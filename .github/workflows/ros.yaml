@@ -2,9 +2,8 @@ name: ROS
 
 on:
   pull_request:
-  push:
   workflow_dispatch:
-    
+
 jobs:
   test:
     name: test
