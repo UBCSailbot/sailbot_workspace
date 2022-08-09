@@ -1,4 +1,4 @@
-# build command: docker build --tag ghcr.io/UBCSailbot/vscode_ros2_workspace/base:ros_eloquent-ompl_1_5_0_python3 .
+# build command: docker build --tag ghcr.io/ubcsailbot/vscode_ros2_workspace/base:ros_eloquent-ompl_1_5_0_python3 .
 FROM ros:eloquent-ros-base-bionic
 
 # install OMPL
