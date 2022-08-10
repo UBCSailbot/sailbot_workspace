@@ -2,6 +2,12 @@ name: Build Dev Image
 
 on:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Dev image tag'
+        required: false
+        type: string
+        default: 'latest'
 
 jobs:
   docker:
@@ -26,6 +32,6 @@ jobs:
         with:
           context: "{{defaultContext}}:.devcontainer/dev"
           push: true
-          tags: ghcr.io/ubcsailbot/vscode_ros2_workspace/dev:latest
+          tags: ghcr.io/ubcsailbot/vscode_ros2_workspace/dev:${{ inputs.tag }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
