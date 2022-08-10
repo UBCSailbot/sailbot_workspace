@@ -1,4 +1,4 @@
-name: lint docs
+name: Docs - Lint
 
 on:
   push:
