@@ -10,8 +10,8 @@ See [how I develop with vscode and ros2](https://www.allisonthackston.com/articl
 
 ROS2-approved formatters are included in the IDE.  
 
-* **c++** uncrustify; config from `ament_uncrustify`
-* **python** autopep8; vscode settings consistent with the [style guide](https://index.ros.org/doc/ros2/Contributing/Code-Style-Language-Versions/)
+- **c++** uncrustify; config from `ament_uncrustify`
+- **python** autopep8; vscode settings consistent with the [style guide](https://index.ros.org/doc/ros2/Contributing/Code-Style-Language-Versions/)
 
 ### Tasks
 
@@ -25,7 +25,7 @@ This template sets up debugging for python files and gdb for cpp programs.  See 
 
 ### Continuous Integration
 
-The template also comes with basic continuous integration set up. See [`.github/workflows/ros.yaml`](/.github/workflows/ros.yaml).
+The template also comes with basic continuous integration set up. See [`.github/workflows/ros.yaml`](.github/workflows/ros.yaml).
 
 To remove a linter just delete it's name from this line:
 
@@ -40,9 +40,9 @@ To remove a linter just delete it's name from this line:
 
 You should already have Docker and VSCode with the remote containers plugin installed on your system.
 
-* [docker](https://docs.docker.com/engine/install/)
-* [vscode](https://code.visualstudio.com/)
-* [vscode remote containers plugin](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
+- [docker](https://docs.docker.com/engine/install/)
+- [vscode](https://code.visualstudio.com/)
+- [vscode remote containers plugin](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
 
 ### Get the template
 
@@ -66,7 +66,7 @@ Now you can clone your repo as normal
 
 ### Open it in vscode
 
-Now that you've cloned your repo onto your computer, you can open it in VSCode (File->Open Folder). 
+Now that you've cloned your repo onto your computer, you can open it in VSCode (File->Open Folder).
 
 When you open it for the first time, you should see a little popup that asks you if you would like to open it in a container.  Say yes!
 
@@ -78,18 +78,18 @@ If you don't see the pop-up, click on the little green square in the bottom left
 
 In the dialog, select "Remote Containers: Reopen in container"
 
-VSCode will build the dockerfile inside of `.devcontainer` for you.  If you open a terminal inside VSCode (Terminal->New Terminal), you should see that your username has been changed to `ros`, and the bottom left green corner should say "Dev Container"
+VSCode will build the dockerfile inside of `.devcontainer` for you.  If you open a terminal inside VSCode (Terminal->New Terminal),
+you should see that your username has been changed to `ros`, and the bottom left green corner should say "Dev Container"
 
 ![template_container](https://user-images.githubusercontent.com/6098197/91332895-adbf1500-e781-11ea-8afc-7a22a5340d4a.png)
-
 
 ### Update the template with your code
 
 1. Specify the repositories you want to include in your workspace in `src/ros2.repos` or delete `src/ros2.repos` and develop directly within the workspace.
 2. If you are using a `ros2.repos` file, import the contents `Terminal->Run Task..->import from workspace file`
-2. Install dependencies `Terminal->Run Task..->install dependencies`
-3. (optional) Adjust scripts to your liking.  These scripts are used both within tasks and CI.
+3. Install dependencies `Terminal->Run Task..->install dependencies`
+4. (optional) Adjust scripts to your liking.  These scripts are used both within tasks and CI.
    1. `setup.sh` The setup commands for your code.  Default to import workspace and install dependencies.
    2. `build.sh` The build commands for your code.  Default to `--merge-install` and `--symlink-install`
    3. `test.sh` The test commands for your code.
-4. Develop!
+5. Develop!
