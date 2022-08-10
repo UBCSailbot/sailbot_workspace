@@ -26,13 +26,10 @@ See their [write-up](https://www.allisonthackston.com/articles/vscode_docker_ros
 4. Open it in a container
     1. Make sure that Docker is running
     2. When you open it for the first time, you should see a little popup that asks you if you would like to open it in a container. Say yes!
-        ![template_vscode](https://user-images.githubusercontent.com/6098197/91332551-36898100-e781-11ea-9080-729964373719.png)
     3. If you don't see the pop-up, click on the little green square in the bottom left corner, which should bring up the container dialog
-        ![template_vscode_bottom](https://user-images.githubusercontent.com/6098197/91332638-5d47b780-e781-11ea-9fb6-4d134dbfc464.png)
         - In the dialog, select "Remote Containers: Reopen in container"
     4. VSCode will build the dockerfile inside of `.devcontainer` for you. If you open a terminal inside VSCode (Terminal > New Terminal),
 you should see that your username has been changed to `ros`, and the bottom left green corner should say "Dev Container"
-        ![template_container](https://user-images.githubusercontent.com/6098197/91332895-adbf1500-e781-11ea-8afc-7a22a5340d4a.png)
 
 5. Import the ROS packages and install their dependencies by running the "setup" task
     - You can also import and install independently with their respective tasks, "import from workspace file" and "install dependencies"
