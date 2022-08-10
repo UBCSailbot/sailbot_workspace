@@ -4,17 +4,15 @@
   // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
   "version": "0.2.0",
   "configurations": [
-    // Example launch of a python file
     {
-      "name": "Python: Current File",
+      "name": "Launch Python File",
       "type": "python",
       "request": "launch",
       "program": "${file}",
       "console": "integratedTerminal",
     },
-    // Example gdb launch of a ros executable
     {
-      "name": "(gdb) Launch",
+      "name": "Launch Cpp Program",
       "type": "cppdbg",
       "request": "launch",
       "program": "${workspaceFolder}/install/lib/${input:package}/${input:program}",
