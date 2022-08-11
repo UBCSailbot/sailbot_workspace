@@ -73,6 +73,7 @@ RUN sudo chmod +x /sbin/update-bashrc ; sudo chown ros /sbin/update-bashrc ; syn
 # ROS 1 workspace setup
 WORKDIR /workspaces/catkin_ws
 RUN mkdir src
+RUN /bin/bash -c "source /opt/ros/${ROS1_DISTRO}/setup.bash; catkin_make"
 RUN git clone https://github.com/UBCSailbot/local-pathfinding.git src/local-pathfinding
 RUN git clone https://github.com/UBCSailbot/boat_controller.git src/boat_controller
 RUN git clone https://github.com/UBCSailbot/sailbot-msg.git src/sailbot-msg
