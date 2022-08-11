@@ -82,4 +82,4 @@ RUN git clone https://github.com/UBCSailbot/sailbot-msg.git src/sailbot-msg
 RUN /bin/bash -c "source /opt/ros/${ROS1_DISTRO}/setup.bash; catkin_make"
 
 # ROS 2 workspace setup
-WORKDIR $ROS2_WORKSPACE
+WORKDIR /
