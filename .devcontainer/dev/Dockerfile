@@ -70,12 +70,13 @@ RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=${HOME}/comma
 COPY update-bashrc.sh /sbin/update-bashrc
 RUN sudo chmod +x /sbin/update-bashrc ; sudo chown ros /sbin/update-bashrc ; sync ; /bin/bash -c /sbin/update-bashrc ; sudo rm /sbin/update-bashrc
 
+ENV ROS1_WORKSPACE /workspaces/catkin_ws
+ENV ROS2_WORKSPACE /workspaces/vscode_ros2_workspace
+
 # ROS 1 workspace setup
-WORKDIR /workspaces/catkin_ws
+WORKDIR ${ROS1_WORKSPACE}
 RUN mkdir src
-RUN /bin/bash -c "source /opt/ros/${ROS1_DISTRO}/setup.bash; catkin_make"
 RUN git clone https://github.com/UBCSailbot/local-pathfinding.git src/local-pathfinding
 RUN git clone https://github.com/UBCSailbot/boat_controller.git src/boat_controller
 RUN git clone https://github.com/UBCSailbot/sailbot-msg.git src/sailbot-msg
 RUN /bin/bash -c "source /opt/ros/${ROS1_DISTRO}/setup.bash; catkin_make"
-RUN /bin/bash -c "pip install protobuf==3.17.3"
