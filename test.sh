@@ -1,6 +1,7 @@
 #!/bin/bash
 set -e
 
-if [ -f install/setup.bash ]; then source install/setup.bash; fi
+source /opt/ros/${ROS2_DISTRO}/setup.bash
+if [ -f install/local_setup.bash ]; then source install/local_setup.bash; fi
 colcon test --merge-install
 colcon test-result
