@@ -59,6 +59,7 @@ ${SUDO}apt-get update && \
         scrot \
         vim
 
+${SUDO}pip2 install protobuf==3.17.3
 ${SUDO}pip2 install geopy pyautogui shapely wandb
 
 # Run remaining installation script (note there are some redundant commands, but it wastes minimal amount of time) and generate Python bindings
