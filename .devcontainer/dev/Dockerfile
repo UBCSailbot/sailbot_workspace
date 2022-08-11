@@ -70,8 +70,8 @@ RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=${HOME}/comma
 COPY update-bashrc.sh /sbin/update-bashrc
 RUN sudo chmod +x /sbin/update-bashrc ; sudo chown ros /sbin/update-bashrc ; sync ; /bin/bash -c /sbin/update-bashrc ; sudo rm /sbin/update-bashrc
 
-ENV ROS1_WORKSPACE /workspaces/catkin_ws
-ENV ROS2_WORKSPACE /workspaces/vscode_ros2_workspace
+ARG ROS1_WORKSPACE=/workspaces/catkin_ws
+ARG ROS2_WORKSPACE=/workspaces/vscode_ros2_workspace
 
 # ROS 1 workspace setup
 WORKDIR ${ROS1_WORKSPACE}
