@@ -2,3 +2,7 @@ build/*
 install/*
 log/*
 site/*
+
+# configuration files
+.devcontainer/config/*
+!.devcontainer/config/.gitkeep

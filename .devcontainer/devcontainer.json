@@ -22,12 +22,14 @@
 	"settings": {
 		"terminal.integrated.profiles.linux": {
 			"bash": {
-				"path": "bash"
+				"path": "bash",
+				"icon": "terminal-bash"
 			}
 		},
 		"terminal.integrated.defaultProfile.linux": "bash"
 	},
 	"extensions": [
+		// template repo
 		"althack.ament-task-provider",
 		"DotJoshJohnson.xml",
 		"ms-azuretools.vscode-docker",
@@ -38,6 +40,18 @@
 		"streetsidesoftware.code-spell-checker",
 		"twxs.cmake",
 		"yzhang.markdown-all-in-one",
-		"zachflower.uncrustify"
+		"zachflower.uncrustify",
+
+		// UBCSailbot
+		"jeff-hykin.better-cpp-syntax",
+		"johnpapa.vscode-peacock",
+		"KevinRose.vsc-python-indent",
+		"ms-vsliveshare.vsliveshare",
+		"njpwerner.autodocstring",
+		"vscode-icons-team.vscode-icons"
+	],
+	"mounts": [
+		"source=sailbot-new-project-bashhistory,target=/home/ros/commandhistory,type=volume",
+		"source=sailbot-new-project-roslog,target=/home/ros/.ros/log,type=volume"
 	]
 }
