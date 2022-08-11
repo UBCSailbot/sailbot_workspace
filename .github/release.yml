@@ -2,8 +2,16 @@ changelog:
   exclude:
     labels:
       - ignore-for-release
+    authors:
+      - dependabot
   categories:
-    - title: Infrastructure Updates
+    - title: Workflow Updates
+      labels:
+        - workflows
+    - title: Devcontainer Updates
+      labels:
+        - devcontainer
+    - title: General Infrastructure Updates
       labels:
         - infrastructure
     - title: Other Changes

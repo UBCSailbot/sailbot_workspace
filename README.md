@@ -25,7 +25,7 @@ This template sets up debugging for python files and gdb for cpp programs.  See 
 
 ### Continuous Integration
 
-The template also comes with basic continuous integration set up. See [`.github/workflows/ros.yaml`](.github/workflows/ros.yaml).
+The template also comes with basic continuous integration set up. See [`.github/workflows/ros-lint-and-test.yaml`](.github/workflows/ros-lint-and-test.yaml).
 
 To remove a linter just delete it's name from this line:
 

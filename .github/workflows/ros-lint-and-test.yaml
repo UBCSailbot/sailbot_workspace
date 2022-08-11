@@ -1,4 +1,4 @@
-name: ROS
+name: ROS - Lint and Test
 
 on:
   push:
