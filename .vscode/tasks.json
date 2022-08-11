@@ -5,7 +5,7 @@
     "tasks": [
         // Build tasks
         {
-            "label": "build",
+            "label": "Build",
             "detail": "Build workspace (default)",
             "type": "shell",
             "command": "./build.sh",
@@ -44,7 +44,7 @@
             "label": "clean",
             "detail": "Run the clean target",
             "type": "shell",
-            "command": "colcon build --cmake-target clean",
+            "command": "colcon build --merge-install --cmake-target clean",
             "problemMatcher": "$gcc"
         },
         {
