@@ -67,10 +67,10 @@ RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=${HOME}/comma
   && echo $SNIPPET >> "/home/${USER}/.bashrc"
 
 # bash configuration
-COPY update_bashrc_ros.sh /sbin/update_bashrc_ros
-RUN sudo chmod +x /sbin/update_bashrc_ros ; sudo chown ros /sbin/update_bashrc_ros ; sync ; /bin/bash -c /sbin/update_bashrc_ros ; sudo rm /sbin/update_bashrc_ros
+COPY update-bashrc.sh /sbin/update-bashrc
+RUN sudo chmod +x /sbin/update-bashrc ; sudo chown ros /sbin/update-bashrc ; sync ; /bin/bash -c /sbin/update-bashrc ; sudo rm /sbin/update-bashrc
 
-# ROS1 workspace setup
+# ROS 1 workspace setup
 WORKDIR /workspaces/catkin_ws
 RUN mkdir src
 RUN git clone https://github.com/UBCSailbot/local-pathfinding.git src/local-pathfinding
