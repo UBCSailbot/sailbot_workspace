@@ -3,6 +3,10 @@ install/*
 log/*
 site/*
 
+# vcstool packages
+src/cpp_pubsub
+src/py_pubsub
+
 # configuration files
 .devcontainer/config/*
 !.devcontainer/config/.gitkeep
