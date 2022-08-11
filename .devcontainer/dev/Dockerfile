@@ -66,15 +66,15 @@ RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=${HOME}/comma
   && chown -R ${USER} ${HOME}/commandhistory \
   && echo $SNIPPET >> "/home/${USER}/.bashrc"
 
+ARG ROS1_WORKSPACE=/workspaces/catkin_ws
+ARG ROS2_WORKSPACE=/workspaces/vscode_ros2_workspace
+
 # bash configuration
 COPY update-bashrc.sh /sbin/update-bashrc
 RUN sudo chmod +x /sbin/update-bashrc ; sudo chown ros /sbin/update-bashrc ; sync ; /bin/bash -c /sbin/update-bashrc ; sudo rm /sbin/update-bashrc
 
-ARG ROS1_WORKSPACE=/workspaces/catkin_ws
-ARG ROS2_WORKSPACE=/workspaces/vscode_ros2_workspace
-
 # ROS 1 workspace setup
-WORKDIR ${ROS1_WORKSPACE}
+WORKDIR $ROS1_WORKSPACE
 RUN mkdir src
 RUN git clone https://github.com/UBCSailbot/local-pathfinding.git src/local-pathfinding
 RUN git clone https://github.com/UBCSailbot/boat_controller.git src/boat_controller
