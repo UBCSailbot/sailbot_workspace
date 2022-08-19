@@ -16,6 +16,6 @@ echo "    export PYTHONPATH=/opt/ros/$ROS2_DISTRO/lib/python3.6/site-packages:\$
 echo "else" >> $HOME/.bashrc
 echo "    echo 'ROS 2 workspace local_setup.bash not found; run the Build task then run srcnew'" >> $HOME/.bashrc
 echo "fi" >> $HOME/.bashrc
-echo "alias srcnew='unset ROS_DISTRO; source /workspaces/vscode_ros2_workspace/install/local_setup.bash; PYTHONPATH=/opt/ros/$ROS2_DISTRO/lib/python3.6/site-packages:\$PYTHONPATH'" >> $HOME/.bashrc
+echo "alias srcnew='unset ROS_DISTRO; source /workspaces/sailbot_workspace/install/local_setup.bash; PYTHONPATH=/opt/ros/$ROS2_DISTRO/lib/python3.6/site-packages:\$PYTHONPATH'" >> $HOME/.bashrc
 echo "source /usr/share/colcon_cd/function/colcon_cd.sh" >> $HOME/.bashrc
 echo "export _colcon_cd_root=$ROS2_WORKSPACE" >> $HOME/.bashrc
