@@ -53,14 +53,14 @@ FROM builder
 
 # install latest version of git
 ENV DEBIAN_FRONTEND=noninteractive
-RUN sudo apt-get update \
-  && sudo apt-get -y install --no-install-recommends software-properties-common \
-  && sudo add-apt-repository ppa:git-core/ppa -y \
-  && sudo apt-get update \
-  && sudo apt-get -y install --no-install-recommends git \
+RUN apt-get update \
+  && apt-get -y install --no-install-recommends software-properties-common \
+  && add-apt-repository ppa:git-core/ppa -y \
+  && apt-get update \
+  && apt-get -y install --no-install-recommends git \
   # Clean up
-  && sudo apt-get autoremove -y \
-  && sudo apt-get clean -y \
+  && apt-get autoremove -y \
+  && apt-get clean -y \
   && rm -rf /var/lib/apt/lists/*
 ENV DEBIAN_FRONTEND=
 
@@ -83,7 +83,7 @@ ARG ROS2_WORKSPACE=/workspaces/vscode_ros2_workspace
 
 # bash configuration
 COPY update-bashrc.sh /sbin/update-bashrc
-RUN sudo chmod +x /sbin/update-bashrc ; sudo chown ros /sbin/update-bashrc ; sync ; /bin/bash -c /sbin/update-bashrc ; sudo rm /sbin/update-bashrc
+RUN chmod +x /sbin/update-bashrc ; chown ros /sbin/update-bashrc ; sync ; /bin/bash -c /sbin/update-bashrc ; rm /sbin/update-bashrc
 
 # ROS 1 workspace setup
 WORKDIR $ROS1_WORKSPACE
