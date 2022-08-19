@@ -76,7 +76,7 @@ RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=${HOME}/comma
   && mkdir ${HOME}/commandhistory \
   && touch ${HOME}/commandhistory/.bash_history \
   && chown -R ${USERNAME} ${HOME}/commandhistory \
-  && echo $SNIPPET >> "/home/${USERNAME}/.bashrc"
+  && echo $SNIPPET >> "${HOME}/.bashrc"
 
 ARG ROS1_WORKSPACE=/workspaces/catkin_ws
 ARG ROS2_WORKSPACE=/workspaces/vscode_ros2_workspace
