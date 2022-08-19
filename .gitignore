@@ -4,8 +4,8 @@ log/*
 site/*
 
 # vcstool packages
-src/cpp_pubsub
-src/py_pubsub
+src/*
+!src/new_project.repos
 
 # configuration files
 .devcontainer/config/*
