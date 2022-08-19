@@ -17,7 +17,7 @@
       "request": "launch",
       "program": "${workspaceFolder}/install/lib/${input:package}/${input:program}",
       "args": [],
-      "preLaunchTask": "build",
+      "preLaunchTask": "Build",
       "stopAtEntry": true,
       "cwd": "${workspaceFolder}",
       "externalConsole": false,

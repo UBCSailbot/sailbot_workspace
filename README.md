@@ -85,8 +85,8 @@ you should see that your username has been changed to `ros`, and the bottom left
 
 ### Update the template with your code
 
-1. Specify the repositories you want to include in your workspace in `src/ros2.repos` or delete `src/ros2.repos` and develop directly within the workspace.
-2. If you are using a `ros2.repos` file, import the contents `Terminal->Run Task..->import from workspace file`
+1. Specify the repositories you want to include in your workspace in `src/new_project.repos` or delete `src/new_project.repos` and develop directly within the workspace.
+2. If you are using a `new_project.repos` file, import the contents `Terminal->Run Task..->import from workspace file`
 3. Install dependencies `Terminal->Run Task..->install dependencies`
 4. (optional) Adjust scripts to your liking.  These scripts are used both within tasks and CI.
    1. `setup.sh` The setup commands for your code.  Default to import workspace and install dependencies.
