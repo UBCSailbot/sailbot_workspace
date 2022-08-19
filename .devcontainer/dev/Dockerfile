@@ -1,7 +1,7 @@
 # build using Build Dev Image workflow
 FROM ghcr.io/ubcsailbot/vscode_ros2_workspace/base:raye as builder
 
-# develop configuration from athackst's image
+# develop configuration based on athackst's image
 # https://github.com/athackst/dockerfiles/blob/main/ros2/eloquent.Dockerfile
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
@@ -51,30 +51,47 @@ ENV AMENT_CPPCHECK_ALLOW_SLOW_VERSIONS=1
 
 FROM builder
 
-ENV USER ros
-USER ros
-ENV HOME /home/${USER}
+# install latest version of git
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update \
+  && apt-get -y install --no-install-recommends software-properties-common \
+  && add-apt-repository ppa:git-core/ppa -y \
+  && apt-get update \
+  && apt-get -y install --no-install-recommends git \
+  # Clean up
+  && apt-get autoremove -y \
+  && apt-get clean -y \
+  && rm -rf /var/lib/apt/lists/*
+ENV DEBIAN_FRONTEND=
+
+ARG USERNAME=ros
+ARG HOME=/home/$USERNAME
 
 # persist ROS logs
 RUN mkdir -p ${HOME}/.ros/log \
-    && chown -R ${USER} ${HOME}/.ros/log
+    && chown -R ${USERNAME} ${HOME}/.ros
 
 # persist bash history
 RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=${HOME}/commandhistory/.bash_history" \
   && mkdir ${HOME}/commandhistory \
   && touch ${HOME}/commandhistory/.bash_history \
-  && chown -R ${USER} ${HOME}/commandhistory \
-  && echo $SNIPPET >> "/home/${USER}/.bashrc"
+  && chown ${USERNAME} ${HOME}/commandhistory/.bash_history \
+  && echo $SNIPPET >> "${HOME}/.bashrc"
+
+ARG ROS1_WORKSPACE=/workspaces/catkin_ws
+ARG ROS2_WORKSPACE=/workspaces/vscode_ros2_workspace
 
 # bash configuration
-COPY update_bashrc_ros.sh /sbin/update_bashrc_ros
-RUN sudo chmod +x /sbin/update_bashrc_ros ; sudo chown ros /sbin/update_bashrc_ros ; sync ; /bin/bash -c /sbin/update_bashrc_ros ; sudo rm /sbin/update_bashrc_ros
+COPY update-bashrc.sh /sbin/update-bashrc
+RUN chmod +x /sbin/update-bashrc ; chown ros /sbin/update-bashrc ; sync ; /bin/bash -c /sbin/update-bashrc ; rm /sbin/update-bashrc
 
-# ROS1 workspace setup
-WORKDIR /workspaces/catkin_ws
+# ROS 1 workspace setup
+WORKDIR $ROS1_WORKSPACE
 RUN mkdir src
 RUN git clone https://github.com/UBCSailbot/local-pathfinding.git src/local-pathfinding
 RUN git clone https://github.com/UBCSailbot/boat_controller.git src/boat_controller
 RUN git clone https://github.com/UBCSailbot/sailbot-msg.git src/sailbot-msg
 RUN /bin/bash -c "source /opt/ros/${ROS1_DISTRO}/setup.bash; catkin_make"
-RUN /bin/bash -c "pip install protobuf==3.17.3"
+
+# ROS 2 workspace setup
+WORKDIR /
