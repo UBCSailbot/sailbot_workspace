@@ -1,4 +1,3 @@
-# FROM althack/ros2:foxy-dev
 FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:latest
 
 # ** [Optional] Uncomment this section to install additional packages. **
