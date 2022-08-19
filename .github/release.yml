@@ -5,12 +5,12 @@ changelog:
     authors:
       - dependabot
   categories:
-    - title: Workflow Updates
-      labels:
-        - workflows
     - title: Devcontainer Updates
       labels:
         - devcontainer
+    - title: Workflow Updates
+      labels:
+        - workflows
     - title: General Infrastructure Updates
       labels:
         - infrastructure
