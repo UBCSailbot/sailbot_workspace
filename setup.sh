@@ -5,10 +5,10 @@ echo $USER
 echo $HOME
 id -u $USER
 id -g $USER
-git clone https://github.com/UBCSailbot/py_pubsub src/py_pubsub
+git ls-remote https://github.com/UBCSailbot/py_pubsub main
 ls -lah src
 vcs --version
-vcs import < src/ros2.repos src --debug
+vcs import < src/ros2.repos src
 sudo apt-get update
 rosdep update
 rosdep install --from-paths src --ignore-src -y
