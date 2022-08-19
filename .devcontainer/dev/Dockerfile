@@ -69,13 +69,13 @@ ARG HOME=/home/$USERNAME
 
 # persist ROS logs
 RUN mkdir -p ${HOME}/.ros/log \
-    && chown -R ${USERNAME} ${HOME}/.ros/log
+    && chown -R ${USERNAME} ${HOME}/.ros
 
 # persist bash history
 RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=${HOME}/commandhistory/.bash_history" \
   && mkdir ${HOME}/commandhistory \
   && touch ${HOME}/commandhistory/.bash_history \
-  && chown -R ${USERNAME} ${HOME}/commandhistory \
+  && chown ${USERNAME} ${HOME}/commandhistory/.bash_history \
   && echo $SNIPPET >> "${HOME}/.bashrc"
 
 ARG ROS1_WORKSPACE=/workspaces/catkin_ws
