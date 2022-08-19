@@ -4,15 +4,12 @@ FROM ghcr.io/ubcsailbot/vscode_ros2_workspace/base:raye as builder
 # develop configuration based on athackst's image
 # https://github.com/athackst/dockerfiles/blob/main/ros2/eloquent.Dockerfile
 ENV DEBIAN_FRONTEND=noninteractive
-# update apt repository to install latest version of git
-RUN add-apt-repository ppa:git-core/ppa -y
 RUN apt-get update && apt-get install -y \
   bash-completion \
   build-essential \
   cmake \
   gdb \
   git \
-  less \
   pylint3 \
   python3-argcomplete \
   python3-colcon-common-extensions \
@@ -52,7 +49,20 @@ RUN groupadd --gid $USER_GID $USERNAME \
 ENV DEBIAN_FRONTEND=
 ENV AMENT_CPPCHECK_ALLOW_SLOW_VERSIONS=1
 
-# FROM builder
+FROM builder
+
+# install latest version of git
+ENV DEBIAN_FRONTEND=noninteractive
+RUN sudo apt-get update \
+  && sudo apt-get -y install --no-install-recommends software-properties-common \
+  && sudo add-apt-repository ppa:git-core/ppa -y \
+  && sudo apt-get update \
+  && sudo apt-get -y install --no-install-recommends git \
+  # Clean up
+  && sudo apt-get autoremove -y \
+  && sudo apt-get clean -y \
+  && rm -rf /var/lib/apt/lists/*
+ENV DEBIAN_FRONTEND=
 
 # ENV USER ros
 # USER ros
