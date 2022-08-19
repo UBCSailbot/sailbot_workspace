@@ -1,15 +1,18 @@
 # build using Build Dev Image workflow
 FROM ghcr.io/ubcsailbot/vscode_ros2_workspace/base:raye as builder
 
-# develop configuration from athackst's image
+# develop configuration based on athackst's image
 # https://github.com/athackst/dockerfiles/blob/main/ros2/eloquent.Dockerfile
 ENV DEBIAN_FRONTEND=noninteractive
+# update apt repository to install latest version of git
+RUN add-apt-repository ppa:git-core/ppa -y
 RUN apt-get update && apt-get install -y \
   bash-completion \
   build-essential \
   cmake \
   gdb \
   git \
+  less \
   pylint3 \
   python3-argcomplete \
   python3-colcon-common-extensions \
