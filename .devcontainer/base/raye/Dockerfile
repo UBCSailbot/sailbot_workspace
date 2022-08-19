@@ -1,5 +1,5 @@
-# build command: docker build --tag ghcr.io/ubcsailbot/vscode_ros2_workspace/base:raye .
-FROM ghcr.io/ubcsailbot/vscode_ros2_workspace/base:ros_eloquent-ompl_1_5_0_python3 as builder
+# build command: docker build --tag ghcr.io/ubcsailbot/sailbot_workspace/base:raye .
+FROM ghcr.io/ubcsailbot/sailbot_workspace/base:ros_eloquent-ompl_1_5_0_python3 as builder
 
 # install ROS 1
 # https://github.com/osrf/docker_images/blob/master/ros/eloquent/ubuntu/bionic/ros1-bridge/Dockerfile

@@ -1,5 +1,5 @@
 # build using Build Dev Image workflow
-FROM ghcr.io/ubcsailbot/vscode_ros2_workspace/base:raye as builder
+FROM ghcr.io/ubcsailbot/sailbot_workspace/base:raye as builder
 
 # develop configuration based on athackst's image
 # https://github.com/athackst/dockerfiles/blob/main/ros2/eloquent.Dockerfile
@@ -79,7 +79,7 @@ RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=${HOME}/comma
   && echo $SNIPPET >> "${HOME}/.bashrc"
 
 ARG ROS1_WORKSPACE=/workspaces/catkin_ws
-ARG ROS2_WORKSPACE=/workspaces/vscode_ros2_workspace
+ARG ROS2_WORKSPACE=/workspaces/sailbot_workspace
 
 # bash configuration
 COPY update-bashrc.sh /sbin/update-bashrc
