@@ -6,7 +6,6 @@
     "language": "en",
     // words - list of words to be always considered correct
     "words": [
-        "RTPS",
         "athackst",
         "autopep",
         "buildx",
@@ -19,6 +18,7 @@
         "gaurav",
         "ints",
         "noqa",
+        "pallete",
         "pytest",
         "rclcpp",
         "rclpy",
