@@ -43,43 +43,43 @@ RUN groupadd --gid $USER_GID $USERNAME \
   && chmod 0440 /etc/sudoers.d/$USERNAME \
   # Cleanup
   && rm -rf /var/lib/apt/lists/* \
-  && echo "source /usr/share/bash-completion/completions/git" >> /home/$USERNAME/.bashrc
-  # && echo "if [ -f /opt/ros/${ROS_DISTRO}/setup.bash ]; then source /opt/ros/${ROS_DISTRO}/setup.bash; fi" >> /home/$USERNAME/.bashrc
+  && echo "source /usr/share/bash-completion/completions/git" >> /home/$USERNAME/.bashrc \
+  && echo "if [ -f /opt/ros/${ROS_DISTRO}/setup.bash ]; then source /opt/ros/${ROS_DISTRO}/setup.bash; fi" >> /home/$USERNAME/.bashrc
 
 ENV DEBIAN_FRONTEND=
 ENV AMENT_CPPCHECK_ALLOW_SLOW_VERSIONS=1
 
-FROM builder
+# FROM builder
 
-ENV USER ros
-USER ros
-ENV HOME /home/${USER}
+# ENV USER ros
+# USER ros
+# ENV HOME /home/${USER}
 
-# persist ROS logs
-RUN mkdir -p ${HOME}/.ros/log \
-    && chown -R ${USER} ${HOME}/.ros/log
+# # persist ROS logs
+# RUN mkdir -p ${HOME}/.ros/log \
+#     && chown -R ${USER} ${HOME}/.ros/log
 
-# persist bash history
-RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=${HOME}/commandhistory/.bash_history" \
-  && mkdir ${HOME}/commandhistory \
-  && touch ${HOME}/commandhistory/.bash_history \
-  && chown -R ${USER} ${HOME}/commandhistory \
-  && echo $SNIPPET >> "/home/${USER}/.bashrc"
+# # persist bash history
+# RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=${HOME}/commandhistory/.bash_history" \
+#   && mkdir ${HOME}/commandhistory \
+#   && touch ${HOME}/commandhistory/.bash_history \
+#   && chown -R ${USER} ${HOME}/commandhistory \
+#   && echo $SNIPPET >> "/home/${USER}/.bashrc"
 
-ARG ROS1_WORKSPACE=/workspaces/catkin_ws
-ARG ROS2_WORKSPACE=/workspaces/vscode_ros2_workspace
+# ARG ROS1_WORKSPACE=/workspaces/catkin_ws
+# ARG ROS2_WORKSPACE=/workspaces/vscode_ros2_workspace
 
-# bash configuration
-COPY update-bashrc.sh /sbin/update-bashrc
-RUN sudo chmod +x /sbin/update-bashrc ; sudo chown ros /sbin/update-bashrc ; sync ; /bin/bash -c /sbin/update-bashrc ; sudo rm /sbin/update-bashrc
+# # bash configuration
+# COPY update-bashrc.sh /sbin/update-bashrc
+# RUN sudo chmod +x /sbin/update-bashrc ; sudo chown ros /sbin/update-bashrc ; sync ; /bin/bash -c /sbin/update-bashrc ; sudo rm /sbin/update-bashrc
 
-# ROS 1 workspace setup
-WORKDIR $ROS1_WORKSPACE
-RUN mkdir src
-RUN git clone https://github.com/UBCSailbot/local-pathfinding.git src/local-pathfinding
-RUN git clone https://github.com/UBCSailbot/boat_controller.git src/boat_controller
-RUN git clone https://github.com/UBCSailbot/sailbot-msg.git src/sailbot-msg
-RUN /bin/bash -c "source /opt/ros/${ROS1_DISTRO}/setup.bash; catkin_make"
+# # ROS 1 workspace setup
+# WORKDIR $ROS1_WORKSPACE
+# RUN mkdir src
+# RUN git clone https://github.com/UBCSailbot/local-pathfinding.git src/local-pathfinding
+# RUN git clone https://github.com/UBCSailbot/boat_controller.git src/boat_controller
+# RUN git clone https://github.com/UBCSailbot/sailbot-msg.git src/sailbot-msg
+# RUN /bin/bash -c "source /opt/ros/${ROS1_DISTRO}/setup.bash; catkin_make"
 
-# ROS 2 workspace setup
-WORKDIR /
+# # ROS 2 workspace setup
+# WORKDIR /
