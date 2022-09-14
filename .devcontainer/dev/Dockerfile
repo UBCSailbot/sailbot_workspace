@@ -51,10 +51,10 @@ ENV AMENT_CPPCHECK_ALLOW_SLOW_VERSIONS=1
 
 FROM builder
 
-# install latest version of git
+# install latest version of git and other related packages
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
-  && apt-get -y install --no-install-recommends software-properties-common \
+  && apt-get -y install --no-install-recommends software-properties-common nvim less \
   && add-apt-repository ppa:git-core/ppa -y \
   && apt-get update \
   && apt-get -y install --no-install-recommends git \
@@ -63,6 +63,11 @@ RUN apt-get update \
   && apt-get clean -y \
   && rm -rf /var/lib/apt/lists/*
 ENV DEBIAN_FRONTEND=
+
+# install git-delta
+RUN wget https://github.com/dandavison/delta/releases/download/0.14.0/git-delta-musl_0.14.0_amd64.deb
+RUN dpkg -i git-delta-musl_0.14.0_amd64.deb
+RUN rm git-delta-musl_0.14.0_amd64.deb
 
 ARG USERNAME=ros
 ARG HOME=/home/$USERNAME
