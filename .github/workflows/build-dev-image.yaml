@@ -7,7 +7,7 @@ on:
         description: 'Dev image tag'
         required: false
         type: string
-        default: 'latest'
+        default: 'main'
 
 jobs:
   docker:
