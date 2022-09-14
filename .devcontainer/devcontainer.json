@@ -43,6 +43,8 @@
 		"zachflower.uncrustify",
 
 		// UBCSailbot
+		"awesomektvn.toggle-semicolon",
+		"DavidAnson.vscode-markdownlint",
 		"jeff-hykin.better-cpp-syntax",
 		"johnpapa.vscode-peacock",
 		"KevinRose.vsc-python-indent",
