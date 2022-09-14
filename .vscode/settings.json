@@ -1,7 +1,7 @@
 {
     "editor.tabSize": 8,
     "editor.rulers": [
-        100
+        120
     ],
     "files.associations": {
         "*.repos": "yaml",
@@ -20,7 +20,7 @@
     // Use the system installed version of autopep8
     "python.formatting.autopep8Path": "/usr/bin/autopep8",
     "python.formatting.autopep8Args": [
-        "--max-line-length=100"
+        "--max-line-length=120"
     ],
     "C_Cpp.default.intelliSenseMode": "linux-gcc-x86",
     "C_Cpp.formatting": "Disabled",
