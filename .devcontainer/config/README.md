@@ -1,4 +1,4 @@
-# User Configuration Files
+# Personal Configuration Files
 
 Copy your personal configuration files (e.g., `.vimrc`) to this directory
 to add them to the Dev Container.
