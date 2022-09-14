@@ -1,4 +1,4 @@
-FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:infra_updates
+FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:add_tmux
 
 # ** [Optional] Uncomment this section to install additional packages. **
 #
