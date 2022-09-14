@@ -7,3 +7,8 @@
     - See [config's README](./config/README.md) for more details
 - Adds run arguments, container environment variables, VS Code extensions, and volumes
     - See [dev's README](./dev/README.md) for more details about the volumes
+
+## How to Temporarily Add Packages
+
+1. Uncomment optional section
+2. Add the desired packages below the line `# Your package list here` with the format `<pkg1 name> <pkg2 name> ... \`
