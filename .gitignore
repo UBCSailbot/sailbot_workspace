@@ -9,4 +9,4 @@ src/*
 
 # configuration files
 .devcontainer/config/*
-!.devcontainer/config/.gitkeep
+!.devcontainer/config/README.md

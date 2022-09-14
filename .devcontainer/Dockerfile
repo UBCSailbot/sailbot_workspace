@@ -1,7 +1,6 @@
-FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:infra_updates
+FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:add_tmux
 
 # ** [Optional] Uncomment this section to install additional packages. **
-#
 # ENV DEBIAN_FRONTEND=noninteractive
 # RUN apt-get update \
 #  && apt-get -y install --no-install-recommends \
