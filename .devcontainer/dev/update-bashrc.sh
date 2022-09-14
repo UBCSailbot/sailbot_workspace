@@ -1,8 +1,7 @@
 echo "" >> $HOME/.bashrc
 echo "# source aliases and functions, if they exist" >> $HOME/.bashrc
-echo "if [ -f $HOME/.aliases.bash ]; then . ~/.aliases.bash; fi" >> $HOME/.bashrc
-echo "if [ -f $HOME/.functions.bash ]; then . ~/.functions.bash; fi" >> $HOME/.bashrc
-echo "" >> $HOME/.bashrc
+echo "if [ -f $HOME/.aliases.bash ]; then . $HOME/.aliases.bash; fi" >> $HOME/.bashrc
+echo "if [ -f $HOME/.functions.bash ]; then . $HOME/.functions.bash; fi" >> $HOME/.bashrc
 
 echo "" >> $HOME/.bashrc
 echo "# setup ROS 1 environment" >> $HOME/.bashrc
