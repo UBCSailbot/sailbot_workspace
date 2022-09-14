@@ -1,4 +1,4 @@
-FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:latest
+FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:infra_updates
 
 # ** [Optional] Uncomment this section to install additional packages. **
 #
