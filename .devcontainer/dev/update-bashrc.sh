@@ -1,4 +1,10 @@
 echo "" >> $HOME/.bashrc
+echo "# source aliases and functions, if they exist" >> $HOME/.bashrc
+echo "if [ -f $HOME/.aliases.bash ]; then . ~/.aliases.bash; fi" >> $HOME/.bashrc
+echo "if [ -f $HOME/.functions.bash ]; then . ~/.functions.bash; fi" >> $HOME/.bashrc
+echo "" >> $HOME/.bashrc
+
+echo "" >> $HOME/.bashrc
 echo "# setup ROS 1 environment" >> $HOME/.bashrc
 echo "unset ROS_DISTRO  # unsetting ROS_DISTRO to silence ROS_DISTRO override warning" >> $HOME/.bashrc
 echo "export ROS_WORKSPACE=$ROS1_WORKSPACE" >> $HOME/.bashrc
