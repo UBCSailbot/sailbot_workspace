@@ -2,7 +2,7 @@
 
 ## Features
 
-- Starts from the [dev](./dev/README.md) image
+- Starts from the [dev](./dev/) image
 - Copies the user configuration files in [`.devcontainer/config/`](./config/) to the container's home directory
     - See [config's README](./config/README.md) for more details
 - Adds run arguments, container environment variables, VS Code extensions, and volumes

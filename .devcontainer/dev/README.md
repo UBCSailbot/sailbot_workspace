@@ -2,7 +2,7 @@
 
 ## Features
 
-- Starts from the [base:raye](../base/raye/README.md) image
+- Starts from the [base:raye](../base/raye/) image
 - Installs software that is nice to have for development
 - Adds a non-root user
 - Initializes the ROS log and bash history volumes
