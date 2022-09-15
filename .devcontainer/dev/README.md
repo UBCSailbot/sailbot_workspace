@@ -17,4 +17,5 @@ select "Run workflow"
 2. In "Use workflow from", select the branch that you want to use the workflow from (e.g., your development branch)
 3. Update "Dev image tag" with the selected branch
 4. Click "Run workflow"
-5. Once the workflow successfully completes, ensure that `.devcontainer/Dockerfile` uses the image you just built
+5. Once the workflow successfully completes, ensure that [`.devcontainer/Dockerfile`](../Dockerfile) uses the image you
+   just built
