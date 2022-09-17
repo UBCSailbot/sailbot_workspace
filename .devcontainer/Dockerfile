@@ -1,10 +1,11 @@
-FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:add_tmux
+FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:support_tutorials
 
-# ** [Optional] Uncomment this section to install additional packages. **
+# Uncomment this section to install ROS tutorial packages
 # ENV DEBIAN_FRONTEND=noninteractive
 # RUN apt-get update \
 #  && apt-get -y install --no-install-recommends \
 #  # Your package list here
+#  ros-eloquent-turtlesim \
 #  # Clean up
 #  && apt-get autoremove -y \
 #  && apt-get clean -y \
