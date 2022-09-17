@@ -1,9 +1,12 @@
 # List of repositories to use within your workspace
 # See https://github.com/dirk-thomas/vcstool
-############ 
-# Example:
-############
 repositories:
+  # Uncomment this section to install the ROS tutorials sample repo
+  # ros_tutorials:
+  #   type: git
+  #   url: https://github.com/ros/ros_tutorials
+  #   version: eloquent-devel
+
   py_pubsub:
     type: git
     url: https://github.com/UBCSailbot/py_pubsub
