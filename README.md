@@ -7,6 +7,8 @@ this workspace functions.
 
 ## Setup
 
+This workspace can be installed on most operating systems, but it performs the best on [Ubuntu](https://ubuntu.com/download/desktop).
+
 1. Install prerequisites
     - [docker](https://docs.docker.com/engine/install/)
         - For Windows, the WSL 2 backend for Docker Desktop is recommended
