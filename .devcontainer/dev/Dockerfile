@@ -24,6 +24,11 @@ RUN apt-get update && apt-get install -y \
   ros-eloquent-launch-testing-ament-cmake \
   ros-eloquent-launch-testing-ros \
   python-autopep8 \
+  # Packages not from athackst's image
+  ros-eloquent-rqt* \
+  ros-eloquent-ros2bag \
+  ros-eloquent-rosbag2-converter-default-plugins \
+  ros-eloquent-rosbag2-storage-default-plugins \
   && rm -rf /var/lib/apt/lists/* \
   && rosdep init || echo "rosdep already initialized" \
   # Update pydocstyle
