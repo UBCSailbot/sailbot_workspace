@@ -16,7 +16,7 @@ jobs:
       uses: actions/checkout@v3
 
     - name: Lint markdown pages
-      uses: nosborn/github-action-markdown-cli@v3.1.0
+      uses: nosborn/github-action-markdown-cli@v3.2.0
       with:
         files: 'README.md .devcontainer/'
         config_file: '.markdownlint.json'
