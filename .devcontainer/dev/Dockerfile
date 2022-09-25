@@ -90,6 +90,10 @@ ARG ROS2_WORKSPACE=/workspaces/sailbot_workspace
 COPY update-bashrc.sh /sbin/update-bashrc
 RUN chmod +x /sbin/update-bashrc ; chown ros /sbin/update-bashrc ; sync ; /bin/bash -c /sbin/update-bashrc ; rm /sbin/update-bashrc
 
+# remove deprecated PPA from base:raye image
+# TODO: remove this section once base:raye is rebuilt
+RUN sed -i '$d' /etc/apt/sources.list
+
 # ROS 1 workspace setup
 WORKDIR $ROS1_WORKSPACE
 RUN mkdir src
