@@ -1,6 +1,10 @@
 # build using Build Dev Image workflow
 FROM ghcr.io/ubcsailbot/sailbot_workspace/base:raye as builder
 
+# remove deprecated PPA from base:raye image
+# TODO: remove this section once base:raye is rebuilt
+RUN sed -i '$d' /etc/apt/sources.list
+
 # develop configuration based on athackst's image
 # https://github.com/athackst/dockerfiles/blob/main/ros2/eloquent.Dockerfile
 ENV DEBIAN_FRONTEND=noninteractive
@@ -89,10 +93,6 @@ ARG ROS2_WORKSPACE=/workspaces/sailbot_workspace
 # bash configuration
 COPY update-bashrc.sh /sbin/update-bashrc
 RUN chmod +x /sbin/update-bashrc ; chown ros /sbin/update-bashrc ; sync ; /bin/bash -c /sbin/update-bashrc ; rm /sbin/update-bashrc
-
-# remove deprecated PPA from base:raye image
-# TODO: remove this section once base:raye is rebuilt
-RUN sed -i '$d' /etc/apt/sources.list
 
 # ROS 1 workspace setup
 WORKDIR $ROS1_WORKSPACE
