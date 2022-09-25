@@ -41,8 +41,7 @@ ${SUDO}apt-get install -y \
        wget \
 
 # Install spot
-wget -q -O - https://www.lrde.epita.fr/repo/debian.gpg | apt-key add - && \
-echo 'deb http://www.lrde.epita.fr/repo/debian/ stable/' >> /etc/apt/sources.list && \
+${SUDO}add-apt-repository ppa:asiffer/libspot && \
 ${SUDO}apt-get update && \
 ${SUDO}apt-get install -y libspot-dev && \
 # Install newer version of castxml than is available via apt-get:

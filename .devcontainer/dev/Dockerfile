@@ -1,6 +1,10 @@
 # build using Build Dev Image workflow
 FROM ghcr.io/ubcsailbot/sailbot_workspace/base:raye as builder
 
+# remove deprecated PPA from base:raye image
+# TODO: remove this section once base:raye is rebuilt
+RUN sed -i '$d' /etc/apt/sources.list
+
 # develop configuration based on athackst's image
 # https://github.com/athackst/dockerfiles/blob/main/ros2/eloquent.Dockerfile
 ENV DEBIAN_FRONTEND=noninteractive
