@@ -11,6 +11,6 @@
 
 ## How to Temporarily Add Packages
 
-1. Uncomment the section in [`.devcontainer/Dockerfile`](../Dockerfile) that installs additional packages
+1. Uncomment the section in [`.devcontainer/Dockerfile`](./Dockerfile) that installs additional packages
 2. Add the desired packages below the line `# Your package list here` with the format `<pkg1 name> <pkg2 name> ... \`
 3. Run the "Remote-Containers: Rebuild Container" command
