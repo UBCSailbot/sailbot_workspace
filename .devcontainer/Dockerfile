@@ -1,6 +1,6 @@
 FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:fix_setup_script
 
-# ** [Optional] Uncomment this section to install additional packages. **
+# Uncomment this section to install additional packages
 # ENV DEBIAN_FRONTEND=noninteractive
 # RUN apt-get update \
 #  && apt-get -y install --no-install-recommends \
