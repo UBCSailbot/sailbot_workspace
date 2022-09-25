@@ -209,6 +209,20 @@
             "problemMatcher": []
         },
         {
+            "label": "new ament_cmake package with a node",
+            "detail": "Create a new ROS cpp package with a node from a template.",
+            "type": "shell",
+            "command": "ros2 pkg create --destination-directory src --build-type ament_cmake ${input:package} --node-name ${input:node}",
+            "problemMatcher": []
+        },
+        {
+            "label": "new ament_python package with a node",
+            "detail": "Create a new ROS python package with a node from a template.",
+            "type": "shell",
+            "command": "ros2 pkg create --destination-directory src --build-type ament_python ${input:package} --node-name ${input:node}",
+            "problemMatcher": []
+        },
+        {
             "label": "import from workspace file",
             "detail": "Use vcs to import modules specified by a workspace/rosinstall file.",
             "type": "shell",
