@@ -11,5 +11,6 @@
 
 ## How to Temporarily Add Packages
 
-1. Uncomment optional section
+1. Uncomment the optional section
 2. Add the desired packages below the line `# Your package list here` with the format `<pkg1 name> <pkg2 name> ... \`
+3. Run the "Remote-Containers: Rebuild Container" command
