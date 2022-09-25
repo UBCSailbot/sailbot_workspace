@@ -1,4 +1,4 @@
-FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:add_tmux
+FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:fix_setup_script
 
 # ** [Optional] Uncomment this section to install additional packages. **
 # ENV DEBIAN_FRONTEND=noninteractive
