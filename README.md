@@ -39,7 +39,7 @@ This workspace can be installed on most operating systems, but it performs the b
        corner should say "Dev Container"
 
 5. Import the ROS packages and install their dependencies by running the "setup" task
-    - You can also import and install independently with their respective tasks, "import from workspace file" and
+    - You can also import and install independently with their respective VS Code tasks, "import from workspace file" and
       "install dependencies"
 
 ## Features
