@@ -7,12 +7,12 @@ repositories:
   #   url: https://github.com/ros/ros_tutorials
   #   version: eloquent-devel
 
-  py_pubsub:
+  py_pubsub_ex:
     type: git
-    url: https://github.com/UBCSailbot/py_pubsub
+    url: https://github.com/UBCSailbot/py_pubsub_ex
     version: main
 
-  cpp_pubsub:
+  cpp_pubsub_ex:
     type: git
-    url: https://github.com/UBCSailbot/cpp_pubsub
+    url: https://github.com/UBCSailbot/cpp_pubsub_ex
     version: main
