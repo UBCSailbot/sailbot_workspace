@@ -6,7 +6,7 @@ echo "if [ -f $HOME/.functions.bash ]; then . $HOME/.functions.bash; fi" >> $HOM
 echo "" >> $HOME/.bashrc
 echo "# setup ROS 1 environment" >> $HOME/.bashrc
 echo "export ROS_WORKSPACE=$ROS1_WORKSPACE" >> $HOME/.bashrc
-echo "alias srcraye='source $ROS1_WORKSPACE/devel/setup.bash; echo \"sourcing the ROS 1 underlay and overlay of $ROS1_WORKSPACE\"'" >> $HOME/.bashrc
+echo "alias srcraye='unset ROS_DISTRO; source $ROS1_WORKSPACE/devel/setup.bash; echo \"sourcing the ROS 1 underlay and overlay of $ROS1_WORKSPACE\"'" >> $HOME/.bashrc
 
 echo "" >> $HOME/.bashrc
 echo "# setup ROS 2 environment" >> $HOME/.bashrc
