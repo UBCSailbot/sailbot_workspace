@@ -7,3 +7,4 @@ to add them to the Dev Container.
 
 - Files in this directory are ignored by Git.
 - To add aliases and functions to bash, put them in `.aliases.bash` and `.functions.bash`, respectively.
+- Your Git configuration file `~/.gitconfig` is copied over by the devcontainer automatically
