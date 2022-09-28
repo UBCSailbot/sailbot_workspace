@@ -7,6 +7,8 @@ this workspace functions.
 
 ## Setup
 
+This workspace can be installed on most operating systems, but it performs the best on [Ubuntu](https://ubuntu.com/download/desktop).
+
 1. Install prerequisites
     - [docker](https://docs.docker.com/engine/install/)
         - For Windows, the WSL 2 backend for Docker Desktop is recommended
@@ -37,8 +39,11 @@ this workspace functions.
        corner should say "Dev Container"
 
 5. Import the ROS packages and install their dependencies by running the "setup" task
-    - You can also import and install independently with their respective tasks, "import from workspace file" and
-      "install dependencies"
+
+6. Run a ROS program in the terminal
+    - The ROS 2 underlay is sourced by default so that VS Code tasks and GitHub Actions can run without additional configuration
+    - The ROS 2 overlay, which is needed to run new project software, can be sourced by running `srcnew`
+    - The ROS 1 underlay and overlay, which is needed to run Raye software, can be sourced by running `srcraye`
 
 ## Features
 
@@ -54,7 +59,7 @@ ROS2-approved formatters are included in the IDE.
 There are many pre-defined tasks, see [`.vscode/tasks.json`](.vscode/tasks.json) for a complete listing.
 Bring up the task menu by typing "Tasks: Run Task" in the command pallete, or creating a keyboard shortcut for `workbench.action.tasks.runTask`.
 
-### Debugging
+### Debugging ([WIP](https://github.com/UBCSailbot/sailbot_workspace/issues/6))
 
 This repository has debug configurations for Python files and Cpp programs.
 See [`.vscode/launch.json`](.vscode/launch.json) for configuration details.
