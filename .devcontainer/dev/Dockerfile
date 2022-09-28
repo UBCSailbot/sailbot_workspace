@@ -102,9 +102,9 @@ RUN chmod +x /sbin/update-bashrc ; chown ros /sbin/update-bashrc ; sync ; /bin/b
 # ROS 1 workspace setup
 WORKDIR $ROS1_WORKSPACE
 RUN mkdir src
-RUN git clone https://github.com/UBCSailbot/local-pathfinding.git src/local-pathfinding
-RUN git clone https://github.com/UBCSailbot/boat_controller.git src/boat_controller
-RUN git clone https://github.com/UBCSailbot/sailbot-msg.git src/sailbot-msg
+RUN git clone https://github.com/UBCSailbot/raye-local-pathfinding.git src/local-pathfinding
+RUN git clone https://github.com/UBCSailbot/raye-boat-controller.git src/boat_controller
+RUN git clone https://github.com/UBCSailbot/raye-sailbot-msg.git src/sailbot-msg
 RUN /bin/bash -c "source /opt/ros/${ROS1_DISTRO}/setup.bash; catkin_make"
 
 # ROS 2 workspace setup
