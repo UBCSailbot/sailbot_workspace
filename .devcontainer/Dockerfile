@@ -1,6 +1,6 @@
 FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:support_tutorials
 
-# Uncomment this section to install ROS tutorial packages
+## Uncomment this section to install the packages used in the ROS 2 tutorials
 # ENV DEBIAN_FRONTEND=noninteractive
 # RUN apt-get update \
 #  && apt-get -y install --no-install-recommends \
@@ -12,7 +12,7 @@ FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:support_tutorials
 #  && rm -rf /var/lib/apt/lists/*
 # ENV DEBIAN_FRONTEND=
 
-# Uncomment this section to install additional packages
+## Uncomment this section to install additional packages
 # ENV DEBIAN_FRONTEND=noninteractive
 # RUN apt-get update \
 #  && apt-get -y install --no-install-recommends \
