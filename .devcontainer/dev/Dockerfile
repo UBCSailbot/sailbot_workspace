@@ -105,8 +105,8 @@ RUN mkdir src
 RUN git clone https://github.com/UBCSailbot/raye-local-pathfinding.git src/local-pathfinding
 RUN git clone https://github.com/UBCSailbot/raye-boat-controller.git src/boat_controller
 RUN git clone https://github.com/UBCSailbot/raye-sailbot-msg.git src/sailbot-msg
-RUN chown -R ${USERNAME} .
 RUN /bin/bash -c "source /opt/ros/${ROS1_DISTRO}/setup.bash; catkin_make"
+RUN chown -R ${USERNAME} .
 
 # ROS 2 workspace setup
 WORKDIR /
