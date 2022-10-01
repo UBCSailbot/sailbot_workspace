@@ -8,5 +8,4 @@ src/*
 !src/new_project.repos
 
 # configuration files
-.devcontainer/config/*
-!.devcontainer/config/README.md
+.devcontainer/config/.*

@@ -1,0 +1,44 @@
+{
+	"folders": [
+		{
+			"path": "../../../catkin_ws/src/boat_controller"
+		},
+		{
+			"path": "../../../catkin_ws/src/local-pathfinding"
+		},
+		{
+			"path": "../../../catkin_ws/src/sailbot-msg"
+		},
+		{
+			"path": "../.."
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"*.repos": "yaml",
+			"*.world": "xml",
+			"*.xacro": "xml"
+		},
+		"workbench.colorCustomizations": {
+			"activityBar.activeBackground": "#19488d",
+			"activityBar.activeBorder": "#dd4181",
+			"activityBar.background": "#19488d",
+			"activityBar.foreground": "#e7e7e7",
+			"activityBar.inactiveForeground": "#e7e7e799",
+			"activityBarBadge.background": "#dd4181",
+			"activityBarBadge.foreground": "#e7e7e7",
+			"sash.hoverBorder": "#19488d",
+			"statusBar.background": "#113262",
+			"statusBar.foreground": "#e7e7e7",
+			"statusBarItem.hoverBackground": "#19488d",
+			"statusBarItem.remoteBackground": "#113262",
+			"statusBarItem.remoteForeground": "#e7e7e7",
+			"titleBar.activeBackground": "#113262",
+			"titleBar.activeForeground": "#e7e7e7",
+			"titleBar.inactiveBackground": "#11326299",
+			"titleBar.inactiveForeground": "#e7e7e799",
+			"commandCenter.border": "#e7e7e799"
+		},
+		"peacock.remoteColor": "#113262"
+	}
+}

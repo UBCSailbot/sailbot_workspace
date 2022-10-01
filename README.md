@@ -40,10 +40,19 @@ This workspace can be installed on most operating systems, but it performs the b
 
 5. Import the ROS packages and install their dependencies by running the "setup" task
 
-6. Run a ROS program in the terminal
-    - The ROS 2 underlay is sourced by default so that VS Code tasks and GitHub Actions can run without additional configuration
-    - The ROS 2 overlay, which is needed to run new project software, can be sourced by running `srcnew`
-    - The ROS 1 underlay and overlay, which is needed to run Raye software, can be sourced by running `srcraye`
+## Run
+
+1. Source the relevant overlay in the terminal
+    - ROS 2: `srcnew`
+    - ROS 1: `srcraye`
+
+2. Build (this step might not be necessary if there are no changes made to C++ or custom msg nodes)
+    - ROS 2: run the "Build" VS Code task, which has the keyboard shortcut `CTRL+SHIFT+B`
+    - ROS 1: `roscd` then `catkin_make`
+
+3. Run the ROS program
+    - ROS 2: `ros2 run ...` or `ros2 launch ...`
+    - ROS 1: `rosrun ...` or `roslaunch ...`
 
 ## Features
 
@@ -70,3 +79,10 @@ from the Run and Debug view.
 
 This repository also has continuous integration that lints and tests our code.
 See [`.github/workflows/`](.github/workflows/) for the configuration files.
+
+### Configured Terminal Commands and Aliases
+
+| ROS 2 Command | ROS 1 Command | Function |
+| ------------- | ------------- | -------- |
+| `colcon_cd` | `roscd` | Navigate to ROS workspace |
+| `srcnew` | `srcraye` | Source ROS workspace overlay |
