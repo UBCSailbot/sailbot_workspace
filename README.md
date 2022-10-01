@@ -79,3 +79,10 @@ from the Run and Debug view.
 
 This repository also has continuous integration that lints and tests our code.
 See [`.github/workflows/`](.github/workflows/) for the configuration files.
+
+### Configured Terminal Commands and Aliases
+
+| ROS 2 Command | ROS 1 Command | Function |
+| ------------- | ------------- | -------- |
+| `colcon_cd` | `roscd` | Navigate to ROS workspace |
+| `srcnew` | `srcraye` | Source ROS workspace overlay |
