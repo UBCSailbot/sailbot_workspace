@@ -1,16 +1,16 @@
 {
 	"folders": [
 		{
-			"path": "../.."
+			"path": "../../../catkin_ws/src/boat_controller"
 		},
 		{
 			"path": "../../../catkin_ws/src/local-pathfinding"
 		},
 		{
-			"path": "../../../catkin_ws/src/boat_controller"
+			"path": "../../../catkin_ws/src/sailbot-msg"
 		},
 		{
-			"path": "../../../catkin_ws/src/sailbot-msg"
+			"path": "../.."
 		}
 	],
 	"settings": {
