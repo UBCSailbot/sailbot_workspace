@@ -17,6 +17,7 @@ This workspace can be installed on most operating systems, but it performs the b
         - For Windows, the WSL 2 backend for Docker Desktop is recommended
     - [vscode](https://code.visualstudio.com/)
     - [vscode remote containers plugin](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
+    - For MacOS users, [xquartz](https://gist.github.com/sorny/969fe55d85c9b0035b0109a31cbcb088)
 
 2. Clone this repository
 
@@ -44,6 +45,10 @@ This workspace can be installed on most operating systems, but it performs the b
 5. Import the ROS packages and install their dependencies by running the "setup" task
 
 ## Run
+
+0. If you are on MacOS and want to run something with a GUI
+    1. Start XQuartz
+    2. Run `xhost +localhost` in the ***MacOS terminal***
 
 1. Source the relevant overlay in the terminal
     - ROS 2: `srcnew`
