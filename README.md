@@ -18,6 +18,9 @@ This workspace can be installed on most operating systems, but it performs the b
     - [vscode](https://code.visualstudio.com/)
     - [vscode remote containers plugin](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
     - For MacOS users, [xquartz](https://gist.github.com/sorny/969fe55d85c9b0035b0109a31cbcb088)
+        - Will also have to configure its startup
+            - `cp /opt/X11/etc/X11/xinit/xinitrc ~/.xinitrc`
+            - Add `xhost +localhost` to `~/.xinitrc` after its first line
 
 2. Clone this repository
 
@@ -46,9 +49,7 @@ This workspace can be installed on most operating systems, but it performs the b
 
 ## Run
 
-0. If you are on MacOS and want to run something with a GUI
-    1. Start XQuartz
-    2. Run `xhost +localhost` in the ***MacOS terminal***
+0. If you are on MacOS and want to run something with a GUI, start XQuartz
 
 1. Source the relevant overlay in the terminal
     - ROS 2: `srcnew`
