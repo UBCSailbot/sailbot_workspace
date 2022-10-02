@@ -21,6 +21,8 @@ This workspace can be installed on most operating systems, but it performs the b
         - Will also have to configure its startup
             - `cp /opt/X11/etc/X11/xinit/xinitrc ~/.xinitrc`
             - Add `xhost +localhost` to `~/.xinitrc` after its first line
+            - Add `export MAC_DOCKER_LOCALHOST="docker.for.mac.host.internal"` to `~/.zshrc`
+            - `source ~/.zshrc`
 
 2. Clone this repository
 
