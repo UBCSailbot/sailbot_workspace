@@ -424,6 +424,11 @@
 			"id": "package",
 			"type": "promptString",
 			"description": "Package name"
+			},
+			{
+			"id": "node",
+			"type": "promptString",
+			"description": "Node name"
 			}
 		]
 	}
