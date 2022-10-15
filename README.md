@@ -1,5 +1,8 @@
 # Sailbot Workspace
 
+[![Test](https://github.com/UBCSailbot/sailbot_workspace/actions/workflows/test.yaml/badge.svg)](https://github.com/UBCSailbot/sailbot_workspace/actions/workflows/test.yaml)
+[![Lint](https://github.com/UBCSailbot/sailbot_workspace/actions/workflows/lint.yaml/badge.svg)](https://github.com/UBCSailbot/sailbot_workspace/actions/workflows/lint.yaml)
+
 This repository will get you set up to develop UBCSailbot's software on VS Code. It is based on athackst's
 [vscode_ros2_workspace](https://github.com/athackst/vscode_ros2_workspace).
 See their [write-up](https://www.allisonthackston.com/articles/vscode_docker_ros2.html) for a more in-depth look on how
@@ -65,13 +68,14 @@ ROS2-approved formatters are included in the IDE.
 
 ### Tasks
 
-There are many pre-defined tasks, see [`.vscode/tasks.json`](.vscode/tasks.json) for a complete listing.
-Bring up the task menu by typing "Tasks: Run Task" in the command pallete, or creating a keyboard shortcut for `workbench.action.tasks.runTask`.
+There are many pre-defined tasks, see [our workspace file](.devcontainer/config/sailbot_workspace.code-workspace) for a
+complete listing. Bring up the task menu by typing "Tasks: Run Task" in the command pallete, or creating a keyboard
+shortcut for `workbench.action.tasks.runTask`.
 
 ### Debugging ([WIP](https://github.com/UBCSailbot/sailbot_workspace/issues/6))
 
 This repository has debug configurations for Python files and Cpp programs.
-See [`.vscode/launch.json`](.vscode/launch.json) for configuration details.
+See [our workspace file](.devcontainer/config/sailbot_workspace.code-workspace) for configuration details.
 Bring up the debug configurations menu by typing "debug " in the command pallete without the ">" prefix, or select one
 from the Run and Debug view.
 
