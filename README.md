@@ -1,7 +1,7 @@
+# Sailbot Workspace
+
 [![Test](https://github.com/UBCSailbot/sailbot_workspace/actions/workflows/test.yaml/badge.svg)](https://github.com/UBCSailbot/sailbot_workspace/actions/workflows/test.yaml)
 [![Lint](https://github.com/UBCSailbot/sailbot_workspace/actions/workflows/lint.yaml/badge.svg)](https://github.com/UBCSailbot/sailbot_workspace/actions/workflows/lint.yaml)
-
-# Sailbot Workspace
 
 This repository will get you set up to develop UBCSailbot's software on VS Code. It is based on athackst's
 [vscode_ros2_workspace](https://github.com/athackst/vscode_ros2_workspace).
