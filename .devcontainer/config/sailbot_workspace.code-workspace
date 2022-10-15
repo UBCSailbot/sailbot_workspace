@@ -1,6 +1,9 @@
 {
 	"folders": [
 		{
+			"path": "../.."
+		},
+		{
 			"path": "../../../catkin_ws/src/boat_controller"
 		},
 		{
@@ -8,9 +11,6 @@
 		},
 		{
 			"path": "../../../catkin_ws/src/sailbot-msg"
-		},
-		{
-			"path": "../.."
 		}
 	],
 	"settings": {
@@ -424,6 +424,11 @@
 			"id": "package",
 			"type": "promptString",
 			"description": "Package name"
+			},
+			{
+			"id": "node",
+			"type": "promptString",
+			"description": "Node name"
 			}
 		]
 	}
