@@ -65,13 +65,14 @@ ROS2-approved formatters are included in the IDE.
 
 ### Tasks
 
-There are many pre-defined tasks, see [`.vscode/tasks.json`](.vscode/tasks.json) for a complete listing.
-Bring up the task menu by typing "Tasks: Run Task" in the command pallete, or creating a keyboard shortcut for `workbench.action.tasks.runTask`.
+There are many pre-defined tasks, see [our workspace file](.devcontainer/config/sailbot_workspace.code-workspace) for a
+complete listing. Bring up the task menu by typing "Tasks: Run Task" in the command pallete, or creating a keyboard
+shortcut for `workbench.action.tasks.runTask`.
 
 ### Debugging ([WIP](https://github.com/UBCSailbot/sailbot_workspace/issues/6))
 
 This repository has debug configurations for Python files and Cpp programs.
-See [`.vscode/launch.json`](.vscode/launch.json) for configuration details.
+See [our workspace file](.devcontainer/config/sailbot_workspace.code-workspace) for configuration details.
 Bring up the debug configurations menu by typing "debug " in the command pallete without the ">" prefix, or select one
 from the Run and Debug view.
 
