@@ -36,6 +36,7 @@ This workspace can be installed on most operating systems, but it performs the b
         - Zsh configuration
             - Add `export MAC_DOCKER_LOCALHOST="docker.for.mac.host.internal"` to `~/.zshrc`
             - `source ~/.zshrc`
+        - If VS Code, Docker or xquartz are open, restart them
 
 3. Clone this repository
 
