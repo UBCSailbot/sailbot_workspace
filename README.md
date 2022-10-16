@@ -10,33 +10,48 @@ this workspace functions.
 
 ## Setup
 
-This workspace can be installed on most operating systems, but it performs the best on [Ubuntu](https://ubuntu.com/download/desktop).
+This workspace can be installed on most operating systems, but it performs the best out of the box on [Ubuntu](https://ubuntu.com/download/desktop).
 
 1. Install prerequisites
     - [docker](https://docs.docker.com/engine/install/)
-        - For Windows, the WSL 2 backend for Docker Desktop is recommended
+        - For Windows, use the WSL 2 backend for Docker Desktop
     - [vscode](https://code.visualstudio.com/)
-    - [vscode remote containers plugin](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
-    - For MacOS users, [xquartz](https://gist.github.com/sorny/969fe55d85c9b0035b0109a31cbcb088)
-        - Will also have to configure its startup
+        - [vscode remote development extension pack](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack)
+    - For Windows, [Ubuntu WSL distribution](https://apps.microsoft.com/store/detail/ubuntu/9PDXGNCFSCZV);
+    run the commands below in an *administrator* PowerShell window
+        - Ensure your default WSL version is 2: `wsl --set-default-version 2`
+        - Install the distribution from the Microsoft store
+        - Set the distribution as default: `wsl --set-version Ubuntu`
+        - Ensure your WSL kernel is up to date: `wsl --update`
+
+2. For Windows and MacOS, additional configuration to run GUI applications
+    - For Windows 11, GUI applications work without additional configuration,
+    *but if you upgraded from Windows 10 make sure your WSL kernel is up to date*
+    - For Windows 10, **TODO**
+    - For MacOS
+        - Follow [this guide](https://gist.github.com/sorny/969fe55d85c9b0035b0109a31cbcb088) to setup xquartz
+        - Additional xquartz configuration
             - `cp /opt/X11/etc/X11/xinit/xinitrc ~/.xinitrc`
             - Add `xhost +localhost` to `~/.xinitrc` after its first line
+        - Zsh configuration
             - Add `export MAC_DOCKER_LOCALHOST="docker.for.mac.host.internal"` to `~/.zshrc`
             - `source ~/.zshrc`
 
-2. Clone this repository
+3. Clone this repository
 
     ```
     git clone https://github.com/UBCSailbot/sailbot_workspace.git
     ```
 
-3. Open it in VS Code
+    - For Windows, clone the repository in the WSL filesystem, for example `~/sailbot` in the Ubuntu WSL terminal
+
+4. Open it in VS Code
 
     ```
     code sailbot_workspace
     ```
 
-4. Open it in a container
+5. Open it in a container
     1. Make sure that Docker is running
     2. When you open it for the first time, you should see a little popup that asks you if you would like to open it in
        a container. Say yes!
@@ -47,21 +62,21 @@ This workspace can be installed on most operating systems, but it performs the b
        (Terminal > New Terminal), you should see that your username has been changed to `ros`, and the bottom left green
        corner should say "Dev Container"
 
-5. Import the ROS packages and install their dependencies by running the "setup" task
+6. Import the ROS packages and install their dependencies by running the "setup" task
 
 ## Run
 
-0. If you are on MacOS and want to run something with a GUI, start XQuartz
+1. If you are on MacOS and want to run something with a GUI, start XQuartz
 
-1. Source the relevant overlay in the terminal
+2. Source the relevant overlay in the terminal
     - ROS 2: `srcnew`
     - ROS 1: `srcraye`
 
-2. Build (this step might not be necessary if there are no changes made to C++ or custom msg nodes)
+3. Build (this step might not be necessary if there are no changes made to C++ or custom msg nodes)
     - ROS 2: run the "Build" VS Code task, which has the keyboard shortcut `CTRL+SHIFT+B`
     - ROS 1: `roscd` then `catkin_make`
 
-3. Run the ROS program
+4. Run the ROS program
     - ROS 2: `ros2 run ...` or `ros2 launch ...`
     - ROS 1: `rosrun ...` or `roslaunch ...`
 
