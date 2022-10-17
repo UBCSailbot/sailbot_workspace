@@ -10,11 +10,16 @@ this workspace functions.
 
 ## Setup
 
-This workspace can be installed on most operating systems, but it performs the best out of the box on [Ubuntu](https://ubuntu.com/download/desktop).
+This workspace can be installed on most operating systems, but it performs the best and requires the least setup on Ubuntu:
+[dual boot Windows and Ubuntu](https://www.linuxtechi.com/dual-boot-ubuntu-22-04-and-windows-11/).
 
 1. Install prerequisites
     - [docker](https://docs.docker.com/engine/install/)
         - For Windows, use the WSL 2 backend for Docker Desktop
+        - For Ubuntu
+            - [Install Docker engine](https://docs.docker.com/engine/install/ubuntu/)
+            - [Manage Docker as a non-root user](https://docs.docker.com/engine/install/linux-postinstall/#manage-docker-as-a-non-root-user)
+            - [Configure Docker to start on boot](https://docs.docker.com/engine/install/linux-postinstall/#configure-docker-to-start-on-boot)
     - [vscode](https://code.visualstudio.com/)
         - [vscode remote development extension pack](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack)
     - For Windows, [Ubuntu WSL distribution](https://apps.microsoft.com/store/detail/ubuntu/9PDXGNCFSCZV);
