@@ -10,8 +10,8 @@ this workspace functions.
 
 ## Setup
 
-This workspace can be installed on most operating systems, but it performs the best and requires the least setup on Ubuntu:
-[dual boot Windows and Ubuntu](https://www.linuxtechi.com/dual-boot-ubuntu-22-04-and-windows-11/).
+This workspace can be set up on most operating systems, but it performs the best and requires the least setup on
+Ubuntu and [its derivatives](https://distrowatch.com/search.php?basedon=Ubuntu).
 
 1. Install prerequisites
     - [docker](https://docs.docker.com/engine/install/)
