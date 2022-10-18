@@ -39,7 +39,7 @@ Ubuntu and [its derivatives](https://distrowatch.com/search.php?basedon=Ubuntu).
             - `cp /opt/X11/etc/X11/xinit/xinitrc ~/.xinitrc`
             - Add `xhost +localhost` to `~/.xinitrc` after its first line
         - Zsh configuration
-            - Add `export MAC_DOCKER_LOCALHOST="docker.for.mac.host.internal"` to `~/.zshrc`
+            - Add `export MAC_DOCKER_LOCALHOST="docker.for.mac.host.internal"` and `export DISPLAY=:0` to `~/.zshrc`
             - `source ~/.zshrc`
         - If VS Code, Docker or xquartz are open, restart them
 
