@@ -32,7 +32,10 @@ Ubuntu and [its derivatives](https://distrowatch.com/search.php?basedon=Ubuntu).
 2. For Windows and MacOS, additional configuration to run GUI applications
     - For Windows 11, GUI applications work without additional configuration,
     *but if you upgraded from Windows 10 make sure your WSL kernel is up to date*
-    - For Windows 10, **TODO**
+    - For Windows 10, follow [this guide](https://techcommunity.microsoft.com/t5/windows-dev-appconsult/running-wsl-gui-apps-on-windows-10/ba-p/1493242)
+        - Put the first `export DISPLAY` command into `~/.bashrc`
+        - No need to run the `echo xfce4-session` command
+        - Test setup with the third option, `x11-apps`
     - For MacOS
         - Follow [this guide](https://gist.github.com/sorny/969fe55d85c9b0035b0109a31cbcb088) to setup xquartz
         - Additional xquartz configuration
