@@ -15,7 +15,9 @@
 	],
 	"settings": {
 		"editor.tabSize": 4,
-		"editor.rulers": [120],
+		"editor.rulers": [
+			120
+		],
 		"files.associations": {
 			"*.repos": "yaml",
 			"*.world": "xml",
@@ -41,12 +43,8 @@
 		"python.formatting.autopep8Args": [
 			"--max-line-length=120"
 		],
-		"C_Cpp.default.intelliSenseMode": "linux-gcc-x86",
-		"C_Cpp.formatting": "Disabled",
-		"uncrustify.configPath.linux": "/opt/ros/eloquent/lib/python3.6/site-packages/ament_uncrustify/configuration/ament_code_style.cfg",
-		"[cpp]": {
-			"editor.defaultFormatter": "zachflower.uncrustify"
-		},
+		"C_Cpp.intelliSenseEngine": "Disabled",
+		"C_Cpp.formatting": "clangFormat",
 		"search.exclude": {
 			"**/build": true,
 			"**/install": true,
@@ -114,7 +112,15 @@
 			"Wextra",
 			"Wpedantic",
 			"xmllint"
-		]
+		],
+		"editor.formatOnSave": false,
+		"files.insertFinalNewline": true,
+		"[cpp]": {
+			"editor.formatOnSave": true
+		},
+		"[c]": {
+			"editor.formatOnSave": true
+		},
 	},
 	"launch": {
 		// Use IntelliSense to learn about possible attributes.
@@ -123,44 +129,44 @@
 		"version": "0.2.0",
 		"configurations": [
 			{
-			"name": "Launch Python File",
-			"type": "python",
-			"request": "launch",
-			"program": "${file}",
-			"console": "integratedTerminal",
+				"name": "Launch Python File",
+				"type": "python",
+				"request": "launch",
+				"program": "${file}",
+				"console": "integratedTerminal",
 			},
 			{
-			"name": "Launch Cpp Program",
-			"type": "cppdbg",
-			"request": "launch",
-			"program": "${workspaceFolder}/install/lib/${input:package}/${input:program}",
-			"args": [],
-			"preLaunchTask": "Build",
-			"stopAtEntry": true,
-			"cwd": "${workspaceFolder}",
-			"externalConsole": false,
-			"MIMode": "gdb",
-			"setupCommands": [
-				{
-				"description": "Enable pretty-printing for gdb",
-				"text": "-enable-pretty-printing",
-				"ignoreFailures": true
-				}
-			]
+				"name": "Launch Cpp Program",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceFolder}/install/lib/${input:package}/${input:program}",
+				"args": [],
+				"preLaunchTask": "Build",
+				"stopAtEntry": true,
+				"cwd": "${workspaceFolder}",
+				"externalConsole": false,
+				"MIMode": "gdb",
+				"setupCommands": [
+					{
+						"description": "Enable pretty-printing for gdb",
+						"text": "-enable-pretty-printing",
+						"ignoreFailures": true
+					}
+				]
 			}
 		],
 		"inputs": [
 			{
-			"id": "package",
-			"type": "promptString",
-			"description": "Package name",
-			"default": "examples_rclcpp_minimal_publisher"
+				"id": "package",
+				"type": "promptString",
+				"description": "Package name",
+				"default": "examples_rclcpp_minimal_publisher"
 			},
 			{
-			"id": "program",
-			"type": "promptString",
-			"description": "Program name",
-			"default": "publisher_member_function"
+				"id": "program",
+				"type": "promptString",
+				"description": "Program name",
+				"default": "publisher_member_function"
 			}
 		]
 	},
@@ -336,7 +342,7 @@
 				"type": "ament",
 				"task": "xmllint",
 				"path": "src/",
-				"problemMatcher": [ 
+				"problemMatcher": [
 					"$ament_xmllint",
 				],
 				"presentation": {
@@ -416,18 +422,17 @@
 				"command": "./setup.sh",
 				"problemMatcher": []
 			}
-
 		],
 		"inputs": [
 			{
-			"id": "package",
-			"type": "promptString",
-			"description": "Package name"
+				"id": "package",
+				"type": "promptString",
+				"description": "Package name"
 			},
 			{
-			"id": "node",
-			"type": "promptString",
-			"description": "Node name"
+				"id": "node",
+				"type": "promptString",
+				"description": "Node name"
 			}
 		]
 	}

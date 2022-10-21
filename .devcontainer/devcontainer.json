@@ -51,7 +51,8 @@
 		"KevinRose.vsc-python-indent",
 		"ms-vsliveshare.vsliveshare",
 		"njpwerner.autodocstring",
-		"vscode-icons-team.vscode-icons"
+		"vscode-icons-team.vscode-icons",
+		"llvm-vs-code-extensions.vscode-clangd"
 	],
 	"mounts": [
 		"source=sailbot-new-project-bashhistory,target=/home/ros/commandhistory,type=volume",

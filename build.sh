@@ -8,3 +8,8 @@ colcon build \
         --symlink-install \
         --cmake-args "-DCMAKE_BUILD_TYPE=$BUILD_TYPE" "-DCMAKE_EXPORT_COMPILE_COMMANDS=On" \
         -Wall -Wextra -Wpedantic
+
+# For Clangd
+if [ ! -f /workspaces/sailbot_workspace/compile_commands.json ]; then
+    ln -s /workspaces/sailbot_workspace/build/compile_commands.json /workspaces/sailbot_workspace/compile_commands.json
+fi

@@ -9,3 +9,6 @@ src/*
 
 # configuration files
 .devcontainer/config/.*
+
+.clangd/
+compile_commands.json

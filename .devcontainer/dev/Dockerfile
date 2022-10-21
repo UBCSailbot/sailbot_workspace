@@ -73,6 +73,17 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/*
 ENV DEBIAN_FRONTEND=
 
+# install clang some clang tools
+RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key|sudo apt-key add -
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update \
+  && apt-get -y install --no-install-recommends\
+  clang-10 clang-tidy-10 clangd-10 \
+  && apt-get autoremove -y \
+  && apt-get clean -y \
+  && rm -rf /var/lib/apt/lists/*
+ENV DEBIAN_FRONTEND=
+
 # install git-delta
 RUN wget https://github.com/dandavison/delta/releases/download/0.14.0/git-delta-musl_0.14.0_amd64.deb
 RUN dpkg -i git-delta-musl_0.14.0_amd64.deb
