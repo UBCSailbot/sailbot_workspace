@@ -14,37 +14,44 @@ This workspace can be set up on most operating systems, but it performs the best
 Ubuntu and [its derivatives](https://distrowatch.com/search.php?basedon=Ubuntu).
 
 1. Install prerequisites
-    - [docker](https://docs.docker.com/engine/install/)
-        - For Windows, use the WSL 2 backend for Docker Desktop
-        - For Ubuntu
-            - [Install Docker engine](https://docs.docker.com/engine/install/ubuntu/)
+    - For Windows, [WSL](https://learn.microsoft.com/en-us/windows/wsl/about)
+        - Run these commands in an *administrator* PowerShell window
+
+            ```
+            wsl --install --distribution Ubuntu
+            wsl --set-default Ubuntu
+            wsl --set-version Ubuntu 2
+            ```
+
+    - [Docker](https://docs.docker.com/get-started/overview/)
+        - [Install Docker](https://docs.docker.com/engine/install/)
+            - For Windows or MacOS, install Docker Desktop
+                - For Windows, use the WSL 2 backend for Docker Desktop
+            - For Linux, install Docker Engine
+        - For Linux
             - [Manage Docker as a non-root user](https://docs.docker.com/engine/install/linux-postinstall/#manage-docker-as-a-non-root-user)
             - [Configure Docker to start on boot](https://docs.docker.com/engine/install/linux-postinstall/#configure-docker-to-start-on-boot)
-    - [vscode](https://code.visualstudio.com/)
-        - [vscode remote development extension pack](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack)
-    - For Windows, [Ubuntu WSL distribution](https://apps.microsoft.com/store/detail/ubuntu/9PDXGNCFSCZV);
-    run the commands below in an *administrator* PowerShell window
-        - Ensure your default WSL version is 2: `wsl --set-default-version 2`
-        - Install the distribution from the Microsoft store
-        - Set the distribution as default: `wsl --set-version Ubuntu`
-        - Ensure your WSL kernel is up to date: `wsl --update`
+    - [VS Code](https://code.visualstudio.com/)
+        - [Install VS Code](https://code.visualstudio.com/download)
+        - [Install VS Code Remote Development Extension Pack](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack)
 
 2. For Windows and MacOS, additional configuration to run GUI applications
     - For Windows 11, GUI applications work without additional configuration,
-    *but if you upgraded from Windows 10 make sure your WSL kernel is up to date*
-    - For Windows 10, follow [this guide](https://techcommunity.microsoft.com/t5/windows-dev-appconsult/running-wsl-gui-apps-on-windows-10/ba-p/1493242)
-        - Put the first `export DISPLAY` command into `~/.bashrc`
-        - No need to run the `echo xfce4-session` command
-        - Test setup with the third option, `x11-apps`
+    *but if you upgraded from Windows 10 make sure to update the WSL kernel:* `wsl --update`
+    - For Windows 10
+        - Follow [this guide](https://techcommunity.microsoft.com/t5/windows-dev-appconsult/running-wsl-gui-apps-on-windows-10/ba-p/1493242)
+    up to setting the `DISPLAY` variable, exclusive
+        - Put ``export DISPLAY="\`grep nameserver /etc/resolv.conf | sed 's/nameserver //'\`:0"`` into `~/.bashrc`
+        - If VS Code is open, restart it
     - For MacOS
-        - Follow [this guide](https://gist.github.com/sorny/969fe55d85c9b0035b0109a31cbcb088) to setup xquartz
-        - Additional xquartz configuration
+        - Follow [this guide](https://gist.github.com/sorny/969fe55d85c9b0035b0109a31cbcb088) to setup XQuartz
+        - Additional XQuartz configuration
             - `cp /opt/X11/etc/X11/xinit/xinitrc ~/.xinitrc`
             - Add `xhost +localhost` to `~/.xinitrc` after its first line
+            - If XQuartz is open, restart it
         - Zsh configuration
             - Add `export MAC_DOCKER_LOCALHOST="docker.for.mac.host.internal"` and `export DISPLAY=:0` to `~/.zshrc`
-            - `source ~/.zshrc`
-        - If VS Code, Docker or xquartz are open, restart them
+            - If VS Code is open, restart it
 
 3. Clone this repository
 
