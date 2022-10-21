@@ -37,11 +37,13 @@ Ubuntu and [its derivatives](https://distrowatch.com/search.php?basedon=Ubuntu).
 
 2. For Windows and MacOS, additional configuration to run GUI applications
     - For Windows 11, GUI applications work without additional configuration,
-    *but if you upgraded from Windows 10 make sure to update the WSL kernel:* `wsl --update`
+      *but if you upgraded from Windows 10 make sure to update the WSL kernel:* `wsl --update`
+      in an *administrator* PowerShell window
     - For Windows 10
         - Follow [this guide](https://techcommunity.microsoft.com/t5/windows-dev-appconsult/running-wsl-gui-apps-on-windows-10/ba-p/1493242)
-    up to setting the `DISPLAY` variable, exclusive
+          up to setting the `DISPLAY` variable, exclusive
         - Put ``export DISPLAY="\`grep nameserver /etc/resolv.conf | sed 's/nameserver //'\`:0"`` into `~/.bashrc`
+          of the WSL file system
         - If VS Code is open, restart it
     - For MacOS
         - Follow [this guide](https://gist.github.com/sorny/969fe55d85c9b0035b0109a31cbcb088) to setup XQuartz
@@ -82,7 +84,9 @@ Ubuntu and [its derivatives](https://distrowatch.com/search.php?basedon=Ubuntu).
 
 ## Run
 
-1. If you are on MacOS and want to run something with a GUI, start XQuartz
+1. For Windows 10 and MacOS, if you want to run something with a GUI
+    - For Windows 10, open the XLaunch configuration file
+    - For MacOS, start XQuartz
 
 2. Source the relevant overlay in the terminal
     - ROS 2: `srcnew`
