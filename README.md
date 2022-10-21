@@ -42,7 +42,7 @@ Ubuntu and [its derivatives](https://distrowatch.com/search.php?basedon=Ubuntu).
     - For Windows 10
         - Follow [this guide](https://techcommunity.microsoft.com/t5/windows-dev-appconsult/running-wsl-gui-apps-on-windows-10/ba-p/1493242)
           up to setting the `DISPLAY` variable, exclusive
-        - Put ``export DISPLAY="\`grep nameserver /etc/resolv.conf | sed 's/nameserver //'\`:0"`` into `~/.bashrc`
+        - Add ``export DISPLAY="\`grep nameserver /etc/resolv.conf | sed 's/nameserver //'\`:0"`` to `~/.bashrc`
           of the WSL file system
         - If VS Code is open, restart it
     - For MacOS
