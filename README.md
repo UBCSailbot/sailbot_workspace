@@ -80,7 +80,9 @@ Ubuntu and [its derivatives](https://distrowatch.com/search.php?basedon=Ubuntu).
        (Terminal > New Terminal), you should see that your username has been changed to `ros`, and the bottom left green
        corner should say "Dev Container"
 
-6. Import the ROS packages and install their dependencies by running the "setup" task
+6. Open the workspace file `.devcontainer/config/sailbot_workspace.code-workspace` and click "Open Workspace"
+
+7. Import the ROS packages and install their dependencies by running the "setup" task
 
 ## Run
 
@@ -131,5 +133,5 @@ See [`.github/workflows/`](.github/workflows/) for the configuration files.
 
 | ROS 2 Command | ROS 1 Command | Function |
 | ------------- | ------------- | -------- |
-| `colcon_cd` | `roscd` | Navigate to ROS workspace |
 | `srcnew` | `srcraye` | Source ROS workspace overlay |
+| `colcon_cd` | `roscd` | Navigate to ROS workspace |
