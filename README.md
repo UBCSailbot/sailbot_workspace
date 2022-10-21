@@ -66,7 +66,7 @@ Ubuntu and [its derivatives](https://distrowatch.com/search.php?basedon=Ubuntu).
        a container. Say yes!
     3. If you don't see the pop-up, click on the little green square in the bottom left corner, which should bring up
        the container dialog
-        - In the dialog, select "Remote Containers: Reopen in container"
+        - In the dialog, select "Reopen in container"
     4. VSCode will build the dockerfile inside of `.devcontainer` for you. If you open a terminal inside VSCode
        (Terminal > New Terminal), you should see that your username has been changed to `ros`, and the bottom left green
        corner should say "Dev Container"
