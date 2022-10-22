@@ -72,7 +72,6 @@
 			"titleBar.inactiveForeground": "#e7e7e799",
 			"commandCenter.border": "#e7e7e799"
 		},
-		"peacock.remoteColor": "#113262",
 		"cSpell.enabled": true,
 		"cSpell.allowCompoundWords": true,
 		"cSpell.ignorePaths": [
