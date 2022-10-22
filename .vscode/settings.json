@@ -1,0 +1,100 @@
+{
+    "editor.tabSize": 4,
+    "editor.rulers": [120],
+    "files.associations": {
+        "*.repos": "yaml",
+        "*.world": "xml",
+        "*.xacro": "xml"
+    },
+    "python.analysis.extraPaths": [
+        "/workspaces/sailbot_workspace/install/lib/python3.10/site-packages",
+        "/opt/ros/humble/lib/python3.10/site-packages"
+    ],
+    // Autocomplete from ros python packages
+    "python.autoComplete.extraPaths": [
+        "/workspaces/sailbot_workspace/install/lib/python3.10/site-packages",
+        "/opt/ros/humble/lib/python3.10/site-packages"
+    ],
+    // Environment file lets vscode find python files within workspace
+    "python.envFile": "/workspaces/sailbot_workspace/.env",
+    // Use the system installed version of autopep8
+    "python.formatting.autopep8Path": "/usr/bin/autopep8",
+    "python.formatting.autopep8Args": [
+        "--max-line-length=120"
+    ],
+    "C_Cpp.default.intelliSenseMode": "linux-gcc-x86",
+    "C_Cpp.formatting": "Disabled",
+    "uncrustify.configPath.linux": "/opt/ros/humble/lib/python3.10/site-packages/ament_uncrustify/configuration/ament_code_style.cfg",
+    "[cpp]": {
+        "editor.defaultFormatter": "zachflower.uncrustify"
+    },
+    "search.exclude": {
+        "**/build": true,
+        "**/install": true,
+        "**/log": true
+    },
+    "workbench.colorCustomizations": {
+        "activityBar.activeBackground": "#19488d",
+        "activityBar.activeBorder": "#dd4181",
+        "activityBar.background": "#19488d",
+        "activityBar.foreground": "#e7e7e7",
+        "activityBar.inactiveForeground": "#e7e7e799",
+        "activityBarBadge.background": "#dd4181",
+        "activityBarBadge.foreground": "#e7e7e7",
+        "sash.hoverBorder": "#19488d",
+        "statusBar.background": "#113262",
+        "statusBar.foreground": "#e7e7e7",
+        "statusBarItem.hoverBackground": "#19488d",
+        "statusBarItem.remoteBackground": "#113262",
+        "statusBarItem.remoteForeground": "#e7e7e7",
+        "titleBar.activeBackground": "#113262",
+        "titleBar.activeForeground": "#e7e7e7",
+        "titleBar.inactiveBackground": "#11326299",
+        "titleBar.inactiveForeground": "#e7e7e799",
+        "commandCenter.border": "#e7e7e799"
+    },
+    "peacock.remoteColor": "#113262",
+    "cSpell.enabled": true,
+    "cSpell.allowCompoundWords": true,
+    "cSpell.ignorePaths": [
+        "package-lock.json",
+        "node_modules",
+        "vscode-extension",
+        ".git/objects",
+        ".vscode",
+        ".vscode-insiders",
+        ".devcontainer/devcontainer.json"
+    ],
+    "cSpell.words": [
+        "athackst",
+        "autopep",
+        "buildx",
+        "cmake",
+        "cppcheck",
+        "cppdbg",
+        "cpplint",
+        "DCMAKE",
+        "deque",
+        "devcontainer",
+        "gaurav",
+        "ints",
+        "noqa",
+        "pallete",
+        "pytest",
+        "Raye",
+        "rclcpp",
+        "rclpy",
+        "repos",
+        "rosdep",
+        "rosdistro",
+        "rosidl",
+        "RTPS",
+        "srcnew",
+        "srcraye",
+        "ubcsailbot",
+        "uncrustify",
+        "Wextra",
+        "Wpedantic",
+        "xmllint"
+    ]
+}
