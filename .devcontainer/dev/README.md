@@ -18,4 +18,4 @@ select "Run workflow"
 3. Update "Dev image tag" with the selected branch
 4. Click "Run workflow"
 5. Once the workflow successfully completes, ensure that the base image of [`.devcontainer/Dockerfile`](../Dockerfile)
-   uses the tag you just built, then run the "Remote-Containers: Rebuild Container" command
+   uses the tag you just built, then run the "Dev Containers: Rebuild Container" command
