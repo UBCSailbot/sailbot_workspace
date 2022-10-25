@@ -1,2 +1,19 @@
-Checks: >
-    google-*,
+Checks: "
+    bugprone*,
+    clang-analyzer*,
+    concurrency*,
+    google*,
+    misc-definitions-in-headers,
+    misc-static-assert,
+    misc-unused-parameters,
+    modernize-avoid-c-arrays,
+    modernize-use-nullptr,
+    modernize-use-using,
+    readability*,
+
+    -clang-analyzer-optin*,
+    -clang-analyzer-osx*,
+    -google-objc*,
+"
+
+WarningsAsErrors: "*, -google-readability-todo"

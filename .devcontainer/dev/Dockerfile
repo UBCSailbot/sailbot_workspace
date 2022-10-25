@@ -79,6 +79,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
   && apt-get -y install --no-install-recommends\
   clang-10 clang-tidy-10 clangd-10 \
+  && update-alternatives --install /usr/bin/clangd clangd /usr/bin/clangd-10 100 \
   && apt-get autoremove -y \
   && apt-get clean -y \
   && rm -rf /var/lib/apt/lists/*
