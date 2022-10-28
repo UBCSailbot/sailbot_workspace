@@ -15,9 +15,7 @@
 	],
 	"settings": {
 		"editor.tabSize": 4,
-		"editor.rulers": [
-			120
-		],
+		"editor.rulers": [120],
 		"files.associations": {
 			"*.repos": "yaml",
 			"*.world": "xml",
@@ -43,8 +41,6 @@
 		"python.formatting.autopep8Args": [
 			"--max-line-length=120"
 		],
-		"C_Cpp.intelliSenseEngine": "Disabled",
-		"C_Cpp.formatting": "clangFormat",
 		"search.exclude": {
 			"**/build": true,
 			"**/install": true,
@@ -129,44 +125,44 @@
 		"version": "0.2.0",
 		"configurations": [
 			{
-				"name": "Launch Python File",
-				"type": "python",
-				"request": "launch",
-				"program": "${file}",
-				"console": "integratedTerminal",
+			"name": "Launch Python File",
+			"type": "python",
+			"request": "launch",
+			"program": "${file}",
+			"console": "integratedTerminal",
 			},
 			{
-				"name": "Launch Cpp Program",
-				"type": "cppdbg",
-				"request": "launch",
-				"program": "${workspaceFolder}/install/lib/${input:package}/${input:program}",
-				"args": [],
-				"preLaunchTask": "Build",
-				"stopAtEntry": true,
-				"cwd": "${workspaceFolder}",
-				"externalConsole": false,
-				"MIMode": "gdb",
-				"setupCommands": [
-					{
-						"description": "Enable pretty-printing for gdb",
-						"text": "-enable-pretty-printing",
-						"ignoreFailures": true
-					}
-				]
+			"name": "Launch Cpp Program",
+			"type": "cppdbg",
+			"request": "launch",
+			"program": "${workspaceFolder}/install/lib/${input:package}/${input:program}",
+			"args": [],
+			"preLaunchTask": "Build",
+			"stopAtEntry": true,
+			"cwd": "${workspaceFolder}",
+			"externalConsole": false,
+			"MIMode": "gdb",
+			"setupCommands": [
+				{
+				"description": "Enable pretty-printing for gdb",
+				"text": "-enable-pretty-printing",
+				"ignoreFailures": true
+				}
+			]
 			}
 		],
 		"inputs": [
 			{
-				"id": "package",
-				"type": "promptString",
-				"description": "Package name",
-				"default": "examples_rclcpp_minimal_publisher"
+			"id": "package",
+			"type": "promptString",
+			"description": "Package name",
+			"default": "examples_rclcpp_minimal_publisher"
 			},
 			{
-				"id": "program",
-				"type": "promptString",
-				"description": "Program name",
-				"default": "publisher_member_function"
+			"id": "program",
+			"type": "promptString",
+			"description": "Program name",
+			"default": "publisher_member_function"
 			}
 		]
 	},
@@ -227,70 +223,6 @@
 				"problemMatcher": []
 			},
 			// Linting and static code analysis tasks
-			{
-				"label": "fix",
-				"detail": "Reformat files with uncrustify.",
-				"type": "shell",
-				"command": "ament_uncrustify --reformat src/",
-				"problemMatcher": []
-			},
-			{
-				"label": "uncrustify",
-				"detail": "Lint files with uncrustify.",
-				"type": "shell",
-				"command": "ament_uncrustify src/",
-				"presentation": {
-					"panel": "dedicated",
-					"reveal": "silent",
-					"clear": true
-				},
-				"problemMatcher": [
-					{
-						"owner": "uncrustify",
-						"source": "uncrustify",
-						"fileLocation": "relative",
-						"pattern": [
-							// just the file name message
-							{
-								"regexp": "^(.*)'(.*)':",
-								"kind": "file",
-								"file": 2,
-								"message": 1
-							}
-						]
-					}
-				]
-			},
-			{
-				"label": "cpplint",
-				"detail": "Lint files with cpplint.",
-				"type": "ament",
-				"task": "cpplint",
-				"path": "src/",
-				"problemMatcher": [
-					"$ament_cpplint"
-				],
-				"presentation": {
-					"panel": "dedicated",
-					"reveal": "silent",
-					"clear": true
-				},
-			},
-			{
-				"label": "cppcheck",
-				"detail": "Run static code checker cppcheck.",
-				"type": "ament",
-				"task": "cppcheck",
-				"path": "src/",
-				"problemMatcher": [
-					"$ament_cppcheck"
-				],
-				"presentation": {
-					"panel": "dedicated",
-					"reveal": "silent",
-					"clear": true
-				},
-			},
 			{
 				"label": "lint_cmake",
 				"detail": "Run lint on cmake files.",
@@ -355,13 +287,10 @@
 				"label": "lint all",
 				"detail": "Run all linters.",
 				"dependsOn": [
-					"cppcheck",
-					"cpplint",
 					"flake8",
 					"lint_cmake",
 					"pep257",
 					"xmllint",
-					"uncrustify"
 				],
 				"problemMatcher": []
 			},
@@ -422,17 +351,18 @@
 				"command": "./setup.sh",
 				"problemMatcher": []
 			}
+
 		],
 		"inputs": [
 			{
-				"id": "package",
-				"type": "promptString",
-				"description": "Package name"
+			"id": "package",
+			"type": "promptString",
+			"description": "Package name"
 			},
 			{
-				"id": "node",
-				"type": "promptString",
-				"description": "Node name"
+			"id": "node",
+			"type": "promptString",
+			"description": "Node name"
 			}
 		]
 	}
