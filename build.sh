@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-# Set the default build type
-BUILD_TYPE=RelWithDebInfo
+# Set the build type
+BUILD_TYPE=${1:-RelWithDebInfo}
 colcon build \
         --merge-install \
         --symlink-install \
