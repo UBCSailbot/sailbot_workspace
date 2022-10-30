@@ -92,6 +92,11 @@ RUN wget -O boost_1_80_0.tar.gz https://sourceforge.net/projects/boost/files/boo
  && cd boost_1_80_0 && ./bootstrap.sh --prefix=/usr/ && ./b2 install \
  && cd .. && rm -rf boost_1_80_0 && rm -f boost_1_80_0.tar.gz
 
+# build and install googletest
+RUN git clone https://github.com/google/googletest.git -b release-1.12.1 \
+ && cd googletest && mkdir build && cd build && cmake .. -DBUILD_GMOCK=OFF \
+ && make && make install && cd ../../ && rm -r googletest
+
 # install git-delta
 RUN wget https://github.com/dandavison/delta/releases/download/0.14.0/git-delta-musl_0.14.0_amd64.deb
 RUN dpkg -i git-delta-musl_0.14.0_amd64.deb

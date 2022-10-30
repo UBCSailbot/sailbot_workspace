@@ -15,7 +15,7 @@
 	],
 	"settings": {
 		"editor.tabSize": 4,
-		"editor.rulers": [80, 120],
+		"editor.rulers": [120],
 		"files.associations": {
 			"*.repos": "yaml",
 			"*.world": "xml",
@@ -206,7 +206,7 @@
 				"detail": "Run lint on cmake files.",
 				"type": "ament",
 				"task": "lint_cmake",
-				"path": "src/network_systems/CMakeLists.txt src/network_systems/projects/ src/network_systems/lib/protofiles",
+				"path": "src/",
 				"problemMatcher": [
 					"$ament_lint_cmake"
 				],
@@ -233,7 +233,7 @@
 				"detail": "Run flake8 on python files.",
 				"type": "ament",
 				"task": "flake8",
-				"path": "src/py_pubsub_ex", // TODO replace with paths to PATH and CTRL repos
+				"path": "src/",
 				"problemMatcher": [
 					"$ament_flake8"
 				],
@@ -248,7 +248,7 @@
 				"detail": "Run pep257 on python files.",
 				"type": "ament",
 				"task": "pep257",
-				"path": "src/py_pubsub_ex", // TODO replace with paths to PATH and CTRL repos
+				"path": "src/",
 				"problemMatcher": [
 					"$ament_pep257"
 				],
