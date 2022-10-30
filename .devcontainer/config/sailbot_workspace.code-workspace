@@ -15,7 +15,7 @@
 	],
 	"settings": {
 		"editor.tabSize": 4,
-		"editor.rulers": [120],
+		"editor.rulers": [80, 120],
 		"files.associations": {
 			"*.repos": "yaml",
 			"*.world": "xml",
@@ -206,7 +206,7 @@
 				"detail": "Run lint on cmake files.",
 				"type": "ament",
 				"task": "lint_cmake",
-				"path": "src/",
+				"path": "src/network_systems/CMakeLists.txt src/network_systems/projects/ src/network_systems/lib/protofiles",
 				"problemMatcher": [
 					"$ament_lint_cmake"
 				],
@@ -217,11 +217,23 @@
 				}
 			},
 			{
+				"label": "clang-tidy",
+				"detail": "Run clang-tidy static analysis",
+				"type": "shell",
+				"command": "./run_clang-tidy.sh",
+				"problemMatcher": [],
+				"presentation": {
+					"panel": "dedicated",
+					"reveal": "always",
+					"clear": true
+				}
+			},
+			{
 				"label": "flake8",
 				"detail": "Run flake8 on python files.",
 				"type": "ament",
 				"task": "flake8",
-				"path": "src/",
+				"path": "src/py_pubsub_ex", // TODO replace with paths to PATH and CTRL repos
 				"problemMatcher": [
 					"$ament_flake8"
 				],
@@ -236,7 +248,7 @@
 				"detail": "Run pep257 on python files.",
 				"type": "ament",
 				"task": "pep257",
-				"path": "src/",
+				"path": "src/py_pubsub_ex", // TODO replace with paths to PATH and CTRL repos
 				"problemMatcher": [
 					"$ament_pep257"
 				],
@@ -265,6 +277,7 @@
 				"label": "lint all",
 				"detail": "Run all linters.",
 				"dependsOn": [
+					"clang-tidy",
 					"flake8",
 					"lint_cmake",
 					"pep257",

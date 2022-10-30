@@ -63,7 +63,7 @@ FROM builder
 # install latest version of git and other related packages
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
-  && apt-get -y install --no-install-recommends software-properties-common less tmux \
+  && apt-get -y install --no-install-recommends software-properties-common less tmux openssh-client \
   && add-apt-repository ppa:git-core/ppa -y \
   && apt-get update \
   && apt-get -y install --no-install-recommends git \
