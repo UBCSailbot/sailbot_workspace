@@ -42,8 +42,13 @@ Ubuntu and [its derivatives](https://distrowatch.com/search.php?basedon=Ubuntu).
     - For Windows 10
         - Follow [this guide](https://techcommunity.microsoft.com/t5/windows-dev-appconsult/running-wsl-gui-apps-on-windows-10/ba-p/1493242)
           up to setting the `DISPLAY` variable, exclusive
-        - Add ``export DISPLAY="`grep nameserver /etc/resolv.conf | sed 's/nameserver //'`:0"`` to `~/.bashrc`
-          of the WSL file system
+        - Add the following lines to `~/.bashrc` of the WSL file system
+
+            ```sh
+            export DISPLAY="`grep nameserver /etc/resolv.conf | sed 's/nameserver //'`:0"
+            export WIN10_DOCKER_DISPLAY_END="${DISPLAY:1}"
+            ```
+
         - If VS Code is open, restart it
     - For MacOS
         - Follow [this guide](https://gist.github.com/sorny/969fe55d85c9b0035b0109a31cbcb088) to setup XQuartz
