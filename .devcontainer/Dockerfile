@@ -13,7 +13,6 @@ FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:cppworkspace
 # ENV DEBIAN_FRONTEND=
 
 ## Uncomment this section to install additional packages
-# RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key|sudo apt-key add -
 # ENV DEBIAN_FRONTEND=noninteractive
 # RUN apt-get update \
 #  && apt-get -y install --no-install-recommends \
