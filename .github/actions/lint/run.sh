@@ -3,4 +3,10 @@ set -e
 
 source /opt/ros/${ROS2_DISTRO}/setup.bash
 ./setup.sh
-ament_${LINTER} src/
+if [[ "$LINTER" == "clang-tidy" ]]
+then
+    ./build.sh Debug OFF
+    ./run_clang-tidy.sh
+else
+    ament_${LINTER} src/
+fi

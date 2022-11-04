@@ -4,6 +4,9 @@
 			"path": "../.."
 		},
 		{
+			"path": "../../src/network_systems"
+		},
+		{
 			"path": "../../../catkin_ws/src/boat_controller"
 		},
 		{
@@ -41,12 +44,6 @@
 		"python.formatting.autopep8Args": [
 			"--max-line-length=120"
 		],
-		"C_Cpp.default.intelliSenseMode": "linux-gcc-x86",
-		"C_Cpp.formatting": "Disabled",
-		"uncrustify.configPath.linux": "/opt/ros/eloquent/lib/python3.6/site-packages/ament_uncrustify/configuration/ament_code_style.cfg",
-		"[cpp]": {
-			"editor.defaultFormatter": "zachflower.uncrustify"
-		},
 		"search.exclude": {
 			"**/build": true,
 			"**/install": true,
@@ -98,6 +95,7 @@
 			"ints",
 			"noqa",
 			"pallete",
+			"protofiles",
 			"pytest",
 			"Raye",
 			"rclcpp",
@@ -114,7 +112,14 @@
 			"Wextra",
 			"Wpedantic",
 			"xmllint"
-		]
+		],
+		"files.insertFinalNewline": true,
+		"[cpp]": {
+			"editor.formatOnSave": true
+		},
+		"[c]": {
+			"editor.formatOnSave": true
+		},
 	},
 	"launch": {
 		// Use IntelliSense to learn about possible attributes.
@@ -185,12 +190,7 @@
 				"label": "debug",
 				"detail": "Build workspace (debug)",
 				"type": "shell",
-				"command": "./build.sh",
-				"options": {
-					"env": {
-						"BUILD_TYPE": "Debug"
-					}
-				},
+				"command": "./build.sh Debug",
 				"group": "build",
 				"problemMatcher": "$gcc"
 			},
@@ -222,70 +222,6 @@
 			},
 			// Linting and static code analysis tasks
 			{
-				"label": "fix",
-				"detail": "Reformat files with uncrustify.",
-				"type": "shell",
-				"command": "ament_uncrustify --reformat src/",
-				"problemMatcher": []
-			},
-			{
-				"label": "uncrustify",
-				"detail": "Lint files with uncrustify.",
-				"type": "shell",
-				"command": "ament_uncrustify src/",
-				"presentation": {
-					"panel": "dedicated",
-					"reveal": "silent",
-					"clear": true
-				},
-				"problemMatcher": [
-					{
-						"owner": "uncrustify",
-						"source": "uncrustify",
-						"fileLocation": "relative",
-						"pattern": [
-							// just the file name message
-							{
-								"regexp": "^(.*)'(.*)':",
-								"kind": "file",
-								"file": 2,
-								"message": 1
-							}
-						]
-					}
-				]
-			},
-			{
-				"label": "cpplint",
-				"detail": "Lint files with cpplint.",
-				"type": "ament",
-				"task": "cpplint",
-				"path": "src/",
-				"problemMatcher": [
-					"$ament_cpplint"
-				],
-				"presentation": {
-					"panel": "dedicated",
-					"reveal": "silent",
-					"clear": true
-				},
-			},
-			{
-				"label": "cppcheck",
-				"detail": "Run static code checker cppcheck.",
-				"type": "ament",
-				"task": "cppcheck",
-				"path": "src/",
-				"problemMatcher": [
-					"$ament_cppcheck"
-				],
-				"presentation": {
-					"panel": "dedicated",
-					"reveal": "silent",
-					"clear": true
-				},
-			},
-			{
 				"label": "lint_cmake",
 				"detail": "Run lint on cmake files.",
 				"type": "ament",
@@ -297,6 +233,18 @@
 				"presentation": {
 					"panel": "dedicated",
 					"reveal": "silent",
+					"clear": true
+				}
+			},
+			{
+				"label": "clang-tidy",
+				"detail": "Run clang-tidy static analysis",
+				"type": "shell",
+				"command": "./run_clang-tidy.sh",
+				"problemMatcher": [],
+				"presentation": {
+					"panel": "dedicated",
+					"reveal": "always",
 					"clear": true
 				}
 			},
@@ -336,7 +284,7 @@
 				"type": "ament",
 				"task": "xmllint",
 				"path": "src/",
-				"problemMatcher": [ 
+				"problemMatcher": [
 					"$ament_xmllint",
 				],
 				"presentation": {
@@ -349,13 +297,11 @@
 				"label": "lint all",
 				"detail": "Run all linters.",
 				"dependsOn": [
-					"cppcheck",
-					"cpplint",
+					"clang-tidy",
 					"flake8",
 					"lint_cmake",
 					"pep257",
 					"xmllint",
-					"uncrustify"
 				],
 				"problemMatcher": []
 			},

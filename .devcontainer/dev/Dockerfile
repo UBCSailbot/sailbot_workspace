@@ -63,7 +63,7 @@ FROM builder
 # install latest version of git and other related packages
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
-  && apt-get -y install --no-install-recommends software-properties-common less tmux \
+  && apt-get -y install --no-install-recommends software-properties-common less tmux openssh-client \
   && add-apt-repository ppa:git-core/ppa -y \
   && apt-get update \
   && apt-get -y install --no-install-recommends git \
@@ -72,6 +72,30 @@ RUN apt-get update \
   && apt-get clean -y \
   && rm -rf /var/lib/apt/lists/*
 ENV DEBIAN_FRONTEND=
+
+# install clang, some clang tools, and protobuf for network systems
+RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key|sudo apt-key add -
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update \
+  && apt-get -y install --no-install-recommends \
+  clang-10 clang-tidy-10 clangd-10 llvm-10 protobuf-compiler libprotobuf-dev \
+  && update-alternatives --install /usr/bin/clangd clangd /usr/bin/clangd-10 100 \
+  # Clean up
+  && apt-get autoremove -y \
+  && apt-get clean -y \
+  && rm -rf /var/lib/apt/lists/*
+ENV DEBIAN_FRONTEND=
+
+# build Boost from source to get the latest version
+RUN wget -O boost_1_80_0.tar.gz https://sourceforge.net/projects/boost/files/boost/1.80.0/boost_1_80_0.tar.gz/download \
+ && tar xzf boost_1_80_0.tar.gz \
+ && cd boost_1_80_0 && ./bootstrap.sh --prefix=/usr/ && ./b2 install \
+ && cd .. && rm -rf boost_1_80_0 && rm -f boost_1_80_0.tar.gz
+
+# build and install googletest
+RUN git clone https://github.com/google/googletest.git -b release-1.12.1 \
+ && cd googletest && mkdir build && cd build && cmake .. -DBUILD_GMOCK=OFF \
+ && make && make install && cd ../../ && rm -r googletest
 
 # install git-delta
 RUN wget https://github.com/dandavison/delta/releases/download/0.14.0/git-delta-musl_0.14.0_amd64.deb
