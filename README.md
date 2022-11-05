@@ -52,7 +52,7 @@ Ubuntu and [its derivatives](https://distrowatch.com/search.php?basedon=Ubuntu).
     - For Windows 10
         - Follow [this guide](https://techcommunity.microsoft.com/t5/windows-dev-appconsult/running-wsl-gui-apps-on-windows-10/ba-p/1493242)
           up to setting the `DISPLAY` variable, exclusive
-        - Add the following lines to `~/.bashrc` of the WSL file system
+        - In the Ubuntu terminal, add the following lines to `~/.bashrc`
 
             ```sh
             export DISPLAY="`grep nameserver /etc/resolv.conf | sed 's/nameserver //'`:0"
@@ -76,7 +76,7 @@ Ubuntu and [its derivatives](https://distrowatch.com/search.php?basedon=Ubuntu).
     git clone https://github.com/UBCSailbot/sailbot_workspace.git
     ```
 
-    - For Windows, clone the repository in the WSL filesystem, for example `~/sailbot` in the Ubuntu WSL terminal
+    - For Windows, run the command in the Ubuntu terminal
 
 5. Open it in VS Code
 
