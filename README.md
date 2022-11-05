@@ -35,15 +35,30 @@ Ubuntu and [its derivatives](https://distrowatch.com/search.php?basedon=Ubuntu).
         - [Install VS Code](https://code.visualstudio.com/download)
         - [Install VS Code Remote Development Extension Pack](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack)
 
-2. For Windows and MacOS, additional configuration to run GUI applications
+2. For Windows, check that your Ubuntu configuration is correct
+    - Run `whoami` in the Ubuntu terminal; if it outputs `root`, create a non-root user with sudo privileges and give it
+    full permissions to Docker
+        - Follow the steps [here](https://www.digitalocean.com/community/tutorials/how-to-add-and-delete-users-on-ubuntu-20-04)
+        to create a non-root user with sudo privileges
+        - Change the default Ubuntu user to the one you just created by entering the following command in Powershell:
+        `ubuntu config --default-user <username>`, where `<username>` is the name of the user
+        - Follow [this guide](https://docs.docker.com/engine/install/linux-postinstall/#manage-docker-as-a-non-root-user)
+        to add the user to the Docker group
+
+3. For Windows and MacOS, additional configuration to run GUI applications
     - For Windows 11, GUI applications work without additional configuration,
       *but if you upgraded from Windows 10 make sure to update the WSL kernel:* `wsl --update`
       in an *administrator* PowerShell window
     - For Windows 10
         - Follow [this guide](https://techcommunity.microsoft.com/t5/windows-dev-appconsult/running-wsl-gui-apps-on-windows-10/ba-p/1493242)
           up to setting the `DISPLAY` variable, exclusive
-        - Add ``export DISPLAY="`grep nameserver /etc/resolv.conf | sed 's/nameserver //'`:0"`` to `~/.bashrc`
-          of the WSL file system
+        - In the Ubuntu terminal, add the following lines to `~/.bashrc`
+
+            ```sh
+            export DISPLAY="`grep nameserver /etc/resolv.conf | sed 's/nameserver //'`:0"
+            export WIN10_DOCKER_DISPLAY_END="${DISPLAY:1}"
+            ```
+
         - If VS Code is open, restart it
     - For MacOS
         - Follow [this guide](https://gist.github.com/sorny/969fe55d85c9b0035b0109a31cbcb088) to setup XQuartz
@@ -55,21 +70,21 @@ Ubuntu and [its derivatives](https://distrowatch.com/search.php?basedon=Ubuntu).
             - Add `export MAC_DOCKER_LOCALHOST="docker.for.mac.host.internal"` and `export DISPLAY=:0` to `~/.zshrc`
             - If VS Code is open, restart it
 
-3. Clone this repository
+4. Clone this repository
 
     ```
     git clone https://github.com/UBCSailbot/sailbot_workspace.git
     ```
 
-    - For Windows, clone the repository in the WSL filesystem, for example `~/sailbot` in the Ubuntu WSL terminal
+    - For Windows, run the command in the Ubuntu terminal
 
-4. Open it in VS Code
+5. Open it in VS Code
 
     ```
     code sailbot_workspace
     ```
 
-5. Open it in a container
+6. Open it in a container
     1. Make sure that Docker is running
     2. When you open it for the first time, you should see a little popup that asks you if you would like to open it in
        a container. Say yes!
@@ -80,9 +95,9 @@ Ubuntu and [its derivatives](https://distrowatch.com/search.php?basedon=Ubuntu).
        (Terminal > New Terminal), you should see that your username has been changed to `ros`, and the bottom left green
        corner should say "Dev Container"
 
-6. Open the workspace file `.devcontainer/config/sailbot_workspace.code-workspace` and click "Open Workspace"
+7. Open the workspace file `.devcontainer/config/sailbot_workspace.code-workspace` and click "Open Workspace"
 
-7. Import the ROS packages and install their dependencies by running the "setup" task
+8. Import the ROS packages and install their dependencies by running the "setup" task
 
 ## Run
 
