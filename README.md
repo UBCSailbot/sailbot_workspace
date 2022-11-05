@@ -13,11 +13,6 @@ this workspace functions.
 This workspace can be set up on most operating systems, but it performs the best and requires the least setup on
 Ubuntu and [its derivatives](https://distrowatch.com/search.php?basedon=Ubuntu).
 
-If you choose to use Ubuntu, it is important that you are logged in as a non-root user with sudo permissions so that you have full permissions in the Docker Container. The steps to do so are as follow:
-- Follow the steps [here](https://www.digitalocean.com/community/tutorials/how-to-add-and-delete-users-on-ubuntu-20-04) to create a new Ubuntu user with sudo permissions
-- Change the default ubuntu user by entering this in Command Prompt or Powershell: `ubuntu config --default-user <username>` where `<username>` is the name you chose for your new Ubuntu user
-- Follow [this](https://docs.docker.com/engine/install/linux-postinstall/) guide to add the new user to the Docker group, so that you can open the Docker Container as the new user
-
 1. Install prerequisites
     - For Windows, [WSL](https://learn.microsoft.com/en-us/windows/wsl/about)
         - Run these commands in an *administrator* PowerShell window
@@ -40,7 +35,17 @@ If you choose to use Ubuntu, it is important that you are logged in as a non-roo
         - [Install VS Code](https://code.visualstudio.com/download)
         - [Install VS Code Remote Development Extension Pack](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack)
 
-2. For Windows and MacOS, additional configuration to run GUI applications
+2. For Windows, check that your Ubuntu configuration is correct
+    - Run `whoami` in the Ubuntu terminal; if it outputs `root`, create a non-root user with sudo privileges and give it
+    full permissions to Docker
+        - Follow the steps [here](https://www.digitalocean.com/community/tutorials/how-to-add-and-delete-users-on-ubuntu-20-04)
+        to create a non-root user with sudo privileges
+        - Change the default Ubuntu user to the one you just created by entering the following command in Powershell:
+        `ubuntu config --default-user <username>`, where `<username>` is the name of the user
+        - Follow [this guide](https://docs.docker.com/engine/install/linux-postinstall/#manage-docker-as-a-non-root-user)
+        to add the user to the Docker group
+
+3. For Windows and MacOS, additional configuration to run GUI applications
     - For Windows 11, GUI applications work without additional configuration,
       *but if you upgraded from Windows 10 make sure to update the WSL kernel:* `wsl --update`
       in an *administrator* PowerShell window
@@ -65,7 +70,7 @@ If you choose to use Ubuntu, it is important that you are logged in as a non-roo
             - Add `export MAC_DOCKER_LOCALHOST="docker.for.mac.host.internal"` and `export DISPLAY=:0` to `~/.zshrc`
             - If VS Code is open, restart it
 
-3. Clone this repository
+4. Clone this repository
 
     ```
     git clone https://github.com/UBCSailbot/sailbot_workspace.git
@@ -73,13 +78,13 @@ If you choose to use Ubuntu, it is important that you are logged in as a non-roo
 
     - For Windows, clone the repository in the WSL filesystem, for example `~/sailbot` in the Ubuntu WSL terminal
 
-4. Open it in VS Code
+5. Open it in VS Code
 
     ```
     code sailbot_workspace
     ```
 
-5. Open it in a container
+6. Open it in a container
     1. Make sure that Docker is running
     2. When you open it for the first time, you should see a little popup that asks you if you would like to open it in
        a container. Say yes!
@@ -90,9 +95,9 @@ If you choose to use Ubuntu, it is important that you are logged in as a non-roo
        (Terminal > New Terminal), you should see that your username has been changed to `ros`, and the bottom left green
        corner should say "Dev Container"
 
-6. Open the workspace file `.devcontainer/config/sailbot_workspace.code-workspace` and click "Open Workspace"
+7. Open the workspace file `.devcontainer/config/sailbot_workspace.code-workspace` and click "Open Workspace"
 
-7. Import the ROS packages and install their dependencies by running the "setup" task
+8. Import the ROS packages and install their dependencies by running the "setup" task
 
 ## Run
 
