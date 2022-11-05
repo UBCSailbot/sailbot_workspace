@@ -1,4 +1,7 @@
 {
     "ignorePatterns": [
+        {
+            "pattern": "^https://distrowatch.com*"
+        }
     ]
 }
