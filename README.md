@@ -13,6 +13,11 @@ this workspace functions.
 This workspace can be set up on most operating systems, but it performs the best and requires the least setup on
 Ubuntu and [its derivatives](https://distrowatch.com/search.php?basedon=Ubuntu).
 
+If you choose to use Ubuntu, it is important that you are logged in as a non-root user with sudo permissions so that you have full permissions in the Docker Container. The steps to do so are as follow:
+- Follow the steps [here](https://www.digitalocean.com/community/tutorials/how-to-add-and-delete-users-on-ubuntu-20-04) to create a new Ubuntu user with sudo permissions
+- Change the default ubuntu user by entering this in Command Prompt or Powershell: `ubuntu config --default-user <username>` where `<username>` is the name you chose for your new Ubuntu user
+- Follow [this](https://docs.docker.com/engine/install/linux-postinstall/) guide to add the new user to the Docker group, so that you can open the Docker Container as the new user
+
 1. Install prerequisites
     - For Windows, [WSL](https://learn.microsoft.com/en-us/windows/wsl/about)
         - Run these commands in an *administrator* PowerShell window
