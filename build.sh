@@ -4,6 +4,11 @@ set -e
 # Set the build type
 BUILD_TYPE=${1:-RelWithDebInfo}
 STATIC_ANALYSIS=${2:-ON}
+if [ "$BUILD_TYPE" == "Debug" ]
+then
+    # Remove existing code coverage files
+    find . -name "*.gcda" -type f -delete
+fi
 colcon build \
         --merge-install \
         --symlink-install \
