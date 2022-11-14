@@ -2,6 +2,7 @@ build/*
 install/*
 log/*
 site/*
+**/__pycache__/
 
 # vcstool packages
 src/*

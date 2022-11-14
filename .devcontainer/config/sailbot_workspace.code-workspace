@@ -173,6 +173,17 @@
             "editor.rulers": [120],
         },
 
+		"testMate.cpp.discovery.loadOnStartup": true,
+		// The following setting just changes the default prelaunch task from "build" to "debug"
+		"testMate.cpp.test.advancedExecutables": [
+			{
+				"pattern": "{build,Build,BUILD,out,Out,OUT}/**/*{test,Test,TEST}*",
+				"runTask": {
+					"before": [ "debug" ]
+				}
+			}
+		]
+
         // markdown
         // copied from docs: https://github.com/UBCSailbot/docs/blob/main/.vscode/settings.json
         "[markdown]": {
@@ -237,7 +248,26 @@
                     "ignoreFailures": true
                     }
                 ]
-            }
+            },
+			{
+			"name": "Debug NET C++",
+			"type": "cppdbg",
+			"request": "launch",
+			"program": "${workspaceFolder:sailbot_workspace}/build/network_systems/projects/${input:program}/test_${input:program}",
+			"args": [],
+			"preLaunchTask": "debug",
+			"stopAtEntry": true,
+			"cwd": "${workspaceFolder:sailbot_workspace}",
+			"externalConsole": false,
+			"MIMode": "gdb",
+			"setupCommands": [
+				{
+				"description": "Enable pretty-printing for gdb",
+				"text": "-enable-pretty-printing",
+				"ignoreFailures": true
+				}
+			]
+			}
         ],
         "inputs": [
             {
