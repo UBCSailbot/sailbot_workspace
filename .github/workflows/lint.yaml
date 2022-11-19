@@ -35,7 +35,7 @@ jobs:
     - name: Run linter
       uses: nosborn/github-action-markdown-cli@v3.2.0
       with:
-        files: 'README.md .devcontainer/'
+        files: '.devcontainer/'
         config_file: '.markdownlint.json'
 
   # https://github.com/gaurav-nelson/github-action-markdown-link-check
@@ -49,5 +49,4 @@ jobs:
       uses: gaurav-nelson/github-action-markdown-link-check@v1
       with:
         config-file: '.markdown-link-check.json'
-        file-path: './README.md'
         folder-path: '.devcontainer'
