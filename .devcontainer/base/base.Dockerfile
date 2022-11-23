@@ -1,4 +1,4 @@
-# From https://github.com/ompl/ompl/blob/d8375d842a7f016d64f27a81d6f95eaa83fbe595/scripts/docker/ompl.Dockerfile
+# Based on https://github.com/ompl/ompl/blob/d8375d842a7f016d64f27a81d6f95eaa83fbe595/scripts/docker/ompl.Dockerfile
 FROM ubuntu:jammy AS builder
 # avoid interactive configuration dialog from tzdata, which gets pulled in
 # as a dependency
@@ -33,7 +33,7 @@ RUN apt-get update && \
     apt-get update && \
     apt-get install -y libspot-dev && \
     pip3 install pygccxml pyplusplus
-COPY . /ompl
+COPY ompl /ompl
 WORKDIR /build
 RUN cmake \
         -DPYTHON_EXEC=/usr/bin/python3 \
@@ -74,6 +74,3 @@ RUN apt-get update && \
     apt-get install -y libspot-dev
 
 COPY --from=builder /usr /usr
-RUN useradd -ms /bin/bash ompl
-USER ompl
-WORKDIR /home/ompl
