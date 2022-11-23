@@ -1,3 +1,15 @@
+FROM ubuntu:22.04 AS ompl
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && \
+    apt-get install -y git && \
+    apt-get autoremove -y && \
+    apt-get clean -y && \
+    rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
+RUN git clone https://github.com/ompl/ompl.git /ompl
+WORKDIR /ompl
+RUN git reset --hard d8375d8
+
 # From https://github.com/athackst/dockerfiles/blob/32a872348af0ad25ec4a6e6184cb803357acb6ab/ros2/humble.Dockerfile
 FROM ubuntu:22.04 AS base
 
@@ -79,7 +91,7 @@ RUN apt-get update && \
     apt-get clean -y && \
     rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
 RUN pip3 install pygccxml pyplusplus
-COPY ompl /ompl
+COPY --from=ompl /ompl /ompl
 WORKDIR /build
 RUN cmake \
         -DPYTHON_EXEC=/usr/bin/python3 \
