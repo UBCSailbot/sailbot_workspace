@@ -47,7 +47,6 @@ FROM base AS builder
 # avoid interactive configuration dialog from tzdata, which gets pulled in
 # as a dependency
 ENV DEBIAN_FRONTEND=noninteractive
-# alternative method of installing libspot
 RUN apt-get update && \
     apt-get install -y software-properties-common && \
     add-apt-repository ppa:asiffer/libspot && \
@@ -94,7 +93,6 @@ RUN cmake \
 
 FROM base
 ENV DEBIAN_FRONTEND=noninteractive
-# alternative method of installing libspot
 RUN apt-get update && \
     apt-get install -y software-properties-common && \
     add-apt-repository ppa:asiffer/libspot && \
@@ -124,3 +122,5 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
 
 COPY --from=builder /usr /usr
+
+LABEL org.opencontainers.image.source https://github.com/UBCSailbot/sailbot_workspace
