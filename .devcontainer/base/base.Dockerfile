@@ -76,3 +76,7 @@ RUN apt-get update && \
         wget
 
 COPY --from=builder /usr /usr
+
+RUN apt-get autoremove -y && \
+    apt-get clean -y && \
+    rm -rf /var/lib/apt/lists/*
