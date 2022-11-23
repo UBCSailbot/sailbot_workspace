@@ -1,12 +1,6 @@
-# build using Build Dev Image workflow
-FROM ghcr.io/ubcsailbot/sailbot_workspace/base:raye as builder
+FROM ghcr.io/ubcsailbot/sailbot_workspace/base:ros_humble-ompl_d8375d8-amd64 as dev
 
-# remove deprecated PPA from base:raye image
-# TODO: remove this section once base:raye is rebuilt
-RUN sed -i '$d' /etc/apt/sources.list
-
-# develop configuration based on athackst's image
-# https://github.com/athackst/dockerfiles/blob/main/ros2/eloquent.Dockerfile
+# From https://github.com/athackst/dockerfiles/blob/32a872348af0ad25ec4a6e6184cb803357acb6ab/ros2/humble.Dockerfile
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
   bash-completion \
@@ -14,7 +8,7 @@ RUN apt-get update && apt-get install -y \
   cmake \
   gdb \
   git \
-  pylint3 \
+  pylint \
   python3-argcomplete \
   python3-colcon-common-extensions \
   python3-pip \
@@ -23,16 +17,11 @@ RUN apt-get update && apt-get install -y \
   vim \
   wget \
   # Install ros distro testing packages
-  ros-eloquent-ament-lint \
-  ros-eloquent-launch-testing \
-  ros-eloquent-launch-testing-ament-cmake \
-  ros-eloquent-launch-testing-ros \
-  python-autopep8 \
-  # Packages not from athackst's image
-  ros-eloquent-rqt* \
-  ros-eloquent-ros2bag \
-  ros-eloquent-rosbag2-converter-default-plugins \
-  ros-eloquent-rosbag2-storage-default-plugins \
+  ros-humble-ament-lint \
+  ros-humble-launch-testing \
+  ros-humble-launch-testing-ament-cmake \
+  ros-humble-launch-testing-ros \
+  python3-autopep8 \
   && rm -rf /var/lib/apt/lists/* \
   && rosdep init || echo "rosdep already initialized" \
   # Update pydocstyle
@@ -52,55 +41,13 @@ RUN groupadd --gid $USER_GID $USERNAME \
   && chmod 0440 /etc/sudoers.d/$USERNAME \
   # Cleanup
   && rm -rf /var/lib/apt/lists/* \
-  && echo "source /usr/share/bash-completion/completions/git" >> /home/$USERNAME/.bashrc
-  # && echo "if [ -f /opt/ros/${ROS_DISTRO}/setup.bash ]; then source /opt/ros/${ROS_DISTRO}/setup.bash; fi" >> /home/$USERNAME/.bashrc
+  && echo "source /usr/share/bash-completion/completions/git" >> /home/$USERNAME/.bashrc \
+  && echo "if [ -f /opt/ros/${ROS_DISTRO}/setup.bash ]; then source /opt/ros/${ROS_DISTRO}/setup.bash; fi" >> /home/$USERNAME/.bashrc
 
 ENV DEBIAN_FRONTEND=
 ENV AMENT_CPPCHECK_ALLOW_SLOW_VERSIONS=1
 
-FROM builder
-
-# install latest version of git and other related packages
-ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update \
-  && apt-get -y install --no-install-recommends software-properties-common less tmux openssh-client \
-  && add-apt-repository ppa:git-core/ppa -y \
-  && apt-get update \
-  && apt-get -y install --no-install-recommends git \
-  # Clean up
-  && apt-get autoremove -y \
-  && apt-get clean -y \
-  && rm -rf /var/lib/apt/lists/*
-ENV DEBIAN_FRONTEND=
-
-# install clang, some clang tools, and protobuf for network systems
-RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key|sudo apt-key add -
-ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update \
-  && apt-get -y install --no-install-recommends \
-  clang-10 clang-tidy-10 clangd-10 llvm-10 protobuf-compiler libprotobuf-dev \
-  && update-alternatives --install /usr/bin/clangd clangd /usr/bin/clangd-10 100 \
-  # Clean up
-  && apt-get autoremove -y \
-  && apt-get clean -y \
-  && rm -rf /var/lib/apt/lists/*
-ENV DEBIAN_FRONTEND=
-
-# build Boost from source to get the latest version
-RUN wget -O boost_1_80_0.tar.gz https://sourceforge.net/projects/boost/files/boost/1.80.0/boost_1_80_0.tar.gz/download \
- && tar xzf boost_1_80_0.tar.gz \
- && cd boost_1_80_0 && ./bootstrap.sh --prefix=/usr/ && ./b2 install \
- && cd .. && rm -rf boost_1_80_0 && rm -f boost_1_80_0.tar.gz
-
-# build and install googletest
-RUN git clone https://github.com/google/googletest.git -b release-1.12.1 \
- && cd googletest && mkdir build && cd build && cmake .. -DBUILD_GMOCK=OFF \
- && make && make install && cd ../../ && rm -r googletest
-
-# install git-delta
-RUN wget https://github.com/dandavison/delta/releases/download/0.14.0/git-delta-musl_0.14.0_amd64.deb
-RUN dpkg -i git-delta-musl_0.14.0_amd64.deb
-RUN rm git-delta-musl_0.14.0_amd64.deb
+FROM dev
 
 ARG USERNAME=ros
 ARG HOME=/home/$USERNAME
@@ -116,21 +63,47 @@ RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=${HOME}/comma
   && chown ${USERNAME} ${HOME}/commandhistory/.bash_history \
   && echo $SNIPPET >> "${HOME}/.bashrc"
 
-ARG ROS1_WORKSPACE=/workspaces/catkin_ws
-ARG ROS2_WORKSPACE=/workspaces/sailbot_workspace
+ARG ROS_WORKSPACE=/workspaces/sailbot_workspace
 
 # bash configuration
 COPY update-bashrc.sh /sbin/update-bashrc
 RUN chmod +x /sbin/update-bashrc ; chown ros /sbin/update-bashrc ; sync ; /bin/bash -c /sbin/update-bashrc ; rm /sbin/update-bashrc
 
-# ROS 1 workspace setup
-WORKDIR $ROS1_WORKSPACE
-RUN mkdir src
-RUN git clone https://github.com/UBCSailbot/raye-local-pathfinding.git src/local-pathfinding
-RUN git clone https://github.com/UBCSailbot/raye-boat-controller.git src/boat_controller
-RUN git clone https://github.com/UBCSailbot/raye-sailbot-msg.git src/sailbot-msg
-RUN /bin/bash -c "source /opt/ros/${ROS1_DISTRO}/setup.bash; catkin_make"
-RUN chown -R ${USERNAME} .
+# install clang, some clang tools, and protobuf for network systems
+# TODO: move required packages to base image
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && \
+  apt-get install -y \
+    clang \
+    clang-tidy \
+    clangd \
+    googletest \
+    libboost-all-dev \
+    libprotobuf-dev \
+    llvm \
+    protobuf-compiler && \
+  apt-get autoremove -y && \
+  apt-get clean -y && \
+  rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
+ENV DEBIAN_FRONTEND=
 
-# ROS 2 workspace setup
-WORKDIR /
+# install git-delta
+RUN wget https://github.com/dandavison/delta/releases/download/0.14.0/git-delta-musl_0.14.0_amd64.deb
+RUN dpkg -i git-delta-musl_0.14.0_amd64.deb
+RUN rm git-delta-musl_0.14.0_amd64.deb
+
+# install other helpful packages
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && \
+  apt-get -y install \
+    less \
+    openssh-client \
+    ros-humble-ament-lint \
+    ros-humble-launch-testing \
+    ros-humble-launch-testing-ament-cmake \
+    ros-humble-launch-testing-ros \
+    tmux && \
+  apt-get autoremove -y && \
+  apt-get clean -y && \
+  rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
+ENV DEBIAN_FRONTEND=
