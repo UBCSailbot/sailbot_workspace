@@ -49,10 +49,9 @@ FROM base AS builder
 ENV DEBIAN_FRONTEND=noninteractive
 # alternative method of installing libspot
 RUN apt-get update && \
-    apt-get install -y \
-        software-properties-common && \
-    add-apt-repository ppa:asiffer/libspot
-RUN apt-get update && \
+    apt-get install -y software-properties-common && \
+    add-apt-repository ppa:asiffer/libspot && \
+    apt-get update && \
     apt-get install -y \
         build-essential \
         castxml \
@@ -77,7 +76,10 @@ RUN apt-get update && \
         python3-pip \
         pypy3 \
         wget && \
-    pip3 install pygccxml pyplusplus
+    apt-get autoremove -y && \
+    apt-get clean -y && \
+    rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
+RUN pip3 install pygccxml pyplusplus
 COPY ompl /ompl
 WORKDIR /build
 RUN cmake \
@@ -94,10 +96,9 @@ FROM base
 ENV DEBIAN_FRONTEND=noninteractive
 # alternative method of installing libspot
 RUN apt-get update && \
-    apt-get install -y \
-        software-properties-common && \
-    add-apt-repository ppa:asiffer/libspot
-RUN apt-get update && \
+    apt-get install -y software-properties-common && \
+    add-apt-repository ppa:asiffer/libspot && \
+    apt-get update && \
     apt-get install -y \
         build-essential \
         cmake \
@@ -117,10 +118,9 @@ RUN apt-get update && \
         python3-dev \
         python3-numpy \
         python3-pip \
-        wget
+        wget && \
+    apt-get autoremove -y && \
+    apt-get clean -y && \
+    rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
 
 COPY --from=builder /usr /usr
-
-RUN apt-get autoremove -y && \
-    apt-get clean -y && \
-    rm -rf /var/lib/apt/lists/*
