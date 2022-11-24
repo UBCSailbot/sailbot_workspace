@@ -2,10 +2,10 @@
 set -e
 
 source /opt/ros/${ROS2_DISTRO}/setup.bash
-./setup.sh
+./setup.sh DISABLE_VCS
 if [[ "$LINTER" == "clang-tidy" ]]
 then
-    ./build.sh Debug OFF
+    ./build.sh RelWithDebInfo OFF
     ./run_clang-tidy.sh
 else
     ament_${LINTER} src/
