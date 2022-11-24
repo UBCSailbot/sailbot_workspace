@@ -6,15 +6,6 @@
 		{
 			"path": "../../src/network_systems"
 		},
-		{
-			"path": "../../../catkin_ws/src/boat_controller"
-		},
-		{
-			"path": "../../../catkin_ws/src/local-pathfinding"
-		},
-		{
-			"path": "../../../catkin_ws/src/sailbot-msg"
-		}
 	],
 	"settings": {
 		"editor.tabSize": 4,
@@ -25,17 +16,13 @@
 			"*.xacro": "xml"
 		},
 		"python.analysis.extraPaths": [
-			"/workspaces/catkin_ws/devel/lib/python2.7/dist-packages",
-			"/opt/ros/melodic/lib/python2.7/dist-packages",
-			"/workspaces/sailbot_workspace/install/lib/python3.6/site-packages",
-			"/opt/ros/eloquent/lib/python3.6/site-packages"
+			"/workspaces/sailbot_workspace/install/lib/python3.10/site-packages",
+			"/opt/ros/humble/lib/python3.10/site-packages"
 		],
 		// Autocomplete from ros python packages
 		"python.autoComplete.extraPaths": [
-			"/workspaces/catkin_ws/devel/lib/python2.7/dist-packages",
-			"/opt/ros/melodic/lib/python2.7/dist-packages",
-			"/workspaces/sailbot_workspace/install/lib/python3.6/site-packages",
-			"/opt/ros/eloquent/lib/python3.6/site-packages"
+			"/workspaces/sailbot_workspace/install/lib/python3.10/site-packages",
+			"/opt/ros/humble/lib/python3.10/site-packages"
 		],
 		// Environment file lets vscode find python files within workspace
 		"python.envFile": "/workspaces/sailbot_workspace/.env",
