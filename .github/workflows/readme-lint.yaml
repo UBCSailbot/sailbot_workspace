@@ -1,0 +1,34 @@
+name: README Lint
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  # https://github.com/nosborn/github-action-markdown-cli
+  markdownlint:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v3
+
+    - name: Run linter
+      uses: nosborn/github-action-markdown-cli@v3.2.0
+      with:
+        config_file: '.markdownlint.json'
+        files: 'README.md'
+
+  # https://github.com/gaurav-nelson/github-action-markdown-link-check
+  markdown-link-check:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v3
+
+    - name: Run linter
+      uses: gaurav-nelson/github-action-markdown-link-check@v1
+      with:
+        config-file: '.markdown-link-check.json'
+        file-path: './README.md'

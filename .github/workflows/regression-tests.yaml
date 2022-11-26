@@ -1,14 +1,23 @@
-name: Lint
+name: Regression Tests
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
+  schedule:
+    # Every Friday at 1:00am UTC
+    - cron: '0 1 * * 5'
   workflow_dispatch:
 
 jobs:
-  ros-lint:
+  ros_test:
+    runs-on: ubuntu-latest
+    steps:
+      - 
+        name: Checkout code
+        uses: actions/checkout@v3
+      -
+        name: Test
+        uses: ./.github/actions/test/
+
+  ros_lint:
     name: ament_${{ matrix.linter }}
     runs-on: ubuntu-latest
     strategy:
@@ -35,8 +44,8 @@ jobs:
     - name: Run linter
       uses: nosborn/github-action-markdown-cli@v3.2.0
       with:
-        files: '.devcontainer/'
         config_file: '.markdownlint.json'
+        files: 'README.md'
 
   # https://github.com/gaurav-nelson/github-action-markdown-link-check
   markdown-link-check:
@@ -49,4 +58,4 @@ jobs:
       uses: gaurav-nelson/github-action-markdown-link-check@v1
       with:
         config-file: '.markdown-link-check.json'
-        folder-path: '.devcontainer'
+        file-path: './README.md'
