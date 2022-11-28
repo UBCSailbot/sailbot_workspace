@@ -45,7 +45,7 @@ jobs:
       uses: nosborn/github-action-markdown-cli@v3.2.0
       with:
         config_file: '.markdownlint.json'
-        files: 'README.md'
+        files: .
 
   # https://github.com/gaurav-nelson/github-action-markdown-link-check
   markdown-link-check:
@@ -58,4 +58,4 @@ jobs:
       uses: gaurav-nelson/github-action-markdown-link-check@v1
       with:
         config-file: '.markdown-link-check.json'
-        file-path: './README.md'
+        folder-path: .
