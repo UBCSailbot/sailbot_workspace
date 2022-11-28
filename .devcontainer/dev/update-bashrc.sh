@@ -11,5 +11,9 @@ echo "" >> $HOME/.bashrc
 echo "# set up ROS environment" >> $HOME/.bashrc
 echo "source /usr/share/colcon_cd/function/colcon_cd.sh" >> $HOME/.bashrc
 echo "export _colcon_cd_root=$ROS_WORKSPACE" >> $HOME/.bashrc
-echo "alias srcros=\"if [ -f $ROS_WORKSPACE/install/local_setup.bash ]; then source $ROS_WORKSPACE/install/local_setup.bash; echo 'sourcing the ROS overlay of $ROS_WORKSPACE'; else echo '$ROS_WORKSPACE/install/local_setup.bash not found: run the Build task (CTRL+SHIFT+B) then srcros (in the terminal)'; fi\"" >> $HOME/.bashrc
-
+echo "if [ -f $ROS_WORKSPACE/install/local_setup.bash ]" >> $HOME/.bashrc
+echo "then" >> $HOME/.bashrc
+echo "    source $ROS_WORKSPACE/install/local_setup.bash" >> $HOME/.bashrc
+echo "else" >> $HOME/.bashrc
+echo "    echo \"WARNING: Can't source the ROS workspace overlay: run the Build task then open a new terminal\"" >> $HOME/.bashrc
+echo "fi" >> $HOME/.bashrc
