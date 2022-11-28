@@ -17,8 +17,9 @@ jobs:
     - name: Run linter
       uses: nosborn/github-action-markdown-cli@v3.2.0
       with:
-        config_file: '.markdownlint.json'
+        config_file: .markdownlint.json
         files: .
+        dot: true
         ignore_files: src/*
 
   # https://github.com/gaurav-nelson/github-action-markdown-link-check
@@ -31,6 +32,6 @@ jobs:
     - name: Run linter
       uses: gaurav-nelson/github-action-markdown-link-check@v1
       with:
-        config-file: '.markdown-link-check.json'
+        config-file: .markdown-link-check.json
         folder-path: '.devcontainer, .github, .vscode'
         file-path: './README.md'
