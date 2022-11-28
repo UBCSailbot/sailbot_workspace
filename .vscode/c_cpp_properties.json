@@ -4,10 +4,10 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "/opt/ros/eloquent/include/**"
+                "/opt/ros/humble/include/**"
             ],
             "defines": [],
-            "compilerPath": "/usr/bin/clang-10",
+            "compilerPath": "/usr/bin/clang",
             "compileCommands": "${workspaceFolder}/build/compile_commands.json",
             "cStandard": "c99",
             "cppStandard": "c++14",
