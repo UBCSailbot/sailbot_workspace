@@ -98,10 +98,6 @@ RUN apt-get update && \
     apt-get install -y \
         less \
         openssh-client \
-        ros-humble-ament-lint \
-        ros-humble-launch-testing \
-        ros-humble-launch-testing-ament-cmake \
-        ros-humble-launch-testing-ros \
         tmux \
     && apt-get autoremove -y && \
     apt-get clean -y && \
