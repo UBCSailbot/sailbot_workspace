@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y \
   bash-completion \
   build-essential \
   cmake \
+  curl \
   gdb \
   git \
   pylint3 \
@@ -104,6 +105,14 @@ RUN rm git-delta-musl_0.14.0_amd64.deb
 
 ARG USERNAME=ros
 ARG HOME=/home/$USERNAME
+
+# install and setup starship
+RUN curl -sS https://starship.rs/install.sh -o install_starship.sh \
+  && sh install_starship.sh -y \
+  && rm install_starship.sh
+ENV STARSHIP_CONFIG=/workspaces/sailbot_workspace/.devcontainer/config/starship.toml
+#ENV STARSHIP_CACHE=
+RUN echo 'eval "$(starship init bash)"' >> ${HOME}/.bashrc
 
 # persist ROS logs
 RUN mkdir -p ${HOME}/.ros/log \
