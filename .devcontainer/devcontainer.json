@@ -26,7 +26,8 @@
 				"icon": "terminal-bash"
 			}
 		},
-		"terminal.integrated.defaultProfile.linux": "bash"
+		"terminal.integrated.defaultProfile.linux": "bash",
+		"editor.renderWhitespace": "all"
 	},
 	"extensions": [
 		// template repo
@@ -39,6 +40,7 @@
 		"smilerobotics.urdf",
 		"streetsidesoftware.code-spell-checker",
 		"twxs.cmake",
+		"ms-python.flake8",
 		// "yzhang.markdown-all-in-one",
 		// "zachflower.uncrustify",
 
