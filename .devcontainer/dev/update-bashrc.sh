@@ -20,4 +20,4 @@ echo "alias srcnew=\"if [ -f $ROS2_WORKSPACE/install/local_setup.bash ]; then so
 # echo "alias srcnew='unset ROS_DISTRO; source $ROS2_WORKSPACE/install/local_setup.bash; export PYTHONPATH=/opt/ros/$ROS2_DISTRO/lib/python3.6/site-packages:\$PYTHONPATH; echo \"sourcing the overlay in $ROS2_WORKSPACE\"'" >> $HOME/.bashrc
 
 # Add this as the last line to .bashrc
-eval "$(starship init bash)"
+echo 'eval "$(starship init bash)"' >> $HOME/.bashrc
