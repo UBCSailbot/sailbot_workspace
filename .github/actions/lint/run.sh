@@ -2,7 +2,12 @@
 set -e
 
 source /opt/ros/${ROS2_DISTRO}/setup.bash
-./setup.sh DISABLE_VCS
+if [[ $DISABLE_VCS == "true" ]]
+then
+    ./setup.sh DISABLE_VCS
+else
+    ./setup.sh
+fi
 if [[ "$LINTER" == "clang-tidy" ]]
 then
     ./build.sh RelWithDebInfo OFF

@@ -15,6 +15,8 @@ jobs:
 
       - name: Test
         uses: ./.github/actions/test/
+        env:
+          DISABLE_VCS: false
 
   ros_lint:
     name: ament_${{ matrix.linter }}
@@ -31,6 +33,7 @@ jobs:
         uses: ./.github/actions/lint/
         env: 
           LINTER: ${{ matrix.linter }}
+          DISABLE_VCS: false
 
   # https://github.com/nosborn/github-action-markdown-cli
   markdownlint:

@@ -2,6 +2,11 @@
 set -e
 
 source /opt/ros/${ROS2_DISTRO}/setup.bash
-./setup.sh DISABLE_VCS
+if [[ $DISABLE_VCS == "true" ]]
+then
+    ./setup.sh DISABLE_VCS
+else
+    ./setup.sh
+fi
 ./build.sh RelWithDebInfo OFF  # Do not run static analysis or linting
 ./test.sh
