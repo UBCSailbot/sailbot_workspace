@@ -110,8 +110,6 @@ ARG HOME=/home/$USERNAME
 RUN curl -sS https://starship.rs/install.sh -o install_starship.sh \
   && sh install_starship.sh -y \
   && rm install_starship.sh
-ENV STARSHIP_CONFIG=/workspaces/sailbot_workspace/.devcontainer/config/starship.toml
-#ENV STARSHIP_CACHE=
 
 # persist ROS logs
 RUN mkdir -p ${HOME}/.ros/log \

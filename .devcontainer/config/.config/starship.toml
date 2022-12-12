@@ -7,6 +7,7 @@ format = '\[[$symbol($profile)(\($region\))(\[$duration\])]($style)\]'
 format = '\[[$symbol($version)]($style)\]'
 
 [c]
+symbol = " "
 format = '\[[$symbol($version(-$name))]($style)\]'
 
 [cmake]
@@ -21,6 +22,9 @@ format = '\[[$symbol($version)]($style)\]'
 [conda]
 format = '\[[$symbol$environment]($style)\]'
 
+[container]
+disabled = true
+
 [crystal]
 format = '\[[$symbol($version)]($style)\]'
 
@@ -34,6 +38,7 @@ format = '\[[$symbol($version)]($style)\]'
 format = '\[[$symbol($version)]($style)\]'
 
 [docker_context]
+symbol = " "
 format = '\[[$symbol$context]($style)\]'
 
 [dotnet]
@@ -52,6 +57,7 @@ format = '\[[$symbol($version)]($style)\]'
 format = '\[[$symbol$account(@$domain)(\($region\))]($style)\]'
 
 [git_branch]
+symbol = " "
 format = '\[[$symbol$branch]($style)\]'
 
 [git_status]
@@ -67,6 +73,7 @@ format = '\[[$symbol($version)]($style)\]'
 format = '\[[$symbol($version)]($style)\]'
 
 [hg_branch]
+symbol = " "
 format = '\[[$symbol$branch]($style)\]'
 
 [java]
@@ -85,6 +92,7 @@ format = '\[[$symbol$context( \($namespace\))]($style)\]'
 format = '\[[$symbol($version)]($style)\]'
 
 [memory_usage]
+symbol = " "
 format = '\[$symbol[$ram( | $swap)]($style)\]'
 
 [meson]
@@ -106,6 +114,7 @@ format = '\[[$symbol($version)(\($switch_indicator$switch_name\))]($style)\]'
 format = '\[[$symbol$cloud(\($project\))]($style)\]'
 
 [package]
+symbol = " "
 format = '\[[$symbol$version]($style)\]'
 
 [perl]
@@ -121,6 +130,7 @@ format = '\[[$symbol$stack]($style)\]'
 format = '\[[$symbol($version)]($style)\]'
 
 [python]
+symbol = " "
 format = '\[[${symbol}${pyenv_prefix}(${version})(\($virtualenv\))]($style)\]'
 
 [raku]

@@ -17,6 +17,8 @@
 		}
 	],
 	"settings": {
+		"editor.fontFamily": "FiraCode NFM",
+		"editor.fontSize": 12,
 		"editor.tabSize": 4,
 		"editor.rulers": [120],
 		"files.associations": {
@@ -120,6 +122,8 @@
 		"[c]": {
 			"editor.formatOnSave": true
 		},
+		"terminal.integrated.fontFamily": "FiraCode NFM",
+		"terminal.integrated.fontSize": 12,
 	},
 	"launch": {
 		// Use IntelliSense to learn about possible attributes.
