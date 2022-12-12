@@ -112,7 +112,6 @@ RUN curl -sS https://starship.rs/install.sh -o install_starship.sh \
   && rm install_starship.sh
 ENV STARSHIP_CONFIG=/workspaces/sailbot_workspace/.devcontainer/config/starship.toml
 #ENV STARSHIP_CACHE=
-RUN echo 'eval "$(starship init bash)"' >> ${HOME}/.bashrc
 
 # persist ROS logs
 RUN mkdir -p ${HOME}/.ros/log \
