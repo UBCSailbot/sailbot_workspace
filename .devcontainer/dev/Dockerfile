@@ -97,6 +97,19 @@ RUN git clone https://github.com/google/googletest.git -b release-1.12.1 \
  && cd googletest && mkdir build && cd build && cmake .. -DBUILD_GMOCK=OFF \
  && make && make install && cd ../../ && rm -r googletest
 
+# setup CAN device for testing
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update \
+  && apt-get -y install --no-install-recommends \
+  iproute2 can-utils \
+  # Clean up
+  && apt-get autoremove -y \
+  && apt-get clean -y \
+  && rm -rf /var/lib/apt/lists/*
+ENV DEBIAN_FRONTEND=
+# setup vcan when the container is started
+ENTRYPOINT ip link add dev vcan0 type vcan && ip link set up vcan0
+
 # install git-delta
 RUN wget https://github.com/dandavison/delta/releases/download/0.14.0/git-delta-musl_0.14.0_amd64.deb
 RUN dpkg -i git-delta-musl_0.14.0_amd64.deb
