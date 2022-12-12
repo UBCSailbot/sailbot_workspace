@@ -1,4 +1,4 @@
-FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:cppworkspace
+FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:can_support
 
 ## Uncomment this section to install the packages used in the ROS 2 tutorials
 # ENV DEBIAN_FRONTEND=noninteractive

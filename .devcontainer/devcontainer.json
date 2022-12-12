@@ -9,10 +9,13 @@
 	"remoteUser": "ros",
 	"runArgs": [
 		"--network=host",
-		"--cap-add=SYS_PTRACE",
 		"--security-opt=seccomp:unconfined",
 		"--security-opt=apparmor:unconfined",
 		"--volume=/tmp/.X11-unix:/tmp/.X11-unix"
+	],
+	"capAdd": [
+		"SYS_PTRACE",
+		"NET_ADMIN"  // Needed for CAN network access
 	],
 	"containerEnv": {
 		"DISPLAY": "${localEnv:MAC_DOCKER_LOCALHOST}${localEnv:DISPLAY}${localEnv:WIN10_DOCKER_DISPLAY_END}",
