@@ -11,5 +11,5 @@ src/*
 .devcontainer/config/.*
 
 # clangd
-.clangd/*
+.cache/*
 compile_commands.json
