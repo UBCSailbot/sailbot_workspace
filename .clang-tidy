@@ -14,6 +14,7 @@ Checks: "
     -clang-analyzer-optin*,
     -clang-analyzer-osx*,
     -google-objc*,
+    -readability-function-cognitive-complexity,
 "
 
 WarningsAsErrors: "*, -google-readability-todo"
