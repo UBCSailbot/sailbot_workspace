@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-if [ "$1" != "DISABLE_VCS" ]
+if [[ $DISABLE_VCS != "true" ]]
 then
     vcs import < src/new_project.repos src
 fi
