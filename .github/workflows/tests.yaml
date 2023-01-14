@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  ros_test:
+  colcon-test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -19,25 +19,31 @@ jobs:
 
       - name: Test
         uses: ./.github/actions/test/
-        env:
-          DISABLE_VCS: false
 
-  ros_lint:
+  ament-lint:
     name: ament_${{ matrix.linter }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-          linter: [clang-tidy, lint_cmake, xmllint, flake8, pep257]
+          linter: [lint_cmake, xmllint, flake8, pep257]
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
       - name: Run linter
-        uses: ./.github/actions/lint/
-        env: 
+        uses: ./.github/actions/ament-lint/
+        env:
           LINTER: ${{ matrix.linter }}
-          DISABLE_VCS: false
+
+  clang-tidy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Run linter
+        uses: ./.github/actions/clang-tidy/
 
   # https://github.com/nosborn/github-action-markdown-cli
   markdownlint:
