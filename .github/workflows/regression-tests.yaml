@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  ros_test:
+  colcon-test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code

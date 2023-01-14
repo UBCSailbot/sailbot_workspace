@@ -3,4 +3,4 @@ description: 'Clang-Tidy using devcontainer'
 runs:
   using: 'docker'
   image: '../../../.devcontainer/Dockerfile'
-  entrypoint: ".github/actions/lint/run.sh"
+  entrypoint: ".github/actions/clang-tidy/run.sh"
