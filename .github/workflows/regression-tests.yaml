@@ -1,13 +1,23 @@
-name: Lint
+name: Regression Tests
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
+  schedule:
+    # Every Friday at 1:00am UTC
+    - cron: '0 1 * * 5'
   workflow_dispatch:
 
 jobs:
+  ros_test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Test
+        uses: ./.github/actions/test/
+        env:
+          DISABLE_VCS: false
+
   ament-lint:
     name: ament_${{ matrix.linter }}
     runs-on: ubuntu-latest
@@ -20,9 +30,10 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Run linter
-        uses: ./.github/actions/lint/
+        uses: ./.github/actions/ament-lint/
         env: 
           LINTER: ${{ matrix.linter }}
+          DISABLE_VCS: false
 
   clang-tidy:
     runs-on: ubuntu-latest
@@ -31,9 +42,10 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Run linter
-        uses: ./.github/actions/lint/
+        uses: ./.github/actions/clang-tidy/
         env: 
           LINTER: clang-tidy
+          DISABLE_VCS: false
 
   # https://github.com/nosborn/github-action-markdown-cli
   markdownlint:
@@ -45,8 +57,9 @@ jobs:
     - name: Run linter
       uses: nosborn/github-action-markdown-cli@v3.2.0
       with:
-        files: '.devcontainer/'
-        config_file: '.markdownlint.json'
+        config_file: .markdownlint.json
+        files: .
+        dot: true
 
   # https://github.com/gaurav-nelson/github-action-markdown-link-check
   markdown-link-check:
@@ -58,5 +71,5 @@ jobs:
     - name: Run linter
       uses: gaurav-nelson/github-action-markdown-link-check@v1
       with:
-        config-file: '.markdown-link-check.json'
-        folder-path: '.devcontainer'
+        config-file: .markdown-link-check.json
+        folder-path: .
