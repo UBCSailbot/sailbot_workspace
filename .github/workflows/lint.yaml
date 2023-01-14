@@ -8,22 +8,32 @@ on:
   workflow_dispatch:
 
 jobs:
-  ros-lint:
+  ament-lint:
     name: ament_${{ matrix.linter }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-          linter: [clang-tidy, lint_cmake, xmllint, flake8, pep257]
+          linter: [lint_cmake, xmllint, flake8, pep257]
     steps:
-      - 
-        name: Checkout code
+      - name: Checkout code
         uses: actions/checkout@v3
-      -
-        name: Run linter
+
+      - name: Run linter
         uses: ./.github/actions/lint/
         env: 
           LINTER: ${{ matrix.linter }}
+
+  clang-tidy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Run linter
+        uses: ./.github/actions/lint/
+        env: 
+          LINTER: clang-tidy
 
   # https://github.com/nosborn/github-action-markdown-cli
   markdownlint:

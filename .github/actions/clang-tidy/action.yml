@@ -1,5 +1,5 @@
-name: 'Lint'
-description: 'Lint using devcontainer'
+name: 'Clang-Tidy'
+description: 'Clang-Tidy using devcontainer'
 runs:
   using: 'docker'
   image: '../../../.devcontainer/Dockerfile'
