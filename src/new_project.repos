@@ -7,17 +7,17 @@ repositories:
   #   url: https://github.com/ros/ros_tutorials
   #   version: humble
 
-  py_pubsub_ex:
-    type: git
-    url: https://github.com/UBCSailbot/py_pubsub_ex
-    version: main
-
-  cpp_pubsub_ex:
-    type: git
-    url: https://github.com/UBCSailbot/cpp_pubsub_ex
-    version: main
-
-  # network_systems:
+  # py_pubsub_ex:
   #   type: git
-  #   url: https://github.com/UBCSailbot/network_systems
+  #   url: https://github.com/UBCSailbot/py_pubsub_ex
   #   version: main
+
+  # cpp_pubsub_ex:
+  #   type: git
+  #   url: https://github.com/UBCSailbot/cpp_pubsub_ex
+  #   version: main
+
+  network_systems:
+    type: git
+    url: https://github.com/UBCSailbot/network_systems
+    version: v2-updates
