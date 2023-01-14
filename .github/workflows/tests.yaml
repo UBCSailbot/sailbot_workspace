@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - raye
   pull_request:
   schedule:
     # Every Friday at 1:00am UTC
