@@ -26,8 +26,7 @@
 				"icon": "terminal-bash"
 			}
 		},
-		"terminal.integrated.defaultProfile.linux": "bash",
-		"editor.renderWhitespace": "all"
+		"terminal.integrated.defaultProfile.linux": "bash"
 	},
 	"extensions": [
 		// template repo
