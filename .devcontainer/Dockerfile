@@ -1,4 +1,4 @@
-FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:ros_humble-ompl_d8375d8-amd64
+FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:fix_dockerfile_name
 
 # # Uncomment this section to install the apt packages used in the ROS 2 tutorials
 # ENV DEBIAN_FRONTEND=noninteractive
