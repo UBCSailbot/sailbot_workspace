@@ -57,11 +57,11 @@ RUN mkdir -p ${HOME}/.ros/log \
     && chown -R ${USERNAME} ${HOME}/.ros
 
 # persist bash history
-RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=${HOME}/commandhistory/.bash_history" && \
-    mkdir ${HOME}/commandhistory && \
-    touch ${HOME}/commandhistory/.bash_history && \
-    chown ${USERNAME} ${HOME}/commandhistory/.bash_history && \
-    echo $SNIPPET >> "${HOME}/.bashrc"
+RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=${HOME}/commandhistory/.bash_history" \
+    && mkdir ${HOME}/commandhistory \
+    && touch ${HOME}/commandhistory/.bash_history \
+    && chown ${USERNAME} ${HOME}/commandhistory/.bash_history \
+    && echo $SNIPPET >> "${HOME}/.bashrc"
 
 ARG ROS_WORKSPACE=/workspaces/sailbot_workspace
 
@@ -72,8 +72,8 @@ RUN chmod +x /sbin/update-bashrc ; chown ros /sbin/update-bashrc ; sync ; /bin/b
 # install clang, some clang tools, and protobuf for network systems
 # TODO: move required apt packages to base image
 ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && \
-    apt-get install -y \
+RUN apt-get update \
+    && apt-get install -y \
         clang \
         clang-tidy \
         clangd \
@@ -82,9 +82,9 @@ RUN apt-get update && \
         libprotobuf-dev \
         llvm \
         protobuf-compiler \
-    && apt-get autoremove -y && \
-    apt-get clean -y && \
-    rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
+    && apt-get autoremove -y \
+    && apt-get clean -y \
+    && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
 ENV DEBIAN_FRONTEND=
 
 # install git-delta
@@ -94,12 +94,12 @@ RUN rm git-delta-musl_0.14.0_amd64.deb
 
 # install other helpful apt packages
 ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && \
-    apt-get install -y \
+RUN apt-get update \
+    && apt-get install -y \
         less \
         openssh-client \
         tmux \
-    && apt-get autoremove -y && \
-    apt-get clean -y && \
-    rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
+    && apt-get autoremove -y \
+    && apt-get clean -y \
+    && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
 ENV DEBIAN_FRONTEND=
