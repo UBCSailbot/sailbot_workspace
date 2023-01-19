@@ -8,7 +8,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
 RUN git clone https://github.com/ompl/ompl.git
 WORKDIR /ompl
-RUN git reset --hard d8375d8
+RUN git reset --hard 1bb0aa2
 
 # From https://github.com/athackst/dockerfiles/blob/32a872348af0ad25ec4a6e6184cb803357acb6ab/ros2/humble.Dockerfile
 FROM ubuntu:22.04 AS ros
@@ -54,15 +54,12 @@ ENV ROS_PYTHON_VERSION=3
 ENV ROS_VERSION=2
 ENV DEBIAN_FRONTEND=
 
-# Based on https://github.com/ompl/ompl/blob/d8375d842a7f016d64f27a81d6f95eaa83fbe595/scripts/docker/ompl.Dockerfile
+# Based on https://github.com/ompl/ompl/blob/1bb0aa2cae0d5e30eee6efca4a9d10a2da1971dc/scripts/docker/ompl.Dockerfile
 FROM ros AS ompl-builder
 # avoid interactive configuration dialog from tzdata, which gets pulled in
 # as a dependency
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
-    && apt-get install -y software-properties-common \
-    && add-apt-repository ppa:asiffer/libspot \
-    && apt-get update \
     && apt-get install -y \
         build-essential \
         castxml \
@@ -78,7 +75,6 @@ RUN apt-get update \
         libexpat1 \
         libflann-dev \
         libode-dev \
-        libspot-dev \
         libtriangle-dev \
         ninja-build \
         pkg-config \
@@ -108,9 +104,6 @@ LABEL org.opencontainers.image.source https://github.com/UBCSailbot/sailbot_work
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
-    && apt-get install -y software-properties-common \
-    && add-apt-repository ppa:asiffer/libspot \
-    && apt-get update \
     && apt-get install -y \
         build-essential \
         cmake \
@@ -123,7 +116,6 @@ RUN apt-get update \
         libeigen3-dev \
         libflann-dev \
         libode-dev \
-        libspot-dev \
         libtriangle-dev \
         ninja-build \
         pkg-config \
