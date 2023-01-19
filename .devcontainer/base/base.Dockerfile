@@ -1,17 +1,17 @@
-FROM ubuntu:22.04 AS ompl
+FROM ubuntu:22.04 AS ompl-source
 
 ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && \
-    apt-get install -y git && \
-    apt-get autoremove -y && \
-    apt-get clean -y && \
-    rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
+RUN apt-get update \
+    && apt-get install -y git \
+    && apt-get autoremove -y \
+    && apt-get clean -y \
+    && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
 RUN git clone https://github.com/ompl/ompl.git
 WORKDIR /ompl
-RUN git reset --hard d8375d8
+RUN git reset --hard 1bb0aa2
 
 # From https://github.com/athackst/dockerfiles/blob/32a872348af0ad25ec4a6e6184cb803357acb6ab/ros2/humble.Dockerfile
-FROM ubuntu:22.04 AS base
+FROM ubuntu:22.04 AS ros-base
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -54,16 +54,13 @@ ENV ROS_PYTHON_VERSION=3
 ENV ROS_VERSION=2
 ENV DEBIAN_FRONTEND=
 
-# Based on https://github.com/ompl/ompl/blob/d8375d842a7f016d64f27a81d6f95eaa83fbe595/scripts/docker/ompl.Dockerfile
-FROM base AS builder
+# Based on https://github.com/ompl/ompl/blob/1bb0aa2cae0d5e30eee6efca4a9d10a2da1971dc/scripts/docker/ompl.Dockerfile
+FROM ros-base AS ompl-builder
 # avoid interactive configuration dialog from tzdata, which gets pulled in
 # as a dependency
 ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && \
-    apt-get install -y software-properties-common && \
-    add-apt-repository ppa:asiffer/libspot && \
-    apt-get update && \
-    apt-get install -y \
+RUN apt-get update \
+    && apt-get install -y \
         build-essential \
         castxml \
         cmake \
@@ -78,7 +75,6 @@ RUN apt-get update && \
         libexpat1 \
         libflann-dev \
         libode-dev \
-        libspot-dev \
         libtriangle-dev \
         ninja-build \
         pkg-config \
@@ -86,30 +82,29 @@ RUN apt-get update && \
         python3-numpy \
         python3-pip \
         pypy3 \
-        wget && \
-    apt-get autoremove -y && \
-    apt-get clean -y && \
-    rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
+        wget \
+    && apt-get autoremove -y \
+    && apt-get clean -y \
+    && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
 RUN pip3 install pygccxml pyplusplus
-COPY --from=ompl /ompl /ompl
+COPY --from=ompl-source /ompl /ompl
 WORKDIR /build
 RUN cmake \
         -DPYTHON_EXEC=/usr/bin/python3 \
         -DOMPL_REGISTRATION=OFF \
         -DCMAKE_INSTALL_PREFIX=/usr \
         -G Ninja \
-        /ompl && \
-    ninja update_bindings -j `nproc` && \
-    ninja -j `nproc` && \
-    ninja install
+        /ompl \
+    && ninja update_bindings -j `nproc` \
+    && ninja -j `nproc` \
+    && ninja install
 
-FROM base
+FROM ros-base as base
+LABEL org.opencontainers.image.source https://github.com/UBCSailbot/sailbot_workspace
+
 ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && \
-    apt-get install -y software-properties-common && \
-    add-apt-repository ppa:asiffer/libspot && \
-    apt-get update && \
-    apt-get install -y \
+RUN apt-get update \
+    && apt-get install -y \
         build-essential \
         cmake \
         libboost-filesystem-dev \
@@ -121,18 +116,16 @@ RUN apt-get update && \
         libeigen3-dev \
         libflann-dev \
         libode-dev \
-        libspot-dev \
         libtriangle-dev \
         ninja-build \
         pkg-config \
         python3-dev \
         python3-numpy \
         python3-pip \
-        wget && \
-    apt-get autoremove -y && \
-    apt-get clean -y && \
-    rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
+        wget \
+    && apt-get autoremove -y \
+    && apt-get clean -y \
+    && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
+ENV DEBIAN_FRONTEND=
 
-COPY --from=builder /usr /usr
-
-LABEL org.opencontainers.image.source https://github.com/UBCSailbot/sailbot_workspace
+COPY --from=ompl-builder /usr /usr
