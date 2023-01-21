@@ -1,4 +1,4 @@
-FROM ghcr.io/ubcsailbot/sailbot_workspace/base:ros_humble-ompl_1bb0aa2-amd64 as ros-dev
+FROM ghcr.io/ubcsailbot/sailbot_workspace/base:ros_humble-ompl_4c86b2f as ros-dev
 
 # From https://github.com/athackst/dockerfiles/blob/32a872348af0ad25ec4a6e6184cb803357acb6ab/ros2/humble.Dockerfile
 ENV DEBIAN_FRONTEND=noninteractive
@@ -86,11 +86,6 @@ RUN apt-get update \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
 ENV DEBIAN_FRONTEND=
-
-# install git-delta
-RUN wget https://github.com/dandavison/delta/releases/download/0.14.0/git-delta-musl_0.14.0_amd64.deb
-RUN dpkg -i git-delta-musl_0.14.0_amd64.deb
-RUN rm git-delta-musl_0.14.0_amd64.deb
 
 # install other helpful apt packages
 ENV DEBIAN_FRONTEND=noninteractive
