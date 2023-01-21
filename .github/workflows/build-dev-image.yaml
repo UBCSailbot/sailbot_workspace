@@ -32,7 +32,8 @@ jobs:
         with:
           context: "{{defaultContext}}:.devcontainer/dev"
           file: dev.Dockerfile
-          push: true
           tags: ghcr.io/ubcsailbot/sailbot_workspace/dev:${{ inputs.tag }}
+          platforms: linux/arm64,linux/amd64
+          push: true
           cache-from: type=gha
           cache-to: type=gha,mode=max
