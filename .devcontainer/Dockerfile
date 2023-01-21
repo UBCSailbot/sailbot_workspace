@@ -1,4 +1,4 @@
-FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:fix-build-dev-image-ci
+FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:arm-support
 
 # # Uncomment this section to install the apt packages used in the ROS 2 tutorials
 # ENV DEBIAN_FRONTEND=noninteractive
