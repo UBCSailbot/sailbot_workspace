@@ -8,7 +8,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
 RUN git clone https://github.com/ompl/ompl.git
 WORKDIR /ompl
-RUN git reset --hard 1bb0aa2
+RUN git reset --hard 4c86b2f
 
 # From https://github.com/athackst/dockerfiles/blob/32a872348af0ad25ec4a6e6184cb803357acb6ab/ros2/humble.Dockerfile
 FROM ubuntu:22.04 AS ros-base
@@ -54,7 +54,7 @@ ENV ROS_PYTHON_VERSION=3
 ENV ROS_VERSION=2
 ENV DEBIAN_FRONTEND=
 
-# Based on https://github.com/ompl/ompl/blob/1bb0aa2cae0d5e30eee6efca4a9d10a2da1971dc/scripts/docker/ompl.Dockerfile
+# Based on https://github.com/ompl/ompl/blob/4c86b2fecf7084ae9073bf6a837176d0be169721/scripts/docker/ompl.Dockerfile
 FROM ros-base AS ompl-builder
 # avoid interactive configuration dialog from tzdata, which gets pulled in
 # as a dependency
