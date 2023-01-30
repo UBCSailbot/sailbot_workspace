@@ -6,10 +6,6 @@ changelog:
       - dependabot
   categories:
 
-    - title: "Bug Fixes :beetle:"
-      labels:
-        - bug
-    
     - title: "Docker Changes :whale:"
       labels:
         - devcontainer
@@ -25,6 +21,10 @@ changelog:
     - title: "Other Infrastructure Changes :gear:"
       labels:
         - infrastructure
+
+    - title: "Bug Fixes :beetle:"
+      labels:
+        - bug
 
     - title: "Other Changes :hammer_and_wrench:"
       labels:
