@@ -13,6 +13,7 @@ Checks: "
 
     -clang-analyzer-optin*,
     -clang-analyzer-osx*,
+    -clang-analyzer-cplusplus.Move,
     -google-objc*,
     -readability-function-cognitive-complexity,
 "
