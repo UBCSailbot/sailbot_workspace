@@ -4,6 +4,11 @@ BasedOnStyle: Google
 
 AccessModifierOffset: -4
 AlignAfterOpenBracket: AlwaysBreak
+AlignConsecutiveAssignments: true
+AlignConsecutiveBitFields: true
+AlignConsecutiveDeclarations: true
+AlignConsecutiveMacros: true
+AlignTrailingComments: true
 BraceWrapping:
   AfterClass: true
   AfterFunction: true
