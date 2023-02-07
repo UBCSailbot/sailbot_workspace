@@ -46,6 +46,7 @@
 		// UBCSailbot
 		"awesomektvn.toggle-semicolon",
 		"bierner.markdown-preview-github-styles",
+		"cschlosser.doxdocgen",
 		"DavidAnson.vscode-markdownlint",
 		"eamodio.gitlens",
 		"jeff-hykin.better-cpp-syntax",
