@@ -15,7 +15,6 @@ Since building OMPL with Python bindings is very CPU and memory intensive, and A
 I highly recommend building this image on a bare-metal Linux computer and giving Docker at least 10GB of memory.
 The more CPU cores and memory you can give Docker the better: building this image on an Ubuntu server with
 24 cores and 128GB of memory took 20 minutes, peaking at 100% CPU usage and 25GB memory used.
-For example, the steps required to update OMPL to the latest commit:
 
 ### Setup
 
