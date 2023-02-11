@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Dev image tag'
+        description: 'Base and dev image tag'
         required: false
         type: string
         default: 'main'
@@ -27,10 +27,21 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.PATRICK_PAT }}
 
-      - name: Build and push
+      - name: Build and push base
         uses: docker/build-push-action@v4
         with:
-          context: "{{defaultContext}}:.devcontainer/dev"
+          context: "{{defaultContext}}:.devcontainer/base-dev"
+          file: base-dev.Dockerfile
+          push: true
+          tags: ghcr.io/ubcsailbot/sailbot_workspace/base:${{ inputs.tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          target: base
+
+      - name: Build and push dev
+        uses: docker/build-push-action@v4
+        with:
+          context: "{{defaultContext}}:.devcontainer/base-dev"
           file: base-dev.Dockerfile
           push: true
           tags: ghcr.io/ubcsailbot/sailbot_workspace/dev:${{ inputs.tag }}
