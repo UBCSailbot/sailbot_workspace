@@ -5,15 +5,23 @@ changelog:
     authors:
       - dependabot
   categories:
-    - title: Devcontainer Updates
+
+    - title: "Bug Fixes :beetle:"
+      labels:
+        - bug
+
+    - title: "Dev Container Configuration Changes :whale:"
       labels:
         - devcontainer
-    - title: Workflow Updates
+
+    - title: "VS Code Configuration Changes :computer:"
       labels:
-        - workflows
-    - title: General Infrastructure Updates
+        - vscode
+
+    - title: "GitHub Configuration Changes :octocat:"
       labels:
-        - infrastructure
-    - title: Other Changes
+        - github
+
+    - title: "Other Changes :hammer_and_wrench:"
       labels:
         - "*"

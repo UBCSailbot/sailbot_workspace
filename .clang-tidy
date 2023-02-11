@@ -11,10 +11,13 @@ Checks: "
     modernize-use-using,
     readability*,
 
+    -bugprone-easily-swappable-parameters,
     -clang-analyzer-optin*,
     -clang-analyzer-osx*,
+    -clang-analyzer-cplusplus.Move,
     -google-objc*,
     -readability-function-cognitive-complexity,
+    -readability-identifier-length,
 "
 
 WarningsAsErrors: "*, -google-readability-todo"
