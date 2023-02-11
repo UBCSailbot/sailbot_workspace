@@ -1,4 +1,4 @@
-name: Build Base and Dev Images
+name: Build Images
 
 on:
   workflow_dispatch:
