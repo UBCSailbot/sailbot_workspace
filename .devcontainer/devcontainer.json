@@ -19,44 +19,48 @@
 		"LIBGL_ALWAYS_SOFTWARE": "1" // Needed for software rendering of opengl
 	},
 	// Set *default* container specific settings.json values on container create.
-	"settings": {
-		"terminal.integrated.profiles.linux": {
-			"bash": {
-				"path": "bash",
-				"icon": "terminal-bash"
-			}
-		},
-		"terminal.integrated.defaultProfile.linux": "bash"
-	},
-	"extensions": [
-		// template repo
-		"althack.ament-task-provider",
-		"DotJoshJohnson.xml",
-		"ms-azuretools.vscode-docker",
-		"ms-python.python",
-		"ms-vscode.cpptools",
-		"redhat.vscode-yaml",
-		"smilerobotics.urdf",
-		"streetsidesoftware.code-spell-checker",
-		"twxs.cmake",
-		"ms-python.flake8",
-		// "yzhang.markdown-all-in-one",
-		// "zachflower.uncrustify",
+	"customizations": {
+		"vscode": {
+			"settings": {
+				"terminal.integrated.profiles.linux": {
+					"bash": {
+						"path": "bash",
+						"icon": "terminal-bash"
+					}
+				},
+				"terminal.integrated.defaultProfile.linux": "bash"
+			},
+			"extensions": [
+				// template repo
+				"althack.ament-task-provider",
+				"DotJoshJohnson.xml",
+				"ms-azuretools.vscode-docker",
+				"ms-python.python",
+				"ms-vscode.cpptools",
+				"redhat.vscode-yaml",
+				"smilerobotics.urdf",
+				"streetsidesoftware.code-spell-checker",
+				"twxs.cmake",
+				"ms-python.flake8",
+				// "yzhang.markdown-all-in-one",
+				// "zachflower.uncrustify",
 
-		// UBCSailbot
-		"awesomektvn.toggle-semicolon",
-		"bierner.markdown-preview-github-styles",
-		"cschlosser.doxdocgen",
-		"DavidAnson.vscode-markdownlint",
-		"eamodio.gitlens",
-		"jeff-hykin.better-cpp-syntax",
-		"KevinRose.vsc-python-indent",
-		"llvm-vs-code-extensions.vscode-clangd",
-		"ms-vsliveshare.vsliveshare",
-		"njpwerner.autodocstring",
-		"vscode-icons-team.vscode-icons",
-		"zxh404.vscode-proto3"
-	],
+				// UBCSailbot
+				"awesomektvn.toggle-semicolon",
+				"bierner.markdown-preview-github-styles",
+				"cschlosser.doxdocgen",
+				"DavidAnson.vscode-markdownlint",
+				"eamodio.gitlens",
+				"jeff-hykin.better-cpp-syntax",
+				"KevinRose.vsc-python-indent",
+				"llvm-vs-code-extensions.vscode-clangd",
+				"ms-vsliveshare.vsliveshare",
+				"njpwerner.autodocstring",
+				"vscode-icons-team.vscode-icons",
+				"zxh404.vscode-proto3"
+			]
+		}
+	},
 	"mounts": [
 		"source=sailbot-new-project-bashhistory,target=/home/ros/commandhistory,type=volume",
 		"source=sailbot-new-project-roslog,target=/home/ros/.ros/log,type=volume"
