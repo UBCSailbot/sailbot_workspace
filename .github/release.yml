@@ -22,6 +22,10 @@ changelog:
       labels:
         - github
 
+    - title: "Documentation Updates :book:"
+      labels:
+        - documentation
+
     - title: "Other Changes :hammer_and_wrench:"
       labels:
         - "*"
