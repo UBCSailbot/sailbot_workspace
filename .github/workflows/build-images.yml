@@ -1,7 +1,6 @@
 name: Build Images
 
 on:
-  pull_request:
   workflow_dispatch:
     inputs:
       tag:
@@ -40,7 +39,7 @@ jobs:
           context: "{{defaultContext}}:.devcontainer/base-dev"
           file: base-dev.Dockerfile
           push: true
-          tags: ghcr.io/ubcsailbot/base:${{ inputs.tag }}
+          tags: ghcr.io/ubcsailbot/sailbot_workspace/base:${{ inputs.tag }}
           platforms: linux/arm64,linux/amd64
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -52,7 +51,7 @@ jobs:
           context: "{{defaultContext}}:.devcontainer/base-dev"
           file: base-dev.Dockerfile
           push: true
-          tags: ghcr.io/ubcsailbot/dev:${{ inputs.tag }}
+          tags: ghcr.io/ubcsailbot/sailbot_workspace/dev:${{ inputs.tag }}
           platforms: linux/arm64,linux/amd64
           cache-from: type=gha
           cache-to: type=gha,mode=max

@@ -100,7 +100,7 @@ RUN cmake \
     && ninja install
 
 FROM ros-pre-base as pre-base
-LABEL org.opencontainers.image.source=https://github.com/UBCSailbot/sailbot_workspace
+LABEL org.opencontainers.image.source = "https://github.com/UBCSailbot/sailbot_workspace"
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
