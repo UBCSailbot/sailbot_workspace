@@ -8,7 +8,9 @@ src/*
 !src/new_project.repos
 
 # configuration files
-.devcontainer/config/.*
+.devcontainer/config/*
+!.devcontainer/config/README.md
+!.devcontainer/config/sailbot_workspace.code-workspace
 
 # clangd
 .cache/*
