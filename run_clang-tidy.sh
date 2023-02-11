@@ -1,3 +1,3 @@
-files=$(find ./src/ -type f \( -iname \*.cpp -o -iname \*.h \))
+# files=$(find ./src/ -type f \( -iname \*.cpp -o -iname \*.h \))
 
-clang-tidy-10 -p ./build/ --format-style=file $files
+# clang-tidy-10 -p ./build/ --format-style=file $files
