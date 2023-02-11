@@ -70,7 +70,6 @@ COPY update-bashrc.sh /sbin/update-bashrc
 RUN chmod +x /sbin/update-bashrc ; chown ros /sbin/update-bashrc ; sync ; /bin/bash -c /sbin/update-bashrc ; rm /sbin/update-bashrc
 
 # install clang, some clang tools, and protobuf for network systems
-# TODO: move required apt packages to base image
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
     && apt-get install -y \
@@ -78,9 +77,7 @@ RUN apt-get update \
         clang-tidy \
         clangd \
         googletest \
-        libboost-all-dev \
         libprotobuf-dev \
-        llvm \
         protobuf-compiler \
     && apt-get autoremove -y \
     && apt-get clean -y \

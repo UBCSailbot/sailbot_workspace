@@ -64,13 +64,7 @@ RUN apt-get update \
         build-essential \
         castxml \
         cmake \
-        libboost-filesystem-dev \
-        libboost-numpy-dev \
-        libboost-program-options-dev \
-        libboost-python-dev \
-        libboost-serialization-dev \
-        libboost-system-dev \
-        libboost-test-dev \
+        libboost-all-dev \
         libeigen3-dev \
         libexpat1 \
         libflann-dev \
