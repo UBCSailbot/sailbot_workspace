@@ -22,10 +22,6 @@ changelog:
       labels:
         - workflows
 
-    - title: "Other Infrastructure Changes :gear:"
-      labels:
-        - infrastructure
-
     - title: "Other Changes :hammer_and_wrench:"
       labels:
         - "*"
