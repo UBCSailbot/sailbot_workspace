@@ -1,4 +1,16 @@
-FROM ghcr.io/ubcsailbot/sailbot_workspace/base:ros_humble-ompl_1bb0aa2-amd64 as ros-dev
+FROM ghcr.io/ubcsailbot/sailbot_workspace/base:ros_humble-ompl_1bb0aa2-amd64 as base
+
+# install apt base dependencies
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update \
+    && apt-get install -y \
+        libboost-all-dev \
+    && apt-get autoremove -y \
+    && apt-get clean -y \
+    && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
+ENV DEBIAN_FRONTEND=
+
+FROM base as ros-dev
 
 # From https://github.com/athackst/dockerfiles/blob/32a872348af0ad25ec4a6e6184cb803357acb6ab/ros2/humble.Dockerfile
 ENV DEBIAN_FRONTEND=noninteractive
@@ -70,7 +82,6 @@ COPY update-bashrc.sh /sbin/update-bashrc
 RUN chmod +x /sbin/update-bashrc ; chown ros /sbin/update-bashrc ; sync ; /bin/bash -c /sbin/update-bashrc ; rm /sbin/update-bashrc
 
 # install clang, some clang tools, and protobuf for network systems
-# TODO: move required apt packages to base image
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
     && apt-get install -y \
@@ -78,9 +89,7 @@ RUN apt-get update \
         clang-tidy \
         clangd \
         googletest \
-        libboost-all-dev \
         libprotobuf-dev \
-        llvm \
         protobuf-compiler \
     && apt-get autoremove -y \
     && apt-get clean -y \

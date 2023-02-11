@@ -11,7 +11,7 @@ WORKDIR /ompl
 RUN git reset --hard 1bb0aa2
 
 # From https://github.com/athackst/dockerfiles/blob/32a872348af0ad25ec4a6e6184cb803357acb6ab/ros2/humble.Dockerfile
-FROM ubuntu:22.04 AS ros-base
+FROM ubuntu:22.04 AS ros-pre-base
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -55,7 +55,7 @@ ENV ROS_VERSION=2
 ENV DEBIAN_FRONTEND=
 
 # Based on https://github.com/ompl/ompl/blob/1bb0aa2cae0d5e30eee6efca4a9d10a2da1971dc/scripts/docker/ompl.Dockerfile
-FROM ros-base AS ompl-builder
+FROM ros-pre-base AS ompl-builder
 # avoid interactive configuration dialog from tzdata, which gets pulled in
 # as a dependency
 ENV DEBIAN_FRONTEND=noninteractive
@@ -99,7 +99,7 @@ RUN cmake \
     && ninja -j `nproc` \
     && ninja install
 
-FROM ros-base as base
+FROM ros-pre-base as pre-base
 LABEL org.opencontainers.image.source https://github.com/UBCSailbot/sailbot_workspace
 
 ENV DEBIAN_FRONTEND=noninteractive
