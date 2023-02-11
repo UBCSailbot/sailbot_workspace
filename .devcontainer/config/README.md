@@ -17,7 +17,7 @@
 ### Configuration
 
 - The files in this directory are ignored by Git; to track a file, exclude its relative path in
-  [the repository's `.gitignore` file](/.gitignore)
+  [the repository's `.gitignore` file](../../.gitignore)
     - For example, add `!.devcontainer/config/README.md` to track this file
 - The files in this directory are copied to the Dev Container's home directory; to not copy a file, add its relative path
   to [the Dev Container's `.dockerignore` file](../.dockerignore)
