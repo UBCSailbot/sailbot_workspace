@@ -4,9 +4,6 @@
 			"path": "../.."
 		},
 		{
-			"path": "../../src/network_systems"
-		},
-		{
 			"path": "../../../catkin_ws/src/boat_controller"
 		},
 		{
