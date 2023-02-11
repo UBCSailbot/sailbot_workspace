@@ -1,6 +1,6 @@
-FROM ghcr.io/ubcsailbot/sailbot_workspace/base:ros_humble-ompl_1bb0aa2-amd64 as base
+FROM ghcr.io/ubcsailbot/sailbot_workspace/pre-base:ros_humble-ompl_4c86b2f as base
 
-# install apt base dependencies
+# install base apt dependencies
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
     && apt-get install -y \
@@ -95,11 +95,6 @@ RUN apt-get update \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
 ENV DEBIAN_FRONTEND=
-
-# install git-delta
-RUN wget https://github.com/dandavison/delta/releases/download/0.14.0/git-delta-musl_0.14.0_amd64.deb
-RUN dpkg -i git-delta-musl_0.14.0_amd64.deb
-RUN rm git-delta-musl_0.14.0_amd64.deb
 
 # install other helpful apt packages
 ENV DEBIAN_FRONTEND=noninteractive
