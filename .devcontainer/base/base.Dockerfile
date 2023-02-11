@@ -107,7 +107,12 @@ RUN apt-get update \
     && apt-get install -y \
         build-essential \
         cmake \
-        libboost-all-dev \
+        libboost-filesystem-dev \
+        libboost-numpy-dev \
+        libboost-program-options-dev \
+        libboost-python-dev \
+        libboost-serialization-dev \
+        libboost-system-dev \
         libeigen3-dev \
         libflann-dev \
         libode-dev \
