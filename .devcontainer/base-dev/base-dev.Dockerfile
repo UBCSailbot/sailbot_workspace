@@ -1,4 +1,4 @@
-FROM ghcr.io/ubcsailbot/sailbot_workspace/base:ros_humble-ompl_4c86b2f as base
+FROM ghcr.io/ubcsailbot/sailbot_workspace/pre-base:ros_humble-ompl_4c86b2f as base
 
 # install base apt dependencies
 ENV DEBIAN_FRONTEND=noninteractive
