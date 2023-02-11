@@ -18,8 +18,7 @@ For example, the steps required to add a development dependency:
 2. In the [Build Images workflow](https://github.com/UBCSailbot/sailbot_workspace/actions/workflows/build-images.yml),
    select "Run workflow"
 3. In "Use workflow from", select the branch that your changes are in
-4. Update "Base and dev image tag" with a short description of the changes
-    - For example, `add-vim`
+4. Update "Base and dev image tag" with a short description of the changes; for example, `add-vim`
 5. Click "Run workflow"
 6. In [`.devcontainer/Dockerfile`](../Dockerfile), update the dev image tag with the short description above
 7. Once the workflow successfully completes:
