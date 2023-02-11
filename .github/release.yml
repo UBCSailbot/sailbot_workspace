@@ -6,7 +6,11 @@ changelog:
       - dependabot
   categories:
 
-    - title: "Docker Changes :whale:"
+    - title: "Bug Fixes :beetle:"
+      labels:
+        - bug
+
+    - title: "Dev Container Configuration Changes :whale:"
       labels:
         - devcontainer
 
@@ -14,17 +18,9 @@ changelog:
       labels:
         - vscode
 
-    - title: "Workflow Changes :octocat:"
+    - title: "GitHub Configuration Changes :octocat:"
       labels:
-        - workflows
-
-    - title: "Other Infrastructure Changes :gear:"
-      labels:
-        - infrastructure
-
-    - title: "Bug Fixes :beetle:"
-      labels:
-        - bug
+        - github
 
     - title: "Other Changes :hammer_and_wrench:"
       labels:
