@@ -5,7 +5,7 @@
 - Builds off the Ubuntu 22.04 image
 - Install ROS Humble
 - Installs OMPL with Python bindings
-- Builds both for `amd64` and `arm64`
+- Builds for both `amd64` and `arm64`
 
 ## How to build
 
@@ -15,7 +15,13 @@ For example, the steps required to update OMPL to the latest commit:
    URL
 2. In [`build-pre-base.sh`](build-pre-base.sh), update the commit hash in the tag
 3. Login to the GitHub container registry: [Authenticating with a personal access token (classic)](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-with-a-personal-access-token-classic)
-4. Build and push the image: `./build-pre-base.sh`
+4. Create a new driver to build this multi-architecture image
+
+   ```
+   docker buildx create --name sailbot --platform linux/arm64,linux/amd64 --use
+   ```
+
+5. Build and push the image: `./build-pre-base.sh`
 
 ### Hardware recommendations
 
