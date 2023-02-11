@@ -34,4 +34,6 @@ For example, the steps required to update OMPL to the latest commit:
 1. In [`pre-base.Dockerfile`](pre-base.Dockerfile), update the commit hash in the `git reset` command and OMPL repository
    URL
 2. In [`build-pre-base.sh`](build-pre-base.sh), update the commit hash in the tag
-3. Build and push the image: `./build-pre-base.sh`
+3. In [`base-dev.Dockerfile`](../base-dev/base-dev.Dockerfile), update the commit hash in the pre-base image tag
+4. Build and push the image: `./build-pre-base.sh`
+5. [Build the base and dev images using the newly built image](../base-dev/README.md#how-to-build)
