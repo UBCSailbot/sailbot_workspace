@@ -5,10 +5,6 @@ This repository will get you set up to develop UBCSailbot's software on VS Code.
 See their [write-up](https://www.allisonthackston.com/articles/vscode_docker_ros2.html) for a more
 in-depth look on how this workspace functions.
 
-## Setup
-
-The setup instructions for this workspace can be found on [our Docs website](https://ubcsailbot.github.io/docs/current/sailbot_workspace/setup/).
-
 ## Features
 
 ### Style
@@ -45,3 +41,7 @@ for the configuration files.
 | ------------- | ------------- | -------- |
 | `srcnew` | `srcraye` | Source ROS workspace overlay |
 | `colcon_cd` | `roscd` | Navigate to ROS workspace |
+
+## Documentation
+
+Further documentation, including setup instructions, can be found on [our Docs website](https://ubcsailbot.github.io/docs/current/sailbot_workspace/overview/).
