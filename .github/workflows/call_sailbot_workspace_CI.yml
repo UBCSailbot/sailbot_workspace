@@ -9,8 +9,6 @@ name: Use sailbot workspace CI in other repos
 # Run condition
 on:
   push:
-    branches:
-      - main
   pull_request:
   workflow_dispatch:
   schedule:
