@@ -5,7 +5,8 @@
 IMAGE_ID=${1:-""}
 
 IMAGE_NAME="sailbot_workspace"
-HOST_WORKSPACE_ROOT=$(readlink -f ../) # store as absolute path
+SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
+HOST_WORKSPACE_ROOT="$SCRIPT_DIR/.."
 DOCKERFILE_DIR="$HOST_WORKSPACE_ROOT/.devcontainer"
 DEVCONTAINER_PATH="$DOCKERFILE_DIR/devcontainer.json"
 CONTAINER_WORKSPACE_PATH="/workspaces/sailbot_workspace"
