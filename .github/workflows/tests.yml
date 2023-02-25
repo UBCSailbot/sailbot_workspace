@@ -1,29 +1,39 @@
 name: Tests
 
 on:
-  push:
-    branches:
-      - main
-      - raye
-  pull_request:
-  schedule:
-    # Every Friday at 1:00am UTC
-    - cron: '0 1 * * 5'
-  workflow_dispatch:
-
+  workflow_call:
+    inputs:
+      disable-vcs:
+        required: true
+        type: string
+      repository:
+        required: true
+        type: string
+        
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
+
 
 jobs:
   colcon-test:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout workspace
         uses: actions/checkout@v3
+
+      - name: Checkout code
+        if: ${{ inputs.repository }} != ${{ github.repository }}
+        uses: actions/checkout@v3
+        with: 
+            repository: UBCSailbot/sailbot_workspace
 
       - name: Test
         uses: ./.github/actions/test/
+        env:
+          DISABLE_VCS: ${{ inputs.disable-vcs }}
+
 
   ament-lint:
     name: ament_${{ matrix.linter }}
@@ -35,21 +45,33 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        
+      - name: Checkout code
+        if: ${{ inputs.repository }} != ${{ github.repository }}
+        uses: actions/checkout@v3
+        with: 
+            repository: UBCSailbot/sailbot_workspace
 
       - name: Run linter
         uses: ./.github/actions/ament-lint/
         env:
           LINTER: ${{ matrix.linter }}
-
+          
   clang-tidy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        
+      - name: Checkout code
+        if: ${{ inputs.repository }} != ${{ github.repository }}
+        uses: actions/checkout@v3
+        with: 
+            repository: UBCSailbot/sailbot_workspace
 
       - name: Run linter
         uses: ./.github/actions/clang-tidy/
-
+        
   # https://github.com/nosborn/github-action-markdown-cli
   markdownlint:
     runs-on: ubuntu-latest
@@ -57,6 +79,12 @@ jobs:
     - name: Check out code
       uses: actions/checkout@v3
 
+    - name: Checkout code
+      if: ${{ inputs.repository }} != ${{ github.repository }}
+      uses: actions/checkout@v3
+      with: 
+          repository: UBCSailbot/sailbot_workspace
+          
     - name: Run linter
       uses: nosborn/github-action-markdown-cli@v3.2.0
       with:
@@ -70,7 +98,12 @@ jobs:
     steps:
     - name: Check out code
       uses: actions/checkout@v3
-
+        
+    - name: Checkout code
+      if: ${{ inputs.repository }} != ${{ github.repository }}
+      uses: actions/checkout@v3
+      with: 
+          repository: UBCSailbot/sailbot_workspace
     - name: Run linter
       uses: gaurav-nelson/github-action-markdown-link-check@v1
       with:
