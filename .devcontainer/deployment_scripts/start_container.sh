@@ -1,13 +1,15 @@
 #!/bin/bash
-# Build and run the sailbot_workspace image without VSCode for deployment
+# Run the sailbot_workspace image without VSCode for deployment
+# Pulls and runs the latest base image by default
 # (Optional) run this script with an image ID as the first argument to run a specific version of the image
 
 IMAGE_ID=${1:-""}
 
-IMAGE_NAME="sailbot_workspace"
+BASE_IMAGE="ghcr.io/ubcsailbot/sailbot_workspace/base"
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
-HOST_WORKSPACE_ROOT="$SCRIPT_DIR/.."
+HOST_WORKSPACE_ROOT="$SCRIPT_DIR/../.."
 DOCKERFILE_DIR="$HOST_WORKSPACE_ROOT/.devcontainer"
+DOCKERFILE_PATH="$DOCKERFILE_DIR/Dockerfile"
 DEVCONTAINER_PATH="$DOCKERFILE_DIR/devcontainer.json"
 CONTAINER_WORKSPACE_PATH="/workspaces/sailbot_workspace"
 # args to mount the repo inside the container
@@ -24,16 +26,25 @@ get_docker_run_args()
 
     echo $DOCKER_RUN_ARGS # return args
 }
+# Parse the Dockerfile to get the latest image tag
+get_latest_tag()
+{
+    TAG=$(head -n1 $DOCKERFILE_PATH) # Get first line with the image source and tag
+    IFS=':' read -ra TAG <<< "$TAG"  # Turn the string into an array
+    TAG=${TAG[1]}                    # Get the tag from the second element in the array
+
+    echo $TAG # return tag
+}
 
 DOCKER_RUN_ARGS=$(get_docker_run_args)
 
 if [[ $IMAGE_ID == "" ]]
 then
-    # Build IMAGE_NAME from dockerfile found in DOCKERFILE_DIR (does nothing if image is already built)
-    docker build -t $IMAGE_NAME $DOCKERFILE_DIR
-    # Run latest IMAGE_NAME in an interactive bash terminal 
-    echo "Running: docker run -it $DOCKER_MNT_VOL_ARGS $DOCKER_RUN_ARGS $IMAGE_NAME /bin/bash"
-    docker run -it $DOCKER_MNT_VOL_ARGS $DOCKER_RUN_ARGS $IMAGE_NAME /bin/bash
+    TAG=$(get_latest_tag)
+    docker pull $BASE_IMAGE:$TAG
+    # Run latest base image in an interactive bash terminal 
+    echo "Running: docker run -it $DOCKER_MNT_VOL_ARGS $DOCKER_RUN_ARGS $BASE_IMAGE:$TAG /bin/bash"
+    docker run -it $DOCKER_MNT_VOL_ARGS $DOCKER_RUN_ARGS $BASE_IMAGE:$TAG /bin/bash
 else
     echo "Running: docker run -it $DOCKER_MNT_VOL_ARGS $DOCKER_RUN_ARGS $IMAGE_ID /bin/bash"
     docker run -it $DOCKER_MNT_VOL_ARGS $DOCKER_RUN_ARGS $IMAGE_ID /bin/bash

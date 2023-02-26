@@ -4,7 +4,12 @@ FROM ghcr.io/ubcsailbot/sailbot_workspace/pre-base:ros_humble-ompl_4c86b2f as ba
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
     && apt-get install -y \
+        clang \
+        cmake \
         libboost-all-dev \
+        libprotobuf-dev \
+        protobuf-compiler \
+        python3-colcon-common-extensions \
     && apt-get autoremove -y \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
@@ -81,14 +86,16 @@ ARG ROS_WORKSPACE=/workspaces/sailbot_workspace
 COPY update-bashrc.sh /sbin/update-bashrc
 RUN chmod +x /sbin/update-bashrc ; chown ros /sbin/update-bashrc ; sync ; /bin/bash -c /sbin/update-bashrc ; rm /sbin/update-bashrc
 
-# install clang, some clang tools, and protobuf for network systems
+# install some clang tools and googletest for network systems
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
     && apt-get install -y \
         clang \
-        clang-tidy \
         clangd \
+        clang-tidy \
+        cmake \
         googletest \
+        libboost-all-dev \
         libprotobuf-dev \
         protobuf-compiler \
     && apt-get autoremove -y \
