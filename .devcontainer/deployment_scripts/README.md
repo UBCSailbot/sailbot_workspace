@@ -10,10 +10,3 @@
 ./start_container.sh <IMAGE_ID>
 ```
 
-## quick_build.sh
-
-- Builds all Sailbot software code without checks that slow down the build like static analysis
-
-```
-./quick_build.sh
-```
