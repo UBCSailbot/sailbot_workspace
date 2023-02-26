@@ -1,6 +1,6 @@
 #!/bin/bash
-# Run the sailbot_workspace image without VSCode for deployment
-# Pulls and runs the latest base image by default
+# Run the base image without VSCode for deployment
+# Runs the base image used by the Dev Container by default
 # (Optional) run this script with an image ID as the first argument to run a specific version of the image
 
 IMAGE_ID=${1:-""}
@@ -26,8 +26,8 @@ get_docker_run_args()
 
     echo $DOCKER_RUN_ARGS # return args
 }
-# Parse the Dockerfile to get the latest image tag
-get_latest_tag()
+# Parse the Dockerfile to get the base/dev image tag
+get_dev_tag()
 {
     TAG=$(head -n1 $DOCKERFILE_PATH) # Get first line with the image source and tag
     IFS=':' read -ra TAG <<< "$TAG"  # Turn the string into an array
@@ -40,8 +40,7 @@ DOCKER_RUN_ARGS=$(get_docker_run_args)
 
 if [[ $IMAGE_ID == "" ]]
 then
-    TAG=$(get_latest_tag)
-    docker pull $BASE_IMAGE:$TAG
+    TAG=$(get_dev_tag)
     # Run latest base image in an interactive bash terminal 
     echo "Running: docker run -it $DOCKER_MNT_VOL_ARGS $DOCKER_RUN_ARGS $BASE_IMAGE:$TAG /bin/bash"
     docker run -it $DOCKER_MNT_VOL_ARGS $DOCKER_RUN_ARGS $BASE_IMAGE:$TAG /bin/bash
