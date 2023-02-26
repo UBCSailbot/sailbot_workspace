@@ -14,7 +14,7 @@
 
 1. Run setup script: `./setup.sh`
 2. Run quick build script: `./quick_build.sh`
-3. Source ROS overlay: `source install/local_setup.bash`
+3. Source ROS overlay: `source install/setup.bash`
 
 ## Development using deployment container
 
