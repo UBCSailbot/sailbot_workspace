@@ -3,6 +3,7 @@
 ## Features
 
 - The base image builds off the the [`pre-base`](../pre-base/pre-base.Dockerfile) image and adds additional dependencies
+    - This image is used for [deployment](../deployment/README.md)
 - The dev image build off the base image and:
     - Installs software that is nice to have for development
     - Adds a non-root user
