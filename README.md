@@ -5,10 +5,6 @@ This repository will get you set up to develop UBCSailbot's software on VS Code.
 See their [write-up](https://www.allisonthackston.com/articles/vscode_docker_ros2.html) for a more
 in-depth look on how this workspace functions.
 
-## Setup
-
-The setup instructions for this workspace can be found on [our Docs website](https://ubcsailbot.github.io/docs/current/sailbot_workspace/setup/).
-
 ## Features
 
 ### Style
@@ -39,9 +35,18 @@ This repository also has continuous integration that lints and tests our code.
 See [`.github/workflows/`](https://github.com/UBCSailbot/sailbot_workspace/tree/main/.github/workflows)
 for the configuration files.
 
-### Configured Terminal Commands and Aliases
+### Customization
 
-| ROS 2 Command | ROS 1 Command | Function |
-| ------------- | ------------- | -------- |
-| `srcnew` | `srcraye` | Source ROS workspace overlay |
-| `colcon_cd` | `roscd` | Navigate to ROS workspace |
+This repository supports user-specific configuration files. To set this up see
+[how to use your personal configuration file in the Dev Container](https://github.com/UBCSailbot/sailbot_workspace/tree/main/.devcontainer/config#how-to-use-your-personal-configuration-file-in-the-dev-container).
+
+## Run Raye's Software
+
+Raye was our previous project. Its software can be run in the [`raye` branch](https://github.com/UBCSailbot/sailbot_workspace/tree/raye).
+This branch (and Raye's codebase in general) is not in active development, so it may not have all the latest features
+in the `main` branch. The initial differences between the `main` and `raye` branch are summarized in
+[this PR](https://github.com/UBCSailbot/sailbot_workspace/pull/61).
+
+## Documentation
+
+Further documentation, including setup instructions, can be found on [our Docs website](https://ubcsailbot.github.io/docs/current/sailbot_workspace/overview/).
