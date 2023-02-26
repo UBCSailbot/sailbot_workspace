@@ -6,13 +6,17 @@ RUN apt-get update \
     && apt-get install -y \
         clang \
         cmake \
+        git \
         libboost-all-dev \
         libprotobuf-dev \
         protobuf-compiler \
         python3-colcon-common-extensions \
+        python3-rosdep \
+        python3-vcstool \
     && apt-get autoremove -y \
     && apt-get clean -y \
-    && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
+    && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/* \
+    && rosdep init || echo "rosdep already initialized"
 ENV DEBIAN_FRONTEND=
 
 FROM base as ros-dev
