@@ -28,7 +28,7 @@ The deployment container isn't intended for development, but if you discover a b
 
 ### `start_container.sh`
 
-Run the [`base`](./../base-dev/base-dev.Dockerfile) image without VSCode for deployment:
+Run the [`base`](https://github.com/UBCSailbot/sailbot_workspace/blob/main/.devcontainer/base-dev/base-dev.Dockerfile) image without VSCode for deployment:
 
 - Runs the base image used by the Dev Container by default: `./start_container.sh`
 - Run a specific version of the base image by specifying its ID: `./start_container.sh <IMAGE_ID>`
