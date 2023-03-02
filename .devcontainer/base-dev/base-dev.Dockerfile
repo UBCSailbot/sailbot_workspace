@@ -3,7 +3,7 @@ FROM ghcr.io/ubcsailbot/sailbot_workspace/pre-base:ros_humble-ompl_4c86b2f as ba
 # install base apt dependencies
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
-    && apt-get install -y \
+    && apt-get install -y --no-install-recommends \
         clang \
         cmake \
         git \
@@ -103,7 +103,7 @@ RUN chmod +x /sbin/update-bashrc \
 # install some clang tools and googletest for network systems
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
-    && apt-get install -y \
+    && apt-get install -y --no-install-recommends \
         clang \
         clangd \
         clang-tidy \
@@ -120,7 +120,7 @@ ENV DEBIAN_FRONTEND=
 # install other helpful apt packages
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
-    && apt-get install -y \
+    && apt-get install -y --no-install-recommends \
         less \
         openssh-client \
         tmux \
