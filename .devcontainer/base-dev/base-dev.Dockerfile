@@ -19,6 +19,10 @@ RUN apt-get update \
     && rosdep init || echo "rosdep already initialized"
 ENV DEBIAN_FRONTEND=
 
+# bash configuration
+COPY update-bashrc.sh /sbin/update-bashrc
+RUN chmod +x /sbin/update-bashrc ; chown ros /sbin/update-bashrc ; sync ; /bin/bash -c /sbin/update-bashrc ; rm /sbin/update-bashrc
+
 FROM base as ros-dev
 
 # From https://github.com/athackst/dockerfiles/blob/32a872348af0ad25ec4a6e6184cb803357acb6ab/ros2/humble.Dockerfile
@@ -85,10 +89,6 @@ RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=${HOME}/comma
     && echo $SNIPPET >> "${HOME}/.bashrc"
 
 ARG ROS_WORKSPACE=/workspaces/sailbot_workspace
-
-# bash configuration
-COPY update-bashrc.sh /sbin/update-bashrc
-RUN chmod +x /sbin/update-bashrc ; chown ros /sbin/update-bashrc ; sync ; /bin/bash -c /sbin/update-bashrc ; rm /sbin/update-bashrc
 
 # install some clang tools and googletest for network systems
 ENV DEBIAN_FRONTEND=noninteractive
