@@ -11,9 +11,9 @@ echo "" >> $HOME/.bashrc
 echo "# set up ROS environment" >> $HOME/.bashrc
 echo "source /usr/share/colcon_cd/function/colcon_cd.sh" >> $HOME/.bashrc
 echo "export _colcon_cd_root=$ROS_WORKSPACE" >> $HOME/.bashrc
-echo "if [ -f $ROS_WORKSPACE/install/local_setup.bash ]" >> $HOME/.bashrc
+echo "if [ -f $ROS_WORKSPACE/install/setup.bash ]" >> $HOME/.bashrc
 echo "then" >> $HOME/.bashrc
-echo "    source $ROS_WORKSPACE/install/local_setup.bash" >> $HOME/.bashrc
+echo "    source $ROS_WORKSPACE/install/setup.bash" >> $HOME/.bashrc
 echo "else" >> $HOME/.bashrc
 echo "    echo \"WARNING: Can't source the ROS workspace overlay: build then run `source ~/.bashrc`\"" >> $HOME/.bashrc
 echo "fi" >> $HOME/.bashrc
