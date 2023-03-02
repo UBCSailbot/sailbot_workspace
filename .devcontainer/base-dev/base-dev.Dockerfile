@@ -21,7 +21,11 @@ ENV DEBIAN_FRONTEND=
 
 # bash configuration
 COPY update-bashrc.sh /sbin/update-bashrc
-RUN chmod +x /sbin/update-bashrc ; chown ros /sbin/update-bashrc ; sync ; /bin/bash -c /sbin/update-bashrc ; rm /sbin/update-bashrc
+RUN chmod +x /sbin/update-bashrc \
+    && chown ros /sbin/update-bashrc \
+    && sync \
+    && /bin/bash -c /sbin/update-bashrc \
+    && rm /sbin/update-bashrc
 
 FROM base as ros-dev
 
