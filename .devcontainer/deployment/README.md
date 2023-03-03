@@ -6,7 +6,10 @@
 
 Runs the [`base`](https://github.com/UBCSailbot/sailbot_workspace/blob/main/.devcontainer/base-dev/base-dev.Dockerfile)
 image using the run arguments in [`devcontainer.json`](https://github.com/UBCSailbot/sailbot_workspace/blob/main/.devcontainer/devcontainer.json).
-A new container is created every time this is run.
+
+A new container is created every time this is run. The default container name is `sailbot`. Container names are unique,
+so if you want to use multiple deployment containers (e.g., from different branches) you will have to update the variable
+`CONTAINER_NAME` in the script.
 
 Usage:
 
@@ -16,7 +19,7 @@ Usage:
 ## Deployment container commands
 
 - Exit out of a container: `exit`
-- Start an existing container: `docker start -ia <container ID>`
+- Start an existing container: `docker start -ia <container name>`
 - Delete an existing container: `docker rm <container ID>`
 - Find the container ID of a container: `docker ps -a`
 
