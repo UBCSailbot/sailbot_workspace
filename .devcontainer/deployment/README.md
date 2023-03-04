@@ -16,6 +16,17 @@ Usage:
 - Runs the base image used by the Dev Container by default: `./start_container.sh`
 - Run a specific version of the base image by specifying its ID: `./start_container.sh <IMAGE_ID>`
 
+### `setup_boot.sh`
+
+Configures programs and scripts that need to run when the main computer boots. Only needs to be run once unless the
+script is updated. Does not need to be rerun if any scripts or programs it targets are updated, with the exception of
+renaming or moving the file.
+
+Usage:
+
+- Must be run as root
+- `sudo ./setup_boot.sh`
+
 ## Deployment container commands
 
 - Exit out of a container: `exit`
