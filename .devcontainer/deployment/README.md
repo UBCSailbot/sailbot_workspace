@@ -23,7 +23,7 @@ Usage:
 
 - Exit out of a container: `exit`
 - Start an existing container: `docker start -ia <container name>`
-- Delete an existing container: `docker rm <container ID>`
+- Delete an existing container: `docker rm <container name>`
 - Find the container ID of a container: `docker ps -a`
 
 ## Deploy software
