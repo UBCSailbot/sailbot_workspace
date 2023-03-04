@@ -93,8 +93,7 @@ DOCKER_RUN_CMD="$DOCKER_RUN_CMD $DOCKER_RUN_ARGS"
 if [[ $IMAGE_ID == "" ]]
 then
     TAG=$(get_dev_tag)
-    DOCKER_RUN_CMD="$DOCKER_RUN_CMD --pull always"
-    DOCKER_RUN_CMD="$DOCKER_RUN_CMD $BASE_IMAGE:$TAG /bin/bash"
+    DOCKER_RUN_CMD="$DOCKER_RUN_CMD --pull always $BASE_IMAGE:$TAG /bin/bash"
 else
     DOCKER_RUN_CMD="$DOCKER_RUN_CMD $IMAGE_ID /bin/bash"
 fi
