@@ -38,9 +38,8 @@ Usage:
 
 > These commands are run in the in the root directory of this repository
 
-1. Run setup script: `./setup.sh`
-2. Run quick build script: `./quick_build.sh`
-3. Source ROS overlay: `source install/setup.bash`
+1. Run the setup script: `./setup.sh`
+2. Run the quick build script: `./quick_build.sh`
 
 ## Develop software
 
