@@ -4,9 +4,11 @@ FROM ghcr.io/ubcsailbot/sailbot_workspace/pre-base:ros_humble-ompl_4c86b2f as ba
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
+        can-utils \
         clang \
         cmake \
         git \
+        iproute2 \
         libboost-all-dev \
         libprotobuf-dev \
         protobuf-compiler \

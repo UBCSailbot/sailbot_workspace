@@ -76,3 +76,12 @@ jobs:
       with:
         config-file: .markdown-link-check.json
         folder-path: .
+
+  rebuild-docs:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+    - name: Dispatch Docs Publish workflow
+      # https://github.com/orgs/community/discussions/26323#discussioncomment-3251448
+      run: |
+        curl -XPOST -u "${{ secrets.PAT_USERNAME}}:${{secrets.PAT_TOKEN}}" -H "Accept: application/vnd.github.everest-preview+json" -H "Content-Type: application/json" https://api.github.com/repos/UBCSailbot/docs/actions/workflows/publish.yml/dispatches --data '{"ref": "main"}'

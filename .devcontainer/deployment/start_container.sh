@@ -12,8 +12,12 @@ DOCKERFILE_DIR="$HOST_WORKSPACE_ROOT/.devcontainer"
 DOCKERFILE_PATH="$DOCKERFILE_DIR/Dockerfile"
 DEVCONTAINER_PATH="$DOCKERFILE_DIR/devcontainer.json"
 CONTAINER_WORKSPACE_PATH="/workspaces/sailbot_workspace"
+# run interactive terminal and name it sailbot
+CONTAINER_NAME="sailbot"
+DOCKER_RUN_CMD="docker run -it --name $CONTAINER_NAME"
 # args to mount the repo inside the container
 DOCKER_MNT_VOL_ARGS="-v $HOST_WORKSPACE_ROOT:$CONTAINER_WORKSPACE_PATH -w $CONTAINER_WORKSPACE_PATH"
+DOCKER_RUN_CMD="$DOCKER_RUN_CMD $DOCKER_MNT_VOL_ARGS"
 
 # Parse the devcontainer.json file for docker run arguments
 get_docker_run_args()
@@ -36,15 +40,23 @@ get_dev_tag()
     echo $TAG # return tag
 }
 
+if [[ $(docker ps -a --filter "name=$CONTAINER_NAME" | grep -w $CONTAINER_NAME) != "" ]]
+then
+    echo "Error: $CONTAINER_NAME is already running or suspended. Run the following command and then try again:"
+    echo "docker stop $CONTAINER_NAME; docker rm $CONTAINER_NAME"
+    exit 1
+fi
+
 DOCKER_RUN_ARGS=$(get_docker_run_args)
+DOCKER_RUN_CMD="$DOCKER_RUN_CMD $DOCKER_RUN_ARGS"
 
 if [[ $IMAGE_ID == "" ]]
 then
     TAG=$(get_dev_tag)
-    # Run latest base image in an interactive bash terminal 
-    echo "Running: docker run -it $DOCKER_MNT_VOL_ARGS $DOCKER_RUN_ARGS $BASE_IMAGE:$TAG /bin/bash"
-    docker run -it $DOCKER_MNT_VOL_ARGS $DOCKER_RUN_ARGS $BASE_IMAGE:$TAG /bin/bash
+    DOCKER_RUN_CMD="$DOCKER_RUN_CMD --pull always $BASE_IMAGE:$TAG /bin/bash"
 else
-    echo "Running: docker run -it $DOCKER_MNT_VOL_ARGS $DOCKER_RUN_ARGS $IMAGE_ID /bin/bash"
-    docker run -it $DOCKER_MNT_VOL_ARGS $DOCKER_RUN_ARGS $IMAGE_ID /bin/bash
+    DOCKER_RUN_CMD="$DOCKER_RUN_CMD $IMAGE_ID /bin/bash"
 fi
+
+echo "Running: $DOCKER_RUN_CMD"
+$DOCKER_RUN_CMD # Any commands placed after this will run AFTER the container is exited
