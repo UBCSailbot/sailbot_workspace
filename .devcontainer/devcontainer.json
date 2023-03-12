@@ -14,8 +14,11 @@
 		}
 	},
 	"remoteUser": "ros",
+	// Do not add comments to any lines within the runArgs array - it breaks the start_container.sh script
 	"runArgs": [
 		"--cap-add=SYS_PTRACE",
+		"--cap-add=NET_ADMIN",
+		"--network=host",
 		"--security-opt=seccomp:unconfined",
 		"--security-opt=apparmor:unconfined"
 	],

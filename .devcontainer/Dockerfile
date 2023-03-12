@@ -1,9 +1,9 @@
-FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:base-image-build-capable2
+FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:bash-config-in-base2
 
 # # Uncomment this section to install the apt packages used in the ROS 2 tutorials
 # ENV DEBIAN_FRONTEND=noninteractive
 # RUN apt-get update \
-#     && apt-get install -y \
+#     && apt-get install -y --no-install-recommends \
 #         # Your package list here
 #         ros-humble-turtlesim \
 #     # Clean up
@@ -15,7 +15,7 @@ FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:base-image-build-capable2
 # # Uncomment this section to install additional apt packages
 # ENV DEBIAN_FRONTEND=noninteractive
 # RUN apt-get update \
-#     && apt-get install -y \
+#     && apt-get install -y --no-install-recommends \
 #         # Your package list here
 #     # Clean up
 #     && apt-get autoremove -y \

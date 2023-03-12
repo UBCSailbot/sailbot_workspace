@@ -3,10 +3,12 @@ FROM ghcr.io/ubcsailbot/sailbot_workspace/pre-base:ros_humble-ompl_4c86b2f as ba
 # install base apt dependencies
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
-    && apt-get install -y \
+    && apt-get install -y --no-install-recommends \
+        can-utils \
         clang \
         cmake \
         git \
+        iproute2 \
         libboost-all-dev \
         libprotobuf-dev \
         protobuf-compiler \
@@ -18,6 +20,14 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/* \
     && rosdep init || echo "rosdep already initialized"
 ENV DEBIAN_FRONTEND=
+
+# root bash configuration
+ENV ROS_WORKSPACE=/workspaces/sailbot_workspace
+COPY update-bashrc.sh /sbin/update-bashrc
+RUN chmod +x /sbin/update-bashrc \
+    && sync \
+    && /bin/bash -c /sbin/update-bashrc \
+    && rm /sbin/update-bashrc
 
 FROM base as ros-dev
 
@@ -62,8 +72,9 @@ RUN groupadd --gid $USER_GID $USERNAME \
     && chmod 0440 /etc/sudoers.d/$USERNAME \
     # Cleanup
     && rm -rf /var/lib/apt/lists/* \
-    && echo "source /usr/share/bash-completion/completions/git" >> /home/$USERNAME/.bashrc \
-    && echo "if [ -f /opt/ros/${ROS_DISTRO}/setup.bash ]; then source /opt/ros/${ROS_DISTRO}/setup.bash; fi" >> /home/$USERNAME/.bashrc
+    && echo "source /usr/share/bash-completion/completions/git" >> /home/$USERNAME/.bashrc
+    # Sourcing overlay in update-bashrc.sh instead
+    # && echo "if [ -f /opt/ros/${ROS_DISTRO}/setup.bash ]; then source /opt/ros/${ROS_DISTRO}/setup.bash; fi" >> /home/$USERNAME/.bashrc
 
 ENV DEBIAN_FRONTEND=
 ENV AMENT_CPPCHECK_ALLOW_SLOW_VERSIONS=1
@@ -84,16 +95,18 @@ RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=${HOME}/comma
     && chown ${USERNAME} ${HOME}/commandhistory/.bash_history \
     && echo $SNIPPET >> "${HOME}/.bashrc"
 
-ARG ROS_WORKSPACE=/workspaces/sailbot_workspace
-
-# bash configuration
+# ros bash configuration
 COPY update-bashrc.sh /sbin/update-bashrc
-RUN chmod +x /sbin/update-bashrc ; chown ros /sbin/update-bashrc ; sync ; /bin/bash -c /sbin/update-bashrc ; rm /sbin/update-bashrc
+RUN chmod +x /sbin/update-bashrc \
+    && chown ros /sbin/update-bashrc \
+    && sync \
+    && /bin/bash -c /sbin/update-bashrc \
+    && rm /sbin/update-bashrc
 
 # install some clang tools and googletest for network systems
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
-    && apt-get install -y \
+    && apt-get install -y --no-install-recommends \
         clang \
         clangd \
         clang-tidy \
@@ -110,7 +123,7 @@ ENV DEBIAN_FRONTEND=
 # install other helpful apt packages
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
-    && apt-get install -y \
+    && apt-get install -y --no-install-recommends \
         less \
         openssh-client \
         tmux \
