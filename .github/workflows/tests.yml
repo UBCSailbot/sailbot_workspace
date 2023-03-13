@@ -15,7 +15,6 @@ concurrency:
   cancel-in-progress: true
 
 
-
 jobs:
   colcon-test:
     runs-on: ubuntu-latest
@@ -23,7 +22,7 @@ jobs:
       - name: Checkout workspace
         uses: actions/checkout@v3
 
-      - name: Checkout code
+      - name: Checkout ROS package
         if: ${{ inputs.repository }} != ${{ github.repository }}
         uses: actions/checkout@v3
         with: 
@@ -46,7 +45,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         
-      - name: Checkout code
+      - name: Checkout ROS package
         if: ${{ inputs.repository }} != ${{ github.repository }}
         uses: actions/checkout@v3
         with: 
@@ -63,7 +62,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         
-      - name: Checkout code
+      - name: Checkout ROS package
         if: ${{ inputs.repository }} != ${{ github.repository }}
         uses: actions/checkout@v3
         with: 
@@ -79,7 +78,7 @@ jobs:
     - name: Check out code
       uses: actions/checkout@v3
 
-    - name: Checkout code
+    - name: Checkout ROS package
       if: ${{ inputs.repository }} != ${{ github.repository }}
       uses: actions/checkout@v3
       with: 
@@ -99,7 +98,7 @@ jobs:
     - name: Check out code
       uses: actions/checkout@v3
         
-    - name: Checkout code
+    - name: Checkout ROS package
       if: ${{ inputs.repository }} != ${{ github.repository }}
       uses: actions/checkout@v3
       with: 

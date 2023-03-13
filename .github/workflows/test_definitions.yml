@@ -1,14 +1,16 @@
-name: Use sailbot workspace CI in other repos
+name: Tests
 
 # This uses workflows in a different repo, refer to:
 # https://docs.github.com/en/actions/using-workflows/reusing-workflows#calling-a-reusable-workflow
 
 # This runs sailbot workspace workflows and actions.
-# Runs all workflows within sailbot_workspace
+# Runs the Tests workflow in sailbot_workspace
    
 # Run condition
 on:
   push:
+    branches:
+      - main
   pull_request:
   workflow_dispatch:
   schedule:
@@ -17,9 +19,9 @@ on:
   
 jobs:
 # Calls our workflows in sailbot_workspace 
-# UBCSailbot/sailbot_workspace/tree/main/.github/workflows
+# https://github.com/UBCSailbot/sailbot_workspace
   call-workflow-1-in-sailbot:
-        uses: UBCSailbot/sailbot_workspace/.github/workflows/tests.yml@user/colinli02/11-Publish-ROS-package-actions_FINAL
+        uses: UBCSailbot/sailbot_workspace/.github/workflows/tests.yml@main
         with:
-            repository: sailbot_workspace
+            repository: ${{ github.event.repository.name }}
             disable-vcs: true 
