@@ -20,7 +20,8 @@ jobs:
     steps:
       - name: Checkout workspace
         uses: actions/checkout@v3
-        repository: UBCSailbot/sailbot_workspace
+        with: 
+            repository: UBCSailbot/sailbot_workspace
 
       - name: Checkout ROS package
         if: ${{ inputs.repository }} != ${{ github.event.repository.name }}
@@ -45,8 +46,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-        repository: UBCSailbot/sailbot_workspace
-        
+        with: 
+            repository: UBCSailbot/sailbot_workspace
+            
       - name: Checkout ROS package
         if: ${{ inputs.repository }} != ${{ github.event.repository.name }}
         uses: actions/checkout@v3
@@ -58,14 +60,16 @@ jobs:
         uses: ./.github/actions/ament-lint/
         env:
           LINTER: ${{ matrix.linter }}
+          DISABLE_VCS: ${{ inputs.disable-vcs }}
           
   clang-tidy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-        repository: UBCSailbot/sailbot_workspace
-        
+        with: 
+            repository: UBCSailbot/sailbot_workspace
+            
       - name: Checkout ROS package
         if: ${{ inputs.repository }} != ${{ github.event.repository.name }}
         uses: actions/checkout@v3
@@ -75,6 +79,8 @@ jobs:
             
       - name: Run linter
         uses: ./.github/actions/clang-tidy/
+        env:
+          DISABLE_VCS: ${{ inputs.disable-vcs }}
         
   # https://github.com/nosborn/github-action-markdown-cli
   markdownlint:
