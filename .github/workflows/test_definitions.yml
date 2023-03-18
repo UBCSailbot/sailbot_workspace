@@ -1,0 +1,126 @@
+name: Test Definitions
+on:
+  workflow_call:
+    inputs:
+      disable-vcs:
+        required: true
+        type: string
+      repository:
+        required: true
+        type: string
+      rebuild-docs:
+        required: true 
+        type: string 
+        
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+
+jobs:
+  colcon-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout workspace
+        uses: actions/checkout@v3
+        with: 
+            repository: UBCSailbot/sailbot_workspace
+
+      - name: Checkout ROS package
+        if: ${{ inputs.repository }} != ${{ github.event.repository.name }}
+        uses: actions/checkout@v3
+        with: 
+            repository: UBCSailbot/${{ inputs.repository }}
+            path: src/${{ inputs.repository }}
+
+      - name: Test
+        uses: ./.github/actions/test/
+        env:
+          DISABLE_VCS: ${{ inputs.disable-vcs }}
+
+
+  ament-lint:
+    name: ament_${{ matrix.linter }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+          linter: [lint_cmake, xmllint, flake8, pep257]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with: 
+            repository: UBCSailbot/sailbot_workspace
+            
+      - name: Checkout ROS package
+        if: ${{ inputs.repository }} != ${{ github.event.repository.name }}
+        uses: actions/checkout@v3
+        with: 
+            repository: UBCSailbot/${{ inputs.repository }}
+            path: src/${{ inputs.repository }}
+            
+      - name: Run linter
+        uses: ./.github/actions/ament-lint/
+        env:
+          LINTER: ${{ matrix.linter }}
+          DISABLE_VCS: ${{ inputs.disable-vcs }}
+          
+  clang-tidy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with: 
+            repository: UBCSailbot/sailbot_workspace
+            
+      - name: Checkout ROS package
+        if: ${{ inputs.repository }} != ${{ github.event.repository.name }}
+        uses: actions/checkout@v3
+        with: 
+            repository: UBCSailbot/${{ inputs.repository }}
+            path: src/${{ inputs.repository }}
+            
+      - name: Run linter
+        uses: ./.github/actions/clang-tidy/
+        env:
+          DISABLE_VCS: ${{ inputs.disable-vcs }}
+        
+  # https://github.com/nosborn/github-action-markdown-cli
+  markdownlint:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v3
+      with: 
+          repository: UBCSailbot/${{ inputs.repository }}
+          
+    - name: Run linter
+      uses: nosborn/github-action-markdown-cli@v3.2.0
+      with:
+        config_file: .markdownlint.json
+        files: .
+        dot: true
+
+  # https://github.com/gaurav-nelson/github-action-markdown-link-check
+  markdown-link-check:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v3
+      with: 
+          repository: UBCSailbot/sailbot_workspace
+          
+    - name: Run linter
+      uses: gaurav-nelson/github-action-markdown-link-check@v1
+      with:
+        config-file: .markdown-link-check.json
+        folder-path: .
+        
+  rebuild-docs:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && ${{ inputs.rebuild-docs}} == 'true'
+    steps:
+    - name: Dispatch Docs Publish workflow
+      # https://github.com/orgs/community/discussions/26323#discussioncomment-3251448
+      run: |
+        curl -XPOST -u "${{ secrets.PAT_USERNAME}}:${{secrets.PAT_TOKEN}}" -H "Accept: application/vnd.github.everest-preview+json" -H "Content-Type: application/json" https://api.github.com/repos/UBCSailbot/docs/actions/workflows/publish.yml/dispatches --data '{"ref": "main"}'
