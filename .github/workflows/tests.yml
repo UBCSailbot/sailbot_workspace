@@ -26,3 +26,4 @@ jobs:
         with:
             repository: ${{ github.event.repository.name }}
             disable-vcs: false
+            rebuild-docs: true 
