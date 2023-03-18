@@ -1,27 +1,108 @@
-name: Tests
-
-# This uses workflows in a different repo, refer to:
-# https://docs.github.com/en/actions/using-workflows/reusing-workflows#calling-a-reusable-workflow
-
-# This runs sailbot workspace workflows and actions.
-# Runs the Tests workflow in sailbot_workspace
-   
-# Run condition
+name: Test Definitions
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-  workflow_dispatch:
-  schedule:
-    # Every Friday at 1:00am UTC
-    - cron: '0 1 * * 5'
-  
+  workflow_call:
+    inputs:
+      disable-vcs:
+        required: true
+        type: string
+      repository:
+        required: true
+        type: string
+        
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+
 jobs:
-# Calls our workflows in sailbot_workspace 
-# https://github.com/UBCSailbot/sailbot_workspace
-  call-workflow-1-in-sailbot:
-        uses: UBCSailbot/sailbot_workspace/.github/workflows/tests.yml@main
-        with:
-            repository: ${{ github.event.repository.name }}
-            disable-vcs: true 
+  colcon-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout workspace
+        uses: actions/checkout@v3
+        repository: UBCSailbot/sailbot_workspace
+
+      - name: Checkout ROS package
+        if: ${{ inputs.repository }} != ${{ github.event.repository.name }}
+        uses: actions/checkout@v3
+        with: 
+            repository: UBCSailbot/${{ inputs.repository }}
+            path: src/${{ inputs.repository }}
+
+      - name: Test
+        uses: ./.github/actions/test/
+        env:
+          DISABLE_VCS: ${{ inputs.disable-vcs }}
+
+
+  ament-lint:
+    name: ament_${{ matrix.linter }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+          linter: [lint_cmake, xmllint, flake8, pep257]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        repository: UBCSailbot/sailbot_workspace
+        
+      - name: Checkout ROS package
+        if: ${{ inputs.repository }} != ${{ github.event.repository.name }}
+        uses: actions/checkout@v3
+        with: 
+            repository: UBCSailbot/${{ inputs.repository }}
+            path: src/${{ inputs.repository }}
+            
+      - name: Run linter
+        uses: ./.github/actions/ament-lint/
+        env:
+          LINTER: ${{ matrix.linter }}
+          
+  clang-tidy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        repository: UBCSailbot/sailbot_workspace
+        
+      - name: Checkout ROS package
+        if: ${{ inputs.repository }} != ${{ github.event.repository.name }}
+        uses: actions/checkout@v3
+        with: 
+            repository: UBCSailbot/${{ inputs.repository }}
+            path: src/${{ inputs.repository }}
+            
+      - name: Run linter
+        uses: ./.github/actions/clang-tidy/
+        
+  # https://github.com/nosborn/github-action-markdown-cli
+  markdownlint:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v3
+      with: 
+          repository: UBCSailbot/${{ inputs.repository }}
+          
+    - name: Run linter
+      uses: nosborn/github-action-markdown-cli@v3.2.0
+      with:
+        config_file: .markdownlint.json
+        files: .
+        dot: true
+
+  # https://github.com/gaurav-nelson/github-action-markdown-link-check
+  markdown-link-check:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v3
+      with: 
+          repository: UBCSailbot/sailbot_workspace
+          
+    - name: Run linter
+      uses: gaurav-nelson/github-action-markdown-link-check@v1
+      with:
+        config-file: .markdown-link-check.json
+        folder-path: .
