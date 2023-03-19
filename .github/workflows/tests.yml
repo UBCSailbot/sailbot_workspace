@@ -1,29 +1,34 @@
 name: Tests
 
-# This uses workflows in a different repo, refer to:
-# https://docs.github.com/en/actions/using-workflows/reusing-workflows#calling-a-reusable-workflow
-
-# This runs sailbot workspace workflows and actions.
-# Runs the Tests Definitions workflow in sailbot_workspace
-   
-# Run condition
 on:
   push:
     branches:
       - main
       - raye
   pull_request:
-  workflow_dispatch:
+  # Regression tests runs every Friday at 1:00am UTC
   schedule:
-    # Every Friday at 1:00am UTC
     - cron: '0 1 * * 5'
-  
+  workflow_dispatch:
+
+# Cancel in-progress runs for the current workflow
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-# Calls tests in sailbot_workspace 
-# https://github.com/UBCSailbot/sailbot_workspace
-  tests:
-        uses: UBCSailbot/sailbot_workspace/.github/workflows/test_definitions.yml@user/colinli02/11-Publish-ROS-package-actions_FINAL
-        with:
-            repository: ${{ github.event.repository.name }}
-            disable-vcs: false
-            rebuild-docs: true 
+  # CI for all UBCSailbot repositories defined in one place
+  # https://github.com/UBCSailbot/sailbot_workspace/blob/main/.github/workflows/test_definitions.yml
+  test-definitions:
+    # Runs another workflow, refer to
+    # https://docs.github.com/en/actions/using-workflows/reusing-workflows#calling-a-reusable-workflow
+    uses: UBCSailbot/sailbot_workspace/.github/workflows/test_definitions.yml@user/colinli02/11-Publish-ROS-package-actions_FINAL
+    with:
+      repository: ${{ github.event.repository.name }}
+      # VCS is used to clone all subteam repositories, so set to
+      # true in subteam repositories and
+      # false in sailbot_workspace
+      disable-vcs: false
+      # Rebuilds our docs site https://ubcsailbot.github.io/docs/
+      # If the docs contains a snippet of a file in this repository, set to true
+      rebuild-docs: true
