@@ -29,7 +29,21 @@ RUN chmod +x /sbin/update-bashrc \
     && /bin/bash -c /sbin/update-bashrc \
     && rm /sbin/update-bashrc
 
-FROM base as ros-dev
+FROM base as local-base
+
+# install website dependencies
+RUN curl -sL https://deb.nodesource.com/setup_18.x -o /tmp/nodesource_setup.sh
+RUN sudo bash /tmp/nodesource_setup.sh
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        nodejs \
+    && apt-get autoremove -y \
+    && apt-get clean -y \
+    && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
+ENV DEBIAN_FRONTEND=
+
+FROM local-base as ros-dev
 
 # From https://github.com/athackst/dockerfiles/blob/32a872348af0ad25ec4a6e6184cb803357acb6ab/ros2/humble.Dockerfile
 ENV DEBIAN_FRONTEND=noninteractive
