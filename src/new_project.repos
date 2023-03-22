@@ -21,3 +21,8 @@ repositories:
     type: git
     url: https://github.com/UBCSailbot/network_systems
     version: main
+
+  website:
+    type: git
+    url: https://github.com/UBCSailbot/website.git
+    version: main
