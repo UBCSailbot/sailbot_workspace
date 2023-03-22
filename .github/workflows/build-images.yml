@@ -45,6 +45,18 @@ jobs:
           cache-to: type=gha,mode=max
           target: base
 
+      - name: Build and push local-base
+        uses: docker/build-push-action@v4
+        with:
+          context: "{{defaultContext}}:.devcontainer/base-dev"
+          file: base-dev.Dockerfile
+          push: true
+          tags: ghcr.io/ubcsailbot/sailbot_workspace/local-base:${{ inputs.tag }}
+          platforms: linux/arm64,linux/amd64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          target: local-base
+
       - name: Build and push dev
         uses: docker/build-push-action@v4
         with:
