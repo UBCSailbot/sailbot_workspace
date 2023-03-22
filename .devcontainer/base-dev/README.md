@@ -4,7 +4,8 @@
 
 - The base image builds off the the [`pre-base`](../pre-base/pre-base.Dockerfile) image and adds additional dependencies
     - This image is used for [deployment](../deployment/README.md)
-- The dev image build off the base image and:
+- The local-base image build off the base image and installs website repository dependencies
+- The dev image build off the local-base image and:
     - Installs software that is nice to have for development
     - Adds a non-root user
     - Initializes the ROS log and bash history volumes
