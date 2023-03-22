@@ -4,22 +4,22 @@ repositories:
   # # Uncomment this section to install the repository used in the ROS 2 tutorials
   # ros_tutorials:
   #   type: git
-  #   url: https://github.com/ros/ros_tutorials
+  #   url: https://github.com/ros/ros_tutorials.git
   #   version: humble
 
   # py_pubsub_ex:
   #   type: git
-  #   url: https://github.com/UBCSailbot/py_pubsub_ex
+  #   url: https://github.com/UBCSailbot/py_pubsub_ex.git
   #   version: main
 
   # cpp_pubsub_ex:
   #   type: git
-  #   url: https://github.com/UBCSailbot/cpp_pubsub_ex
+  #   url: https://github.com/UBCSailbot/cpp_pubsub_ex.git
   #   version: main
 
   network_systems:
     type: git
-    url: https://github.com/UBCSailbot/network_systems
+    url: https://github.com/UBCSailbot/network_systems.git
     version: main
 
   website:
