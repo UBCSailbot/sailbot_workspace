@@ -17,7 +17,15 @@ services:
     # Runs on the same network as the database container, allows "forwardPorts" in devcontainer.json function.
     network_mode: service:mongodb
 
-  # connection string: mongodb://localhost:27017
+    # From run arguments
+    cap_add:
+    - SYS_PTRACE
+    - NET_ADMIN
+    security_opt:
+    - seccomp:unconfined
+    - apparmor:unconfined
+
+  # Connection string: mongodb://localhost:27017
   mongodb:
     image: mongo:latest
     restart: unless-stopped
