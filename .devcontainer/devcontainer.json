@@ -9,7 +9,7 @@
 {
 	"name": "Sailbot Workspace",
 	"dockerComposeFile": "docker-compose.yml",
-	"service": "app",
+	"service": "sailbot-workspace",
 	"workspaceFolder": "/workspaces/sailbot_workspace",
 	"remoteUser": "ros",
 	"containerEnv": {

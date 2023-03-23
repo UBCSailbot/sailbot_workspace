@@ -1,7 +1,8 @@
+# adapted from https://github.com/microsoft/vscode-dev-containers/blob/main/containers/javascript-node-mongo/.devcontainer/docker-compose.yml
 version: '3.8'
 
 services:
-  app:
+  sailbot-workspace:
     build: 
       context: .
       dockerfile: Dockerfile
