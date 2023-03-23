@@ -34,13 +34,14 @@ services:
     # (Adding the "ports" property to this file will not forward from a Codespace.)
 
   grafana:
-    image: grafana/grafana-enterprise:latest
+    image: bitnami/grafana:latest
     restart: unless-stopped
-    volumes:
-      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
-      - grafana-data:/var/lib/grafana
+    # volumes:
+    #   - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+    #   - grafana-data:/var/lib/grafana
     environment:
-      - GF_INSTALL_PLUGINS=grafana-mongodb-datasource
+      - GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS=meln5674-mongodb-community
+      - GF_INSTALL_PLUGINS=meln5674-mongodb-community=https://github.com/meln5674/grafana-mongodb-community-plugin/releases/download/v0.1.2/meln5674-mongodb-community.zip
 
     # Runs on the same network as the database container, allows "forwardPorts" in devcontainer.json function.
     network_mode: service:db
@@ -52,4 +53,4 @@ volumes:
   sailbot-new-project-bashhistory:
   sailbot-new-project-roslog:
   mongodb-data:
-  grafana-data:
+  # grafana-data:
