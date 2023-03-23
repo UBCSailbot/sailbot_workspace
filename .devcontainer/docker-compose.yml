@@ -14,7 +14,7 @@ services:
     # Overrides default command so things don't shut down after the process ends.
     command: sleep infinity
 
-    # Runs app on the same network as the database container, allows "forwardPorts" in devcontainer.json function.
+    # Runs on the same network as the database container, allows "forwardPorts" in devcontainer.json function.
     network_mode: service:db
 
   # connection string: mongodb://localhost:27017
@@ -33,7 +33,23 @@ services:
     # Add "forwardPorts": ["27017"] to **devcontainer.json** to forward MongoDB locally.
     # (Adding the "ports" property to this file will not forward from a Codespace.)
 
+  grafana:
+    image: grafana/grafana-enterprise:latest
+    restart: unless-stopped
+    volumes:
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+      - grafana-data:/var/lib/grafana
+    environment:
+      - GF_INSTALL_PLUGINS=grafana-mongodb-datasource
+
+    # Runs on the same network as the database container, allows "forwardPorts" in devcontainer.json function.
+    network_mode: service:db
+
+    # Add "forwardPorts": ["3000"] to **devcontainer.json** to forward MongoDB locally.
+    # (Adding the "ports" property to this file will not forward from a Codespace.)
+
 volumes:
-  mongodb-data:
   sailbot-new-project-bashhistory:
   sailbot-new-project-roslog:
+  mongodb-data:
+  grafana-data:

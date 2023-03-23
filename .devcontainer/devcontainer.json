@@ -16,6 +16,9 @@
 		"LIBGL_ALWAYS_SOFTWARE": "1" // Needed for software rendering of opengl
 	},
 
+	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+	"forwardPorts": [3000],
+
 	// Set *default* container specific settings.json values on container create.
 	"customizations": {
 		"vscode": {
