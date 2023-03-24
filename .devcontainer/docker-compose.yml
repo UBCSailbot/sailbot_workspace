@@ -17,10 +17,9 @@ services:
     # Runs on the same network as the database container, allows "forwardPorts" in devcontainer.json function.
     network_mode: service:mongodb
 
-    # From run arguments
+    # From run arguments of template repository
     cap_add:
     - SYS_PTRACE
-    - NET_ADMIN
     security_opt:
     - seccomp:unconfined
     - apparmor:unconfined
