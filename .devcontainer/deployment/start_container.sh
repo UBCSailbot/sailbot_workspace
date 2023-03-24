@@ -17,19 +17,10 @@ CONTAINER_NAME="sailbot"
 DOCKER_RUN_CMD="docker run -it --name $CONTAINER_NAME"
 # args to mount the repo inside the container
 DOCKER_MNT_VOL_ARGS="-v $HOST_WORKSPACE_ROOT:$CONTAINER_WORKSPACE_PATH -w $CONTAINER_WORKSPACE_PATH"
-DOCKER_RUN_CMD="$DOCKER_RUN_CMD $DOCKER_MNT_VOL_ARGS"
+# args to support can/vcan
+DOCKER_CAN_ARGS="--cap-add=NET_ADMIN --network=host"
+DOCKER_RUN_CMD="$DOCKER_RUN_CMD $DOCKER_MNT_VOL_ARGS $DOCKER_CAN_ARGS"
 
-# Parse the devcontainer.json file for docker run arguments
-get_docker_run_args()
-{
-    DOCKER_RUN_ARGS=$(sed -n '/"runArgs": \[/,/\],/p' $DEVCONTAINER_PATH) # isolate the entire runArgs field
-    DOCKER_RUN_ARGS=$(sed 's/"runArgs": \[//g' <<< "$DOCKER_RUN_ARGS")    # remove "runArgs": [
-    DOCKER_RUN_ARGS=$(sed 's/\],//g' <<< "$DOCKER_RUN_ARGS")              # remove ],
-    DOCKER_RUN_ARGS=$(sed 's/"//g' <<< "$DOCKER_RUN_ARGS")                # remove "
-    DOCKER_RUN_ARGS=$(sed 's/,//g' <<< "$DOCKER_RUN_ARGS")                # remove ,
-
-    echo $DOCKER_RUN_ARGS # return args
-}
 # Parse the Dockerfile to get the base/dev image tag
 get_dev_tag()
 {
@@ -46,9 +37,6 @@ then
     echo "docker stop $CONTAINER_NAME; docker rm $CONTAINER_NAME"
     exit 1
 fi
-
-DOCKER_RUN_ARGS=$(get_docker_run_args)
-DOCKER_RUN_CMD="$DOCKER_RUN_CMD $DOCKER_RUN_ARGS"
 
 if [[ $IMAGE_ID == "" ]]
 then
