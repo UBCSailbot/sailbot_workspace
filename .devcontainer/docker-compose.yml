@@ -25,7 +25,7 @@ services:
     - seccomp:unconfined
     - apparmor:unconfined
 
-  # Connection string: mongodb://localhost:27017
+  # URL: mongodb://localhost:27017
   mongodb:
     image: mongo:latest
     restart: unless-stopped
@@ -41,14 +41,15 @@ services:
     # Add "forwardPorts": ["27017"] to **devcontainer.json** to forward MongoDB locally.
     # (Adding the "ports" property to this file will not forward from a Codespace.)
 
+  # https://github.com/meln5674/grafana-mongodb-community-plugin/blob/7c48c8c45353cbd360d08ff597ce2ccdc8bad85d/examples/docker-compose/official/docker-compose.yaml
   grafana:
-    image: bitnami/grafana:latest
+    image: grafana/grafana-oss:latest
     restart: unless-stopped
     volumes:
-      - grafana-data:/opt/bitnami/grafana/data
+      - grafana-data:/var/lib/grafana
     environment:
       - GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS=meln5674-mongodb-community
-      - GF_INSTALL_PLUGINS=meln5674-mongodb-community=https://github.com/meln5674/grafana-mongodb-community-plugin/releases/download/v0.1.2/meln5674-mongodb-community.zip
+      - GF_INSTALL_PLUGINS=https://github.com/meln5674/grafana-mongodb-community-plugin/releases/download/v0.1.2/meln5674-mongodb-community.zip;meln5674-mongodb-community
 
     # Runs on the same network as the database container, allows "forwardPorts" in devcontainer.json function.
     network_mode: service:mongodb
