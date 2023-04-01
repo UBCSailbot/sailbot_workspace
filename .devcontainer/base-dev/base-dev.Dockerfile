@@ -146,4 +146,4 @@ RUN apt-get update \
 ENV DEBIAN_FRONTEND=
 
 ENV LOCAL_TRANSCEIVER_TEST_PORT="/tmp/local_transceiver_test_port"
-ENV VIRTUAL_IRIDIUM_PORT="/tmp/VIRTUAL_IRIDIUM_PORT"
+ENV VIRTUAL_IRIDIUM_PORT="/tmp/virtual_iridium_port"
