@@ -21,3 +21,8 @@ repositories:
     type: git
     url: https://github.com/UBCSailbot/network_systems
     version: main
+
+  virtual_iridium:
+    type: git
+    url: https://github.com/UBCSailbot/virtual_iridium.git
+    version: use_argparse
