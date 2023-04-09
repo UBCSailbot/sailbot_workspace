@@ -23,7 +23,7 @@ jobs:
   test-definitions:
     # Runs another workflow, refer to
     # https://docs.github.com/en/actions/using-workflows/reusing-workflows#calling-a-reusable-workflow
-    uses: UBCSailbot/sailbot_workspace/.github/workflows/test_definitions.yml@user/colinli02/11-Publish-ROS-package-actions_FINAL
+    uses: UBCSailbot/sailbot_workspace/.github/workflows/test_definitions.yml@main
     with:
       repository: ${{ github.event.repository.name }}
       # VCS is used to clone all subteam repositories, so set to
