@@ -29,5 +29,5 @@ repositories:
 
   virtual_iridium:
     type: git
-    url: https://github.com/UBCSailbot/virtual_iridium
+    url: https://github.com/UBCSailbot/virtual_iridium.git
     version: master
