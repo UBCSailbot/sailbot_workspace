@@ -6,6 +6,9 @@
 		{
 			"path": "../../src/network_systems"
 		},
+		{
+			"path": "../../src/ros_msgs"
+		},
 	],
 	"settings": {
 		"editor.tabSize": 4,
