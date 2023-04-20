@@ -29,7 +29,7 @@ repositories:
 
   ros_msgs:
     type: git
-    url: https://github.com/UBCSailbot/ros_msgs
+    url: https://github.com/UBCSailbot/ros_msgs.git
     version: main
 
   virtual_iridium:
