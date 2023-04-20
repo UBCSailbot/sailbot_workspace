@@ -27,6 +27,11 @@ repositories:
     url: https://github.com/UBCSailbot/website.git
     version: main
 
+  ros_msgs:
+    type: git
+    url: https://github.com/UBCSailbot/ros_msgs
+    version: main
+
   virtual_iridium:
     type: git
     url: https://github.com/UBCSailbot/virtual_iridium.git

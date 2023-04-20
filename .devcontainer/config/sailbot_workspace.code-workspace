@@ -7,6 +7,9 @@
 			"path": "../../src/network_systems"
 		},
 		{
+			"path": "../../src/ros_msgs"
+		},
+		{
 			"path": "../../src/website"
 		},
 	],
