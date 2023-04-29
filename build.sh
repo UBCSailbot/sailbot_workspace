@@ -1,11 +1,24 @@
 #!/bin/bash
 set -e
 
+# Packages to build
+packages=""
+
+# Parse command-line options
+while getopts ":p:" flag; do
+    case ${flag} in
+        p )     packages="${OPTARG}" ;;
+        \? )    echo "Invalid option: -${flag}"; exit 1 ;;
+        : )     echo "Option -${flag} requires an argument"; exit 1 ;;
+    esac
+done
+
 # Set the build type
 BUILD_TYPE=${1:-RelWithDebInfo}
 STATIC_ANALYSIS=${2:-ON}
 UNIT_TEST=${3:-ON}
 colcon build \
+        ${packages:+--packages-select $packages} \
         --packages-ignore virtual_iridium \
         --merge-install \
         --symlink-install \
