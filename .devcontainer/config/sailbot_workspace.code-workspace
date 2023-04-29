@@ -9,6 +9,9 @@
 		{
 			"path": "../../src/ros_msgs"
 		},
+		{
+			"path": "../../src/boat_simulator"
+		},
 	],
 	"settings": {
 		"editor.tabSize": 4,
@@ -169,10 +172,21 @@
 		"tasks": [
 			// Build tasks
 			{
-				"label": "Build",
+				"label": "Build All",
 				"detail": "Build workspace (default)",
 				"type": "shell",
 				"command": "./build.sh",
+				"group": {
+					"kind": "build",
+					"isDefault": true
+				},
+				"problemMatcher": "$gcc"
+			},
+			{
+				"label": "Build",
+				"detail": "Build specific packages in the workspace",
+				"type": "shell",
+				"command": "./build.sh -p ${input:packages}",
 				"group": {
 					"kind": "build",
 					"isDefault": true
@@ -359,14 +373,20 @@
 		],
 		"inputs": [
 			{
-			"id": "package",
-			"type": "promptString",
-			"description": "Package name"
+				"id": "packages",
+				"type": "promptString",
+				"description": "Packages to build separated by spaces",
+				"default": ""
 			},
 			{
-			"id": "node",
-			"type": "promptString",
-			"description": "Node name"
+				"id": "package",
+				"type": "promptString",
+				"description": "Package name"
+			},
+			{
+				"id": "node",
+				"type": "promptString",
+				"description": "Node name"
 			}
 		]
 	}
