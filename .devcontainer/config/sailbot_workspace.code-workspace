@@ -9,6 +9,9 @@
 		{
 			"path": "../../src/ros_msgs"
 		},
+		{
+			"path": "../../websites/docs"
+		},
 	],
 	"settings": {
 		"editor.tabSize": 4,
@@ -186,6 +189,13 @@
 				"command": "./build.sh Debug",
 				"group": "build",
 				"problemMatcher": "$gcc"
+			},
+			{
+				"label": "serve docs",
+				"detail": "Run development server for docs website",
+				"type": "shell",
+				"command": "mkdocs serve -f /workspaces/sailbot_workspace/websites/docs/mkdocs.yml",
+				"group": "build"
 			},
 			// Test tasks
 			{
