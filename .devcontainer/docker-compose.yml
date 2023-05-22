@@ -8,8 +8,8 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ..:/workspaces/sailbot_workspace:cached
-      - sailbot-new-project-bashhistory:/home/ros/commandhistory
-      - sailbot-new-project-roslog:/home/ros/.ros/log
+      - sailbot-new-project-bashhistory:/home/ros/commandhistory:delegated
+      - sailbot-new-project-roslog:/home/ros/.ros/log:delegated
 
     # Overrides default command so things don't shut down after the process ends.
     command: sleep infinity
