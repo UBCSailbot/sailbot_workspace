@@ -1,12 +1,10 @@
 // See https://aka.ms/vscode-remote/devcontainer.json for format details.
 {
-	"dockerFile": "Dockerfile",
+	"name": "Sailbot Workspace",
+	"dockerComposeFile": "docker-compose.yml",
+	"service": "sailbot-workspace",
+	"workspaceFolder": "/workspaces/sailbot_workspace",
 	"remoteUser": "ros",
-	"runArgs": [
-		"--cap-add=SYS_PTRACE",
-		"--security-opt=seccomp:unconfined",
-		"--security-opt=apparmor:unconfined"
-	],
 	"containerEnv": {
 		"LIBGL_ALWAYS_SOFTWARE": "1" // Needed for software rendering of opengl
 	},

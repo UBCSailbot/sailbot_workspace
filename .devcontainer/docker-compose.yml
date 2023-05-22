@@ -1,0 +1,20 @@
+# adapted from https://github.com/microsoft/vscode-dev-containers/blob/main/containers/javascript-node-mongo/.devcontainer/docker-compose.yml
+version: '3.8'
+
+services:
+  sailbot-workspace:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ..:/workspaces/sailbot_workspace:cached
+
+    # Overrides default command so things don't shut down after the process ends.
+    command: sleep infinity
+
+    # From run arguments of template repository
+    cap_add:
+    - SYS_PTRACE
+    security_opt:
+    - seccomp:unconfined
+    - apparmor:unconfined
