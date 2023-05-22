@@ -39,14 +39,19 @@
 				// UBCSailbot
 				"awesomektvn.toggle-semicolon",
 				"bierner.markdown-preview-github-styles",
+				"christian-kohler.path-intellisense",
 				"cschlosser.doxdocgen",
 				"DavidAnson.vscode-markdownlint",
 				"eamodio.gitlens",
 				"jeff-hykin.better-cpp-syntax",
 				"KevinRose.vsc-python-indent",
 				"llvm-vs-code-extensions.vscode-clangd",
+				"ms-python.flake8",
+				"ms-python.python",
 				"ms-vsliveshare.vsliveshare",
 				"njpwerner.autodocstring",
+				"redhat.vscode-yaml",
+				"streetsidesoftware.code-spell-checker",
 				"vscode-icons-team.vscode-icons",
 				"zxh404.vscode-proto3"
 			]
