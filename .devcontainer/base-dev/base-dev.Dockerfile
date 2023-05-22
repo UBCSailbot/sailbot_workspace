@@ -29,7 +29,27 @@ RUN chmod +x /sbin/update-bashrc \
     && /bin/bash -c /sbin/update-bashrc \
     && rm /sbin/update-bashrc
 
-FROM base as ros-dev
+FROM base as local-base
+
+# install virtual iridium dependencies
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        python2 \
+        socat \
+    && apt-get autoremove -y \
+    && apt-get clean -y \
+    && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
+RUN wget https://bootstrap.pypa.io/pip/2.7/get-pip.py \
+    && python2 get-pip.py && pip2 install pyserial && pip2 install requests \
+    && rm -f get-pip.py
+ENV DEBIAN_FRONTEND=
+
+# set virtual iridium environment variables
+ENV LOCAL_TRANSCEIVER_TEST_PORT="/tmp/local_transceiver_test_port"
+ENV VIRTUAL_IRIDIUM_PORT="/tmp/virtual_iridium_port"
+
+FROM local-base as ros-dev
 
 # From https://github.com/athackst/dockerfiles/blob/32a872348af0ad25ec4a6e6184cb803357acb6ab/ros2/humble.Dockerfile
 ENV DEBIAN_FRONTEND=noninteractive
@@ -120,19 +140,6 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
 ENV DEBIAN_FRONTEND=
 
-# install python2 and some libraries for virtual iridium
-ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        socat python2 \
-    && apt-get autoremove -y \
-    && apt-get clean -y \
-    && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
-RUN wget https://bootstrap.pypa.io/pip/2.7/get-pip.py \
-    && python2 get-pip.py && pip2 install pyserial && pip2 install requests \
-    && rm -f get-pip.py
-ENV DEBIAN_FRONTEND=
-
 # install other helpful apt packages
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
@@ -144,6 +151,3 @@ RUN apt-get update \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
 ENV DEBIAN_FRONTEND=
-
-ENV LOCAL_TRANSCEIVER_TEST_PORT="/tmp/local_transceiver_test_port"
-ENV VIRTUAL_IRIDIUM_PORT="/tmp/virtual_iridium_port"
