@@ -5,9 +5,7 @@
 ### `start_container.sh`
 
 Runs the [`base`](https://github.com/UBCSailbot/sailbot_workspace/blob/main/.devcontainer/base-dev/base-dev.Dockerfile)
-image using the run arguments in [`devcontainer.json`](https://github.com/UBCSailbot/sailbot_workspace/blob/main/.devcontainer/devcontainer.json).
-
-A new container is created every time this is run. The default container name is `sailbot`. Container names are unique,
+image. A new container is created every time this is run. The default container name is `sailbot`. Container names are unique,
 so if you want to use multiple deployment containers (e.g., from different branches) you will have to update the variable
 `CONTAINER_NAME` in the script.
 
