@@ -1,11 +1,6 @@
 // See https://aka.ms/vscode-remote/devcontainer.json for format details.
 {
 	"dockerFile": "Dockerfile",
-	"build": {
-		"args": {
-			"WORKSPACE": "${containerWorkspaceFolder}"
-		}
-	},
 	"remoteUser": "ros",
 	"runArgs": [
 		"--cap-add=SYS_PTRACE",
