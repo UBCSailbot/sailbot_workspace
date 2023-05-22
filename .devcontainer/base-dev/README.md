@@ -4,7 +4,7 @@
 
 - The base image builds off the the [`pre-base`](../pre-base/pre-base.Dockerfile) image and adds additional dependencies
     - This image is used for [deployment](../deployment/README.md)
-- The local-base image builds off the base image and installs development-only dependencies
+- The local-base image builds off the base image and installs essential development-only dependencies
 - The dev image builds off the local-base image and:
     - Installs software that is nice to have for development
     - Adds a non-root user
