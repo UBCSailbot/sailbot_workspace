@@ -1,11 +1,4 @@
 // See https://aka.ms/vscode-remote/devcontainer.json for format details.
-// IMPORTANT: be careful with the general devcontainer.json properties
-// 		https://containers.dev/implementors/json_reference/#general-properties
-//      Do not add any properties that correspond to a docker run argument
-//		https://docs.docker.com/engine/reference/commandline/run/#options
-// 		sailbot_workspace/.devcontainer/deployment/start_container.sh parses this file for "runArgs" to run the 
-//      container, but if you use, for example, the "capAdd" JSON field then it will NOT be picked up by the script
-//      without changes
 {
 	"dockerFile": "Dockerfile",
 	"build": {
@@ -14,11 +7,8 @@
 		}
 	},
 	"remoteUser": "ros",
-	// Do not add comments to any lines within the runArgs array - it breaks the start_container.sh script
 	"runArgs": [
 		"--cap-add=SYS_PTRACE",
-		"--cap-add=NET_ADMIN",
-		"--network=host",
 		"--security-opt=seccomp:unconfined",
 		"--security-opt=apparmor:unconfined"
 	],
