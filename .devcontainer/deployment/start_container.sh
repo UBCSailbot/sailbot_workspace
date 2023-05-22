@@ -13,7 +13,7 @@ DOCKERFILE_PATH="$DOCKERFILE_DIR/Dockerfile"
 DEVCONTAINER_PATH="$DOCKERFILE_DIR/devcontainer.json"
 CONTAINER_WORKSPACE_PATH="/workspaces/sailbot_workspace"
 # run interactive terminal and name it sailbot
-CONTAINER_NAME="sailbot"
+CONTAINER_NAME="sailbot_deployment_container"
 DOCKER_RUN_CMD="docker run -it --name $CONTAINER_NAME"
 # args to mount the repo inside the container
 DOCKER_MNT_VOL_ARGS="-v $HOST_WORKSPACE_ROOT:$CONTAINER_WORKSPACE_PATH -w $CONTAINER_WORKSPACE_PATH"
