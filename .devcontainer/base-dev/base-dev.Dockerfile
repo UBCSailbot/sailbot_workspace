@@ -133,21 +133,6 @@ RUN wget https://bootstrap.pypa.io/pip/2.7/get-pip.py \
     && rm -f get-pip.py
 ENV DEBIAN_FRONTEND=
 
-# install social OS dependencies for docs website
-ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        libcairo2-dev \
-        libfreetype6-dev \
-        libffi-dev \
-        libjpeg-dev \
-        libpng-dev \
-        libz-dev \
-    && apt-get autoremove -y \
-    && apt-get clean -y \
-    && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
-ENV DEBIAN_FRONTEND=
-
 # install other helpful apt packages
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \

@@ -1,4 +1,5 @@
 # adapted from https://github.com/microsoft/vscode-dev-containers/blob/main/containers/javascript-node-mongo/.devcontainer/docker-compose.yml
+# Note: the "ports" property in this file will not forward from a codespace; add to "forwardPorts" in devcontainer.json instead
 version: '3.8'
 
 services:
@@ -20,6 +21,16 @@ services:
     security_opt:
     - seccomp:unconfined
     - apparmor:unconfined
+
+  docs:
+    build:
+      context: ..
+      dockerfile: .devcontainer/docs/docs.Dockerfile
+    volumes:
+      - ../src/docs:/docs:cached
+
+    # Runs on the same network as the workspace container, allows "forwardPorts" in devcontainer.json function.
+    network_mode: service:sailbot-workspace
 
 volumes:
   sailbot-new-project-bashhistory:

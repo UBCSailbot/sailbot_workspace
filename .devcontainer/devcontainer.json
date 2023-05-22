@@ -2,6 +2,7 @@
 {
 	"name": "Sailbot Workspace",
 	"dockerComposeFile": "docker-compose.yml",
+	"forwardPorts": [8000],
 	"service": "sailbot-workspace",
 	"workspaceFolder": "/workspaces/sailbot_workspace",
 	"remoteUser": "ros",

@@ -7,10 +7,6 @@ site/*
 src/*
 !src/new_project.repos
 
-# vsctool website repos
-websites/*
-!websites/web.repos
-
 # configuration files
 .devcontainer/config/*
 !.devcontainer/config/README.md
