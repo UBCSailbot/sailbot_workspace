@@ -8,6 +8,8 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ..:/workspaces/sailbot_workspace:cached
+      - sailbot-new-project-bashhistory:/home/ros/commandhistory
+      - sailbot-new-project-roslog:/home/ros/.ros/log
 
     # Overrides default command so things don't shut down after the process ends.
     command: sleep infinity
@@ -18,3 +20,7 @@ services:
     security_opt:
     - seccomp:unconfined
     - apparmor:unconfined
+
+volumes:
+  sailbot-new-project-bashhistory:
+  sailbot-new-project-roslog:

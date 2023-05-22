@@ -50,9 +50,5 @@
 				"zxh404.vscode-proto3"
 			]
 		}
-	},
-	"mounts": [
-		"source=sailbot-new-project-bashhistory,target=/home/ros/commandhistory,type=volume",
-		"source=sailbot-new-project-roslog,target=/home/ros/.ros/log,type=volume"
-	]
+	}
 }
