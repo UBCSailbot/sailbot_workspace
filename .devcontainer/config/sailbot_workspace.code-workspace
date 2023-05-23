@@ -12,6 +12,9 @@
 		{
 			"path": "../../src/docs"
 		},
+		{
+			"path": "../../src/website"
+		},
 	],
 	"settings": {
 		"editor.tabSize": 4,

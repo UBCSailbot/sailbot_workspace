@@ -4,6 +4,7 @@
 	"dockerComposeFile": "docker-compose.yml",
 	"forwardPorts": [
 		3000, // grafana
+		3005, // website
 		8000  // docs
 	],
 	"service": "sailbot-workspace",
