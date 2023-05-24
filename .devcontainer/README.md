@@ -14,7 +14,7 @@
 
 ### Sailbot Workspace features
 
-- Builds off the [`dev`](./base-dev/base-dev.Dockerfile) image
+- Builds off the [`dev`](./base-dev/) image
 - Copies the user configuration files in [`.devcontainer/config/`](./config/) to the container's home directory
     - See [config's README](./config/README.md) for more details
 
