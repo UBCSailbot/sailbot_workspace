@@ -29,4 +29,4 @@ If a task requires you to add packages, you can test it in the Sailbot Workspace
 Before merging in the PR, you should migrate the package installations to upstream images:
 
 - [`base`, `local-base`, `dev`](./base-dev/)
-- [`pre-base`](../pre-base/)
+- [`pre-base`](./pre-base/)
