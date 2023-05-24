@@ -404,10 +404,9 @@
 		],
 		"inputs": [
 			{
-				"id": "packages",
+				"id": "node",
 				"type": "promptString",
-				"description": "Packages to build separated by spaces",
-				"default": ""
+				"description": "Node name"
 			},
 			{
 				"id": "package",
@@ -415,9 +414,10 @@
 				"description": "Package name"
 			},
 			{
-				"id": "node",
+				"id": "packages",
 				"type": "promptString",
-				"description": "Node name"
+				"description": "Packages to build separated by spaces",
+				"default": ""
 			}
 		]
 	}
