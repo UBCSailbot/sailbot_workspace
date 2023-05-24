@@ -15,6 +15,9 @@ on:
       rebuild-docs:
         required: true
         type: boolean
+    secrets:
+      gh-token:
+        required: true
 
 jobs:
   colcon-test:
@@ -126,4 +129,4 @@ jobs:
           sleep 5
           gh run watch -R UBCSailbot/docs $(gh run list -R UBCSailbot/docs -w publish.yml -L1 --json databaseId --jq '.[0].databaseId')
     env:
-      GH_TOKEN: ${{ secrets.PAT_TOKEN }}
+      GH_TOKEN: ${{ secrets.gh-token }}

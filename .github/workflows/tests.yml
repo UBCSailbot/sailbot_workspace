@@ -23,7 +23,7 @@ jobs:
   test-definitions:
     # Runs another workflow, refer to
     # https://docs.github.com/en/actions/using-workflows/reusing-workflows#calling-a-reusable-workflow
-    uses: UBCSailbot/sailbot_workspace/.github/workflows/test_definitions.yml@main
+    uses: UBCSailbot/sailbot_workspace/.github/workflows/test_definitions.yml@user/patrick-5546/fix-rebuild-docs2
     with:
       repository: ${{ github.event.repository.name }}
       # VCS is used to clone all subteam repositories, so set to
@@ -33,3 +33,6 @@ jobs:
       # Rebuilds our docs site https://ubcsailbot.github.io/docs/
       # If the docs contains a snippet of a file in this repository, set to true
       rebuild-docs: true
+    # https://docs.github.com/en/actions/using-workflows/reusing-workflows#using-inputs-and-secrets-in-a-reusable-workflow
+    secrets:
+      gh-token: ${{ secrets.PAT_TOKEN }}
