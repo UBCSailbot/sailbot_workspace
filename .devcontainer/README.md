@@ -15,14 +15,14 @@
 ### Sailbot Workspace features
 
 - Builds off the [`dev`](./base-dev/) image
-- Copies the user configuration files in [`.devcontainer/config/`](./config/) to the container's home directory
+- Copies the user configuration files in [`config/`](./config/) to the container's home directory
     - See [config's README](./config/README.md) for more details
 
 ### Temporarily add packages
 
 If a task requires you to add packages, you can test it in the Sailbot Workspace image:
 
-1. Uncomment the section in [`.devcontainer/Dockerfile`](./Dockerfile) that installs additional packages
+1. Uncomment the section in [`Dockerfile`](./Dockerfile) that installs additional packages
 2. Add the desired packages below the line `# Your package list here` with the format `<pkg1 name> <pkg2 name> ... \`
 3. Run the "Dev Containers: Rebuild Container" VS Code command
 
