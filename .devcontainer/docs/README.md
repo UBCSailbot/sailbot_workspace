@@ -9,5 +9,5 @@ Used for running [our docs site](https://github.com/UBCSailbot/docs).
 
 ## How to run
 
-1. Uncomment `"docker-compose.docs.yml",` in [`devcontainer.json`](./devcontainer.json)
+1. Uncomment `"docker-compose.docs.yml",` in [`.devcontainer/devcontainer.json`](../devcontainer.json)
 2. Run the "Dev Containers: Rebuild Container" VS Code command
