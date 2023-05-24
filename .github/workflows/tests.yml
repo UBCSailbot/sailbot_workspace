@@ -33,3 +33,16 @@ jobs:
       # Rebuilds our docs site https://ubcsailbot.github.io/docs/
       # If the docs contains a snippet of a file in this repository, set to true
       rebuild-docs: true
+
+  # Rebuilds our docs site https://ubcsailbot.github.io/docs/
+  rebuild-docs-test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Dispatch Docs Publish workflow
+      # https://github.com/orgs/community/discussions/26323#discussioncomment-5600001
+      run: |
+          gh workflow run publish.yml -R UBCSailbot/docs
+          sleep 5
+          gh run watch -R UBCSailbot/docs $(gh run list -R UBCSailbot/docs -w publish.yml -L1 --json databaseId --jq '.[0].databaseId')
+    env:
+      GH_TOKEN: ${{ secrets.PAT_TOKEN }}
