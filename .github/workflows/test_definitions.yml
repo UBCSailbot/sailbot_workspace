@@ -120,6 +120,10 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && inputs.rebuild-docs
     steps:
     - name: Dispatch Docs Publish workflow
-      # https://github.com/orgs/community/discussions/26323#discussioncomment-3251448
+      # https://github.com/orgs/community/discussions/26323#discussioncomment-5600001
       run: |
-        curl -XPOST -u "${{ secrets.PAT_USERNAME}}:${{secrets.PAT_TOKEN}}" -H "Accept: application/vnd.github.everest-preview+json" -H "Content-Type: application/json" https://api.github.com/repos/UBCSailbot/docs/actions/workflows/publish.yml/dispatches --data '{"ref": "main"}'
+          gh workflow run publish.yml -R UBCSailbot/docs
+          sleep 5
+          gh run watch $(gh run list -R UBCSailbot/docs -w publish.yml -L1 --json databaseId --jq .[0].databaseId)
+    env:
+      GH_TOKEN: ${{ secrets.PAT_TOKEN }}
