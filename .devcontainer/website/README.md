@@ -8,7 +8,7 @@ Used for running [our website](https://github.com/UBCSailbot/website).
   image
 - Installs the dependencies of the site located in the `website/` folder of [`src/`](../../src/)
 
-## How to build
+## How to run
 
 1. Uncomment `"docker-compose.website.yml",` in [`devcontainer.json`](./devcontainer.json)
 2. If you want to access the database, uncomment `"docker-compose.db.yml",` as well
