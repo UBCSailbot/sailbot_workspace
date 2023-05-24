@@ -2,7 +2,7 @@
 
 ## Features
 
-- Builds off the Ubuntu 22.04 image
+- Builds off the [`ubuntu`](https://hub.docker.com/_/ubuntu) image
 - Install ROS Humble
 - Installs OMPL with Python bindings
 - Builds for both `amd64` and `arm64`
