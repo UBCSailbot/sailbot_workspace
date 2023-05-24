@@ -4,7 +4,7 @@ on:
   # Called by other workflows, refer to
   # https://docs.github.com/en/actions/using-workflows/reusing-workflows#calling-a-reusable-workflow
   workflow_call:
-    # Inputs documented in the caller workflows
+    # Inputs and secrets documented in the caller workflows
     inputs:
       disable-vcs:
         required: true
