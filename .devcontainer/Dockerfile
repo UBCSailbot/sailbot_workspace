@@ -1,4 +1,4 @@
-FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:virtual-iridium
+FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:add-local-base
 
 # # Uncomment this section to install the apt packages used in the ROS 2 tutorials
 # ENV DEBIAN_FRONTEND=noninteractive

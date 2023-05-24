@@ -20,6 +20,10 @@ repositories:
   boat_simulator:
     type: git
     url: https://github.com/UBCSailbot/boat_simulator
+
+  docs:
+    type: git
+    url: https://github.com/UBCSailbot/docs
     version: main
 
   network_systems:
@@ -30,6 +34,11 @@ repositories:
   ros_msgs:
     type: git
     url: https://github.com/UBCSailbot/ros_msgs
+    version: main
+
+  website:
+    type: git
+    url: https://github.com/UBCSailbot/website
     version: main
 
   virtual_iridium:

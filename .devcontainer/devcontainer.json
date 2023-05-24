@@ -1,27 +1,15 @@
 // See https://aka.ms/vscode-remote/devcontainer.json for format details.
-// IMPORTANT: be careful with the general devcontainer.json properties
-// 		https://containers.dev/implementors/json_reference/#general-properties
-//      Do not add any properties that correspond to a docker run argument
-//		https://docs.docker.com/engine/reference/commandline/run/#options
-// 		sailbot_workspace/.devcontainer/deployment/start_container.sh parses this file for "runArgs" to run the 
-//      container, but if you use, for example, the "capAdd" JSON field then it will NOT be picked up by the script
-//      without changes
 {
-	"dockerFile": "Dockerfile",
-	"build": {
-		"args": {
-			"WORKSPACE": "${containerWorkspaceFolder}"
-		}
-	},
-	"remoteUser": "ros",
-	// Do not add comments to any lines within the runArgs array - it breaks the start_container.sh script
-	"runArgs": [
-		"--cap-add=SYS_PTRACE",
-		"--cap-add=NET_ADMIN",
-		"--network=host",
-		"--security-opt=seccomp:unconfined",
-		"--security-opt=apparmor:unconfined"
+	"name": "Sailbot Workspace",
+	"dockerComposeFile": "docker-compose.yml",
+	"forwardPorts": [
+		3000, // grafana
+		3005, // website
+		8000  // docs
 	],
+	"service": "sailbot-workspace",
+	"workspaceFolder": "/workspaces/sailbot_workspace",
+	"remoteUser": "ros",
 	"containerEnv": {
 		"LIBGL_ALWAYS_SOFTWARE": "1" // Needed for software rendering of opengl
 	},
@@ -55,21 +43,23 @@
 				// UBCSailbot
 				"awesomektvn.toggle-semicolon",
 				"bierner.markdown-preview-github-styles",
+				"christian-kohler.path-intellisense",
 				"cschlosser.doxdocgen",
 				"DavidAnson.vscode-markdownlint",
 				"eamodio.gitlens",
 				"jeff-hykin.better-cpp-syntax",
 				"KevinRose.vsc-python-indent",
 				"llvm-vs-code-extensions.vscode-clangd",
+				"mongodb.mongodb-vscode",
+				"ms-python.flake8",
+				"ms-python.python",
 				"ms-vsliveshare.vsliveshare",
 				"njpwerner.autodocstring",
+				"redhat.vscode-yaml",
+				"streetsidesoftware.code-spell-checker",
 				"vscode-icons-team.vscode-icons",
 				"zxh404.vscode-proto3"
 			]
 		}
-	},
-	"mounts": [
-		"source=sailbot-new-project-bashhistory,target=/home/ros/commandhistory,type=volume",
-		"source=sailbot-new-project-roslog,target=/home/ros/.ros/log,type=volume"
-	]
+	}
 }

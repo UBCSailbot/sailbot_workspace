@@ -4,13 +4,19 @@
 			"path": "../.."
 		},
 		{
+			"path": "../../src/boat_simulator"
+		},
+		{
 			"path": "../../src/network_systems"
 		},
 		{
 			"path": "../../src/ros_msgs"
 		},
 		{
-			"path": "../../src/boat_simulator"
+			"path": "../../src/docs"
+		},
+		{
+			"path": "../../src/website"
 		},
 	],
 	"settings": {
@@ -116,6 +122,31 @@
 		"[c]": {
 			"editor.formatOnSave": true
 		},
+
+		// copied from docs: https://github.com/UBCSailbot/docs/blob/main/.vscode/settings.json
+		"[markdown]": {
+			"editor.unicodeHighlight.ambiguousCharacters": false,
+			"editor.unicodeHighlight.invisibleCharacters": false,
+			"editor.wordWrap": "on",
+			"editor.quickSuggestions": {
+				"other": "off",
+				"comments": "off",
+				"strings": "off"
+			},
+			"editor.rulers": [120],
+			"editor.renderWhitespace": "trailing",
+			"cSpell.fixSpellingWithRenameProvider": true,
+			"cSpell.advanced.feature.useReferenceProviderWithRename": true,
+			"cSpell.advanced.feature.useReferenceProviderRemove": "/^#+\\s/"
+		},
+		"yaml.schemas": {
+			"https://squidfunk.github.io/mkdocs-material/schema.json": "mkdocs.yml"
+		},
+		"yaml.customTags": [
+			"tag:yaml.org,2002:python/name:materialx.emoji.twemoji",
+			"tag:yaml.org,2002:python/name:materialx.emoji.to_svg",
+			"tag:yaml.org,2002:python/name:pymdownx.superfences.fence_code_format"
+		],
 	},
 	"launch": {
 		// Use IntelliSense to learn about possible attributes.
