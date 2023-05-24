@@ -7,13 +7,13 @@
 			"path": "../../src/boat_simulator"
 		},
 		{
+			"path": "../../src/docs"
+		},
+		{
 			"path": "../../src/network_systems"
 		},
 		{
 			"path": "../../src/ros_msgs"
-		},
-		{
-			"path": "../../src/docs"
 		},
 		{
 			"path": "../../src/website"
