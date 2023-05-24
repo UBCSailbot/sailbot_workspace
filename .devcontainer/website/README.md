@@ -12,5 +12,4 @@ Used for running [our website](https://github.com/UBCSailbot/website).
 
 1. Uncomment `"docker-compose.website.yml",` in [`devcontainer.json`](./devcontainer.json)
 2. If you want to access the database, uncomment `"docker-compose.db.yml",` as well
-3. Run the `Dev Containers: Rebuild Container` command in the
-   [VS Code command palette](https://code.visualstudio.com/docs/getstarted/userinterface#_command-palette)
+3. Run the "Dev Containers: Rebuild Container" VS Code command
