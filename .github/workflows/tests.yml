@@ -35,4 +35,5 @@ jobs:
       rebuild-docs: true
     # https://docs.github.com/en/actions/using-workflows/reusing-workflows#using-inputs-and-secrets-in-a-reusable-workflow
     secrets:
+      # The repository secret `PAT_TOKEN` needs to exist, copy from Bitwarden
       gh-token: ${{ secrets.PAT_TOKEN }}
