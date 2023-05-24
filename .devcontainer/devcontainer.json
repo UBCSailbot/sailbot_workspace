@@ -2,9 +2,11 @@
 {
 	"name": "Sailbot Workspace",
 	"dockerComposeFile": [
-		"docker-compose.db.yml",
-		"docker-compose.docs.yml",
-		"docker-compose.website.yml",
+		// uncomment the files containing the services you need
+		// "docker-compose.db.yml",
+		// "docker-compose.docs.yml",
+		// "docker-compose.website.yml",
+
 		"docker-compose.yml"
 	],
 	"forwardPorts": [
