@@ -18,8 +18,15 @@
 - Copies the user configuration files in [`.devcontainer/config/`](./config/) to the container's home directory
     - See [config's README](./config/README.md) for more details
 
-### How to temporarily add packages
+### Temporarily add packages
+
+If a task requires you to add packages, you can test it in the Sailbot Workspace image:
 
 1. Uncomment the section in [`.devcontainer/Dockerfile`](./Dockerfile) that installs additional packages
 2. Add the desired packages below the line `# Your package list here` with the format `<pkg1 name> <pkg2 name> ... \`
 3. Run the "Dev Containers: Rebuild Container" VS Code command
+
+Before merging in the PR, you should migrate the package installations to upstream images:
+
+- [`base`, `local-base`, `dev`](./base-dev/)
+- [`pre-base`](../pre-base/)

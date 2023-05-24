@@ -1,4 +1,4 @@
-# Base and Dev Images
+# Base, Local Base, and Dev Images
 
 ## Features
 
