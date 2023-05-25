@@ -204,7 +204,7 @@
 			// Build tasks
 			{
 				"label": "Build",
-				"detail": "Build workspace (default)",
+				"detail": "Build all packages in the workspace (default)",
 				"type": "shell",
 				"command": "./build.sh",
 				"group": {
@@ -217,7 +217,7 @@
 				"label": "Build Package",
 				"detail": "Build specific packages in the workspace",
 				"type": "shell",
-				"command": "./build.sh -p ${input:packages}",
+				"command": "./build.sh -p ${input:package}",
 				"group": {
 					"kind": "build",
 					"isDefault": false
@@ -412,12 +412,6 @@
 				"id": "package",
 				"type": "promptString",
 				"description": "Package name"
-			},
-			{
-				"id": "packages",
-				"type": "promptString",
-				"description": "Packages to build separated by spaces",
-				"default": ""
 			}
 		]
 	}
