@@ -203,7 +203,7 @@
 		"tasks": [
 			// Build tasks
 			{
-				"label": "Build",
+				"label": "Build All",
 				"detail": "Build all packages in the workspace (default)",
 				"type": "shell",
 				"command": "./build.sh",
@@ -220,7 +220,7 @@
 				"command": "./build.sh -p ${input:package}",
 				"group": {
 					"kind": "build",
-					"isDefault": false
+					"isDefault": true
 				},
 				"problemMatcher": "$gcc"
 			},
