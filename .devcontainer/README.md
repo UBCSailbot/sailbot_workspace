@@ -2,10 +2,10 @@
 
 ## Features
 
-- Services defined (in the Docker Compose files) are installed in their own containers
-    - Services include [this repository](#sailbot-workspace-image), [docs](./docs/), and [website](./website/)
+- Programs defined (in the Docker Compose files) are installed in their own containers
+    - Programs include [this repository](#sailbot-workspace-image), [docs](./docs/), and [website](./website/)
 - Highly configurable through its configuration file, [`devcontainer.json`](./devcontainer.json)
-    - Control which services are run
+    - Control which programs are run
     - Define environment variables
     - Specify which VS Code extensions to install
     - And [much more](https://containers.dev/implementors/json_reference/)
