@@ -1,5 +1,7 @@
 # Deployment
 
+Deploying our software to our autonomous sailboat's main computer.
+
 ## Scripts
 
 ### `start_container.sh`
