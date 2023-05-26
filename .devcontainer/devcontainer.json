@@ -2,10 +2,10 @@
 {
 	"name": "Sailbot Workspace",
 	"dockerComposeFile": [
-		// uncomment the files containing the services you need
-		// "docker-compose.db.yml",
-		// "docker-compose.docs.yml",
-		// "docker-compose.website.yml",
+		// Uncomment the files containing the programs you need
+		// "docker-compose.db.yml", // mongodb
+		// "docker-compose.docs.yml", // docs
+		// "docker-compose.website.yml", // grafana, website
 
 		"docker-compose.yml"
 	],
