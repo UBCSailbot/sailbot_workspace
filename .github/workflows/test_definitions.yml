@@ -77,11 +77,10 @@ jobs:
       matrix:
           linter: [lint_cmake, xmllint, flake8, pep257]
     if: |
-      ${{ inputs.ament-lint && (((matrix.linter == 'lint_cmake') && inputs.uses-cpp) 
-        || ((matrix.linter == 'xmllint'))
-        || ((matrix.linter == 'flake8') && inputs.uses-python)
-        || ((matrix.linter == 'pep257') && inputs.uses-python))
-      }}
+      inputs.ament-lint && (((${{ matrix.linter }} == 'lint_cmake') && inputs.uses-cpp) 
+      || ((${{ matrix.linter }} == 'xmllint'))
+      || ((${{ matrix.linter }} == 'flake8') && inputs.uses-python)
+      || ((${{ matrix.linter }} == 'pep257') && inputs.uses-python))
     steps:
       - name: Checkout workspace
         uses: actions/checkout@v3
