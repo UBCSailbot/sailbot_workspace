@@ -33,6 +33,12 @@ jobs:
       # Rebuilds our docs site https://ubcsailbot.github.io/docs/
       # If the docs contains a snippet of a file in this repository, set to true
       rebuild-docs: true
+      # Languages the repository uses
+      uses-python: true
+      uses-cpp: true
+      uses-js: true
+      # Some repositories don't use all linters so don't lint
+      ament-lint: false
     # https://docs.github.com/en/actions/using-workflows/reusing-workflows#using-inputs-and-secrets-in-a-reusable-workflow
     secrets:
       # The repository secret `PAT_TOKEN` needs to exist, copy from Bitwarden
