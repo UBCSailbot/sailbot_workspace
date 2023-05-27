@@ -72,7 +72,7 @@ jobs:
   ament_lint_cmake:
     name: ament_lint_cmake
     runs-on: ubuntu-latest
-    if: ${{ inputs.ament-lint }} && ${{ inputs.uses-cpp }}
+    if: ${{ inputs.ament-lint && inputs.uses-cpp }}
     steps:
       - name: Checkout workspace
         uses: actions/checkout@v3
@@ -118,7 +118,7 @@ jobs:
   ament_flake8:
     name: ament_flake8
     runs-on: ubuntu-latest
-    if: ${{ inputs.ament-lint }} && ${{ inputs.uses-python }}
+    if: ${{ inputs.ament-lint && inputs.uses-python }}
     steps:
       - name: Checkout workspace
         uses: actions/checkout@v3
@@ -141,7 +141,7 @@ jobs:
   ament_pep257:
     name: ament_pep257
     runs-on: ubuntu-latest
-    if: ${{ inputs.ament-lint }} && ${{ inputs.uses-python }}
+    if: ${{ inputs.ament-lint && inputs.uses-python }}
     steps:
       - name: Checkout workspace
         uses: actions/checkout@v3
