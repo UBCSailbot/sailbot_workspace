@@ -15,6 +15,9 @@ else
     warn "VCS disabled. Skipping project repository imports..."
 fi
 
+echo "SRC DIRS"
+ls src
+
 sudo apt-get update
 rosdep update
 rosdep install --from-paths src --ignore-src -y
