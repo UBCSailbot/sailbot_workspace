@@ -16,13 +16,16 @@ on:
         required: true
         type: boolean
       uses-python:
-        required: true
+        required: false
+        default: false
         type: boolean
       uses-cpp:
-        required: true
+        required: false
+        default: false
         type: boolean
       uses-js:
-        required: true
+        required: false
+        default: false
         type: boolean
       colcon-test:
         required: false
