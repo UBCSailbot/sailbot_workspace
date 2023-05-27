@@ -69,10 +69,6 @@ jobs:
   ament-lint:
     name: ament_lint
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-          linter: [lint_cmake, xmllint, flake8, pep257]
     if: ${{ inputs.ament-lint }}
     steps:
       - name: Checkout workspace
