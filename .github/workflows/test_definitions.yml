@@ -86,7 +86,6 @@ jobs:
 
   clang-tidy:
     runs-on: ubuntu-latest
-    if: ${{ inputs.uses-cpp }}
     steps:
       - name: Checkout workspace
         uses: actions/checkout@v3
