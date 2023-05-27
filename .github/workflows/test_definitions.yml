@@ -15,18 +15,6 @@ on:
       rebuild-docs:
         required: true
         type: boolean
-      uses-python:
-        required: false
-        default: false
-        type: boolean
-      uses-cpp:
-        required: false
-        default: false
-        type: boolean
-      uses-js:
-        required: false
-        default: false
-        type: boolean
       colcon-test:
         required: false
         default: true
@@ -69,33 +57,13 @@ jobs:
         env:
           DISABLE_VCS: ${{ inputs.disable-vcs }}
 
-  ament_lint_cmake:
-    name: ament_lint_cmake
+  ament-lint:
+    name: ament_${{ matrix.linter }}
     runs-on: ubuntu-latest
-    if: ${{ inputs.ament-lint && inputs.uses-cpp }}
-    steps:
-      - name: Checkout workspace
-        uses: actions/checkout@v3
-        with:
-            repository: UBCSailbot/sailbot_workspace
-            ref: user/dfriend01/test_current_workflow
-
-      - name: Checkout ROS package
-        if: ${{ inputs.repository }} != ${{ github.event.repository.name }}
-        uses: actions/checkout@v3
-        with:
-            repository: UBCSailbot/${{ inputs.repository }}
-            path: src/${{ inputs.repository }}
-
-      - name: Run linter
-        uses: ./.github/actions/ament-lint/
-        env:
-          LINTER: lint_cmake
-          DISABLE_VCS: ${{ inputs.disable-vcs }}
-
-  ament_xmllint:
-    name: ament_xmllint
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+          linter: [lint_cmake, xmllint, flake8, pep257]
     if: ${{ inputs.ament-lint }}
     steps:
       - name: Checkout workspace
@@ -113,53 +81,7 @@ jobs:
       - name: Run linter
         uses: ./.github/actions/ament-lint/
         env:
-          LINTER: xmllint
-          DISABLE_VCS: ${{ inputs.disable-vcs }}
-
-  ament_flake8:
-    name: ament_flake8
-    runs-on: ubuntu-latest
-    if: ${{ inputs.ament-lint && inputs.uses-python }}
-    steps:
-      - name: Checkout workspace
-        uses: actions/checkout@v3
-        with:
-            repository: UBCSailbot/sailbot_workspace
-
-      - name: Checkout ROS package
-        if: ${{ inputs.repository }} != ${{ github.event.repository.name }}
-        uses: actions/checkout@v3
-        with:
-            repository: UBCSailbot/${{ inputs.repository }}
-            path: src/${{ inputs.repository }}
-
-      - name: Run linter
-        uses: ./.github/actions/ament-lint/
-        env:
-          LINTER: flake8
-          DISABLE_VCS: ${{ inputs.disable-vcs }}
-
-  ament_pep257:
-    name: ament_pep257
-    runs-on: ubuntu-latest
-    if: ${{ inputs.ament-lint && inputs.uses-python }}
-    steps:
-      - name: Checkout workspace
-        uses: actions/checkout@v3
-        with:
-            repository: UBCSailbot/sailbot_workspace
-
-      - name: Checkout ROS package
-        if: ${{ inputs.repository }} != ${{ github.event.repository.name }}
-        uses: actions/checkout@v3
-        with:
-            repository: UBCSailbot/${{ inputs.repository }}
-            path: src/${{ inputs.repository }}
-
-      - name: Run linter
-        uses: ./.github/actions/ament-lint/
-        env:
-          LINTER: pep257
+          LINTER: ${{ matrix.linter }}
           DISABLE_VCS: ${{ inputs.disable-vcs }}
 
   clang-tidy:
