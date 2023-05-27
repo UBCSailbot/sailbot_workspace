@@ -18,7 +18,7 @@ function do_lint_cmake {
     LINTED_FILES=`find ${VALID_SRC_DIRS_ARG} -type f \( -name "CMakeLists.txt" -o -name "*.cmake" -o -name "*.cmake.in" \)`
 
     if [[ ! -z ${LINTED_FILES} ]]; then
-        ament_lint_cmake $VALID_SRC_DIRS_ARG
+        ament_lint_cmake $LINTED_FILES
     else
         warn "WARNING: No files found for lint_cmake. Skipping lint_cmake..."
     fi
@@ -29,7 +29,7 @@ function do_flake8 {
     LINTED_FILES=`find ${VALID_SRC_DIRS_ARG} -type f -name "*.py"`
 
     if [[ ! -z ${LINTED_FILES} ]]; then
-        ament_flake8 $VALID_SRC_DIRS_ARG
+        ament_flake8 $LINTED_FILES
     else
         warn "WARNING: No files found for flake8. Skipping flake8..."
     fi
@@ -40,7 +40,7 @@ function do_pep257 {
     LINTED_FILES=`find ${VALID_SRC_DIRS_ARG} -type f -name "*.py"`
 
     if [[ ! -z ${LINTED_FILES} ]]; then
-        ament_pep257 $VALID_SRC_DIRS_ARG
+        ament_pep257 $LINTED_FILES
     else
         warn "WARNING: No files found for pep257. Skipping pep257..."
     fi
@@ -51,7 +51,7 @@ function do_xmllint {
     LINTED_FILES=`find ${VALID_SRC_DIRS_ARG} -type f -name "*.xml"`
 
     if [[ ! -z ${LINTED_FILES} ]]; then
-        ament_xmllint $VALID_SRC_DIRS_ARG
+        ament_xmllint $LINTED_FILES
     else
         warn "WARNING: No files found for xmllint. Skipping xmllint..."
     fi
