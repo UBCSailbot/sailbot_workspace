@@ -2,7 +2,7 @@
 set -e
 
 # Packages to build
-packages=""
+package=""
 
 # Parse command-line options
 while getopts ":p:" flag; do

@@ -215,7 +215,7 @@
 			},
 			{
 				"label": "Build Package",
-				"detail": "Build specific packages in the workspace",
+				"detail": "Build a specific package in the workspace",
 				"type": "shell",
 				"command": "./build.sh -p ${input:package}",
 				"group": {
