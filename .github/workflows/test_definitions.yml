@@ -76,7 +76,14 @@ jobs:
       fail-fast: false
       matrix:
           linter: [lint_cmake, xmllint, flake8, pep257]
-    if: ${{ inputs.ament-lint }}
+    if: |
+      ${{ inputs.ament-lint }} &&
+      (
+        ((${{ matrix.linter }} == 'lint_cmake') && ${{ inputs.uses-cpp }}) ||
+        ((${{ matrix.linter }} == 'xmllint')) ||
+        ((${{ matrix.linter }} == 'flake8') && ${{ inputs.uses-python }}) ||
+        ((${{ matrix.linter }} == 'pep257') && ${{ inputs.uses-python }})
+      )
     steps:
       - name: Checkout workspace
         uses: actions/checkout@v3
@@ -91,11 +98,6 @@ jobs:
             path: src/${{ inputs.repository }}
 
       - name: Run linter
-        if: |
-          ((${{ matrix.linter }} == 'lint_cmake') && inputs.uses-cpp) ||
-          ((${{ matrix.linter }} == 'xmllint')) ||
-          ((${{ matrix.linter }} == 'flake8') && inputs.uses-python) ||
-          ((${{ matrix.linter }} == 'pep257') && inputs.uses-python)
         uses: ./.github/actions/ament-lint/
         env:
           LINTER: ${{ matrix.linter }}
