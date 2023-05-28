@@ -41,6 +41,6 @@ source /opt/ros/${ROS_DISTRO}/setup.bash
 ./setup.sh
 cd src
 
-# exclude virtual_iridium because it is a legacy library
-VALID_SRC_DIRS=$(ls | grep -v -e virtual_iridium -e new_project.repos)
+# Exclude virtual_iridium because it is a legacy library and docs
+VALID_SRC_DIRS=$(ls | grep -v -e virtual_iridium -e docs -e new_project.repos)
 lint ${VALID_SRC_DIRS}
