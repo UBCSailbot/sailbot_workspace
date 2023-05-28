@@ -13,9 +13,6 @@ if [[ $DISABLE_VCS != "true" ]]; then
     vcs import < src/new_project.repos src
 else
     warn "VCS disabled. Skipping project repository imports..."
-    warn "SRC DIRS"
-    warn `ls src`
-    warn `pwd`
 fi
 
 sudo apt-get update
