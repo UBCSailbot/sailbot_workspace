@@ -22,6 +22,11 @@ repositories:
     url: https://github.com/UBCSailbot/docs
     version: main
 
+  local_pathfinding:
+    type: git
+    url: https://github.com/UBCSailbot/local_pathfinding
+    version: main
+
   network_systems:
     type: git
     url: https://github.com/UBCSailbot/network_systems

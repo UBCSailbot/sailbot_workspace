@@ -4,6 +4,9 @@
 			"path": "../.."
 		},
 		{
+			"path": "../../src/local_pathfinding"
+		},
+		{
 			"path": "../../src/network_systems"
 		},
 		{
