@@ -46,8 +46,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-          # ament_lint_common, except for the cpp linters: cppcheck, cpplint, and uncrustify
-          linter: [copyright, flake8, lint_cmake, pep257, xmllint]
+          # ament_lint_common, except for copyright, cppcheck, cpplint, and uncrustify
+          linter: [lint_cmake, flake8, pep257, xmllint]
     steps:
       - name: Checkout workspace
         uses: actions/checkout@v3
