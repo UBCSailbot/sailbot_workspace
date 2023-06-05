@@ -122,10 +122,12 @@
 		"editor.inlayHints.enabled": "off",
 		"files.insertFinalNewline": true,
 		"[cpp]": {
-			"editor.formatOnSave": true
+			"editor.formatOnSave": true,
+			"editor.rulers": [120],
 		},
 		"[c]": {
-			"editor.formatOnSave": true
+			"editor.formatOnSave": true,
+			"editor.rulers": [120],
 		},
 
 		// copied from docs: https://github.com/UBCSailbot/docs/blob/main/.vscode/settings.json
