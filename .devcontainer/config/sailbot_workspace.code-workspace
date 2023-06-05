@@ -281,6 +281,7 @@
 				"type": "ament",
 				"task": "flake8",
 				"path": "src/",
+				"commandOptions": "--exclude=src/virtual_iridium",
 				"problemMatcher": [
 					"$ament_flake8"
 				],
@@ -296,6 +297,7 @@
 				"type": "ament",
 				"task": "pep257",
 				"path": "src/",
+				"commandOptions": "--exclude=src/virtual_iridium",
 				"problemMatcher": [
 					"$ament_pep257"
 				],
@@ -321,12 +323,11 @@
 				}
 			},
 			{
-				"label": "lint all",
-				"detail": "Run all linters.",
+				"label": "ament lint",
+				"detail": "Run all ament linters.",
 				"dependsOn": [
-					"clang-tidy",
-					"flake8",
 					"lint_cmake",
+					"flake8",
 					"pep257",
 					"xmllint",
 				],
