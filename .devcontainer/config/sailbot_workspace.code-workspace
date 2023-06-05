@@ -43,12 +43,16 @@
 		],
 		// Environment file lets vscode find python files within workspace
 		"python.envFile": "/workspaces/sailbot_workspace/.env",
+		// Python linter: use flake8 extension
+		"flake8.args": [
+			"--max-line-length=99"
+		],
+		// Python formatter: use black extension
+		"python.formatting.provider": "none",
 		"black-formatter.args": [
 			"--line-length=99",
 			"--skip-string-normalization"
 		],
-		// Python formatter
-		"python.formatting.provider": "none",
 		"search.exclude": {
 			"**/build": true,
 			"**/install": true,
