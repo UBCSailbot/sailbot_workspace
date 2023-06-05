@@ -59,6 +59,7 @@
 				"KevinRose.vsc-python-indent",
 				"llvm-vs-code-extensions.vscode-clangd",
 				"mongodb.mongodb-vscode",
+				"ms-python.black-formatter",
 				"ms-vsliveshare.vsliveshare",
 				"njpwerner.autodocstring",
 				"streetsidesoftware.code-spell-checker",
