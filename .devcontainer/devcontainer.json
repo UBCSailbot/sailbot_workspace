@@ -54,6 +54,7 @@
 				"cschlosser.doxdocgen",
 				"DavidAnson.vscode-markdownlint",
 				"eamodio.gitlens",
+				"github.vscode-github-actions",
 				"jeff-hykin.better-cpp-syntax",
 				"KevinRose.vsc-python-indent",
 				"llvm-vs-code-extensions.vscode-clangd",
