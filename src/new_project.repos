@@ -17,6 +17,11 @@ repositories:
   #   url: https://github.com/UBCSailbot/cpp_pubsub_ex
   #   version: main
 
+  custom_interfaces:
+    type: git
+    url: https://github.com/UBCSailbot/custom_interfaces
+    version: user/colinli02/custom_messages
+
   docs:
     type: git
     url: https://github.com/UBCSailbot/docs
@@ -30,11 +35,6 @@ repositories:
   network_systems:
     type: git
     url: https://github.com/UBCSailbot/network_systems
-    version: main
-
-  ros_msgs:
-    type: git
-    url: https://github.com/UBCSailbot/ros_msgs
     version: main
 
   website:
