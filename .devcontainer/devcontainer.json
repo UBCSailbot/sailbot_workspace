@@ -60,6 +60,7 @@
 				"llvm-vs-code-extensions.vscode-clangd",
 				"mongodb.mongodb-vscode",
 				"ms-python.black-formatter",
+				"ms-python.isort",
 				"ms-vsliveshare.vsliveshare",
 				"njpwerner.autodocstring",
 				"streetsidesoftware.code-spell-checker",

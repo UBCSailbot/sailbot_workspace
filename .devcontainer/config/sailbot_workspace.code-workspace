@@ -28,6 +28,9 @@
 			"*.xacro": "xml"
 		},
 		"[python]": {
+			"editor.codeActionsOnSave": {
+				"source.organizeImports": true
+			},
 			"editor.defaultFormatter": "ms-python.black-formatter",
 			"editor.formatOnSave": true,
 			"editor.rulers": [99],
@@ -44,15 +47,14 @@
 		// Environment file lets vscode find python files within workspace
 		"python.envFile": "/workspaces/sailbot_workspace/.env",
 		// Python linter: use flake8 extension
-		"flake8.args": [
-			"--max-line-length=99"
-		],
-		// Python formatter: use black extension
+		"flake8.args": ["--max-line-length=99"],
+		// Python formatter: use black and isort extensions
 		"python.formatting.provider": "none",
 		"black-formatter.args": [
 			"--line-length=99",
 			"--skip-string-normalization"
 		],
+		"isort.args":["--profile=black"],
 		"search.exclude": {
 			"**/build": true,
 			"**/install": true,
