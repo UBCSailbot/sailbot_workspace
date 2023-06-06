@@ -6,6 +6,9 @@ on:
   workflow_call:
     # Inputs and secrets documented in the caller workflows
     inputs:
+      clang-tidy:
+        required: true
+        type: boolean
       disable-vcs:
         required: true
         type: string
@@ -69,6 +72,7 @@ jobs:
 
   clang-tidy:
     runs-on: ubuntu-latest
+    if: inputs.clang-tidy
     steps:
       - name: Checkout workspace
         uses: actions/checkout@v3
