@@ -305,22 +305,6 @@
 				}
 			},
 			{
-				"label": "pep257",
-				"detail": "Run pep257 on python files.",
-				"type": "ament",
-				"task": "pep257",
-				"path": "src/",
-				"commandOptions": "--exclude=src/virtual_iridium",
-				"problemMatcher": [
-					"$ament_pep257"
-				],
-				"presentation": {
-					"panel": "dedicated",
-					"reveal": "silent",
-					"clear": true
-				}
-			},
-			{
 				"label": "xmllint",
 				"detail": "Run xmllint on xml files.",
 				"type": "ament",
@@ -341,7 +325,6 @@
 				"dependsOn": [
 					"lint_cmake",
 					"flake8",
-					"pep257",
 					"xmllint",
 				],
 				"problemMatcher": []
