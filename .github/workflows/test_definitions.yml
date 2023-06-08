@@ -42,7 +42,7 @@ jobs:
             path: src/${{ inputs.repository }}
 
       - name: Checkout custom_interfaces ROS package
-        if: ${{ inputs.disable-vcs }} && ${{ inputs.custom-interfaces}}
+        if: ${{ inputs.custom-interfaces}}
         uses: actions/checkout@v3
         with:
             repository: UBCSailbot/custom_interfaces
@@ -75,7 +75,7 @@ jobs:
             path: src/${{ inputs.repository }}
 
       - name: Checkout custom_interfaces ROS package
-        if: ${{ inputs.disable-vcs }} && ${{ inputs.custom-interfaces}}
+        if: ${{ inputs.custom-interfaces}}
         uses: actions/checkout@v3
         with:
             repository: UBCSailbot/custom_interfaces
@@ -104,7 +104,7 @@ jobs:
             path: src/${{ inputs.repository }}
 
       - name: Checkout custom_interfaces ROS package
-        if: ${{ inputs.disable-vcs }} && ${{ inputs.custom-interfaces}}
+        if: ${{ inputs.custom-interfaces}}
         uses: actions/checkout@v3
         with:
             repository: UBCSailbot/custom_interfaces
