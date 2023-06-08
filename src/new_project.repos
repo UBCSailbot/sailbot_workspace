@@ -39,7 +39,7 @@ repositories:
 
   raye-local-pathfinding:
     type: git
-    url: https://github.com/UBCSailbot/local_pathfinding
+    url: https://github.com/UBCSailbot/raye-local-pathfinding
     version: user/patrick-5546/delete-ros-files
 
   website:
