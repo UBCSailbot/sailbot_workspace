@@ -28,6 +28,8 @@ jobs:
       repository: ${{ github.event.repository.name }}
       # clang-tidy take a long time to run, so disable in repositories that don't need it
       clang-tidy: true
+      # If the repository uses the msgs or srvs defined in custom_interfaces, set to true
+      custom-interfaces: true
       # VCS is used to clone all subteam repositories, so set to
       # true in subteam repositories and
       # false in sailbot_workspace
