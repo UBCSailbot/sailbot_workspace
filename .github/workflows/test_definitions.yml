@@ -6,6 +6,12 @@ on:
   workflow_call:
     # Inputs and secrets documented in the caller workflows
     inputs:
+      clang-tidy:
+        required: true
+        type: boolean
+      custom-interfaces:
+        required: true
+        type: boolean
       disable-vcs:
         required: true
         type: string
@@ -35,6 +41,14 @@ jobs:
             repository: UBCSailbot/${{ inputs.repository }}
             path: src/${{ inputs.repository }}
 
+      - name: Checkout custom_interfaces ROS package
+        if: ${{ inputs.custom-interfaces}}
+        uses: actions/checkout@v3
+        with:
+            repository: UBCSailbot/custom_interfaces
+            ref: user/colinli02/custom_messages
+            path: src/custom_interfaces
+
       - name: Test
         uses: ./.github/actions/test/
         env:
@@ -46,7 +60,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-          linter: [lint_cmake, xmllint, flake8, pep257]
+          # ament_lint_common, except for copyright, cppcheck, cpplint, uncrustify, and pep257
+          linter: [lint_cmake, flake8, xmllint]
     steps:
       - name: Checkout workspace
         uses: actions/checkout@v3
@@ -59,6 +74,14 @@ jobs:
         with:
             repository: UBCSailbot/${{ inputs.repository }}
             path: src/${{ inputs.repository }}
+
+      - name: Checkout custom_interfaces ROS package
+        if: ${{ inputs.custom-interfaces}}
+        uses: actions/checkout@v3
+        with:
+            repository: UBCSailbot/custom_interfaces
+            ref: user/colinli02/custom_messages
+            path: src/custom_interfaces
 
       - name: Run linter
         uses: ./.github/actions/ament-lint/
@@ -68,6 +91,7 @@ jobs:
 
   clang-tidy:
     runs-on: ubuntu-latest
+    if: inputs.clang-tidy
     steps:
       - name: Checkout workspace
         uses: actions/checkout@v3
@@ -80,6 +104,14 @@ jobs:
         with:
             repository: UBCSailbot/${{ inputs.repository }}
             path: src/${{ inputs.repository }}
+
+      - name: Checkout custom_interfaces ROS package
+        if: ${{ inputs.custom-interfaces}}
+        uses: actions/checkout@v3
+        with:
+            repository: UBCSailbot/custom_interfaces
+            ref: user/colinli02/custom_messages
+            path: src/custom_interfaces
 
       - name: Run linter
         uses: ./.github/actions/clang-tidy/
