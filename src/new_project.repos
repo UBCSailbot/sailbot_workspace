@@ -37,6 +37,11 @@ repositories:
     url: https://github.com/UBCSailbot/network_systems
     version: main
 
+  raye-local-pathfinding:
+    type: git
+    url: https://github.com/UBCSailbot/raye-local-pathfinding
+    version: user/patrick-5546/delete-ros-files
+
   website:
     type: git
     url: https://github.com/UBCSailbot/website

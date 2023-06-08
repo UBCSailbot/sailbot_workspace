@@ -7,13 +7,16 @@
 			"path": "../../src/custom_interfaces"
 		},
 		{
+			"path": "../../src/docs"
+		},
+		{
 			"path": "../../src/local_pathfinding"
 		},
 		{
 			"path": "../../src/network_systems"
 		},
 		{
-			"path": "../../src/docs"
+			"path": "../../src/raye-local-pathfinding"
 		},
 		{
 			"path": "../../src/website"
@@ -301,7 +304,7 @@
 				"type": "ament",
 				"task": "flake8",
 				"path": "src/",
-				"commandOptions": "--exclude=src/virtual_iridium",
+				"commandOptions": "--exclude=src/virtual_iridium,src/raye-local-pathfinding",
 				"problemMatcher": [
 					"$ament_flake8"
 				],
