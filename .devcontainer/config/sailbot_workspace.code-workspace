@@ -13,6 +13,9 @@
 			"path": "../../src/network_systems"
 		},
 		{
+			"path": "../../src/raye-local-pathfinding"
+		},
+		{
 			"path": "../../src/docs"
 		},
 		{
