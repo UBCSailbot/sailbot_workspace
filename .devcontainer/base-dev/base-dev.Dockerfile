@@ -15,6 +15,7 @@ RUN apt-get update \
         python3-colcon-common-extensions \
         python3-rosdep \
         python3-vcstool \
+        tzdata \
     && apt-get autoremove -y \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/* \
@@ -28,6 +29,9 @@ RUN chmod +x /sbin/update-bashrc \
     && sync \
     && /bin/bash -c /sbin/update-bashrc \
     && rm /sbin/update-bashrc
+
+# set timezone
+ENV TZ="America/Vancouver"
 
 FROM base as local-base
 
