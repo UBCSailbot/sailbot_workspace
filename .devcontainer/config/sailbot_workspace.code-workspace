@@ -7,6 +7,9 @@
 			"path": "../../src/custom_interfaces"
 		},
 		{
+			"path": "../../src/docs"
+		},
+		{
 			"path": "../../src/local_pathfinding"
 		},
 		{
@@ -14,9 +17,6 @@
 		},
 		{
 			"path": "../../src/raye-local-pathfinding"
-		},
-		{
-			"path": "../../src/docs"
 		},
 		{
 			"path": "../../src/website"
