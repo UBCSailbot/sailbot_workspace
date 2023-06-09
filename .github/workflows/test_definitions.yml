@@ -4,8 +4,14 @@ on:
   # Called by other workflows, refer to
   # https://docs.github.com/en/actions/using-workflows/reusing-workflows#calling-a-reusable-workflow
   workflow_call:
-    # Inputs documented in the caller workflows
+    # Inputs and secrets documented in the caller workflows
     inputs:
+      clang-tidy:
+        required: true
+        type: boolean
+      custom-interfaces:
+        required: true
+        type: boolean
       disable-vcs:
         required: true
         type: string
@@ -15,6 +21,9 @@ on:
       rebuild-docs:
         required: true
         type: boolean
+    secrets:
+      gh-token:
+        required: true
 
 jobs:
   colcon-test:
@@ -32,6 +41,14 @@ jobs:
             repository: UBCSailbot/${{ inputs.repository }}
             path: src/${{ inputs.repository }}
 
+      - name: Checkout custom_interfaces ROS package
+        if: ${{ inputs.custom-interfaces}}
+        uses: actions/checkout@v3
+        with:
+            repository: UBCSailbot/custom_interfaces
+            ref: user/colinli02/custom_messages
+            path: src/custom_interfaces
+
       - name: Test
         uses: ./.github/actions/test/
         env:
@@ -43,7 +60,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-          linter: [lint_cmake, xmllint, flake8, pep257]
+          # ament_lint_common, except for copyright, cppcheck, cpplint, uncrustify, and pep257
+          linter: [lint_cmake, flake8, xmllint]
     steps:
       - name: Checkout workspace
         uses: actions/checkout@v3
@@ -56,6 +74,14 @@ jobs:
         with:
             repository: UBCSailbot/${{ inputs.repository }}
             path: src/${{ inputs.repository }}
+
+      - name: Checkout custom_interfaces ROS package
+        if: ${{ inputs.custom-interfaces}}
+        uses: actions/checkout@v3
+        with:
+            repository: UBCSailbot/custom_interfaces
+            ref: user/colinli02/custom_messages
+            path: src/custom_interfaces
 
       - name: Run linter
         uses: ./.github/actions/ament-lint/
@@ -65,6 +91,7 @@ jobs:
 
   clang-tidy:
     runs-on: ubuntu-latest
+    if: inputs.clang-tidy
     steps:
       - name: Checkout workspace
         uses: actions/checkout@v3
@@ -77,6 +104,14 @@ jobs:
         with:
             repository: UBCSailbot/${{ inputs.repository }}
             path: src/${{ inputs.repository }}
+
+      - name: Checkout custom_interfaces ROS package
+        if: ${{ inputs.custom-interfaces}}
+        uses: actions/checkout@v3
+        with:
+            repository: UBCSailbot/custom_interfaces
+            ref: user/colinli02/custom_messages
+            path: src/custom_interfaces
 
       - name: Run linter
         uses: ./.github/actions/clang-tidy/
@@ -120,6 +155,10 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && inputs.rebuild-docs
     steps:
     - name: Dispatch Docs Publish workflow
-      # https://github.com/orgs/community/discussions/26323#discussioncomment-3251448
+      # https://github.com/orgs/community/discussions/26323#discussioncomment-5600001
       run: |
-        curl -XPOST -u "${{ secrets.PAT_USERNAME}}:${{secrets.PAT_TOKEN}}" -H "Accept: application/vnd.github.everest-preview+json" -H "Content-Type: application/json" https://api.github.com/repos/UBCSailbot/docs/actions/workflows/publish.yml/dispatches --data '{"ref": "main"}'
+          gh workflow run publish.yml -R UBCSailbot/docs
+          sleep 5
+          gh run watch -R UBCSailbot/docs $(gh run list -R UBCSailbot/docs -w publish.yml -L1 --json databaseId --jq '.[0].databaseId')
+    env:
+      GH_TOKEN: ${{ secrets.gh-token }}

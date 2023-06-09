@@ -5,70 +5,28 @@
 		},
 		{
 			"path": "../../src/boat_simulator"
+    },
+		{
+			"path": "../../src/custom_interfaces"
 		},
 		{
 			"path": "../../src/docs"
 		},
 		{
+			"path": "../../src/local_pathfinding"
+		},
+		{
 			"path": "../../src/network_systems"
 		},
 		{
-			"path": "../../src/ros_msgs"
+			"path": "../../src/raye-local-pathfinding"
 		},
 		{
 			"path": "../../src/website"
 		},
 	],
 	"settings": {
-		"editor.tabSize": 4,
-		"editor.rulers": [120],
-		"editor.renderWhitespace": "trailing",
-		"files.associations": {
-			"*.repos": "yaml",
-			"*.world": "xml",
-			"*.xacro": "xml"
-		},
-		"python.analysis.extraPaths": [
-			"/workspaces/sailbot_workspace/install/lib/python3.10/site-packages",
-			"/opt/ros/humble/lib/python3.10/site-packages"
-		],
-		// Autocomplete from ros python packages
-		"python.autoComplete.extraPaths": [
-			"/workspaces/sailbot_workspace/install/lib/python3.10/site-packages",
-			"/opt/ros/humble/lib/python3.10/site-packages"
-		],
-		// Environment file lets vscode find python files within workspace
-		"python.envFile": "/workspaces/sailbot_workspace/.env",
-		// Use the system installed version of autopep8
-		"python.formatting.autopep8Path": "/usr/bin/autopep8",
-		"python.formatting.autopep8Args": [
-			"--max-line-length=120"
-		],
-		"search.exclude": {
-			"**/build": true,
-			"**/install": true,
-			"**/log": true
-		},
-		"workbench.colorCustomizations": {
-			"activityBar.activeBackground": "#19488d",
-			"activityBar.activeBorder": "#dd4181",
-			"activityBar.background": "#19488d",
-			"activityBar.foreground": "#e7e7e7",
-			"activityBar.inactiveForeground": "#e7e7e799",
-			"activityBarBadge.background": "#dd4181",
-			"activityBarBadge.foreground": "#e7e7e7",
-			"sash.hoverBorder": "#19488d",
-			"statusBar.background": "#113262",
-			"statusBar.foreground": "#e7e7e7",
-			"statusBarItem.hoverBackground": "#19488d",
-			"statusBarItem.remoteBackground": "#113262",
-			"statusBarItem.remoteForeground": "#e7e7e7",
-			"titleBar.activeBackground": "#113262",
-			"titleBar.activeForeground": "#e7e7e7",
-			"titleBar.inactiveBackground": "#11326299",
-			"titleBar.inactiveForeground": "#e7e7e799",
-			"commandCenter.border": "#e7e7e799"
-		},
+		// general
 		"cSpell.enabled": true,
 		"cSpell.allowCompoundWords": true,
 		"cSpell.ignorePaths": [
@@ -115,14 +73,91 @@
 			"xmllint"
 		],
 		"editor.inlayHints.enabled": "off",
-		"files.insertFinalNewline": true,
-		"[cpp]": {
-			"editor.formatOnSave": true
+		"editor.renderWhitespace": "trailing",
+		"editor.tabSize": 4,
+		"files.associations": {
+			"*.repos": "yaml",
+			"*.world": "xml",
+			"*.xacro": "xml"
 		},
-		"[c]": {
-			"editor.formatOnSave": true
+		"files.insertFinalNewline": true,
+		"files.trimFinalNewlines": true,
+		"files.trimTrailingWhitespace": true,
+		"search.exclude": {
+			"**/build": true,
+			"**/install": true,
+			"**/log": true
+		},
+		"todo-tree.highlights.useColourScheme": true,
+		"workbench.colorCustomizations": {
+			"activityBar.activeBackground": "#19488d",
+			"activityBar.activeBorder": "#dd4181",
+			"activityBar.background": "#19488d",
+			"activityBar.foreground": "#e7e7e7",
+			"activityBar.inactiveForeground": "#e7e7e799",
+			"activityBarBadge.background": "#dd4181",
+			"activityBarBadge.foreground": "#e7e7e7",
+			"sash.hoverBorder": "#19488d",
+			"statusBar.background": "#113262",
+			"statusBar.foreground": "#e7e7e7",
+			"statusBarItem.hoverBackground": "#19488d",
+			"statusBarItem.remoteBackground": "#113262",
+			"statusBarItem.remoteForeground": "#e7e7e7",
+			"titleBar.activeBackground": "#113262",
+			"titleBar.activeForeground": "#e7e7e7",
+			"titleBar.inactiveBackground": "#11326299",
+			"titleBar.inactiveForeground": "#e7e7e799",
+			"commandCenter.border": "#e7e7e799"
 		},
 
+		// python
+		"[python]": {
+			"editor.codeActionsOnSave": {
+				"source.organizeImports": true
+			},
+			"editor.defaultFormatter": "ms-python.black-formatter",
+			"editor.formatOnSave": true,
+			"editor.rulers": [99],
+		},
+		"python.analysis.extraPaths": [
+			"/workspaces/sailbot_workspace/install/lib/python3.10/site-packages",
+			"/opt/ros/humble/lib/python3.10/site-packages"
+		],
+		// Autocomplete from ros python packages
+		"python.autoComplete.extraPaths": [
+			"/workspaces/sailbot_workspace/install/lib/python3.10/site-packages",
+			"/opt/ros/humble/lib/python3.10/site-packages"
+		],
+		// Environment file lets vscode find python files within workspace
+		"python.envFile": "/workspaces/sailbot_workspace/.env",
+		// linter: flake8 extension
+		// copy from https://github.com/ament/ament_lint/blob/humble/ament_flake8/ament_flake8/configuration/ament_flake8.ini
+		// except for import order style = google: use isort with black profile instead
+		"flake8.args": [
+			"--extend-ignore=B902,C816,D100,D101,D102,D103,D104,D105,D106,D107,D203,D212,D404,I202",
+			"--max-line-length=99",
+			"--show-source",
+			"--statistics",
+		],
+		// formatter: black and isort extensions
+		"python.formatting.provider": "none",
+		"black-formatter.args": [
+			"--line-length=99",
+			"--skip-string-normalization"
+		],
+		"isort.args":["--profile=black"],
+
+		// c/c++
+		"[cpp]": {
+			"editor.formatOnSave": true,
+			"editor.rulers": [120],
+		},
+		"[c]": {
+			"editor.formatOnSave": true,
+			"editor.rulers": [120],
+		},
+
+		// markdown
 		// copied from docs: https://github.com/UBCSailbot/docs/blob/main/.vscode/settings.json
 		"[markdown]": {
 			"editor.unicodeHighlight.ambiguousCharacters": false,
@@ -139,6 +174,8 @@
 			"cSpell.advanced.feature.useReferenceProviderWithRename": true,
 			"cSpell.advanced.feature.useReferenceProviderRemove": "/^#+\\s/"
 		},
+
+		// yaml
 		"yaml.schemas": {
 			"https://squidfunk.github.io/mkdocs-material/schema.json": "mkdocs.yml"
 		},
@@ -292,23 +329,9 @@
 				"type": "ament",
 				"task": "flake8",
 				"path": "src/",
+				"commandOptions": "--exclude=src/virtual_iridium,src/raye-local-pathfinding",
 				"problemMatcher": [
 					"$ament_flake8"
-				],
-				"presentation": {
-					"panel": "dedicated",
-					"reveal": "silent",
-					"clear": true
-				}
-			},
-			{
-				"label": "pep257",
-				"detail": "Run pep257 on python files.",
-				"type": "ament",
-				"task": "pep257",
-				"path": "src/",
-				"problemMatcher": [
-					"$ament_pep257"
 				],
 				"presentation": {
 					"panel": "dedicated",
@@ -332,13 +355,11 @@
 				}
 			},
 			{
-				"label": "lint all",
-				"detail": "Run all linters.",
+				"label": "ament lint",
+				"detail": "Run all ament linters.",
 				"dependsOn": [
-					"clang-tidy",
-					"flake8",
 					"lint_cmake",
-					"pep257",
+					"flake8",
 					"xmllint",
 				],
 				"problemMatcher": []

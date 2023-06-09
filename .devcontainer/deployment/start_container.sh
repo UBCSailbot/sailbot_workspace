@@ -17,9 +17,10 @@ CONTAINER_NAME="sailbot_deployment_container"
 DOCKER_RUN_CMD="docker run -it --name $CONTAINER_NAME"
 # args to mount the repo inside the container
 DOCKER_MNT_VOL_ARGS="-v $HOST_WORKSPACE_ROOT:$CONTAINER_WORKSPACE_PATH -w $CONTAINER_WORKSPACE_PATH"
+DOCKER_TEMPATE_REPO_ARGS="--cap-add=SYS_PTRACE --security-opt=seccomp:unconfined --security-opt=apparmor:unconfined"
 # args to support can/vcan
 DOCKER_CAN_ARGS="--cap-add=NET_ADMIN --network=host"
-DOCKER_RUN_CMD="$DOCKER_RUN_CMD $DOCKER_MNT_VOL_ARGS $DOCKER_CAN_ARGS"
+DOCKER_RUN_CMD="$DOCKER_RUN_CMD $DOCKER_MNT_VOL_ARGS $DOCKER_TEMPATE_REPO_ARGS $DOCKER_CAN_ARGS"
 
 # Parse the Dockerfile to get the base/dev image tag
 get_dev_tag()

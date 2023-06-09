@@ -23,9 +23,14 @@ jobs:
   test-definitions:
     # Runs another workflow, refer to
     # https://docs.github.com/en/actions/using-workflows/reusing-workflows#calling-a-reusable-workflow
-    uses: UBCSailbot/sailbot_workspace/.github/workflows/test_definitions.yml@main
+    uses: UBCSailbot/sailbot_workspace/.github/workflows/test_definitions.yml@user/patrick-5546/setup-local-pathfinding
     with:
       repository: ${{ github.event.repository.name }}
+      # clang-tidy take a long time to run, so disable in repositories that don't need it
+      clang-tidy: true
+      # Set to false in sailbot_workspace (cloned using VCS) and custom_interfaces
+      # Else if the repository uses the msgs or srvs defined in custom_interfaces, set to true
+      custom-interfaces: false
       # VCS is used to clone all subteam repositories, so set to
       # true in subteam repositories and
       # false in sailbot_workspace
@@ -33,3 +38,7 @@ jobs:
       # Rebuilds our docs site https://ubcsailbot.github.io/docs/
       # If the docs contains a snippet of a file in this repository, set to true
       rebuild-docs: true
+    # https://docs.github.com/en/actions/using-workflows/reusing-workflows#using-inputs-and-secrets-in-a-reusable-workflow
+    secrets:
+      # The repository secret `PAT_TOKEN` needs to exist, copy from Bitwarden
+      gh-token: ${{ secrets.PAT_TOKEN }}

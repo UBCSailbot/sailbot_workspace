@@ -1,7 +1,14 @@
 // See https://aka.ms/vscode-remote/devcontainer.json for format details.
 {
 	"name": "Sailbot Workspace",
-	"dockerComposeFile": "docker-compose.yml",
+	"dockerComposeFile": [
+		// Uncomment the files containing the programs you need
+		// "docker-compose.db.yml", // mongodb
+		// "docker-compose.docs.yml", // docs
+		// "docker-compose.website.yml", // grafana, website
+
+		"docker-compose.yml"
+	],
 	"forwardPorts": [
 		3000, // grafana
 		3005, // website
@@ -47,15 +54,16 @@
 				"cschlosser.doxdocgen",
 				"DavidAnson.vscode-markdownlint",
 				"eamodio.gitlens",
+				"github.vscode-github-actions",
+				"Gruntfuggly.todo-tree",
 				"jeff-hykin.better-cpp-syntax",
 				"KevinRose.vsc-python-indent",
 				"llvm-vs-code-extensions.vscode-clangd",
 				"mongodb.mongodb-vscode",
-				"ms-python.flake8",
-				"ms-python.python",
+				"ms-python.black-formatter",
+				"ms-python.isort",
 				"ms-vsliveshare.vsliveshare",
 				"njpwerner.autodocstring",
-				"redhat.vscode-yaml",
 				"streetsidesoftware.code-spell-checker",
 				"vscode-icons-team.vscode-icons",
 				"zxh404.vscode-proto3"
