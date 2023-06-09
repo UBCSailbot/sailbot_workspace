@@ -12,9 +12,6 @@ on:
       clang-tidy:
         required: true
         type: boolean
-      disable-vcs:
-        required: true
-        type: string
       repository:
         required: true
         type: string
@@ -58,7 +55,7 @@ jobs:
       - name: Test
         uses: ./.github/actions/test/
         env:
-          DISABLE_VCS: ${{ inputs.disable-vcs }}
+          DISABLE_VCS: ${{ inputs.repository !=  github.event.repository.name }}
 
   ament-lint:
     name: ament_${{ matrix.linter }}
@@ -95,7 +92,7 @@ jobs:
         uses: ./.github/actions/ament-lint/
         env:
           LINTER: ${{ matrix.linter }}
-          DISABLE_VCS: ${{ inputs.disable-vcs }}
+          DISABLE_VCS: ${{ inputs.repository !=  github.event.repository.name }}
 
   clang-tidy:
     runs-on: ubuntu-latest
@@ -125,7 +122,7 @@ jobs:
       - name: Run linter
         uses: ./.github/actions/clang-tidy/
         env:
-          DISABLE_VCS: ${{ inputs.disable-vcs }}
+          DISABLE_VCS: ${{ inputs.repository !=  github.event.repository.name }}
 
   # https://github.com/nosborn/github-action-markdown-cli
   markdownlint:
