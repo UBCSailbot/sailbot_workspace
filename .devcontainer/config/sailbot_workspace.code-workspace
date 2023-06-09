@@ -85,6 +85,7 @@
 			"**/install": true,
 			"**/log": true
 		},
+		"todo-tree.highlights.useColourScheme": true,
 		"workbench.colorCustomizations": {
 			"activityBar.activeBackground": "#19488d",
 			"activityBar.activeBorder": "#dd4181",
