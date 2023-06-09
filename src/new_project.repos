@@ -17,9 +17,19 @@ repositories:
   #   url: https://github.com/UBCSailbot/cpp_pubsub_ex
   #   version: main
 
+  custom_interfaces:
+    type: git
+    url: https://github.com/UBCSailbot/custom_interfaces
+    version: user/colinli02/custom_messages
+
   docs:
     type: git
     url: https://github.com/UBCSailbot/docs
+    version: main
+
+  local_pathfinding:
+    type: git
+    url: https://github.com/UBCSailbot/local_pathfinding
     version: main
 
   network_systems:
@@ -27,10 +37,10 @@ repositories:
     url: https://github.com/UBCSailbot/network_systems
     version: main
 
-  ros_msgs:
+  raye-local-pathfinding:
     type: git
-    url: https://github.com/UBCSailbot/ros_msgs
-    version: main
+    url: https://github.com/UBCSailbot/raye-local-pathfinding
+    version: user/patrick-5546/delete-ros-files
 
   website:
     type: git

@@ -15,6 +15,7 @@ RUN apt-get update \
         python3-colcon-common-extensions \
         python3-rosdep \
         python3-vcstool \
+        tzdata \
     && apt-get autoremove -y \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/* \
@@ -28,6 +29,12 @@ RUN chmod +x /sbin/update-bashrc \
     && sync \
     && /bin/bash -c /sbin/update-bashrc \
     && rm /sbin/update-bashrc
+
+# set timezone
+ENV TZ="America/Vancouver"
+
+# customize ROS log format: https://docs.ros.org/en/humble/Concepts/About-Logging.html#environment-variables
+ENV RCUTILS_CONSOLE_OUTPUT_FORMAT="[{severity}] [{time}] [{name}:{line_number}]: {message}"
 
 FROM base as local-base
 
@@ -48,6 +55,10 @@ ENV DEBIAN_FRONTEND=
 # set virtual iridium environment variables
 ENV LOCAL_TRANSCEIVER_TEST_PORT="/tmp/local_transceiver_test_port"
 ENV VIRTUAL_IRIDIUM_PORT="/tmp/virtual_iridium_port"
+
+# downgrade setuptools
+# https://answers.ros.org/question/396439/setuptoolsdeprecationwarning-setuppy-install-is-deprecated-use-build-and-pip-and-other-standards-based-tools/?answer=400052#post-id-400052
+RUN pip3 install setuptools==58.2.0
 
 FROM local-base as ros-dev
 
@@ -76,7 +87,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/* \
     && rosdep init || echo "rosdep already initialized" \
     # Update pydocstyle
-    && pip install --upgrade pydocstyle
+    && pip3 install --upgrade pydocstyle
 
 ARG USERNAME=ros
 ARG USER_UID=1000
