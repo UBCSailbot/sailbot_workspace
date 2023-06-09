@@ -31,31 +31,31 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ inputs.ros-ci }}
     steps:
-      - name: Checkout workspace
-        uses: actions/checkout@v3
-        with:
-            repository: UBCSailbot/sailbot_workspace
-            ref: user/dfriend01/add_lang_ci_args
+    - name: Checkout workspace
+      uses: actions/checkout@v3
+      with:
+          repository: UBCSailbot/sailbot_workspace
+          ref: user/dfriend01/add_lang_ci_args
 
-      - name: Checkout ROS package
-        if: ${{ inputs.repository }} != ${{ github.event.repository.name }}
-        uses: actions/checkout@v3
-        with:
-            repository: UBCSailbot/${{ inputs.repository }}
-            path: src/${{ inputs.repository }}
+    - name: Checkout ROS package
+      if: ${{ inputs.repository }} != ${{ github.event.repository.name }}
+      uses: actions/checkout@v3
+      with:
+          repository: UBCSailbot/${{ inputs.repository }}
+          path: src/${{ inputs.repository }}
 
-      - name: Checkout custom_interfaces ROS package
-        if: ${{ inputs.repository }} != ${{ github.event.repository.name }}
-        uses: actions/checkout@v3
-        with:
-            repository: UBCSailbot/custom_interfaces
-            ref: user/colinli02/custom_messages
-            path: src/custom_interfaces
+    - name: Checkout custom_interfaces ROS package
+      if: ${{ inputs.repository }} != ${{ github.event.repository.name }}
+      uses: actions/checkout@v3
+      with:
+          repository: UBCSailbot/custom_interfaces
+          ref: user/colinli02/custom_messages
+          path: src/custom_interfaces
 
-      - name: Test
-        uses: ./.github/actions/test/
-        env:
-          DISABLE_VCS: ${{ inputs.repository !=  github.event.repository.name }}
+    - name: Test
+      uses: ./.github/actions/test/
+      env:
+        DISABLE_VCS: ${{ inputs.repository !=  github.event.repository.name }}
 
   ament-lint:
     name: ament_${{ matrix.linter }}
@@ -67,62 +67,62 @@ jobs:
           linter: [lint_cmake, flake8, xmllint]
     if: ${{ inputs.ros-ci }}
     steps:
-      - name: Checkout workspace
-        uses: actions/checkout@v3
-        with:
-            repository: UBCSailbot/sailbot_workspace
-            ref: user/dfriend01/add_lang_ci_args
+    - name: Checkout workspace
+      uses: actions/checkout@v3
+      with:
+          repository: UBCSailbot/sailbot_workspace
+          ref: user/dfriend01/add_lang_ci_args
 
-      - name: Checkout ROS package
-        if: ${{ inputs.repository }} != ${{ github.event.repository.name }}
-        uses: actions/checkout@v3
-        with:
-            repository: UBCSailbot/${{ inputs.repository }}
-            path: src/${{ inputs.repository }}
+    - name: Checkout ROS package
+      if: ${{ inputs.repository }} != ${{ github.event.repository.name }}
+      uses: actions/checkout@v3
+      with:
+          repository: UBCSailbot/${{ inputs.repository }}
+          path: src/${{ inputs.repository }}
 
-      - name: Checkout custom_interfaces ROS package
-        if: ${{ inputs.repository }} != ${{ github.event.repository.name }}
-        uses: actions/checkout@v3
-        with:
-            repository: UBCSailbot/custom_interfaces
-            ref: user/colinli02/custom_messages
-            path: src/custom_interfaces
+    - name: Checkout custom_interfaces ROS package
+      if: ${{ inputs.repository }} != ${{ github.event.repository.name }}
+      uses: actions/checkout@v3
+      with:
+          repository: UBCSailbot/custom_interfaces
+          ref: user/colinli02/custom_messages
+          path: src/custom_interfaces
 
-      - name: Run linter
-        uses: ./.github/actions/ament-lint/
-        env:
-          LINTER: ${{ matrix.linter }}
-          DISABLE_VCS: ${{ inputs.repository !=  github.event.repository.name }}
+    - name: Run linter
+      uses: ./.github/actions/ament-lint/
+      env:
+        LINTER: ${{ matrix.linter }}
+        DISABLE_VCS: ${{ inputs.repository !=  github.event.repository.name }}
 
   clang-tidy:
     runs-on: ubuntu-latest
     if: inputs.clang-tidy
     steps:
-      - name: Checkout workspace
-        uses: actions/checkout@v3
-        with:
-            repository: UBCSailbot/sailbot_workspace
-            ref: user/dfriend01/add_lang_ci_args
+    - name: Checkout workspace
+      uses: actions/checkout@v3
+      with:
+          repository: UBCSailbot/sailbot_workspace
+          ref: user/dfriend01/add_lang_ci_args
 
-      - name: Checkout ROS package
-        if: ${{ inputs.repository }} != ${{ github.event.repository.name }}
-        uses: actions/checkout@v3
-        with:
-            repository: UBCSailbot/${{ inputs.repository }}
-            path: src/${{ inputs.repository }}
+    - name: Checkout ROS package
+      if: ${{ inputs.repository }} != ${{ github.event.repository.name }}
+      uses: actions/checkout@v3
+      with:
+          repository: UBCSailbot/${{ inputs.repository }}
+          path: src/${{ inputs.repository }}
 
-      - name: Checkout custom_interfaces ROS package
-        if: ${{ inputs.repository }} != ${{ github.event.repository.name }}
-        uses: actions/checkout@v3
-        with:
-            repository: UBCSailbot/custom_interfaces
-            ref: user/colinli02/custom_messages
-            path: src/custom_interfaces
+    - name: Checkout custom_interfaces ROS package
+      if: ${{ inputs.repository }} != ${{ github.event.repository.name }}
+      uses: actions/checkout@v3
+      with:
+          repository: UBCSailbot/custom_interfaces
+          ref: user/colinli02/custom_messages
+          path: src/custom_interfaces
 
-      - name: Run linter
-        uses: ./.github/actions/clang-tidy/
-        env:
-          DISABLE_VCS: ${{ inputs.repository !=  github.event.repository.name }}
+    - name: Run linter
+      uses: ./.github/actions/clang-tidy/
+      env:
+        DISABLE_VCS: ${{ inputs.repository !=  github.event.repository.name }}
 
   # https://github.com/nosborn/github-action-markdown-cli
   markdownlint:
