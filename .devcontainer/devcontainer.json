@@ -55,6 +55,7 @@
 				"DavidAnson.vscode-markdownlint",
 				"eamodio.gitlens",
 				"github.vscode-github-actions",
+				"Gruntfuggly.todo-tree",
 				"jeff-hykin.better-cpp-syntax",
 				"KevinRose.vsc-python-indent",
 				"llvm-vs-code-extensions.vscode-clangd",
