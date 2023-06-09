@@ -28,10 +28,6 @@ jobs:
       repository: ${{ github.event.repository.name }}
       # clang-tidy take a long time to run, so disable in repositories that don't need it
       clang-tidy: true
-      # VCS is used to clone all subteam repositories, so set to
-      # true in subteam repositories and
-      # false in sailbot_workspace
-      disable-vcs: false
       # Rebuilds our docs site https://ubcsailbot.github.io/docs/
       # If the docs contains a snippet of a file in this repository, set to true
       rebuild-docs: true
