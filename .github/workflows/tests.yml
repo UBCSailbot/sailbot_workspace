@@ -23,7 +23,7 @@ jobs:
   test-definitions:
     # Runs another workflow, refer to
     # https://docs.github.com/en/actions/using-workflows/reusing-workflows#calling-a-reusable-workflow
-    uses: UBCSailbot/sailbot_workspace/.github/workflows/test_definitions.yml@user/patrick-5546/add_lang_ci_args
+    uses: UBCSailbot/sailbot_workspace/.github/workflows/test_definitions.yml@user/dfriend01/add_lang_ci_args
     with:
       repository: ${{ github.event.repository.name }}
       # clang-tidy take a long time to run, so disable in repositories that don't need it
