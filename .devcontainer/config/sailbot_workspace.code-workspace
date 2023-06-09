@@ -137,6 +137,8 @@
 		],
 		"editor.inlayHints.enabled": "off",
 		"files.insertFinalNewline": true,
+		"files.trimTrailingWhitespace": true,
+		"files.trimFinalNewlines": true,
 		"[cpp]": {
 			"editor.formatOnSave": true,
 			"editor.rulers": [120],
