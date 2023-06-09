@@ -1,19 +1,22 @@
 #!/bin/bash
 set -e
 
-# Display error message
 function error {
+    # Display error message
     message=$1
     echo -e "\e[1;31m${message}\e[0m"
 }
 
-# Display warning message
 function warn {
+    # Display warning message
     message=$1
     echo -e "\e[1;33m${message}\e[0m"
 }
 
 function get_search_command {
+    # Returns a search command in the form of a string that performs a search for
+    # files to lint. The returned search command depends on the specified linter.
+
     case ${LINTER} in
         lint_cmake) CMD='find ${VALID_SRC_DIRS_ARG} -type f \( -name "CMakeLists.txt" -o -name "*.cmake" -o -name "*.cmake.in" \)' ;;
         flake8) CMD='find ${VALID_SRC_DIRS_ARG} -type f -name "*.py"' ;;
@@ -25,6 +28,9 @@ function get_search_command {
 }
 
 function lint {
+    # Run a specified linter on a set of files
+    # Arg 1: A list of source directories and files to perform linting on
+
     VALID_SRC_DIRS_ARG=$1
     FILE_SEARCH_CMD=`get_search_command`
     LINTED_FILES=`eval ${FILE_SEARCH_CMD}`
