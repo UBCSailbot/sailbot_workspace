@@ -6,10 +6,10 @@ on:
   workflow_call:
     # Inputs and secrets documented in the caller workflows
     inputs:
-      clang-tidy:
+      ros-ci:
         required: true
         type: boolean
-      custom-interfaces:
+      clang-tidy:
         required: true
         type: boolean
       disable-vcs:
@@ -21,19 +21,7 @@ on:
       rebuild-docs:
         required: true
         type: boolean
-      colcon-test:
-        required: false
-        default: true
-        type: boolean
-      ament-lint:
-        required: false
-        default: true
-        type: boolean
-      markdownlint:
-        required: false
-        default: true
-        type: boolean
-      markdown-link-check:
+      markdown-ci:
         required: false
         default: true
         type: boolean
@@ -44,7 +32,7 @@ on:
 jobs:
   colcon-test:
     runs-on: ubuntu-latest
-    if: ${{ inputs.colcon-test }}
+    if: ${{ inputs.ros-ci }}
     steps:
       - name: Checkout workspace
         uses: actions/checkout@v3
@@ -60,7 +48,7 @@ jobs:
             path: src/${{ inputs.repository }}
 
       - name: Checkout custom_interfaces ROS package
-        if: ${{ inputs.custom-interfaces}}
+        if: ${{ inputs.repository }} != ${{ github.event.repository.name }}
         uses: actions/checkout@v3
         with:
             repository: UBCSailbot/custom_interfaces
@@ -80,7 +68,7 @@ jobs:
       matrix:
           # ament_lint_common, except for copyright, cppcheck, cpplint, uncrustify, and pep257
           linter: [lint_cmake, flake8, xmllint]
-    if: ${{ inputs.ament-lint }}
+    if: ${{ inputs.ros-ci }}
     steps:
       - name: Checkout workspace
         uses: actions/checkout@v3
@@ -96,7 +84,7 @@ jobs:
             path: src/${{ inputs.repository }}
 
       - name: Checkout custom_interfaces ROS package
-        if: ${{ inputs.custom-interfaces}}
+        if: ${{ inputs.repository }} != ${{ github.event.repository.name }}
         uses: actions/checkout@v3
         with:
             repository: UBCSailbot/custom_interfaces
@@ -127,7 +115,7 @@ jobs:
             path: src/${{ inputs.repository }}
 
       - name: Checkout custom_interfaces ROS package
-        if: ${{ inputs.custom-interfaces}}
+        if: ${{ inputs.repository }} != ${{ github.event.repository.name }}
         uses: actions/checkout@v3
         with:
             repository: UBCSailbot/custom_interfaces
@@ -142,7 +130,7 @@ jobs:
   # https://github.com/nosborn/github-action-markdown-cli
   markdownlint:
     runs-on: ubuntu-latest
-    if: ${{ inputs.markdownlint }}
+    if: ${{ inputs.markdown-ci }}
     steps:
     - name: Check out code
       uses: actions/checkout@v3
@@ -159,7 +147,7 @@ jobs:
   # https://github.com/gaurav-nelson/github-action-markdown-link-check
   markdown-link-check:
     runs-on: ubuntu-latest
-    if: ${{ inputs.markdown-link-check }}
+    if: ${{ inputs.markdown-ci }}
     steps:
     - name: Check out code
       uses: actions/checkout@v3
