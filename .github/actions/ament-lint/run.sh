@@ -17,7 +17,6 @@ function get_search_command {
     case ${LINTER} in
         lint_cmake) CMD='find ${VALID_SRC_DIRS_ARG} -type f \( -name "CMakeLists.txt" -o -name "*.cmake" -o -name "*.cmake.in" \)' ;;
         flake8) CMD='find ${VALID_SRC_DIRS_ARG} -type f -name "*.py"' ;;
-        pep257) CMD='find ${VALID_SRC_DIRS_ARG} -type f -name "*.py"' ;;
         xmllint) CMD='find ${VALID_SRC_DIRS_ARG} -type f -name "*.xml"' ;;
         *) error "ERROR: Invalid linter ${LINTER} specified in ament-lint action"; exit 1 ;;
     esac
