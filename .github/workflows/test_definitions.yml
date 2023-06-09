@@ -37,11 +37,6 @@ jobs:
           repository: UBCSailbot/sailbot_workspace
           ref: user/dfriend01/add_lang_ci_args
 
-    - name: Debug
-      run: |
-          echo ${{ inputs.repository }}
-          echo ${{ github.event.repository.name }}
-
     - name: Checkout ROS package
       if: ${{ inputs.repository != github.event.repository.name }}
       uses: actions/checkout@v3
