@@ -43,14 +43,14 @@ jobs:
           echo ${{ github.event.repository.name }}
 
     - name: Checkout ROS package
-      if: ${{ inputs.repository }} != ${{ github.event.repository.name }}
+      if: ${{ inputs.repository != github.event.repository.name }}
       uses: actions/checkout@v3
       with:
           repository: UBCSailbot/${{ inputs.repository }}
           path: src/${{ inputs.repository }}
 
     - name: Checkout custom_interfaces ROS package
-      if: ${{ inputs.repository }} != ${{ github.event.repository.name }}
+      if: ${{ inputs.repository != github.event.repository.name }}
       uses: actions/checkout@v3
       with:
           repository: UBCSailbot/custom_interfaces
@@ -60,7 +60,7 @@ jobs:
     - name: Test
       uses: ./.github/actions/test/
       env:
-        DISABLE_VCS: ${{ inputs.repository !=  github.event.repository.name }}
+        DISABLE_VCS: ${{ inputs.repository != github.event.repository.name }}
 
   ament-lint:
     name: ament_${{ matrix.linter }}
@@ -79,14 +79,14 @@ jobs:
           ref: user/dfriend01/add_lang_ci_args
 
     - name: Checkout ROS package
-      if: ${{ inputs.repository }} != ${{ github.event.repository.name }}
+      if: ${{ inputs.repository != github.event.repository.name }}
       uses: actions/checkout@v3
       with:
           repository: UBCSailbot/${{ inputs.repository }}
           path: src/${{ inputs.repository }}
 
     - name: Checkout custom_interfaces ROS package
-      if: ${{ inputs.repository }} != ${{ github.event.repository.name }}
+      if: ${{ inputs.repository != github.event.repository.name }}
       uses: actions/checkout@v3
       with:
           repository: UBCSailbot/custom_interfaces
@@ -97,7 +97,7 @@ jobs:
       uses: ./.github/actions/ament-lint/
       env:
         LINTER: ${{ matrix.linter }}
-        DISABLE_VCS: ${{ inputs.repository !=  github.event.repository.name }}
+        DISABLE_VCS: ${{ inputs.repository != github.event.repository.name }}
 
   clang-tidy:
     runs-on: ubuntu-latest
@@ -110,14 +110,14 @@ jobs:
           ref: user/dfriend01/add_lang_ci_args
 
     - name: Checkout ROS package
-      if: ${{ inputs.repository }} != ${{ github.event.repository.name }}
+      if: ${{ inputs.repository != github.event.repository.name }}
       uses: actions/checkout@v3
       with:
           repository: UBCSailbot/${{ inputs.repository }}
           path: src/${{ inputs.repository }}
 
     - name: Checkout custom_interfaces ROS package
-      if: ${{ inputs.repository }} != ${{ github.event.repository.name }}
+      if: ${{ inputs.repository != github.event.repository.name }}
       uses: actions/checkout@v3
       with:
           repository: UBCSailbot/custom_interfaces
@@ -127,7 +127,7 @@ jobs:
     - name: Run linter
       uses: ./.github/actions/clang-tidy/
       env:
-        DISABLE_VCS: ${{ inputs.repository !=  github.event.repository.name }}
+        DISABLE_VCS: ${{ inputs.repository != github.event.repository.name }}
 
   # https://github.com/nosborn/github-action-markdown-cli
   markdownlint:
