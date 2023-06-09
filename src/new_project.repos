@@ -17,11 +17,6 @@ repositories:
   #   url: https://github.com/UBCSailbot/cpp_pubsub_ex
   #   version: main
 
-  custom_interfaces:
-    type: git
-    url: https://github.com/UBCSailbot/custom_interfaces
-    version: user/colinli02/custom_messages
-
   docs:
     type: git
     url: https://github.com/UBCSailbot/docs
@@ -51,3 +46,8 @@ repositories:
     type: git
     url: https://github.com/UBCSailbot/virtual_iridium
     version: master
+
+  custom_interfaces:
+      type: git
+      url: https://github.com/UBCSailbot/custom_interfaces
+      version: user/colinli02/custom_messages
