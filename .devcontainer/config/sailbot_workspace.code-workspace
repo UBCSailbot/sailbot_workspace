@@ -195,14 +195,14 @@
         "version": "0.2.0",
         "configurations": [
             {
-                "name": "Launch Python File",
+                "name": "Python: Current File",
                 "type": "python",
                 "request": "launch",
                 "program": "${file}",
                 "console": "integratedTerminal",
             },
             {
-                "name": "Launch Cpp Program",
+                "name": "C++ (GDB): Launch",
                 "type": "cppdbg",
                 "request": "launch",
                 "program": "${workspaceFolder}/install/lib/${input:package}/${input:program}",
