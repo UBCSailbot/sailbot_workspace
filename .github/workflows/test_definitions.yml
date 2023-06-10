@@ -69,13 +69,13 @@ jobs:
         DISABLE_VCS: ${{ inputs.repository != github.event.repository.name }}
 
   ament-lint:
-    name: ament_${{ matrix.linter }}
-    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
           # ament_lint_common, except for copyright, cppcheck, cpplint, uncrustify, and pep257
           linter: [lint_cmake, flake8, xmllint]
+    name: ament_${{ matrix.linter }}
+    runs-on: ubuntu-latest
     if: ${{ inputs.ros-ci }}
     steps:
     - name: Checkout workspace
