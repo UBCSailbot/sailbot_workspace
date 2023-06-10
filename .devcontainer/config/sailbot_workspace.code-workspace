@@ -143,6 +143,12 @@
 			"--skip-string-normalization"
 		],
 		"isort.args":["--profile=black"],
+		// test framework: pytest
+		"python.testing.cwd": "/workspaces/sailbot_workspace/src",
+		"python.testing.pytestArgs": [
+			"--ignore=/workspaces/sailbot_workspace/src/raye-local-pathfinding",
+		],
+		"python.testing.pytestEnabled": true,
 
 		// c/c++
 		"[cpp]": {
