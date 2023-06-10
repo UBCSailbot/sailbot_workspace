@@ -60,6 +60,7 @@
 				"KevinRose.vsc-python-indent",
 				"llvm-vs-code-extensions.vscode-clangd",
 				"mongodb.mongodb-vscode",
+				"ms-iot.vscode-ros",
 				"ms-python.black-formatter",
 				"ms-python.isort",
 				"ms-vsliveshare.vsliveshare",
