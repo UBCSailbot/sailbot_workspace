@@ -1,5 +1,10 @@
 FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:setup-local-pathfinding3
 
+# Copy configuration files (e.g., .vimrc) from config/ to the container's home directory
+ARG USERNAME=ros
+ARG HOME=/home/$USERNAME
+COPY config ${HOME}
+
 # # Uncomment this section to install additional apt packages
 # ENV DEBIAN_FRONTEND=noninteractive
 # RUN apt-get update \
@@ -12,8 +17,3 @@ FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:setup-local-pathfinding3
 #     && apt-get clean -y \
 #     && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
 # ENV DEBIAN_FRONTEND=
-
-# Copy configuration files (e.g., .vimrc) from config/ to the container's home directory
-ARG USERNAME=ros
-ARG HOME=/home/$USERNAME
-COPY config ${HOME}
