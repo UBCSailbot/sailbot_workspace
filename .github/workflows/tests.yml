@@ -20,21 +20,18 @@ concurrency:
 jobs:
   # CI for all UBCSailbot repositories defined in one place
   # https://github.com/UBCSailbot/sailbot_workspace/blob/main/.github/workflows/test_definitions.yml
+  # Runs another workflow: https://docs.github.com/en/actions/using-workflows/reusing-workflows#calling-a-reusable-workflow
   test-definitions:
-    # Runs another workflow, refer to
-    # https://docs.github.com/en/actions/using-workflows/reusing-workflows#calling-a-reusable-workflow
-    # sailbot_workspace only: use locally-defined file
+    # sailbot_workspace: use locally-defined file
+    # other repositories: set to UBCSailbot/sailbot_workspace/.github/workflows/test_definitions.yml@<release>
     uses: ./.github/workflows/test_definitions.yml
     with:
-      # Enable to true when running CI on ROS packages
-      ros-ci: true
       repository: ${{ github.event.repository.name }}
-      # clang-tidy take a long time to run, so disable in repositories that don't need it
+      ros-ci: true
       clang-tidy: true
-      # Rebuilds our docs site https://ubcsailbot.github.io/docs/
-      # If the docs contains a snippet of a file in this repository, set to true
       rebuild-docs: true
-    # https://docs.github.com/en/actions/using-workflows/reusing-workflows#using-inputs-and-secrets-in-a-reusable-workflow
     secrets:
-      # The repository secret `PAT_TOKEN` needs to exist, copy from Bitwarden
+      # If rebuild-docs is true:
+      # 1. Create the repository secret PAT_TOKEN (copy from Bitwarden)
+      # 2. Uncomment the line below
       gh-token: ${{ secrets.PAT_TOKEN }}
