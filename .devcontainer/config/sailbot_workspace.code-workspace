@@ -195,21 +195,14 @@
         "version": "0.2.0",
         "configurations": [
             {
-                "name": "Python: Current File",
-                "type": "python",
-                "request": "launch",
-                "program": "${file}",
-                "console": "integratedTerminal",
-            },
-            {
                 "name": "C++ (GDB): Launch",
                 "type": "cppdbg",
                 "request": "launch",
-                "program": "${workspaceFolder}/install/lib/${input:package}/${input:program}",
+                "program": "${workspaceFolder:sailbot_workspace}/install/lib/${input:package}/${input:program}",
                 "args": [],
                 "preLaunchTask": "Build",
-                "stopAtEntry": true,
-                "cwd": "${workspaceFolder}",
+                "stopAtEntry": false,
+                "cwd": "${workspaceFolder:sailbot_workspace}",
                 "externalConsole": false,
                 "MIMode": "gdb",
                 "setupCommands": [
@@ -226,13 +219,13 @@
                 "id": "package",
                 "type": "promptString",
                 "description": "Package name",
-                "default": "examples_rclcpp_minimal_publisher"
+                "default": "network_systems"
             },
             {
                 "id": "program",
                 "type": "promptString",
                 "description": "Program name",
-                "default": "publisher_member_function"
+                "default": "local_transceiver"
             }
         ]
     },
