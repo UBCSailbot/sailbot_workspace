@@ -23,7 +23,8 @@ jobs:
   test-definitions:
     # Runs another workflow, refer to
     # https://docs.github.com/en/actions/using-workflows/reusing-workflows#calling-a-reusable-workflow
-    uses: UBCSailbot/sailbot_workspace/.github/workflows/test_definitions.yml@user/dfriend01/add_lang_ci_args
+    # sailbot_workspace only: use locally-defined file
+    uses: ./.github/workflows/test_definitions.yml
     with:
       # Enable to true when running CI on ROS packages
       ros-ci: true
