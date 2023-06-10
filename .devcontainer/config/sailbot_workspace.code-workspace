@@ -195,6 +195,13 @@
         "version": "0.2.0",
         "configurations": [
             {
+                "name": "ROS: Launch local_pathfinding main_launch.py",
+                "type": "ros",
+                "request": "launch",
+                "preLaunchTask": "Build",
+                "target": "${workspaceFolder:sailbot_workspace}/install/share/local_pathfinding/main_launch.py",
+            },
+            {
                 "name": "C++ (GDB): Launch",
                 "type": "cppdbg",
                 "request": "launch",
