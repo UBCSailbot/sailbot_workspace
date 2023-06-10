@@ -66,7 +66,7 @@ jobs:
     - name: Test
       uses: ./.github/actions/test/
       env:
-        DISABLE_VCS: ${{ inputs.repository != github.event.repository.name }}
+        DISABLE_VCS: ${{ inputs.repository != 'UBCSailbot/boat_simulator' }}
 
   ament-lint:
     strategy:
