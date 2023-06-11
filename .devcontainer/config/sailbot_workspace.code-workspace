@@ -258,7 +258,7 @@
 			},
 			{
 				"label": "Build All (Quick)",
-				"detail": "Quick builds all packages in the workspace (default)",
+				"detail": "Quick builds all packages in the workspace",
 				"type": "shell",
 				"command": "./build.sh -q",
 				"group": {

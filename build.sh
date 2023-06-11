@@ -5,10 +5,10 @@ set -e
 function helpMessage() {
     echo -e "Build ROS package(s) in the Sailbot Workspace."
     echo -e "Usage: ./build.sh [OPTION] ..."
-    echo -e "Example: ./build.sh -p local_pathfinding -q\n"
+    echo -e "Example: ./build.sh -q -p local_pathfinding\n"
     echo -e "Options (All Optional):"
-    echo -e "\t-p <PACKAGE_NAME>: Build a ROS package. Can only specify one package. If argument not included, all packages are built."
     echo -e "\t-q: Do a quick build. Specifying this argument will skip static analysis and unit testing when building."
+    echo -e "\t-p <PACKAGE_NAME>: Build a ROS package. Can only specify one package. If argument not included, all packages are built."
     echo -e "\t-h: Display this message."
 }
 
