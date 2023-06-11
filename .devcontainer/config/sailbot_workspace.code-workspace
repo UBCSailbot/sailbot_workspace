@@ -198,44 +198,57 @@
         "version": "0.2.0",
         "configurations": [
             {
-            "name": "Launch Python File",
-            "type": "python",
-            "request": "launch",
-            "program": "${file}",
-            "console": "integratedTerminal",
+                "name": "ROS: Attach (currently only C++ working)",
+                "type": "ros",
+                "request": "attach"
             },
             {
-            "name": "Launch Cpp Program",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/install/lib/${input:package}/${input:program}",
-            "args": [],
-            "preLaunchTask": "Build",
-            "stopAtEntry": true,
-            "cwd": "${workspaceFolder}",
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                "description": "Enable pretty-printing for gdb",
-                "text": "-enable-pretty-printing",
-                "ignoreFailures": true
-                }
-            ]
+                "name": "ROS: Launch",
+                "type": "ros",
+                "request": "launch",
+                "preLaunchTask": "Build All",
+                "target": "${workspaceFolder:sailbot_workspace}/install/share/${input:launchFile}",
+            },
+            {
+                "name": "C++ (GDB): Launch",
+                "type": "cppdbg",
+                "request": "launch",
+                "program": "${workspaceFolder:sailbot_workspace}/install/lib/${input:node}",
+                "args": [],
+                "preLaunchTask": "Build All",
+                "stopAtEntry": false,
+                "cwd": "${workspaceFolder:sailbot_workspace}",
+                "externalConsole": false,
+                "MIMode": "gdb",
+                "setupCommands": [
+                    {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                    }
+                ]
             }
         ],
         "inputs": [
             {
-            "id": "package",
-            "type": "promptString",
-            "description": "Package name",
-            "default": "examples_rclcpp_minimal_publisher"
+                "id": "launchFile",
+                "type": "pickString",
+                "description": "Launch file to run, in the format `<package>/<launch file>`",
+                "options": [
+                    "boat_simulator/all_launch.yaml",
+                    "local_pathfinding/main_launch.py",
+                ]
             },
             {
-            "id": "program",
-            "type": "promptString",
-            "description": "Program name",
-            "default": "publisher_member_function"
+                "id": "node",
+                "type": "pickString",
+                "description": "Node to run, in the format `<package>/<node>`",
+                "options": [
+                    "network_systems/can_transceiver",
+                    "network_systems/example",
+                    "network_systems/local_transceiver",
+                ],
+                "default": "network_systems/local_transceiver"
             }
         ]
     },
@@ -249,7 +262,7 @@
                 "label": "Build All",
                 "detail": "Build all packages in the workspace",
                 "type": "shell",
-                "command": "./build.sh ${input:quick_build}",
+                "command": "./build.sh ${input:quickBuild}",
                 "group": {
                     "kind": "build",
                     "isDefault": true
@@ -260,7 +273,7 @@
                 "label": "Build Package",
                 "detail": "Build a specific package in the workspace",
                 "type": "shell",
-                "command": "./build.sh ${input:quick_build} -p ${input:package}",
+                "command": "./build.sh ${input:quickBuild} -p ${input:package}",
                 "group": {
                     "kind": "build",
                     "isDefault": true
@@ -391,7 +404,7 @@
             {
                 "id": "package",
                 "type": "pickString",
-                "description": "Package name",
+                "description": "Package to build",
                 "options": [
                     "boat_simulator",
                     "custom_interfaces",
@@ -400,9 +413,9 @@
                 ]
             },
             {
-                "id": "quick_build",
+                "id": "quickBuild",
                 "type": "promptString",
-                "description": "Argument to disable static analysis and unit tests for quicker builds; delete to enable",
+                "description": "Build arguments: -q disables static analysis and unit tests for quicker builds",
                 "default": "-q"
             },
         ]
