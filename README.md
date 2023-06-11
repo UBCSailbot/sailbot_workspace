@@ -25,6 +25,13 @@ C++ and Python linters and formatters are integrated into Sailbot Workspace:
 The [ament linters](https://github.com/ament/ament_lint/tree/humble) are configured to be consistent with the
 [ROS style guide](https://docs.ros.org/en/humble/The-ROS2-Project/Contributing/Code-Style-Language-Versions.html).
 
+### Dev Container
+
+[Dev Containers](https://code.visualstudio.com/docs/devcontainers/containers) enable us to use a
+[Docker container](https://www.docker.com/resources/what-container/) as a fully-featured development environment
+containing all our configuration and dependencies.
+Our Dev Container configuration can be found in [`.devcontainer/`](https://github.com/UBCSailbot/sailbot_workspace/blob/main/.devcontainer).
+
 ### Multi-Root Workspace
 
 [Workspaces](https://code.visualstudio.com/docs/editor/workspaces) are VS Code instances that contain one or more folders.
@@ -52,20 +59,20 @@ our workspace file.
 
 [Actions](https://docs.github.com/en/actions/learn-github-actions/understanding-github-actions)
 were used to build [our Docker containers](https://github.com/orgs/UBCSailbot/packages?repo_name=sailbot_workspace)
-that contain all our OS-level configuration and dependencies, and lint and test our code, the same way it is done
-locally in Sailbot Workspace on GitHub.
+and lint and test our code the same way it is done locally in Sailbot Workspace on GitHub.
 We use a [reusable workflow](https://docs.github.com/en/actions/using-workflows/reusing-workflows)
 to create a single source of truth for our tests across all our repositories.
-Our CI is defined in [`.github/workflows/`](https://github.com/UBCSailbot/sailbot_workspace/tree/main/.github/workflows).
+Our CI can be found in [`.github/workflows/`](https://github.com/UBCSailbot/sailbot_workspace/tree/main/.github/workflows).
 
 ### Customization
 
 This repository supports user-specific configuration files. To set this up, see
 [How to use your dotfiles](https://ubcsailbot.github.io/docs/current/sailbot_workspace/how_to/#use-your-dotfiles).
 
-## Run Raye's Software
+### Run Raye's Software
 
-Raye was our previous project. Her software can be run in the [`raye` branch](https://github.com/UBCSailbot/sailbot_workspace/tree/raye).
+[Raye](https://www.ubcsailbot.org/discover-raye) was our previous project.
+Her software can be run in the [`raye` branch](https://github.com/UBCSailbot/sailbot_workspace/tree/raye).
 The initial differences between the `main` and `raye` branches are summarized in
 [this PR](https://github.com/UBCSailbot/sailbot_workspace/pull/61).
 
