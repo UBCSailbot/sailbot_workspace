@@ -200,6 +200,13 @@
                 "request": "attach"
             },
             {
+                "name": "ROS: Launch",
+                "type": "ros",
+                "request": "launch",
+                "preLaunchTask": "Build",
+                "target": "${workspaceFolder:sailbot_workspace}/install/share/${input:package}/${input:program}",
+            },
+            {
                 "name": "ROS: Launch local_pathfinding main_launch.py",
                 "type": "ros",
                 "request": "launch",
