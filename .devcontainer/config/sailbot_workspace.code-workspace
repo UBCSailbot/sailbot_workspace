@@ -372,10 +372,10 @@
 			},
 			// Workspace editing tasks
 			{
-				"label": "import from workspace file",
-				"detail": "Use vcs to import modules specified by a workspace/rosinstall file.",
+				"label": "clone source repositories",
+				"detail": "Clone the repositories specified in src/new_project.repos to src/",
 				"type": "shell",
-				"command": "vcs import < src/new_project.repos src",
+				"command": "vcs import < src/new_project.repos src --skip-existing",
 				"problemMatcher": []
 			},
 			{
