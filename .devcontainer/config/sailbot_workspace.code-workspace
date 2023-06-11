@@ -389,11 +389,6 @@
         ],
         "inputs": [
             {
-                "id": "node",
-                "type": "promptString",
-                "description": "Node name"
-            },
-            {
                 "id": "package",
                 "type": "pickString",
                 "description": "Package name",
