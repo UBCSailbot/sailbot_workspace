@@ -195,6 +195,11 @@
         "version": "0.2.0",
         "configurations": [
             {
+                "name": "ROS: Attach (currently only C++ working)",
+                "type": "ros",
+                "request": "attach"
+            },
+            {
                 "name": "ROS: Launch local_pathfinding main_launch.py",
                 "type": "ros",
                 "request": "launch",
