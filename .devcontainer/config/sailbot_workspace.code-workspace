@@ -206,23 +206,16 @@
                 "name": "ROS: Launch",
                 "type": "ros",
                 "request": "launch",
-                "preLaunchTask": "Build",
-                "target": "${workspaceFolder:sailbot_workspace}/install/share/${input:package}/${input:program}",
-            },
-            {
-                "name": "ROS: Launch local_pathfinding main_launch.py",
-                "type": "ros",
-                "request": "launch",
-                "preLaunchTask": "Build",
-                "target": "${workspaceFolder:sailbot_workspace}/install/share/local_pathfinding/main_launch.py",
+                "preLaunchTask": "Build All",
+                "target": "${workspaceFolder:sailbot_workspace}/install/share/${input:launch_file}",
             },
             {
                 "name": "C++ (GDB): Launch",
                 "type": "cppdbg",
                 "request": "launch",
-                "program": "${workspaceFolder:sailbot_workspace}/install/lib/${input:package}/${input:program}",
+                "program": "${workspaceFolder:sailbot_workspace}/install/lib/${input:node}",
                 "args": [],
-                "preLaunchTask": "Build",
+                "preLaunchTask": "Build All",
                 "stopAtEntry": false,
                 "cwd": "${workspaceFolder:sailbot_workspace}",
                 "externalConsole": false,
@@ -238,16 +231,24 @@
         ],
         "inputs": [
             {
-                "id": "package",
-                "type": "promptString",
-                "description": "Package name",
-                "default": "network_systems"
+                "id": "launch_file",
+                "type": "pickString",
+                "description": "Launch file to run, in the format `<package>/<launch file>`",
+                "options": [
+                    "boat_simulator/all_launch.yaml",
+                    "local_pathfinding/main_launch.py",
+                ]
             },
             {
-                "id": "program",
-                "type": "promptString",
-                "description": "Program name",
-                "default": "local_transceiver"
+                "id": "node",
+                "type": "pickString",
+                "description": "Node to run, in the format `<package>/<node>`",
+                "options": [
+                    "network_systems/can_transceiver",
+                    "network_systems/example",
+                    "network_systems/local_transceiver",
+                ],
+                "default": "network_systems/local_transceiver"
             }
         ]
     },
@@ -403,7 +404,7 @@
             {
                 "id": "package",
                 "type": "pickString",
-                "description": "Package name",
+                "description": "Package to build",
                 "options": [
                     "boat_simulator",
                     "custom_interfaces",
@@ -414,7 +415,7 @@
             {
                 "id": "quick_build",
                 "type": "promptString",
-                "description": "Argument to disable static analysis and unit tests for quicker builds; delete to enable",
+                "description": "Build arguments: -q disables static analysis and unit tests for quicker builds",
                 "default": "-q"
             },
         ]
