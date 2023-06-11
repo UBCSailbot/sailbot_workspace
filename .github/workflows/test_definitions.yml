@@ -168,7 +168,7 @@ jobs:
   # Rebuilds our docs site https://ubcsailbot.github.io/docs/
   rebuild-docs:
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && inputs.rebuild-docs
+    if: inputs.rebuild-docs
     steps:
     - name: Dispatch Docs Tests workflow to publish site
       # https://github.com/orgs/community/discussions/26323#discussioncomment-5600001
