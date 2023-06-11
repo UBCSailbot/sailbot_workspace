@@ -169,6 +169,7 @@ jobs:
   rebuild-docs:
     runs-on: ubuntu-latest
     if: inputs.rebuild-docs
+    needs: [markdownlint, markdown-link-check]
     steps:
     - name: Dispatch Docs Tests workflow to publish site
       # https://github.com/orgs/community/discussions/26323#discussioncomment-5600001
