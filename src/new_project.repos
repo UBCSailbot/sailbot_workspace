@@ -17,6 +17,11 @@ repositories:
   #   url: https://github.com/UBCSailbot/cpp_pubsub_ex
   #   version: main
 
+  boat_simulator:
+    type: git
+    url: https://github.com/UBCSailbot/boat_simulator
+    version: main
+
   custom_interfaces:
     type: git
     url: https://github.com/UBCSailbot/custom_interfaces

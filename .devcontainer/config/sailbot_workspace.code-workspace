@@ -1,431 +1,410 @@
 {
-	"folders": [
-		{
-			"path": "../.."
-		},
-		{
-			"path": "../../src/custom_interfaces"
-		},
-		{
-			"path": "../../src/docs"
-		},
-		{
-			"path": "../../src/local_pathfinding"
-		},
-		{
-			"path": "../../src/network_systems"
-		},
-		{
-			"path": "../../src/raye-local-pathfinding"
-		},
-		{
-			"path": "../../src/website"
-		},
-	],
-	"settings": {
-		// general
-		"cSpell.enabled": true,
-		"cSpell.allowCompoundWords": true,
-		"cSpell.ignorePaths": [
-			"package-lock.json",
-			"node_modules",
-			"vscode-extension",
-			".git/objects",
-			".vscode",
-			".vscode-insiders",
-			".devcontainer/devcontainer.json"
-		],
-		"cSpell.words": [
-			"athackst",
-			"autopep",
-			"buildx",
-			"cmake",
-			"cppcheck",
-			"cppdbg",
-			"cpplint",
-			"DCMAKE",
-			"deque",
-			"devcontainer",
-			"gaurav",
-			"ints",
-			"noqa",
-			"OMPL",
-			"pallete",
-			"protofiles",
-			"pytest",
-			"Raye",
-			"rclcpp",
-			"rclpy",
-			"repos",
-			"rosdep",
-			"rosdistro",
-			"rosidl",
-			"RTPS",
-			"srcnew",
-			"srcraye",
-			"ubcsailbot",
-			"uncrustify",
-			"Wextra",
-			"Wpedantic",
-			"xmllint"
-		],
-		"editor.inlayHints.enabled": "off",
-		"editor.renderWhitespace": "trailing",
-		"editor.tabSize": 4,
-		"files.associations": {
-			"*.repos": "yaml",
-			"*.world": "xml",
-			"*.xacro": "xml"
-		},
-		"files.insertFinalNewline": true,
-		"files.trimFinalNewlines": true,
-		"files.trimTrailingWhitespace": true,
-		"search.exclude": {
-			"**/build": true,
-			"**/install": true,
-			"**/log": true
-		},
-		"todo-tree.highlights.useColourScheme": true,
-		"workbench.colorCustomizations": {
-			"activityBar.activeBackground": "#19488d",
-			"activityBar.activeBorder": "#dd4181",
-			"activityBar.background": "#19488d",
-			"activityBar.foreground": "#e7e7e7",
-			"activityBar.inactiveForeground": "#e7e7e799",
-			"activityBarBadge.background": "#dd4181",
-			"activityBarBadge.foreground": "#e7e7e7",
-			"sash.hoverBorder": "#19488d",
-			"statusBar.background": "#113262",
-			"statusBar.foreground": "#e7e7e7",
-			"statusBarItem.hoverBackground": "#19488d",
-			"statusBarItem.remoteBackground": "#113262",
-			"statusBarItem.remoteForeground": "#e7e7e7",
-			"titleBar.activeBackground": "#113262",
-			"titleBar.activeForeground": "#e7e7e7",
-			"titleBar.inactiveBackground": "#11326299",
-			"titleBar.inactiveForeground": "#e7e7e799",
-			"commandCenter.border": "#e7e7e799"
-		},
+    "folders": [
+        {
+            "path": "../.."
+        },
+        {
+            "path": "../../src/boat_simulator"
+        },
+        {
+            "path": "../../src/custom_interfaces"
+        },
+        {
+            "path": "../../src/docs"
+        },
+        {
+            "path": "../../src/local_pathfinding"
+        },
+        {
+            "path": "../../src/network_systems"
+        },
+        {
+            "path": "../../src/raye-local-pathfinding"
+        },
+        {
+            "path": "../../src/website"
+        },
+    ],
+    "settings": {
+        // general
+        "cSpell.enabled": true,
+        "cSpell.allowCompoundWords": true,
+        "cSpell.ignorePaths": [
+            "package-lock.json",
+            "node_modules",
+            "vscode-extension",
+            ".git/objects",
+            ".vscode",
+            ".vscode-insiders",
+            ".devcontainer/devcontainer.json"
+        ],
+        "cSpell.words": [
+            "athackst",
+            "autopep",
+            "buildx",
+            "cmake",
+            "cppcheck",
+            "cppdbg",
+            "cpplint",
+            "DCMAKE",
+            "deque",
+            "devcontainer",
+            "gaurav",
+            "ints",
+            "noqa",
+            "OMPL",
+            "pallete",
+            "protofiles",
+            "pytest",
+            "Raye",
+            "rclcpp",
+            "rclpy",
+            "repos",
+            "rosdep",
+            "rosdistro",
+            "rosidl",
+            "RTPS",
+            "srcnew",
+            "srcraye",
+            "ubcsailbot",
+            "uncrustify",
+            "Wextra",
+            "Wpedantic",
+            "xmllint"
+        ],
+        "editor.inlayHints.enabled": "off",
+        "editor.renderWhitespace": "trailing",
+        "editor.tabSize": 4,
+        "files.associations": {
+            "*.repos": "yaml",
+            "*.world": "xml",
+            "*.xacro": "xml"
+        },
+        "files.insertFinalNewline": true,
+        "files.trimFinalNewlines": true,
+        "files.trimTrailingWhitespace": true,
+        "search.exclude": {
+            "**/build": true,
+            "**/install": true,
+            "**/log": true
+        },
+        "todo-tree.highlights.useColourScheme": true,
+        "workbench.colorCustomizations": {
+            "activityBar.activeBackground": "#19488d",
+            "activityBar.activeBorder": "#dd4181",
+            "activityBar.background": "#19488d",
+            "activityBar.foreground": "#e7e7e7",
+            "activityBar.inactiveForeground": "#e7e7e799",
+            "activityBarBadge.background": "#dd4181",
+            "activityBarBadge.foreground": "#e7e7e7",
+            "sash.hoverBorder": "#19488d",
+            "statusBar.background": "#113262",
+            "statusBar.foreground": "#e7e7e7",
+            "statusBarItem.hoverBackground": "#19488d",
+            "statusBarItem.remoteBackground": "#113262",
+            "statusBarItem.remoteForeground": "#e7e7e7",
+            "titleBar.activeBackground": "#113262",
+            "titleBar.activeForeground": "#e7e7e7",
+            "titleBar.inactiveBackground": "#11326299",
+            "titleBar.inactiveForeground": "#e7e7e799",
+            "commandCenter.border": "#e7e7e799"
+        },
 
-		// python
-		"[python]": {
-			"editor.codeActionsOnSave": {
-				"source.organizeImports": true
-			},
-			"editor.defaultFormatter": "ms-python.black-formatter",
-			"editor.formatOnSave": true,
-			"editor.rulers": [99],
-		},
-		"python.analysis.extraPaths": [
-			"/workspaces/sailbot_workspace/install/lib/python3.10/site-packages",
-			"/opt/ros/humble/lib/python3.10/site-packages"
-		],
-		// Autocomplete from ros python packages
-		"python.autoComplete.extraPaths": [
-			"/workspaces/sailbot_workspace/install/lib/python3.10/site-packages",
-			"/opt/ros/humble/lib/python3.10/site-packages"
-		],
-		// Environment file lets vscode find python files within workspace
-		"python.envFile": "/workspaces/sailbot_workspace/.env",
-		// linter: flake8 extension
-		// copy from https://github.com/ament/ament_lint/blob/humble/ament_flake8/ament_flake8/configuration/ament_flake8.ini
-		// except for import order style = google: use isort with black profile instead
-		"flake8.args": [
-			"--extend-ignore=B902,C816,D100,D101,D102,D103,D104,D105,D106,D107,D203,D212,D404,I202",
-			"--max-line-length=99",
-			"--show-source",
-			"--statistics",
-		],
-		// formatter: black and isort extensions
-		"python.formatting.provider": "none",
-		"black-formatter.args": [
-			"--line-length=99",
-			"--skip-string-normalization"
-		],
-		"isort.args":["--profile=black"],
-		// test framework: pytest
-		"python.testing.cwd": "/workspaces/sailbot_workspace/src",
-		"python.testing.pytestArgs": [
-			"--ignore=/workspaces/sailbot_workspace/src/raye-local-pathfinding",
-		],
-		"python.testing.pytestEnabled": true,
+        // python
+        "[python]": {
+            "editor.codeActionsOnSave": {
+                "source.organizeImports": true
+            },
+            "editor.defaultFormatter": "ms-python.black-formatter",
+            "editor.formatOnSave": true,
+            "editor.rulers": [99],
+        },
+        "python.analysis.extraPaths": [
+            "/workspaces/sailbot_workspace/install/lib/python3.10/site-packages",
+            "/opt/ros/humble/lib/python3.10/site-packages"
+        ],
+        // Autocomplete from ros python packages
+        "python.autoComplete.extraPaths": [
+            "/workspaces/sailbot_workspace/install/lib/python3.10/site-packages",
+            "/opt/ros/humble/lib/python3.10/site-packages"
+        ],
+        // Environment file lets vscode find python files within workspace
+        "python.envFile": "/workspaces/sailbot_workspace/.env",
+        // linter: flake8 extension
+        // copy from https://github.com/ament/ament_lint/blob/humble/ament_flake8/ament_flake8/configuration/ament_flake8.ini
+        // except for import order style = google: use isort with black profile instead
+        "flake8.args": [
+            "--extend-ignore=B902,C816,D100,D101,D102,D103,D104,D105,D106,D107,D203,D212,D404,I202",
+            "--max-line-length=99",
+            "--show-source",
+            "--statistics",
+        ],
+        // formatter: black and isort extensions
+        "python.formatting.provider": "none",
+        "black-formatter.args": [
+            "--line-length=99",
+            "--skip-string-normalization"
+        ],
+        "isort.args":["--profile=black"],
+        // test framework: pytest
+        "python.testing.cwd": "/workspaces/sailbot_workspace/src",
+        "python.testing.pytestArgs": [
+            "--ignore=/workspaces/sailbot_workspace/src/raye-local-pathfinding",
+        ],
+        "python.testing.pytestEnabled": true,
 
-		// c/c++
-		"[cpp]": {
-			"editor.formatOnSave": true,
-			"editor.rulers": [120],
-		},
-		"[c]": {
-			"editor.formatOnSave": true,
-			"editor.rulers": [120],
-		},
+        // c/c++
+        "[cpp]": {
+            "editor.formatOnSave": true,
+            "editor.rulers": [120],
+        },
+        "[c]": {
+            "editor.formatOnSave": true,
+            "editor.rulers": [120],
+        },
 
-		// markdown
-		// copied from docs: https://github.com/UBCSailbot/docs/blob/main/.vscode/settings.json
-		"[markdown]": {
-			"editor.unicodeHighlight.ambiguousCharacters": false,
-			"editor.unicodeHighlight.invisibleCharacters": false,
-			"editor.wordWrap": "on",
-			"editor.quickSuggestions": {
-				"other": "off",
-				"comments": "off",
-				"strings": "off"
-			},
-			"editor.rulers": [120],
-			"editor.renderWhitespace": "trailing",
-			"cSpell.fixSpellingWithRenameProvider": true,
-			"cSpell.advanced.feature.useReferenceProviderWithRename": true,
-			"cSpell.advanced.feature.useReferenceProviderRemove": "/^#+\\s/"
-		},
+        // markdown
+        // copied from docs: https://github.com/UBCSailbot/docs/blob/main/.vscode/settings.json
+        "[markdown]": {
+            "editor.unicodeHighlight.ambiguousCharacters": false,
+            "editor.unicodeHighlight.invisibleCharacters": false,
+            "editor.wordWrap": "on",
+            "editor.quickSuggestions": {
+                "other": "off",
+                "comments": "off",
+                "strings": "off"
+            },
+            "editor.rulers": [120],
+            "editor.renderWhitespace": "trailing",
+            "cSpell.fixSpellingWithRenameProvider": true,
+            "cSpell.advanced.feature.useReferenceProviderWithRename": true,
+            "cSpell.advanced.feature.useReferenceProviderRemove": "/^#+\\s/"
+        },
 
-		// yaml
-		"yaml.schemas": {
-			"https://squidfunk.github.io/mkdocs-material/schema.json": "mkdocs.yml"
-		},
-		"yaml.customTags": [
-			"tag:yaml.org,2002:python/name:materialx.emoji.twemoji",
-			"tag:yaml.org,2002:python/name:materialx.emoji.to_svg",
-			"tag:yaml.org,2002:python/name:pymdownx.superfences.fence_code_format"
-		],
-	},
-	"launch": {
-		// Use IntelliSense to learn about possible attributes.
-		// Hover to view descriptions of existing attributes.
-		// For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-		"version": "0.2.0",
-		"configurations": [
-			{
-			"name": "Launch Python File",
-			"type": "python",
-			"request": "launch",
-			"program": "${file}",
-			"console": "integratedTerminal",
-			},
-			{
-			"name": "Launch Cpp Program",
-			"type": "cppdbg",
-			"request": "launch",
-			"program": "${workspaceFolder}/install/lib/${input:package}/${input:program}",
-			"args": [],
-			"preLaunchTask": "Build",
-			"stopAtEntry": true,
-			"cwd": "${workspaceFolder}",
-			"externalConsole": false,
-			"MIMode": "gdb",
-			"setupCommands": [
-				{
-				"description": "Enable pretty-printing for gdb",
-				"text": "-enable-pretty-printing",
-				"ignoreFailures": true
-				}
-			]
-			}
-		],
-		"inputs": [
-			{
-			"id": "package",
-			"type": "promptString",
-			"description": "Package name",
-			"default": "examples_rclcpp_minimal_publisher"
-			},
-			{
-			"id": "program",
-			"type": "promptString",
-			"description": "Program name",
-			"default": "publisher_member_function"
-			}
-		]
-	},
-	"tasks": {
-		// See https://go.microsoft.com/fwlink/?LinkId=733558
-		// for the documentation about the tasks.json format
-		"version": "2.0.0",
-		"tasks": [
-			// Build tasks
-			{
-				"label": "Build",
-				"detail": "Build workspace (default)",
-				"type": "shell",
-				"command": "./build.sh",
-				"group": {
-					"kind": "build",
-					"isDefault": true
-				},
-				"problemMatcher": "$gcc"
-			},
-			{
-				"label": "debug",
-				"detail": "Build workspace (debug)",
-				"type": "shell",
-				"command": "./build.sh Debug",
-				"group": "build",
-				"problemMatcher": "$gcc"
-			},
-			// Test tasks
-			{
-				"label": "test",
-				"detail": "Run all unit tests and show results.",
-				"type": "shell",
-				"command": "./test.sh",
-				"group": {
-					"kind": "test",
-					"isDefault": true
-				}
-			},
-			// Clean
-			{
-				"label": "clean",
-				"detail": "Run the clean target",
-				"type": "shell",
-				"command": "colcon build --packages-ignore virtual_iridium --merge-install --cmake-target clean",
-				"problemMatcher": "$gcc"
-			},
-			{
-				"label": "purge",
-				"detail": "Purge workspace by deleting all generated files.",
-				"type": "shell",
-				"command": "rm -fr build install log; py3clean .",
-				"problemMatcher": []
-			},
-			// Linting and static code analysis tasks
-			{
-				"label": "lint_cmake",
-				"detail": "Run lint on cmake files.",
-				"type": "ament",
-				"task": "lint_cmake",
-				"path": "src/",
-				"problemMatcher": [
-					"$ament_lint_cmake"
-				],
-				"presentation": {
-					"panel": "dedicated",
-					"reveal": "silent",
-					"clear": true
-				}
-			},
-			{
-				"label": "clang-tidy",
-				"detail": "Run clang-tidy static analysis",
-				"type": "shell",
-				"command": "./run_clang-tidy.sh",
-				"problemMatcher": [],
-				"presentation": {
-					"panel": "dedicated",
-					"reveal": "always",
-					"clear": true
-				}
-			},
-			{
-				"label": "flake8",
-				"detail": "Run flake8 on python files.",
-				"type": "ament",
-				"task": "flake8",
-				"path": "src/",
-				"commandOptions": "--exclude=src/virtual_iridium,src/raye-local-pathfinding",
-				"problemMatcher": [
-					"$ament_flake8"
-				],
-				"presentation": {
-					"panel": "dedicated",
-					"reveal": "silent",
-					"clear": true
-				}
-			},
-			{
-				"label": "xmllint",
-				"detail": "Run xmllint on xml files.",
-				"type": "ament",
-				"task": "xmllint",
-				"path": "src/",
-				"problemMatcher": [
-					"$ament_xmllint",
-				],
-				"presentation": {
-					"panel": "dedicated",
-					"reveal": "silent",
-					"clear": true
-				}
-			},
-			{
-				"label": "ament lint",
-				"detail": "Run all ament linters.",
-				"dependsOn": [
-					"lint_cmake",
-					"flake8",
-					"xmllint",
-				],
-				"problemMatcher": []
-			},
-			// Workspace editing tasks
-			{
-				"label": "new ament_cmake package",
-				"detail": "Create a new ROS cpp package from a template.",
-				"type": "shell",
-				"command": "ros2 pkg create --destination-directory src --build-type ament_cmake ${input:package}",
-				"problemMatcher": []
-			},
-			{
-				"label": "new ament_python package",
-				"detail": "Create a new ROS python package from a template.",
-				"type": "shell",
-				"command": "ros2 pkg create --destination-directory src --build-type ament_python ${input:package}",
-				"problemMatcher": []
-			},
-			{
-				"label": "new ament_cmake package with a node",
-				"detail": "Create a new ROS cpp package with a node from a template.",
-				"type": "shell",
-				"command": "ros2 pkg create --destination-directory src --build-type ament_cmake ${input:package} --node-name ${input:node}",
-				"problemMatcher": []
-			},
-			{
-				"label": "new ament_python package with a node",
-				"detail": "Create a new ROS python package with a node from a template.",
-				"type": "shell",
-				"command": "ros2 pkg create --destination-directory src --build-type ament_python ${input:package} --node-name ${input:node}",
-				"problemMatcher": []
-			},
-			{
-				"label": "import from workspace file",
-				"detail": "Use vcs to import modules specified by a workspace/rosinstall file.",
-				"type": "shell",
-				"command": "vcs import < src/new_project.repos src",
-				"problemMatcher": []
-			},
-			{
-				"label": "update workspace file",
-				"detail": "Use vcs to update repositories in src to workspace file.",
-				"type": "shell",
-				"command": "vcs export src > src/new_project.repos",
-				"problemMatcher": []
-			},
-			{
-				"label": "install dependencies",
-				"detail": "Install all dependencies specified in the workspaces package.xml files.",
-				"type": "shell",
-				"command": "sudo apt-get update && rosdep update && rosdep install --from-paths src --ignore-src -y",
-				"problemMatcher": []
-			},
-			{
-				"label": "setup",
-				"detail": "Set up the workspace",
-				"type": "shell",
-				"command": "./setup.sh",
-				"problemMatcher": []
-			}
+        // yaml
+        "yaml.schemas": {
+            "https://squidfunk.github.io/mkdocs-material/schema.json": "mkdocs.yml"
+        },
+        "yaml.customTags": [
+            "tag:yaml.org,2002:python/name:materialx.emoji.twemoji",
+            "tag:yaml.org,2002:python/name:materialx.emoji.to_svg",
+            "tag:yaml.org,2002:python/name:pymdownx.superfences.fence_code_format"
+        ],
+    },
+    "launch": {
+        // Use IntelliSense to learn about possible attributes.
+        // Hover to view descriptions of existing attributes.
+        // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+        "version": "0.2.0",
+        "configurations": [
+            {
+            "name": "Launch Python File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            },
+            {
+            "name": "Launch Cpp Program",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/install/lib/${input:package}/${input:program}",
+            "args": [],
+            "preLaunchTask": "Build",
+            "stopAtEntry": true,
+            "cwd": "${workspaceFolder}",
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                "description": "Enable pretty-printing for gdb",
+                "text": "-enable-pretty-printing",
+                "ignoreFailures": true
+                }
+            ]
+            }
+        ],
+        "inputs": [
+            {
+            "id": "package",
+            "type": "promptString",
+            "description": "Package name",
+            "default": "examples_rclcpp_minimal_publisher"
+            },
+            {
+            "id": "program",
+            "type": "promptString",
+            "description": "Program name",
+            "default": "publisher_member_function"
+            }
+        ]
+    },
+    "tasks": {
+        // See https://go.microsoft.com/fwlink/?LinkId=733558
+        // for the documentation about the tasks.json format
+        "version": "2.0.0",
+        "tasks": [
+            // Build tasks
+            {
+                "label": "Build All",
+                "detail": "Build all packages in the workspace",
+                "type": "shell",
+                "command": "./build.sh ${input:quick_build}",
+                "group": {
+                    "kind": "build",
+                    "isDefault": true
+                },
+                "problemMatcher": "$gcc"
+            },
+            {
+                "label": "Build Package",
+                "detail": "Build a specific package in the workspace",
+                "type": "shell",
+                "command": "./build.sh ${input:quick_build} -p ${input:package}",
+                "group": {
+                    "kind": "build",
+                    "isDefault": true
+                },
+                "problemMatcher": "$gcc"
+            },
+            {
+                "label": "debug",
+                "detail": "Build workspace (debug)",
+                "type": "shell",
+                "command": "./build.sh Debug",
+                "group": "build",
+                "problemMatcher": "$gcc"
+            },
+            // Test tasks
+            {
+                "label": "test",
+                "detail": "Run all unit tests and show results.",
+                "type": "shell",
+                "command": "./test.sh",
+                "group": {
+                    "kind": "test",
+                    "isDefault": true
+                }
+            },
+            // Clean
+            {
+                "label": "clean",
+                "detail": "Run the clean target",
+                "type": "shell",
+                "command": "colcon build --packages-ignore virtual_iridium --merge-install --cmake-target clean",
+                "problemMatcher": "$gcc"
+            },
+            {
+                "label": "purge",
+                "detail": "Purge workspace by deleting all generated files.",
+                "type": "shell",
+                "command": "rm -fr build install log; py3clean .",
+                "problemMatcher": []
+            },
+            // Linting and static code analysis tasks
+            {
+                "label": "lint_cmake",
+                "detail": "Run lint on cmake files.",
+                "type": "ament",
+                "task": "lint_cmake",
+                "path": "src/",
+                "problemMatcher": [
+                    "$ament_lint_cmake"
+                ],
+                "presentation": {
+                    "panel": "dedicated",
+                    "reveal": "silent",
+                    "clear": true
+                }
+            },
+            {
+                "label": "clang-tidy",
+                "detail": "Run clang-tidy static analysis",
+                "type": "shell",
+                "command": "./run_clang-tidy.sh",
+                "problemMatcher": [],
+                "presentation": {
+                    "panel": "dedicated",
+                    "reveal": "always",
+                    "clear": true
+                }
+            },
+            {
+                "label": "flake8",
+                "detail": "Run flake8 on python files.",
+                "type": "ament",
+                "task": "flake8",
+                "path": "src/",
+                "commandOptions": "--exclude=src/virtual_iridium,src/raye-local-pathfinding",
+                "problemMatcher": [
+                    "$ament_flake8"
+                ],
+                "presentation": {
+                    "panel": "dedicated",
+                    "reveal": "silent",
+                    "clear": true
+                }
+            },
+            {
+                "label": "xmllint",
+                "detail": "Run xmllint on xml files.",
+                "type": "ament",
+                "task": "xmllint",
+                "path": "src/",
+                "problemMatcher": [
+                    "$ament_xmllint",
+                ],
+                "presentation": {
+                    "panel": "dedicated",
+                    "reveal": "silent",
+                    "clear": true
+                }
+            },
+            {
+                "label": "ament lint",
+                "detail": "Run all ament linters.",
+                "dependsOn": [
+                    "lint_cmake",
+                    "flake8",
+                    "xmllint",
+                ],
+                "problemMatcher": []
+            },
+            // Workspace editing tasks
+            {
+                "label": "clone source repositories",
+                "detail": "Clone the repositories specified in src/new_project.repos to src/",
+                "type": "shell",
+                "command": "vcs import < src/new_project.repos src --skip-existing",
+                "problemMatcher": []
+            },
+            {
+                "label": "setup",
+                "detail": "Set up the workspace",
+                "type": "shell",
+                "command": "./setup.sh",
+                "problemMatcher": []
+            }
 
-		],
-		"inputs": [
-			{
-			"id": "package",
-			"type": "promptString",
-			"description": "Package name"
-			},
-			{
-			"id": "node",
-			"type": "promptString",
-			"description": "Node name"
-			}
-		]
-	}
+        ],
+        "inputs": [
+            {
+                "id": "package",
+                "type": "pickString",
+                "description": "Package name",
+                "options": [
+                    "boat_simulator",
+                    "custom_interfaces",
+                    "local_pathfinding",
+                    "network_systems",
+                ]
+            },
+            {
+                "id": "quick_build",
+                "type": "promptString",
+                "description": "Argument to disable static analysis and unit tests for quicker builds; delete to enable",
+                "default": "-q"
+            },
+        ]
+    }
 }
