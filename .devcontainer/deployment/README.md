@@ -39,7 +39,7 @@ Usage:
 > These commands are run in the in the root directory of this repository
 
 1. Run the setup script: `./setup.sh`
-2. Run the quick build script: `./quick_build.sh`
+2. Run the build script with the quick build flag: `./build.sh -q`
 
 ## Develop software
 
