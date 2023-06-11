@@ -5,43 +5,63 @@
 
 This repository will get you set up to develop UBCSailbot's software on VS Code. It is based on athackst's
 [vscode_ros2_workspace](https://github.com/athackst/vscode_ros2_workspace).
-See their [write-up](https://www.allisonthackston.com/articles/vscode_docker_ros2.html) for a more
-in-depth look on how this workspace functions.
 
 ## Features
 
+An overview of Sailbot Workspace's features can be found below.
+See [our docs site](https://ubcsailbot.github.io/docs/current/sailbot_workspace/run/) for how to use these features.
+
 ### Style
 
-ROS2-approved formatters are included in the IDE.
+C++ and Python linters and formatters are integrated into Sailbot Workspace:
 
-- **C++** uncrustify; config from `ament_uncrustify`
-- **Python** autopep8; vscode settings consistent with the [style guide](https://index.ros.org/doc/ros2/Contributing/Code-Style-Language-Versions/)
+- ament_flake8
+- ament_lint_cmake
+- ament_xmllint
+- black
+- clang-tidy
+- isort
+
+The [ament linters](https://github.com/ament/ament_lint/tree/humble) are configured to be consistent with the
+[ROS style guide](https://docs.ros.org/en/humble/The-ROS2-Project/Contributing/Code-Style-Language-Versions.html).
+
+### Multi-Root Workspace
+
+[Workspaces](https://code.visualstudio.com/docs/editor/workspaces) are VS Code instances that contain one or more folders.
+Our workspace configuration file can be found at
+[`.devcontainer/config/sailbot_workspace.code-workspace`](https://github.com/UBCSailbot/sailbot_workspace/blob/main/.devcontainer/config/sailbot_workspace.code-workspace).
+
+Our software spans many repositories: [software team repositories](https://github.com/orgs/UBCSailbot/teams/software-team/repositories).
+[Multi-root workspaces](https://code.visualstudio.com/docs/editor/multi-root-workspaces)
+make it easy to work with multiple repositories at the same time.
+Our roots are defined in the `folders` section of our workspace file.
 
 ### Tasks
 
-There are many pre-defined tasks. See
-[our workspace file](https://github.com/UBCSailbot/sailbot_workspace/blob/main/.devcontainer/config/sailbot_workspace.code-workspace)
-for a complete listing. Bring up the task menu by typing "Tasks: Run Task" in the command pallete, or creating a keyboard
-shortcut for `workbench.action.tasks.runTask`.
+[Tasks](https://code.visualstudio.com/docs/editor/tasks) provide an alternative to memorizing the multitude of
+CLI commands we use to setup, build, lint, test, and run our software. They are defined in `tasks` section of
+our workspace file.
 
-### Debugging ([WIP](https://github.com/UBCSailbot/sailbot_workspace/issues/6))
+### Debugging
 
-This repository has debug configurations for Python files and C++ programs. See
-[our workspace file](https://github.com/UBCSailbot/sailbot_workspace/blob/main/.devcontainer/config/sailbot_workspace.code-workspace)
-for configuration details.
-Bring up the debug configurations menu by typing "debug " in the command palette without the ">" prefix, or select one
-from the Run and Debug view.
+[Launch configurations](https://code.visualstudio.com/docs/editor/debugging#_launch-configurations)
+have been created to debug our software. They are defined in the `launch` section of
+our workspace file.
 
 ### Continuous Integration
 
-This repository also has continuous integration that lints and tests our code.
-See [`.github/workflows/`](https://github.com/UBCSailbot/sailbot_workspace/tree/main/.github/workflows)
-for the configuration files.
+[Actions](https://docs.github.com/en/actions/learn-github-actions/understanding-github-actions)
+were used to build [our Docker containers](https://github.com/orgs/UBCSailbot/packages?repo_name=sailbot_workspace)
+that contain all our OS-level configuration and dependencies, and lint and test our code, the same way it is done
+locally in Sailbot Workspace on GitHub.
+We use a [reusable workflow](https://docs.github.com/en/actions/using-workflows/reusing-workflows)
+to create a single source of truth for our tests across all our repositories.
+Our CI is defined in [`.github/workflows/`](https://github.com/UBCSailbot/sailbot_workspace/tree/main/.github/workflows).
 
 ### Customization
 
-This repository supports user-specific configuration files. To set this up see
-[how to use your personal configuration file in the Dev Container](https://github.com/UBCSailbot/sailbot_workspace/tree/main/.devcontainer/config#how-to-use-your-personal-configuration-file-in-the-dev-container).
+This repository supports user-specific configuration files. To set this up, see
+[How to use your dotfiles](https://ubcsailbot.github.io/docs/current/sailbot_workspace/how_to/#use-your-dotfiles).
 
 ## Run Raye's Software
 
