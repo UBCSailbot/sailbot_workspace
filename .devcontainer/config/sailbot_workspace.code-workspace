@@ -257,10 +257,32 @@
 				"problemMatcher": "$gcc"
 			},
 			{
+				"label": "Build All (Quick)",
+				"detail": "Quick builds all packages in the workspace (default)",
+				"type": "shell",
+				"command": "./build.sh -q",
+				"group": {
+					"kind": "build",
+					"isDefault": true
+				},
+				"problemMatcher": "$gcc"
+			},
+			{
 				"label": "Build Package",
 				"detail": "Build a specific package in the workspace",
 				"type": "shell",
 				"command": "./build.sh -p ${input:package}",
+				"group": {
+					"kind": "build",
+					"isDefault": true
+				},
+				"problemMatcher": "$gcc"
+			},
+			{
+				"label": "Build Package (Quick)",
+				"detail": "Quick build a specific package in the workspace",
+				"type": "shell",
+				"command": "./build.sh -q -p ${input:package}",
 				"group": {
 					"kind": "build",
 					"isDefault": true
