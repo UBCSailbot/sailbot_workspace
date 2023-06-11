@@ -19,12 +19,13 @@ concurrency:
 
 jobs:
   # CI for all UBCSailbot repositories defined in one place
-  # https://github.com/UBCSailbot/sailbot_workspace/blob/main/.github/workflows/test_definitions.yml
   # Runs another workflow: https://docs.github.com/en/actions/using-workflows/reusing-workflows#calling-a-reusable-workflow
   test-definitions:
     # sailbot_workspace: use locally-defined file
     # other repositories: set to UBCSailbot/sailbot_workspace/.github/workflows/test_definitions.yml@<release>
     uses: ./.github/workflows/test_definitions.yml
+    # see https://github.com/UBCSailbot/sailbot_workspace/blob/main/.github/workflows/test_definitions.yml
+    # for documentation on the inputs and secrets below
     with:
       repository: ${{ github.event.repository.name }}
       ros-ci: true

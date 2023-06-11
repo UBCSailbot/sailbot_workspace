@@ -4,6 +4,9 @@
             "path": "../.."
         },
         {
+            "path": "../../src/boat_simulator"
+        },
+        {
             "path": "../../src/custom_interfaces"
         },
         {
@@ -255,10 +258,21 @@
         "tasks": [
             // Build tasks
             {
-                "label": "Build",
-                "detail": "Build workspace (default)",
+                "label": "Build All",
+                "detail": "Build all packages in the workspace",
                 "type": "shell",
-                "command": "./build.sh",
+                "command": "./build.sh ${input:quick_build}",
+                "group": {
+                    "kind": "build",
+                    "isDefault": true
+                },
+                "problemMatcher": "$gcc"
+            },
+            {
+                "label": "Build Package",
+                "detail": "Build a specific package in the workspace",
+                "type": "shell",
+                "command": "./build.sh ${input:quick_build} -p ${input:package}",
                 "group": {
                     "kind": "build",
                     "isDefault": true
@@ -370,52 +384,10 @@
             },
             // Workspace editing tasks
             {
-                "label": "new ament_cmake package",
-                "detail": "Create a new ROS cpp package from a template.",
+                "label": "clone source repositories",
+                "detail": "Clone the repositories specified in src/new_project.repos to src/",
                 "type": "shell",
-                "command": "ros2 pkg create --destination-directory src --build-type ament_cmake ${input:package}",
-                "problemMatcher": []
-            },
-            {
-                "label": "new ament_python package",
-                "detail": "Create a new ROS python package from a template.",
-                "type": "shell",
-                "command": "ros2 pkg create --destination-directory src --build-type ament_python ${input:package}",
-                "problemMatcher": []
-            },
-            {
-                "label": "new ament_cmake package with a node",
-                "detail": "Create a new ROS cpp package with a node from a template.",
-                "type": "shell",
-                "command": "ros2 pkg create --destination-directory src --build-type ament_cmake ${input:package} --node-name ${input:node}",
-                "problemMatcher": []
-            },
-            {
-                "label": "new ament_python package with a node",
-                "detail": "Create a new ROS python package with a node from a template.",
-                "type": "shell",
-                "command": "ros2 pkg create --destination-directory src --build-type ament_python ${input:package} --node-name ${input:node}",
-                "problemMatcher": []
-            },
-            {
-                "label": "import from workspace file",
-                "detail": "Use vcs to import modules specified by a workspace/rosinstall file.",
-                "type": "shell",
-                "command": "vcs import < src/new_project.repos src",
-                "problemMatcher": []
-            },
-            {
-                "label": "update workspace file",
-                "detail": "Use vcs to update repositories in src to workspace file.",
-                "type": "shell",
-                "command": "vcs export src > src/new_project.repos",
-                "problemMatcher": []
-            },
-            {
-                "label": "install dependencies",
-                "detail": "Install all dependencies specified in the workspaces package.xml files.",
-                "type": "shell",
-                "command": "sudo apt-get update && rosdep update && rosdep install --from-paths src --ignore-src -y",
+                "command": "vcs import < src/new_project.repos src --skip-existing",
                 "problemMatcher": []
             },
             {
@@ -429,15 +401,22 @@
         ],
         "inputs": [
             {
-            "id": "package",
-            "type": "promptString",
-            "description": "Package name"
+                "id": "package",
+                "type": "pickString",
+                "description": "Package name",
+                "options": [
+                    "boat_simulator",
+                    "custom_interfaces",
+                    "local_pathfinding",
+                    "network_systems",
+                ]
             },
             {
-            "id": "node",
-            "type": "promptString",
-            "description": "Node name"
-            }
+                "id": "quick_build",
+                "type": "promptString",
+                "description": "Argument to disable static analysis and unit tests for quicker builds; delete to enable",
+                "default": "-q"
+            },
         ]
     }
 }
