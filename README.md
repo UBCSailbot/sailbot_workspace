@@ -43,16 +43,16 @@ Our software spans many repositories: [software team repositories](https://githu
 make it easy to work with multiple repositories at the same time.
 Our roots are defined in the `folders` section of our workspace file.
 
-### Tasks
-
-[Tasks](https://code.visualstudio.com/docs/editor/tasks) provide an alternative to memorizing the multitude of
-CLI commands we use to setup, build, lint, test, and run our software. They are defined in `tasks` section of
-our workspace file.
-
 ### Debugging
 
 [Launch configurations](https://code.visualstudio.com/docs/editor/debugging#_launch-configurations)
 have been created to debug our software. They are defined in the `launch` section of
+our workspace file.
+
+### Tasks
+
+[Tasks](https://code.visualstudio.com/docs/editor/tasks) provide an alternative to memorizing the multitude of
+CLI commands we use to setup, build, lint, test, and run our software. They are defined in `tasks` section of
 our workspace file.
 
 ### Continuous Integration
