@@ -170,11 +170,11 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && inputs.rebuild-docs
     steps:
-    - name: Dispatch Docs Publish workflow
+    - name: Dispatch Docs Tests workflow to publish site
       # https://github.com/orgs/community/discussions/26323#discussioncomment-5600001
       run: |
-          gh workflow run publish.yml -R UBCSailbot/docs
+          gh workflow run tests.yml -R UBCSailbot/docs
           sleep 5
-          gh run watch -R UBCSailbot/docs $(gh run list -R UBCSailbot/docs -w publish.yml -L1 --json databaseId --jq '.[0].databaseId')
+          gh run watch -R UBCSailbot/docs $(gh run list -R UBCSailbot/docs -w tests.yml -L1 --json databaseId --jq '.[0].databaseId')
     env:
       GH_TOKEN: ${{ secrets.gh-token }}
