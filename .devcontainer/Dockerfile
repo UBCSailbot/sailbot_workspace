@@ -1,4 +1,4 @@
-FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:fix-ros-sourcing
+FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:fix-ros-sourcing3
 
 # Copy configuration files (e.g., .vimrc) from config/ to the container's home directory
 ARG USERNAME=ros
