@@ -15,6 +15,6 @@ echo "if [ -f $ROS_WORKSPACE/install/setup.bash ]" >> $HOME/.bashrc
 echo "then" >> $HOME/.bashrc
 echo "    source $ROS_WORKSPACE/install/setup.bash" >> $HOME/.bashrc
 echo "else" >> $HOME/.bashrc
-echo "    echo \"WARNING: Can't source the ROS workspace overlay: build then run `source ~/.bashrc`\"" >> $HOME/.bashrc
+echo "    echo \"WARNING: Can't find the ROS workspace overlay: build then open a new terminal\"" >> $HOME/.bashrc
 echo "    source /opt/ros/$ROS_DISTRO/setup.bash" >> $HOME/.bashrc
 echo "fi" >> $HOME/.bashrc
