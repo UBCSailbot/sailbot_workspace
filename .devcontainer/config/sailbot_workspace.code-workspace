@@ -51,6 +51,9 @@
             "devcontainer",
             "gaurav",
             "ints",
+            "isort",
+            "kmph",
+            "mkdocs",
             "noqa",
             "OMPL",
             "pallete",
@@ -59,6 +62,7 @@
             "Raye",
             "rclcpp",
             "rclpy",
+            "rcutils",
             "repos",
             "rosdep",
             "rosdistro",
@@ -119,10 +123,13 @@
             "editor.formatOnSave": true,
             "editor.rulers": [99],
         },
+        "python.analysis.diagnosticMode": "workspace",
         "python.analysis.extraPaths": [
             "/workspaces/sailbot_workspace/install/lib/python3.10/site-packages",
             "/opt/ros/humble/lib/python3.10/site-packages"
         ],
+        "python.analysis.include": ["${workspaceFolder:sailbot_workspace}/src"],
+        "python.analysis.exclude": ["${workspaceFolder:sailbot_workspace}/src/virtual_iridium"],
         // Autocomplete from ros python packages
         "python.autoComplete.extraPaths": [
             "/workspaces/sailbot_workspace/install/lib/python3.10/site-packages",
