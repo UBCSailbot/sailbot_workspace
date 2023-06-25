@@ -63,6 +63,7 @@
 				"ms-iot.vscode-ros",
 				"ms-python.black-formatter",
 				"ms-python.isort",
+				"ms-python.vscode-pylance",
 				"ms-vsliveshare.vsliveshare",
 				"njpwerner.autodocstring",
 				"streetsidesoftware.code-spell-checker",
