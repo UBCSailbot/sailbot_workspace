@@ -60,6 +60,21 @@ ENV VIRTUAL_IRIDIUM_PORT="/tmp/virtual_iridium_port"
 # https://answers.ros.org/question/396439/setuptoolsdeprecationwarning-setuppy-install-is-deprecated-use-build-and-pip-and-other-standards-based-tools/?answer=400052#post-id-400052
 RUN pip3 install setuptools==58.2.0
 
+# install MongoDB command line tools
+ARG MONGO_TOOLS_VERSION=6.0
+RUN . /etc/os-release \
+    && curl -sSL "https://www.mongodb.org/static/pgp/server-${MONGO_TOOLS_VERSION}.asc" | sudo apt-key add - \
+    && echo "deb [arch=$(dpkg --print-architecture)] http://repo.mongodb.org/apt/ubuntu ${VERSION_CODENAME}/mongodb-org/${MONGO_TOOLS_VERSION} multiverse" | tee /etc/apt/sources.list.d/mongodb-org-${MONGO_TOOLS_VERSION}.list
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        mongodb-database-tools \
+        mongodb-mongosh \
+    && apt-get autoremove -y \
+    && apt-get clean -y \
+    && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
+ENV DEBIAN_FRONTEND=
+
 FROM local-base as ros-dev
 
 # From https://github.com/athackst/dockerfiles/blob/32a872348af0ad25ec4a6e6184cb803357acb6ab/ros2/humble.Dockerfile
