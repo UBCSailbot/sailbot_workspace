@@ -27,7 +27,7 @@ jobs:
     # see https://github.com/UBCSailbot/sailbot_workspace/blob/main/.github/workflows/test_definitions.yml
     # for documentation on the inputs and secrets below
     with:
-      repository: ${{ github.event.repository.name }}
+      repository: local_pathfinding
       ros-ci: true
       clang-tidy: true
       rebuild-docs: true
