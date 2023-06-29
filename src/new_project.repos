@@ -25,7 +25,7 @@ repositories:
   custom_interfaces:
     type: git
     url: https://github.com/UBCSailbot/custom_interfaces
-    version: user/colinli02/custom_messages
+    version: main
 
   docs:
     type: git
