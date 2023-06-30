@@ -59,7 +59,6 @@ jobs:
       uses: actions/checkout@v3
       with:
           repository: UBCSailbot/custom_interfaces
-          ref: user/colinli02/custom_messages
           path: src/custom_interfaces
 
     - name: Test
@@ -94,7 +93,6 @@ jobs:
       uses: actions/checkout@v3
       with:
           repository: UBCSailbot/custom_interfaces
-          ref: user/colinli02/custom_messages
           path: src/custom_interfaces
 
     - name: Run linter
@@ -124,7 +122,6 @@ jobs:
       uses: actions/checkout@v3
       with:
           repository: UBCSailbot/custom_interfaces
-          ref: user/colinli02/custom_messages
           path: src/custom_interfaces
 
     - name: Run linter
