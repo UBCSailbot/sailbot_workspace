@@ -46,8 +46,8 @@ def generate_launch_argument_declarations() -> List[DeclareLaunchArgument]:
 
 def launch_setup(context : LaunchContext, *args, **kwargs) -> List[IncludeLaunchDescription]:
     launch_args = parse_launch_args(context=context)
-    ros_packages = get_running_ros_packages(mode=launch_args["mode"])
-    include_launch_descriptions = get_include_launch_descriptions(ros_packages=ros_packages)
+    ros_package_list = get_running_ros_packages(mode=launch_args["mode"])
+    include_launch_descriptions = get_include_launch_descriptions(ros_packages=ros_package_list)
     return include_launch_descriptions
 
 
