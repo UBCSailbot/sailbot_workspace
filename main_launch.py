@@ -15,7 +15,8 @@ SIMULATION_ROS_PACKAGES = ["boat_simulator", "local_pathfinding", "network_syste
 LAUNCH_FILENAME_ENDING = "_launch.py"
 
 # Add launch arguments here and edit launch_setup() to use new argument(s)
-# if needed for global setup. All arguments are passed to children launch files.
+# if needed for global setup.
+# TODO: Pass global arguments to children launch files.
 LaunchArgument = namedtuple("LaunchArgument", ["name", "default", "description"])
 LAUNCH_ARGUMENTS = [
     LaunchArgument("mode", "production", "System mode that determines software behavior")
