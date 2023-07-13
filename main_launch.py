@@ -19,7 +19,7 @@ LAUNCH_FILENAME_ENDING = "_launch.py"
 # TODO: Pass global arguments to children launch files.
 LaunchArgument = namedtuple("LaunchArgument", ["name", "default", "description"])
 LAUNCH_ARGUMENTS = [
-    LaunchArgument("mode", "production", "System mode that determines software behavior")
+    LaunchArgument("mode", "production", "System mode. One of 'production', 'simulation'.")
 ]
 LAUNCH_MODES = ["production", "simulation"]
 
@@ -78,4 +78,4 @@ def get_running_ros_packages(mode : str) -> List[str]:
         case "simulation":
             return SIMULATION_ROS_PACKAGES
         case _:
-            raise ValueError('Invalid launch mode specified')
+            raise ValueError("Invalid launch mode. Must be one of 'production', 'simulation'.")
