@@ -9,7 +9,7 @@ from launch.substitutions import LaunchConfiguration
 
 
 # TODO: Add the controller package when it is ready
-ROS_PACKAGES_DIR = "/workspaces/sailbot_workspace/src"
+ROS_PACKAGES_DIR = os.path.join(os.getenv("ROS_WORKSPACE"), "src")
 PRODUCTION_ROS_PACKAGES = ["local_pathfinding", "network_systems"]
 SIMULATION_ROS_PACKAGES = ["boat_simulator", "local_pathfinding", "network_systems"]
 LAUNCH_FILENAME_ENDING = "_launch.py"
