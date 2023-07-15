@@ -65,7 +65,7 @@ def parse_launch_args(context: LaunchContext) -> Dict[str, str]:
         context (LaunchContext): The context to be parsed.
 
     Returns:
-        Dict[str, str]: A dict containing arguments, where they keys are argument names and the
+        Dict[str, str]: A dict containing arguments, where the keys are argument names and the
         values are the argument values.
     """
     parsed_args = dict()
