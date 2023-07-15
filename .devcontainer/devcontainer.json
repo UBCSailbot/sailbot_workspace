@@ -4,7 +4,7 @@
 	"dockerComposeFile": [
 		// Uncomment the files containing the programs you need
 		// "docker-compose.db.yml", // mongodb
-		"docker-compose.docs.yml", // docs
+		// "docker-compose.docs.yml", // docs
 		// "docker-compose.website.yml", // grafana, website
 
 		"docker-compose.yml"
