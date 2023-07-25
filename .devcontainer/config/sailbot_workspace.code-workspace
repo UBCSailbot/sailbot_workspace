@@ -54,6 +54,7 @@
             "isort",
             "kmph",
             "mkdocs",
+            "mypy",
             "noqa",
             "OMPL",
             "pallete",
@@ -159,6 +160,8 @@
             "--ignore=/workspaces/sailbot_workspace/src/raye-local-pathfinding",
         ],
         "python.testing.pytestEnabled": true,
+        // type checker: mypy
+        "mypy-type-checker.interpreter": ["/usr/bin/python3"],
 
         // c/c++
         "[cpp]": {

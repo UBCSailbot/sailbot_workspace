@@ -102,7 +102,8 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/* \
     && rosdep init || echo "rosdep already initialized" \
     # Update pydocstyle
-    && pip3 install --upgrade pydocstyle
+    && pip3 install --upgrade pydocstyle \
+    && pip3 install mypy
 
 ARG USERNAME=ros
 ARG USER_UID=1000
