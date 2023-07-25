@@ -161,7 +161,12 @@
         ],
         "python.testing.pytestEnabled": true,
         // type checker: mypy
-        "mypy-type-checker.interpreter": ["/usr/bin/python3"],
+        //"mypy-type-checker.args": [
+        //    "--ignore-missing-imports",
+        //    "--warn-redundant-casts",
+        //    "--warn-unreachable"
+        //],
+        //"mypy-type-checker.interpreter": ["/usr/bin/python3"],
 
         // c/c++
         "[cpp]": {
@@ -390,6 +395,24 @@
                     "lint_cmake",
                     "flake8",
                     "xmllint",
+                ],
+                "problemMatcher": []
+            },
+            {
+                "label": "type check",
+                "detail": "Type check the currently opened Python file with mypy",
+                "type": "shell",
+                "command": "mypy",
+                "args": [
+                    "${file}",
+                    "--ignore-missing-imports",
+                    "--disallow-incomplete-defs",
+                    "--warn-redundant-casts",
+                    "--warn-unreachable",
+                    "--show-error-context",
+                    "--show-column-numbers",
+                    "--pretty",
+                    "--warn-incomplete-stub"
                 ],
                 "problemMatcher": []
             },

@@ -65,7 +65,7 @@
 				"ms-python.isort",
 				"ms-python.vscode-pylance",
 				"ms-vsliveshare.vsliveshare",
-				"ms-python.mypy-type-checker",
+				// "ms-python.mypy-type-checker",
 				"njpwerner.autodocstring",
 				"streetsidesoftware.code-spell-checker",
 				"vscode-icons-team.vscode-icons",
