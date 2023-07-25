@@ -399,20 +399,20 @@
                 "problemMatcher": []
             },
             {
-                "label": "type check",
-                "detail": "Type check the currently opened Python file with mypy",
+                "label": "type check (Python)",
+                "detail": "Type check all Python files in a ROS package",
                 "type": "shell",
                 "command": "mypy",
                 "args": [
-                    "${file}",
+                    "$ROS_WORKSPACE/src/${input:package}",
                     "--ignore-missing-imports",
                     "--disallow-incomplete-defs",
                     "--warn-redundant-casts",
+                    "--warn-incomplete-stub",
                     "--warn-unreachable",
                     "--show-error-context",
                     "--show-column-numbers",
                     "--pretty",
-                    "--warn-incomplete-stub"
                 ],
                 "problemMatcher": []
             },
@@ -437,7 +437,7 @@
             {
                 "id": "package",
                 "type": "pickString",
-                "description": "Package to build",
+                "description": "Package to select",
                 "options": [
                     "boat_simulator",
                     "custom_interfaces",
