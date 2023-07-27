@@ -16,3 +16,6 @@ src/*
 # clangd
 .cache/*
 compile_commands.json
+
+# python
+*.pyc

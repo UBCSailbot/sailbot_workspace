@@ -6,9 +6,11 @@ from launch.actions import (
     DeclareLaunchArgument,
     IncludeLaunchDescription,
     OpaqueFunction,
+    SetEnvironmentVariable,
 )
 from launch.launch_context import LaunchContext
 from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.logging import launch_config
 from launch.substitutions import LaunchConfiguration
 
 # TODO: Add the controller package when it is ready
@@ -18,13 +20,24 @@ SIMULATION_ROS_PACKAGES = ["boat_simulator", "local_pathfinding", "network_syste
 # Add launch arguments here and edit launch_setup() to use new argument(s)
 # if needed for global setup.
 # TODO: Pass global arguments to children launch files.
+GLOBAL_LAUNCH_ARGUMENTS = [
+    # put node log files in same directory as launch log files
+    # ref: https://github.com/ros2/launch/issues/551#issuecomment-982146452
+    SetEnvironmentVariable('ROS_LOG_DIR', launch_config.log_dir),
+    # ref: https://answers.ros.org/question/311471/selecting-log-level-in-ros2-launch-file/
+    DeclareLaunchArgument(
+        name='log_level',
+        default_value=['info'],
+        description='Logging level',
+    ),
+]
 LAUNCH_ARGUMENTS = [
     DeclareLaunchArgument(
         name="mode",
         default_value="simulation",
         choices=["production", "simulation"],
         description="System mode.",
-    )
+    ),
 ]
 
 
@@ -37,6 +50,7 @@ def generate_launch_description() -> LaunchDescription:
     launch_description = LaunchDescription(
         [
             *LAUNCH_ARGUMENTS,
+            *GLOBAL_LAUNCH_ARGUMENTS,
             OpaqueFunction(function=launch_setup),
         ]
     )
