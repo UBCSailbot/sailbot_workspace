@@ -12,18 +12,18 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 
 # TODO: Add the controller package when it is ready
-ROS_PACKAGES_DIR = os.path.join(os.getenv("ROS_WORKSPACE"), "src")
 PRODUCTION_ROS_PACKAGES = ["local_pathfinding", "network_systems"]
 SIMULATION_ROS_PACKAGES = ["boat_simulator", "local_pathfinding", "network_systems"]
-LAUNCH_FILENAME_ENDING = "_launch.py"
 
 # Add launch arguments here and edit launch_setup() to use new argument(s)
 # if needed for global setup.
 # TODO: Pass global arguments to children launch files.
-LAUNCH_MODES = ["production", "simulation"]
 LAUNCH_ARGUMENTS = [
     DeclareLaunchArgument(
-        name="mode", default_value="simulation", choices=LAUNCH_MODES, description="System mode."
+        name="mode",
+        default_value="simulation",
+        choices=["production", "simulation"],
+        description="System mode.",
     )
 ]
 
@@ -85,11 +85,10 @@ def get_include_launch_descriptions(ros_packages: List[str]) -> List[IncludeLaun
     Returns:
         List[IncludeLaunchDescription]: List of include launch descriptons for each ROS package.
     """
+    ros_packages_dir = os.path.join(os.getenv("ROS_WORKSPACE"), "src")
     package_include_launch_descriptions = list()
     for package in ros_packages:
-        launch_file_abs_path = (
-            os.path.join(ROS_PACKAGES_DIR, package, 'launch', package) + LAUNCH_FILENAME_ENDING
-        )
+        launch_file_abs_path = os.path.join(ros_packages_dir, package, 'launch', 'main_launch.py')
         include_launch_description = IncludeLaunchDescription(
             PythonLaunchDescriptionSource(launch_file_abs_path)
         )
