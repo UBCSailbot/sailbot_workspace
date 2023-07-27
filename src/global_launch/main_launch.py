@@ -23,7 +23,7 @@ LAUNCH_FILENAME_ENDING = "_launch.py"
 LAUNCH_MODES = ["production", "simulation"]
 LAUNCH_ARGUMENTS = [
     DeclareLaunchArgument(
-        name="mode", default_value="production", choices=LAUNCH_MODES, description="System mode."
+        name="mode", default_value="simulation", choices=LAUNCH_MODES, description="System mode."
     )
 ]
 
@@ -34,10 +34,12 @@ def generate_launch_description() -> LaunchDescription:
     Returns:
         LaunchDescription: A collection of entities representing the behavior of the system.
     """
-    launch_description = LaunchDescription([
-        *LAUNCH_ARGUMENTS,
-        OpaqueFunction(function=launch_setup)
-    ])
+    launch_description = LaunchDescription(
+        [
+            *LAUNCH_ARGUMENTS,
+            OpaqueFunction(function=launch_setup),
+        ]
+    )
     return launch_description
 
 
