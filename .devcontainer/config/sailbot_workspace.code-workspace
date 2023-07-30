@@ -242,8 +242,9 @@
                 "type": "pickString",
                 "description": "Launch file to run, in the format `<package>/<launch file>`",
                 "options": [
-                    "boat_simulator/all_launch.yaml",
+                    "boat_simulator/main_launch.py",
                     "local_pathfinding/main_launch.py",
+                    "network_systems/launch/main_launch.py",
                 ]
             },
             {
