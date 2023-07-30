@@ -100,8 +100,11 @@ def get_log_ros_arguments() -> List:
 
     Reference: https://answers.ros.org/question/311471/selecting-log-level-in-ros2-launch-file/
     """
+    ros_arguments = []
     log_level = LaunchConfiguration("log_level")
-    return [["--log-level", [f"{node}:=", log_level]] for node in ROS_NODES]
+    for node in ROS_NODES:
+        ros_arguments.extend(["--log-level", [f"{node}:=", log_level]])
+    return ros_arguments
 
 
 def get_running_ros_packages(mode: str) -> List[str]:
