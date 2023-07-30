@@ -152,7 +152,6 @@
         "black-formatter.interpreter": ["/usr/bin/python3"],
         "black-formatter.args": [
             "--line-length=99",
-            "--skip-string-normalization"
         ],
         "isort.args":["--profile=black"],
         "isort.interpreter": ["/usr/bin/python3"],
