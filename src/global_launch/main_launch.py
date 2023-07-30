@@ -11,8 +11,7 @@ from launch.substitutions import LaunchConfiguration
 
 # TODO: Add the controller package when it is ready
 PRODUCTION_ROS_PACKAGES = ["local_pathfinding", "network_systems"]
-# SIMULATION_ROS_PACKAGES = ["boat_simulator", "local_pathfinding", "network_systems"]
-SIMULATION_ROS_PACKAGES = ["local_pathfinding"]
+SIMULATION_ROS_PACKAGES = ["boat_simulator", "local_pathfinding", "network_systems"]
 ROS_NODES = ["navigate_main"]
 ROS_PACKAGES_DIR = os.path.join(os.getenv("ROS_WORKSPACE"), "src")
 
