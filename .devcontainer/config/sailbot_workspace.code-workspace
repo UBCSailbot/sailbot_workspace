@@ -146,13 +146,15 @@
             "--show-source",
             "--statistics",
         ],
+        "flake8.interpreter": ["/usr/bin/python3"],
         // formatter: black and isort extensions
         "python.formatting.provider": "none",
+        "black-formatter.interpreter": ["/usr/bin/python3"],
         "black-formatter.args": [
             "--line-length=99",
-            "--skip-string-normalization"
         ],
         "isort.args":["--profile=black"],
+        "isort.interpreter": ["/usr/bin/python3"],
         // test framework: pytest
         "python.testing.cwd": "/workspaces/sailbot_workspace/src",
         "python.testing.pytestArgs": [
