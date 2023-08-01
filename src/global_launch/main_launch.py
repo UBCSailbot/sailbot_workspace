@@ -1,22 +1,33 @@
-import importlib
 import os
-from types import ModuleType
-from typing import List, Optional
+from typing import List, Tuple
 
 from launch import LaunchDescription, LaunchDescriptionEntity
-from launch.actions import DeclareLaunchArgument, OpaqueFunction, SetEnvironmentVariable
+from launch.actions import (
+    DeclareLaunchArgument,
+    IncludeLaunchDescription,
+    OpaqueFunction,
+    SetEnvironmentVariable,
+)
 from launch.launch_context import LaunchContext
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.logging import launch_config
+from launch.some_substitutions_type import SomeSubstitutionsType
 from launch.substitutions import LaunchConfiguration
 
 # TODO: Add the controller package when it is ready
 PRODUCTION_ROS_PACKAGES = ["local_pathfinding", "network_systems"]
 SIMULATION_ROS_PACKAGES = ["boat_simulator", "local_pathfinding", "network_systems"]
-ROS_NODES = ["navigate_main"]
-ROS_PACKAGES_DIR = os.path.join(os.getenv("ROS_WORKSPACE"), "src")
 
-GLOBAL_CONFIG = os.path.join(ROS_PACKAGES_DIR, "global_launch", "config", "globals.yaml")
+# Global launch arguments and constants. Should be the same across all launch files.
+# To add global arguments, update the GLOBAL_LAUNCH_ARGUMENTS list in this file and all other
+# launch files, and then add it to the get_global_launch_arguments function in this file.
+ROS_PACKAGES_DIR = os.path.join(os.getenv("ROS_WORKSPACE"), "src")
 GLOBAL_LAUNCH_ARGUMENTS = [
+    DeclareLaunchArgument(
+        name="config",
+        default_value=os.path.join(ROS_PACKAGES_DIR, "global_launch", "config", "globals.yaml"),
+        description="Path to ROS parameter config file.",
+    ),
     # Reference: https://answers.ros.org/question/311471/selecting-log-level-in-ros2-launch-file/
     DeclareLaunchArgument(
         name="log_level",
@@ -42,15 +53,13 @@ def generate_launch_description() -> LaunchDescription:
         [
             *GLOBAL_LAUNCH_ARGUMENTS,
             OpaqueFunction(function=set_log_dir),
-            OpaqueFunction(function=get_nodes),
+            OpaqueFunction(function=setup_launch),
         ]
     )
     return launch_description
 
 
-def set_log_dir(
-    context: LaunchContext, *args, **kwargs
-) -> Optional[List[LaunchDescriptionEntity]]:
+def set_log_dir(context: LaunchContext, *args, **kwargs) -> List[LaunchDescriptionEntity]:
     """Set the log directory of nodes to the log directory of launches so that all logs are in the
     same directory.
 
@@ -66,44 +75,20 @@ def set_log_dir(
     return [SetEnvironmentVariable("ROS_LOG_DIR", launch_config.log_dir)]
 
 
-def get_nodes(context: LaunchContext, *args, **kwargs) -> Optional[List[LaunchDescriptionEntity]]:
-    """Determine which ROS nodes to launch, initializing and returning them.
+def setup_launch(context: LaunchContext) -> List[LaunchDescriptionEntity]:
+    """Collects launch descriptions from all local launch files while passing the global launch
+    arguments to each of them.
 
     Args:
-        context (LaunchContext): Runtime context used by launch entities.
+        context (LaunchContext): The current context of the launch.
 
     Returns:
-        Optional[List[LaunchDescriptionEntity]]: The initialized nodes.
+        List[LaunchDescriptionEntity]: Launch file descriptions.
     """
-    # get_nodes() arguments for the global launch
-    common_params = [GLOBAL_CONFIG]
-    common_ros_args = [*get_log_ros_arguments()]
     mode = LaunchConfiguration("mode").perform(context)
-
-    ros_package_list = get_running_ros_packages(mode=mode)
-    modules = get_launch_modules(ros_package_list=ros_package_list)
-    return [
-        node
-        for module in modules
-        for node in module.get_nodes(
-            common_parameters=common_params, common_ros_arguments=common_ros_args, mode=mode
-        )
-    ]
-
-
-def get_log_ros_arguments() -> List:
-    """Create ROS node arguments to set their log levels to the launch argument.
-
-    Returns:
-        List[str]: ROS arguments that set the log levels of all ROS nodes.
-
-    Reference: https://answers.ros.org/question/311471/selecting-log-level-in-ros2-launch-file/
-    """
-    ros_arguments = []
-    log_level = LaunchConfiguration("log_level")
-    for node in ROS_NODES:
-        ros_arguments.extend(["--log-level", [f"{node}:=", log_level]])
-    return ros_arguments
+    ros_packages = get_running_ros_packages(mode)
+    global_arguments = get_global_launch_arguments(context)
+    return get_include_launch_descriptions(ros_packages, global_arguments)
 
 
 def get_running_ros_packages(mode: str) -> List[str]:
@@ -127,20 +112,46 @@ def get_running_ros_packages(mode: str) -> List[str]:
             raise ValueError("Invalid launch mode. Must be one of 'production', 'simulation'.")
 
 
-def get_launch_modules(ros_package_list: List[str]) -> List[ModuleType]:
-    """Execute and return the main launch files of the ROS packages to be launched.
+def get_global_launch_arguments(
+    context: LaunchContext,
+) -> List[Tuple[SomeSubstitutionsType, SomeSubstitutionsType]]:
+    """Extracts the global launch arguments from the current launch context.
+
+    Args:
+        context (LaunchContext): The current context of the launch.
+
+    Returns:
+        List[Tuple[SomeSubstitutionsType, SomeSubstitutionsType]]: Global launch arguments.
+    """
+    return [
+        ("config", LaunchConfiguration("config").perform(context)),
+        ("log_level", LaunchConfiguration("log_level").perform(context)),
+        ("mode", LaunchConfiguration("mode").perform(context)),
+    ]
+
+
+def get_include_launch_descriptions(
+    ros_package_list: List[str],
+    global_arguments: List[Tuple[SomeSubstitutionsType, SomeSubstitutionsType]],
+) -> List[IncludeLaunchDescription]:
+    """Get the launch descriptions for each ROS package.
 
     Args:
         ros_package_list (List[str]): The names of the packages to be launched.
+        global_arguments(List[Tuple[SomeSubstitutionType, SomeSubstitutionType]]): The global
+            arguments common across all ROS packages.
 
     Returns:
-        List[ModuleType]: The executed modules.
+        List[IncludeLaunchDescriptions]: The launch descriptions.
     """
-    modules = []
+    include_launch_descriptions = []
     for pkg in ros_package_list:
         pkg_main_launch = os.path.join(ROS_PACKAGES_DIR, pkg, "launch", "main_launch.py")
-        spec = importlib.util.spec_from_file_location(f"{pkg}_launch", pkg_main_launch)
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        modules.append(module)
-    return modules
+        launch_description = IncludeLaunchDescription(
+            launch_description_source=PythonLaunchDescriptionSource(
+                launch_file_path=pkg_main_launch
+            ),
+            launch_arguments=global_arguments,
+        )
+        include_launch_descriptions.append(launch_description)
+    return include_launch_descriptions
