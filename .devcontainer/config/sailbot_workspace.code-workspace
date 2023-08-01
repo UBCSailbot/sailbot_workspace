@@ -135,6 +135,7 @@
             "/workspaces/sailbot_workspace/install/lib/python3.10/site-packages",
             "/opt/ros/humble/lib/python3.10/site-packages"
         ],
+        "python.defaultInterpreterPath": "/usr/bin/python3",
         // Environment file lets vscode find python files within workspace
         "python.envFile": "/workspaces/sailbot_workspace/.env",
         // linter: flake8 extension
