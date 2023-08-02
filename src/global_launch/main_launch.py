@@ -28,19 +28,23 @@ GLOBAL_LAUNCH_ARGUMENTS = [
     DeclareLaunchArgument(
         name="config",
         default_value=os.path.join(ROS_PACKAGES_DIR, "global_launch", "config", "globals.yaml"),
-        description="Path to ROS parameter config file.",
+        description="Path to ROS parameter config file. Controls ROS parameters passed into"
+        + " ROS nodes",
     ),
     # Reference: https://answers.ros.org/question/311471/selecting-log-level-in-ros2-launch-file/
     DeclareLaunchArgument(
         name="log_level",
-        default_value=["info"],
-        description="Logging level",
+        default_value="info",
+        choices=["debug", "info", "warn", "error", "fatal"],
+        description="Logging severity level. A logger will only process log messages with"
+        + " severity levels at or higher than the specified severity",
     ),
     DeclareLaunchArgument(
         name="mode",
         default_value="simulation",
         choices=["production", "simulation"],
-        description="System mode.",
+        description="System mode. Decides whether the system is ran with simulation or production"
+        + " interfaces",
     ),
 ]
 
