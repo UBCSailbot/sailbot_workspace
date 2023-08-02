@@ -1,3 +1,5 @@
+"""Global launch file that starts the entire system."""
+
 import os
 from typing import List, Tuple
 
