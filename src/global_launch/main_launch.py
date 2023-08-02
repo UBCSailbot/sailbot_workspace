@@ -18,9 +18,9 @@ from launch.substitutions import LaunchConfiguration
 PRODUCTION_ROS_PACKAGES = ["local_pathfinding", "network_systems"]
 SIMULATION_ROS_PACKAGES = ["boat_simulator", "local_pathfinding", "network_systems"]
 
-# Global launch arguments and constants. Should be the same across all launch files.
-# To add global arguments, update the GLOBAL_LAUNCH_ARGUMENTS list in this file and all other
-# launch files, and then add it to the get_global_launch_arguments function in this file.
+# Global launch arguments and constants.
+# To add global arguments, update the GLOBAL_LAUNCH_ARGUMENTS list and then add it to the
+# format_global_launch_arguments function in this file.
 ROS_PACKAGES_DIR = os.path.join(os.getenv("ROS_WORKSPACE"), "src")
 GLOBAL_LAUNCH_ARGUMENTS = [
     DeclareLaunchArgument(
@@ -87,7 +87,7 @@ def setup_launch(context: LaunchContext) -> List[LaunchDescriptionEntity]:
     """
     mode = LaunchConfiguration("mode").perform(context)
     ros_packages = get_running_ros_packages(mode)
-    global_arguments = get_global_launch_arguments(context)
+    global_arguments = format_global_launch_arguments(context)
     return get_include_launch_descriptions(ros_packages, global_arguments)
 
 
@@ -112,10 +112,11 @@ def get_running_ros_packages(mode: str) -> List[str]:
             raise ValueError("Invalid launch mode. Must be one of 'production', 'simulation'.")
 
 
-def get_global_launch_arguments(
+def format_global_launch_arguments(
     context: LaunchContext,
 ) -> List[Tuple[SomeSubstitutionsType, SomeSubstitutionsType]]:
-    """Extracts the global launch arguments from the current launch context.
+    """Extracts the global launch arguments from the current launch context and formats them to
+    pass into children launch files.
 
     Args:
         context (LaunchContext): The current context of the launch.
