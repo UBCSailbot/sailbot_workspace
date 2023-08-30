@@ -18,7 +18,7 @@ from launch.substitutions import LaunchConfiguration
 
 # TODO: Add the controller package when it is ready
 PRODUCTION_ROS_PACKAGES = ["local_pathfinding", "network_systems"]
-SIMULATION_ROS_PACKAGES = ["boat_simulator", "local_pathfinding", "network_systems"]
+DEVELOPMENT_ROS_PACKAGES = ["boat_simulator", "local_pathfinding", "network_systems"]
 
 # Global launch arguments and constants.
 # To add global arguments, update the GLOBAL_LAUNCH_ARGUMENTS list and then add it to the
@@ -41,9 +41,9 @@ GLOBAL_LAUNCH_ARGUMENTS = [
     ),
     DeclareLaunchArgument(
         name="mode",
-        default_value="simulation",
-        choices=["production", "simulation"],
-        description="System mode. Decides whether the system is ran with simulation or production"
+        default_value="development",
+        choices=["production", "development"],
+        description="System mode. Decides whether the system is ran with development or production"
         + " interfaces",
     ),
 ]
@@ -77,7 +77,6 @@ def set_log_dir(context: LaunchContext, *args, **kwargs) -> List[LaunchDescripti
 
     Reference: https://github.com/ros2/launch/issues/551#issuecomment-982146452
     """
-
     return [SetEnvironmentVariable("ROS_LOG_DIR", launch_config.log_dir)]
 
 
@@ -112,10 +111,10 @@ def get_running_ros_packages(mode: str) -> List[str]:
     match mode:
         case "production":
             return PRODUCTION_ROS_PACKAGES
-        case "simulation":
-            return SIMULATION_ROS_PACKAGES
+        case "development":
+            return DEVELOPMENT_ROS_PACKAGES
         case _:
-            raise ValueError("Invalid launch mode. Must be one of 'production', 'simulation'.")
+            raise ValueError("Invalid launch mode. Must be one of 'production', 'development'.")
 
 
 def format_global_launch_arguments(
