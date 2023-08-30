@@ -92,7 +92,10 @@ def setup_launch(context: LaunchContext) -> List[LaunchDescriptionEntity]:
     """
     mode = LaunchConfiguration("mode").perform(context)
     ros_packages = get_running_ros_packages(mode)
-    global_arguments = format_global_launch_arguments(context)
+    global_arguments = [
+        (arg.name, LaunchConfiguration(arg.name).perform(context))
+        for arg in GLOBAL_LAUNCH_ARGUMENTS
+    ]
     return get_include_launch_descriptions(ros_packages, global_arguments)
 
 
@@ -115,25 +118,6 @@ def get_running_ros_packages(mode: str) -> List[str]:
             return DEVELOPMENT_ROS_PACKAGES
         case _:
             raise ValueError("Invalid launch mode. Must be one of 'production', 'development'.")
-
-
-def format_global_launch_arguments(
-    context: LaunchContext,
-) -> List[Tuple[SomeSubstitutionsType, SomeSubstitutionsType]]:
-    """Extracts the global launch arguments from the current launch context and formats them to
-    pass into children launch files.
-
-    Args:
-        context (LaunchContext): The current context of the launch.
-
-    Returns:
-        List[Tuple[SomeSubstitutionsType, SomeSubstitutionsType]]: Global launch arguments.
-    """
-    return [
-        ("config", LaunchConfiguration("config").perform(context)),
-        ("log_level", LaunchConfiguration("log_level").perform(context)),
-        ("mode", LaunchConfiguration("mode").perform(context)),
-    ]
 
 
 def get_include_launch_descriptions(
