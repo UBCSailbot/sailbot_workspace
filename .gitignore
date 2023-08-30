@@ -5,7 +5,6 @@ site/*
 
 # vcstool packages
 src/*
-!src/global_launch
 !src/new_project.repos
 
 # configuration files
