@@ -245,6 +245,7 @@
                 "type": "pickString",
                 "description": "Launch file to run, in the format `<package>/<launch file>`",
                 "options": [
+                    "../../global_launch/main_launch.py",
                     "boat_simulator/main_launch.py",
                     "local_pathfinding/main_launch.py",
                     "network_systems/launch/main_launch.py",
