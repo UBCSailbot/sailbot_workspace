@@ -21,8 +21,6 @@ PRODUCTION_ROS_PACKAGES = ["local_pathfinding", "network_systems"]
 DEVELOPMENT_ROS_PACKAGES = ["boat_simulator", "local_pathfinding", "network_systems"]
 
 # Global launch arguments and constants.
-# To add global arguments, update the GLOBAL_LAUNCH_ARGUMENTS list and then add it to the
-# format_global_launch_arguments function in this file.
 ROS_WORKSPACE = os.getenv("ROS_WORKSPACE")
 GLOBAL_LAUNCH_ARGUMENTS = [
     DeclareLaunchArgument(
@@ -47,6 +45,10 @@ GLOBAL_LAUNCH_ARGUMENTS = [
         + " interfaces",
     ),
 ]
+ENVIRONMENT_VARIABLES = [
+    SetEnvironmentVariable("ROS_LOG_DIR", launch_config.log_dir),
+    SetEnvironmentVariable("RCUTILS_COLORIZED_OUTPUT", "1"),
+]
 
 
 def generate_launch_description() -> LaunchDescription:
@@ -58,26 +60,10 @@ def generate_launch_description() -> LaunchDescription:
     launch_description = LaunchDescription(
         [
             *GLOBAL_LAUNCH_ARGUMENTS,
-            OpaqueFunction(function=set_log_dir),
             OpaqueFunction(function=setup_launch),
         ]
     )
     return launch_description
-
-
-def set_log_dir(context: LaunchContext, *args, **kwargs) -> List[LaunchDescriptionEntity]:
-    """Set the log directory of nodes to the log directory of launches so that all logs are in the
-    same directory.
-
-    Args:
-        context (LaunchContext): Runtime context used by launch entities.
-
-    Returns:
-        Optional[List[LaunchDescriptionEntity]]: An entity that sets the log directory of nodes.
-
-    Reference: https://github.com/ros2/launch/issues/551#issuecomment-982146452
-    """
-    return [SetEnvironmentVariable("ROS_LOG_DIR", launch_config.log_dir)]
 
 
 def setup_launch(context: LaunchContext) -> List[LaunchDescriptionEntity]:
