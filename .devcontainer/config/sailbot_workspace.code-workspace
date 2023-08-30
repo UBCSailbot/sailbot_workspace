@@ -162,12 +162,10 @@
         ],
         "python.testing.pytestEnabled": true,
         // type checker: mypy
-        //"mypy-type-checker.args": [
-        //    "--ignore-missing-imports",
-        //    "--warn-redundant-casts",
-        //    "--warn-unreachable"
-        //],
-        //"mypy-type-checker.interpreter": ["/usr/bin/python3"],
+        "mypy-type-checker.args": [
+            "--ignore-missing-imports",
+        ],
+        "mypy-type-checker.interpreter": ["/usr/bin/python3"],
 
         // c/c++
         "[cpp]": {
@@ -396,24 +394,6 @@
                     "lint_cmake",
                     "flake8",
                     "xmllint",
-                ],
-                "problemMatcher": []
-            },
-            {
-                "label": "type check (Python)",
-                "detail": "Type check all Python files in a ROS package",
-                "type": "shell",
-                "command": "mypy",
-                "args": [
-                    "$ROS_WORKSPACE/src/${input:package}",
-                    "--ignore-missing-imports",
-                    "--disallow-incomplete-defs",
-                    "--warn-redundant-casts",
-                    "--warn-incomplete-stub",
-                    "--warn-unreachable",
-                    "--show-error-context",
-                    "--show-column-numbers",
-                    "--pretty",
                 ],
                 "problemMatcher": []
             },
