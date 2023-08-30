@@ -70,8 +70,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-          # ament_lint_common, except for copyright, cppcheck, cpplint, uncrustify, and pep257
-          linter: [lint_cmake, flake8, xmllint]
+          # mypy and ament_lint_common, except for copyright, cppcheck, cpplint, uncrustify, and pep257
+          linter: [lint_cmake, flake8, mypy, xmllint]
     name: ament_${{ matrix.linter }}
     runs-on: ubuntu-latest
     if: ${{ inputs.ros-ci }}
