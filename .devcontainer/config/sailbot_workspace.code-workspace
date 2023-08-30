@@ -372,6 +372,22 @@
                     "clear": true
                 }
             },
+            // TODO: contribute to https://github.com/athackst/vscode-ament-task-provider
+            // {
+            //     "label": "mypy",
+            //     "detail": "Run mypy on python files.",
+            //     "type": "ament",
+            //     "task": "mypy",
+            //     "path": "src/",
+            //     "problemMatcher": [
+            //         "$ament_mypy",
+            //     ],
+            //     "presentation": {
+            //         "panel": "dedicated",
+            //         "reveal": "silent",
+            //         "clear": true
+            //     }
+            // },
             {
                 "label": "xmllint",
                 "detail": "Run xmllint on xml files.",
@@ -393,6 +409,7 @@
                 "dependsOn": [
                     "lint_cmake",
                     "flake8",
+                    // "mypy",
                     "xmllint",
                 ],
                 "problemMatcher": []
