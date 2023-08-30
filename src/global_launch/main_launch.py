@@ -21,11 +21,11 @@ PRODUCTION_ROS_PACKAGES = ["local_pathfinding", "network_systems"]
 DEVELOPMENT_ROS_PACKAGES = ["boat_simulator", "local_pathfinding", "network_systems"]
 
 # Global launch arguments and constants.
-ROS_WORKSPACE = os.getenv("ROS_WORKSPACE")
+ROS_PACKAGES_DIR = os.path.join(os.getenv("ROS_WORKSPACE"), "src")
 GLOBAL_LAUNCH_ARGUMENTS = [
     DeclareLaunchArgument(
         name="config",
-        default_value=os.path.join(ROS_WORKSPACE, "global_launch", "config", "globals.yaml"),
+        default_value=os.path.join(ROS_PACKAGES_DIR, "global_launch", "config", "globals.yaml"),
         description="Path to ROS parameter config file. Controls ROS parameters passed into"
         + " ROS nodes",
     ),
@@ -122,7 +122,7 @@ def get_include_launch_descriptions(
     """
     include_launch_descriptions = []
     for pkg in ros_package_list:
-        pkg_main_launch = os.path.join(ROS_WORKSPACE, "src", pkg, "launch", "main_launch.py")
+        pkg_main_launch = os.path.join(ROS_PACKAGES_DIR, pkg, "launch", "main_launch.py")
         launch_description = IncludeLaunchDescription(
             launch_description_source=PythonLaunchDescriptionSource(
                 launch_file_path=pkg_main_launch
