@@ -149,7 +149,6 @@
         ],
         "flake8.interpreter": ["/usr/bin/python3"],
         // formatter: black and isort extensions
-        "python.formatting.provider": "none",
         "black-formatter.interpreter": ["/usr/bin/python3"],
         "black-formatter.args": [
             "--line-length=99",
