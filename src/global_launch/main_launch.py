@@ -1,7 +1,7 @@
 """Global launch file that starts the entire system."""
 
 import os
-from typing import List, Tuple
+from typing import List
 
 from launch import LaunchDescription, LaunchDescriptionEntity
 from launch.actions import (
@@ -13,7 +13,6 @@ from launch.actions import (
 from launch.launch_context import LaunchContext
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.logging import launch_config
-from launch.some_substitutions_type import SomeSubstitutionsType
 from launch.substitutions import LaunchConfiguration
 
 # TODO: Add the controller package when it is ready
@@ -67,8 +66,7 @@ def generate_launch_description() -> LaunchDescription:
 
 
 def setup_launch(context: LaunchContext) -> List[LaunchDescriptionEntity]:
-    """Collects launch descriptions from all local launch files while passing the global launch
-    arguments to each of them.
+    """Collects launch descriptions from all local launch files.
 
     Args:
         context (LaunchContext): The current context of the launch.
@@ -78,11 +76,7 @@ def setup_launch(context: LaunchContext) -> List[LaunchDescriptionEntity]:
     """
     mode = LaunchConfiguration("mode").perform(context)
     ros_packages = get_running_ros_packages(mode)
-    global_arguments = [
-        (arg.name, LaunchConfiguration(arg.name).perform(context))
-        for arg in GLOBAL_LAUNCH_ARGUMENTS
-    ]
-    return get_include_launch_descriptions(ros_packages, global_arguments)
+    return get_include_launch_descriptions(ros_packages)
 
 
 def get_running_ros_packages(mode: str) -> List[str]:
@@ -106,16 +100,11 @@ def get_running_ros_packages(mode: str) -> List[str]:
             raise ValueError("Invalid launch mode. Must be one of 'production', 'development'.")
 
 
-def get_include_launch_descriptions(
-    ros_package_list: List[str],
-    global_arguments: List[Tuple[SomeSubstitutionsType, SomeSubstitutionsType]],
-) -> List[IncludeLaunchDescription]:
+def get_include_launch_descriptions(ros_package_list: List[str]) -> List[IncludeLaunchDescription]:
     """Get the launch descriptions for each ROS package.
 
     Args:
         ros_package_list (List[str]): The names of the packages to be launched.
-        global_arguments(List[Tuple[SomeSubstitutionType, SomeSubstitutionType]]): The global
-            arguments common across all ROS packages.
 
     Returns:
         List[IncludeLaunchDescriptions]: The launch descriptions.
@@ -123,11 +112,14 @@ def get_include_launch_descriptions(
     include_launch_descriptions = []
     for pkg in ros_package_list:
         pkg_main_launch = os.path.join(ROS_PACKAGES_DIR, pkg, "launch", "main_launch.py")
+
+        # Note: Normally, arguments would be passed by setting the `launch_arguments` input.
+        # However, since we load global arguments in package launch files already, this is not
+        # necessary. Only the launch description source is required.
         launch_description = IncludeLaunchDescription(
             launch_description_source=PythonLaunchDescriptionSource(
                 launch_file_path=pkg_main_launch
-            ),
-            launch_arguments=global_arguments,
+            )
         )
         include_launch_descriptions.append(launch_description)
     return include_launch_descriptions
