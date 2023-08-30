@@ -372,7 +372,8 @@
                     "clear": true
                 }
             },
-            // TODO: contribute to https://github.com/athackst/vscode-ament-task-provider
+            // TODO: uncomment once https://github.com/athackst/vscode-ament-task-provider/pull/201
+            //       is merged and a new release is created
             // {
             //     "label": "mypy",
             //     "detail": "Run mypy on python files.",
