@@ -1,0 +1,4 @@
+/**:
+   ros__parameters:
+      # Publishers' period (seconds): how often the publishers publish
+      pub_period_sec: 0.5
