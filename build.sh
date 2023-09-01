@@ -43,12 +43,6 @@ else
 fi
 
 # Build ROS packages in src directory
-if [ "$BUILD_TYPE" == "Debug" ]
-then
-    # Remove existing code coverage files
-    find . -name "*.gcda" -type f -delete
-fi
-
 colcon build \
         ${PACKAGE:+--packages-select $PACKAGE} \
         --packages-ignore virtual_iridium \
