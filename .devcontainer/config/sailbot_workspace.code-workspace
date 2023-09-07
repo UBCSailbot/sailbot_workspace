@@ -41,6 +41,7 @@
         "cSpell.words": [
             "athackst",
             "autopep",
+            "bsoncxx",
             "buildx",
             "cmake",
             "cppcheck",
@@ -54,6 +55,7 @@
             "isort",
             "kmph",
             "mkdocs",
+            "mongocxx",
             "noqa",
             "OMPL",
             "pallete",
