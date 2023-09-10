@@ -238,7 +238,8 @@
                 "request": "launch",
                 "program": "${workspaceFolder:sailbot_workspace}/install/lib/${input:node}",
                 "args": [],
-                "preLaunchTask": "Build All",
+                // Have testMate extension build before starting debug session to avoid building twice
+                // "preLaunchTask": "debug",
                 "stopAtEntry": false,
                 "cwd": "${workspaceFolder:sailbot_workspace}",
                 "externalConsole": false,
