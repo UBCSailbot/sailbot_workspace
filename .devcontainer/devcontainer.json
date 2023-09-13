@@ -3,11 +3,11 @@
 	"name": "Sailbot Workspace",
 	"dockerComposeFile": [
 		// Uncomment the files containing the programs you need
-		// "docker-compose.db.yml", // mongodb
 		// "docker-compose.docs.yml", // docs
 		// "docker-compose.website.yml", // grafana, website
 
-		"docker-compose.yml"
+		"docker-compose.yml",
+		"docker-compose.db.yml" // mongodb
 	],
 	"forwardPorts": [
 		3000, // grafana
