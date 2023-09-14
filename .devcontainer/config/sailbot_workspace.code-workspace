@@ -375,23 +375,22 @@
                     "clear": true
                 }
             },
-            // TODO: uncomment once https://github.com/athackst/vscode-ament-task-provider/pull/201
-            //       is merged and a new release is created
-            // {
-            //     "label": "mypy",
-            //     "detail": "Run mypy on python files.",
-            //     "type": "ament",
-            //     "task": "mypy",
-            //     "path": "src/",
-            //     "problemMatcher": [
-            //         "$ament_mypy",
-            //     ],
-            //     "presentation": {
-            //         "panel": "dedicated",
-            //         "reveal": "silent",
-            //         "clear": true
-            //     }
-            // },
+            {
+                "label": "mypy",
+                "detail": "Run mypy on python files.",
+                "type": "ament",
+                "task": "mypy",
+                "path": "src/",
+                "commandOptions": "--exclude=src/virtual_iridium,src/raye-local-pathfinding",
+                "problemMatcher": [
+                    "$ament_mypy",
+                ],
+                "presentation": {
+                    "panel": "dedicated",
+                    "reveal": "silent",
+                    "clear": true
+                }
+            },
             {
                 "label": "xmllint",
                 "detail": "Run xmllint on xml files.",
@@ -413,7 +412,7 @@
                 "dependsOn": [
                     "lint_cmake",
                     "flake8",
-                    // "mypy",
+                    "mypy",
                     "xmllint",
                 ],
                 "problemMatcher": []
