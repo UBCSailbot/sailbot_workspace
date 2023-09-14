@@ -61,10 +61,18 @@ jobs:
           repository: UBCSailbot/custom_interfaces
           path: src/custom_interfaces
 
+    - name: Start MongoDB
+      if: ${{ inputs.repository != 'sailbot_workspace' && inputs.repository != 'custom_interfaces' }}
+      run: docker-compose -f ".devcontainer/docker-compose.ci.yml" up -d --build
+
     - name: Test
       uses: ./.github/actions/test/
       env:
         DISABLE_VCS: ${{ inputs.repository != 'sailbot_workspace' }}
+
+    - name: Stop MongoDB
+      if: ${{ inputs.repository != 'sailbot_workspace' && inputs.repository != 'custom_interfaces' }}
+      run: docker-compose -f ".devcontainer/docker-compose.ci.yml" down
 
   ament-lint:
     strategy:
