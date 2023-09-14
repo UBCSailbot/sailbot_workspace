@@ -12,6 +12,9 @@ services:
       - sailbot-new-project-bashhistory:/home/ros/commandhistory:delegated
       - sailbot-new-project-roslog:/home/ros/.ros/log:delegated
 
+    environment:
+      - MONGODB_CONN_STR=mongodb://localhost:27017
+
     # Overrides default command so things don't shut down after the process ends.
     command: sleep infinity
 

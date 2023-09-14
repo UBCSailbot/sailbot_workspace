@@ -3,18 +3,37 @@
 version: '3.8'
 
 services:
+  # mongodb_container:
+  #   image: mongo:latest
+  #   environment:
+  #     MONGO_INITDB_ROOT_USERNAME: root
+  #     MONGO_INITDB_ROOT_PASSWORD: rootpassword
+  #   ports:
+  #     - 27017:27017
   sailbot-workspace:
     build:
       context: .
       dockerfile: Dockerfile
 
-  # URL: mongodb://localhost:27017
-  mongodb:
+    # NOTE: CI reads environment variables from sailbot_workspace/.github/workflows/test_definitions.yml instead of here
+    environment:
+      - MONGODB_CONN_STR=mongodb://root:rootpassword@mongodb_container:27017
+    # Initialize mongodb and keep the service running
+    # command: '/bin/bash -c "sleep 5; mongosh $$CONN_STR --eval \"show dbs;\""; sleep infinity'
+    command: 'sleep infinity'
+    depends_on:
+      - mongodb_container
+
+  # # URL: mongodb://mongodb:27017
+  mongodb_container:
     image: mongo:latest
     restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: rootpassword
+    ports:
+      - 27017:27017
 
-    # Runs on the same network as the workspace container, allows "forwardPorts" in devcontainer.json function.
-    network_mode: service:sailbot-workspace
 
     # Uncomment to change startup options
     # environment:
