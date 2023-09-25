@@ -10,7 +10,7 @@ function warn() {
 # Import all project repositories
 if [[ $DISABLE_VCS != "true" ]]; then
     echo "Importing project repositories..."
-    vcs import < src/new_project.repos src --skip-existing
+    vcs import < src/polaris.repos src --skip-existing
 else
     warn "VCS disabled. Skipping project repository imports..."
 fi

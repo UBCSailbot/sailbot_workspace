@@ -6,7 +6,7 @@ site/*
 # vcstool packages
 src/*
 !src/global_launch
-!src/new_project.repos
+!src/polaris.repos
 
 # configuration files
 .devcontainer/config/*
