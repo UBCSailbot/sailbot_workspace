@@ -417,9 +417,9 @@
             // Workspace editing tasks
             {
                 "label": "clone source repositories",
-                "detail": "Clone the repositories specified in src/new_project.repos to src/",
+                "detail": "Clone the repositories specified in src/polaris.repos to src/",
                 "type": "shell",
-                "command": "vcs import < src/new_project.repos src --skip-existing",
+                "command": "vcs import < src/polaris.repos src --skip-existing",
                 "problemMatcher": []
             },
             {
