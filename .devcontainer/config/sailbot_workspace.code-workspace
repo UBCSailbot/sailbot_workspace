@@ -7,6 +7,9 @@
             "path": "../../src/boat_simulator"
         },
         {
+            "path": "../../src/controller"
+        },
+        {
             "path": "../../src/custom_interfaces"
         },
         {

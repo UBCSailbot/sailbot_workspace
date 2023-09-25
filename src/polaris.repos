@@ -22,6 +22,11 @@ repositories:
     url: https://github.com/UBCSailbot/boat_simulator
     version: main
 
+  controller:
+    type: git
+    url: https://github.com/UBCSailbot/controller
+    version: main
+
   custom_interfaces:
     type: git
     url: https://github.com/UBCSailbot/custom_interfaces
