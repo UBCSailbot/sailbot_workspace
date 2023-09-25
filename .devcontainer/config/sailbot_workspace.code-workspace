@@ -19,6 +19,9 @@
             "path": "../../src/network_systems"
         },
         {
+            "path": "../../src/notebooks"
+        },
+        {
             "path": "../../src/raye-local-pathfinding"
         },
         {
@@ -125,6 +128,8 @@
             "editor.formatOnSave": true,
             "editor.rulers": [99],
         },
+        "notebook.formatOnCellExecution": true,
+        "notebook.formatOnSave.enabled": true,
         "python.analysis.diagnosticMode": "workspace",
         "python.analysis.extraPaths": [
             "/workspaces/sailbot_workspace/install/lib/python3.10/site-packages",
