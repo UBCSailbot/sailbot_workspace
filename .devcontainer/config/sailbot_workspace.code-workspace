@@ -19,6 +19,9 @@
             "path": "../../src/network_systems"
         },
         {
+            "path": "../../src/notebooks"
+        },
+        {
             "path": "../../src/raye-local-pathfinding"
         },
         {
