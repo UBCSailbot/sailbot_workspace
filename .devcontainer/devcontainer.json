@@ -12,7 +12,8 @@
 	"forwardPorts": [
 		3000, // grafana
 		3005, // website
-		8000  // docs
+		8000, // docs
+		27017 // db
 	],
 	"service": "sailbot-workspace",
 	"workspaceFolder": "/workspaces/sailbot_workspace",
