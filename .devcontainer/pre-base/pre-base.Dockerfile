@@ -118,6 +118,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         build-essential \
         cmake \
+        git \
         libboost-filesystem-dev \
         libboost-numpy-dev \
         libboost-program-options-dev \
