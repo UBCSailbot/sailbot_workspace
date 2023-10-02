@@ -1,10 +1,19 @@
-FROM ubuntu:22.04 AS ompl-source
+FROM ubuntu:22.04 AS fix-certificates
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         ca-certificates \
-        git \
+    && apt-get autoremove -y \
+    && apt-get clean -y \
+    && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
+ENV DEBIAN_FRONTEND=
+
+FROM fix-certificates AS ompl-source
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git \
     && apt-get autoremove -y \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
@@ -13,7 +22,7 @@ WORKDIR /ompl
 RUN git reset --hard 4c86b2f
 
 # From https://github.com/athackst/dockerfiles/blob/32a872348af0ad25ec4a6e6184cb803357acb6ab/ros2/humble.Dockerfile
-FROM ubuntu:22.04 AS ros-pre-base
+FROM fix-certificates AS ros-pre-base
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -35,7 +44,6 @@ RUN ln -fs /usr/share/zoneinfo/UTC /etc/localtime \
 
 # Install ROS2
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        ca-certificates \
         curl \
         gnupg2 \
         lsb-release \
