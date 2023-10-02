@@ -15,9 +15,8 @@ FROM mcr.microsoft.com/vscode/devcontainers/javascript-node:0-${VARIANT}
 # RUN su node -c "npm install -g <your-package-list-here>"
 
 # Adapted from https://www.digitalocean.com/community/tutorials/how-to-build-a-node-js-application-with-docker
-RUN mkdir -p /website/node_modules
 WORKDIR /website
 COPY src/website/package*.json ./
-RUN npm install
+RUN npm install --legacy-peer-deps
 EXPOSE 3005
-CMD [ "npm", "run", "dev" ]
+CMD npm install --legacy-peer-deps & npm run dev
