@@ -161,3 +161,4 @@ RUN apt-get update \
 ENV DEBIAN_FRONTEND=
 
 COPY --from=ompl-builder /usr /usr
+COPY --from=mongo-cxx-driver-builder /usr /usr
