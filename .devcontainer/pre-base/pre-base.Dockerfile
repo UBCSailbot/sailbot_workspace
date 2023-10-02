@@ -110,6 +110,30 @@ RUN cmake \
     && ninja -j `nproc` \
     && ninja install
 
+FROM fix-certificates AS mongo-cxx-driver-builder
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        build-essential \
+        cmake \
+        git \
+        libmongoc-dev \
+        wget \
+    && apt-get autoremove -y \
+    && apt-get clean -y \
+    && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
+
+# setup MongoDB C++ Packages
+# mongo-cxx-driver version must match libmongoc-dev version - see https://mongocxx.org/mongocxx-v3/installation/linux/
+RUN wget https://github.com/mongodb/mongo-cxx-driver/releases/download/r3.6.7/mongo-cxx-driver-r3.6.7.tar.gz \
+    && tar -xzf mongo-cxx-driver-r3.6.7.tar.gz \
+    && cd mongo-cxx-driver-r3.6.7/build \
+    && cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local \
+    && cmake --build . \
+    && cmake --build . --target  install
+ENV DEBIAN_FRONTEND=
+
 FROM ros-pre-base as pre-base
 LABEL org.opencontainers.image.source = "https://github.com/UBCSailbot/sailbot_workspace"
 
@@ -118,7 +142,6 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         build-essential \
         cmake \
-        git \
         libboost-filesystem-dev \
         libboost-numpy-dev \
         libboost-program-options-dev \
@@ -139,15 +162,7 @@ RUN apt-get update \
     && apt-get autoremove -y \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
-
-# setup MongoDB C++ Packages
-# mongo-cxx-driver version must match libmongoc-dev version - see https://mongocxx.org/mongocxx-v3/installation/linux/
-RUN wget https://github.com/mongodb/mongo-cxx-driver/releases/download/r3.6.7/mongo-cxx-driver-r3.6.7.tar.gz \
-    && tar -xzf mongo-cxx-driver-r3.6.7.tar.gz \
-    && cd mongo-cxx-driver-r3.6.7/build \
-    && cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local \
-    && cmake --build . \
-    && cmake --build . --target  install
 ENV DEBIAN_FRONTEND=
 
 COPY --from=ompl-builder /usr /usr
+COPY --from=mongo-cxx-driver-builder /usr /usr
