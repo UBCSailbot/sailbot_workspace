@@ -147,6 +147,7 @@ RUN apt-get update \
         libboost-system-dev \
         libeigen3-dev \
         libflann-dev \
+        libmongoc-dev \
         libode-dev \
         libtriangle-dev \
         ninja-build \
