@@ -66,7 +66,7 @@ ENV ROS_VERSION=2
 ENV DEBIAN_FRONTEND=
 
 # Based on https://github.com/ompl/ompl/blob/4c86b2fecf7084ae9073bf6a837176d0be169721/scripts/docker/ompl.Dockerfile
-FROM ros-pre-base AS ompl-builder
+FROM fix-certificates AS ompl-builder
 # avoid interactive configuration dialog from tzdata, which gets pulled in
 # as a dependency
 ENV DEBIAN_FRONTEND=noninteractive
@@ -110,6 +110,27 @@ RUN cmake \
     && ninja -j `nproc` \
     && ninja install
 
+FROM fix-certificates AS mongo-cxx-driver-builder
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        libmongoc-dev \
+        wget \
+    && apt-get autoremove -y \
+    && apt-get clean -y \
+    && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
+
+# setup MongoDB C++ Packages
+# mongo-cxx-driver version must match libmongoc-dev version - see https://mongocxx.org/mongocxx-v3/installation/linux/
+RUN wget https://github.com/mongodb/mongo-cxx-driver/releases/download/r3.6.7/mongo-cxx-driver-r3.6.7.tar.gz \
+    && tar -xzf mongo-cxx-driver-r3.6.7.tar.gz \
+    && cd mongo-cxx-driver-r3.6.7/build \
+    && cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local \
+    && cmake --build . \
+    && cmake --build . --target  install
+ENV DEBIAN_FRONTEND=
+
 FROM ros-pre-base as pre-base
 LABEL org.opencontainers.image.source = "https://github.com/UBCSailbot/sailbot_workspace"
 
@@ -126,7 +147,6 @@ RUN apt-get update \
         libboost-system-dev \
         libeigen3-dev \
         libflann-dev \
-        libmongoc-dev \
         libode-dev \
         libtriangle-dev \
         ninja-build \
@@ -138,17 +158,6 @@ RUN apt-get update \
     && apt-get autoremove -y \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
-ENV DEBIAN_FRONTEND=
-
-# setup MongoDB C++ Packages
-ENV DEBIAN_FRONTEND=noninteractive
-# mongo-cxx-driver version must match libmongoc-dev version - see https://mongocxx.org/mongocxx-v3/installation/linux/
-RUN wget https://github.com/mongodb/mongo-cxx-driver/releases/download/r3.6.7/mongo-cxx-driver-r3.6.7.tar.gz \
-    && tar -xzf mongo-cxx-driver-r3.6.7.tar.gz \
-    && cd mongo-cxx-driver-r3.6.7/build \
-    && cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local \
-    && cmake --build . \
-    && cmake --build . --target  install
 ENV DEBIAN_FRONTEND=
 
 COPY --from=ompl-builder /usr /usr
