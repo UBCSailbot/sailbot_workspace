@@ -35,6 +35,7 @@ RUN ln -fs /usr/share/zoneinfo/UTC /etc/localtime \
 
 # Install ROS2
 RUN apt-get update && apt-get install -y --no-install-recommends \
+        ca-certificates \
         curl \
         gnupg2 \
         lsb-release \
