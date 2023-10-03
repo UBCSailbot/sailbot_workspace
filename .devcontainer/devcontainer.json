@@ -66,6 +66,7 @@
 				"ms-python.black-formatter",
 				"ms-python.isort",
 				"ms-python.vscode-pylance",
+				"ms-toolsai.jupyter",
 				"ms-vsliveshare.vsliveshare",
 				"njpwerner.autodocstring",
 				"streetsidesoftware.code-spell-checker",

@@ -41,6 +41,9 @@ else
     STATIC_ANALYSIS="ON"
     UNIT_TEST="ON"
 fi
+if [[ $UNIT_TEST = "ON" ]]; then
+    BUILD_TYPE="Debug"
+fi
 
 # Build ROS packages in src directory
 colcon build \
