@@ -164,5 +164,5 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
 ENV DEBIAN_FRONTEND=
 
-COPY --from=mongo-cxx-driver-builder /usr /usr
 COPY --from=ompl-builder /usr /usr
+COPY --from=mongo-cxx-driver-builder /usr/local /usr/local
