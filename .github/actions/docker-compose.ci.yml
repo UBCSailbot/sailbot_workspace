@@ -5,14 +5,12 @@ version: '3.8'
 services:
   sailbot-workspace:
     build:
-      context: .
+      context: ../../.devcontainer
       dockerfile: Dockerfile
     environment:
       - MONGODB_CONN_STR=mongodb://localhost:27017
     volumes:
-      - ..:/workspaces/sailbot_workspace:cached
-      - sailbot-new-project-bashhistory:/home/ros/commandhistory:delegated
-      - sailbot-new-project-roslog:/home/ros/.ros/log:delegated
+      - ../..:/workspaces/sailbot_workspace:cached
 
     # Overrides default command so things don't shut down after the process ends.
     command: sleep infinity
@@ -23,7 +21,3 @@ services:
     security_opt:
     - seccomp:unconfined
     - apparmor:unconfined
-
-volumes:
-  sailbot-new-project-bashhistory:
-  sailbot-new-project-roslog:
