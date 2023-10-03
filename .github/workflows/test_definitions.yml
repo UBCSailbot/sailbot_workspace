@@ -46,7 +46,6 @@ jobs:
       uses: actions/checkout@v4
       with:
           repository: UBCSailbot/sailbot_workspace
-          ref: patrick-5546/refactor-ci
 
     - name: Checkout repositories
       uses: ./.github/actions/checkout/
@@ -72,7 +71,6 @@ jobs:
       uses: actions/checkout@v4
       with:
           repository: UBCSailbot/sailbot_workspace
-          ref: patrick-5546/refactor-ci
 
     - name: Checkout repositories
       uses: ./.github/actions/checkout/
@@ -93,7 +91,6 @@ jobs:
       uses: actions/checkout@v4
       with:
           repository: UBCSailbot/sailbot_workspace
-          ref: patrick-5546/refactor-ci
 
     - name: Checkout repositories
       uses: ./.github/actions/checkout/
