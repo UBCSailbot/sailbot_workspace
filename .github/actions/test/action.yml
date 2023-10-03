@@ -11,12 +11,12 @@ runs:
   steps:
     - name: Build Containers
       shell: bash
-      run: docker-compose -f .github/actions/docker-compose.ci.yml -f .github/actions/docker-compose.ci.db.yml build
+      run: docker-compose -f .devcontainer/docker-compose.yml -f .devcontainer/docker-compose.db.yml build
 
     - name: Run Containers
       shell: bash
-      run: docker-compose -f .github/actions/docker-compose.ci.yml -f .github/actions/docker-compose.ci.db.yml up -d
+      run: docker-compose -f .devcontainer/docker-compose.yml -f .devcontainer/docker-compose.db.yml up -d
 
     - name: Run Tests
       shell: bash
-      run: docker-compose -f .github/actions/docker-compose.ci.yml -f .github/actions/docker-compose.ci.db.yml exec -T sailbot-workspace /bin/bash -c "export DISABLE_VCS=${{ inputs.disable_vcs }} && cd /workspaces/sailbot_workspace && .github/actions/test/run.sh"
+      run: docker-compose -f .devcontainer/docker-compose.yml -f .devcontainer/docker-compose.db.yml exec -T sailbot-workspace /bin/bash -c "export DISABLE_VCS=${{ inputs.disable_vcs }} && cd /workspaces/sailbot_workspace && .github/actions/test/run.sh"
