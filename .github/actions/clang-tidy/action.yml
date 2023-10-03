@@ -1,6 +1,16 @@
 name: 'Clang-Tidy'
 description: 'Clang-Tidy using devcontainer'
 runs:
-  using: 'docker'
-  image: '../../../.devcontainer/Dockerfile'
-  entrypoint: ".github/actions/clang-tidy/run.sh"
+  using: "composite"
+  steps:
+    - name: Build Containers
+      shell: bash
+      run: docker-compose -f .github/actions/docker-compose.ci.yml build
+
+    - name: Run Containers
+      shell: bash
+      run: docker-compose -f .github/actions/docker-compose.ci.yml up -d
+
+    - name: Run Tests
+      shell: bash
+      run: docker-compose -f .github/actions/docker-compose.ci.yml exec -T sailbot-workspace /bin/bash -c "cd /workspaces/sailbot_workspace && .github/actions/clang-tidy/run.sh"
