@@ -5,12 +5,12 @@ runs:
   steps:
     - name: Build Containers
       shell: bash
-      run: docker-compose -f .github/actions/docker-compose.ci.yml build
+      run: docker-compose -f .github/actions/docker-compose.ci.yml -f .github/actions/docker-compose.ci.website.yml build
 
     - name: Run Containers
       shell: bash
-      run: docker-compose -f .github/actions/docker-compose.ci.yml up -d
+      run: docker-compose -f .github/actions/docker-compose.ci.yml -f .github/actions/docker-compose.ci.website.yml up -d
 
     - name: Run Tests
       shell: bash
-      run: docker-compose -f .github/actions/docker-compose.ci.yml exec -T -u ros sailbot-workspace /bin/bash -c "cd /workspaces/sailbot_workspace && .github/actions/test/run.sh"
+      run: docker-compose -f .github/actions/docker-compose.ci.yml -f .github/actions/docker-compose.ci.website.yml exec -T -u ros sailbot-workspace /bin/bash -c "cd /workspaces/sailbot_workspace && .github/actions/test/run.sh"

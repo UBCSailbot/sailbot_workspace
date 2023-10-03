@@ -19,17 +19,3 @@ services:
     security_opt:
     - seccomp:unconfined
     - apparmor:unconfined
-
-  # URL: mongodb://localhost:27017
-  mongodb:
-    image: mongo:latest
-    restart: unless-stopped
-
-    # Runs on the same network as the workspace container, allows "forwardPorts" in devcontainer.json function.
-    network_mode: service:sailbot-workspace
-
-    # Uncomment to change startup options
-    # environment:
-    #  MONGO_INITDB_ROOT_USERNAME: root
-    #  MONGO_INITDB_ROOT_PASSWORD: example
-    #  MONGO_INITDB_DATABASE: your-database-here
