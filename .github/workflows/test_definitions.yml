@@ -55,8 +55,8 @@ jobs:
 
     - name: Test
       uses: ./.github/actions/test/
-      env:
-        DISABLE_VCS: ${{ inputs.repository != 'sailbot_workspace' }}
+      with:
+        disable_vcs: ${{ inputs.repository != 'sailbot_workspace' }}
 
   ament-lint:
     strategy:
@@ -102,8 +102,8 @@ jobs:
 
     - name: Run linter
       uses: ./.github/actions/clang-tidy/
-      env:
-        DISABLE_VCS: ${{ inputs.repository != 'sailbot_workspace' }}
+      with:
+        disable_vcs: ${{ inputs.repository != 'sailbot_workspace' }}
 
   # https://github.com/nosborn/github-action-markdown-cli
   markdownlint:

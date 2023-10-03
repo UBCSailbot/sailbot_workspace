@@ -1,5 +1,11 @@
 name: 'Clang-Tidy'
 description: 'Clang-Tidy using devcontainer'
+
+inputs:
+  disable_vcs:
+    description: 'Whether to disable VCS cloning all repositories'
+    required: true
+
 runs:
   using: "composite"
   steps:
@@ -13,4 +19,4 @@ runs:
 
     - name: Run Tests
       shell: bash
-      run: docker-compose -f .github/actions/docker-compose.ci.yml exec -T sailbot-workspace /bin/bash -c "cd /workspaces/sailbot_workspace && .github/actions/clang-tidy/run.sh"
+      run: docker-compose -f .github/actions/docker-compose.ci.yml exec -T sailbot-workspace /bin/bash -c "export DISABLE_VCS=${{ inputs.disable_vcs }} && cd /workspaces/sailbot_workspace && .github/actions/clang-tidy/run.sh"
