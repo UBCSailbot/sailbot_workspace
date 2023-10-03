@@ -13,4 +13,4 @@ runs:
 
     - name: Run Tests
       shell: bash
-      run: docker-compose -f .github/actions/docker-compose.ci.yml -f .github/actions/docker-compose.ci.website.yml exec -T -u ros sailbot-workspace /bin/bash -c "cd /workspaces/sailbot_workspace && .github/actions/test/run.sh"
+      run: docker-compose -f .github/actions/docker-compose.ci.yml -f .github/actions/docker-compose.ci.website.yml exec -T sailbot-workspace /bin/bash -c "cd /workspaces/sailbot_workspace && .github/actions/test/run.sh"
