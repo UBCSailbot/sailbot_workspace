@@ -81,9 +81,9 @@ jobs:
 
     - name: Run linter
       uses: ./.github/actions/ament-lint/
-      env:
-        LINTER: ${{ matrix.linter }}
-        DISABLE_VCS: ${{ inputs.repository != 'sailbot_workspace' }}
+      with:
+        linter: ${{ matrix.linter }}
+        disable_vcs: ${{ inputs.repository != 'sailbot_workspace' }}
 
   clang-tidy:
     runs-on: ubuntu-latest
