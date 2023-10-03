@@ -22,4 +22,4 @@ runs:
 
     - name: Run Tests
       shell: bash
-      run: docker-compose -f .github/actions/docker-compose.ci.yml exec -T sailbot-workspace /bin/bash -c "LINTER=${{ inputs.linter}} && DISABLE_VCS=${{ inputs.disable_vcs }} && cd /workspaces/sailbot_workspace && .github/actions/ament-lint/run.sh"
+      run: docker-compose -f .github/actions/docker-compose.ci.yml exec -T sailbot-workspace /bin/bash -c "export LINTER=${{ inputs.linter}} && export DISABLE_VCS=${{ inputs.disable_vcs }} && cd /workspaces/sailbot_workspace && .github/actions/ament-lint/run.sh"
