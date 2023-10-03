@@ -3,21 +3,17 @@ description: 'Test using devcontainer'
 runs:
   using: "composite"
   steps:
-    - name: Print working directory
+    - name: Build Containers
       shell: bash
-      run: pwd
+      run: docker-compose -f .github/actions/docker-compose.ci.yml build
 
-    - name: Build
+    - name: Run Containers
       shell: bash
-      run: docker-compose -f ../docker-compose.ci.yml build
+      run: docker-compose -f .github/actions/docker-compose.ci.yml up -d
 
-    - name: Run
-      shell: bash
-      run: docker-compose -f ../docker-compose.ci.yml up -d
-
-    - name: Test
+    - name: Run Tests
       shell: bash
       run: |
-        docker-compose -f ../docker-compose.ci.yml exec -u ros sailbot-workspace /bin/bash
+        docker-compose -f .github/actions/docker-compose.ci.yml exec -u ros sailbot-workspace /bin/bash
         cd /workspaces/sailbot_workspace
         .github/actions/test/run.sh
