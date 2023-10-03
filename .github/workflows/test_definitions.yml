@@ -76,6 +76,11 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ inputs.ros-ci }}
     steps:
+    - name: Checkout workspace
+      uses: actions/checkout@v4
+      with:
+          repository: UBCSailbot/sailbot_workspace
+
     - name: Checkout repositories
       uses: ./.github/actions/checkout/
       with:
