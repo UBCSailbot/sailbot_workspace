@@ -3,9 +3,9 @@ description: 'Test using devcontainer'
 runs:
   using: "composite"
   steps:
-    - name: List
+    - name: Print working directory
       shell: bash
-      run: ls
+      run: pwd
 
     - name: Build
       shell: bash
