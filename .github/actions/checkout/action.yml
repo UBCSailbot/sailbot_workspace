@@ -17,7 +17,7 @@ runs:
           path: src/${{ inputs.repository }}
 
     - name: Checkout custom_interfaces ROS package
-      # if: ${{ inputs.repository != 'sailbot_workspace' && inputs.repository != 'custom_interfaces' }}
+      if: ${{ inputs.repository != 'sailbot_workspace' && inputs.repository != 'custom_interfaces' }}
       uses: actions/checkout@v4
       with:
           repository: UBCSailbot/custom_interfaces
