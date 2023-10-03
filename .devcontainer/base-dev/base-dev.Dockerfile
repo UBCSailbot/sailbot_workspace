@@ -1,4 +1,4 @@
-FROM ghcr.io/ubcsailbot/sailbot_workspace/pre-base:ros_humble-ompl_4c86b2f as base
+FROM ghcr.io/ubcsailbot/sailbot_workspace/pre-base:ros_humble-ompl_4c86b2f-mongo_367-v2 as base
 
 # install base apt dependencies
 ENV DEBIAN_FRONTEND=noninteractive
@@ -75,21 +75,9 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         mongodb-database-tools \
         mongodb-mongosh \
-        libmongoc-dev \
     && apt-get autoremove -y \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
-ENV DEBIAN_FRONTEND=
-
-# setup MongoDB C++ Packages
-ENV DEBIAN_FRONTEND=noninteractive
-# mongo-cxx-driver version must match libmongoc-dev version - see https://mongocxx.org/mongocxx-v3/installation/linux/
-RUN wget https://github.com/mongodb/mongo-cxx-driver/releases/download/r3.6.7/mongo-cxx-driver-r3.6.7.tar.gz \
-    && tar -xzf mongo-cxx-driver-r3.6.7.tar.gz \
-    && cd mongo-cxx-driver-r3.6.7/build \
-    && cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local \
-    && cmake --build . \
-    && cmake --build . --target  install
 ENV DEBIAN_FRONTEND=
 
 FROM local-base as ros-dev
