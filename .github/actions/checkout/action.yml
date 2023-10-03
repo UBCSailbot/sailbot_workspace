@@ -1,0 +1,29 @@
+name: 'Checkout Repositories'
+description: 'Checkout the repositories depending on the inputs'
+
+inputs:
+  repository:
+    description: 'The repository name: github.event.repository.name'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout workspace
+      uses: actions/checkout@v4
+      with:
+          repository: UBCSailbot/sailbot_workspace
+
+    - name: Checkout ROS package
+      if: ${{ inputs.repository != 'sailbot_workspace' }}
+      uses: actions/checkout@v4
+      with:
+          repository: UBCSailbot/${{ inputs.repository }}
+          path: src/${{ inputs.repository }}
+
+    - name: Checkout custom_interfaces ROS package
+      if: ${{ inputs.repository != 'sailbot_workspace' && inputs.repository != 'custom_interfaces' }}
+      uses: actions/checkout@v4
+      with:
+          repository: UBCSailbot/custom_interfaces
+          path: src/custom_interfaces
