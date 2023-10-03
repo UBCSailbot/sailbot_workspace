@@ -7,6 +7,9 @@
             "path": "../../src/boat_simulator"
         },
         {
+            "path": "../../src/controller"
+        },
+        {
             "path": "../../src/custom_interfaces"
         },
         {
@@ -17,6 +20,9 @@
         },
         {
             "path": "../../src/network_systems"
+        },
+        {
+            "path": "../../src/notebooks"
         },
         {
             "path": "../../src/raye-local-pathfinding"
@@ -41,6 +47,7 @@
         "cSpell.words": [
             "athackst",
             "autopep",
+            "bsoncxx",
             "buildx",
             "cmake",
             "cppcheck",
@@ -54,6 +61,7 @@
             "isort",
             "kmph",
             "mkdocs",
+            "mongocxx",
             "noqa",
             "OMPL",
             "pallete",
@@ -123,6 +131,8 @@
             "editor.formatOnSave": true,
             "editor.rulers": [99],
         },
+        "notebook.formatOnCellExecution": true,
+        "notebook.formatOnSave.enabled": true,
         "python.analysis.diagnosticMode": "workspace",
         "python.analysis.extraPaths": [
             "/workspaces/sailbot_workspace/install/lib/python3.10/site-packages",
@@ -135,6 +145,7 @@
             "/workspaces/sailbot_workspace/install/lib/python3.10/site-packages",
             "/opt/ros/humble/lib/python3.10/site-packages"
         ],
+        "python.defaultInterpreterPath": "/usr/bin/python3",
         // Environment file lets vscode find python files within workspace
         "python.envFile": "/workspaces/sailbot_workspace/.env",
         // linter: flake8 extension
@@ -146,13 +157,15 @@
             "--show-source",
             "--statistics",
         ],
+        "flake8.interpreter": ["/usr/bin/python3"],
         // formatter: black and isort extensions
         "python.formatting.provider": "none",
+        "black-formatter.interpreter": ["/usr/bin/python3"],
         "black-formatter.args": [
             "--line-length=99",
-            "--skip-string-normalization"
         ],
         "isort.args":["--profile=black"],
+        "isort.interpreter": ["/usr/bin/python3"],
         // test framework: pytest
         "python.testing.cwd": "/workspaces/sailbot_workspace/src",
         "python.testing.pytestArgs": [
@@ -169,6 +182,17 @@
             "editor.formatOnSave": true,
             "editor.rulers": [120],
         },
+
+		"testMate.cpp.discovery.loadOnStartup": true,
+		// The following setting just changes the default prelaunch task from "build" to "debug"
+		"testMate.cpp.test.advancedExecutables": [
+			{
+				"pattern": "{build,Build,BUILD,out,Out,OUT}/**/*{test,Test,TEST}*",
+				"runTask": {
+					"before": [ "debug" ]
+				}
+			}
+		],
 
         // markdown
         // copied from docs: https://github.com/UBCSailbot/docs/blob/main/.vscode/settings.json
@@ -222,7 +246,8 @@
                 "request": "launch",
                 "program": "${workspaceFolder:sailbot_workspace}/install/lib/${input:node}",
                 "args": [],
-                "preLaunchTask": "Build All",
+                // Have testMate extension build before starting debug session to avoid building twice
+                // "preLaunchTask": "debug",
                 "stopAtEntry": false,
                 "cwd": "${workspaceFolder:sailbot_workspace}",
                 "externalConsole": false,
@@ -242,8 +267,10 @@
                 "type": "pickString",
                 "description": "Launch file to run, in the format `<package>/<launch file>`",
                 "options": [
-                    "boat_simulator/all_launch.yaml",
+                    "../../src/global_launch/main_launch.py",
+                    "boat_simulator/main_launch.py",
                     "local_pathfinding/main_launch.py",
+                    "network_systems/launch/main_launch.py",
                 ]
             },
             {
@@ -393,9 +420,9 @@
             // Workspace editing tasks
             {
                 "label": "clone source repositories",
-                "detail": "Clone the repositories specified in src/new_project.repos to src/",
+                "detail": "Clone the repositories specified in src/polaris.repos to src/",
                 "type": "shell",
-                "command": "vcs import < src/new_project.repos src --skip-existing",
+                "command": "vcs import < src/polaris.repos src --skip-existing",
                 "problemMatcher": []
             },
             {

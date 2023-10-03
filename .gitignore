@@ -5,7 +5,8 @@ site/*
 
 # vcstool packages
 src/*
-!src/new_project.repos
+!src/global_launch
+!src/polaris.repos
 
 # configuration files
 .devcontainer/config/*
@@ -15,3 +16,6 @@ src/*
 # clangd
 .cache/*
 compile_commands.json
+
+# python
+*.pyc

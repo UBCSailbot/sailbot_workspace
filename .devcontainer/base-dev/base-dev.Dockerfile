@@ -1,4 +1,4 @@
-FROM ghcr.io/ubcsailbot/sailbot_workspace/pre-base:ros_humble-ompl_4c86b2f as base
+FROM ghcr.io/ubcsailbot/sailbot_workspace/pre-base:ros_humble-ompl_4c86b2f-mongo_367-v2 as base
 
 # install base apt dependencies
 ENV DEBIAN_FRONTEND=noninteractive
@@ -21,6 +21,11 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/* \
     && rosdep init || echo "rosdep already initialized"
 ENV DEBIAN_FRONTEND=
+
+# install base pip dependencies
+RUN pip3 install \
+    pyproj \
+    shapely
 
 # root bash configuration
 ENV ROS_WORKSPACE=/workspaces/sailbot_workspace
