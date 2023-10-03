@@ -1,6 +1,23 @@
 name: 'Test'
 description: 'Test using devcontainer'
 runs:
-  using: 'docker'
-  image: '../../../.devcontainer/Dockerfile'
-  entrypoint: ".github/actions/test/run.sh"
+  using: "composite"
+  steps:
+    - name: List
+      shell: bash
+      run: ls
+
+    - name: Build
+      shell: bash
+      run: docker-compose -f ../docker-compose.ci.yml build
+
+    - name: Run
+      shell: bash
+      run: docker-compose -f ../docker-compose.ci.yml up -d
+
+    - name: Test
+      shell: bash
+      run: |
+        docker-compose -f ../docker-compose.ci.yml exec -u ros sailbot-workspace /bin/bash
+        cd /workspaces/sailbot_workspace
+        .github/actions/test/run.sh
