@@ -7,8 +7,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    environment:
-      - MONGODB_CONN_STR=mongodb://localhost:27017
     volumes:
       - ..:/workspaces/sailbot_workspace:cached
       - sailbot-new-project-bashhistory:/home/ros/commandhistory:delegated
