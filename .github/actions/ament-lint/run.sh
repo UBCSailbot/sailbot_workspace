@@ -48,5 +48,5 @@ source /opt/ros/${ROS_DISTRO}/setup.bash
 cd src
 
 # Exclude repos and files we don't want to lint
-VALID_SRC_DIRS=$(ls | grep -v -e virtual_iridium -e docs -e raye-local-pathfinding -e new_project.repos)
+VALID_SRC_DIRS=$(ls | grep -v -e virtual_iridium -e docs -e raye-local-pathfinding -e polaris.repos)
 lint ${VALID_SRC_DIRS}

@@ -7,6 +7,9 @@
             "path": "../../src/boat_simulator"
         },
         {
+            "path": "../../src/controller"
+        },
+        {
             "path": "../../src/custom_interfaces"
         },
         {
@@ -17,6 +20,9 @@
         },
         {
             "path": "../../src/network_systems"
+        },
+        {
+            "path": "../../src/notebooks"
         },
         {
             "path": "../../src/raye-local-pathfinding"
@@ -41,6 +47,7 @@
         "cSpell.words": [
             "athackst",
             "autopep",
+            "bsoncxx",
             "buildx",
             "cmake",
             "cppcheck",
@@ -54,6 +61,7 @@
             "isort",
             "kmph",
             "mkdocs",
+            "mongocxx",
             "mypy",
             "noqa",
             "OMPL",
@@ -124,6 +132,8 @@
             "editor.formatOnSave": true,
             "editor.rulers": [99],
         },
+        "notebook.formatOnCellExecution": true,
+        "notebook.formatOnSave.enabled": true,
         "python.analysis.diagnosticMode": "workspace",
         "python.analysis.extraPaths": [
             "/workspaces/sailbot_workspace/install/lib/python3.10/site-packages",
@@ -178,6 +188,17 @@
             "editor.rulers": [120],
         },
 
+		"testMate.cpp.discovery.loadOnStartup": true,
+		// The following setting just changes the default prelaunch task from "build" to "debug"
+		"testMate.cpp.test.advancedExecutables": [
+			{
+				"pattern": "{build,Build,BUILD,out,Out,OUT}/**/*{test,Test,TEST}*",
+				"runTask": {
+					"before": [ "debug" ]
+				}
+			}
+		],
+
         // markdown
         // copied from docs: https://github.com/UBCSailbot/docs/blob/main/.vscode/settings.json
         "[markdown]": {
@@ -230,7 +251,8 @@
                 "request": "launch",
                 "program": "${workspaceFolder:sailbot_workspace}/install/lib/${input:node}",
                 "args": [],
-                "preLaunchTask": "Build All",
+                // Have testMate extension build before starting debug session to avoid building twice
+                // "preLaunchTask": "debug",
                 "stopAtEntry": false,
                 "cwd": "${workspaceFolder:sailbot_workspace}",
                 "externalConsole": false,
@@ -420,9 +442,9 @@
             // Workspace editing tasks
             {
                 "label": "clone source repositories",
-                "detail": "Clone the repositories specified in src/new_project.repos to src/",
+                "detail": "Clone the repositories specified in src/polaris.repos to src/",
                 "type": "shell",
-                "command": "vcs import < src/new_project.repos src --skip-existing",
+                "command": "vcs import < src/polaris.repos src --skip-existing",
                 "problemMatcher": []
             },
             {

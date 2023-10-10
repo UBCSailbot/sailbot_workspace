@@ -3,7 +3,7 @@
 	"name": "Sailbot Workspace",
 	"dockerComposeFile": [
 		// Uncomment the files containing the programs you need
-		// "docker-compose.db.yml", // mongodb
+		"docker-compose.db.yml", // mongodb
 		// "docker-compose.docs.yml", // docs
 		// "docker-compose.website.yml", // grafana, website
 
@@ -22,6 +22,20 @@
 	},
 	// Set *default* container specific settings.json values on container create.
 	"customizations": {
+		"codespaces": {
+			"repositories": {
+				"UBCSailbot/boat_simulator": {"permissions": "write-all"},
+				"UBCSailbot/controller": {"permissions": "write-all"},
+				"UBCSailbot/custom_interfaces": {"permissions": "write-all"},
+				"UBCSailbot/docs": {"permissions": "write-all"},
+				"UBCSailbot/local_pathfinding": {"permissions": "write-all"},
+				"UBCSailbot/network_systems": {"permissions": "write-all"},
+				"UBCSailbot/notebooks": {"permissions": "write-all"},
+				"UBCSailbot/raye-local-pathfinding": {"permissions": "write-all"},
+				"UBCSailbot/website": {"permissions": "write-all"},
+				"UBCSailbot/virtual_iridium": {"permissions": "write-all"}
+			}
+		},
 		"vscode": {
 			"settings": {
 				"terminal.integrated.profiles.linux": {
@@ -60,14 +74,17 @@
 				"jeff-hykin.better-cpp-syntax",
 				"KevinRose.vsc-python-indent",
 				"llvm-vs-code-extensions.vscode-clangd",
+				"matepek.vscode-catch2-test-adapter",
 				"mongodb.mongodb-vscode",
 				"ms-iot.vscode-ros",
 				"ms-python.black-formatter",
 				"ms-python.isort",
 				"ms-python.vscode-pylance",
+				"ms-toolsai.jupyter",
 				"ms-vsliveshare.vsliveshare",
 				"ms-python.mypy-type-checker",
 				"njpwerner.autodocstring",
+				"stevejpurves.cucumber",
 				"streetsidesoftware.code-spell-checker",
 				"vscode-icons-team.vscode-icons",
 				"zxh404.vscode-proto3"
