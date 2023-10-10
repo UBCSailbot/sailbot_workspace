@@ -24,6 +24,7 @@ ENV DEBIAN_FRONTEND=
 
 # install base pip dependencies
 RUN pip3 install \
+    plotly \
     pyproj \
     shapely
 
