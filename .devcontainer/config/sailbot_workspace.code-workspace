@@ -399,11 +399,50 @@
             },
             {
                 "label": "mypy",
-                "detail": "Run mypy on python files.",
+                "detail": "Run mypy on all Python packages.",
+                "dependsOn": [
+                    "mypy boat_simulator",
+                    "mypy controller",
+                    "mypy local_pathfinding",
+                ],
+                "problemMatcher": []
+            },
+            {
+                "label": "mypy boat_simulator",
+                "detail": "Run mypy on python files in boat_simulator.",
                 "type": "ament",
                 "task": "mypy",
-                "path": "src/",
-                "commandOptions": "--exclude=src/virtual_iridium,src/raye-local-pathfinding",
+                "path": "src/boat_simulator",
+                "problemMatcher": [
+                    "$ament_mypy",
+                ],
+                "presentation": {
+                    "panel": "dedicated",
+                    "reveal": "silent",
+                    "clear": true
+                }
+            },
+            {
+                "label": "mypy controller",
+                "detail": "Run mypy on python files in controller.",
+                "type": "ament",
+                "task": "mypy",
+                "path": "src/controller",
+                "problemMatcher": [
+                    "$ament_mypy",
+                ],
+                "presentation": {
+                    "panel": "dedicated",
+                    "reveal": "silent",
+                    "clear": true
+                }
+            },
+            {
+                "label": "mypy local_pathfinding",
+                "detail": "Run mypy on python files in local_pathfinding.",
+                "type": "ament",
+                "task": "mypy",
+                "path": "src/local_pathfinding",
                 "problemMatcher": [
                     "$ament_mypy",
                 ],
