@@ -45,12 +45,12 @@ function lint {
 
 source /opt/ros/${ROS_DISTRO}/setup.bash
 ./setup.sh
-cd src
 
 # Exclude repos and files we don't want to lint
-VALID_SRC_DIRS=$(ls | grep -v -e virtual_iridium -e docs -e raye-local-pathfinding -e polaris.repos)
+VALID_SRC_DIRS=$(ls src | grep -v -e virtual_iridium -e docs -e raye-local-pathfinding -e polaris.repos)
 
 # Loop over each directory and lint it
 for dir in $VALID_SRC_DIRS; do
-    lint $dir
+    echo "Run $LINTER on src/$dir"
+    lint src/$dir || warn "WARNING: $LINTER errors in src/$dir, continuing with others"
 done
