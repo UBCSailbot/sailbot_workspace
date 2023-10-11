@@ -82,6 +82,7 @@
 				"ms-python.vscode-pylance",
 				"ms-toolsai.jupyter",
 				"ms-vsliveshare.vsliveshare",
+				"ms-python.mypy-type-checker",
 				"njpwerner.autodocstring",
 				"stevejpurves.cucumber",
 				"streetsidesoftware.code-spell-checker",

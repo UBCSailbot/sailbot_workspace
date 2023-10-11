@@ -3,7 +3,7 @@
 import os
 from typing import List
 
-from launch import LaunchDescription, LaunchDescriptionEntity
+from launch import LaunchDescription
 from launch.actions import (
     DeclareLaunchArgument,
     IncludeLaunchDescription,
@@ -20,7 +20,9 @@ PRODUCTION_ROS_PACKAGES = ["local_pathfinding", "network_systems"]
 DEVELOPMENT_ROS_PACKAGES = ["boat_simulator", "local_pathfinding", "network_systems"]
 
 # Global launch arguments and constants.
-ROS_PACKAGES_DIR = os.path.join(os.getenv("ROS_WORKSPACE"), "src")
+ROS_PACKAGES_DIR = os.path.join(
+    os.getenv("ROS_WORKSPACE", default="/workspaces/sailbot_workspace"), "src"
+)
 GLOBAL_LAUNCH_ARGUMENTS = [
     DeclareLaunchArgument(
         name="config",
@@ -65,7 +67,7 @@ def generate_launch_description() -> LaunchDescription:
     return launch_description
 
 
-def setup_launch(context: LaunchContext) -> List[LaunchDescriptionEntity]:
+def setup_launch(context: LaunchContext) -> List[IncludeLaunchDescription]:
     """Collects launch descriptions from all local launch files.
 
     Args:

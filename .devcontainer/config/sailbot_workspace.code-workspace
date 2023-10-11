@@ -56,12 +56,14 @@
             "DCMAKE",
             "deque",
             "devcontainer",
+            "dtype",
             "gaurav",
             "ints",
             "isort",
             "kmph",
             "mkdocs",
             "mongocxx",
+            "mypy",
             "noqa",
             "OMPL",
             "pallete",
@@ -159,7 +161,6 @@
         ],
         "flake8.interpreter": ["/usr/bin/python3"],
         // formatter: black and isort extensions
-        "python.formatting.provider": "none",
         "black-formatter.interpreter": ["/usr/bin/python3"],
         "black-formatter.args": [
             "--line-length=99",
@@ -172,6 +173,11 @@
             "--ignore=/workspaces/sailbot_workspace/src/raye-local-pathfinding",
         ],
         "python.testing.pytestEnabled": true,
+        // type checker: mypy
+        "mypy-type-checker.args": [
+            "--ignore-missing-imports",
+        ],
+        "mypy-type-checker.interpreter": ["/usr/bin/python3"],
 
         // c/c++
         "[cpp]": {
@@ -352,15 +358,13 @@
             {
                 "label": "lint_cmake",
                 "detail": "Run lint on cmake files.",
-                "type": "ament",
-                "task": "lint_cmake",
-                "path": "src/",
+                "type": "shell",
+                "command": "LINTER=lint_cmake LOCAL_RUN=true .github/actions/ament-lint/run.sh",
                 "problemMatcher": [
                     "$ament_lint_cmake"
                 ],
                 "presentation": {
                     "panel": "dedicated",
-                    "reveal": "silent",
                     "clear": true
                 }
             },
@@ -372,38 +376,45 @@
                 "problemMatcher": [],
                 "presentation": {
                     "panel": "dedicated",
-                    "reveal": "always",
                     "clear": true
                 }
             },
             {
                 "label": "flake8",
                 "detail": "Run flake8 on python files.",
-                "type": "ament",
-                "task": "flake8",
-                "path": "src/",
-                "commandOptions": "--exclude=src/virtual_iridium,src/raye-local-pathfinding",
+                "type": "shell",
+                "command": "LINTER=flake8 LOCAL_RUN=true .github/actions/ament-lint/run.sh",
                 "problemMatcher": [
                     "$ament_flake8"
                 ],
                 "presentation": {
                     "panel": "dedicated",
-                    "reveal": "silent",
+                    "clear": true
+                }
+            },
+            {
+                "label": "mypy",
+                "detail": "Run mypy on python files.",
+                "type": "shell",
+                "command": "LINTER=mypy LOCAL_RUN=true .github/actions/ament-lint/run.sh",
+                "problemMatcher": [
+                    "$ament_mypy",
+                ],
+                "presentation": {
+                    "panel": "dedicated",
                     "clear": true
                 }
             },
             {
                 "label": "xmllint",
                 "detail": "Run xmllint on xml files.",
-                "type": "ament",
-                "task": "xmllint",
-                "path": "src/",
+                "type": "shell",
+                "command": "LINTER=xmllint LOCAL_RUN=true .github/actions/ament-lint/run.sh",
                 "problemMatcher": [
                     "$ament_xmllint",
                 ],
                 "presentation": {
                     "panel": "dedicated",
-                    "reveal": "silent",
                     "clear": true
                 }
             },
@@ -413,6 +424,7 @@
                 "dependsOn": [
                     "lint_cmake",
                     "flake8",
+                    "mypy",
                     "xmllint",
                 ],
                 "problemMatcher": []
@@ -438,10 +450,12 @@
             {
                 "id": "package",
                 "type": "pickString",
-                "description": "Package to build",
+                "description": "Package to select",
                 "options": [
                     "boat_simulator",
+                    "controller",
                     "custom_interfaces",
+                    "global_launch",
                     "local_pathfinding",
                     "network_systems",
                 ]

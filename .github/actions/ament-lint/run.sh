@@ -20,6 +20,7 @@ function get_search_command {
     case ${LINTER} in
         lint_cmake) CMD='find ${VALID_SRC_DIRS_ARG} -type f \( -name "CMakeLists.txt" -o -name "*.cmake" -o -name "*.cmake.in" \)' ;;
         flake8) CMD='find ${VALID_SRC_DIRS_ARG} -type f -name "*.py"' ;;
+        mypy) CMD='find ${VALID_SRC_DIRS_ARG} -type f -name "*.py"' ;;
         xmllint) CMD='find ${VALID_SRC_DIRS_ARG} -type f -name "*.xml"' ;;
         *) error "ERROR: Invalid linter ${LINTER} specified in ament-lint action"; exit 1 ;;
     esac
@@ -42,10 +43,22 @@ function lint {
     fi
 }
 
-source /opt/ros/${ROS_DISTRO}/setup.bash
-./setup.sh
-cd src
+if [[ $LOCAL_RUN != "true" ]]; then
+    source /opt/ros/${ROS_DISTRO}/setup.bash
+    ./setup.sh
+fi
 
 # Exclude repos and files we don't want to lint
-VALID_SRC_DIRS=$(ls | grep -v -e virtual_iridium -e docs -e raye-local-pathfinding -e polaris.repos)
-lint ${VALID_SRC_DIRS}
+VALID_SRC_DIRS=$(ls src | grep -v -e virtual_iridium -e docs -e raye-local-pathfinding -e website -e notebooks -e polaris.repos)
+lint_errors=0
+
+# Loop over each directory and lint it
+for dir in $VALID_SRC_DIRS; do
+    echo "Run $LINTER on src/$dir"
+    lint src/$dir || { warn "WARNING: $LINTER errors in src/$dir, continuing with others"; lint_errors=1; }
+done
+
+# Exit with an error if any lint command failed
+if [ "$lint_errors" -ne 0 ]; then
+    exit 1
+fi

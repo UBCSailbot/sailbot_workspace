@@ -101,6 +101,7 @@ RUN apt-get update && apt-get install -y \
     wget \
     # Install ros distro testing packages
     ros-humble-ament-lint \
+    ros-humble-ament-mypy \
     ros-humble-launch-testing \
     ros-humble-launch-testing-ament-cmake \
     ros-humble-launch-testing-ros \
@@ -108,7 +109,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/* \
     && rosdep init || echo "rosdep already initialized" \
     # Update pydocstyle
-    && pip3 install --upgrade pydocstyle
+    && pip3 install --upgrade pydocstyle mypy
 
 ARG USERNAME=ros
 ARG USER_UID=1000
