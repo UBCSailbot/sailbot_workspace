@@ -20,7 +20,9 @@ PRODUCTION_ROS_PACKAGES = ["local_pathfinding", "network_systems"]
 DEVELOPMENT_ROS_PACKAGES = ["boat_simulator", "local_pathfinding", "network_systems"]
 
 # Global launch arguments and constants.
-ROS_PACKAGES_DIR = os.path.join(os.getenv("ROS_WORKSPACE"), "src")
+ROS_PACKAGES_DIR = os.path.join(
+    os.getenv("ROS_WORKSPACE", default="/workspaces/sailbot_workspace"), "src"
+)
 GLOBAL_LAUNCH_ARGUMENTS = [
     DeclareLaunchArgument(
         name="config",
