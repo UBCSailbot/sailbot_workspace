@@ -50,9 +50,15 @@ fi
 
 # Exclude repos and files we don't want to lint
 VALID_SRC_DIRS=$(ls src | grep -v -e virtual_iridium -e docs -e raye-local-pathfinding -e website -e notebooks -e polaris.repos)
+lint_errors=0
 
 # Loop over each directory and lint it
 for dir in $VALID_SRC_DIRS; do
     echo "Run $LINTER on src/$dir"
-    lint src/$dir || warn "WARNING: $LINTER errors in src/$dir, continuing with others"
+    lint src/$dir || { warn "WARNING: $LINTER errors in src/$dir, continuing with others"; lint_errors=1; }
 done
+
+# Exit with an error if any lint command failed
+if [ "$lint_errors" -ne 0 ]; then
+    exit 1
+fi
