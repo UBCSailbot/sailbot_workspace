@@ -403,6 +403,7 @@
                 "dependsOn": [
                     "mypy boat_simulator",
                     "mypy controller",
+                    "mypy global_launch",
                     "mypy local_pathfinding",
                 ],
                 "problemMatcher": []
@@ -428,6 +429,21 @@
                 "type": "ament",
                 "task": "mypy",
                 "path": "src/controller",
+                "problemMatcher": [
+                    "$ament_mypy",
+                ],
+                "presentation": {
+                    "panel": "dedicated",
+                    "reveal": "silent",
+                    "clear": true
+                }
+            },
+            {
+                "label": "mypy global_launch",
+                "detail": "Run mypy on python files in global_launch.",
+                "type": "ament",
+                "task": "mypy",
+                "path": "src/global_launch",
                 "problemMatcher": [
                     "$ament_mypy",
                 ],
