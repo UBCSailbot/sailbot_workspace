@@ -49,4 +49,8 @@ cd src
 
 # Exclude repos and files we don't want to lint
 VALID_SRC_DIRS=$(ls | grep -v -e virtual_iridium -e docs -e raye-local-pathfinding -e polaris.repos)
-lint ${VALID_SRC_DIRS}
+
+# Loop over each directory and lint it
+for dir in $VALID_SRC_DIRS; do
+    lint $dir
+done
