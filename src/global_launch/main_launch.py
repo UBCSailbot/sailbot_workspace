@@ -3,7 +3,7 @@
 import os
 from typing import List
 
-from launch import LaunchDescription, LaunchDescriptionEntity
+from launch import LaunchDescription
 from launch.actions import (
     DeclareLaunchArgument,
     IncludeLaunchDescription,
@@ -67,7 +67,7 @@ def generate_launch_description() -> LaunchDescription:
     return launch_description
 
 
-def setup_launch(context: LaunchContext) -> List[LaunchDescriptionEntity]:
+def setup_launch(context: LaunchContext) -> List[IncludeLaunchDescription]:
     """Collects launch descriptions from all local launch files.
 
     Args:
