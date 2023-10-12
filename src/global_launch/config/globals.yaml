@@ -2,3 +2,33 @@
    ros__parameters:
       # Publishers' period (seconds): how often the publishers publish
       pub_period_sec: 0.5
+
+# boat_simulator parameters
+low_level_control_node:
+   ros__parameters:
+      rudder:
+         disable_actuation: false
+         fixed_angle_deg: 0.0 # Only used if rudder actuation is disabled
+         actuation_request_period_sec: 10.0
+         actuation_execution_period_sec: 0.5
+         pid: # Only used if rudder actuation is enabled
+            kp: 0.0
+            ki: 0.0
+            kd: 0.0
+            buffer_size: 50
+      wingsail:
+         disable_actuation: false
+         fixed_angle_deg: 0.0 # Only used if actuation is disabled
+         actuation_request_period_sec: 10.0
+         actuation_execution_period_sec: 0.5
+         actuation_speed_deg_per_sec: 0.1 # Only used if actuation is enabled
+physics_engine_node:
+   ros__parameters:
+      wind_sensor:
+         generator_type: gaussian # One of "gaussian", "constant"
+         gaussian_params:
+            mean: [1.0, 0.0] # Mean for x and y components
+            std_dev: [0.1, 0.1] # Standard deviation for x and y components
+            corr_xy: 0.0
+         constant_params:
+            value: [1.0, 0.0] # Constant value for x and y components
