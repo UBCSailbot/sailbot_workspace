@@ -6,6 +6,7 @@
 # boat_simulator parameters
 low_level_control_node:
    ros__parameters:
+      logging_throttle_period_sec: 2.0
       rudder:
          disable_actuation: false
          fixed_angle_deg: 0.0 # Only used if rudder actuation is disabled
@@ -24,6 +25,7 @@ low_level_control_node:
          actuation_speed_deg_per_sec: 0.1 # Only used if actuation is enabled
 physics_engine_node:
    ros__parameters:
+      logging_throttle_period_sec: 2.0
       wind_sensor:
          generator_type: gaussian # One of "gaussian", "constant"
          gaussian_params:
