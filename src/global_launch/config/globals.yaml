@@ -6,23 +6,23 @@
 # boat_simulator parameters
 low_level_control_node:
    ros__parameters:
-      logging_throttle_period_sec: 2.0 # [0, MAX_DOUBLE]
+      logging_throttle_period_sec: 2.0 # [0.0, MAX_DOUBLE]
       rudder:
          disable_actuation: false
-         fixed_angle_deg: 0.0 # Only used if rudder actuation is disabled: [0, 360.0]
-         actuation_request_period_sec: 10.0 # [0, MAX_DOUBLE]
-         actuation_execution_period_sec: 0.5 # [0, MAX_DOubLE]
+         fixed_angle_deg: 0.0 # Only used if rudder actuation is disabled: [0.0, 360.0]
+         actuation_request_period_sec: 10.0 # [0.0, MAX_DOUBLE]
+         actuation_execution_period_sec: 0.5 # [0.0, MAX_DOubLE]
          pid: # Only used if rudder actuation is enabled
-            kp: 0.0 # [0, MAX_DOUBLE]
-            ki: 0.0 # [0, MAX_DOUBLE]
-            kd: 0.0 # [0, MAX_DOUBLE]
+            kp: 0.0 # [0.0, MAX_DOUBLE]
+            ki: 0.0 # [0.0, MAX_DOUBLE]
+            kd: 0.0 # [0.0, MAX_DOUBLE]
             buffer_size: 50 # [0, MAX_INT]
       wingsail:
          disable_actuation: false
-         fixed_angle_deg: 0.0 # Only used if actuation is disabled: [0, 360.0]
-         actuation_request_period_sec: 10.0 # [0, MAX_FLOAT]
-         actuation_execution_period_sec: 0.5 # [0, MAX_FLOAT]
-         actuation_speed_deg_per_sec: 0.1 # Only used if actuation is enable: [0, MAX_FLOAT]
+         fixed_angle_deg: 0.0 # Only used if actuation is disabled: [0.0, 360.0]
+         actuation_request_period_sec: 10.0 # [0.0, MAX_FLOAT]
+         actuation_execution_period_sec: 0.5 # [0.0, MAX_FLOAT]
+         actuation_speed_deg_per_sec: 0.1 # Only used if actuation is enable: [0.0, MAX_FLOAT]
 physics_engine_node:
    ros__parameters:
       logging_throttle_period_sec: 2.0 # [0, MAX_DOUBLE]
@@ -30,7 +30,7 @@ physics_engine_node:
          generator_type: gaussian # One of "gaussian", "constant"
          gaussian_params:
             mean: [1.0, 0.0] # Mean for x and y components: [MIN_DOUBLE, MAX_DOUBLE] for x, y
-            std_dev: [0.1, 0.1] # Standard deviation for x and y components: [0, MAX_DOUBLE] for x, y
-            corr_xy: 0.0 # [-1, 1]
+            std_dev: [0.1, 0.1] # Standard deviation for x and y components: [0.0, MAX_DOUBLE] for x, y
+            corr_xy: 0.0 # [-1.0, 1.0]
          constant_params:
             value: [1.0, 0.0] # Constant value for x and y components: [MIN_DOUBLE, MAX_DOUBLE]
