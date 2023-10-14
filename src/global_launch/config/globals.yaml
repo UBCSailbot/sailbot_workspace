@@ -20,7 +20,7 @@ low_level_control_node:
          disable_actuation: false
          fixed_angle_deg: 0.0 # Only used if actuation is disabled: [0.0, 360.0]
          actuation_execution_period_sec: 0.5 # How often the sail action server routine's main loop executes: [0.0, MAX_DOUBLE]
-         actuation_speed_deg_per_sec: 0.1 # Only used if actuation is enable: [0.0, MAX_FLOAT]
+         actuation_speed_deg_per_sec: 0.1 # Only used if actuation is enable: [0.0, MAX_DOUBLE]
 physics_engine_node:
    ros__parameters:
       rudder:
