@@ -10,8 +10,7 @@ low_level_control_node:
       rudder:
          disable_actuation: false
          fixed_angle_deg: 0.0 # Only used if rudder actuation is disabled: [0.0, 360.0]
-         actuation_request_period_sec: 10.0 # [0.0, MAX_DOUBLE]
-         actuation_execution_period_sec: 0.5 # [0.0, MAX_DOubLE]
+         actuation_execution_period_sec: 0.5 # How often the rudder action server routine's main loop executes: [0.0, MAX_DOubLE]
          pid: # Only used if rudder actuation is enabled
             kp: 0.0 # [0.0, MAX_DOUBLE]
             ki: 0.0 # [0.0, MAX_DOUBLE]
@@ -20,11 +19,14 @@ low_level_control_node:
       wingsail:
          disable_actuation: false
          fixed_angle_deg: 0.0 # Only used if actuation is disabled: [0.0, 360.0]
-         actuation_request_period_sec: 10.0 # [0.0, MAX_FLOAT]
-         actuation_execution_period_sec: 0.5 # [0.0, MAX_FLOAT]
+         actuation_execution_period_sec: 0.5 # How often the sail action server routine's main loop executes: [0.0, MAX_DOUBLE]
          actuation_speed_deg_per_sec: 0.1 # Only used if actuation is enable: [0.0, MAX_FLOAT]
 physics_engine_node:
    ros__parameters:
+      rudder:
+         actuation_request_period_sec: 10.0 # How often the rudder action client requests a rudder actuation: [0.0, MAX_DOUBLE]
+      wingsail:
+         actuation_request_period_sec: 10.0 # How often the sail action server requests a wingsail actuation: [0.0, MAX_DOUBLE]
       logging_throttle_period_sec: 2.0 # [0, MAX_DOUBLE]
       wind_sensor:
          generator_type: gaussian # One of "gaussian", "constant"
