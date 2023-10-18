@@ -1,120 +1,106 @@
-# Global ROS Parameters
+# Sailbot ROS Parameter Configuration
+
+## Global Parameters
+
+ROS parameters common across all ROS nodes in the network.
+
+**`pub_period_sec`**
+
+- _Description_: The period at which the publishers publish.
+- _Datatype_: `double`
+- _Range_: `(0.0, MAX_DOUBLE)`
 
 ## Boat Simulator Parameters
 
-### low_level_control_node Parameters
+ROS parameters specific to the nodes in the boat simulator.
 
-#### low_level_control_node `logging_throttle_period_sec`
+### `low_level_control_node`
 
-Controls the message logging throttle period.
+**`logging_throttle_period_sec`**
 
-Acceptable Value Range: `(0.0, MAX_DOUBLE)`
+- _Description_: Controls the message logging throttle period.
+- _Datatype_: `double`
+- _Range_: `(0.0, MAX_DOUBLE)`
 
-#### low_level_control_node `info_log_throttle_period_sec`
+**`info_log_throttle_period_sec`**
 
-Limits the info logs to avoid overwhelming the terminal. It's really more for us humans.
+- _Description_: Limits the info logs to avoid overwhelming the terminal.
+- _Datatype_: `double`
+- _Range_: `(0.0, MAX_DOUBLE)`
 
-Datatype: `double`
+**`qos_depth`**
 
-Acceptable Value Range: `(0.0, MAX_DOUBLE)`
+- _Description_: The maximum number of subscription messages to queue for further processing.
+- _Datatype_: `int`
+- _Range_: `[1, MAX_INT)`
 
-#### low_level_control_node `qos_depth`
+**`rudder.disable_actuation`**
 
-The maximum number of subscription messages to queue for further processing.
+- _Description_: Controls whether or not rudder actuation is disabled. If true, the rudder angle is fixed to some value.
+Otherwise, the PID mechanism is used to control the rudder angle.
+- Datatype: `boolean`
+- _Acceptable Values_: `true`, `false`
 
-Datatype: `int`
+**`rudder.fixed_angle_deg`**
 
-Acceptable Value Range: `[1, MAX_INT)`
+- _Description_: The angle to fix the rudder in degrees. Only used if `rudder.disable_actuation` is true.
+- _Datatype_: `double`
+- _Range_: `[-45.0, 45.0]`
 
-#### `rudder.disable_actuation`
+**`rudder.actuation_execution_period_sec`**
 
-Controls whether or not rudder actuation is disabled.
+- _Description_: The period at which the main loop in the rudder action server executes in seconds.
+- _Datatype_: `double`
+- _Range_: `(0.0, MAX_DOUBLE)`
 
-Datatype: `boolean`
+**`rudder.pid.kp`**
 
-Acceptable Values: `true`, `false`
+- _Description_: The PID Proportionality constant for the rudder. Only used if `rudder.disable_actuation` is false.
+- _Datatype_: `double`
+- _Range_: `[0.0, MAX_DOUBLE)`
 
-#### `rudder.fixed_angle_deg`
+**`rudder.pid.ki`**
 
-Only used if rudder actuation is disabled.
+- _Description_: The PID Integral constant for the rudder. Only used if `rudder.disable_actuation` is false.
+- _Datatype_: `double`
+- _Range_: `[0.0, MAX_DOUBLE)`
 
-Acceptable Value Range: `[-45.0, 45.0]`
+**`rudder.pid.kd`**
 
-#### `rudder.actuation_execution_period_sec`
+- _Description_: The PID Derivative constant for the rudder. Only used if `rudder.disable_actuation` is false.
+- _Datatype_: `double`
+- _Range_: `[0.0, MAX_DOUBLE)`
 
-How often the rudder action server routine's main loop executes.
+**`rudder.pid.buffer_size`**
 
-Datatype: `double`
+- _Description_: The buffer size of PID that stores previously computed errors over time.
+- _Datatype_: `int`
+- _Range_: `[1, MAX_INT)`
 
-Acceptable Values: `(0.0, MAX_DOubLE)``
+**`wingsail.disable_actuation`**
 
-#### `rudder.pid.kp`
+- _Description_: Controls whether or not wingsail trim tab actuation is disabled. If true, the trim tab is fixed to some
+value. Otherwise, the trim tab angle is determined by the wingsail controller.
+- _Datatype_: `boolean`
+- _Acceptable Values_: `true`, `false`
 
-PID Proportionality Gain
+**`wingsail.fixed_angle_degree`**
 
-Only used if rudder actuation enabled.
+- _Description_: Fixed the wingsail trim tab to some angle in degrees. Only used if `wingsail.disable_actuation` is true.
+- _Datatype_: `double`
+- _Range_: `[-180.0, 180.0)`
 
-Determines the strength of the controller's response to the current error.
+**`wingsail.actuation_execution_period_sec`**
 
-Datatype: `double`
+- _Description_: The period at which the main loop in the sail action server executes in seconds.
+- _Datatype_: `double`
+- _Range_: `(0.0, MAX_DOUBLE)`
 
-Acceptable Value Range: `[0.0, MAX_DOUBLE)`
+**`wingsail.actuation_speed_deg_per_sec`**
 
-#### `rudder.pid.ki`
-
-PID Integral Gain
-
-Only used if rudder actuation enabled.
-
-Determines the response of the controller to past errors.
-
-Datatype: `double`
-
-Acceptable Value Range: `[0.0, MAX_DOUBLE)`
-
-#### `rudder.pid.kd`
-
-PID Derivative Gain
-
-Only used if rudder actuation enabled.
-
-Determines the response of the controller to the rate of change of the error.
-
-Datatype: `double`
-
-Acceptable Value Range: `[0.0, MAX_DOUBLE)`
-
-#### `rudder.pid.buffer_size`
-
-Determines buffer size of PID.
-
-Datatype: `int`
-
-Acceptable Value Range: `[1, MAX_INT)`
-
-#### `wingsail.disable_actuation`
-
-Controls whether or not wingsail actuation is disabled.
-
-Datatype: `boolean`
-
-Acceptable Values: `true`, `false`
-
-#### `wingsail.fixed_angle_degree`
-
-Only used if wingsail actuation is disabled.
-
-Datatype: `double`
-
-Acceptable Value Range:`[-180.0, 180.0)`
-
-#### `wingsail.actuation_execution_period_sec`
-
-How often the sail action server routine's main loop executes.
-
-Datatype: `double`
-
-Acceptable Value Range: `(0.0, MAX_DOUBLE)`
+- _Description_: The speed at which the wingsail trim tab actuates in degrees per second.
+- _Datatype_: `double`
+- _Range_: `(0.0, MAX_DOUBLE)`
 
 ### physics_engine_node Parameters
 
