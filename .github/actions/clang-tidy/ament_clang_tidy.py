@@ -183,7 +183,7 @@ def main(argv=sys.argv[1:]):
         def is_excluded_file(file_path):
             for excluded_file in excluded_files:
                 if file_path.endswith(excluded_file):
-                    print(f"skipping excluded file '{file_path}'")
+                    print(f"excluding file '{file_path}'")
                     return True
             print(f"including file '{file_path}'")
             return False
