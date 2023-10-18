@@ -33,12 +33,13 @@ done
 # Assign build type default
 BUILD_TYPE="RelWithDebInfo"
 
+# whether to run clang-tidy during build (unnecessary since we have separate clang-tidy CI and task)
+STATIC_ANALYSIS="OFF"
+
 # Configuration for build (full or quick)
 if [[ $QUICK_BUILD = "true" ]]; then
-    STATIC_ANALYSIS="OFF"
     UNIT_TEST="OFF"
 else
-    STATIC_ANALYSIS="ON"
     UNIT_TEST="ON"
 fi
 if [[ $UNIT_TEST = "ON" ]]; then
