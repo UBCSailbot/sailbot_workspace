@@ -41,6 +41,7 @@ Only used if rudder actuation enabled.
 Determines the strength of the controller's response to the current error.
 
 Datatype: `double`
+
 Acceptable Value Range: `[0.0, MAX_DOUBLE)`
 
 #### `rudder.pid.ki`
@@ -52,6 +53,7 @@ Only used if rudder actuation enabled.
 Determines the response of the controller to past errors.
 
 Datatype: `double`
+
 Acceptable Value Range: `[0.0, MAX_DOUBLE)`
 
 #### `rudder.pid.kd`
