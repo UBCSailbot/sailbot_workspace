@@ -12,7 +12,7 @@ Acceptable Value Range: `(0.0, MAX_DOUBLE)`
 
 #### `rudder.disable_actuation`
 
-Controls whether or not rudder actuation is disabled
+Controls whether or not rudder actuation is disabled.
 
 Datatype: `boolean`
 
@@ -68,7 +68,7 @@ Acceptable Value Range: `[0.0, MAX_DOUBLE)`
 
 #### `rudder.pid.buffer_size`
 
-Determines buffer size of PID
+Determines buffer size of PID.
 
 Datatype: `double`
 
@@ -76,7 +76,7 @@ Acceptable Value Range: `[1, MAX_INT)`
 
 #### `wingsail.disable_actuation`
 
-Controls whether or not wingsail actuation is disabled
+Controls whether or not wingsail actuation is disabled.
 
 Datatype: `boolean`
 
@@ -92,7 +92,7 @@ Acceptable Value Range:`[-180.0, 180.0)`
 
 #### `wingsail.actuation_execution_period_sec`
 
-How often the sail action server routine's main loop
+How often the sail action server routine's main loop executes.
 
 Datatype: `double`
 
@@ -110,7 +110,7 @@ Acceptable Value Range: `(0.0, MAX_DOUBLE)`
 
 #### `rudder.actuation_request_period_sec`
 
-How often the rudder action client requests a rudder actuation
+How often the rudder action client requests a rudder actuation.
 
 Datatype: `double`
 
@@ -118,7 +118,7 @@ Acceptable Value Range: `(0.0, MAX_DOUBLE)`
 
 #### `wingsail.actuation_request_period_sec`
 
-How often the sail actionaction server requests a wingsail actuation
+How often the sail action server requests a wingsail actuation.
 
 Datatype: `double`
 
@@ -156,6 +156,6 @@ Acceptable Value Range: `[-1.0, 1.0]`
 
 #### `wind_sensor.constant_params.value`
 
-Constant value for x and y components
+Constant value for x and y components.
 
 Acceptable Value Range: `(MIN_DOUBLE, MAX_DOUBLE)`
