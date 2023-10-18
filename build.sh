@@ -33,7 +33,7 @@ done
 # Assign build type default
 BUILD_TYPE="RelWithDebInfo"
 
-# whether to run clang-tidy during build (unnecessary since we have separate clang-tidy CI and task)
+# Whether to run clang-tidy during build (unnecessary since we have separate CI and task)
 STATIC_ANALYSIS="OFF"
 
 # Configuration for build (full or quick)
