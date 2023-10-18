@@ -1,5 +1,23 @@
 # Sailbot ROS Parameter Configuration
 
+The description of each parameter contained in `globals.yaml` are described in this README. Descriptions of parameters
+for each node are included. These parameters can be changed dynamically as well via the command line interface. To
+learn more, see the ROS 2 documentation on [ROS 2 Parameters](https://docs.ros.org/en/humble/Concepts/Basic/About-Parameters.html).
+
+Each parameter is specified in the following format:
+
+- _Description_: The description of the parameter.
+- _Datatype_: The datatype. If it happens to be an array, the datatype of the elements should be specified and the length
+of the array.
+- _Range_/_Acceptable Values_: Ranges of integers and floating point values are specified with interval notation.
+Namely, `[]` denotes inclusive boundaries, while `()` denotes non-inclusive boundaries. For strings, the acceptable
+values are listed.
+
+Additional information may be included when necessary.
+
+> [!IMPORTANT]
+> This document should be updated when any changes occur to the ROS parameters specified in `globals.yaml`.
+
 ## Global Parameters
 
 ROS parameters common across all ROS nodes in the network.
@@ -102,88 +120,77 @@ value. Otherwise, the trim tab angle is determined by the wingsail controller.
 - _Datatype_: `double`
 - _Range_: `(0.0, MAX_DOUBLE)`
 
-### physics_engine_node Parameters
+### `physics_engine_node`
 
-#### physics_engine_node `logging_throttle_period_sec`
+**`logging_throttle_period_sec`**
 
-Controls the message logging throttle period.
+- _Description_: Controls the message logging throttle period.
+- _Datatype_: `double`
+- _Range_: `(0.0, MAX_DOUBLE)`
 
-Datatype: `double`
+**`info_log_throttle_period_sec`**
 
-Acceptable Value Range: `(0.0, MAX_DOUBLE)`
+- _Description_: Limits the info logs to avoid overwhelming the terminal.
+- _Datatype_: `double`
+- _Range_: `(0.0, MAX_DOUBLE)`
 
-#### physics_engine_node `info_log_throttle_period_sec`
+**`action_send_goal_timeout_sec`**
 
-Limits the info logs to avoid overwhelming the terminal. It's really more for us humans.
+- _Description_: How long the action clients wait for the action server to respond to a request before timing out in seconds.
+- _Datatype_: `double`
+- _Range_: `(0.0, MAX_DOUBLE)`
 
-Datatype: `double`
+**`qos_depth`**
 
-Acceptable Value Range: `(0.0, MAX_DOUBLE)`
+- _Description_: The maximum number of subscription messages to queue for further processing.
+- _Datatype_: `int`
+- _Range_: `[1, MAX_INT)`
 
-#### `action_send_goal_timeout_sec`
+**`rudder.actuation_request_period_sec`**
 
-How long the action clients wait for the server before timing out.
+- _Description_: How often the rudder action client requests a rudder actuation in seconds.
+- _Datatype_: `double`
+- _Range_: `(0.0, MAX_DOUBLE)`
 
-Datatype: `double`
+**`wingsail.actuation_request_period_sec`**
 
-Acceptable Value Range: `(0.0, MAX_DOUBLE)`
+- _Description_: How often the sail action server requests a wingsail actuation.
+- _Datatype_: `double`
+- _Range_: `(0.0, MAX_DOUBLE)`
 
-#### `qos_depth`
+**`wind_sensor.generator_type`**
 
-The maximum number of subscription messages to queue for further processing.
+- _Description_: Determines the type of random number generator that will be used to generate wind sensor data.
+- _Datatype_: `string`
+- _Acceptable Values_: `gaussian`, `constant`
 
-Datatype: `int`
+**`wind_sensor.gaussian_params.mean`**
 
-Acceptable Value Range: `[1, MAX_INT)`
+- _Description_: The mean wind velocity parameter in kmph for the gaussian generator. The mean is an array containing
+the `x` and `y` components of the velocity. Only used if `wind_sensor.generator_type` is `gaussian`.
+- _Datatype_: `double` array, length 2
+- _Range_: `(MIN_DOUBLE, MAX_DOUBLE)`
 
-#### `rudder.actuation_request_period_sec`
+**`wind_sensor.gaussian_params.std_dev`**
 
-How often the rudder action client requests a rudder actuation.
+- _Description_: The standard deviation parameters in kmph for the gaussian generator. There are two standard deviations
+specified within an array: one for the `x` component, and one for the `y` component. Only used if
+`wind_sensor.generator_type` is `gaussian`.
+- _Datatype_: `double` array, length 2
+- _Range_: `(0.0, MAX_DOUBLE)`
+    - If a standard deviation of zero is desired, then consider using the constant generator instead.
 
-Datatype: `double`
+**`wind_sensor.gaussian_params.corr_xy`**
 
-Acceptable Value Range: `(0.0, MAX_DOUBLE)`
+- _Description_: The correlation coefficient between x and y components of the wind velocity. Only used if
+`wind_sensor.generator_type` is `gaussian`.
+- _Datatype_: `double`
+- _Range_: `[-1.0, 1.0]`
 
-#### `wingsail.actuation_request_period_sec`
+**`wind_sensor.constant_params.value`**
 
-How often the sail action server requests a wingsail actuation.
-
-Datatype: `double`
-
-Acceptable Value Range: `(0.0, MAX_DOUBLE)`
-
-#### `wind_sensor.generator_type`
-
-Datatype: `string`
-
-Acceptable Values: `gaussian`, `constant`
-
-#### `wind_sensor.gaussian_params.mean`
-
-Mean for the x and y components.
-
-Datatype: `double` array, length 2
-
-Acceptable Value Range: `(MIN_DOUBLE, MAX_DOUBLE)`
-
-#### `wind_sensor.gaussian_params.std_dev`
-
-Standard deviation for the x and y components.
-
-Datatype: `double` array, length 2
-
-Acceptable Value Range: `[0.0, MAX_DOUBLE)`
-
-#### `wind_sensor.gaussian_params.corr_xy`
-
-Correlation coefficient between x and y components.
-
-Datatype: `double`
-
-Acceptable Value Range: `[-1.0, 1.0]`
-
-#### `wind_sensor.constant_params.value`
-
-Constant value for x and y components.
-
-Acceptable Value Range: `(MIN_DOUBLE, MAX_DOUBLE)`
+- _Description_: Specifies the constant vector returned by the constant generator that represents the wind velocity in kmph.
+Namely, the same value is fixed in the wind sensors. The value is an array containing the `x` and `y` components of the
+velocity. Only used if `wind_sensor.generator_type` is `constant`.
+- _Datatype_: `double` array, length 2
+- _Range_: `(MIN_DOUBLE, MAX_DOUBLE)`
