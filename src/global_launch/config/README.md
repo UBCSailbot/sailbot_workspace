@@ -4,13 +4,13 @@
 
 ### low_level_control_node Parameters
 
-#### `logging_throttle_period_sec`
+#### low_level_control_node `logging_throttle_period_sec`
 
 Controls the message logging throttle period.
 
 Acceptable Value Range: `(0.0, MAX_DOUBLE)`
 
-#### `info_log_throttle_period_sec`
+#### low_level_control_node `info_log_throttle_period_sec`
 
 Limits the info logs to avoid overwhelming the terminal. It's really more for us humans.
 
@@ -18,7 +18,7 @@ Datatype: `double`
 
 Acceptable Value Range: `(0.0, MAX_DOUBLE)`
 
-#### `qos_depth`
+#### low_level_control_node `qos_depth`
 
 The maximum number of subscription messages to queue for further processing.
 
@@ -118,7 +118,7 @@ Acceptable Value Range: `(0.0, MAX_DOUBLE)`
 
 ### physics_engine_node Parameters
 
-#### `logging_throttle_period_sec`
+#### physics_engine_node `logging_throttle_period_sec`
 
 Controls the message logging throttle period.
 
@@ -126,7 +126,7 @@ Datatype: `double`
 
 Acceptable Value Range: `(0.0, MAX_DOUBLE)`
 
-#### `info_log_throttle_period_sec`
+#### physics_engine_node `info_log_throttle_period_sec`
 
 Limits the info logs to avoid overwhelming the terminal. It's really more for us humans.
 
