@@ -369,7 +369,7 @@
                 "label": "clang-tidy",
                 "detail": "Run clang-tidy static analysis",
                 "type": "shell",
-                "command": "./run_clang-tidy.sh",
+                "command": "LOCAL_RUN=true .github/actions/clang-tidy/run.sh",
                 "problemMatcher": [],
                 "presentation": {
                     "panel": "dedicated",

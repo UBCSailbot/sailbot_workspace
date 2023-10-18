@@ -1,7 +1,10 @@
 #!/bin/bash
 set -e
 
-source /opt/ros/${ROS_DISTRO}/setup.bash
-./setup.sh
-./build.sh RelWithDebInfo OFF
-./run_clang-tidy.sh
+if [[ $LOCAL_RUN != "true" ]]; then
+    source /opt/ros/${ROS_DISTRO}/setup.bash
+    ./setup.sh
+    ./build.sh RelWithDebInfo OFF
+fi
+
+python3 .github/actions/clang-tidy/ament_clang_tidy.py build --jobs 16
