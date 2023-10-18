@@ -31,6 +31,10 @@ import yaml
 
 def main(argv=sys.argv[1:]):
     extensions = ["c", "cc", "cpp", "cxx", "h", "hh", "hpp", "hxx"]
+    excluded_files = [
+        "waypoints.pb.cc",
+        "sensors.pb.cc",
+    ]
 
     parser = argparse.ArgumentParser(
         description="Check code style using clang_tidy.",
@@ -176,6 +180,14 @@ def main(argv=sys.argv[1:]):
                 output = e.output.decode()
             return output
 
+        def is_excluded_file(file_path):
+            for excluded_file in excluded_files:
+                if file_path.endswith(excluded_file):
+                    print(f"skipping excluded file '{file_path}'")
+                    return True
+            print(f"including file '{file_path}'")
+            return False
+
         files = []
         async_outputs = []
         db = json.load(open(compilation_db_path))
@@ -187,6 +199,9 @@ def main(argv=sys.argv[1:]):
             # exclude unit test sources from being checked by clang-tidy
             # because gtest macros are problematic
             if is_unittest_source(package_name, item["file"]):
+                continue
+
+            if is_excluded_file(item["file"]):
                 continue
 
             files.append(item["file"])
