@@ -7,6 +7,8 @@
 low_level_control_node:
    ros__parameters:
       logging_throttle_period_sec: 2.0
+      info_log_throttle_period_sec: 2.0
+      qos_depth: 1
       rudder:
          disable_actuation: false
          fixed_angle_deg: 0.0
@@ -24,6 +26,9 @@ low_level_control_node:
 physics_engine_node:
    ros__parameters:
       logging_throttle_period_sec: 2.0
+      info_log_throttle_period_sec: 2.0
+      action_send_goal_timeout_sec: 2.0
+      qos_depth: 1
       rudder:
          actuation_request_period_sec: 10.0
       wingsail:

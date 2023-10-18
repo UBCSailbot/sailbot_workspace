@@ -10,6 +10,22 @@ Controls the message logging throttle period.
 
 Acceptable Value Range: `(0.0, MAX_DOUBLE)`
 
+#### `info_log_throttle_period_sec`
+
+Limits the info logs to avoid overwhelming the terminal. It's really more for us humans.
+
+Datatype: `double`
+
+Acceptable Value Range: `(0.0, MAX_DOUBLE)`
+
+#### `qos_depth`
+
+The maximum number of subscription messages to queue for further processing.
+
+Datatype: `int`
+
+Acceptable Value Range: `[1, MAX_INT)`
+
 #### `rudder.disable_actuation`
 
 Controls whether or not rudder actuation is disabled.
@@ -22,7 +38,7 @@ Acceptable Values: `true`, `false`
 
 Only used if rudder actuation is disabled.
 
-Acceptable Value Range: ``[-45.0, 45.0]``
+Acceptable Value Range: `[-45.0, 45.0]`
 
 #### `rudder.actuation_execution_period_sec`
 
@@ -72,7 +88,7 @@ Acceptable Value Range: `[0.0, MAX_DOUBLE)`
 
 Determines buffer size of PID.
 
-Datatype: `double`
+Datatype: `int`
 
 Acceptable Value Range: `[1, MAX_INT)`
 
@@ -100,7 +116,7 @@ Datatype: `double`
 
 Acceptable Value Range: `(0.0, MAX_DOUBLE)`
 
-### physics_engine_node
+### physics_engine_node Parameters
 
 #### `logging_throttle_period_sec`
 
@@ -109,6 +125,30 @@ Controls the message logging throttle period.
 Datatype: `double`
 
 Acceptable Value Range: `(0.0, MAX_DOUBLE)`
+
+#### `action_send_goal_timeout_sec`
+
+How long the action clients wait for the server before timing out.
+
+Datatype: `double`
+
+Acceptable Value Range: `(0.0, MAX_DOUBLE)`
+
+#### `info_log_throttle_period_sec`
+
+Limits the info logs to avoid overwhelming the terminal. It's really more for us humans.
+
+Datatype: `double`
+
+Acceptable Value Range: `(0.0, MAX_DOUBLE)`
+
+#### `qos_depth`
+
+The maximum number of subscription messages to queue for further processing.
+
+Datatype: `int`
+
+Acceptable Value Range: `[1, MAX_INT)`
 
 #### `rudder.actuation_request_period_sec`
 
