@@ -31,10 +31,6 @@ import yaml
 
 def main(argv=sys.argv[1:]):
     extensions = ["c", "cc", "cpp", "cxx", "h", "hh", "hpp", "hxx"]
-    excluded_files = [
-        "waypoints.pb.cc",
-        "sensors.pb.cc",
-    ]
 
     parser = argparse.ArgumentParser(
         description="Check code style using clang_tidy.",
@@ -167,6 +163,11 @@ def main(argv=sys.argv[1:]):
         def is_unittest_source(package, file_path):
             return ("%s/test/" % package) in file_path
 
+        def is_protobuf_source(file_name):
+            if ".pb.cc" in file_name or ".pb.h" in file_name:
+                return True
+            return False
+
         def start_subprocess(full_cmd):
             output = ""
             try:
@@ -179,14 +180,6 @@ def main(argv=sys.argv[1:]):
                 )
                 output = e.output.decode()
             return output
-
-        def is_excluded_file(file_path):
-            for excluded_file in excluded_files:
-                if file_path.endswith(excluded_file):
-                    print(f"excluding file '{file_path}'")
-                    return True
-            print(f"including file '{file_path}'")
-            return False
 
         files = []
         async_outputs = []
@@ -201,7 +194,8 @@ def main(argv=sys.argv[1:]):
             if is_unittest_source(package_name, item["file"]):
                 continue
 
-            if is_excluded_file(item["file"]):
+            # exclude auto-generated protobuf source files from being checked by clang-tidy
+            if is_protobuf_source(os.path.basename(item["file"])):
                 continue
 
             files.append(item["file"])
