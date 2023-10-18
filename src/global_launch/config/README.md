@@ -126,17 +126,17 @@ Datatype: `double`
 
 Acceptable Value Range: `(0.0, MAX_DOUBLE)`
 
-#### `action_send_goal_timeout_sec`
+#### `info_log_throttle_period_sec`
 
-How long the action clients wait for the server before timing out.
+Limits the info logs to avoid overwhelming the terminal. It's really more for us humans.
 
 Datatype: `double`
 
 Acceptable Value Range: `(0.0, MAX_DOUBLE)`
 
-#### `info_log_throttle_period_sec`
+#### `action_send_goal_timeout_sec`
 
-Limits the info logs to avoid overwhelming the terminal. It's really more for us humans.
+How long the action clients wait for the server before timing out.
 
 Datatype: `double`
 
