@@ -154,10 +154,7 @@
         // copy from https://github.com/ament/ament_lint/blob/humble/ament_flake8/ament_flake8/configuration/ament_flake8.ini
         // except for import order style = google: use isort with black profile instead
         "flake8.args": [
-            "--extend-ignore=B902,C816,D100,D101,D102,D103,D104,D105,D106,D107,D203,D212,D404,I202",
-            "--max-line-length=99",
-            "--show-source",
-            "--statistics",
+            "--config=${workspaceFolder:sailbot_workspace}/.flake8",
         ],
         "flake8.interpreter": ["/usr/bin/python3"],
         // formatter: black and isort extensions
@@ -372,7 +369,7 @@
                 "label": "clang-tidy",
                 "detail": "Run clang-tidy static analysis",
                 "type": "shell",
-                "command": "./run_clang-tidy.sh",
+                "command": "LOCAL_RUN=true .github/actions/clang-tidy/run.sh",
                 "problemMatcher": [],
                 "presentation": {
                     "panel": "dedicated",

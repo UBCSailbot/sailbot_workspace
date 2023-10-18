@@ -37,7 +37,12 @@ function lint {
     LINTED_FILES=`eval ${FILE_SEARCH_CMD}`
 
     if [[ ! -z ${LINTED_FILES} ]]; then
-        ament_${LINTER} ${LINTED_FILES}
+        if [[ ${LINTER} = "flake8" ]]; then
+            # use custom configuration file that is compatible with black formatter
+            ament_${LINTER} --config .flake8 ${LINTED_FILES}
+        else
+            ament_${LINTER} ${LINTED_FILES}
+        fi
     else
         warn "WARNING: No files found for ${LINTER}. Skipping ament_${LINTER}..."
     fi
