@@ -16,35 +16,23 @@ function helpMessage() {
 # If still empty after argument parsing, all ROS packages are built
 PACKAGE=""
 
-# Boolean for quick build (default is full build)
-QUICK_BUILD="false"
-
 # Parse command-line options (all are optional arguments)
 while getopts "hp:q" flag; do
     case ${flag} in
         p )     PACKAGE="${OPTARG}" ;;
-        q )     QUICK_BUILD="true" ;;
         h )     helpMessage; exit 0 ;;
         \? )    echo "Invalid option: -${flag}"; helpMessage; exit 1 ;;
         : )     echo "Option -${flag} requires an argument"; helpMessage; exit 1 ;;
     esac
 done
 
-# Assign build type default
-BUILD_TYPE="RelWithDebInfo"
+# Assign build type debug
+BUILD_TYPE="Debug"
 
 # Whether to run clang-tidy during build (unnecessary since we have separate CI and task)
 STATIC_ANALYSIS="OFF"
 
-# Configuration for build (full or quick)
-if [[ $QUICK_BUILD = "true" ]]; then
-    UNIT_TEST="OFF"
-else
-    UNIT_TEST="ON"
-fi
-if [[ $UNIT_TEST = "ON" ]]; then
-    BUILD_TYPE="Debug"
-fi
+UNIT_TEST="ON"
 
 # Build ROS packages in src directory
 colcon build \
