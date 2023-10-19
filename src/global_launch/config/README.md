@@ -34,15 +34,15 @@ ROS parameters specific to the nodes in the boat simulator.
 
 ### `low_level_control_node`
 
-**`logging_throttle_period_sec`**
-
-- _Description_: Controls the message logging throttle period.
-- _Datatype_: `double`
-- _Range_: `(0.0, MAX_DOUBLE)`
-
 **`info_log_throttle_period_sec`**
 
 - _Description_: Limits the info logs to avoid overwhelming the terminal.
+- _Datatype_: `double`
+- _Range_: `(0.0, MAX_DOUBLE)`
+
+**`logging_throttle_period_sec`**
+
+- _Description_: Controls the message logging throttle period.
 - _Datatype_: `double`
 - _Range_: `(0.0, MAX_DOUBLE)`
 
@@ -51,6 +51,12 @@ ROS parameters specific to the nodes in the boat simulator.
 - _Description_: The maximum number of subscription messages to queue for further processing.
 - _Datatype_: `int`
 - _Range_: `[1, MAX_INT)`
+
+**`rudder.actuation_execution_period_sec`**
+
+- _Description_: The period at which the main loop in the rudder action server executes in seconds.
+- _Datatype_: `double`
+- _Range_: `(0.0, MAX_DOUBLE)`
 
 **`rudder.disable_actuation`**
 
@@ -65,15 +71,15 @@ Otherwise, the PID mechanism is used to control the rudder angle.
 - _Datatype_: `double`
 - _Range_: `[-45.0, 45.0]`
 
-**`rudder.actuation_execution_period_sec`**
+**`rudder.pid.buffer_size`**
 
-- _Description_: The period at which the main loop in the rudder action server executes in seconds.
-- _Datatype_: `double`
-- _Range_: `(0.0, MAX_DOUBLE)`
+- _Description_: The buffer size of PID that stores previously computed errors over time.
+- _Datatype_: `int`
+- _Range_: `[1, MAX_INT)`
 
-**`rudder.pid.kp`**
+**`rudder.pid.kd`**
 
-- _Description_: The PID Proportionality constant for the rudder. Only used if `rudder.disable_actuation` is false.
+- _Description_: The PID Derivative constant for the rudder. Only used if `rudder.disable_actuation` is false.
 - _Datatype_: `double`
 - _Range_: `[0.0, MAX_DOUBLE)`
 
@@ -83,17 +89,23 @@ Otherwise, the PID mechanism is used to control the rudder angle.
 - _Datatype_: `double`
 - _Range_: `[0.0, MAX_DOUBLE)`
 
-**`rudder.pid.kd`**
+**`rudder.pid.kp`**
 
-- _Description_: The PID Derivative constant for the rudder. Only used if `rudder.disable_actuation` is false.
+- _Description_: The PID Proportionality constant for the rudder. Only used if `rudder.disable_actuation` is false.
 - _Datatype_: `double`
 - _Range_: `[0.0, MAX_DOUBLE)`
 
-**`rudder.pid.buffer_size`**
+**`wingsail.actuation_execution_period_sec`**
 
-- _Description_: The buffer size of PID that stores previously computed errors over time.
-- _Datatype_: `int`
-- _Range_: `[1, MAX_INT)`
+- _Description_: The period at which the main loop in the sail action server executes in seconds.
+- _Datatype_: `double`
+- _Range_: `(0.0, MAX_DOUBLE)`
+
+**`wingsail.actuation_speed_deg_per_sec`**
+
+- _Description_: The speed at which the wingsail trim tab actuates in degrees per second.
+- _Datatype_: `double`
+- _Range_: `(0.0, MAX_DOUBLE)`
 
 **`wingsail.disable_actuation`**
 
@@ -108,23 +120,11 @@ value. Otherwise, the trim tab angle is determined by the wingsail controller.
 - _Datatype_: `double`
 - _Range_: `[-180.0, 180.0)`
 
-**`wingsail.actuation_execution_period_sec`**
-
-- _Description_: The period at which the main loop in the sail action server executes in seconds.
-- _Datatype_: `double`
-- _Range_: `(0.0, MAX_DOUBLE)`
-
-**`wingsail.actuation_speed_deg_per_sec`**
-
-- _Description_: The speed at which the wingsail trim tab actuates in degrees per second.
-- _Datatype_: `double`
-- _Range_: `(0.0, MAX_DOUBLE)`
-
 ### `physics_engine_node`
 
-**`logging_throttle_period_sec`**
+**`action_send_goal_timeout_sec`**
 
-- _Description_: Controls the message logging throttle period.
+- _Description_: How long the action clients wait for the action server to respond to a request before timing out in seconds.
 - _Datatype_: `double`
 - _Range_: `(0.0, MAX_DOUBLE)`
 
@@ -134,9 +134,9 @@ value. Otherwise, the trim tab angle is determined by the wingsail controller.
 - _Datatype_: `double`
 - _Range_: `(0.0, MAX_DOUBLE)`
 
-**`action_send_goal_timeout_sec`**
+**`logging_throttle_period_sec`**
 
-- _Description_: How long the action clients wait for the action server to respond to a request before timing out in seconds.
+- _Description_: Controls the message logging throttle period.
 - _Datatype_: `double`
 - _Range_: `(0.0, MAX_DOUBLE)`
 
@@ -152,17 +152,20 @@ value. Otherwise, the trim tab angle is determined by the wingsail controller.
 - _Datatype_: `double`
 - _Range_: `(0.0, MAX_DOUBLE)`
 
-**`wingsail.actuation_request_period_sec`**
+**`wind_sensor.constant_params.value`**
 
-- _Description_: How often the sail action server requests a wingsail actuation.
+- _Description_: Specifies the constant vector returned by the constant generator that represents the wind velocity in kmph.
+Namely, the same value is fixed in the wind sensors. The value is an array containing the `x` and `y` components of the
+velocity. Only used if `wind_sensor.generator_type` is `constant`.
+- _Datatype_: `double` array, length 2
+- _Range_: `(MIN_DOUBLE, MAX_DOUBLE)`
+
+**`wind_sensor.gaussian_params.corr_xy`**
+
+- _Description_: The correlation coefficient between x and y components of the wind velocity. Only used if
+`wind_sensor.generator_type` is `gaussian`.
 - _Datatype_: `double`
-- _Range_: `(0.0, MAX_DOUBLE)`
-
-**`wind_sensor.generator_type`**
-
-- _Description_: Determines the type of random number generator that will be used to generate wind sensor data.
-- _Datatype_: `string`
-- _Acceptable Values_: `gaussian`, `constant`
+- _Range_: `[-1.0, 1.0]`
 
 **`wind_sensor.gaussian_params.mean`**
 
@@ -180,17 +183,14 @@ specified within an array: one for the `x` component, and one for the `y` compon
 - _Range_: `(0.0, MAX_DOUBLE)`
     - If a standard deviation of zero is desired, then consider using the constant generator instead.
 
-**`wind_sensor.gaussian_params.corr_xy`**
+**`wind_sensor.generator_type`**
 
-- _Description_: The correlation coefficient between x and y components of the wind velocity. Only used if
-`wind_sensor.generator_type` is `gaussian`.
+- _Description_: Determines the type of random number generator that will be used to generate wind sensor data.
+- _Datatype_: `string`
+- _Acceptable Values_: `gaussian`, `constant`
+
+**`wingsail.actuation_request_period_sec`**
+
+- _Description_: How often the sail action server requests a wingsail actuation.
 - _Datatype_: `double`
-- _Range_: `[-1.0, 1.0]`
-
-**`wind_sensor.constant_params.value`**
-
-- _Description_: Specifies the constant vector returned by the constant generator that represents the wind velocity in kmph.
-Namely, the same value is fixed in the wind sensors. The value is an array containing the `x` and `y` components of the
-velocity. Only used if `wind_sensor.generator_type` is `constant`.
-- _Datatype_: `double` array, length 2
-- _Range_: `(MIN_DOUBLE, MAX_DOUBLE)`
+- _Range_: `(0.0, MAX_DOUBLE)`
