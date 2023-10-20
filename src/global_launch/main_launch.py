@@ -74,7 +74,7 @@ def setup_launch(context: LaunchContext) -> List[IncludeLaunchDescription]:
         context (LaunchContext): The current context of the launch.
 
     Returns:
-        List[LaunchDescriptionEntity]: Launch file descriptions.
+        List[IncludeLaunchDescription]: Launch file descriptions.
     """
     mode = LaunchConfiguration("mode").perform(context)
     ros_packages = get_running_ros_packages(mode)
