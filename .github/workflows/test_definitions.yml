@@ -153,7 +153,7 @@ jobs:
   # Runs Sailbot Workspace CI
   run-sailbot-workspace-ci:
     runs-on: ubuntu-latest
-    # if: github.event_name == 'push' && github.ref == 'refs/heads/main' && inputs.repository != 'sailbot_workspace' && inputs.repository != 'docs'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && inputs.repository != 'sailbot_workspace' && inputs.repository != 'docs'
     steps:
     - name: Dispatch Sailbot Workspace Tests workflow to run CI
       # https://github.com/orgs/community/discussions/26323#discussioncomment-5600001
