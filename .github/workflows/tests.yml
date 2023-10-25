@@ -7,9 +7,6 @@ on:
       # sailbot_workspace only: raye branch used to run Raye's software
       - raye
   pull_request:
-  # sailbot_workspace only: regression tests runs every Friday at 1:00am UTC
-  schedule:
-    - cron: '0 1 * * 5'
   workflow_dispatch:
 
 # Cancel in-progress runs for the current workflow
