@@ -7,13 +7,13 @@
             "path": "../../src/boat_simulator"
         },
         {
-            "path": "../../src/diagnostics"
-        },
-        {
             "path": "../../src/controller"
         },
         {
             "path": "../../src/custom_interfaces"
+        },
+        {
+            "path": "../../src/diagnostics"
         },
         {
             "path": "../../src/docs"
