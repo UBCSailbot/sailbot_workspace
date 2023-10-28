@@ -47,31 +47,22 @@ jobs:
       with:
           repository: UBCSailbot/sailbot_workspace
 
-    - name: Checkout ROS package
-      if: ${{ inputs.repository != 'sailbot_workspace' }}
-      uses: actions/checkout@v4
+    - name: Checkout repositories
+      uses: ./.github/actions/checkout/
       with:
-          repository: UBCSailbot/${{ inputs.repository }}
-          path: src/${{ inputs.repository }}
-
-    - name: Checkout custom_interfaces ROS package
-      if: ${{ inputs.repository != 'sailbot_workspace' && inputs.repository != 'custom_interfaces' }}
-      uses: actions/checkout@v4
-      with:
-          repository: UBCSailbot/custom_interfaces
-          path: src/custom_interfaces
+          repository: ${{ inputs.repository }}
 
     - name: Test
       uses: ./.github/actions/test/
-      env:
-        DISABLE_VCS: ${{ inputs.repository != 'sailbot_workspace' }}
+      with:
+        disable_vcs: ${{ inputs.repository != 'sailbot_workspace' }}
 
   ament-lint:
     strategy:
       fail-fast: false
       matrix:
-          # ament_lint_common, except for copyright, cppcheck, cpplint, uncrustify, and pep257
-          linter: [lint_cmake, flake8, xmllint]
+          # mypy and ament_lint_common, except for copyright, cppcheck, cpplint, uncrustify, and pep257
+          linter: [lint_cmake, flake8, mypy, xmllint]
     name: ament_${{ matrix.linter }}
     runs-on: ubuntu-latest
     if: ${{ inputs.ros-ci }}
@@ -81,25 +72,16 @@ jobs:
       with:
           repository: UBCSailbot/sailbot_workspace
 
-    - name: Checkout ROS package
-      if: ${{ inputs.repository != 'sailbot_workspace' }}
-      uses: actions/checkout@v4
+    - name: Checkout repositories
+      uses: ./.github/actions/checkout/
       with:
-          repository: UBCSailbot/${{ inputs.repository }}
-          path: src/${{ inputs.repository }}
-
-    - name: Checkout custom_interfaces ROS package
-      if: ${{ inputs.repository != 'sailbot_workspace' && inputs.repository != 'custom_interfaces' }}
-      uses: actions/checkout@v4
-      with:
-          repository: UBCSailbot/custom_interfaces
-          path: src/custom_interfaces
+          repository: ${{ inputs.repository }}
 
     - name: Run linter
       uses: ./.github/actions/ament-lint/
-      env:
-        LINTER: ${{ matrix.linter }}
-        DISABLE_VCS: ${{ inputs.repository != 'sailbot_workspace' }}
+      with:
+        linter: ${{ matrix.linter }}
+        disable_vcs: ${{ inputs.repository != 'sailbot_workspace' }}
 
   clang-tidy:
     runs-on: ubuntu-latest
@@ -110,24 +92,15 @@ jobs:
       with:
           repository: UBCSailbot/sailbot_workspace
 
-    - name: Checkout ROS package
-      if: ${{ inputs.repository != 'sailbot_workspace' }}
-      uses: actions/checkout@v4
+    - name: Checkout repositories
+      uses: ./.github/actions/checkout/
       with:
-          repository: UBCSailbot/${{ inputs.repository }}
-          path: src/${{ inputs.repository }}
-
-    - name: Checkout custom_interfaces ROS package
-      if: ${{ inputs.repository != 'sailbot_workspace' && inputs.repository != 'custom_interfaces' }}
-      uses: actions/checkout@v4
-      with:
-          repository: UBCSailbot/custom_interfaces
-          path: src/custom_interfaces
+          repository: ${{ inputs.repository }}
 
     - name: Run linter
       uses: ./.github/actions/clang-tidy/
-      env:
-        DISABLE_VCS: ${{ inputs.repository != 'sailbot_workspace' }}
+      with:
+        disable_vcs: ${{ inputs.repository != 'sailbot_workspace' }}
 
   # https://github.com/nosborn/github-action-markdown-cli
   markdownlint:
@@ -174,5 +147,19 @@ jobs:
           gh workflow run tests.yml -R UBCSailbot/docs
           sleep 5
           gh run watch -R UBCSailbot/docs $(gh run list -R UBCSailbot/docs -w tests.yml -L1 --json databaseId --jq '.[0].databaseId')
+    env:
+      GH_TOKEN: ${{ secrets.gh-token }}
+
+  # Runs Sailbot Workspace CI
+  run-sailbot-workspace-ci:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && inputs.repository != 'sailbot_workspace' && inputs.repository != 'docs'
+    steps:
+    - name: Dispatch Sailbot Workspace Tests workflow to run CI
+      # https://github.com/orgs/community/discussions/26323#discussioncomment-5600001
+      run: |
+          gh workflow run tests.yml -R UBCSailbot/sailbot_workspace
+          sleep 5
+          gh run watch -R UBCSailbot/sailbot_workspace $(gh run list -R UBCSailbot/sailbot_workspace -w tests.yml -L1 --json databaseId --jq '.[0].databaseId')
     env:
       GH_TOKEN: ${{ secrets.gh-token }}

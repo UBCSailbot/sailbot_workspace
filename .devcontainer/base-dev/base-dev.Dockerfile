@@ -1,4 +1,4 @@
-FROM ghcr.io/ubcsailbot/sailbot_workspace/pre-base:ros_humble-ompl_4c86b2f as base
+FROM ghcr.io/ubcsailbot/sailbot_workspace/pre-base:ros_humble-ompl_4c86b2f-mongo_367-v2 as base
 
 # install base apt dependencies
 ENV DEBIAN_FRONTEND=noninteractive
@@ -21,6 +21,12 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/* \
     && rosdep init || echo "rosdep already initialized"
 ENV DEBIAN_FRONTEND=
+
+# install base pip dependencies
+RUN pip3 install \
+    plotly \
+    pyproj \
+    shapely
 
 # root bash configuration
 ENV ROS_WORKSPACE=/workspaces/sailbot_workspace
@@ -70,21 +76,9 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         mongodb-database-tools \
         mongodb-mongosh \
-        libmongoc-dev \
     && apt-get autoremove -y \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
-ENV DEBIAN_FRONTEND=
-
-# setup MongoDB C++ Packages
-ENV DEBIAN_FRONTEND=noninteractive
-# mongo-cxx-driver version must match libmongoc-dev version - see https://mongocxx.org/mongocxx-v3/installation/linux/
-RUN wget https://github.com/mongodb/mongo-cxx-driver/releases/download/r3.6.7/mongo-cxx-driver-r3.6.7.tar.gz \
-    && tar -xzf mongo-cxx-driver-r3.6.7.tar.gz \
-    && cd mongo-cxx-driver-r3.6.7/build \
-    && cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local \
-    && cmake --build . \
-    && cmake --build . --target  install
 ENV DEBIAN_FRONTEND=
 
 FROM local-base as ros-dev
@@ -107,6 +101,7 @@ RUN apt-get update && apt-get install -y \
     wget \
     # Install ros distro testing packages
     ros-humble-ament-lint \
+    ros-humble-ament-mypy \
     ros-humble-launch-testing \
     ros-humble-launch-testing-ament-cmake \
     ros-humble-launch-testing-ros \
@@ -114,7 +109,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/* \
     && rosdep init || echo "rosdep already initialized" \
     # Update pydocstyle
-    && pip3 install --upgrade pydocstyle
+    && pip3 install --upgrade pydocstyle mypy
 
 ARG USERNAME=ros
 ARG USER_UID=1000
