@@ -7,6 +7,9 @@
             "path": "../../src/boat_simulator"
         },
         {
+            "path": "../../src/diagnostics"
+        },
+        {
             "path": "../../src/controller"
         },
         {
@@ -29,9 +32,6 @@
         },
         {
             "path": "../../src/website"
-        },
-        {
-            "path": "../../src/diagnostics"
         },
     ],
     "settings": {
