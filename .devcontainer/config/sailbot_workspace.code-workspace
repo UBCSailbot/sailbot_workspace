@@ -13,6 +13,9 @@
             "path": "../../src/custom_interfaces"
         },
         {
+            "path": "../../src/diagnostics"
+        },
+        {
             "path": "../../src/docs"
         },
         {
