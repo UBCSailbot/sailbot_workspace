@@ -175,9 +175,9 @@ ENV DEBIAN_FRONTEND=
 
 # install rapidyaml for diagnostics
 ENV DEBIAN_FRONTEND=noninteractive
-RUN wget https://github.com/biojppm/rapidyaml/releases/download/v0.5.0/rapidyaml-0.5.0-ubuntu-20.04.deb && \
-    apt-get install ./rapidyaml-0.5.0-ubuntu-20.04.deb && \
-    rm -f rapidyaml-0.5.0-ubuntu-20.04.deb
+RUN wget https://github.com/biojppm/rapidyaml/releases/download/v0.5.0/rapidyaml-0.5.0-ubuntu-20.04.deb
+RUN apt-get install ./rapidyaml-0.5.0-ubuntu-20.04.deb
+RUN rm -f rapidyaml-0.5.0-ubuntu-20.04.deb
 ENV DEBIAN_FRONTEND=
 
 # install other helpful apt packages
