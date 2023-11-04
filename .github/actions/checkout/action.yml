@@ -22,3 +22,10 @@ runs:
       with:
           repository: UBCSailbot/custom_interfaces
           path: src/custom_interfaces
+
+    - name: Checkout virtual_iridium repository
+      if: ${{ inputs.repository != 'sailbot_workspace' && inputs.repository == 'network_systems' }}
+      uses: actions/checkout@v4
+      with:
+          repository: UBCSailbot/virtual_iridium
+          path: src/virtual_iridium
