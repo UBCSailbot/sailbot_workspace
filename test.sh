@@ -13,7 +13,9 @@ trap 'exit' INT TERM
 trap 'signal_handler' EXIT
 
 if [ -f install/local_setup.bash ]; then source install/local_setup.bash; fi
-if [ -d src/network_systems ]; then src/network_systems/scripts/run_virtual_iridium.sh &> /dev/null & fi
+ls
+ls src
+if [ -d src/network_systems ]; then src/network_systems/scripts/run_virtual_iridium.sh & fi
 colcon test --packages-ignore virtual_iridium --merge-install --event-handlers console_cohesion+
 colcon test-result
 exit 0
