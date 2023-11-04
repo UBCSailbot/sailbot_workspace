@@ -39,8 +39,7 @@ on:
 
 jobs:
   # Adapted from https://github.com/actions/toolkit/issues/1264#issuecomment-1770928498
-  metadata:
-    name: Extract metadata
+  extract-metadata:
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -56,13 +55,13 @@ jobs:
   colcon-test:
     runs-on: ubuntu-latest
     if: ${{ inputs.ros-ci }}
-    needs: [metadata]
+    needs: [extract-metadata]
     steps:
     - name: Checkout workspace
       uses: actions/checkout@v4
       with:
           repository: UBCSailbot/sailbot_workspace
-          ref: ${{ needs.metadata.outputs.caller-ref }}
+          ref: ${{ needs.extract-metadata.outputs.caller-ref }}
 
     - name: Checkout repositories
       uses: ./.github/actions/checkout/
@@ -83,13 +82,13 @@ jobs:
     name: ament_${{ matrix.linter }}
     runs-on: ubuntu-latest
     if: ${{ inputs.ros-ci }}
-    needs: [metadata]
+    needs: [extract-metadata]
     steps:
     - name: Checkout workspace
       uses: actions/checkout@v4
       with:
           repository: UBCSailbot/sailbot_workspace
-          ref: ${{ needs.metadata.outputs.caller-ref }}
+          ref: ${{ needs.extract-metadata.outputs.caller-ref }}
 
     - name: Checkout repositories
       uses: ./.github/actions/checkout/
@@ -105,13 +104,13 @@ jobs:
   clang-tidy:
     runs-on: ubuntu-latest
     if: inputs.clang-tidy
-    needs: [metadata]
+    needs: [extract-metadata]
     steps:
     - name: Checkout workspace
       uses: actions/checkout@v4
       with:
           repository: UBCSailbot/sailbot_workspace
-          ref: ${{ needs.metadata.outputs.caller-ref }}
+          ref: ${{ needs.extract-metadata.outputs.caller-ref }}
 
     - name: Checkout repositories
       uses: ./.github/actions/checkout/
