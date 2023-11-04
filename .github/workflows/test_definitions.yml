@@ -38,30 +38,30 @@ on:
         required: false
 
 jobs:
-  metadata:
-    name: Extract metadata
+  # Adapted from https://github.com/actions/toolkit/issues/1264#issuecomment-1770928498
+  extract-metadata:
     runs-on: ubuntu-latest
     permissions:
       actions: read
     outputs:
-      caller-sha: ${{ steps.workflows-ref.outputs.caller-sha }}
+      caller-ref: ${{ steps.workflows-ref.outputs.caller-ref }}
     steps:
       - name: Get workflow reference
         id: workflows-ref
         run: |
-          sha=$(curl -L -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${{ secrets.gh-token }}" -H "X-GitHub-Api-Version: 2022-11-28" https://api.github.com/repos/UBCSailbot/sailbot_workspace/actions/runs/${{ github.run_id }} | jq -r '.referenced_workflows[0] | .sha')
-          echo "caller-sha=$sha" >> $GITHUB_OUTPUT
+          ref=$(curl -L -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${{ secrets.gh-token }}" -H "X-GitHub-Api-Version: 2022-11-28" https://api.github.com/repos/UBCSailbot/${{ inputs.repository }}/actions/runs/${{ github.run_id }} | jq -r '.referenced_workflows[0] | .ref')
+          echo "caller-ref=$ref" >> $GITHUB_OUTPUT
 
   colcon-test:
     runs-on: ubuntu-latest
     if: ${{ inputs.ros-ci }}
-    needs: [metadata]
+    needs: [extract-metadata]
     steps:
     - name: Checkout workspace
       uses: actions/checkout@v4
       with:
           repository: UBCSailbot/sailbot_workspace
-          ref: ${{ needs.metadata.outputs.caller-sha }}
+          ref: ${{ needs.extract-metadata.outputs.caller-ref }}
 
     - name: Checkout repositories
       uses: ./.github/actions/checkout/
@@ -82,13 +82,13 @@ jobs:
     name: ament_${{ matrix.linter }}
     runs-on: ubuntu-latest
     if: ${{ inputs.ros-ci }}
-    needs: [metadata]
+    needs: [extract-metadata]
     steps:
     - name: Checkout workspace
       uses: actions/checkout@v4
       with:
           repository: UBCSailbot/sailbot_workspace
-          ref: ${{ needs.metadata.outputs.caller-sha }}
+          ref: ${{ needs.extract-metadata.outputs.caller-ref }}
 
     - name: Checkout repositories
       uses: ./.github/actions/checkout/
@@ -104,13 +104,13 @@ jobs:
   clang-tidy:
     runs-on: ubuntu-latest
     if: inputs.clang-tidy
-    needs: [metadata]
+    needs: [extract-metadata]
     steps:
     - name: Checkout workspace
       uses: actions/checkout@v4
       with:
           repository: UBCSailbot/sailbot_workspace
-          ref: ${{ needs.metadata.outputs.caller-sha }}
+          ref: ${{ needs.extract-metadata.outputs.caller-ref }}
 
     - name: Checkout repositories
       uses: ./.github/actions/checkout/
