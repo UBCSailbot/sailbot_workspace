@@ -9,11 +9,6 @@ on:
   pull_request:
   workflow_dispatch:
 
-# Cancel in-progress runs for the current workflow
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   # CI for all UBCSailbot repositories defined in one place
   # Runs another workflow: https://docs.github.com/en/actions/using-workflows/reusing-workflows#calling-a-reusable-workflow
