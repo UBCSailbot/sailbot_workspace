@@ -38,6 +38,7 @@ on:
         required: false
 
 jobs:
+  # Adapted from https://github.com/actions/toolkit/issues/1264#issuecomment-1770928498
   metadata:
     name: Extract metadata
     runs-on: ubuntu-latest
