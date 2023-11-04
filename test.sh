@@ -14,9 +14,13 @@ trap 'signal_handler' EXIT
 
 if [ -f install/local_setup.bash ]; then source install/local_setup.bash; fi
 echo 'testing'
+echo 'pwd'
 pwd
+echo 'ls'
 ls
+echo 'ls src'
 ls src
+echo 'ls src/network_systems/scripts'
 ls src/network_systems/scripts
 if [ -d src/network_systems ]; then src/network_systems/scripts/run_virtual_iridium.sh &> /dev/null & fi
 colcon test --packages-ignore virtual_iridium --merge-install --event-handlers console_cohesion+
