@@ -57,13 +57,11 @@ jobs:
     if: ${{ inputs.ros-ci }}
     needs: [metadata]
     steps:
-    - name: Print ref
-      run: echo ${{ needs.metadata.outputs.caller-sha }}
-
     - name: Checkout workspace
       uses: actions/checkout@v4
       with:
           repository: UBCSailbot/sailbot_workspace
+          ref: ${{ needs.metadata.outputs.caller-sha }}
 
     - name: Checkout repositories
       uses: ./.github/actions/checkout/
@@ -84,11 +82,13 @@ jobs:
     name: ament_${{ matrix.linter }}
     runs-on: ubuntu-latest
     if: ${{ inputs.ros-ci }}
+    needs: [metadata]
     steps:
     - name: Checkout workspace
       uses: actions/checkout@v4
       with:
           repository: UBCSailbot/sailbot_workspace
+          ref: ${{ needs.metadata.outputs.caller-sha }}
 
     - name: Checkout repositories
       uses: ./.github/actions/checkout/
@@ -104,11 +104,13 @@ jobs:
   clang-tidy:
     runs-on: ubuntu-latest
     if: inputs.clang-tidy
+    needs: [metadata]
     steps:
     - name: Checkout workspace
       uses: actions/checkout@v4
       with:
           repository: UBCSailbot/sailbot_workspace
+          ref: ${{ needs.metadata.outputs.caller-sha }}
 
     - name: Checkout repositories
       uses: ./.github/actions/checkout/
