@@ -3,19 +3,6 @@
 version: '3.8'
 
 services:
-  # https://github.com/meln5674/grafana-mongodb-community-plugin/blob/7c48c8c45353cbd360d08ff597ce2ccdc8bad85d/examples/docker-compose/official/docker-compose.yaml
-  grafana:
-    image: grafana/grafana-oss:latest
-    restart: unless-stopped
-    volumes:
-      - grafana-data:/var/lib/grafana:delegated
-    environment:
-      - GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS=meln5674-mongodb-community
-      - GF_INSTALL_PLUGINS=https://github.com/meln5674/grafana-mongodb-community-plugin/releases/download/v0.1.2/meln5674-mongodb-community.zip;meln5674-mongodb-community
-
-    # Runs on the same network as the workspace container, allows "forwardPorts" in devcontainer.json function.
-    network_mode: service:sailbot-workspace
-
   website:
     build:
       context: ..
@@ -28,5 +15,4 @@ services:
     network_mode: service:sailbot-workspace
 
 volumes:
-  grafana-data:
   website-node-modules:

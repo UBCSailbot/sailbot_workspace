@@ -5,12 +5,11 @@
 		// Uncomment the files containing the programs you need
 		"docker-compose.db.yml", // mongodb
 		// "docker-compose.docs.yml", // docs
-		// "docker-compose.website.yml", // grafana, website
+		// "docker-compose.website.yml", // website
 
 		"docker-compose.yml"
 	],
 	"forwardPorts": [
-		3000, // grafana
 		3005, // website
 		8000  // docs
 	],
