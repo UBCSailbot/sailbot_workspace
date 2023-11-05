@@ -40,6 +40,7 @@ on:
 jobs:
   # Adapted from https://github.com/actions/toolkit/issues/1264#issuecomment-1770928498
   extract-metadata:
+    if: inputs.ros-ci || inputs.clang-tidy
     runs-on: ubuntu-latest
     permissions:
       actions: read
