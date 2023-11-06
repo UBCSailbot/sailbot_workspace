@@ -167,7 +167,7 @@ jobs:
       run: |
           gh workflow run tests.yml -R UBCSailbot/docs
           sleep 5
-          gh run watch -R UBCSailbot/docs $(gh run list -R UBCSailbot/docs -w tests.yml -L1 --json databaseId --jq '.[0].databaseId')
+          gh run watch --exit-status -R UBCSailbot/docs $(gh run list -R UBCSailbot/docs -w tests.yml -L1 --json databaseId --jq '.[0].databaseId')
     env:
       GH_TOKEN: ${{ secrets.gh-token }}
 
@@ -181,6 +181,6 @@ jobs:
       run: |
           gh workflow run tests.yml -R UBCSailbot/sailbot_workspace
           sleep 5
-          gh run watch -R UBCSailbot/sailbot_workspace $(gh run list -R UBCSailbot/sailbot_workspace -w tests.yml -L1 --json databaseId --jq '.[0].databaseId')
+          gh run watch --exit-status -R UBCSailbot/sailbot_workspace $(gh run list -R UBCSailbot/sailbot_workspace -w tests.yml -L1 --json databaseId --jq '.[0].databaseId')
     env:
       GH_TOKEN: ${{ secrets.gh-token }}
