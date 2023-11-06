@@ -34,7 +34,7 @@ on:
       # If rebuild-docs is true:
       # 1. Create the repository secret PAT_TOKEN (copy from Bitwarden)
       # 2. Set to ${{ secrets.PAT_TOKEN }}
-      gh-token:
+      PAT_TOKEN:
         required: false
 
 jobs:
@@ -50,7 +50,7 @@ jobs:
       - name: Get workflow reference
         id: workflows-ref
         run: |
-          ref=$(curl -L -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${{ secrets.gh-token }}" -H "X-GitHub-Api-Version: 2022-11-28" https://api.github.com/repos/UBCSailbot/${{ inputs.repository }}/actions/runs/${{ github.run_id }} | jq -r '.referenced_workflows[0] | .ref')
+          ref=$(curl -L -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" -H "X-GitHub-Api-Version: 2022-11-28" https://api.github.com/repos/UBCSailbot/${{ inputs.repository }}/actions/runs/${{ github.run_id }} | jq -r '.referenced_workflows[0] | .ref')
           echo "caller-ref=$ref" >> $GITHUB_OUTPUT
           echo "ref=$ref"
 
@@ -170,7 +170,7 @@ jobs:
           sleep 5
           gh run watch --exit-status -R UBCSailbot/docs $(gh run list -R UBCSailbot/docs -w tests.yml -L1 --json databaseId --jq '.[0].databaseId')
     env:
-      GH_TOKEN: ${{ secrets.gh-token }}
+      GH_TOKEN: ${{ secrets.PAT_TOKEN }}
 
   # Runs Sailbot Workspace CI
   run-sailbot-workspace-ci:
@@ -184,4 +184,4 @@ jobs:
           sleep 5
           gh run watch --exit-status -R UBCSailbot/sailbot_workspace $(gh run list -R UBCSailbot/sailbot_workspace -w tests.yml -L1 --json databaseId --jq '.[0].databaseId')
     env:
-      GH_TOKEN: ${{ secrets.gh-token }}
+      GH_TOKEN: ${{ secrets.PAT_TOKEN }}
