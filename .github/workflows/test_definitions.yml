@@ -40,8 +40,9 @@ on:
 jobs:
   # Adapted from https://github.com/actions/toolkit/issues/1264#issuecomment-1770928498
   extract-metadata:
-    if: inputs.ros-ci || inputs.clang-tidy
     runs-on: ubuntu-latest
+    timeout-minutes: 1
+    if: inputs.ros-ci || inputs.clang-tidy
     permissions:
       actions: read
     outputs:
@@ -56,6 +57,7 @@ jobs:
 
   colcon-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     if: ${{ inputs.ros-ci }}
     needs: [extract-metadata]
     steps:
@@ -83,6 +85,7 @@ jobs:
           linter: [lint_cmake, flake8, mypy, xmllint]
     name: ament_${{ matrix.linter }}
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     if: ${{ inputs.ros-ci }}
     needs: [extract-metadata]
     steps:
@@ -105,6 +108,7 @@ jobs:
 
   clang-tidy:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     if: inputs.clang-tidy
     needs: [extract-metadata]
     steps:
@@ -127,6 +131,7 @@ jobs:
   # https://github.com/nosborn/github-action-markdown-cli
   markdownlint:
     runs-on: ubuntu-latest
+    timeout-minutes: 1
     if: ${{ inputs.markdown-ci }}
     steps:
     - name: Check out code
@@ -144,6 +149,7 @@ jobs:
   # https://github.com/gaurav-nelson/github-action-markdown-link-check
   markdown-link-check:
     runs-on: ubuntu-latest
+    timeout-minutes: 1
     if: ${{ inputs.markdown-ci }}
     steps:
     - name: Check out code
@@ -160,6 +166,7 @@ jobs:
   # Rebuilds our docs site https://ubcsailbot.github.io/docs/
   rebuild-docs:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && inputs.rebuild-docs
     needs: [markdownlint, markdown-link-check]
     steps:
