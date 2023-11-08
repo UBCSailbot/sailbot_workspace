@@ -201,7 +201,6 @@
             "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd",
             "editor.formatOnSave": true,
             "editor.rulers": [120],
-
         },
 
 		"testMate.cpp.discovery.loadOnStartup": true,
