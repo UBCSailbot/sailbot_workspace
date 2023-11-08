@@ -1,7 +1,7 @@
-build/*
-install/*
-log/*
-site/*
+# ros
+build/
+install/
+log/
 
 # vcstool packages
 src/*
@@ -14,8 +14,10 @@ src/*
 !.devcontainer/config/sailbot_workspace.code-workspace
 
 # clangd
-.cache/*
+.cache/
 compile_commands.json
 
 # python
-*.pyc
+__pycache__/
+.mypy_cache/
+.pytest_cache/
