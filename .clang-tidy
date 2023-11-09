@@ -12,6 +12,7 @@ Checks: "
     readability*,
 
     -bugprone-easily-swappable-parameters,
+    -bugprone-infinite-loop,
     -clang-analyzer-optin*,
     -clang-analyzer-osx*,
     -clang-analyzer-cplusplus.Move,
