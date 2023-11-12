@@ -15,9 +15,8 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.logging import launch_config
 from launch.substitutions import LaunchConfiguration
 
-# TODO: Add the controller package when it is ready
-PRODUCTION_ROS_PACKAGES = ["local_pathfinding", "network_systems"]
-DEVELOPMENT_ROS_PACKAGES = ["boat_simulator", "local_pathfinding", "network_systems"]
+PRODUCTION_ROS_PACKAGES = ["controller", "local_pathfinding", "network_systems"]
+DEVELOPMENT_ROS_PACKAGES = ["controller", "boat_simulator", "local_pathfinding", "network_systems"]
 
 # Global launch arguments and constants.
 ROS_PACKAGES_DIR = os.path.join(
