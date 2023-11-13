@@ -22,8 +22,9 @@ RUN apt-get update \
     && rosdep init || echo "rosdep already initialized"
 ENV DEBIAN_FRONTEND=
 
-# install base pip dependencies
+# install base python3 dependencies
 RUN pip3 install \
+    # from local pathfinding
     plotly \
     pyproj \
     shapely
@@ -183,6 +184,11 @@ RUN tar -xzf rapidyaml-0.5.0-src.tgz && \
     cmake --build ./build/Release/ryml-build --config Release --target install && \
     rm -rf *rapidyaml*
 ENV DEBIAN_FRONTEND=
+
+# install dev python3 dependencies
+RUN pip3 install \
+    # to be able to run juypter notebooks
+    ipykernel
 
 # install other helpful apt packages
 ENV DEBIAN_FRONTEND=noninteractive
