@@ -1,37 +1,37 @@
 {
     "folders": [
         {
-            "path": "../.."
+            "path": "."
         },
         {
-            "path": "../../src/boat_simulator"
+            "path": "src/boat_simulator"
         },
         {
-            "path": "../../src/controller"
+            "path": "src/controller"
         },
         {
-            "path": "../../src/custom_interfaces"
+            "path": "src/custom_interfaces"
         },
         {
-            "path": "../../src/diagnostics"
+            "path": "src/diagnostics"
         },
         {
-            "path": "../../src/docs"
+            "path": "src/docs"
         },
         {
-            "path": "../../src/local_pathfinding"
+            "path": "src/local_pathfinding"
         },
         {
-            "path": "../../src/network_systems"
+            "path": "src/network_systems"
         },
         {
-            "path": "../../src/notebooks"
+            "path": "src/notebooks"
         },
         {
-            "path": "../../src/raye-local-pathfinding"
+            "path": "src/raye-local-pathfinding"
         },
         {
-            "path": "../../src/website"
+            "path": "src/website"
         },
     ],
     "settings": {
