@@ -1,0 +1,34 @@
+@startuml template
+' Colors picked to match docs site
+' See sailbot_workspace/src/docs/docs/stylesheets/extra.css
+!$SAILBOT_LIGHT_BLUE = "#73a3c7"
+!$SAILBOT_BLUE       = "#1665a2"
+!$SAILBOT_DARK_BLUE  = "#0d3d61"
+!$MAX_MESSAGE_SIZE   = 150
+
+' autonumber ' autonumber breaks state diagrams so don't put in template
+hide empty description
+
+skinparam {
+    BoxPadding 10
+    MaxMessageSize $MAX_MESSAGE_SIZE
+    NoteBackgroundColor $SAILBOT_BLUE
+    NoteBorderColor Grey
+    NoteFontColor White
+    NoteShadowing true
+    ParticipantBackgroundColor $SAILBOT_DARK_BLUE
+    ParticipantBorderColor White
+    ParticipantFontColor White
+    ParticipantPadding 20
+    SequenceBoxBackgroundColor $SAILBOT_LIGHT_BLUE
+    SequenceLifeLineBackgroundColor $SAILBOT_DARK_BLUE
+    SequenceLifeLineBorderColor White
+    SequenceMessageAlign center
+    StateBackgroundColor $SAILBOT_DARK_BLUE
+    StateFontColor White
+    TitleBackgroundColor LightSteelBlue
+    TitleBorderColor $SAILBOT_DARK_BLUE
+    TitleFontSize 28
+    wrapWidth $MAX_MESSAGE_SIZE
+}
+@enduml

@@ -1,0 +1,104 @@
+@startuml state_diagram_ex
+title Digital Watch
+
+!include %getenv("PLANTUML_TEMPLATE_PATH")
+
+State Regular
+
+State StopWatch {
+    state PauseStopWatch
+    state StartStopWatch
+}
+note top of StopWatch
+    B1: Unused
+    B2: Continue
+    B3: Pause
+endnote
+
+State Timer {
+    State RunTimer {
+        State PauseTimer
+        State StartTimer
+    }
+    note left of RunTimer
+        B1: Adjust
+        B2: Continue
+        B3: Pause
+    end note
+    State SetTimer {
+        State SetSecondTimer
+        State SetMinuteTimer
+        State SetHourTimer
+    }
+    note bottom of SetTimer
+        B1: Adjust
+        B2: Increment
+        B3: Decrement
+
+        Increment and Decrement
+        in each Set{X}Timer
+        substate increments or
+        decrements each counter
+        register X.
+    end note
+}
+
+State SetTime {
+    State SetSecond
+    State SetMinute
+    State SetHour
+    State SetDay
+    State SetWeekday
+    State SetMonth
+    State SetTimeType : Cycle through enums\n24H, AM, PM
+}
+note top of SetTime
+    B1: Adjust
+    B2: Increment
+    B3: Decrement
+
+    Increment and Decrement
+    in each Set{X}
+    substate increments or
+    decrements each counter
+    register X.
+end note
+
+[*]-->Regular
+note on link
+    Four Button Digital Watch
+    B0: Mode Select
+    B1: Unused / Adjust (depends on mode)
+    B2: Continue / Increment (depends on mode)
+    B3: Pause / Decrement (depends on mode)
+end note
+Regular-up->Regular : Increment all time tracking registers
+
+Regular-down->PauseStopWatch : Mode Select
+PauseStopWatch-up->StartStopWatch : Continue
+StartStopWatch->StartStopWatch : Increment seconds, minutes, hours
+StartStopWatch-down->PauseStopWatch : Pause
+PauseStopWatch->PauseStopWatch : Pause / reset seconds, minutes, hours to 0
+
+StopWatch-down->RunTimer : Mode Select
+PauseTimer-up->StartTimer : Continue
+PauseTimer-->PauseTimer : Pause / reset seconds, minutes, hours to 0
+StartTimer-down->PauseTimer : Pause
+StartTimer->StartTimer : Decrement seconds, minutes, hours
+PauseTimer-down->SetSecondTimer : Adjust Timer
+SetSecondTimer-right->SetMinuteTimer : Adjust Timer
+SetMinuteTimer-up->SetHourTimer : Adjust Timer
+SetHourTimer-left->SetSecondTimer : Adjust Timer
+SetTimer-up->PauseTimer : Mode Select
+
+RunTimer-right->SetTimeType : Mode Select
+SetTimeType-left->SetSecond : Adjust Time
+SetSecond-up->SetMinute : Adjust Time
+SetMinute-up->SetHour : Adjust Time
+SetHour-up->SetWeekday : Adjust Time
+SetWeekday-right->SetDay : Adjust Time
+SetDay-down->SetMonth : Adjust Time
+SetMonth-down->SetTimeType : Adjust Time
+SetTime-up->Regular : Mode Select
+
+@enduml
