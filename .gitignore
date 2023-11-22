@@ -1,20 +1,19 @@
 # ros
-build/
-install/
-log/
+/build/
+/install/
+/log/
 
 # vcstool packages
-src/*
-!src/global_launch
-!src/polaris.repos
+/src/*
+!/src/global_launch
+!/src/polaris.repos
 
 # configuration files
-.devcontainer/config/*
-!.devcontainer/config/README.md
+/.devcontainer/config/*
+!/.devcontainer/config/README.md
 
 # clangd
 .cache/
-compile_commands.json
 
 # python
 __pycache__/
@@ -22,4 +21,4 @@ __pycache__/
 .pytest_cache/
 
 # exported plantuml diagrams
-out/
+/diagrams/out/
