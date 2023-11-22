@@ -20,3 +20,6 @@ compile_commands.json
 __pycache__/
 .mypy_cache/
 .pytest_cache/
+
+# exported plantuml diagrams
+out/
