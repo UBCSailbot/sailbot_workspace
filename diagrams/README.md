@@ -30,7 +30,7 @@ format (ex. jpg, png, svg), then open the VSCode command palette (`ctrl+shift+p`
 
 PlantUML supports various diagram types. This section goes over a few types in use by the Sailbot Software Team and
 describes their use cases. For a full list, see the [PlantUML website](https://plantuml.com/). Examples of the diagrams
-described below can be found under [examples/](examples/).
+described below can be found under [src/](src/).
 
 #### [Sequence Diagram](https://plantuml.com/sequence-diagram)
 
@@ -62,4 +62,4 @@ publishers, subscribers).
 is relatively short and goes over every diagram specific feature and some basic styling.
 - For more advanced styling, comprehensive documentation can be found
 [here](https://plantuml-documentation.readthedocs.io/en/latest/formatting/all-skin-params.html).
-- The [examples/](examples/) folder contains some basic diagram examples that utilize the template.
+- The [src/](src/) folder contains some basic diagram examples that utilize the template.
