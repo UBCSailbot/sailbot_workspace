@@ -171,7 +171,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
 ENV DEBIAN_FRONTEND=
 
-ENV PLANTUML_TEMPLATE_PATH="/workspaces/sailbot_workspace/.devcontainer/plantuml/template.puml"
+ENV PLANTUML_TEMPLATE_PATH="/workspaces/sailbot_workspace/diagrams/template.puml"
 
 # install some clang tools and googletest for network systems
 ENV DEBIAN_FRONTEND=noninteractive
