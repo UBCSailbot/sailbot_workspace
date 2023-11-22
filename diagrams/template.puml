@@ -1,0 +1,67 @@
+@startuml template
+' Colors picked to (try to) match docs site
+' See sailbot_workspace/src/docs/docs/stylesheets/extra.css
+!$SAILBOT_LIGHT_BLUE = "#73a3c7"
+!$SAILBOT_BLUE       = "#1665a2"
+!$SAILBOT_DARK_BLUE  = "#0d3d61"
+!$MAX_MESSAGE_SIZE   = 150
+!$PADDING            = 20
+
+' autonumber ' autonumber breaks state diagrams so don't put in template
+hide empty description
+
+!procedure $set_sequence_participant_skinparams($participant)
+    !$BackgroundColor = $participant + "BackgroundColor"
+    !$BorderColor     = $participant + "BorderColor"
+    !$FontColor       = $participant + "FontColor"
+    !$Padding         = $participant + "Padding"
+
+    $BackgroundColor $SAILBOT_DARK_BLUE
+    $BorderColor     White
+    $FontColor       White
+    $Padding         $PADDING
+!endprocedure
+
+skinparam {
+    BoxPadding 10
+    MaxMessageSize $MAX_MESSAGE_SIZE
+    Note {
+        BackgroundColor $SAILBOT_BLUE
+        BorderColor Grey
+        FontColor White
+        Shadowing true
+    }
+    Sequence {
+        BoxBackgroundColor $SAILBOT_LIGHT_BLUE
+        Group {
+            BackgroundColor White
+            BodyBackgroundColor PowderBlue
+            FontColor OrangeRed
+        }
+        LifeLine {
+            BackgroundColor $SAILBOT_DARK_BLUE
+            BorderColor White
+        }
+        MessageAlign center
+    }
+    State {
+        BackgroundColor $SAILBOT_DARK_BLUE
+        FontColor White
+    }
+    Title {
+        BackgroundColor LightSteelBlue
+        BorderColor $SAILBOT_DARK_BLUE
+        FontSize 28
+    }
+
+    $set_sequence_participant_skinparams("Actor")
+    $set_sequence_participant_skinparams("Boundary")
+    $set_sequence_participant_skinparams("Collections")
+    $set_sequence_participant_skinparams("Control")
+    $set_sequence_participant_skinparams("Database")
+    $set_sequence_participant_skinparams("Entity")
+    $set_sequence_participant_skinparams("Participant")
+    $set_sequence_participant_skinparams("Queue")
+}
+
+@enduml

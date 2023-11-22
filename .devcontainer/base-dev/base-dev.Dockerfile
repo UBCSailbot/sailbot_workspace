@@ -157,6 +157,22 @@ RUN chmod +x /sbin/update-bashrc \
     && /bin/bash -c /sbin/update-bashrc \
     && rm /sbin/update-bashrc
 
+# plantuml diagram support
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        default-jre graphviz \
+    && wget https://github.com/plantuml/plantuml/releases/download/v1.2023.12/plantuml-asl-1.2023.12.jar \
+    && mv plantuml-asl-1.2023.12.jar /usr/local/bin/plantuml-asl-1.2023.12.jar \
+    && echo "#!/bin/bash\njava -jar /usr/local/bin/plantuml-asl-1.2023.12.jar \$*" > /usr/local/bin/plantuml.sh \
+    && chmod +x /usr/local/bin/plantuml.sh \
+    && apt-get autoremove -y \
+    && apt-get clean -y \
+    && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
+ENV DEBIAN_FRONTEND=
+
+ENV PLANTUML_TEMPLATE_PATH="/workspaces/sailbot_workspace/diagrams/template.puml"
+
 # install some clang tools and googletest for network systems
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
