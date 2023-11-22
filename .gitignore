@@ -15,6 +15,9 @@
 # clangd
 .cache/
 
+# microsoft c/c++ intellisense (disabled in favor of clangd)
+/.vscode/c_cpp_properties.json
+
 # python
 __pycache__/
 .mypy_cache/
