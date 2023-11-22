@@ -17,7 +17,7 @@ src/*
 compile_commands.json
 
 # microsoft c/c++ intellisense (disabled in favor of clangd)
-.vscode/c_cpp_properties.json
+/.vscode/c_cpp_properties.json
 
 # python
 __pycache__/
