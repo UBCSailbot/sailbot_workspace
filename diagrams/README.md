@@ -22,9 +22,9 @@ the `.puml` file. Occasionally, you'll need to run `PlantUML: Preview Current Di
 Exporting as an image is required for viewing PlantUML diagrams on services like Google Drive and Confluence.
 
 If simply copying an image suffices, then [render in VSCode](#render-in-vscode-simplest-way-to-view), hover over the
-rendered diagram and click the copy icon to the left of the help button. If you want to export and save as a particular
-format (ex. jpg, png, svg), then open the VSCode command palette (`ctrl+shift+p`) and run one of the
-`PlantUML: Export <...>` commands. The exported diagram(s) can be found under `sailbot_workspace/out/`.
+rendered diagram and click the copy icon to the left of the help button. You can also export it as a PNG
+by opening the VSCode command palette (`ctrl+shift+p`) and running one of the
+`PlantUML: Export <...>` commands. The exported diagram(s) can be found under `diagrams/out/`.
 
 ### Create a Diagram
 
