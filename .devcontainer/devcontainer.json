@@ -62,7 +62,7 @@
 
 				// UBCSailbot
 				"awesomektvn.toggle-semicolon",
-				"bierner.markdown-preview-github-styles",
+				"bierner.github-markdown-preview",
 				"christian-kohler.path-intellisense",
 				"cschlosser.doxdocgen",
 				"DavidAnson.vscode-markdownlint",
