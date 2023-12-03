@@ -203,7 +203,8 @@
             "-log=verbose",
             "-pretty",
             "--background-index",
-            "--compile-commands-dir=/workspaces/sailbot_workspace/build/"
+            "--compile-commands-dir=/workspaces/sailbot_workspace/build/",
+            "--header-insertion=never"
         ],
 
         "[cpp]": {
