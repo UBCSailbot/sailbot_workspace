@@ -159,7 +159,7 @@ jobs:
     - name: Check out code
       uses: actions/checkout@v4
       with:
-          repository: UBCSailbot/sailbot_workspace
+          repository: UBCSailbot/${{ inputs.repository }}
 
     - name: Run linter
       uses: gaurav-nelson/github-action-markdown-link-check@v1
