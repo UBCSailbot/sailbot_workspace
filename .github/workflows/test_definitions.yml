@@ -46,7 +46,7 @@ jobs:
   extract-metadata:
     runs-on: ubuntu-latest
     timeout-minutes: 1
-    if: inputs.ros-ci || inputs.clang-tidy
+    if: inputs.ros-ci || inputs.clang-tidy || inputs.markdown-ci
     permissions:
       actions: read
     outputs:
