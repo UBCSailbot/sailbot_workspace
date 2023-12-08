@@ -57,7 +57,7 @@
 				"streetsidesoftware.code-spell-checker",
 				"twxs.cmake",
 				"ms-python.flake8",
-				// "yzhang.markdown-all-in-one",
+				"yzhang.markdown-all-in-one",
 				// "zachflower.uncrustify",
 
 				// UBCSailbot
@@ -75,6 +75,7 @@
 				"KevinRose.vsc-python-indent",
 				"llvm-vs-code-extensions.vscode-clangd",
 				"matepek.vscode-catch2-test-adapter",
+				"mechatroner.rainbow-csv",
 				"mongodb.mongodb-vscode",
 				"ms-iot.vscode-ros",
 				"ms-python.black-formatter",
