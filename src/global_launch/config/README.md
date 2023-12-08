@@ -32,7 +32,7 @@ ROS parameters common across all ROS nodes in the network.
 
 ROS parameters specific to the nodes in the local_pathfinding package.
 
-### `node_mock_global_path`
+### `mgp_main`
 
 **`global_path_filepath`**
 

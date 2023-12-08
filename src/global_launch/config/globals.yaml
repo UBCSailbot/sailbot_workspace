@@ -1,9 +1,11 @@
+# global parameters
 /**:
    ros__parameters:
       # Publishers' period (seconds): how often the publishers publish
       pub_period_sec: 0.5
-# mock_global_path parameters
-node_mock_global_path:
+
+# local_pathfinding parameters
+mgp_main:
    ros__parameters:
       global_path_filepath: "/workspaces/sailbot_workspace/src/local_pathfinding/global_paths/mock_global_path.csv"
       interval_spacing: 30.0
