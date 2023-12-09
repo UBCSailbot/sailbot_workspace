@@ -144,7 +144,7 @@
         // python
         "[python]": {
             "editor.codeActionsOnSave": {
-                "source.organizeImports": true
+                "source.organizeImports": "explicit"
             },
             "editor.defaultFormatter": "ms-python.black-formatter",
             "editor.formatOnSave": true,
@@ -203,7 +203,8 @@
             "-log=verbose",
             "-pretty",
             "--background-index",
-            "--compile-commands-dir=/workspaces/sailbot_workspace/build/"
+            "--compile-commands-dir=/workspaces/sailbot_workspace/build/",
+            "--header-insertion=never"
         ],
 
         "[cpp]": {

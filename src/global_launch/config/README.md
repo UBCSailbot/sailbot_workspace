@@ -28,6 +28,24 @@ ROS parameters common across all ROS nodes in the network.
 - _Datatype_: `double`
 - _Range_: `(0.0, MAX_DOUBLE)`
 
+## Local Pathfinding Parameters
+
+ROS parameters specific to the nodes in the local_pathfinding package.
+
+### `mgp_main`
+
+**`global_path_filepath`**
+
+- _Description_: The absolute filepath to a global path csv file.
+- _Datatype_: `string`
+- _Acceptable Values_: Any valid filepath to a properly formatted csv file.
+
+**`interval_spacing`**
+
+- _Description_: The upper bound on spacing between each point in the global path in km.
+- _Datatype_: `float`
+- _Range_: `(0.0, MAX_DOUBLE)`
+
 ## Boat Simulator Parameters
 
 ROS parameters specific to the nodes in the boat simulator.

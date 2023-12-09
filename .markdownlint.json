@@ -1,7 +1,9 @@
 {
   "default": true,
   "MD013": {
-    "line_length": 120
+    "line_length": 120,
+    "code_blocks": false,
+    "tables": false
   },
   "MD004": {
     "style": "dash"
@@ -12,6 +14,7 @@
   "MD035": {
     "style": "---"
   },
+  "MD033": false,
   "MD040": false,
   "MD041": false,
   "MD046": false
