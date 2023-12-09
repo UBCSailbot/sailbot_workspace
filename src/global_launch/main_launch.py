@@ -22,10 +22,11 @@ DEVELOPMENT_ROS_PACKAGES = ["controller", "boat_simulator", "local_pathfinding",
 ROS_PACKAGES_DIR = os.path.join(
     os.getenv("ROS_WORKSPACE", default="/workspaces/sailbot_workspace"), "src"
 )
+GLOBAL_LAUNCH_CONFIG = os.path.join(ROS_PACKAGES_DIR, "global_launch", "config", "globals.yaml")
 GLOBAL_LAUNCH_ARGUMENTS = [
     DeclareLaunchArgument(
         name="config",
-        default_value=os.path.join(ROS_PACKAGES_DIR, "global_launch", "config", "globals.yaml"),
+        default_value=GLOBAL_LAUNCH_CONFIG,
         description="Path to ROS parameter config file. Controls ROS parameters passed into"
         + " ROS nodes",
     ),
