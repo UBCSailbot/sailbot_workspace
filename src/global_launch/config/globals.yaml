@@ -41,3 +41,13 @@ physics_engine_node:
             corr_xy: 0.
          constant_params:
             value: [1.0, 0.0]
+data_collection_node:
+   ros__parameters:
+      file_name: 'data_collection_test'
+      qos_depth: 10
+      # Define topics to subscribe to in the format ['topic_name', 'topic_type']
+      topics: ['/mock_gps', 'GPS', '/mock_wind_sensors', 'WindSensors']
+      bag: false
+      json: true
+      # JSON file write interval (seconds)
+      write_period_sec: 0.5
