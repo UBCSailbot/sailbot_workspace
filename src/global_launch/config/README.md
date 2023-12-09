@@ -46,6 +46,12 @@ ROS parameters specific to the nodes in the local_pathfinding package.
 - _Datatype_: `float`
 - _Range_: `(0.0, MAX_DOUBLE)`
 
+**`write`**
+
+- _Description_: Whether or not to write a generated global path to a new csv file.
+- _Datatype_: `boolean`
+- _Acceptable Values_: `true`, `false`
+
 ## Boat Simulator Parameters
 
 ROS parameters specific to the nodes in the boat simulator.
