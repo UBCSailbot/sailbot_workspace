@@ -43,7 +43,7 @@ ROS parameters specific to the nodes in the local_pathfinding package.
 **`interval_spacing`**
 
 - _Description_: The upper bound on spacing between each point in the global path in km.
-- _Datatype_: `float`
+- _Datatype_: `double`
 - _Range_: `(0.0, MAX_DOUBLE)`
 
 **`write`**
