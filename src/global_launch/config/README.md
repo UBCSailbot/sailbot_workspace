@@ -52,6 +52,12 @@ ROS parameters specific to the nodes in the local_pathfinding package.
 - _Datatype_: `boolean`
 - _Acceptable Values_: `true`, `false`
 
+**`gps_threshold`**
+
+- _Description_: A new path will be generated if the GPS position changed by more than this amount in km.
+- _Datatype_: `double`
+- _Acceptable Values_: `(0.0, MAX_DOUBLE)`
+
 ## Boat Simulator Parameters
 
 ROS parameters specific to the nodes in the boat simulator.

@@ -10,6 +10,7 @@ mgp_main:
       global_path_filepath: "/workspaces/sailbot_workspace/src/local_pathfinding/global_paths/mock_global_path.csv"
       interval_spacing: 30.0
       write: false
+      gps_threshold: 20.0
 
 # boat_simulator parameters
 low_level_control_node:
