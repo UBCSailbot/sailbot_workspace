@@ -1,0 +1,16 @@
+
+required_packages:
+  - name: boat_simulator
+    configs:
+  - name: local_pathfinding
+    configs:
+
+inputs:
+  - type:
+    name:
+    body:
+
+expected_outputs:
+  - type:
+    name:
+    body:
