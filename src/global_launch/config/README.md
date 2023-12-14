@@ -58,6 +58,12 @@ ROS parameters specific to the nodes in the local_pathfinding package.
 - _Datatype_: `double`
 - _Acceptable Values_: `(0.0, MAX_DOUBLE)`
 
+**`force`**
+
+- _Description_: Force the mock global path callback to update the global path when set to true.
+- _Datatype_: `boolean`
+- _Acceptable Values_: `true`, `false`
+
 ## Boat Simulator Parameters
 
 ROS parameters specific to the nodes in the boat simulator.

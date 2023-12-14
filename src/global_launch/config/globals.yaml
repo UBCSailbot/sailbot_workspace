@@ -11,6 +11,7 @@ mgp_main:
       interval_spacing: 30.0
       write: false
       gps_threshold: 2.0
+      force: false
 
 # boat_simulator parameters
 low_level_control_node:
