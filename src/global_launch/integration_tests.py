@@ -58,16 +58,17 @@ def stop_modules(process_list):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-c", "--config", required=True, metavar="path", dest="config_file")
+    parser.add_argument("-c", "--config", required=True, metavar="path", dest="config_files")
     args = parser.parse_args()
 
-    with open(args.config_file, "r") as config_file:
-        params = yaml.safe_load(config_file)
+    for config_file in args.config_files:
+        with open(config_file, "r") as config:
+            params = yaml.safe_load(config)
 
-        procs = launch_modules(params["required_packages"])
+            procs = launch_modules(params["required_packages"])
 
-        time.sleep(10)
-        stop_modules(procs)
+            time.sleep(10)
+            stop_modules(procs)
 
 
 if __name__ == "__main__":
