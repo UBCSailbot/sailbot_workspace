@@ -4,11 +4,14 @@ import signal
 import subprocess
 import sys
 import time
+from enum import Enum
 
 import rclpy
 import yaml
 from gen_dtypes import gen_dtypes
 from rclpy.node import Node
+
+import custom_interfaces.msg
 
 gen_dtypes()
 
@@ -72,20 +75,19 @@ def setup_test(config_file: str):
     with open(config_file, "r") as config:
         params = yaml.safe_load(config)
 
-        procs = launch_modules(params["required_packages"])
         inputs = params["inputs"]
         expected_outputs = params["expected_outputs"]
+        procs = launch_modules(params["required_packages"])
 
-        # time.sleep(TIMEOUT_S)  # Give the inputs time to propagate through the ROS network
-        # stop_modules(procs)
         return procs, inputs, expected_outputs
 
 
-def set_ros_input(input: dict):
-    def is_builtin_type(x):
-        return x.__class__.__module__ == "builtins"
+def is_builtin_type(x):
+    return x.__class__.__module__ == "builtins"
 
-    msg = get_dtype(input["dtype"])
+
+def set_ros_input(input: dict):
+    msg, _ = get_dtype(input["dtype"])
 
     if is_builtin_type(msg):
         return msg(input["val"])
@@ -99,46 +101,106 @@ def set_ros_input(input: dict):
 class IntegrationTest:
     def __init__(self, config_file: str):
         procs, inputs, expected_outputs = setup_test(config_file)
-        self.procs = procs
-        self.inputs = inputs
-        self.expected_outputs = expected_outputs
+        self.__procs = procs
 
-    def send_inputs(self):
-        for input in self.inputs:
+        try:
+            self.__ros_inputs: list[dict] = []
+            self.__http_inputs: list[dict] = []
+
+            self.__set_inputs(inputs)
+        except:  # noqa: E722
+            self.finish()
+
+    def __set_inputs(self, inputs: list[dict]):
+        for input in inputs:
             if input["type"] == "ROS":
-                topic = input["name"]
-                msg = get_dtype(input["dtype"])
+                new_input_dict = {"topic": "", "msg_type": None, "msg": None}
+                new_input_dict["topic"] = input["name"]
+
                 data = input["data"]
-                for field in data:
-                    # msg[field] = set_ros_input(data[field])
-                    setattr(msg, field, set_ros_input(data[field]))
-                print(msg)
+                msg, msg_type = get_dtype(data["dtype"])
+                new_input_dict["msg_type"] = msg_type
+                if is_builtin_type(msg):
+                    # std_msgs need an extra "data" field so we have to do some extra processing
+                    val = msg(data["val"])
+                    msg = msg_type()  # Change built-in type to std_msg type
+                    msg.data = val
+                else:
+                    for field in data:
+                        if field != "dtype":
+                            setattr(msg, field, set_ros_input(data[field]))
+
+                new_input_dict["msg"] = msg
+                self.__ros_inputs.append(new_input_dict)
+
             elif input["type"] == "HTTP":
+                # TODO: IMPLEMENT
                 raise NotImplementedError("HTTP support is a WIP")
             else:
                 raise KeyError("Invalid input type: {}".format(input["type"]))
 
+    def ros_inputs(self):
+        return self.__ros_inputs
+
+    def http_inputs(self):
+        return self.__http_inputs
+
     def finish(self):
-        stop_modules(self.procs)
+        stop_modules(self.__procs)
 
 
 class IntegrationTestNode(Node):
-    def __init__(self):
+    def __init__(self, config_file: str):
         super().__init__("integration_test_node")
+
+        self.__test_inst = IntegrationTest(config_file)
+
+        try:
+            self.__ros_inputs: list[dict] = []
+            for ros_input in self.__test_inst.ros_inputs():
+                pub = self.create_publisher(
+                    msg_type=ros_input["msg_type"],
+                    topic=ros_input["topic"],
+                    qos_profile=10,  # placeholder
+                )
+                self.__ros_inputs.append(
+                    {
+                        "pub": pub,
+                        "msg": ros_input["msg"],
+                    }
+                )
+
+            # TODO: HTTP
+
+            self.send_inputs()
+
+            self.timeout = self.create_timer(TIMEOUT_S, self.__timeout_cb)
+        except:  # noqa: E722
+            self.__test_inst.finish()
+
+    def __pub_ros(self):
+        for ros_input in self.__ros_inputs:
+            pub = ros_input["pub"]
+            msg = ros_input["msg"]
+            pub.publish(msg)
+            self.get_logger().info(
+                'Published to topic: "{topic}", with msg: "{msg}"'.format(topic=pub.topic, msg=msg)
+            )
+
+    def __timeout_cb(self):
+        print("TIMEOUT")
+        self.__test_inst.finish()
+
+    def send_inputs(self):
+        self.__pub_ros()
 
 
 def main(args=None):
     parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--config", required=True, metavar="path", dest="config_file")
-    args = parser.parse_args()
-    test_inst = IntegrationTest(args.config_file)
-    test_inst.send_inputs()
-
-    time.sleep(TIMEOUT_S)  # Give the inputs time to propagate through the ROS network
-    test_inst.finish()
 
     rclpy.init(args=args)
-    node = IntegrationTestNode()
+    node = IntegrationTestNode(parser.parse_args().config_file)
     rclpy.spin(node)
     rclpy.shutdown()
 

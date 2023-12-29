@@ -6,72 +6,78 @@ BASE = """
 
 
 import builtins
-from custom_interfaces.msg import *
-from std_msgs.msg import String
+import custom_interfaces.msg
+import std_msgs.msg
+"""
 
+GET_DTYPE_BASE = """
 def get_dtype(dtype: str):
     match dtype:
         # BUILT-IN-TYPES
         # SEE: https://docs.ros.org/en/foxy/Concepts/About-ROS-Interfaces.html#field-types
 
         case "bool":
-            return builtins.bool
+            return builtins.bool, std_msgs.msg.Bool
 
         case "byte":
-            return builtins.bytes
+            return builtins.bytes, std_msgs.msg.Byte
 
         case "char":
-            return builtins.str
+            return builtins.str, std_msgs.msg.String
 
         case "float32":
-            return builtins.float
+            return builtins.float, std_msgs.msg.Float32
 
         case "float64":
-            return builtins.float
+            return builtins.float, std_msgs.msg.Float64
 
         case "int8":
-            return builtins.int
+            return builtins.int, std_msgs.msg.Int8
 
         case "uint8":
-            return builtins.int
+            return builtins.int, std_msgs.msg.UInt8
 
         case "int16":
-            return builtins.int
+            return builtins.int, std_msgs.msg.Int16
 
         case "uint16":
-            return builtins.int
+            return builtins.int, std_msgs.msg.UInt16
 
         case "int32":
-            return builtins.int
+            return builtins.int, std_msgs.msg.Int32
 
         case "uint32":
-            return builtins.int
+            return builtins.int, std_msgs.msg.UInt32
 
         case "int64":
-            return builtins.int
+            return builtins.int, std_msgs.msg.Int64
 
         case "uint64":
-            return builtins.int
+            return builtins.int, std_msgs.msg.UInt64
 
         case "string":
-            return builtins.str
+            return builtins.str, std_msgs.msg.String
 
         case "wstring":
-            return builtins.str
+            return builtins.str, std_msgs.msg.String
 
         # TODO: ARRAYS >.<
-
-        # std_msg types (Only String b/c idk which ones we actually use)
-
-        case "String":
-            return String()
 
         # custom_interfaces
 """
 
-CASE_TEMPLATE = """
+GET_DTYPE_CASE_TEMPLATE = """
         case "{type}":
-            return {type}()
+            return custom_interfaces.msg.{type}(), custom_interfaces.msg.{type}
+"""
+
+END_GET_DTYPE_CASE = """
+        case _:
+            raise TypeError("INVALID TYPE: {}".format(dtype))
+"""
+
+GET_MSG_TYPE_BASE = """
+    def get_msg_type(dtype)
 """
 
 ROS_PACKAGES_DIR = os.path.join(
@@ -92,10 +98,11 @@ def detect_custom_intfs():
 
 
 def build_output():
-    output = BASE
+    output = BASE + GET_DTYPE_BASE
     for intf in detect_custom_intfs():
-        scenario = CASE_TEMPLATE.format(type=intf)
+        scenario = GET_DTYPE_CASE_TEMPLATE.format(type=intf)
         output += scenario
+    output += END_GET_DTYPE_CASE
     return output
 
 

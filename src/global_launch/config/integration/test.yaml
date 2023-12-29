@@ -7,13 +7,15 @@ required_packages:
       - mock_ais/mock_ais_en_default.yaml
 
 inputs:
-    # - type:  ROS
-    #   name:  /cached_fib
-    #   data:
+    - type:  ROS
+      name:  /cached_fib
+      data:
+            dtype: uint64
+            val: 6
     - type: ROS
       name: /gps
-      dtype: GPS
       data:
+            dtype: GPS
             lat_lon:
                 dtype: HelperLatLon
                 latitude:
