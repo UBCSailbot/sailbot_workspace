@@ -6,6 +6,7 @@
 # vcstool packages
 /src/*
 !/src/global_launch
+/src/global_launch/integration/dtypes.py
 !/src/polaris.repos
 
 # configuration files
