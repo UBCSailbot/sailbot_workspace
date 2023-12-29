@@ -11,27 +11,57 @@ import yaml
 from gen_dtypes import gen_dtypes
 from rclpy.node import Node
 
-import custom_interfaces.msg
-
+# Need to generate dtypes.py before importing it
 gen_dtypes()
 
-# Need to generate the file before importing it
 from dtypes import get_dtype  # noqa: E402
 
+
+class ROSPkg(Enum):
+    boat_simulator = 0
+    controller = 1
+    local_pathfinding = 2
+    network_systems = 3
+
+
 # NAMESPACE = "INTEGRATION_TEST_NODE"
-TIMEOUT_S = 5  # Number of seconds that the test has to run
-ROS_LAUNCH_CMD = "ros2 launch {} main_launch.py"
-ROS_PACKAGES = ["boat_simulator", "controller", "local_pathfinding", "network_systems"]
+TIMEOUT_S = 30  # Number of seconds that the test has to run
+ROS_LAUNCH_CMD = "ros2 launch {} main_launch.py mode:=development"
 ROS_WORKSPACE_PATH = os.getenv("ROS_WORKSPACE", default="/workspaces/sailbotworkspace")
+ROS_PACKAGES_DIR = os.path.join(
+    os.getenv("ROS_WORKSPACE", default="/workspaces/sailbot_workspace"), "src"
+)
+# ROS_PACKAGES = ["boat_simulator", "controller", "local_pathfinding", "network_systems"]
+ROS_PACKAGES = [pkg.name for pkg in ROSPkg]
+ROS_PACKAGE_CONFIG_DIRS = {
+    ROSPkg.boat_simulator: os.path.join(
+        ROS_PACKAGES_DIR, ROSPkg.boat_simulator.name, "src/config"
+    ),
+    ROSPkg.controller: os.path.join(ROS_PACKAGES_DIR, ROSPkg.controller.name, "src/config"),
+    ROSPkg.local_pathfinding: os.path.join(
+        ROS_PACKAGES_DIR, ROSPkg.local_pathfinding.name, "src/config"
+    ),
+    ROSPkg.network_systems: os.path.join(
+        ROS_PACKAGES_DIR, ROSPkg.network_systems.name, "src/config"
+    ),
+}
 
 
 def get_ros_launch_cmd(package_name: str, launch_config_files: list[str]):
     launch_cmd = ROS_LAUNCH_CMD.format(package_name)
 
     if launch_config_files is not None:
-        config_files_str = "".join(launch_config_files)
-        launch_cmd += " --config:={}".format(config_files_str)
 
+        def convert_to_abs_path(config_file_path: str):
+            pkg = ROSPkg[package_name]
+            pkg_config_dir = ROS_PACKAGE_CONFIG_DIRS[pkg]
+            return os.path.join(pkg_config_dir, config_file_path)
+
+        launch_config_files_abs_path = [convert_to_abs_path(file) for file in launch_config_files]
+        config_files_str = ",".join(launch_config_files_abs_path)
+        launch_cmd += " config:={}".format(config_files_str)
+
+    print(launch_cmd)
     return launch_cmd
 
 
