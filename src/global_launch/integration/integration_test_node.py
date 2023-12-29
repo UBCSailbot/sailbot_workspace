@@ -7,8 +7,13 @@ import time
 
 import rclpy
 import yaml
-from dtypes.py import get_dtype
+from gen_dtypes import gen_dtypes
 from rclpy.node import Node
+
+gen_dtypes()
+
+# Need to generate the file before importing it
+from dtypes import get_dtype  # noqa: E402
 
 # NAMESPACE = "INTEGRATION_TEST_NODE"
 TIMEOUT_S = 5  # Number of seconds that the test has to run
@@ -63,37 +68,40 @@ def stop_modules(process_list: list[subprocess.Popen]):
         os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
 
 
-def run_test(config_files: list[str]):
-    for config_file in config_files:
-        with open(config_file, "r") as config:
-            params = yaml.safe_load(config)
+def setup_test(config_file: str):
+    with open(config_file, "r") as config:
+        params = yaml.safe_load(config)
 
-            procs = launch_modules(params["required_packages"])
+        procs = launch_modules(params["required_packages"])
+        inputs = params["inputs"]
+        expected_outputs = params["expected_outputs"]
 
-            time.sleep(TIMEOUT_S)  # Give the inputs time to propagate through the ROS network
-            stop_modules(procs)
+        # time.sleep(TIMEOUT_S)  # Give the inputs time to propagate through the ROS network
+        # stop_modules(procs)
+        return procs, inputs, expected_outputs
 
 
-class IntegrationTestNode(Node):
-    def __init__(self):
-        super().__init__("integration_test_node")
+def set_ros_input(input: dict):
+    def is_builtin_type(x):
+        return x.__class__.__module__ == "builtins"
 
-        # self.declare_parameters(
-        #     namespace=NAMESPACE,
-        #     parameters=[
-        #         ("")
-        #     ]
-        # )
+    msg = get_dtype(input["dtype"])
 
-    def set_ros_input(self, input):
-        if isinstance(input, dict):
-            msg = get_dtype(input["dtype"])
-            for field in input:
-                if field != "dtype":
-                    msg[field] = self.set_ros_input(input[field])
-            return msg
-        else:
-            return input
+    if is_builtin_type(msg):
+        return msg(input["val"])
+
+    for field in input:
+        if field != "dtype":
+            setattr(msg, field, set_ros_input(input[field]))
+    return msg
+
+
+class IntegrationTest:
+    def __init__(self, config_file: str):
+        procs, inputs, expected_outputs = setup_test(config_file)
+        self.procs = procs
+        self.inputs = inputs
+        self.expected_outputs = expected_outputs
 
     def send_inputs(self):
         for input in self.inputs:
@@ -102,16 +110,32 @@ class IntegrationTestNode(Node):
                 msg = get_dtype(input["dtype"])
                 data = input["data"]
                 for field in data:
-                    msg[field] = self.set_ros_input(data[field])
+                    # msg[field] = set_ros_input(data[field])
+                    setattr(msg, field, set_ros_input(data[field]))
+                print(msg)
+            elif input["type"] == "HTTP":
+                raise NotImplementedError("HTTP support is a WIP")
             else:
-                pass
+                raise KeyError("Invalid input type: {}".format(input["type"]))
+
+    def finish(self):
+        stop_modules(self.procs)
+
+
+class IntegrationTestNode(Node):
+    def __init__(self):
+        super().__init__("integration_test_node")
 
 
 def main(args=None):
     parser = argparse.ArgumentParser()
-    parser.add_argument("-c", "--config", required=True, metavar="path", dest="config_files")
+    parser.add_argument("-c", "--config", required=True, metavar="path", dest="config_file")
     args = parser.parse_args()
-    run_test(args.config_files.split(","))
+    test_inst = IntegrationTest(args.config_file)
+    test_inst.send_inputs()
+
+    time.sleep(TIMEOUT_S)  # Give the inputs time to propagate through the ROS network
+    test_inst.finish()
 
     rclpy.init(args=args)
     node = IntegrationTestNode()
