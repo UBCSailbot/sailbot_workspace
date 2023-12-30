@@ -1,5 +1,6 @@
 import argparse
 import functools
+import importlib
 import os
 import signal
 import subprocess
@@ -8,15 +9,14 @@ import time
 from enum import Enum
 from typing import Type
 
+import gen_dtypes
 import rclpy
 import yaml
-from gen_dtypes import gen_dtypes
 from rclpy.node import MsgType, Node
 
-# Need to generate dtypes.py before importing it
-gen_dtypes()
-
-from dtypes import get_dtype  # noqa: E402
+# Generate and import datatypes
+gen_dtypes.gen_dtypes()
+DTYPES_MOD = importlib.import_module("dtypes")
 
 
 class ROSPkg(Enum):
@@ -90,7 +90,7 @@ def launch_modules(packages: list[dict]):
                 shell=True,
                 preexec_fn=os.setsid,
                 # Use os.setsid to set process group such that we can
-                # cleanly kill all spawned processes at the end of the test(s)
+                # cleanly kill all spawned processes at the end of the test
             )
         )
 
@@ -125,7 +125,7 @@ def is_builtin_type(x):
 
 
 def set_ros_data_field(input: dict):
-    msg, _ = get_dtype(input["dtype"])
+    msg, _ = DTYPES_MOD.get_dtype(input["dtype"])
 
     if is_builtin_type(msg):
         return msg(input["val"])
@@ -145,7 +145,7 @@ def builtin_to_std_msg(builtin_type: Type, msg_type: MsgType, val: str):
 
 
 def parse_ros_data(data: dict):
-    msg, msg_type = get_dtype(data["dtype"])
+    msg, msg_type = DTYPES_MOD.get_dtype(data["dtype"])
     if "DONT_CARE" in data and data["DONT_CARE"] is True:
         return None, msg_type
     if is_builtin_type(msg):
