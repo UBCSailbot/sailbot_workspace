@@ -1,0 +1,54 @@
+required_packages:
+    - name: boat_simulator
+      configs:
+    - name: network_systems
+      configs:
+        - all_disable.yaml
+        - example/example_en.yaml
+        - mock_ais/mock_ais_en_default.yaml
+
+inputs:
+    - type: ROS
+      name: cached_fib_in
+      data:
+        dtype: uint64
+        val: 6
+    - type: ROS
+      name: mock_gps
+      data:
+        dtype: GPS
+        lat_lon:
+            dtype: HelperLatLon
+            latitude:
+                dtype: float32
+                val: 1
+            longitude:
+                dtype: float32
+                val: -1
+        speed:
+            dtype: HelperSpeed
+            speed:
+                dtype: float32
+                val: 5
+        heading:
+            dtype: HelperHeading
+            heading:
+                dtype: float32
+                val: 180
+
+expected_outputs:
+    - type: ROS
+      name: cached_fib_out
+      data:
+        dtype: uint64
+        val: 5
+    - type: ROS
+      name: cached_fib_in
+      data:
+        dtype: uint64
+        val: 6
+    - type: ROS
+      name: ais_ships
+      data:
+        dtype: AISShips
+        DONT_CARE: True
