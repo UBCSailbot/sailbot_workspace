@@ -8,10 +8,13 @@ BASE = """
 import builtins
 import custom_interfaces.msg
 import std_msgs.msg
+from rclpy.node import MsgType
+from typing import Tuple, Union
+
 """
 
 GET_DTYPE_BASE = """
-def get_dtype(dtype: str):
+def get_dtype(dtype: str) -> Tuple[Union[builtins.type, MsgType], MsgType]:
     match dtype:
         # BUILT-IN-TYPES
         # SEE: https://docs.ros.org/en/foxy/Concepts/About-ROS-Interfaces.html#field-types
@@ -61,8 +64,6 @@ def get_dtype(dtype: str):
         case "wstring":
             return builtins.str, std_msgs.msg.String
 
-        # TODO: ARRAYS >.<
-
         # custom_interfaces
 """
 
@@ -76,9 +77,6 @@ END_GET_DTYPE_CASE = """
             raise TypeError("INVALID TYPE: {}".format(dtype))
 """
 
-GET_MSG_TYPE_BASE = """
-    def get_msg_type(dtype)
-"""
 
 ROS_PACKAGES_DIR = os.path.join(
     os.getenv("ROS_WORKSPACE", default="/workspaces/sailbot_workspace"), "src"

@@ -1,4 +1,5 @@
 import argparse
+import builtins
 import functools
 import importlib
 import os
@@ -7,7 +8,7 @@ import subprocess
 import sys
 import time
 from enum import Enum
-from typing import Type
+from typing import Tuple, Union
 
 import gen_dtypes
 import rclpy
@@ -19,15 +20,16 @@ gen_dtypes.gen_dtypes()
 DTYPES_MOD = importlib.import_module("dtypes")
 
 
+MIN_SETUP_DELAY_S = 1  # Minimum 1 second delay between setting up the test and sending inputs
+TIMEOUT_S = 3  # Number of seconds that the test has to run
+
+
 class ROSPkg(Enum):
     boat_simulator = 0
     controller = 1
     local_pathfinding = 2
     network_systems = 3
 
-
-MIN_SETUP_DELAY_S = 1  # Minimum 1 second delay between setting up the test and sending inputs
-TIMEOUT_S = 3  # Number of seconds that the test has to run
 
 ROS_LAUNCH_CMD = "ros2 launch {} main_launch.py mode:=development"
 ROS_WORKSPACE_PATH = os.getenv("ROS_WORKSPACE", default="/workspaces/sailbotworkspace")
@@ -44,19 +46,18 @@ ROS_PACKAGE_CONFIG_DIRS = {
     ),
     ROSPkg.network_systems: os.path.join(ROS_PACKAGES_DIR, ROSPkg.network_systems.name, "config"),
 }
+NON_ROS_PACKAGES = ["virtual_iridium", "website"]
 
-G_VERBOSE = False
 
-
-def get_ros_launch_cmd(package_name: str, launch_config_files: list[str]):
-    launch_cmd = ROS_LAUNCH_CMD.format(package_name)
+def get_ros_launch_cmd(ros_pkg_name: str, launch_config_files: list[str]):
+    launch_cmd = ROS_LAUNCH_CMD.format(ros_pkg_name)
 
     if launch_config_files is not None:
 
         def convert_to_abs_path(config_file_path: str):
-            pkg = ROSPkg[package_name]
-            pkg_config_dir = ROS_PACKAGE_CONFIG_DIRS[pkg]
-            return os.path.join(pkg_config_dir, config_file_path)
+            ros_pkg = ROSPkg[ros_pkg_name]
+            ros_pkg_config_dir = ROS_PACKAGE_CONFIG_DIRS[ros_pkg]
+            return os.path.join(ros_pkg_config_dir, config_file_path)
 
         launch_config_files_abs_path = [convert_to_abs_path(file) for file in launch_config_files]
         config_files_str = ",".join(launch_config_files_abs_path)
@@ -124,19 +125,7 @@ def is_builtin_type(x):
     return x.__class__.__module__ == "builtins"
 
 
-def set_ros_data_field(input: dict):
-    msg, _ = DTYPES_MOD.get_dtype(input["dtype"])
-
-    if is_builtin_type(msg):
-        return msg(input["val"])
-
-    for field in input:
-        if field != "dtype":
-            setattr(msg, field, set_ros_data_field(input[field]))
-    return msg
-
-
-def builtin_to_std_msg(builtin_type: Type, msg_type: MsgType, val: str):
+def builtin_to_std_msg(builtin_type: builtins.type, msg_type: MsgType, val: str) -> MsgType:
     # std_msgs need an extra "data" field so we have to do some extra processing
     std_val = builtin_type(val)
     msg = msg_type()
@@ -144,16 +133,39 @@ def builtin_to_std_msg(builtin_type: Type, msg_type: MsgType, val: str):
     return msg
 
 
-def parse_ros_data(data: dict):
+def set_ros_msg_field(input: dict) -> Union[builtins.type, MsgType]:
+    msg, _ = DTYPES_MOD.get_dtype(input["dtype"])
+
+    if is_builtin_type(msg):
+        return msg(input["val"])
+
+    msg = parse_ros_msg(msg, input)
+    return msg
+
+
+def parse_ros_msg(msg: MsgType, data: dict) -> MsgType:
+    for key in data:
+        if key != "dtype":
+            val = data[key]
+            if isinstance(val, builtins.list):
+                sub_msg_list: list[MsgType] = []
+                for i in val:
+                    sub_msg, _ = parse_ros_data(i)
+                    sub_msg_list.append(sub_msg)
+                setattr(msg, key, sub_msg_list)
+            else:
+                setattr(msg, key, set_ros_msg_field(val))
+    return msg
+
+
+def parse_ros_data(data: dict) -> Tuple[Union[None, MsgType], MsgType]:
     msg, msg_type = DTYPES_MOD.get_dtype(data["dtype"])
     if "DONT_CARE" in data and data["DONT_CARE"] is True:
-        return None, msg_type
+        return None, msg_type  # Still need to return msg_type so we can pub/sub to a topic
     if is_builtin_type(msg):
         msg = builtin_to_std_msg(msg, msg_type, data["val"])
     else:
-        for field in data:
-            if field != "dtype":
-                setattr(msg, field, set_ros_data_field(data[field]))
+        msg = parse_ros_msg(msg, data)
 
     return msg, msg_type
 
