@@ -7,17 +7,20 @@ import signal
 import subprocess
 import sys
 import time
+from dataclasses import dataclass, field
 from enum import Enum
-from typing import Tuple, Union
+from typing import Any, Generic, Optional, Tuple, Union
 
-import gen_dtypes
+import gen_ros_dtypes
 import rclpy
+import rclpy.node
 import yaml
-from rclpy.node import MsgType, Node
+from rclpy.impl.rcutils_logger import RcutilsLogger
+from rclpy.node import Node
 
 # Generate and import datatypes
-gen_dtypes.gen_dtypes()
-DTYPES_MOD = importlib.import_module("dtypes")
+gen_ros_dtypes.gen_ros_dtypes()
+ROS_DTYPES_MOD = importlib.import_module("ros_dtypes")
 
 
 MIN_SETUP_DELAY_S = 1  # Minimum 1 second delay between setting up the test and sending inputs
@@ -25,6 +28,8 @@ TIMEOUT_S = 3  # Number of seconds that the test has to run
 
 
 class ROSPkg(Enum):
+    """Defines packages that are integrated with the ROS network"""
+
     boat_simulator = 0
     controller = 1
     local_pathfinding = 2
@@ -36,7 +41,6 @@ ROS_WORKSPACE_PATH = os.getenv("ROS_WORKSPACE", default="/workspaces/sailbotwork
 ROS_PACKAGES_DIR = os.path.join(
     os.getenv("ROS_WORKSPACE", default="/workspaces/sailbot_workspace"), "src"
 )
-# ROS_PACKAGES = ["boat_simulator", "controller", "local_pathfinding", "network_systems"]
 ROS_PACKAGES = [pkg.name for pkg in ROSPkg]
 ROS_PACKAGE_CONFIG_DIRS = {
     ROSPkg.boat_simulator: os.path.join(ROS_PACKAGES_DIR, ROSPkg.boat_simulator.name, "config"),
@@ -49,12 +53,40 @@ ROS_PACKAGE_CONFIG_DIRS = {
 NON_ROS_PACKAGES = ["virtual_iridium", "website"]
 
 
-def get_ros_launch_cmd(ros_pkg_name: str, launch_config_files: list[str]):
+def get_ros_launch_cmd(ros_pkg_name: str, launch_config_files: list[str]) -> str:
+    """Returns a command to launch a ROS package with specified config files
+
+    Args:
+        ros_pkg_name (str): A ROS package found in the ROS_PACKAGES constant
+        launch_config_files (list[str]): A list of relative config file paths
+
+    Raises:
+        ValueError: If ros_pkg_name is not a valid ROS package
+
+    Returns:
+        str: A shell command to launch the desired ROS package with specified config files
+    """
+
+    if ros_pkg_name not in ROS_PACKAGES:
+        raise ValueError(
+            "Given ros_pkg_name ({given}) is not a valid ROS package ({ros_pkgs})".format(
+                given=ros_pkg_name, ros_pkgs=ROS_PACKAGES
+            )
+        )
+
     launch_cmd = ROS_LAUNCH_CMD.format(ros_pkg_name)
 
     if launch_config_files is not None:
 
-        def convert_to_abs_path(config_file_path: str):
+        def convert_to_abs_path(config_file_path: str) -> str:
+            """Converts the relative path of a package config file to its absolute path
+
+            Args:
+                config_file_path (str): relative config file path of format "config/**/*.yaml"
+
+            Returns:
+                str: absolute path of format "/workspaces/sailbot_workspace/**/config/**/*.yaml"
+            """
             ros_pkg = ROSPkg[ros_pkg_name]
             ros_pkg_config_dir = ROS_PACKAGE_CONFIG_DIRS[ros_pkg]
             return os.path.join(ros_pkg_config_dir, config_file_path)
@@ -66,20 +98,51 @@ def get_ros_launch_cmd(ros_pkg_name: str, launch_config_files: list[str]):
     return launch_cmd
 
 
-def launch_modules(packages: list[dict]):
+@dataclass
+class PkgConfig:
+    """Represents the KVPs of the required_packages field in test config yaml files"""
+
+    name: str
+    configs: list[str]
+
+    def __init__(self, pkg_dict: dict):
+        """Initialize a PkgConfig instance from a config dict
+
+        Args:
+            pkg_dict (dict): config dict
+        """
+        self.name = pkg_dict["name"]
+        self.configs = pkg_dict["configs"]
+
+
+def launch_modules(packages: list[PkgConfig]) -> list[subprocess.Popen]:
+    """Launches specified modules in background processes. Also registers a signal handler to kill
+    any spawned processes.
+
+    Args:
+        packages (list[PkgConfig]): List of modules to launch with their respective config files
+
+    Raises:
+        NotImplementedError: If "website" package is specified. It's on the TODO list.
+        ValueError: If there is an invalid package.
+
+    Returns:
+        list[subprocess.Popen]: The handles of all spawned subprocesses. These must be killed
+        on exit.
+    """
     launch_cmds: list[str] = []
-    for package in packages:
-        if package["name"] in ROS_PACKAGES:
-            launch_cmds.append(get_ros_launch_cmd(package["name"], package["configs"]))
+    for pkg in packages:
+        if pkg.name in ROS_PACKAGES:
+            launch_cmds.append(get_ros_launch_cmd(pkg.name, pkg.configs))
         else:
-            match package["name"]:
+            match pkg.name:
                 case "virtual_iridium":
                     run_viridium_cmd = os.path.join(ROS_WORKSPACE_PATH, "run_virtual_iridium.sh")
                     launch_cmds.append(run_viridium_cmd)
                 case "website":
-                    pass
+                    raise NotImplementedError("Website not supported yet")
                 case _:
-                    sys.exit("Error, invalid package name: {}".format(package["name"]))
+                    raise ValueError("Invalid package name: {}".format(pkg.name))
 
     procs: list[subprocess.Popen] = []
     for cmd in launch_cmds:
@@ -95,8 +158,13 @@ def launch_modules(packages: list[dict]):
             )
         )
 
-    # Make sure we cleanup after receiving an interrupt
-    def signal_handler(sig_no: int, frame):
+    def signal_handler(sig_no: int, frame) -> None:
+        """Kill spawned processes on interrupt and exit
+
+        Args:
+            sig_no (int): Interrupt signal number - unused
+            frame (something): unused
+        """
         stop_modules(procs)
         sys.exit(0)
 
@@ -105,36 +173,82 @@ def launch_modules(packages: list[dict]):
     return procs
 
 
-def stop_modules(process_list: list[subprocess.Popen]):
+def stop_modules(process_list: list[subprocess.Popen]) -> None:
+    """Kill running modules
+
+    Args:
+        process_list (list[subprocess.Popen]): List of subprocess handles to kill
+    """
     for proc in process_list:
         os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
 
 
-def setup_test(config_file: str):
+def setup_test(config_file: str) -> Tuple[list[subprocess.Popen], list[dict], list[dict]]:
+    """Reads a test config file and sets up the test environment
+
+    Args:
+        config_file (str): Path to a .yaml test config file
+
+    Returns:
+        list[subprocess.Popen]: List of spawned subprocess handles
+        list[dict]: inputs parsed from config_file
+        list[dict]: expected outputs parsed from config_file
+    """
     with open(config_file, "r") as config:
         params = yaml.safe_load(config)
 
         inputs = params["inputs"]
         expected_outputs = params["expected_outputs"]
-        procs = launch_modules(params["required_packages"])
+        pkgs = [PkgConfig(pkg_dict) for pkg_dict in params["required_packages"]]
+        procs = launch_modules(pkgs)
 
         return procs, inputs, expected_outputs
 
 
-def is_builtin_type(x):
+def is_builtin_type(x: Any) -> bool:
+    """Checks if an object is a builtin type
+
+    Args:
+        x (Any): object to check
+
+    Returns:
+        bool: True if x is a builtin type, False otherwise
+    """
     return x.__class__.__module__ == "builtins"
 
 
-def builtin_to_std_msg(builtin_type: builtins.type, msg_type: MsgType, val: str) -> MsgType:
+def builtin_to_std_msg(
+    builtin_type: builtins.type, msg_type: rclpy.node.MsgType, val: str
+) -> rclpy.node.MsgType:
+    """Convert a builtin type to a ROS std_msg type (rclpy.node.MsgType)
+
+    Args:
+        builtin_type (builtins.type): builtin type to convert
+        msg_type (rclpy.node.MsgType): ROS type to convert to
+        val (str): Value of the type
+
+    Returns:
+        rclpy.node.MsgType: Conversion of the givin builtin type to ROS type
+    """
     # std_msgs need an extra "data" field so we have to do some extra processing
     std_val = builtin_type(val)
-    msg = msg_type()
+    # mypy gives on error for this line but it works :)
+    msg = msg_type()  # type: ignore
     msg.data = std_val
     return msg
 
 
-def set_ros_msg_field(input: dict) -> Union[builtins.type, MsgType]:
-    msg, _ = DTYPES_MOD.get_dtype(input["dtype"])
+def get_ros_msg_field_val(input: dict) -> Union[builtins.type, rclpy.node.MsgType]:
+    """Get the field value of some ROS message type
+
+    Args:
+        input (dict): dictionary containing a "dtype" field and other fields.
+
+    Returns:
+        Union[builtins.type, rclpy.node.MsgType]: A value of type builtins.type or
+            rclpy.node.MsgType depending on what is set in the config.
+    """
+    msg, _ = ROS_DTYPES_MOD.get_ros_dtype(input["dtype"])
 
     if is_builtin_type(msg):
         return msg(input["val"])
@@ -143,23 +257,43 @@ def set_ros_msg_field(input: dict) -> Union[builtins.type, MsgType]:
     return msg
 
 
-def parse_ros_msg(msg: MsgType, data: dict) -> MsgType:
+def parse_ros_msg(msg: rclpy.node.MsgType, data: dict) -> rclpy.node.MsgType:
+    """Parse a ROS data field dictionary. Use this function to parse fields specified UNDER the
+    "data" category, but no the "data" category itself.
+
+    Args:
+        msg (rclpy.node.MsgType): ROS msg type of the data
+        data (dict): dictionary containing data subfields
+
+    Returns:
+        rclpy.node.MsgType: msg object with fields assigned
+    """
     for key in data:
         if key != "dtype":
             val = data[key]
             if isinstance(val, builtins.list):
-                sub_msg_list: list[MsgType] = []
+                sub_msg_list: list[Union[rclpy.node.MsgType, None]] = []
                 for i in val:
                     sub_msg, _ = parse_ros_data(i)
                     sub_msg_list.append(sub_msg)
                 setattr(msg, key, sub_msg_list)
             else:
-                setattr(msg, key, set_ros_msg_field(val))
+                setattr(msg, key, get_ros_msg_field_val(val))
     return msg
 
 
-def parse_ros_data(data: dict) -> Tuple[Union[None, MsgType], MsgType]:
-    msg, msg_type = DTYPES_MOD.get_dtype(data["dtype"])
+def parse_ros_data(data: dict) -> Tuple[Union[None, rclpy.node.MsgType], rclpy.node.MsgType]:
+    """Parse a data dictionary "data" field knowing only that it is ROS data. Use this function if
+    dtype is currently unknown.
+
+    Args:
+        data (dict): dictionary containing ROS data
+
+    Returns:
+        Union[None, rclpy.node.MsgType]: ROS msg type OBJECT or None if DONT_CARE is specified
+        rclpy.node.MsgType: ROS msg type IDENTIFIER
+    """
+    msg, msg_type = ROS_DTYPES_MOD.get_ros_dtype(data["dtype"])
     if "DONT_CARE" in data and data["DONT_CARE"] is True:
         return None, msg_type  # Still need to return msg_type so we can pub/sub to a topic
     if is_builtin_type(msg):
@@ -170,108 +304,268 @@ def parse_ros_data(data: dict) -> Tuple[Union[None, MsgType], MsgType]:
     return msg, msg_type
 
 
-class IntegrationTest:
+# TODO: This class should also encompass whatever type we use for HTTP messages
+class TestMsgType(Generic[rclpy.node.MsgType]):
+    """This class just exists to make type hinting play nice with @dataclass classes"""
+
+    pass
+
+
+@dataclass
+class IOEntry:
+    """Represents IO data"""
+
+    name: str  # ROS topic or HTTP target
+    msg_type: TestMsgType
+    msg: Optional[TestMsgType]
+
+
+class IntegrationTestSequence:
+    """Class that defines a test sequence/flow"""
+
     def __init__(self, config_file: str):
+        """Initializes a test sequences
+
+        Args:
+            config_file (str): Path to a test .yaml config file
+        """
         self.__setup_complete = False
         procs, inputs, expected_outputs = setup_test(config_file)
         self.__procs = procs
 
-        try:
-            self.__ros_inputs: list[dict] = []
-            self.__ros_e_outputs: list[dict] = []
-            self.__http_inputs: list[dict] = []
+        self.__ros_inputs: list[IOEntry] = []
+        self.__ros_e_outputs: list[IOEntry] = []
+        self.__http_inputs: list[IOEntry] = []
+        self.__http_e_outputs: list[IOEntry] = []
 
+        try:
             self.__set_inputs(inputs)
             self.__set_expected_outputs(expected_outputs)
             self.__setup_complete = True
-        except:  # noqa: E722
+        except:  # noqa: E722 # Catch all exceptions so we can kill spawned subprocesses
             self.finish()
 
     def __set_inputs(self, inputs: list[dict]):
+        """Prepare inputs that will drive the test
+
+        Args:
+            inputs (list[dict]): list of inputs
+
+        Raises:
+            NotImplementedError: If an input of type HTTP is given. It's on the TODO list :)
+            KeyError: If an invalid input type is given. Valid input types are ROS and HTTP.
+        """
         for input in inputs:
             if input["type"] == "ROS":
-                new_input_dict = {"topic": "", "msg_type": None, "msg": None}
-                new_input_dict["topic"] = input["name"]
-
                 data = input["data"]
-                msg, msg_type = parse_ros_data(data)
+                msg, msg_type = parse_ros_data(data)  # type: ignore
 
-                new_input_dict["msg_type"] = msg_type
-                new_input_dict["msg"] = msg
-                self.__ros_inputs.append(new_input_dict)
+                new_input = IOEntry(name=input["name"], msg_type=msg_type, msg=msg)
+                self.__ros_inputs.append(new_input)
 
             elif input["type"] == "HTTP":
-                # TODO: IMPLEMENT
                 raise NotImplementedError("HTTP support is a WIP")
             else:
                 raise KeyError("Invalid input type: {}".format(input["type"]))
 
     def __set_expected_outputs(self, outputs: list[dict]):
+        """Prepare the test's expected outputs
+
+        Args:
+            outputs (list[dict]): list of expected outputs
+
+        Raises:
+            NotImplementedError: If an output of type HTTP is given. It's on the TODO list :)
+            KeyError: If an invalid output type is given. Valid input types are ROS and HTTP.
+        """
         for output in outputs:
             if output["type"] == "ROS":
-                new_output_dict = {"topic": "", "msg_type": None, "msg": None}
-                new_output_dict["topic"] = output["name"]
-
                 data = output["data"]
-                msg, msg_type = parse_ros_data(data)
+                msg, msg_type = parse_ros_data(data)  # type: ignore
 
-                new_output_dict["msg_type"] = msg_type
-                new_output_dict["msg"] = msg
-                self.__ros_e_outputs.append(new_output_dict)
+                new_output = IOEntry(name=output["name"], msg_type=msg_type, msg=msg)
+                self.__ros_e_outputs.append(new_output)
 
             elif output["type"] == "HTTP":
-                # TODO: IMPLEMENT
                 raise NotImplementedError("HTTP support is a WIP")
             else:
                 raise KeyError("Invalid output type: {}".format(output["type"]))
 
-    def ros_inputs(self):
+    def ros_inputs(self) -> list[IOEntry]:
+        """Return ROS inputs
+
+        Returns:
+            list[IOEntry]: ROS inputs
+        """
         return self.__ros_inputs
 
-    def ros_expected_outputs(self):
+    def ros_expected_outputs(self) -> list[IOEntry]:
+        """Return expected ROS outputs
+
+        Returns:
+            list[IOEntry]: Expected ROS outputs
+        """
         return self.__ros_e_outputs
 
-    def http_inputs(self):
+    def http_inputs(self) -> list[IOEntry]:
+        """Return HTTP inputs
+
+        Returns:
+            list[IOEntry]: HTTP inputs
+        """
         return self.__http_inputs
 
-    def setup_complete(self):
+    def http_expected_outputs(self) -> list[IOEntry]:
+        """Return expected HTTP outputs
+
+        Returns:
+            list[IOEntry]: Expected HTTP outputs
+        """
+        return self.__http_e_outputs
+
+    def setup_complete(self) -> bool:
+        """Return whether the setup was successfully completed
+
+        Returns:
+            bool: True on success, False otherwise
+        """
         return self.__setup_complete
 
-    def finish(self):
+    def finish(self) -> None:
+        """Finish test sequence and cleanup"""
         stop_modules(self.__procs)
 
 
+@dataclass
+class MonitorEntry:
+    """Represents entries in the Monitor class."""
+
+    expected_msg: Union[TestMsgType, None]  # Excepts None types as sometimes we just care that
+    # *something* is being output.
+    rcvd_msgs: list[TestMsgType] = field(default_factory=list[TestMsgType])
+
+
+class Monitor:
+    """IO monitor that watches the data that passes through given interfaces. This data is saved"""
+
+    def __init__(self):
+        """Initialize a monitor instance"""
+        self.__monitor: dict[str, MonitorEntry] = {}
+
+    def register(self, name: str, expected_msg: Union[TestMsgType, None]) -> None:
+        """Register an IO event to keep track of
+
+        Args:
+            name (str): Name of the event (ROS topic or HTTP target)
+            expected_msg (TestMsgType | None): Event message type
+        """
+        self.__monitor[name] = MonitorEntry(expected_msg=expected_msg)
+
+    def on_new_msg(self, name: str, rcvd_msg: TestMsgType) -> None:
+        """Update the monitor with the message of a tracked IO event
+
+        Args:
+            name (str): Name of the event being tracked (ROS topic or HTTP target)
+            rcvd_msg (TestMsgType): Message that was received at the event
+
+        Raises:
+            KeyError: If this function is called on an unregistered event
+        """
+        if name not in self.__monitor:
+            raise KeyError(f"Tried to update Monitor with unregistered IO from {name}!")
+        self.__monitor[name].rcvd_msgs.append(rcvd_msg)
+
+    def evaluate(self, logger: RcutilsLogger) -> Tuple[int, int]:
+        """Evaluate the results of all tracked events
+
+        Args:
+            logger (RcutilsLogger): ROS logger instance to use
+
+        Returns:
+            int: Number of failures
+            int: Number of warnings
+        """
+
+        num_fails = 0
+        num_warn = 0
+        for name in self.__monitor:
+            entry = self.__monitor[name]
+            num_rcvd = len(entry.rcvd_msgs)
+
+            if num_rcvd == 0:
+                logger.error("No messages seen on: {}!".format(name))
+                num_fails += 1
+            elif entry.expected_msg is not None:
+                num_matches = entry.rcvd_msgs.count(entry.expected_msg)
+                if num_matches == 0:
+                    logger.error(
+                        """
+                                 No matching messages for: {name}!
+                                 Expected: {expected}
+                                 Received: {rcvd}
+                                 """.format(
+                            name=name, expected=entry.expected_msg, rcvd=entry.rcvd_msgs
+                        )
+                    )
+                    num_fails += 1
+                elif num_matches < num_rcvd:
+                    logger.warn(
+                        """ Partial matching message(s) for: {name}
+                        Number of matching messages:       {num_matches}
+                        Total number of received messages: {num_rcvd}
+                        Expected message: {expected_msg}
+                        """.format(
+                            name=name,
+                            num_matches=num_matches,
+                            num_rcvd=num_rcvd,
+                            expected_msg=entry.expected_msg,
+                        )
+                    )
+                    num_warn += 1
+        return num_fails, num_warn
+
+
 class IntegrationTestNode(Node):
+    """Node that connects integration tests to the ROS network"""
+
     def __init__(self, config_file: str):
+        """Initialize the node
+
+        Args:
+            config_file (str): Path to test config .yaml file
+        """
         super().__init__("integration_test_node")
 
-        self.__num_errs = 0
-        self.__test_inst = IntegrationTest(config_file)
+        self.__test_inst = IntegrationTestSequence(config_file)
+
+        if not self.__test_inst.setup_complete():
+            self.get_logger().error(
+                "Failed to setup tests! Integration test code is probably buggy!"
+            )
+            sys.exit(-1)
 
         try:
             self.__ros_inputs: list[dict] = []
             for ros_input in self.__test_inst.ros_inputs():
                 pub = self.create_publisher(
-                    msg_type=ros_input["msg_type"],
-                    topic=ros_input["topic"],
+                    msg_type=ros_input.msg_type,
+                    topic=ros_input.name,
                     qos_profile=10,  # placeholder
                 )
                 self.__ros_inputs.append(
                     {
                         "pub": pub,
-                        "msg": ros_input["msg"],
+                        "msg": ros_input.msg,
                     }
                 )
 
-            self.output_monitor: dict[str, dict] = {}
-            self.subs: list[Node.Subscriber] = []
+            self.__monitor = Monitor()
+            self.__ros_subs: list[Node.Subscriber] = []
             for e_ros_output in self.__test_inst.ros_expected_outputs():
-                topic = e_ros_output["topic"]
-                self.output_monitor[topic] = {}
-                self.output_monitor[topic]["rcvd"] = False
-                self.output_monitor[topic]["expected_msg"] = e_ros_output["msg"]
+                topic = e_ros_output.name
+                self.__monitor.register(topic, e_ros_output.msg)
                 sub = self.create_subscription(
-                    msg_type=e_ros_output["msg_type"],
+                    msg_type=e_ros_output.msg_type,
                     topic=topic,
                     # Fun fact, setting this callback without functools.partial() requires
                     # writing something atrocious like:
@@ -280,33 +574,29 @@ class IntegrationTestNode(Node):
                     callback=functools.partial(self.__sub_ros_cb, topic=topic),
                     qos_profile=10,  # placeholder
                 )
-                self.subs.append(sub)
+                self.__ros_subs.append(sub)
 
             # TODO: HTTP
 
             # IMPORTANT: MAKE SURE EXPECTED OUTPUTS ARE SETUP BEFORE SENDING INPUTS
             time.sleep(MIN_SETUP_DELAY_S)
-            self.send_inputs()
+            self.drive_inputs()
 
             self.timeout = self.create_timer(TIMEOUT_S, self.__timeout_cb)
         except:  # noqa: E722
             self.__test_inst.finish()
 
-    def __sub_ros_cb(self, rcvd_msg: MsgType, topic: str):
-        self.output_monitor[topic]["rcvd"] = True
-        expected_msg = self.output_monitor[topic]["expected_msg"]
-        if expected_msg is not None:
-            if rcvd_msg != expected_msg:
-                self.__num_errs += 1
-                err_msg = """
-                    Mismatch between expected and received value on topic: \"{topic}\"!
-                    Expected: \"{expected}\", but received: \"{rcvd}\"
-                """.format(
-                    topic=topic, expected=expected_msg, rcvd=rcvd_msg
-                )
-                self.get_logger().error(err_msg)
+    def __sub_ros_cb(self, rcvd_msg: rclpy.node.MsgType, topic: str) -> None:
+        """Callback to be executed when a subscribed ROS topic gets new data
 
-    def __pub_ros(self):
+        Args:
+            rcvd_msg (rclpy.node.MsgType): data received at the subscribed topic
+            topic (str): subscribed topic
+        """
+        self.__monitor.on_new_msg(topic, rcvd_msg)  # type: ignore # type hinting struggles
+
+    def __pub_ros(self) -> None:
+        """Publish to all registered ROS input topics"""
         for ros_input in self.__ros_inputs:
             pub = ros_input["pub"]
             msg = ros_input["msg"]
@@ -315,33 +605,35 @@ class IntegrationTestNode(Node):
                 'Published to topic: "{topic}", with msg: "{msg}"'.format(topic=pub.topic, msg=msg)
             )
 
-    def __timeout_cb(self):
+    def __timeout_cb(self) -> None:
+        """Callback for when the test times out. Stops all test processes, evaluates correctness,
+        and exits
+        """
         self.__test_inst.finish()  # Stop tests
 
-        if not self.__test_inst.setup_complete():
-            self.__num_errs += 1
-            self.get_logger().error(
-                "Failed to setup tests! Integration test code is probably buggy!"
+        num_fail, num_warn = self.__monitor.evaluate(self.get_logger())
+
+        if num_warn > 0:
+            self.get_logger().warn(
+                (
+                    f"Test finished with {num_warn} warnings. "
+                    "Please check logs to verify that they are OK."
+                )
             )
 
-        # Check that expected outputs were updated at all
-        for topic in self.output_monitor:
-            if self.output_monitor[topic]["rcvd"] is False:
-                self.__num_errs += 1
-                err_msg = 'No messages seen on expected output topic: "{topic}"!'.format(
-                    topic=topic
-                )
-                self.get_logger().error(err_msg)
-
-        if self.__num_errs > 0:
-            self.get_logger().error("Errors in integration tests! View logs for details")
+        if num_fail > 0:
+            self.get_logger().error(
+                f"Test finished with {num_fail} failures! Check logs for details."
+            )
             sys.exit(-1)
 
-        self.get_logger().info("Integration test successful!")
+        self.get_logger().info("Integration test finished successfully!")
         sys.exit(0)
 
-    def send_inputs(self):
+    def drive_inputs(self) -> None:
+        """Drive all registered test inputs"""
         self.__pub_ros()
+        # TODO: add HTTP
 
 
 def main(args=None):
