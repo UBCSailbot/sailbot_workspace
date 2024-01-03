@@ -1,9 +1,6 @@
 {
     "ignorePatterns": [
         {
-            "pattern": "^https://distrowatch.com*"
-        },
-        {
             "pattern": "^https://github.com/UBCSailbot/.github/issues/templates/edit"
         },
         {
