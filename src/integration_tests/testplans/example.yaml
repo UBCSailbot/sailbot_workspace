@@ -1,6 +1,9 @@
+# Example testplan - Does not currently show HTTP I/O
+timeout_sec: 3
+
 required_packages:
   - name: local_pathfinding
-    configs:
+    configs: # Start local_pathfinding with default configuration
   - name: network_systems
     configs:
       - all_disable.yaml
@@ -62,6 +65,7 @@ expected_outputs:
     data:
       dtype: uint64
       val: 5
+  # monitoring an input as an output is allowed
   - type: ROS
     name: cached_fib_in
     data:

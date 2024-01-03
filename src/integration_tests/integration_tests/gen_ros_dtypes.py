@@ -94,7 +94,7 @@ ROS_PACKAGES_DIR = os.path.join(
     os.getenv("ROS_WORKSPACE", default="/workspaces/sailbot_workspace"), "src"
 )
 CUSTOM_INTERFACES_MSG_DIR = os.path.join(ROS_PACKAGES_DIR, "custom_interfaces/msg")
-OUTPUT_FILE = os.path.join(ROS_PACKAGES_DIR, "global_launch/integration/ros_dtypes.py")
+OUTPUT_FILE = os.path.join(ROS_PACKAGES_DIR, "integration_tests/integration_tests/ros_dtypes.py")
 
 
 def detect_custom_intfs() -> list[str]:

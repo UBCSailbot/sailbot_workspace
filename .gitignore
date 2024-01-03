@@ -5,8 +5,11 @@
 
 # vcstool packages
 /src/*
+!/src/integration_tests
+/src/integration_tests/integration_tests/ros_dtypes.py
+/src/integration_tests/config
+!/src/integration_tests/generate_configs.sh
 !/src/global_launch
-/src/global_launch/integration/ros_dtypes.py
 !/src/polaris.repos
 
 # configuration files

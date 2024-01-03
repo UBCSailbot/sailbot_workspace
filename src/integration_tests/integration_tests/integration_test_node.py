@@ -1,4 +1,3 @@
-import argparse
 import builtins
 import functools
 import importlib
@@ -11,20 +10,21 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Generic, Optional, Tuple, Union
 
-import gen_ros_dtypes
 import rclpy
 import rclpy.node
 import yaml
 from rclpy.impl.rcutils_logger import RcutilsLogger
 from rclpy.node import Node
 
+from integration_tests.gen_ros_dtypes import gen_ros_dtypes
+
 # Generate and import datatypes
-gen_ros_dtypes.gen_ros_dtypes()
-ROS_DTYPES_MOD = importlib.import_module("ros_dtypes")
+gen_ros_dtypes()
+ROS_DTYPES_MOD = importlib.import_module("integration_tests.ros_dtypes")
 
 
 MIN_SETUP_DELAY_S = 1  # Minimum 1 second delay between setting up the test and sending inputs
-TIMEOUT_S = 3  # Number of seconds that the test has to run
+DEFAULT_TIMEOUT_SEC = 3  # Number of seconds that the test has to run
 
 
 class ROSPkg(Enum):
@@ -99,28 +99,28 @@ def get_ros_launch_cmd(ros_pkg_name: str, launch_config_files: list[str]) -> str
 
 
 @dataclass
-class PkgConfig:
-    """Represents the KVPs of the required_packages field in test config yaml files"""
+class TestPlan:
+    """Represents the KVPs of the required_packages field in testplan yaml files"""
 
     name: str
     configs: list[str]
 
     def __init__(self, pkg_dict: dict):
-        """Initialize a PkgConfig instance from a config dict
+        """Initialize a TestPlan instance from a testplan required_packages entry dict
 
         Args:
-            pkg_dict (dict): config dict
+            pkg_dict (dict): required_packages entry
         """
         self.name = pkg_dict["name"]
         self.configs = pkg_dict["configs"]
 
 
-def launch_modules(packages: list[PkgConfig]) -> list[subprocess.Popen]:
+def launch_modules(packages: list[TestPlan]) -> list[subprocess.Popen]:
     """Launches specified modules in background processes. Also registers a signal handler to kill
     any spawned processes.
 
     Args:
-        packages (list[PkgConfig]): List of modules to launch with their respective config files
+        packages (list[TestPlan]): List of modules to launch with their respective config files
 
     Raises:
         NotImplementedError: If "website" package is specified. It's on the TODO list.
@@ -183,26 +183,28 @@ def stop_modules(process_list: list[subprocess.Popen]) -> None:
         os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
 
 
-def setup_test(config_file: str) -> Tuple[list[subprocess.Popen], list[dict], list[dict]]:
-    """Reads a test config file and sets up the test environment
+def setup_test(testplan_file: str) -> Tuple[list[subprocess.Popen], list[dict], list[dict], int]:
+    """Reads a test testplan file and sets up the test environment
 
     Args:
-        config_file (str): Path to a .yaml test config file
+        testplan_file (str): Path to a .yaml test testplan file
 
     Returns:
         list[subprocess.Popen]: List of spawned subprocess handles
-        list[dict]: inputs parsed from config_file
-        list[dict]: expected outputs parsed from config_file
+        list[dict]: inputs parsed from testplan_file
+        list[dict]: expected outputs parsed from testplan_file
+        int: test timeout in seconds
     """
-    with open(config_file, "r") as config:
-        params = yaml.safe_load(config)
+    with open(testplan_file, "r") as testplan:
+        params = yaml.safe_load(testplan)
 
         inputs = params["inputs"]
         expected_outputs = params["expected_outputs"]
-        pkgs = [PkgConfig(pkg_dict) for pkg_dict in params["required_packages"]]
+        pkgs = [TestPlan(pkg_dict) for pkg_dict in params["required_packages"]]
         procs = launch_modules(pkgs)
+        timeout_sec = params["timeout_sec"] if "timeout_sec" in params else DEFAULT_TIMEOUT_SEC
 
-        return procs, inputs, expected_outputs
+        return procs, inputs, expected_outputs, timeout_sec
 
 
 def is_builtin_type(x: Any) -> bool:
@@ -246,7 +248,7 @@ def get_ros_msg_field_val(input: dict) -> Union[builtins.type, rclpy.node.MsgTyp
 
     Returns:
         Union[builtins.type, rclpy.node.MsgType]: A value of type builtins.type or
-            rclpy.node.MsgType depending on what is set in the config.
+            rclpy.node.MsgType depending on what is set in the testplan.
     """
     msg, _ = ROS_DTYPES_MOD.get_ros_dtype(input["dtype"])
 
@@ -323,15 +325,16 @@ class IOEntry:
 class IntegrationTestSequence:
     """Class that defines a test sequence/flow"""
 
-    def __init__(self, config_file: str):
+    def __init__(self, testplan_file: str):
         """Initializes a test sequences
 
         Args:
-            config_file (str): Path to a test .yaml config file
+            config_file (str): Path to a test .yaml testplan file
         """
         self.__setup_complete = False
-        procs, inputs, expected_outputs = setup_test(config_file)
+        procs, inputs, expected_outputs, timeout = setup_test(testplan_file)
         self.__procs = procs
+        self.__timeout = timeout
 
         self.__ros_inputs: list[IOEntry] = []
         self.__ros_e_outputs: list[IOEntry] = []
@@ -391,6 +394,14 @@ class IntegrationTestSequence:
             else:
                 raise KeyError("Invalid output type: {}".format(output["type"]))
 
+    def timeout_sec(self) -> int:
+        """Get test timeout
+
+        Returns:
+            int: timeout value in seconds
+        """
+        return self.__timeout
+
     def ros_inputs(self) -> list[IOEntry]:
         """Return ROS inputs
 
@@ -440,7 +451,7 @@ class IntegrationTestSequence:
 class MonitorEntry:
     """Represents entries in the Monitor class."""
 
-    expected_msg: Union[TestMsgType, None]  # Excepts None types as sometimes we just care that
+    expected_msg: Union[TestMsgType, None]  # Accepts None types as sometimes we just care that
     # *something* is being output.
     rcvd_msgs: list[TestMsgType] = field(default_factory=list[TestMsgType])
 
@@ -528,15 +539,19 @@ class Monitor:
 class IntegrationTestNode(Node):
     """Node that connects integration tests to the ROS network"""
 
-    def __init__(self, config_file: str):
+    def __init__(self):
         """Initialize the node
 
         Args:
-            config_file (str): Path to test config .yaml file
+            testplan_file (str): Path to test testplan .yaml file
         """
         super().__init__("integration_test_node")
 
-        self.__test_inst = IntegrationTestSequence(config_file)
+        self.declare_parameter("testplan", rclpy.Parameter.Type.STRING)
+
+        testplan_file = self.get_parameter("testplan").get_parameter_value().string_value
+
+        self.__test_inst = IntegrationTestSequence(testplan_file)
 
         if not self.__test_inst.setup_complete():
             self.get_logger().error(
@@ -582,7 +597,7 @@ class IntegrationTestNode(Node):
             time.sleep(MIN_SETUP_DELAY_S)
             self.drive_inputs()
 
-            self.timeout = self.create_timer(TIMEOUT_S, self.__timeout_cb)
+            self.timeout = self.create_timer(self.__test_inst.timeout_sec(), self.__timeout_cb)
         except:  # noqa: E722
             self.__test_inst.finish()
 
@@ -637,13 +652,8 @@ class IntegrationTestNode(Node):
 
 
 def main(args=None):
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-c", "--config", required=True, metavar="path", dest="config_file")
-
-    argparse_args = parser.parse_args()
-
     rclpy.init(args=args)
-    node = IntegrationTestNode(argparse_args.config_file)
+    node = IntegrationTestNode()
     rclpy.spin(node)
     rclpy.shutdown()
 
