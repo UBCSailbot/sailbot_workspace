@@ -8,7 +8,7 @@ import sys
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Optional, Tuple, TypeVar, Union
+from typing import Any, Optional, Tuple, Type, TypeVar, Union
 
 import rclpy
 import rclpy.node
@@ -315,7 +315,7 @@ class IOEntry:
     """Represents IO data"""
 
     name: str  # ROS topic or HTTP target
-    msg_type: TestMsgType
+    msg_type: Type[TestMsgType]
     msg: Optional[TestMsgType]
 
 
@@ -533,6 +533,14 @@ class Monitor:
         return num_fails, num_warn
 
 
+@dataclass
+class ROSInputEntry:
+    """Represents ROS publisher and msg pairs"""
+
+    pub: rclpy.node.Publisher
+    msg: rclpy.node.MsgType
+
+
 class IntegrationTestNode(Node):
     """Node that connects integration tests to the ROS network"""
 
@@ -557,19 +565,14 @@ class IntegrationTestNode(Node):
             sys.exit(-1)
 
         try:
-            self.__ros_inputs: list[dict] = []
+            self.__ros_inputs: list[ROSInputEntry] = []
             for ros_input in self.__test_inst.ros_inputs():
                 pub = self.create_publisher(
                     msg_type=ros_input.msg_type,
                     topic=ros_input.name,
                     qos_profile=10,  # placeholder
                 )
-                self.__ros_inputs.append(
-                    {
-                        "pub": pub,
-                        "msg": ros_input.msg,
-                    }
-                )
+                self.__ros_inputs.append(ROSInputEntry(pub=pub, msg=ros_input.msg))
 
             self.__monitor = Monitor()
             self.__ros_subs: list[Node.Subscriber] = []
@@ -610,8 +613,8 @@ class IntegrationTestNode(Node):
     def __pub_ros(self) -> None:
         """Publish to all registered ROS input topics"""
         for ros_input in self.__ros_inputs:
-            pub = ros_input["pub"]
-            msg = ros_input["msg"]
+            pub = ros_input.pub
+            msg = ros_input.msg
             pub.publish(msg)
             self.get_logger().info(
                 'Published to topic: "{topic}", with msg: "{msg}"'.format(topic=pub.topic, msg=msg)

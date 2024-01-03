@@ -9,12 +9,12 @@ import builtins
 import custom_interfaces.msg
 import std_msgs.msg
 from rclpy.node import MsgType
-from typing import Tuple, Union
+from typing import Tuple, Type, Union
 
 """
 
 GET_DTYPE_BASE = """
-def get_ros_dtype(dtype: str) -> Tuple[Union[builtins.type, MsgType], type[MsgType]]:
+def get_ros_dtype(dtype: str) -> Tuple[Union[builtins.type, MsgType], Type[MsgType]]:
     \"\"\"Given the dtype as a str, return the Python type object and identifier
 
     Args:
@@ -25,7 +25,7 @@ def get_ros_dtype(dtype: str) -> Tuple[Union[builtins.type, MsgType], type[MsgTy
 
     Returns:
         Union[builtins.type, MsgType]: Type object
-        MsgType: Type identifier
+        Type[MsgType]: Type identifier
     \"\"\"
     match dtype:
         # builtin types see "Type name" column in:
