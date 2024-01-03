@@ -8,7 +8,7 @@ import sys
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Generic, Optional, Tuple, Union
+from typing import Any, Optional, Tuple, TypeVar, Union
 
 import rclpy
 import rclpy.node
@@ -51,6 +51,10 @@ ROS_PACKAGE_CONFIG_DIRS = {
     ROSPkg.network_systems: os.path.join(ROS_PACKAGES_DIR, ROSPkg.network_systems.name, "config"),
 }
 NON_ROS_PACKAGES = ["virtual_iridium", "website"]
+
+# TODO: TestMsgType needs to encompass/inherit whatever type we use for HTTP messages
+HTTP_MSG_PLACEHOLDER_TYPE = TypeVar("HTTP_MSG_PLACEHOLDER_TYPE")
+TestMsgType = Union[rclpy.node.MsgType, HTTP_MSG_PLACEHOLDER_TYPE]
 
 
 def get_ros_launch_cmd(ros_pkg_name: str, launch_config_files: list[str]) -> str:
@@ -306,13 +310,6 @@ def parse_ros_data(data: dict) -> Tuple[Union[None, rclpy.node.MsgType], rclpy.n
     return msg, msg_type
 
 
-# TODO: This class should also encompass whatever type we use for HTTP messages
-class TestMsgType(Generic[rclpy.node.MsgType]):
-    """This class just exists to make type hinting play nice with @dataclass classes"""
-
-    pass
-
-
 @dataclass
 class IOEntry:
     """Represents IO data"""
@@ -459,7 +456,7 @@ class MonitorEntry:
 class Monitor:
     """IO monitor that watches the data that passes through given interfaces. This data is saved"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize a monitor instance"""
         self.__monitor: dict[str, MonitorEntry] = {}
 
@@ -539,7 +536,7 @@ class Monitor:
 class IntegrationTestNode(Node):
     """Node that connects integration tests to the ROS network"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the node
 
         Args:

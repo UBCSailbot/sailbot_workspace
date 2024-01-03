@@ -4,9 +4,9 @@ import os
 from importlib.util import module_from_spec, spec_from_file_location
 from typing import List, Tuple
 
-from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, OpaqueFunction
 from launch.launch_context import LaunchContext
+from launch.launch_description import LaunchDescription
 from launch.some_substitutions_type import SomeSubstitutionsType
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
