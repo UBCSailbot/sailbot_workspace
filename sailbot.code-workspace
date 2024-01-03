@@ -491,6 +491,7 @@
                     "controller",
                     "custom_interfaces",
                     "global_launch",
+                    "integration_tests",
                     "local_pathfinding",
                     "network_systems",
                 ]
