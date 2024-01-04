@@ -244,22 +244,22 @@ def builtin_to_std_msg(
     return msg
 
 
-def get_ros_msg_field_val(input: dict) -> Union[builtins.type, rclpy.node.MsgType]:
+def get_ros_msg_field_val(input_dict: dict) -> Union[builtins.type, rclpy.node.MsgType]:
     """Get the field value of some ROS message type
 
     Args:
-        input (dict): dictionary containing a "dtype" field and other fields.
+        input_dict (dict): dictionary containing a "dtype" field and other fields.
 
     Returns:
         Union[builtins.type, rclpy.node.MsgType]: A value of type builtins.type or
             rclpy.node.MsgType depending on what is set in the testplan.
     """
-    msg, _ = ROS_DTYPES_MOD.get_ros_dtype(input["dtype"])
+    msg, _ = ROS_DTYPES_MOD.get_ros_dtype(input_dict["dtype"])
 
     if is_builtin_type(msg):
-        return msg(input["val"])
+        return msg(input_dict["val"])
 
-    msg = parse_ros_msg(msg, input)
+    msg = parse_ros_msg(msg, input_dict)
     return msg
 
 
@@ -355,18 +355,18 @@ class IntegrationTestSequence:
             NotImplementedError: If an input of type HTTP is given. It's on the TODO list :)
             KeyError: If an invalid input type is given. Valid input types are ROS and HTTP.
         """
-        for input in inputs:
-            if input["type"] == "ROS":
-                data = input["data"]
+        for input_dict in inputs:
+            if input_dict["type"] == "ROS":
+                data = input_dict["data"]
                 msg, msg_type = parse_ros_data(data)  # type: ignore
 
-                new_input = IOEntry(name=input["name"], msg_type=msg_type, msg=msg)
+                new_input = IOEntry(name=input_dict["name"], msg_type=msg_type, msg=msg)
                 self.__ros_inputs.append(new_input)
 
-            elif input["type"] == "HTTP":
+            elif input_dict["type"] == "HTTP":
                 raise NotImplementedError("HTTP support is a WIP")
             else:
-                raise KeyError("Invalid input type: {}".format(input["type"]))
+                raise KeyError("Invalid input type: {}".format(input_dict["type"]))
 
     def __set_expected_outputs(self, outputs: list[dict]):
         """Prepare the test's expected outputs
