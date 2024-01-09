@@ -54,9 +54,9 @@ ROS parameters specific to the nodes in the local_pathfinding package.
 
 **`gps_threshold`**
 
-- _Description_: A new path will be generated if the GPS position changed by more than this amount in km.
+- _Description_: A new path will be generated if the GPS position changed by more thangps_threshold*interval_spacing.
 - _Datatype_: `double`
-- _Acceptable Values_: `(0.0, MAX_DOUBLE)`
+- _Acceptable Values_: `(1.0, MAX_DOUBLE)`
 
 **`force`**
 
