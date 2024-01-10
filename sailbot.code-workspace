@@ -19,6 +19,12 @@
             "path": "src/docs"
         },
         {
+            "path": "src/global_launch"
+        },
+        {
+            "path": "src/integration_tests"
+        },
+        {
             "path": "src/local_pathfinding"
         },
         {
