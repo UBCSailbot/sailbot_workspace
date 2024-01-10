@@ -43,8 +43,26 @@ ROS parameters specific to the nodes in the local_pathfinding package.
 **`interval_spacing`**
 
 - _Description_: The upper bound on spacing between each point in the global path in km.
-- _Datatype_: `float`
+- _Datatype_: `double`
 - _Range_: `(0.0, MAX_DOUBLE)`
+
+**`write`**
+
+- _Description_: Whether or not to write a generated global path to a new csv file.
+- _Datatype_: `boolean`
+- _Acceptable Values_: `true`, `false`
+
+**`gps_threshold`**
+
+- _Description_: A new path will be generated if the GPS position changed by more thangps_threshold*interval_spacing.
+- _Datatype_: `double`
+- _Acceptable Values_: `(1.0, MAX_DOUBLE)`
+
+**`force`**
+
+- _Description_: Force the mock global path callback to update the global path when set to true.
+- _Datatype_: `boolean`
+- _Acceptable Values_: `true`, `false`
 
 ## Boat Simulator Parameters
 
