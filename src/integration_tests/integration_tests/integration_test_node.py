@@ -1,6 +1,5 @@
 import builtins
 import functools
-import importlib
 import os
 import signal
 import subprocess
@@ -20,8 +19,7 @@ from integration_tests.gen_ros_dtypes import gen_ros_dtypes
 
 # Generate and import datatypes
 gen_ros_dtypes()
-ROS_DTYPES_MOD = importlib.import_module("integration_tests.ros_dtypes")
-
+from integration_tests.ros_dtypes import get_ros_dtype  # noqa: E402
 
 MIN_SETUP_DELAY_S = 1  # Minimum 1 second delay between setting up the test and sending inputs
 DEFAULT_TIMEOUT_SEC = 3  # Number of seconds that the test has to run
@@ -254,7 +252,7 @@ def get_ros_msg_field_val(input_dict: dict) -> Union[builtins.type, rclpy.node.M
         Union[builtins.type, rclpy.node.MsgType]: A value of type builtins.type or
             rclpy.node.MsgType depending on what is set in the testplan.
     """
-    msg, _ = ROS_DTYPES_MOD.get_ros_dtype(input_dict["dtype"])
+    msg, _ = get_ros_dtype(input_dict["dtype"])
 
     if is_builtin_type(msg):
         return msg(input_dict["val"])
@@ -299,7 +297,7 @@ def parse_ros_data(data: dict) -> Tuple[Union[None, rclpy.node.MsgType], rclpy.n
         Union[None, rclpy.node.MsgType]: ROS msg type OBJECT or None if DONT_CARE is specified
         rclpy.node.MsgType: ROS msg type IDENTIFIER
     """
-    msg, msg_type = ROS_DTYPES_MOD.get_ros_dtype(data["dtype"])
+    msg, msg_type = get_ros_dtype(data["dtype"])
     if "DONT_CARE" in data and data["DONT_CARE"] is True:
         return None, msg_type  # Still need to return msg_type so we can pub/sub to a topic
     if is_builtin_type(msg):
