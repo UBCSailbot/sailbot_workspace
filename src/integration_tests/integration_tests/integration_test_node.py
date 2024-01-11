@@ -6,7 +6,6 @@ import subprocess
 import sys
 import time
 from dataclasses import dataclass, field
-from enum import Enum
 from typing import Any, Optional, Tuple, Type, TypeVar, Union
 
 import rclpy
@@ -24,30 +23,12 @@ from integration_tests.ros_dtypes import get_ros_dtype  # noqa: E402
 MIN_SETUP_DELAY_S = 1  # Minimum 1 second delay between setting up the test and sending inputs
 DEFAULT_TIMEOUT_SEC = 3  # Number of seconds that the test has to run
 
-
-class ROSPkg(Enum):
-    """Defines packages that are integrated with the ROS network"""
-
-    boat_simulator = 0
-    controller = 1
-    local_pathfinding = 2
-    network_systems = 3
-
-
 ROS_LAUNCH_CMD = "ros2 launch {} main_launch.py mode:=development"
 ROS_WORKSPACE_PATH = os.getenv("ROS_WORKSPACE", default="/workspaces/sailbotworkspace")
 ROS_PACKAGES_DIR = os.path.join(
     os.getenv("ROS_WORKSPACE", default="/workspaces/sailbot_workspace"), "src"
 )
-ROS_PACKAGES = [pkg.name for pkg in ROSPkg]
-ROS_PACKAGE_CONFIG_DIRS = {
-    ROSPkg.boat_simulator: os.path.join(ROS_PACKAGES_DIR, ROSPkg.boat_simulator.name, "config"),
-    ROSPkg.controller: os.path.join(ROS_PACKAGES_DIR, ROSPkg.controller.name, "config"),
-    ROSPkg.local_pathfinding: os.path.join(
-        ROS_PACKAGES_DIR, ROSPkg.local_pathfinding.name, "config"
-    ),
-    ROSPkg.network_systems: os.path.join(ROS_PACKAGES_DIR, ROSPkg.network_systems.name, "config"),
-}
+ROS_PACKAGES = ["boat_simulator", "controller", "local_pathfinding", "network_systems"]
 NON_ROS_PACKAGES = ["virtual_iridium", "website"]
 
 # TODO: TestMsgType needs to encompass/inherit whatever type we use for HTTP messages
@@ -79,21 +60,9 @@ def get_ros_launch_cmd(ros_pkg_name: str, launch_config_files: list[str]) -> str
     launch_cmd = ROS_LAUNCH_CMD.format(ros_pkg_name)
 
     if launch_config_files is not None:
-
-        def convert_to_abs_path(config_file_path: str) -> str:
-            """Converts the relative path of a package config file to its absolute path
-
-            Args:
-                config_file_path (str): relative config file path of format "config/**/*.yaml"
-
-            Returns:
-                str: absolute path of format "/workspaces/sailbot_workspace/**/config/**/*.yaml"
-            """
-            ros_pkg = ROSPkg[ros_pkg_name]
-            ros_pkg_config_dir = ROS_PACKAGE_CONFIG_DIRS[ros_pkg]
-            return os.path.join(ros_pkg_config_dir, config_file_path)
-
-        launch_config_files_abs_path = [convert_to_abs_path(file) for file in launch_config_files]
+        launch_config_files_abs_path = [
+            os.path.join(ROS_PACKAGES_DIR, ros_pkg_name, "config", f) for f in launch_config_files
+        ]
         config_files_str = ",".join(launch_config_files_abs_path)
         launch_cmd += " config:={}".format(config_files_str)
 
