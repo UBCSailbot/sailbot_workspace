@@ -52,9 +52,7 @@ def get_ros_launch_cmd(ros_pkg_name: str, launch_config_files: list[str]) -> str
 
     if ros_pkg_name not in ROS_PACKAGES:
         raise ValueError(
-            "Given ros_pkg_name ({given}) is not a valid ROS package ({ros_pkgs})".format(
-                given=ros_pkg_name, ros_pkgs=ROS_PACKAGES
-            )
+            f"Given ros_pkg_name ({ros_pkg_name}) is not a valid ROS package ({ROS_PACKAGES})"
         )
 
     launch_cmd = ROS_LAUNCH_CMD.format(ros_pkg_name)
@@ -64,7 +62,7 @@ def get_ros_launch_cmd(ros_pkg_name: str, launch_config_files: list[str]) -> str
             os.path.join(ROS_PACKAGES_DIR, ros_pkg_name, "config", f) for f in launch_config_files
         ]
         config_files_str = ",".join(launch_config_files_abs_path)
-        launch_cmd += " config:={}".format(config_files_str)
+        launch_cmd += f" config:={config_files_str}"
 
     return launch_cmd
 
@@ -113,7 +111,7 @@ def launch_modules(packages: list[TestPlan]) -> list[subprocess.Popen]:
                 case "website":
                     raise NotImplementedError("Website not supported yet")
                 case _:
-                    raise ValueError("Invalid package name: {}".format(pkg.name))
+                    raise ValueError(f"Invalid package name: {pkg.name}")
 
     procs: list[subprocess.Popen] = []
     for cmd in launch_cmds:
@@ -333,7 +331,7 @@ class IntegrationTestSequence:
             elif input_dict["type"] == "HTTP":
                 raise NotImplementedError("HTTP support is a WIP")
             else:
-                raise KeyError("Invalid input type: {}".format(input_dict["type"]))
+                raise KeyError(f"Invalid input type: {input_dict['type']}")
 
     def __set_expected_outputs(self, outputs: list[dict]):
         """Prepare the test's expected outputs
@@ -356,7 +354,7 @@ class IntegrationTestSequence:
             elif output["type"] == "HTTP":
                 raise NotImplementedError("HTTP support is a WIP")
             else:
-                raise KeyError("Invalid output type: {}".format(output["type"]))
+                raise KeyError(f"Invalid output type: {output['type']}")
 
     def timeout_sec(self) -> int:
         """Get test timeout
@@ -468,33 +466,26 @@ class Monitor:
             num_rcvd = len(entry.rcvd_msgs)
 
             if num_rcvd == 0:
-                logger.error("No messages seen on: {}!".format(name))
+                logger.error(f"No messages seen on: {name}!")
                 num_fails += 1
             elif entry.expected_msg is not None:
                 num_matches = entry.rcvd_msgs.count(entry.expected_msg)
                 if num_matches == 0:
                     logger.error(
-                        """
+                        f"""
                                  No matching messages for: {name}!
-                                 Expected: {expected}
-                                 Received: {rcvd}
-                                 """.format(
-                            name=name, expected=entry.expected_msg, rcvd=entry.rcvd_msgs
-                        )
+                                 Expected: {entry.expected_msg}
+                                 Received: {entry.rcvd_msgs}
+                                 """
                     )
                     num_fails += 1
                 elif num_matches < num_rcvd:
                     logger.warn(
-                        """ Partial matching message(s) for: {name}
+                        f""" Partial matching message(s) for: {name}
                         Number of matching messages:       {num_matches}
                         Total number of received messages: {num_rcvd}
-                        Expected message: {expected_msg}
-                        """.format(
-                            name=name,
-                            num_matches=num_matches,
-                            num_rcvd=num_rcvd,
-                            expected_msg=entry.expected_msg,
-                        )
+                        Expected message: {entry.expected_msg}
+                        """
                     )
                     num_warn += 1
         return num_fails, num_warn
@@ -583,9 +574,7 @@ class IntegrationTestNode(Node):
             pub = ros_input.pub
             msg = ros_input.msg
             pub.publish(msg)
-            self.get_logger().info(
-                'Published to topic: "{topic}", with msg: "{msg}"'.format(topic=pub.topic, msg=msg)
-            )
+            self.get_logger().info(f'Published to topic: "{pub.topic}", with msg: "{msg}"')
 
     def __timeout_cb(self) -> None:
         """Callback for when the test times out. Stops all test processes, evaluates correctness,
