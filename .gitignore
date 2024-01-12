@@ -7,8 +7,6 @@
 /src/*
 !/src/integration_tests
 /src/integration_tests/integration_tests/ros_dtypes.py
-/src/integration_tests/config/*
-!/src/integration_tests/config/generate_configs.sh
 !/src/global_launch
 !/src/polaris.repos
 

@@ -48,24 +48,3 @@ For example:
 ```shell
 ros2 run integration_tests run --ros-args -p testplan:=testplans/example.yaml
 ```
-
-## Invoking with ros2 launch
-
-Since the custom testplan `.yaml` files are not valid ROS parameter config files, using them with `ros2 launch` requires
-a wrapper. To create the wrappers, run:
-
-```shell
-./config/generate_configs.sh
-```
-
-This command must be run whenever the `testplans/` directory gets a new or renamed `.yaml` file. We can then run:
-
-```shell
-ros2 launch integration_tests main_launch.py config:=<path/to/config.yaml>
-```
-
-For example:
-
-```shell
-ros2 launch integration_tests main_launch.py config:=config/example.yaml
-```
