@@ -6,7 +6,6 @@
 # vcstool packages
 /src/*
 !/src/integration_tests
-/src/integration_tests/integration_tests/ros_dtypes.py
 !/src/global_launch
 !/src/polaris.repos
 

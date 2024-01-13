@@ -8,17 +8,13 @@ import time
 from dataclasses import dataclass, field
 from typing import Any, Optional, Tuple, Type, TypeVar, Union
 
+import custom_interfaces.msg
 import rclpy
 import rclpy.node
+import std_msgs.msg
 import yaml
 from rclpy.impl.rcutils_logger import RcutilsLogger
-from rclpy.node import Node
-
-from integration_tests.gen_ros_dtypes import gen_ros_dtypes
-
-# Generate and import datatypes
-gen_ros_dtypes()
-from integration_tests.ros_dtypes import get_ros_dtype  # noqa: E402
+from rclpy.node import MsgType, Node
 
 MIN_SETUP_DELAY_S = 1  # Minimum 1 second delay between setting up the test and sending inputs
 DEFAULT_TIMEOUT_SEC = 3  # Number of seconds that the test has to run
@@ -207,6 +203,79 @@ def builtin_to_std_msg(
     msg = msg_type()  # type: ignore
     msg.data = std_val
     return msg
+
+
+def get_ros_dtype(dtype: str) -> Tuple[Union[builtins.type, MsgType], Type[MsgType]]:
+    """Given the dtype as a str, return the Python type object and identifier
+
+    Args:
+        dtype (str): dtype str from
+
+    Raises:
+        TypeError: If an invalid dtype is given
+
+    Returns:
+        Union[builtins.type, MsgType]: Type object
+        Type[MsgType]: Type identifier
+    """
+    match dtype:
+        # builtin types see "Type name" column in:
+        # https://docs.ros.org/en/foxy/Concepts/About-ROS-Interfaces.html#field-types
+
+        case "bool":
+            return builtins.bool, std_msgs.msg.Bool
+
+        case "byte":
+            return builtins.bytes, std_msgs.msg.Byte
+
+        case "char":
+            return builtins.str, std_msgs.msg.String
+
+        case "float32":
+            return builtins.float, std_msgs.msg.Float32
+
+        case "float64":
+            return builtins.float, std_msgs.msg.Float64
+
+        case "int8":
+            return builtins.int, std_msgs.msg.Int8
+
+        case "uint8":
+            return builtins.int, std_msgs.msg.UInt8
+
+        case "int16":
+            return builtins.int, std_msgs.msg.Int16
+
+        case "uint16":
+            return builtins.int, std_msgs.msg.UInt16
+
+        case "int32":
+            return builtins.int, std_msgs.msg.Int32
+
+        case "uint32":
+            return builtins.int, std_msgs.msg.UInt32
+
+        case "int64":
+            return builtins.int, std_msgs.msg.Int64
+
+        case "uint64":
+            return builtins.int, std_msgs.msg.UInt64
+
+        case "string":
+            return builtins.str, std_msgs.msg.String
+
+        case "wstring":
+            return builtins.str, std_msgs.msg.String
+
+        # custom_interfaces
+        case _:
+            try:
+                return (
+                    getattr(custom_interfaces.msg, dtype)(),
+                    getattr(custom_interfaces.msg, dtype),
+                )
+            except AttributeError:
+                raise TypeError(f"INVALID TYPE: {dtype}")
 
 
 def get_ros_msg_field_val(input_dict: dict) -> Union[builtins.type, rclpy.node.MsgType]:
