@@ -22,7 +22,7 @@ main_launch.py
 config:=config/example.yaml
 endnote
 
-==Setup==
+==Initialization==
 
 --> main : Read ROS parameters (testplan filepath)
 main -> seq --++ : Get testplan

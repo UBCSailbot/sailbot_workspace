@@ -5,16 +5,18 @@ import signal
 import subprocess
 import sys
 import time
+import traceback
 from dataclasses import dataclass, field
 from typing import Any, Optional, Tuple, Type, TypeVar, Union
 
-import custom_interfaces.msg
 import rclpy
 import rclpy.node
 import std_msgs.msg
 import yaml
 from rclpy.impl.rcutils_logger import RcutilsLogger
 from rclpy.node import MsgType, Node
+
+import custom_interfaces.msg
 
 MIN_SETUP_DELAY_S = 1  # Minimum 1 second delay between setting up the test and sending inputs
 DEFAULT_TIMEOUT_SEC = 3  # Number of seconds that the test has to run
@@ -369,7 +371,6 @@ class IntegrationTestSequence:
         Args:
             config_file (str): Path to a test .yaml testplan file
         """
-        self.__setup_complete = False
         procs, inputs, expected_outputs, timeout = setup_test(testplan_file)
         self.__procs = procs
         self.__timeout = timeout
@@ -382,9 +383,9 @@ class IntegrationTestSequence:
         try:
             self.__set_inputs(inputs)
             self.__set_expected_outputs(expected_outputs)
-            self.__setup_complete = True
-        except:  # noqa: E722 # Catch all exceptions so we can kill spawned subprocesses
+        except Exception as e:
             self.finish()
+            raise e
 
     def __set_inputs(self, inputs: list[dict]):
         """Prepare inputs that will drive the test
@@ -471,14 +472,6 @@ class IntegrationTestSequence:
             list[IOEntry]: Expected HTTP outputs
         """
         return self.__http_e_outputs
-
-    def setup_complete(self) -> bool:
-        """Return whether the setup was successfully completed
-
-        Returns:
-            bool: True on success, False otherwise
-        """
-        return self.__setup_complete
 
     def finish(self) -> None:
         """Finish test sequence and cleanup"""
@@ -590,50 +583,54 @@ class IntegrationTestNode(Node):
 
         testplan_file = self.get_parameter("testplan").get_parameter_value().string_value
 
-        self.__test_inst = IntegrationTestSequence(testplan_file)
+        try:
+            self.__test_inst = IntegrationTestSequence(testplan_file)
+            try:
+                self.__ros_inputs: list[ROSInputEntry] = []
+                for ros_input in self.__test_inst.ros_inputs():
+                    pub = self.create_publisher(
+                        msg_type=ros_input.msg_type,
+                        topic=ros_input.name,
+                        qos_profile=10,  # placeholder
+                    )
+                    self.__ros_inputs.append(ROSInputEntry(pub=pub, msg=ros_input.msg))
 
-        if not self.__test_inst.setup_complete():
+                self.__monitor = Monitor()
+                self.__ros_subs: list[Node.Subscriber] = []
+                for e_ros_output in self.__test_inst.ros_expected_outputs():
+                    topic = e_ros_output.name
+                    self.__monitor.register(topic, e_ros_output.msg)
+                    sub = self.create_subscription(
+                        msg_type=e_ros_output.msg_type,
+                        topic=topic,
+                        # Fun fact, setting this callback without functools.partial() requires
+                        # writing something atrocious like:
+                        # callback=
+                        #     ((lambda topic: (lambda msg: self.__sub_ros_cb(msg, topic)))(topic))
+                        # Python variable scoping can be very funky
+                        callback=functools.partial(self.__sub_ros_cb, topic=topic),
+                        qos_profile=10,  # placeholder
+                    )
+                    self.__ros_subs.append(sub)
+
+                # TODO: HTTP
+
+                # IMPORTANT: MAKE SURE EXPECTED OUTPUTS ARE SETUP BEFORE SENDING INPUTS
+                time.sleep(MIN_SETUP_DELAY_S)
+                self.drive_inputs()
+
+                self.timeout = self.create_timer(self.__test_inst.timeout_sec(), self.__timeout_cb)
+            except Exception as e:
+                # At this point, the test instance has successfully started all package processes.
+                # This except block is a failsafe to kill the processes in case anything crashes
+                # the program
+                self.__test_inst.finish()
+                raise e
+        except:  # noqa: 402
             self.get_logger().error(
-                "Failed to setup tests! Integration test code is probably buggy!"
+                f"Failed to setup tests! Exception occured:\n{traceback.format_exc()}"
             )
             sys.exit(-1)
-
-        try:
-            self.__ros_inputs: list[ROSInputEntry] = []
-            for ros_input in self.__test_inst.ros_inputs():
-                pub = self.create_publisher(
-                    msg_type=ros_input.msg_type,
-                    topic=ros_input.name,
-                    qos_profile=10,  # placeholder
-                )
-                self.__ros_inputs.append(ROSInputEntry(pub=pub, msg=ros_input.msg))
-
-            self.__monitor = Monitor()
-            self.__ros_subs: list[Node.Subscriber] = []
-            for e_ros_output in self.__test_inst.ros_expected_outputs():
-                topic = e_ros_output.name
-                self.__monitor.register(topic, e_ros_output.msg)
-                sub = self.create_subscription(
-                    msg_type=e_ros_output.msg_type,
-                    topic=topic,
-                    # Fun fact, setting this callback without functools.partial() requires
-                    # writing something atrocious like:
-                    # callback=((lambda topic: (lambda msg: self.__sub_ros_cb(msg, topic)))(topic))
-                    # Python variable scoping can be very funky
-                    callback=functools.partial(self.__sub_ros_cb, topic=topic),
-                    qos_profile=10,  # placeholder
-                )
-                self.__ros_subs.append(sub)
-
-            # TODO: HTTP
-
-            # IMPORTANT: MAKE SURE EXPECTED OUTPUTS ARE SETUP BEFORE SENDING INPUTS
-            time.sleep(MIN_SETUP_DELAY_S)
-            self.drive_inputs()
-
-            self.timeout = self.create_timer(self.__test_inst.timeout_sec(), self.__timeout_cb)
-        except:  # noqa: E722
-            self.__test_inst.finish()
 
     def __sub_ros_cb(self, rcvd_msg: rclpy.node.MsgType, topic: str) -> None:
         """Callback to be executed when a subscribed ROS topic gets new data
