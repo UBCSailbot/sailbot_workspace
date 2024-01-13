@@ -32,6 +32,13 @@ HTTP_MSG_PLACEHOLDER_TYPE = TypeVar("HTTP_MSG_PLACEHOLDER_TYPE")
 TestMsgType = Union[rclpy.node.MsgType, HTTP_MSG_PLACEHOLDER_TYPE]
 
 
+def main(args=None):
+    rclpy.init(args=args)
+    node = IntegrationTestNode()
+    rclpy.spin(node)
+    rclpy.shutdown()
+
+
 def get_ros_launch_cmd(ros_pkg_name: str, launch_config_files: list[str]) -> str:
     """Returns a command to launch a ROS package with specified config files
 
@@ -674,13 +681,6 @@ class IntegrationTestNode(Node):
         """Drive all registered test inputs"""
         self.__pub_ros()
         # TODO: add HTTP
-
-
-def main(args=None):
-    rclpy.init(args=args)
-    node = IntegrationTestNode()
-    rclpy.spin(node)
-    rclpy.shutdown()
 
 
 if __name__ == "__main__":
