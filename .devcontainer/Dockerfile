@@ -1,4 +1,4 @@
-FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:plantuml2
+FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:integration_tests
 
 # Copy configuration files (e.g., .vimrc) from config/ to the container's home directory
 ARG USERNAME=ros

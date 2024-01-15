@@ -204,7 +204,9 @@ ENV DEBIAN_FRONTEND=
 # install dev python3 dependencies
 RUN pip3 install \
     # to be able to run juypter notebooks
-    ipykernel
+    ipykernel \
+    # for integration_tests package
+    types-PyYAML
 
 # install other helpful apt packages
 ENV DEBIAN_FRONTEND=noninteractive
