@@ -27,7 +27,8 @@ RUN pip3 install \
     # from local pathfinding
     plotly \
     pyproj \
-    shapely
+    shapely \
+    flask
 
 # root bash configuration
 ENV ROS_WORKSPACE=/workspaces/sailbot_workspace
