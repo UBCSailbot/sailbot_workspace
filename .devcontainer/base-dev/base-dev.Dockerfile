@@ -27,6 +27,7 @@ RUN pip3 install \
     # from local pathfinding
     plotly \
     pyproj \
+    flask \
     shapely
 
 # root bash configuration
