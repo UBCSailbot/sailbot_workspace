@@ -55,9 +55,7 @@ data_collection_node:
    ros__parameters:
       file_name: 'ros_data_collection'
       qos_depth: 10
-      # Define topics to subscribe to in the format ['topic_name', 'topic_type']
       topics: ['/mock_gps', 'GPS', '/mock_wind_sensors', 'WindSensors']
       bag: false
       json: true
-      # JSON file write interval (seconds)
       write_period_sec: 0.5
