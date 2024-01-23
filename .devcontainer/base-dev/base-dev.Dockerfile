@@ -1,4 +1,4 @@
-FROM ghcr.io/ubcsailbot/sailbot_workspace/pre-base:ros_humble-ompl_4c86b2f-mongo_367-v2 as base
+FROM ghcr.io/ubcsailbot/sailbot_workspace/pre-base:ros_humble-ompl_2db81e2-mongo_367-v2 as base
 
 # install base apt dependencies
 ENV DEBIAN_FRONTEND=noninteractive

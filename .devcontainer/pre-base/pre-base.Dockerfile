@@ -19,7 +19,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
 RUN git clone https://github.com/ompl/ompl.git
 WORKDIR /ompl
-RUN git reset --hard 4c86b2f
+RUN git reset --hard 2db81e2
 
 # From https://github.com/athackst/dockerfiles/blob/32a872348af0ad25ec4a6e6184cb803357acb6ab/ros2/humble.Dockerfile
 FROM fix-certificates AS ros-pre-base
@@ -85,7 +85,6 @@ RUN apt-get update \
         libeigen3-dev \
         libexpat1 \
         libflann-dev \
-        libode-dev \
         libtriangle-dev \
         ninja-build \
         pkg-config \
@@ -99,16 +98,19 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
 RUN pip3 install pygccxml pyplusplus
 COPY --from=ompl-source /ompl /ompl
-WORKDIR /build
+WORKDIR /ompl
+RUN echo $PATH
 RUN cmake \
+        -G Ninja \
+        -B build \
         -DPYTHON_EXEC=/usr/bin/python3 \
         -DOMPL_REGISTRATION=OFF \
-        -DCMAKE_INSTALL_PREFIX=/usr \
-        -G Ninja \
-        /ompl \
-    && ninja update_bindings -j `nproc` \
-    && ninja -j `nproc` \
-    && ninja install
+        -DCMAKE_INSTALL_PREFIX=/usr && \
+    cmake --build build -t update_bindings && \
+    cmake --install build && \
+    cd tests/cmake_export && \
+    cmake -B build -DCMAKE_INSTALL_PREFIX=../../install && \
+    cmake --build build
 
 FROM fix-certificates AS mongo-cxx-driver-builder
 
@@ -151,7 +153,6 @@ RUN apt-get update \
         libeigen3-dev \
         libflann-dev \
         libmongoc-dev \
-        libode-dev \
         libtriangle-dev \
         ninja-build \
         pkg-config \
