@@ -98,15 +98,21 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
 RUN pip3 install pygccxml pyplusplus
 COPY --from=ompl-source /ompl /ompl
-WORKDIR /ompl/build
+WORKDIR /ompl
 RUN cmake \
-        .. \
+        -G Ninja \
+        -B build \
         -DPYTHON_EXEC=/usr/bin/python3 \
         -DOMPL_REGISTRATION=OFF \
         -DCMAKE_INSTALL_PREFIX=/usr \
-    && make update_bindings \
-    && make -j 8 \
-    && make install
+    && cmake --build build -t update_bindings \
+    && NPROC=$(nproc) \
+    && HALF_NPROC=$((NPROC / 2)) \
+    && cmake --build build -- -j $HALF_NPROC \
+    && cmake --install build \
+    && cd tests/cmake_export \
+    && cmake -B build -DCMAKE_INSTALL_PREFIX=../../install \
+    && cmake --build build
 
 FROM fix-certificates AS mongo-cxx-driver-builder
 
@@ -128,7 +134,9 @@ RUN wget https://github.com/mongodb/mongo-cxx-driver/releases/download/r3.6.7/mo
     && tar -xzf mongo-cxx-driver-r3.6.7.tar.gz \
     && cd mongo-cxx-driver-r3.6.7/build \
     && cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local \
-    && cmake --build . -j 8 \
+    && NPROC=$(nproc) \
+    && HALF_NPROC=$((NPROC / 2)) \
+    && cmake --build . -- -j $HALF_NPROC \
     && cmake --build . --target  install
 ENV DEBIAN_FRONTEND=
 
