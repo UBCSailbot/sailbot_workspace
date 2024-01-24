@@ -103,10 +103,10 @@ RUN cmake \
         .. \
         -DPYTHON_EXEC=/usr/bin/python3 \
         -DOMPL_REGISTRATION=OFF \
-        -DCMAKE_INSTALL_PREFIX=/usr && \
-    make update_bindings && \
-    make -j 8 && \
-    make install
+        -DCMAKE_INSTALL_PREFIX=/usr \
+    && make update_bindings \
+    && make -j 8 \
+    && make install
 
 FROM fix-certificates AS mongo-cxx-driver-builder
 
