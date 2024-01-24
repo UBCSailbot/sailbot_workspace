@@ -123,6 +123,7 @@ RUN apt-get update \
         cmake \
         git \
         libmongoc-dev \
+        ninja-build \
         wget \
     && apt-get autoremove -y \
     && apt-get clean -y \
@@ -133,7 +134,7 @@ RUN apt-get update \
 RUN wget https://github.com/mongodb/mongo-cxx-driver/releases/download/r3.6.7/mongo-cxx-driver-r3.6.7.tar.gz \
     && tar -xzf mongo-cxx-driver-r3.6.7.tar.gz \
     && cd mongo-cxx-driver-r3.6.7/build \
-    && cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local \
+    && cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local \
     && NPROC=$(nproc) \
     && HALF_NPROC=$((NPROC / 2)) \
     && cmake --build . -- -j $HALF_NPROC \
