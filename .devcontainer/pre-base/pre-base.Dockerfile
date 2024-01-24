@@ -105,7 +105,7 @@ RUN cmake \
         -DOMPL_REGISTRATION=OFF \
         -DCMAKE_INSTALL_PREFIX=/usr && \
     make update_bindings && \
-    make && \
+    make -j 8 && \
     make install
 
 FROM fix-certificates AS mongo-cxx-driver-builder
@@ -128,7 +128,7 @@ RUN wget https://github.com/mongodb/mongo-cxx-driver/releases/download/r3.6.7/mo
     && tar -xzf mongo-cxx-driver-r3.6.7.tar.gz \
     && cd mongo-cxx-driver-r3.6.7/build \
     && cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local \
-    && cmake --build . \
+    && cmake --build . -j 8 \
     && cmake --build . --target  install
 ENV DEBIAN_FRONTEND=
 
