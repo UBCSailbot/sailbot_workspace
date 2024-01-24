@@ -17,9 +17,7 @@ RUN apt-get update \
     && apt-get autoremove -y \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
-RUN git clone https://github.com/ompl/ompl.git
-WORKDIR /ompl
-RUN git reset --hard 2db81e2
+RUN git clone https://github.com/ompl/ompl.git && cd ompl && git reset --hard 2db81e2
 
 # From https://github.com/athackst/dockerfiles/blob/32a872348af0ad25ec4a6e6184cb803357acb6ab/ros2/humble.Dockerfile
 FROM fix-certificates AS ros-pre-base
