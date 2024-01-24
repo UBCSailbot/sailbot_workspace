@@ -65,7 +65,7 @@ ENV ROS_PYTHON_VERSION=3
 ENV ROS_VERSION=2
 ENV DEBIAN_FRONTEND=
 
-# Based on https://github.com/ompl/ompl/blob/4c86b2fecf7084ae9073bf6a837176d0be169721/scripts/docker/ompl.Dockerfile
+# Based on https://github.com/ompl/ompl/blob/2db81e2154cad93f4b823b2afcd3e7c021ea2b2f/scripts/docker/ompl.Dockerfile
 FROM fix-certificates AS ompl-builder
 # avoid interactive configuration dialog from tzdata, which gets pulled in
 # as a dependency
@@ -98,19 +98,15 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
 RUN pip3 install pygccxml pyplusplus
 COPY --from=ompl-source /ompl /ompl
-WORKDIR /ompl
-RUN echo $PATH
+WORKDIR /ompl/build
 RUN cmake \
-        -G Ninja \
-        -B build \
+        .. \
         -DPYTHON_EXEC=/usr/bin/python3 \
         -DOMPL_REGISTRATION=OFF \
         -DCMAKE_INSTALL_PREFIX=/usr && \
-    cmake --build build -t update_bindings && \
-    cmake --install build && \
-    cd tests/cmake_export && \
-    cmake -B build -DCMAKE_INSTALL_PREFIX=../../install && \
-    cmake --build build
+    make update_bindings && \
+    make && \
+    make install
 
 FROM fix-certificates AS mongo-cxx-driver-builder
 
