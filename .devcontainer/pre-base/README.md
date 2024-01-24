@@ -23,7 +23,7 @@ bottlenecks, but if your computer has a lot of memory you can set `-j $NPROC` to
 1. Create a new driver to build this multi-architecture image
 
    ```
-   docker buildx create --name sailbot --platform linux/arm64,linux/amd64 --use
+   docker buildx create --name sailbot --platform linux/arm64,linux/amd64
    ```
 
 2. Login to the GitHub container registry: [Authenticating with a personal access token (classic)](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-with-a-personal-access-token-classic)
