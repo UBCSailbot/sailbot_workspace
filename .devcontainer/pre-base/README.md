@@ -9,12 +9,14 @@
 
 ## How to build
 
-### Hardware recommendations
+### Optimizing build times
 
 Since building OMPL with Python bindings is very CPU and memory intensive, and ARM emulation on x86 is not very fast,
-I highly recommend building this image on a bare-metal Linux computer and giving Docker at least 10GB of memory.
-The more CPU cores and memory you can give Docker the better: building this image on an Ubuntu server with
-24 cores and 128GB of memory took 20 minutes, peaking at 100% CPU usage and 25GB memory used.
+I highly recommend building this image on a bare-metal Linux computer using Docker Engine (not Docker Desktop).
+The `-j <num>` argument of `make`/`cmake` parallelizes builds. More parallelization will shorten build times but
+use more memory, so you may have to play around with this argument to build on your computer.
+For reference, `-j 24` peaks at ~25GB memory and `-j 8` peaks at ~12GB, provided that you have enough logical
+processors. If `-j` >= the number of logical processors your computer has, you will be pinned at 100% CPU usage.
 
 ### Setup
 
