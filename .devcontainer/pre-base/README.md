@@ -38,3 +38,12 @@ For example, the steps required to update OMPL to the latest commit:
 3. In [`base-dev.Dockerfile`](../base-dev/base-dev.Dockerfile), update the commit hash in the pre-base image tag
 4. Build and push the image: `./build-pre-base.sh`
 5. [Build the base and dev images using the newly built image](../base-dev/README.md#how-to-build)
+
+### Debugging
+
+If you are getting build errors, try:
+
+1. Commenting out the lines that cause, and that are after, the error
+2. Building a test image: `docker build -f pre-base.Dockerfile -t pre-base-debug`
+3. Running the commented out commands interactively: `docker run -it --rm pre-base-debug`
+4. Inspecting the container for things that went wrong
