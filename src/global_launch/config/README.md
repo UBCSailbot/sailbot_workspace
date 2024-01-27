@@ -64,6 +64,13 @@ ROS parameters specific to the nodes in the local_pathfinding package.
 - _Datatype_: `boolean`
 - _Acceptable Values_: `true`, `false`
 
+### `navigate_main`
+
+**`path_planner`**
+
+- _Description_: The path planner to use.
+- _Datatype_: `string`
+- _Acceptable Values_: `"bfmtstar"`, `"bitstar"`, `"fmtstar"`, `"informedrrtstar"`, `"prmstar"`, `"rrtstar"`, `"sorrtstar"`, `"rrtxstatic"`, `"rrtsharp"`, `"lazyprmstar"`, `"rrtconnect"`, `"lbtrrt"`, `"lazylbtrrt"`
 ## Boat Simulator Parameters
 
 ROS parameters specific to the nodes in the boat simulator.
