@@ -64,6 +64,24 @@ ROS parameters specific to the nodes in the local_pathfinding package.
 - _Datatype_: `boolean`
 - _Acceptable Values_: `true`, `false`
 
+## Controller Parameters
+
+ROS parameters specific to the nodes in the Controller.
+
+### wingsail_ctrl_node
+
+**`reynolds_number`**
+
+- _Description_: The reynolds number of the boat.
+- _Datatype_: `double`
+- _Range_: `(0.0, MAX_DOUBLE)`
+
+**`angle_of_attack`**
+
+- _Description_: The angle of attack of the sail.
+- _Datatype_: `double`
+- _Range_: `(-180.0, 180.0]`
+
 ## Boat Simulator Parameters
 
 ROS parameters specific to the nodes in the boat simulator.
