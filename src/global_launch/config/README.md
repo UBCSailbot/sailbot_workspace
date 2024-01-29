@@ -68,7 +68,7 @@ ROS parameters specific to the nodes in the local_pathfinding package.
 
 **`path_planner`**
 
-- _Description_: The path planner to use.
+- _Description_: The path planner to use. Planners are from [OMPL Library](https://ompl.kavrakilab.org/planners.html).
 - _Datatype_: `string`
 - _Acceptable Values_: `"bfmtstar"`, `"bitstar"`, `"fmtstar"`, `"informedrrtstar"`, `"prmstar"`, `"rrtstar"`,
 `"sorrtstar"`, `"rrtxstatic"`, `"rrtsharp"`, `"lazyprmstar"`, `"rrtconnect"`, `"lbtrrt"`, `"lazylbtrrt"`
