@@ -64,6 +64,15 @@ ROS parameters specific to the nodes in the local_pathfinding package.
 - _Datatype_: `boolean`
 - _Acceptable Values_: `true`, `false`
 
+### `navigate_main`
+
+**`path_planner`**
+
+- _Description_: The path planner to use. Planners are from [OMPL Library](https://ompl.kavrakilab.org/planners.html).
+- _Datatype_: `string`
+- _Acceptable Values_: `"bitstar"`, `"bfmtstar"`, `"fmtstar"`, `"informedrrtstar"`, `"lazylbtrrt"`, `"lazyprmstar"`,
+  `"lbtrrt"`, `"prmstar"`, `"rrtconnect"`, `"rrtsharp"`, `"rrtstar"`, `"rrtxstatic"`, `"sorrtstar"`
+
 ## Boat Simulator Parameters
 
 ROS parameters specific to the nodes in the boat simulator.
