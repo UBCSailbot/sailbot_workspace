@@ -2,7 +2,11 @@
 
 ## Features
 
-- The base image builds off the [`pre-base`](../pre-base/) image and adds additional dependencies
+- The pre-base image builds off the [`ubuntu`](https://hub.docker.com/_/ubuntu) image and installs ROS and OMPL with
+  Python bindings. This is not pushed, but just used as a cache since it takes a long time to build
+    - By default building is done with half the number of jobs as logical processors (`HALF_NPROC`) to avoid out of
+      memory crashes, but if the build machine has a lot of memory you can set `-j $NPROC` to minimize build times
+- The base image builds off the pre-base image and adds additional dependencies
     - This image is used for [deployment](../deployment/)
 - The local-base image builds off the base image and installs essential development-only dependencies
 - The dev image builds off the local-base image and:
@@ -26,3 +30,60 @@ For example, the steps required to add a development dependency:
 7. Once the workflow successfully completes:
     1. Run the "Dev Containers: Rebuild Container" VS Code command to use the newly built image in your Dev Container
     2. Push your changes so that the CI runs with the newly built image
+
+### Debugging locally
+
+If you are getting build errors, it is faster to debug locally:
+
+1. Comment out the lines that cause, and that are after, the error
+2. Build a test image: `docker build -f base-dev.Dockerfile -t dev:debug .`
+3. Run the commented out commands interactively: `docker run -it --rm dev:debug`
+4. Inspect the container for things that went wrong
+
+If you don't get any errors locally but still get errors on GitHub Actions, try building for both `amd64` and `arm64`:
+
+1. Create a new driver to build this multi-architecture image
+
+   ```
+   docker buildx create --name sailbot --platform linux/arm64,linux/amd64
+   ```
+
+2. Run the build command
+
+    ```
+    docker buildx build . \
+        --file base-dev.Dockerfile \
+        --tag ghcr.io/ubcsailbot/sailbot_workspace/dev:debug \
+        --platform linux/arm64,linux/amd64 \
+        --builder sailbot
+    ```
+
+If you want to push this to GitHub (instead of using the slow Build Images workflow):
+
+1. Login to the GitHub container registry: [Authenticating with a personal access token (classic)](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-with-a-personal-access-token-classic)
+
+2. Push each image
+
+    ```
+    docker buildx build . \
+        --file base-dev.Dockerfile \
+        --tag ghcr.io/ubcsailbot/sailbot_workspace/base:<tag> \
+        --platform linux/arm64,linux/amd64 \
+        --builder sailbot \
+        --target base \
+        --push
+    docker buildx build . \
+        --file base-dev.Dockerfile \
+        --tag ghcr.io/ubcsailbot/sailbot_workspace/local-base:<tag> \
+        --platform linux/arm64,linux/amd64 \
+        --builder sailbot \
+        --target local-base \
+        --push
+    docker buildx build . \
+        --file base-dev.Dockerfile \
+        --tag ghcr.io/ubcsailbot/sailbot_workspace/dev:<tag> \
+        --platform linux/arm64,linux/amd64 \
+        --builder sailbot \
+        --target dev \
+        --push
+    ```
