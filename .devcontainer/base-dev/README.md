@@ -33,7 +33,7 @@ For example, the steps required to add a development dependency:
 
 ### Debugging locally
 
-If you are getting build errors, it may be faster to debug locally:
+If you are getting build errors, it is faster to debug locally:
 
 1. Comment out the lines that cause, and that are after, the error
 2. Build a test image: `docker build -f base-dev.Dockerfile -t dev:debug .`
@@ -56,4 +56,34 @@ If you don't get any errors locally but still get errors on GitHub Actions, try 
         --tag ghcr.io/ubcsailbot/sailbot_workspace/dev:debug \
         --platform linux/arm64,linux/amd64 \
         --builder sailbot
+    ```
+
+If you want to push this to GitHub (instead of using the slow Build Images workflow):
+
+1. Login to the GitHub container registry: [Authenticating with a personal access token (classic)](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-with-a-personal-access-token-classic)
+
+2. Push each image
+
+    ```
+    docker buildx build . \
+        --file base-dev.Dockerfile \
+        --tag ghcr.io/ubcsailbot/sailbot_workspace/base:<tag> \
+        --platform linux/arm64,linux/amd64 \
+        --builder sailbot \
+        --target base \
+        --push
+    docker buildx build . \
+        --file base-dev.Dockerfile \
+        --tag ghcr.io/ubcsailbot/sailbot_workspace/local-base:<tag> \
+        --platform linux/arm64,linux/amd64 \
+        --builder sailbot \
+        --target local-base \
+        --push
+    docker buildx build . \
+        --file base-dev.Dockerfile \
+        --tag ghcr.io/ubcsailbot/sailbot_workspace/dev:<tag> \
+        --platform linux/arm64,linux/amd64 \
+        --builder sailbot \
+        --target dev \
+        --push
     ```
