@@ -36,7 +36,7 @@ For example, the steps required to add a development dependency:
 If you are getting build errors, it is faster to debug locally:
 
 1. Comment out the lines that cause, and that are after, the error
-2. Build a test image: `docker build -f base-dev.Dockerfile -t dev:debug .`
+2. Build a test image: `docker build . -f base-dev.Dockerfile -t dev:debug`
 3. Run the commented out commands interactively: `docker run -it --rm dev:debug`
 4. Inspect the container for things that went wrong
 
@@ -62,7 +62,7 @@ If you want to push this to GitHub (instead of using the slow Build Images workf
 
 1. Login to the GitHub container registry: [Authenticating with a personal access token (classic)](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-with-a-personal-access-token-classic)
 
-2. Push each image
+2. Push each image, replacing `<tag>` with the desired tag in the commands below
 
     ```
     docker buildx build . \
