@@ -5,7 +5,7 @@ version: '3.8'
 services:
   # URL: mongodb://localhost:27017
   mongodb:
-    image: mongo:latest
+    image: mongo:7
     restart: unless-stopped
     volumes:
       - mongodb-data:/data/db:delegated
