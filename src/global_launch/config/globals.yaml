@@ -12,6 +12,9 @@ mgp_main:
       write: false
       gps_threshold: 1.5
       force: false
+navigate_main:
+   ros__parameters:
+      path_planner: "rrtstar"
 
 # boat_simulator parameters
 low_level_control_node:
