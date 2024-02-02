@@ -72,7 +72,7 @@ ROS parameters specific to the nodes in the Controller.
 
 **`reynolds_number`**
 
-- _Description_: The reynolds number of the boat.
+- _Description_: The Reynolds number of the wind.
 - _Datatype_: `double`
 - _Range_: `(0.0, MAX_DOUBLE)`
 
