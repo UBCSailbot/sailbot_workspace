@@ -64,6 +64,15 @@ ROS parameters specific to the nodes in the local_pathfinding package.
 - _Datatype_: `boolean`
 - _Acceptable Values_: `true`, `false`
 
+### `navigate_main`
+
+**`path_planner`**
+
+- _Description_: The path planner to use. Planners are from [OMPL Library](https://ompl.kavrakilab.org/planners.html).
+- _Datatype_: `string`
+- _Acceptable Values_: `"bitstar"`, `"bfmtstar"`, `"fmtstar"`, `"informedrrtstar"`, `"lazylbtrrt"`, `"lazyprmstar"`,
+  `"lbtrrt"`, `"prmstar"`, `"rrtconnect"`, `"rrtsharp"`, `"rrtstar"`, `"rrtxstatic"`, `"sorrtstar"`
+
 ## Controller Parameters
 
 ROS parameters specific to the nodes in the Controller.
@@ -246,5 +255,44 @@ specified within an array: one for the `x` component, and one for the `y` compon
 **`wingsail.actuation_request_period_sec`**
 
 - _Description_: How often the sail action server requests a wingsail actuation.
+- _Datatype_: `double`
+- _Range_: `(0.0, MAX_DOUBLE)`
+
+### `data_collection_node`
+
+**`file_name`**
+
+- _Description_: The name of the file in which the data is saved, excluding the file extension.
+- _Datatype_: `string`
+- _Acceptable Values_: Any valid file name.
+
+**`qos_depth`**
+
+- _Description_: The maximum number of subscription messages to queue for further processing.
+- _Datatype_: `int`
+- _Range_: `[1, MAX_INT)`
+
+**`topics`**
+
+- _Description_: Specifies the topics to subscribe to. It should adhere to the format `['topic_name_1', 'topic_type_1', ...]`.
+- _Datatype_: `string` array with an even length
+- _Acceptable Values_: Each pair within the array must consist of a valid topic name as the first string and the
+corresponding correct type as the second string.
+
+**`bag`**
+
+- _Description_: Determines whether to save recorded data as a ROS bag.
+- _Datatype_: `boolean`
+- _Acceptable Values_: `true`, `false`
+
+**`json`**
+
+- _Description_: Determines whether to save recorded data as a JSON file.
+- _Datatype_: `boolean`
+- _Acceptable Values_: `true`, `false`
+
+**`write_period_sec`**
+
+- _Description_: The interval (in seconds) for writing queued data to the JSON file.
 - _Datatype_: `double`
 - _Range_: `(0.0, MAX_DOUBLE)`

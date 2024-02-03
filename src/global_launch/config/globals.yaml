@@ -12,6 +12,9 @@ mgp_main:
       write: false
       gps_threshold: 1.5
       force: false
+navigate_main:
+   ros__parameters:
+      path_planner: "rrtstar"
 
 # controller parameters
 wingsail_ctrl_node:
@@ -57,3 +60,11 @@ physics_engine_node:
             corr_xy: 0.
          constant_params:
             value: [1.0, 0.0]
+data_collection_node:
+   ros__parameters:
+      file_name: 'ros_data_collection'
+      qos_depth: 10
+      topics: ['/mock_gps', 'GPS', '/mock_wind_sensors', 'WindSensors']
+      bag: false
+      json: true
+      write_period_sec: 0.5

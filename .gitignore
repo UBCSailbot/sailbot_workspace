@@ -26,3 +26,6 @@ __pycache__/
 
 # exported plantuml diagrams
 /diagrams/out/
+
+# data collection node output
+/boat_simulator_output/
