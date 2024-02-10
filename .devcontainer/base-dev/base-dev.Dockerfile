@@ -1,4 +1,4 @@
-FROM ubuntu:22.04 AS fix-certificates
+FROM ubuntu:jammy-20240111 AS fix-certificates
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
