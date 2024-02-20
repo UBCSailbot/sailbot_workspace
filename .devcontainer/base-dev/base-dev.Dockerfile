@@ -195,14 +195,6 @@ RUN apt-get update \
     && rosdep init || echo "rosdep already initialized"
 ENV DEBIAN_FRONTEND=
 
-# install base python3 dependencies
-RUN pip3 install \
-    # from local pathfinding
-    plotly \
-    pyproj \
-    flask \
-    shapely
-
 # root bash configuration
 ENV ROS_WORKSPACE=/workspaces/sailbot_workspace
 COPY update-bashrc.sh /sbin/update-bashrc
