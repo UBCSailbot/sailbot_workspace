@@ -1,4 +1,4 @@
-FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:fix-building-pre-base
+FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:keep-plotly-and-flask
 
 # Copy configuration files (e.g., .vimrc) from config/ to the container's home directory
 ARG USERNAME=ros
