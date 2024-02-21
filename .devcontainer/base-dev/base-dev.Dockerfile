@@ -195,12 +195,6 @@ RUN apt-get update \
     && rosdep init || echo "rosdep already initialized"
 ENV DEBIAN_FRONTEND=
 
-# install base python3 dependencies
-RUN pip3 install \
-    # from local pathfinding
-    plotly \
-    flask
-
 # root bash configuration
 ENV ROS_WORKSPACE=/workspaces/sailbot_workspace
 COPY update-bashrc.sh /sbin/update-bashrc
@@ -375,10 +369,13 @@ ENV DEBIAN_FRONTEND=
 
 # install dev python3 dependencies
 RUN pip3 install \
-    # to be able to run juypter notebooks
+    # for juypter notebooks
     ipykernel \
     # for integration_tests package
-    types-PyYAML
+    types-PyYAML \
+    # for local pathfinding
+    plotly \
+    flask
 
 # install other helpful apt packages
 ENV DEBIAN_FRONTEND=noninteractive
