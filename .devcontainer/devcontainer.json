@@ -67,7 +67,7 @@
 				"cschlosser.doxdocgen",
 				"DavidAnson.vscode-markdownlint",
 				"eamodio.gitlens",
-				"github.copilot",
+				// "github.copilot",
 				"github.vscode-github-actions",
 				"Gruntfuggly.todo-tree",
 				"jebbs.plantuml",
