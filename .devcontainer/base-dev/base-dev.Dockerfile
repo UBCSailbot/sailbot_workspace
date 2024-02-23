@@ -206,9 +206,6 @@ RUN chmod +x /sbin/update-bashrc \
 # set timezone
 ENV TZ="America/Vancouver"
 
-# customize ROS log format: https://docs.ros.org/en/humble/Concepts/About-Logging.html#environment-variables
-ENV RCUTILS_CONSOLE_OUTPUT_FORMAT="[{severity}] [{time}] [{name}:{line_number}]: {message}"
-
 FROM base as local-base
 
 # install virtual iridium dependencies
