@@ -370,12 +370,7 @@ ENV DEBIAN_FRONTEND=
 # install dev python3 dependencies
 RUN pip3 install \
     # for juypter notebooks
-    ipykernel \
-    # for integration_tests package
-    types-PyYAML \
-    # for local pathfinding
-    plotly \
-    flask
+    ipykernel
 
 # install other helpful apt packages
 ENV DEBIAN_FRONTEND=noninteractive
