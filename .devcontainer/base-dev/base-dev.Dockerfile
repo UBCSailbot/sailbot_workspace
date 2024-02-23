@@ -245,6 +245,17 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
 ENV DEBIAN_FRONTEND=
 
+# install rapidyaml for diagnostics
+ENV DEBIAN_FRONTEND=noninteractive
+RUN wget https://github.com/biojppm/rapidyaml/releases/download/v0.5.0/rapidyaml-0.5.0-src.tgz
+RUN tar -xzf rapidyaml-0.5.0-src.tgz && \
+    cd rapidyaml-0.5.0-src && \
+    cmake -S "." -B ./build/Release/ryml-build "-DCMAKE_INSTALL_PREFIX=/usr" -DCMAKE_BUILD_TYPE=Release && \
+    cmake --build ./build/Release/ryml-build --parallel --config Release && \
+    cmake --build ./build/Release/ryml-build --config Release --target install && \
+    rm -rf *rapidyaml*
+ENV DEBIAN_FRONTEND=
+
 FROM local-base as ros-dev
 
 # From https://github.com/athackst/dockerfiles/blob/32a872348af0ad25ec4a6e6184cb803357acb6ab/ros2/humble.Dockerfile
@@ -351,17 +362,6 @@ RUN apt-get update \
     && apt-get autoremove -y \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
-ENV DEBIAN_FRONTEND=
-
-# install rapidyaml for diagnostics
-ENV DEBIAN_FRONTEND=noninteractive
-RUN wget https://github.com/biojppm/rapidyaml/releases/download/v0.5.0/rapidyaml-0.5.0-src.tgz
-RUN tar -xzf rapidyaml-0.5.0-src.tgz && \
-    cd rapidyaml-0.5.0-src && \
-    cmake -S "." -B ./build/Release/ryml-build "-DCMAKE_INSTALL_PREFIX=/usr" -DCMAKE_BUILD_TYPE=Release && \
-    cmake --build ./build/Release/ryml-build --parallel --config Release && \
-    cmake --build ./build/Release/ryml-build --config Release --target install && \
-    rm -rf *rapidyaml*
 ENV DEBIAN_FRONTEND=
 
 # install dev python3 dependencies
