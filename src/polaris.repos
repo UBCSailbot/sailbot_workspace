@@ -45,7 +45,7 @@ repositories:
   local_pathfinding:
     type: git
     url: https://github.com/UBCSailbot/local_pathfinding
-    version: main
+    version: user/SPDonaghy/migrate-package-specific-dependencies-242
 
   network_systems:
     type: git
