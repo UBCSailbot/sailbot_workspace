@@ -364,11 +364,6 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
 ENV DEBIAN_FRONTEND=
 
-# install dev python3 dependencies
-RUN pip3 install \
-    # for juypter notebooks
-    ipykernel
-
 # install other helpful apt packages
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
@@ -380,3 +375,8 @@ RUN apt-get update \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
 ENV DEBIAN_FRONTEND=
+
+# install dev python3 dependencies
+RUN pip3 install \
+    # for juypter notebooks
+    ipykernel
