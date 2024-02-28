@@ -6,7 +6,15 @@
 		"website/docker-compose.website.yml", // website
 
 		// Uncomment the files containing the programs you need
-		// "docs/docker-compose.docs.yml", // docs
+		"docker-compose.db.yml", // mongodb
+		// "docker-compose.docs.yml", // docs
+		"docker-compose.website.yml", // website
+
+		"docker-compose.yml"
+	],
+	"forwardPorts": [
+		3005, // website
+		8000  // docs
 	],
 	"service": "sailbot-workspace",
 	"workspaceFolder": "/workspaces/sailbot_workspace",

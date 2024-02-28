@@ -58,6 +58,15 @@ inputs:
           longitude:
               dtype: float32
               val: -3
+  - type: HTTP
+    name: gps
+    dtype: GPS
+    data:
+      latitude: 1.0
+      longitude: 2.0
+      speed: 10.0
+      heading: 180.0
+
 
 expected_outputs:
   - type: ROS
