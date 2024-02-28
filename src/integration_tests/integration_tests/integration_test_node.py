@@ -9,6 +9,7 @@ import traceback
 from dataclasses import dataclass, field
 from typing import Any, Optional, Tuple, Type, TypeVar, Union
 
+import custom_interfaces.msg
 import rclpy
 import rclpy.node
 import std_msgs.msg
@@ -16,7 +17,7 @@ import yaml
 from rclpy.impl.rcutils_logger import RcutilsLogger
 from rclpy.node import MsgType, Node
 
-import custom_interfaces.msg
+from pymongo import MongoClient
 
 MIN_SETUP_DELAY_S = 1  # Minimum 1 second delay between setting up the test and sending inputs
 DEFAULT_TIMEOUT_SEC = 3  # Number of seconds that the test has to run
@@ -353,6 +354,25 @@ def parse_ros_data(data: dict) -> Tuple[Union[None, rclpy.node.MsgType], rclpy.n
     return msg, msg_type
 
 
+def parse_web_data(data: dict):
+    """Parse a data dictionary "data" field knowing only that it is HTTP data. Use this function if
+    dtype is currently unknown.
+
+    Args:
+        data (dict): dictionary containing HTTP data
+
+    Returns:
+        Union[None, HTTP_MSG_PLACEHOLDER_TYPE]: HTTP msg type OBJECT or None if DONT_CARE is specified
+        HTTP_MSG_PLACEHOLDER_TYPE: HTTP msg type IDENTIFIER
+    """
+    # TODO: Implement get_http_dtype
+    msg = data
+    msg["timestamp"] = time.asctime(time.localtime())
+
+
+    return msg
+
+
 @dataclass
 class IOEntry:
     """Represents IO data"""
@@ -406,7 +426,13 @@ class IntegrationTestSequence:
                 self.__ros_inputs.append(new_input)
 
             elif input_dict["type"] == "HTTP":
-                raise NotImplementedError("HTTP support is a WIP")
+                data = input_dict["data"]
+                dtype = input_dict["dtype"]
+                msg = parse_web_data(data)  # type: ignore
+
+                new_input = IOEntry(name=input_dict["name"], msg_type=dtype, msg=msg)
+
+                self.__http_inputs.append(new_input)
             else:
                 raise KeyError(f"Invalid input type: {input_dict['type']}")
 
@@ -614,6 +640,23 @@ class IntegrationTestNode(Node):
                     self.__ros_subs.append(sub)
 
                 # TODO: HTTP
+                # Get HTTP inputs and outputs
+                self.__http_inputs: list[IOEntry] = []
+                try:
+                    db = self.get_database()
+                except:
+                    print("MongoDB not connected")
+
+                # Format the HTTP inputs as a dict
+                for http_inputs in self.__test_inst.http_inputs():
+                    self.get_logger().info(f"HTTP input: {http_inputs}")
+
+                    test_output = http_inputs.msg
+
+                    collection_name = db[http_inputs.name]
+
+                    collection_name.insert_one(test_output)
+
 
                 # IMPORTANT: MAKE SURE EXPECTED OUTPUTS ARE SETUP BEFORE SENDING INPUTS
                 time.sleep(MIN_SETUP_DELAY_S)
@@ -679,6 +722,13 @@ class IntegrationTestNode(Node):
         self.__pub_ros()
         # TODO: add HTTP
 
+    def get_database(self):
+
+        CONNECTION_STRING = "mongodb://localhost:27017"
+
+        client = MongoClient(CONNECTION_STRING)
+
+        return client["test"]
 
 if __name__ == "__main__":
     main()

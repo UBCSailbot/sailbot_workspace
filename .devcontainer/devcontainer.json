@@ -5,7 +5,7 @@
 		// Uncomment the files containing the programs you need
 		"docker-compose.db.yml", // mongodb
 		// "docker-compose.docs.yml", // docs
-		// "docker-compose.website.yml", // website
+		"docker-compose.website.yml", // website
 
 		"docker-compose.yml"
 	],
