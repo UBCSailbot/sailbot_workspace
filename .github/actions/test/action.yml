@@ -17,6 +17,10 @@ runs:
       shell: bash
       run: docker-compose -f .devcontainer/docker-compose.yml -f .devcontainer/docker-compose.db.yml -f .devcontainer/docker-compose.website.yml up -d
 
+    - name: Print Website Logs
+      shell: bash
+      run: docker-compose -f .devcontainer/docker-compose.yml -f .devcontainer/docker-compose.db.yml -f .devcontainer/docker-compose.website.yml logs website
+
     - name: Run Tests
       shell: bash
       run: docker-compose -f .devcontainer/docker-compose.yml -f .devcontainer/docker-compose.db.yml -f .devcontainer/docker-compose.website.yml exec -T sailbot-workspace /bin/bash -c "export DISABLE_VCS=${{ inputs.disable_vcs }} && cd /workspaces/sailbot_workspace && .github/actions/test/run.sh"

@@ -45,7 +45,7 @@ repositories:
   local_pathfinding:
     type: git
     url: https://github.com/UBCSailbot/local_pathfinding
-    version: main
+    version: user/SPDonaghy/Global-path-part-2-return-of-the-path-#69
 
   network_systems:
     type: git
