@@ -14,12 +14,12 @@ runs:
   steps:
     - name: Build Containers
       shell: bash
-      run: docker-compose -f .devcontainer/docker-compose.yml build
+      run: docker compose -f .devcontainer/docker-compose.yml build
 
     - name: Run Containers
       shell: bash
-      run: docker-compose -f .devcontainer/docker-compose.yml up -d
+      run: docker compose -f .devcontainer/docker-compose.yml up -d
 
     - name: Run Tests
       shell: bash
-      run: docker-compose -f .devcontainer/docker-compose.yml exec -T sailbot-workspace /bin/bash -c "export LINTER=${{ inputs.linter}} && export DISABLE_VCS=${{ inputs.disable_vcs }} && cd /workspaces/sailbot_workspace && .github/actions/ament-lint/run.sh"
+      run: docker compose -f .devcontainer/docker-compose.yml exec -T sailbot-workspace /bin/bash -c "export LINTER=${{ inputs.linter}} && export DISABLE_VCS=${{ inputs.disable_vcs }} && cd /workspaces/sailbot_workspace && .github/actions/ament-lint/run.sh"
