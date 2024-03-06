@@ -23,8 +23,22 @@ runs:
           repository: UBCSailbot/custom_interfaces
           path: src/custom_interfaces
 
+    - name: Checkout network_systems ROS package
+      if: ${{ inputs.repository != 'sailbot_workspace' && inputs.repository == 'local_pathfinding' }}
+      uses: actions/checkout@v4
+      with:
+          repository: UBCSailbot/network_systems
+          path: src/network_systems
+
+    - name: Checkout website ROS package
+      if: ${{ inputs.repository != 'sailbot_workspace' && inputs.repository == 'local_pathfinding' }}
+      uses: actions/checkout@v4
+      with:
+          repository: UBCSailbot/website
+          path: src/website
+
     - name: Checkout virtual_iridium repository
-      if: ${{ inputs.repository != 'sailbot_workspace' && inputs.repository == 'network_systems' }}
+      if: ${{ inputs.repository != 'sailbot_workspace' && (inputs.repository == 'network_systems' || inputs.repository == 'local_pathfinding') }}
       uses: actions/checkout@v4
       with:
           repository: UBCSailbot/virtual_iridium

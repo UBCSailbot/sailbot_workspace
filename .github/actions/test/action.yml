@@ -9,14 +9,17 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Build Containers
+    # TODO: remove once monorepo and combine website docker compose into main one
+    - name: Setup Code
       shell: bash
-      run: docker-compose -f .devcontainer/docker-compose.yml -f .devcontainer/docker-compose.db.yml build
+      run: |
+        docker compose -f .devcontainer/docker-compose.yml up -d
+        docker compose -f .devcontainer/docker-compose.yml exec -T sailbot-workspace /bin/bash -c "export DISABLE_VCS=${{ inputs.disable_vcs }} && cd /workspaces/sailbot_workspace && ./setup.sh"
 
     - name: Run Containers
       shell: bash
-      run: docker-compose -f .devcontainer/docker-compose.yml -f .devcontainer/docker-compose.db.yml up -d
+      run: docker compose -f .devcontainer/docker-compose.yml -f .devcontainer/docker-compose.website.yml up -d
 
     - name: Run Tests
       shell: bash
-      run: docker-compose -f .devcontainer/docker-compose.yml -f .devcontainer/docker-compose.db.yml exec -T sailbot-workspace /bin/bash -c "export DISABLE_VCS=${{ inputs.disable_vcs }} && cd /workspaces/sailbot_workspace && .github/actions/test/run.sh"
+      run: docker compose -f .devcontainer/docker-compose.yml -f .devcontainer/docker-compose.website.yml exec -T sailbot-workspace /bin/bash -c "export DISABLE_VCS=${{ inputs.disable_vcs }} && cd /workspaces/sailbot_workspace && .github/actions/test/run.sh"

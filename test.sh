@@ -13,7 +13,16 @@ trap 'exit' INT TERM
 trap 'signal_handler' EXIT
 
 if [ -f install/local_setup.bash ]; then source install/local_setup.bash; fi
-if [ -d src/network_systems ]; then ./run_virtual_iridium.sh &> /dev/null & fi
+
+NET_DIR=src/network_systems
+if [ -d $NET_DIR ]; then
+    ./run_virtual_iridium.sh &> /dev/null &
+    pushd $NET_DIR
+    ./scripts/sailbot_db sailbot_db --clear
+    ./scripts/sailbot_db sailbot_db --populate
+    popd
+fi
+
 colcon test --packages-ignore virtual_iridium --merge-install --event-handlers console_cohesion+
 colcon test-result
 exit 0

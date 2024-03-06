@@ -3,14 +3,12 @@
 	"name": "Sailbot Workspace",
 	"dockerComposeFile": [
 		// Uncomment the files containing the programs you need
-		"docker-compose.db.yml", // mongodb
 		// "docker-compose.docs.yml", // docs
-		// "docker-compose.website.yml", // website
+		"docker-compose.website.yml", // website
 
 		"docker-compose.yml"
 	],
 	"forwardPorts": [
-		3005, // website
 		8000  // docs
 	],
 	"service": "sailbot-workspace",
@@ -19,6 +17,7 @@
 	"containerEnv": {
 		"LIBGL_ALWAYS_SOFTWARE": "1" // Needed for software rendering of opengl
 	},
+	"postCreateCommand": "./setup.sh",
 	// Set *default* container specific settings.json values on container create.
 	"customizations": {
 		"codespaces": {
