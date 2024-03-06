@@ -38,7 +38,7 @@ runs:
           path: src/website
 
     - name: Checkout virtual_iridium repository
-      if: ${{ inputs.repository != 'sailbot_workspace' && inputs.repository == 'network_systems' }}
+      if: ${{ inputs.repository != 'sailbot_workspace' && (inputs.repository == 'network_systems' || inputs.repository == 'local_pathfinding') }}
       uses: actions/checkout@v4
       with:
           repository: UBCSailbot/virtual_iridium
