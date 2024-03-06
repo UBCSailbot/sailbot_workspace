@@ -22,6 +22,23 @@ services:
     - seccomp:unconfined
     - apparmor:unconfined
 
+  # URL: mongodb://localhost:27017
+  mongodb:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - mongodb-data:/data/db:delegated
+
+    # Runs on the same network as the workspace container, allows "forwardPorts" in devcontainer.json function.
+    network_mode: service:sailbot-workspace
+
+    # Uncomment to change startup options
+    # environment:
+    #  MONGO_INITDB_ROOT_USERNAME: root
+    #  MONGO_INITDB_ROOT_PASSWORD: example
+    #  MONGO_INITDB_DATABASE: your-database-here
+
 volumes:
+  mongodb-data:
   sailbot-new-project-bashhistory:
   sailbot-new-project-roslog:
