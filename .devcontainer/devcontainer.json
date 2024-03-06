@@ -9,7 +9,6 @@
 		"docker-compose.yml"
 	],
 	"forwardPorts": [
-		3005, // website
 		8000  // docs
 	],
 	"service": "sailbot-workspace",

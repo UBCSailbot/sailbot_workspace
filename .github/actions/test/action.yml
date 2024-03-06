@@ -9,7 +9,7 @@ inputs:
 runs:
   using: "composite"
   steps:
-    # TODO: remove once monorepo
+    # TODO: remove once monorepo and combine website docker compose into main one
     - name: Setup Code
       shell: bash
       run: |
