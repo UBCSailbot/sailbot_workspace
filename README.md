@@ -9,7 +9,8 @@ This repository will get you set up to develop UBCSailbot's software on VS Code.
 ## Features
 
 An overview of Sailbot Workspace's features can be found below.
-See [our docs site](https://ubcsailbot.github.io/docs/current/sailbot_workspace/run/) for how to use these features.
+See [our docs site](https://ubcsailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/run/)
+for how to use these features.
 
 ### Style
 
@@ -67,16 +68,16 @@ Our CI can be found in [`.github/workflows/`](https://github.com/UBCSailbot/sail
 ### Customization
 
 This repository supports user-specific configuration files. To set this up, see
-[How to use your dotfiles](https://ubcsailbot.github.io/docs/current/sailbot_workspace/how_to/#use-your-dotfiles).
+[How to use your dotfiles](https://ubcsailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/how_to/#use-your-dotfiles).
 
 ### Run Raye's Software
 
 [Raye](https://www.ubcsailbot.org/discover-raye) was our previous project.
 Her software can be run in the [`raye` branch](https://github.com/UBCSailbot/sailbot_workspace/tree/raye)
-following the instructions in [How to run Raye's software](https://ubcsailbot.github.io/docs/main/current/sailbot_workspace/how_to/#run-rayes-software).
+following the instructions in [How to run Raye's software](https://ubcsailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/how_to/#run-rayes-software).
 The initial differences between the `main` and `raye` branches are summarized in
 [this PR](https://github.com/UBCSailbot/sailbot_workspace/pull/61).
 
 ## Documentation
 
-Further documentation, including setup and run instructions, can be found on [our Docs website](https://ubcsailbot.github.io/docs/current/sailbot_workspace/overview/).
+Further documentation, including setup and run instructions, can be found on [our Docs website](https://ubcsailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/overview/).

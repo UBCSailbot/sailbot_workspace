@@ -61,8 +61,8 @@ If there are new features or bug fixes that you want to try, you will need to up
 
 ## 3. Make your changes
 
-We make changes to our software following our [GitHub development workflow](https://ubcsailbot.github.io/docs/reference/github/workflow/overview/){target=_blank}.
-Of particular relevance is the [Developing on Branches page](https://ubcsailbot.github.io/docs/reference/github/workflow/branches/){target=_blank}.
+We make changes to our software following our [GitHub development workflow](https://ubcsailbot.github.io/sailbot_workspace/main/reference/github/workflow/overview/){target=_blank}.
+Of particular relevance is the [Developing on Branches page](https://ubcsailbot.github.io/sailbot_workspace/main/reference/github/workflow/branches/){target=_blank}.
 
 !!! tip "Git interfaces"
 

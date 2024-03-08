@@ -9,7 +9,7 @@ on:
         required: true
         type: string
     secrets:
-      # A GitHub token with access to our docs site https://ubcsailbot.github.io/docs/
+      # A GitHub token with access to our docs site https://ubcsailbot.github.io/sailbot_workspace/
       # If rebuild-docs is true:
       # 1. Create the repository secret PAT_TOKEN (copy from Bitwarden)
       # 2. Set to ${{ secrets.PAT_TOKEN }}
