@@ -8,27 +8,6 @@ on:
       repository:
         required: true
         type: string
-      # If true, runs the ROS tests and linters
-      # Set to true for ROS packages
-      ros-ci:
-        required: true
-        type: boolean
-      # If true, runs clang-tidy
-      # Takes a long time, so only set to true for C++ repositories
-      clang-tidy:
-        required: true
-        type: boolean
-      # If true, rebuilds our docs site https://ubcsailbot.github.io/docs/
-      # Set to true if the docs site contains a snippet of a file in the repository
-      rebuild-docs:
-        required: true
-        type: boolean
-      # If true, runs the Markdown linters
-      # True by default, disable only if there will never be Markdown files in the repository
-      markdown-ci:
-        required: false
-        default: true
-        type: boolean
     secrets:
       # A GitHub token with access to our docs site https://ubcsailbot.github.io/docs/
       # If rebuild-docs is true:
@@ -46,7 +25,6 @@ jobs:
   extract-metadata:
     runs-on: ubuntu-latest
     timeout-minutes: 1
-    if: inputs.ros-ci || inputs.clang-tidy || inputs.markdown-ci
     permissions:
       actions: read
     outputs:
@@ -62,7 +40,7 @@ jobs:
   colcon-test:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    if: ${{ inputs.ros-ci }}
+    if: inputs.repository == 'sailbot_workspace'
     needs: [extract-metadata]
     steps:
     - name: Checkout workspace
@@ -83,7 +61,7 @@ jobs:
     name: ament_${{ matrix.linter }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    if: ${{ inputs.ros-ci }}
+    if: inputs.repository == 'sailbot_workspace'
     needs: [extract-metadata]
     steps:
     - name: Checkout workspace
@@ -100,7 +78,7 @@ jobs:
   clang-tidy:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    if: inputs.clang-tidy
+    if: inputs.repository == 'sailbot_workspace'
     needs: [extract-metadata]
     steps:
     - name: Checkout workspace
@@ -116,7 +94,6 @@ jobs:
   markdownlint:
     runs-on: ubuntu-latest
     timeout-minutes: 1
-    if: ${{ inputs.markdown-ci }}
     needs: [extract-metadata]
     steps:
     - name: Checkout workspace
@@ -145,7 +122,6 @@ jobs:
   markdown-link-check:
     runs-on: ubuntu-latest
     timeout-minutes: 1
-    if: ${{ inputs.markdown-ci }}
     needs: [extract-metadata]
     steps:
     - name: Checkout workspace
@@ -172,7 +148,7 @@ jobs:
   rebuild-docs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && inputs.rebuild-docs
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [markdownlint, markdown-link-check]
     steps:
     - name: Dispatch Docs Tests workflow to publish site
@@ -181,20 +157,6 @@ jobs:
           gh workflow run tests.yml -R UBCSailbot/docs
           sleep 5
           gh run watch --exit-status -R UBCSailbot/docs $(gh run list -R UBCSailbot/docs -w tests.yml -L1 --json databaseId --jq '.[0].databaseId')
-    env:
-      GH_TOKEN: ${{ secrets.PAT_TOKEN }}
-
-  # Runs Sailbot Workspace CI
-  run-sailbot-workspace-ci:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && inputs.repository != 'sailbot_workspace' && inputs.repository != 'docs'
-    steps:
-    - name: Dispatch Sailbot Workspace Tests workflow to run CI
-      # https://github.com/orgs/community/discussions/26323#discussioncomment-5600001
-      run: |
-          gh workflow run tests.yml -R UBCSailbot/sailbot_workspace
-          sleep 5
-          gh run watch --exit-status -R UBCSailbot/sailbot_workspace $(gh run list -R UBCSailbot/sailbot_workspace -w tests.yml -L1 --json databaseId --jq '.[0].databaseId')
     env:
       GH_TOKEN: ${{ secrets.PAT_TOKEN }}
 

@@ -20,11 +20,5 @@ jobs:
     # for documentation on the inputs and secrets below
     with:
       repository: ${{ github.event.repository.name }}
-      ros-ci: true
-      clang-tidy: true
-      rebuild-docs: true
-    # If rebuild-docs is true:
-    # 1. Create the repository secret PAT_TOKEN (copy from Bitwarden)
-    # 2. Uncomment the 2 lines below
     secrets:
       PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
