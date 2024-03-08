@@ -140,6 +140,8 @@ nav:
       - Overview: current/controller/overview.md
     - Custom Interfaces:
       - Overview: current/custom_interfaces/overview.md
+    - Docs:
+      - Overview: current/docs/overview.md
     - Local Pathfinding:
       - Overview: current/local_pathfinding/overview.md
     - Network Systems:

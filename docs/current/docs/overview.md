@@ -1,8 +1,6 @@
 # Docs
 
-[![Tests](https://github.com/UBCSailbot/docs/actions/workflows/tests.yml/badge.svg)](https://github.com/UBCSailbot/docs/actions/workflows/tests.yml)
-
-UBCSailbot software team's documentation site. It is meant to be developed in [Sailbot Workspace](https://github.com/UBCSailbot/sailbot_workspace)
+UBCSailbot software team's documentation site. It is meant to be developed in [Sailbot Workspace](https://github.com/UBCSailbot/sailbot_workspace){target=_blank}
 in conjunction with our other software, but doesn't have to be. There are instructions for both cases below.
 
 ## Setup
@@ -12,7 +10,7 @@ in conjunction with our other software, but doesn't have to be. There are instru
 1. Uncomment `docker-compose.docs.yml` in `.devcontainer/devcontainer.json`
 2. Rebuild the Dev Container
 
-Refer to [How to run optional programs](https://ubcsailbot.github.io/docs/main/current/sailbot_workspace/how_to/#run-optional-programs)
+Refer to [How to work with containerized applications](../sailbot_workspace/how_to.md#work-with-containerized-applications)
 for more details.
 
 ### Setup By Itself
@@ -23,7 +21,7 @@ for more details.
     git clone https://github.com/UBCSailbot/docs.git
     ```
 
-2. Manually install [social plugin OS dependencies](https://squidfunk.github.io/mkdocs-material/setup/setting-up-social-cards/#dependencies)
+2. Manually install [social plugin OS dependencies](https://squidfunk.github.io/mkdocs-material/setup/setting-up-social-cards/#dependencies){target=_blank}
 
 3. Install Python dependencies
 
@@ -32,7 +30,7 @@ for more details.
    pip install -Ur docs/requirements.txt
    ```
 
-    - Can do this in a [Python virtual environment](https://ubcsailbot.github.io/docs/reference/python/virtual-environments/)
+    - Can do this in a [Python virtual environment](../../reference/python/virtual-environments.md)
 
 ## Run
 
@@ -40,7 +38,7 @@ for more details.
 
 After [setup](#setup-in-sailbot-workspace), the Docs site should be running on port 8000.
 
-Refer to [How to run optional programs](https://ubcsailbot.github.io/docs/main/current/sailbot_workspace/how_to/#run-optional-programs)
+Refer to [How to work with containerized applications](../sailbot_workspace/how_to.md#work-with-containerized-applications)
 for more details.
 
 ### Run By Itself using VS Code
@@ -58,7 +56,7 @@ mkdocs serve
 
 ## Update Dependencies
 
-This site is built using the latest versions of dependencies in [`docs/requirements.txt`](./docs/requirements.txt)
+This site is built using the latest versions of dependencies in `docs/requirements.txt`
 at the time of the most recent commit to the main branch.
 To see exactly how the site will look when deployed, ensure your local dependencies are up to date.
 
