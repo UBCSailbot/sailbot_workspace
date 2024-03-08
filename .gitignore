@@ -3,12 +3,6 @@
 /install/
 /log/
 
-# vcstool packages
-# TODO: remove
-/src/*
-!/src/integration_tests
-!/src/global_launch
-
 # configuration files
 /.devcontainer/config/*
 !/.devcontainer/config/README.md
