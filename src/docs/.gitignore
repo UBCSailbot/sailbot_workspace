@@ -1,9 +1,0 @@
-# Python virtual environment
-.venv/
-venv/
-
-# Social cards
-.cache/
-
-# Build
-site/

@@ -4,6 +4,9 @@
             "path": "."
         },
         {
+            "path": "docs"
+        },
+        {
             "path": "src/boat_simulator"
         },
         {
@@ -14,9 +17,6 @@
         },
         {
             "path": "src/diagnostics"
-        },
-        {
-            "path": "src/docs"
         },
         {
             "path": "src/global_launch"

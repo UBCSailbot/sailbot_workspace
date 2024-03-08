@@ -5,7 +5,6 @@
 
 # vcstool packages
 /src/*
-!/src/docs
 !/src/integration_tests
 !/src/global_launch
 !/src/polaris.repos
@@ -30,3 +29,13 @@ __pycache__/
 
 # data collection node output
 /boat_simulator_output/
+
+# docs
+!/src/docs
+# Python virtual environment
+.venv/
+venv/
+# Social cards
+.cache/
+# Build
+site/
