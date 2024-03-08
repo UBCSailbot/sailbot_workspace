@@ -71,11 +71,6 @@ jobs:
           repository: UBCSailbot/sailbot_workspace
           ref: ${{ needs.extract-metadata.outputs.caller-ref }}
 
-    - name: Checkout repositories
-      uses: ./.github/actions/checkout/
-      with:
-          repository: ${{ inputs.repository }}
-
     - name: Test
       uses: ./.github/actions/test/
 
@@ -97,11 +92,6 @@ jobs:
           repository: UBCSailbot/sailbot_workspace
           ref: ${{ needs.extract-metadata.outputs.caller-ref }}
 
-    - name: Checkout repositories
-      uses: ./.github/actions/checkout/
-      with:
-          repository: ${{ inputs.repository }}
-
     - name: Run linter
       uses: ./.github/actions/ament-lint/
       with:
@@ -119,11 +109,6 @@ jobs:
           repository: UBCSailbot/sailbot_workspace
           ref: ${{ needs.extract-metadata.outputs.caller-ref }}
 
-    - name: Checkout repositories
-      uses: ./.github/actions/checkout/
-      with:
-          repository: ${{ inputs.repository }}
-
     - name: Run linter
       uses: ./.github/actions/clang-tidy/
 
@@ -139,11 +124,6 @@ jobs:
       with:
           repository: UBCSailbot/sailbot_workspace
           ref: ${{ needs.extract-metadata.outputs.caller-ref }}
-
-    - name: Checkout repositories
-      uses: ./.github/actions/checkout/
-      with:
-          repository: ${{ inputs.repository }}
 
     - name: Run linter in workspace
       uses: nosborn/github-action-markdown-cli@v3.3.0
@@ -173,11 +153,6 @@ jobs:
       with:
           repository: UBCSailbot/sailbot_workspace
           ref: ${{ needs.extract-metadata.outputs.caller-ref }}
-
-    - name: Checkout repositories
-      uses: ./.github/actions/checkout/
-      with:
-          repository: ${{ inputs.repository }}
 
     - name: Run linter in workspace
       uses: gaurav-nelson/github-action-markdown-link-check@v1
