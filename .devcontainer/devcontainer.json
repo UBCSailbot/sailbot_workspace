@@ -29,7 +29,6 @@
 				"UBCSailbot/local_pathfinding": {"permissions": "write-all"},
 				"UBCSailbot/network_systems": {"permissions": "write-all"},
 				"UBCSailbot/notebooks": {"permissions": "write-all"},
-				"UBCSailbot/raye-local-pathfinding": {"permissions": "write-all"},
 				"UBCSailbot/website": {"permissions": "write-all"},
 				"UBCSailbot/virtual_iridium": {"permissions": "write-all"}
 			}

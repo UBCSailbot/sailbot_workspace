@@ -34,9 +34,6 @@
             "path": "src/notebooks"
         },
         {
-            "path": "src/raye-local-pathfinding"
-        },
-        {
             "path": "src/website"
         },
     ],
@@ -189,9 +186,6 @@
         "isort.interpreter": ["/usr/bin/python3"],
         // test framework: pytest
         "python.testing.cwd": "/workspaces/sailbot_workspace/src",
-        "python.testing.pytestArgs": [
-            "--ignore=/workspaces/sailbot_workspace/src/raye-local-pathfinding",
-        ],
         "python.testing.pytestEnabled": true,
         // type checker: mypy
         "mypy-type-checker.args": [

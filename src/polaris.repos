@@ -57,11 +57,6 @@ repositories:
     url: https://github.com/UBCSailbot/notebooks
     version: main
 
-  raye-local-pathfinding:
-    type: git
-    url: https://github.com/UBCSailbot/raye-local-pathfinding
-    version: user/patrick-5546/delete-ros-files
-
   website:
     type: git
     url: https://github.com/UBCSailbot/website
