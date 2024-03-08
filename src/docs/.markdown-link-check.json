@@ -1,0 +1,13 @@
+{
+    "ignorePatterns": [
+        {
+            "pattern": "^https://github.com/UBCSailbot/.github/issues/templates/edit"
+        },
+        {
+            "pattern": "^https://docs.github.com*"
+        },
+        {
+            "pattern": "^https://distrowatch.com*"
+        }
+    ]
+}

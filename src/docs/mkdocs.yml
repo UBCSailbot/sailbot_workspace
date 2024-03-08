@@ -1,0 +1,174 @@
+# Project information
+site_name: UBCSailbot Software Team Docs
+site_url: https://UBCSailbot.github.io/docs/
+site_author: UBCSailbot Software Team
+
+# Repository
+repo_name: UBCSailbot/docs
+repo_url: https://github.com/UBCSailbot/docs
+edit_uri: "edit/main/docs/"
+
+# Configuration
+theme:
+  name: material
+  custom_dir: docs/overrides
+  logo: assets/ubcsailbot-white.png
+  features:
+    - content.action.edit
+    - content.action.view
+    - content.code.annotate
+    - content.code.copy
+    - content.tabs.link
+    - navigation.expand
+    - navigation.footer
+    - navigation.instant
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.top
+    - search.highlight
+    - search.share
+    - search.suggest
+    - toc.follow
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+# Plugins
+plugins:
+  - git-revision-date-localized:
+      timezone: America/Vancouver
+  - search:
+      separator: '[\s\-,:!=\[\]()"/]+|(?!\b)(?=[A-Z][a-z])|\.(?!\d)|&[lg]t;'
+  - social:
+      cards_layout_options:
+        background_color: "#1665A2"
+
+# Customization
+extra:
+  social:
+    - icon: material/sail-boat
+      link: https://www.ubcsailbot.org/
+    - icon: material/instagram
+      link: https://www.instagram.com/ubcsailbot/
+    - icon: material/linkedin
+      link: https://www.linkedin.com/company/ubc-sailbot/
+    - icon: material/github
+      link: https://github.com/UBCSailbot
+    - icon: material/email
+      link: mailto:software@ubcsailbot.org
+  version:
+    provider: mike
+
+extra_css:
+  - stylesheets/extra.css
+
+extra_javascript:
+  - javascripts/mathjax.js
+  - javascripts/table_of_contents_themes.js
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+
+# Extensions
+markdown_extensions:
+  # Python Markdown
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - toc:
+      permalink: true
+
+  # Python Markdown Extensions
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
+      options:
+        custom_icons:
+          - overrides/.icons
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.snippets:
+      url_download: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+# Page tree
+nav:
+  - Home: index.md
+  - Current Project:
+    - Overview: current/overview.md
+    - Sailbot Workspace:
+      - Overview: current/sailbot_workspace/overview.md
+      - Setup: current/sailbot_workspace/setup.md
+      - Parameters: current/sailbot_workspace/parameters.md
+      - Workflow: current/sailbot_workspace/workflow.md
+      - How-To's: current/sailbot_workspace/how_to.md
+      - Deployment: current/sailbot_workspace/deployment.md
+      - Images: current/sailbot_workspace/docker_images.md
+      - Launch Files: current/sailbot_workspace/launch_files.md
+    - Boat Simulator:
+      - Overview: current/boat_simulator/overview.md
+    - Controller:
+      - Overview: current/controller/overview.md
+    - Custom Interfaces:
+      - Overview: current/custom_interfaces/overview.md
+    - Local Pathfinding:
+      - Overview: current/local_pathfinding/overview.md
+    - Network Systems:
+      - Overview: current/network_systems/overview.md
+    - Notebooks:
+      - Overview: current/notebooks/overview.md
+    - Website:
+      - Overview: current/website/overview.md
+  - Reference:
+    - C++:
+      - Getting Started: reference/cpp/start.md
+      - Differences: reference/cpp/differences.md
+      - Tools: reference/cpp/tools.md
+    - GitHub:
+      - Development Workflow:
+        - Overview: reference/github/workflow/overview.md
+        - Creating Issues: reference/github/workflow/issues.md
+        - Developing on Branches: reference/github/workflow/branches.md
+        - Pull Requests: reference/github/workflow/pr.md
+    - Markdown: reference/markdown.md
+    - Python:
+      - Getting Started: reference/python/start.md
+      - Conventions: reference/python/conventions.md
+      - Virtual Environments: reference/python/virtual-environments.md
+    - Robot Operating System: reference/ros.md
+    - Sailing Knowledge:
+      - Overview: reference/sailing/overview.md
+      - Parts of a Sailboat: reference/sailing/boat_parts.md
+      - Types of Turns: reference/sailing/turning.md
+      - Points of Sail: reference/sailing/points_of_sail.md
+      - AIS Terms: reference/sailing/ais_terms.md
+      - Miscellaneous: reference/sailing/miscellaneous.md

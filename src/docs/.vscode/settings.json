@@ -1,0 +1,45 @@
+{
+    "cSpell.enabled": true,
+    "[markdown]": {
+        "editor.unicodeHighlight.ambiguousCharacters": false,
+        "editor.unicodeHighlight.invisibleCharacters": false,
+        "editor.wordWrap": "on",
+        "editor.quickSuggestions": {
+            "other": "off",
+            "comments": "off",
+            "strings": "off"
+        },
+        "editor.rulers": [120],
+        "editor.renderWhitespace": "trailing",
+        "cSpell.fixSpellingWithRenameProvider": true,
+        "cSpell.advanced.feature.useReferenceProviderWithRename": true,
+        "cSpell.advanced.feature.useReferenceProviderRemove": "/^#+\\s/"
+    },
+    "yaml.schemas": {
+        "https://squidfunk.github.io/mkdocs-material/schema.json": "mkdocs.yml"
+    },
+    "yaml.customTags": [
+        "tag:yaml.org,2002:python/name:materialx.emoji.twemoji",
+        "tag:yaml.org,2002:python/name:materialx.emoji.to_svg",
+        "tag:yaml.org,2002:python/name:pymdownx.superfences.fence_code_format"
+    ],
+    "workbench.colorCustomizations": {
+        "activityBar.activeBackground": "#0394bb",
+        "activityBar.background": "#0394bb",
+        "activityBar.foreground": "#e7e7e7",
+        "activityBar.inactiveForeground": "#e7e7e799",
+        "activityBarBadge.background": "#9d037c",
+        "activityBarBadge.foreground": "#e7e7e7",
+        "commandCenter.border": "#e7e7e799",
+        "sash.hoverBorder": "#0394bb",
+        "statusBar.background": "#026c89",
+        "statusBar.foreground": "#e7e7e7",
+        "statusBarItem.hoverBackground": "#0394bb",
+        "statusBarItem.remoteBackground": "#026c89",
+        "statusBarItem.remoteForeground": "#e7e7e7",
+        "titleBar.activeBackground": "#026c89",
+        "titleBar.activeForeground": "#e7e7e7",
+        "titleBar.inactiveBackground": "#026c8999",
+        "titleBar.inactiveForeground": "#e7e7e799"
+    }
+}

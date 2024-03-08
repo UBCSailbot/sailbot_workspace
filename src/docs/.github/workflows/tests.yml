@@ -1,0 +1,146 @@
+name: Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    # docs only: default types + closed
+    types: [opened, synchronize, reopened, closed]
+  # docs only: markdown linters run every Saturday at 11:00am UTC
+  # to check for links that have died
+  schedule:
+    - cron: '0 11 * * 6'
+  workflow_dispatch:
+
+jobs:
+  # CI for all UBCSailbot repositories defined in one place
+  # Runs another workflow: https://docs.github.com/en/actions/using-workflows/reusing-workflows#calling-a-reusable-workflow
+  test-definitions:
+    # sailbot_workspace: use locally-defined file
+    # other repositories: set to UBCSailbot/sailbot_workspace/.github/workflows/test_definitions.yml@<release>
+    uses: UBCSailbot/sailbot_workspace/.github/workflows/test_definitions.yml@v1.7.0
+    # see https://github.com/UBCSailbot/sailbot_workspace/blob/main/.github/workflows/test_definitions.yml
+    # for documentation on the inputs and secrets below
+    with:
+      repository: ${{ github.event.repository.name }}
+      ros-ci: false
+      clang-tidy: false
+      rebuild-docs: false
+    secrets:
+      PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
+
+  markdown-link-redirection-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Check links to external sites redirect to a new tab
+        uses: ./.github/actions/lint/
+        env:
+          ROOT: './docs/'
+
+  docs-build:
+    name: Build Docs
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.action != 'closed'
+    steps:
+      - name: "Check out the repo"
+        uses: "actions/checkout@v4"
+        with:
+          # checkout all commits to get accurate page revision times
+          # for the git-revision-date-localized plugin
+          fetch-depth: '0'
+
+      - name: "Set up Python"
+        uses: "actions/setup-python@v5"
+        with:
+          python-version: "3.x"
+
+      - name: Install OS Dependencies
+        run: sudo apt-get install libcairo2-dev libfreetype6-dev libffi-dev libjpeg-dev libpng-dev libz-dev
+
+      - name: Install Python dependencies
+        run: pip install -Ur docs/requirements.txt
+
+      - name: "Build docs"
+        run: mkdocs build
+
+  # https://squidfunk.github.io/mkdocs-material/publishing-your-site/#with-github-actions
+  docs-deploy:
+    name: Deploy Docs version
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.action != 'closed'
+    needs: [test-definitions, markdown-link-redirection-check, docs-build]
+    permissions:
+      contents: write
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          # checkout all commits to get accurate page revision times
+          # for the git-revision-date-localized plugin
+          fetch-depth: '0'
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.x
+
+      - name: Install OS Dependencies
+        run: sudo apt-get install libcairo2-dev libfreetype6-dev libffi-dev libjpeg-dev libpng-dev libz-dev
+
+      - name: Install Python dependencies
+        run: pip install -Ur docs/requirements.txt
+
+      - name: "Deploy pr-${{ github.event.number }} version of the Docs"
+        if: github.event_name == 'pull_request'
+        run: |
+          git config user.name ci-bot
+          git config user.email ci-bot@example.com
+          mike deploy --push pr-${{ github.event.number }}
+
+      - name: Deploy main version of the Docs
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+        run: |
+          git config user.name ci-bot
+          git config user.email ci-bot@example.com
+          mike deploy --push --update-aliases main latest
+
+  docs-delete:
+    name: Delete Docs version
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    permissions:
+      contents: write
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          # checkout all commits to get accurate page revision times
+          # for the git-revision-date-localized plugin
+          fetch-depth: '0'
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.x
+
+      - name: Install OS Dependencies
+        run: sudo apt-get install libcairo2-dev libfreetype6-dev libffi-dev libjpeg-dev libpng-dev libz-dev
+
+      - name: Install Python dependencies
+        run: pip install -Ur docs/requirements.txt
+
+      - name: "Delete pr-${{ github.event.number }} version of the Docs"
+        run: |
+          git config user.name ci-bot
+          git config user.email ci-bot@example.com
+          mike delete --push pr-${{ github.event.number }}

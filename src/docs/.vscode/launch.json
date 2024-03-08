@@ -1,0 +1,40 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Run Application",
+            "type": "python",
+            "request": "launch",
+            "module": "mkdocs",
+            "args": [
+                "serve"
+            ],
+            "console": "internalConsole",
+            "internalConsoleOptions": "openOnSessionStart"
+        },
+        {
+            "name": "Launch Chrome",
+            "request": "launch",
+            "type": "chrome",
+            "url": "http://localhost:8000",
+        },
+        {
+            "name": "Launch Edge",
+            "request": "launch",
+            "type": "msedge",
+            "url": "http://localhost:8000"
+        }
+    ],
+    "compounds": [
+        {
+            "name": "Launch Application in Chrome",
+            "configurations": ["Run Application", "Launch Chrome"],
+            "stopAll": true
+        },
+        {
+            "name": "Launch Application in Edge",
+            "configurations": ["Run Application", "Launch Edge"],
+            "stopAll": true
+        }
+    ]
+}

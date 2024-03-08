@@ -1,0 +1,12 @@
+{
+    "recommendations": [
+        "bierner.markdown-preview-github-styles",
+        "christian-kohler.path-intellisense",
+        "davidanson.vscode-markdownlint",
+        "eamodio.gitlens",
+        "ms-python.python",
+        "redhat.vscode-yaml",
+        "streetsidesoftware.code-spell-checker",
+        "ms-python.flake8"
+    ]
+}
