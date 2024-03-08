@@ -31,7 +31,6 @@ __pycache__/
 /boat_simulator_output/
 
 # docs
-!/src/docs
 # Python virtual environment
 .venv/
 venv/
