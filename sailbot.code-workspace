@@ -4,9 +4,6 @@
             "path": "."
         },
         {
-            "path": "docs"
-        },
-        {
             "path": "src/boat_simulator"
         },
         {
@@ -29,9 +26,6 @@
         },
         {
             "path": "src/network_systems"
-        },
-        {
-            "path": "src/notebooks"
         },
         {
             "path": "src/website"
