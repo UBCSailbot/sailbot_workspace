@@ -54,7 +54,7 @@ if [[ $LOCAL_RUN != "true" ]]; then
 fi
 
 # Exclude repos and files we don't want to lint
-VALID_SRC_DIRS=$(ls src | grep -v -e virtual_iridium -e docs -e website -e notebooks -e polaris.repos)
+VALID_SRC_DIRS=$(ls src | grep -v -e virtual_iridium -e docs -e website -e notebooks)
 lint_errors=0
 
 # Loop over each directory and lint it

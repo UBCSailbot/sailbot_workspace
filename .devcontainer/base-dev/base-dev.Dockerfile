@@ -187,7 +187,6 @@ RUN apt-get update \
         protobuf-compiler \
         python3-colcon-common-extensions \
         python3-rosdep \
-        python3-vcstool \
         tzdata \
     && apt-get autoremove -y \
     && apt-get clean -y \

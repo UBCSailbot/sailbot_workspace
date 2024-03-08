@@ -466,13 +466,6 @@
             },
             // Workspace editing tasks
             {
-                "label": "clone source repositories",
-                "detail": "Clone the repositories specified in src/polaris.repos to src/",
-                "type": "shell",
-                "command": "vcs import < src/polaris.repos src --skip-existing",
-                "problemMatcher": []
-            },
-            {
                 "label": "setup",
                 "detail": "Set up the workspace",
                 "type": "shell",

@@ -4,10 +4,10 @@
 /log/
 
 # vcstool packages
+# TODO: remove
 /src/*
 !/src/integration_tests
 !/src/global_launch
-!/src/polaris.repos
 
 # configuration files
 /.devcontainer/config/*

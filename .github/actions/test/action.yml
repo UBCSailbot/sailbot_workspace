@@ -1,11 +1,6 @@
 name: 'Test'
 description: 'Test using devcontainer'
 
-inputs:
-  disable_vcs:
-    description: 'Whether to disable VCS cloning all repositories'
-    required: true
-
 runs:
   using: "composite"
   steps:
@@ -14,7 +9,7 @@ runs:
       shell: bash
       run: |
         docker compose -f .devcontainer/docker-compose.yml up -d
-        docker compose -f .devcontainer/docker-compose.yml exec -T sailbot-workspace /bin/bash -c "export DISABLE_VCS=${{ inputs.disable_vcs }} && cd /workspaces/sailbot_workspace && ./setup.sh"
+        docker compose -f .devcontainer/docker-compose.yml exec -T sailbot-workspace /bin/bash -c "cd /workspaces/sailbot_workspace && ./setup.sh"
 
     - name: Run Containers
       shell: bash
@@ -22,4 +17,4 @@ runs:
 
     - name: Run Tests
       shell: bash
-      run: docker compose -f .devcontainer/docker-compose.yml -f .devcontainer/docker-compose.website.yml exec -T sailbot-workspace /bin/bash -c "export DISABLE_VCS=${{ inputs.disable_vcs }} && cd /workspaces/sailbot_workspace && .github/actions/test/run.sh"
+      run: docker compose -f .devcontainer/docker-compose.yml -f .devcontainer/docker-compose.website.yml exec -T sailbot-workspace /bin/bash -c "cd /workspaces/sailbot_workspace && .github/actions/test/run.sh"
