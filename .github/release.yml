@@ -2,10 +2,12 @@ changelog:
   exclude:
     labels:
       - ignore-for-release
+
     authors:
       - dependabot
-  categories:
+      - imgbot
 
+  categories:
     - title: "Bug Fixes :beetle:"
       labels:
         - bug
@@ -22,9 +24,9 @@ changelog:
       labels:
         - github
 
-    - title: "Documentation Updates :book:"
+    - title: "Docs Site Updates :book:"
       labels:
-        - documentation
+        - docs
 
     - title: "Other Changes :hammer_and_wrench:"
       labels:

@@ -4,6 +4,9 @@
             "path": "."
         },
         {
+            "path": "docs"
+        },
+        {
             "path": "src/boat_simulator"
         },
         {
@@ -14,9 +17,6 @@
         },
         {
             "path": "src/diagnostics"
-        },
-        {
-            "path": "src/docs"
         },
         {
             "path": "src/global_launch"
@@ -55,7 +55,11 @@
             "autopep",
             "bsoncxx",
             "buildx",
+            "Clangd",
             "cmake",
+            "completionist",
+            "conda",
+            "cout",
             "cppcheck",
             "cppdbg",
             "cpplint",
@@ -63,8 +67,12 @@
             "deque",
             "devcontainer",
             "dtype",
+            "endl",
             "gaurav",
+            "gtest",
+            "ighxy",
             "ints",
+            "iostream",
             "isort",
             "kmph",
             "mkdocs",
@@ -73,6 +81,7 @@
             "noqa",
             "OMPL",
             "pallete",
+            "Protobuf",
             "protofiles",
             "pytest",
             "Raye",
@@ -80,17 +89,28 @@
             "rclpy",
             "rcutils",
             "repos",
+            "roscd",
             "rosdep",
             "rosdistro",
             "rosidl",
+            "roslaunch",
+            "rosrun",
             "RTPS",
             "srcnew",
             "srcraye",
+            "struct",
+            "Structs",
             "ubcsailbot",
             "uncrustify",
+            "virtualenv",
             "Wextra",
             "Wpedantic",
-            "xmllint"
+            "xcalc",
+            "xhost",
+            "xinit",
+            "xinitrc",
+            "xmllint",
+            "xorg"
         ],
         "editor.inlayHints.enabled": "off",
         "editor.renderWhitespace": "trailing",
@@ -252,8 +272,11 @@
             "https://squidfunk.github.io/mkdocs-material/schema.json": "mkdocs.yml"
         },
         "yaml.customTags": [
-            "tag:yaml.org,2002:python/name:materialx.emoji.twemoji",
-            "tag:yaml.org,2002:python/name:materialx.emoji.to_svg",
+            "!ENV scalar",
+            "!ENV sequence",
+            "!relative scalar",
+            "tag:yaml.org,2002:python/name:material.extensions.emoji.to_svg",
+            "tag:yaml.org,2002:python/name:material.extensions.emoji.twemoji",
             "tag:yaml.org,2002:python/name:pymdownx.superfences.fence_code_format"
         ],
 

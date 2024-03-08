@@ -29,3 +29,12 @@ __pycache__/
 
 # data collection node output
 /boat_simulator_output/
+
+# docs
+# Python virtual environment
+.venv/
+venv/
+# Social cards
+.cache/
+# Build
+site/

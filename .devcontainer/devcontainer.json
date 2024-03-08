@@ -25,7 +25,6 @@
 				"UBCSailbot/boat_simulator": {"permissions": "write-all"},
 				"UBCSailbot/controller": {"permissions": "write-all"},
 				"UBCSailbot/custom_interfaces": {"permissions": "write-all"},
-				"UBCSailbot/docs": {"permissions": "write-all"},
 				"UBCSailbot/local_pathfinding": {"permissions": "write-all"},
 				"UBCSailbot/network_systems": {"permissions": "write-all"},
 				"UBCSailbot/notebooks": {"permissions": "write-all"},

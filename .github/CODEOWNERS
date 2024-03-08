@@ -6,3 +6,6 @@
 # these owners will be requested for
 # review when someone opens a pull request.
 * @patrick-5546
+
+# docs
+/docs/ @DFriend01

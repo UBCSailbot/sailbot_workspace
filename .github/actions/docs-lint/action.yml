@@ -1,0 +1,7 @@
+name: 'Lint New Tab Links'
+description: 'Check links to external sites redirect to a new tab'
+runs:
+  using: "composite"
+  steps:
+    - run: python3 $GITHUB_ACTION_PATH/lint_links.py -r $ROOT -c $CONFIG_FILE
+      shell: bash
