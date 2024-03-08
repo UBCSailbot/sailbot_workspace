@@ -37,11 +37,6 @@ repositories:
     url: https://github.com/UBCSailbot/diagnostics
     version: main
 
-  docs:
-    type: git
-    url: https://github.com/UBCSailbot/docs
-    version: main
-
   local_pathfinding:
     type: git
     url: https://github.com/UBCSailbot/local_pathfinding
