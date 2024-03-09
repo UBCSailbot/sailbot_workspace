@@ -54,10 +54,7 @@ If there are new features or bug fixes that you want to try, you will need to up
         However, there may be changes to the Dev Container that VS Code can't detect.
         To rebuild it yourself, run the `Dev Containers: Rebuild Container` VS Code command.
 
-4. If you aren't working in any other branches,
-   run the `setup` task to switch the branches of all sub-repositories to their default specified in `src/polaris.repos`
-   and pull their latest changes
-5. If you want to run our docs, website, or other optional programs, see [How to run optional programs](./how_to.md#run-optional-programs){target=_blank}
+4. If you want to run our docs or website, see [How to work with containerized applications](./how_to.md#work-with-containerized-applications)
 
 ## 3. Make your changes
 
@@ -187,6 +184,7 @@ configurations in the **Run and Debug** tab on the VS Code primary sidebar. The 
 
 If you are having some trouble running our software, here are some things you can try:
 
+- Run the `setup` task to update package dependencies
 - Build from scratch
     1. Run the `clean` task to delete C++ generated files
     2. Run the `purge` task to delete ROS generated files
