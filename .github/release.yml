@@ -7,27 +7,40 @@ changelog:
       - dependabot
       - imgbot
 
+  # emoji reference (outdated): https://gist.github.com/rxaviers/7360908
   categories:
     - title: "Bug Fixes :beetle:"
       labels:
         - bug
 
-    - title: "Dev Container Configuration Changes :whale:"
+    - title: "Website Changes :computer:"
       labels:
-        - devcontainer
+        - web
 
-    - title: "VS Code Configuration Changes :computer:"
+    - title: "Pathfinding Changes :earth_americas:"
       labels:
-        - vscode
+        - path
 
-    - title: "GitHub Configuration Changes :octocat:"
+    - title: "Boat Simulator Changes :video_game:"
       labels:
-        - github
+        - sim
 
-    - title: "Docs Site Updates :book:"
+    - title: "Controller Changes :boat:"
+      labels:
+        - ctrl
+
+    - title: "Network Systems Changes :artificial_satellite:"
+      labels:
+        - net
+
+    - title: "Docs Site Changes :book:"
       labels:
         - docs
 
-    - title: "Other Changes :hammer_and_wrench:"
+    - title: "Infrastructure Changes :hammer_and_wrench:"
+      labels:
+        - infrastructure
+
+    - title: "Other Changes"
       labels:
         - "*"
