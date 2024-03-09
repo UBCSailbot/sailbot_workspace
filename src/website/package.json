@@ -8,10 +8,10 @@
     "format": "prettier --write ."
   },
   "dependencies": {
-    "@dnd-kit/core": "^6.1.0",
-    "@emotion/react": "^11.11.1",
+    "@emotion/react": "^11.11.4",
     "@emotion/styled": "^11.11.0",
-    "@mui/material": "^5.14.12",
+    "@mui/icons-material": "^5.15.10",
+    "@mui/material": "^5.15.12",
     "@react-google-maps/api": "^2.19.2",
     "@reduxjs/toolkit": "^1.9.5",
     "dotenv": "^16.3.1",

@@ -33,13 +33,4 @@ export default class BaseSaga {
     });
     return sagaFunctions;
   }
-
-  /**
-   * Returns a saga function to execute.
-   *
-   * @returns a specific saga function.
-   */
-  forkSaga(func) {
-    return [fork([this, this[func]])];
-  }
 }

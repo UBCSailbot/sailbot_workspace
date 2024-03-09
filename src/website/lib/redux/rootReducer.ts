@@ -7,7 +7,6 @@ import LocalPathReducer from '@/stores/LocalPath/LocalPathReducers';
 import BatteriesReducer from '@/stores/Batteries/BatteriesReducers';
 import WindSensorsReducer from '@/stores/WindSensors/WindSensorsReducers';
 import GenericSensorsReducer from '@/stores/GenericSensors/GenericSensorsReducers';
-import GraphsReducer from '@/stores/Graphs/GraphsReducers';
 
 export function rootReducer() {
   const reducerMap = {
@@ -18,7 +17,6 @@ export function rootReducer() {
     batteries: new BatteriesReducer().reducer,
     windSensors: new WindSensorsReducer().reducer,
     genericSensors: new GenericSensorsReducer().reducer,
-    graphs: new GraphsReducer().reducer,
   };
 
   return combineReducers(reducerMap);
