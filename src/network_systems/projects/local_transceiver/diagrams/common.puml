@@ -1,0 +1,19 @@
+' To be included by other files. Do not use on its own.
+@startuml common
+
+box Modules
+participant "Local Transceiver ROS Intf" as intf
+participant "Local Transceiver" as local
+end box
+
+box Resources
+Collections "Sensor Buffer" as buf
+Queue "Serial Port" as port
+end box
+
+note across
+    As ROS is used for synchronizing access to resources, the module control
+    flow is blocking, meaning only one subsequence can happen at at a time.
+end note
+
+@enduml

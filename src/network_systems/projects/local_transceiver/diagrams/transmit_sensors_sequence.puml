@@ -1,0 +1,40 @@
+@startuml transmit_sensors_sequence
+title Local Transceiver Transmit Sensors Sequence
+
+!include %getenv("PLANTUML_TEMPLATE_PATH")
+!include common.puml
+
+autonumber
+
+== Update Sensors Subsequence ==
+
+note across : Very Frequent - On Demand Execution
+
+-> intf ++ : New Sensor Data
+intf -> local ++ : Update Sensor
+local -> local : Convert Data from ROS to Google Protobuf
+local --> buf : Store Sensor in Buffer
+deactivate intf
+deactivate local
+
+...
+
+== Transmit Sensors Subsequence ==
+
+note across : Very Infrequent - Execute Every Few Hours
+
+intf -> intf ++ : Transmit Timer Triggers
+intf -> local ++ : Start Transmission
+local <-- buf : Read Current Sensors
+local -> local : Serialize Sensor Data
+local -> local : Create AT Write Binary Command With Data
+note right of local : If payload is too large, split the data across multiple commands
+loop Until Successful or <SOME_TBD_NUMBER> Unsuccessful Attempts
+    local --> port : Write Command
+    local <-- port : Read Response
+end
+opt If Failed to Transmit Sensors Data
+    intf <- local -- : Return failure
+    intf -> intf : Set Shorter Transmit Timer Interval
+end
+deactivate intf

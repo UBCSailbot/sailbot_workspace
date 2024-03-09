@@ -1,0 +1,10 @@
+' To be included in other files, do not use on its own
+@startuml common
+
+box Modules
+participant "HTTP Listener" as handler
+participant "HTTP Server" as server
+participant SailbotDB as db
+end box
+
+@endmul

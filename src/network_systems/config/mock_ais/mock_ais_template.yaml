@@ -1,0 +1,10 @@
+# Template for the Mock AIS module
+mock_ais_node:
+  ros__parameters:
+    enabled: true
+    # The following parameters are optional. Defaults are set in mock_ais_ros_intf.cpp
+    publish_rate_ms: # Integer: How frequently the Mock AIS publishes data in milliseconds (ex. 500)
+    seed: # Integer: Random seed used for random data generation
+    num_sim_ships: # Integer: Total number of AIS ships to simulate (does not include Polaris)
+    polaris_start_pos: # Integer Array (size 2): Initial latitude and longitude of Polaris for simulation
+                        # (ex. [49.283, -123.652])

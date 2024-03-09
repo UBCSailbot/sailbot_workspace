@@ -1,0 +1,15 @@
+PLACEHOLDER_TOPIC_0
+PLACEHOLDER_TOPIC_1
+mock_local_to_remote_transceiver
+mock_remote_to_local_transceiver
+ais_ships
+mock_ais_ships
+batteries
+desired_heading
+data_sensors
+global_path
+gps
+mock_gps
+filtered_wind_sensor
+mock_wind_sensors
+wind_sensors
