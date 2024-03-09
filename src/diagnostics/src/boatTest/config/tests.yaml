@@ -1,0 +1,19 @@
+inputs:
+  - type: ROS
+    name: rosTestOne
+    timeout_sec: 5
+    data:
+      dtype: uint64
+      val: 6
+  - type: ROS
+    name: rosTestTwo
+    timeout_sec: 5
+    data:
+      dtype: uint64
+      val: 7
+  - type: CAN
+    name: canTestOne
+    timeout_sec: 5
+    data:
+      dtype: float
+      val: 8.5
