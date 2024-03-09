@@ -1,6 +1,5 @@
 import dynamic from 'next/dynamic';
 import { CircularProgress } from '@mui/material';
-import DashboardContainer from '@/views/DashboardContainer';
 import Header from '@/views/components/Header/Header';
 import styles from './style.module.css';
 
@@ -19,6 +18,10 @@ const MapsContainer = dynamic(() => import('@/views/MapsContainer'), {
       }}
     />
   ),
+  ssr: false,
+});
+
+const DashboardContainer = dynamic(() => import('@/views/DashboardContainer'), {
   ssr: false,
 });
 

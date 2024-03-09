@@ -15,6 +15,9 @@ export interface IUPlotMultiLineChartState {
   options: uPlot.Options;
 }
 
+const fmtDate = uPlot.fmtDate("{YYYY}-{MM}-{DD} {h}:{mm}:{ss}{aa}");
+const localTz = new Intl.DateTimeFormat().resolvedOptions().timeZone;
+const tzDate = ts => uPlot.tzDate(new Date(ts * 1e3), localTz);
 export default class UPlotMultiLineChartComponent extends React.Component<
   IUPlotMultiLineChartProps,
   IUPlotMultiLineChartState
@@ -25,21 +28,36 @@ export default class UPlotMultiLineChartComponent extends React.Component<
       width: 0,
       height: 250,
       scales: {
-        x: {
-          time: true,
-        },
+        x: {},
         y: {},
       },
       axes: [{}],
       series: [
-        {},
+        {
+          show: true,
+          spanGaps: false,
+          label: "Time",
+          value: (self, rawValue, xValuesIndex, currentVal) => {
+            if (currentVal == null) {
+              let xValues = self.data[xValuesIndex];
+              let xValue = fmtDate(tzDate(xValues[xValues.length - 1]));
+              return `${xValue}`;
+            }
+            return fmtDate(tzDate(rawValue));
+          },
+          stroke: 'red',
+          width: 1,
+          band: true,
+        },
         {
           show: true,
           spanGaps: false,
           label: this.props.labelOne,
-          value: (self, rawValue) => {
-            if (!rawValue) {
-              return `-- ${this.props.unit}`;
+          value: (self, rawValue, yValuesIndex, currentVal) => {
+            if (currentVal == null) {
+              let yValues = self.data[yValuesIndex]
+              let yValue = (yValues[yValues.length - 1])?.toFixed(2)
+              return `${yValue} ${this.props.unit}`
             }
             return rawValue?.toFixed(2) + ` ${this.props.unit}`;
           },
@@ -51,9 +69,11 @@ export default class UPlotMultiLineChartComponent extends React.Component<
           show: true,
           spanGaps: false,
           label: this.props.labelTwo,
-          value: (self, rawValue) => {
-            if (!rawValue) {
-              return `-- ${this.props.unit}`;
+          value: (self, rawValue, yValuesIndex, currentVal) => {
+            if (currentVal == null) {
+              let yValues = self.data[yValuesIndex]
+              let yValue = (yValues[yValues.length - 1])?.toFixed(2)
+              return `${yValue} ${this.props.unit}`
             }
             return rawValue?.toFixed(2) + ` ${this.props.unit}`;
           },
