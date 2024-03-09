@@ -2,12 +2,13 @@ import itertools
 import math
 
 import pytest
-from custom_interfaces.msg import HelperLatLon
+from custom_interfaces.msg import GPS, AISShips, HelperLatLon, Path, WindSensor
 from rclpy.impl.rcutils_logger import RcutilsLogger
 
 import local_pathfinding.coord_systems as coord_systems
 import local_pathfinding.objectives as objectives
 import local_pathfinding.ompl_path as ompl_path
+from local_pathfinding.local_path import LocalPathState
 
 # Upwind downwind cost multipliers
 UPWIND_MULTIPLIER = 3000.0
@@ -17,7 +18,13 @@ DOWNWIND_MULTIPLIER = 3000.0
 PATH = ompl_path.OMPLPath(
     parent_logger=RcutilsLogger(),
     max_runtime=1,
-    local_path_state=None,  # type: ignore[arg-type] # None is placeholder
+    local_path_state=LocalPathState(
+        gps=GPS(),
+        ais_ships=AISShips(),
+        global_path=Path(),
+        filtered_wind_sensor=WindSensor(),
+        planner="bitstar",
+    ),
 )
 
 

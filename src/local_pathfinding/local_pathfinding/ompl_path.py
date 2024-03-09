@@ -7,7 +7,7 @@ https://ompl.kavrakilab.org/api_overview.html.
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Tuple, Type
 
 from custom_interfaces.msg import HelperLatLon
 from ompl import base as ob
@@ -26,7 +26,7 @@ ou.setLogLevel(ou.LOG_WARN)
 
 
 class OMPLPathState:
-    def __init__(self, local_path_state: LocalPathState):
+    def __init__(self, local_path_state: LocalPathState, logger: RcutilsLogger):
         # TODO: derive OMPLPathState attributes from local_path_state
         self.heading_direction = 45.0
         self.wind_direction = 10.0
@@ -42,6 +42,15 @@ class OMPLPathState:
             if local_path_state and len(local_path_state.global_path) > 0
             else HelperLatLon(latitude=0.0, longitude=0.0)
         )
+
+        if local_path_state:
+            planner = local_path_state.planner
+            supported_planner, _ = get_planner_class(planner)
+            if planner != supported_planner:
+                logger.error(
+                    f"Planner {planner} is not implemented, defaulting to {supported_planner}"
+                )
+            self.planner = supported_planner
 
 
 class OMPLPath:
@@ -67,7 +76,7 @@ class OMPLPath:
             local_path_state (LocalPathState): State of Sailbot.
         """
         self._logger = parent_logger.get_child(name="ompl_path")
-        self.state = OMPLPathState(local_path_state)
+        self.state = OMPLPathState(local_path_state, self._logger)
         self._simple_setup = self._init_simple_setup()
         self.solved = self._simple_setup.solve(time=max_runtime)  # time is in seconds
 
@@ -177,8 +186,8 @@ class OMPLPath:
         simple_setup.setOptimizationObjective(objective)
 
         # set the planner of the simple setup object
-        # TODO: implement and add planner here
-        planner = og.RRTstar(space_information)
+        _, planner_class = get_planner_class(self.state.planner)
+        planner = planner_class(space_information)
         simple_setup.setPlanner(planner)
 
         return simple_setup
@@ -196,3 +205,44 @@ def is_state_valid(state: ob.SE2StateSpace) -> bool:
     # TODO: implement obstacle avoidance here
     # note: `state` is of type `SE2StateInternal`, so we don't need to use the `()` operator.
     return state.getX() < 0.6
+
+
+def get_planner_class(planner: str) -> Tuple[str, Type[ob.Planner]]:
+    """Choose the planner to use for the OMPL query.
+
+    Args:
+        planner (str): Name of the planner to use.
+
+    Returns:
+        Tuple[str, Type[ob.Planner]]: The name and class of the planner to use for the OMPL query,
+            defaults to RRT* if `planner` is not implemented in this function.
+    """
+    match planner.lower():
+        case "bitstar":
+            return planner, og.BITstar
+        case "bfmtstar":
+            return planner, og.BFMT
+        case "fmtstar":
+            return planner, og.FMT
+        case "informedrrtstar":
+            return planner, og.InformedRRTstar
+        case "lazylbtrrt":
+            return planner, og.LazyLBTRRT
+        case "lazyprmstar":
+            return planner, og.LazyPRMstar
+        case "lbtrrt":
+            return planner, og.LBTRRT
+        case "prmstar":
+            return planner, og.PRMstar
+        case "rrtconnect":
+            return planner, og.RRTConnect
+        case "rrtsharp":
+            return planner, og.RRTsharp
+        case "rrtstar":
+            return planner, og.RRTstar
+        case "rrtxstatic":
+            return planner, og.RRTXstatic
+        case "sorrtstar":
+            return planner, og.SORRTstar
+        case _:
+            return "rrtstar", og.RRTstar
