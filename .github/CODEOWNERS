@@ -15,6 +15,9 @@
 /notebooks/controller @DFriend01
 /src/controller @DFriend01
 
+# diagnostics
+/src/diagnostics @samdai01
+
 # docs
 /docs/ @DFriend01
 
