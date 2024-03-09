@@ -5,6 +5,9 @@
 
 #include <array>
 #include <custom_interfaces/msg/batteries.hpp>
+#include <custom_interfaces/msg/gps.hpp>
+#include <custom_interfaces/msg/sail_cmd.hpp>
+#include <custom_interfaces/msg/wind_sensor.hpp>
 #include <map>
 #include <optional>
 #include <span>
@@ -27,19 +30,11 @@ enum class CanId : canid_t {
     BMS_P_DATA_FRAME_1     = 0x31,
     BMS_P_DATA_FRAME_2     = 0x32,
     SAIL_WSM_CMD_FRAME_1   = 0x60,
-    SAIL_WSM_CMD_FRAME_2   = 0x61,
-    SAIL_ENCD_DATA_FRAME   = 0x62,
     SAIL_WSM_DATA_FRAME_1  = 0x63,
-    SAIL_WSM_DATA_FRAME_2  = 0x64,
     SAIL_WIND_DATA_FRAME_1 = 0x65,
-    SAIL_NAV_CMD_FRAME     = 0x66,
-    RUDR_CMD_FRAME         = 0x70,
-    RUDR_DATA_FRAME_1      = 0x71,
-    RUDR_DATA_FRAME_2      = 0x72,
     PATH_GPS_DATA_FRAME_1  = 0x80,
     PATH_GPS_DATA_FRAME_2  = 0x81,
     PATH_GPS_DATA_FRAME_3  = 0x82,
-    PATH_GPS_DATA_FRAME_4  = 0x83,
     PATH_WIND_DATA_FRAME   = 0x84,
 };
 
@@ -52,19 +47,11 @@ static const std::map<CanId, std::string> CAN_DESC{
   {CanId::BMS_P_DATA_FRAME_1, "BMS_P_DATA_FRAME_1 (Battery 1 data)"},
   {CanId::BMS_P_DATA_FRAME_2, "BMS_P_DATA_FRAME_2 (Battery 2 data)"},
   {CanId::SAIL_WSM_CMD_FRAME_1, "SAIL_WSM_CMD_FRAME_1 (Main sail command)"},
-  {CanId::SAIL_WSM_CMD_FRAME_2, "SAIL_WSM_CMD_FRAME_2 (Jib Sail command)"},
-  {CanId::SAIL_ENCD_DATA_FRAME, "SAIL_ENCD_DATA_FRAME (Sail encoder data)"},
   {CanId::SAIL_WSM_DATA_FRAME_1, "SAIL_WSM_DATA_FRAME_1 (Main sail data)"},
-  {CanId::SAIL_WSM_DATA_FRAME_2, "SAIL_WSM_DATA_FRAME_2 (Jib sail data)"},
   {CanId::SAIL_WIND_DATA_FRAME_1, "SAIL_WIND_DATA_FRAME_1 (Mast wind sensor)"},
-  {CanId::SAIL_NAV_CMD_FRAME, "SAIL_NAV_CMD_FRAME (Nav light commands)"},
-  {CanId::RUDR_CMD_FRAME, "RUDR_CMD_FRAME (Rudder commands [BOTH RUDDERS])"},
-  {CanId::RUDR_DATA_FRAME_1, "RUDR_DATA_FRAME_1 (Port rudder data)"},
-  {CanId::RUDR_DATA_FRAME_2, "RUDR_DATA_FRAME_2 (Starboard rudder data)"},
   {CanId::PATH_GPS_DATA_FRAME_1, "PATH_GPS_DATA_FRAME_1 (GPS latitude)"},
   {CanId::PATH_GPS_DATA_FRAME_2, "PATH_GPS_DATA_FRAME_2 (GPS longitude)"},
   {CanId::PATH_GPS_DATA_FRAME_3, "PATH_GPS_DATA_FRAME_3 (GPS other data)"},
-  {CanId::PATH_GPS_DATA_FRAME_4, "PATH_GPS_DATA_FRAME_4 (GPS time reporting [ex. day of the year])"},
   {CanId::PATH_WIND_DATA_FRAME, "PATH_WIND_DATA_FRAME (Hull wind sensor)"}};
 
 /**
@@ -222,6 +209,233 @@ private:
     float curr_;      // Current - positive means charging and negative means discharging (powering the boat)
     float volt_max_;  // Maximum voltage of cells in the battery pack (unused)
     float volt_min_;  // Minimum voltage of cells in the battery pack (unused)
+};
+
+/**
+ * @brief A sail class derived from the BaseFrame. Represents a sail command.
+ *
+ */
+class SailCmd final : public BaseFrame
+{
+public:
+    static constexpr std::array<CanId, 2> SAIL_CMD_IDS   = {CanId::SAIL_WSM_CMD_FRAME_1, CanId::SAIL_WSM_DATA_FRAME_1};
+    static constexpr uint8_t              CAN_BYTE_DLEN_ = 2;
+    static constexpr uint8_t              BYTE_OFF_ANGLE = 0;
+
+    /**
+     * @brief Explicitly deleted no-argument constructor
+     *
+     */
+    SailCmd() = delete;
+
+    /**
+     * @brief Construct a SailCmd object from a Linux CanFrame representation
+     *
+     * @param cf Linux CanFrame
+     */
+    explicit SailCmd(const CanFrame & cf);
+
+    /**
+     * @brief Construct a SailCmd object from a custom_interfaces ROS msg representation
+     *
+     * @param ros_sail_cmd custom_interfaces representation of a SailCmd
+     * @param id      CanId of the SailCmd (use the rosIdxToCanId() method if unknown)
+     */
+    explicit SailCmd(msg::SailCmd ros_sail_cmd, CanId id);
+
+    /**
+     * @return the custom_interfaces ROS representation of the SailCmd object
+     */
+    msg::SailCmd toRosMsg() const;
+
+    /**
+     * @return the Linux CanFrame representation of the SailCmd object
+     */
+    CanFrame toLinuxCan() const override;
+
+    /**
+     * @return A string that can be printed or logged to debug a SailCmd object
+     */
+    std::string debugStr() const override;
+
+private:
+    /**
+     * @brief Private helper constructor for SailCmd objects
+     *
+     * @param id CanId of the SailCmd
+     */
+    explicit SailCmd(CanId id);
+
+    /**
+     * @brief Check if the assigned fields after constructing a SailCmd object are within bounds.
+     * @throws std::out_of_range if any assigned fields are outside of expected bounds
+     */
+    void checkBounds() const;
+
+    float angle_;  // Angle specified by the command
+};
+
+/**
+ * @brief //TODO: Add description
+ *
+ */
+class WindSensor final : public BaseFrame
+{
+public:
+    static constexpr std::array<CanId, 2> WIND_SENSOR_IDS = {
+      CanId::SAIL_WIND_DATA_FRAME_1, CanId::PATH_WIND_DATA_FRAME};
+    static constexpr uint8_t CAN_BYTE_DLEN_ = 4;
+    static constexpr uint8_t BYTE_OFF_ANGLE = 0;
+    static constexpr uint8_t BYTE_OFF_SPEED = 2;
+
+    /**
+     * @brief Explicitly deleted no-argument constructor
+     *
+     */
+    WindSensor() = delete;
+
+    /**
+     * @brief Construct a Wind object from a Linux CanFrame representation
+     *
+     * @param cf Linux CanFrame
+     */
+    explicit WindSensor(const CanFrame & cf);
+
+    /**
+     * @brief Construct a WindSensor object from a custom_interfaces ROS msg representation
+     *
+     * @param ros_wind_sensor custom_interfaces representation of a WindSensor
+     * @param id      CanId of the GPS (use the rosIdxToCanId() method if unknown)
+     */
+    explicit WindSensor(msg::WindSensor ros_wind_sensor, CanId id);
+
+    /**
+     * @return the custom_interfaces ROS representation of the WindSensor
+     */
+    msg::WindSensor toRosMsg() const;
+
+    /**
+     * @return the Linux CanFrame representation of the GPS object
+     */
+    CanFrame toLinuxCan() const override;
+
+    /**
+     * @return A string that can be printed or logged to debug a GPS object
+     */
+    std::string debugStr() const override;
+
+    /**
+     * @brief Factory method to convert the index of a wind sensor in the custom_interfaces ROS representation
+     *        into a CanId if valid.
+     *
+     * @param bat_idx idx of the wind sensor in a custom_interfaces::msg::WindSensors array
+     * @return CanId if valid, std::nullopt if invalid
+     */
+    static std::optional<CanId> rosIdxToCanId(size_t wind_idx);
+
+private:
+    /**
+     * @brief Private helper constructor for GPS objects
+     *
+     * @param id CanId of the WindSensor Object
+     */
+    explicit WindSensor(CanId id);
+
+    /**
+     * @brief Check if the assigned fields after constructing a GPS object are within bounds.
+     * @throws std::out_of_range if any assigned fields are outside of expected bounds
+     */
+    void checkBounds() const;
+
+    int16_t wind_angle_;
+    float   wind_speed_;
+};
+
+/**
+ * @brief GPS class derived from the BaseFrame. Represents GPS data.
+ *
+ */
+class GPS final : public BaseFrame
+{
+public:
+    static constexpr std::array<CanId, 1> GPS_IDS          = {CanId::PATH_GPS_DATA_FRAME_1};
+    static constexpr uint8_t              CAN_BYTE_DLEN_   = 24;
+    static constexpr uint32_t             BYTE_OFF_LAT     = 0;
+    static constexpr uint32_t             BYTE_OFF_LON     = 4;
+    static constexpr uint32_t             BYTE_OFF_SEC     = 8;
+    static constexpr uint32_t             BYTE_OFF_MIN     = 12;
+    static constexpr uint32_t             BYTE_OFF_HOUR    = 13;
+    static constexpr uint32_t             BYTE_OFF_RESV    = 14;
+    static constexpr uint32_t             BYTE_OFF_HEADING = 16;
+    static constexpr uint32_t             BYTE_OFF_SPEED   = 20;
+
+    /**
+       * @brief Explicitly deleted no-argument constructor
+       *
+       */
+    GPS() = delete;
+
+    /**
+     * @brief Construct a GPS object from a Linux CanFrame representation
+     *
+     * @param cf Linux CanFrame
+     */
+    explicit GPS(const CanFrame & cf);
+
+    /**
+     * @brief Construct a GPS object from a custom_interfaces ROS msg representation
+     *
+     * @param ros_gps custom_interfaces representation of a GPS
+     * @param id      CanId of the GPS (use the rosIdxToCanId() method if unknown)
+     */
+    explicit GPS(msg::GPS ros_gps, CanId id);
+
+    /**
+     * @return the custom_interfaces ROS representation of the GPS object
+     */
+    msg::GPS toRosMsg() const;
+
+    /**
+     * @return the Linux CanFrame representation of the GPS object
+     */
+    CanFrame toLinuxCan() const override;
+
+    /**
+     * @return A string that can be printed or logged to debug a GPS object
+     */
+    std::string debugStr() const override;
+
+    /**
+     * @brief Factory method to convert the index of a GPS in the custom_interfaces ROS representation
+     *        into a CanId if valid.
+     *
+     * @param gps_idx idx of the GPS in a custom_interfaces::msg::GPS array
+     * @return CanId if valid, std::nullopt if invalid
+     */
+    static std::optional<CanId> rosIdxToCanId(size_t gps_idx);
+
+private:
+    /**
+     * @brief Private helper constructor for GPS objects
+     *
+     * @param id CanId of the GPS
+     */
+    explicit GPS(CanId id);
+
+    /**
+     * @brief Check if the assigned fields after constructing a GPS object are within bounds.
+     * @throws std::out_of_range if any assigned fields are outside of expected bounds
+     */
+    void checkBounds() const;
+
+    float lat_;
+    float lon_;
+    float sec_;
+    float min_;
+    float hour_;
+    //float reserved;  // Unused
+    float heading_;
+    float speed_;
 };
 
 }  // namespace CAN_FP

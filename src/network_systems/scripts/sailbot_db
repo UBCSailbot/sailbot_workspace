@@ -1,9 +1,0 @@
-#!/bin/bash
-
-EXE=$ROS_WORKSPACE/build/network_systems/lib/sailbot_db/sailbot_db
-
-if [ -f $EXE ]; then
-    $EXE "$@"
-else
-    echo "$EXE not found! Did you build network_systems?"
-fi

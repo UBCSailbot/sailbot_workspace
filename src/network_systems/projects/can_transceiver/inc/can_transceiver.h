@@ -19,8 +19,15 @@ public:
     * @brief Construct a new Can Transceiver and connect it to the default CAN interface (can0)
     * @note  Can only be used in deployment
     *
+    * @param can_inst
     */
     CanTransceiver();
+
+    /**
+     * @brief Destroy the Canbus Intf object
+     *
+     */
+    ~CanTransceiver();
 
     /**
      * @brief Construct a new Can Transceiver and connect it to an existing and open file descriptor
@@ -34,7 +41,7 @@ public:
      * @brief Close the opened CAN port and kill the receive() thread
      *
      */
-    ~CanTransceiver();
+    void onNewCmd(const CAN_FP::CanFrame & cmd_frame);
 
     /**
      * @brief Send a CAN frame to the CAN port
@@ -82,7 +89,6 @@ private:
      *        Can be shutdown by setting shutdown_flag_ to true
      */
     void receive();
-
     /**
      * @brief Call on successfully reading a new CAN data frame from hardware/simulator
      *

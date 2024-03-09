@@ -8,19 +8,6 @@
 
 Given an input text file where each line is the name of a ROS topic, generates a C++ header file matching those names.
 
-## Sailbot DB
-
-```shell
-./sailbot_db <db-name> [COMMAND]
-./sailbot_db --help
-```
-
-Wrapper for the [SailbotDB Utility DB tool](../lib/sailbot_db/src/main.cpp).
-
-- Requires network_systems to be built
-- Run with `--help` for full details on how to run
-- Can clear, populate, and dump data from a DB
-
 ## Run Virtual Iridium
 
 ```shell
