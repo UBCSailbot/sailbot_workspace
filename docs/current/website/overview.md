@@ -1,7 +1,6 @@
 !!! quote "Source code"
 
-    The source code for Website can be found in the
-    [website](https://github.com/UBCSailbot/website){target=_blank} GitHub repository.
+    The source code for Website can be found in `src/website`.
     Its README has been copied below.
 
---8<-- "https://raw.githubusercontent.com/UBCSailbot/website/main/README.md"
+--8<-- "src/website/README.md"

@@ -1,7 +1,6 @@
 !!! quote "Source code"
 
-    The source code for Local Pathfinding can be found in the
-    [local_pathfinding](https://github.com/UBCSailbot/local_pathfinding){target=_blank} GitHub repository.
+    The source code for Local Pathfinding can be found in `src/local_pathfinding`.
     Its README has been copied below.
 
---8<-- "https://raw.githubusercontent.com/UBCSailbot/local_pathfinding/main/README.md"
+--8<-- "src/local_pathfinding/README.md"
