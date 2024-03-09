@@ -1,7 +1,7 @@
 #!/bin/bash
 # README under sailbot_workspace/src/network_systems/scripts/
 
-WEBHOOK_SERVER_ENDPOINT=${1:-127.0.0.1:8081}
+WEBHOOK_SERVER_ENDPOINT=${1:-"http://127.0.0.1:8081"}
 VIRTUAL_IRIDIUM_HTTP_SERVER_PORT=${2:-8080}
 
 # Make sure everything is killed on exit

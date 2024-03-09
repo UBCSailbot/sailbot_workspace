@@ -1,0 +1,3 @@
+# PlantUML export directory
+/diagrams/out/*.png
+!/diagrams/out/external_interfaces.png

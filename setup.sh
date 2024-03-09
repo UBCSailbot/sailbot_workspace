@@ -1,20 +1,6 @@
 #!/bin/bash
 set -e
 
-# Display warning message
-function warn() {
-    message=$1
-    echo -e "\e[1;33m${message}\e[0m"
-}
-
-# Import all project repositories
-if [[ $DISABLE_VCS != "true" ]]; then
-    echo "Importing project repositories..."
-    vcs import < src/polaris.repos src --skip-existing
-else
-    warn "VCS disabled. Skipping project repository imports..."
-fi
-
 # Create/overwrite the custom rosdep list file
 CUSTOM_ROSDEP_LIST="/etc/ros/rosdep/sources.list.d/20-sailbot.list"
 CUSTOM_ROSDEP_FILE="custom-rosdep.yaml"
