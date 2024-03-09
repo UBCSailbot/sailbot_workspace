@@ -3,12 +3,6 @@
 /install/
 /log/
 
-# vcstool packages
-/src/*
-!/src/integration_tests
-!/src/global_launch
-!/src/polaris.repos
-
 # configuration files
 /.devcontainer/config/*
 !/.devcontainer/config/README.md

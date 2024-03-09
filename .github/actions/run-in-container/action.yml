@@ -1,0 +1,31 @@
+# documentation: https://docs.github.com/en/actions/creating-actions/metadata-syntax-for-github-actions
+name: 'Run in Container'
+description: 'Run script using our Docker image'
+
+inputs:
+  script:
+    description: 'Script to run'
+    required: true
+  run-website:
+    description: 'Whether to run the website image'
+    required: false
+    default: 'false'
+  linter:
+    description: 'For the lint script, the linter to run'
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+    - name: Run sailbot workspace image
+      shell: bash
+      run: docker compose -f .devcontainer/docker-compose.yml up -d
+
+    - name: Run website image
+      if: inputs.run-website == 'true'
+      shell: bash
+      run: docker compose -f .devcontainer/docker-compose.yml -f .devcontainer/docker-compose.website.yml up -d
+
+    - name: Run script inside sailbot workspace image
+      shell: bash
+      run: docker compose -f .devcontainer/docker-compose.yml exec -T sailbot-workspace /bin/bash -c "export LINTER=${{ inputs.linter }} && cd /workspaces/sailbot_workspace && .github/actions/run-in-container/${{ inputs.script }}.sh"

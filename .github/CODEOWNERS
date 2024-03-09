@@ -7,5 +7,29 @@
 # review when someone opens a pull request.
 * @patrick-5546
 
+# boat_simulator
+/notebooks/boat_simulator @DFriend01
+/src/boat_simulator @DFriend01
+
+# custom_interfaces
+/src/custom_interfaces @UBCSailbot/soft-leads
+
+# controller
+/notebooks/controller @DFriend01
+/src/controller @DFriend01
+
+# diagnostics
+/src/diagnostics @samdai01
+
 # docs
 /docs/ @DFriend01
+
+# local_pathfinding
+/notebooks/local_pathfinding @jamenkaye
+/src/local_pathfinding @jamenkaye
+
+# network_systems
+/src/network_systems @hhenry01
+
+# website
+/src/website @jahn18

@@ -4,9 +4,6 @@
             "path": "."
         },
         {
-            "path": "docs"
-        },
-        {
             "path": "src/boat_simulator"
         },
         {
@@ -29,12 +26,6 @@
         },
         {
             "path": "src/network_systems"
-        },
-        {
-            "path": "src/notebooks"
-        },
-        {
-            "path": "src/raye-local-pathfinding"
         },
         {
             "path": "src/website"
@@ -209,9 +200,6 @@
         "isort.interpreter": ["/usr/bin/python3"],
         // test framework: pytest
         "python.testing.cwd": "/workspaces/sailbot_workspace/src",
-        "python.testing.pytestArgs": [
-            "--ignore=/workspaces/sailbot_workspace/src/raye-local-pathfinding",
-        ],
         "python.testing.pytestEnabled": true,
         // type checker: mypy
         "mypy-type-checker.args": [
@@ -258,6 +246,9 @@
         // markdown
         // copied from docs: https://github.com/UBCSailbot/docs/blob/main/.vscode/settings.json
         "[markdown]": {
+            "editor.codeActionsOnSave": {
+                "source.fixAll": "always"
+            },
             "editor.unicodeHighlight.ambiguousCharacters": false,
             "editor.unicodeHighlight.invisibleCharacters": false,
             "editor.wordWrap": "on",
@@ -494,13 +485,6 @@
                 "problemMatcher": []
             },
             // Workspace editing tasks
-            {
-                "label": "clone source repositories",
-                "detail": "Clone the repositories specified in src/polaris.repos to src/",
-                "type": "shell",
-                "command": "vcs import < src/polaris.repos src --skip-existing",
-                "problemMatcher": []
-            },
             {
                 "label": "setup",
                 "detail": "Set up the workspace",

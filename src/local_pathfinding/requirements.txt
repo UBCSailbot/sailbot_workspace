@@ -1,0 +1,8 @@
+# packages that aren't required on the main computer in production
+# install them with pip3 install -r requirements.txt
+
+# global_paths/path_builder/path_builder.py
+flask
+
+# test/test_obstacles.py
+plotly

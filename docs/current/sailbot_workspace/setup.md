@@ -241,7 +241,7 @@ Click the popup to `Open Workspace`. If there isn't a popup:
 
 ## 7. Run the `setup` task
 
-The `setup` task clones the repositories defined in `src/polaris.repos` and updates dependencies of the ROS packages.
+The `setup` task updates dependencies of the ROS packages.
 If you don't know how to run a VS Code task, see [How to run VS Code commands, tasks, and launch configurations](./how_to.md#run-vs-code-commands-tasks-and-launch-configurations).
 
 ??? bug "Can't see the `setup` task"

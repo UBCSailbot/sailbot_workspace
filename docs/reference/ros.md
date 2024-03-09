@@ -22,8 +22,9 @@ To get our workspace configuration running on your computer:
 1. Set it up by following the [setup instructions](../current/sailbot_workspace/setup.md)
 2. Uncomment the ROS 2 tutorials section in [`.devcontainer/Dockerfile`](https://github.com/UBCSailbot/sailbot_workspace/blob/main/.devcontainer/Dockerfile){target=_blank},
    then run the "Dev Containers: Rebuild Container" VS Code command, to install the tutorials' dependencies
-3. Uncomment the ROS 2 tutorials section in [`src/polaris.repos`](https://github.com/UBCSailbot/sailbot_workspace/blob/main/src/polaris.repos){target=_blank},
-   then run the "setup" VS Code task, to clone the repositories used in the tutorials
+3. Clone the repositories used in the tutuorials: [ros_tutorials](https://github.com/ros/ros_tutorials/tree/humble){target=_blank}
+   (`humble` branch), [py_pubsub_ex](https://github.com/UBCSailbot/py_pubsub_ex){target=_blank}, and [cpp_pubsub_ex](https://github.com/UBCSailbot/cpp_pubsub_ex){target=_blank},
+   then run the `setup` VS Code task to install their dependencies
 
 Our workspace configuration contains easier methods of accomplishing some of the tutorial steps, or eliminates the need
 for them altogether.

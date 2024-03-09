@@ -1,0 +1,16 @@
+@startuml deployment_sequence
+title CAN Transceiver Deployment Sequence
+
+!include %getenv("PLANTUML_TEMPLATE_PATH")
+
+autonumber
+
+!includesub common_sequence.puml!PARTICIPANTS
+
+-> can : Sensors from ELEC [CAN]
+
+!includesub common_sequence.puml!SEQUENCE
+
+<- can -- : Transmit Command(s) to ELEC [CAN]
+
+@enduml

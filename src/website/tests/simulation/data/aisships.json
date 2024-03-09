@@ -1,0 +1,56 @@
+[
+  {
+    "ships": [
+      {
+        "id": 0,
+        "latitude": 49.368762,
+        "longitude": -123.316688,
+        "cog": -120,
+        "rot": 45,
+        "sog": 12.5,
+        "width": 30,
+        "length": 80
+      },
+      {
+        "id": 1,
+        "latitude": 49.351795,
+        "longitude": -123.303052,
+        "cog": -20,
+        "rot": -20,
+        "sog": 12.5,
+        "width": 30,
+        "length": 100
+      },
+      {
+        "id": 2,
+        "latitude": 49.332968,
+        "longitude": -123.334462,
+        "cog": 0,
+        "rot": 0,
+        "sog": 12.5,
+        "width": 30,
+        "length": 150
+      },
+      {
+        "id": 3,
+        "latitude": 49.347048,
+        "longitude": -123.284458,
+        "cog": 10,
+        "rot": 10,
+        "sog": 12.5,
+        "width": 20,
+        "length": 180
+      },
+      {
+        "id": 4,
+        "latitude": 49.38638338038264,
+        "longitude": -123.27870728489948,
+        "cog": 80,
+        "rot": 80,
+        "sog": 12.5,
+        "width": 30,
+        "length": 200
+      }
+    ]
+  }
+]

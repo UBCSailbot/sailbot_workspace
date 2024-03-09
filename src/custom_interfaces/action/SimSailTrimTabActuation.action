@@ -1,0 +1,14 @@
+# Request: The desired position to turn to
+# Units: degrees, 0° south, increases CW
+# Range: [-90, 90] (TODO: Confirm desireable range with MECH team)
+float32 desired_angular_position
+---
+# Result: The absolute angular distance between the current and desired heading
+# Units: degrees
+# Range: [0, 180] (TODO: Conform desireable range with MECH team)
+float32 remaining_angular_distance
+---
+# Feedback: The trim tab angle with respect to the wingsail
+# Units: degrees, 0° south, increases CW
+# Range: [-90, 90] (TODO: Confirm desireable range with MECH team)
+float32 current_angular_position

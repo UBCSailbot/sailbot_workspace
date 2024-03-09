@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package Polaris;
+
+message Waypoint
+{
+    float  latitude  = 1;
+    float  longitude = 2;
+}

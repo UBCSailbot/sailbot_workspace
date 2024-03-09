@@ -28,7 +28,7 @@ jobs:
   # https://github.com/gaurav-nelson/github-action-markdown-link-check
   markdown-link-check:
     runs-on: ubuntu-latest
-    timeout-minutes: 1
+    timeout-minutes: 2
     steps:
     - name: Checkout workspace
       uses: actions/checkout@v4
@@ -87,7 +87,7 @@ jobs:
     name: Deploy Docs version
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request' || github.event.action != 'closed'
-    needs: [markdownlint, markdown-link-check, markdown-link-redirection-check, docs-build]
+    needs: [docs-build]
     permissions:
       contents: write
     steps:

@@ -1,0 +1,21 @@
+# Configuration that disables everything
+# Allows us to overload the config:=... arguments such that we only launch certain nodes (useful for integration testing)
+can_transceiver_node:
+  ros__parameters:
+    enabled: false
+
+cached_fib_subscriber:
+  ros__parameters:
+    enabled: false
+
+local_transceiver_node:
+  ros__parameters:
+    enabled: false
+
+mock_ais_node:
+  ros__parameters:
+    enabled: false
+
+remote_transceiver_node:
+  ros__parameters:
+    enabled: false
