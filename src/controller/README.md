@@ -4,13 +4,13 @@
 
 UBC Sailbot's controller for the new project. This repository contains a ROS package `controller`. This README
 contains only setup and run instructions. Further information on the controller can be found on the software
-team's [docs website](https://ubcsailbot.github.io/docs/main/current/controller/overview/).
+team's [docs website](https://ubcsailbot.github.io/sailbot_workspace/main/current/controller/overview/).
 
 ## Setup
 
 The controller is meant to be ran inside the [Sailbot Workspace](https://github.com/UBCSailbot/sailbot_workspace)
 development environment. Follow the setup instructions for the Sailbot Workspace
-[here](https://ubcsailbot.github.io/docs/main/current/sailbot_workspace/setup/)
+[here](https://ubcsailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/setup/)
 to get started and build all the necessary ROS packages.
 
 ## Run
