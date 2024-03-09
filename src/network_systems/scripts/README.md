@@ -34,7 +34,7 @@ Allows testing of satellite code without needing physical hardware.
 Optional argument - webhook server url:
 
 - Specify where the URL where the Remote Transceiver or whatever other HTTP server is running.
-- Default is 127.0.0.1:8081, which assumes fully local testing.
+- Default is `http://127.0.0.1:8081`, which assumes fully local testing.
 
 Optional argument - virtual iridium server port
 
