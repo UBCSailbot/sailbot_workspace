@@ -246,6 +246,9 @@
         // markdown
         // copied from docs: https://github.com/UBCSailbot/docs/blob/main/.vscode/settings.json
         "[markdown]": {
+            "editor.codeActionsOnSave": {
+                "source.fixAll": "always"
+            },
             "editor.unicodeHighlight.ambiguousCharacters": false,
             "editor.unicodeHighlight.invisibleCharacters": false,
             "editor.wordWrap": "on",
