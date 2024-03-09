@@ -60,13 +60,59 @@ inputs:
               val: -3
   - type: HTTP
     name: gps
-    dtype: GPS
     data:
+      dtype: GPS
       latitude: 1.0
       longitude: 2.0
       speed: 10.0
       heading: 180.0
-
+  - type: HTTP
+    name: ais_ships
+    data:
+      dtype: Ships
+      ships:
+        - dtype: Ship
+          latitude: 1.0
+          longitude: 2.0
+          sog: 10.0
+          cog: 180.0
+          rot: 2.32
+          width: 321.0
+          length: 121.2
+        - dtype: Ship
+          latitude: -11.41931
+          longitude: -131.14706420
+          sog: 20.0
+          cog: 190.0
+          rot: 3.32
+          width: 421.0
+          length: 221.2
+  - type: HTTP
+    name: batteries
+    data:
+      dtype: Batteries
+      ships:
+        - dtype: Battery
+          voltage: 198.48098754882812
+          current: -160.0299835205078
+        - dtype: Battery
+          voltage: 167.8837127685547
+          current: -109.57650756835938
+  - type: HTTP
+    name: local_path
+    data:
+      dtype: Path
+      waypoints:
+        - dtype: HelperLatLon
+          latitude:
+              val: 2
+          longitude:
+              val: -2
+        - dtype: HelperLatLon
+          latitude:
+              val: 3
+          longitude:
+              val: -3
 
 expected_outputs:
   - type: ROS

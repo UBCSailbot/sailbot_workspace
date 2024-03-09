@@ -353,6 +353,17 @@ def parse_ros_data(data: dict) -> Tuple[Union[None, rclpy.node.MsgType], rclpy.n
 
     return msg, msg_type
 
+def get_web_dtype(dtype):
+    match dtype:
+        case "GPS":
+            return None
+        case "Ships":
+            return None
+        case "Batteries":
+            return None
+        case  "Path":
+            return None
+
 
 def parse_web_data(data: dict):
     """Parse a data dictionary "data" field knowing only that it is HTTP data. Use this function if
@@ -427,8 +438,10 @@ class IntegrationTestSequence:
 
             elif input_dict["type"] == "HTTP":
                 data = input_dict["data"]
-                dtype = input_dict["dtype"]
                 msg = parse_web_data(data)  # type: ignore
+                dtype = data["dtype"]
+
+                msg.pop('dtype', None)
 
                 new_input = IOEntry(name=input_dict["name"], msg_type=dtype, msg=msg)
 
@@ -610,6 +623,13 @@ class IntegrationTestNode(Node):
         testplan_file = self.get_parameter("testplan").get_parameter_value().string_value
 
         try:
+            self.db = self.get_database()
+            self.clear(self.db)
+        except:
+            print("MongoDB not connected")
+
+
+        try:
             self.__test_inst = IntegrationTestSequence(testplan_file)
             try:
                 self.__ros_inputs: list[ROSInputEntry] = []
@@ -642,20 +662,13 @@ class IntegrationTestNode(Node):
                 # TODO: HTTP
                 # Get HTTP inputs and outputs
                 self.__http_inputs: list[IOEntry] = []
-                try:
-                    db = self.get_database()
-                except:
-                    print("MongoDB not connected")
-
                 # Format the HTTP inputs as a dict
                 for http_inputs in self.__test_inst.http_inputs():
-                    self.get_logger().info(f"HTTP input: {http_inputs}")
+                    self.get_logger().info(f"HTTP input: {http_inputs.msg}")
 
-                    test_output = http_inputs.msg
+                    self.get_logger().info(f"Cleanned HTTP input: {http_inputs}")
 
-                    collection_name = db[http_inputs.name]
-
-                    collection_name.insert_one(test_output)
+                    self.__http_inputs.append(http_inputs)
 
 
                 # IMPORTANT: MAKE SURE EXPECTED OUTPUTS ARE SETUP BEFORE SENDING INPUTS
@@ -692,6 +705,14 @@ class IntegrationTestNode(Node):
             pub.publish(msg)
             self.get_logger().info(f'Published to topic: "{pub.topic}", with msg: "{msg}"')
 
+    def __pub_db(self) -> None:
+        """Publish to all tables
+        """
+        for http_input in self.__http_inputs:
+            self.get_logger().info("{}".format(http_input))
+            collection_name = self.db[http_input.name]
+            collection_name.insert_one(http_input)
+
     def __timeout_cb(self) -> None:
         """Callback for when the test times out. Stops all test processes, evaluates correctness,
         and exits
@@ -721,6 +742,7 @@ class IntegrationTestNode(Node):
         """Drive all registered test inputs"""
         self.__pub_ros()
         # TODO: add HTTP
+        self.__pub_db()
 
     def get_database(self):
 
@@ -729,6 +751,26 @@ class IntegrationTestNode(Node):
         client = MongoClient(CONNECTION_STRING)
 
         return client["test"]
+
+    def clear_mongodb_collection(self, collection):
+        collection.delete_many({})
+        self.get_logger().info("Cleared data in MongoDB collection '{collection.name}'")
+
+    def clear(self, db):
+        gps = db["gps"]
+        local_path = db["local_path"]
+        global_path = db["global_path"]
+        ais_ships = db["ais_ships"]
+        batteries = db["batteries"]
+        wind_sensors = db["wind_sensors"]
+        self.get_logger().info("Clearing all collections:")
+        self.clear_mongodb_collection(gps)
+        self.clear_mongodb_collection(local_path)
+        self.clear_mongodb_collection(global_path)
+        self.clear_mongodb_collection(ais_ships)
+        self.clear_mongodb_collection(batteries)
+        self.clear_mongodb_collection(wind_sensors)
+        self.get_logger().info("Cleared all collections")
 
 if __name__ == "__main__":
     main()
