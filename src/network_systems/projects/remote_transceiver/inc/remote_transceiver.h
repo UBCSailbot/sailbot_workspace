@@ -42,6 +42,7 @@ static const std::string GLOBAL_PATH = "/global-path";
  */
 struct MOMsgParams
 {
+    // message template for a message from the iridium satellite
     using Params = struct
     {
         uint64_t    imei_;           // Rockblock IMEI
@@ -61,6 +62,7 @@ struct MOMsgParams
      * @param query_string example:
      *      imei=1234&serial=5678&momsn=9123&transmit_time=21-10-31 10:41:50&iridium_latitude=12.34&iridium_longitude=56.78&iridium_cep=2&data=A1B2C3
      */
+    // used for creating local representation of boat data posted from the local transciever
     explicit MOMsgParams(const std::string & query_string);
 
     /**
@@ -144,7 +146,8 @@ private:
 };
 
 /**
- * Listener class to listen for and accept HTTP requests over TCP
+ * Listener class to listen for and accept HTTP requests over TCP (HTTP Handler in the diagram)
+ *
  *
  */
 class Listener : public std::enable_shared_from_this<Listener>

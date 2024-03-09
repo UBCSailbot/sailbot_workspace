@@ -19,6 +19,7 @@ class RemoteTransceiverRosIntf : public rclcpp::Node
 public:
     RemoteTransceiverRosIntf() : Node("remote_transceiver_node")
     {
+        // standard ROS setup
         this->declare_parameter("enabled", true);
         enabled_ = this->get_parameter("enabled").as_bool();
 
@@ -49,6 +50,7 @@ public:
                 throw std::runtime_error(msg);
             }
 
+            // ros declare params and get params
             this->declare_parameter("db_name", default_db_name);
             this->declare_parameter("host", default_host);
             this->declare_parameter("port", default_port);
@@ -70,20 +72,27 @@ public:
               mode.c_str(), db_name.c_str(), host.c_str(), std::to_string(port).c_str(),
               std::to_string(num_threads).c_str());
 
+            // create a sailbot_db object given an address to MongoDB
             SailbotDB sailbot_db(db_name, MONGODB_CONN_STR);
+            // test the connection to ensure that the DB is made
             if (!sailbot_db.testConnection()) {
                 throw std::runtime_error("Failed to connect to database");
             }
 
             try {
+                // create the io synchronizer and reserve the number of threads for connection
                 io_ = std::make_unique<bio::io_context>(num_threads);
                 io_threads_.reserve(num_threads);
+                // given an IP address string, create a boost ip address obj
                 bio::ip::address addr = bio::ip::make_address(host);
 
+                // create a listener and pass it the io context, a created tcp:endpoint given ip and port and
+                // pass ownership of the db to the listener and remote transciever
                 std::make_shared<remote_transceiver::Listener>(
                   *io_, tcp::endpoint{addr, static_cast<uint16_t>(port)}, std::move(sailbot_db))
                   ->run();
 
+                // create a thread, pass the reference of the boost asio obj to the thread and run it
                 for (std::thread & io_thread : io_threads_) {
                     io_thread = std::thread([&io_ = io_]() { io_->run(); });
                 }
@@ -102,7 +111,9 @@ public:
     ~RemoteTransceiverRosIntf()
     {
         if (enabled_) {
+            // stop receiving IO or sending IO
             io_->stop();
+            // join all threads
             for (std::thread & io_thread : io_threads_) {
                 io_thread.join();
             }
@@ -117,6 +128,7 @@ private:
 
 int main(int argc, char ** argv)
 {
+    // main function that spins on the ros network, handles new ros messages and synchronization
     rclcpp::init(argc, argv);
     try {
         rclcpp::spin(std::make_shared<RemoteTransceiverRosIntf>());

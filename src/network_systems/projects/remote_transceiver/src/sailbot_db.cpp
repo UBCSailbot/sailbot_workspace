@@ -5,14 +5,12 @@
 #include <bsoncxx/builder/stream/helpers.hpp>
 #include <bsoncxx/json.hpp>
 #include <cstdint>
-#include <iomanip>
 #include <iostream>
 #include <memory>
 #include <mongocxx/client.hpp>
 #include <mongocxx/collection.hpp>
 #include <mongocxx/database.hpp>
 #include <mongocxx/instance.hpp>
-#include <sstream>
 
 #include "sensors.pb.h"
 #include "waypoint.pb.h"
@@ -20,46 +18,40 @@
 namespace bstream = bsoncxx::builder::stream;
 using Polaris::Sensors;
 
-mongocxx::instance SailbotDB::inst_{};  // staticallly initialize instance
+mongocxx::instance SailbotDB::inst_{};  // staticallly initialize instance so that it is available everywhere in this
+                                        // translation unit
+                                        // why is this not used anywhere else?
 
 // PUBLIC
 
-std::ostream & operator<<(std::ostream & os, const SailbotDB::RcvdMsgInfo & info)
+// constructor for a sailbotdb instance that takes in a db name to set, and a connection string that defines the port that
+// is used on local host for now
+SailbotDB::SailbotDB(const std::string & db_name, const std::string & mongodb_conn_str)
+: db_name_(db_name)  // sets the db name
 {
-    os << "Latitude: " << info.lat_ << "\n"
-       << "Longitude: " << info.lon_ << "\n"
-       << "Accuracy (km): " << info.cep_ << "\n"
-       << "Timestamp: " << info.timestamp_;
-    return os;
+    mongocxx::uri uri = mongocxx::uri{
+      // what exactly is uri ???
+      mongodb_conn_str};  // creates a mongodb uri based on the connection string which is an address and port
+    pool_ = std::make_unique<mongocxx::pool>(uri);  // given a database, create a set of ready to use connections
+                                                    // that the app can connect to and access the db
 }
 
-std::string SailbotDB::RcvdMsgInfo::mkTimestamp(const std::tm & tm)
-{
-    // This is impossible to read. It's reading each field of tm and 0 padding it to 2 digits with either "-" or ":"
-    // in between each number
-    std::stringstream tm_ss;
-    tm_ss << std::setfill('0') << std::setw(2) << tm.tm_year << "-" << std::setfill('0') << std::setw(2) << tm.tm_mon
-          << "-" << std::setfill('0') << std::setw(2) << tm.tm_mday << " " << std::setfill('0') << std::setw(2)
-          << tm.tm_hour << ":" << std::setfill('0') << std::setw(2) << tm.tm_min << ":" << std::setfill('0')
-          << std::setw(2) << tm.tm_sec;
-    return tm_ss.str();
-}
-
-SailbotDB::SailbotDB(const std::string & db_name, const std::string & mongodb_conn_str) : db_name_(db_name)
-{
-    mongocxx::uri uri = mongocxx::uri{mongodb_conn_str};
-    pool_             = std::make_unique<mongocxx::pool>(uri);
-}
-
+// prints out a given document into the terminal, it prints out one set of data defined in the comments in sailbot_db.h
+// converts the specific mongodb document into a JSON string and prints it out
 void SailbotDB::printDoc(const DocVal & doc) { std::cout << bsoncxx::to_json(doc.view()) << std::endl; }
 
+// tests the connection given
 bool SailbotDB::testConnection()
 {
-    const DocVal          ping_cmd = bstream::document{} << "ping" << 1 << bstream::finalize;
-    mongocxx::pool::entry entry    = pool_->acquire();
-    mongocxx::database    db       = (*entry)[db_name_];
+    // creates the ping command using a bstream document???, command is the ping command to the DB
+    const DocVal ping_cmd = bstream::document{} << "ping" << 1 << bstream::finalize;
+    // acquire a connection to the db from one of the pools
+    mongocxx::pool::entry entry = pool_->acquire();
+    // obtain reference to the database from the connection
+    mongocxx::database db = (*entry)[db_name_];
     try {
         // Ping the database.
+        // apparently ping throws an exception if the ping command doesn't work and cant connect?
         db.run_command(ping_cmd.view());
         return true;
     } catch (const std::exception & e) {
@@ -68,11 +60,14 @@ bool SailbotDB::testConnection()
     }
 }
 
+// given a sensors protobuf and iridium information, write to the db
+// each message from iridium will contain the entire system data instead of just new ones
 bool SailbotDB::storeNewSensors(const Sensors & sensors_pb, RcvdMsgInfo new_info)
 {
     // Only using timestamp info for now, may use other fields in the future
     const std::string &   timestamp = new_info.timestamp_;
-    mongocxx::pool::entry entry     = pool_->acquire();
+    mongocxx::pool::entry entry     = pool_->acquire();  // acquire connection to DB
+    // store all data individually
     return storeGps(sensors_pb.gps(), timestamp, *entry) && storeAis(sensors_pb.ais_ships(), timestamp, *entry) &&
            storeGenericSensors(sensors_pb.data_sensors(), timestamp, *entry) &&
            storeBatteries(sensors_pb.batteries(), timestamp, *entry) &&
@@ -84,36 +79,51 @@ bool SailbotDB::storeNewSensors(const Sensors & sensors_pb, RcvdMsgInfo new_info
 
 // PRIVATE
 
+// given a sensors::gps protobuf, the timestamp of message, and a mongodb client connected to DB, write gps data to db
 bool SailbotDB::storeGps(const Sensors::Gps & gps_pb, const std::string & timestamp, mongocxx::client & client)
 {
-    mongocxx::database   db       = client[db_name_];
+    // obtain reference to DB
+    mongocxx::database db = client[db_name_];
+    // obtain reference to the gps collection
     mongocxx::collection gps_coll = db[COLLECTION_GPS];
+    // create new document entry to the DB given the latitude, longitude, speed, and heading
     DocVal gps_doc = bstream::document{} << "latitude" << gps_pb.latitude() << "longitude" << gps_pb.longitude()
                                          << "speed" << gps_pb.speed() << "heading" << gps_pb.heading() << "timestamp"
                                          << timestamp << bstream::finalize;
 
+    // insert the document entry to the DB and return the status
     return static_cast<bool>(gps_coll.insert_one(gps_doc.view()));
 }
 
+// given a sensors::ais protobuf, the timestamp of message, and mongodb client connected to DB, write AIS data to the db
 bool SailbotDB::storeAis(
   const ProtoList<Sensors::Ais> & ais_ships_pb, const std::string & timestamp, mongocxx::client & client)
 {
+    // obtain reference to DB and correct collection
     mongocxx::database   db       = client[db_name_];
     mongocxx::collection ais_coll = db[COLLECTION_AIS_SHIPS];
-    bstream::document    doc_builder{};
-    auto                 ais_ships_doc_arr = doc_builder << "ships" << bstream::open_array;
+
+    // since the ais protobuf contains an array of ships, need to create document differently
+    bstream::document doc_builder{};
+    // create an array named ships
+    auto ais_ships_doc_arr = doc_builder << "ships" << bstream::open_array;
     for (const Sensors::Ais & ais_ship : ais_ships_pb) {
         // The BSON spec does not allow unsigned integers (throws exception), so cast our uint32s to sint64s
+        // push ship data into the document array
         ais_ships_doc_arr = ais_ships_doc_arr
+                            // creates a document entry for each boat
                             << bstream::open_document << "id" << static_cast<int64_t>(ais_ship.id()) << "latitude"
                             << ais_ship.latitude() << "longitude" << ais_ship.longitude() << "sog" << ais_ship.sog()
                             << "cog" << ais_ship.cog() << "rot" << ais_ship.rot() << "width" << ais_ship.width()
                             << "length" << ais_ship.length() << bstream::close_document;
     }
+    // close the array, add a timestamp, and complete the document
     DocVal ais_ships_doc = ais_ships_doc_arr << bstream::close_array << "timestamp" << timestamp << bstream::finalize;
+    // insert the document to the db
     return static_cast<bool>(ais_coll.insert_one(ais_ships_doc.view()));
 }
 
+// same as ais ships but for generic sensors
 bool SailbotDB::storeGenericSensors(
   const ProtoList<Sensors::Generic> & generic_pb, const std::string & timestamp, mongocxx::client & client)
 {
@@ -129,6 +139,7 @@ bool SailbotDB::storeGenericSensors(
     return static_cast<bool>(generic_coll.insert_one(generic_doc.view()));
 }
 
+// same as ais ships but for batteries
 bool SailbotDB::storeBatteries(
   const ProtoList<Sensors::Battery> & battery_pb, const std::string & timestamp, mongocxx::client & client)
 {
@@ -144,6 +155,7 @@ bool SailbotDB::storeBatteries(
     return static_cast<bool>(batteries_coll.insert_one(batteries_doc.view()));
 }
 
+// similar to ais ships but for wind sensors
 bool SailbotDB::storeWindSensors(
   const ProtoList<Sensors::Wind> & wind_pb, const std::string & timestamp, mongocxx::client & client)
 {
@@ -159,6 +171,7 @@ bool SailbotDB::storeWindSensors(
     return static_cast<bool>(wind_coll.insert_one(wind_doc.view()));
 }
 
+// same as ais ships but for path sensors
 bool SailbotDB::storePathSensors(
   const Sensors::Path & local_path_pb, const std::string & timestamp, mongocxx::client & client)
 {
