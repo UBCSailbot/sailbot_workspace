@@ -13,12 +13,15 @@
 #include <boost/beast/http.hpp>
 #include <boost/beast/version.hpp>
 #include <boost/core/ignore_unused.hpp>
+#include <boost/property_tree/json_parser.hpp>  //JSON parser
+#include <boost/property_tree/ptree.hpp>
 #include <boost/system/error_code.hpp>
 #include <iostream>
 #include <memory>
 #include <string>
 
 #include "cmn_hdrs/shared_constants.h"
+#include "global_path.pb.h"
 #include "sailbot_db.h"
 #include "sensors.pb.h"
 
@@ -174,7 +177,7 @@ void HTTPServer::doPost()
                     Polaris::Sensors       sensors;
                     SailbotDB::RcvdMsgInfo info = {params.lat_, params.lon_, params.cep_, params.transmit_time_};
                     sensors.ParseFromString(params.data_);
-                    if (!self->db_.storeNewSensors(sensors, info)) {
+                    if (!self->db_.storeNewSensors(sensors, info)) {  //important
                         std::cerr << "Error, failed to store data received from:\n" << info << std::endl;
                     };
                 }
@@ -187,7 +190,25 @@ void HTTPServer::doPost()
         }
     } else if (req_.target() == remote_transceiver::targets::GLOBAL_PATH) {
         // TODO(): Allow POST global path
-        res_.result(http::status::not_implemented);
+        std::string                 json_str = beast::buffers_to_string(req_.body().data());  //JSON Parsing
+        std::stringstream           ss(json_str);
+        boost::property_tree::ptree json_tree;
+        boost::property_tree::read_json(ss, json_tree);
+        std::string timestamp = json_tree.get<std::string>("timestamp");
+        std::cout << "timestamp: " << timestamp << std::endl;
+        Polaris::GlobalPath global_path;
+        int                 num_waypoints = 0;
+        for (const auto & waypoint : json_tree.get_child("waypoints")) {
+            float               lat             = waypoint.second.get<float>("latitude");
+            float               lon             = waypoint.second.get<float>("longitude");
+            Polaris::Waypoint * global_waypoint = global_path.add_waypoints();
+            global_waypoint->set_longitude(lon);
+            global_waypoint->set_latitude(lat);
+            num_waypoints++;
+            std::cout << "waypoint latlon: " << lat << " " << lon << std::endl;
+        }
+        global_path.set_num_waypoints(num_waypoints);
+
     } else {
         doNotFound();
     }

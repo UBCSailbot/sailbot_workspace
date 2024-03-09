@@ -1,8 +1,10 @@
 #include <gtest/gtest.h>
 
+#include "mongocxx/client.hpp"
 #include "sailbot_db.h"
 #include "util_db.h"
 
+using Polaris::GlobalPath;
 using Polaris::Sensors;
 
 static std::random_device g_rd        = std::random_device();  // random number sampler
@@ -37,4 +39,11 @@ TEST_F(TestSailbotDB, TestStoreSensors)
     std::array<SailbotDB::RcvdMsgInfo, 1> expected_info    = {rand_info};
 
     EXPECT_TRUE(g_test_db.verifyDBWrite(expected_sensors, expected_info));
+}
+
+TEST_F(TestSailbotDB, TestStoreGlobalPath)
+{
+    SCOPED_TRACE("Seed: " + std::to_string(g_rand_seed));  // Print seed on any failure
+    auto [global_path_data, global_info] = g_test_db.genGlobalData(UtilDB::getTimestamp());
+    //ASSERT_TRUE(g_test_db.storeNewGlobalPath(global_path_data, global_info));
 }

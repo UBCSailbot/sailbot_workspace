@@ -35,6 +35,8 @@ public:
     */
     Polaris::Sensors genRandSensors();
 
+    Polaris::GlobalPath genGlobalPath();
+
     /**
      * @return timestamp for the current time
      */
@@ -47,6 +49,8 @@ public:
     * @return std::pair<Sensors, SailbotDB::RcvdMsgInfo>
     */
     std::pair<Polaris::Sensors, SailbotDB::RcvdMsgInfo> genRandData(const std::tm & tm);
+
+    std::pair<Polaris::GlobalPath, SailbotDB::RcvdMsgInfo> genGlobalData(const std::tm & tm);
 
     /**
     * @brief Query the database and check that the sensor and message are correct
@@ -111,4 +115,6 @@ private:
     * @param path_data Path data to modify
     */
     void genRandPathData(Polaris::Sensors::Path & path_data);
+
+    void genGlobalPathData(Polaris::GlobalPath & global_path_data);
 };

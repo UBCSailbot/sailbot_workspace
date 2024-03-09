@@ -14,8 +14,11 @@
 #include <random>
 
 #include "cmn_hdrs/shared_constants.h"
+#include "sailbot_db/inc/sailbot_db.h"
+#include "sailbot_db/inc/util_db.h"
 #include "utils/utils.h"
 
+using Polaris::GlobalPath;
 using Polaris::Sensors;
 
 void UtilDB::cleanDB()
@@ -71,6 +74,13 @@ Sensors UtilDB::genRandSensors()
     return sensors;
 }
 
+GlobalPath UtilDB::genGlobalPath()
+{
+    GlobalPath global_path;
+    genGlobalPathData(global_path);
+    return global_path;
+}
+
 std::tm UtilDB::getTimestamp()
 {
     // Get the current time
@@ -91,6 +101,18 @@ std::pair<Sensors, SailbotDB::RcvdMsgInfo> UtilDB::genRandData(const std::tm & t
       .cep_       = 0,  // Not processed yet, so just set to 0
       .timestamp_ = SailbotDB::RcvdMsgInfo::mkTimestamp(tm)};
     return {rand_sensors, rand_info};
+}
+
+std::pair<Polaris::GlobalPath, SailbotDB::RcvdMsgInfo> UtilDB::genGlobalData(const std::tm & tm)
+{
+    Polaris::GlobalPath global_path_data = genGlobalPath();
+
+    SailbotDB::RcvdMsgInfo global_info{
+      .lat_       = 0,  // Not processed yet, so just set to 0
+      .lon_       = 0,  // Not processed yet, so just set to 0
+      .cep_       = 0,  // Not processed yet, so just set to 0
+      .timestamp_ = SailbotDB::RcvdMsgInfo::mkTimestamp(tm)};
+    return {global_path_data, global_info};
 }
 
 bool UtilDB::verifyDBWrite(std::span<Sensors> expected_sensors, std::span<SailbotDB::RcvdMsgInfo> expected_msg_info)
@@ -395,5 +417,15 @@ void UtilDB::genRandPathData(Sensors::Path & path_data)
         Polaris::Waypoint * waypoint = path_data.add_waypoints();
         waypoint->set_latitude(latitude_path(*rng_));
         waypoint->set_longitude(longitude_path(*rng_));
+    }
+}
+
+void UtilDB::genGlobalPathData(Polaris::GlobalPath & global_path_data)  //
+{
+    (void)rng_;
+    for (float i = 0; i < NUM_PATH_WAYPOINTS; i++) {
+        Polaris::Waypoint * waypoint = global_path_data.add_waypoints();
+        waypoint->set_latitude(i);  // this needs a float
+        waypoint->set_longitude(i);
     }
 }
