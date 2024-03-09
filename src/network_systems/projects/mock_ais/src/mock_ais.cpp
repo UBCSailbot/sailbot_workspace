@@ -97,15 +97,22 @@ void MockAisShip::tick(const Vec2DFloat & polaris_lat_lon)
         speed = SPEED_LBND;
     }
 
-    //
-    heading_                               = boundHeading(heading_dist(mt_rng_));
-    speed_                                 = speed;
-    Vec2DFloat dir_vec                     = headingToVec2D(heading_);
-    Vec2DFloat displacement                = dir_vec * speed_;
-    Vec2DFloat new_pos                     = lat_lon_ + displacement;
-    Vec2DFloat polaris_to_new_pos_vec      = new_pos - polaris_lat_lon;
-    float      polaris_to_new_pos_distance = qvm::mag(polaris_to_new_pos_vec);
+    // obtain new heading
+    heading_ = boundHeading(heading_dist(mt_rng_));
+    // obtain speed of boat
+    speed_ = speed;
+    // obtain the vector for the heading
+    Vec2DFloat dir_vec = headingToVec2D(heading_);
+    // obtain the vector for the displacement from last tick by multiplying direction by speed
+    Vec2DFloat displacement = dir_vec * speed_;
+    // obtain the new position for the boat by adding the displacement to the lat lon
+    Vec2DFloat new_pos = lat_lon_ + displacement;
+    // obtain the difference between new position and old position?
+    Vec2DFloat polaris_to_new_pos_vec = new_pos - polaris_lat_lon;
+    // find the distance traveled between the two ticks
+    float polaris_to_new_pos_distance = qvm::mag(polaris_to_new_pos_vec);
 
+    // check bounds for distance traveled and update the lat_lon_ of the ship
     if (polaris_to_new_pos_distance < config_.min_ship_dist_) {
         qvm::normalize(polaris_to_new_pos_vec);
         lat_lon_ = polaris_lat_lon + config_.min_ship_dist_ * polaris_to_new_pos_vec;
@@ -120,6 +127,7 @@ void MockAisShip::tick(const Vec2DFloat & polaris_lat_lon)
     rot_ = rot_dist(mt_rng_);
 }
 
+// mock ais constructor that uses the second one with ship config
 MockAis::MockAis(uint32_t seed, uint32_t num_ships, Vec2DFloat polaris_lat_lon)
 : MockAis(
     seed, num_ships, polaris_lat_lon,
@@ -134,14 +142,17 @@ MockAis::MockAis(uint32_t seed, uint32_t num_ships, Vec2DFloat polaris_lat_lon)
 {
 }
 
+// the second constructor with ship config
 MockAis::MockAis(uint32_t seed, uint32_t num_ships, Vec2DFloat polaris_lat_lon, SimShipConfig config)
-: polaris_lat_lon_(polaris_lat_lon)
+: polaris_lat_lon_(polaris_lat_lon)  // sets polaris lat lon field as a Vec2DFloat
 {
+    // for the preset num ships, create ship with slightly random data and push to ships array
     for (uint32_t i = 0; i < num_ships; i++) {
         ships_.push_back(MockAisShip(seed + i, i, polaris_lat_lon, config));
     }
 }
 
+// obtain a vector of ships
 std::vector<AisShip> MockAis::ships() const
 {
     std::vector<AisShip> ships;
@@ -151,8 +162,10 @@ std::vector<AisShip> MockAis::ships() const
     return ships;
 }
 
+// update polaris location within AIS with new lat_lon value
 void MockAis::updatePolarisPos(const Vec2DFloat & lat_lon) { polaris_lat_lon_ = lat_lon; }
 
+// move one tick forward -> update new ship locations and directions
 void MockAis::tick()
 {
     for (MockAisShip & ship : ships_) {
