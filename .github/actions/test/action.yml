@@ -4,13 +4,6 @@ description: 'Test using devcontainer'
 runs:
   using: "composite"
   steps:
-    # TODO: remove once monorepo and combine website docker compose into main one
-    - name: Setup Code
-      shell: bash
-      run: |
-        docker compose -f .devcontainer/docker-compose.yml up -d
-        docker compose -f .devcontainer/docker-compose.yml exec -T sailbot-workspace /bin/bash -c "cd /workspaces/sailbot_workspace && ./setup.sh"
-
     - name: Run Containers
       shell: bash
       run: docker compose -f .devcontainer/docker-compose.yml -f .devcontainer/docker-compose.website.yml up -d
