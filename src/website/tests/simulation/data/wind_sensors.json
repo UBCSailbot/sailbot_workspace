@@ -1,0 +1,434 @@
+[
+  {
+    "windSensors": [
+      {
+        "speed": 15,
+        "direction": -57
+      },
+      {
+        "speed": 11,
+        "direction": -34
+      }
+    ]
+  },
+  {
+    "windSensors": [
+      {
+        "speed": 18,
+        "direction": -1
+      },
+      {
+        "speed": 10,
+        "direction": -143
+      }
+    ]
+  },
+  {
+    "windSensors": [
+      {
+        "speed": 13,
+        "direction": 2
+      },
+      {
+        "speed": 19,
+        "direction": -136
+      }
+    ]
+  },
+  {
+    "windSensors": [
+      {
+        "speed": 22,
+        "direction": 23
+      },
+      {
+        "speed": 17,
+        "direction": 174
+      }
+    ]
+  },
+  {
+    "windSensors": [
+      {
+        "speed": 13,
+        "direction": 74
+      },
+      {
+        "speed": 22,
+        "direction": 15
+      }
+    ]
+  },
+  {
+    "windSensors": [
+      {
+        "speed": 12,
+        "direction": -136
+      },
+      {
+        "speed": 16,
+        "direction": -169
+      }
+    ]
+  },
+  {
+    "windSensors": [
+      {
+        "speed": 21,
+        "direction": -29
+      },
+      {
+        "speed": 15,
+        "direction": -123
+      }
+    ]
+  },
+  {
+    "windSensors": [
+      {
+        "speed": 11,
+        "direction": 68
+      },
+      {
+        "speed": 14,
+        "direction": 85
+      }
+    ]
+  },
+  {
+    "windSensors": [
+      {
+        "speed": 14,
+        "direction": 142
+      },
+      {
+        "speed": 20,
+        "direction": -139
+      }
+    ]
+  },
+  {
+    "windSensors": [
+      {
+        "speed": 10,
+        "direction": 117
+      },
+      {
+        "speed": 13,
+        "direction": 12
+      }
+    ]
+  },
+  {
+    "windSensors": [
+      {
+        "speed": 22,
+        "direction": -175
+      },
+      {
+        "speed": 21,
+        "direction": -161
+      }
+    ]
+  },
+  {
+    "windSensors": [
+      {
+        "speed": 20,
+        "direction": -140
+      },
+      {
+        "speed": 19,
+        "direction": -29
+      }
+    ]
+  },
+  {
+    "windSensors": [
+      {
+        "speed": 12,
+        "direction": -34
+      },
+      {
+        "speed": 14,
+        "direction": 31
+      }
+    ]
+  },
+  {
+    "windSensors": [
+      {
+        "speed": 11,
+        "direction": 149
+      },
+      {
+        "speed": 13,
+        "direction": 106
+      }
+    ]
+  },
+  {
+    "windSensors": [
+      {
+        "speed": 20,
+        "direction": -30
+      },
+      {
+        "speed": 11,
+        "direction": 125
+      }
+    ]
+  },
+  {
+    "windSensors": [
+      {
+        "speed": 17,
+        "direction": -168
+      },
+      {
+        "speed": 19,
+        "direction": -160
+      }
+    ]
+  },
+  {
+    "windSensors": [
+      {
+        "speed": 16,
+        "direction": 3
+      },
+      {
+        "speed": 13,
+        "direction": 138
+      }
+    ]
+  },
+  {
+    "windSensors": [
+      {
+        "speed": 14,
+        "direction": -125
+      },
+      {
+        "speed": 21,
+        "direction": -108
+      }
+    ]
+  },
+  {
+    "windSensors": [
+      {
+        "speed": 18,
+        "direction": -126
+      },
+      {
+        "speed": 16,
+        "direction": -123
+      }
+    ]
+  },
+  {
+    "windSensors": [
+      {
+        "speed": 10,
+        "direction": 21
+      },
+      {
+        "speed": 22,
+        "direction": -178
+      }
+    ]
+  },
+  {
+    "windSensors": [
+      {
+        "speed": 16,
+        "direction": -5
+      },
+      {
+        "speed": 21,
+        "direction": -111
+      }
+    ]
+  },
+  {
+    "windSensors": [
+      {
+        "speed": 19,
+        "direction": -36
+      },
+      {
+        "speed": 19,
+        "direction": 111
+      }
+    ]
+  },
+  {
+    "windSensors": [
+      {
+        "speed": 13,
+        "direction": 1
+      },
+      {
+        "speed": 18,
+        "direction": 7
+      }
+    ]
+  },
+  {
+    "windSensors": [
+      {
+        "speed": 17,
+        "direction": 69
+      },
+      {
+        "speed": 15,
+        "direction": -49
+      }
+    ]
+  },
+  {
+    "windSensors": [
+      {
+        "speed": 10,
+        "direction": 163
+      },
+      {
+        "speed": 10,
+        "direction": -96
+      }
+    ]
+  },
+  {
+    "windSensors": [
+      {
+        "speed": 16,
+        "direction": -157
+      },
+      {
+        "speed": 18,
+        "direction": 73
+      }
+    ]
+  },
+  {
+    "windSensors": [
+      {
+        "speed": 19,
+        "direction": 67
+      },
+      {
+        "speed": 15,
+        "direction": -39
+      }
+    ]
+  },
+  {
+    "windSensors": [
+      {
+        "speed": 14,
+        "direction": -104
+      },
+      {
+        "speed": 14,
+        "direction": 164
+      }
+    ]
+  },
+  {
+    "windSensors": [
+      {
+        "speed": 22,
+        "direction": 167
+      },
+      {
+        "speed": 15,
+        "direction": 2
+      }
+    ]
+  },
+  {
+    "windSensors": [
+      {
+        "speed": 19,
+        "direction": 179
+      },
+      {
+        "speed": 21,
+        "direction": 29
+      }
+    ]
+  },
+  {
+    "windSensors": [
+      {
+        "speed": 19,
+        "direction": -34
+      },
+      {
+        "speed": 16,
+        "direction": -115
+      }
+    ]
+  },
+  {
+    "windSensors": [
+      {
+        "speed": 11,
+        "direction": 175
+      },
+      {
+        "speed": 12,
+        "direction": -51
+      }
+    ]
+  },
+  {
+    "windSensors": [
+      {
+        "speed": 15,
+        "direction": -159
+      },
+      {
+        "speed": 15,
+        "direction": -102
+      }
+    ]
+  },
+  {
+    "windSensors": [
+      {
+        "speed": 21,
+        "direction": 67
+      },
+      {
+        "speed": 17,
+        "direction": -129
+      }
+    ]
+  },
+  {
+    "windSensors": [
+      {
+        "speed": 17,
+        "direction": 133
+      },
+      {
+        "speed": 17,
+        "direction": 81
+      }
+    ]
+  },
+  {
+    "windSensors": [
+      {
+        "speed": 13,
+        "direction": -172
+      },
+      {
+        "speed": 12,
+        "direction": -138
+      }
+    ]
+  }
+]

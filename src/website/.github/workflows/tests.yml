@@ -1,0 +1,45 @@
+name: Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+# Cancel in-progress runs for the current workflow
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # CI for all UBCSailbot repositories defined in one place
+  # Runs another workflow: https://docs.github.com/en/actions/using-workflows/reusing-workflows#calling-a-reusable-workflow
+  test-definitions:
+    # sailbot_workspace: use locally-defined file
+    # other repositories: set to UBCSailbot/sailbot_workspace/.github/workflows/test_definitions.yml@<release>
+    uses: UBCSailbot/sailbot_workspace/.github/workflows/test_definitions.yml@v1.6.0
+    # see https://github.com/UBCSailbot/sailbot_workspace/blob/main/.github/workflows/test_definitions.yml
+    # for documentation on the inputs and secrets below
+    with:
+      repository: ${{ github.event.repository.name }}
+      ros-ci: false
+      clang-tidy: false
+      rebuild-docs: true
+    secrets:
+      PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
+
+  linter:
+    runs-on: ubuntu-latest
+    name: eslint
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          repository: UBCSailbot/${{ github.event.repository.name }}
+      - name: Install node-js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      - run: npm install
+      - run: npm run format && npm run lint
