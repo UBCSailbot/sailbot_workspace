@@ -83,6 +83,12 @@ bool SailbotDB::storeNewSensors(const Sensors & sensors_pb, RcvdMsgInfo new_info
 
 // END PUBLIC
 
+bool SailbotDB::storeNewGlobalPath(const GlobalPath & global_pb, const std::string & timestamp)
+{
+    mongocxx::pool::entry entry = pool_->acquire();
+    return storeNewGlobalPath(global_pb, timestamp, *entry);
+}
+
 // PRIVATE
 
 bool SailbotDB::storeGps(const Sensors::Gps & gps_pb, const std::string & timestamp, mongocxx::client & client)
