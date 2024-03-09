@@ -4,27 +4,51 @@ on:
   push:
     branches:
       - main
-      # sailbot_workspace only: raye branch used to run Raye's software
       - raye
   pull_request:
   workflow_dispatch:
 
 jobs:
-  # CI for all UBCSailbot repositories defined in one place
-  # Runs another workflow: https://docs.github.com/en/actions/using-workflows/reusing-workflows#calling-a-reusable-workflow
-  test-definitions:
-    # sailbot_workspace: use locally-defined file
-    # other repositories: set to UBCSailbot/sailbot_workspace/.github/workflows/test_definitions.yml@<release>
-    uses: ./.github/workflows/test_definitions.yml
-    # see https://github.com/UBCSailbot/sailbot_workspace/blob/main/.github/workflows/test_definitions.yml
-    # for documentation on the inputs and secrets below
-    with:
-      repository: ${{ github.event.repository.name }}
-      ros-ci: true
-      clang-tidy: true
-      rebuild-docs: true
-    # If rebuild-docs is true:
-    # 1. Create the repository secret PAT_TOKEN (copy from Bitwarden)
-    # 2. Uncomment the 2 lines below
-    secrets:
-      PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
+  colcon-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+    - name: Checkout workspace
+      uses: actions/checkout@v4
+
+    - name: Test
+      uses: ./.github/actions/run-in-container/
+      with:
+        script: 'test'
+        run-website: 'true'
+
+  ament-lint:
+    strategy:
+      fail-fast: false
+      matrix:
+          # mypy and ament_lint_common, except for copyright, cppcheck, cpplint, uncrustify, and pep257
+          linter: [lint_cmake, flake8, mypy, xmllint]
+    name: ament_${{ matrix.linter }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+    - name: Checkout workspace
+      uses: actions/checkout@v4
+
+    - name: Run linter
+      uses: ./.github/actions/run-in-container/
+      with:
+        script: 'ament-lint'
+        linter: ${{ matrix.linter }}
+
+  clang-tidy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+    - name: Checkout workspace
+      uses: actions/checkout@v4
+
+    - name: Run linter
+      uses: ./.github/actions/run-in-container/
+      with:
+        script: 'clang-tidy'

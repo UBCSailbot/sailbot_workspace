@@ -1,0 +1,30 @@
+@startuml transmit_global_path_sequence
+title Remote Transceiver Transmit Global Path Sequence
+
+!include %getenv("PLANTUML_TEMPLATE_PATH")
+!include common.puml
+
+autonumber
+
+note over db : Unused
+
+-> handler ++ : POST Global Path
+handler -> server --++ : Process POST request
+server -> server : Parse HTTP Request for Waypoints
+server -> server : Convert Waypoints to Protobuf and Serialize
+opt If Waypoints are too Large for One Message
+    server -> server : Split Waypoints Across Multiples Messages
+end
+loop For Each Waypoint Message
+    server -> handler ++ : Transmit Waypoints
+    <-- handler : POST Waypoints to Iridium
+    handler -> server -- : POST complete
+    note over handler, server
+        To prevent out of order transmissions on random
+        POST failures, POSTING to Iridium should be a
+        blocking operation.
+    end note
+end
+deactivate server
+
+@enduml

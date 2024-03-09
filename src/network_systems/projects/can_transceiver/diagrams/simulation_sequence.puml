@@ -1,0 +1,29 @@
+@startuml simulation_sequence
+title CAN Transceiver Simulation Sequence
+
+!include %getenv("PLANTUML_TEMPLATE_PATH")
+
+autonumber
+
+box "Simulation Sequence"
+participant CanSimIntf as sim_intf
+participant CanSimTransceiver as sim_t
+end box
+
+!includesub common_sequence.puml!PARTICIPANTS
+
+-> sim_intf ++ : Mock Sensors from Simulator [ROS]
+sim_intf -> sim_t --++ : Process Mock Sensors [ROS]
+sim_t -> sim_t : Convert ROS sensor object to CAN
+sim_t --> can -- : Call new Sensors API [CAN]
+deactivate sim_intf
+note right sim_t : API call should be async to replicate deployment behavior.
+
+!includesub common_sequence.puml!SEQUENCE
+
+sim_t <-- can --++ : Call Write to CAN API
+note left can : API call should be async to replicate deployment behavior.
+sim_t -> sim_t : Convert Command(s) from CAN to ROS
+sim_intf <- sim_t --++ : Transmit Command(s) [ROS]
+activate sim_intf
+<- sim_intf -- : Publish Command(s) to Simulator [ROS]

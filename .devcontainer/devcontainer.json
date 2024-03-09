@@ -3,14 +3,12 @@
 	"name": "Sailbot Workspace",
 	"dockerComposeFile": [
 		// Uncomment the files containing the programs you need
-		"docker-compose.db.yml", // mongodb
 		// "docker-compose.docs.yml", // docs
-		// "docker-compose.website.yml", // website
+		"docker-compose.website.yml", // website
 
 		"docker-compose.yml"
 	],
 	"forwardPorts": [
-		3005, // website
 		8000  // docs
 	],
 	"service": "sailbot-workspace",
@@ -19,22 +17,9 @@
 	"containerEnv": {
 		"LIBGL_ALWAYS_SOFTWARE": "1" // Needed for software rendering of opengl
 	},
+	"postCreateCommand": "./setup.sh",
 	// Set *default* container specific settings.json values on container create.
 	"customizations": {
-		"codespaces": {
-			"repositories": {
-				"UBCSailbot/boat_simulator": {"permissions": "write-all"},
-				"UBCSailbot/controller": {"permissions": "write-all"},
-				"UBCSailbot/custom_interfaces": {"permissions": "write-all"},
-				"UBCSailbot/docs": {"permissions": "write-all"},
-				"UBCSailbot/local_pathfinding": {"permissions": "write-all"},
-				"UBCSailbot/network_systems": {"permissions": "write-all"},
-				"UBCSailbot/notebooks": {"permissions": "write-all"},
-				"UBCSailbot/raye-local-pathfinding": {"permissions": "write-all"},
-				"UBCSailbot/website": {"permissions": "write-all"},
-				"UBCSailbot/virtual_iridium": {"permissions": "write-all"}
-			}
-		},
 		"vscode": {
 			"settings": {
 				"terminal.integrated.profiles.linux": {
@@ -67,7 +52,7 @@
 				"cschlosser.doxdocgen",
 				"DavidAnson.vscode-markdownlint",
 				"eamodio.gitlens",
-				"github.copilot",
+				// "github.copilot",
 				"github.vscode-github-actions",
 				"Gruntfuggly.todo-tree",
 				"jebbs.plantuml",
@@ -85,6 +70,7 @@
 				"ms-vsliveshare.vsliveshare",
 				"ms-python.mypy-type-checker",
 				"njpwerner.autodocstring",
+				"randomfractalsinc.geo-data-viewer",
 				"stevejpurves.cucumber",
 				"streetsidesoftware.code-spell-checker",
 				"vscode-icons-team.vscode-icons",

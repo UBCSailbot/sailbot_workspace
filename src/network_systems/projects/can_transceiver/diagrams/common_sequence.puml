@@ -1,0 +1,37 @@
+@startuml common_sequence
+title CAN Transceiver Common Sequence
+
+!include %getenv("PLANTUML_TEMPLATE_PATH")
+
+autonumber
+
+!startsub PARTICIPANTS
+box "Common Sequence"
+participant CanTransceiver as can
+participant CanTransceiverRosIntf as ros_intf
+end box
+== Inbound ==
+!endsub PARTICIPANTS
+
+-> can : Inbound Sensor(s) [CAN]
+
+!startsub SEQUENCE
+
+activate can
+can -> can : Convert from CAN to ROS
+can -> can : Filter Sensor(s)
+can -> ros_intf --++ : Transmit Sensor(s) [ROS]
+ros_intf -> : Publish sensor(s) to Software ROS Network
+deactivate ros_intf
+
+== Outbound ==
+
+ros_intf <- ++ : Command(s) from Software ROS Network (ex. Desired Heading)
+can <- ros_intf --++ : Transmit Command(s) [ROS]
+can -> can : Convert Command(s) from ROS to CAN
+!endsub SEQUENCE
+
+<- can : Outbound Command(s) [CAN]
+deactivate can
+
+@enduml

@@ -1,6 +1,12 @@
 {
     "ignorePatterns": [
         {
+            "pattern": "^http://localhost:*"
+        },
+        {
+            "pattern": "^https://cruel-carlota.pagodabox.com*"
+        },
+        {
             "pattern": "^https://github.com/UBCSailbot/.github/issues/templates/edit"
         },
         {

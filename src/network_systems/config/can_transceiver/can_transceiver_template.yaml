@@ -1,0 +1,4 @@
+# Template for the can_transceiver module
+can_transceiver_node:
+  ros__parameters:
+    enabled: true

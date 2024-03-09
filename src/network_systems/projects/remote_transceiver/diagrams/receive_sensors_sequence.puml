@@ -1,0 +1,35 @@
+@startuml receive_sensors_sequence
+title Remote Transceiver Receive Sensors Sequence
+
+!include %getenv("PLANTUML_TEMPLATE_PATH")
+!include common.puml
+
+autonumber
+
+box Resources
+Collections "Sensors Buffer" as buf
+Database "MongoDB" as mongo
+end box
+
+note over buf : Contents of this buffer are \nunparsed, raw binary strings
+
+-> handler ++ : POST Sensors
+handler -> server --++: Process POST Request
+server -> server : Parse HTTP
+server --> buf : Update Sensors Buffer
+alt If Incomplete Sensors Payload
+    handler <- server --++ : Return OK
+    <- handler -- : Send Response
+
+else Else All Sensor Payloads Received
+    activate server
+    handler <-- server ++ : Return OK
+    note right of server : Execution continues after returning HTTP response
+    <- handler -- : Send Response
+    server <-- buf : Read Entire Buffer
+    server -> server : Parse Protobuf Sensors Object from Binary
+    server -> db --++ : Commit Sensors to DB
+    db -> db : Convert Sensors to BSON Format
+    db --> mongo -- : Write Sensors to MongoDB
+    deactivate server
+end

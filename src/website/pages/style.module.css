@@ -1,0 +1,12 @@
+.maincontainer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-top: 0;
+  height: 50vh;
+  position: absolute;
+}
+
+.dashboardcontainer {
+  overflow-y: scroll;
+  padding-left: 10px;
+}
