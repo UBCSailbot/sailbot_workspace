@@ -20,18 +20,6 @@
 	"postCreateCommand": "./setup.sh",
 	// Set *default* container specific settings.json values on container create.
 	"customizations": {
-		"codespaces": {
-			"repositories": {
-				"UBCSailbot/boat_simulator": {"permissions": "write-all"},
-				"UBCSailbot/controller": {"permissions": "write-all"},
-				"UBCSailbot/custom_interfaces": {"permissions": "write-all"},
-				"UBCSailbot/local_pathfinding": {"permissions": "write-all"},
-				"UBCSailbot/network_systems": {"permissions": "write-all"},
-				"UBCSailbot/notebooks": {"permissions": "write-all"},
-				"UBCSailbot/website": {"permissions": "write-all"},
-				"UBCSailbot/virtual_iridium": {"permissions": "write-all"}
-			}
-		},
 		"vscode": {
 			"settings": {
 				"terminal.integrated.profiles.linux": {
