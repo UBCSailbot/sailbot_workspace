@@ -87,7 +87,7 @@ jobs:
     name: Deploy Docs version
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request' || github.event.action != 'closed'
-    needs: [markdownlint, markdown-link-check, markdown-link-redirection-check, docs-build]
+    needs: [docs-build]
     permissions:
       contents: write
     steps:
