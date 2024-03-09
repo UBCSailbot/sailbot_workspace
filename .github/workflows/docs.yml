@@ -28,7 +28,7 @@ jobs:
   # https://github.com/gaurav-nelson/github-action-markdown-link-check
   markdown-link-check:
     runs-on: ubuntu-latest
-    timeout-minutes: 1
+    timeout-minutes: 5
     steps:
     - name: Checkout workspace
       uses: actions/checkout@v4
