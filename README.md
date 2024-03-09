@@ -10,7 +10,7 @@ This repository will get you set up to develop UBCSailbot's software on VS Code.
 ## Features
 
 An overview of Sailbot Workspace's features can be found below.
-See [our docs site](https://ubcsailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/run/)
+See [our docs site](https://ubcsailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/workflow/)
 for how to use these features.
 
 ### Style
