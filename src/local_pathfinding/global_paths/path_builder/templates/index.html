@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Global Path Builder</title>
+        <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+        <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+        <link rel="icon" href="https://ubcsailbot.github.io/docs/main/assets/images/favicon.png">
+    </head>
+    <body style="margin:0">
+        <div class="text conatiner">
+            <div class="container" id="banner">
+                <h2>Global Path Builder</h2>
+                <div id="banner_btns">
+                    <!-- Buttons -->
+                    <div class="buttons">
+                        <button id="export_btn" title="Save path to a csv file" onclick="prompt_and_export()">Export Path</button>
+                        <button id="import_btn" title="Load path from a csv file" onclick="import_file()">Import Path</button>
+                        <button id="inter_btn" title="Interpolate between waypoints" onclick="interpolate()">Interpolate</button>
+                        <button id="clear_btn" title="Clear all waypoints from the map" onclick="clear_path()">Clear Path</button>
+                        <button id="delete_paths_btn" title="Delete all path files with a specified keyword in the filename" onclick="delete_paths()">Purge Paths</button>
+                        <button id="plot_btn" title="Plot path on a 3D globe" onclick="plot()">3D Plot</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="main_view">
+                <!-- Map container -->
+                <div id="map" class="container"></div>
+
+                <div class="container waypoints">
+                    <!-- Waypoints list -->
+                    <h2 style="color:black">Waypoints</h2>
+
+                    <table id="waypointsTable">
+                        <thead>
+                            <tr>
+                                <th>Latitude</th>
+                                <th>Longitude</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Waypoints will be added here dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </body>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</html>
