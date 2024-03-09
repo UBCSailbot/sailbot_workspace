@@ -11,6 +11,9 @@
 /notebooks/boat_simulator @DFriend01
 /src/boat_simulator @DFriend01
 
+# custom_interfaces
+/src/custom_interfaces @UBCSailbot/soft-leads
+
 # controller
 /notebooks/controller @DFriend01
 /src/controller @DFriend01
