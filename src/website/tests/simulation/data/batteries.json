@@ -1,0 +1,434 @@
+[
+  {
+    "batteries": [
+      {
+        "voltage": 8,
+        "current": 5
+      },
+      {
+        "voltage": 8,
+        "current": 3
+      }
+    ]
+  },
+  {
+    "batteries": [
+      {
+        "voltage": 10,
+        "current": 5
+      },
+      {
+        "voltage": 10,
+        "current": 3
+      }
+    ]
+  },
+  {
+    "batteries": [
+      {
+        "voltage": 10,
+        "current": 3
+      },
+      {
+        "voltage": 9,
+        "current": 5
+      }
+    ]
+  },
+  {
+    "batteries": [
+      {
+        "voltage": 9,
+        "current": 3
+      },
+      {
+        "voltage": 5,
+        "current": 4
+      }
+    ]
+  },
+  {
+    "batteries": [
+      {
+        "voltage": 8,
+        "current": 5
+      },
+      {
+        "voltage": 5,
+        "current": 4
+      }
+    ]
+  },
+  {
+    "batteries": [
+      {
+        "voltage": 6,
+        "current": 4
+      },
+      {
+        "voltage": 10,
+        "current": 4
+      }
+    ]
+  },
+  {
+    "batteries": [
+      {
+        "voltage": 6,
+        "current": 4
+      },
+      {
+        "voltage": 5,
+        "current": 5
+      }
+    ]
+  },
+  {
+    "batteries": [
+      {
+        "voltage": 6,
+        "current": 5
+      },
+      {
+        "voltage": 5,
+        "current": 4
+      }
+    ]
+  },
+  {
+    "batteries": [
+      {
+        "voltage": 10,
+        "current": 5
+      },
+      {
+        "voltage": 5,
+        "current": 5
+      }
+    ]
+  },
+  {
+    "batteries": [
+      {
+        "voltage": 9,
+        "current": 4
+      },
+      {
+        "voltage": 7,
+        "current": 5
+      }
+    ]
+  },
+  {
+    "batteries": [
+      {
+        "voltage": 10,
+        "current": 4
+      },
+      {
+        "voltage": 6,
+        "current": 5
+      }
+    ]
+  },
+  {
+    "batteries": [
+      {
+        "voltage": 6,
+        "current": 5
+      },
+      {
+        "voltage": 8,
+        "current": 5
+      }
+    ]
+  },
+  {
+    "batteries": [
+      {
+        "voltage": 10,
+        "current": 4
+      },
+      {
+        "voltage": 10,
+        "current": 4
+      }
+    ]
+  },
+  {
+    "batteries": [
+      {
+        "voltage": 5,
+        "current": 5
+      },
+      {
+        "voltage": 5,
+        "current": 3
+      }
+    ]
+  },
+  {
+    "batteries": [
+      {
+        "voltage": 6,
+        "current": 4
+      },
+      {
+        "voltage": 7,
+        "current": 3
+      }
+    ]
+  },
+  {
+    "batteries": [
+      {
+        "voltage": 6,
+        "current": 3
+      },
+      {
+        "voltage": 6,
+        "current": 5
+      }
+    ]
+  },
+  {
+    "batteries": [
+      {
+        "voltage": 7,
+        "current": 4
+      },
+      {
+        "voltage": 6,
+        "current": 5
+      }
+    ]
+  },
+  {
+    "batteries": [
+      {
+        "voltage": 7,
+        "current": 5
+      },
+      {
+        "voltage": 7,
+        "current": 4
+      }
+    ]
+  },
+  {
+    "batteries": [
+      {
+        "voltage": 10,
+        "current": 5
+      },
+      {
+        "voltage": 6,
+        "current": 3
+      }
+    ]
+  },
+  {
+    "batteries": [
+      {
+        "voltage": 9,
+        "current": 4
+      },
+      {
+        "voltage": 10,
+        "current": 3
+      }
+    ]
+  },
+  {
+    "batteries": [
+      {
+        "voltage": 10,
+        "current": 4
+      },
+      {
+        "voltage": 8,
+        "current": 5
+      }
+    ]
+  },
+  {
+    "batteries": [
+      {
+        "voltage": 9,
+        "current": 5
+      },
+      {
+        "voltage": 7,
+        "current": 3
+      }
+    ]
+  },
+  {
+    "batteries": [
+      {
+        "voltage": 6,
+        "current": 4
+      },
+      {
+        "voltage": 9,
+        "current": 5
+      }
+    ]
+  },
+  {
+    "batteries": [
+      {
+        "voltage": 9,
+        "current": 3
+      },
+      {
+        "voltage": 7,
+        "current": 4
+      }
+    ]
+  },
+  {
+    "batteries": [
+      {
+        "voltage": 9,
+        "current": 4
+      },
+      {
+        "voltage": 5,
+        "current": 3
+      }
+    ]
+  },
+  {
+    "batteries": [
+      {
+        "voltage": 7,
+        "current": 3
+      },
+      {
+        "voltage": 10,
+        "current": 3
+      }
+    ]
+  },
+  {
+    "batteries": [
+      {
+        "voltage": 9,
+        "current": 4
+      },
+      {
+        "voltage": 7,
+        "current": 3
+      }
+    ]
+  },
+  {
+    "batteries": [
+      {
+        "voltage": 7,
+        "current": 3
+      },
+      {
+        "voltage": 7,
+        "current": 4
+      }
+    ]
+  },
+  {
+    "batteries": [
+      {
+        "voltage": 10,
+        "current": 4
+      },
+      {
+        "voltage": 7,
+        "current": 3
+      }
+    ]
+  },
+  {
+    "batteries": [
+      {
+        "voltage": 6,
+        "current": 3
+      },
+      {
+        "voltage": 7,
+        "current": 5
+      }
+    ]
+  },
+  {
+    "batteries": [
+      {
+        "voltage": 10,
+        "current": 3
+      },
+      {
+        "voltage": 5,
+        "current": 5
+      }
+    ]
+  },
+  {
+    "batteries": [
+      {
+        "voltage": 9,
+        "current": 4
+      },
+      {
+        "voltage": 7,
+        "current": 5
+      }
+    ]
+  },
+  {
+    "batteries": [
+      {
+        "voltage": 8,
+        "current": 5
+      },
+      {
+        "voltage": 9,
+        "current": 3
+      }
+    ]
+  },
+  {
+    "batteries": [
+      {
+        "voltage": 9,
+        "current": 4
+      },
+      {
+        "voltage": 5,
+        "current": 5
+      }
+    ]
+  },
+  {
+    "batteries": [
+      {
+        "voltage": 5,
+        "current": 5
+      },
+      {
+        "voltage": 5,
+        "current": 5
+      }
+    ]
+  },
+  {
+    "batteries": [
+      {
+        "voltage": 7,
+        "current": 3
+      },
+      {
+        "voltage": 6,
+        "current": 4
+      }
+    ]
+  }
+]

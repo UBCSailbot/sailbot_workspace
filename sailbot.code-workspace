@@ -16,9 +16,6 @@
             "path": "src/diagnostics"
         },
         {
-            "path": "src/docs"
-        },
-        {
             "path": "src/global_launch"
         },
         {
@@ -29,12 +26,6 @@
         },
         {
             "path": "src/network_systems"
-        },
-        {
-            "path": "src/notebooks"
-        },
-        {
-            "path": "src/raye-local-pathfinding"
         },
         {
             "path": "src/website"
@@ -58,7 +49,11 @@
             "autopep",
             "bsoncxx",
             "buildx",
+            "Clangd",
             "cmake",
+            "completionist",
+            "conda",
+            "cout",
             "cppcheck",
             "cppdbg",
             "cpplint",
@@ -66,8 +61,12 @@
             "deque",
             "devcontainer",
             "dtype",
+            "endl",
             "gaurav",
+            "gtest",
+            "ighxy",
             "ints",
+            "iostream",
             "isort",
             "kmph",
             "mkdocs",
@@ -76,6 +75,7 @@
             "noqa",
             "OMPL",
             "pallete",
+            "Protobuf",
             "protofiles",
             "pytest",
             "Raye",
@@ -83,17 +83,28 @@
             "rclpy",
             "rcutils",
             "repos",
+            "roscd",
             "rosdep",
             "rosdistro",
             "rosidl",
+            "roslaunch",
+            "rosrun",
             "RTPS",
             "srcnew",
             "srcraye",
+            "struct",
+            "Structs",
             "ubcsailbot",
             "uncrustify",
+            "virtualenv",
             "Wextra",
             "Wpedantic",
-            "xmllint"
+            "xcalc",
+            "xhost",
+            "xinit",
+            "xinitrc",
+            "xmllint",
+            "xorg"
         ],
         "editor.inlayHints.enabled": "off",
         "editor.renderWhitespace": "trailing",
@@ -189,9 +200,6 @@
         "isort.interpreter": ["/usr/bin/python3"],
         // test framework: pytest
         "python.testing.cwd": "/workspaces/sailbot_workspace/src",
-        "python.testing.pytestArgs": [
-            "--ignore=/workspaces/sailbot_workspace/src/raye-local-pathfinding",
-        ],
         "python.testing.pytestEnabled": true,
         // type checker: mypy
         "mypy-type-checker.args": [
@@ -238,6 +246,9 @@
         // markdown
         // copied from docs: https://github.com/UBCSailbot/docs/blob/main/.vscode/settings.json
         "[markdown]": {
+            "editor.codeActionsOnSave": {
+                "source.fixAll": "always"
+            },
             "editor.unicodeHighlight.ambiguousCharacters": false,
             "editor.unicodeHighlight.invisibleCharacters": false,
             "editor.wordWrap": "on",
@@ -258,8 +269,11 @@
             "https://squidfunk.github.io/mkdocs-material/schema.json": "mkdocs.yml"
         },
         "yaml.customTags": [
-            "tag:yaml.org,2002:python/name:materialx.emoji.twemoji",
-            "tag:yaml.org,2002:python/name:materialx.emoji.to_svg",
+            "!ENV scalar",
+            "!ENV sequence",
+            "!relative scalar",
+            "tag:yaml.org,2002:python/name:material.extensions.emoji.to_svg",
+            "tag:yaml.org,2002:python/name:material.extensions.emoji.twemoji",
             "tag:yaml.org,2002:python/name:pymdownx.superfences.fence_code_format"
         ],
 
@@ -471,13 +485,6 @@
                 "problemMatcher": []
             },
             // Workspace editing tasks
-            {
-                "label": "clone source repositories",
-                "detail": "Clone the repositories specified in src/polaris.repos to src/",
-                "type": "shell",
-                "command": "vcs import < src/polaris.repos src --skip-existing",
-                "problemMatcher": []
-            },
             {
                 "label": "setup",
                 "detail": "Set up the workspace",

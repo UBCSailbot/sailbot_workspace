@@ -1,0 +1,4 @@
+# Enable Mock AIS with default settings
+mock_ais_node:
+  ros__parameters:
+    enabled: true

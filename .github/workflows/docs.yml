@@ -1,0 +1,155 @@
+name: Docs Site
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    # default types and closed
+    types: [opened, synchronize, reopened, closed]
+  workflow_dispatch:
+
+jobs:
+  # https://github.com/nosborn/github-action-markdown-cli
+  markdownlint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+    - name: Checkout workspace
+      uses: actions/checkout@v4
+
+    - name: Run linter
+      uses: nosborn/github-action-markdown-cli@v3.3.0
+      with:
+        config_file: .markdownlint.json
+        files: .
+        dot: true
+
+  # https://github.com/gaurav-nelson/github-action-markdown-link-check
+  markdown-link-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+    - name: Checkout workspace
+      uses: actions/checkout@v4
+
+    - name: Run linter
+      uses: gaurav-nelson/github-action-markdown-link-check@v1
+      with:
+        config-file: .markdown-link-check.json
+        folder-path: .
+
+  markdown-link-redirection-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Check links to external sites redirect to a new tab
+        uses: ./.github/actions/docs-lint/
+        env:
+          ROOT: './docs/'
+
+  docs-build:
+    name: Build Docs
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.action != 'closed'
+    steps:
+      - name: "Check out the repo"
+        uses: "actions/checkout@v4"
+        with:
+          # checkout all commits to get accurate page revision times
+          # for the git-revision-date-localized plugin
+          fetch-depth: '0'
+
+      - name: "Set up Python"
+        uses: "actions/setup-python@v5"
+        with:
+          python-version: "3.x"
+
+      - name: Install OS Dependencies
+        run: sudo apt-get install libcairo2-dev libfreetype6-dev libffi-dev libjpeg-dev libpng-dev libz-dev
+
+      - name: Install Python dependencies
+        run: pip install -Ur docs/requirements.txt
+
+      - name: "Build docs"
+        run: mkdocs build
+
+  # https://squidfunk.github.io/mkdocs-material/publishing-your-site/#with-github-actions
+  docs-deploy:
+    name: Deploy Docs version
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.action != 'closed'
+    needs: [docs-build]
+    permissions:
+      contents: write
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          # checkout all commits to get accurate page revision times
+          # for the git-revision-date-localized plugin
+          fetch-depth: '0'
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.x
+
+      - name: Install OS Dependencies
+        run: sudo apt-get install libcairo2-dev libfreetype6-dev libffi-dev libjpeg-dev libpng-dev libz-dev
+
+      - name: Install Python dependencies
+        run: pip install -Ur docs/requirements.txt
+
+      - name: "Deploy pr-${{ github.event.number }} version of the Docs"
+        if: github.event_name == 'pull_request'
+        run: |
+          git config user.name ci-bot
+          git config user.email ci-bot@example.com
+          mike deploy --push pr-${{ github.event.number }}
+
+      - name: Deploy main version of the Docs
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+        run: |
+          git config user.name ci-bot
+          git config user.email ci-bot@example.com
+          mike deploy --push --update-aliases main latest
+
+  docs-delete:
+    name: Delete Docs version
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    permissions:
+      contents: write
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          # checkout all commits to get accurate page revision times
+          # for the git-revision-date-localized plugin
+          fetch-depth: '0'
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.x
+
+      - name: Install OS Dependencies
+        run: sudo apt-get install libcairo2-dev libfreetype6-dev libffi-dev libjpeg-dev libpng-dev libz-dev
+
+      - name: Install Python dependencies
+        run: pip install -Ur docs/requirements.txt
+
+      - name: "Delete pr-${{ github.event.number }} version of the Docs"
+        run: |
+          git config user.name ci-bot
+          git config user.email ci-bot@example.com
+          mike delete --push pr-${{ github.event.number }}

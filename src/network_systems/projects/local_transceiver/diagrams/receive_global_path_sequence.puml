@@ -1,0 +1,24 @@
+@startuml receive_global_path_sequence
+title Local Transceiver Receive Global Path Sequence
+
+!include %getenv("PLANTUML_TEMPLATE_PATH")
+!include common.puml
+
+autonumber
+
+== Update Global Waypoints Subsequence ==
+
+note over buf : Unused
+
+intf -> intf ++ : Update Timer Triggers
+intf -> local ++ : Get Global Waypoints
+local -> local : Create Global Waypoints Object
+loop While Iridium Mailbox is Not Empty &&\nThere are Global Waypoints Remaining
+    local --> port : Issue AT Read Command
+    local <-- port : Read response
+    local -> local : Update Global Waypoints Object
+end
+opt If New Global Waypoints
+    intf <- local -- : Return New Global Waypoints
+    <- intf -- : Publish Global Waypoints
+end

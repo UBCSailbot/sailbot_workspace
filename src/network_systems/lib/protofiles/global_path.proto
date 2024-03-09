@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package Polaris;
+
+import "waypoint.proto";
+
+message GlobalPath
+{
+    uint32            num_waypoints = 1;
+    repeated Waypoint waypoints     = 2;
+}

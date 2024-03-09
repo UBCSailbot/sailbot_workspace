@@ -1,0 +1,160 @@
+@startuml external_interfaces
+Title External Interfaces
+
+!include %getenv("PLANTUML_TEMPLATE_PATH")
+
+' Define stereotypes to categorize states
+skinparam State {
+    BackgroundColor {
+        <<Legend>>   White
+        <<Topic>>    SlateBlue
+        <<Pub>>      Green
+        <<Sub>>      Red
+        <<SimTopic>> MidnightBlue
+        <<Node>>     $SAILBOT_DARK_BLUE
+        <<SimNode>>  Purple
+    }
+    Font {
+        Color<<Legend>> Black
+        Style<<Legend>> Bold
+    }
+}
+
+State Legend<<Legend>> {
+    State "Publisher" <<Pub>>
+    State "Subscriber" <<Sub>>
+    State Topic <<Topic>> : Type
+    State "Sim Topic" <<SimTopic>> : Type
+    State Node {
+
+    }
+    State "Sim Node" as sim_node <<SimNode>> {
+
+    }
+}
+
+' Define topics and sim topics
+State ais_ships<<Topic>> : AISShips
+State mock_ais_ships<<SimTopic>> : AISShips
+State batteries<<Topic>> : Batteries
+State boat_sim_input<<SimTopic>> : CanSimToBoatSim
+state desired_heading<<Topic>> : DesiredHeading
+State data_sensors<<Topic>> : GenericSensors
+State gps<<Topic>> : GPS
+State mock_gps<<SimTopic>> : GPS
+State local_path_data<<Topic>> : LPathData
+State global_path<<Topic>> : Path
+State "global_path" as mock_global_path<<SimTopic>> : Path
+note right of mock_global_path
+    Note: the global_path topic
+    used during simulation is
+    the same topic used
+    during deployment
+end note
+State sail_cmd<<Topic>> : SailCmd
+State filtered_wind_sensor<<Topic>> : WindSensor
+State mock_wind_sensors<<SimTopic>> : WindSensors
+State wind_sensors<<Topic>> : WindSensors
+
+' Define nodes and sim nodes
+State "Local Pathfinding" as l_path <<Node>> {
+    State "Publish" as l_path_pub <<Pub>>
+    State "Subscribe" as l_path_sub <<Sub>>
+}
+State "Local Transceiver" as l_trans <<Node>> {
+    State "Publish" as l_trans_pub <<Pub>>
+    State "Subscribe" as l_trans_sub <<Sub>>
+}
+State "Controller" as ctrl <<Node>> {
+    State "Publish" as ctrl_pub <<Pub>>
+    State "Subscribe" as ctrl_sub <<Sub>>
+}
+State "Boat Simulator" as sim <<SimNode>> {
+    State "Publish" as sim_pub <<Pub>>
+    State "Subscribe" as sim_sub <<Sub>>
+}
+
+State "Can Transceiver" as can<<Legend>> {
+    State "CanTrxRosIntf" as can_trx <<Node>> {
+        State "Publish" as can_trx_pub <<Pub>>
+        State "Subscribe" as can_trx_sub <<Sub>>
+    }
+
+    State "CanSimIntf" as can_sim <<SimNode>> {
+        State "Publish" as can_sim_pub <<Pub>>
+        State "Subscribe" as can_sim_sub <<Sub>>
+    }
+}
+note top of can
+    Note: Can Transceiver is a module that
+    encompasses and connects CanTrxRosIntf
+    and CanSimIntf
+end note
+
+State "Mock Ais" as ais <<SimNode>> {
+    state "Publish" as ais_pub <<Pub>>
+}
+
+State "Mock Global Path" as g_path <<SimNode>> {
+    State "Publish" as g_path_pub <<Pub>>
+}
+
+' Publisher --> Topic
+
+ais_pub --> mock_ais_ships
+
+can_trx_pub --> ais_ships
+can_trx_pub --> batteries
+can_trx_pub --> data_sensors
+can_trx_pub --> gps
+can_trx_pub --> filtered_wind_sensor
+can_trx_pub --> wind_sensors
+
+can_sim_pub --> boat_sim_input
+
+ctrl_pub -up-> sail_cmd
+
+l_path_pub --> desired_heading
+l_path_pub --> local_path_data
+
+l_trans_pub --> global_path
+
+g_path_pub --> mock_global_path
+
+sim_pub -left-> mock_gps
+sim_pub -left-> mock_wind_sensors
+
+' Topic --> Subscriber
+
+ais_ships --> l_path_sub
+ais_ships --> l_trans_sub
+
+batteries --> l_trans_sub
+
+boat_sim_input --> sim_sub
+
+desired_heading --> ctrl_sub
+desired_heading --> sim_sub
+
+data_sensors --> l_trans_sub
+
+global_path --> l_path_sub
+
+mock_global_path -up-> l_path_sub
+
+gps --> l_trans_sub
+gps --> l_path_sub
+
+local_path_data -up-> l_trans_sub
+
+mock_ais_ships --> can_sim_sub
+
+mock_gps -up-> can_sim_sub
+
+filtered_wind_sensor --> l_path_sub
+
+mock_wind_sensors -up-> can_sim_sub
+
+sail_cmd -up-> can_trx_sub
+
+wind_sensors --> l_trans_sub
