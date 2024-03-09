@@ -4,7 +4,14 @@
   margin-bottom: 10px;
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  position: relative;
   background: linear-gradient(to right, #26619c, #3498db);
+}
+
+.headerContainer {
+  display: flex;
+  align-items: center;
 }
 
 .title {
