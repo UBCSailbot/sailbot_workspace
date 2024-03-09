@@ -13,6 +13,7 @@
 
 # controller
 /notebooks/controller @DFriend01
+/src/controller @DFriend01
 
 # docs
 /docs/ @DFriend01
