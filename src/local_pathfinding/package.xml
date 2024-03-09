@@ -7,19 +7,9 @@
   <maintainer email="software@ubcsailbot.org">Patrick Creighton</maintainer>
   <license>MIT</license>
 
-  <!--ROS Dependencies-->
-  <exec_depend>custom_interfaces</exec_depend>
   <exec_depend>rclpy</exec_depend>
+  <exec_depend>custom_interfaces</exec_depend>
 
-  <!--Python Dependencies-->
-  <exec_depend>python3-numpy</exec_depend>
-  <exec_depend>python3-pyproj</exec_depend>
-  <exec_depend>python3-shapely</exec_depend>
-
-  <!--Test Dependencies-->
-  <test_depend>ament_copyright</test_depend>
-  <test_depend>ament_flake8</test_depend>
-  <test_depend>ament_pep257</test_depend>
   <test_depend>python3-pytest</test_depend>
 
   <export>

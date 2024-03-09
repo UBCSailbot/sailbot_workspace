@@ -1,13 +1,13 @@
+import itertools
 import math
 
 import pytest
-from custom_interfaces.msg import GPS, AISShips, HelperLatLon, Path, WindSensor
+from custom_interfaces.msg import HelperLatLon
 from rclpy.impl.rcutils_logger import RcutilsLogger
 
 import local_pathfinding.coord_systems as coord_systems
 import local_pathfinding.objectives as objectives
 import local_pathfinding.ompl_path as ompl_path
-from local_pathfinding.local_path import LocalPathState
 
 # Upwind downwind cost multipliers
 UPWIND_MULTIPLIER = 3000.0
@@ -17,30 +17,39 @@ DOWNWIND_MULTIPLIER = 3000.0
 PATH = ompl_path.OMPLPath(
     parent_logger=RcutilsLogger(),
     max_runtime=1,
-    local_path_state=LocalPathState(
-        gps=GPS(),
-        ais_ships=AISShips(),
-        global_path=Path(),
-        filtered_wind_sensor=WindSensor(),
-        planner="bitstar",
-    ),
+    local_path_state=None,  # type: ignore[arg-type] # None is placeholder
 )
+
+
+""" Tests for distance objective """
 
 
 @pytest.mark.parametrize(
-    "method",
+    "method,max_motion_cost",
     [
-        objectives.DistanceMethod.EUCLIDEAN,
-        objectives.DistanceMethod.LATLON,
-        objectives.DistanceMethod.OMPL_PATH_LENGTH,
+        (objectives.DistanceMethod.EUCLIDEAN, 2.5),
+        (objectives.DistanceMethod.LATLON, 2700),
+        (objectives.DistanceMethod.OMPL_PATH_LENGTH, 4.0),
     ],
 )
-def test_distance_objective(method: objectives.DistanceMethod):
+def test_distance_objective(method: objectives.DistanceMethod, max_motion_cost: float):
     distance_objective = objectives.DistanceObjective(
         PATH._simple_setup.getSpaceInformation(),
         method,
     )
-    assert distance_objective is not None
+
+    # test sample_states()
+    num_samples = 3
+    sampled_states = distance_objective.sample_states(num_samples)
+    assert len(sampled_states) == num_samples
+
+    # test find_maximum_motion_cost()
+    assert distance_objective.max_motion_cost == pytest.approx(max_motion_cost, rel=1e0)
+
+    # test if the motionCost() is normalized between 0 and 1 for 10 random samples
+    states = distance_objective.sample_states(10)
+    for s1, s2 in itertools.combinations(iterable=states, r=2):
+        assert 0 <= distance_objective.motionCost(s1, s2).value() <= 1
 
 
 @pytest.mark.parametrize(
@@ -86,22 +95,39 @@ def test_get_latlon_path_length_objective(rf: tuple, cs1: tuple, cs2: tuple):
     ) == pytest.approx(distance_m)
 
 
+""" Tests for minimum turning objective """
+
+
 @pytest.mark.parametrize(
-    "method",
+    "method,heading_degrees,max_motion_cost",
     [
-        objectives.MinimumTurningMethod.GOAL_HEADING,
-        objectives.MinimumTurningMethod.GOAL_PATH,
-        objectives.MinimumTurningMethod.HEADING_PATH,
+        (objectives.MinimumTurningMethod.GOAL_HEADING, 60.0, 174.862),
+        (objectives.MinimumTurningMethod.GOAL_PATH, 60.0, 179.340),
+        (objectives.MinimumTurningMethod.HEADING_PATH, 60.0, 179.962),
     ],
 )
-def test_minimum_turning_objective(method: objectives.MinimumTurningMethod):
+def test_minimum_turning_objective(
+    method: objectives.MinimumTurningMethod, heading_degrees: float, max_motion_cost: float
+):
     minimum_turning_objective = objectives.MinimumTurningObjective(
         PATH._simple_setup.getSpaceInformation(),
         PATH._simple_setup,
-        PATH.state.heading_direction,
+        heading_degrees,
         method,
     )
-    assert minimum_turning_objective is not None
+
+    # test sample_states()
+    num_samples = 3
+    sampled_states = minimum_turning_objective.sample_states(num_samples)
+    assert len(sampled_states) == num_samples
+
+    # test find_maximum_motion_cost()
+    assert minimum_turning_objective.max_motion_cost == pytest.approx(max_motion_cost, rel=1e0)
+
+    # test if the motionCost() is normalized between 0 and 1 for 10 random samples
+    states = minimum_turning_objective.sample_states(10)
+    for s1, s2 in itertools.combinations(iterable=states, r=2):
+        assert 0 <= minimum_turning_objective.motionCost(s1, s2).value() <= 1
 
 
 @pytest.mark.parametrize(
@@ -152,6 +178,36 @@ def test_heading_path_turn_cost(cs1: tuple, cs2: tuple, heading_degrees: float, 
     assert objectives.MinimumTurningObjective.heading_path_turn_cost(
         s1, s2, heading
     ) == pytest.approx(expected, abs=1e-3)
+
+
+""" Tests for wind objective """
+
+
+@pytest.mark.parametrize(
+    "wind_direction_deg,max_motion_cost",
+    [
+        (60.0, 7593.768),
+        (45.0, 7763.842),
+        (0.0, 7579.767),
+    ],
+)
+def test_wind_objective(wind_direction_deg: float, max_motion_cost: float):
+    wind_objective = objectives.WindObjective(
+        PATH._simple_setup.getSpaceInformation(), wind_direction_deg
+    )
+
+    # test sample_states()
+    num_samples = 3
+    sampled_states = wind_objective.sample_states(num_samples)
+    assert len(sampled_states) == num_samples
+
+    # test find_maximum_motion_cost()
+    assert wind_objective.max_motion_cost == pytest.approx(max_motion_cost, rel=1e0)
+
+    # test if the motionCost() is normalized between 0 and 1 for 10 random samples
+    states = wind_objective.sample_states(10)
+    for s1, s2 in itertools.combinations(iterable=states, r=2):
+        assert 0 <= wind_objective.motionCost(s1, s2).value() <= 1
 
 
 @pytest.mark.parametrize(
@@ -225,15 +281,18 @@ def test_angle_between(afir: float, amid: float, asec: float, expected: float):
     )
 
 
+""" Tests for speed objective """
+
+
 @pytest.mark.parametrize(
-    "method",
+    "method,max_motion_cost",
     [
-        objectives.SpeedObjectiveMethod.SAILBOT_TIME,
-        objectives.SpeedObjectiveMethod.SAILBOT_PIECEWISE,
-        objectives.SpeedObjectiveMethod.SAILBOT_CONTINUOUS,
+        (objectives.SpeedObjectiveMethod.SAILBOT_TIME, 1.0),
+        (objectives.SpeedObjectiveMethod.SAILBOT_PIECEWISE, 1.0),
+        (objectives.SpeedObjectiveMethod.SAILBOT_CONTINUOUS, 1.0),
     ],
 )
-def test_speed_objective(method: objectives.SpeedObjectiveMethod):
+def test_speed_objective(method: objectives.SpeedObjectiveMethod, max_motion_cost: float):
     speed_objective = objectives.SpeedObjective(
         PATH._simple_setup.getSpaceInformation(),
         PATH.state.heading_direction,
@@ -241,7 +300,20 @@ def test_speed_objective(method: objectives.SpeedObjectiveMethod):
         PATH.state.wind_speed,
         method,
     )
-    assert speed_objective is not None
+
+    # test sample_states()
+    num_samples = 3
+    sampled_states = speed_objective.sample_states(num_samples)
+    assert len(sampled_states) == num_samples
+
+    # test find_maximum_motion_cost()
+    print(speed_objective.max_motion_cost)
+    assert speed_objective.max_motion_cost == pytest.approx(max_motion_cost, rel=1e0)
+
+    # test if the motionCost() is normalized between 0 and 1 for 10 random samples
+    states = speed_objective.sample_states(10)
+    for s1, s2 in itertools.combinations(iterable=states, r=2):
+        assert 0 <= speed_objective.motionCost(s1, s2).value() <= 1
 
 
 @pytest.mark.parametrize(

@@ -22,7 +22,6 @@ class LocalPathState:
             navigating along.
         `wind_speed` (float): Wind speed.
         `wind_direction` (int): Wind direction.
-        `planner` (str): Planner to use for the OMPL query.
     """
 
     def __init__(
@@ -31,7 +30,6 @@ class LocalPathState:
         ais_ships: AISShips,
         global_path: Path,
         filtered_wind_sensor: WindSensor,
-        planner: str,
     ):
         """Initializes the state from ROS msgs."""
         if gps:  # TODO: remove when mock can be run
@@ -52,8 +50,6 @@ class LocalPathState:
             self.wind_speed = filtered_wind_sensor.speed.speed
             self.wind_direction = filtered_wind_sensor.direction
 
-        self.planner = planner
-
 
 class LocalPath:
     """Sets and updates the OMPL path and the local waypoints
@@ -66,7 +62,6 @@ class LocalPath:
     """
 
     def __init__(self, parent_logger: RcutilsLogger):
-        """Initializes the LocalPath class."""
         self._logger = parent_logger.get_child(name="local_path")
         self._ompl_path: Optional[OMPLPath] = None
         self.waypoints: Optional[List[Tuple[float, float]]] = None
@@ -77,7 +72,6 @@ class LocalPath:
         ais_ships: AISShips,
         global_path: Path,
         filtered_wind_sensor: WindSensor,
-        planner: str,
     ):
         """Updates the OMPL path and waypoints. The path is updated if a new path is found.
 
@@ -87,12 +81,8 @@ class LocalPath:
             `global_path` (Path): Path to the destination.
             `filtered_wind_sensor` (WindSensor): Wind data.
         """
-        state = LocalPathState(gps, ais_ships, global_path, filtered_wind_sensor, planner)
-        ompl_path = OMPLPath(
-            parent_logger=self._logger,
-            max_runtime=1.0,
-            local_path_state=state,
-        )
+        state = LocalPathState(gps, ais_ships, global_path, filtered_wind_sensor)
+        ompl_path = OMPLPath(parent_logger=self._logger, max_runtime=1.0, local_path_state=state)
         if ompl_path.solved:
             self._logger.info("Updating local path")
             self._update(ompl_path)

@@ -12,7 +12,6 @@ def test_LocalPath_update_if_needed():
         ais_ships=AISShips(),
         global_path=Path(),
         filtered_wind_sensor=WindSensor(),
-        planner="bitstar",
     )
     assert PATH.waypoints is not None, "waypoints is not initialized"
     assert len(PATH.waypoints) > 1, "waypoints length <= 1"

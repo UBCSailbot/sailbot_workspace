@@ -23,9 +23,9 @@ import plotly.graph_objects as go
 from custom_interfaces.msg import HelperLatLon, Path
 from flask import Flask, jsonify, render_template, request
 
-from local_pathfinding.global_path import (
-    _interpolate_path,
+from local_pathfinding.node_mock_global_path import (
     calculate_interval_spacing,
+    interpolate_path,
     write_to_file,
 )
 
@@ -65,7 +65,7 @@ def main():
             path_spacing = calculate_interval_spacing(pos=pos, waypoints=waypoints)
 
             path = Path(waypoints=waypoints)
-            path = _interpolate_path(
+            path = interpolate_path(
                 global_path=path,
                 interval_spacing=args.interpolate,
                 pos=pos,
@@ -134,7 +134,7 @@ def _delete_paths():
 
 
 @app.route("/interpolate_path", methods=["POST"])
-def _interpolate_path_():
+def _interpolate_path():
     data = request.json
     result = _handle_interpolate(data)
     return jsonify(result)
@@ -229,7 +229,7 @@ def _handle_interpolate(data):
 
     try:
         path_spacing = calculate_interval_spacing(pos=point1, waypoints=path.waypoints)
-        path = _interpolate_path(
+        path = interpolate_path(
             global_path=path,
             interval_spacing=interval_spacing,
             pos=point1,
