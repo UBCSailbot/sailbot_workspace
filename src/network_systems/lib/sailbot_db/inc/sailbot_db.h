@@ -7,6 +7,7 @@
 #include <mongocxx/instance.hpp>
 #include <mongocxx/pool.hpp>
 
+#include "global_path.pb.h"
 #include "sensors.pb.h"
 #include "waypoint.pb.h"
 
@@ -19,6 +20,7 @@ const std::string COLLECTION_DATA_SENSORS = "data_sensors";
 const std::string COLLECTION_GPS          = "gps";
 const std::string COLLECTION_WIND_SENSORS = "wind_sensors";
 const std::string COLLECTION_LOCAL_PATH   = "local_path";
+const std::string COLLECTION_GLOBAL_PATH  = "global_path";  //added
 const std::string MONGODB_CONN_STR        = "mongodb://localhost:27017";
 
 template <typename T>
@@ -89,6 +91,21 @@ public:
      * @return false on failure
      */
     bool storeNewSensors(const Polaris::Sensors & sensors_pb, RcvdMsgInfo new_info);
+
+    bool storeNewGlobalPath(const Polaris::GlobalPath & global_pb, const std::string & timestamp);
+
+    /**
+     * @brief Write global path data to the database
+     *
+     * @param global_path_pb Protobuf list of global path objects
+     * @param timestamp      transmission time <year - 2000>-<month>-<day> <hour>:<minute>:<second>
+     * @param client         mongocxx::client instance for the current thread
+
+     * @return true  if successful
+     * @return false on failure
+     */
+    bool storeNewGlobalPath(
+      const Polaris::GlobalPath & global_path_pb, const std::string & timestamp, mongocxx::client & client);
 
 protected:
     const std::string               db_name_;  // Name of the database
@@ -172,4 +189,14 @@ private:
     */
     bool storeWindSensors(
       const ProtoList<Polaris::Sensors::Wind> & wind_pb, const std::string & timestamp, mongocxx::client & client);
+
+    // /**
+    // * @brief Builds global path document by extracting waypoint information and adding it to document
+    // *
+    // * @param global_path_doc_arr  bstream document builder array for global path
+    // * @param waypoints            global path waypoints: <latitude: decimal>, <longitude: decimal>
+    // *
+    // */
+    // auto buildGlobalPathDoc(
+    //   auto global_path_doc_arr, const ProtoList<Polaris::Waypoint>& waypoints);
 };

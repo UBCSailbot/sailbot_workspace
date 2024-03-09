@@ -5,46 +5,26 @@
 #include <bsoncxx/builder/stream/helpers.hpp>
 #include <bsoncxx/json.hpp>
 #include <cstdint>
-#include <iomanip>
 #include <iostream>
 #include <memory>
 #include <mongocxx/client.hpp>
 #include <mongocxx/collection.hpp>
 #include <mongocxx/database.hpp>
 #include <mongocxx/instance.hpp>
-#include <sstream>
 
 #include "global_path.pb.h"
 #include "sensors.pb.h"
 #include "waypoint.pb.h"
 
 namespace bstream = bsoncxx::builder::stream;
+using Polaris::GlobalPath;
 using Polaris::Sensors;
+// using Polaris::GlobalPath;
+// using Polaris::waypoint;
 
 mongocxx::instance SailbotDB::inst_{};  // staticallly initialize instance
 
 // PUBLIC
-
-std::ostream & operator<<(std::ostream & os, const SailbotDB::RcvdMsgInfo & info)
-{
-    os << "Latitude: " << info.lat_ << "\n"
-       << "Longitude: " << info.lon_ << "\n"
-       << "Accuracy (km): " << info.cep_ << "\n"
-       << "Timestamp: " << info.timestamp_;
-    return os;
-}
-
-std::string SailbotDB::RcvdMsgInfo::mkTimestamp(const std::tm & tm)
-{
-    // This is impossible to read. It's reading each field of tm and 0 padding it to 2 digits with either "-" or ":"
-    // in between each number
-    std::stringstream tm_ss;
-    tm_ss << std::setfill('0') << std::setw(2) << tm.tm_year << "-" << std::setfill('0') << std::setw(2) << tm.tm_mon
-          << "-" << std::setfill('0') << std::setw(2) << tm.tm_mday << " " << std::setfill('0') << std::setw(2)
-          << tm.tm_hour << ":" << std::setfill('0') << std::setw(2) << tm.tm_min << ":" << std::setfill('0')
-          << std::setw(2) << tm.tm_sec;
-    return tm_ss.str();
-}
 
 SailbotDB::SailbotDB(const std::string & db_name, const std::string & mongodb_conn_str) : db_name_(db_name)
 {
@@ -64,7 +44,7 @@ bool SailbotDB::testConnection()
         db.run_command(ping_cmd.view());
         return true;
     } catch (const std::exception & e) {
-        std::cerr << "Exception: " << e.what() << std::endl;
+        std::cout << "Exception: " << e.what() << std::endl;
         return false;
     }
 }
@@ -79,6 +59,12 @@ bool SailbotDB::storeNewSensors(const Sensors & sensors_pb, RcvdMsgInfo new_info
            storeBatteries(sensors_pb.batteries(), timestamp, *entry) &&
            storeWindSensors(sensors_pb.wind_sensors(), timestamp, *entry) &&
            storePathSensors(sensors_pb.local_path_data(), timestamp, *entry);
+}
+
+bool SailbotDB::storeNewGlobalPath(const GlobalPath & global_pb, const std::string & timestamp)
+{
+    mongocxx::pool::entry entry = pool_->acquire();
+    return storeNewGlobalPath(global_pb, timestamp, *entry);
 }
 
 // END PUBLIC
@@ -188,19 +174,10 @@ bool SailbotDB::storeNewGlobalPath(
         global_path_doc_arr = global_path_doc_arr << bstream::open_document << "latitude" << waypoint.latitude()
                                                   << "longitude" << waypoint.longitude() << bstream::close_document;
     }
-    // global_path_doc_arr = buildGlobalPathDoc(global_path_doc_arr, waypoints);
+
     DocVal global_path_doc = global_path_doc_arr << bstream::close_array << "timestamp" << timestamp
                                                  << bstream::finalize;
     return static_cast<bool>(global_path_coll.insert_one(global_path_doc.view()));
 }
-
-//  buildGlobalPathDoc(auto global_path_doc_arr, const ProtoList<Polaris::Waypoint> & waypoints)
-// {
-//     for (const Polaris::Waypoint & waypoint : waypoints) {
-//         global_path_doc_arr = global_path_doc_arr << bstream::open_document << "latitude" << waypoint.latitude()
-//                                                   << "longitude" << waypoint.longitude() << bstream::close_document;
-//     }
-//     return global_path_doc_arr;
-// }
 
 // END PRIVATE

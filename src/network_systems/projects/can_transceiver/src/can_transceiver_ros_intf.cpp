@@ -161,7 +161,7 @@ private:
      *
      * @param mock_gps mock_gps received from the Mock GPS topic
      */
-    void subMockGpsCb(msg::GPS /*mock_gps*/)
+    void subMockGpsCb(msg::GPS mock_gps)
     {
         // TODO(lross03): implement this
     }
