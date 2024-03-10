@@ -31,11 +31,41 @@ class BoatState:
         """
         self.__kinematics_computation = BoatKinematics(timestep, mass, inertia)
 
-    def compute_net_force_and_torque(self, wind_vel: NDArray) -> Tuple[NDArray, NDArray]:
-        """Calculates the net force and net torque acting on the boat due to the wind.
+    def step(
+        self, glo_wind_vel: NDArray, glo_water_vel: NDArray
+    ) -> Tuple[KinematicsData, KinematicsData]:
+        """Updates the boat's kinematic data based on applied forces and torques, and returns
+        the updated kinematic data in both relative and global reference frames.
 
         Args:
-            wind_vel (NDArray): The velocity of the wind, expressed in meters per second (m/s).
+            glo_wind_vel (NDArray): The velocity of the true wind in the global reference frame,
+                expressed in meters per second (m/s).
+            glo_water_vel (NDArray): The velocity of the current in the global reference frame,
+                expressed in meters per second (m/s).
+
+        Returns:
+            Tuple[KinematicsData, KinematicsData]: A tuple with the first element representing
+                kinematic data in the relative reference frame, and the second element representing
+                data in the global reference frame, both using SI units.
+        """
+        rel_wind_vel = glo_wind_vel  # TODO: Use proper conversion from global to relative here.
+        rel_water_vel = glo_water_vel
+
+        rel_net_force, net_torque = self.__compute_net_force_and_torque(
+            rel_wind_vel, rel_water_vel
+        )
+        return self.__kinematics_computation.step(rel_net_force, net_torque)
+
+    def __compute_net_force_and_torque(
+        self, rel_wind_vel: NDArray, rel_water_vel
+    ) -> Tuple[NDArray, NDArray]:
+        """Calculates the net force and net torque acting on the boat caused by the wind and water.
+
+        Args:
+            rel_wind_vel (NDArray): The velocity of the true wind in the relative reference frame,
+                expressed in meters per second (m/s).
+            rel_water_vel (NDArray): The velocity of the current in the relative reference frame,
+                expressed in meters per second (m/s).
 
         Returns:
             Tuple[NDArray, NDArray]: A tuple where the first element represents the net force in
@@ -43,25 +73,6 @@ class BoatState:
                 represents the net torque, expressed in newton-meters (N•m).
         """
         raise NotImplementedError()
-
-    def step(
-        self, rel_net_force: NDArray, net_torque: NDArray
-    ) -> Tuple[KinematicsData, KinematicsData]:
-        """Updates the boat's kinematic data based on applied forces and torques, and returns
-        the updated kinematic data in both relative and global reference frames.
-
-        Args:
-            rel_net_force (NDArray): The net force acting on the boat in the relative reference
-            frame, expressed in newtons (N).
-            net_torque (NDArray): The net torque acting on the boat, expressed in newton-meters
-                (N•m).
-
-        Returns:
-            Tuple[KinematicsData, KinematicsData]: A tuple with the first element representing
-                kinematic data in the relative reference frame, and the second element representing
-                data in the global reference frame, both using SI units.
-        """
-        return self.__kinematics_computation.step(rel_net_force, net_torque)
 
     @property
     def global_position(self) -> NDArray:
