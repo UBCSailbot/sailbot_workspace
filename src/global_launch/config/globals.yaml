@@ -16,6 +16,12 @@ navigate_main:
    ros__parameters:
       path_planner: "rrtstar"
 
+# controller parameters
+wingsail_ctrl_node:
+    ros__parameters:
+        reynolds_number: [0.0, 1.0, 2.0]
+        angle_of_attack: [0.0, 1.0, 2.0]
+
 # boat_simulator parameters
 low_level_control_node:
    ros__parameters:
