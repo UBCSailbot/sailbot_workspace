@@ -32,7 +32,11 @@ class BoatState:
         self.__kinematics_computation = BoatKinematics(timestep, mass, inertia)
 
     def step(
-        self, glo_wind_vel: NDArray, glo_water_vel: NDArray
+        self,
+        glo_wind_vel: NDArray,
+        glo_water_vel: NDArray,
+        rudder_angle_deg: float,
+        trim_tab_angle: float,
     ) -> Tuple[KinematicsData, KinematicsData]:
         """Updates the boat's kinematic data based on applied forces and torques, and returns
         the updated kinematic data in both relative and global reference frames.
@@ -42,6 +46,10 @@ class BoatState:
                 expressed in meters per second (m/s).
             glo_water_vel (NDArray): The velocity of the current in the global reference frame,
                 expressed in meters per second (m/s).
+            rudder_angle_deg (float): The rudder angle with respect to the boat in degrees. Angle
+                convention is 0 degrees is straight, increasing CCW.
+            trim_tab_angle (float): The trim tab angle with respect to the wingsail in degrees.
+                Angle convention is 0 degrees is straight, increasing CCW.
 
         Returns:
             Tuple[KinematicsData, KinematicsData]: A tuple with the first element representing
@@ -52,12 +60,16 @@ class BoatState:
         rel_water_vel = glo_water_vel
 
         rel_net_force, net_torque = self.__compute_net_force_and_torque(
-            rel_wind_vel, rel_water_vel
+            rel_wind_vel, rel_water_vel, rudder_angle_deg, trim_tab_angle
         )
         return self.__kinematics_computation.step(rel_net_force, net_torque)
 
     def __compute_net_force_and_torque(
-        self, rel_wind_vel: NDArray, rel_water_vel
+        self,
+        rel_wind_vel: NDArray,
+        rel_water_vel: NDArray,
+        rudder_angle_deg: float,
+        trim_tab_angle: float,
     ) -> Tuple[NDArray, NDArray]:
         """Calculates the net force and net torque acting on the boat caused by the wind and water.
 
@@ -66,6 +78,10 @@ class BoatState:
                 expressed in meters per second (m/s).
             rel_water_vel (NDArray): The velocity of the current in the relative reference frame,
                 expressed in meters per second (m/s).
+            rudder_angle_deg (float): The rudder angle with respect to the boat in degrees. Angle
+                convention is 0 degrees is straight, increasing CCW.
+            trim_tab_angle (float): The trim tab angle with respect to the wingsail in degrees.
+                Angle convention is 0 degrees is straight, increasing CCW.
 
         Returns:
             Tuple[NDArray, NDArray]: A tuple where the first element represents the net force in
