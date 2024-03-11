@@ -633,6 +633,30 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#controller-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Controller Parameters
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Controller Parameters">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#wingsail_ctrl_node" class="md-nav__link">
+    <span class="md-ellipsis">
+      wingsail_ctrl_node
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#boat-simulator-parameters" class="md-nav__link">
     <span class="md-ellipsis">
       Boat Simulator Parameters
@@ -2089,6 +2113,30 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#controller-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Controller Parameters
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Controller Parameters">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#wingsail_ctrl_node" class="md-nav__link">
+    <span class="md-ellipsis">
+      wingsail_ctrl_node
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#boat-simulator-parameters" class="md-nav__link">
     <span class="md-ellipsis">
       Boat Simulator Parameters
@@ -2232,6 +2280,21 @@ This document should be updated when any changes occur to the ROS parameters spe
 <li><em>Datatype</em>: <code>string</code></li>
 <li><em>Acceptable Values</em>: <code>"bitstar"</code>, <code>"bfmtstar"</code>, <code>"fmtstar"</code>, <code>"informedrrtstar"</code>, <code>"lazylbtrrt"</code>, <code>"lazyprmstar"</code>,
   <code>"lbtrrt"</code>, <code>"prmstar"</code>, <code>"rrtconnect"</code>, <code>"rrtsharp"</code>, <code>"rrtstar"</code>, <code>"rrtxstatic"</code>, <code>"sorrtstar"</code></li>
+</ul>
+<h2 id="controller-parameters">Controller Parameters<a class="headerlink" href="#controller-parameters" title="Permanent link">&para;</a></h2>
+<p>ROS parameters specific to the nodes in the Controller.</p>
+<h3 id="wingsail_ctrl_node">wingsail_ctrl_node<a class="headerlink" href="#wingsail_ctrl_node" title="Permanent link">&para;</a></h3>
+<p><strong><code>reynolds_number</code></strong></p>
+<ul>
+<li><em>Description</em>: The Reynolds number of the wind.</li>
+<li><em>Datatype</em>: <code>double</code></li>
+<li><em>Range</em>: <code>(0.0, MAX_DOUBLE)</code></li>
+</ul>
+<p><strong><code>angle_of_attack</code></strong></p>
+<ul>
+<li><em>Description</em>: The angle of attack of the sail.</li>
+<li><em>Datatype</em>: <code>double</code></li>
+<li><em>Range</em>: <code>(-180.0, 180.0]</code></li>
 </ul>
 <h2 id="boat-simulator-parameters">Boat Simulator Parameters<a class="headerlink" href="#boat-simulator-parameters" title="Permanent link">&para;</a></h2>
 <p>ROS parameters specific to the nodes in the boat simulator.</p>
