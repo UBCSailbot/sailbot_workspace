@@ -1,0 +1,10 @@
+geopandas
+shapely
+pyproj
+pandas
+numpy
+scikit-learn
+alphashpae
+xarray
+fiona
+tqdm
