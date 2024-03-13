@@ -1,5 +1,6 @@
 // Include this module
 #include "cached_fib.h"
+#include "cmn_hdrs/ros_info.h"
 #include "net_node.h"
 // Include ROS headers
 #include <rclcpp/rclcpp.hpp>
