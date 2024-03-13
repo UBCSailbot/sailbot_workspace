@@ -14,7 +14,7 @@ constexpr int INIT_FIB_SIZE = 5;
 class CachedFibNode : public NetNode
 {
 public:
-    explicit CachedFibNode(const std::size_t initSize) : NetNode("cached_fib_node"), c_fib_(initSize)
+    explicit CachedFibNode(const std::size_t initSize) : NetNode(ros_nodes::CACHED_FIB), c_fib_(initSize)
     {
         this->declare_parameter("enabled", false);
         bool enabled = this->get_parameter("enabled").as_bool();
