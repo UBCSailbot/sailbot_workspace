@@ -29,26 +29,31 @@ The following CLI arguments are available:
 
         --lat (optional): Latitude range, for selecting a subregion of dataset
         --lon (optional): Longitude range, for selecting a subregion of dataset
+        --test (optional): Run in test mode. Uses smaller data sets and modifies
+          global variables to speed things up
+        --jump (optional): Jump past initial data filtering for debugging
 """
 
 import argparse
 import csv
 import os
 import pickle
+from os.path import normpath
 from typing import List
 
 import alphashape
 import geopandas as gpd
 import numpy as np
 import pandas as pd
+import psutil
 import pyproj
-import tqdm
 import xarray as xr
 from geopandas import GeoDataFrame
 from shapely.geometry import LineString, Point, Polygon, box
 from shapely.ops import split, transform
 from sklearn.cluster import DBSCAN
 from sklearn.preprocessing import StandardScaler
+from tqdm import tqdm
 
 # Constants
 WGS84 = pyproj.CRS("EPSG:4326")
@@ -57,62 +62,103 @@ MIN_DEPTH = -20  # meters
 MAX_HEIGHT = 99999  # meters, include all land for now
 GRID_SIZE = 0.1  # degrees lat/lons
 
+# Modes
+# run in production mode by default
+_mode = "PROD"
+_jump = False
+
 # Default Latitude and Longitude ranges for the complete global navigation region
 LAT_RANGE = (14.6338, 61.4795)  # S:N
 LON_RANGE = (-179.9, -109.335938)  # W:E
 DEFAULT_BBOX = box(LON_RANGE[0], LAT_RANGE[0], LON_RANGE[1], LAT_RANGE[1])
 
 # SHAPE FILE PATHS
-BASE_SHP_FILE = "shp/land_polygons.shp"
-BBOX_REGION_FILE = "shp/land_polygons_bbox_region.shp"
-COMPLETE_DATA_FILE = "shp/complete_land_data.shp"
+BASE_SHP_FILE = normpath("shp/land_polygons.shp")
+SMALL_SHP_FILE = normpath("shp/ne_10m_land.shp")
+BBOX_REGION_FILE = normpath("shp/land_polygons_bbox_region.shp")
+COMPLETE_DATA_FILE = normpath("shp/complete_land_data.shp")
 
 # CSV PATHS
 # this is the polygon which defines the complete navigation region
 # all land obstacles will come from polygons which intersect or are bounded by this polygon
-MAP_SEL_POLYGON = "/csv/map_sel.csv"
+MAP_SEL_POLYGON = normpath("csv/map_sel.csv")
 # not to be confused with map_sel.csv
 # this polygon is used to filter out inland points from the bathymetric dataset
-INLAND_FILTER_POLYGON = "/csv/inland_polygon.csv"
+INLAND_FILTER_POLYGON = normpath("csv/inland_polygon.csv")
 
 # NETCDF PATHS
-NETCDF_FILE = "netcdf/gebco_2023/GEBCO_2023.nc"
+NETCDF_FILE = normpath("netcdf/gebco_2023/GEBCO_2023.nc")
+NETCDF_SMALL_FILE = normpath("netcdf/gebco_2023_small/salish_sea.nc")
 
 # PKL PATHS
-SINDEX_FILE = "/pkl/sindex.pkl"
+SINDEX_FILE = normpath("pkl/sindex.pkl")  # spatial index of final land mass data set
+GDF_SPF_FILE = normpath("pkl/gdf_spf.pkl")  # gdf after first spatial filter
+GDF_FILTER_FILE = normpath("pkl/gdf_filter.pkl")  # gdf containing polygons to filter against
+
+
+class colors:
+    ERROR = "\033[91m"
+    OK = "\033[92m"
+    WARN = "\033[93m"
+    RESET = "\033[0m"
 
 
 def main():
 
+    # Set the maximum number of cores to the number of physical cores of the system
+    # the loky function that tries to do this fails
+    cores = psutil.cpu_count(logical=False)
+    os.environ["LOKY_MAX_CPU_COUNT"] = str(cores)
+
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--lat", help="Latitude range, for selecting a subregion of dataset.", type=List[float]
+        "--lat",
+        help="Latitude range, for selecting a subregion of dataset.",
+        type=float,
+        nargs="*",
     )
     parser.add_argument(
-        "--lon", help="Longitude range, for selecting a subregion of dataset.", type=List[float]
+        "--lon",
+        help="Longitude range, for selecting a subregion of dataset.",
+        type=float,
+        nargs="*",
     )
     parser.add_argument("--test", help="Run in test mode.", action="store_true")
+
+    parser.add_argument("--jump", help="Jump past intitial data filtering", action="store_true")
+
     args = parser.parse_args()
 
+    # Determine which mode to run the script in
     if args.test:
         # Run the script in test mode
-        print("Running in test mode...")
+        print(colors.WARN + "Running in TEST mode" + colors.RESET)
+        global _mode
+        _mode = "TEST"
 
         # check paths of existing dependent files
-        paths = [BASE_SHP_FILE, MAP_SEL_POLYGON, INLAND_FILTER_POLYGON, NETCDF_FILE]
+        paths = [
+            BASE_SHP_FILE,
+            MAP_SEL_POLYGON,
+            INLAND_FILTER_POLYGON,
+            NETCDF_FILE,
+            NETCDF_SMALL_FILE,
+            SMALL_SHP_FILE,
+        ]
         for path in paths:
             assert os.path.exists(path), f"File not found: {path}"
 
-        # Override netcdf filepath to small file
-        netCDF_file = "netcdf/gebco_2023_small/salish_sea.nc"
-        remove_gen_files = True
+        # Override data file paths to small test size files
+        base_shp = SMALL_SHP_FILE
+        netCDF_file = NETCDF_SMALL_FILE
 
     else:
         # Run in production mode
-        print("Running in production mode...")
+        print(colors.OK + "Running in PRODUCTION mode" + colors.RESET)
+        base_shp = BASE_SHP_FILE
         netCDF_file = NETCDF_FILE
-        remove_gen_files = False
 
+    # Lat/Lon ranges
     if args.lat and args.lon:
         print("got lat and lon ranges, creating bbox..")
         lat_range = args.lat
@@ -120,68 +166,99 @@ def main():
         bbox = box(args.lon[0], args.lat[0], args.lon[1], args.lat[1])
 
     elif (args.lat is None) + (args.lon is None) == 1:  # if only one is specified
-        parser.error("Both latitude and longitude ranges must be specified.")
+        parser.error(
+            colors.ERROR + "Both latitude and longitude ranges must be specified." + colors.RESET
+        )
 
     else:
-        print("No lat and lon ranges specified, using default values to create bbox..")
+        print(
+            colors.WARN
+            + "No lat and lon ranges specified, using default values to create bbox.."
+            + colors.RESET
+        )
         bbox = DEFAULT_BBOX
         lat_range = LAT_RANGE
         lon_range = LON_RANGE
 
-    # convert bounding box to mercator projection
-    bbox = gpd.GeoSeries([bbox], crs=WGS84).to_crs(MERCATOR).iloc[0]
+    # Determine if the script should jump past the initial data filtering
+    if args.jump:
+        global _jump
+        _jump = True
+        print(
+            colors.WARN + "Skipping initial data filtering. "
+            f"Loading intermediate results from {GDF_FILTER_FILE}" + colors.RESET
+        )
+        gdf = load_pkl(GDF_FILTER_FILE)
 
-    # read in all land polygons inside the bounding box
-    print(f"reading in land polygons from {BASE_SHP_FILE}...")
-    gdf = gpd.read_file(BASE_SHP_FILE, bbox=bbox)
+    else:
+        # convert bounding box to mercator projection
+        bbox = gpd.GeoSeries([bbox], crs=WGS84).to_crs(MERCATOR).iloc[0]
 
-    print(f"saving selected region to {BBOX_REGION_FILE}...")
-    # store bbox selected region back into a shape file
-    bbox_region_path = BBOX_REGION_FILE
-    gdf.to_file(bbox_region_path)
+        # read in all land polygons inside the bounding box
+        print(f"reading in land polygons from {base_shp}...")
+        gdf = gpd.read_file(base_shp, bbox=bbox)
 
-    # Load in a custom Polygon which hugs coastline, to prune off unneccesary inland polygons
-    with open(MAP_SEL_POLYGON, "r") as f:
-        reader = csv.reader(f)
-        # skip header
-        reader.__next__()
-        map_sel = Polygon([[float(row[1]), float(row[0])] for row in reader])
+        print(colors.WARN + f"Saving selected region to {BBOX_REGION_FILE}..." + colors.RESET)
+        # store bbox selected region back into a shape file
+        gdf.to_file(BBOX_REGION_FILE)
 
-    # Slice off section of map_sel west of the International Date Line
-    # transforming a polygon that crosses the IDL has undesired results
-    IDL = LineString([(-180, 90), (-180, -90)])
-    map_sel_east = split(map_sel, IDL).geoms[0]
+        # Load in a custom Polygon which hugs coastline, to prune off unneeded inland polygons
+        with open(MAP_SEL_POLYGON, "r") as f:
+            reader = csv.reader(f)
+            # skip header
+            reader.__next__()
+            map_sel = Polygon([[float(row[1]), float(row[0])] for row in reader])
 
-    # TODO check if I can do this with geopandas, might solve my issue?
-    projection = pyproj.Transformer.from_proj(WGS84, MERCATOR, always_xy=True).transform
-    map_sel_east = transform(projection, map_sel_east)
+        # Slice off section of map_sel west of the International Date Line
+        # transforming a polygon that crosses the IDL has undesired results
+        IDL = LineString([(-180, 90), (-180, -90)])
+        map_sel_east = split(map_sel, IDL).geoms[0]
 
-    # load back in our subset of the region with our map selection mask applied
-    print(
-        f"reading in land polygons from {BBOX_REGION_FILE} with map selection mask from"
-        f"{MAP_SEL_POLYGON} applied..."
-    )
-    gdf = gpd.read_file(bbox_region_path, mask=map_sel_east)
+        # TODO if output is not correct, check if this transformation can be done with
+        # geopandas instead
+        # It thin with to_crs() it also failed on the part of map_sel that crosses the IDL
+        projection = pyproj.Transformer.from_proj(WGS84, MERCATOR, always_xy=True).transform
+        map_sel_east = transform(projection, map_sel_east)
 
-    if remove_gen_files:
-        print(f"Running in test mode. removing {bbox_region_path}")
-        os.remove(bbox_region_path)
+        # load back in our subset of the region with our map selection mask applied
+        print(
+            f"reading in land polygons from {BBOX_REGION_FILE} with map selection mask from "
+            f"{MAP_SEL_POLYGON} applied..."
+        )
+        gdf = gpd.read_file(BBOX_REGION_FILE, mask=map_sel_east)
+        print(len(gdf["geometry"]), f" land polygons loaded from {BBOX_REGION_FILE}.")
 
-    print("Starting Bathymetric Data Processing...")
-    # obtain all polygons from the bathymetric data set
-    gdf_bathy = get_bathy_gdf(
-        gdf_filter=gdf, lat_range=lat_range, lon_range=lon_range, netcdf=netCDF_file
-    )
-    print("Bathymetric Data Processing Complete")
+        if _mode == "TEST":
+            print(colors.WARN + f"TEST MODE: removing {BBOX_REGION_FILE}" + colors.RESET)
+            remove_shape(BBOX_REGION_FILE)
 
-    # finally convert gdf to WSG84
-    # crs attr must be set pre to_crs()
-    gdf.crs = MERCATOR
-    gdf.to_crs(WGS84)
+        print("Starting Bathymetric Data Processing...")
+        # convert gdf geometry to WSG84
+        gdf.to_crs(WGS84, inplace=True)
 
-    print("Merging datasets...")
-    # merge coastline and bathymetric polygon sets
-    gdf_combined = pd.concat([gdf, gdf_bathy], ignore_index=True)
+        print(colors.WARN + f"Saving intermediate results to {GDF_FILTER_FILE}..." + colors.RESET)
+        dump_pkl(gdf, GDF_FILTER_FILE)
+
+    gdf_bathy = None
+
+    try:
+        # obtain all polygons from the bathymetric data set
+        gdf_bathy = get_bathy_gdf(
+            gdf_filter=gdf, lat_range=lat_range, lon_range=lon_range, netcdf=netCDF_file
+        )
+        print(colors.OK + "Bathymetric Data Processing Complete" + colors.RESET)
+
+        print("Merging datasets...")
+        # merge coastline and bathymetric polygon sets
+        gdf_combined = pd.concat([gdf, gdf_bathy], ignore_index=True)
+
+    except Exception as e:
+        print(
+            colors.ERROR
+            + f"Bathymetric data process failed with an unexpected error: {e}"
+            + colors.RESET
+        )
+        exit()
 
     # create spatial index object
     sindex = gdf_combined.sindex
@@ -196,16 +273,87 @@ def main():
     gdf_combined.to_file(filename=COMPLETE_DATA_FILE, engine="fiona")
 
     print(
-        f"The complete land mass data set has successfully been created and saved as"
-        f"'{COMPLETE_DATA_FILE}'."
+        colors.OK + f"The complete land mass data set has successfully been created and saved as"
+        f"'{COMPLETE_DATA_FILE}'." + colors.RESET
     )
-    print(f"The corresponding spatial index has been saved as '{SINDEX_FILE}'.")
+    print(
+        colors.OK
+        + f"The corresponding spatial index has been saved as '{SINDEX_FILE}'."
+        + colors.RESET
+    )
 
-    if remove_gen_files:
-        print(f"Running in test mode. removing {COMPLETE_DATA_FILE} and {SINDEX_FILE}")
-        os.remove(COMPLETE_DATA_FILE)
+    if _mode == "TEST":
+        print(colors.WARN + f"TEST MODE: removing {COMPLETE_DATA_FILE}" + colors.RESET)
+        remove_shape(COMPLETE_DATA_FILE)
+        print(colors.WARN + f"TEST MODE: removing {SINDEX_FILE}" + colors.RESET)
         os.remove(SINDEX_FILE)
+        print(colors.OK + "Done" + colors.RESET)
     return
+
+
+def box_fix(gdf: GeoDataFrame) -> GeoDataFrame:
+    """
+    Constructs a box around any Point in gdf for which the entry in the 'cluster' column is -1
+    The idea is to add more points around any lone or double points so that DBSCAN can
+    successfully add that point to a cluster which can be then converted into a Polygon.
+
+    Args:
+        - gdf (GeoDataFrame): A GeoDataFrame with the columns:
+          'geometry' (Points), 'elevation', and 'cluster'
+
+    Returns:
+        - gdf_copy (GeoDataFrame): A copy of the original data frame with extra points added
+          around any unclustered points and the 'cluster' column removed.
+          gdf_copy is ready for the second pass with DBSCAN.
+    """
+    gdf_copy = gdf.copy()
+
+    # remove the cluster column as it will be added again on the second pass with DBSCAN
+    gdf_copy.drop(columns=["cluster"], inplace=True)
+
+    # Extract only the points which were not clustered by DBSCAN
+    unclustered_points = gdf[gdf["cluster"] == -1]
+
+    lats = []
+    lons = []
+
+    for _, row in unclustered_points.iterrows():
+
+        # Create a box around each unclustered point
+
+        box_points = box_pts(row.geometry)
+
+        lats.extend([point[1] for point in box_points])
+        lons.extend([point[0] for point in box_points])
+
+    # add dummy depths for new points since
+    # gdf should be depth filtered by the time this function is called
+    depths = np.zeros(len(lats))
+
+    geometry = gpd.points_from_xy(lons, lats)
+
+    gdf_tail = GeoDataFrame(geometry=geometry, columns=["geometry"])
+
+    gdf_tail["depth"] = depths
+
+    return pd.concat([gdf_copy, gdf_tail], ignore_index=True)
+
+
+def box_pts(pt: Point, w: float = 0.001) -> List[Point]:
+    """
+    Returns a list of points which form a box around the point pt.
+
+    Args:
+        - pt (Point): A point around which to build a box of points.
+        - w (float): Width of the box
+
+    Returns:
+        - points (List[Point]): A list of the points which form a box around the point pt.
+    """
+
+    box = pt.buffer(w, cap_style=3)
+
+    return box.exterior.coords
 
 
 def get_bathy_gdf(
@@ -237,90 +385,111 @@ def get_bathy_gdf(
         - gdf (GeoDataFrame): A GeoDataFrame containing polygons representing the
           bathymetric data set.
     """
+    if _mode == "TEST":
+        # speed up the process by using a larger grid size
+        global GRID_SIZE
+        GRID_SIZE = 1  # degrees lat/lons
 
-    # open data stream
-    # file is not loaded into memory yet
-    with xr.open_dataset(netcdf) as data:
+    if _jump:
+        print(
+            colors.WARN + "Entered get_bathy_pts() Jumping past initial data filtering. "
+            f"Loading intermediate results from {GDF_SPF_FILE}..." + colors.RESET
+        )
+        gdf_spatial_filtered = load_pkl(GDF_SPF_FILE)
 
-        # only select points within specified region,
-        # do not filter for depth at this stage, as it loads entire file into memory
-        lat_range_slice = slice(*lat_range)
-        lon_range_slice = slice(*lon_range)
-        sliced_data = data.sel(lat=lat_range_slice, lon=lon_range_slice)
+    else:
+        # open data stream
+        # file is not loaded into memory yet
+        with xr.open_dataset(netcdf) as data:
 
-        # data is transferred to an ndarray array for depth filtering as it is more performant
-        elevation = sliced_data.elevation.data
-        lats = sliced_data.lat.data
-        lons = sliced_data.lon.data
+            # only select points within specified region,
+            # do not filter for depth at this stage, as it loads entire file into memory
+            lat_range_slice = slice(*lat_range)
+            lon_range_slice = slice(*lon_range)
+            sliced_data = data.sel(lat=lat_range_slice, lon=lon_range_slice)
 
-    dpts = np.empty((len(elevation), len(elevation[0]), 3), dtype=np.float32)
+            # data is transferred to an ndarray array for depth filtering as it is more performant
+            elevation = sliced_data.elevation.data
+            lats = sliced_data.lat.data
+            lons = sliced_data.lon.data
 
-    # populate dpts with unfiltered data set
-    dpts[:, :, 0] = lats[:, None]
-    dpts[:, :, 1] = lons[None, :]
-    dpts[:, :, 2] = elevation
+        print(
+            colors.OK + f"Bathymetric data loaded. Loaded {len(elevation)} points." + colors.RESET
+        )
+        print("Starting depth filtering...")
 
-    # DEPTH FILTERING
-    # filter array with a mask
-    mask = np.logical_and(dpts[:, :, 2] >= MIN_DEPTH, dpts[:, :, 2] <= MAX_HEIGHT)
-    dpts_filtered = dpts[mask]  # dpts_filtered is a 2D array
+        dpts = np.empty((len(elevation), len(elevation[0]), 3), dtype=np.float32)
 
-    del dpts  # free up memory asap
+        # populate dpts with unfiltered data set
+        dpts[:, :, 0] = lats[:, None]
+        dpts[:, :, 1] = lons[None, :]
+        dpts[:, :, 2] = elevation
 
-    # START SPATIAL FILTERING
+        # DEPTH FILTERING
+        # filter array with a mask
+        mask = np.logical_and(dpts[:, :, 2] >= MIN_DEPTH, dpts[:, :, 2] <= MAX_HEIGHT)
+        dpts_filtered = dpts[mask]  # dpts_filtered is a 2D array
 
-    # Transfer filtered points back to a GeoDataFrame
-    latitude = dpts_filtered[:, 0]
-    longitude = dpts_filtered[:, 1]
-    depth = dpts_filtered[:, 2]
+        del dpts  # free up memory asap
 
-    geometry = gpd.points_from_xy(longitude, latitude)
-    gdf_filtered = GeoDataFrame(geometry=geometry, columns=["geometry"])
+        # START SPATIAL FILTERING
+        print(colors.OK + "Depth filtering complete. " + colors.RESET)
+        print(f"Transferring {len(dpts_filtered)} data points to a GeoDataFrame...")
+        # Transfer filtered points to a GeoDataFrame
+        latitude = dpts_filtered[:, 0]
+        longitude = dpts_filtered[:, 1]
+        geometry = gpd.points_from_xy(longitude, latitude)
+        gdf_pts = GeoDataFrame(geometry=geometry, columns=["geometry"])
 
-    # Add depth values as a new column
-    gdf_filtered["depth"] = depth
+        print(f"Starting spatial filtering on {len(gdf_pts['geometry'])} points...")
+        # Filter out inland areas to cut down the number of points
+        # Load in a custom Polygon representing inland area to be pruned from the data
+        with open(INLAND_FILTER_POLYGON, "r") as f:
+            reader = csv.reader(f)
+            # skip header
+            reader.__next__()
+            prune_poly = Polygon([[float(row[1]), float(row[0])] for row in reader])
 
-    # Filter out inland areas to cut down the number of points
-    # Load in a custom Polygon representing inland area to be pruned from the data
-    with open(INLAND_FILTER_POLYGON, "r") as f:
-        reader = csv.reader(f)
-        # skip header
-        reader.__next__()
-        prune_poly = Polygon([[float(row[1]), float(row[0])] for row in reader])
+        gdf_spatial_filtered = spatial_filter(gdf=gdf_pts, geometry=prune_poly)
 
-    # spatial filtering is done sequentially as spatial filter 2 is more expensive
-    gdf_spatial_filtered_1 = spatial_filter(gdf_filtered, prune_poly)
-    gdf_spatial_filtered_2 = spatial_filter(
-        gdf_spatial_filtered_1, geometry=gdf_filter["geometry"]
-    )
+        print(
+            colors.OK + f"First spatial filter complete. "
+            f"{len(gdf_spatial_filtered['geometry'])} points remain. "
+            f"Saving intermediate results to {GDF_SPF_FILE}..." + colors.RESET
+        )
 
-    # END SPATIAL FILTERING
-
-    # START POLYGONIZATION
+        # dump to pkl create load point
+        dump_pkl(gdf_spatial_filtered, GDF_SPF_FILE)
 
     # split the data into chunks
     chunked_array = points_to_chunked_array(
-        lat_range=lat_range, lon_range=lon_range, gdf=gdf_spatial_filtered_2, grid_size=GRID_SIZE
+        lat_range=lat_range,
+        lon_range=lon_range,
+        gdf=gdf_spatial_filtered,
+        grid_size=GRID_SIZE,
+        gdf_filter=gdf_filter,
     )
+    # END SPATIAL FILTERING
+
     print(
-        f"Created chunked array from bathymetric points."
+        f"Created chunked array from bathymetric points. "
         f"Running Clustering on {len(chunked_array)} chunks..."
     )
 
+    # START POLYGONIZATION
+    print(" Starting Polygonization...")
     # all polygons generated by the polygonize_chunks() will be stored in this list
     polygons = []
     # to track the chunks which could not be polygonized
     failures = 0
     scaler = StandardScaler()
 
-    for i, chunk in tqdm(enumerate(chunked_array), desc="Processing Bathymetric Data Chunks"):
-
-        print(f"Processing chunk {i}...")
+    for chunk in tqdm(
+        chunked_array, desc="Processing Bathymetric Data Chunks", total=len(chunked_array)
+    ):
 
         if len(chunk) == 0:  # empty chunk
             continue
-
-        print(f"Chunk {i} has {len(chunk)} points. Running DBSCAN...")
 
         # create a GDF from the chunk(ndarray)
         latitude = chunk[:, 0]
@@ -344,14 +513,22 @@ def get_bathy_gdf(
         if gdf_polygons is not None:
             polygons.extend(gdf_polygons)  # TODO optimal? what is complexity of extend?
 
-    print("Polygonization Complete")
+    print(colors.OK + "Polygonization Complete" + colors.RESET)
 
     # END POLYGONIZATION
 
     if failures > 0:
-        print(f"Number of failed alphashapes: {failures}")
+        print(
+            colors.ERROR
+            + f"Task failed. {failures} chunks could not be polygonized."
+            + colors.RESET
+        )
     else:
-        print(f"All chunks were successfully polygonized. {len(polygons)} polygons generated.")
+        print(
+            colors.OK
+            + f"All chunks were successful. {len(polygons)} polygons generated."
+            + colors.RESET
+        )
 
     return GeoDataFrame(geometry=polygons)
 
@@ -400,7 +577,6 @@ def polygonize_chunks(
 
     # SECOND DBSCAN PASS
     if -1 in db.labels_:
-        print("Some points were not clustered. Running DBSCAN again...")
         gdf = box_fix(gdf)
         # coordinates = MultiPoint([point for point in gdf_near["geometry"]])
         coordinates = np.array([(point.x, point.y) for point in gdf["geometry"]])
@@ -423,44 +599,75 @@ def polygonize_chunks(
     return gdf_polygons
 
 
-def points_inside(gdf: GeoDataFrame, bbox: Polygon) -> List[Point]:
+def points_inside(
+    gdf: GeoDataFrame, bbox: Polygon, gdf_filter: GeoDataFrame = None
+) -> List[Point]:
     """
-    Returns all points in gdf that are inside bbox.
+    Returns all points in gdf that are inside bbox. If gdf_filter is not None, the points that
+    are within any polygon stored in gdf_filter are removed.
 
     Args:
         - gdf (GeoDataFrame): A GeoDataFrame containing a set of points.
         - bbox (Polygon): A Polygon which defines the region to be queried.
+        - gdf_filter ([Optional] GeoDataFrame): A GeoDataFrame containing polygons which
+          represent the coastlines
+          used to filter the points in gdf.
+
 
     Returns:
         - matches (List[Point]): A list of all points in gdf that are inside bbox.
+          If gdf_filter is not None, the points are filtered against gdf_filter polygons.
     """
-    # return all points in gdf that are inside bbox
-    matches_index = list(gdf.sindex.query(geometry=bbox))
-    matches = gdf.iloc[matches_index]
+    # find all points in gdf that are inside bbox
+    bbox_pts_idx = list(gdf.sindex.query(geometry=bbox))
+    gdf_bbox_pts = gpd.GeoDataFrame(
+        geometry=gdf.iloc[bbox_pts_idx]["geometry"], columns=["geometry"]
+    )
+    gdf_bbox_pts.reset_index(
+        drop=True, inplace=True
+    )  # so that the indices align with `idx_to_drop` later
 
-    return matches["geometry"]
+    if gdf_filter is not None and _mode != "TEST":
 
+        # find all polygons in gdf_filter that intersect bbox
+        gdf_polygons = gdf_filter.iloc[gdf_filter.sindex.query(bbox, predicate="intersects")]
 
-def spatial_filter(gdf: GeoDataFrame, geometry) -> GeoDataFrame:
-    """
-    Returns a GeoDataFrame with all points inside `geometry` removed.
+        idx_to_drop = []
+        for polygon in gdf_polygons["geometry"]:
+            # find all points in gdf_bbox_pts that are inside each polygon, so we can drop them
+            # have to do it this way because we cannot drop any points
+            # when we still have more queries to make on gdf_bbox_pts.sindex
+            idx_to_drop.extend(
+                list(gdf_bbox_pts.sindex.query(geometry=polygon, predicate="contains"))
+            )
 
-    Args:
-        - gdf (GeoDataFrame): A GeoDataFrame containing a set of points.
-        - geometry : shapely.Geometry or array-like of geometries
-          (numpy.ndarray, GeoSeries, GeometryArray). From Geopandas documentation.
+        idx_to_drop = list(set(idx_to_drop))  # remove duplicates
 
-    Returns:
-        - gdf_filtered (GeoDataFrame): A GeoDataFrame with all points inside `geometry` removed.
-    """
-    return gdf.drop(list(gdf.sindex.query(geometry=geometry)))
+        try:
+            gdf_bbox_pts = gdf_bbox_pts.drop(
+                idx_to_drop
+            )  # remove points that are inside any polygon form gdf_filter
+
+        except KeyError as e:
+
+            print(
+                colors.ERROR + f"attempted to drop indices: {idx_to_drop} from dataframe with"
+                f"indicies: {gdf_bbox_pts.index}." + colors.RESET
+            )
+            exit(e)
+
+    return gdf_bbox_pts["geometry"]
 
 
 def points_to_chunked_array(
-    lat_range: tuple, lon_range: tuple, gdf: GeoDataFrame, grid_size: float = 1
+    lat_range: tuple,
+    lon_range: tuple,
+    gdf: GeoDataFrame,
+    grid_size: float = 1,
+    gdf_filter: GeoDataFrame = None,
 ) -> List[np.ndarray]:
     """
-    Creates a ragged array of ndarrays containing [lon,lat] points that are
+    Creates a ragged array of ndarrays containing [lon,lat] points (from gdf) that are
     geographically located inside a corresponding grid cell of the subdivided region defined by
     lat_range, lon_range,
     and grid_size.
@@ -477,10 +684,14 @@ def points_to_chunked_array(
         - lon_range (tuple): A tuple containing the minimum and maximum longitudes of the region.
         - gdf (GeoDataFrame): A GeoDataFrame containing a set of points.
         - grid_size (float): The size of the grid cells in degrees.
+        - gdf_filter (GeoDataFrame): A GeoDataFrame containing polygons which represent the
+          coastlines
+          used to filter the points in gdf.
 
     Returns:
         - pts_array_list (List[np.ndarray]): A list of ndarrays containing [lon,lat] points that
           are geographically located inside a corresponding grid cell.
+          If gdf_filter is not None, the points are filtered against gdf_filter polygons.
     """
     lat_range = np.linspace(
         lat_range[0], lat_range[1], int((lat_range[1] - lat_range[0]) / grid_size)
@@ -498,9 +709,10 @@ def points_to_chunked_array(
     # lons go from 0-n-1
     # lats go from 0-n-1
     for i in tqdm(
-        range(len(grid_pts) - 1), desc="Grouping bathymetric points by grid cell."
-    ):  # lats
-        for j in range(len(grid_pts[0]) - 1):  # lons
+        range(len(grid_pts) - 1),
+        desc="Grouping bathymetric points by grid cell and running second spatial filter.",
+    ):
+        for j in range(len(grid_pts[0]) - 1):
             # (lon1, lat1, lon2, lat2)
             bbox = box(
                 grid_pts[i][j][1],
@@ -509,75 +721,48 @@ def points_to_chunked_array(
                 grid_pts[i + 1][j + 1][0],
             )
             pts_array_list.append(
-                np.array([[point.x, point.y] for point in points_inside(gdf, bbox)])
+                np.array(
+                    [
+                        [point.x, point.y]
+                        for point in points_inside(gdf=gdf, bbox=bbox, gdf_filter=gdf_filter)
+                    ]
+                )
             )
 
     return pts_array_list
 
 
-def box_fix(gdf: GeoDataFrame) -> GeoDataFrame:
+def remove_shape(file_path: str):
     """
-    Constructs a box around any Point in gdf for which the entry in the 'cluster' column is -1
-    The idea is to add more points around any lone or double points so that DBSCAN can
-    successfully add that point to a cluster which can be then converted into a Polygon.
+    Removes the shape file and its associated files from the file system.
 
     Args:
-        - gdf (GeoDataFrame): A GeoDataFrame with the columns:
-          'geometry' (Points), 'elevation', and 'cluster'
-
-    Returns:
-        - gdf_copy (GeoDataFrame): A copy of the original data frame with extra points added
-          around any unclustered points and the 'cluster' column removed.
-          gdf_copy is ready for the second pass with DBSCAN.
+        - file_path (str): The file path of the shape file to be removed.
     """
-    gdf_copy = gdf.copy()
 
-    # remove the cluster column as it will be added again on the second pass with DBSCAN
-    gdf_copy.drop(columns=["cluster"], inplace=True)
-
-    # Extract only the points which were not clustered by DBSCAN
-    unclustered_points = gdf[gdf["cluster"] == -1]
-
-    lats = []
-    lons = []
-
-    for index, row in unclustered_points.iterrows():
-
-        # Create a box around each unclustered point
-
-        box_points = box_pts(row.geometry)
-
-        lats.extend([point[1] for point in box_points])
-        lons.extend([point[0] for point in box_points])
-
-    # add dummy depths for new points since
-    # gdf should be depth filtered by the time this function is called
-    depths = np.zeros(len(lats))
-
-    geometry = gpd.points_from_xy(lons, lats)
-
-    gdf_tail = GeoDataFrame(geometry=geometry, columns=["geometry"])
-
-    gdf_tail["depth"] = depths
-
-    return pd.concat([gdf_copy, gdf_tail], ignore_index=True)
+    if os.path.exists(file_path):
+        prefix = file_path.split(".")[0]
+        for ext in [".cpg", ".dbf", ".prj", ".shx", ".shp"]:
+            file = prefix + ext
+            if os.path.exists(file):
+                os.remove(file)
+    else:
+        print(colors.WARN + f"{file_path} not found. Did not remove anything." + colors.RESET)
 
 
-def box_pts(pt: Point, w: float = 0.001) -> List[Point]:
+def spatial_filter(gdf: GeoDataFrame, geometry: Polygon) -> GeoDataFrame:
     """
-    Returns a list of points which form a box around the point pt.
+    Returns a GeoDataFrame with all points inside `geometry` removed.
 
     Args:
-        - pt (Point): A point around which to build a box of points.
-        - w (float): Width of the box
+        - gdf (GeoDataFrame): A GeoDataFrame containing a set of points.
+        - geometry (Polygon): shapely polygon to filter points against.
+          Points in the polygon's interior are filtered out.
 
     Returns:
-        - points (List[Point]): A list of the points which form a box around the point pt.
+        - gdf (GeoDataFrame): A GeoDataFrame with all points inside `geometry` removed.
     """
-
-    box = pt.buffer(w, cap_style=3)
-
-    return box.exterior.coords
+    return gdf.drop(list(gdf.sindex.query(geometry=geometry)))
 
 
 if __name__ == "__main__":

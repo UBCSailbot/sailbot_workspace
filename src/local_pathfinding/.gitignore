@@ -10,3 +10,4 @@ __pycache__/
 # land data files
 /land/netcdf
 /land/shp
+*.pkl
