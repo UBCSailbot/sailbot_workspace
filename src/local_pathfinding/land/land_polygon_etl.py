@@ -38,6 +38,7 @@ import argparse
 import csv
 import os
 import pickle
+import subprocess
 import zipfile
 from os.path import normpath
 from shutil import move
@@ -125,8 +126,20 @@ def main():
 
     # ----------------------------------------SETUP ----------------------------------------------
 
-    # Set the maximum number of cores to the number of physical cores of the system
-    # the loky function that tries to do this fails
+    # Install Requirements
+    command = [
+        "pip3",
+        "install",
+        "-r",
+        normpath("/workspaces/sailbot_workspace/src/local_pathfinding/requirements.txt"),
+    ]
+    try:
+        subprocess.run(command, check=True, stdout=subprocess.DEVNULL)
+    except subprocess.CalledProcessError as e:
+        exit(e)
+
+    # Setup environment variables
+    # the Loky function that tries to do this fails, so set it here
     cores = psutil.cpu_count(logical=False)
     os.environ["LOKY_MAX_CPU_COUNT"] = str(cores)
 
