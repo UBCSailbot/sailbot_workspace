@@ -341,8 +341,8 @@ GPS::GPS(const CanFrame & cf) : GPS(static_cast<CanId>(cf.can_id))
     std::memcpy(&raw_heading, cf.data + BYTE_OFF_HEADING, sizeof(int32_t));
     std::memcpy(&raw_speed, cf.data + BYTE_OFF_SPEED, sizeof(int32_t));
 
-    lat_     = (static_cast<float>(raw_lat) - 90.0) / 1000.0;   //NOLINT
-    lon_     = (static_cast<float>(raw_lon) - 180.0) / 1000.0;  //NOLINT
+    lat_     = (static_cast<float>(raw_lat) / 1000.0) - 90;     //NOLINT
+    lon_     = (static_cast<float>(raw_lon) / 1000.0) - 180.0;  //NOLINT
     sec_     = static_cast<float>(raw_sec) / 1000.0;            //NOLINT
     min_     = static_cast<float>(raw_min);
     hour_    = static_cast<float>(raw_hour);
@@ -351,7 +351,7 @@ GPS::GPS(const CanFrame & cf) : GPS(static_cast<CanId>(cf.can_id))
 
     checkBounds();
 }
-/*
+
 GPS::GPS(msg::GPS ros_gps, CanId id)
 : BaseFrame(id, CAN_BYTE_DLEN_),
   lat_(ros_gps.lat_lon.latitude),
@@ -360,7 +360,9 @@ GPS::GPS(msg::GPS ros_gps, CanId id)
   min_(0),   // temp set to 0
   hour_(0),  //temp set to 0
   heading_(ros_gps.heading.heading),
-  speed_(ros_gps.speed.speed) checkBounds();
+  speed_(ros_gps.speed.speed)
+{
+    checkBounds();
 }
 
 msg::GPS GPS::toRosMsg() const
@@ -399,6 +401,49 @@ CanFrame GPS::toLinuxCan() const
     std::memcpy(cf.data + BYTE_OFF_SPEED, &raw_speed, sizeof(int32_t));
 
     return cf;
-}*/
+}
+
+std::string GPS::debugStr() const
+{
+    std::stringstream ss;
+    ss << BaseFrame::debugStr() << "\n"
+       << "Latitude (decimal degrees): " << lat_ << "\n"
+       << "Longitude (decimal degrees): " << lon_ << "\n"
+       << "Seconds (sec): " << sec_ << "\n"
+       << "Minutes (min): " << min_ << "\n"
+       << "Hours (hr): " << hour_ << "\n"
+       << "True heading (degrees): " << heading_ << "\n"
+       << "Speed (km/hr): " << speed_ << "\n";
+    return ss.str();
+}
+
+//GPS public END
+//GPS private START
+
+GPS::GPS(CanId id) : BaseFrame(std::span{GPS_IDS}, id, CAN_BYTE_DLEN_) {}
+
+void GPS::checkBounds() const
+{
+    auto err = utils::isOutOfBounds<float>(lat_, LAT_LBND, LAT_UBND);
+    if (err) {
+        std::string err_msg = err.value();
+        throw std::out_of_range("Latitude angle is out of bounds!\n" + debugStr() + "\n" + err_msg);
+    }
+    err = utils::isOutOfBounds<float>(lon_, LON_LBND, LON_UBND);
+    if (err) {
+        std::string err_msg = err.value();
+        throw std::out_of_range("Longitude is out of bounds!\n" + debugStr() + "\n" + err_msg);
+    }
+    err = utils::isOutOfBounds<float>(heading_, HEADING_LBND, HEADING_UBND);
+    if (err) {
+        std::string err_msg = err.value();
+        throw std::out_of_range("Heading is out of bounds!\n" + debugStr() + "\n" + err_msg);
+    }
+    err = utils::isOutOfBounds<float>(speed_, SPEED_LBND, SPEED_UBND);
+    if (err) {
+        std::string err_msg = err.value();
+        throw std::out_of_range("Speed is out of bounds!\n" + debugStr() + "\n" + err_msg);
+    }
+}
 
 }  // namespace CAN_FP
