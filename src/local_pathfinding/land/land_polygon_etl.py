@@ -38,15 +38,19 @@ import argparse
 import csv
 import os
 import pickle
+import zipfile
 from os.path import normpath
+from shutil import move
 from typing import List
 
 import alphashape
+import gdown
 import geopandas as gpd
 import numpy as np
 import pandas as pd
 import psutil
 import pyproj
+import requests
 import xarray as xr
 from geopandas import GeoDataFrame
 from shapely.geometry import LineString, Point, Polygon, box
@@ -61,6 +65,7 @@ MERCATOR = pyproj.CRS("EPSG:3857")
 MIN_DEPTH = -20  # meters
 MAX_HEIGHT = 99999  # meters, include all land for now
 GRID_SIZE = 0.1  # degrees lat/lons
+DOWNLOAD_ATTEMPTS = 3
 
 # Modes
 # run in production mode by default
@@ -78,6 +83,10 @@ SMALL_SHP_FILE = normpath("shp/ne_10m_land.shp")
 BBOX_REGION_FILE = normpath("shp/land_polygons_bbox_region.shp")
 COMPLETE_DATA_FILE = normpath("shp/complete_land_data.shp")
 
+# SHAPE FILE URLS
+BASE_SHP_URL = "https://osmdata.openstreetmap.de/download/land-polygons-split-3857.zip"
+SMALL_SHP_URL = "https://naciscdn.org/naturalearth/10m/physical/ne_10m_land.zip"
+
 # CSV PATHS
 # this is the polygon which defines the complete navigation region
 # all land obstacles will come from polygons which intersect or are bounded by this polygon
@@ -87,8 +96,12 @@ MAP_SEL_POLYGON = normpath("csv/map_sel.csv")
 INLAND_FILTER_POLYGON = normpath("csv/inland_polygon.csv")
 
 # NETCDF PATHS
-NETCDF_FILE = normpath("netcdf/gebco_2023/GEBCO_2023.nc")
-NETCDF_SMALL_FILE = normpath("netcdf/gebco_2023_small/salish_sea.nc")
+NETCDF_FILE = normpath("netcdf/GEBCO_2023.nc")
+NETCDF_SMALL_FILE = normpath("netcdf/salish_sea.nc")
+
+# NETCDF URLS
+NET_CDF_URL = "https://www.bodc.ac.uk/data/open_download/gebco/gebco_2023/zip/"
+NETCDF_SMALL_URL = "https://drive.google.com/uc?id=11Le2e8sz4xIor4bWsrGSd_ovYgUBTR6b"
 
 # PKL PATHS
 SINDEX_FILE = normpath("pkl/sindex.pkl")  # spatial index of final land mass data set
@@ -97,6 +110,11 @@ GDF_FILTER_FILE = normpath("pkl/gdf_filter.pkl")  # gdf containing polygons to f
 
 
 class colors:
+    """
+    ANSI color codes for terminal output.
+    """
+
+    # I should have just created a logger to use instead of this
     ERROR = "\033[91m"
     OK = "\033[92m"
     WARN = "\033[93m"
@@ -104,6 +122,8 @@ class colors:
 
 
 def main():
+
+    # ----------------------------------------SETUP ----------------------------------------------
 
     # Set the maximum number of cores to the number of physical cores of the system
     # the loky function that tries to do this fails
@@ -128,6 +148,42 @@ def main():
     parser.add_argument("--jump", help="Jump past intitial data filtering", action="store_true")
 
     args = parser.parse_args()
+
+    # Check for process dependent files
+    # download data files if they are not present
+    if not os.path.exists(BASE_SHP_FILE):
+        print(colors.WARN + f"{BASE_SHP_FILE} not found." + colors.RESET)
+        download_zip(url=BASE_SHP_URL, file_name="base_shp.zip", dir="shp")
+
+    if not os.path.exists(SMALL_SHP_FILE):
+        print(colors.WARN + f"{SMALL_SHP_FILE} not found." + colors.RESET)
+        download_zip(url=SMALL_SHP_URL, file_name="small_shp.zip", dir="shp")
+
+    # flatten the shp directory
+    flatten_dir("shp")
+
+    if not os.path.exists(NETCDF_FILE):
+        print(colors.WARN + f"{NETCDF_FILE} not found." + colors.RESET)
+        download_zip(url=NET_CDF_URL, file_name="gebco_2023.zip", dir="netcdf")
+
+    if not os.path.exists(NETCDF_SMALL_FILE):
+        print(
+            colors.WARN + f"{NETCDF_SMALL_FILE} not found. Attempting to download." + colors.RESET
+        )
+
+        tries = DOWNLOAD_ATTEMPTS
+        while tries > 0:
+            try:
+                gdown.download(NETCDF_SMALL_URL, NETCDF_SMALL_FILE, quiet=False)
+                break
+            except gdown.exceptions.FileURLRetrievalError:
+                print(
+                    colors.ERROR
+                    + f"Failed to download {NETCDF_SMALL_FILE} from {NETCDF_SMALL_URL}."
+                    + colors.RESET
+                )
+                print("Retrying...")
+                tries -= 1
 
     # Determine which mode to run the script in
     if args.test:
@@ -158,6 +214,7 @@ def main():
         base_shp = BASE_SHP_FILE
         netCDF_file = NETCDF_FILE
 
+    # ----------------------------------------END SETUP -------------------------------------------
     # Lat/Lon ranges
     if args.lat and args.lon:
         print("got lat and lon ranges, creating bbox..")
@@ -354,6 +411,66 @@ def box_pts(pt: Point, w: float = 0.001) -> List[Point]:
     box = pt.buffer(w, cap_style=3)
 
     return box.exterior.coords
+
+
+def download_zip(url: str, file_name: str, dir: str):
+    """
+    Saves a file from a URL to the specified directory with the specified name.
+    Then calls the unzip() function.
+
+    Args:
+        - url (str): The URL of the file to be downloaded.
+        - file_name (str): The file name to save the downloaded file to.
+        - dir (str): The directory to save the downloaded file to.
+    """
+    tries = DOWNLOAD_ATTEMPTS
+
+    while tries > 0:
+
+        try:
+            # download file in chunks of 10MB
+            response = requests.get(
+                url, stream=True
+            )  # stream to avoid loading entire file into memory
+            path = os.path.join(dir, file_name)
+            with open(path, "wb") as f:
+                for chunk in tqdm(
+                    response.iter_content(chunk_size=10 * 1024**2),
+                    desc=f"Downloading {file_name} to {dir}...",
+                    total=int(int(response.headers.get("content-length", 0)) / (10 * 1024**2) + 1),
+                ):
+                    f.write(chunk)
+            # extract files to shp folder
+            print(f"Extracting {file_name} to {dir}...")
+            unzip(path, extract_to=dir)
+            break
+
+        except requests.exceptions.RequestException as e:
+            print(colors.ERROR + f"Failed to download {file_name} from {url}." + colors.RESET)
+            print(e)
+            print("Retrying...")
+            tries -= 1
+            if tries == 0:
+                exit(e)
+
+
+def flatten_dir(directory):
+    """
+    Flatten a directory structure by moving all files to the parent directory and then removing
+    any subdirectories
+
+    Args:
+        - directory (str): The directory to be flattened.
+    """
+    for root, dirs, files in os.walk(directory):
+        # Move all files to the parent directory
+        for file in files:
+            src = os.path.join(root, file)
+            dst = os.path.join(directory, file)
+            move(src, dst)
+    for root, dirs, files in os.walk(directory, topdown=False):
+        for dir in dirs:
+            os.rmdir(os.path.join(root, dir))
 
 
 def get_bathy_gdf(
@@ -763,6 +880,20 @@ def spatial_filter(gdf: GeoDataFrame, geometry: Polygon) -> GeoDataFrame:
         - gdf (GeoDataFrame): A GeoDataFrame with all points inside `geometry` removed.
     """
     return gdf.drop(list(gdf.sindex.query(geometry=geometry)))
+
+
+def unzip(zip_file, extract_to):
+    """
+    Extracts the contents of a zip file to a specified directory,
+    then deletes the original zip file.
+
+    Args:
+        - zip_file (str): The file path of the zip file to be unzipped.
+        - extract_to (str): The directory to unzip the file to.
+    """
+    with zipfile.ZipFile(zip_file, "r") as zip_ref:
+        zip_ref.extractall(extract_to)
+    os.remove(zip_file)
 
 
 if __name__ == "__main__":
