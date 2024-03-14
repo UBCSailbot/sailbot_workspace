@@ -44,6 +44,7 @@ endforeach()
 
 # Boost
 find_package(Boost 1.74.0 COMPONENTS REQUIRED
+    program_options
     serialization
     system
     thread

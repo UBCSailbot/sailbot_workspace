@@ -8,7 +8,7 @@ independent project.
 
 ## Setup
 
-For comprehensive setup instructions, follow our [setup guide](https://ubcsailbot.github.io/docs/main/current/sailbot_workspace/setup/).
+For comprehensive setup instructions, follow our [setup guide](https://ubcsailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/setup/).
 
 ## Building
 
@@ -20,7 +20,7 @@ For comprehensive setup instructions, follow our [setup guide](https://ubcsailbo
 
 ### ROS Launch
 
-[Instructions found here.](https://ubcsailbot.github.io/docs/main/current/sailbot_workspace/launch_files/)
+[Instructions found here.](https://ubcsailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/launch_files/)
 
 For example:
 

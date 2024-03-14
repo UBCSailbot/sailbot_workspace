@@ -73,6 +73,24 @@ ROS parameters specific to the nodes in the local_pathfinding package.
 - _Acceptable Values_: `"bitstar"`, `"bfmtstar"`, `"fmtstar"`, `"informedrrtstar"`, `"lazylbtrrt"`, `"lazyprmstar"`,
   `"lbtrrt"`, `"prmstar"`, `"rrtconnect"`, `"rrtsharp"`, `"rrtstar"`, `"rrtxstatic"`, `"sorrtstar"`
 
+## Controller Parameters
+
+ROS parameters specific to the nodes in the Controller.
+
+### wingsail_ctrl_node
+
+**`reynolds_number`**
+
+- _Description_: The Reynolds number of the wind.
+- _Datatype_: `double`
+- _Range_: `(0.0, MAX_DOUBLE)`
+
+**`angle_of_attack`**
+
+- _Description_: The angle of attack of the sail.
+- _Datatype_: `double`
+- _Range_: `(-180.0, 180.0]`
+
 ## Boat Simulator Parameters
 
 ROS parameters specific to the nodes in the boat simulator.

@@ -10,11 +10,9 @@ set(inc_dirs
 set(compile_defs
 )
 
-# Create module library
 set(srcs
     ${CMAKE_CURRENT_LIST_DIR}/src/mock_ais.cpp
 )
-make_lib(${module} "${srcs}" "${link_libs}" "${inc_dirs}" "${compile_defs}")
 
 # Create module ROS executable
 set(bin_srcs
