@@ -123,6 +123,8 @@ class colors:
 
 
 def main():
+    # Not ready to run yet
+    exit(colors.ERROR + "This script is not ready to run yet. Exiting")
 
     # ----------------------------------------SETUP ----------------------------------------------
 
@@ -671,30 +673,36 @@ def dump_pkl(object: any, file_path: str):
 
 
 def load_pkl(file_path: str) -> any:
-    # creating a single unpickler instance to use for all unpickling during runtime
-    # will likely be more efficient
     with open(file_path, "rb") as f:
         return pickle.load(f)
 
 
 def polygonize_chunks(
-    gdf: GeoDataFrame, scaler: StandardScaler, eps: float = 0.00001, alpha: int = 100
+    gdf: GeoDataFrame, scaler: StandardScaler, eps: float = 0.001, alpha: int = 100
 ) -> List[Polygon]:
     """
     Clusters a set of coordinates using DBSCAN and polygonizes the clusters using DBSCAN.
 
+    Important Note: The default eps and alpha values were determined through trial and error.
+                    * The DBSCAN algorithm is very sensitive to the eps value, any value smaller
+                    will cause the number of clusters to explode as eps will be below the unit
+                    distance between points in the data set, making every point its own cluster.
+                    * The alphashape algorithm is also sensitive to the alpha value, any value
+                    below 100 will yield more convex polygons and any value higher will
+                    potentially risk losing entire polygons.
     Args:
         - gdf (GeoDataFrame): A GeoDataFrame containing a set of coordinates to be polygonized.
         - scaler (StandardScaler): A StandardScaler object which will be used to scale the
           coordinates before clustering.
         - eps (float): The maximum distance between two samples for one to be considered as in the
-          neighborhood of the other.
+          neighborhood of the other. Used by the DBSCAN algorithm.
         - alpha (int): The alpha value to be used in the alphashape algorithm.
 
     Returns:
         - gdf_polygons (List[Polygon]): A list of polygons generated from the clusters.
     """
-
+    # TODO This function is not ready, still need to implement checks to make sure polygonization
+    # was successful
     coordinates = np.array([(point.x, point.y) for point in gdf["geometry"]])
 
     if len(coordinates) == 0:
