@@ -3,14 +3,19 @@ import { Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { styled } from '@mui/material/styles';
 
+const textAndTitleColor = '#092e4e';
+
 const FlexItemContainer = styled('div')({
   flex: 1,
   display: 'flex',
-  justifyContent: 'center', 
+  justifyContent: 'center',
+  fontFamily: 'Switzer, sans-serif',
+  color: textAndTitleColor,
+  fontWeight: 'bold',
 });
 
 const DetailsFlexContainer = styled('div')({
-  display: 'flex',
+  display: 'flex', 
   justifyContent: 'space-between',
   width: '100%',
   position: 'relative', 
@@ -39,19 +44,30 @@ function CustomAccordion({ title, content, downloadAction }) {
   const titles = ["DATA TYPE", "TIMESCALE", "FILE", "ACCESS"];
   return (
     <Accordion sx={{
-      backgroundColor: '#ecf0f1',
+      backgroundColor: '#7a8b99',
       border: '1px solid #bdc3c7',
-      boxShadow: '0px 2px 4px -1px rgb(0 0 0 / 20%), 0px 4px 5px 0px rgb(0 0 0 / 14%), 0px 1px 10px 0px rgb(0 0 0 / 12%)',
+      boxShadow: 'none',
     }}>
-      <AccordionSummary
-        expandIcon={<ExpandMoreIcon />}
-        aria-controls="panel1-content"
-        id="panel1-header"
-        sx={{ backgroundColor: '#3498db', color: 'white', }}
-      >
-        {title}
-      </AccordionSummary>
-      <AccordionDetails sx={{ backgroundColor: '#bdc3c7', flexDirection: 'column', padding: '16px 16px', }}>
+<AccordionSummary
+  expandIcon={<ExpandMoreIcon />}
+  aria-controls="panel1-content"
+  id="panel1-header"
+  sx={{ 
+    backgroundColor: '#d9dddc', 
+    color: '#00263e', 
+    fontFamily: 'Switzer, sans-serif',
+    fontWeight: 'bold', 
+  }}
+>
+  {title}
+</AccordionSummary>
+      <AccordionDetails sx={{ 
+        backgroundColor: 'white',
+        flexDirection: 'column',
+        padding: '16px 16px',
+        fontFamily: 'Switzer, sans-serif',
+        color: textAndTitleColor,
+      }}>
         <DetailsFlexContainer> 
           {titles.map((title, index) => (
             <FlexItemContainer key={`title-${index}`}>{title}</FlexItemContainer>
@@ -70,5 +86,5 @@ function CustomAccordion({ title, content, downloadAction }) {
   );
 }
 
-
 export default CustomAccordion;
+
