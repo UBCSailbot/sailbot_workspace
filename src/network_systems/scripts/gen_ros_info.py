@@ -30,15 +30,13 @@ GEN_PYTHON_PREAMBLE = f"# {GEN_FILE_WARN}\n"
 
 
 def populate_hdr(hdr_file_obj, info_target):
-    for pair in info_target:
-        for k, v in pair.items():
-            hdr_file_obj.write(f'static constexpr auto {k} = "{v}";\n')
+    for k, v in info_target.items():
+        hdr_file_obj.write(f'static constexpr auto {k} = "{v}";\n')
 
 
 def populate_py_nodes(py_file_obj, info_target):
-    for pair in info_target:
-        for k, v in pair.items():
-            py_file_obj.write(f'{k}_NODE = "{v}"\n')
+    for k, v in info_target.items():
+        py_file_obj.write(f'{k}_NODE = "{v}"\n')
 
 
 def main():
