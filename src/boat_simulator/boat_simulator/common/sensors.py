@@ -97,7 +97,7 @@ class WindSensor(Sensor):
     def __init__(
         self,
         wind: ScalarOrArray,
-        stdev: List[Scalar] = [1.0, 1.0],
+        wind_noise_stdev: List[Scalar] = [1.0, 1.0],
         enable_noise: bool = False,
         enable_delay: bool = False,
     ) -> None:
@@ -110,7 +110,7 @@ class WindSensor(Sensor):
         self.wind_queue_next: bool = False
         self.wind_next_value: ScalarOrArray = wind
         self.wind_noisemaker: MVGaussianGenerator = MVGaussianGenerator(
-            mean=np.array([0, 0]), cov=np.diag(np.power(stdev, 2))
+            mean=np.array([0, 0]), cov=np.diag(np.power(wind_noise_stdev, 2))
         )
 
     @property  # type: ignore
@@ -161,7 +161,9 @@ class GPS(Sensor):
         lat_lon: NDArray,
         speed: Scalar,
         heading: Scalar,
-        stdev: Scalar = 1,
+        lat_lon_noise_stdev: Scalar = 1,
+        speed_noise_stdev: Scalar = 1,
+        heading_noise_stdev: Scalar = 1,
         enable_noise: bool = False,
         enable_delay: bool = False,
     ):
@@ -184,13 +186,13 @@ class GPS(Sensor):
         self.heading_next_value: Scalar = heading
 
         self.lat_lon_noisemaker: GaussianGenerator = GaussianGenerator(
-            mean=0, stdev=stdev
+            mean=0, stdev=lat_lon_noise_stdev
         )
         self.speed_noisemaker: GaussianGenerator = GaussianGenerator(
-            mean=0, stdev=stdev
+            mean=0, stdev=speed_noise_stdev
         )
         self.heading_noisemaker: GaussianGenerator = GaussianGenerator(
-            mean=0, stdev=stdev
+            mean=0, stdev=heading_noise_stdev
         )
 
     @property  # type: ignore
