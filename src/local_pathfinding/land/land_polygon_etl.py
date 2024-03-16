@@ -265,6 +265,8 @@ def main():
         )
         gdf = load_pkl(GDF_FILTER_FILE)
 
+    # JUMP OVER THIS ------------------------------------------------------------------------------
+
     else:
         # convert bounding box to mercator projection
         bbox = gpd.GeoSeries([bbox], crs=WGS84).to_crs(MERCATOR).iloc[0]
@@ -313,6 +315,8 @@ def main():
 
         print(colors.WARN + f"Saving intermediate results to {GDF_FILTER_FILE}..." + colors.RESET)
         dump_pkl(gdf, GDF_FILTER_FILE)
+
+    # JUMP TO HERE --------------------------------------------------------------------------------
 
     try:
         # obtain all polygons from the bathymetric data set
