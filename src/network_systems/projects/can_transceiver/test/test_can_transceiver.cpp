@@ -282,7 +282,7 @@ TEST_F(TestCanFrameParser, TestWindSensorInvalid)
         EXPECT_THROW(CAN_FP::WindSensor tmp(msg, valid_id), std::out_of_range);
     };
 }
-//TODO: implement the GPS tests
+
 /**
  * @brief Test ROS<->CAN GPS translations work as expected for valid input values
  *
