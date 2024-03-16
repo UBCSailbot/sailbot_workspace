@@ -1,0 +1,20 @@
+{
+    "python.autoComplete.extraPaths": [
+        "/workspaces/sailbot_workspace/build/local_pathfinding",
+        "/workspaces/sailbot_workspace/build/controller",
+        "/workspaces/sailbot_workspace/build/boat_simulator",
+        "/workspaces/sailbot_workspace/install/local/lib/python3.10/dist-packages",
+        "/workspaces/sailbot_workspace/install/lib/python3.10/site-packages",
+        "/opt/ros/humble/local/lib/python3.10/dist-packages",
+        "/opt/ros/humble/lib/python3.10/site-packages"
+    ],
+    "python.analysis.extraPaths": [
+        "/workspaces/sailbot_workspace/build/local_pathfinding",
+        "/workspaces/sailbot_workspace/build/controller",
+        "/workspaces/sailbot_workspace/build/boat_simulator",
+        "/workspaces/sailbot_workspace/install/local/lib/python3.10/dist-packages",
+        "/workspaces/sailbot_workspace/install/lib/python3.10/site-packages",
+        "/opt/ros/humble/local/lib/python3.10/dist-packages",
+        "/opt/ros/humble/lib/python3.10/site-packages"
+    ]
+}
