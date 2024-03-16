@@ -107,14 +107,6 @@ msg::HelperBattery Battery::toRosMsg() const
     msg.set__voltage(volt_);
     msg.set__current(curr_);
 
-    std::vector<msg::HelperBattery> batteries;
-    batteries.push_back(msg);
-
-    if (batteries.size() >= 2) {
-        std::array<msg::HelperBattery, 2> msg_arr;
-        copy(batteries.begin(), batteries.end(), msg_arr.begin());
-    }
-
     return msg;
 }
 
@@ -249,7 +241,8 @@ WindSensor::WindSensor(const CanFrame & cf) : WindSensor(static_cast<CanId>(cf.c
     std::memcpy(&raw_wind_speed, cf.data + BYTE_OFF_SPEED, sizeof(int16_t));
     std::memcpy(&raw_wind_dir, cf.data + BYTE_OFF_ANGLE, sizeof(int16_t));
 
-    wind_speed_ = static_cast<float>(raw_wind_speed) * 1.852 / 10.0;  //NOLINT
+    // convert knots to kmph before setting value
+    wind_speed_ = static_cast<float>(raw_wind_speed * 1.852 / 10.0);  // NOLINT(readability-magic-numbers)
     wind_angle_ = static_cast<int16_t>(raw_wind_dir);
 
     checkBounds();
@@ -273,7 +266,8 @@ msg::WindSensor WindSensor::toRosMsg() const
 
 CanFrame WindSensor::toLinuxCan() const
 {
-    int16_t raw_wind_speed = static_cast<int16_t>(wind_speed_ * 10 / 1.852);  //NOLINT
+    // convert kmph to knots before setting value
+    int16_t raw_wind_speed = static_cast<int16_t>(wind_speed_ * 10 / 1.852);  // NOLINT(readability-magic-numbers)
     int16_t raw_wind_dir   = static_cast<int16_t>(wind_angle_);
 
     CanFrame cf = BaseFrame::toLinuxCan();
@@ -341,13 +335,13 @@ GPS::GPS(const CanFrame & cf) : GPS(static_cast<CanId>(cf.can_id))
     std::memcpy(&raw_heading, cf.data + BYTE_OFF_HEADING, sizeof(int32_t));
     std::memcpy(&raw_speed, cf.data + BYTE_OFF_SPEED, sizeof(int32_t));
 
-    lat_     = (static_cast<float>(raw_lat) / 1000.0) - 90;     //NOLINT
-    lon_     = (static_cast<float>(raw_lon) / 1000.0) - 180.0;  //NOLINT
-    sec_     = static_cast<float>(raw_sec) / 1000.0;            //NOLINT
+    lat_     = static_cast<float>(raw_lat / 1000.0 - 90);     //NOLINT(readability-magic-numbers)
+    lon_     = static_cast<float>(raw_lon / 1000.0 - 180.0);  //NOLINT(readability-magic-numbers)
+    sec_     = static_cast<float>(raw_sec / 1000.0);          //NOLINT(readability-magic-numbers)
     min_     = static_cast<float>(raw_min);
     hour_    = static_cast<float>(raw_hour);
-    heading_ = static_cast<float>(raw_heading) / 1000.0;  //NOLINT
-    speed_   = static_cast<float>(raw_speed) / 1000.0;    //NOLINT
+    heading_ = static_cast<float>(raw_heading / 1000.0);  //NOLINT(readability-magic-numbers)
+    speed_   = static_cast<float>(raw_speed / 1000.0);    //NOLINT(readability-magic-numbers)
 
     checkBounds();
 }
@@ -356,9 +350,9 @@ GPS::GPS(msg::GPS ros_gps, CanId id)
 : BaseFrame(id, CAN_BYTE_DLEN_),
   lat_(ros_gps.lat_lon.latitude),
   lon_(ros_gps.lat_lon.longitude),
-  sec_(0),   //temp set to 0
-  min_(0),   // temp set to 0
-  hour_(0),  //temp set to 0
+  sec_(0),   // unused set to 0
+  min_(0),   // unused set to 0
+  hour_(0),  // unused set to 0
   heading_(ros_gps.heading.heading),
   speed_(ros_gps.speed.speed)
 {
@@ -383,13 +377,13 @@ msg::GPS GPS::toRosMsg() const
 
 CanFrame GPS::toLinuxCan() const
 {
-    int32_t raw_lat     = static_cast<int32_t>((lat_ + 90.0) * 1000.0);   //NOLINT
-    int32_t raw_lon     = static_cast<int32_t>((lon_ + 180.0) * 1000.0);  //NOLINT
-    int32_t raw_sec     = static_cast<int32_t>(sec_ * 1000);              //NOLINT
+    int32_t raw_lat     = static_cast<int32_t>((lat_ + 90.0) * 1000.0);   //NOLINT(readability-magic-numbers)
+    int32_t raw_lon     = static_cast<int32_t>((lon_ + 180.0) * 1000.0);  //NOLINT(readability-magic-numbers)
+    int32_t raw_sec     = static_cast<int32_t>(sec_ * 1000);              //NOLINT(readability-magic-numbers)
     int8_t  raw_min     = static_cast<int8_t>(min_);
     int8_t  raw_hour    = static_cast<int8_t>(hour_);
-    int32_t raw_heading = static_cast<int32_t>(heading_ * 1000);  //NOLINT
-    int32_t raw_speed   = static_cast<int32_t>(speed_ * 1000);    //NOLINT
+    int32_t raw_heading = static_cast<int32_t>(heading_ * 1000);  //NOLINT(readability-magic-numbers)
+    int32_t raw_speed   = static_cast<int32_t>(speed_ * 1000);    //NOLINT(readability-magic-numbers)
 
     CanFrame cf = BaseFrame::toLinuxCan();
     std::memcpy(cf.data + BYTE_OFF_LAT, &raw_lat, sizeof(int32_t));

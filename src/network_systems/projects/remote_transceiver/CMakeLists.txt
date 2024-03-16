@@ -18,10 +18,6 @@ set(srcs
     ${CMAKE_CURRENT_LIST_DIR}/src/remote_transceiver.cpp
 )
 
-set(srcs
-    ${CMAKE_CURRENT_LIST_DIR}/src/remote_transceiver.cpp
-)
-
 set(bin_srcs
     ${srcs}
     ${CMAKE_CURRENT_LIST_DIR}/src/remote_transceiver_ros_intf.cpp

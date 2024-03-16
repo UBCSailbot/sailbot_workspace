@@ -19,7 +19,6 @@ public:
     * @brief Construct a new Can Transceiver and connect it to the default CAN interface (can0)
     * @note  Can only be used in deployment
     *
-    * @param can_inst
     */
     CanTransceiver();
 
@@ -36,12 +35,6 @@ public:
      * @param fd
      */
     explicit CanTransceiver(int fd);
-
-    /**
-     * @brief Close the opened CAN port and kill the receive() thread
-     *
-     */
-    void onNewCmd(const CAN_FP::CanFrame & cmd_frame);
 
     /**
      * @brief Send a CAN frame to the CAN port
