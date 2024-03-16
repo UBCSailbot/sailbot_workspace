@@ -26,7 +26,7 @@ using CAN_FP::CanId;
 class CanTransceiverIntf : public rclcpp::Node
 {
 public:
-    CanTransceiverIntf() : Node("can_transceiver_node")
+    CanTransceiverIntf() : NetNode(ros_nodes::CAN_TRANSCEIVER)
     {
         this->declare_parameter("enabled", true);
 
@@ -61,8 +61,8 @@ public:
                 throw std::runtime_error(msg);
             }
 
-            ais_pub_       = this->create_publisher<msg::AISShips>(AIS_SHIPS_TOPIC, QUEUE_SIZE);
-            batteries_pub_ = this->create_publisher<msg::Batteries>(BATTERIES_TOPIC, QUEUE_SIZE);
+            ais_pub_       = this->create_publisher<msg::AISShips>(ros_topics::AIS_SHIPS, QUEUE_SIZE);
+            batteries_pub_ = this->create_publisher<msg::Batteries>(ros_topics::BATTERIES, QUEUE_SIZE);
 
             can_trns_->registerCanCbs({
               std::make_pair(
@@ -76,10 +76,10 @@ public:
 
             if (mode == SYSTEM_MODE::DEV) {  // Initialize the CAN Sim Intf
                 mock_ais_sub_ = this->create_subscription<msg::AISShips>(
-                  MOCK_AIS_SHIPS_TOPIC, QUEUE_SIZE,
+                  ros_topics::MOCK_AIS_SHIPS, QUEUE_SIZE,
                   [this](msg::AISShips mock_ais_ships) { subMockAISCb(mock_ais_ships); });
                 mock_gps_sub_ = this->create_subscription<msg::GPS>(
-                  MOCK_GPS_TOPIC, QUEUE_SIZE, [this](msg::GPS mock_gps) { subMockGpsCb(mock_gps); });
+                  ros_topics::MOCK_GPS, QUEUE_SIZE, [this](msg::GPS mock_gps) { subMockGpsCb(mock_gps); });
 
                 // TODO(lross03): register a callback for CanSimToBoatSim
 
