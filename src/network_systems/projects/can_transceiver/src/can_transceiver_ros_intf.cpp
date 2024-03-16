@@ -15,6 +15,7 @@
 #include "can_transceiver.h"
 #include "cmn_hdrs/ros_info.h"
 #include "cmn_hdrs/shared_constants.h"
+#include "net_node.h"
 
 constexpr int  QUEUE_SIZE     = 10;  // Arbitrary number
 constexpr auto TIMER_INTERVAL = std::chrono::milliseconds(500);
@@ -23,10 +24,10 @@ namespace msg = custom_interfaces::msg;
 using CAN_FP::CanFrame;
 using CAN_FP::CanId;
 
-class CanTransceiverIntf : public rclcpp::Node
+class CanTransceiverIntf : public NetNode
 {
 public:
-    CanTransceiverIntf() : Node("can_transceiver_node")
+    CanTransceiverIntf() : NetNode(ros_nodes::CAN_TRANSCEIVER)
     {
         this->declare_parameter("enabled", true);
 
@@ -61,8 +62,8 @@ public:
                 throw std::runtime_error(msg);
             }
 
-            ais_pub_       = this->create_publisher<msg::AISShips>(AIS_SHIPS_TOPIC, QUEUE_SIZE);
-            batteries_pub_ = this->create_publisher<msg::Batteries>(BATTERIES_TOPIC, QUEUE_SIZE);
+            ais_pub_       = this->create_publisher<msg::AISShips>(ros_topics::AIS_SHIPS, QUEUE_SIZE);
+            batteries_pub_ = this->create_publisher<msg::Batteries>(ros_topics::BATTERIES, QUEUE_SIZE);
 
             can_trns_->registerCanCbs({
               std::make_pair(
@@ -76,10 +77,10 @@ public:
 
             if (mode == SYSTEM_MODE::DEV) {  // Initialize the CAN Sim Intf
                 mock_ais_sub_ = this->create_subscription<msg::AISShips>(
-                  MOCK_AIS_SHIPS_TOPIC, QUEUE_SIZE,
+                  ros_topics::MOCK_AIS_SHIPS, QUEUE_SIZE,
                   [this](msg::AISShips mock_ais_ships) { subMockAISCb(mock_ais_ships); });
                 mock_gps_sub_ = this->create_subscription<msg::GPS>(
-                  MOCK_GPS_TOPIC, QUEUE_SIZE, [this](msg::GPS mock_gps) { subMockGpsCb(mock_gps); });
+                  ros_topics::MOCK_GPS, QUEUE_SIZE, [this](msg::GPS mock_gps) { subMockGpsCb(mock_gps); });
 
                 // TODO(lross03): register a callback for CanSimToBoatSim
 
@@ -188,8 +189,20 @@ private:
 
 int main(int argc, char * argv[])
 {
+    bool err = false;
     rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<CanTransceiverIntf>());
+    try {
+        std::shared_ptr<CanTransceiverIntf> node = std::make_shared<CanTransceiverIntf>();
+        try {
+            rclcpp::spin(node);
+        } catch (std::exception & e) {
+            RCLCPP_ERROR(node->get_logger(), "%s", e.what());
+            throw e;
+        }
+    } catch (std::exception & e) {
+        std::cerr << e.what() << std::endl;
+        err = true;
+    }
     rclcpp::shutdown();
-    return 0;
+    return err ? -1 : 0;
 }
