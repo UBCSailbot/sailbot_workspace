@@ -30,8 +30,7 @@ class TestRudderController:
         time_step: Scalar,
         kp: Scalar,
         cp: Scalar,
-        max_angle_range: tuple,
-        rudder_speed: Scalar,
+        control_speed: Scalar,
     ):
 
         rudder_controller = RudderController(
@@ -41,10 +40,9 @@ class TestRudderController:
             time_step,
             kp,
             cp,
-            max_angle_range,
-            rudder_speed,
+            control_speed,
         )
-        error = rudder_controller.compute_error(desired_heading, current_heading)
+        error = rudder_controller.compute_error()
         desired_rad = np.deg2rad(bound_to_180(desired_heading))
         current_rad = np.deg2rad(bound_to_180(current_heading))
         expected_error = atan2(sin(desired_rad - current_rad), cos(desired_rad - current_rad))
@@ -69,58 +67,16 @@ class TestRudderController:
         time_step: Scalar,
         kp: Scalar,
         cp: Scalar,
-        max_angle_range: tuple,
-        rudder_speed: Scalar,
+        control_speed: Scalar,
     ):
 
         rudder_controller = RudderController(
-            current_heading,
-            desired_heading,
-            current_control_ang,
-            time_step,
-            kp,
-            cp,
-            max_angle_range,
-            rudder_speed,
+            current_heading, desired_heading, current_control_ang, time_step, kp, cp, control_speed
         )
-        feedback_angle = rudder_controller.compute_error_angle()
-        error = rudder_controller.compute_error(desired_heading, current_heading)
+        feedback_angle = rudder_controller.compute_setpoint()
+        error = rudder_controller.compute_error()
         expected_angle = (rudder_controller.kp * error) / (1 + (rudder_controller.cp * error))
         assert np.equal(feedback_angle, np.rad2deg(expected_angle))
-
-    @pytest.mark.parametrize(
-        "current_heading, desired_heading, current_control_ang,time_step, kp, cp, max_angle_range",
-        [
-            (60, 45, 10, 0.5, 0.7, 0.34, (45, -45)),
-        ],
-    )
-    def test_compute_setpoint(
-        self,
-        current_heading: Scalar,
-        desired_heading: Scalar,
-        current_control_ang: Scalar,
-        time_step: Scalar,
-        kp: Scalar,
-        cp: Scalar,
-        max_angle_range: tuple,
-        rudder_speed: Scalar,
-    ):
-
-        rudder_controller = RudderController(
-            current_heading,
-            desired_heading,
-            current_control_ang,
-            time_step,
-            kp,
-            cp,
-            max_angle_range,
-            rudder_speed,
-        )
-        setpoint = rudder_controller.compute_setpoint()
-        expected_setpoint = (
-            rudder_controller.current_control_ang + rudder_controller.compute_error_angle()
-        )
-        assert np.equal(setpoint, expected_setpoint)
 
     @pytest.mark.parametrize(
         "current_heading, desired_heading, current_control_ang,time_step, kp, cp, max_angle_range",
@@ -136,8 +92,7 @@ class TestRudderController:
         time_step: Scalar,
         kp: Scalar,
         cp: Scalar,
-        max_angle_range: tuple,
-        rudder_speed: Scalar,
+        control_speed: Scalar,
     ):
 
         rudder_controller = RudderController(
@@ -147,8 +102,7 @@ class TestRudderController:
             time_step,
             kp,
             cp,
-            max_angle_range,
-            rudder_speed,
+            control_speed,
         )
         rudder_controller.update_state()
         assert np.equal(rudder_controller.current_control_ang, 12)
