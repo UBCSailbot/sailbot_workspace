@@ -122,9 +122,23 @@ class colors:
     RESET = "\033[0m"
 
 
+class FailedPolygonError(Exception):
+    """
+    Raised when a polygonization process on a chunk fails.
+    """
+
+    pass
+
+
+class FailedBathyDataError(Exception):
+    """
+    Raised when the bathymetric data process fails.
+    """
+
+    pass
+
+
 def main():
-    # Not ready to run yet
-    exit(colors.ERROR + "This script is not ready to run yet. Exiting")
 
     # ----------------------------------------SETUP ----------------------------------------------
 
@@ -145,6 +159,7 @@ def main():
     cores = psutil.cpu_count(logical=False)
     os.environ["LOKY_MAX_CPU_COUNT"] = str(cores)
 
+    # Parse Arguments
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--lat",
@@ -230,6 +245,7 @@ def main():
         netCDF_file = NETCDF_FILE
 
     # ----------------------------------------END SETUP -------------------------------------------
+
     # Lat/Lon ranges
     if args.lat and args.lon:
         print("got lat and lon ranges, creating bbox..")
@@ -311,8 +327,6 @@ def main():
         print(colors.WARN + f"Saving intermediate results to {GDF_FILTER_FILE}..." + colors.RESET)
         dump_pkl(gdf, GDF_FILTER_FILE)
 
-    gdf_bathy = None
-
     try:
         # obtain all polygons from the bathymetric data set
         gdf_bathy = get_bathy_gdf(
@@ -324,13 +338,18 @@ def main():
         # merge coastline and bathymetric polygon sets
         gdf_combined = pd.concat([gdf, gdf_bathy], ignore_index=True)
 
+    except FailedBathyDataError:
+        exit(
+            colors.ERROR + "Bathymetric data processing failed as a result of "
+            "failure to polygonize a chunk" + colors.RESET
+        )
+
     except Exception as e:
-        print(
+        exit(
             colors.ERROR
-            + f"Bathymetric data process failed with an unexpected error: {e}"
+            + f"Bathymetric data processing failed with an unexpected error: {e}"
             + colors.RESET
         )
-        exit()
 
     # create spatial index object
     sindex = gdf_combined.sindex
@@ -616,8 +635,10 @@ def get_bathy_gdf(
     failures = 0
     scaler = StandardScaler()
 
-    for chunk in tqdm(
-        chunked_array, desc="Processing Bathymetric Data Chunks", total=len(chunked_array)
+    for i, chunk in tqdm(
+        enumerate(chunked_array),
+        desc="Processing Bathymetric Data Chunks",
+        total=len(chunked_array),
     ):
 
         if len(chunk) == 0:  # empty chunk
@@ -632,18 +653,40 @@ def get_bathy_gdf(
         gdf_polygons = None
 
         try:
-            # polygonize the chunk
+            # polygonize the chunk with default eps and alpha
             gdf_polygons = polygonize_chunks(gdf_chunk, scaler=scaler)
 
-        except Exception as e:
+        except FailedPolygonError:
 
-            print(chunk)
-            print(e)
-            failures += 1
-            break
+            try:
+                # lower eps
+                gdf_polygons = polygonize_chunks(gdf_chunk, scaler=scaler, eps=0.0005)
+
+            except FailedPolygonError:
+
+                try:
+                    # lower eps and alpha
+                    gdf_polygons = polygonize_chunks(
+                        gdf_chunk, scaler=scaler, eps=0.0005, alpha=30
+                    )
+
+                except FailedPolygonError:
+                    # Still failed to polygonize
+                    # try lowering alpha even more in the previous try/except layer
+                    print(
+                        colors.ERROR + f"Could not polygonize chunk #{i}."
+                        "results will not be reliable. Aborting bathymetric data processing."
+                        + colors.RESET
+                    )
+                    raise FailedBathyDataError
 
         if gdf_polygons is not None:
-            polygons.extend(gdf_polygons)  # TODO optimal? what is complexity of extend?
+            polygons.extend(gdf_polygons)
+        else:
+            exit(
+                colors.ERROR + f"Tried to add polygons from chunk #{i} to the total polygon list "
+                "but gdf_polygons is None. This should never happen" + colors.RESET
+            )
 
     print(colors.OK + "Polygonization Complete" + colors.RESET)
 
@@ -684,7 +727,7 @@ def polygonize_chunks(
     Clusters a set of coordinates using DBSCAN and polygonizes the clusters using DBSCAN.
 
     Important Note: The default eps and alpha values were determined through trial and error.
-                    * The DBSCAN algorithm is very sensitive to the eps value, any value smaller
+                    * The DBSCAN algorithm is very sensitive to the eps value, too small of an eps
                     will cause the number of clusters to explode as eps will be below the unit
                     distance between points in the data set, making every point its own cluster.
                     * The alphashape algorithm is also sensitive to the alpha value, any value
