@@ -26,7 +26,7 @@ namespace ros_nodes
 GEN_HDR_FILE_NODES_END = "}; // namespace ros_nodes\n"
 
 GEN_PYTHON_FILE = os.path.join(NET_DIR, "launch/ros_info.py")
-GEN_PYTHON_PREAMBLE = f"# {GEN_FILE_WARN}\n"
+GEN_PYTHON_PREAMBLE = f"# {GEN_FILE_WARN} # noqa: E501\n"
 
 
 def populate_hdr(hdr_file_obj, info_target):
