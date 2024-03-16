@@ -149,7 +149,8 @@ class WingsailControllerNode(Node):
         self.__trim_tab_angle_pub.publish(msg)
 
         self.get_logger().info(
-            f"Published to {self.__trim_tab_angle_pub.topic} the following angle: {msg.trim_tab_angle_degrees}"
+            f"Published to {self.__trim_tab_angle_pub.topic} \
+                the following angle: {msg.trim_tab_angle_degrees}"
         )
 
     @property
