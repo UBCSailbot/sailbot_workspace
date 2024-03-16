@@ -105,16 +105,27 @@ GDF_SPF_FILE = normpath("pkl/gdf_spf.pkl")  # gdf after first spatial filter
 GDF_FILTER_FILE = normpath("pkl/gdf_filter.pkl")  # gdf containing polygons to filter against
 
 
-class colors:
-    """
-    ANSI color codes for terminal output.
-    """
+class Logger:
 
-    # I should have just created a logger to use instead of this
-    ERROR = "\033[91m"
-    OK = "\033[92m"
-    WARN = "\033[93m"
-    RESET = "\033[0m"
+    def __init__(self):
+        self.levels = {
+            "ERROR": "\033[91m",
+            "OK": "\033[92m",
+            "WARN": "\033[93m",
+        }
+        self.reset = "\033[0m"
+
+    def ok(self, msg):
+        level = self.levels.get("OK")
+        print(level + msg + self.reset)
+
+    def warn(self, msg):
+        level = self.levels.get("WARN")
+        print(level + msg + self.reset)
+
+    def error(self, msg):
+        level = self.levels.get("ERROR")
+        print(level + msg + self.reset)
 
 
 class FailedPolygonError(Exception):
@@ -136,9 +147,11 @@ class FailedBathyDataError(Exception):
 def main():
 
     # ----------------------------------------SETUP ----------------------------------------------
+    # Create a logger
+    logger = Logger()
 
     # Setup environment variables
-    # the Loky function that tries to do this fails, so set it here
+    # the L"OK"y function that tries to do this fails, so set it here
     cores = psutil.cpu_count(logical=False)
     os.environ["LOKY_MAX_CPU_COUNT"] = str(cores)
 
@@ -165,30 +178,28 @@ def main():
     # Check for process dependent files
     # download data files if they are not present
     if not os.path.exists(BASE_SHP_FILE):
-        print(colors.WARN + f"{BASE_SHP_FILE} not found." + colors.RESET)
+        logger.warn(f"{BASE_SHP_FILE} not found.")
         download_zip(url=BASE_SHP_URL, file_name="base_shp.zip", dir="shp")
 
     if not os.path.exists(SMALL_SHP_FILE):
-        print(colors.WARN + f"{SMALL_SHP_FILE} not found." + colors.RESET)
+        logger.warn(f"{SMALL_SHP_FILE} not found.")
         download_zip(url=SMALL_SHP_URL, file_name="small_shp.zip", dir="shp")
 
     # flatten the shp directory
     flatten_dir("shp")
 
     if not os.path.exists(NETCDF_FILE):
-        print(colors.WARN + f"{NETCDF_FILE} not found." + colors.RESET)
+        logger.warn(f"{NETCDF_FILE} not found.")
         download_zip(url=NET_CDF_URL, file_name="gebco_2023.zip", dir="netcdf")
 
     if not os.path.exists(NETCDF_SMALL_FILE):
-        print(
-            colors.WARN + f"{NETCDF_SMALL_FILE} not found. Attempting to download." + colors.RESET
-        )
+        logger.warn(f"{NETCDF_SMALL_FILE} not found. Attempting to download.")
         gd_download(NETCDF_SMALL_URL, NETCDF_SMALL_FILE)
 
     # Determine which mode to run the script in
     if args.test:
         # Run the script in test mode
-        print(colors.WARN + "Running in TEST mode" + colors.RESET)
+        logger.ok(msg="Running in TEST mode")
         global _mode
         _mode = "TEST"
 
@@ -210,7 +221,7 @@ def main():
 
     else:
         # Run in production mode
-        print(colors.OK + "Running in PRODUCTION mode" + colors.RESET)
+        logger.ok("Running in PRODUCTION mode")
         base_shp = BASE_SHP_FILE
         netCDF_file = NETCDF_FILE
 
@@ -224,16 +235,10 @@ def main():
         bbox = box(args.lon[0], args.lat[0], args.lon[1], args.lat[1])
 
     elif (args.lat is None) + (args.lon is None) == 1:  # if only one is specified
-        parser.error(
-            colors.ERROR + "Both latitude and longitude ranges must be specified." + colors.RESET
-        )
+        logger.error("Both latitude and longitude ranges must be specified.")
 
     else:
-        print(
-            colors.WARN
-            + "No lat and lon ranges specified, using default values to create bbox.."
-            + colors.RESET
-        )
+        logger.warn("No lat and lon ranges specified, using default values to create bbox..")
         bbox = DEFAULT_BBOX
         lat_range = LAT_RANGE
         lon_range = LON_RANGE
@@ -242,9 +247,8 @@ def main():
     if args.jump:
         global _jump
         _jump = True
-        print(
-            colors.WARN + "Skipping initial data filtering. "
-            f"Loading intermediate results from {GDF_FILTER_FILE}" + colors.RESET
+        logger.warn(
+            f"Skipping initial data filtering. Loading intermediate results from {GDF_FILTER_FILE}"
         )
         gdf = load_pkl(GDF_FILTER_FILE)
 
@@ -258,7 +262,7 @@ def main():
         print(f"reading in land polygons from {base_shp}...")
         gdf = gpd.read_file(base_shp, bbox=bbox)
 
-        print(colors.WARN + f"Saving selected region to {BBOX_REGION_FILE}..." + colors.RESET)
+        print(f"Saving selected region to {BBOX_REGION_FILE}...")
         # store bbox selected region back into a shape file
         gdf.to_file(BBOX_REGION_FILE)
 
@@ -289,14 +293,14 @@ def main():
         print(len(gdf["geometry"]), f" land polygons loaded from {BBOX_REGION_FILE}.")
 
         if _mode == "TEST":
-            print(colors.WARN + f"TEST MODE: removing {BBOX_REGION_FILE}" + colors.RESET)
+            logger.warn(f"TEST MODE: removing {BBOX_REGION_FILE}")
             remove_shape(BBOX_REGION_FILE)
 
         print("Starting Bathymetric Data Processing...")
         # convert gdf geometry to WSG84
         gdf.to_crs(WGS84, inplace=True)
 
-        print(colors.WARN + f"Saving intermediate results to {GDF_FILTER_FILE}..." + colors.RESET)
+        logger.warn(f"Saving intermediate results to {GDF_FILTER_FILE}...")
         dump_pkl(gdf, GDF_FILTER_FILE)
 
     # JUMP TO HERE --------------------------------------------------------------------------------
@@ -306,24 +310,18 @@ def main():
         gdf_bathy = get_bathy_gdf(
             gdf_filter=gdf, lat_range=lat_range, lon_range=lon_range, netcdf=netCDF_file
         )
-        print(colors.OK + "Bathymetric Data Processing Complete" + colors.RESET)
+        logger.ok("Bathymetric Data Processing Complete")
 
         print("Merging datasets...")
         # merge coastline and bathymetric polygon sets
         gdf_combined = pd.concat([gdf, gdf_bathy], ignore_index=True)
 
     except FailedBathyDataError:
-        exit(
-            colors.ERROR + "Bathymetric data processing failed as a result of "
-            "failure to polygonize a chunk" + colors.RESET
-        )
+        logger.error("Bathymetric data processing failed. Failed to polygonize a chunk")
+        exit()
 
     except Exception as e:
-        exit(
-            colors.ERROR
-            + f"Bathymetric data processing failed with an unexpected error: {e}"
-            + colors.RESET
-        )
+        logger.error(f"Bathymetric data processing failed with an unexpected error: {e}")
 
     # create spatial index object
     sindex = gdf_combined.sindex
@@ -337,22 +335,18 @@ def main():
     # fiona will be used to load the file again, so its the specified engine
     gdf_combined.to_file(filename=COMPLETE_DATA_FILE, engine="fiona")
 
-    print(
-        colors.OK + f"The complete land mass data set has successfully been created and saved as"
-        f"'{COMPLETE_DATA_FILE}'." + colors.RESET
+    logger.ok(
+        f"The complete land mass data set has successfully been created and saved as"
+        f"'{COMPLETE_DATA_FILE}'."
     )
-    print(
-        colors.OK
-        + f"The corresponding spatial index has been saved as '{SINDEX_FILE}'."
-        + colors.RESET
-    )
+    logger.ok(f"The corresponding spatial index has been saved as '{SINDEX_FILE}'.")
 
     if _mode == "TEST":
-        print(colors.WARN + f"TEST MODE: removing {COMPLETE_DATA_FILE}" + colors.RESET)
+        logger.warn(f"TEST MODE: removing {COMPLETE_DATA_FILE}")
         remove_shape(COMPLETE_DATA_FILE)
-        print(colors.WARN + f"TEST MODE: removing {SINDEX_FILE}" + colors.RESET)
+        logger.warn(f"TEST MODE: removing {SINDEX_FILE}")
         os.remove(SINDEX_FILE)
-        print(colors.OK + "Done" + colors.RESET)
+        logger.ok("Done")
     return
 
 
@@ -450,15 +444,18 @@ def get_bathy_gdf(
         - gdf (GeoDataFrame): A GeoDataFrame containing polygons representing the
           bathymetric data set.
     """
+    # create logger
+    logger = Logger()
+
     if _mode == "TEST":
         # speed up the process by using a larger grid size
         global GRID_SIZE
         GRID_SIZE = 1  # degrees lat/lons
 
     if _jump:
-        print(
-            colors.WARN + "Entered get_bathy_pts() Jumping past initial data filtering. "
-            f"Loading intermediate results from {GDF_SPF_FILE}..." + colors.RESET
+        logger.warn(
+            "Entered get_bathy_pts() Jumping past initial data filtering. "
+            f"Loading intermediate results from {GDF_SPF_FILE}..."
         )
         gdf_spatial_filtered = load_pkl(GDF_SPF_FILE)
 
@@ -478,11 +475,7 @@ def get_bathy_gdf(
             lats = sliced_data.lat.data
             lons = sliced_data.lon.data
 
-        print(
-            colors.OK
-            + f"Bathymetric data loaded. Loaded {len(elevation)*len(elevation[0])} points."
-            + colors.RESET
-        )
+        logger.ok(f"Bathymetric data loaded. Loaded {len(elevation)*len(elevation[0])} points.")
         print("Starting depth filtering...")
 
         dpts = np.empty((len(elevation), len(elevation[0]), 3), dtype=np.float32)
@@ -500,7 +493,7 @@ def get_bathy_gdf(
         del dpts  # free up memory asap
 
         # START SPATIAL FILTERING
-        print(colors.OK + "Depth filtering complete. " + colors.RESET)
+        logger.ok("Depth filtering complete. ")
         print(f"Transferring {len(dpts_filtered)} data points to a GeoDataFrame...")
         # Transfer filtered points to a GeoDataFrame
         latitude = dpts_filtered[:, 0]
@@ -519,10 +512,10 @@ def get_bathy_gdf(
 
         gdf_spatial_filtered = spatial_filter(gdf=gdf_pts, geometry=prune_poly)
 
-        print(
-            colors.OK + f"First spatial filter complete. "
+        logger.ok(
+            f"First spatial filter complete. "
             f"{len(gdf_spatial_filtered['geometry'])} points remain. "
-            f"Saving intermediate results to {GDF_SPF_FILE}..." + colors.RESET
+            f"Saving intermediate results to {GDF_SPF_FILE}..."
         )
 
         # dump to pkl create load point
@@ -589,37 +582,29 @@ def get_bathy_gdf(
                 except FailedPolygonError:
                     # Still failed to polygonize
                     # try lowering alpha even more in the previous try/except layer
-                    print(
-                        colors.ERROR + f"Could not polygonize chunk #{i}."
+                    logger.error(
+                        f"Could not polygonize chunk #{i}."
                         "results will not be reliable. Aborting bathymetric data processing."
-                        + colors.RESET
                     )
                     raise FailedBathyDataError
 
         if gdf_polygons is not None:
             polygons.extend(gdf_polygons)
         else:
-            exit(
-                colors.ERROR + f"Tried to add polygons from chunk #{i} to the total polygon list "
-                "but gdf_polygons is None. This should never happen" + colors.RESET
+            logger.error(
+                f"Tried to add polygons from chunk #{i} to the total polygon list "
+                "but gdf_polygons is None. This should never happen"
             )
+            exit()
 
-    print(colors.OK + "Polygonization Complete" + colors.RESET)
+    logger.ok("Polygonization Complete")
 
     # END POLYGONIZATION
 
     if failures > 0:
-        print(
-            colors.ERROR
-            + f"Task failed. {failures} chunks could not be polygonized."
-            + colors.RESET
-        )
+        logger.error(f"Task failed. {failures} chunks could not be polygonized.")
     else:
-        print(
-            colors.OK
-            + f"All chunks were successful. {len(polygons)} polygons generated."
-            + colors.RESET
-        )
+        logger.ok(f"All chunks were successful. {len(polygons)} polygons generated.")
 
     return GeoDataFrame(geometry=polygons)
 
@@ -703,6 +688,9 @@ def points_inside(
         - matches (List[Point]): A list of all points in gdf that are inside bbox.
           If gdf_filter is not None, the points are filtered against gdf_filter polygons.
     """
+    # create logger
+    logger = Logger()
+
     # find all points in gdf that are inside bbox
     bbox_pts_idx = list(gdf.sindex.query(geometry=bbox))
     gdf_bbox_pts = gpd.GeoDataFrame(
@@ -735,9 +723,9 @@ def points_inside(
 
         except KeyError as e:
 
-            print(
-                colors.ERROR + f"attempted to drop indices: {idx_to_drop} from dataframe with"
-                f"indicies: {gdf_bbox_pts.index}." + colors.RESET
+            logger.error(
+                f"attempted to drop indices: {idx_to_drop} from dataframe with"
+                f"indicies: {gdf_bbox_pts.index}."
             )
             exit(e)
 
@@ -824,6 +812,7 @@ def remove_shape(file_path: str):
     Args:
         - file_path (str): The file path of the shape file to be removed.
     """
+    logger = Logger()
 
     if os.path.exists(file_path):
         prefix = file_path.split(".")[0]
@@ -832,7 +821,7 @@ def remove_shape(file_path: str):
             if os.path.exists(file):
                 os.remove(file)
     else:
-        print(colors.WARN + f"{file_path} not found. Did not remove anything." + colors.RESET)
+        logger.warn(f"{file_path} not found. Did not remove anything.")
 
 
 def spatial_filter(gdf: GeoDataFrame, geometry: Polygon) -> GeoDataFrame:
