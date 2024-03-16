@@ -10,3 +10,11 @@
   overflow-y: scroll;
   padding-left: 10px;
 }
+
+.rayecontainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  margin-top: 800px;
+}

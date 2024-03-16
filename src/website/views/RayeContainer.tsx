@@ -80,7 +80,7 @@ const CoverageItem = styled('div')(({ theme }) => ({
   marginBottom: theme.spacing(-1.5),
   display: 'flex',
   flexDirection: 'column',
-  gap: theme.spacing(3),
+  gap: theme.spacing(4),
 }));
 
 const CoverageContent = styled('div')(({ theme }) => ({
