@@ -19,6 +19,7 @@
 #include "waypoint.pb.h"
 
 namespace bstream = bsoncxx::builder::stream;
+using Polaris::GlobalPath;
 using Polaris::Sensors;
 
 mongocxx::instance SailbotDB::inst_{};  // staticallly initialize instance
@@ -34,7 +35,7 @@ std::ostream & operator<<(std::ostream & os, const SailbotDB::RcvdMsgInfo & info
     return os;
 }
 
-std::string SailbotDB::RcvdMsgInfo::mkTimestamp(const std::tm & tm)
+std::string SailbotDB::mkTimestamp(const std::tm & tm)
 {
     // This is impossible to read. It's reading each field of tm and 0 padding it to 2 digits with either "-" or ":"
     // in between each number

@@ -99,20 +99,16 @@ std::pair<Sensors, SailbotDB::RcvdMsgInfo> UtilDB::genRandData(const std::tm & t
       .lat_       = 0,  // Not processed yet, so just set to 0
       .lon_       = 0,  // Not processed yet, so just set to 0
       .cep_       = 0,  // Not processed yet, so just set to 0
-      .timestamp_ = SailbotDB::RcvdMsgInfo::mkTimestamp(tm)};
+      .timestamp_ = SailbotDB::mkTimestamp(tm)};
     return {rand_sensors, rand_info};
 }
 
-std::pair<Polaris::GlobalPath, SailbotDB::RcvdMsgInfo> UtilDB::genGlobalData(const std::tm & tm)
+std::pair<Polaris::GlobalPath, std::string> UtilDB::genGlobalData(const std::tm & tm)
 {
     Polaris::GlobalPath global_path_data = genGlobalPath();
 
-    SailbotDB::RcvdMsgInfo global_info{
-      .lat_       = 0,  // Not processed yet, so just set to 0
-      .lon_       = 0,  // Not processed yet, so just set to 0
-      .cep_       = 0,  // Not processed yet, so just set to 0
-      .timestamp_ = SailbotDB::RcvdMsgInfo::mkTimestamp(tm)};
-    return {global_path_data, global_info};
+    std::string global_timestamp = {SailbotDB::mkTimestamp(tm)};
+    return {global_path_data, global_timestamp};
 }
 
 bool UtilDB::verifyDBWrite(std::span<Sensors> expected_sensors, std::span<SailbotDB::RcvdMsgInfo> expected_msg_info)
@@ -190,6 +186,82 @@ bool UtilDB::verifyDBWrite(std::span<Sensors> expected_sensors, std::span<Sailbo
     }
     return !tracker.failed();
 }
+
+// bool UtilDB::verifyDBWrite_GlobalPath(std::span<GlobalPath> expected_globalpath, std::span<SailbotDB::RcvdMsgInfo> expected_msg_info)
+// {
+//     utils::FailTracker tracker;
+
+//     auto expectEQ = [&tracker]<not_float T>(T rcvd, T expected, const std::string & err_msg) -> void {
+//         tracker.track(utils::checkEQ(rcvd, expected, err_msg));
+//     };
+//     auto expectFloatEQ = [&tracker]<std::floating_point T>(T rcvd, T expected, const std::string & err_msg) -> void {
+//         tracker.track(utils::checkEQ(rcvd, expected, err_msg));
+//     };
+
+//     expectEQ(expected_sensors.size(), expected_msg_info.size(), "Must have msg info for each set of Sensors");
+//     size_t num_docs                          = expected_sensors.size();
+//     auto [dumped_sensors, dumped_timestamps] = dumpSensors(tracker, num_docs);
+
+//     expectEQ(dumped_sensors.size(), num_docs, "");
+//     expectEQ(dumped_timestamps.size(), num_docs, "");
+
+//     for (size_t i = 0; i < num_docs; i++) {
+//         expectEQ(dumped_timestamps[i], expected_msg_info[i].timestamp_, "");
+
+//         // gps
+//         expectFloatEQ(dumped_sensors[i].gps().latitude(), expected_sensors[i].gps().latitude(), "");
+//         expectFloatEQ(dumped_sensors[i].gps().longitude(), expected_sensors[i].gps().longitude(), "");
+//         expectFloatEQ(dumped_sensors[i].gps().speed(), expected_sensors[i].gps().speed(), "");
+//         expectFloatEQ(dumped_sensors[i].gps().heading(), expected_sensors[i].gps().heading(), "");
+
+//         // ais ships
+//         for (int j = 0; j < NUM_AIS_SHIPS; j++) {
+//             const Sensors::Ais & dumped_ais_ship   = dumped_sensors[i].ais_ships(j);
+//             const Sensors::Ais & expected_ais_ship = expected_sensors[i].ais_ships(j);
+//             expectEQ(dumped_ais_ship.id(), expected_ais_ship.id(), "");
+//             expectFloatEQ(dumped_ais_ship.latitude(), expected_ais_ship.latitude(), "");
+//             expectFloatEQ(dumped_ais_ship.longitude(), expected_ais_ship.longitude(), "");
+//             expectFloatEQ(dumped_ais_ship.sog(), expected_ais_ship.sog(), "");
+//             expectFloatEQ(dumped_ais_ship.cog(), expected_ais_ship.cog(), "");
+//             expectFloatEQ(dumped_ais_ship.rot(), expected_ais_ship.rot(), "");
+//             expectFloatEQ(dumped_ais_ship.width(), expected_ais_ship.width(), "");
+//             expectFloatEQ(dumped_ais_ship.length(), expected_ais_ship.length(), "");
+//         }
+
+//         // generic sensors
+//         for (int j = 0; j < NUM_GENERIC_SENSORS; j++) {
+//             const Sensors::Generic & dumped_data_sensor   = dumped_sensors[i].data_sensors(j);
+//             const Sensors::Generic & expected_data_sensor = expected_sensors[i].data_sensors(j);
+//             expectEQ(dumped_data_sensor.id(), expected_data_sensor.id(), "");
+//             expectEQ(dumped_data_sensor.data(), expected_data_sensor.data(), "");
+//         }
+
+//         // batteries
+//         for (int j = 0; j < NUM_BATTERIES; j++) {
+//             const Sensors::Battery & dumped_battery   = dumped_sensors[i].batteries(j);
+//             const Sensors::Battery & expected_battery = expected_sensors[i].batteries(j);
+//             expectFloatEQ(dumped_battery.voltage(), expected_battery.voltage(), "");
+//             expectFloatEQ(dumped_battery.current(), expected_battery.current(), "");
+//         }
+
+//         // wind sensors
+//         for (int j = 0; j < NUM_WIND_SENSORS; j++) {
+//             const Sensors::Wind & dumped_wind_sensor   = dumped_sensors[i].wind_sensors(j);
+//             const Sensors::Wind & expected_wind_sensor = expected_sensors[i].wind_sensors(j);
+//             expectFloatEQ(dumped_wind_sensor.speed(), expected_wind_sensor.speed(), "");
+//             expectEQ(dumped_wind_sensor.direction(), expected_wind_sensor.direction(), "");
+//         }
+
+//         // path waypoints
+//         for (int j = 0; j < NUM_PATH_WAYPOINTS; j++) {
+//             const Polaris::Waypoint & dumped_path_waypoint   = dumped_sensors[i].local_path_data().waypoints(j);
+//             const Polaris::Waypoint & expected_path_waypoint = expected_sensors[i].local_path_data().waypoints(j);
+//             expectFloatEQ(dumped_path_waypoint.latitude(), expected_path_waypoint.latitude(), "");
+//             expectFloatEQ(dumped_path_waypoint.longitude(), expected_path_waypoint.longitude(), "");
+//         }
+//     }
+//     return !tracker.failed();
+// }
 
 std::pair<std::vector<Sensors>, std::vector<std::string>> UtilDB::dumpSensors(
   utils::FailTracker & tracker, size_t num_docs)
@@ -423,9 +495,9 @@ void UtilDB::genRandPathData(Sensors::Path & path_data)
 void UtilDB::genGlobalPathData(Polaris::GlobalPath & global_path_data)  //
 {
     (void)rng_;
-    for (float i = 0; i < NUM_PATH_WAYPOINTS; i++) {
+    for (int i = 0; i < NUM_PATH_WAYPOINTS; i++) {
         Polaris::Waypoint * waypoint = global_path_data.add_waypoints();
-        waypoint->set_latitude(i);  // this needs a float
-        waypoint->set_longitude(i);
+        waypoint->set_latitude(static_cast<float>(i));  // this needs a float
+        waypoint->set_longitude(static_cast<float>(i));
     }
 }

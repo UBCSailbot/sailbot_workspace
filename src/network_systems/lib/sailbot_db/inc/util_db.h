@@ -50,7 +50,7 @@ public:
     */
     std::pair<Polaris::Sensors, SailbotDB::RcvdMsgInfo> genRandData(const std::tm & tm);
 
-    std::pair<Polaris::GlobalPath, SailbotDB::RcvdMsgInfo> genGlobalData(const std::tm & tm);
+    std::pair<Polaris::GlobalPath, std::string> genGlobalData(const std::tm & tm);
 
     /**
     * @brief Query the database and check that the sensor and message are correct

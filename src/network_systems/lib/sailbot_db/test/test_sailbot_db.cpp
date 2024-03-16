@@ -44,6 +44,11 @@ TEST_F(TestSailbotDB, TestStoreSensors)
 TEST_F(TestSailbotDB, TestStoreGlobalPath)
 {
     SCOPED_TRACE("Seed: " + std::to_string(g_rand_seed));  // Print seed on any failure
-    auto [global_path_data, global_info] = g_test_db.genGlobalData(UtilDB::getTimestamp());
-    ASSERT_TRUE(g_test_db.storeNewGlobalPath(global_path_data, global_info));
+    auto [global_path_data, global_path_timestamp] = g_test_db.genGlobalData(UtilDB::getTimestamp());
+    ASSERT_TRUE(g_test_db.storeNewGlobalPath(global_path_data, global_path_timestamp));
+
+    // std::array<GlobalPath, 1>  expected_global_path_data = {global_path_data};
+    // std::array<std::string, 1> expected_global_timestamp = {global_path_timestamp};
+
+    //EXPECT_TRUE(g_test_db.)
 }
