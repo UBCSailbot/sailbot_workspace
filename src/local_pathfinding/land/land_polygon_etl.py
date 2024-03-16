@@ -38,7 +38,6 @@ import argparse
 import csv
 import os
 import pickle
-import subprocess
 import zipfile
 from os.path import normpath
 from shutil import move
@@ -141,18 +140,6 @@ class FailedBathyDataError(Exception):
 def main():
 
     # ----------------------------------------SETUP ----------------------------------------------
-
-    # Install Requirements
-    command = [
-        "pip3",
-        "install",
-        "-r",
-        normpath("/workspaces/sailbot_workspace/src/local_pathfinding/requirements.txt"),
-    ]
-    try:
-        subprocess.run(command, check=True, stdout=subprocess.DEVNULL)
-    except subprocess.CalledProcessError as e:
-        exit(e)
 
     # Setup environment variables
     # the Loky function that tries to do this fails, so set it here
@@ -565,7 +552,9 @@ def get_bathy_gdf(
             lons = sliced_data.lon.data
 
         print(
-            colors.OK + f"Bathymetric data loaded. Loaded {len(elevation)} points." + colors.RESET
+            colors.OK
+            + f"Bathymetric data loaded. Loaded {len(elevation)*len(elevation[0])} points."
+            + colors.RESET
         )
         print("Starting depth filtering...")
 
