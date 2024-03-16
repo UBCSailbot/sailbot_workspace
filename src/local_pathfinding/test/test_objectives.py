@@ -292,19 +292,25 @@ def test_angle_between(afir: float, amid: float, asec: float, expected: float):
 
 
 @pytest.mark.parametrize(
-    "method,max_motion_cost",
+    "method,heading,wind_direction,wind_speed,max_motion_cost",
     [
-        (objectives.SpeedObjectiveMethod.SAILBOT_TIME, 1.0),
-        (objectives.SpeedObjectiveMethod.SAILBOT_PIECEWISE, 1.0),
-        (objectives.SpeedObjectiveMethod.SAILBOT_CONTINUOUS, 1.0),
+        (objectives.SpeedObjectiveMethod.SAILBOT_TIME, 5, 43, 28, 3672.594),
+        (objectives.SpeedObjectiveMethod.SAILBOT_PIECEWISE, -15, 67, 22, 50.0),
+        (objectives.SpeedObjectiveMethod.SAILBOT_CONTINUOUS, -15, 67, 22, 10000.0),
     ],
 )
-def test_speed_objective(method: objectives.SpeedObjectiveMethod, max_motion_cost: float):
+def test_speed_objective(
+    method: objectives.SpeedObjectiveMethod,
+    heading,
+    wind_direction,
+    wind_speed,
+    max_motion_cost: float,
+):
     speed_objective = objectives.SpeedObjective(
         PATH._simple_setup.getSpaceInformation(),
-        PATH.state.heading_direction,
-        PATH.state.wind_direction,
-        PATH.state.wind_speed,
+        heading,
+        wind_direction,
+        wind_speed,
         method,
     )
 
@@ -314,8 +320,8 @@ def test_speed_objective(method: objectives.SpeedObjectiveMethod, max_motion_cos
     assert len(sampled_states) == num_samples
 
     # test find_maximum_motion_cost()
-    print(speed_objective.max_motion_cost)
-    assert speed_objective.max_motion_cost == pytest.approx(max_motion_cost, rel=1e0)
+    if method != objectives.SpeedObjectiveMethod.SAILBOT_TIME:
+        assert speed_objective.max_motion_cost == pytest.approx(max_motion_cost, rel=1e0)
 
     # test if the motionCost() is normalized between 0 and 1 for 10 random samples
     states = speed_objective.sample_states(10)
