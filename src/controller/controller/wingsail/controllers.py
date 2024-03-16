@@ -52,6 +52,8 @@ class WingsailController:
         Reynolds number and apparent wind direction.
         """
         desired_alpha: float = self.lut(reynolds_number)  # Using __call__ method
+        # If the controller convetions seems reversed, flip the sign of this return statement
+        # EN, AE - 2024/03/16
         return math.copysign(desired_alpha, apparent_wind_direction)
 
     def get_trim_tab_angle(
