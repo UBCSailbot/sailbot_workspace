@@ -37,21 +37,17 @@ The following CLI arguments are available:
 import argparse
 import csv
 import os
-import pickle
-import zipfile
 from os.path import normpath
-from shutil import move
 from typing import List
 
 import alphashape
-import gdown
 import geopandas as gpd
 import numpy as np
 import pandas as pd
 import psutil
 import pyproj
-import requests
 import xarray as xr
+from files import download_zip, dump_pkl, flatten_dir, gd_download, load_pkl
 from geopandas import GeoDataFrame
 from shapely.geometry import LineString, Point, Polygon, box
 from shapely.ops import split, transform
@@ -187,20 +183,7 @@ def main():
         print(
             colors.WARN + f"{NETCDF_SMALL_FILE} not found. Attempting to download." + colors.RESET
         )
-
-        tries = DOWNLOAD_ATTEMPTS
-        while tries > 0:
-            try:
-                gdown.download(NETCDF_SMALL_URL, NETCDF_SMALL_FILE, quiet=False)
-                break
-            except gdown.exceptions.FileURLRetrievalError:
-                print(
-                    colors.ERROR
-                    + f"Failed to download {NETCDF_SMALL_FILE} from {NETCDF_SMALL_URL}."
-                    + colors.RESET
-                )
-                print("Retrying...")
-                tries -= 1
+        gd_download(NETCDF_SMALL_URL, NETCDF_SMALL_FILE)
 
     # Determine which mode to run the script in
     if args.test:
@@ -438,66 +421,6 @@ def box_pts(pt: Point, w: float = 0.001) -> List[Point]:
     return box.exterior.coords
 
 
-def download_zip(url: str, file_name: str, dir: str):
-    """
-    Saves a file from a URL to the specified directory with the specified name.
-    Then calls the unzip() function.
-
-    Args:
-        - url (str): The URL of the file to be downloaded.
-        - file_name (str): The file name to save the downloaded file to.
-        - dir (str): The directory to save the downloaded file to.
-    """
-    tries = DOWNLOAD_ATTEMPTS
-
-    while tries > 0:
-
-        try:
-            # download file in chunks of 10MB
-            response = requests.get(
-                url, stream=True
-            )  # stream to avoid loading entire file into memory
-            path = os.path.join(dir, file_name)
-            with open(path, "wb") as f:
-                for chunk in tqdm(
-                    response.iter_content(chunk_size=10 * 1024**2),
-                    desc=f"Downloading {file_name} to {dir}...",
-                    total=int(int(response.headers.get("content-length", 0)) / (10 * 1024**2) + 1),
-                ):
-                    f.write(chunk)
-            # extract files to shp folder
-            print(f"Extracting {file_name} to {dir}...")
-            unzip(path, extract_to=dir)
-            break
-
-        except requests.exceptions.RequestException as e:
-            print(colors.ERROR + f"Failed to download {file_name} from {url}." + colors.RESET)
-            print(e)
-            print("Retrying...")
-            tries -= 1
-            if tries == 0:
-                exit(e)
-
-
-def flatten_dir(directory):
-    """
-    Flatten a directory structure by moving all files to the parent directory and then removing
-    any subdirectories
-
-    Args:
-        - directory (str): The directory to be flattened.
-    """
-    for root, dirs, files in os.walk(directory):
-        # Move all files to the parent directory
-        for file in files:
-            src = os.path.join(root, file)
-            dst = os.path.join(directory, file)
-            move(src, dst)
-    for root, dirs, files in os.walk(directory, topdown=False):
-        for dir in dirs:
-            os.rmdir(os.path.join(root, dir))
-
-
 def get_bathy_gdf(
     gdf_filter: GeoDataFrame, lat_range: tuple, lon_range: tuple, netcdf: str
 ) -> GeoDataFrame:
@@ -699,18 +622,6 @@ def get_bathy_gdf(
         )
 
     return GeoDataFrame(geometry=polygons)
-
-
-def dump_pkl(object: any, file_path: str):
-    # creating a pickler once, when everything is being pickled
-    # will likely be more efficient
-    with open(file_path, "wb") as f:
-        pickle.dump(object, f, protocol=pickle.HIGHEST_PROTOCOL)
-
-
-def load_pkl(file_path: str) -> any:
-    with open(file_path, "rb") as f:
-        return pickle.load(f)
 
 
 def polygonize_chunks(
@@ -937,20 +848,6 @@ def spatial_filter(gdf: GeoDataFrame, geometry: Polygon) -> GeoDataFrame:
         - gdf (GeoDataFrame): A GeoDataFrame with all points inside `geometry` removed.
     """
     return gdf.drop(list(gdf.sindex.query(geometry=geometry)))
-
-
-def unzip(zip_file, extract_to):
-    """
-    Extracts the contents of a zip file to a specified directory,
-    then deletes the original zip file.
-
-    Args:
-        - zip_file (str): The file path of the zip file to be unzipped.
-        - extract_to (str): The directory to unzip the file to.
-    """
-    with zipfile.ZipFile(zip_file, "r") as zip_ref:
-        zip_ref.extractall(extract_to)
-    os.remove(zip_file)
 
 
 if __name__ == "__main__":
