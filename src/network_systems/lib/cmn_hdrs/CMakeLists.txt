@@ -1,8 +1,7 @@
 # Generate ROS info header file
-set(ROS_INFO_FILE ${CMAKE_SOURCE_DIR}/ros_info.txt)
 add_custom_command(
     OUTPUT ${CMAKE_SOURCE_DIR}/lib/cmn_hdrs/ros_info.h
-    COMMAND ${CMAKE_SOURCE_DIR}/scripts/autogen_ros_topics.sh ${ROS_INFO_FILE}
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/scripts/gen_ros_info.py
     DEPENDS ${CMAKE_SOURCE_DIR} ${ROS_INFO_FILE}
 )
 add_custom_target(ros_info_h DEPENDS ${CMAKE_CURRENT_LIST_DIR}/ros_info.h)
