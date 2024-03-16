@@ -14,6 +14,9 @@ set(inc_dirs
     ${SAILBOT_DB_INC_DIR}
 )
 
+set(compile_defs
+)
+
 set(srcs
     ${CMAKE_CURRENT_LIST_DIR}/src/remote_transceiver.cpp
 )
