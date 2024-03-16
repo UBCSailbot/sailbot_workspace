@@ -238,7 +238,10 @@ TEST_F(TestCanFrameParser, WindSensorTestValid)
         EXPECT_DOUBLE_EQ(msg_from_sensor.direction, expected_angle);
     }
 }
-
+/**
+ * @brief Test the behavior of the WindSensor class when given invalid input values
+ *
+ */
 TEST_F(TestCanFrameParser, TestWindSensorInvalid)
 {
     auto optId = CAN_FP::WindSensor::rosIdxToCanId(NUM_WIND_SENSORS);
@@ -278,12 +281,166 @@ TEST_F(TestCanFrameParser, TestWindSensorInvalid)
 
         EXPECT_THROW(CAN_FP::WindSensor tmp(msg, valid_id), std::out_of_range);
     };
+}
+//TODO: implement the GPS tests
+/**
+ * @brief Test ROS<->CAN GPS translations work as expected for valid input values
+ *
+ */
+TEST_F(TestCanFrameParser, GPSTestValid)
+{
+    constexpr std::array<float, 4>   expected_lats{48.6, -57.3};
+    constexpr std::array<float, 4>   expected_lons{-32.1, 112.9};
+    constexpr std::array<float, 4>   expected_speeds{3.5, 8.0};
+    constexpr std::array<float, 4>   expected_headings{100.4, 43.2};
+    constexpr std::array<int32_t, 4> expected_raw_lats{138600, 32700};
+    constexpr std::array<int32_t, 4> expected_raw_lons{147900, 292900};
+    constexpr std::array<int32_t, 4> expected_raw_speeds{3500, 8000};
+    constexpr std::array<int32_t, 4> expected_raw_headings{100400, 43200};
 
-    /** Garbage value test does not work because garbage values are within bounds
-    cf.can_id = static_cast<canid_t>(CAN_FP::CanId::SAIL_WIND_DATA_FRAME_1);
-    std::copy(std::begin(GARBAGE_DATA), std::end(GARBAGE_DATA), cf.data);
-    EXPECT_THROW(CAN_FP::WindSensor tmp(cf), std::out_of_range);
-    */
+    for (size_t i = 0; i < 2; i++) {
+        CAN_FP::CanId id               = CAN_FP::CanId::PATH_GPS_DATA_FRAME_1;
+        float         expected_lat     = expected_lats[i];
+        float         expected_lon     = expected_lons[i];
+        float         expected_speed   = expected_speeds[i];
+        float         expected_heading = expected_headings[i];
+
+        msg::GPS           msg;
+        msg::HelperLatLon  msg_latlon;
+        msg::HelperSpeed   msg_speed;
+        msg::HelperHeading msg_heading;
+        msg_latlon.set__latitude(static_cast<float>(expected_lat));
+        msg_latlon.set__longitude(static_cast<float>(expected_lon));
+        msg.set__lat_lon(msg_latlon);
+
+        msg_speed.set__speed(expected_speed);
+        msg.set__speed(msg_speed);
+
+        msg_heading.set__heading(expected_heading);
+        msg.set__heading(msg_heading);
+
+        CAN_FP::GPS      gps_from_ros = CAN_FP::GPS(msg, id);
+        CAN_FP::CanFrame cf           = gps_from_ros.toLinuxCan();
+
+        EXPECT_EQ(cf.can_id, static_cast<canid_t>(id));
+        EXPECT_EQ(cf.len, CAN_FP::GPS::CAN_BYTE_DLEN_);
+
+        int32_t raw_lat;
+        int32_t raw_lon;
+        int32_t raw_speed;
+        int32_t raw_heading;
+        std::memcpy(&raw_lat, cf.data + CAN_FP::GPS::BYTE_OFF_LAT, sizeof(int32_t));
+        std::memcpy(&raw_lon, cf.data + CAN_FP::GPS::BYTE_OFF_LON, sizeof(int32_t));
+        std::memcpy(&raw_speed, cf.data + CAN_FP::GPS::BYTE_OFF_SPEED, sizeof(int32_t));
+        std::memcpy(&raw_heading, cf.data + CAN_FP::GPS::BYTE_OFF_HEADING, sizeof(int32_t));
+
+        EXPECT_NEAR(raw_lat, expected_raw_lats[i], 1);
+        EXPECT_NEAR(raw_lon, expected_raw_lons[i], 1);
+        EXPECT_EQ(raw_speed, expected_raw_speeds[i]);
+        EXPECT_EQ(raw_heading, expected_raw_headings[i]);
+
+        CAN_FP::GPS gps_from_can = CAN_FP::GPS(cf);
+
+        EXPECT_EQ(gps_from_can.id_, id);
+
+        msg::GPS msg_from_gps = gps_from_can.toRosMsg();
+
+        EXPECT_NEAR(msg_from_gps.lat_lon.latitude, expected_lat, 1);
+        EXPECT_NEAR(msg_from_gps.lat_lon.longitude, expected_lon, 1);
+        EXPECT_DOUBLE_EQ(msg_from_gps.speed.speed, expected_speed);
+        EXPECT_DOUBLE_EQ(msg_from_gps.heading.heading, expected_heading);
+    }
+}
+
+/**
+ * @brief Test the behavior of the GPS class when given invalid input values
+ *
+ */
+TEST_F(TestCanFrameParser, TestGPSInvalid)
+{
+    CAN_FP::CanId invalid_id = CAN_FP::CanId::RESERVED;
+
+    CAN_FP::CanFrame cf{.can_id = static_cast<canid_t>(invalid_id)};
+
+    EXPECT_THROW(CAN_FP::GPS tmp(cf), CAN_FP::CanIdMismatchException);
+
+    std::vector<float> invalid_lons{LON_LBND - 1, LON_UBND + 1};
+    std::vector<float> invalid_lats{LAT_LBND - 1, LAT_UBND + 1};
+    std::vector<float> invalid_speeds{SPEED_LBND - 1, SPEED_UBND + 1};
+    std::vector<float> invalid_headings{HEADING_LBND - 1, HEADING_UBND + 1};
+
+    CAN_FP::CanId valid_id = CAN_FP::CanId::PATH_GPS_DATA_FRAME_1;
+    msg::GPS      msg;
+
+    // Set a valid speed for this portion
+    for (float invalid_lon : invalid_lons) {
+        msg::HelperLatLon  msg_latlon;
+        msg::HelperSpeed   msg_speed;
+        msg::HelperHeading msg_heading;
+        msg_latlon.set__latitude(LAT_UBND);
+        msg_latlon.set__longitude(invalid_lon);
+        msg.set__lat_lon(msg_latlon);
+
+        msg_speed.set__speed(SPEED_UBND);
+        msg.set__speed(msg_speed);
+
+        msg_heading.set__heading(HEADING_UBND);
+        msg.set__heading(msg_heading);
+
+        EXPECT_THROW(CAN_FP::GPS tmp(msg, valid_id), std::out_of_range);
+    };
+
+    // Set a valid direction for this portion
+    for (float invalid_lat : invalid_lats) {
+        msg::HelperLatLon  msg_latlon;
+        msg::HelperSpeed   msg_speed;
+        msg::HelperHeading msg_heading;
+        msg_latlon.set__latitude(invalid_lat);
+        msg_latlon.set__longitude(LON_UBND);
+        msg.set__lat_lon(msg_latlon);
+
+        msg_speed.set__speed(SPEED_UBND);
+        msg.set__speed(msg_speed);
+
+        msg_heading.set__heading(HEADING_UBND);
+        msg.set__heading(msg_heading);
+
+        EXPECT_THROW(CAN_FP::GPS tmp(msg, valid_id), std::out_of_range);
+    };
+
+    for (float invalid_speed : invalid_speeds) {
+        msg::HelperLatLon  msg_latlon;
+        msg::HelperSpeed   msg_speed;
+        msg::HelperHeading msg_heading;
+        msg_latlon.set__latitude(LAT_UBND);
+        msg_latlon.set__longitude(LON_UBND);
+        msg.set__lat_lon(msg_latlon);
+
+        msg_speed.set__speed(invalid_speed);
+        msg.set__speed(msg_speed);
+
+        msg_heading.set__heading(HEADING_UBND);
+        msg.set__heading(msg_heading);
+
+        EXPECT_THROW(CAN_FP::GPS tmp(msg, valid_id), std::out_of_range);
+    };
+
+    for (float invalid_heading : invalid_headings) {
+        msg::HelperLatLon  msg_latlon;
+        msg::HelperSpeed   msg_speed;
+        msg::HelperHeading msg_heading;
+        msg_latlon.set__latitude(LAT_UBND);
+        msg_latlon.set__longitude(LON_UBND);
+        msg.set__lat_lon(msg_latlon);
+
+        msg_speed.set__speed(SPEED_UBND);
+        msg.set__speed(msg_speed);
+
+        msg_heading.set__heading(invalid_heading);
+        msg.set__heading(msg_heading);
+
+        EXPECT_THROW(CAN_FP::GPS tmp(msg, valid_id), std::out_of_range);
+    };
 }
 
 /**

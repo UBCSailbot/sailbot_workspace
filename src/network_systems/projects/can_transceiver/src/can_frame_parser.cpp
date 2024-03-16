@@ -383,9 +383,9 @@ msg::GPS GPS::toRosMsg() const
 
 CanFrame GPS::toLinuxCan() const
 {
-    int32_t raw_lat     = static_cast<int32_t>((lat_ + 90.0) * 1000.0);  //NOLINT
-    int32_t raw_lon     = static_cast<int32_t>((lon_ + 90.0) * 1000.0);  //NOLINT
-    int32_t raw_sec     = static_cast<int32_t>(sec_ * 1000);             //NOLINT
+    int32_t raw_lat     = static_cast<int32_t>((lat_ + 90.0) * 1000.0);   //NOLINT
+    int32_t raw_lon     = static_cast<int32_t>((lon_ + 180.0) * 1000.0);  //NOLINT
+    int32_t raw_sec     = static_cast<int32_t>(sec_ * 1000);              //NOLINT
     int8_t  raw_min     = static_cast<int8_t>(min_);
     int8_t  raw_hour    = static_cast<int8_t>(hour_);
     int32_t raw_heading = static_cast<int32_t>(heading_ * 1000);  //NOLINT

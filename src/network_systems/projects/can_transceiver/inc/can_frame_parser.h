@@ -33,8 +33,6 @@ enum class CanId : canid_t {
     SAIL_WSM_DATA_FRAME_1  = 0x63,
     SAIL_WIND_DATA_FRAME_1 = 0x65,
     PATH_GPS_DATA_FRAME_1  = 0x80,
-    PATH_GPS_DATA_FRAME_2  = 0x81,
-    PATH_GPS_DATA_FRAME_3  = 0x82,
     PATH_WIND_DATA_FRAME   = 0x84,
 };
 
@@ -50,8 +48,6 @@ static const std::map<CanId, std::string> CAN_DESC{
   {CanId::SAIL_WSM_DATA_FRAME_1, "SAIL_WSM_DATA_FRAME_1 (Main sail data)"},
   {CanId::SAIL_WIND_DATA_FRAME_1, "SAIL_WIND_DATA_FRAME_1 (Mast wind sensor)"},
   {CanId::PATH_GPS_DATA_FRAME_1, "PATH_GPS_DATA_FRAME_1 (GPS latitude)"},
-  {CanId::PATH_GPS_DATA_FRAME_2, "PATH_GPS_DATA_FRAME_2 (GPS longitude)"},
-  {CanId::PATH_GPS_DATA_FRAME_3, "PATH_GPS_DATA_FRAME_3 (GPS other data)"},
   {CanId::PATH_WIND_DATA_FRAME, "PATH_WIND_DATA_FRAME (Hull wind sensor)"}};
 
 /**
