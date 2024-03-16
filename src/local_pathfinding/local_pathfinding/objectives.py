@@ -77,9 +77,11 @@ class Objective(ob.StateCostIntegralObjective):
         self.space_information = space_information
 
         states = self.sample_states(num_samples)
+        self.found_max_cost = False
         # initialize to 1 so that motionCost is not normalized when finding the maximum motion cost
         self.max_motion_cost = 1.0
         self.max_motion_cost = self.find_maximum_motion_cost(states)
+        self.found_max_cost = True
 
     def motionCost(self, s1: ob.SE2StateSpace, s2: ob.SE2StateSpace) -> ob.Cost:
         raise NotImplementedError
@@ -127,7 +129,13 @@ class Objective(ob.StateCostIntegralObjective):
             float: normalized cost between 0 to 1.
         """
         normalized_cost = cost / self.max_motion_cost
-        return min(normalized_cost, 1.0)
+        if normalized_cost > 1.0:
+            if self.found_max_cost:
+                return 1.0
+            else:
+                return normalized_cost
+        else:
+            return normalized_cost
 
 
 class DistanceObjective(Objective):
@@ -487,7 +495,12 @@ class SpeedObjective(Objective):
 
         self.wind_speed = wind_speed
         self.method = method
-        super().__init__(space_information, num_samples=100)
+        if self.method == SpeedObjectiveMethod.SAILBOT_TIME:
+            super().__init__(
+                space_information, num_samples=2000
+            )  # SpeedObjectiveMethod.SAILBOT_TIME needs more sample to find max_motion_cost. Even 2000 is NOT enough
+        else:
+            super().__init__(space_information, num_samples=200)
 
     def motionCost(self, s1: ob.SE2StateSpace, s2: ob.SE2StateSpace) -> ob.Cost:
         """Generates the cost associated with the speed of the boat.
@@ -502,12 +515,10 @@ class SpeedObjective(Objective):
 
         s1_xy = cs.XY(s1.getX(), s1.getY())
         s2_xy = cs.XY(s2.getX(), s2.getY())
-        heading_s1_to_s2 = math.atan2(s2_xy.x - s1_xy.x, s2_xy.y - s1_xy.y)
-
+        heading_s1_to_s2 = 180 * math.atan2(s2_xy.x - s1_xy.x, s2_xy.y - s1_xy.y) / math.pi
         sailbot_speed = self.get_sailbot_speed(
             heading_s1_to_s2, self.wind_direction, self.wind_speed
         )
-
         if sailbot_speed == 0:
             return ob.Cost(1.0)
 
