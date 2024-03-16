@@ -14,7 +14,7 @@ import pymongo
 from datetime import datetime
 
 CONNECTION_STRING = "mongodb://localhost:27017"
-DATABASE_NAME = "TestDB"
+DATABASE_NAME = "sailbot_db"
 
 # Load the database
 client = pymongo.MongoClient(CONNECTION_STRING)

@@ -1,7 +1,6 @@
 import React from "react";
 import Image from "next/image";
-import { Grid, Paper, Typography } from "@mui/material";
-import SingleValueLine from "../SingleValueLine/SingleValueLine";
+import { Grid, Typography } from "@mui/material";
 import styles from "./boatcompass.module.css"
 
 interface BoatCompassProps {

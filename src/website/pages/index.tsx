@@ -1,6 +1,7 @@
 import dynamic from 'next/dynamic';
 import { CircularProgress } from '@mui/material';
 import Header from '@/views/components/Header/Header';
+import TimestampFilter from '@/views/components/TimestampFilter/TimestampFilter';
 import styles from './style.module.css';
 
 const MapsContainer = dynamic(() => import('@/views/MapsContainer'), {
@@ -28,7 +29,12 @@ const DashboardContainer = dynamic(() => import('@/views/DashboardContainer'), {
 export default function Home() {
   return (
     <>
-      <Header />
+      <div className={styles.parent}>
+        <Header />
+        <div className={styles.topRight}>
+          <TimestampFilter/>
+        </div>
+      </div>
       <div className={styles.maincontainer}>
         <MapsContainer />
         <div className={styles.dashboardcontainer}>

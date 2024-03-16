@@ -10,3 +10,14 @@
   overflow-y: scroll;
   padding-left: 10px;
 }
+
+.topRight {
+  position: absolute;
+  z-index: 10000000000;
+  top: 0vh;
+  right: 0.2vw;
+}
+
+.parent {
+  position: relative;
+}
