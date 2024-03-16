@@ -48,14 +48,6 @@ public:
          * @brief overload stream operator
          */
         friend std::ostream & operator<<(std::ostream & os, const RcvdMsgInfo & info);
-
-        /**
-         * @brief Get a properly formatted timestamp string
-         *
-         * @param tm standard C/C++ time structure
-         * @return tm converted to a timestamp string
-         */
-        static std::string mkTimestamp(const std::tm & tm);
     };
 
     /**
@@ -80,6 +72,14 @@ public:
      * @return false if ping fails
      */
     bool testConnection();
+
+    /**
+         * @brief Get a properly formatted timestamp string
+         *
+         * @param tm standard C/C++ time structure
+         * @return tm converted to a timestamp string
+         */
+    static std::string mkTimestamp(const std::tm & tm);
 
     /**
      * @brief Write new sensor data to the database
