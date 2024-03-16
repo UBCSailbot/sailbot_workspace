@@ -34,6 +34,8 @@ enum class CanId : canid_t {
     SAIL_WIND_DATA_FRAME_1 = 0x65,
     PATH_GPS_DATA_FRAME_1  = 0x80,
     PATH_WIND_DATA_FRAME   = 0x84,
+    GENERIC_SENSOR_START   = 0x100,
+    GENERIC_SENSOR_END     = 0x1FF
 };
 
 /**

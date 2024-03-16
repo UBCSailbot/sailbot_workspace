@@ -62,18 +62,33 @@ public:
                 throw std::runtime_error(msg);
             }
 
-            ais_pub_       = this->create_publisher<msg::AISShips>(ros_topics::AIS_SHIPS, QUEUE_SIZE);
-            batteries_pub_ = this->create_publisher<msg::Batteries>(ros_topics::BATTERIES, QUEUE_SIZE);
+            ais_pub_          = this->create_publisher<msg::AISShips>(ros_topics::AIS_SHIPS, QUEUE_SIZE);
+            batteries_pub_    = this->create_publisher<msg::Batteries>(ros_topics::BATTERIES, QUEUE_SIZE);
+            gps_pub_          = this->create_publisher<msg::GPS>(ros_topics::GPS, QUEUE_SIZE);
+            wind_sensors_pub_ = this->create_publisher<msg::WindSensors>(ros_topics::WIND_SENSORS, QUEUE_SIZE);
+            filtered_wind_sensor_pub_ =
+              this->create_publisher<msg::WindSensor>(ros_topics::FILTERED_WIND_SENSOR, QUEUE_SIZE);
 
-            can_trns_->registerCanCbs({
-              std::make_pair(
-                CanId::BMS_P_DATA_FRAME_1,
-                std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishBattery(frame); })),
-              std::make_pair(
-                CanId::BMS_P_DATA_FRAME_2,
-                std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishBattery(frame); })),
-              // TODO(lross03): Add remaining pairs
-            });
+            can_trns_->registerCanCbs(
+              {std::make_pair(
+                 CanId::BMS_P_DATA_FRAME_1,
+                 std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishBattery(frame); })),
+               std::make_pair(
+                 CanId::BMS_P_DATA_FRAME_2,
+                 std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishBattery(frame); })),
+               // TODO(lross03): Add remaining pairs
+               std::make_pair(
+                 CanId::PATH_GPS_DATA_FRAME_1,
+                 std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishGPS(frame); })),
+               std::make_pair(
+                 CanId::SAIL_WIND_DATA_FRAME_1,
+                 std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishWindSensor(frame); })),
+               std::make_pair(
+                 CanId::PATH_WIND_DATA_FRAME,
+                 std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishWindSensor(frame); })),
+               std::make_pair(
+                 CanId::GENERIC_SENSOR_START,
+                 std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishGeneric(frame); }))});
 
             if (mode == SYSTEM_MODE::DEV) {  // Initialize the CAN Sim Intf
                 mock_ais_sub_ = this->create_subscription<msg::AISShips>(
@@ -97,10 +112,18 @@ private:
     std::unique_ptr<CanTransceiver> can_trns_;
 
     // Universal publishers and subscribers present in both deployment and simulation
-    rclcpp::Publisher<msg::AISShips>::SharedPtr  ais_pub_;
-    msg::AISShips                                ais_ships_;
-    rclcpp::Publisher<msg::Batteries>::SharedPtr batteries_pub_;
-    msg::Batteries                               batteries_;
+    rclcpp::Publisher<msg::AISShips>::SharedPtr       ais_pub_;
+    msg::AISShips                                     ais_ships_;
+    rclcpp::Publisher<msg::Batteries>::SharedPtr      batteries_pub_;
+    msg::Batteries                                    batteries_;
+    rclcpp::Publisher<msg::GPS>::SharedPtr            gps_pub_;
+    msg::GPS                                          gps_;
+    rclcpp::Publisher<msg::WindSensors>::SharedPtr    wind_sensors_pub_;
+    msg::WindSensors                                  wind_sensors_;
+    rclcpp::Publisher<msg::WindSensor>::SharedPtr     filtered_wind_sensor_pub_;
+    msg::WindSensor                                   filtered_wind_sensor_;
+    rclcpp::Publisher<msg::GenericSensors>::SharedPtr generic_sensors_pub_;
+    msg::GenericSensors                               generic_sensors_;
 
     // Simulation only publishers and subscribers
     rclcpp::Subscription<msg::AISShips>::SharedPtr mock_ais_sub_;
@@ -142,6 +165,82 @@ private:
         msg::HelperBattery & bat_msg = batteries_.batteries[idx];
         bat_msg                      = bat.toRosMsg();
         batteries_pub_->publish(batteries_);
+    }
+
+    /**
+     * @brief Publish a GPS frame
+     *        Intended to be registered as a callback with the CAN Tranceiver instance
+     *
+     * @param gps_frame gps CAN rfame read from the CAN bus
+     */
+    void publishGPS(const CanFrame & gps_frame)
+    {
+        CAN_FP::GPS gps(gps_frame);
+
+        msg::GPS gps_ = gps.toRosMsg();
+        gps_pub_->publish(gps_);
+    }
+
+    void publishWindSensor(const CanFrame & wind_sensor_frame)
+    {
+        CAN_FP::WindSensor wind_sensor(wind_sensor_frame);
+        size_t             idx;
+        for (size_t i = 0;; i++) {
+            if ((wind_sensor.id_ == CAN_FP::WindSensor::WIND_SENSOR_IDS[i])) {
+                idx = i;
+                break;
+            }
+        }
+        msg::WindSensor & wind_sensor_msg = wind_sensors_.wind_sensors[idx];
+        wind_sensor_msg                   = wind_sensor.toRosMsg();
+        wind_sensors_pub_->publish(wind_sensors_);
+
+        publishFilteredWindSensor();
+    }
+
+    void publishFilteredWindSensor()
+    {
+        int16_t average_direction = 0;
+        for (size_t i = 0; i < NUM_WIND_SENSORS; i++) {
+            //TODO: check casting later
+            average_direction += static_cast<int16_t>(wind_sensors_.wind_sensors[i].direction);  //NOLINT
+        }
+        average_direction /= NUM_WIND_SENSORS;
+
+        float average_speed = 0;
+        for (size_t i = 0; i < NUM_WIND_SENSORS; i++) {
+            average_speed += wind_sensors_.wind_sensors[i].speed.speed;
+        }
+        average_speed /= NUM_WIND_SENSORS;
+
+        msg::HelperSpeed & filtered_speed = filtered_wind_sensor_.speed;
+        filtered_speed.set__speed(average_speed);
+
+        filtered_wind_sensor_.set__speed(filtered_speed);
+        filtered_wind_sensor_.set__direction(average_direction);
+
+        filtered_wind_sensor_pub_->publish(filtered_wind_sensor_);
+    }
+
+    void publishGeneric(const CanFrame & generic_frame)
+    {
+        //check all generic sensors in the ROS msg for the matching id
+        //assumes this sensor is in the generic_sensors_ array of sensors
+        size_t idx;
+        for (size_t i = 0;; i++) {
+            if (generic_frame.can_id == generic_sensors_.generic_sensors[i].id) {
+                idx = i;
+                break;
+            }
+        }
+        //TODO: ask if i can assume generic_frame is in the generic_sensors array
+        uint64_t generic_data = 0;
+        std::memcpy(&generic_data, generic_frame.data, sizeof(int64_t));
+        msg::HelperGenericSensor & generic_sensor_msg = generic_sensors_.generic_sensors[idx];
+        generic_sensor_msg.set__data(generic_data);
+        generic_sensor_msg.set__id(generic_frame.can_id);
+
+        generic_sensors_pub_->publish(generic_sensors_);
     }
 
     /**
