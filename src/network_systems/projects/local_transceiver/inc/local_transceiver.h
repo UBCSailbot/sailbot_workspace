@@ -15,8 +15,10 @@
 #include "rclcpp/node.hpp"
 #include "sensors.pb.h"
 
+// set namespaces to get custom interfaces
 namespace msg = custom_interfaces::msg;
 
+// define satellite baud rate
 constexpr unsigned int SATELLITE_BAUD_RATE = 19200;
 
 /**
@@ -26,56 +28,56 @@ class LocalTransceiver
 {
 public:
     /**
-    * @brief Update the sensor with new GPS data
+    * @brief Update the sensor with new GPS data -> used in update sensors sequence
     *
     * @param gps custom_interfaces gps object
     */
     void updateSensor(msg::GPS gps);
 
     /**
-    * @brief Update the sensor with new AIS Ships data
+    * @brief Update the sensor with new AIS Ships data -> used in update sensors sequence
     *
     * @param ships custom_interfaces AISShips object
     */
     void updateSensor(msg::AISShips ships);
 
     /**
-    * @brief Update the sensor with new Wind sensor data
+    * @brief Update the sensor with new Wind sensor data -> used in update sensors sequence
     *
     * @param wind custom_interfaces WindSensors object
     */
     void updateSensor(msg::WindSensors wind);
 
     /**
-    * @brief Update the sensor with new battery data
+    * @brief Update the sensor with new battery data -> used in update sensors sequence
     *
     * @param battery custom_interfaces Batteries object
     */
     void updateSensor(msg::Batteries battery);
 
     /**
-    * @brief Update the sensor with new generic sensor data
+    * @brief Update the sensor with new generic sensor data -> used in update sensors sequence
     *
     * @param generic custom_interfaces GenericSensors object
     */
     void updateSensor(msg::GenericSensors msg);
 
     /**
-    * @brief Update the sensor with new local path data
+    * @brief Update the sensor with new local path data -> used in update sensors sequence
     *
     * @param localData custom_interfaces LPathData object
     */
     void updateSensor(msg::LPathData localData);
 
     /**
-    * @brief Get a copy of the sensors object
+    * @brief Get a copy of the sensors object -> obtain a copy of the entire sensors protobuf object
     *
     * @return Copy of sensors_
     */
     Polaris::Sensors sensors();
 
     /**
-     * @brief Construct a new Local Transceiver object and connect it to a serial port
+     * @brief Construct a new Local Transceiver object and connect it to a serial port -> local transciever constructor
      *
      * @param port_name serial port (ex. /dev/ttyS0)
      * @param baud_rate baud rate of the serial port
@@ -83,7 +85,7 @@ public:
     LocalTransceiver(const std::string & port_name, uint32_t baud_rate);
 
     /**
-     * @brief Destroy the Local Transceiver object
+     * @brief Destroy the Local Transceiver object -> destructor for the local transciever
      *
      * @note must call stop() to properly cleanup the object
      *
@@ -100,7 +102,8 @@ public:
     void stop();
 
     /**
-     * @brief Send current data to the serial port and to the remote server
+     * @brief Send current data to the serial port and to the remote server used to send to the serial port
+     *        which is connected to the satellite
      *
      * @return true  on success
      * @return false on failure

@@ -124,6 +124,8 @@ bool LocalTransceiver::send()
         std::cerr << sensors.DebugString() << std::endl;
         return false;
     }
+
+    // data size currently is impossible to exceed max size below
     if (data.size() >= MAX_LOCAL_TO_REMOTE_PAYLOAD_SIZE_BYTES) {
         // if this proves to be a problem, we need a solution to split the data into multiple messages
         std::string err_string =
@@ -139,11 +141,14 @@ bool LocalTransceiver::send()
     AT::Line    at_write_cmd(write_bin_cmd_str);
 
     static constexpr int MAX_NUM_RETRIES = 20;  // allow retries because the connection is imperfect
+    // loop that retries local to remote sending
     for (int i = 0; i < MAX_NUM_RETRIES; i++) {
+        // while we fail to send, try again
         if (!send(at_write_cmd)) {
             continue;
         }
 
+        // if do not receive a ready to send at response, try again
         if (!rcvRsps({
               at_write_cmd,
               AT::Line(AT::DELIMITER),
@@ -153,12 +158,17 @@ bool LocalTransceiver::send()
             continue;
         }
 
+        // obtain the string to send by concatenating the data with the checksum
         std::string msg_str = data + checksum(data);
-        AT::Line    msg(msg_str);
+        // convert the data to send into the AT message
+        AT::Line msg(msg_str);
+
+        // while we fail to send, continue
         if (!send(msg)) {
             continue;
         }
 
+        // while we don't receive an ok response to our message, continue
         if (!rcvRsps({
               AT::Line(AT::DELIMITER),
               AT::Line(AT::write_bin::rsp::SUCCESS),
@@ -172,11 +182,16 @@ bool LocalTransceiver::send()
 
         // Check SBD Session status to see if data was sent successfully
         // NEEDS AN ACTIVE SERVER ON $WEBHOOK_SERVER_ENDPOINT OR VIRTUAL IRIDIUM WILL CRASH
+
+        // obtain the sdb session
         static const AT::Line sbdix_cmd = AT::Line(AT::SBD_SESSION);
+
+        // if sbd send fails, then we try again
         if (!send(sbdix_cmd)) {
             continue;
         }
 
+        // if the response for sbd send fails, try again
         if (!rcvRsps({
               AT::Line("\r"),
               sbdix_cmd,
@@ -185,6 +200,7 @@ bool LocalTransceiver::send()
             continue;
         }
 
+        /// ??? what is this
         auto opt_rsp = readRsp();
         if (!opt_rsp) {
             continue;

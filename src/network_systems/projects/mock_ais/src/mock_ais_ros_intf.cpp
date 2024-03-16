@@ -23,9 +23,12 @@ public:
     MockAisRosIntf() : NetNode(ros_nodes::MOCK_AIS)
     {
         static constexpr int ROS_Q_SIZE = 5;
+        // declare mock ais as disabled by default
         this->declare_parameter("enabled", false);
 
+        // if the mock ais is enabled
         if (this->get_parameter("enabled").as_bool()) {
+            // define ros parameters and configure node
             this->declare_parameter("mode", rclcpp::PARAMETER_STRING);
             this->declare_parameter("publish_rate_ms", defaults::UPDATE_RATE_MS);
             this->declare_parameter("seed", defaults::SEED);
@@ -40,6 +43,7 @@ public:
             rclcpp::Parameter num_sim_ships_param     = this->get_parameter("num_sim_ships");
             rclcpp::Parameter polaris_start_pos_param = this->get_parameter("polaris_start_pos");
 
+            // reobtain the node configuration from the ros system
             std::string mode              = mode_param.as_string();
             int64_t     publish_rate_ms   = publish_rate_ms_param.as_int();
             int64_t     seed              = seed_param.as_int();
@@ -48,24 +52,29 @@ public:
                                             static_cast<float>(polaris_start_pos_param.as_double_array()[0]),
                                             static_cast<float>(polaris_start_pos_param.as_double_array()[1])};
 
+            // obtain logger and log the start of the mock ais and its configs
             RCLCPP_INFO(
               this->get_logger(),
               "Running Mock AIS in mode: %s, with publish_rate_ms: %s, seed: %s, num_ships %s, polaris_start_pos: %s",
               mode.c_str(), publish_rate_ms_param.value_to_string().c_str(), seed_param.value_to_string().c_str(),
               num_sim_ships_param.value_to_string().c_str(), polaris_start_pos_param.value_to_string().c_str());
 
+            // create a mock ais
             // TODO(): Add ROS parameters so that we can use the MockAis constructor that takes SimShipConfig
             // Optionally use nested parameters: https://answers.ros.org/question/325939/declare-nested-parameter/
             mock_ais_                     = std::make_unique<MockAis>(seed, num_sim_ships, polaris_start_pos);
             std::string polaris_gps_topic = mode == SYSTEM_MODE::DEV ? ros_topics::MOCK_GPS : ros_topics::GPS;
 
             // The subscriber callback is very simple so it's just the following lambda function
+            // make the mock ais subscribe to the GPS topic so it can obtain the GPS data of polaris to start off
             sub_ = this->create_subscription<custom_interfaces::msg::GPS>(
               polaris_gps_topic, ROS_Q_SIZE, [&mock_ais_ = mock_ais_](custom_interfaces::msg::GPS mock_gps) {
                   mock_ais_->updatePolarisPos({mock_gps.lat_lon.latitude, mock_gps.lat_lon.longitude});
               });
 
-            pub_   = this->create_publisher<custom_interfaces::msg::AISShips>(ros_topics::MOCK_AIS_SHIPS, ROS_Q_SIZE);
+            // create a publisher that publishes AISShips messages to the MOCK_AIS_SHIP topic
+            pub_ = this->create_publisher<custom_interfaces::msg::AISShips>(ros_topics::MOCK_AIS_SHIPS, ROS_Q_SIZE);
+            // create a timer than runs the CB function that publsihes ais ships every publish_rate_ms ms
             timer_ = this->create_wall_timer(
               std::chrono::milliseconds(publish_rate_ms), std::bind(&MockAisRosIntf::pubShipsCB, this));
         } else {
@@ -85,11 +94,17 @@ private:
      */
     void pubShipsCB()
     {
+        // CB function that publishes all mock AIS data to ROS
+        // run a tick to simulate boat movement
         mock_ais_->tick();
-        std::vector<AisShip>             ais_ships = mock_ais_->ships();
+        // obtain a vector of all ships in the mock ais
+        std::vector<AisShip> ais_ships = mock_ais_->ships();
+        // create a new AISShips message for the publisher
         custom_interfaces::msg::AISShips msg{};
         for (const AisShip & ais_ship : ais_ships) {
+            // for every AIS ship, create a helper ship obj since the AISShips is an array of them
             custom_interfaces::msg::HelperAISShip helper_ship;
+            // set the data fields in the helper ship obj
             helper_ship.set__id(static_cast<int32_t>(ais_ship.id_));
             custom_interfaces::msg::HelperHeading helper_head;
             helper_head.set__heading(ais_ship.heading_);
@@ -110,13 +125,16 @@ private:
             custom_interfaces::msg::HelperROT rot;
             rot.set__rot(ais_ship.rot_);
             helper_ship.set__rot(rot);
-
+            // push the object back to the ships array
             msg.ships.push_back(helper_ship);
         }
+
+        // publish the aisships object to the message
         pub_->publish(msg);
     }
 };
 
+// ros main function that spins the node to run
 int main(int argc, char * argv[])
 {
     bool err = false;
