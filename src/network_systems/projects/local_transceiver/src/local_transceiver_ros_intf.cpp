@@ -25,28 +25,30 @@ public:
      * @param lcl_trns Local Transceiver instance
      */
     explicit LocalTransceiverIntf(std::shared_ptr<LocalTransceiver> lcl_trns)
-    : NetNode("local_transceiver_node"), lcl_trns_(lcl_trns)
+    : NetNode(ros_nodes::LOCAL_TRANSCEIVER), lcl_trns_(lcl_trns)
     {
         static constexpr int  ROS_Q_SIZE     = 5;
         static constexpr auto TIMER_INTERVAL = std::chrono::milliseconds(500);
         timer_ = this->create_wall_timer(TIMER_INTERVAL, std::bind(&LocalTransceiverIntf::pub_cb, this));
-        pub_   = this->create_publisher<custom_interfaces::msg::Path>(GLOBAL_PATH_TOPIC, ROS_Q_SIZE);
+        pub_   = this->create_publisher<custom_interfaces::msg::Path>(ros_topics::GLOBAL_PATH, ROS_Q_SIZE);
 
         // subscriber nodes
         sub_wind_sensor = this->create_subscription<custom_interfaces::msg::WindSensors>(
-          WIND_SENSORS_TOPIC, ROS_Q_SIZE,
+          ros_topics::WIND_SENSORS, ROS_Q_SIZE,
           std::bind(&LocalTransceiverIntf::sub_wind_sensor_cb, this, std::placeholders::_1));
         sub_batteries = this->create_subscription<custom_interfaces::msg::Batteries>(
-          BATTERIES_TOPIC, ROS_Q_SIZE, std::bind(&LocalTransceiverIntf::sub_batteries_cb, this, std::placeholders::_1));
+          ros_topics::BATTERIES, ROS_Q_SIZE,
+          std::bind(&LocalTransceiverIntf::sub_batteries_cb, this, std::placeholders::_1));
         sub_data_sensors = this->create_subscription<custom_interfaces::msg::GenericSensors>(
-          DATA_SENSORS_TOPIC, ROS_Q_SIZE,
+          ros_topics::DATA_SENSORS, ROS_Q_SIZE,
           std::bind(&LocalTransceiverIntf::sub_data_sensors_cb, this, std::placeholders::_1));
         sub_ais_ships = this->create_subscription<custom_interfaces::msg::AISShips>(
-          AIS_SHIPS_TOPIC, ROS_Q_SIZE, std::bind(&LocalTransceiverIntf::sub_ais_ships_cb, this, std::placeholders::_1));
+          ros_topics::AIS_SHIPS, ROS_Q_SIZE,
+          std::bind(&LocalTransceiverIntf::sub_ais_ships_cb, this, std::placeholders::_1));
         sub_gps = this->create_subscription<custom_interfaces::msg::GPS>(
-          GPS_TOPIC, ROS_Q_SIZE, std::bind(&LocalTransceiverIntf::sub_gps_cb, this, std::placeholders::_1));
+          ros_topics::GPS, ROS_Q_SIZE, std::bind(&LocalTransceiverIntf::sub_gps_cb, this, std::placeholders::_1));
         sub_local_path_data = this->create_subscription<custom_interfaces::msg::LPathData>(
-          LOCAL_PATH_DATA_TOPIC, ROS_Q_SIZE,
+          ros_topics::LOCAL_PATH, ROS_Q_SIZE,
           std::bind(&LocalTransceiverIntf::sub_local_path_data_cb, this, std::placeholders::_1));
     }
 
