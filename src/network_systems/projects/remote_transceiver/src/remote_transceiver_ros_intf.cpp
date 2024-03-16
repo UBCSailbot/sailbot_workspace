@@ -6,6 +6,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <stdexcept>
 
+#include "cmn_hdrs/ros_info.h"
 #include "cmn_hdrs/shared_constants.h"
 #include "net_node.h"
 #include "remote_transceiver.h"
@@ -18,7 +19,7 @@
 class RemoteTransceiverRosIntf : public NetNode
 {
 public:
-    RemoteTransceiverRosIntf() : NetNode("remote_transceiver_node")
+    RemoteTransceiverRosIntf() : NetNode(ros_nodes::REMOTE_TRANSCEIVER)
     {
         // standard ROS setup
         this->declare_parameter("enabled", true);
