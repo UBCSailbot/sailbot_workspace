@@ -1,5 +1,6 @@
 export type Timestamp = {
-    timestamp: Date,
+    startDate: String | null,
+    endDate: String | null
 }
 
 export type TimestampState = {

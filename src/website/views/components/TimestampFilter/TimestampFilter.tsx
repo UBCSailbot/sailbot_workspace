@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { connect } from 'react-redux';
-import { TextField } from '@mui/material'
 import Accordion from '@mui/material/Accordion';
 import AccordionSummary from '@mui/material/AccordionSummary';
 import AccordionDetails from '@mui/material/AccordionDetails';
@@ -10,18 +9,21 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 
 function TimestampFilter(props) {
-
-    const [startingDate, setStartingDate, endingDate, setEndingDate] = useState<Date | null>(null)
+    let startingDateStr = "", endingDateStr = ""
 
     const dispatch = (props.dispatch)
 
-    const handleChange = (newDate) => {
-        setStartingDate(newDate)
-        // dispatch({type: 'TIMESTAMP', payload: newDate})
-        console.log(newDate)
+    const handleStartChange = (newStartDate) => {
+        dispatch({type: 'TIMESTAMP', payload: [newStartDate.$d.toString(), endingDateStr]})
+        console.log(newStartDate.$d.toString())
+        startingDateStr = newStartDate.$d.toString()
     }
 
-    console.log({ startingDate })
+    const handleEndChange = (newEndDate) => {
+        dispatch({type: 'TIMESTAMP', payload: [startingDateStr, newEndDate.$d.toString()]})
+        console.log(newEndDate.$d.toString())
+        endingDateStr = newEndDate.$d.toString()
+    }
 
     return (
         <Accordion>
@@ -35,17 +37,16 @@ function TimestampFilter(props) {
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                     <DatePicker
                         label="Starting Date"
-                        value={startingDate}
-                        onChange={handleChange}
+                        onChange={handleStartChange}
                     />
-                    {startingDate && props.children}
+                    {props.children}
                 </LocalizationProvider>
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                     <DatePicker
                         label="Ending Date"
-                        value={endingDate}
+                        onChange={handleEndChange}
                     />
-                    {endingDate && props.children}
+                    {props.children}
                 </LocalizationProvider>
             </AccordionDetails>
         </Accordion>
