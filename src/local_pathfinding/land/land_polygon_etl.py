@@ -341,12 +341,6 @@ def main():
     )
     logger.ok(f"The corresponding spatial index has been saved as '{SINDEX_FILE}'.")
 
-    if _mode == "TEST":
-        logger.warn(f"TEST MODE: removing {COMPLETE_DATA_FILE}")
-        remove_shape(COMPLETE_DATA_FILE)
-        logger.warn(f"TEST MODE: removing {SINDEX_FILE}")
-        os.remove(SINDEX_FILE)
-        logger.ok("Done")
     return
 
 
