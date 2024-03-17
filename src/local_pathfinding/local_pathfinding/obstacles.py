@@ -1,19 +1,25 @@
 """Describes obstacles which the Sailbot must avoid: Boats and Land"""
 
 import math
-from typing import Optional
+import os
 
+import fiona
 import numpy as np
 from custom_interfaces.msg import HelperAISShip, HelperLatLon
 from shapely.affinity import affine_transform
-from shapely.geometry import Point, Polygon
+from shapely.geometry import MultiPolygon, Point, Polygon, box
 
+from land.files import load_pkl
+from land.land_polygon_etl import SINDEX_FILE
 from local_pathfinding.coord_systems import XY, latlon_to_xy, meters_to_km
 
 # Constants
 PROJ_TIME_NO_COLLISION = 3  # hours
 COLLISION_ZONE_SAFETY_BUFFER = 0.5  # km
 COLLISION_ZONE_STRETCH_FACTOR = 1.5  # This factor changes the scope/width of the collision cone
+SHORE_BUFFER = 0.5  # km
+
+LAND_DIR = "/workspaces/sailbot_workspace/src/local_pathfinding/land"
 
 
 class Obstacle:
@@ -28,13 +34,10 @@ class Obstacle:
             obstacle's collision zone. Shape depends on the child class.
     """
 
-    def __init__(
-        self, reference: HelperLatLon, sailbot_position: HelperLatLon, sailbot_speed: float
-    ):
+    def __init__(self, reference: HelperLatLon, sailbot_position: HelperLatLon):
         self.reference = reference
         self.sailbot_position_latlon = sailbot_position
         self.sailbot_position = latlon_to_xy(self.reference, self.sailbot_position_latlon)
-        self.sailbot_speed = sailbot_speed
 
         # Defined later by the child class
         self.collision_zone = None
@@ -104,6 +107,55 @@ class Obstacle:
             self.update_boat_collision_zone()
 
 
+class Land(Obstacle):
+    """
+    Describes land objects which Sailbot must avoid.
+
+    Attributes:
+        polygons (MultiPolygon): Shapely MultiPolygon representing all land obstacles within the
+        state space.
+    """
+
+    # The spatial index of the land polygon data set
+    sindex = load_pkl(os.path.join(LAND_DIR, SINDEX_FILE))
+
+    def __init__(
+        self,
+        reference: HelperLatLon,
+        sailbot_position: HelperLatLon,
+        next_waypoint: HelperLatLon,
+        buffer: float,
+    ):
+        super().__init__(reference, sailbot_position)
+        self.polygons = self.get_land(reference, sailbot_position, next_waypoint, buffer)
+
+    def get_land(
+        reference: HelperLatLon,
+        sailbot_position: HelperLatLon,
+        next_waypoint: HelperLatLon,
+        buffer: float,
+    ) -> MultiPolygon:
+        """
+        Returns a MultiPolygon representing all land obstacles within a rectangle
+        that bounds the state space with some buffer.
+
+        Args:
+            reference (HelperLatLon): Lat and lon position of the reference point
+            sailbot_position (HelperLatLon): Lat and lon position of SailBot.
+            next_waypoint (HelperLatLon): Lat and lon position of the next global waypoint.
+            buffer (float): Buffer distance in km to add to bounding box around
+        """
+        # create a bounding box around the state space
+        bbox = box(
+            sailbot_position.longitude,
+            sailbot_position.latitude,
+            next_waypoint.longitude,
+            next_waypoint.latitude,
+        )
+        # rows = Land.sindex.query(bbox, predicate="intersects")
+        # pull these rows from the shp file using fiona
+
+
 class Boat(Obstacle):
     """Describes boat objects which Sailbot must avoid.
     Also referred to target ships or boat obstacles.
@@ -121,8 +173,8 @@ class Boat(Obstacle):
         sailbot_speed: float,
         ais_ship: HelperAISShip,
     ):
-        super().__init__(reference, sailbot_position, sailbot_speed)
-
+        super().__init__(reference, sailbot_position)
+        self.sailbot_speed = sailbot_speed
         self.ais_ship = ais_ship
         self.width = meters_to_km(self.ais_ship.width.dimension)
         self.length = meters_to_km(self.ais_ship.length.dimension)
