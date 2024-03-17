@@ -1,5 +1,5 @@
 export type Timestamp = {
-    timestamp: string,
+    timestamp: Date,
 }
 
 export type TimestampState = {
