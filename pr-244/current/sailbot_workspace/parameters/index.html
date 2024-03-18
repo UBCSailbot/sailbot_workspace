@@ -20,7 +20,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.13">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.14">
     
     
       
@@ -28,7 +28,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.7e359304.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.10ba22f1.min.css">
       
         
         <link rel="stylesheet" href="../../../assets/stylesheets/palette.06af60db.min.css">
@@ -622,6 +622,30 @@
   <a href="#navigate_main" class="md-nav__link">
     <span class="md-ellipsis">
       navigate_main
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#controller-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Controller Parameters
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Controller Parameters">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#wingsail_ctrl_node" class="md-nav__link">
+    <span class="md-ellipsis">
+      wingsail_ctrl_node
     </span>
   </a>
   
@@ -2089,6 +2113,30 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#controller-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Controller Parameters
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Controller Parameters">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#wingsail_ctrl_node" class="md-nav__link">
+    <span class="md-ellipsis">
+      wingsail_ctrl_node
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#boat-simulator-parameters" class="md-nav__link">
     <span class="md-ellipsis">
       Boat Simulator Parameters
@@ -2232,6 +2280,21 @@ This document should be updated when any changes occur to the ROS parameters spe
 <li><em>Datatype</em>: <code>string</code></li>
 <li><em>Acceptable Values</em>: <code>"bitstar"</code>, <code>"bfmtstar"</code>, <code>"fmtstar"</code>, <code>"informedrrtstar"</code>, <code>"lazylbtrrt"</code>, <code>"lazyprmstar"</code>,
   <code>"lbtrrt"</code>, <code>"prmstar"</code>, <code>"rrtconnect"</code>, <code>"rrtsharp"</code>, <code>"rrtstar"</code>, <code>"rrtxstatic"</code>, <code>"sorrtstar"</code></li>
+</ul>
+<h2 id="controller-parameters">Controller Parameters<a class="headerlink" href="#controller-parameters" title="Permanent link">&para;</a></h2>
+<p>ROS parameters specific to the nodes in the Controller.</p>
+<h3 id="wingsail_ctrl_node">wingsail_ctrl_node<a class="headerlink" href="#wingsail_ctrl_node" title="Permanent link">&para;</a></h3>
+<p><strong><code>reynolds_number</code></strong></p>
+<ul>
+<li><em>Description</em>: The Reynolds number of the wind.</li>
+<li><em>Datatype</em>: <code>double</code></li>
+<li><em>Range</em>: <code>(0.0, MAX_DOUBLE)</code></li>
+</ul>
+<p><strong><code>angle_of_attack</code></strong></p>
+<ul>
+<li><em>Description</em>: The angle of attack of the sail.</li>
+<li><em>Datatype</em>: <code>double</code></li>
+<li><em>Range</em>: <code>(-180.0, 180.0]</code></li>
 </ul>
 <h2 id="boat-simulator-parameters">Boat Simulator Parameters<a class="headerlink" href="#boat-simulator-parameters" title="Permanent link">&para;</a></h2>
 <p>ROS parameters specific to the nodes in the boat simulator.</p>
@@ -2610,7 +2673,7 @@ corresponding correct type as the second string.</li>
     <script id="__config" type="application/json">{"base": "../../..", "features": ["content.action.edit", "content.action.view", "content.code.annotate", "content.code.copy", "content.tabs.link", "navigation.expand", "navigation.footer", "navigation.instant", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.c8d2eff1.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.bd41221c.min.js"></script>
       
         <script src="../../../javascripts/mathjax.js"></script>
       
