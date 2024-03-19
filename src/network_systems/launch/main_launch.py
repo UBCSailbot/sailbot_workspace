@@ -1,6 +1,7 @@
 """Launch file that runs all nodes for the network systems ROS package."""
 
 import os
+import sys
 from importlib.util import module_from_spec, spec_from_file_location
 from typing import List, Tuple
 
@@ -11,6 +12,16 @@ from launch.actions import DeclareLaunchArgument, OpaqueFunction
 from launch.launch_context import LaunchContext
 from launch.some_substitutions_type import SomeSubstitutionsType
 from launch.substitutions import LaunchConfiguration
+
+# Deal with Python import paths
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(SCRIPT_DIR)
+from ros_info import (  # noqa: E402
+    CACHED_FIB_NODE,
+    CAN_TRANSCEIVER_NODE,
+    MOCK_AIS_NODE,
+    REMOTE_TRANSCEIVER_NODE,
+)
 
 # Local launch arguments and constants
 PACKAGE_NAME = "network_systems"
@@ -87,7 +98,7 @@ def get_cached_fib_description(context: LaunchContext) -> Node:
     Returns:
         Node: The node object that launches the cached_fib_node.
     """
-    node_name = "cached_fib_node"
+    node_name = CACHED_FIB_NODE
     ros_parameters = [
         global_launch_config,
         {"mode": LaunchConfiguration("mode")},
@@ -119,7 +130,7 @@ def get_mock_ais_description(context: LaunchContext) -> Node:
     Returns:
         Node: The node object that launches the mock_ais_node.
     """
-    node_name = "mock_ais_node"
+    node_name = MOCK_AIS_NODE
     ros_parameters = [
         global_launch_config,
         {"mode": LaunchConfiguration("mode")},
@@ -151,7 +162,7 @@ def get_can_transceiver_description(context: LaunchContext) -> Node:
     Returns:
         Node: The node object that launches the can_transceiver_node.
     """
-    node_name = "can_transceiver_node"
+    node_name = CAN_TRANSCEIVER_NODE
     ros_parameters = [
         global_launch_config,
         {"mode": LaunchConfiguration("mode")},
@@ -183,7 +194,7 @@ def get_remote_transceiver_description(context: LaunchContext) -> Node:
     Returns:
         Node: The node object that launches the remote_transceiver_node.
     """
-    node_name = "remote_transceiver_node"
+    node_name = REMOTE_TRANSCEIVER_NODE
     ros_parameters = [
         global_launch_config,
         {"mode": LaunchConfiguration("mode")},
