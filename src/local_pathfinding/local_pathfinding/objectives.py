@@ -129,13 +129,7 @@ class Objective(ob.StateCostIntegralObjective):
             float: normalized cost between 0 to 1.
         """
         normalized_cost = cost / self.max_motion_cost
-        if normalized_cost > 1.0:
-            if self.found_max_cost:
-                return 1.0
-            else:
-                return normalized_cost
-        else:
-            return normalized_cost
+        return min(normalized_cost, 1.0) if self.found_max_cost else normalized_cost
 
 
 class DistanceObjective(Objective):
@@ -495,12 +489,9 @@ class SpeedObjective(Objective):
 
         self.wind_speed = wind_speed
         self.method = method
-        if self.method == SpeedObjectiveMethod.SAILBOT_TIME:
-            super().__init__(
-                space_information, num_samples=2000
-            )  # SpeedObjectiveMethod.SAILBOT_TIME needs more sample to find max_motion_cost. Even 2000 is NOT enough
-        else:
-            super().__init__(space_information, num_samples=200)
+        # sailbot time needs more samples to find max_motion_cost, even 2000 is not enough
+        num_samples = 2000 if self.method == SpeedObjective.SAILBOT_TIME else 200
+        super().__init__(space_information, num_samples=num_samples)
 
     def motionCost(self, s1: ob.SE2StateSpace, s2: ob.SE2StateSpace) -> ob.Cost:
         """Generates the cost associated with the speed of the boat.
