@@ -47,7 +47,7 @@ import pandas as pd
 import psutil
 import pyproj
 import xarray as xr
-from files import download_zip, dump_pkl, flatten_dir, gd_download, load_pkl
+from files import Logger, download_zip, dump_pkl, flatten_dir, gd_download, load_pkl
 from geopandas import GeoDataFrame
 from shapely.geometry import LineString, Point, Polygon, box
 from shapely.ops import split, transform
@@ -103,29 +103,6 @@ NETCDF_SMALL_URL = "https://drive.google.com/uc?id=11Le2e8sz4xIor4bWsrGSd_ovYgUB
 SINDEX_FILE = normpath("pkl/sindex.pkl")  # spatial index of final land mass data set
 GDF_SPF_FILE = normpath("pkl/gdf_spf.pkl")  # gdf after first spatial filter
 GDF_FILTER_FILE = normpath("pkl/gdf_filter.pkl")  # gdf containing polygons to filter against
-
-
-class Logger:
-
-    def __init__(self):
-        self.levels = {
-            "ERROR": "\033[91m",
-            "OK": "\033[92m",
-            "WARN": "\033[93m",
-        }
-        self.reset = "\033[0m"
-
-    def ok(self, msg):
-        level = self.levels.get("OK")
-        print(level + msg + self.reset)
-
-    def warn(self, msg):
-        level = self.levels.get("WARN")
-        print(level + msg + self.reset)
-
-    def error(self, msg):
-        level = self.levels.get("ERROR")
-        print(level + msg + self.reset)
 
 
 class FailedPolygonError(Exception):

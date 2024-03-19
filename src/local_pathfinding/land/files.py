@@ -10,16 +10,30 @@ from tqdm import tqdm
 DOWNLOAD_ATTEMPTS = 3
 
 
-class colors:
+class Logger:
     """
-    ANSI color codes for terminal output.
+    Little custom colored logger to clean up print statements.
     """
 
-    # I should have just created a logger to use instead of this
-    ERROR = "\033[91m"
-    OK = "\033[92m"
-    WARN = "\033[93m"
-    RESET = "\033[0m"
+    def __init__(self):
+        self.levels = {
+            "ERROR": "\033[91m",
+            "OK": "\033[92m",
+            "WARN": "\033[93m",
+        }
+        self.reset = "\033[0m"
+
+    def ok(self, msg):
+        level = self.levels.get("OK")
+        print(level + msg + self.reset)
+
+    def warn(self, msg):
+        level = self.levels.get("WARN")
+        print(level + msg + self.reset)
+
+    def error(self, msg):
+        level = self.levels.get("ERROR")
+        print(level + msg + self.reset)
 
 
 def dump_pkl(object: any, file_path: str):
@@ -45,6 +59,7 @@ def download_zip(url: str, file_name: str, dir: str):
         - file_name (str): The file name to save the downloaded file to.
         - dir (str): The directory to save the downloaded file to.
     """
+    logger = Logger()
     os.makedirs(dir, exist_ok=True)
 
     tries = DOWNLOAD_ATTEMPTS
@@ -70,7 +85,7 @@ def download_zip(url: str, file_name: str, dir: str):
             break
 
         except requests.exceptions.RequestException as e:
-            print(colors.ERROR + f"Failed to download {file_name} from {url}." + colors.RESET)
+            logger.error(f"Failed to download {file_name} from {url}.")
             print(e)
             print("Retrying...")
             tries -= 1
@@ -98,14 +113,14 @@ def flatten_dir(directory):
 
 
 def gd_download(url: str, file_name: str):
-
+    logger = Logger()
     tries = DOWNLOAD_ATTEMPTS
     while tries > 0:
         try:
             gdown.download(url, file_name, quiet=False)
             break
         except gdown.exceptions.FileURLRetrievalError:
-            print(colors.ERROR + f"Failed to download {file_name} from {url}." + colors.RESET)
+            logger.error(f"Failed to download {file_name} from {url}.")
             print("Retrying...")
             tries -= 1
 
