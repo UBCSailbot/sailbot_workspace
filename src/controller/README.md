@@ -1,7 +1,5 @@
 # Controller
 
-[![Tests](https://github.com/UBCSailbot/controller/actions/workflows/tests.yml/badge.svg)](https://github.com/UBCSailbot/controller/actions/workflows/tests.yml)
-
 UBC Sailbot's controller for the new project. This repository contains a ROS package `controller`. This README
 contains only setup and run instructions. Further information on the controller can be found on the software
 team's [docs website](https://ubcsailbot.github.io/sailbot_workspace/main/current/controller/overview/).

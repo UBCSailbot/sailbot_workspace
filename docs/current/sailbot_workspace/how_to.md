@@ -33,8 +33,8 @@ For prefixes that are words, you will have to append a space to them to bring up
 We have containerized the following applications for a variety of reasons:
 
 - [MongoDB database](https://www.mongodb.com/){target=_blank}
-- [Docs site](https://github.com/UBCSailbot/sailbot_workspace){target=_blank}
-- [Website](https://github.com/UBCSailbot/website){target=_blank}
+- [Docs site](https://ubcsailbot.github.io/sailbot_workspace/main/){target=_blank}
+- [Website](https://github.com/UBCSailbot/sailbot_workspace/tree/main/src/website){target=_blank}
 
 ### Running containerized applications
 
