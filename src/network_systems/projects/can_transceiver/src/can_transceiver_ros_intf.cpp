@@ -201,8 +201,8 @@ private:
     {
         int16_t average_direction = 0;
         for (size_t i = 0; i < NUM_WIND_SENSORS; i++) {
-            average_direction +=
-              static_cast<int16_t>(wind_sensors_.wind_sensors[i].direction);  //NOLINT (bugprone-narrowing-conversions)
+            //note: direction is an int16_t, but there was an error saying "narrowing conversion from int to int16"
+            average_direction += wind_sensors_.wind_sensors[i].direction;  //NOLINT (bugprone-narrowing-conversions)
         }
         average_direction /= NUM_WIND_SENSORS;
 
@@ -224,7 +224,7 @@ private:
     void publishGeneric(const CanFrame & generic_frame)
     {
         //check all generic sensors in the ROS msg for the matching id
-        //assumes this sensor is in the "generic_sensors_" array of sensors
+        //assumes this sensor is in the "generic_sensors_" array of sensors, however generic sensors do not have a constructor in can_frame_parser
         size_t idx;
         for (size_t i = 0;; i++) {
             if (generic_frame.can_id == generic_sensors_.generic_sensors[i].id) {
