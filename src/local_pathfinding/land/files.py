@@ -25,6 +25,7 @@ class colors:
 def dump_pkl(object: any, file_path: str):
     # creating a pickler once, when everything is being pickled
     # will likely be more efficient
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
     with open(file_path, "wb") as f:
         pickle.dump(object, f, protocol=pickle.HIGHEST_PROTOCOL)
 
