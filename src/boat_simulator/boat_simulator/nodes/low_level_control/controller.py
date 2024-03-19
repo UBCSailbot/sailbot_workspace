@@ -55,23 +55,24 @@ class ActuatorController(ABC):
             False if target control angle was not reached, else
             True if target control angle has been reached (running error = 0)
         """
+        error_tracker = False
         if np.isclose(self.running_error, 0, 0.01):
             return True
         else:
             change = copysign(1, self.running_error) * self.control_speed * self.time_step
 
-        if abs(self.running_error) > change:
+        if abs(self.running_error) > abs(change):
             next_control = max(self.current_control_ang + change, self.max_angle_range[0])
-            self.running_error += change
+            self.running_error -= change
         else:
             next_control = max(
                 self.current_control_ang + self.running_error, self.max_angle_range[0]
             )
             self.running_error = 0
-            return True
+            error_tracker = True
 
         self.current_control_ang = min(next_control, self.max_angle_range[1])
-        return False
+        return error_tracker
 
     @abstractmethod
     def reset_setpoint(self, new_target_angle: Scalar) -> None:
@@ -155,9 +156,6 @@ class RudderController(ActuatorController):
 
         heading_error = self.compute_error()  # heading_error in radians
 
-        if abs(heading_error) > np.sum(abs(np.deg2rad(RUDDER_MAX_ANGLE_RANGE))):
-            raise ValueError("heading_error must be less than the total max_rudder angle range")
-
         rudder_setpoint = (self.kp * heading_error) / (1 + (self.cp * abs(heading_error)))
 
         if abs(rudder_setpoint) > RUDDER_MAX_ANGLE_RANGE[1]:
@@ -167,7 +165,7 @@ class RudderController(ActuatorController):
         self.running_error = rudder_setpoint_deg - self.current_control_ang  # in degrees
         self.setpoint = rudder_setpoint_deg  # in degrees
 
-        return rudder_setpoint  # in degrees
+        return rudder_setpoint_deg  # in degrees
 
     def reset_setpoint(self, new_desired_heading: Scalar) -> None:
         """Resets a new desired heading angle, therefore recalculating the corresponding
@@ -180,6 +178,15 @@ class RudderController(ActuatorController):
 
         self.desired_heading = new_desired_heading
         self.compute_setpoint()
+
+    def change_desired_heading(self, changed_desired_heading) -> None:
+        """Changes desired heading to a new angle. Used for testing purposes
+
+        Args:
+            `changed_desired_heading` (Scalar): New desired heading in degrees
+
+        """
+        self.desired_heading = changed_desired_heading
 
 
 class SailController(ActuatorController):
@@ -220,7 +227,7 @@ class SailController(ActuatorController):
         self.kp = kp
         self.cp = cp
 
-    def compute_error(self):
+    def compute_error(self) -> Scalar:
         """Computes the corresponding control error angle between current control angle and
         target control angle
 
@@ -229,6 +236,7 @@ class SailController(ActuatorController):
             current and target control angle in degrees"""
 
         self.running_error = self.target_angle - self.current_control_ang
+        return self.running_error
 
     def reset_setpoint(self, new_target: Scalar) -> None:
         """Resets a new desired sail actuator angle and updates the running_error
@@ -238,4 +246,13 @@ class SailController(ActuatorController):
 
         """
         self.target_angle = new_target
-        self.compute_error
+        self.compute_error()
+
+    def reset_target_angle(self, changed_target_angle) -> None:
+        """Changes target_angle desired to a new angle. Used for testing purposes
+
+        Args:
+            `changed_target_angle` (Scalar): New desired heading in degrees
+
+        """
+        self.target_angle = changed_target_angle
