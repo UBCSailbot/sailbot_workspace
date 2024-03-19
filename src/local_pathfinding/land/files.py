@@ -44,6 +44,8 @@ def download_zip(url: str, file_name: str, dir: str):
         - file_name (str): The file name to save the downloaded file to.
         - dir (str): The directory to save the downloaded file to.
     """
+    os.makedirs(dir, exist_ok=True)
+
     tries = DOWNLOAD_ATTEMPTS
 
     while tries > 0:
