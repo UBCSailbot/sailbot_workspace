@@ -26,7 +26,7 @@ void CanTransceiver::onNewCanData(const CanFrame & frame) const
     }
 
     //0x100 - 0x1FF: Generic sensor data frame range
-    if (static_cast<int>(id) >= 0x100 && static_cast<int>(id) <= 0x1FF) {  //NOLINT(readability-magic-numbers)
+    if (id >= CanId::GENERIC_SENSOR_START && id <= CanId::GENERIC_SENSOR_END) {
         read_callbacks_.at(CanId::GENERIC_SENSOR_START)(frame);
     }
 }

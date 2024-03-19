@@ -76,7 +76,6 @@ public:
                std::make_pair(
                  CanId::BMS_P_DATA_FRAME_2,
                  std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishBattery(frame); })),
-               // TODO(lross03): Add remaining pairs
                std::make_pair(
                  CanId::PATH_GPS_DATA_FRAME_1,
                  std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishGPS(frame); })),
@@ -202,8 +201,8 @@ private:
     {
         int16_t average_direction = 0;
         for (size_t i = 0; i < NUM_WIND_SENSORS; i++) {
-            //TODO: check casting later
-            average_direction += static_cast<int16_t>(wind_sensors_.wind_sensors[i].direction);  //NOLINT
+            average_direction +=
+              static_cast<int16_t>(wind_sensors_.wind_sensors[i].direction);  //NOLINT (bugprone-narrowing-conversions)
         }
         average_direction /= NUM_WIND_SENSORS;
 
@@ -225,7 +224,7 @@ private:
     void publishGeneric(const CanFrame & generic_frame)
     {
         //check all generic sensors in the ROS msg for the matching id
-        //assumes this sensor is in the generic_sensors_ array of sensors
+        //assumes this sensor is in the "generic_sensors_" array of sensors
         size_t idx;
         for (size_t i = 0;; i++) {
             if (generic_frame.can_id == generic_sensors_.generic_sensors[i].id) {
@@ -233,7 +232,7 @@ private:
                 break;
             }
         }
-        //TODO: ask if i can assume generic_frame is in the generic_sensors array
+
         uint64_t generic_data = 0;
         std::memcpy(&generic_data, generic_frame.data, sizeof(int64_t));
         msg::HelperGenericSensor & generic_sensor_msg = generic_sensors_.generic_sensors[idx];
