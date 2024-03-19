@@ -81,19 +81,47 @@ def test_update_state(rudder_controller):
 
 
 def test_update_state_continuous(rudder_controller):
-    pass
-    # rudder_controller.compute_setpoint()
-    # progress = False
-    # counter = 0
-    # while not np.isclose(rudder_controller.running_error, 0, 0.1):
-    #     counter += 1
-    #     rudder_controller.update_state()
-    #     if rudder_controller.running_error == 0:
-    #         progress = True
-    #         break
-    #     if counter > 50:
-    #         break
-    # assert progress
+    rudder_controller.compute_setpoint()
+    progress = False
+    counter = 0
+    if np.isclose(rudder_controller.running_error, 0, 0.1):
+        progress = True
+    else:
+        while not np.isclose(rudder_controller.running_error, 0, 0.1):
+            counter += 1
+            rudder_controller.update_state()
+            if rudder_controller.running_error == 0:
+                progress = True
+                break
+            if counter > 1000:
+                break
+    assert progress
+
+
+def test_update_state_reset(rudder_controller):
+    rudder_controller.compute_setpoint()
+    counter = 0
+    while not np.isclose(rudder_controller.running_error, 0, 0.1):
+        counter += 1
+        rudder_controller.update_state()
+        if rudder_controller.running_error == 0:
+            break
+        if counter > 1000:
+            break
+    rudder_controller.reset_setpoint(-1)
+    reset_progress = False
+    if np.isclose(rudder_controller.running_error, 0, 0.1):
+        reset_progress = True
+    else:
+        while not np.isclose(rudder_controller.running_error, 0, 0.1):
+            counter += 1
+            rudder_controller.update_state()
+            if rudder_controller.running_error == 0:
+                reset_progress = True
+                break
+            if counter > 1000:
+                break
+    assert reset_progress
 
 
 @pytest.fixture(
@@ -137,3 +165,21 @@ def test_update_state_1(sail_controller):
     assert sail_controller.update_state() == (
         sail_controller.running_error >= iteration_speed
     ) or sail_controller.update_state() == (sail_controller.running_error == 0)
+
+
+def test_update_state_continuous_1(sail_controller):
+    sail_controller.compute_error()
+    progress = False
+    counter = 0
+    if np.isclose(sail_controller.running_error, 0, 0.1):
+        progress = True
+    else:
+        while not np.isclose(sail_controller.running_error, 0, 0.1):
+            counter += 1
+            sail_controller.update_state()
+            if sail_controller.running_error == 0:
+                progress = True
+                break
+            if counter > 1000:
+                break
+    assert progress
