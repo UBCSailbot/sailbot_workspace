@@ -1,6 +1,6 @@
 # Docs Image
 
-Used for running [our docs site](https://github.com/UBCSailbot/docs).
+Used for running [our docs site](https://github.com/UBCSailbot/sailbot_workspace).
 
 ## Features
 
