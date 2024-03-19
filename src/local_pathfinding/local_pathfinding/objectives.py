@@ -490,7 +490,7 @@ class SpeedObjective(Objective):
         self.wind_speed = wind_speed
         self.method = method
         # sailbot time needs more samples to find max_motion_cost, even 2000 is not enough
-        num_samples = 2000 if self.method == SpeedObjective.SAILBOT_TIME else 200
+        num_samples = 2000 if self.method == SpeedObjectiveMethod.SAILBOT_TIME else 200
         super().__init__(space_information, num_samples=num_samples)
 
     def motionCost(self, s1: ob.SE2StateSpace, s2: ob.SE2StateSpace) -> ob.Cost:
