@@ -1,4 +1,4 @@
-FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:combined-pip3-installs3
+FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:moved-network-deps
 
 # Copy configuration files (e.g., .vimrc) from config/ to the container's home directory
 ARG USERNAME=ros
