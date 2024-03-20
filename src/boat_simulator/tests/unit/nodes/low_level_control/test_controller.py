@@ -1,11 +1,10 @@
 """Tests classes and functions in boat_simulator/nodes/controller.py"""
 
-from math import atan2, cos, sin
+from math import atan2, copysign, cos, sin
 
 import numpy as np
 import pytest
 
-from boat_simulator.common.constants import RUDDER_MAX_ANGLE_RANGE
 from boat_simulator.nodes.low_level_control.controller import (
     RudderController,
     SailController,
@@ -56,8 +55,10 @@ def test_compute_setpoint(rudder_controller):
         1 + (rudder_controller.cp * abs(heading_error))
     )
 
-    if abs(rudder_setpoint) > RUDDER_MAX_ANGLE_RANGE[1]:
-        raise ValueError("rudder_change must be between -pi/4 and pi/4")
+    rudder_setpoint = min(
+        max(rudder_setpoint, np.deg2rad(rudder_controller.max_angle_range[0])),
+        np.deg2rad(rudder_controller.max_angle_range[1]),
+    )
 
     rudder_setpoint_deg = np.rad2deg(rudder_setpoint)  # in degrees
     running_error = rudder_setpoint_deg - rudder_controller.current_control_ang  # in degrees
@@ -67,8 +68,9 @@ def test_compute_setpoint(rudder_controller):
 
 def test_reset_setpoint(rudder_controller):
     # Test reset_setpoint method of RudderController
-    new_desired_heading = 60  # Example value
-    expected = rudder_controller.reset_setpoint(new_desired_heading)
+    new_desired_heading = 60
+    new_current_heading = 30
+    expected = rudder_controller.reset_setpoint(new_desired_heading, new_current_heading)
     rudder_controller.change_desired_heading(new_desired_heading)
     calculated = rudder_controller.compute_setpoint()
     np.equal(calculated, expected)
@@ -76,8 +78,19 @@ def test_reset_setpoint(rudder_controller):
 
 # testing for one iteration only
 def test_update_state(rudder_controller):
+    current_control = rudder_controller.current_control_ang
     rudder_controller.compute_setpoint()
     assert rudder_controller.update_state() == (abs(rudder_controller.running_error) == 0)
+    assert np.equal(
+        current_control
+        + (
+            copysign(
+                rudder_controller.control_speed * rudder_controller.time_step,
+                rudder_controller.running_error,
+            )
+        ),
+        rudder_controller.current_control_ang,
+    )
 
 
 def test_update_state_continuous(rudder_controller):
@@ -96,6 +109,7 @@ def test_update_state_continuous(rudder_controller):
             if counter > 1000:
                 break
     assert progress
+    assert np.equal(rudder_controller.current_control_ang, rudder_controller.setpoint)
 
 
 def test_update_state_reset(rudder_controller):
@@ -108,7 +122,7 @@ def test_update_state_reset(rudder_controller):
             break
         if counter > 1000:
             break
-    rudder_controller.reset_setpoint(-1)
+    rudder_controller.reset_setpoint(-30, 10)
     reset_progress = False
     if np.isclose(rudder_controller.running_error, 0, 0.1):
         reset_progress = True
@@ -122,6 +136,7 @@ def test_update_state_reset(rudder_controller):
             if counter > 1000:
                 break
     assert reset_progress
+    assert np.isclose(rudder_controller.current_control_ang, rudder_controller.setpoint, 0.1)
 
 
 @pytest.fixture(
@@ -155,16 +170,21 @@ def test_compute_error_1(sail_controller):
 
 def test_reset_setpoint_1(sail_controller):
     # Test reset_setpoint method of SailController
-    new_target = 90  # Example value
+    new_target = 90
     sail_controller.reset_setpoint(new_target)
     assert np.equal(new_target, sail_controller.target_angle)
 
 
 def test_update_state_1(sail_controller):
-    iteration_speed = sail_controller.time_step * sail_controller.control_speed
-    assert sail_controller.update_state() == (
-        sail_controller.running_error >= iteration_speed
-    ) or sail_controller.update_state() == (sail_controller.running_error == 0)
+    current_control = sail_controller.current_control_ang
+    iteration_speed = copysign(
+        sail_controller.control_speed * sail_controller.time_step, sail_controller.running_error
+    )
+    assert sail_controller.update_state() == (abs(sail_controller.running_error) == 0)
+    assert (
+        np.isclose(sail_controller.current_control_ang, current_control + iteration_speed, 0.1)
+        or sail_controller.running_error == 0
+    )
 
 
 def test_update_state_continuous_1(sail_controller):

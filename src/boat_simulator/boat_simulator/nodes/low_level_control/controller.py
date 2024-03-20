@@ -1,6 +1,5 @@
 """Low level control logic for actuating the rudder and the sail."""
 
-from abc import ABC, abstractmethod
 from math import atan2, copysign, cos, sin
 from typing import Tuple
 
@@ -11,7 +10,7 @@ from boat_simulator.common.types import Scalar
 from boat_simulator.common.utils import bound_to_180
 
 
-class ActuatorController(ABC):
+class ActuatorController:
     """Abstract class for rudder and sail actuation mechanisms.
 
     Attributes:
@@ -26,8 +25,8 @@ class ActuatorController(ABC):
         current_control_ang: Scalar,
         time_step: Scalar,
         control_speed: Scalar,
-        running_error: Scalar,
         max_angle_range: Tuple[Scalar, Scalar],
+        running_error=0.0,
     ):
         """Initializes the class attributes. Note that this class cannot be directly instantiated.
 
@@ -35,7 +34,7 @@ class ActuatorController(ABC):
             `current_control_ang` (Scalar): Current control mechanism angle in degrees.
             `time_step` (Scalar): Time per iteration given in seconds.
             `control_speed` (Scalar): Speed of control angle change in degrees / second.
-            'running_error' (Scalar): Error between current and target control angle.
+            'running_error' (Scalar): Error between current and target control angle. Default to 0
         """
         self.current_control_ang = current_control_ang
         self.time_step = time_step
@@ -59,7 +58,7 @@ class ActuatorController(ABC):
         if np.isclose(self.running_error, 0, 0.01):
             return True
         else:
-            change = copysign(1, self.running_error) * self.control_speed * self.time_step
+            change = copysign(self.control_speed * self.time_step, self.running_error)
 
         if abs(self.running_error) > abs(change):
             next_control = max(self.current_control_ang + change, self.max_angle_range[0])
@@ -73,16 +72,6 @@ class ActuatorController(ABC):
 
         self.current_control_ang = min(next_control, self.max_angle_range[1])
         return error_tracker
-
-    @abstractmethod
-    def reset_setpoint(self, new_target_angle: Scalar) -> None:
-        """Resets a new target angle and computes a new corresponding setpoint
-
-        Args:
-            `new_target_angle` (Scalar): New target angle in degrees
-
-        """
-        pass
 
 
 class RudderController(ActuatorController):
@@ -101,7 +90,7 @@ class RudderController(ActuatorController):
         cp: Scalar,
         control_speed: Scalar,
         running_error=0.0,
-        max_angle_range=RUDDER_MAX_ANGLE_RANGE,
+        max_angle_range=None,
     ):
         """Initializes the class attributes.
 
@@ -118,10 +107,17 @@ class RudderController(ActuatorController):
             'running_error' (Scalar): Error between current and target control angle.
 
         """
+
         super().__init__(
-            current_control_ang, time_step, control_speed, running_error, max_angle_range
+            current_control_ang,
+            time_step,
+            control_speed,
+            running_error,
+            max_angle_range,
         )
 
+        self.max_angle_range = RUDDER_MAX_ANGLE_RANGE
+        self.running_error = 0.0
         self.current_heading = bound_to_180(current_heading)  # bound (-180, 180] in degrees
         self.desired_heading = bound_to_180(desired_heading)  # bound (-180, 180] in degrees
         self.kp = kp
@@ -158,8 +154,10 @@ class RudderController(ActuatorController):
 
         rudder_setpoint = (self.kp * heading_error) / (1 + (self.cp * abs(heading_error)))
 
-        if abs(rudder_setpoint) > RUDDER_MAX_ANGLE_RANGE[1]:
-            raise ValueError("rudder_change must be between -pi/4 and pi/4")
+        rudder_setpoint = min(
+            max(rudder_setpoint, np.deg2rad(self.max_angle_range[0])),
+            np.deg2rad(self.max_angle_range[1]),
+        )
 
         rudder_setpoint_deg = np.rad2deg(rudder_setpoint)  # in degrees
         self.running_error = rudder_setpoint_deg - self.current_control_ang  # in degrees
@@ -167,7 +165,7 @@ class RudderController(ActuatorController):
 
         return rudder_setpoint_deg  # in degrees
 
-    def reset_setpoint(self, new_desired_heading: Scalar) -> None:
+    def reset_setpoint(self, new_desired_heading: Scalar, new_current_heading: Scalar) -> None:
         """Resets a new desired heading angle, therefore recalculating the corresponding
         setpoint and running error.
 
@@ -177,6 +175,7 @@ class RudderController(ActuatorController):
         """
 
         self.desired_heading = new_desired_heading
+        self.current_heading = new_current_heading
         self.compute_setpoint()
 
     def change_desired_heading(self, changed_desired_heading) -> None:
@@ -220,9 +219,15 @@ class SailController(ActuatorController):
 
         """
         super().__init__(
-            current_control_ang, time_step, control_speed, running_error, max_angle_range
+            current_control_ang,
+            time_step,
+            control_speed,
+            running_error,
+            max_angle_range,
         )
 
+        self.max_angle_range = SAIL_MAX_ANGLE_RANGE
+        self.running_error = 0.0
         self.target_angle = target_angle
         self.kp = kp
         self.cp = cp

@@ -62,8 +62,8 @@ SAIL_ACTUATION_NUM_LOOP_EXECUTIONS = 10  # TODO This is a placeholder until the 
 # Number of times the rudder action server routine's main loop executes
 RUDDER_ACTUATION_NUM_LOOP_EXECUTIONS = 10  # TODO This is a placeholder until the PID is integrated
 
-# Max rudder control angle range
+# Max rudder control angle range in degrees
 RUDDER_MAX_ANGLE_RANGE = (-45, 45)
 
-# Max sail actuator control angle range
+# Max sail actuator control angle range in degrees
 SAIL_MAX_ANGLE_RANGE = (-7, 7)
