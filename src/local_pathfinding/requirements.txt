@@ -19,3 +19,4 @@ netcdf4
 scipy>=1.12
 requests
 gdown
+psutil
