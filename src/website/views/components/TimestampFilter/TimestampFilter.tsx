@@ -9,20 +9,21 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 
 function TimestampFilter(props) {
-    let startingDateStr = "", endingDateStr = ""
+    const [startDate, setStartDate] = useState("");
+    const [endDate, setEndDate] = useState("");
 
     const dispatch = (props.dispatch)
 
     const handleStartChange = (newStartDate) => {
-        dispatch({type: 'TIMESTAMP', payload: [newStartDate.$d.toString(), endingDateStr]})
+        setStartDate(newStartDate.$d.toString())
+        dispatch({type: 'TIMESTAMP', payload: [newStartDate.$d.toString(), endDate]})
         console.log(newStartDate.$d.toString())
-        startingDateStr = newStartDate.$d.toString()
     }
 
     const handleEndChange = (newEndDate) => {
-        dispatch({type: 'TIMESTAMP', payload: [startingDateStr, newEndDate.$d.toString()]})
+        setEndDate(newEndDate.$d.toString())
+        dispatch({type: 'TIMESTAMP', payload: [startDate, newEndDate.$d.toString()]})
         console.log(newEndDate.$d.toString())
-        endingDateStr = newEndDate.$d.toString()
     }
 
     return (
@@ -39,14 +40,14 @@ function TimestampFilter(props) {
                         label="Starting Date"
                         onChange={handleStartChange}
                     />
-                    {props.children}
+                    {startDate && props.children}
                 </LocalizationProvider>
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                     <DatePicker
                         label="Ending Date"
                         onChange={handleEndChange}
                     />
-                    {props.children}
+                    {endDate && props.children}
                 </LocalizationProvider>
             </AccordionDetails>
         </Accordion>

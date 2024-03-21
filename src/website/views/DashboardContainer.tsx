@@ -4,6 +4,7 @@ import UPlotLineChartComponent from './components/LineChart/UPlotLineChart';
 import { GPSState } from '@/stores/GPS/GPSTypes';
 import { BatteriesState } from '@/stores/Batteries/BatteriesTypes';
 import { WindSensorsState } from '@/stores/WindSensors/WindSensorsTypes';
+import { TimestampState } from '@/stores/Timestamp/TimestampTypes';
 import UPlotMultiLineChartComponent from './components/LineChart/UPlotMultiLineChart';
 import SingleValueChart from './components/SingleValueChart/SingleValueChart';
 import { Grid } from '@mui/material';
@@ -16,7 +17,17 @@ export interface DashboardContainerProps {
 
 class DashboardContainer extends React.PureComponent<DashboardContainerProps> {
   render() {
-    const { gps, batteries, windSensors } = this.props;
+    const { gps, batteries, windSensors, timestampFilter } = this.props;
+
+    // if( typeof timestampFilter !== 'undefined'){
+    //   console.log(timestampFilter[0])
+    // }
+
+    // if( timestampFilter.isArray() == true ){
+    //   console.log("hello");
+    // }
+
+    console.log(timestampFilter.timestamps[0]);
 
     const gpsChartData = [
       gps.data.map((data) => this._parseISOString(data.timestamp)),
@@ -45,6 +56,8 @@ class DashboardContainer extends React.PureComponent<DashboardContainerProps> {
       windSensors.data.map((data) => data.windSensors[0].speed),
       windSensors.data.map((data) => data.windSensors[1].speed),
     ];
+
+    // console.log(gpsChartData[1])
 
     const totalTripDistance = this._computeTotalTripDistance(gpsDistanceData[0], gpsDistanceData[1])
 
@@ -143,6 +156,7 @@ const mapStateToProps = (state: any) => ({
   gps: state.gps,
   batteries: state.batteries,
   windSensors: state.windSensors,
+  timestampFilter: state.timestampFilter
 });
 
 const mapDispatchToProps = {};
