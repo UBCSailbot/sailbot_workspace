@@ -68,9 +68,11 @@ public:
             wind_sensors_pub_ = this->create_publisher<msg::WindSensors>(ros_topics::WIND_SENSORS, QUEUE_SIZE);
             filtered_wind_sensor_pub_ =
               this->create_publisher<msg::WindSensor>(ros_topics::FILTERED_WIND_SENSOR, QUEUE_SIZE);
+            generic_sensors_pub_ = this->create_publisher<msg::GenericSensors>(ros_topics::DATA_SENSORS, QUEUE_SIZE);
 
             can_trns_->registerCanCbs(
-              {std::make_pair(
+              {//TODO(lross03): Add callback for AIS
+               std::make_pair(
                  CanId::BMS_P_DATA_FRAME_1,
                  std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishBattery(frame); })),
                std::make_pair(
@@ -140,7 +142,7 @@ private:
      */
     void publishAIS(const CanFrame & /**/)
     {
-        //TODO(): Should be registered with CAN Transceiver once ELEC defines AIS frames
+        //TODO(lross03): fill out this function
         ais_pub_->publish(ais_ships_);
     }
 
@@ -199,10 +201,11 @@ private:
 
     void publishFilteredWindSensor()
     {
-        int16_t average_direction = 0;
+        // TODO(): Currently a simple average of the two wind sensors, but we'll want something more substantial
+        // with issue #271
+        int32_t average_direction = 0;
         for (size_t i = 0; i < NUM_WIND_SENSORS; i++) {
-            //note: direction is an int16_t, but there was an error saying "narrowing conversion from int to int16"
-            average_direction += wind_sensors_.wind_sensors[i].direction;  //NOLINT (bugprone-narrowing-conversions)
+            average_direction += wind_sensors_.wind_sensors[i].direction;
         }
         average_direction /= NUM_WIND_SENSORS;
 
@@ -216,7 +219,7 @@ private:
         filtered_speed.set__speed(average_speed);
 
         filtered_wind_sensor_.set__speed(filtered_speed);
-        filtered_wind_sensor_.set__direction(average_direction);
+        filtered_wind_sensor_.set__direction(static_cast<int16_t>(average_direction));
 
         filtered_wind_sensor_pub_->publish(filtered_wind_sensor_);
     }
@@ -249,9 +252,9 @@ private:
      */
     void subMockAISCb(msg::AISShips mock_ais_ships)
     {
-        //TODO(): Should be routed through the CAN Transceiver once ELEC defines AIS frames
+        //TODO(lross03): Should be routed through the CAN Transceiver once ELEC defines AIS frames
         ais_ships_ = mock_ais_ships;
-        publishAIS(CanFrame{});
+        ais_pub_->publish(ais_ships_);
     }
 
     /**

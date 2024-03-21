@@ -29,7 +29,8 @@ enum class CanId : canid_t {
     RESERVED               = 0x00,
     BMS_P_DATA_FRAME_1     = 0x31,
     BMS_P_DATA_FRAME_2     = 0x32,
-    SAIL_WSM_CMD_FRAME_1   = 0x60,
+    SAIL_AIS               = 0x60,
+    SAIL_WSM_CMD_FRAME_1   = 0x61,  // TODO(hhenry01): This was changed, confirm the ID with ELEC
     SAIL_WSM_DATA_FRAME_1  = 0x63,
     SAIL_WIND_DATA_FRAME_1 = 0x65,
     PATH_GPS_DATA_FRAME_1  = 0x80,
