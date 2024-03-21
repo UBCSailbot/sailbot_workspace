@@ -5,12 +5,10 @@ import { AnyAction } from 'redux'
 
 export default class TimestampReducer extends BaseReducer {
     initialState: TimestampState = {
-        timestamps: [
-            {
-                startDate: "",
-                endDate: ""
-            }
-        ],
+        timestamp: {
+            startDate: null,
+            endDate: null
+        },
         error: null
     };
 
@@ -20,7 +18,7 @@ export default class TimestampReducer extends BaseReducer {
     ) {
         return {
             ...state,
-            timestamps: action.payload,
+            timestamp: action.payload,
         };
     }
 

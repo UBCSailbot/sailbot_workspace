@@ -13,21 +13,15 @@ export interface DashboardContainerProps {
   gps: GPSState;
   batteries: BatteriesState;
   windSensors: WindSensorsState;
+  timestamp: TimestampState
 }
 
 class DashboardContainer extends React.PureComponent<DashboardContainerProps> {
   render() {
-    const { gps, batteries, windSensors, timestampFilter } = this.props;
+    const { gps, batteries, windSensors, timestamp } = this.props;
 
-    // if( typeof timestampFilter !== 'undefined'){
-    //   console.log(timestampFilter[0])
-    // }
-
-    // if( timestampFilter.isArray() == true ){
-    //   console.log("hello");
-    // }
-
-    console.log(timestampFilter.timestamps[0]);
+    // console.log(timestamp)
+    // console.log(this._parseISOString(timestamp.timestamp.startDate))
 
     const gpsChartData = [
       gps.data.map((data) => this._parseISOString(data.timestamp)),
@@ -56,8 +50,6 @@ class DashboardContainer extends React.PureComponent<DashboardContainerProps> {
       windSensors.data.map((data) => data.windSensors[0].speed),
       windSensors.data.map((data) => data.windSensors[1].speed),
     ];
-
-    // console.log(gpsChartData[1])
 
     const totalTripDistance = this._computeTotalTripDistance(gpsDistanceData[0], gpsDistanceData[1])
 
@@ -156,7 +148,7 @@ const mapStateToProps = (state: any) => ({
   gps: state.gps,
   batteries: state.batteries,
   windSensors: state.windSensors,
-  timestampFilter: state.timestampFilter
+  timestamp: state.timestamp
 });
 
 const mapDispatchToProps = {};

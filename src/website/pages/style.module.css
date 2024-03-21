@@ -15,7 +15,7 @@
   position: absolute;
   z-index: 10000000000;
   top: 0vh;
-  right: 0.2vw;
+  right: 0vw;
 }
 
 .parent {

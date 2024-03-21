@@ -4,6 +4,6 @@ export type Timestamp = {
 }
 
 export type TimestampState = {
-    timestamps: Timestamp[];
+    timestamp: Timestamp;
     error?: any;
 }
