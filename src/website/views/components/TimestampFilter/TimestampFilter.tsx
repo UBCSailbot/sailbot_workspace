@@ -5,7 +5,6 @@ import AccordionSummary from '@mui/material/AccordionSummary';
 import AccordionDetails from '@mui/material/AccordionDetails';
 import Typography from '@mui/material/Typography';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import * as dayjs from 'dayjs'
 import { Button, Grid } from '@mui/material'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -14,45 +13,49 @@ import styles from './timestampfilter.module.css'
 // FIX ELEVATION ISSUE !!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 function TimestampFilter(props) {
-    dayjs().format()
-
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
 
     const dispatch = (props.dispatch)
 
     const handleApplyChange = () => {
+        let cond1 = startDate != null && endDate != null
+        let cond2 = _parseISOString(endDate) > _parseISOString(startDate)
+
+        if (cond1 == true && cond2 == true) {
+            dispatch({
+                type: 'TIMESTAMP',
+                payload: {
+                    startDate: startDate.toISOString(),
+                    endDate: endDate.toISOString()
+                }
+            })
+        }
+    }
+
+    const handleResetChange = () => {
         dispatch({
             type: 'TIMESTAMP',
             payload: {
-                startDate: startDate,
-                endDate: endDate
+                startDate: null,
+                endDate: null
             }
         })
+
+        setStartDate(null)
+        setEndDate(null)
     }
 
     const handleStartChange = (newStartDate) => {
-        setStartDate(dayjs(newStartDate.$d).format('YYYY-MM-DD'))
-        // dispatch({
-        //     type: 'TIMESTAMP',
-        //     payload: {
-        //         startDate: dayjs(newStartDate.$d).format('YYYY-MM-DD'),
-        //         endDate: endDate
-        //     }
-        // })
-        // console.log(newStartDate.$d.toString())
+        setStartDate(newStartDate)
     }
 
     const handleEndChange = (newEndDate) => {
-        setEndDate(dayjs(newEndDate.$d).format('YYYY-MM-DD'))
-        // dispatch({
-        //     type: 'TIMESTAMP',
-        //     payload: {
-        //         startDate: startDate,
-        //         endDate: dayjs(newEndDate.$d).format('YYYY-MM-DD')
-        //     }
-        // })
-        // console.log(newEndDate.$d.toString())
+        setEndDate(newEndDate)
+    }
+
+    function _parseISOString(s: string) {
+        return Math.floor(Date.parse(s) / 1000); // Converts to seconds
     }
 
     return (
@@ -63,7 +66,7 @@ function TimestampFilter(props) {
                 aria-controls="timestampfilter-content"
                 id="timestampfilter-header"
             >
-                <Typography align="center" sx={{width: '100%'}}>Timestamp Filter</Typography>
+                <Typography align="center" sx={{ width: '100%' }}>Timestamp Filter</Typography>
             </AccordionSummary>
             <AccordionDetails>
                 <Grid container rowSpacing={1}>
@@ -72,7 +75,7 @@ function TimestampFilter(props) {
                             <DatePicker
                                 label="Starting Date"
                                 onChange={handleStartChange}
-                                className = {styles.datepicker}
+                                className={styles.datepicker}
                             />
                             {startDate && props.children}
                         </LocalizationProvider>
@@ -82,17 +85,25 @@ function TimestampFilter(props) {
                             <DatePicker
                                 label="Ending Date"
                                 onChange={handleEndChange}
-                                className = {styles.datepicker}
+                                className={styles.datepicker}
                             />
                             {endDate && props.children}
                         </LocalizationProvider>
                     </Grid>
-                    <Grid item xs={12}>
+                    <Grid item xs={6}>
                         <Button
                             variant="contained"
                             onClick={handleApplyChange}
                         >
                             APPLY
+                        </Button>
+                    </Grid>
+                    <Grid item xs={6}>
+                        <Button
+                            variant="outlined"
+                            onClick={handleResetChange}
+                        >
+                            RESET
                         </Button>
                     </Grid>
                 </Grid>

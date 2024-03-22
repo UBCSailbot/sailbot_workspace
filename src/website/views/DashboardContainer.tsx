@@ -20,11 +20,8 @@ class DashboardContainer extends React.PureComponent<DashboardContainerProps> {
   render() {
     const { gps, batteries, windSensors, timestamp } = this.props;
 
-    // console.log(timestamp)
-    // console.log(this._parseISOString(timestamp.timestamp.startDate))
-
     const gpsChartData = [
-      gps.data.map((data) => this._parseISOString(data.timestamp)),
+      gps.data.map((data) => this._parseISOString(data.timestamp)).filter((time) => this._validTimestamp(time) == true),
       gps.data.map((data) => data.speed),
     ];
 
@@ -34,19 +31,19 @@ class DashboardContainer extends React.PureComponent<DashboardContainerProps> {
     ];
 
     const batteriesVoltageData = [
-      batteries.data.map((data) => this._parseISOString(data.timestamp)),
+      batteries.data.map((data) => this._parseISOString(data.timestamp)).filter((time) => this._validTimestamp(time) == true),
       batteries.data.map((data) => data.batteries[0].voltage),
       batteries.data.map((data) => data.batteries[1].voltage),
     ];
 
     const batteriesCurrentData = [
-      batteries.data.map((data) => this._parseISOString(data.timestamp)),
+      batteries.data.map((data) => this._parseISOString(data.timestamp)).filter((time) => this._validTimestamp(time) == true),
       batteries.data.map((data) => data.batteries[0].current),
       batteries.data.map((data) => data.batteries[1].current),
     ];
 
     const windSensorsSpeedData = [
-      windSensors.data.map((data) => this._parseISOString(data.timestamp)),
+      windSensors.data.map((data) => this._parseISOString(data.timestamp)).filter((time) => this._validTimestamp(time) == true),
       windSensors.data.map((data) => data.windSensors[0].speed),
       windSensors.data.map((data) => data.windSensors[1].speed),
     ];
@@ -141,6 +138,21 @@ class DashboardContainer extends React.PureComponent<DashboardContainerProps> {
     }
 
     return Number(totalDistance.toFixed(2));
+  }
+
+  _validTimestamp(timestampISO: number) {
+    let cond1 = timestampISO >= this._parseISOString(this.props.timestamp.timestamp.startDate)
+    let cond2 = timestampISO <= this._parseISOString(this.props.timestamp.timestamp.endDate)
+
+    if (this.props.timestamp.timestamp.startDate == null && this.props.timestamp.timestamp.endDate == null) {
+      return true
+    }
+
+    if(cond1 == cond2){
+      return true
+    }
+
+    return false
   }
 }
 
