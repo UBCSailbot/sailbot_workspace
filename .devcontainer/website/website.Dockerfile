@@ -17,4 +17,4 @@ FROM mcr.microsoft.com/vscode/devcontainers/javascript-node:0-${VARIANT}
 # Adapted from https://www.digitalocean.com/community/tutorials/how-to-build-a-node-js-application-with-docker
 WORKDIR /website
 EXPOSE 3005
-CMD npm install --legacy-peer-deps && npm run dev
+CMD npm install && npm run dev
