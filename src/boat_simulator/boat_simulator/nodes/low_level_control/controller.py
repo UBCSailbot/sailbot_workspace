@@ -26,7 +26,6 @@ class ActuatorController:
         time_step: Scalar,
         control_speed: Scalar,
         max_angle_range: Tuple[Scalar, Scalar],
-        running_error=0.0,
     ):
         """Initializes the class attributes. Note that this class cannot be directly instantiated.
 
@@ -39,8 +38,8 @@ class ActuatorController:
         self.current_control_ang = current_control_ang
         self.time_step = time_step
         self.control_speed = control_speed
-        self.running_error = running_error
         self.max_angle_range = max_angle_range
+        self.running_error = 0.0
 
     def update_state(self) -> bool:
         """Updates the controller position iteratively based on control_speed * time_step, until
@@ -89,7 +88,6 @@ class RudderController(ActuatorController):
         kp: Scalar,
         cp: Scalar,
         control_speed: Scalar,
-        running_error=0.0,
         max_angle_range=None,
     ):
         """Initializes the class attributes.
@@ -112,7 +110,6 @@ class RudderController(ActuatorController):
             current_control_ang,
             time_step,
             control_speed,
-            running_error,
             max_angle_range,
         )
 
@@ -123,6 +120,7 @@ class RudderController(ActuatorController):
         self.kp = kp
         self.cp = cp
         self.setpoint = 0.0  # current setpoint angle in degrees
+        self.running_error = 0.0
 
     def compute_error(self) -> Scalar:  # angle passed in as radians
         """Computes the error between desired and current heading
@@ -202,7 +200,6 @@ class SailController(ActuatorController):
         kp: Scalar,
         cp: Scalar,
         control_speed: Scalar,
-        running_error=0.0,
         max_angle_range=SAIL_MAX_ANGLE_RANGE,
     ):
         """Initializes the class attributes.
@@ -222,7 +219,6 @@ class SailController(ActuatorController):
             current_control_ang,
             time_step,
             control_speed,
-            running_error,
             max_angle_range,
         )
 
