@@ -63,6 +63,7 @@ def test_calculate_attack_angle(
     ), f"Expected {expected_angle}, got {attack_angle}"
 
 
+# Test taken from https://www1.grc.nasa.gov/beginners-guide-to-aeronautics/foilsimstudent/
 @pytest.mark.parametrize(
     "orientation, expected_lift, expected_drag, apparent_velocity",
     [
