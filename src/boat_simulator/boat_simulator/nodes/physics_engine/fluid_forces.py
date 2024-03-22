@@ -1,16 +1,13 @@
 """This module provides functionality for computing the lift and drag forces acting on a medium."""
 
-from typing import Tuple, Union
+from typing import Tuple
 
-# from typing import Scalar
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy.typing import NDArray
 
-Scalar = Union[int, float]
-
-# from boat_simulator.common.utils import Scalar
+from boat_simulator.common.utils import Scalar
 
 
 class MediumForceComputation:
@@ -24,9 +21,7 @@ class MediumForceComputation:
         `drag_coefficients` (NDArray): An array of shape (n, 2) where each row contains a pair
             (x, y) representing an angle of attack, in degrees, and its corresponding drag
             coefficient.
-        `areas` (NDArray): An array of shape (n, 2) where each row contains a pair (x, y),
-            representing an angle of attack, in degrees, and its corresponding area, in square
-            meters (m^2).
+        `areas` (Scalar): Corresponding area, in square meters (m^2).
         `fluid_density` (Scalar): The density of the fluid acting on the medium, expressed in
             kilograms per cubic meter (kg/m^3).
     """
@@ -35,7 +30,7 @@ class MediumForceComputation:
         self,
         lift_coefficients: NDArray,
         drag_coefficients: NDArray,
-        areas: NDArray,
+        areas: Scalar,
         fluid_density: Scalar,
     ):
         self.__lift_coefficients = lift_coefficients
@@ -45,7 +40,7 @@ class MediumForceComputation:
 
     def calculate_attack_angle(self, apparent_velocity: NDArray, orientation: Scalar) -> Scalar:
         """Calculates the angle of attack formed between the orientation angle of the medium
-        and the direction of the apparent velocity, bounded between 0 and 180 degrees.
+        and the direction of the apparent velocity, bounded between -180 and 180 degrees.
 
         Args:
             apparent_velocity (NDArray): The apparent (relative) velocity between the fluid and
@@ -55,17 +50,25 @@ class MediumForceComputation:
         Returns:
             Scalar: The angle of attack formed between the orientation angle of the medium and
                 the direction of the apparent velocity, expressed in degrees
-                and bounded between 0 and 180 degrees.
+                and bounded between -180 and 180 degrees.
         """
-        # Calculate the angle in degrees and normalize it to the range [0, 360)
-        angle_of_attack = (
-            np.rad2deg(
-                np.arctan2(apparent_velocity[1], apparent_velocity[0]) - np.deg2rad(orientation)
-            )
-        ) % 360
+        # Check if the apparent velocity is [0, 0]
+        if np.all(apparent_velocity == 0):
+            # Directly return the normalized orientation as the angle of attack
+            # Normalize orientation to be within [-180, 180)
+            return ((orientation + 180) % 360) - 180
 
-        if angle_of_attack > 180:
-            angle_of_attack = 360 - angle_of_attack
+        # Calculate the angle in degrees of the apparent velocity
+        angle_of_attack_raw = np.rad2deg(np.arctan2(apparent_velocity[1], apparent_velocity[0]))
+
+        # Adjust orientation to be in the range of [-180, 180)
+        orientation = ((orientation + 180) % 360) - 180
+
+        # Calculate the raw angle of attack by subtracting the orientation from the velocity angle
+        angle_of_attack = angle_of_attack_raw - orientation
+
+        # Normalize the angle of attack to [-180, 180) range
+        angle_of_attack = ((angle_of_attack + 180) % 360) - 180
 
         return angle_of_attack
 
@@ -86,67 +89,78 @@ class MediumForceComputation:
         """
 
         attack_angle = self.calculate_attack_angle(apparent_velocity, orientation)
-        lift_coefficient, drag_coefficient, area = self.interpolate(attack_angle)
+        lift_coefficient, drag_coefficient = self.interpolate(attack_angle)
         velocity_magnitude = np.linalg.norm(apparent_velocity)
 
+        def calculate_magnitude(coefficient):
+            return 0.5 * self.__fluid_density * coefficient * self.areas * (velocity_magnitude**2)
+
         # Calculate the lift and drag forces
-        lift_force_magnitude = (
-            0.5 * self.__fluid_density * lift_coefficient * area * (velocity_magnitude**2)
-        )
 
-        drag_force_magnitude = (
-            0.5 * self.__fluid_density * drag_coefficient * area * (velocity_magnitude**2)
-        )
+        lift_force_magnitude = calculate_magnitude(lift_coefficient)
+        drag_force_magnitude = calculate_magnitude(drag_coefficient)
 
-        # Rotate the lift and drag forces by 90 degrees to obtain the lift and drag forces
-        # Rotate counter clockwise in 1st and 3rd quadrant, and clockwise in 2nd and 4th quadrant
-        # 0 otherwise
-        drag_force_direction = (apparent_velocity) / velocity_magnitude
+        drag_force_unit_vector = (apparent_velocity) / velocity_magnitude
 
-        def rotate_vector_clockwise(v, theta_degrees):
-            theta_radians = np.deg2rad(theta_degrees)  # Convert angle from degrees to radians
+        def rotate_vector(v, theta_degrees, clockwise=True):
+            """
+            Rotates a vector by a specified angle in degrees.
+
+            Args:
+                v (np.array): The vector to be rotated.
+                theta_degrees (float): The rotation angle in degrees.
+                clockwise (bool, optional): If True, rotates clockwise. Defaults to True.
+
+            Returns:
+                np.array: The rotated vector.
+            """
+            theta_radians = np.deg2rad(theta_degrees)
+            sign = 1 if clockwise else -1
             rotation_matrix = np.array(
                 [
-                    [np.cos(theta_radians), np.sin(theta_radians)],
-                    [-np.sin(theta_radians), np.cos(theta_radians)],
+                    [np.cos(theta_radians), sign * np.sin(theta_radians)],
+                    [-sign * np.sin(theta_radians), np.cos(theta_radians)],
                 ]
             )
-            v_rotated = np.dot(rotation_matrix, v)  # Multiply the rotation matrix by the vector
-            return v_rotated
-
-        def rotate_vector_anticlockwise(v, theta_degrees):
-            theta_radians = np.deg2rad(theta_degrees)  # Convert angle from degrees to radians
-            rotation_matrix = np.array(
-                [
-                    [np.cos(theta_radians), -np.sin(theta_radians)],
-                    [np.sin(theta_radians), np.cos(theta_radians)],
-                ]
-            )
-            v_rotated = np.dot(rotation_matrix, v)  # Multiply the rotation matrix by the vector
+            v_rotated = np.dot(rotation_matrix, v)
             return v_rotated
 
         # Rotate the drag force direction to normalize it to 0 degrees
-        if orientation != 0:
-            drag_force_direction = rotate_vector_clockwise(drag_force_direction, orientation)
+        drag_force_unit_vector = rotate_vector(drag_force_unit_vector, orientation, clockwise=True)
 
-        if (drag_force_direction[0] > 0 and drag_force_direction[1] > 0) or (
-            drag_force_direction[0] < 0 and drag_force_direction[1] < 0
+        # Rotate the lift and drag forces by 90 degrees to obtain the lift and drag forces
+
+        # Convention used here is that the positive x-axis is 0 degrees
+        # and the positive y-axis is 90 degrees
+        # Positive rotation is counter clockwise
+
+        # Rotate counter clockwise in 1st and 3rd quadrant,
+
+        if (drag_force_unit_vector[0] > 0 and drag_force_unit_vector[1] > 0) or (
+            drag_force_unit_vector[0] < 0 and drag_force_unit_vector[1] < 0
         ):
-            lift_force_direction = np.array([-drag_force_direction[1], drag_force_direction[0]])
-        elif (drag_force_direction[0] > 0 and drag_force_direction[1] < 0) or (
-            drag_force_direction[0] < 0 and drag_force_direction[1] > 0
+            lift_force_direction = np.array(
+                [-drag_force_unit_vector[1], drag_force_unit_vector[0]]
+            )
+        # Rotate clockwise in 2nd and 4th quadrant
+        elif (drag_force_unit_vector[0] > 0 and drag_force_unit_vector[1] < 0) or (
+            drag_force_unit_vector[0] < 0 and drag_force_unit_vector[1] > 0
         ):
-            lift_force_direction = np.array([drag_force_direction[1], -drag_force_direction[0]])
+            lift_force_direction = np.array(
+                [drag_force_unit_vector[1], -drag_force_unit_vector[0]]
+            )
+        # 0 otherwise
         else:
             lift_force_direction = np.array([0, 0])
 
         # Rotate the lift and drag forces back to the original orientation
-        if orientation != 0:
-            lift_force_direction = rotate_vector_anticlockwise(lift_force_direction, orientation)
-            drag_force_direction = rotate_vector_anticlockwise(drag_force_direction, orientation)
+        lift_force_direction = rotate_vector(lift_force_direction, orientation, clockwise=False)
+        drag_force_unit_vector = rotate_vector(
+            drag_force_unit_vector, orientation, clockwise=False
+        )
 
         lift_force = lift_force_magnitude * lift_force_direction
-        drag_force = drag_force_magnitude * drag_force_direction
+        drag_force = drag_force_magnitude * drag_force_unit_vector
 
         return lift_force, drag_force
 
@@ -172,12 +186,11 @@ class MediumForceComputation:
         drag_coefficient = np.interp(
             attack_angle, self.__drag_coefficients[:, 0], self.__drag_coefficients[:, 1]
         )
-        area = np.interp(attack_angle, self.__areas[:, 0], self.__areas[:, 1])
-        return lift_coefficient, drag_coefficient, area
+        return lift_coefficient, drag_coefficient
 
-    def draw_boat(ax, position, orientation):
-        """Draws a simplified boat shape on the given axes, ensuring it
-        aligns with the orientation line."""
+    def _draw_boat(ax, position, orientation):
+        """Draws a simplified boat shape on the given axes, ensuring it aligns
+        with the orientation line."""
         boat_length = 1.0
         boat_width = 0.3
 
@@ -240,7 +253,7 @@ class MediumForceComputation:
         norm_drag_force = drag_force / np.linalg.norm(drag_force)
 
         # Draw the boat
-        MediumForceComputation.draw_boat(ax, position, orientation)
+        MediumForceComputation._draw_boat(ax, position, orientation)
         # Plot forces and velocity
         ax.quiver(
             position[0],
@@ -311,7 +324,7 @@ class MediumForceComputation:
         return self.__drag_coefficients
 
     @property
-    def areas(self) -> NDArray:
+    def areas(self) -> Scalar:
         return self.__areas
 
     @property
