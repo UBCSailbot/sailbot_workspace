@@ -64,9 +64,8 @@ class WingsailController:
         """
         Computes and returns the final trim tab angle.
 
-        Range: -90 <= direction <= 90 for symmetry. The absolute trim tab angle range is
-        [90, -90) degrees, but the realist range of angles it can take is dictated by the angles
-        used in the look up table.
+        Range: -40 <= direction <= 40 for symmetry. The realistic range of angles it can take is
+        dictated by the angles used in the look up table.
 
         Args:
         - apparent_wind_speed (float): The apparent wind speed in meters per second.
