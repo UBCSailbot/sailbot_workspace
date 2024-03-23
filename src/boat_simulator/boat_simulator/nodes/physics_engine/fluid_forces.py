@@ -177,7 +177,7 @@ class MediumForceComputation:
         v_rotated = np.dot(rotation_matrix, v)
         return v_rotated
 
-    def interpolate(self, attack_angle: Scalar) -> Tuple[Scalar, Scalar, Scalar]:
+    def interpolate(self, attack_angle: Scalar) -> Tuple[Scalar, Scalar]:
         """Performs linear interpolation to estimate the lift and drag coefficients, as well as the
         associated area upon which the fluid acts, based on the provided angle of attack.
 
@@ -186,7 +186,7 @@ class MediumForceComputation:
                     the medium and the direction of the apparent velocity, expressed in degrees.
 
             Returns:
-                Tuple[Scalar, Scalar, Scalar]: A tuple representing the computed parameters. The
+                Tuple[Scalar, Scalar]: A tuple representing the computed parameters. The
                     first scalar denotes the lift coefficient, the second scalar represents the
                     drag coefficient, and the third scalar indicates the surface area upon which
                     the fluid acts. Both lift and drag coefficients are unitless, while the
