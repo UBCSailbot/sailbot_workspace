@@ -75,7 +75,12 @@ function TimestampFilter(props) {
                             <DatePicker
                                 label="Starting Date"
                                 onChange={handleStartChange}
-                                className={styles.datepicker}
+                                slotProps={{
+                                    field: { clearable: true },
+                                    popper: {
+                                        disablePortal: true,
+                                    },
+                                }}
                             />
                             {startDate && props.children}
                         </LocalizationProvider>
@@ -85,7 +90,12 @@ function TimestampFilter(props) {
                             <DatePicker
                                 label="Ending Date"
                                 onChange={handleEndChange}
-                                className={styles.datepicker}
+                                slotProps={{
+                                    field: { clearable: true },
+                                    popper: {
+                                        disablePortal: true,
+                                    },
+                                }}
                             />
                             {endDate && props.children}
                         </LocalizationProvider>
