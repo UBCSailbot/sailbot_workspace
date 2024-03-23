@@ -52,6 +52,12 @@ def test_initialization(medium_force_setup):
         (np.array([-1, 0]), 180, 0),
         (np.array([0, 1]), 270, -180),
         (np.array([0, -1]), 90, -180),
+        # Additional tests with non-unit vectors
+        (np.array([2, 0]), 0, 0),  # Horizontal vector, twice the unit length
+        (np.array([0, 2]), 0, 90),  # Vertical vector, twice the unit length
+        (np.array([-2, 0]), 0, -180),  # Left horizontal, twice the unit length
+        (np.array([3, 4]), 0, np.rad2deg(np.arctan2(4, 3))),  # 3-4-5 triangle vector
+        (np.array([5, 5]), 45, 0),  # Diagonal upward, aligned with orientation
     ],
 )
 def test_calculate_attack_angle(

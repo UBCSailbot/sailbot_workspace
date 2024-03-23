@@ -85,31 +85,35 @@ class MediumForceComputation:
         Returns:
             Tuple[NDArray, NDArray]: A tuple containing the lift force and drag force experienced
                 by the medium, both expressed in newtons (N).
-                Bound to 360 degrees before using.
         """
 
         attack_angle = self.calculate_attack_angle(apparent_velocity, orientation)
         lift_coefficient, drag_coefficient = self.interpolate(attack_angle)
         velocity_magnitude = np.linalg.norm(apparent_velocity)
 
-        def calculate_magnitude(coefficient):
-            return 0.5 * self.__fluid_density * coefficient * self.areas * (velocity_magnitude**2)
+        def __calculate_fluid_force_magnitude(
+            self, coefficient: Scalar, velocity_magnitude: Scalar
+        ) -> Scalar:
+            """Calculates the magnitude of fluid forces based on coefficient and velocity."""
+            return 0.5 * self.__fluid_density * coefficient * self.__area * (velocity_magnitude**2)
 
         # Calculate the lift and drag forces
 
-        lift_force_magnitude = calculate_magnitude(lift_coefficient)
-        drag_force_magnitude = calculate_magnitude(drag_coefficient)
+        lift_force_magnitude = __calculate_fluid_force_magnitude(lift_coefficient)
+        drag_force_magnitude = __calculate_fluid_force_magnitude(drag_coefficient)
 
         drag_force_unit_vector = (apparent_velocity) / velocity_magnitude
 
-        def rotate_vector(v, theta_degrees, clockwise=True):
+        def __rotate_vector(v, theta_degrees, clockwise=True):
             """
             Rotates a vector by a specified angle in degrees.
 
             Args:
-                v (np.array): The vector to be rotated.
-                theta_degrees (float): The rotation angle in degrees.
-                clockwise (bool, optional): If True, rotates clockwise. Defaults to True.
+            v (np.array): The vector to be rotated.
+            theta_degrees (float): The rotation angle in degrees.
+            clockwise (bool, optional): Determines the direction of rotation. If True (default),
+                                        rotates the vector clockwise. If False, rotates the vector
+                                        counterclockwise.
 
             Returns:
                 np.array: The rotated vector.
@@ -126,7 +130,9 @@ class MediumForceComputation:
             return v_rotated
 
         # Rotate the drag force direction to normalize it to 0 degrees
-        drag_force_unit_vector = rotate_vector(drag_force_unit_vector, orientation, clockwise=True)
+        drag_force_unit_vector = __rotate_vector(
+            drag_force_unit_vector, orientation, clockwise=True
+        )
 
         # Rotate the lift and drag forces by 90 degrees to obtain the lift and drag forces
 
@@ -134,28 +140,33 @@ class MediumForceComputation:
         # and the positive y-axis is 90 degrees
         # Positive rotation is counter clockwise
 
-        # Rotate counter clockwise in 1st and 3rd quadrant,
+        is_drag_in_first_or_third_quadrant = (
+            drag_force_unit_vector[0] > 0 and drag_force_unit_vector[1] > 0
+        ) or (drag_force_unit_vector[0] < 0 and drag_force_unit_vector[1] < 0)
 
-        if (drag_force_unit_vector[0] > 0 and drag_force_unit_vector[1] > 0) or (
-            drag_force_unit_vector[0] < 0 and drag_force_unit_vector[1] < 0
-        ):
+        is_drag_in_second_or_fourth_quadrant = (
+            drag_force_unit_vector[0] > 0 and drag_force_unit_vector[1] < 0
+        ) or (drag_force_unit_vector[0] < 0 and drag_force_unit_vector[1] > 0)
+
+        # Rotate the lift force direction based on the quadrant of the drag force
+        if is_drag_in_first_or_third_quadrant:
+            # Rotate counter clockwise to get lift direction
             lift_force_direction = np.array(
                 [-drag_force_unit_vector[1], drag_force_unit_vector[0]]
             )
-        # Rotate clockwise in 2nd and 4th quadrant
-        elif (drag_force_unit_vector[0] > 0 and drag_force_unit_vector[1] < 0) or (
-            drag_force_unit_vector[0] < 0 and drag_force_unit_vector[1] > 0
-        ):
+        elif is_drag_in_second_or_fourth_quadrant:
+            # Rotate clockwise to get lift direction
             lift_force_direction = np.array(
                 [drag_force_unit_vector[1], -drag_force_unit_vector[0]]
             )
-        # 0 otherwise
         else:
+            # Should not happen if drag force direction is properly normalized
+            # This could be a fallback for an unexpected case
             lift_force_direction = np.array([0, 0])
 
         # Rotate the lift and drag forces back to the original orientation
-        lift_force_direction = rotate_vector(lift_force_direction, orientation, clockwise=False)
-        drag_force_unit_vector = rotate_vector(
+        lift_force_direction = __rotate_vector(lift_force_direction, orientation, clockwise=False)
+        drag_force_unit_vector = __rotate_vector(
             drag_force_unit_vector, orientation, clockwise=False
         )
 
