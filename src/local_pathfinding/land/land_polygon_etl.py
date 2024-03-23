@@ -136,7 +136,7 @@ def main():
     logger = Logger()
 
     # Setup environment variables
-    # the L"OK"y function that tries to do this fails, so set it here
+    # the Loky function that tries to do this fails, so set it here
     cores = psutil.cpu_count(logical=False)
     os.environ["LOKY_MAX_CPU_COUNT"] = str(cores)
 
