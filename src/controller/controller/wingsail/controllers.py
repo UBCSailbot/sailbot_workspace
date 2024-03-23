@@ -38,13 +38,15 @@ class WingsailController:
         self, reynolds_number: float, apparent_wind_direction: float
     ) -> float:
         """
-        Computes the trim tab angle based on Reynolds number and apparent wind direction.
+        Computes the trim tab angle based on Reynolds number and apparent wind direction. During
+        this computation, it is assumed that the wingsail is aligned in the direction of the wind,
+        with the rear of the wingsail (where the trim tab is located) pointing in the same
+        direction as the wind is blowing.
 
         Args:
         - reynolds_number (float): The Reynolds number.
-        - apparent_wind_direction (float): The absolute bearing (true heading) of the wind.
-        Degrees, 0° means the apparent wind is blowing from the bow to the stern of the boat,
-        increase CW
+        - apparent_wind_direction (float): direction of the wind, in degrees. Here 0° means the
+        apparent wind is blowing from the bow to the stern of the boat, and the angle increases CCW.
         Range: -180 < direction <= 180 for symmetry
 
         Returns:
@@ -62,14 +64,16 @@ class WingsailController:
         """
         Computes and returns the final trim tab angle.
 
-        Range: -180 < direction <= 180 for symmetry
+        Range: -90 <= direction <= 90 for symmetry. The absolute trim tab angle range is
+        [90, -90) degrees, but the realist range of angles it can take is dictated by the angles
+        used in the look up table.
 
         Args:
         - apparent_wind_speed (float): The apparent wind speed in meters per second.
         - apparent_wind_direction (float): The apparent wind direction in degrees.
 
         Returns:
-        - trim_tab_angle (float): The computed trim tab angle.
+        - trim_tab_angle (float): The computed trim tab angle. With angle increasing CCW
         """
         reynolds_number: float = self._compute_reynolds_number(apparent_wind_speed)
         trim_tab_angle: float = self._compute_trim_tab_angle(
