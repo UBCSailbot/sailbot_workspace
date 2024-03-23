@@ -17,8 +17,7 @@ using tcp       = boost::asio::ip::tcp;
 namespace remote_transceiver
 {
 // Default number of HTTP requests that can be accepted in parallel
-// Using more than one thread is potentially buggy
-constexpr int DEFAULT_NUM_IO_THREADS = 1;
+constexpr int DEFAULT_NUM_IO_THREADS = 2;
 
 // Production constants are all placheholders
 static const std::string PROD_DB_NAME = "PLACEHOLDER";
