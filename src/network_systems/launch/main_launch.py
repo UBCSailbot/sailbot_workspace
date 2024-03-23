@@ -217,6 +217,7 @@ def get_remote_transceiver_description(context: LaunchContext) -> Node:
 
     return node
 
+
 def get_local_transceiver_description(context: LaunchContext) -> Node:
     """Gets the launch description for the local_transceiver_node.
 
