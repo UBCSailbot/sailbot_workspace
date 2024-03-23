@@ -39,13 +39,19 @@ State mock_ais_ships<<SimTopic>> : AISShips
 State batteries<<Topic>> : Batteries
 State boat_sim_input<<SimTopic>> : CanSimToBoatSim
 state desired_heading<<Topic>> : DesiredHeading
+note right of desired_heading
+    Note: Desired heading
+    is used in both
+    simulation and
+    deployment
+end note
 State data_sensors<<Topic>> : GenericSensors
 State gps<<Topic>> : GPS
 State mock_gps<<SimTopic>> : GPS
 State local_path_data<<Topic>> : LPathData
 State global_path<<Topic>> : Path
 State "global_path" as mock_global_path<<SimTopic>> : Path
-note right of mock_global_path
+note left of mock_global_path
     Note: the global_path topic
     used during simulation is
     the same topic used
@@ -121,8 +127,8 @@ l_trans_pub --> global_path
 
 g_path_pub --> mock_global_path
 
-sim_pub -left-> mock_gps
-sim_pub -left-> mock_wind_sensors
+sim_pub --> mock_gps
+sim_pub --> mock_wind_sensors
 
 ' Topic --> Subscriber
 
@@ -131,10 +137,10 @@ ais_ships --> l_trans_sub
 
 batteries --> l_trans_sub
 
-boat_sim_input --> sim_sub
+boat_sim_input -right-> sim_sub
 
 desired_heading --> ctrl_sub
-desired_heading --> sim_sub
+desired_heading -left-> can_sim_sub
 
 data_sensors --> l_trans_sub
 
