@@ -189,14 +189,4 @@ private:
     */
     bool storeWindSensors(
       const ProtoList<Polaris::Sensors::Wind> & wind_pb, const std::string & timestamp, mongocxx::client & client);
-
-    // /**
-    // * @brief Builds global path document by extracting waypoint information and adding it to document
-    // *
-    // * @param global_path_doc_arr  bstream document builder array for global path
-    // * @param waypoints            global path waypoints: <latitude: decimal>, <longitude: decimal>
-    // *
-    // */
-    // auto buildGlobalPathDoc(
-    //   auto global_path_doc_arr, const ProtoList<Polaris::Waypoint>& waypoints);
 };
