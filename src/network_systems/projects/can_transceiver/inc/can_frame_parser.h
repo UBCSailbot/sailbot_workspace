@@ -25,6 +25,7 @@ namespace msg    = custom_interfaces::msg;
 
 /**
  * @brief IDs of CAN frames relevant to the Software team
+ * NOTE: IDs are placeholders for now.
  *
  */
 enum class CanId : canid_t {
@@ -32,7 +33,7 @@ enum class CanId : canid_t {
     BMS_P_DATA_FRAME_1     = 0x31,
     BMS_P_DATA_FRAME_2     = 0x32,
     SAIL_AIS               = 0x60,
-    SAIL_WSM_CMD_FRAME_1   = 0x61,  // TODO(hhenry01): This was changed, confirm the ID with ELEC
+    SAIL_WSM_CMD_FRAME_1   = 0x61,
     SAIL_WSM_DATA_FRAME_1  = 0x63,
     SAIL_WIND_DATA_FRAME_1 = 0x65,
     PATH_GPS_DATA_FRAME_1  = 0x80,
@@ -476,15 +477,15 @@ public:
     /**
      * @brief Construct an AISShips object from a custom_interfaces ROS msg representation
      *
-     * @param ros_ais_ships custom_interfaces representation of an AISShip
+     * @param ros_ais_ship custom_interfaces representation of an AISShip
      * @param id      CanId of the AISShips
      */
-    explicit AISShips(msg::AISShips ros_ais_ships, CanId id);
+    explicit AISShips(msg::HelperAISShip ros_ship, CanId id);
 
     /**
      * @return the custom_interfaces ROS representation of the AISShips object
      */
-    msg::AISShips toRosMsg() const;
+    msg::HelperAISShip toRosMsg() const;
 
     /**
      * @return the Linux CanFrame representation of the Battery object
@@ -505,17 +506,28 @@ private:
     explicit AISShips(CanId id);
 
     /**
+     * @brief Private helper to construct a HelperAISShip message
+     *
+     */
+    msg::HelperAISShip toHelperAISShip() const;
+
+    /**
      * @brief Check if the assigned fields after constructing an AISShips object are within bounds.
      * @throws std::out_of_range if any assigned fields are outside of expected bounds
      */
     void checkBounds() const;
 
-    size_t num_ships_;
-    float  lat_;
-    float  lon_;
-    float  speed_;
-    int8_t rot_;
-    float  course_;
+    int8_t   num_ships_;
+    float    lat_;
+    float    lon_;
+    float    speed_;
+    int8_t   rot_;
+    float    course_;
+    float    heading_;
+    float    width_;
+    float    length_;
+    uint16_t id_;
+    int8_t   idx_;
 };
 
 }  // namespace CAN_FP
