@@ -11,7 +11,7 @@ The two data input streams are:
 
     2. GEBCO_2023.nc
         A netCDF file containing bathymetric data. The data is filtered for depth
-        and then polygonized using DBSCAN and alphashape.
+        and then polygonized using DBSCAN and shapely.concave_hull
         This data is downloaded from
         https://www.gebco.net/
 
@@ -40,20 +40,28 @@ import os
 from os.path import normpath
 from typing import List
 
-import alphashape
 import geopandas as gpd
 import numpy as np
 import pandas as pd
 import psutil
 import pyproj
 import xarray as xr
-from files import Logger, download_zip, dump_pkl, flatten_dir, gd_download, load_pkl
 from geopandas import GeoDataFrame
-from shapely.geometry import LineString, Point, Polygon, box
+from shapely import concave_hull, convex_hull
+from shapely.geometry import LineString, MultiPoint, Point, Polygon, box
 from shapely.ops import split, transform
 from sklearn.cluster import DBSCAN
 from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
+
+from land.custom_utils import (
+    Logger,
+    download_zip,
+    dump_pkl,
+    flatten_dir,
+    gd_download,
+    load_pkl,
+)
 
 # Constants
 WGS84 = pyproj.CRS("EPSG:4326")
@@ -150,6 +158,8 @@ def main():
 
     parser.add_argument("--jump", help="Jump past intitial data filtering", action="store_true")
 
+    parser.add_argument("--grid", help="The size of grid cells for chunking data", type=float)
+
     args = parser.parse_args()
 
     # Check for process dependent files
@@ -202,6 +212,10 @@ def main():
         base_shp = BASE_SHP_FILE
         netCDF_file = NETCDF_FILE
 
+    # Set grid size
+    if args.grid:
+        global GRID_SIZE
+        GRID_SIZE = args.grid
     # ----------------------------------------END SETUP -------------------------------------------
 
     # Lat/Lon ranges
@@ -302,6 +316,7 @@ def main():
 
     # create spatial index object
     sindex = gdf_combined.sindex
+
     # dummy query to ensure sindex is fully instantiated
     point = Point(-122.743184, 48.268958)
     sindex.query(geometry=point.buffer(distance=0.001, cap_style=3))
@@ -317,6 +332,7 @@ def main():
         f"'{COMPLETE_DATA_FILE}'."
     )
     logger.ok(f"The corresponding spatial index has been saved as '{SINDEX_FILE}'.")
+    logger.ok("Done")
 
     return
 
@@ -393,7 +409,7 @@ def get_bathy_gdf(
     Generates a GeoDataFrame containing polygons representing the bathymetric data set.
     Points are extracted from the bathymetric data set and then run through a depth filter and
     two spatial filters.
-    The points are then polygonized using DBSCAN and alphashape.
+    The points are then polygonized using DBSCAN and shapely.concave_hull
 
     Depth Filtering:
         - Any points which are not within the depth range [MIN_DEPTH, MAX_HEIGHT] are removed.
@@ -524,7 +540,7 @@ def get_bathy_gdf(
         if len(chunk) == 0:  # empty chunk
             continue
 
-        # create a GDF from the chunk(ndarray)
+        # create a GDF from the chunked ndarray
         latitude = chunk[:, 0]
         longitude = chunk[:, 1]
         geometry = gpd.points_from_xy(longitude, latitude)
@@ -533,7 +549,7 @@ def get_bathy_gdf(
         gdf_polygons = None
 
         try:
-            # polygonize the chunk with default eps and alpha
+            # polygonize the chunk with default eps and ratio
             gdf_polygons = polygonize_chunks(gdf_chunk, scaler=scaler)
 
         except FailedPolygonError:
@@ -545,14 +561,14 @@ def get_bathy_gdf(
             except FailedPolygonError:
 
                 try:
-                    # lower eps and alpha
+                    # lower eps and raise ratio
                     gdf_polygons = polygonize_chunks(
-                        gdf_chunk, scaler=scaler, eps=0.0005, alpha=30
+                        gdf_chunk, scaler=scaler, eps=0.0005, ratio=0.1
                     )
 
                 except FailedPolygonError:
                     # Still failed to polygonize
-                    # try lowering alpha even more in the previous try/except layer
+                    # try raising ratio even more in the previous try/except layer
                     logger.error(
                         f"Could not polygonize chunk #{i}."
                         "results will not be reliable. Aborting bathymetric data processing."
@@ -581,31 +597,36 @@ def get_bathy_gdf(
 
 
 def polygonize_chunks(
-    gdf: GeoDataFrame, scaler: StandardScaler, eps: float = 0.001, alpha: int = 100
+    gdf: GeoDataFrame, scaler: StandardScaler, eps: float = 0.001, ratio: float = 0.05
 ) -> List[Polygon]:
     """
-    Clusters a set of coordinates using DBSCAN and polygonizes the clusters using DBSCAN.
+    Clusters a set of coordinates using DBSCAN and
+    polygonizes the clusters using shapely.concave_hull.
 
-    Important Note: The default eps and alpha values were determined through trial and error.
+    Important Note: The default eps and ratio values were determined through trial and error.
                     * The DBSCAN algorithm is very sensitive to the eps value, too small of an eps
                     will cause the number of clusters to explode as eps will be below the unit
                     distance between points in the data set, making every point its own cluster.
-                    * The alphashape algorithm is also sensitive to the alpha value, any value
-                    below 100 will yield more convex polygons and any value higher will
-                    potentially risk losing entire polygons.
+
+                    * The concave_hull algorithm is also sensitive to the ratio value, any value
+                    below 0.05 will create polygons with a lot of empty space inside. Higher values
+                    will create lower detailed/more convex hulls.
+
     Args:
         - gdf (GeoDataFrame): A GeoDataFrame containing a set of coordinates to be polygonized.
         - scaler (StandardScaler): A StandardScaler object which will be used to scale the
           coordinates before clustering.
         - eps (float): The maximum distance between two samples for one to be considered as in the
           neighborhood of the other. Used by the DBSCAN algorithm.
-        - alpha (int): The alpha value to be used in the alphashape algorithm.
+        - ratio (float in [0,1]): The concavity ratio of the hull. ratio = 1 gives convex_hull
 
     Returns:
         - gdf_polygons (List[Polygon]): A list of polygons generated from the clusters.
+
+    Raises:
+        FailedPolygonError: Raised when polygonization fails for any reason
     """
-    # TODO This function is not ready, still need to implement checks to make sure polygonization
-    # was successful
+
     coordinates = np.array([(point.x, point.y) for point in gdf["geometry"]])
 
     if len(coordinates) == 0:
@@ -630,12 +651,35 @@ def polygonize_chunks(
     gdf_clusters = [gdf[gdf["cluster"] == i] for i in range(max(gdf["cluster"]) + 1)]
 
     # Polygonize
-    gdf_polygons = [
-        alphashape.alphashape(
-            points=[(point.x, point.y) for point in cluster["geometry"]], alpha=alpha
+    try:
+        # Check how many polygons we should obtain
+        # this provides a minimum count as convex_hull will not lose any polygons
+        convex_hulls = list(
+            map(
+                lambda cluster: convex_hull(
+                    MultiPoint(cluster["geometry"]),
+                ),
+                gdf_clusters,
+            )
         )
-        for cluster in gdf_clusters
-    ]
+
+        gdf_polygons = list(
+            map(
+                lambda cluster: concave_hull(
+                    MultiPoint(cluster["geometry"]),
+                    ratio=ratio,
+                ),
+                gdf_clusters,
+            )
+        )
+
+        # Ensure no clusters were lost by the concave_hull operation
+        if len(convex_hulls) != len(gdf_polygons):
+            raise FailedPolygonError("Some polygons were lost during polygonization")
+
+    except Exception as e:
+
+        raise FailedPolygonError from e
 
     return gdf_polygons
 
@@ -676,17 +720,22 @@ def points_inside(
         # find all polygons in gdf_filter that intersect bbox
         gdf_polygons = gdf_filter.iloc[gdf_filter.sindex.query(bbox, predicate="intersects")]
 
-        idx_to_drop = []
-        for polygon in gdf_polygons["geometry"]:
-            # find all points in gdf_bbox_pts that are inside each polygon, so we can drop them
-            # have to do it this way because we cannot drop any points
-            # when we still have more queries to make on gdf_bbox_pts.sindex
-            idx_to_drop.extend(
-                list(gdf_bbox_pts.sindex.query(geometry=polygon, predicate="contains"))
-            )
+        # find all points in gdf_bbox_pts that are inside any polygon from gdf_filter
+        # using sjoin might speed this up more
+        idx_to_drop = list(
+            np.fromiter(
+                map(
+                    lambda poly: list(
+                        gdf_bbox_pts.sindex.query(geometry=poly, predicate="contains")
+                    ),
+                    gdf_polygons["geometry"],
+                ),
+                dtype=np.int,
+            ).flatten()
+        )
 
-        idx_to_drop = list(set(idx_to_drop))  # remove duplicates
-
+        # remove duplicates
+        idx_to_drop = list(set(idx_to_drop))
         try:
             gdf_bbox_pts = gdf_bbox_pts.drop(
                 idx_to_drop

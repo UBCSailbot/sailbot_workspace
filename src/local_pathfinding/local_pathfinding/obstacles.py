@@ -2,35 +2,42 @@
 
 import math
 import os
+import sys
+from typing import List, Optional
 
 import fiona
 import numpy as np
 from custom_interfaces.msg import HelperAISShip, HelperLatLon
+from geopandas import GeoDataFrame
 from shapely.affinity import affine_transform
-from shapely.geometry import MultiPolygon, Point, Polygon, box
+from shapely.geometry import MultiPolygon, Point, Polygon, envelope
+from shapely.strtree import STRtree
 
-from land.files import load_pkl
-from land.land_polygon_etl import SINDEX_FILE
 from local_pathfinding.coord_systems import XY, latlon_to_xy, meters_to_km
+from local_pathfinding.land.land_polygon_etl import COMPLETE_DATA_FILE
 
+sys.path.insert(0, "/workspaces/sailbot_workspace/src/local_pathfinding/land")
 # Constants
 PROJ_TIME_NO_COLLISION = 3  # hours
-COLLISION_ZONE_SAFETY_BUFFER = 0.5  # km
+BOAT_BUFFER = 0.5  # km
 COLLISION_ZONE_STRETCH_FACTOR = 1.5  # This factor changes the scope/width of the collision cone
-SHORE_BUFFER = 0.5  # km
+LAND_BUFFER = 0.5  # km
 
 LAND_DIR = "/workspaces/sailbot_workspace/src/local_pathfinding/land"
+LAND_POLYGONS_FILE = os.path.join(LAND_DIR, COMPLETE_DATA_FILE)
 
 
 class Obstacle:
-    """This class describes general obstacle objects which are
+    """
+    This class describes general obstacle objects which are
     anything which the sailbot must avoid.
+
+    Do not instantiate an Obstacle object directly, use one of the subclasses instead.
 
     Attributes:
         reference (HelperLatLon): Lat and lon position of the next global waypoint.
         sailbot_position (XY): Lat and lon position of SailBot.
-        sailbot_speed (float): Speed of the SailBot in kmph.
-        collision_zone (Optional[Polygon]): Shapely polygon representing the
+        collision_zone (Optional[Polygon or MultiPolygon]): Shapely geometry representing the
             obstacle's collision zone. Shape depends on the child class.
     """
 
@@ -43,7 +50,8 @@ class Obstacle:
         self.collision_zone = None
 
     def is_valid(self, point: XY) -> bool:
-        """Checks if a point is contained the obstacle's collision zone.
+        """
+        Checks if a state point is inside the obstacle's collision zone.
 
         Args:
             point (HelperLatLon): Point representing the state point to be checked.
@@ -52,38 +60,28 @@ class Obstacle:
             bool: True if the point is not within the obstacle's collision zone, false otherwise.
 
         Raises:
-            ValueError: If the collision zone has not been initialized.
+            RuntimeError: If the collision zone has not yet been initialized.
         """
         if self.collision_zone is None:
-            raise ValueError("Collision zone has not been initialized")
+            raise RuntimeError("Collision zone has not been initialized")
 
-        # contains() requires a shapely Point object as an argument
-        point = Point(*point)
+        return not self.collision_zone.contains(Point(*point))
 
-        return not self.collision_zone.contains(point)
-
-    def update_collision_zone(self, collision_zone: Polygon, offset: XY, angle: float):
-        """Updates the collision zone of the obstacle. Called by the child classes.
-
-        Args:
-            collision_zone (Polygon): Shapely Polygon representing the obstacle's collision zone.
-            offset (XY): position of the collision zone relative to the reference point.
-            angle (float): rotation angle of the collision zone in degrees.
+    def update_collision_zone(self) -> None:
         """
-        dx, dy = offset
-        angle_rad = math.radians(angle)
-        sin_theta = math.sin(angle_rad)
-        cos_theta = math.cos(angle_rad)
+        Updates the collision zone of the obstacle to reflect updated attributes.
+        If attributes of the obstacle have not been changed, this function will have no effect.
+        """
+        if isinstance(self, Boat):
+            # Boat Obstacle
+            self._update_boat_czone()
 
-        # coefficient matrix for the 2D affine transformation of the collision zone
-        transformation = np.array([cos_theta, -sin_theta, sin_theta, cos_theta, dx, dy])
+        else:
+            # Land Obstacle
+            self._update_land_czone()
 
-        collision_zone = affine_transform(collision_zone, transformation)
-
-        self.collision_zone = collision_zone.buffer(COLLISION_ZONE_SAFETY_BUFFER, join_style=2)
-
-    def update_sailbot_data(self, sailbot_position: HelperLatLon, sailbot_speed: float):
-        """Updates the sailbot's position and speed.
+    def update_sailbot_data(self, sailbot_position: HelperLatLon, sailbot_speed: float) -> None:
+        """Updates Sailbot's position, and Sailbot's speed (if the caller is a Boat object).
 
         Args:
             sailbot_position (HelperLatLon): Position of the SailBot.
@@ -91,9 +89,11 @@ class Obstacle:
         """
         self.sailbot_position_latlon = sailbot_position
         self.sailbot_position = latlon_to_xy(self.reference, sailbot_position)
-        self.sailbot_speed = sailbot_speed
 
-    def update_reference_point(self, reference: HelperLatLon):
+        if isinstance(self, Boat):
+            self.sailbot_speed = sailbot_speed
+
+    def update_reference_point(self, reference: HelperLatLon) -> None:
         """Updates the reference point.
 
         Args:
@@ -104,56 +104,103 @@ class Obstacle:
 
         if isinstance(self, Boat):
             # regenerate collision zone with updated reference point
-            self.update_boat_collision_zone()
+            self.update_boat_czone()
+
+        else:
+            # regenerate collision zone with updated reference point
+            self.update_land_czone()
 
 
 class Land(Obstacle):
     """
-    Describes land objects which Sailbot must avoid.
+    Describes land objects which Sailbot must avoid. The intent is to only have a single Land
+    obstacle and update its collision zone with new geometry when required.
 
     Attributes:
-        polygons (MultiPolygon): Shapely MultiPolygon representing all land obstacles within the
-        state space.
+        next_waypoint (HelperLatLon): Lat and lon position of the next global waypoint.
+        sindex (STRtree): Spatial index of the land polygons.
+        bbox_buffer (float): square buffer around Sailbot and around the next global waypoint.
     """
-
-    # The spatial index of the land polygon data set
-    sindex = load_pkl(os.path.join(LAND_DIR, SINDEX_FILE))
 
     def __init__(
         self,
         reference: HelperLatLon,
         sailbot_position: HelperLatLon,
         next_waypoint: HelperLatLon,
-        buffer: float,
+        sindex: STRtree,
+        bbox_buffer: float,
     ):
         super().__init__(reference, sailbot_position)
-        self.polygons = self.get_land(reference, sailbot_position, next_waypoint, buffer)
+        self.next_waypoint = next_waypoint
+        self.sindex = sindex
+        self.bbox_buffer = bbox_buffer
+        self._update_land_czone()
 
-    def get_land(
-        reference: HelperLatLon,
-        sailbot_position: HelperLatLon,
-        next_waypoint: HelperLatLon,
-        buffer: float,
-    ) -> MultiPolygon:
+    def _update_land_czone(self) -> None:
         """
-        Returns a MultiPolygon representing all land obstacles within a rectangle
-        that bounds the state space with some buffer.
+        Updates the Land object's collision zone with a MultiPolygon representing
+        all land obstacles within a rectangle that bounds boxes around Sailbot and the
+        next global waypoint.
+        """
+
+        # create a box around sailbot
+        sailbot_box = Point(*self.sailbot_position).buffer(
+            self.bbox_buffer, cap_style="square", join_style=2
+        )
+        # and another around the next waypoint
+        waypoint_box = Point(*self.next_waypoint).buffer(
+            self.bbox_buffer, cap_style="square", join_style=2
+        )
+        # then create a bounding box around both boxes
+        bbox = envelope(list(sailbot_box, waypoint_box))
+
+        # query the spatial index for all land polygons that intersect the bounding box
+        rows = list(self.sindex.query(geometry=bbox, predicate="intersects"))
+
+        # read in these rows from the shape file
+        with fiona.open(LAND_POLYGONS_FILE, "r") as reader:
+            # array of polygons
+            latlon_polygons = GeoDataFrame.from_features((reader[row] for row in rows))["geometry"]
+
+        local_polygons = self._transform_polygons(latlon_polygons, self.reference)
+
+        # add a buffer to the perimeter of all polygons
+        buffered_polygons = list(
+            map(lambda poly: poly.buffer(LAND_BUFFER, join_style=2), local_polygons)
+        )
+
+        self.collision_zone = MultiPolygon(buffered_polygons)
+
+    def _transform_polygons(polygons: List[Polygon], reference: HelperLatLon) -> List[Polygon]:
+        """
+        Transforms the polygons from the global coordinate system to the local
+        XY coordinate system.
 
         Args:
-            reference (HelperLatLon): Lat and lon position of the reference point
-            sailbot_position (HelperLatLon): Lat and lon position of SailBot.
-            next_waypoint (HelperLatLon): Lat and lon position of the next global waypoint.
-            buffer (float): Buffer distance in km to add to bounding box around
+            polygons (List[Polygon]): List of polygons to be transformed.
+            reference (HelperLatLon): Lat and lon position of the reference point.
+
+        Returns:
+            List[Polygon]: List of transformed polygons.
+
+        Inner Functions:
+            _latlon_to_point(point: HelperLatLon) -> Point:
+                Converts a latlon point to a 2D Cartesian point.
+            _transform_polygon(poly: Polygon) -> Polygon:
+                Applies the _latlon_to_point function to every point of poly
         """
-        # create a bounding box around the state space
-        bbox = box(
-            sailbot_position.longitude,
-            sailbot_position.latitude,
-            next_waypoint.longitude,
-            next_waypoint.latitude,
-        )
-        # rows = Land.sindex.query(bbox, predicate="intersects")
-        # pull these rows from the shp file using fiona
+
+        def _latlon_to_point(point: HelperLatLon) -> Point:
+            return Point(
+                *latlon_to_xy(
+                    reference=reference, latlon=HelperLatLon(latitude=point[1], longitude=point[0])
+                )
+            )
+
+        def _transform_polygon(poly: Polygon) -> Polygon:
+            return Polygon(list(map(_latlon_to_point, poly.exterior.coords)))
+
+        return list(map(_transform_polygon, polygons))
 
 
 class Boat(Obstacle):
@@ -178,11 +225,10 @@ class Boat(Obstacle):
         self.ais_ship = ais_ship
         self.width = meters_to_km(self.ais_ship.width.dimension)
         self.length = meters_to_km(self.ais_ship.length.dimension)
-        self.update_boat_collision_zone()
+        self._update_boat_czone()
 
-    def update_boat_collision_zone(self, ais_ship: Optional[HelperAISShip] = None):
-        """Sets or regenerates a Shapely Polygon that represents the boat's collision zone,
-        which is shaped like a cone.
+    def _update_boat_czone(self, ais_ship: Optional[HelperAISShip] = None) -> None:
+        """Sets or regenerates a Shapely Polygon that represents the boat's collision zone.
 
         Args:
             ais_ship (Optional[HelperAISShip]): AIS Ship message containing boat information.
@@ -206,7 +252,7 @@ class Boat(Obstacle):
         cog = ais_ship.cog.heading
 
         # Calculate distance the boat will travel before soonest possible collision with Sailbot
-        projected_distance = self.calculate_projected_distance()
+        projected_distance = self._calc_proj_dist()
 
         # TODO This feels too arbitrary, maybe will incorporate ROT at a later time
         collision_zone_width = projected_distance * COLLISION_ZONE_STRETCH_FACTOR * width
@@ -221,9 +267,17 @@ class Boat(Obstacle):
             ]
         )
 
-        self.update_collision_zone(boat_collision_zone, position, -cog)
+        dx, dy = position
+        angle_rad = math.radians(-cog)
+        sin_theta = math.sin(angle_rad)
+        cos_theta = math.cos(angle_rad)
 
-    def calculate_projected_distance(self) -> float:
+        # coefficient matrix for the 2D affine transformation of the collision zone
+        transformation = np.array([cos_theta, -sin_theta, sin_theta, cos_theta, dx, dy])
+        collision_zone = affine_transform(boat_collision_zone, transformation)
+        self.collision_zone = collision_zone.buffer(BOAT_BUFFER, join_style=2)
+
+    def _calc_proj_dist(self) -> float:
         """Calculates the distance the boat obstacle will travel before collision, if
         Sailbot moves directly towards the soonest possible collision point at its current speed.
         The system is modeled by two parametric lines extending from the positions of the boat
