@@ -7,7 +7,7 @@ import Typography from '@mui/material/Typography';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { Button, Grid } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import styles from './timestampfilter.module.css';
 
 // FIX ELEVATION ISSUE !!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -34,6 +34,9 @@ function TimestampFilter(props) {
   };
 
   const handleResetChange = () => {
+    setStartDate(null);
+    setEndDate(null);
+
     dispatch({
       type: 'TIMESTAMP',
       payload: {
@@ -41,17 +44,16 @@ function TimestampFilter(props) {
         endDate: null,
       },
     });
-
-    setStartDate(null);
-    setEndDate(null);
   };
 
   const handleStartChange = (newStartDate) => {
     setStartDate(newStartDate);
+    // console.log(_parseISOString(newStartDate.$d))
   };
 
   const handleEndChange = (newEndDate) => {
     setEndDate(newEndDate);
+    // console.log(_parseISOString(newEndDate.$d))
   };
 
   function _parseISOString(s: string) {
@@ -72,8 +74,9 @@ function TimestampFilter(props) {
         <Grid container rowSpacing={1}>
           <Grid item xs={12}>
             <LocalizationProvider dateAdapter={AdapterDayjs}>
-              <DatePicker
+              <DateTimePicker
                 label='Starting Date'
+                value={startDate}
                 onChange={handleStartChange}
                 slotProps={{
                   field: { clearable: true },
@@ -87,8 +90,9 @@ function TimestampFilter(props) {
           </Grid>
           <Grid item xs={12}>
             <LocalizationProvider dateAdapter={AdapterDayjs}>
-              <DatePicker
+              <DateTimePicker
                 label='Ending Date'
+                value={endDate}
                 onChange={handleEndChange}
                 slotProps={{
                   field: { clearable: true },
