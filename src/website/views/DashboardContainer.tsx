@@ -18,7 +18,7 @@ export interface DashboardContainerProps {
 
 class DashboardContainer extends React.PureComponent<DashboardContainerProps> {
   render() {
-    const { gps, batteries, windSensors, timestamp } = this.props;
+    const { gps, batteries, windSensors } = this.props;
 
     const gpsChartData = [
       gps.data

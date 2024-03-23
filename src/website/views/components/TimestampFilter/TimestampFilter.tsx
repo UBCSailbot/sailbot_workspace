@@ -48,12 +48,10 @@ function TimestampFilter(props) {
 
   const handleStartChange = (newStartDate) => {
     setStartDate(newStartDate);
-    // console.log(_parseISOString(newStartDate.$d))
   };
 
   const handleEndChange = (newEndDate) => {
     setEndDate(newEndDate);
-    // console.log(_parseISOString(newEndDate.$d))
   };
 
   function _parseISOString(s: string) {
