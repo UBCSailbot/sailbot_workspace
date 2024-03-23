@@ -18,7 +18,7 @@ export function* rootSaga() {
     batteries: new BatteriesSagas().forkSagas(),
     windSensors: new WindSensorsSagas().forkSagas(),
     genericSensors: new GenericSensorsSagas().forkSagas(),
-    timestamp: new TimestampSagas().forkSaga(TimestampActions.TIMESTAMP)
+    timestamp: new TimestampSagas().forkSaga(TimestampActions.TIMESTAMP),
   };
 
   yield all(combineSagas(rootSagaMap));

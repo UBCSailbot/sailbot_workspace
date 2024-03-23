@@ -13,7 +13,7 @@ export interface DashboardContainerProps {
   gps: GPSState;
   batteries: BatteriesState;
   windSensors: WindSensorsState;
-  timestamp: TimestampState
+  timestamp: TimestampState;
 }
 
 class DashboardContainer extends React.PureComponent<DashboardContainerProps> {
@@ -21,34 +21,45 @@ class DashboardContainer extends React.PureComponent<DashboardContainerProps> {
     const { gps, batteries, windSensors, timestamp } = this.props;
 
     const gpsChartData = [
-      gps.data.map((data) => this._parseISOString(data.timestamp)).filter((time) => this._validTimestamp(time) == true),
+      gps.data
+        .map((data) => this._parseISOString(data.timestamp))
+        .filter((time) => this._validTimestamp(time) == true),
       gps.data.map((data) => data.speed),
     ];
 
     const gpsDistanceData = [
       gps.data.map((data) => data.latitude),
-      gps.data.map((data) => data.longitude)
+      gps.data.map((data) => data.longitude),
     ];
 
     const batteriesVoltageData = [
-      batteries.data.map((data) => this._parseISOString(data.timestamp)).filter((time) => this._validTimestamp(time) == true),
+      batteries.data
+        .map((data) => this._parseISOString(data.timestamp))
+        .filter((time) => this._validTimestamp(time) == true),
       batteries.data.map((data) => data.batteries[0].voltage),
       batteries.data.map((data) => data.batteries[1].voltage),
     ];
 
     const batteriesCurrentData = [
-      batteries.data.map((data) => this._parseISOString(data.timestamp)).filter((time) => this._validTimestamp(time) == true),
+      batteries.data
+        .map((data) => this._parseISOString(data.timestamp))
+        .filter((time) => this._validTimestamp(time) == true),
       batteries.data.map((data) => data.batteries[0].current),
       batteries.data.map((data) => data.batteries[1].current),
     ];
 
     const windSensorsSpeedData = [
-      windSensors.data.map((data) => this._parseISOString(data.timestamp)).filter((time) => this._validTimestamp(time) == true),
+      windSensors.data
+        .map((data) => this._parseISOString(data.timestamp))
+        .filter((time) => this._validTimestamp(time) == true),
       windSensors.data.map((data) => data.windSensors[0].speed),
       windSensors.data.map((data) => data.windSensors[1].speed),
     ];
 
-    const totalTripDistance = this._computeTotalTripDistance(gpsDistanceData[0], gpsDistanceData[1])
+    const totalTripDistance = this._computeTotalTripDistance(
+      gpsDistanceData[0],
+      gpsDistanceData[1],
+    );
 
     return (
       <div>
@@ -103,56 +114,69 @@ class DashboardContainer extends React.PureComponent<DashboardContainerProps> {
   }
 
   _haversineDistance(lat1: number, long1: number, lat2: number, long2: number) {
-
-    function toRadians(angle: number): number{
-      return angle * Math.PI / 180
+    function toRadians(angle: number): number {
+      return (angle * Math.PI) / 180;
     }
 
-    const EARTH_RADIUS = 6571 // in km
+    const EARTH_RADIUS = 6571; // in km
 
-    let delta_lat = lat2-lat1
-    let delta_lat_rad = toRadians(delta_lat)
-    let delta_long = long2-long1
-    let delta_long_rad = toRadians(delta_long)
+    let delta_lat = lat2 - lat1;
+    let delta_lat_rad = toRadians(delta_lat);
+    let delta_long = long2 - long1;
+    let delta_long_rad = toRadians(delta_long);
 
-    let a = (Math.sin(delta_lat_rad/2) * Math.sin(delta_lat_rad/2))
-    + (Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2))
-    * Math.sin(delta_long_rad/2)
-    * Math.sin(delta_long_rad/2))
-    let c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    let a =
+      Math.sin(delta_lat_rad / 2) * Math.sin(delta_lat_rad / 2) +
+      Math.cos(toRadians(lat1)) *
+        Math.cos(toRadians(lat2)) *
+        Math.sin(delta_long_rad / 2) *
+        Math.sin(delta_long_rad / 2);
+    let c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
     let distance = EARTH_RADIUS * c;
 
-    return distance
+    return distance;
   }
 
   _computeTotalTripDistance(latitude: number[], longitude: number[]) {
-    if(latitude.length != longitude.length){
+    if (latitude.length != longitude.length) {
       return -1;
     }
 
     let totalDistance = 0;
 
-    for(let i = 1; i < latitude.length; i++){
-        totalDistance += this._haversineDistance(latitude[i-1], longitude[i-1], latitude[i], longitude[i]);
+    for (let i = 1; i < latitude.length; i++) {
+      totalDistance += this._haversineDistance(
+        latitude[i - 1],
+        longitude[i - 1],
+        latitude[i],
+        longitude[i],
+      );
     }
 
     return Number(totalDistance.toFixed(2));
   }
 
   _validTimestamp(timestampISO: number) {
-    let cond1 = timestampISO >= this._parseISOString(this.props.timestamp.timestamp.startDate)
-    let cond2 = timestampISO <= this._parseISOString(this.props.timestamp.timestamp.endDate)
+    let cond1 =
+      timestampISO >=
+      this._parseISOString(this.props.timestamp.timestamp.startDate);
+    let cond2 =
+      timestampISO <=
+      this._parseISOString(this.props.timestamp.timestamp.endDate);
 
-    if (this.props.timestamp.timestamp.startDate == null && this.props.timestamp.timestamp.endDate == null) {
-      return true
+    if (
+      this.props.timestamp.timestamp.startDate == null &&
+      this.props.timestamp.timestamp.endDate == null
+    ) {
+      return true;
     }
 
-    if(cond1 == cond2){
-      return true
+    if (cond1 == cond2) {
+      return true;
     }
 
-    return false
+    return false;
   }
 }
 
@@ -160,7 +184,7 @@ const mapStateToProps = (state: any) => ({
   gps: state.gps,
   batteries: state.batteries,
   windSensors: state.windSensors,
-  timestamp: state.timestamp
+  timestamp: state.timestamp,
 });
 
 const mapDispatchToProps = {};

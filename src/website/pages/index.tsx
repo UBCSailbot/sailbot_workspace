@@ -32,7 +32,7 @@ export default function Home() {
       <div className={styles.parent}>
         <Header />
         <div className={styles.topRight}>
-          <TimestampFilter/>
+          <TimestampFilter />
         </div>
       </div>
       <div className={styles.maincontainer}>
