@@ -91,48 +91,17 @@ class MediumForceComputation:
         lift_coefficient, drag_coefficient = self.interpolate(attack_angle)
         velocity_magnitude = np.linalg.norm(apparent_velocity)
 
-        def __calculate_fluid_force_magnitude(
-            self, coefficient: Scalar, velocity_magnitude: Scalar
-        ) -> Scalar:
-            """Calculates the magnitude of fluid forces based on coefficient and velocity."""
-            return 0.5 * self.__fluid_density * coefficient * self.__area * (velocity_magnitude**2)
-
         # Calculate the lift and drag forces
 
-        lift_force_magnitude = __calculate_fluid_force_magnitude(lift_coefficient)
-        drag_force_magnitude = __calculate_fluid_force_magnitude(drag_coefficient)
-
-        drag_force_unit_vector = (apparent_velocity) / velocity_magnitude
-
-        def __rotate_vector(v, theta_degrees, clockwise=True):
-            """
-            Rotates a vector by a specified angle in degrees.
-
-            Args:
-            v (np.array): The vector to be rotated.
-            theta_degrees (float): The rotation angle in degrees.
-            clockwise (bool, optional): Determines the direction of rotation. If True (default),
-                                        rotates the vector clockwise. If False, rotates the vector
-                                        counterclockwise.
-
-            Returns:
-                np.array: The rotated vector.
-            """
-            theta_radians = np.deg2rad(theta_degrees)
-            sign = 1 if clockwise else -1
-            rotation_matrix = np.array(
-                [
-                    [np.cos(theta_radians), sign * np.sin(theta_radians)],
-                    [-sign * np.sin(theta_radians), np.cos(theta_radians)],
-                ]
-            )
-            v_rotated = np.dot(rotation_matrix, v)
-            return v_rotated
-
-        # Rotate the drag force direction to normalize it to 0 degrees
-        drag_force_unit_vector = __rotate_vector(
-            drag_force_unit_vector, orientation, clockwise=True
+        lift_force_magnitude = self.__calculate_fluid_force_magnitude(
+            lift_coefficient, velocity_magnitude
         )
+        drag_force_magnitude = self.__calculate_fluid_force_magnitude(
+            drag_coefficient, velocity_magnitude
+        )
+
+        drag_force_unit_vector = apparent_velocity / velocity_magnitude
+        drag_force_unit_vector = self.__rotate_vector(drag_force_unit_vector, orientation)
 
         # Rotate the lift and drag forces by 90 degrees to obtain the lift and drag forces
 
@@ -165,8 +134,10 @@ class MediumForceComputation:
             lift_force_direction = np.array([0, 0])
 
         # Rotate the lift and drag forces back to the original orientation
-        lift_force_direction = __rotate_vector(lift_force_direction, orientation, clockwise=False)
-        drag_force_unit_vector = __rotate_vector(
+        lift_force_direction = self.__rotate_vector(
+            lift_force_direction, orientation, clockwise=False
+        )
+        drag_force_unit_vector = self.__rotate_vector(
             drag_force_unit_vector, orientation, clockwise=False
         )
 
@@ -174,6 +145,37 @@ class MediumForceComputation:
         drag_force = drag_force_magnitude * drag_force_unit_vector
 
         return lift_force, drag_force
+
+    def __calculate_fluid_force_magnitude(
+        self, coefficient: Scalar, velocity_magnitude: Scalar
+    ) -> Scalar:
+        """Calculates the magnitude of fluid forces based on coefficient and velocity."""
+        return 0.5 * self.__fluid_density * coefficient * self.__areas * (velocity_magnitude**2)
+
+    def __rotate_vector(self, v: NDArray, theta_degrees: Scalar, clockwise=True) -> NDArray:
+        """
+        Rotates a vector by a specified angle in degrees.
+
+        Args:
+        v (np.array): The vector to be rotated.
+        theta_degrees (float): The rotation angle in degrees.
+        clockwise (bool, optional): Determines the direction of rotation. If True (default),
+                                    rotates the vector clockwise. If False, rotates the vector
+                                    counterclockwise.
+
+        Returns:
+            np.array: The rotated vector.
+        """
+        theta_radians = np.deg2rad(theta_degrees)
+        sign = 1 if clockwise else -1
+        rotation_matrix = np.array(
+            [
+                [np.cos(theta_radians), sign * np.sin(theta_radians)],
+                [-sign * np.sin(theta_radians), np.cos(theta_radians)],
+            ]
+        )
+        v_rotated = np.dot(rotation_matrix, v)
+        return v_rotated
 
     def interpolate(self, attack_angle: Scalar) -> Tuple[Scalar, Scalar, Scalar]:
         """Performs linear interpolation to estimate the lift and drag coefficients, as well as the
