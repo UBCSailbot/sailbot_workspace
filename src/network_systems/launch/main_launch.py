@@ -86,6 +86,7 @@ def setup_launch(context: LaunchContext) -> List[Node]:
     launch_description_entities.append(get_mock_ais_description(context))
     launch_description_entities.append(get_can_transceiver_description(context))
     launch_description_entities.append(get_remote_transceiver_description(context))
+    launch_description_entities.append(get_local_transceiver_description(context))
     return launch_description_entities
 
 
@@ -209,6 +210,36 @@ def get_remote_transceiver_description(context: LaunchContext) -> Node:
         package=PACKAGE_NAME,
         namespace=NAMESPACE,
         executable="remote_transceiver",
+        name=node_name,
+        parameters=ros_parameters,
+        ros_arguments=ros_arguments,
+    )
+
+    return node
+
+def get_local_transceiver_description(context: LaunchContext) -> Node:
+    """Gets the launch description for the local_transceiver_node.
+
+        Args:
+            context (LaunchContext): The current launch context.
+
+        Returns:
+            Node: The node object that launches the local_transceiver_node.
+        """
+    node_name = "local_transceiver_node"
+    ros_parameters = [
+        global_launch_config,
+        {"mode": LaunchConfiguration("mode")},
+        *LaunchConfiguration("config").perform(context).split(","),
+    ]
+    ros_arguments: List[SomeSubstitutionsType] = [
+        "--log-level",
+        [f"{node_name}:=", LaunchConfiguration("log_level")],
+    ]
+    node = Node(
+        package=PACKAGE_NAME,
+        namespace=NAMESPACE,
+        executable="local_transceiver",
         name=node_name,
         parameters=ros_parameters,
         ros_arguments=ros_arguments,
