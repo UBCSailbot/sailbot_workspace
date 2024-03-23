@@ -15,7 +15,7 @@ PATH = ompl_path.OMPLPath(
         ais_ships=AISShips(),
         global_path=Path(),
         filtered_wind_sensor=WindSensor(),
-        planner="bitstar",
+        planner="rrtstar",
     ),
 )
 

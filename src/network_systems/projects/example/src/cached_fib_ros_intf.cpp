@@ -1,5 +1,7 @@
 // Include this module
 #include "cached_fib.h"
+#include "cmn_hdrs/ros_info.h"
+#include "net_node.h"
 // Include ROS headers
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/u_int64.hpp>
@@ -10,10 +12,10 @@ constexpr int ROS_Q_SIZE    = 10;
 constexpr int INIT_FIB_SIZE = 5;
 }  // namespace
 
-class CachedFibNode : public rclcpp::Node
+class CachedFibNode : public NetNode
 {
 public:
-    explicit CachedFibNode(const std::size_t initSize) : Node("cached_fib_node"), c_fib_(initSize)
+    explicit CachedFibNode(const std::size_t initSize) : NetNode(ros_nodes::CACHED_FIB), c_fib_(initSize)
     {
         this->declare_parameter("enabled", false);
         bool enabled = this->get_parameter("enabled").as_bool();
@@ -50,8 +52,20 @@ private:
 
 int main(int argc, char * argv[])
 {
+    bool err = false;
     rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<CachedFibNode>(INIT_FIB_SIZE));
+    try {
+        std::shared_ptr<CachedFibNode> node = std::make_shared<CachedFibNode>(INIT_FIB_SIZE);
+        try {
+            rclcpp::spin(node);
+        } catch (std::exception & e) {
+            RCLCPP_ERROR(node->get_logger(), "%s", e.what());
+            throw e;
+        }
+    } catch (std::exception & e) {
+        std::cerr << e.what() << std::endl;
+        err = true;
+    }
     rclcpp::shutdown();
-    return 0;
+    return err ? -1 : 0;
 }

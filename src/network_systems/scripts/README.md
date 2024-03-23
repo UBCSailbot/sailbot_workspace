@@ -1,12 +1,12 @@
 # Scripts
 
-## Autogen ROS Topics
+## Generate ROS Info
 
 ```shell
-./autogen_ros_topics.sh <input text file>
+python3 gen_ros_info.py
 ```
 
-Given an input text file where each line is the name of a ROS topic, generates a C++ header file matching those names.
+Takes [ros_info.yaml](../ros_info.yaml) and generates a C++ header file and Python file with constants defined within.
 
 ## Sailbot DB
 
@@ -34,7 +34,7 @@ Allows testing of satellite code without needing physical hardware.
 Optional argument - webhook server url:
 
 - Specify where the URL where the Remote Transceiver or whatever other HTTP server is running.
-- Default is 127.0.0.1:8081, which assumes fully local testing.
+- Default is `http://127.0.0.1:8081`, which assumes fully local testing.
 
 Optional argument - virtual iridium server port
 

@@ -1,9 +1,5 @@
 from boat_simulator.common.sensors import GPS
 import numpy as np
-from boat_simulator.common.generators import (
-    ConstantGenerator,
-    GaussianGenerator,
-)
 
 
 class TestGPS:
@@ -11,28 +7,6 @@ class TestGPS:
         lat_lon = np.array([1, 0])
         speed = 100
         heading = 1.09
-        error_fn = None
-
-        gps = GPS(
-            lat_lon=lat_lon,
-            speed=speed,
-            heading=heading,
-            lat_lon_noisemaker=error_fn,
-            speed_noisemaker=error_fn,
-            heading_noisemaker=error_fn,
-        )
-
-        assert (gps.lat_lon == lat_lon).all()
-        assert gps.speed == speed
-        assert gps.heading == heading
-        assert gps.lat_lon_noisemaker is error_fn
-        assert gps.speed_noisemaker is error_fn
-        assert gps.heading_noisemaker is error_fn
-
-    def test_gps_init_implicit_error_fn(self):
-        lat_lon = np.array([1, 0])
-        speed = 100
-        heading = 1.09
 
         gps = GPS(
             lat_lon=lat_lon,
@@ -43,64 +17,28 @@ class TestGPS:
         assert (gps.lat_lon == lat_lon).all()
         assert gps.speed == speed
         assert gps.heading == heading
-        for noisemaker in [
-            gps.lat_lon_noisemaker,
-            gps.speed_noisemaker,
-            gps.heading_noisemaker,
-        ]:
-            assert noisemaker is None
 
-    def test_gps_read_no_error(self):
+    def test_gps_read_no_noise(self):
         lat_lon = np.array([1, 0])
         speed = np.random.randint(0, 100)
         heading = np.random.rand()
 
-        gps = GPS(
-            lat_lon=lat_lon,
-            speed=speed,
-            heading=heading,
-        )
+        gps = GPS(lat_lon=lat_lon, speed=speed, heading=heading, enable_noise=False)
 
-        assert (gps.read("lat_lon") == lat_lon).all()
+        assert np.all(gps.read("lat_lon") == lat_lon)
         assert gps.read("speed") == speed
         assert gps.read("heading") == heading
 
-    def test_gps_read_constant_error(self):
-        lat_lon = np.array([1, 0])
-        speed = np.random.randint(0, 100)
-        heading = np.random.rand()
-        constant = 3.01
-        error_fn = ConstantGenerator(constant=constant)
-
-        gps = GPS(
-            lat_lon=lat_lon,
-            speed=speed,
-            heading=heading,
-            lat_lon_noisemaker=error_fn,
-            speed_noisemaker=error_fn,
-            heading_noisemaker=error_fn,
-        )
-
-        assert (gps.read("lat_lon") == lat_lon + constant).all()
-        assert gps.read("speed") == speed + constant
-        assert gps.read("heading") == heading + constant
-
-    def test_gps_gaussian_error(self):
+    def test_gps_gaussian_noise(self):
         lat_lon = np.array([1, 0])
         speed = np.random.randint(0, 100)
         heading = np.random.rand()
         mean = 0
-        stdev = 1
-
-        error_fn = GaussianGenerator(mean=mean, stdev=stdev)
 
         gps = GPS(
             lat_lon=lat_lon,
             speed=speed,
             heading=heading,
-            lat_lon_noisemaker=error_fn,
-            speed_noisemaker=error_fn,
-            heading_noisemaker=error_fn,
         )
 
         NUM_READINGS = 10000
@@ -117,9 +55,9 @@ class TestGPS:
             [speed, heading, lat_lon],
         ):
             sample_mean = np.mean(reading, axis=0)
-            assert np.isclose(sample_mean, mean + init_data, atol=0.1).all()
+            assert np.allclose(sample_mean, mean + init_data, atol=0.1)
 
-    def test_wind_sensor_update(self):
+    def test_gps_sensor_update(self):
         lat_lon = np.array([0, 0])
         speed = 0
         heading = 0
@@ -143,3 +81,17 @@ class TestGPS:
             lat_lon_reading = gps.read("lat_lon")
             assert (lat_lon_reading == np.array([i, i])).all()
             gps.update(lat_lon=(lat_lon_reading + 1))
+
+    def test_gps_sensor_update_delay(self):
+        lat_lon = np.array([0, 0])
+        speed0 = 0
+        heading = 0
+
+        # Initialized data is read without delay
+        gps = GPS(lat_lon=lat_lon, speed=speed0, heading=heading, enable_delay=True)
+        assert gps.read("speed") == speed0
+
+        NUM_UPDATES = 3
+        for i in range(NUM_UPDATES):
+            gps.update(speed=(i + 1))
+            assert gps.read("speed") == i
