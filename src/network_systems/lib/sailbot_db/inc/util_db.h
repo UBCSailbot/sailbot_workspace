@@ -36,6 +36,13 @@ public:
     Polaris::Sensors genRandSensors();
 
     /**
+    * @brief Generate random data for all global paths
+    *
+    * @return Global Path object
+    */
+    Polaris::GlobalPath genRandGlobalPath();
+
+    /**
      * @return timestamp for the current time
      */
     static std::tm getTimestamp();
@@ -49,6 +56,14 @@ public:
     std::pair<Polaris::Sensors, SailbotDB::RcvdMsgInfo> genRandData(const std::tm & tm);
 
     /**
+    * @brief Generate random global paths and Iridium msg info
+    *
+    * @param tm Timestamp returned by mkTimestamp() (with any modifications made to it)
+    * @return std::pair<GlobalPath, std::string>
+    */
+    std::pair<Polaris::GlobalPath, std::string> genRandGlobalData(const std::tm & tm);
+
+    /**
     * @brief Query the database and check that the sensor and message are correct
     *
     * @param expected_sensors
@@ -56,6 +71,15 @@ public:
     */
     bool verifyDBWrite(
       std::span<Polaris::Sensors> expected_sensors, std::span<SailbotDB::RcvdMsgInfo> expected_msg_info);
+
+    /**
+    * @brief Query the database and check that the global path and timestamps are correct
+    *
+    * @param expected_sensors
+    * @param expected_msg_info
+    */
+    bool verifyDBGlobalPath(
+      std::span<Polaris::GlobalPath> expected_global_path, std::span<std::string> expected_timestamp);
 
     /**
      * @brief Dump and check all sensors and timestamps from the database
@@ -66,6 +90,16 @@ public:
      */
     std::pair<std::vector<Polaris::Sensors>, std::vector<std::string>> dumpSensors(
       utils::FailTracker & tracker, size_t expected_num_docs = 1);
+
+    /**
+     * @brief Dump and check all global paths and timestamps from the database
+     *
+     * @param tracker           FailureTracker that gets if any unexpected results are dumped
+     * @param expected_num_docs Expected number of documents. tracker is updated if there's a mismatch
+     * @return std::pair{Vector of dumped Global Paths, Vector of dumped timestamps}
+     */
+    std::pair<std::vector<Polaris::GlobalPath>, std::vector<std::string>> dumpGlobalPath(
+      utils::FailTracker & tracker, size_t expected_num_docs = 1);  //Write specs
 
 private:
     std::shared_ptr<std::mt19937> rng_;  // random number generator
@@ -111,4 +145,11 @@ private:
     * @param path_data Path data to modify
     */
     void genRandPathData(Polaris::Sensors::Path & path_data);
+
+    /**
+    * @brief generate random global path data
+    *
+    * @param global_path_data Global path data to modify
+    */
+    void genRandGlobalPathData(Polaris::GlobalPath & global_path_data);
 };
