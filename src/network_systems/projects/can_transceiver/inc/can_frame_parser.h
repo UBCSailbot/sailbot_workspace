@@ -4,8 +4,10 @@
 #include <stdint.h>
 
 #include <array>
+#include <custom_interfaces/msg/ais_ships.hpp>
 #include <custom_interfaces/msg/batteries.hpp>
 #include <custom_interfaces/msg/gps.hpp>
+#include <custom_interfaces/msg/helper_ais_ship.hpp>
 #include <custom_interfaces/msg/sail_cmd.hpp>
 #include <custom_interfaces/msg/wind_sensor.hpp>
 #include <map>
@@ -23,17 +25,21 @@ namespace msg    = custom_interfaces::msg;
 
 /**
  * @brief IDs of CAN frames relevant to the Software team
+ * NOTE: IDs are placeholders for now.
  *
  */
 enum class CanId : canid_t {
     RESERVED               = 0x00,
     BMS_P_DATA_FRAME_1     = 0x31,
     BMS_P_DATA_FRAME_2     = 0x32,
-    SAIL_WSM_CMD_FRAME_1   = 0x60,
+    SAIL_AIS               = 0x60,
+    SAIL_WSM_CMD_FRAME_1   = 0x61,
     SAIL_WSM_DATA_FRAME_1  = 0x63,
     SAIL_WIND_DATA_FRAME_1 = 0x65,
     PATH_GPS_DATA_FRAME_1  = 0x80,
     PATH_WIND_DATA_FRAME   = 0x84,
+    GENERIC_SENSOR_START   = 0x100,
+    GENERIC_SENSOR_END     = 0x1FF
 };
 
 /**
@@ -432,6 +438,96 @@ private:
     //float reserved;  // Unused
     float heading_;
     float speed_;
+};
+
+/**
+ * @brief AISShips class derived from BaseFrame. Represents AIS ship data.
+ *
+ */
+class AISShips final : public BaseFrame
+{
+public:
+    // static constexpr std::array<CanId, 1> AIS_IDS        = {CanId::}; ASK LATER
+    static constexpr uint32_t CAN_BYTE_DLEN_     = 26;
+    static constexpr uint32_t BYTE_OFF_ID        = 0;
+    static constexpr uint32_t BYTE_OFF_LAT       = 4;
+    static constexpr uint32_t BYTE_OFF_LON       = 8;
+    static constexpr uint16_t BYTE_OFF_SPEED     = 12;
+    static constexpr uint16_t BYTE_OFF_COURSE    = 14;
+    static constexpr uint16_t BYTE_OFF_HEADING   = 16;
+    static constexpr uint8_t  BYTE_OFF_ROT       = 18;
+    static constexpr uint16_t BYTE_OFF_LENGTH    = 20;
+    static constexpr uint8_t  BYTE_OFF_WIDTH     = 22;
+    static constexpr uint8_t  BYTE_OFF_IDX       = 24;
+    static constexpr uint8_t  BYTE_OFF_NUM_SHIPS = 24;
+
+    /**
+     * @brief Explicitly deleted no-argument constructor
+     *
+     */
+    AISShips() = delete;
+
+    /**
+     * @brief Construct an AISShips object from a Linux CanFrame representation
+     *
+     * @param cf Linux CanFrame
+     */
+    explicit AISShips(const CanFrame & cf);
+
+    /**
+     * @brief Construct an AISShips object from a custom_interfaces ROS msg representation
+     *
+     * @param ros_ais_ship custom_interfaces representation of an AISShip
+     * @param id      CanId of the AISShips
+     */
+    explicit AISShips(msg::HelperAISShip ros_ship, CanId id);
+
+    /**
+     * @return the custom_interfaces ROS representation of the AISShips object
+     */
+    msg::HelperAISShip toRosMsg() const;
+
+    /**
+     * @return the Linux CanFrame representation of the Battery object
+     */
+    CanFrame toLinuxCan() const override;
+
+    /**
+     * @return A string that can be printed or logged to debug a Battery object
+     */
+    std::string debugStr() const override;
+
+private:
+    /**
+     * @brief Private helper constructor for AISShips objects
+     *
+     * @param id CanId of the AISShips
+     */
+    explicit AISShips(CanId id);
+
+    /**
+     * @brief Private helper to construct a HelperAISShip message
+     *
+     */
+    msg::HelperAISShip toHelperAISShip() const;
+
+    /**
+     * @brief Check if the assigned fields after constructing an AISShips object are within bounds.
+     * @throws std::out_of_range if any assigned fields are outside of expected bounds
+     */
+    void checkBounds() const;
+
+    int8_t   num_ships_;
+    float    lat_;
+    float    lon_;
+    float    speed_;
+    int8_t   rot_;
+    float    course_;
+    float    heading_;
+    float    width_;
+    float    length_;
+    uint16_t id_;
+    int8_t   idx_;
 };
 
 }  // namespace CAN_FP

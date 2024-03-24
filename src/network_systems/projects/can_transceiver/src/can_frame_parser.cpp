@@ -439,5 +439,181 @@ void GPS::checkBounds() const
         throw std::out_of_range("Speed is out of bounds!\n" + debugStr() + "\n" + err_msg);
     }
 }
+//AISShips START
+//AISShips pubic START
+
+AISShips::AISShips(const CanFrame & cf) : AISShips(static_cast<CanId>(cf.can_id))
+{
+    int32_t raw_id;
+    int32_t raw_lat;
+    int32_t raw_lon;
+    int16_t raw_speed;
+    int16_t raw_course;
+    int16_t raw_heading;
+    int8_t  raw_rot;
+    int16_t raw_length;
+    int8_t  raw_width;
+    int8_t  raw_idx;
+    int8_t  raw_num_ships;
+
+    std::memcpy(&raw_id, cf.data + BYTE_OFF_ID, sizeof(int32_t));
+    std::memcpy(&raw_lat, cf.data + BYTE_OFF_LAT, sizeof(int32_t));
+    std::memcpy(&raw_lon, cf.data + BYTE_OFF_LON, sizeof(int32_t));
+    std::memcpy(&raw_speed, cf.data + BYTE_OFF_SPEED, sizeof(int16_t));
+    std::memcpy(&raw_course, cf.data + BYTE_OFF_COURSE, sizeof(int16_t));
+    std::memcpy(&raw_heading, cf.data + BYTE_OFF_HEADING, sizeof(int16_t));
+    std::memcpy(&raw_rot, cf.data + BYTE_OFF_ROT, sizeof(int8_t));
+    std::memcpy(&raw_length, cf.data + BYTE_OFF_LENGTH, sizeof(int16_t));
+    std::memcpy(&raw_width, cf.data + BYTE_OFF_WIDTH, sizeof(int8_t));
+    std::memcpy(&raw_idx, cf.data + BYTE_OFF_IDX, sizeof(int8_t));
+    std::memcpy(&raw_num_ships, cf.data + BYTE_OFF_NUM_SHIPS, sizeof(int8_t));
+
+    num_ships_ = raw_num_ships;
+    lat_       = static_cast<float>(raw_lat / 1000.0 - 90);     //NOLINT(readability-magic-numbers)
+    lon_       = static_cast<float>(raw_lon / 1000.0 - 180.0);  //NOLINT(readability-magic-numbers)
+    speed_     = static_cast<float>(raw_speed / 10.0 * 1.852);  //NOLINT(readability-magic-numbers)
+    rot_       = raw_rot;
+    course_    = static_cast<float>(raw_course / 10.0);  //NOLINT(readability-magic-numbers)
+    idx_       = raw_idx;
+
+    checkBounds();
+}
+
+AISShips::AISShips(msg::HelperAISShip ros_ship, CanId id)
+: BaseFrame(id, CAN_BYTE_DLEN_),
+  num_ships_(0),
+  lat_(ros_ship.lat_lon.latitude),
+  lon_(ros_ship.lat_lon.longitude),
+  speed_(ros_ship.sog.speed),
+  rot_(ros_ship.rot.rot),
+  course_(ros_ship.cog.heading),
+  width_(ros_ship.width.dimension),
+  length_(ros_ship.length.dimension),
+  id_(ros_ship.id)
+{
+    checkBounds();
+}
+
+msg::HelperAISShip AISShips::toRosMsg() const
+{
+    msg::HelperAISShip ship;
+
+    msg::HelperLatLon lat_lon;
+    lat_lon.set__latitude(lat_);
+    lat_lon.set__longitude(lon_);
+
+    msg::HelperHeading cog;
+    cog.set__heading(course_);
+
+    msg::HelperSpeed sog;
+    //convert to km/h
+    sog.set__speed(speed_);
+
+    msg::HelperROT rot;
+    rot.set__rot(rot_);
+
+    msg::HelperDimension width;
+    width.set__dimension(static_cast<float>(width_));  //NOLINT(readability-magic-numbers)
+
+    msg::HelperDimension length;
+    length.set__dimension(static_cast<float>(length_));  //NOLINT(readability-magic-numbers)
+
+    ship.set__id(id_);
+    ship.set__lat_lon(lat_lon);
+    ship.set__cog(cog);
+    ship.set__sog(sog);
+    ship.set__rot(rot);
+    ship.set__width(width);
+    ship.set__length(length);
+
+    return ship;
+}
+
+CanFrame AISShips::toLinuxCan() const
+{
+    int32_t raw_id        = id_;
+    int32_t raw_lat       = static_cast<int32_t>((lat_ + 90.0) * 1000.0);   //NOLINT(readability-magic-numbers)
+    int32_t raw_lon       = static_cast<int32_t>((lon_ + 180.0) * 1000.0);  //NOLINT(readability-magic-numbers)
+    int16_t raw_speed     = static_cast<int16_t>(speed_ / 1.852 * 10);      //NOLINT(readability-magic-numbers)
+    int16_t raw_course    = static_cast<int16_t>(course_ * 10);             //NOLINT(readability-magic-numbers)
+    int16_t raw_heading   = static_cast<int16_t>(heading_);
+    int8_t  raw_rot       = rot_;
+    int16_t raw_length    = static_cast<int16_t>(length_);
+    int8_t  raw_width     = static_cast<int8_t>(width_);
+    int8_t  raw_idx       = idx_;
+    int8_t  raw_num_ships = num_ships_;
+
+    CanFrame cf = BaseFrame::toLinuxCan();
+    std::memcpy(cf.data + BYTE_OFF_ID, &raw_id, sizeof(int32_t));
+    std::memcpy(cf.data + BYTE_OFF_LAT, &raw_lat, sizeof(int32_t));
+    std::memcpy(cf.data + BYTE_OFF_LON, &raw_lon, sizeof(int32_t));
+    std::memcpy(cf.data + BYTE_OFF_SPEED, &raw_speed, sizeof(int16_t));
+    std::memcpy(cf.data + BYTE_OFF_COURSE, &raw_course, sizeof(int16_t));
+    std::memcpy(cf.data + BYTE_OFF_HEADING, &raw_heading, sizeof(int16_t));
+    std::memcpy(cf.data + BYTE_OFF_ROT, &raw_rot, sizeof(int8_t));
+    std::memcpy(cf.data + BYTE_OFF_LENGTH, &raw_length, sizeof(int16_t));
+    std::memcpy(cf.data + BYTE_OFF_WIDTH, &raw_width, sizeof(int8_t));
+    std::memcpy(cf.data + BYTE_OFF_IDX, &raw_idx, sizeof(int8_t));
+    std::memcpy(cf.data + BYTE_OFF_NUM_SHIPS, &raw_num_ships, sizeof(int8_t));
+
+    return cf;
+}
+
+std::string AISShips::debugStr() const
+{
+    std::stringstream ss;
+    ss << BaseFrame::debugStr() << "\n"
+       << "Ship " << idx_ << ":\n"
+       << "ID: " << id_ << "\n"
+       << "Latitude (decimal degrees): " << lat_ << "\n"
+       << "Longitude (decimal degrees): " << lon_ << "\n"
+       << "Heading (degrees): " << heading_ << "\n"
+       << "Speed (km/hr): " << speed_ << "\n"
+       << "ROT (degree/min): " << rot_ << "\n"
+       << "Width (m): " << width_ << "\n"
+       << "Length (m): " << length_ << "\n"
+       << "\n";
+
+    return ss.str();
+}
+
+void AISShips::checkBounds() const
+{
+    auto err = utils::isOutOfBounds<float>(lat_, LAT_LBND, LAT_UBND);
+    if (err) {
+        std::string err_msg = err.value();
+        throw std::out_of_range("Latitude angle is out of bounds!\n" + debugStr() + "\n" + err_msg);
+    }
+    err = utils::isOutOfBounds<float>(lon_, LON_LBND, LON_UBND);
+    if (err) {
+        std::string err_msg = err.value();
+        throw std::out_of_range("Longitude is out of bounds!\n" + debugStr() + "\n" + err_msg);
+    }
+    err = utils::isOutOfBounds<float>(speed_, SPEED_LBND, SPEED_UBND);
+    if (err) {
+        std::string err_msg = err.value();
+        throw std::out_of_range("Speed is out of bounds!\n" + debugStr() + "\n" + err_msg);
+    }
+    err = utils::isOutOfBounds<float>(course_, HEADING_LBND, HEADING_UBND);
+    if (err) {
+        std::string err_msg = err.value();
+        throw std::out_of_range("Course is out of bounds!\n" + debugStr() + "\n" + err_msg);
+    }
+    err = utils::isOutOfBounds<float>(rot_, ROT_LBND, ROT_UBND);
+    if (err) {
+        std::string err_msg = err.value();
+        throw std::out_of_range("ROT is out of bounds!\n" + debugStr() + "\n" + err_msg);
+    }
+    err = utils::isOutOfBounds<float>(width_, SHIP_DIMENSION_LBND, SHIP_DIMENSION_UBND);
+    if (err) {
+        std::string err_msg = err.value();
+        throw std::out_of_range("Width is out of bounds!\n" + debugStr() + "\n" + err_msg);
+    }
+    err = utils::isOutOfBounds<float>(length_, SHIP_DIMENSION_LBND, SHIP_DIMENSION_UBND);
+    if (err) {
+        std::string err_msg = err.value();
+        throw std::out_of_range("Length is out of bounds!\n" + debugStr() + "\n" + err_msg);
+    }
+}
 
 }  // namespace CAN_FP
