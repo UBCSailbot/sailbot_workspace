@@ -7,7 +7,7 @@ export default class GraphsSagas extends BaseSaga {
     *rearrangeGraphs(action) {
         try {
             //code that works
-            // const graphs: GraphData[] = yield call(getGraphs);
+
             yield put({
                 type: GraphsActions.REARRANGE_GRAPHS_SUCCESS,
                 payload: action.payload,

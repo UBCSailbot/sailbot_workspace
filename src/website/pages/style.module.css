@@ -7,6 +7,6 @@
 }
 
 .dashboardcontainer {
-  overflow-y: scroll;
+  overflow-y: auto;
   padding-left: 10px;
 }

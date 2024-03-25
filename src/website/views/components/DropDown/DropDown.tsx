@@ -1,23 +1,25 @@
 import React, { useState } from 'react';
 import styles from './dropdown.module.css';
-import { connect } from 'react-redux';
+import DropdownMenu from '@/views/components/DropDown/DropdownMenu';
 
-function DropdownBtn(props) {
+const DropdownBtn = () => {
 
-  const [open, setOpen] = useState(false);
-
-  const dispatch = (props.dispatch)
+  const [showMenu, setShowMenu] = useState(false);
 
   const handleClick = () => {
-    setOpen(!open)
-    dispatch({type: 'REARRANGE_GRAPHS', payload: ["1", "2", "4", "3"]})
+    setShowMenu(!showMenu)
   }
+
   return (
-    <>
-      <div className={styles.iconButton} onClick={handleClick}> clickToDrop! </div>
-      { open && props.children }
-    </>
+    <div className="menuContainer">
+      <div className={ showMenu? styles.iconButtonOpen : styles.iconButton } onClick={ handleClick }>
+      { showMenu? "Drag and Drop to Sort!" : "Sort Graphs" }
+      </div>
+      <div className={ showMenu? styles.dropdownActive : styles.dropdownInactive }>
+        <DropdownMenu />
+      </div>
+    </div>
   );
 }
 
-export default connect()(DropdownBtn);
+export default (DropdownBtn);

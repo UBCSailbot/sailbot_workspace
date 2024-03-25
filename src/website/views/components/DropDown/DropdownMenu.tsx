@@ -1,42 +1,100 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styles from './dropdown.module.css';
+import { connect } from 'react-redux';
+import { DndContext, closestCenter } from '@dnd-kit/core';
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from '@dnd-kit/sortable';
+import {
+  restrictToVerticalAxis,
+  restrictToWindowEdges,
+} from '@dnd-kit/modifiers';
+import { CSS } from '@dnd-kit/utilities';
 
-function DropdownMenu() {
+const SortableGraph = ({ id, children, order, dispatch, setOrder }) => {
 
-  function DropdownItem(props) {
-    return (
-      <div className={styles.dropdownItem}>
-        {props.children}
-      </div>
-    )
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
+    id,
+  })
+
+  const style = {
+    transition,
+    transform: CSS.Transform.toString(transform),
   }
 
-  let graphArray = [];
+  // const handleRightClick = (event) => {
+  //   event.preventDefault();
 
-  for (let i = 1; i < 5; i++) {
-    graphArray.push(
-      <DropdownItem key={i}>
-        {i}
-      </DropdownItem>
-    )
+  //   function removeGraph(graphInOrder) {
+  //     console.log(id + " was clicked")
+  //     return (id !== graphInOrder)
+  //   }
+
+  //   let filteredOrder = order.filter(removeGraph)
+  //   console.log(filteredOrder)
+  //   dispatch({type: 'REARRANGE_GRAPHS', payload: filteredOrder})
+  //   setOrder(filteredOrder)
+  // }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className={styles.dropdownItem}
+      // onContextMenu={handleRightClick}
+      suppressHydrationWarning={true} // I know this is irresponsible but the warning is very annoying and i have no idea how to fix it ill ask one of you later
+    >
+      {children}
+    </div>
+  );
+}
+
+const DropdownMenu = ({ dispatch, graphsOrder }) => {
+  const [order, setOrder] = useState(graphsOrder.order);
+
+  useEffect(() => {
+    const storedOrder = JSON.parse(sessionStorage.getItem('Current Order'));
+    setOrder(storedOrder)
+  }, [graphsOrder]);
+
+  const onDragEnd = ({ active, over })  => {
+
+    if (active.id === over.id){
+      return;
+    }
+
+    const oldIndex = order.indexOf(active.id);
+    const newIndex = order.indexOf(over.id);
+
+    let newArray = arrayMove(order, oldIndex, newIndex);
+    dispatch({type: 'REARRANGE_GRAPHS', payload: newArray});
+    setOrder(newArray);
+    sessionStorage.setItem('Current Order', JSON.stringify(newArray));
   }
-
-  let graphsOrderArray = [];
-  for (let i = 0; i < 4; i++) {
-    graphsOrderArray.push(graphArray[i].key)
-  }
-  const [order, setOrder] = useState(graphsOrderArray);
-
-  console.log(graphsOrderArray)
 
   return (
     <div className={styles.dropdownMenu}>
-      {graphArray}
-      <button onClick={() => setOrder(graphsOrderArray)}>
-        set
-      </button>
+      <DndContext collisionDetection={closestCenter} onDragEnd={onDragEnd} modifiers={[restrictToVerticalAxis, restrictToWindowEdges]}>
+        <SortableContext items={order} strategy={verticalListSortingStrategy}>
+          {order.map((id) => (
+            <SortableGraph key={id} id={id} order={order} dispatch={dispatch} setOrder={setOrder}>
+              {id}
+              <div className={styles.dragDropIndicator}>::</div>
+            </SortableGraph>
+          ))}
+        </SortableContext>
+      </DndContext>
     </div>
   )
 }
 
-export default DropdownMenu;
+const mapStateToProps = (state) => ({
+  graphsOrder: state.graphs
+});
+
+export default connect(mapStateToProps)(DropdownMenu);

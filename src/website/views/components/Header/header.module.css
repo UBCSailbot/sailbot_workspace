@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap');
+
 .header {
   padding: 5px;
   margin: -10px;
@@ -5,8 +7,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  position: relative;
+  position: sticky;
   background: linear-gradient(to right, #26619c, #3498db);
+  z-index: 1002;
 }
 
 .headerContainer {
@@ -15,8 +18,8 @@
 }
 
 .title {
-  font-family: Verdana, Geneva, sans-serif;
-  font-weight: 20px;
+  font-family: "Roboto", sans-serif;
+  font-weight: 500;
   color: white;
   margin-left: 20px;
   font-size: 30px;

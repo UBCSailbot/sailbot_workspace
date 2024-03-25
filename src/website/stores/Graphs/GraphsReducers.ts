@@ -1,11 +1,11 @@
 import BaseReducer from '@/utils/BaseReducer';
 import GraphsActions from './GraphsActions';
-import { GraphsState } from './BatteriesTypes';
+import { GraphsState } from './GraphsTypes';
 import { AnyAction } from 'redux';
 
 export default class GraphsReducer extends BaseReducer {
   initialState: GraphsState = {
-    order: ["1", "2", "3", "4"],
+    order: ["speed", "battery voltage", "battery current", "wind sensor"],
     error: null,
   };
 
