@@ -13,7 +13,7 @@ const DropdownBtn = () => {
   return (
     <div className="menuContainer">
       <div className={ showMenu? styles.iconButtonOpen : styles.iconButton } onClick={ handleClick }>
-      { showMenu? "Drag and Drop to Sort!" : "Sort Graphs" }
+      { showMenu? "Drag & Drop to Sort!" : "Sort Graphs" }
       </div>
       <div className={ showMenu? styles.dropdownActive : styles.dropdownInactive }>
         <DropdownMenu />
