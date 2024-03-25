@@ -6,17 +6,18 @@ import { BatteriesState } from '@/stores/Batteries/BatteriesTypes';
 import { WindSensorsState } from '@/stores/WindSensors/WindSensorsTypes';
 import UPlotMultiLineChartComponent from './components/LineChart/UPlotMultiLineChart';
 import SingleValueChart from './components/SingleValueChart/SingleValueChart';
-import { Grid } from '@mui/material';
+
 
 export interface DashboardContainerProps {
   gps: GPSState;
   batteries: BatteriesState;
   windSensors: WindSensorsState;
+  graphsOrder: string[];
 }
 
 class DashboardContainer extends React.PureComponent<DashboardContainerProps> {
   render() {
-    const { gps, batteries, windSensors } = this.props;
+    const { gps, batteries, windSensors, graphsOrder } = this.props;
 
     const gpsChartData = [
       gps.data.map((data) => this._parseISOString(data.timestamp)),
@@ -48,6 +49,46 @@ class DashboardContainer extends React.PureComponent<DashboardContainerProps> {
 
     const totalTripDistance = this._computeTotalTripDistance(gpsDistanceData[0], gpsDistanceData[1])
 
+    let graphArray = [
+      <UPlotLineChartComponent
+        key='speed'
+        data={gpsChartData}
+        label='Boat Speed'
+        unit='km/hr'
+      />,
+      <UPlotMultiLineChartComponent
+        key="battery voltage"
+        data={batteriesVoltageData}
+        labelOne='Battery 1 Voltage'
+        labelTwo='Battery 2 Voltage'
+        unit='V'
+      />,
+      <UPlotMultiLineChartComponent
+        key="battery current"
+        data={batteriesCurrentData}
+        labelOne='Battery 1 Current'
+        labelTwo='Battery 2 Current'
+        unit='A'
+      />,
+      <UPlotMultiLineChartComponent
+        key="wind sensor"
+        data={windSensorsSpeedData}
+        labelOne='Wind Sensor 1 Speed'
+        labelTwo='Wind Sensor 2 Speed'
+        unit='m/s'
+      />
+    ];
+
+    let sortedGraphArray = []
+
+    for (let order of graphsOrder){
+      for (let graph of graphArray){
+        if (order === graph.key){
+          sortedGraphArray.push(graph)
+        }
+      }
+    }
+
     return (
       <div>
         {/* <Grid
@@ -69,29 +110,7 @@ class DashboardContainer extends React.PureComponent<DashboardContainerProps> {
             <SingleValueChart title="Longitude" data={this.props.gps.data.at(-1)?.longitude.toFixed(2)} unit="°"/>
           </Grid>
         </Grid> */}
-        <UPlotLineChartComponent
-          data={gpsChartData}
-          label='Boat Speed'
-          unit='km/hr'
-        />
-        <UPlotMultiLineChartComponent
-          data={batteriesVoltageData}
-          labelOne='Battery 1 Voltage'
-          labelTwo='Battery 2 Voltage'
-          unit='V'
-        />
-        <UPlotMultiLineChartComponent
-          data={batteriesCurrentData}
-          labelOne='Battery 1 Current'
-          labelTwo='Battery 2 Current'
-          unit='A'
-        />
-        <UPlotMultiLineChartComponent
-          data={windSensorsSpeedData}
-          labelOne='Wind Sensor 1 Speed'
-          labelTwo='Wind Sensor 2 Speed'
-          unit='m/s'
-        />
+        {sortedGraphArray}
       </div>
     );
   }
@@ -139,11 +158,20 @@ class DashboardContainer extends React.PureComponent<DashboardContainerProps> {
   }
 }
 
-const mapStateToProps = (state: any) => ({
-  gps: state.gps,
-  batteries: state.batteries,
-  windSensors: state.windSensors,
-});
+// const mapStateToProps = (state: any) => ({
+//   gps: state.gps,
+//   batteries: state.batteries,
+//   windSensors: state.windSensors,
+// });
+
+const mapStateToProps = (state: any) => {
+  return {
+    gps: state.gps,
+    batteries: state.batteries,
+    windSensors: state.windSensors,
+    graphsOrder: state.graphs.order,
+  };
+};
 
 const mapDispatchToProps = {};
 
