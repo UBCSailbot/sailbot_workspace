@@ -141,22 +141,20 @@ def test_update_state_reset(rudder_controller):
 
 @pytest.fixture(
     params=[
-        (45, 0.9, 0.5, 0.7, 0.34, 2),  # Test case 1
-        (-45.2, 15, 1, 0.7, 0.34, 1.5),
-        (0, -60, 2, 0.7, 0.34, 0.5),
-        (70.2, -70.5, 0.5, 0.7, 0.34, 1),
-        (24, 24, 1, 0.7, 0.34, 2),
+        (45, 0.9, 0.5, 2),  # Test case 1
+        (-45.2, 15, 1, 1.5),
+        (0, -60, 2, 0.5),
+        (70.2, -70.5, 0.5, 1),
+        (24, 24, 1, 2),
     ]
 )
 def sail_controller(request):
     # Initialize the SailController object with parameters from the fixture
-    target_angle, current_control_ang, time_step, kp, cp, control_speed = request.param
+    target_angle, current_control_ang, time_step, control_speed = request.param
     return SailController(
         target_angle=target_angle,
         current_control_ang=current_control_ang,
         time_step=time_step,
-        kp=kp,
-        cp=cp,
         control_speed=control_speed,
     )
 
