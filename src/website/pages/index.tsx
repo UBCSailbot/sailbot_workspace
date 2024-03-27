@@ -2,6 +2,7 @@ import dynamic from 'next/dynamic';
 import { CircularProgress } from '@mui/material';
 import Header from '@/views/components/Header/Header';
 import styles from './style.module.css';
+import PolarisContainer from '@/views/components/Polaris/PolarisContainer';
 
 const MapsContainer = dynamic(() => import('@/views/MapsContainer'), {
   loading: () => (
@@ -29,11 +30,14 @@ export default function Home() {
   return (
     <>
       <Header />
-      <div className={styles.maincontainer}>
+      <div className={styles.mainContainer}>
         <MapsContainer />
-        <div className={styles.dashboardcontainer}>
+        <div className={styles.dashboardContainer}>
           <DashboardContainer />
         </div>
+      </div>
+      <div className={styles.polarisContainer}>
+        <PolarisContainer />
       </div>
     </>
   );
