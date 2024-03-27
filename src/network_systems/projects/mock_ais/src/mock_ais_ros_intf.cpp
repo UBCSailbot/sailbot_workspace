@@ -12,14 +12,15 @@
 #include "cmn_hdrs/ros_info.h"
 #include "cmn_hdrs/shared_constants.h"
 #include "mock_ais.h"
+#include "net_node.h"
 
 /**
  * Connect the Mock AIS to the onbaord ROS network
  */
-class MockAisRosIntf : public rclcpp::Node
+class MockAisRosIntf : public NetNode
 {
 public:
-    MockAisRosIntf() : Node("mock_ais_node")
+    MockAisRosIntf() : NetNode(ros_nodes::MOCK_AIS)
     {
         static constexpr int ROS_Q_SIZE = 5;
         this->declare_parameter("enabled", false);
@@ -56,7 +57,7 @@ public:
             // TODO(): Add ROS parameters so that we can use the MockAis constructor that takes SimShipConfig
             // Optionally use nested parameters: https://answers.ros.org/question/325939/declare-nested-parameter/
             mock_ais_                     = std::make_unique<MockAis>(seed, num_sim_ships, polaris_start_pos);
-            std::string polaris_gps_topic = mode == SYSTEM_MODE::DEV ? MOCK_GPS_TOPIC : GPS_TOPIC;
+            std::string polaris_gps_topic = mode == SYSTEM_MODE::DEV ? ros_topics::MOCK_GPS : ros_topics::GPS;
 
             // The subscriber callback is very simple so it's just the following lambda function
             sub_ = this->create_subscription<custom_interfaces::msg::GPS>(
@@ -64,7 +65,7 @@ public:
                   mock_ais_->updatePolarisPos({mock_gps.lat_lon.latitude, mock_gps.lat_lon.longitude});
               });
 
-            pub_   = this->create_publisher<custom_interfaces::msg::AISShips>(MOCK_AIS_SHIPS_TOPIC, ROS_Q_SIZE);
+            pub_   = this->create_publisher<custom_interfaces::msg::AISShips>(ros_topics::MOCK_AIS_SHIPS, ROS_Q_SIZE);
             timer_ = this->create_wall_timer(
               std::chrono::milliseconds(publish_rate_ms), std::bind(&MockAisRosIntf::pubShipsCB, this));
         } else {
@@ -118,8 +119,20 @@ private:
 
 int main(int argc, char * argv[])
 {
+    bool err = false;
     rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<MockAisRosIntf>());
+    try {
+        std::shared_ptr<MockAisRosIntf> node = std::make_shared<MockAisRosIntf>();
+        try {
+            rclcpp::spin(node);
+        } catch (std::exception & e) {
+            RCLCPP_ERROR(node->get_logger(), "%s", e.what());
+            throw e;
+        }
+    } catch (std::exception & e) {
+        std::cerr << e.what() << std::endl;
+        err = true;
+    }
     rclcpp::shutdown();
-    return 0;
+    return err ? -1 : 0;
 }

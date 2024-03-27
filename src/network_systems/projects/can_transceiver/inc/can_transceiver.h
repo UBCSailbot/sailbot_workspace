@@ -23,18 +23,18 @@ public:
     CanTransceiver();
 
     /**
+     * @brief Destroy the Canbus Intf object
+     *
+     */
+    ~CanTransceiver();
+
+    /**
      * @brief Construct a new Can Transceiver and connect it to an existing and open file descriptor
      * @note  Can only be used if simulating the CAN bus
      *
      * @param fd
      */
     explicit CanTransceiver(int fd);
-
-    /**
-     * @brief Close the opened CAN port and kill the receive() thread
-     *
-     */
-    ~CanTransceiver();
 
     /**
      * @brief Send a CAN frame to the CAN port
@@ -82,7 +82,6 @@ private:
      *        Can be shutdown by setting shutdown_flag_ to true
      */
     void receive();
-
     /**
      * @brief Call on successfully reading a new CAN data frame from hardware/simulator
      *

@@ -63,7 +63,7 @@ bool SailbotDB::testConnection()
         db.run_command(ping_cmd.view());
         return true;
     } catch (const std::exception & e) {
-        std::cout << "Exception: " << e.what() << std::endl;
+        std::cerr << "Exception: " << e.what() << std::endl;
         return false;
     }
 }
