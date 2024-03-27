@@ -1,4 +1,4 @@
-.maincontainer {
+.mainContainer {
   display: grid;
   grid-template-columns: 1fr 1fr;
   margin-top: 0;
@@ -6,12 +6,12 @@
   position: absolute;
 }
 
-.dashboardcontainer {
+.dashboardContainer {
   overflow-y: scroll;
   padding-left: 10px;
 }
 
-.rayecontainer {
+.polarisContainer {
   display: flex;
   justify-content: center;
   align-items: center;
