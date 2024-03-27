@@ -9,22 +9,21 @@ import { Button, Grid } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import styles from './timestampfilter.module.css';
-
-// FIX ELEVATION ISSUE !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+import DataFilterActions from '@/stores/DataFilter/DataFilterActions';
 
 function TimestampFilter(props) {
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [startDate, setStartDate] = useState(null);
+  const [endDate, setEndDate] = useState(null);
 
   const dispatch = props.dispatch;
 
   const handleApplyChange = () => {
-    let cond1 = startDate != null && endDate != null;
-    let cond2 = _parseISOString(endDate) > _parseISOString(startDate);
+    let emptyDate = startDate != null && endDate != null;
+    let validDate = parseISOString(endDate) > parseISOString(startDate);
 
-    if (cond1 == true && cond2 == true) {
+    if (emptyDate == true && validDate == true) {
       dispatch({
-        type: 'TIMESTAMP',
+        type: DataFilterActions.SET_TIMESTAMP,
         payload: {
           startDate: startDate.toISOString(),
           endDate: endDate.toISOString(),
@@ -38,7 +37,7 @@ function TimestampFilter(props) {
     setEndDate(null);
 
     dispatch({
-      type: 'TIMESTAMP',
+      type: DataFilterActions.SET_TIMESTAMP,
       payload: {
         startDate: null,
         endDate: null,
@@ -54,7 +53,7 @@ function TimestampFilter(props) {
     setEndDate(newEndDate);
   };
 
-  function _parseISOString(s: string) {
+  function parseISOString(s: string) {
     return Math.floor(Date.parse(s) / 1000); // Converts to seconds
   }
 

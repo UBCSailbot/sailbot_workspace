@@ -6,8 +6,8 @@ import GlobalPathSagas from '@/stores/GlobalPath/GlobalPathSagas';
 import BatteriesSagas from '@/stores/Batteries/BatteriesSagas';
 import WindSensorsSagas from '@/stores/WindSensors/WindSensorsSagas';
 import GenericSensorsSagas from '@/stores/GenericSensors/GenericSensorsSagas';
-import TimestampSagas from '@/stores/Timestamp/TimestampSagas';
-import TimestampActions from '@/stores/Timestamp/TimestampActions';
+import DataFilterSagas from '@/stores/DataFilter/DataFilterSagas';
+import DataFilterActions from '@/stores/DataFilter/DataFilterActions';
 
 export function* rootSaga() {
   const rootSagaMap = {
@@ -18,7 +18,7 @@ export function* rootSaga() {
     batteries: new BatteriesSagas().forkSagas(),
     windSensors: new WindSensorsSagas().forkSagas(),
     genericSensors: new GenericSensorsSagas().forkSagas(),
-    timestamp: new TimestampSagas().forkSaga(TimestampActions.TIMESTAMP),
+    dataFilter: new DataFilterSagas().forkSaga(DataFilterActions.SET_TIMESTAMP),
   };
 
   yield all(combineSagas(rootSagaMap));

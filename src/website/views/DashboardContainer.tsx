@@ -4,16 +4,18 @@ import UPlotLineChartComponent from './components/LineChart/UPlotLineChart';
 import { GPSState } from '@/stores/GPS/GPSTypes';
 import { BatteriesState } from '@/stores/Batteries/BatteriesTypes';
 import { WindSensorsState } from '@/stores/WindSensors/WindSensorsTypes';
-import { TimestampState } from '@/stores/Timestamp/TimestampTypes';
+import { DataFilterState } from '@/stores/DataFilter/DataFilterTypes';
 import UPlotMultiLineChartComponent from './components/LineChart/UPlotMultiLineChart';
 import SingleValueChart from './components/SingleValueChart/SingleValueChart';
 import { Grid } from '@mui/material';
 
+// to-do:
+// add in filter to map (localpath and gps for heading)
 export interface DashboardContainerProps {
   gps: GPSState;
   batteries: BatteriesState;
   windSensors: WindSensorsState;
-  timestamp: TimestampState;
+  timestamp: DataFilterState;
 }
 
 class DashboardContainer extends React.PureComponent<DashboardContainerProps> {
@@ -27,10 +29,10 @@ class DashboardContainer extends React.PureComponent<DashboardContainerProps> {
       gps.data.map((data) => data.speed),
     ];
 
-    const gpsDistanceData = [
-      gps.data.map((data) => data.latitude),
-      gps.data.map((data) => data.longitude),
-    ];
+    // const gpsDistanceData = [
+    //   gps.data.map((data) => data.latitude),
+    //   gps.data.map((data) => data.longitude),
+    // ];
 
     const batteriesVoltageData = [
       batteries.data
@@ -56,10 +58,10 @@ class DashboardContainer extends React.PureComponent<DashboardContainerProps> {
       windSensors.data.map((data) => data.windSensors[1].speed),
     ];
 
-    const totalTripDistance = this._computeTotalTripDistance(
-      gpsDistanceData[0],
-      gpsDistanceData[1],
-    );
+    // const totalTripDistance = this._computeTotalTripDistance(
+    //   gpsDistanceData[0],
+    //   gpsDistanceData[1],
+    // );
 
     return (
       <div>
@@ -128,9 +130,9 @@ class DashboardContainer extends React.PureComponent<DashboardContainerProps> {
     let a =
       Math.sin(delta_lat_rad / 2) * Math.sin(delta_lat_rad / 2) +
       Math.cos(toRadians(lat1)) *
-        Math.cos(toRadians(lat2)) *
-        Math.sin(delta_long_rad / 2) *
-        Math.sin(delta_long_rad / 2);
+      Math.cos(toRadians(lat2)) *
+      Math.sin(delta_long_rad / 2) *
+      Math.sin(delta_long_rad / 2);
     let c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
     let distance = EARTH_RADIUS * c;
@@ -158,21 +160,17 @@ class DashboardContainer extends React.PureComponent<DashboardContainerProps> {
   }
 
   _validTimestamp(timestampISO: number) {
-    let cond1 =
-      timestampISO >=
-      this._parseISOString(this.props.timestamp.timestamp.startDate);
-    let cond2 =
-      timestampISO <=
-      this._parseISOString(this.props.timestamp.timestamp.endDate);
-
     if (
-      this.props.timestamp.timestamp.startDate == null &&
-      this.props.timestamp.timestamp.endDate == null
+      this.props.dataFilter.timestamps.startDate == null &&
+      this.props.dataFilter.timestamps.endDate == null
     ) {
       return true;
     }
 
-    if (cond1 == cond2) {
+    if (timestampISO >=
+      this._parseISOString(this.props.dataFilter.timestamps.startDate) &&
+      timestampISO <=
+      this._parseISOString(this.props.dataFilter.timestamps.endDate)) {
       return true;
     }
 
@@ -184,7 +182,7 @@ const mapStateToProps = (state: any) => ({
   gps: state.gps,
   batteries: state.batteries,
   windSensors: state.windSensors,
-  timestamp: state.timestamp,
+  dataFilter: state.dataFilter,
 });
 
 const mapDispatchToProps = {};
