@@ -50,6 +50,7 @@ static const std::map<CanId, std::string> CAN_DESC{
   {CanId::RESERVED, "RESERVED"},
   {CanId::BMS_P_DATA_FRAME_1, "BMS_P_DATA_FRAME_1 (Battery 1 data)"},
   {CanId::BMS_P_DATA_FRAME_2, "BMS_P_DATA_FRAME_2 (Battery 2 data)"},
+  {CanId::SAIL_AIS, "SAIL_AIS (AIS ship data)"},
   {CanId::SAIL_WSM_CMD_FRAME_1, "SAIL_WSM_CMD_FRAME_1 (Main sail command)"},
   {CanId::SAIL_WSM_DATA_FRAME_1, "SAIL_WSM_DATA_FRAME_1 (Main sail data)"},
   {CanId::SAIL_WIND_DATA_FRAME_1, "SAIL_WIND_DATA_FRAME_1 (Mast wind sensor)"},
@@ -447,19 +448,19 @@ private:
 class AISShips final : public BaseFrame
 {
 public:
-    // static constexpr std::array<CanId, 1> AIS_IDS        = {CanId::}; ASK LATER
-    static constexpr uint32_t CAN_BYTE_DLEN_     = 26;
-    static constexpr uint32_t BYTE_OFF_ID        = 0;
-    static constexpr uint32_t BYTE_OFF_LAT       = 4;
-    static constexpr uint32_t BYTE_OFF_LON       = 8;
-    static constexpr uint16_t BYTE_OFF_SPEED     = 12;
-    static constexpr uint16_t BYTE_OFF_COURSE    = 14;
-    static constexpr uint16_t BYTE_OFF_HEADING   = 16;
-    static constexpr uint8_t  BYTE_OFF_ROT       = 18;
-    static constexpr uint16_t BYTE_OFF_LENGTH    = 20;
-    static constexpr uint8_t  BYTE_OFF_WIDTH     = 22;
-    static constexpr uint8_t  BYTE_OFF_IDX       = 24;
-    static constexpr uint8_t  BYTE_OFF_NUM_SHIPS = 24;
+    static constexpr std::array<CanId, 1> AISSHIPS_IDS       = {CanId::SAIL_AIS};
+    static constexpr uint32_t             CAN_BYTE_DLEN_     = 26;
+    static constexpr uint32_t             BYTE_OFF_ID        = 0;
+    static constexpr uint32_t             BYTE_OFF_LAT       = 4;
+    static constexpr uint32_t             BYTE_OFF_LON       = 8;
+    static constexpr uint16_t             BYTE_OFF_SPEED     = 12;
+    static constexpr uint16_t             BYTE_OFF_COURSE    = 14;
+    static constexpr uint16_t             BYTE_OFF_HEADING   = 16;
+    static constexpr uint8_t              BYTE_OFF_ROT       = 18;
+    static constexpr uint16_t             BYTE_OFF_LENGTH    = 20;
+    static constexpr uint8_t              BYTE_OFF_WIDTH     = 22;
+    static constexpr uint8_t              BYTE_OFF_IDX       = 24;
+    static constexpr uint8_t              BYTE_OFF_NUM_SHIPS = 25;
 
     /**
      * @brief Explicitly deleted no-argument constructor
@@ -506,18 +507,12 @@ private:
     explicit AISShips(CanId id);
 
     /**
-     * @brief Private helper to construct a HelperAISShip message
-     *
-     */
-    msg::HelperAISShip toHelperAISShip() const;
-
-    /**
      * @brief Check if the assigned fields after constructing an AISShips object are within bounds.
      * @throws std::out_of_range if any assigned fields are outside of expected bounds
      */
     void checkBounds() const;
 
-    int8_t   num_ships_;
+    uint8_t  num_ships_;
     float    lat_;
     float    lon_;
     float    speed_;
@@ -526,8 +521,8 @@ private:
     float    heading_;
     float    width_;
     float    length_;
-    uint16_t id_;
-    int8_t   idx_;
+    uint32_t ship_id_;
+    uint8_t  idx_;
 };
 
 }  // namespace CAN_FP

@@ -439,22 +439,26 @@ void GPS::checkBounds() const
         throw std::out_of_range("Speed is out of bounds!\n" + debugStr() + "\n" + err_msg);
     }
 }
+
+//GPS private END
+//GPS END
+
 //AISShips START
 //AISShips pubic START
 
 AISShips::AISShips(const CanFrame & cf) : AISShips(static_cast<CanId>(cf.can_id))
 {
-    int32_t raw_id;
-    int32_t raw_lat;
-    int32_t raw_lon;
-    int16_t raw_speed;
-    int16_t raw_course;
-    int16_t raw_heading;
-    int8_t  raw_rot;
-    int16_t raw_length;
-    int8_t  raw_width;
-    int8_t  raw_idx;
-    int8_t  raw_num_ships;
+    int32_t  raw_id;  // CAN documentation says id is uint32, but custom interfaces says its int32
+    uint32_t raw_lat;
+    uint32_t raw_lon;
+    uint16_t raw_speed;
+    uint16_t raw_course;
+    uint16_t raw_heading;
+    int8_t   raw_rot;
+    uint16_t raw_length;
+    uint8_t  raw_width;
+    uint8_t  raw_idx;
+    uint8_t  raw_num_ships;
 
     std::memcpy(&raw_id, cf.data + BYTE_OFF_ID, sizeof(int32_t));
     std::memcpy(&raw_lat, cf.data + BYTE_OFF_LAT, sizeof(int32_t));
@@ -474,7 +478,11 @@ AISShips::AISShips(const CanFrame & cf) : AISShips(static_cast<CanId>(cf.can_id)
     speed_     = static_cast<float>(raw_speed / 10.0 * 1.852);  //NOLINT(readability-magic-numbers)
     rot_       = raw_rot;
     course_    = static_cast<float>(raw_course / 10.0);  //NOLINT(readability-magic-numbers)
+    heading_   = raw_heading;
     idx_       = raw_idx;
+    width_     = raw_width;
+    length_    = raw_length;
+    ship_id_   = raw_id;
 
     checkBounds();
 }
@@ -489,7 +497,7 @@ AISShips::AISShips(msg::HelperAISShip ros_ship, CanId id)
   course_(ros_ship.cog.heading),
   width_(ros_ship.width.dimension),
   length_(ros_ship.length.dimension),
-  id_(ros_ship.id)
+  ship_id_(ros_ship.id)
 {
     checkBounds();
 }
@@ -518,7 +526,7 @@ msg::HelperAISShip AISShips::toRosMsg() const
     msg::HelperDimension length;
     length.set__dimension(static_cast<float>(length_));  //NOLINT(readability-magic-numbers)
 
-    ship.set__id(id_);
+    ship.set__id(ship_id_);
     ship.set__lat_lon(lat_lon);
     ship.set__cog(cog);
     ship.set__sog(sog);
@@ -531,17 +539,18 @@ msg::HelperAISShip AISShips::toRosMsg() const
 
 CanFrame AISShips::toLinuxCan() const
 {
-    int32_t raw_id        = id_;
-    int32_t raw_lat       = static_cast<int32_t>((lat_ + 90.0) * 1000.0);   //NOLINT(readability-magic-numbers)
-    int32_t raw_lon       = static_cast<int32_t>((lon_ + 180.0) * 1000.0);  //NOLINT(readability-magic-numbers)
-    int16_t raw_speed     = static_cast<int16_t>(speed_ / 1.852 * 10);      //NOLINT(readability-magic-numbers)
-    int16_t raw_course    = static_cast<int16_t>(course_ * 10);             //NOLINT(readability-magic-numbers)
-    int16_t raw_heading   = static_cast<int16_t>(heading_);
-    int8_t  raw_rot       = rot_;
-    int16_t raw_length    = static_cast<int16_t>(length_);
-    int8_t  raw_width     = static_cast<int8_t>(width_);
-    int8_t  raw_idx       = idx_;
-    int8_t  raw_num_ships = num_ships_;
+    //NOTE: Implemented rounding for km/hr to knots conversion, is this ok?
+    uint32_t raw_id        = ship_id_;
+    uint32_t raw_lat       = static_cast<int32_t>((lat_ + 90.0) * 1000.0);           //NOLINT(readability-magic-numbers)
+    uint32_t raw_lon       = static_cast<int32_t>((lon_ + 180.0) * 1000.0);          //NOLINT(readability-magic-numbers)
+    uint16_t raw_speed     = static_cast<int16_t>(std::round(speed_ / 1.852 * 10));  //NOLINT(readability-magic-numbers)
+    uint16_t raw_course    = static_cast<int16_t>(course_ * 10);                     //NOLINT(readability-magic-numbers)
+    uint16_t raw_heading   = static_cast<int16_t>(heading_);
+    int8_t   raw_rot       = rot_;
+    uint16_t raw_length    = static_cast<int16_t>(length_);
+    uint8_t  raw_width     = static_cast<int8_t>(width_);
+    uint8_t  raw_idx       = idx_;
+    uint8_t  raw_num_ships = num_ships_;
 
     CanFrame cf = BaseFrame::toLinuxCan();
     std::memcpy(cf.data + BYTE_OFF_ID, &raw_id, sizeof(int32_t));
@@ -564,7 +573,7 @@ std::string AISShips::debugStr() const
     std::stringstream ss;
     ss << BaseFrame::debugStr() << "\n"
        << "Ship " << idx_ << ":\n"
-       << "ID: " << id_ << "\n"
+       << "ID: " << ship_id_ << "\n"
        << "Latitude (decimal degrees): " << lat_ << "\n"
        << "Longitude (decimal degrees): " << lon_ << "\n"
        << "Heading (degrees): " << heading_ << "\n"
@@ -576,6 +585,10 @@ std::string AISShips::debugStr() const
 
     return ss.str();
 }
+//AISShips public END
+//AISShips private START
+
+AISShips::AISShips(CanId id) : BaseFrame(std::span{AISSHIPS_IDS}, id, CAN_BYTE_DLEN_) {}
 
 void AISShips::checkBounds() const
 {
@@ -615,5 +628,7 @@ void AISShips::checkBounds() const
         throw std::out_of_range("Length is out of bounds!\n" + debugStr() + "\n" + err_msg);
     }
 }
+//AISShips private END
+//AISShips END
 
 }  // namespace CAN_FP
