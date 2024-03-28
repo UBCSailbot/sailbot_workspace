@@ -81,7 +81,19 @@ class DashboardContainer extends React.PureComponent<DashboardContainerProps> {
 
     let sortedGraphArray = []
 
-    for (let order of graphsOrder){
+    const currentOrder = sessionStorage.getItem('Current Order')
+    const storedOrder = JSON.parse(currentOrder);
+
+    if (storedOrder && storedOrder !== graphsOrder) {
+      console.log("oh no! they are different")
+      console.log("graphsOrder: ", graphsOrder)
+      console.log("storedOrder: ", storedOrder)
+    }
+
+    let graphsOrderForRealThisTime = (storedOrder ? storedOrder : graphsOrder)
+    for (let order of graphsOrderForRealThisTime){
+      console.log(graphsOrder)
+      console.log(order)
       for (let graph of graphArray){
         if (order === graph.key){
           sortedGraphArray.push(graph)

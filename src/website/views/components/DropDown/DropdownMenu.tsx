@@ -58,9 +58,10 @@ const DropdownMenu = ({ dispatch, graphsOrder }) => {
   const [order, setOrder] = useState(graphsOrder.order);
 
   useEffect(() => {
-    const storedOrder = JSON.parse(sessionStorage.getItem('Current Order'));
+    const currentOrder = sessionStorage.getItem('Current Order')
+    const storedOrder = JSON.parse(currentOrder);
     if (storedOrder) {
-      setOrder(storedOrder)
+      setOrder(storedOrder);
     }
   }, [graphsOrder]);
 
