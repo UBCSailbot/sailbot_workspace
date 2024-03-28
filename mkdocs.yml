@@ -4,9 +4,9 @@ site_url: https://UBCSailbot.github.io/sailbot_workspace/
 site_author: UBCSailbot Software Team
 
 # Repository
-repo_name: UBCSailbot/docs
-repo_url: https://github.com/UBCSailbot/docs
-edit_uri: "edit/main/docs/"
+repo_name: UBCSailbot/sailbot_workspace
+repo_url: https://github.com/UBCSailbot/sailbot_workspace
+edit_uri: "edit/main/sailbot_workspace/"
 
 # Configuration
 theme:

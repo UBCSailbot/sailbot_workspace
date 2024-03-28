@@ -19,7 +19,7 @@ ROS messages and services used across many ROS packages in the project.
 Update diagram by editing diagrams/src/external_interfaces.puml and the PlantUML Export Diagram command in VSCode
 --->
 
-![External Interface Diagram](https://github.com/UBCSailbot/custom_interfaces/blob/main/diagrams/out/external_interfaces.png?raw=true)
+![External Interface Diagram](https://github.com/UBCSailbot/sailbot_workspace/blob/main/src/custom_interfaces/diagrams/out/external_interfaces.png?raw=true)
 
 ### Project-wide Internal Interfaces
 
@@ -36,7 +36,7 @@ Update diagram by editing diagrams/src/external_interfaces.puml and the PlantUML
 
 ## Boat Simulator Interfaces
 
-ROS messages and services used in our [boat simulator](https://github.com/UBCSailbot/boat_simulator).
+ROS messages and services used in our [boat simulator](https://github.com/UBCSailbot/sailbot_workspace/tree/main/src/boat_simulator).
 
 ### Boat Simulator External Interfaces
 
