@@ -19,6 +19,7 @@ from boat_simulator.nodes.low_level_control.controller import (
         (-24, -24, 9.2, 0.5, 0.7, 0.34, 2),
         (90, -90, 30, 2, 0.7, 0.34, 1.5),
         (50.488, -36.78, 30, 0.5, 0.7, 0.34, 1),
+        (40, -39, 10, 0.5, 0.7, 0.34, 0.5),
     ]
 )
 def rudder_controller(request):
@@ -146,6 +147,7 @@ def test_update_state_reset(rudder_controller):
         (0, -60, 2, 0.5),
         (70.2, -70.5, 0.5, 1),
         (24, 24, 1, 2),
+        (-60.2, 10, 0.75, 2),
     ]
 )
 def sail_controller(request):

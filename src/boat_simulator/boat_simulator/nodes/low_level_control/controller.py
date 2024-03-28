@@ -17,7 +17,7 @@ class ActuatorController:
         `current_control_ang` (Scalar): Current control mechanism angle in degrees.
         `time_step` (Scalar): Time taken per iteration given in seconds.
         `control_speed` (Scalar): Speed of control angle change in degrees / second.
-        'max_angle_range' (Tuple): Control angle range in degrees, minimum[0] and maximum[1]
+        'max_angle_range' (Tuple): Max control angle range in degrees, minimum[0] and maximum[1]
     """
 
     def __init__(
@@ -33,7 +33,7 @@ class ActuatorController:
             `current_control_ang` (Scalar): Current control mechanism angle in degrees.
             `time_step` (Scalar): Time per iteration given in seconds.
             `control_speed` (Scalar): Speed of control angle change in degrees / second.
-            'max_angle_range' (Tuple): Control angle range in degrees, minimum[0] and maximum[1]
+            'max_angle_range' (Tuple): Max control angle range in degrees,minimum[0] and maximum[1]
         """
         self.current_control_ang = current_control_ang
         self.time_step = time_step
@@ -42,7 +42,7 @@ class ActuatorController:
         self.running_error = 0.0
 
     def update_state(self) -> bool:
-        """Updates the controller position iteratively based on control_speed * time_step, until
+        """Updates the controller position iteratively by control_speed * time_step, until
         the control target angle is reached.
 
         Returns:
@@ -98,7 +98,7 @@ class RudderController(ActuatorController):
             `kp` (Scalar): Proportional constant when calculating error.
             `cp` (Scalar): Tuning parameter for control action.
             `control_speed` (Scalar): Speed of controller change in degrees per second.
-            'running_error' (Scalar): Error between current and target control angle.
+            'max_angle_range' (Tuple): Max control angle range in degrees,minimum[0] and maximum[1]
 
         """
 
@@ -109,8 +109,8 @@ class RudderController(ActuatorController):
             max_angle_range,
         )
 
-        self.current_heading = bound_to_180(current_heading)  # bound (-180, 180] in degrees
-        self.desired_heading = bound_to_180(desired_heading)  # bound (-180, 180] in degrees
+        self.current_heading = bound_to_180(current_heading)
+        self.desired_heading = bound_to_180(desired_heading)
         self.kp = kp
         self.cp = cp
         self.setpoint = 0.0  # current setpoint angle in degrees
@@ -203,7 +203,7 @@ class SailController(ActuatorController):
             `current_control_ang` (Scalar): Current control mechanism angle in degrees.
             `time_step` (Scalar): Time per iteration given in seconds.
             `control_speed` (Scalar): Speed in which the controller turns in degrees / seconds.
-            'running_error' (Scalar): Error between current and target control angle.
+            'max_angle_range' (Tuple): Trim tab angle range in degrees,minimum[0] and maximum[1].
 
         """
         super().__init__(
