@@ -45,11 +45,11 @@
     flex-wrap: wrap;
     justify-content: flex-start;
     align-items: flex-start;
-    width: 800px;
+    width: 735px;
     margin: 20px;
     border-bottom: 1px solid black;
     border-top: 1px solid black;
-    padding-bottom: px;
+    padding-bottom: 1px;
     padding-top: 45px;
 }
 
@@ -57,7 +57,6 @@
     width: 100%;
     font-weight: bold;
     margin-bottom: 16px; 
-    margin-left: 15px;
 }
 
 .coverageItem {
@@ -65,12 +64,11 @@
     margin-bottom: 8px; 
     display: flex;
     flex-direction: column;
-    gap: 16px; 
-    margin-left: 15px;
+    gap: 20px; 
 }
 
 .coverageContent {
-    margin-bottom: 16px; 
+    margin-bottom: 38px; 
 }
 
   
