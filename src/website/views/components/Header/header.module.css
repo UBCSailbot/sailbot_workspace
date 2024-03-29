@@ -4,12 +4,12 @@
   margin-bottom: 10px;
   display: flex;
   align-items: center;
+  justify-content: space-between; 
   background: linear-gradient(to right, #26619c, #3498db);
 }
 
 .title {
   font-family: Verdana, Geneva, sans-serif;
-  font-weight: 20px;
   color: white;
   margin-left: 20px;
   font-size: 30px;
@@ -19,4 +19,8 @@
 .logo {
   width: 30px;
   margin-left: 50px;
+}
+
+.infoButton {
+  margin-right: 20px; 
 }

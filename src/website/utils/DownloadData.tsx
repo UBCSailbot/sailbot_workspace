@@ -1,6 +1,7 @@
 const downloadSensorData = async (sensorType) => {
   try {
-    const response = await fetch(`http://localhost:3005/api/${sensorType}`);
+    const apiUrl = `${process.env.NEXT_PUBLIC_SERVER_HOST}:${process.env.NEXT_PUBLIC_SERVER_PORT}/api/${sensorType}`;
+    const response = await fetch(apiUrl);
     if (!response.ok) {
       throw new Error(`Error: ${response.statusText}`);
     }

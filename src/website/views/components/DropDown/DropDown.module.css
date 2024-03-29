@@ -1,13 +1,15 @@
-.flex-item-container {
+@import url('https://fonts.googleapis.com/css2?family=Switzer:wght@400;700&display=swap');
+
+.flexItemContainer {
   flex: 1;
   display: flex;
   justify-content: center;
-  font-family: 'Switzer, sans-serif';
-  color: #092e4e; 
+  font-family: 'Switzer', sans-serif;
+  color: #092e4e;
   font-weight: bold;
 }
 
-.details-flex-container {
+.detailsFlexContainer {
   display: flex;
   justify-content: space-between;
   width: 100%;
@@ -16,7 +18,7 @@
   margin-top: 2px;
 }
 
-.details-flex-container::after {
+.detailsFlexContainer::after {
   content: "";
   display: block;
   position: absolute;
@@ -27,30 +29,30 @@
   background-color: black;
 }
 
-.content-container {
+.contentContainer {
   display: flex;
   justify-content: space-between;
   width: 100%;
   padding-top: 8px;
 }
 
-.accordion-custom {
+.accordionCustom {
   background-color: #7a8b99;
   border: 1px solid #bdc3c7;
   box-shadow: none;
 }
 
-.accordion-summary-custom {
+.accordionSummaryCustom {
   background-color: #d9dddc;
   color: #00263e;
-  font-family: 'Switzer, sans-serif';
+  font-family: 'Switzer', sans-serif;
   font-weight: bold;
 }
 
-.accordion-details-custom {
+.accordionDetailsCustom {
   background-color: white;
   flex-direction: column;
   padding: 16px 16px;
-  font-family: 'Switzer, sans-serif';
-  color: #092e4e; 
+  font-family: 'Switzer', sans-serif;
+  color: #092e4e;
 }
