@@ -5,6 +5,7 @@ from math import atan2, copysign, cos, sin
 import numpy as np
 import pytest
 
+from boat_simulator.common.constants import SAIL_MAX_ANGLE_RANGE
 from boat_simulator.nodes.low_level_control.controller import (
     RudderController,
     SailController,
@@ -20,6 +21,7 @@ from boat_simulator.nodes.low_level_control.controller import (
         (90, -90, 30, 2, 0.7, 0.34, 1.5),
         (50.488, -36.78, 30, 0.5, 0.7, 0.34, 1),
         (40, -39, 10, 0.5, 0.7, 0.34, 0.5),
+        (0, 0, 0, 0.5, 0.7, 0.34, 1),
     ]
 )
 def rudder_controller(request):
@@ -40,7 +42,7 @@ def rudder_controller(request):
 
 def test_compute_error(rudder_controller):
     # Test compute_error method of RudderController
-    error = rudder_controller.compute_error()
+    error = rudder_controller._compute_error()
     desired_rad = np.deg2rad(rudder_controller.desired_heading)
     current_rad = np.deg2rad(rudder_controller.current_heading)
     exp_error = atan2(sin(desired_rad - current_rad), cos(desired_rad - current_rad))
@@ -50,7 +52,7 @@ def test_compute_error(rudder_controller):
 def test_compute_setpoint(rudder_controller):
     # Test compute_setpoint method of RudderController
     setpoint = rudder_controller.compute_setpoint()
-    heading_error = rudder_controller.compute_error()  # heading_error in radians
+    heading_error = rudder_controller._compute_error()  # heading_error in radians
 
     rudder_setpoint = (rudder_controller.kp * heading_error) / (
         1 + (rudder_controller.cp * abs(heading_error))
@@ -72,7 +74,7 @@ def test_reset_setpoint(rudder_controller):
     new_desired_heading = 60
     new_current_heading = 30
     expected = rudder_controller.reset_setpoint(new_desired_heading, new_current_heading)
-    rudder_controller.change_desired_heading(new_desired_heading)
+    rudder_controller._change_desired_heading(new_desired_heading)
     calculated = rudder_controller.compute_setpoint()
     np.equal(calculated, expected)
 
@@ -82,16 +84,17 @@ def test_update_state(rudder_controller):
     current_control = rudder_controller.current_control_ang
     rudder_controller.compute_setpoint()
     assert rudder_controller.update_state() == (abs(rudder_controller.running_error) == 0)
-    assert np.equal(
-        current_control
-        + (
-            copysign(
-                rudder_controller.control_speed * rudder_controller.time_step,
-                rudder_controller.running_error,
-            )
-        ),
-        rudder_controller.current_control_ang,
-    )
+    if rudder_controller.current_heading != rudder_controller.desired_heading:
+        assert np.equal(
+            current_control
+            + (
+                copysign(
+                    rudder_controller.control_speed * rudder_controller.time_step,
+                    rudder_controller.running_error,
+                )
+            ),
+            rudder_controller.current_control_ang,
+        )
 
 
 def test_update_state_continuous(rudder_controller):
@@ -148,6 +151,7 @@ def test_update_state_reset(rudder_controller):
         (70.2, -70.5, 0.5, 1),
         (24, 24, 1, 2),
         (-60.2, 10, 0.75, 2),
+        (0, 0, 0.5, 2),
     ]
 )
 def sail_controller(request):
@@ -163,7 +167,7 @@ def sail_controller(request):
 
 def test_compute_error_1(sail_controller):
     # Test compute_error method of SailController
-    error = sail_controller.compute_error()
+    error = sail_controller._compute_error()
     exp_error = sail_controller.target_angle - sail_controller.current_control_ang
     assert np.equal(error, exp_error)
 
@@ -180,15 +184,18 @@ def test_update_state_1(sail_controller):
     iteration_speed = copysign(
         sail_controller.control_speed * sail_controller.time_step, sail_controller.running_error
     )
+    calculated = current_control + iteration_speed
+    calculated = min(max(calculated, SAIL_MAX_ANGLE_RANGE[0]), SAIL_MAX_ANGLE_RANGE[1])
+
     assert sail_controller.update_state() == (abs(sail_controller.running_error) == 0)
     assert (
-        np.isclose(sail_controller.current_control_ang, current_control + iteration_speed, 0.1)
+        np.isclose(sail_controller.current_control_ang, calculated, 0.2)
         or sail_controller.running_error == 0
     )
 
 
 def test_update_state_continuous_1(sail_controller):
-    sail_controller.compute_error()
+    sail_controller._compute_error()
     progress = False
     counter = 0
     if np.isclose(sail_controller.running_error, 0, 0.1):

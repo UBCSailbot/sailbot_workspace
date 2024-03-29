@@ -114,8 +114,9 @@ class RudderController(ActuatorController):
         self.kp = kp
         self.cp = cp
         self.setpoint = 0.0  # current setpoint angle in degrees
+        self.reset_setpoint(self.desired_heading, self.current_heading)
 
-    def compute_error(self) -> Scalar:
+    def _compute_error(self) -> Scalar:
         """Computes the error between desired and current heading
         implementation taken from: https://stackoverflow.com/a/2007279
         Angles are bound with the convention (-180, 180]
@@ -141,7 +142,7 @@ class RudderController(ActuatorController):
             Scalar: Corresponding error angle between the
             current and target control angle in degrees"""
 
-        heading_error_rad = self.compute_error()
+        heading_error_rad = self._compute_error()
 
         rudder_setpoint_rad = (self.kp * heading_error_rad) / (
             1 + (self.cp * abs(heading_error_rad))
@@ -171,7 +172,7 @@ class RudderController(ActuatorController):
         self.current_heading = new_current_heading
         self.compute_setpoint()
 
-    def change_desired_heading(self, changed_desired_heading) -> None:
+    def _change_desired_heading(self, changed_desired_heading) -> None:
         """Changes desired heading to a new angle. Used for testing purposes
 
         Args:
@@ -213,8 +214,9 @@ class SailController(ActuatorController):
             max_angle_range,
         )
         self.target_angle = target_angle
+        self.reset_setpoint(self.target_angle)
 
-    def compute_error(self) -> Scalar:
+    def _compute_error(self) -> Scalar:
         """Computes the corresponding control error angle between current control angle and
         target control angle
 
@@ -233,4 +235,4 @@ class SailController(ActuatorController):
 
         """
         self.target_angle = new_target
-        self.compute_error()
+        self._compute_error()
