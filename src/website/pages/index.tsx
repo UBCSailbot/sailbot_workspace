@@ -24,7 +24,7 @@ const MapsContainer = dynamic(() => import('@/views/MapsContainer'), {
 
 const DashboardContainer = dynamic(() => import('@/views/DashboardContainer'), {
   ssr: false,
-});
+}); 
 
 export default function Home() {
   return (
