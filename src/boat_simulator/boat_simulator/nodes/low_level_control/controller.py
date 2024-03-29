@@ -133,7 +133,7 @@ class RudderController(ActuatorController):
 
         return error_rad
 
-    def compute_setpoint(self) -> Scalar:
+    def _compute_setpoint(self) -> Scalar:
         """Computes the corresponding control error angle between current control angle and
         target control angle. Uses Raye's implementation from:
             https://github.com/UBCSailbot/raye-boat-controller/blob/master/python/tack_controller.py
@@ -170,7 +170,7 @@ class RudderController(ActuatorController):
 
         self.desired_heading = new_desired_heading
         self.current_heading = new_current_heading
-        self.compute_setpoint()
+        self._compute_setpoint()
 
     def _change_desired_heading(self, changed_desired_heading) -> None:
         """Changes desired heading to a new angle. Used for testing purposes

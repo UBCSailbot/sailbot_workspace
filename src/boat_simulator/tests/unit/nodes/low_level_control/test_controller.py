@@ -51,7 +51,7 @@ def test_compute_error(rudder_controller):
 
 def test_compute_setpoint(rudder_controller):
     # Test compute_setpoint method of RudderController
-    setpoint = rudder_controller.compute_setpoint()
+    setpoint = rudder_controller._compute_setpoint()
     heading_error = rudder_controller._compute_error()  # heading_error in radians
 
     rudder_setpoint = (rudder_controller.kp * heading_error) / (
@@ -75,14 +75,14 @@ def test_reset_setpoint(rudder_controller):
     new_current_heading = 30
     expected = rudder_controller.reset_setpoint(new_desired_heading, new_current_heading)
     rudder_controller._change_desired_heading(new_desired_heading)
-    calculated = rudder_controller.compute_setpoint()
+    calculated = rudder_controller._compute_setpoint()
     np.equal(calculated, expected)
 
 
 # testing for one iteration only
 def test_update_state(rudder_controller):
     current_control = rudder_controller.current_control_ang
-    rudder_controller.compute_setpoint()
+    rudder_controller._compute_setpoint()
     assert rudder_controller.update_state() == (abs(rudder_controller.running_error) == 0)
     if rudder_controller.current_heading != rudder_controller.desired_heading:
         assert np.equal(
@@ -98,7 +98,7 @@ def test_update_state(rudder_controller):
 
 
 def test_update_state_continuous(rudder_controller):
-    rudder_controller.compute_setpoint()
+    rudder_controller._compute_setpoint()
     progress = False
     counter = 0
     if np.isclose(rudder_controller.running_error, 0, 0.1):
@@ -117,7 +117,7 @@ def test_update_state_continuous(rudder_controller):
 
 
 def test_update_state_reset(rudder_controller):
-    rudder_controller.compute_setpoint()
+    rudder_controller._compute_setpoint()
     counter = 0
     while not np.isclose(rudder_controller.running_error, 0, 0.1):
         counter += 1
