@@ -463,12 +463,9 @@ TEST_F(TestCanFrameParser, AISShipsTestValid)
     constexpr std::array<uint32_t, 2> expected_raw_lons{147900, 292900};
     constexpr std::array<uint16_t, 2> expected_raw_cogs{1004, 432};
     constexpr std::array<uint16_t, 2> expected_raw_sogs{50, 22};
-    //constexpr std::array<uint16_t, 2> expected_raw_headings{16, 160};
     constexpr std::array<int8_t, 2>   expected_raw_rots{-10, 50};
     constexpr std::array<uint8_t, 2>  expected_raw_widths{4, 65};
     constexpr std::array<uint16_t, 2> expected_raw_lengths{15, 360};
-    //constexpr std::array<uint8_t, 2>  expected_raw_idxs{3, 1};
-    //constexpr std::array<uint8_t, 2>  expected_raw_num_ships{2, 17};
 
     for (size_t i = 0; i < 2; i++) {
         CAN_FP::CanId id              = CAN_FP::CanId::SAIL_AIS;
@@ -545,12 +542,9 @@ TEST_F(TestCanFrameParser, AISShipsTestValid)
         EXPECT_NEAR(raw_lon, expected_raw_lons[i], 1);
         EXPECT_EQ(raw_speed, expected_raw_sogs[i]);
         EXPECT_EQ(raw_course, expected_raw_cogs[i]);
-        //EXPECT_EQ(raw_heading, expected_raw_headings[i]);     NOTE: commented out data is not in the ROS message, so will not be able to check
         EXPECT_EQ(raw_rot, expected_raw_rots[i]);
         EXPECT_EQ(raw_length, expected_raw_lengths[i]);
         EXPECT_EQ(raw_width, expected_raw_widths[i]);
-        //EXPECT_EQ(raw_idx, expected_raw_idxs[i]);
-        //EXPECT_EQ(raw_num_ships, expected_raw_num_ships[i]);
 
         CAN_FP::AISShips ais_from_can = CAN_FP::AISShips(cf);
 
