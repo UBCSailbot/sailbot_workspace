@@ -109,9 +109,7 @@ std::string createSensorPostBody(remote_transceiver::MOMsgParams::Params params)
     return s.str();
 }
 
-std::string createGlobalPathPostBody(remote_transceiver::MOMsgParams::Params params) {}
->>>>>>> e2ccf2e8b8fdc22c08c2d316b01455981f66d964
-
+// std::string createGlobalPathPostBody(remote_transceiver::MOMsgParams::Params params) {}
 /**
  * @brief Test that we can POST global path data to the server
  *
@@ -206,39 +204,4 @@ TEST_F(TestRemoteTransceiver, TestPostSensorsMult)
 
     // Check that DB is updated properly for all requests
     EXPECT_TRUE(g_test_db.verifyDBWrite(expected_sensors, expected_info));
-}
-
-/**
- * @brief Test that we can POST global path data to the server
- *
- */
-TEST_F(TestRemoteTransceiver, TestPostGlobalPath)
-{
-    SCOPED_TRACE("Seed: " + std::to_string(g_rand_seed));  // Print seed on any failure
-    auto [rand_global_path, rand_timestamp] = g_test_db.genRandGlobalData(UtilDB::getTimestamp());
-
-    std::string rand_global_path_str;
-    ASSERT_TRUE(rand_global_path.SerializeToString(&rand_global_path_str));
-    Polaris::GlobalPath test;
-    test.ParseFromString(rand_global_path_str);
-    // This query is comprised entirely of arbitrary values exccept for .data_
-    std::string query = createGlobalPathPostBody(
-      {.imei_          = 0,
-       .serial_        = 0,
-       .momsn_         = 1,
-       .transmit_time_ = rand_info.timestamp_,
-       .lat_           = rand_info.lat_,
-       .lon_           = rand_info.lon_,
-       .cep_           = rand_info.cep_,
-       .data_          = rand_sensors_str});
-    http::status status = http_client::post(
-      {TESTING_HOST, std::to_string(TESTING_PORT), remote_transceiver::targets::GLOBAL_PATH}, "application/json",
-      query);
-
-    EXPECT_EQ(status, http::status::ok);
-    std::this_thread::sleep_for(WAIT_AFTER_RES);
-
-    std::array<GlobalPath, 1>  expected_global_path = {rand_global_path};
-    std::array<std::string, 1> expected_timestamp   = {rand_timestamp};
-    EXPECT_TRUE(g_test_db.verifyDBGlobalPath(expected_global_path, expected_timestamp));
 }
