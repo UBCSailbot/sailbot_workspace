@@ -1,1 +1,1 @@
-../../../run_virtual_iridium.sh
+../../../scripts/run_virtual_iridium.sh
