@@ -498,6 +498,20 @@ public:
      */
     std::string debugStr() const override;
 
+    /**
+     * @brief Returns the number of ships
+     *
+     * @return the number of ships
+     */
+    int getNumShips() const { return num_ships_; }
+
+    /**
+     * @brief Returns the index of the current ship
+     *
+     * @return the index of the current ship
+     */
+    int getShipIndex() const { return idx_; }
+
 private:
     /**
      * @brief Private helper constructor for AISShips objects
@@ -505,6 +519,14 @@ private:
      * @param id CanId of the AISShips
      */
     explicit AISShips(CanId id);
+
+    /**
+     * @brief Rounds a float to 4 decimal places of precision
+     *
+     * @param val
+     * @return rounded float
+     */
+    static float roundFloat(float val);
 
     /**
      * @brief Check if the assigned fields after constructing an AISShips object are within bounds.

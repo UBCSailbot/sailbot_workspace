@@ -225,7 +225,8 @@ TEST_F(TestCanFrameParser, WindSensorTestValid)
         std::memcpy(&raw_angle, cf.data + CAN_FP::WindSensor::BYTE_OFF_ANGLE, sizeof(int16_t));
         float converted_speed = static_cast<float>(raw_speed) * 1.852 / 10.0;  //NOLINT
 
-        EXPECT_NEAR(converted_speed, expected_speeds[i], 0.1852);
+        //expect within 0.05 knots (0.0926km/hr)
+        EXPECT_NEAR(converted_speed, expected_speeds[i], 0.0926);
         EXPECT_EQ(raw_angle, expected_angles[i]);
 
         CAN_FP::WindSensor sensor_from_can = CAN_FP::WindSensor(cf);
@@ -233,8 +234,8 @@ TEST_F(TestCanFrameParser, WindSensorTestValid)
         EXPECT_EQ(sensor_from_can.id_, id);
 
         msg::WindSensor msg_from_sensor = sensor_from_can.toRosMsg();
-
-        EXPECT_NEAR(msg_from_sensor.speed.speed, expected_speed, 0.1852);
+        //expect within 0.05 knots (0.0926km/hr)
+        EXPECT_NEAR(msg_from_sensor.speed.speed, expected_speed, 0.0926);
         EXPECT_DOUBLE_EQ(msg_from_sensor.direction, expected_angle);
     }
 }
@@ -334,8 +335,8 @@ TEST_F(TestCanFrameParser, GPSTestValid)
         std::memcpy(&raw_speed, cf.data + CAN_FP::GPS::BYTE_OFF_SPEED, sizeof(int32_t));
         std::memcpy(&raw_heading, cf.data + CAN_FP::GPS::BYTE_OFF_HEADING, sizeof(int32_t));
 
-        EXPECT_NEAR(raw_lat, expected_raw_lats[i], 1);
-        EXPECT_NEAR(raw_lon, expected_raw_lons[i], 1);
+        EXPECT_EQ(raw_lat, expected_raw_lats[i]);
+        EXPECT_EQ(raw_lon, expected_raw_lons[i]);
         EXPECT_EQ(raw_speed, expected_raw_speeds[i]);
         EXPECT_EQ(raw_heading, expected_raw_headings[i]);
 
@@ -345,8 +346,8 @@ TEST_F(TestCanFrameParser, GPSTestValid)
 
         msg::GPS msg_from_gps = gps_from_can.toRosMsg();
 
-        EXPECT_NEAR(msg_from_gps.lat_lon.latitude, expected_lat, 1);
-        EXPECT_NEAR(msg_from_gps.lat_lon.longitude, expected_lon, 1);
+        EXPECT_EQ(msg_from_gps.lat_lon.latitude, expected_lat);
+        EXPECT_EQ(msg_from_gps.lat_lon.longitude, expected_lon);
         EXPECT_DOUBLE_EQ(msg_from_gps.speed.speed, expected_speed);
         EXPECT_DOUBLE_EQ(msg_from_gps.heading.heading, expected_heading);
     }
@@ -538,8 +539,8 @@ TEST_F(TestCanFrameParser, AISShipsTestValid)
         std::memcpy(&raw_num_ships, cf.data + CAN_FP::AISShips::BYTE_OFF_NUM_SHIPS, sizeof(int8_t));
 
         EXPECT_EQ(raw_id, expected_raw_ids[i]);
-        EXPECT_NEAR(raw_lat, expected_raw_lats[i], 1);
-        EXPECT_NEAR(raw_lon, expected_raw_lons[i], 1);
+        EXPECT_EQ(raw_lat, expected_raw_lats[i]);
+        EXPECT_EQ(raw_lon, expected_raw_lons[i]);
         EXPECT_EQ(raw_speed, expected_raw_sogs[i]);
         EXPECT_EQ(raw_course, expected_raw_cogs[i]);
         EXPECT_EQ(raw_rot, expected_raw_rots[i]);
@@ -553,8 +554,8 @@ TEST_F(TestCanFrameParser, AISShipsTestValid)
         msg::HelperAISShip msg_from_ais = ais_from_can.toRosMsg();
 
         EXPECT_EQ(msg_from_ais.id, expected_id);
-        EXPECT_NEAR(msg_from_ais.lat_lon.latitude, expected_lat, 0.001);
-        EXPECT_NEAR(msg_from_ais.lat_lon.longitude, expected_lon, 0.001);
+        EXPECT_DOUBLE_EQ(msg_from_ais.lat_lon.latitude, expected_lat);
+        EXPECT_DOUBLE_EQ(msg_from_ais.lat_lon.longitude, expected_lon);
         EXPECT_DOUBLE_EQ(msg_from_ais.cog.heading, expected_cog);
         EXPECT_DOUBLE_EQ(msg_from_ais.sog.speed, expected_sog);
         EXPECT_DOUBLE_EQ(msg_from_ais.rot.rot, expected_rot);

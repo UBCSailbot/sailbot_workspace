@@ -377,11 +377,11 @@ msg::GPS GPS::toRosMsg() const
 
 CanFrame GPS::toLinuxCan() const
 {
-    int32_t raw_lat     = static_cast<int32_t>((lat_ + 90.0) * 1000.0);   //NOLINT(readability-magic-numbers)
-    int32_t raw_lon     = static_cast<int32_t>((lon_ + 180.0) * 1000.0);  //NOLINT(readability-magic-numbers)
-    int32_t raw_sec     = static_cast<int32_t>(sec_ * 1000);              //NOLINT(readability-magic-numbers)
-    int8_t  raw_min     = static_cast<int8_t>(min_);
-    int8_t  raw_hour    = static_cast<int8_t>(hour_);
+    int32_t raw_lat  = static_cast<int32_t>(std::round((lat_ + 90.0) * 1000.0));   //NOLINT(readability-magic-numbers)
+    int32_t raw_lon  = static_cast<int32_t>(std::round((lon_ + 180.0) * 1000.0));  //NOLINT(readability-magic-numbers)
+    int32_t raw_sec  = static_cast<int32_t>(sec_ * 1000);                          //NOLINT(readability-magic-numbers)
+    int8_t  raw_min  = static_cast<int8_t>(min_);
+    int8_t  raw_hour = static_cast<int8_t>(hour_);
     int32_t raw_heading = static_cast<int32_t>(heading_ * 1000);  //NOLINT(readability-magic-numbers)
     int32_t raw_speed   = static_cast<int32_t>(speed_ * 1000);    //NOLINT(readability-magic-numbers)
 
@@ -540,10 +540,10 @@ msg::HelperAISShip AISShips::toRosMsg() const
 CanFrame AISShips::toLinuxCan() const
 {
     //NOTE: Implemented rounding for km/hr to knots conversion, is this ok?
-    uint32_t raw_id        = ship_id_;
-    uint32_t raw_lat       = static_cast<int32_t>((lat_ + 90.0) * 1000.0);           //NOLINT(readability-magic-numbers)
-    uint32_t raw_lon       = static_cast<int32_t>((lon_ + 180.0) * 1000.0);          //NOLINT(readability-magic-numbers)
-    uint16_t raw_speed     = static_cast<int16_t>(std::round(speed_ / 1.852 * 10));  //NOLINT(readability-magic-numbers)
+    uint32_t raw_id    = ship_id_;
+    uint32_t raw_lat   = static_cast<int32_t>(std::round((lat_ + 90.0) * 1000.0));   //NOLINT(readability-magic-numbers)
+    uint32_t raw_lon   = static_cast<int32_t>(std::round((lon_ + 180.0) * 1000.0));  //NOLINT(readability-magic-numbers)
+    uint16_t raw_speed = static_cast<int16_t>(std::round(speed_ / 1.852 * 10));      //NOLINT(readability-magic-numbers)
     uint16_t raw_course    = static_cast<int16_t>(course_ * 10);                     //NOLINT(readability-magic-numbers)
     uint16_t raw_heading   = static_cast<int16_t>(heading_);
     int8_t   raw_rot       = rot_;
@@ -589,6 +589,11 @@ std::string AISShips::debugStr() const
 //AISShips private START
 
 AISShips::AISShips(CanId id) : BaseFrame(std::span{AISSHIPS_IDS}, id, CAN_BYTE_DLEN_) {}
+
+float AISShips::roundFloat(float val)
+{
+    return std::round(val * 10000) / 10000;  //NOLINT(readability-magic-numbers)
+}
 
 void AISShips::checkBounds() const
 {

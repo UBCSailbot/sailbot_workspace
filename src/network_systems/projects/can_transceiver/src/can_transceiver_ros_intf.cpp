@@ -71,8 +71,7 @@ public:
             generic_sensors_pub_ = this->create_publisher<msg::GenericSensors>(ros_topics::DATA_SENSORS, QUEUE_SIZE);
 
             can_trns_->registerCanCbs(
-              {//TODO(lross03): Add callback for AIS
-               std::make_pair(
+              {std::make_pair(
                  CanId::BMS_P_DATA_FRAME_1,
                  std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishBattery(frame); })),
                std::make_pair(
@@ -89,7 +88,10 @@ public:
                  std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishWindSensor(frame); })),
                std::make_pair(
                  CanId::GENERIC_SENSOR_START,
-                 std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishGeneric(frame); }))});
+                 std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishGeneric(frame); })),
+               std::make_pair(CanId::SAIL_AIS, std::function<void(const CanFrame &)>([this](const CanFrame & frame) {
+                                  publishAIS(frame);
+                              }))});
 
             if (mode == SYSTEM_MODE::DEV) {  // Initialize the CAN Sim Intf
                 mock_ais_sub_ = this->create_subscription<msg::AISShips>(
@@ -133,6 +135,10 @@ private:
     // Timer for anything that just needs a repeatedly written value in simulation
     rclcpp::TimerBase::SharedPtr timer_;
 
+    // Holder for AISShips before publishing
+    std::vector<msg::HelperAISShip> ais_ships_holder_;
+    int                             ais_ships_num_;
+
     // Mock CAN file descriptor for simulation
     int sim_intf_fd_;
 
@@ -140,10 +146,21 @@ private:
      * @brief Publish AIS ships
      *
      */
-    void publishAIS(const CanFrame & /**/)
+    void publishAIS(const CanFrame & ais_frame)
     {
-        //TODO(lross03): fill out this function
-        ais_pub_->publish(ais_ships_);
+        CAN_FP::AISShips ais_ship(ais_frame);
+        if (ais_ships_num_ == 0) {
+            ais_ships_num_ = ais_ship.getNumShips();
+            ais_ships_holder_.reserve(ais_ships_num_);
+        }
+
+        ais_ships_holder_[ais_ship.getShipIndex()] = ais_ship.toRosMsg();  //maybe change to pushback later
+
+        if (ais_ships_holder_.size() == static_cast<size_t>(ais_ships_num_)) {
+            ais_ships_.ships = ais_ships_holder_;
+            ais_ships_holder_.clear();
+            ais_pub_->publish(ais_ships_);
+        }
     }
 
     /**
