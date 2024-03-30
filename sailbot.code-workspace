@@ -357,7 +357,7 @@
                 "label": "Build All",
                 "detail": "Build all packages in the workspace",
                 "type": "shell",
-                "command": "./build.sh",
+                "command": "${workspaceFolder:sailbot_workspace}/scripts/build.sh",
                 "group": {
                     "kind": "build",
                     "isDefault": true
@@ -368,7 +368,7 @@
                 "label": "Build Package",
                 "detail": "Build a specific package in the workspace",
                 "type": "shell",
-                "command": "./build.sh -p ${input:package}",
+                "command": "${workspaceFolder:sailbot_workspace}/scripts/build.sh -p ${input:package}",
                 "group": {
                     "kind": "build",
                     "isDefault": true
@@ -379,7 +379,7 @@
                 "label": "debug",
                 "detail": "Build workspace (debug)",
                 "type": "shell",
-                "command": "./build.sh Debug",
+                "command": "${workspaceFolder:sailbot_workspace}/scripts/build.sh Debug",
                 "group": "build",
                 "problemMatcher": "$gcc"
             },
@@ -388,7 +388,7 @@
                 "label": "test",
                 "detail": "Run all unit tests and show results.",
                 "type": "shell",
-                "command": "./test.sh",
+                "command": "${workspaceFolder:sailbot_workspace}/scripts/test.sh",
                 "group": {
                     "kind": "test",
                     "isDefault": true
@@ -489,7 +489,7 @@
                 "label": "setup",
                 "detail": "Set up the workspace",
                 "type": "shell",
-                "command": "./setup.sh",
+                "command": "./scripts/setup.sh",
                 "problemMatcher": []
             }
 
