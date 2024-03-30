@@ -5,8 +5,8 @@ const downloadSensorData = async (sensorType) => {
     if (!response.ok) {
       throw new Error(`Error: ${response.statusText}`);
     }
-    const { data } = await response.json(); 
-    const jsonStr = JSON.stringify(data); 
+    const { data } = await response.json();
+    const jsonStr = JSON.stringify(data);
     const blob = new Blob([jsonStr], { type: 'application/json' });
 
     const link = document.createElement('a');
@@ -26,4 +26,5 @@ export const downloadGlobalPathData = () => downloadSensorData('globalpath');
 export const downloadLocalPathData = () => downloadSensorData('localpath');
 export const downloadBatteriesData = () => downloadSensorData('batteries');
 export const downloadWindSensorsData = () => downloadSensorData('wind-sensors');
-export const downloadGenericSensorsData = () => downloadSensorData('generic-sensors');
+export const downloadGenericSensorsData = () =>
+  downloadSensorData('generic-sensors');

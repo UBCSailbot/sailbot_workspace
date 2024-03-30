@@ -13,7 +13,7 @@ function Header({ onInfoButtonClick }: HeaderProps) {
       <img src='SailbotLogo.png' alt='Logo' className={styles.logo} />
       <h1 className={styles.title}>UBC SAILBOT</h1>
       <div className={styles.infoButton}>
-        <IconButton onClick={onInfoButtonClick} color="inherit">
+        <IconButton onClick={onInfoButtonClick} color='inherit'>
           <InfoIcon />
         </IconButton>
       </div>

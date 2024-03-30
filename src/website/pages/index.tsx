@@ -6,15 +6,13 @@ import styles from './style.module.css';
 import PolarisContainer from '@/views/components/Polaris/PolarisContainer';
 
 const MapsContainer = dynamic(() => import('@/views/MapsContainer'), {
-  loading: () => (
-    <CircularProgress className={styles.loadingSpinner} />
-  ),
+  loading: () => <CircularProgress className={styles.loadingSpinner} />,
   ssr: false,
 });
 
 const DashboardContainer = dynamic(() => import('@/views/DashboardContainer'), {
   ssr: false,
-}); 
+});
 
 export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -34,8 +32,8 @@ export default function Home() {
       <Modal
         open={isModalOpen}
         onClose={handleCloseModal}
-        aria-labelledby="modal-title"
-        aria-describedby="modal-description"
+        aria-labelledby='modal-title'
+        aria-describedby='modal-description'
         sx={{ 'z-index': 20000000000 }}
       >
         <div className={styles.modalContent}>
