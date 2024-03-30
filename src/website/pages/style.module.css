@@ -20,10 +20,9 @@
   max-width: 800px;
   background-color: white;
   border: 2px solid #000;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 20px rgba(0 0 0 10%);
   padding: 20px;
-  overflow-y: scroll;
-  overflow-x: hidden;
+  overflow: hidden scroll;
   max-height: 90vh;
 }
 

@@ -1,10 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Switzer:wght@400;700&display=swap');
+@import 'https://fonts.googleapis.com/css2?family=Switzer:wght@400;700&display=swap';
 
 .container {
   display: flex;
   flex-direction: column;
   align-items: center;
-  font-family: 'Switzer', sans-serif;
+  font-family: Switzer, sans-serif;
   color: #092e4e;
 }
 
@@ -41,8 +41,7 @@
 
 .spatialCoverageContainer {
   display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
+  flex-flow: row wrap;
   justify-content: flex-start;
   align-items: flex-start;
   width: 735px;
