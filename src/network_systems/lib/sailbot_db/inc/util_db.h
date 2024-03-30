@@ -61,6 +61,9 @@ public:
     bool verifyDBWrite(
       std::span<Polaris::Sensors> expected_sensors, std::span<SailbotDB::RcvdMsgInfo> expected_msg_info);
 
+    bool verifyDBWrite_GlobalPath(
+      std::span<Polaris::GlobalPath> expected_globalpath, std::span<std::string> expected_timestamp);
+
     /**
      * @brief Dump and check all sensors and timestamps from the database
      *
@@ -69,6 +72,9 @@ public:
      * @return std::pair{Vector of dumped Sensors, Vector of dumped timestamps}
      */
     std::pair<std::vector<Polaris::Sensors>, std::vector<std::string>> dumpSensors(
+      utils::FailTracker & tracker, size_t expected_num_docs = 1);
+
+    std::pair<std::vector<Polaris::GlobalPath>, std::vector<std::string>> dumpGlobalpath(
       utils::FailTracker & tracker, size_t expected_num_docs = 1);
 
 private:

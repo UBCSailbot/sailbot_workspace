@@ -47,8 +47,8 @@ TEST_F(TestSailbotDB, TestStoreGlobalPath)
     auto [global_path_data, global_path_timestamp] = g_test_db.genGlobalData(UtilDB::getTimestamp());
     ASSERT_TRUE(g_test_db.storeNewGlobalPath(global_path_data, global_path_timestamp));
 
-    // std::array<GlobalPath, 1>  expected_global_path_data = {global_path_data};
-    // std::array<std::string, 1> expected_global_timestamp = {global_path_timestamp};
+    std::array<GlobalPath, 1>  expected_global_path_data      = {global_path_data};
+    std::array<std::string, 1> expected_global_path_timestamp = {global_path_timestamp};
 
-    //EXPECT_TRUE(g_test_db.)
+    EXPECT_TRUE(g_test_db.verifyDBWrite_GlobalPath(expected_global_path_data, expected_global_path_timestamp));
 }
