@@ -96,7 +96,11 @@ TEST_F(TestRemoteTransceiver, TestGet)
  * @param params Params structure
  * @return formatted request body
  */
+<<<<<<< HEAD
+std::string createPostBody(remote_transceiver::MOMsgParams::Params params)
+=======
 std::string createSensorPostBody(remote_transceiver::MOMsgParams::Params params)
+>>>>>>> e2ccf2e8b8fdc22c08c2d316b01455981f66d964
 {
     std::ostringstream s;
     s << "imei=" << params.imei_ << "&serial=" << params.serial_ << "&momsn=" << params.momsn_
@@ -106,6 +110,7 @@ std::string createSensorPostBody(remote_transceiver::MOMsgParams::Params params)
 }
 
 std::string createGlobalPathPostBody(remote_transceiver::MOMsgParams::Params params) {}
+>>>>>>> e2ccf2e8b8fdc22c08c2d316b01455981f66d964
 
 /**
  * @brief Test that we can POST global path data to the server
