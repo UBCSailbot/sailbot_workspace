@@ -105,24 +105,10 @@ std::string createSensorPostBody(remote_transceiver::MOMsgParams::Params params)
     return s.str();
 }
 
-/**
- * @brief Create a formatted string that matches the body of POST requests from Iridium
- *        https://docs.rockblock.rock7.com/reference/receiving-mo-messages-via-http-webhook
- *
- * @param params Params structure
- * @return formatted request body
- */
-std::string createGlobalPathPostBody(remote_transceiver::MOMsgParams::Params params)
-{
-    std::ostringstream s;
-    s << "imei=" << params.imei_ << "&serial=" << params.serial_ << "&momsn=" << params.momsn_
-      << "&transmit_time=" << params.transmit_time_ << "&iridium_latitude=" << params.lat_
-      << "&iridium_longitude=" << params.lon_ << "&iridium_cep=" << params.cep_ << "&data=" << params.data_;
-    return s.str();
-}
+std::string createGlobalPathPostBody(remote_transceiver::MOMsgParams::Params params) {}
 
 /**
- * @brief Test that we can POST sensor data to the server
+ * @brief Test that we can POST global path data to the server
  *
  */
 TEST_F(TestRemoteTransceiver, TestPostSensors)
