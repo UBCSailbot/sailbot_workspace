@@ -8,9 +8,6 @@ import { DataFilterState } from '@/stores/DataFilter/DataFilterTypes';
 import UPlotMultiLineChartComponent from './components/LineChart/UPlotMultiLineChart';
 import SingleValueChart from './components/SingleValueChart/SingleValueChart';
 import { Grid } from '@mui/material';
-
-// to-do:
-// add in filter to map (localpath and gps for heading)
 export interface DashboardContainerProps {
   gps: GPSState;
   batteries: BatteriesState;
@@ -26,7 +23,9 @@ class DashboardContainer extends React.PureComponent<DashboardContainerProps> {
       gps.data
         .map((data) => this._parseISOString(data.timestamp))
         .filter((time) => this._validTimestamp(time) == true),
-      gps.data.map((data) => data.speed),
+      gps.data
+        .filter((data) => this._validTimestamp(this._parseISOString(data.timestamp)) == true)
+        .map((data) => data.speed),
     ];
 
     // const gpsDistanceData = [
@@ -38,24 +37,36 @@ class DashboardContainer extends React.PureComponent<DashboardContainerProps> {
       batteries.data
         .map((data) => this._parseISOString(data.timestamp))
         .filter((time) => this._validTimestamp(time) == true),
-      batteries.data.map((data) => data.batteries[0].voltage),
-      batteries.data.map((data) => data.batteries[1].voltage),
+      batteries.data
+        .filter((data) => this._validTimestamp(this._parseISOString(data.timestamp)) == true)
+        .map((data) => data.batteries[0].voltage),
+      batteries.data
+        .filter((data) => this._validTimestamp(this._parseISOString(data.timestamp)) == true)
+        .map((data) => data.batteries[1].voltage),
     ];
 
     const batteriesCurrentData = [
       batteries.data
         .map((data) => this._parseISOString(data.timestamp))
         .filter((time) => this._validTimestamp(time) == true),
-      batteries.data.map((data) => data.batteries[0].current),
-      batteries.data.map((data) => data.batteries[1].current),
+      batteries.data
+        .filter((data) => this._validTimestamp(this._parseISOString(data.timestamp)) == true)
+        .map((data) => data.batteries[0].current),
+      batteries.data
+        .filter((data) => this._validTimestamp(this._parseISOString(data.timestamp)) == true)
+        .map((data) => data.batteries[1].current),
     ];
 
     const windSensorsSpeedData = [
       windSensors.data
         .map((data) => this._parseISOString(data.timestamp))
         .filter((time) => this._validTimestamp(time) == true),
-      windSensors.data.map((data) => data.windSensors[0].speed),
-      windSensors.data.map((data) => data.windSensors[1].speed),
+      windSensors.data
+        .filter((data) => this._validTimestamp(this._parseISOString(data.timestamp)) == true)
+        .map((data) => data.windSensors[0].speed),
+      windSensors.data
+        .filter((data) => this._validTimestamp(this._parseISOString(data.timestamp)) == true)
+        .map((data) => data.windSensors[1].speed),
     ];
 
     // const totalTripDistance = this._computeTotalTripDistance(
