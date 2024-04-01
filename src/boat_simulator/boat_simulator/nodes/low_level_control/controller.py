@@ -68,6 +68,10 @@ class ActuatorController:
         self.current_control_ang = min(next_control, self.max_angle_range[1])
         return is_target_reached
 
+    @property
+    def is_target_reached(self) -> bool:
+        return np.isclose(self.running_error, 0)
+
 
 class RudderController(ActuatorController):
     """General Class for the Actuator Controller.
@@ -116,6 +120,19 @@ class RudderController(ActuatorController):
         self.setpoint = 0.0  # current setpoint angle in degrees
         self.reset_setpoint(self.desired_heading, self.current_heading)
 
+    def reset_setpoint(self, new_desired_heading: Scalar, new_current_heading: Scalar) -> None:
+        """Resets a new desired heading angle, therefore recalculating the corresponding
+        setpoint and running error.
+
+        Args:
+            `new_desired_heading` (Scalar): New desired heading in degrees
+            `new_current_heading` (Scalar): New current heading in degrees
+        """
+
+        self.desired_heading = new_desired_heading
+        self.current_heading = new_current_heading
+        self._compute_setpoint()
+
     def _compute_error(self) -> Scalar:
         """Computes the error between desired and current heading
         implementation taken from: https://stackoverflow.com/a/2007279
@@ -158,19 +175,6 @@ class RudderController(ActuatorController):
         self.setpoint = rudder_setpoint_deg
 
         return rudder_setpoint_deg
-
-    def reset_setpoint(self, new_desired_heading: Scalar, new_current_heading: Scalar) -> None:
-        """Resets a new desired heading angle, therefore recalculating the corresponding
-        setpoint and running error.
-
-        Args:
-            `new_desired_heading` (Scalar): New desired heading in degrees
-            `new_current_heading` (Scalar): New current heading in degrees
-        """
-
-        self.desired_heading = new_desired_heading
-        self.current_heading = new_current_heading
-        self._compute_setpoint()
 
     def _change_desired_heading(self, changed_desired_heading) -> None:
         """Changes desired heading to a new angle. Used for testing purposes
@@ -216,6 +220,16 @@ class SailController(ActuatorController):
         self.target_angle = target_angle
         self.reset_setpoint(self.target_angle)
 
+    def reset_setpoint(self, new_target: Scalar) -> None:
+        """Resets a new desired trim tab angle and updates the running_error
+
+        Args:
+            `target_angle` (Scalar): New desired sail controller angle in degrees
+
+        """
+        self.target_angle = new_target
+        self._compute_error()
+
     def _compute_error(self) -> Scalar:
         """Computes the corresponding control error angle between current control angle and
         target control angle
@@ -226,13 +240,3 @@ class SailController(ActuatorController):
 
         self.running_error = self.target_angle - self.current_control_ang
         return self.running_error
-
-    def reset_setpoint(self, new_target: Scalar) -> None:
-        """Resets a new desired trim tab angle and updates the running_error
-
-        Args:
-            `target_angle` (Scalar): New desired sail controller angle in degrees
-
-        """
-        self.target_angle = new_target
-        self._compute_error()
