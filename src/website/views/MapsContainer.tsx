@@ -20,7 +20,7 @@ export interface MapsContainerProps {
 
 class MapsContainer extends React.PureComponent<MapsContainerProps> {
   render() {
-    const { gps, localPath } = this.props;
+    const { gps } = this.props;
 
     const gpsData = [
       gps.data.map((data) => data.latitude),
@@ -46,11 +46,11 @@ class MapsContainer extends React.PureComponent<MapsContainerProps> {
     for (let i = 0; i < gpsData[0].length; i++) {
       if (this._validTimestamp(gpsData[5][i]) == true) {
         validGPSObject.push({
-          latitude:   gpsData[0][i],
-          longitude:  gpsData[1][i],
-          speed:      gpsData[2][i],
-          heading:    gpsData[3][i],
-          timestamp:  gpsData[4][i]
+          latitude: gpsData[0][i],
+          longitude: gpsData[1][i],
+          speed: gpsData[2][i],
+          heading: gpsData[3][i],
+          timestamp: gpsData[4][i]
         })
       }
     }
@@ -71,8 +71,8 @@ class MapsContainer extends React.PureComponent<MapsContainerProps> {
           globalPath={this.props.globalPath.data.waypoints.map(
             (waypoint: WayPoint) => convertToLatLng(waypoint),
           )}
-          aisShips={this.props.aisShips.data.ships}
-          localPath={this._validLocalPath}
+          aisShips={this._validAISShips()}
+          localPath={this._validLocalPath()}
         />
       </div>
     );
@@ -137,15 +137,7 @@ class MapsContainer extends React.PureComponent<MapsContainerProps> {
   }
 
   _validGPSLocation(gpsdata: [number[], number[], number[], number[], number[]]) {
-    if (typeof gpsdata[0].at(-1) == 'undefined') {
-      return {
-        latitude: 49.37614179786771,
-        longitude: -123.27376619978901,
-        speed: 0,
-        heading: 0,
-      }
-    }
-    else {
+    if (typeof gpsdata[0].at(-1) !== 'undefined') {
       return {
         latitude: gpsdata[0].at(-1),
         longitude: gpsdata[1].at(-1),
@@ -154,14 +146,36 @@ class MapsContainer extends React.PureComponent<MapsContainerProps> {
         timestamp: gpsdata[4].at(-1)
       }
     }
+    else {
+      return {
+        latitude: 999,
+        longitude: 999,
+        speed: 999,
+        heading: 999,
+      }
+    }
   }
 
-  _validLocalPath(){
+  _validLocalPath() {
     if (this._validTimestamp(this._parseISOString(this.props.localPath.data.timestamp)) == true) {
       return this.props.localPath.data.waypoints.map((waypoint: WayPoint) => convertToLatLng(waypoint));
     }
     else {
-      return null;
+      return convertToLatLng({
+        latitude: 999,
+        longitude: 999,
+        speed: 999,
+        heading: 999,
+      })
+    }
+  }
+
+  _validAISShips() {
+    if (this._validTimestamp(this._parseISOString(this.props.aisShips.data.timestamp)) == true) {
+      return this.props.aisShips.data.ships;
+    }
+    else {
+      return [];
     }
   }
 }
