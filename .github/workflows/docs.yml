@@ -68,19 +68,13 @@ jobs:
           # for the git-revision-date-localized plugin
           fetch-depth: '0'
 
-      - name: "Set up Python"
-        uses: "actions/setup-python@v5"
-        with:
-          python-version: "3.x"
+      - name: Start containers
+        shell: bash
+        run: docker compose -f .devcontainer/docker-compose.yml -f .devcontainer/docker-compose.docs.yml up -d
 
-      - name: Install OS Dependencies
-        run: sudo apt-get install libcairo2-dev libfreetype6-dev libffi-dev libjpeg-dev libpng-dev libz-dev
-
-      - name: Install Python dependencies
-        run: pip install -Ur docs/requirements.txt
-
-      - name: "Build docs"
-        run: mkdocs build
+      - name: Build docs
+        shell: bash
+        run: docker compose -f .devcontainer/docker-compose.docs.yml exec -T docs /bin/bash -c "mkdocs build"
 
   # https://squidfunk.github.io/mkdocs-material/publishing-your-site/#with-github-actions
   docs-deploy:
