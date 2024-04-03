@@ -2,8 +2,7 @@ import React from 'react';
 import { Typography } from '@mui/material';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
-import styles from './singlevaluechart.module.css'
-
+import styles from './singlevaluechart.module.css';
 
 interface SingleValueChartProps {
   title: string;
@@ -16,13 +15,13 @@ class SingleValueChart extends React.Component<SingleValueChartProps> {
     const { title, data, unit } = this.props;
 
     return (
-      <Card className={styles.card} variant="outlined">
+      <Card className={styles.card} variant='outlined'>
         <CardContent>
-          <Typography align="center" variant="h6">
+          <Typography align='center' variant='h6'>
             {`${title}`}
           </Typography>
-          <Typography align="center" variant="h5">
-            <strong>{(data) ? `${data} ${unit}` : `-- ${unit}`}</strong>
+          <Typography align='center' variant='h5'>
+            <strong>{data ? `${data} ${unit}` : `-- ${unit}`}</strong>
           </Typography>
         </CardContent>
       </Card>
