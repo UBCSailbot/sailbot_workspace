@@ -1,8 +1,10 @@
+@import url('https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,100..900;1,100..900&display=swap');
+
 .iconButton {
     display:flex;
     justify-content:center;
     align-items:center;
-    font-family: Verdana, Geneva, sans-serif;
+    font-family: Verdana, sans-serif;
     padding: 3px;
     border: 2px solid white;
     border-radius: 5px;
@@ -21,14 +23,7 @@
 .iconButton:hover {
     background-color: white;
     cursor: pointer;
-    font-family: Verdana, Geneva, sans-serif;
-    border: 2px solid white;
-    border-radius: 5px;
-    box-sizing: border-box;
     transition: 0.3s ease;
-    -webkit-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
 }
 
 .iconButtonOpen {

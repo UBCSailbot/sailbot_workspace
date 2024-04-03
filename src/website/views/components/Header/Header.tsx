@@ -6,7 +6,7 @@ function Header() {
   return (
     <header className={styles.header}>
       <div className={styles.headerContainer}>
-        <img src='SailbotLogo.png' alt='Logo' className={styles.logo} />
+        <img src='Sailbot Logo Plain (white).png' alt='Logo' className={styles.logo} />
         <h1 className={styles.title}>UBC SAILBOT</h1>
       </div>
       <DropdownBtn />
