@@ -6,14 +6,11 @@ import { Graphs } from './GraphsTypes';
 export default class GraphsSagas extends BaseSaga {
     *rearrangeGraphs(action) {
         try {
-            //code that works
-
             yield put({
                 type: GraphsActions.REARRANGE_GRAPHS_SUCCESS,
                 payload: action.payload,
             })
         } catch (e) {
-            //code that doesnt
             yield put ({
                 type: GraphsActions.REARRANGE_GRAPHS_FAILURE,
                 error: e.message,

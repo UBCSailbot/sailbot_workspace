@@ -13,8 +13,10 @@ import {
   restrictToWindowEdges,
 } from '@dnd-kit/modifiers';
 import { CSS } from '@dnd-kit/utilities';
+import { saveSessionStorageData, loadSessionStorageData } from '@/utils/SessionStorage'
+import GraphsActions from '@/stores/Graphs/GraphsActions'
 
-const SortableGraph = ({ id, children, order, dispatch, setOrder }) => {
+const SortableGraph = ({ id, children, order, setOrder }) => {
 
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
     id,
@@ -25,20 +27,6 @@ const SortableGraph = ({ id, children, order, dispatch, setOrder }) => {
     transform: CSS.Transform.toString(transform),
   }
 
-  // const handleRightClick = (event) => {
-  //   event.preventDefault();
-
-  //   function removeGraph(graphInOrder) {
-  //     console.log(id + " was clicked")
-  //     return (id !== graphInOrder)
-  //   }
-
-  //   let filteredOrder = order.filter(removeGraph)
-  //   console.log(filteredOrder)
-  //   dispatch({type: 'REARRANGE_GRAPHS', payload: filteredOrder})
-  //   setOrder(filteredOrder)
-  // }
-
   return (
     <div
       ref={setNodeRef}
@@ -46,22 +34,26 @@ const SortableGraph = ({ id, children, order, dispatch, setOrder }) => {
       {...attributes}
       {...listeners}
       className={styles.dropdownItem}
-      // onContextMenu={handleRightClick}
-      suppressHydrationWarning={true} // I know this is irresponsible but the warning is very annoying and i have no idea how to fix it ill ask one of you later
+      suppressHydrationWarning={true}
     >
       {children}
     </div>
   );
 }
+interface DropDownMenuProps {
+  rearrangeGraphs: () => void;
+  graphsOrder: {
+    order: string[];
+  };
+}
 
-const DropdownMenu = ({ dispatch, graphsOrder }) => {
+const DropdownMenu = ({ rearrangeGraphs, graphsOrder }) => {
   const [order, setOrder] = useState(graphsOrder.order);
 
   useEffect(() => {
-    const currentOrder = sessionStorage.getItem('Current Order')
-    const storedOrder = JSON.parse(currentOrder);
-    if (storedOrder) {
-      setOrder(storedOrder);
+    const currentOrder = loadSessionStorageData("Current Order");
+    if (currentOrder) {
+      setOrder(currentOrder);
     }
   }, [graphsOrder]);
 
@@ -75,9 +67,9 @@ const DropdownMenu = ({ dispatch, graphsOrder }) => {
     const newIndex = order.indexOf(over.id);
 
     let newArray = arrayMove(order, oldIndex, newIndex);
-    dispatch({type: 'REARRANGE_GRAPHS', payload: newArray});
+    rearrangeGraphs(newArray);
     setOrder(newArray);
-    sessionStorage.setItem('Current Order', JSON.stringify(newArray));
+    saveSessionStorageData('Current Order', newArray);
   }
 
   return (
@@ -85,7 +77,7 @@ const DropdownMenu = ({ dispatch, graphsOrder }) => {
       <DndContext collisionDetection={closestCenter} onDragEnd={onDragEnd} modifiers={[restrictToVerticalAxis, restrictToWindowEdges]}>
         <SortableContext items={order} strategy={verticalListSortingStrategy}>
           {order.map((id) => (
-            <SortableGraph key={id} id={id} order={order} dispatch={dispatch} setOrder={setOrder}>
+            <SortableGraph key={id} id={id} order={order} setOrder={setOrder}>
               {id}
               <div className={styles.dragDropIndicator}>::</div>
             </SortableGraph>
@@ -100,4 +92,13 @@ const mapStateToProps = (state) => ({
   graphsOrder: state.graphs
 });
 
-export default connect(mapStateToProps)(DropdownMenu);
+const mapDispatchToProps = {
+  rearrangeGraphs: (arrayArrangement: any) => {
+    return {
+      type: GraphsActions.REARRANGE_GRAPHS,
+      payload: arrayArrangement
+    }
+  }
+}
+
+export default connect(mapStateToProps, mapDispatchToProps)(DropdownMenu);

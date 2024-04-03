@@ -81,19 +81,7 @@ class DashboardContainer extends React.PureComponent<DashboardContainerProps> {
 
     let sortedGraphArray = []
 
-    const currentOrder = sessionStorage.getItem('Current Order')
-    const storedOrder = JSON.parse(currentOrder);
-
-    if (storedOrder && storedOrder !== graphsOrder) {
-      console.log("oh no! they are different")
-      console.log("graphsOrder: ", graphsOrder)
-      console.log("storedOrder: ", storedOrder)
-    }
-
-    let graphsOrderForRealThisTime = (storedOrder ? storedOrder : graphsOrder)
-    for (let order of graphsOrderForRealThisTime){
-      console.log(graphsOrder)
-      console.log(order)
+    for (let order of graphsOrder){
       for (let graph of graphArray){
         if (order === graph.key){
           sortedGraphArray.push(graph)
@@ -176,14 +164,19 @@ class DashboardContainer extends React.PureComponent<DashboardContainerProps> {
 //   windSensors: state.windSensors,
 // });
 
-const mapStateToProps = (state: any) => {
-  return {
-    gps: state.gps,
-    batteries: state.batteries,
-    windSensors: state.windSensors,
-    graphsOrder: state.graphs.order,
-  };
-};
+// const mapStateToProps = (state: any) => ({
+//   gps: state.gps,
+//   batteries: state.batteries,
+//   windSensors: state.windSensors,
+//   graphsOrder: state.graphs.order,
+// });
+
+const mapStateToProps = (state: any) => ({
+  gps: state.gps,
+  batteries: state.batteries,
+  windSensors: state.windSensors,
+  graphsOrder: state.graphs.order,
+});
 
 const mapDispatchToProps = {};
 
