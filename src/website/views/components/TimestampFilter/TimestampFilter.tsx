@@ -10,8 +10,21 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import styles from './timestampfilter.module.css';
 import DataFilterActions from '@/stores/DataFilter/DataFilterActions';
+import { GPSState } from '@/stores/GPS/GPSTypes';
+import { fmtDate, tzDate } from '../LineChart/UPlotLineChart';
+import { DataFilterState } from '@/stores/DataFilter/DataFilterTypes';
 
-function TimestampFilter({ setTimeStamp }) {
+interface TimestampFilterProps {
+  gps: GPSState;
+  dataFilter: DataFilterState;
+  setTimestamp: (timestamps: any) => any;
+}
+
+function TimestampFilter({
+  gps,
+  dataFilter,
+  setTimestamp,
+}: TimestampFilterProps) {
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
 
@@ -20,7 +33,7 @@ function TimestampFilter({ setTimeStamp }) {
     let validDate = parseISOString(endDate) > parseISOString(startDate);
 
     if (emptyDate == true && validDate == true) {
-      setTimeStamp({
+      setTimestamp({
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
       });
@@ -30,7 +43,7 @@ function TimestampFilter({ setTimeStamp }) {
   const handleResetChange = () => {
     setStartDate(null);
     setEndDate(null);
-    setTimeStamp({
+    setTimestamp({
       startDate: null,
       endDate: null,
     });
@@ -55,12 +68,20 @@ function TimestampFilter({ setTimeStamp }) {
         id='timestampfilter-header'
       >
         <Typography align='center' sx={{ width: '100%' }}>
-          Timestamp Filter
+          {`${
+            dataFilter.timestamps.startDate
+              ? fmtDate(tzDate(parseISOString(dataFilter.timestamps.startDate)))
+              : fmtDate(tzDate(parseISOString(gps.data[0].timestamp)))
+          } to ${
+            dataFilter.timestamps.endDate
+              ? fmtDate(tzDate(parseISOString(dataFilter.timestamps.endDate)))
+              : fmtDate(tzDate(parseISOString(gps.data?.at(-1).timestamp)))
+          }`}
         </Typography>
       </AccordionSummary>
       <AccordionDetails>
         <Grid container rowSpacing={1}>
-          <Grid item xs={12}>
+          <Grid item xs={13}>
             <LocalizationProvider dateAdapter={AdapterDayjs}>
               <DateTimePicker
                 label='Starting Date'
@@ -75,7 +96,7 @@ function TimestampFilter({ setTimeStamp }) {
               />
             </LocalizationProvider>
           </Grid>
-          <Grid item xs={12}>
+          <Grid item xs={13}>
             <LocalizationProvider dateAdapter={AdapterDayjs}>
               <DateTimePicker
                 label='Ending Date'
@@ -90,12 +111,12 @@ function TimestampFilter({ setTimeStamp }) {
               />
             </LocalizationProvider>
           </Grid>
-          <Grid item xs={6}>
+          <Grid item xs={7}>
             <Button variant='contained' onClick={handleApplyChange}>
               APPLY
             </Button>
           </Grid>
-          <Grid item xs={6}>
+          <Grid item xs={2}>
             <Button variant='outlined' onClick={handleResetChange}>
               RESET
             </Button>
@@ -106,8 +127,13 @@ function TimestampFilter({ setTimeStamp }) {
   );
 }
 
+const mapStateToProps = (state: any) => ({
+  gps: state.gps,
+  dataFilter: state.dataFilter,
+});
+
 const mapDispatchToProps = {
-  setTimeStamp: (timestamps: any) => {
+  setTimestamp: (timestamps: any) => {
     return {
       type: DataFilterActions.SET_TIMESTAMP,
       payload: timestamps,
@@ -115,4 +141,4 @@ const mapDispatchToProps = {
   },
 };
 
-export default connect(null, mapDispatchToProps)(TimestampFilter);
+export default connect(mapStateToProps, mapDispatchToProps)(TimestampFilter);

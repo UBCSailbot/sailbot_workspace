@@ -14,14 +14,14 @@
 .topRight {
   position: absolute;
   z-index: 10000000000;
-  top: 0vh;
-  right: 0vw;
+  top: 2vh;
+  right: 4vw;
 }
 
 .parent {
   position: relative;
-}  
- 
+}
+
 .modalContent {
   position: absolute;
   top: 50%;

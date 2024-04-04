@@ -23,12 +23,12 @@ export default function Home() {
   return (
     <>
       <div className={styles.parent}>
-        <Header />
+        <Header onInfoButtonClick={handleOpenModal} />
         <div className={styles.topRight}>
           <TimestampFilter />
         </div>
       </div>
-      <div className={styles.maincontainer}>
+      <div className={styles.mainContainer}>
         <MapsContainer />
         <div className={styles.dashboardContainer}>
           <DashboardContainer />
