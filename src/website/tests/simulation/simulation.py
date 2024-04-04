@@ -62,7 +62,6 @@ def preload_data():
     write_to_mongodb(global_path_data[0], global_path, 0)
     write_to_mongodb(local_path_data[0], local_path, 0)
     write_to_mongodb(ais_ships_data[0], ais_ships, 0)
-    write_to_mongodb(ais_ships_data[1], ais_ships, 0)
     print("\nDone\n")
 
 

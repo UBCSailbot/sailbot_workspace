@@ -2,11 +2,16 @@ import BaseReducer from '@/utils/BaseReducer';
 import GraphsActions from './GraphsActions';
 import { GraphsState } from './GraphsTypes';
 import { AnyAction } from 'redux';
-import { initSessionStorageData } from '@/utils/SessionStorage'
+import { initSessionStorageData } from '@/utils/SessionStorage';
 
 export default class GraphsReducer extends BaseReducer {
   initialState: GraphsState = {
-    order: initSessionStorageData('Current Order', ["speed", "battery voltage", "battery current", "wind sensor"]),
+    order: initSessionStorageData('Current Order', [
+      'speed',
+      'battery voltage',
+      'battery current',
+      'wind sensor',
+    ]),
     error: null,
   };
 

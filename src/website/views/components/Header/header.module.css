@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,100..900;1,100..900&display=swap');
+@import 'https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,100..900;1,100..900&display=swap';
 
 .header {
   padding: 5px;
@@ -18,7 +18,7 @@
 }
 
 .title {
-  font-family: "Raleway", sans-serif;
+  font-family: Raleway, sans-serif;
   font-weight: 500;
   color: white;
   margin-left: 20px;
@@ -32,6 +32,7 @@
 }
 
 .infoButton {
+  display: flex;
   margin-right: 20px;
   margin-left: auto;
 }

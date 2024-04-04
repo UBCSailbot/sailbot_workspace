@@ -1,4 +1,4 @@
-import { ForkEffect, fork, all } from 'redux-saga/effects';
+import { ForkEffect, all } from 'redux-saga/effects';
 import AISShipsSagas from '@/stores/AISShips/AISShipsSagas';
 import GPSSagas from '@/stores/GPS/GPSSagas';
 import LocalPathSagas from '@/stores/LocalPath/LocalPathSagas';
@@ -26,7 +26,6 @@ export function* rootSaga() {
 
   yield all(combineSagas(rootSagaMap));
 }
-
 
 function combineSagas(sagaMap: { [s: string]: ForkEffect[] }) {
   return Object.values(sagaMap).reduce((acc, arr) => acc.concat(arr), []);

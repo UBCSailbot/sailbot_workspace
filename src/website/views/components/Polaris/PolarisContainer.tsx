@@ -10,7 +10,7 @@ import {
   downloadLocalPathData,
   downloadWindSensorsData,
 } from '@/utils/DownloadData';
-import CustomAccordion from '@/views/components/DropDown/DropDown';
+import Dataset from '@/views/components/Dataset/Dataset';
 
 function stringToParagraphs(text) {
   return text.split('\n').map((item, key) => (
@@ -94,7 +94,7 @@ class PolarisContainer extends React.Component {
           <div className={styles.dataSetHeader}>Access Data Sets</div>
           {customContents.map((content) => (
             <div className={styles.accordionWrapper} key={content.title}>
-              <CustomAccordion
+              <Dataset
                 title={content.title}
                 content={content.data}
                 downloadAction={content.action}

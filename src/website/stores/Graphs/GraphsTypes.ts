@@ -1,8 +1,8 @@
 export type Graphs = {
-    id: string,
-}
+  id: string;
+};
 
 export type GraphsState = {
-    order: Graphs[];
-    error?: any;
-}
+  order: Graphs[];
+  error?: any;
+};

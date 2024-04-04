@@ -106,34 +106,34 @@ class DashboardContainer extends React.PureComponent<DashboardContainerProps> {
         unit='km/hr'
       />,
       <UPlotMultiLineChartComponent
-        key="battery voltage"
+        key='battery voltage'
         data={batteriesVoltageData}
         labelOne='Battery 1 Voltage'
         labelTwo='Battery 2 Voltage'
         unit='V'
       />,
       <UPlotMultiLineChartComponent
-        key="battery current"
+        key='battery current'
         data={batteriesCurrentData}
         labelOne='Battery 1 Current'
         labelTwo='Battery 2 Current'
         unit='A'
       />,
       <UPlotMultiLineChartComponent
-        key="wind sensor"
+        key='wind sensor'
         data={windSensorsSpeedData}
         labelOne='Wind Sensor 1 Speed'
         labelTwo='Wind Sensor 2 Speed'
         unit='m/s'
-      />
+      />,
     ];
 
-    let sortedGraphArray = []
+    let sortedGraphArray = [];
 
-    for (let order of graphsOrder){
-      for (let graph of graphArray){
-        if (order === graph.key){
-          sortedGraphArray.push(graph)
+    for (let order of graphsOrder) {
+      for (let graph of graphArray) {
+        if (order === graph.key) {
+          sortedGraphArray.push(graph);
         }
       }
     }

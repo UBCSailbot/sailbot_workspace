@@ -13,20 +13,23 @@ import {
   restrictToWindowEdges,
 } from '@dnd-kit/modifiers';
 import { CSS } from '@dnd-kit/utilities';
-import { saveSessionStorageData, loadSessionStorageData } from '@/utils/SessionStorage'
-import GraphsActions from '@/stores/Graphs/GraphsActions'
+import {
+  saveSessionStorageData,
+  loadSessionStorageData,
+} from '@/utils/SessionStorage';
+import GraphsActions from '@/stores/Graphs/GraphsActions';
 import { GraphsState } from '@/stores/Graphs/GraphsTypes';
 
 const SortableGraph = ({ id, children, order, setOrder }) => {
-
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
-    id,
-  })
+  const { attributes, listeners, setNodeRef, transform, transition } =
+    useSortable({
+      id,
+    });
 
   const style = {
     transition,
     transform: CSS.Transform.toString(transform),
-  }
+  };
 
   return (
     <div
@@ -40,7 +43,7 @@ const SortableGraph = ({ id, children, order, setOrder }) => {
       {children}
     </div>
   );
-}
+};
 interface DropDownMenuProps {
   rearrangeGraphs: (arrayArrangement: any) => any;
   graphsOrder: GraphsState;
@@ -50,15 +53,14 @@ const DropdownMenu = ({ rearrangeGraphs, graphsOrder }: DropDownMenuProps) => {
   const [order, setOrder] = useState(graphsOrder.order);
 
   useEffect(() => {
-    const currentOrder = loadSessionStorageData("Current Order");
+    const currentOrder = loadSessionStorageData('Current Order');
     if (currentOrder) {
       setOrder(currentOrder);
     }
   }, [graphsOrder]);
 
-  const onDragEnd = ({ active, over })  => {
-
-    if (active.id === over.id){
+  const onDragEnd = ({ active, over }) => {
+    if (active.id === over.id) {
       return;
     }
 
@@ -69,11 +71,15 @@ const DropdownMenu = ({ rearrangeGraphs, graphsOrder }: DropDownMenuProps) => {
     rearrangeGraphs(newArray);
     setOrder(newArray);
     saveSessionStorageData('Current Order', newArray);
-  }
+  };
 
   return (
     <div className={styles.dropdownMenu}>
-      <DndContext collisionDetection={closestCenter} onDragEnd={onDragEnd} modifiers={[restrictToVerticalAxis, restrictToWindowEdges]}>
+      <DndContext
+        collisionDetection={closestCenter}
+        onDragEnd={onDragEnd}
+        modifiers={[restrictToVerticalAxis, restrictToWindowEdges]}
+      >
         <SortableContext items={order} strategy={verticalListSortingStrategy}>
           {order.map((id) => (
             <SortableGraph key={id} id={id} order={order} setOrder={setOrder}>
@@ -84,20 +90,20 @@ const DropdownMenu = ({ rearrangeGraphs, graphsOrder }: DropDownMenuProps) => {
         </SortableContext>
       </DndContext>
     </div>
-  )
-}
+  );
+};
 
 const mapStateToProps = (state) => ({
-  graphsOrder: state.graphs
+  graphsOrder: state.graphs,
 });
 
 const mapDispatchToProps = {
   rearrangeGraphs: (arrayArrangement: any) => {
     return {
       type: GraphsActions.REARRANGE_GRAPHS,
-      payload: arrayArrangement
-    }
-  }
-}
+      payload: arrayArrangement,
+    };
+  },
+};
 
 export default connect(mapStateToProps, mapDispatchToProps)(DropdownMenu);
