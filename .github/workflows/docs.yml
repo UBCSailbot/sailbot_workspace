@@ -56,38 +56,11 @@ jobs:
         env:
           ROOT: './docs/'
 
-  docs-build:
-    name: Build Docs
-    runs-on: ubuntu-latest
-    if: github.event_name != 'pull_request' || github.event.action != 'closed'
-    steps:
-      - name: "Check out the repo"
-        uses: "actions/checkout@v4"
-        with:
-          # checkout all commits to get accurate page revision times
-          # for the git-revision-date-localized plugin
-          fetch-depth: '0'
-
-      - name: "Set up Python"
-        uses: "actions/setup-python@v5"
-        with:
-          python-version: "3.x"
-
-      - name: Install OS Dependencies
-        run: sudo apt-get install libcairo2-dev libfreetype6-dev libffi-dev libjpeg-dev libpng-dev libz-dev
-
-      - name: Install Python dependencies
-        run: pip install -Ur docs/requirements.txt
-
-      - name: "Build docs"
-        run: mkdocs build
-
   # https://squidfunk.github.io/mkdocs-material/publishing-your-site/#with-github-actions
   docs-deploy:
     name: Deploy Docs version
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request' || github.event.action != 'closed'
-    needs: [docs-build]
     permissions:
       contents: write
     steps:
@@ -98,30 +71,31 @@ jobs:
           # for the git-revision-date-localized plugin
           fetch-depth: '0'
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: 3.x
+      - name: Start containers
+        shell: bash
+        run: docker compose -f .devcontainer/docker-compose.yml -f .devcontainer/docker-compose.docs.yml up -d
 
-      - name: Install OS Dependencies
-        run: sudo apt-get install libcairo2-dev libfreetype6-dev libffi-dev libjpeg-dev libpng-dev libz-dev
-
-      - name: Install Python dependencies
-        run: pip install -Ur docs/requirements.txt
+      - name: Build docs
+        shell: bash
+        run: docker compose -f .devcontainer/docker-compose.yml exec -T docs /bin/sh -c "mkdocs build"
 
       - name: "Deploy pr-${{ github.event.number }} version of the Docs"
         if: github.event_name == 'pull_request'
+        shell: bash
         run: |
-          git config user.name ci-bot
-          git config user.email ci-bot@example.com
-          mike deploy --push pr-${{ github.event.number }}
+          docker compose -f .devcontainer/docker-compose.yml exec -T docs /bin/sh -c "\
+            git config user.name ci-bot && \
+            git config user.email ci-bot@example.com && \
+            mike deploy --push pr-${{ github.event.number }}"
 
       - name: Deploy main version of the Docs
         if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+        shell: bash
         run: |
-          git config user.name ci-bot
-          git config user.email ci-bot@example.com
-          mike deploy --push --update-aliases main latest
+          docker compose -f .devcontainer/docker-compose.yml exec -T docs /bin/sh -c "\
+            git config user.name ci-bot && \
+            git config user.email ci-bot@example.com && \
+            mike deploy --push --update-aliases main latest"
 
   docs-delete:
     name: Delete Docs version
@@ -137,19 +111,14 @@ jobs:
           # for the git-revision-date-localized plugin
           fetch-depth: '0'
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: 3.x
-
-      - name: Install OS Dependencies
-        run: sudo apt-get install libcairo2-dev libfreetype6-dev libffi-dev libjpeg-dev libpng-dev libz-dev
-
-      - name: Install Python dependencies
-        run: pip install -Ur docs/requirements.txt
+      - name: Start containers
+        shell: bash
+        run: docker compose -f .devcontainer/docker-compose.yml -f .devcontainer/docker-compose.docs.yml up -d
 
       - name: "Delete pr-${{ github.event.number }} version of the Docs"
+        shell: bash
         run: |
-          git config user.name ci-bot
-          git config user.email ci-bot@example.com
-          mike delete --push pr-${{ github.event.number }}
+          docker compose -f .devcontainer/docker-compose.yml exec -T docs /bin/sh -c "\
+            git config user.name ci-bot && \
+            git config user.email ci-bot@example.com && \
+            mike delete --push pr-${{ github.event.number }}"
