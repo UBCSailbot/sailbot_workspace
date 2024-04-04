@@ -14,9 +14,9 @@ export interface IUPlotLineChartState {
   options: uPlot.Options;
 }
 
-const fmtDate = uPlot.fmtDate('{YYYY}-{MM}-{DD} {h}:{mm}:{ss}{aa}');
-const localTz = new Intl.DateTimeFormat().resolvedOptions().timeZone;
-const tzDate = (ts) => uPlot.tzDate(new Date(ts * 1e3), localTz);
+export const fmtDate = uPlot.fmtDate('{YYYY}-{MM}-{DD} {h}:{mm}:{ss}{aa}');
+export const localTz = new Intl.DateTimeFormat().resolvedOptions().timeZone;
+export const tzDate = (ts) => uPlot.tzDate(new Date(ts * 1e3), localTz);
 export default class UPlotLineChartComponent extends React.Component<
   IUPlotLineChartProps,
   IUPlotLineChartState

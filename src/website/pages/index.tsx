@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import dynamic from 'next/dynamic';
 import { CircularProgress, Modal } from '@mui/material';
 import Header from '@/views/components/Header/Header';
+import TimestampFilter from '@/views/components/TimestampFilter/TimestampFilter';
 import styles from './style.module.css';
 import PolarisContainer from '@/views/components/Polaris/PolarisContainer';
 
@@ -21,7 +22,12 @@ export default function Home() {
 
   return (
     <>
-      <Header onInfoButtonClick={handleOpenModal} />
+      <div className={styles.parent}>
+        <Header onInfoButtonClick={handleOpenModal} />
+        <div className={styles.topRight}>
+          <TimestampFilter />
+        </div>
+      </div>
       <div className={styles.mainContainer}>
         <MapsContainer />
         <div className={styles.dashboardContainer}>
