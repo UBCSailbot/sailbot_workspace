@@ -67,7 +67,7 @@ function TimestampFilter({
         aria-controls='timestampfilter-content'
         id='timestampfilter-header'
       >
-        <Typography align='center' sx={{ width: '100%' }}>
+        <Typography align='center' sx={{ width: '100%' }} suppressHydrationWarning={true}>
           {`${
             dataFilter.timestamps.startDate
               ? fmtDate(tzDate(parseISOString(dataFilter.timestamps.startDate)))
