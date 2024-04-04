@@ -8,6 +8,8 @@ import WindSensorsSagas from '@/stores/WindSensors/WindSensorsSagas';
 import GenericSensorsSagas from '@/stores/GenericSensors/GenericSensorsSagas';
 import GraphsSagas from '@/stores/Graphs/GraphsSagas';
 import GraphsActions from '@/stores/Graphs/GraphsActions';
+import DataFilterSagas from '@/stores/DataFilter/DataFilterSagas';
+import DataFilterActions from '@/stores/DataFilter/DataFilterActions';
 
 export function* rootSaga() {
   const rootSagaMap = {
@@ -19,6 +21,7 @@ export function* rootSaga() {
     windSensors: new WindSensorsSagas().forkSagas(),
     genericSensors: new GenericSensorsSagas().forkSagas(),
     graphs: new GraphsSagas().forkSaga(GraphsActions.REARRANGE_GRAPHS),
+    dataFilter: new DataFilterSagas().forkSaga(DataFilterActions.SET_TIMESTAMP),
   };
 
   yield all(combineSagas(rootSagaMap));

@@ -8,6 +8,7 @@ import BatteriesReducer from '@/stores/Batteries/BatteriesReducers';
 import WindSensorsReducer from '@/stores/WindSensors/WindSensorsReducers';
 import GenericSensorsReducer from '@/stores/GenericSensors/GenericSensorsReducers';
 import GraphsReducer from '@/stores/Graphs/GraphsReducers';
+import DataFilterReducer from '@/stores/DataFilter/DataFilterReducers';
 
 export function rootReducer() {
   const reducerMap = {
@@ -19,6 +20,7 @@ export function rootReducer() {
     windSensors: new WindSensorsReducer().reducer,
     genericSensors: new GenericSensorsReducer().reducer,
     graphs: new GraphsReducer().reducer,
+    dataFilter: new DataFilterReducer().reducer,
   };
 
   return combineReducers(reducerMap);

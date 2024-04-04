@@ -52,5 +52,59 @@
         "length": 200
       }
     ]
+  },
+  {
+    "ships": [
+      {
+        "id": 0,
+        "latitude": 49.369762,
+        "longitude": -123.317688,
+        "cog": -120,
+        "rot": 45,
+        "sog": 12.5,
+        "width": 30,
+        "length": 80
+      },
+      {
+        "id": 1,
+        "latitude": 49.352795,
+        "longitude": -123.304052,
+        "cog": -20,
+        "rot": -20,
+        "sog": 12.5,
+        "width": 30,
+        "length": 100
+      },
+      {
+        "id": 2,
+        "latitude": 49.333968,
+        "longitude": -123.333462,
+        "cog": 0,
+        "rot": 0,
+        "sog": 12.5,
+        "width": 30,
+        "length": 150
+      },
+      {
+        "id": 3,
+        "latitude": 49.348048,
+        "longitude": -123.283458,
+        "cog": 10,
+        "rot": 10,
+        "sog": 12.5,
+        "width": 20,
+        "length": 180
+      },
+      {
+        "id": 4,
+        "latitude": 49.38738338038264,
+        "longitude": -123.27770728489948,
+        "cog": 80,
+        "rot": 80,
+        "sog": 12.5,
+        "width": 30,
+        "length": 200
+      }
+    ]
   }
 ]
