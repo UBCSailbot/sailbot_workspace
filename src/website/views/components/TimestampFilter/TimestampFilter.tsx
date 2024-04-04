@@ -11,23 +11,18 @@ import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import styles from './timestampfilter.module.css';
 import DataFilterActions from '@/stores/DataFilter/DataFilterActions';
 
-function TimestampFilter(props) {
+function TimestampFilter({ setTimeStamp }) {
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
-
-  const dispatch = props.dispatch;
 
   const handleApplyChange = () => {
     let emptyDate = startDate != null && endDate != null;
     let validDate = parseISOString(endDate) > parseISOString(startDate);
 
     if (emptyDate == true && validDate == true) {
-      dispatch({
-        type: DataFilterActions.SET_TIMESTAMP,
-        payload: {
-          startDate: startDate.toISOString(),
-          endDate: endDate.toISOString(),
-        },
+      setTimeStamp({
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
       });
     }
   };
@@ -35,13 +30,9 @@ function TimestampFilter(props) {
   const handleResetChange = () => {
     setStartDate(null);
     setEndDate(null);
-
-    dispatch({
-      type: DataFilterActions.SET_TIMESTAMP,
-      payload: {
-        startDate: null,
-        endDate: null,
-      },
+    setTimeStamp({
+      startDate: null,
+      endDate: null,
     });
   };
 
@@ -82,7 +73,6 @@ function TimestampFilter(props) {
                   },
                 }}
               />
-              {startDate && props.children}
             </LocalizationProvider>
           </Grid>
           <Grid item xs={12}>
@@ -98,7 +88,6 @@ function TimestampFilter(props) {
                   },
                 }}
               />
-              {endDate && props.children}
             </LocalizationProvider>
           </Grid>
           <Grid item xs={6}>
@@ -117,4 +106,13 @@ function TimestampFilter(props) {
   );
 }
 
-export default connect()(TimestampFilter);
+const mapDispatchToProps = {
+  setTimeStamp: (timestamps: any) => {
+    return {
+      type: DataFilterActions.SET_TIMESTAMP,
+      payload: timestamps,
+    };
+  },
+};
+
+export default connect(null, mapDispatchToProps)(TimestampFilter);

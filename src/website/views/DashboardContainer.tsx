@@ -12,7 +12,7 @@ export interface DashboardContainerProps {
   gps: GPSState;
   batteries: BatteriesState;
   windSensors: WindSensorsState;
-  timestamp: DataFilterState;
+  dataFilter: DataFilterState;
 }
 
 class DashboardContainer extends React.PureComponent<DashboardContainerProps> {
@@ -24,7 +24,10 @@ class DashboardContainer extends React.PureComponent<DashboardContainerProps> {
         .map((data) => this._parseISOString(data.timestamp))
         .filter((time) => this._validTimestamp(time) == true),
       gps.data
-        .filter((data) => this._validTimestamp(this._parseISOString(data.timestamp)) == true)
+        .filter(
+          (data) =>
+            this._validTimestamp(this._parseISOString(data.timestamp)) == true,
+        )
         .map((data) => data.speed),
     ];
 
@@ -38,10 +41,16 @@ class DashboardContainer extends React.PureComponent<DashboardContainerProps> {
         .map((data) => this._parseISOString(data.timestamp))
         .filter((time) => this._validTimestamp(time) == true),
       batteries.data
-        .filter((data) => this._validTimestamp(this._parseISOString(data.timestamp)) == true)
+        .filter(
+          (data) =>
+            this._validTimestamp(this._parseISOString(data.timestamp)) == true,
+        )
         .map((data) => data.batteries[0].voltage),
       batteries.data
-        .filter((data) => this._validTimestamp(this._parseISOString(data.timestamp)) == true)
+        .filter(
+          (data) =>
+            this._validTimestamp(this._parseISOString(data.timestamp)) == true,
+        )
         .map((data) => data.batteries[1].voltage),
     ];
 
@@ -50,10 +59,16 @@ class DashboardContainer extends React.PureComponent<DashboardContainerProps> {
         .map((data) => this._parseISOString(data.timestamp))
         .filter((time) => this._validTimestamp(time) == true),
       batteries.data
-        .filter((data) => this._validTimestamp(this._parseISOString(data.timestamp)) == true)
+        .filter(
+          (data) =>
+            this._validTimestamp(this._parseISOString(data.timestamp)) == true,
+        )
         .map((data) => data.batteries[0].current),
       batteries.data
-        .filter((data) => this._validTimestamp(this._parseISOString(data.timestamp)) == true)
+        .filter(
+          (data) =>
+            this._validTimestamp(this._parseISOString(data.timestamp)) == true,
+        )
         .map((data) => data.batteries[1].current),
     ];
 
@@ -62,10 +77,16 @@ class DashboardContainer extends React.PureComponent<DashboardContainerProps> {
         .map((data) => this._parseISOString(data.timestamp))
         .filter((time) => this._validTimestamp(time) == true),
       windSensors.data
-        .filter((data) => this._validTimestamp(this._parseISOString(data.timestamp)) == true)
+        .filter(
+          (data) =>
+            this._validTimestamp(this._parseISOString(data.timestamp)) == true,
+        )
         .map((data) => data.windSensors[0].speed),
       windSensors.data
-        .filter((data) => this._validTimestamp(this._parseISOString(data.timestamp)) == true)
+        .filter(
+          (data) =>
+            this._validTimestamp(this._parseISOString(data.timestamp)) == true,
+        )
         .map((data) => data.windSensors[1].speed),
     ];
 
@@ -141,9 +162,9 @@ class DashboardContainer extends React.PureComponent<DashboardContainerProps> {
     let a =
       Math.sin(delta_lat_rad / 2) * Math.sin(delta_lat_rad / 2) +
       Math.cos(toRadians(lat1)) *
-      Math.cos(toRadians(lat2)) *
-      Math.sin(delta_long_rad / 2) *
-      Math.sin(delta_long_rad / 2);
+        Math.cos(toRadians(lat2)) *
+        Math.sin(delta_long_rad / 2) *
+        Math.sin(delta_long_rad / 2);
     let c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
     let distance = EARTH_RADIUS * c;
@@ -178,10 +199,12 @@ class DashboardContainer extends React.PureComponent<DashboardContainerProps> {
       return true;
     }
 
-    if (timestampISO >=
-      this._parseISOString(this.props.dataFilter.timestamps.startDate) &&
+    if (
+      timestampISO >=
+        this._parseISOString(this.props.dataFilter.timestamps.startDate) &&
       timestampISO <=
-      this._parseISOString(this.props.dataFilter.timestamps.endDate)) {
+        this._parseISOString(this.props.dataFilter.timestamps.endDate)
+    ) {
       return true;
     }
 
