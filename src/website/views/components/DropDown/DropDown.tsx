@@ -1,49 +1,29 @@
-import React from 'react';
-import { Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import styles from '@/views/components/DropDown/DropDown.module.css';
+import React, { useState } from 'react';
+import styles from './dropdown.module.css';
+import DropdownMenu from '@/views/components/DropDown/DropdownMenu';
 
-const CustomAccordion = ({ title, content, downloadAction }) => {
-  const titles = ['DATA TYPE', 'TIMESCALE', 'FILE', 'ACCESS'];
+const DropdownBtn = () => {
+  const [showMenu, setShowMenu] = useState(false);
+
+  const handleClick = () => {
+    setShowMenu(!showMenu);
+  };
+
   return (
-    <Accordion className={styles.accordionCustom}>
-      <AccordionSummary
-        expandIcon={<ExpandMoreIcon />}
-        aria-controls='panel1-content'
-        id='panel1-header'
-        className={styles.accordionSummaryCustom}
+    <div className='menuContainer'>
+      <div
+        className={showMenu ? styles.iconButtonOpen : styles.iconButton}
+        onClick={handleClick}
       >
-        {title}
-      </AccordionSummary>
-      <AccordionDetails className={styles.accordionDetailsCustom}>
-        <div className={styles.detailsFlexContainer}>
-          {titles.map((title, index) => (
-            <div className={styles.flexItemContainer} key={`title-${index}`}>
-              {title}
-            </div>
-          ))}
-        </div>
-        <div className={styles.contentContainer}>
-          {content.slice(0, 3).map((item, index) => (
-            <div
-              className={styles.flexItemContainer}
-              key={`content-item-${index}`}
-            >
-              {item}
-            </div>
-          ))}
-          <div className={styles.flexItemContainer}>
-            <span
-              style={{ cursor: 'pointer', textDecoration: 'underline' }}
-              onClick={downloadAction}
-            >
-              Download
-            </span>
-          </div>
-        </div>
-      </AccordionDetails>
-    </Accordion>
+        {showMenu ? 'Drag & Drop to Sort!' : 'Sort Graphs'}
+      </div>
+      <div
+        className={showMenu ? styles.dropdownActive : styles.dropdownInactive}
+      >
+        <DropdownMenu />
+      </div>
+    </div>
   );
 };
 
-export default CustomAccordion;
+export default DropdownBtn;
