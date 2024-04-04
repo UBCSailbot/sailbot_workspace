@@ -15,6 +15,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { saveSessionStorageData, loadSessionStorageData } from '@/utils/SessionStorage'
 import GraphsActions from '@/stores/Graphs/GraphsActions'
+import { GraphsState } from '@/stores/Graphs/GraphsTypes';
 
 const SortableGraph = ({ id, children, order, setOrder }) => {
 
@@ -41,13 +42,11 @@ const SortableGraph = ({ id, children, order, setOrder }) => {
   );
 }
 interface DropDownMenuProps {
-  rearrangeGraphs: () => void;
-  graphsOrder: {
-    order: string[];
-  };
+  rearrangeGraphs: (arrayArrangement: any) => any;
+  graphsOrder: GraphsState;
 }
 
-const DropdownMenu = ({ rearrangeGraphs, graphsOrder }) => {
+const DropdownMenu = ({ rearrangeGraphs, graphsOrder }: DropDownMenuProps) => {
   const [order, setOrder] = useState(graphsOrder.order);
 
   useEffect(() => {

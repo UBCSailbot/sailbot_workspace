@@ -5,8 +5,6 @@ import { GPSState } from '@/stores/GPS/GPSTypes';
 import { BatteriesState } from '@/stores/Batteries/BatteriesTypes';
 import { WindSensorsState } from '@/stores/WindSensors/WindSensorsTypes';
 import UPlotMultiLineChartComponent from './components/LineChart/UPlotMultiLineChart';
-import SingleValueChart from './components/SingleValueChart/SingleValueChart';
-
 
 export interface DashboardContainerProps {
   gps: GPSState;
@@ -157,19 +155,6 @@ class DashboardContainer extends React.PureComponent<DashboardContainerProps> {
     return Number(totalDistance.toFixed(2));
   }
 }
-
-// const mapStateToProps = (state: any) => ({
-//   gps: state.gps,
-//   batteries: state.batteries,
-//   windSensors: state.windSensors,
-// });
-
-// const mapStateToProps = (state: any) => ({
-//   gps: state.gps,
-//   batteries: state.batteries,
-//   windSensors: state.windSensors,
-//   graphsOrder: state.graphs.order,
-// });
 
 const mapStateToProps = (state: any) => ({
   gps: state.gps,

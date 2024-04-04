@@ -1,7 +1,6 @@
 import BaseSaga from '@/utils/BaseSaga';
 import GraphsActions from './GraphsActions';
-import { call, delay, put, takeLatest } from 'redux-saga/effects';
-import { Graphs } from './GraphsTypes';
+import { put, takeLatest } from 'redux-saga/effects';
 
 export default class GraphsSagas extends BaseSaga {
     *rearrangeGraphs(action) {
