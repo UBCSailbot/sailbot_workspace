@@ -113,7 +113,7 @@ jobs:
             git config user.name ci-bot && \
             git config user.email ci-bot@example.com && \
             git switch gh-pages && \
-            git switch - --detach && \
+            git switch - && \
             mike deploy --update-aliases main latest && \
             git switch gh-pages && \
             git pull && \
