@@ -57,7 +57,7 @@ jobs:
 
   # https://squidfunk.github.io/mkdocs-material/publishing-your-site/#with-github-actions
   docs-update:
-    name: Deploy and/or Delete Docs versions
+    name: Update docs site
     runs-on: ubuntu-latest
     permissions:
       contents: write
