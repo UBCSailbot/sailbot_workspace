@@ -84,6 +84,7 @@ jobs:
         shell: bash
         run: |
           docker compose -f .devcontainer/docker-compose.yml exec -T docs /bin/sh -c "\
+            git fetch && \
             git config user.name ci-bot && \
             git config user.email ci-bot@example.com && \
             mike deploy --push pr-${{ github.event.number }}"
@@ -93,6 +94,7 @@ jobs:
         shell: bash
         run: |
           docker compose -f .devcontainer/docker-compose.yml exec -T docs /bin/sh -c "\
+            git fetch && \
             git config user.name ci-bot && \
             git config user.email ci-bot@example.com && \
             mike deploy --push --update-aliases main latest"
@@ -119,6 +121,7 @@ jobs:
         shell: bash
         run: |
           docker compose -f .devcontainer/docker-compose.yml exec -T docs /bin/sh -c "\
+            git fetch && \
             git config user.name ci-bot && \
             git config user.email ci-bot@example.com && \
             mike delete --push pr-${{ github.event.number }}"
