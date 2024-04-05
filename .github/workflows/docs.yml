@@ -7,7 +7,6 @@ on:
   pull_request:
     # default types and closed
     types: [opened, synchronize, reopened, closed]
-  workflow_dispatch:
 
 jobs:
   # https://github.com/nosborn/github-action-markdown-cli
@@ -57,10 +56,8 @@ jobs:
           ROOT: './docs/'
 
   # https://squidfunk.github.io/mkdocs-material/publishing-your-site/#with-github-actions
-  docs-deploy:
-    name: Deploy Docs version
+  docs-update:
     runs-on: ubuntu-latest
-    if: github.event_name != 'pull_request' || github.event.action != 'closed'
     permissions:
       contents: write
     steps:
@@ -76,49 +73,36 @@ jobs:
         run: docker compose -f .devcontainer/docker-compose.yml -f .devcontainer/docker-compose.docs.yml up -d
 
       - name: Build docs
+        if: github.event_name == 'push' || github.event.action != 'closed'
         shell: bash
         run: docker compose -f .devcontainer/docker-compose.yml exec -T docs /bin/sh -c "mkdocs build"
 
-      - name: "Deploy pr-${{ github.event.number }} version of the Docs"
-        if: github.event_name == 'pull_request'
+      - name: "Delete pr-${{ github.event.number }} version of the Docs"
+        if: github.event_name == 'pull_request' && github.event.action == 'closed'
         shell: bash
         run: |
           docker compose -f .devcontainer/docker-compose.yml exec -T docs /bin/sh -c "\
+            git fetch && \
+            git config user.name ci-bot && \
+            git config user.email ci-bot@example.com && \
+            mike delete pr-${{ github.event.number }}"
+
+      - name: "Deploy pr-${{ github.event.number }} version of the Docs"
+        if: github.event_name == 'pull_request' && github.event.action != 'closed'
+        shell: bash
+        run: |
+          docker compose -f .devcontainer/docker-compose.yml exec -T docs /bin/sh -c "\
+            git fetch && \
             git config user.name ci-bot && \
             git config user.email ci-bot@example.com && \
             mike deploy --push pr-${{ github.event.number }}"
 
       - name: Deploy main version of the Docs
-        if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         shell: bash
         run: |
           docker compose -f .devcontainer/docker-compose.yml exec -T docs /bin/sh -c "\
+            git fetch && \
             git config user.name ci-bot && \
             git config user.email ci-bot@example.com && \
             mike deploy --push --update-aliases main latest"
-
-  docs-delete:
-    name: Delete Docs version
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && github.event.action == 'closed'
-    permissions:
-      contents: write
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-        with:
-          # checkout all commits to get accurate page revision times
-          # for the git-revision-date-localized plugin
-          fetch-depth: '0'
-
-      - name: Start containers
-        shell: bash
-        run: docker compose -f .devcontainer/docker-compose.yml -f .devcontainer/docker-compose.docs.yml up -d
-
-      - name: "Delete pr-${{ github.event.number }} version of the Docs"
-        shell: bash
-        run: |
-          docker compose -f .devcontainer/docker-compose.yml exec -T docs /bin/sh -c "\
-            git config user.name ci-bot && \
-            git config user.email ci-bot@example.com && \
-            mike delete --push pr-${{ github.event.number }}"
