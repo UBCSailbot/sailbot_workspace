@@ -82,19 +82,19 @@ jobs:
         shell: bash
         run: |
           docker compose -f .devcontainer/docker-compose.yml exec -T docs /bin/sh -c "\
-            git fetch && \
             git config user.name ci-bot && \
             git config user.email ci-bot@example.com && \
-            mike delete pr-${{ github.event.number }}"
+            git fetch && \
+            mike delete --push pr-${{ github.event.number }}"
 
       - name: "Deploy pr-${{ github.event.number }} version of the Docs"
         if: github.event_name == 'pull_request' && github.event.action != 'closed'
         shell: bash
         run: |
           docker compose -f .devcontainer/docker-compose.yml exec -T docs /bin/sh -c "\
-            git fetch && \
             git config user.name ci-bot && \
             git config user.email ci-bot@example.com && \
+            git fetch && \
             mike deploy --push pr-${{ github.event.number }}"
 
       - name: Deploy main version of the Docs
@@ -102,7 +102,7 @@ jobs:
         shell: bash
         run: |
           docker compose -f .devcontainer/docker-compose.yml exec -T docs /bin/sh -c "\
-            git fetch && \
             git config user.name ci-bot && \
             git config user.email ci-bot@example.com && \
+            git fetch && \
             mike deploy --push --update-aliases main latest"
