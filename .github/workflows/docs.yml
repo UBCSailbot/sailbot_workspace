@@ -80,8 +80,6 @@ jobs:
       - name: "Delete pr-${{ github.event.number }} version of the Docs"
         if: github.event_name == 'pull_request' && github.event.action == 'closed'
         shell: bash
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           docker compose -f .devcontainer/docker-compose.yml exec -T docs /bin/sh -c "\
             git config user.name ci-bot && \
@@ -91,14 +89,12 @@ jobs:
             mike delete pr-${{ github.event.number }} && \
             git switch gh-pages && \
             git pull --no-rebase && \
-            git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/UBCSailbot/sailbot_workspace.git && \
+            git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/UBCSailbot/sailbot_workspace.git && \
             git push"
 
       - name: "Deploy pr-${{ github.event.number }} version of the Docs"
         if: github.event_name == 'pull_request' && github.event.action != 'closed'
         shell: bash
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           docker compose -f .devcontainer/docker-compose.yml exec -T docs /bin/sh -c "\
             git config user.name ci-bot && \
@@ -108,14 +104,12 @@ jobs:
             mike deploy pr-${{ github.event.number }} && \
             git switch gh-pages && \
             git pull --no-rebase && \
-            git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/UBCSailbot/sailbot_workspace.git && \
+            git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/UBCSailbot/sailbot_workspace.git && \
             git push"
 
       - name: Deploy main version of the Docs
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         shell: bash
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           docker compose -f .devcontainer/docker-compose.yml exec -T docs /bin/sh -c "\
             git config user.name ci-bot && \
@@ -125,5 +119,5 @@ jobs:
             mike deploy --update-aliases main latest && \
             git switch gh-pages && \
             git pull --no-rebase && \
-            git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/UBCSailbot/sailbot_workspace.git && \
+            git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/UBCSailbot/sailbot_workspace.git && \
             git push"
