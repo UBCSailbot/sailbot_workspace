@@ -85,7 +85,7 @@ jobs:
             git config user.name ci-bot && \
             git config user.email ci-bot@example.com && \
             git switch gh-pages && \
-            git switch - && \
+            git switch - --detach && \
             mike delete pr-${{ github.event.number }} && \
             git switch gh-pages && \
             git pull && \
@@ -99,7 +99,7 @@ jobs:
             git config user.name ci-bot && \
             git config user.email ci-bot@example.com && \
             git switch gh-pages && \
-            git switch - && \
+            git switch - --detach && \
             mike deploy pr-${{ github.event.number }} && \
             git switch gh-pages && \
             git pull && \
@@ -113,7 +113,7 @@ jobs:
             git config user.name ci-bot && \
             git config user.email ci-bot@example.com && \
             git switch gh-pages && \
-            git switch - && \
+            git switch - --detach && \
             mike deploy --update-aliases main latest && \
             git switch gh-pages && \
             git pull && \
