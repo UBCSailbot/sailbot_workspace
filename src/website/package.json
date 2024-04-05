@@ -2,7 +2,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3005",
-    "build": "prettier --check . && stylelint --allow-empty-input \"**/*.{css,scss}\" && next build",
+    "build": "next build",
     "start": "next start",
     "lint": "prettier --check . && stylelint --allow-empty-input \"**/*.{css,scss}\" && next lint",
     "format": "prettier --write ."

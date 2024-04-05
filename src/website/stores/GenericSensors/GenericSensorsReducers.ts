@@ -1,13 +1,11 @@
 import BaseReducer from '@/utils/BaseReducer';
 import GenericSensorActions from './GenericSensorsActions';
-import { GenericSensorsState } from './GenericSensorsTypes';
+import { GenericSensors, GenericSensorsState } from './GenericSensorsTypes';
 import { AnyAction } from 'redux';
 
 export default class GenericSensorsReducer extends BaseReducer {
   initialState: GenericSensorsState = {
-    data: {
-      genericSensors: [],
-    },
+    data: {} as GenericSensors,
     error: null,
   };
 

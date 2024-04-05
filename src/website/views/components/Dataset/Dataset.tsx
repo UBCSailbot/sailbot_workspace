@@ -3,7 +3,13 @@ import { Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import styles from './dataset.module.css';
 
-const Dataset = ({ title, content, downloadAction }) => {
+interface DatasetProps {
+  title: string;
+  content: string[];
+  downloadAction: () => any;
+}
+
+const Dataset = ({ title, content, downloadAction }: DatasetProps) => {
   const titles = ['DATA TYPE', 'TIMESCALE', 'FILE', 'ACCESS'];
   return (
     <Accordion className={styles.accordionCustom}>
