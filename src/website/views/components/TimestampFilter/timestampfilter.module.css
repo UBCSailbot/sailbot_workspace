@@ -1,0 +1,94 @@
+@import 'https://fonts.googleapis.com/css2?family=Switzer:wght@400;700&display=swap';
+
+.center {
+  text-align: center;
+}
+
+.iconButton {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: Switzer, sans-serif;
+  padding: 3px;
+  border: 2px solid white;
+  border-radius: 5px;
+  width: 100%;
+  height: 50px;
+  color: white;
+  float: right;
+  margin-right: 20px;
+  box-sizing: border-box;
+  transition: 0.3s ease;
+  transform: none;
+  user-select: none;
+}
+
+.iconButton:hover {
+  background-color: white;
+  color: #3498db;
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+
+.iconButtonOpen {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: Switzer, sans-serif;
+  padding: 3px;
+  border: 2px solid white;
+  border-radius: 5px;
+  width: 100%;
+  height: 50px;
+  float: right;
+  margin-right: 20px;
+  box-sizing: border-box;
+  transition: 0.3s ease;
+  transform: none;
+  user-select: none;
+  background-color: white;
+  color: #3498db;
+}
+
+.dropdownActive {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  transition: 0.3s ease;
+}
+
+.dropdownInactive {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-45px);
+  transition: 0.3s;
+  pointer-events: none;
+}
+
+.dropdownMenu {
+  margin: 25px;
+  position: absolute;
+  width: 300px;
+  right: 30px;
+  top: 40px;
+  z-index: 1000;
+  background-color: white;
+  border-bottom: 2px #3498db solid;
+  border-radius: 5px;
+  align-items: center;
+  box-sizing: border-box;
+  padding: 15px;
+}
+
+.dropdownItem {
+  padding: 8px;
+  width: 100%;
+  right: 10px;
+}
+
+.dropdownBtn {
+  margin-top: 5px;
+  margin-right: 15px;
+  left: 20px;
+  width: 40%;
+}

@@ -1,4 +1,5 @@
 export interface GPS {
+  timestamp: any;
   latitude: number;
   longitude: number;
   speed: number;
