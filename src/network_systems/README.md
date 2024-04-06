@@ -1,7 +1,5 @@
 # Network Systems
 
-[![Tests](https://github.com/UBCSailbot/network_systems/actions/workflows/tests.yml/badge.svg)](https://github.com/UBCSailbot/network_systems/actions/workflows/tests.yml)
-
 This repository contains the source code for all of UBC Sailbot's Network Systems programs. It is made to work as part
 of [Sailbot Workspace](https://github.com/UBCSailbot/sailbot_workspace), and is **_not_** meant to be built as an
 independent project.
