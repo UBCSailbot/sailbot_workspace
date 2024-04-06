@@ -131,6 +131,9 @@ class ConversionFactors(Enum):
     km_to_nautical_mi = nautical_mi_to_km.inverse()
 
     # Time
+    sec_to_ms = ConversionFactor(factor=1000)
+    ms_to_sec = sec_to_ms.inverse()
+
     min_to_sec = ConversionFactor(factor=60)
     sec_to_min = min_to_sec.inverse()
 
@@ -199,7 +202,9 @@ class UnitConverter:
                 belonging to `ConversionFactors`.
         """
         for attr_name, attr_val in kwargs.items():
-            assert isinstance(attr_val, Enum) and isinstance(attr_val.value, ConversionFactor)
+            assert isinstance(attr_val, Enum) and isinstance(
+                attr_val.value, ConversionFactor
+            )
             setattr(self, attr_name, attr_val)
 
     def convert(self, **kwargs: ScalarOrArray) -> Dict[str, ScalarOrArray]:
@@ -223,7 +228,9 @@ class UnitConverter:
 
         for attr_name, attr_val in kwargs.items():
             attr = getattr(self, attr_name, None)
-            assert attr is not None, f"Attribute name {attr} not found in UnitConverter."
+            assert (
+                attr is not None
+            ), f"Attribute name {attr} not found in UnitConverter."
 
             conversion_factor = attr.value
             converted_values[attr_name] = conversion_factor.forward_convert(attr_val)

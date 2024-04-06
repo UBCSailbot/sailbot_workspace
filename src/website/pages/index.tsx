@@ -1,23 +1,12 @@
+import React, { useState } from 'react';
 import dynamic from 'next/dynamic';
-import { CircularProgress } from '@mui/material';
+import { CircularProgress, Modal } from '@mui/material';
 import Header from '@/views/components/Header/Header';
 import styles from './style.module.css';
+import PolarisContainer from '@/views/components/Polaris/PolarisContainer';
 
 const MapsContainer = dynamic(() => import('@/views/MapsContainer'), {
-  loading: () => (
-    <CircularProgress
-      style={{
-        position: 'absolute',
-        top: 0,
-        bottom: 0,
-        left: 0,
-        right: 0,
-        margin: 'auto',
-        height: '100px',
-        width: '100px',
-      }}
-    />
-  ),
+  loading: () => <CircularProgress className={styles.loadingSpinner} />,
   ssr: false,
 });
 
@@ -26,15 +15,33 @@ const DashboardContainer = dynamic(() => import('@/views/DashboardContainer'), {
 });
 
 export default function Home() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const handleOpenModal = () => setIsModalOpen(true);
+  const handleCloseModal = () => setIsModalOpen(false);
+
   return (
     <>
-      <Header />
-      <div className={styles.maincontainer}>
+      <Header onInfoButtonClick={handleOpenModal} />
+      <div className={styles.mainContainer}>
         <MapsContainer />
-        <div className={styles.dashboardcontainer}>
+        <div className={styles.dashboardContainer}>
           <DashboardContainer />
         </div>
       </div>
+
+      <Modal
+        open={isModalOpen}
+        onClose={handleCloseModal}
+        aria-labelledby='modal-title'
+        aria-describedby='modal-description'
+        sx={{ 'z-index': 20000000000 }}
+      >
+        <div className={styles.modalContent}>
+          <div style={{ transform: 'scale(1)', transformOrigin: 'top center' }}>
+            <PolarisContainer />
+          </div>
+        </div>
+      </Modal>
     </>
   );
 }
