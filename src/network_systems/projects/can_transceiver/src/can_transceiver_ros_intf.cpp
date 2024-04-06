@@ -93,12 +93,22 @@ public:
                                   publishAIS(frame);
                               }))});
 
+            // TODO: SailCmd subscriber...
+            sail_cmd_sub_ = this->create_subscription<msg::AISShips>(
+              ros_topics::SAIL_CMD, QUEUE_SIZE, [this](msg::SailCmd sail_cmd_) { subSailCmdCb(sail_cmd_); });
+
             if (mode == SYSTEM_MODE::DEV) {  // Initialize the CAN Sim Intf
                 mock_ais_sub_ = this->create_subscription<msg::AISShips>(
                   ros_topics::MOCK_AIS_SHIPS, QUEUE_SIZE,
                   [this](msg::AISShips mock_ais_ships) { subMockAISCb(mock_ais_ships); });
                 mock_gps_sub_ = this->create_subscription<msg::GPS>(
                   ros_topics::MOCK_GPS, QUEUE_SIZE, [this](msg::GPS mock_gps) { subMockGpsCb(mock_gps); });
+                mock_wind_sensors_sub_ = this->create_subscription<msg::WindSensors>(
+                  ros_topics::MOCK_WIND_SENSORS, QUEUE_SIZE,
+                  [this](msg::WindSensors mock_wind_sensors) { subMockWindSensorsCb(mock_wind_sensors); });
+                boat_sim_input_pub_ = this->create_publisher<msg::CanSimToBoatSim>(
+                  ros_topics::BOAT_SIM_INPUT, QUEUE_SIZE,
+                  [this](msg::CanSimToBoatSim boat_sim_input_msg_) { publishBoatSimInput(boat_sim_input_msg_); });
 
                 // TODO(lross03): register a callback for CanSimToBoatSim
 
@@ -115,22 +125,28 @@ private:
     std::unique_ptr<CanTransceiver> can_trns_;
 
     // Universal publishers and subscribers present in both deployment and simulation
-    rclcpp::Publisher<msg::AISShips>::SharedPtr       ais_pub_;
-    msg::AISShips                                     ais_ships_;
-    rclcpp::Publisher<msg::Batteries>::SharedPtr      batteries_pub_;
-    msg::Batteries                                    batteries_;
-    rclcpp::Publisher<msg::GPS>::SharedPtr            gps_pub_;
-    msg::GPS                                          gps_;
-    rclcpp::Publisher<msg::WindSensors>::SharedPtr    wind_sensors_pub_;
-    msg::WindSensors                                  wind_sensors_;
-    rclcpp::Publisher<msg::WindSensor>::SharedPtr     filtered_wind_sensor_pub_;
-    msg::WindSensor                                   filtered_wind_sensor_;
-    rclcpp::Publisher<msg::GenericSensors>::SharedPtr generic_sensors_pub_;
-    msg::GenericSensors                               generic_sensors_;
+    rclcpp::Publisher<msg::AISShips>::SharedPtr          ais_pub_;
+    msg::AISShips                                        ais_ships_;
+    rclcpp::Publisher<msg::Batteries>::SharedPtr         batteries_pub_;
+    msg::Batteries                                       batteries_;
+    rclcpp::Publisher<msg::GPS>::SharedPtr               gps_pub_;
+    msg::GPS                                             gps_;
+    rclcpp::Publisher<msg::WindSensors>::SharedPtr       wind_sensors_pub_;
+    msg::WindSensors                                     wind_sensors_;
+    rclcpp::Publisher<msg::WindSensor>::SharedPtr        filtered_wind_sensor_pub_;
+    msg::WindSensor                                      filtered_wind_sensor_;
+    rclcpp::Publisher<msg::GenericSensors>::SharedPtr    generic_sensors_pub_;
+    msg::GenericSensors                                  generic_sensors_;
+    rclcpp::Subscription<msg::DesiredHeading>::SharedPtr desired_heading_sub_;
+    rclcpp::Subscription<msg::SailCmd>::SharedPtr        sail_cmd_sub_;
+    msg::SailCmd                                         sail_cmd_;
 
     // Simulation only publishers and subscribers
-    rclcpp::Subscription<msg::AISShips>::SharedPtr mock_ais_sub_;
-    rclcpp::Subscription<msg::GPS>::SharedPtr      mock_gps_sub_;
+    rclcpp::Subscription<msg::AISShips>::SharedPtr     mock_ais_sub_;
+    rclcpp::Subscription<msg::GPS>::SharedPtr          mock_gps_sub_;
+    rclcpp::Subscription<msg::WindSensors>::SharedPtr  mock_wind_sensors_sub_;
+    rclcpp::Publisher<msg::CanSimToBoatSim>::SharedPtr boat_sim_input_pub_;
+    msg::CanSimToBoatSim                               boat_sim_input_msg_;
 
     // Timer for anything that just needs a repeatedly written value in simulation
     rclcpp::TimerBase::SharedPtr timer_;
@@ -158,8 +174,9 @@ private:
 
         if (ais_ships_holder_.size() == static_cast<size_t>(ais_ships_num_)) {
             ais_ships_.ships = ais_ships_holder_;
-            ais_ships_holder_.clear();
             ais_pub_->publish(ais_ships_);
+            ais_ships_holder_.clear();
+            ais_ships_num_ = 0;  // reset the number of ships
         }
     }
 
@@ -199,6 +216,11 @@ private:
         gps_pub_->publish(gps_);
     }
 
+    /**
+     * @brief Publish a wind sensor frame
+     *
+     * @param wind_sensor_frame
+     */
     void publishWindSensor(const CanFrame & wind_sensor_frame)
     {
         CAN_FP::WindSensor wind_sensor(wind_sensor_frame);
@@ -216,6 +238,10 @@ private:
         publishFilteredWindSensor();
     }
 
+    /**
+     * @brief Publish the filtered wind sensor data
+     *
+     */
     void publishFilteredWindSensor()
     {
         // TODO(): Currently a simple average of the two wind sensors, but we'll want something more substantial
@@ -241,6 +267,11 @@ private:
         filtered_wind_sensor_pub_->publish(filtered_wind_sensor_);
     }
 
+    /**
+     * @brief Publish a generic sensor frame
+     *
+     * @param generic_frame
+     */
     void publishGeneric(const CanFrame & generic_frame)
     {
         //check all generic sensors in the ROS msg for the matching id
@@ -263,26 +294,54 @@ private:
     }
 
     /**
+     * @brief SailCmd subscriber callback
+     *
+     * @param sail_cmd_
+     */
+    void subSailCmdCb(const msg::SailCmd & sail_cmd_input) { sail_cmd_ = sail_cmd_input; }
+
+    // SIMULATION CALLBACKS //
+
+    /**
+     * @brief Publish the boat sim input message
+     *
+     * @param boat_sim_input_msg
+     */
+    void publishBoatSimInput(const msg::CanSimToBoatSim & boat_sim_input_msg)
+    {
+        boat_sim_input_pub_->publish(boat_sim_input_msg);
+    }
+
+    /**
      * @brief Mock AIS topic callback
      *
      * @param mock_ais_ships ais_ships received from the Mock AIS topic
      */
     void subMockAISCb(msg::AISShips mock_ais_ships)
     {
-        //TODO(lross03): Should be routed through the CAN Transceiver once ELEC defines AIS frames
         ais_ships_ = mock_ais_ships;
         ais_pub_->publish(ais_ships_);
     }
+    /**
+     * @brief Desired heading topic callback
+     *
+     * @param desired_heading desired_heading received from the Desired Heading topic
+     */
+    void subDesiredHeadingCb(msg::DesiredHeading desired_heading) { boat_sim_input_msg_.set__heading(desired_heading); }
 
     /**
      * @brief Mock GPS topic callback
      *
      * @param mock_gps mock_gps received from the Mock GPS topic
      */
-    void subMockGpsCb(msg::GPS /*mock_gps*/)
-    {
-        // TODO(lross03): implement this
-    }
+    void subMockGpsCb(msg::GPS mock_gps) { gps_ = mock_gps; }
+
+    /**
+     * @brief Mock wind sensors topic callback
+     *
+     * @param mock_wind_sensors mock_wind_sensors received from the Mock Wind Sensors topic
+     */
+    void subMockWindSensorsCb(msg::WindSensors mock_wind_sensors) { wind_sensors_ = mock_wind_sensors; }
 
     /**
      * @brief A mock batteries callback that just sends dummy (but valid) battery values to the simulation CAN intf
