@@ -93,7 +93,7 @@ public:
                                   publishAIS(frame);
                               }))});
 
-            // TODO: SailCmd subscriber...
+            // TODO: Double check sail command subscriber
             sail_cmd_sub_ = this->create_subscription<msg::AISShips>(
               ros_topics::SAIL_CMD, QUEUE_SIZE, [this](msg::SailCmd sail_cmd_) { subSailCmdCb(sail_cmd_); });
 
@@ -109,8 +109,6 @@ public:
                 boat_sim_input_pub_ = this->create_publisher<msg::CanSimToBoatSim>(
                   ros_topics::BOAT_SIM_INPUT, QUEUE_SIZE,
                   [this](msg::CanSimToBoatSim boat_sim_input_msg_) { publishBoatSimInput(boat_sim_input_msg_); });
-
-                // TODO(lross03): register a callback for CanSimToBoatSim
 
                 timer_ = this->create_wall_timer(TIMER_INTERVAL, [this]() {
                     mockBatteriesCb();
