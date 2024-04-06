@@ -14,9 +14,9 @@ export interface IUPlotLineChartState {
   options: uPlot.Options;
 }
 
-const fmtDate = uPlot.fmtDate("{YYYY}-{MM}-{DD} {h}:{mm}:{ss}{aa}");
-const localTz = new Intl.DateTimeFormat().resolvedOptions().timeZone;
-const tzDate = ts => uPlot.tzDate(new Date(ts * 1e3), localTz);
+export const fmtDate = uPlot.fmtDate('{YYYY}-{MM}-{DD} {h}:{mm}:{ss}{aa}');
+export const localTz = new Intl.DateTimeFormat().resolvedOptions().timeZone;
+export const tzDate = (ts) => uPlot.tzDate(new Date(ts * 1e3), localTz);
 export default class UPlotLineChartComponent extends React.Component<
   IUPlotLineChartProps,
   IUPlotLineChartState
@@ -35,7 +35,7 @@ export default class UPlotLineChartComponent extends React.Component<
         {
           show: true,
           spanGaps: false,
-          label: "Time",
+          label: 'Time',
           value: (self, rawValue, xValuesIndex, currentVal) => {
             if (currentVal == null) {
               let xValues = self.data[xValuesIndex];
@@ -55,7 +55,7 @@ export default class UPlotLineChartComponent extends React.Component<
           value: (self, rawValue, yValuesIndex, currentVal) => {
             if (currentVal == null) {
               let yValues = self.data[yValuesIndex];
-              let yValue = (yValues[yValues.length - 1])?.toFixed(2);
+              let yValue = yValues[yValues.length - 1]?.toFixed(2);
               return `${yValue} ${this.props.unit}`;
             }
             return rawValue?.toFixed(2) + ` ${this.props.unit}`;

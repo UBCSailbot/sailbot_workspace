@@ -1,13 +1,13 @@
 .bottom {
-    position: absolute;
+  position: absolute;
 }
 
 .middle {
-    position: absolute;
-    z-index: 1;
+  position: absolute;
+  z-index: 1;
 }
 
 .top {
-    position: relative;
-    z-index: 1000000000;
+  position: relative;
+  z-index: 1000000000;
 }
