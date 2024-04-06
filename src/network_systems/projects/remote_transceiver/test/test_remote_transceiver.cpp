@@ -37,7 +37,7 @@ class TestRemoteTransceiver : public ::testing::Test
 protected:
     static constexpr int NUM_THREADS = 4;
     // Need to wait after receiving an HTTP response from the server
-    static constexpr auto WAIT_AFTER_RES = std::chrono::milliseconds(20);
+    static constexpr auto WAIT_AFTER_RES = std::chrono::milliseconds(200);
 
     // Network objects that are shared amongst all HTTP test suites
     static bio::io_context          io_;

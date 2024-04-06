@@ -194,14 +194,6 @@ RUN apt-get update \
     && rosdep init || echo "rosdep already initialized"
 ENV DEBIAN_FRONTEND=
 
-# install base python3 dependencies
-RUN pip3 install \
-    # from local pathfinding
-    plotly \
-    pyproj \
-    flask \
-    shapely
-
 # root bash configuration
 ENV ROS_WORKSPACE=/workspaces/sailbot_workspace
 COPY update-bashrc.sh /sbin/update-bashrc
@@ -212,9 +204,6 @@ RUN chmod +x /sbin/update-bashrc \
 
 # set timezone
 ENV TZ="America/Vancouver"
-
-# customize ROS log format: https://docs.ros.org/en/humble/Concepts/About-Logging.html#environment-variables
-ENV RCUTILS_CONSOLE_OUTPUT_FORMAT="[{severity}] [{time}] [{name}:{line_number}]: {message}"
 
 FROM base as local-base
 
@@ -253,6 +242,17 @@ RUN apt-get update \
     && apt-get autoremove -y \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
+ENV DEBIAN_FRONTEND=
+
+# install rapidyaml for diagnostics
+ENV DEBIAN_FRONTEND=noninteractive
+RUN wget https://github.com/biojppm/rapidyaml/releases/download/v0.5.0/rapidyaml-0.5.0-src.tgz
+RUN tar -xzf rapidyaml-0.5.0-src.tgz && \
+    cd rapidyaml-0.5.0-src && \
+    cmake -S "." -B ./build/Release/ryml-build "-DCMAKE_INSTALL_PREFIX=/usr" -DCMAKE_BUILD_TYPE=Release && \
+    cmake --build ./build/Release/ryml-build --parallel --config Release && \
+    cmake --build ./build/Release/ryml-build --config Release --target install && \
+    rm -rf *rapidyaml*
 ENV DEBIAN_FRONTEND=
 
 FROM local-base as ros-dev
@@ -354,32 +354,10 @@ RUN apt-get update \
         clangd \
         clang-tidy \
         cmake \
-        googletest \
-        libboost-all-dev \
-        libprotobuf-dev \
-        protobuf-compiler \
     && apt-get autoremove -y \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
 ENV DEBIAN_FRONTEND=
-
-# install rapidyaml for diagnostics
-ENV DEBIAN_FRONTEND=noninteractive
-RUN wget https://github.com/biojppm/rapidyaml/releases/download/v0.5.0/rapidyaml-0.5.0-src.tgz
-RUN tar -xzf rapidyaml-0.5.0-src.tgz && \
-    cd rapidyaml-0.5.0-src && \
-    cmake -S "." -B ./build/Release/ryml-build "-DCMAKE_INSTALL_PREFIX=/usr" -DCMAKE_BUILD_TYPE=Release && \
-    cmake --build ./build/Release/ryml-build --parallel --config Release && \
-    cmake --build ./build/Release/ryml-build --config Release --target install && \
-    rm -rf *rapidyaml*
-ENV DEBIAN_FRONTEND=
-
-# install dev python3 dependencies
-RUN pip3 install \
-    # to be able to run juypter notebooks
-    ipykernel \
-    # for integration_tests package
-    types-PyYAML
 
 # install other helpful apt packages
 ENV DEBIAN_FRONTEND=noninteractive
@@ -392,3 +370,8 @@ RUN apt-get update \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
 ENV DEBIAN_FRONTEND=
+
+# install dev python3 dependencies
+RUN pip3 install \
+    # for juypter notebooks
+    ipykernel

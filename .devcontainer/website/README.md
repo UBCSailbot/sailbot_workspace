@@ -1,6 +1,6 @@
 # Website Image
 
-Used for running [our website](https://github.com/UBCSailbot/website).
+Used for running [our website](https://github.com/UBCSailbot/sailbot_workspace/tree/main/src/website).
 
 ## Features
 
