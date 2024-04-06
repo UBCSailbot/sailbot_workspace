@@ -1,0 +1,71 @@
+@import 'https://fonts.googleapis.com/css2?family=Switzer:wght@400;700&display=swap';
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: Switzer, sans-serif;
+  color: #092e4e;
+}
+
+.description {
+  text-align: left;
+  max-width: 800px;
+  margin: 20px;
+}
+
+.dataSetsContainer {
+  width: 800px;
+  display: flex;
+  flex-direction: column;
+}
+
+.dataSetHeader {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.5em;
+  font-weight: bold;
+  color: white;
+  background-color: #00263e;
+  padding: 20px 0;
+}
+
+.accordionWrapper {
+  margin-bottom: 0;
+}
+
+.accordionWrapper:last-child {
+  margin-bottom: 0;
+}
+
+.spatialCoverageContainer {
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: flex-start;
+  align-items: flex-start;
+  width: 735px;
+  margin: 20px;
+  border-bottom: 1px solid black;
+  border-top: 1px solid black;
+  padding-bottom: 1px;
+  padding-top: 45px;
+}
+
+.spatialCoverageTitle {
+  width: 100%;
+  font-weight: bold;
+  margin-bottom: 16px;
+}
+
+.coverageItem {
+  margin-right: 20px;
+  margin-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.coverageContent {
+  margin-bottom: 38px;
+}
