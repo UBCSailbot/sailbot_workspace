@@ -10,7 +10,7 @@ import numpy as np
 from custom_interfaces.msg import HelperAISShip, HelperLatLon
 from geopandas import GeoDataFrame
 from shapely.affinity import affine_transform
-from shapely.geometry import MultiPolygon, Point, Polygon, envelope
+from shapely.geometry import MultiPolygon, Point, Polygon, box
 from shapely.strtree import STRtree
 
 from land.land_polygon_etl import COMPLETE_DATA_FILE
@@ -136,23 +136,25 @@ class Land(Obstacle):
         self.bbox_buffer = bbox_buffer
         self._update_land_czone()
 
-    def _update_land_czone(self) -> None:
+    def _update_land_czone(self, bbox: Polygon = None) -> None:
         """
         Updates the Land object's collision zone with a MultiPolygon representing
-        all land obstacles within a rectangle that bounds boxes around Sailbot and the
-        next global waypoint.
+        all land obstacles within either a bounding box input as an argument
+        or a rectangle that bounds boxes around Sailbot and the next global waypoint.
         """
 
-        # create a box around sailbot
-        sailbot_box = Point(*self.sailbot_position).buffer(
-            self.bbox_buffer, cap_style="square", join_style=2
-        )
-        # and another around the next waypoint
-        waypoint_box = Point(*self.next_waypoint).buffer(
-            self.bbox_buffer, cap_style="square", join_style=2
-        )
-        # then create a bounding box around both boxes
-        bbox = envelope(list(sailbot_box, waypoint_box))
+        if bbox is None:
+
+            # create a box around sailbot
+            sailbot_box = Point(*self.sailbot_position).buffer(
+                self.bbox_buffer, cap_style="square", join_style=2
+            )
+            # and another around the next waypoint
+            waypoint_box = Point(*self.next_waypoint).buffer(
+                self.bbox_buffer, cap_style="square", join_style=2
+            )
+            # then create a bounding box around both boxes
+            bbox = box(MultiPolygon(list(sailbot_box, waypoint_box)).bounds)
 
         # query the spatial index for all land polygons that intersect the bounding box
         rows = list(self.sindex.query(geometry=bbox, predicate="intersects"))
