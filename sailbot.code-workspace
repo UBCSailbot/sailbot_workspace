@@ -290,7 +290,7 @@
         "version": "0.2.0",
         "configurations": [
             {
-                "name": "ROS: Launch Launch File",
+                "name": "ROS: Run Launch File",
                 "type": "ros",
                 "request": "launch",
                 "preLaunchTask": "Build All",
@@ -309,14 +309,14 @@
             },
             // Can't launch ros nodes standalone because ros parameters aren't initialized
             {
-                "name": "Python Debugger: Launch Current File",
+                "name": "Python Debugger: Run Current File",
                 "type": "debugpy",
                 "request": "launch",
                 "program": "${file}",
                 "console": "integratedTerminal",
             },
             {
-                "name": "C++ (GDB): Launch Node",
+                "name": "C++ (GDB): Run Node",
                 "type": "cppdbg",
                 "request": "launch",
                 "program": "${workspaceFolder:sailbot_workspace}/install/lib/${input:node}",
