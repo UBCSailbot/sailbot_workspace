@@ -1,7 +1,5 @@
 # adapted from https://github.com/microsoft/vscode-dev-containers/blob/main/containers/javascript-node-mongo/.devcontainer/docker-compose.yml
 # Note: the "ports" property in this file will not forward from a codespace; add to "forwardPorts" in devcontainer.json instead
-version: '3.8'
-
 services:
   docs:
     build:
