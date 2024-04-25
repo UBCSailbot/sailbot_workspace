@@ -239,26 +239,20 @@ Click the popup to `Open Workspace`. If there isn't a popup:
 2. Click the popup to `Reopen in Container`. If there isn't a popup,
    run the `Dev Containers: Reopen in Container` VS Code command
 
-## 7. Run the `setup` task
+## 7. Run the `Build All` task
 
-The `setup` task updates dependencies of the ROS packages.
-If you don't know how to run a VS Code task, see [How to run VS Code commands, tasks, and launch configurations](./how_to.md#run-vs-code-commands-tasks-and-launch-configurations).
+!!! warning "Wait before running"
 
-??? bug "Can't see the `setup` task"
-
-    If you can't see the `setup` task, run the `Developer: Reload Window` VS Code command.
-    This may occur when the workspace file is opened for the first time.
-
-## 8. Run the `Build All` task
+    Ensure that the `postCreateCommand from devcontainer.json` has completed before running this task.
 
 The `Build All` task builds all the ROS packages.
 
-## 9. Reload the VS Code terminals and window
+## 8. Reload the VS Code terminals and window
 
 Delete all open terminals and run the `Developer: Reload Window` VS Code command
 to detect the files that were generated from building.
 
-## 10. Start the system
+## 9. Start the system
 
 Run the entire system to verify everything is working using the following command in the VS Code terminal:
 
