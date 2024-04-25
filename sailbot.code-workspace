@@ -290,19 +290,33 @@
         "version": "0.2.0",
         "configurations": [
             {
-                "name": "ROS: Attach (currently only C++ working)",
-                "type": "ros",
-                "request": "attach"
-            },
-            {
-                "name": "ROS: Launch",
+                "name": "ROS: Launch Launch File",
                 "type": "ros",
                 "request": "launch",
                 "preLaunchTask": "Build All",
                 "target": "${workspaceFolder:sailbot_workspace}/install/share/${input:launchFile}",
             },
             {
-                "name": "C++ (GDB): Launch",
+                "name": "ROS: Attach Process (currently only C++ working)",
+                "type": "ros",
+                "request": "attach"
+            },
+            {
+                "name": "Python Debugger: Attach Process",
+                "type": "debugpy",
+                "request": "attach",
+                "processId": "${command:pickProcess}",
+            },
+            // Can't launch ros nodes standalone because ros parameters aren't initialized
+            {
+                "name": "Python Debugger: Launch Current File",
+                "type": "debugpy",
+                "request": "launch",
+                "program": "${file}",
+                "console": "integratedTerminal",
+            },
+            {
+                "name": "C++ (GDB): Launch Node",
                 "type": "cppdbg",
                 "request": "launch",
                 "program": "${workspaceFolder:sailbot_workspace}/install/lib/${input:node}",
