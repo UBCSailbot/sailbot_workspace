@@ -24,7 +24,7 @@ runs:
     - name: Run website image
       if: inputs.run-website == 'true'
       shell: bash
-      run: docker compose -f .devcontainer/docker-compose.yml -f .devcontainer/docker-compose.website.yml up -d
+      run: docker compose -f .devcontainer/docker-compose.yml -f .devcontainer/website/docker-compose.website.yml up -d
 
     - name: Run script inside sailbot workspace image
       shell: bash

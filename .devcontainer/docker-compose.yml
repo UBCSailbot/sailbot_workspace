@@ -6,7 +6,10 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
+      # website
       - "3005:3005"
+      # docs
+      # - "8000:8000"
     volumes:
       - ..:/workspaces/sailbot_workspace:cached
       - sailbot-new-project-bashhistory:/home/ros/commandhistory:delegated

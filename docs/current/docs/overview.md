@@ -7,8 +7,9 @@ in conjunction with our other software, but doesn't have to be. There are instru
 
 ### Setup in Sailbot Workspace
 
-1. Uncomment `docker-compose.docs.yml` in `.devcontainer/devcontainer.json`
-2. Rebuild the Dev Container
+1. Uncomment `docs/docker-compose.docs.yml` in `.devcontainer/devcontainer.json`
+2. Uncomment `8000:8000` in `.devcontainer/docker-compose.yml`
+3. Rebuild the Dev Container
 
 Refer to [How to work with containerized applications](../sailbot_workspace/how_to.md#work-with-containerized-applications)
 for more details.
