@@ -1,11 +1,9 @@
 name: Deployment
 
 on:
-  push:
-    branches:
-      - main
-      - deployment
-  pull_request:
+  #push:
+  #  branches:
+  #    - main
   workflow_dispatch:
 
 jobs:
@@ -17,12 +15,10 @@ jobs:
     - name: Update docker image
       uses: appleboy/ssh-action@v1.0.3
       with:
-        # host: ${{ secrets.SSH_HOST }}
-        host: 64.23.224.81
-        # username: ${{ secrets.SSH_USERNAME }}
-        username: root
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
         key: ${{ secrets.SSH_KEY }}
         script: |
           [ ! -d "sailbot_workspace" ] && git clone https://github.com/UBCSailbot/sailbot_workspace.git
           cd sailbot_workspace
-          docker compose -f .devcontainer/docker-compose.yml -f .devcontainer/docker-compose.website.yml up --force-recreate -d
+          docker compose -f .devcontainer/docker-compose.yml -f .devcontainer/website/docker-compose.website.prod.yml up --force-recreate -d --build --remove-orphans

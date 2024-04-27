@@ -1,9 +1,10 @@
 {
   "private": true,
   "scripts": {
+    "postinstall": "cd tests && npm install",
     "dev": "next dev -p 3005",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 3005",
     "lint": "prettier --check . && stylelint --allow-empty-input \"**/*.{css,scss}\" && next lint",
     "format": "prettier --write ."
   },
