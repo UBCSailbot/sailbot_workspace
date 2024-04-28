@@ -1,9 +1,11 @@
 name: Deployment
 
 on:
-  #push:
-  #  branches:
-  #    - main
+  # Uncomment once we are ready to deploy 
+  push:
+    branches:
+      - main
+      - deployment 
   workflow_dispatch:
 
 jobs:
@@ -21,4 +23,8 @@ jobs:
         script: |
           [ ! -d "sailbot_workspace" ] && git clone https://github.com/UBCSailbot/sailbot_workspace.git
           cd sailbot_workspace
+          git switch deployment
+          git pull
+          touch src/website/.env.local # Adds a local environment file to VM to override env vars in .env.production  
+          echo NEXT_PUBLIC_SERVER_HOST=http://${{ secrets.SSH_HOST }} >> src/website/.env.local
           docker compose -f .devcontainer/docker-compose.yml -f .devcontainer/website/docker-compose.website.prod.yml up --force-recreate -d --build --remove-orphans
