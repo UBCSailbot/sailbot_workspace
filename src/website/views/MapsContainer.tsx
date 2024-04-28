@@ -38,6 +38,9 @@ class MapsContainer extends React.PureComponent<MapsContainerProps> {
             unit='km'
           />
         </div>
+        <div className={styles.bottomRight}>
+          <BoatCompass angle={gpsData.at(-1)?.heading} />
+        </div>
         <Maps
           gpsLocation={this._validGPSLocation(gpsData)}
           gpsPath={gpsData.map((gpsPoint: GPS) => convertToLatLng(gpsPoint))}
