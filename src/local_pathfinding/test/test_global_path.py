@@ -1,6 +1,6 @@
 import os
 
-import post_server
+import post_server as ps
 import pytest
 from custom_interfaces.msg import HelperLatLon, Path
 
@@ -338,11 +338,11 @@ def test_post_path(global_path: Path):
     """
 
     # Launch http server
-    server = post_server.run_server()
+    server = ps.run_server()
 
-    assert post_path(global_path), "Failed to post global path"
+    assert post_path(global_path, url=ps.POST_TEST_URL), "Failed to post global path"
 
-    post_server.shutdown_server(httpd=server)
+    ps.shutdown_server(httpd=server)
 
 
 # ------------------------- TEST WRITE_TO_FILE ------------------------------
