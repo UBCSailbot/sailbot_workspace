@@ -156,12 +156,16 @@ nav:
       - Getting Started: reference/cpp/start.md
       - Differences: reference/cpp/differences.md
       - Tools: reference/cpp/tools.md
+    - Docker: reference/docker.md
     - GitHub:
       - Development Workflow:
         - Overview: reference/github/workflow/overview.md
         - Creating Issues: reference/github/workflow/issues.md
         - Developing on Branches: reference/github/workflow/branches.md
         - Pull Requests: reference/github/workflow/pr.md
+      - Advanced Git: reference/github/advanced_git.md
+      - GitHub Actions: reference/github/github_actions.md
+    - Linux Commands: reference/linux_commands.md
     - Markdown: reference/markdown.md
     - Python:
       - Getting Started: reference/python/start.md

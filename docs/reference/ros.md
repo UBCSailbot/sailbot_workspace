@@ -15,6 +15,14 @@ To run our software on your device without our workspace, you would have to [ins
 and the dependencies that are in [our Docker images](https://github.com/UBCSailbot/sailbot_workspace/tree/main/.devcontainer){target=_blank}
 yourself.
 
+## Tutorial
+
+<!-- markdownlint-disable MD013 -->
+<div class="video-wrapper">
+    <iframe width="560" height="315" src="https://www.youtube.com/embed/q98d9Qd3iwE?si=sXth8aLrddXY5Iv_" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
+<!-- markdownlint-enable MD013 -->
+
 ## Workspace Configuration
 
 To get our workspace configuration running on your computer:

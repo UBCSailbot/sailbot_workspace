@@ -5,6 +5,14 @@ Within Sailbot Workspace, ROS launch files are used to start up our ROS packages
 Additionally, we take advantage of the hierarchical properties of launch files by defining a global
 entry point that invokes the launch files of all ROS packages in the system.
 
+## Tutorial
+
+<!-- markdownlint-disable MD013 -->
+<div class="video-wrapper">
+    <iframe width="560" height="315" src="https://www.youtube.com/embed/iJdLFAo-QYM?si=CThSU9GxYHvuDTY3" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
+<!-- markdownlint-enable MD013 -->
+
 ## Launch File Architecture
 
 There are two launch processes that we utilize: namely the Package Launch Process and the Global launch process.
