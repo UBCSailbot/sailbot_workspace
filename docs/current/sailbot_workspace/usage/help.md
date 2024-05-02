@@ -58,3 +58,13 @@ If you are having some trouble running our software, here are some things you ca
         - Add `--volumes` to additionally remove volumes (makes Bash history and ROS logs persist across containers)
     - Run `docker rmi -f $(docker images -aq)` to remove all images
 - [Install a previous version of Docker Desktop](https://stackoverflow.com/a/77224786){target=_blank}
+
+## Shrink WSL Distributions' Size
+
+After using Docker and Ubuntu for a while, you may notice that the vdisks are very large. As of May 2024,
+they are located at `C:\Users\<user>\AppData\Local\Docker\wsl\data\ext4.vhdx` and `C:\Users\<user>\AppData\Local\Packages\CanonicalGroupLimited.Ubuntu_79rhkp1fndgsc\LocalState\ext4.vhdx`,
+respectively.
+
+The problem is that these vdisks can automatically grow but not shrink, so if you download
+large files (like Docker images) and delete them once they're not needed the space is not freed.
+You can shrink vdisk using [these commands](https://github.com/microsoft/WSL/issues/4699#issuecomment-627133168){target=_blank}.
