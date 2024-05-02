@@ -3,7 +3,7 @@
 Sailbot Workspace can be run on Windows, Linux, or macOS, but is the easiest to set up and performs the best on
 [Ubuntu](https://ubuntu.com/){target=_blank} and [its derivatives](https://distrowatch.com/search.php?basedon=Ubuntu){target=_blank}.
 The workspace may not perform well on Windows computers with 8GB of memory or less;
-in this case, please check out our recommendations in the [Performance Issues](./workflow.md#performance-issues){target=_blank}
+in this case, please check out our recommendations in the [Performance Issues](./help.md#performance-issues){target=_blank}
 section.
 
 ## 1. Setup prerequisites

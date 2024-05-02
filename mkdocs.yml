@@ -131,6 +131,7 @@ nav:
         - Setup: current/sailbot_workspace/usage/setup.md
         - Workflow: current/sailbot_workspace/usage/workflow.md
         - How-To's: current/sailbot_workspace/usage/how_to.md
+        - Help: current/sailbot_workspace/usage/help.md
       - Reference:
         - Deployment: current/sailbot_workspace/reference/deployment.md
         - Images: current/sailbot_workspace/reference/docker_images.md
