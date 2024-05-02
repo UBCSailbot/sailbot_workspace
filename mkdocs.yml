@@ -43,8 +43,6 @@ theme:
 
 # Plugins
 plugins:
-  - git-revision-date-localized:
-      timezone: America/Vancouver
   - search:
       separator: '[\s\-,:!=\[\]()"/]+|(?!\b)(?=[A-Z][a-z])|\.(?!\d)|&[lg]t;'
   - social:
