@@ -127,13 +127,15 @@ nav:
     - Overview: current/overview.md
     - Sailbot Workspace:
       - Overview: current/sailbot_workspace/overview.md
-      - Setup: current/sailbot_workspace/setup.md
-      - Parameters: current/sailbot_workspace/parameters.md
-      - Workflow: current/sailbot_workspace/workflow.md
-      - How-To's: current/sailbot_workspace/how_to.md
-      - Deployment: current/sailbot_workspace/deployment.md
-      - Images: current/sailbot_workspace/docker_images.md
-      - Launch Files: current/sailbot_workspace/launch_files.md
+      - Usage:
+        - Setup: current/sailbot_workspace/usage/setup.md
+        - Workflow: current/sailbot_workspace/usage/workflow.md
+        - How-To's: current/sailbot_workspace/usage/how_to.md
+      - Reference:
+        - Deployment: current/sailbot_workspace/reference/deployment.md
+        - Images: current/sailbot_workspace/reference/docker_images.md
+        - Launch Files: current/sailbot_workspace/reference/launch_files.md
+        - Parameters: current/sailbot_workspace/reference/parameters.md
     - Boat Simulator:
       - Overview: current/boat_simulator/overview.md
     - Controller:
