@@ -76,7 +76,7 @@ jobs:
 
       - name: Start containers
         shell: bash
-        run: docker compose -f .devcontainer/docker-compose.yml -f .devcontainer/docker-compose.docs.yml up -d
+        run: docker compose -f .devcontainer/docker-compose.yml -f .devcontainer/docs/docker-compose.docs.yml up -d
 
       - name: Build docs
         if: github.event_name == 'push' || github.event.action != 'closed'
