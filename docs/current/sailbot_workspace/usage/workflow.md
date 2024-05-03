@@ -161,12 +161,12 @@ package should be documented in their READMEs, but in general they can be run us
     - Launch files: `ROS: Run a ROS launch file (roslaunch)`
     - Nodes: `ROS: Run a ROS executable (rosrun)`
 
-For more information on launch file use in our system, see [this page](./launch_files.md){target=_blank}.
+For more information on launch file use in our system, see [this page](../reference/launch_files.md){target=_blank}.
 
 ### Run the System
 
 To verify that you didn't break anything, you may want to run the entire system. See
-[Invoking Launch Files](./launch_files.md#invoking-launch-files) for more information
+[Invoking Launch Files](../reference/launch_files.md#invoking-launch-files) for more information
 on running the system.
 
 ### Debugging

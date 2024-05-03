@@ -11,7 +11,7 @@ in conjunction with our other software, but doesn't have to be. There are instru
 2. Uncomment `8000:8000` in `.devcontainer/docker-compose.yml`
 3. Rebuild the Dev Container
 
-Refer to [How to work with containerized applications](../sailbot_workspace/how_to.md#work-with-containerized-applications)
+Refer to [How to work with containerized applications](../sailbot_workspace/usage/how_to.md#work-with-containerized-applications)
 for more details.
 
 ### Setup By Itself
@@ -39,7 +39,7 @@ for more details.
 
 After [setup](#setup-in-sailbot-workspace), the Docs site should be running on port 8000.
 
-Refer to [How to work with containerized applications](../sailbot_workspace/how_to.md#work-with-containerized-applications)
+Refer to [How to work with containerized applications](../sailbot_workspace/usage/how_to.md#work-with-containerized-applications)
 for more details.
 
 ### Run By Itself using VS Code

@@ -192,7 +192,7 @@ There are a couple cases where you would want to add dependencies to a Docker im
 
 To verify your changes, you can add them to `.devcontainer/Dockerfile` then
 run the `Dev Containers: Rebuild Container` VS Code command. Once verified, migrate the changes to one of the upstream
-[images](./docker_images.md){target=_blank}: `base`, `local-base`, `dev`, or `pre-base`.
+[images](../reference/docker_images.md){target=_blank}: `base`, `local-base`, `dev`, or `pre-base`.
 
 ## Enable GitHub Copilot in Sailbot Workspace
 
@@ -251,7 +251,7 @@ Dotfiles that are commonly modified include:
 
 To use your dotfiles:
 
-1. Ensure that the `base`, `local-base`, or `dev` [image](./docker_images.md){target=_blank}
+1. Ensure that the `base`, `local-base`, or `dev` [image](../reference/docker_images.md){target=_blank}
    installs the programs that the dotfiles correspond to
 2. Copy the dotfiles to the `.devcontainer/config/` directory.
    If a dotfile is located in a child directory, you will have to created it.
