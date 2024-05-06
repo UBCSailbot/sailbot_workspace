@@ -1,7 +1,8 @@
 # Website
 
 In the website development timeline, we are currently evaluating the folllowing software stack:
-[Next.js](https://nextjs.org/) website (this repository), [Typescript](https://www.typescriptlang.org/docs/), [React](https://react.dev/) + [Redux](https://redux-saga.js.org/), and the [MongoDB](https://www.mongodb.com/) database.
+[Next.js](https://nextjs.org/) website (this repository), [Typescript](https://www.typescriptlang.org/docs/),
+[React](https://react.dev/) + [Redux](https://redux-saga.js.org/), and the [MongoDB](https://www.mongodb.com/) database.
 The easiest way to evaluate these potential solutions for our purposes is in [sailbot_workspace](https://github.com/UBCSailbot/sailbot_workspace).
 
 ## Database
@@ -13,7 +14,8 @@ developers and for the cloud era. If you want to learn more about MongoDB, visit
 
 ### Environment variables
 
-We have two separate configurations: one for development `.env.development`, the other for production `.env.production`. The values may vary, but the environment variables are the same. See below:
+We have two separate configurations: one for development `.env.development`,
+the other for production `.env.production`. The values may vary, but the environment variables are the same. See below:
 
 - `MONGODB_URI`: Your MongoDB connection string. Use `mongodb://localhost:27017/<DB_NAME>` to establish a connection
   with the local database.
