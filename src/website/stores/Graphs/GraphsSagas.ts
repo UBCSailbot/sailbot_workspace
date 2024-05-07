@@ -3,7 +3,7 @@ import GraphsActions from './GraphsActions';
 import { put, takeLatest } from 'redux-saga/effects';
 
 export default class GraphsSagas extends BaseSaga {
-  *rearrangeGraphs(action) {
+  *rearrangeGraphs(action: any) {
     try {
       yield put({
         type: GraphsActions.REARRANGE_GRAPHS_SUCCESS,
@@ -12,7 +12,7 @@ export default class GraphsSagas extends BaseSaga {
     } catch (e) {
       yield put({
         type: GraphsActions.REARRANGE_GRAPHS_FAILURE,
-        error: e.message,
+        error: (e as Error).message,
       });
     }
   }

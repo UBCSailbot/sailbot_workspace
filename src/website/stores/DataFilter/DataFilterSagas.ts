@@ -3,7 +3,7 @@ import DataFilterActions from './DataFilterActions';
 import { put, takeLatest } from 'redux-saga/effects';
 
 export default class DataFilterSagas extends BaseSaga {
-  *replaceTimestamp(action) {
+  *replaceTimestamp(action: any) {
     try {
       yield put({
         type: DataFilterActions.SET_TIMESTAMP_SUCCESS,
@@ -12,7 +12,7 @@ export default class DataFilterSagas extends BaseSaga {
     } catch (e) {
       yield put({
         type: DataFilterActions.SET_TIMESTAMP_FAILURE,
-        error: e.message,
+        error: (e as Error).message,
       });
     }
   }

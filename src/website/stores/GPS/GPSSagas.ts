@@ -18,6 +18,7 @@ export default class GPSSagas extends BaseSaga {
           error: (e as Error).message,
         });
       }
+      // @ts-ignore
       yield delay(process.env.NEXT_PUBLIC_POLLING_TIME_MS);
     }
   }

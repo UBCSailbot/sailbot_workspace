@@ -1,13 +1,11 @@
 import BaseReducer from '@/utils/BaseReducer';
 import AISShipsActions from './AISShipsActions';
-import { AISShipsState } from './AISShipsTypes';
+import { AISShips, AISShipsState } from './AISShipsTypes';
 import { AnyAction } from 'redux';
 
 export default class AISShipsReducer extends BaseReducer {
   initialState: AISShipsState = {
-    data: {
-      ships: [],
-    },
+    data: {} as AISShips,
     error: null,
   };
 
