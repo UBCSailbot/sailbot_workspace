@@ -140,11 +140,12 @@ def get_path(file_path: str) -> Path:
     return path
 
 
-def post_path(path: Path) -> bool:
+def post_path(path: Path, url: str = PATH_URL) -> bool:
     """Sends the global path to NET via POST request.
 
     Args:
         path (Path): The global path.
+        url (str): URL to post path to. Should always use default value except for tests.
 
     Returns:
         bool: Whether or not the global path was successfully posted.
@@ -160,8 +161,9 @@ def post_path(path: Path) -> bool:
     data = {"waypoints": waypoints, "timestamp": timestamp}
 
     json_data = json.dumps(data).encode("utf-8")
+
     try:
-        urlopen(PATH_URL, json_data)
+        urlopen(url, json_data)
         return True
     except HTTPError as http_error:
         print(f"HTTP Error: {http_error.code}")
