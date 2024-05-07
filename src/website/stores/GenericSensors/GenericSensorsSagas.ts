@@ -23,7 +23,7 @@ export default class GenericSensorsSagas extends BaseSaga {
           error: (e as Error).message,
         });
       }
-      // Poll every minute. Adjust the time as needed.
+      // @ts-ignore
       yield delay(process.env.NEXT_PUBLIC_POLLING_TIME_MS);
     }
   }

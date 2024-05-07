@@ -23,7 +23,7 @@ export default class GlobalPathSagas extends BaseSaga {
           error: (e as Error).message,
         });
       }
-      // poll every minute - can be adjusted accordingly
+      // @ts-ignore
       yield delay(process.env.NEXT_PUBLIC_POLLING_TIME_MS);
     }
   }

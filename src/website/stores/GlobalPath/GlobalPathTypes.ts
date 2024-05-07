@@ -5,6 +5,7 @@ export type WayPoint = {
 
 export type GlobalPath = {
   waypoints: WayPoint[];
+  timestamp: string;
 };
 
 export type GlobalPathState = {
