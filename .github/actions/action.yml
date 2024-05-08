@@ -28,4 +28,4 @@ runs:
 
     - name: Run script inside sailbot workspace image
       shell: bash
-      run: docker compose -f .devcontainer/docker-compose.yml exec -T sailbot-workspace /bin/bash -c "export LINTER=${{ inputs.linter }} && cd /workspaces/sailbot_workspace && .github/actions/scripts/${{ inputs.script }}.sh"
+      run: docker compose -f .devcontainer/docker-compose.yml exec -T sailbot-workspace /bin/bash -c "export LINTER=${{ inputs.linter }} && cd /workspaces/sailbot_workspace && scripts/${{ inputs.script }}.sh"

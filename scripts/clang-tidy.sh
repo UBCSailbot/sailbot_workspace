@@ -7,4 +7,4 @@ if [[ $LOCAL_RUN != "true" ]]; then
     ./scripts/build.sh RelWithDebInfo OFF
 fi
 
-python3 ament_clang_tidy.py build/compile_commands.json --jobs 8
+python3 scripts/ament_clang_tidy.py build/compile_commands.json --jobs 8

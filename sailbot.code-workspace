@@ -428,7 +428,7 @@
                 "label": "lint_cmake",
                 "detail": "Run lint on cmake files.",
                 "type": "shell",
-                "command": "LINTER=lint_cmake LOCAL_RUN=true .github/actions/scripts/ament-lint.sh",
+                "command": "LINTER=lint_cmake LOCAL_RUN=true scripts/ament-lint.sh",
                 "problemMatcher": [
                     "$ament_lint_cmake"
                 ],
@@ -441,7 +441,7 @@
                 "label": "clang-tidy",
                 "detail": "Run clang-tidy static analysis",
                 "type": "shell",
-                "command": "LOCAL_RUN=true .github/actions/scripts/clang-tidy.sh",
+                "command": "LOCAL_RUN=true scripts/clang-tidy.sh",
                 "problemMatcher": [],
                 "presentation": {
                     "panel": "dedicated",
@@ -452,7 +452,7 @@
                 "label": "flake8",
                 "detail": "Run flake8 on python files.",
                 "type": "shell",
-                "command": "LINTER=flake8 LOCAL_RUN=true .github/actions/scripts/ament-lint.sh",
+                "command": "LINTER=flake8 LOCAL_RUN=true scripts/ament-lint.sh",
                 "problemMatcher": [
                     "$ament_flake8"
                 ],
@@ -465,7 +465,7 @@
                 "label": "mypy",
                 "detail": "Run mypy on python files.",
                 "type": "shell",
-                "command": "LINTER=mypy LOCAL_RUN=true .github/actions/scripts/ament-lint.sh",
+                "command": "LINTER=mypy LOCAL_RUN=true scripts/ament-lint.sh",
                 "problemMatcher": [
                     "$ament_mypy",
                 ],
@@ -478,7 +478,7 @@
                 "label": "xmllint",
                 "detail": "Run xmllint on xml files.",
                 "type": "shell",
-                "command": "LINTER=xmllint LOCAL_RUN=true .github/actions/scripts/ament-lint.sh",
+                "command": "LINTER=xmllint LOCAL_RUN=true scripts/ament-lint.sh",
                 "problemMatcher": [
                     "$ament_xmllint",
                 ],
