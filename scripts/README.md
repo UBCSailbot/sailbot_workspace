@@ -1,5 +1,11 @@
 # Scripts
 
+## how to run
+
+All scripts in this directory should be able to be run with `./path/to/script` (excluding arguments).
+For this to work, the script will need to have a shebang and be executable.
+For more details, see [this tutorial](https://linuxize.com/post/bash-shebang/).
+
 ## `ament-lint.sh`
 
 Script to lint source code in all ROS packages.
