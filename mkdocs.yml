@@ -134,6 +134,7 @@ nav:
       - Deployment: current/sailbot_workspace/deployment.md
       - Images: current/sailbot_workspace/docker_images.md
       - Launch Files: current/sailbot_workspace/launch_files.md
+      - Scripts: current/sailbot_workspace/scripts.md
     - Boat Simulator:
       - Overview: current/boat_simulator/overview.md
     - Controller:
