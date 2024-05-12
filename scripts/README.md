@@ -51,7 +51,6 @@ Other relevant commands include (but are not limited to):
 - `at+sbdrb\r`: Read binary content in the mailbox.
 - `at+sbdd2\r`: Clear all buffers.
 
-
 ## `run-tests.sh`
 
 Script to setup, build, and test all ROS packages.

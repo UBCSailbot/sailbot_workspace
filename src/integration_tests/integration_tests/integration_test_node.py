@@ -111,8 +111,9 @@ def launch_modules(packages: list[TestPlan]) -> list[subprocess.Popen]:
         else:
             match pkg.name:
                 case "virtual_iridium":
-                    run_viridium_cmd = os.path.join(ROS_WORKSPACE_PATH, 
-                                                    "scripts", "run_virtual_iridium.sh")
+                    run_viridium_cmd = os.path.join(
+                        ROS_WORKSPACE_PATH, "scripts", "run_virtual_iridium.sh"
+                    )
                     launch_cmds.append(run_viridium_cmd)
                 case "website":
                     raise NotImplementedError("Website not supported yet")
