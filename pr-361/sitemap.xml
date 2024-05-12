@@ -76,6 +76,11 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://UBCSailbot.github.io/sailbot_workspace/pr-361/current/sailbot_workspace/scripts/</loc>
+         <lastmod>2024-05-12</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://UBCSailbot.github.io/sailbot_workspace/pr-361/current/sailbot_workspace/setup/</loc>
          <lastmod>2024-05-12</lastmod>
          <changefreq>daily</changefreq>
