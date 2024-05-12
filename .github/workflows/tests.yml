@@ -17,9 +17,9 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Test
-      uses: ./scripts/
+      uses: ./.github/actions/
       with:
-        script: 'run-tests'
+        script: './scripts/run-tests'
         run-website: 'true'
 
   ament-lint:
@@ -36,9 +36,9 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Run linter
-      uses: ./scripts/
+      uses: ./.github/actions/
       with:
-        script: 'ament-lint'
+        script: './scripts/ament-lint'
         linter: ${{ matrix.linter }}
 
   clang-tidy:
@@ -49,6 +49,6 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Run linter
-      uses: ./scripts/
+      uses: ./.github/actions/
       with:
-        script: 'clang-tidy'
+        script: './scripts/clang-tidy'
