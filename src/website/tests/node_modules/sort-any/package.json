@@ -1,0 +1,56 @@
+{
+  "name": "sort-any",
+  "version": "2.0.0",
+  "description": "Sorts any JavaScript array in a predictable way (deep equal arrays are always sorted in the same order)",
+  "main": "build/index.js",
+  "scripts": {
+    "build": "rm -rf build && babel src --out-dir build --ignore tests/",
+    "lint": "eslint src",
+    "prepublishOnly": "npm run build",
+    "test": "mocha -r babel-register --recursive src/tests --timeout 5000"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/oprogramador/sort-any.git"
+  },
+  "keywords": [
+    "sort",
+    "any",
+    "array",
+    "object",
+    "deep",
+    "equal",
+    "predictable"
+  ],
+  "author": "oprogramador",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/oprogramador/sort-any/issues"
+  },
+  "homepage": "https://github.com/oprogramador/sort-any#readme",
+  "devDependencies": {
+    "@babel/core": "^7.13.14",
+    "@semantic-release/commit-analyzer": "^8.0.1",
+    "@semantic-release/git": "^9.0.0",
+    "@semantic-release/npm": "^7.1.0",
+    "babel-cli": "^6.26.0",
+    "babel-core": "^6.26.3",
+    "babel-plugin-module-resolver": "^4.1.0",
+    "babel-plugin-transform-es2015-modules-commonjs": "^6.26.2",
+    "babel-register": "^6.26.0",
+    "chai": "^4.3.4",
+    "chai-as-promised": "^7.1.1",
+    "chai-subset": "^1.6.0",
+    "dirty-chai": "^2.0.1",
+    "eslint": "^7.23.0",
+    "eslint-config-airbnb-improved": "^5.0.0",
+    "eslint-import-resolver-babel-module": "^5.2.0",
+    "mocha": "^8.3.2",
+    "sinon": "^10.0.0",
+    "sinon-as-promised": "^4.0.3",
+    "sinon-chai": "^3.6.0"
+  },
+  "dependencies": {
+    "lodash": "^4.17.21"
+  }
+}
