@@ -31,11 +31,6 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://UBCSailbot.github.io/sailbot_workspace/pr-374/current/docs/overview/</loc>
-         <lastmod>2024-05-18</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
          <loc>https://UBCSailbot.github.io/sailbot_workspace/pr-374/current/local_pathfinding/overview/</loc>
          <lastmod>2024-05-18</lastmod>
          <changefreq>daily</changefreq>
@@ -67,6 +62,11 @@
     </url>
     <url>
          <loc>https://UBCSailbot.github.io/sailbot_workspace/pr-374/current/sailbot_workspace/reference/docker_images/</loc>
+         <lastmod>2024-05-18</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://UBCSailbot.github.io/sailbot_workspace/pr-374/current/sailbot_workspace/reference/docs_site/</loc>
          <lastmod>2024-05-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
