@@ -60,6 +60,10 @@ pip install -Ur docs/requirements.txt
 
 ## Maintain
 
+### Contribute to This Site
+
+Read our [Markdown Reference Page](../../../reference/markdown.md){target=_blank} for the syntax supported by this site.
+
 ### Delete Deployed Versions
 
 A version of the docs site is created when a PR is open, and is deleted when it is merged or closed.
