@@ -1,11 +1,11 @@
 import { ResponseErrorObject } from '../table-objects/table-objects';
 
 export default class ResponseError {
-  public detail: string;
+  public detail: string | undefined;
 
-  public title: string;
+  public title: string | undefined;
 
-  public status: string;
+  public status: string | undefined;
 
   /**
    * Error response must include all the following properties.

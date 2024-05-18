@@ -38,8 +38,8 @@ Usage:
 
 > These commands are run in the in the root directory of this repository
 
-1. Run the setup script: `./setup.sh`
-2. Run the build script with the quick build flag: `./build.sh -q`
+1. Run the setup script: `./scripts/setup.sh`
+2. Run the build script with the quick build flag: `./scripts/build.sh -q`
 
 ## Develop software
 

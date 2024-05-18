@@ -4,7 +4,7 @@ import { Grid, Typography } from '@mui/material';
 import styles from './boatcompass.module.css';
 
 interface BoatCompassProps {
-  angle: number;
+  angle: number | undefined;
 }
 
 class BoatCompass extends React.Component<BoatCompassProps> {
@@ -46,7 +46,7 @@ class BoatCompass extends React.Component<BoatCompassProps> {
     );
   }
 
-  _rotateBoat(boatAngle: number) {
+  _rotateBoat(boatAngle: number | null): number {
     if (boatAngle == null) {
       return 0;
     } else {
@@ -54,7 +54,7 @@ class BoatCompass extends React.Component<BoatCompassProps> {
     }
   }
 
-  _rotateBoatString(boatAngle: number) {
+  _rotateBoatString(boatAngle: number | null): string {
     if (boatAngle == null) {
       return `rotate0deg)`;
     } else {

@@ -137,6 +137,7 @@ nav:
         - Images: current/sailbot_workspace/reference/docker_images.md
         - Launch Files: current/sailbot_workspace/reference/launch_files.md
         - Parameters: current/sailbot_workspace/reference/parameters.md
+        - Scripts: current/sailbot_workspace/scripts.md
     - Boat Simulator:
       - Overview: current/boat_simulator/overview.md
     - Controller:

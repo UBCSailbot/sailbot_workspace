@@ -5,6 +5,7 @@ export type WayPoint = {
 
 export type LocalPath = {
   waypoints: WayPoint[];
+  timestamp: string;
 };
 
 export type LocalPathState = {

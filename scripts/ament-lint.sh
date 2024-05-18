@@ -50,7 +50,7 @@ function lint {
 
 if [[ $LOCAL_RUN != "true" ]]; then
     source /opt/ros/${ROS_DISTRO}/setup.bash
-    ./setup.sh
+    ./scripts/setup.sh
 fi
 
 # Exclude repos and files we don't want to lint
