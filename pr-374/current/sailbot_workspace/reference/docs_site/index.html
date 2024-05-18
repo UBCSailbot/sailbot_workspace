@@ -2479,7 +2479,7 @@ for more details.</p>
 <h2 id="run">Run<a class="headerlink" href="#run" title="Permanent link">&para;</a></h2>
 <h3 id="run-in-sailbot-workspace">Run in Sailbot Workspace<a class="headerlink" href="#run-in-sailbot-workspace" title="Permanent link">&para;</a></h3>
 <p>After <a href="#setup-in-sailbot-workspace">setup</a>, the Docs site should be running on port 8000.</p>
-<p>Refer to <a href="../sailbot_workspace/usage/how_to.md#work-with-containerized-applications">How to work with containerized applications</a>
+<p>Refer to <a href="../../usage/how_to/#work-with-containerized-applications">How to work with containerized applications</a>
 for more details.</p>
 <h3 id="run-standalone">Run Standalone<a class="headerlink" href="#run-standalone" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>mkdocs serve
@@ -2497,7 +2497,8 @@ To see exactly how the site will look when deployed, ensure your local dependenc
 <h3 id="delete-deployed-versions">Delete Deployed Versions<a class="headerlink" href="#delete-deployed-versions" title="Permanent link">&para;</a></h3>
 <p>A version of the docs site is created when a PR is open, and is deleted when it is merged or closed.
 However, the CI that does this is very finnicky, so if 2 PR's are trying to update the site at the exact same time
-one might fail. This is especially annoying if this happens to be one that deletes a version, because this means that
+one might fail.</p>
+<p>This is especially annoying if this happens to be one that deletes a version, because this means that
 there is a version still open for a merged/closed PR. To manually clean up these PR's, run the following commands in
 the docs container (in Docker Desktop, the exec tab):</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>git config user.name &lt;your github username&gt;
