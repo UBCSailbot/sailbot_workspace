@@ -16,6 +16,14 @@ A good development workflow is essential to maintain a robust codebase and stay 
 diagram is a high level overview of how our development process works, and parts of this process
 are explained in subsequent sections.
 
+## Tutorial
+
+<!-- markdownlint-disable MD013 -->
+<div class="video-wrapper">
+    <iframe width="560" height="315" src="https://www.youtube.com/embed/bBHJgIDoZGk?si=XCn_brSzTfcWCcTB" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
+<!-- markdownlint-enable MD013 -->
+
 ## Version control: Git
 
 We use git to help us keep track of the version history of our codebase. Git is a free and open source

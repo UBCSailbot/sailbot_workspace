@@ -32,4 +32,4 @@ Click on an image to learn more about its features and how to update it.
 [Dockerfile]: <https://github.com/UBCSailbot/sailbot_workspace/blob/main/.devcontainer/Dockerfile>
 
 <!-- Miscellaneous -->
-[o]: ./how_to.md#run-optional-programs
+[o]: ../usage/how_to.md#run-optional-programs

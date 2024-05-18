@@ -26,10 +26,6 @@ For prefixes that are words, you will have to append a space to them to bring up
 
 ## Work with containerized applications
 
-!!! info ""
-
-    New in [:octicons-tag-24: v1.1.0](https://github.com/UBCSailbot/sailbot_workspace/releases/tag/v1.1.0){target=_blank}
-
 We have containerized the following applications for a variety of reasons:
 
 - [MongoDB database](https://www.mongodb.com/){target=_blank}
@@ -45,11 +41,14 @@ The ones that are commented out are not run. To run them:
 
 1. Uncomment the Docker Compose file(s) that the application(s) you desire to run are defined in
     - Programs that are defined in the uncommented Docker Compose files will be started and stopped with Sailbot Workspace
-2. Run the `Dev Containers: Rebuild Container` VS Code command to restart Sailbot Workspace
+2. Uncomment the port mapping(s) of the application(s) you want to run in `.devcontainer/docker-compose.yml`
+    - Uncommented port mappings exposed ports to the host operating system;
+      e.g., so that web applications can be opened in your browser
+3. Run the `Dev Containers: Rebuild Container` VS Code command to restart Sailbot Workspace
 
 To stop running them:
 
-1. Comment out the corresponding Docker Compose file
+1. Comment out the corresponding Docker Compose file in `.devcontainer/devcontainer.json` and port mapping in `.devcontainer/docker-compose.yml`
 2. Stop the application's container: see [Managing containerized applications](#managing-containerized-applications)
 
 ### Viewing MongoDB data
@@ -192,7 +191,7 @@ There are a couple cases where you would want to add dependencies to a Docker im
 
 To verify your changes, you can add them to `.devcontainer/Dockerfile` then
 run the `Dev Containers: Rebuild Container` VS Code command. Once verified, migrate the changes to one of the upstream
-[images](./docker_images.md){target=_blank}: `base`, `local-base`, `dev`, or `pre-base`.
+[images](../reference/docker_images.md){target=_blank}: `base`, `local-base`, `dev`, or `pre-base`.
 
 ## Enable GitHub Copilot in Sailbot Workspace
 
@@ -251,7 +250,7 @@ Dotfiles that are commonly modified include:
 
 To use your dotfiles:
 
-1. Ensure that the `base`, `local-base`, or `dev` [image](./docker_images.md){target=_blank}
+1. Ensure that the `base`, `local-base`, or `dev` [image](../reference/docker_images.md){target=_blank}
    installs the programs that the dotfiles correspond to
 2. Copy the dotfiles to the `.devcontainer/config/` directory.
    If a dotfile is located in a child directory, you will have to created it.

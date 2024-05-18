@@ -10,7 +10,7 @@ Welcome to the UBC Sailbot software team docs :wave:
 
 Looking to get started with running the Sailbot codebase? Start by setting up the Sailbot Workspace:
 
-[:octicons-arrow-right-24: Getting Started](./current/sailbot_workspace/setup.md){target=_blank}
+[:octicons-arrow-right-24: Getting Started](./current/sailbot_workspace/usage/setup.md){target=_blank}
 
 ## :fontawesome-solid-circle-info: What information is on this website?
 
