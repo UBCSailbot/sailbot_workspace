@@ -77,5 +77,5 @@ mike delete --push pr-<number>
 If you get an error that your local copy of the `gh-pages` branch has diverged from the remote, you can delete it
 with `git branch -D gh-pages` and rerun the `mike delete` command above.
 
-It will probably ask you to login to GitHub: enter your username then a [GitHub access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)
+It will probably ask you to login to GitHub: enter your username then a [GitHub access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens){target=_blank}
 with write permission.
