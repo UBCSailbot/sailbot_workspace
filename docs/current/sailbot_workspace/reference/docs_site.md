@@ -64,10 +64,10 @@ pip install -Ur docs/requirements.txt
 
 Read our [Markdown Reference Page](../../../reference/markdown.md){target=_blank} for the syntax supported by this site.
 
-### Delete Deployed Versions
+### Delete Docs Versions
 
 A version of the docs site is created when a PR is open, and is deleted when it is merged or closed.
-However, the CI that does this is very finnicky, so if 2 PR's are trying to update the site at the exact same time
+However, the CI that does this is very finicky, so if 2 PR's are trying to update the site at the exact same time
 one might fail.
 
 This is especially annoying if this happens to be one that deletes a version, because this means that
