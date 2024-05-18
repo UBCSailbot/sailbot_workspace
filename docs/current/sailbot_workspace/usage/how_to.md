@@ -26,10 +26,6 @@ For prefixes that are words, you will have to append a space to them to bring up
 
 ## Work with containerized applications
 
-!!! info ""
-
-    New in [:octicons-tag-24: v1.1.0](https://github.com/UBCSailbot/sailbot_workspace/releases/tag/v1.1.0){target=_blank}
-
 We have containerized the following applications for a variety of reasons:
 
 - [MongoDB database](https://www.mongodb.com/){target=_blank}

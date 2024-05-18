@@ -75,10 +75,6 @@ Things to note when making changes:
 
 ## 4. Build your changes
 
-!!! info ""
-
-    Revamped in [:octicons-tag-24: v1.2.0](https://github.com/UBCSailbot/sailbot_workspace/releases/tag/v1.2.0){target=_blank}
-
 In general, changes need to be built before they can be run. You can skip this step if you only modified Python source
 or test files (in `python_package/python_package/` or `python_package/test`, respectively), or are running a launch type
 launch configuration.
@@ -87,10 +83,6 @@ launch configuration.
     1. Unless you want to run `clang-tidy`, use the `-q` build argument (default) for quicker build times
 
 ## 5. Verify your changes
-
-!!! info ""
-
-    Revamped in [:octicons-tag-24: v1.2.0](https://github.com/UBCSailbot/sailbot_workspace/releases/tag/v1.2.0){target=_blank}
 
 ??? tip "Running GUI applications on macOS"
 
