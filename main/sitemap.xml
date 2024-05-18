@@ -6,6 +6,11 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://UBCSailbot.github.io/sailbot_workspace/main/about_us/</loc>
+         <lastmod>2024-05-18</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://UBCSailbot.github.io/sailbot_workspace/main/current/overview/</loc>
          <lastmod>2024-05-18</lastmod>
          <changefreq>daily</changefreq>
@@ -26,11 +31,6 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://UBCSailbot.github.io/sailbot_workspace/main/current/docs/overview/</loc>
-         <lastmod>2024-05-18</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
          <loc>https://UBCSailbot.github.io/sailbot_workspace/main/current/local_pathfinding/overview/</loc>
          <lastmod>2024-05-18</lastmod>
          <changefreq>daily</changefreq>
@@ -46,32 +46,7 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://UBCSailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/deployment/</loc>
-         <lastmod>2024-05-18</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://UBCSailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/docker_images/</loc>
-         <lastmod>2024-05-18</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://UBCSailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/how_to/</loc>
-         <lastmod>2024-05-18</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://UBCSailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/launch_files/</loc>
-         <lastmod>2024-05-18</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
          <loc>https://UBCSailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/overview/</loc>
-         <lastmod>2024-05-18</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://UBCSailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/parameters/</loc>
          <lastmod>2024-05-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
@@ -81,17 +56,62 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://UBCSailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/setup/</loc>
+         <loc>https://UBCSailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/reference/deployment/</loc>
          <lastmod>2024-05-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://UBCSailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/workflow/</loc>
+         <loc>https://UBCSailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/reference/docker_images/</loc>
+         <lastmod>2024-05-18</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://UBCSailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/reference/docs_site/</loc>
+         <lastmod>2024-05-18</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://UBCSailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/reference/launch_files/</loc>
+         <lastmod>2024-05-18</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://UBCSailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/reference/parameters/</loc>
+         <lastmod>2024-05-18</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://UBCSailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/usage/help/</loc>
+         <lastmod>2024-05-18</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://UBCSailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/usage/how_to/</loc>
+         <lastmod>2024-05-18</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://UBCSailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/usage/setup/</loc>
+         <lastmod>2024-05-18</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://UBCSailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/usage/workflow/</loc>
          <lastmod>2024-05-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://UBCSailbot.github.io/sailbot_workspace/main/current/website/overview/</loc>
+         <lastmod>2024-05-18</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://UBCSailbot.github.io/sailbot_workspace/main/reference/docker/</loc>
+         <lastmod>2024-05-18</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://UBCSailbot.github.io/sailbot_workspace/main/reference/linux_commands/</loc>
          <lastmod>2024-05-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
@@ -117,6 +137,16 @@
     </url>
     <url>
          <loc>https://UBCSailbot.github.io/sailbot_workspace/main/reference/cpp/tools/</loc>
+         <lastmod>2024-05-18</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://UBCSailbot.github.io/sailbot_workspace/main/reference/github/advanced_git/</loc>
+         <lastmod>2024-05-18</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://UBCSailbot.github.io/sailbot_workspace/main/reference/github/github_actions/</loc>
          <lastmod>2024-05-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
