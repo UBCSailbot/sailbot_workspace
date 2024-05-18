@@ -45,11 +45,14 @@ The ones that are commented out are not run. To run them:
 
 1. Uncomment the Docker Compose file(s) that the application(s) you desire to run are defined in
     - Programs that are defined in the uncommented Docker Compose files will be started and stopped with Sailbot Workspace
-2. Run the `Dev Containers: Rebuild Container` VS Code command to restart Sailbot Workspace
+2. Uncomment the port mapping(s) of the application(s) you want to run in `.devcontainer/docker-compose.yml`
+    - Uncommented port mappings exposed ports to the host operating system;
+      e.g., so that web applications can be opened in your browser
+3. Run the `Dev Containers: Rebuild Container` VS Code command to restart Sailbot Workspace
 
 To stop running them:
 
-1. Comment out the corresponding Docker Compose file
+1. Comment out the corresponding Docker Compose file in `.devcontainer/devcontainer.json` and port mapping in `.devcontainer/docker-compose.yml`
 2. Stop the application's container: see [Managing containerized applications](#managing-containerized-applications)
 
 ### Viewing MongoDB data
