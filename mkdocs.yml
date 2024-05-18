@@ -134,6 +134,7 @@ nav:
         - Help: current/sailbot_workspace/usage/help.md
       - Reference:
         - Deployment: current/sailbot_workspace/reference/deployment.md
+        - Docs Site: current/sailbot_workspace/reference/docs_site.md
         - Images: current/sailbot_workspace/reference/docker_images.md
         - Launch Files: current/sailbot_workspace/reference/launch_files.md
         - Parameters: current/sailbot_workspace/reference/parameters.md
@@ -144,8 +145,6 @@ nav:
       - Overview: current/controller/overview.md
     - Custom Interfaces:
       - Overview: current/custom_interfaces/overview.md
-    - Docs:
-      - Overview: current/docs/overview.md
     - Local Pathfinding:
       - Overview: current/local_pathfinding/overview.md
     - Network Systems:

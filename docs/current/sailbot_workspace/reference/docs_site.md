@@ -1,4 +1,4 @@
-# Docs
+# Docs Site
 
 UBCSailbot software team's documentation site. It is meant to be developed in [Sailbot Workspace](https://github.com/UBCSailbot/sailbot_workspace){target=_blank}
 in conjunction with our other software, but doesn't have to be. There are instructions for both cases below.
