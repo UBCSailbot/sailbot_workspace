@@ -14,17 +14,11 @@ in conjunction with our other software, but doesn't have to be. There are instru
 Refer to [How to work with containerized applications](../sailbot_workspace/usage/how_to.md#work-with-containerized-applications)
 for more details.
 
-### Setup By Itself
+### Setup Standalone
 
-1. Clone repository
+1. Manually install [social plugin OS dependencies](https://squidfunk.github.io/mkdocs-material/setup/setting-up-social-cards/#dependencies){target=_blank}
 
-    ```
-    git clone https://github.com/UBCSailbot/docs.git
-    ```
-
-2. Manually install [social plugin OS dependencies](https://squidfunk.github.io/mkdocs-material/setup/setting-up-social-cards/#dependencies){target=_blank}
-
-3. Install Python dependencies
+2. Install Python dependencies
 
     ```
    pip install --upgrade pip
@@ -42,14 +36,7 @@ After [setup](#setup-in-sailbot-workspace), the Docs site should be running on p
 Refer to [How to work with containerized applications](../sailbot_workspace/usage/how_to.md#work-with-containerized-applications)
 for more details.
 
-### Run By Itself using VS Code
-
-1. `CTRL+P` to open Quick Open
-2. Run a launch configuration
-    - "debug Run Application" runs `mkdocs serve`
-    - "debug Launch Application" runs `mkdocs serve` and opens the application in a new Microsoft Edge window
-
-### Run By Itself using CLI
+### Run Standalone
 
 ```
 mkdocs serve
@@ -70,3 +57,25 @@ Rebuild the Dev Container.
 ```
 pip install -Ur docs/requirements.txt
 ```
+
+## Maintain
+
+### Delete Deployed Versions
+
+A version of the docs site is created when a PR is open, and is deleted when it is merged or closed.
+However, the CI that does this is very finnicky, so if 2 PR's are trying to update the site at the exact same time
+one might fail. This is especially annoying if this happens to be one that deletes a version, because this means that
+there is a version still open for a merged/closed PR. To manually clean up these PR's, run the following commands in
+the docs container (in Docker Desktop, the exec tab):
+
+```
+git config user.name <your github username>
+git config user.email <your github email>
+mike delete --push pr-<number>
+```
+
+If you get an error that your local copy of the `gh-pages` branch has diverged from the remote, you can delete it
+with `git branch -D gh-pages` and rerun the `mike delete` command above.
+
+It will probably ask you to login to GitHub: enter your username then a [GitHub access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)
+with write permission.
