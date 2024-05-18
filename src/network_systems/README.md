@@ -60,7 +60,7 @@ are defined per module. For example, under [projects/example/test/](projects/exa
 
 **Option A**: With sailbot_workspace open, invoke the VSCode `test` task.
 
-**Option B**: Under the sailbot_workspace directory, run `/workspaces/sailbot_workspace/test.sh`
+**Option B**: Under the sailbot_workspace directory, run `/workspaces/sailbot_workspace/scripts/test.sh`
 
 Both options will run all of UBC Sailbot's tests, including those from other projects. More often than not, this is
 unnecessary.

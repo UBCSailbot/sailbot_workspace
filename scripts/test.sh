@@ -16,7 +16,7 @@ if [ -f install/local_setup.bash ]; then source install/local_setup.bash; fi
 
 NET_DIR=src/network_systems
 if [ -d $NET_DIR ]; then
-    ./run_virtual_iridium.sh &> /dev/null &
+    ./scripts/run_virtual_iridium.sh &> /dev/null &
     pushd $NET_DIR
     ./scripts/sailbot_db sailbot_db --clear
     ./scripts/sailbot_db sailbot_db --populate
