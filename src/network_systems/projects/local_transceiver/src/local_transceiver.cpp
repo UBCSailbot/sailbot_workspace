@@ -21,6 +21,7 @@
 #include "at_cmds.h"
 #include "cmn_hdrs/ros_info.h"
 #include "cmn_hdrs/shared_constants.h"
+#include "global_path.pb.h"
 #include "sensors.pb.h"
 #include "waypoint.pb.h"
 
@@ -241,7 +242,12 @@ bool LocalTransceiver::send(const AT::Line & cmd)
 std::string LocalTransceiver::parseInMsg(const std::string & msg)
 {
     //TODO(jng468): implement function
-    (void)msg;
+    Polaris::GlobalPath path;
+    path.ParseFromString(msg);
+
+    for (auto waypoint : path.waypoints()) {
+    }
+
     return "placeholder";
 }
 
