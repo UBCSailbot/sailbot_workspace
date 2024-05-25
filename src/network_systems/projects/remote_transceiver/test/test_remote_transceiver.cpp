@@ -4,6 +4,8 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/address.hpp>
 #include <boost/beast/http/status.hpp>
+#include <boost/json.hpp>
+#include <boost/property_tree/json_parser.hpp>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
@@ -96,11 +98,7 @@ TEST_F(TestRemoteTransceiver, TestGet)
  * @param params Params structure
  * @return formatted request body
  */
-<<<<<<< HEAD
-std::string createPostBody(remote_transceiver::MOMsgParams::Params params)
-=======
 std::string createSensorPostBody(remote_transceiver::MOMsgParams::Params params)
->>>>>>> e2ccf2e8b8fdc22c08c2d316b01455981f66d964
 {
     std::ostringstream s;
     s << "imei=" << params.imei_ << "&serial=" << params.serial_ << "&momsn=" << params.momsn_
@@ -109,9 +107,27 @@ std::string createSensorPostBody(remote_transceiver::MOMsgParams::Params params)
     return s.str();
 }
 
-// std::string createGlobalPathPostBody(remote_transceiver::MOMsgParams::Params params) {}
+std::string createGlobalPath(params)  //std::string example = "{"field1": 0, "field2": 1.0}";
+{
+    json globalPath;
+
+    json::array waypointsArr;
+
+    for (const auto & waypoint : params.waypoints) {
+        json waypoint;
+        waypoint["latitude"]  = waypoint.latitude;
+        waypoint["longitude"] = waypoint.longitude;
+        waypointsArr.push_back(waypoint);
+    }
+
+    globalPath["waypoints"] = std::move(waypointsArray);
+    globalPath["timestamp"] = params.timestamp;
+
+    return json::serialize(globalPath);
+}
+
 /**
- * @brief Test that we can POST global path data to the server
+ * @brief Test that we can POST sensor data to the server
  *
  */
 TEST_F(TestRemoteTransceiver, TestPostSensors)
@@ -204,4 +220,39 @@ TEST_F(TestRemoteTransceiver, TestPostSensorsMult)
 
     // Check that DB is updated properly for all requests
     EXPECT_TRUE(g_test_db.verifyDBWrite(expected_sensors, expected_info));
+}
+
+/**
+ * @brief Test that we can POST global path data to the server
+ *
+ */
+TEST_F(TestRemoteTransceiver, TestPostGlobalPath)
+{
+    SCOPED_TRACE("Seed: " + std::to_string(g_rand_seed));  // Print seed on any failure
+    auto [rand_global_path, rand_timestamp] = g_test_db.genRandGlobalData(UtilDB::getTimestamp());
+
+    std::string rand_global_path_str;
+    ASSERT_TRUE(rand_global_path.SerializeToString(&rand_global_path_str));
+    Polaris::GlobalPath test;
+    test.ParseFromString(rand_global_path_str);
+    // This query is comprised entirely of arbitrary values exccept for .data_
+    std::string query = createGlobalPathPostBody(
+      {.imei_          = 0,  //Change to JSON
+       .serial_        = 0,
+       .momsn_         = 1,
+       .transmit_time_ = rand_info.timestamp_,
+       .lat_           = rand_info.lat_,
+       .lon_           = rand_info.lon_,
+       .cep_           = rand_info.cep_,
+       .data_          = rand_sensors_str});
+    http::status status = http_client::post(
+      {TESTING_HOST, std::to_string(TESTING_PORT), remote_transceiver::targets::GLOBAL_PATH}, "application/json",
+      query);
+
+    EXPECT_EQ(status, http::status::ok);
+    std::this_thread::sleep_for(WAIT_AFTER_RES);
+
+    std::array<GlobalPath, 1> expected_global_path = {rand_global_path};
+    std::<std::string>        expected_timestamp   = {rand_timestamp};
+    EXPECT_TRUE(g_test_db.verifyDBWrite_GlobalPath(expected_global_path, expected_timestamp));
 }
