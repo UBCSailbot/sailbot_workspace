@@ -5,7 +5,10 @@ import { AnyAction } from 'redux';
 
 export default class AISShipsReducer extends BaseReducer {
   initialState: AISShipsState = {
-    data: {} as AISShips,
+    data: {
+      ships: [],
+      timestamp: new Date().toISOString(),
+    } as AISShips,
     error: null,
   };
 

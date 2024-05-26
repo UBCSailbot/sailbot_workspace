@@ -5,7 +5,10 @@ import { AnyAction } from 'redux';
 
 export default class GlobalPathReducer extends BaseReducer {
   initialState: GlobalPathState = {
-    data: {} as GlobalPath,
+    data: {
+      waypoints: [],
+      timestamp: new Date().toISOString(),
+    } as GlobalPath,
     error: null,
   };
 
