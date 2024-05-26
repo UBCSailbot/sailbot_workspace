@@ -5,7 +5,10 @@ import { AnyAction } from 'redux';
 
 export default class GenericSensorsReducer extends BaseReducer {
   initialState: GenericSensorsState = {
-    data: {} as GenericSensors,
+    data: {
+      genericSensors: [],
+      timestamp: new Date().toISOString(),
+    } as GenericSensors,
     error: null,
   };
 
