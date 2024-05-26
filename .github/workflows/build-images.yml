@@ -5,9 +5,8 @@ on:
     inputs:
       tag:
         description: 'Tag of the base, local-base, and dev images'
-        required: false
+        required: true
         type: string
-        default: 'main'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
