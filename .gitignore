@@ -11,7 +11,7 @@
 .cache/
 
 # microsoft c/c++ intellisense (disabled in favor of clangd)
-/.vscode/c_cpp_properties.json
+/.vscode/*
 
 # python
 __pycache__/
@@ -32,3 +32,6 @@ venv/
 .cache/
 # Build
 site/
+
+# web
+/src/website/tests/node_modules/*

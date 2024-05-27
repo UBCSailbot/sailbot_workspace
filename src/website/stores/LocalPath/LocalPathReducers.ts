@@ -5,7 +5,10 @@ import { AnyAction } from 'redux';
 
 export default class LocalPathReducer extends BaseReducer {
   initialState: LocalPathState = {
-    data: {} as LocalPath,
+    data: {
+      waypoints: [],
+      timestamp: new Date().toISOString(),
+    } as LocalPath,
     error: null,
   };
 
