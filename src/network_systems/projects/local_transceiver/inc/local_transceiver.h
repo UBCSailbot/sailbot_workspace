@@ -120,7 +120,7 @@ public:
      *
      * @return The message as a binary string
      */
-    std::string receive();
+    custom_interfaces::msg::Path receive();
 
 private:
     // Serial port read/write timeout
@@ -161,7 +161,7 @@ private:
      * @param msg message received from the remote server
      * @return the data byte string payload from the message
      */
-    static std::string parseInMsg(const std::string & msg);
+    static custom_interfaces::msg::Path parseInMsg(const std::string & msg);
 
     /**
      * @brief Convert a boost::asio::streambuf into a string

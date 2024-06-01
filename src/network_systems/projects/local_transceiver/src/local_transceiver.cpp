@@ -221,11 +221,12 @@ std::optional<std::string> LocalTransceiver::debugSend(const std::string & cmd)
     return readRsp();
 }
 
-std::string LocalTransceiver::receive()
+custom_interfaces::msg::Path LocalTransceiver::receive()
 {
-    // TODO(hhenry01)
-    std::string receivedData = readRsp().value();
-    return receivedData;
+    // TODO(jng468)
+    std::string                  receivedData = readRsp().value();
+    custom_interfaces::msg::Path to_publish   = parseInMsg(receivedData);
+    return to_publish;
 }
 
 bool LocalTransceiver::send(const AT::Line & cmd)
@@ -239,16 +240,25 @@ bool LocalTransceiver::send(const AT::Line & cmd)
     return true;
 }
 
-std::string LocalTransceiver::parseInMsg(const std::string & msg)
+custom_interfaces::msg::Path LocalTransceiver::parseInMsg(const std::string & msg)
 {
-    //TODO(jng468): implement function
+    //TODO(jng468)
     Polaris::GlobalPath path;
     path.ParseFromString(msg);
 
+    custom_interfaces::msg::Path                      soln;
+    std::vector<custom_interfaces::msg::HelperLatLon> waypoints;
+
     for (auto waypoint : path.waypoints()) {
+        custom_interfaces::msg::HelperLatLon helperLatLon;
+        helperLatLon.set__longitude(waypoint.longitude());
+        helperLatLon.set__latitude(waypoint.latitude());
+
+        waypoints.push_back(helperLatLon);
     }
 
-    return "placeholder";
+    soln.set__waypoints(waypoints);
+    return soln;
 }
 
 bool LocalTransceiver::rcvRsp(const AT::Line & expected_rsp)

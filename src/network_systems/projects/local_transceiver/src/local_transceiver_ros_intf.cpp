@@ -100,7 +100,11 @@ private:
      */
     void pub_cb(/*placeholder*/)
     {
-        // TODO(Jng468): complete this, after receive is done
+        // TODO(jng468): complete this, after receive is done
+        // confirm if there's any input
+
+        custom_interfaces::msg::Path msg = lcl_trns_->receive();
+        pub_->publish(msg);
     }
 
     /**
