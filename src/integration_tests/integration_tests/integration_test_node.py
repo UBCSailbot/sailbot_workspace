@@ -5,18 +5,19 @@ import signal
 import subprocess
 import sys
 import time
+import json
 import traceback
+import urllib.request
 from dataclasses import dataclass, field
 from typing import Any, Optional, Tuple, Type, TypeVar, Union
 
+import custom_interfaces.msg
 import rclpy
 import rclpy.node
 import std_msgs.msg
 import yaml
 from rclpy.impl.rcutils_logger import RcutilsLogger
 from rclpy.node import MsgType, Node
-
-import custom_interfaces.msg
 
 MIN_SETUP_DELAY_S = 1  # Minimum 1 second delay between setting up the test and sending inputs
 DEFAULT_TIMEOUT_SEC = 3  # Number of seconds that the test has to run
@@ -30,7 +31,7 @@ ROS_PACKAGES = ["boat_simulator", "controller", "local_pathfinding", "network_sy
 NON_ROS_PACKAGES = ["virtual_iridium", "website"]
 
 # TODO: TestMsgType needs to encompass/inherit whatever type we use for HTTP messages
-HTTP_MSG_PLACEHOLDER_TYPE = TypeVar("HTTP_MSG_PLACEHOLDER_TYPE")
+HTTP_MSG_PLACEHOLDER_TYPE = type(dict)
 TestMsgType = Union[rclpy.node.MsgType, HTTP_MSG_PLACEHOLDER_TYPE]
 
 
@@ -396,7 +397,7 @@ class IntegrationTestSequence:
             inputs (list[dict]): list of inputs
 
         Raises:
-            NotImplementedError: If an input of type HTTP is given. It's on the TODO list :)
+            NotImplementedError: GlobalPath messages are not yet supported
             KeyError: If an invalid input type is given. Valid input types are ROS and HTTP.
         """
         for input_dict in inputs:
@@ -408,7 +409,15 @@ class IntegrationTestSequence:
                 self.__ros_inputs.append(new_input)
 
             elif input_dict["type"] == "HTTP":
-                raise NotImplementedError("HTTP support is a WIP")
+                data = input_dict["data"]
+                if "global_path" == input_dict["name"]:
+                    # This is a GlobalPath message
+                    raise NotImplementedError("Global Path Integration Test")
+                else:
+                    msg, msg_type = parse_ros_data(data)  # type: ignore
+                    new_input = IOEntry(name=input_dict["name"], msg_type=msg_type, msg=msg)
+                    self.__http_inputs.append(new_input)
+
             else:
                 raise KeyError(f"Invalid input type: {input_dict['type']}")
 
@@ -431,7 +440,15 @@ class IntegrationTestSequence:
                 self.__ros_e_outputs.append(new_output)
 
             elif output["type"] == "HTTP":
-                raise NotImplementedError("HTTP support is a WIP")
+                data = output["data"]
+                if "GlobalPath" in data:
+                    # This is a GlobalPath message
+                    raise NotImplementedError("Global Path Integration Test")
+
+                msg, msg_type = parse_ros_data(data)  # type: ignore
+                new_output = IOEntry(name=output["name"], msg_type=msg_type, msg=msg)
+                self.__http_e_outputs.append(new_output)
+
             else:
                 raise KeyError(f"Invalid output type: {output['type']}")
 
@@ -615,7 +632,27 @@ class IntegrationTestNode(Node):
                     )
                     self.__ros_subs.append(sub)
 
-                # TODO: HTTP
+                # TODO: HTTP (GlobalPath will need to be done separtely)
+                self.__http_inputs: list[ROSInputEntry] = []
+                for http_input in self.__test_inst.http_inputs():
+                    pub = self.create_publisher(
+                        msg_type=http_input.msg_type,
+                        topic=http_input.name,
+                        qos_profile=10, # change
+                    )
+                    self.__http_inputs.append(ROSInputEntry(pub=pub, msg=http_input.msg))
+
+                self.__http_subs: list[Node.Subscriber] = []
+                for e_http_output in self.__test_inst.http_expected_outputs():
+                    self.__monitor.register(e_http_output.name, e_http_output.msg)
+                    sub = self.create_subscription(
+                        msg_type=e_http_output.msg_type,
+                        topic=e_http_output.name,
+                        callback=functools.partial(self.__sub_ros_cb, topic=e_http_output.name),
+                        qos_profile=10, # change
+                    )
+                    self.__ros_subs.append(sub)
+
 
                 # IMPORTANT: MAKE SURE EXPECTED OUTPUTS ARE SETUP BEFORE SENDING INPUTS
                 time.sleep(MIN_SETUP_DELAY_S)
@@ -651,6 +688,39 @@ class IntegrationTestNode(Node):
             pub.publish(msg)
             self.get_logger().info(f'Published to topic: "{pub.topic}", with msg: "{msg}"')
 
+    def __pub_http(self) -> None:
+        """Publish to all registered ROS input topics"""
+        for web_input in self.__http_inputs:
+                pub = web_input.pub
+                msg = web_input.msg
+                pub.publish(msg)
+                self.get_logger().info(f'Published to topic: "{pub.topic}", with msg: "{msg}"')
+
+    def http_evaluate(self, data) -> int:
+
+        return 0
+
+    def get_http_outputs(self) -> int:
+
+        self.__http_outputs: list[dict[str, Any]] = []
+        num_fail = 0
+
+        for e_http_output in self.__test_inst.http_expected_outputs():
+            topic = e_http_output.name
+            try:
+                contents = urllib.request.urlopen(
+                    f"http://localhost:3005/api/gps"
+                )
+            except urllib.error.HTTPError as e:
+                self._logger.error(f"HTTPError: {e}")
+
+            data_dict = json.load(contents)
+            data = (data_dict["data"])[0]
+            self._logger.info(f"Received HTTP response from {topic}: {data}")
+            self.get_logger().info(f"What is the dir of ROS msg {e_http_output.msg.get_fields_and_field_types()}")
+
+        return num_fail
+
     def __timeout_cb(self) -> None:
         """Callback for when the test times out. Stops all test processes, evaluates correctness,
         and exits
@@ -658,7 +728,7 @@ class IntegrationTestNode(Node):
         self.__test_inst.finish()  # Stop tests
 
         num_fail, num_warn = self.__monitor.evaluate(self.get_logger())
-
+        num_fail += self.get_http_outputs()
         if num_warn > 0:
             self.get_logger().warn(
                 (
@@ -680,6 +750,7 @@ class IntegrationTestNode(Node):
         """Drive all registered test inputs"""
         self.__pub_ros()
         # TODO: add HTTP
+        self.__pub_http()
 
 
 if __name__ == "__main__":

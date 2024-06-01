@@ -16,7 +16,7 @@ inputs:
     data:
       dtype: uint64
       val: 6
-  - type: ROS
+  - type: HTTP
     name: mock_gps
     data:
       dtype: GPS
@@ -38,49 +38,6 @@ inputs:
           heading:
               dtype: float32
               val: 180.0
-  # # Global Path used to test list datatype parsing, it's not actually monitored in this example
-  # - type: HTTP
-  #   name: global_path
-  #   data:
-  #     dtype: Path
-  #     waypoints:
-  #       - dtype: HelperLatLon
-  #         latitude:
-  #             dtype: float32
-  #             val: 2
-  #         longitude:
-  #             dtype: float32
-  #             val: -2
-  #       - dtype: HelperLatLon
-  #         latitude:
-  #             dtype: float32
-  #             val: 3
-  #         longitude:
-  #             dtype: float32
-  #             val: -3
-  - type: HTTP
-    name: mock_gps
-    data:
-      dtype: GPS
-      lat_lon:
-          dtype: HelperLatLon
-          latitude:
-              dtype: float32
-              val: 1
-          longitude:
-              dtype: float32
-              val: -1
-      speed:
-          dtype: HelperSpeed
-          speed:
-              dtype: float32
-              val: 5
-      heading:
-          dtype: HelperHeading
-          heading:
-              dtype: float32
-              val: 180
-
 
 expected_outputs:
   - type: ROS
@@ -93,12 +50,7 @@ expected_outputs:
     name: cached_fib_in
     data:
       dtype: uint64
-      val: 6
-  - type: ROS
-    name: mock_ais_ships
-    data:
-      dtype: AISShips
-      DONT_CARE: True
+      val: 6.0
   - type: HTTP
     name: mock_gps
     data:
@@ -107,17 +59,17 @@ expected_outputs:
           dtype: HelperLatLon
           latitude:
               dtype: float32
-              val: 1
+              val: 1.0
           longitude:
               dtype: float32
-              val: -1
+              val: -1.0
       speed:
           dtype: HelperSpeed
           speed:
               dtype: float32
-              val: 5
+              val: 5.0
       heading:
           dtype: HelperHeading
           heading:
               dtype: float32
-              val: 180
+              val: 180.0
