@@ -21,7 +21,9 @@ function TimestampFilter({ setTimestamp }: TimestampFilterProps) {
 
     if (emptyDate == true && validDate == true) {
       setTimestamp({
+        // @ts-ignore
         startDate: startDate.toISOString(),
+        // @ts-ignore
         endDate: endDate.toISOString(),
       });
     }
@@ -36,15 +38,16 @@ function TimestampFilter({ setTimestamp }: TimestampFilterProps) {
     });
   };
 
-  const handleStartChange = (newStartDate) => {
+  const handleStartChange = (newStartDate: any) => {
     setStartDate(newStartDate);
   };
 
-  const handleEndChange = (newEndDate) => {
+  const handleEndChange = (newEndDate: any) => {
     setEndDate(newEndDate);
   };
 
-  function parseISOString(s: string) {
+  function parseISOString(s: string | null) {
+    if (s === null) return 0;
     return Math.floor(Date.parse(s) / 1000); // Converts to seconds
   }
 

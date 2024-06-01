@@ -1,11 +1,11 @@
 import BaseReducer from '@/utils/BaseReducer';
 import WindSensorsAction from './WindSensorsActions';
-import { WindSensorsState } from './WindSensorsTypes';
+import { WindSensorsState, WindSensors } from './WindSensorsTypes';
 import { AnyAction } from 'redux';
 
 export default class WindSensorsReducer extends BaseReducer {
   initialState: WindSensorsState = {
-    data: [],
+    data: [] as WindSensors[],
     error: null,
   };
 

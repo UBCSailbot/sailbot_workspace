@@ -5,9 +5,10 @@ export type Battery = {
 
 export type Batteries = {
   batteries: Battery[];
+  timestamp: string;
 };
 
 export type BatteriesState = {
-  data: Batteries;
+  data: Batteries[];
   error?: any;
 };

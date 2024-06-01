@@ -1,4 +1,4 @@
-/* IMPORTANT: Make sure only one instance of network_systems/scripts/run_virtual_iridium.sh is running */
+/* IMPORTANT: Make sure only one instance of sailbot_workspace/scripts/run_virtual_iridium.sh is running */
 
 #include <gtest/gtest.h>
 
