@@ -93,8 +93,7 @@ public:
                                   publishAIS(frame);
                               }))});
 
-            // TODO: SailCmd subscriber...
-            sail_cmd_sub_ = this->create_subscription<msg::AISShips>(
+            sail_cmd_sub_ = this->create_subscription<msg::SailCmd>(
               ros_topics::SAIL_CMD, QUEUE_SIZE, [this](msg::SailCmd sail_cmd_) { subSailCmdCb(sail_cmd_); });
 
             if (mode == SYSTEM_MODE::DEV) {  // Initialize the CAN Sim Intf
@@ -106,14 +105,12 @@ public:
                 mock_wind_sensors_sub_ = this->create_subscription<msg::WindSensors>(
                   ros_topics::MOCK_WIND_SENSORS, QUEUE_SIZE,
                   [this](msg::WindSensors mock_wind_sensors) { subMockWindSensorsCb(mock_wind_sensors); });
-                boat_sim_input_pub_ = this->create_publisher<msg::CanSimToBoatSim>(
-                  ros_topics::BOAT_SIM_INPUT, QUEUE_SIZE,
-                  [this](msg::CanSimToBoatSim boat_sim_input_msg_) { publishBoatSimInput(boat_sim_input_msg_); });
-
-                // TODO(lross03): register a callback for CanSimToBoatSim
+                boat_sim_input_pub_ =
+                  this->create_publisher<msg::CanSimToBoatSim>(ros_topics::BOAT_SIM_INPUT, QUEUE_SIZE);
 
                 timer_ = this->create_wall_timer(TIMER_INTERVAL, [this]() {
                     mockBatteriesCb();
+                    publishBoatSimInput(boat_sim_input_msg_);
                     // Add any other necessary looping callbacks
                 });
             }
@@ -298,7 +295,11 @@ private:
      *
      * @param sail_cmd_
      */
-    void subSailCmdCb(const msg::SailCmd & sail_cmd_input) { sail_cmd_ = sail_cmd_input; }
+    void subSailCmdCb(const msg::SailCmd & sail_cmd_input)
+    {
+        sail_cmd_ = sail_cmd_input;
+        boat_sim_input_msg_.set__sail_cmd(sail_cmd_);
+    }
 
     // SIMULATION CALLBACKS //
 
