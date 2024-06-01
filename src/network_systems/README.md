@@ -6,7 +6,7 @@ independent project.
 
 ## Setup
 
-For comprehensive setup instructions, follow our [setup guide](https://ubcsailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/setup/).
+For comprehensive setup instructions, follow our [setup guide](https://ubcsailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/usage/setup/).
 
 ## Building
 
@@ -18,7 +18,7 @@ For comprehensive setup instructions, follow our [setup guide](https://ubcsailbo
 
 ### ROS Launch
 
-[Instructions found here.](https://ubcsailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/launch_files/)
+[Instructions found here.](https://ubcsailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/reference/launch_files/)
 
 For example:
 
@@ -60,7 +60,7 @@ are defined per module. For example, under [projects/example/test/](projects/exa
 
 **Option A**: With sailbot_workspace open, invoke the VSCode `test` task.
 
-**Option B**: Under the sailbot_workspace directory, run `/workspaces/sailbot_workspace/test.sh`
+**Option B**: Under the sailbot_workspace directory, run `/workspaces/sailbot_workspace/scripts/test.sh`
 
 Both options will run all of UBC Sailbot's tests, including those from other projects. More often than not, this is
 unnecessary.

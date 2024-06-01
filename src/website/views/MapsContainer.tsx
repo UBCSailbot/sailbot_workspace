@@ -23,7 +23,7 @@ class MapsContainer extends React.PureComponent<MapsContainerProps> {
     const { gps } = this.props;
 
     const gpsData = gps.data.filter(
-      (data) =>
+      (data: GPS) =>
         this._validTimestamp(this._parseISOString(data.timestamp)) == true,
     );
 
@@ -68,8 +68,10 @@ class MapsContainer extends React.PureComponent<MapsContainerProps> {
 
     if (
       timestampISO >=
+      // @ts-ignore
         this._parseISOString(this.props.dataFilter.timestamps.startDate) &&
       timestampISO <=
+      // @ts-ignore
         this._parseISOString(this.props.dataFilter.timestamps.endDate)
     ) {
       return true;
@@ -123,6 +125,7 @@ class MapsContainer extends React.PureComponent<MapsContainerProps> {
         longitude: 999,
         speed: 999,
         heading: 999,
+        timestamp: new Date().toISOString()
       };
     }
     return gpsdata.at(-1);

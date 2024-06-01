@@ -24,7 +24,7 @@ static const std::string PROD_DB_NAME = "PLACEHOLDER";
 static const std::string PROD_HOST    = "127.0.0.1";
 constexpr uint16_t       PROD_PORT    = 8081;
 
-// TESTING constants should match the webhook server endpoint info found in sailbot_workspace/run_virtual_iridium.sh
+// TESTING constants should match the webhook server endpoint info found in sailbot_workspace/scripts/run_virtual_iridium.sh
 static const std::string TESTING_HOST = "127.0.0.1";
 constexpr uint16_t       TESTING_PORT = 8081;
 

@@ -22,7 +22,7 @@ export default class AISShipsSagas extends BaseSaga {
           error: (e as Error).message,
         });
       }
-      // Poll every minute. Can be adjusted accordingly.
+      // @ts-ignore
       yield delay(process.env.NEXT_PUBLIC_POLLING_TIME_MS);
     }
   }
