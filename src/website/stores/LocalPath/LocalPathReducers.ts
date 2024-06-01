@@ -1,13 +1,14 @@
 import BaseReducer from '@/utils/BaseReducer';
 import LocalPathActions from './LocalPathActions';
-import { LocalPathState } from './LocalPathTypes';
+import { LocalPath, LocalPathState } from './LocalPathTypes';
 import { AnyAction } from 'redux';
 
 export default class LocalPathReducer extends BaseReducer {
   initialState: LocalPathState = {
     data: {
       waypoints: [],
-    },
+      timestamp: new Date().toISOString(),
+    } as LocalPath,
     error: null,
   };
 

@@ -11,7 +11,7 @@ When starting a new issue, you will want to create a new branch for it:
 
 !!! caution
 
-    When creating branches locally, it uses your **local copy** to create the new branch. Remember to do a `git pull` 
+    When creating branches locally, it uses your **local copy** to create the new branch. Remember to do a `git pull`
     if you intend on using the latest changes from the remote branch you are creating from.
 
 ```bash title="Creating a new branch from main"
@@ -33,7 +33,7 @@ When working on a new issue, you will want to create a branch to work on it. We 
 naming convention:
 
 ```
-user/<github_username>/<issue_number>-<issue_description>
+<github_username>/<issue_number>-<issue_description>
 ```
 
 !!! example

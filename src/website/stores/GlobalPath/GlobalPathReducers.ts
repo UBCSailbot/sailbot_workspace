@@ -1,13 +1,14 @@
 import BaseReducer from '@/utils/BaseReducer';
 import GlobalPathActions from './GlobalPathActions';
-import { GlobalPathState } from './GlobalPathTypes';
+import { GlobalPath, GlobalPathState } from './GlobalPathTypes';
 import { AnyAction } from 'redux';
 
 export default class GlobalPathReducer extends BaseReducer {
   initialState: GlobalPathState = {
     data: {
       waypoints: [],
-    },
+      timestamp: new Date().toISOString(),
+    } as GlobalPath,
     error: null,
   };
 

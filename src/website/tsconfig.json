@@ -23,6 +23,12 @@
       }
     ]
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "hooks/useSessionState.js"
+, "lib/dotenv.js", "models/helper/parser.js", "utils/DownloadData.js"  ],
   "exclude": ["node_modules"]
 }
