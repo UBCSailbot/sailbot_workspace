@@ -45,6 +45,10 @@ while getopts ":-:" opt; do
     esac
 done
 
+# check for any remaining arguments after option parsing
+if [ "$OPTIND" -le "$#" ]; then
+    usage
+fi
 
 ## HELPER VARIABLES ---
 
