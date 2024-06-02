@@ -29,7 +29,7 @@ while getopts ":-:" opt; do
                     BASE_TAG="${!OPTIND}"; OPTIND=$(( $OPTIND + 1 ))
                     ;;
                 website)
-                    WEBSITE_ARG="-f .devcontainer/website/docker-compose.website.prod.yml"
+                    WEBSITE_ARG="--file .devcontainer/website/docker-compose.website.yml"
                     ;;
                 interactive)
                     INTERACTIVE="interactive"
