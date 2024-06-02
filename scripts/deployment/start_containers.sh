@@ -68,13 +68,12 @@ SW_TAG=$BASE_TAG $DOCKER_COMPOSE_ARGS up --build --detach
 if [[ -n $INTERACTIVE ]]; then
     $DOCKER_COMPOSE_ARGS exec --interactive --tty sailbot-workspace /bin/bash
 else
-    $DOCKER_COMPOSE_ARGS exec -T sailbot-workspace /bin/bash -c "\
-    cd \$ROS_WORKSPACE && \
-    pwd && \
+    $DOCKER_COMPOSE_ARGS exec --no-TTY sailbot-workspace /bin/bash -c "\
+    source /opt/ros/\$ROS_DISTRO/setup.bash && \
     ./scripts/setup.sh && \
     ./scripts/build.sh && \
-    ./scripts/test.sh && \
-    ls"
+    source ./install/local_setup.bash && \
+    ros2 launch src/global_launch/main_launch.py"
 fi
 
 # stop containers
