@@ -1,8 +1,6 @@
 #!/bin/bash
 set -e
 
-ls -la
-
 # Display a help message for using this script
 function helpMessage() {
     echo -e "Build ROS package(s) in the Sailbot Workspace."
