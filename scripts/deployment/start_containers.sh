@@ -11,7 +11,7 @@ BASE_TAG="latest"
 WEBSITE_ARG=""
 INTERACTIVE=""
 
-# Function to display usage help
+# function to display usage help
 usage() {
     echo "Usage: $0 [--tag tag] [--website]"
     echo "  --tag          Specify the base Docker image tag (default: latest)"
@@ -49,11 +49,11 @@ done
 ## HELPER VARIABLES ---
 
 # get absolute path to workspace root in host OS
-SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
+SCRIPT_DIR="$(dirname "$(readlink --canonicalize "$0")")"
 HOST_WORKSPACE_ROOT="$SCRIPT_DIR/../.."
 
 # common arguments for docker compose commmands
-DOCKER_COMPOSE_ARGS="docker compose -f .devcontainer/docker-compose.yml $WEBSITE_ARG"
+DOCKER_COMPOSE_ARGS="docker compose --project-name deployment --file .devcontainer/docker-compose.yml $WEBSITE_ARG"
 
 
 ## RUN COMMANDS ---
@@ -66,7 +66,7 @@ SW_TAG=$BASE_TAG $DOCKER_COMPOSE_ARGS up --detach
 
 # run commands inside sailbot workspace container
 if [[ -n $INTERACTIVE ]]; then
-    $DOCKER_COMPOSE_ARGS exec -it sailbot-workspace /bin/bash
+    $DOCKER_COMPOSE_ARGS exec --interactive --tty sailbot-workspace /bin/bash
 else
     $DOCKER_COMPOSE_ARGS exec -T sailbot-workspace /bin/bash -c "\
     cd \$ROS_WORKSPACE && \
