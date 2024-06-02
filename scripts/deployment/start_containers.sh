@@ -13,8 +13,8 @@ usage() {
     echo "Usage: $0 [--website] [--interactive] [--clean] [--reset]"
     echo "  --website      If set, runs the website container"
     echo "  --interactive  If set, run commands inside the sailbot workspace container interactively"
-    echo "  --clean        If set, removes containers after running"
-    echo "  --reset        If set, removes containers and volumes after running"
+    echo "  --clean        If set, removes containers before running"
+    echo "  --reset        If set, removes containers and volumes before running"
     exit 1
 }
 
@@ -99,6 +99,16 @@ if wget -q --spider --timeout=1 http://google.com; then
     docker pull mongo:$MONGO_TAG
 fi
 
+# remove containers
+if [[ "$CLEAN" == "true" ]] || [[ "$RESET" == "true" ]]; then
+    $DOCKER_COMPOSE_ARGS down
+fi
+
+# remove volumes
+if [[ "$RESET" = true ]]; then
+    docker volume ls -q | grep "^${PROJECT_NAME}_" | xargs -r docker volume rm
+fi
+
 # start containers
 MONGO_TAG=$MONGO_TAG $DOCKER_COMPOSE_ARGS up --build --detach --pull never
 
@@ -116,13 +126,3 @@ fi
 
 # stop containers
 $DOCKER_COMPOSE_ARGS stop
-
-# remove containers
-if [[ "$CLEAN" == "true" ]] || [[ "$RESET" == "true" ]]; then
-    $DOCKER_COMPOSE_ARGS down
-fi
-
-# remove volumes
-if [[ "$RESET" = true ]]; then
-    docker volume ls -q | grep "^${PROJECT_NAME}_" | xargs -r docker volume rm
-fi
