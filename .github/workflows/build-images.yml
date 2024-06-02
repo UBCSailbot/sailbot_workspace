@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag of the base, local-base, and dev images'
+        description: 'Tag of the Docker image'
         required: true
         type: string
 
@@ -32,34 +32,6 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.PAT_TOKEN }}
-
-      - name: Build and push base
-        uses: docker/build-push-action@v5
-        with:
-          context: "{{defaultContext}}:.devcontainer/base-dev"
-          file: base-dev.Dockerfile
-          push: true
-          tags: |
-            ghcr.io/ubcsailbot/sailbot_workspace/base:${{ inputs.tag }}
-            ghcr.io/ubcsailbot/sailbot_workspace/base:latest
-          platforms: linux/arm64,linux/amd64
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          target: base
-
-      - name: Build and push local-base
-        uses: docker/build-push-action@v5
-        with:
-          context: "{{defaultContext}}:.devcontainer/base-dev"
-          file: base-dev.Dockerfile
-          push: true
-          tags: |
-            ghcr.io/ubcsailbot/sailbot_workspace/local-base:${{ inputs.tag }}
-            ghcr.io/ubcsailbot/sailbot_workspace/local-base:latest
-          platforms: linux/arm64,linux/amd64
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          target: local-base
 
       - name: Build and push dev
         uses: docker/build-push-action@v5
