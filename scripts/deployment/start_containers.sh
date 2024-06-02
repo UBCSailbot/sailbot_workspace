@@ -1,22 +1,24 @@
 #!/bin/bash
 
 # TODO: check if it works without internet once built
-# TODO: argument for deleting containers
-# TODO: argument for deleting volumes
 
 ## CLI ARGUMENTS ---
 
 # default argument values
 BASE_TAG="latest"
 WEBSITE_ARG=""
-INTERACTIVE=""
+INTERACTIVE=false
+CLEAN=false
+RESET=false
 
 # function to display usage help
 usage() {
-    echo "Usage: $0 [--tag tag] [--website] [--interactive]"
+    echo "Usage: $0 [--tag tag] [--website] [--interactive] [--clean] [--reset]"
     echo "  --tag          Specify the base Docker image tag (default: latest)"
     echo "  --website      If set, runs the website container"
     echo "  --interactive  If set, run commands inside the sailbot workspace container interactively"
+    echo "  --clean        If set, removes containers after running"
+    echo "  --reset        If set, removes containers and volumes after running"
     exit 1
 }
 
@@ -32,7 +34,13 @@ while getopts ":-:" opt; do
                     WEBSITE_ARG="--file .devcontainer/website/docker-compose.website.yml"
                     ;;
                 interactive)
-                    INTERACTIVE="interactive"
+                    INTERACTIVE=true
+                    ;;
+                clean)
+                    CLEAN=true
+                    ;;
+                reset)
+                    RESET=true
                     ;;
                 *)
                     usage  # Show usage if argument is not recognized
@@ -57,7 +65,8 @@ SCRIPT_DIR="$(dirname "$(readlink --canonicalize "$0")")"
 HOST_WORKSPACE_ROOT="$SCRIPT_DIR/../.."
 
 # common arguments for docker compose commmands
-DOCKER_COMPOSE_ARGS="docker compose --project-name deployment --file .devcontainer/docker-compose.yml $WEBSITE_ARG"
+PROJECT_NAME="deployment"
+DOCKER_COMPOSE_ARGS="docker compose --project-name $PROJECT_NAME --file .devcontainer/docker-compose.yml $WEBSITE_ARG"
 
 
 ## RUN COMMANDS ---
@@ -69,7 +78,7 @@ cd $HOST_WORKSPACE_ROOT
 SW_TAG=$BASE_TAG $DOCKER_COMPOSE_ARGS up --build --detach
 
 # run commands inside sailbot workspace container
-if [[ -n $INTERACTIVE ]]; then
+if [[ "$INTERACTIVE" = true ]]; then
     $DOCKER_COMPOSE_ARGS exec --interactive --tty sailbot-workspace /bin/bash
 else
     $DOCKER_COMPOSE_ARGS exec --no-TTY sailbot-workspace /bin/bash -c "\
@@ -82,3 +91,13 @@ fi
 
 # stop containers
 $DOCKER_COMPOSE_ARGS stop
+
+# remove containers
+if [[ "$CLEAN" == "true" ]] || [[ "$RESET" == "true" ]]; then
+    $DOCKER_COMPOSE_ARGS down
+fi
+
+# remove volumes
+if [[ "$RESET" = true ]]; then
+    docker volume ls -q | grep "^${PROJECT_NAME}_" | xargs -r docker volume rm
+fi
