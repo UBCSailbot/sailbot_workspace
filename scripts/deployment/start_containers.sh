@@ -13,7 +13,7 @@ INTERACTIVE=""
 
 # function to display usage help
 usage() {
-    echo "Usage: $0 [--tag tag] [--website]"
+    echo "Usage: $0 [--tag tag] [--website] [--interactive]"
     echo "  --tag          Specify the base Docker image tag (default: latest)"
     echo "  --website      If set, runs the website container"
     echo "  --interactive  If set, run commands inside the sailbot workspace container interactively"
