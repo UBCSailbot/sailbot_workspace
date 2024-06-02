@@ -62,7 +62,7 @@ DOCKER_COMPOSE_ARGS="docker compose --project-name deployment --file .devcontain
 cd $HOST_WORKSPACE_ROOT
 
 # start containers
-SW_TAG=$BASE_TAG $DOCKER_COMPOSE_ARGS up --detach
+SW_TAG=$BASE_TAG $DOCKER_COMPOSE_ARGS up --build --detach
 
 # run commands inside sailbot workspace container
 if [[ -n $INTERACTIVE ]]; then
