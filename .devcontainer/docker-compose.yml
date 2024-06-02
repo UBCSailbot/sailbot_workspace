@@ -27,7 +27,7 @@ services:
 
   # URL: mongodb://localhost:27017
   mongodb:
-    image: mongo:7
+    image: mongo:${MONGO_TAG:-7}
     restart: unless-stopped
     volumes:
       - mongodb-data:/data/db:delegated
