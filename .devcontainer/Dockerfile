@@ -19,6 +19,6 @@ COPY --chown=${USERNAME}:${USERNAME} config ${HOME}
 
 # set user and working directory
 RUN mkdir -p "${ROS_WORKSPACE}" \
-    && chown "${USERNAME}" "${ROS_WORKSPACE}"
+    && chown ${USERNAME}:${USERNAME} ${ROS_WORKSPACE}
 USER ${USERNAME}
 WORKDIR ${ROS_WORKSPACE}
