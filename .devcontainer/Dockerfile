@@ -18,7 +18,5 @@ COPY --chown=${USERNAME}:${USERNAME} config ${HOME}
 #     && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
 
 # set user and working directory
-RUN mkdir -p "${ROS_WORKSPACE}" \
-    && chown ${USERNAME}:${USERNAME} ${ROS_WORKSPACE}
 USER ${USERNAME}
 WORKDIR ${ROS_WORKSPACE}
