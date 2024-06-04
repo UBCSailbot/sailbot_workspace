@@ -24,7 +24,7 @@ while getopts ":-:" opt; do
         -)
             case "${OPTARG}" in
                 website)
-                    WEBSITE_ARG="--file .devcontainer/website/docker-compose.website.yml"
+                    WEBSITE_ARG="--file .devcontainer/website/docker-compose.website.prod.yml"
                     ;;
                 interactive)
                     INTERACTIVE=true
