@@ -2,8 +2,8 @@
 set -e
 
 if [[ $LOCAL_RUN != "true" ]]; then
-    # give user permissions
-    sudo chown $(whoami):$(whoami) $ROS_WORKSPACE
+    # give user permissions, required for GitHub Actions
+    sudo chown -R $(whoami):$(whoami) $ROS_WORKSPACE
 
     source /opt/ros/${ROS_DISTRO}/setup.bash
     ./scripts/setup.sh
