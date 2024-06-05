@@ -55,7 +55,7 @@ fi
 ## HELPER VARIABLES AND FUNCTIONS ---
 
 # get absolute path to workspace root in host OS
-SCRIPT_DIR="$(dirname "$(readlink --canonicalize "$0")")"
+SCRIPT_DIR="$(dirname "$(realpath "$0")")"
 HOST_WORKSPACE_ROOT="$SCRIPT_DIR/../.."
 
 # common arguments for docker compose commmands

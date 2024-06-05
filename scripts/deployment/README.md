@@ -16,7 +16,8 @@ Usage:
 
 ### `start_containers.sh`
 
-Runs our Docker Compose files.
+Runs our Docker Compose files. You may have to install commands like `wget`.
+Would recommend running this script in its own clone of sailbot_workspace (not the one you open in VS Code).
 
 Usage:
 
