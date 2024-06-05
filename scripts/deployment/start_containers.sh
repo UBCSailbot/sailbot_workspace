@@ -51,6 +51,7 @@ if [ "$OPTIND" -le "$#" ]; then
     usage
 fi
 
+
 ## HELPER VARIABLES AND FUNCTIONS ---
 
 # get absolute path to workspace root in host OS
@@ -64,25 +65,25 @@ DOCKER_COMPOSE_ARGS="docker compose --project-name $PROJECT_NAME --file .devcont
 
 # function to pull the first FROM image from a specified Dockerfile
 pull_from_image() {
-    # Check if Dockerfile path was provided as an argument
+    # check if Dockerfile path was provided as an argument
     if [[ -z "$1" ]]; then
         echo "No Dockerfile path specified."
         return 1  # Return with error status
     fi
 
-    # The path to the Dockerfile is the first argument to the function
+    # path to the Dockerfile is the first argument to the function
     local dockerfile_path="$1"
 
-    # Extract the image from the Dockerfile
+    # extract the image from the Dockerfile
     local image=$(grep '^FROM' "$dockerfile_path" | head -n 1 | awk '{print $2}')
 
-    # Check if the image variable is not empty
+    # check if the image variable is not empty
     if [[ -n "$image" ]]; then
         echo "Pulling Docker image: $image"
         docker pull "$image"
     else
         echo "No image found in Dockerfile at $dockerfile_path."
-        return 1  # Return with error status
+        return 1  # return with error status
     fi
 }
 
@@ -93,7 +94,7 @@ pull_from_image() {
 cd $HOST_WORKSPACE_ROOT
 
 # pull images if connected to the internet
-if wget -q --spider --timeout=1 http://google.com; then
+if wget --quiet --spider --timeout=1 http://google.com; then
     pull_from_image .devcontainer/Dockerfile
     pull_from_image .devcontainer/website/website.Dockerfile
     docker pull mongo:$MONGO_TAG
@@ -106,7 +107,7 @@ fi
 
 # remove volumes
 if [[ "$RESET" = true ]]; then
-    docker volume ls -q | grep "^${PROJECT_NAME}_" | xargs -r docker volume rm
+    docker volume ls --quiet | grep "^${PROJECT_NAME}_" | xargs --no-run-if-empty docker volume rm
 fi
 
 # start containers
@@ -116,12 +117,7 @@ MONGO_TAG=$MONGO_TAG $DOCKER_COMPOSE_ARGS up --build --detach --pull never
 if [[ "$INTERACTIVE" = true ]]; then
     $DOCKER_COMPOSE_ARGS exec --interactive --tty sailbot-workspace /bin/bash
 else
-    $DOCKER_COMPOSE_ARGS exec --no-TTY sailbot-workspace /bin/bash -c "\
-    source /opt/ros/\$ROS_DISTRO/setup.bash && \
-    ./scripts/setup.sh && \
-    ./scripts/build.sh && \
-    source ./install/local_setup.bash && \
-    ros2 launch src/global_launch/main_launch.py"
+    $DOCKER_COMPOSE_ARGS exec --no-TTY sailbot-workspace /bin/bash -c "./scripts/run_software.sh"
 fi
 
 # stop containers
