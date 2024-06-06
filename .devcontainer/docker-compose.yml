@@ -5,6 +5,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    user: ros
     ports:
       # website
       - "3005:3005"
