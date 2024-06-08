@@ -29,18 +29,13 @@ namespace msg    = custom_interfaces::msg;
  *
  */
 enum class CanId : canid_t {
-    PWR_MODE       = 0x00,
-    MAIN_HEADING   = 0x01,
-    MAIN_TR_TAB    = 0x02,
-    BMS_DATA_FRAME = 0x30,
-    SAIL_WIND      = 0x40,
-    DATA_WIND      = 0x41,
-
-    //TODO: Restructure the battery CAN frames and add PWR_MODE, MAIN_HEADING, MAIN_TR_TAB
-    //Sail_cmd has changed and what to do about rudder commands?
-    SAIL_AIS = 0x60,
-    // SAIL_WSM_CMD_FRAME_1   = 0x61,
-    // SAIL_WSM_DATA_FRAME_1  = 0x63,
+    PWR_MODE             = 0x00,
+    MAIN_HEADING         = 0x01,
+    MAIN_TR_TAB          = 0x02,
+    BMS_DATA_FRAME       = 0x30,
+    SAIL_WIND            = 0x40,
+    DATA_WIND            = 0x41,
+    SAIL_AIS             = 0x60,
     PATH_GPS_DATA_FRAME  = 0x70,
     GENERIC_SENSOR_START = 0x100,
     GENERIC_SENSOR_END   = 0x1FF
@@ -56,8 +51,8 @@ static const std::map<CanId, std::string> CAN_DESC{
   {CanId::MAIN_TR_TAB, "MAIN_TR_TAB (Trim tab for sail)"},
   {CanId::BMS_DATA_FRAME, "BMS_P_DATA_FRAME_1 (Battery 1 data)"},
   {CanId::SAIL_AIS, "SAIL_AIS (AIS ship data)"},
-  //   {CanId::SAIL_WSM_CMD_FRAME_1, "SAIL_WSM_CMD_FRAME_1 (Main sail command)"},
-  //   {CanId::SAIL_WSM_DATA_FRAME_1, "SAIL_WSM_DATA_FRAME_1 (Main sail data)"},
+  {CanId::MAIN_TR_TAB, "MAIN_TR_TAB (Main sail command)"},
+  {CanId::MAIN_HEADING, "MAIN_HEADING (Main rudder command)"},
   {CanId::SAIL_WIND, "SAIL_WIND (Mast wind sensor)"},
   {CanId::PATH_GPS_DATA_FRAME, "PATH_GPS_DATA_FRAME (GPS latitude)"},
   {CanId::DATA_WIND, "DATA_WIND (Hull wind sensor)"}};
@@ -213,7 +208,7 @@ private:
 class SailCmd final : public BaseFrame
 {
 public:
-    static constexpr std::array<CanId, 2> SAIL_CMD_IDS   = {CanId::SAIL_WSM_CMD_FRAME_1, CanId::SAIL_WSM_DATA_FRAME_1};
+    static constexpr std::array<CanId, 1> SAIL_CMD_IDS   = {CanId::MAIN_TR_TAB};
     static constexpr uint8_t              CAN_BYTE_DLEN_ = 2;
     static constexpr uint8_t              BYTE_OFF_ANGLE = 0;
 
@@ -277,11 +272,10 @@ private:
 class WindSensor final : public BaseFrame
 {
 public:
-    static constexpr std::array<CanId, 2> WIND_SENSOR_IDS = {
-      CanId::SAIL_WIND_DATA_FRAME_1, CanId::PATH_WIND_DATA_FRAME};
-    static constexpr uint8_t CAN_BYTE_DLEN_ = 4;
-    static constexpr uint8_t BYTE_OFF_ANGLE = 0;
-    static constexpr uint8_t BYTE_OFF_SPEED = 2;
+    static constexpr std::array<CanId, 2> WIND_SENSOR_IDS = {CanId::SAIL_WIND, CanId::DATA_WIND};
+    static constexpr uint8_t              CAN_BYTE_DLEN_  = 4;
+    static constexpr uint8_t              BYTE_OFF_ANGLE  = 0;
+    static constexpr uint8_t              BYTE_OFF_SPEED  = 2;
 
     /**
      * @brief Explicitly deleted no-argument constructor
@@ -353,7 +347,7 @@ private:
 class GPS final : public BaseFrame
 {
 public:
-    static constexpr std::array<CanId, 1> GPS_IDS          = {CanId::PATH_GPS_DATA_FRAME_1};
+    static constexpr std::array<CanId, 1> GPS_IDS          = {CanId::PATH_GPS_DATA_FRAME};
     static constexpr uint8_t              CAN_BYTE_DLEN_   = 24;
     static constexpr uint32_t             BYTE_OFF_LAT     = 0;
     static constexpr uint32_t             BYTE_OFF_LON     = 4;
