@@ -95,7 +95,11 @@ TEST_F(TestRemoteTransceiver, TestGet)
  * @param params Params structure
  * @return formatted request body
  */
-std::string createPostBody(remote_transceiver::MOMsgParams::Params params)
+
+std::string createPostBody(remote_transceiver::MOMsgParams::Params params);
+
+std::string createSensorPostBody(remote_transceiver::MOMsgParams::Params params)
+
 {
     std::ostringstream s;
     s << "imei=" << params.imei_ << "&serial=" << params.serial_ << "&momsn=" << params.momsn_
@@ -118,7 +122,7 @@ TEST_F(TestRemoteTransceiver, TestPostSensors)
     Polaris::Sensors test;
     test.ParseFromString(rand_sensors_str);
     // This query is comprised entirely of arbitrary values exccept for .data_
-    std::string query = createPostBody(
+    std::string query = createSensorPostBody(
       {.imei_          = 0,
        .serial_        = 0,
        .momsn_         = 1,
@@ -168,7 +172,7 @@ TEST_F(TestRemoteTransceiver, TestPostSensorsMult)
         Polaris::Sensors test;
         test.ParseFromString(rand_sensors_str);
         // This query is comprised entirely of arbitrary values exccept for .data_
-        queries[i] = createPostBody(
+        queries[i] = createSensorPostBody(
           {.imei_          = 0,
            .serial_        = 0,
            .momsn_         = 1,
