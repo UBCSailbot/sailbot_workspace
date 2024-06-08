@@ -41,17 +41,14 @@ TEST_F(TestSailbotDB, TestStoreSensors)
     EXPECT_TRUE(g_test_db.verifyDBWrite(expected_sensors, expected_info));
 }
 
-/**
- * @brief Write random global path data to the TestDB - read and verify said data
- */
 TEST_F(TestSailbotDB, TestStoreGlobalPath)
 {
     SCOPED_TRACE("Seed: " + std::to_string(g_rand_seed));  // Print seed on any failure
-    auto [global_path_data, global_path_timestamp] = g_test_db.genRandGlobalData(UtilDB::getTimestamp());
+    auto [global_path_data, global_path_timestamp] = g_test_db.genGlobalData(UtilDB::getTimestamp());
     ASSERT_TRUE(g_test_db.storeNewGlobalPath(global_path_data, global_path_timestamp));
 
-    // std::array<GlobalPath, 1>  expected_global_path_data = {global_path_data};
-    // std::array<std::string, 1> expected_global_timestamp = {global_path_timestamp};
+    std::array<GlobalPath, 1>  expected_global_path_data      = {global_path_data};
+    std::array<std::string, 1> expected_global_path_timestamp = {global_path_timestamp};
 
-    //EXPECT_TRUE(g_test_db.)
+    EXPECT_TRUE(g_test_db.verifyDBWrite_GlobalPath(expected_global_path_data, expected_global_path_timestamp));
 }
