@@ -52,3 +52,5 @@ TEST_F(TestSailbotDB, TestStoreGlobalPath)
 
     EXPECT_TRUE(g_test_db.verifyDBWrite_GlobalPath(expected_global_path_data, expected_global_path_timestamp));
 }
+
+//testing
