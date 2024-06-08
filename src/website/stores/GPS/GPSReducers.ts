@@ -11,6 +11,7 @@ export default class GPSReducer extends BaseReducer {
         longitude: -123.27376619978901,
         speed: 0,
         heading: 0,
+        timestamp: new Date().toISOString(),
       },
     ],
   };

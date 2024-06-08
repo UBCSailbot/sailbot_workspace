@@ -43,8 +43,6 @@ theme:
 
 # Plugins
 plugins:
-  - git-revision-date-localized:
-      timezone: America/Vancouver
   - search:
       separator: '[\s\-,:!=\[\]()"/]+|(?!\b)(?=[A-Z][a-z])|\.(?!\d)|&[lg]t;'
   - social:
@@ -58,6 +56,8 @@ extra:
       link: https://www.ubcsailbot.org/
     - icon: material/instagram
       link: https://www.instagram.com/ubcsailbot/
+    - icon: material/facebook
+      link: https://www.facebook.com/ubcsailbot
     - icon: material/linkedin
       link: https://www.linkedin.com/company/ubc-sailbot/
     - icon: material/github
@@ -127,27 +127,29 @@ nav:
     - Overview: current/overview.md
     - Sailbot Workspace:
       - Overview: current/sailbot_workspace/overview.md
-      - Setup: current/sailbot_workspace/setup.md
-      - Parameters: current/sailbot_workspace/parameters.md
-      - Workflow: current/sailbot_workspace/workflow.md
-      - How-To's: current/sailbot_workspace/how_to.md
-      - Deployment: current/sailbot_workspace/deployment.md
-      - Images: current/sailbot_workspace/docker_images.md
-      - Launch Files: current/sailbot_workspace/launch_files.md
+      - Usage:
+        - Setup: current/sailbot_workspace/usage/setup.md
+        - Workflow: current/sailbot_workspace/usage/workflow.md
+        - How-To's: current/sailbot_workspace/usage/how_to.md
+        - Help: current/sailbot_workspace/usage/help.md
+      - Reference:
+        - Deployment: current/sailbot_workspace/reference/deployment.md
+        - Docs Site: current/sailbot_workspace/reference/docs_site.md
+        - Images: current/sailbot_workspace/reference/docker_images.md
+        - Launch Files: current/sailbot_workspace/reference/launch_files.md
+        - Notebooks: current/sailbot_workspace/reference/notebooks.md
+        - Parameters: current/sailbot_workspace/reference/parameters.md
+        - Scripts: current/sailbot_workspace/scripts.md
     - Boat Simulator:
       - Overview: current/boat_simulator/overview.md
     - Controller:
       - Overview: current/controller/overview.md
     - Custom Interfaces:
       - Overview: current/custom_interfaces/overview.md
-    - Docs:
-      - Overview: current/docs/overview.md
     - Local Pathfinding:
       - Overview: current/local_pathfinding/overview.md
     - Network Systems:
       - Overview: current/network_systems/overview.md
-    - Notebooks:
-      - Overview: current/notebooks/overview.md
     - Website:
       - Overview: current/website/overview.md
   - Reference:
@@ -155,12 +157,16 @@ nav:
       - Getting Started: reference/cpp/start.md
       - Differences: reference/cpp/differences.md
       - Tools: reference/cpp/tools.md
+    - Docker: reference/docker.md
     - GitHub:
       - Development Workflow:
         - Overview: reference/github/workflow/overview.md
         - Creating Issues: reference/github/workflow/issues.md
         - Developing on Branches: reference/github/workflow/branches.md
         - Pull Requests: reference/github/workflow/pr.md
+      - Advanced Git: reference/github/advanced_git.md
+      - GitHub Actions: reference/github/github_actions.md
+    - Linux Commands: reference/linux_commands.md
     - Markdown: reference/markdown.md
     - Python:
       - Getting Started: reference/python/start.md
@@ -174,3 +180,4 @@ nav:
       - Points of Sail: reference/sailing/points_of_sail.md
       - AIS Terms: reference/sailing/ais_terms.md
       - Miscellaneous: reference/sailing/miscellaneous.md
+  - About Us: about_us.md

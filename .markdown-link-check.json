@@ -17,6 +17,9 @@
         },
         {
             "pattern": "^https://hub.docker.com*"
+        },
+        {
+            "pattern": "^https://linuxize.com*"
         }
     ]
 }

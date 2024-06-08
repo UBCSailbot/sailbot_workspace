@@ -1,2 +1,4 @@
-/.github/CODEOWNERS
-/src/virtual_iridium
+.github/CODEOWNERS
+.github/pull_request_template.md
+.github/ISSUE_TEMPLATE/
+src/virtual_iridium/

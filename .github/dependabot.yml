@@ -9,6 +9,12 @@ updates:
     directory: "/" # Location of package manifests
     schedule:
       interval: "weekly"
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    # Disable all pull requests for npm dependencies
+    open-pull-requests-limit: 0
     # # Create a group of dependencies to be updated together in one pull request
     # groups:
     #    # Specify a name for the group, which will be used in pull request titles

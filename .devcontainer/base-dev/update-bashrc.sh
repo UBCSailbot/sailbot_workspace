@@ -18,5 +18,5 @@ echo "if [ -f $ROS_WORKSPACE/install/local_setup.bash ]" >> $HOME/.bashrc
 echo "then" >> $HOME/.bashrc
 echo "    source $ROS_WORKSPACE/install/local_setup.bash" >> $HOME/.bashrc
 echo "else" >> $HOME/.bashrc
-echo "    echo \"WARNING: Can't find the ROS workspace overlay: build then run 'source $ROS_WORKSPACE/install/local_setup.bash'\"" >> $HOME/.bashrc
+echo "    echo -e \"\\\e[1;33mWARNING: Can't find the ROS workspace overlay: build then run 'source $ROS_WORKSPACE/install/local_setup.bash'\\\e[0m\"" >> $HOME/.bashrc
 echo "fi" >> $HOME/.bashrc
