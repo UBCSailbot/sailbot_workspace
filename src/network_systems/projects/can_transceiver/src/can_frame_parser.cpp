@@ -77,7 +77,11 @@ Battery::Battery(const CanFrame & cf) : Battery(static_cast<CanId>(cf.can_id))
 {
     int32_t raw_volt;
     int32_t raw_curr;
+    int32_t raw_volt;
+    int32_t raw_curr;
 
+    std::memcpy(&raw_volt, cf.data + BYTE_OFF_VOLT, sizeof(int32_t));
+    std::memcpy(&raw_curr, cf.data + BYTE_OFF_CURR, sizeof(int32_t));
     std::memcpy(&raw_volt, cf.data + BYTE_OFF_VOLT, sizeof(int32_t));
     std::memcpy(&raw_curr, cf.data + BYTE_OFF_CURR, sizeof(int32_t));
 
@@ -106,8 +110,12 @@ CanFrame Battery::toLinuxCan() const
 {
     int32_t raw_volt = static_cast<int32_t>(volt_ * 100);  // NOLINT(readability-magic-numbers)
     int32_t raw_curr = static_cast<int32_t>(curr_ * 100);  // NOLINT(readability-magic-numbers)
+    int32_t raw_volt = static_cast<int32_t>(volt_ * 100);  // NOLINT(readability-magic-numbers)
+    int32_t raw_curr = static_cast<int32_t>(curr_ * 100);  // NOLINT(readability-magic-numbers)
 
     CanFrame cf = BaseFrame::toLinuxCan();
+    std::memcpy(cf.data + BYTE_OFF_VOLT, &raw_volt, sizeof(int32_t));
+    std::memcpy(cf.data + BYTE_OFF_CURR, &raw_curr, sizeof(int32_t));
     std::memcpy(cf.data + BYTE_OFF_VOLT, &raw_volt, sizeof(int32_t));
     std::memcpy(cf.data + BYTE_OFF_CURR, &raw_curr, sizeof(int32_t));
 
