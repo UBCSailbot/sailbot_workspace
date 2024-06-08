@@ -70,7 +70,6 @@ public:
               this->create_publisher<msg::WindSensor>(ros_topics::FILTERED_WIND_SENSOR, QUEUE_SIZE);
             generic_sensors_pub_ = this->create_publisher<msg::GenericSensors>(ros_topics::DATA_SENSORS, QUEUE_SIZE);
 
-            //TODO: change frames to match new frames
             can_trns_->registerCanCbs(
               {std::make_pair(
                  CanId::BMS_P_DATA_FRAME_1,

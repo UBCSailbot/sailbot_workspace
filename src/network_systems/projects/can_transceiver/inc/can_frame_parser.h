@@ -29,21 +29,17 @@ namespace msg    = custom_interfaces::msg;
  *
  */
 enum class CanId : canid_t {
-    PWR_MODE       = 0x00,
-    MAIN_HEADING   = 0x01,
-    MAIN_TR_TAB    = 0x02,
-    BMS_DATA_FRAME = 0x30,
-    SAIL_WIND      = 0x40,
-    DATA_WIND      = 0x41,
-
-    //TODO: Restructure the battery CAN frames and add PWR_MODE, MAIN_HEADING, MAIN_TR_TAB
-    //Sail_cmd has changed and what to do about rudder commands?
-    SAIL_AIS = 0x60,
-    // SAIL_WSM_CMD_FRAME_1   = 0x61,
-    // SAIL_WSM_DATA_FRAME_1  = 0x63,
-    PATH_GPS_DATA_FRAME  = 0x70,
-    GENERIC_SENSOR_START = 0x100,
-    GENERIC_SENSOR_END   = 0x1FF
+    RESERVED               = 0x00,
+    BMS_P_DATA_FRAME_1     = 0x31,
+    BMS_P_DATA_FRAME_2     = 0x32,
+    SAIL_AIS               = 0x60,
+    SAIL_WSM_CMD_FRAME_1   = 0x61,
+    SAIL_WSM_DATA_FRAME_1  = 0x63,
+    SAIL_WIND_DATA_FRAME_1 = 0x65,
+    PATH_GPS_DATA_FRAME_1  = 0x80,
+    PATH_WIND_DATA_FRAME   = 0x84,
+    GENERIC_SENSOR_START   = 0x100,
+    GENERIC_SENSOR_END     = 0x1FF
 };
 
 /**
@@ -51,16 +47,15 @@ enum class CanId : canid_t {
  *
  */
 static const std::map<CanId, std::string> CAN_DESC{
-  {CanId::PWR_MODE, "PWR_MODE (Power Mode)"},
-  {CanId::MAIN_HEADING, "MAIN_HEADING (Main heading for rudder)"},
-  {CanId::MAIN_TR_TAB, "MAIN_TR_TAB (Trim tab for sail)"},
-  {CanId::BMS_DATA_FRAME, "BMS_P_DATA_FRAME_1 (Battery 1 data)"},
+  {CanId::RESERVED, "RESERVED"},
+  {CanId::BMS_P_DATA_FRAME_1, "BMS_P_DATA_FRAME_1 (Battery 1 data)"},
+  {CanId::BMS_P_DATA_FRAME_2, "BMS_P_DATA_FRAME_2 (Battery 2 data)"},
   {CanId::SAIL_AIS, "SAIL_AIS (AIS ship data)"},
-  //   {CanId::SAIL_WSM_CMD_FRAME_1, "SAIL_WSM_CMD_FRAME_1 (Main sail command)"},
-  //   {CanId::SAIL_WSM_DATA_FRAME_1, "SAIL_WSM_DATA_FRAME_1 (Main sail data)"},
-  {CanId::SAIL_WIND, "SAIL_WIND (Mast wind sensor)"},
-  {CanId::PATH_GPS_DATA_FRAME, "PATH_GPS_DATA_FRAME (GPS latitude)"},
-  {CanId::DATA_WIND, "DATA_WIND (Hull wind sensor)"}};
+  {CanId::SAIL_WSM_CMD_FRAME_1, "SAIL_WSM_CMD_FRAME_1 (Main sail command)"},
+  {CanId::SAIL_WSM_DATA_FRAME_1, "SAIL_WSM_DATA_FRAME_1 (Main sail data)"},
+  {CanId::SAIL_WIND_DATA_FRAME_1, "SAIL_WIND_DATA_FRAME_1 (Mast wind sensor)"},
+  {CanId::PATH_GPS_DATA_FRAME_1, "PATH_GPS_DATA_FRAME_1 (GPS latitude)"},
+  {CanId::PATH_WIND_DATA_FRAME, "PATH_WIND_DATA_FRAME (Hull wind sensor)"}};
 
 /**
  * @brief Custom exception for when an attempt is made to construct a CAN object with a mismatched ID
@@ -145,11 +140,13 @@ protected:
 class Battery final : public BaseFrame
 {
 public:
-    // Valid CanIds that a Battery object can have. There used to be two, but now there is only one.
-    static constexpr std::array<CanId, 1> BATTERY_IDS    = {CanId::BMS_DATA_FRAME};
-    static constexpr uint8_t              CAN_BYTE_DLEN_ = 8;
-    static constexpr uint8_t              BYTE_OFF_VOLT  = 0;
-    static constexpr uint8_t              BYTE_OFF_CURR  = 4;
+    // Valid CanIds that a Battery object can have
+    static constexpr std::array<CanId, 2> BATTERY_IDS       = {CanId::BMS_P_DATA_FRAME_1, CanId::BMS_P_DATA_FRAME_2};
+    static constexpr uint8_t              CAN_BYTE_DLEN_    = 8;
+    static constexpr uint8_t              BYTE_OFF_VOLT     = 0;
+    static constexpr uint8_t              BYTE_OFF_CURR     = 2;
+    static constexpr uint8_t              BYTE_OFF_MAX_VOLT = 4;
+    static constexpr uint8_t              BYTE_OFF_MIN_VOLT = 6;
 
     /**
      * @brief Explicitly deleted no-argument constructor
@@ -187,6 +184,15 @@ public:
      */
     std::string debugStr() const override;
 
+    /**
+     * @brief Factory method to convert the index of a battery in the custom_interfaces ROS representation
+     *        into a CanId if valid.
+     *
+     * @param bat_idx idx of the battery in a custom_interfaces::msg::Batteries array
+     * @return CanId if valid, std::nullopt if invalid
+     */
+    static std::optional<CanId> rosIdxToCanId(size_t bat_idx);
+
 private:
     /**
      * @brief Private helper constructor for Battery objects
@@ -202,8 +208,10 @@ private:
     void checkBounds() const;
 
     // Note: Each BMS battery is comprised of multiple battery cells
-    float volt_;  // Average voltage of cells in the battery
-    float curr_;  // Current - positive means charging and negative means discharging (powering the boat)
+    float volt_;      // Average voltage of cells in the battery
+    float curr_;      // Current - positive means charging and negative means discharging (powering the boat)
+    float volt_max_;  // Maximum voltage of cells in the battery pack (unused)
+    float volt_min_;  // Minimum voltage of cells in the battery pack (unused)
 };
 
 /**
@@ -271,7 +279,7 @@ private:
 };
 
 /**
- * @brief A wind class derived from the BaseFrame. Represents wind data.
+ * @brief //TODO: Add description
  *
  */
 class WindSensor final : public BaseFrame
@@ -428,6 +436,7 @@ private:
     float sec_;
     float min_;
     float hour_;
+    //float reserved;  // Unused
     float heading_;
     float speed_;
 };
@@ -537,13 +546,5 @@ private:
     uint32_t ship_id_;
     uint8_t  idx_;
 };
-
-//TODO: Create PWR_MODE frame
-
-//TODO: Create MAIN_HEADING frame
-
-//TODO: Create MAIN_TR_TAB frame
-
-//TODO: Create RUDDER_DATA_FRAME frame
 
 }  // namespace CAN_FP

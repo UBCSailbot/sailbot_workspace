@@ -75,20 +75,28 @@ CanFrame BaseFrame::toLinuxCan() const { return CanFrame{.can_id = static_cast<c
 
 Battery::Battery(const CanFrame & cf) : Battery(static_cast<CanId>(cf.can_id))
 {
-    int32_t raw_volt;
-    int32_t raw_curr;
+    int16_t raw_volt;
+    int16_t raw_curr;
+    int16_t raw_max_volt;
+    int16_t raw_min_volt;
 
-    std::memcpy(&raw_volt, cf.data + BYTE_OFF_VOLT, sizeof(int32_t));
-    std::memcpy(&raw_curr, cf.data + BYTE_OFF_CURR, sizeof(int32_t));
+    std::memcpy(&raw_volt, cf.data + BYTE_OFF_VOLT, sizeof(int16_t));
+    std::memcpy(&raw_curr, cf.data + BYTE_OFF_CURR, sizeof(int16_t));
+    std::memcpy(&raw_max_volt, cf.data + BYTE_OFF_MAX_VOLT, sizeof(int16_t));
+    std::memcpy(&raw_min_volt, cf.data + BYTE_OFF_MIN_VOLT, sizeof(int16_t));
 
     volt_ = static_cast<float>(raw_volt) / 100;  // NOLINT(readability-magic-numbers)
     curr_ = static_cast<float>(raw_curr) / 100;  // NOLINT(readability-magic-numbers)
+
+    // TODO(hhenry01): Max and min are dodgy... it doesn't make sense to not divide them by 100 - confirm with ELEC
+    volt_max_ = static_cast<float>(raw_max_volt);
+    volt_min_ = static_cast<float>(raw_min_volt);
 
     checkBounds();
 }
 
 Battery::Battery(msg::HelperBattery ros_bat, CanId id)
-: BaseFrame(id, CAN_BYTE_DLEN_), volt_(ros_bat.voltage), curr_(ros_bat.current)
+: BaseFrame(id, CAN_BYTE_DLEN_), volt_(ros_bat.voltage), curr_(ros_bat.current), volt_max_(0.0), volt_min_(0.0)
 {
     checkBounds();
 }
@@ -104,12 +112,17 @@ msg::HelperBattery Battery::toRosMsg() const
 
 CanFrame Battery::toLinuxCan() const
 {
-    int32_t raw_volt = static_cast<int32_t>(volt_ * 100);  // NOLINT(readability-magic-numbers)
-    int32_t raw_curr = static_cast<int32_t>(curr_ * 100);  // NOLINT(readability-magic-numbers)
+    int16_t raw_volt = static_cast<int16_t>(volt_ * 100);  // NOLINT(readability-magic-numbers)
+    int16_t raw_curr = static_cast<int16_t>(curr_ * 100);  // NOLINT(readability-magic-numbers)
+    // TODO(hhenry01): Max and min are dodgy... it doesn't make sense to not multiply them by 100 - confirm with ELEC
+    int16_t raw_max_volt = static_cast<int16_t>(volt_max_);
+    int16_t raw_min_volt = static_cast<int16_t>(volt_max_);
 
     CanFrame cf = BaseFrame::toLinuxCan();
-    std::memcpy(cf.data + BYTE_OFF_VOLT, &raw_volt, sizeof(int32_t));
-    std::memcpy(cf.data + BYTE_OFF_CURR, &raw_curr, sizeof(int32_t));
+    std::memcpy(cf.data + BYTE_OFF_VOLT, &raw_volt, sizeof(int16_t));
+    std::memcpy(cf.data + BYTE_OFF_CURR, &raw_curr, sizeof(int16_t));
+    std::memcpy(cf.data + BYTE_OFF_MAX_VOLT, &raw_max_volt, sizeof(int16_t));
+    std::memcpy(cf.data + BYTE_OFF_MIN_VOLT, &raw_min_volt, sizeof(int16_t));
 
     return cf;
 }
@@ -119,8 +132,18 @@ std::string Battery::debugStr() const
     std::stringstream ss;
     ss << BaseFrame::debugStr() << "\n"
        << "Voltage (V): " << volt_ << "\n"
-       << "Current (A): " << curr_ << "\n";
+       << "Current (A): " << curr_ << "\n"
+       << "Max voltage (V): " << volt_max_ << "\n"
+       << "Min voltage (V): " << volt_min_;
     return ss.str();
+}
+
+std::optional<CanId> Battery::rosIdxToCanId(size_t bat_idx)
+{
+    if (bat_idx < BATTERY_IDS.size()) {
+        return BATTERY_IDS[bat_idx];
+    }
+    return std::nullopt;
 }
 
 // Battery public END
