@@ -5,6 +5,7 @@ export type GenericSensor = {
 
 export type GenericSensors = {
   genericSensors: GenericSensor[];
+  timestamp: string;
 };
 
 export type GenericSensorsState = {

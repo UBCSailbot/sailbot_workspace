@@ -20,7 +20,15 @@ import {
 import GraphsActions from '@/stores/Graphs/GraphsActions';
 import { GraphsState } from '@/stores/Graphs/GraphsTypes';
 
-const SortableGraph = ({ id, children, order, setOrder }) => {
+interface SortableGraphProps {
+  id: any;
+  children: any;
+  key: any;
+  order: any;
+  setOrder: any;
+}
+
+const SortableGraph = ({ id, children, order, setOrder }: SortableGraphProps) => {
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({
       id,
@@ -59,7 +67,7 @@ const DropdownMenu = ({ rearrangeGraphs, graphsOrder }: DropDownMenuProps) => {
     }
   }, [graphsOrder]);
 
-  const onDragEnd = ({ active, over }) => {
+  const onDragEnd = ({ active, over }: any) => {
     if (active.id === over.id) {
       return;
     }
@@ -81,7 +89,7 @@ const DropdownMenu = ({ rearrangeGraphs, graphsOrder }: DropDownMenuProps) => {
         modifiers={[restrictToVerticalAxis, restrictToWindowEdges]}
       >
         <SortableContext items={order} strategy={verticalListSortingStrategy}>
-          {order.map((id) => (
+          {order.map((id: any) => (
             <SortableGraph key={id} id={id} order={order} setOrder={setOrder}>
               {id}
               <div className={styles.dragDropIndicator}>::</div>
@@ -93,7 +101,7 @@ const DropdownMenu = ({ rearrangeGraphs, graphsOrder }: DropDownMenuProps) => {
   );
 };
 
-const mapStateToProps = (state) => ({
+const mapStateToProps = (state: any) => ({
   graphsOrder: state.graphs,
 });
 

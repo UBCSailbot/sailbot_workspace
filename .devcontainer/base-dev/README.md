@@ -7,7 +7,7 @@
     - By default building is done with half the number of jobs as logical processors (`HALF_NPROC`) to avoid out of
       memory crashes, but if the build machine has a lot of memory you can set `-j $NPROC` to minimize build times
 - The base image builds off the pre-base image and adds additional dependencies
-    - This image is used for [deployment](../deployment/)
+    - This image is used for [deployment](../../scripts/deployment/)
 - The local-base image builds off the base image and installs essential development-only dependencies
 - The dev image builds off the local-base image and:
     - Installs software that is nice to have for development

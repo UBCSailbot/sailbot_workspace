@@ -5,31 +5,31 @@
 # the repo. Unless a later match takes precedence,
 # these owners will be requested for
 # review when someone opens a pull request.
-* @patrick-5546
+* @SPDonaghy
 
 # boat_simulator
-/notebooks/boat_simulator @DFriend01 @eomielan
-/src/boat_simulator @DFriend01 @eomielan
+/notebooks/boat_simulator @eomielan
+/src/boat_simulator @eomielan
 
 # custom_interfaces
-/src/custom_interfaces @UBCSailbot/soft-leads
+/src/custom_interfaces @UBCSailbot/soft-admin
 
 # controller
-/notebooks/controller @DFriend01
-/src/controller @DFriend01
+/notebooks/controller @eomielan
+/src/controller @eomielan
 
 # diagnostics
 /src/diagnostics @samdai01
 
 # docs
-/docs/ @DFriend01
+/docs/ @jamenkaye
 
 # local_pathfinding
-/notebooks/local_pathfinding @jamenkaye
-/src/local_pathfinding @jamenkaye
+/notebooks/local_pathfinding @jamenkaye @FireBoyAJ24
+/src/local_pathfinding @jamenkaye @FireBoyAJ24
 
 # network_systems
-/src/network_systems @hhenry01
+/src/network_systems @samdai01
 
 # website
-/src/website @jahn18
+/src/website @JordanChen123

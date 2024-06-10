@@ -1,9 +1,9 @@
 export interface GPS {
-  timestamp: any;
   latitude: number;
   longitude: number;
   speed: number;
   heading: number;
+  timestamp: string;
 }
 export interface GPSState {
   data: GPS[];
