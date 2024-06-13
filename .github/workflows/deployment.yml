@@ -38,3 +38,4 @@ jobs:
             touch src/website/.env.local # Adds a local environment file to VM to override env vars in .env.production  
             echo NEXT_PUBLIC_SERVER_HOST=http://${{ secrets.SSH_HOST }} >> src/website/.env.local
             docker compose -f .devcontainer/docker-compose.yml -f .devcontainer/website/docker-compose.website.prod.yml up --force-recreate -d --build --remove-orphans
+            
