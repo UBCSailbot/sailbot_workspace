@@ -18,15 +18,22 @@ jobs:
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GH_TOKEN }}
+          
+      - name: Debug - List directory structure
+        run: |
+          ls -R
+
       - name: Install dependencies and run lint checks
         run: |
           cd sailbot_workspace/src/website
           npm ci
           npm run lint
+          
       - name: Build website
         run: |
           cd sailbot_workspace/src/website
           npm run build
+          
       - name: Update docker image
         uses: appleboy/ssh-action@v1.0.3
         with:
