@@ -150,11 +150,11 @@ void Battery::checkBounds() const
 
 SailCmd::SailCmd(const CanFrame & cf) : SailCmd(static_cast<CanId>(cf.can_id))
 {
-    int16_t raw_angle;
+    uint32_t raw_angle;
 
-    std::memcpy(&raw_angle, cf.data + BYTE_OFF_ANGLE, sizeof(int16_t));
+    std::memcpy(&raw_angle, cf.data + BYTE_OFF_ANGLE, sizeof(uint32_t));
 
-    angle_ = static_cast<float>(raw_angle);
+    angle_ = static_cast<float>(raw_angle) / 1000;  //NOLINT(readability-magic-numbers)
 
     checkBounds();
 }
@@ -174,10 +174,10 @@ msg::SailCmd SailCmd::toRosMsg() const
 
 CanFrame SailCmd::toLinuxCan() const
 {
-    int16_t raw_angle = static_cast<int16_t>(angle_);
+    uint32_t raw_angle = static_cast<uint32_t>(angle_) * 1000;  //NOLINT(readability-magic-numbers)
 
     CanFrame cf = BaseFrame::toLinuxCan();
-    std::memcpy(cf.data + BYTE_OFF_ANGLE, &raw_angle, sizeof(int16_t));
+    std::memcpy(cf.data + BYTE_OFF_ANGLE, &raw_angle, sizeof(uint32_t));
 
     return cf;
 }
@@ -670,66 +670,129 @@ void PwrMode::checkBounds() const
 // PwrMode private END
 // PwrMode END
 
-// MAIN_HEADING START
-// MAIN_HEADING public START
+// DesiredHeading START
+// DesiredHeading public START
 
-RudderCmd::RudderCmd(const CanFrame & cf) : RudderCmd(static_cast<CanId>(cf.can_id))
+DesiredHeading::DesiredHeading(const CanFrame & cf) : DesiredHeading(static_cast<CanId>(cf.can_id))
 {
-    int16_t raw_heading;
+    uint32_t raw_heading;
 
-    std::memcpy(&raw_heading, cf.data + BYTE_OFF_HEADING, sizeof(int16_t));
+    std::memcpy(&raw_heading, cf.data + BYTE_OFF_HEADING, sizeof(uint32_t));
 
-    heading_ = static_cast<float>();
+    heading_ = static_cast<float>(raw_heading) / 1000;  //NOLINT(readability-magic-numbers)
 
     checkBounds();
 }
 
-SailCmd::SailCmd(msg::SailCmd ros_sail_cmd, CanId id)
-: BaseFrame(id, CAN_BYTE_DLEN_), angle_(ros_sail_cmd.trim_tab_angle_degrees)
+DesiredHeading::DesiredHeading(msg::DesiredHeading ros_desired_heading, CanId id)
+: BaseFrame(id, CAN_BYTE_DLEN_), heading_(ros_desired_heading.heading.heading)
 {
     checkBounds();
 }
 
-msg::SailCmd SailCmd::toRosMsg() const
+msg::DesiredHeading DesiredHeading::toRosMsg() const
 {
-    msg::SailCmd msg;
-    msg.set__trim_tab_angle_degrees(angle_);
+    msg::HelperHeading helper_msg;
+    helper_msg.set__heading(heading_);
+    msg::DesiredHeading msg;
+    msg.set__heading(helper_msg);
     return msg;
 }
 
-CanFrame SailCmd::toLinuxCan() const
+CanFrame DesiredHeading::toLinuxCan() const
 {
-    int16_t raw_angle = static_cast<int16_t>(angle_);
+    uint32_t raw_heading = static_cast<uint32_t>(heading_) * 1000;  //NOLINT(readability-magic-numbers)
 
     CanFrame cf = BaseFrame::toLinuxCan();
-    std::memcpy(cf.data + BYTE_OFF_ANGLE, &raw_angle, sizeof(int16_t));
+    std::memcpy(cf.data + BYTE_OFF_HEADING, &raw_heading, sizeof(uint32_t));
 
     return cf;
 }
 
-std::string SailCmd::debugStr() const
+std::string DesiredHeading::debugStr() const
 {
     std::stringstream ss;
     ss << BaseFrame::debugStr() << "\n"
-       << "Trim tab angle (degrees): " << angle_;
+       << "Desired heading: " << heading_;
     return ss.str();
 }
 
-// SailCmd public END
-// SailCmd private START
+// DesiredHeading public END
+// DesiredHeading private START
 
-SailCmd::SailCmd(CanId id) : BaseFrame(std::span{SAIL_CMD_IDS}, id, CAN_BYTE_DLEN_) {}
+DesiredHeading::DesiredHeading(CanId id) : BaseFrame(std::span{DESIRED_HEADING_IDS}, id, CAN_BYTE_DLEN_) {}
 
-void SailCmd::checkBounds() const
+void DesiredHeading::checkBounds() const
 {
-    auto err = utils::isOutOfBounds<float>(angle_, HEADING_LBND, HEADING_UBND);
+    auto err = utils::isOutOfBounds<float>(heading_, HEADING_LBND, HEADING_UBND);
     if (err) {
         std::string err_msg = err.value();
-        throw std::out_of_range("Sail angle is out of bounds!\n" + debugStr() + "\n" + err_msg);
+        throw std::out_of_range("Desired heading is out of bounds!\n" + debugStr() + "\n" + err_msg);
     }
 }
 
-// SailCmd private END
-// SailCmd END
+// DesiredHeading private END
+// DesiredHeading END
 
+// RudderData START
+// RudderData public START
+
+RudderData::RudderData(const CanFrame & cf) : RudderData(static_cast<CanId>(cf.can_id))
+{
+    uint32_t raw_heading;
+
+    std::memcpy(&raw_heading, cf.data + BYTE_OFF_HEADING, sizeof(uint32_t));
+
+    heading_ = static_cast<float>(raw_heading) / 1000;  //NOLINT(readability-magic-numbers)
+
+    checkBounds();
+}
+
+RudderData::RudderData(msg::HelperHeading ros_rudder_data, CanId id)
+: BaseFrame(id, CAN_BYTE_DLEN_), heading_(ros_rudder_data.heading)
+{
+    checkBounds();
+}
+
+msg::HelperHeading RudderData::toRosMsg() const
+{
+    msg::HelperHeading msg;
+    msg.set__heading(heading_);
+    return msg;
+}
+
+CanFrame RudderData::toLinuxCan() const
+{
+    uint32_t raw_heading = static_cast<uint32_t>(heading_) * 1000;  //NOLINT(readability-magic-numbers)
+
+    CanFrame cf = BaseFrame::toLinuxCan();
+    std::memcpy(cf.data + BYTE_OFF_HEADING, &raw_heading, sizeof(uint32_t));
+
+    return cf;
+}
+
+std::string RudderData::debugStr() const
+{
+    std::stringstream ss;
+    ss << BaseFrame::debugStr() << "\n"
+       << "Rudder heading: " << heading_;
+    return ss.str();
+}
+
+// DesiredHeading public END
+// DesiredHeading private START
+
+RudderData::RudderData(CanId id) : BaseFrame(std::span{RUDDER_DATA_IDS}, id, CAN_BYTE_DLEN_) {}
+
+void RudderData::checkBounds() const
+{
+    auto err = utils::isOutOfBounds<float>(heading_, HEADING_LBND, HEADING_UBND);
+    if (err) {
+        std::string err_msg = err.value();
+        throw std::out_of_range("Rudder heading is out of bounds!\n" + debugStr() + "\n" + err_msg);
+    }
+
+    // DesiredHeading private END
+    // DesiredHeading END
+}
 }  // namespace CAN_FP
