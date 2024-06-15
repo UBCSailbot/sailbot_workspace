@@ -19,6 +19,7 @@
 #include "util_db.h"
 #include "waypoint.pb.h"
 
+using Polaris::GlobalPath;
 using Polaris::Sensors;
 using remote_transceiver::HTTPServer;
 using remote_transceiver::Listener;
@@ -108,11 +109,13 @@ std::string createSensorPostBody(remote_transceiver::MOMsgParams::Params params)
     return s.str();
 }
 
-/**
+std::string createGlobalPathPostBody()
+
+  /**
  * @brief Test that we can POST sensor data to the server
  *
  */
-TEST_F(TestRemoteTransceiver, TestPostSensors)
+  TEST_F(TestRemoteTransceiver, TestPostSensors)
 {
     SCOPED_TRACE("Seed: " + std::to_string(g_rand_seed));  // Print seed on any failure
     auto [rand_sensors, rand_info] = g_test_db.genRandData(UtilDB::getTimestamp());
@@ -144,7 +147,7 @@ TEST_F(TestRemoteTransceiver, TestPostSensors)
 }
 
 /**
- * @brief Test that the server can multiple POST requests at once
+ * @brief Test that the server can multiple POST sensor requests at once
  *
  */
 TEST_F(TestRemoteTransceiver, TestPostSensorsMult)
@@ -202,4 +205,102 @@ TEST_F(TestRemoteTransceiver, TestPostSensorsMult)
 
     // Check that DB is updated properly for all requests
     EXPECT_TRUE(g_test_db.verifyDBWrite(expected_sensors, expected_info));
+}
+
+/**
+ * @brief Test that we can POST global path data to the server
+ *
+ */
+TEST_F(TestRemoteTransceiver, TestGlobalPath)
+{
+    SCOPED_TRACE("Seed: " + std::to_string(g_rand_seed));  // Print seed on any failure
+    auto [rand_global_path, rand_global_path_timestamp] = g_test_db.genGlobalData(UtilDB::getTimestamp());
+
+    std::string rand_global_path_str;
+    ASSERT_TRUE(rand_global_path.SerializeToString(&rand_global_path_str));
+    Polaris::GlobalPath test;
+    test.ParseFromString(rand_global_path_str);
+    // This query is comprised entirely of arbitrary values exccept for .data_
+    //Configure for global path
+    std::string query = createSensorPostBody(
+      {.imei_          = 0,
+       .serial_        = 0,
+       .momsn_         = 1,
+       .transmit_time_ = rand_info.timestamp_,
+       .lat_           = rand_info.lat_,
+       .lon_           = rand_info.lon_,
+       .cep_           = rand_info.cep_,
+       .data_          = rand_sensors_str});
+    http::status status = http_client::post(
+      {TESTING_HOST, std::to_string(TESTING_PORT), remote_transceiver::targets::GLOBAL_PATH},
+      "application/x-www-form-urlencoded", query);  //change url as per global path specs
+
+    EXPECT_EQ(status, http::status::ok);
+    std::this_thread::sleep_for(WAIT_AFTER_RES);
+
+    std::array<GlobalPath, 1>  expected_global_path           = {rand_global_path};
+    std::array<std::string, 1> expected_global_path_timestamp = {rand_global_path_timestamp};
+    EXPECT_TRUE(g_test_db.verifyDBWrite_GlobalPath(expected_global_path, expected_global_path_timestamp));
+}
+
+/**
+ * @brief Test that the server can multiple POST global path requests at once
+ *
+ */
+TEST_F(TestRemoteTransceiver, TestPostGlobalPathMult)
+{
+    SCOPED_TRACE("Seed: " + std::to_string(g_rand_seed));  // Print seed on any failure
+
+    constexpr int                             NUM_REQS = 50;  // Keep this number under 60 to simplify timestamp logic
+    std::array<std::string, NUM_REQS>         queries;
+    std::array<std::thread, NUM_REQS>         req_threads;
+    std::array<http::status, NUM_REQS>        res_statuses;
+    std::array<Polaris::GlobalPath, NUM_REQS> expected_global_path;
+    std::array<std::string, NUM_REQS>         expected_timestamp;
+
+    std::tm tm = UtilDB::getTimestamp();
+    // Prepare all queries
+    for (int i = 0; i < NUM_REQS; i++) {
+        // Timestamps are only granular to the second, so if we want to maintain document ordering by time
+        // without adding a lot of 1 second delays, then the time must be modified
+        tm.tm_sec                               = i;
+        auto [rand_global_path, rand_timestamp] = g_test_db.genGlobalData(tm);
+        expected_global_path[i]                 = rand_global_path;
+        expected_timestamp[i]                   = rand_timestamp;
+        std::string rand_global_path_str;
+        ASSERT_TRUE(rand_global_path.SerializeToString(&rand_global_path_str));
+        Polaris::GlobalPath test;
+        test.ParseFromString(rand_global_path_str);
+        // This query is comprised entirely of arbitrary values exccept for .data_
+        //Configure for global path
+        queries[i] = createSensorPostBody(
+          {.imei_          = 0,
+           .serial_        = 0,
+           .momsn_         = 1,
+           .transmit_time_ = rand_info.timestamp_,
+           .lat_           = rand_info.lat_,
+           .lon_           = rand_info.lon_,
+           .cep_           = rand_info.cep_,
+           .data_          = rand_sensors_str});
+    }
+
+    // Send all requests at once
+    for (int i = 0; i < NUM_REQS; i++) {
+        req_threads[i] = std::thread([&queries, &res_statuses, i]() {
+            std::string query = queries[i];
+            res_statuses[i]   = http_client::post(
+                {TESTING_HOST, std::to_string(TESTING_PORT), remote_transceiver::targets::GLOBAL_PATH},
+                "application/x-www-form-urlencoded", query);  //Change url as per global path specs
+        });
+    }
+
+    // Wait for all requests to finish
+    for (int i = 0; i < NUM_REQS; i++) {
+        req_threads[i].join();
+        EXPECT_EQ(res_statuses[i], http::status::ok);
+    }
+    std::this_thread::sleep_for(WAIT_AFTER_RES);
+
+    // Check that DB is updated properly for all requests
+    EXPECT_TRUE(g_test_db.verifyDBWrite_GlobalPath(expected_global_path, expected_timestamp));
 }
