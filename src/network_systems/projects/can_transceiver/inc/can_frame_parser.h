@@ -11,7 +11,6 @@
 #include <custom_interfaces/msg/helper_ais_ship.hpp>
 #include <custom_interfaces/msg/sail_cmd.hpp>
 #include <custom_interfaces/msg/wind_sensor.hpp>
-#include <custom_interfases/msg/desired_heading.hpp>
 #include <map>
 #include <optional>
 #include <span>
