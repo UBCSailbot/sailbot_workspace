@@ -11,7 +11,6 @@
 #include <custom_interfaces/msg/helper_ais_ship.hpp>
 #include <custom_interfaces/msg/sail_cmd.hpp>
 #include <custom_interfaces/msg/wind_sensor.hpp>
-#include <custom_interfases/msg/desired_heading.hpp>
 #include <map>
 #include <optional>
 #include <span>
@@ -34,9 +33,11 @@ enum class CanId : canid_t {
     PWR_MODE             = 0x00,
     MAIN_HEADING         = 0x01,
     MAIN_TR_TAB          = 0x02,
+    RESERVED             = 0x29,
     BMS_DATA_FRAME       = 0x30,
     SAIL_WIND            = 0x40,
     DATA_WIND            = 0x41,
+    RUDDER_DATA_FRAME    = 0x50,
     SAIL_AIS             = 0x60,
     PATH_GPS_DATA_FRAME  = 0x70,
     GENERIC_SENSOR_START = 0x100,
@@ -52,10 +53,11 @@ static const std::map<CanId, std::string> CAN_DESC{
   {CanId::MAIN_HEADING, "MAIN_HEADING (Main heading for rudder)"},
   {CanId::MAIN_TR_TAB, "MAIN_TR_TAB (Trim tab for sail)"},
   {CanId::BMS_DATA_FRAME, "BMS_P_DATA_FRAME_1 (Battery 1 data)"},
+  {CanId::RESERVED, "Reserved for mainframe (0x0 - 0x29)"},
   {CanId::SAIL_AIS, "SAIL_AIS (AIS ship data)"},
-  {CanId::MAIN_TR_TAB, "MAIN_TR_TAB (Main sail command)"},
   {CanId::MAIN_HEADING, "MAIN_HEADING (Main rudder command)"},
   {CanId::SAIL_WIND, "SAIL_WIND (Mast wind sensor)"},
+  {CanId::RUDDER_DATA_FRAME, "RUDDER_DATA_FRAME (Rudder data from ecompass)"},
   {CanId::PATH_GPS_DATA_FRAME, "PATH_GPS_DATA_FRAME (GPS latitude)"},
   {CanId::DATA_WIND, "DATA_WIND (Hull wind sensor)"}};
 
