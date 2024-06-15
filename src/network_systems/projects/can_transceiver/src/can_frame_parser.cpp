@@ -548,7 +548,7 @@ CanFrame AISShips::toLinuxCan() const
     uint16_t raw_heading   = static_cast<int16_t>(heading_);
     int8_t   raw_rot       = rot_;
     uint16_t raw_length    = static_cast<int16_t>(length_);
-    uint8_t  raw_width     = static_cast<int8_t>(width_);
+    uint16_t  raw_width     = static_cast<uint16_t>(width_);
     uint8_t  raw_idx       = idx_;
     uint8_t  raw_num_ships = num_ships_;
 
@@ -561,7 +561,7 @@ CanFrame AISShips::toLinuxCan() const
     std::memcpy(cf.data + BYTE_OFF_HEADING, &raw_heading, sizeof(int16_t));
     std::memcpy(cf.data + BYTE_OFF_ROT, &raw_rot, sizeof(int8_t));
     std::memcpy(cf.data + BYTE_OFF_LENGTH, &raw_length, sizeof(int16_t));
-    std::memcpy(cf.data + BYTE_OFF_WIDTH, &raw_width, sizeof(int8_t));
+    std::memcpy(cf.data + BYTE_OFF_WIDTH, &raw_width, sizeof(uint16_t));
     std::memcpy(cf.data + BYTE_OFF_IDX, &raw_idx, sizeof(int8_t));
     std::memcpy(cf.data + BYTE_OFF_NUM_SHIPS, &raw_num_ships, sizeof(int8_t));
 
