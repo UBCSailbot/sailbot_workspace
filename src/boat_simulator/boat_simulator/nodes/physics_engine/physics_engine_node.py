@@ -5,6 +5,7 @@
 import sys
 from typing import Optional
 
+import numpy as np
 import rclpy
 import rclpy.utilities
 from custom_interfaces.action import SimRudderActuation, SimSailTrimTabActuation
@@ -30,7 +31,10 @@ from rclpy.publisher import Publisher
 from rclpy.subscription import Subscription
 
 import boat_simulator.common.constants as Constants
+from boat_simulator.common.generators import MVGaussianGenerator
 from boat_simulator.common.types import Scalar
+from boat_simulator.nodes.physics_engine.fluid_generation import FluidGenerator
+from boat_simulator.nodes.physics_engine.model import BoatState
 
 from .decorators import require_all_subs_active
 
@@ -106,6 +110,15 @@ class PhysicsEngineNode(Node):
         self.__rudder_angle = 0
         self.__sail_trim_tab_angle = 0
         self.__desired_heading = None
+        self.__boat_state = BoatState(
+            0.5, 1, np.array([[0.5, 0.5, 0.5], [0.0, 0.5, 0.5], [0.0, 0.0, 0.5]], dtype=np.float32)
+        )
+        self.__wind_generator = FluidGenerator(
+            generator=MVGaussianGenerator(np.array([5, 5]), np.array([[2, 1], [1, 2]]))
+        )
+        self.__current_generator = FluidGenerator(
+            generator=MVGaussianGenerator(np.array([1, 1]), np.array([[2, 1], [1, 2]]))
+        )
 
     def __declare_ros_parameters(self):
         """Declares ROS parameters from the global configuration file that will be used in this
