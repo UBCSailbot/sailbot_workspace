@@ -456,7 +456,7 @@ AISShips::AISShips(const CanFrame & cf) : AISShips(static_cast<CanId>(cf.can_id)
     uint16_t raw_heading;
     int8_t   raw_rot;
     uint16_t raw_length;
-    uint8_t  raw_width;
+    uint16_t  raw_width;
     uint8_t  raw_idx;
     uint8_t  raw_num_ships;
 
@@ -468,7 +468,7 @@ AISShips::AISShips(const CanFrame & cf) : AISShips(static_cast<CanId>(cf.can_id)
     std::memcpy(&raw_heading, cf.data + BYTE_OFF_HEADING, sizeof(int16_t));
     std::memcpy(&raw_rot, cf.data + BYTE_OFF_ROT, sizeof(int8_t));
     std::memcpy(&raw_length, cf.data + BYTE_OFF_LENGTH, sizeof(int16_t));
-    std::memcpy(&raw_width, cf.data + BYTE_OFF_WIDTH, sizeof(int8_t));
+    std::memcpy(&raw_width, cf.data + BYTE_OFF_WIDTH, sizeof(uint16_t));
     std::memcpy(&raw_idx, cf.data + BYTE_OFF_IDX, sizeof(int8_t));
     std::memcpy(&raw_num_ships, cf.data + BYTE_OFF_NUM_SHIPS, sizeof(int8_t));
 
