@@ -6,11 +6,11 @@
 #include <array>
 #include <custom_interfaces/msg/ais_ships.hpp>
 #include <custom_interfaces/msg/batteries.hpp>
+#include <custom_interfaces/msg/desired_heading.hpp>
 #include <custom_interfaces/msg/gps.hpp>
 #include <custom_interfaces/msg/helper_ais_ship.hpp>
 #include <custom_interfaces/msg/sail_cmd.hpp>
 #include <custom_interfaces/msg/wind_sensor.hpp>
-#include <custom_interfases/msg/desired_heading.hpp>
 #include <map>
 #include <optional>
 #include <span>
@@ -33,9 +33,11 @@ enum class CanId : canid_t {
     PWR_MODE             = 0x00,
     MAIN_HEADING         = 0x01,
     MAIN_TR_TAB          = 0x02,
+    RESERVED             = 0x29,
     BMS_DATA_FRAME       = 0x30,
     SAIL_WIND            = 0x40,
     DATA_WIND            = 0x41,
+    RUDDER_DATA_FRAME    = 0x50,
     SAIL_AIS             = 0x60,
     PATH_GPS_DATA_FRAME  = 0x70,
     GENERIC_SENSOR_START = 0x100,
@@ -51,10 +53,11 @@ static const std::map<CanId, std::string> CAN_DESC{
   {CanId::MAIN_HEADING, "MAIN_HEADING (Main heading for rudder)"},
   {CanId::MAIN_TR_TAB, "MAIN_TR_TAB (Trim tab for sail)"},
   {CanId::BMS_DATA_FRAME, "BMS_P_DATA_FRAME_1 (Battery 1 data)"},
+  {CanId::RESERVED, "Reserved for mainframe (0x0 - 0x29)"},
   {CanId::SAIL_AIS, "SAIL_AIS (AIS ship data)"},
-  {CanId::MAIN_TR_TAB, "MAIN_TR_TAB (Main sail command)"},
   {CanId::MAIN_HEADING, "MAIN_HEADING (Main rudder command)"},
   {CanId::SAIL_WIND, "SAIL_WIND (Mast wind sensor)"},
+  {CanId::RUDDER_DATA_FRAME, "RUDDER_DATA_FRAME (Rudder data from ecompass)"},
   {CanId::PATH_GPS_DATA_FRAME, "PATH_GPS_DATA_FRAME (GPS latitude)"},
   {CanId::DATA_WIND, "DATA_WIND (Hull wind sensor)"}};
 
@@ -164,7 +167,7 @@ public:
      * @brief Construct a Battery object from a custom_interfaces ROS msg representation
      *
      * @param ros_bat custom_interfaces representation of a Battery
-     * @param id      CanId of the battery (use the rosIdxToCanId() method if unknown)
+     * @param id      CanId of the battery
      */
     explicit Battery(msg::HelperBattery ros_bat, CanId id);
 
@@ -230,7 +233,7 @@ public:
      * @brief Construct a SailCmd object from a custom_interfaces ROS msg representation
      *
      * @param ros_sail_cmd custom_interfaces representation of a SailCmd
-     * @param id      CanId of the SailCmd (use the rosIdxToCanId() method if unknown)
+     * @param id      CanId of the SailCmd
      */
     explicit SailCmd(msg::SailCmd ros_sail_cmd, CanId id);
 
@@ -376,7 +379,7 @@ public:
      * @brief Construct a GPS object from a custom_interfaces ROS msg representation
      *
      * @param ros_gps custom_interfaces representation of a GPS
-     * @param id      CanId of the GPS (use the rosIdxToCanId() method if unknown)
+     * @param id      CanId of the GPS
      */
     explicit GPS(msg::GPS ros_gps, CanId id);
 
@@ -394,15 +397,6 @@ public:
      * @return A string that can be printed or logged to debug a GPS object
      */
     std::string debugStr() const override;
-
-    /**
-     * @brief Factory method to convert the index of a GPS in the custom_interfaces ROS representation
-     *        into a CanId if valid.
-     *
-     * @param gps_idx idx of the GPS in a custom_interfaces::msg::GPS array
-     * @return CanId if valid, std::nullopt if invalid
-     */
-    static std::optional<CanId> rosIdxToCanId(size_t gps_idx);
 
 private:
     /**
@@ -598,17 +592,16 @@ private:
     uint8_t mode_;
 };
 
-//TODO: Create MAIN_HEADING frame
 /**
- * @brief A rudder class derived from the BaseFrame. Represents a rudder command.
+ * @brief A DesiredHeading class derived from the BaseFrame. Represents a desired heading for the rudder.
  *
  */
 class DesiredHeading final : public BaseFrame
 {
 public:
-    static constexpr std::array<CanId, 1> RUDDER_CMD_IDS   = {CanId::MAIN_HEADING};
-    static constexpr uint8_t              CAN_BYTE_DLEN_   = 2;
-    static constexpr uint8_t              BYTE_OFF_HEADING = 0;
+    static constexpr std::array<CanId, 1> DESIRED_HEADING_IDS = {CanId::MAIN_HEADING};
+    static constexpr uint8_t              CAN_BYTE_DLEN_      = 4;
+    static constexpr uint8_t              BYTE_OFF_HEADING    = 0;
 
     /**
      * @brief Explicitly deleted no-argument constructor
@@ -617,7 +610,7 @@ public:
     DesiredHeading() = delete;
 
     /**
-     * @brief Construct a SailCmd object from a Linux CanFrame representation
+     * @brief Construct a Desiredheading object from a Linux CanFrame representation
      *
      * @param cf Linux CanFrame
      */
@@ -626,15 +619,15 @@ public:
     /**
      * @brief Construct a DesiredHeading object from a custom_interfaces ROS msg representation
      *
-     * @param ros_sail_cmd custom_interfaces representation of a DesiredHeading
-     * @param id      CanId of the DesiredHeading (use the rosIdxToCanId() method if unknown)
+     * @param ros_desired_heading custom_interfaces representation of a DesiredHeading
+     * @param id      CanId of the DesiredHeading
      */
-    explicit DesiredHeading(msg::DesiredHeading ros_rudder_cmd, CanId id);
+    explicit DesiredHeading(msg::DesiredHeading ros_desired_heading, CanId id);
 
     /**
      * @return the custom_interfaces ROS representation of the DesiredHeading object
      */
-    //msg::DesiredHeading toRosMsg() const;
+    msg::DesiredHeading toRosMsg() const;
 
     /**
      * @return the Linux CanFrame representation of the DesiredHeading object
@@ -663,8 +656,71 @@ private:
     float heading_;  // Angle specified by the command
 };
 
-//TODO: Create MAIN_TR_TAB frame
+/**
+ * @brief A Rudder Data class derived from the BaseFrame. Represents data of rudder's position.
+ *
+ */
+class RudderData final : public BaseFrame
+{
+public:
+    static constexpr std::array<CanId, 1> RUDDER_DATA_IDS  = {CanId::RUDDER_DATA_FRAME};
+    static constexpr uint8_t              CAN_BYTE_DLEN_   = 2;
+    static constexpr uint8_t              BYTE_OFF_HEADING = 0;
 
-//TODO: Create RUDDER_DATA_FRAME frame
+    /**
+     * @brief Explicitly deleted no-argument constructor
+     *
+     */
+    RudderData() = delete;
+
+    /**
+     * @brief Construct a RudderData object from a Linux CanFrame representation
+     *
+     * @param cf Linux CanFrame
+     */
+    explicit RudderData(const CanFrame & cf);
+
+    /**
+     * @brief Construct a HelperHeading object from a custom_interfaces ROS msg representation
+     *
+     * @param ros_rudder_heading custom_interfaces representation of a HelperHeading
+     * @param id      CanId of the HelperHeading
+     */
+    explicit RudderData(msg::HelperHeading ros_rudder_data, CanId id);
+
+    /**
+     * @return the custom_interfaces ROS representation of the DesiredHeading object
+     */
+    msg::HelperHeading toRosMsg() const;
+
+    /**
+     * @return the Linux CanFrame representation of the RudderData object
+     */
+    CanFrame toLinuxCan() const override;
+
+    /**
+     * @return A string that can be printed or logged to debug a RudderData object
+     */
+    std::string debugStr() const override;
+
+private:
+    /**
+     * @brief Private helper constructor for DesiredHeading objects
+     *
+     * @param id CanId of the RudderData
+     */
+    explicit RudderData(CanId id);
+
+    /**
+     * @brief Check if the assigned fields after constructing a DesiredHeading object are within bounds.
+     * @throws std::out_of_range if any assigned fields are outside of expected bounds
+     */
+    void checkBounds() const;
+
+    float heading_;
+};
+
+//TODO: update tests for sail
+//TODO: write tests for desired heading and rudder data
 
 }  // namespace CAN_FP
