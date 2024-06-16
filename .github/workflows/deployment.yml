@@ -25,13 +25,13 @@ jobs:
 
       - name: Install dependencies and run lint checks
         run: |
-          cd website
+          cd src/website
           npm ci
           npm run lint
           
       - name: Build website
         run: |
-          cd website
+          cd src/website
           npm run build
           
       - name: Update docker image
