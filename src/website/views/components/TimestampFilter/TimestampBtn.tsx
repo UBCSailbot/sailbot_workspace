@@ -36,8 +36,8 @@ const TimestampBtn = ({ gps, dataFilter }: TimestampFilterBtnProps) => {
         } to ${
           dataFilter.timestamps.endDate
             ? fmtDate(tzDate(parseISOString(dataFilter.timestamps.endDate)))
-            // @ts-ignore
-            : fmtDate(tzDate(parseISOString(gps.data.at(-1).timestamp)))
+            : // @ts-ignore
+              fmtDate(tzDate(parseISOString(gps.data.at(-1).timestamp)))
         }`}
       </div>
       <div

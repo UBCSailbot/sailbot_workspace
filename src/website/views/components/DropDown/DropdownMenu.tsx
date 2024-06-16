@@ -28,7 +28,12 @@ interface SortableGraphProps {
   setOrder: any;
 }
 
-const SortableGraph = ({ id, children, order, setOrder }: SortableGraphProps) => {
+const SortableGraph = ({
+  id,
+  children,
+  order,
+  setOrder,
+}: SortableGraphProps) => {
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({
       id,

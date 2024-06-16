@@ -37,7 +37,12 @@ export default class UPlotMultiLineChartComponent extends React.Component<
           show: true,
           spanGaps: false,
           label: 'Time',
-          value: (self: any, rawValue: any, xValuesIndex: any, currentVal: any) => {
+          value: (
+            self: any,
+            rawValue: any,
+            xValuesIndex: any,
+            currentVal: any,
+          ) => {
             if (currentVal == null) {
               let xValues = self.data[xValuesIndex];
               let xValue = fmtDate(tzDate(xValues[xValues.length - 1]));
@@ -53,7 +58,12 @@ export default class UPlotMultiLineChartComponent extends React.Component<
           show: true,
           spanGaps: false,
           label: this.props.labelOne,
-          value: (self: any, rawValue: any, yValuesIndex: any, currentVal: any) => {
+          value: (
+            self: any,
+            rawValue: any,
+            yValuesIndex: any,
+            currentVal: any,
+          ) => {
             if (currentVal == null) {
               let yValues = self.data[yValuesIndex];
               let yValue = yValues[yValues.length - 1]?.toFixed(2);
@@ -69,7 +79,12 @@ export default class UPlotMultiLineChartComponent extends React.Component<
           show: true,
           spanGaps: false,
           label: this.props.labelTwo,
-          value: (self: any, rawValue: any, yValuesIndex: any, currentVal: any) => {
+          value: (
+            self: any,
+            rawValue: any,
+            yValuesIndex: any,
+            currentVal: any,
+          ) => {
             if (currentVal == null) {
               let yValues = self.data[yValuesIndex];
               let yValue = yValues[yValues.length - 1]?.toFixed(2);
