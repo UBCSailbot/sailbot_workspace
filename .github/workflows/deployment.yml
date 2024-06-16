@@ -25,13 +25,13 @@ jobs:
 
       - name: Install dependencies and run lint checks
         run: |
-          cd sailbot_workspace/src/website
+          cd website
           npm ci
           npm run lint
           
       - name: Build website
         run: |
-          cd sailbot_workspace/src/website
+          cd website
           npm run build
           
       - name: Update docker image
