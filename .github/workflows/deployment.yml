@@ -2,10 +2,6 @@ name: Deployment
 
 on:
   workflow_dispatch:
-    # Uncomment once we are ready to deploy 
-    #push:
-    #  branches:
-    #    - main
   pull_request:
     branches:
       - main
@@ -35,7 +31,7 @@ jobs:
           npm run build
           
       - name: Update docker image
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v0.1.9
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
