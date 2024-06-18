@@ -35,7 +35,7 @@ jobs:
           password: ${{ secrets.PAT_TOKEN }}
 
       - name: Build and push base
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: "{{defaultContext}}:.devcontainer/base-dev"
           file: base-dev.Dockerfile
@@ -47,7 +47,7 @@ jobs:
           target: base
 
       - name: Build and push local-base
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: "{{defaultContext}}:.devcontainer/base-dev"
           file: base-dev.Dockerfile
@@ -59,7 +59,7 @@ jobs:
           target: local-base
 
       - name: Build and push dev
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: "{{defaultContext}}:.devcontainer/base-dev"
           file: base-dev.Dockerfile
