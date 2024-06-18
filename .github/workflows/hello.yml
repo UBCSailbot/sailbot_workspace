@@ -13,8 +13,11 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    - name: Get branch name
-      run: export SECRET=${{ secrets.TEST_SECRET }}
-
-    - name: Get ..
-      run: echo $SECRET
+    - name: env test
+      env:
+        MY_VAL: ${{ secrets.TEST_SECRET }}
+      run: |
+        import os
+        for q in (os.getenv("MY_VAL")):
+          print(q)
+      shell: python
