@@ -10,5 +10,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Say Hello
-      run: echo "Hello, World!"
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Get branch name
+      run: echo $GITHUB_REF
