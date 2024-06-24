@@ -2,9 +2,10 @@ name: Deployment
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
+    # Uncomment once we are ready to deploy 
+    push:
+      branches:
+        - main
   pull_request:
     branches:
       - main
@@ -20,7 +21,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GH_TOKEN }}
-          
+
       - name: Debug - List directory structure
         run: |
           ls -R
@@ -30,54 +31,38 @@ jobs:
           cd src/website
           npm ci
           npm run lint
-          
+
       - name: Build website
         run: |
           cd src/website
           npm run build
 
-      - name: Check SSH Key for Pre-production
-        if: github.event_name == 'pull_request'
-        run: |
-          echo "${{ secrets.SSH_KEY_PREPROD }}" > key_preprod
-          cat key_preprod
-          chmod 600 key_preprod
-          ssh-keygen -y -f key_preprod
-          
-      - name: Check SSH Key for Production
-        if: github.event_name == 'push'
-        run: |
-          echo "${{ secrets.SSH_KEY_PROD }}" > key_prod
-          cat key_prod
-          chmod 600 key_prod
-          ssh-keygen -y -f key_prod
-          
       - name: Update docker image for pre-production
         if: github.event_name == 'pull_request'
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.SSH_HOST_PREPROD }}
-          username: ${{ secrets.SSH_USERNAME_PREPROD }}
-          key: ${{ secrets.SSH_KEY_PREPROD }}
+          host: ${{ secrets.SSH_PREPROD_HOST }}
+          username: ${{ secrets.SSH_PREPROD_USERNAME }}
+          key: ${{ secrets.SSH_PREPROD_KEY }}
           script: |
             [ ! -d "sailbot_workspace" ] && git clone https://github.com/UBCSailbot/sailbot_workspace.git
             cd sailbot_workspace
             git pull
-            touch src/website/.env.local # Adds a local environment file to VM to override env vars in .env.production  
-            echo NEXT_PUBLIC_SERVER_HOST=http://${{ secrets.SSH_HOST_PREPROD }} >> src/website/.env.local
+            touch src/website/.env.local # Adds a local environment file to VM to override env vars in .env.production
+            echo NEXT_PUBLIC_SERVER_HOST=http://${{ secrets.SSH_PREPROD_HOST }} >> src/website/.env.local
             docker compose -f .devcontainer/docker-compose.yml -f .devcontainer/website/docker-compose.website.prod.yml up --force-recreate -d --build --remove-orphans
 
       - name: Update docker image for production
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.SSH_HOST_PROD }}
-          username: ${{ secrets.SSH_USERNAME_PROD }}
-          key: ${{ secrets.SSH_KEY_PROD }}
+          host: ${{ secrets.SSH_PROD_HOST }}
+          username: ${{ secrets.SSH_PROD_USERNAME }}
+          key: ${{ secrets.SSH_PROD_KEY }}
           script: |
             [ ! -d "sailbot_workspace" ] && git clone https://github.com/UBCSailbot/sailbot_workspace.git
             cd sailbot_workspace
             git pull
-            touch src/website/.env.local # Adds a local environment file to VM to override env vars in .env.production  
-            echo NEXT_PUBLIC_SERVER_HOST=http://${{ secrets.SSH_HOST_PROD }} >> src/website/.env.local
+            touch src/website/.env.local # Adds a local environment file to VM to override env vars in .env.production
+            echo NEXT_PUBLIC_SERVER_HOST=http://${{ secrets.SSH_PROD_HOST }} >> src/website/.env.local
             docker compose -f .devcontainer/docker-compose.yml -f .devcontainer/website/docker-compose.website.prod.yml up --force-recreate -d --build --remove-orphans
