@@ -21,6 +21,10 @@ jobs:
         with:
           token: ${{ secrets.GH_TOKEN }}
           
+      - name: Debug - List directory structure
+        run: |
+          ls -R
+
       - name: Install dependencies and run lint checks
         run: |
           cd src/website
@@ -31,18 +35,20 @@ jobs:
         run: |
           cd src/website
           npm run build
-          
-      - name: Debug SSH Key for Pre-production
+
+      - name: Check SSH Key for Pre-production
         if: github.event_name == 'pull_request'
         run: |
-          echo "${{ secrets.SSH_KEY_PREPROD }}" | tr -d '\r' > key_preprod
+          echo "${{ secrets.SSH_KEY_PREPROD }}" > key_preprod
+          cat key_preprod
           chmod 600 key_preprod
           ssh-keygen -y -f key_preprod
           
-      - name: Debug SSH Key for Production
+      - name: Check SSH Key for Production
         if: github.event_name == 'push'
         run: |
-          echo "${{ secrets.SSH_KEY_PROD }}" | tr -d '\r' > key_prod
+          echo "${{ secrets.SSH_KEY_PROD }}" > key_prod
+          cat key_prod
           chmod 600 key_prod
           ssh-keygen -y -f key_prod
           
