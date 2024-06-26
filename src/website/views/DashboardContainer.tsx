@@ -3,7 +3,11 @@ import { connect } from 'react-redux';
 import UPlotLineChartComponent from './components/LineChart/UPlotLineChart';
 import { GPS, GPSState } from '@/stores/GPS/GPSTypes';
 import { Batteries, BatteriesState } from '@/stores/Batteries/BatteriesTypes';
-import { WindSensor, WindSensors, WindSensorsState } from '@/stores/WindSensors/WindSensorsTypes';
+import {
+  WindSensor,
+  WindSensors,
+  WindSensorsState,
+} from '@/stores/WindSensors/WindSensorsTypes';
 import { DataFilterState } from '@/stores/DataFilter/DataFilterTypes';
 import UPlotMultiLineChartComponent from './components/LineChart/UPlotMultiLineChart';
 
@@ -219,10 +223,10 @@ class DashboardContainer extends React.PureComponent<DashboardContainerProps> {
 
     if (
       timestampISO >=
-      // @ts-ignore
+        // @ts-ignore
         this._parseISOString(this.props.dataFilter.timestamps.startDate) &&
       timestampISO <=
-      // @ts-ignore
+        // @ts-ignore
         this._parseISOString(this.props.dataFilter.timestamps.endDate)
     ) {
       return true;
