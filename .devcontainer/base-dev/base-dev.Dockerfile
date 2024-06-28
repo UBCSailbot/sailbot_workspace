@@ -361,3 +361,42 @@ ENV DEBIAN_FRONTEND=
 RUN pip3 install \
     # for juypter notebooks
     ipykernel
+
+# install boost C++
+ARG BOOST_VERSION=1.85.0
+ARG NUM_JOBS=8
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        build-essential \
+        software-properties-common \
+        autoconf \
+        automake \
+        libtool \
+        pkg-config \
+        ca-certificates \
+        libssl-dev \
+        wget \
+        git \
+        curl \
+        language-pack-en \
+        locales \
+        locales-all \
+        vim \
+        gdb \
+        valgrind && \
+    apt-get clean
+
+ENV LC_ALL en_US.UTF-8
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US.UTF-8
+
+RUN cd /tmp && \
+    BOOST_VERSION_MOD=$(echo $BOOST_VERSION | tr . _) && \
+    wget https://boostorg.jfrog.io/artifactory/main/release/${BOOST_VERSION}/source/boost_${BOOST_VERSION_MOD}.tar.bz2 && \
+    tar --bzip2 -xf boost_${BOOST_VERSION_MOD}.tar.bz2 && \
+    cd boost_${BOOST_VERSION_MOD} && \
+    ./bootstrap.sh --prefix=/usr/local && \
+    ./b2 install && \
+    rm -rf /tmp/*
