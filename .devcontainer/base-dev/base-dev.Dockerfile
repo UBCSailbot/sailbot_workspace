@@ -73,13 +73,6 @@ RUN apt-get update \
         build-essential \
         castxml \
         cmake \
-        libboost-filesystem-dev \
-        libboost-numpy-dev \
-        libboost-program-options-dev \
-        libboost-python-dev \
-        libboost-serialization-dev \
-        libboost-system-dev \
-        libboost-test-dev \
         libeigen3-dev \
         libexpat1 \
         libflann-dev \
@@ -147,12 +140,6 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         build-essential \
         cmake \
-        libboost-filesystem-dev \
-        libboost-numpy-dev \
-        libboost-program-options-dev \
-        libboost-python-dev \
-        libboost-serialization-dev \
-        libboost-system-dev \
         libeigen3-dev \
         libflann-dev \
         libmongoc-dev \
@@ -182,7 +169,6 @@ RUN apt-get update \
         cmake \
         git \
         iproute2 \
-        libboost-all-dev \
         libprotobuf-dev \
         protobuf-compiler \
         python3-colcon-common-extensions \
