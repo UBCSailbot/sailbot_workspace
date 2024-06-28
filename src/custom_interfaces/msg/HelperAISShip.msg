@@ -1,5 +1,5 @@
 # AIS identifier (MMSI)
-int32 id
+uint32 id
 HelperLatLon lat_lon
 # The ship's course over ground
 HelperHeading   cog

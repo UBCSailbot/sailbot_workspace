@@ -24,6 +24,11 @@ void CanTransceiver::onNewCanData(const CanFrame & frame) const
     if (read_callbacks_.contains(id)) {
         read_callbacks_.at(id)(frame);  // invoke the callback function mapped to id
     }
+
+    //0x100 - 0x1FF: Generic sensor data frame range
+    if (id >= CanId::GENERIC_SENSOR_START && id <= CanId::GENERIC_SENSOR_END) {
+        read_callbacks_.at(CanId::GENERIC_SENSOR_START)(frame);
+    }
 }
 
 void CanTransceiver::registerCanCb(const std::pair<CanId, std::function<void(const CanFrame &)>> cb_kvp)

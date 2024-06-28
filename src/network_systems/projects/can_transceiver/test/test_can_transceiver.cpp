@@ -225,7 +225,8 @@ TEST_F(TestCanFrameParser, WindSensorTestValid)
         std::memcpy(&raw_angle, cf.data + CAN_FP::WindSensor::BYTE_OFF_ANGLE, sizeof(int16_t));
         float converted_speed = static_cast<float>(raw_speed) * 1.852 / 10.0;  //NOLINT
 
-        EXPECT_NEAR(converted_speed, expected_speeds[i], 0.1852);
+        //expect within 0.05 knots (0.0926km/hr)
+        EXPECT_NEAR(converted_speed, expected_speeds[i], 0.0926);
         EXPECT_EQ(raw_angle, expected_angles[i]);
 
         CAN_FP::WindSensor sensor_from_can = CAN_FP::WindSensor(cf);
@@ -233,8 +234,8 @@ TEST_F(TestCanFrameParser, WindSensorTestValid)
         EXPECT_EQ(sensor_from_can.id_, id);
 
         msg::WindSensor msg_from_sensor = sensor_from_can.toRosMsg();
-
-        EXPECT_NEAR(msg_from_sensor.speed.speed, expected_speed, 0.1852);
+        //expect within 0.05 knots (0.0926km/hr)
+        EXPECT_NEAR(msg_from_sensor.speed.speed, expected_speed, 0.0926);
         EXPECT_DOUBLE_EQ(msg_from_sensor.direction, expected_angle);
     }
 }
@@ -289,14 +290,14 @@ TEST_F(TestCanFrameParser, TestWindSensorInvalid)
  */
 TEST_F(TestCanFrameParser, GPSTestValid)
 {
-    constexpr std::array<float, 4>   expected_lats{48.6, -57.3};
-    constexpr std::array<float, 4>   expected_lons{-32.1, 112.9};
-    constexpr std::array<float, 4>   expected_speeds{3.5, 8.0};
-    constexpr std::array<float, 4>   expected_headings{100.4, 43.2};
-    constexpr std::array<int32_t, 4> expected_raw_lats{138600, 32700};
-    constexpr std::array<int32_t, 4> expected_raw_lons{147900, 292900};
-    constexpr std::array<int32_t, 4> expected_raw_speeds{3500, 8000};
-    constexpr std::array<int32_t, 4> expected_raw_headings{100400, 43200};
+    constexpr std::array<float, 2>   expected_lats{48.6, -57.3};
+    constexpr std::array<float, 2>   expected_lons{-32.1, 112.9};
+    constexpr std::array<float, 2>   expected_speeds{3.5, 8.0};
+    constexpr std::array<float, 2>   expected_headings{100.4, 43.2};
+    constexpr std::array<int32_t, 2> expected_raw_lats{138600, 32700};
+    constexpr std::array<int32_t, 2> expected_raw_lons{147900, 292900};
+    constexpr std::array<int32_t, 2> expected_raw_speeds{3500, 8000};
+    constexpr std::array<int32_t, 2> expected_raw_headings{100400, 43200};
 
     for (size_t i = 0; i < 2; i++) {
         CAN_FP::CanId id               = CAN_FP::CanId::PATH_GPS_DATA_FRAME_1;
@@ -334,8 +335,8 @@ TEST_F(TestCanFrameParser, GPSTestValid)
         std::memcpy(&raw_speed, cf.data + CAN_FP::GPS::BYTE_OFF_SPEED, sizeof(int32_t));
         std::memcpy(&raw_heading, cf.data + CAN_FP::GPS::BYTE_OFF_HEADING, sizeof(int32_t));
 
-        EXPECT_NEAR(raw_lat, expected_raw_lats[i], 1);
-        EXPECT_NEAR(raw_lon, expected_raw_lons[i], 1);
+        EXPECT_EQ(raw_lat, expected_raw_lats[i]);
+        EXPECT_EQ(raw_lon, expected_raw_lons[i]);
         EXPECT_EQ(raw_speed, expected_raw_speeds[i]);
         EXPECT_EQ(raw_heading, expected_raw_headings[i]);
 
@@ -345,8 +346,8 @@ TEST_F(TestCanFrameParser, GPSTestValid)
 
         msg::GPS msg_from_gps = gps_from_can.toRosMsg();
 
-        EXPECT_NEAR(msg_from_gps.lat_lon.latitude, expected_lat, 1);
-        EXPECT_NEAR(msg_from_gps.lat_lon.longitude, expected_lon, 1);
+        EXPECT_EQ(msg_from_gps.lat_lon.latitude, expected_lat);
+        EXPECT_EQ(msg_from_gps.lat_lon.longitude, expected_lon);
         EXPECT_DOUBLE_EQ(msg_from_gps.speed.speed, expected_speed);
         EXPECT_DOUBLE_EQ(msg_from_gps.heading.heading, expected_heading);
     }
@@ -440,6 +441,374 @@ TEST_F(TestCanFrameParser, TestGPSInvalid)
         msg.set__heading(msg_heading);
 
         EXPECT_THROW(CAN_FP::GPS tmp(msg, valid_id), std::out_of_range);
+    };
+}
+
+/**
+ * @brief Test ROS<->CAN AISShips translations work as expected for valid input values
+ *
+ */
+TEST_F(TestCanFrameParser, AISShipsTestValid)
+{
+    constexpr std::array<int32_t, 2> expected_ids{1010, 9193};
+    constexpr std::array<float, 2>   expected_lats{48.6, -57.3};
+    constexpr std::array<float, 2>   expected_lons{-32.1, 112.9};
+    constexpr std::array<float, 2>   expected_cogs{100.4, 43.2};
+    constexpr std::array<float, 2>   expected_sogs{9.26, 4.0744};
+    constexpr std::array<int8_t, 2>  expected_rots{-10, 50};
+    constexpr std::array<float, 2>   expected_widths{4, 65};
+    constexpr std::array<float, 2>   expected_lengths{15, 360};
+
+    constexpr std::array<uint32_t, 2> expected_raw_ids{1010, 9193};
+    constexpr std::array<uint32_t, 2> expected_raw_lats{138600, 32700};
+    constexpr std::array<uint32_t, 2> expected_raw_lons{147900, 292900};
+    constexpr std::array<uint16_t, 2> expected_raw_cogs{1004, 432};
+    constexpr std::array<uint16_t, 2> expected_raw_sogs{50, 22};
+    constexpr std::array<int8_t, 2>   expected_raw_rots{-10, 50};
+    constexpr std::array<uint8_t, 2>  expected_raw_widths{4, 65};
+    constexpr std::array<uint16_t, 2> expected_raw_lengths{15, 360};
+
+    for (size_t i = 0; i < 2; i++) {
+        CAN_FP::CanId id              = CAN_FP::CanId::SAIL_AIS;
+        int32_t       expected_id     = expected_ids[i];
+        float         expected_lat    = expected_lats[i];
+        float         expected_lon    = expected_lons[i];
+        float         expected_cog    = expected_cogs[i];
+        float         expected_sog    = expected_sogs[i];
+        int8_t        expected_rot    = expected_rots[i];
+        float         expected_width  = expected_widths[i];
+        float         expected_length = expected_lengths[i];
+
+        msg::HelperAISShip msg;
+        msg::HelperLatLon  lat_lon;
+        lat_lon.set__latitude(expected_lat);
+        lat_lon.set__longitude(expected_lon);
+
+        msg::HelperHeading cog;
+        cog.set__heading(expected_cog);
+
+        msg::HelperSpeed sog;
+        //convert to km/h
+        sog.set__speed(expected_sog);
+
+        msg::HelperROT rot;
+        rot.set__rot(expected_rot);
+
+        msg::HelperDimension width;
+        width.set__dimension(static_cast<float>(expected_width));  //NOLINT(readability-magic-numbers)
+
+        msg::HelperDimension length;
+        length.set__dimension(static_cast<float>(expected_length));  //NOLINT(readability-magic-numbers)
+
+        msg.set__id(expected_id);
+        msg.set__lat_lon(lat_lon);
+        msg.set__cog(cog);
+        msg.set__sog(sog);
+        msg.set__rot(rot);
+        msg.set__width(width);
+        msg.set__length(length);
+
+        CAN_FP::AISShips ais_from_ros = CAN_FP::AISShips(msg, id);
+        CAN_FP::CanFrame cf           = ais_from_ros.toLinuxCan();
+
+        EXPECT_EQ(cf.can_id, static_cast<canid_t>(id));
+        EXPECT_EQ(cf.len, CAN_FP::AISShips::CAN_BYTE_DLEN_);
+
+        int32_t  raw_id;
+        uint32_t raw_lat;
+        uint32_t raw_lon;
+        uint16_t raw_speed;
+        uint16_t raw_course;
+        uint16_t raw_heading;
+        int8_t   raw_rot;
+        uint16_t raw_length;
+        uint8_t  raw_width;
+        uint8_t  raw_idx;
+        uint8_t  raw_num_ships;
+
+        std::memcpy(&raw_id, cf.data + CAN_FP::AISShips::BYTE_OFF_ID, sizeof(int32_t));
+        std::memcpy(&raw_lat, cf.data + CAN_FP::AISShips::BYTE_OFF_LAT, sizeof(int32_t));
+        std::memcpy(&raw_lon, cf.data + CAN_FP::AISShips::BYTE_OFF_LON, sizeof(int32_t));
+        std::memcpy(&raw_speed, cf.data + CAN_FP::AISShips::BYTE_OFF_SPEED, sizeof(int16_t));
+        std::memcpy(&raw_course, cf.data + CAN_FP::AISShips::BYTE_OFF_COURSE, sizeof(int16_t));
+        std::memcpy(&raw_heading, cf.data + CAN_FP::AISShips::BYTE_OFF_HEADING, sizeof(int16_t));
+        std::memcpy(&raw_rot, cf.data + CAN_FP::AISShips::BYTE_OFF_ROT, sizeof(int8_t));
+        std::memcpy(&raw_length, cf.data + CAN_FP::AISShips::BYTE_OFF_LENGTH, sizeof(int16_t));
+        std::memcpy(&raw_width, cf.data + CAN_FP::AISShips::BYTE_OFF_WIDTH, sizeof(int8_t));
+        std::memcpy(&raw_idx, cf.data + CAN_FP::AISShips::BYTE_OFF_IDX, sizeof(int8_t));
+        std::memcpy(&raw_num_ships, cf.data + CAN_FP::AISShips::BYTE_OFF_NUM_SHIPS, sizeof(int8_t));
+
+        EXPECT_EQ(raw_id, expected_raw_ids[i]);
+        EXPECT_EQ(raw_lat, expected_raw_lats[i]);
+        EXPECT_EQ(raw_lon, expected_raw_lons[i]);
+        EXPECT_EQ(raw_speed, expected_raw_sogs[i]);
+        EXPECT_EQ(raw_course, expected_raw_cogs[i]);
+        EXPECT_EQ(raw_rot, expected_raw_rots[i]);
+        EXPECT_EQ(raw_length, expected_raw_lengths[i]);
+        EXPECT_EQ(raw_width, expected_raw_widths[i]);
+
+        CAN_FP::AISShips ais_from_can = CAN_FP::AISShips(cf);
+
+        EXPECT_EQ(ais_from_can.id_, id);
+
+        msg::HelperAISShip msg_from_ais = ais_from_can.toRosMsg();
+
+        EXPECT_EQ(msg_from_ais.id, expected_id);
+        EXPECT_DOUBLE_EQ(msg_from_ais.lat_lon.latitude, expected_lat);
+        EXPECT_DOUBLE_EQ(msg_from_ais.lat_lon.longitude, expected_lon);
+        EXPECT_DOUBLE_EQ(msg_from_ais.cog.heading, expected_cog);
+        EXPECT_DOUBLE_EQ(msg_from_ais.sog.speed, expected_sog);
+        EXPECT_DOUBLE_EQ(msg_from_ais.rot.rot, expected_rot);
+        EXPECT_DOUBLE_EQ(msg_from_ais.width.dimension, expected_width);
+        EXPECT_DOUBLE_EQ(msg_from_ais.length.dimension, expected_length);
+    }
+}
+
+/**
+ * @brief Test the behavior of the AISShips class when given invalid input values
+ *
+ */
+TEST_F(TestCanFrameParser, TestAISShipsInvalid)
+{
+    CAN_FP::CanId invalid_id = CAN_FP::CanId::RESERVED;
+
+    CAN_FP::CanFrame cf{.can_id = static_cast<canid_t>(invalid_id)};
+
+    EXPECT_THROW(CAN_FP::AISShips tmp(cf), CAN_FP::CanIdMismatchException);
+
+    constexpr std::array<float, 2>  invalid_lats{LAT_LBND - 1, LAT_UBND + 1};
+    constexpr std::array<float, 2>  invalid_lons{LON_LBND - 1, LON_UBND + 1};
+    constexpr std::array<float, 2>  invalid_cogs{HEADING_LBND - 1, HEADING_UBND + 1};
+    constexpr std::array<float, 2>  invalid_sogs{SPEED_LBND - 1, SPEED_UBND + 1};
+    constexpr std::array<int8_t, 2> invalid_rots{ROT_LBND - 1, ROT_UBND + 1};
+    constexpr std::array<float, 2>  invalid_widths{SHIP_DIMENSION_LBND - 1, SHIP_DIMENSION_UBND + 1};
+    constexpr std::array<float, 2>  invalid_lengths{SHIP_DIMENSION_LBND - 1, SHIP_DIMENSION_UBND + 1};
+
+    CAN_FP::CanId      valid_id = CAN_FP::CanId::SAIL_AIS;
+    msg::HelperAISShip msg;
+
+    for (float invalid_lon : invalid_lons) {
+        msg::HelperLatLon lat_lon;
+        lat_lon.set__latitude(LAT_UBND);
+        lat_lon.set__longitude(invalid_lon);
+
+        msg::HelperHeading cog;
+        cog.set__heading(HEADING_LBND);
+
+        msg::HelperSpeed sog;
+        //convert to km/h
+        sog.set__speed(SPEED_LBND);
+
+        msg::HelperROT rot;
+        rot.set__rot(ROT_UBND);
+
+        msg::HelperDimension width;
+        width.set__dimension(SHIP_DIMENSION_LBND);  //NOLINT(readability-magic-numbers)
+
+        msg::HelperDimension length;
+        length.set__dimension(SHIP_DIMENSION_LBND);  //NOLINT(readability-magic-numbers)
+
+        msg.set__id(10);  //NOLINT(readability-magic-numbers)
+        msg.set__lat_lon(lat_lon);
+        msg.set__cog(cog);
+        msg.set__sog(sog);
+        msg.set__rot(rot);
+        msg.set__width(width);
+        msg.set__length(length);
+
+        EXPECT_THROW(CAN_FP::AISShips tmp(msg, valid_id), std::out_of_range);
+    };
+
+    for (float invalid_lat : invalid_lats) {
+        msg::HelperLatLon lat_lon;
+        lat_lon.set__latitude(invalid_lat);
+        lat_lon.set__longitude(LON_UBND);
+
+        msg::HelperHeading cog;
+        cog.set__heading(HEADING_LBND);
+
+        msg::HelperSpeed sog;
+        //convert to km/h
+        sog.set__speed(SPEED_LBND);
+
+        msg::HelperROT rot;
+        rot.set__rot(ROT_UBND);
+
+        msg::HelperDimension width;
+        width.set__dimension(SHIP_DIMENSION_LBND);  //NOLINT(readability-magic-numbers)
+
+        msg::HelperDimension length;
+        length.set__dimension(SHIP_DIMENSION_LBND);  //NOLINT(readability-magic-numbers)
+
+        msg.set__id(10);  //NOLINT(readability-magic-numbers)
+        msg.set__lat_lon(lat_lon);
+        msg.set__cog(cog);
+        msg.set__sog(sog);
+        msg.set__rot(rot);
+        msg.set__width(width);
+        msg.set__length(length);
+
+        EXPECT_THROW(CAN_FP::AISShips tmp(msg, valid_id), std::out_of_range);
+    };
+
+    for (float invalid_cog : invalid_cogs) {
+        msg::HelperLatLon lat_lon;
+        lat_lon.set__latitude(LAT_UBND);
+        lat_lon.set__longitude(LON_UBND);
+
+        msg::HelperHeading cog;
+        cog.set__heading(invalid_cog);
+
+        msg::HelperSpeed sog;
+        //convert to km/h
+        sog.set__speed(SPEED_LBND);
+
+        msg::HelperROT rot;
+        rot.set__rot(ROT_UBND);
+
+        msg::HelperDimension width;
+        width.set__dimension(SHIP_DIMENSION_LBND);  //NOLINT(readability-magic-numbers)
+
+        msg::HelperDimension length;
+        length.set__dimension(SHIP_DIMENSION_LBND);  //NOLINT(readability-magic-numbers)
+
+        msg.set__id(10);  //NOLINT(readability-magic-numbers)
+        msg.set__lat_lon(lat_lon);
+        msg.set__cog(cog);
+        msg.set__sog(sog);
+        msg.set__rot(rot);
+        msg.set__width(width);
+        msg.set__length(length);
+
+        EXPECT_THROW(CAN_FP::AISShips tmp(msg, valid_id), std::out_of_range);
+    };
+
+    for (float invalid_sog : invalid_sogs) {
+        msg::HelperLatLon lat_lon;
+        lat_lon.set__latitude(LAT_UBND);
+        lat_lon.set__longitude(LON_UBND);
+
+        msg::HelperHeading cog;
+        cog.set__heading(HEADING_LBND);
+
+        msg::HelperSpeed sog;
+        //convert to km/h
+        sog.set__speed(invalid_sog);
+
+        msg::HelperROT rot;
+        rot.set__rot(ROT_UBND);
+
+        msg::HelperDimension width;
+        width.set__dimension(SHIP_DIMENSION_LBND);  //NOLINT(readability-magic-numbers)
+
+        msg::HelperDimension length;
+        length.set__dimension(SHIP_DIMENSION_LBND);  //NOLINT(readability-magic-numbers)
+
+        msg.set__id(10);  //NOLINT(readability-magic-numbers)
+        msg.set__lat_lon(lat_lon);
+        msg.set__cog(cog);
+        msg.set__sog(sog);
+        msg.set__rot(rot);
+        msg.set__width(width);
+        msg.set__length(length);
+
+        EXPECT_THROW(CAN_FP::AISShips tmp(msg, valid_id), std::out_of_range);
+    };
+
+    for (int8_t invalid_rot : invalid_rots) {
+        msg::HelperLatLon lat_lon;
+        lat_lon.set__latitude(LAT_UBND);
+        lat_lon.set__longitude(LON_UBND);
+
+        msg::HelperHeading cog;
+        cog.set__heading(HEADING_LBND);
+
+        msg::HelperSpeed sog;
+        //convert to km/h
+        sog.set__speed(SPEED_UBND);
+
+        msg::HelperROT rot;
+        rot.set__rot(invalid_rot);
+
+        msg::HelperDimension width;
+        width.set__dimension(SHIP_DIMENSION_LBND);  //NOLINT(readability-magic-numbers)
+
+        msg::HelperDimension length;
+        length.set__dimension(SHIP_DIMENSION_LBND);  //NOLINT(readability-magic-numbers)
+
+        msg.set__id(10);  //NOLINT(readability-magic-numbers)
+        msg.set__lat_lon(lat_lon);
+        msg.set__cog(cog);
+        msg.set__sog(sog);
+        msg.set__rot(rot);
+        msg.set__width(width);
+        msg.set__length(length);
+
+        EXPECT_THROW(CAN_FP::AISShips tmp(msg, valid_id), std::out_of_range);
+    };
+
+    for (float invalid_width : invalid_widths) {
+        msg::HelperLatLon lat_lon;
+        lat_lon.set__latitude(LAT_UBND);
+        lat_lon.set__longitude(LON_UBND);
+
+        msg::HelperHeading cog;
+        cog.set__heading(HEADING_LBND);
+
+        msg::HelperSpeed sog;
+        //convert to km/h
+        sog.set__speed(SPEED_UBND);
+
+        msg::HelperROT rot;
+        rot.set__rot(ROT_UBND);
+
+        msg::HelperDimension width;
+        width.set__dimension(invalid_width);
+
+        msg::HelperDimension length;
+        length.set__dimension(SHIP_DIMENSION_LBND);  //NOLINT(readability-magic-numbers)
+
+        msg.set__id(10);  //NOLINT(readability-magic-numbers)
+        msg.set__lat_lon(lat_lon);
+        msg.set__cog(cog);
+        msg.set__sog(sog);
+        msg.set__rot(rot);
+        msg.set__width(width);
+        msg.set__length(length);
+
+        EXPECT_THROW(CAN_FP::AISShips tmp(msg, valid_id), std::out_of_range);
+    };
+
+    for (float invalid_length : invalid_lengths) {
+        msg::HelperLatLon lat_lon;
+        lat_lon.set__latitude(LAT_UBND);
+        lat_lon.set__longitude(LON_UBND);
+
+        msg::HelperHeading cog;
+        cog.set__heading(HEADING_LBND);
+
+        msg::HelperSpeed sog;
+        //convert to km/h
+        sog.set__speed(SPEED_UBND);
+
+        msg::HelperROT rot;
+        rot.set__rot(ROT_UBND);
+
+        msg::HelperDimension width;
+        width.set__dimension(SHIP_DIMENSION_LBND);  //NOLINT(readability-magic-numbers)
+
+        msg::HelperDimension length;
+        length.set__dimension(invalid_length);
+
+        msg.set__id(10);  //NOLINT(readability-magic-numbers)
+        msg.set__lat_lon(lat_lon);
+        msg.set__cog(cog);
+        msg.set__sog(sog);
+        msg.set__rot(rot);
+        msg.set__width(width);
+        msg.set__length(length);
+
+        EXPECT_THROW(CAN_FP::AISShips tmp(msg, valid_id), std::out_of_range);
     };
 }
 

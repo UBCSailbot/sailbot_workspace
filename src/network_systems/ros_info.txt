@@ -14,3 +14,5 @@ filtered_wind_sensor
 mock_wind_sensors
 wind_sensors
 local_path_data
+sail_cmd
+boat_sim_input
