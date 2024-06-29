@@ -201,10 +201,6 @@ void HTTPServer::doPost()
                 if (!params.data_.empty()) {
                     Polaris::GlobalPath global_path;
                     global_path.ParseFromString(params.data_);
-                    if (!self->db_.storeNewGlobalPath(global_path, params.transmit_time_)) {  //important
-                        std::cerr << "Error, failed to store data received from:\n"
-                                  << params.transmit_time_ << std::endl;
-                    };
                     int num_waypoints = 0;
                     for (const auto & waypoint : global_path.waypoints()) {
                         float               lat             = waypoint.latitude();
@@ -216,9 +212,17 @@ void HTTPServer::doPost()
                         std::cout << "waypoint latlon: " << lat << " " << lon << std::endl;
                     }
                     global_path.set_num_waypoints(num_waypoints);
+                    if (!self->db_.storeNewGlobalPath(global_path, params.transmit_time_)) {  //important
+                        std::cerr << "Error, failed to store data received from:\n"
+                                  << params.transmit_time_ << std::endl;
+                    };
                 }
             });
             post_thread.detach();
+        } else {
+            res_.result(http::status::unsupported_media_type);
+            res_.set(http::field::content_type, "text/plain");
+            beast::ostream(res_.body()) << "Server does not support sensors POST requests of type: " << content_type;
         }
         // std::string                 json_str = beast::buffers_to_string(req_.body().data());  //JSON Parsing
         // std::stringstream           ss(json_str);
