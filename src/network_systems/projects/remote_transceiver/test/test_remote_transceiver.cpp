@@ -101,6 +101,7 @@ std::string createPostBody(remote_transceiver::MOMsgParams::Params params);
 
 std::string createSensorPostBody(remote_transceiver::MOMsgParams::Params params)
 
+
 {
     std::ostringstream s;
     s << "imei=" << params.imei_ << "&serial=" << params.serial_ << "&momsn=" << params.momsn_
@@ -109,7 +110,8 @@ std::string createSensorPostBody(remote_transceiver::MOMsgParams::Params params)
     return s.str();
 }
 
-std::string createGlobalPathPostBody()
+//json createGlobalPathPostBody(protobuf,params)
+
 
   /**
  * @brief Test that we can POST sensor data to the server
