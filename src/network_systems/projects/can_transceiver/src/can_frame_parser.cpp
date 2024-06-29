@@ -627,25 +627,14 @@ PwrMode::PwrMode(const CanFrame & cf) : PwrMode(static_cast<CanId>(cf.can_id))
     checkBounds();
 }
 
-// PwrMode::PwrMode(msg::SailCmd ros_sail_cmd, CanId id)
-// : BaseFrame(id, CAN_BYTE_DLEN_), angle_(ros_sail_cmd.trim_tab_angle_degrees)
-// {
-//     checkBounds();
-// }
-
-// msg::SailCmd SailCmd::toRosMsg() const
-// {
-//     msg::SailCmd msg;
-//     msg.set__trim_tab_angle_degrees(angle_);
-//     return msg;
-// }
+PwrMode::PwrMode(uint8_t mode, CanId id) : BaseFrame(id, CAN_BYTE_DLEN_), mode_(mode) { checkBounds(); }
 
 CanFrame PwrMode::toLinuxCan() const
 {
-    uint8_t raw_angle = mode_;
+    uint8_t raw_mode = mode_;
 
     CanFrame cf = BaseFrame::toLinuxCan();
-    std::memcpy(cf.data + BYTE_OFF_MODE, &raw_angle, sizeof(uint8_t));
+    std::memcpy(cf.data + BYTE_OFF_MODE, &raw_mode, sizeof(uint8_t));
 
     return cf;
 }
@@ -665,7 +654,7 @@ PwrMode::PwrMode(CanId id) : BaseFrame(std::span{PWR_MODE_IDS}, id, CAN_BYTE_DLE
 
 void PwrMode::checkBounds() const
 {
-    auto err = utils::isOutOfBounds<float>(mode_, HEADING_LBND, HEADING_UBND);
+    auto err = utils::isOutOfBounds<float>(mode_, POWER_MODE_LOW, POWER_MODE_NORMAL);
     if (err) {
         std::string err_msg = err.value();
         throw std::out_of_range("Power mode value is out of bounds!\n" + debugStr() + "\n" + err_msg);

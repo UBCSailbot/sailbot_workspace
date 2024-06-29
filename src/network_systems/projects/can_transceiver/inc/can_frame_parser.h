@@ -535,9 +535,12 @@ private:
 class PwrMode final : public BaseFrame
 {
 public:
-    static constexpr std::array<CanId, 1> PWR_MODE_IDS   = {CanId::PWR_MODE};
-    static constexpr uint32_t             CAN_BYTE_DLEN_ = 1;
-    static constexpr uint32_t             BYTE_OFF_MODE  = 0;
+    static constexpr std::array<CanId, 1>   PWR_MODE_IDS      = {CanId::PWR_MODE};
+    static constexpr uint8_t                CAN_BYTE_DLEN_    = 1;
+    static constexpr uint8_t                BYTE_OFF_MODE     = 0;
+    static constexpr uint8_t                POWER_MODE_LOW    = 0;
+    static constexpr uint8_t                POWER_MODE_NORMAL = 1;
+    static constexpr std::array<uint8_t, 2> PWR_MODES         = {POWER_MODE_LOW, POWER_MODE_NORMAL};
 
     /**
      * @brief Explicitly deleted no-argument constructor
@@ -553,12 +556,12 @@ public:
     explicit PwrMode(const CanFrame & cf);
 
     /**
-     * @brief Construct an AISShips object from a custom_interfaces ROS msg representation
+     * @brief Construct a PwrMode object given a mode and CAN ID
      *
-     * @param ros_ais_ship custom_interfaces representation of the PwrMode
+     * @param mode    Power mode select
      * @param id      CanId of the PwrMode
      */
-    explicit PwrMode(msg::HelperAISShip ros_ship, CanId id);
+    explicit PwrMode(uint8_t mode, CanId id);
 
     /**
      * @return the custom_interfaces ROS representation of the PwrMode object

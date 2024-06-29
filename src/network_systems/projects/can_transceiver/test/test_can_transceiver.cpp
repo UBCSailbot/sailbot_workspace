@@ -564,6 +564,55 @@ TEST_F(TestCanFrameParser, TestGPSInvalid)
 }
 
 /**
+ * @brief Test NET<->CAN PwrMode translations work as expected for valid input values
+ *
+ */
+TEST_F(TestCanFrameParser, PwrModeTestValid)
+{
+    constexpr std::size_t NUM_MODES = CAN_FP::PwrMode::PWR_MODES.size();  //NOLINT(readability-magic-numbers)
+    constexpr std::array<uint8_t, NUM_MODES> expected_modes{
+      CAN_FP::PwrMode::POWER_MODE_LOW, CAN_FP::PwrMode::POWER_MODE_NORMAL};
+
+    for (size_t i = 0; i < NUM_MODES; i++) {
+        CAN_FP::CanId id            = CAN_FP::CanId::PWR_MODE;
+        uint8_t       expected_mode = expected_modes[i];
+
+        CAN_FP::PwrMode  pwr_mode_inst = CAN_FP::PwrMode(expected_mode, id);
+        CAN_FP::CanFrame cf            = pwr_mode_inst.toLinuxCan();
+
+        EXPECT_EQ(cf.can_id, static_cast<canid_t>(id));
+        EXPECT_EQ(cf.len, CAN_FP::PwrMode::CAN_BYTE_DLEN_);
+
+        uint8_t raw_mode;
+        std::memcpy(&raw_mode, cf.data + CAN_FP::PwrMode::BYTE_OFF_MODE, sizeof(int8_t));
+
+        EXPECT_EQ(raw_mode, expected_mode);
+    }
+}
+
+/**
+ * @brief Test the behavior of the WindSensor class when given invalid input values
+ *
+ */
+TEST_F(TestCanFrameParser, TestPwrModeInvalid)
+{
+    CAN_FP::CanId invalid_id = CAN_FP::CanId::RESERVED;
+
+    CAN_FP::CanFrame cf{.can_id = static_cast<canid_t>(invalid_id)};
+
+    EXPECT_THROW(CAN_FP::WindSensor tmp(cf), CAN_FP::CanIdMismatchException);
+
+    std::vector<int16_t> invalid_modes{CAN_FP::PwrMode::POWER_MODE_LOW - 1, CAN_FP::PwrMode::POWER_MODE_NORMAL + 1};
+
+    CAN_FP::CanId valid_id = CAN_FP::CanId::PWR_MODE;
+
+    // Set a valid speed for this portion
+    for (uint8_t invalid_mode : invalid_modes) {
+        EXPECT_THROW(CAN_FP::PwrMode tmp(invalid_mode, valid_id), std::out_of_range);
+    };
+}
+
+/**
  * @brief Test CanTransceiver using a tmp file
  *
  */
