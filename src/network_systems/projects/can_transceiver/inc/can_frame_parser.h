@@ -527,7 +527,6 @@ private:
     uint8_t  idx_;
 };
 
-//TODO: Create PWR_MODE frame
 /**
  * @brief Power mode class derived from BaseFrame. Represents power mode data.
  *
