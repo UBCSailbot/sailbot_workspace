@@ -223,7 +223,6 @@ std::optional<std::string> LocalTransceiver::debugSend(const std::string & cmd)
 
 custom_interfaces::msg::Path LocalTransceiver::receive()
 {
-    // TODO(jng468)
     std::string                  receivedData = readRsp().value();
     custom_interfaces::msg::Path to_publish   = parseInMsg(receivedData);
     return to_publish;
@@ -242,7 +241,6 @@ bool LocalTransceiver::send(const AT::Line & cmd)
 
 custom_interfaces::msg::Path LocalTransceiver::parseInMsg(const std::string & msg)
 {
-    //TODO(jng468)
     Polaris::GlobalPath path;
     path.ParseFromString(msg);
 

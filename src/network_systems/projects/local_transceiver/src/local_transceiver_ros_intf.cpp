@@ -100,9 +100,6 @@ private:
      */
     void pub_cb(/*placeholder*/)
     {
-        // TODO(jng468): complete this, after receive is done
-        // confirm if there's any input
-
         custom_interfaces::msg::Path msg = lcl_trns_->receive();
         pub_->publish(msg);
     }
@@ -139,10 +136,8 @@ int main(int argc, char * argv[])
 {
     bool err = false;
     rclcpp::init(argc, argv);
-  
-    // std::shared_ptr<LocalTransceiver> lcl_trns = std::make_shared<LocalTransceiver>("", SATELLITE_BAUD_RATE);
+
     try {
-        //std::shared_ptr<LocalTransceiverIntf> node = std::make_shared<LocalTransceiverIntf>(lcl_trns);
         std::shared_ptr<LocalTransceiverIntf> node = std::make_shared<LocalTransceiverIntf>();
         try {
             rclcpp::spin(node);

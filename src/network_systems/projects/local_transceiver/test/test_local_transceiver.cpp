@@ -16,6 +16,7 @@
 
 #include "at_cmds.h"
 #include "cmn_hdrs/shared_constants.h"
+#include "global_path.pb.h"
 #include "local_transceiver.h"
 #include "sensors.pb.h"
 
@@ -178,4 +179,34 @@ TEST_F(TestLocalTransceiver, sendData)
     lcl_trns_->updateSensor(local_paths);
 
     EXPECT_TRUE(lcl_trns_->send());
+}
+
+TEST_F(TestLocalTransceiver, paseInMsg)
+{
+    // creating sample path data
+
+    constexpr float                                   holder = 14.3;
+    std::vector<custom_interfaces::msg::HelperLatLon> waypoints;
+
+    Polaris::GlobalPath test;
+    // set values for this, call parse in message
+
+    custom_interfaces::msg::HelperLatLon helperLatLon_a;
+    helperLatLon_a.set__longitude(holder);
+    helperLatLon_a.set__latitude(holder);
+    waypoints.push_back(helperLatLon_a);
+
+    custom_interfaces::msg::HelperLatLon helperLatLon_b;
+    helperLatLon_b.set__longitude(holder);
+    helperLatLon_b.set__latitude(holder);
+    waypoints.push_back(helperLatLon_b);
+
+    // EXPECT_EQ(waypoints, /*placeholder*/);
+}
+
+TEST_F(TestLocalTransceiver, receive)
+{
+    custom_interfaces::msg::Path sent_data;
+
+    //EXPECT_EQ(sent_data, /*placeholder*/);
 }
