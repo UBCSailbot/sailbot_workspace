@@ -133,18 +133,18 @@ TEST_F(TestCanFrameParser, SailCmdTestValid)
         EXPECT_EQ(cf.can_id, static_cast<canid_t>(id));
         EXPECT_EQ(cf.len, CAN_FP::SailCmd::CAN_BYTE_DLEN_);
 
-        int16_t raw_angle;
-        std::memcpy(&raw_angle, cf.data + CAN_FP::SailCmd::BYTE_OFF_ANGLE, sizeof(int16_t));
-
+        uint32_t raw_angle;
+        std::memcpy(&raw_angle, cf.data + CAN_FP::SailCmd::BYTE_OFF_ANGLE, sizeof(uint32_t));
+        raw_angle /= 1000;  //NOLINT(readability-magic-numbers)
         EXPECT_EQ(raw_angle, expected_angle);
 
         CAN_FP::SailCmd sail_from_can = CAN_FP::SailCmd(cf);
 
         EXPECT_EQ(sail_from_can.id_, id);
 
-        msg::SailCmd msg_from_bat = sail_from_can.toRosMsg();
+        msg::SailCmd msg_from_can = sail_from_can.toRosMsg();
 
-        EXPECT_DOUBLE_EQ(msg_from_bat.trim_tab_angle_degrees, expected_angle);
+        EXPECT_DOUBLE_EQ(msg_from_can.trim_tab_angle_degrees, expected_angle);
     }
 }
 
@@ -175,6 +175,137 @@ TEST_F(TestCanFrameParser, TestSailCmdInvalid)
     std::copy(std::begin(GARBAGE_DATA), std::end(GARBAGE_DATA), cf.data);
 
     EXPECT_THROW(CAN_FP::SailCmd tmp(cf), std::out_of_range);
+}
+
+/**
+ * @brief Test ROS<->CAN DesiredHeading translations work as expected for valid input values
+ *
+ */
+TEST_F(TestCanFrameParser, DesiredHeadingTestValid)
+{
+    constexpr std::array<float, 2> expected_angles{9, 102};
+    CAN_FP::CanId                  id = CAN_FP::DesiredHeading::DESIRED_HEADING_IDS[0];
+
+    for (size_t i = 0; i < 2; i++) {
+        float              expected_angle = expected_angles[i];
+        msg::HelperHeading helper_msg;
+        helper_msg.set__heading(expected_angle);
+        msg::DesiredHeading msg;
+        msg.set__heading(helper_msg);
+        CAN_FP::DesiredHeading heading_from_ros = CAN_FP::DesiredHeading(msg, id);
+        CAN_FP::CanFrame       cf               = heading_from_ros.toLinuxCan();
+
+        EXPECT_EQ(cf.can_id, static_cast<canid_t>(id));
+        EXPECT_EQ(cf.len, CAN_FP::DesiredHeading::CAN_BYTE_DLEN_);
+
+        uint32_t raw_angle;
+        std::memcpy(&raw_angle, cf.data + CAN_FP::DesiredHeading::BYTE_OFF_HEADING, sizeof(uint32_t));
+        raw_angle /= 1000;  //NOLINT(readability-magic-numbers)
+        EXPECT_EQ(raw_angle, expected_angle);
+
+        CAN_FP::DesiredHeading heading_from_can = CAN_FP::DesiredHeading(cf);
+
+        EXPECT_EQ(heading_from_can.id_, id);
+
+        msg::DesiredHeading msg_from_can = heading_from_can.toRosMsg();
+
+        EXPECT_DOUBLE_EQ(msg_from_can.heading.heading, expected_angle);
+    }
+}
+
+/**
+ * @brief Test the behavior of the DesiredHeading class when given invalid Id values
+ *
+ */
+TEST_F(TestCanFrameParser, TestDesiredHeadingInvalid)
+{
+    CAN_FP::CanId invalid_id = CAN_FP::CanId::RESERVED;
+
+    CAN_FP::CanFrame cf{.can_id = static_cast<canid_t>(invalid_id)};
+
+    EXPECT_THROW(CAN_FP::DesiredHeading tmp(cf), CAN_FP::CanIdMismatchException);
+
+    std::vector<float> invalid_angles{HEADING_LBND - 1, HEADING_UBND + 1};
+
+    CAN_FP::CanId       valid_id = CAN_FP::CanId::MAIN_TR_TAB;
+    msg::DesiredHeading msg;
+    msg::HelperHeading  helper_msg;
+
+    for (float invalid_angle : invalid_angles) {
+        helper_msg.set__heading(invalid_angle);
+        msg.set__heading(helper_msg);
+
+        EXPECT_THROW(CAN_FP::DesiredHeading tmp(msg, valid_id), std::out_of_range);
+    };
+
+    cf.can_id = static_cast<canid_t>(CAN_FP::CanId::MAIN_HEADING);
+    std::copy(std::begin(GARBAGE_DATA), std::end(GARBAGE_DATA), cf.data);
+
+    EXPECT_THROW(CAN_FP::DesiredHeading tmp(cf), std::out_of_range);
+}
+
+/**
+ * @brief Test ROS<->CAN RudderData translations work as expected for valid input values
+ *
+ */
+TEST_F(TestCanFrameParser, RudderDataTestValid)
+{
+    constexpr std::array<float, 2> expected_angles{12, 128};
+    CAN_FP::CanId                  id = CAN_FP::RudderData::RUDDER_DATA_IDS[0];
+
+    for (size_t i = 0; i < 2; i++) {
+        float              expected_angle = expected_angles[i];
+        msg::HelperHeading helper_msg;
+        helper_msg.set__heading(expected_angle);
+
+        CAN_FP::RudderData heading_from_ros = CAN_FP::RudderData(helper_msg, id);
+        CAN_FP::CanFrame   cf               = heading_from_ros.toLinuxCan();
+
+        EXPECT_EQ(cf.can_id, static_cast<canid_t>(id));
+        EXPECT_EQ(cf.len, CAN_FP::RudderData::CAN_BYTE_DLEN_);
+
+        uint32_t raw_angle;
+        std::memcpy(&raw_angle, cf.data + CAN_FP::RudderData::BYTE_OFF_HEADING, sizeof(uint32_t));
+        raw_angle /= 1000;  //NOLINT(readability-magic-numbers)
+        EXPECT_EQ(raw_angle, expected_angle);
+
+        CAN_FP::RudderData heading_from_can = CAN_FP::RudderData(cf);
+
+        EXPECT_EQ(heading_from_can.id_, id);
+
+        msg::HelperHeading msg_from_can = heading_from_can.toRosMsg();
+
+        EXPECT_DOUBLE_EQ(msg_from_can.heading, expected_angle);
+    }
+}
+
+/**
+ * @brief Test the behavior of the RudderData class when given invalid Id values
+ *
+ */
+TEST_F(TestCanFrameParser, TestRudderDataInvalid)
+{
+    CAN_FP::CanId invalid_id = CAN_FP::CanId::RESERVED;
+
+    CAN_FP::CanFrame cf{.can_id = static_cast<canid_t>(invalid_id)};
+
+    EXPECT_THROW(CAN_FP::RudderData tmp(cf), CAN_FP::CanIdMismatchException);
+
+    std::vector<float> invalid_angles{HEADING_LBND - 1, HEADING_UBND + 1};
+
+    CAN_FP::CanId      valid_id = CAN_FP::CanId::MAIN_TR_TAB;
+    msg::HelperHeading helper_msg;
+
+    for (float invalid_angle : invalid_angles) {
+        helper_msg.set__heading(invalid_angle);
+
+        EXPECT_THROW(CAN_FP::RudderData tmp(helper_msg, valid_id), std::out_of_range);
+    };
+
+    cf.can_id = static_cast<canid_t>(CAN_FP::CanId::MAIN_HEADING);
+    std::copy(std::begin(GARBAGE_DATA), std::end(GARBAGE_DATA), cf.data);
+
+    EXPECT_THROW(CAN_FP::RudderData tmp(cf), std::out_of_range);
 }
 
 /**
