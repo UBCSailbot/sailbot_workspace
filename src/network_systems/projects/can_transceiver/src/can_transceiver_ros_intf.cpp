@@ -354,14 +354,8 @@ private:
         msg::HelperBattery bat;
         bat.set__voltage(BATT_VOLT_UBND);
         bat.set__current(BATT_CURR_UBND);
-        for (size_t i = 0; i < NUM_BATTERIES; i++) {
-            auto optCanId = CAN_FP::Battery::rosIdxToCanId(i);
-            if (optCanId) {
-                can_trns_->send(CAN_FP::Battery(bat, optCanId.value()).toLinuxCan());
-            } else {
-                RCLCPP_ERROR(this->get_logger(), "Failed to send mock battery of index %zu!", i);
-            }
-        }
+
+        can_trns_->send(CAN_FP::Battery(bat, CanId::BMS_DATA_FRAME).toLinuxCan());
     }
 };
 
