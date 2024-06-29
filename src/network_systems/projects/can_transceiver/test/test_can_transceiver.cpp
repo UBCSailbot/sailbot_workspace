@@ -115,30 +115,30 @@ TEST_F(TestCanFrameParser, TestBatteryInvalid)
 }
 
 /**
- * @brief Test ROS<->CAN SailCmd translations work as expected for valid input values
+ * @brief Test ROS<->CAN MainTrimTab translations work as expected for valid input values
  *
  */
-TEST_F(TestCanFrameParser, SailCmdTestValid)
+TEST_F(TestCanFrameParser, MainTrimTabTestValid)
 {
     constexpr std::array<float, 2> expected_angles{12, 128};
-    CAN_FP::CanId                  id = CAN_FP::SailCmd::SAIL_CMD_IDS[0];
+    CAN_FP::CanId                  id = CAN_FP::CanId::MAIN_TR_TAB;
 
     for (size_t i = 0; i < 2; i++) {
         float        expected_angle = expected_angles[i];
         msg::SailCmd msg;
         msg.set__trim_tab_angle_degrees(expected_angle);
-        CAN_FP::SailCmd  sail_from_ros = CAN_FP::SailCmd(msg, id);
-        CAN_FP::CanFrame cf            = sail_from_ros.toLinuxCan();
+        CAN_FP::MainTrimTab sail_from_ros = CAN_FP::MainTrimTab(msg, id);
+        CAN_FP::CanFrame    cf            = sail_from_ros.toLinuxCan();
 
         EXPECT_EQ(cf.can_id, static_cast<canid_t>(id));
-        EXPECT_EQ(cf.len, CAN_FP::SailCmd::CAN_BYTE_DLEN_);
+        EXPECT_EQ(cf.len, CAN_FP::MainTrimTab::CAN_BYTE_DLEN_);
 
         uint32_t raw_angle;
-        std::memcpy(&raw_angle, cf.data + CAN_FP::SailCmd::BYTE_OFF_ANGLE, sizeof(uint32_t));
+        std::memcpy(&raw_angle, cf.data + CAN_FP::MainTrimTab::BYTE_OFF_ANGLE, sizeof(uint32_t));
         raw_angle /= 1000;  //NOLINT(readability-magic-numbers)
         EXPECT_EQ(raw_angle, expected_angle);
 
-        CAN_FP::SailCmd sail_from_can = CAN_FP::SailCmd(cf);
+        CAN_FP::MainTrimTab sail_from_can = CAN_FP::MainTrimTab(cf);
 
         EXPECT_EQ(sail_from_can.id_, id);
 
@@ -149,16 +149,16 @@ TEST_F(TestCanFrameParser, SailCmdTestValid)
 }
 
 /**
- * @brief Test the behavior of the SailCmd class when given invalid Id values
+ * @brief Test the behavior of the MainTrimTab class when given invalid Id values
  *
  */
-TEST_F(TestCanFrameParser, TestSailCmdInvalid)
+TEST_F(TestCanFrameParser, TestMainTrimTabInvalid)
 {
     CAN_FP::CanId invalid_id = CAN_FP::CanId::RESERVED;
 
     CAN_FP::CanFrame cf{.can_id = static_cast<canid_t>(invalid_id)};
 
-    EXPECT_THROW(CAN_FP::SailCmd tmp(cf), CAN_FP::CanIdMismatchException);
+    EXPECT_THROW(CAN_FP::MainTrimTab tmp(cf), CAN_FP::CanIdMismatchException);
 
     std::vector<float> invalid_angles{HEADING_LBND - 1, HEADING_UBND + 1};
 
@@ -168,13 +168,13 @@ TEST_F(TestCanFrameParser, TestSailCmdInvalid)
     for (float invalid_angle : invalid_angles) {
         msg.set__trim_tab_angle_degrees(invalid_angle);
 
-        EXPECT_THROW(CAN_FP::SailCmd tmp(msg, valid_id), std::out_of_range);
+        EXPECT_THROW(CAN_FP::MainTrimTab tmp(msg, valid_id), std::out_of_range);
     };
 
     cf.can_id = static_cast<canid_t>(CAN_FP::CanId::MAIN_TR_TAB);
     std::copy(std::begin(GARBAGE_DATA), std::end(GARBAGE_DATA), cf.data);
 
-    EXPECT_THROW(CAN_FP::SailCmd tmp(cf), std::out_of_range);
+    EXPECT_THROW(CAN_FP::MainTrimTab tmp(cf), std::out_of_range);
 }
 
 /**
@@ -184,7 +184,7 @@ TEST_F(TestCanFrameParser, TestSailCmdInvalid)
 TEST_F(TestCanFrameParser, DesiredHeadingTestValid)
 {
     constexpr std::array<float, 2> expected_angles{9, 102};
-    CAN_FP::CanId                  id = CAN_FP::DesiredHeading::DESIRED_HEADING_IDS[0];
+    CAN_FP::CanId                  id = CAN_FP::CanId::MAIN_HEADING;
 
     for (size_t i = 0; i < 2; i++) {
         float              expected_angle = expected_angles[i];
@@ -251,7 +251,7 @@ TEST_F(TestCanFrameParser, TestDesiredHeadingInvalid)
 TEST_F(TestCanFrameParser, RudderDataTestValid)
 {
     constexpr std::array<float, 2> expected_angles{12, 128};
-    CAN_FP::CanId                  id = CAN_FP::RudderData::RUDDER_DATA_IDS[0];
+    CAN_FP::CanId                  id = CAN_FP::CanId::RUDDER_DATA_FRAME;
 
     for (size_t i = 0; i < 2; i++) {
         float              expected_angle = expected_angles[i];
@@ -413,18 +413,15 @@ TEST_F(TestCanFrameParser, GPSTestValid)
     constexpr std::array<float, 2>   expected_lats{48.6, -57.3};
     constexpr std::array<float, 2>   expected_lons{-32.1, 112.9};
     constexpr std::array<float, 2>   expected_speeds{3.5, 8.0};
-    constexpr std::array<float, 2>   expected_headings{100.4, 43.2};
     constexpr std::array<int32_t, 2> expected_raw_lats{138600, 32700};
     constexpr std::array<int32_t, 2> expected_raw_lons{147900, 292900};
     constexpr std::array<int32_t, 2> expected_raw_speeds{3500, 8000};
-    constexpr std::array<int32_t, 2> expected_raw_headings{100400, 43200};
 
     for (size_t i = 0; i < 2; i++) {
-        CAN_FP::CanId id               = CAN_FP::CanId::PATH_GPS_DATA_FRAME;
-        float         expected_lat     = expected_lats[i];
-        float         expected_lon     = expected_lons[i];
-        float         expected_speed   = expected_speeds[i];
-        float         expected_heading = expected_headings[i];
+        CAN_FP::CanId id             = CAN_FP::CanId::PATH_GPS_DATA_FRAME;
+        float         expected_lat   = expected_lats[i];
+        float         expected_lon   = expected_lons[i];
+        float         expected_speed = expected_speeds[i];
 
         msg::GPS           msg;
         msg::HelperLatLon  msg_latlon;
@@ -437,7 +434,7 @@ TEST_F(TestCanFrameParser, GPSTestValid)
         msg_speed.set__speed(expected_speed);
         msg.set__speed(msg_speed);
 
-        msg_heading.set__heading(expected_heading);
+        msg_heading.set__heading(0.0);
         msg.set__heading(msg_heading);
 
         CAN_FP::GPS      gps_from_ros = CAN_FP::GPS(msg, id);
@@ -449,16 +446,13 @@ TEST_F(TestCanFrameParser, GPSTestValid)
         int32_t raw_lat;
         int32_t raw_lon;
         int32_t raw_speed;
-        int32_t raw_heading;
         std::memcpy(&raw_lat, cf.data + CAN_FP::GPS::BYTE_OFF_LAT, sizeof(int32_t));
         std::memcpy(&raw_lon, cf.data + CAN_FP::GPS::BYTE_OFF_LON, sizeof(int32_t));
         std::memcpy(&raw_speed, cf.data + CAN_FP::GPS::BYTE_OFF_SPEED, sizeof(int32_t));
-        std::memcpy(&raw_heading, cf.data + CAN_FP::GPS::BYTE_OFF_HEADING, sizeof(int32_t));
 
         EXPECT_EQ(raw_lat, expected_raw_lats[i]);
         EXPECT_EQ(raw_lon, expected_raw_lons[i]);
         EXPECT_EQ(raw_speed, expected_raw_speeds[i]);
-        EXPECT_EQ(raw_heading, expected_raw_headings[i]);
 
         CAN_FP::GPS gps_from_can = CAN_FP::GPS(cf);
 
@@ -469,7 +463,6 @@ TEST_F(TestCanFrameParser, GPSTestValid)
         EXPECT_EQ(msg_from_gps.lat_lon.latitude, expected_lat);
         EXPECT_EQ(msg_from_gps.lat_lon.longitude, expected_lon);
         EXPECT_DOUBLE_EQ(msg_from_gps.speed.speed, expected_speed);
-        EXPECT_DOUBLE_EQ(msg_from_gps.heading.heading, expected_heading);
     }
 }
 
@@ -488,7 +481,6 @@ TEST_F(TestCanFrameParser, TestGPSInvalid)
     std::vector<float> invalid_lons{LON_LBND - 1, LON_UBND + 1};
     std::vector<float> invalid_lats{LAT_LBND - 1, LAT_UBND + 1};
     std::vector<float> invalid_speeds{SPEED_LBND - 1, SPEED_UBND + 1};
-    std::vector<float> invalid_headings{HEADING_LBND - 1, HEADING_UBND + 1};
 
     CAN_FP::CanId valid_id = CAN_FP::CanId::PATH_GPS_DATA_FRAME;
     msg::GPS      msg;
@@ -545,22 +537,54 @@ TEST_F(TestCanFrameParser, TestGPSInvalid)
 
         EXPECT_THROW(CAN_FP::GPS tmp(msg, valid_id), std::out_of_range);
     };
+}
 
-    for (float invalid_heading : invalid_headings) {
-        msg::HelperLatLon  msg_latlon;
-        msg::HelperSpeed   msg_speed;
-        msg::HelperHeading msg_heading;
-        msg_latlon.set__latitude(LAT_UBND);
-        msg_latlon.set__longitude(LON_UBND);
-        msg.set__lat_lon(msg_latlon);
+/**
+ * @brief Test NET<->CAN PwrMode translations work as expected for valid input values
+ *
+ */
+TEST_F(TestCanFrameParser, PwrModeTestValid)
+{
+    constexpr std::size_t NUM_MODES = CAN_FP::PwrMode::PWR_MODES.size();  //NOLINT(readability-magic-numbers)
+    constexpr std::array<uint8_t, NUM_MODES> expected_modes{
+      CAN_FP::PwrMode::POWER_MODE_LOW, CAN_FP::PwrMode::POWER_MODE_NORMAL};
 
-        msg_speed.set__speed(SPEED_UBND);
-        msg.set__speed(msg_speed);
+    for (size_t i = 0; i < NUM_MODES; i++) {
+        CAN_FP::CanId id            = CAN_FP::CanId::PWR_MODE;
+        uint8_t       expected_mode = expected_modes[i];
 
-        msg_heading.set__heading(invalid_heading);
-        msg.set__heading(msg_heading);
+        CAN_FP::PwrMode  pwr_mode_inst = CAN_FP::PwrMode(expected_mode, id);
+        CAN_FP::CanFrame cf            = pwr_mode_inst.toLinuxCan();
 
-        EXPECT_THROW(CAN_FP::GPS tmp(msg, valid_id), std::out_of_range);
+        EXPECT_EQ(cf.can_id, static_cast<canid_t>(id));
+        EXPECT_EQ(cf.len, CAN_FP::PwrMode::CAN_BYTE_DLEN_);
+
+        uint8_t raw_mode;
+        std::memcpy(&raw_mode, cf.data + CAN_FP::PwrMode::BYTE_OFF_MODE, sizeof(int8_t));
+
+        EXPECT_EQ(raw_mode, expected_mode);
+    }
+}
+
+/**
+ * @brief Test the behavior of the WindSensor class when given invalid input values
+ *
+ */
+TEST_F(TestCanFrameParser, TestPwrModeInvalid)
+{
+    CAN_FP::CanId invalid_id = CAN_FP::CanId::RESERVED;
+
+    CAN_FP::CanFrame cf{.can_id = static_cast<canid_t>(invalid_id)};
+
+    EXPECT_THROW(CAN_FP::WindSensor tmp(cf), CAN_FP::CanIdMismatchException);
+
+    std::vector<int16_t> invalid_modes{CAN_FP::PwrMode::POWER_MODE_LOW - 1, CAN_FP::PwrMode::POWER_MODE_NORMAL + 1};
+
+    CAN_FP::CanId valid_id = CAN_FP::CanId::PWR_MODE;
+
+    // Set a valid speed for this portion
+    for (uint8_t invalid_mode : invalid_modes) {
+        EXPECT_THROW(CAN_FP::PwrMode tmp(invalid_mode, valid_id), std::out_of_range);
     };
 }
 
