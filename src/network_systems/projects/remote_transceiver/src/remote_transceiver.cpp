@@ -205,6 +205,17 @@ void HTTPServer::doPost()
                         std::cerr << "Error, failed to store data received from:\n"
                                   << params.transmit_time_ << std::endl;
                     };
+                    int num_waypoints = 0;
+                    for (const auto & waypoint : global_path.waypoints()) {
+                        float               lat             = waypoint.latitude();
+                        float               lon             = waypoint.longitude();
+                        Polaris::Waypoint * global_waypoint = global_path.add_waypoints();
+                        global_waypoint->set_longitude(lon);
+                        global_waypoint->set_latitude(lat);
+                        num_waypoints++;
+                        std::cout << "waypoint latlon: " << lat << " " << lon << std::endl;
+                    }
+                    global_path.set_num_waypoints(num_waypoints);
                 }
             });
             post_thread.detach();
