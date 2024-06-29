@@ -14,8 +14,11 @@
 #include <random>
 
 #include "cmn_hdrs/shared_constants.h"
+#include "sailbot_db/inc/sailbot_db.h"
+#include "sailbot_db/inc/util_db.h"
 #include "utils/utils.h"
 
+using Polaris::GlobalPath;
 using Polaris::Sensors;
 
 void UtilDB::cleanDB()
@@ -23,12 +26,13 @@ void UtilDB::cleanDB()
     mongocxx::pool::entry entry = pool_->acquire();
     mongocxx::database    db    = (*entry)[db_name_];
 
-    mongocxx::collection gps_coll        = db[COLLECTION_GPS];
-    mongocxx::collection ais_coll        = db[COLLECTION_AIS_SHIPS];
-    mongocxx::collection generic_coll    = db[COLLECTION_DATA_SENSORS];
-    mongocxx::collection batteries_coll  = db[COLLECTION_BATTERIES];
-    mongocxx::collection wind_coll       = db[COLLECTION_WIND_SENSORS];
-    mongocxx::collection local_path_coll = db[COLLECTION_LOCAL_PATH];
+    mongocxx::collection gps_coll         = db[COLLECTION_GPS];
+    mongocxx::collection ais_coll         = db[COLLECTION_AIS_SHIPS];
+    mongocxx::collection generic_coll     = db[COLLECTION_DATA_SENSORS];
+    mongocxx::collection batteries_coll   = db[COLLECTION_BATTERIES];
+    mongocxx::collection wind_coll        = db[COLLECTION_WIND_SENSORS];
+    mongocxx::collection local_path_coll  = db[COLLECTION_LOCAL_PATH];
+    mongocxx::collection global_path_coll = db[COLLECTION_GLOBAL_PATH];
 
     gps_coll.delete_many(bsoncxx::builder::basic::make_document());
     ais_coll.delete_many(bsoncxx::builder::basic::make_document());
@@ -36,6 +40,7 @@ void UtilDB::cleanDB()
     batteries_coll.delete_many(bsoncxx::builder::basic::make_document());
     wind_coll.delete_many(bsoncxx::builder::basic::make_document());
     local_path_coll.delete_many(bsoncxx::builder::basic::make_document());
+    global_path_coll.delete_many(bsoncxx::builder::basic::make_document());
 }
 
 Sensors UtilDB::genRandSensors()
@@ -71,6 +76,13 @@ Sensors UtilDB::genRandSensors()
     return sensors;
 }
 
+GlobalPath UtilDB::genGlobalPath()
+{
+    GlobalPath global_path;
+    genGlobalPathData(global_path);
+    return global_path;
+}
+
 std::tm UtilDB::getTimestamp()
 {
     // Get the current time
@@ -89,8 +101,16 @@ std::pair<Sensors, SailbotDB::RcvdMsgInfo> UtilDB::genRandData(const std::tm & t
       .lat_       = 0,  // Not processed yet, so just set to 0
       .lon_       = 0,  // Not processed yet, so just set to 0
       .cep_       = 0,  // Not processed yet, so just set to 0
-      .timestamp_ = SailbotDB::RcvdMsgInfo::mkTimestamp(tm)};
+      .timestamp_ = SailbotDB::mkTimestamp(tm)};
     return {rand_sensors, rand_info};
+}
+
+std::pair<Polaris::GlobalPath, std::string> UtilDB::genGlobalData(const std::tm & tm)
+{
+    Polaris::GlobalPath global_path_data = genGlobalPath();
+
+    std::string global_timestamp = {SailbotDB::mkTimestamp(tm)};
+    return {global_path_data, global_timestamp};
 }
 
 bool UtilDB::verifyDBWrite(std::span<Sensors> expected_sensors, std::span<SailbotDB::RcvdMsgInfo> expected_msg_info)
@@ -167,6 +187,79 @@ bool UtilDB::verifyDBWrite(std::span<Sensors> expected_sensors, std::span<Sailbo
         }
     }
     return !tracker.failed();
+}
+
+bool UtilDB::verifyDBWrite_GlobalPath(
+  std::span<GlobalPath> expected_globalpath, std::span<std::string> expected_timestamp)
+{
+    utils::FailTracker tracker;
+
+    auto expectEQ = [&tracker]<not_float T>(T rcvd, T expected, const std::string & err_msg) -> void {
+        tracker.track(utils::checkEQ(rcvd, expected, err_msg));
+    };
+    auto expectFloatEQ = [&tracker]<std::floating_point T>(T rcvd, T expected, const std::string & err_msg) -> void {
+        tracker.track(utils::checkEQ(rcvd, expected, err_msg));
+    };
+
+    expectEQ(expected_globalpath.size(), expected_timestamp.size(), "Must have a timestamp for global path");
+    size_t num_docs                             = expected_globalpath.size();
+    auto [dumped_globalpath, dumped_timestamps] = dumpGlobalpath(tracker, num_docs);
+
+    expectEQ(dumped_globalpath.size(), num_docs, "");
+    expectEQ(dumped_timestamps.size(), num_docs, "");
+
+    for (size_t i = 0; i < num_docs; i++) {
+        expectEQ(dumped_timestamps[i], expected_timestamp[i], "");
+
+        // path waypoints
+        for (int j = 0; j < NUM_PATH_WAYPOINTS; j++) {
+            const Polaris::Waypoint & dumped_path_waypoint   = dumped_globalpath[i].waypoints(j);
+            const Polaris::Waypoint & expected_path_waypoint = expected_globalpath[i].waypoints(j);
+            expectFloatEQ(dumped_path_waypoint.latitude(), expected_path_waypoint.latitude(), "");
+            expectFloatEQ(dumped_path_waypoint.longitude(), expected_path_waypoint.longitude(), "");
+        }
+    }
+    return !tracker.failed();
+}
+
+std::pair<std::vector<GlobalPath>, std::vector<std::string>> UtilDB::dumpGlobalpath(
+  utils::FailTracker & tracker, size_t num_docs)
+{
+    auto expectEQ = [&tracker]<not_float T>(T rcvd, T expected, const std::string & err_msg) -> void {
+        tracker.track(utils::checkEQ(rcvd, expected, err_msg));
+    };
+
+    std::vector<GlobalPath>  globalpath_vec(num_docs);
+    std::vector<std::string> timestamp_vec(num_docs);
+    mongocxx::pool::entry    entry = pool_->acquire();
+    mongocxx::database       db    = (*entry)[db_name_];
+    // Set the find options to sort by timestamp
+    bsoncxx::document::value order = bsoncxx::builder::stream::document{} << "timestamp" << 1
+                                                                          << bsoncxx::builder::stream::finalize;
+    mongocxx::options::find opts = mongocxx::options::find{};
+    opts.sort(order.view());
+
+    // global path
+    mongocxx::collection path_coll        = db[COLLECTION_GLOBAL_PATH];
+    mongocxx::cursor     global_path_docs = path_coll.find({}, opts);
+    expectEQ(
+      static_cast<uint64_t>(path_coll.count_documents({})), num_docs,
+      "Error: TestDB should only have " + std::to_string(num_docs) + " documents per collection");
+
+    for (auto [i, path_doc_it] = std::tuple{size_t{0}, global_path_docs.begin()}; i < num_docs; i++, path_doc_it++) {
+        GlobalPath &                  globalpath = globalpath_vec[i];
+        const bsoncxx::document::view path_doc   = *path_doc_it;
+        timestamp_vec[i]                         = path_doc["timestamp"].get_utf8().value.to_string();
+        for (bsoncxx::array::element path_doc : path_doc["waypoints"].get_array().value) {
+            Polaris::Waypoint * path = globalpath.add_waypoints();
+            path->set_latitude(static_cast<float>(path_doc["latitude"].get_double().value));
+            path->set_longitude(static_cast<float>(path_doc["longitude"].get_double().value));
+        }
+        expectEQ(globalpath.waypoints_size(), NUM_PATH_WAYPOINTS, "Size mismatch when reading path waypoints from DB");
+        //expectEQ(path_doc["timestamp"].get_utf8().value.to_string(), timestamp, "Document timestamp mismatch");  // issue here
+    }
+
+    return {globalpath_vec, timestamp_vec};
 }
 
 std::pair<std::vector<Sensors>, std::vector<std::string>> UtilDB::dumpSensors(
@@ -396,4 +489,17 @@ void UtilDB::genRandPathData(Sensors::Path & path_data)
         waypoint->set_latitude(latitude_path(*rng_));
         waypoint->set_longitude(longitude_path(*rng_));
     }
+}
+
+void UtilDB::genGlobalPathData(Polaris::GlobalPath & global_path_data)  //
+{
+    std::uniform_real_distribution<float> latitude_path(LAT_LBND, LAT_UBND);
+    std::uniform_real_distribution<float> longitude_path(LON_LBND, LON_UBND);
+    (void)rng_;
+    for (int i = 0; i < NUM_PATH_WAYPOINTS; i++) {
+        Polaris::Waypoint * waypoint = global_path_data.add_waypoints();
+        waypoint->set_latitude(latitude_path(*rng_));  // this needs a float
+        waypoint->set_longitude(longitude_path(*rng_));
+    }
+    global_path_data.num_waypoints();
 }
