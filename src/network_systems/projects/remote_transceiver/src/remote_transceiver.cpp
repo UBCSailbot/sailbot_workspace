@@ -190,24 +190,43 @@ void HTTPServer::doPost()
         }
     } else if (req_.target() == remote_transceiver::targets::GLOBAL_PATH) {
         // TODO(): Allow POST global path
-        std::string                 json_str = beast::buffers_to_string(req_.body().data());  //JSON Parsing
-        std::stringstream           ss(json_str);
-        boost::property_tree::ptree json_tree;
-        boost::property_tree::read_json(ss, json_tree);
-        std::string timestamp = json_tree.get<std::string>("timestamp");
-        std::cout << "timestamp: " << timestamp << std::endl;
-        Polaris::GlobalPath global_path;
-        int                 num_waypoints = 0;
-        for (const auto & waypoint : json_tree.get_child("waypoints")) {
-            float               lat             = waypoint.second.get<float>("latitude");
-            float               lon             = waypoint.second.get<float>("longitude");
-            Polaris::Waypoint * global_waypoint = global_path.add_waypoints();
-            global_waypoint->set_longitude(lon);
-            global_waypoint->set_latitude(lat);
-            num_waypoints++;
-            std::cout << "waypoint latlon: " << lat << " " << lon << std::endl;
+        beast::string_view content_type = req_["content-type"];
+        if (content_type == "application/x-www-form-urlencoded") {
+            res_.result(http::status::ok);
+            std::shared_ptr<HTTPServer> self = shared_from_this();
+            // Detach a thread to process the data so that the server can write a response within the 3 seconds allotted
+            std::thread post_thread([self]() {
+                std::string         query_string = beast::buffers_to_string(self->req_.body().data());
+                MOMsgParams::Params params       = MOMsgParams(query_string).params_;
+                if (!params.data_.empty()) {
+                    Polaris::GlobalPath global_path;
+                    global_path.ParseFromString(params.data_);
+                    if (!self->db_.storeNewGlobalPath(global_path, params.transmit_time_)) {  //important
+                        std::cerr << "Error, failed to store data received from:\n"
+                                  << params.transmit_time_ << std::endl;
+                    };
+                }
+            });
+            post_thread.detach();
         }
-        global_path.set_num_waypoints(num_waypoints);
+        // std::string                 json_str = beast::buffers_to_string(req_.body().data());  //JSON Parsing
+        // std::stringstream           ss(json_str);
+        // boost::property_tree::ptree json_tree;
+        // boost::property_tree::read_json(ss, json_tree);
+        // std::string timestamp = json_tree.get<std::string>("timestamp");
+        // std::cout << "timestamp: " << timestamp << std::endl;
+        // Polaris::GlobalPath global_path;
+        // int                 num_waypoints = 0;
+        // for (const auto & waypoint : json_tree.get_child("waypoints")) {
+        //     float               lat             = waypoint.second.get<float>("latitude");
+        //     float               lon             = waypoint.second.get<float>("longitude");
+        //     Polaris::Waypoint * global_waypoint = global_path.add_waypoints();
+        //     global_waypoint->set_longitude(lon);
+        //     global_waypoint->set_latitude(lat);
+        //     num_waypoints++;
+        //     std::cout << "waypoint latlon: " << lat << " " << lon << std::endl;
+        // }
+        // global_path.set_num_waypoints(num_waypoints);
 
     } else {
         doNotFound();
