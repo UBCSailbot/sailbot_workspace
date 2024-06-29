@@ -720,6 +720,4 @@ private:
     float heading_;
 };
 
-//TODO: write tests for rudder data
-
 }  // namespace CAN_FP
