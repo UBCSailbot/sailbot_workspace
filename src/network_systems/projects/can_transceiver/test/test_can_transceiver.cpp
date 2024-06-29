@@ -302,7 +302,7 @@ TEST_F(TestCanFrameParser, TestRudderDataInvalid)
         EXPECT_THROW(CAN_FP::RudderData tmp(helper_msg, valid_id), std::out_of_range);
     };
 
-    cf.can_id = static_cast<canid_t>(CAN_FP::CanId::MAIN_HEADING);
+    cf.can_id = static_cast<canid_t>(CAN_FP::CanId::RUDDER_DATA_FRAME);
     std::copy(std::begin(GARBAGE_DATA), std::end(GARBAGE_DATA), cf.data);
 
     EXPECT_THROW(CAN_FP::RudderData tmp(cf), std::out_of_range);
