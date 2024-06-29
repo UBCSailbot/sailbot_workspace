@@ -214,7 +214,7 @@ class SailCmd final : public BaseFrame
 {
 public:
     static constexpr std::array<CanId, 1> SAIL_CMD_IDS   = {CanId::MAIN_TR_TAB};
-    static constexpr uint8_t              CAN_BYTE_DLEN_ = 2;
+    static constexpr uint8_t              CAN_BYTE_DLEN_ = 4;
     static constexpr uint8_t              BYTE_OFF_ANGLE = 0;
 
     /**
@@ -721,7 +721,6 @@ private:
     float heading_;
 };
 
-//TODO: update tests for sail
-//TODO: write tests for desired heading and rudder data
+//TODO: write tests for rudder data
 
 }  // namespace CAN_FP
