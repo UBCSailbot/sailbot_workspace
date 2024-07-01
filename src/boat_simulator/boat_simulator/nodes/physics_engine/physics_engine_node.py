@@ -278,6 +278,7 @@ class PhysicsEngineNode(Node):
 
     # PUBLISHER CALLBACKS
     def __publish(self):
+        self.__update_boat_state()
         """Synchronously publishes data to all publishers at once."""
         # TODO Get updated boat state and publish (should this be separate from publishing?)
         # TODO Get wind sensor data and publish (should this be separate from publishing?)
@@ -552,6 +553,19 @@ class PhysicsEngineNode(Node):
             throttle_duration_sec=self.get_parameter("info_log_throttle_period_sec")
             .get_parameter_value()
             .double_value,
+        )
+
+    def __update_boat_state(self):
+        """
+        Generates the next vectors for wind_generator and current_generator and updates the
+        boat_state with the new wind and current vectors along with the rudder_angle and
+        sail_trim_tab_angle.
+        """
+        self.__boat_state(
+            self.__wind_generator.next(),
+            self.__current_generator.next(),
+            self.__rudder_angle,
+            self.__sail_trim_tab_angle,
         )
 
     # CLASS PROPERTY PUBLIC GETTERS
