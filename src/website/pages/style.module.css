@@ -1,14 +1,9 @@
 .mainContainer {
-  display: grid;
+  /* display: grid;
   grid-template-columns: 1fr 1fr;
   margin-top: 0;
-  height: 50vh;
-  position: absolute;
-}
-
-.dashboardContainer {
-  overflow-y: auto;
-  padding-left: 10px;
+  position: absolute; */
+  height: 75vh;
 }
 
 .topRight {

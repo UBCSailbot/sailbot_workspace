@@ -1,0 +1,5 @@
+.dashboardContainer {
+    overflow-y: scroll;
+    padding-left: 10px;
+    height: 100%;
+}

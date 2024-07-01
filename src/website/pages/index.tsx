@@ -5,6 +5,8 @@ import Header from '@/views/components/Header/Header';
 import styles from './style.module.css';
 import PolarisContainer from '@/views/components/Polaris/PolarisContainer';
 import { clearLogsPeriodically } from '@/lib/redux/logUtils'
+import SplitPane from 'split-pane-react';
+import 'split-pane-react/esm/themes/default.css';
 
 const MapsContainer = dynamic(() => import('@/views/MapsContainer'), {
   loading: () => <CircularProgress className={styles.loadingSpinner} />,
@@ -20,6 +22,12 @@ export default function Home() {
   const handleOpenModal = () => setIsModalOpen(true);
   const handleCloseModal = () => setIsModalOpen(false);
 
+  const [sizes, setSizes] = useState(['50%', '50%', 'auto']);
+
+  const layoutCSS = {
+    height: '100%'
+  };
+
   useEffect(() => {
     clearLogsPeriodically();
   }, []);
@@ -27,11 +35,20 @@ export default function Home() {
   return (
     <>
       <Header onInfoButtonClick={handleOpenModal} />
-      <div className={styles.mainContainer}>
+      {/* <div className={styles.mainContainer}>
         <MapsContainer />
-        <div className={styles.dashboardContainer}>
+        <DashboardContainer />
+      </div> */}
+
+      <div className={styles.mainContainer}>
+        <SplitPane
+          split='vertical'
+          sizes={sizes}
+          onChange={setSizes}
+        >
+          <MapsContainer />
           <DashboardContainer />
-        </div>
+        </SplitPane>
       </div>
 
       <Modal

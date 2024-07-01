@@ -6,6 +6,7 @@ import { Batteries, BatteriesState } from '@/stores/Batteries/BatteriesTypes';
 import { WindSensor, WindSensors, WindSensorsState } from '@/stores/WindSensors/WindSensorsTypes';
 import { DataFilterState } from '@/stores/DataFilter/DataFilterTypes';
 import UPlotMultiLineChartComponent from './components/LineChart/UPlotMultiLineChart';
+import styles from './dashboardcontainer.module.css'
 
 export interface DashboardContainerProps {
   gps: GPSState;
@@ -136,7 +137,7 @@ class DashboardContainer extends React.PureComponent<DashboardContainerProps> {
     }
 
     return (
-      <div>
+      <div className={styles.dashboardContainer}>
         {/* <Grid
           container spacing={0}
           direction={"row"}
