@@ -16,5 +16,8 @@ for DIR in $ROS_WORKSPACE/src/*; do
 done
 
 sudo apt-get update
-rosdep update --rosdistro $ROS_DISTRO
+if wget -q --spider --timeout=1 http://google.com; then
+    # only run if connected to the internet
+    rosdep update --rosdistro $ROS_DISTRO
+fi
 rosdep install --from-paths src --ignore-src -y --rosdistro $ROS_DISTRO

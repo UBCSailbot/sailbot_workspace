@@ -32,6 +32,3 @@ venv/
 .cache/
 # Build
 site/
-
-# web
-/src/website/tests/node_modules/*

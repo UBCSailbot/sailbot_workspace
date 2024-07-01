@@ -5,6 +5,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    user: ros
     ports:
       # website
       - "3005:3005"
@@ -27,7 +28,7 @@ services:
 
   # URL: mongodb://localhost:27017
   mongodb:
-    image: mongo:7
+    image: mongo:${MONGO_TAG:-4.4.18}
     restart: unless-stopped
     volumes:
       - mongodb-data:/data/db:delegated
