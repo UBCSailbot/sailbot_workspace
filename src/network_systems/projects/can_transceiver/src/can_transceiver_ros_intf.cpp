@@ -67,10 +67,10 @@ public:
 
             can_trns_->registerCanCbs({
               std::make_pair(
-                CanId::BMS_P_DATA_FRAME_1,
+                CanId::BMS_DATA_FRAME,
                 std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishBattery(frame); })),
               std::make_pair(
-                CanId::BMS_P_DATA_FRAME_2,
+                CanId::BMS_DATA_FRAME,
                 std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishBattery(frame); })),
               // TODO(lross03): Add remaining pairs
             });
@@ -176,14 +176,8 @@ private:
         msg::HelperBattery bat;
         bat.set__voltage(BATT_VOLT_UBND);
         bat.set__current(BATT_CURR_UBND);
-        for (size_t i = 0; i < NUM_BATTERIES; i++) {
-            auto optCanId = CAN_FP::Battery::rosIdxToCanId(i);
-            if (optCanId) {
-                can_trns_->send(CAN_FP::Battery(bat, optCanId.value()).toLinuxCan());
-            } else {
-                RCLCPP_ERROR(this->get_logger(), "Failed to send mock battery of index %zu!", i);
-            }
-        }
+
+        can_trns_->send(CAN_FP::Battery(bat, CanId::BMS_DATA_FRAME).toLinuxCan());
     }
 };
 
