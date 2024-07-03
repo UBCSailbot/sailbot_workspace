@@ -2,7 +2,6 @@
 
 import math
 import os
-import sys
 from typing import List, Optional
 
 import fiona
@@ -16,7 +15,6 @@ from shapely.strtree import STRtree
 from land.land_polygon_etl import COMPLETE_DATA_FILE
 from local_pathfinding.coord_systems import XY, latlon_to_xy, meters_to_km
 
-sys.path.insert(0, "/workspaces/sailbot_workspace/src/local_pathfinding/land")
 # Constants
 PROJ_TIME_NO_COLLISION = 3  # hours
 BOAT_BUFFER = 0.5  # km
@@ -113,8 +111,9 @@ class Obstacle:
 
 class Land(Obstacle):
     """
-    Describes land objects which Sailbot must avoid. During runtime, we will keep track of a single
-    Land obstacle object and update its collision zone with new geometry when required.
+    Describes land objects which Sailbot must avoid. During runtime, the obstacle tracker will
+    keep track of a single Land obstacle object and update its collision zone with new geometry
+    when required.
 
     Attributes:
         next_waypoint (HelperLatLon): Lat and lon position of the next global waypoint.
