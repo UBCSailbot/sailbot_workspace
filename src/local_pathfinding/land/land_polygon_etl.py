@@ -30,6 +30,7 @@ import os
 import pickle
 import subprocess
 import sys
+import fiona
 from os.path import normpath
 
 import geopandas as gpd
@@ -100,7 +101,7 @@ class Logger:
 
     def error(self, msg):
         level = self.levels.get("ERROR")
-        print(level + msg + self.reset)
+        print(level + msg + "Exiting" + self.reset)
         exit(1)
 
 
