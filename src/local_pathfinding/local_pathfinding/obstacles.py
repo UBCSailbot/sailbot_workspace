@@ -19,7 +19,6 @@ from local_pathfinding.coord_systems import XY, latlon_to_xy, meters_to_km
 PROJ_TIME_NO_COLLISION = 3  # hours
 BOAT_BUFFER = 0.5  # km
 COLLISION_ZONE_STRETCH_FACTOR = 1.5  # This factor changes the scope/width of the collision cone
-LAND_BUFFER = 0.5  # km
 
 LAND_DIR = "/workspaces/sailbot_workspace/src/local_pathfinding/land"
 LAND_POLYGONS_FILE = os.path.join(LAND_DIR, COMPLETE_DATA_FILE)
@@ -167,12 +166,9 @@ class Land(Obstacle):
 
         local_polygons = self._transform_polygons_latlon_to_XY(latlon_polygons, self.reference)
 
-        # add a buffer to the perimeter of all polygons
-        buffered_polygons = list(
-            map(lambda poly: poly.buffer(LAND_BUFFER, join_style=2), local_polygons)
-        )
-
-        self.collision_zone = MultiPolygon(buffered_polygons)
+        # create a MultiPolygon from the local polygons
+        # local_polygons will already have a buffer applied before runtime
+        self.collision_zone = MultiPolygon(local_polygons)
 
     def _transform_polygons_from_latlon_to_xy(
         polygons: List[Polygon],
