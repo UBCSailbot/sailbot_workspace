@@ -54,7 +54,7 @@ class Obstacle:
         Checks if a state point is inside the obstacle's collision zone.
 
         Args:
-            point (HelperLatLon): Point representing the state point to be checked.
+            point (HelperLatLon): Point representing the path planner's state point to be checked.
 
         Returns:
             bool: True if the point is not within the obstacle's collision zone, false otherwise.
@@ -74,11 +74,11 @@ class Obstacle:
         """
         if isinstance(self, Boat):
             # Boat Obstacle
-            self._update_boat_czone()
+            self._update_boat_collision_zone()
 
         else:
             # Land Obstacle
-            self._update_land_czone()
+            self._update_land_collision_zone()
 
     def update_sailbot_data(self, sailbot_position: HelperLatLon, sailbot_speed: float) -> None:
         """Updates Sailbot's position, and Sailbot's speed (if the caller is a Boat object).
@@ -104,17 +104,17 @@ class Obstacle:
 
         if isinstance(self, Boat):
             # regenerate collision zone with updated reference point
-            self.update_boat_czone()
+            self.update_boat_collision_zone()
 
         else:
             # regenerate collision zone with updated reference point
-            self.update_land_czone()
+            self.update_land_collision_zone()
 
 
 class Land(Obstacle):
     """
-    Describes land objects which Sailbot must avoid. The intent is to only have a single Land
-    obstacle and update its collision zone with new geometry when required.
+    Describes land objects which Sailbot must avoid. During runtime, we will keep track of a single
+    Land obstacle object and update its collision zone with new geometry when required.
 
     Attributes:
         next_waypoint (HelperLatLon): Lat and lon position of the next global waypoint.
@@ -134,9 +134,9 @@ class Land(Obstacle):
         self.next_waypoint = next_waypoint
         self.sindex = sindex
         self.bbox_buffer = bbox_buffer
-        self._update_land_czone()
+        self._update_land_collision_zone()
 
-    def _update_land_czone(self, bbox: Polygon = None) -> None:
+    def _update_land_collision_zone(self, bbox: Polygon = None) -> None:
         """
         Updates the Land object's collision zone with a MultiPolygon representing
         all land obstacles within either a bounding box input as an argument
@@ -149,12 +149,14 @@ class Land(Obstacle):
             sailbot_box = Point(*self.sailbot_position).buffer(
                 self.bbox_buffer, cap_style="square", join_style=2
             )
-            # and another around the next waypoint
+            # create a box around the next waypoint
             waypoint_box = Point(*self.next_waypoint).buffer(
                 self.bbox_buffer, cap_style="square", join_style=2
             )
-            # then create a bounding box around both boxes
-            bbox = box(MultiPolygon(list(sailbot_box, waypoint_box)).bounds)
+            # create a bounding box around both boxes
+            bbox = box(
+                MultiPolygon([sailbot_box, waypoint_box]).bounds
+            )
 
         # query the spatial index for all land polygons that intersect the bounding box
         rows = list(self.sindex.query(geometry=bbox, predicate="intersects"))
@@ -164,7 +166,7 @@ class Land(Obstacle):
             # array of polygons
             latlon_polygons = GeoDataFrame.from_features((reader[row] for row in rows))["geometry"]
 
-        local_polygons = self._transform_polygons(latlon_polygons, self.reference)
+        local_polygons = self._transform_polygons_latlon_to_XY(latlon_polygons, self.reference)
 
         # add a buffer to the perimeter of all polygons
         buffered_polygons = list(
@@ -173,7 +175,10 @@ class Land(Obstacle):
 
         self.collision_zone = MultiPolygon(buffered_polygons)
 
-    def _transform_polygons(polygons: List[Polygon], reference: HelperLatLon) -> List[Polygon]:
+    def _transform_polygons_from_latlon_to_xy(
+        polygons: List[Polygon],
+            reference: HelperLatLon) -> List[Polygon]:
+
         """
         Transforms the polygons from the global coordinate system to the local
         XY coordinate system.
@@ -186,23 +191,23 @@ class Land(Obstacle):
             List[Polygon]: List of transformed polygons.
 
         Inner Functions:
-            _latlon_to_point(point: HelperLatLon) -> Point:
+            _latlon_to_xy_point(point: HelperLatLon) -> Point:
                 Converts a latlon point to a 2D Cartesian point.
-            _transform_polygon(poly: Polygon) -> Polygon:
+            _latlons_to_xy_points(poly: Polygon) -> Polygon:
                 Applies the _latlon_to_point function to every point of poly
         """
 
-        def _latlon_to_point(point: HelperLatLon) -> Point:
+        def _latlons_to_xy_points(poly: Polygon) -> Polygon:
+            return Polygon(list(map(_latlon_to_xy_point, poly.exterior.coords)))
+
+        def _latlon_to_xy_point(point: HelperLatLon) -> Point:
             return Point(
                 *latlon_to_xy(
                     reference=reference, latlon=HelperLatLon(latitude=point[1], longitude=point[0])
                 )
             )
 
-        def _transform_polygon(poly: Polygon) -> Polygon:
-            return Polygon(list(map(_latlon_to_point, poly.exterior.coords)))
-
-        return list(map(_transform_polygon, polygons))
+        return list(map(_latlons_to_xy_points, polygons))
 
 
 class Boat(Obstacle):
@@ -227,9 +232,9 @@ class Boat(Obstacle):
         self.ais_ship = ais_ship
         self.width = meters_to_km(self.ais_ship.width.dimension)
         self.length = meters_to_km(self.ais_ship.length.dimension)
-        self._update_boat_czone()
+        self._update_boat_collision_zone()
 
-    def _update_boat_czone(self, ais_ship: Optional[HelperAISShip] = None) -> None:
+    def _update_boat_collision_zone(self, ais_ship: Optional[HelperAISShip] = None) -> None:
         """Sets or regenerates a Shapely Polygon that represents the boat's collision zone.
 
         Args:
