@@ -112,6 +112,19 @@ SINDEX_FILE = normpath("pkl/sindex.pkl")  # spatial index of final land mass dat
 GDF_SPF_FILE = normpath("pkl/gdf_spf.pkl")  # gdf after first spatial filter
 GDF_FILTER_FILE = normpath("pkl/gdf_filter.pkl")  # gdf containing polygons to filter against
 
+def dump_pkl(object: any, file_path: str):
+    # creating a pickler once, when everything is being pickled
+    # will likely be more efficient
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    with open(file_path, "wb") as f:
+        pickle.dump(object, f, protocol=pickle.HIGHEST_PROTOCOL)
+
+
+def load_pkl(file_path: str) -> any:
+    with open(file_path, "rb") as f:
+        return pickle.load(f)
+
+
 
 # ----------------------------------------UTILS----------------------------------------------
 class Logger:
