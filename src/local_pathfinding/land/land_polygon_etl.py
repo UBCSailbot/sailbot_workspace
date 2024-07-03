@@ -30,7 +30,6 @@ import os
 import pickle
 import subprocess
 import sys
-import fiona
 from os.path import normpath
 
 import geopandas as gpd
@@ -47,15 +46,19 @@ LAT_RANGE = (14.6338, 61.4795)  # S:N
 LON_RANGE = (-179.9, -109.335938)  # W:E
 DEFAULT_BBOX = box(LON_RANGE[0], LAT_RANGE[0], LON_RANGE[1], LAT_RANGE[1])
 
+# buffer distance in degrees
+# translates to 500m at the equator
+LAND_BUFFER = 0.0045
+
 # SHAPE FILE PATHS
 BASE_SHP_FILE = normpath("shp/land_polygons.shp")
 BBOX_REGION_FILE = normpath("shp/land_polygons_bbox_region.shp")
 COMPLETE_DATA_FILE = normpath("shp/complete_land_data.shp")
 
-# SHAPE FILE URLS
+# SHAPE FILE URL
 BASE_SHP_URL = "https://osmdata.openstreetmap.de/download/land-polygons-split-3857.zip"
 
-# CSV PATHS
+# CSV
 # this is the polygon which defines the complete navigation region
 # all land obstacles will come from polygons which intersect or are bounded by this polygon
 MAP_SEL_POLYGON = normpath("csv/map_sel.csv")
@@ -197,8 +200,19 @@ def main():
 
     gdf_complete.to_crs(WGS84, inplace=True)
 
+    unbuffered_polygons = gdf_complete["geometry"].values
+
+    logger.ok("Buffering polygons...")
+    # buffer polygons
+    buffered_polygons = list(
+            map(lambda poly: poly.buffer(LAND_BUFFER, join_style=2), unbuffered_polygons)
+    )
+
+    gdf_complete_buffered = gpd.GeoDataFrame(geometry=buffered_polygons, crs=WGS84)
+
+    logger.ok("Creating spatial index...")
     # create spatial index object
-    sindex = gdf_complete.sindex
+    sindex = gdf_complete_buffered.sindex
 
     # dummy query to ensure sindex is fully instantiated
     point = Point(-122.743184, 48.268958)
@@ -208,7 +222,7 @@ def main():
     dump_pkl(sindex, SINDEX_FILE)
     # send gdf_complete to shp file
     # fiona will be used to load the file again, so it is the specified engine
-    gdf_complete.to_file(filename=COMPLETE_DATA_FILE, engine="fiona")
+    gdf_complete_buffered.to_file(filename=COMPLETE_DATA_FILE, engine="fiona")
 
     logger.ok(
         f"The complete land mass data set has successfully been created and saved as"
