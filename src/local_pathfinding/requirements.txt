@@ -9,14 +9,4 @@ plotly
 
 # land_polygon_etl.py
 geopandas
-pandas
-scikit-learn
-alphashape
-xarray
 fiona
-tqdm
-netcdf4
-scipy>=1.12
-requests
-gdown
-psutil

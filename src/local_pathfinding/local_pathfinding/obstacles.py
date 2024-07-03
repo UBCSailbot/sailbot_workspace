@@ -48,10 +48,10 @@ class Obstacle:
 
     def is_valid(self, point: XY) -> bool:
         """
-        Checks if a state point is inside the obstacle's collision zone.
+        Checks if a path planner's state point is inside the obstacle's collision zone.
 
         Args:
-            point (HelperLatLon): Point representing the path planner's state point to be checked.
+            point (HelperLatLon): Point representing the state point to be checked.
 
         Returns:
             bool: True if the point is not within the obstacle's collision zone, false otherwise.
