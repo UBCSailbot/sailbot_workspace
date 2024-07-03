@@ -31,20 +31,11 @@ import pickle
 import subprocess
 import sys
 from os.path import normpath
-from typing import List
 
 import geopandas as gpd
-import numpy as np
-import pandas as pd
 import pyproj
-import xarray as xr
-from geopandas import GeoDataFrame
-from shapely import concave_hull, convex_hull
-from shapely.geometry import LineString, MultiPoint, Point, Polygon, box
+from shapely.geometry import LineString, Point, Polygon, box
 from shapely.ops import split, transform
-from sklearn.cluster import DBSCAN
-from sklearn.preprocessing import StandardScaler
-from tqdm import tqdm
 
 # Constants
 WGS84 = pyproj.CRS("EPSG:4326")

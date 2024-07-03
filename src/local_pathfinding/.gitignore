@@ -8,6 +8,5 @@ __pycache__/
 !/global_paths/mock_global_path.csv
 
 # land data files
-/land/netcdf
 /land/shp
 *.pkl
