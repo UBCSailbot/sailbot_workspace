@@ -561,7 +561,7 @@ class PhysicsEngineNode(Node):
         boat_state with the new wind and current vectors along with the rudder_angle and
         sail_trim_tab_angle.
         """
-        self.__boat_state(
+        self.__boat_state.step(
             self.__wind_generator.next(),
             self.__current_generator.next(),
             self.__rudder_angle,
