@@ -61,6 +61,10 @@ Other relevant commands include (but are not limited to):
 
 Script to setup, build, and test all ROS packages.
 
+## `run_software.sh`
+
+Script to setup, build, and run all ROS packages.
+
 ## `setup.sh`
 
 Script to handle ROS setup.
