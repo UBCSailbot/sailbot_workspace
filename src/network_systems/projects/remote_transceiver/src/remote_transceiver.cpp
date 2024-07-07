@@ -1,5 +1,7 @@
 #include "remote_transceiver.h"
 
+#include <curl/curl.h>
+
 #include <boost/algorithm/string.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/io_context.hpp>
@@ -190,59 +192,54 @@ void HTTPServer::doPost()
         }
     } else if (req_.target() == remote_transceiver::targets::GLOBAL_PATH) {
         // TODO(): Allow POST global path
-        beast::string_view content_type = req_["content-type"];
-        if (content_type == "application/x-www-form-urlencoded") {
-            res_.result(http::status::ok);
-            std::shared_ptr<HTTPServer> self = shared_from_this();
-            // Detach a thread to process the data so that the server can write a response within the 3 seconds allotted
-            std::thread post_thread([self]() {
-                std::string         query_string = beast::buffers_to_string(self->req_.body().data());
-                MOMsgParams::Params params       = MOMsgParams(query_string).params_;
-                if (!params.data_.empty()) {
-                    Polaris::GlobalPath global_path;
-                    global_path.ParseFromString(params.data_);
-                    int num_waypoints = 0;
-                    for (const auto & waypoint : global_path.waypoints()) {
-                        float               lat             = waypoint.latitude();
-                        float               lon             = waypoint.longitude();
-                        Polaris::Waypoint * global_waypoint = global_path.add_waypoints();
-                        global_waypoint->set_longitude(lon);
-                        global_waypoint->set_latitude(lat);
-                        num_waypoints++;
-                        std::cout << "waypoint latlon: " << lat << " " << lon << std::endl;
-                    }
-                    global_path.set_num_waypoints(num_waypoints);
-                    if (!self->db_.storeNewGlobalPath(global_path, params.transmit_time_)) {  //important
-                        std::cerr << "Error, failed to store data received from:\n"
-                                  << params.transmit_time_ << std::endl;
-                    };
-                }
-            });
-            post_thread.detach();
-        } else {
-            res_.result(http::status::unsupported_media_type);
-            res_.set(http::field::content_type, "text/plain");
-            beast::ostream(res_.body()) << "Server does not support sensors POST requests of type: " << content_type;
+        std::string                 json_str = beast::buffers_to_string(req_.body().data());  //JSON Parsing
+        std::stringstream           ss(json_str);
+        boost::property_tree::ptree json_tree;
+        boost::property_tree::read_json(ss, json_tree);
+        std::string timestamp = json_tree.get<std::string>("timestamp");
+        std::cout << "timestamp: " << timestamp << std::endl;
+        Polaris::GlobalPath global_path;
+        int                 num_waypoints = 0;
+        for (const auto & waypoint : json_tree.get_child("waypoints")) {
+            float               lat             = waypoint.second.get<float>("latitude");
+            float               lon             = waypoint.second.get<float>("longitude");
+            Polaris::Waypoint * global_waypoint = global_path.add_waypoints();
+            global_waypoint->set_longitude(lon);
+            global_waypoint->set_latitude(lat);
+            num_waypoints++;
+            std::cout << "waypoint latlon: " << lat << " " << lon << std::endl;
         }
-        // std::string                 json_str = beast::buffers_to_string(req_.body().data());  //JSON Parsing
-        // std::stringstream           ss(json_str);
-        // boost::property_tree::ptree json_tree;
-        // boost::property_tree::read_json(ss, json_tree);
-        // std::string timestamp = json_tree.get<std::string>("timestamp");
-        // std::cout << "timestamp: " << timestamp << std::endl;
-        // Polaris::GlobalPath global_path;
-        // int                 num_waypoints = 0;
-        // for (const auto & waypoint : json_tree.get_child("waypoints")) {
-        //     float               lat             = waypoint.second.get<float>("latitude");
-        //     float               lon             = waypoint.second.get<float>("longitude");
-        //     Polaris::Waypoint * global_waypoint = global_path.add_waypoints();
-        //     global_waypoint->set_longitude(lon);
-        //     global_waypoint->set_latitude(lat);
-        //     num_waypoints++;
-        //     std::cout << "waypoint latlon: " << lat << " " << lon << std::endl;
-        // }
-        // global_path.set_num_waypoints(num_waypoints);
+        global_path.set_num_waypoints(num_waypoints);
+        std::string data;
+        //  serialize global path string
+        if (!global_path.SerializeToString(&data)) {
+            std::cerr << "Failed to Serialized Global Path string" << std::endl;
+            std::cerr << global_path.DebugString() << std::endl;
+        }
 
+        CURL *   curl;
+        CURLcode res;
+
+        curl_global_init(CURL_GLOBAL_ALL);
+
+        curl                   = curl_easy_init();
+        std::string param_data = "imei=123456789&username=foo&password=bar&data=";
+        param_data += data;
+
+        if (curl != nullptr) {
+            curl_easy_setopt(curl, CURLOPT_URL, "https://rockblock.rock7.com/rockblock/MT");
+            curl_easy_setopt(curl, CURLOPT_POSTFIELDS, param_data.c_str());
+
+            res = curl_easy_perform(curl);
+
+            if (res != CURLE_OK) {
+                std::cerr << "ccurl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
+            }
+
+            curl_easy_cleanup(curl);
+        }
+        curl_global_cleanup();
+        // Create a post request to rockblock http pot request URL (how to send a post request to a url/endpoint)
     } else {
         doNotFound();
     }
