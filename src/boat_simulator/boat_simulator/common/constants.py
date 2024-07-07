@@ -33,14 +33,14 @@ class PhysicsEnginePublisherTopics:
 
 @dataclass
 class BoatProperties:
-    sail_lift_coeffs: Dict[float, float]
-    sail_drag_coeffs: Dict[float, float]
-    sail_areas: Dict[float, float]
-    rudder_drag_coeffs: Dict[float, float]
-    rudder_areas: Dict[float, float]
-    sail_dist: float
-    rudder_dist: float
-    hull_drag_factor: float
+    sail_lift_coeffs: Dict[float, float]  # Degrees, Dimensionless
+    sail_drag_coeffs: Dict[float, float]  # Degrees, Dimensionless
+    sail_areas: Dict[float, float]  # Degrees, Square meters
+    rudder_drag_coeffs: Dict[float, float]  # Degrees, Dimensionless
+    rudder_areas: Dict[float, float]  # Degrees, Square meters
+    sail_dist: float  # Meters
+    rudder_dist: float  # Meters
+    hull_drag_factor: float  # Dimensionless
 
 
 # Directly accessible constants
@@ -92,3 +92,4 @@ BOAT_PROPERTIES = BoatProperties(
     rudder_dist=1.5,
     hull_drag_factor=0.05,
 )
+# TODO These are placeholder values which should be replaced when we have real values.
