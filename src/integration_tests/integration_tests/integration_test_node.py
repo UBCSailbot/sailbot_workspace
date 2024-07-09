@@ -736,14 +736,13 @@ class IntegrationTestNode(Node):
 
         for count, http_e_output in enumerate(self.__test_inst.http_expected_outputs()):
             topic = http_e_output.name
-            if topic != GLOBAL_PATH_API_NAME or (topic == GLOBAL_PATH_API_NAME and self.__global_path_pub):
-                data = http_outputs[count]
+            data = http_outputs[count]
 
-                if data != http_e_output.msg:
-                    self._logger.error(
-                        f"HTTP output from {topic} does not match expected output: {data}"
-                    )
-                    num_fail += 1
+            if data != http_e_output.msg:
+                self._logger.error(
+                    f"HTTP output from {topic} does not match expected output: {data}"
+                )
+                num_fail += 1
 
         return num_fail
 
