@@ -34,6 +34,10 @@ NON_ROS_PACKAGES = ["virtual_iridium", "website"]
 HTTP_MSG_PLACEHOLDER_TYPE = builtins.dict[str, Any]
 TestMsgType = Union[rclpy.node.MsgType, HTTP_MSG_PLACEHOLDER_TYPE]
 
+GLOBAL_PATH_API_NAME = "globalpath"
+POST_URL = "http://localhost:8081/global-path"
+PULL_URL = "http://localhost:3005/api/"
+
 
 def main(args=None):
     rclpy.init(args=args)
@@ -425,13 +429,15 @@ class IntegrationTestSequence:
 
             elif input_dict["type"] == "HTTP":
                 data = input_dict["data"]
-                if "global_path" == input_dict["name"]:
+                if GLOBAL_PATH_API_NAME == input_dict["name"]:
                     # This is a GlobalPath message
-                    raise NotImplementedError("Global Path Integration Test")
+                    msg, msg_type = parse_http_data(data)  # type: ignore
+                    new_input = IOEntry(name=input_dict["name"], msg_type=msg_type, msg=msg)
                 else:
                     msg, msg_type = parse_ros_data(data)  # type: ignore
                     new_input = IOEntry(name=input_dict["name"], msg_type=msg_type, msg=msg)
-                    self.__http_inputs.append(new_input)
+
+                self.__http_inputs.append(new_input)
 
             else:
                 raise KeyError(f"Invalid input type: {input_dict['type']}")
@@ -456,9 +462,6 @@ class IntegrationTestSequence:
 
             elif output["type"] == "HTTP":
                 data = output["data"]
-                if "GlobalPath" in data:
-                    # This is a GlobalPath message
-                    raise NotImplementedError("Global Path Integration Test")
 
                 msg, msg_type = parse_http_data(data)  # type: ignore
                 new_output = IOEntry(name=output["name"], msg_type=msg_type, msg=msg)
@@ -649,13 +652,22 @@ class IntegrationTestNode(Node):
 
                 # TODO: HTTP (GlobalPath will need to be done separtely)
                 self.__http_inputs: list[ROSInputEntry] = []
+                self.__global_path_pub = False
                 for http_input in self.__test_inst.http_inputs():
-                    pub = self.create_publisher(
-                        msg_type=http_input.msg_type,
-                        topic=http_input.name,
-                        qos_profile=10, # change
-                    )
-                    self.__http_inputs.append(ROSInputEntry(pub=pub, msg=http_input.msg))
+                    if http_input.name != GLOBAL_PATH_API_NAME:
+                        pub = self.create_publisher(
+                            msg_type=http_input.msg_type,
+                            topic=http_input.name,
+                            qos_profile=10, # change
+                        )
+                        self.__http_inputs.append(ROSInputEntry(pub=pub, msg=http_input.msg))
+                    else:
+                        # This is a GlobalPath message
+                        self.__global_path_pub = self.pub_global_path(http_input.msg)
+
+                        if self.__global_path_pub:
+                            self.get_logger().info("Published GlobalPath to database")
+
 
                 self.__http_outputs: list[dict[str, Any]]
 
@@ -701,19 +713,37 @@ class IntegrationTestNode(Node):
                 pub.publish(msg)
                 self.get_logger().info(f'Published to topic: "{pub.topic}", with msg: "{msg}"')
 
+    def pub_global_path(self, msg: HTTP_MSG_PLACEHOLDER_TYPE) -> None:
+        """Publish to the GlobalPath HTTP endpoint
+
+        Args:
+            msg (HTTP_MSG_PLACEHOLDER_TYPE): Message to publish
+        """
+        data = json.dumps(msg).encode("utf8")
+
+        try:
+            urllib.request.urlopen(
+            PULL_URL + GLOBAL_PATH_API_NAME,
+            data,
+            )
+            return True
+        except urllib.error.HTTPError as e:
+            self.get_logger().error(f"Failed to publish Global path to the database: {e}")
+
     def http_evaluate(self, http_outputs) -> int:
 
         num_fail = 0
 
         for count, http_e_output in enumerate(self.__test_inst.http_expected_outputs()):
             topic = http_e_output.name
-            data = http_outputs[count]
+            if topic != GLOBAL_PATH_API_NAME or (topic == GLOBAL_PATH_API_NAME and self.__global_path_pub):
+                data = http_outputs[count]
 
-            if data != http_e_output.msg:
-                self._logger.error(
-                    f"HTTP output from {topic} does not match expected output: {data}"
-                )
-                num_fail += 1
+                if data != http_e_output.msg:
+                    self._logger.error(
+                        f"HTTP output from {topic} does not match expected output: {data}"
+                    )
+                    num_fail += 1
 
         return num_fail
 
@@ -726,16 +756,15 @@ class IntegrationTestNode(Node):
             topic = e_http_output.name
             try:
                 contents = urllib.request.urlopen(
-                    f"http://localhost:3005/api/{topic}"
+                    PULL_URL + topic
                 )
             except urllib.error.HTTPError as e:
                 self._logger.error(f"HTTPError: {e}")
 
             data_dict = json.load(contents)
             data = (data_dict["data"])[0]
-            self._logger.info(f"Received HTTP response from {topic}: {data}")
 
-            data.pop("timestamp")
+            data.pop("timestamp") # Remove timestamp from data as it is not relevant for comparison
             self.__http_outputs.append(data)
 
         num_fail = self.http_evaluate(self.__http_outputs)
