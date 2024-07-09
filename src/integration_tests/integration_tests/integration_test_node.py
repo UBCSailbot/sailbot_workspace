@@ -9,7 +9,7 @@ import json
 import traceback
 import urllib.request
 from dataclasses import dataclass, field
-from typing import Any, Optional, Tuple, Type, TypeVar, Union
+from typing import Any, Optional, Tuple, Type, Union
 
 import custom_interfaces.msg
 import rclpy
