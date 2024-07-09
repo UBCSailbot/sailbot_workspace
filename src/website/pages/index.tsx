@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { CircularProgress, Modal } from '@mui/material';
 import Header from '@/views/components/Header/Header';
 import styles from './style.module.css';
 import PolarisContainer from '@/views/components/Polaris/PolarisContainer';
+import { clearLogsPeriodically } from '@/lib/redux/logUtils'
 
 const MapsContainer = dynamic(() => import('@/views/MapsContainer'), {
   loading: () => <CircularProgress className={styles.loadingSpinner} />,
@@ -18,6 +19,10 @@ export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const handleOpenModal = () => setIsModalOpen(true);
   const handleCloseModal = () => setIsModalOpen(false);
+
+  useEffect(() => {
+    clearLogsPeriodically();
+  }, []);
 
   return (
     <>

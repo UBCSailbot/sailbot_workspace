@@ -137,6 +137,7 @@ nav:
         - Docs Site: current/sailbot_workspace/reference/docs_site.md
         - Images: current/sailbot_workspace/reference/docker_images.md
         - Launch Files: current/sailbot_workspace/reference/launch_files.md
+        - Notebooks: current/sailbot_workspace/reference/notebooks.md
         - Parameters: current/sailbot_workspace/reference/parameters.md
         - Scripts: current/sailbot_workspace/scripts.md
     - Boat Simulator:
@@ -149,8 +150,6 @@ nav:
       - Overview: current/local_pathfinding/overview.md
     - Network Systems:
       - Overview: current/network_systems/overview.md
-    - Notebooks:
-      - Overview: current/notebooks/overview.md
     - Website:
       - Overview: current/website/overview.md
   - Reference:
