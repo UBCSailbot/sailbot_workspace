@@ -40,7 +40,7 @@ inputs:
               val: 180.0
   # # Global Path used to test list datatype parsing, it's not actually monitored in this example
   # - type: HTTP
-  #   name: global_path
+  #   name: local_path
   #   data:
   #     dtype: Path
   #     waypoints:
@@ -59,7 +59,7 @@ inputs:
   #             dtype: float32
   #             val: -3
   - type: HTTP
-    name: mock_gps
+    name: gps # The name should follow the similar format to the MongoDB collection name
     data:
       dtype: GPS
       lat_lon:
@@ -80,7 +80,25 @@ inputs:
           heading:
               dtype: float32
               val: 180
-
+  - type: HTTP
+    name: local_path
+    data:
+      dtype: Path
+      waypoints:
+        - dtype: HelperLatLon
+          latitude:
+              dtype: float32
+              val: 2
+          longitude:
+              dtype: float32
+              val: -2
+        - dtype: HelperLatLon
+          latitude:
+              dtype: float32
+              val: 3
+          longitude:
+              dtype: float32
+              val: -3
 
 expected_outputs:
   - type: ROS
@@ -100,24 +118,19 @@ expected_outputs:
       dtype: AISShips
       DONT_CARE: True
   - type: HTTP
-    name: mock_gps
+    name: gps
     data:
       dtype: GPS
-      lat_lon:
-          dtype: HelperLatLon
-          latitude:
-              dtype: float32
-              val: 1
-          longitude:
-              dtype: float32
-              val: -1
-      speed:
-          dtype: HelperSpeed
-          speed:
-              dtype: float32
-              val: 5
-      heading:
-          dtype: HelperHeading
-          heading:
-              dtype: float32
-              val: 180
+      latitude: 1.0
+      longitude: -1.0
+      speed: 5.0
+      heading: 180.0
+  - type: HTTP
+    name: localpath
+    data:
+      dtype: Path
+      waypoints:
+        - latitude: 2.0
+          longitude: -2.0
+        - latitude: 3.0
+          longitude: -3.0

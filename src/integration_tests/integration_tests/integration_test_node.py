@@ -31,7 +31,7 @@ ROS_PACKAGES = ["boat_simulator", "controller", "local_pathfinding", "network_sy
 NON_ROS_PACKAGES = ["virtual_iridium", "website"]
 
 # TODO: TestMsgType needs to encompass/inherit whatever type we use for HTTP messages
-HTTP_MSG_PLACEHOLDER_TYPE = type(dict)
+HTTP_MSG_PLACEHOLDER_TYPE = builtins.dict[str, Any]
 TestMsgType = Union[rclpy.node.MsgType, HTTP_MSG_PLACEHOLDER_TYPE]
 
 
@@ -355,6 +355,21 @@ def parse_ros_data(data: dict) -> Tuple[Union[None, rclpy.node.MsgType], rclpy.n
 
     return msg, msg_type
 
+def parse_http_data(data: dict) -> Tuple[Union[None, HTTP_MSG_PLACEHOLDER_TYPE], HTTP_MSG_PLACEHOLDER_TYPE]:
+    """ Parses
+
+    Args:
+        data (dict): Stores the expected HTTP output
+
+    Returns:
+        Tuple[Union[None, HTTP_MSG_PLACEHOLDER_TYPE], HTTP_MSG_PLACEHOLDER_TYPE]: _description_
+    """
+
+    msg_type = data["dtype"]
+    data.pop("dtype")
+
+    return data, msg_type
+
 
 @dataclass
 class IOEntry:
@@ -445,7 +460,7 @@ class IntegrationTestSequence:
                     # This is a GlobalPath message
                     raise NotImplementedError("Global Path Integration Test")
 
-                msg, msg_type = parse_ros_data(data)  # type: ignore
+                msg, msg_type = parse_http_data(data)  # type: ignore
                 new_output = IOEntry(name=output["name"], msg_type=msg_type, msg=msg)
                 self.__http_e_outputs.append(new_output)
 
@@ -642,17 +657,7 @@ class IntegrationTestNode(Node):
                     )
                     self.__http_inputs.append(ROSInputEntry(pub=pub, msg=http_input.msg))
 
-                self.__http_subs: list[Node.Subscriber] = []
-                for e_http_output in self.__test_inst.http_expected_outputs():
-                    self.__monitor.register(e_http_output.name, e_http_output.msg)
-                    sub = self.create_subscription(
-                        msg_type=e_http_output.msg_type,
-                        topic=e_http_output.name,
-                        callback=functools.partial(self.__sub_ros_cb, topic=e_http_output.name),
-                        qos_profile=10, # change
-                    )
-                    self.__ros_subs.append(sub)
-
+                self.__http_outputs: list[dict[str, Any]]
 
                 # IMPORTANT: MAKE SURE EXPECTED OUTPUTS ARE SETUP BEFORE SENDING INPUTS
                 time.sleep(MIN_SETUP_DELAY_S)
@@ -689,16 +694,28 @@ class IntegrationTestNode(Node):
             self.get_logger().info(f'Published to topic: "{pub.topic}", with msg: "{msg}"')
 
     def __pub_http(self) -> None:
-        """Publish to all registered ROS input topics"""
+        """Publish to all registered ROS input topics that interact with HTTP endpoints"""
         for web_input in self.__http_inputs:
                 pub = web_input.pub
                 msg = web_input.msg
                 pub.publish(msg)
                 self.get_logger().info(f'Published to topic: "{pub.topic}", with msg: "{msg}"')
 
-    def http_evaluate(self, data) -> int:
+    def http_evaluate(self, http_outputs) -> int:
 
-        return 0
+        num_fail = 0
+
+        for count, http_e_output in enumerate(self.__test_inst.http_expected_outputs()):
+            topic = http_e_output.name
+            data = http_outputs[count]
+
+            if data != http_e_output.msg:
+                self._logger.error(
+                    f"HTTP output from {topic} does not match expected output: {data}"
+                )
+                num_fail += 1
+
+        return num_fail
 
     def get_http_outputs(self) -> int:
 
@@ -709,7 +726,7 @@ class IntegrationTestNode(Node):
             topic = e_http_output.name
             try:
                 contents = urllib.request.urlopen(
-                    f"http://localhost:3005/api/gps"
+                    f"http://localhost:3005/api/{topic}"
                 )
             except urllib.error.HTTPError as e:
                 self._logger.error(f"HTTPError: {e}")
@@ -717,7 +734,11 @@ class IntegrationTestNode(Node):
             data_dict = json.load(contents)
             data = (data_dict["data"])[0]
             self._logger.info(f"Received HTTP response from {topic}: {data}")
-            self.get_logger().info(f"What is the dir of ROS msg {e_http_output.msg.get_fields_and_field_types()}")
+
+            data.pop("timestamp")
+            self.__http_outputs.append(data)
+
+        num_fail = self.http_evaluate(self.__http_outputs)
 
         return num_fail
 
