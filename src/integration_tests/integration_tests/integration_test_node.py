@@ -359,8 +359,11 @@ def parse_ros_data(data: dict) -> Tuple[Union[None, rclpy.node.MsgType], rclpy.n
 
     return msg, msg_type
 
-def parse_http_data(data: dict) -> Tuple[Union[None, HTTP_MSG_PLACEHOLDER_TYPE], HTTP_MSG_PLACEHOLDER_TYPE]:
-    """ Parses
+
+def parse_http_data(
+    data: dict,
+) -> Tuple[Union[None, HTTP_MSG_PLACEHOLDER_TYPE], HTTP_MSG_PLACEHOLDER_TYPE]:
+    """Parses
 
     Args:
         data (dict): Stores the expected HTTP output
@@ -658,7 +661,7 @@ class IntegrationTestNode(Node):
                         pub = self.create_publisher(
                             msg_type=http_input.msg_type,
                             topic=http_input.name,
-                            qos_profile=10, # change
+                            qos_profile=10,  # change
                         )
                         self.__http_inputs.append(ROSInputEntry(pub=pub, msg=http_input.msg))
                     else:
@@ -667,7 +670,6 @@ class IntegrationTestNode(Node):
 
                         if self.__global_path_pub:
                             self.get_logger().info("Published GlobalPath to database")
-
 
                 self.__http_outputs: list[dict[str, Any]]
 
@@ -708,10 +710,10 @@ class IntegrationTestNode(Node):
     def __pub_http(self) -> None:
         """Publish to all registered ROS input topics that interact with HTTP endpoints"""
         for web_input in self.__http_inputs:
-                pub = web_input.pub
-                msg = web_input.msg
-                pub.publish(msg)
-                self.get_logger().info(f'Published to topic: "{pub.topic}", with msg: "{msg}"')
+            pub = web_input.pub
+            msg = web_input.msg
+            pub.publish(msg)
+            self.get_logger().info(f'Published to topic: "{pub.topic}", with msg: "{msg}"')
 
     def pub_global_path(self, msg: HTTP_MSG_PLACEHOLDER_TYPE) -> None:
         """Publish to the GlobalPath HTTP endpoint
@@ -723,8 +725,8 @@ class IntegrationTestNode(Node):
 
         try:
             urllib.request.urlopen(
-            PULL_URL + GLOBAL_PATH_API_NAME,
-            data,
+                PULL_URL + GLOBAL_PATH_API_NAME,
+                data,
             )
             return True
         except urllib.error.HTTPError as e:
@@ -754,16 +756,16 @@ class IntegrationTestNode(Node):
         for e_http_output in self.__test_inst.http_expected_outputs():
             topic = e_http_output.name
             try:
-                contents = urllib.request.urlopen(
-                    PULL_URL + topic
-                )
+                contents = urllib.request.urlopen(PULL_URL + topic)
             except urllib.error.HTTPError as e:
                 self._logger.error(f"HTTPError: {e}")
 
             data_dict = json.load(contents)
             data = (data_dict["data"])[0]
 
-            data.pop("timestamp") # Remove timestamp from data as it is not relevant for comparison
+            data.pop(
+                "timestamp"
+            )  # Remove timestamp from data as it is not relevant for comparison
             self.__http_outputs.append(data)
 
         num_fail = self.http_evaluate(self.__http_outputs)
