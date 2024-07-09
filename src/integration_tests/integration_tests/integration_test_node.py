@@ -11,12 +11,12 @@ import urllib.request
 from dataclasses import dataclass, field
 from typing import Any, Optional, Tuple, Type, Union
 
-import custom_interfaces.msg
-import rclpy
-import rclpy.node
-import std_msgs.msg
+import custom_interfaces.msg  # type: ignore
+import rclpy  # type: ignore
+import rclpy.node  # type: ignore
+import std_msgs.msg  # type: ignore
 import yaml
-from rclpy.impl.rcutils_logger import RcutilsLogger
+from rclpy.impl.rcutils_logger import RcutilsLogger  # type: ignore
 from rclpy.node import MsgType, Node
 
 MIN_SETUP_DELAY_S = 1  # Minimum 1 second delay between setting up the test and sending inputs
@@ -289,7 +289,7 @@ def get_ros_dtype(dtype: str) -> Tuple[Union[builtins.type, MsgType], Type[MsgTy
                 return (
                     getattr(custom_interfaces.msg, dtype)(),
                     getattr(custom_interfaces.msg, dtype),
-                )
+                )  # type: ignore
             except AttributeError:
                 raise TypeError(f"INVALID TYPE: {dtype}")
 
@@ -715,7 +715,7 @@ class IntegrationTestNode(Node):
             pub.publish(msg)
             self.get_logger().info(f'Published to topic: "{pub.topic}", with msg: "{msg}"')
 
-    def pub_global_path(self, msg: HTTP_MSG_PLACEHOLDER_TYPE) -> None:
+    def pub_global_path(self, msg: Union[dict[str, Any], None]) -> bool:
         """Publish to the GlobalPath HTTP endpoint
 
         Args:
@@ -731,8 +731,9 @@ class IntegrationTestNode(Node):
             return True
         except urllib.error.HTTPError as e:
             self.get_logger().error(f"Failed to publish Global path to the database: {e}")
+            return False
 
-    def http_evaluate(self, http_outputs) -> int:
+    def http_evaluate(self, http_outputs: list[dict[str, Any]]) -> int:
 
         num_fail = 0
 
@@ -750,7 +751,6 @@ class IntegrationTestNode(Node):
 
     def get_http_outputs(self) -> int:
 
-        self.__http_outputs: list[dict[str, Any]] = []
         num_fail = 0
 
         for e_http_output in self.__test_inst.http_expected_outputs():
