@@ -759,6 +759,7 @@ class IntegrationTestNode(Node):
                 contents = urllib.request.urlopen(PULL_URL + topic)
             except urllib.error.HTTPError as e:
                 self._logger.error(f"HTTPError: {e}")
+                return False
 
             data_dict = json.load(contents)
             data = (data_dict["data"])[0]
