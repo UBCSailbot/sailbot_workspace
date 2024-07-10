@@ -11,14 +11,13 @@ import urllib.request
 from dataclasses import dataclass, field
 from typing import Any, Optional, Tuple, Type, Union
 
+import custom_interfaces.msg  # type: ignore
 import rclpy  # type: ignore
 import rclpy.node  # type: ignore
 import std_msgs.msg  # type: ignore
 import yaml
 from rclpy.impl.rcutils_logger import RcutilsLogger  # type: ignore
 from rclpy.node import MsgType, Node
-
-import custom_interfaces.msg  # type: ignore
 
 MIN_SETUP_DELAY_S = 1  # Minimum 1 second delay between setting up the test and sending inputs
 DEFAULT_TIMEOUT_SEC = 3  # Number of seconds that the test has to run
@@ -680,7 +679,9 @@ class IntegrationTestNode(Node):
                 time.sleep(MIN_SETUP_DELAY_S)
                 self.drive_inputs()
 
-                self.timeout = self.create_timer(self.__test_inst.timeout_sec(), self.__timeout_cb())
+                self.timeout = self.create_timer(
+                    self.__test_inst.timeout_sec(), self.__timeout_cb()
+                )
             except Exception as e:
                 # At this point, the test instance has successfully started all package processes.
                 # This except block is a failsafe to kill the processes in case anything crashes
@@ -733,7 +734,9 @@ class IntegrationTestNode(Node):
             )
             return True
         except urllib.error.URLError as e:
-            self.get_logger().error(f"Failed to publish Global path to the remote transceiver: {e}")
+            self.get_logger().error(
+                f"Failed to publish Global path to the remote transceiver: {e}"
+            )
             return False
         except urllib.error.HTTPError as e:
             self.get_logger().error(f"Failed to publish Global path to the database: {e}")
