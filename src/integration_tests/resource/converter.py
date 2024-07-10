@@ -99,6 +99,47 @@ def ais_converter(file: str) -> Tuple[dict[str, Any], dict[str, Any]]:
     return http_data, ros_data
 
 
+def gps_converter(file: str) -> Tuple[dict[str, Any], dict[str, Any]]:
+    http_data = {"type": "HTTP", "name": "gps", "data": {"dtype": "GPS"}}
+    ros_data = {"type": "ROS", "name": "gps", "data": {"dtype": "GPS"}}
+    with open(os.path.join(subdir, file)) as f:
+        data = json.load(f)
+
+        gps_json = {
+            "lat": data[0],
+            "lon": data[1],
+            "speedKmph": data[3],
+            "headingDegrees": data[2],
+            "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        }  # type: dict[str, float | int | str]
+
+        gps_ros = {
+            "lat_lon": {
+                "dtype": "HelperLatLon",
+                "latitude": {
+                    "dtype": "float32",
+                    "val": data[1],
+                },
+                "longitude": {
+                    "dtype": "float32",
+                    "val": data[2],
+                },
+            },
+            "heading": {
+                "dtype": "HelperHeading",
+                "heading": {
+                    "dtype": "float32",
+                    "val": data[3],
+                },
+            },
+        }
+
+        http_data["data"].update(gps_json) # type: ignore
+        ros_data["data"].update(gps_ros) # type: ignore
+
+    return http_data, ros_data
+
+
 def dump_http(data: dict[str, Any], subdir_name: str, msg_type: str) -> None:
     with open(os.path.join(subdir_name, msg_type + "_http_data.yaml"), "w") as f:
         yaml.dump(data, f, sort_keys=False)
@@ -144,3 +185,9 @@ if __name__ == "__main__":
                 ros_data = add_miscellaneous(ros_data)
                 dump_http(http_data, subdir_name, msg_type="aisships")
                 dump_ros(ros_data, subdir_name, msg_type="aisships")
+            elif file == "myGPS.json":
+                http_data, ros_data = gps_converter(file)
+                http_data = add_miscellaneous(http_data)
+                ros_data = add_miscellaneous(ros_data)
+                dump_http(http_data, subdir_name, msg_type="gps")
+                dump_ros(ros_data, subdir_name, msg_type="gps")
