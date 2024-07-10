@@ -625,6 +625,7 @@ class IntegrationTestNode(Node):
         testplan_file = self.get_parameter("testplan").get_parameter_value().string_value
 
         self.__http_outputs: list[dict[str, Any]] = []
+        self.__web_fail = 0
 
         try:
             self.__test_inst = IntegrationTestSequence(testplan_file)
@@ -672,12 +673,14 @@ class IntegrationTestNode(Node):
 
                         if self.__global_path_pub:
                             self.get_logger().info("Published GlobalPath to database")
+                        else:
+                            self.__web_fail = 1
 
                 # IMPORTANT: MAKE SURE EXPECTED OUTPUTS ARE SETUP BEFORE SENDING INPUTS
                 time.sleep(MIN_SETUP_DELAY_S)
                 self.drive_inputs()
 
-                self.timeout = self.create_timer(self.__test_inst.timeout_sec(), self.__timeout_cb)
+                self.timeout = self.create_timer(self.__test_inst.timeout_sec(), self.__timeout_cb())
             except Exception as e:
                 # At this point, the test instance has successfully started all package processes.
                 # This except block is a failsafe to kill the processes in case anything crashes
@@ -783,7 +786,7 @@ class IntegrationTestNode(Node):
         self.__test_inst.finish()  # Stop tests
 
         num_fail, num_warn = self.__monitor.evaluate(self.get_logger())
-        num_fail += self.get_http_outputs()
+        num_fail += self.__web_fail + self.get_http_outputs()
         if num_warn > 0:
             self.get_logger().warn(
                 (
