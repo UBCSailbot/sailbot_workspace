@@ -39,7 +39,7 @@ inputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: 49
+          val: -25
       width:
         dtype: HelperDimension
         dimension:
@@ -82,7 +82,7 @@ expected_outputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: 49
+          val: -25
       width:
         dtype: HelperDimension
         dimension:

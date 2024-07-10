@@ -18,10 +18,10 @@ inputs:
       lon: -130
       headingDegrees: 0
       speedKmph: 10
-      rot: -138.28541167397714
+      rot: -107.32472908528709
       width: 10
       length: 20
-      timestamp: '2024-07-10 03:47:20'
+      timestamp: '2024-07-10 03:55:13'
 expected_outputs:
 - type: HTTP
   name: aisships
@@ -33,7 +33,7 @@ expected_outputs:
       lon: -130
       headingDegrees: 0
       speedKmph: 10
-      rot: -138.28541167397714
+      rot: -107.32472908528709
       width: 10
       length: 20
-      timestamp: '2024-07-10 03:47:20'
+      timestamp: '2024-07-10 03:55:13'

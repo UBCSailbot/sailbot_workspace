@@ -39,7 +39,7 @@ inputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: -41
+          val: 36
       width:
         dtype: HelperDimension
         dimension:
@@ -76,7 +76,7 @@ inputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: -110
+          val: -21
       width:
         dtype: HelperDimension
         dimension:
@@ -113,7 +113,7 @@ inputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: 55
+          val: 124
       width:
         dtype: HelperDimension
         dimension:
@@ -150,7 +150,7 @@ inputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: -99
+          val: -113
       width:
         dtype: HelperDimension
         dimension:
@@ -187,7 +187,7 @@ inputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: 113
+          val: -70
       width:
         dtype: HelperDimension
         dimension:
@@ -224,7 +224,7 @@ inputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: -92
+          val: -23
       width:
         dtype: HelperDimension
         dimension:
@@ -261,7 +261,7 @@ inputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: -14
+          val: -121
       width:
         dtype: HelperDimension
         dimension:
@@ -298,7 +298,7 @@ inputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: 58
+          val: 27
       width:
         dtype: HelperDimension
         dimension:
@@ -335,7 +335,7 @@ inputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: 90
+          val: -59
       width:
         dtype: HelperDimension
         dimension:
@@ -372,7 +372,7 @@ inputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: -101
+          val: -20
       width:
         dtype: HelperDimension
         dimension:
@@ -409,7 +409,7 @@ inputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: 0
+          val: 18
       width:
         dtype: HelperDimension
         dimension:
@@ -446,7 +446,7 @@ inputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: -96
+          val: -114
       width:
         dtype: HelperDimension
         dimension:
@@ -483,7 +483,7 @@ inputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: -76
+          val: -97
       width:
         dtype: HelperDimension
         dimension:
@@ -520,7 +520,7 @@ inputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: 48
+          val: -76
       width:
         dtype: HelperDimension
         dimension:
@@ -557,7 +557,7 @@ inputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: 126
+          val: 74
       width:
         dtype: HelperDimension
         dimension:
@@ -594,7 +594,7 @@ inputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: -16
+          val: 21
       width:
         dtype: HelperDimension
         dimension:
@@ -631,7 +631,7 @@ inputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: 125
+          val: -12
       width:
         dtype: HelperDimension
         dimension:
@@ -668,7 +668,7 @@ inputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: 94
+          val: -1
       width:
         dtype: HelperDimension
         dimension:
@@ -705,7 +705,7 @@ inputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: 17
+          val: 81
       width:
         dtype: HelperDimension
         dimension:
@@ -742,7 +742,7 @@ inputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: 41
+          val: 17
       width:
         dtype: HelperDimension
         dimension:
@@ -779,7 +779,7 @@ inputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: 21
+          val: -116
       width:
         dtype: HelperDimension
         dimension:
@@ -816,7 +816,7 @@ inputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: 11
+          val: -40
       width:
         dtype: HelperDimension
         dimension:
@@ -853,7 +853,7 @@ inputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: -30
+          val: -26
       width:
         dtype: HelperDimension
         dimension:
@@ -890,7 +890,7 @@ inputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: -107
+          val: 82
       width:
         dtype: HelperDimension
         dimension:
@@ -927,7 +927,7 @@ inputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: -52
+          val: 43
       width:
         dtype: HelperDimension
         dimension:
@@ -964,7 +964,7 @@ inputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: 14
+          val: 105
       width:
         dtype: HelperDimension
         dimension:
@@ -1001,7 +1001,7 @@ inputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: 69
+          val: 73
       width:
         dtype: HelperDimension
         dimension:
@@ -1038,7 +1038,7 @@ inputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: 10
+          val: 56
       width:
         dtype: HelperDimension
         dimension:
@@ -1075,7 +1075,7 @@ inputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: 107
+          val: 17
       width:
         dtype: HelperDimension
         dimension:
@@ -1112,7 +1112,7 @@ inputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: -59
+          val: 10
       width:
         dtype: HelperDimension
         dimension:
@@ -1155,7 +1155,7 @@ expected_outputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: -41
+          val: 36
       width:
         dtype: HelperDimension
         dimension:
@@ -1192,7 +1192,7 @@ expected_outputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: -110
+          val: -21
       width:
         dtype: HelperDimension
         dimension:
@@ -1229,7 +1229,7 @@ expected_outputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: 55
+          val: 124
       width:
         dtype: HelperDimension
         dimension:
@@ -1266,7 +1266,7 @@ expected_outputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: -99
+          val: -113
       width:
         dtype: HelperDimension
         dimension:
@@ -1303,7 +1303,7 @@ expected_outputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: 113
+          val: -70
       width:
         dtype: HelperDimension
         dimension:
@@ -1340,7 +1340,7 @@ expected_outputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: -92
+          val: -23
       width:
         dtype: HelperDimension
         dimension:
@@ -1377,7 +1377,7 @@ expected_outputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: -14
+          val: -121
       width:
         dtype: HelperDimension
         dimension:
@@ -1414,7 +1414,7 @@ expected_outputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: 58
+          val: 27
       width:
         dtype: HelperDimension
         dimension:
@@ -1451,7 +1451,7 @@ expected_outputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: 90
+          val: -59
       width:
         dtype: HelperDimension
         dimension:
@@ -1488,7 +1488,7 @@ expected_outputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: -101
+          val: -20
       width:
         dtype: HelperDimension
         dimension:
@@ -1525,7 +1525,7 @@ expected_outputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: 0
+          val: 18
       width:
         dtype: HelperDimension
         dimension:
@@ -1562,7 +1562,7 @@ expected_outputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: -96
+          val: -114
       width:
         dtype: HelperDimension
         dimension:
@@ -1599,7 +1599,7 @@ expected_outputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: -76
+          val: -97
       width:
         dtype: HelperDimension
         dimension:
@@ -1636,7 +1636,7 @@ expected_outputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: 48
+          val: -76
       width:
         dtype: HelperDimension
         dimension:
@@ -1673,7 +1673,7 @@ expected_outputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: 126
+          val: 74
       width:
         dtype: HelperDimension
         dimension:
@@ -1710,7 +1710,7 @@ expected_outputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: -16
+          val: 21
       width:
         dtype: HelperDimension
         dimension:
@@ -1747,7 +1747,7 @@ expected_outputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: 125
+          val: -12
       width:
         dtype: HelperDimension
         dimension:
@@ -1784,7 +1784,7 @@ expected_outputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: 94
+          val: -1
       width:
         dtype: HelperDimension
         dimension:
@@ -1821,7 +1821,7 @@ expected_outputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: 17
+          val: 81
       width:
         dtype: HelperDimension
         dimension:
@@ -1858,7 +1858,7 @@ expected_outputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: 41
+          val: 17
       width:
         dtype: HelperDimension
         dimension:
@@ -1895,7 +1895,7 @@ expected_outputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: 21
+          val: -116
       width:
         dtype: HelperDimension
         dimension:
@@ -1932,7 +1932,7 @@ expected_outputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: 11
+          val: -40
       width:
         dtype: HelperDimension
         dimension:
@@ -1969,7 +1969,7 @@ expected_outputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: -30
+          val: -26
       width:
         dtype: HelperDimension
         dimension:
@@ -2006,7 +2006,7 @@ expected_outputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: -107
+          val: 82
       width:
         dtype: HelperDimension
         dimension:
@@ -2043,7 +2043,7 @@ expected_outputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: -52
+          val: 43
       width:
         dtype: HelperDimension
         dimension:
@@ -2080,7 +2080,7 @@ expected_outputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: 14
+          val: 105
       width:
         dtype: HelperDimension
         dimension:
@@ -2117,7 +2117,7 @@ expected_outputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: 69
+          val: 73
       width:
         dtype: HelperDimension
         dimension:
@@ -2154,7 +2154,7 @@ expected_outputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: 10
+          val: 56
       width:
         dtype: HelperDimension
         dimension:
@@ -2191,7 +2191,7 @@ expected_outputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: 107
+          val: 17
       width:
         dtype: HelperDimension
         dimension:
@@ -2228,7 +2228,7 @@ expected_outputs:
         dtype: HelperROT
         rot:
           dtype: int8
-          val: -59
+          val: 10
       width:
         dtype: HelperDimension
         dimension:

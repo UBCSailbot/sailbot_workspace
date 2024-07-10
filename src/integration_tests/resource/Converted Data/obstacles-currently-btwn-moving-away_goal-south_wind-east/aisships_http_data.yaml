@@ -18,19 +18,19 @@ inputs:
       lon: -130.05
       headingDegrees: 180
       speedKmph: 10
-      rot: 146.89153001023396
+      rot: 7.218545349438614
       width: 10
       length: 20
-      timestamp: '2024-07-10 03:47:18'
+      timestamp: '2024-07-10 03:55:11'
     - ID: 0
       lat: 39.85
       lon: -129.95
       headingDegrees: 0
       speedKmph: 10
-      rot: -96.37057472675039
+      rot: 155.56930757038361
       width: 10
       length: 20
-      timestamp: '2024-07-10 03:47:18'
+      timestamp: '2024-07-10 03:55:11'
 expected_outputs:
 - type: HTTP
   name: aisships
@@ -42,16 +42,16 @@ expected_outputs:
       lon: -130.05
       headingDegrees: 180
       speedKmph: 10
-      rot: 146.89153001023396
+      rot: 7.218545349438614
       width: 10
       length: 20
-      timestamp: '2024-07-10 03:47:18'
+      timestamp: '2024-07-10 03:55:11'
     - ID: 0
       lat: 39.85
       lon: -129.95
       headingDegrees: 0
       speedKmph: 10
-      rot: -96.37057472675039
+      rot: 155.56930757038361
       width: 10
       length: 20
-      timestamp: '2024-07-10 03:47:18'
+      timestamp: '2024-07-10 03:55:11'

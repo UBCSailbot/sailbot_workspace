@@ -20,7 +20,7 @@ inputs:
       longitude:
         dtype: float32
         val: -123.92537339005594
-    cog:
+    heading:
       dtype: HelperHeading
       heading:
         dtype: float32
@@ -38,7 +38,7 @@ expected_outputs:
       longitude:
         dtype: float32
         val: -123.92537339005594
-    cog:
+    heading:
       dtype: HelperHeading
       heading:
         dtype: float32
