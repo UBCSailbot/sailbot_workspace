@@ -1,0 +1,63 @@
+# Example testplan - Does not currently show HTTP I/O
+timeout_sec: 3
+
+required_packages:
+  - name: local_pathfinding
+    configs: # Start local_pathfinding with default configuration
+  - name: network_systems
+    configs:
+      - all_disable.yaml
+      - example/example_en.yaml
+      - mock_ais/mock_ais_en_default.yaml
+
+
+inputs:
+  - type: HTTP
+    name: aisships
+    data:
+      dtype: AISShips
+      ships:
+        - dtype: HelperAISShip
+          id:
+              dtype: uint64
+              val: 3190503
+          lat_lon:
+              dtype: HelperLatLon
+              latitude:
+                  dtype: float32
+                  val: -64.9635
+              longitude:
+                  dtype: float32
+                  val: 63.93045
+          sog:
+              dtype: HelperSpeed
+              val: -0.46731
+          cog:
+              dtype: HelperHeading
+              val: 232.11761
+          rot:
+              dtype: HelperROT
+              val: -87.7223739
+          width:
+              dtype: HelperDimension
+              val: 140.18624877
+          length:
+              dtype: HelperDimension
+              val: 63.506221771
+
+
+expected_outputs:
+  - type: ROS
+    name: aisships
+    data:
+      dtype: AISShips
+      ships:
+        - id: 3190503543
+          latitude: -64.96359252929688
+          longitude: 63.930450439453125
+          sog: -0.4673185348510742
+          cog: 232.11761474609375
+          rot: -87.72237396240234
+          width: 140.18624877929688
+          length: 63.506221771240234
+      timestamp: 24-02-23 17:26:17

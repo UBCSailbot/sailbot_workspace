@@ -1,23 +1,24 @@
 import builtins
 import functools
+import json
 import os
 import signal
 import subprocess
 import sys
 import time
-import json
 import traceback
 import urllib.request
 from dataclasses import dataclass, field
 from typing import Any, Optional, Tuple, Type, Union
 
-import custom_interfaces.msg  # type: ignore
 import rclpy  # type: ignore
 import rclpy.node  # type: ignore
 import std_msgs.msg  # type: ignore
 import yaml
 from rclpy.impl.rcutils_logger import RcutilsLogger  # type: ignore
 from rclpy.node import MsgType, Node
+
+import custom_interfaces.msg  # type: ignore
 
 MIN_SETUP_DELAY_S = 1  # Minimum 1 second delay between setting up the test and sending inputs
 DEFAULT_TIMEOUT_SEC = 3  # Number of seconds that the test has to run
@@ -623,6 +624,8 @@ class IntegrationTestNode(Node):
 
         testplan_file = self.get_parameter("testplan").get_parameter_value().string_value
 
+        self.__http_outputs: list[dict[str, Any]] = []
+
         try:
             self.__test_inst = IntegrationTestSequence(testplan_file)
             try:
@@ -653,7 +656,6 @@ class IntegrationTestNode(Node):
                     )
                     self.__ros_subs.append(sub)
 
-                # TODO: HTTP (GlobalPath will need to be done separtely)
                 self.__http_inputs: list[ROSInputEntry] = []
                 self.__global_path_pub = False
                 for http_input in self.__test_inst.http_inputs():
@@ -670,8 +672,6 @@ class IntegrationTestNode(Node):
 
                         if self.__global_path_pub:
                             self.get_logger().info("Published GlobalPath to database")
-
-                self.__http_outputs: list[dict[str, Any]]
 
                 # IMPORTANT: MAKE SURE EXPECTED OUTPUTS ARE SETUP BEFORE SENDING INPUTS
                 time.sleep(MIN_SETUP_DELAY_S)
