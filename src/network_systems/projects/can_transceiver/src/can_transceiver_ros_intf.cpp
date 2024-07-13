@@ -72,20 +72,17 @@ public:
 
             can_trns_->registerCanCbs(
               {std::make_pair(
-                 CanId::BMS_P_DATA_FRAME_1,
+                 CanId::BMS_DATA_FRAME,
                  std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishBattery(frame); })),
                std::make_pair(
-                 CanId::BMS_P_DATA_FRAME_2,
-                 std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishBattery(frame); })),
-               std::make_pair(
-                 CanId::PATH_GPS_DATA_FRAME_1,
+                 CanId::PATH_GPS_DATA_FRAME,
                  std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishGPS(frame); })),
-               std::make_pair(
-                 CanId::SAIL_WIND_DATA_FRAME_1,
-                 std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishWindSensor(frame); })),
-               std::make_pair(
-                 CanId::PATH_WIND_DATA_FRAME,
-                 std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishWindSensor(frame); })),
+               std::make_pair(CanId::SAIL_WIND, std::function<void(const CanFrame &)>([this](const CanFrame & frame) {
+                                  publishWindSensor(frame);
+                              })),
+               std::make_pair(CanId::DATA_WIND, std::function<void(const CanFrame &)>([this](const CanFrame & frame) {
+                                  publishWindSensor(frame);
+                              })),
                std::make_pair(
                  CanId::GENERIC_SENSOR_START,
                  std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishGeneric(frame); })),
