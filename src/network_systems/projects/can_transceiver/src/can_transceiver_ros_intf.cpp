@@ -155,6 +155,9 @@ private:
     // Mock CAN file descriptor for simulation
     int sim_intf_fd_;
 
+    // Saved power mode state
+    uint8_t set_pwr_mode = CAN_FP::PwrMode::POWER_MODE_NORMAL;
+
     /**
      * @brief Publish AIS ships
      *
@@ -186,7 +189,6 @@ private:
     void publishBattery(const CanFrame & battery_frame)
     {
         CAN_FP::Battery bat(battery_frame);
-        uint8_t         set_pwr_mode = CAN_FP::PwrMode::POWER_MODE_NORMAL;
         size_t          idx;
         for (size_t i = 0;; i++) {  // idx WILL be in range (can_frame_parser constructors guarantee this)
             if (bat.id_ == CAN_FP::Battery::BATTERY_IDS[i]) {
@@ -197,9 +199,12 @@ private:
         msg::HelperBattery & bat_msg = batteries_.batteries[idx];
         bat_msg                      = bat.toRosMsg();
         batteries_pub_->publish(batteries_);
-        // Voltage >= 10V means normal power mode, < 10V means low power mode
+        // Voltage < 10V means low power mode
+        // If in low power mode, power mode will only change back to normal if voltage reaches >= 12V.
         if (bat_msg.voltage < 10) {  //NOLINT(readability-magic-numbers)
             set_pwr_mode = CAN_FP::PwrMode::POWER_MODE_LOW;
+        } else if (bat_msg.voltage >= 12) {  //NOLINT(readability-magic-numbers)
+            set_pwr_mode = CAN_FP::PwrMode::POWER_MODE_NORMAL;
         }
         CAN_FP::PwrMode power_mode(set_pwr_mode, CAN_FP::CanId::PWR_MODE);
         can_trns_->send(power_mode.toLinuxCan());
