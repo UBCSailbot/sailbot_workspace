@@ -613,8 +613,8 @@ void AISShips::checkBounds() const
 //AISShips private END
 //AISShips END
 
-//PwRMode START
-//PwRMode public START
+//PwrMode START
+//PwrMode public START
 
 PwrMode::PwrMode(const CanFrame & cf) : PwrMode(static_cast<CanId>(cf.can_id))
 {
@@ -660,7 +660,6 @@ void PwrMode::checkBounds() const
         throw std::out_of_range("Power mode value is out of bounds!\n" + debugStr() + "\n" + err_msg);
     }
 }
-//can i add new custom int messages and can i add new constants
 // PwrMode private END
 // PwrMode END
 
