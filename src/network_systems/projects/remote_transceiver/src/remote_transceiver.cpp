@@ -230,6 +230,8 @@ void HTTPServer::doPost()
             curl_easy_setopt(curl, CURLOPT_URL, "https://rockblock.rock7.com/rockblock/MT");
             curl_easy_setopt(curl, CURLOPT_POSTFIELDS, param_data.c_str());
 
+            curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10L);  //arbitrary value of 10s chosen for timeout
+
             res = curl_easy_perform(curl);
 
             if (res != CURLE_OK) {
@@ -240,6 +242,7 @@ void HTTPServer::doPost()
         }
         curl_global_cleanup();
         // Create a post request to rockblock http pot request URL (how to send a post request to a url/endpoint)
+
     } else {
         doNotFound();
     }
