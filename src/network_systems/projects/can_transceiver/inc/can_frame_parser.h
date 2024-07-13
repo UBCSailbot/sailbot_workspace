@@ -27,7 +27,6 @@ namespace msg    = custom_interfaces::msg;
 /**
  * @brief IDs of CAN frames relevant to the Software team
  * NOTE: IDs are placeholders for now.
- * NOTE: IDs are placeholders for now.
  *
  */
 enum class CanId : canid_t {
