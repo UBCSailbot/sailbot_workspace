@@ -769,15 +769,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#start_containersh" class="md-nav__link">
-    <span class="md-ellipsis">
-      start_container.sh
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#setup_bootsh" class="md-nav__link">
     <span class="md-ellipsis">
       setup_boot.sh
@@ -786,35 +777,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#start_containerssh" class="md-nav__link">
+    <span class="md-ellipsis">
+      start_containers.sh
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#deployment-container-commands" class="md-nav__link">
-    <span class="md-ellipsis">
-      Deployment container commands
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#deploy-software" class="md-nav__link">
-    <span class="md-ellipsis">
-      Deploy software
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#develop-software" class="md-nav__link">
-    <span class="md-ellipsis">
-      Develop software
-    </span>
-  </a>
   
 </li>
       
@@ -2196,15 +2169,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#start_containersh" class="md-nav__link">
-    <span class="md-ellipsis">
-      start_container.sh
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#setup_bootsh" class="md-nav__link">
     <span class="md-ellipsis">
       setup_boot.sh
@@ -2213,35 +2177,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#start_containerssh" class="md-nav__link">
+    <span class="md-ellipsis">
+      start_containers.sh
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#deployment-container-commands" class="md-nav__link">
-    <span class="md-ellipsis">
-      Deployment container commands
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#deploy-software" class="md-nav__link">
-    <span class="md-ellipsis">
-      Deploy software
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#develop-software" class="md-nav__link">
-    <span class="md-ellipsis">
-      Develop software
-    </span>
-  </a>
   
 </li>
       
@@ -2284,47 +2230,24 @@ Its README has been copied below.</p>
 <h1 id="deployment">Deployment<a class="headerlink" href="#deployment" title="Permanent link">&para;</a></h1>
 <p>Deploying our software to our autonomous sailboat's main computer.</p>
 <h2 id="scripts">Scripts<a class="headerlink" href="#scripts" title="Permanent link">&para;</a></h2>
-<h3 id="start_containersh"><code>start_container.sh</code><a class="headerlink" href="#start_containersh" title="Permanent link">&para;</a></h3>
-<p>Runs the <a href="https://github.com/UBCSailbot/sailbot_workspace/blob/main/.devcontainer/base-dev/base-dev.Dockerfile"><code>base</code></a>
-image. A new container is created every time this is run. The default container name is <code>sailbot_deployment_container</code>.
-Container names are unique, so if you want to use multiple deployment containers (e.g., from different branches)
-you will have to update the variable <code>CONTAINER_NAME</code> in the script.</p>
-<p>Usage:</p>
-<ul>
-<li>Runs the base image used by the Dev Container by default: <code>./start_container.sh</code></li>
-<li>Run a specific version of the base image by specifying its ID: <code>./start_container.sh &lt;IMAGE_ID&gt;</code></li>
-</ul>
 <h3 id="setup_bootsh"><code>setup_boot.sh</code><a class="headerlink" href="#setup_bootsh" title="Permanent link">&para;</a></h3>
 <p>Configures programs and scripts that need to run when the main computer boots. Only needs to be run once unless the
 script is updated. Does not need to be rerun if any scripts or programs it targets are updated, with the exception of
 renaming or moving the file.</p>
 <p>Usage:</p>
 <ul>
-<li>Must be run as root</li>
-<li><code>sudo ./setup_boot.sh</code></li>
+<li>Must be run as root: <code>sudo ./setup_boot.sh</code></li>
 </ul>
-<h2 id="deployment-container-commands">Deployment container commands<a class="headerlink" href="#deployment-container-commands" title="Permanent link">&para;</a></h2>
+<h3 id="start_containerssh"><code>start_containers.sh</code><a class="headerlink" href="#start_containerssh" title="Permanent link">&para;</a></h3>
+<p>Runs our Docker Compose files. You may have to install commands like <code>wget</code>.
+Would recommend running this script in its own clone of sailbot_workspace (not the one you open in VS Code).</p>
+<p>Usage:</p>
 <ul>
-<li>Exit out of a container: <code>exit</code></li>
-<li>Start an existing container: <code>docker start -ia &lt;container name&gt;</code></li>
-<li>Delete an existing container: <code>docker rm &lt;container name&gt;</code></li>
-<li>Find the container ID of a container: <code>docker ps -a</code></li>
+<li>Runs the global launch file by default: <code>./start_containers.sh</code></li>
+<li>Add the <code>--website</code> argument to additionally run the website container</li>
+<li>Add the <code>--interactive</code> argument to manually run commands in the sailbot workspace container</li>
+<li>Add the <code>--help</code> argument to see all available arguments</li>
 </ul>
-<h2 id="deploy-software">Deploy software<a class="headerlink" href="#deploy-software" title="Permanent link">&para;</a></h2>
-<blockquote>
-<p>These commands are run in the in the root directory of this repository</p>
-</blockquote>
-<ol>
-<li>Run the setup script: <code>./scripts/setup.sh</code></li>
-<li>Run the build script with the quick build flag: <code>./scripts/build.sh -q</code></li>
-</ol>
-<h2 id="develop-software">Develop software<a class="headerlink" href="#develop-software" title="Permanent link">&para;</a></h2>
-<p>The deployment container isn't intended for development, but if you discover a bug and want to quickly push a fix:</p>
-<ol>
-<li>Fix the issue in a terminal <strong><em>outside</em></strong> the deployment container</li>
-<li>Run the software to verify your fix in a terminal <strong><em>inside</em></strong> the deployment container</li>
-<li>Commit and push your fix in a terminal <strong><em>outside</em></strong> the deployment container</li>
-</ol>
 
 
 
