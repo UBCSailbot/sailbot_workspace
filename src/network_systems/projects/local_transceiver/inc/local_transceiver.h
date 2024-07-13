@@ -24,6 +24,8 @@ constexpr unsigned int SATELLITE_BAUD_RATE = 19200;
  */
 class LocalTransceiver
 {
+    friend class TestLocalTransceiver_parseInMsgValid_Test;
+
 public:
     /**
     * @brief Update the sensor with new GPS data
