@@ -739,7 +739,9 @@ class IntegrationTestNode(Node):
             )
             return False
         except urllib.error.HTTPError as e:
-            self.get_logger().error(f"Failed to publish Global path to the database: {e}")
+            self.get_logger().error(
+                f"Failed to publish Global path to the remote transceiver: {e}"
+            )
             return False
 
     def http_evaluate(self, http_outputs: list[dict[str, Any]]) -> int:
