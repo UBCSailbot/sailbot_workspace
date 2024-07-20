@@ -61,6 +61,12 @@ public:
     bool verifyDBWrite(
       std::span<Polaris::Sensors> expected_sensors, std::span<SailbotDB::RcvdMsgInfo> expected_msg_info);
 
+    /**
+    * @brief Query the database and check that the global path and timestamp are correct
+    *
+    * @param expected_globalpath
+    * @param expected_timestamp
+    */
     bool verifyDBWrite_GlobalPath(
       std::span<Polaris::GlobalPath> expected_globalpath, std::span<std::string> expected_timestamp);
 
