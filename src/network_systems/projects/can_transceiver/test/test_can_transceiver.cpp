@@ -481,7 +481,6 @@ TEST_F(TestCanFrameParser, TestGPSInvalid)
     std::vector<float> invalid_lons{LON_LBND - 1, LON_UBND + 1};
     std::vector<float> invalid_lats{LAT_LBND - 1, LAT_UBND + 1};
     std::vector<float> invalid_speeds{SPEED_LBND - 1, SPEED_UBND + 1};
-    std::vector<float> invalid_headings{HEADING_LBND - 1, HEADING_UBND + 1};
 
     CAN_FP::CanId valid_id = CAN_FP::CanId::PATH_GPS_DATA_FRAME;
     msg::GPS      msg;
@@ -534,23 +533,6 @@ TEST_F(TestCanFrameParser, TestGPSInvalid)
         msg.set__speed(msg_speed);
 
         msg_heading.set__heading(HEADING_UBND);
-        msg.set__heading(msg_heading);
-
-        EXPECT_THROW(CAN_FP::GPS tmp(msg, valid_id), std::out_of_range);
-    };
-
-    for (float invalid_heading : invalid_headings) {
-        msg::HelperLatLon  msg_latlon;
-        msg::HelperSpeed   msg_speed;
-        msg::HelperHeading msg_heading;
-        msg_latlon.set__latitude(LAT_UBND);
-        msg_latlon.set__longitude(LON_UBND);
-        msg.set__lat_lon(msg_latlon);
-
-        msg_speed.set__speed(SPEED_UBND);
-        msg.set__speed(msg_speed);
-
-        msg_heading.set__heading(invalid_heading);
         msg.set__heading(msg_heading);
 
         EXPECT_THROW(CAN_FP::GPS tmp(msg, valid_id), std::out_of_range);

@@ -341,7 +341,7 @@ msg::GPS GPS::toRosMsg() const
     lat_lon.set__latitude(lat_);
     lat_lon.set__longitude(lon_);
     speed.set__speed(speed_);
-    heading.set__heading(0.0);
+    heading.set__heading(0.0);  // unused set to 0
     msg.set__lat_lon(lat_lon);
     msg.set__heading(heading);
     msg.set__speed(speed);
