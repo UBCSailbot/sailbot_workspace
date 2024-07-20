@@ -63,7 +63,7 @@ public:
             }
 
             ais_pub_          = this->create_publisher<msg::AISShips>(ros_topics::AIS_SHIPS, QUEUE_SIZE);
-            batteries_pub_    = this->create_publisher<msg::Batteries>(ros_topics::BATTERIES, QUEUE_SIZE);
+            batteries_pub_    = this->create_publisher<msg::HelperBattery>(ros_topics::BATTERIES, QUEUE_SIZE);
             gps_pub_          = this->create_publisher<msg::GPS>(ros_topics::GPS, QUEUE_SIZE);
             wind_sensors_pub_ = this->create_publisher<msg::WindSensors>(ros_topics::WIND_SENSORS, QUEUE_SIZE);
             filtered_wind_sensor_pub_ =
@@ -121,8 +121,8 @@ private:
     // Universal publishers and subscribers present in both deployment and simulation
     rclcpp::Publisher<msg::AISShips>::SharedPtr          ais_pub_;
     msg::AISShips                                        ais_ships_;
-    rclcpp::Publisher<msg::Batteries>::SharedPtr         batteries_pub_;
-    msg::Batteries                                       batteries_;
+    rclcpp::Publisher<msg::HelperBattery>::SharedPtr     batteries_pub_;
+    msg::HelperBattery                                   batteries_;
     rclcpp::Publisher<msg::GPS>::SharedPtr               gps_pub_;
     msg::GPS                                             gps_;
     rclcpp::Publisher<msg::WindSensors>::SharedPtr       wind_sensors_pub_;
@@ -182,16 +182,8 @@ private:
      */
     void publishBattery(const CanFrame & battery_frame)
     {
-        CAN_FP::Battery bat(battery_frame);
-
-        size_t idx;
-        for (size_t i = 0;; i++) {  // idx WILL be in range (can_frame_parser constructors guarantee this)
-            if (bat.id_ == CAN_FP::Battery::BATTERY_IDS[i]) {
-                idx = i;
-                break;
-            }
-        }
-        msg::HelperBattery & bat_msg = batteries_.batteries[idx];
+        CAN_FP::Battery      bat(battery_frame);
+        msg::HelperBattery & bat_msg = batteries_;
         bat_msg                      = bat.toRosMsg();
         batteries_pub_->publish(batteries_);
     }

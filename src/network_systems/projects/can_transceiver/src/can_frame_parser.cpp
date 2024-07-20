@@ -145,10 +145,10 @@ void Battery::checkBounds() const
 // Battery private END
 // Battery END
 
-// SailCmd START
-// SailCmd public START
+// MainTrimTab START
+// MainTrimTab public START
 
-SailCmd::SailCmd(const CanFrame & cf) : SailCmd(static_cast<CanId>(cf.can_id))
+MainTrimTab::MainTrimTab(const CanFrame & cf) : MainTrimTab(static_cast<CanId>(cf.can_id))
 {
     uint32_t raw_angle;
 
@@ -159,20 +159,20 @@ SailCmd::SailCmd(const CanFrame & cf) : SailCmd(static_cast<CanId>(cf.can_id))
     checkBounds();
 }
 
-SailCmd::SailCmd(msg::SailCmd ros_sail_cmd, CanId id)
+MainTrimTab::MainTrimTab(msg::SailCmd ros_sail_cmd, CanId id)
 : BaseFrame(id, CAN_BYTE_DLEN_), angle_(ros_sail_cmd.trim_tab_angle_degrees)
 {
     checkBounds();
 }
 
-msg::SailCmd SailCmd::toRosMsg() const
+msg::SailCmd MainTrimTab::toRosMsg() const
 {
     msg::SailCmd msg;
     msg.set__trim_tab_angle_degrees(angle_);
     return msg;
 }
 
-CanFrame SailCmd::toLinuxCan() const
+CanFrame MainTrimTab::toLinuxCan() const
 {
     uint32_t raw_angle = static_cast<uint32_t>(angle_) * 1000;  //NOLINT(readability-magic-numbers)
 
@@ -182,7 +182,7 @@ CanFrame SailCmd::toLinuxCan() const
     return cf;
 }
 
-std::string SailCmd::debugStr() const
+std::string MainTrimTab::debugStr() const
 {
     std::stringstream ss;
     ss << BaseFrame::debugStr() << "\n"
@@ -190,12 +190,12 @@ std::string SailCmd::debugStr() const
     return ss.str();
 }
 
-// SailCmd public END
-// SailCmd private START
+// MainTrimTab public END
+// MainTrimTab private START
 
-SailCmd::SailCmd(CanId id) : BaseFrame(std::span{SAIL_CMD_IDS}, id, CAN_BYTE_DLEN_) {}
+MainTrimTab::MainTrimTab(CanId id) : BaseFrame(std::span{TRIM_TAB_IDS}, id, CAN_BYTE_DLEN_) {}
 
-void SailCmd::checkBounds() const
+void MainTrimTab::checkBounds() const
 {
     auto err = utils::isOutOfBounds<float>(angle_, HEADING_LBND, HEADING_UBND);
     if (err) {
@@ -204,8 +204,8 @@ void SailCmd::checkBounds() const
     }
 }
 
-// SailCmd private END
-// SailCmd END
+// MainTrimTab private END
+// MainTrimTab END
 
 // WindSensor START
 // WindSensor public START
@@ -301,7 +301,6 @@ GPS::GPS(const CanFrame & cf) : GPS(static_cast<CanId>(cf.can_id))
     int32_t raw_sec;
     int8_t  raw_min;
     int8_t  raw_hour;
-    int32_t raw_heading;
     int32_t raw_speed;
 
     std::memcpy(&raw_lat, cf.data + BYTE_OFF_LAT, sizeof(int32_t));
@@ -309,16 +308,14 @@ GPS::GPS(const CanFrame & cf) : GPS(static_cast<CanId>(cf.can_id))
     std::memcpy(&raw_sec, cf.data + BYTE_OFF_SEC, sizeof(int32_t));
     std::memcpy(&raw_min, cf.data + BYTE_OFF_MIN, sizeof(int8_t));
     std::memcpy(&raw_hour, cf.data + BYTE_OFF_HOUR, sizeof(int8_t));
-    std::memcpy(&raw_heading, cf.data + BYTE_OFF_HEADING, sizeof(int32_t));
     std::memcpy(&raw_speed, cf.data + BYTE_OFF_SPEED, sizeof(int32_t));
 
-    lat_     = static_cast<float>(raw_lat / 1000.0 - 90);     //NOLINT(readability-magic-numbers)
-    lon_     = static_cast<float>(raw_lon / 1000.0 - 180.0);  //NOLINT(readability-magic-numbers)
-    sec_     = static_cast<float>(raw_sec / 1000.0);          //NOLINT(readability-magic-numbers)
-    min_     = static_cast<float>(raw_min);
-    hour_    = static_cast<float>(raw_hour);
-    heading_ = static_cast<float>(raw_heading / 1000.0);  //NOLINT(readability-magic-numbers)
-    speed_   = static_cast<float>(raw_speed / 1000.0);    //NOLINT(readability-magic-numbers)
+    lat_   = static_cast<float>(raw_lat / 1000.0 - 90);     //NOLINT(readability-magic-numbers)
+    lon_   = static_cast<float>(raw_lon / 1000.0 - 180.0);  //NOLINT(readability-magic-numbers)
+    sec_   = static_cast<float>(raw_sec / 1000.0);          //NOLINT(readability-magic-numbers)
+    min_   = static_cast<float>(raw_min);
+    hour_  = static_cast<float>(raw_hour);
+    speed_ = static_cast<float>(raw_speed / 1000.0);  //NOLINT(readability-magic-numbers)
 
     checkBounds();
 }
@@ -330,7 +327,6 @@ GPS::GPS(msg::GPS ros_gps, CanId id)
   sec_(0),   // unused set to 0
   min_(0),   // unused set to 0
   hour_(0),  // unused set to 0
-  heading_(ros_gps.heading.heading),
   speed_(ros_gps.speed.speed)
 {
     checkBounds();
@@ -340,12 +336,12 @@ msg::GPS GPS::toRosMsg() const
 {
     msg::GPS           msg;
     msg::HelperLatLon  lat_lon;
-    msg::HelperHeading heading;
     msg::HelperSpeed   speed;
+    msg::HelperHeading heading;
     lat_lon.set__latitude(lat_);
     lat_lon.set__longitude(lon_);
-    heading.set__heading(heading_);
     speed.set__speed(speed_);
+    heading.set__heading(0.0);
     msg.set__lat_lon(lat_lon);
     msg.set__heading(heading);
     msg.set__speed(speed);
@@ -354,13 +350,12 @@ msg::GPS GPS::toRosMsg() const
 
 CanFrame GPS::toLinuxCan() const
 {
-    int32_t raw_lat  = static_cast<int32_t>(std::round((lat_ + 90.0) * 1000.0));   //NOLINT(readability-magic-numbers)
-    int32_t raw_lon  = static_cast<int32_t>(std::round((lon_ + 180.0) * 1000.0));  //NOLINT(readability-magic-numbers)
-    int32_t raw_sec  = static_cast<int32_t>(sec_ * 1000);                          //NOLINT(readability-magic-numbers)
-    int8_t  raw_min  = static_cast<int8_t>(min_);
-    int8_t  raw_hour = static_cast<int8_t>(hour_);
-    int32_t raw_heading = static_cast<int32_t>(heading_ * 1000);  //NOLINT(readability-magic-numbers)
-    int32_t raw_speed   = static_cast<int32_t>(speed_ * 1000);    //NOLINT(readability-magic-numbers)
+    int32_t raw_lat   = static_cast<int32_t>(std::round((lat_ + 90.0) * 1000.0));   //NOLINT(readability-magic-numbers)
+    int32_t raw_lon   = static_cast<int32_t>(std::round((lon_ + 180.0) * 1000.0));  //NOLINT(readability-magic-numbers)
+    int32_t raw_sec   = static_cast<int32_t>(sec_ * 1000);                          //NOLINT(readability-magic-numbers)
+    int8_t  raw_min   = static_cast<int8_t>(min_);
+    int8_t  raw_hour  = static_cast<int8_t>(hour_);
+    int32_t raw_speed = static_cast<int32_t>(speed_ * 1000);  //NOLINT(readability-magic-numbers)
 
     CanFrame cf = BaseFrame::toLinuxCan();
     std::memcpy(cf.data + BYTE_OFF_LAT, &raw_lat, sizeof(int32_t));
@@ -368,7 +363,6 @@ CanFrame GPS::toLinuxCan() const
     std::memcpy(cf.data + BYTE_OFF_SEC, &raw_sec, sizeof(int32_t));
     std::memcpy(cf.data + BYTE_OFF_MIN, &raw_min, sizeof(int8_t));
     std::memcpy(cf.data + BYTE_OFF_HOUR, &raw_hour, sizeof(int8_t));
-    std::memcpy(cf.data + BYTE_OFF_HEADING, &raw_heading, sizeof(int32_t));
     std::memcpy(cf.data + BYTE_OFF_SPEED, &raw_speed, sizeof(int32_t));
 
     return cf;
@@ -383,7 +377,6 @@ std::string GPS::debugStr() const
        << "Seconds (sec): " << sec_ << "\n"
        << "Minutes (min): " << min_ << "\n"
        << "Hours (hr): " << hour_ << "\n"
-       << "True heading (degrees): " << heading_ << "\n"
        << "Speed (km/hr): " << speed_ << "\n";
     return ss.str();
 }
@@ -404,11 +397,6 @@ void GPS::checkBounds() const
     if (err) {
         std::string err_msg = err.value();
         throw std::out_of_range("Longitude is out of bounds!\n" + debugStr() + "\n" + err_msg);
-    }
-    err = utils::isOutOfBounds<float>(heading_, HEADING_LBND, HEADING_UBND);
-    if (err) {
-        std::string err_msg = err.value();
-        throw std::out_of_range("Heading is out of bounds!\n" + debugStr() + "\n" + err_msg);
     }
     err = utils::isOutOfBounds<float>(speed_, SPEED_LBND, SPEED_UBND);
     if (err) {
@@ -433,7 +421,7 @@ AISShips::AISShips(const CanFrame & cf) : AISShips(static_cast<CanId>(cf.can_id)
     uint16_t raw_heading;
     int8_t   raw_rot;
     uint16_t raw_length;
-    uint8_t  raw_width;
+    uint16_t raw_width;
     uint8_t  raw_idx;
     uint8_t  raw_num_ships;
 
@@ -445,7 +433,7 @@ AISShips::AISShips(const CanFrame & cf) : AISShips(static_cast<CanId>(cf.can_id)
     std::memcpy(&raw_heading, cf.data + BYTE_OFF_HEADING, sizeof(int16_t));
     std::memcpy(&raw_rot, cf.data + BYTE_OFF_ROT, sizeof(int8_t));
     std::memcpy(&raw_length, cf.data + BYTE_OFF_LENGTH, sizeof(int16_t));
-    std::memcpy(&raw_width, cf.data + BYTE_OFF_WIDTH, sizeof(int8_t));
+    std::memcpy(&raw_width, cf.data + BYTE_OFF_WIDTH, sizeof(uint16_t));
     std::memcpy(&raw_idx, cf.data + BYTE_OFF_IDX, sizeof(int8_t));
     std::memcpy(&raw_num_ships, cf.data + BYTE_OFF_NUM_SHIPS, sizeof(int8_t));
 
@@ -525,7 +513,7 @@ CanFrame AISShips::toLinuxCan() const
     uint16_t raw_heading   = static_cast<int16_t>(heading_);
     int8_t   raw_rot       = rot_;
     uint16_t raw_length    = static_cast<int16_t>(length_);
-    uint8_t  raw_width     = static_cast<int8_t>(width_);
+    uint16_t raw_width     = static_cast<int16_t>(width_);
     uint8_t  raw_idx       = idx_;
     uint8_t  raw_num_ships = num_ships_;
 
@@ -538,7 +526,7 @@ CanFrame AISShips::toLinuxCan() const
     std::memcpy(cf.data + BYTE_OFF_HEADING, &raw_heading, sizeof(int16_t));
     std::memcpy(cf.data + BYTE_OFF_ROT, &raw_rot, sizeof(int8_t));
     std::memcpy(cf.data + BYTE_OFF_LENGTH, &raw_length, sizeof(int16_t));
-    std::memcpy(cf.data + BYTE_OFF_WIDTH, &raw_width, sizeof(int8_t));
+    std::memcpy(cf.data + BYTE_OFF_WIDTH, &raw_width, sizeof(uint8_t));
     std::memcpy(cf.data + BYTE_OFF_IDX, &raw_idx, sizeof(int8_t));
     std::memcpy(cf.data + BYTE_OFF_NUM_SHIPS, &raw_num_ships, sizeof(int8_t));
 
@@ -612,68 +600,6 @@ void AISShips::checkBounds() const
 }
 //AISShips private END
 //AISShips END
-
-//PwRMode START
-//PwRMode public START
-
-PwrMode::PwrMode(const CanFrame & cf) : PwrMode(static_cast<CanId>(cf.can_id))
-{
-    uint8_t raw_mode;
-
-    std::memcpy(&raw_mode, cf.data + BYTE_OFF_MODE, sizeof(uint8_t));
-
-    mode_ = raw_mode;
-
-    checkBounds();
-}
-
-// PwrMode::PwrMode(msg::SailCmd ros_sail_cmd, CanId id)
-// : BaseFrame(id, CAN_BYTE_DLEN_), angle_(ros_sail_cmd.trim_tab_angle_degrees)
-// {
-//     checkBounds();
-// }
-
-// msg::SailCmd SailCmd::toRosMsg() const
-// {
-//     msg::SailCmd msg;
-//     msg.set__trim_tab_angle_degrees(angle_);
-//     return msg;
-// }
-
-CanFrame PwrMode::toLinuxCan() const
-{
-    uint8_t raw_angle = mode_;
-
-    CanFrame cf = BaseFrame::toLinuxCan();
-    std::memcpy(cf.data + BYTE_OFF_MODE, &raw_angle, sizeof(uint8_t));
-
-    return cf;
-}
-
-std::string PwrMode::debugStr() const
-{
-    std::stringstream ss;
-    ss << BaseFrame::debugStr() << "\n"
-       << "Power mode: " << mode_;
-    return ss.str();
-}
-
-// PwrMode public END
-// PwrMode private START
-
-PwrMode::PwrMode(CanId id) : BaseFrame(std::span{PWR_MODE_IDS}, id, CAN_BYTE_DLEN_) {}
-
-void PwrMode::checkBounds() const
-{
-    auto err = utils::isOutOfBounds<float>(mode_, HEADING_LBND, HEADING_UBND);
-    if (err) {
-        std::string err_msg = err.value();
-        throw std::out_of_range("Power mode value is out of bounds!\n" + debugStr() + "\n" + err_msg);
-    }
-}
-//can i add new custom int messages and can i add new constants
-// PwrMode private END
-// PwrMode END
 
 // DesiredHeading START
 // DesiredHeading public START
