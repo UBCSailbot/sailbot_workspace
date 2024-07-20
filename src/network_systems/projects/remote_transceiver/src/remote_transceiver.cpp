@@ -217,30 +217,36 @@ void HTTPServer::doPost()
             std::cerr << global_path.DebugString() << std::endl;
         }
 
-        CURL *   curl;
-        CURLcode res;
+        static constexpr int NUM_CHECK = 20;
+        for (int i = 0; i < NUM_CHECK; i++) {
+            CURL *   curl;
+            CURLcode res;
 
-        curl_global_init(CURL_GLOBAL_ALL);
+            curl_global_init(CURL_GLOBAL_ALL);
 
-        curl                   = curl_easy_init();
-        std::string param_data = "imei=123456789&username=foo&password=bar&data=";
-        param_data += data;
+            curl                   = curl_easy_init();
+            std::string param_data = "imei=123456789&username=foo&password=bar&data=";
+            param_data += data;
 
-        if (curl != nullptr) {
-            curl_easy_setopt(curl, CURLOPT_URL, "https://rockblock.rock7.com/rockblock/MT");
-            curl_easy_setopt(curl, CURLOPT_POSTFIELDS, param_data.c_str());
+            if (curl != nullptr) {
+                curl_easy_setopt(curl, CURLOPT_URL, "https://rockblock.rock7.com/rockblock/MT");
+                curl_easy_setopt(curl, CURLOPT_POSTFIELDS, param_data.c_str());
 
-            curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10L);  //arbitrary value of 10s chosen for timeout
+                curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10L);  //arbitrary value of 10s chosen for timeout
 
-            res = curl_easy_perform(curl);
+                res = curl_easy_perform(curl);
 
-            if (res != CURLE_OK) {
-                std::cerr << "ccurl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
+                if (res != CURLE_OK) {
+                    std::cerr << "ccurl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
+                } else {
+                    curl_easy_cleanup(curl);
+                    break;
+                }
+
+                curl_easy_cleanup(curl);
             }
-
-            curl_easy_cleanup(curl);
+            curl_global_cleanup();
         }
-        curl_global_cleanup();
         // Create a post request to rockblock http pot request URL (how to send a post request to a url/endpoint)
 
     } else {
