@@ -80,9 +80,6 @@ public:
                std::make_pair(CanId::SAIL_WIND, std::function<void(const CanFrame &)>([this](const CanFrame & frame) {
                                   publishWindSensor(frame);
                               })),
-               std::make_pair(CanId::DATA_WIND, std::function<void(const CanFrame &)>([this](const CanFrame & frame) {
-                                  publishWindSensor(frame);
-                              })),
                std::make_pair(
                  CanId::GENERIC_SENSOR_START,
                  std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishGeneric(frame); })),
@@ -291,17 +288,6 @@ private:
         generic_sensors_pub_->publish(generic_sensors_);
     }
 
-    /**
-     * @brief SailCmd subscriber callback
-     *
-     * @param sail_cmd_
-     */
-    void subSailCmdCb(const msg::SailCmd & sail_cmd_input)
-    {
-        sail_cmd_ = sail_cmd_input;
-        boat_sim_input_msg_.set__sail_cmd(sail_cmd_);
-    }
-
     // SIMULATION CALLBACKS //
 
     /**
@@ -312,97 +298,6 @@ private:
     void publishBoatSimInput(const msg::CanSimToBoatSim & boat_sim_input_msg)
     {
         boat_sim_input_pub_->publish(boat_sim_input_msg);
-    }
-
-    /**
-     * @brief Publish a GPS frame
-     *        Intended to be registered as a callback with the CAN Tranceiver instance
-     *
-     * @param gps_frame gps CAN rfame read from the CAN bus
-     */
-    void publishGPS(const CanFrame & gps_frame)
-    {
-        CAN_FP::GPS gps(gps_frame);
-
-        msg::GPS gps_ = gps.toRosMsg();
-        gps_pub_->publish(gps_);
-    }
-
-    /**
-     * @brief Publish a wind sensor frame
-     *
-     * @param wind_sensor_frame
-     */
-    void publishWindSensor(const CanFrame & wind_sensor_frame)
-    {
-        CAN_FP::WindSensor wind_sensor(wind_sensor_frame);
-        size_t             idx;
-        for (size_t i = 0;; i++) {
-            if ((wind_sensor.id_ == CAN_FP::WindSensor::WIND_SENSOR_IDS[i])) {
-                idx = i;
-                break;
-            }
-        }
-        msg::WindSensor & wind_sensor_msg = wind_sensors_.wind_sensors[idx];
-        wind_sensor_msg                   = wind_sensor.toRosMsg();
-        wind_sensors_pub_->publish(wind_sensors_);
-
-        publishFilteredWindSensor();
-    }
-
-    /**
-     * @brief Publish the filtered wind sensor data
-     *
-     */
-    void publishFilteredWindSensor()
-    {
-        // TODO(): Currently a simple average of the two wind sensors, but we'll want something more substantial
-        // with issue #271
-        int32_t average_direction = 0;
-        for (size_t i = 0; i < NUM_WIND_SENSORS; i++) {
-            average_direction += wind_sensors_.wind_sensors[i].direction;
-        }
-        average_direction /= NUM_WIND_SENSORS;
-
-        float average_speed = 0;
-        for (size_t i = 0; i < NUM_WIND_SENSORS; i++) {
-            average_speed += wind_sensors_.wind_sensors[i].speed.speed;
-        }
-        average_speed /= NUM_WIND_SENSORS;
-
-        msg::HelperSpeed & filtered_speed = filtered_wind_sensor_.speed;
-        filtered_speed.set__speed(average_speed);
-
-        filtered_wind_sensor_.set__speed(filtered_speed);
-        filtered_wind_sensor_.set__direction(static_cast<int16_t>(average_direction));
-
-        filtered_wind_sensor_pub_->publish(filtered_wind_sensor_);
-    }
-
-    /**
-     * @brief Publish a generic sensor frame
-     *
-     * @param generic_frame
-     */
-    void publishGeneric(const CanFrame & generic_frame)
-    {
-        //check all generic sensors in the ROS msg for the matching id
-        //assumes this sensor is in the "generic_sensors_" array of sensors, however generic sensors do not have a constructor in can_frame_parser
-        size_t idx;
-        for (size_t i = 0;; i++) {
-            if (generic_frame.can_id == generic_sensors_.generic_sensors[i].id) {
-                idx = i;
-                break;
-            }
-        }
-
-        uint64_t generic_data = 0;
-        std::memcpy(&generic_data, generic_frame.data, sizeof(int64_t));
-        msg::HelperGenericSensor & generic_sensor_msg = generic_sensors_.generic_sensors[idx];
-        generic_sensor_msg.set__data(generic_data);
-        generic_sensor_msg.set__id(generic_frame.can_id);
-
-        generic_sensors_pub_->publish(generic_sensors_);
     }
 
     /**
@@ -416,18 +311,6 @@ private:
         boat_sim_input_msg_.set__sail_cmd(sail_cmd_);
 
         can_trns_->send(CAN_FP::MainTrimTab(sail_cmd_input, CanId::MAIN_TR_TAB).toLinuxCan());
-    }
-
-    // SIMULATION CALLBACKS //
-
-    /**
-     * @brief Publish the boat sim input message
-     *
-     * @param boat_sim_input_msg
-     */
-    void publishBoatSimInput(const msg::CanSimToBoatSim & boat_sim_input_msg)
-    {
-        boat_sim_input_pub_->publish(boat_sim_input_msg);
     }
 
     /**
