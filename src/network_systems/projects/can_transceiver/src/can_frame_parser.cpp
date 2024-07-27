@@ -75,28 +75,20 @@ CanFrame BaseFrame::toLinuxCan() const { return CanFrame{.can_id = static_cast<c
 
 Battery::Battery(const CanFrame & cf) : Battery(static_cast<CanId>(cf.can_id))
 {
-    int16_t raw_volt;
-    int16_t raw_curr;
-    int16_t raw_max_volt;
-    int16_t raw_min_volt;
+    int32_t raw_volt;
+    int32_t raw_curr;
 
-    std::memcpy(&raw_volt, cf.data + BYTE_OFF_VOLT, sizeof(int16_t));
-    std::memcpy(&raw_curr, cf.data + BYTE_OFF_CURR, sizeof(int16_t));
-    std::memcpy(&raw_max_volt, cf.data + BYTE_OFF_MAX_VOLT, sizeof(int16_t));
-    std::memcpy(&raw_min_volt, cf.data + BYTE_OFF_MIN_VOLT, sizeof(int16_t));
+    std::memcpy(&raw_volt, cf.data + BYTE_OFF_VOLT, sizeof(int32_t));
+    std::memcpy(&raw_curr, cf.data + BYTE_OFF_CURR, sizeof(int32_t));
 
     volt_ = static_cast<float>(raw_volt) / 100;  // NOLINT(readability-magic-numbers)
     curr_ = static_cast<float>(raw_curr) / 100;  // NOLINT(readability-magic-numbers)
-
-    // TODO(hhenry01): Max and min are dodgy... it doesn't make sense to not divide them by 100 - confirm with ELEC
-    volt_max_ = static_cast<float>(raw_max_volt);
-    volt_min_ = static_cast<float>(raw_min_volt);
 
     checkBounds();
 }
 
 Battery::Battery(msg::HelperBattery ros_bat, CanId id)
-: BaseFrame(id, CAN_BYTE_DLEN_), volt_(ros_bat.voltage), curr_(ros_bat.current), volt_max_(0.0), volt_min_(0.0)
+: BaseFrame(id, CAN_BYTE_DLEN_), volt_(ros_bat.voltage), curr_(ros_bat.current)
 {
     checkBounds();
 }
@@ -112,17 +104,12 @@ msg::HelperBattery Battery::toRosMsg() const
 
 CanFrame Battery::toLinuxCan() const
 {
-    int16_t raw_volt = static_cast<int16_t>(volt_ * 100);  // NOLINT(readability-magic-numbers)
-    int16_t raw_curr = static_cast<int16_t>(curr_ * 100);  // NOLINT(readability-magic-numbers)
-    // TODO(hhenry01): Max and min are dodgy... it doesn't make sense to not multiply them by 100 - confirm with ELEC
-    int16_t raw_max_volt = static_cast<int16_t>(volt_max_);
-    int16_t raw_min_volt = static_cast<int16_t>(volt_max_);
+    int32_t raw_volt = static_cast<int32_t>(volt_ * 100);  // NOLINT(readability-magic-numbers)
+    int32_t raw_curr = static_cast<int32_t>(curr_ * 100);  // NOLINT(readability-magic-numbers)
 
     CanFrame cf = BaseFrame::toLinuxCan();
-    std::memcpy(cf.data + BYTE_OFF_VOLT, &raw_volt, sizeof(int16_t));
-    std::memcpy(cf.data + BYTE_OFF_CURR, &raw_curr, sizeof(int16_t));
-    std::memcpy(cf.data + BYTE_OFF_MAX_VOLT, &raw_max_volt, sizeof(int16_t));
-    std::memcpy(cf.data + BYTE_OFF_MIN_VOLT, &raw_min_volt, sizeof(int16_t));
+    std::memcpy(cf.data + BYTE_OFF_VOLT, &raw_volt, sizeof(int32_t));
+    std::memcpy(cf.data + BYTE_OFF_CURR, &raw_curr, sizeof(int32_t));
 
     return cf;
 }
@@ -132,18 +119,8 @@ std::string Battery::debugStr() const
     std::stringstream ss;
     ss << BaseFrame::debugStr() << "\n"
        << "Voltage (V): " << volt_ << "\n"
-       << "Current (A): " << curr_ << "\n"
-       << "Max voltage (V): " << volt_max_ << "\n"
-       << "Min voltage (V): " << volt_min_;
+       << "Current (A): " << curr_ << "\n";
     return ss.str();
-}
-
-std::optional<CanId> Battery::rosIdxToCanId(size_t bat_idx)
-{
-    if (bat_idx < BATTERY_IDS.size()) {
-        return BATTERY_IDS[bat_idx];
-    }
-    return std::nullopt;
 }
 
 // Battery public END
@@ -168,44 +145,44 @@ void Battery::checkBounds() const
 // Battery private END
 // Battery END
 
-// SailCmd START
-// SailCmd public START
+// MainTrimTab START
+// MainTrimTab public START
 
-SailCmd::SailCmd(const CanFrame & cf) : SailCmd(static_cast<CanId>(cf.can_id))
+MainTrimTab::MainTrimTab(const CanFrame & cf) : MainTrimTab(static_cast<CanId>(cf.can_id))
 {
-    int16_t raw_angle;
+    uint32_t raw_angle;
 
-    std::memcpy(&raw_angle, cf.data + BYTE_OFF_ANGLE, sizeof(int16_t));
+    std::memcpy(&raw_angle, cf.data + BYTE_OFF_ANGLE, sizeof(uint32_t));
 
-    angle_ = static_cast<float>(raw_angle);
+    angle_ = static_cast<float>(raw_angle) / 1000;  //NOLINT(readability-magic-numbers)
 
     checkBounds();
 }
 
-SailCmd::SailCmd(msg::SailCmd ros_sail_cmd, CanId id)
+MainTrimTab::MainTrimTab(msg::SailCmd ros_sail_cmd, CanId id)
 : BaseFrame(id, CAN_BYTE_DLEN_), angle_(ros_sail_cmd.trim_tab_angle_degrees)
 {
     checkBounds();
 }
 
-msg::SailCmd SailCmd::toRosMsg() const
+msg::SailCmd MainTrimTab::toRosMsg() const
 {
     msg::SailCmd msg;
     msg.set__trim_tab_angle_degrees(angle_);
     return msg;
 }
 
-CanFrame SailCmd::toLinuxCan() const
+CanFrame MainTrimTab::toLinuxCan() const
 {
-    int16_t raw_angle = static_cast<int16_t>(angle_);
+    uint32_t raw_angle = static_cast<uint32_t>(angle_) * 1000;  //NOLINT(readability-magic-numbers)
 
     CanFrame cf = BaseFrame::toLinuxCan();
-    std::memcpy(cf.data + BYTE_OFF_ANGLE, &raw_angle, sizeof(int16_t));
+    std::memcpy(cf.data + BYTE_OFF_ANGLE, &raw_angle, sizeof(uint32_t));
 
     return cf;
 }
 
-std::string SailCmd::debugStr() const
+std::string MainTrimTab::debugStr() const
 {
     std::stringstream ss;
     ss << BaseFrame::debugStr() << "\n"
@@ -213,13 +190,13 @@ std::string SailCmd::debugStr() const
     return ss.str();
 }
 
-// SailCmd public END
-// SailCmd private START
+// MainTrimTab public END
+// MainTrimTab private START
 
-SailCmd::SailCmd(CanId id) : BaseFrame(std::span{SAIL_CMD_IDS}, id, CAN_BYTE_DLEN_) {}
+MainTrimTab::MainTrimTab(CanId id) : BaseFrame(std::span{TRIM_TAB_IDS}, id, CAN_BYTE_DLEN_) {}
 
-void SailCmd::checkBounds() const
-{  //fix min max angle
+void MainTrimTab::checkBounds() const
+{
     auto err = utils::isOutOfBounds<float>(angle_, HEADING_LBND, HEADING_UBND);
     if (err) {
         std::string err_msg = err.value();
@@ -227,8 +204,8 @@ void SailCmd::checkBounds() const
     }
 }
 
-// SailCmd private END
-// SailCmd END
+// MainTrimTab private END
+// MainTrimTab END
 
 // WindSensor START
 // WindSensor public START
@@ -324,7 +301,6 @@ GPS::GPS(const CanFrame & cf) : GPS(static_cast<CanId>(cf.can_id))
     int32_t raw_sec;
     int8_t  raw_min;
     int8_t  raw_hour;
-    int32_t raw_heading;
     int32_t raw_speed;
 
     std::memcpy(&raw_lat, cf.data + BYTE_OFF_LAT, sizeof(int32_t));
@@ -332,16 +308,14 @@ GPS::GPS(const CanFrame & cf) : GPS(static_cast<CanId>(cf.can_id))
     std::memcpy(&raw_sec, cf.data + BYTE_OFF_SEC, sizeof(int32_t));
     std::memcpy(&raw_min, cf.data + BYTE_OFF_MIN, sizeof(int8_t));
     std::memcpy(&raw_hour, cf.data + BYTE_OFF_HOUR, sizeof(int8_t));
-    std::memcpy(&raw_heading, cf.data + BYTE_OFF_HEADING, sizeof(int32_t));
     std::memcpy(&raw_speed, cf.data + BYTE_OFF_SPEED, sizeof(int32_t));
 
-    lat_     = static_cast<float>(raw_lat / 1000.0 - 90);     //NOLINT(readability-magic-numbers)
-    lon_     = static_cast<float>(raw_lon / 1000.0 - 180.0);  //NOLINT(readability-magic-numbers)
-    sec_     = static_cast<float>(raw_sec / 1000.0);          //NOLINT(readability-magic-numbers)
-    min_     = static_cast<float>(raw_min);
-    hour_    = static_cast<float>(raw_hour);
-    heading_ = static_cast<float>(raw_heading / 1000.0);  //NOLINT(readability-magic-numbers)
-    speed_   = static_cast<float>(raw_speed / 1000.0);    //NOLINT(readability-magic-numbers)
+    lat_   = static_cast<float>(raw_lat / 1000.0 - 90);     //NOLINT(readability-magic-numbers)
+    lon_   = static_cast<float>(raw_lon / 1000.0 - 180.0);  //NOLINT(readability-magic-numbers)
+    sec_   = static_cast<float>(raw_sec / 1000.0);          //NOLINT(readability-magic-numbers)
+    min_   = static_cast<float>(raw_min);
+    hour_  = static_cast<float>(raw_hour);
+    speed_ = static_cast<float>(raw_speed / 1000.0);  //NOLINT(readability-magic-numbers)
 
     checkBounds();
 }
@@ -353,7 +327,6 @@ GPS::GPS(msg::GPS ros_gps, CanId id)
   sec_(0),   // unused set to 0
   min_(0),   // unused set to 0
   hour_(0),  // unused set to 0
-  heading_(ros_gps.heading.heading),
   speed_(ros_gps.speed.speed)
 {
     checkBounds();
@@ -363,12 +336,12 @@ msg::GPS GPS::toRosMsg() const
 {
     msg::GPS           msg;
     msg::HelperLatLon  lat_lon;
-    msg::HelperHeading heading;
     msg::HelperSpeed   speed;
+    msg::HelperHeading heading;
     lat_lon.set__latitude(lat_);
     lat_lon.set__longitude(lon_);
-    heading.set__heading(heading_);
     speed.set__speed(speed_);
+    heading.set__heading(0.0);  // unused set to 0
     msg.set__lat_lon(lat_lon);
     msg.set__heading(heading);
     msg.set__speed(speed);
@@ -377,13 +350,12 @@ msg::GPS GPS::toRosMsg() const
 
 CanFrame GPS::toLinuxCan() const
 {
-    int32_t raw_lat  = static_cast<int32_t>(std::round((lat_ + 90.0) * 1000.0));   //NOLINT(readability-magic-numbers)
-    int32_t raw_lon  = static_cast<int32_t>(std::round((lon_ + 180.0) * 1000.0));  //NOLINT(readability-magic-numbers)
-    int32_t raw_sec  = static_cast<int32_t>(sec_ * 1000);                          //NOLINT(readability-magic-numbers)
-    int8_t  raw_min  = static_cast<int8_t>(min_);
-    int8_t  raw_hour = static_cast<int8_t>(hour_);
-    int32_t raw_heading = static_cast<int32_t>(heading_ * 1000);  //NOLINT(readability-magic-numbers)
-    int32_t raw_speed   = static_cast<int32_t>(speed_ * 1000);    //NOLINT(readability-magic-numbers)
+    int32_t raw_lat   = static_cast<int32_t>(std::round((lat_ + 90.0) * 1000.0));   //NOLINT(readability-magic-numbers)
+    int32_t raw_lon   = static_cast<int32_t>(std::round((lon_ + 180.0) * 1000.0));  //NOLINT(readability-magic-numbers)
+    int32_t raw_sec   = static_cast<int32_t>(sec_ * 1000);                          //NOLINT(readability-magic-numbers)
+    int8_t  raw_min   = static_cast<int8_t>(min_);
+    int8_t  raw_hour  = static_cast<int8_t>(hour_);
+    int32_t raw_speed = static_cast<int32_t>(speed_ * 1000);  //NOLINT(readability-magic-numbers)
 
     CanFrame cf = BaseFrame::toLinuxCan();
     std::memcpy(cf.data + BYTE_OFF_LAT, &raw_lat, sizeof(int32_t));
@@ -391,7 +363,6 @@ CanFrame GPS::toLinuxCan() const
     std::memcpy(cf.data + BYTE_OFF_SEC, &raw_sec, sizeof(int32_t));
     std::memcpy(cf.data + BYTE_OFF_MIN, &raw_min, sizeof(int8_t));
     std::memcpy(cf.data + BYTE_OFF_HOUR, &raw_hour, sizeof(int8_t));
-    std::memcpy(cf.data + BYTE_OFF_HEADING, &raw_heading, sizeof(int32_t));
     std::memcpy(cf.data + BYTE_OFF_SPEED, &raw_speed, sizeof(int32_t));
 
     return cf;
@@ -406,7 +377,6 @@ std::string GPS::debugStr() const
        << "Seconds (sec): " << sec_ << "\n"
        << "Minutes (min): " << min_ << "\n"
        << "Hours (hr): " << hour_ << "\n"
-       << "True heading (degrees): " << heading_ << "\n"
        << "Speed (km/hr): " << speed_ << "\n";
     return ss.str();
 }
@@ -427,11 +397,6 @@ void GPS::checkBounds() const
     if (err) {
         std::string err_msg = err.value();
         throw std::out_of_range("Longitude is out of bounds!\n" + debugStr() + "\n" + err_msg);
-    }
-    err = utils::isOutOfBounds<float>(heading_, HEADING_LBND, HEADING_UBND);
-    if (err) {
-        std::string err_msg = err.value();
-        throw std::out_of_range("Heading is out of bounds!\n" + debugStr() + "\n" + err_msg);
     }
     err = utils::isOutOfBounds<float>(speed_, SPEED_LBND, SPEED_UBND);
     if (err) {
@@ -456,7 +421,7 @@ AISShips::AISShips(const CanFrame & cf) : AISShips(static_cast<CanId>(cf.can_id)
     uint16_t raw_heading;
     int8_t   raw_rot;
     uint16_t raw_length;
-    uint16_t  raw_width;
+    uint16_t raw_width;
     uint8_t  raw_idx;
     uint8_t  raw_num_ships;
 
@@ -548,7 +513,7 @@ CanFrame AISShips::toLinuxCan() const
     uint16_t raw_heading   = static_cast<int16_t>(heading_);
     int8_t   raw_rot       = rot_;
     uint16_t raw_length    = static_cast<int16_t>(length_);
-    uint16_t  raw_width     = static_cast<uint16_t>(width_);
+    uint16_t raw_width     = static_cast<int16_t>(width_);
     uint8_t  raw_idx       = idx_;
     uint8_t  raw_num_ships = num_ships_;
 
@@ -561,7 +526,7 @@ CanFrame AISShips::toLinuxCan() const
     std::memcpy(cf.data + BYTE_OFF_HEADING, &raw_heading, sizeof(int16_t));
     std::memcpy(cf.data + BYTE_OFF_ROT, &raw_rot, sizeof(int8_t));
     std::memcpy(cf.data + BYTE_OFF_LENGTH, &raw_length, sizeof(int16_t));
-    std::memcpy(cf.data + BYTE_OFF_WIDTH, &raw_width, sizeof(uint16_t));
+    std::memcpy(cf.data + BYTE_OFF_WIDTH, &raw_width, sizeof(uint8_t));
     std::memcpy(cf.data + BYTE_OFF_IDX, &raw_idx, sizeof(int8_t));
     std::memcpy(cf.data + BYTE_OFF_NUM_SHIPS, &raw_num_ships, sizeof(int8_t));
 
@@ -636,4 +601,129 @@ void AISShips::checkBounds() const
 //AISShips private END
 //AISShips END
 
+// DesiredHeading START
+// DesiredHeading public START
+
+DesiredHeading::DesiredHeading(const CanFrame & cf) : DesiredHeading(static_cast<CanId>(cf.can_id))
+{
+    uint32_t raw_heading;
+
+    std::memcpy(&raw_heading, cf.data + BYTE_OFF_HEADING, sizeof(uint32_t));
+
+    heading_ = static_cast<float>(raw_heading) / 1000;  //NOLINT(readability-magic-numbers)
+
+    checkBounds();
+}
+
+DesiredHeading::DesiredHeading(msg::DesiredHeading ros_desired_heading, CanId id)
+: BaseFrame(id, CAN_BYTE_DLEN_), heading_(ros_desired_heading.heading.heading)
+{
+    checkBounds();
+}
+
+msg::DesiredHeading DesiredHeading::toRosMsg() const
+{
+    msg::HelperHeading helper_msg;
+    helper_msg.set__heading(heading_);
+    msg::DesiredHeading msg;
+    msg.set__heading(helper_msg);
+    return msg;
+}
+
+CanFrame DesiredHeading::toLinuxCan() const
+{
+    uint32_t raw_heading = static_cast<uint32_t>(heading_) * 1000;  //NOLINT(readability-magic-numbers)
+
+    CanFrame cf = BaseFrame::toLinuxCan();
+    std::memcpy(cf.data + BYTE_OFF_HEADING, &raw_heading, sizeof(uint32_t));
+
+    return cf;
+}
+
+std::string DesiredHeading::debugStr() const
+{
+    std::stringstream ss;
+    ss << BaseFrame::debugStr() << "\n"
+       << "Desired heading: " << heading_;
+    return ss.str();
+}
+
+// DesiredHeading public END
+// DesiredHeading private START
+
+DesiredHeading::DesiredHeading(CanId id) : BaseFrame(std::span{DESIRED_HEADING_IDS}, id, CAN_BYTE_DLEN_) {}
+
+void DesiredHeading::checkBounds() const
+{
+    auto err = utils::isOutOfBounds<float>(heading_, HEADING_LBND, HEADING_UBND);
+    if (err) {
+        std::string err_msg = err.value();
+        throw std::out_of_range("Desired heading is out of bounds!\n" + debugStr() + "\n" + err_msg);
+    }
+}
+
+// DesiredHeading private END
+// DesiredHeading END
+
+// RudderData START
+// RudderData public START
+
+RudderData::RudderData(const CanFrame & cf) : RudderData(static_cast<CanId>(cf.can_id))
+{
+    uint32_t raw_heading;
+
+    std::memcpy(&raw_heading, cf.data + BYTE_OFF_HEADING, sizeof(uint32_t));
+
+    heading_ = static_cast<float>(raw_heading) / 1000;  //NOLINT(readability-magic-numbers)
+
+    checkBounds();
+}
+
+RudderData::RudderData(msg::HelperHeading ros_rudder_data, CanId id)
+: BaseFrame(id, CAN_BYTE_DLEN_), heading_(ros_rudder_data.heading)
+{
+    checkBounds();
+}
+
+msg::HelperHeading RudderData::toRosMsg() const
+{
+    msg::HelperHeading msg;
+    msg.set__heading(heading_);
+    return msg;
+}
+
+CanFrame RudderData::toLinuxCan() const
+{
+    uint32_t raw_heading = static_cast<uint32_t>(heading_) * 1000;  //NOLINT(readability-magic-numbers)
+
+    CanFrame cf = BaseFrame::toLinuxCan();
+    std::memcpy(cf.data + BYTE_OFF_HEADING, &raw_heading, sizeof(uint32_t));
+
+    return cf;
+}
+
+std::string RudderData::debugStr() const
+{
+    std::stringstream ss;
+    ss << BaseFrame::debugStr() << "\n"
+       << "Rudder heading: " << heading_;
+    return ss.str();
+}
+
+// DesiredHeading public END
+// DesiredHeading private START
+
+RudderData::RudderData(CanId id) : BaseFrame(std::span{RUDDER_DATA_IDS}, id, CAN_BYTE_DLEN_) {}
+
+void RudderData::checkBounds() const
+{
+    auto err = utils::isOutOfBounds<float>(heading_, HEADING_LBND, HEADING_UBND);
+    if (err) {
+        std::string err_msg = err.value();
+        throw std::out_of_range("Rudder heading is out of bounds!\n" + debugStr() + "\n" + err_msg);
+    }
+
+    // DesiredHeading private END
+    // DesiredHeading END
+}
 }  // namespace CAN_FP

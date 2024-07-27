@@ -32,8 +32,8 @@ protected:
 };
 
 /**
- * @brief Test ROS<->CAN Battery translations work as expected for valid input values
- *
+ * @brief Test ROS<->CAN Battery translations work as expected for valid input values.
+ *        Treat both batteries as one combined battery.
  */
 TEST_F(TestCanFrameParser, BatteryTestValid)
 {
@@ -43,11 +43,7 @@ TEST_F(TestCanFrameParser, BatteryTestValid)
     constexpr std::array<int16_t, NUM_BATTERIES> expected_raw_expected_currs{250, -100};
 
     for (size_t i = 0; i < NUM_BATTERIES; i++) {
-        auto optId = CAN_FP::Battery::rosIdxToCanId(i);
-
-        ASSERT_TRUE(optId.has_value());
-
-        CAN_FP::CanId      id            = optId.value();
+        CAN_FP::CanId      id            = CAN_FP::CanId::BMS_DATA_FRAME;
         float              expected_volt = expected_volts[i];
         float              expected_curr = expected_currs[i];
         msg::HelperBattery msg;
@@ -84,9 +80,6 @@ TEST_F(TestCanFrameParser, BatteryTestValid)
  */
 TEST_F(TestCanFrameParser, TestBatteryInvalid)
 {
-    auto optId = CAN_FP::Battery::rosIdxToCanId(NUM_BATTERIES);
-    EXPECT_FALSE(optId.has_value());
-
     CAN_FP::CanId invalid_id = CAN_FP::CanId::RESERVED;
 
     CAN_FP::CanFrame cf{.can_id = static_cast<canid_t>(invalid_id)};
@@ -96,10 +89,7 @@ TEST_F(TestCanFrameParser, TestBatteryInvalid)
     std::vector<float> invalid_volts{BATT_VOLT_LBND - 1, BATT_VOLT_UBND + 1};
     std::vector<float> invalid_currs{BATT_CURR_LBND - 1, BATT_CURR_UBND + 1};
 
-    optId = CAN_FP::Battery::rosIdxToCanId(0);
-    ASSERT_TRUE(optId.has_value());
-
-    CAN_FP::CanId      valid_id = optId.value();
+    CAN_FP::CanId      valid_id = CAN_FP::CanId::BMS_DATA_FRAME;
     msg::HelperBattery msg;
 
     // Set a valid current for this portion
@@ -118,74 +108,204 @@ TEST_F(TestCanFrameParser, TestBatteryInvalid)
         EXPECT_THROW(CAN_FP::Battery tmp(msg, valid_id), std::out_of_range);
     };
 
-    cf.can_id = static_cast<canid_t>(CAN_FP::CanId::BMS_P_DATA_FRAME_1);
+    cf.can_id = static_cast<canid_t>(CAN_FP::CanId::BMS_DATA_FRAME);
     std::copy(std::begin(GARBAGE_DATA), std::end(GARBAGE_DATA), cf.data);
 
     EXPECT_THROW(CAN_FP::Battery tmp(cf), std::out_of_range);
 }
 
 /**
- * @brief Test ROS<->CAN SailCmd translations work as expected for valid input values
+ * @brief Test ROS<->CAN MainTrimTab translations work as expected for valid input values
  *
  */
-TEST_F(TestCanFrameParser, SailCmdTestValid)
+TEST_F(TestCanFrameParser, MainTrimTabTestValid)
 {
-    constexpr std::uint8_t                 NUM_SAILS = CAN_FP::SailCmd::SAIL_CMD_IDS.size();
-    constexpr std::array<float, NUM_SAILS> expected_angles{12, 128};
+    constexpr std::array<float, 2> expected_angles{12, 128};
+    CAN_FP::CanId                  id = CAN_FP::CanId::MAIN_TR_TAB;
 
-    for (size_t i = 0; i < NUM_SAILS; i++) {
-        CAN_FP::CanId id             = CAN_FP::SailCmd::SAIL_CMD_IDS[i];
-        float         expected_angle = expected_angles[i];
-        msg::SailCmd  msg;
+    for (size_t i = 0; i < 2; i++) {
+        float        expected_angle = expected_angles[i];
+        msg::SailCmd msg;
         msg.set__trim_tab_angle_degrees(expected_angle);
-        CAN_FP::SailCmd  sail_from_ros = CAN_FP::SailCmd(msg, id);
-        CAN_FP::CanFrame cf            = sail_from_ros.toLinuxCan();
+        CAN_FP::MainTrimTab sail_from_ros = CAN_FP::MainTrimTab(msg, id);
+        CAN_FP::CanFrame    cf            = sail_from_ros.toLinuxCan();
 
         EXPECT_EQ(cf.can_id, static_cast<canid_t>(id));
-        EXPECT_EQ(cf.len, CAN_FP::SailCmd::CAN_BYTE_DLEN_);
+        EXPECT_EQ(cf.len, CAN_FP::MainTrimTab::CAN_BYTE_DLEN_);
 
-        int16_t raw_angle;
-        std::memcpy(&raw_angle, cf.data + CAN_FP::SailCmd::BYTE_OFF_ANGLE, sizeof(int16_t));
-
+        uint32_t raw_angle;
+        std::memcpy(&raw_angle, cf.data + CAN_FP::MainTrimTab::BYTE_OFF_ANGLE, sizeof(uint32_t));
+        raw_angle /= 1000;  //NOLINT(readability-magic-numbers)
         EXPECT_EQ(raw_angle, expected_angle);
 
-        CAN_FP::SailCmd sail_from_can = CAN_FP::SailCmd(cf);
+        CAN_FP::MainTrimTab sail_from_can = CAN_FP::MainTrimTab(cf);
 
         EXPECT_EQ(sail_from_can.id_, id);
 
-        msg::SailCmd msg_from_bat = sail_from_can.toRosMsg();
+        msg::SailCmd msg_from_can = sail_from_can.toRosMsg();
 
-        EXPECT_DOUBLE_EQ(msg_from_bat.trim_tab_angle_degrees, expected_angle);
+        EXPECT_DOUBLE_EQ(msg_from_can.trim_tab_angle_degrees, expected_angle);
     }
 }
 
 /**
- * @brief Test the behavior of the SailCmd class when given invalid Id values
+ * @brief Test the behavior of the MainTrimTab class when given invalid Id values
  *
  */
-TEST_F(TestCanFrameParser, TestSailCmdInvalid)
+TEST_F(TestCanFrameParser, TestMainTrimTabInvalid)
 {
     CAN_FP::CanId invalid_id = CAN_FP::CanId::RESERVED;
 
     CAN_FP::CanFrame cf{.can_id = static_cast<canid_t>(invalid_id)};
 
-    EXPECT_THROW(CAN_FP::SailCmd tmp(cf), CAN_FP::CanIdMismatchException);
+    EXPECT_THROW(CAN_FP::MainTrimTab tmp(cf), CAN_FP::CanIdMismatchException);
 
     std::vector<float> invalid_angles{HEADING_LBND - 1, HEADING_UBND + 1};
 
-    CAN_FP::CanId valid_id = CAN_FP::CanId::SAIL_WSM_CMD_FRAME_1;
+    CAN_FP::CanId valid_id = CAN_FP::CanId::MAIN_TR_TAB;
     msg::SailCmd  msg;
 
     for (float invalid_angle : invalid_angles) {
         msg.set__trim_tab_angle_degrees(invalid_angle);
 
-        EXPECT_THROW(CAN_FP::SailCmd tmp(msg, valid_id), std::out_of_range);
+        EXPECT_THROW(CAN_FP::MainTrimTab tmp(msg, valid_id), std::out_of_range);
     };
 
-    cf.can_id = static_cast<canid_t>(CAN_FP::CanId::SAIL_WSM_CMD_FRAME_1);
+    cf.can_id = static_cast<canid_t>(CAN_FP::CanId::MAIN_TR_TAB);
     std::copy(std::begin(GARBAGE_DATA), std::end(GARBAGE_DATA), cf.data);
 
-    EXPECT_THROW(CAN_FP::SailCmd tmp(cf), std::out_of_range);
+    EXPECT_THROW(CAN_FP::MainTrimTab tmp(cf), std::out_of_range);
+}
+
+/**
+ * @brief Test ROS<->CAN DesiredHeading translations work as expected for valid input values
+ *
+ */
+TEST_F(TestCanFrameParser, DesiredHeadingTestValid)
+{
+    constexpr std::array<float, 2> expected_angles{9, 102};
+    CAN_FP::CanId                  id = CAN_FP::CanId::MAIN_HEADING;
+
+    for (size_t i = 0; i < 2; i++) {
+        float              expected_angle = expected_angles[i];
+        msg::HelperHeading helper_msg;
+        helper_msg.set__heading(expected_angle);
+        msg::DesiredHeading msg;
+        msg.set__heading(helper_msg);
+        CAN_FP::DesiredHeading heading_from_ros = CAN_FP::DesiredHeading(msg, id);
+        CAN_FP::CanFrame       cf               = heading_from_ros.toLinuxCan();
+
+        EXPECT_EQ(cf.can_id, static_cast<canid_t>(id));
+        EXPECT_EQ(cf.len, CAN_FP::DesiredHeading::CAN_BYTE_DLEN_);
+
+        uint32_t raw_angle;
+        std::memcpy(&raw_angle, cf.data + CAN_FP::DesiredHeading::BYTE_OFF_HEADING, sizeof(uint32_t));
+        raw_angle /= 1000;  //NOLINT(readability-magic-numbers)
+        EXPECT_EQ(raw_angle, expected_angle);
+
+        CAN_FP::DesiredHeading heading_from_can = CAN_FP::DesiredHeading(cf);
+
+        EXPECT_EQ(heading_from_can.id_, id);
+
+        msg::DesiredHeading msg_from_can = heading_from_can.toRosMsg();
+
+        EXPECT_DOUBLE_EQ(msg_from_can.heading.heading, expected_angle);
+    }
+}
+
+/**
+ * @brief Test the behavior of the DesiredHeading class when given invalid Id values
+ *
+ */
+TEST_F(TestCanFrameParser, TestDesiredHeadingInvalid)
+{
+    CAN_FP::CanId invalid_id = CAN_FP::CanId::RESERVED;
+
+    CAN_FP::CanFrame cf{.can_id = static_cast<canid_t>(invalid_id)};
+
+    EXPECT_THROW(CAN_FP::DesiredHeading tmp(cf), CAN_FP::CanIdMismatchException);
+
+    std::vector<float> invalid_angles{HEADING_LBND - 1, HEADING_UBND + 1};
+
+    CAN_FP::CanId       valid_id = CAN_FP::CanId::MAIN_TR_TAB;
+    msg::DesiredHeading msg;
+    msg::HelperHeading  helper_msg;
+
+    for (float invalid_angle : invalid_angles) {
+        helper_msg.set__heading(invalid_angle);
+        msg.set__heading(helper_msg);
+
+        EXPECT_THROW(CAN_FP::DesiredHeading tmp(msg, valid_id), std::out_of_range);
+    };
+
+    cf.can_id = static_cast<canid_t>(CAN_FP::CanId::MAIN_HEADING);
+    std::copy(std::begin(GARBAGE_DATA), std::end(GARBAGE_DATA), cf.data);
+
+    EXPECT_THROW(CAN_FP::DesiredHeading tmp(cf), std::out_of_range);
+}
+
+/**
+ * @brief Test ROS<->CAN RudderData translations work as expected for valid input values
+ *
+ */
+TEST_F(TestCanFrameParser, RudderDataTestValid)
+{
+    constexpr std::array<float, 2> expected_angles{12, 128};
+    CAN_FP::CanId                  id = CAN_FP::CanId::RUDDER_DATA_FRAME;
+
+    for (size_t i = 0; i < 2; i++) {
+        float              expected_angle = expected_angles[i];
+        msg::HelperHeading helper_msg;
+        helper_msg.set__heading(expected_angle);
+
+        CAN_FP::RudderData heading_from_ros = CAN_FP::RudderData(helper_msg, id);
+        CAN_FP::CanFrame   cf               = heading_from_ros.toLinuxCan();
+
+        EXPECT_EQ(cf.can_id, static_cast<canid_t>(id));
+        EXPECT_EQ(cf.len, CAN_FP::RudderData::CAN_BYTE_DLEN_);
+
+        uint32_t raw_angle;
+        std::memcpy(&raw_angle, cf.data + CAN_FP::RudderData::BYTE_OFF_HEADING, sizeof(uint32_t));
+        raw_angle /= 1000;  //NOLINT(readability-magic-numbers)
+        EXPECT_EQ(raw_angle, expected_angle);
+
+        CAN_FP::RudderData heading_from_can = CAN_FP::RudderData(cf);
+
+        EXPECT_EQ(heading_from_can.id_, id);
+
+        msg::HelperHeading msg_from_can = heading_from_can.toRosMsg();
+
+        EXPECT_DOUBLE_EQ(msg_from_can.heading, expected_angle);
+    }
+}
+
+/**
+ * @brief Test the behavior of the RudderData class when given invalid Id values
+ *
+ */
+TEST_F(TestCanFrameParser, TestRudderDataInvalid)
+{
+    CAN_FP::CanId invalid_id = CAN_FP::CanId::RESERVED;
+
+    CAN_FP::CanFrame cf{.can_id = static_cast<canid_t>(invalid_id)};
+
+    EXPECT_THROW(CAN_FP::RudderData tmp(cf), CAN_FP::CanIdMismatchException);
+
+    std::vector<float> invalid_angles{HEADING_LBND - 1, HEADING_UBND + 1};
+
+    CAN_FP::CanId      valid_id = CAN_FP::CanId::MAIN_TR_TAB;
+    msg::HelperHeading helper_msg;
+
+    for (float invalid_angle : invalid_angles) {
+        helper_msg.set__heading(invalid_angle);
+
+        EXPECT_THROW(CAN_FP::RudderData tmp(helper_msg, valid_id), std::out_of_range);
+    };
+
+    cf.can_id = static_cast<canid_t>(CAN_FP::CanId::RUDDER_DATA_FRAME);
+    std::copy(std::begin(GARBAGE_DATA), std::end(GARBAGE_DATA), cf.data);
+
+    EXPECT_THROW(CAN_FP::RudderData tmp(cf), std::out_of_range);
 }
 
 /**
@@ -293,18 +413,15 @@ TEST_F(TestCanFrameParser, GPSTestValid)
     constexpr std::array<float, 2>   expected_lats{48.6, -57.3};
     constexpr std::array<float, 2>   expected_lons{-32.1, 112.9};
     constexpr std::array<float, 2>   expected_speeds{3.5, 8.0};
-    constexpr std::array<float, 2>   expected_headings{100.4, 43.2};
     constexpr std::array<int32_t, 2> expected_raw_lats{138600, 32700};
     constexpr std::array<int32_t, 2> expected_raw_lons{147900, 292900};
     constexpr std::array<int32_t, 2> expected_raw_speeds{3500, 8000};
-    constexpr std::array<int32_t, 2> expected_raw_headings{100400, 43200};
 
     for (size_t i = 0; i < 2; i++) {
-        CAN_FP::CanId id               = CAN_FP::CanId::PATH_GPS_DATA_FRAME_1;
-        float         expected_lat     = expected_lats[i];
-        float         expected_lon     = expected_lons[i];
-        float         expected_speed   = expected_speeds[i];
-        float         expected_heading = expected_headings[i];
+        CAN_FP::CanId id             = CAN_FP::CanId::PATH_GPS_DATA_FRAME;
+        float         expected_lat   = expected_lats[i];
+        float         expected_lon   = expected_lons[i];
+        float         expected_speed = expected_speeds[i];
 
         msg::GPS           msg;
         msg::HelperLatLon  msg_latlon;
@@ -317,7 +434,7 @@ TEST_F(TestCanFrameParser, GPSTestValid)
         msg_speed.set__speed(expected_speed);
         msg.set__speed(msg_speed);
 
-        msg_heading.set__heading(expected_heading);
+        msg_heading.set__heading(0.0);
         msg.set__heading(msg_heading);
 
         CAN_FP::GPS      gps_from_ros = CAN_FP::GPS(msg, id);
@@ -329,16 +446,13 @@ TEST_F(TestCanFrameParser, GPSTestValid)
         int32_t raw_lat;
         int32_t raw_lon;
         int32_t raw_speed;
-        int32_t raw_heading;
         std::memcpy(&raw_lat, cf.data + CAN_FP::GPS::BYTE_OFF_LAT, sizeof(int32_t));
         std::memcpy(&raw_lon, cf.data + CAN_FP::GPS::BYTE_OFF_LON, sizeof(int32_t));
         std::memcpy(&raw_speed, cf.data + CAN_FP::GPS::BYTE_OFF_SPEED, sizeof(int32_t));
-        std::memcpy(&raw_heading, cf.data + CAN_FP::GPS::BYTE_OFF_HEADING, sizeof(int32_t));
 
         EXPECT_EQ(raw_lat, expected_raw_lats[i]);
         EXPECT_EQ(raw_lon, expected_raw_lons[i]);
         EXPECT_EQ(raw_speed, expected_raw_speeds[i]);
-        EXPECT_EQ(raw_heading, expected_raw_headings[i]);
 
         CAN_FP::GPS gps_from_can = CAN_FP::GPS(cf);
 
@@ -349,7 +463,6 @@ TEST_F(TestCanFrameParser, GPSTestValid)
         EXPECT_EQ(msg_from_gps.lat_lon.latitude, expected_lat);
         EXPECT_EQ(msg_from_gps.lat_lon.longitude, expected_lon);
         EXPECT_DOUBLE_EQ(msg_from_gps.speed.speed, expected_speed);
-        EXPECT_DOUBLE_EQ(msg_from_gps.heading.heading, expected_heading);
     }
 }
 
@@ -368,9 +481,8 @@ TEST_F(TestCanFrameParser, TestGPSInvalid)
     std::vector<float> invalid_lons{LON_LBND - 1, LON_UBND + 1};
     std::vector<float> invalid_lats{LAT_LBND - 1, LAT_UBND + 1};
     std::vector<float> invalid_speeds{SPEED_LBND - 1, SPEED_UBND + 1};
-    std::vector<float> invalid_headings{HEADING_LBND - 1, HEADING_UBND + 1};
 
-    CAN_FP::CanId valid_id = CAN_FP::CanId::PATH_GPS_DATA_FRAME_1;
+    CAN_FP::CanId valid_id = CAN_FP::CanId::PATH_GPS_DATA_FRAME;
     msg::GPS      msg;
 
     // Set a valid speed for this portion
@@ -421,23 +533,6 @@ TEST_F(TestCanFrameParser, TestGPSInvalid)
         msg.set__speed(msg_speed);
 
         msg_heading.set__heading(HEADING_UBND);
-        msg.set__heading(msg_heading);
-
-        EXPECT_THROW(CAN_FP::GPS tmp(msg, valid_id), std::out_of_range);
-    };
-
-    for (float invalid_heading : invalid_headings) {
-        msg::HelperLatLon  msg_latlon;
-        msg::HelperSpeed   msg_speed;
-        msg::HelperHeading msg_heading;
-        msg_latlon.set__latitude(LAT_UBND);
-        msg_latlon.set__longitude(LON_UBND);
-        msg.set__lat_lon(msg_latlon);
-
-        msg_speed.set__speed(SPEED_UBND);
-        msg.set__speed(msg_speed);
-
-        msg_heading.set__heading(invalid_heading);
         msg.set__heading(msg_heading);
 
         EXPECT_THROW(CAN_FP::GPS tmp(msg, valid_id), std::out_of_range);
@@ -842,11 +937,11 @@ TEST_F(TestCanTransceiver, TestNewDataValid)
         is_cb_called = true;
     };
     canbus_t_->registerCanCbs({{
-      std::make_pair(CAN_FP::CanId::BMS_P_DATA_FRAME_1, test_cb),
+      std::make_pair(CAN_FP::CanId::BMS_DATA_FRAME, test_cb),
     }});
 
     // just need a valid and matching ID for this test
-    CAN_FP::CanFrame dummy_frame{.can_id = static_cast<canid_t>(CAN_FP::CanId::BMS_P_DATA_FRAME_1)};
+    CAN_FP::CanFrame dummy_frame{.can_id = static_cast<canid_t>(CAN_FP::CanId::BMS_DATA_FRAME)};
 
     canbus_t_->send(dummy_frame);
 
@@ -867,7 +962,7 @@ TEST_F(TestCanTransceiver, TestNewDataIgnore)
         is_cb_called = true;
     };
     canbus_t_->registerCanCbs({{
-      std::make_pair(CAN_FP::CanId::BMS_P_DATA_FRAME_1, test_cb),
+      std::make_pair(CAN_FP::CanId::BMS_DATA_FRAME, test_cb),
     }});
 
     // just need a valid and ignored ID for this test
