@@ -115,30 +115,30 @@ TEST_F(TestCanFrameParser, TestBatteryInvalid)
 }
 
 /**
- * @brief Test ROS<->CAN MainTrimTab translations work as expected for valid input values
+ * @brief Test ROS<->CAN SailCmd translations work as expected for valid input values
  *
  */
-TEST_F(TestCanFrameParser, MainTrimTabTestValid)
+TEST_F(TestCanFrameParser, SailCmdTestValid)
 {
     constexpr std::array<float, 2> expected_angles{12, 128};
-    CAN_FP::CanId                  id = CAN_FP::CanId::MAIN_TR_TAB;
+    CAN_FP::CanId                  id = CAN_FP::SailCmd::SAIL_CMD_IDS[0];
 
     for (size_t i = 0; i < 2; i++) {
         float        expected_angle = expected_angles[i];
         msg::SailCmd msg;
         msg.set__trim_tab_angle_degrees(expected_angle);
-        CAN_FP::MainTrimTab sail_from_ros = CAN_FP::MainTrimTab(msg, id);
-        CAN_FP::CanFrame    cf            = sail_from_ros.toLinuxCan();
+        CAN_FP::SailCmd  sail_from_ros = CAN_FP::SailCmd(msg, id);
+        CAN_FP::CanFrame cf            = sail_from_ros.toLinuxCan();
 
         EXPECT_EQ(cf.can_id, static_cast<canid_t>(id));
-        EXPECT_EQ(cf.len, CAN_FP::MainTrimTab::CAN_BYTE_DLEN_);
+        EXPECT_EQ(cf.len, CAN_FP::SailCmd::CAN_BYTE_DLEN_);
 
         uint32_t raw_angle;
-        std::memcpy(&raw_angle, cf.data + CAN_FP::MainTrimTab::BYTE_OFF_ANGLE, sizeof(uint32_t));
+        std::memcpy(&raw_angle, cf.data + CAN_FP::SailCmd::BYTE_OFF_ANGLE, sizeof(uint32_t));
         raw_angle /= 1000;  //NOLINT(readability-magic-numbers)
         EXPECT_EQ(raw_angle, expected_angle);
 
-        CAN_FP::MainTrimTab sail_from_can = CAN_FP::MainTrimTab(cf);
+        CAN_FP::SailCmd sail_from_can = CAN_FP::SailCmd(cf);
 
         EXPECT_EQ(sail_from_can.id_, id);
 
@@ -149,16 +149,16 @@ TEST_F(TestCanFrameParser, MainTrimTabTestValid)
 }
 
 /**
- * @brief Test the behavior of the MainTrimTab class when given invalid Id values
+ * @brief Test the behavior of the SailCmd class when given invalid Id values
  *
  */
-TEST_F(TestCanFrameParser, TestMainTrimTabInvalid)
+TEST_F(TestCanFrameParser, TestSailCmdInvalid)
 {
     CAN_FP::CanId invalid_id = CAN_FP::CanId::RESERVED;
 
     CAN_FP::CanFrame cf{.can_id = static_cast<canid_t>(invalid_id)};
 
-    EXPECT_THROW(CAN_FP::MainTrimTab tmp(cf), CAN_FP::CanIdMismatchException);
+    EXPECT_THROW(CAN_FP::SailCmd tmp(cf), CAN_FP::CanIdMismatchException);
 
     std::vector<float> invalid_angles{HEADING_LBND - 1, HEADING_UBND + 1};
 
@@ -168,13 +168,13 @@ TEST_F(TestCanFrameParser, TestMainTrimTabInvalid)
     for (float invalid_angle : invalid_angles) {
         msg.set__trim_tab_angle_degrees(invalid_angle);
 
-        EXPECT_THROW(CAN_FP::MainTrimTab tmp(msg, valid_id), std::out_of_range);
+        EXPECT_THROW(CAN_FP::SailCmd tmp(msg, valid_id), std::out_of_range);
     };
 
     cf.can_id = static_cast<canid_t>(CAN_FP::CanId::MAIN_TR_TAB);
     std::copy(std::begin(GARBAGE_DATA), std::end(GARBAGE_DATA), cf.data);
 
-    EXPECT_THROW(CAN_FP::MainTrimTab tmp(cf), std::out_of_range);
+    EXPECT_THROW(CAN_FP::SailCmd tmp(cf), std::out_of_range);
 }
 
 /**
