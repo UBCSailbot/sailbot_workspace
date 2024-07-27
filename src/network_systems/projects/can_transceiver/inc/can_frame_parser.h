@@ -525,6 +525,73 @@ private:
 };
 
 /**
+ * @brief Power mode class derived from BaseFrame. Represents power mode data.
+ *
+ */
+class PwrMode final : public BaseFrame
+{
+public:
+    static constexpr std::array<CanId, 1>   PWR_MODE_IDS      = {CanId::PWR_MODE};
+    static constexpr uint8_t                CAN_BYTE_DLEN_    = 1;
+    static constexpr uint8_t                BYTE_OFF_MODE     = 0;
+    static constexpr uint8_t                POWER_MODE_LOW    = 0;
+    static constexpr uint8_t                POWER_MODE_NORMAL = 1;
+    static constexpr std::array<uint8_t, 2> PWR_MODES         = {POWER_MODE_LOW, POWER_MODE_NORMAL};
+
+    /**
+     * @brief Explicitly deleted no-argument constructor
+     *
+     */
+    PwrMode() = delete;
+
+    /**
+     * @brief Construct an PwrMode object from a Linux CanFrame representation
+     *
+     * @param cf Linux CanFrame
+     */
+    explicit PwrMode(const CanFrame & cf);
+
+    /**
+     * @brief Construct a PwrMode object given a mode and CAN ID
+     *
+     * @param mode    Power mode select
+     * @param id      CanId of the PwrMode
+     */
+    explicit PwrMode(uint8_t mode, CanId id);
+
+    /**
+     * @return the custom_interfaces ROS representation of the PwrMode object
+     */
+    //msg::HelperPwrMode toRosMsg() const;
+
+    /**
+     * @return the Linux CanFrame representation of the PwrMode object
+     */
+    CanFrame toLinuxCan() const override;
+
+    /**
+     * @return A string that can be printed or logged to debug a PwrMode object
+     */
+    std::string debugStr() const override;
+
+private:
+    /**
+     * @brief Private helper constructor for PwrMode objects
+     *
+     * @param id CanId of the PwrMode
+     */
+    explicit PwrMode(CanId id);
+
+    /**
+     * @brief Check if the assigned fields after constructing a PwrMode object are within bounds.
+     * @throws std::out_of_range if any assigned fields are outside of expected bounds
+     */
+    void checkBounds() const;
+
+    uint8_t mode_;
+};
+
+/**
  * @brief A DesiredHeading class derived from the BaseFrame. Represents a desired heading for the rudder.
  *
  */
