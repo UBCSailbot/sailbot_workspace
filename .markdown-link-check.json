@@ -21,5 +21,7 @@
         {
             "pattern": "^https://linuxize.com*"
         }
-    ]
+    ],
+
+    "aliveStatusCodes": [403, 200]
 }
