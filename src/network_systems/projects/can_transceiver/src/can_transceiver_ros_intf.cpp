@@ -288,6 +288,8 @@ private:
     {
         sail_cmd_ = sail_cmd_input;
         boat_sim_input_msg_.set__sail_cmd(sail_cmd_);
+
+        can_trns_->send(CAN_FP::MainTrimTab(sail_cmd_input, CanId::MAIN_TR_TAB).toLinuxCan());
     }
 
     // SIMULATION CALLBACKS //
@@ -317,7 +319,11 @@ private:
      *
      * @param desired_heading desired_heading received from the Desired Heading topic
      */
-    void subDesiredHeadingCb(msg::DesiredHeading desired_heading) { boat_sim_input_msg_.set__heading(desired_heading); }
+    void subDesiredHeadingCb(msg::DesiredHeading desired_heading)
+    {
+        boat_sim_input_msg_.set__heading(desired_heading);
+        can_trns_->send(CAN_FP::DesiredHeading(desired_heading, CanId::MAIN_TR_TAB).toLinuxCan());
+    }
 
     /**
      * @brief Mock GPS topic callback
