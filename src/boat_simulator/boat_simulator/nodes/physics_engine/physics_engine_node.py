@@ -278,8 +278,8 @@ class PhysicsEngineNode(Node):
 
     # PUBLISHER CALLBACKS
     def __publish(self):
-        self.__update_boat_state()
         """Synchronously publishes data to all publishers at once."""
+        self.__update_boat_state()
         # TODO Get updated boat state and publish (should this be separate from publishing?)
         # TODO Get wind sensor data and publish (should this be separate from publishing?)
         self.__publish_gps()
