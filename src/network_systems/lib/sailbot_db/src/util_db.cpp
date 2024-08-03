@@ -222,6 +222,71 @@ bool UtilDB::verifyDBWrite_GlobalPath(
     return !tracker.failed();
 }
 
+bool UtilDB::verifyDBWrite_IridiumResponse(
+  std::span<std::string> expected_response, std::span<uint8_t> expected_error,
+  std::span<std::string> expected_timestamp)
+{
+    utils::FailTracker tracker;
+
+    auto expectEQ = [&tracker]<not_float T>(T rcvd, T expected, const std::string & err_msg) -> void {
+        tracker.track(utils::checkEQ(rcvd, expected, err_msg));
+    };
+
+    expectEQ(expected_response.size(), expected_timestamp.size(), "Must have a timestamp for each response");
+    size_t num_docs                                         = expected_response.size();
+    auto [dumped_response, dumped_error, dumped_timestamps] = dumpIridiumResponse(tracker, num_docs);
+
+    expectEQ(dumped_response.size(), num_docs, "");
+    expectEQ(dumped_error.size(), num_docs, "");
+    expectEQ(dumped_timestamps.size(), num_docs, "");
+
+    for (size_t i = 0; i < num_docs; i++) {
+        expectEQ(dumped_response[i], expected_response[i], "");
+        expectEQ(dumped_error[i], expected_error[i], "");
+        expectEQ(dumped_timestamps[i], expected_timestamp[i], "");
+    }
+    return !tracker.failed();
+}
+
+std::tuple<std::vector<std::string>, std::vector<uint8_t>, std::vector<std::string>> UtilDB::dumpIridiumResponse(
+  utils::FailTracker & tracker, size_t num_docs)
+{
+    auto expectEQ = [&tracker]<not_float T>(T rcvd, T expected, const std::string & err_msg) -> void {
+        tracker.track(utils::checkEQ(rcvd, expected, err_msg));
+    };
+
+    std::vector<std::string> response_vec(num_docs);
+    std::vector<uint8_t>     error_vec(num_docs);
+    std::vector<std::string> timestamp_vec(num_docs);
+    mongocxx::pool::entry    entry = pool_->acquire();
+    mongocxx::database       db    = (*entry)[db_name_];
+
+    // Set the find options to sort by timestamp, don't need?
+    bsoncxx::document::value order = bsoncxx::builder::stream::document{} << "timestamp" << 1
+                                                                          << bsoncxx::builder::stream::finalize;
+    mongocxx::options::find opts = mongocxx::options::find{};
+    opts.sort(order.view());
+
+    // iridium response
+    mongocxx::collection path_coll             = db[COLLECTION_IRIDIUM_RESPONSE];
+    mongocxx::cursor     iridium_response_docs = path_coll.find({}, opts);
+    expectEQ(
+      static_cast<uint64_t>(path_coll.count_documents({})), num_docs,
+      "Error: TestDB should only have " + std::to_string(num_docs) + " documents per collection");
+
+    for (auto [i, path_doc_it] = std::tuple{size_t{0}, iridium_response_docs.begin()}; i < num_docs;
+         i++, path_doc_it++) {
+        std::string &                 timestamp = timestamp_vec[i];
+        const bsoncxx::document::view path_doc  = *path_doc_it;
+        timestamp_vec[i]                        = path_doc["timestamp"].get_utf8().value.to_string();
+
+        expectEQ(
+          path_doc["timestamp"].get_utf8().value.to_string(), timestamp, "Document timestamp mismatch");  // issue here
+    }
+
+    return {response_vec, error_vec, timestamp_vec};
+}
+
 std::pair<std::vector<GlobalPath>, std::vector<std::string>> UtilDB::dumpGlobalpath(
   utils::FailTracker & tracker, size_t num_docs)
 {
@@ -233,6 +298,7 @@ std::pair<std::vector<GlobalPath>, std::vector<std::string>> UtilDB::dumpGlobalp
     std::vector<std::string> timestamp_vec(num_docs);
     mongocxx::pool::entry    entry = pool_->acquire();
     mongocxx::database       db    = (*entry)[db_name_];
+
     // Set the find options to sort by timestamp
     bsoncxx::document::value order = bsoncxx::builder::stream::document{} << "timestamp" << 1
                                                                           << bsoncxx::builder::stream::finalize;
@@ -256,7 +322,7 @@ std::pair<std::vector<GlobalPath>, std::vector<std::string>> UtilDB::dumpGlobalp
             path->set_longitude(static_cast<float>(path_doc["longitude"].get_double().value));
         }
         expectEQ(globalpath.waypoints_size(), NUM_PATH_WAYPOINTS, "Size mismatch when reading path waypoints from DB");
-        //expectEQ(path_doc["timestamp"].get_utf8().value.to_string(), timestamp, "Document timestamp mismatch");  // issue here
+        // expectEQ(path_doc["timestamp"].get_utf8().value.to_string(), timestamp, "Document timestamp mismatch");  // issue here
     }
 
     return {globalpath_vec, timestamp_vec};

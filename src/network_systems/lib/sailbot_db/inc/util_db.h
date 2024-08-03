@@ -71,6 +71,17 @@ public:
       std::span<Polaris::GlobalPath> expected_globalpath, std::span<std::string> expected_timestamp);
 
     /**
+    * @brief Query the database and check that the Iridium response, error code, and timestamp are correct
+    *
+    * @param expected_response
+    * @param expected_error
+    * @param expected_timestamp
+    */
+    bool verifyDBWrite_IridiumResponse(
+      std::span<std::string> expected_response, std::span<uint8_t> expected_error,
+      std::span<std::string> expected_timestamp);
+
+    /**
      * @brief Dump and check all sensors and timestamps from the database
      *
      * @param tracker           FailureTracker that gets if any unexpected results are dumped
@@ -80,7 +91,24 @@ public:
     std::pair<std::vector<Polaris::Sensors>, std::vector<std::string>> dumpSensors(
       utils::FailTracker & tracker, size_t expected_num_docs = 1);
 
+    /**
+     * @brief Dump and check all global paths and timestamps from the database
+     *
+     * @param tracker           FailureTracker that gets if any unexpected results are dumped
+     * @param expected_num_docs Expected number of documents. tracker is updated if there's a mismatch
+     * @return std::pair{Vector of dumped Global Paths, Vector of dumped timestamps}
+     */
     std::pair<std::vector<Polaris::GlobalPath>, std::vector<std::string>> dumpGlobalpath(
+      utils::FailTracker & tracker, size_t expected_num_docs = 1);
+
+    /**
+     * @brief Dump and check all Iridium responses and timestamps from the database
+     *
+     * @param tracker           FailureTracker that gets if any unexpected results are dumped
+     * @param expected_num_docs Expected number of documents. tracker is updated if there's a mismatch
+     * @return std::tuple{Vector of dumped responses, Vector of dumped error codes, Vector of dumped timestamps}
+     */
+    std::tuple<std::vector<std::string>, std::vector<uint8_t>, std::vector<std::string>> dumpIridiumResponse(
       utils::FailTracker & tracker, size_t expected_num_docs = 1);
 
 private:
