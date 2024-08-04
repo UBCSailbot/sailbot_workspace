@@ -4,7 +4,7 @@ import { CircularProgress, Modal } from '@mui/material';
 import Header from '@/views/components/Header/Header';
 import styles from './style.module.css';
 import PolarisContainer from '@/views/components/Polaris/PolarisContainer';
-import { clearLogsPeriodically } from '@/lib/redux/logUtils'
+import { clearLogsPeriodically } from '@/lib/redux/logUtils';
 
 const MapsContainer = dynamic(() => import('@/views/MapsContainer'), {
   loading: () => <CircularProgress className={styles.loadingSpinner} />,

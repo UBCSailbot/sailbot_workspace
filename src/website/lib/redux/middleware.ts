@@ -15,6 +15,6 @@ const middleware: Redux.Middleware[] = [
     },
     predicate: () => typeof window !== 'undefined',
   }),
-]
+];
 
 export { middleware };
