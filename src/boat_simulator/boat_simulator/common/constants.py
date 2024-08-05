@@ -82,6 +82,7 @@ RUDDER_MAX_ANGLE_RANGE = (-45, 45)
 SAIL_MAX_ANGLE_RANGE = (-7, 7)
 
 # Predetermined values for BoatProperties
+# TODO These are placeholder values which should be replaced when we have real values.
 BOAT_PROPERTIES = BoatProperties(
     sail_lift_coeffs={0.0: 0.0, 5.0: 0.2, 10.0: 0.5, 15.0: 0.7, 20.0: 1.0},
     sail_drag_coeffs={0.0: 0.1, 5.0: 0.12, 10.0: 0.15, 15.0: 0.18, 20.0: 0.2},
@@ -92,4 +93,3 @@ BOAT_PROPERTIES = BoatProperties(
     rudder_dist=1.5,
     hull_drag_factor=0.05,
 )
-# TODO These are placeholder values which should be replaced when we have real values.
