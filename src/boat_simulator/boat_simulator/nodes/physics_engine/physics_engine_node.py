@@ -34,9 +34,10 @@ import boat_simulator.common.constants as Constants
 from boat_simulator.common.generators import MVGaussianGenerator
 from boat_simulator.common.types import Scalar
 from boat_simulator.nodes.physics_engine.fluid_generation import FluidGenerator
-from boat_simulator.nodes.physics_engine.model import BoatState
 
 from .decorators import require_all_subs_active
+
+# from boat_simulator.nodes.physics_engine.model import BoatState
 
 
 def main(args=None):
@@ -110,9 +111,16 @@ class PhysicsEngineNode(Node):
         self.__rudder_angle = 0
         self.__sail_trim_tab_angle = 0
         self.__desired_heading = None
-        self.__boat_state = BoatState(
-            0.5, 1, np.array([[0.5, 0.5, 0.5], [0.0, 0.5, 0.5], [0.0, 0.0, 0.5]], dtype=np.float32)
-        )
+        self.__boat_state = {
+            "sail_lift_coeffs": Constants.BOAT_PROPERTIES.sail_lift_coeffs,
+            "sail_drag_coeffs": Constants.BOAT_PROPERTIES.sail_drag_coeffs,
+            "sail_areas": Constants.BOAT_PROPERTIES.sail_areas,
+            "rudder_drag_coeffs": Constants.BOAT_PROPERTIES.rudder_drag_coeffs,
+            "rudder_areas": Constants.BOAT_PROPERTIES.rudder_areas,
+            "sail_dist": Constants.BOAT_PROPERTIES.sail_dist,
+            "rudder_dist": Constants.BOAT_PROPERTIES.rudder_dist,
+            "hull_drag_factor": Constants.BOAT_PROPERTIES.hull_drag_factor,
+        }
         self.__wind_generator = FluidGenerator(
             generator=MVGaussianGenerator(np.array([5, 5]), np.array([[2, 1], [1, 2]]))
         )
