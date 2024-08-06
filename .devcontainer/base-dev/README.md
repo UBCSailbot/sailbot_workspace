@@ -62,23 +62,9 @@ If you want to push this to GitHub (instead of using the slow Build Images workf
 
 1. Login to the GitHub container registry: [Authenticating with a personal access token (classic)](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-with-a-personal-access-token-classic)
 
-2. Push each image, replacing `<tag>` with the desired tag in the commands below
+2. Push the image, replacing `<tag>` with the desired tag in the command below
 
     ```
-    docker buildx build . \
-        --file base-dev.Dockerfile \
-        --tag ghcr.io/ubcsailbot/sailbot_workspace/base:<tag> \
-        --platform linux/arm64,linux/amd64 \
-        --builder sailbot \
-        --target base \
-        --push
-    docker buildx build . \
-        --file base-dev.Dockerfile \
-        --tag ghcr.io/ubcsailbot/sailbot_workspace/local-base:<tag> \
-        --platform linux/arm64,linux/amd64 \
-        --builder sailbot \
-        --target local-base \
-        --push
     docker buildx build . \
         --file base-dev.Dockerfile \
         --tag ghcr.io/ubcsailbot/sailbot_workspace/dev:<tag> \
