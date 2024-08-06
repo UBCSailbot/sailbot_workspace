@@ -120,6 +120,7 @@ class PhysicsEngineNode(Node):
             "sail_dist": Constants.BOAT_PROPERTIES.sail_dist,
             "rudder_dist": Constants.BOAT_PROPERTIES.rudder_dist,
             "hull_drag_factor": Constants.BOAT_PROPERTIES.hull_drag_factor,
+            # huh
         }
         self.__wind_generator = FluidGenerator(
             generator=MVGaussianGenerator(np.array([5, 5]), np.array([[2, 1], [1, 2]]))
