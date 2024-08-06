@@ -67,6 +67,9 @@ if(UNIT_TEST)
     set(GTEST_LINK_LIBS gtest gtest_main)
 endif()
 
+# CURL
+find_package(CURL REQUIRED)
+
 # Add src directories
 add_subdirectory(lib)
 add_subdirectory(projects)

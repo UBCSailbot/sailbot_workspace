@@ -93,3 +93,4 @@ BOAT_PROPERTIES = BoatProperties(
     rudder_dist=1.5,
     hull_drag_factor=0.05,
 )
+# TODO These are placeholder values which should be replaced when we have real values.

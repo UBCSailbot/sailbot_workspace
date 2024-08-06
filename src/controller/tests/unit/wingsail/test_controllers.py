@@ -6,12 +6,12 @@ from controller.common.lut import LUT
 from controller.wingsail.controllers import WingsailController
 
 # Define test data
-test_lut_data = np.array(
+sample_lut_data = np.array(
     [[50000, 5.75], [100000, 6.75], [200000, 7], [500000, 9.25], [1000000, 10]]
 )
-test_lut = LUT(test_lut_data)
-test_chord_width = CHORD_WIDTH_MAIN_SAIL
-test_kinematic_viscosity = KINEMATIC_VISCOSITY
+sample_lut = LUT(sample_lut_data)
+sample_chord_width = CHORD_WIDTH_MAIN_SAIL
+sample_kinematic_viscosity = KINEMATIC_VISCOSITY
 
 
 class TestWingsailController:
@@ -24,7 +24,7 @@ class TestWingsailController:
         """
         Fixture to create an instance of WingsailController for testing.
         """
-        return WingsailController(test_chord_width, test_kinematic_viscosity, test_lut)
+        return WingsailController(sample_chord_width, sample_kinematic_viscosity, sample_lut)
 
     @pytest.mark.parametrize(
         "apparent_wind_speed, expected_reynolds_number",
