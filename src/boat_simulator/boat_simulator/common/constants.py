@@ -5,6 +5,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Dict
 
+import numpy as np
+
 
 # Class declarations for constants. These are not meant to be accessed directly.
 @dataclass
@@ -41,6 +43,8 @@ class BoatProperties:
     sail_dist: float  # Meters
     rudder_dist: float  # Meters
     hull_drag_factor: float  # Dimensionless
+    mass: float  # Kilograms
+    inertia: np.ndarray  # Kilogram meter squared
 
 
 # Directly accessible constants
@@ -92,4 +96,6 @@ BOAT_PROPERTIES = BoatProperties(
     sail_dist=5.0,
     rudder_dist=1.5,
     hull_drag_factor=0.05,
+    mass=200.0,
+    inertia=np.array([[10, 0, 0], [0, 30, 0], [0, 0, 20]], dtype=np.float32),
 )
