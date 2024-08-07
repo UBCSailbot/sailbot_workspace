@@ -6,3 +6,7 @@ flask
 
 # test/test_obstacles.py
 plotly
+
+# land_polygon_etl.py
+geopandas
+fiona
