@@ -784,7 +784,7 @@ class IntegrationTestNode(Node):
 
         return num_fail
 
-    def __timeout_cb(self) -> None:
+    def __timeout_cb(self) -> None: # type: ignore
         """Callback for when the test times out. Stops all test processes, evaluates correctness,
         and exits
         """
