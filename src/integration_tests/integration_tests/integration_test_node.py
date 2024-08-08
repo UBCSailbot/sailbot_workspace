@@ -680,7 +680,7 @@ class IntegrationTestNode(Node):
                 self.drive_inputs()
 
                 self.timeout = self.create_timer(
-                    self.__test_inst.timeout_sec(), self.__timeout_cb()
+                    self.__test_inst.timeout_sec(), self.__timeout_cb()  # type: ignore
                 )
             except Exception as e:
                 # At this point, the test instance has successfully started all package processes.
@@ -784,7 +784,7 @@ class IntegrationTestNode(Node):
 
         return num_fail
 
-    def __timeout_cb(self) -> None: # type: ignore
+    def __timeout_cb(self) -> None:
         """Callback for when the test times out. Stops all test processes, evaluates correctness,
         and exits
         """
