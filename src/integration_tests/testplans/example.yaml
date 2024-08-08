@@ -1,15 +1,12 @@
-# Example testplan - Does not currently show HTTP I/O
-timeout_sec: 3
-
+timeout: 3
 required_packages:
   - name: local_pathfinding
-    configs: # Start local_pathfinding with default configuration
+    configs:
   - name: network_systems
     configs:
-      - all_disable.yaml
-      - example/example_en.yaml
-      - mock_ais/mock_ais_en_default.yaml
-
+    - all_disable.yaml
+    - example/example_en.yaml
+    - mock_ais/mock_ais_en_default.yaml
 inputs:
   - type: ROS
     name: cached_fib_in
@@ -17,30 +14,66 @@ inputs:
       dtype: uint64
       val: 6
   - type: ROS
-    name: mock_gps
+    name: aisship
+    data:
+      dtype: AISShips
+      ships:
+      - dtype: HelperAISShip
+        id:
+          dtype: uint32
+          val: 0
+        lat_lon:
+          dtype: HelperLatLon
+          latitude:
+            dtype: float32
+            val: 48.486730711983434
+          longitude:
+            dtype: float32
+            val: -124.2584587833453
+        cog:
+          dtype: HelperHeading
+          heading:
+            dtype: float32
+            val: 48.0
+        sog:
+          dtype: HelperSpeed
+          speed:
+            dtype: float32
+            val: 13.0
+        rot:
+          dtype: HelperROT
+          rot:
+            dtype: int8
+            val: -55
+        width:
+          dtype: HelperDimension
+          dimension:
+            dtype: float32
+            val: 10
+        length:
+          dtype: HelperDimension
+          dimension:
+            dtype: float32
+            val: 20
+  - type: ROS
+    name: gps
     data:
       dtype: GPS
       lat_lon:
-          dtype: HelperLatLon
-          latitude:
-              dtype: float32
-              val: 1
-          longitude:
-              dtype: float32
-              val: -1
-      speed:
-          dtype: HelperSpeed
-          speed:
-              dtype: float32
-              val: 5
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: -124.80127511028725
+        longitude:
+          dtype: float32
+          val: -123.92537339005594
       heading:
-          dtype: HelperHeading
-          heading:
-              dtype: float32
-              val: 180
-  # Global Path used to test list datatype parsing, it's not actually monitored in this example
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 14.4
   - type: ROS
-    name: global_path
+    name: local_path
     data:
       dtype: Path
       waypoints:
@@ -65,14 +98,81 @@ expected_outputs:
     data:
       dtype: uint64
       val: 5
-  # monitoring an input as an output is allowed
   - type: ROS
-    name: cached_fib_in
-    data:
-      dtype: uint64
-      val: 6
-  - type: ROS
-    name: mock_ais_ships
+    name: aisships
     data:
       dtype: AISShips
-      DONT_CARE: True
+      ships:
+      - dtype: HelperAISShip
+        id:
+          dtype: uint32
+          val: 0
+        lat_lon:
+          dtype: HelperLatLon
+          latitude:
+            dtype: float32
+            val: 48.486730711983434
+          longitude:
+            dtype: float32
+            val: -124.2584587833453
+        cog:
+          dtype: HelperHeading
+          heading:
+            dtype: float32
+            val: 48.0
+        sog:
+          dtype: HelperSpeed
+          speed:
+            dtype: float32
+            val: 13.0
+        rot:
+          dtype: HelperROT
+          rot:
+            dtype: int8
+            val: -55
+        width:
+          dtype: HelperDimension
+          dimension:
+            dtype: float32
+            val: 10
+        length:
+          dtype: HelperDimension
+          dimension:
+            dtype: float32
+            val: 20
+  - type: ROS
+    name: gps
+    data:
+      dtype: GPS
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: -124.80127511028725
+        longitude:
+          dtype: float32
+          val: -123.92537339005594
+      heading:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 14.4
+  - type: ROS
+    name: local_path
+    data:
+      dtype: Path
+      waypoints:
+        - dtype: HelperLatLon
+          latitude:
+              dtype: float32
+              val: 2
+          longitude:
+              dtype: float32
+              val: -2
+        - dtype: HelperLatLon
+          latitude:
+              dtype: float32
+              val: 3
+          longitude:
+              dtype: float32
+              val: -3
