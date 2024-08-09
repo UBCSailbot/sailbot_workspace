@@ -1,5 +1,7 @@
-"""The Global Path Module, which retrieves the global path from a specified http source and
-sends it to NET via POST request.
+"""The Global Path Module.
+
+The main service loop will monitor both the Sailbot's current position via HTTP and the global path 
+(which is stored in a csv on disk) and post a global path to the remote transceiver via HTTP
 
 The main function accepts two CLI arguments:
     file_path (str): The path to the global path csv file.
