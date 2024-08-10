@@ -11,6 +11,8 @@ ros_topics:
   MOCK_GPS: mock_gps
   MOCK_WIND_SENSORS: mock_wind_sensor
   WIND_SENSORS: wind_sensors
+  SAIL_CMD: sail_cmd
+  BOAT_SIM_INPUT: boat_sim_input
 
 ros_nodes:
   CAN_TRANSCEIVER: can_transceiver_node
