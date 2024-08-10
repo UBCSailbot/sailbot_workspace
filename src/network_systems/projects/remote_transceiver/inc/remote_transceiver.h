@@ -218,10 +218,10 @@ http::status post(ConnectionInfo info, std::string content_type, const std::stri
  * @param info          ConnectionInfo configuration
  * @param content_type  what kind of content is being posted (ex. application/x-www-form-urlencoded)
  * @param body          Content to POST
- * @return http::status of the response
+ * @return http::response of the response
  */
-http::response post_response_body(ConnectionInfo info, std::string content_type, const std::string & body);
+http::response<http::dynamic_body> post_response_body(
+  ConnectionInfo info, std::string content_type, const std::string & body);
 }  // namespace http_client
 
 }  // namespace remote_transceiver
-

@@ -162,6 +162,13 @@ void HTTPServer::doNotFound()
     beast::ostream(res_.body()) << "Not found: " << req_.target();
 }
 
+// Callback function to write the response data
+static size_t WriteCallback(void * contents, size_t size, size_t nmemb, void * userp)
+{
+    (static_cast<std::string *>(userp))->append(static_cast<char *>(contents), size * nmemb);
+    return size * nmemb;
+}
+
 // https://docs.rockblock.rock7.com/reference/receiving-mo-messages-via-http-webhook
 // IMPORTANT: Have 3 seconds to send HTTP status 200, so do not process data on same thread before responding
 void HTTPServer::doPost()
@@ -192,6 +199,8 @@ void HTTPServer::doPost()
         }
     } else if (req_.target() == remote_transceiver::targets::GLOBAL_PATH) {
         // TODO(): Allow POST global path
+
+        std::shared_ptr<HTTPServer> self     = shared_from_this();
         std::string                 json_str = beast::buffers_to_string(req_.body().data());  //JSON Parsing
         std::stringstream           ss(json_str);
         boost::property_tree::ptree json_tree;
@@ -217,6 +226,10 @@ void HTTPServer::doPost()
             std::cerr << global_path.DebugString() << std::endl;
         }
 
+        if (!self->db_.storeNewGlobalPath(global_path, timestamp)) {  //important
+            std::cerr << "Error, failed to store data received at:\n" << timestamp << std::endl;
+        }
+
         static constexpr int NUM_CHECK = 20;
         for (int i = 0; i < NUM_CHECK; i++) {
             CURL *   curl;
@@ -229,8 +242,23 @@ void HTTPServer::doPost()
             param_data += data;
 
             if (curl != nullptr) {
+                std::string response_body;
+
                 curl_easy_setopt(curl, CURLOPT_URL, "https://rockblock.rock7.com/rockblock/MT");
                 curl_easy_setopt(curl, CURLOPT_POSTFIELDS, param_data.c_str());
+
+                curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+                curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response_body);
+
+                std::stringstream           ss(response_body);
+                boost::property_tree::ptree pt;
+                boost::property_tree::read_json(ss, pt);
+                std::string response = pt.get<std::string>("response");
+                uint8_t     error    = pt.get<int>("error");
+
+                if (!self->db_.storeIridiumResponse(response, error, timestamp)) {  //important
+                    std::cerr << "Error, failed to store data received at:\n" << timestamp << std::endl;
+                }
 
                 curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10L);  //arbitrary value of 10s chosen for timeout
 
@@ -342,7 +370,8 @@ http::status http_client::post(ConnectionInfo info, std::string content_type, co
     return status;
 }
 
-http::response http_client::post_response_body(ConnectionInfo info, std::string content_type, const std::string & body)
+http::response<http::dynamic_body> http_client::post_response_body(
+  ConnectionInfo info, std::string content_type, const std::string & body)
 {
     bio::io_context io;
     tcp::socket     socket{io};
@@ -371,6 +400,7 @@ http::response http_client::post_response_body(ConnectionInfo info, std::string 
     boost::system::error_code e;
     socket.shutdown(tcp::socket::shutdown_both, e);
 
-    // http::status status = res.base().result();
     return res;
 }
+
+//OK, 10, message
