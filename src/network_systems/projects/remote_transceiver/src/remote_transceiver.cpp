@@ -341,3 +341,36 @@ http::status http_client::post(ConnectionInfo info, std::string content_type, co
     http::status status = res.base().result();
     return status;
 }
+
+http::response http_client::post_response_body(ConnectionInfo info, std::string content_type, const std::string & body)
+{
+    bio::io_context io;
+    tcp::socket     socket{io};
+    tcp::resolver   resolver{io};
+
+    auto [host, port, target] = info.get();
+
+    tcp::resolver::results_type const results = resolver.resolve(host, port);
+    bio::connect(socket, results.begin(), results.end());
+
+    http::request<http::string_body> req{http::verb::post, target, HTTP_VERSION};
+    req.set(http::field::host, host);
+    req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
+    req.set(http::field::content_type, content_type);
+    req.set(http::field::content_length, std::to_string(body.size()));
+    req.body() = body;
+
+    req.prepare_payload();
+    http::write(socket, req);
+
+    beast::flat_buffer buf;
+
+    http::response<http::dynamic_body> res;
+    http::read(socket, buf, res);
+
+    boost::system::error_code e;
+    socket.shutdown(tcp::socket::shutdown_both, e);
+
+    // http::status status = res.base().result();
+    return res;
+}
