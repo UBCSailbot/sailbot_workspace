@@ -30,7 +30,7 @@ const Dataset = ({ title, content, downloadAction }: DatasetProps) => {
           ))}
         </div>
         <div className={styles.contentContainer}>
-          {content.slice(0, 3).map((item, index) => (
+          {content.slice(0, 2).map((item, index) => (
             <div
               className={styles.flexItemContainer}
               key={`content-item-${index}`}
@@ -38,6 +38,14 @@ const Dataset = ({ title, content, downloadAction }: DatasetProps) => {
               {item}
             </div>
           ))}
+          <div className={styles.flexItemContainer}>
+            <span
+              style={{ cursor: 'pointer', textDecoration: 'underline' }}
+              onClick={downloadAction}
+            >
+            JSON
+            </span>
+          </div>
           <div className={styles.flexItemContainer}>
             <span
               style={{ cursor: 'pointer', textDecoration: 'underline' }}

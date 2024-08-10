@@ -12,27 +12,26 @@ import {
 } from '@/utils/DownloadData.js';
 import Dataset from '@/views/components/Dataset/Dataset';
 
-function stringToParagraphs(text: string) {
-  return text.split('\n').map((item, key) => (
-    <span key={key}>
-      {item}
-      <br />
-      <br />
-    </span>
-  ));
-}
-
 const PolarisContainer = () => {
 
-  const [description, setDescription] = useState<string>()
+  function stringToParagraphs(text: string) {
+    return text.split('\\n').map((item, key) => (
+      <span key={key}>
+        {item}
+        <br />
+        <br />
+      </span>
+    ));
+  }
+
+  const [description, setDescription] = useState<React.ReactNode>()
 
   useEffect(() => {
     fetch('/info/PolarisVoyageDescription.txt')
       .then((res) => res.text())
-      .then((data) => setDescription(data));
+      .then((text) => stringToParagraphs(text))
+      .then((paragraphs) => setDescription(paragraphs));
   }, []);
-
-  const paragraphs = description
 
   const customContents = [
     {
@@ -62,12 +61,12 @@ const PolarisContainer = () => {
     },
     {
       title: 'Wind Sensors',
-      data: ['Wind Sensors', '12 hours', 'JSON', 'Download'],
+      data: ['Wind Sensors', '12 hours', 'JSON'],
       action: downloadWindSensorsData,
     },
     {
       title: 'Generic Sensors',
-      data: ['Generic Sensors', '12 hours', 'JSON', 'Download'],
+      data: ['Generic Sensors', '12 hours', 'JSON'],
       action: downloadGenericSensorsData,
     },
   ];
@@ -93,7 +92,7 @@ const PolarisContainer = () => {
           <div className={styles.coverageContent}>Hello4</div>
         </div>
       </div>
-      <p className={styles.description}>{paragraphs}</p>
+      {description}
       <div className={styles.dataSetsContainer}>
         <div className={styles.dataSetHeader}>Access Data Sets</div>
         {customContents.map((content) => (
