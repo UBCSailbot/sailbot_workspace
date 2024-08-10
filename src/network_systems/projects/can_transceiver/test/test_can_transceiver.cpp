@@ -34,6 +34,8 @@ protected:
 /**
  * @brief Test ROS<->CAN Battery translations work as expected for valid input values.
  *        Treat both batteries as one combined battery.
+ * @brief Test ROS<->CAN Battery translations work as expected for valid input values.
+ *        Treat both batteries as one combined battery.
  */
 TEST_F(TestCanFrameParser, BatteryTestValid)
 {

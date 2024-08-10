@@ -55,6 +55,7 @@ static const std::map<CanId, std::string> CAN_DESC{
   {CanId::BMS_DATA_FRAME, "BMS_P_DATA_FRAME (Battery data)"},
   {CanId::RESERVED, "Reserved for mainframe (0x0 - 0x29)"},
   {CanId::SAIL_AIS, "SAIL_AIS (AIS ship data)"},
+  {CanId::MAIN_HEADING, "MAIN_HEADING (Main rudder command)"},
   {CanId::SAIL_WIND, "SAIL_WIND (Mast wind sensor)"},
   {CanId::RUDDER_DATA_FRAME, "RUDDER_DATA_FRAME (Rudder data from ecompass)"},
   {CanId::PATH_GPS_DATA_FRAME, "PATH_GPS_DATA_FRAME (GPS latitude)"},
