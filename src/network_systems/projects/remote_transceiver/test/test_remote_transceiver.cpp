@@ -247,7 +247,23 @@ TEST_F(TestRemoteTransceiver, TestGlobalPath)
     EXPECT_EQ(status, http::status::ok);
     std::this_thread::sleep_for(WAIT_AFTER_RES);
 
+    http::response<http::dynamic_body> response_body = http_client::post_response_body(
+      {TESTING_HOST, std::to_string(TESTING_PORT), remote_transceiver::targets::GLOBAL_PATH},
+      "application/x-www-form-urlencoded", global_path_ss.str());  //change url as per global path specs
+
+    std::string                 response_body_str = boost::beast::buffers_to_string(response_body.body().data());
+    std::stringstream           ss(response_body_str);
+    boost::property_tree::ptree pt;
+    boost::property_tree::read_json(ss, pt);
+    std::string response = pt.get<std::string>("response");
+    uint8_t     error    = pt.get<int>("error");
+
+    std::array<std::string, 1> expected_response              = {response};
+    std::array<uint8_t, 1>     expected_error                 = {error};
     std::array<GlobalPath, 1>  expected_global_path           = {rand_global_path};
     std::array<std::string, 1> expected_global_path_timestamp = {rand_global_path_timestamp};
+
     EXPECT_TRUE(g_test_db.verifyDBWrite_GlobalPath(expected_global_path, expected_global_path_timestamp));
+    EXPECT_TRUE(
+      g_test_db.verifyDBWrite_IridiumResponse(expected_response, expected_error, expected_global_path_timestamp));
 }
