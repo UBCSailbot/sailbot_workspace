@@ -8,6 +8,7 @@ from numpy.typing import NDArray
 from boat_simulator.common.types import Scalar
 from boat_simulator.nodes.physics_engine.kinematics_computation import BoatKinematics
 from boat_simulator.nodes.physics_engine.kinematics_data import KinematicsData
+from boat_simulator.nodes.physics_engine.fluid_forces import MediumForceComputation
 
 
 class BoatState:
@@ -20,7 +21,8 @@ class BoatState:
             expressed in SI units.
     """
 
-    def __init__(self, timestep: Scalar, mass: Scalar, inertia: NDArray):
+    def __init__(self, timestep: Scalar, mass: Scalar, inertia: NDArray,
+                 air_density: Scalar, water_density: Scalar):
         """Initializes an instance of `BoatState`.
 
         Args:
@@ -28,8 +30,18 @@ class BoatState:
             mass (Scalar): The mass of the boat, expressed in kilograms (kg).
             inertia (NDArray): The inertia of the boat, expressed in kilograms-meters squared
                 (kg•m^2).
+            air_density(Scalar): Density of air, expressed in kilograms per meter cubed (kg/m^3)
+            water_density(Scalar): Density of water, expressed in kilograms per meter cubed
+                (kg/m^3)
         """
+        self.__timestep = timestep
+        self.__mass = mass
+        self.__inertia = inertia
+        self.__air_density = air_density
+        self.__water_density = water_density
+
         self.__kinematics_computation = BoatKinematics(timestep, mass, inertia)
+        self.__sail_force_computation = MediumForceComputation()
 
     def compute_net_force_and_torque(self, wind_vel: NDArray) -> Tuple[NDArray, NDArray]:
         """Calculates the net force and net torque acting on the boat due to the wind.
