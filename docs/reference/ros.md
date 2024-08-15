@@ -15,11 +15,19 @@ To run our software on your device without our workspace, you would have to [ins
 and the dependencies that are in [our Docker images](https://github.com/UBCSailbot/sailbot_workspace/tree/main/.devcontainer){target=_blank}
 yourself.
 
+## Tutorial
+
+<!-- markdownlint-disable MD013 -->
+<div class="video-wrapper">
+    <iframe width="560" height="315" src="https://www.youtube.com/embed/q98d9Qd3iwE?si=sXth8aLrddXY5Iv_" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
+<!-- markdownlint-enable MD013 -->
+
 ## Workspace Configuration
 
 To get our workspace configuration running on your computer:
 
-1. Set it up by following the [setup instructions](../current/sailbot_workspace/setup.md)
+1. Set it up by following the [setup instructions](../current/sailbot_workspace/usage/setup.md)
 2. Uncomment the ROS 2 tutorials section in [`.devcontainer/Dockerfile`](https://github.com/UBCSailbot/sailbot_workspace/blob/main/.devcontainer/Dockerfile){target=_blank},
    then run the "Dev Containers: Rebuild Container" VS Code command, to install the tutorials' dependencies
 3. Clone the repositories used in the tutuorials: [ros_tutorials](https://github.com/ros/ros_tutorials/tree/humble){target=_blank}

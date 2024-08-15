@@ -8,11 +8,19 @@
  <maintainer email="henryhuang2001@gmail.com">Henry Huang</maintainer>
  <license>Apache License 2.0</license>
 
+ <!--ROS Dependencies-->
  <buildtool_depend>ament_cmake</buildtool_depend>
- <depend>rclcpp</depend>
- <depend>std_msgs</depend>
  <depend>custom_interfaces</depend>
+ <depend>rclcpp</depend>
  <exec_depend>ros2launch</exec_depend>
+ <depend>std_msgs</depend>
+
+ <!--Boost-->
+ <depend>boost</depend>
+ <!--Protobuf-->
+ <depend>protobuf-dev</depend>
+ <!--Gtest-->
+ <depend>gtest</depend>
 
  <export>
    <build_type>ament_cmake</build_type>

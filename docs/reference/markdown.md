@@ -55,12 +55,12 @@ experience is required to contribute to our docs.
 
 Material for MkDocs supports powerful features purpose-built to take technical documentation to the next level.
 Feel free to browse this site to see how we use these features, exploring their syntax in the
-[source code](https://github.com/UBCSailbot/docs/tree/main/docs){target=_blank}. Since GitHub renders Markdown files automatically
-you will need to click the "Raw" button to view their contents.
+[source code](https://github.com/UBCSailbot/sailbot_workspace/tree/main/docs){target=_blank}.
+Since GitHub renders Markdown files automatically you will need to click the "Raw" button to view their contents.
 
 !!! note "Material-Flavoured Markdown"
 
-    Material for MkDocs' flavour of Markdown extends upon vanilla Markdown, adding features such as admonitions 
+    Material for MkDocs' flavour of Markdown extends upon vanilla Markdown, adding features such as admonitions
     (like this note) and content tabs. Refer to the
     [official Material for MkDocs reference page](https://squidfunk.github.io/mkdocs-material/reference/){target=_blank}
     for more information on the available features.
@@ -85,7 +85,7 @@ resources are good for rendering Markdown:
 
 === ":logo: Material for MkDocs"
     - UBC Sailbot Docs: To preview your changes when working on this site,
-    refer to the [run instructions in the `README.md`](https://github.com/UBCSailbot/docs#run){target=_blank}.
+    refer to the [How to work with containerized applications](../current/sailbot_workspace/usage/how_to.md#work-with-containerized-applications){target=_blank}.
     - Material for MkDocs sites in general: If you ever decide to write your own documentation using Material for MkDocs,
     refer to the [official "Getting Started" guide](https://squidfunk.github.io/mkdocs-material/getting-started/){target=_blank}.
 
@@ -98,10 +98,10 @@ to browse around for the solution that suits your needs.
 We lint our Markdown files to reduce errors and increase readability. In particular, we use two tools:
 
 1. [markdownlint](https://github.com/DavidAnson/markdownlint){target=_blank} is
-used to enforce a style guide. Its configuration file for this repository is [`.markdownlint.json`](https://github.com/UBCSailbot/docs/blob/main/.markdownlint.json){target=_blank}.
+used to enforce a style guide. Its configuration file for this repository is [`.markdownlint.json`](https://github.com/UBCSailbot/sailbot_workspace/blob/main/.markdownlint.json){target=_blank}.
 If you use VS Code, there is a [markdownlint extension](https://marketplace.visualstudio.com/items?itemName=DavidAnson.vscode-markdownlint){target=_blank}.
 
 2. [markdown-link-check](https://github.com/tcort/markdown-link-check){target=_blank} is
-used to check for broken links. Its configuration file for this repository is [`.markdown-link-check.json`](https://github.com/UBCSailbot/docs/blob/main/.markdown-link-check.json){target=_blank}.
+used to check for broken links. Its configuration file for this repository is [`.markdown-link-check.json`](https://github.com/UBCSailbot/sailbot_workspace/blob/main/.markdown-link-check.json){target=_blank}.
 
 [^1]: <https://www.markdownguide.org/getting-started/>

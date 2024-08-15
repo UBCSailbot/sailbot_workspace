@@ -3,6 +3,7 @@
 import os
 from dataclasses import dataclass
 from enum import Enum
+from typing import Dict
 
 
 # Class declarations for constants. These are not meant to be accessed directly.
@@ -28,6 +29,18 @@ class PhysicsEnginePublisherTopics:
     GPS: str = "mock_gps"
     KINEMATICS: str = "mock_kinematics"
     WIND_SENSORS: str = "mock_wind_sensors"
+
+
+@dataclass
+class BoatProperties:
+    sail_lift_coeffs: Dict[float, float]  # Degrees, Dimensionless
+    sail_drag_coeffs: Dict[float, float]  # Degrees, Dimensionless
+    sail_areas: Dict[float, float]  # Degrees, Square meters
+    rudder_drag_coeffs: Dict[float, float]  # Degrees, Dimensionless
+    rudder_areas: Dict[float, float]  # Degrees, Square meters
+    sail_dist: float  # Meters
+    rudder_dist: float  # Meters
+    hull_drag_factor: float  # Dimensionless
 
 
 # Directly accessible constants
@@ -61,9 +74,3 @@ SAIL_ACTUATION_NUM_LOOP_EXECUTIONS = 10  # TODO This is a placeholder until the 
 
 # Number of times the rudder action server routine's main loop executes
 RUDDER_ACTUATION_NUM_LOOP_EXECUTIONS = 10  # TODO This is a placeholder until the PID is integrated
-
-# Max rudder control angle range in degrees, min angle [0] and max angle [1]
-RUDDER_MAX_ANGLE_RANGE = (-45, 45)
-
-# Max sail actuator control angle range in degrees, min angle [0], max angle [1]
-SAIL_MAX_ANGLE_RANGE = (-7, 7)

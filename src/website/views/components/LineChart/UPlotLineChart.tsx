@@ -10,13 +10,13 @@ export interface IUPlotLineChartProps {
 }
 
 export interface IUPlotLineChartState {
-  chart: uPlot;
-  options: uPlot.Options;
+  chart: uPlot | null;
+  options: any;
 }
 
-const fmtDate = uPlot.fmtDate("{YYYY}-{MM}-{DD} {h}:{mm}:{ss}{aa}");
-const localTz = new Intl.DateTimeFormat().resolvedOptions().timeZone;
-const tzDate = ts => uPlot.tzDate(new Date(ts * 1e3), localTz);
+export const fmtDate = uPlot.fmtDate('{YYYY}-{MM}-{DD} {h}:{mm}:{ss}{aa}');
+export const localTz = new Intl.DateTimeFormat().resolvedOptions().timeZone;
+export const tzDate = (ts: number) => uPlot.tzDate(new Date(ts * 1e3), localTz);
 export default class UPlotLineChartComponent extends React.Component<
   IUPlotLineChartProps,
   IUPlotLineChartState
@@ -35,8 +35,8 @@ export default class UPlotLineChartComponent extends React.Component<
         {
           show: true,
           spanGaps: false,
-          label: "Time",
-          value: (self, rawValue, xValuesIndex, currentVal) => {
+          label: 'Time',
+          value: (self: any, rawValue: any, xValuesIndex: any, currentVal: any) => {
             if (currentVal == null) {
               let xValues = self.data[xValuesIndex];
               let xValue = fmtDate(tzDate(xValues[xValues.length - 1]));
@@ -52,10 +52,10 @@ export default class UPlotLineChartComponent extends React.Component<
           show: true,
           spanGaps: false,
           label: this.props.label,
-          value: (self, rawValue, yValuesIndex, currentVal) => {
+          value: (self: any, rawValue: any, yValuesIndex: any, currentVal: any) => {
             if (currentVal == null) {
               let yValues = self.data[yValuesIndex];
-              let yValue = (yValues[yValues.length - 1])?.toFixed(2);
+              let yValue = yValues[yValues.length - 1]?.toFixed(2);
               return `${yValue} ${this.props.unit}`;
             }
             return rawValue?.toFixed(2) + ` ${this.props.unit}`;
@@ -70,7 +70,7 @@ export default class UPlotLineChartComponent extends React.Component<
 
   componentDidMount() {
     // Set the chart's width dynamically; the height is set manually above within 'options' in state.
-    this.setState((state) => ({
+    this.setState((state: any) => ({
       ...state,
       options: { ...state.options, width: this.getWindowSize().width / 2 - 40 },
     }));
@@ -87,8 +87,8 @@ export default class UPlotLineChartComponent extends React.Component<
    *
    * @param e the event called whenever a user resizes their window.
    */
-  setChartSize = (e: any) => {
-    this.state.chart.setSize({
+  setChartSize = () => {
+    this.state.chart?.setSize({
       width: this.getWindowSize().width / 2 - 40,
       height: this.state.options.height,
     });
@@ -111,7 +111,7 @@ export default class UPlotLineChartComponent extends React.Component<
    *              This instance is used for various chart operations within the component.
    */
   setChartRef = (chart: any) => {
-    this.setState((state) => ({ ...state, chart: chart }));
+    this.setState((state: any) => ({ ...state, chart: chart }));
   };
 
   render() {

@@ -7,7 +7,7 @@
     - By default building is done with half the number of jobs as logical processors (`HALF_NPROC`) to avoid out of
       memory crashes, but if the build machine has a lot of memory you can set `-j $NPROC` to minimize build times
 - The base image builds off the pre-base image and adds additional dependencies
-    - This image is used for [deployment](../deployment/)
+    - This image is used for [deployment](../../scripts/deployment/)
 - The local-base image builds off the base image and installs essential development-only dependencies
 - The dev image builds off the local-base image and:
     - Installs software that is nice to have for development
@@ -62,23 +62,9 @@ If you want to push this to GitHub (instead of using the slow Build Images workf
 
 1. Login to the GitHub container registry: [Authenticating with a personal access token (classic)](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-with-a-personal-access-token-classic)
 
-2. Push each image, replacing `<tag>` with the desired tag in the commands below
+2. Push the image, replacing `<tag>` with the desired tag in the command below
 
     ```
-    docker buildx build . \
-        --file base-dev.Dockerfile \
-        --tag ghcr.io/ubcsailbot/sailbot_workspace/base:<tag> \
-        --platform linux/arm64,linux/amd64 \
-        --builder sailbot \
-        --target base \
-        --push
-    docker buildx build . \
-        --file base-dev.Dockerfile \
-        --tag ghcr.io/ubcsailbot/sailbot_workspace/local-base:<tag> \
-        --platform linux/arm64,linux/amd64 \
-        --builder sailbot \
-        --target local-base \
-        --push
     docker buildx build . \
         --file base-dev.Dockerfile \
         --tag ghcr.io/ubcsailbot/sailbot_workspace/dev:<tag> \

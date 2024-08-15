@@ -1,5 +1,7 @@
 #include "local_transceiver.h"
 
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/split.hpp>
 #include <boost/asio/read.hpp>
 #include <boost/asio/read_until.hpp>
 #include <boost/asio/serial_port.hpp>
@@ -19,9 +21,11 @@
 #include "at_cmds.h"
 #include "cmn_hdrs/ros_info.h"
 #include "cmn_hdrs/shared_constants.h"
+#include "global_path.pb.h"
 #include "sensors.pb.h"
 #include "waypoint.pb.h"
 
+using boost::system::error_code;
 using Polaris::Sensors;
 namespace bio = boost::asio;
 
@@ -82,9 +86,9 @@ void LocalTransceiver::updateSensor(msg::GenericSensors msg)
 void LocalTransceiver::updateSensor(msg::LPathData localData)
 {
     sensors_.clear_local_path_data();
+    Sensors::Path * new_local = sensors_.mutable_local_path_data();
     for (const msg::HelperLatLon & local_data : localData.local_path.waypoints) {
-        Sensors::Path *     new_local = sensors_.mutable_local_path_data();
-        Polaris::Waypoint * waypoint  = new_local->add_waypoints();
+        Polaris::Waypoint * waypoint = new_local->add_waypoints();
         waypoint->set_latitude(local_data.latitude);
         waypoint->set_longitude(local_data.longitude);
     }
@@ -95,6 +99,8 @@ Sensors LocalTransceiver::sensors() { return sensors_; }
 LocalTransceiver::LocalTransceiver(const std::string & port_name, const uint32_t baud_rate) : serial_(io_, port_name)
 {
     serial_.set_option(bio::serial_port_base::baud_rate(baud_rate));
+    // Set a timeout for read/write operations on the serial port
+    setsockopt(serial_.native_handle(), SOL_SOCKET, SO_RCVTIMEO, &TIMEOUT, sizeof(TIMEOUT));
 };
 
 LocalTransceiver::~LocalTransceiver()
@@ -130,80 +136,187 @@ bool LocalTransceiver::send()
         throw std::length_error(err_string);
     }
 
-    static constexpr int MAX_NUM_RETRIES = 20;
-    for (int i = 0; i < MAX_NUM_RETRIES; i++) {
-        std::string sbdwbCommand = "AT+SBDWB=" + std::to_string(data.size()) + "\r";
-        send(sbdwbCommand + data + "\r");
+    std::string write_bin_cmd_str = AT::write_bin::CMD + std::to_string(data.size());  //according to specs
+    AT::Line    at_write_cmd(write_bin_cmd_str);
 
-        std::string checksumCommand = std::to_string(data.size()) + checksum(data) + "\r";
-        send(data + "+" + checksumCommand + "\r");
+    static constexpr int MAX_NUM_RETRIES = 20;  // allow retries because the connection is imperfect
+    for (int i = 0; i < MAX_NUM_RETRIES; i++) {
+        if (!send(at_write_cmd)) {
+            continue;
+        }
+
+        if (!rcvRsps({
+              at_write_cmd,
+              AT::Line(AT::DELIMITER),
+              AT::Line(AT::RSP_READY),
+              AT::Line("\n"),
+            })) {
+            continue;
+        }
+
+        std::string msg_str = data + checksum(data);
+        AT::Line    msg(msg_str);
+        if (!send(msg)) {
+            continue;
+        }
+
+        if (!rcvRsps({
+              AT::Line(AT::DELIMITER),
+              AT::Line(AT::write_bin::rsp::SUCCESS),
+              AT::Line("\n"),
+              AT::Line(AT::DELIMITER),
+              AT::Line(AT::STATUS_OK),
+              AT::Line("\n"),
+            })) {
+            continue;
+        }
 
         // Check SBD Session status to see if data was sent successfully
-        send(AT::SBD_SESSION);
-        std::string rsp_str = readLine();
-        readLine();  // empty line after response
-        if (checkOK()) {
-            try {
-                AT::SBDStatusResponse rsp(rsp_str);
-                if (rsp.MOSuccess()) {
-                    return true;
-                }
-            } catch (std::invalid_argument & e) {
-                /* Catch response parsing exceptions */
-            }
+        // NEEDS AN ACTIVE SERVER ON $WEBHOOK_SERVER_ENDPOINT OR VIRTUAL IRIDIUM WILL CRASH
+        static const AT::Line sbdix_cmd = AT::Line(AT::SBD_SESSION);
+        if (!send(sbdix_cmd)) {
+            continue;
+        }
+
+        if (!rcvRsps({
+              AT::Line("\r"),
+              sbdix_cmd,
+              AT::Line(AT::DELIMITER),
+            })) {
+            continue;
+        }
+
+        auto opt_rsp = readRsp();
+        if (!opt_rsp) {
+            continue;
+        }
+
+        // This string will look something like:
+        // "+SBDIX:<MO status>,<MOMSN>,<MT status>,<MTMSN>,<MT length>,<MTqueued>\r\n\r\nOK\r"
+        // on success
+        // Don't bother to check for OK\r as MO status will tell us if it succeeded or not
+        std::string              opt_rsp_val = opt_rsp.value();
+        std::vector<std::string> sbd_status_vec;
+        boost::algorithm::split(sbd_status_vec, opt_rsp_val, boost::is_any_of(AT::DELIMITER));
+
+        AT::SBDStatusRsp rsp(sbd_status_vec[0]);
+        if (rsp.MOSuccess()) {
+            return true;
         }
     }
+    std::cerr << "Failed to transmit data to satellite!" << std::endl;
+    std::cerr << sensors.DebugString() << std::endl;
     return false;
 }
 
-std::string LocalTransceiver::debugSend(const std::string & cmd)
+std::optional<std::string> LocalTransceiver::debugSend(const std::string & cmd)
 {
-    send(cmd);
+    AT::Line    at_cmd(cmd);
+    std::string sent_cmd;
 
-    std::string response = readLine();  // Read and capture the response
-    readLine();                         // Check if there is an empty line after respones
-    return response;
+    if (!send(at_cmd)) {
+        return std::nullopt;
+    }
+
+    return readRsp();
 }
 
-std::string LocalTransceiver::receive()
+custom_interfaces::msg::Path LocalTransceiver::receive()
 {
-    std::string receivedData = readLine();
-    return receivedData;
+    std::string                  receivedData = readRsp().value();
+    custom_interfaces::msg::Path to_publish   = parseInMsg(receivedData);
+    return to_publish;
 }
 
-void LocalTransceiver::send(const std::string & cmd) { bio::write(serial_, bio::buffer(cmd, cmd.size())); }
-
-std::string LocalTransceiver::parseInMsg(const std::string & msg)
+bool LocalTransceiver::send(const AT::Line & cmd)
 {
-    //TODO(jng468): implement function
-    (void)msg;
-    return "placeholder";
+    boost::system::error_code ec;
+    bio::write(serial_, bio::buffer(cmd.str_, cmd.str_.size()), ec);
+    if (ec) {
+        std::cerr << "Write failed with error: " << ec.message() << std::endl;
+        return false;
+    }
+    return true;
 }
 
-std::string LocalTransceiver::readLine()
+custom_interfaces::msg::Path LocalTransceiver::parseInMsg(const std::string & msg)
+{
+    Polaris::GlobalPath path;
+    path.ParseFromString(msg);
+
+    custom_interfaces::msg::Path                      soln;
+    std::vector<custom_interfaces::msg::HelperLatLon> waypoints;
+
+    for (auto waypoint : path.waypoints()) {
+        custom_interfaces::msg::HelperLatLon helperLatLon;
+        helperLatLon.set__longitude(waypoint.longitude());
+        helperLatLon.set__latitude(waypoint.latitude());
+
+        waypoints.push_back(helperLatLon);
+    }
+
+    soln.set__waypoints(waypoints);
+    return soln;
+}
+
+bool LocalTransceiver::rcvRsp(const AT::Line & expected_rsp)
 {
     bio::streambuf buf;
-
-    // Caution: will hang if another proccess is reading from serial port
-    bio::read_until(serial_, buf, AT::DELIMITER);
-    return std::string(
-      bio::buffers_begin(buf.data()), bio::buffers_begin(buf.data()) + static_cast<int64_t>(buf.data().size()));
+    error_code     ec;
+    // Caution: will hang if another proccess is reading from the same serial port
+    bio::read(serial_, buf, bio::transfer_exactly(expected_rsp.str_.size()), ec);
+    if (ec) {
+        std::cerr << "Failed to read with error: " << ec.message() << std::endl;
+        return false;
+    }
+    std::string outstr = streambufToStr(buf);
+    if (outstr != expected_rsp.str_) {
+        std::cerr << "Expected to read: \"" << expected_rsp.str_ << "\"\nbut read: \"" << outstr << "\"" << std::endl;
+        return false;
+    }
+    return true;
 }
 
-bool LocalTransceiver::checkOK()
+bool LocalTransceiver::rcvRsps(std::initializer_list<const AT::Line> expected_rsps)
 {
-    std::string status = readLine();
-    return status == AT::STATUS_OK;
+    // All responses must match the expected responses
+    return std::all_of(
+      expected_rsps.begin(), expected_rsps.end(), [this](const AT::Line & e_rsp) { return rcvRsp(e_rsp); });
+}
+
+std::optional<std::string> LocalTransceiver::readRsp()
+{
+    bio::streambuf buf;
+    error_code     ec;
+
+    // Caution: will hang if another proccess is reading from serial port
+    bio::read_until(serial_, buf, AT::DELIMITER, ec);
+    if (ec) {
+        return std::nullopt;
+    }
+
+    std::string rsp_str = streambufToStr(buf);
+    rsp_str.pop_back();  // Remove the "\n"
+    return rsp_str;
 }
 
 std::string LocalTransceiver::checksum(const std::string & data)
 {
-    uint16_t counter = 0;
+    uint16_t sum = 0;
     for (char c : data) {
-        counter += static_cast<uint8_t>(c);
+        sum += static_cast<uint8_t>(c);
     }
 
-    std::stringstream ss;
-    ss << std::hex << std::setw(4) << std::setfill('0') << counter;
-    return ss.str();
+    char checksum_low  = static_cast<char>(sum & 0xff);           // NOLINT(readability-magic-numbers)
+    char checksum_high = static_cast<char>((sum & 0xff00) >> 8);  // NOLINT(readability-magic-numbers)
+
+    return std::string{checksum_high, checksum_low};
+}
+
+std::string LocalTransceiver::streambufToStr(bio::streambuf & buf)
+{
+    std::string str = std::string(
+      bio::buffers_begin(buf.data()), bio::buffers_begin(buf.data()) + static_cast<int64_t>(buf.data().size()));
+    buf.consume(buf.size());
+    return str;
 }

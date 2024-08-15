@@ -7,6 +7,14 @@ import rclpy.utilities
 from custom_interfaces.msg import GPS, SailCmd, WindSensor
 from rclpy.node import Node
 
+from controller.common.constants import (
+    CHORD_WIDTH_MAIN_SAIL,
+    KINEMATIC_VISCOSITY,
+    REYNOLDS_NUMBER_ALPHA_TABLE,
+)
+from controller.common.lut import LUT
+from controller.wingsail.controllers import WingsailController
+
 
 def main(args=None):
     rclpy.init(args=args)
@@ -47,8 +55,14 @@ class WingsailControllerNode(Node):
         during the initialization process.
         """
         self.__trim_tab_angle = 0.0
-        self.__filtered_wind_sensor = None
-        self.__gps = None
+        self.__filtered_wind_sensor = WindSensor()
+        self.__gps = GPS()
+        # pull hardcoded table from the right place later...
+        # right location should be config.py
+        lut = LUT(REYNOLDS_NUMBER_ALPHA_TABLE)
+        self.__wingsailController = WingsailController(
+            CHORD_WIDTH_MAIN_SAIL, KINEMATIC_VISCOSITY, lut
+        )
 
     def __declare_ros_parameters(self):
         """Declares ROS parameters from the global configuration file that will be used in this
@@ -124,11 +138,20 @@ class WingsailControllerNode(Node):
     def __publish(self):
         """Publishes a SailCmd message with the trim tab angle using the designated publisher.
         It also logs information about the publication to the logger."""
-
         msg = SailCmd()
-        msg.trim_tab_angle_degrees = 0.0
+
+        self.__trim_tab_angle = self.__wingsailController.get_trim_tab_angle(
+            self.__filtered_wind_sensor.speed.speed, self.__filtered_wind_sensor.direction
+        )
+
+        msg.trim_tab_angle_degrees = self.__trim_tab_angle
+
         self.__trim_tab_angle_pub.publish(msg)
-        self.get_logger().info(f"Published to {self.__trim_tab_angle_pub.topic}")
+
+        self.get_logger().info(
+            f"Published to {self.__trim_tab_angle_pub.topic} \
+                the following angle: {msg.trim_tab_angle_degrees}"
+        )
 
     @property
     def pub_period(self) -> float:

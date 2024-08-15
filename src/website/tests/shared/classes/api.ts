@@ -24,7 +24,7 @@ export class Api {
       return this.response.data;
     } catch (error) {
       this.logError(error, failOnError);
-      return null;
+      return null as any;
     }
   };
 
@@ -45,7 +45,7 @@ export class Api {
       return this.response.data;
     } catch (error) {
       this.logError(error, failOnError);
-      return null;
+      return null as any;
     }
   };
 
@@ -66,7 +66,7 @@ export class Api {
       return this.response.data;
     } catch (error) {
       this.logError(error, failOnError);
-      return null;
+      return null as any;
     }
   };
 
@@ -82,7 +82,7 @@ export class Api {
       return this.response;
     } catch (error) {
       this.logError(error, failOnError);
-      return null;
+      return null as any;
     }
   };
 
@@ -97,7 +97,7 @@ export class Api {
   };
 
   /* eslint-disable class-methods-use-this */
-  logRequest = (request, config): void => {
+  logRequest = (request: any, config: any): void => {
     logger.info(request);
     logger.info(config);
   };

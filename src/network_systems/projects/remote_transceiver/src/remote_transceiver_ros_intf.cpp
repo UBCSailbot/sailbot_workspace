@@ -6,7 +6,9 @@
 #include <rclcpp/rclcpp.hpp>
 #include <stdexcept>
 
+#include "cmn_hdrs/ros_info.h"
 #include "cmn_hdrs/shared_constants.h"
+#include "net_node.h"
 #include "remote_transceiver.h"
 #include "sailbot_db.h"
 
@@ -14,10 +16,10 @@
  * @brief Connect the Remote Transceiver to the onboard ROS network
  *
  */
-class RemoteTransceiverRosIntf : public rclcpp::Node
+class RemoteTransceiverRosIntf : public NetNode
 {
 public:
-    RemoteTransceiverRosIntf() : Node("remote_transceiver_node")
+    RemoteTransceiverRosIntf() : NetNode(ros_nodes::REMOTE_TRANSCEIVER)
     {
         this->declare_parameter("enabled", true);
         enabled_ = this->get_parameter("enabled").as_bool();
@@ -117,14 +119,21 @@ private:
 
 int main(int argc, char ** argv)
 {
+    bool err = false;
     rclcpp::init(argc, argv);
     try {
-        rclcpp::spin(std::make_shared<RemoteTransceiverRosIntf>());
-    } catch (std::runtime_error & e) {
+        std::shared_ptr<RemoteTransceiverRosIntf> node = std::make_shared<RemoteTransceiverRosIntf>();
+        try {
+            rclcpp::spin(node);
+        } catch (std::exception & e) {
+            RCLCPP_ERROR(node->get_logger(), "%s", e.what());
+            throw e;
+        }
+    } catch (std::exception & e) {
         std::cerr << e.what() << std::endl;
-        return -1;
+        err = true;
     }
     rclcpp::shutdown();
 
-    return 0;
+    return err ? -1 : 0;
 }
