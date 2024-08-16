@@ -6,6 +6,7 @@ from enum import Enum
 from typing import Dict
 
 import numpy as np
+from numpy.typing import NDArray
 
 
 # Class declarations for constants. These are not meant to be accessed directly.
@@ -44,7 +45,7 @@ class BoatProperties:
     rudder_dist: float  # Meters
     hull_drag_factor: float  # Dimensionless
     mass: float  # Kilograms
-    inertia: np.ndarray  # Kilogram meter squared
+    inertia: NDArray[np.float64]  # Kilogram meter squared
 
 
 # Directly accessible constants
