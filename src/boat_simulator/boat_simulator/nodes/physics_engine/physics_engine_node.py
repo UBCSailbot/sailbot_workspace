@@ -110,6 +110,7 @@ class PhysicsEngineNode(Node):
         self.__rudder_angle = 0
         self.__sail_trim_tab_angle = 0
         self.__desired_heading = None
+        self._wind_sensor = WindSensor()
         self.__boat_state = BoatState(
             0.5, Constants.BOAT_PROPERTIES.mass, Constants.BOAT_PROPERTIES.inertia
         )
@@ -119,6 +120,12 @@ class PhysicsEngineNode(Node):
         self.__current_generator = FluidGenerator(
             generator=MVGaussianGenerator(np.array([1, 1]), np.array([[2, 1], [1, 2]]))
         )
+
+    def __update_wind_sensor(self):
+        """Updates the wind sensor with the latest wind data from the wind generator."""
+        wind_data = self.__wind_generator.next()
+        self.__wind_sensor.speed.speed = wind_data[0]
+        self.__wind_sensor.direction = wind_data[1]
 
     def __declare_ros_parameters(self):
         """Declares ROS parameters from the global configuration file that will be used in this
@@ -279,6 +286,7 @@ class PhysicsEngineNode(Node):
     # PUBLISHER CALLBACKS
     def __publish(self):
         """Synchronously publishes data to all publishers at once."""
+        self.__update_wind_sensor()
         self.__update_boat_state()
         # TODO Get updated boat state and publish (should this be separate from publishing?)
         # TODO Get wind sensor data and publish (should this be separate from publishing?)
@@ -307,16 +315,16 @@ class PhysicsEngineNode(Node):
     def __publish_wind_sensors(self):
         """Publishes mock wind sensor data."""
         # TODO Update to publish real data
-        windSensor1 = WindSensor()
-        windSensor1.speed.speed = 0.0
-        windSensor1.direction = 0
+        # windSensor1 = WindSensor()
+        # windSensor1.speed.speed = 0.0
+        # windSensor1.direction = 0
 
-        windSensor2 = WindSensor()
-        windSensor2.speed.speed = 0.0
-        windSensor2.direction = 0
+        # windSensor2 = WindSensor()
+        # windSensor2.speed.speed = 0.0
+        # windSensor2.direction = 0
 
         msg = WindSensors()
-        msg.wind_sensors = [windSensor1, windSensor2]
+        msg.wind_sensors = [self.__wind_sensor] * 2  # Accounts for two sensors with identical data
 
         self.wind_sensors_pub.publish(msg)
         self.get_logger().info(
@@ -562,7 +570,8 @@ class PhysicsEngineNode(Node):
         sail_trim_tab_angle.
         """
         self.__boat_state.step(
-            self.__wind_generator.next(),
+            self.__wind_sensor,
+            # self.__wind_generator.next(),
             self.__current_generator.next(),
             self.__rudder_angle,
             self.__sail_trim_tab_angle,
