@@ -9,6 +9,7 @@ from boat_simulator.common.types import Scalar
 from boat_simulator.nodes.physics_engine.kinematics_computation import BoatKinematics
 from boat_simulator.nodes.physics_engine.kinematics_data import KinematicsData
 from boat_simulator.nodes.physics_engine.fluid_forces import MediumForceComputation
+from boat_simulator.common.constants import BoatProperties
 
 
 class BoatState:
@@ -41,7 +42,14 @@ class BoatState:
         self.__water_density = water_density
 
         self.__kinematics_computation = BoatKinematics(timestep, mass, inertia)
-        self.__sail_force_computation = MediumForceComputation()
+        self.__sail_force_computation = MediumForceComputation(
+            BoatProperties.sail_lift_coeffs,
+            BoatProperties.sail_drag_coeffs,
+            BoatProperties.sail_areas, self.__air_density)
+        self.__rudder_force_computation = MediumForceComputation(
+            BoatProperties.sail_lift_coeffs, # This should be rudder_lift_coeffs
+            BoatProperties.rudder_drag_coeffs,
+            BoatProperties.rudder_areas, self.__water_density)
 
     def step(
         self,
@@ -100,6 +108,11 @@ class BoatState:
                 the relative reference frame, expressed in newtons (N), and the second element
                 represents the net torque, expressed in newton-meters (N•m).
         """
+        apparent_wind_vel = rel_wind_vel - self.relative_velocity
+        apparent_water_vel = rel_water_vel - self.relative_velocity
+        sail_force = self.__sail_force_computation.compute_force(apparent_wind_vel, trim_tab_angle)
+        rudder_force = self.__rudder_force_computation.compute_force(
+            apparent_water_vel, rudder_angle_deg)
         raise NotImplementedError()
 
     @property
