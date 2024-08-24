@@ -1,5 +1,6 @@
 /* IMPORTANT: Make sure only one instance of sailbot_workspace/scripts/run_virtual_iridium.sh is running */
 
+#include <curl/curl.h>
 #include <gtest/gtest.h>
 
 #include <boost/process.hpp>
@@ -255,3 +256,23 @@ TEST_F(TestLocalTransceiver, parseInMsgValid)
     EXPECT_EQ(parsed_test.waypoints[1].latitude, holder);
     EXPECT_EQ(parsed_test.waypoints[1].longitude, holder);
 }
+
+TEST_F(TestLocalTransceiver, checkMailBoxValid)
+{
+    constexpr float holder = 14.3;
+
+    custom_interfaces::msg::GPS gps;
+    gps.heading.set__heading(holder);
+    gps.lat_lon.set__latitude(holder);
+    gps.lat_lon.set__longitude(holder);
+
+    lcl_trns_->updateSensor(gps);
+    EXPECT_TRUE(lcl_trns_->send());
+
+    // std::string curlCommand = "curl -X POST -d \"AT+SBDIX\" http://localhost:8080/";
+
+    // std::this_thread::sleep_for(std::chrono::seconds(10));  //NOLINT(readability-magic-numbers)
+    EXPECT_TRUE(lcl_trns_->checkMailbox());
+}
+
+/*test setup section*/
