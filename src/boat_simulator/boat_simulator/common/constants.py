@@ -36,6 +36,7 @@ class BoatProperties:
     sail_lift_coeffs: Dict[float, float]  # Degrees, Dimensionless
     sail_drag_coeffs: Dict[float, float]  # Degrees, Dimensionless
     sail_areas: Dict[float, float]  # Degrees, Square meters
+    rudder_lift_coeffs: Dict[float, float]  # Degrees, Dimensionless
     rudder_drag_coeffs: Dict[float, float]  # Degrees, Dimensionless
     rudder_areas: Dict[float, float]  # Degrees, Square meters
     sail_dist: float  # Meters

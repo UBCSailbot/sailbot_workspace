@@ -48,6 +48,7 @@ class BoatState:
         self.__water_density = water_density
 
         self.__kinematics_computation = BoatKinematics(timestep, mass, inertia)
+
         self.__sail_force_computation = MediumForceComputation(
             BoatProperties.sail_lift_coeffs,
             BoatProperties.sail_drag_coeffs,
@@ -55,7 +56,7 @@ class BoatState:
             self.__air_density,
         )
         self.__rudder_force_computation = MediumForceComputation(
-            BoatProperties.sail_lift_coeffs,  # This should be rudder_lift_coeffs
+            BoatProperties.rudder_lift_coeffs,
             BoatProperties.rudder_drag_coeffs,
             BoatProperties.rudder_areas,
             self.__water_density,
@@ -136,7 +137,7 @@ class BoatState:
         total_force = sail_force + rudder_force + hull_drag_force
 
         sail_torque = sail_force * 1 * np.sin(trim_tab_angle)
-        rudder_torque = rudder_force * 1 * np.sin(rudder_angle_deg)
+        rudder_torque = rudder_force * (0.1233 / 2) * np.sin(rudder_angle_deg)
         total_torque = sail_torque + rudder_torque
 
         return (total_force, total_torque)
