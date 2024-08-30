@@ -8,7 +8,6 @@ RUN apt-get update \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
 ENV DEBIAN_FRONTEND=
-
 FROM fix-certificates AS ompl-source
 
 ENV DEBIAN_FRONTEND=noninteractive
