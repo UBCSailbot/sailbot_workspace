@@ -8,6 +8,11 @@
 		// Uncomment the files containing the programs you need
 		// "docs/docker-compose.docs.yml", // docs
 	],
+
+	"mounts": [
+			"source=${localEnv:HOME}/.ssh,target=/home/vscode/.ssh,type=bind,consistency=cached"
+	],
+
 	"service": "sailbot-workspace",
 	"workspaceFolder": "/workspaces/sailbot_workspace",
 	"remoteUser": "ros",
