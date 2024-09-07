@@ -134,10 +134,12 @@ class BoatState:
         # Defined Rudder size of approximately 0.1233m^2
         hull_drag_force = self.relative_velocity * BoatProperties.hull_drag_factor
 
+        # Total Force Calculation
         total_force = sail_force + rudder_force + hull_drag_force
 
-        sail_torque = sail_force * 1 * np.sin(trim_tab_angle)
-        rudder_torque = rudder_force * float((0.1233 / 2.0)) * np.sin(rudder_angle_deg)
+        # Calculating Total Torque
+        sail_torque = sail_force * BoatProperties.sail_dist * np.sin(trim_tab_angle)
+        rudder_torque = rudder_force * BoatProperties.rudder_dist * np.sin(rudder_angle_deg)
         total_torque = sail_torque + rudder_torque
 
         return (total_force, total_torque)

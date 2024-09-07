@@ -4,7 +4,7 @@ import os
 from dataclasses import dataclass
 from enum import Enum
 
-import numpy as np
+from numpy.typing import NDArray
 
 from boat_simulator.common.types import Scalar
 
@@ -36,15 +36,15 @@ class PhysicsEnginePublisherTopics:
 
 @dataclass
 class BoatProperties:
-    sail_lift_coeffs: np.ndarray  # Degrees, Dimensionless
-    sail_drag_coeffs: np.ndarray  # Degrees, Dimensionless
+    sail_lift_coeffs: NDArray  # Degrees, Dimensionless
+    sail_drag_coeffs: NDArray  # Degrees, Dimensionless
     sail_areas: Scalar  # Degrees, Square meters
-    rudder_lift_coeffs: np.ndarray  # Degrees, Dimensionless
-    rudder_drag_coeffs: np.ndarray  # Degrees, Dimensionless
+    rudder_lift_coeffs: NDArray  # Degrees, Dimensionless
+    rudder_drag_coeffs: NDArray  # Degrees, Dimensionless
     rudder_areas: Scalar  # Degrees, Square meters
-    sail_dist: float  # Meters
-    rudder_dist: float  # Meters
-    hull_drag_factor: float  # Dimensionless
+    sail_dist: Scalar  # Meters
+    rudder_dist: Scalar  # Meters
+    hull_drag_factor: Scalar  # Dimensionless
 
 
 # Directly accessible constants
