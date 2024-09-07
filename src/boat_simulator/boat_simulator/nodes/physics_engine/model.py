@@ -124,20 +124,20 @@ class BoatState:
         apparent_water_vel = rel_water_vel - self.relative_velocity
 
         # Calculate Forces on sail and rudder
-        sail_force = self.__sail_force_computation.compute_force(apparent_wind_vel, trim_tab_angle)
-        rudder_force = self.__rudder_force_computation.compute_force(
+        sail_force = self.__sail_force_computation.compute(apparent_wind_vel, trim_tab_angle)
+        rudder_force = self.__rudder_force_computation.compute(
             apparent_water_vel, rudder_angle_deg
         )
 
         # Approximate sail area of 2m^2
         # Defined Sail height of approximately 2m
         # Defined Rudder size of approximately 0.1233m^2
-        hull_drag_force = self.relative_velocity * BoatProperties.hull_drag_coeff
+        hull_drag_force = self.relative_velocity * BoatProperties.hull_drag_factor
 
         total_force = sail_force + rudder_force + hull_drag_force
 
         sail_torque = sail_force * 1 * np.sin(trim_tab_angle)
-        rudder_torque = rudder_force * (0.1233 / 2) * np.sin(rudder_angle_deg)
+        rudder_torque = rudder_force * float((0.1233 / 2.0)) * np.sin(rudder_angle_deg)
         total_torque = sail_torque + rudder_torque
 
         return (total_force, total_torque)
