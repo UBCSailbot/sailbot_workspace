@@ -5,6 +5,7 @@ from typing import Tuple
 import numpy as np
 from numpy.typing import NDArray
 
+from boat_simulator.common.constants import BoatProperties
 from boat_simulator.common.types import Scalar
 from boat_simulator.nodes.physics_engine.kinematics_computation import BoatKinematics
 from boat_simulator.nodes.physics_engine.kinematics_data import KinematicsData
@@ -20,23 +21,22 @@ class BoatState:
             expressed in SI units.
     """
 
-    def __init__(self, timestep: Scalar, mass: Scalar, inertia: NDArray):
+    def __init__(self, timestep: Scalar):
         """Initializes an instance of `BoatState`.
 
         Args:
             timestep (Scalar): The time interval for calculations, expressed in seconds (s).
-            mass (Scalar): The mass of the boat, expressed in kilograms (kg).
-            inertia (NDArray): The inertia of the boat, expressed in kilograms-meters squared
-                (kg•m^2).
         """
-        self.__kinematics_computation = BoatKinematics(timestep, mass, inertia)
+        self.__kinematics_computation = BoatKinematics(
+            timestep, BoatProperties.mass, BoatProperties.inertia
+        )
 
     def step(
         self,
         glo_wind_vel: NDArray,
         glo_water_vel: NDArray,
-        rudder_angle_deg: float,
-        trim_tab_angle: float,
+        rudder_angle_deg: Scalar,
+        trim_tab_angle: Scalar,
     ) -> Tuple[KinematicsData, KinematicsData]:
         """Updates the boat's kinematic data based on applied forces and torques, and returns
         the updated kinematic data in both relative and global reference frames.
@@ -68,8 +68,8 @@ class BoatState:
         self,
         rel_wind_vel: NDArray,
         rel_water_vel: NDArray,
-        rudder_angle_deg: float,
-        trim_tab_angle: float,
+        rudder_angle_deg: Scalar,
+        trim_tab_angle: Scalar,
     ) -> Tuple[NDArray, NDArray]:
         """Calculates the net force and net torque acting on the boat caused by the wind and water.
 
