@@ -8,6 +8,8 @@ from typing import Dict
 import numpy as np
 from numpy.typing import NDArray
 
+from boat_simulator.common.types import Scalar
+
 
 # Class declarations for constants. These are not meant to be accessed directly.
 @dataclass
@@ -36,16 +38,16 @@ class PhysicsEnginePublisherTopics:
 
 @dataclass
 class BoatProperties:
-    sail_lift_coeffs: Dict[float, float]  # Degrees, Dimensionless
-    sail_drag_coeffs: Dict[float, float]  # Degrees, Dimensionless
-    sail_areas: Dict[float, float]  # Degrees, Square meters
-    rudder_drag_coeffs: Dict[float, float]  # Degrees, Dimensionless
-    rudder_areas: Dict[float, float]  # Degrees, Square meters
-    sail_dist: float  # Meters
-    rudder_dist: float  # Meters
-    hull_drag_factor: float  # Dimensionless
-    mass: float  # Kilograms
-    inertia: NDArray[np.float64]  # Kilogram meter squared
+    sail_lift_coeffs: Dict[Scalar, Scalar]  # Degrees, Dimensionless
+    sail_drag_coeffs: Dict[Scalar, Scalar]  # Degrees, Dimensionless
+    sail_areas: Dict[Scalar, Scalar]  # Degrees, Square meters (m^2)
+    rudder_drag_coeffs: Dict[Scalar, Scalar]  # Degrees, Dimensionless
+    rudder_areas: Dict[Scalar, Scalar]  # Degrees, Square meters (m^2)
+    sail_dist: Scalar  # Meters (m)
+    rudder_dist: Scalar  # Meters (m)
+    hull_drag_factor: Scalar  # Dimensionless
+    mass: Scalar  # Kilograms (kg)
+    inertia: NDArray  # Kilograms-meters squared (kg•m^2)
 
 
 # Directly accessible constants
