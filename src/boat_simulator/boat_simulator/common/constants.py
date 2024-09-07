@@ -8,6 +8,11 @@ from numpy.typing import NDArray
 
 from boat_simulator.common.types import Scalar
 
+import numpy as np
+from numpy.typing import NDArray
+
+from boat_simulator.common.types import Scalar
+
 
 # Class declarations for constants. These are not meant to be accessed directly.
 @dataclass
@@ -38,13 +43,17 @@ class PhysicsEnginePublisherTopics:
 class BoatProperties:
     sail_lift_coeffs: NDArray  # Degrees, Dimensionless
     sail_drag_coeffs: NDArray  # Degrees, Dimensionless
-    sail_areas: Scalar  # Degrees, Square meters
+    sail_areas: Scalar  # Degrees, Square meters (m^2)
     rudder_lift_coeffs: NDArray  # Degrees, Dimensionless
     rudder_drag_coeffs: NDArray  # Degrees, Dimensionless
-    rudder_areas: Scalar  # Degrees, Square meters
-    sail_dist: Scalar  # Meters
-    rudder_dist: Scalar  # Meters
+    rudder_areas: Scalar  # Degrees, Square meters (m^2)
+    sail_dist: Scalar  # Meters (m)
+    rudder_dist: Scalar  # Meters (m)
     hull_drag_factor: Scalar  # Dimensionless
+    mass: Scalar  # Kilograms (kg)
+    inertia: NDArray  # Kilograms-meters squared (kg•m^2)
+    air_density: Scalar # Kilograms per meter cubed (kg/m^3)
+    water_density: Scalar # Kilograms per meter cubed (kg/m^3)
 
 
 # Directly accessible constants
@@ -97,3 +106,4 @@ SAIL_MAX_ANGLE_RANGE = (-7, 7)
 #     rudder_dist=1.5,
 #     hull_drag_factor=0.05,
 # )
+

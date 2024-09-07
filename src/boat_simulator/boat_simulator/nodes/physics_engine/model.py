@@ -22,32 +22,15 @@ class BoatState:
             expressed in SI units.
     """
 
-    def __init__(
-        self,
-        timestep: Scalar,
-        mass: Scalar,
-        inertia: NDArray,
-        air_density: Scalar,
-        water_density: Scalar,
-    ):
+    def __init__(self, timestep: Scalar):
         """Initializes an instance of `BoatState`.
 
         Args:
             timestep (Scalar): The time interval for calculations, expressed in seconds (s).
-            mass (Scalar): The mass of the boat, expressed in kilograms (kg).
-            inertia (NDArray): The inertia of the boat, expressed in kilograms-meters squared
-                (kg•m^2).
-            air_density(Scalar): Density of air, expressed in kilograms per meter cubed (kg/m^3)
-            water_density(Scalar): Density of water, expressed in kilograms per meter cubed
-                (kg/m^3)
         """
-        self.__timestep = timestep
-        self.__mass = mass
-        self.__inertia = inertia
-        self.__air_density = air_density
-        self.__water_density = water_density
-
-        self.__kinematics_computation = BoatKinematics(timestep, mass, inertia)
+        self.__kinematics_computation = BoatKinematics(
+            timestep, BoatProperties.mass, BoatProperties.inertia
+        )
 
         self.__sail_force_computation = MediumForceComputation(
             BoatProperties.sail_lift_coeffs,
@@ -66,8 +49,8 @@ class BoatState:
         self,
         glo_wind_vel: NDArray,
         glo_water_vel: NDArray,
-        rudder_angle_deg: float,
-        trim_tab_angle: float,
+        rudder_angle_deg: Scalar,
+        trim_tab_angle: Scalar,
     ) -> Tuple[KinematicsData, KinematicsData]:
         """Updates the boat's kinematic data based on applied forces and torques, and returns
         the updated kinematic data in both relative and global reference frames.
@@ -99,8 +82,8 @@ class BoatState:
         self,
         rel_wind_vel: NDArray,
         rel_water_vel: NDArray,
-        rudder_angle_deg: float,
-        trim_tab_angle: float,
+        rudder_angle_deg: Scalar,
+        trim_tab_angle: Scalar,
     ) -> Tuple[NDArray, NDArray]:
         """Calculates the net force and net torque acting on the boat caused by the wind and water.
 
