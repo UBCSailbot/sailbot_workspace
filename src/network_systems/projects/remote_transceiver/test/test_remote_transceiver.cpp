@@ -232,7 +232,7 @@ TEST_F(TestRemoteTransceiver, rockblockWebServerExample)
             std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
         } else {
             std::cout << "Response data: " << readBuffer << std::endl;
-            EXPECT_EQ("foo", readBuffer);
+            EXPECT_EQ("FAILED,11,No RockBLOCK with this IMEI found on your account", readBuffer);
         }
 
         curl_easy_cleanup(curl);
