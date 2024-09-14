@@ -101,11 +101,11 @@ class Obstacle:
 
         if isinstance(self, Boat):
             # regenerate collision zone with updated reference point
-            self.update_boat_collision_zone()
+            self._update_boat_collision_zone()
 
         else:
             # regenerate collision zone with updated reference point
-            self.update_land_collision_zone()
+            self._update_land_collision_zone()
 
 
 class Land(Obstacle):
@@ -165,12 +165,15 @@ class Land(Obstacle):
             # array of polygons
             latlon_polygons = GeoDataFrame.from_features((reader[row] for row in rows))["geometry"]
 
-        local_polygons = self._transform_polygons_latlon_to_XY(latlon_polygons, self.reference)
+        local_polygons = self._transform_polygons_from_latlon_to_xy(
+            latlon_polygons, self.reference
+        )
 
         # create a MultiPolygon from the local polygons
         # local_polygons will already have a buffer applied before runtime
         self.collision_zone = MultiPolygon(local_polygons)
 
+    @staticmethod
     def _transform_polygons_from_latlon_to_xy(
         polygons: List[Polygon], reference: HelperLatLon
     ) -> List[Polygon]:
