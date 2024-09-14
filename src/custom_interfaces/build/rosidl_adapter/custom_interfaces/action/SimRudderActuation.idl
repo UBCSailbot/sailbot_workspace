@@ -1,0 +1,29 @@
+// generated from rosidl_adapter/resource/action.idl.em
+// with input from custom_interfaces/action/SimRudderActuation.action
+// generated code does not contain a copyright notice
+
+#include "custom_interfaces/msg/DesiredHeading.idl"
+
+module custom_interfaces {
+  module action {
+    @verbatim (language="comment", text=
+      "Request: The desired heading to turn to")
+    struct SimRudderActuation_Goal {
+      custom_interfaces::msg::DesiredHeading desired_heading;
+    };
+    @verbatim (language="comment", text=
+      "Result: The absolute angular distance between the current and desired heading" "\n"
+      "Units: degrees" "\n"
+      "Range: [0, 180]")
+    struct SimRudderActuation_Result {
+      float remaining_angular_distance;
+    };
+    @verbatim (language="comment", text=
+      "Feedback: The rudder angle with respect to the boat" "\n"
+      "Units: degrees, 0° south, increases CW" "\n"
+      "Range: [-90, 90]")
+    struct SimRudderActuation_Feedback {
+      float rudder_angle;
+    };
+  };
+};

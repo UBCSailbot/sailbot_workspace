@@ -1,0 +1,16 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from custom_interfaces/msg/HelperHeading.msg
+// generated code does not contain a copyright notice
+
+
+module custom_interfaces {
+  module msg {
+    @verbatim (language="comment", text=
+      "Direction the bow of the boat is pointing towards" "\n"
+      "Unit: degrees, 0° north, increases CW" "\n"
+      "Range: -180 < heading <= 180")
+    struct HelperHeading {
+      float heading;
+    };
+  };
+};

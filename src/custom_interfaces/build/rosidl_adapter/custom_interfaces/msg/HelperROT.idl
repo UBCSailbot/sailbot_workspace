@@ -1,0 +1,20 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from custom_interfaces/msg/HelperROT.msg
+// generated code does not contain a copyright notice
+
+
+module custom_interfaces {
+  module msg {
+    @verbatim (language="comment", text=
+      "Rate of turn of the ship, negative for CCW (min -126) turning and positive for CW (max +126) turning." "\n"
+      "Special unit: https://documentation.spire.com/ais-fundamentals/understanding-ais-performance-in-high-traffic-zones/" "\n"
+      "= int(4.733 * sqrt(degrees/minute))" "\n"
+      "-126 and +126 indicate CCW/CW at a rate of up to 708 degrees/minute or higher" "\n"
+      "-127 and +127 are special values indicates CCW/CW turning of more than 10 degrees/minute (only used if the reporting" "\n"
+      "vessel does not have an external ROT indicator device available)" "\n"
+      "-128 means no rot info")
+    struct HelperROT {
+      int8 rot;
+    };
+  };
+};

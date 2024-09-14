@@ -1,0 +1,13 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from custom_interfaces/msg/Path.msg
+// generated code does not contain a copyright notice
+
+#include "custom_interfaces/msg/HelperLatLon.idl"
+
+module custom_interfaces {
+  module msg {
+    struct Path {
+      sequence<custom_interfaces::msg::HelperLatLon> waypoints;
+    };
+  };
+};

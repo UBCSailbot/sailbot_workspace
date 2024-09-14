@@ -1,0 +1,15 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from custom_interfaces/msg/Batteries.msg
+// generated code does not contain a copyright notice
+
+#include "custom_interfaces/msg/HelperBattery.idl"
+
+module custom_interfaces {
+  module msg {
+    typedef custom_interfaces::msg::HelperBattery custom_interfaces__msg__HelperBattery;
+    typedef custom_interfaces__msg__HelperBattery custom_interfaces__msg__HelperBattery__2[2];
+    struct Batteries {
+      custom_interfaces__msg__HelperBattery__2 batteries;
+    };
+  };
+};

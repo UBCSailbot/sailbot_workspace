@@ -1,0 +1,20 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from custom_interfaces/msg/CanSimToBoatSim.msg
+// generated code does not contain a copyright notice
+
+#include "custom_interfaces/msg/DesiredHeading.idl"
+#include "custom_interfaces/msg/SailCmd.idl"
+
+module custom_interfaces {
+  module msg {
+    @verbatim (language="comment", text=
+      "Data from the topic /desired_heading")
+    struct CanSimToBoatSim {
+      custom_interfaces::msg::DesiredHeading heading;
+
+      @verbatim (language="comment", text=
+        "Data from the topic /sail_cmd")
+      custom_interfaces::msg::SailCmd sail_cmd;
+    };
+  };
+};

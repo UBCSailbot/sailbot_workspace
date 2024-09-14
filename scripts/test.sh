@@ -20,6 +20,8 @@ if [ -d $NET_DIR ]; then
     pushd $NET_DIR
     ./scripts/sailbot_db sailbot_db --clear
     ./scripts/sailbot_db sailbot_db --populate
+    python3 scripts/rockblock_web_server.py &
+    ROCKBLOCK_SERVER_PID=$!
     popd
 fi
 
