@@ -36,6 +36,7 @@ import geopandas as gpd
 import pyproj
 from shapely.geometry import LineString, Point, Polygon, box
 from shapely.ops import split, transform
+from tqdm import tqdm
 
 # Constants
 WGS84 = pyproj.CRS("EPSG:4326")
@@ -51,9 +52,15 @@ DEFAULT_BBOX = box(LON_RANGE[0], LAT_RANGE[0], LON_RANGE[1], LAT_RANGE[1])
 LAND_BUFFER = 0.0045
 
 # SHAPE FILE PATHS
-BASE_SHP_FILE = normpath("shp/land_polygons.shp")
-BBOX_REGION_FILE = normpath("shp/land_polygons_bbox_region.shp")
-COMPLETE_DATA_FILE = normpath("shp/complete_land_data.shp")
+BASE_SHP_FILE = normpath(
+    "/workspaces/sailbot_workspace/src/local_pathfinding/land/shp/land_polygons.shp"
+)
+BBOX_REGION_FILE = normpath(
+    "/workspaces/sailbot_workspace/src/local_pathfinding/land/shp/land_polygons_bbox_region.shp"
+)
+COMPLETE_DATA_FILE = normpath(
+    "/workspaces/sailbot_workspace/src/local_pathfinding/land/shp/complete_land_data.shp"
+)
 
 # SHAPE FILE URL
 BASE_SHP_URL = "https://osmdata.openstreetmap.de/download/land-polygons-split-3857.zip"
@@ -61,10 +68,13 @@ BASE_SHP_URL = "https://osmdata.openstreetmap.de/download/land-polygons-split-38
 # CSV
 # this is the polygon which defines the complete navigation region
 # all land obstacles will come from polygons which intersect or are bounded by this polygon
-MAP_SEL_POLYGON = normpath("csv/map_sel.csv")
+MAP_SEL_POLYGON = normpath(
+    "/workspaces/sailbot_workspace/src/local_pathfinding/land/csv/map_sel.csv"
+)
 
 # PKL PATHS
-SINDEX_FILE = normpath("pkl/sindex.pkl")  # spatial index of final land mass data set
+# spatial index of final land mass data set
+SINDEX_FILE = normpath("/workspaces/sailbot_workspace/src/local_pathfinding/land/pkl/sindex.pkl")
 
 
 def dump_pkl(object: any, file_path: str):
@@ -204,9 +214,16 @@ def main():
 
     logger.ok("Buffering polygons...")
     # buffer polygons
+
     buffered_polygons = list(
-            map(lambda poly: poly.buffer(LAND_BUFFER, join_style=2), unbuffered_polygons)
+        tqdm(
+            map(lambda poly: poly.buffer(LAND_BUFFER, join_style=2), unbuffered_polygons),
+            total=len(unbuffered_polygons),
+        )
     )
+    """buffered_polygons = list(
+        map(lambda poly: poly.buffer(LAND_BUFFER, join_style=2), unbuffered_polygons)
+    )"""
 
     gdf_complete_buffered = gpd.GeoDataFrame(geometry=buffered_polygons, crs=WGS84)
 

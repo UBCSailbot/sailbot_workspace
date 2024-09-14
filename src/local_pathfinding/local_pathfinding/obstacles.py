@@ -165,20 +165,18 @@ class Land(Obstacle):
             # array of polygons
             latlon_polygons = GeoDataFrame.from_features((reader[row] for row in rows))["geometry"]
 
-        local_polygons = self._transform_polygons_from_latlon_to_xy(
-            latlon_polygons, self.reference
-        )
+        xy_polygons = self._latlon_polygons_to_xy_polygons(latlon_polygons, self.reference)
 
         # create a MultiPolygon from the local polygons
         # local_polygons will already have a buffer applied before runtime
-        self.collision_zone = MultiPolygon(local_polygons)
+        self.collision_zone = MultiPolygon(xy_polygons)
 
     @staticmethod
-    def _transform_polygons_from_latlon_to_xy(
+    def _latlon_polygons_to_xy_polygons(
         polygons: List[Polygon], reference: HelperLatLon
     ) -> List[Polygon]:
         """
-        Transforms the polygons from the global coordinate system to the local
+        Transforms a list of polygons from the global lat/lon coordinate system to the local
         XY coordinate system.
 
         Args:
@@ -195,17 +193,17 @@ class Land(Obstacle):
                 Applies the _latlon_to_point function to every point of poly
         """
 
-        def _latlons_to_xy_points(poly: Polygon) -> Polygon:
-            return Polygon(list(map(_latlon_to_xy_point, poly.exterior.coords)))
+        def _latlon_polygons_to_xy_polygons(poly: Polygon) -> Polygon:
+            return Polygon(list(map(_latlon_point_to_xy_point, poly.exterior.coords)))
 
-        def _latlon_to_xy_point(point: HelperLatLon) -> Point:
+        def _latlon_point_to_xy_point(point: HelperLatLon) -> Point:
             return Point(
                 *latlon_to_xy(
                     reference=reference, latlon=HelperLatLon(latitude=point[1], longitude=point[0])
                 )
             )
 
-        return list(map(_latlons_to_xy_points, polygons))
+        return list(map(_latlon_polygons_to_xy_polygons, polygons))
 
 
 class Boat(Obstacle):
