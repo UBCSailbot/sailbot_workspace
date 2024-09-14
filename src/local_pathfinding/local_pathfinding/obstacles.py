@@ -115,9 +115,12 @@ class Land(Obstacle):
     when required.
 
     Attributes:
+        collision_zone (MultiPolygon): A collection of Polygons in (X,Y) that define regions of
+                                       land stored in the Land object
         next_waypoint (HelperLatLon): Lat and lon position of the next global waypoint.
         sindex (STRtree): Spatial index of the land polygons.
-        bbox_buffer (float): square buffer around Sailbot and around the next global waypoint.
+        bbox_buffer_amount (float): The amount of square buffer around Sailbot and around the next
+                                    global waypoint.
     """
 
     def __init__(
@@ -126,12 +129,12 @@ class Land(Obstacle):
         sailbot_position: HelperLatLon,
         next_waypoint: HelperLatLon,
         sindex: STRtree,
-        bbox_buffer: float,
+        bbox_buffer_amount: float,
     ):
         super().__init__(reference, sailbot_position)
         self.next_waypoint = next_waypoint
         self.sindex = sindex
-        self.bbox_buffer = bbox_buffer
+        self.bbox_buffer_amount = bbox_buffer_amount
         self._update_land_collision_zone()
 
     def _update_land_collision_zone(self, bbox: Polygon = None) -> None:
@@ -145,16 +148,14 @@ class Land(Obstacle):
 
             # create a box around sailbot
             sailbot_box = Point(*self.sailbot_position).buffer(
-                self.bbox_buffer, cap_style="square", join_style=2
+                self.bbox_buffer_amount, cap_style="square", join_style=2
             )
             # create a box around the next waypoint
             waypoint_box = Point(*self.next_waypoint).buffer(
-                self.bbox_buffer, cap_style="square", join_style=2
+                self.bbox_buffer_amount, cap_style="square", join_style=2
             )
             # create a bounding box around both boxes
-            bbox = box(
-                MultiPolygon([sailbot_box, waypoint_box]).bounds
-            )
+            bbox = box(MultiPolygon([sailbot_box, waypoint_box]).bounds)
 
         # query the spatial index for all land polygons that intersect the bounding box
         rows = list(self.sindex.query(geometry=bbox, predicate="intersects"))
@@ -171,9 +172,8 @@ class Land(Obstacle):
         self.collision_zone = MultiPolygon(local_polygons)
 
     def _transform_polygons_from_latlon_to_xy(
-        polygons: List[Polygon],
-            reference: HelperLatLon) -> List[Polygon]:
-
+        polygons: List[Polygon], reference: HelperLatLon
+    ) -> List[Polygon]:
         """
         Transforms the polygons from the global coordinate system to the local
         XY coordinate system.
