@@ -10,3 +10,5 @@ __pycache__/
 # land data files
 /land/shp/*
 /land/pkl/*
+!/land/shp
+!/land/pkl
