@@ -10,13 +10,59 @@ from custom_interfaces.msg import (
 )
 from shapely.geometry import Point, Polygon
 
+from land.land_polygon_etl import load_pkl
 from local_pathfinding.coord_systems import XY, latlon_to_xy, meters_to_km
 from local_pathfinding.obstacles import COLLISION_ZONE_SAFETY_BUFFER, Boat, Obstacle
 
+SPATIAL_INDEX = load_pkl("/workspaces/sailbot_workspace/src/local_pathfinding/land/pkl/sindex.pkl")
 # LAND OBSTACLES ----------------------------------------------------------------------------------
+"""Test Plan
+isValid
+update collision zone
+update sailbot data
+update ref point
+init
+latlon polys to xy polys
+    latlon poly to xy poly
+    latlon pt to xy pt
+"""
+
+
+# Test boat collision zone is created/updated successfully
+@pytest.mark.parametrize(
+    "reference_point, sailbot_position, next_waypoint, sindex, bbox_buffer_amount",
+    [
+        (
+            HelperLatLon(latitude=52.26, longitude=-136.91),
+            HelperLatLon(latitude=51.95, longitude=-136.26),
+            HelperLatLon(latitude=51.96, longitude=-136.27),
+        )
+    ],
+)
+def test_create_collision_zone(
+    reference_point: HelperLatLon,
+    sailbot_position: HelperLatLon,
+    ais_ship: HelperAISShip,
+    sailbot_speed: float,
+):
+    boat1 = Boat(reference_point, sailbot_position, sailbot_speed, ais_ship)
+    boat1.update_boat_collision_zone()
+
+    assert isinstance(boat1.collision_zone, Polygon)
+    if boat1.collision_zone is not None:
+        assert boat1.collision_zone.exterior.coords is not None
 
 
 # BOAT OBSTACLES ----------------------------------------------------------------------------------
+"""Test Plan
+isValid OK
+update collision zone OK
+update sailbot data OK
+update ref point OK
+init OK
+calc proj dist OK
+"""
+
 
 # Test calculate projected distance
 # Boat and Sailbot in same location

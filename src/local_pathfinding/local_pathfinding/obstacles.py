@@ -117,10 +117,10 @@ class Land(Obstacle):
     Attributes:
         collision_zone (MultiPolygon): A collection of Polygons in (X,Y) that define regions of
                                        land stored in the Land object
-        next_waypoint (HelperLatLon): Lat and lon position of the next global waypoint.
+        next_waypoint (HelperLatLon): Lat/lon position of the next global waypoint.
         sindex (STRtree): Spatial index of the land polygons.
         bbox_buffer_amount (float): The amount of square buffer around Sailbot and around the next
-                                    global waypoint.
+                                    global waypoint. In degrees lat/lon.
     """
 
     def __init__(
@@ -193,7 +193,7 @@ class Land(Obstacle):
                 Applies the _latlon_to_point function to every point of poly
         """
 
-        def _latlon_polygons_to_xy_polygons(poly: Polygon) -> Polygon:
+        def _latlon_polygon_to_xy_polygon(poly: Polygon) -> Polygon:
             return Polygon(list(map(_latlon_point_to_xy_point, poly.exterior.coords)))
 
         def _latlon_point_to_xy_point(point: HelperLatLon) -> Point:
@@ -203,7 +203,7 @@ class Land(Obstacle):
                 )
             )
 
-        return list(map(_latlon_polygons_to_xy_polygons, polygons))
+        return list(map(_latlon_polygon_to_xy_polygon, polygons))
 
 
 class Boat(Obstacle):
