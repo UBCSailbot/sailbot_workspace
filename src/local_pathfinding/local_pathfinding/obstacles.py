@@ -33,7 +33,7 @@ class Obstacle:
 
     Attributes:
         reference (HelperLatLon): Lat and lon position of the next global waypoint.
-        sailbot_position (XY): Lat and lon position of SailBot.
+        sailbot_position (HelperLatLon): Lat and lon position of SailBot.
         collision_zone (Optional[Polygon or MultiPolygon]): Shapely geometry representing the
             obstacle's collision zone. Shape depends on the child class.
     """
@@ -62,6 +62,8 @@ class Obstacle:
         if self.collision_zone is None:
             raise RuntimeError("Collision zone has not been initialized")
 
+        # could also use
+        # Point(point).within(self.collision_zone)
         return not self.collision_zone.contains(Point(*point))
 
     def update_collision_zone(self) -> None:
@@ -77,7 +79,9 @@ class Obstacle:
             # Land Obstacle
             self._update_land_collision_zone()
 
-    def update_sailbot_data(self, sailbot_position: HelperLatLon, sailbot_speed: float) -> None:
+    def update_sailbot_data(
+        self, sailbot_position: HelperLatLon, sailbot_speed: float = None
+    ) -> None:
         """Updates Sailbot's position, and Sailbot's speed (if the caller is a Boat object).
 
         Args:
@@ -159,6 +163,10 @@ class Land(Obstacle):
 
         # query the spatial index for all land polygons that intersect the bounding box
         rows = list(self.sindex.query(geometry=bbox, predicate="intersects"))
+
+        if len(rows) == 0:
+            self.collision_zone = MultiPolygon()  # no land nearby
+            return
 
         # read in these rows from the shape file
         with fiona.open(LAND_POLYGONS_FILE, "r") as reader:

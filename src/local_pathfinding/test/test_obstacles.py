@@ -8,27 +8,33 @@ from custom_interfaces.msg import (
     HelperROT,
     HelperSpeed,
 )
-from shapely.geometry import Point, Polygon
+from shapely.geometry import MultiPolygon, Point, Polygon
+from shapely.strtree import STRtree
 
 from land.land_polygon_etl import load_pkl
 from local_pathfinding.coord_systems import XY, latlon_to_xy, meters_to_km
-from local_pathfinding.obstacles import COLLISION_ZONE_SAFETY_BUFFER, Boat, Obstacle
+from local_pathfinding.obstacles import (
+    COLLISION_ZONE_SAFETY_BUFFER,
+    Boat,
+    Land,
+    Obstacle,
+)
 
 SPATIAL_INDEX = load_pkl("/workspaces/sailbot_workspace/src/local_pathfinding/land/pkl/sindex.pkl")
+
 # LAND OBSTACLES ----------------------------------------------------------------------------------
 """Test Plan
 isValid
-update collision zone
-update sailbot data
-update ref point
-init
+update collision zone OK
+update sailbot data OK
+update ref point OK
 latlon polys to xy polys
     latlon poly to xy poly
     latlon pt to xy pt
 """
 
 
-# Test boat collision zone is created/updated successfully
+# Test land collision zone is created/updated successfully
 @pytest.mark.parametrize(
     "reference_point, sailbot_position, next_waypoint, sindex, bbox_buffer_amount",
     [
@@ -36,21 +42,135 @@ latlon polys to xy polys
             HelperLatLon(latitude=52.26, longitude=-136.91),
             HelperLatLon(latitude=51.95, longitude=-136.26),
             HelperLatLon(latitude=51.96, longitude=-136.27),
+            SPATIAL_INDEX,
+            0.1,  # degrees
         )
     ],
 )
-def test_create_collision_zone(
+def test_land_collision_zone(
     reference_point: HelperLatLon,
     sailbot_position: HelperLatLon,
-    ais_ship: HelperAISShip,
-    sailbot_speed: float,
+    next_waypoint: HelperLatLon,
+    sindex: STRtree,
+    bbox_buffer_amount,
 ):
-    boat1 = Boat(reference_point, sailbot_position, sailbot_speed, ais_ship)
-    boat1.update_boat_collision_zone()
+    land = Land(
+        reference=reference_point,
+        sailbot_position=sailbot_position,
+        next_waypoint=next_waypoint,
+        sindex=sindex,
+        bbox_buffer_amount=bbox_buffer_amount,
+    )
+    land.update_collision_zone()
 
-    assert isinstance(boat1.collision_zone, Polygon)
-    if boat1.collision_zone is not None:
-        assert boat1.collision_zone.exterior.coords is not None
+    assert isinstance(land.collision_zone, MultiPolygon)
+    assert land.collision_zone.exterior.coords is not None
+
+
+# Test updating Sailbot data
+@pytest.mark.parametrize(
+    "reference_point, sailbot_position_1, sailbot_position_2, next_waypoint, sindex, bbox_buffer_amount",  # noqa
+    [
+        (
+            HelperLatLon(latitude=52.26, longitude=-136.91),
+            HelperLatLon(latitude=51.0, longitude=-136.0),
+            HelperLatLon(latitude=52.0, longitude=-137.0),
+            HelperLatLon(latitude=53.0, longitude=-138.0),
+            SPATIAL_INDEX,
+            0.1,  # degrees
+        )
+    ],
+)
+def test_update_sailbot_data_land(
+    reference_point: HelperLatLon,
+    sailbot_position_1: HelperLatLon,
+    sailbot_position_2: HelperLatLon,
+    next_waypoint: HelperLatLon,
+    sindex: STRtree,
+    bbox_buffer_amount,
+):
+    land = Land(
+        reference=reference_point,
+        sailbot_position=sailbot_position_1,
+        next_waypoint=next_waypoint,
+        sindex=sindex,
+        bbox_buffer_amount=bbox_buffer_amount,
+    )
+
+    land.update_sailbot_data(sailbot_position_2)
+    assert land.sailbot_position == pytest.approx(
+        latlon_to_xy(reference_point, sailbot_position_2)
+    )
+
+
+# Test update reference point
+@pytest.mark.parametrize(
+    "reference_point_1,reference_point_2,sailbot_position,next_waypoint,sindex,bbox_buffer_amount",  # noqa
+    [
+        (
+            HelperLatLon(latitude=52.2, longitude=-136.9),
+            HelperLatLon(latitude=51.0, longitude=-136.0),
+            HelperLatLon(latitude=51.95785651405779, longitude=-136.26282894969611),
+        ),
+        (
+            HelperLatLon(latitude=50.06442134644842, longitude=-130.7725487868677),
+            HelperLatLon(latitude=49.88670956993386, longitude=-130.37061359404225),
+            HelperLatLon(latitude=51.95785651405779, longitude=-136.26282894969611),
+            15.0,
+        ),
+    ],
+)
+def test_update_reference_point_land(
+    reference_point_1: HelperLatLon,
+    reference_point_2: HelperLatLon,
+    sailbot_position: HelperLatLon,
+    next_waypoint: HelperLatLon,
+    sindex: STRtree,
+    bbox_buffer_amount,
+):
+    land = Land(
+        reference=reference_point_1,
+        sailbot_position=sailbot_position,
+        next_waypoint=next_waypoint,
+        sindex=sindex,
+        bbox_buffer_amount=bbox_buffer_amount,
+    )
+
+    if isinstance(boat1.collision_zone, Polygon):
+        point1 = Point(
+            land.collision_zone.exterior.coords.xy[0][0],
+            land.collision_zone.exterior.coords.xy[1][0],
+        )
+
+    assert land.reference == reference_point_1
+
+    assert land.sailbot_position == pytest.approx(
+        latlon_to_xy(reference_point_1, sailbot_position)
+    )
+
+    # Change the reference point
+    land.update_reference_point(reference_point_2)
+
+    if isinstance(land.collision_zone, Polygon):
+        point2 = Point(
+            land.collision_zone.exterior.coords.xy[0][0],
+            land.collision_zone.exterior.coords.xy[1][0],
+        )
+
+    assert land.reference == reference_point_2
+    assert land.sailbot_position_latlon == sailbot_position
+    assert land.sailbot_position == pytest.approx(
+        latlon_to_xy(reference_point_2, sailbot_position)
+    )
+
+    # Calculate the expected displacement based on the old and new reference point
+    x_displacement, y_displacement = latlon_to_xy(reference_point_2, reference_point_1)
+    displacement = np.sqrt(x_displacement**2 + y_displacement**2)
+    # calculate how far the collision zone was actually translated on reference point update
+    translation = point1.distance(point2)
+
+    # There is some error in the latlon_to_xy conversion but the results are close
+    assert translation == pytest.approx(displacement, rel=0.1), "incorrect translation"
 
 
 # BOAT OBSTACLES ----------------------------------------------------------------------------------
@@ -118,7 +238,7 @@ def test_calculate_projected_distance(
         )
     ],
 )
-def test_create_collision_zone(
+def test_boat_collision_zone(
     reference_point: HelperLatLon,
     sailbot_position: HelperLatLon,
     ais_ship: HelperAISShip,
