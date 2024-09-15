@@ -13,6 +13,10 @@ from shapely.geometry import Point, Polygon
 from local_pathfinding.coord_systems import XY, latlon_to_xy, meters_to_km
 from local_pathfinding.obstacles import COLLISION_ZONE_SAFETY_BUFFER, Boat, Obstacle
 
+# LAND OBSTACLES ----------------------------------------------------------------------------------
+
+
+# BOAT OBSTACLES ----------------------------------------------------------------------------------
 
 # Test calculate projected distance
 # Boat and Sailbot in same location

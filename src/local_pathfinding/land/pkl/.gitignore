@@ -1,3 +1,0 @@
-# don't track pkl binary files
-*
-!.gitignore
