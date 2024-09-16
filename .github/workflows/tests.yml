@@ -25,14 +25,15 @@ jobs:
       run: |
         pip3 install shapely==2.0.6
 
+    - name: test union_all installed
+      run: |
+        python3 -c "from shapely import union_all; print('union_all imported successfully')"
+
     - name: Test
       uses: ./.github/actions/
       with:
         script: './scripts/run-tests'
         run-website: 'true'
-
-    - name: Install dependencies
-      run: pip3 install shapely==2.0.6
 
   ament-lint:
     strategy:
