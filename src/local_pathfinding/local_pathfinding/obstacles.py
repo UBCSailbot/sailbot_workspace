@@ -8,6 +8,7 @@ import fiona
 import numpy as np
 from custom_interfaces.msg import HelperAISShip, HelperLatLon
 from geopandas import GeoDataFrame
+from shapely import union_all
 from shapely.affinity import affine_transform
 from shapely.geometry import MultiPolygon, Point, Polygon, box
 from shapely.strtree import STRtree
@@ -141,12 +142,19 @@ class Land(Obstacle):
         self.bbox_buffer_amount = bbox_buffer_amount
         self._update_land_collision_zone()
 
-    def _update_land_collision_zone(self, bbox: Polygon = None) -> None:
+    def _update_land_collision_zone(
+        self, bbox: Polygon = None, land_multi_polygon: MultiPolygon = None
+    ) -> None:
         """
         Updates the Land object's collision zone with a MultiPolygon representing
         all land obstacles within either a bounding box input as an argument
         or a rectangle that bounds boxes around Sailbot and the next global waypoint.
         """
+        if land_multi_polygon is not None:
+            # for testing
+            # union to remove overlaps between polygons
+            self.collision_zone = union_all(land_multi_polygon)
+            return
 
         if bbox is None:
 
@@ -175,9 +183,9 @@ class Land(Obstacle):
 
         xy_polygons = self._latlon_polygons_to_xy_polygons(latlon_polygons, self.reference)
 
-        # create a MultiPolygon from the local polygons
         # local_polygons will already have a buffer applied before runtime
-        self.collision_zone = MultiPolygon(xy_polygons)
+        # union_all to eliminate any overlaps between polygons
+        self.collision_zone = union_all(MultiPolygon(xy_polygons))
 
     @staticmethod
     def _latlon_polygons_to_xy_polygons(
@@ -204,10 +212,12 @@ class Land(Obstacle):
         def _latlon_polygon_to_xy_polygon(poly: Polygon) -> Polygon:
             return Polygon(list(map(_latlon_point_to_xy_point, poly.exterior.coords)))
 
-        def _latlon_point_to_xy_point(point: HelperLatLon) -> Point:
+        def _latlon_point_to_xy_point(latlon_point: tuple) -> Point:
             return Point(
                 *latlon_to_xy(
-                    reference=reference, latlon=HelperLatLon(latitude=point[1], longitude=point[0])
+                    reference=reference,
+                    # points are (lon, lat) in the land dataset
+                    latlon=HelperLatLon(longitude=latlon_point[0], latitude=latlon_point[1]),
                 )
             )
 

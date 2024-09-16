@@ -24,14 +24,89 @@ SPATIAL_INDEX = load_pkl("/workspaces/sailbot_workspace/src/local_pathfinding/la
 
 # LAND OBSTACLES ----------------------------------------------------------------------------------
 """Test Plan
-isValid
+Get land OK
+isValid OK
 update collision zone OK
 update sailbot data OK
 update ref point OK
-latlon polys to xy polys
-    latlon poly to xy poly
-    latlon pt to xy pt
+latlon polys to xy polys OK
 """
+
+
+# Test that update land collision zone successfully retrieves data from the shape file on disk
+# latlon points are hand picked from a map to ensure the area contains some land
+@pytest.mark.parametrize(
+    "reference_point, sailbot_position, next_waypoint, sindex, bbox_buffer_amount"[
+        (
+            HelperLatLon(latitude=48.927646856442834, longitude=-125.18555198866946),
+            HelperLatLon(latitude=48.842045056421135, longitude=-125.29181185529734),
+            HelperLatLon(latitude=48.92893492027311, longitude=-125.37140872956104),
+            SPATIAL_INDEX,
+            0.1,  # degrees
+        )
+    ],
+)
+def test_get_land(
+    reference_point: HelperLatLon,
+    sailbot_position: HelperLatLon,
+    next_waypoint: HelperLatLon,
+    sindex: STRtree,
+    bbox_buffer_amount: float,
+):
+    land = Land(
+        reference=reference_point,
+        sailbot_position=sailbot_position,
+        next_waypoint=next_waypoint,
+        sindex=sindex,
+        bbox_buffer_amount=bbox_buffer_amount,
+    )
+
+    assert len(land.collision_zone.geoms) != 0
+
+
+# Test is_valid
+@pytest.mark.parametrize(
+    "reference_point, sailbot_position, next_waypoint, sindex, bbox_buffer_amount, invalid_point, valid_point",  # noqa
+    "mock_land"[
+        (
+            HelperLatLon(latitude=52.26, longitude=-136.91),
+            HelperLatLon(latitude=51.95, longitude=-136.26),
+            HelperLatLon(latitude=51.96, longitude=-136.27),
+            SPATIAL_INDEX,
+            0.1,  # degrees
+            XY(0.5, 0.5),
+            XY(3, 0),
+            MultiPolygon(
+                [
+                    Polygon([Point([0, 0]), Point([0, 1]), Point([1, 1]), Point([1, 0])]),
+                    Polygon([Point([0, 0]), Point([0, 1]), Point([2, 1]), Point([2, 0])]),
+                    Polygon([Point([2, 2]), Point([2, 3]), Point([3, 3]), Point([3, 2])]),
+                ]
+            ),
+        )
+    ],
+)
+def test_is_valid_land(
+    reference_point: HelperLatLon,
+    sailbot_position: HelperLatLon,
+    next_waypoint: HelperLatLon,
+    sindex: STRtree,
+    bbox_buffer_amount: float,
+    invalid_point: XY,
+    valid_point: XY,
+    mock_land: MultiPolygon,
+):
+    land = Land(
+        reference=reference_point,
+        sailbot_position=sailbot_position,
+        next_waypoint=next_waypoint,
+        sindex=sindex,
+        bbox_buffer_amount=bbox_buffer_amount,
+    )
+
+    land._update_land_collision_zone(mock_land)
+    assert not land.is_valid(invalid_point)
+    assert land.is_valid(valid_point)
 
 
 # Test land collision zone is created/updated successfully
@@ -171,6 +246,64 @@ def test_update_reference_point_land(
 
     # There is some error in the latlon_to_xy conversion but the results are close
     assert translation == pytest.approx(displacement, rel=0.1), "incorrect translation"
+
+
+# Test latlon polygons to xy polygons
+# just asserts that every point in every xy_polygon agrees with latlon_to_xy() from coord_systems
+@pytest.mark.parametrize(
+    "latlon_polygons, reference_point",
+    [
+        (
+            MultiPolygon(
+                [
+                    Polygon(
+                        [
+                            (-129.10434, 49.173085),
+                            (-131.23681, 50.112124)(-134.820239, 50.658515)(
+                                -135.963419, 49.772751
+                            )(-136.359135, 48.230528)(-134.556428, 47.671306)(
+                                -131.478636, 47.78954
+                            )(
+                                -129.895772, 48.274419
+                            )(
+                                -129.412119, 48.928274
+                            ),
+                        ]
+                    ),
+                    Polygon(
+                        [
+                            (-123.872094, 50.252825)(-124.135905, 49.530913)(
+                                -125.938612, 49.758558
+                            )(-125.674801, 50.797603)
+                        ]
+                    ),
+                ]
+            ),
+            HelperLatLon(latitude=51.527884, longitude=-132.643800),
+        )
+    ],
+)
+def test_latlon_polygons_to_xy_polygons(
+    latlon_polygons: MultiPolygon, reference_point: HelperLatLon
+):
+
+    xy_polygons = Land._latlon_polygons_to_xy_polygons(latlon_polygons, reference_point)
+    assert isinstance(xy_polygons, list)
+
+    for i, xy_poly in enumerate(xy_polygons):
+        latlon_poly = latlon_polygons.geoms[i]
+        assert isinstance(xy_poly, Polygon)
+        assert xy_poly.exterior.coords is not None
+
+        for j, xy_point in enumerate(xy_poly.exterior.coords):
+            latlon_point = latlon_poly.exterior.coords[j]
+            assert isinstance(xy_point, tuple)
+            assert xy_point == pytest.approx(
+                latlon_to_xy(
+                    reference_point,
+                    HelperLatLon(longitude=latlon_point[0], latitude=latlon_point[1]),
+                )
+            )
 
 
 # BOAT OBSTACLES ----------------------------------------------------------------------------------
@@ -359,7 +492,7 @@ def test_create_collision_zone_id_mismatch(
         )
     ],
 )
-def test_is_valid(
+def test_is_valid_boat(
     reference_point: HelperLatLon,
     sailbot_position: HelperLatLon,
     ais_ship: HelperAISShip,
