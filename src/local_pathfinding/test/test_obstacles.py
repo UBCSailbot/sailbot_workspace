@@ -13,12 +13,7 @@ from shapely.strtree import STRtree
 
 from land.land_polygon_etl import load_pkl
 from local_pathfinding.coord_systems import XY, latlon_to_xy, meters_to_km
-from local_pathfinding.obstacles import (
-    COLLISION_ZONE_SAFETY_BUFFER,
-    Boat,
-    Land,
-    Obstacle,
-)
+from local_pathfinding.obstacles import BOAT_BUFFER, Boat, Land, Obstacle
 
 SPATIAL_INDEX = load_pkl("/workspaces/sailbot_workspace/src/local_pathfinding/land/pkl/sindex.pkl")
 
@@ -36,7 +31,8 @@ latlon polys to xy polys OK
 # Test that update land collision zone successfully retrieves data from the shape file on disk
 # latlon points are hand picked from a map to ensure the area contains some land
 @pytest.mark.parametrize(
-    "reference_point, sailbot_position, next_waypoint, sindex, bbox_buffer_amount"[
+    "reference_point, sailbot_position, next_waypoint, sindex, bbox_buffer_amount",
+    [
         (
             HelperLatLon(latitude=48.927646856442834, longitude=-125.18555198866946),
             HelperLatLon(latitude=48.842045056421135, longitude=-125.29181185529734),
@@ -66,8 +62,8 @@ def test_get_land(
 
 # Test is_valid
 @pytest.mark.parametrize(
-    "reference_point, sailbot_position, next_waypoint, sindex, bbox_buffer_amount, invalid_point, valid_point",  # noqa
-    "mock_land"[
+    "reference_point, sailbot_position, next_waypoint, sindex, bbox_buffer_amount, invalid_point, valid_point, mock_land",  # noqa
+    [
         (
             HelperLatLon(latitude=52.26, longitude=-136.91),
             HelperLatLon(latitude=51.95, longitude=-136.26),
@@ -259,22 +255,22 @@ def test_update_reference_point_land(
                     Polygon(
                         [
                             (-129.10434, 49.173085),
-                            (-131.23681, 50.112124)(-134.820239, 50.658515)(
-                                -135.963419, 49.772751
-                            )(-136.359135, 48.230528)(-134.556428, 47.671306)(
-                                -131.478636, 47.78954
-                            )(
-                                -129.895772, 48.274419
-                            )(
-                                -129.412119, 48.928274
-                            ),
+                            (-131.23681, 50.112124),
+                            (-134.820239, 50.658515),
+                            (-135.963419, 49.772751),
+                            (-136.359135, 48.230528),
+                            (-134.556428, 47.671306),
+                            (-131.478636, 47.78954),
+                            (-129.895772, 48.274419),
+                            (-129.412119, 48.928274)
                         ]
                     ),
                     Polygon(
                         [
-                            (-123.872094, 50.252825)(-124.135905, 49.530913)(
-                                -125.938612, 49.758558
-                            )(-125.674801, 50.797603)
+                            (-123.872094, 50.252825),
+                            (-124.135905, 49.530913),
+                            (-125.938612, 49.758558),
+                            (-125.674801, 50.797603)
                         ]
                     ),
                 ]
@@ -415,7 +411,7 @@ def test_position_collision_zone(
     boat1 = Boat(reference_point, sailbot_position, sailbot_speed, ais_ship)
 
     if boat1.collision_zone is not None:
-        unbuffered = boat1.collision_zone.buffer(-COLLISION_ZONE_SAFETY_BUFFER, join_style=2)
+        unbuffered = boat1.collision_zone.buffer(-BOAT_BUFFER, join_style=2)
         x, y = np.array(unbuffered.exterior.coords.xy)
         x = np.array(x)
         y = np.array(y)
@@ -733,7 +729,7 @@ if __name__ == "__main__":
     collision_zone_length = round(
         (
             boat1.calculate_projected_distance()
-            + 2 * COLLISION_ZONE_SAFETY_BUFFER
+            + 2 * BOAT_BUFFER
             + meters_to_km(boat1.ais_ship.length.dimension)
         ),
         4,
