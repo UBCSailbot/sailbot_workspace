@@ -5,6 +5,7 @@
 import sys
 from typing import Optional
 
+import numpy as np
 import rclpy
 import rclpy.utilities
 from custom_interfaces.action import SimRudderActuation, SimSailTrimTabActuation
@@ -30,7 +31,10 @@ from rclpy.publisher import Publisher
 from rclpy.subscription import Subscription
 
 import boat_simulator.common.constants as Constants
+from boat_simulator.common.generators import MVGaussianGenerator
 from boat_simulator.common.types import Scalar
+from boat_simulator.nodes.physics_engine.fluid_generation import FluidGenerator
+from boat_simulator.nodes.physics_engine.model import BoatState
 
 from .decorators import require_all_subs_active
 
@@ -106,6 +110,15 @@ class PhysicsEngineNode(Node):
         self.__rudder_angle = 0
         self.__sail_trim_tab_angle = 0
         self.__desired_heading = None
+        self.__boat_state = BoatState(
+            0.5, Constants.BOAT_PROPERTIES.mass, Constants.BOAT_PROPERTIES.inertia
+        )
+        self.__wind_generator = FluidGenerator(
+            generator=MVGaussianGenerator(np.array([5, 5]), np.array([[2, 1], [1, 2]]))
+        )
+        self.__current_generator = FluidGenerator(
+            generator=MVGaussianGenerator(np.array([1, 1]), np.array([[2, 1], [1, 2]]))
+        )
 
     def __declare_ros_parameters(self):
         """Declares ROS parameters from the global configuration file that will be used in this
@@ -266,6 +279,7 @@ class PhysicsEngineNode(Node):
     # PUBLISHER CALLBACKS
     def __publish(self):
         """Synchronously publishes data to all publishers at once."""
+        self.__update_boat_state()
         # TODO Get updated boat state and publish (should this be separate from publishing?)
         # TODO Get wind sensor data and publish (should this be separate from publishing?)
         self.__publish_gps()
@@ -539,6 +553,19 @@ class PhysicsEngineNode(Node):
             throttle_duration_sec=self.get_parameter("info_log_throttle_period_sec")
             .get_parameter_value()
             .double_value,
+        )
+
+    def __update_boat_state(self):
+        """
+        Generates the next vectors for wind_generator and current_generator and updates the
+        boat_state with the new wind and current vectors along with the rudder_angle and
+        sail_trim_tab_angle.
+        """
+        self.__boat_state.step(
+            self.__wind_generator.next(),
+            self.__current_generator.next(),
+            self.__rudder_angle,
+            self.__sail_trim_tab_angle,
         )
 
     # CLASS PROPERTY PUBLIC GETTERS
