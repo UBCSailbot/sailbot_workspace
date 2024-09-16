@@ -31,6 +31,7 @@ import pickle
 import subprocess
 import sys
 from os.path import normpath
+from typing import Any
 
 import geopandas as gpd
 import pyproj
@@ -77,7 +78,7 @@ MAP_SEL_POLYGON = normpath(
 SINDEX_FILE = normpath("/workspaces/sailbot_workspace/src/local_pathfinding/land/pkl/sindex.pkl")
 
 
-def dump_pkl(object: any, file_path: str):
+def dump_pkl(object: Any, file_path: str):
     # creating a pickler once, when everything is being pickled
     # will likely be more efficient
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
@@ -85,7 +86,7 @@ def dump_pkl(object: any, file_path: str):
         pickle.dump(object, f, protocol=pickle.HIGHEST_PROTOCOL)
 
 
-def load_pkl(file_path: str) -> any:
+def load_pkl(file_path: str) -> Any:
     with open(file_path, "rb") as f:
         return pickle.load(f)
 

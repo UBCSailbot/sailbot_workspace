@@ -74,10 +74,10 @@ class Obstacle:
 
         else:
             # Land Obstacle
-            self._update_land_collision_zone()
+            self._update_land_collision_zone()  # type: ignore
 
     def update_sailbot_data(
-        self, sailbot_position: HelperLatLon, sailbot_speed: float = None
+        self, sailbot_position: HelperLatLon, sailbot_speed: Optional[float] = None
     ) -> None:
         """Updates Sailbot's position, and Sailbot's speed (if the caller is a Boat object).
 
@@ -106,7 +106,7 @@ class Obstacle:
 
         else:
             # regenerate collision zone with updated reference point
-            self._update_land_collision_zone()
+            self._update_land_collision_zone()  # type: ignore
 
 
 class Land(Obstacle):
@@ -326,7 +326,7 @@ class Boat(Obstacle):
 
         quadratic_coefficients = np.array(
             [
-                v1**2 + v2**2 - (self.sailbot_speed**2),
+                v1**2 + v2**2 - (self.sailbot_speed**2),  # type: ignore
                 2 * (v1 * (a - c) + v2 * (b - d)),
                 (a - c) ** 2 + (b - d) ** 2,
             ]
@@ -336,7 +336,7 @@ class Boat(Obstacle):
         quad_roots = np.roots(quadratic_coefficients)
 
         # filter out only positive and real roots
-        quad_roots = [i for i in quad_roots if i >= 0 and i.imag == 0]
+        quad_roots = np.array([i for i in quad_roots if i >= 0 and i.imag == 0])
 
         if len(quad_roots) == 0:
             # Sailbot and this Boat will never collide
