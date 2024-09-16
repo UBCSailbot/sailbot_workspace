@@ -16,6 +16,15 @@ jobs:
     - name: Checkout workspace
       uses: actions/checkout@v4
 
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.x'
+
+    - name: Install dependencies
+      run: |
+        pip3 install shapely==2.0.6
+
     - name: Test
       uses: ./.github/actions/
       with:
