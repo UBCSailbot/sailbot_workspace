@@ -1,4 +1,5 @@
-from typing import List
+import pickle
+from typing import Any, List
 
 import numpy as np
 import pytest
@@ -14,8 +15,13 @@ from shapely.geometry import MultiPolygon, Point, Polygon
 from shapely.strtree import STRtree
 
 from local_pathfinding.coord_systems import XY, latlon_to_xy, meters_to_km
-from local_pathfinding.land_polygon_etl import load_pkl
 from local_pathfinding.obstacles import BOAT_BUFFER, Boat, Land, Obstacle
+
+
+def load_pkl(file_path: str) -> Any:
+    with open(file_path, "rb") as f:
+        return pickle.load(f)
+
 
 SPATIAL_INDEX = load_pkl("/workspaces/sailbot_workspace/src/local_pathfinding/land/pkl/sindex.pkl")
 
@@ -59,7 +65,7 @@ def test_get_land(
         bbox_buffer_amount=bbox_buffer_amount,
     )
 
-    assert len(land.collision_zone.geoms) != 0
+    assert len(land.collision_zone.geoms) != 0  # type: ignore
 
 
 # Test is_valid
