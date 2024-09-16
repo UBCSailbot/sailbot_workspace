@@ -25,4 +25,4 @@ jobs:
 
     - name: Test shapely import
       run: |
-        python -c "from shapely import union_all; print('union_all imported successfully')"
+        python3 -c "from shapely import union_all; print('union_all imported successfully')"
