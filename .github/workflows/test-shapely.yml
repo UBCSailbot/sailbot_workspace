@@ -10,10 +10,14 @@ jobs:
     - name: Check out the repository
       uses: actions/checkout@v3
 
-    #- name: Set up Python
-    #  uses: actions/setup-python@v3
-    #  with:
-    #    python-version: '3.x'
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.x'
+
+    - name: Install dependencies
+      run: |
+        pip3 install shapely==2.0.6
 
     - name: List installed packages
       run: |
