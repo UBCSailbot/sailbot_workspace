@@ -12,8 +12,8 @@ from shapely.affinity import affine_transform
 from shapely.geometry import MultiPolygon, Point, Polygon, box
 from shapely.strtree import STRtree
 
-from land.land_polygon_etl import COMPLETE_DATA_FILE
 from local_pathfinding.coord_systems import XY, latlon_to_xy, meters_to_km
+from local_pathfinding.land_polygon_etl import COMPLETE_DATA_FILE
 
 # Constants
 PROJ_TIME_NO_COLLISION = 3  # hours
