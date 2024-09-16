@@ -181,7 +181,19 @@ class Land(Obstacle):
 
         # local_polygons will already have a buffer applied before runtime
         # union_all to eliminate any overlaps between polygons
-        self.collision_zone = union_all(MultiPolygon(xy_polygons))
+        bbox_xy = Land._latlon_polygons_to_xy_polygons([bbox], self.reference)[0]
+        non_overlapping_polygons = union_all(MultiPolygon(xy_polygons)).geoms
+        clipped_polygons = []
+
+        for poly in non_overlapping_polygons:
+            clipped_poly = poly.intersection(bbox_xy)
+            # if clipped_poly is a MultiPolygon, append each Polygon separately
+            if clipped_poly.geom_type == "MultiPolygon":
+                clipped_polygons.extend(list(clipped_poly.geoms))
+            else:
+                clipped_polygons.append(clipped_poly)
+
+        self.collision_zone = MultiPolygon(clipped_polygons)
 
     @staticmethod
     def _latlon_polygons_to_xy_polygons(
