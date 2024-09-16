@@ -1,7 +1,6 @@
 """Describes obstacles which the Sailbot must avoid: Boats and Land"""
 
 import math
-import os
 from typing import List, Optional
 
 import fiona
@@ -20,9 +19,6 @@ from local_pathfinding.coord_systems import XY, latlon_to_xy, meters_to_km
 PROJ_TIME_NO_COLLISION = 3  # hours
 BOAT_BUFFER = 0.5  # km
 COLLISION_ZONE_STRETCH_FACTOR = 1.5  # This factor changes the scope/width of the collision cone
-
-LAND_DIR = "/workspaces/sailbot_workspace/src/local_pathfinding/land"
-LAND_POLYGONS_FILE = os.path.join(LAND_DIR, COMPLETE_DATA_FILE)
 
 
 class Obstacle:
@@ -159,27 +155,27 @@ class Land(Obstacle):
         if bbox is None:
 
             # create a box around sailbot
-            sailbot_box = Point(*self.sailbot_position).buffer(
-                self.bbox_buffer_amount, cap_style="square", join_style=2
-            )
+            sailbot_box = Point(
+                self.sailbot_position_latlon.longitude, self.sailbot_position_latlon.latitude
+            ).buffer(self.bbox_buffer_amount, cap_style="square", join_style=2)
             # create a box around the next waypoint
-            waypoint_box = Point(*self.next_waypoint).buffer(
+            waypoint_box = Point(self.next_waypoint.longitude, self.next_waypoint.latitude).buffer(
                 self.bbox_buffer_amount, cap_style="square", join_style=2
             )
             # create a bounding box around both boxes
-            bbox = box(MultiPolygon([sailbot_box, waypoint_box]).bounds)
+            bbox = box(*MultiPolygon([sailbot_box, waypoint_box]).bounds)
 
-        # query the spatial index for all land polygons that intersect the bounding box
-        rows = list(self.sindex.query(geometry=bbox, predicate="intersects"))
+        row_indices = list(self.sindex.query(geometry=bbox, predicate="intersects"))
 
-        if len(rows) == 0:
+        if len(row_indices) == 0:
             self.collision_zone = MultiPolygon()  # no land nearby
             return
 
-        # read in these rows from the shape file
-        with fiona.open(LAND_POLYGONS_FILE, "r") as reader:
-            # array of polygons
-            latlon_polygons = GeoDataFrame.from_features((reader[row] for row in rows))["geometry"]
+        latlon_polygons = None
+        with fiona.open(COMPLETE_DATA_FILE, "r") as reader:
+            latlon_polygons = GeoDataFrame(
+                geometry=[reader.get(idx)["geometry"] for idx in row_indices]
+            )["geometry"]
 
         xy_polygons = self._latlon_polygons_to_xy_polygons(latlon_polygons, self.reference)
 
@@ -273,7 +269,7 @@ class Boat(Obstacle):
         cog = ais_ship.cog.heading
 
         # Calculate distance the boat will travel before soonest possible collision with Sailbot
-        projected_distance = self._calc_proj_dist()
+        projected_distance = self._calculate_projected_distance()
 
         # TODO This feels too arbitrary, maybe will incorporate ROT at a later time
         collision_zone_width = projected_distance * COLLISION_ZONE_STRETCH_FACTOR * width
@@ -298,7 +294,7 @@ class Boat(Obstacle):
         collision_zone = affine_transform(boat_collision_zone, transformation)
         self.collision_zone = collision_zone.buffer(BOAT_BUFFER, join_style=2)
 
-    def _calc_proj_dist(self) -> float:
+    def _calculate_projected_distance(self) -> float:
         """Calculates the distance the boat obstacle will travel before collision, if
         Sailbot moves directly towards the soonest possible collision point at its current speed.
         The system is modeled by two parametric lines extending from the positions of the boat

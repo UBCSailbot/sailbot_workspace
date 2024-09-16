@@ -1,3 +1,5 @@
+from typing import List
+
 import numpy as np
 import pytest
 from custom_interfaces.msg import (
@@ -71,7 +73,7 @@ def test_get_land(
             SPATIAL_INDEX,
             0.1,  # degrees
             XY(0.5, 0.5),
-            XY(3, 0),
+            XY(5, 5),
             MultiPolygon(
                 [
                     Polygon([Point([0, 0]), Point([0, 1]), Point([1, 1]), Point([1, 0])]),
@@ -100,9 +102,9 @@ def test_is_valid_land(
         bbox_buffer_amount=bbox_buffer_amount,
     )
 
-    land._update_land_collision_zone(mock_land)
-    assert not land.is_valid(invalid_point)
+    land._update_land_collision_zone(land_multi_polygon=mock_land)
     assert land.is_valid(valid_point)
+    assert not land.is_valid(invalid_point)
 
 
 # Test land collision zone is created/updated successfully
@@ -110,9 +112,9 @@ def test_is_valid_land(
     "reference_point, sailbot_position, next_waypoint, sindex, bbox_buffer_amount",
     [
         (
-            HelperLatLon(latitude=52.26, longitude=-136.91),
-            HelperLatLon(latitude=51.95, longitude=-136.26),
-            HelperLatLon(latitude=51.96, longitude=-136.27),
+            HelperLatLon(latitude=48.927646856442834, longitude=-125.18555198866946),
+            HelperLatLon(latitude=48.842045056421135, longitude=-125.29181185529734),
+            HelperLatLon(latitude=48.92893492027311, longitude=-125.37140872956104),
             SPATIAL_INDEX,
             0.1,  # degrees
         )
@@ -135,7 +137,7 @@ def test_land_collision_zone(
     land.update_collision_zone()
 
     assert isinstance(land.collision_zone, MultiPolygon)
-    assert land.collision_zone.exterior.coords is not None
+    assert len(land.collision_zone.geoms) != 0
 
 
 # Test updating Sailbot data
@@ -182,12 +184,9 @@ def test_update_sailbot_data_land(
             HelperLatLon(latitude=52.2, longitude=-136.9),
             HelperLatLon(latitude=51.0, longitude=-136.0),
             HelperLatLon(latitude=51.95785651405779, longitude=-136.26282894969611),
-        ),
-        (
             HelperLatLon(latitude=50.06442134644842, longitude=-130.7725487868677),
-            HelperLatLon(latitude=49.88670956993386, longitude=-130.37061359404225),
-            HelperLatLon(latitude=51.95785651405779, longitude=-136.26282894969611),
-            15.0,
+            SPATIAL_INDEX,
+            0.1,  # degrees
         ),
     ],
 )
@@ -207,10 +206,10 @@ def test_update_reference_point_land(
         bbox_buffer_amount=bbox_buffer_amount,
     )
 
-    if isinstance(boat1.collision_zone, Polygon):
+    if isinstance(land.collision_zone, MultiPolygon):
         point1 = Point(
-            land.collision_zone.exterior.coords.xy[0][0],
-            land.collision_zone.exterior.coords.xy[1][0],
+            land.collision_zone.geoms[0].exterior.coords.xy[0][0],
+            land.collision_zone.geoms[0].exterior.coords.xy[1][0],
         )
 
     assert land.reference == reference_point_1
@@ -222,10 +221,10 @@ def test_update_reference_point_land(
     # Change the reference point
     land.update_reference_point(reference_point_2)
 
-    if isinstance(land.collision_zone, Polygon):
+    if isinstance(land.collision_zone, MultiPolygon):
         point2 = Point(
-            land.collision_zone.exterior.coords.xy[0][0],
-            land.collision_zone.exterior.coords.xy[1][0],
+            land.collision_zone.geoms[0].exterior.coords.xy[0][0],
+            land.collision_zone.geoms[0].exterior.coords.xy[1][0],
         )
 
     assert land.reference == reference_point_2
@@ -250,7 +249,7 @@ def test_update_reference_point_land(
     "latlon_polygons, reference_point",
     [
         (
-            MultiPolygon(
+            list(
                 [
                     Polygon(
                         [
@@ -262,7 +261,7 @@ def test_update_reference_point_land(
                             (-134.556428, 47.671306),
                             (-131.478636, 47.78954),
                             (-129.895772, 48.274419),
-                            (-129.412119, 48.928274)
+                            (-129.412119, 48.928274),
                         ]
                     ),
                     Polygon(
@@ -270,7 +269,7 @@ def test_update_reference_point_land(
                             (-123.872094, 50.252825),
                             (-124.135905, 49.530913),
                             (-125.938612, 49.758558),
-                            (-125.674801, 50.797603)
+                            (-125.674801, 50.797603),
                         ]
                     ),
                 ]
@@ -280,14 +279,14 @@ def test_update_reference_point_land(
     ],
 )
 def test_latlon_polygons_to_xy_polygons(
-    latlon_polygons: MultiPolygon, reference_point: HelperLatLon
+    latlon_polygons: List[Polygon], reference_point: HelperLatLon
 ):
 
     xy_polygons = Land._latlon_polygons_to_xy_polygons(latlon_polygons, reference_point)
     assert isinstance(xy_polygons, list)
 
     for i, xy_poly in enumerate(xy_polygons):
-        latlon_poly = latlon_polygons.geoms[i]
+        latlon_poly = latlon_polygons[i]
         assert isinstance(xy_poly, Polygon)
         assert xy_poly.exterior.coords is not None
 
@@ -342,7 +341,7 @@ def test_calculate_projected_distance(
 ):
     boat1 = Boat(reference_point, sailbot_position, sailbot_speed, ais_ship)
 
-    assert boat1.calculate_projected_distance() == pytest.approx(
+    assert boat1._calculate_projected_distance() == pytest.approx(
         0.0
     ), "incorrect projected distance"
 
@@ -374,7 +373,7 @@ def test_boat_collision_zone(
     sailbot_speed: float,
 ):
     boat1 = Boat(reference_point, sailbot_position, sailbot_speed, ais_ship)
-    boat1.update_boat_collision_zone()
+    boat1._update_boat_collision_zone()
 
     assert isinstance(boat1.collision_zone, Polygon)
     if boat1.collision_zone is not None:
@@ -458,7 +457,7 @@ def test_create_collision_zone_id_mismatch(
     boat1 = Boat(reference_point, sailbot_position, sailbot_speed, ais_ship_1)
 
     with pytest.raises(ValueError):
-        boat1.update_boat_collision_zone(ais_ship_2)
+        boat1._update_boat_collision_zone(ais_ship_2)
 
 
 # Test is_valid
@@ -503,12 +502,11 @@ def test_is_valid_boat(
 
 # Test is_valid raises error when collision zone has not been set
 @pytest.mark.parametrize(
-    "reference_point,sailbot_position,sailbot_speed,invalid_point,valid_point",
+    "reference_point,sailbot_position,invalid_point,valid_point",
     [
         (
             HelperLatLon(latitude=52.268119490007756, longitude=-136.9133983613776),
             HelperLatLon(latitude=51.95785651405779, longitude=-136.26282894969611),
-            15.0,
             latlon_to_xy(
                 HelperLatLon(latitude=52.268119490007756, longitude=-136.9133983613776),
                 HelperLatLon(latitude=52.174842845359755, longitude=-137.10372451905042),
@@ -523,14 +521,13 @@ def test_is_valid_boat(
 def test_is_valid_no_collision_zone(
     reference_point: HelperLatLon,
     sailbot_position: HelperLatLon,
-    sailbot_speed: float,
     invalid_point: XY,
     valid_point: XY,
 ):
-    obstacle = Obstacle(reference_point, sailbot_position, sailbot_speed)
-    with pytest.raises(ValueError):
+    obstacle = Obstacle(reference_point, sailbot_position)
+    with pytest.raises(RuntimeError):
         obstacle.is_valid(invalid_point)
-    with pytest.raises(ValueError):
+    with pytest.raises(RuntimeError):
         obstacle.is_valid(valid_point)
 
 
@@ -728,7 +725,7 @@ if __name__ == "__main__":
     # - the safety buffer
     collision_zone_length = round(
         (
-            boat1.calculate_projected_distance()
+            boat1._calculate_projected_distance()
             + 2 * BOAT_BUFFER
             + meters_to_km(boat1.ais_ship.length.dimension)
         ),
