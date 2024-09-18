@@ -17,13 +17,13 @@
   <exec_depend>python3-shapely</exec_depend>
   <exec_depend>python3-geopandas</exec_depend>
   <exec_depend>python3-fiona</exec_depend>
+  <exec_depend>python3-tqdm</exec_depend>
 
   <!--Test Dependencies-->
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
   <test_depend>ament_pep257</test_depend>
   <test_depend>python3-pytest</test_depend>
-  <test_depend>python3-shapely</test_depend>
 
   <export>
     <build_type>ament_python</build_type>
