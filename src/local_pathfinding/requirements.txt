@@ -6,3 +6,6 @@ flask
 
 # test/test_obstacles.py
 plotly
+
+# generate_land_data.py
+tqdm

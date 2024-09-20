@@ -1,5 +1,7 @@
 """
 This script is used to generate a complete land mass data set for the navigation region.
+The script computes all buffers around land polygons, to prevent the need for costly buffer
+calculations at Sailbot navigation  runtime.
 
 The data source is:
 
@@ -10,13 +12,13 @@ The data source is:
 
 This script generates two files as final products:
 
-    1. complete_land_data.shp (shape file)
-        A shape file containing all land mass polygons from source data file
+    1. complete_land_data.shp
+        A binary file containing all land mass polygons from source data file
 
-    2. sindex.pkl (pickle file)
+    2. sindex.pkl
         A PKL file containing a binary encoding of an STRTree object which can be loaded
         and used to run spatial queries on its parent GeoDataFrame which contained all land mass
-        polygons at the time of pickling.
+        polygons at the time of pickling
 
 The following CLI arguments are available:
 
@@ -49,8 +51,12 @@ LON_RANGE = (-179.9, -109.335938)  # W:E
 DEFAULT_BBOX = box(LON_RANGE[0], LAT_RANGE[0], LON_RANGE[1], LAT_RANGE[1])
 
 # buffer distance in degrees
-# translates to 500m at the equator
+# corresponds to 500m at the equator
 LAND_BUFFER = 0.0045
+
+REQUIREMENTS_FILE = normpath(
+    "/workspaces/sailbot_workspace/src/local_pathfinding/requirements.txt"
+)
 
 # SHAPE FILE PATHS
 BASE_SHP_FILE = normpath(
@@ -62,25 +68,18 @@ BBOX_REGION_FILE = normpath(
 COMPLETE_DATA_FILE = normpath(
     "/workspaces/sailbot_workspace/src/local_pathfinding/land/shp/complete_land_data.shp"
 )
-
-# SHAPE FILE URL
 BASE_SHP_URL = "https://osmdata.openstreetmap.de/download/land-polygons-split-3857.zip"
 
-# CSV
-# this is the polygon which defines the complete navigation region
-# all land obstacles will come from polygons which intersect or are bounded by this polygon
+# this irregularly shaped polygon defines the complete expected navigation region
+# all land obstacles will come from polygons which intersect this polygon
 MAP_SEL_POLYGON = normpath(
     "/workspaces/sailbot_workspace/src/local_pathfinding/land/csv/map_sel.csv"
 )
-
-# PKL PATHS
 # spatial index of final land mass data set
 SINDEX_FILE = normpath("/workspaces/sailbot_workspace/src/local_pathfinding/land/pkl/sindex.pkl")
 
 
 def dump_pkl(object: Any, file_path: str):
-    # creating a pickler once, when everything is being pickled
-    # will likely be more efficient
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     with open(file_path, "wb") as f:
         pickle.dump(object, f, protocol=pickle.HIGHEST_PROTOCOL)
@@ -105,7 +104,7 @@ class Logger:
         }
         self.reset = "\033[0m"
 
-    def ok(self, msg):
+    def info(self, msg):
         level = self.levels.get("OK")
         print(level + msg + self.reset)
 
@@ -121,7 +120,6 @@ class Logger:
 
 def install_packages(requirements_file):
     try:
-        # Use subprocess to call pip install
         subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", requirements_file])
         print(f"All packages from {requirements_file} have been installed successfully.")
     except subprocess.CalledProcessError as e:
@@ -131,10 +129,8 @@ def install_packages(requirements_file):
 def main():
 
     # ----------------------------------------SETUP ----------------------------------------------
-    # Create a logger
     logger = Logger()
 
-    # Parse Arguments
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--lat",
@@ -151,20 +147,18 @@ def main():
 
     args = parser.parse_args()
 
-    # Check for process dependent files
+    install_packages(REQUIREMENTS_FILE)
+
     if not os.path.exists(BASE_SHP_FILE):
         logger.error(f"{BASE_SHP_FILE} not found.")
 
     if not os.path.exists(MAP_SEL_POLYGON):
         logger.error(f"{MAP_SEL_POLYGON} not found.")
 
-    # Run in production mode
-    logger.ok("Running in PRODUCTION mode")
     base_shp = BASE_SHP_FILE
 
     # ----------------------------------------END SETUP -------------------------------------------
 
-    # Lat/Lon ranges
     if args.lat and args.lon:
         print("got lat and lon ranges, creating bbox..")
         bbox = box(args.lon[0], args.lat[0], args.lon[1], args.lat[1])
@@ -179,12 +173,13 @@ def main():
     # convert bounding box to mercator projection
     bbox = gpd.GeoSeries([bbox], crs=WGS84).to_crs(MERCATOR).iloc[0]
 
-    # read in all land polygons inside the bounding box
     print(f"reading in land polygons from {base_shp}...")
     gdf = gpd.read_file(base_shp, bbox=bbox)
 
     print(f"Saving selected region to {BBOX_REGION_FILE}...")
-    # store bbox selected region back into a shape file
+    # this is to keep only the polygons that intersect with the bounding box
+    # and discard the rest
+    # it makes the next filtering step faster
     gdf.to_file(BBOX_REGION_FILE)
 
     # Load in a custom Polygon which hugs coastline, to prune off unneeded inland polygons
@@ -201,7 +196,6 @@ def main():
     projection = pyproj.Transformer.from_proj(WGS84, MERCATOR, always_xy=True).transform
     map_sel_east = transform(projection, map_sel_east)
 
-    # load back in our subset of the region with our map selection mask applied
     print(
         f"reading in land polygons from {BBOX_REGION_FILE} with map selection mask from "
         f"{MAP_SEL_POLYGON} applied..."
@@ -213,41 +207,33 @@ def main():
 
     unbuffered_polygons = gdf_complete["geometry"].values
 
-    logger.ok("Buffering polygons...")
-    # buffer polygons
-
+    logger.info("Buffering polygons...")
     buffered_polygons = list(
         tqdm(
             map(lambda poly: poly.buffer(LAND_BUFFER, join_style=2), unbuffered_polygons),
             total=len(unbuffered_polygons),
         )
     )
-    """buffered_polygons = list(
-        map(lambda poly: poly.buffer(LAND_BUFFER, join_style=2), unbuffered_polygons)
-    )"""
 
     gdf_complete_buffered = gpd.GeoDataFrame(geometry=buffered_polygons, crs=WGS84)
 
-    logger.ok("Creating spatial index...")
-    # create spatial index object
+    logger.info("Creating spatial index...")
     sindex = gdf_complete_buffered.sindex
 
-    # dummy query to ensure sindex is fully instantiated
+    # dummy query to ensure sindex is fully initialized
     point = Point(-122.743184, 48.268958)
     sindex.query(geometry=point.buffer(distance=0.001, cap_style=3))
 
-    # send sindex to PKL
     dump_pkl(sindex, SINDEX_FILE)
-    # send gdf_complete to shp file
     # fiona will be used to load the file again, so it is the specified engine
     gdf_complete_buffered.to_file(filename=COMPLETE_DATA_FILE, engine="fiona")
 
-    logger.ok(
+    logger.info(
         f"The complete land mass data set has successfully been created and saved as"
         f"'{COMPLETE_DATA_FILE}'."
     )
-    logger.ok(f"The corresponding spatial index has been saved as '{SINDEX_FILE}'.")
-    logger.ok("Done")
+    logger.info(f"The corresponding spatial index has been saved as '{SINDEX_FILE}'.")
+    logger.info("Done")
 
 
 if __name__ == "__main__":
