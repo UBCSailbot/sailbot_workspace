@@ -526,7 +526,7 @@ CanFrame AISShips::toLinuxCan() const
     std::memcpy(cf.data + BYTE_OFF_HEADING, &raw_heading, sizeof(int16_t));
     std::memcpy(cf.data + BYTE_OFF_ROT, &raw_rot, sizeof(int8_t));
     std::memcpy(cf.data + BYTE_OFF_LENGTH, &raw_length, sizeof(int16_t));
-    std::memcpy(cf.data + BYTE_OFF_WIDTH, &raw_width, sizeof(uint8_t));
+    std::memcpy(cf.data + BYTE_OFF_WIDTH, &raw_width, sizeof(uint16_t));
     std::memcpy(cf.data + BYTE_OFF_IDX, &raw_idx, sizeof(int8_t));
     std::memcpy(cf.data + BYTE_OFF_NUM_SHIPS, &raw_num_ships, sizeof(int8_t));
 
@@ -600,6 +600,56 @@ void AISShips::checkBounds() const
 }
 //AISShips private END
 //AISShips END
+
+//PwrMode START
+//PwrMode public START
+
+PwrMode::PwrMode(const CanFrame & cf) : PwrMode(static_cast<CanId>(cf.can_id))
+{
+    uint8_t raw_mode;
+
+    std::memcpy(&raw_mode, cf.data + BYTE_OFF_MODE, sizeof(uint8_t));
+
+    mode_ = raw_mode;
+
+    checkBounds();
+}
+
+PwrMode::PwrMode(uint8_t mode, CanId id) : BaseFrame(id, CAN_BYTE_DLEN_), mode_(mode) { checkBounds(); }
+
+CanFrame PwrMode::toLinuxCan() const
+{
+    uint8_t raw_mode = mode_;
+
+    CanFrame cf = BaseFrame::toLinuxCan();
+    std::memcpy(cf.data + BYTE_OFF_MODE, &raw_mode, sizeof(uint8_t));
+
+    return cf;
+}
+
+std::string PwrMode::debugStr() const
+{
+    std::stringstream ss;
+    ss << BaseFrame::debugStr() << "\n"
+       << "Power mode: " << mode_;
+    return ss.str();
+}
+
+// PwrMode public END
+// PwrMode private START
+
+PwrMode::PwrMode(CanId id) : BaseFrame(std::span{PWR_MODE_IDS}, id, CAN_BYTE_DLEN_) {}
+
+void PwrMode::checkBounds() const
+{
+    auto err = utils::isOutOfBounds<float>(mode_, POWER_MODE_LOW, POWER_MODE_NORMAL);
+    if (err) {
+        std::string err_msg = err.value();
+        throw std::out_of_range("Power mode value is out of bounds!\n" + debugStr() + "\n" + err_msg);
+    }
+}
+// PwrMode private END
+// PwrMode END
 
 // DesiredHeading START
 // DesiredHeading public START
