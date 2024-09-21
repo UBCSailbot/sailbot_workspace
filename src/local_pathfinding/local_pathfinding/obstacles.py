@@ -18,7 +18,7 @@ from local_pathfinding.generate_land_data import COMPLETE_DATA_FILE
 # Constants
 PROJ_TIME_NO_COLLISION = 3  # hours
 BOAT_BUFFER = 0.5  # km
-COLLISION_ZONE_STRETCH_FACTOR = 1.5  # This factor changes the scope/width of the collision cone
+COLLISION_ZONE_STRETCH_FACTOR = 1.5  # This factor changes the width of the boat collision zone
 
 
 class Obstacle:
@@ -111,9 +111,9 @@ class Obstacle:
 
 class Land(Obstacle):
     """
-    Describes land objects which Sailbot must avoid. During runtime, the obstacle tracker will
-    keep track of a single Land obstacle object and update its collision zone with new geometry
-    when required.
+    Describes land and territorial waters that which Sailbot must avoid. During runtime,
+    the obstacle tracker will keep track of a single Land obstacle object and update its collision
+    zone with new geometry when required.
 
     Attributes:
         collision_zone (MultiPolygon): A collection of Polygons in (X,Y) that define regions of
@@ -182,6 +182,7 @@ class Land(Obstacle):
         # local_polygons will already have a buffer applied before runtime
         # union_all to eliminate any overlaps between polygons
         bbox_xy = Land._latlon_polygons_to_xy_polygons([bbox], self.reference)[0]
+        # we don't precompute unions because we could end up with excessively large polygons
         non_overlapping_polygons = union_all(MultiPolygon(xy_polygons)).geoms
         clipped_polygons = []
 
