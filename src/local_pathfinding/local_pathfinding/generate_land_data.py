@@ -9,6 +9,8 @@ The data source is:
         A collection of polygons representing coastlines and islands.
         This data is based off of the Open Street Map project and downloaded from
         https://osmdata.openstreetmap.de/
+        The data may be used for ANY purpose under the Open Database License (ODbL) v1.0.
+        https://www.openstreetmap.org/copyright
 
 This script generates two files as final products:
 
