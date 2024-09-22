@@ -2,6 +2,7 @@
 
 """The ROS node for the physics engine."""
 
+import json
 import sys
 from typing import Optional
 
@@ -124,11 +125,10 @@ class PhysicsEngineNode(Node):
                 ("wind_sensor.gaussian_params.std_dev", rclpy.Parameter.Type.DOUBLE_ARRAY),
                 ("wind_sensor.gaussian_params.corr_xy", rclpy.Parameter.Type.DOUBLE),
                 ("wind_sensor.constant_params.value", rclpy.Parameter.Type.DOUBLE_ARRAY),
-                ("wind_generation.generator_type", rclpy.Parameter.Type.STRING),
                 ("wind_generation.mvgaussian_params.mean", rclpy.Parameter.Type.DOUBLE_ARRAY),
-                # ("wind_generation.mvgaussian_params.cov", rclpy.Parameter.Type.DOUBLE_ARRAY),
+                ("wind_generation.mvgaussian_params.cov", rclpy.Parameter.Type.STRING),
                 ("current_generation.mvgaussian_params.mean", rclpy.Parameter.Type.DOUBLE_ARRAY),
-                # ("current_generation.mvgaussian_params.cov", rclpy.Parameter.Type.DOUBLE_ARRAY),
+                ("current_generation.mvgaussian_params.cov", rclpy.Parameter.Type.STRING),
             ],
         )
 
@@ -153,7 +153,15 @@ class PhysicsEngineNode(Node):
             .get_parameter_value()
             .double_array_value
         )
-        wind_cov = np.array([[2.0, 1.0, 0.0], [1.0, 0.0, 2.0], [0.0, 2.0, 1.0]])
+        # Parse the covariance matrix from a string into a 2D array, as ROS parameters do not
+        # support native 2D array types.
+        wind_cov = np.array(
+            json.loads(
+                self.get_parameter("wind_generation.mvgaussian_params.cov")
+                .get_parameter_value()
+                .string_value
+            )
+        )
         self.__wind_generator = FluidGenerator(generator=MVGaussianGenerator(wind_mean, wind_cov))
 
         current_mean = np.array(
@@ -161,7 +169,15 @@ class PhysicsEngineNode(Node):
             .get_parameter_value()
             .double_array_value
         )
-        current_cov = np.array([[2.0, 1.0, 0.0], [1.0, 0.0, 2.0], [0.0, 2.0, 1.0]])
+        # Parse the covariance matrix from a string into a 2D array, as ROS parameters do not
+        # support native 2D array types.
+        current_cov = np.array(
+            json.loads(
+                self.get_parameter("current_generation.mvgaussian_params.cov")
+                .get_parameter_value()
+                .string_value
+            )
+        )
         self.__current_generator = FluidGenerator(
             generator=MVGaussianGenerator(current_mean, current_cov)
         )
