@@ -32,12 +32,11 @@ import argparse
 import csv
 import os
 import pickle
-import subprocess
-import sys
 from os.path import normpath
 from typing import Any
 
 import geopandas as gpd
+import numpy as np
 import pyproj
 from shapely.geometry import LineString, Point, Polygon, box
 from shapely.ops import split, transform
@@ -51,11 +50,8 @@ MERCATOR = pyproj.CRS("EPSG:3857")
 LAT_RANGE = (14.6338, 61.4795)  # S:N
 LON_RANGE = (-179.9, -109.335938)  # W:E
 DEFAULT_BBOX = box(LON_RANGE[0], LAT_RANGE[0], LON_RANGE[1], LAT_RANGE[1])
-LAND_BUFFER = 23_150  # 12.5 nautical miles in meters
 
-REQUIREMENTS_FILE = normpath(
-    "/workspaces/sailbot_workspace/src/local_pathfinding/requirements.txt"
-)
+LAND_BUFFER = 20, 000  # meters
 
 # SHAPE FILE PATHS
 BASE_SHP_FILE = normpath(
@@ -115,14 +111,6 @@ class Logger:
         level = self.levels.get("ERROR")
         print(level + msg + "Exiting" + self.reset)
         exit(1)
-
-
-def install_packages(requirements_file):
-    try:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", requirements_file])
-        print(f"All packages from {requirements_file} have been installed successfully.")
-    except subprocess.CalledProcessError as e:
-        print(f"An error occurred while trying to install the packages: {e}")
 
 
 def main():
@@ -190,8 +178,6 @@ def main():
     # transforming a polygon that crosses the IDL has undesired results
     IDL = LineString([(-180, 90), (-180, -90)])
     map_sel_east = split(map_sel, IDL).geoms[0]
-    # the land dataset is in mercator projection, to select only the data inside of bbox
-    # bbox must also be in mercator
     projection = pyproj.Transformer.from_proj(WGS84, MERCATOR, always_xy=True).transform
     map_sel_east = transform(projection, map_sel_east)
 
@@ -200,7 +186,11 @@ def main():
         f"{MAP_SEL_POLYGON} applied..."
     )
     gdf_complete = gpd.read_file(BBOX_REGION_FILE, mask=map_sel_east)
+    gdf_complete.to_crs(MERCATOR, inplace=True)
     print(len(gdf_complete["geometry"]), f" land polygons loaded from {BBOX_REGION_FILE}.")
+
+    print("head of gdf_complete: ")
+    print(gdf_complete.head)
 
     unbuffered_polygons = gdf_complete["geometry"].values
 
@@ -212,9 +202,19 @@ def main():
         )
     )
 
+    projection = pyproj.Transformer.from_proj(MERCATOR, WGS84, always_xy=True).transform
+    buffered_polygons = list(np.array(buffered_polygons).flatten())
+    logger.info("Transforming buffered polygons to WGS84...")
+    buffered_polygons = list(
+        tqdm(
+            [transform(projection, geom) for geom in buffered_polygons],
+            total=len(buffered_polygons),
+        )
+    )
     gdf_complete_buffered = gpd.GeoDataFrame(geometry=buffered_polygons)
-    # this will transform the polygons back to WGS84 with units of degrees
-    gdf_complete_buffered.to_crs(WGS84, inplace=True)
+
+    print("head of gdf_complete_buffered after transformation: ")
+    print(gdf_complete_buffered.head)
 
     logger.info("Creating spatial index...")
     sindex = gdf_complete_buffered.sindex
