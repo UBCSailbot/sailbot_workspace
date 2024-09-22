@@ -60,6 +60,16 @@ physics_engine_node:
             corr_xy: 0.
          constant_params:
             value: [1.0, 0.0]
+      wind_generation:
+         generator_type: mvgaussian
+         mvgaussian_params:
+            mean: [5.0, 5.0, 0.0]
+            # cov: [[2.0, 1.0], [1.0, 2.0]]
+      current_generation:
+         generator_type: mvgaussian
+         mvgaussian_params:
+            mean: [1.0, 1.0, 0.0]
+            # cov: [[2.0, 1.0], [1.0, 2.0]]
 data_collection_node:
    ros__parameters:
       file_name: 'ros_data_collection'

@@ -92,8 +92,8 @@ class PhysicsEngineNode(Node):
         self.__is_multithreading_enabled = multithreading_enabled
 
         self.get_logger().debug("Initializing node...")
-        self.__init_private_attributes()
         self.__declare_ros_parameters()
+        self.__init_private_attributes()
         self.__init_callback_groups()
         self.__init_subscriptions()
         self.__init_publishers()
@@ -102,22 +102,6 @@ class PhysicsEngineNode(Node):
         self.get_logger().debug("Node initialization complete. Starting execution...")
 
     # INITIALIZATION HELPERS
-    def __init_private_attributes(self):
-        """Initializes the private attributes of this class that are not set anywhere else during
-        the initialization process.
-        """
-        self.__publish_counter = 0
-        self.__rudder_angle = 0
-        self.__sail_trim_tab_angle = 0
-        self.__desired_heading = None
-        self.__boat_state = BoatState(0.5)
-        self.__wind_generator = FluidGenerator(
-            generator=MVGaussianGenerator(np.array([5, 5]), np.array([[2, 1], [1, 2]]))
-        )
-        self.__current_generator = FluidGenerator(
-            generator=MVGaussianGenerator(np.array([1, 1]), np.array([[2, 1], [1, 2]]))
-        )
-
     def __declare_ros_parameters(self):
         """Declares ROS parameters from the global configuration file that will be used in this
         node. This node will monitor for any changes to these parameters during execution and will
@@ -140,6 +124,11 @@ class PhysicsEngineNode(Node):
                 ("wind_sensor.gaussian_params.std_dev", rclpy.Parameter.Type.DOUBLE_ARRAY),
                 ("wind_sensor.gaussian_params.corr_xy", rclpy.Parameter.Type.DOUBLE),
                 ("wind_sensor.constant_params.value", rclpy.Parameter.Type.DOUBLE_ARRAY),
+                ("wind_generation.generator_type", rclpy.Parameter.Type.STRING),
+                ("wind_generation.mvgaussian_params.mean", rclpy.Parameter.Type.DOUBLE_ARRAY),
+                # ("wind_generation.mvgaussian_params.cov", rclpy.Parameter.Type.DOUBLE_ARRAY),
+                ("current_generation.mvgaussian_params.mean", rclpy.Parameter.Type.DOUBLE_ARRAY),
+                # ("current_generation.mvgaussian_params.cov", rclpy.Parameter.Type.DOUBLE_ARRAY),
             ],
         )
 
@@ -148,6 +137,34 @@ class PhysicsEngineNode(Node):
         for name, parameter in all_parameters.items():
             value_str = str(parameter.value)
             self.get_logger().debug(f"Got parameter {name} with value {value_str}")
+
+    def __init_private_attributes(self):
+        """Initializes the private attributes of this class that are not set anywhere else during
+        the initialization process.
+        """
+        self.__publish_counter = 0
+        self.__rudder_angle = 0
+        self.__sail_trim_tab_angle = 0
+        self.__desired_heading = None
+        self.__boat_state = BoatState(self.pub_period)
+
+        wind_mean = np.array(
+            self.get_parameter("wind_generation.mvgaussian_params.mean")
+            .get_parameter_value()
+            .double_array_value
+        )
+        wind_cov = np.array([[2.0, 1.0, 0.0], [1.0, 0.0, 2.0], [0.0, 2.0, 1.0]])
+        self.__wind_generator = FluidGenerator(generator=MVGaussianGenerator(wind_mean, wind_cov))
+
+        current_mean = np.array(
+            self.get_parameter("current_generation.mvgaussian_params.mean")
+            .get_parameter_value()
+            .double_array_value
+        )
+        current_cov = np.array([[2.0, 1.0, 0.0], [1.0, 0.0, 2.0], [0.0, 2.0, 1.0]])
+        self.__current_generator = FluidGenerator(
+            generator=MVGaussianGenerator(current_mean, current_cov)
+        )
 
     def __init_callback_groups(self):
         """Initializes the callback groups. Whether multithreading is enabled or not will affect
