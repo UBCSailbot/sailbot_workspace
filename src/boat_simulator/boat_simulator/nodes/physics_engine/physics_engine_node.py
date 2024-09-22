@@ -110,9 +110,7 @@ class PhysicsEngineNode(Node):
         self.__rudder_angle = 0
         self.__sail_trim_tab_angle = 0
         self.__desired_heading = None
-        self.__boat_state = BoatState(
-            0.5, Constants.BOAT_PROPERTIES.mass, Constants.BOAT_PROPERTIES.inertia
-        )
+        self.__boat_state = BoatState(0.5)
         self.__wind_generator = FluidGenerator(
             generator=MVGaussianGenerator(np.array([5, 5]), np.array([[2, 1], [1, 2]]))
         )
