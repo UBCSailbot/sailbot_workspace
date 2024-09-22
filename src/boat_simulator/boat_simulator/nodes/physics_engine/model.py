@@ -89,7 +89,7 @@ class BoatState:
                 represents the net torque, expressed in newton-meters (N•m).
         """
         # TODO Implement this function
-        return (np.array([0, 0]), np.array([0, 0]))
+        return (np.array([0, 0, 0]), np.array([0, 0, 0]))
 
     @property
     def global_position(self) -> NDArray:
