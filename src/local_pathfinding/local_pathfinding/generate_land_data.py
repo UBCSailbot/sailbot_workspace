@@ -202,6 +202,9 @@ def main():
     gdf_complete = gpd.read_file(BBOX_REGION_FILE, mask=map_sel_east)
     print(len(gdf_complete["geometry"]), f" land polygons loaded from {BBOX_REGION_FILE}.")
 
+    print("head of gdf_complete pre-buffering:")
+    print(gdf_complete.head)
+
     unbuffered_polygons = gdf_complete["geometry"].values
 
     logger.info("Buffering polygons...")
@@ -215,6 +218,9 @@ def main():
     gdf_complete_buffered = gpd.GeoDataFrame(geometry=buffered_polygons)
     # this will transform the polygons back to WGS84 with units of degrees
     gdf_complete_buffered.to_crs(WGS84, inplace=True)
+
+    print("head of gdf_complete_buffered after transformation to WGS84:")
+    print(gdf_complete_buffered.head)
 
     logger.info("Creating spatial index...")
     sindex = gdf_complete_buffered.sindex
