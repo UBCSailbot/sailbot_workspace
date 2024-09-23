@@ -250,7 +250,7 @@ specified within an array: one for the `x` component, and one for the `y` compon
 `wind_sensor.generator_type` is `gaussian`.
 - _Datatype_: `double` array, length 2
 - _Range_: `(0.0, MAX_DOUBLE)`
-  - If a standard deviation of zero is desired, then consider using the constant generator instead.
+    - If a standard deviation of zero is desired, then consider using the constant generator instead.
 
 **`wind_sensor.generator_type`**
 
@@ -260,25 +260,29 @@ specified within an array: one for the `x` component, and one for the `y` compon
 
 **`wind_generation.mvgaussian_params.mean`**
 
-- _Description_: The mean value for the wind generated, expressed in kilometers per hour (km/h), for the multivariate Gaussian generator.
+- _Description_: The mean value for the wind generated, expressed in kilometers per hour (km/h), for the multivariate
+Gaussian generator.
 - _Datatype_: `double` array, length 3
 - _Range_: `(0.0, MAX_DOUBLE)`
 
 **`wind_generation.mvgaussian_params.cov`**
 
-- _Description_: The covariance matrix for the generated wind, represented as a string formatted as a 2D `double` array, since ROS parameters do not support native 2D array types.
+- _Description_: The covariance matrix for the generated wind, represented as a string formatted as a 2D `double` array,
+since ROS parameters do not support native 2D array types.
 - _Datatype_: `string`
 - _Range_: `(0.0, MAX_DOUBLE)`
 
 **`current_generation.mvgaussian_params.mean`**
 
-- _Description_: The mean value for the current generated, expressed in kilometers per hour (km/h), for the multivariate Gaussian generator.
+- _Description_: The mean value for the current generated, expressed in kilometers per hour (km/h), for the multivariate
+Gaussian generator.
 - _Datatype_: `double` array, length 3
 - _Range_: `(0.0, MAX_DOUBLE)`
 
 **`current_generation.mvgaussian_params.cov`**
 
-- _Description_: The covariance matrix for the generated current, represented as a string formatted as a 2D `double` array, since ROS parameters do not support native 2D array types.
+- _Description_: The covariance matrix for the generated current, represented as a string formatted as a 2D `double`
+array, since ROS parameters do not support native 2D array types.
 - _Datatype_: `string`
 - _Range_: `(0.0, MAX_DOUBLE)`
 
