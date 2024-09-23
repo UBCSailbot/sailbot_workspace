@@ -2613,8 +2613,10 @@ the <code>x</code> and <code>y</code> components of the velocity. Only used if <
 specified within an array: one for the <code>x</code> component, and one for the <code>y</code> component. Only used if
 <code>wind_sensor.generator_type</code> is <code>gaussian</code>.</li>
 <li><em>Datatype</em>: <code>double</code> array, length 2</li>
-<li><em>Range</em>: <code>(0.0, MAX_DOUBLE)</code></li>
+<li><em>Range</em>: <code>(0.0, MAX_DOUBLE)</code><ul>
 <li>If a standard deviation of zero is desired, then consider using the constant generator instead.</li>
+</ul>
+</li>
 </ul>
 <p><strong><code>wind_sensor.generator_type</code></strong></p>
 <ul>
@@ -2624,25 +2626,29 @@ specified within an array: one for the <code>x</code> component, and one for the
 </ul>
 <p><strong><code>wind_generation.mvgaussian_params.mean</code></strong></p>
 <ul>
-<li><em>Description</em>: The mean value for the wind generated, expressed in kilometers per hour (km/h), for the multivariate Gaussian generator.</li>
+<li><em>Description</em>: The mean value for the wind generated, expressed in kilometers per hour (km/h), for the multivariate
+Gaussian generator.</li>
 <li><em>Datatype</em>: <code>double</code> array, length 3</li>
 <li><em>Range</em>: <code>(0.0, MAX_DOUBLE)</code></li>
 </ul>
 <p><strong><code>wind_generation.mvgaussian_params.cov</code></strong></p>
 <ul>
-<li><em>Description</em>: The covariance matrix for the generated wind, represented as a string formatted as a 2D <code>double</code> array, since ROS parameters do not support native 2D array types.</li>
+<li><em>Description</em>: The covariance matrix for the generated wind, represented as a string formatted as a 2D <code>double</code> array,
+since ROS parameters do not support native 2D array types.</li>
 <li><em>Datatype</em>: <code>string</code></li>
 <li><em>Range</em>: <code>(0.0, MAX_DOUBLE)</code></li>
 </ul>
 <p><strong><code>current_generation.mvgaussian_params.mean</code></strong></p>
 <ul>
-<li><em>Description</em>: The mean value for the current generated, expressed in kilometers per hour (km/h), for the multivariate Gaussian generator.</li>
+<li><em>Description</em>: The mean value for the current generated, expressed in kilometers per hour (km/h), for the multivariate
+Gaussian generator.</li>
 <li><em>Datatype</em>: <code>double</code> array, length 3</li>
 <li><em>Range</em>: <code>(0.0, MAX_DOUBLE)</code></li>
 </ul>
 <p><strong><code>current_generation.mvgaussian_params.cov</code></strong></p>
 <ul>
-<li><em>Description</em>: The covariance matrix for the generated current, represented as a string formatted as a 2D <code>double</code> array, since ROS parameters do not support native 2D array types.</li>
+<li><em>Description</em>: The covariance matrix for the generated current, represented as a string formatted as a 2D <code>double</code>
+array, since ROS parameters do not support native 2D array types.</li>
 <li><em>Datatype</em>: <code>string</code></li>
 <li><em>Range</em>: <code>(0.0, MAX_DOUBLE)</code></li>
 </ul>
