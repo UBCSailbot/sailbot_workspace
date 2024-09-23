@@ -32,9 +32,9 @@ def shutdown_handler(signum: int, frame: Any) -> None:
 
 def main(args=None):
     rclpy.init(args=args)
-    node = DataCollectionNode()
     if is_collection_enabled():
         try:
+            node = DataCollectionNode()
             # TODO Explore alternatives to using the signal library, such as ROS event handlers
             signal.signal(signal.SIGINT, shutdown_handler)
             rclpy.spin(node)
