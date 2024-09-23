@@ -215,6 +215,12 @@ value. Otherwise, the trim tab angle is determined by the wingsail controller.
 - _Datatype_: `double`
 - _Range_: `(0.0, MAX_DOUBLE)`
 
+**`wingsail.actuation_request_period_sec`**
+
+- _Description_: How often the sail action server requests a wingsail actuation.
+- _Datatype_: `double`
+- _Range_: `(0.0, MAX_DOUBLE)`
+
 **`wind_sensor.constant_params.value`**
 
 - _Description_: Specifies the constant vector returned by the constant generator that represents the wind velocity in kmph.
@@ -252,10 +258,32 @@ specified within an array: one for the `x` component, and one for the `y` compon
 - _Datatype_: `string`
 - _Acceptable Values_: `gaussian`, `constant`
 
-**`wingsail.actuation_request_period_sec`**
+**`wind_generation.mvgaussian_params.mean`**
 
-- _Description_: How often the sail action server requests a wingsail actuation.
-- _Datatype_: `double`
+- _Description_: The mean value for the wind generated, expressed in kilometers per hour (km/h), for the multivariate
+Gaussian generator.
+- _Datatype_: `double` array, length 3
+- _Range_: `(0.0, MAX_DOUBLE)`
+
+**`wind_generation.mvgaussian_params.cov`**
+
+- _Description_: The covariance matrix for the generated wind, represented as a string formatted as a 2D `double` array,
+since ROS parameters do not support native 2D array types.
+- _Datatype_: `string`
+- _Range_: `(0.0, MAX_DOUBLE)`
+
+**`current_generation.mvgaussian_params.mean`**
+
+- _Description_: The mean value for the current generated, expressed in kilometers per hour (km/h), for the multivariate
+Gaussian generator.
+- _Datatype_: `double` array, length 3
+- _Range_: `(0.0, MAX_DOUBLE)`
+
+**`current_generation.mvgaussian_params.cov`**
+
+- _Description_: The covariance matrix for the generated current, represented as a string formatted as a 2D `double`
+array, since ROS parameters do not support native 2D array types.
+- _Datatype_: `string`
 - _Range_: `(0.0, MAX_DOUBLE)`
 
 ### `data_collection_node`
