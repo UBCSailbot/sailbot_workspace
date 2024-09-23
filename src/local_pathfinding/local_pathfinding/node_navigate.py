@@ -1,9 +1,9 @@
 """The main node of the local_pathfinding package, represented by the `Sailbot` class."""
 
+import custom_interfaces.msg as ci
 import rclpy
 from rclpy.node import Node
 
-import custom_interfaces.msg as ci
 from local_pathfinding.local_path import LocalPath
 
 
@@ -105,7 +105,7 @@ class Sailbot(Node):
         self.gps = None
         self.global_path = None
         self.filtered_wind_sensor = None
-
+        
         # attributes
         self.local_path = LocalPath(parent_logger=self.get_logger())
         self.planner = self.get_parameter("path_planner").get_parameter_value().string_value
