@@ -2579,6 +2579,12 @@ value. Otherwise, the trim tab angle is determined by the wingsail controller.</
 <li><em>Datatype</em>: <code>double</code></li>
 <li><em>Range</em>: <code>(0.0, MAX_DOUBLE)</code></li>
 </ul>
+<p><strong><code>wingsail.actuation_request_period_sec</code></strong></p>
+<ul>
+<li><em>Description</em>: How often the sail action server requests a wingsail actuation.</li>
+<li><em>Datatype</em>: <code>double</code></li>
+<li><em>Range</em>: <code>(0.0, MAX_DOUBLE)</code></li>
+</ul>
 <p><strong><code>wind_sensor.constant_params.value</code></strong></p>
 <ul>
 <li><em>Description</em>: Specifies the constant vector returned by the constant generator that represents the wind velocity in kmph.
@@ -2618,10 +2624,32 @@ specified within an array: one for the <code>x</code> component, and one for the
 <li><em>Datatype</em>: <code>string</code></li>
 <li><em>Acceptable Values</em>: <code>gaussian</code>, <code>constant</code></li>
 </ul>
-<p><strong><code>wingsail.actuation_request_period_sec</code></strong></p>
+<p><strong><code>wind_generation.mvgaussian_params.mean</code></strong></p>
 <ul>
-<li><em>Description</em>: How often the sail action server requests a wingsail actuation.</li>
-<li><em>Datatype</em>: <code>double</code></li>
+<li><em>Description</em>: The mean value for the wind generated, expressed in kilometers per hour (km/h), for the multivariate
+Gaussian generator.</li>
+<li><em>Datatype</em>: <code>double</code> array, length 3</li>
+<li><em>Range</em>: <code>(0.0, MAX_DOUBLE)</code></li>
+</ul>
+<p><strong><code>wind_generation.mvgaussian_params.cov</code></strong></p>
+<ul>
+<li><em>Description</em>: The covariance matrix for the generated wind, represented as a string formatted as a 2D <code>double</code> array,
+since ROS parameters do not support native 2D array types.</li>
+<li><em>Datatype</em>: <code>string</code></li>
+<li><em>Range</em>: <code>(0.0, MAX_DOUBLE)</code></li>
+</ul>
+<p><strong><code>current_generation.mvgaussian_params.mean</code></strong></p>
+<ul>
+<li><em>Description</em>: The mean value for the current generated, expressed in kilometers per hour (km/h), for the multivariate
+Gaussian generator.</li>
+<li><em>Datatype</em>: <code>double</code> array, length 3</li>
+<li><em>Range</em>: <code>(0.0, MAX_DOUBLE)</code></li>
+</ul>
+<p><strong><code>current_generation.mvgaussian_params.cov</code></strong></p>
+<ul>
+<li><em>Description</em>: The covariance matrix for the generated current, represented as a string formatted as a 2D <code>double</code>
+array, since ROS parameters do not support native 2D array types.</li>
+<li><em>Datatype</em>: <code>string</code></li>
 <li><em>Range</em>: <code>(0.0, MAX_DOUBLE)</code></li>
 </ul>
 <h3 id="data_collection_node"><code>data_collection_node</code><a class="headerlink" href="#data_collection_node" title="Permanent link">&para;</a></h3>
