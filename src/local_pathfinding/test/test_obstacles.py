@@ -12,7 +12,6 @@ from custom_interfaces.msg import (
     HelperSpeed,
 )
 from shapely.geometry import MultiPolygon, Point, Polygon
-from shapely.strtree import STRtree
 
 from local_pathfinding.coord_systems import XY, latlon_to_xy, meters_to_km
 from local_pathfinding.obstacles import BOAT_BUFFER, Boat, Land, Obstacle
@@ -23,11 +22,11 @@ def load_pkl(file_path: str) -> Any:
         return pickle.load(f)
 
 
-SPATIAL_INDEX = load_pkl("/workspaces/sailbot_workspace/src/local_pathfinding/land/pkl/sindex.pkl")
+LAND = load_pkl("/workspaces/sailbot_workspace/src/local_pathfinding/land/pkl/land.pkl")
 
 # LAND OBSTACLES ----------------------------------------------------------------------------------
 """Test Plan
-Get land OK
+Create Land OK
 isValid OK
 update collision zone OK
 update sailbot data OK
@@ -36,16 +35,14 @@ latlon polys to xy polys OK
 """
 
 
-# Test that update land collision zone successfully retrieves data from the shape file on disk
-# latlon points are hand picked from a map to ensure the area contains some land
 @pytest.mark.parametrize(
-    "reference_point, sailbot_position, next_waypoint, sindex, bbox_buffer_amount",
+    "reference_point, sailbot_position, next_waypoint, all_land_data, bbox_buffer_amount",
     [
         (
             HelperLatLon(latitude=48.927646856442834, longitude=-125.18555198866946),
             HelperLatLon(latitude=48.842045056421135, longitude=-125.29181185529734),
             HelperLatLon(latitude=48.92893492027311, longitude=-125.37140872956104),
-            SPATIAL_INDEX,
+            LAND,
             0.1,  # degrees
         )
     ],
@@ -54,14 +51,14 @@ def test_get_land(
     reference_point: HelperLatLon,
     sailbot_position: HelperLatLon,
     next_waypoint: HelperLatLon,
-    sindex: STRtree,
+    all_land_data: MultiPolygon,
     bbox_buffer_amount: float,
 ):
     land = Land(
         reference=reference_point,
         sailbot_position=sailbot_position,
         next_waypoint=next_waypoint,
-        sindex=sindex,
+        all_land_data=all_land_data,
         bbox_buffer_amount=bbox_buffer_amount,
     )
 
@@ -70,13 +67,13 @@ def test_get_land(
 
 # Test is_valid
 @pytest.mark.parametrize(
-    "reference_point, sailbot_position, next_waypoint, sindex, bbox_buffer_amount, invalid_point, valid_point, mock_land",  # noqa
+    "reference_point, sailbot_position, next_waypoint, all_land_data, bbox_buffer_amount, invalid_point, valid_point, mock_land",  # noqa
     [
         (
             HelperLatLon(latitude=52.26, longitude=-136.91),
             HelperLatLon(latitude=51.95, longitude=-136.26),
             HelperLatLon(latitude=51.96, longitude=-136.27),
-            SPATIAL_INDEX,
+            LAND,
             0.1,  # degrees
             XY(0.5, 0.5),
             XY(5, 5),
@@ -94,7 +91,7 @@ def test_is_valid_land(
     reference_point: HelperLatLon,
     sailbot_position: HelperLatLon,
     next_waypoint: HelperLatLon,
-    sindex: STRtree,
+    all_land_data: MultiPolygon,
     bbox_buffer_amount: float,
     invalid_point: XY,
     valid_point: XY,
@@ -104,7 +101,7 @@ def test_is_valid_land(
         reference=reference_point,
         sailbot_position=sailbot_position,
         next_waypoint=next_waypoint,
-        sindex=sindex,
+        all_land_data=all_land_data,
         bbox_buffer_amount=bbox_buffer_amount,
     )
 
@@ -115,13 +112,13 @@ def test_is_valid_land(
 
 # Test land collision zone is created/updated successfully
 @pytest.mark.parametrize(
-    "reference_point, sailbot_position, next_waypoint, sindex, bbox_buffer_amount",
+    "reference_point, sailbot_position, next_waypoint, all_land_data, bbox_buffer_amount",
     [
         (
             HelperLatLon(latitude=48.927646856442834, longitude=-125.18555198866946),
             HelperLatLon(latitude=48.842045056421135, longitude=-125.29181185529734),
             HelperLatLon(latitude=48.92893492027311, longitude=-125.37140872956104),
-            SPATIAL_INDEX,
+            LAND,
             0.1,  # degrees
         )
     ],
@@ -130,14 +127,14 @@ def test_land_collision_zone(
     reference_point: HelperLatLon,
     sailbot_position: HelperLatLon,
     next_waypoint: HelperLatLon,
-    sindex: STRtree,
+    all_land_data: MultiPolygon,
     bbox_buffer_amount,
 ):
     land = Land(
         reference=reference_point,
         sailbot_position=sailbot_position,
         next_waypoint=next_waypoint,
-        sindex=sindex,
+        all_land_data=all_land_data,
         bbox_buffer_amount=bbox_buffer_amount,
     )
     land.update_collision_zone()
@@ -148,14 +145,14 @@ def test_land_collision_zone(
 
 # Test updating Sailbot data
 @pytest.mark.parametrize(
-    "reference_point, sailbot_position_1, sailbot_position_2, next_waypoint, sindex, bbox_buffer_amount",  # noqa
+    "reference_point, sailbot_position_1, sailbot_position_2, next_waypoint, all_land_data, bbox_buffer_amount",  # noqa
     [
         (
             HelperLatLon(latitude=52.26, longitude=-136.91),
             HelperLatLon(latitude=51.0, longitude=-136.0),
             HelperLatLon(latitude=52.0, longitude=-137.0),
             HelperLatLon(latitude=53.0, longitude=-138.0),
-            SPATIAL_INDEX,
+            LAND,
             0.1,  # degrees
         )
     ],
@@ -165,14 +162,14 @@ def test_update_sailbot_data_land(
     sailbot_position_1: HelperLatLon,
     sailbot_position_2: HelperLatLon,
     next_waypoint: HelperLatLon,
-    sindex: STRtree,
+    all_land_data: MultiPolygon,
     bbox_buffer_amount,
 ):
     land = Land(
         reference=reference_point,
         sailbot_position=sailbot_position_1,
         next_waypoint=next_waypoint,
-        sindex=sindex,
+        all_land_data=all_land_data,
         bbox_buffer_amount=bbox_buffer_amount,
     )
 
@@ -184,14 +181,14 @@ def test_update_sailbot_data_land(
 
 # Test update reference point
 @pytest.mark.parametrize(
-    "reference_point_1,reference_point_2,sailbot_position,next_waypoint,sindex,bbox_buffer_amount",  # noqa
+    "reference_point_1,reference_point_2,sailbot_position,next_waypoint,all_land_data,bbox_buffer_amount",  # noqa
     [
         (
             HelperLatLon(latitude=52.2, longitude=-136.9),
             HelperLatLon(latitude=51.0, longitude=-136.0),
             HelperLatLon(latitude=51.95785651405779, longitude=-136.26282894969611),
             HelperLatLon(latitude=50.06442134644842, longitude=-130.7725487868677),
-            SPATIAL_INDEX,
+            LAND,
             0.1,  # degrees
         ),
     ],
@@ -201,14 +198,14 @@ def test_update_reference_point_land(
     reference_point_2: HelperLatLon,
     sailbot_position: HelperLatLon,
     next_waypoint: HelperLatLon,
-    sindex: STRtree,
+    all_land_data: MultiPolygon,
     bbox_buffer_amount,
 ):
     land = Land(
         reference=reference_point_1,
         sailbot_position=sailbot_position,
         next_waypoint=next_waypoint,
-        sindex=sindex,
+        all_land_data=all_land_data,
         bbox_buffer_amount=bbox_buffer_amount,
     )
 

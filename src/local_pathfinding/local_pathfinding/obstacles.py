@@ -3,17 +3,13 @@
 import math
 from typing import List, Optional
 
-import fiona
 import numpy as np
 from custom_interfaces.msg import HelperAISShip, HelperLatLon
-from geopandas import GeoDataFrame
 from shapely import union_all
 from shapely.affinity import affine_transform
 from shapely.geometry import MultiPolygon, Point, Polygon, box
-from shapely.strtree import STRtree
 
 from local_pathfinding.coord_systems import XY, latlon_to_xy, meters_to_km
-from local_pathfinding.generate_land_data import COMPLETE_DATA_FILE
 
 # Constants
 PROJ_TIME_NO_COLLISION = 3  # hours
@@ -129,12 +125,12 @@ class Land(Obstacle):
         reference: HelperLatLon,
         sailbot_position: HelperLatLon,
         next_waypoint: HelperLatLon,
-        sindex: STRtree,
+        all_land_data: MultiPolygon,
         bbox_buffer_amount: float,
     ):
         super().__init__(reference, sailbot_position)
         self.next_waypoint = next_waypoint
-        self.sindex = sindex
+        self.all_land_data = all_land_data
         self.bbox_buffer_amount = bbox_buffer_amount
         self._update_land_collision_zone()
 
@@ -148,53 +144,26 @@ class Land(Obstacle):
         """
         if land_multi_polygon is not None:
             # for testing
-            # union to remove overlaps between polygons
+            # to remove overlaps between polygons
             self.collision_zone = union_all(land_multi_polygon)
             return
 
         if bbox is None:
 
-            # create a box around sailbot
             sailbot_box = Point(
                 self.sailbot_position_latlon.longitude, self.sailbot_position_latlon.latitude
             ).buffer(self.bbox_buffer_amount, cap_style="square", join_style=2)
-            # create a box around the next waypoint
+
             waypoint_box = Point(self.next_waypoint.longitude, self.next_waypoint.latitude).buffer(
                 self.bbox_buffer_amount, cap_style="square", join_style=2
             )
-            # create a bounding box around both boxes
             bbox = box(*MultiPolygon([sailbot_box, waypoint_box]).bounds)
 
-        row_indices = list(self.sindex.query(geometry=bbox, predicate="intersects"))
+        latlon_polygons = self.all_land_data.intersection(bbox)
 
-        if len(row_indices) == 0:
-            self.collision_zone = MultiPolygon()  # no land nearby
-            return
+        xy_polygons = Land._latlon_polygons_to_xy_polygons(latlon_polygons, self.reference)
 
-        latlon_polygons = None
-        with fiona.open(COMPLETE_DATA_FILE, "r") as reader:
-            latlon_polygons = GeoDataFrame(
-                geometry=[reader.get(idx)["geometry"] for idx in row_indices]
-            )["geometry"]
-
-        xy_polygons = self._latlon_polygons_to_xy_polygons(latlon_polygons, self.reference)
-
-        # local_polygons will already have a buffer applied before runtime
-        # union_all to eliminate any overlaps between polygons
-        bbox_xy = Land._latlon_polygons_to_xy_polygons([bbox], self.reference)[0]
-        # we don't precompute unions because we could end up with excessively large polygons
-        non_overlapping_polygons = union_all(MultiPolygon(xy_polygons)).geoms
-        clipped_polygons = []
-
-        for poly in non_overlapping_polygons:
-            clipped_poly = poly.intersection(bbox_xy)
-            # if clipped_poly is a MultiPolygon, append each Polygon separately
-            if clipped_poly.geom_type == "MultiPolygon":
-                clipped_polygons.extend(list(clipped_poly.geoms))
-            else:
-                clipped_polygons.append(clipped_poly)
-
-        self.collision_zone = MultiPolygon(clipped_polygons)
+        self.collision_zone = union_all(MultiPolygon(xy_polygons))
 
     @staticmethod
     def _latlon_polygons_to_xy_polygons(
