@@ -318,7 +318,7 @@ class Boat(Obstacle):
         quad_roots = np.roots(quadratic_coefficients)
 
         # filter out only positive and real roots
-        quad_roots = np.array([i for i in quad_roots if i >= 0 and i.imag == 0])
+        quad_roots = [i for i in quad_roots if i >= 0 and i.imag == 0]  # type: ignore
 
         if len(quad_roots) == 0:
             # Sailbot and this Boat will never collide

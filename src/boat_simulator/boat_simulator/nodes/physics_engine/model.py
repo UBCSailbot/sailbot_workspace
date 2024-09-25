@@ -5,7 +5,7 @@ from typing import Tuple
 import numpy as np
 from numpy.typing import NDArray
 
-from boat_simulator.common.constants import BoatProperties
+from boat_simulator.common.constants import BOAT_PROPERTIES
 from boat_simulator.common.types import Scalar
 from boat_simulator.nodes.physics_engine.kinematics_computation import BoatKinematics
 from boat_simulator.nodes.physics_engine.kinematics_data import KinematicsData
@@ -28,7 +28,7 @@ class BoatState:
             timestep (Scalar): The time interval for calculations, expressed in seconds (s).
         """
         self.__kinematics_computation = BoatKinematics(
-            timestep, BoatProperties.mass, BoatProperties.inertia
+            timestep, BOAT_PROPERTIES.mass, BOAT_PROPERTIES.inertia
         )
 
     def step(
@@ -88,7 +88,8 @@ class BoatState:
                 the relative reference frame, expressed in newtons (N), and the second element
                 represents the net torque, expressed in newton-meters (N•m).
         """
-        raise NotImplementedError()
+        # TODO Implement this function
+        return (np.array([0, 0, 0]), np.array([0, 0, 0]))
 
     @property
     def global_position(self) -> NDArray:

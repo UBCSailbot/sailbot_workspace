@@ -16,8 +16,6 @@
   <exec_depend>python3-pyproj</exec_depend>
   <exec_depend>python3-shapely</exec_depend>
   <exec_depend>python3-geopandas</exec_depend>
-  <exec_depend>python3-fiona</exec_depend>
-  <exec_depend>python3-tqdm</exec_depend>
 
   <!--Test Dependencies-->
   <test_depend>ament_copyright</test_depend>

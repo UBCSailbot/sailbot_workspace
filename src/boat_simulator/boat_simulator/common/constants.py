@@ -38,16 +38,34 @@ class PhysicsEnginePublisherTopics:
 
 @dataclass
 class BoatProperties:
-    sail_lift_coeffs: Dict[Scalar, Scalar]  # Degrees, Dimensionless
-    sail_drag_coeffs: Dict[Scalar, Scalar]  # Degrees, Dimensionless
-    sail_areas: Dict[Scalar, Scalar]  # Degrees, Square meters (m^2)
-    rudder_drag_coeffs: Dict[Scalar, Scalar]  # Degrees, Dimensionless
-    rudder_areas: Dict[Scalar, Scalar]  # Degrees, Square meters (m^2)
-    sail_dist: Scalar  # Meters (m)
-    rudder_dist: Scalar  # Meters (m)
-    hull_drag_factor: Scalar  # Dimensionless
-    mass: Scalar  # Kilograms (kg)
-    inertia: NDArray  # Kilograms-meters squared (kg•m^2)
+    # A lookup table that maps angles of attack (in degrees) to their corresponding lift
+    # coefficients.
+    sail_lift_coeffs: Dict[Scalar, Scalar]
+    # A lookup table that maps angles of attack (in degrees) to their corresponding drag
+    # coefficients.
+    sail_drag_coeffs: Dict[Scalar, Scalar]
+    # A lookup table that maps angles of attack (in degrees) to their corresponding sail areas
+    # (in square meters).
+    sail_areas: Dict[Scalar, Scalar]
+    # A lookup table that maps angles of attack (in degrees) to their corresponding drag
+    # coefficients for the rudder.
+    rudder_drag_coeffs: Dict[Scalar, Scalar]
+    # A lookup table that maps angles of attack (in degrees) to their corresponding rudder areas
+    # (in square meters).
+    rudder_areas: Dict[Scalar, Scalar]
+    # A scalar representing the distance from the center of effort of the sail to the pivot point
+    # (in meters).
+    sail_dist: Scalar
+    # A scalar representing the distance from the center of effort of the rudder to the pivot
+    # point (in meters).
+    rudder_dist: Scalar
+    # A dimensionless scalar representing the drag factor of the hull as a function of the boat's
+    # velocity.
+    hull_drag_factor: Scalar
+    # The mass of the boat (in kilograms).
+    mass: Scalar
+    # The inertia of the boat (in kilograms-meters squared).
+    inertia: NDArray
 
 
 # Directly accessible constants
@@ -88,7 +106,7 @@ RUDDER_MAX_ANGLE_RANGE = (-45, 45)
 # Max sail actuator control angle range in degrees, min angle [0], max angle [1]
 SAIL_MAX_ANGLE_RANGE = (-7, 7)
 
-# Predetermined values for BoatProperties
+# Constants related to the physical and mechanical properties of Polaris
 # TODO These are placeholder values which should be replaced when we have real values.
 BOAT_PROPERTIES = BoatProperties(
     sail_lift_coeffs={0.0: 0.0, 5.0: 0.2, 10.0: 0.5, 15.0: 0.7, 20.0: 1.0},
@@ -96,9 +114,9 @@ BOAT_PROPERTIES = BoatProperties(
     sail_areas={0.0: 20.0, 5.0: 19.8, 10.0: 19.5, 15.0: 19.2, 20.0: 18.8},
     rudder_drag_coeffs={0.0: 0.2, 5.0: 0.22, 10.0: 0.25, 15.0: 0.28, 20.0: 0.3},
     rudder_areas={0.0: 2.0, 5.0: 1.9, 10.0: 1.8, 15.0: 1.7, 20.0: 1.6},
-    sail_dist=5.0,
-    rudder_dist=1.5,
+    sail_dist=0.5,
+    rudder_dist=1.0,
     hull_drag_factor=0.05,
-    mass=200.0,
-    inertia=np.array([[10, 0, 0], [0, 30, 0], [0, 0, 20]], dtype=np.float32),
+    mass=1500.0,
+    inertia=np.array([[125, 0, 0], [0, 1125, 0], [0, 0, 500]], dtype=np.float32),
 )
