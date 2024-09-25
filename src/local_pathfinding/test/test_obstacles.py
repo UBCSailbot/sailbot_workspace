@@ -36,7 +36,7 @@ latlon polys to xy polys OK
 
 
 @pytest.mark.parametrize(
-    "reference_point, sailbot_position, next_waypoint, all_land_data, bbox_buffer_amount",
+    "reference_point, sailbot_position, next_waypoint, all_land_data, bbox_buffer_amount, land_present",  # noqa
     [
         (
             HelperLatLon(latitude=48.927646856442834, longitude=-125.18555198866946),
@@ -44,15 +44,25 @@ latlon polys to xy polys OK
             HelperLatLon(latitude=48.92893492027311, longitude=-125.37140872956104),
             LAND,
             0.1,  # degrees
-        )
+            True,
+        ),
+        (
+            HelperLatLon(latitude=44.112832, longitude=-156.008729),
+            HelperLatLon(latitude=44.112832, longitude=-151.260136),
+            HelperLatLon(latitude=46.097615, longitude=-156.800161),
+            LAND,
+            0.1,  # degrees
+            False,
+        ),
     ],
 )
-def test_get_land(
+def test_create_land(
     reference_point: HelperLatLon,
     sailbot_position: HelperLatLon,
     next_waypoint: HelperLatLon,
     all_land_data: MultiPolygon,
     bbox_buffer_amount: float,
+    land_present: bool,
 ):
     land = Land(
         reference=reference_point,
@@ -62,7 +72,11 @@ def test_get_land(
         bbox_buffer_amount=bbox_buffer_amount,
     )
 
-    assert len(land.collision_zone.geoms) != 0  # type: ignore
+    assert isinstance(land.collision_zone, MultiPolygon)
+    if land_present:
+        assert len(land.collision_zone.geoms) != 0  # type: ignore
+    else:
+        assert len(land.collision_zone.geoms) == 0  # type: ignore
 
 
 # Test is_valid
@@ -275,10 +289,37 @@ def test_update_reference_point_land(
                             (-125.674801, 50.797603),
                         ]
                     ),
+                    Polygon(
+                        [
+                            (-123.872094, 50.252825),
+                            (-124.135905, 49.530913),
+                            (-125.938612, 49.758558),
+                            (-125.674801, 50.797603),
+                        ]
+                    ),
                 ]
             ),
             HelperLatLon(latitude=51.527884, longitude=-132.643800),
-        )
+        ),
+        (
+            list(
+                [
+                    Polygon(
+                        [
+                            (-123.872094, 50.252825),
+                            (-124.135905, 49.530913),
+                            (-125.938612, 49.758558),
+                            (-125.674801, 50.797603),
+                        ]
+                    ),
+                ]
+            ),
+            HelperLatLon(latitude=51.527884, longitude=-132.643800),
+        ),
+        (
+            list([]),
+            HelperLatLon(latitude=51.527884, longitude=-132.643800),
+        ),
     ],
 )
 def test_latlon_polygons_to_xy_polygons(
@@ -287,21 +328,23 @@ def test_latlon_polygons_to_xy_polygons(
 
     xy_polygons = Land._latlon_polygons_to_xy_polygons(latlon_polygons, reference_point)
     assert isinstance(xy_polygons, list)
+    assert len(xy_polygons) == len(latlon_polygons)
 
-    for i, xy_poly in enumerate(xy_polygons):
-        latlon_poly = latlon_polygons[i]
-        assert isinstance(xy_poly, Polygon)
-        assert xy_poly.exterior.coords is not None
+    if len(xy_polygons) > 0:
+        for i, xy_poly in enumerate(xy_polygons):
+            latlon_poly = latlon_polygons[i]
+            assert isinstance(xy_poly, Polygon)
+            assert xy_poly.exterior.coords is not None
 
-        for j, xy_point in enumerate(xy_poly.exterior.coords):
-            latlon_point = latlon_poly.exterior.coords[j]
-            assert isinstance(xy_point, tuple)
-            assert xy_point == pytest.approx(
-                latlon_to_xy(
-                    reference_point,
-                    HelperLatLon(longitude=latlon_point[0], latitude=latlon_point[1]),
+            for j, xy_point in enumerate(xy_poly.exterior.coords):
+                latlon_point = latlon_poly.exterior.coords[j]
+                assert isinstance(xy_point, tuple)
+                assert xy_point == pytest.approx(
+                    latlon_to_xy(
+                        reference_point,
+                        HelperLatLon(longitude=latlon_point[0], latitude=latlon_point[1]),
+                    )
                 )
-            )
 
 
 # BOAT OBSTACLES ----------------------------------------------------------------------------------
