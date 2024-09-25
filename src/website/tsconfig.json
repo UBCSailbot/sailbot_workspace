@@ -28,7 +28,10 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "hooks/useSessionState.js"
-, "lib/dotenv.js", "models/helper/parser.js", "utils/DownloadData.js"  ],
+    "hooks/useSessionState.js",
+    "lib/dotenv.js",
+    "models/helper/parser.js",
+    "utils/DownloadData.js"
+  ],
   "exclude": ["node_modules"]
 }
