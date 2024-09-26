@@ -5,7 +5,6 @@ from typing import List, Optional
 
 import numpy as np
 from custom_interfaces.msg import HelperAISShip, HelperLatLon
-from shapely import union_all
 from shapely.affinity import affine_transform
 from shapely.geometry import MultiPolygon, Point, Polygon, box
 
@@ -144,8 +143,7 @@ class Land(Obstacle):
         """
         if land_multi_polygon is not None:
             # for testing
-            # to remove overlaps between polygons
-            self.collision_zone = union_all(land_multi_polygon)
+            self.collision_zone = land_multi_polygon
             return
 
         if bbox is None:
@@ -163,7 +161,7 @@ class Land(Obstacle):
 
         xy_polygons = Land._latlon_polygons_to_xy_polygons([latlon_polygons], self.reference)
 
-        collision_zone = union_all(MultiPolygon(xy_polygons))
+        collision_zone = MultiPolygon(xy_polygons)
 
         if collision_zone.geom_type == "MultiPolygon":
             self.collision_zone = collision_zone
