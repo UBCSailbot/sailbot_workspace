@@ -141,9 +141,14 @@ class Land(Obstacle):
         all land obstacles within either a bounding box input as an argument
         or a rectangle that bounds boxes around Sailbot and the next global waypoint.
         """
-        if land_multi_polygon is not None:
-            # for testing
-            self.collision_zone = land_multi_polygon
+        if land_multi_polygon is not None:  # for testing
+
+            collision_zone = land_multi_polygon.buffer(0)
+
+            if collision_zone.geom_type == "Polygon":
+                collision_zone = MultiPolygon([collision_zone])
+
+            self.collision_zone = collision_zone
             return
 
         if bbox is None:
@@ -163,10 +168,19 @@ class Land(Obstacle):
 
         collision_zone = MultiPolygon(xy_polygons)
 
-        if collision_zone.geom_type == "MultiPolygon":
-            self.collision_zone = collision_zone
+        if len(collision_zone.geoms) > 0:
+            # if collision_zone is empty, buffer(0) will return an empty Polygon
+            # not a MultiPolygon
+            # buffer(0) will repair invalid/overlapping geometry
+            # otherwise we cant run .contains() on it
+            collision_zone = collision_zone.buffer(0)
 
-        self.collision_zone = MultiPolygon([collision_zone])
+            if collision_zone.geom_type == "Polygon":
+                collision_zone = MultiPolygon([collision_zone])
+        else:
+            collision_zone = MultiPolygon()
+
+        self.collision_zone = collision_zone
 
     @staticmethod
     def _latlon_polygons_to_xy_polygons(
