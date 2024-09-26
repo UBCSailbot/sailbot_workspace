@@ -1,10 +1,13 @@
 """The main node of the local_pathfinding package, represented by the `Sailbot` class."""
 
 import rclpy
+from pyproj import Geod
 from rclpy.node import Node
 
 import custom_interfaces.msg as ci
 from local_pathfinding.local_path import LocalPath
+
+GEODESIC = Geod(ellps="WGS84")
 
 
 def main(args=None):
@@ -175,8 +178,22 @@ class Sailbot(Node):
             self.gps, self.ais_ships, self.global_path, self.filtered_wind_sensor, self.planner
         )
 
-        # TODO: create function to compute the heading from current position to next local waypoint
-        return 0.0
+        current_waypoint = self.gps.lat_lon
+        next_waypoint = None
+        waypoints = self.local_path.waypoints
+        for i in range(len(waypoints)):
+            if waypoints[i] == current_waypoint and i < len(waypoints) - 1:
+                next_waypoint = waypoints[i + 1]
+                break
+        if next_waypoint is None:
+            return 0.0
+        heading = GEODESIC.inv(
+            lats1=current_waypoint.latitude,
+            lons1=current_waypoint.longitude,
+            lats2=next_waypoint.latitude,
+            lons2=next_waypoint.longitude,
+        )[0]
+        return heading
 
     def update_params(self):
         """Update instance variables that depend on parameters if they have changed."""
