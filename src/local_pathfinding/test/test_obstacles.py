@@ -173,7 +173,7 @@ def test_land_collision_zone(
         )
     ],
 )
-def test_custom_bbox_passed_to_update_collision_zone(
+def test_custom_state_space_passed_to_update_collision_zone(
     reference_point: HelperLatLon,
     sailbot_position: HelperLatLon,
     next_waypoint: HelperLatLon,
@@ -198,9 +198,9 @@ def test_custom_bbox_passed_to_update_collision_zone(
         bbox_buffer_amount, cap_style="square", join_style=2
     )
     # create a bounding box around both boxes
-    custom_bbox = box(*MultiPolygon([sailbot_box, waypoint_box]).bounds)
+    custom_state_space = box(*MultiPolygon([sailbot_box, waypoint_box]).bounds)
 
-    land.update_collision_zone(bbox=custom_bbox)
+    land.update_collision_zone(state_space=custom_state_space)
 
     assert isinstance(land.collision_zone, MultiPolygon)
     assert len(land.collision_zone.geoms) != 0

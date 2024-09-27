@@ -70,7 +70,8 @@ class Obstacle:
         else:
             # Land Obstacle
             self._update_land_collision_zone(  # type: ignore
-                bbox=kwargs.get("bbox"), land_multi_polygon=kwargs.get("land_multi_polygon")
+                state_space=kwargs.get("state_space"),
+                land_multi_polygon=kwargs.get("land_multi_polygon"),
             )
 
     def update_sailbot_data(
@@ -137,7 +138,7 @@ class Land(Obstacle):
         self._update_land_collision_zone()
 
     def _update_land_collision_zone(
-        self, bbox: Polygon = None, land_multi_polygon: MultiPolygon = None
+        self, state_space: Polygon = None, land_multi_polygon: MultiPolygon = None
     ) -> None:
         """
         Updates the Land object's collision zone with a MultiPolygon representing
@@ -154,7 +155,7 @@ class Land(Obstacle):
             self.collision_zone = collision_zone
             return
 
-        if bbox is None:
+        if state_space is None:  # create a deafult one
 
             sailbot_box = Point(
                 self.sailbot_position_latlon.longitude, self.sailbot_position_latlon.latitude
@@ -163,9 +164,9 @@ class Land(Obstacle):
             waypoint_box = Point(self.next_waypoint.longitude, self.next_waypoint.latitude).buffer(
                 self.bbox_buffer_amount, cap_style="square", join_style=2
             )
-            bbox = box(*MultiPolygon([sailbot_box, waypoint_box]).bounds)
+            state_space = box(*MultiPolygon([sailbot_box, waypoint_box]).bounds)
 
-        latlon_polygons = self.all_land_data.intersection(bbox)
+        latlon_polygons = self.all_land_data.intersection(state_space)
 
         xy_polygons = Land._latlon_polygons_to_xy_polygons([latlon_polygons], self.reference)
 
