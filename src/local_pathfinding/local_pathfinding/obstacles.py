@@ -142,8 +142,8 @@ class Land(Obstacle):
     ) -> None:
         """
         Updates the Land object's collision zone with a MultiPolygon representing
-        all land obstacles within either a bounding box input as an argument
-        or a rectangle that bounds boxes around Sailbot and the next global waypoint.
+        all land obstacles within either a state_space input as an argument
+        or a default rectangle that bounds boxes around Sailbot and the next global waypoint.
         """
         if land_multi_polygon is not None:  # for testing
 
@@ -174,7 +174,6 @@ class Land(Obstacle):
 
         if len(collision_zone.geoms) > 0:
             # if collision_zone is empty, buffer(0) will return an empty Polygon
-            # not a MultiPolygon
             # buffer(0) will repair invalid/overlapping geometry
             # otherwise we cant run .contains() on it
             collision_zone = collision_zone.buffer(0)
