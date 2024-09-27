@@ -27,7 +27,7 @@ LAND = load_pkl("/workspaces/sailbot_workspace/src/local_pathfinding/land/pkl/la
 # LAND OBSTACLES ----------------------------------------------------------------------------------
 """Test Plan
 Create Land OK
-Pass custom bbox
+Pass custom bbox OK
 isValid OK
 update collision zone OK
 update sailbot data OK
