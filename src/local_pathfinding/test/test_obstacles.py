@@ -11,7 +11,7 @@ from custom_interfaces.msg import (
     HelperROT,
     HelperSpeed,
 )
-from shapely.geometry import MultiPolygon, Point, Polygon
+from shapely.geometry import MultiPolygon, Point, Polygon, box
 
 from local_pathfinding.coord_systems import XY, latlon_to_xy, meters_to_km
 from local_pathfinding.obstacles import BOAT_BUFFER, Boat, Land, Obstacle
@@ -27,6 +27,7 @@ LAND = load_pkl("/workspaces/sailbot_workspace/src/local_pathfinding/land/pkl/la
 # LAND OBSTACLES ----------------------------------------------------------------------------------
 """Test Plan
 Create Land OK
+Pass custom bbox
 isValid OK
 update collision zone OK
 update sailbot data OK
@@ -119,7 +120,7 @@ def test_is_valid_land(
         bbox_buffer_amount=bbox_buffer_amount,
     )
 
-    land._update_land_collision_zone(land_multi_polygon=mock_land)
+    land.update_collision_zone(land_multi_polygon=mock_land)
     assert land.is_valid(valid_point)
     assert not land.is_valid(invalid_point)
 
@@ -155,6 +156,60 @@ def test_land_collision_zone(
 
     assert isinstance(land.collision_zone, MultiPolygon)
     assert len(land.collision_zone.geoms) != 0
+
+
+# Test passing a custom bbox to update_collision_zone works as well
+@pytest.mark.parametrize(
+    "reference_point, sailbot_position, next_waypoint, all_land_data, bbox_buffer_amount, valid_point, invalid_point",  # noqa
+    [
+        (
+            HelperLatLon(latitude=49.155485, longitude=-126.987704),
+            HelperLatLon(latitude=48.838328, longitude=-126.380390),
+            HelperLatLon(latitude=49.155485, longitude=-126.987704),
+            LAND,
+            0.1,  # degrees
+            HelperLatLon(latitude=48.955695, longitude=-126.743129),
+            HelperLatLon(latitude=49.159077, longitude=-126.322681),
+        )
+    ],
+)
+def test_custom_bbox_passed_to_update_collision_zone(
+    reference_point: HelperLatLon,
+    sailbot_position: HelperLatLon,
+    next_waypoint: HelperLatLon,
+    all_land_data: MultiPolygon,
+    bbox_buffer_amount: float,
+    valid_point: HelperLatLon,
+    invalid_point: HelperLatLon,
+):
+    land = Land(
+        reference=reference_point,
+        sailbot_position=sailbot_position,
+        next_waypoint=next_waypoint,
+        all_land_data=all_land_data,
+        bbox_buffer_amount=bbox_buffer_amount,
+    )
+
+    sailbot_box = Point(sailbot_position.longitude, sailbot_position.latitude).buffer(
+        bbox_buffer_amount, cap_style="square", join_style=2
+    )
+    # create a box around the next waypoint
+    waypoint_box = Point(next_waypoint.longitude, next_waypoint.latitude).buffer(
+        bbox_buffer_amount, cap_style="square", join_style=2
+    )
+    # create a bounding box around both boxes
+    custom_bbox = box(*MultiPolygon([sailbot_box, waypoint_box]).bounds)
+
+    land.update_collision_zone(bbox=custom_bbox)
+
+    assert isinstance(land.collision_zone, MultiPolygon)
+    assert len(land.collision_zone.geoms) != 0
+
+    valid_xy = latlon_to_xy(reference_point, valid_point)
+    invalid_xy = latlon_to_xy(reference_point, invalid_point)
+
+    assert land.is_valid(valid_xy)
+    assert not land.is_valid(invalid_xy)
 
 
 # Test updating Sailbot data

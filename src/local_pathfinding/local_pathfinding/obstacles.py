@@ -58,7 +58,7 @@ class Obstacle:
         # Point(point).within(self.collision_zone)
         return not self.collision_zone.contains(Point(*point))
 
-    def update_collision_zone(self) -> None:
+    def update_collision_zone(self, **kwargs) -> None:
         """
         Updates the collision zone of the obstacle to reflect updated attributes.
         If attributes of the obstacle have not been changed, this function will have no effect.
@@ -69,7 +69,9 @@ class Obstacle:
 
         else:
             # Land Obstacle
-            self._update_land_collision_zone()  # type: ignore
+            self._update_land_collision_zone(  # type: ignore
+                bbox=kwargs.get("bbox"), land_multi_polygon=kwargs.get("land_multi_polygon")
+            )
 
     def update_sailbot_data(
         self, sailbot_position: HelperLatLon, sailbot_speed: Optional[float] = None
@@ -112,9 +114,10 @@ class Land(Obstacle):
 
     Attributes:
         collision_zone (MultiPolygon): A collection of Polygons in (X,Y) that define regions of
-                                       land stored in the Land object
+                                       land stored in the Land object.
         next_waypoint (HelperLatLon): Lat/lon position of the next global waypoint.
-        sindex (STRtree): Spatial index of the land polygons.
+        all_land_data (MultiPolygon): MultiPolygon of absolutely all land polygons known to
+                                      Sailbot.
         bbox_buffer_amount (float): The amount of square buffer around Sailbot and around the next
                                     global waypoint. In degrees lat/lon.
     """
