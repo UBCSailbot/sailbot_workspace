@@ -191,11 +191,11 @@ def test_custom_state_space_passed_to_update_collision_zone(
     )
 
     sailbot_box = Point(sailbot_position.longitude, sailbot_position.latitude).buffer(
-        bbox_buffer_amount, cap_style="square", join_style=2
+        bbox_buffer_amount, cap_style=3, join_style=2
     )
     # create a box around the next waypoint
     waypoint_box = Point(next_waypoint.longitude, next_waypoint.latitude).buffer(
-        bbox_buffer_amount, cap_style="square", join_style=2
+        bbox_buffer_amount, cap_style=3, join_style=2
     )
     # create a bounding box around both boxes
     custom_state_space = box(*MultiPolygon([sailbot_box, waypoint_box]).bounds)

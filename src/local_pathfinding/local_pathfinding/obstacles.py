@@ -159,10 +159,10 @@ class Land(Obstacle):
 
             sailbot_box = Point(
                 self.sailbot_position_latlon.longitude, self.sailbot_position_latlon.latitude
-            ).buffer(self.bbox_buffer_amount, cap_style="square", join_style=2)
+            ).buffer(self.bbox_buffer_amount, cap_style=3, join_style=2)
 
             waypoint_box = Point(self.next_waypoint.longitude, self.next_waypoint.latitude).buffer(
-                self.bbox_buffer_amount, cap_style="square", join_style=2
+                self.bbox_buffer_amount, cap_style=3, join_style=2
             )
             state_space = box(*MultiPolygon([sailbot_box, waypoint_box]).bounds)
 
