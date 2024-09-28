@@ -374,4 +374,4 @@ ENV DEBIAN_FRONTEND=
 # install dev python3 dependencies
 RUN pip3 install \
     # for juypter notebooks
-    ipykernel
+    ipykernel \
