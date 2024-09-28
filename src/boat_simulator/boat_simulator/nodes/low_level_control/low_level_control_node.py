@@ -209,7 +209,7 @@ class LowLevelControlNode(Node):
         self.get_logger().debug("Beginning rudder actuation...")
         all_parameters = self._parameters
 
-        current_heading = self.gps.heading
+        current_heading = self.__gps.heading
         desired_heading = goal_handle.request
         current_control_ang = self.rudder_angle
         time_step = all_parameters["rudder.actuation_execution_period_sec"]
