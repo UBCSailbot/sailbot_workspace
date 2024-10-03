@@ -12,15 +12,15 @@ class FluidGenerator:
     """This class provides functionality to generate velocity vectors representing fluid movements.
 
     Attributes:
-        `generator` (VectorGenerator): The vector generator used to generate 2D fluid velocities.
+        `generator` (VectorGenerator): The vector generator used to generate 3D fluid velocities.
         `velocity` (NDArray): The most recently generated fluid velocity vector, expressed in
-            meters per second (m/s). It is expected to be a 2D vector.
+            meters per second (m/s). It is expected to be a 3D vector.
     """
 
     def __init__(self, generator: VectorGenerator):
         self.__generator = generator
         self.__velocity = np.array(self.__generator.next())
-        assert self.__velocity.shape == (2,)
+        assert self.__velocity.shape == (3,)
 
     def next(self) -> NDArray:
         """Generates the next velocity vector for the fluid simulation.
