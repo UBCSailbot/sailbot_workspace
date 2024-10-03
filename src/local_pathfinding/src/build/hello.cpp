@@ -1,4 +1,4 @@
-#include </usr/include/ompl-1.6/ompl/util/Console.h>  // Include the Console header
+#include </usr/include/ompl-1.6/ompl/util/Console.h>
 #include <pybind11/pybind11.h>
 
 namespace py = pybind11;
