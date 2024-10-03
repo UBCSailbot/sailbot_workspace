@@ -151,7 +151,7 @@ class OMPLPath:
 
         # create a simple setup object
         simple_setup = pyompl.SimpleSetup(space)
-        simple_setup.setStateValidityChecker(pyompl.StateValidityCheckerFn(is_state_valid))
+        simple_setup.setStateValidityChecker(is_state_valid)
 
         # set the goal and start states of the simple setup object
         start = pyompl.State(space)

@@ -4,6 +4,7 @@
 #include </usr/include/ompl-1.6/ompl/base/ScopedState.h>
 #include </usr/include/ompl-1.6/ompl/base/SpaceInformation.h>
 #include </usr/include/ompl-1.6/ompl/base/State.h>
+#include </usr/include/ompl-1.6/ompl/base/StateSpace.h>
 #include </usr/include/ompl-1.6/ompl/base/StateValidityChecker.h>
 #include </usr/include/ompl-1.6/ompl/base/spaces/RealVectorBounds.h>
 #include </usr/include/ompl-1.6/ompl/base/spaces/SE2StateSpace.h>
@@ -11,9 +12,24 @@
 #include </usr/include/ompl-1.6/ompl/geometric/SimpleSetup.h>
 #include </usr/include/ompl-1.6/ompl/geometric/planners/rrt/RRTstar.h>
 #include </usr/include/ompl-1.6/ompl/util/Console.h>
+#include <pybind11/functional.h>
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 namespace py = pybind11;
+
+class StateValidityCheckerFn
+{
+public:
+    using CheckerFunction = std::function<bool(const ompl::base::State *)>;
+
+    StateValidityCheckerFn(CheckerFunction checker) : checker_(checker) {}
+
+    bool isValid(const ompl::base::State * state) { return checker_(state); }
+
+private:
+    CheckerFunction checker_;
+};
 
 void bind_OMPL(py::module & m)
 {
@@ -34,8 +50,13 @@ void bind_OMPL(py::module & m)
       .def("high", [](const ompl::base::RealVectorBounds & self) { return self.high; })
       .def("check", &ompl::base::RealVectorBounds::check);
 
+    // Binding for StateSpace the parent class to SE2StateSpace
+    py::class_<ompl::base::StateSpace, std::shared_ptr<ompl::base::StateSpace>>(m, "StateSpace");
+
     // Binding for ompl::base::SE2StateSpace
-    py::class_<ompl::base::SE2StateSpace>(m, "SE2StateSpace")
+    // this allows SE2StateSpace to be a subclass of StateSpace
+    py::class_<ompl::base::SE2StateSpace, ompl::base::StateSpace, std::shared_ptr<ompl::base::SE2StateSpace>>(
+      m, "SE2StateSpace")
       .def(py::init<>())
       .def(
         "setBounds",
@@ -43,7 +64,11 @@ void bind_OMPL(py::module & m)
         py::arg("bounds"));
 
     // Binding for ompl::base::StateValidityCheckerFn
-    py::class_<ompl::base::StateValidityCheckerFn>(m, "StateValidityCheckerFn").def(py::init<>());
+    py::class_<StateValidityCheckerFn>(m, "StateValidityCheckerFn")
+      .def(
+        py::init<StateValidityCheckerFn::CheckerFunction>(),
+        "Constructs a StateValidityCheckerFn with a Python callable.")
+      .def("is_valid", &StateValidityCheckerFn::isValid, "Checks if the state is valid.");
 
     // Binding for ompl::geometric::RRTstar
     py::class_<ompl::geometric::RRTstar>(m, "RRTstar")
@@ -75,7 +100,7 @@ void bind_OMPL(py::module & m)
         "setStateValidityChecker",
         static_cast<void (ompl::geometric::SimpleSetup::*)(const ompl::base::StateValidityCheckerFn &)>(
           &ompl::geometric::SimpleSetup::setStateValidityChecker),
-        py::arg("svc"))
+        py::arg("svc"), "Sets a state validity checker.")
       .def(
         "getSpaceInformation",
         [](const ompl::geometric::SimpleSetup & self) {
