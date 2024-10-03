@@ -33,9 +33,33 @@ private:
 
 void bind_OMPL(py::module & m)
 {
-    // Binding for ompl::base::State
+    // Binding for ompl::base::ScopedState<ompl::base::SE2StateSpace>
     py::class_<ompl::base::ScopedState<ompl::base::SE2StateSpace>>(m, "State")
-      .def(py::init<ompl::base::StateSpacePtr>(), py::arg("space"));
+      .def(py::init<ompl::base::StateSpacePtr>(), py::arg("space"))
+      .def(
+        "setXY",
+        [](ompl::base::ScopedState<ompl::base::SE2StateSpace> & state, double x, double y) {
+            // Access the underlying StateType and call setXY
+            state()->setXY(x, y);  // Assuming operator() gives access to the underlying state
+        })
+      .def(
+        "setY",
+        [](ompl::base::ScopedState<ompl::base::SE2StateSpace> & state, double y) {
+            state()->setY(y);  // Call setY on the underlying StateType
+        })
+      .def(
+        "setX",
+        [](ompl::base::ScopedState<ompl::base::SE2StateSpace> & state, double x) {
+            state()->setX(x);  // Call setX on the underlying StateType
+        })
+      .def(
+        "getX",
+        [](const ompl::base::ScopedState<ompl::base::SE2StateSpace> & state) {
+            return state()->getX();  // Get X from the underlying StateType
+        })
+      .def("getY", [](const ompl::base::ScopedState<ompl::base::SE2StateSpace> & state) {
+          return state()->getY();  // Get Y from the underlying StateType
+      });
 
     // Binding for ompl::base::RealVectorBounds
     py::class_<ompl::base::RealVectorBounds>(m, "RealVectorBounds")
@@ -54,7 +78,6 @@ void bind_OMPL(py::module & m)
     py::class_<ompl::base::StateSpace, std::shared_ptr<ompl::base::StateSpace>>(m, "StateSpace");
 
     // Binding for ompl::base::SE2StateSpace
-    // this allows SE2StateSpace to be a subclass of StateSpace
     py::class_<ompl::base::SE2StateSpace, ompl::base::StateSpace, std::shared_ptr<ompl::base::SE2StateSpace>>(
       m, "SE2StateSpace")
       .def(py::init<>())
@@ -62,6 +85,15 @@ void bind_OMPL(py::module & m)
         "setBounds",
         [](ompl::base::SE2StateSpace & self, const ompl::base::RealVectorBounds & bounds) { self.setBounds(bounds); },
         py::arg("bounds"));
+
+    // Binding for ompl::base::SE2StateSpace::StateType
+    py::class_<ompl::base::SE2StateSpace::StateType>(m, "SE2StateSpaceStateType")
+      .def(py::init<>())
+      .def("setX", &ompl::base::SE2StateSpace::StateType::setX)
+      .def("setY", &ompl::base::SE2StateSpace::StateType::setY)
+      .def("setXY", &ompl::base::SE2StateSpace::StateType::setXY)
+      .def("getX", &ompl::base::SE2StateSpace::StateType::getX)
+      .def("getY", &ompl::base::SE2StateSpace::StateType::getY);
 
     // Binding for ompl::base::StateValidityCheckerFn
     py::class_<StateValidityCheckerFn>(m, "StateValidityCheckerFn")

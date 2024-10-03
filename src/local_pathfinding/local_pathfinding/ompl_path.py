@@ -158,13 +158,13 @@ class OMPLPath:
         goal = pyompl.State(space)
         start_x, start_y = self.state.start_state
         goal_x, goal_y = self.state.goal_state
-        start().setXY(start_x, start_y)
-        goal().setXY(goal_x, goal_y)
-        self._logger.debug(
+        start.setXY(start_x, start_y)
+        goal.setXY(goal_x, goal_y)
+        """self._logger.debug(
             "start and goal state: "
             f"start=({start().getX()}, {start().getY()}); "
             f"goal=({goal().getX()}, {goal().getY()})"
-        )
+        )"""
         simple_setup.setStartAndGoalStates(start, goal)
 
         # Constructs a space information instance for this simple setup
