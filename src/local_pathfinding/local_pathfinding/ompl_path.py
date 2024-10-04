@@ -154,8 +154,8 @@ class OMPLPath:
         simple_setup.setStateValidityChecker(is_state_valid)
 
         # set the goal and start states of the simple setup object
-        start = pyompl.State(space)
-        goal = pyompl.State(space)
+        start = pyompl.ScopedState(space)
+        goal = pyompl.ScopedState(space)
         start_x, start_y = self.state.start_state
         goal_x, goal_y = self.state.goal_state
         start.setXY(start_x, start_y)
@@ -165,7 +165,7 @@ class OMPLPath:
             f"start=({start().getX()}, {start().getY()}); "
             f"goal=({goal().getX()}, {goal().getY()})"
         )"""
-        simple_setup.setStartAndGoalStates(start, goal)
+        simple_setup.setStartAndGoalStatesSE2(start, goal)
 
         # Constructs a space information instance for this simple setup
         space_information = simple_setup.getSpaceInformation()

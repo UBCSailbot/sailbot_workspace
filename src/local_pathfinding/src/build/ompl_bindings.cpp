@@ -34,7 +34,7 @@ private:
 void bind_OMPL(py::module & m)
 {
     // Binding for ompl::base::ScopedState<ompl::base::SE2StateSpace>
-    py::class_<ompl::base::ScopedState<ompl::base::SE2StateSpace>>(m, "State")
+    py::class_<ompl::base::ScopedState<ompl::base::SE2StateSpace>>(m, "ScopedState")
       .def(py::init<ompl::base::StateSpacePtr>(), py::arg("space"))
       .def(
         "setXY",
@@ -113,11 +113,14 @@ void bind_OMPL(py::module & m)
     py::class_<ompl::geometric::SimpleSetup>(m, "SimpleSetup")
       .def(py::init<const ompl::base::StateSpacePtr &>(), py::arg("space"))
       .def(
-        "setStartAndGoalStates",
-        static_cast<void (ompl::geometric::SimpleSetup::*)(
-          const ompl::base::ScopedState<> &, const ompl::base::ScopedState<> &, double)>(
-          &ompl::geometric::SimpleSetup::setStartAndGoalStates),
-        py::arg("start"), py::arg("goal"), py::arg("threshold") = std::numeric_limits<double>::epsilon())
+        "setStartAndGoalStatesSE2",
+        [](
+          py::object simple_setup, const ompl::base::ScopedState<ompl::base::SE2StateSpace> & start,
+          const ompl::base::ScopedState<ompl::base::SE2StateSpace> & goal) {
+            simple_setup.cast<ompl::geometric::SimpleSetup>().setStartAndGoalStates(
+              ompl::base::ScopedState<>(start), ompl::base::ScopedState<>(goal));
+        },
+        py::arg("start"), py::arg("goal"))
       .def(
         "solve",
         static_cast<ompl::base::PlannerStatus (ompl::geometric::SimpleSetup::*)(double)>(
