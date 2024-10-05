@@ -109,6 +109,10 @@ void bind_OMPL(py::module & m)
       .def("setRange", &ompl::geometric::RRTstar::setRange)
       .def("getRange", &ompl::geometric::RRTstar::getRange);
 
+    // Binding for ompl::base::SpaceInformation
+    py::class_<ompl::base::SpaceInformation, std::shared_ptr<ompl::base::SpaceInformation>>(m, "SpaceInformation")
+      .def(py::init<const ompl::base::StateSpacePtr &>(), py::arg("space"));
+
     // Binding for ompl::geometric::SimpleSetup
     py::class_<ompl::geometric::SimpleSetup>(m, "SimpleSetup")
       .def(py::init<const ompl::base::StateSpacePtr &>(), py::arg("space"))
