@@ -1,13 +1,14 @@
 """The path to the next global waypoint, represented by the `LocalPath` class."""
 
+import logging
 from typing import List, Optional, Tuple
 
-import matplotlib.pyplot as plt
 from custom_interfaces.msg import GPS, AISShips, HelperLatLon, Path, WindSensor
 from rclpy.impl.rcutils_logger import RcutilsLogger
 from shapely.geometry import LineString, Point
 
 import local_pathfinding.coord_systems as cs
+from local_pathfinding.obstacles import Boat
 from local_pathfinding.ompl_path import OMPLPath
 
 
@@ -70,7 +71,12 @@ class LocalPath:
 
     def __init__(self, parent_logger: RcutilsLogger):
         """Initializes the LocalPath class."""
-        self._logger = parent_logger.get_child(name="local_path")
+        # TODO: Remove these to make logger right
+        if parent_logger and hasattr(parent_logger, "get_child"):
+            self._logger = parent_logger.get_child(name="local_path")
+        else:
+            # Use the logger as-is or create a default logger if None is provided
+            self._logger = parent_logger or logging.getLogger("local_path")
         self._ompl_path: Optional[OMPLPath] = None
         self.waypoints: Optional[List[Tuple[float, float]]] = None
 
@@ -146,17 +152,68 @@ class LocalPath:
             # TODO add buffer distance for sailbot_drifted_from_old_path() & global_path_changed();
             # If not check default value of 2.0km in the function def
             if (
-                self.old_path_in_collision_zone(ais_ships)
+                self.old_path_in_collision_zone(gps, ais_ships)
                 or self.sailbot_drifted_from_old_path(gps, self.waypoints)
                 or self.global_path_changed(global_path, self.waypoints)
             ):
                 return False
             return True
 
-    def old_path_in_collision_zone(self, ais_ships: AISShips) -> bool:
-        """Checks if the old path is in a collision zone with other ships."""
-        # Placeholder logic for checking collision, replace with actual logic
-        self._logger.debug("Checking if old path is in collision zone with AIS ships.")
+    def old_path_in_collision_zone(self, gps: GPS, ais_ships: AISShips) -> bool:
+        """
+        Checks if the old path is in a collision zone with other ships based on the provided AISShips data.
+
+        This method creates a collision zone for each AIS ship using the Boat class and checks if the SailBot's old path,
+        represented as a series of waypoints, intersects or is within any of the collision zones. The collision check is
+        performed using projected coordinates derived from the GPS position.
+
+        Args:
+            gps (GPS): GPS message containing the SailBot's current position, speed, and heading.
+            ais_ships (AISShips): AISShips message containing a list of detected ships.
+
+        Returns:
+            bool: True if the old path is in a collision zone with any of the AIS ships, False otherwise.
+        """
+        self.sailbot_position_latlon = gps.lat_lon
+        self.sailbot_speed = gps.speed.speed
+        self.reference = gps.lat_lon
+
+        reference_latlon = HelperLatLon(
+            latitude=gps.lat_lon.latitude, longitude=gps.lat_lon.longitude
+        )
+
+        if len(self.waypoints) < 2:
+            single_waypoint = self.waypoints[0]
+            projected_point = cs.latlon_to_xy(
+                reference_latlon,
+                HelperLatLon(latitude=single_waypoint[0], longitude=single_waypoint[1]),
+            )
+            old_path_geom = Point(projected_point)
+        else:
+            projected_waypoints = [
+                cs.latlon_to_xy(reference_latlon, HelperLatLon(latitude=lat, longitude=lon))
+                for lat, lon in self.waypoints
+            ]
+            old_path_geom = LineString(projected_waypoints)
+
+        for ais_ship in ais_ships.ships:
+            boat = Boat(
+                reference=reference_latlon,
+                sailbot_position=gps.lat_lon,
+                sailbot_speed=gps.speed.speed,
+                ais_ship=ais_ship,
+            )
+            boat.update_boat_collision_zone()
+
+            if old_path_geom.intersects(boat.collision_zone) or old_path_geom.within(
+                boat.collision_zone
+            ):
+                self._logger.debug(
+                    f"Old path is in collision zone with AIS ship ID: {ais_ship.id}"
+                )
+                return True
+
+        self._logger.debug("Old path is not in collision zone with any AIS ships.")
         return False
 
     def global_path_changed(
@@ -212,10 +269,23 @@ class LocalPath:
             bool: True if Sailbot has drifted significantly, False otherwise.
         """
 
-        path_line = LineString(waypoints)
+        reference_latlon = HelperLatLon(latitude=waypoints[0][0], longitude=waypoints[0][1])
 
-        path_polygon = path_line.buffer(buffer * 1000)  # buffer from km to m
-        gps_point = Point(gps.lat_lon.longitude, gps.lat_lon.latitude)
+        projected_waypoints = [
+            cs.latlon_to_xy(reference_latlon, HelperLatLon(latitude=lat, longitude=lon))
+            for lat, lon in waypoints
+        ]
+
+        path_line = LineString([(pt.x, pt.y) for pt in projected_waypoints])
+
+        path_polygon = path_line.buffer(buffer)
+
+        projected_gps = cs.latlon_to_xy(
+            reference_latlon,
+            HelperLatLon(latitude=gps.lat_lon.latitude, longitude=gps.lat_lon.longitude),
+        )
+
+        gps_point = Point(projected_gps.x, projected_gps.y)
 
         # Check if the Sailbot is outside the buffered path
         if not path_polygon.contains(gps_point):
@@ -224,31 +294,3 @@ class LocalPath:
 
         self._logger.debug("Sailbot is within the path polygon.")
         return False
-
-    def plot_polygon_and_point(self, gps: GPS):
-        # TODO Remove this function as it is needed to to test visually
-        """Plots the path polygon and the current GPS point.
-
-        Args:
-            gps (GPS): GPS data.
-        """
-        path_line = LineString(self.waypoints)
-
-        path_polygon = path_line.buffer(2000)  # 2000 meters = 2 km buffer
-
-        gps_point = Point(gps.lat_lon.longitude, gps.lat_lon.latitude)
-        fig, ax = plt.subplots()
-
-        x, y = path_polygon.exterior.xy
-        ax.fill(x, y, alpha=0.5, fc="lightblue", ec="black")
-
-        waypoint_x, waypoint_y = zip(*self.waypoints)
-        ax.plot(waypoint_x, waypoint_y, "bo-", label="Waypoints")
-
-        ax.plot(gps_point.x, gps_point.y, "rx", markersize=10, label="GPS Point")
-
-        ax.set_title("Path Polygon with Buffer and GPS Point")
-        ax.set_xlabel("Longitude")
-        ax.set_ylabel("Latitude")
-        ax.legend()
-        plt.show()
