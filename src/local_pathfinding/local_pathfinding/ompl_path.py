@@ -182,6 +182,7 @@ class OMPLPath:
             self.state.wind_direction,
             self.state.wind_speed,
         )
+
         simple_setup.setOptimizationObjective(objective)
 
         # set the planner of the simple setup object

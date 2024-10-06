@@ -1,3 +1,5 @@
+#include </usr/include/ompl-1.6/ompl/base/Cost.h>
+#include </usr/include/ompl-1.6/ompl/base/Goal.h>
 #include </usr/include/ompl-1.6/ompl/base/OptimizationObjective.h>
 #include </usr/include/ompl-1.6/ompl/base/Planner.h>
 #include </usr/include/ompl-1.6/ompl/base/PlannerStatus.h>
@@ -6,6 +8,8 @@
 #include </usr/include/ompl-1.6/ompl/base/State.h>
 #include </usr/include/ompl-1.6/ompl/base/StateSpace.h>
 #include </usr/include/ompl-1.6/ompl/base/StateValidityChecker.h>
+#include </usr/include/ompl-1.6/ompl/base/objectives/PathLengthOptimizationObjective.h>
+#include </usr/include/ompl-1.6/ompl/base/objectives/StateCostIntegralObjective.h>
 #include </usr/include/ompl-1.6/ompl/base/spaces/RealVectorBounds.h>
 #include </usr/include/ompl-1.6/ompl/base/spaces/SE2StateSpace.h>
 #include </usr/include/ompl-1.6/ompl/geometric/PathGeometric.h>
@@ -33,35 +37,17 @@ private:
 
 void bind_OMPL(py::module & m)
 {
-    // Binding for ompl::base::ScopedState<ompl::base::SE2StateSpace>
+    // ########################################## OMPL PATH BINDINGS ###################################################
     py::class_<ompl::base::ScopedState<ompl::base::SE2StateSpace>>(m, "ScopedState")
       .def(py::init<ompl::base::StateSpacePtr>(), py::arg("space"))
       .def(
         "setXY",
-        [](ompl::base::ScopedState<ompl::base::SE2StateSpace> & state, double x, double y) {
-            // Access the underlying StateType and call setXY
-            state()->setXY(x, y);  // Assuming operator() gives access to the underlying state
-        })
-      .def(
-        "setY",
-        [](ompl::base::ScopedState<ompl::base::SE2StateSpace> & state, double y) {
-            state()->setY(y);  // Call setY on the underlying StateType
-        })
-      .def(
-        "setX",
-        [](ompl::base::ScopedState<ompl::base::SE2StateSpace> & state, double x) {
-            state()->setX(x);  // Call setX on the underlying StateType
-        })
-      .def(
-        "getX",
-        [](const ompl::base::ScopedState<ompl::base::SE2StateSpace> & state) {
-            return state()->getX();  // Get X from the underlying StateType
-        })
-      .def("getY", [](const ompl::base::ScopedState<ompl::base::SE2StateSpace> & state) {
-          return state()->getY();  // Get Y from the underlying StateType
-      });
+        [](ompl::base::ScopedState<ompl::base::SE2StateSpace> & state, double x, double y) { state()->setXY(x, y); })
+      .def("setY", [](ompl::base::ScopedState<ompl::base::SE2StateSpace> & state, double y) { state()->setY(y); })
+      .def("setX", [](ompl::base::ScopedState<ompl::base::SE2StateSpace> & state, double x) { state()->setX(x); })
+      .def("getX", [](const ompl::base::ScopedState<ompl::base::SE2StateSpace> & state) { return state()->getX(); })
+      .def("getY", [](const ompl::base::ScopedState<ompl::base::SE2StateSpace> & state) { return state()->getY(); });
 
-    // Binding for ompl::base::RealVectorBounds
     py::class_<ompl::base::RealVectorBounds>(m, "RealVectorBounds")
       .def(py::init<unsigned int>(), py::arg("dim"))
       .def(
@@ -74,10 +60,8 @@ void bind_OMPL(py::module & m)
       .def("high", [](const ompl::base::RealVectorBounds & self) { return self.high; })
       .def("check", &ompl::base::RealVectorBounds::check);
 
-    // Binding for StateSpace the parent class to SE2StateSpace
     py::class_<ompl::base::StateSpace, std::shared_ptr<ompl::base::StateSpace>>(m, "StateSpace");
 
-    // Binding for ompl::base::SE2StateSpace
     py::class_<ompl::base::SE2StateSpace, ompl::base::StateSpace, std::shared_ptr<ompl::base::SE2StateSpace>>(
       m, "SE2StateSpace")
       .def(py::init<>())
@@ -86,7 +70,6 @@ void bind_OMPL(py::module & m)
         [](ompl::base::SE2StateSpace & self, const ompl::base::RealVectorBounds & bounds) { self.setBounds(bounds); },
         py::arg("bounds"));
 
-    // Binding for ompl::base::SE2StateSpace::StateType
     py::class_<ompl::base::SE2StateSpace::StateType>(m, "SE2StateSpaceStateType")
       .def(py::init<>())
       .def("setX", &ompl::base::SE2StateSpace::StateType::setX)
@@ -95,25 +78,21 @@ void bind_OMPL(py::module & m)
       .def("getX", &ompl::base::SE2StateSpace::StateType::getX)
       .def("getY", &ompl::base::SE2StateSpace::StateType::getY);
 
-    // Binding for ompl::base::StateValidityCheckerFn
     py::class_<StateValidityCheckerFn>(m, "StateValidityCheckerFn")
       .def(
         py::init<StateValidityCheckerFn::CheckerFunction>(),
         "Constructs a StateValidityCheckerFn with a Python callable.")
       .def("is_valid", &StateValidityCheckerFn::isValid, "Checks if the state is valid.");
 
-    // Binding for ompl::geometric::RRTstar
     py::class_<ompl::geometric::RRTstar>(m, "RRTstar")
       .def(py::init<const ompl::base::SpaceInformationPtr &>(), py::arg("space_information"))
       .def("solve", &ompl::geometric::RRTstar::solve)
       .def("setRange", &ompl::geometric::RRTstar::setRange)
       .def("getRange", &ompl::geometric::RRTstar::getRange);
 
-    // Binding for ompl::base::SpaceInformation
     py::class_<ompl::base::SpaceInformation, std::shared_ptr<ompl::base::SpaceInformation>>(m, "SpaceInformation")
       .def(py::init<const ompl::base::StateSpacePtr &>(), py::arg("space"));
 
-    // Binding for ompl::geometric::SimpleSetup
     py::class_<ompl::geometric::SimpleSetup>(m, "SimpleSetup")
       .def(py::init<const ompl::base::StateSpacePtr &>(), py::arg("space"))
       .def(
@@ -150,7 +129,39 @@ void bind_OMPL(py::module & m)
         "setOptimizationObjective",
         static_cast<void (ompl::geometric::SimpleSetup::*)(const ompl::base::OptimizationObjectivePtr &)>(
           &ompl::geometric::SimpleSetup::setOptimizationObjective),
-        py::arg("optimizationObjective"));
+        py::arg("optimizationObjective"))
+      .def(
+        "setPlanner",
+        static_cast<void (ompl::geometric::SimpleSetup::*)(const ompl::base::PlannerPtr &)>(
+          &ompl::geometric::SimpleSetup::setPlanner),
+        py::arg("planner"))
+      .def("getGoal", &ompl::geometric::SimpleSetup::getGoal);
+
+    // ########################################## OBJECTIVES BINDINGS ##################################################
+    py::class_<ompl::base::OptimizationObjective, std::shared_ptr<ompl::base::OptimizationObjective>>(
+      m, "OptimizationObjective");
+
+    py::class_<
+      ompl::base::MultiOptimizationObjective, ompl::base::OptimizationObjective,
+      std::shared_ptr<ompl::base::MultiOptimizationObjective>>(m, "MultiOptimizationObjective")
+      .def(py::init<const ompl::base::SpaceInformationPtr &>(), py::arg("si"))
+      .def(
+        "addObjective", &ompl::base::MultiOptimizationObjective::addObjective, py::arg("objective"), py::arg("weight"));
+
+    py::class_<
+      ompl::base::PathLengthOptimizationObjective, ompl::base::OptimizationObjective,
+      std::shared_ptr<ompl::base::PathLengthOptimizationObjective>>(m, "PathLengthOptimizationObjective")
+      .def(py::init<const ompl::base::SpaceInformationPtr &>(), py::arg("si"));
+
+    py::class_<
+      ompl::base::StateCostIntegralObjective, ompl::base::OptimizationObjective,
+      std::shared_ptr<ompl::base::StateCostIntegralObjective>>(m, "StateCostIntegralObjective")
+      .def(
+        py::init<const ompl::base::SpaceInformationPtr &, bool>(), py::arg("si"),
+        py::arg("enableMotionCostInterpolation") = false);
+
+    py::class_<ompl::base::Cost>(m, "Cost").def(py::init<double>());
+    py::class_<ompl::base::Goal, std::shared_ptr<ompl::base::Goal>>(m, "Goal");
 }
 
 PYBIND11_MODULE(pyompl, m) { bind_OMPL(m); }

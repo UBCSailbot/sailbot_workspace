@@ -1,6 +1,6 @@
+import pyompl
 import pytest
 from custom_interfaces.msg import GPS, AISShips, Path, WindSensor
-from ompl import base as ob
 from rclpy.impl.rcutils_logger import RcutilsLogger
 
 import local_pathfinding.coord_systems as cs
@@ -71,7 +71,7 @@ def test_OMPLPath_update_objectives():
     ],
 )
 def test_is_state_valid(x: float, y: float, is_valid: bool):
-    state = ob.State(PATH._simple_setup.getStateSpace())
+    state = pyompl.ScopedState(PATH._simple_setup.getStateSpace())
     state().setXY(x, y)
 
     if is_valid:
