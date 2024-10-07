@@ -8,6 +8,7 @@
 #include </usr/include/ompl-1.6/ompl/base/State.h>
 #include </usr/include/ompl-1.6/ompl/base/StateSpace.h>
 #include </usr/include/ompl-1.6/ompl/base/StateValidityChecker.h>
+#include </usr/include/ompl-1.6/ompl/base/goals/GoalState.h>
 #include </usr/include/ompl-1.6/ompl/base/objectives/PathLengthOptimizationObjective.h>
 #include </usr/include/ompl-1.6/ompl/base/objectives/StateCostIntegralObjective.h>
 #include </usr/include/ompl-1.6/ompl/base/spaces/RealVectorBounds.h>
@@ -161,6 +162,13 @@ void bind_OMPL(py::module & m)
         py::arg("enableMotionCostInterpolation") = false);
 
     py::class_<ompl::base::Cost>(m, "Cost").def(py::init<double>());
+    py::class_<ompl::base::GoalState, std::shared_ptr<ompl::base::GoalState>>(m, "GoalState")
+      .def(py::init<const ompl::base::SpaceInformationPtr &>(), py::arg("si"))
+      .def("getState", [](ompl::base::GoalState & self) {
+          ompl::base::State * state = self.getState();
+          auto                space = self.getSpaceInformation()->getStateSpace();
+          return ompl::base::ScopedState<ompl::base::SE2StateSpace>(space, state);
+      });
     py::class_<ompl::base::Goal, std::shared_ptr<ompl::base::Goal>>(m, "Goal");
 }
 
