@@ -104,7 +104,7 @@ class OMPLPath:
         waypoints = []
 
         for state in solution_path.getStates():
-            waypoint_XY = cs.XY(state.getX(), state.getY())
+            waypoint_XY = cs.XY(state.getX(), state.getY())  # TODO causes SEG FAULT
             waypoint_latlon = cs.xy_to_latlon(self.state.reference_latlon, waypoint_XY)
             waypoints.append(
                 HelperLatLon(

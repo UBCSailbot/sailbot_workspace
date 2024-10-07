@@ -85,11 +85,15 @@ void bind_OMPL(py::module & m)
         "Constructs a StateValidityCheckerFn with a Python callable.")
       .def("is_valid", &StateValidityCheckerFn::isValid, "Checks if the state is valid.");
 
-    py::class_<ompl::geometric::RRTstar>(m, "RRTstar")
-      .def(py::init<const ompl::base::SpaceInformationPtr &>(), py::arg("space_information"))
+    py::class_<ompl::base::Planner, std::shared_ptr<ompl::base::Planner>>(m, "Planner");
+
+    py::class_<ompl::geometric::RRTstar, ompl::base::Planner, std::shared_ptr<ompl::geometric::RRTstar>>(m, "RRTstar")
+      .def(py::init<const ompl::base::SpaceInformationPtr &>(), py::arg("si"))
       .def("solve", &ompl::geometric::RRTstar::solve)
       .def("setRange", &ompl::geometric::RRTstar::setRange)
       .def("getRange", &ompl::geometric::RRTstar::getRange);
+
+    py::class_<ompl::base::PlannerStatus, std::shared_ptr<ompl::base::PlannerStatus>>(m, "PlannerStatus");
 
     py::class_<ompl::base::SpaceInformation, std::shared_ptr<ompl::base::SpaceInformation>>(m, "SpaceInformation")
       .def(py::init<const ompl::base::StateSpacePtr &>(), py::arg("space"));
@@ -136,7 +140,22 @@ void bind_OMPL(py::module & m)
         static_cast<void (ompl::geometric::SimpleSetup::*)(const ompl::base::PlannerPtr &)>(
           &ompl::geometric::SimpleSetup::setPlanner),
         py::arg("planner"))
-      .def("getGoal", &ompl::geometric::SimpleSetup::getGoal);
+      .def("getGoal", &ompl::geometric::SimpleSetup::getGoal)
+      .def("getStateSpace", &ompl::geometric::SimpleSetup::getStateSpace);
+
+    py::class_<ompl::geometric::PathGeometric, std::shared_ptr<ompl::geometric::PathGeometric>>(m, "PathGeometric")
+      .def("getStates", [](ompl::geometric::PathGeometric & self) {
+          std::vector<ompl::base::State *>                                states = self.getStates();
+          std::vector<ompl::base::ScopedState<ompl::base::SE2StateSpace>> scopedStates;
+
+          auto spaceInfo  = self.getSpaceInformation();
+          auto stateSpace = spaceInfo->getStateSpace();
+
+          for (auto state : states) {
+              scopedStates.emplace_back(stateSpace, state);
+          }
+          return scopedStates;
+      });
 
     // ########################################## OBJECTIVES BINDINGS ##################################################
     py::class_<ompl::base::OptimizationObjective, std::shared_ptr<ompl::base::OptimizationObjective>>(
