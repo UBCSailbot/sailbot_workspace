@@ -230,18 +230,19 @@ void HTTPServer::doPost()
             std::cerr << "Error, failed to store data received at:\n" << timestamp << std::endl;
         }
 
+        curl_global_init(CURL_GLOBAL_ALL);
+
         static constexpr int NUM_CHECK = 20;
         for (int i = 0; i < NUM_CHECK; i++) {
             CURL *   curl;
             CURLcode res;
 
-            curl_global_init(CURL_GLOBAL_ALL);
-
-            curl                   = curl_easy_init();
-            std::string param_data = "imei=123456789&username=foo&password=bar&data=";
-            param_data += data;
+            curl = curl_easy_init();
 
             if (curl != nullptr) {
+                std::string param_data = "imei=123456789&username=foo&password=bar&data=";
+                param_data += data;
+
                 std::string response_body;
 
                 curl_easy_setopt(curl, CURLOPT_URL, "https://rockblock.rock7.com/rockblock/MT");
@@ -250,31 +251,40 @@ void HTTPServer::doPost()
                 curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
                 curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response_body);
 
-                std::stringstream           ss(response_body);
-                boost::property_tree::ptree pt;
-                boost::property_tree::read_json(ss, pt);
-                std::string response = pt.get<std::string>("response");
-                uint8_t     error    = pt.get<int>("error");
-
-                if (!self->db_.storeIridiumResponse(response, error, timestamp)) {  //important
-                    std::cerr << "Error, failed to store data received at:\n" << timestamp << std::endl;
-                }
-
                 curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10L);  //arbitrary value of 10s chosen for timeout
 
                 res = curl_easy_perform(curl);
 
                 if (res != CURLE_OK) {
-                    std::cerr << "ccurl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
+                    std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
                 } else {
-                    curl_easy_cleanup(curl);
-                    break;
-                }
+                    std::stringstream ss(response_body);
+                    // boost::property_tree::ptree pt;
+                    // boost::property_tree::read_json(ss, pt);
+                    std::string response;
+                    std::string error;
+                    std::string message;
 
-                curl_easy_cleanup(curl);
+                    std::getline(ss, response, ',');
+                    std::getline(ss, error, ',');
+                    std::getline(ss, message, ',');
+
+                    uint8_t error_code = static_cast<uint8_t>(std::stoi(error));
+
+                    // std::string response = pt.get<std::string>("response");
+                    // uint8_t     error    = pt.get<int>("error");
+                    if (!self->db_.storeIridiumResponse(response, error_code, timestamp)) {  //important
+                        std::cerr << "Error, failed to store data received at:\n" << timestamp << std::endl;
+                    } else {
+                        curl_easy_cleanup(curl);
+                        break;
+                    }
+                }
             }
-            curl_global_cleanup();
+            curl_easy_cleanup(curl);
         }
+
+        curl_global_cleanup();
         // Create a post request to rockblock http pot request URL (how to send a post request to a url/endpoint)
 
     } else {
