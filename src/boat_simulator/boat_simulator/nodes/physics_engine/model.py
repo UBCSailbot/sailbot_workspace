@@ -106,6 +106,11 @@ class BoatState:
         apparent_wind_vel = np.subtract(rel_wind_vel, self.relative_velocity)
         apparent_water_vel = np.subtract(rel_water_vel, self.relative_velocity)
 
+        wind_angle = np.arctan2(rel_wind_vel[1], rel_wind_vel[0])  # Wind angle in radians
+        trim_tab_angle_rad = np.radians(trim_tab_angle)
+        main_sail_angle = wind_angle - trim_tab_angle_rad  # in radians
+        rudder_angle_rad = np.radians(rudder_angle_deg)
+
         # Calculate Forces on sail and rudder
         sail_force = self.__sail_force_computation.compute(apparent_wind_vel, trim_tab_angle)
         rudder_force = self.__rudder_force_computation.compute(
@@ -113,29 +118,49 @@ class BoatState:
         )
 
         # Calculate Hull Drag Force
-        hull_drag_force = (
-            self.relative_velocity[0] * BoatProperties.hull_drag_factor,
-            self.relative_velocity[1] * BoatProperties.hull_drag_factor,
-        )
+        hull_drag_force = self.relative_velocity * BoatProperties.hull_drag_factor
 
         # Total Force Calculation
-        total_drag_force = np.add(sail_force[1] + rudder_force[1] + hull_drag_force)
+        total_drag_force = np.add(sail_force[1], rudder_force[1], hull_drag_force)
         total_force = np.add(sail_force[0] + rudder_force[0], total_drag_force)
 
+        # Setting origin at rear of boat
+        centre_of_gravity = 3  # TODO  only measuring length of boat
+        sail_central_distance = 5  # TODO only measuring length of boat
+        # TODO define sail distance as half the width of the sail
+
+        # Calculating magnitudes of sail
+        sail_drag = np.linalg.norm(sail_force[1], ord=2)
+        sail_lift = np.linalg.norm(sail_force[0], ord=2)
+
         # Calculating Total Torque
-        sail_torque_constant = BoatProperties.sail_dist * np.sin(np.radians(trim_tab_angle))
-        rudder_torque_constant = BoatProperties.rudder_dist * np.sin(np.radians(rudder_angle_deg))
-
-        sail_torque = (sail_force[0] * sail_torque_constant, sail_force[1] * sail_torque_constant)
-        rudder_torque = (
-            rudder_force[0] * rudder_torque_constant,
-            rudder_force[1] * rudder_torque_constant,
+        sail_lift_constant = (
+            sail_central_distance  # position of sail mount
+            - (
+                BoatProperties.sail_dist * np.cos(main_sail_angle)
+            )  # distance of sail with changes to trim tab angle
+            - centre_of_gravity  # point to take torque around
         )
-        total_torque = (sail_torque[0] + rudder_torque[0], sail_torque[1] + rudder_torque[1])
+        sail_drag_constant = BoatProperties.sail_dist * np.sin(main_sail_angle)
 
-        # torque_magnitude = np.
+        sail_torque = np.add(sail_drag * sail_drag_constant, sail_lift * sail_lift_constant)
 
-        return (total_force, total_torque)
+        rudder_drag_constant = BoatProperties.rudder_dist * np.sin(rudder_angle_rad)
+
+        rudder_lift_constant = (
+            BoatProperties.rudder_dist * np.cos(rudder_angle_rad) + centre_of_gravity
+        )
+
+        rudder_torque = np.add(
+            rudder_force[0] * rudder_lift_constant,
+            rudder_force[1] * rudder_drag_constant,
+        )
+
+        total_torque = np.add(sail_torque, rudder_torque) # Sum torques about z-axis
+
+        final_torque = np.array([0, 0, total_torque])
+
+        return (total_force, final_torque)
 
     @property
     def global_position(self) -> NDArray:
