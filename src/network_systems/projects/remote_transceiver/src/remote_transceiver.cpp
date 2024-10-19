@@ -258,6 +258,7 @@ void HTTPServer::doPost()
                 if (res != CURLE_OK) {
                     std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
                 } else {
+                    std::cout << "Response body: " << response_body << std::endl;
                     std::stringstream ss(response_body);
                     // boost::property_tree::ptree pt;
                     // boost::property_tree::read_json(ss, pt);
@@ -273,6 +274,10 @@ void HTTPServer::doPost()
 
                     // std::string response = pt.get<std::string>("response");
                     // uint8_t     error    = pt.get<int>("error");
+                    std::cout << "response: " << response << std::endl;
+                    std::cout << "error: " << error << std::endl;
+                    std::cout << "message: " << message << std::endl;
+
                     if (!self->db_.storeIridiumResponse(response, error, message, timestamp)) {  //important
                         std::cerr << "Error, failed to store data received at:\n" << timestamp << std::endl;
                     } else {
