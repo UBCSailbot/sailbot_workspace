@@ -1,4 +1,3 @@
-
 #include "util_db.h"
 
 #include <bsoncxx/builder/basic/document.hpp>
@@ -26,13 +25,14 @@ void UtilDB::cleanDB()
     mongocxx::pool::entry entry = pool_->acquire();
     mongocxx::database    db    = (*entry)[db_name_];
 
-    mongocxx::collection gps_coll         = db[COLLECTION_GPS];
-    mongocxx::collection ais_coll         = db[COLLECTION_AIS_SHIPS];
-    mongocxx::collection generic_coll     = db[COLLECTION_DATA_SENSORS];
-    mongocxx::collection batteries_coll   = db[COLLECTION_BATTERIES];
-    mongocxx::collection wind_coll        = db[COLLECTION_WIND_SENSORS];
-    mongocxx::collection local_path_coll  = db[COLLECTION_LOCAL_PATH];
-    mongocxx::collection global_path_coll = db[COLLECTION_GLOBAL_PATH];
+    mongocxx::collection gps_coll              = db[COLLECTION_GPS];
+    mongocxx::collection ais_coll              = db[COLLECTION_AIS_SHIPS];
+    mongocxx::collection generic_coll          = db[COLLECTION_DATA_SENSORS];
+    mongocxx::collection batteries_coll        = db[COLLECTION_BATTERIES];
+    mongocxx::collection wind_coll             = db[COLLECTION_WIND_SENSORS];
+    mongocxx::collection local_path_coll       = db[COLLECTION_LOCAL_PATH];
+    mongocxx::collection global_path_coll      = db[COLLECTION_GLOBAL_PATH];
+    mongocxx::collection iridium_response_coll = db[COLLECTION_IRIDIUM_RESPONSE];
 
     gps_coll.delete_many(bsoncxx::builder::basic::make_document());
     ais_coll.delete_many(bsoncxx::builder::basic::make_document());
@@ -41,6 +41,7 @@ void UtilDB::cleanDB()
     wind_coll.delete_many(bsoncxx::builder::basic::make_document());
     local_path_coll.delete_many(bsoncxx::builder::basic::make_document());
     global_path_coll.delete_many(bsoncxx::builder::basic::make_document());
+    iridium_response_coll.delete_many(bsoncxx::builder::basic::make_document());
 }
 
 Sensors UtilDB::genRandSensors()
@@ -223,8 +224,8 @@ bool UtilDB::verifyDBWrite_GlobalPath(
 }
 
 bool UtilDB::verifyDBWrite_IridiumResponse(
-  std::span<std::string> expected_response, std::span<uint8_t> expected_error,
-  std::span<std::string> expected_timestamp)
+  std::span<std::string> expected_response, std::span<std::string> expected_error,
+  std::span<std::string> expected_message, std::span<std::string> expected_timestamp)
 {
     utils::FailTracker tracker;
 
@@ -233,58 +234,69 @@ bool UtilDB::verifyDBWrite_IridiumResponse(
     };
 
     expectEQ(expected_response.size(), expected_timestamp.size(), "Must have a timestamp for each response");
-    size_t num_docs                                         = expected_response.size();
-    auto [dumped_response, dumped_error, dumped_timestamps] = dumpIridiumResponse(tracker, num_docs);
+    size_t num_docs                                                         = expected_response.size();
+    auto [dumped_response, dumped_error, dumped_message, dumped_timestamps] = dumpIridiumResponse(tracker, num_docs);
 
     expectEQ(dumped_response.size(), num_docs, "");
     expectEQ(dumped_error.size(), num_docs, "");
+    expectEQ(dumped_message.size(), num_docs, "");
     expectEQ(dumped_timestamps.size(), num_docs, "");
 
     for (size_t i = 0; i < num_docs; i++) {
         expectEQ(dumped_response[i], expected_response[i], "");
         expectEQ(dumped_error[i], expected_error[i], "");
+        expectEQ(dumped_message[i], expected_message[i], "");
         expectEQ(dumped_timestamps[i], expected_timestamp[i], "");
     }
     return !tracker.failed();
 }
 
-std::tuple<std::vector<std::string>, std::vector<uint8_t>, std::vector<std::string>> UtilDB::dumpIridiumResponse(
-  utils::FailTracker & tracker, size_t num_docs)
+std::tuple<std::vector<std::string>, std::vector<std::string>, std::vector<std::string>, std::vector<std::string>>
+UtilDB::dumpIridiumResponse(utils::FailTracker & tracker, size_t num_docs)
 {
     auto expectEQ = [&tracker]<not_float T>(T rcvd, T expected, const std::string & err_msg) -> void {
         tracker.track(utils::checkEQ(rcvd, expected, err_msg));
     };
 
     std::vector<std::string> response_vec(num_docs);
-    std::vector<uint8_t>     error_vec(num_docs);
+    std::vector<std::string> error_vec(num_docs);
+    std::vector<std::string> message_vec(num_docs);
     std::vector<std::string> timestamp_vec(num_docs);
     mongocxx::pool::entry    entry = pool_->acquire();
     mongocxx::database       db    = (*entry)[db_name_];
 
     // Set the find options to sort by timestamp, don't need?
-    bsoncxx::document::value order = bsoncxx::builder::stream::document{} << "timestamp" << 1
-                                                                          << bsoncxx::builder::stream::finalize;
-    mongocxx::options::find opts = mongocxx::options::find{};
-    opts.sort(order.view());
+    // bsoncxx::document::value order = bsoncxx::builder::stream::document{} << "timestamp" << 1
+    //                                                                       << bsoncxx::builder::stream::finalize;
+    // mongocxx::options::find opts = mongocxx::options::find{};
+    // opts.sort(order.view());
 
     // iridium response
     mongocxx::collection path_coll             = db[COLLECTION_IRIDIUM_RESPONSE];
-    mongocxx::cursor     iridium_response_docs = path_coll.find({}, opts);
+    mongocxx::cursor     iridium_response_docs = path_coll.find({});
     expectEQ(
       static_cast<uint64_t>(path_coll.count_documents({})), num_docs,
       "Error: TestDB should only have " + std::to_string(num_docs) + " documents per collection");
 
     for (auto [i, path_doc_it] = std::tuple{size_t{0}, iridium_response_docs.begin()}; i < num_docs;
          i++, path_doc_it++) {
+        std::string &                 response  = response_vec[i];
+        std::string &                 error     = error_vec[i];
+        std::string &                 message   = message_vec[i];
         std::string &                 timestamp = timestamp_vec[i];
         const bsoncxx::document::view path_doc  = *path_doc_it;
+        response_vec[i]                         = path_doc["response"].get_utf8().value.to_string();
+        error_vec[i]                            = path_doc["error"].get_utf8().value.to_string();
+        message_vec[i]                          = path_doc["message"].get_utf8().value.to_string();
         timestamp_vec[i]                        = path_doc["timestamp"].get_utf8().value.to_string();
 
-        expectEQ(
-          path_doc["timestamp"].get_utf8().value.to_string(), timestamp, "Document timestamp mismatch");  // issue here
+        expectEQ(path_doc["response"].get_utf8().value.to_string(), response, "Document response mismatch");
+        expectEQ(path_doc["error"].get_utf8().value.to_string(), error, "Document error mismatch");
+        expectEQ(path_doc["message"].get_utf8().value.to_string(), message, "Document message mismatch");
+        expectEQ(path_doc["timestamp"].get_utf8().value.to_string(), timestamp, "Document timestamp mismatch");
     }
 
-    return {response_vec, error_vec, timestamp_vec};
+    return {response_vec, error_vec, message_vec, timestamp_vec};
 }
 
 std::pair<std::vector<GlobalPath>, std::vector<std::string>> UtilDB::dumpGlobalpath(

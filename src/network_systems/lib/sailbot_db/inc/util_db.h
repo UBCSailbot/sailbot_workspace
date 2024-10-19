@@ -78,8 +78,8 @@ public:
     * @param expected_timestamp
     */
     bool verifyDBWrite_IridiumResponse(
-      std::span<std::string> expected_response, std::span<uint8_t> expected_error,
-      std::span<std::string> expected_timestamp);
+      std::span<std::string> expected_response, std::span<std::string> expected_error,
+      std::span<std::string> expected_message, std::span<std::string> expected_timestamp);
 
     /**
      * @brief Dump and check all sensors and timestamps from the database
@@ -108,8 +108,8 @@ public:
      * @param expected_num_docs Expected number of documents. tracker is updated if there's a mismatch
      * @return std::tuple{Vector of dumped responses, Vector of dumped error codes, Vector of dumped timestamps}
      */
-    std::tuple<std::vector<std::string>, std::vector<uint8_t>, std::vector<std::string>> dumpIridiumResponse(
-      utils::FailTracker & tracker, size_t expected_num_docs = 1);
+    std::tuple<std::vector<std::string>, std::vector<std::string>, std::vector<std::string>, std::vector<std::string>>
+    dumpIridiumResponse(utils::FailTracker & tracker, size_t expected_num_docs = 1);
 
 private:
     std::shared_ptr<std::mt19937> rng_;  // random number generator

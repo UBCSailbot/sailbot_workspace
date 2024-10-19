@@ -259,6 +259,7 @@ TEST_F(TestRemoteTransceiver, TestGlobalPath)
 
     std::string rand_global_path_str;
     ASSERT_TRUE(rand_global_path.SerializeToString(&rand_global_path_str));
+    std::cout << "rand_global_path: " << rand_global_path_str << std::endl;
     Polaris::GlobalPath test;
     test.ParseFromString(rand_global_path_str);
     // This query is comprised entirely of arbitrary values exccept for .data_
@@ -296,15 +297,20 @@ TEST_F(TestRemoteTransceiver, TestGlobalPath)
     std::stringstream           ss(response_body_str);
     boost::property_tree::ptree pt;
     boost::property_tree::read_json(ss, pt);
-    std::string response = pt.get<std::string>("response");
-    uint8_t     error    = pt.get<int>("error");
+    std::string response  = pt.get<std::string>("response");
+    std::string error     = pt.get<std::string>("error");
+    std::string message   = pt.get<std::string>("message");
+    std::string timestamp = pt.get<std::string>("timestamp");
 
-    std::array<std::string, 1> expected_response              = {response};
-    std::array<uint8_t, 1>     expected_error                 = {error};
+    std::array<std::string, 1> expected_response  = {response};
+    std::array<std::string, 1> expected_error     = {error};
+    std::array<std::string, 1> expected_message   = {message};
+    std::array<std::string, 1> expected_timestamp = {timestamp};
+
     std::array<GlobalPath, 1>  expected_global_path           = {rand_global_path};
     std::array<std::string, 1> expected_global_path_timestamp = {rand_global_path_timestamp};
 
     EXPECT_TRUE(g_test_db.verifyDBWrite_GlobalPath(expected_global_path, expected_global_path_timestamp));
     EXPECT_TRUE(
-      g_test_db.verifyDBWrite_IridiumResponse(expected_response, expected_error, expected_global_path_timestamp));
+      g_test_db.verifyDBWrite_IridiumResponse(expected_response, expected_error, expected_message, expected_timestamp));
 }

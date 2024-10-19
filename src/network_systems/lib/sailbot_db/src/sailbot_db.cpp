@@ -90,10 +90,11 @@ bool SailbotDB::storeNewGlobalPath(const GlobalPath & global_pb, const std::stri
     return storeNewGlobalPath(global_pb, timestamp, *entry);
 }
 
-bool SailbotDB::storeIridiumResponse(const std::string & response, uint8_t & error, const std::string & timestamp)
+bool SailbotDB::storeIridiumResponse(
+  const std::string & response, const std::string & error, const std::string & message, const std::string & timestamp)
 {
     mongocxx::pool::entry entry = pool_->acquire();
-    return storeIridiumResponse(response, error, timestamp, *entry);
+    return storeIridiumResponse(response, error, message, timestamp, *entry);
 }
 
 // PRIVATE
@@ -208,12 +209,13 @@ bool SailbotDB::storeNewGlobalPath(
 }
 
 bool SailbotDB::storeIridiumResponse(
-  const std::string & response, uint8_t & error, const std::string & timestamp, mongocxx::client & client)
+  const std::string & response, const std::string & error, const std::string & message, const std::string & timestamp,
+  mongocxx::client & client)
 {
     mongocxx::database   db                    = client[db_name_];
     mongocxx::collection iridium_response_coll = db[COLLECTION_IRIDIUM_RESPONSE];
-    DocVal iridium_response_doc = bstream::document{} << "response" << response << "error" << error << "timestamp"
-                                                      << timestamp << bstream::finalize;
+    DocVal iridium_response_doc = bstream::document{} << "response" << response << "error" << error << "message"
+                                                      << message << "timestamp" << timestamp << bstream::finalize;
 
     return static_cast<bool>(iridium_response_coll.insert_one(iridium_response_doc.view()));
 }

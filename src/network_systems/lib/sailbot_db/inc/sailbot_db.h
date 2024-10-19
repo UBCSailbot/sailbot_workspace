@@ -108,7 +108,9 @@ public:
     bool storeNewGlobalPath(
       const Polaris::GlobalPath & global_path_pb, const std::string & timestamp, mongocxx::client & client);
 
-    bool storeIridiumResponse(const std::string & response, uint8_t & error, const std::string & timestamp);
+    bool storeIridiumResponse(
+      const std::string & response, const std::string & error, const std::string & message,
+      const std::string & timestamp);
 
     /**
      * @brief Write iridum response data to the database
@@ -122,7 +124,8 @@ public:
      * @return false on failure
      */
     bool storeIridiumResponse(
-      const std::string & response, uint8_t & error, const std::string & timestamp, mongocxx::client & client);
+      const std::string & response, const std::string & error, const std::string & message,
+      const std::string & timestamp, mongocxx::client & client);
 
 protected:
     const std::string               db_name_;  // Name of the database

@@ -269,11 +269,11 @@ void HTTPServer::doPost()
                     std::getline(ss, error, ',');
                     std::getline(ss, message, ',');
 
-                    uint8_t error_code = static_cast<uint8_t>(std::stoi(error));
+                    // std::getLineerror_code = static_cast<uint8_t>(std::stoi(error));
 
                     // std::string response = pt.get<std::string>("response");
                     // uint8_t     error    = pt.get<int>("error");
-                    if (!self->db_.storeIridiumResponse(response, error_code, timestamp)) {  //important
+                    if (!self->db_.storeIridiumResponse(response, error, message, timestamp)) {  //important
                         std::cerr << "Error, failed to store data received at:\n" << timestamp << std::endl;
                     } else {
                         curl_easy_cleanup(curl);
