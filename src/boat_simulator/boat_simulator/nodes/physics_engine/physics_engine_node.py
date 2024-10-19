@@ -36,6 +36,7 @@ from boat_simulator.common.generators import MVGaussianGenerator
 from boat_simulator.common.types import Scalar
 from boat_simulator.nodes.physics_engine.fluid_generation import FluidGenerator
 from boat_simulator.nodes.physics_engine.model import BoatState
+from boat_simulator.common.sensors import SimWindSensor
 
 from .decorators import require_all_subs_active
 
@@ -181,6 +182,8 @@ class PhysicsEngineNode(Node):
         self.__current_generator = FluidGenerator(
             generator=MVGaussianGenerator(current_mean, current_cov)
         )
+  
+        self.__sim_wind_sensor = SimWindSensor(self.__wind_generator.next(), enable_noise=True, enable_delay=False)
 
     def __init_callback_groups(self):
         """Initializes the callback groups. Whether multithreading is enabled or not will affect
@@ -310,6 +313,7 @@ class PhysicsEngineNode(Node):
     # PUBLISHER CALLBACKS
     def __publish(self):
         """Synchronously publishes data to all publishers at once."""
+        # GENERATE WIND, UPDATE WINDSENSOR
         self.__update_boat_state()
         # TODO Get updated boat state and publish (should this be separate from publishing?)
         # TODO Get wind sensor data and publish (should this be separate from publishing?)
