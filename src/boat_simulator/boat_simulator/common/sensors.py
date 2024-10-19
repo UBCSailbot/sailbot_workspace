@@ -80,7 +80,7 @@ class Sensor:
             )
 
 
-class WindSensor(Sensor):
+class SimWindSensor(Sensor):
     """
     Abstraction for wind sensor.
 
@@ -138,7 +138,7 @@ class WindSensor(Sensor):
         self.wind_next_value = wind
 
 
-class GPS(Sensor):
+class SimGPS(Sensor):
     """
     Abstraction for GPS.
 
