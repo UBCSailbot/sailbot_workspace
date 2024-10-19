@@ -156,7 +156,7 @@ class BoatState:
             rudder_force[1] * rudder_drag_constant,
         )
 
-        total_torque = np.add(sail_torque, rudder_torque) # Sum torques about z-axis
+        total_torque = np.add(sail_torque, rudder_torque)  # Sum torques about z-axis
 
         final_torque = np.array([0, 0, total_torque])
 
