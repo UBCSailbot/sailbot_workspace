@@ -1,0 +1,2804 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+        <meta name="author" content="UBCSailbot Software Team">
+      
+      
+        <link rel="canonical" href="https://UBCSailbot.github.io/sailbot_workspace/pr-442/reference/python/virtual-environments/">
+      
+      
+        <link rel="prev" href="../conventions/">
+      
+      
+        <link rel="next" href="../../ros/">
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.42">
+    
+    
+      
+        <title>Virtual Environments - UBCSailbot Software Team Docs</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.0253249f.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+      
+        <meta  property="og:type"  content="website" >
+      
+        <meta  property="og:title"  content="Virtual Environments - UBCSailbot Software Team Docs" >
+      
+        <meta  property="og:description"  content="None" >
+      
+        <meta  property="og:image"  content="https://UBCSailbot.github.io/sailbot_workspace/pr-442/assets/images/social/reference/python/virtual-environments.png" >
+      
+        <meta  property="og:image:type"  content="image/png" >
+      
+        <meta  property="og:image:width"  content="1200" >
+      
+        <meta  property="og:image:height"  content="630" >
+      
+        <meta  property="og:url"  content="https://UBCSailbot.github.io/sailbot_workspace/pr-442/reference/python/virtual-environments/" >
+      
+        <meta  name="twitter:card"  content="summary_large_image" >
+      
+        <meta  name="twitter:title"  content="Virtual Environments - UBCSailbot Software Team Docs" >
+      
+        <meta  name="twitter:description"  content="None" >
+      
+        <meta  name="twitter:image"  content="https://UBCSailbot.github.io/sailbot_workspace/pr-442/assets/images/social/reference/python/virtual-environments.png" >
+      
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#virtual-environments" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+          <aside class="md-banner md-banner--warning">
+            <div class="md-banner__inner md-grid md-typeset">
+              
+  You're not viewing the version in the main branch.
+  <a href="../main/../../..">
+    <strong>Click here to go to main.</strong>
+  </a>
+
+            </div>
+            <script>var el=document.querySelector("[data-md-component=outdated]"),outdated=__md_get("__outdated",sessionStorage);!0===outdated&&el&&(el.hidden=!1)</script>
+          </aside>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="UBCSailbot Software Team Docs" class="md-header__button md-logo" aria-label="UBCSailbot Software Team Docs" data-md-component="logo">
+      
+  <img src="../../../assets/ubcsailbot-white.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            UBCSailbot Software Team Docs
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Virtual Environments
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/UBCSailbot/sailbot_workspace" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    UBCSailbot/sailbot_workspace
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../.." class="md-tabs__link">
+        
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../current/overview/" class="md-tabs__link">
+          
+  
+  Current Project
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+    
+  
+  
+    
+    
+      
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../../cpp/start/" class="md-tabs__link">
+          
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+    
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../about_us/" class="md-tabs__link">
+        
+  
+    
+  
+  About Us
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="UBCSailbot Software Team Docs" class="md-nav__button md-logo" aria-label="UBCSailbot Software Team Docs" data-md-component="logo">
+      
+  <img src="../../../assets/ubcsailbot-white.png" alt="logo">
+
+    </a>
+    UBCSailbot Software Team Docs
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/UBCSailbot/sailbot_workspace" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    UBCSailbot/sailbot_workspace
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Current Project
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            Current Project
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../current/overview/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Overview
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_2" id="__nav_2_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Sailbot Workspace
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_2">
+            <span class="md-nav__icon md-icon"></span>
+            Sailbot Workspace
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../current/sailbot_workspace/overview/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Overview
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2_2_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_2_2" id="__nav_2_2_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Usage
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_2_2_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_2_2">
+            <span class="md-nav__icon md-icon"></span>
+            Usage
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../current/sailbot_workspace/usage/setup/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Setup
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../current/sailbot_workspace/usage/workflow/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Workflow
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../current/sailbot_workspace/usage/how_to/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    How-To's
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../current/sailbot_workspace/usage/help/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Help
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2_2_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_2_3" id="__nav_2_2_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Reference
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_2_2_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_2_3">
+            <span class="md-nav__icon md-icon"></span>
+            Reference
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../current/sailbot_workspace/reference/deployment/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Deployment
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../current/sailbot_workspace/reference/docs_site/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Docs Site
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../current/sailbot_workspace/reference/docker_images/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Images
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../current/sailbot_workspace/reference/launch_files/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Launch Files
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../current/sailbot_workspace/reference/notebooks/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Notebooks
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../current/sailbot_workspace/reference/parameters/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Parameters
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../current/sailbot_workspace/scripts/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Scripts
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_3" id="__nav_2_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Boat Simulator
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_3">
+            <span class="md-nav__icon md-icon"></span>
+            Boat Simulator
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../current/boat_simulator/overview/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Overview
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_4" id="__nav_2_4_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Controller
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_4">
+            <span class="md-nav__icon md-icon"></span>
+            Controller
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../current/controller/overview/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Overview
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_5" id="__nav_2_5_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Custom Interfaces
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_5">
+            <span class="md-nav__icon md-icon"></span>
+            Custom Interfaces
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../current/custom_interfaces/overview/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Overview
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_6" id="__nav_2_6_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Local Pathfinding
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_6">
+            <span class="md-nav__icon md-icon"></span>
+            Local Pathfinding
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../current/local_pathfinding/overview/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Overview
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_7" id="__nav_2_7_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Network Systems
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_7">
+            <span class="md-nav__icon md-icon"></span>
+            Network Systems
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../current/network_systems/overview/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Overview
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_8" id="__nav_2_8_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Website
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_8">
+            <span class="md-nav__icon md-icon"></span>
+            Website
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../current/website/overview/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Overview
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+      
+        
+        
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    Reference
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Reference
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_1" id="__nav_3_1_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    C++
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_1">
+            <span class="md-nav__icon md-icon"></span>
+            C++
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpp/start/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Getting Started
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpp/differences/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Differences
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cpp/tools/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Tools
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../docker/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Docker
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    GitHub
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3">
+            <span class="md-nav__icon md-icon"></span>
+            GitHub
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_3_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_3_1" id="__nav_3_3_1_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Development Workflow
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_3_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3_1">
+            <span class="md-nav__icon md-icon"></span>
+            Development Workflow
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../github/workflow/overview/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Overview
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../github/workflow/issues/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Creating Issues
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../github/workflow/branches/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Developing on Branches
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../github/workflow/pr/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Pull Requests
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../github/advanced_git/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Advanced Git
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../github/github_actions/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    GitHub Actions
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../linux_commands/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Linux Commands
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../markdown/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Markdown
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_6" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3_6" id="__nav_3_6_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Python
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3_6">
+            <span class="md-nav__icon md-icon"></span>
+            Python
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../start/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Getting Started
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../conventions/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Conventions
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Virtual Environments
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Virtual Environments
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Installation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#using-virtual-environments" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using virtual environments
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Using virtual environments">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#creating-a-virtual-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Creating a virtual environment
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#activating-the-virtual-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Activating the virtual environment
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#installing-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      Installing dependencies
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deactivating-the-virtual-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Deactivating the virtual environment
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reproducing-your-virtual-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Reproducing your virtual environment
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Reproducing your virtual environment">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#exporting-your-virtual-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Exporting your virtual environment
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reproducing-the-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Reproducing the environment
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#official-references" class="md-nav__link">
+    <span class="md-ellipsis">
+      Official references
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ros/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Robot Operating System
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_8" id="__nav_3_8_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Sailing Knowledge
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_8">
+            <span class="md-nav__icon md-icon"></span>
+            Sailing Knowledge
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sailing/overview/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Overview
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sailing/boat_parts/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Parts of a Sailboat
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sailing/turning/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Types of Turns
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sailing/points_of_sail/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Points of Sail
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sailing/ais_terms/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    AIS Terms
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sailing/miscellaneous/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Miscellaneous
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../about_us/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    About Us
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Installation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#using-virtual-environments" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using virtual environments
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Using virtual environments">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#creating-a-virtual-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Creating a virtual environment
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#activating-the-virtual-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Activating the virtual environment
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#installing-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      Installing dependencies
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deactivating-the-virtual-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Deactivating the virtual environment
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reproducing-your-virtual-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Reproducing your virtual environment
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Reproducing your virtual environment">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#exporting-your-virtual-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Exporting your virtual environment
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reproducing-the-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Reproducing the environment
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#official-references" class="md-nav__link">
+    <span class="md-ellipsis">
+      Official references
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+    <a href="https://github.com/UBCSailbot/sailbot_workspace/edit/main/docs/reference/python/virtual-environments.md" title="Edit this page" class="md-content__button md-icon">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+    
+      
+    
+    <a href="https://github.com/UBCSailbot/sailbot_workspace/raw/main/docs/reference/python/virtual-environments.md" title="View source of this page" class="md-content__button md-icon">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.2 8.2 0 0 1-1.23-2"/></svg>
+    </a>
+  
+
+
+<h1 id="virtual-environments">Virtual Environments<a class="headerlink" href="#virtual-environments" title="Permanent link">&para;</a></h1>
+<p>The Python virtual environment is a tool for dependency management and project isolation. They solve many
+common issues, including:</p>
+<ul>
+<li>
+<p><strong>Dependency Resolution:</strong> A project might want a package with version A while another project might want
+a package with version B. With a virtual environment, you can separate which packages that you want to use
+for a given project.</p>
+</li>
+<li>
+<p><strong>Project Isolation:</strong> The environment for your project is self-contained and reproducible by capturing all
+dependencies in a configuration file.</p>
+</li>
+<li>
+<p><strong>Housekeeping:</strong> Virtual environments allow you to keep your global workspace tidy.</p>
+</li>
+</ul>
+<p>There are two main methods of creating virtual environments: <a href="https://pypi.org/project/virtualenv/" target="_blank">virtualenv</a>
+and <a href="https://www.anaconda.com/" target="_blank">Anaconda</a>. Each have their own benefits and drawbacks. Here are some differences
+between the two:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Virtualenv</th>
+<th style="text-align: left;">Anaconda</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">Environment files are local.</td>
+<td style="text-align: left;">Environment files are available globally.</td>
+</tr>
+<tr>
+<td style="text-align: left;">Must activate environment by giving the path.</td>
+<td style="text-align: left;">Can activate the environment without knowing the path, but only the name.</td>
+</tr>
+<tr>
+<td style="text-align: left;">Can only use <code>pip</code> to install packages.</td>
+<td style="text-align: left;">Can either use <code>pip</code> or built-in <code>conda</code> package manager.</td>
+</tr>
+<tr>
+<td style="text-align: left;">Installation is very simple.</td>
+<td style="text-align: left;">Installation takes more effort.</td>
+</tr>
+<tr>
+<td style="text-align: left;">Can only install python packages.</td>
+<td style="text-align: left;">In addition to packages, you can download many data science tools.</td>
+</tr>
+</tbody>
+</table>
+<p>We recommend <strong>virtualenv</strong> over Anaconda because of its simplicity. However, feel free to appeal to your preferences.</p>
+<h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19.14 7.5A2.86 2.86 0 0 1 22 10.36v3.78A2.86 2.86 0 0 1 19.14 17H12c0 .39.32.96.71.96H17v1.68a2.86 2.86 0 0 1-2.86 2.86H9.86A2.86 2.86 0 0 1 7 19.64v-3.75a2.85 2.85 0 0 1 2.86-2.85h5.25a2.85 2.85 0 0 0 2.85-2.86V7.5zm-4.28 11.79c-.4 0-.72.3-.72.89s.32.71.72.71a.71.71 0 0 0 .71-.71c0-.59-.32-.89-.71-.89m-10-1.79A2.86 2.86 0 0 1 2 14.64v-3.78A2.86 2.86 0 0 1 4.86 8H12c0-.39-.32-.96-.71-.96H7V5.36A2.86 2.86 0 0 1 9.86 2.5h4.28A2.86 2.86 0 0 1 17 5.36v3.75a2.85 2.85 0 0 1-2.86 2.85H8.89a2.85 2.85 0 0 0-2.85 2.86v2.68zM9.14 5.71c.4 0 .72-.3.72-.89s-.32-.71-.72-.71c-.39 0-.71.12-.71.71s.32.89.71.89"/></svg></span> Virtualenv</label><label for="__tabbed_1_2"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12.045.033a12.181 12.182 0 0 0-1.361.078 17.512 17.513 0 0 1 1.813 1.433l.48.438-.465.45a15 15 0 0 0-1.126 1.205l-.178.215a9 9 0 0 1 .86-.05 8.154 8.155 0 1 1-4.286 15.149 15.764 15.765 0 0 1-1.841.106h-.86a22 22 0 0 0 .264 2.866 11.966 11.967 0 1 0 6.7-21.89M8.17.678a12.181 12.182 0 0 0-2.624 1.275 16 16 0 0 1 1.813.43A18.551 18.552 0 0 1 8.17.678M9.423.75a16.237 16.238 0 0 0-.995 1.998 16.15 16.152 0 0 1 1.605.66 7 7 0 0 1 .43-.509q.35-.43.716-.817A15 15 0 0 0 9.423.75M4.68 2.949a14.969 14.97 0 0 0 0 2.336c.587-.065 1.196-.1 1.812-.107a17 17 0 0 1 .48-1.748 16.48 16.481 0 0 0-2.292-.481M3.62 3.5a12 12 0 0 0-1.858 2.38 17 17 0 0 1 1.877-.444A17 17 0 0 1 3.62 3.5m4.406.287c-.143.437-.265.888-.38 1.347a8.3 8.3 0 0 1 1.67-.803c-.423-.2-.845-.38-1.29-.544M6.3 6.216a14 14 0 0 0-1.555.108c.064.523.157 1.038.272 1.554A8.4 8.4 0 0 1 6.3 6.216m-2.55.137a15.3 15.3 0 0 0-2.602.716H1.07v.079a17.104 17.105 0 0 0 1.267 2.544l.043.071.072-.049a16 16 0 0 1 1.734-1.083l.057-.035V8.54a17 17 0 0 1-.408-2.094v-.092zM.644 8.095l-.063.2A11.844 11.845 0 0 0 0 11.655v.209l.143-.152a17.706 17.707 0 0 1 1.584-1.447l.057-.043-.043-.064a16 16 0 0 1-1.025-1.87zm3.77 1.253-.18.1c-.465.273-.93.573-1.375.889l-.065.05.05.064c.309.437.645.867.996 1.276l.137.165v-.208a8.2 8.2 0 0 1 .364-2.15zM2.2 10.853l-.072.05a16.6 16.6 0 0 0-1.813 1.734l-.058.058.066.057a15.5 15.5 0 0 0 1.991 1.483l.072.05.043-.08a16.738 16.74 0 0 1 1.053-1.64v-.05l-.043-.05a17 17 0 0 1-1.19-1.54zm1.855 2.071-.121.172a15 15 0 0 0-.917 1.433l-.043.072.071.043a17 17 0 0 0 1.562.766l.193.086-.086-.193a8 8 0 0 1-.66-2.172zm-3.976.48v.2a11.758 11.759 0 0 0 .946 3.326l.078.186.072-.194a16.215 16.216 0 0 1 .845-2l.057-.063-.064-.043a17.197 17.198 0 0 1-1.776-1.284zm2.543 1.805-.035.08a15.764 15.765 0 0 0-.983 2.479v.08h.086a16.15 16.152 0 0 0 2.688.5l.072.007v-.086a18 18 0 0 1 .164-2.056v-.065H4.55a16 16 0 0 1-1.849-.896zm2.544 1.169v.114a17 17 0 0 0-.151 1.828v.078h.931c.287 0 .624.014.946 0h.209l-.166-.129a8 8 0 0 1-1.64-1.834zm-3.29 2.1.115.172a12 12 0 0 0 2.502 2.737l.157.129v-.201a22.578 22.58 0 0 1-.2-2.336v-.071h-.072a16 16 0 0 1-2.3-.387z"/></svg></span> Anaconda</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p>If you already have python and the pip package manager installed, just execute the following:</p>
+<div class="highlight"><span class="filename">Using pip to install virtualenv</span><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>virtualenv
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<p>Go to the official <a href="https://www.anaconda.com/" target="_blank">Anaconda website</a> and follow the installation
+instructions for your operating system.</p>
+</div>
+</div>
+</div>
+<h2 id="using-virtual-environments">Using virtual environments<a class="headerlink" href="#using-virtual-environments" title="Permanent link">&para;</a></h2>
+<p>The name of a virtual environment is configurable. For the purposes of this site, we will use <code>env</code> as the environment
+name unless specified otherwise.</p>
+<h3 id="creating-a-virtual-environment">Creating a virtual environment<a class="headerlink" href="#creating-a-virtual-environment" title="Permanent link">&para;</a></h3>
+<div class="tabbed-set tabbed-alternate" data-tabs="2:2"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19.14 7.5A2.86 2.86 0 0 1 22 10.36v3.78A2.86 2.86 0 0 1 19.14 17H12c0 .39.32.96.71.96H17v1.68a2.86 2.86 0 0 1-2.86 2.86H9.86A2.86 2.86 0 0 1 7 19.64v-3.75a2.85 2.85 0 0 1 2.86-2.85h5.25a2.85 2.85 0 0 0 2.85-2.86V7.5zm-4.28 11.79c-.4 0-.72.3-.72.89s.32.71.72.71a.71.71 0 0 0 .71-.71c0-.59-.32-.89-.71-.89m-10-1.79A2.86 2.86 0 0 1 2 14.64v-3.78A2.86 2.86 0 0 1 4.86 8H12c0-.39-.32-.96-.71-.96H7V5.36A2.86 2.86 0 0 1 9.86 2.5h4.28A2.86 2.86 0 0 1 17 5.36v3.75a2.85 2.85 0 0 1-2.86 2.85H8.89a2.85 2.85 0 0 0-2.85 2.86v2.68zM9.14 5.71c.4 0 .72-.3.72-.89s-.32-.71-.72-.71c-.39 0-.71.12-.71.71s.32.89.71.89"/></svg></span> Virtualenv</label><label for="__tabbed_2_2"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12.045.033a12.181 12.182 0 0 0-1.361.078 17.512 17.513 0 0 1 1.813 1.433l.48.438-.465.45a15 15 0 0 0-1.126 1.205l-.178.215a9 9 0 0 1 .86-.05 8.154 8.155 0 1 1-4.286 15.149 15.764 15.765 0 0 1-1.841.106h-.86a22 22 0 0 0 .264 2.866 11.966 11.967 0 1 0 6.7-21.89M8.17.678a12.181 12.182 0 0 0-2.624 1.275 16 16 0 0 1 1.813.43A18.551 18.552 0 0 1 8.17.678M9.423.75a16.237 16.238 0 0 0-.995 1.998 16.15 16.152 0 0 1 1.605.66 7 7 0 0 1 .43-.509q.35-.43.716-.817A15 15 0 0 0 9.423.75M4.68 2.949a14.969 14.97 0 0 0 0 2.336c.587-.065 1.196-.1 1.812-.107a17 17 0 0 1 .48-1.748 16.48 16.481 0 0 0-2.292-.481M3.62 3.5a12 12 0 0 0-1.858 2.38 17 17 0 0 1 1.877-.444A17 17 0 0 1 3.62 3.5m4.406.287c-.143.437-.265.888-.38 1.347a8.3 8.3 0 0 1 1.67-.803c-.423-.2-.845-.38-1.29-.544M6.3 6.216a14 14 0 0 0-1.555.108c.064.523.157 1.038.272 1.554A8.4 8.4 0 0 1 6.3 6.216m-2.55.137a15.3 15.3 0 0 0-2.602.716H1.07v.079a17.104 17.105 0 0 0 1.267 2.544l.043.071.072-.049a16 16 0 0 1 1.734-1.083l.057-.035V8.54a17 17 0 0 1-.408-2.094v-.092zM.644 8.095l-.063.2A11.844 11.845 0 0 0 0 11.655v.209l.143-.152a17.706 17.707 0 0 1 1.584-1.447l.057-.043-.043-.064a16 16 0 0 1-1.025-1.87zm3.77 1.253-.18.1c-.465.273-.93.573-1.375.889l-.065.05.05.064c.309.437.645.867.996 1.276l.137.165v-.208a8.2 8.2 0 0 1 .364-2.15zM2.2 10.853l-.072.05a16.6 16.6 0 0 0-1.813 1.734l-.058.058.066.057a15.5 15.5 0 0 0 1.991 1.483l.072.05.043-.08a16.738 16.74 0 0 1 1.053-1.64v-.05l-.043-.05a17 17 0 0 1-1.19-1.54zm1.855 2.071-.121.172a15 15 0 0 0-.917 1.433l-.043.072.071.043a17 17 0 0 0 1.562.766l.193.086-.086-.193a8 8 0 0 1-.66-2.172zm-3.976.48v.2a11.758 11.759 0 0 0 .946 3.326l.078.186.072-.194a16.215 16.216 0 0 1 .845-2l.057-.063-.064-.043a17.197 17.198 0 0 1-1.776-1.284zm2.543 1.805-.035.08a15.764 15.765 0 0 0-.983 2.479v.08h.086a16.15 16.152 0 0 0 2.688.5l.072.007v-.086a18 18 0 0 1 .164-2.056v-.065H4.55a16 16 0 0 1-1.849-.896zm2.544 1.169v.114a17 17 0 0 0-.151 1.828v.078h.931c.287 0 .624.014.946 0h.209l-.166-.129a8 8 0 0 1-1.64-1.834zm-3.29 2.1.115.172a12 12 0 0 0 2.502 2.737l.157.129v-.201a22.578 22.58 0 0 1-.2-2.336v-.071h-.072a16 16 0 0 1-2.3-.387z"/></svg></span> Anaconda</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p>Since virtualenv creates the environment directory in a specific location, make sure that you
+are in the located in the project that you want to work on.</p>
+<div class="highlight"><span class="filename">Create virtual environment with virtualenv</span><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Go to desired location</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nb">cd</span><span class="w"> </span>&lt;PATH<span class="w"> </span>TO<span class="w"> </span>DIRECTORY&gt;
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># Create the environment with the name env</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>python3<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>env
+</code></pre></div>
+<p>Verify that your environment is created by examining your current directory and look for the directory
+that matches the name of your virtual environment.</p>
+</div>
+<div class="tabbed-block">
+<p>Since the environment will be available globally, there is no need to go to a specific location to create
+it.</p>
+<div class="highlight"><span class="filename">Create virtual environment with Anaconda</span><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Create environment with name env and python version</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>conda<span class="w"> </span>env<span class="w"> </span>create<span class="w"> </span>-n<span class="w"> </span>env<span class="w"> </span><span class="nv">python</span><span class="o">=</span>&lt;PYTHON<span class="w"> </span>VERSION<span class="w"> </span>NUM&gt;
+</code></pre></div>
+<p>If you don't specify a python version, the default is the version you used when you downloaded and installed Anaconda.
+Verify that your environment is created by executing <code>conda env list</code>.</p>
+</div>
+</div>
+</div>
+<h3 id="activating-the-virtual-environment">Activating the virtual environment<a class="headerlink" href="#activating-the-virtual-environment" title="Permanent link">&para;</a></h3>
+<p>To use the virtual environment, you must activate it.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="3:2"><input checked="checked" id="__tabbed_3_1" name="__tabbed_3" type="radio" /><input id="__tabbed_3_2" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="__tabbed_3_1"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19.14 7.5A2.86 2.86 0 0 1 22 10.36v3.78A2.86 2.86 0 0 1 19.14 17H12c0 .39.32.96.71.96H17v1.68a2.86 2.86 0 0 1-2.86 2.86H9.86A2.86 2.86 0 0 1 7 19.64v-3.75a2.85 2.85 0 0 1 2.86-2.85h5.25a2.85 2.85 0 0 0 2.85-2.86V7.5zm-4.28 11.79c-.4 0-.72.3-.72.89s.32.71.72.71a.71.71 0 0 0 .71-.71c0-.59-.32-.89-.71-.89m-10-1.79A2.86 2.86 0 0 1 2 14.64v-3.78A2.86 2.86 0 0 1 4.86 8H12c0-.39-.32-.96-.71-.96H7V5.36A2.86 2.86 0 0 1 9.86 2.5h4.28A2.86 2.86 0 0 1 17 5.36v3.75a2.85 2.85 0 0 1-2.86 2.85H8.89a2.85 2.85 0 0 0-2.85 2.86v2.68zM9.14 5.71c.4 0 .72-.3.72-.89s-.32-.71-.72-.71c-.39 0-.71.12-.71.71s.32.89.71.89"/></svg></span> Virtualenv</label><label for="__tabbed_3_2"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12.045.033a12.181 12.182 0 0 0-1.361.078 17.512 17.513 0 0 1 1.813 1.433l.48.438-.465.45a15 15 0 0 0-1.126 1.205l-.178.215a9 9 0 0 1 .86-.05 8.154 8.155 0 1 1-4.286 15.149 15.764 15.765 0 0 1-1.841.106h-.86a22 22 0 0 0 .264 2.866 11.966 11.967 0 1 0 6.7-21.89M8.17.678a12.181 12.182 0 0 0-2.624 1.275 16 16 0 0 1 1.813.43A18.551 18.552 0 0 1 8.17.678M9.423.75a16.237 16.238 0 0 0-.995 1.998 16.15 16.152 0 0 1 1.605.66 7 7 0 0 1 .43-.509q.35-.43.716-.817A15 15 0 0 0 9.423.75M4.68 2.949a14.969 14.97 0 0 0 0 2.336c.587-.065 1.196-.1 1.812-.107a17 17 0 0 1 .48-1.748 16.48 16.481 0 0 0-2.292-.481M3.62 3.5a12 12 0 0 0-1.858 2.38 17 17 0 0 1 1.877-.444A17 17 0 0 1 3.62 3.5m4.406.287c-.143.437-.265.888-.38 1.347a8.3 8.3 0 0 1 1.67-.803c-.423-.2-.845-.38-1.29-.544M6.3 6.216a14 14 0 0 0-1.555.108c.064.523.157 1.038.272 1.554A8.4 8.4 0 0 1 6.3 6.216m-2.55.137a15.3 15.3 0 0 0-2.602.716H1.07v.079a17.104 17.105 0 0 0 1.267 2.544l.043.071.072-.049a16 16 0 0 1 1.734-1.083l.057-.035V8.54a17 17 0 0 1-.408-2.094v-.092zM.644 8.095l-.063.2A11.844 11.845 0 0 0 0 11.655v.209l.143-.152a17.706 17.707 0 0 1 1.584-1.447l.057-.043-.043-.064a16 16 0 0 1-1.025-1.87zm3.77 1.253-.18.1c-.465.273-.93.573-1.375.889l-.065.05.05.064c.309.437.645.867.996 1.276l.137.165v-.208a8.2 8.2 0 0 1 .364-2.15zM2.2 10.853l-.072.05a16.6 16.6 0 0 0-1.813 1.734l-.058.058.066.057a15.5 15.5 0 0 0 1.991 1.483l.072.05.043-.08a16.738 16.74 0 0 1 1.053-1.64v-.05l-.043-.05a17 17 0 0 1-1.19-1.54zm1.855 2.071-.121.172a15 15 0 0 0-.917 1.433l-.043.072.071.043a17 17 0 0 0 1.562.766l.193.086-.086-.193a8 8 0 0 1-.66-2.172zm-3.976.48v.2a11.758 11.759 0 0 0 .946 3.326l.078.186.072-.194a16.215 16.216 0 0 1 .845-2l.057-.063-.064-.043a17.197 17.198 0 0 1-1.776-1.284zm2.543 1.805-.035.08a15.764 15.765 0 0 0-.983 2.479v.08h.086a16.15 16.152 0 0 0 2.688.5l.072.007v-.086a18 18 0 0 1 .164-2.056v-.065H4.55a16 16 0 0 1-1.849-.896zm2.544 1.169v.114a17 17 0 0 0-.151 1.828v.078h.931c.287 0 .624.014.946 0h.209l-.166-.129a8 8 0 0 1-1.64-1.834zm-3.29 2.1.115.172a12 12 0 0 0 2.502 2.737l.157.129v-.201a22.578 22.58 0 0 1-.2-2.336v-.071h-.072a16 16 0 0 1-2.3-.387z"/></svg></span> Anaconda</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="tabbed-set tabbed-alternate" data-tabs="4:3"><input checked="checked" id="__tabbed_4_1" name="__tabbed_4" type="radio" /><input id="__tabbed_4_2" name="__tabbed_4" type="radio" /><input id="__tabbed_4_3" name="__tabbed_4" type="radio" /><div class="tabbed-labels"><label for="__tabbed_4_1"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 12V6.75l6-1.32v6.48zm17-9v8.75l-10 .15V5.21zM3 13l6 .09v6.81l-6-1.15zm17 .25V22l-10-1.91V13.1z"/></svg></span> Windows</label><label for="__tabbed_4_2"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11"/></svg></span> macOS</label><label for="__tabbed_4_3"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14.62 8.35c-.42.28-1.75 1.04-1.95 1.19-.39.31-.75.29-1.14-.01-.2-.16-1.53-.92-1.95-1.19-.48-.31-.45-.7.08-.92 1.64-.69 3.28-.64 4.91.03.49.21.51.6.05.9m7.22 7.28c-.93-2.09-2.2-3.99-3.84-5.66a4.3 4.3 0 0 1-1.06-1.88c-.1-.33-.17-.67-.24-1.01-.2-.88-.29-1.78-.7-2.61-.73-1.58-2-2.4-3.84-2.47-1.81.05-3.16.81-3.95 2.4-.21.43-.36.88-.46 1.34-.17.76-.32 1.55-.5 2.32-.15.65-.45 1.21-.96 1.71-1.61 1.57-2.9 3.37-3.88 5.35-.14.29-.28.58-.37.88-.19.66.29 1.12.99.96.44-.09.88-.18 1.3-.31.41-.15.57-.05.67.35.65 2.15 2.07 3.66 4.24 4.5 4.12 1.56 8.93-.66 9.97-4.58.07-.27.17-.37.47-.27.46.14.93.24 1.4.35.49.09.85-.16.92-.64.03-.26-.06-.49-.16-.73"/></svg></span> Linux</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><span class="filename">Activation for Windows</span><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>env\Scripts\activate
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><span class="filename">Activation for macOS</span><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nb">source</span><span class="w"> </span>env/bin/activate
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><span class="filename">Activation for Linux</span><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nb">source</span><span class="w"> </span>env/bin/activate
+</code></pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><span class="filename">Activation for Anaconda</span><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>conda<span class="w"> </span>activate<span class="w"> </span>env
+</code></pre></div>
+</div>
+</div>
+</div>
+<p>After activating your virtual environment, you might see <code>(env)</code> on your terminal before or after
+your current line. Now you are in your virtual environment!</p>
+<h3 id="installing-dependencies">Installing dependencies<a class="headerlink" href="#installing-dependencies" title="Permanent link">&para;</a></h3>
+<p>Any dependencies that you install while your virtual environment is activated are only available in your virtual
+environment. If you deactivate your environment and try to use those dependencies, you will find that you will get
+errors because they will not be found unless you install those dependencies in the other environment!</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="5:2"><input checked="checked" id="__tabbed_5_1" name="__tabbed_5" type="radio" /><input id="__tabbed_5_2" name="__tabbed_5" type="radio" /><div class="tabbed-labels"><label for="__tabbed_5_1"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19.14 7.5A2.86 2.86 0 0 1 22 10.36v3.78A2.86 2.86 0 0 1 19.14 17H12c0 .39.32.96.71.96H17v1.68a2.86 2.86 0 0 1-2.86 2.86H9.86A2.86 2.86 0 0 1 7 19.64v-3.75a2.85 2.85 0 0 1 2.86-2.85h5.25a2.85 2.85 0 0 0 2.85-2.86V7.5zm-4.28 11.79c-.4 0-.72.3-.72.89s.32.71.72.71a.71.71 0 0 0 .71-.71c0-.59-.32-.89-.71-.89m-10-1.79A2.86 2.86 0 0 1 2 14.64v-3.78A2.86 2.86 0 0 1 4.86 8H12c0-.39-.32-.96-.71-.96H7V5.36A2.86 2.86 0 0 1 9.86 2.5h4.28A2.86 2.86 0 0 1 17 5.36v3.75a2.85 2.85 0 0 1-2.86 2.85H8.89a2.85 2.85 0 0 0-2.85 2.86v2.68zM9.14 5.71c.4 0 .72-.3.72-.89s-.32-.71-.72-.71c-.39 0-.71.12-.71.71s.32.89.71.89"/></svg></span> Virtualenv</label><label for="__tabbed_5_2"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12.045.033a12.181 12.182 0 0 0-1.361.078 17.512 17.513 0 0 1 1.813 1.433l.48.438-.465.45a15 15 0 0 0-1.126 1.205l-.178.215a9 9 0 0 1 .86-.05 8.154 8.155 0 1 1-4.286 15.149 15.764 15.765 0 0 1-1.841.106h-.86a22 22 0 0 0 .264 2.866 11.966 11.967 0 1 0 6.7-21.89M8.17.678a12.181 12.182 0 0 0-2.624 1.275 16 16 0 0 1 1.813.43A18.551 18.552 0 0 1 8.17.678M9.423.75a16.237 16.238 0 0 0-.995 1.998 16.15 16.152 0 0 1 1.605.66 7 7 0 0 1 .43-.509q.35-.43.716-.817A15 15 0 0 0 9.423.75M4.68 2.949a14.969 14.97 0 0 0 0 2.336c.587-.065 1.196-.1 1.812-.107a17 17 0 0 1 .48-1.748 16.48 16.481 0 0 0-2.292-.481M3.62 3.5a12 12 0 0 0-1.858 2.38 17 17 0 0 1 1.877-.444A17 17 0 0 1 3.62 3.5m4.406.287c-.143.437-.265.888-.38 1.347a8.3 8.3 0 0 1 1.67-.803c-.423-.2-.845-.38-1.29-.544M6.3 6.216a14 14 0 0 0-1.555.108c.064.523.157 1.038.272 1.554A8.4 8.4 0 0 1 6.3 6.216m-2.55.137a15.3 15.3 0 0 0-2.602.716H1.07v.079a17.104 17.105 0 0 0 1.267 2.544l.043.071.072-.049a16 16 0 0 1 1.734-1.083l.057-.035V8.54a17 17 0 0 1-.408-2.094v-.092zM.644 8.095l-.063.2A11.844 11.845 0 0 0 0 11.655v.209l.143-.152a17.706 17.707 0 0 1 1.584-1.447l.057-.043-.043-.064a16 16 0 0 1-1.025-1.87zm3.77 1.253-.18.1c-.465.273-.93.573-1.375.889l-.065.05.05.064c.309.437.645.867.996 1.276l.137.165v-.208a8.2 8.2 0 0 1 .364-2.15zM2.2 10.853l-.072.05a16.6 16.6 0 0 0-1.813 1.734l-.058.058.066.057a15.5 15.5 0 0 0 1.991 1.483l.072.05.043-.08a16.738 16.74 0 0 1 1.053-1.64v-.05l-.043-.05a17 17 0 0 1-1.19-1.54zm1.855 2.071-.121.172a15 15 0 0 0-.917 1.433l-.043.072.071.043a17 17 0 0 0 1.562.766l.193.086-.086-.193a8 8 0 0 1-.66-2.172zm-3.976.48v.2a11.758 11.759 0 0 0 .946 3.326l.078.186.072-.194a16.215 16.216 0 0 1 .845-2l.057-.063-.064-.043a17.197 17.198 0 0 1-1.776-1.284zm2.543 1.805-.035.08a15.764 15.765 0 0 0-.983 2.479v.08h.086a16.15 16.152 0 0 0 2.688.5l.072.007v-.086a18 18 0 0 1 .164-2.056v-.065H4.55a16 16 0 0 1-1.849-.896zm2.544 1.169v.114a17 17 0 0 0-.151 1.828v.078h.931c.287 0 .624.014.946 0h.209l-.166-.129a8 8 0 0 1-1.64-1.834zm-3.29 2.1.115.172a12 12 0 0 0 2.502 2.737l.157.129v-.201a22.578 22.58 0 0 1-.2-2.336v-.071h-.072a16 16 0 0 1-2.3-.387z"/></svg></span> Anaconda</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p>Use the <code>pip</code> package manager to install python dependencies. Before installing any Python dependencies, it is good
+practice to upgrade <code>pip</code>:</p>
+<div class="highlight"><span class="filename">Upgrade pip</span><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span>pip
+</code></pre></div>
+<p>Now, install any Python dependencies <code>pip</code>:</p>
+<div class="highlight"><span class="filename">Install dependency with pip</span><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>pip<span class="w"> </span>install<span class="w"> </span>&lt;PACKAGE&gt;
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="tabbed-set tabbed-alternate" data-tabs="6:2"><input checked="checked" id="__tabbed_6_1" name="__tabbed_6" type="radio" /><input id="__tabbed_6_2" name="__tabbed_6" type="radio" /><div class="tabbed-labels"><label for="__tabbed_6_1">Option 1: pip</label><label for="__tabbed_6_2">Option 2: conda</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p>Use the <code>pip</code> package manager to install python dependencies.</p>
+<div class="highlight"><span class="filename">Install dependency with pip</span><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># Install pip using conda</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>conda<span class="w"> </span>install<span class="w"> </span>pip
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="c1"># Install python packages using pip</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>pip<span class="w"> </span>install<span class="w"> </span>&lt;PACKAGE&gt;
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<p>Use the built-in <code>conda</code> package manager to install python dependencies.</p>
+<div class="highlight"><span class="filename">Install dependency with conda</span><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>&lt;CHANNEL&gt;<span class="w"> </span>&lt;PACKAGE&gt;
+</code></pre></div>
+<p>Sometimes, installing a package like this simply won't work because you are not installing
+from the correct <a href="https://conda.io/projects/conda/en/latest/user-guide/concepts/channels.html" target="_blank">channel</a>.
+You usually will have to google the command to use in order to install your package correctly because
+it usually comes from a specific channel that you don't know about. Some common channels to try are:</p>
+<ul>
+<li>conda-forge</li>
+<li>anaconda</li>
+<li>bioconda</li>
+<li>r</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<h3 id="deactivating-the-virtual-environment">Deactivating the virtual environment<a class="headerlink" href="#deactivating-the-virtual-environment" title="Permanent link">&para;</a></h3>
+<p>When you are finished using your virtual environment, you will need to deactivate it.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="7:2"><input checked="checked" id="__tabbed_7_1" name="__tabbed_7" type="radio" /><input id="__tabbed_7_2" name="__tabbed_7" type="radio" /><div class="tabbed-labels"><label for="__tabbed_7_1"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19.14 7.5A2.86 2.86 0 0 1 22 10.36v3.78A2.86 2.86 0 0 1 19.14 17H12c0 .39.32.96.71.96H17v1.68a2.86 2.86 0 0 1-2.86 2.86H9.86A2.86 2.86 0 0 1 7 19.64v-3.75a2.85 2.85 0 0 1 2.86-2.85h5.25a2.85 2.85 0 0 0 2.85-2.86V7.5zm-4.28 11.79c-.4 0-.72.3-.72.89s.32.71.72.71a.71.71 0 0 0 .71-.71c0-.59-.32-.89-.71-.89m-10-1.79A2.86 2.86 0 0 1 2 14.64v-3.78A2.86 2.86 0 0 1 4.86 8H12c0-.39-.32-.96-.71-.96H7V5.36A2.86 2.86 0 0 1 9.86 2.5h4.28A2.86 2.86 0 0 1 17 5.36v3.75a2.85 2.85 0 0 1-2.86 2.85H8.89a2.85 2.85 0 0 0-2.85 2.86v2.68zM9.14 5.71c.4 0 .72-.3.72-.89s-.32-.71-.72-.71c-.39 0-.71.12-.71.71s.32.89.71.89"/></svg></span> Virtualenv</label><label for="__tabbed_7_2"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12.045.033a12.181 12.182 0 0 0-1.361.078 17.512 17.513 0 0 1 1.813 1.433l.48.438-.465.45a15 15 0 0 0-1.126 1.205l-.178.215a9 9 0 0 1 .86-.05 8.154 8.155 0 1 1-4.286 15.149 15.764 15.765 0 0 1-1.841.106h-.86a22 22 0 0 0 .264 2.866 11.966 11.967 0 1 0 6.7-21.89M8.17.678a12.181 12.182 0 0 0-2.624 1.275 16 16 0 0 1 1.813.43A18.551 18.552 0 0 1 8.17.678M9.423.75a16.237 16.238 0 0 0-.995 1.998 16.15 16.152 0 0 1 1.605.66 7 7 0 0 1 .43-.509q.35-.43.716-.817A15 15 0 0 0 9.423.75M4.68 2.949a14.969 14.97 0 0 0 0 2.336c.587-.065 1.196-.1 1.812-.107a17 17 0 0 1 .48-1.748 16.48 16.481 0 0 0-2.292-.481M3.62 3.5a12 12 0 0 0-1.858 2.38 17 17 0 0 1 1.877-.444A17 17 0 0 1 3.62 3.5m4.406.287c-.143.437-.265.888-.38 1.347a8.3 8.3 0 0 1 1.67-.803c-.423-.2-.845-.38-1.29-.544M6.3 6.216a14 14 0 0 0-1.555.108c.064.523.157 1.038.272 1.554A8.4 8.4 0 0 1 6.3 6.216m-2.55.137a15.3 15.3 0 0 0-2.602.716H1.07v.079a17.104 17.105 0 0 0 1.267 2.544l.043.071.072-.049a16 16 0 0 1 1.734-1.083l.057-.035V8.54a17 17 0 0 1-.408-2.094v-.092zM.644 8.095l-.063.2A11.844 11.845 0 0 0 0 11.655v.209l.143-.152a17.706 17.707 0 0 1 1.584-1.447l.057-.043-.043-.064a16 16 0 0 1-1.025-1.87zm3.77 1.253-.18.1c-.465.273-.93.573-1.375.889l-.065.05.05.064c.309.437.645.867.996 1.276l.137.165v-.208a8.2 8.2 0 0 1 .364-2.15zM2.2 10.853l-.072.05a16.6 16.6 0 0 0-1.813 1.734l-.058.058.066.057a15.5 15.5 0 0 0 1.991 1.483l.072.05.043-.08a16.738 16.74 0 0 1 1.053-1.64v-.05l-.043-.05a17 17 0 0 1-1.19-1.54zm1.855 2.071-.121.172a15 15 0 0 0-.917 1.433l-.043.072.071.043a17 17 0 0 0 1.562.766l.193.086-.086-.193a8 8 0 0 1-.66-2.172zm-3.976.48v.2a11.758 11.759 0 0 0 .946 3.326l.078.186.072-.194a16.215 16.216 0 0 1 .845-2l.057-.063-.064-.043a17.197 17.198 0 0 1-1.776-1.284zm2.543 1.805-.035.08a15.764 15.765 0 0 0-.983 2.479v.08h.086a16.15 16.152 0 0 0 2.688.5l.072.007v-.086a18 18 0 0 1 .164-2.056v-.065H4.55a16 16 0 0 1-1.849-.896zm2.544 1.169v.114a17 17 0 0 0-.151 1.828v.078h.931c.287 0 .624.014.946 0h.209l-.166-.129a8 8 0 0 1-1.64-1.834zm-3.29 2.1.115.172a12 12 0 0 0 2.502 2.737l.157.129v-.201a22.578 22.58 0 0 1-.2-2.336v-.071h-.072a16 16 0 0 1-2.3-.387z"/></svg></span> Anaconda</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><span class="filename">Deactivate virtualenv environment</span><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>deactivate
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><span class="filename">Deactivate anaconda environment</span><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>conda<span class="w"> </span>deactivate
+</code></pre></div>
+</div>
+</div>
+</div>
+<h2 id="reproducing-your-virtual-environment">Reproducing your virtual environment<a class="headerlink" href="#reproducing-your-virtual-environment" title="Permanent link">&para;</a></h2>
+<p>When you want to share your code with others, it is important for others to be able to reproduce the environment
+that you worked in. We discuss two topics in this section: exporting your environment and reproducing the environment.</p>
+<h3 id="exporting-your-virtual-environment">Exporting your virtual environment<a class="headerlink" href="#exporting-your-virtual-environment" title="Permanent link">&para;</a></h3>
+<p>In order to reproduce your virtual environment, you need to export some information about your environment.
+Be sure to follow the instructions below <strong>while your environment is activated</strong>.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="8:2"><input checked="checked" id="__tabbed_8_1" name="__tabbed_8" type="radio" /><input id="__tabbed_8_2" name="__tabbed_8" type="radio" /><div class="tabbed-labels"><label for="__tabbed_8_1"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19.14 7.5A2.86 2.86 0 0 1 22 10.36v3.78A2.86 2.86 0 0 1 19.14 17H12c0 .39.32.96.71.96H17v1.68a2.86 2.86 0 0 1-2.86 2.86H9.86A2.86 2.86 0 0 1 7 19.64v-3.75a2.85 2.85 0 0 1 2.86-2.85h5.25a2.85 2.85 0 0 0 2.85-2.86V7.5zm-4.28 11.79c-.4 0-.72.3-.72.89s.32.71.72.71a.71.71 0 0 0 .71-.71c0-.59-.32-.89-.71-.89m-10-1.79A2.86 2.86 0 0 1 2 14.64v-3.78A2.86 2.86 0 0 1 4.86 8H12c0-.39-.32-.96-.71-.96H7V5.36A2.86 2.86 0 0 1 9.86 2.5h4.28A2.86 2.86 0 0 1 17 5.36v3.75a2.85 2.85 0 0 1-2.86 2.85H8.89a2.85 2.85 0 0 0-2.85 2.86v2.68zM9.14 5.71c.4 0 .72-.3.72-.89s-.32-.71-.72-.71c-.39 0-.71.12-.71.71s.32.89.71.89"/></svg></span> Virtualenv</label><label for="__tabbed_8_2"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12.045.033a12.181 12.182 0 0 0-1.361.078 17.512 17.513 0 0 1 1.813 1.433l.48.438-.465.45a15 15 0 0 0-1.126 1.205l-.178.215a9 9 0 0 1 .86-.05 8.154 8.155 0 1 1-4.286 15.149 15.764 15.765 0 0 1-1.841.106h-.86a22 22 0 0 0 .264 2.866 11.966 11.967 0 1 0 6.7-21.89M8.17.678a12.181 12.182 0 0 0-2.624 1.275 16 16 0 0 1 1.813.43A18.551 18.552 0 0 1 8.17.678M9.423.75a16.237 16.238 0 0 0-.995 1.998 16.15 16.152 0 0 1 1.605.66 7 7 0 0 1 .43-.509q.35-.43.716-.817A15 15 0 0 0 9.423.75M4.68 2.949a14.969 14.97 0 0 0 0 2.336c.587-.065 1.196-.1 1.812-.107a17 17 0 0 1 .48-1.748 16.48 16.481 0 0 0-2.292-.481M3.62 3.5a12 12 0 0 0-1.858 2.38 17 17 0 0 1 1.877-.444A17 17 0 0 1 3.62 3.5m4.406.287c-.143.437-.265.888-.38 1.347a8.3 8.3 0 0 1 1.67-.803c-.423-.2-.845-.38-1.29-.544M6.3 6.216a14 14 0 0 0-1.555.108c.064.523.157 1.038.272 1.554A8.4 8.4 0 0 1 6.3 6.216m-2.55.137a15.3 15.3 0 0 0-2.602.716H1.07v.079a17.104 17.105 0 0 0 1.267 2.544l.043.071.072-.049a16 16 0 0 1 1.734-1.083l.057-.035V8.54a17 17 0 0 1-.408-2.094v-.092zM.644 8.095l-.063.2A11.844 11.845 0 0 0 0 11.655v.209l.143-.152a17.706 17.707 0 0 1 1.584-1.447l.057-.043-.043-.064a16 16 0 0 1-1.025-1.87zm3.77 1.253-.18.1c-.465.273-.93.573-1.375.889l-.065.05.05.064c.309.437.645.867.996 1.276l.137.165v-.208a8.2 8.2 0 0 1 .364-2.15zM2.2 10.853l-.072.05a16.6 16.6 0 0 0-1.813 1.734l-.058.058.066.057a15.5 15.5 0 0 0 1.991 1.483l.072.05.043-.08a16.738 16.74 0 0 1 1.053-1.64v-.05l-.043-.05a17 17 0 0 1-1.19-1.54zm1.855 2.071-.121.172a15 15 0 0 0-.917 1.433l-.043.072.071.043a17 17 0 0 0 1.562.766l.193.086-.086-.193a8 8 0 0 1-.66-2.172zm-3.976.48v.2a11.758 11.759 0 0 0 .946 3.326l.078.186.072-.194a16.215 16.216 0 0 1 .845-2l.057-.063-.064-.043a17.197 17.198 0 0 1-1.776-1.284zm2.543 1.805-.035.08a15.764 15.765 0 0 0-.983 2.479v.08h.086a16.15 16.152 0 0 0 2.688.5l.072.007v-.086a18 18 0 0 1 .164-2.056v-.065H4.55a16 16 0 0 1-1.849-.896zm2.544 1.169v.114a17 17 0 0 0-.151 1.828v.078h.931c.287 0 .624.014.946 0h.209l-.166-.129a8 8 0 0 1-1.64-1.834zm-3.29 2.1.115.172a12 12 0 0 0 2.502 2.737l.157.129v-.201a22.578 22.58 0 0 1-.2-2.336v-.071h-.072a16 16 0 0 1-2.3-.387z"/></svg></span> Anaconda</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p>You will create a <code>requirements.txt</code> file, which essentially lists all of your python dependencies in one
+file:</p>
+<div class="highlight"><span class="filename">Creating requirements file</span><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>pip<span class="w"> </span>freeze<span class="w"> </span>&gt;<span class="w"> </span>requirements.txt
+</code></pre></div>
+<p>The <code>pip freeze</code> command prints all of your pip dependencies, and <code>&gt; requirements.txt</code> redirects the output
+to a text file.</p>
+</div>
+<div class="tabbed-block">
+<p>Anaconda uses configuration files to recreate an environment.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="9:3"><input checked="checked" id="__tabbed_9_1" name="__tabbed_9" type="radio" /><input id="__tabbed_9_2" name="__tabbed_9" type="radio" /><input id="__tabbed_9_3" name="__tabbed_9" type="radio" /><div class="tabbed-labels"><label for="__tabbed_9_1"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 12V6.75l6-1.32v6.48zm17-9v8.75l-10 .15V5.21zM3 13l6 .09v6.81l-6-1.15zm17 .25V22l-10-1.91V13.1z"/></svg></span> Windows</label><label for="__tabbed_9_2"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11"/></svg></span> macOS</label><label for="__tabbed_9_3"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14.62 8.35c-.42.28-1.75 1.04-1.95 1.19-.39.31-.75.29-1.14-.01-.2-.16-1.53-.92-1.95-1.19-.48-.31-.45-.7.08-.92 1.64-.69 3.28-.64 4.91.03.49.21.51.6.05.9m7.22 7.28c-.93-2.09-2.2-3.99-3.84-5.66a4.3 4.3 0 0 1-1.06-1.88c-.1-.33-.17-.67-.24-1.01-.2-.88-.29-1.78-.7-2.61-.73-1.58-2-2.4-3.84-2.47-1.81.05-3.16.81-3.95 2.4-.21.43-.36.88-.46 1.34-.17.76-.32 1.55-.5 2.32-.15.65-.45 1.21-.96 1.71-1.61 1.57-2.9 3.37-3.88 5.35-.14.29-.28.58-.37.88-.19.66.29 1.12.99.96.44-.09.88-.18 1.3-.31.41-.15.57-.05.67.35.65 2.15 2.07 3.66 4.24 4.5 4.12 1.56 8.93-.66 9.97-4.58.07-.27.17-.37.47-.27.46.14.93.24 1.4.35.49.09.85-.16.92-.64.03-.26-.06-.49-.16-.73"/></svg></span> Linux</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p>Execute the following command to create a file called <code>environment.yml</code>:</p>
+<div class="highlight"><span class="filename">Create config file</span><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>conda env export <span class="p">&gt;</span> environment.yml
+</code></pre></div>
+<p>Then, open the <code>environment.yml</code> file and delete the line with <code>prefix:</code>.</p>
+</div>
+<div class="tabbed-block">
+<p>Execute the following command to create a file called <code>environment.yml</code>:</p>
+<div class="highlight"><span class="filename">Create config file</span><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>conda<span class="w"> </span>env<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-v<span class="w"> </span><span class="s2">&quot;^prefix: &quot;</span><span class="w"> </span>&gt;<span class="w"> </span>environment.yml
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<p>Execute the following command to create a file called <code>environment.yml</code>:</p>
+<div class="highlight"><span class="filename">Create config file</span><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>conda<span class="w"> </span>env<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-v<span class="w"> </span><span class="s2">&quot;^prefix: &quot;</span><span class="w"> </span>&gt;<span class="w"> </span>environment.yml
+</code></pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<h3 id="reproducing-the-environment">Reproducing the environment<a class="headerlink" href="#reproducing-the-environment" title="Permanent link">&para;</a></h3>
+<p>You can reproduce your virtual environment when given the information about it. The steps above tell you how
+to extract the information, and now we will use that information to recreate the virtual environment.
+Remember to <strong>deactivate the current environment</strong> before making a new environment.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="10:2"><input checked="checked" id="__tabbed_10_1" name="__tabbed_10" type="radio" /><input id="__tabbed_10_2" name="__tabbed_10" type="radio" /><div class="tabbed-labels"><label for="__tabbed_10_1"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19.14 7.5A2.86 2.86 0 0 1 22 10.36v3.78A2.86 2.86 0 0 1 19.14 17H12c0 .39.32.96.71.96H17v1.68a2.86 2.86 0 0 1-2.86 2.86H9.86A2.86 2.86 0 0 1 7 19.64v-3.75a2.85 2.85 0 0 1 2.86-2.85h5.25a2.85 2.85 0 0 0 2.85-2.86V7.5zm-4.28 11.79c-.4 0-.72.3-.72.89s.32.71.72.71a.71.71 0 0 0 .71-.71c0-.59-.32-.89-.71-.89m-10-1.79A2.86 2.86 0 0 1 2 14.64v-3.78A2.86 2.86 0 0 1 4.86 8H12c0-.39-.32-.96-.71-.96H7V5.36A2.86 2.86 0 0 1 9.86 2.5h4.28A2.86 2.86 0 0 1 17 5.36v3.75a2.85 2.85 0 0 1-2.86 2.85H8.89a2.85 2.85 0 0 0-2.85 2.86v2.68zM9.14 5.71c.4 0 .72-.3.72-.89s-.32-.71-.72-.71c-.39 0-.71.12-.71.71s.32.89.71.89"/></svg></span> Virtualenv</label><label for="__tabbed_10_2"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12.045.033a12.181 12.182 0 0 0-1.361.078 17.512 17.513 0 0 1 1.813 1.433l.48.438-.465.45a15 15 0 0 0-1.126 1.205l-.178.215a9 9 0 0 1 .86-.05 8.154 8.155 0 1 1-4.286 15.149 15.764 15.765 0 0 1-1.841.106h-.86a22 22 0 0 0 .264 2.866 11.966 11.967 0 1 0 6.7-21.89M8.17.678a12.181 12.182 0 0 0-2.624 1.275 16 16 0 0 1 1.813.43A18.551 18.552 0 0 1 8.17.678M9.423.75a16.237 16.238 0 0 0-.995 1.998 16.15 16.152 0 0 1 1.605.66 7 7 0 0 1 .43-.509q.35-.43.716-.817A15 15 0 0 0 9.423.75M4.68 2.949a14.969 14.97 0 0 0 0 2.336c.587-.065 1.196-.1 1.812-.107a17 17 0 0 1 .48-1.748 16.48 16.481 0 0 0-2.292-.481M3.62 3.5a12 12 0 0 0-1.858 2.38 17 17 0 0 1 1.877-.444A17 17 0 0 1 3.62 3.5m4.406.287c-.143.437-.265.888-.38 1.347a8.3 8.3 0 0 1 1.67-.803c-.423-.2-.845-.38-1.29-.544M6.3 6.216a14 14 0 0 0-1.555.108c.064.523.157 1.038.272 1.554A8.4 8.4 0 0 1 6.3 6.216m-2.55.137a15.3 15.3 0 0 0-2.602.716H1.07v.079a17.104 17.105 0 0 0 1.267 2.544l.043.071.072-.049a16 16 0 0 1 1.734-1.083l.057-.035V8.54a17 17 0 0 1-.408-2.094v-.092zM.644 8.095l-.063.2A11.844 11.845 0 0 0 0 11.655v.209l.143-.152a17.706 17.707 0 0 1 1.584-1.447l.057-.043-.043-.064a16 16 0 0 1-1.025-1.87zm3.77 1.253-.18.1c-.465.273-.93.573-1.375.889l-.065.05.05.064c.309.437.645.867.996 1.276l.137.165v-.208a8.2 8.2 0 0 1 .364-2.15zM2.2 10.853l-.072.05a16.6 16.6 0 0 0-1.813 1.734l-.058.058.066.057a15.5 15.5 0 0 0 1.991 1.483l.072.05.043-.08a16.738 16.74 0 0 1 1.053-1.64v-.05l-.043-.05a17 17 0 0 1-1.19-1.54zm1.855 2.071-.121.172a15 15 0 0 0-.917 1.433l-.043.072.071.043a17 17 0 0 0 1.562.766l.193.086-.086-.193a8 8 0 0 1-.66-2.172zm-3.976.48v.2a11.758 11.759 0 0 0 .946 3.326l.078.186.072-.194a16.215 16.216 0 0 1 .845-2l.057-.063-.064-.043a17.197 17.198 0 0 1-1.776-1.284zm2.543 1.805-.035.08a15.764 15.765 0 0 0-.983 2.479v.08h.086a16.15 16.152 0 0 0 2.688.5l.072.007v-.086a18 18 0 0 1 .164-2.056v-.065H4.55a16 16 0 0 1-1.849-.896zm2.544 1.169v.114a17 17 0 0 0-.151 1.828v.078h.931c.287 0 .624.014.946 0h.209l-.166-.129a8 8 0 0 1-1.64-1.834zm-3.29 2.1.115.172a12 12 0 0 0 2.502 2.737l.157.129v-.201a22.578 22.58 0 0 1-.2-2.336v-.071h-.072a16 16 0 0 1-2.3-.387z"/></svg></span> Anaconda</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p>We use the <code>requirements.txt</code> file that we generated earlier to recreate the environment.</p>
+<div class="highlight"><span class="filename">Recreate virtualenv environment</span><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="c1"># Create the new environment</span>
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>python<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>&lt;NEW<span class="w"> </span>ENV<span class="w"> </span>NAME&gt;
+<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>
+<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="c1"># Activate the environment</span>
+<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a><span class="nb">source</span><span class="w"> </span>&lt;NEW<span class="w"> </span>ENV<span class="w"> </span>NAME&gt;/bin/activate
+<a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>
+<a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a><span class="c1"># Install dependencies</span>
+<a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>&lt;PATH<span class="w"> </span>TO<span class="w"> </span>requirements.txt<span class="w"> </span>file&gt;
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<p>We use the <code>environment.yml</code> file that we generated earlier to recreate the environment.</p>
+<div class="highlight"><span class="filename">Recreate the conda environment</span><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="c1"># Create the new environment with the dependencies</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>conda<span class="w"> </span>env<span class="w"> </span>create<span class="w"> </span>-f<span class="w"> </span>&lt;PATH<span class="w"> </span>TO<span class="w"> </span>environment.yml&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;ENV<span class="w"> </span>NAME&gt;
+</code></pre></div>
+</div>
+</div>
+</div>
+<h2 id="official-references">Official references<a class="headerlink" href="#official-references" title="Permanent link">&para;</a></h2>
+<p>In this section, we summarized what virtual environments are, why they are used, and how to use them. We did not
+cover all of the functions of virtual environments, but feel free to consult the official references to learn
+about virtual environments more in depth.</p>
+<ul>
+<li><a href="https://docs.python.org/3/library/venv.html#module-venv" target="_blank">Virtualenv Reference</a></li>
+<li><a href="https://conda.io/projects/conda/en/latest/user-guide/concepts/environments.html#" target="_blank">Anaconda Reference</a></li>
+</ul>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../conventions/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Conventions">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Conventions
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../../ros/" class="md-footer__link md-footer__link--next" aria-label="Next: Robot Operating System">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Robot Operating System
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://www.ubcsailbot.org/" target="_blank" rel="noopener" title="www.ubcsailbot.org" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m3 13.5 8-11.47V13.5zm9.5 0c1.35-3.75 1.17-8.79 0-12.5 4.76 1.54 8.4 7.4 8.46 12.5zm8.6 3.58c-.41.64-.89 1.19-1.45 1.66-.65-.29-1.23-.74-1.69-1.24-1.49 1.93-4.5 1.93-5.99 0-1.47 1.93-4.5 1.93-5.97 0-.5.5-1.05.95-1.7 1.24-1.14-.94-2-2.28-2.3-3.74h19.94a6.4 6.4 0 0 1-.84 2.08M20.96 23q-1.59 0-3-.75c-1.84 1-4.15 1-5.99 0-1.84 1-4.15 1-5.97 0-1.23.69-2.64.8-4 .75v-2c1.41.05 2.77-.1 4-1 1.74 1.25 4.21 1.25 5.97 0 1.77 1.25 4.23 1.25 5.99 0 1.21.9 2.58 1.05 3.98 1v2z"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://www.instagram.com/ubcsailbot/" target="_blank" rel="noopener" title="www.instagram.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M7.8 2h8.4C19.4 2 22 4.6 22 7.8v8.4a5.8 5.8 0 0 1-5.8 5.8H7.8C4.6 22 2 19.4 2 16.2V7.8A5.8 5.8 0 0 1 7.8 2m-.2 2A3.6 3.6 0 0 0 4 7.6v8.8C4 18.39 5.61 20 7.6 20h8.8a3.6 3.6 0 0 0 3.6-3.6V7.6C20 5.61 18.39 4 16.4 4zm9.65 1.5a1.25 1.25 0 0 1 1.25 1.25A1.25 1.25 0 0 1 17.25 8 1.25 1.25 0 0 1 16 6.75a1.25 1.25 0 0 1 1.25-1.25M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://www.facebook.com/ubcsailbot" target="_blank" rel="noopener" title="www.facebook.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2.04c-5.5 0-10 4.49-10 10.02 0 5 3.66 9.15 8.44 9.9v-7H7.9v-2.9h2.54V9.85c0-2.51 1.49-3.89 3.78-3.89 1.09 0 2.23.19 2.23.19v2.47h-1.26c-1.24 0-1.63.77-1.63 1.56v1.88h2.78l-.45 2.9h-2.33v7a10 10 0 0 0 8.44-9.9c0-5.53-4.5-10.02-10-10.02"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://www.linkedin.com/company/ubc-sailbot/" target="_blank" rel="noopener" title="www.linkedin.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93zM6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37z"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/UBCSailbot" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33s1.71.11 2.5.33c1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="mailto:software@ubcsailbot.org" target="_blank" rel="noopener" title="" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m20 8-8 5-8-5V6l8 5 8-5m0-2H4c-1.11 0-2 .89-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "../../..", "features": ["content.action.edit", "content.action.view", "content.code.annotate", "content.code.copy", "content.tabs.link", "navigation.expand", "navigation.footer", "navigation.instant", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.83f73b43.min.js"></script>
+      
+        <script src="../../../javascripts/mathjax.js"></script>
+      
+        <script src="../../../javascripts/table_of_contents_themes.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
