@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import styles from './dataset.module.css';
+import Select from 'react-select'
 
 interface DatasetProps {
   title: string;
@@ -11,6 +12,14 @@ interface DatasetProps {
 
 const Dataset = ({ title, content, downloadAction }: DatasetProps) => {
   const titles = ['DATA TYPE', 'TIMESCALE', 'FILE', 'ACCESS'];
+  const fileTypes = [
+    { value: 'JSON', label: 'JSON' },
+    { value: 'CSV', label: 'CSV' },
+    { value: 'XLSX', label: 'EXCEL' },
+  ];
+
+  const [selectedFileType, setSelectedFileType] = useState('JSON');
+
   return (
     <Accordion className={styles.accordionCustom}>
       <AccordionSummary
@@ -30,7 +39,7 @@ const Dataset = ({ title, content, downloadAction }: DatasetProps) => {
           ))}
         </div>
         <div className={styles.contentContainer}>
-          {content.slice(0, 3).map((item, index) => (
+          {content.slice(0, 2).map((item, index) => (
             <div
               className={styles.flexItemContainer}
               key={`content-item-${index}`}
@@ -39,9 +48,12 @@ const Dataset = ({ title, content, downloadAction }: DatasetProps) => {
             </div>
           ))}
           <div className={styles.flexItemContainer}>
+            <Select options={fileTypes} defaultValue={fileTypes[0]} onChange={(fileType: { value: string, label: string }) => setSelectedFileType(fileType.value)}/>
+          </div>
+          <div className={styles.flexItemContainer}>
             <span
               style={{ cursor: 'pointer', textDecoration: 'underline' }}
-              onClick={downloadAction}
+              onClick={() => downloadAction(selectedFileType)}
             >
               Download
             </span>

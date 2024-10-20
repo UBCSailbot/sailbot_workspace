@@ -1,9 +1,15 @@
 {
   "compilerOptions": {
     "target": "es5",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": [
+        "./*"
+      ]
     },
     "allowJs": true,
     "skipLibCheck": true,
@@ -28,7 +34,12 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "hooks/useSessionState.js"
-, "lib/dotenv.js", "models/helper/parser.js", "utils/DownloadData.js"  ],
-  "exclude": ["node_modules"]
+    "hooks/useSessionState.js",
+    "lib/dotenv.js",
+    "models/helper/parser.js",
+    "utils/DownloadData.js"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }
