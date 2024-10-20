@@ -15,6 +15,7 @@ const Dataset = ({ title, content, downloadAction }: DatasetProps) => {
   const fileTypes = [
     { value: 'JSON', label: 'JSON' },
     { value: 'CSV', label: 'CSV' },
+    { value: 'XLSX', label: 'EXCEL' },
   ];
 
   const [selectedFileType, setSelectedFileType] = useState('JSON');
