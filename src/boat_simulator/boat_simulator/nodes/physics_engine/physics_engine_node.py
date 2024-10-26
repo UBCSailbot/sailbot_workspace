@@ -4,7 +4,7 @@
 
 import json
 import sys
-from typing import List, Optional
+from typing import Optional
 
 import numpy as np
 import rclpy
@@ -183,11 +183,9 @@ class PhysicsEngineNode(Node):
             generator=MVGaussianGenerator(current_mean, current_cov)
         )
 
-        # Used arbitrary non-zero stdev centred about 0 for now
         # No delay in this instance
         sim_wind = self.__wind_generator.next()
-        sim_wind_noise_stdev = List[Scalar] = [-10.0, 10.0]
-        self.__sim_wind_sensor = SimWindSensor(sim_wind, sim_wind_noise_stdev, enable_noise=True)
+        self.__sim_wind_sensor = SimWindSensor(sim_wind, enable_noise=True)
 
     def __init_callback_groups(self):
         """Initializes the callback groups. Whether multithreading is enabled or not will affect
