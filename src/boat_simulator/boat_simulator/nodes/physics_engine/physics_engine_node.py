@@ -315,7 +315,8 @@ class PhysicsEngineNode(Node):
     # PUBLISHER CALLBACKS
     def __publish(self):
         """Synchronously publishes data to all publishers at once."""
-        self.__update_sim_wind_sensor()
+        # Line below updates wind parameter of wind sensor
+        self.__sim_wind_sensor.wind = self.__wind_generator.next()
         self.__update_boat_state()
         # TODO Get updated boat state and publish (should this be separate from publishing?)
         # TODO Get wind sensor data and publish (should this be separate from publishing?)
@@ -323,10 +324,6 @@ class PhysicsEngineNode(Node):
         self.__publish_wind_sensors()
         self.__publish_kinematics()
         self.__publish_counter += 1
-
-    def __update_sim_wind_sensor(self):
-        """Updates wind parameter of wind sensor"""
-        self.__sim_wind_sensor.wind = self.__wind_generator.next()
 
     def __update_boat_state(self):
         """
