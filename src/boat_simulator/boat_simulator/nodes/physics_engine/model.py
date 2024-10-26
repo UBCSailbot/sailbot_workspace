@@ -121,8 +121,8 @@ class BoatState:
         hull_drag_force = self.relative_velocity * BOAT_PROPERTIES.hull_drag_factor
 
         # Total Force Calculation
-        total_drag_force = np.add(sail_force[1], rudder_force[1], hull_drag_force)
-        total_force = np.add(sail_force[0] + rudder_force[0], total_drag_force)
+        total_drag_force = sail_force[1] + rudder_force[1] + hull_drag_force
+        total_force = sail_force[0] + rudder_force[0] + total_drag_force
 
         # Calculating magnitudes of sail
         sail_drag = np.linalg.norm(sail_force[1], ord=2)
@@ -140,7 +140,7 @@ class BoatState:
 
         sail_torque = np.add(sail_drag * sail_drag_constant, sail_lift * sail_lift_constant)
 
-        # Calculating magnitudes of sail
+        # Calculating magnitudes of rudder
         rudder_drag = np.linalg.norm(rudder_force[1], ord=2)
         rudder_lift = np.linalg.norm(rudder_force[0], ord=2)
 
