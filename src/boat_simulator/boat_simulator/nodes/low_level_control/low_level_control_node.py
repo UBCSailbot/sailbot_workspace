@@ -210,11 +210,11 @@ class LowLevelControlNode(Node):
         all_parameters = self._parameters
 
         current_heading = self.__gps.heading
-        desired_heading = goal_handle.request
+        desired_heading = goal_handle.request.desired_heading
         current_control_ang = self.rudder_angle
-        time_step = all_parameters["rudder.actuation_execution_period_sec"]
-        kp = all_parameters["rudder.pid.kp"]
-        cp = all_parameters["rudder.pid.kp"]  # not sure if this is the right value to use
+        time_step = all_parameters["rudder.actuation_execution_period_sec"].value
+        kp = all_parameters["rudder.pid.kp"].value
+        cp = all_parameters["rudder.pid.kp"].value  # not sure if this is the right value to use
         control_speed = 10  # not sure if this is the right value to use
 
         rudder_controller = RudderController(
@@ -252,14 +252,14 @@ class LowLevelControlNode(Node):
         Returns:
             Optional[SimSailTrimTabActuation_Result]: The result message if successful.
         """
+
         self.get_logger().debug("Beginning sail actuation...")
         all_parameters = self._parameters
 
-        target_angle = goal_handle.request
+        target_angle = goal_handle.request.desired_angular_position
         current_angle = self.sail_trim_tab_angle
-        time_step = all_parameters["wingsail.actuation_execution_period_sec"]
-        control_speed = all_parameters["wingsail.actuation_speed_deg_per_sec"]
-
+        time_step = all_parameters["wingsail.actuation_execution_period_sec"].value
+        control_speed = all_parameters["wingsail.actuation_speed_deg_per_sec"].value
         sail_controller = SailController(target_angle, current_angle, time_step, control_speed)
 
         # TODO Placeholder loop. Replace with sail ctrl once implemented.
