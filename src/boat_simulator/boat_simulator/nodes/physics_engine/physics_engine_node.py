@@ -4,7 +4,7 @@
 
 import json
 import sys
-from typing import Optional
+from typing import Optional, List
 
 import numpy as np
 import rclpy
@@ -182,8 +182,11 @@ class PhysicsEngineNode(Node):
         self.__current_generator = FluidGenerator(
             generator=MVGaussianGenerator(current_mean, current_cov)
         )
-  
-        self.__sim_wind_sensor = SimWindSensor(self.__wind_generator.next(), enable_noise=True, enable_delay=False)
+
+        # Used arbitrary non-zero stdev centred about 0 for now
+        sim_wind = self.__wind_generator.next()
+        sim_wind_noise_stdev = List[Scalar] = [-10.0, 10.0]
+        self.__sim_wind_sensor = SimWindSensor(sim_wind, sim_wind_noise_stdev, enable_noise=True)
 
     def __init_callback_groups(self):
         """Initializes the callback groups. Whether multithreading is enabled or not will affect
@@ -313,7 +316,7 @@ class PhysicsEngineNode(Node):
     # PUBLISHER CALLBACKS
     def __publish(self):
         """Synchronously publishes data to all publishers at once."""
-        # GENERATE WIND, UPDATE WINDSENSOR
+        self.__update_sim_wind_sensor()
         self.__update_boat_state()
         # TODO Get updated boat state and publish (should this be separate from publishing?)
         # TODO Get wind sensor data and publish (should this be separate from publishing?)
@@ -321,6 +324,10 @@ class PhysicsEngineNode(Node):
         self.__publish_wind_sensors()
         self.__publish_kinematics()
         self.__publish_counter += 1
+        
+    def __update_sim_wind_sensor(self):
+        """Updates wind parameter of wind sensor"""
+        self.update(wind=self.__wind_generator.next())
 
     def __publish_gps(self):
         """Publishes mock GPS data."""
@@ -597,7 +604,7 @@ class PhysicsEngineNode(Node):
         sail_trim_tab_angle.
         """
         self.__boat_state.step(
-            self.__wind_generator.next(),
+            self.__sim_wind_sensor.wind,
             self.__current_generator.next(),
             self.__rudder_angle,
             self.__sail_trim_tab_angle,
