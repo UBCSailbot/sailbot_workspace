@@ -80,5 +80,3 @@ def test_compute_net_force_torque(
     final_torque = np.array([0, 0, total_torque])
 
     assert np.equal(net_force, (total_force, final_torque))
-
-    assert np.equal(1, 1)
