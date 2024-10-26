@@ -4,6 +4,7 @@ import os
 from dataclasses import dataclass
 from enum import Enum
 
+import numpy as np
 from numpy.typing import NDArray
 
 from boat_simulator.common.types import Scalar
@@ -49,6 +50,8 @@ class BoatProperties:
     inertia: NDArray  # Kilograms-meters squared (kg•m^2)
     air_density: Scalar  # Kilograms per meter cubed (kg/m^3)
     water_density: Scalar  # Kilograms per meter cubed (kg/m^3)
+    centre_of_gravity: NDArray  # Meters (m)
+    mast_position: NDArray  # Meters (m)
 
 
 # Directly accessible constants
@@ -89,15 +92,24 @@ RUDDER_MAX_ANGLE_RANGE = (-45, 45)
 # Max sail actuator control angle range in degrees, min angle [0], max angle [1]
 SAIL_MAX_ANGLE_RANGE = (-7, 7)
 
-# # Predetermined values for BoatProperties
-# # TODO These are placeholder values which should be replaced when we have real values.
-# BOAT_PROPERTIES = BoatProperties(
-#     sail_lift_coeffs={0.0: 0.0, 5.0: 0.2, 10.0: 0.5, 15.0: 0.7, 20.0: 1.0},
-#     sail_drag_coeffs={0.0: 0.1, 5.0: 0.12, 10.0: 0.15, 15.0: 0.18, 20.0: 0.2},
-#     sail_areas={0.0: 20.0, 5.0: 19.8, 10.0: 19.5, 15.0: 19.2, 20.0: 18.8},
-#     rudder_drag_coeffs={0.0: 0.2, 5.0: 0.22, 10.0: 0.25, 15.0: 0.28, 20.0: 0.3},
-#     rudder_areas={0.0: 2.0, 5.0: 1.9, 10.0: 1.8, 15.0: 1.7, 20.0: 1.6},
-#     sail_dist=5.0,
-#     rudder_dist=1.5,
-#     hull_drag_factor=0.05,
-# )
+# Predetermined values for BoatProperties
+# TODO These are placeholder values which should be replaced when we have real values.
+BOAT_PROPERTIES = BoatProperties(
+    sail_lift_coeffs=np.array([[0.0, 0.0], [5.0, 0.2], [10.0, 0.5], [15.0, 0.7], [20.0, 1.0]]),
+    sail_drag_coeffs=np.array([[0.0, 0.1], [5.0, 0.12], [10.0, 0.15], [15.0, 0.18], [20.0, 0.2]]),
+    sail_areas=4.0,
+    rudder_lift_coeffs=np.array([[0.0, 0.0], [5.0, 0.1], [10.0, 0.2], [15.0, 0.3], [20.0, 0.4]]),
+    rudder_drag_coeffs=np.array(
+        [[0.0, 0.2], [5.0, 0.22], [10.0, 0.25], [15.0, 0.28], [20.0, 0.3]]
+    ),
+    rudder_areas=3.0,
+    sail_dist=0.75,  # defined distance from mast position to centre of gravity of the sailboat
+    rudder_dist=1.5,
+    hull_drag_factor=0.05,
+    mass=50,
+    inertia=np.array([0.0, 0.1, 0.2, 0.3, 0.4]),
+    air_density=1.225,
+    water_density=1000,
+    centre_of_gravity=np.array([0.8, 1, 0]),
+    mast_position=np.array([0.8, 1.5, 0]),
+)

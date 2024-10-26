@@ -5,7 +5,7 @@ from typing import Tuple
 import numpy as np
 from numpy.typing import NDArray
 
-from boat_simulator.common.constants import BoatProperties
+from boat_simulator.common.constants import BOAT_PROPERTIES
 from boat_simulator.common.types import Scalar
 from boat_simulator.nodes.physics_engine.fluid_forces import MediumForceComputation
 from boat_simulator.nodes.physics_engine.kinematics_computation import BoatKinematics
@@ -29,20 +29,20 @@ class BoatState:
             timestep (Scalar): The time interval for calculations, expressed in seconds (s).
         """
         self.__kinematics_computation = BoatKinematics(
-            timestep, BoatProperties.mass, BoatProperties.inertia
+            timestep, BOAT_PROPERTIES.mass, BOAT_PROPERTIES.inertia
         )
 
         self.__sail_force_computation = MediumForceComputation(
-            BoatProperties.sail_lift_coeffs,
-            BoatProperties.sail_drag_coeffs,
-            BoatProperties.sail_areas,
-            BoatProperties.air_density,
+            BOAT_PROPERTIES.sail_lift_coeffs,
+            BOAT_PROPERTIES.sail_drag_coeffs,
+            BOAT_PROPERTIES.sail_areas,
+            BOAT_PROPERTIES.air_density,
         )
         self.__rudder_force_computation = MediumForceComputation(
-            BoatProperties.rudder_lift_coeffs,
-            BoatProperties.rudder_drag_coeffs,
-            BoatProperties.rudder_areas,
-            BoatProperties.water_density,
+            BOAT_PROPERTIES.rudder_lift_coeffs,
+            BOAT_PROPERTIES.rudder_drag_coeffs,
+            BOAT_PROPERTIES.rudder_areas,
+            BOAT_PROPERTIES.water_density,
         )
 
     def step(
@@ -118,16 +118,11 @@ class BoatState:
         )
 
         # Calculate Hull Drag Force
-        hull_drag_force = self.relative_velocity * BoatProperties.hull_drag_factor
+        hull_drag_force = self.relative_velocity * BOAT_PROPERTIES.hull_drag_factor
 
         # Total Force Calculation
         total_drag_force = np.add(sail_force[1], rudder_force[1], hull_drag_force)
         total_force = np.add(sail_force[0] + rudder_force[0], total_drag_force)
-
-        # Setting origin at rear of boat
-        centre_of_gravity = 3  # TODO  only measuring length of boat
-        sail_central_distance = 5  # TODO only measuring length of boat
-        # TODO define sail distance as half the width of the sail
 
         # Calculating magnitudes of sail
         sail_drag = np.linalg.norm(sail_force[1], ord=2)
@@ -135,25 +130,30 @@ class BoatState:
 
         # Calculating Total Torque
         sail_lift_constant = (
-            sail_central_distance  # position of sail mount
+            BOAT_PROPERTIES.mast_position[1]  # position of sail mount
             - (
-                BoatProperties.sail_dist * np.cos(main_sail_angle)
+                BOAT_PROPERTIES.sail_dist * np.cos(main_sail_angle)
             )  # distance of sail with changes to trim tab angle
-            - centre_of_gravity  # point to take torque around
+            - BOAT_PROPERTIES.centre_of_gravity[1]  # point to take torque around
         )
-        sail_drag_constant = BoatProperties.sail_dist * np.sin(main_sail_angle)
+        sail_drag_constant = BOAT_PROPERTIES.sail_dist * np.sin(main_sail_angle)
 
         sail_torque = np.add(sail_drag * sail_drag_constant, sail_lift * sail_lift_constant)
 
-        rudder_drag_constant = BoatProperties.rudder_dist * np.sin(rudder_angle_rad)
+        # Calculating magnitudes of sail
+        rudder_drag = np.linalg.norm(rudder_force[1], ord=2)
+        rudder_lift = np.linalg.norm(rudder_force[0], ord=2)
+
+        rudder_drag_constant = BOAT_PROPERTIES.rudder_dist * np.sin(rudder_angle_rad)
 
         rudder_lift_constant = (
-            BoatProperties.rudder_dist * np.cos(rudder_angle_rad) + centre_of_gravity
+            BOAT_PROPERTIES.rudder_dist * np.cos(rudder_angle_rad)
+            + BOAT_PROPERTIES.centre_of_gravity[1]
         )
 
         rudder_torque = np.add(
-            rudder_force[0] * rudder_lift_constant,
-            rudder_force[1] * rudder_drag_constant,
+            rudder_lift * rudder_lift_constant,
+            rudder_drag * rudder_drag_constant,
         )
 
         total_torque = np.add(sail_torque, rudder_torque)  # Sum torques about z-axis
