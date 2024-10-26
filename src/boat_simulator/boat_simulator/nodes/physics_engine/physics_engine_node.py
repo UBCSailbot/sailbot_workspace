@@ -184,6 +184,7 @@ class PhysicsEngineNode(Node):
         )
 
         # Used arbitrary non-zero stdev centred about 0 for now
+        # No delay in this instance
         sim_wind = self.__wind_generator.next()
         sim_wind_noise_stdev = List[Scalar] = [-10.0, 10.0]
         self.__sim_wind_sensor = SimWindSensor(sim_wind, sim_wind_noise_stdev, enable_noise=True)
