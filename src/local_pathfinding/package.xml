@@ -24,7 +24,7 @@
   <test_depend>python3-pytest</test_depend>
 
   <!--PyOMPL Packages-->
-  <depend>pyompl</depend>
+  <depend>sailompl</depend>
 
   <export>
     <build_type>ament_python</build_type>

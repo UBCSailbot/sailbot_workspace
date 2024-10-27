@@ -4,7 +4,7 @@ import math
 from enum import Enum, auto
 
 import numpy as np
-import pyompl
+import sailompl
 from custom_interfaces.msg import HelperLatLon
 
 import local_pathfinding.coord_systems as cs
@@ -56,7 +56,7 @@ class SpeedObjectiveMethod(Enum):
     SAILBOT_TIME = auto()
 
 
-class Objective(pyompl.StateCostIntegralObjective):
+class Objective(sailompl.StateCostIntegralObjective):
     """All of our optimization objectives inherit from this class.
 
     Notes:
@@ -73,7 +73,7 @@ class Objective(pyompl.StateCostIntegralObjective):
         super().__init__(si=space_information, enableMotionCostInterpolation=True)
         self.space_information = space_information
 
-    def motionCost(self, s1: pyompl.SE2StateSpace, s2: pyompl.SE2StateSpace) -> pyompl.Cost:
+    def motionCost(self, s1: sailompl.SE2StateSpace, s2: sailompl.SE2StateSpace) -> sailompl.Cost:
         raise NotImplementedError
 
 
@@ -82,7 +82,7 @@ class DistanceObjective(Objective):
 
     Attributes:
         method (DistanceMethod): The method of the distance objective function
-        ompl_path_objective (pyompl.PathLengthOptimizationObjective): The OMPL path length objective.
+        ompl_path_objective (sailompl.PathLengthOptimizationObjective): The OMPL path length objective.
             Only defined if the method is OMPL path length.
         reference (HelperLatLon): The XY origin when converting from latlon to XY.
             Only defined if the method is latlon.
@@ -97,13 +97,13 @@ class DistanceObjective(Objective):
         super().__init__(space_information)
         self.method = method
         if self.method == DistanceMethod.OMPL_PATH_LENGTH:
-            self.ompl_path_objective = pyompl.PathLengthOptimizationObjective(
+            self.ompl_path_objective = sailompl.PathLengthOptimizationObjective(
                 self.space_information
             )
         elif self.method == DistanceMethod.LATLON:
             self.reference = reference
 
-    def motionCost(self, s1: pyompl.SE2StateSpace, s2: pyompl.SE2StateSpace) -> pyompl.Cost:
+    def motionCost(self, s1: sailompl.SE2StateSpace, s2: sailompl.SE2StateSpace) -> sailompl.Cost:
         """Generates the distance between two points
 
         Args:
@@ -111,7 +111,7 @@ class DistanceObjective(Objective):
             s2 (SE2StateInternal): The ending point of the local goal state
 
         Returns:
-            pyompl.Cost: The distance between two points object
+            sailompl.Cost: The distance between two points object
 
         Raises:
             ValueError: If the distance method is not supported
@@ -120,12 +120,12 @@ class DistanceObjective(Objective):
         s2_xy = cs.XY(s2.getX(), s2.getY())
         if self.method == DistanceMethod.EUCLIDEAN:
             distance = DistanceObjective.get_euclidean_path_length_objective(s1_xy, s2_xy)
-            cost = pyompl.Cost(distance)
+            cost = sailompl.Cost(distance)
         elif self.method == DistanceMethod.LATLON:
             distance = DistanceObjective.get_latlon_path_length_objective(
                 s1_xy, s2_xy, self.reference
             )
-            cost = pyompl.Cost(distance)
+            cost = sailompl.Cost(distance)
         elif self.method == DistanceMethod.OMPL_PATH_LENGTH:
             cost = self.ompl_path_objective.motionCost(s1_xy, s2_xy)
         else:
@@ -193,7 +193,7 @@ class MinimumTurningObjective(Objective):
         self.heading = math.radians(heading_degrees)
         self.method = method
 
-    def motionCost(self, s1: pyompl.SE2StateSpace, s2: pyompl.SE2StateSpace) -> pyompl.Cost:
+    def motionCost(self, s1: sailompl.SE2StateSpace, s2: sailompl.SE2StateSpace) -> sailompl.Cost:
         """Generates the turning cost between s1, s2, heading or the goal position
 
         Args:
@@ -201,7 +201,7 @@ class MinimumTurningObjective(Objective):
             s2 (SE2StateInternal): The ending point of the local goal state
 
         Returns:
-            pyompl.Cost: The minimum turning angle in degrees
+            sailompl.Cost: The minimum turning angle in degrees
 
         Raises:
             ValueError: If the minimum turning method is not supported
@@ -216,7 +216,7 @@ class MinimumTurningObjective(Objective):
             angle = self.heading_path_turn_cost(s1_xy, s2_xy, self.heading)
         else:
             ValueError(f"Method {self.method} not supported")
-        return pyompl.Cost(angle)
+        return sailompl.Cost(angle)
 
     @staticmethod
     def goal_heading_turn_cost(s1: cs.XY, goal: cs.XY, heading: float) -> float:
@@ -308,7 +308,7 @@ class WindObjective(Objective):
         assert -180 < wind_direction_degrees <= 180
         self.wind_direction = math.radians(wind_direction_degrees)
 
-    def motionCost(self, s1: pyompl.SE2StateSpace, s2: pyompl.SE2StateSpace) -> pyompl.Cost:
+    def motionCost(self, s1: sailompl.SE2StateSpace, s2: sailompl.SE2StateSpace) -> sailompl.Cost:
         """Generates the cost associated with the upwind and downwind directions of the boat in
         relation to the wind.
 
@@ -317,11 +317,11 @@ class WindObjective(Objective):
             s2 (SE2StateInternal): The ending point of the local goal state
 
         Returns:
-            pyompl.Cost: The cost of going upwind or downwind
+            sailompl.Cost: The cost of going upwind or downwind
         """
         s1_xy = cs.XY(s1.getX(), s1.getY())
         s2_xy = cs.XY(s2.getX(), s2.getY())
-        return pyompl.Cost(WindObjective.wind_direction_cost(s1_xy, s2_xy, self.wind_direction))
+        return sailompl.Cost(WindObjective.wind_direction_cost(s1_xy, s2_xy, self.wind_direction))
 
     @staticmethod
     def wind_direction_cost(s1: cs.XY, s2: cs.XY, wind_direction: float) -> float:
@@ -437,7 +437,7 @@ class SpeedObjective(Objective):
         self.wind_speed = wind_speed
         self.method = method
 
-    def motionCost(self, s1: pyompl.SE2StateSpace, s2: pyompl.SE2StateSpace) -> pyompl.Cost:
+    def motionCost(self, s1: sailompl.SE2StateSpace, s2: sailompl.SE2StateSpace) -> sailompl.Cost:
         """Generates the cost associated with the speed of the boat.
 
         Args:
@@ -445,7 +445,7 @@ class SpeedObjective(Objective):
             s2 (SE2StateInternal): The ending point of the local goal state
 
         Returns:
-            pyompl.Cost: The cost of going upwind or downwind
+            sailompl.Cost: The cost of going upwind or downwind
         """
 
         s1_xy = cs.XY(s1.getX(), s1.getY())
@@ -456,18 +456,18 @@ class SpeedObjective(Objective):
         )
 
         if sailbot_speed == 0:
-            return pyompl.Cost(10000)
+            return sailompl.Cost(10000)
 
         if self.method == SpeedObjectiveMethod.SAILBOT_TIME:
             distance = DistanceObjective.get_euclidean_path_length_objective(s1_xy, s2_xy)
             time = distance / sailbot_speed
 
-            cost = pyompl.Cost(time)
+            cost = sailompl.Cost(time)
 
         elif self.method == SpeedObjectiveMethod.SAILBOT_PIECEWISE:
-            cost = pyompl.Cost(self.get_piecewise_cost(sailbot_speed))
+            cost = sailompl.Cost(self.get_piecewise_cost(sailbot_speed))
         elif self.method == SpeedObjectiveMethod.SAILBOT_CONTINUOUS:
-            cost = pyompl.Cost(self.get_continuous_cost(sailbot_speed))
+            cost = sailompl.Cost(self.get_continuous_cost(sailbot_speed))
         else:
             ValueError(f"Method {self.method} not supported")
         return cost
@@ -571,9 +571,9 @@ def get_sailing_objective(
     heading_degrees: float,
     wind_direction_degrees: float,
     wind_speed: float,
-) -> pyompl.OptimizationObjective:
+) -> sailompl.OptimizationObjective:
 
-    objective = pyompl.MultiOptimizationObjective(si=space_information)
+    objective = sailompl.MultiOptimizationObjective(si=space_information)
     objective.addObjective(
         objective=DistanceObjective(space_information, DistanceMethod.LATLON),
         weight=1.0,

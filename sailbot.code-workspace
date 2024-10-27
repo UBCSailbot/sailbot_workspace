@@ -521,7 +521,7 @@
                     "integration_tests",
                     "local_pathfinding",
                     "network_systems",
-                    "pyompl",
+                    "sailompl",
                 ]
             },
         ]

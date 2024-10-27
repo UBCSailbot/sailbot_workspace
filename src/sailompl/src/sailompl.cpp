@@ -191,4 +191,4 @@ void bind_OMPL(py::module & m)
     py::class_<ompl::base::Goal, std::shared_ptr<ompl::base::Goal>>(m, "Goal");
 }
 
-PYBIND11_MODULE(pyompl, m) { bind_OMPL(m); }
+PYBIND11_MODULE(sailompl, m) { bind_OMPL(m); }
