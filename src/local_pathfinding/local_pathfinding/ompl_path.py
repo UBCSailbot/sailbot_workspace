@@ -10,11 +10,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, List
 
+
 import pyompl
 from custom_interfaces.msg import HelperLatLon
+
 from rclpy.impl.rcutils_logger import RcutilsLogger
 
 import local_pathfinding.coord_systems as cs
+from custom_interfaces.msg import HelperLatLon
 from local_pathfinding.objectives import get_sailing_objective
 
 if TYPE_CHECKING:
@@ -38,7 +41,7 @@ class OMPLPathState:
 
         self.reference_latlon = (
             local_path_state.global_path[-1]
-            if local_path_state and len(local_path_state.global_path) > 0
+            if local_path_state.global_path and len(local_path_state.global_path) > 0
             else HelperLatLon(latitude=0.0, longitude=0.0)
         )
 
