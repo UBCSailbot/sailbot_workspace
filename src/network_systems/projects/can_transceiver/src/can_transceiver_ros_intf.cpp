@@ -80,9 +80,6 @@ public:
                std::make_pair(CanId::SAIL_WIND, std::function<void(const CanFrame &)>([this](const CanFrame & frame) {
                                   publishWindSensor(frame);
                               })),
-               std::make_pair(CanId::DATA_WIND, std::function<void(const CanFrame &)>([this](const CanFrame & frame) {
-                                  publishWindSensor(frame);
-                              })),
                std::make_pair(
                  CanId::GENERIC_SENSOR_START,
                  std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishGeneric(frame); })),
@@ -152,6 +149,9 @@ private:
     // Mock CAN file descriptor for simulation
     int sim_intf_fd_;
 
+    // Saved power mode state
+    uint8_t set_pwr_mode = CAN_FP::PwrMode::POWER_MODE_NORMAL;
+
     /**
      * @brief Publish AIS ships
      *
@@ -186,6 +186,15 @@ private:
         msg::HelperBattery & bat_msg = batteries_;
         bat_msg                      = bat.toRosMsg();
         batteries_pub_->publish(batteries_);
+        // Voltage < 10V means low power mode
+        // If in low power mode, power mode will only change back to normal if voltage reaches >= 12V.
+        if (bat_msg.voltage < 10) {  //NOLINT(readability-magic-numbers)
+            set_pwr_mode = CAN_FP::PwrMode::POWER_MODE_LOW;
+        } else if (bat_msg.voltage >= 12) {  //NOLINT(readability-magic-numbers)
+            set_pwr_mode = CAN_FP::PwrMode::POWER_MODE_NORMAL;
+        }
+        CAN_FP::PwrMode power_mode(set_pwr_mode, CAN_FP::CanId::PWR_MODE);
+        can_trns_->send(power_mode.toLinuxCan());
     }
 
     /**
@@ -279,17 +288,6 @@ private:
         generic_sensors_pub_->publish(generic_sensors_);
     }
 
-    /**
-     * @brief SailCmd subscriber callback
-     *
-     * @param sail_cmd_
-     */
-    void subSailCmdCb(const msg::SailCmd & sail_cmd_input)
-    {
-        sail_cmd_ = sail_cmd_input;
-        boat_sim_input_msg_.set__sail_cmd(sail_cmd_);
-    }
-
     // SIMULATION CALLBACKS //
 
     /**
@@ -300,6 +298,19 @@ private:
     void publishBoatSimInput(const msg::CanSimToBoatSim & boat_sim_input_msg)
     {
         boat_sim_input_pub_->publish(boat_sim_input_msg);
+    }
+
+    /**
+     * @brief SailCmd subscriber callback
+     *
+     * @param sail_cmd_
+     */
+    void subSailCmdCb(const msg::SailCmd & sail_cmd_input)
+    {
+        sail_cmd_ = sail_cmd_input;
+        boat_sim_input_msg_.set__sail_cmd(sail_cmd_);
+
+        can_trns_->send(CAN_FP::MainTrimTab(sail_cmd_input, CanId::MAIN_TR_TAB).toLinuxCan());
     }
 
     /**
@@ -317,7 +328,11 @@ private:
      *
      * @param desired_heading desired_heading received from the Desired Heading topic
      */
-    void subDesiredHeadingCb(msg::DesiredHeading desired_heading) { boat_sim_input_msg_.set__heading(desired_heading); }
+    void subDesiredHeadingCb(msg::DesiredHeading desired_heading)
+    {
+        boat_sim_input_msg_.set__heading(desired_heading);
+        can_trns_->send(CAN_FP::DesiredHeading(desired_heading, CanId::MAIN_TR_TAB).toLinuxCan());
+    }
 
     /**
      * @brief Mock GPS topic callback
