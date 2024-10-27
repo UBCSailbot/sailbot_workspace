@@ -39,9 +39,5 @@ def create_simple_setup():
     simple_setup = po.SimpleSetup(space)
 
 
-def create_optimization_objective():
-    objective = po.StateCostIntegralObjective()
-
-
 if __name__ == "main":
     create_state_space()

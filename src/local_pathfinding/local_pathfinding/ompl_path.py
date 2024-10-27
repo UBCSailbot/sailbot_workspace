@@ -10,14 +10,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, List
 
-
 import pyompl
 from custom_interfaces.msg import HelperLatLon
-
 from rclpy.impl.rcutils_logger import RcutilsLogger
 
 import local_pathfinding.coord_systems as cs
-from custom_interfaces.msg import HelperLatLon
 from local_pathfinding.objectives import get_sailing_objective
 
 if TYPE_CHECKING:
@@ -47,7 +44,7 @@ class OMPLPathState:
 
         if local_path_state:
             self.planner = None
-            self.planner = pyompl.RRTstar()
+            self.planner = pypathfinder.RRTstar()
 
 
 class OMPLPath:
