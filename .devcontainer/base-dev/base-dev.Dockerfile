@@ -94,7 +94,7 @@ RUN apt-get update \
     && apt-get autoremove -y \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
-RUN pip3 install pygccxml pyplusplus
+RUN pip3 install pygccxml pyplusplus pybind11
 COPY --from=ompl-source /ompl /ompl
 WORKDIR /ompl
 RUN cmake \
