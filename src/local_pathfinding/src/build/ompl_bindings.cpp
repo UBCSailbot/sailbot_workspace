@@ -176,9 +176,39 @@ void bind_OMPL(py::module & m)
     py::class_<
       ompl::base::StateCostIntegralObjective, ompl::base::OptimizationObjective,
       std::shared_ptr<ompl::base::StateCostIntegralObjective>>(m, "StateCostIntegralObjective")
+      // Bind the constructor
       .def(
         py::init<const ompl::base::SpaceInformationPtr &, bool>(), py::arg("si"),
-        py::arg("enableMotionCostInterpolation") = false);
+        py::arg("enableMotionCostInterpolation") = false)
+
+      // Bind the stateCost method
+      .def(
+        "stateCost", &ompl::base::StateCostIntegralObjective::stateCost, py::arg("s"),
+        "Calculate the cost associated with a specific state")
+
+      // Bind the motionCost method
+      .def(
+        "motionCost", &ompl::base::StateCostIntegralObjective::motionCost, py::arg("s1"), py::arg("s2"),
+        "Calculate the cost of motion between two states")
+
+      // Bind the isMotionCostInterpolationEnabled method
+      .def(
+        "isMotionCostInterpolationEnabled", &ompl::base::StateCostIntegralObjective::isMotionCostInterpolationEnabled,
+        "Check if motion cost interpolation is enabled")
+
+      // Bind the trapezoid method as a protected method with lambdas for access
+      .def(
+        "trapezoid",
+        [](const ompl::base::StateCostIntegralObjective & self, const Cost & c1, const Cost & c2, double dist) {
+            return self.trapezoid(c1, c2, dist);
+        },
+        py::arg("c1"), py::arg("c2"), py::arg("dist"), "Calculate the trapezoidal estimate of motion cost")
+
+      // Bind interpolateMotionCost_ as a protected attribute
+      .def_property_readonly(
+        "interpolateMotionCost_",
+        [](const ompl::base::StateCostIntegralObjective & self) { return self.isMotionCostInterpolationEnabled(); },
+        "Whether motion cost interpolation is enabled.");
 
     py::class_<ompl::base::Cost>(m, "Cost").def(py::init<double>());
     py::class_<ompl::base::GoalState, std::shared_ptr<ompl::base::GoalState>>(m, "GoalState")

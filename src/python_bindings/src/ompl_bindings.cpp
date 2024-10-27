@@ -3,25 +3,67 @@
 #include </usr/include/ompl-1.6/ompl/base/OptimizationObjective.h>
 #include </usr/include/ompl-1.6/ompl/base/Planner.h>
 #include </usr/include/ompl-1.6/ompl/base/PlannerStatus.h>
+#include </usr/include/ompl-1.6/ompl/base/ProblemDefinition.h>
 #include </usr/include/ompl-1.6/ompl/base/ScopedState.h>
 #include </usr/include/ompl-1.6/ompl/base/SpaceInformation.h>
 #include </usr/include/ompl-1.6/ompl/base/State.h>
 #include </usr/include/ompl-1.6/ompl/base/StateSpace.h>
 #include </usr/include/ompl-1.6/ompl/base/StateValidityChecker.h>
 #include </usr/include/ompl-1.6/ompl/base/goals/GoalState.h>
+#include </usr/include/ompl-1.6/ompl/base/objectives/MaximizeMinClearanceObjective.h>
+#include </usr/include/ompl-1.6/ompl/base/objectives/MinimaxObjective.h>
 #include </usr/include/ompl-1.6/ompl/base/objectives/PathLengthOptimizationObjective.h>
 #include </usr/include/ompl-1.6/ompl/base/objectives/StateCostIntegralObjective.h>
+#include </usr/include/ompl-1.6/ompl/base/samplers/InformedStateSampler.h>
 #include </usr/include/ompl-1.6/ompl/base/spaces/RealVectorBounds.h>
 #include </usr/include/ompl-1.6/ompl/base/spaces/SE2StateSpace.h>
+#include </usr/include/ompl-1.6/ompl/control/Control.h>
 #include </usr/include/ompl-1.6/ompl/geometric/PathGeometric.h>
 #include </usr/include/ompl-1.6/ompl/geometric/SimpleSetup.h>
 #include </usr/include/ompl-1.6/ompl/geometric/planners/rrt/RRTstar.h>
+#include </usr/include/ompl-1.6/ompl/util/ClassForward.h>
 #include </usr/include/ompl-1.6/ompl/util/Console.h>
 #include <pybind11/functional.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
 namespace py = pybind11;
+
+// Wrapper class for OptimizationObjective
+class PyOptimizationObjective : public ompl::base::OptimizationObjective
+{
+public:
+    using ompl::base::OptimizationObjective::OptimizationObjective;
+
+    // Implement the pure virtual methods
+    ompl::base::Cost stateCost(const ompl::base::State * s) const override
+    {
+        PYBIND11_OVERRIDE_PURE(
+          ompl::base::Cost,                   // Return type
+          ompl::base::OptimizationObjective,  // Parent class
+          stateCost,                          // Name of method in C++
+          s                                   // Argument(s)
+        );
+    }
+
+    ompl::base::Cost motionCost(const ompl::base::State * s1, const ompl::base::State * s2) const override
+    {
+        PYBIND11_OVERRIDE_PURE(
+          ompl::base::Cost,                   // Return type
+          ompl::base::OptimizationObjective,  // Parent class
+          motionCost,                         // Name of method in C++
+          s1, s2                              // Argument(s)
+        );
+    }
+
+    // Optionally override other virtual methods if needed
+};
+
+class PyStateCostIntegralObjective : public ompl::base::StateCostIntegralObjective
+{
+public:
+    using ompl::base::StateCostIntegralObjective::trapezoid;
+};
 
 class StateValidityCheckerFn
 {
@@ -164,9 +206,19 @@ void bind_OMPL(py::module & m)
     py::class_<
       ompl::base::MultiOptimizationObjective, ompl::base::OptimizationObjective,
       std::shared_ptr<ompl::base::MultiOptimizationObjective>>(m, "MultiOptimizationObjective")
-      .def(py::init<const ompl::base::SpaceInformationPtr &>(), py::arg("si"))
+      .def(py::init<ompl::base::SpaceInformationPtr>(), py::arg("si"))
       .def(
-        "addObjective", &ompl::base::MultiOptimizationObjective::addObjective, py::arg("objective"), py::arg("weight"));
+        "addObjective", &ompl::base::MultiOptimizationObjective::addObjective, py::arg("objective"), py::arg("weight"))
+      .def("getObjectiveCount", &ompl::base::MultiOptimizationObjective::getObjectiveCount)
+      .def("getObjective", &ompl::base::MultiOptimizationObjective::getObjective, py::arg("idx"))
+      .def("getObjectiveWeight", &ompl::base::MultiOptimizationObjective::getObjectiveWeight, py::arg("idx"))
+      .def(
+        "setObjectiveWeight", &ompl::base::MultiOptimizationObjective::setObjectiveWeight, py::arg("idx"),
+        py::arg("weight"))
+      .def("lock", &ompl::base::MultiOptimizationObjective::lock)
+      .def("isLocked", &ompl::base::MultiOptimizationObjective::isLocked)
+      .def("stateCost", &ompl::base::MultiOptimizationObjective::stateCost, py::arg("s"))
+      .def("motionCost", &ompl::base::MultiOptimizationObjective::motionCost, py::arg("s1"), py::arg("s2"));
 
     py::class_<
       ompl::base::PathLengthOptimizationObjective, ompl::base::OptimizationObjective,
@@ -176,9 +228,11 @@ void bind_OMPL(py::module & m)
     py::class_<
       ompl::base::StateCostIntegralObjective, ompl::base::OptimizationObjective,
       std::shared_ptr<ompl::base::StateCostIntegralObjective>>(m, "StateCostIntegralObjective")
+      .def(py::init<const ompl::base::SpaceInformationPtr &>(), py::arg("si"))
+      .def("stateCost", &ompl::base::StateCostIntegralObjective::stateCost, "Get the cost of a state.")
       .def(
-        py::init<const ompl::base::SpaceInformationPtr &, bool>(), py::arg("si"),
-        py::arg("enableMotionCostInterpolation") = false);
+        "motionCost", &ompl::base::StateCostIntegralObjective::motionCost,
+        "Get the cost of moving between two states.");
 
     py::class_<ompl::base::Cost>(m, "Cost").def(py::init<double>());
     py::class_<ompl::base::GoalState, std::shared_ptr<ompl::base::GoalState>>(m, "GoalState")
@@ -189,6 +243,8 @@ void bind_OMPL(py::module & m)
           return ompl::base::ScopedState<ompl::base::SE2StateSpace>(space, state);
       });
     py::class_<ompl::base::Goal, std::shared_ptr<ompl::base::Goal>>(m, "Goal");
+
+    py::print(m.attr("__file__"));
 }
 
 PYBIND11_MODULE(pyompl, m) { bind_OMPL(m); }
