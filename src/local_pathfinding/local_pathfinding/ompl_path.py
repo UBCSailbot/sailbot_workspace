@@ -10,11 +10,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, List
 
-import pypathfinder
+import pyompl
+from custom_interfaces.msg import HelperLatLon
 from rclpy.impl.rcutils_logger import RcutilsLogger
 
 import local_pathfinding.coord_systems as cs
-from custom_interfaces.msg import HelperLatLon
 from local_pathfinding.objectives import get_sailing_objective
 
 if TYPE_CHECKING:
@@ -44,7 +44,7 @@ class OMPLPathState:
 
         if local_path_state:
             self.planner = None
-            self.planner = pypathfinder.RRTstar()
+            self.planner = pyompl.RRTstar()
 
 
 class OMPLPath:
@@ -121,7 +121,7 @@ class OMPLPath:
         """
         raise NotImplementedError
 
-    def _init_simple_setup(self, local_path_state) -> pypathfinder.SimpleSetup:
+    def _init_simple_setup(self, local_path_state) -> pyompl.SimpleSetup:
         """Initialize and configure the OMPL SimpleSetup object.
 
         Returns:
@@ -131,10 +131,10 @@ class OMPLPath:
         self.state = OMPLPathState(local_path_state, self._logger)
 
         # create an SE2 state space: rotation and translation in a plane
-        space = pypathfinder.SE2StateSpace()
+        space = pyompl.SE2StateSpace()
 
         # set the bounds of the state space
-        bounds = pypathfinder.RealVectorBounds(dim=2)
+        bounds = pyompl.RealVectorBounds(dim=2)
         x_min, x_max = self.state.state_domain
         y_min, y_max = self.state.state_range
         bounds.setLow(0, x_min)
@@ -150,12 +150,12 @@ class OMPLPath:
         space.setBounds(bounds)
 
         # create a simple setup object
-        simple_setup = pypathfinder.SimpleSetup(space)
+        simple_setup = pyompl.SimpleSetup(space)
         simple_setup.setStateValidityChecker(is_state_valid)
 
         # set the goal and start states of the simple setup object
-        start = pypathfinder.ScopedState(space)
-        goal = pypathfinder.ScopedState(space)
+        start = pyompl.ScopedState(space)
+        goal = pyompl.ScopedState(space)
         start_x, start_y = self.state.start_state
         goal_x, goal_y = self.state.goal_state
         start.setXY(start_x, start_y)
@@ -170,7 +170,7 @@ class OMPLPath:
         # Constructs a space information instance for this simple setup
         space_information = simple_setup.getSpaceInformation()
 
-        self.state.planner = pypathfinder.RRTstar(space_information)
+        self.state.planner = pyompl.RRTstar(space_information)
 
         # set the optimization objective of the simple setup object
         # TODO: implement and add optimization objective here
@@ -186,12 +186,12 @@ class OMPLPath:
         simple_setup.setOptimizationObjective(objective)
 
         # set the planner of the simple setup object
-        simple_setup.setPlanner(pypathfinder.RRTstar(space_information))
+        simple_setup.setPlanner(pyompl.RRTstar(space_information))
 
         return simple_setup
 
 
-def is_state_valid(state: pypathfinder.SE2StateSpace) -> bool:
+def is_state_valid(state: pyompl.SE2StateSpace) -> bool:
     """Evaluate a state to determine if the configuration collides with an environment obstacle.
 
     Args:
@@ -215,4 +215,4 @@ def get_planner_class():
         Tuple[str, Type[ob.Planner]]: The name and class of the planner to use for the OMPL query,
             defaults to RRT* if `planner` is not implemented in this function.
     """
-    return "rrtstar", pypathfinder.RRTstar
+    return "rrtstar", pyompl.RRTstar
