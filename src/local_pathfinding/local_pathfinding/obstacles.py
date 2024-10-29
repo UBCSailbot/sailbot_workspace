@@ -168,7 +168,9 @@ class Land(Obstacle):
 
         latlon_polygons = self.all_land_data.intersection(state_space)
 
-        xy_polygons = Land._latlon_polygons_to_xy_polygons([latlon_polygons], self.reference)
+        xy_polygons = Land._latlon_polygon_list_to_xy_polygon_list(
+            [latlon_polygons], self.reference
+        )
 
         collision_zone = MultiPolygon(xy_polygons)
 
@@ -186,12 +188,12 @@ class Land(Obstacle):
         self.collision_zone = collision_zone
 
     @staticmethod
-    def _latlon_polygons_to_xy_polygons(
+    def _latlon_polygon_list_to_xy_polygon_list(
         polygons: List[Polygon], reference: HelperLatLon
     ) -> List[Polygon]:
         """
-        Transforms a list of polygons from the global lat/lon coordinate system to the local
-        XY coordinate system.
+        Transforms a list of one or more polygons from the global lat/lon coordinate system to
+        the local XY coordinate system.
 
         Args:
             polygons (List[Polygon]): List of polygons to be transformed.

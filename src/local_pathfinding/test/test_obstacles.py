@@ -315,7 +315,7 @@ def test_update_reference_point_land(
     assert translation == pytest.approx(displacement, rel=0.1), "incorrect translation"
 
 
-# Test latlon polygons to xy polygons
+# Test _latlon_polygon_list_to_xy_polygon_list
 # just asserts that every point in every xy_polygon agrees with latlon_to_xy() from coord_systems
 @pytest.mark.parametrize(
     "latlon_polygons, reference_point",
@@ -381,7 +381,7 @@ def test_latlon_polygons_to_xy_polygons(
     latlon_polygons: List[Polygon], reference_point: HelperLatLon
 ):
 
-    xy_polygons = Land._latlon_polygons_to_xy_polygons(latlon_polygons, reference_point)
+    xy_polygons = Land._latlon_polygon_list_to_xy_polygon_list(latlon_polygons, reference_point)
     assert isinstance(xy_polygons, list)
     assert len(xy_polygons) == len(latlon_polygons)
 
