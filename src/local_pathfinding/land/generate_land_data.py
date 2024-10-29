@@ -22,6 +22,14 @@ def load_pkl(file_path: str) -> Any:
 
 
 def pickle_land():
+    """
+    Generates the complete land dataset to be used by sailbot and stores it in PKL format for
+    long term storage on disk.
+
+    Land data is saved to:
+    /workspaces/sailbot_workspace/src/local_pathfinding/land/pkl/land.pkl
+
+    """
 
     WGS84 = pyproj.CRS("EPSG:4326")
     MERCATOR = pyproj.CRS("EPSG:3857")
