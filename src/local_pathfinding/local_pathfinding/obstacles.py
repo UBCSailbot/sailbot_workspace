@@ -138,8 +138,11 @@ class Land(Obstacle):
     ) -> None:
         """
         Updates the Land object's collision zone with a MultiPolygon representing
-        all land obstacles within either a state_space input as an argument
-        or a default rectangle that bounds boxes around Sailbot and the next global waypoint.
+        all land obstacles within either a specified or default state space.
+
+        Args:
+            state_space (Polygon): A custom state space.
+            land_multi_polygon (MultiPolygon): Custom land data. Useful for testing.
         """
         if land_multi_polygon is not None:  # for testing
 
