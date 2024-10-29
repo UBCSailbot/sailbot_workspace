@@ -11,7 +11,7 @@ from shapely.geometry import MultiPolygon, Point, Polygon, box
 from local_pathfinding.coord_systems import XY, latlon_to_xy, meters_to_km
 
 # Constants
-PROJ_TIME_NO_COLLISION = 3  # hours
+PROJ_HOURS_NO_COLLISION = 3  # hours
 BOAT_BUFFER = 0.5  # km
 COLLISION_ZONE_STRETCH_FACTOR = 1.5  # This factor changes the width of the boat collision zone
 
@@ -350,7 +350,7 @@ class Boat(Obstacle):
 
         if len(quad_roots) == 0:
             # Sailbot and this Boat will never collide
-            return PROJ_TIME_NO_COLLISION * self.ais_ship.sog.speed
+            return PROJ_HOURS_NO_COLLISION * self.ais_ship.sog.speed
 
         # Use the smaller positive time, if there is one
         t = min(quad_roots)
