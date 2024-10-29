@@ -237,9 +237,9 @@ def test_update_sailbot_data_land(
     "reference_point_1, reference_point_2, sailbot_position, all_land_data, bbox_buffer_amount",  # noqa
     [
         (
-            HelperLatLon(latitude=49.0, longitude=-126.0),
+            HelperLatLon(latitude=49.155485, longitude=-126.987704),
             HelperLatLon(latitude=49.1, longitude=-126.1),
-            HelperLatLon(latitude=49.2, longitude=-126.2),
+            HelperLatLon(latitude=48.838328, longitude=-126.380390),
             LAND,
             0.1,  # degrees
         ),
@@ -258,31 +258,33 @@ def test_update_reference_point_land(
         all_land_data=all_land_data,
         bbox_buffer_amount=bbox_buffer_amount,
     )
+    state_space = box(-180, -90, 180, 90)
+    # Force the state space to be entire world so that the statespace does not change size
+    # when the reference point is updated
+    # otherwise the land obstacle would have a different shape and we couldn't check if it
+    # was translated properly
+    land.update_collision_zone(state_space=state_space)
     assert land.reference == reference_point_1
-
-    centroid1 = land.collision_zone.centroid  # type: ignore
-
     assert land.sailbot_position == pytest.approx(
         latlon_to_xy(reference_point_1, sailbot_position)
     )
+    centroid1 = land.collision_zone.centroid  # type: ignore
 
     land.update_reference_point(reference_point_2)
+    land.update_collision_zone(state_space=state_space)
     assert land.reference == reference_point_2
-
-    centroid2 = land.collision_zone.centroid  # type: ignore
-
     assert land.sailbot_position_latlon == sailbot_position
     assert land.sailbot_position == pytest.approx(
         latlon_to_xy(reference_point_2, sailbot_position)
     )
+
+    centroid2 = land.collision_zone.centroid  # type: ignore
 
     # Calculate the expected displacement based on the old and new reference point
     x_displacement, y_displacement = latlon_to_xy(reference_point_2, reference_point_1)
     displacement = np.sqrt(x_displacement**2 + y_displacement**2)
     # calculate how far the collision zone was actually translated on reference point update
     translation = centroid1.distance(centroid2)
-
-    # There is some error in the latlon_to_xy conversion but the results are close
     assert translation == pytest.approx(displacement, rel=0.1), "incorrect translation"
 
 

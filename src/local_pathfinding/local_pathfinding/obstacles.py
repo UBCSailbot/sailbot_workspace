@@ -164,9 +164,14 @@ class Land(Obstacle):
 
         latlon_polygons = self.all_land_data.intersection(state_space)
 
-        xy_polygons = Land._latlon_polygon_list_to_xy_polygon_list(
-            [latlon_polygons], self.reference
-        )
+        if isinstance(latlon_polygons, MultiPolygon):
+            xy_polygons = Land._latlon_polygon_list_to_xy_polygon_list(
+                latlon_polygons.geoms, self.reference
+            )
+        else:
+            xy_polygons = Land._latlon_polygon_list_to_xy_polygon_list(
+                [latlon_polygons], self.reference
+            )
 
         collision_zone = MultiPolygon(xy_polygons)
 
@@ -206,6 +211,9 @@ class Land(Obstacle):
         """
 
         def _latlon_polygon_to_xy_polygon(poly: Polygon) -> Polygon:
+            if poly is None:
+                return None
+
             return Polygon(list(map(_latlon_point_to_xy_point, poly.exterior.coords)))
 
         def _latlon_point_to_xy_point(latlon_point: tuple) -> Point:
@@ -216,12 +224,6 @@ class Land(Obstacle):
                     latlon=HelperLatLon(longitude=latlon_point[0], latitude=latlon_point[1]),
                 )
             )
-
-        if len(polygons) == 0:
-            return []
-
-        elif len(polygons) == 1:
-            return [_latlon_polygon_to_xy_polygon(polygons[0])]
 
         return list(map(_latlon_polygon_to_xy_polygon, polygons))
 
