@@ -26,7 +26,7 @@ class Obstacle:
     Attributes:
         reference (HelperLatLon): Lat and lon position of the next global waypoint.
         sailbot_position (HelperLatLon): Lat and lon position of SailBot.
-        collision_zone (Optional[Polygon or MultiPolygon]): Shapely geometry representing the
+        collision_zone ([Polygon or MultiPolygon]): Shapely geometry representing the
             obstacle's collision zone. Shape depends on the child class.
     """
 
@@ -54,8 +54,6 @@ class Obstacle:
         if self.collision_zone is None:
             raise RuntimeError("Collision zone has not been initialized")
 
-        # could also use
-        # Point(point).within(self.collision_zone)
         return not self.collision_zone.contains(Point(*point))
 
     def update_collision_zone(self, **kwargs) -> None:
@@ -98,6 +96,7 @@ class Obstacle:
         self.reference = reference
         self.sailbot_position = latlon_to_xy(self.reference, self.sailbot_position_latlon)
 
+        # TODO just make one call to  parent update_collision_zone func
         if isinstance(self, Boat):
             # regenerate collision zone with updated reference point
             self._update_boat_collision_zone()
@@ -116,7 +115,6 @@ class Land(Obstacle):
     Attributes:
         collision_zone (MultiPolygon): A collection of Polygons in (X,Y) that define regions of
                                        land stored in the Land object.
-        next_waypoint (HelperLatLon): Lat/lon position of the next global waypoint.
         all_land_data (MultiPolygon): MultiPolygon of absolutely all land polygons known to
                                       Sailbot.
         bbox_buffer_amount (float): The amount of square buffer around Sailbot and around the next
@@ -127,12 +125,10 @@ class Land(Obstacle):
         self,
         reference: HelperLatLon,
         sailbot_position: HelperLatLon,
-        next_waypoint: HelperLatLon,
         all_land_data: MultiPolygon,
         bbox_buffer_amount: float,
     ):
         super().__init__(reference, sailbot_position)
-        self.next_waypoint = next_waypoint
         self.all_land_data = all_land_data
         self.bbox_buffer_amount = bbox_buffer_amount
         self._update_land_collision_zone()
@@ -155,13 +151,13 @@ class Land(Obstacle):
             self.collision_zone = collision_zone
             return
 
-        if state_space is None:  # create a deafult one
+        if state_space is None:  # create a default one
 
             sailbot_box = Point(
                 self.sailbot_position_latlon.longitude, self.sailbot_position_latlon.latitude
             ).buffer(self.bbox_buffer_amount, cap_style=3, join_style=2)
 
-            waypoint_box = Point(self.next_waypoint.longitude, self.next_waypoint.latitude).buffer(
+            waypoint_box = Point(self.reference.longitude, self.reference.latitude).buffer(
                 self.bbox_buffer_amount, cap_style=3, join_style=2
             )
             state_space = box(*MultiPolygon([sailbot_box, waypoint_box]).bounds)
