@@ -95,15 +95,7 @@ class Obstacle:
         """
         self.reference = reference
         self.sailbot_position = latlon_to_xy(self.reference, self.sailbot_position_latlon)
-
-        # TODO just make one call to  parent update_collision_zone func
-        if isinstance(self, Boat):
-            # regenerate collision zone with updated reference point
-            self._update_boat_collision_zone()
-
-        else:
-            # regenerate collision zone with updated reference point
-            self._update_land_collision_zone()  # type: ignore
+        self.update_collision_zone()
 
 
 class Land(Obstacle):
