@@ -130,7 +130,7 @@ def test_is_valid_land(
         )
     ],
 )
-def test_land_collision_zone(
+def test_collision_zone_land(
     reference_point: HelperLatLon,
     sailbot_position: HelperLatLon,
     all_land_data: MultiPolygon,
@@ -162,7 +162,7 @@ def test_land_collision_zone(
         )
     ],
 )
-def test_custom_state_space_passed_to_update_collision_zone(
+def test_custom_state_space_passed_to_update_collision_zone_land(
     reference_point: HelperLatLon,
     sailbot_position: HelperLatLon,
     all_land_data: MultiPolygon,
@@ -320,7 +320,7 @@ calc proj dist OK
         )
     ],
 )
-def test_calculate_projected_distance(
+def test_calculate_projected_distance_boat(
     reference_point: HelperLatLon,
     sailbot_position: HelperLatLon,
     ais_ship: HelperAISShip,
@@ -353,7 +353,7 @@ def test_calculate_projected_distance(
         )
     ],
 )
-def test_boat_collision_zone(
+def test_collision_zone_boat(
     reference_point: HelperLatLon,
     sailbot_position: HelperLatLon,
     ais_ship: HelperAISShip,
@@ -388,7 +388,7 @@ def test_boat_collision_zone(
         )
     ],
 )
-def test_position_collision_zone(
+def test_position_collision_zone_boat(
     reference_point: HelperLatLon,
     sailbot_position: HelperLatLon,
     ais_ship: HelperAISShip,
@@ -434,7 +434,7 @@ def test_position_collision_zone(
         )
     ],
 )
-def test_create_collision_zone_id_mismatch(
+def test_create_collision_zone_id_mismatch_boat(
     reference_point: HelperLatLon,
     sailbot_position: HelperLatLon,
     ais_ship_1: HelperAISShip,
@@ -505,7 +505,7 @@ def test_is_valid_boat(
         )
     ],
 )
-def test_is_valid_no_collision_zone(
+def test_is_valid_no_collision_zone_boat(
     reference_point: HelperLatLon,
     sailbot_position: HelperLatLon,
     invalid_point: XY,
@@ -540,7 +540,7 @@ def test_is_valid_no_collision_zone(
         )
     ],
 )
-def test_update_sailbot_data(
+def test_update_sailbot_data_boat(
     ref_point: HelperLatLon,
     sailbot_position_1: HelperLatLon,
     sailbot_speed_1: float,
@@ -591,7 +591,7 @@ def test_update_sailbot_data(
         ),
     ],
 )
-def test_update_reference_point(
+def test_update_reference_point_boat(
     reference_point_1: HelperLatLon,
     reference_point_2: HelperLatLon,
     sailbot_position: HelperLatLon,

@@ -3,7 +3,7 @@ from typing import List
 
 import pytest
 from custom_interfaces.msg import HelperLatLon
-from shapely.geometry import Polygon
+from shapely.geometry import MultiPolygon, Polygon, box
 
 import local_pathfinding.coord_systems as coord_systems
 
@@ -102,9 +102,8 @@ def test_xy_to_latlon(ref_lat: float, ref_lon: float, true_bearing_deg: float, d
         (latlon.latitude, latlon.longitude)
     ), "incorrect coordinate conversion"
 
-    # Test _latlon_polygon_list_to_xy_polygon_list
 
-
+# Test latlon_polygon_list_to_xy_polygon_list
 # just asserts that every point in every xy_polygon agrees with latlon_to_xy() from coord_systems
 @pytest.mark.parametrize(
     "latlon_polygons, reference_point",
@@ -143,6 +142,42 @@ def test_xy_to_latlon(ref_lat: float, ref_lon: float, true_bearing_deg: float, d
                     ),
                 ]
             ),
+            HelperLatLon(latitude=51.527884, longitude=-132.643800),
+        ),
+        (
+            MultiPolygon(
+                [
+                    Polygon(
+                        [
+                            (-129.10434, 49.173085),
+                            (-131.23681, 50.112124),
+                            (-134.820239, 50.658515),
+                            (-135.963419, 49.772751),
+                            (-136.359135, 48.230528),
+                            (-134.556428, 47.671306),
+                            (-131.478636, 47.78954),
+                            (-129.895772, 48.274419),
+                            (-129.412119, 48.928274),
+                        ]
+                    ),
+                    Polygon(
+                        [
+                            (-123.872094, 50.252825),
+                            (-124.135905, 49.530913),
+                            (-125.938612, 49.758558),
+                            (-125.674801, 50.797603),
+                        ]
+                    ),
+                    Polygon(
+                        [
+                            (-123.872094, 50.252825),
+                            (-124.135905, 49.530913),
+                            (-125.938612, 49.758558),
+                            (-125.674801, 50.797603),
+                        ]
+                    ),
+                ]
+            ).geoms,
             HelperLatLon(latitude=51.527884, longitude=-132.643800),
         ),
         (
@@ -191,3 +226,19 @@ def test_latlon_polygons_to_xy_polygons(
                         HelperLatLon(longitude=latlon_point[0], latitude=latlon_point[1]),
                     )
                 )
+
+
+def test_latlon_polygons_to_xy_polygons_empty_Polygon():
+
+    reference_point = HelperLatLon(latitude=51.527884, longitude=-132.643800)
+    b1 = box(0, 0, 1, 1)
+    b3 = box(2, 2, 3, 3)
+
+    empty_poly = b1.intersection(b3)
+    assert isinstance(empty_poly, Polygon)
+    assert empty_poly.is_empty
+
+    result = coord_systems.latlon_polygon_list_to_xy_polygon_list([empty_poly], reference_point)
+    assert isinstance(result, List)
+    assert len(result) == 1
+    assert result[0].is_empty

@@ -105,8 +105,8 @@ def latlon_polygon_list_to_xy_polygon_list(
     """
 
     def _latlon_polygon_to_xy_polygon(poly: Polygon) -> Polygon:
-        if poly is None:
-            return None
+        if poly.is_empty:
+            return poly
 
         return Polygon(list(map(_latlon_point_to_xy_point, poly.exterior.coords)))
 

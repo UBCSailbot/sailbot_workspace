@@ -92,7 +92,7 @@ class Obstacle:
         if isinstance(self, Boat):
             self.sailbot_speed = sailbot_speed
 
-    def update_reference_point(self, reference: HelperLatLon) -> None:
+    def update_reference_point(self, reference: HelperLatLon, **kwargs) -> None:
         """Updates the reference point.
 
         Args:
@@ -100,7 +100,7 @@ class Obstacle:
         """
         self.reference = reference
         self.sailbot_position = latlon_to_xy(self.reference, self.sailbot_position_latlon)
-        self.update_collision_zone()
+        self.update_collision_zone(**kwargs)
 
 
 class Land(Obstacle):
@@ -110,8 +110,11 @@ class Land(Obstacle):
     zone with new geometry when required.
 
     Attributes:
-        collision_zone (MultiPolygon): A collection of Polygons in (X,Y) that define regions of
-                                       land stored in the Land object.
+        collision_zone (MultiPolygon):
+                                       A collection of Polygons in (X,Y) that define regions of
+                                       land stored in the Land object. Even if the land is a single
+                                       polygon, or no polygons, the collision_zone is always a
+                                       MultiPolygon.
         all_land_data (MultiPolygon): MultiPolygon of absolutely all land polygons known to
                                       Sailbot.
         bbox_buffer_amount (float): The amount of square buffer around Sailbot and around the next
@@ -165,10 +168,13 @@ class Land(Obstacle):
         latlon_polygons = self.all_land_data.intersection(state_space)
 
         if isinstance(latlon_polygons, MultiPolygon):
+            # non-empty MultiPolygon
             xy_polygons = latlon_polygon_list_to_xy_polygon_list(
                 latlon_polygons.geoms, self.reference
             )
         else:
+            # single Polygon (empty or non-empty)
+            # pass it inside a list for consistency
             xy_polygons = latlon_polygon_list_to_xy_polygon_list([latlon_polygons], self.reference)
 
         collision_zone = MultiPolygon(xy_polygons)
