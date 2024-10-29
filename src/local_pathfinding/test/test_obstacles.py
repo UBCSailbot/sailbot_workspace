@@ -24,18 +24,8 @@ def load_pkl(file_path: str) -> Any:
 
 LAND = load_pkl("/workspaces/sailbot_workspace/src/local_pathfinding/land/pkl/land.pkl")
 
+
 # LAND OBSTACLES ----------------------------------------------------------------------------------
-"""Test Plan
-Create Land OK
-Pass custom bbox OK
-isValid OK
-update collision zone OK
-update sailbot data OK
-update ref point OK
-latlon polys to xy polys OK
-"""
-
-
 @pytest.mark.parametrize(
     "reference_point, sailbot_position, all_land_data, bbox_buffer_amount, land_present",  # noqa
     [
@@ -289,14 +279,6 @@ def test_update_reference_point_land(
 
 
 # BOAT OBSTACLES ----------------------------------------------------------------------------------
-"""Test Plan
-isValid OK
-update collision zone OK
-update sailbot data OK
-update ref point OK
-init OK
-calc proj dist OK
-"""
 
 
 # Test calculate projected distance
