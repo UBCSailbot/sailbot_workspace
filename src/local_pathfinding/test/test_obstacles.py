@@ -1,5 +1,5 @@
 import pickle
-from typing import Any, List
+from typing import Any
 
 import numpy as np
 import pytest
@@ -286,93 +286,6 @@ def test_update_reference_point_land(
     # calculate how far the collision zone was actually translated on reference point update
     translation = centroid1.distance(centroid2)
     assert translation == pytest.approx(displacement, rel=0.1), "incorrect translation"
-
-
-# Test _latlon_polygon_list_to_xy_polygon_list
-# just asserts that every point in every xy_polygon agrees with latlon_to_xy() from coord_systems
-@pytest.mark.parametrize(
-    "latlon_polygons, reference_point",
-    [
-        (
-            list(
-                [
-                    Polygon(
-                        [
-                            (-129.10434, 49.173085),
-                            (-131.23681, 50.112124),
-                            (-134.820239, 50.658515),
-                            (-135.963419, 49.772751),
-                            (-136.359135, 48.230528),
-                            (-134.556428, 47.671306),
-                            (-131.478636, 47.78954),
-                            (-129.895772, 48.274419),
-                            (-129.412119, 48.928274),
-                        ]
-                    ),
-                    Polygon(
-                        [
-                            (-123.872094, 50.252825),
-                            (-124.135905, 49.530913),
-                            (-125.938612, 49.758558),
-                            (-125.674801, 50.797603),
-                        ]
-                    ),
-                    Polygon(
-                        [
-                            (-123.872094, 50.252825),
-                            (-124.135905, 49.530913),
-                            (-125.938612, 49.758558),
-                            (-125.674801, 50.797603),
-                        ]
-                    ),
-                ]
-            ),
-            HelperLatLon(latitude=51.527884, longitude=-132.643800),
-        ),
-        (
-            list(
-                [
-                    Polygon(
-                        [
-                            (-123.872094, 50.252825),
-                            (-124.135905, 49.530913),
-                            (-125.938612, 49.758558),
-                            (-125.674801, 50.797603),
-                        ]
-                    ),
-                ]
-            ),
-            HelperLatLon(latitude=51.527884, longitude=-132.643800),
-        ),
-        (
-            list([]),
-            HelperLatLon(latitude=51.527884, longitude=-132.643800),
-        ),
-    ],
-)
-def test_latlon_polygons_to_xy_polygons(
-    latlon_polygons: List[Polygon], reference_point: HelperLatLon
-):
-
-    xy_polygons = Land._latlon_polygon_list_to_xy_polygon_list(latlon_polygons, reference_point)
-    assert isinstance(xy_polygons, list)
-    assert len(xy_polygons) == len(latlon_polygons)
-
-    if len(xy_polygons) > 0:
-        for i, xy_poly in enumerate(xy_polygons):
-            latlon_poly = latlon_polygons[i]
-            assert isinstance(xy_poly, Polygon)
-            assert xy_poly.exterior.coords is not None
-
-            for j, xy_point in enumerate(xy_poly.exterior.coords):
-                latlon_point = latlon_poly.exterior.coords[j]
-                assert isinstance(xy_point, tuple)
-                assert xy_point == pytest.approx(
-                    latlon_to_xy(
-                        reference_point,
-                        HelperLatLon(longitude=latlon_point[0], latitude=latlon_point[1]),
-                    )
-                )
 
 
 # BOAT OBSTACLES ----------------------------------------------------------------------------------

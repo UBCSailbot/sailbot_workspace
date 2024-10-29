@@ -1,14 +1,19 @@
 """Describes obstacles which the Sailbot must avoid: Boats and Land"""
 
 import math
-from typing import List, Optional
+from typing import Optional
 
 import numpy as np
 from custom_interfaces.msg import HelperAISShip, HelperLatLon
 from shapely.affinity import affine_transform
 from shapely.geometry import MultiPolygon, Point, Polygon, box
 
-from local_pathfinding.coord_systems import XY, latlon_to_xy, meters_to_km
+from local_pathfinding.coord_systems import (
+    XY,
+    latlon_polygon_list_to_xy_polygon_list,
+    latlon_to_xy,
+    meters_to_km,
+)
 
 # Constants
 PROJ_HOURS_NO_COLLISION = 3  # hours
@@ -160,13 +165,11 @@ class Land(Obstacle):
         latlon_polygons = self.all_land_data.intersection(state_space)
 
         if isinstance(latlon_polygons, MultiPolygon):
-            xy_polygons = Land._latlon_polygon_list_to_xy_polygon_list(
+            xy_polygons = latlon_polygon_list_to_xy_polygon_list(
                 latlon_polygons.geoms, self.reference
             )
         else:
-            xy_polygons = Land._latlon_polygon_list_to_xy_polygon_list(
-                [latlon_polygons], self.reference
-            )
+            xy_polygons = latlon_polygon_list_to_xy_polygon_list([latlon_polygons], self.reference)
 
         collision_zone = MultiPolygon(xy_polygons)
 
@@ -182,45 +185,6 @@ class Land(Obstacle):
             collision_zone = MultiPolygon()
 
         self.collision_zone = collision_zone
-
-    @staticmethod
-    def _latlon_polygon_list_to_xy_polygon_list(
-        polygons: List[Polygon], reference: HelperLatLon
-    ) -> List[Polygon]:
-        """
-        Transforms a list of one or more polygons from the global lat/lon coordinate system to
-        the local XY coordinate system.
-
-        Args:
-            polygons (List[Polygon]): List of polygons to be transformed.
-            reference (HelperLatLon): Lat and lon position of the reference point.
-
-        Returns:
-            List[Polygon]: List of transformed polygons.
-
-        Inner Functions:
-            _latlon_to_xy_point(point: HelperLatLon) -> Point:
-                Converts a latlon point to a 2D Cartesian point.
-            _latlons_to_xy_points(poly: Polygon) -> Polygon:
-                Applies the _latlon_to_point function to every point of poly
-        """
-
-        def _latlon_polygon_to_xy_polygon(poly: Polygon) -> Polygon:
-            if poly is None:
-                return None
-
-            return Polygon(list(map(_latlon_point_to_xy_point, poly.exterior.coords)))
-
-        def _latlon_point_to_xy_point(latlon_point: tuple) -> Point:
-            return Point(
-                *latlon_to_xy(
-                    reference=reference,
-                    # points are (lon, lat) in the land dataset
-                    latlon=HelperLatLon(longitude=latlon_point[0], latitude=latlon_point[1]),
-                )
-            )
-
-        return list(map(_latlon_polygon_to_xy_polygon, polygons))
 
 
 class Boat(Obstacle):
