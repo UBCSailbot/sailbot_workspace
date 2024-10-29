@@ -93,7 +93,7 @@ class Obstacle:
             self.sailbot_speed = sailbot_speed
 
     def update_reference_point(self, reference: HelperLatLon, **kwargs) -> None:
-        """Updates the reference point.
+        """Updates the reference point and updates the collision zone.
 
         Args:
             reference (HelperLatLon): Position of the updated global waypoint.
@@ -127,11 +127,15 @@ class Land(Obstacle):
         sailbot_position: HelperLatLon,
         all_land_data: MultiPolygon,
         bbox_buffer_amount: float,
+        state_space: Polygon = None,
+        land_multi_polygon: MultiPolygon = None,
     ):
         super().__init__(reference, sailbot_position)
         self.all_land_data = all_land_data
         self.bbox_buffer_amount = bbox_buffer_amount
-        self._update_land_collision_zone()
+        self._update_land_collision_zone(
+            state_space=state_space, land_multi_polygon=land_multi_polygon
+        )
 
     def _update_land_collision_zone(
         self, state_space: Polygon = None, land_multi_polygon: MultiPolygon = None

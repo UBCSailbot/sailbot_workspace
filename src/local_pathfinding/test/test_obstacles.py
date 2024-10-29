@@ -101,9 +101,9 @@ def test_is_valid_land(
         sailbot_position=sailbot_position,
         all_land_data=all_land_data,
         bbox_buffer_amount=bbox_buffer_amount,
+        land_multi_polygon=mock_land,
     )
 
-    land.update_collision_zone(land_multi_polygon=mock_land)
     assert land.is_valid(valid_point)
     assert not land.is_valid(invalid_point)
 
@@ -242,26 +242,26 @@ def test_update_reference_point_land(
     all_land_data: MultiPolygon,
     bbox_buffer_amount,
 ):
+    # Force the state space to be entire world so that the statespace does not change size
+    # when the reference point is updated
+    # otherwise the land obstacle would have a different shape and we couldn't check if it
+    # was translated properly
+    state_space = box(-180, -90, 180, 90)
     land = Land(
         reference=reference_point_1,
         sailbot_position=sailbot_position,
         all_land_data=all_land_data,
         bbox_buffer_amount=bbox_buffer_amount,
+        state_space=state_space,
     )
-    state_space = box(-180, -90, 180, 90)
-    # Force the state space to be entire world so that the statespace does not change size
-    # when the reference point is updated
-    # otherwise the land obstacle would have a different shape and we couldn't check if it
-    # was translated properly
-    land.update_collision_zone(state_space=state_space)
+
     assert land.reference == reference_point_1
     assert land.sailbot_position == pytest.approx(
         latlon_to_xy(reference_point_1, sailbot_position)
     )
     centroid1 = land.collision_zone.centroid  # type: ignore
 
-    land.update_reference_point(reference_point_2)
-    land.update_collision_zone(state_space=state_space)
+    land.update_reference_point(reference=reference_point_2, state_space=state_space)
     assert land.reference == reference_point_2
     assert land.sailbot_position_latlon == sailbot_position
     assert land.sailbot_position == pytest.approx(
