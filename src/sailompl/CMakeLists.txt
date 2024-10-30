@@ -21,7 +21,7 @@ pybind11_add_module(${PROJECT_NAME} MODULE ${SOURCE_FILES})
 
 
 # Link OMPL libraries (assuming shared libraries are in /usr/lib)
-target_link_libraries(${PROJECT_NAME} PRIVATE /usr/lib/libompl.so)
+# target_link_libraries(${PROJECT_NAME} PRIVATE /usr/lib/libompl.so)
 
 # Specify include directories for OMPL and Pybind11
 target_include_directories(${PROJECT_NAME} PRIVATE ${PYTHON3_INCLUDE_DIRS})
