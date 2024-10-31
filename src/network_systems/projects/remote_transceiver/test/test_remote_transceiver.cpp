@@ -225,7 +225,8 @@ TEST_F(TestRemoteTransceiver, rockblockWebServerExample)
     curl = curl_easy_init();
 
     if (curl != nullptr) {
-        curl_easy_setopt(curl, CURLOPT_URL, "http://localhost:8100/?data=B&imei=300434065264590&username=myuser");
+        curl_easy_setopt(
+          curl, CURLOPT_URL, "http://localhost:8100/?data=thisistestdata&ec=B&imei=300434065264590&username=myuser");
 
         curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "POST");
 
