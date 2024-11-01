@@ -21,7 +21,14 @@ PATH = ompl_path.OMPLPath(
 
 
 def test_OMPLPathState():
-    state = ompl_path.OMPLPathState(local_path_state=None, logger=RcutilsLogger())
+    local_path_state = LocalPathState(
+        gps=GPS(),
+        ais_ships=AISShips(),
+        global_path=Path(),
+        filtered_wind_sensor=WindSensor(),
+        planner="rrtstar",
+    )
+    state = ompl_path.OMPLPathState(local_path_state, logger=RcutilsLogger())
     assert state.state_domain == (-1, 1), "incorrect value for attribute state_domain"
     assert state.state_range == (-1, 1), "incorrect value for attribute start_state"
     assert state.start_state == pytest.approx(

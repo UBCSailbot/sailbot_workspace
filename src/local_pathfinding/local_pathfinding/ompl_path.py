@@ -38,7 +38,7 @@ class OMPLPathState:
 
         self.reference_latlon = (
             local_path_state.global_path[-1]
-            if local_path_state and len(local_path_state.global_path) > 0
+            if local_path_state.global_path and len(local_path_state.global_path) > 0
             else HelperLatLon(latitude=0.0, longitude=0.0)
         )
 

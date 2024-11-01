@@ -48,6 +48,8 @@ class LocalPathState:
                 HelperLatLon(latitude=waypoint.latitude, longitude=waypoint.longitude)
                 for waypoint in global_path.waypoints
             ]
+        else:
+            self.global_path = global_path
 
         if filtered_wind_sensor:  # TODO: remove when mock can be run
             self.wind_speed = filtered_wind_sensor.speed.speed
