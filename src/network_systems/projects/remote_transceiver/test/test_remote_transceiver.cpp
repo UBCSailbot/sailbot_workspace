@@ -238,6 +238,7 @@ TEST_F(TestRemoteTransceiver, rockblockWebServerExample)
 
         if (res != CURLE_OK) {
             std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
+            EXPECT_TRUE(false);
         } else {
             std::cout << "Response data: " << readBuffer << std::endl;
             EXPECT_EQ("FAILED,11,No RockBLOCK with this IMEI found on your account", readBuffer);
@@ -294,8 +295,8 @@ TEST_F(TestRemoteTransceiver, TestGlobalPath)
     std::this_thread::sleep_for(WAIT_AFTER_RES);
 
     std::array<std::string, 1> expected_response  = {"FAILED"};
-    std::array<std::string, 1> expected_error     = {"10"};
-    std::array<std::string, 1> expected_message   = {"Invalid login credentials"};
+    std::array<std::string, 1> expected_error     = {"11"};
+    std::array<std::string, 1> expected_message   = {"No RockBLOCK with this IMEI found on your account"};
     std::array<std::string, 1> expected_timestamp = {rand_global_path_timestamp};
 
     // EXPECT_TRUE(g_test_db.verifyDBWrite_GlobalPath(expected_global_path, expected_global_path_timestamp));
