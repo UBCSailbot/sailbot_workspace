@@ -20,7 +20,7 @@
       
       
       <link rel="icon" href="../../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.34">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.43">
     
     
       
@@ -28,7 +28,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../../assets/stylesheets/main.35f28582.min.css">
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.0253249f.min.css">
       
         
         <link rel="stylesheet" href="../../../../assets/stylesheets/palette.06af60db.min.css">
@@ -2579,6 +2579,12 @@ value. Otherwise, the trim tab angle is determined by the wingsail controller.</
 <li><em>Datatype</em>: <code>double</code></li>
 <li><em>Range</em>: <code>(0.0, MAX_DOUBLE)</code></li>
 </ul>
+<p><strong><code>wingsail.actuation_request_period_sec</code></strong></p>
+<ul>
+<li><em>Description</em>: How often the sail action server requests a wingsail actuation.</li>
+<li><em>Datatype</em>: <code>double</code></li>
+<li><em>Range</em>: <code>(0.0, MAX_DOUBLE)</code></li>
+</ul>
 <p><strong><code>wind_sensor.constant_params.value</code></strong></p>
 <ul>
 <li><em>Description</em>: Specifies the constant vector returned by the constant generator that represents the wind velocity in kmph.
@@ -2618,10 +2624,32 @@ specified within an array: one for the <code>x</code> component, and one for the
 <li><em>Datatype</em>: <code>string</code></li>
 <li><em>Acceptable Values</em>: <code>gaussian</code>, <code>constant</code></li>
 </ul>
-<p><strong><code>wingsail.actuation_request_period_sec</code></strong></p>
+<p><strong><code>wind_generation.mvgaussian_params.mean</code></strong></p>
 <ul>
-<li><em>Description</em>: How often the sail action server requests a wingsail actuation.</li>
-<li><em>Datatype</em>: <code>double</code></li>
+<li><em>Description</em>: The mean value for the wind generated, expressed in kilometers per hour (km/h), for the multivariate
+Gaussian generator.</li>
+<li><em>Datatype</em>: <code>double</code> array, length 3</li>
+<li><em>Range</em>: <code>(0.0, MAX_DOUBLE)</code></li>
+</ul>
+<p><strong><code>wind_generation.mvgaussian_params.cov</code></strong></p>
+<ul>
+<li><em>Description</em>: The covariance matrix for the generated wind, represented as a string formatted as a 2D <code>double</code> array,
+since ROS parameters do not support native 2D array types.</li>
+<li><em>Datatype</em>: <code>string</code></li>
+<li><em>Range</em>: <code>(0.0, MAX_DOUBLE)</code></li>
+</ul>
+<p><strong><code>current_generation.mvgaussian_params.mean</code></strong></p>
+<ul>
+<li><em>Description</em>: The mean value for the current generated, expressed in kilometers per hour (km/h), for the multivariate
+Gaussian generator.</li>
+<li><em>Datatype</em>: <code>double</code> array, length 3</li>
+<li><em>Range</em>: <code>(0.0, MAX_DOUBLE)</code></li>
+</ul>
+<p><strong><code>current_generation.mvgaussian_params.cov</code></strong></p>
+<ul>
+<li><em>Description</em>: The covariance matrix for the generated current, represented as a string formatted as a 2D <code>double</code>
+array, since ROS parameters do not support native 2D array types.</li>
+<li><em>Datatype</em>: <code>string</code></li>
 <li><em>Range</em>: <code>(0.0, MAX_DOUBLE)</code></li>
 </ul>
 <h3 id="data_collection_node"><code>data_collection_node</code><a class="headerlink" href="#data_collection_node" title="Permanent link">&para;</a></h3>
@@ -2826,10 +2854,10 @@ corresponding correct type as the second string.</li>
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "../../../..", "features": ["content.action.edit", "content.action.view", "content.code.annotate", "content.code.copy", "content.tabs.link", "navigation.expand", "navigation.footer", "navigation.instant", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../../../../assets/javascripts/workers/search.07f07601.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": "../../../..", "features": ["content.action.edit", "content.action.view", "content.code.annotate", "content.code.copy", "content.tabs.link", "navigation.expand", "navigation.footer", "navigation.instant", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../../../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../../../../assets/javascripts/bundle.56dfad97.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.83f73b43.min.js"></script>
       
         <script src="../../../../javascripts/mathjax.js"></script>
       
