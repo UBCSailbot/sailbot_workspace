@@ -82,7 +82,8 @@ class DistanceObjective(Objective):
 
     Attributes:
         method (DistanceMethod): The method of the distance objective function
-        ompl_path_objective (pyompl.PathLengthOptimizationObjective): The OMPL path length objective.
+        ompl_path_objective (pyompl.PathLengthOptimizationObjective): The OMPL path length
+        objective.
             Only defined if the method is OMPL path length.
         reference (HelperLatLon): The XY origin when converting from latlon to XY.
             Only defined if the method is latlon.
