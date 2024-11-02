@@ -262,6 +262,7 @@ TEST_F(TestRemoteTransceiver, TestGlobalPath)
     std::cout << "rand_global_path: " << rand_global_path_str << std::endl;
     Polaris::GlobalPath test;
     test.ParseFromString(rand_global_path_str);
+    std::cout << "global path str: " << rand_global_path_str << std::endl;
     // This query is comprised entirely of arbitrary values exccept for .data_
     //Configure for global path
 
