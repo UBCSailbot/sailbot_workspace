@@ -28,9 +28,7 @@ def test_compute_net_force_torque(
 ):
 
     current_state = BoatState(1.0)
-    net_force = current_state._BoatState__compute_net_force_and_torque(
-        rel_wind_vel, rel_water_vel, rudder_angle_deg, trim_tab_angle
-    )
+    net_force = current_state.step(rel_wind_vel, rel_water_vel, rudder_angle_deg, trim_tab_angle)
 
     app_wind_vel = np.subtract(rel_wind_vel, current_state.relative_velocity)
     app_water_vel = np.subtract(rel_water_vel, current_state.relative_velocity)

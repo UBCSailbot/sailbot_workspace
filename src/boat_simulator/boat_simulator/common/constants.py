@@ -107,7 +107,7 @@ BOAT_PROPERTIES = BoatProperties(
     rudder_dist=1.5,
     hull_drag_factor=0.05,
     mass=50,
-    inertia=np.eye(3),
+    inertia=np.array([[125, 0, 0], [0, 1125, 0], [0, 0, 500]], dtype=np.float32),
     air_density=1.225,
     water_density=1000,
     centre_of_gravity=np.array([0.8, 1, 0]),
