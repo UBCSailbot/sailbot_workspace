@@ -6,6 +6,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from boat_simulator.common.constants import BOAT_PROPERTIES
+from boat_simulator.common.constants import BOAT_PROPERTIES
 from boat_simulator.common.types import Scalar
 from boat_simulator.nodes.physics_engine.fluid_forces import MediumForceComputation
 from boat_simulator.nodes.physics_engine.kinematics_computation import BoatKinematics
