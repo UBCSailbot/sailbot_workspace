@@ -6,7 +6,6 @@ import numpy as np
 from numpy.typing import NDArray
 
 from boat_simulator.common.constants import BOAT_PROPERTIES
-from boat_simulator.common.constants import BOAT_PROPERTIES
 from boat_simulator.common.types import Scalar
 from boat_simulator.nodes.physics_engine.fluid_forces import MediumForceComputation
 from boat_simulator.nodes.physics_engine.kinematics_computation import BoatKinematics
@@ -103,23 +102,24 @@ class BoatState:
                 the relative reference frame, expressed in newtons (N), and the second element
                 represents the net torque, expressed in newton-meters (N•m).
         """
-        # Compute apparent wind and water velocities as ND arrays
-        apparent_wind_vel = np.subtract(rel_wind_vel, self.relative_velocity)
-        apparent_water_vel = np.subtract(rel_water_vel, self.relative_velocity)
+        # Compute apparent wind and water velocities as ND arrays (2-D)
+        apparent_wind_vel = np.subtract(rel_wind_vel, self.relative_velocity[0:2])
+        apparent_water_vel = np.subtract(rel_water_vel, self.relative_velocity[0:2])
 
-        wind_angle = np.arctan2(rel_wind_vel[1], rel_wind_vel[0])  # Wind angle in radians
+        # angle references all in radians
+        wind_angle = np.arctan2(rel_wind_vel[1], rel_wind_vel[0])
         trim_tab_angle_rad = np.radians(trim_tab_angle)
-        main_sail_angle = wind_angle - trim_tab_angle_rad  # in radians
+        main_sail_angle = wind_angle - trim_tab_angle_rad
         rudder_angle_rad = np.radians(rudder_angle_deg)
 
         # Calculate Forces on sail and rudder
-        sail_force = self.__sail_force_computation.compute(apparent_wind_vel, trim_tab_angle)
+        sail_force = self.__sail_force_computation.compute(apparent_wind_vel[0:2], trim_tab_angle)
         rudder_force = self.__rudder_force_computation.compute(
-            apparent_water_vel, rudder_angle_deg
+            apparent_water_vel[0:2], rudder_angle_deg
         )
 
         # Calculate Hull Drag Force
-        hull_drag_force = self.relative_velocity * BOAT_PROPERTIES.hull_drag_factor
+        hull_drag_force = self.relative_velocity[0:2] * BOAT_PROPERTIES.hull_drag_factor
 
         # Total Force Calculation
         total_drag_force = sail_force[1] + rudder_force[1] + hull_drag_force
@@ -152,6 +152,7 @@ class BoatState:
             + BOAT_PROPERTIES.centre_of_gravity[1]
         )
 
+        # adding total rudder torque
         rudder_torque = np.add(
             rudder_lift * rudder_lift_constant,
             rudder_drag * rudder_drag_constant,
@@ -159,7 +160,7 @@ class BoatState:
 
         total_torque = np.add(sail_torque, rudder_torque)  # Sum torques about z-axis
 
-        final_torque = np.array([0, 0, total_torque])
+        final_torque = np.array([0, 0, total_torque])  # generate 3-D array(only z component)
 
         return (total_force, final_torque)
 

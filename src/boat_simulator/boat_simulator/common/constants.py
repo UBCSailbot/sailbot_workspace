@@ -37,21 +37,21 @@ class PhysicsEnginePublisherTopics:
 
 @dataclass
 class BoatProperties:
-    # A lookup table that maps angles of attack (in degrees) to their corresponding lift
+    # A lookup array that maps angles of attack (in degrees) to their corresponding lift
     # coefficients.
     sail_lift_coeffs: NDArray
-    # A lookup table that maps angles of attack (in degrees) to their corresponding drag
+    # A lookup array that maps angles of attack (in degrees) to their corresponding drag
     # coefficients.
     sail_drag_coeffs: NDArray
-    # A lookup table that maps angles of attack (in degrees) to their corresponding sail areas
-    # (in square meters).
+    # The area of sail (in square meters).
     sail_areas: Scalar
-    # A lookup table that maps angles of attack (in degrees) to their corresponding drag
+    # A lookup array that maps angles of attack (in degrees) to their corresponding lift
     # coefficients for the rudder.
-    rudder_lift_coeffs: NDArray  
+    rudder_lift_coeffs: NDArray
+    # A lookup array that maps angles of attack (in degrees) to their corresponding drag
+    # coefficients for the rudder.
     rudder_drag_coeffs: NDArray
-    # A lookup table that maps angles of attack (in degrees) to their corresponding rudder areas
-    # (in square meters).
+    # The area of rudder (in square meters).
     rudder_areas: Scalar
     # A scalar representing the distance from the center of effort of the sail to the pivot point
     # (in meters).
@@ -66,10 +66,15 @@ class BoatProperties:
     mass: Scalar
     # The inertia of the boat (in kilograms-meters squared).
     inertia: NDArray
-    air_density: Scalar  # Kilograms per meter cubed (kg/m^3)
-    water_density: Scalar  # Kilograms per meter cubed (kg/m^3)
-    centre_of_gravity: NDArray  # Meters (m)
-    mast_position: NDArray  # Meters (m)
+    # The density of air (in kilograms per meter cubed).
+    air_density: Scalar
+    # The density of water (in kilograms per meter cubed).
+    water_density: Scalar
+    # The center of gravity of the boat ((3, ) array in meters).
+    # (0, 0) at bottom right corner
+    centre_of_gravity: NDArray
+    # The mast position ((3, ) array in meters).
+    mast_position: NDArray
 
 
 # Directly accessible constants
