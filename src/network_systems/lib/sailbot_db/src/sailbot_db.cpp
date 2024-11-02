@@ -214,8 +214,8 @@ bool SailbotDB::storeIridiumResponse(
 {
     mongocxx::database   db                    = client[db_name_];
     mongocxx::collection iridium_response_coll = db[COLLECTION_IRIDIUM_RESPONSE];
-    DocVal iridium_response_doc = bstream::document{} << "response" << response << "error" << error << "message"
-                                                      << message << "timestamp" << timestamp << bstream::finalize;
+    DocVal iridium_response_doc = bstream::document{} << "response" << response << "error" << error << "timestamp"
+                                                      << timestamp << "message" << message << bstream::finalize;
 
     return static_cast<bool>(iridium_response_coll.insert_one(iridium_response_doc.view()));
 }
