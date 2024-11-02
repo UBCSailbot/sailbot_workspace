@@ -34,6 +34,11 @@ STATIC_ANALYSIS="OFF"
 
 UNIT_TEST="ON"
 
+if [[ "$PACKAGE" == "local_pathfinding" || "$PACKAGE" == "" ]]; then
+    echo "Building ompl python bindings..."
+    /workspaces/sailbot_workspace/src/local_pathfinding/src/build/py_bindings.sh
+fi
+
 # Build ROS packages in src directory
 colcon build \
         ${PACKAGE:+--packages-select $PACKAGE} \
