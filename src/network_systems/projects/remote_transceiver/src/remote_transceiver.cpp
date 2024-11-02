@@ -234,32 +234,31 @@ void HTTPServer::doPost()
 
         static constexpr int NUM_CHECK = 20;
         for (int i = 0; i < NUM_CHECK; i++) {
-            CURL *   curl;
-            CURLcode res;
+            CURL *      curl;
+            CURLcode    res;
+            std::string readBuffer;
 
             curl = curl_easy_init();
+            // URL we are using: http://localhost:8100/?data=thisistestdata&ec=B&imei=300434065264590&username=myuser
 
             if (curl != nullptr) {
-                std::string param_data = "imei=123456789&username=foo&password=bar&data=";
-                param_data += data;
+                curl_easy_setopt(
+                  curl, CURLOPT_URL,
+                  "http://localhost:8100/?data=thisistestdata&ec=B&imei=300434065264590&username=myuser");
 
-                std::string response_body;
-
-                curl_easy_setopt(curl, CURLOPT_URL, "https://rockblock.rock7.com/rockblock/MT");
-                curl_easy_setopt(curl, CURLOPT_POSTFIELDS, param_data.c_str());
+                curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "POST");
 
                 curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-                curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response_body);
 
-                curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10L);  //arbitrary value of 10s chosen for timeout
+                curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
 
                 res = curl_easy_perform(curl);
 
                 if (res != CURLE_OK) {
                     std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
                 } else {
-                    std::cout << "Response body: " << response_body << std::endl;
-                    std::stringstream ss(response_body);
+                    // std::cout << "Response body: " << response_body << std::endl;
+                    // std::stringstream ss(response_body);
                     // boost::property_tree::ptree pt;
                     // boost::property_tree::read_json(ss, pt);
                     std::string response;
