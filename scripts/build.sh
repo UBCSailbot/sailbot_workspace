@@ -34,11 +34,6 @@ STATIC_ANALYSIS="OFF"
 
 UNIT_TEST="ON"
 
-if [[ "$PACKAGE" == "local_pathfinding" || "$PACKAGE" == "" ]]; then
-    echo "Building ompl python bindings..."
-    /workspaces/sailbot_workspace/src/local_pathfinding/src/build/py_bindings.sh
-fi
-
 # Build ROS packages in src directory
 colcon build \
         ${PACKAGE:+--packages-select $PACKAGE} \
@@ -46,3 +41,8 @@ colcon build \
         --merge-install \
         --symlink-install \
         --cmake-args "-DCMAKE_BUILD_TYPE=$BUILD_TYPE" "-DSTATIC_ANALYSIS=$STATIC_ANALYSIS" "-DUNIT_TEST=$UNIT_TEST" "--no-warn-unused-cli"
+
+if [[ "$PACKAGE" == "local_pathfinding" || "$PACKAGE" == "" ]]; then
+    echo "Building ompl python bindings..."
+    /workspaces/sailbot_workspace/src/local_pathfinding/src/build/py_bindings.sh
+fi
