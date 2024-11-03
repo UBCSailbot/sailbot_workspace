@@ -30,6 +30,12 @@ LOCAL_LAUNCH_ARGUMENTS: List[DeclareLaunchArgument] = [
         choices=["true", "false"],
         description="Enable data collection in the boat simulator",
     ),
+    DeclareLaunchArgument(
+        name="enable-mock-data",
+        default_value="false",
+        choices=["true", "false"],
+        description="Enable generation of mock data from pathfinding",
+    ),
 ]
 
 
@@ -200,8 +206,8 @@ def get_mock_data_description(context: LaunchContext) -> Node:
     ]
     # may not need local arguments.
     local_arguments: List[SomeSubstitutionsType] = [
-        Constants.MULTITHREADING_CLI_ARG_NAME,
-        [LaunchConfiguration("enable_sim_multithreading")],
+        Constants.MOCK_DATA_CLI_ARG_NAME,
+        [LaunchConfiguration("enable-mock-data")],
     ]
 
     node = Node(

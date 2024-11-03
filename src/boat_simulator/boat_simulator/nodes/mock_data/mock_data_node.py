@@ -1,4 +1,5 @@
 import random
+import sys
 
 import rclpy
 from custom_interfaces.msg import DesiredHeading, HelperHeading, SailCmd
@@ -70,7 +71,20 @@ class MockDataNode(Node):
 def main(args=None):
     rclpy.init(args=args)
     node = MockDataNode()
-    rclpy.spin(node)
+    if is_mock_data_enabled():
+        try:
+            rclpy.spin(node)
+        finally:
+            rclpy.shutdown()
+
+
+def is_mock_data_enabled() -> bool:
+    try:
+        is_mock_data_enabled_index = sys.argv.index(Constants.MOCK_DATA_CLI_ARG_NAME) + 1
+        is_mock_data_enabled = sys.argv[is_mock_data_enabled_index] == "true"
+    except ValueError:
+        is_mock_data_enabled = False
+    return is_mock_data_enabled
 
 
 if __name__ == "__main__":

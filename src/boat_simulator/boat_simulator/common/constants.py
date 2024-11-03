@@ -91,6 +91,9 @@ PHYSICS_ENGINE_SUBSCRIPTIONS = PhysicsEngineSubscriptionTopics()
 # CLI argument name for data collection option
 DATA_COLLECTION_CLI_ARG_NAME = "--enable-data-collection"
 
+# CLI argument name for data collection option
+MOCK_DATA_CLI_ARG_NAME = "--enable-mock-data"
+
 # Enumerated orientation indices since indexing pitch, roll, and yaw could be arbitrary
 ORIENTATION_INDICES = Enum("ORIENTATION_INDICES", ["PITCH", "ROLL", "YAW"], start=0)  # x, y, x
 
