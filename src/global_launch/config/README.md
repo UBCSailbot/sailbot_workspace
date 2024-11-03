@@ -262,7 +262,7 @@ specified within an array: one for the `x` component, and one for the `y` compon
 
 - _Description_: The mean value for the wind generated, expressed in kilometers per hour (km/h), for the multivariate
 Gaussian generator.
-- _Datatype_: `double` array, length 3
+- _Datatype_: `double` array, length 2
 - _Range_: `(0.0, MAX_DOUBLE)`
 
 **`wind_generation.mvgaussian_params.cov`**
@@ -276,7 +276,7 @@ since ROS parameters do not support native 2D array types.
 
 - _Description_: The mean value for the current generated, expressed in kilometers per hour (km/h), for the multivariate
 Gaussian generator.
-- _Datatype_: `double` array, length 3
+- _Datatype_: `double` array, length 2
 - _Range_: `(0.0, MAX_DOUBLE)`
 
 **`current_generation.mvgaussian_params.cov`**
