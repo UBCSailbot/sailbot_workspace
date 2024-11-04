@@ -70,9 +70,10 @@ class MockDataNode(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = MockDataNode()
+
     if is_mock_data_enabled():
         try:
+            node = MockDataNode()
             rclpy.spin(node)
         finally:
             rclpy.shutdown()
