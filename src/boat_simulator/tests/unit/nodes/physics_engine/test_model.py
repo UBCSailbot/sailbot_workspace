@@ -18,7 +18,7 @@ from boat_simulator.nodes.physics_engine.model import BoatState
         (np.array([-1, -2]), np.array([-1, -2]), 180, 270, 2),
         (np.array([3.5, 4.5]), np.array([1.5, 2.5]), 15, 75, 4),
         (np.array([100, 200]), np.array([300, 200]), 0, 45, 2),
-        # cannot use 0 vector, or will cause divison by zero error 
+        # cannot use 0 vector, or will error
     ],
 )
 def test_compute_net_force_torque(
