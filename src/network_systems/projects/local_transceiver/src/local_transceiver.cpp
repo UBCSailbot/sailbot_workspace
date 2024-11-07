@@ -223,8 +223,80 @@ std::optional<std::string> LocalTransceiver::debugSend(const std::string & cmd)
 
 custom_interfaces::msg::Path LocalTransceiver::receive()
 {
-    std::string                  receivedData = readRsp().value();
-    custom_interfaces::msg::Path to_publish   = parseInMsg(receivedData);
+    std::string receivedData = readRsp().value();
+
+    static constexpr int MAX_NUM_RETRIES = 20;
+    for (int i = 0; i < MAX_NUM_RETRIES; i++) {
+        static const AT::Line check_conn_cmd = AT::Line(AT::CHECK_CONN + AT::DELIMITER);
+        if (!send(check_conn_cmd)) {
+            continue;
+        }
+
+        if (!rcvRsps({AT::Line(AT::STATUS_OK + AT::DELIMITER)})) {
+            continue;
+        }
+
+        static const AT::Line disable_ctrlflow_cmd = AT::Line(AT::DSBL_CTRLFLOW + AT::DELIMITER);
+        if (!send(disable_ctrlflow_cmd)) {
+            continue;
+        }
+
+        if (!rcvRsps({AT::Line(AT::STATUS_OK + AT::DELIMITER)})) {
+            continue;
+        }
+
+        static const AT::Line sbdix_cmd = AT::Line(AT::SBD_SESSION + AT::DELIMITER);
+        if (!send(sbdix_cmd)) {
+            continue;
+        }
+
+        auto opt_rsp = readRsp();
+        if (!opt_rsp) {
+            continue;
+        }
+
+        std::string              opt_rsp_val = opt_rsp.value();
+        std::vector<std::string> sbd_status_vec;
+        boost::algorithm::split(sbd_status_vec, opt_rsp_val, boost::is_any_of(AT::DELIMITER));
+
+        AT::SBDStatusRsp rsp(sbd_status_vec[0]);
+
+        if (rsp.MO_status_ == 0) {
+            if (rsp.MT_status_ == 0) {
+                // stop receiving, return nothing :(
+            } else if (rsp.MT_status_ == 1) {
+                break;
+            } else if (rsp.MT_status_ == 2) {
+                continue;
+            }
+        } else {
+            continue;
+        }
+    }
+
+    std::string receivedDataBuffer;
+    for (int i = 0; i < MAX_NUM_RETRIES; i++) {
+        static const AT::Line message_to_queue_cmd = AT::Line(AT::DNLD_TO_QUEUE + AT::DELIMITER);
+        if (!send(message_to_queue_cmd)) {
+            continue;
+        }
+
+        if (!rcvRsps({AT::Line("+SBDRB:" + AT::DELIMITER), AT::Line("OK" + AT::DELIMITER)})) {
+            continue;
+        }
+
+        auto buffer_data = readRsp();
+        if (!buffer_data) {
+            continue;
+        }
+
+        receivedDataBuffer = buffer_data.value();
+        break;
+    }
+
+    // HERE
+
+    custom_interfaces::msg::Path to_publish = parseInMsg(receivedDataBuffer);
     return to_publish;
 }
 
@@ -243,6 +315,8 @@ custom_interfaces::msg::Path LocalTransceiver::parseInMsg(const std::string & ms
 {
     Polaris::GlobalPath path;
     path.ParseFromString(msg);
+    // issue: need to use the same as send, parse each individual
+    // need to grab actualt data not in rockblock format
 
     custom_interfaces::msg::Path                      soln;
     std::vector<custom_interfaces::msg::HelperLatLon> waypoints;
@@ -319,103 +393,4 @@ std::string LocalTransceiver::streambufToStr(bio::streambuf & buf)
       bio::buffers_begin(buf.data()), bio::buffers_begin(buf.data()) + static_cast<int64_t>(buf.data().size()));
     buf.consume(buf.size());
     return str;
-}
-
-bool LocalTransceiver::checkMailbox()
-{
-    static constexpr int  MAX_NUM_RETRIES = 20;
-    static constexpr int  TEMP            = 6;
-    static constexpr int  TEMP2           = 8;
-    static const AT::Line at_check_connection("AT\r");
-    static const AT::Line at_disable_flow_control("AT&K0\r");
-    static const AT::Line at_sbdix("AT+SBDIX\r");
-    static const AT::Line at_sbdrb("AT+SBDRB\r");
-
-    for (int i = 0; i < MAX_NUM_RETRIES; ++i) {
-        // check connection to Rockblock modem
-        if (!send(at_check_connection) || !rcvRsps({AT::Line("OK\r")})) {
-            continue;
-        }
-
-        // disable flow control
-        if (!send(at_disable_flow_control) || !rcvRsps({AT::Line("OK\r")})) {
-            continue;
-        }
-
-        // initiate an SBD Data Session to poll the mailbox
-        if (!send(at_sbdix)) {
-            continue;
-        }
-
-        auto opt_rsp = readRsp();
-        if (!opt_rsp) {
-            continue;
-        }
-
-        // parse the SBDIX response
-        std::string              rsp_val = opt_rsp.value();
-        std::vector<std::string> sbd_status_vec;
-        boost::algorithm::split(sbd_status_vec, rsp_val, boost::is_any_of(","));
-
-        if (sbd_status_vec.size() < TEMP) {
-            continue;
-        }
-
-        int mo_status = std::stoi(sbd_status_vec[0]);
-        int mt_status = std::stoi(sbd_status_vec[2]);
-        int mt_length = std::stoi(sbd_status_vec[4]);
-
-        if (mo_status != 0) {
-            continue;
-        }
-
-        if (mt_status == 0) {
-            // no messages waiting to be received
-            return false;
-        }
-
-        if (mt_status == 1) {
-            // transfer the latest message to the controller
-            if (!send(at_sbdrb)) {
-                continue;
-            }
-
-            auto opt_mt_msg = readRsp();
-            if (!opt_mt_msg) {
-                continue;
-            }
-
-            std::string mt_msg = opt_mt_msg.value();
-            // parse the incoming data
-            std::string::size_type pos = mt_msg.find("+SBDRB:\r");
-            if (pos == std::string::npos) {
-                continue;
-            }
-            pos += TEMP2;  // Skip past "+SBDRB:\r"
-            std::string msg_data = mt_msg.substr(pos, mt_length);
-
-            // ensure we have the complete message
-            if (msg_data.size() != static_cast<size_t>(mt_length)) {
-                continue;
-            }
-
-            // handle the received MT message (e.g., store it, process it, etc.)
-            std::cout << "Received MT message: " << msg_data << std::endl;
-
-            // verify the final OK response
-            if (!rcvRsps({AT::Line("OK\r")})) {
-                continue;
-            }
-
-            return true;
-        }
-
-        // if mt_status is 2, retry
-        if (mt_status == 2) {
-            continue;
-        }
-    }
-
-    std::cerr << "Failed to check mailbox!" << std::endl;
-    return false;
 }

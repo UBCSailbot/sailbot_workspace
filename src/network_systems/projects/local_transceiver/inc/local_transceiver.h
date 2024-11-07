@@ -26,6 +26,7 @@ class LocalTransceiver
 {
     friend class TestLocalTransceiver_parseInMsgValid_Test;
     friend class TestLocalTransceiver_SendAndReceiveMessage;
+    friend class TestLocalTransceiver_testMailboxBlackbox_Test;
 
 public:
     /**

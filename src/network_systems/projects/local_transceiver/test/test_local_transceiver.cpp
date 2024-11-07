@@ -13,6 +13,7 @@
 #include <custom_interfaces/msg/detail/helper_rot__struct.hpp>
 #include <custom_interfaces/msg/detail/helper_speed__struct.hpp>
 #include <fstream>
+#include <mutex>
 #include <vector>
 
 #include "at_cmds.h"
@@ -257,22 +258,70 @@ TEST_F(TestLocalTransceiver, parseInMsgValid)
     EXPECT_EQ(parsed_test.waypoints[1].longitude, holder);
 }
 
-TEST_F(TestLocalTransceiver, checkMailBoxValid)
+std::mutex port_mutex;
+
+TEST_F(TestLocalTransceiver, testMailboxBlackbox)
 {
-    constexpr float holder = 14.3;
+    std::lock_guard<std::mutex> lock(port_mutex);  // because same port is being used
 
-    custom_interfaces::msg::GPS gps;
-    gps.heading.set__heading(holder);
-    gps.lat_lon.set__latitude(holder);
-    gps.lat_lon.set__longitude(holder);
+    std::string holder  = "curl -X POST -F \"test=1234\" http://localhost:8080";
+    std::string holder2 = "printf \"at+sbdix\r\" > $LOCAL_TRANSCEIVER_TEST_PORT";
 
-    lcl_trns_->updateSensor(gps);
-    EXPECT_TRUE(lcl_trns_->send());
+    system(holder.c_str());
+    system(holder2.c_str());
 
-    // std::string curlCommand = "curl -X POST -d \"AT+SBDIX\" http://localhost:8080/";
-
-    // std::this_thread::sleep_for(std::chrono::seconds(10));  //NOLINT(readability-magic-numbers)
-    EXPECT_TRUE(lcl_trns_->checkMailbox());
+    std::optional<std::string> response = lcl_trns_->readRsp();
+    std::cout << *response << std::endl;
+    //ASSERT_TRUE(response.has_value());
+    // EXPECT_EQ(response, value)
+    // check documentation for expected value
 }
 
-/*test setup section*/
+TEST_F(TestLocalTransceiver, parseReceiveMessageBlackbox)
+{
+    std::lock_guard<std::mutex> lock(port_mutex);
+
+    constexpr float     holder = 14.3;
+    Polaris::GlobalPath sample_data;
+
+    Polaris::Waypoint * waypoint_a = sample_data.add_waypoints();
+    waypoint_a->set_latitude(holder);
+    waypoint_a->set_longitude(holder);
+
+    Polaris::Waypoint * waypoint_b = sample_data.add_waypoints();
+    waypoint_b->set_latitude(holder);
+    waypoint_b->set_longitude(holder);
+
+    std::string serialized_data;
+    ASSERT_TRUE(sample_data.SerializeToString(&serialized_data));
+
+    std::ofstream outfile("/tmp/serialized_data.bin", std::ios::binary);
+    outfile.write(serialized_data.data(), 1000);  //NOLINT(readability-magic-numbers)
+    outfile.close();
+
+    std::string holder2 = "curl -X POST -F \"data=$(base64 /tmp/serialized_data.bin)\" http://localhost:8080";
+    std::string holder3 = "printf \"at+sbdix\r\" > $LOCAL_TRANSCEIVER_TEST_PORT";
+
+    system(holder2.c_str());
+    system(holder3.c_str());
+
+    custom_interfaces::msg::Path received_data = lcl_trns_->receive();
+
+    Polaris::GlobalPath global_path;
+    for (const auto & waypoint : received_data.waypoints) {
+        Polaris::Waypoint * new_waypoint = global_path.add_waypoints();
+        new_waypoint->set_latitude(waypoint.latitude);
+        new_waypoint->set_longitude(waypoint.longitude);
+    }
+
+    if (global_path.waypoints_size() > 0) {
+        std::cout << "Latitude of the first waypoint: " << global_path.waypoints(0).latitude() << std::endl;
+    } else {
+        std::cout << "No waypoints received." << std::endl;
+    }
+
+    // create sample data
+    // serialize to binary string
+    // send post request to localhost
+    // SDBRB
+}
