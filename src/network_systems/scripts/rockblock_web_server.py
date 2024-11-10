@@ -1,5 +1,6 @@
 import http.server
 import logging
+import os
 import random
 import signal
 import socketserver
@@ -24,6 +25,8 @@ error_codes = {
 logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
+TEMP_FILE_PATH = "/tmp/remote_transceiver/downstream_test.log"
+
 
 # Custom HTTP request handler
 class MyHandler(http.server.BaseHTTPRequestHandler):
@@ -31,22 +34,23 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
         logger.debug("Received POST request.")
         # Extract data parameter from the request
-        data = self.get_data()
+        data, error_code = self.get_data()
         logger.debug(f"Extracted data: {data}")
 
-        # Check if data is not empty
         if data:
             try:
-                # Decode the hex data
-                error_code = int(data, 16)
-                logger.debug(f"Decoded error code: {error_code}")
-            except ValueError:
-                # If decoding fails, return error code 99
-                logger.error("Failed to decode data. Using error code 99.")
-                error_code = 99
-        else:
-            # Default error code if data is empty
-            logger.warning("No data found. Using error code 99.")
+                os.makedirs(os.path.dirname(TEMP_FILE_PATH), exist_ok=True)
+                with open(TEMP_FILE_PATH, "w") as f:
+                    f.write(data)
+                logger.info(f"Data written to {TEMP_FILE_PATH}")
+                logger.info(f"Data written is: {data}")
+            except Exception as e:
+                logger.error(f"Failed to write data to file: {e}")
+
+        try:
+            error_code = int(error_code, 16) if error_code else 99
+        except ValueError:
+            logger.error("Failed to decode ec parameter. Using error code 99.")
             error_code = 99
 
         # Handle error codes and special case for error_code 0
@@ -75,7 +79,9 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
         """Extracts the data parameter from the URL query string (e.g., ?data=48656C6C6F)"""
         query = parse.urlsplit(self.path).query
         params = dict(parse.parse_qsl(query))
-        return params.get("data", "")
+        data = params.get("data", "")
+        error_code = params.get("ec", "")
+        return data, error_code
 
 
 # Set up the server
