@@ -250,7 +250,7 @@ specified within an array: one for the `x` component, and one for the `y` compon
 `wind_sensor.generator_type` is `gaussian`.
 - _Datatype_: `double` array, length 2
 - _Range_: `(0.0, MAX_DOUBLE)`
-    - If a standard deviation of zero is desired, then consider using the constant generator instead.
+  - If a standard deviation of zero is desired, then consider using the constant generator instead.
 
 **`wind_sensor.generator_type`**
 
@@ -324,3 +324,29 @@ corresponding correct type as the second string.
 - _Description_: The interval (in seconds) for writing queued data to the JSON file.
 - _Datatype_: `double`
 - _Range_: `(0.0, MAX_DOUBLE)`
+
+### `Mock Data Node`
+
+**`qos_depth`**
+
+- _Description_: The maximum number of subscription messages to queue for further processing.
+- _Datatype_: `int`
+- _Range_: `[1, MAX_INT)`
+
+**`pub_period_sec`**
+
+- _Description_: The period at which the publishers publish.
+- _Datatype_: `double`
+- _Range_: `(0.0, MAX_DOUBLE)`
+
+**`mock_desired_heading`**
+
+- _Description_: Set to True if mock data for desired heading should be generated. False otherwise.
+- _Datatype_: `bool`
+- _Range_: `(True, False)`
+
+**`mock_sail_trim_tab`**
+
+- _Description_: Set to True if mock data for sail trim tab should be generated. False otherwise.
+- _Datatype_: `bool`
+- _Range_: `(True, False)`
