@@ -269,6 +269,9 @@ void HTTPServer::doPost()
                 if (res != CURLE_OK) {
                     std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
                 } else {
+                    std::cout << "Read Buffer: " << readBuffer << std::endl;
+                    std::stringstream ss(readBuffer);
+
                     std::string response;
                     std::string error;
                     std::string message;
@@ -277,10 +280,6 @@ void HTTPServer::doPost()
                     std::getline(ss, error, ',');
                     std::getline(ss, message, ',');
 
-                    // std::getLineerror_code = static_cast<uint8_t>(std::stoi(error));
-
-                    // std::string response = pt.get<std::string>("response");
-                    // uint8_t     error    = pt.get<int>("error");
                     std::cout << "response: " << response << std::endl;
                     std::cout << "error: " << error << std::endl;
                     std::cout << "message: " << message << std::endl;
