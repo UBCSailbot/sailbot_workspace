@@ -103,6 +103,10 @@ class BoatState:
                 represents the net torque, expressed in newton-meters (N•m).
         """
         # Compute apparent wind and water velocities as ND arrays (2-D)
+
+        assert np.any(rel_wind_vel), "rel_wind_vel cannot be 0"
+        assert np.any(rel_water_vel), "rel_water_vel cannot be 0"
+
         apparent_wind_vel = np.subtract(rel_wind_vel, self.relative_velocity[0:2])
         apparent_water_vel = np.subtract(rel_water_vel, self.relative_velocity[0:2])
 
