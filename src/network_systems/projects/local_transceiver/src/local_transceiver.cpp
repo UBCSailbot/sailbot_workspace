@@ -226,26 +226,29 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
     std::string receivedData = readRsp().value();
 
     static constexpr int MAX_NUM_RETRIES = 20;
-    for (int i = 0; i < MAX_NUM_RETRIES; i++) {
-        static const AT::Line check_conn_cmd = AT::Line(AT::CHECK_CONN + AT::DELIMITER);
+    for (int i = 0; i <= MAX_NUM_RETRIES; i++) {
+        if (i == MAX_NUM_RETRIES) {
+            return parseInMsg("-1");
+        }
+        static const AT::Line check_conn_cmd = AT::Line(AT::CHECK_CONN);
         if (!send(check_conn_cmd)) {
             continue;
         }
 
-        if (!rcvRsps({AT::Line(AT::STATUS_OK + AT::DELIMITER)})) {
+        if (!rcvRsps({check_conn_cmd, AT::Line(AT::DELIMITER), AT::Line(AT::STATUS_OK), AT::Line("\n")})) {
             continue;
         }
 
-        static const AT::Line disable_ctrlflow_cmd = AT::Line(AT::DSBL_CTRLFLOW + AT::DELIMITER);
+        static const AT::Line disable_ctrlflow_cmd = AT::Line(AT::DSBL_CTRLFLOW);
         if (!send(disable_ctrlflow_cmd)) {
             continue;
         }
 
-        if (!rcvRsps({AT::Line(AT::STATUS_OK + AT::DELIMITER)})) {
+        if (!rcvRsps({disable_ctrlflow_cmd, AT::Line(AT::DELIMITER), AT::Line(AT::STATUS_OK), AT::Line("\n")})) {
             continue;
         }
 
-        static const AT::Line sbdix_cmd = AT::Line(AT::SBD_SESSION + AT::DELIMITER);
+        static const AT::Line sbdix_cmd = AT::Line(AT::SBD_SESSION);
         if (!send(sbdix_cmd)) {
             continue;
         }
@@ -263,7 +266,7 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
 
         if (rsp.MO_status_ == 0) {
             if (rsp.MT_status_ == 0) {
-                // stop receiving, return nothing :(
+                return parseInMsg("-1");
             } else if (rsp.MT_status_ == 1) {
                 break;
             } else if (rsp.MT_status_ == 2) {
@@ -273,7 +276,7 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
             continue;
         }
     }
-
+    //NEED TO FIX
     std::string receivedDataBuffer;
     for (int i = 0; i < MAX_NUM_RETRIES; i++) {
         static const AT::Line message_to_queue_cmd = AT::Line(AT::DNLD_TO_QUEUE + AT::DELIMITER);
@@ -295,7 +298,6 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
     }
 
     // HERE
-
     custom_interfaces::msg::Path to_publish = parseInMsg(receivedDataBuffer);
     return to_publish;
 }
@@ -313,10 +315,10 @@ bool LocalTransceiver::send(const AT::Line & cmd)
 
 custom_interfaces::msg::Path LocalTransceiver::parseInMsg(const std::string & msg)
 {
-    Polaris::GlobalPath path;
-    path.ParseFromString(msg);
     // issue: need to use the same as send, parse each individual
     // need to grab actualt data not in rockblock format
+    Polaris::GlobalPath path;
+    path.ParseFromString(msg);
 
     custom_interfaces::msg::Path                      soln;
     std::vector<custom_interfaces::msg::HelperLatLon> waypoints;
