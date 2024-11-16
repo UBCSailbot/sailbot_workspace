@@ -261,8 +261,17 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
         std::string              opt_rsp_val = opt_rsp.value();
         std::vector<std::string> sbd_status_vec;
         boost::algorithm::split(sbd_status_vec, opt_rsp_val, boost::is_any_of(AT::DELIMITER));
+        std::stringstream test;
 
-        AT::SBDStatusRsp rsp(sbd_status_vec[0]);
+        std::string sbdix_value;
+        for (const auto & element : sbd_status_vec) {
+            if (element.find("SBDIX:") != std::string::npos) {
+                sbdix_value = element;
+                break;
+            }
+        }
+
+        AT::SBDStatusRsp rsp(sbdix_value);
 
         if (rsp.MO_status_ == 0) {
             if (rsp.MT_status_ == 0) {
@@ -276,6 +285,31 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
             continue;
         }
     }
+
+    //     std::vector<std::string> sbd_status_vec;
+    // std::string              prefix = "+SBDIX: ";
+
+    // if (opt_rsp_val.find(prefix) == 0) {
+    //     opt_rsp_val = opt_rsp_val.substr(prefix.length());
+    // }
+
+    // if (
+    //   !opt_rsp_val.empty() && (opt_rsp_val.back() == '\r' || std::string(1, opt_rsp_val.back()) == AT::DELIMITER)) {
+    //     opt_rsp_val.pop_back();
+    // }
+
+    // std::vector<std::string> components;
+    // std::stringstream        ss(opt_rsp_val);
+    // std::string              item;
+    // while (std::getline(ss, item, ',')) {
+    //     // Remove leading and trailing whitespace from each component
+    //     size_t start = item.find_first_not_of(" \t");
+    //     size_t end   = item.find_last_not_of(" \t");
+    //     if (start != std::string::npos && end != std::string::npos) {
+    //         item = item.substr(start, end - start + 1);
+    //     }
+    //     components.push_back(item);
+    // }
     //NEED TO FIX
     std::string receivedDataBuffer;
     for (int i = 0; i < MAX_NUM_RETRIES; i++) {
