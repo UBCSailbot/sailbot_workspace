@@ -76,3 +76,10 @@ data_collection_node:
       bag: false
       json: true
       write_period_sec: 0.5
+
+mock_data_node:
+   ros__parameters:
+      qos_depth: 10
+      mock_desired_heading: True
+      mock_sail_trim_tab: False
+      pub_period_sec: 1.0
