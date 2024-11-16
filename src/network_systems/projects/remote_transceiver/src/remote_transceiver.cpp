@@ -216,7 +216,7 @@ void HTTPServer::doPost()
             global_waypoint->set_longitude(lon);
             global_waypoint->set_latitude(lat);
             num_waypoints++;
-            std::cout << "waypoint latlon: " << lat << " " << lon << std::endl;
+            std::cout << "actual waypoint latlon: " << lat << " " << lon << std::endl;
         }
         global_path.set_num_waypoints(num_waypoints);
         std::string data;
@@ -241,10 +241,22 @@ void HTTPServer::doPost()
             curl = curl_easy_init();
             // URL we are using: http://localhost:8100/?data=thisistestdata&ec=B&imei=300434065264590&username=myuser
 
+            // std::string test_url =
+            //   "http://localhost:8100/?data=checktestdata&ec=B&imei=300434065264590&username=myuser";
+            std::string EC        = "B";
+            std::string IMEI      = "300434065264590";
+            std::string USERNAME  = "myuser";
+            std::string test_data = "insertingtest data";
+
+            char * encoded_data = curl_easy_escape(curl, data.c_str(), 0);
+
+            std::string url = "http://localhost:8100/?data=" + std::string(encoded_data) + "&ec=" + EC +
+                              "&imei=" + IMEI + "&username=" + USERNAME;
+
             if (curl != nullptr) {
-                curl_easy_setopt(
-                  curl, CURLOPT_URL,
-                  "http://localhost:8100/?data=thisistestdata&ec=B&imei=300434065264590&username=myuser");
+                curl_free(encoded_data);
+
+                curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
 
                 curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "POST");
 
@@ -257,10 +269,6 @@ void HTTPServer::doPost()
                 if (res != CURLE_OK) {
                     std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
                 } else {
-                    // std::cout << "Response body: " << response_body << std::endl;
-                    // std::stringstream ss(response_body);
-                    // boost::property_tree::ptree pt;
-                    // boost::property_tree::read_json(ss, pt);
                     std::string response;
                     std::string error;
                     std::string message;
