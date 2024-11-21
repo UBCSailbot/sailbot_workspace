@@ -300,10 +300,10 @@ TEST_F(TestLocalTransceiver, parseReceiveMessageBlackbox)
     outfile.close();
 
     std::string holder2 = "curl -X POST -F \"data=$(base64 /tmp/serialized_data.bin)\" http://localhost:8080";
-    std::string holder3 = "printf \"at+sbdix\r\" > $LOCAL_TRANSCEIVER_TEST_PORT";
+    //std::string holder3 = "printf \"at+sbdix\r\" > $LOCAL_TRANSCEIVER_TEST_PORT";
 
     system(holder2.c_str());
-    system(holder3.c_str());
+    //system(holder3.c_str());
 
     custom_interfaces::msg::Path received_data = lcl_trns_->receive();
 

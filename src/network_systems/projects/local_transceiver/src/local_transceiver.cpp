@@ -223,8 +223,6 @@ std::optional<std::string> LocalTransceiver::debugSend(const std::string & cmd)
 
 custom_interfaces::msg::Path LocalTransceiver::receive()
 {
-    std::string receivedData = readRsp().value();
-
     static constexpr int MAX_NUM_RETRIES = 20;
     for (int i = 0; i <= MAX_NUM_RETRIES; i++) {
         if (i == MAX_NUM_RETRIES) {
@@ -286,31 +284,7 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
         }
     }
 
-    //     std::vector<std::string> sbd_status_vec;
-    // std::string              prefix = "+SBDIX: ";
-
-    // if (opt_rsp_val.find(prefix) == 0) {
-    //     opt_rsp_val = opt_rsp_val.substr(prefix.length());
-    // }
-
-    // if (
-    //   !opt_rsp_val.empty() && (opt_rsp_val.back() == '\r' || std::string(1, opt_rsp_val.back()) == AT::DELIMITER)) {
-    //     opt_rsp_val.pop_back();
-    // }
-
-    // std::vector<std::string> components;
-    // std::stringstream        ss(opt_rsp_val);
-    // std::string              item;
-    // while (std::getline(ss, item, ',')) {
-    //     // Remove leading and trailing whitespace from each component
-    //     size_t start = item.find_first_not_of(" \t");
-    //     size_t end   = item.find_last_not_of(" \t");
-    //     if (start != std::string::npos && end != std::string::npos) {
-    //         item = item.substr(start, end - start + 1);
-    //     }
-    //     components.push_back(item);
-    // }
-    //NEED TO FIX
+    // NEED TO FIX
     std::string receivedDataBuffer;
     for (int i = 0; i < MAX_NUM_RETRIES; i++) {
         static const AT::Line message_to_queue_cmd = AT::Line(AT::DNLD_TO_QUEUE + AT::DELIMITER);
@@ -318,7 +292,9 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
             continue;
         }
 
-        if (!rcvRsps({AT::Line("+SBDRB:" + AT::DELIMITER), AT::Line("OK" + AT::DELIMITER)})) {
+        if (!rcvRsps(
+              {message_to_queue_cmd, AT::Line(AT::DELIMITER), AT::Line("\n"), AT::Line(AT::DELIMITER),
+               AT::Line(AT::STATUS_OK), AT::Line("\n")})) {
             continue;
         }
 
