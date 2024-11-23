@@ -127,7 +127,9 @@ class LocalPath:
         Returns:
             bool: False if wind speed is too low, True otherwise.
         """
-        if filtered_wind_sensor.speed.speed < 5:  # Example threshold for low speed
+        if (
+            filtered_wind_sensor.speed.speed < 5
+        ):  # TODO Example threshold of 5.0 for low speed. Change accordingly
             self._logger.warning(
                 f"Wind speed too low: {filtered_wind_sensor.speed.speed}. Not computing OMPL Path"
             )
@@ -149,30 +151,29 @@ class LocalPath:
         if self.waypoints is None:
             return False
         else:
-            # TODO add buffer distance for sailbot_drifted_from_old_path() & global_path_changed();
-            # If not check default value of 2.0km in the function def
+            # TODO Buffer is set to 2.0 km. Change accordingly
             if (
                 self.old_path_in_collision_zone(gps, ais_ships)
-                or self.sailbot_drifted_from_old_path(gps, self.waypoints)
-                or self.global_path_changed(global_path, self.waypoints)
+                or self.sailbot_drifted_from_old_path(gps, self.waypoints, buffer=2.0)
+                or self.global_path_changed(global_path, self.waypoints, buffer=2.0)
             ):
                 return False
             return True
 
     def old_path_in_collision_zone(self, gps: GPS, ais_ships: AISShips) -> bool:
         """
-        Checks if the old path is in a collision zone with other ships based on the provided AISShips data.
+        Checks if the old path is in a collision zone based on the provided AISShips data.
 
-        This method creates a collision zone for each AIS ship using the Boat class and checks if the SailBot's old path,
-        represented as a series of waypoints, intersects or is within any of the collision zones. The collision check is
-        performed using projected coordinates derived from the GPS position.
+        This method creates a collision zone for each AIS ship using the Boat class and checks if
+        the SailBot's old path, represented as a series of waypoints, intersects or is within any
+        of the collision zones
 
         Args:
             gps (GPS): GPS message containing the SailBot's current position, speed, and heading.
             ais_ships (AISShips): AISShips message containing a list of detected ships.
 
         Returns:
-            bool: True if the old path is in a collision zone with any of the AIS ships, False otherwise.
+            bool: True if the old path is in a collision zone False otherwise.
         """
         self.sailbot_position_latlon = gps.lat_lon
         self.sailbot_speed = gps.speed.speed
@@ -247,8 +248,8 @@ class LocalPath:
                 global_latlon.longitude,
                 global_latlon.latitude,
             )
-            if distance_m <= buffer * 1000:  # buffer is in km coverted to m
-                return False  # No change, path matches within buffer
+            if distance_m <= buffer * 1000:  # km coverted to m
+                return False
 
         self._logger.warning(
             f"None of the waypoints in global path within {buffer} km with local goal state"
@@ -258,7 +259,7 @@ class LocalPath:
     def sailbot_drifted_from_old_path(
         self, gps: GPS, waypoints: List[Tuple[float, float]], buffer: float = 2.0
     ) -> bool:
-        """Checks if the Sailbot has drifted significantly from the old path.
+        """Checks if the Sailbot has drifted buffer distance away from the old path.
 
         Args:
             'gps' (GPS): GPS data.
