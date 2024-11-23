@@ -287,14 +287,12 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
     // NEED TO FIX
     std::string receivedDataBuffer;
     for (int i = 0; i < MAX_NUM_RETRIES; i++) {
-        static const AT::Line message_to_queue_cmd = AT::Line(AT::DNLD_TO_QUEUE + AT::DELIMITER);
+        static const AT::Line message_to_queue_cmd = AT::Line(AT::DNLD_TO_QUEUE);
         if (!send(message_to_queue_cmd)) {
             continue;
         }
 
-        if (!rcvRsps(
-              {message_to_queue_cmd, AT::Line(AT::DELIMITER), AT::Line("\n"), AT::Line(AT::DELIMITER),
-               AT::Line(AT::STATUS_OK), AT::Line("\n")})) {
+        if (!rcvRsps({message_to_queue_cmd, AT::Line("\n")})) {
             continue;
         }
 
