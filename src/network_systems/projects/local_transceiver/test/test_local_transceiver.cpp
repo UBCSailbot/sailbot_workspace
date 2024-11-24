@@ -296,11 +296,12 @@ TEST_F(TestLocalTransceiver, parseReceiveMessageBlackbox)
     ASSERT_TRUE(sample_data.SerializeToString(&serialized_data));
 
     std::ofstream outfile("/tmp/serialized_data.bin", std::ios::binary);
-    outfile.write(serialized_data.data(), 1000);  //NOLINT(readability-magic-numbers)
+    outfile.write(serialized_data.data(), static_cast<std::streamsize>(serialized_data.size()));
     outfile.close();
 
-    std::string holder2 = "curl -X POST -F \"data=$(base64 /tmp/serialized_data.bin)\" http://localhost:8080";
-    //std::string holder3 = "printf \"at+sbdix\r\" > $LOCAL_TRANSCEIVER_TEST_PORT";
+    std::string holder2 = "curl -X POST -F \"data=@/tmp/serialized_data.bin\" http://localhost:8080";
+
+    std::system(holder2.c_str());
 
     system(holder2.c_str());
     //system(holder3.c_str());

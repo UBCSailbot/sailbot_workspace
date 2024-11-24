@@ -15,6 +15,7 @@
 #include <custom_interfaces/msg/l_path_data.hpp>
 #include <custom_interfaces/msg/wind_sensors.hpp>
 #include <exception>
+#include <regex>
 #include <stdexcept>
 #include <string>
 
@@ -299,6 +300,20 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
         auto buffer_data = readRsp();
         if (!buffer_data) {
             continue;
+        }
+
+        std::regex re(
+          R"(name=\"data\"; filename=\"[^\"]*\"\r?\n(?:.*\r?\n)*\r?\n([\s\S]*?)\r?\n--)", std::regex::ECMAScript);
+
+        std::smatch match;
+
+        if (std::regex_search(*buffer_data, match, re)) {
+            *buffer_data = match[1];
+            std::stringstream ss;
+            ss << *buffer_data;
+            std::cout << ss.str() << std::endl;
+        } else {
+            std::cout << "No match found." << std::endl;
         }
 
         receivedDataBuffer = buffer_data.value();
