@@ -179,7 +179,6 @@ class Sailbot(Node):
             self.gps, self.ais_ships, self.global_path, self.filtered_wind_sensor, self.planner
         )
 
-        # TODO: create function to compute the heading from current position to next local waypoint
         boat_lat = self.gps.position.lat_lon.latitude
         boat_long = self.gps.position.lat_lon.longitude
 
