@@ -11,21 +11,19 @@ from boat_simulator.common.types import Scalar
 from boat_simulator.nodes.physics_engine.kinematics_computation import BoatKinematics
 from boat_simulator.nodes.physics_engine.kinematics_data import KinematicsData
 from boat_simulator.nodes.physics_engine.model import BoatState
-from tests.unit.nodes.physics_engine.test_kinematics_computation import ExpectedData
 
 
 class TestBoatState:
     # pass
     def test_step_boat_state(
         self,
-        glo_wind_vel,
-        glo_water_vel,
-        rudder_angle_deg,
-        trim_tab_angle,
-        input_data: KinematicsData,
-        expected_output_data: ExpectedData,
-        actual_input_data: KinematicsData,
-    ) -> ExpectedData:
+        timestep: Scalar,
+        glo_wind_vel: NDArray,
+        glo_water_vel: NDArray,
+        rudder_angle_deg: Scalar,
+        trim_tab_angle: Scalar,
+        input_kin_data: NDArray,
+    ):
         # Assumes __compute_net_force_and_torque and __kinematics_computation.step work
         # __compute_net_force_and_torque needs to be tested
 
@@ -37,9 +35,23 @@ class TestBoatState:
         # net force and torque computed in BoatState.step, set manually in expected
         # compute all other intermediate vars manually w/ dif names
 
-        relative_wind_vel = glo_wind_vel - input_data.linear_velocity
-        relative_water_vel = glo_water_vel - input_data.linear_velocity
+        test_boat_state = BoatState(timestep)
+        input_kinematics = KinematicsData(input_kin_data)
 
-        actual_step = BoatState.step(glo_wind_vel, glo_water_vel, rudder_angle_deg, trim_tab_angle)
+        relative_wind_vel = glo_wind_vel - input_kinematics.linear_velocity
+        relative_water_vel = glo_water_vel - input_kinematics.linear_velocity
 
-        return True
+        total_force, total_torque = test_boat_state.__compute_net_force_and_torque(
+            relative_wind_vel, relative_water_vel, rudder_angle_deg, trim_tab_angle
+        )
+
+        actual_step = test_boat_state.step(
+            glo_wind_vel, glo_water_vel, rudder_angle_deg, trim_tab_angle
+        )
+        expected_step = test_boat_state.__kinematics_computation.step(total_force, total_torque)
+
+        assert (actual_step == expected_step)
+
+    @pytest.mark.parametrize(
+
+    )
