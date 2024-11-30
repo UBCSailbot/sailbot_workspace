@@ -261,7 +261,7 @@
             "editor.renderWhitespace": "trailing",
             "cSpell.fixSpellingWithRenameProvider": true,
             "cSpell.advanced.feature.useReferenceProviderWithRename": true,
-            "cSpell.advanced.feature.useReferenceProviderRemove": "/^#+\\s/",
+            "cSpell.advanced.feature.useReferenceProviderRemove": "/^#+\\s/"
         },
         "markdownlint.config": {
             "extends": "/workspaces/sailbot_workspace/.markdownlint.json"
