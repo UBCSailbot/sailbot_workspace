@@ -53,5 +53,15 @@ class TestBoatState:
         assert (actual_step == expected_step)
 
     @pytest.mark.parametrize(
+        "timestep, glo_wind_vel, glo_water_vel, rudder_angle_deg, trim_tab_angle, input_kin_data",
+        [
+            (
+                0.1,
+                np.array([4.0, 5.5, 0.0], dtype=np.float32),
+                np.array([1.0, 2.0, 0.0], dtype=np.float32),
+                15,
+                35,
 
+            )
+        ]
     )
