@@ -285,7 +285,6 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
         }
     }
 
-    // NEED TO FIX
     std::string receivedDataBuffer;
     for (int i = 0; i < MAX_NUM_RETRIES; i++) {
         static const AT::Line message_to_queue_cmd = AT::Line(AT::DNLD_TO_QUEUE);
@@ -320,7 +319,6 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
         break;
     }
 
-    // HERE
     custom_interfaces::msg::Path to_publish = parseInMsg(receivedDataBuffer);
     return to_publish;
 }
@@ -338,8 +336,6 @@ bool LocalTransceiver::send(const AT::Line & cmd)
 
 custom_interfaces::msg::Path LocalTransceiver::parseInMsg(const std::string & msg)
 {
-    // issue: need to use the same as send, parse each individual
-    // need to grab actualt data not in rockblock format
     Polaris::GlobalPath path;
     path.ParseFromString(msg);
 

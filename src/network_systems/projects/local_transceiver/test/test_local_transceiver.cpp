@@ -272,9 +272,6 @@ TEST_F(TestLocalTransceiver, testMailboxBlackbox)
 
     std::optional<std::string> response = lcl_trns_->readRsp();
     std::cout << *response << std::endl;
-    //ASSERT_TRUE(response.has_value());
-    // EXPECT_EQ(response, value)
-    // check documentation for expected value
 }
 
 TEST_F(TestLocalTransceiver, parseReceiveMessageBlackbox)
@@ -320,9 +317,4 @@ TEST_F(TestLocalTransceiver, parseReceiveMessageBlackbox)
     } else {
         std::cout << "No waypoints received." << std::endl;
     }
-
-    // create sample data
-    // serialize to binary string
-    // send post request to localhost
-    // SDBRB
 }
