@@ -33,6 +33,7 @@ from rclpy.subscription import Subscription
 
 import boat_simulator.common.constants as Constants
 from boat_simulator.common.generators import MVGaussianGenerator
+from boat_simulator.common.sensors import SimWindSensor
 from boat_simulator.common.types import Scalar
 from boat_simulator.nodes.physics_engine.fluid_generation import FluidGenerator
 from boat_simulator.nodes.physics_engine.model import BoatState
@@ -182,6 +183,10 @@ class PhysicsEngineNode(Node):
             generator=MVGaussianGenerator(current_mean, current_cov)
         )
 
+        # No delay in this instance
+        sim_wind = self.__wind_generator.next()
+        self.__sim_wind_sensor = SimWindSensor(sim_wind, enable_noise=True)
+
     def __init_callback_groups(self):
         """Initializes the callback groups. Whether multithreading is enabled or not will affect
         how callbacks are executed.
@@ -317,6 +322,21 @@ class PhysicsEngineNode(Node):
         self.__publish_wind_sensors()
         self.__publish_kinematics()
         self.__publish_counter += 1
+
+    def __update_boat_state(self):
+        """
+        Generates the next vectors for wind_generator and current_generator and updates the
+        boat_state with the new wind and current vectors along with the rudder_angle and
+        sail_trim_tab_angle.
+        """
+        # Wind parameter in line below introduces noise
+        self.__sim_wind_sensor.wind = self.__wind_generator.next()
+        self.__boat_state.step(
+            self.__sim_wind_sensor.wind,
+            self.__current_generator.next(),
+            self.__rudder_angle,
+            self.__sail_trim_tab_angle,
+        )
 
     def __publish_gps(self):
         """Publishes mock GPS data."""
@@ -584,19 +604,6 @@ class PhysicsEngineNode(Node):
             throttle_duration_sec=self.get_parameter("info_log_throttle_period_sec")
             .get_parameter_value()
             .double_value,
-        )
-
-    def __update_boat_state(self):
-        """
-        Generates the next vectors for wind_generator and current_generator and updates the
-        boat_state with the new wind and current vectors along with the rudder_angle and
-        sail_trim_tab_angle.
-        """
-        self.__boat_state.step(
-            self.__wind_generator.next(),
-            self.__current_generator.next(),
-            self.__rudder_angle,
-            self.__sail_trim_tab_angle,
         )
 
     # CLASS PROPERTY PUBLIC GETTERS

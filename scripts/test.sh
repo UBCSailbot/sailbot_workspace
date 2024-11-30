@@ -1,5 +1,7 @@
 #!/bin/bash
 set -e
+export LD_LIBRARY_PATH=/usr/share:$LD_LIBRARY_PATH
+echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
 
 function signal_handler() {
     if [ -n "$(pgrep -f virtual_iridium)" ]; then

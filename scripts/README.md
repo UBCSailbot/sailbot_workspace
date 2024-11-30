@@ -67,7 +67,7 @@ Script to setup, build, and run all ROS packages.
 
 ## `setup.sh`
 
-Script to handle ROS setup.
+Script to handle ROS setup and to further update /home/ros/.bashrc.
 
 ## `test.sh`
 
