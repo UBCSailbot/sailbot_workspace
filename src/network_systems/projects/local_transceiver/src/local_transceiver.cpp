@@ -275,7 +275,7 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
         if (rsp.MO_status_ == 0) {
             if (rsp.MT_status_ == 0) {
                 return parseInMsg("-1");
-            } else if (rsp.MT_status_ == 1) {
+            } else if (rsp.MT_status_ == 1) {  //NOLINT
                 break;
             } else if (rsp.MT_status_ == 2) {
                 continue;

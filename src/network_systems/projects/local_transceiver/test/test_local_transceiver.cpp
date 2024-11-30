@@ -267,8 +267,8 @@ TEST_F(TestLocalTransceiver, testMailboxBlackbox)
     std::string holder  = "curl -X POST -F \"test=1234\" http://localhost:8080";
     std::string holder2 = "printf \"at+sbdix\r\" > $LOCAL_TRANSCEIVER_TEST_PORT";
 
-    system(holder.c_str());
-    system(holder2.c_str());
+    system(holder.c_str());   //NOLINT
+    system(holder2.c_str());  //NOLINT
 
     std::optional<std::string> response = lcl_trns_->readRsp();
     std::cout << *response << std::endl;
@@ -298,10 +298,9 @@ TEST_F(TestLocalTransceiver, parseReceiveMessageBlackbox)
 
     std::string holder2 = "curl -X POST -F \"data=@/tmp/serialized_data.bin\" http://localhost:8080";
 
-    std::system(holder2.c_str());
+    std::system(holder2.c_str());  //NOLINT
 
-    system(holder2.c_str());
-    //system(holder3.c_str());
+    system(holder2.c_str());  //NOLINT
 
     custom_interfaces::msg::Path received_data = lcl_trns_->receive();
 
