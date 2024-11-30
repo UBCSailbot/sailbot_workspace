@@ -263,6 +263,7 @@
             "cSpell.advanced.feature.useReferenceProviderWithRename": true,
             "cSpell.advanced.feature.useReferenceProviderRemove": "/^#+\\s/"
         },
+        "markdown.extension.list.indentationSize": "inherit",
         "markdownlint.config": {
             "extends": "/workspaces/sailbot_workspace/.markdownlint.json"
         },
