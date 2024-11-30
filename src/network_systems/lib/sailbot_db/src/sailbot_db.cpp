@@ -202,7 +202,6 @@ bool SailbotDB::storeNewGlobalPath(
         global_path_doc_arr = global_path_doc_arr << bstream::open_document << "latitude" << waypoint.latitude()
                                                   << "longitude" << waypoint.longitude() << bstream::close_document;
     }
-    // global_path_doc_arr = buildGlobalPathDoc(global_path_doc_arr, waypoints);
     DocVal global_path_doc = global_path_doc_arr << bstream::close_array << "timestamp" << timestamp
                                                  << bstream::finalize;
     return static_cast<bool>(global_path_coll.insert_one(global_path_doc.view()));
@@ -215,21 +214,9 @@ bool SailbotDB::storeIridiumResponse(
     mongocxx::database   db                    = client[db_name_];
     mongocxx::collection iridium_response_coll = db[COLLECTION_IRIDIUM_RESPONSE];
 
-    // Print the contents of the collection before insertion
-    // std::cout << "Collection contents before insertion:\n";
-    // for (auto doc : iridium_response_coll.find({})) {
-    //     std::cout << bsoncxx::to_json(doc) << "\n";
-    // }
     DocVal iridium_response_doc = bstream::document{} << "response" << response << "error" << error << "timestamp"
                                                       << timestamp << "message" << message << bstream::finalize;
 
-    // Print the contents of the collection after insertion
-    // std::cout << "\nCollection contents after insertion:\n";
-    // for (auto doc : iridium_response_coll.find({})) {
-    //     std::cout << bsoncxx::to_json(doc) << "\n";
-    // }
-
-    // return static_cast<bool>(iridium_response_coll.insert_one(iridium_response_doc.view()));
     return static_cast<bool>(iridium_response_coll.insert_one(iridium_response_doc.view()));
 }
 

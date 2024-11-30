@@ -198,15 +198,12 @@ void HTTPServer::doPost()
             beast::ostream(res_.body()) << "Server does not support sensors POST requests of type: " << content_type;
         }
     } else if (req_.target() == remote_transceiver::targets::GLOBAL_PATH) {
-        // TODO(): Allow POST global path
-
         std::shared_ptr<HTTPServer> self     = shared_from_this();
         std::string                 json_str = beast::buffers_to_string(req_.body().data());  //JSON Parsing
         std::stringstream           ss(json_str);
         boost::property_tree::ptree json_tree;
         boost::property_tree::read_json(ss, json_tree);
-        std::string timestamp = json_tree.get<std::string>("timestamp");
-        std::cout << "timestamp: " << timestamp << std::endl;
+        std::string         timestamp = json_tree.get<std::string>("timestamp");
         Polaris::GlobalPath global_path;
         int                 num_waypoints = 0;
         for (const auto & waypoint : json_tree.get_child("waypoints")) {
@@ -216,7 +213,6 @@ void HTTPServer::doPost()
             global_waypoint->set_longitude(lon);
             global_waypoint->set_latitude(lat);
             num_waypoints++;
-            std::cout << "actual waypoint latlon: " << lat << " " << lon << std::endl;
         }
         global_path.set_num_waypoints(num_waypoints);
         std::string data;
@@ -239,7 +235,6 @@ void HTTPServer::doPost()
             std::string readBuffer;
 
             curl = curl_easy_init();
-            // Sample URL we are using: http://localhost:8100/?data=thisistestdata&ec=B&imei=300434065264590&username=myuser
 
             std::string EC        = "B";
             std::string IMEI      = "300434065264590";
@@ -267,7 +262,6 @@ void HTTPServer::doPost()
                 if (res != CURLE_OK) {
                     std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
                 } else {
-                    std::cout << "Read Buffer: " << readBuffer << std::endl;
                     std::stringstream ss(readBuffer);
 
                     std::string response;
@@ -277,10 +271,6 @@ void HTTPServer::doPost()
                     std::getline(ss, response, ',');
                     std::getline(ss, error, ',');
                     std::getline(ss, message, ',');
-
-                    std::cout << "response: " << response << std::endl;
-                    std::cout << "error: " << error << std::endl;
-                    std::cout << "message: " << message << std::endl;
 
                     if (!self->db_.storeIridiumResponse(response, error, message, timestamp)) {  //important
                         std::cerr << "Error, failed to store data received at:\n" << timestamp << std::endl;
@@ -294,8 +284,6 @@ void HTTPServer::doPost()
         }
 
         curl_global_cleanup();
-        // Create a post request to rockblock http pot request URL (how to send a post request to a url/endpoint)
-
     } else {
         doNotFound();
     }
@@ -421,5 +409,3 @@ http::response<http::dynamic_body> http_client::post_response_body(
 
     return res;
 }
-
-//OK, 10, message

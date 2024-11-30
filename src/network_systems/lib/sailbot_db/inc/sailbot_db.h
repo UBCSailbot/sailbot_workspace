@@ -93,6 +93,15 @@ public:
      */
     bool storeNewSensors(const Polaris::Sensors & sensors_pb, RcvdMsgInfo new_info);
 
+    /**
+     * @brief Write new sensor data to the database
+     *
+     * @param global_pb Protobuf GlobalPath object
+     * @param timestamp Timestamp for data
+     *
+     * @return true  if successful
+     * @return false on failure
+     */
     bool storeNewGlobalPath(const Polaris::GlobalPath & global_pb, const std::string & timestamp);
 
     /**
@@ -108,6 +117,17 @@ public:
     bool storeNewGlobalPath(
       const Polaris::GlobalPath & global_path_pb, const std::string & timestamp, mongocxx::client & client);
 
+    /**
+     * @brief Write iridium response data to the database
+     *
+     * @param response       OK or FAILED
+     * @param error          MO message error code
+     * @param message        message given by rockblock server
+     * @param timestamp      transmission time <year - 2000>-<month>-<day> <hour>:<minute>:<second>
+
+     * @return true  if successful
+     * @return false on failure
+     */
     bool storeIridiumResponse(
       const std::string & response, const std::string & error, const std::string & message,
       const std::string & timestamp);
@@ -117,6 +137,7 @@ public:
      *
      * @param response       OK or FAILED
      * @param error          MO message error code
+     * @param message        message given by rockblock server
      * @param timestamp      transmission time <year - 2000>-<month>-<day> <hour>:<minute>:<second>
      * @param client         mongocxx::client instance for the current thread
      *
@@ -209,14 +230,4 @@ private:
     */
     bool storeWindSensors(
       const ProtoList<Polaris::Sensors::Wind> & wind_pb, const std::string & timestamp, mongocxx::client & client);
-
-    // /**
-    // * @brief Builds global path document by extracting waypoint information and adding it to document
-    // *
-    // * @param global_path_doc_arr  bstream document builder array for global path
-    // * @param waypoints            global path waypoints: <latitude: decimal>, <longitude: decimal>
-    // *
-    // */
-    // auto buildGlobalPathDoc(
-    //   auto global_path_doc_arr, const ProtoList<Polaris::Waypoint>& waypoints);
 };

@@ -5,7 +5,7 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/address.hpp>
 #include <boost/beast/http/status.hpp>
-#include <boost/property_tree/json_parser.hpp>  //JSON parser
+#include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <chrono>
 #include <cstddef>
@@ -240,7 +240,6 @@ TEST_F(TestRemoteTransceiver, rockblockWebServerExample)
             std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
             // EXPECT_TRUE(false);
         } else {
-            std::cout << "Response data: " << readBuffer << std::endl;
             EXPECT_EQ("FAILED,11,No RockBLOCK with this IMEI found on your account", readBuffer);
         }
 
@@ -261,24 +260,17 @@ TEST_F(TestRemoteTransceiver, TestPostGlobalPath)
 
     std::string rand_global_path_str;
     ASSERT_TRUE(rand_global_path.SerializeToString(&rand_global_path_str));
-    std::cout << "rand_global_path: " << rand_global_path_str << std::endl;
     Polaris::GlobalPath test;
     test.ParseFromString(rand_global_path_str);
-    std::cout << "global path str: " << rand_global_path_str << std::endl;
-    // This query is comprised entirely of arbitrary values exccept for .data_
-    //Configure for global path
 
     boost::property_tree::ptree global_path_json;
     boost::property_tree::ptree waypoints_arr;
 
     for (const auto & waypoint : rand_global_path.waypoints()) {
-        std::cout << "test waypoint lat: " << waypoint.latitude() << std::endl;
-        std::cout << "test waypoint long: " << waypoint.longitude() << std::endl;
         boost::property_tree::ptree waypoint_node;
         waypoint_node.put("latitude", waypoint.latitude());
         waypoint_node.put("longitude", waypoint.longitude());
         waypoints_arr.push_back(std::make_pair("", waypoint_node));
-        std::cout << "waypoint arr size: " << waypoints_arr.size() << std::endl;
     }
 
     global_path_json.add_child("waypoints", waypoints_arr);
@@ -309,7 +301,7 @@ TEST_F(TestRemoteTransceiver, TestPostGlobalPathMult)
 {
     SCOPED_TRACE("Seed: " + std::to_string(g_rand_seed));  // Print seed on any failure
 
-    constexpr int                             NUM_REQS = 3;  // Keep this
+    constexpr int                             NUM_REQS = 3;  // Keep this number under 60 to simplify timestamp logic
     std::array<std::string, NUM_REQS>         queries;
     std::array<std::thread, NUM_REQS>         req_threads;
     std::array<http::status, NUM_REQS>        res_statuses;
@@ -340,13 +332,10 @@ TEST_F(TestRemoteTransceiver, TestPostGlobalPathMult)
         boost::property_tree::ptree waypoints_arr;
 
         for (const auto & waypoint : rand_globalpaths.waypoints()) {
-            std::cout << "test waypoint lat: " << waypoint.latitude() << std::endl;
-            std::cout << "test waypoint long: " << waypoint.longitude() << std::endl;
             boost::property_tree::ptree waypoint_node;
             waypoint_node.put("latitude", waypoint.latitude());
             waypoint_node.put("longitude", waypoint.longitude());
             waypoints_arr.push_back(std::make_pair("", waypoint_node));
-            std::cout << "waypoint arr size: " << waypoints_arr.size() << std::endl;
         }
 
         global_path_json.add_child("waypoints", waypoints_arr);
