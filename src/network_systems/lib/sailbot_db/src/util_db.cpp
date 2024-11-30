@@ -266,14 +266,15 @@ UtilDB::dumpIridiumResponse(utils::FailTracker & tracker, size_t num_docs)
     mongocxx::database       db    = (*entry)[db_name_];
 
     // Set the find options to sort by timestamp, don't need?
-    // bsoncxx::document::value order = bsoncxx::builder::stream::document{} << "timestamp" << 1
-    //                                                                       << bsoncxx::builder::stream::finalize;
-    // mongocxx::options::find opts = mongocxx::options::find{};
-    // opts.sort(order.view());
+    bsoncxx::document::value order = bsoncxx::builder::stream::document{} << "timestamp" << 1
+                                                                          << bsoncxx::builder::stream::finalize;
+    mongocxx::options::find opts = mongocxx::options::find{};
+    opts.sort(order.view());
 
     // iridium response
     mongocxx::collection path_coll             = db[COLLECTION_IRIDIUM_RESPONSE];
-    mongocxx::cursor     iridium_response_docs = path_coll.find({});
+    mongocxx::cursor     iridium_response_docs = path_coll.find({}, opts);
+
     expectEQ(
       static_cast<uint64_t>(path_coll.count_documents({})), num_docs,
       "Error: TestDB should only have " + std::to_string(num_docs) + " documents per collection");

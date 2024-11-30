@@ -239,10 +239,8 @@ void HTTPServer::doPost()
             std::string readBuffer;
 
             curl = curl_easy_init();
-            // URL we are using: http://localhost:8100/?data=thisistestdata&ec=B&imei=300434065264590&username=myuser
+            // Sample URL we are using: http://localhost:8100/?data=thisistestdata&ec=B&imei=300434065264590&username=myuser
 
-            // std::string test_url =
-            //   "http://localhost:8100/?data=checktestdata&ec=B&imei=300434065264590&username=myuser";
             std::string EC        = "B";
             std::string IMEI      = "300434065264590";
             std::string USERNAME  = "myuser";

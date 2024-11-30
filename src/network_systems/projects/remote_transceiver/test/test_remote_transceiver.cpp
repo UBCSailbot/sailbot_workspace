@@ -254,7 +254,7 @@ TEST_F(TestRemoteTransceiver, rockblockWebServerExample)
  * @brief Test that we can POST global path data
  *
  */
-TEST_F(TestRemoteTransceiver, TestGlobalPath)
+TEST_F(TestRemoteTransceiver, TestPostGlobalPath)
 {
     SCOPED_TRACE("Seed: " + std::to_string(g_rand_seed));  // Print seed on any failure
     auto [rand_global_path, rand_global_path_timestamp] = g_test_db.genGlobalData(UtilDB::getTimestamp());
@@ -303,4 +303,78 @@ TEST_F(TestRemoteTransceiver, TestGlobalPath)
     EXPECT_TRUE(g_test_db.verifyDBWrite_GlobalPath(expected_global_path, expected_timestamp));
     EXPECT_TRUE(
       g_test_db.verifyDBWrite_IridiumResponse(expected_response, expected_error, expected_message, expected_timestamp));
+}
+
+TEST_F(TestRemoteTransceiver, TestPostGlobalPathMult)
+{
+    SCOPED_TRACE("Seed: " + std::to_string(g_rand_seed));  // Print seed on any failure
+
+    constexpr int                             NUM_REQS = 3;  // Keep this
+    std::array<std::string, NUM_REQS>         queries;
+    std::array<std::thread, NUM_REQS>         req_threads;
+    std::array<http::status, NUM_REQS>        res_statuses;
+    std::array<Polaris::GlobalPath, NUM_REQS> expected_globalpaths;
+    std::array<std::string, NUM_REQS>         expected_timestamps;
+    std::array<std::string, NUM_REQS>         expected_response;
+    std::array<std::string, NUM_REQS>         expected_error;
+    std::array<std::string, NUM_REQS>         expected_message;
+
+    std::tm tm = UtilDB::getTimestamp();
+    //Prepare all queries
+    for (int i = 0; i < NUM_REQS; i++) {
+        // Timestamps are only granular to the second, so if we want to maintain document ordering by time
+        // without adding a lot of 1 second delays, then the time must be modified
+        tm.tm_sec                               = i;
+        auto [rand_globalpaths, rand_timestamp] = g_test_db.genGlobalData(tm);
+        expected_globalpaths[i]                 = rand_globalpaths;
+        expected_timestamps[i]                  = rand_timestamp;
+        expected_response[i]                    = "FAILED";
+        expected_error[i]                       = "11";
+        expected_message[i]                     = "No RockBLOCK with this IMEI found on your account";
+        std::string rand_globalpath_str;
+        ASSERT_TRUE(rand_globalpaths.SerializeToString(&rand_globalpath_str));
+        Polaris::GlobalPath test;
+        test.ParseFromString(rand_globalpath_str);
+
+        boost::property_tree::ptree global_path_json;
+        boost::property_tree::ptree waypoints_arr;
+
+        for (const auto & waypoint : rand_globalpaths.waypoints()) {
+            std::cout << "test waypoint lat: " << waypoint.latitude() << std::endl;
+            std::cout << "test waypoint long: " << waypoint.longitude() << std::endl;
+            boost::property_tree::ptree waypoint_node;
+            waypoint_node.put("latitude", waypoint.latitude());
+            waypoint_node.put("longitude", waypoint.longitude());
+            waypoints_arr.push_back(std::make_pair("", waypoint_node));
+            std::cout << "waypoint arr size: " << waypoints_arr.size() << std::endl;
+        }
+
+        global_path_json.add_child("waypoints", waypoints_arr);
+        global_path_json.put("timestamp", rand_timestamp);
+
+        std::stringstream global_path_ss;
+        boost::property_tree::json_parser::write_json(global_path_ss, global_path_json);
+
+        queries[i] = global_path_ss.str();
+    }
+
+    for (int i = 0; i < NUM_REQS; i++) {
+        req_threads[i] = std::thread([&queries, &res_statuses, i]() {
+            std::string query = queries[i];
+            res_statuses[i]   = http_client::post(
+                {TESTING_HOST, std::to_string(TESTING_PORT), remote_transceiver::targets::GLOBAL_PATH},
+                "application/x-www-form-urlencoded", query);
+        });
+    }
+
+    // Wait for all requests to finish
+    for (int i = 0; i < NUM_REQS; i++) {
+        req_threads[i].join();
+        EXPECT_EQ(res_statuses[i], http::status::ok);
+    }
+    std::this_thread::sleep_for(WAIT_AFTER_RES);
+
+    EXPECT_TRUE(g_test_db.verifyDBWrite_GlobalPath(expected_globalpaths, expected_timestamps));
+    EXPECT_TRUE(g_test_db.verifyDBWrite_IridiumResponse(
+      expected_response, expected_error, expected_message, expected_timestamps));
 }
