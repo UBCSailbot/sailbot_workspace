@@ -30,6 +30,7 @@ setup(
             + "boat_simulator.nodes.low_level_control.low_level_control_node:main",
             "data_collection_node = "
             + "boat_simulator.nodes.data_collection.data_collection_node:main",
+            "mock_data_node = " + "boat_simulator.nodes.mock_data.mock_data_node:main",
         ],
     },
 )

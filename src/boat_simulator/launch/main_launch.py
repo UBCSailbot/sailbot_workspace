@@ -30,6 +30,12 @@ LOCAL_LAUNCH_ARGUMENTS: List[DeclareLaunchArgument] = [
         choices=["true", "false"],
         description="Enable data collection in the boat simulator",
     ),
+    DeclareLaunchArgument(
+        name="enable-mock-data",
+        default_value="false",
+        choices=["true", "false"],
+        description="Enable generation of mock data from pathfinding",
+    ),
 ]
 
 
@@ -83,6 +89,7 @@ def setup_launch(context: LaunchContext) -> List[Node]:
     launch_description_entities.append(get_physics_engine_description(context))
     launch_description_entities.append(get_low_level_control_description(context))
     launch_description_entities.append(get_data_collection_description(context))
+    launch_description_entities.append(get_mock_data_description(context))
     return launch_description_entities
 
 
@@ -168,6 +175,39 @@ def get_data_collection_description(context: LaunchContext) -> Node:
     local_arguments: List[SomeSubstitutionsType] = [
         Constants.DATA_COLLECTION_CLI_ARG_NAME,
         [LaunchConfiguration("enable-data-collection")],
+    ]
+
+    node = Node(
+        package=PACKAGE_NAME,
+        executable=node_name,
+        name=node_name,
+        parameters=ros_parameters,
+        ros_arguments=ros_arguments,
+        arguments=local_arguments,
+    )
+
+    return node
+
+
+def get_mock_data_description(context: LaunchContext) -> Node:
+    """Gets the launch description for the data collection node.
+
+    Args:
+        context (LaunchContext): The current launch context.
+
+    Returns:
+        Node: The node object that launches the data collection node.
+    """
+    node_name = "mock_data_node"
+    ros_parameters = [LaunchConfiguration("config").perform(context)]
+    ros_arguments: List[SomeSubstitutionsType] = [
+        "--log-level",
+        [f"{node_name}:=", LaunchConfiguration("log_level")],
+    ]
+    # may not need local arguments.
+    local_arguments: List[SomeSubstitutionsType] = [
+        Constants.MOCK_DATA_CLI_ARG_NAME,
+        [LaunchConfiguration("enable-mock-data")],
     ]
 
     node = Node(
