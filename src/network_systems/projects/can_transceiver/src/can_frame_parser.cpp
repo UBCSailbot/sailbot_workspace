@@ -66,6 +66,8 @@ BaseFrame::BaseFrame(std::span<const CanId> valid_ids, CanId id, uint8_t can_byt
 
 std::string BaseFrame::debugStr() const { return CanDebugStr(id_); }
 
+std::string BaseFrame::toString() const { return CanIdToStr(id_); }
+
 CanFrame BaseFrame::toLinuxCan() const { return CanFrame{.can_id = static_cast<canid_t>(id_), .len = can_byte_dlen_}; }
 
 // BaseFrame protected END
@@ -120,6 +122,13 @@ std::string Battery::debugStr() const
     ss << BaseFrame::debugStr() << "\n"
        << "Voltage (V): " << volt_ << "\n"
        << "Current (A): " << curr_ << "\n";
+    return ss.str();
+}
+
+std::string Battery::toString() const
+{
+    std::stringstream ss;
+    ss << "[BATTERY] Voltage: " << volt_;
     return ss.str();
 }
 
@@ -187,6 +196,13 @@ std::string MainTrimTab::debugStr() const
     std::stringstream ss;
     ss << BaseFrame::debugStr() << "\n"
        << "Trim tab angle (degrees): " << angle_;
+    return ss.str();
+}
+
+std::string MainTrimTab::toString() const
+{
+    std::stringstream ss;
+    ss << "[MAIN TRIM TAB] Angle: " << angle_;
     return ss.str();
 }
 
@@ -260,6 +276,13 @@ std::string WindSensor::debugStr() const
     ss << BaseFrame::debugStr() << "\n"
        << "Wind speed (m/s): " << wind_speed_ << "\n"
        << "Wind angle (degrees): " << wind_angle_;
+    return ss.str();
+}
+
+std::string WindSensor::toString() const
+{
+    std::stringstream ss;
+    ss << "[WIND SENSOR] Speed: " << wind_speed_ << " Angle: " << wind_angle_;
     return ss.str();
 }
 
@@ -378,6 +401,13 @@ std::string GPS::debugStr() const
        << "Minutes (min): " << min_ << "\n"
        << "Hours (hr): " << hour_ << "\n"
        << "Speed (km/hr): " << speed_ << "\n";
+    return ss.str();
+}
+
+std::string GPS::toString() const
+{
+    std::stringstream ss;
+    ss << "[GPS] Latitude: " << lat_ << " Longitude: " << lon_ << " Speed: " << speed_;  //NOTE HEADING IS NOT USED
     return ss.str();
 }
 
@@ -550,6 +580,13 @@ std::string AISShips::debugStr() const
 
     return ss.str();
 }
+
+std::string AISShips::toString() const
+{
+    std::stringstream ss;
+    ss << "[AIS SHIP] ID: " << ship_id_ << " Latitude: " << lat_ << " Longitude: " << lon_;
+    return ss.str();
+}
 //AISShips public END
 //AISShips private START
 
@@ -695,6 +732,13 @@ std::string DesiredHeading::debugStr() const
     std::stringstream ss;
     ss << BaseFrame::debugStr() << "\n"
        << "Desired heading: " << heading_;
+    return ss.str();
+}
+
+std::string DesiredHeading::toString() const
+{
+    std::stringstream ss;
+    ss << "[DESIRED HEADING] Heading: " << heading_;
     return ss.str();
 }
 

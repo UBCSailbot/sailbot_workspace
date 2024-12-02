@@ -27,6 +27,12 @@ if [ -d $NET_DIR ]; then
     popd
 fi
 
+# Set the environment variables
+export ROS_LOG_DIR="/src/network_systems/scripts/can_transceiver.log"
+export RCUTILS_COLORIZED_OUTPUT="1"
+
+echo "ROS_LOG_DIR is set to: $ROS_LOG_DIR"
+
 colcon test --packages-ignore virtual_iridium --merge-install --event-handlers console_cohesion+
 colcon test-result
 exit 0

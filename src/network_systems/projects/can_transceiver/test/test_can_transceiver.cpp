@@ -1157,9 +1157,8 @@ TEST_F(TestCanTransceiver, TestNewGPSValid)
  */
 TEST_F(TestCanTransceiver, TestNewDataWindValid)
 {
-    volatile bool is_cb_called = false;
-
-    std::function<void(CAN_FP::CanFrame)> test_cb = [&is_cb_called](CAN_FP::CanFrame /*unused*/) {
+    volatile bool                         is_cb_called = false;
+    std::function<void(CAN_FP::CanFrame)> test_cb      = [&is_cb_called](CAN_FP::CanFrame /*unused*/) {
         is_cb_called = true;
     };
     canbus_t_->registerCanCbs({{
