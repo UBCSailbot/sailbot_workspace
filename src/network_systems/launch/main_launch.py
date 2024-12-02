@@ -221,12 +221,12 @@ def get_remote_transceiver_description(context: LaunchContext) -> Node:
 def get_local_transceiver_description(context: LaunchContext) -> Node:
     """Gets the launch description for the local_transceiver_node.
 
-        Args:
-            context (LaunchContext): The current launch context.
+    Args:
+        context (LaunchContext): The current launch context.
 
-        Returns:
-            Node: The node object that launches the local_transceiver_node.
-        """
+    Returns:
+        Node: The node object that launches the local_transceiver_node.
+    """
     node_name = "local_transceiver_node"
     ros_parameters = [
         global_launch_config,

@@ -3,7 +3,6 @@
 import os
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict
 
 import numpy as np
 from numpy.typing import NDArray
@@ -38,21 +37,22 @@ class PhysicsEnginePublisherTopics:
 
 @dataclass
 class BoatProperties:
-    # A lookup table that maps angles of attack (in degrees) to their corresponding lift
+    # A lookup array that maps angles of attack (in degrees) to their corresponding lift
     # coefficients.
-    sail_lift_coeffs: Dict[Scalar, Scalar]
-    # A lookup table that maps angles of attack (in degrees) to their corresponding drag
+    sail_lift_coeffs: NDArray
+    # A lookup array that maps angles of attack (in degrees) to their corresponding drag
     # coefficients.
-    sail_drag_coeffs: Dict[Scalar, Scalar]
-    # A lookup table that maps angles of attack (in degrees) to their corresponding sail areas
-    # (in square meters).
-    sail_areas: Dict[Scalar, Scalar]
-    # A lookup table that maps angles of attack (in degrees) to their corresponding drag
+    sail_drag_coeffs: NDArray
+    # The area of sail (in square meters).
+    sail_areas: Scalar
+    # A lookup array that maps angles of attack (in degrees) to their corresponding lift
     # coefficients for the rudder.
-    rudder_drag_coeffs: Dict[Scalar, Scalar]
-    # A lookup table that maps angles of attack (in degrees) to their corresponding rudder areas
-    # (in square meters).
-    rudder_areas: Dict[Scalar, Scalar]
+    rudder_lift_coeffs: NDArray
+    # A lookup array that maps angles of attack (in degrees) to their corresponding drag
+    # coefficients for the rudder.
+    rudder_drag_coeffs: NDArray
+    # The area of rudder (in square meters).
+    rudder_areas: Scalar
     # A scalar representing the distance from the center of effort of the sail to the pivot point
     # (in meters).
     sail_dist: Scalar
@@ -66,6 +66,15 @@ class BoatProperties:
     mass: Scalar
     # The inertia of the boat (in kilograms-meters squared).
     inertia: NDArray
+    # The density of air (in kilograms per meter cubed).
+    air_density: Scalar
+    # The density of water (in kilograms per meter cubed).
+    water_density: Scalar
+    # The center of gravity of the boat ((3, ) array in meters).
+    # (0, 0) at bottom right corner
+    centre_of_gravity: NDArray
+    # The mast position ((3, ) array in meters).
+    mast_position: NDArray
 
 
 # Directly accessible constants
@@ -109,14 +118,21 @@ SAIL_MAX_ANGLE_RANGE = (-7, 7)
 # Constants related to the physical and mechanical properties of Polaris
 # TODO These are placeholder values which should be replaced when we have real values.
 BOAT_PROPERTIES = BoatProperties(
-    sail_lift_coeffs={0.0: 0.0, 5.0: 0.2, 10.0: 0.5, 15.0: 0.7, 20.0: 1.0},
-    sail_drag_coeffs={0.0: 0.1, 5.0: 0.12, 10.0: 0.15, 15.0: 0.18, 20.0: 0.2},
-    sail_areas={0.0: 20.0, 5.0: 19.8, 10.0: 19.5, 15.0: 19.2, 20.0: 18.8},
-    rudder_drag_coeffs={0.0: 0.2, 5.0: 0.22, 10.0: 0.25, 15.0: 0.28, 20.0: 0.3},
-    rudder_areas={0.0: 2.0, 5.0: 1.9, 10.0: 1.8, 15.0: 1.7, 20.0: 1.6},
-    sail_dist=0.5,
-    rudder_dist=1.0,
+    sail_lift_coeffs=np.array([[0.0, 0.0], [5.0, 0.2], [10.0, 0.5], [15.0, 0.7], [20.0, 1.0]]),
+    sail_drag_coeffs=np.array([[0.0, 0.1], [5.0, 0.12], [10.0, 0.15], [15.0, 0.18], [20.0, 0.2]]),
+    sail_areas=4.0,
+    rudder_lift_coeffs=np.array([[0.0, 0.0], [5.0, 0.1], [10.0, 0.2], [15.0, 0.3], [20.0, 0.4]]),
+    rudder_drag_coeffs=np.array(
+        [[0.0, 0.2], [5.0, 0.22], [10.0, 0.25], [15.0, 0.28], [20.0, 0.3]]
+    ),
+    rudder_areas=3.0,
+    sail_dist=0.75,  # defined distance from mast position to centre of gravity of the sailboat
+    rudder_dist=1.5,
     hull_drag_factor=0.05,
-    mass=1500.0,
+    mass=50,
     inertia=np.array([[125, 0, 0], [0, 1125, 0], [0, 0, 500]], dtype=np.float32),
+    air_density=1.225,
+    water_density=1000,
+    centre_of_gravity=np.array([0.8, 1, 0]),
+    mast_position=np.array([0.8, 1.5, 0]),
 )
