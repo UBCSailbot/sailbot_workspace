@@ -1,0 +1,18 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from custom_interfaces/msg/WindSensor.msg
+// generated code does not contain a copyright notice
+
+#include "custom_interfaces/msg/HelperSpeed.idl"
+
+module custom_interfaces {
+  module msg {
+    struct WindSensor {
+      custom_interfaces::msg::HelperSpeed speed;
+
+      @verbatim (language="comment", text=
+        "Unit: degrees, 0° means the apparent wind is blowing from the bow to the stern of the boat, increase CW" "\n"
+        "Range: -180 < direction <= 180 for symmetry")
+      int16 direction;
+    };
+  };
+};

@@ -1,0 +1,19 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from custom_interfaces/msg/GPS.msg
+// generated code does not contain a copyright notice
+
+#include "custom_interfaces/msg/HelperHeading.idl"
+#include "custom_interfaces/msg/HelperLatLon.idl"
+#include "custom_interfaces/msg/HelperSpeed.idl"
+
+module custom_interfaces {
+  module msg {
+    struct GPS {
+      custom_interfaces::msg::HelperLatLon lat_lon;
+
+      custom_interfaces::msg::HelperSpeed speed;
+
+      custom_interfaces::msg::HelperHeading heading;
+    };
+  };
+};

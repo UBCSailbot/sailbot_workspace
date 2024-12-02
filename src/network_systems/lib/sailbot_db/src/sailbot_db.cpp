@@ -14,10 +14,12 @@
 #include <mongocxx/instance.hpp>
 #include <sstream>
 
+#include "global_path.pb.h"
 #include "sensors.pb.h"
 #include "waypoint.pb.h"
 
 namespace bstream = bsoncxx::builder::stream;
+using Polaris::GlobalPath;
 using Polaris::Sensors;
 
 mongocxx::instance SailbotDB::inst_{};  // staticallly initialize instance
@@ -33,7 +35,7 @@ std::ostream & operator<<(std::ostream & os, const SailbotDB::RcvdMsgInfo & info
     return os;
 }
 
-std::string SailbotDB::RcvdMsgInfo::mkTimestamp(const std::tm & tm)
+std::string SailbotDB::mkTimestamp(const std::tm & tm)
 {
     // This is impossible to read. It's reading each field of tm and 0 padding it to 2 digits with either "-" or ":"
     // in between each number
@@ -81,6 +83,19 @@ bool SailbotDB::storeNewSensors(const Sensors & sensors_pb, RcvdMsgInfo new_info
 }
 
 // END PUBLIC
+
+bool SailbotDB::storeNewGlobalPath(const GlobalPath & global_pb, const std::string & timestamp)
+{
+    mongocxx::pool::entry entry = pool_->acquire();
+    return storeNewGlobalPath(global_pb, timestamp, *entry);
+}
+
+bool SailbotDB::storeIridiumResponse(
+  const std::string & response, const std::string & error, const std::string & message, const std::string & timestamp)
+{
+    mongocxx::pool::entry entry = pool_->acquire();
+    return storeIridiumResponse(response, error, message, timestamp, *entry);
+}
 
 // PRIVATE
 
@@ -173,6 +188,36 @@ bool SailbotDB::storePathSensors(
     }
     DocVal local_path_doc = local_path_doc_arr << bstream::close_array << "timestamp" << timestamp << bstream::finalize;
     return static_cast<bool>(local_path_coll.insert_one(local_path_doc.view()));
+}
+
+bool SailbotDB::storeNewGlobalPath(
+  const Polaris::GlobalPath & global_path_pb, const std::string & timestamp, mongocxx::client & client)
+{
+    mongocxx::database           db               = client[db_name_];
+    mongocxx::collection         global_path_coll = db[COLLECTION_GLOBAL_PATH];
+    bstream::document            doc_builder{};
+    auto                         global_path_doc_arr = doc_builder << "waypoints" << bstream::open_array;
+    ProtoList<Polaris::Waypoint> waypoints           = global_path_pb.waypoints();
+    for (const Polaris::Waypoint & waypoint : waypoints) {
+        global_path_doc_arr = global_path_doc_arr << bstream::open_document << "latitude" << waypoint.latitude()
+                                                  << "longitude" << waypoint.longitude() << bstream::close_document;
+    }
+    DocVal global_path_doc = global_path_doc_arr << bstream::close_array << "timestamp" << timestamp
+                                                 << bstream::finalize;
+    return static_cast<bool>(global_path_coll.insert_one(global_path_doc.view()));
+}
+
+bool SailbotDB::storeIridiumResponse(
+  const std::string & response, const std::string & error, const std::string & message, const std::string & timestamp,
+  mongocxx::client & client)
+{
+    mongocxx::database   db                    = client[db_name_];
+    mongocxx::collection iridium_response_coll = db[COLLECTION_IRIDIUM_RESPONSE];
+
+    DocVal iridium_response_doc = bstream::document{} << "response" << response << "error" << error << "timestamp"
+                                                      << timestamp << "message" << message << bstream::finalize;
+
+    return static_cast<bool>(iridium_response_coll.insert_one(iridium_response_doc.view()));
 }
 
 // END PRIVATE

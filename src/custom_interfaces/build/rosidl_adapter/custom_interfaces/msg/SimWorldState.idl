@@ -1,0 +1,44 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from custom_interfaces/msg/SimWorldState.msg
+// generated code does not contain a copyright notice
+
+#include "custom_interfaces/msg/GPS.idl"
+#include "geometry_msgs/msg/Pose.idl"
+#include "geometry_msgs/msg/Vector3.idl"
+#include "std_msgs/msg/Header.idl"
+
+module custom_interfaces {
+  module msg {
+    @verbatim (language="comment", text=
+      "GPS data of the simulated with respect to the Earth (in the global reference frame).")
+    struct SimWorldState {
+      custom_interfaces::msg::GPS global_gps;
+
+      @verbatim (language="comment", text=
+        "Contains both position and orientation (in quaternions, following a East-North-Up convention)" "\n"
+        "of the simulated boat with respect to the Earth (in the global reference frame)." "\n"
+        "Position Unit: km, distance from the origin")
+      geometry_msgs::msg::Pose global_pose;
+
+      @verbatim (language="comment", text=
+        "Direction that the wind is going TOWARDS. Note that this is difference from the WindSensor type" "\n"
+        "in custom_interfaces, where WindSensor.direction gives us the direction where the wind is coming" "\n"
+        "FROM (basically a 180 degree phase shift in the velocity direction)." "\n"
+        "" "\n"
+        "Contains the linear component of the velocity." "\n"
+        "Linear Velocity Unit: km/hr")
+      geometry_msgs::msg::Vector3 wind_velocity;
+
+      @verbatim (language="comment", text=
+        "Direction that the current is going TOWARDS." "\n"
+        "" "\n"
+        "Contains the linear component of the velocity." "\n"
+        "Linear Velocity Unit: km/hr")
+      geometry_msgs::msg::Vector3 current_velocity;
+
+      @verbatim (language="comment", text=
+        "Timestamp. Contains time since start in seconds and the frame number.")
+      std_msgs::msg::Header header;
+    };
+  };
+};

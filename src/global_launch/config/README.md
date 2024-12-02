@@ -250,7 +250,7 @@ specified within an array: one for the `x` component, and one for the `y` compon
 `wind_sensor.generator_type` is `gaussian`.
 - _Datatype_: `double` array, length 2
 - _Range_: `(0.0, MAX_DOUBLE)`
-    - If a standard deviation of zero is desired, then consider using the constant generator instead.
+  - If a standard deviation of zero is desired, then consider using the constant generator instead.
 
 **`wind_sensor.generator_type`**
 

@@ -5,6 +5,8 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/address.hpp>
 #include <boost/beast/http/status.hpp>
+#include <boost/property_tree/json_parser.hpp>
+#include <boost/property_tree/ptree.hpp>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
@@ -21,6 +23,7 @@
 #include "util_db.h"
 #include "waypoint.pb.h"
 
+using Polaris::GlobalPath;
 using Polaris::Sensors;
 using remote_transceiver::HTTPServer;
 using remote_transceiver::Listener;
@@ -103,7 +106,11 @@ TEST_F(TestRemoteTransceiver, TestGet)
  * @param params Params structure
  * @return formatted request body
  */
-std::string createPostBody(remote_transceiver::MOMsgParams::Params params)
+
+std::string createPostBody(remote_transceiver::MOMsgParams::Params params);
+
+std::string createSensorPostBody(remote_transceiver::MOMsgParams::Params params)
+
 {
     std::ostringstream s;
     s << "imei=" << params.imei_ << "&serial=" << params.serial_ << "&momsn=" << params.momsn_
@@ -126,7 +133,7 @@ TEST_F(TestRemoteTransceiver, TestPostSensors)
     Polaris::Sensors test;
     test.ParseFromString(rand_sensors_str);
     // This query is comprised entirely of arbitrary values exccept for .data_
-    std::string query = createPostBody(
+    std::string query = createSensorPostBody(
       {.imei_          = 0,
        .serial_        = 0,
        .momsn_         = 1,
@@ -148,7 +155,7 @@ TEST_F(TestRemoteTransceiver, TestPostSensors)
 }
 
 /**
- * @brief Test that the server can multiple POST requests at once
+ * @brief Test that the server can multiple POST sensor requests at once
  *
  */
 TEST_F(TestRemoteTransceiver, TestPostSensorsMult)
@@ -176,7 +183,7 @@ TEST_F(TestRemoteTransceiver, TestPostSensorsMult)
         Polaris::Sensors test;
         test.ParseFromString(rand_sensors_str);
         // This query is comprised entirely of arbitrary values exccept for .data_
-        queries[i] = createPostBody(
+        queries[i] = createSensorPostBody(
           {.imei_          = 0,
            .serial_        = 0,
            .momsn_         = 1,
@@ -231,8 +238,8 @@ TEST_F(TestRemoteTransceiver, rockblockWebServerExample)
 
         if (res != CURLE_OK) {
             std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
+            // EXPECT_TRUE(false);
         } else {
-            std::cout << "Response data: " << readBuffer << std::endl;
             EXPECT_EQ("FAILED,11,No RockBLOCK with this IMEI found on your account", readBuffer);
         }
 
@@ -240,4 +247,123 @@ TEST_F(TestRemoteTransceiver, rockblockWebServerExample)
     }
 
     curl_global_cleanup();
+}
+
+/**
+ * @brief Test that we can POST global path data
+ *
+ */
+TEST_F(TestRemoteTransceiver, TestPostGlobalPath)
+{
+    SCOPED_TRACE("Seed: " + std::to_string(g_rand_seed));  // Print seed on any failure
+    auto [rand_global_path, rand_global_path_timestamp] = g_test_db.genGlobalData(UtilDB::getTimestamp());
+
+    std::string rand_global_path_str;
+    ASSERT_TRUE(rand_global_path.SerializeToString(&rand_global_path_str));
+    Polaris::GlobalPath test;
+    test.ParseFromString(rand_global_path_str);
+
+    boost::property_tree::ptree global_path_json;
+    boost::property_tree::ptree waypoints_arr;
+
+    for (const auto & waypoint : rand_global_path.waypoints()) {
+        boost::property_tree::ptree waypoint_node;
+        waypoint_node.put("latitude", waypoint.latitude());
+        waypoint_node.put("longitude", waypoint.longitude());
+        waypoints_arr.push_back(std::make_pair("", waypoint_node));
+    }
+
+    global_path_json.add_child("waypoints", waypoints_arr);
+    global_path_json.put("timestamp", rand_global_path_timestamp);
+
+    std::stringstream global_path_ss;
+    boost::property_tree::json_parser::write_json(global_path_ss, global_path_json);
+
+    http::status status = http_client::post(
+      {TESTING_HOST, std::to_string(TESTING_PORT), remote_transceiver::targets::GLOBAL_PATH},
+      "application/x-www-form-urlencoded", global_path_ss.str());  //change url as per global path specs
+
+    EXPECT_EQ(status, http::status::ok);
+    std::this_thread::sleep_for(WAIT_AFTER_RES);
+
+    std::array<std::string, 1>         expected_response    = {"FAILED"};
+    std::array<std::string, 1>         expected_error       = {"11"};
+    std::array<std::string, 1>         expected_message     = {"No RockBLOCK with this IMEI found on your account"};
+    std::array<std::string, 1>         expected_timestamp   = {rand_global_path_timestamp};
+    std::array<Polaris::GlobalPath, 1> expected_global_path = {rand_global_path};
+
+    EXPECT_TRUE(g_test_db.verifyDBWrite_GlobalPath(expected_global_path, expected_timestamp));
+    EXPECT_TRUE(
+      g_test_db.verifyDBWrite_IridiumResponse(expected_response, expected_error, expected_message, expected_timestamp));
+}
+
+TEST_F(TestRemoteTransceiver, TestPostGlobalPathMult)
+{
+    SCOPED_TRACE("Seed: " + std::to_string(g_rand_seed));  // Print seed on any failure
+
+    constexpr int                             NUM_REQS = 3;  // Keep this number under 60 to simplify timestamp logic
+    std::array<std::string, NUM_REQS>         queries;
+    std::array<std::thread, NUM_REQS>         req_threads;
+    std::array<http::status, NUM_REQS>        res_statuses;
+    std::array<Polaris::GlobalPath, NUM_REQS> expected_globalpaths;
+    std::array<std::string, NUM_REQS>         expected_timestamps;
+    std::array<std::string, NUM_REQS>         expected_response;
+    std::array<std::string, NUM_REQS>         expected_error;
+    std::array<std::string, NUM_REQS>         expected_message;
+
+    std::tm tm = UtilDB::getTimestamp();
+    //Prepare all queries
+    for (int i = 0; i < NUM_REQS; i++) {
+        // Timestamps are only granular to the second, so if we want to maintain document ordering by time
+        // without adding a lot of 1 second delays, then the time must be modified
+        tm.tm_sec                               = i;
+        auto [rand_globalpaths, rand_timestamp] = g_test_db.genGlobalData(tm);
+        expected_globalpaths[i]                 = rand_globalpaths;
+        expected_timestamps[i]                  = rand_timestamp;
+        expected_response[i]                    = "FAILED";
+        expected_error[i]                       = "11";
+        expected_message[i]                     = "No RockBLOCK with this IMEI found on your account";
+        std::string rand_globalpath_str;
+        ASSERT_TRUE(rand_globalpaths.SerializeToString(&rand_globalpath_str));
+        Polaris::GlobalPath test;
+        test.ParseFromString(rand_globalpath_str);
+
+        boost::property_tree::ptree global_path_json;
+        boost::property_tree::ptree waypoints_arr;
+
+        for (const auto & waypoint : rand_globalpaths.waypoints()) {
+            boost::property_tree::ptree waypoint_node;
+            waypoint_node.put("latitude", waypoint.latitude());
+            waypoint_node.put("longitude", waypoint.longitude());
+            waypoints_arr.push_back(std::make_pair("", waypoint_node));
+        }
+
+        global_path_json.add_child("waypoints", waypoints_arr);
+        global_path_json.put("timestamp", rand_timestamp);
+
+        std::stringstream global_path_ss;
+        boost::property_tree::json_parser::write_json(global_path_ss, global_path_json);
+
+        queries[i] = global_path_ss.str();
+    }
+
+    for (int i = 0; i < NUM_REQS; i++) {
+        req_threads[i] = std::thread([&queries, &res_statuses, i]() {
+            std::string query = queries[i];
+            res_statuses[i]   = http_client::post(
+                {TESTING_HOST, std::to_string(TESTING_PORT), remote_transceiver::targets::GLOBAL_PATH},
+                "application/x-www-form-urlencoded", query);
+        });
+    }
+
+    // Wait for all requests to finish
+    for (int i = 0; i < NUM_REQS; i++) {
+        req_threads[i].join();
+        EXPECT_EQ(res_statuses[i], http::status::ok);
+    }
+    std::this_thread::sleep_for(WAIT_AFTER_RES);
+
+    EXPECT_TRUE(g_test_db.verifyDBWrite_GlobalPath(expected_globalpaths, expected_timestamps));
+    EXPECT_TRUE(g_test_db.verifyDBWrite_IridiumResponse(
+      expected_response, expected_error, expected_message, expected_timestamps));
 }

@@ -11,9 +11,9 @@ class TestFluidGenerator:
     @pytest.mark.parametrize(
         "vector",
         [
-            (np.array([1, 0])),
-            (np.array([0, 1])),
-            (np.array([1, 0])),
+            (np.array([1, 0, 1])),
+            (np.array([0, 1, 0])),
+            (np.array([1, 0, 0])),
         ],
     )
     def test_velocity_constant(self, vector):
@@ -26,10 +26,10 @@ class TestFluidGenerator:
     @pytest.mark.parametrize(
         "mean, cov",
         [
-            (np.array([1, 2]), np.array([[2, 1], [1, 2]])),
-            (np.array([4, 5]), np.array([[3, 1], [1, 3]])),
-            (np.array([100, 50]), np.array([[10, 5], [5, 10]])),
-            (np.array([120, 130]), np.array([[10, 5], [5, 10]])),
+            (np.array([1, 2, 0]), np.array([[2, 1, 1], [1, 2, 0.9], [1, 0.9, 1]])),
+            (np.array([4, 5, 3]), np.array([[3, 1, 1], [1, 3, 1], [1, 1, 2]])),
+            (np.array([100, 50, 20]), np.array([[10, 5, 5], [5, 10, 4.5], [5, 4.5, 5]])),
+            (np.array([120, 130, 40]), np.array([[10, 5, 1], [5, 10, 2], [1, 2, 5]])),
         ],
     )
     def test_velocity_random(self, mean, cov):
@@ -42,12 +42,12 @@ class TestFluidGenerator:
     @pytest.mark.parametrize(
         "vector",
         [
-            (np.array([1, 0])),
-            (np.array([0, 1])),
-            (np.array([-1, 0])),
-            (np.array([0, -1])),
-            (np.array([1, 1])),
-            (np.array([-1, -1])),
+            (np.array([1, 0, 1])),
+            (np.array([0, 1, 0])),
+            (np.array([-1, 0, 1])),
+            (np.array([0, -1, 0])),
+            (np.array([1, 1, 1])),
+            (np.array([-1, -1, -1])),
         ],
     )
     def test_speed(self, vector):
@@ -60,12 +60,12 @@ class TestFluidGenerator:
     @pytest.mark.parametrize(
         "vector, expected_direction",
         [
-            (np.array([1, 0]), 0),
-            (np.array([0, 1]), 90),
-            (np.array([-1, 0]), -180),
-            (np.array([0, -1]), -90),
-            (np.array([1, 1]), 45),
-            (np.array([-1, -1]), -135),
+            (np.array([1, 0, 1]), 0),
+            (np.array([0, 1, -3]), 90),
+            (np.array([-1, 0, -1]), -180),
+            (np.array([0, -1, 0]), -90),
+            (np.array([1, 1, 4]), 45),
+            (np.array([-1, -1, 6]), -135),
         ],
     )
     def test_direction(self, vector, expected_direction):

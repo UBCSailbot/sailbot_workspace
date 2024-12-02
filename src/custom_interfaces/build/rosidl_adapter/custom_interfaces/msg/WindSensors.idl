@@ -1,0 +1,15 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from custom_interfaces/msg/WindSensors.msg
+// generated code does not contain a copyright notice
+
+#include "custom_interfaces/msg/WindSensor.idl"
+
+module custom_interfaces {
+  module msg {
+    typedef custom_interfaces::msg::WindSensor custom_interfaces__msg__WindSensor;
+    typedef custom_interfaces__msg__WindSensor custom_interfaces__msg__WindSensor__2[2];
+    struct WindSensors {
+      custom_interfaces__msg__WindSensor__2 wind_sensors;
+    };
+  };
+};

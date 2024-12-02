@@ -1,0 +1,13 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from custom_interfaces/msg/DesiredHeading.msg
+// generated code does not contain a copyright notice
+
+#include "custom_interfaces/msg/HelperHeading.idl"
+
+module custom_interfaces {
+  module msg {
+    struct DesiredHeading {
+      custom_interfaces::msg::HelperHeading heading;
+    };
+  };
+};

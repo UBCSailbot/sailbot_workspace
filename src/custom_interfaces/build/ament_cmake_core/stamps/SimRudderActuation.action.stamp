@@ -1,0 +1,12 @@
+# Request: The desired heading to turn to
+DesiredHeading desired_heading
+---
+# Result: The absolute angular distance between the current and desired heading
+# Units: degrees
+# Range: [0, 180]
+float32 remaining_angular_distance
+---
+# Feedback: The rudder angle with respect to the boat
+# Units: degrees, 0° south, increases CW
+# Range: [-90, 90]
+float32 rudder_angle
