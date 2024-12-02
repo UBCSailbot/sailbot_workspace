@@ -1,0 +1,2241 @@
+timeout: 3
+required_packages:
+- name: local_pathfinding
+  configs: null
+- name: network_systems
+  configs:
+  - all_disable.yaml
+  - example/example_en.yaml
+  - mock_ais/mock_ais_en_default.yaml
+inputs:
+- type: ROS
+  name: aisships
+  data:
+    dtype: AISShips
+    ships:
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 0
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.61842067978617
+        longitude:
+          dtype: float32
+          val: -124.5444541422716
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 85.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 1.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: -105
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 1
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.629184643878574
+        longitude:
+          dtype: float32
+          val: -125.4058230885733
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 24.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 6.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: -47
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 2
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.45834258608675
+        longitude:
+          dtype: float32
+          val: -124.41269760208793
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 276.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 3.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: 35
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 3
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.61318808121673
+        longitude:
+          dtype: float32
+          val: -124.88318152592021
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 62.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 1.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: -91
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 4
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.63022738649405
+        longitude:
+          dtype: float32
+          val: -124.28009953085756
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 299.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 12.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: 65
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 5
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.71032008168071
+        longitude:
+          dtype: float32
+          val: -125.20725444108156
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 111.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 10.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: 75
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 6
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.36421821841841
+        longitude:
+          dtype: float32
+          val: -125.18123206856677
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 317.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 1.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: -77
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 7
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.69812452386202
+        longitude:
+          dtype: float32
+          val: -124.61304461233802
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 182.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 2.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: -5
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 8
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.41563013288296
+        longitude:
+          dtype: float32
+          val: -124.4132998685929
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 337.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 13.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: -86
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 9
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.73646383501497
+        longitude:
+          dtype: float32
+          val: -125.29413060266113
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 328.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 9.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: -69
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 10
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.239019661936624
+        longitude:
+          dtype: float32
+          val: -124.61856280272379
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 183.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 6.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: 7
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 11
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.86495877108123
+        longitude:
+          dtype: float32
+          val: -124.65161705663984
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 58.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 4.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: 75
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 12
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.35064404520543
+        longitude:
+          dtype: float32
+          val: -124.84667833634305
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 16.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 10.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: -44
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 13
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.652082274297584
+        longitude:
+          dtype: float32
+          val: -124.1628296309164
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 170.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 5.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: 90
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 14
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.451381374915385
+        longitude:
+          dtype: float32
+          val: -124.346294547324
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 149.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 3.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: -15
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 15
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.34105276516963
+        longitude:
+          dtype: float32
+          val: -124.89255868913573
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 128.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 11.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: 35
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 16
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.50868355021881
+        longitude:
+          dtype: float32
+          val: -124.7060976392906
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 326.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 1.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: -95
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 17
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.433839946036606
+        longitude:
+          dtype: float32
+          val: -124.6226051233039
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 276.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 9.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: 80
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 18
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.48284782465366
+        longitude:
+          dtype: float32
+          val: -124.87641655877394
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 64.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 7.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: -24
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 19
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.83086703268401
+        longitude:
+          dtype: float32
+          val: -124.92394471911683
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 323.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 15.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: 89
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 20
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.56709528137824
+        longitude:
+          dtype: float32
+          val: -125.45533646979852
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 6.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 4.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: -65
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 21
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.625258212265706
+        longitude:
+          dtype: float32
+          val: -125.20704321245998
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 148.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 15.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: -27
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 22
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.647411848918246
+        longitude:
+          dtype: float32
+          val: -124.54402991530728
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 105.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 3.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: -45
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 23
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.68032137600396
+        longitude:
+          dtype: float32
+          val: -124.78694469665997
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 137.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 15.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: -15
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 24
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.26225472308407
+        longitude:
+          dtype: float32
+          val: -124.37677621598758
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 16.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 2.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: 69
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 25
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.09901576684643
+        longitude:
+          dtype: float32
+          val: -124.49526391246907
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 104.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 1.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: -117
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 26
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.5314454713883
+        longitude:
+          dtype: float32
+          val: -124.71791859783437
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 75.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 0.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: 116
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 27
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.44599106727562
+        longitude:
+          dtype: float32
+          val: -124.79584755564018
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 244.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 2.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: -15
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 28
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.41276965271506
+        longitude:
+          dtype: float32
+          val: -124.82574716041476
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 89.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 15.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: -76
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 29
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.05426579708035
+        longitude:
+          dtype: float32
+          val: -124.70655643357726
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 279.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 6.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: -12
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+expected_outputs:
+- type: ROS
+  name: aisships
+  data:
+    dtype: AISShips
+    ships:
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 0
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.61842067978617
+        longitude:
+          dtype: float32
+          val: -124.5444541422716
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 85.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 1.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: -105
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 1
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.629184643878574
+        longitude:
+          dtype: float32
+          val: -125.4058230885733
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 24.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 6.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: -47
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 2
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.45834258608675
+        longitude:
+          dtype: float32
+          val: -124.41269760208793
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 276.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 3.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: 35
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 3
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.61318808121673
+        longitude:
+          dtype: float32
+          val: -124.88318152592021
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 62.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 1.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: -91
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 4
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.63022738649405
+        longitude:
+          dtype: float32
+          val: -124.28009953085756
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 299.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 12.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: 65
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 5
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.71032008168071
+        longitude:
+          dtype: float32
+          val: -125.20725444108156
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 111.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 10.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: 75
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 6
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.36421821841841
+        longitude:
+          dtype: float32
+          val: -125.18123206856677
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 317.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 1.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: -77
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 7
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.69812452386202
+        longitude:
+          dtype: float32
+          val: -124.61304461233802
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 182.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 2.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: -5
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 8
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.41563013288296
+        longitude:
+          dtype: float32
+          val: -124.4132998685929
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 337.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 13.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: -86
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 9
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.73646383501497
+        longitude:
+          dtype: float32
+          val: -125.29413060266113
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 328.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 9.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: -69
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 10
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.239019661936624
+        longitude:
+          dtype: float32
+          val: -124.61856280272379
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 183.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 6.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: 7
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 11
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.86495877108123
+        longitude:
+          dtype: float32
+          val: -124.65161705663984
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 58.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 4.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: 75
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 12
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.35064404520543
+        longitude:
+          dtype: float32
+          val: -124.84667833634305
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 16.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 10.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: -44
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 13
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.652082274297584
+        longitude:
+          dtype: float32
+          val: -124.1628296309164
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 170.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 5.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: 90
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 14
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.451381374915385
+        longitude:
+          dtype: float32
+          val: -124.346294547324
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 149.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 3.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: -15
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 15
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.34105276516963
+        longitude:
+          dtype: float32
+          val: -124.89255868913573
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 128.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 11.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: 35
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 16
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.50868355021881
+        longitude:
+          dtype: float32
+          val: -124.7060976392906
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 326.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 1.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: -95
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 17
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.433839946036606
+        longitude:
+          dtype: float32
+          val: -124.6226051233039
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 276.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 9.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: 80
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 18
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.48284782465366
+        longitude:
+          dtype: float32
+          val: -124.87641655877394
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 64.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 7.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: -24
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 19
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.83086703268401
+        longitude:
+          dtype: float32
+          val: -124.92394471911683
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 323.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 15.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: 89
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 20
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.56709528137824
+        longitude:
+          dtype: float32
+          val: -125.45533646979852
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 6.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 4.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: -65
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 21
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.625258212265706
+        longitude:
+          dtype: float32
+          val: -125.20704321245998
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 148.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 15.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: -27
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 22
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.647411848918246
+        longitude:
+          dtype: float32
+          val: -124.54402991530728
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 105.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 3.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: -45
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 23
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.68032137600396
+        longitude:
+          dtype: float32
+          val: -124.78694469665997
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 137.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 15.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: -15
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 24
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.26225472308407
+        longitude:
+          dtype: float32
+          val: -124.37677621598758
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 16.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 2.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: 69
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 25
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.09901576684643
+        longitude:
+          dtype: float32
+          val: -124.49526391246907
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 104.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 1.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: -117
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 26
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.5314454713883
+        longitude:
+          dtype: float32
+          val: -124.71791859783437
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 75.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 0.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: 116
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 27
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.44599106727562
+        longitude:
+          dtype: float32
+          val: -124.79584755564018
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 244.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 2.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: -15
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 28
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.41276965271506
+        longitude:
+          dtype: float32
+          val: -124.82574716041476
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 89.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 15.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: -76
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 29
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 48.05426579708035
+        longitude:
+          dtype: float32
+          val: -124.70655643357726
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 279.0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 6.0
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: -12
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
