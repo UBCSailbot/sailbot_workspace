@@ -21,6 +21,10 @@ from rclpy.timer import Rate
 
 import boat_simulator.common.constants as Constants
 from boat_simulator.common.types import Scalar
+from boat_simulator.nodes.low_level_control.controller import (
+    RudderController,
+    SailController,
+)
 from boat_simulator.nodes.low_level_control.decorators import (
     MutuallyExclusiveActionRoutine,
 )
@@ -203,12 +207,28 @@ class LowLevelControlNode(Node):
             Optional[SimRudderActuation_Result]: The result message if successful.
         """
         self.get_logger().debug("Beginning rudder actuation...")
+        all_parameters = self._parameters
+
+        current_heading = self.__gps.heading
+        desired_heading = goal_handle.request.desired_heading
+        current_control_ang = self.rudder_angle
+        time_step = all_parameters["rudder.actuation_execution_period_sec"].value
+        kp = all_parameters["rudder.pid.kp"].value
+        cp = all_parameters["rudder.pid.kp"].value  # not sure if this is the right value to use
+        control_speed = 10  # not sure if this is the right value to use
+
+        rudder_controller = RudderController(
+            current_heading, desired_heading, current_control_ang, time_step, kp, cp, control_speed
+        )
 
         # TODO Placeholder loop. Replace with PID ctrl once implemented.
         feedback_msg = SimRudderActuation.Feedback()
-        for i in range(Constants.RUDDER_ACTUATION_NUM_LOOP_EXECUTIONS):
-            feedback_msg.rudder_angle = float(i)
-            self.get_logger().debug(f"Rudder Action Server feedback: {i}")
+        while self.is_rudder_action_active and not rudder_controller.is_target_reached:
+            rudder_controller.update_state()
+            feedback_msg.rudder_angle = float(rudder_controller.current_control_ang)
+            self.get_logger().debug(
+                f"Rudder Action Server feedback: {rudder_controller.current_control_ang}"
+            )
             self.get_logger().debug(f"Is Rudder Action Active? {self.is_rudder_action_active}")
             goal_handle.publish_feedback(feedback=feedback_msg)
             self.rudder_action_feedback_rate.sleep()
@@ -232,13 +252,24 @@ class LowLevelControlNode(Node):
         Returns:
             Optional[SimSailTrimTabActuation_Result]: The result message if successful.
         """
+
         self.get_logger().debug("Beginning sail actuation...")
+        all_parameters = self._parameters
+
+        target_angle = goal_handle.request.desired_angular_position
+        current_angle = self.sail_trim_tab_angle
+        time_step = all_parameters["wingsail.actuation_execution_period_sec"].value
+        control_speed = all_parameters["wingsail.actuation_speed_deg_per_sec"].value
+        sail_controller = SailController(target_angle, current_angle, time_step, control_speed)
 
         # TODO Placeholder loop. Replace with sail ctrl once implemented.
         feedback_msg = SimSailTrimTabActuation.Feedback()
-        for i in range(Constants.SAIL_ACTUATION_NUM_LOOP_EXECUTIONS):
-            feedback_msg.current_angular_position = float(i)
-            self.get_logger().debug(f"Sail Action Server feedback: {i}")
+        while self.is_sail_action_active and not sail_controller.is_target_reached:
+            sail_controller.update_state()
+            feedback_msg.current_angular_position = sail_controller.current_control_ang
+            self.get_logger().debug(
+                f"Sail Action Server feedback: {sail_controller.current_control_ang}"
+            )
             self.get_logger().debug(f"Is Sail Action Active? {self.is_sail_action_active}")
             goal_handle.publish_feedback(feedback=feedback_msg)
             self.sail_action_feedback_rate.sleep()
