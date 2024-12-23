@@ -3,11 +3,11 @@
 import logging
 from typing import List, Optional, Tuple
 
-from custom_interfaces.msg import GPS, AISShips, HelperLatLon, Path, WindSensor
 from rclpy.impl.rcutils_logger import RcutilsLogger
 from shapely.geometry import LineString, Point
 
 import local_pathfinding.coord_systems as cs
+from custom_interfaces.msg import GPS, AISShips, HelperLatLon, Path, WindSensor
 from local_pathfinding.obstacles import Boat
 from local_pathfinding.ompl_path import OMPLPath
 
@@ -127,9 +127,12 @@ class LocalPath:
         Returns:
             bool: False if wind speed is too low, True otherwise.
         """
-        if (
-            filtered_wind_sensor.speed.speed < 5
-        ):  # TODO Example threshold of 5.0 for low speed. Change accordingly
+        if filtered_wind_sensor is None:
+            self._logger.warning("Filtered wind sensor is None. Not computing OMPL Path")
+            return False
+
+        if filtered_wind_sensor.speed.speed < 5:
+            # TODO Example threshold of 5.0 for low speed. Change accordingly
             self._logger.warning(
                 f"Wind speed too low: {filtered_wind_sensor.speed.speed}. Not computing OMPL Path"
             )
