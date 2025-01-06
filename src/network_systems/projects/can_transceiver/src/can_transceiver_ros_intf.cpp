@@ -63,7 +63,7 @@ public:
             }
 
             ais_pub_          = this->create_publisher<msg::AISShips>(ros_topics::AIS_SHIPS, QUEUE_SIZE);
-            batteries_pub_    = this->create_publisher<msg::Batteries>(ros_topics::BATTERIES, QUEUE_SIZE);
+            batteries_pub_    = this->create_publisher<msg::HelperBattery>(ros_topics::BATTERIES, QUEUE_SIZE);
             gps_pub_          = this->create_publisher<msg::GPS>(ros_topics::GPS, QUEUE_SIZE);
             wind_sensors_pub_ = this->create_publisher<msg::WindSensors>(ros_topics::WIND_SENSORS, QUEUE_SIZE);
             filtered_wind_sensor_pub_ =
@@ -72,20 +72,14 @@ public:
 
             can_trns_->registerCanCbs(
               {std::make_pair(
-                 CanId::BMS_P_DATA_FRAME_1,
+                 CanId::BMS_DATA_FRAME,
                  std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishBattery(frame); })),
                std::make_pair(
-                 CanId::BMS_P_DATA_FRAME_2,
-                 std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishBattery(frame); })),
-               std::make_pair(
-                 CanId::PATH_GPS_DATA_FRAME_1,
+                 CanId::PATH_GPS_DATA_FRAME,
                  std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishGPS(frame); })),
-               std::make_pair(
-                 CanId::SAIL_WIND_DATA_FRAME_1,
-                 std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishWindSensor(frame); })),
-               std::make_pair(
-                 CanId::PATH_WIND_DATA_FRAME,
-                 std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishWindSensor(frame); })),
+               std::make_pair(CanId::SAIL_WIND, std::function<void(const CanFrame &)>([this](const CanFrame & frame) {
+                                  publishWindSensor(frame);
+                              })),
                std::make_pair(
                  CanId::GENERIC_SENSOR_START,
                  std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishGeneric(frame); })),
@@ -124,8 +118,8 @@ private:
     // Universal publishers and subscribers present in both deployment and simulation
     rclcpp::Publisher<msg::AISShips>::SharedPtr          ais_pub_;
     msg::AISShips                                        ais_ships_;
-    rclcpp::Publisher<msg::Batteries>::SharedPtr         batteries_pub_;
-    msg::Batteries                                       batteries_;
+    rclcpp::Publisher<msg::HelperBattery>::SharedPtr     batteries_pub_;
+    msg::HelperBattery                                   batteries_;
     rclcpp::Publisher<msg::GPS>::SharedPtr               gps_pub_;
     msg::GPS                                             gps_;
     rclcpp::Publisher<msg::WindSensors>::SharedPtr       wind_sensors_pub_;
@@ -154,6 +148,9 @@ private:
 
     // Mock CAN file descriptor for simulation
     int sim_intf_fd_;
+
+    // Saved power mode state
+    uint8_t set_pwr_mode = CAN_FP::PwrMode::POWER_MODE_NORMAL;
 
     /**
      * @brief Publish AIS ships
@@ -185,18 +182,19 @@ private:
      */
     void publishBattery(const CanFrame & battery_frame)
     {
-        CAN_FP::Battery bat(battery_frame);
-
-        size_t idx;
-        for (size_t i = 0;; i++) {  // idx WILL be in range (can_frame_parser constructors guarantee this)
-            if (bat.id_ == CAN_FP::Battery::BATTERY_IDS[i]) {
-                idx = i;
-                break;
-            }
-        }
-        msg::HelperBattery & bat_msg = batteries_.batteries[idx];
+        CAN_FP::Battery      bat(battery_frame);
+        msg::HelperBattery & bat_msg = batteries_;
         bat_msg                      = bat.toRosMsg();
         batteries_pub_->publish(batteries_);
+        // Voltage < 10V means low power mode
+        // If in low power mode, power mode will only change back to normal if voltage reaches >= 12V.
+        if (bat_msg.voltage < 10) {  //NOLINT(readability-magic-numbers)
+            set_pwr_mode = CAN_FP::PwrMode::POWER_MODE_LOW;
+        } else if (bat_msg.voltage >= 12) {  //NOLINT(readability-magic-numbers)
+            set_pwr_mode = CAN_FP::PwrMode::POWER_MODE_NORMAL;
+        }
+        CAN_FP::PwrMode power_mode(set_pwr_mode, CAN_FP::CanId::PWR_MODE);
+        can_trns_->send(power_mode.toLinuxCan());
     }
 
     /**
@@ -290,17 +288,6 @@ private:
         generic_sensors_pub_->publish(generic_sensors_);
     }
 
-    /**
-     * @brief SailCmd subscriber callback
-     *
-     * @param sail_cmd_
-     */
-    void subSailCmdCb(const msg::SailCmd & sail_cmd_input)
-    {
-        sail_cmd_ = sail_cmd_input;
-        boat_sim_input_msg_.set__sail_cmd(sail_cmd_);
-    }
-
     // SIMULATION CALLBACKS //
 
     /**
@@ -311,6 +298,19 @@ private:
     void publishBoatSimInput(const msg::CanSimToBoatSim & boat_sim_input_msg)
     {
         boat_sim_input_pub_->publish(boat_sim_input_msg);
+    }
+
+    /**
+     * @brief SailCmd subscriber callback
+     *
+     * @param sail_cmd_
+     */
+    void subSailCmdCb(const msg::SailCmd & sail_cmd_input)
+    {
+        sail_cmd_ = sail_cmd_input;
+        boat_sim_input_msg_.set__sail_cmd(sail_cmd_);
+
+        can_trns_->send(CAN_FP::MainTrimTab(sail_cmd_input, CanId::MAIN_TR_TAB).toLinuxCan());
     }
 
     /**
@@ -328,7 +328,11 @@ private:
      *
      * @param desired_heading desired_heading received from the Desired Heading topic
      */
-    void subDesiredHeadingCb(msg::DesiredHeading desired_heading) { boat_sim_input_msg_.set__heading(desired_heading); }
+    void subDesiredHeadingCb(msg::DesiredHeading desired_heading)
+    {
+        boat_sim_input_msg_.set__heading(desired_heading);
+        can_trns_->send(CAN_FP::DesiredHeading(desired_heading, CanId::MAIN_TR_TAB).toLinuxCan());
+    }
 
     /**
      * @brief Mock GPS topic callback
@@ -354,14 +358,8 @@ private:
         msg::HelperBattery bat;
         bat.set__voltage(BATT_VOLT_UBND);
         bat.set__current(BATT_CURR_UBND);
-        for (size_t i = 0; i < NUM_BATTERIES; i++) {
-            auto optCanId = CAN_FP::Battery::rosIdxToCanId(i);
-            if (optCanId) {
-                can_trns_->send(CAN_FP::Battery(bat, optCanId.value()).toLinuxCan());
-            } else {
-                RCLCPP_ERROR(this->get_logger(), "Failed to send mock battery of index %zu!", i);
-            }
-        }
+
+        can_trns_->send(CAN_FP::Battery(bat, CanId::BMS_DATA_FRAME).toLinuxCan());
     }
 };
 

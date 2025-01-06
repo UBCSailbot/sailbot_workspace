@@ -2,9 +2,9 @@
 
 from typing import List, Optional, Tuple
 
+from custom_interfaces.msg import GPS, AISShips, HelperLatLon, Path, WindSensor
 from rclpy.impl.rcutils_logger import RcutilsLogger
 
-from custom_interfaces.msg import GPS, AISShips, HelperLatLon, Path, WindSensor
 from local_pathfinding.ompl_path import OMPLPath
 
 
@@ -47,6 +47,8 @@ class LocalPathState:
                 HelperLatLon(latitude=waypoint.latitude, longitude=waypoint.longitude)
                 for waypoint in global_path.waypoints
             ]
+        else:
+            self.global_path = global_path
 
         if filtered_wind_sensor:  # TODO: remove when mock can be run
             self.wind_speed = filtered_wind_sensor.speed.speed

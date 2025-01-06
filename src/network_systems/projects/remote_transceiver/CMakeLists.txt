@@ -2,6 +2,7 @@ set(module remote_transceiver)
 
 set(link_libs
     ${PROTOBUF_LINK_LIBS}
+    ${CURL_LIBRARIES}
     mongo::mongocxx_shared
     mongo::bsoncxx_shared
     sailbot_db
@@ -12,6 +13,7 @@ set(inc_dirs
     ${LIBMONGOCXX_INCLUDE_DIRS}
     ${LIBBSONCXX_INCLUDE_DIRS}
     ${SAILBOT_DB_INC_DIR}
+    ${CURL_INCLUDE_DIR}
 )
 
 set(compile_defs

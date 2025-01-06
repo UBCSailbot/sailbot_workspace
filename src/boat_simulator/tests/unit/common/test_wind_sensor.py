@@ -1,11 +1,11 @@
-from boat_simulator.common.sensors import WindSensor
+from boat_simulator.common.sensors import SimWindSensor
 import numpy as np
 
 
-class TestWindSensor:
+class TestSimWindSensor:
     def test_wind_sensor_init(self):
         init_data = np.array([1, 0])
-        ws = WindSensor(
+        ws = SimWindSensor(
             wind=init_data,
         )
 
@@ -13,7 +13,7 @@ class TestWindSensor:
 
     def test_wind_sensor_read_no_noise(self):
         init_data = np.array([1, 0])
-        ws = WindSensor(
+        ws = SimWindSensor(
             wind=init_data,
         )
         read_data = ws.read("wind")
@@ -23,7 +23,7 @@ class TestWindSensor:
         init_data = np.array([0, 0])
         mean = np.array([0, 0])
         cov = np.eye(2)
-        ws = WindSensor(wind=init_data, enable_noise=True)
+        ws = SimWindSensor(wind=init_data, enable_noise=True)
 
         NUM_READINGS = 10000
         reading = np.zeros(shape=(NUM_READINGS, mean.size))
@@ -38,7 +38,7 @@ class TestWindSensor:
 
     def test_wind_sensor_update_no_delay(self):
         init_data = np.array([0, 0])
-        ws = WindSensor(wind=init_data)
+        ws = SimWindSensor(wind=init_data)
 
         NUM_READINGS = 100
         for i in range(NUM_READINGS):
@@ -54,7 +54,7 @@ class TestWindSensor:
 
         init_data = np.array([0, 0])
 
-        ws = WindSensor(wind=init_data, enable_delay=True)
+        ws = SimWindSensor(wind=init_data, enable_delay=True)
 
         wind = ws.read("wind")
         # Initialized data is read without delay

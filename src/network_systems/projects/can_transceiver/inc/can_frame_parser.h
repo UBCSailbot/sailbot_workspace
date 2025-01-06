@@ -6,6 +6,7 @@
 #include <array>
 #include <custom_interfaces/msg/ais_ships.hpp>
 #include <custom_interfaces/msg/batteries.hpp>
+#include <custom_interfaces/msg/desired_heading.hpp>
 #include <custom_interfaces/msg/gps.hpp>
 #include <custom_interfaces/msg/helper_ais_ship.hpp>
 #include <custom_interfaces/msg/sail_cmd.hpp>
@@ -29,17 +30,18 @@ namespace msg    = custom_interfaces::msg;
  *
  */
 enum class CanId : canid_t {
-    RESERVED               = 0x00,
-    BMS_P_DATA_FRAME_1     = 0x31,
-    BMS_P_DATA_FRAME_2     = 0x32,
-    SAIL_AIS               = 0x60,
-    SAIL_WSM_CMD_FRAME_1   = 0x61,
-    SAIL_WSM_DATA_FRAME_1  = 0x63,
-    SAIL_WIND_DATA_FRAME_1 = 0x65,
-    PATH_GPS_DATA_FRAME_1  = 0x80,
-    PATH_WIND_DATA_FRAME   = 0x84,
-    GENERIC_SENSOR_START   = 0x100,
-    GENERIC_SENSOR_END     = 0x1FF
+    PWR_MODE             = 0x00,
+    MAIN_HEADING         = 0x01,
+    MAIN_TR_TAB          = 0x02,
+    RESERVED             = 0x29,
+    BMS_DATA_FRAME       = 0x30,
+    SAIL_WIND            = 0x40,
+    DATA_WIND            = 0x41,
+    RUDDER_DATA_FRAME    = 0x50,
+    SAIL_AIS             = 0x60,
+    PATH_GPS_DATA_FRAME  = 0x70,
+    GENERIC_SENSOR_START = 0x100,
+    GENERIC_SENSOR_END   = 0x1FF
 };
 
 /**
@@ -47,15 +49,17 @@ enum class CanId : canid_t {
  *
  */
 static const std::map<CanId, std::string> CAN_DESC{
-  {CanId::RESERVED, "RESERVED"},
-  {CanId::BMS_P_DATA_FRAME_1, "BMS_P_DATA_FRAME_1 (Battery 1 data)"},
-  {CanId::BMS_P_DATA_FRAME_2, "BMS_P_DATA_FRAME_2 (Battery 2 data)"},
+  {CanId::PWR_MODE, "PWR_MODE (Power Mode)"},
+  {CanId::MAIN_HEADING, "MAIN_HEADING (Main heading for rudder)"},
+  {CanId::MAIN_TR_TAB, "MAIN_TR_TAB (Trim tab for sail)"},
+  {CanId::BMS_DATA_FRAME, "BMS_P_DATA_FRAME (Battery data)"},
+  {CanId::RESERVED, "Reserved for mainframe (0x0 - 0x29)"},
   {CanId::SAIL_AIS, "SAIL_AIS (AIS ship data)"},
-  {CanId::SAIL_WSM_CMD_FRAME_1, "SAIL_WSM_CMD_FRAME_1 (Main sail command)"},
-  {CanId::SAIL_WSM_DATA_FRAME_1, "SAIL_WSM_DATA_FRAME_1 (Main sail data)"},
-  {CanId::SAIL_WIND_DATA_FRAME_1, "SAIL_WIND_DATA_FRAME_1 (Mast wind sensor)"},
-  {CanId::PATH_GPS_DATA_FRAME_1, "PATH_GPS_DATA_FRAME_1 (GPS latitude)"},
-  {CanId::PATH_WIND_DATA_FRAME, "PATH_WIND_DATA_FRAME (Hull wind sensor)"}};
+  {CanId::MAIN_HEADING, "MAIN_HEADING (Main rudder command)"},
+  {CanId::SAIL_WIND, "SAIL_WIND (Mast wind sensor)"},
+  {CanId::RUDDER_DATA_FRAME, "RUDDER_DATA_FRAME (Rudder data from ecompass)"},
+  {CanId::PATH_GPS_DATA_FRAME, "PATH_GPS_DATA_FRAME (GPS latitude)"},
+  {CanId::DATA_WIND, "DATA_WIND (Hull wind sensor)"}};
 
 /**
  * @brief Custom exception for when an attempt is made to construct a CAN object with a mismatched ID
@@ -140,13 +144,11 @@ protected:
 class Battery final : public BaseFrame
 {
 public:
-    // Valid CanIds that a Battery object can have
-    static constexpr std::array<CanId, 2> BATTERY_IDS       = {CanId::BMS_P_DATA_FRAME_1, CanId::BMS_P_DATA_FRAME_2};
-    static constexpr uint8_t              CAN_BYTE_DLEN_    = 8;
-    static constexpr uint8_t              BYTE_OFF_VOLT     = 0;
-    static constexpr uint8_t              BYTE_OFF_CURR     = 2;
-    static constexpr uint8_t              BYTE_OFF_MAX_VOLT = 4;
-    static constexpr uint8_t              BYTE_OFF_MIN_VOLT = 6;
+    // Valid CanIds that a Battery object can have. There used to be two, but now there is only one.
+    static constexpr std::array<CanId, 1> BATTERY_IDS    = {CanId::BMS_DATA_FRAME};
+    static constexpr uint8_t              CAN_BYTE_DLEN_ = 8;
+    static constexpr uint8_t              BYTE_OFF_VOLT  = 0;
+    static constexpr uint8_t              BYTE_OFF_CURR  = 4;
 
     /**
      * @brief Explicitly deleted no-argument constructor
@@ -165,7 +167,7 @@ public:
      * @brief Construct a Battery object from a custom_interfaces ROS msg representation
      *
      * @param ros_bat custom_interfaces representation of a Battery
-     * @param id      CanId of the battery (use the rosIdxToCanId() method if unknown)
+     * @param id      CanId of the battery
      */
     explicit Battery(msg::HelperBattery ros_bat, CanId id);
 
@@ -180,18 +182,9 @@ public:
     CanFrame toLinuxCan() const override;
 
     /**
-     * @return A string that can be printed or logged to debug a Battery object
+     * @return A string that can be printed or logged to debug an Battery object
      */
     std::string debugStr() const override;
-
-    /**
-     * @brief Factory method to convert the index of a battery in the custom_interfaces ROS representation
-     *        into a CanId if valid.
-     *
-     * @param bat_idx idx of the battery in a custom_interfaces::msg::Batteries array
-     * @return CanId if valid, std::nullopt if invalid
-     */
-    static std::optional<CanId> rosIdxToCanId(size_t bat_idx);
 
 private:
     /**
@@ -208,69 +201,67 @@ private:
     void checkBounds() const;
 
     // Note: Each BMS battery is comprised of multiple battery cells
-    float volt_;      // Average voltage of cells in the battery
-    float curr_;      // Current - positive means charging and negative means discharging (powering the boat)
-    float volt_max_;  // Maximum voltage of cells in the battery pack (unused)
-    float volt_min_;  // Minimum voltage of cells in the battery pack (unused)
+    float volt_;  // Average voltage of cells in the battery
+    float curr_;  // Current - positive means charging and negative means discharging (powering the boat)
 };
 
 /**
- * @brief A sail class derived from the BaseFrame. Represents a sail command.
+ * @brief A sail class derived from the BaseFrame. Represents a trim tab command.
  *
  */
-class SailCmd final : public BaseFrame
+class MainTrimTab final : public BaseFrame
 {
 public:
-    static constexpr std::array<CanId, 2> SAIL_CMD_IDS   = {CanId::SAIL_WSM_CMD_FRAME_1, CanId::SAIL_WSM_DATA_FRAME_1};
-    static constexpr uint8_t              CAN_BYTE_DLEN_ = 2;
+    static constexpr std::array<CanId, 1> TRIM_TAB_IDS   = {CanId::MAIN_TR_TAB};
+    static constexpr uint8_t              CAN_BYTE_DLEN_ = 4;
     static constexpr uint8_t              BYTE_OFF_ANGLE = 0;
 
     /**
      * @brief Explicitly deleted no-argument constructor
      *
      */
-    SailCmd() = delete;
+    MainTrimTab() = delete;
 
     /**
-     * @brief Construct a SailCmd object from a Linux CanFrame representation
+     * @brief Construct a MainTrimTab object from a Linux CanFrame representation
      *
      * @param cf Linux CanFrame
      */
-    explicit SailCmd(const CanFrame & cf);
+    explicit MainTrimTab(const CanFrame & cf);
 
     /**
-     * @brief Construct a SailCmd object from a custom_interfaces ROS msg representation
+     * @brief Construct a MainTrimTab object from a custom_interfaces ROS msg representation
      *
-     * @param ros_sail_cmd custom_interfaces representation of a SailCmd
-     * @param id      CanId of the SailCmd (use the rosIdxToCanId() method if unknown)
+     * @param ros_sail_cmd custom_interfaces representation of a MainTrimTab
+     * @param id      CanId of the MainTrimTab
      */
-    explicit SailCmd(msg::SailCmd ros_sail_cmd, CanId id);
+    explicit MainTrimTab(msg::SailCmd ros_sail_cmd, CanId id);
 
     /**
-     * @return the custom_interfaces ROS representation of the SailCmd object
+     * @return the custom_interfaces ROS representation of the MainTrimTab object
      */
     msg::SailCmd toRosMsg() const;
 
     /**
-     * @return the Linux CanFrame representation of the SailCmd object
+     * @return the Linux CanFrame representation of the MainTrimTab object
      */
     CanFrame toLinuxCan() const override;
 
     /**
-     * @return A string that can be printed or logged to debug a SailCmd object
+     * @return A string that can be printed or logged to debug a MainTrimTab object
      */
     std::string debugStr() const override;
 
 private:
     /**
-     * @brief Private helper constructor for SailCmd objects
+     * @brief Private helper constructor for MainTrimTab objects
      *
-     * @param id CanId of the SailCmd
+     * @param id CanId of the MainTrimTab
      */
-    explicit SailCmd(CanId id);
+    explicit MainTrimTab(CanId id);
 
     /**
-     * @brief Check if the assigned fields after constructing a SailCmd object are within bounds.
+     * @brief Check if the assigned fields after constructing a MainTrimTab object are within bounds.
      * @throws std::out_of_range if any assigned fields are outside of expected bounds
      */
     void checkBounds() const;
@@ -279,17 +270,16 @@ private:
 };
 
 /**
- * @brief //TODO: Add description
+ * @brief A wind class derived from the BaseFrame. Represents wind data.
  *
  */
 class WindSensor final : public BaseFrame
 {
 public:
-    static constexpr std::array<CanId, 2> WIND_SENSOR_IDS = {
-      CanId::SAIL_WIND_DATA_FRAME_1, CanId::PATH_WIND_DATA_FRAME};
-    static constexpr uint8_t CAN_BYTE_DLEN_ = 4;
-    static constexpr uint8_t BYTE_OFF_ANGLE = 0;
-    static constexpr uint8_t BYTE_OFF_SPEED = 2;
+    static constexpr std::array<CanId, 2> WIND_SENSOR_IDS = {CanId::SAIL_WIND, CanId::DATA_WIND};
+    static constexpr uint8_t              CAN_BYTE_DLEN_  = 4;
+    static constexpr uint8_t              BYTE_OFF_ANGLE  = 0;
+    static constexpr uint8_t              BYTE_OFF_SPEED  = 2;
 
     /**
      * @brief Explicitly deleted no-argument constructor
@@ -361,16 +351,15 @@ private:
 class GPS final : public BaseFrame
 {
 public:
-    static constexpr std::array<CanId, 1> GPS_IDS          = {CanId::PATH_GPS_DATA_FRAME_1};
-    static constexpr uint8_t              CAN_BYTE_DLEN_   = 24;
-    static constexpr uint32_t             BYTE_OFF_LAT     = 0;
-    static constexpr uint32_t             BYTE_OFF_LON     = 4;
-    static constexpr uint32_t             BYTE_OFF_SEC     = 8;
-    static constexpr uint32_t             BYTE_OFF_MIN     = 12;
-    static constexpr uint32_t             BYTE_OFF_HOUR    = 13;
-    static constexpr uint32_t             BYTE_OFF_RESV    = 14;
-    static constexpr uint32_t             BYTE_OFF_HEADING = 16;
-    static constexpr uint32_t             BYTE_OFF_SPEED   = 20;
+    static constexpr std::array<CanId, 1> GPS_IDS        = {CanId::PATH_GPS_DATA_FRAME};
+    static constexpr uint8_t              CAN_BYTE_DLEN_ = 20;
+    static constexpr uint32_t             BYTE_OFF_LAT   = 0;
+    static constexpr uint32_t             BYTE_OFF_LON   = 4;
+    static constexpr uint32_t             BYTE_OFF_SEC   = 8;
+    static constexpr uint32_t             BYTE_OFF_MIN   = 12;
+    static constexpr uint32_t             BYTE_OFF_HOUR  = 13;
+    static constexpr uint32_t             BYTE_OFF_RESV  = 14;
+    static constexpr uint32_t             BYTE_OFF_SPEED = 16;
 
     /**
        * @brief Explicitly deleted no-argument constructor
@@ -389,7 +378,7 @@ public:
      * @brief Construct a GPS object from a custom_interfaces ROS msg representation
      *
      * @param ros_gps custom_interfaces representation of a GPS
-     * @param id      CanId of the GPS (use the rosIdxToCanId() method if unknown)
+     * @param id      CanId of the GPS
      */
     explicit GPS(msg::GPS ros_gps, CanId id);
 
@@ -407,15 +396,6 @@ public:
      * @return A string that can be printed or logged to debug a GPS object
      */
     std::string debugStr() const override;
-
-    /**
-     * @brief Factory method to convert the index of a GPS in the custom_interfaces ROS representation
-     *        into a CanId if valid.
-     *
-     * @param gps_idx idx of the GPS in a custom_interfaces::msg::GPS array
-     * @return CanId if valid, std::nullopt if invalid
-     */
-    static std::optional<CanId> rosIdxToCanId(size_t gps_idx);
 
 private:
     /**
@@ -436,8 +416,6 @@ private:
     float sec_;
     float min_;
     float hour_;
-    //float reserved;  // Unused
-    float heading_;
     float speed_;
 };
 
@@ -545,6 +523,201 @@ private:
     float    length_;
     uint32_t ship_id_;
     uint8_t  idx_;
+};
+
+/**
+ * @brief Power mode class derived from BaseFrame. Represents power mode data.
+ *
+ */
+class PwrMode final : public BaseFrame
+{
+public:
+    static constexpr std::array<CanId, 1>   PWR_MODE_IDS      = {CanId::PWR_MODE};
+    static constexpr uint8_t                CAN_BYTE_DLEN_    = 1;
+    static constexpr uint8_t                BYTE_OFF_MODE     = 0;
+    static constexpr uint8_t                POWER_MODE_LOW    = 0;
+    static constexpr uint8_t                POWER_MODE_NORMAL = 1;
+    static constexpr std::array<uint8_t, 2> PWR_MODES         = {POWER_MODE_LOW, POWER_MODE_NORMAL};
+
+    /**
+     * @brief Explicitly deleted no-argument constructor
+     *
+     */
+    PwrMode() = delete;
+
+    /**
+     * @brief Construct an PwrMode object from a Linux CanFrame representation
+     *
+     * @param cf Linux CanFrame
+     */
+    explicit PwrMode(const CanFrame & cf);
+
+    /**
+     * @brief Construct a PwrMode object given a mode and CAN ID
+     *
+     * @param mode    Power mode select
+     * @param id      CanId of the PwrMode
+     */
+    explicit PwrMode(uint8_t mode, CanId id);
+
+    /**
+     * @return the custom_interfaces ROS representation of the PwrMode object
+     */
+    //msg::HelperPwrMode toRosMsg() const;
+
+    /**
+     * @return the Linux CanFrame representation of the PwrMode object
+     */
+    CanFrame toLinuxCan() const override;
+
+    /**
+     * @return A string that can be printed or logged to debug a PwrMode object
+     */
+    std::string debugStr() const override;
+
+private:
+    /**
+     * @brief Private helper constructor for PwrMode objects
+     *
+     * @param id CanId of the PwrMode
+     */
+    explicit PwrMode(CanId id);
+
+    /**
+     * @brief Check if the assigned fields after constructing a PwrMode object are within bounds.
+     * @throws std::out_of_range if any assigned fields are outside of expected bounds
+     */
+    void checkBounds() const;
+
+    uint8_t mode_;
+};
+
+/**
+ * @brief A DesiredHeading class derived from the BaseFrame. Represents a desired heading for the rudder.
+ *
+ */
+class DesiredHeading final : public BaseFrame
+{
+public:
+    static constexpr std::array<CanId, 1> DESIRED_HEADING_IDS = {CanId::MAIN_HEADING};
+    static constexpr uint8_t              CAN_BYTE_DLEN_      = 4;
+    static constexpr uint8_t              BYTE_OFF_HEADING    = 0;
+
+    /**
+     * @brief Explicitly deleted no-argument constructor
+     *
+     */
+    DesiredHeading() = delete;
+
+    /**
+     * @brief Construct a Desiredheading object from a Linux CanFrame representation
+     *
+     * @param cf Linux CanFrame
+     */
+    explicit DesiredHeading(const CanFrame & cf);
+
+    /**
+     * @brief Construct a DesiredHeading object from a custom_interfaces ROS msg representation
+     *
+     * @param ros_desired_heading custom_interfaces representation of a DesiredHeading
+     * @param id      CanId of the DesiredHeading
+     */
+    explicit DesiredHeading(msg::DesiredHeading ros_desired_heading, CanId id);
+
+    /**
+     * @return the custom_interfaces ROS representation of the DesiredHeading object
+     */
+    msg::DesiredHeading toRosMsg() const;
+
+    /**
+     * @return the Linux CanFrame representation of the DesiredHeading object
+     */
+    CanFrame toLinuxCan() const override;
+
+    /**
+     * @return A string that can be printed or logged to debug a DesiredHeading object
+     */
+    std::string debugStr() const override;
+
+private:
+    /**
+     * @brief Private helper constructor for DesiredHeading objects
+     *
+     * @param id CanId of the DesiredHeading
+     */
+    explicit DesiredHeading(CanId id);
+
+    /**
+     * @brief Check if the assigned fields after constructing a DesiredHeading object are within bounds.
+     * @throws std::out_of_range if any assigned fields are outside of expected bounds
+     */
+    void checkBounds() const;
+
+    float heading_;  // Angle specified by the command
+};
+
+/**
+ * @brief A Rudder Data class derived from the BaseFrame. Represents data of rudder's position.
+ *
+ */
+class RudderData final : public BaseFrame
+{
+public:
+    static constexpr std::array<CanId, 1> RUDDER_DATA_IDS  = {CanId::RUDDER_DATA_FRAME};
+    static constexpr uint8_t              CAN_BYTE_DLEN_   = 4;
+    static constexpr uint8_t              BYTE_OFF_HEADING = 0;
+
+    /**
+     * @brief Explicitly deleted no-argument constructor
+     *
+     */
+    RudderData() = delete;
+
+    /**
+     * @brief Construct a RudderData object from a Linux CanFrame representation
+     *
+     * @param cf Linux CanFrame
+     */
+    explicit RudderData(const CanFrame & cf);
+
+    /**
+     * @brief Construct a HelperHeading object from a custom_interfaces ROS msg representation
+     *
+     * @param ros_rudder_heading custom_interfaces representation of a HelperHeading
+     * @param id      CanId of the HelperHeading
+     */
+    explicit RudderData(msg::HelperHeading ros_rudder_data, CanId id);
+
+    /**
+     * @return the custom_interfaces ROS representation of the DesiredHeading object
+     */
+    msg::HelperHeading toRosMsg() const;
+
+    /**
+     * @return the Linux CanFrame representation of the RudderData object
+     */
+    CanFrame toLinuxCan() const override;
+
+    /**
+     * @return A string that can be printed or logged to debug a RudderData object
+     */
+    std::string debugStr() const override;
+
+private:
+    /**
+     * @brief Private helper constructor for DesiredHeading objects
+     *
+     * @param id CanId of the RudderData
+     */
+    explicit RudderData(CanId id);
+
+    /**
+     * @brief Check if the assigned fields after constructing a DesiredHeading object are within bounds.
+     * @throws std::out_of_range if any assigned fields are outside of expected bounds
+     */
+    void checkBounds() const;
+
+    float heading_;
 };
 
 }  // namespace CAN_FP
