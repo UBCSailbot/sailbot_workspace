@@ -8,17 +8,17 @@ from rclpy.node import Node
 import boat_simulator.common.constants as Constants
 
 
-
 class MockDataNode(Node):
-    """the purpose of this node is to publish to all topics that there is subscribers in physics engine node so send goal code can work.
-    
+    """the purpose of this node is to publish to all topics that there is subscribers in physics.
+    engine node so send goal code can work.
     based on following:
     https://docs.ros.org/en/humble/Tutorials/Beginner-Client-Libraries/Writing-A-Simple-Py-Publisher-And-Subscriber.html
 
      Publishers:
-        desired_heading_pub (Publisher): Publishes GPS data in a `GPS` message.
-        wind_sensors_pub (Publisher): Publishes mock desired heading data in a `DesiredHeading` message.
-        sail_trim_tab_angle_pub (Publisher): Publishes mock sail trim tab angle data in a `SailCmd` message
+        desired_heading_pub (Publisher): Publishes mock desired heading data
+        in `DesiredHeading` message.
+        sail_trim_tab_angle_pub (Publisher): Publishes mock sail trim tab data
+        in `SailCmd` message
     """
     def __init__(self):
         super().__init__("mock_data")
@@ -71,7 +71,10 @@ class MockDataNode(Node):
 
     def publish_mock_desired_heading(self):
         """Publishes mock wind sensor data."""
-        heading = random.uniform(self.mock_desired_heading_lower_bound, self.mock_desired_heading_upper_bound)
+        heading = random.uniform(
+            self.mock_desired_heading_lower_bound,
+            self.mock_desired_heading_upper_bound
+            )
 
         helper_heading = HelperHeading()
         helper_heading.heading = heading
@@ -87,7 +90,10 @@ class MockDataNode(Node):
 
     def publish_mock_sail_trim_tab_angle(self):
         """Publishes mock wind sensor data."""
-        trim_tab_angle_degrees = random.uniform(self.mock_sail_trim_tab_lower_bound, self.mock_sail_trim_tab_upper_bound)
+        trim_tab_angle_degrees = random.uniform(
+            self.mock_sail_trim_tab_lower_bound,
+            self.mock_sail_trim_tab_upper_bound
+            )
 
         msg = SailCmd()
         msg.trim_tab_angle_degrees = trim_tab_angle_degrees
