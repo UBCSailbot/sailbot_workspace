@@ -7,15 +7,19 @@ from rclpy.node import Node
 
 import boat_simulator.common.constants as Constants
 
-# based on following:
-# https://docs.ros.org
-# /en/humble/Tutorials/Beginner-Client-Libraries/Writing-A-Simple-Py-Publisher-And-Subscriber.html
-# the purpose of this node is to publish to all topics that there is
-# subscribers in physics engine node so send goal code can work.
 
 
 class MockDataNode(Node):
+    """the purpose of this node is to publish to all topics that there is subscribers in physics engine node so send goal code can work.
+    
+    based on following:
+    https://docs.ros.org/en/humble/Tutorials/Beginner-Client-Libraries/Writing-A-Simple-Py-Publisher-And-Subscriber.html
 
+     Publishers:
+        desired_heading_pub (Publisher): Publishes GPS data in a `GPS` message.
+        wind_sensors_pub (Publisher): Publishes mock desired heading data in a `DesiredHeading` message.
+        sail_trim_tab_angle_pub (Publisher): Publishes mock sail trim tab angle data in a `SailCmd` message
+    """
     def __init__(self):
         super().__init__("mock_data")
         self.__declare_ros_parameters()
@@ -47,6 +51,10 @@ class MockDataNode(Node):
                 ("mock_sail_trim_tab", rclpy.Parameter.Type.BOOL),
                 ("mock_desired_heading", rclpy.Parameter.Type.BOOL),
                 ("qos_depth", rclpy.Parameter.Type.INTEGER),
+                ("mock_desired_heading_lower_bound", rclpy.Parameter.Type.DOUBLE),
+                ("mock_desired_heading_upper_bound", rclpy.Parameter.Type.DOUBLE),
+                ("mock_sail_trim_tab_lower_bound", rclpy.Parameter.Type.DOUBLE),
+                ("mock_sail_trim_tab_upper_bound", rclpy.Parameter.Type.DOUBLE)
             ],
         )
 
@@ -63,7 +71,7 @@ class MockDataNode(Node):
 
     def publish_mock_desired_heading(self):
         """Publishes mock wind sensor data."""
-        heading = random.uniform(-179.99, 180.0)
+        heading = random.uniform(self.mock_desired_heading_lower_bound, self.mock_desired_heading_upper_bound)
 
         helper_heading = HelperHeading()
         helper_heading.heading = heading
@@ -73,21 +81,21 @@ class MockDataNode(Node):
 
         self.desired_heading_pub.publish(msg)
         self.get_logger().info(
-            f"Publishing to {self.desired_heading_pub.topic} "
-            + f"a mock desired heading of {heading} degrees"
+            f'Publishing to {self.desired_heading_pub.topic} '
+            f'a mock desired heading of {heading} degrees'
         )
 
     def publish_mock_sail_trim_tab_angle(self):
         """Publishes mock wind sensor data."""
-        trim_tab_angle_degrees = random.uniform(-40, 40)
+        trim_tab_angle_degrees = random.uniform(self.mock_sail_trim_tab_lower_bound, self.mock_sail_trim_tab_upper_bound)
 
         msg = SailCmd()
         msg.trim_tab_angle_degrees = trim_tab_angle_degrees
 
         self.sail_trim_tab_angle_pub.publish(msg)
         self.get_logger().info(
-            f"Publishing to {self.sail_trim_tab_angle_pub.topic} "
-            + f"a mock trim tab angle of {trim_tab_angle_degrees} degrees"
+            f'Publishing to {self.sail_trim_tab_angle_pub.topic} '
+            f'a mock trim tab angle of {trim_tab_angle_degrees} degrees'
         )
 
     @property

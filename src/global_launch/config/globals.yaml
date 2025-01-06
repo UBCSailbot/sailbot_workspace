@@ -76,10 +76,13 @@ data_collection_node:
       bag: false
       json: true
       write_period_sec: 0.5
-
 mock_data_node:
    ros__parameters:
       qos_depth: 10
       mock_desired_heading: True
+      mock_desired_heading_lower_bound: -179.99
+      mock_desired_heading_upper_bound: 180.00
       mock_sail_trim_tab: True
+      mock_sail_trim_tab_lower_bound: -40.0
+      mock_sail_trim_tab_desired_heading_upper_bound: 40
       pub_period_sec: 5.0
