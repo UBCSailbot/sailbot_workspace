@@ -20,7 +20,7 @@
       
       
       <link rel="icon" href="../../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.46">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.49">
     
     
       
@@ -2713,23 +2713,47 @@ corresponding correct type as the second string.</li>
 <li><em>Datatype</em>: <code>int</code></li>
 <li><em>Range</em>: <code>[1, MAX_INT)</code></li>
 </ul>
-<p><strong><code>pub_period_sec</code></strong></p>
-<ul>
-<li><em>Description</em>: The period at which the publishers publish.</li>
-<li><em>Datatype</em>: <code>double</code></li>
-<li><em>Range</em>: <code>(0.0, MAX_DOUBLE)</code></li>
-</ul>
 <p><strong><code>mock_desired_heading</code></strong></p>
 <ul>
 <li><em>Description</em>: Set to True if mock data for desired heading should be generated. False otherwise.</li>
 <li><em>Datatype</em>: <code>bool</code></li>
 <li><em>Range</em>: <code>(True, False)</code></li>
 </ul>
+<p><strong><code>mock_desired_heading_lower_bound</code></strong></p>
+<ul>
+<li><em>Description</em>: Gives a lower bound for randomizing desired heading values. This value should be less than <code>mock_desired_heading_upper_bound</code>.</li>
+<li><em>Datatype</em>: <code>double</code></li>
+<li><em>Range</em>: <code>(-MAX_DOUBLE, MAX_DOUBLE)</code></li>
+</ul>
+<p><strong><code>mock_desired_heading_upper_bound</code></strong></p>
+<ul>
+<li><em>Description</em>: Gives a upper bound for randomizing desired heading values. This value should be greater than <code>mock_desired_heading_upper_bound</code>.</li>
+<li><em>Datatype</em>: <code>double</code></li>
+<li><em>Range</em>: <code>(-MAX_DOUBLE, MAX_DOUBLE)</code></li>
+</ul>
 <p><strong><code>mock_sail_trim_tab</code></strong></p>
 <ul>
 <li><em>Description</em>: Set to True if mock data for sail trim tab should be generated. False otherwise.</li>
 <li><em>Datatype</em>: <code>bool</code></li>
 <li><em>Range</em>: <code>(True, False)</code></li>
+</ul>
+<p><strong><code>mock_sail_trim_tab_lower_bound</code></strong></p>
+<ul>
+<li><em>Description</em>: Gives a lower bound for randomizing sail trim tab values. This value should be less than <code>mock_sail_trim_tab_upper_bound</code>.</li>
+<li><em>Datatype</em>: <code>double</code></li>
+<li><em>Range</em>: <code>(-MAX_DOUBLE, MAX_DOUBLE)</code></li>
+</ul>
+<p><strong><code>mock_sail_trim_tab_upper_bound</code></strong></p>
+<ul>
+<li><em>Description</em>: Gives a upper bound for randomizing sail trim tab values. This value should be greater than <code>mock_sail_trim_tab_lower_bound</code>.</li>
+<li><em>Datatype</em>: <code>double</code></li>
+<li><em>Range</em>: <code>(-MAX_DOUBLE, MAX_DOUBLE)</code></li>
+</ul>
+<p><strong><code>pub_period_sec</code></strong></p>
+<ul>
+<li><em>Description</em>: The period at which the publishers publish.</li>
+<li><em>Datatype</em>: <code>double</code></li>
+<li><em>Range</em>: <code>(0.0, MAX_DOUBLE)</code></li>
 </ul>
 
 
@@ -2898,7 +2922,7 @@ corresponding correct type as the second string.</li>
     <script id="__config" type="application/json">{"base": "../../../..", "features": ["content.action.edit", "content.action.view", "content.code.annotate", "content.code.copy", "content.tabs.link", "navigation.expand", "navigation.footer", "navigation.instant", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../../../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../../../../assets/javascripts/bundle.83f73b43.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.88dd0f4e.min.js"></script>
       
         <script src="../../../../javascripts/mathjax.js"></script>
       
