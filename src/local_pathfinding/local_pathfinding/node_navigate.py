@@ -105,7 +105,7 @@ class Sailbot(Node):
         self.gps = None
         self.global_path = None
         self.filtered_wind_sensor = None
-        
+
         # attributes
         self.local_path = LocalPath(parent_logger=self.get_logger())
         self.planner = self.get_parameter("path_planner").get_parameter_value().string_value
@@ -150,8 +150,11 @@ class Sailbot(Node):
 
     def lpath_data_callback(self):
         """Get and publish the local path."""
+        if self.local_path.waypoints is None:
+            current_local_path = ci.Path(waypoints=list())
+        else:
+            current_local_path = ci.Path(waypoints=self.local_path.waypoints)
 
-        current_local_path = ci.Path(waypoints=self.local_path.waypoints)
 
         msg = ci.LPathData(local_path=current_local_path)
 
