@@ -70,7 +70,7 @@ class MockDataNode(Node):
             self.publish_mock_sail_trim_tab_angle()
 
     def publish_mock_desired_heading(self):
-        """Publishes mock wind sensor data."""
+        """Publishes mock  data."""
         heading = random.uniform(
             self.mock_desired_heading_lower_bound,
             self.mock_desired_heading_upper_bound

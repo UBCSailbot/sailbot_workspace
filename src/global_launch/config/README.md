@@ -250,7 +250,7 @@ specified within an array: one for the `x` component, and one for the `y` compon
 `wind_sensor.generator_type` is `gaussian`.
 - _Datatype_: `double` array, length 2
 - _Range_: `(0.0, MAX_DOUBLE)`
-- If a standard deviation of zero is desired, then consider using the constant generator instead.
+    - If a standard deviation of zero is desired, then consider using the constant generator instead.
 
 **`wind_sensor.generator_type`**
 
@@ -338,7 +338,7 @@ corresponding correct type as the second string.
 - _Description_: Set to True if mock data for desired heading should be generated. False otherwise.
 - _Datatype_: `bool`
 - _Range_: `(True, False)`
-  
+
 **`mock_desired_heading_lower_bound`**
 
 - _Description_: Gives a lower bound for randomizing desired heading values. This value should be less than `mock_desired_heading_upper_bound`.
@@ -368,7 +368,7 @@ corresponding correct type as the second string.
 - _Description_: Gives a upper bound for randomizing sail trim tab values. This value should be greater than `mock_sail_trim_tab_lower_bound`.
 - _Datatype_: `double`
 - _Range_: `(-MAX_DOUBLE, MAX_DOUBLE)`
-  
+
 **`pub_period_sec`**
 
 - _Description_: The period at which the publishers publish.
