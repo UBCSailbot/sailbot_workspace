@@ -7,19 +7,22 @@
 #include <mongocxx/instance.hpp>
 #include <mongocxx/pool.hpp>
 
+#include "global_path.pb.h"
 #include "sensors.pb.h"
 #include "waypoint.pb.h"
 
 // >>>>IMPORTANT<<<<<
 // BSON document formats from: https://ubcsailbot.atlassian.net/wiki/spaces/prjt22/pages/1907589126/Database+Schemas:
 
-const std::string COLLECTION_AIS_SHIPS    = "ais_ships";
-const std::string COLLECTION_BATTERIES    = "batteries";
-const std::string COLLECTION_DATA_SENSORS = "data_sensors";
-const std::string COLLECTION_GPS          = "gps";
-const std::string COLLECTION_WIND_SENSORS = "wind_sensors";
-const std::string COLLECTION_LOCAL_PATH   = "local_path";
-const std::string MONGODB_CONN_STR        = "mongodb://localhost:27017";
+const std::string COLLECTION_AIS_SHIPS        = "ais_ships";
+const std::string COLLECTION_BATTERIES        = "batteries";
+const std::string COLLECTION_DATA_SENSORS     = "data_sensors";
+const std::string COLLECTION_GPS              = "gps";
+const std::string COLLECTION_WIND_SENSORS     = "wind_sensors";
+const std::string COLLECTION_LOCAL_PATH       = "local_path";
+const std::string COLLECTION_GLOBAL_PATH      = "global_path";
+const std::string COLLECTION_IRIDIUM_RESPONSE = "iridium_response";
+const std::string MONGODB_CONN_STR            = "mongodb://localhost:27017";
 
 template <typename T>
 using ProtoList = google::protobuf::RepeatedPtrField<T>;
@@ -46,14 +49,6 @@ public:
          * @brief overload stream operator
          */
         friend std::ostream & operator<<(std::ostream & os, const RcvdMsgInfo & info);
-
-        /**
-         * @brief Get a properly formatted timestamp string
-         *
-         * @param tm standard C/C++ time structure
-         * @return tm converted to a timestamp string
-         */
-        static std::string mkTimestamp(const std::tm & tm);
     };
 
     /**
@@ -80,6 +75,14 @@ public:
     bool testConnection();
 
     /**
+         * @brief Get a properly formatted timestamp string
+         *
+         * @param tm standard C/C++ time structure
+         * @return tm converted to a timestamp string
+         */
+    static std::string mkTimestamp(const std::tm & tm);
+
+    /**
      * @brief Write new sensor data to the database
      *
      * @param sensors_pb Protobuf Sensors object
@@ -89,6 +92,61 @@ public:
      * @return false on failure
      */
     bool storeNewSensors(const Polaris::Sensors & sensors_pb, RcvdMsgInfo new_info);
+
+    /**
+     * @brief Write new sensor data to the database
+     *
+     * @param global_pb Protobuf GlobalPath object
+     * @param timestamp Timestamp for data
+     *
+     * @return true  if successful
+     * @return false on failure
+     */
+    bool storeNewGlobalPath(const Polaris::GlobalPath & global_pb, const std::string & timestamp);
+
+    /**
+     * @brief Write global path data to the database
+     *
+     * @param global_path_pb Protobuf list of global path objects
+     * @param timestamp      transmission time <year - 2000>-<month>-<day> <hour>:<minute>:<second>
+     * @param client         mongocxx::client instance for the current thread
+
+     * @return true  if successful
+     * @return false on failure
+     */
+    bool storeNewGlobalPath(
+      const Polaris::GlobalPath & global_path_pb, const std::string & timestamp, mongocxx::client & client);
+
+    /**
+     * @brief Write iridium response data to the database
+     *
+     * @param response       OK or FAILED
+     * @param error          MO message error code
+     * @param message        message given by rockblock server
+     * @param timestamp      transmission time <year - 2000>-<month>-<day> <hour>:<minute>:<second>
+
+     * @return true  if successful
+     * @return false on failure
+     */
+    bool storeIridiumResponse(
+      const std::string & response, const std::string & error, const std::string & message,
+      const std::string & timestamp);
+
+    /**
+     * @brief Write iridum response data to the database
+     *
+     * @param response       OK or FAILED
+     * @param error          MO message error code
+     * @param message        message given by rockblock server
+     * @param timestamp      transmission time <year - 2000>-<month>-<day> <hour>:<minute>:<second>
+     * @param client         mongocxx::client instance for the current thread
+     *
+     * @return true  if successful
+     * @return false on failure
+     */
+    bool storeIridiumResponse(
+      const std::string & response, const std::string & error, const std::string & message,
+      const std::string & timestamp, mongocxx::client & client);
 
 protected:
     const std::string               db_name_;  // Name of the database
