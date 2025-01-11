@@ -188,8 +188,8 @@ class LocalPath:
             latitude=gps.lat_lon.latitude, longitude=gps.lat_lon.longitude
         )
 
-        if len(self.waypoints) < 2:
-            single_waypoint = self.waypoints[0]
+        if len(self.waypoints) < 2:  # type: ignore
+            single_waypoint = self.waypoints[0]  # type: ignore
             projected_point = cs.latlon_to_xy(
                 reference_latlon,
                 HelperLatLon(latitude=single_waypoint[0], longitude=single_waypoint[1]),
@@ -198,7 +198,7 @@ class LocalPath:
         else:
             projected_waypoints = [
                 cs.latlon_to_xy(reference_latlon, HelperLatLon(latitude=lat, longitude=lon))
-                for lat, lon in self.waypoints
+                for lat, lon in self.waypoints  # type: ignore
             ]
             old_path_geom = LineString(projected_waypoints)
 
