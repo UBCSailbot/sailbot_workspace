@@ -284,7 +284,6 @@ TEST_F(TestLocalTransceiver, parseReceiveMessageBlackbox)
     Polaris::Waypoint * waypoint_a = sample_data.add_waypoints();
     waypoint_a->set_latitude(holder);
     waypoint_a->set_longitude(holder);
-
     Polaris::Waypoint * waypoint_b = sample_data.add_waypoints();
     waypoint_b->set_latitude(holder);
     waypoint_b->set_longitude(holder);
@@ -297,10 +296,7 @@ TEST_F(TestLocalTransceiver, parseReceiveMessageBlackbox)
     outfile.close();
 
     std::string holder2 = "curl -X POST -F \"data=@/tmp/serialized_data.bin\" http://localhost:8080";
-
     std::system(holder2.c_str());  //NOLINT
-
-    system(holder2.c_str());  //NOLINT
 
     custom_interfaces::msg::Path received_data = lcl_trns_->receive();
 
@@ -312,7 +308,10 @@ TEST_F(TestLocalTransceiver, parseReceiveMessageBlackbox)
     }
 
     if (global_path.waypoints_size() > 0) {
-        std::cout << "Latitude of the first waypoint: " << global_path.waypoints(0).latitude() << std::endl;
+        ASSERT_EQ(global_path.waypoints_size(), sample_data.waypoints_size())
+          << "Mismatch in number of waypoints received.";
+        ASSERT_EQ(global_path.waypoints(0).latitude(), holder);
+        ASSERT_EQ(global_path.waypoints(0).longitude(), holder);
     } else {
         std::cout << "No waypoints received." << std::endl;
     }

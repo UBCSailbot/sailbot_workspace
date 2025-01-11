@@ -260,7 +260,6 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
         std::string              opt_rsp_val = opt_rsp.value();
         std::vector<std::string> sbd_status_vec;
         boost::algorithm::split(sbd_status_vec, opt_rsp_val, boost::is_any_of(AT::DELIMITER));
-        std::stringstream test;
 
         std::string sbdix_value;
         for (const auto & element : sbd_status_vec) {
