@@ -20,6 +20,7 @@ class MockDataNode(Node):
         sail_trim_tab_angle_pub (Publisher): Publishes mock sail trim tab data
         in `SailCmd` message
     """
+
     def __init__(self):
         super().__init__("mock_data")
         self.__declare_ros_parameters()
@@ -54,7 +55,7 @@ class MockDataNode(Node):
                 ("mock_desired_heading_lower_bound", rclpy.Parameter.Type.DOUBLE),
                 ("mock_desired_heading_upper_bound", rclpy.Parameter.Type.DOUBLE),
                 ("mock_sail_trim_tab_lower_bound", rclpy.Parameter.Type.DOUBLE),
-                ("mock_sail_trim_tab_upper_bound", rclpy.Parameter.Type.DOUBLE)
+                ("mock_sail_trim_tab_upper_bound", rclpy.Parameter.Type.DOUBLE),
             ],
         )
 
@@ -72,9 +73,8 @@ class MockDataNode(Node):
     def publish_mock_desired_heading(self):
         """Publishes mock desired heading data."""
         heading = random.uniform(
-            self.mock_desired_heading_lower_bound,
-            self.mock_desired_heading_upper_bound
-            )
+            self.mock_desired_heading_lower_bound, self.mock_desired_heading_upper_bound
+        )
 
         helper_heading = HelperHeading()
         helper_heading.heading = heading
@@ -84,24 +84,23 @@ class MockDataNode(Node):
 
         self.desired_heading_pub.publish(msg)
         self.get_logger().info(
-            f'Publishing to {self.desired_heading_pub.topic} '
-            f'a mock desired heading of {heading} degrees'
+            f"Publishing to {self.desired_heading_pub.topic} "
+            f"a mock desired heading of {heading} degrees"
         )
 
     def publish_mock_sail_trim_tab_angle(self):
         """Publishes mock sail trim tab angle data."""
         trim_tab_angle_degrees = random.uniform(
-            self.mock_sail_trim_tab_lower_bound,
-            self.mock_sail_trim_tab_upper_bound
-            )
+            self.mock_sail_trim_tab_lower_bound, self.mock_sail_trim_tab_upper_bound
+        )
 
         msg = SailCmd()
         msg.trim_tab_angle_degrees = trim_tab_angle_degrees
 
         self.sail_trim_tab_angle_pub.publish(msg)
         self.get_logger().info(
-            f'Publishing to {self.sail_trim_tab_angle_pub.topic} '
-            f'a mock trim tab angle of {trim_tab_angle_degrees} degrees'
+            f"Publishing to {self.sail_trim_tab_angle_pub.topic} "
+            f"a mock trim tab angle of {trim_tab_angle_degrees} degrees"
         )
 
     @property
@@ -119,6 +118,36 @@ class MockDataNode(Node):
     @property
     def qos_depth(self) -> int:
         return self.get_parameter("qos_depth").get_parameter_value().integer_value
+
+    @property
+    def mock_desired_heading_lower_bound(self) -> bool:
+        return (
+            self.get_parameter("mock_desired_heading_lower_bound")
+            .get_parameter_value()
+            .double_value
+        )
+
+    @property
+    def mock_desired_heading_upper_bound(self) -> bool:
+        return (
+            self.get_parameter("mock_desired_heading_upper_bound")
+            .get_parameter_value()
+            .double_value
+        )
+
+    @property
+    def mock_sail_trim_tab_lower_bound(self) -> bool:
+        return (
+            self.get_parameter("mock_sail_trim_tab_lower_bound").get_parameter_value().double_value
+        )
+
+    @property
+    def mock_sail_trim_tab_upper_bound(self) -> bool:
+        return (
+            self.get_parameter("mock_sail_trim_tab_upper_bound")
+            .get_parameter_value()
+            .double_value
+        )
 
 
 def main(args=None):
