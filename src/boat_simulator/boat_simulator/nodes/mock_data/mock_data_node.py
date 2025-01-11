@@ -104,23 +104,23 @@ class MockDataNode(Node):
         )
 
     @property
-    def pub_period(self) -> float:
+    def pub_period(self):
         return self.get_parameter("pub_period_sec").get_parameter_value().double_value
 
     @property
-    def mock_desired_heading(self) -> bool:
+    def mock_desired_heading(self):
         return self.get_parameter("mock_desired_heading").get_parameter_value().bool_value
 
     @property
-    def mock_sail_trim_tab(self) -> bool:
+    def mock_sail_trim_tab(self):
         return self.get_parameter("mock_sail_trim_tab").get_parameter_value().bool_value
 
     @property
-    def qos_depth(self) -> int:
+    def qos_depth(self):
         return self.get_parameter("qos_depth").get_parameter_value().integer_value
 
     @property
-    def mock_desired_heading_lower_bound(self) -> bool:
+    def mock_desired_heading_lower_bound(self):
         return (
             self.get_parameter("mock_desired_heading_lower_bound")
             .get_parameter_value()
@@ -128,7 +128,7 @@ class MockDataNode(Node):
         )
 
     @property
-    def mock_desired_heading_upper_bound(self) -> bool:
+    def mock_desired_heading_upper_bound(self):
         return (
             self.get_parameter("mock_desired_heading_upper_bound")
             .get_parameter_value()
@@ -136,17 +136,15 @@ class MockDataNode(Node):
         )
 
     @property
-    def mock_sail_trim_tab_lower_bound(self) -> bool:
+    def mock_sail_trim_tab_lower_bound(self):
         return (
             self.get_parameter("mock_sail_trim_tab_lower_bound").get_parameter_value().double_value
         )
 
     @property
-    def mock_sail_trim_tab_upper_bound(self) -> bool:
+    def mock_sail_trim_tab_upper_bound(self):
         return (
-            self.get_parameter("mock_sail_trim_tab_upper_bound")
-            .get_parameter_value()
-            .double_value
+            self.get_parameter("mock_sail_trim_tab_upper_bound").get_parameter_value().double_value
         )
 
 
