@@ -107,8 +107,8 @@ class BoatState:
         assert np.any(rel_wind_vel), "rel_wind_vel cannot be 0 vector"
         assert np.any(rel_water_vel), "rel_water_vel cannot be 0 vector"
 
-        apparent_wind_vel = np.subtract(rel_wind_vel, self.relative_velocity[0:2])
-        apparent_water_vel = np.subtract(rel_water_vel, self.relative_velocity[0:2])
+        apparent_wind_vel = np.subtract(rel_wind_vel, self.relative_velocity)
+        apparent_water_vel = np.subtract(rel_water_vel, self.relative_velocity)
 
         # angle references all in radians
         wind_angle = np.arctan2(rel_wind_vel[1], rel_wind_vel[0])
@@ -117,13 +117,13 @@ class BoatState:
         rudder_angle_rad = np.radians(rudder_angle_deg)
 
         # Calculate Forces on sail and rudder
-        sail_force = self.__sail_force_computation.compute(apparent_wind_vel[0:2], trim_tab_angle)
+        sail_force = self.__sail_force_computation.compute(apparent_wind_vel, trim_tab_angle)
         rudder_force = self.__rudder_force_computation.compute(
-            apparent_water_vel[0:2], rudder_angle_deg
+            apparent_water_vel, rudder_angle_deg
         )
 
         # Calculate Hull Drag Force
-        hull_drag_force = self.relative_velocity[0:2] * BOAT_PROPERTIES.hull_drag_factor
+        hull_drag_force = self.relative_velocity * BOAT_PROPERTIES.hull_drag_factor
 
         # Total Force Calculation
         total_drag_force = sail_force[1] + rudder_force[1] + hull_drag_force
