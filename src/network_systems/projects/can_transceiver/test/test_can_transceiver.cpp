@@ -34,6 +34,8 @@ protected:
 /**
  * @brief Test ROS<->CAN Battery translations work as expected for valid input values.
  *        Treat both batteries as one combined battery.
+ * @brief Test ROS<->CAN Battery translations work as expected for valid input values.
+ *        Treat both batteries as one combined battery.
  */
 TEST_F(TestCanFrameParser, BatteryTestValid)
 {
@@ -540,6 +542,55 @@ TEST_F(TestCanFrameParser, TestGPSInvalid)
 }
 
 /**
+ * @brief Test NET<->CAN PwrMode translations work as expected for valid input values
+ *
+ */
+TEST_F(TestCanFrameParser, PwrModeTestValid)
+{
+    constexpr std::size_t NUM_MODES = CAN_FP::PwrMode::PWR_MODES.size();  //NOLINT(readability-magic-numbers)
+    constexpr std::array<uint8_t, NUM_MODES> expected_modes{
+      CAN_FP::PwrMode::POWER_MODE_LOW, CAN_FP::PwrMode::POWER_MODE_NORMAL};
+
+    for (size_t i = 0; i < NUM_MODES; i++) {
+        CAN_FP::CanId id            = CAN_FP::CanId::PWR_MODE;
+        uint8_t       expected_mode = expected_modes[i];
+
+        CAN_FP::PwrMode  pwr_mode_inst = CAN_FP::PwrMode(expected_mode, id);
+        CAN_FP::CanFrame cf            = pwr_mode_inst.toLinuxCan();
+
+        EXPECT_EQ(cf.can_id, static_cast<canid_t>(id));
+        EXPECT_EQ(cf.len, CAN_FP::PwrMode::CAN_BYTE_DLEN_);
+
+        uint8_t raw_mode;
+        std::memcpy(&raw_mode, cf.data + CAN_FP::PwrMode::BYTE_OFF_MODE, sizeof(int8_t));
+
+        EXPECT_EQ(raw_mode, expected_mode);
+    }
+}
+
+/**
+ * @brief Test the behavior of the WindSensor class when given invalid input values
+ *
+ */
+TEST_F(TestCanFrameParser, TestPwrModeInvalid)
+{
+    CAN_FP::CanId invalid_id = CAN_FP::CanId::RESERVED;
+
+    CAN_FP::CanFrame cf{.can_id = static_cast<canid_t>(invalid_id)};
+
+    EXPECT_THROW(CAN_FP::WindSensor tmp(cf), CAN_FP::CanIdMismatchException);
+
+    std::vector<int16_t> invalid_modes{CAN_FP::PwrMode::POWER_MODE_LOW - 1, CAN_FP::PwrMode::POWER_MODE_NORMAL + 1};
+
+    CAN_FP::CanId valid_id = CAN_FP::CanId::PWR_MODE;
+
+    // Set a valid speed for this portion
+    for (uint8_t invalid_mode : invalid_modes) {
+        EXPECT_THROW(CAN_FP::PwrMode tmp(invalid_mode, valid_id), std::out_of_range);
+    };
+}
+
+/**
  * @brief Test ROS<->CAN AISShips translations work as expected for valid input values
  *
  */
@@ -926,10 +977,10 @@ protected:
 };
 
 /**
- * @brief Test that callbacks can be properly registered and invoked on desired CanIds
+ * @brief Test that callback can be properly registered and invoked on BMS_DATA_FRAME CanId
  *
  */
-TEST_F(TestCanTransceiver, TestNewDataValid)
+TEST_F(TestCanTransceiver, TestNewBatteryValid)
 {
     volatile bool is_cb_called = false;
 
@@ -942,6 +993,180 @@ TEST_F(TestCanTransceiver, TestNewDataValid)
 
     // just need a valid and matching ID for this test
     CAN_FP::CanFrame dummy_frame{.can_id = static_cast<canid_t>(CAN_FP::CanId::BMS_DATA_FRAME)};
+
+    canbus_t_->send(dummy_frame);
+
+    std::this_thread::sleep_for(SLEEP_TIME);
+
+    EXPECT_TRUE(is_cb_called);
+}
+
+/**
+ * @brief Test that callback can be properly registered and invoked on MAIN_HEADING CanId
+ *
+ */
+TEST_F(TestCanTransceiver, TestNewHeadingValid)
+{
+    volatile bool is_cb_called = false;
+
+    std::function<void(CAN_FP::CanFrame)> test_cb = [&is_cb_called](CAN_FP::CanFrame /*unused*/) {
+        is_cb_called = true;
+    };
+    canbus_t_->registerCanCbs({{
+      std::make_pair(CAN_FP::CanId::MAIN_HEADING, test_cb),
+    }});
+
+    // just need a valid and matching ID for this test
+    CAN_FP::CanFrame dummy_frame{.can_id = static_cast<canid_t>(CAN_FP::CanId::MAIN_HEADING)};
+
+    canbus_t_->send(dummy_frame);
+
+    std::this_thread::sleep_for(SLEEP_TIME);
+
+    EXPECT_TRUE(is_cb_called);
+}
+
+/**
+ * @brief Test that callback can be properly registered and invoked on MAIN_TR_TAB CanId
+ *
+ */
+TEST_F(TestCanTransceiver, TestNewTrimTabValid)
+{
+    volatile bool is_cb_called = false;
+
+    std::function<void(CAN_FP::CanFrame)> test_cb = [&is_cb_called](CAN_FP::CanFrame /*unused*/) {
+        is_cb_called = true;
+    };
+    canbus_t_->registerCanCbs({{
+      std::make_pair(CAN_FP::CanId::MAIN_TR_TAB, test_cb),
+    }});
+
+    // just need a valid and matching ID for this test
+    CAN_FP::CanFrame dummy_frame{.can_id = static_cast<canid_t>(CAN_FP::CanId::MAIN_TR_TAB)};
+
+    canbus_t_->send(dummy_frame);
+
+    std::this_thread::sleep_for(SLEEP_TIME);
+
+    EXPECT_TRUE(is_cb_called);
+}
+
+/**
+ * @brief Test that callback can be properly registered and invoked on SAIL_AIS CanId
+ *
+ */
+TEST_F(TestCanTransceiver, TestNewAISValid)
+{
+    volatile bool is_cb_called = false;
+
+    std::function<void(CAN_FP::CanFrame)> test_cb = [&is_cb_called](CAN_FP::CanFrame /*unused*/) {
+        is_cb_called = true;
+    };
+    canbus_t_->registerCanCbs({{
+      std::make_pair(CAN_FP::CanId::SAIL_AIS, test_cb),
+    }});
+
+    // just need a valid and matching ID for this test
+    CAN_FP::CanFrame dummy_frame{.can_id = static_cast<canid_t>(CAN_FP::CanId::SAIL_AIS)};
+
+    canbus_t_->send(dummy_frame);
+
+    std::this_thread::sleep_for(SLEEP_TIME);
+
+    EXPECT_TRUE(is_cb_called);
+}
+
+/**
+ * @brief Test that callback can be properly registered and invoked on SAIL_WIND CanId
+ *
+ */
+TEST_F(TestCanTransceiver, TestNewSailWindValid)
+{
+    volatile bool is_cb_called = false;
+
+    std::function<void(CAN_FP::CanFrame)> test_cb = [&is_cb_called](CAN_FP::CanFrame /*unused*/) {
+        is_cb_called = true;
+    };
+    canbus_t_->registerCanCbs({{
+      std::make_pair(CAN_FP::CanId::SAIL_WIND, test_cb),
+    }});
+
+    // just need a valid and matching ID for this test
+    CAN_FP::CanFrame dummy_frame{.can_id = static_cast<canid_t>(CAN_FP::CanId::SAIL_WIND)};
+
+    canbus_t_->send(dummy_frame);
+
+    std::this_thread::sleep_for(SLEEP_TIME);
+
+    EXPECT_TRUE(is_cb_called);
+}
+
+/**
+ * @brief Test that callback can be properly registered and invoked on RUDDER_DATA_FRAME CanId
+ *
+ */
+TEST_F(TestCanTransceiver, TestNewRudderDataValid)
+{
+    volatile bool is_cb_called = false;
+
+    std::function<void(CAN_FP::CanFrame)> test_cb = [&is_cb_called](CAN_FP::CanFrame /*unused*/) {
+        is_cb_called = true;
+    };
+    canbus_t_->registerCanCbs({{
+      std::make_pair(CAN_FP::CanId::RUDDER_DATA_FRAME, test_cb),
+    }});
+
+    // just need a valid and matching ID for this test
+    CAN_FP::CanFrame dummy_frame{.can_id = static_cast<canid_t>(CAN_FP::CanId::RUDDER_DATA_FRAME)};
+
+    canbus_t_->send(dummy_frame);
+
+    std::this_thread::sleep_for(SLEEP_TIME);
+
+    EXPECT_TRUE(is_cb_called);
+}
+
+/**
+ * @brief Test that callback can be properly registered and invoked on PATH_GPS_DATA_FRAME CanId
+ *
+ */
+TEST_F(TestCanTransceiver, TestNewGPSValid)
+{
+    volatile bool is_cb_called = false;
+
+    std::function<void(CAN_FP::CanFrame)> test_cb = [&is_cb_called](CAN_FP::CanFrame /*unused*/) {
+        is_cb_called = true;
+    };
+    canbus_t_->registerCanCbs({{
+      std::make_pair(CAN_FP::CanId::PATH_GPS_DATA_FRAME, test_cb),
+    }});
+
+    // just need a valid and matching ID for this test
+    CAN_FP::CanFrame dummy_frame{.can_id = static_cast<canid_t>(CAN_FP::CanId::PATH_GPS_DATA_FRAME)};
+
+    canbus_t_->send(dummy_frame);
+
+    std::this_thread::sleep_for(SLEEP_TIME);
+
+    EXPECT_TRUE(is_cb_called);
+}
+
+/**
+ * @brief Test that callback can be properly registered and invoked on DATA_WIND CanId
+ *
+ */
+TEST_F(TestCanTransceiver, TestNewDataWindValid)
+{
+    volatile bool                         is_cb_called = false;
+    std::function<void(CAN_FP::CanFrame)> test_cb      = [&is_cb_called](CAN_FP::CanFrame /*unused*/) {
+        is_cb_called = true;
+    };
+    canbus_t_->registerCanCbs({{
+      std::make_pair(CAN_FP::CanId::DATA_WIND, test_cb),
+    }});
+
+    // just need a valid and matching ID for this test
+    CAN_FP::CanFrame dummy_frame{.can_id = static_cast<canid_t>(CAN_FP::CanId::DATA_WIND)};
 
     canbus_t_->send(dummy_frame);
 

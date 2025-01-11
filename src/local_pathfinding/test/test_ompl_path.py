@@ -1,6 +1,6 @@
+import pyompl
 import pytest
 from custom_interfaces.msg import GPS, AISShips, Path, WindSensor
-from ompl import base as ob
 from rclpy.impl.rcutils_logger import RcutilsLogger
 
 import local_pathfinding.coord_systems as cs
@@ -21,7 +21,14 @@ PATH = ompl_path.OMPLPath(
 
 
 def test_OMPLPathState():
-    state = ompl_path.OMPLPathState(local_path_state=None, logger=RcutilsLogger())
+    local_path_state = LocalPathState(
+        gps=GPS(),
+        ais_ships=AISShips(),
+        global_path=Path(),
+        filtered_wind_sensor=WindSensor(),
+        planner="rrtstar",
+    )
+    state = ompl_path.OMPLPathState(local_path_state, logger=RcutilsLogger())
     assert state.state_domain == (-1, 1), "incorrect value for attribute state_domain"
     assert state.state_range == (-1, 1), "incorrect value for attribute start_state"
     assert state.start_state == pytest.approx(
@@ -71,10 +78,10 @@ def test_OMPLPath_update_objectives():
     ],
 )
 def test_is_state_valid(x: float, y: float, is_valid: bool):
-    state = ob.State(PATH._simple_setup.getStateSpace())
-    state().setXY(x, y)
+    state = pyompl.ScopedState(PATH._simple_setup.getStateSpace())
+    state.setXY(x, y)
 
     if is_valid:
-        assert ompl_path.is_state_valid(state()), "state should be valid"
+        assert ompl_path.is_state_valid(state), "state should be valid"
     else:
-        assert not ompl_path.is_state_valid(state()), "state should not be valid"
+        assert not ompl_path.is_state_valid(state), "state should not be valid"

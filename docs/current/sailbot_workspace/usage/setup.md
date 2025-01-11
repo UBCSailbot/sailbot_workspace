@@ -21,7 +21,7 @@ allowing it to be installed on Windows and macOS in addition to Linux.
 
 [^1]: [Wikipedia Docker page](https://en.wikipedia.org/wiki/Docker_(software)){target=_blank}
 [^2]: [Get Docker](https://docs.docker.com/get-docker/){target=_blank}
-[^3]: [What is the difference between Docker Desktop for Linux and Docker Engine](https://docs.docker.com/desktop/faqs/linuxfaqs/#what-is-the-difference-between-docker-desktop-for-linux-and-docker-engine){target=_blank}
+[^3]: [What is the difference between Docker Desktop for Linux and Docker Engine](https://www.docker.com/blog/how-to-check-docker-version){target=_blank}
 
 === ":material-microsoft-windows: Windows"
 
