@@ -773,7 +773,11 @@ class IntegrationTestNode(Node):
                 return False
 
             data_dict = json.load(contents)
-            data = (data_dict["data"])[0]
+            try:
+                data = (data_dict["data"])[0]
+            except IndexError:
+                self._logger.error(f"No data found for {topic}")
+                return False
 
             data.pop(
                 "timestamp"

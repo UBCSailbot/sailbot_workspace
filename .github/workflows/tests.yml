@@ -52,3 +52,16 @@ jobs:
       uses: ./.github/actions/
       with:
         script: './scripts/clang-tidy'
+
+  integration-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+    - name: Checkout workspace
+      uses: actions/checkout@v4
+
+    - name: Run integration tests
+      uses: ./.github/actions/
+      with:
+        script: './scripts/run-integration-tests'
+        run-website: 'true'
