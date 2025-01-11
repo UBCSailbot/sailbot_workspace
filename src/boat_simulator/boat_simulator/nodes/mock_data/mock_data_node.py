@@ -9,7 +9,7 @@ import boat_simulator.common.constants as Constants
 
 
 class MockDataNode(Node):
-    """the purpose of this node is to publish to all topics that there is subscribers in physics.
+    """the purpose of this node is to publish to all topics that there is subscribers in physics
     engine node so send goal code can work.
     based on following:
     https://docs.ros.org/en/humble/Tutorials/Beginner-Client-Libraries/Writing-A-Simple-Py-Publisher-And-Subscriber.html
@@ -70,7 +70,7 @@ class MockDataNode(Node):
             self.publish_mock_sail_trim_tab_angle()
 
     def publish_mock_desired_heading(self):
-        """Publishes mock  data."""
+        """Publishes mock desired heading data."""
         heading = random.uniform(
             self.mock_desired_heading_lower_bound,
             self.mock_desired_heading_upper_bound
@@ -89,7 +89,7 @@ class MockDataNode(Node):
         )
 
     def publish_mock_sail_trim_tab_angle(self):
-        """Publishes mock wind sensor data."""
+        """Publishes mock sail trim tab angle data."""
         trim_tab_angle_degrees = random.uniform(
             self.mock_sail_trim_tab_lower_bound,
             self.mock_sail_trim_tab_upper_bound
@@ -124,12 +124,12 @@ class MockDataNode(Node):
 def main(args=None):
     rclpy.init(args=args)
 
-    if is_mock_data_enabled():
-        try:
+    try:
+        if is_mock_data_enabled():
             node = MockDataNode()
             rclpy.spin(node)
-        finally:
-            rclpy.shutdown()
+    finally:
+        rclpy.shutdown()
 
 
 def is_mock_data_enabled() -> bool:
