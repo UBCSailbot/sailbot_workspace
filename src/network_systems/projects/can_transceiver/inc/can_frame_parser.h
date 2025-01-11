@@ -135,6 +135,12 @@ protected:
      * @return A string that can be printed or logged for debugging
      */
     virtual std::string debugStr() const;
+
+    /**
+     * @brief A string representation of the dataframe
+     *
+     */
+    virtual std::string toString() const;
 };
 
 /**
@@ -185,6 +191,12 @@ public:
      * @return A string that can be printed or logged to debug an Battery object
      */
     std::string debugStr() const override;
+
+    /**
+     * @brief A string representation of the Battery object
+     *
+     */
+    std::string toString() const override;
 
 private:
     /**
@@ -252,6 +264,12 @@ public:
      */
     std::string debugStr() const override;
 
+    /**
+     * @brief A string representation of the MainTrimTab object
+     *
+     */
+    std::string toString() const override;
+
 private:
     /**
      * @brief Private helper constructor for MainTrimTab objects
@@ -316,6 +334,12 @@ public:
      * @return A string that can be printed or logged to debug a GPS object
      */
     std::string debugStr() const override;
+
+    /**
+     * @brief A string representation of the WindSensor object
+     *
+     */
+    std::string toString() const override;
 
     /**
      * @brief Factory method to convert the index of a wind sensor in the custom_interfaces ROS representation
@@ -397,6 +421,12 @@ public:
      */
     std::string debugStr() const override;
 
+    /**
+     * @brief A string representation of the GPS object
+     *
+     */
+    std::string toString() const override;
+
 private:
     /**
      * @brief Private helper constructor for GPS objects
@@ -475,6 +505,12 @@ public:
      * @return A string that can be printed or logged to debug a Battery object
      */
     std::string debugStr() const override;
+
+    /**
+     * @brief A string representation of the AISShips object
+     *
+     */
+    std::string toString() const override;
 
     /**
      * @brief Returns the number of ships
@@ -638,6 +674,12 @@ public:
      * @return A string that can be printed or logged to debug a DesiredHeading object
      */
     std::string debugStr() const override;
+
+    /**
+     * @brief A string representation of the DesiredHeading object
+     *
+     */
+    std::string toString() const override;
 
 private:
     /**
