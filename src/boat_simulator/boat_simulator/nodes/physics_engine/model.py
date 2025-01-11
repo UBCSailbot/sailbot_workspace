@@ -78,7 +78,7 @@ class BoatState:
         )
 
         rel_net_force = np.append(rel_net_force, 0)
-        
+
         return self.__kinematics_computation.step(rel_net_force, net_torque)
 
     def __compute_net_force_and_torque(
@@ -109,13 +109,6 @@ class BoatState:
 
         assert np.any(rel_wind_vel), "rel_wind_vel cannot be 0 vector"
         assert np.any(rel_water_vel), "rel_water_vel cannot be 0 vector"
-
-        # if rel_wind_vel.shape != (3,):
-        #     raise ValueError(f"Expected rel_wind_vel to be a 3-element array, but got {rel_wind_vel.shape}")
-        # if self.relative_velocity.shape != (3,):
-        #     raise ValueError(
-        #         f"Expected self.relative_velocity to be a 3-element array, but got {self.relative_velocity.shape}"
-        #     )
 
         apparent_wind_vel = np.subtract(rel_wind_vel, self.relative_velocity[0:2])
         apparent_water_vel = np.subtract(rel_water_vel, self.relative_velocity[0:2])
