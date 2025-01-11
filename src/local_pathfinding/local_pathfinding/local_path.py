@@ -3,11 +3,11 @@
 import logging
 from typing import List, Optional, Tuple
 
+from custom_interfaces.msg import GPS, AISShips, HelperLatLon, Path, WindSensor
 from rclpy.impl.rcutils_logger import RcutilsLogger
 from shapely.geometry import LineString, Point
 
 import local_pathfinding.coord_systems as cs
-from custom_interfaces.msg import GPS, AISShips, HelperLatLon, Path, WindSensor
 from local_pathfinding.obstacles import Boat
 from local_pathfinding.ompl_path import OMPLPath
 

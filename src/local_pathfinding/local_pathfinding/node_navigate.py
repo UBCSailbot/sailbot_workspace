@@ -155,7 +155,6 @@ class Sailbot(Node):
         else:
             current_local_path = ci.Path(waypoints=self.local_path.waypoints)
 
-
         msg = ci.LPathData(local_path=current_local_path)
 
         self.lpath_data_pub.publish(msg)
