@@ -76,6 +76,9 @@ class BoatState:
         rel_net_force, net_torque = self.__compute_net_force_and_torque(
             rel_wind_vel, rel_water_vel, rudder_angle_deg, trim_tab_angle
         )
+
+        rel_net_force = np.append(rel_net_force, 0)
+        
         return self.__kinematics_computation.step(rel_net_force, net_torque)
 
     def __compute_net_force_and_torque(
@@ -107,8 +110,15 @@ class BoatState:
         assert np.any(rel_wind_vel), "rel_wind_vel cannot be 0 vector"
         assert np.any(rel_water_vel), "rel_water_vel cannot be 0 vector"
 
-        apparent_wind_vel = np.subtract(rel_wind_vel, self.relative_velocity)
-        apparent_water_vel = np.subtract(rel_water_vel, self.relative_velocity)
+        # if rel_wind_vel.shape != (3,):
+        #     raise ValueError(f"Expected rel_wind_vel to be a 3-element array, but got {rel_wind_vel.shape}")
+        # if self.relative_velocity.shape != (3,):
+        #     raise ValueError(
+        #         f"Expected self.relative_velocity to be a 3-element array, but got {self.relative_velocity.shape}"
+        #     )
+
+        apparent_wind_vel = np.subtract(rel_wind_vel, self.relative_velocity[0:2])
+        apparent_water_vel = np.subtract(rel_water_vel, self.relative_velocity[0:2])
 
         # angle references all in radians
         wind_angle = np.arctan2(rel_wind_vel[1], rel_wind_vel[0])
@@ -123,7 +133,7 @@ class BoatState:
         )
 
         # Calculate Hull Drag Force
-        hull_drag_force = self.relative_velocity * BOAT_PROPERTIES.hull_drag_factor
+        hull_drag_force = self.relative_velocity[0:2] * BOAT_PROPERTIES.hull_drag_factor
 
         # Total Force Calculation
         total_drag_force = sail_force[1] + rudder_force[1] + hull_drag_force
@@ -164,7 +174,7 @@ class BoatState:
 
         total_torque = np.add(sail_torque, rudder_torque)  # Sum torques about z-axis
 
-        final_torque = np.array([0, 0, total_torque])  # generate 3-D array(only z component)
+        final_torque = np.array([0, 0, total_torque])  # generate 3-D array (only z component)
 
         return (total_force, final_torque)
 
