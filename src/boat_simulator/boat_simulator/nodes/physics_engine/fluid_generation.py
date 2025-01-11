@@ -14,7 +14,7 @@ class FluidGenerator:
     Attributes:
         `generator` (VectorGenerator): The vector generator used to generate 2D fluid velocities.
         `velocity` (NDArray): The most recently generated fluid velocity vector, expressed in
-            meters per second (m/s). It is expected to be a 2D vector.
+            meters per second (m/s). It is expected to be a 3D vector.
     """
 
     def __init__(self, generator: VectorGenerator):
