@@ -966,6 +966,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#mock-data-node" class="md-nav__link">
+    <span class="md-ellipsis">
+      Mock Data Node
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2336,6 +2345,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#mock-data-node" class="md-nav__link">
+    <span class="md-ellipsis">
+      Mock Data Node
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2687,6 +2705,55 @@ corresponding correct type as the second string.</li>
 <p><strong><code>write_period_sec</code></strong></p>
 <ul>
 <li><em>Description</em>: The interval (in seconds) for writing queued data to the JSON file.</li>
+<li><em>Datatype</em>: <code>double</code></li>
+<li><em>Range</em>: <code>(0.0, MAX_DOUBLE)</code></li>
+</ul>
+<h3 id="mock-data-node"><code>Mock Data Node</code><a class="headerlink" href="#mock-data-node" title="Permanent link">&para;</a></h3>
+<p><strong><code>qos_depth</code></strong></p>
+<ul>
+<li><em>Description</em>: The maximum number of subscription messages to queue for further processing.</li>
+<li><em>Datatype</em>: <code>int</code></li>
+<li><em>Range</em>: <code>[1, MAX_INT)</code></li>
+</ul>
+<p><strong><code>mock_desired_heading</code></strong></p>
+<ul>
+<li><em>Description</em>: Set to True if mock data for desired heading should be generated. False otherwise.</li>
+<li><em>Datatype</em>: <code>bool</code></li>
+<li><em>Range</em>: <code>(True, False)</code></li>
+</ul>
+<p><strong><code>mock_desired_heading_lower_bound</code></strong></p>
+<ul>
+<li><em>Description</em>: Gives a lower bound for randomizing desired heading values. This value should be less than <code>mock_desired_heading_upper_bound</code>.</li>
+<li><em>Datatype</em>: <code>double</code></li>
+<li><em>Range</em>: <code>(-MAX_DOUBLE, MAX_DOUBLE)</code></li>
+</ul>
+<p><strong><code>mock_desired_heading_upper_bound</code></strong></p>
+<ul>
+<li><em>Description</em>: Gives a upper bound for randomizing desired heading values. This value should be greater than <code>mock_desired_heading_upper_bound</code>.</li>
+<li><em>Datatype</em>: <code>double</code></li>
+<li><em>Range</em>: <code>(-MAX_DOUBLE, MAX_DOUBLE)</code></li>
+</ul>
+<p><strong><code>mock_sail_trim_tab</code></strong></p>
+<ul>
+<li><em>Description</em>: Set to True if mock data for sail trim tab should be generated. False otherwise.</li>
+<li><em>Datatype</em>: <code>bool</code></li>
+<li><em>Range</em>: <code>(True, False)</code></li>
+</ul>
+<p><strong><code>mock_sail_trim_tab_lower_bound</code></strong></p>
+<ul>
+<li><em>Description</em>: Gives a lower bound for randomizing sail trim tab values. This value should be less than <code>mock_sail_trim_tab_upper_bound</code>.</li>
+<li><em>Datatype</em>: <code>double</code></li>
+<li><em>Range</em>: <code>(-MAX_DOUBLE, MAX_DOUBLE)</code></li>
+</ul>
+<p><strong><code>mock_sail_trim_tab_upper_bound</code></strong></p>
+<ul>
+<li><em>Description</em>: Gives a upper bound for randomizing sail trim tab values. This value should be greater than <code>mock_sail_trim_tab_lower_bound</code>.</li>
+<li><em>Datatype</em>: <code>double</code></li>
+<li><em>Range</em>: <code>(-MAX_DOUBLE, MAX_DOUBLE)</code></li>
+</ul>
+<p><strong><code>pub_period_sec</code></strong></p>
+<ul>
+<li><em>Description</em>: The period at which the publishers publish.</li>
 <li><em>Datatype</em>: <code>double</code></li>
 <li><em>Range</em>: <code>(0.0, MAX_DOUBLE)</code></li>
 </ul>
