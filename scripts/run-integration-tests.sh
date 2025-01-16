@@ -1,9 +1,14 @@
 #!/bin/bash
 set -e
 
-# give user permissions, required for GitHub Actions
-ls -la
-sudo chown -R $(whoami):$(whoami) $ROS_WORKSPACE
+if [[ $LOCAL_RUN != "true" ]]; then
+    # give user permissions, required for GitHub Actions
+    sudo chown -R $(whoami):$(whoami) $ROS_WORKSPACE
+
+    source /opt/ros/${ROS_DISTRO}/setup.bash
+    ./scripts/setup.sh
+    ./scripts/build.sh
+fi
 
 echo "Integration tests started"
 
