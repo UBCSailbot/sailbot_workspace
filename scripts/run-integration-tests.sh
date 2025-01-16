@@ -8,6 +8,7 @@ if [[ $LOCAL_RUN != "true" ]]; then
     source /opt/ros/${ROS_DISTRO}/setup.bash
     ./scripts/setup.sh
     ./scripts/build.sh
+    source $ROS_WORKSPACE/install/setup.bash 
 fi
 
 echo "Integration tests started"
