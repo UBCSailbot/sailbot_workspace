@@ -11,6 +11,7 @@ if [[ $LOCAL_RUN != "true" ]]; then
 fi
 
 echo "Integration tests started"
+cd $ROS_WORKSPACE/src/integration_tests
 
 for FILE in $ROS_WORKSPACE/src/integration_tests/testplans/*; do
     if [ -f $FILE ]; then

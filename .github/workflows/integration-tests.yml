@@ -2,8 +2,6 @@ name: Integration-Tests
 
 on:
   push:
-    branches:
-        - user/Jay/integration_test_workflow
   pull_request:
   workflow_dispatch:
 
