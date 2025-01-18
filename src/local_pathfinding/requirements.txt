@@ -4,5 +4,8 @@
 # global_paths/path_builder/path_builder.py
 flask
 
-# test/test_obstacles.py
+# obstacle visual tests
 plotly
+folium
+mapclassify
+matplotlib
