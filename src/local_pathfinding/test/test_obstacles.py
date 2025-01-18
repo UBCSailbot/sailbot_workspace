@@ -22,7 +22,12 @@ def load_pkl(file_path: str) -> Any:
         return pickle.load(f)
 
 
-LAND = load_pkl("/workspaces/sailbot_workspace/src/local_pathfinding/land/pkl/land.pkl")
+LAND = MultiPolygon()
+
+try:
+    LAND = load_pkl("/workspaces/sailbot_workspace/src/local_pathfinding/land/pkl/land.pkl")
+except RuntimeError as e:
+    exit(f"could not load the land.pkl file {e}")
 
 
 # LAND OBSTACLES ----------------------------------------------------------------------------------
