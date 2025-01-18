@@ -66,6 +66,8 @@ BaseFrame::BaseFrame(std::span<const CanId> valid_ids, CanId id, uint8_t can_byt
 
 std::string BaseFrame::debugStr() const { return CanDebugStr(id_); }
 
+std::string BaseFrame::toString() const { return CanIdToStr(id_); }
+
 CanFrame BaseFrame::toLinuxCan() const { return CanFrame{.can_id = static_cast<canid_t>(id_), .len = can_byte_dlen_}; }
 
 // BaseFrame protected END
@@ -120,6 +122,13 @@ std::string Battery::debugStr() const
     ss << BaseFrame::debugStr() << "\n"
        << "Voltage (V): " << volt_ << "\n"
        << "Current (A): " << curr_ << "\n";
+    return ss.str();
+}
+
+std::string Battery::toString() const
+{
+    std::stringstream ss;
+    ss << "[BATTERY] Voltage: " << volt_;
     return ss.str();
 }
 
@@ -187,6 +196,13 @@ std::string MainTrimTab::debugStr() const
     std::stringstream ss;
     ss << BaseFrame::debugStr() << "\n"
        << "Trim tab angle (degrees): " << angle_;
+    return ss.str();
+}
+
+std::string MainTrimTab::toString() const
+{
+    std::stringstream ss;
+    ss << "[MAIN TRIM TAB] Angle: " << angle_;
     return ss.str();
 }
 
@@ -260,6 +276,13 @@ std::string WindSensor::debugStr() const
     ss << BaseFrame::debugStr() << "\n"
        << "Wind speed (m/s): " << wind_speed_ << "\n"
        << "Wind angle (degrees): " << wind_angle_;
+    return ss.str();
+}
+
+std::string WindSensor::toString() const
+{
+    std::stringstream ss;
+    ss << "[WIND SENSOR] Speed: " << wind_speed_ << " Angle: " << wind_angle_;
     return ss.str();
 }
 
@@ -378,6 +401,13 @@ std::string GPS::debugStr() const
        << "Minutes (min): " << min_ << "\n"
        << "Hours (hr): " << hour_ << "\n"
        << "Speed (km/hr): " << speed_ << "\n";
+    return ss.str();
+}
+
+std::string GPS::toString() const
+{
+    std::stringstream ss;
+    ss << "[GPS] Latitude: " << lat_ << " Longitude: " << lon_ << " Speed: " << speed_;  //NOTE HEADING IS NOT USED
     return ss.str();
 }
 
@@ -526,7 +556,7 @@ CanFrame AISShips::toLinuxCan() const
     std::memcpy(cf.data + BYTE_OFF_HEADING, &raw_heading, sizeof(int16_t));
     std::memcpy(cf.data + BYTE_OFF_ROT, &raw_rot, sizeof(int8_t));
     std::memcpy(cf.data + BYTE_OFF_LENGTH, &raw_length, sizeof(int16_t));
-    std::memcpy(cf.data + BYTE_OFF_WIDTH, &raw_width, sizeof(uint8_t));
+    std::memcpy(cf.data + BYTE_OFF_WIDTH, &raw_width, sizeof(uint16_t));
     std::memcpy(cf.data + BYTE_OFF_IDX, &raw_idx, sizeof(int8_t));
     std::memcpy(cf.data + BYTE_OFF_NUM_SHIPS, &raw_num_ships, sizeof(int8_t));
 
@@ -548,6 +578,13 @@ std::string AISShips::debugStr() const
        << "Length (m): " << length_ << "\n"
        << "\n";
 
+    return ss.str();
+}
+
+std::string AISShips::toString() const
+{
+    std::stringstream ss;
+    ss << "[AIS SHIP] ID: " << ship_id_ << " Latitude: " << lat_ << " Longitude: " << lon_;
     return ss.str();
 }
 //AISShips public END
@@ -601,6 +638,56 @@ void AISShips::checkBounds() const
 //AISShips private END
 //AISShips END
 
+//PwrMode START
+//PwrMode public START
+
+PwrMode::PwrMode(const CanFrame & cf) : PwrMode(static_cast<CanId>(cf.can_id))
+{
+    uint8_t raw_mode;
+
+    std::memcpy(&raw_mode, cf.data + BYTE_OFF_MODE, sizeof(uint8_t));
+
+    mode_ = raw_mode;
+
+    checkBounds();
+}
+
+PwrMode::PwrMode(uint8_t mode, CanId id) : BaseFrame(id, CAN_BYTE_DLEN_), mode_(mode) { checkBounds(); }
+
+CanFrame PwrMode::toLinuxCan() const
+{
+    uint8_t raw_mode = mode_;
+
+    CanFrame cf = BaseFrame::toLinuxCan();
+    std::memcpy(cf.data + BYTE_OFF_MODE, &raw_mode, sizeof(uint8_t));
+
+    return cf;
+}
+
+std::string PwrMode::debugStr() const
+{
+    std::stringstream ss;
+    ss << BaseFrame::debugStr() << "\n"
+       << "Power mode: " << mode_;
+    return ss.str();
+}
+
+// PwrMode public END
+// PwrMode private START
+
+PwrMode::PwrMode(CanId id) : BaseFrame(std::span{PWR_MODE_IDS}, id, CAN_BYTE_DLEN_) {}
+
+void PwrMode::checkBounds() const
+{
+    auto err = utils::isOutOfBounds<float>(mode_, POWER_MODE_LOW, POWER_MODE_NORMAL);
+    if (err) {
+        std::string err_msg = err.value();
+        throw std::out_of_range("Power mode value is out of bounds!\n" + debugStr() + "\n" + err_msg);
+    }
+}
+// PwrMode private END
+// PwrMode END
+
 // DesiredHeading START
 // DesiredHeading public START
 
@@ -645,6 +732,13 @@ std::string DesiredHeading::debugStr() const
     std::stringstream ss;
     ss << BaseFrame::debugStr() << "\n"
        << "Desired heading: " << heading_;
+    return ss.str();
+}
+
+std::string DesiredHeading::toString() const
+{
+    std::stringstream ss;
+    ss << "[DESIRED HEADING] Heading: " << heading_;
     return ss.str();
 }
 
