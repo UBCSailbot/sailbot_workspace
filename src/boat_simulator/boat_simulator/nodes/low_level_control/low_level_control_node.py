@@ -76,6 +76,7 @@ class LowLevelControlNode(Node):
         self._is_sail_action_active = False
         self.__gps = None
         self.__rudder_controller = None
+        self.__sail_controller = None
 
     def __declare_ros_parameters(self):
         """Declares ROS parameters from the global configuration file that will be used in this
@@ -190,6 +191,15 @@ class LowLevelControlNode(Node):
         control_speed = 1 / time_step  # not sure if this is the right value to use
         self.__rudder_controller = RudderController(
             current_heading, desired_heading, current_control_ang, time_step, kp, cp, control_speed
+        )
+
+    def init_sail_controller(self):
+        target_angle = self._parameters["wingsail.fixed_angle_deg"].value
+        current_control_ang = self._parameters["wingsail.fixed_angle_deg"].value
+        time_step = self._parameters["wingsail.actuation_execution_period_sec"].value
+        control_speed = self._parameters["wingsail.actuation_speed_deg_per_sec"].value
+        self.__sail_controller = SailController(
+            target_angle, current_control_ang, time_step, control_speed
         )
 
     def __gps_sub_callback(self, msg: GPS):
