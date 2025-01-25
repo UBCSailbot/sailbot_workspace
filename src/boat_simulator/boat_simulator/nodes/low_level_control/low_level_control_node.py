@@ -247,7 +247,11 @@ class LowLevelControlNode(Node):
             self.__rudder_controller.reset_setpoint(desired_heading, current_heading)
             if self.__rudder_controller.is_target_reached:
                 self.get_logger().error(
-                    f"Somehow controller target is reached when controller desired heading is {self.__rudder_controller.desired_heading} and controller current heading is {self.__rudder_controller.current_heading}"
+                    "\nSomehow controller target is reached when it should not be. Dumping data:\n"
+                    + f"controller desired heading is {self.__rudder_controller.desired_heading} \n"
+                    + f"controller current heading is {self.__rudder_controller.current_heading}\n"
+                    + f"controller running error is {self.__rudder_controller.running_error}\n"
+                    + f"controller control angle is {self.__rudder_controller.current_control_ang}"
                 )
             feedback_msg = SimRudderActuation.Feedback()
             while not self.__rudder_controller.is_target_reached:
