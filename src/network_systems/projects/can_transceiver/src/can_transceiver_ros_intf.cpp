@@ -103,7 +103,7 @@ public:
                   this->create_publisher<msg::CanSimToBoatSim>(ros_topics::BOAT_SIM_INPUT, QUEUE_SIZE);
 
                 timer_ = this->create_wall_timer(TIMER_INTERVAL, [this]() {
-                    mockBatteriesCb();
+                    //mockBatteriesCb();
                     publishBoatSimInput(boat_sim_input_msg_);
                     // Add any other necessary looping callbacks
                 });
@@ -172,6 +172,7 @@ private:
             ais_ships_holder_.clear();
             ais_ships_num_ = 0;  // reset the number of ships
         }
+        RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), ais_ship.toString().c_str());
     }
 
     /**
@@ -195,6 +196,17 @@ private:
         }
         CAN_FP::PwrMode power_mode(set_pwr_mode, CAN_FP::CanId::PWR_MODE);
         can_trns_->send(power_mode.toLinuxCan());
+
+        // Get the current time as a time_point
+        auto now = std::chrono::system_clock::now();
+
+        // Convert it to a time_t object for extracting hours and minutes
+        std::time_t currentTime = std::chrono::system_clock::to_time_t(now);
+
+        std::stringstream ss;
+        ss << currentTime;
+
+        RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), bat.toString().c_str());
     }
 
     /**
@@ -209,6 +221,7 @@ private:
 
         msg::GPS gps_ = gps.toRosMsg();
         gps_pub_->publish(gps_);
+        RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), gps.toString().c_str());
     }
 
     /**
@@ -229,8 +242,8 @@ private:
         msg::WindSensor & wind_sensor_msg = wind_sensors_.wind_sensors[idx];
         wind_sensor_msg                   = wind_sensor.toRosMsg();
         wind_sensors_pub_->publish(wind_sensors_);
-
         publishFilteredWindSensor();
+        RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), wind_sensor.toString().c_str());
     }
 
     /**
@@ -260,6 +273,9 @@ private:
         filtered_wind_sensor_.set__direction(static_cast<int16_t>(average_direction));
 
         filtered_wind_sensor_pub_->publish(filtered_wind_sensor_);
+        std::stringstream ss;
+        ss << "[WIND SENSOR] Speed: " << filtered_speed.speed << " Angle: " << average_direction;
+        RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), ss.str().c_str());
     }
 
     /**
@@ -286,6 +302,9 @@ private:
         generic_sensor_msg.set__id(generic_frame.can_id);
 
         generic_sensors_pub_->publish(generic_sensors_);
+        std::stringstream ss;
+        ss << "[GENERIC SENSOR] CanID: " << generic_frame.can_id << " Data: " << generic_data;
+        RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), ss.str().c_str());
     }
 
     // SIMULATION CALLBACKS //
@@ -309,8 +328,10 @@ private:
     {
         sail_cmd_ = sail_cmd_input;
         boat_sim_input_msg_.set__sail_cmd(sail_cmd_);
-
-        can_trns_->send(CAN_FP::MainTrimTab(sail_cmd_input, CanId::MAIN_TR_TAB).toLinuxCan());
+        auto main_trim_tab_frame = CAN_FP::MainTrimTab(sail_cmd_input, CanId::MAIN_TR_TAB);
+        can_trns_->send(main_trim_tab_frame.toLinuxCan());
+        RCLCPP_INFO(
+          this->get_logger(), "%s %s", getCurrentTimeString().c_str(), main_trim_tab_frame.toString().c_str());
     }
 
     /**
@@ -331,7 +352,10 @@ private:
     void subDesiredHeadingCb(msg::DesiredHeading desired_heading)
     {
         boat_sim_input_msg_.set__heading(desired_heading);
-        can_trns_->send(CAN_FP::DesiredHeading(desired_heading, CanId::MAIN_TR_TAB).toLinuxCan());
+        auto desired_heading_frame = CAN_FP::DesiredHeading(desired_heading, CanId::MAIN_TR_TAB);
+        can_trns_->send(desired_heading_frame.toLinuxCan());
+        RCLCPP_INFO(
+          this->get_logger(), "%s %s", getCurrentTimeString().c_str(), desired_heading_frame.toString().c_str());
     }
 
     /**
@@ -360,6 +384,18 @@ private:
         bat.set__current(BATT_CURR_UBND);
 
         can_trns_->send(CAN_FP::Battery(bat, CanId::BMS_DATA_FRAME).toLinuxCan());
+    }
+    static std::string getCurrentTimeString()
+    {
+        auto        now      = rclcpp::Clock().now();
+        std::time_t time_now = static_cast<std::time_t>(now.seconds());
+        std::tm     time_info;
+        localtime_r(&time_now, &time_info);
+
+        std::ostringstream ss;
+        ss << '[' << std::put_time(&time_info, "%Y-%m-%d %H:%M:%S") << ']';
+
+        return ss.str();
     }
 };
 
