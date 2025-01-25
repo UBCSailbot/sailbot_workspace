@@ -1,102 +1,58 @@
-@import 'https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,100..900;1,100..900&display=swap';
+@import 'https://fonts.googleapis.com/css2?family=Switzer:wght@400;700&display=swap';
 
-.iconButton {
+.flexItemContainer {
+  flex: 1;
   display: flex;
   justify-content: center;
-  align-items: center;
-  font-family: Verdana, sans-serif;
-  padding: 3px;
-  border: 2px solid white;
-  border-radius: 5px;
-  width: 130px;
-  height: 50px;
-  color: white;
-  float: right;
-  margin-right: 20px;
-  box-sizing: border-box;
-  transition: 0.3s ease;
-  transform: none;
-  user-select: none;
-}
-
-.iconButton:hover {
-  background-color: white;
-  color: #3498db;
-  cursor: pointer;
-  transition: 0.3s ease;
-}
-
-.iconButtonOpen {
-  font-family: Verdana, Geneva, sans-serif;
-  padding: 3px;
-  border: 2px solid white;
-  border-radius: 5px;
-  width: 130px;
-  height: 50px;
-  float: right;
-  margin-right: 20px;
-  box-sizing: border-box;
-  text-align: center;
-  background-color: white;
-  color: #3498db;
-  cursor: pointer;
-  transition: 0.3s ease;
-  transform: none;
-  user-select: none;
-}
-
-.dropdownActive {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
-  transition: 0.3s ease;
-}
-
-.dropdownInactive {
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-45px);
-  transition: 0.3s;
-  pointer-events: none;
-}
-
-.dropdownMenu {
-  margin: 5px;
-  position: absolute;
-  right: 3px;
-  top: 60px;
-  z-index: 1000;
-  background-color: white;
-  border-bottom: 2px #3498db solid;
-  border-radius: 5px;
-}
-
-.dropdownItem {
-  text-transform: capitalize;
-  display: grid;
-  grid-template-columns: 90px auto;
-  font-size: 18px;
-  font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
-  width: 150px;
-  padding: 10px;
-  height: 40px;
-  background-color: white;
-  border: 2px white solid;
-  border-radius: 5px;
-  color: #3498db;
-  align-items: center;
-  transform: none;
-  user-select: none;
-  cursor: pointer;
-}
-
-.dropdownItem:hover {
-  background-color: whitesmoke;
-}
-
-.dragDropIndicator {
-  font-size: 20px;
+  font-family: Switzer, sans-serif;
+  color: #092e4e;
   font-weight: bold;
+}
+
+.detailsFlexContainer {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  position: relative;
+  padding-bottom: 8px;
+  margin-top: 2px;
+}
+
+.detailsFlexContainer::after {
+  content: '';
+  display: block;
   position: absolute;
-  right: 15px;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background-color: black;
+}
+
+.contentContainer {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  padding-top: 8px;
+}
+
+.accordionCustom {
+  background-color: #7a8b99;
+  border: 1px solid #bdc3c7;
+  box-shadow: none;
+}
+
+.accordionSummaryCustom {
+  background-color: #d9dddc;
+  color: #00263e;
+  font-family: Switzer, sans-serif;
+  font-weight: bold;
+}
+
+.accordionDetailsCustom {
+  background-color: white;
+  flex-direction: column;
+  padding: 16px;
+  font-family: Switzer, sans-serif;
+  color: #092e4e;
 }
