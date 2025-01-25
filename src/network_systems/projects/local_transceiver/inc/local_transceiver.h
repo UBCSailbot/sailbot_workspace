@@ -25,6 +25,8 @@ constexpr unsigned int SATELLITE_BAUD_RATE = 19200;
 class LocalTransceiver
 {
     friend class TestLocalTransceiver_parseInMsgValid_Test;
+    friend class TestLocalTransceiver_SendAndReceiveMessage;
+    friend class TestLocalTransceiver_testMailboxBlackbox_Test;
 
 public:
     /**
@@ -123,6 +125,9 @@ public:
      * @return The message as a binary string
      */
     custom_interfaces::msg::Path receive();
+
+    // TEST
+    bool checkMailbox();
 
 private:
     // Serial port read/write timeout
