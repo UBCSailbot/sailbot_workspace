@@ -2,12 +2,12 @@ import React, { useState } from 'react';
 import { Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import styles from './dataset.module.css';
-import Select from 'react-select'
+import Select, { SingleValue } from 'react-select';
 
 interface DatasetProps {
   title: string;
   content: string[];
-  downloadAction: () => any;
+  downloadAction: (fileType: string) => any;
 }
 
 const Dataset = ({ title, content, downloadAction }: DatasetProps) => {
@@ -48,7 +48,15 @@ const Dataset = ({ title, content, downloadAction }: DatasetProps) => {
             </div>
           ))}
           <div className={styles.flexItemContainer}>
-            <Select options={fileTypes} defaultValue={fileTypes[0]} onChange={(fileType: { value: string, label: string }) => setSelectedFileType(fileType.value)}/>
+            <Select 
+              options={fileTypes} 
+              defaultValue={fileTypes[0]} 
+              onChange={(newValue: SingleValue<{ value: string; label: string }>) => {
+                if (newValue) {
+                  setSelectedFileType(newValue.value);
+                }
+              }}
+            />
           </div>
           <div className={styles.flexItemContainer}>
             <span
