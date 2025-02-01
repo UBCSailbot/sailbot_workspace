@@ -9,10 +9,10 @@ import {
   downloadGlobalPathData,
   downloadLocalPathData,
   downloadWindSensorsData,
-} from '@/utils/DownloadData';
+} from '@/utils/DownloadData.js';
 import Dataset from '@/views/components/Dataset/Dataset';
 
-function stringToParagraphs(text) {
+function stringToParagraphs(text: string) {
   return text.split('\n').map((item, key) => (
     <span key={key}>
       {item}

@@ -1,4 +1,4 @@
-FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:moved-network-deps
+FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:add-pybind11
 
 # Copy configuration files (e.g., .vimrc) from config/ to the container's home directory
 ARG USERNAME=ros
@@ -16,3 +16,7 @@ COPY --chown=${USERNAME}:${USERNAME} config ${HOME}
 #     && apt-get autoremove -y \
 #     && apt-get clean -y \
 #     && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
+
+# set user and working directory
+USER ${USERNAME}
+WORKDIR ${ROS_WORKSPACE}

@@ -53,12 +53,12 @@ struct Line
  * Struct representing the response to the CHECK_STATUS command
  * 5.144
  */
-struct SBDStatusRsp  // TODO(Jng468): Implement this class
+struct SBDStatusRsp
 {
     static constexpr uint8_t MO_SUCCESS_START = 0;
     static constexpr uint8_t MO_SUCCESS_END   = 4;
 
-    uint8_t  MO_status_;  // indicates if MO message is transferred successfully [1, 4]
+    uint8_t  MO_status_;  // indicates if MO message is transferred successfully [0, 4]
     uint16_t MOMSN_;
     uint8_t  MT_status_;
     uint16_t MTMSN_;

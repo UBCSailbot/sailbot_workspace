@@ -17,6 +17,11 @@
         },
         {
             "pattern": "^https://hub.docker.com*"
+        },
+        {
+            "pattern": "^https://linuxize.com*"
         }
-    ]
+    ],
+
+    "aliveStatusCodes": [403, 200]
 }

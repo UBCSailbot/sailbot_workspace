@@ -11,6 +11,7 @@ export type AISShip = {
 
 export type AISShips = {
   ships: AISShip[];
+  timestamp: string;
 };
 
 export type AISShipsState = {

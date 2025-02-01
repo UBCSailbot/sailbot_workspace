@@ -389,3 +389,4 @@ def test_continuous_cost(speed: float, expected: int):
     assert objectives.SpeedObjective.get_continuous_cost(speed) == pytest.approx(
         expected, abs=1e-3
     )
+"""

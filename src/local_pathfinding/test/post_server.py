@@ -8,6 +8,9 @@ import json
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
+TEST_PORT = 8085
+POST_TEST_URL = "http://localhost:" + str(TEST_PORT) + "/global-path"
+
 
 class CustomRequestHandler(BaseHTTPRequestHandler):
     def _set_response(self, status_code=200, content_type="application/json"):
@@ -32,7 +35,7 @@ class CustomRequestHandler(BaseHTTPRequestHandler):
         )
 
 
-def run_server(port=8081) -> HTTPServer:
+def run_server(port=TEST_PORT) -> HTTPServer:
     server_address = ("localhost", port)
     httpd = HTTPServer(server_address, CustomRequestHandler)
 

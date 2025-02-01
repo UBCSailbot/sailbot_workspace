@@ -263,6 +263,10 @@
             "cSpell.advanced.feature.useReferenceProviderWithRename": true,
             "cSpell.advanced.feature.useReferenceProviderRemove": "/^#+\\s/"
         },
+        "markdown.extension.list.indentationSize": "inherit",
+        "markdownlint.config": {
+            "extends": "/workspaces/sailbot_workspace/.markdownlint.json"
+        },
 
         // yaml
         "yaml.schemas": {
@@ -290,19 +294,33 @@
         "version": "0.2.0",
         "configurations": [
             {
-                "name": "ROS: Attach (currently only C++ working)",
-                "type": "ros",
-                "request": "attach"
-            },
-            {
-                "name": "ROS: Launch",
+                "name": "ROS: Run Launch File",
                 "type": "ros",
                 "request": "launch",
                 "preLaunchTask": "Build All",
                 "target": "${workspaceFolder:sailbot_workspace}/install/share/${input:launchFile}",
             },
             {
-                "name": "C++ (GDB): Launch",
+                "name": "ROS: Attach Process (currently only C++ working)",
+                "type": "ros",
+                "request": "attach"
+            },
+            {
+                "name": "Python Debugger: Attach Process",
+                "type": "debugpy",
+                "request": "attach",
+                "processId": "${command:pickProcess}",
+            },
+            // Can't launch ros nodes standalone because ros parameters aren't initialized
+            {
+                "name": "Python Debugger: Run Current File",
+                "type": "debugpy",
+                "request": "launch",
+                "program": "${file}",
+                "console": "integratedTerminal",
+            },
+            {
+                "name": "C++ (GDB): Run Node",
                 "type": "cppdbg",
                 "request": "launch",
                 "program": "${workspaceFolder:sailbot_workspace}/install/lib/${input:node}",
@@ -357,7 +375,7 @@
                 "label": "Build All",
                 "detail": "Build all packages in the workspace",
                 "type": "shell",
-                "command": "./build.sh",
+                "command": "${workspaceFolder:sailbot_workspace}/scripts/build.sh",
                 "group": {
                     "kind": "build",
                     "isDefault": true
@@ -368,7 +386,7 @@
                 "label": "Build Package",
                 "detail": "Build a specific package in the workspace",
                 "type": "shell",
-                "command": "./build.sh -p ${input:package}",
+                "command": "${workspaceFolder:sailbot_workspace}/scripts/build.sh -p ${input:package}",
                 "group": {
                     "kind": "build",
                     "isDefault": true
@@ -379,7 +397,7 @@
                 "label": "debug",
                 "detail": "Build workspace (debug)",
                 "type": "shell",
-                "command": "./build.sh Debug",
+                "command": "${workspaceFolder:sailbot_workspace}/scripts/build.sh Debug",
                 "group": "build",
                 "problemMatcher": "$gcc"
             },
@@ -388,7 +406,7 @@
                 "label": "test",
                 "detail": "Run all unit tests and show results.",
                 "type": "shell",
-                "command": "./test.sh",
+                "command": "${workspaceFolder:sailbot_workspace}/scripts/test.sh",
                 "group": {
                     "kind": "test",
                     "isDefault": true
@@ -406,7 +424,7 @@
                 "label": "purge",
                 "detail": "Purge workspace by deleting all generated files.",
                 "type": "shell",
-                "command": "rm -fr build install log; py3clean .",
+                "command": "sudo rm -rf build install log; py3clean .",
                 "problemMatcher": []
             },
             // Linting and static code analysis tasks
@@ -414,7 +432,7 @@
                 "label": "lint_cmake",
                 "detail": "Run lint on cmake files.",
                 "type": "shell",
-                "command": "LINTER=lint_cmake LOCAL_RUN=true .github/actions/run-in-container/ament-lint.sh",
+                "command": "LINTER=lint_cmake LOCAL_RUN=true scripts/ament-lint.sh",
                 "problemMatcher": [
                     "$ament_lint_cmake"
                 ],
@@ -427,7 +445,7 @@
                 "label": "clang-tidy",
                 "detail": "Run clang-tidy static analysis",
                 "type": "shell",
-                "command": "LOCAL_RUN=true .github/actions/run-in-container/clang-tidy.sh",
+                "command": "LOCAL_RUN=true scripts/clang-tidy.sh",
                 "problemMatcher": [],
                 "presentation": {
                     "panel": "dedicated",
@@ -438,7 +456,7 @@
                 "label": "flake8",
                 "detail": "Run flake8 on python files.",
                 "type": "shell",
-                "command": "LINTER=flake8 LOCAL_RUN=true .github/actions/run-in-container/ament-lint.sh",
+                "command": "LINTER=flake8 LOCAL_RUN=true scripts/ament-lint.sh",
                 "problemMatcher": [
                     "$ament_flake8"
                 ],
@@ -451,7 +469,7 @@
                 "label": "mypy",
                 "detail": "Run mypy on python files.",
                 "type": "shell",
-                "command": "LINTER=mypy LOCAL_RUN=true .github/actions/run-in-container/ament-lint.sh",
+                "command": "LINTER=mypy LOCAL_RUN=true scripts/ament-lint.sh",
                 "problemMatcher": [
                     "$ament_mypy",
                 ],
@@ -464,7 +482,7 @@
                 "label": "xmllint",
                 "detail": "Run xmllint on xml files.",
                 "type": "shell",
-                "command": "LINTER=xmllint LOCAL_RUN=true .github/actions/run-in-container/ament-lint.sh",
+                "command": "LINTER=xmllint LOCAL_RUN=true scripts/ament-lint.sh",
                 "problemMatcher": [
                     "$ament_xmllint",
                 ],
@@ -489,7 +507,7 @@
                 "label": "setup",
                 "detail": "Set up the workspace",
                 "type": "shell",
-                "command": "./setup.sh",
+                "command": "./scripts/setup.sh",
                 "problemMatcher": []
             }
 

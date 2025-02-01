@@ -1,11 +1,11 @@
 import BaseReducer from '@/utils/BaseReducer';
 import BatteriesActions from './BatteriesActions';
-import { BatteriesState } from './BatteriesTypes';
+import { Batteries, BatteriesState } from './BatteriesTypes';
 import { AnyAction } from 'redux';
 
 export default class BatteriesReducer extends BaseReducer {
   initialState: BatteriesState = {
-    data: [],
+    data: [] as Batteries[],
     error: null,
   };
 

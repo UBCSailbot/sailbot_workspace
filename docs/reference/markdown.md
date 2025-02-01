@@ -85,7 +85,7 @@ resources are good for rendering Markdown:
 
 === ":logo: Material for MkDocs"
     - UBC Sailbot Docs: To preview your changes when working on this site,
-    refer to the [How to work with containerized applications](../current/sailbot_workspace/how_to.md#work-with-containerized-applications){target=_blank}.
+    refer to the [How to work with containerized applications](../current/sailbot_workspace/usage/how_to.md#work-with-containerized-applications){target=_blank}.
     - Material for MkDocs sites in general: If you ever decide to write your own documentation using Material for MkDocs,
     refer to the [official "Getting Started" guide](https://squidfunk.github.io/mkdocs-material/getting-started/){target=_blank}.
 

@@ -1,4 +1,3 @@
-/* Core */
 import * as Redux from 'redux';
 import { createLogger } from 'redux-logger';
 
@@ -16,6 +15,6 @@ const middleware: Redux.Middleware[] = [
     },
     predicate: () => typeof window !== 'undefined',
   }),
-];
+]
 
 export { middleware };

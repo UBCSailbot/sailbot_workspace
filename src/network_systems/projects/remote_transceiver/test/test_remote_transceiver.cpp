@@ -1,3 +1,4 @@
+#include <curl/curl.h>
 #include <gtest/gtest.h>
 
 #include <array>
@@ -7,6 +8,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <iostream>
 #include <random>
 #include <span>
 #include <string>
@@ -66,6 +68,12 @@ protected:
     }
 
     TestRemoteTransceiver() { g_test_db.cleanDB(); }
+
+    static size_t WriteCallback(void * contents, size_t size, size_t nmemb, void * userp)
+    {
+        (static_cast<std::string *>(userp))->append(static_cast<char *>(contents), size * nmemb);
+        return size * nmemb;
+    }
 
     ~TestRemoteTransceiver() override {}
 };
@@ -198,4 +206,38 @@ TEST_F(TestRemoteTransceiver, TestPostSensorsMult)
 
     // Check that DB is updated properly for all requests
     EXPECT_TRUE(g_test_db.verifyDBWrite(expected_sensors, expected_info));
+}
+
+TEST_F(TestRemoteTransceiver, rockblockWebServerExample)
+{
+    CURL *      curl;
+    CURLcode    res;
+    std::string readBuffer;
+
+    curl_global_init(CURL_GLOBAL_DEFAULT);
+    curl = curl_easy_init();
+
+    if (curl != nullptr) {
+        curl_easy_setopt(
+          curl, CURLOPT_URL, "http://localhost:8100/?data=thisistestdata&ec=B&imei=300434065264590&username=myuser");
+
+        curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "POST");
+
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
+
+        res = curl_easy_perform(curl);
+
+        if (res != CURLE_OK) {
+            std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
+        } else {
+            std::cout << "Response data: " << readBuffer << std::endl;
+            EXPECT_EQ("FAILED,11,No RockBLOCK with this IMEI found on your account", readBuffer);
+        }
+
+        curl_easy_cleanup(curl);
+    }
+
+    curl_global_cleanup();
 }

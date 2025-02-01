@@ -1,4 +1,4 @@
-/* IMPORTANT: Make sure only one instance of network_systems/scripts/run_virtual_iridium.sh is running */
+/* IMPORTANT: Make sure only one instance of sailbot_workspace/scripts/run_virtual_iridium.sh is running */
 
 #include <gtest/gtest.h>
 
@@ -16,6 +16,7 @@
 
 #include "at_cmds.h"
 #include "cmn_hdrs/shared_constants.h"
+#include "global_path.pb.h"
 #include "local_transceiver.h"
 #include "sensors.pb.h"
 
@@ -178,4 +179,79 @@ TEST_F(TestLocalTransceiver, sendData)
     lcl_trns_->updateSensor(local_paths);
 
     EXPECT_TRUE(lcl_trns_->send());
+}
+
+/**
+ * @brief Verifies correct construction of status response object
+ *        for at_cmds.h
+ */
+TEST_F(TestLocalTransceiver, ValidSBDRespose)
+{
+    std::string      response = "+SBDIX:0,1234,0,5678,9,2";
+    AT::SBDStatusRsp status(response);
+
+    EXPECT_EQ(status.MO_status_, 0);
+    EXPECT_EQ(status.MOMSN_, 1234);
+    EXPECT_EQ(status.MT_status_, 0);
+    EXPECT_EQ(status.MTMSN_, 5678);
+    EXPECT_EQ(status.MT_len_, 9);
+    EXPECT_EQ(status.MT_queued_, 2);
+}
+
+/**
+ * @brief Verifies exception is thrown for incorrect construction of status response object
+ *        for at_cmds.h
+ */
+TEST_F(TestLocalTransceiver, InvalidSBDRespose)
+{
+    std::string responseNonInteger = "+SBDIX:hello,THIS,should,THROW,an,EXCEPTION";
+    ASSERT_THROW(AT::SBDStatusRsp status(responseNonInteger), std::invalid_argument);
+}
+
+/**
+ * @brief Verifies correct reporting of MO status (success, failure, no network)
+ *        for at_cmds.h
+ */
+TEST_F(TestLocalTransceiver, MOStatusTest)
+{
+    std::string success    = "+SBDIX:0,1234,0,5678,9,2";
+    std::string fail       = "+SBDIX:5,1234,0,5678,9,2";
+    std::string no_network = "+SBDIX:32,1234,0,5678,9,2";
+
+    AT::SBDStatusRsp success_response(success);
+    AT::SBDStatusRsp failed_response(fail);
+    AT::SBDStatusRsp no_network_service_response(no_network);
+
+    EXPECT_TRUE(success_response.MOSuccess());
+    EXPECT_FALSE(failed_response.MOSuccess());
+    EXPECT_FALSE(no_network_service_response.MOSuccess());
+}
+
+/**
+ * @brief Verifies that message from remote server is correctly parsed
+ */
+TEST_F(TestLocalTransceiver, parseInMsgValid)
+{
+    constexpr float                                   holder = 14.3;
+    std::vector<custom_interfaces::msg::HelperLatLon> waypoints;
+
+    // protobuf
+    Polaris::GlobalPath path;
+
+    Polaris::Waypoint * waypoint_a = path.add_waypoints();
+    waypoint_a->set_latitude(holder);
+    waypoint_a->set_longitude(holder);
+
+    Polaris::Waypoint * waypoint_b = path.add_waypoints();
+    waypoint_b->set_latitude(holder);
+    waypoint_b->set_longitude(holder);
+
+    // convert protobuf to string
+    std::string serialized_test = path.SerializeAsString();
+
+    custom_interfaces::msg::Path parsed_test = LocalTransceiver::parseInMsg(serialized_test);
+    EXPECT_EQ(parsed_test.waypoints[0].latitude, holder);
+    EXPECT_EQ(parsed_test.waypoints[0].longitude, holder);
+    EXPECT_EQ(parsed_test.waypoints[1].latitude, holder);
+    EXPECT_EQ(parsed_test.waypoints[1].longitude, holder);
 }
