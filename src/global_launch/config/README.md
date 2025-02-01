@@ -324,3 +324,53 @@ corresponding correct type as the second string.
 - _Description_: The interval (in seconds) for writing queued data to the JSON file.
 - _Datatype_: `double`
 - _Range_: `(0.0, MAX_DOUBLE)`
+
+### `Mock Data Node`
+
+**`qos_depth`**
+
+- _Description_: The maximum number of subscription messages to queue for further processing.
+- _Datatype_: `int`
+- _Range_: `[1, MAX_INT)`
+
+**`mock_desired_heading`**
+
+- _Description_: Set to True if mock data for desired heading should be generated. False otherwise.
+- _Datatype_: `bool`
+- _Range_: `(True, False)`
+
+**`mock_desired_heading_lower_bound`**
+
+- _Description_: Gives a lower bound for randomizing desired heading values. This value should be less than `mock_desired_heading_upper_bound`.
+- _Datatype_: `double`
+- _Range_: `(-MAX_DOUBLE, MAX_DOUBLE)`
+
+**`mock_desired_heading_upper_bound`**
+
+- _Description_: Gives a upper bound for randomizing desired heading values. This value should be greater than `mock_desired_heading_upper_bound`.
+- _Datatype_: `double`
+- _Range_: `(-MAX_DOUBLE, MAX_DOUBLE)`
+
+**`mock_sail_trim_tab`**
+
+- _Description_: Set to True if mock data for sail trim tab should be generated. False otherwise.
+- _Datatype_: `bool`
+- _Range_: `(True, False)`
+
+**`mock_sail_trim_tab_lower_bound`**
+
+- _Description_: Gives a lower bound for randomizing sail trim tab values. This value should be less than `mock_sail_trim_tab_upper_bound`.
+- _Datatype_: `double`
+- _Range_: `(-MAX_DOUBLE, MAX_DOUBLE)`
+
+**`mock_sail_trim_tab_upper_bound`**
+
+- _Description_: Gives a upper bound for randomizing sail trim tab values. This value should be greater than `mock_sail_trim_tab_lower_bound`.
+- _Datatype_: `double`
+- _Range_: `(-MAX_DOUBLE, MAX_DOUBLE)`
+
+**`pub_period_sec`**
+
+- _Description_: The period at which the publishers publish.
+- _Datatype_: `double`
+- _Range_: `(0.0, MAX_DOUBLE)`
