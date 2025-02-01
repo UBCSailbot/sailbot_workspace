@@ -1,5 +1,6 @@
 /* IMPORTANT: Make sure only one instance of sailbot_workspace/scripts/run_virtual_iridium.sh is running */
 
+#include <curl/curl.h>
 #include <gtest/gtest.h>
 
 #include <boost/process.hpp>
@@ -12,6 +13,7 @@
 #include <custom_interfaces/msg/detail/helper_rot__struct.hpp>
 #include <custom_interfaces/msg/detail/helper_speed__struct.hpp>
 #include <fstream>
+#include <mutex>
 #include <vector>
 
 #include "at_cmds.h"
@@ -254,4 +256,63 @@ TEST_F(TestLocalTransceiver, parseInMsgValid)
     EXPECT_EQ(parsed_test.waypoints[0].longitude, holder);
     EXPECT_EQ(parsed_test.waypoints[1].latitude, holder);
     EXPECT_EQ(parsed_test.waypoints[1].longitude, holder);
+}
+
+std::mutex port_mutex;
+
+TEST_F(TestLocalTransceiver, testMailboxBlackbox)
+{
+    std::lock_guard<std::mutex> lock(port_mutex);  // because same port is being used
+
+    std::string holder  = "curl -X POST -F \"test=1234\" http://localhost:8080";
+    std::string holder2 = "printf \"at+sbdix\r\" > $LOCAL_TRANSCEIVER_TEST_PORT";
+
+    system(holder.c_str());   //NOLINT
+    system(holder2.c_str());  //NOLINT
+
+    std::optional<std::string> response = lcl_trns_->readRsp();
+    std::cout << *response << std::endl;
+}
+
+TEST_F(TestLocalTransceiver, parseReceiveMessageBlackbox)
+{
+    std::lock_guard<std::mutex> lock(port_mutex);
+
+    constexpr float     holder = 14.3;
+    Polaris::GlobalPath sample_data;
+
+    Polaris::Waypoint * waypoint_a = sample_data.add_waypoints();
+    waypoint_a->set_latitude(holder);
+    waypoint_a->set_longitude(holder);
+    Polaris::Waypoint * waypoint_b = sample_data.add_waypoints();
+    waypoint_b->set_latitude(holder);
+    waypoint_b->set_longitude(holder);
+
+    std::string serialized_data;
+    ASSERT_TRUE(sample_data.SerializeToString(&serialized_data));
+
+    std::ofstream outfile("/tmp/serialized_data.bin", std::ios::binary);
+    outfile.write(serialized_data.data(), static_cast<std::streamsize>(serialized_data.size()));
+    outfile.close();
+
+    std::string holder2 = "curl -X POST -F \"data=@/tmp/serialized_data.bin\" http://localhost:8080";
+    std::system(holder2.c_str());  //NOLINT
+
+    custom_interfaces::msg::Path received_data = lcl_trns_->receive();
+
+    Polaris::GlobalPath global_path;
+    for (const auto & waypoint : received_data.waypoints) {
+        Polaris::Waypoint * new_waypoint = global_path.add_waypoints();
+        new_waypoint->set_latitude(waypoint.latitude);
+        new_waypoint->set_longitude(waypoint.longitude);
+    }
+
+    if (global_path.waypoints_size() > 0) {
+        ASSERT_EQ(global_path.waypoints_size(), sample_data.waypoints_size())
+          << "Mismatch in number of waypoints received.";
+        ASSERT_EQ(global_path.waypoints(0).latitude(), holder);
+        ASSERT_EQ(global_path.waypoints(0).longitude(), holder);
+    } else {
+        std::cout << "No waypoints received." << std::endl;
+    }
 }
