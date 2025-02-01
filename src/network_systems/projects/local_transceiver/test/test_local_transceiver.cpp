@@ -291,12 +291,22 @@ TEST_F(TestLocalTransceiver, parseReceiveMessageBlackbox)
     std::string serialized_data;
     ASSERT_TRUE(sample_data.SerializeToString(&serialized_data));
 
+    uint16_t message_size    = static_cast<uint16_t>(serialized_data.size());
+    uint16_t message_size_be = htons(message_size);  // Convert to big-endian
+
+    std::string size_prefix(reinterpret_cast<const char *>(&message_size_be), sizeof(message_size_be));
+
     std::ofstream outfile("/tmp/serialized_data.bin", std::ios::binary);
+    outfile.write(size_prefix.data(), size_prefix.size());  //NOLINT
     outfile.write(serialized_data.data(), static_cast<std::streamsize>(serialized_data.size()));
     outfile.close();
 
-    std::string holder2 = "curl -X POST -F \"data=@/tmp/serialized_data.bin\" http://localhost:8080";
+    outfile.close();  // Close the file after writing
+
+    std::string holder2 = "curl -X POST --data-binary @/tmp/serialized_data.bin http://localhost:8080";
     std::system(holder2.c_str());  //NOLINT
+    std::string test_cmd = "hexdump -C /tmp/serialized_data.bin";
+    std::system(test_cmd.c_str());  //NOLINT
 
     custom_interfaces::msg::Path received_data = lcl_trns_->receive();
 
