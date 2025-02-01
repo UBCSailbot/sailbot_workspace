@@ -76,6 +76,8 @@ class WingsailControllerNode(Node):
                 ("pub_period_sec", rclpy.Parameter.Type.DOUBLE),
                 ("reynolds_number", rclpy.Parameter.Type.DOUBLE_ARRAY),
                 ("angle_of_attack", rclpy.Parameter.Type.DOUBLE_ARRAY),
+                ("apparent_wind_threshold", rclpy.Parameter.Type.DOUBLE),
+                ("scaling_coef", rclpy.Parameter.Type.DOUBLE),
             ],
         )
 
@@ -140,9 +142,15 @@ class WingsailControllerNode(Node):
         It also logs information about the publication to the logger."""
         msg = SailCmd()
 
-        self.__trim_tab_angle = self.__wingsailController.get_trim_tab_angle(
-            self.__filtered_wind_sensor.speed.speed, self.__filtered_wind_sensor.direction
-        )
+        apparent_speed = self.__filtered_wind_sensor.speed.speed
+        apparent_direction = self.__filtered_wind_sensor.direction
+        
+        if apparent_speed > self.get_parameter("apparent_wind_threshold"):
+            # TO-DO: scale trim tab angle w/ exponential
+        else:
+            self.__trim_tab_angle = self.__wingsailController.get_trim_tab_angle(
+                apparent_speed, apparent_direction
+            )
 
         msg.trim_tab_angle_degrees = self.__trim_tab_angle
 
