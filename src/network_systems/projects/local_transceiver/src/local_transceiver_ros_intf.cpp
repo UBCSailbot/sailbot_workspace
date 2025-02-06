@@ -79,6 +79,17 @@ public:
             sub_local_path_data = this->create_subscription<custom_interfaces::msg::LPathData>(
               ros_topics::LOCAL_PATH, ROS_Q_SIZE,
               std::bind(&LocalTransceiverIntf::sub_local_path_data_cb, this, std::placeholders::_1));
+
+            //check for cached waypoints and publish immediately
+            std::filesystem::path cache_path{"global_waypoint_cache"};
+            if (std::filesystem::exists(cache_path)) {
+                ifstream f("global_waypoint_cache", ios::binary);
+                if (!f) {
+                    //error: failed to read cache
+                }
+                custom_interfaces::msg::Path to_publish = parseInMsg(receivedDataBuffer);
+                pub_->publish(to_publish);
+            }
         }
     }
 

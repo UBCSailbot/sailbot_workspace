@@ -22,6 +22,8 @@
 #include "at_cmds.h"
 #include "cmn_hdrs/ros_info.h"
 #include "cmn_hdrs/shared_constants.h"
+#include "filesystem"
+#include "fstream"
 #include "global_path.pb.h"
 #include "sensors.pb.h"
 #include "waypoint.pb.h"
@@ -316,6 +318,21 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
 
         receivedDataBuffer = buffer_data.value();
         break;
+    }
+
+    //need to check if this even works
+    // save serialized data to local cache (extract to function?)
+    std::filesystem::path cache_path{"global_waypoint_cache"};
+    if (std::filesystem::exists(cache_path)) {
+        std::filesystem::path cache_temp{"global_waypoint_cache_temp"};
+        std::ofstream         writeFile("global_waypoint_cache_temp");
+        writeFile << receivedDataBuffer;
+        writeFile.close();
+        std::filesystem::rename(cache_temp, cache_path);
+    } else {
+        std::ofstream writeFile("global_waypoint_cache");
+        writeFile << receivedDataBuffer;
+        writeFile.close();
     }
 
     custom_interfaces::msg::Path to_publish = parseInMsg(receivedDataBuffer);
