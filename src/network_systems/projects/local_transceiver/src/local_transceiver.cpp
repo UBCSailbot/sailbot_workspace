@@ -274,7 +274,7 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
             continue;
         }
 
-        if (!rcvRsps({message_to_queue_cmd, AT::Line("\n"), AT::Line(AT::DNLD_TO_QUEUE), AT::Line(AT::DELIMITER)})) {
+        if (!rcvRsps({message_to_queue_cmd, AT::Line("\n"), AT::Line("+SBDRB:"), AT::Line("\n")})) {
             continue;
         }
 
@@ -299,17 +299,6 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
                            static_cast<uint8_t>(message_size_str[1]);  //NOLINT(readability-magic-numbers)
 
         message = buffer_data->substr(2, message_size_int);
-
-        std::cout << "Raw size bytes (hex): "
-          << std::hex << static_cast<int>(static_cast<uint8_t>(message_size_str[0])) << " "
-          << std::hex << static_cast<int>(static_cast<uint8_t>(message_size_str[1]))
-          << std::dec << std::endl;
-
-        if (!message.empty()) {
-            std::cout << "message exists :" << message << ": size: " << message_size_int << std::endl;
-        } else {
-            std::cout << "message empty :(" << std::endl;
-        }
 
         // std::regex re(
         //   R"(name=\"data\"; filename=\"[^\"]*\"\r?\n(?:.*\r?\n)*\r?\n([\s\S]*?)\r?\n--)", std::regex::ECMAScript);
