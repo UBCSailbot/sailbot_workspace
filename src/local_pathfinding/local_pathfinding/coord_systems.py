@@ -1,10 +1,11 @@
 """Functions and classes for converting between coordinate systems."""
 
 import math
-from typing import NamedTuple
+from typing import List, NamedTuple
 
 from custom_interfaces.msg import HelperLatLon
 from pyproj import Geod
+from shapely.geometry import Point, Polygon
 
 GEODESIC = Geod(ellps="WGS84")
 
@@ -80,3 +81,42 @@ def xy_to_latlon(reference: HelperLatLon, xy: XY) -> HelperLatLon:
     )
 
     return HelperLatLon(latitude=dest_lat, longitude=dest_lon)
+
+
+def latlon_polygon_list_to_xy_polygon_list(
+    polygons: List[Polygon], reference: HelperLatLon
+) -> List[Polygon]:
+    """
+    Transforms a list of one or more polygons from the global lat/lon coordinate system to
+    the local XY coordinate system.
+
+    Args:
+        polygons (List[Polygon]): List of polygons to be transformed.
+        reference (HelperLatLon): Lat and lon position of the reference point.
+
+    Returns:
+        List[Polygon]: List of transformed polygons.
+
+    Inner Functions:
+        _latlon_to_xy_point(point: HelperLatLon) -> Point:
+            Converts a latlon point to a 2D Cartesian point.
+        _latlons_to_xy_points(poly: Polygon) -> Polygon:
+            Applies the _latlon_to_point function to every point of poly
+    """
+
+    def _latlon_polygon_to_xy_polygon(poly: Polygon) -> Polygon:
+        if poly.is_empty:
+            return poly
+
+        return Polygon(list(map(_latlon_point_to_xy_point, poly.exterior.coords)))
+
+    def _latlon_point_to_xy_point(latlon_point: tuple) -> Point:
+        return Point(
+            *latlon_to_xy(
+                reference=reference,
+                # points are (lon, lat) in the land dataset
+                latlon=HelperLatLon(longitude=latlon_point[0], latitude=latlon_point[1]),
+            )
+        )
+
+    return list(map(_latlon_polygon_to_xy_polygon, polygons))
