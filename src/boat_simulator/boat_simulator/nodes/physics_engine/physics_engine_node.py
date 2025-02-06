@@ -398,11 +398,11 @@ class PhysicsEngineNode(Node):
 
         msg.wind_velocity.x = self.__wind_generator.velocity[0]
         msg.wind_velocity.y = self.__wind_generator.velocity[1]
-        msg.wind_velocity.z = self.__wind_generator.velocity[2]
+        msg.wind_velocity.z = 0.0
 
         msg.current_velocity.x = self.__current_generator.velocity[0]
         msg.current_velocity.y = self.__current_generator.velocity[1]
-        msg.current_velocity.z = self.__current_generator.velocity[2]
+        msg.current_velocity.z = 0.0
 
         sec, nanosec = divmod(self.pub_period * self.publish_counter, 1)
         msg.header.stamp.sec = int(sec)
