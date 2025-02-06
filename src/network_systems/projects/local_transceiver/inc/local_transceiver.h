@@ -129,6 +129,13 @@ public:
     // TEST
     bool checkMailbox();
 
+    /**
+     * @brief Read and parse the data from the global waypoints file, if it exists
+     *
+     * @return The global waypoints from the cache
+     */
+    static std::optional<custom_interfaces::msg::Path> getCache();
+
 private:
     // Serial port read/write timeout
     constexpr static const struct timeval TIMEOUT

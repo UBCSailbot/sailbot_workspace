@@ -1,3 +1,5 @@
+#include <bits/stdc++.h>
+
 #include <chrono>
 #include <functional>
 #include <memory>
@@ -9,6 +11,8 @@
 
 #include "cmn_hdrs/ros_info.h"
 #include "cmn_hdrs/shared_constants.h"
+#include "filesystem"
+#include "fstream"
 #include "local_transceiver.h"
 #include "net_node.h"
 
@@ -81,14 +85,12 @@ public:
               std::bind(&LocalTransceiverIntf::sub_local_path_data_cb, this, std::placeholders::_1));
 
             //check for cached waypoints and publish immediately
-            std::filesystem::path cache_path{"global_waypoint_cache"};
-            if (std::filesystem::exists(cache_path)) {
-                ifstream f("global_waypoint_cache", ios::binary);
-                if (!f) {
-                    //error: failed to read cache
-                }
-                custom_interfaces::msg::Path to_publish = parseInMsg(receivedDataBuffer);
-                pub_->publish(to_publish);
+            //note: should check for cache_temp?
+            //      if exists, should be more up-to-date than cache
+            //also, check if I can just use pub_cb or not since its not done initializing?
+            auto msg = lcl_trns_->getCache();
+            if (msg) {
+                pub_->publish(*msg);
             }
         }
     }

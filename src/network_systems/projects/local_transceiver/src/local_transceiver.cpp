@@ -25,6 +25,7 @@
 #include "filesystem"
 #include "fstream"
 #include "global_path.pb.h"
+#include "iostream"
 #include "sensors.pb.h"
 #include "waypoint.pb.h"
 
@@ -324,15 +325,19 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
     // save serialized data to local cache (extract to function?)
     std::filesystem::path cache_path{"global_waypoint_cache"};
     if (std::filesystem::exists(cache_path)) {
+        std::ofstream writeFile("global_waypoint_cache_temp.txt", std::ios::binary);
+        if (!writeFile) {
+            //err
+        }
+        writeFile.write(receivedDataBuffer.data(), static_cast<std::streamsize>(receivedDataBuffer.size()));
         std::filesystem::path cache_temp{"global_waypoint_cache_temp"};
-        std::ofstream         writeFile("global_waypoint_cache_temp");
-        writeFile << receivedDataBuffer;
-        writeFile.close();
         std::filesystem::rename(cache_temp, cache_path);
     } else {
-        std::ofstream writeFile("global_waypoint_cache");
-        writeFile << receivedDataBuffer;
-        writeFile.close();
+        std::ofstream writeFile("global_waypoint_cache.txt", std::ios::binary);
+        if (!writeFile) {
+            //err
+        }
+        writeFile.write(receivedDataBuffer.data(), static_cast<std::streamsize>(receivedDataBuffer.size()));
     }
 
     custom_interfaces::msg::Path to_publish = parseInMsg(receivedDataBuffer);
@@ -368,6 +373,18 @@ custom_interfaces::msg::Path LocalTransceiver::parseInMsg(const std::string & ms
 
     soln.set__waypoints(waypoints);
     return soln;
+}
+
+std::optional<custom_interfaces::msg::Path> LocalTransceiver::getCache()
+{
+    std::filesystem::path cache_path{"global_waypoint_cache"};
+    if (std::filesystem::exists(cache_path)) {
+        std::ifstream                input("global_waypoint_cache", std::ios::binary);
+        std::string                  cachedDataBuffer(std::istreambuf_iterator<char>(input), {});
+        custom_interfaces::msg::Path to_publish = parseInMsg(cachedDataBuffer);
+        return to_publish;
+    }
+    return std::nullopt;
 }
 
 bool LocalTransceiver::rcvRsp(const AT::Line & expected_rsp)
