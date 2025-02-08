@@ -42,7 +42,22 @@ public:
             if (mode == SYSTEM_MODE::PROD) {
                 //TODO(Jng468) placeholder
             } else if (mode == SYSTEM_MODE::DEV) {
-                default_port = LOCAL_TRANSCEIVER_TEST_PORT;
+                default_port                = LOCAL_TRANSCEIVER_TEST_PORT;
+                std::string run_iridium_cmd = "$ROS_WORKSPACE/scripts/run_virtual_iridium.sh";
+                int         result          = std::system(run_iridium_cmd.c_str());  //NOLINT(concurrency-mt-unsafe)
+                if (result != 0) {
+                    std::string msg = "Error: could not start virtual iridium";
+                    std::cerr << msg << std::endl;
+                    throw std::exception();
+                }
+                std::string set_baud_cmd = "stty 19200 < $LOCAL_TRANSCEIVER_TEST_PORT";
+                result                   = std::system(set_baud_cmd.c_str());  //NOLINT(concurrency-mt-unsafe)
+                if (result != 0) {
+                    std::string msg = "Error: could not set baud rate for virtual iridium";
+                    std::cerr << msg << std::endl;
+                    throw std::exception();
+                }
+
             } else {
                 std::string msg = "Error, invalid system mode" + mode;
                 throw std::runtime_error(msg);
