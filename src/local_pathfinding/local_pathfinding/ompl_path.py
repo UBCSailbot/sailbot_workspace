@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, List
 import pyompl
 from custom_interfaces.msg import HelperLatLon
 from rclpy.impl.rcutils_logger import RcutilsLogger
+from shapely import Polygon
 
 import local_pathfinding.coord_systems as cs
 from local_pathfinding.objectives import get_sailing_objective
@@ -56,6 +57,8 @@ class OMPLPath:
         solved (bool): True if the path is a solution to the OMPL query, else false.
     """
 
+    obstacles: List[Polygon] = []
+
     def __init__(
         self,
         parent_logger: RcutilsLogger,
@@ -72,8 +75,9 @@ class OMPLPath:
         self._logger = parent_logger.get_child(name="ompl_path")
 
         self.state = OMPLPathState(local_path_state, self._logger)
+        self.obstacles = self.init_obstacles(local_path_state)
 
-        self._simple_setup = self._init_simple_setup(local_path_state)  # this needs state
+        self._simple_setup = self._init_simple_setup()
 
         self.solved = self._simple_setup.solve(time=max_runtime)  # time is in seconds
 
@@ -81,6 +85,19 @@ class OMPLPath:
         # if self.solved:
         #     # try to shorten the path
         #     simple_setup.simplifySolution()
+
+    def init_obstacles(self, local_path_state: LocalPathState) -> List[Polygon]:
+        """Extracts obstacle data from local_path_state and compiles it into a list of Polygons
+
+        Places Boats first in the list as states are more likely to conflict with Boats than Land.
+
+        Args:
+            local_path_state (LocalPathState): a wrapper class containing all the necessary data
+                                               to generate the obstacle list.
+
+        """
+
+        return []  # stub
 
     def get_cost(self):
         """Get the cost of the path generated.
@@ -106,7 +123,7 @@ class OMPLPath:
         waypoints = []
 
         for state in solution_path.getStates():
-            waypoint_XY = cs.XY(state.getX(), state.getY())  # TODO causes SEG FAULT
+            waypoint_XY = cs.XY(state.getX, state.getY)
             waypoint_latlon = cs.xy_to_latlon(self.state.reference_latlon, waypoint_XY)
             waypoints.append(
                 HelperLatLon(
@@ -123,7 +140,7 @@ class OMPLPath:
         """
         raise NotImplementedError
 
-    def _init_simple_setup(self, local_path_state) -> pyompl.SimpleSetup:
+    def _init_simple_setup(self) -> pyompl.SimpleSetup:
         """Initialize and configure the OMPL SimpleSetup object.
 
         Returns:
@@ -152,7 +169,7 @@ class OMPLPath:
 
         # create a simple setup object
         simple_setup = pyompl.SimpleSetup(space)
-        simple_setup.setStateValidityChecker(is_state_valid)
+        simple_setup.setStateValidityChecker(OMPLPath.is_state_valid)
 
         # set the goal and start states of the simple setup object
         start = pyompl.ScopedState(space)
@@ -191,19 +208,23 @@ class OMPLPath:
 
         return simple_setup
 
+    def is_state_valid(state: pyompl.SE2StateSpace) -> bool:
+        """Evaluate a state to determine if the configuration collides with an environment
+        obstacle.
 
-def is_state_valid(state: pyompl.SE2StateSpace) -> bool:
-    """Evaluate a state to determine if the configuration collides with an environment obstacle.
+        Args:
+            state (ob.SE2StateSpace): State to check.
 
-    Args:
-        state (ob.SE2StateSpace): State to check.
-
-    Returns:
-        bool: True if state is valid, else false.
-    """
-    # TODO: implement obstacle avoidance here
-    # note: `state` is of type `SE2StateInternal`, so we don't need to use the `()` operator.
-    return state.getX() < 0.6
+        Returns:
+            bool: True if state is valid, else false.
+        """
+        # note: `state` is of type `SE2StateInternal`, so we don't need to use the `()` operator.
+        state_is_valid = True
+        for obstacle in OMPLPath.obstacles:
+            state_is_valid = obstacle.is_valid(cs.XY(state.getX(), state.getY()))
+            if not state_is_valid:
+                return state_is_valid  # return False immediately once state is found to be invalid
+        return state_is_valid
 
 
 def get_planner_class():
