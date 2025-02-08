@@ -71,6 +71,8 @@ class OMPLPath:
         """
         self._logger = parent_logger.get_child(name="ompl_path")
 
+        self.state = OMPLPathState(local_path_state, self._logger)
+
         self._simple_setup = self._init_simple_setup(local_path_state)  # this needs state
 
         self.solved = self._simple_setup.solve(time=max_runtime)  # time is in seconds
@@ -128,7 +130,6 @@ class OMPLPath:
             og.SimpleSetup: Encapsulates the various objects necessary to solve a geometric or
                 control query in OMPL.
         """
-        self.state = OMPLPathState(local_path_state, self._logger)
 
         # create an SE2 state space: rotation and translation in a plane
         space = pyompl.SE2StateSpace()
