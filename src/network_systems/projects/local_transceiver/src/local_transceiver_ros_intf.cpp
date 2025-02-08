@@ -57,7 +57,7 @@ public:
             lcl_trns_ = std::make_unique<LocalTransceiver>(port, SATELLITE_BAUD_RATE);
 
             static constexpr int  ROS_Q_SIZE     = 5;
-            static constexpr auto TIMER_INTERVAL = std::chrono::milliseconds(500);
+            static constexpr auto TIMER_INTERVAL = std::chrono::milliseconds(300000);
             timer_ = this->create_wall_timer(TIMER_INTERVAL, std::bind(&LocalTransceiverIntf::pub_cb, this));
             pub_   = this->create_publisher<custom_interfaces::msg::Path>(ros_topics::GLOBAL_PATH, ROS_Q_SIZE);
 

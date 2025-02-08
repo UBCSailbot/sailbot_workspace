@@ -6,3 +6,6 @@ __pycache__/
 # global paths with exceptions
 /global_paths/*.csv
 !/global_paths/mock_global_path.csv
+
+# Python Bindings
+src/local_pathfinding/src/build/pyompl.cpython-310-x86_64-linux-gnu.so
