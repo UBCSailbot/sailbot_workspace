@@ -6,7 +6,6 @@
 #include "at_cmds.h"
 #include "boost/asio/io_service.hpp"
 #include "boost/asio/serial_port.hpp"
-#include "custom_interfaces/msg/ais_ships.hpp"
 #include "custom_interfaces/msg/batteries.hpp"
 #include "custom_interfaces/msg/generic_sensors.hpp"
 #include "custom_interfaces/msg/gps.hpp"
@@ -35,13 +34,6 @@ public:
     * @param gps custom_interfaces gps object
     */
     void updateSensor(msg::GPS gps);
-
-    /**
-    * @brief Update the sensor with new AIS Ships data
-    *
-    * @param ships custom_interfaces AISShips object
-    */
-    void updateSensor(msg::AISShips ships);
 
     /**
     * @brief Update the sensor with new Wind sensor data
