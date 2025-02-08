@@ -1,13 +1,10 @@
 """Tests classes and functions in boat_simulator/nodes/physics_engine/model.py"""
 
-from typing import Tuple
-
 import numpy as np
 import pytest
 from numpy.typing import NDArray
 
 from boat_simulator.common.types import Scalar
-from boat_simulator.nodes.physics_engine.kinematics_computation import BoatKinematics
 from boat_simulator.nodes.physics_engine.kinematics_data import KinematicsData
 from boat_simulator.nodes.physics_engine.model import BoatState
 
