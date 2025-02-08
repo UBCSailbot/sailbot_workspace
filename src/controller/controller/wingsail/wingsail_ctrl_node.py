@@ -2,11 +2,12 @@
 
 """The ROS node for the wingsail controller."""
 
+import math
+
 import rclpy
 import rclpy.utilities
 from custom_interfaces.msg import GPS, SailCmd, WindSensor
 from rclpy.node import Node
-import math
 
 from controller.common.constants import (
     CHORD_WIDTH_MAIN_SAIL,
@@ -146,15 +147,17 @@ class WingsailControllerNode(Node):
         apparent_speed = self.__filtered_wind_sensor.speed.speed
         apparent_direction = self.__filtered_wind_sensor.direction
         apparent_threshold = self.get_parameter("apparent_wind_threshold")
-        
+
         # Sets trim tab angle, scales if apparent wind speed is above threshold
         self.__trim_tab_angle = self.__wingsailController.get_trim_tab_angle(
-                apparent_speed, apparent_direction
+            apparent_speed, apparent_direction
         )
         if apparent_speed > apparent_threshold:
             coef = self.get_parameter("scaling_coef")
-            speed_difference = apparent_threshold-apparent_speed
-            self.__trim_tab_angle = self.__trim_tab_angle*math.exp(-1*coef*abs(speed_difference))
+            speed_difference = apparent_threshold - apparent_speed
+            self.__trim_tab_angle = self.__trim_tab_angle * math.exp(
+                -1 * coef * abs(speed_difference)
+            )
 
         msg.trim_tab_angle_degrees = self.__trim_tab_angle
 
