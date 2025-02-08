@@ -2,8 +2,6 @@
 
 """The ROS node for the wingsail controller."""
 
-import math
-
 import rclpy
 import rclpy.utilities
 from custom_interfaces.msg import GPS, SailCmd, WindSensor
@@ -16,6 +14,8 @@ from controller.common.constants import (
 )
 from controller.common.lut import LUT
 from controller.wingsail.controllers import WingsailController
+
+SCALING_INTERCEPT = 1
 
 
 def main(args=None):
@@ -157,8 +157,8 @@ class WingsailControllerNode(Node):
         if apparent_speed > apparent_threshold:
             coef = self.get_parameter("scaling_coef").get_parameter_value().double_value
             speed_difference = apparent_threshold - apparent_speed
-            self.__trim_tab_angle = self.__trim_tab_angle * math.exp(
-                -1 * coef * abs(speed_difference)
+            self.__trim_tab_angle = (
+                self.__trim_tab_angle * coef * speed_difference + SCALING_INTERCEPT
             )
 
         msg.trim_tab_angle_degrees = self.__trim_tab_angle

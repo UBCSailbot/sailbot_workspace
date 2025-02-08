@@ -99,7 +99,7 @@ ROS parameters specific to the nodes in the Controller.
 
 **`scaling_coef`**
 
-- _Description_: The coefficient used in the argument of the exponential function to scale trim tab angle.
+- _Description_: The coefficient used to scale trim tab angle.
 - _Datatype_: 'double'
 - _Range_: '[0.0, MAX_DOUBLE)'
 
