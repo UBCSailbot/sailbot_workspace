@@ -91,6 +91,18 @@ ROS parameters specific to the nodes in the Controller.
 - _Datatype_: `double`
 - _Range_: `(-180.0, 180.0]`
 
+**apparent_wind_threshold**
+
+- _Description_: The high wind threshold value for apparent wind
+- _Datatype_: 'double'
+- _Range_: '[0.0, MAX_DOUBLE]'
+
+**scaling_coef**
+
+- _Description_: The coefficient used in the argument of the exponential function to scale trim tab angle
+- _Datatype_: 'double'
+- _Range_: '[0.0, MAX_DOUBLE]'
+
 ## Boat Simulator Parameters
 
 ROS parameters specific to the nodes in the boat simulator.
