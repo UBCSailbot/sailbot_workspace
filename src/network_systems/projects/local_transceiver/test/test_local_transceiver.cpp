@@ -5,8 +5,6 @@
 
 #include <boost/process.hpp>
 #include <boost/system/system_error.hpp>
-#include <custom_interfaces/msg/detail/ais_ships__struct.hpp>
-#include <custom_interfaces/msg/detail/helper_ais_ship__struct.hpp>
 #include <custom_interfaces/msg/detail/helper_dimension__struct.hpp>
 #include <custom_interfaces/msg/detail/helper_heading__struct.hpp>
 #include <custom_interfaces/msg/detail/helper_lat_lon__struct.hpp>
@@ -87,7 +85,7 @@ TEST_F(TestLocalTransceiver, debugSendTest)
 
 /**
  * @brief Send a binary string to virtual_iridium and verify it is received
- * Using gps, ais, wind, batteries, generic sensors, local path data
+ * Using gps, wind, batteries, generic sensors, local path data
  */
 TEST_F(TestLocalTransceiver, sendData)
 {
@@ -96,7 +94,6 @@ TEST_F(TestLocalTransceiver, sendData)
 
     // custom inferfaces used
     custom_interfaces::msg::GPS            gps;
-    custom_interfaces::msg::AISShips       ais;
     custom_interfaces::msg::WindSensors    wind;
     custom_interfaces::msg::Batteries      batteries;
     custom_interfaces::msg::GenericSensors sensors;
@@ -107,33 +104,6 @@ TEST_F(TestLocalTransceiver, sendData)
     gps.lat_lon.set__latitude(holder);
     gps.lat_lon.set__longitude(holder);
     gps.speed.set__speed(holder);
-
-    // assign ais data
-    custom_interfaces::msg::HelperAISShip   ship_one;
-    custom_interfaces::msg::HelperHeading   heading_one;
-    custom_interfaces::msg::HelperLatLon    lat_lon_one;
-    custom_interfaces::msg::HelperSpeed     speed_one;
-    custom_interfaces::msg::HelperROT       rotation_one;
-    custom_interfaces::msg::HelperDimension width_one;
-    custom_interfaces::msg::HelperDimension length_one;
-
-    heading_one.set__heading(holder);
-    lat_lon_one.set__latitude(holder);
-    lat_lon_one.set__longitude(holder);
-    speed_one.set__speed(holder);
-    rotation_one.set__rot(holder_int);
-    width_one.set__dimension(holder);
-    length_one.set__dimension(holder);
-
-    ship_one.set__id(holder_int);
-    ship_one.set__cog(heading_one);
-    ship_one.set__lat_lon(lat_lon_one);
-    ship_one.set__sog(speed_one);
-    ship_one.set__rot(rotation_one);
-    ship_one.set__width(width_one);
-    ship_one.set__length(length_one);
-
-    ais.set__ships({ship_one});
 
     // assign wind data
     custom_interfaces::msg::WindSensor  wind_data_one;
@@ -175,7 +145,6 @@ TEST_F(TestLocalTransceiver, sendData)
     // update sensors and send
     lcl_trns_->updateSensor(wind);
     lcl_trns_->updateSensor(gps);
-    lcl_trns_->updateSensor(ais);
     lcl_trns_->updateSensor(batteries);
     lcl_trns_->updateSensor(sensors);
     lcl_trns_->updateSensor(local_paths);
