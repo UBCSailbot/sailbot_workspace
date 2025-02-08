@@ -225,6 +225,26 @@ std::optional<std::string> LocalTransceiver::debugSend(const std::string & cmd)
     return readRsp();
 }
 
+void cacheGlobalWaypoints(std::string receivedDataBuffer)
+{
+    std::filesystem::path cache_path{"global_waypoint_cache"};
+    if (std::filesystem::exists(cache_path)) {
+        std::ofstream writeFile("global_waypoint_cache_temp.txt", std::ios::binary);
+        if (!writeFile) {
+            //err
+        }
+        writeFile.write(receivedDataBuffer.data(), static_cast<std::streamsize>(receivedDataBuffer.size()));
+        std::filesystem::path cache_temp{"global_waypoint_cache_temp"};
+        std::filesystem::rename(cache_temp, cache_path);
+    } else {
+        std::ofstream writeFile("global_waypoint_cache.txt", std::ios::binary);
+        if (!writeFile) {
+            //err
+        }
+        writeFile.write(receivedDataBuffer.data(), static_cast<std::streamsize>(receivedDataBuffer.size()));
+    }
+}
+
 custom_interfaces::msg::Path LocalTransceiver::receive()
 {
     static constexpr int MAX_NUM_RETRIES = 20;
@@ -323,22 +343,7 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
 
     //need to check if this even works
     // save serialized data to local cache (extract to function?)
-    std::filesystem::path cache_path{"global_waypoint_cache"};
-    if (std::filesystem::exists(cache_path)) {
-        std::ofstream writeFile("global_waypoint_cache_temp.txt", std::ios::binary);
-        if (!writeFile) {
-            //err
-        }
-        writeFile.write(receivedDataBuffer.data(), static_cast<std::streamsize>(receivedDataBuffer.size()));
-        std::filesystem::path cache_temp{"global_waypoint_cache_temp"};
-        std::filesystem::rename(cache_temp, cache_path);
-    } else {
-        std::ofstream writeFile("global_waypoint_cache.txt", std::ios::binary);
-        if (!writeFile) {
-            //err
-        }
-        writeFile.write(receivedDataBuffer.data(), static_cast<std::streamsize>(receivedDataBuffer.size()));
-    }
+    cacheGlobalWaypoints(receivedDataBuffer);
 
     custom_interfaces::msg::Path to_publish = parseInMsg(receivedDataBuffer);
     return to_publish;
