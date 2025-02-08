@@ -66,7 +66,8 @@ class TestBoatState:
             ),
         ],
     )
-    # Assumes __compute_net_force_and_torque and __kinematics_computation.step work
+    # Tests BoatState.step()
+    # __compute_net_force_and_torque and __kinematics_computation.step are tested elsewhere
     def test_step_boat_state(
         self,
         timestep: Scalar,
@@ -77,7 +78,6 @@ class TestBoatState:
         input_kin_data: NDArray,
     ):
         test_boat_state = BoatState(timestep)
-        print(dir(test_boat_state))
         input_kinematics = KinematicsData(input_kin_data)
 
         relative_wind_vel = glo_wind_vel - input_kinematics.linear_velocity
