@@ -111,6 +111,8 @@ public:
      */
     std::optional<std::string> debugSend(const std::string & cmd);
 
+    static void cacheGlobalWaypoints(std::string receivedDataBuffer);
+
     /**
      * @brief Retrieve the latest message from the remote server via the serial port
      *
