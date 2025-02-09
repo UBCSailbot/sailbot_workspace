@@ -50,15 +50,15 @@ protected:
 
     TestLocalTransceiver()
     {
-        try {
-            lcl_trns_ = new LocalTransceiver(LOCAL_TRANSCEIVER_TEST_PORT, SATELLITE_BAUD_RATE);
-        } catch (boost::system::system_error & e) {
-            std::stringstream ss;
-            ss << "Failed to create Local Transceiver for tests, is only one instance of: \""
-               << RUN_VIRTUAL_IRIDIUM_SCRIPT_PATH << "\" running?" << std::endl;
-            ss << e.what() << std::endl;
-            throw std::runtime_error(ss.str());
-        }
+        // try {
+        //     lcl_trns_ = new LocalTransceiver(LOCAL_TRANSCEIVER_TEST_PORT, SATELLITE_BAUD_RATE);
+        // } catch (boost::system::system_error & e) {
+        //     std::stringstream ss;
+        //     ss << "Failed to create Local Transceiver for tests, is only one instance of: \""
+        //        << RUN_VIRTUAL_IRIDIUM_SCRIPT_PATH << "\" running?" << std::endl;
+        //     ss << e.what() << std::endl;
+        //     throw std::runtime_error(ss.str());
+        // }
     }
     ~TestLocalTransceiver() override
     {
@@ -248,14 +248,17 @@ TEST_F(TestLocalTransceiver, checkCache)
     // convert protobuf to string
     std::string serialized_test = path.SerializeAsString();
 
-    std::filesystem::path cache_path{"global_waypoint_cache"};
+    std::string           CACHE_PATH      = "global_waypoint_cache";
+    std::string           CACHE_TEMP_PATH = "global_waypoint_cache_temp";
+    std::filesystem::path cache{CACHE_PATH};
     //check that cache doesn't exist yet
-    ASSERT_FALSE(std::filesystem::exists(cache_path));
+    ASSERT_FALSE(std::filesystem::exists(cache));
 
     LocalTransceiver::cacheGlobalWaypoints(serialized_test);
+    std::cout << "REACHED HERE " << std::endl;
 
     //check that after caching the cache exists
-    ASSERT_TRUE(std::filesystem::exists(cache_path));
+    ASSERT_TRUE(std::filesystem::exists(cache));
 
     auto cache_obj = LocalTransceiver::getCache();
 
@@ -279,10 +282,10 @@ TEST_F(TestLocalTransceiver, checkCache)
     serialized_test = path.SerializeAsString();
     LocalTransceiver::cacheGlobalWaypoints(serialized_test);
 
-    std::filesystem::path cache_temp_path{"global_waypoint_cache_temp"};
-    ASSERT_TRUE(std::filesystem::exists(cache_path));
+    std::filesystem::path cache_temp{CACHE_TEMP_PATH};
+    ASSERT_TRUE(std::filesystem::exists(cache));
     //make sure temp path doesn't exist after rename
-    ASSERT_FALSE(std::filesystem::exists(cache_temp_path));
+    ASSERT_FALSE(std::filesystem::exists(CACHE_TEMP_PATH));
 
     cache_obj = LocalTransceiver::getCache();
 

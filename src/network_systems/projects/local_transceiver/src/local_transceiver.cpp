@@ -210,20 +210,27 @@ std::optional<std::string> LocalTransceiver::debugSend(const std::string & cmd)
 
 void LocalTransceiver::cacheGlobalWaypoints(std::string receivedDataBuffer)
 {
-    std::filesystem::path cache_path{"global_waypoint_cache"};
-    if (std::filesystem::exists(cache_path)) {
-        std::ofstream writeFile("global_waypoint_cache_temp.txt", std::ios::binary);
+    std::string           CACHE_PATH      = "global_waypoint_cache";
+    std::string           CACHE_TEMP_PATH = "global_waypoint_cache_temp";
+    std::filesystem::path cache{CACHE_PATH};
+    std::cout << "STARTING cacheGlobalWaypoints" << std::endl;
+    if (std::filesystem::exists(cache)) {
+        std::filesystem::path cache_temp{CACHE_TEMP_PATH};
+        std::cout << "CACHE EXISTS " << std::endl;
+        std::ofstream writeFile(CACHE_TEMP_PATH, std::ios::binary);
         if (!writeFile) {
-            //err
+            std::cerr << "Failed to create temp cache file" << std::endl;
         }
         writeFile.write(receivedDataBuffer.data(), static_cast<std::streamsize>(receivedDataBuffer.size()));
-        std::filesystem::path cache_temp{"global_waypoint_cache_temp"};
-        std::filesystem::rename(cache_temp, cache_path);
+        std::filesystem::rename(CACHE_TEMP_PATH, CACHE_PATH);
     } else {
-        std::ofstream writeFile("global_waypoint_cache.txt", std::ios::binary);
+        std::cout << "CACHE DOESN'T EXIST" << std::endl;
+        std::ofstream writeFile(CACHE_PATH, std::ios::binary);
         if (!writeFile) {
-            //err
+            std::cerr << "Failed to create cache file" << std::endl;
         }
+        std::cout << "Writing to: " << std::filesystem::absolute(CACHE_PATH) << std::endl;
+        std::cout << "Current Working Directory: " << std::filesystem::current_path() << std::endl;
         writeFile.write(receivedDataBuffer.data(), static_cast<std::streamsize>(receivedDataBuffer.size()));
     }
 }
