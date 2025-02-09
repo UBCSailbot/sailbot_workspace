@@ -130,6 +130,15 @@ public:
      */
     static std::optional<custom_interfaces::msg::Path> getCache();
 
+    //temp public for testing
+    /**
+     * @brief Parse the message received from the remote server
+     *
+     * @param msg message received from the remote server
+     * @return the data byte string payload from the message
+     */
+    static custom_interfaces::msg::Path parseInMsg(const std::string & msg);
+
 private:
     // Serial port read/write timeout
     constexpr static const struct timeval TIMEOUT
@@ -162,14 +171,6 @@ private:
     bool rcvRsp(const AT::Line & expected_rsp);
 
     std::optional<std::string> readRsp();
-
-    /**
-     * @brief Parse the message received from the remote server
-     *
-     * @param msg message received from the remote server
-     * @return the data byte string payload from the message
-     */
-    static custom_interfaces::msg::Path parseInMsg(const std::string & msg);
 
     /**
      * @brief Convert a boost::asio::streambuf into a string

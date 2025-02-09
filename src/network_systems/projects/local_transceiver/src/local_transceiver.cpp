@@ -208,7 +208,7 @@ std::optional<std::string> LocalTransceiver::debugSend(const std::string & cmd)
     return readRsp();
 }
 
-void cacheGlobalWaypoints(std::string receivedDataBuffer)
+void LocalTransceiver::cacheGlobalWaypoints(std::string receivedDataBuffer)
 {
     std::filesystem::path cache_path{"global_waypoint_cache"};
     if (std::filesystem::exists(cache_path)) {
