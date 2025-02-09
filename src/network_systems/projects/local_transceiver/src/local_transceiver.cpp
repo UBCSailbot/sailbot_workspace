@@ -210,13 +210,12 @@ std::optional<std::string> LocalTransceiver::debugSend(const std::string & cmd)
 
 void LocalTransceiver::cacheGlobalWaypoints(std::string receivedDataBuffer)
 {
+    //writes to /build/network_systems/projects/local_transceiver/PATH
     std::string           CACHE_PATH      = "global_waypoint_cache";
     std::string           CACHE_TEMP_PATH = "global_waypoint_cache_temp";
     std::filesystem::path cache{CACHE_PATH};
-    std::cout << "STARTING cacheGlobalWaypoints" << std::endl;
     if (std::filesystem::exists(cache)) {
         std::filesystem::path cache_temp{CACHE_TEMP_PATH};
-        std::cout << "CACHE EXISTS " << std::endl;
         std::ofstream writeFile(CACHE_TEMP_PATH, std::ios::binary);
         if (!writeFile) {
             std::cerr << "Failed to create temp cache file" << std::endl;
@@ -224,13 +223,10 @@ void LocalTransceiver::cacheGlobalWaypoints(std::string receivedDataBuffer)
         writeFile.write(receivedDataBuffer.data(), static_cast<std::streamsize>(receivedDataBuffer.size()));
         std::filesystem::rename(CACHE_TEMP_PATH, CACHE_PATH);
     } else {
-        std::cout << "CACHE DOESN'T EXIST" << std::endl;
         std::ofstream writeFile(CACHE_PATH, std::ios::binary);
         if (!writeFile) {
             std::cerr << "Failed to create cache file" << std::endl;
         }
-        std::cout << "Writing to: " << std::filesystem::absolute(CACHE_PATH) << std::endl;
-        std::cout << "Current Working Directory: " << std::filesystem::current_path() << std::endl;
         writeFile.write(receivedDataBuffer.data(), static_cast<std::streamsize>(receivedDataBuffer.size()));
     }
 }
@@ -331,8 +327,6 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
         break;
     }
 
-    //need to check if this even works
-    // save serialized data to local cache (extract to function?)
     cacheGlobalWaypoints(receivedDataBuffer);
 
     custom_interfaces::msg::Path to_publish = parseInMsg(receivedDataBuffer);

@@ -98,8 +98,8 @@ public:
 
             //check for cached waypoints and publish immediately
             //note: should check for cache_temp?
-            //      if exists, should be more up-to-date than cache
-            //also, check if I can just use pub_cb or not since its not done initializing?
+            //      if exists, could be more up-to-date than cache, if power was lost AFTER finishing writing and BEFORE
+            //renaming the file
             auto msg = lcl_trns_->getCache();
             if (msg) {
                 pub_->publish(*msg);

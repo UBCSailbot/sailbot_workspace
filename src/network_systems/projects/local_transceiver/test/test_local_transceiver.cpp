@@ -23,6 +23,8 @@
 
 namespace bp = boost::process;
 
+std::string CACHE_PATH      = "global_waypoint_cache";
+std::string CACHE_TEMP_PATH = "global_waypoint_cache_temp";
 /* >>>>>README<<<<<<
 Local Transceiver unit tests rely on two other programs: Virtual Iridium and HTTP Echo Server
 1. Spawning a separate process for RUN_VIRTUAL_IRIDIUM_SCRIPT_PATH doesn't work very well because the script
@@ -46,7 +48,12 @@ protected:
         }
     }
 
-    static void TearDownTestSuite() { http_echo_server_proc_.terminate(); }
+    static void TearDownTestSuite()
+    {
+        http_echo_server_proc_.terminate();
+        std::filesystem::remove(CACHE_PATH);
+        std::filesystem::remove(CACHE_TEMP_PATH);
+    }
 
     TestLocalTransceiver()
     {
@@ -62,8 +69,8 @@ protected:
     }
     ~TestLocalTransceiver() override
     {
-        lcl_trns_->stop();
-        delete lcl_trns_;
+        // lcl_trns_->stop();
+        // delete lcl_trns_;
     }
 
     LocalTransceiver * lcl_trns_;
@@ -248,8 +255,6 @@ TEST_F(TestLocalTransceiver, checkCache)
     // convert protobuf to string
     std::string serialized_test = path.SerializeAsString();
 
-    std::string           CACHE_PATH      = "global_waypoint_cache";
-    std::string           CACHE_TEMP_PATH = "global_waypoint_cache_temp";
     std::filesystem::path cache{CACHE_PATH};
     //check that cache doesn't exist yet
     ASSERT_FALSE(std::filesystem::exists(cache));
