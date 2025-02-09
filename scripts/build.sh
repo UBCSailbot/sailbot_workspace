@@ -44,7 +44,7 @@ colcon build \
 
 if [[ "$PACKAGE" == "local_pathfinding" || "$PACKAGE" == "" ]]; then
     # check if the ompl python bindings have already been built once
-    if [ ! -f /workspaces/sailbot_workspace/src/local_pathfinding/src/build/*.so ]; then
+    if [ ! -f /workspaces/sailbot_workspace/install/lib/python3.10/site-packages/pyompl*.so ]; then
         echo "Building ompl python bindings..."
         /workspaces/sailbot_workspace/src/local_pathfinding/src/build/py_bindings.sh
     else
