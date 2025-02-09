@@ -120,6 +120,9 @@ RUN apt-get update \
         build-essential \
         cmake \
         git \
+        libbson-dev \
+        libbson-1.0-0 \
+        libmongoc-1.0-0\
         libmongoc-dev \
         ninja-build \
         wget \

@@ -403,10 +403,20 @@
             },
             // Test tasks
             {
-                "label": "test",
+                "label": "Test All",
                 "detail": "Run all unit tests and show results.",
                 "type": "shell",
                 "command": "${workspaceFolder:sailbot_workspace}/scripts/test.sh",
+                "group": {
+                    "kind": "test",
+                    "isDefault": true
+                }
+            },
+            {
+                "label": "Test Package",
+                "detail": "Run unit tests for a specific package and show results.",
+                "type": "shell",
+                "command": "${workspaceFolder:sailbot_workspace}/scripts/test.sh -p ${input:package}",
                 "group": {
                     "kind": "test",
                     "isDefault": true
