@@ -43,6 +43,11 @@ colcon build \
         --cmake-args "-DCMAKE_BUILD_TYPE=$BUILD_TYPE" "-DSTATIC_ANALYSIS=$STATIC_ANALYSIS" "-DUNIT_TEST=$UNIT_TEST" "--no-warn-unused-cli"
 
 if [[ "$PACKAGE" == "local_pathfinding" || "$PACKAGE" == "" ]]; then
-    echo "Building ompl python bindings..."
-    /workspaces/sailbot_workspace/src/local_pathfinding/src/build/py_bindings.sh
+
+    if [ ! -f /workspaces/sailbot_workspace/src/local_pathfinding/src/build/*.so ]; then
+        echo "Building ompl python bindings..."
+        /workspaces/sailbot_workspace/src/local_pathfinding/src/build/py_bindings.sh
+    else
+        echo "ompl python bindings already built. If you want to rebuild them run: /local_pathfinding/src/build/py_bindings.sh"
+    fi
 fi
