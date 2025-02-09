@@ -2,6 +2,7 @@
 set -e
 export LD_LIBRARY_PATH=/usr/share:$LD_LIBRARY_PATH
 echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
+echo "PYTHON_PATH: $PYTHONPATH"
 
 # Display a help message for using this script
 function helpMessage() {
