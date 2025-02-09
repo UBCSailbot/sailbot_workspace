@@ -13,9 +13,10 @@ from typing import TYPE_CHECKING, List
 import pyompl
 from custom_interfaces.msg import HelperLatLon
 from rclpy.impl.rcutils_logger import RcutilsLogger
-from shapely import Polygon
+from shapely.geometry import Polygon
 
 import local_pathfinding.coord_systems as cs
+import local_pathfinding.obstacles as ob
 from local_pathfinding.objectives import get_sailing_objective
 
 if TYPE_CHECKING:
@@ -57,7 +58,8 @@ class OMPLPath:
         solved (bool): True if the path is a solution to the OMPL query, else false.
     """
 
-    obstacles: List[Polygon] = []
+    # one dummy obstacle for now
+    obstacles: List[ob.Obstacle] = []
 
     def __init__(
         self,
@@ -123,7 +125,7 @@ class OMPLPath:
         waypoints = []
 
         for state in solution_path.getStates():
-            waypoint_XY = cs.XY(state.getX, state.getY)
+            waypoint_XY = cs.XY(state.getX(), state.getY())
             waypoint_latlon = cs.xy_to_latlon(self.state.reference_latlon, waypoint_XY)
             waypoints.append(
                 HelperLatLon(
@@ -220,10 +222,12 @@ class OMPLPath:
         """
         # note: `state` is of type `SE2StateInternal`, so we don't need to use the `()` operator.
         state_is_valid = True
-        for obstacle in OMPLPath.obstacles:
-            state_is_valid = obstacle.is_valid(cs.XY(state.getX(), state.getY()))
+
+        for o in OMPLPath.obstacles:
+            state_is_valid = o.is_valid(cs.XY(state.getX(), state.getY()))
             if not state_is_valid:
                 return state_is_valid  # return False immediately once state is found to be invalid
+
         return state_is_valid
 
 
