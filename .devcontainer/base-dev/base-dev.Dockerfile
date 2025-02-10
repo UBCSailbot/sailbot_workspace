@@ -103,7 +103,8 @@ RUN cmake \
         -DPYTHON_EXEC=/usr/bin/python3 \
         -DOMPL_REGISTRATION=OFF \
         -DCMAKE_INSTALL_PREFIX=/usr \
-    && cmake --build build -t update_bindings \
+    # these might not be needed now as we made our own bindings using pybind
+    # && cmake --build build -t update_bindings \
     && NPROC=$(nproc) \
     && HALF_NPROC=$((NPROC / 2)) \
     && cmake --build build -- -j $HALF_NPROC \
