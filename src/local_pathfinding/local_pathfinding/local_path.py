@@ -23,6 +23,7 @@ class LocalPathState:
         `wind_speed` (float): Wind speed.
         `wind_direction` (int): Wind direction.
         `planner` (str): Planner to use for the OMPL query.
+        `reference_latlon` (Tuple[float, float]): The last tuple from the global_path array
     """
 
     def __init__(
@@ -31,7 +32,7 @@ class LocalPathState:
         ais_ships: AISShips,
         global_path: Path,
         filtered_wind_sensor: WindSensor,
-        planner: str,
+        planner: str
     ):
         """Initializes the state from ROS msgs."""
         if gps:  # TODO: remove when mock can be run
@@ -53,6 +54,12 @@ class LocalPathState:
         if filtered_wind_sensor:  # TODO: remove when mock can be run
             self.wind_speed = filtered_wind_sensor.speed.speed
             self.wind_direction = filtered_wind_sensor.direction
+
+        self.reference_latlon = (
+            self.global_path[-1]
+            if self.global_path and len(self.global_path) > 0
+            else HelperLatLon(latitude=0.0, longitude=0.0)
+        )
 
         self.planner = planner
 

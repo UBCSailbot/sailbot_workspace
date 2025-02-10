@@ -14,6 +14,9 @@ import pyompl
 from custom_interfaces.msg import HelperLatLon
 from rclpy.impl.rcutils_logger import RcutilsLogger
 
+# Fix the import
+from shapely.geometry import MultiPolygon, Point, Polygon, box
+
 import local_pathfinding.coord_systems as cs
 from local_pathfinding.objectives import get_sailing_objective
 
@@ -24,27 +27,30 @@ if TYPE_CHECKING:
 # ou.setLogLevel(ou.LOG_WARN)
 
 
-class OMPLPathState:
-    def __init__(self, local_path_state: LocalPathState, logger: RcutilsLogger):
-        # TODO: derive OMPLPathState attributes from local_path_state
-        self.heading_direction = 45.0
-        self.wind_direction = 10.0
-        self.wind_speed = 1.0
+# class OMPLPathState:
+#     def __init__(self, local_path_state: LocalPathState, logger: RcutilsLogger):
+#         # TODO: derive OMPLPathState attributes from local_path_state
+#         self.heading_direction = 45.0
+#         self.wind_direction = 10.0
+#         self.wind_speed = 1.0
 
-        self.state_domain = (-1, 1)
-        self.state_range = (-1, 1)
-        self.start_state = (0.5, 0.4)
-        self.goal_state = (0.5, -0.4)
+#         # domain and range are static
+#         self.state_domain = (-1, 1)
+#         self.state_range = (-1, 1)
+#         # comes from the gps
+#         self.start_state = (0.5, 0.4)
+#         # comes
+#         self.goal_state = (0.5, -0.4)
 
-        self.reference_latlon = (
-            local_path_state.global_path[-1]
-            if local_path_state.global_path and len(local_path_state.global_path) > 0
-            else HelperLatLon(latitude=0.0, longitude=0.0)
-        )
+#         self.reference_latlon = (
+#             local_path_state.global_path[-1]
+#             if local_path_state.global_path and len(local_path_state.global_path) > 0
+#             else HelperLatLon(latitude=0.0, longitude=0.0)
+#         )
 
-        if local_path_state:
-            self.planner = None
-            # self.planner = pyompl.RRTstar()
+#         if local_path_state:
+#             self.planner = None
+#             # self.planner = pyompl.RRTstar()
 
 
 class OMPLPath:
@@ -68,7 +74,11 @@ class OMPLPath:
             parent_logger (RcutilsLogger): Logger of the parent class.
             max_runtime (float): Maximum amount of time in seconds to look for a solution path.
             local_path_state (LocalPathState): State of Sailbot.
+
+        Fields not mentioned in Args:
+            box_buffer (float): buffer around the sailbot position and the goal position in km
         """
+        self.box_buffer = 1
         self._logger = parent_logger.get_child(name="ompl_path")
 
         self._simple_setup = self._init_simple_setup(local_path_state)  # this needs state
@@ -114,6 +124,26 @@ class OMPLPath:
 
         return waypoints
 
+    def create_space(self, position) -> Polygon:
+        space = Point(position[0], position[1]).buffer(self.box_buffer, cap_style=3, join_style=2)
+
+        return space
+        # postion.
+        # space = Point(
+        #     self.state.
+        # )
+
+        # sailbot_box = Point(
+        #         self.sailbot_position_latlon.longitude, self.sailbot_position_latlon.latitude
+        #     ).buffer(self.bbox_buffer_amount, cap_style=3, join_style=2)
+
+        #     waypoint_box = Point(self.reference.longitude, self.reference.latitude).buffer(
+        #         self.bbox_buffer_amount, cap_style=3, join_style=2
+        #     )
+        #     state_space = box(*MultiPolygon([sailbot_box, waypoint_box]).bounds)
+
+        # latlon_polygons = self.all_land_data.intersection(state_space)
+
     def update_objectives(self):
         """Update the objectives on the basis of which the path is optimized.
         Raises:
@@ -122,21 +152,33 @@ class OMPLPath:
         raise NotImplementedError
 
     def _init_simple_setup(self, local_path_state) -> pyompl.SimpleSetup:
-        """Initialize and configure the OMPL SimpleSetup object.
+        self.state = local_path_state
 
-        Returns:
-            og.SimpleSetup: Encapsulates the various objects necessary to solve a geometric or
-                control query in OMPL.
-        """
-        self.state = OMPLPathState(local_path_state, self._logger)
+        # Create buffered spaces and extract their centers
+        start_polygon = self.create_space(self.state.position)
+        start_x, start_y = self.state.position  # Use original position for coordinates
+
+        if not self.state.global_path:
+            goal_polygon = self.create_space([0, 0])
+            goal_x, goal_y = (0, 0)
+        else:
+            goal_position = self.state.global_path[-1]
+            goal_polygon = self.create_space(goal_position)
+            goal_x, goal_y = goal_position
+
+        # Store polygons for collision checking if needed
+        state_domain = start_polygon
+        state_range = goal_polygon
 
         # create an SE2 state space: rotation and translation in a plane
         space = pyompl.SE2StateSpace()
 
         # set the bounds of the state space
         bounds = pyompl.RealVectorBounds(dim=2)
-        x_min, x_max = self.state.state_domain
-        y_min, y_max = self.state.state_range
+        big_polygon = box(*MultiPolygon([start_polygon, goal_polygon]).bounds)
+        x_min, y_min, x_max, y_max = big_polygon.bounds
+        # x_min, x_max = state_domain
+        # y_min, y_max = state_range
         bounds.setLow(0, x_min)
         bounds.setLow(1, y_min)
         bounds.setHigh(0, x_max)
@@ -156,8 +198,8 @@ class OMPLPath:
         # set the goal and start states of the simple setup object
         start = pyompl.ScopedState(space)
         goal = pyompl.ScopedState(space)
-        start_x, start_y = self.state.start_state
-        goal_x, goal_y = self.state.goal_state
+        # start_x, start_y = start_state
+        # goal_x, goal_y = goal_state
         start.setXY(start_x, start_y)
         goal.setXY(goal_x, goal_y)
         """self._logger.debug(
@@ -170,6 +212,7 @@ class OMPLPath:
         # Constructs a space information instance for this simple setup
         space_information = simple_setup.getSpaceInformation()
 
+        # figure this out
         self.state.planner = pyompl.RRTstar(space_information)
 
         # set the optimization objective of the simple setup object
@@ -178,7 +221,8 @@ class OMPLPath:
         objective = get_sailing_objective(
             space_information,
             simple_setup,
-            self.state.heading_direction,
+            # This too
+            self.state.heading,
             self.state.wind_direction,
             self.state.wind_speed,
         )
