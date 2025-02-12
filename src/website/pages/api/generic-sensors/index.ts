@@ -19,15 +19,7 @@ export default async function handler(
           __v: 0,
         });
 
-        const formattedData = genericSensors.map((entry) => ({
-          ...entry.toObject(),
-          genericSensors: entry.genericSensors.map(sensor => ({
-            id: sensor.id,
-            data: BigInt(sensor.data)
-          }))
-        }));
-
-        res.status(200).json({ success: true, data: formattedData });
+        res.status(200).json({ success: true, data: genericSensors });
       } catch (error) {
         res.status(400).json({ success: false, message: (error as Error).message });
       }
@@ -43,13 +35,22 @@ export default async function handler(
 
         const processedSensors = genericSensors.map(sensor => ({
           id: sensor.id,
-          data: sensor.data.toString()
+          data: typeof sensor.data === "bigint" ? sensor.data.toString() : sensor.data
         }));
 
         const newGenericSensors = new GenericSensors({ genericSensors: processedSensors, timestamp });
         await newGenericSensors.save();
 
         res.status(201).json({ success: true, message: "GenericSensors data stored", data: newGenericSensors });
+      } catch (error) {
+        res.status(500).json({ success: false, message: (error as Error).message });
+      }
+      break;
+
+    case 'DELETE':
+      try {
+        await GenericSensors.deleteMany({});
+        res.status(200).json({ success: true, message: "All GenericSensors data deleted" });
       } catch (error) {
         res.status(500).json({ success: false, message: (error as Error).message });
       }
