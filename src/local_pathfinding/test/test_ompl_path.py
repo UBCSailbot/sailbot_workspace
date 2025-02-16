@@ -1,3 +1,4 @@
+from shapely.geometry import Point
 import pyompl
 import pytest
 from custom_interfaces.msg import GPS, AISShips, Path, WindSensor
@@ -18,25 +19,6 @@ PATH = ompl_path.OMPLPath(
         planner="rrtstar",
     ),
 )
-
-# TODO: Update this test
-# def test_OMPLPathState():
-#     local_path_state = LocalPathState(
-#         gps=GPS(),
-#         ais_ships=AISShips(),
-#         global_path=Path(),
-#         filtered_wind_sensor=WindSensor(),
-#         planner="rrtstar",
-#     )
-#     state = local_path_state
-#     # assert state.state_domain == (-1, 1), "incorrect value for attribute state_domain"
-#     # assert state.state_range == (-1, 1), "incorrect value for attribute start_state"
-#     # assert state.start_state == pytest.approx(
-#     #     (0.5, 0.4)
-#     # ), "incorrect value for attribute start_state"
-#     # assert state.goal_state == pytest.approx(
-#     #     (0.5, -0.4)
-#     # ), "incorrect value for attribute goal_state"
 
 
 def test_OMPLPath___init__():
@@ -84,3 +66,21 @@ def test_is_state_valid(x: float, y: float, is_valid: bool):
         assert ompl_path.is_state_valid(state), "state should be valid"
     else:
         assert not ompl_path.is_state_valid(state), "state should not be valid"
+
+
+@pytest.mark.parametrize(
+    "position,expected_area,expected_bounds",
+    [
+        ((0, 0), pytest.approx(4, rel=1e-2), (-1, -1, 1, 1)),
+        ((100, 100), pytest.approx(4, rel=1e-2), (99, 99, 101, 101)),
+        ((-100, -100), pytest.approx(4, rel=1e-2), (-101, -101, -99, -99)),
+    ],
+)
+def test_create_space(position, expected_area, expected_bounds):
+    """Test creation of buffered space around positions"""
+    # Given an OMPLPath instance
+    space = PATH.create_space(position)
+
+    assert space.area == expected_area, "Space area should match buffer size"
+    assert space.bounds == pytest.approx(expected_bounds, abs=1.0), "Bounds should match expected"
+    assert space.contains(Point(position[0], position[1])), "Space should contain center point"

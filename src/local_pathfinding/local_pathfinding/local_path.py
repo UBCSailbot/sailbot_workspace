@@ -23,7 +23,9 @@ class LocalPathState:
         `wind_speed` (float): Wind speed.
         `wind_direction` (int): Wind direction.
         `planner` (str): Planner to use for the OMPL query.
-        `reference_latlon` (Tuple[float, float]): The last tuple from the global_path array
+        `reference_latlon` (Tuple[float, float]): The last tuple from the global_path array (
+            added for convenience in the OMPLPath class after removing the OMPLPathState class
+        )
     """
 
     def __init__(

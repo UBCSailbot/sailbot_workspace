@@ -27,32 +27,6 @@ if TYPE_CHECKING:
 # ou.setLogLevel(ou.LOG_WARN)
 
 
-# class OMPLPathState:
-#     def __init__(self, local_path_state: LocalPathState, logger: RcutilsLogger):
-#         # TODO: derive OMPLPathState attributes from local_path_state
-#         self.heading_direction = 45.0
-#         self.wind_direction = 10.0
-#         self.wind_speed = 1.0
-
-#         # domain and range are static
-#         self.state_domain = (-1, 1)
-#         self.state_range = (-1, 1)
-#         # comes from the gps
-#         self.start_state = (0.5, 0.4)
-#         # comes
-#         self.goal_state = (0.5, -0.4)
-
-#         self.reference_latlon = (
-#             local_path_state.global_path[-1]
-#             if local_path_state.global_path and len(local_path_state.global_path) > 0
-#             else HelperLatLon(latitude=0.0, longitude=0.0)
-#         )
-
-#         if local_path_state:
-#             self.planner = None
-#             # self.planner = pyompl.RRTstar()
-
-
 class OMPLPath:
     """Represents the general OMPL Path.
 
@@ -125,24 +99,11 @@ class OMPLPath:
         return waypoints
 
     def create_space(self, position) -> Polygon:
+        """ Create a space around the given position. Position is the center of the space and
+            is a tuple of x and y.
+        """
         space = Point(position[0], position[1]).buffer(self.box_buffer, cap_style=3, join_style=2)
-
         return space
-        # postion.
-        # space = Point(
-        #     self.state.
-        # )
-
-        # sailbot_box = Point(
-        #         self.sailbot_position_latlon.longitude, self.sailbot_position_latlon.latitude
-        #     ).buffer(self.bbox_buffer_amount, cap_style=3, join_style=2)
-
-        #     waypoint_box = Point(self.reference.longitude, self.reference.latitude).buffer(
-        #         self.bbox_buffer_amount, cap_style=3, join_style=2
-        #     )
-        #     state_space = box(*MultiPolygon([sailbot_box, waypoint_box]).bounds)
-
-        # latlon_polygons = self.all_land_data.intersection(state_space)
 
     def update_objectives(self):
         """Update the objectives on the basis of which the path is optimized.
@@ -155,7 +116,7 @@ class OMPLPath:
         self.state = local_path_state
 
         # Create buffered spaces and extract their centers
-        start_polygon = self.create_space(self.state.position)
+        state_domain = self.create_space(self.state.position)
         start_x, start_y = self.state.position  # Use original position for coordinates
 
         if not self.state.global_path:
@@ -166,19 +127,18 @@ class OMPLPath:
             goal_polygon = self.create_space(goal_position)
             goal_x, goal_y = goal_position
 
-        # Store polygons for collision checking if needed
-        state_domain = start_polygon
-        state_range = goal_polygon
-
         # create an SE2 state space: rotation and translation in a plane
         space = pyompl.SE2StateSpace()
 
         # set the bounds of the state space
         bounds = pyompl.RealVectorBounds(dim=2)
-        big_polygon = box(*MultiPolygon([start_polygon, goal_polygon]).bounds)
+        big_polygon = box(*MultiPolygon([state_domain, goal_polygon]).bounds)
         x_min, y_min, x_max, y_max = big_polygon.bounds
         # x_min, x_max = state_domain
         # y_min, y_max = state_range
+
+        if x_max <= x_min or y_max <= y_min:
+            raise ValueError(f"Invalid bounds: x=[{x_min}, {x_max}], y=[{y_min}, {y_max}]")
         bounds.setLow(0, x_min)
         bounds.setLow(1, y_min)
         bounds.setHigh(0, x_max)
