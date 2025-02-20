@@ -114,7 +114,7 @@ class OMPLPath:
 
         # Create buffered spaces and extract their centers
         start_position_in_xy = cs.latlon_to_xy(self.state.reference_latlon, self.state.position)
-        state_domain = self.create_buffer_around_position(start_position_in_xy)
+        start_box = self.create_buffer_around_position(start_position_in_xy)
         start_x = start_position_in_xy.x
         start_y = start_position_in_xy.y
 
@@ -132,7 +132,7 @@ class OMPLPath:
 
         # set the bounds of the state space
         bounds = pyompl.RealVectorBounds(dim=2)
-        state_space = box(*MultiPolygon([state_domain, goal_polygon]).bounds)
+        state_space = box(*MultiPolygon([start_box, goal_polygon]).bounds)
         x_min, y_min, x_max, y_max = state_space.bounds
 
         if x_max <= x_min or y_max <= y_min:
