@@ -14,7 +14,8 @@ class LocalPathState:
     custom_interfaces repository.
 
     Attributes:
-        `position` (Tuple[float, float]): Latitude and longitude of Sailbot.
+    #TODO:
+        `position` HelperLatLon: Latitude and longitude of Sailbot.
         `speed` (float): Speed of Sailbot.
         `heading` (float): Direction that Sailbot is pointing.
         `ais_ships` (List[HelperAISShip]): Information about nearby ships.
@@ -23,7 +24,7 @@ class LocalPathState:
         `wind_speed` (float): Wind speed.
         `wind_direction` (int): Wind direction.
         `planner` (str): Planner to use for the OMPL query.
-        `reference_latlon` (Tuple[float, float]): The last tuple from the global_path array (
+        `reference (HelperLatLon): Lat and lon position of the next global waypoint. (
             added for convenience in the OMPLPath class after removing the OMPLPathState class
         )
     """
@@ -38,9 +39,13 @@ class LocalPathState:
     ):
         """Initializes the state from ROS msgs."""
         if gps:  # TODO: remove when mock can be run
-            self.position = (gps.lat_lon.latitude, gps.lat_lon.longitude)
+            self.position = gps.lat_lon
             self.speed = gps.speed.speed
             self.heading = gps.heading.heading
+        else:
+            self.position = HelperLatLon(latitude=0.0, longitude=0.0)
+            self.speed = 0.0
+            self.heading = 0.0
 
         if ais_ships:  # TODO: remove when mock can be run
             self.ais_ships = [ship for ship in ais_ships.ships]
@@ -59,7 +64,7 @@ class LocalPathState:
 
         self.reference_latlon = (
             self.global_path[-1]
-            if self.global_path and len(self.global_path) > 0
+            if self.global_path
             else HelperLatLon(latitude=0.0, longitude=0.0)
         )
 

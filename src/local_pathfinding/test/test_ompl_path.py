@@ -1,8 +1,8 @@
-from shapely.geometry import Point
 import pyompl
 import pytest
-from custom_interfaces.msg import GPS, AISShips, Path, WindSensor
+from custom_interfaces.msg import GPS, AISShips, HelperLatLon, Path, WindSensor
 from rclpy.impl.rcutils_logger import RcutilsLogger
+from shapely.geometry import Point
 
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.ompl_path as ompl_path
@@ -32,7 +32,7 @@ def test_OMPLPath_get_cost():
 
 def test_OMPLPath_get_waypoint():
     waypoints = PATH.get_waypoints()
-    waypoint_XY = cs.XY(PATH.state.position[0], PATH.state.position[1])
+    waypoint_XY = cs.XY(PATH.state.position.latitude, PATH.state.position.longitude)
     start_state_latlon = cs.xy_to_latlon(PATH.state.reference_latlon, waypoint_XY)
 
     test_start = waypoints[0]
@@ -71,16 +71,16 @@ def test_is_state_valid(x: float, y: float, is_valid: bool):
 @pytest.mark.parametrize(
     "position,expected_area,expected_bounds",
     [
-        ((0, 0), pytest.approx(4, rel=1e-2), (-1, -1, 1, 1)),
-        ((100, 100), pytest.approx(4, rel=1e-2), (99, 99, 101, 101)),
-        ((-100, -100), pytest.approx(4, rel=1e-2), (-101, -101, -99, -99)),
+        (cs.XY(0.0, 0.0), pytest.approx(4, rel=1e-2), (-1, -1, 1, 1)),
+        (cs.XY(100.0, 100.0), pytest.approx(4, rel=1e-2), (99, 99, 101, 101)),
+        (cs.XY(-100.0, -100.0), pytest.approx(4, rel=1e-2), (-101, -101, -99, -99)),
     ],
 )
-def test_create_space(position, expected_area, expected_bounds):
+def test_create_space(position: cs.XY, expected_area, expected_bounds):
     """Test creation of buffered space around positions"""
     # Given an OMPLPath instance
-    space = PATH.create_space(position)
+    space = PATH.create_buffer_around_position(position)
 
     assert space.area == expected_area, "Space area should match buffer size"
     assert space.bounds == pytest.approx(expected_bounds, abs=1.0), "Bounds should match expected"
-    assert space.contains(Point(position[0], position[1])), "Space should contain center point"
+    assert space.contains(Point(position.x, position.y)), "Space should contain center point"

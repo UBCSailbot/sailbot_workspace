@@ -13,11 +13,10 @@ from typing import TYPE_CHECKING, List
 import pyompl
 from custom_interfaces.msg import HelperLatLon
 from rclpy.impl.rcutils_logger import RcutilsLogger
-
-# Fix the import
 from shapely.geometry import MultiPolygon, Point, Polygon, box
 
 import local_pathfinding.coord_systems as cs
+from local_pathfinding.coord_systems import XY
 from local_pathfinding.objectives import get_sailing_objective
 
 if TYPE_CHECKING:
@@ -33,6 +32,7 @@ class OMPLPath:
     Attributes
         _logger (RcutilsLogger): ROS logger of this class.
         _simple_setup (og.SimpleSetup): OMPL SimpleSetup object.
+        _box_buffer (float): buffer around the sailbot position and the goal position in km
         solved (bool): True if the path is a solution to the OMPL query, else false.
     """
 
@@ -48,11 +48,8 @@ class OMPLPath:
             parent_logger (RcutilsLogger): Logger of the parent class.
             max_runtime (float): Maximum amount of time in seconds to look for a solution path.
             local_path_state (LocalPathState): State of Sailbot.
-
-        Fields not mentioned in Args:
-            box_buffer (float): buffer around the sailbot position and the goal position in km
         """
-        self.box_buffer = 1
+        self._box_buffer = 1
         self._logger = parent_logger.get_child(name="ompl_path")
 
         self._simple_setup = self._init_simple_setup(local_path_state)  # this needs state
@@ -98,11 +95,11 @@ class OMPLPath:
 
         return waypoints
 
-    def create_space(self, position) -> Polygon:
-        """ Create a space around the given position. Position is the center of the space and
-            is a tuple of x and y.
+    def create_buffer_around_position(self: OMPLPath, position: XY) -> Polygon:
+        """Create a space around the given position. Position is the center of the space and
+        is a tuple of x and y.
         """
-        space = Point(position[0], position[1]).buffer(self.box_buffer, cap_style=3, join_style=2)
+        space = Point(position.x, position.y).buffer(self._box_buffer, cap_style=3, join_style=2)
         return space
 
     def update_objectives(self):
@@ -116,26 +113,27 @@ class OMPLPath:
         self.state = local_path_state
 
         # Create buffered spaces and extract their centers
-        state_domain = self.create_space(self.state.position)
-        start_x, start_y = self.state.position  # Use original position for coordinates
+        start_position_in_xy = cs.latlon_to_xy(self.state.reference_latlon, self.state.position)
+        state_domain = self.create_buffer_around_position(start_position_in_xy)
+        start_x = start_position_in_xy.x
+        start_y = start_position_in_xy.y
 
         if not self.state.global_path:
-            goal_polygon = self.create_space([0, 0])
+            goal_polygon = self.create_buffer_around_position(cs.XY(0, 0))
             goal_x, goal_y = (0, 0)
         else:
             goal_position = self.state.global_path[-1]
-            goal_polygon = self.create_space(goal_position)
-            goal_x, goal_y = goal_position
+            goal_position_in_xy = cs.latlon_to_xy(self.state.reference_latlon, goal_position)
+            goal_polygon = self.create_buffer_around_position(goal_position_in_xy)
+            goal_x, goal_y = (int(goal_position_in_xy.x), int(goal_position_in_xy.y))
 
         # create an SE2 state space: rotation and translation in a plane
         space = pyompl.SE2StateSpace()
 
         # set the bounds of the state space
         bounds = pyompl.RealVectorBounds(dim=2)
-        big_polygon = box(*MultiPolygon([state_domain, goal_polygon]).bounds)
-        x_min, y_min, x_max, y_max = big_polygon.bounds
-        # x_min, x_max = state_domain
-        # y_min, y_max = state_range
+        state_space = box(*MultiPolygon([state_domain, goal_polygon]).bounds)
+        x_min, y_min, x_max, y_max = state_space.bounds
 
         if x_max <= x_min or y_max <= y_min:
             raise ValueError(f"Invalid bounds: x=[{x_min}, {x_max}], y=[{y_min}, {y_max}]")
@@ -155,11 +153,8 @@ class OMPLPath:
         simple_setup = pyompl.SimpleSetup(space)
         simple_setup.setStateValidityChecker(is_state_valid)
 
-        # set the goal and start states of the simple setup object
         start = pyompl.ScopedState(space)
         goal = pyompl.ScopedState(space)
-        # start_x, start_y = start_state
-        # goal_x, goal_y = goal_state
         start.setXY(start_x, start_y)
         goal.setXY(goal_x, goal_y)
         """self._logger.debug(
