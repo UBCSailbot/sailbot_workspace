@@ -1,6 +1,6 @@
 import pyompl
 import pytest
-from custom_interfaces.msg import GPS, AISShips, HelperLatLon, Path, WindSensor
+from custom_interfaces.msg import GPS, AISShips, Path, WindSensor
 from rclpy.impl.rcutils_logger import RcutilsLogger
 from shapely.geometry import Point
 
