@@ -11,11 +11,10 @@ from local_pathfinding.ompl_path import OMPLPath
 class LocalPathState:
     """Gathers and stores the state of Sailbot.
     The attributes' units and conventions can be found in the ROS msgs they are derived from in the
-    custom_interfaces repository.
+    custom_interfaces package.
 
     Attributes:
-    #TODO:
-        `position` HelperLatLon: Latitude and longitude of Sailbot.
+        `position` (HelperLatLon): Latitude and longitude of Sailbot.
         `speed` (float): Speed of Sailbot.
         `heading` (float): Direction that Sailbot is pointing.
         `ais_ships` (List[HelperAISShip]): Information about nearby ships.
@@ -24,9 +23,7 @@ class LocalPathState:
         `wind_speed` (float): Wind speed.
         `wind_direction` (int): Wind direction.
         `planner` (str): Planner to use for the OMPL query.
-        `reference (HelperLatLon): Lat and lon position of the next global waypoint. (
-            added for convenience in the OMPLPath class after removing the OMPLPathState class
-        )
+        `reference (HelperLatLon): Lat and lon position of the next global waypoint.
     """
 
     def __init__(
@@ -35,7 +32,7 @@ class LocalPathState:
         ais_ships: AISShips,
         global_path: Path,
         filtered_wind_sensor: WindSensor,
-        planner: str
+        planner: str,
     ):
         """Initializes the state from ROS msgs."""
         if gps:  # TODO: remove when mock can be run
@@ -63,9 +60,7 @@ class LocalPathState:
             self.wind_direction = filtered_wind_sensor.direction
 
         self.reference_latlon = (
-            self.global_path[-1]
-            if self.global_path
-            else HelperLatLon(latitude=0.0, longitude=0.0)
+            self.global_path[-1] if self.global_path else HelperLatLon(latitude=0.0, longitude=0.0)
         )
 
         self.planner = planner
