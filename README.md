@@ -34,16 +34,11 @@ The [ament linters](https://github.com/ament/ament_lint/tree/humble) are configu
 containing all our configuration and dependencies.
 Our Dev Container configuration can be found in [`.devcontainer/`](https://github.com/UBCSailbot/sailbot_workspace/blob/main/.devcontainer).
 
-### Multi-Root Workspace
+### VS Code Workspace
 
 [Workspaces](https://code.visualstudio.com/docs/editor/workspaces) are VS Code instances that contain one or more folders.
 Our workspace configuration file can be found at
 [`sailbot.code-workspace`](https://github.com/UBCSailbot/sailbot_workspace/blob/main/sailbot.code-workspace).
-
-Our software spans many repositories: [software team repositories](https://github.com/orgs/UBCSailbot/teams/software-team/repositories).
-[Multi-root workspaces](https://code.visualstudio.com/docs/editor/multi-root-workspaces)
-make it easy to work with multiple repositories at the same time.
-Our roots are defined in the `folders` section of our workspace file.
 
 ### Debugging
 
