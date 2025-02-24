@@ -41,3 +41,13 @@ colcon build \
         --merge-install \
         --symlink-install \
         --cmake-args "-DCMAKE_BUILD_TYPE=$BUILD_TYPE" "-DSTATIC_ANALYSIS=$STATIC_ANALYSIS" "-DUNIT_TEST=$UNIT_TEST" "--no-warn-unused-cli"
+
+if [[ "$PACKAGE" == "local_pathfinding" || "$PACKAGE" == "" ]]; then
+    # check if the ompl python bindings have already been built once
+    if [ ! -f /workspaces/sailbot_workspace/install/lib/python3.10/site-packages/pyompl*.so ]; then
+        echo "Building ompl python bindings..."
+        /workspaces/sailbot_workspace/src/local_pathfinding/src/build/py_bindings.sh
+    else
+        echo "ompl python bindings already built. If you want to rebuild them run: /local_pathfinding/src/build/py_bindings.sh"
+    fi
+fi

@@ -56,7 +56,7 @@ class BoatCompass extends React.Component<BoatCompassProps> {
 
   _rotateBoatString(boatAngle: number | null): string {
     if (boatAngle == null) {
-      return `rotate0deg)`;
+      return `rotate(0deg)`;
     } else {
       return `rotate(${this._rotateBoat(boatAngle)}deg)`;
     }

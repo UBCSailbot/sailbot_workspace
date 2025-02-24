@@ -21,6 +21,8 @@ wingsail_ctrl_node:
     ros__parameters:
         reynolds_number: [0.0, 1.0, 2.0]
         angle_of_attack: [0.0, 1.0, 2.0]
+        apparent_wind_threshold: 10.0
+        scaling_coef: 1.0
 
 # boat_simulator parameters
 low_level_control_node:
@@ -60,6 +62,14 @@ physics_engine_node:
             corr_xy: 0.
          constant_params:
             value: [1.0, 0.0]
+      wind_generation:
+         mvgaussian_params:
+            mean: [5.0, 5.0]
+            cov: "[[25.0, 10.0], [10.0, 15.0]]"
+      current_generation:
+         mvgaussian_params:
+            mean: [1.0, 0.5]
+            cov: "[[0.5, 0.1], [0.1, 0.3]]"
 data_collection_node:
    ros__parameters:
       file_name: 'ros_data_collection'
@@ -68,3 +78,13 @@ data_collection_node:
       bag: false
       json: true
       write_period_sec: 0.5
+mock_data_node:
+   ros__parameters:
+      qos_depth: 10
+      mock_desired_heading: True
+      mock_desired_heading_lower_bound: -179.99
+      mock_desired_heading_upper_bound: 180.00
+      mock_sail_trim_tab: True
+      mock_sail_trim_tab_lower_bound: -40.0
+      mock_sail_trim_tab_upper_bound: 40.0
+      pub_period_sec: 5.0

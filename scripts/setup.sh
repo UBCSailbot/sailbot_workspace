@@ -21,3 +21,5 @@ if wget -q --spider --timeout=1 http://google.com; then
     rosdep update --rosdistro $ROS_DISTRO
 fi
 rosdep install --from-paths src --ignore-src -y --rosdistro $ROS_DISTRO
+
+source $HOME/.bashrc

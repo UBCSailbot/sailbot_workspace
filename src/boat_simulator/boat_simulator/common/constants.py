@@ -3,6 +3,12 @@
 import os
 from dataclasses import dataclass
 from enum import Enum
+from typing import Dict
+
+import numpy as np
+from numpy.typing import NDArray
+
+from boat_simulator.common.types import Scalar
 
 
 # Class declarations for constants. These are not meant to be accessed directly.
@@ -30,6 +36,38 @@ class PhysicsEnginePublisherTopics:
     WIND_SENSORS: str = "mock_wind_sensors"
 
 
+@dataclass
+class BoatProperties:
+    # A lookup table that maps angles of attack (in degrees) to their corresponding lift
+    # coefficients.
+    sail_lift_coeffs: Dict[Scalar, Scalar]
+    # A lookup table that maps angles of attack (in degrees) to their corresponding drag
+    # coefficients.
+    sail_drag_coeffs: Dict[Scalar, Scalar]
+    # A lookup table that maps angles of attack (in degrees) to their corresponding sail areas
+    # (in square meters).
+    sail_areas: Dict[Scalar, Scalar]
+    # A lookup table that maps angles of attack (in degrees) to their corresponding drag
+    # coefficients for the rudder.
+    rudder_drag_coeffs: Dict[Scalar, Scalar]
+    # A lookup table that maps angles of attack (in degrees) to their corresponding rudder areas
+    # (in square meters).
+    rudder_areas: Dict[Scalar, Scalar]
+    # A scalar representing the distance from the center of effort of the sail to the pivot point
+    # (in meters).
+    sail_dist: Scalar
+    # A scalar representing the distance from the center of effort of the rudder to the pivot
+    # point (in meters).
+    rudder_dist: Scalar
+    # A dimensionless scalar representing the drag factor of the hull as a function of the boat's
+    # velocity.
+    hull_drag_factor: Scalar
+    # The mass of the boat (in kilograms).
+    mass: Scalar
+    # The inertia of the boat (in kilograms-meters squared).
+    inertia: NDArray
+
+
 # Directly accessible constants
 
 # Boat simulator ROS action names
@@ -53,6 +91,9 @@ PHYSICS_ENGINE_SUBSCRIPTIONS = PhysicsEngineSubscriptionTopics()
 # CLI argument name for data collection option
 DATA_COLLECTION_CLI_ARG_NAME = "--enable-data-collection"
 
+# CLI argument name for mock data option
+MOCK_DATA_CLI_ARG_NAME = "--enable-mock-data"
+
 # Enumerated orientation indices since indexing pitch, roll, and yaw could be arbitrary
 ORIENTATION_INDICES = Enum("ORIENTATION_INDICES", ["PITCH", "ROLL", "YAW"], start=0)  # x, y, x
 
@@ -67,3 +108,18 @@ RUDDER_MAX_ANGLE_RANGE = (-45, 45)
 
 # Max sail actuator control angle range in degrees, min angle [0], max angle [1]
 SAIL_MAX_ANGLE_RANGE = (-7, 7)
+
+# Constants related to the physical and mechanical properties of Polaris
+# TODO These are placeholder values which should be replaced when we have real values.
+BOAT_PROPERTIES = BoatProperties(
+    sail_lift_coeffs={0.0: 0.0, 5.0: 0.2, 10.0: 0.5, 15.0: 0.7, 20.0: 1.0},
+    sail_drag_coeffs={0.0: 0.1, 5.0: 0.12, 10.0: 0.15, 15.0: 0.18, 20.0: 0.2},
+    sail_areas={0.0: 20.0, 5.0: 19.8, 10.0: 19.5, 15.0: 19.2, 20.0: 18.8},
+    rudder_drag_coeffs={0.0: 0.2, 5.0: 0.22, 10.0: 0.25, 15.0: 0.28, 20.0: 0.3},
+    rudder_areas={0.0: 2.0, 5.0: 1.9, 10.0: 1.8, 15.0: 1.7, 20.0: 1.6},
+    sail_dist=0.5,
+    rudder_dist=1.0,
+    hull_drag_factor=0.05,
+    mass=1500.0,
+    inertia=np.array([[125, 0, 0], [0, 1125, 0], [0, 0, 500]], dtype=np.float32),
+)
