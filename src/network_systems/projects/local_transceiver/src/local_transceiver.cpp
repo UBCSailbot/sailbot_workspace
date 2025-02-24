@@ -210,7 +210,7 @@ std::optional<std::string> LocalTransceiver::debugSend(const std::string & cmd)
 
 void LocalTransceiver::cacheGlobalWaypoints(std::string receivedDataBuffer)
 {
-    //writes to /build/network_systems/projects/local_transceiver/PATH
+    //writes to /build/network_systems/projects/local_transceiver/PATH when running tests
     std::filesystem::path cache{CACHE_PATH};
     if (std::filesystem::exists(cache)) {
         std::filesystem::path cache_temp{CACHE_TEMP_PATH};

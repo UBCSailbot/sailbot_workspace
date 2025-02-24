@@ -96,10 +96,6 @@ public:
               ros_topics::LOCAL_PATH, ROS_Q_SIZE,
               std::bind(&LocalTransceiverIntf::sub_local_path_data_cb, this, std::placeholders::_1));
 
-            //check for cached waypoints and publish immediately
-            //note: should check for cache_temp?
-            //      if exists, could be more up-to-date than cache, if power was lost AFTER finishing writing and BEFORE
-            //renaming the file
             auto msg = lcl_trns_->getCache();
             if (msg) {
                 pub_->publish(*msg);
