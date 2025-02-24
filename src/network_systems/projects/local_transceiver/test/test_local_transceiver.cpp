@@ -23,8 +23,6 @@
 
 namespace bp = boost::process;
 
-std::string CACHE_PATH      = "global_waypoint_cache";
-std::string CACHE_TEMP_PATH = "global_waypoint_cache_temp";
 /* >>>>>README<<<<<<
 Local Transceiver unit tests rely on two other programs: Virtual Iridium and HTTP Echo Server
 1. Spawning a separate process for RUN_VIRTUAL_IRIDIUM_SCRIPT_PATH doesn't work very well because the script
@@ -57,20 +55,20 @@ protected:
 
     TestLocalTransceiver()
     {
-        // try {
-        //     lcl_trns_ = new LocalTransceiver(LOCAL_TRANSCEIVER_TEST_PORT, SATELLITE_BAUD_RATE);
-        // } catch (boost::system::system_error & e) {
-        //     std::stringstream ss;
-        //     ss << "Failed to create Local Transceiver for tests, is only one instance of: \""
-        //        << RUN_VIRTUAL_IRIDIUM_SCRIPT_PATH << "\" running?" << std::endl;
-        //     ss << e.what() << std::endl;
-        //     throw std::runtime_error(ss.str());
-        // }
+        try {
+            lcl_trns_ = new LocalTransceiver(LOCAL_TRANSCEIVER_TEST_PORT, SATELLITE_BAUD_RATE);
+        } catch (boost::system::system_error & e) {
+            std::stringstream ss;
+            ss << "Failed to create Local Transceiver for tests, is only one instance of: \""
+               << RUN_VIRTUAL_IRIDIUM_SCRIPT_PATH << "\" running?" << std::endl;
+            ss << e.what() << std::endl;
+            throw std::runtime_error(ss.str());
+        }
     }
     ~TestLocalTransceiver() override
     {
-        // lcl_trns_->stop();
-        // delete lcl_trns_;
+        lcl_trns_->stop();
+        delete lcl_trns_;
     }
 
     LocalTransceiver * lcl_trns_;
@@ -260,7 +258,6 @@ TEST_F(TestLocalTransceiver, checkCache)
     ASSERT_FALSE(std::filesystem::exists(cache));
 
     LocalTransceiver::cacheGlobalWaypoints(serialized_test);
-    std::cout << "REACHED HERE " << std::endl;
 
     //check that after caching the cache exists
     ASSERT_TRUE(std::filesystem::exists(cache));
@@ -303,8 +300,6 @@ TEST_F(TestLocalTransceiver, checkCache)
     EXPECT_EQ(parsed_test.waypoints[0].longitude, parsed_cache.waypoints[0].latitude);
     EXPECT_EQ(parsed_test.waypoints[1].latitude, parsed_cache.waypoints[0].latitude);
     EXPECT_EQ(parsed_test.waypoints[1].longitude, parsed_cache.waypoints[0].latitude);
-
-    //TODO: check that cached waypoints get sent over ROS after starting
 }
 
 // std::mutex port_mutex;

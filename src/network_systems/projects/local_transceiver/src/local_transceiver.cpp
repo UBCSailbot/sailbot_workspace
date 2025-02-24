@@ -211,12 +211,10 @@ std::optional<std::string> LocalTransceiver::debugSend(const std::string & cmd)
 void LocalTransceiver::cacheGlobalWaypoints(std::string receivedDataBuffer)
 {
     //writes to /build/network_systems/projects/local_transceiver/PATH
-    std::string           CACHE_PATH      = "global_waypoint_cache";
-    std::string           CACHE_TEMP_PATH = "global_waypoint_cache_temp";
     std::filesystem::path cache{CACHE_PATH};
     if (std::filesystem::exists(cache)) {
         std::filesystem::path cache_temp{CACHE_TEMP_PATH};
-        std::ofstream writeFile(CACHE_TEMP_PATH, std::ios::binary);
+        std::ofstream         writeFile(CACHE_TEMP_PATH, std::ios::binary);
         if (!writeFile) {
             std::cerr << "Failed to create temp cache file" << std::endl;
         }
@@ -366,9 +364,9 @@ custom_interfaces::msg::Path LocalTransceiver::parseInMsg(const std::string & ms
 
 std::optional<custom_interfaces::msg::Path> LocalTransceiver::getCache()
 {
-    std::filesystem::path cache_path{"global_waypoint_cache"};
-    if (std::filesystem::exists(cache_path)) {
-        std::ifstream                input("global_waypoint_cache", std::ios::binary);
+    std::filesystem::path cache{CACHE_PATH};
+    if (std::filesystem::exists(cache)) {
+        std::ifstream                input(CACHE_PATH, std::ios::binary);
         std::string                  cachedDataBuffer(std::istreambuf_iterator<char>(input), {});
         custom_interfaces::msg::Path to_publish = parseInMsg(cachedDataBuffer);
         return to_publish;
