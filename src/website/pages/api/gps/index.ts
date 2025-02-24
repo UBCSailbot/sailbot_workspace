@@ -17,13 +17,35 @@ export default async function handler(
         const gps: GPSDocument[] = await GPS.find({}).select('-_id -__v');
         res.status(200).json({ success: true, data: gps });
       } catch (error) {
-        res
-          .status(400)
-          .json({ success: false, message: (error as Error).message });
+        res.status(400).json({ success: false, message: (error as Error).message });
       }
       break;
+
+    case 'POST':
+      try {
+        const { latitude, longitude, speed, heading, timestamp } = req.body;
+
+        if (
+          typeof latitude !== 'number' ||
+          typeof longitude !== 'number' ||
+          typeof speed !== 'number' ||
+          typeof heading !== 'number' ||
+          typeof timestamp !== 'string'
+        ) {
+          return res.status(400).json({ success: false, message: "Invalid GPS data format" });
+        }
+
+        const newGPS = new GPS({ latitude, longitude, speed, heading, timestamp });
+        await newGPS.save();
+
+        res.status(201).json({ success: true, message: "GPS data stored", data: newGPS });
+      } catch (error) {
+        res.status(500).json({ success: false, message: (error as Error).message });
+      }
+      break;
+
     default:
-      res.status(400).json({ success: false });
+      res.status(405).json({ success: false, message: "Method Not Allowed" });
       break;
   }
 }
