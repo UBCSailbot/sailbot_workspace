@@ -401,7 +401,7 @@
                 "problemMatcher": "$gcc"
             },
             {
-                "label": "test",
+                "label": "Test All",
                 "detail": "Run all unit tests and show results.",
                 "type": "shell",
                 "command": "${workspaceFolder:sailbot_workspace}/scripts/test.sh",
@@ -411,6 +411,17 @@
                 },
                 "problemMatcher": []
             },
+            {
+                "label": "Test Package",
+                "detail": "Run unit tests for a specific package and show results.",
+                "type": "shell",
+                "command": "${workspaceFolder:sailbot_workspace}/scripts/test.sh -p ${input:package}",
+                "group": {
+                    "kind": "test",
+                    "isDefault": true
+                }
+            },
+            // Clean
             {
                 "label": "clean",
                 "detail": "Run the clean target",
