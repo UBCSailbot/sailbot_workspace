@@ -154,8 +154,6 @@ private:
 
     std::optional<std::string> readRsp();
 
-    std::optional<std::string> readRspGarbage();
-
     /**
      * @brief Parse the message received from the remote server
      *
