@@ -1,0 +1,45 @@
+timeout: 3
+required_packages:
+- name: local_pathfinding
+  configs: null
+- name: network_systems
+  configs:
+  - all_disable.yaml
+  - example/example_en.yaml
+  - mock_ais/mock_ais_en_default.yaml
+inputs:
+- type: ROS
+  name: gps
+  data:
+    dtype: GPS
+    lat_lon:
+      dtype: HelperLatLon
+      latitude:
+        dtype: float32
+        val: -124.80127511028725
+      longitude:
+        dtype: float32
+        val: -123.92537339005594
+    heading:
+      dtype: HelperHeading
+      heading:
+        dtype: float32
+        val: 14.4
+expected_outputs:
+- type: ROS
+  name: gps
+  data:
+    dtype: GPS
+    lat_lon:
+      dtype: HelperLatLon
+      latitude:
+        dtype: float32
+        val: -124.80127511028725
+      longitude:
+        dtype: float32
+        val: -123.92537339005594
+    heading:
+      dtype: HelperHeading
+      heading:
+        dtype: float32
+        val: 14.4

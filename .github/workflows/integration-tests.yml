@@ -1,0 +1,20 @@
+name: Integration-Tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+    integration-test:
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        steps:
+        - name: Checkout workspace
+          uses: actions/checkout@v4
+
+        - name: Run integration tests
+          uses: ./.github/actions/
+          with:
+            script: './scripts/run-integration-tests'
+            run-website: 'true'
