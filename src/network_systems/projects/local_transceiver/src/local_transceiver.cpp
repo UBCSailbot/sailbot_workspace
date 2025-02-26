@@ -240,6 +240,8 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
             continue;
         }
 
+        auto garbage = readRspGarbage();
+
         std::string              opt_rsp_val = opt_rsp.value();
         std::vector<std::string> sbd_status_vec;
         boost::algorithm::split(sbd_status_vec, opt_rsp_val, boost::is_any_of(AT::DELIMITER));
@@ -295,24 +297,8 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
         }
 
         message_size_int = (static_cast<uint8_t>(message_size_str[0]) << 8) |  //NOLINT(readability-magic-numbers)
-
                            static_cast<uint8_t>(message_size_str[1]);  //NOLINT(readability-magic-numbers)
-
         message = buffer_data->substr(2, message_size_int);
-
-        // std::regex re(
-        //   R"(name=\"data\"; filename=\"[^\"]*\"\r?\n(?:.*\r?\n)*\r?\n([\s\S]*?)\r?\n--)", std::regex::ECMAScript);
-
-        // std::smatch match;
-
-        // if (std::regex_search(*buffer_data, match, re)) {
-        //     *buffer_data = match[1];
-        //     std::stringstream ss;
-        //     ss << *buffer_data;
-        //     std::cout << ss.str() << std::endl;
-        // } else {
-        //     std::cout << "No match found." << std::endl;
-        // }
 
         receivedDataBuffer = message;
         break;
@@ -393,6 +379,23 @@ std::optional<std::string> LocalTransceiver::readRsp()
     rsp_str.pop_back();  // Remove the "\n"
     return rsp_str;
 }
+
+std::optional<std::string> LocalTransceiver::readRspGarbage()
+{
+    bio::streambuf buf;
+    error_code     ec;
+
+    // Caution: will hang if another proccess is reading from serial port
+    bio::read_until(serial_, buf, AT::GARBAGE, ec);
+    if (ec) {
+        return std::nullopt;
+    }
+
+    std::string rsp_str = streambufToStr(buf);
+    rsp_str.pop_back();  // Remove the "\n"
+    return rsp_str;
+}
+
 
 std::string LocalTransceiver::checksum(const std::string & data)
 {
