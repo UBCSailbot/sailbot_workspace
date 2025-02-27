@@ -86,9 +86,6 @@ public:
             sub_data_sensors = this->create_subscription<custom_interfaces::msg::GenericSensors>(
               ros_topics::DATA_SENSORS, ROS_Q_SIZE,
               std::bind(&LocalTransceiverIntf::sub_data_sensors_cb, this, std::placeholders::_1));
-            sub_ais_ships = this->create_subscription<custom_interfaces::msg::AISShips>(
-              ros_topics::AIS_SHIPS, ROS_Q_SIZE,
-              std::bind(&LocalTransceiverIntf::sub_ais_ships_cb, this, std::placeholders::_1));
             sub_gps = this->create_subscription<custom_interfaces::msg::GPS>(
               ros_topics::GPS, ROS_Q_SIZE, std::bind(&LocalTransceiverIntf::sub_gps_cb, this, std::placeholders::_1));
             sub_local_path_data = this->create_subscription<custom_interfaces::msg::LPathData>(
@@ -105,7 +102,6 @@ private:
     rclcpp::Subscription<custom_interfaces::msg::WindSensors>::SharedPtr    sub_wind_sensor;
     rclcpp::Subscription<custom_interfaces::msg::Batteries>::SharedPtr      sub_batteries;
     rclcpp::Subscription<custom_interfaces::msg::GenericSensors>::SharedPtr sub_data_sensors;
-    rclcpp::Subscription<custom_interfaces::msg::AISShips>::SharedPtr       sub_ais_ships;
     rclcpp::Subscription<custom_interfaces::msg::GPS>::SharedPtr            sub_gps;
     rclcpp::Subscription<custom_interfaces::msg::LPathData>::SharedPtr      sub_local_path_data;
 
@@ -133,11 +129,6 @@ private:
      * @brief Callback function to subscribe to the onboard ROS network for generic sensors
      */
     void sub_data_sensors_cb(custom_interfaces::msg::GenericSensors in_msg) { lcl_trns_->updateSensor(in_msg); }
-
-    /**
-     * @brief Callback function to subscribe to the onboard ROS network for ais ships
-     */
-    void sub_ais_ships_cb(custom_interfaces::msg::AISShips in_msg) { lcl_trns_->updateSensor(in_msg); }
 
     /**
      * @brief Callback function to subscribe to the onboard ROS network for GPS

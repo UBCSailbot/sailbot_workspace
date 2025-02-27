@@ -15,6 +15,8 @@ from controller.common.constants import (
 from controller.common.lut import LUT
 from controller.wingsail.controllers import WingsailController
 
+SCALING_INTERCEPT = 1
+
 
 def main(args=None):
     rclpy.init(args=args)
@@ -76,6 +78,8 @@ class WingsailControllerNode(Node):
                 ("pub_period_sec", rclpy.Parameter.Type.DOUBLE),
                 ("reynolds_number", rclpy.Parameter.Type.DOUBLE_ARRAY),
                 ("angle_of_attack", rclpy.Parameter.Type.DOUBLE_ARRAY),
+                ("apparent_wind_threshold", rclpy.Parameter.Type.DOUBLE),
+                ("scaling_coef", rclpy.Parameter.Type.DOUBLE),
             ],
         )
 
@@ -140,9 +144,22 @@ class WingsailControllerNode(Node):
         It also logs information about the publication to the logger."""
         msg = SailCmd()
 
-        self.__trim_tab_angle = self.__wingsailController.get_trim_tab_angle(
-            self.__filtered_wind_sensor.speed.speed, self.__filtered_wind_sensor.direction
+        apparent_speed = self.__filtered_wind_sensor.speed.speed
+        apparent_direction = self.__filtered_wind_sensor.direction
+        apparent_threshold = (
+            self.get_parameter("apparent_wind_threshold").get_parameter_value().double_value
         )
+
+        # Sets trim tab angle, scales if apparent wind speed is above threshold
+        self.__trim_tab_angle = self.__wingsailController.get_trim_tab_angle(
+            apparent_speed, apparent_direction
+        )
+        if apparent_speed > apparent_threshold:
+            coef = self.get_parameter("scaling_coef").get_parameter_value().double_value
+            speed_difference = apparent_threshold - apparent_speed
+            self.__trim_tab_angle = (
+                self.__trim_tab_angle * coef * speed_difference + SCALING_INTERCEPT
+            )
 
         msg.trim_tab_angle_degrees = self.__trim_tab_angle
 
