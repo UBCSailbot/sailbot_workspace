@@ -235,21 +235,23 @@ TEST_F(TestLocalTransceiver, parseInMsgValid)
 
 TEST_F(TestLocalTransceiver, checkCache)
 {
-    constexpr float                                   holder  = 14.3;
-    constexpr float                                   updated = 17.9;
+    constexpr float                                   holder_lat   = 14.3;
+    constexpr float                                   holder_long  = -177.6;
+    constexpr float                                   updated_lat  = 17.9;
+    constexpr float                                   updated_long = 0.1;
     std::vector<custom_interfaces::msg::HelperLatLon> waypoints;
 
     Polaris::GlobalPath path;
 
     Polaris::Waypoint * waypoint_a = path.add_waypoints();
-    waypoint_a->set_latitude(holder);
-    waypoint_a->set_longitude(holder);
+    waypoint_a->set_latitude(holder_lat);
+    waypoint_a->set_longitude(holder_long);
 
     Polaris::Waypoint * waypoint_b = path.add_waypoints();
-    waypoint_b->set_latitude(holder);
-    waypoint_b->set_longitude(holder);
+    waypoint_b->set_latitude(holder_lat);
+    waypoint_b->set_longitude(holder_long);
 
-    std::string serialized_test = path.SerializeAsString();
+    std::string           serialized_test = path.SerializeAsString();
     std::filesystem::path cache{CACHE_PATH};
 
     ASSERT_FALSE(std::filesystem::exists(cache));
@@ -259,22 +261,22 @@ TEST_F(TestLocalTransceiver, checkCache)
     ASSERT_TRUE(std::filesystem::exists(cache));
 
     auto cache_obj = LocalTransceiver::getCache();
-    
+
     ASSERT_TRUE(cache_obj);
 
     custom_interfaces::msg::Path parsed_cache = *cache_obj;
-    custom_interfaces::msg::Path parsed_test = LocalTransceiver::parseInMsg(serialized_test);
+    custom_interfaces::msg::Path parsed_test  = LocalTransceiver::parseInMsg(serialized_test);
 
     EXPECT_EQ(parsed_test.waypoints[0].latitude, parsed_cache.waypoints[0].latitude);
-    EXPECT_EQ(parsed_test.waypoints[0].longitude, parsed_cache.waypoints[0].latitude);
+    EXPECT_EQ(parsed_test.waypoints[0].longitude, parsed_cache.waypoints[0].longitude);
     EXPECT_EQ(parsed_test.waypoints[1].latitude, parsed_cache.waypoints[0].latitude);
-    EXPECT_EQ(parsed_test.waypoints[1].longitude, parsed_cache.waypoints[0].latitude);
+    EXPECT_EQ(parsed_test.waypoints[1].longitude, parsed_cache.waypoints[0].longitude);
 
-    waypoint_a->set_latitude(updated);
-    waypoint_a->set_longitude(updated);
+    waypoint_a->set_latitude(updated_lat);
+    waypoint_a->set_longitude(updated_long);
 
-    waypoint_b->set_latitude(updated);
-    waypoint_b->set_longitude(updated);
+    waypoint_b->set_latitude(updated_lat);
+    waypoint_b->set_longitude(updated_long);
 
     serialized_test = path.SerializeAsString();
     LocalTransceiver::cacheGlobalWaypoints(serialized_test);
@@ -285,14 +287,15 @@ TEST_F(TestLocalTransceiver, checkCache)
 
     cache_obj = LocalTransceiver::getCache();
 
+    ASSERT_TRUE(std::filesystem::exists(cache));
     ASSERT_TRUE(cache_obj);
     parsed_cache = *cache_obj;
 
     parsed_test = LocalTransceiver::parseInMsg(serialized_test);
     EXPECT_EQ(parsed_test.waypoints[0].latitude, parsed_cache.waypoints[0].latitude);
-    EXPECT_EQ(parsed_test.waypoints[0].longitude, parsed_cache.waypoints[0].latitude);
+    EXPECT_EQ(parsed_test.waypoints[0].longitude, parsed_cache.waypoints[0].longitude);
     EXPECT_EQ(parsed_test.waypoints[1].latitude, parsed_cache.waypoints[0].latitude);
-    EXPECT_EQ(parsed_test.waypoints[1].longitude, parsed_cache.waypoints[0].latitude);
+    EXPECT_EQ(parsed_test.waypoints[1].longitude, parsed_cache.waypoints[0].longitude);
 }
 
 // std::mutex port_mutex;
