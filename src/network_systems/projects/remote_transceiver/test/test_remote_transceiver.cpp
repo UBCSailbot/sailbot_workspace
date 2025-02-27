@@ -367,3 +367,48 @@ TEST_F(TestRemoteTransceiver, TestPostGlobalPathMult)
     EXPECT_TRUE(g_test_db.verifyDBWrite_IridiumResponse(
       expected_response, expected_error, expected_message, expected_timestamps));
 }
+
+TEST_F(TestRemoteTransceiver, TestPostDataTooLong)
+{
+    SCOPED_TRACE("Seed: " + std::to_string(g_rand_seed));  // Print seed on any failure
+    auto [rand_global_path, rand_global_path_timestamp] = g_test_db.genGlobalData(UtilDB::getTimestamp());
+
+    std::string rand_global_path_str;
+    ASSERT_TRUE(rand_global_path.SerializeToString(&rand_global_path_str));
+    Polaris::GlobalPath test;
+    test.ParseFromString(rand_global_path_str);
+
+    boost::property_tree::ptree global_path_json;
+    boost::property_tree::ptree waypoints_arr;
+
+    // Repeat generation of waypoints to exceed max bytes of transmission allowed
+    for (int i = 0; i < 4; i++) {
+        for (const auto & waypoint : rand_global_path.waypoints()) {
+            boost::property_tree::ptree waypoint_node;
+            waypoint_node.put("latitude", waypoint.latitude());
+            waypoint_node.put("longitude", waypoint.longitude());
+            waypoints_arr.push_back(std::make_pair("", waypoint_node));
+        }
+    }
+
+    global_path_json.add_child("waypoints", waypoints_arr);
+    global_path_json.put("timestamp", rand_global_path_timestamp);
+
+    std::stringstream global_path_ss;
+    boost::property_tree::json_parser::write_json(global_path_ss, global_path_json);
+
+    http::status status = http_client::post(
+      {TESTING_HOST, std::to_string(TESTING_PORT), remote_transceiver::targets::GLOBAL_PATH},
+      "application/x-www-form-urlencoded", global_path_ss.str());  //change url as per global path specs
+
+    EXPECT_EQ(status, http::status::ok);
+    std::this_thread::sleep_for(WAIT_AFTER_RES);
+
+    std::array<std::string, 1> expected_response  = {"FAILED"};
+    std::array<std::string, 1> expected_error     = {"15"};
+    std::array<std::string, 1> expected_message   = {"Data too long"};
+    std::array<std::string, 1> expected_timestamp = {rand_global_path_timestamp};
+
+    EXPECT_TRUE(
+      g_test_db.verifyDBWrite_IridiumResponse(expected_response, expected_error, expected_message, expected_timestamp));
+}
