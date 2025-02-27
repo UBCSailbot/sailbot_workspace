@@ -239,7 +239,6 @@ TEST_F(TestLocalTransceiver, checkCache)
     constexpr float                                   updated = 17.9;
     std::vector<custom_interfaces::msg::HelperLatLon> waypoints;
 
-    // protobuf
     Polaris::GlobalPath path;
 
     Polaris::Waypoint * waypoint_a = path.add_waypoints();
@@ -250,31 +249,27 @@ TEST_F(TestLocalTransceiver, checkCache)
     waypoint_b->set_latitude(holder);
     waypoint_b->set_longitude(holder);
 
-    // convert protobuf to string
     std::string serialized_test = path.SerializeAsString();
-
     std::filesystem::path cache{CACHE_PATH};
-    //check that cache doesn't exist yet
+
     ASSERT_FALSE(std::filesystem::exists(cache));
 
     LocalTransceiver::cacheGlobalWaypoints(serialized_test);
 
-    //check that after caching the cache exists
     ASSERT_TRUE(std::filesystem::exists(cache));
 
     auto cache_obj = LocalTransceiver::getCache();
-
-    //getCache returns optional
+    
     ASSERT_TRUE(cache_obj);
-    custom_interfaces::msg::Path parsed_cache = *cache_obj;
 
+    custom_interfaces::msg::Path parsed_cache = *cache_obj;
     custom_interfaces::msg::Path parsed_test = LocalTransceiver::parseInMsg(serialized_test);
+
     EXPECT_EQ(parsed_test.waypoints[0].latitude, parsed_cache.waypoints[0].latitude);
     EXPECT_EQ(parsed_test.waypoints[0].longitude, parsed_cache.waypoints[0].latitude);
     EXPECT_EQ(parsed_test.waypoints[1].latitude, parsed_cache.waypoints[0].latitude);
     EXPECT_EQ(parsed_test.waypoints[1].longitude, parsed_cache.waypoints[0].latitude);
 
-    //update waypoints so we have to use cache_temp and rename
     waypoint_a->set_latitude(updated);
     waypoint_a->set_longitude(updated);
 
@@ -286,12 +281,10 @@ TEST_F(TestLocalTransceiver, checkCache)
 
     std::filesystem::path cache_temp{CACHE_TEMP_PATH};
     ASSERT_TRUE(std::filesystem::exists(cache));
-    //make sure temp path doesn't exist after rename
     ASSERT_FALSE(std::filesystem::exists(CACHE_TEMP_PATH));
 
     cache_obj = LocalTransceiver::getCache();
 
-    //getCache returns optional
     ASSERT_TRUE(cache_obj);
     parsed_cache = *cache_obj;
 
