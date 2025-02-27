@@ -1,3 +1,5 @@
+#include <bits/stdc++.h>
+
 #include <chrono>
 #include <functional>
 #include <memory>
@@ -91,6 +93,11 @@ public:
             sub_local_path_data = this->create_subscription<custom_interfaces::msg::LPathData>(
               ros_topics::LOCAL_PATH, ROS_Q_SIZE,
               std::bind(&LocalTransceiverIntf::sub_local_path_data_cb, this, std::placeholders::_1));
+
+            auto msg = lcl_trns_->getCache();
+            if (msg) {
+                pub_->publish(*msg);
+            }
         }
     }
 

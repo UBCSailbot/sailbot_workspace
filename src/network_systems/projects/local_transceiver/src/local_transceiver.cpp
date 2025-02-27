@@ -21,6 +21,8 @@
 #include "at_cmds.h"
 #include "cmn_hdrs/ros_info.h"
 #include "cmn_hdrs/shared_constants.h"
+#include "filesystem"
+#include "fstream"
 #include "global_path.pb.h"
 #include "sensors.pb.h"
 #include "waypoint.pb.h"
@@ -205,6 +207,27 @@ std::optional<std::string> LocalTransceiver::debugSend(const std::string & cmd)
     return readRsp();
 }
 
+void LocalTransceiver::cacheGlobalWaypoints(std::string receivedDataBuffer)
+{
+    //writes to /build/network_systems/projects/local_transceiver/PATH when running tests
+    std::filesystem::path cache{CACHE_PATH};
+    if (std::filesystem::exists(cache)) {
+        std::filesystem::path cache_temp{CACHE_TEMP_PATH};
+        std::ofstream         writeFile(CACHE_TEMP_PATH, std::ios::binary);
+        if (!writeFile) {
+            std::cerr << "Failed to create temp cache file" << std::endl;
+        }
+        writeFile.write(receivedDataBuffer.data(), static_cast<std::streamsize>(receivedDataBuffer.size()));
+        std::filesystem::rename(CACHE_TEMP_PATH, CACHE_PATH);
+    } else {
+        std::ofstream writeFile(CACHE_PATH, std::ios::binary);
+        if (!writeFile) {
+            std::cerr << "Failed to create cache file" << std::endl;
+        }
+        writeFile.write(receivedDataBuffer.data(), static_cast<std::streamsize>(receivedDataBuffer.size()));
+    }
+}
+
 custom_interfaces::msg::Path LocalTransceiver::receive()
 {
     static constexpr int MAX_NUM_RETRIES = 20;
@@ -301,6 +324,8 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
         break;
     }
 
+    cacheGlobalWaypoints(receivedDataBuffer);
+
     custom_interfaces::msg::Path to_publish = parseInMsg(receivedDataBuffer);
     return to_publish;
 }
@@ -334,6 +359,18 @@ custom_interfaces::msg::Path LocalTransceiver::parseInMsg(const std::string & ms
 
     soln.set__waypoints(waypoints);
     return soln;
+}
+
+std::optional<custom_interfaces::msg::Path> LocalTransceiver::getCache()
+{
+    std::filesystem::path cache{CACHE_PATH};
+    if (std::filesystem::exists(cache)) {
+        std::ifstream                input(CACHE_PATH, std::ios::binary);
+        std::string                  cachedDataBuffer(std::istreambuf_iterator<char>(input), {});
+        custom_interfaces::msg::Path to_publish = parseInMsg(cachedDataBuffer);
+        return to_publish;
+    }
+    return std::nullopt;
 }
 
 bool LocalTransceiver::rcvRsp(const AT::Line & expected_rsp)

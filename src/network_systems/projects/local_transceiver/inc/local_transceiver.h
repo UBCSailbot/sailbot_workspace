@@ -111,6 +111,8 @@ public:
      */
     std::optional<std::string> debugSend(const std::string & cmd);
 
+    static void cacheGlobalWaypoints(std::string receivedDataBuffer);
+
     /**
      * @brief Retrieve the latest message from the remote server via the serial port
      *
@@ -120,6 +122,22 @@ public:
 
     // TEST
     bool checkMailbox();
+
+    /**
+     * @brief Read and parse the data from the global waypoints file, if it exists
+     *
+     * @return The global waypoints from the cache
+     */
+    static std::optional<custom_interfaces::msg::Path> getCache();
+
+    //temp public for testing
+    /**
+     * @brief Parse the message received from the remote server
+     *
+     * @param msg message received from the remote server
+     * @return the data byte string payload from the message
+     */
+    static custom_interfaces::msg::Path parseInMsg(const std::string & msg);
 
 private:
     // Serial port read/write timeout
@@ -153,14 +171,6 @@ private:
     bool rcvRsp(const AT::Line & expected_rsp);
 
     std::optional<std::string> readRsp();
-
-    /**
-     * @brief Parse the message received from the remote server
-     *
-     * @param msg message received from the remote server
-     * @return the data byte string payload from the message
-     */
-    static custom_interfaces::msg::Path parseInMsg(const std::string & msg);
 
     /**
      * @brief Convert a boost::asio::streambuf into a string

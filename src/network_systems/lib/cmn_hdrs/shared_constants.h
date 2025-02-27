@@ -17,6 +17,9 @@ static const std::string DEV  = "development";
 constexpr unsigned int MAX_LOCAL_TO_REMOTE_PAYLOAD_SIZE_BYTES = 340;
 constexpr unsigned int MAX_REMOTE_TO_LOCAL_PAYLOAD_SIZE_BYTES = 270;
 
+static const std::string CACHE_PATH      = "global_waypoint_cache";
+static const std::string CACHE_TEMP_PATH = "global_waypoint_cache_temp";
+
 constexpr int NUM_BATTERIES = []() constexpr
 {
     using batteries_arr = custom_interfaces::msg::Batteries::_batteries_type;
