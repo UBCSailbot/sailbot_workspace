@@ -237,10 +237,9 @@ void HTTPServer::doPost()
 
             curl = curl_easy_init();
 
-            std::string EC        = "B";
-            std::string IMEI      = "300434065264590";
-            std::string USERNAME  = "myuser";
-            std::string test_data = "insertingtest data";
+            std::string EC       = "B";
+            std::string IMEI     = "300434065264590";
+            std::string USERNAME = "myuser";
 
             char * encoded_data = curl_easy_escape(curl, data.c_str(), 0);
 

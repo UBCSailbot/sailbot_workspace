@@ -215,6 +215,10 @@ TEST_F(TestRemoteTransceiver, TestPostSensorsMult)
     EXPECT_TRUE(g_test_db.verifyDBWrite(expected_sensors, expected_info));
 }
 
+/**
+ * @brief Test that we can send a POST request to the mock rockblockWebServer
+ *
+ */
 TEST_F(TestRemoteTransceiver, rockblockWebServerExample)
 {
     CURL *      curl;
@@ -297,6 +301,10 @@ TEST_F(TestRemoteTransceiver, TestPostGlobalPath)
       g_test_db.verifyDBWrite_IridiumResponse(expected_response, expected_error, expected_message, expected_timestamp));
 }
 
+/**
+ * @brief Test that the server can send multiple POST global path requests at once
+ *
+ */
 TEST_F(TestRemoteTransceiver, TestPostGlobalPathMult)
 {
     SCOPED_TRACE("Seed: " + std::to_string(g_rand_seed));  // Print seed on any failure
@@ -368,6 +376,11 @@ TEST_F(TestRemoteTransceiver, TestPostGlobalPathMult)
       expected_response, expected_error, expected_message, expected_timestamps));
 }
 
+/**
+ * @brief Test that correct error code and proper message handling is done when the global path data
+ *        sent exceeds the maximum transmission bytes allowed by rockblock
+ *
+ */
 TEST_F(TestRemoteTransceiver, TestPostDataTooLong)
 {
     SCOPED_TRACE("Seed: " + std::to_string(g_rand_seed));  // Print seed on any failure
@@ -413,6 +426,11 @@ TEST_F(TestRemoteTransceiver, TestPostDataTooLong)
       g_test_db.verifyDBWrite_IridiumResponse(expected_response, expected_error, expected_message, expected_timestamp));
 }
 
+/**
+ * @brief Test that correct error code and proper message handling is done when the global path data
+ *        sent is empty
+ *
+ */
 TEST_F(TestRemoteTransceiver, TestPostNoData)
 {
     SCOPED_TRACE("Seed: " + std::to_string(g_rand_seed));  // Print seed on any failure
