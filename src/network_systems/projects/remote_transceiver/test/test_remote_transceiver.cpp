@@ -419,7 +419,7 @@ TEST_F(TestRemoteTransceiver, TestPostNoData)
     auto [rand_global_path, rand_global_path_timestamp] = g_test_db.genGlobalData(UtilDB::getTimestamp());
 
     std::string global_path_timestamp = rand_global_path_timestamp;
-    std::string empty_body            = "";
+    std::string empty_body;
 
     Polaris::GlobalPath test;
     test.ParseFromString(empty_body);

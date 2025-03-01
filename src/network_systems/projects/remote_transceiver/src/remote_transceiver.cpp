@@ -243,12 +243,11 @@ void HTTPServer::doPost()
             std::string test_data = "insertingtest data";
 
             char * encoded_data = curl_easy_escape(curl, data.c_str(), 0);
-            std::cout << "BYTE COUNT: " << std::strlen(encoded_data) << std::endl;
 
-            if (std::strlen(encoded_data) > MAX_BYTES_TRANSMISSION) {
+            if (num_waypoints <= 1) {
+                EC = "10";
+            } else if (std::strlen(encoded_data) > MAX_BYTES_TRANSMISSION) {
                 EC = "F";
-            } else if (num_waypoints <= 1) {
-                EC = "G";
             }
 
             std::string url = "http://localhost:8100/?data=" + std::string(encoded_data) + "&ec=" + EC +
