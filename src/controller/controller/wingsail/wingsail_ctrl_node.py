@@ -154,7 +154,7 @@ class WingsailControllerNode(Node):
         self.__trim_tab_angle = self.__wingsailController.get_trim_tab_angle(
             apparent_speed, apparent_direction
         )
-    
+
         # Gets scaling factor based on wind speed thresholds
         scaling_coef = 1
         if apparent_speed > apparent_lower_threshold and apparent_speed < apparent_upper_threshold:
@@ -162,9 +162,9 @@ class WingsailControllerNode(Node):
             scaling_coef = (apparent_speed - apparent_lower_threshold) / difference
         elif apparent_speed >= apparent_upper_threshold:
             scaling_coef = 0
-        
+
         self.__trim_tab_angle = scaling_coef * self.__trim_tab_angle
-        
+
         msg.trim_tab_angle_degrees = self.__trim_tab_angle
 
         self.__trim_tab_angle_pub.publish(msg)
