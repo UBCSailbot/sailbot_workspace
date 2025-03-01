@@ -247,6 +247,8 @@ void HTTPServer::doPost()
 
             if (std::strlen(encoded_data) > MAX_BYTES_TRANSMISSION) {
                 EC = "F";
+            } else if (num_waypoints <= 1) {
+                EC = "G";
             }
 
             std::string url = "http://localhost:8100/?data=" + std::string(encoded_data) + "&ec=" + EC +

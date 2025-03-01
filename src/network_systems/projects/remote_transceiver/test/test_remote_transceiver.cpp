@@ -412,3 +412,46 @@ TEST_F(TestRemoteTransceiver, TestPostDataTooLong)
     EXPECT_TRUE(
       g_test_db.verifyDBWrite_IridiumResponse(expected_response, expected_error, expected_message, expected_timestamp));
 }
+
+TEST_F(TestRemoteTransceiver, TestPostNoData)
+{
+    SCOPED_TRACE("Seed: " + std::to_string(g_rand_seed));  // Print seed on any failure
+    auto [rand_global_path, rand_global_path_timestamp] = g_test_db.genGlobalData(UtilDB::getTimestamp());
+
+    std::string global_path_timestamp = rand_global_path_timestamp;
+    std::string empty_body            = "";
+
+    Polaris::GlobalPath test;
+    test.ParseFromString(empty_body);
+
+    boost::property_tree::ptree global_path_json;
+    boost::property_tree::ptree waypoints_arr;
+
+    boost::property_tree::ptree waypoint_node;
+    waypoint_node.put("latitude", 0.0F);
+    waypoint_node.put("longitude", 0.0F);
+
+    waypoints_arr.push_back(std::make_pair("", waypoint_node));
+
+    global_path_json.add_child("waypoints", waypoints_arr);
+
+    global_path_json.put("timestamp", global_path_timestamp);
+
+    std::stringstream global_path_ss;
+    boost::property_tree::json_parser::write_json(global_path_ss, global_path_json);
+
+    http::status status = http_client::post(
+      {TESTING_HOST, std::to_string(TESTING_PORT), remote_transceiver::targets::GLOBAL_PATH},
+      "application/x-www-form-urlencoded", global_path_ss.str());
+
+    EXPECT_EQ(status, http::status::ok);
+    std::this_thread::sleep_for(WAIT_AFTER_RES);
+
+    std::array<std::string, 1> expected_response  = {"FAILED"};
+    std::array<std::string, 1> expected_error     = {"16"};
+    std::array<std::string, 1> expected_message   = {"No data"};
+    std::array<std::string, 1> expected_timestamp = {global_path_timestamp};
+
+    EXPECT_TRUE(
+      g_test_db.verifyDBWrite_IridiumResponse(expected_response, expected_error, expected_message, expected_timestamp));
+}
