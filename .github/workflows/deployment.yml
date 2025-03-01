@@ -14,7 +14,7 @@ jobs:
     - name: Checkout workspace
       uses: actions/checkout@v4
     - name: Update docker image
-      uses: appleboy/ssh-action@v1.0.3
+      uses: appleboy/ssh-action@v1.1.0
       with:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USERNAME }}
