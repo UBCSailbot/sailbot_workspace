@@ -257,7 +257,7 @@ class LowLevelControlNode(Node):
             while not self.__rudder_controller.is_target_reached:
                 self.__rudder_controller.update_state()
                 i = self.__rudder_controller.current_control_ang
-                feedback_msg.current_angular_position = float(i)
+                # feedback_msg.current_angular_position = float(i)
                 self.get_logger().warn(f"Rudder Action Server feedback: {i}")
                 goal_handle.publish_feedback(feedback=feedback_msg)
                 self.sail_action_feedback_rate.sleep()

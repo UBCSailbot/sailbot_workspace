@@ -35,7 +35,7 @@ low_level_control_node:
          fixed_angle_deg: 0.0
          actuation_execution_period_sec: 0.5
          pid:
-            kp: 0.0
+            kp: 0.01
             ki: 0.0
             kd: 0.0
             buffer_size: 50
