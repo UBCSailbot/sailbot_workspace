@@ -388,12 +388,12 @@ class PhysicsEngineNode(Node):
         msg.global_gps.heading.heading = 0.0
 
         # had to make elements into float or else I would get issues
-        msg.global_pose.position.x = float(self.__boat_state.global_position[0])
-        msg.global_pose.position.y = float(self.__boat_state.global_position[1])
-        msg.global_pose.position.z = float(self.__boat_state.global_position[2])
-        msg.global_pose.orientation.x = float(self.__boat_state.angular_position[0])
-        msg.global_pose.orientation.y = float(self.__boat_state.angular_position[1])
-        msg.global_pose.orientation.z = float(self.__boat_state.angular_position[2])
+        msg.global_pose.position.x = self.__boat_state.global_position.item(0)
+        msg.global_pose.position.y = self.__boat_state.global_position.item(1)
+        msg.global_pose.position.z = self.__boat_state.global_position.item(2)
+        msg.global_pose.orientation.x = self.__boat_state.angular_position.item(0)
+        msg.global_pose.orientation.y = self.__boat_state.angular_position.item(1)
+        msg.global_pose.orientation.z = self.__boat_state.angular_position.item(2)
         msg.global_pose.orientation.w = 1.0
 
         msg.wind_velocity.x = self.__wind_generator.velocity[0]
