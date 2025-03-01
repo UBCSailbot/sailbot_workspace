@@ -247,7 +247,7 @@ TEST_F(TestLocalTransceiver, parseReceiveMessageBlackbox)
 {
     std::lock_guard<std::mutex> lock(port_mutex);
 
-    constexpr float     holder = 14.3;
+    constexpr float     holder = 10.3;
     Polaris::GlobalPath sample_data;
 
     Polaris::Waypoint * waypoint_a = sample_data.add_waypoints();
