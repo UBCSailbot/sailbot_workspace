@@ -244,6 +244,9 @@ class LowLevelControlNode(Node):
             self.get_logger().warn("Rudder actuation enabled.")
             current_heading = self.gps.heading.heading
             desired_heading = goal_handle.request.desired_heading.heading.heading
+            self.get_logger().warn(
+                f"current heading: {current_heading} desired heading: {desired_heading}"
+            )
             self.__rudder_controller.reset_setpoint(desired_heading, current_heading)
             if self.__rudder_controller.is_target_reached:
                 self.get_logger().error(
@@ -257,11 +260,12 @@ class LowLevelControlNode(Node):
             while not self.__rudder_controller.is_target_reached:
                 self.__rudder_controller.update_state()
                 i = self.__rudder_controller.current_control_ang
-                # feedback_msg.current_angular_position = float(i)
+                feedback_msg.rudder_angle = float(i)
                 self.get_logger().warn(f"Rudder Action Server feedback: {i}")
                 goal_handle.publish_feedback(feedback=feedback_msg)
-                self.sail_action_feedback_rate.sleep()
+                # self.rudder_action_feedback_rate.sleep()
 
+        self.get_logger().warn("Rudder finished moving.")
         goal_handle.succeed()
         result = SimRudderActuation.Result()
         result.remaining_angular_distance = 0.0
