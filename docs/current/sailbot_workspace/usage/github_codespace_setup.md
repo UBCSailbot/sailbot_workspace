@@ -2,7 +2,7 @@
 
 Github code spaces is very useful for working in sailbot_workspaces as it removed the overhead of setting up the environment.
 
-1. go to [sailbot_workspace](https://github.com/UBCSailbot/sailbot_workspace) repo on GitHub.
+1. go to [sailbot_workspace](https://github.com/UBCSailbot/sailbot_workspace){target=_blank} repo on GitHub.
 
 2. click **Code → Codespaces → +**, a new tab will open, wait as the browser IDE sets up.
 
