@@ -13,20 +13,20 @@ wait a moment as the work space sets up, the IDE should have a blue border.
 
 5. if any bugs occur with building custom_interfaces package run following command in the terminal:
 
-```
-colcon build --packages-select custom_interfaces --merge-install
-```
+    ```
+    colcon build --packages-select custom_interfaces --merge-install
+    ```
 
-6.. run command in the terminal:
+6. run command in the terminal:
 
-```
-source install/setup.sh
-```
+    ```
+    source install/setup.sh
+    ```
 
 7. then run command to launch entire system:
 
-```
-ros2 launch $ROS_WORKSPACE/src/global_launch/main_launch.py
-```
+    ```
+    ros2 launch $ROS_WORKSPACE/src/global_launch/main_launch.py
+    ```
 
 8. if things are working you are done! you can use `ctrl + c` to stop the system.
