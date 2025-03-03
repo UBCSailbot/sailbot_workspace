@@ -6,6 +6,8 @@ The workspace may not perform well on Windows computers with 8GB of memory or le
 in this case, please check out our recommendations in the [Performance Issues](./help.md#performance-issues){target=_blank}
 section.
 
+Sailbot workspace can be run on Github Codespaces, instructions on how to set up are [here](./github_codespace_setup.md).
+
 ## 1. Setup prerequisites
 
 ### Docker
