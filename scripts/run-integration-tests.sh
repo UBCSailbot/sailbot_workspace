@@ -8,7 +8,7 @@ if [[ $LOCAL_RUN != "true" ]]; then
     source /opt/ros/${ROS_DISTRO}/setup.bash
     ./scripts/setup.sh
     ./scripts/build.sh
-    ./scripts/run_virtual_iridium.sh
+    # ./scripts/run_virtual_iridium.sh
     source $ROS_WORKSPACE/install/setup.bash
 fi
 
