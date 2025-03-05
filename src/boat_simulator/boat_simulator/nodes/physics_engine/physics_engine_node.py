@@ -387,20 +387,20 @@ class PhysicsEngineNode(Node):
         msg.global_gps.speed.speed = 0.0
         msg.global_gps.heading.heading = 0.0
 
-        msg.global_pose.position.x = 0.0
-        msg.global_pose.position.y = 0.0
-        msg.global_pose.position.z = 0.0
-        msg.global_pose.orientation.x = 0.0
-        msg.global_pose.orientation.y = 0.0
-        msg.global_pose.orientation.z = 0.0
+        msg.global_pose.position.x = self.__boat_state.global_position.item(0)
+        msg.global_pose.position.y = self.__boat_state.global_position.item(1)
+        msg.global_pose.position.z = self.__boat_state.global_position.item(2)
+        msg.global_pose.orientation.x = self.__boat_state.angular_position.item(0)
+        msg.global_pose.orientation.y = self.__boat_state.angular_position.item(1)
+        msg.global_pose.orientation.z = self.__boat_state.angular_position.item(2)
         msg.global_pose.orientation.w = 1.0
 
-        msg.wind_velocity.x = 0.0
-        msg.wind_velocity.y = 0.0
+        msg.wind_velocity.x = self.__wind_generator.velocity[0]
+        msg.wind_velocity.y = self.__wind_generator.velocity[1]
         msg.wind_velocity.z = 0.0
 
-        msg.current_velocity.x = 0.0
-        msg.current_velocity.y = 0.0
+        msg.current_velocity.x = self.__current_generator.velocity[0]
+        msg.current_velocity.y = self.__current_generator.velocity[1]
         msg.current_velocity.z = 0.0
 
         sec, nanosec = divmod(self.pub_period * self.publish_counter, 1)
