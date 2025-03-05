@@ -207,9 +207,8 @@ std::optional<std::string> LocalTransceiver::debugSend(const std::string & cmd)
     return readRsp();
 }
 
-std::future<void> LocalTransceiver::cacheGlobalWaypoints(std::string receivedDataBuffer)
+std::future<void> LocalTransceiver::cacheGlobalWaypointsAsync(std::string receivedDataBuffer)
 {
-    //writes to /build/network_systems/projects/local_transceiver/PATH when running tests
     return std::async(std::launch::async, [receivedDataBuffer] {
         try {
             std::filesystem::path cache{CACHE_PATH};
@@ -234,31 +233,6 @@ std::future<void> LocalTransceiver::cacheGlobalWaypoints(std::string receivedDat
             std::cerr << "Error caching global waypoints: " << e.what() << std::endl;
         }
     });
-    // std::filesystem::path cache{CACHE_PATH};
-    // if (std::filesystem::exists(cache)) {
-    //     auto future = std::async(std::launch::async, [=] {
-    //         std::ofstream file(CACHE_TEMP_PATH, std::ios::binary);
-    //         if (file.is_open()) {
-    //             file.write(receivedData.data(), static_cast<std::streamsize>(receivedData.size()));
-    //             std::cout << "File written asynchronously.\n"; //!!! REMOVE
-    //         } else {
-    //             std::cerr << "Failed to open file.\n";
-    //         }
-    //     });
-    //     std::filesystem::rename(CACHE_TEMP_PATH, CACHE_PATH);
-    // } else {
-    //     std::ofstream writeFile(CACHE_PATH, std::ios::binary);
-    //     // if (!writeFile) {
-    //     //     std::cerr << "Failed to create cache file" << std::endl;
-    //     // }
-    //     boost::system::error_code ec;
-    //     bio::write(writeFile, bio::buffer(receivedData), ec);
-    //     if (ec) {
-    //         std::cerr << "Temp cache write failed with error: " << ec.message() << std::endl;
-    //         return;
-    //     }
-    // writeFile.write(receivedData.data(), static_cast<std::streamsize>(receivedDataBuffer.size()));
-    // }
 }
 
 custom_interfaces::msg::Path LocalTransceiver::receive()
@@ -357,7 +331,7 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
         break;
     }
 
-    cacheGlobalWaypoints(receivedDataBuffer);
+    cacheGlobalWaypointsAsync(receivedDataBuffer);
 
     custom_interfaces::msg::Path to_publish = parseInMsg(receivedDataBuffer);
     return to_publish;
@@ -394,9 +368,6 @@ custom_interfaces::msg::Path LocalTransceiver::parseInMsg(const std::string & ms
     return soln;
 }
 
-//TODO(adambrett40): make async w/ callback to publish over ros
-// need to ensure the callback publisher can't publish cached waypoints after new waypoints come in
-// put mutex lock on publishing, give to getCache thread?
 std::optional<custom_interfaces::msg::Path> LocalTransceiver::getCache()
 {
     std::filesystem::path cache{CACHE_PATH};

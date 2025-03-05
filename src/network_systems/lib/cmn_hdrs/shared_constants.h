@@ -17,8 +17,22 @@ static const std::string DEV  = "development";
 constexpr unsigned int MAX_LOCAL_TO_REMOTE_PAYLOAD_SIZE_BYTES = 340;
 constexpr unsigned int MAX_REMOTE_TO_LOCAL_PAYLOAD_SIZE_BYTES = 270;
 
-static const std::string CACHE_PATH      = "global_waypoint_cache";
-static const std::string CACHE_TEMP_PATH = "global_waypoint_cache_temp";
+inline std::string getCachePath()
+{
+    const char * ros_ws = std::getenv("ROS_WORKSPACE");  //NOLINT (concurrency-mt-unsafe)
+    return (ros_ws != nullptr ? std::string(ros_ws) : "/workspaces/sailbot_workspace") +
+           "/build/network_systems/projects/local_transceiver/global_waypoint_cache";
+}
+
+inline std::string getCacheTempPath()
+{
+    const char * ros_ws = std::getenv("ROS_WORKSPACE");  //NOLINT (concurrency-mt-unsafe)
+    return (ros_ws != nullptr ? std::string(ros_ws) : "/workspaces/sailbot_workspace") +
+           "/build/network_systems/projects/local_transceiver/global_waypoint_cache_temp";
+}
+
+static const std::string CACHE_PATH      = getCachePath();
+static const std::string CACHE_TEMP_PATH = getCacheTempPath();
 
 constexpr int NUM_BATTERIES = []() constexpr
 {

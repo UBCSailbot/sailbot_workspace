@@ -256,7 +256,8 @@ TEST_F(TestLocalTransceiver, checkCache)
 
     ASSERT_FALSE(std::filesystem::exists(cache));
 
-    LocalTransceiver::cacheGlobalWaypoints(serialized_test);
+    std::future<void> future = LocalTransceiver::cacheGlobalWaypointsAsync(serialized_test);
+    future.get();
 
     ASSERT_TRUE(std::filesystem::exists(cache));
 
@@ -279,7 +280,8 @@ TEST_F(TestLocalTransceiver, checkCache)
     waypoint_b->set_longitude(updated_long);
 
     serialized_test = path.SerializeAsString();
-    LocalTransceiver::cacheGlobalWaypoints(serialized_test);
+    future          = LocalTransceiver::cacheGlobalWaypointsAsync(serialized_test);
+    future.get();
 
     std::filesystem::path cache_temp{CACHE_TEMP_PATH};
     ASSERT_TRUE(std::filesystem::exists(cache));

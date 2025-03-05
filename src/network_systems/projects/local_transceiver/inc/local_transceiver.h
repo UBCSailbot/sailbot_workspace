@@ -111,7 +111,13 @@ public:
      */
     std::optional<std::string> debugSend(const std::string & cmd);
 
-    static std::future<void> cacheGlobalWaypoints(std::string receivedDataBuffer);
+    /**
+     * @brief Asynchronously save the received serialized data to a local file
+     *
+     * @param receivedDataBuffer string to cache
+     * @return future object representing completion of the function
+     */
+    static std::future<void> cacheGlobalWaypointsAsync(std::string receivedDataBuffer);
 
     /**
      * @brief Retrieve the latest message from the remote server via the serial port

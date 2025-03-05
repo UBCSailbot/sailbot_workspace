@@ -46,16 +46,27 @@ public:
             } else if (mode == SYSTEM_MODE::DEV) {
                 default_port                = LOCAL_TRANSCEIVER_TEST_PORT;
                 std::string run_iridium_cmd = "$ROS_WORKSPACE/scripts/run_virtual_iridium.sh";
-                int         result          = std::system(run_iridium_cmd.c_str());  //NOLINT(concurrency-mt-unsafe)
-                if (result != 0) {
-                    std::string msg = "Error: could not start virtual iridium";
-                    std::cerr << msg << std::endl;
-                    throw std::exception();
-                }
+                std::thread vi_thread(std::system, run_iridium_cmd.c_str());
+                //vi needs to run in background
+                vi_thread.detach();
+
+                const int   MAX_ATTEMPTS = 100;  // 100ms timeout, should only take <5
+                int         attempts     = 0;
+                const int   SLEEP_MS     = 1;
                 std::string set_baud_cmd = "stty 19200 < $LOCAL_TRANSCEIVER_TEST_PORT";
-                result                   = std::system(set_baud_cmd.c_str());  //NOLINT(concurrency-mt-unsafe)
-                if (result != 0) {
-                    std::string msg = "Error: could not set baud rate for virtual iridium";
+                while (attempts < MAX_ATTEMPTS) {
+                    if (std::filesystem::exists(LOCAL_TRANSCEIVER_TEST_PORT)) {
+                        int result = std::system(set_baud_cmd.c_str());  //NOLINT(concurrency-mt-unsafe)
+                        if (result == 0) {
+                            break;
+                        }
+                    }
+                    std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_MS));
+                    attempts++;
+                }
+
+                if (attempts == MAX_ATTEMPTS) {
+                    std::string msg = "Error: could not start virtual iridium";
                     std::cerr << msg << std::endl;
                     throw std::exception();
                 }
@@ -94,10 +105,8 @@ public:
               ros_topics::LOCAL_PATH, ROS_Q_SIZE,
               std::bind(&LocalTransceiverIntf::sub_local_path_data_cb, this, std::placeholders::_1));
 
-            auto msg = lcl_trns_->getCache();
-            if (msg) {
-                pub_->publish(*msg);
-            }
+            std::thread cache_thread(&LocalTransceiverIntf::getAndPublishCache, this);
+            cache_thread.detach();
         }
     }
 
@@ -111,6 +120,16 @@ private:
     rclcpp::Subscription<custom_interfaces::msg::GenericSensors>::SharedPtr sub_data_sensors;
     rclcpp::Subscription<custom_interfaces::msg::GPS>::SharedPtr            sub_gps;
     rclcpp::Subscription<custom_interfaces::msg::LPathData>::SharedPtr      sub_local_path_data;
+
+    // may want mutex to ensure cached waypoints can't be published after newly received waypoints,
+    // but don't think practically necessary since pub_cb won't fire until 5 minutes after cache call.
+    void getAndPublishCache()
+    {
+        auto msg = lcl_trns_->getCache();
+        if (msg) {
+            pub_->publish(*msg);
+        }
+    }
 
     /**
      * @brief Callback function to publish to onboard ROS network
