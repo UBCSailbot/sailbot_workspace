@@ -6,7 +6,6 @@
 #include "at_cmds.h"
 #include "boost/asio/io_service.hpp"
 #include "boost/asio/serial_port.hpp"
-#include "custom_interfaces/msg/ais_ships.hpp"
 #include "custom_interfaces/msg/batteries.hpp"
 #include "custom_interfaces/msg/generic_sensors.hpp"
 #include "custom_interfaces/msg/gps.hpp"
@@ -25,6 +24,8 @@ constexpr unsigned int SATELLITE_BAUD_RATE = 19200;
 class LocalTransceiver
 {
     friend class TestLocalTransceiver_parseInMsgValid_Test;
+    friend class TestLocalTransceiver_SendAndReceiveMessage;
+    friend class TestLocalTransceiver_testMailboxBlackbox_Test;
 
 public:
     /**
@@ -33,13 +34,6 @@ public:
     * @param gps custom_interfaces gps object
     */
     void updateSensor(msg::GPS gps);
-
-    /**
-    * @brief Update the sensor with new AIS Ships data
-    *
-    * @param ships custom_interfaces AISShips object
-    */
-    void updateSensor(msg::AISShips ships);
 
     /**
     * @brief Update the sensor with new Wind sensor data
@@ -123,6 +117,9 @@ public:
      * @return The message as a binary string
      */
     custom_interfaces::msg::Path receive();
+
+    // TEST
+    bool checkMailbox();
 
 private:
     // Serial port read/write timeout

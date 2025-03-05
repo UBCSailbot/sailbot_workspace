@@ -8,13 +8,13 @@
 #include <boost/asio/streambuf.hpp>
 #include <boost/asio/write.hpp>
 #include <boost/system/error_code.hpp>
-#include <custom_interfaces/msg/ais_ships.hpp>
 #include <custom_interfaces/msg/batteries.hpp>
 #include <custom_interfaces/msg/generic_sensors.hpp>
 #include <custom_interfaces/msg/gps.hpp>
 #include <custom_interfaces/msg/l_path_data.hpp>
 #include <custom_interfaces/msg/wind_sensors.hpp>
 #include <exception>
+#include <regex>
 #include <stdexcept>
 #include <string>
 
@@ -35,22 +35,6 @@ void LocalTransceiver::updateSensor(msg::GPS gps)
     sensors_.mutable_gps()->set_latitude(gps.lat_lon.latitude);
     sensors_.mutable_gps()->set_longitude(gps.lat_lon.longitude);
     sensors_.mutable_gps()->set_speed(gps.speed.speed);
-}
-
-void LocalTransceiver::updateSensor(msg::AISShips ships)
-{
-    sensors_.clear_ais_ships();
-    for (const msg::HelperAISShip & ship : ships.ships) {
-        Sensors::Ais * new_ship = sensors_.add_ais_ships();
-        new_ship->set_id(ship.id);
-        new_ship->set_cog(ship.cog.heading);
-        new_ship->set_latitude(ship.lat_lon.latitude);
-        new_ship->set_longitude(ship.lat_lon.longitude);
-        new_ship->set_sog(ship.sog.speed);
-        new_ship->set_rot(ship.rot.rot);
-        new_ship->set_width(ship.width.dimension);
-        new_ship->set_length(ship.length.dimension);
-    }
 }
 
 void LocalTransceiver::updateSensor(msg::WindSensors wind)
@@ -223,8 +207,101 @@ std::optional<std::string> LocalTransceiver::debugSend(const std::string & cmd)
 
 custom_interfaces::msg::Path LocalTransceiver::receive()
 {
-    std::string                  receivedData = readRsp().value();
-    custom_interfaces::msg::Path to_publish   = parseInMsg(receivedData);
+    static constexpr int MAX_NUM_RETRIES = 20;
+    for (int i = 0; i <= MAX_NUM_RETRIES; i++) {
+        if (i == MAX_NUM_RETRIES) {
+            return parseInMsg("-1");
+        }
+        static const AT::Line check_conn_cmd = AT::Line(AT::CHECK_CONN);
+        if (!send(check_conn_cmd)) {
+            continue;
+        }
+
+        if (!rcvRsps({check_conn_cmd, AT::Line(AT::DELIMITER), AT::Line(AT::STATUS_OK), AT::Line("\n")})) {
+            continue;
+        }
+
+        static const AT::Line disable_ctrlflow_cmd = AT::Line(AT::DSBL_CTRLFLOW);
+        if (!send(disable_ctrlflow_cmd)) {
+            continue;
+        }
+
+        if (!rcvRsps({disable_ctrlflow_cmd, AT::Line(AT::DELIMITER), AT::Line(AT::STATUS_OK), AT::Line("\n")})) {
+            continue;
+        }
+
+        static const AT::Line sbdix_cmd = AT::Line(AT::SBD_SESSION);
+        if (!send(sbdix_cmd)) {
+            continue;
+        }
+
+        auto opt_rsp = readRsp();
+        if (!opt_rsp) {
+            continue;
+        }
+
+        std::string              opt_rsp_val = opt_rsp.value();
+        std::vector<std::string> sbd_status_vec;
+        boost::algorithm::split(sbd_status_vec, opt_rsp_val, boost::is_any_of(AT::DELIMITER));
+
+        std::string sbdix_value;
+        for (const auto & element : sbd_status_vec) {
+            if (element.find("SBDIX:") != std::string::npos) {
+                sbdix_value = element;
+                break;
+            }
+        }
+
+        AT::SBDStatusRsp rsp(sbdix_value);
+
+        if (rsp.MO_status_ == 0) {
+            if (rsp.MT_status_ == 0) {
+                return parseInMsg("-1");
+            } else if (rsp.MT_status_ == 1) {  //NOLINT
+                break;
+            } else if (rsp.MT_status_ == 2) {
+                continue;
+            }
+        } else {
+            continue;
+        }
+    }
+
+    std::string receivedDataBuffer;
+    for (int i = 0; i < MAX_NUM_RETRIES; i++) {
+        static const AT::Line message_to_queue_cmd = AT::Line(AT::DNLD_TO_QUEUE);
+        if (!send(message_to_queue_cmd)) {
+            continue;
+        }
+
+        if (!rcvRsps({message_to_queue_cmd, AT::Line("\n")})) {
+            continue;
+        }
+
+        auto buffer_data = readRsp();
+        if (!buffer_data) {
+            continue;
+        }
+
+        std::regex re(
+          R"(name=\"data\"; filename=\"[^\"]*\"\r?\n(?:.*\r?\n)*\r?\n([\s\S]*?)\r?\n--)", std::regex::ECMAScript);
+
+        std::smatch match;
+
+        if (std::regex_search(*buffer_data, match, re)) {
+            *buffer_data = match[1];
+            std::stringstream ss;
+            ss << *buffer_data;
+            std::cout << ss.str() << std::endl;
+        } else {
+            std::cout << "No match found." << std::endl;
+        }
+
+        receivedDataBuffer = buffer_data.value();
+        break;
+    }
+
+    custom_interfaces::msg::Path to_publish = parseInMsg(receivedDataBuffer);
     return to_publish;
 }
 
