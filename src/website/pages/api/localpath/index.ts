@@ -29,12 +29,10 @@ export default async function handler(
       try {
         let localPathData = req.body;
 
-        // If input is a single object, wrap it in an array
         if (!Array.isArray(localPathData)) {
           localPathData = [localPathData];
         }
 
-        // Validate each LocalPath entry
         for (const entry of localPathData) {
           if (!Array.isArray(entry.waypoints) || typeof entry.timestamp !== 'string') {
             return res.status(400).json({ success: false, message: "Invalid LocalPath data format" });
@@ -50,7 +48,6 @@ export default async function handler(
           }
         }
 
-        // Insert LocalPath data
         const newLocalPaths = await LocalPath.insertMany(localPathData);
 
         res.status(201).json({ success: true, message: "LocalPath data stored", data: newLocalPaths });
