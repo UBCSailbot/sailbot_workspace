@@ -14,12 +14,12 @@ export default async function handler(
   switch (method) {
     case 'GET':
       try {
-        const localPath: LocalPathDocument[] = await LocalPath.find({}).select({
+        const localPaths: LocalPathDocument[] = await LocalPath.find({}).select({
           'waypoints._id': 0,
           _id: 0,
           __v: 0,
         });
-        res.status(200).json({ success: true, data: localPath });
+        res.status(200).json({ success: true, data: localPaths });
       } catch (error) {
         res.status(400).json({ success: false, message: (error as Error).message });
       }
@@ -27,25 +27,42 @@ export default async function handler(
 
     case 'POST':
       try {
-        const { waypoints, timestamp } = req.body;
+        let localPathData = req.body;
 
-        if (!Array.isArray(waypoints) || typeof timestamp !== 'string') {
-          return res.status(400).json({ success: false, message: "Invalid LocalPath data format" });
+        // If input is a single object, wrap it in an array
+        if (!Array.isArray(localPathData)) {
+          localPathData = [localPathData];
         }
 
-        for (const waypoint of waypoints) {
-          if (
-            typeof waypoint.latitude !== 'number' ||
-            typeof waypoint.longitude !== 'number'
-          ) {
-            return res.status(400).json({ success: false, message: "Invalid waypoint object format" });
+        // Validate each LocalPath entry
+        for (const entry of localPathData) {
+          if (!Array.isArray(entry.waypoints) || typeof entry.timestamp !== 'string') {
+            return res.status(400).json({ success: false, message: "Invalid LocalPath data format" });
+          }
+
+          for (const waypoint of entry.waypoints) {
+            if (
+              typeof waypoint.latitude !== 'number' ||
+              typeof waypoint.longitude !== 'number'
+            ) {
+              return res.status(400).json({ success: false, message: "Invalid waypoint object format" });
+            }
           }
         }
 
-        const newLocalPath = new LocalPath({ waypoints, timestamp });
-        await newLocalPath.save();
+        // Insert LocalPath data
+        const newLocalPaths = await LocalPath.insertMany(localPathData);
 
-        res.status(201).json({ success: true, message: "LocalPath data stored", data: newLocalPath });
+        res.status(201).json({ success: true, message: "LocalPath data stored", data: newLocalPaths });
+      } catch (error) {
+        res.status(500).json({ success: false, message: (error as Error).message });
+      }
+      break;
+
+    case 'DELETE':
+      try {
+        await LocalPath.deleteMany({});
+        res.status(200).json({ success: true, message: "All LocalPath data cleared" });
       } catch (error) {
         res.status(500).json({ success: false, message: (error as Error).message });
       }

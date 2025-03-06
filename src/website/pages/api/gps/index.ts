@@ -23,22 +23,37 @@ export default async function handler(
 
     case 'POST':
       try {
-        const { latitude, longitude, speed, heading, timestamp } = req.body;
+        let gpsData = req.body;
 
-        if (
-          typeof latitude !== 'number' ||
-          typeof longitude !== 'number' ||
-          typeof speed !== 'number' ||
-          typeof heading !== 'number' ||
-          typeof timestamp !== 'string'
-        ) {
-          return res.status(400).json({ success: false, message: "Invalid GPS data format" });
+        if (!Array.isArray(gpsData)) {
+          gpsData = [gpsData];
         }
 
-        const newGPS = new GPS({ latitude, longitude, speed, heading, timestamp });
-        await newGPS.save();
+        for (const data of gpsData) {
+          const { latitude, longitude, speed, heading, timestamp } = data;
+          if (
+            typeof latitude !== 'number' ||
+            typeof longitude !== 'number' ||
+            typeof speed !== 'number' ||
+            typeof heading !== 'number' ||
+            typeof timestamp !== 'string'
+          ) {
+            return res.status(400).json({ success: false, message: "Invalid GPS data format" });
+          }
+        }
 
-        res.status(201).json({ success: true, message: "GPS data stored", data: newGPS });
+        const newGPSData = await GPS.insertMany(gpsData);
+
+        res.status(201).json({ success: true, message: "GPS data stored", data: newGPSData });
+      } catch (error) {
+        res.status(500).json({ success: false, message: (error as Error).message });
+      }
+      break;
+
+    case 'DELETE':
+      try {
+        await GPS.deleteMany({});
+        res.status(200).json({ success: true, message: "All GPS data cleared" });
       } catch (error) {
         res.status(500).json({ success: false, message: (error as Error).message });
       }

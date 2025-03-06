@@ -27,25 +27,39 @@ export default async function handler(
 
     case 'POST':
       try {
-        const { waypoints, timestamp } = req.body;
+        let globalPathData = req.body;
 
-        if (!Array.isArray(waypoints) || typeof timestamp !== 'string') {
-          return res.status(400).json({ success: false, message: "Invalid GlobalPath data format" });
+        if (!Array.isArray(globalPathData)) {
+          globalPathData = [globalPathData];
         }
 
-        for (const waypoint of waypoints) {
-          if (
-            typeof waypoint.latitude !== 'number' ||
-            typeof waypoint.longitude !== 'number'
-          ) {
-            return res.status(400).json({ success: false, message: "Invalid waypoint object format" });
+        for (const entry of globalPathData) {
+          if (!Array.isArray(entry.waypoints) || typeof entry.timestamp !== 'string') {
+            return res.status(400).json({ success: false, message: "Invalid GlobalPath data format" });
+          }
+
+          for (const waypoint of entry.waypoints) {
+            if (
+              typeof waypoint.latitude !== 'number' ||
+              typeof waypoint.longitude !== 'number'
+            ) {
+              return res.status(400).json({ success: false, message: "Invalid waypoint object format" });
+            }
           }
         }
 
-        const newGlobalPath = new GlobalPath({ waypoints, timestamp });
-        await newGlobalPath.save();
+        const newGlobalPaths = await GlobalPath.insertMany(globalPathData);
 
-        res.status(201).json({ success: true, message: "GlobalPath data stored", data: newGlobalPath });
+        res.status(201).json({ success: true, message: "GlobalPath data stored", data: newGlobalPaths });
+      } catch (error) {
+        res.status(500).json({ success: false, message: (error as Error).message });
+      }
+      break;
+
+    case 'DELETE':
+      try {
+        await GlobalPath.deleteMany({});
+        res.status(200).json({ success: true, message: "All GlobalPath data cleared" });
       } catch (error) {
         res.status(500).json({ success: false, message: (error as Error).message });
       }
