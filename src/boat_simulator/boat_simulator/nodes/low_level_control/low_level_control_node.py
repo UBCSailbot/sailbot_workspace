@@ -141,6 +141,7 @@ class LowLevelControlNode(Node):
             clock=self.get_clock(),
         )
         self.__sail_action_feedback_rate = self.create_rate(
+            # should be frequency not period
             frequency=self.get_parameter("wingsail.actuation_execution_period_sec")
             .get_parameter_value()
             .double_value,
@@ -261,10 +262,10 @@ class LowLevelControlNode(Node):
                 self.__rudder_controller.update_state()
                 i = self.__rudder_controller.current_control_ang
                 feedback_msg.rudder_angle = float(i)
-                self.get_logger().warn(f"Rudder Action Server feedback: {i}")
                 goal_handle.publish_feedback(feedback=feedback_msg)
                 # self.rudder_action_feedback_rate.sleep()
 
+        self.get_logger().warn(f"Rudder Action Server feedback: {i}")
         self.get_logger().warn("Rudder finished moving.")
         goal_handle.succeed()
         result = SimRudderActuation.Result()
@@ -286,15 +287,41 @@ class LowLevelControlNode(Node):
         """
         self.get_logger().debug("Beginning sail actuation...")
 
-        # TODO Placeholder loop. Replace with sail ctrl once implemented.
-        feedback_msg = SimSailTrimTabActuation.Feedback()
-        for i in range(Constants.SAIL_ACTUATION_NUM_LOOP_EXECUTIONS):
+        # initialize the sail controller if it has not been initialized yet.
+        if not self.__sail_controller:
+            self.init_sail_controller()
 
-            self.get_logger().debug(f"Sail Action Server feedback: {i}")
-            self.get_logger().debug(f"Is Sail Action Active? {self.is_sail_action_active}")
-            goal_handle.publish_feedback(feedback=feedback_msg)
-            self.sail_action_feedback_rate.sleep()
+        # set controller to disabled
+        if self._parameters["wingsail.disable_actuation"].value:
+            # TODO change this block of code with correct logic of what to do when rudder is off.
+            self.get_logger().warn("wingsail actuation disabled.")
 
+        else:
+            self.get_logger().warn("wingsail actuation enabled.")
+            current_trim_tab_angle = self.sail_trim_tab_angle
+            desired_trim_tab_angle = goal_handle.request.desired_angular_position
+            self.get_logger().warn(
+                f"current trim tab angle: {current_trim_tab_angle} "
+                + f"desired trim tab angle: {desired_trim_tab_angle}"
+            )
+            self.__sail_controller.reset_setpoint(desired_trim_tab_angle)
+            if self.__sail_controller.is_target_reached:
+                self.get_logger().error(
+                    "\nSomehow controller target is reached when it should not be. Dumping data:\n"
+                    + f"controller target angle is {self.__sail_controller.target_angle} \n"
+                    + f"controller current angle is {self.__sail_controller.current_control_ang}\n"
+                    + f"controller running error is {self.__sail_controller.running_error}"
+                )
+            feedback_msg = SimSailTrimTabActuation.Feedback()
+            while not self.__sail_controller.is_target_reached:
+                self.__sail_controller.update_state()
+                i = self.__sail_controller.current_control_ang
+                feedback_msg.current_angular_position = float(i)
+                goal_handle.publish_feedback(feedback=feedback_msg)
+                # self.sail_action_feedback_rate.sleep()
+
+        self.get_logger().warn(f"Trim tab Action Server feedback: {i}")
+        self.get_logger().warn("Trim tab finished moving.")
         goal_handle.succeed()
 
         result = SimSailTrimTabActuation.Result()
