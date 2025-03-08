@@ -370,7 +370,6 @@
         // for the documentation about the tasks.json format
         "version": "2.0.0",
         "tasks": [
-            // Build tasks
             {
                 "label": "Build All",
                 "detail": "Build all packages in the workspace",
@@ -401,7 +400,6 @@
                 "group": "build",
                 "problemMatcher": "$gcc"
             },
-            // Test tasks
             {
                 "label": "Test All",
                 "detail": "Run all unit tests and show results.",
@@ -410,7 +408,8 @@
                 "group": {
                     "kind": "test",
                     "isDefault": true
-                }
+                },
+                "problemMatcher": []
             },
             {
                 "label": "Test Package",
@@ -437,7 +436,6 @@
                 "command": "sudo rm -rf build install log; py3clean .",
                 "problemMatcher": []
             },
-            // Linting and static code analysis tasks
             {
                 "label": "lint_cmake",
                 "detail": "Run lint on cmake files.",
@@ -481,7 +479,7 @@
                 "type": "shell",
                 "command": "LINTER=mypy LOCAL_RUN=true scripts/ament-lint.sh",
                 "problemMatcher": [
-                    "$ament_mypy",
+                    "$ament_mypy"
                 ],
                 "presentation": {
                     "panel": "dedicated",
@@ -494,7 +492,7 @@
                 "type": "shell",
                 "command": "LINTER=xmllint LOCAL_RUN=true scripts/ament-lint.sh",
                 "problemMatcher": [
-                    "$ament_xmllint",
+                    "$ament_xmllint"
                 ],
                 "presentation": {
                     "panel": "dedicated",
@@ -508,11 +506,10 @@
                     "lint_cmake",
                     "flake8",
                     "mypy",
-                    "xmllint",
+                    "xmllint"
                 ],
                 "problemMatcher": []
             },
-            // Workspace editing tasks
             {
                 "label": "setup",
                 "detail": "Set up the workspace",
@@ -520,7 +517,6 @@
                 "command": "./scripts/setup.sh",
                 "problemMatcher": []
             }
-
         ],
         "inputs": [
             {
