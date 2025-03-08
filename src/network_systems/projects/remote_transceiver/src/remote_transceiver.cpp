@@ -237,9 +237,10 @@ void HTTPServer::doPost()
 
             curl = curl_easy_init();
 
-            std::string EC       = "B";
-            std::string IMEI     = "300434065264590";
-            std::string USERNAME = "myuser";
+            std::string EC            = "B";
+            std::string IMEI          = "300434065264590";
+            std::string USERNAME      = "myuser";
+            std::string ROCKBLOCK_WEB = "localhost:8100";
 
             char * encoded_data = curl_easy_escape(curl, data.c_str(), 0);
 
@@ -249,7 +250,7 @@ void HTTPServer::doPost()
                 EC = "F";
             }
 
-            std::string url = "http://localhost:8100/?data=" + std::string(encoded_data) + "&ec=" + EC +
+            std::string url = "http://" + ROCKBLOCK_WEB + "/?data=" + std::string(encoded_data) + "&ec=" + EC +
                               "&imei=" + IMEI + "&username=" + USERNAME;
 
             if (curl != nullptr) {
