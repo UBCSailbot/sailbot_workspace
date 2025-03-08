@@ -2,6 +2,9 @@ on:
     schedule:
       - cron: '00 4 * * 0' # Runs at 8:00 am PST (4:00 am UTC) on Sunday
     workflow_dispatch:
+    push:
+      branches:
+        - main
 
 
 jobs:
