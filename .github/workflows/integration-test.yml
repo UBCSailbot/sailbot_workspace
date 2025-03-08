@@ -1,0 +1,12 @@
+on:
+    schedule:
+      - cron: '00 4 * * 0' # Runs at 8:00 am PST (4:00 am UTC) on Sunday
+    workflow_dispatch:
+
+
+jobs:
+    test_schedule:
+        runs-on: ubuntu-latest
+        steps:
+            - name: ros_integration_test
+              run: ./scripts/run_integration_tests.sh
