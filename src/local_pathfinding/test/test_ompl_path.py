@@ -65,13 +65,6 @@ def test_OMPLPath_update_objectives():
 
 @pytest.mark.parametrize(
     "x,y,is_valid",
-    [
-        (0.5, 0.5, True),
-        (0.6, 0.6, False),
-    ],
-)
-@pytest.mark.parametrize(
-    "x,y,is_valid",
     [(0.5, 0.5, True), (-14, 0.5, False), (-16, 0.5, True)],
 )
 def test_is_state_valid(x: float, y: float, is_valid: bool):

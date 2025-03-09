@@ -219,13 +219,12 @@ class OMPLPath:
         Returns:
             bool: True if state is valid, else false.
         """
-        # note: `state` is of type `SE2StateInternal`, so we don't need to use the `()` operator.
         state_is_valid = True
 
         for o in OMPLPath.obstacles:
             state_is_valid = o.is_valid(cs.XY(state.getX(), state.getY()))
             if not state_is_valid:
-                return state_is_valid  # return False immediately once state is found to be invalid
+                return state_is_valid
 
         return state_is_valid
 
