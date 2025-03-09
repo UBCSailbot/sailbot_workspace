@@ -288,12 +288,12 @@ wait a moment as the work space sets up, the IDE should have a blue border.
 
 4. Open the command palette (`ctrl + shift + p` on windows) and type **Run Build Tasks** then select **Build All**.
 
-??? bug "`custom_interfaces` package fails to build"
+    ??? bug "`custom_interfaces` package fails to build"
 
-    if any bugs occur with building custom_interfaces package run following command in the terminal:
-    ```
-    colcon build --packages-select custom_interfaces --merge-install
-    ```
+        if any bugs occur with building custom_interfaces package run following command in the terminal:
+        ```
+        colcon build --packages-select custom_interfaces --merge-install
+        ```
 
 5. run command in the terminal:
 
