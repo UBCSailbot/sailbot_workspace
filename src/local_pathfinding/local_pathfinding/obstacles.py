@@ -138,14 +138,14 @@ class Land(Obstacle):
         )
 
     def _update_land_collision_zone(
-        self, state_space: Polygon = None, land_multi_polygon: MultiPolygon = None
+        self, state_space_latlon: Polygon = None, land_multi_polygon: MultiPolygon = None
     ) -> None:
         """
         Updates the Land object's collision zone with a MultiPolygon representing
         all land obstacles within either a specified or default state space.
 
         Args:
-            state_space (Polygon): A custom state space.
+            state_space_latlon (Polygon): A custom state space.
             land_multi_polygon (MultiPolygon): Custom land data. Useful for testing.
         """
         if land_multi_polygon is not None:  # for testing
@@ -158,7 +158,7 @@ class Land(Obstacle):
             self.collision_zone = collision_zone
             return
 
-        if state_space is None:  # create a default one
+        if state_space_latlon is None:  # create a default one
 
             sailbot_box = Point(
                 self.sailbot_position_latlon.longitude, self.sailbot_position_latlon.latitude
@@ -167,9 +167,9 @@ class Land(Obstacle):
             waypoint_box = Point(self.reference.longitude, self.reference.latitude).buffer(
                 self.bbox_buffer_amount, cap_style=3, join_style=2
             )
-            state_space = box(*MultiPolygon([sailbot_box, waypoint_box]).bounds)
+            state_space_latlon = box(*MultiPolygon([sailbot_box, waypoint_box]).bounds)
 
-        latlon_polygons = self.all_land_data.intersection(state_space)
+        latlon_polygons = self.all_land_data.intersection(state_space_latlon)
 
         if isinstance(latlon_polygons, MultiPolygon):
             # non-empty MultiPolygon

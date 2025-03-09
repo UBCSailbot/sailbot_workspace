@@ -57,8 +57,6 @@ class OMPLPath:
         """
         self._box_buffer = 1
         self._logger = parent_logger.get_child(name="ompl_path")
-
-        self.obstacles = self.init_obstacles(local_path_state)
         self._simple_setup = self._init_simple_setup(local_path_state)  # this needs state
 
         self.solved = self._simple_setup.solve(time=max_runtime)  # time is in seconds
@@ -68,7 +66,9 @@ class OMPLPath:
         #     # try to shorten the path
         #     simple_setup.simplifySolution()
 
-    def init_obstacles(self, local_path_state: LocalPathState) -> List[Polygon]:
+    def init_obstacles(
+        self, local_path_state: LocalPathState, state_space_xy: Polygon
+    ) -> List[Polygon]:
         """Extracts obstacle data from local_path_state and compiles it into a list of Polygons
 
         Places Boats first in the list as states are more likely to conflict with Boats than Land.
@@ -78,8 +78,20 @@ class OMPLPath:
                                                 to generate the obstacle list.
 
         """
+        obstacles = []
+        ais_ships = local_path_state.ais_ships.ships  # type:ignore
 
-        return []  # stub
+        for ship in ais_ships:
+            obstacles.append(
+                ob.Boat(
+                    local_path_state.reference_latlon,
+                    local_path_state.position,
+                    local_path_state.speed,
+                    ship,
+                )
+            )
+
+        return obstacles
 
     def get_cost(self):
         """Get the cost of the path generated.
@@ -105,7 +117,7 @@ class OMPLPath:
         waypoints = []
 
         for state in solution_path.getStates():
-            waypoint_XY = cs.XY(state.getX(), state.getY())  # TODO causes SEG FAULT
+            waypoint_XY = cs.XY(state.getX(), state.getY())
             waypoint_latlon = cs.xy_to_latlon(self.state.reference_latlon, waypoint_XY)
             waypoints.append(
                 HelperLatLon(
@@ -168,6 +180,8 @@ class OMPLPath:
         )"""
         bounds.check()  # check if bounds are valid
         space.setBounds(bounds)
+
+        self.obstacles = self.init_obstacles(local_path_state, state_space_xy=state_space)
 
         # create a simple setup object
         simple_setup = pyompl.SimpleSetup(space)
