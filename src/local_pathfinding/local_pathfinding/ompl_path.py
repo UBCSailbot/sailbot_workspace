@@ -16,6 +16,7 @@ from rclpy.impl.rcutils_logger import RcutilsLogger
 from shapely.geometry import MultiPolygon, Point, Polygon, box
 
 import local_pathfinding.coord_systems as cs
+import local_pathfinding.obstacles as ob
 from local_pathfinding.coord_systems import XY
 from local_pathfinding.objectives import get_sailing_objective
 
@@ -34,7 +35,12 @@ class OMPLPath:
         _simple_setup (og.SimpleSetup): OMPL SimpleSetup object.
         _box_buffer (float): buffer around the sailbot position and the goal position in km
         solved (bool): True if the path is a solution to the OMPL query, else false.
+
+    Static Attributes
+        obstacles (List[Polygon]): The list of all obstacles Sailbot is currently aware of.
     """
+
+    obstacles: List[ob.Obstacle] = []
 
     def __init__(
         self,
@@ -52,6 +58,7 @@ class OMPLPath:
         self._box_buffer = 1
         self._logger = parent_logger.get_child(name="ompl_path")
 
+        self.obstacles = self.init_obstacles(local_path_state)
         self._simple_setup = self._init_simple_setup(local_path_state)  # this needs state
 
         self.solved = self._simple_setup.solve(time=max_runtime)  # time is in seconds
@@ -60,6 +67,19 @@ class OMPLPath:
         # if self.solved:
         #     # try to shorten the path
         #     simple_setup.simplifySolution()
+
+    def init_obstacles(self, local_path_state: LocalPathState) -> List[Polygon]:
+        """Extracts obstacle data from local_path_state and compiles it into a list of Polygons
+
+        Places Boats first in the list as states are more likely to conflict with Boats than Land.
+
+        Args:
+            local_path_state (LocalPathState): a wrapper class containing all the necessary data
+                                                to generate the obstacle list.
+
+        """
+
+        return []  # stub
 
     def get_cost(self):
         """Get the cost of the path generated.
@@ -151,7 +171,7 @@ class OMPLPath:
 
         # create a simple setup object
         simple_setup = pyompl.SimpleSetup(space)
-        simple_setup.setStateValidityChecker(is_state_valid)
+        simple_setup.setStateValidityChecker(OMPLPath.is_state_valid)
 
         start = pyompl.ScopedState(space)
         goal = pyompl.ScopedState(space)
@@ -189,19 +209,25 @@ class OMPLPath:
 
         return simple_setup
 
+    def is_state_valid(state: pyompl.SE2StateSpace) -> bool:
+        """Evaluate a state to determine if the configuration collides with an environment
+        obstacle.
 
-def is_state_valid(state: pyompl.SE2StateSpace) -> bool:
-    """Evaluate a state to determine if the configuration collides with an environment obstacle.
+        Args:
+            state (ob.SE2StateSpace): State to check.
 
-    Args:
-        state (ob.SE2StateSpace): State to check.
+        Returns:
+            bool: True if state is valid, else false.
+        """
+        # note: `state` is of type `SE2StateInternal`, so we don't need to use the `()` operator.
+        state_is_valid = True
 
-    Returns:
-        bool: True if state is valid, else false.
-    """
-    # TODO: implement obstacle avoidance here
-    # note: `state` is of type `SE2StateInternal`, so we don't need to use the `()` operator.
-    return state.getX() < 0.6
+        for o in OMPLPath.obstacles:
+            state_is_valid = o.is_valid(cs.XY(state.getX(), state.getY()))
+            if not state_is_valid:
+                return state_is_valid  # return False immediately once state is found to be invalid
+
+        return state_is_valid
 
 
 def get_planner_class():
