@@ -307,7 +307,7 @@ wait a moment as the work space sets up, the IDE should have a blue border.
     ros2 launch $ROS_WORKSPACE/src/global_launch/main_launch.py
     ```
 
-8. if things are working you are done! you can use `ctrl + c` to stop the system.
+7. if things are working you are done! you can use `ctrl + c` to stop the system.
 
 Once you have a codespace set up:
 
