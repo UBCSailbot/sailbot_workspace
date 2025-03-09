@@ -3,9 +3,9 @@ from typing import List
 
 import pytest
 from custom_interfaces.msg import HelperLatLon
-from shapely.geometry import MultiPolygon, Polygon, box
+from shapely.geometry import MultiPolygon, Point, Polygon, box
 
-import local_pathfinding.coord_systems as coord_systems
+import local_pathfinding.coord_systems as cs
 
 
 @pytest.mark.parametrize(
@@ -18,7 +18,7 @@ import local_pathfinding.coord_systems as coord_systems
     ],
 )
 def test_cartesian_to_true_bearing(cartesian: float, true_bearing: float):
-    assert coord_systems.cartesian_to_true_bearing(cartesian) == pytest.approx(
+    assert cs.cartesian_to_true_bearing(cartesian) == pytest.approx(
         true_bearing
     ), "incorrect angle conversion"
 
@@ -28,7 +28,7 @@ def test_cartesian_to_true_bearing(cartesian: float, true_bearing: float):
     [(0.0, 0.0), (30, 0.03), (500, 0.5), (-30.5, -0.0305), (-0.0, 0.0)],
 )
 def test_meters_to_km(meters: float, km: float):
-    assert coord_systems.meters_to_km(meters) == pytest.approx(km), "incorrect distance conversion"
+    assert cs.meters_to_km(meters) == pytest.approx(km), "incorrect distance conversion"
 
 
 @pytest.mark.parametrize(
@@ -36,7 +36,7 @@ def test_meters_to_km(meters: float, km: float):
     [(0.0, 0.0), (0.03, 30), (0.5, 500), (-0.0305, -30.5), (-0.0, 0.0)],
 )
 def test_km_to_meters(km: float, meters: float):
-    assert coord_systems.km_to_meters(km) == pytest.approx(meters), "incorrect distance conversion"
+    assert cs.km_to_meters(km) == pytest.approx(meters), "incorrect distance conversion"
 
 
 @pytest.mark.parametrize(
@@ -53,19 +53,19 @@ def test_km_to_meters(km: float, meters: float):
 def test_latlon_to_xy(ref_lat: float, ref_lon: float, true_bearing_deg: float, dist_km: float):
     # create inputs
     reference = HelperLatLon(latitude=ref_lat, longitude=ref_lon)
-    lon, lat, _ = coord_systems.GEODESIC.fwd(
+    lon, lat, _ = cs.GEODESIC.fwd(
         lons=ref_lon, lats=ref_lat, az=true_bearing_deg, dist=dist_km * 1000
     )
     latlon = HelperLatLon(latitude=lat, longitude=lon)
 
     # create expected output
     true_bearing = math.radians(true_bearing_deg)
-    xy = coord_systems.XY(
+    xy = cs.XY(
         x=dist_km * math.sin(true_bearing),
         y=dist_km * math.cos(true_bearing),
     )
 
-    assert coord_systems.latlon_to_xy(reference, latlon) == pytest.approx(
+    assert cs.latlon_to_xy(reference, latlon) == pytest.approx(
         xy
     ), "incorrect coordinate conversion"
 
@@ -85,26 +85,49 @@ def test_latlon_to_xy(ref_lat: float, ref_lon: float, true_bearing_deg: float, d
 def test_xy_to_latlon(ref_lat: float, ref_lon: float, true_bearing_deg: float, dist_km: float):
     # create inputs
     true_bearing = math.radians(true_bearing_deg)
-    xy = coord_systems.XY(
+    xy = cs.XY(
         x=dist_km * math.sin(true_bearing),
         y=dist_km * math.cos(true_bearing),
     )
 
     # create expected output
     reference = HelperLatLon(latitude=ref_lat, longitude=ref_lon)
-    lon, lat, _ = coord_systems.GEODESIC.fwd(
+    lon, lat, _ = cs.GEODESIC.fwd(
         lons=ref_lon, lats=ref_lat, az=true_bearing_deg, dist=dist_km * 1000
     )
     latlon = HelperLatLon(latitude=lat, longitude=lon)
 
-    converted_latlon = coord_systems.xy_to_latlon(reference, xy)
+    converted_latlon = cs.xy_to_latlon(reference, xy)
     assert (converted_latlon.latitude, converted_latlon.longitude) == pytest.approx(
         (latlon.latitude, latlon.longitude)
     ), "incorrect coordinate conversion"
 
 
+@pytest.mark.parametrize(
+    "reference_latlon, polygon",
+    [
+        (
+            HelperLatLon(latitude=50.0, longitude=100.0),
+            Polygon([Point([0, 0]), Point([0, 1]), Point([1, 1]), Point([1, 0])]),
+        )
+    ],
+)
+def test_xy_polygon_to_latlon_polygon(reference_latlon: HelperLatLon, polygon: Polygon):
+
+    latlon_polygon = cs.xy_polygon_to_latlon_polygon(reference=reference_latlon, poly=polygon)
+
+    for i, point in enumerate(latlon_polygon.exterior.coords):
+        assert (
+            cs.latlon_to_xy(
+                reference_latlon, cs.HelperLatLon(longitude=point[0], latitude=point[1])
+            )
+        ) == pytest.approx(
+            polygon.exterior.coords[i]
+        ), "Incorrect conversion from xy polygon to latlon polygon"
+
+
 # Test latlon_polygon_list_to_xy_polygon_list
-# just asserts that every point in every xy_polygon agrees with latlon_to_xy() from coord_systems
+# just asserts that every point in every xy_polygon agrees with latlon_to_xy() from cs
 @pytest.mark.parametrize(
     "latlon_polygons, reference_point",
     [
@@ -205,9 +228,7 @@ def test_latlon_polygons_to_xy_polygons(
     latlon_polygons: List[Polygon], reference_point: HelperLatLon
 ):
 
-    xy_polygons = coord_systems.latlon_polygon_list_to_xy_polygon_list(
-        latlon_polygons, reference_point
-    )
+    xy_polygons = cs.latlon_polygon_list_to_xy_polygon_list(latlon_polygons, reference_point)
     assert isinstance(xy_polygons, list)
     assert len(xy_polygons) == len(latlon_polygons)
 
@@ -221,7 +242,7 @@ def test_latlon_polygons_to_xy_polygons(
                 latlon_point = latlon_poly.exterior.coords[j]
                 assert isinstance(xy_point, tuple)
                 assert xy_point == pytest.approx(
-                    coord_systems.latlon_to_xy(
+                    cs.latlon_to_xy(
                         reference_point,
                         HelperLatLon(longitude=latlon_point[0], latitude=latlon_point[1]),
                     )
@@ -238,7 +259,7 @@ def test_latlon_polygons_to_xy_polygons_empty_Polygon():
     assert isinstance(empty_poly, Polygon)
     assert empty_poly.is_empty
 
-    result = coord_systems.latlon_polygon_list_to_xy_polygon_list([empty_poly], reference_point)
+    result = cs.latlon_polygon_list_to_xy_polygon_list([empty_poly], reference_point)
     assert isinstance(result, List)
     assert len(result) == 1
     assert result[0].is_empty
