@@ -229,17 +229,17 @@ class LowLevelControlNode(Node):
             self.init_rudder_controller()
 
         if self._parameters["rudder.disable_actuation"].value:
-            self.get_logger().warn("Rudder actuation disabled.")
+            self.get_logger().info("Rudder actuation disabled.")
 
         else:
-            self.get_logger().warn("Rudder actuation enabled.")
+            self.get_logger().info("Rudder actuation enabled.")
             current_heading = 0.0
             if self.gps:
                 current_heading = self.gps.heading.heading
             desired_heading = goal_handle.request.desired_heading.heading.heading
 
             self.__rudder_controller.reset_setpoint(desired_heading, current_heading)
-            self.get_logger().warn(
+            self.get_logger().info(
                 f"Current rudder angle: {self.__rudder_controller.current_control_ang} "
                 + f"Desired rudder angle: {self.__rudder_controller.setpoint}"
             )
@@ -253,8 +253,8 @@ class LowLevelControlNode(Node):
                 self.__rudder_angle = i
                 self.rudder_action_feedback_rate.sleep()
         self._is_rudder_action_active = False
-        self.get_logger().warn(f"New rudder angle: {self.rudder_angle}")
-        self.get_logger().warn("Rudder actuation complete.")
+        self.get_logger().info(f"New rudder angle: {self.rudder_angle}")
+        self.get_logger().info("Rudder actuation complete.")
         goal_handle.succeed()
         result = SimRudderActuation.Result()
         result.remaining_angular_distance = 0.0
@@ -277,13 +277,13 @@ class LowLevelControlNode(Node):
             self.init_sail_controller()
 
         if self._parameters["wingsail.disable_actuation"].value:
-            self.get_logger().warn("Trim tab actuation disabled.")
+            self.get_logger().info("Trim tab actuation disabled.")
 
         else:
-            self.get_logger().warn("Trim tab actuation enabled.")
+            self.get_logger().info("Trim tab actuation enabled.")
             current_trim_tab_angle = self.sail_trim_tab_angle
             desired_trim_tab_angle = goal_handle.request.desired_angular_position
-            self.get_logger().warn(
+            self.get_logger().info(
                 f"Current trim tab angle: {current_trim_tab_angle} "
                 + f"Desired trim tab angle: {desired_trim_tab_angle}"
             )
@@ -300,8 +300,8 @@ class LowLevelControlNode(Node):
                 self.sail_action_feedback_rate.sleep()
 
         self._is_sail_action_active = False
-        self.get_logger().warn(f"New trim tab angle {self.__sail_controller.current_control_ang}")
-        self.get_logger().warn("Trim tab actuation complete.")
+        self.get_logger().info(f"New trim tab angle {self.__sail_controller.current_control_ang}")
+        self.get_logger().info("Trim tab actuation complete.")
 
         goal_handle.succeed()
 
