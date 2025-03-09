@@ -1,3 +1,5 @@
+from typing import List
+
 import pyompl
 import pytest
 from custom_interfaces.msg import (
@@ -13,7 +15,7 @@ from custom_interfaces.msg import (
     WindSensor,
 )
 from rclpy.impl.rcutils_logger import RcutilsLogger
-from shapely.geometry import Point
+from shapely.geometry import Point, Polygon
 
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.obstacles as ob
@@ -61,6 +63,43 @@ def test_OMPLPath_get_waypoint():
 def test_OMPLPath_update_objectives():
     with pytest.raises(NotImplementedError):
         PATH.update_objectives()
+
+
+def test_init_obstacles():
+    local_path_state = LocalPathState(
+        gps=GPS(lat_lon=HelperLatLon(latitude=49.29, longitude=-126.32)),
+        ais_ships=AISShips(
+            ships=[
+                HelperAISShip(
+                    id=1,
+                    lat_lon=HelperLatLon(latitude=49.28, longitude=-126.31),
+                    cog=HelperHeading(heading=30.0),
+                    sog=HelperSpeed(speed=20.0),
+                    width=HelperDimension(dimension=20.0),
+                    length=HelperDimension(dimension=100.0),
+                    rot=HelperROT(rot=0),
+                ),
+                HelperAISShip(
+                    id=2,
+                    lat_lon=HelperLatLon(latitude=49.30, longitude=-126.31),
+                    cog=HelperHeading(heading=60.0),
+                    sog=HelperSpeed(speed=20.0),
+                    width=HelperDimension(dimension=20.0),
+                    length=HelperDimension(dimension=100.0),
+                    rot=HelperROT(rot=0),
+                ),
+            ]
+        ),
+        global_path=Path(),
+        filtered_wind_sensor=WindSensor(),
+        planner="rrtstar",
+    )
+
+    obstacles = ompl_path.OMPLPath.init_obstacles(local_path_state=local_path_state)
+    assert isinstance(obstacles, list)
+    assert isinstance(obstacles[0], Polygon)
+    assert isinstance(obstacles[1], Polygon)
+    assert len(obstacles > 2)  # should be some land obstacles based on the chose coords
 
 
 @pytest.mark.parametrize(
