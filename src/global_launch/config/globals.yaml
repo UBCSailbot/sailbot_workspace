@@ -43,7 +43,7 @@ low_level_control_node:
          disable_actuation: false
          fixed_angle_deg: 0.0
          actuation_execution_period_sec: 0.5
-         actuation_speed_deg_per_sec: 0.1
+         actuation_speed_deg_per_sec: 1.0
 physics_engine_node:
    ros__parameters:
       logging_throttle_period_sec: 2.0
