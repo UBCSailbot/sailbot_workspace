@@ -91,9 +91,17 @@ def xy_polygon_to_latlon_polygon(reference: HelperLatLon, poly: Polygon):
         return poly
 
     def _xy_point_to_latlon_point(xy_point: XY) -> Point:
-        return Point(*xy_to_latlon(reference=reference, xy=xy_point))
+        latlon = xy_to_latlon(reference=reference, xy=xy_point)
+        return Point(latlon.longitude, latlon.latitude)
 
-    return Polygon(list(map(_xy_point_to_latlon_point, poly.exterior.coords)))
+    return Polygon(
+        list(
+            map(
+                _xy_point_to_latlon_point,
+                [XY(x=point[0], y=point[1]) for point in poly.exterior.coords],
+            )
+        )
+    )
 
 
 def latlon_polygon_list_to_xy_polygon_list(
