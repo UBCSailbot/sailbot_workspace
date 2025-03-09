@@ -2793,13 +2793,16 @@ or even in a browser for times when you aren't on your programming computer.</p>
 wait a moment as the work space sets up, the IDE should have a blue border.</p>
 </li>
 <li>
-<p>press <code>ctrl + shift + p</code> and type <strong>Run Build Tasks</strong> then select <strong>Build All</strong>.</p>
+<p>Open the command palette (<code>ctrl + shift + p</code> on windows) and type <strong>Run Build Tasks</strong> then select <strong>Build All</strong>.</p>
 </li>
-<li>
-<p>if any bugs occur with building custom_interfaces package run following command in the terminal:</p>
+</ol>
+<details class="bug">
+<summary><code>custom_interfaces</code> package fails to build</summary>
+<p>if any bugs occur with building custom_interfaces package run following command in the terminal:
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>colcon build --packages-select custom_interfaces --merge-install
-</code></pre></div>
-</li>
+</code></pre></div></p>
+</details>
+<ol>
 <li>
 <p>run command in the terminal:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>source install/setup.sh
