@@ -286,21 +286,22 @@ or even in a browser for times when you aren't on your programming computer.
 3. Open `sailbot.code-workspace` and click **Open Workspace**,
 wait a moment as the work space sets up, the IDE should have a blue border.
 
-4. press `ctrl + shift + p` and type **Run Build Tasks** then select **Build All**.
+4. Open the command palette (`ctrl + shift + p` on windows) and type **Run Build Tasks** then select **Build All**.
 
-5. if any bugs occur with building custom_interfaces package run following command in the terminal:
+??? bug "`custom_interfaces` package fails to build"
 
+    if any bugs occur with building custom_interfaces package run following command in the terminal:
     ```
     colcon build --packages-select custom_interfaces --merge-install
     ```
 
-6. run command in the terminal:
+5. run command in the terminal:
 
     ```
     source install/setup.sh
     ```
 
-7. then run command to launch entire system:
+6. then run command to launch entire system:
 
     ```
     ros2 launch $ROS_WORKSPACE/src/global_launch/main_launch.py
