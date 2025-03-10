@@ -56,8 +56,8 @@ class BoatState:
                 kinematic data in the relative reference frame, and the second element representing
                 data in the global reference frame, both using SI units.
         """
-        rel_wind_vel = glo_wind_vel  # TODO: Use proper conversion from global to relative here.
-        rel_water_vel = glo_water_vel
+        rel_wind_vel = glo_wind_vel - self.global_velocity
+        rel_water_vel = glo_water_vel - self.global_velocity
 
         rel_net_force, net_torque = self.__compute_net_force_and_torque(
             rel_wind_vel, rel_water_vel, rudder_angle_deg, trim_tab_angle
