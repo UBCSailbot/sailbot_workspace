@@ -1,0 +1,561 @@
+timeout: 3
+required_packages:
+- name: local_pathfinding
+  configs: null
+- name: network_systems
+  configs:
+  - all_disable.yaml
+  - example/example_en.yaml
+  - mock_ais/mock_ais_en_default.yaml
+inputs:
+- type: HTTP
+  name: aisships
+  data:
+    dtype: AISShips
+    ships:
+    - ID: 0
+      lat: 48.48126855156493
+      lon: -124.4351373880274
+      headingDegrees: 286.0
+      speedKmph: 13.0
+      rot: 162.78465916184388
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 1
+      lat: 48.515774700921014
+      lon: -125.1496068588128
+      headingDegrees: 0.0
+      speedKmph: 10.0
+      rot: 7.584979211304216
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 2
+      lat: 48.55040708423394
+      lon: -125.01893928648452
+      headingDegrees: 134.0
+      speedKmph: 12.0
+      rot: 35.27610541597477
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 3
+      lat: 48.3927887079608
+      lon: -125.15784705188014
+      headingDegrees: 263.0
+      speedKmph: 6.0
+      rot: -90.06053483435859
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 4
+      lat: 48.4664178481448
+      lon: -124.23379450837781
+      headingDegrees: 69.0
+      speedKmph: 8.0
+      rot: 34.6746264934618
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 5
+      lat: 48.29884552006091
+      lon: -124.3027035236955
+      headingDegrees: 290.0
+      speedKmph: 10.0
+      rot: -18.34133202981326
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 6
+      lat: 48.14554331578707
+      lon: -124.60550188720573
+      headingDegrees: 33.0
+      speedKmph: 12.0
+      rot: -155.9689733745736
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 7
+      lat: 48.420167212221706
+      lon: -124.35593125783112
+      headingDegrees: 33.0
+      speedKmph: 3.0
+      rot: -157.73206208988287
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 8
+      lat: 48.42923429999211
+      lon: -124.95557693938409
+      headingDegrees: 343.0
+      speedKmph: 9.0
+      rot: 107.51675322469578
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 9
+      lat: 48.08892261841702
+      lon: -124.85512351033033
+      headingDegrees: 130.0
+      speedKmph: 14.0
+      rot: -84.7769590974291
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 10
+      lat: 48.87313793416265
+      lon: -124.88068294750454
+      headingDegrees: 232.0
+      speedKmph: 11.0
+      rot: -144.23490587623976
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 11
+      lat: 48.405668769070544
+      lon: -124.39061775111199
+      headingDegrees: 10.0
+      speedKmph: 5.0
+      rot: -135.27007877741437
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 12
+      lat: 48.10020150808228
+      lon: -124.89463776679214
+      headingDegrees: 212.0
+      speedKmph: 1.0
+      rot: 135.59946284409676
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 13
+      lat: 48.5588363561571
+      lon: -124.55703775840956
+      headingDegrees: 42.0
+      speedKmph: 10.0
+      rot: -79.80003565856579
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 14
+      lat: 48.58417651037747
+      lon: -124.94130819462264
+      headingDegrees: 174.0
+      speedKmph: 2.0
+      rot: 22.815860274548783
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 15
+      lat: 48.85771636595303
+      lon: -124.74302109252491
+      headingDegrees: 252.0
+      speedKmph: 0.0
+      rot: -89.2378896217134
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 16
+      lat: 48.39891867341927
+      lon: -124.38225271987358
+      headingDegrees: 120.0
+      speedKmph: 14.0
+      rot: 80.67553141112506
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 17
+      lat: 48.59033336300247
+      lon: -124.80063381994236
+      headingDegrees: 136.0
+      speedKmph: 6.0
+      rot: 93.81126523908881
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 18
+      lat: 48.21965145463885
+      lon: -124.48331643654957
+      headingDegrees: 19.0
+      speedKmph: 6.0
+      rot: -39.90192444571505
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 19
+      lat: 48.85351947285686
+      lon: -125.2190264828795
+      headingDegrees: 354.0
+      speedKmph: 3.0
+      rot: -72.92371016284125
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 20
+      lat: 48.610842207133466
+      lon: -125.09461173879693
+      headingDegrees: 241.0
+      speedKmph: 14.0
+      rot: -52.3037833682926
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 21
+      lat: 48.43431074501861
+      lon: -125.13741852006714
+      headingDegrees: 287.0
+      speedKmph: 8.0
+      rot: 35.87454654340729
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 22
+      lat: 48.468286195214176
+      lon: -124.27472502081105
+      headingDegrees: 147.0
+      speedKmph: 1.0
+      rot: 80.32267164831097
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 23
+      lat: 48.60718809945693
+      lon: -124.78192776271403
+      headingDegrees: 176.0
+      speedKmph: 12.0
+      rot: 147.02539416831956
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 24
+      lat: 48.49366808842013
+      lon: -124.51509992770575
+      headingDegrees: 44.0
+      speedKmph: 9.0
+      rot: -132.12324387823082
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 25
+      lat: 48.3783192078282
+      lon: -124.68750254047488
+      headingDegrees: 163.0
+      speedKmph: 14.0
+      rot: 150.08340342348384
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 26
+      lat: 48.348398948830884
+      lon: -124.76315885494485
+      headingDegrees: 317.0
+      speedKmph: 9.0
+      rot: -104.04924365593874
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 27
+      lat: 48.432021544367856
+      lon: -124.52092210308673
+      headingDegrees: 172.0
+      speedKmph: 2.0
+      rot: 55.66863559168391
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 28
+      lat: 48.809470660326866
+      lon: -124.8824934907722
+      headingDegrees: 290.0
+      speedKmph: 5.0
+      rot: -77.91219990704259
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 29
+      lat: 48.37744965742431
+      lon: -124.40771781352117
+      headingDegrees: 333.0
+      speedKmph: 6.0
+      rot: 156.85833160541222
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+expected_outputs:
+- type: HTTP
+  name: aisships
+  data:
+    dtype: AISShips
+    ships:
+    - ID: 0
+      lat: 48.48126855156493
+      lon: -124.4351373880274
+      headingDegrees: 286.0
+      speedKmph: 13.0
+      rot: 162.78465916184388
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 1
+      lat: 48.515774700921014
+      lon: -125.1496068588128
+      headingDegrees: 0.0
+      speedKmph: 10.0
+      rot: 7.584979211304216
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 2
+      lat: 48.55040708423394
+      lon: -125.01893928648452
+      headingDegrees: 134.0
+      speedKmph: 12.0
+      rot: 35.27610541597477
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 3
+      lat: 48.3927887079608
+      lon: -125.15784705188014
+      headingDegrees: 263.0
+      speedKmph: 6.0
+      rot: -90.06053483435859
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 4
+      lat: 48.4664178481448
+      lon: -124.23379450837781
+      headingDegrees: 69.0
+      speedKmph: 8.0
+      rot: 34.6746264934618
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 5
+      lat: 48.29884552006091
+      lon: -124.3027035236955
+      headingDegrees: 290.0
+      speedKmph: 10.0
+      rot: -18.34133202981326
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 6
+      lat: 48.14554331578707
+      lon: -124.60550188720573
+      headingDegrees: 33.0
+      speedKmph: 12.0
+      rot: -155.9689733745736
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 7
+      lat: 48.420167212221706
+      lon: -124.35593125783112
+      headingDegrees: 33.0
+      speedKmph: 3.0
+      rot: -157.73206208988287
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 8
+      lat: 48.42923429999211
+      lon: -124.95557693938409
+      headingDegrees: 343.0
+      speedKmph: 9.0
+      rot: 107.51675322469578
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 9
+      lat: 48.08892261841702
+      lon: -124.85512351033033
+      headingDegrees: 130.0
+      speedKmph: 14.0
+      rot: -84.7769590974291
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 10
+      lat: 48.87313793416265
+      lon: -124.88068294750454
+      headingDegrees: 232.0
+      speedKmph: 11.0
+      rot: -144.23490587623976
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 11
+      lat: 48.405668769070544
+      lon: -124.39061775111199
+      headingDegrees: 10.0
+      speedKmph: 5.0
+      rot: -135.27007877741437
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 12
+      lat: 48.10020150808228
+      lon: -124.89463776679214
+      headingDegrees: 212.0
+      speedKmph: 1.0
+      rot: 135.59946284409676
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 13
+      lat: 48.5588363561571
+      lon: -124.55703775840956
+      headingDegrees: 42.0
+      speedKmph: 10.0
+      rot: -79.80003565856579
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 14
+      lat: 48.58417651037747
+      lon: -124.94130819462264
+      headingDegrees: 174.0
+      speedKmph: 2.0
+      rot: 22.815860274548783
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 15
+      lat: 48.85771636595303
+      lon: -124.74302109252491
+      headingDegrees: 252.0
+      speedKmph: 0.0
+      rot: -89.2378896217134
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 16
+      lat: 48.39891867341927
+      lon: -124.38225271987358
+      headingDegrees: 120.0
+      speedKmph: 14.0
+      rot: 80.67553141112506
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 17
+      lat: 48.59033336300247
+      lon: -124.80063381994236
+      headingDegrees: 136.0
+      speedKmph: 6.0
+      rot: 93.81126523908881
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 18
+      lat: 48.21965145463885
+      lon: -124.48331643654957
+      headingDegrees: 19.0
+      speedKmph: 6.0
+      rot: -39.90192444571505
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 19
+      lat: 48.85351947285686
+      lon: -125.2190264828795
+      headingDegrees: 354.0
+      speedKmph: 3.0
+      rot: -72.92371016284125
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 20
+      lat: 48.610842207133466
+      lon: -125.09461173879693
+      headingDegrees: 241.0
+      speedKmph: 14.0
+      rot: -52.3037833682926
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 21
+      lat: 48.43431074501861
+      lon: -125.13741852006714
+      headingDegrees: 287.0
+      speedKmph: 8.0
+      rot: 35.87454654340729
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 22
+      lat: 48.468286195214176
+      lon: -124.27472502081105
+      headingDegrees: 147.0
+      speedKmph: 1.0
+      rot: 80.32267164831097
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 23
+      lat: 48.60718809945693
+      lon: -124.78192776271403
+      headingDegrees: 176.0
+      speedKmph: 12.0
+      rot: 147.02539416831956
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 24
+      lat: 48.49366808842013
+      lon: -124.51509992770575
+      headingDegrees: 44.0
+      speedKmph: 9.0
+      rot: -132.12324387823082
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 25
+      lat: 48.3783192078282
+      lon: -124.68750254047488
+      headingDegrees: 163.0
+      speedKmph: 14.0
+      rot: 150.08340342348384
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 26
+      lat: 48.348398948830884
+      lon: -124.76315885494485
+      headingDegrees: 317.0
+      speedKmph: 9.0
+      rot: -104.04924365593874
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 27
+      lat: 48.432021544367856
+      lon: -124.52092210308673
+      headingDegrees: 172.0
+      speedKmph: 2.0
+      rot: 55.66863559168391
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 28
+      lat: 48.809470660326866
+      lon: -124.8824934907722
+      headingDegrees: 290.0
+      speedKmph: 5.0
+      rot: -77.91219990704259
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
+    - ID: 29
+      lat: 48.37744965742431
+      lon: -124.40771781352117
+      headingDegrees: 333.0
+      speedKmph: 6.0
+      rot: 156.85833160541222
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:14'
