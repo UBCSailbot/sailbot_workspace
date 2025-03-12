@@ -33,9 +33,9 @@ export default async function handler(
           globalPathData = [globalPathData];
         }
 
-        for (const entry of globalPathData) {
-          if (!Array.isArray(entry.waypoints) || typeof entry.timestamp !== 'string') {
-            return res.status(400).json({ success: false, message: "Invalid GlobalPath data format" });
+        const processedPaths = globalPathData.map(entry => {
+          if (!Array.isArray(entry.waypoints)) {
+            throw new Error("Invalid GlobalPath data format");
           }
 
           for (const waypoint of entry.waypoints) {
@@ -43,16 +43,21 @@ export default async function handler(
               typeof waypoint.latitude !== 'number' ||
               typeof waypoint.longitude !== 'number'
             ) {
-              return res.status(400).json({ success: false, message: "Invalid waypoint object format" });
+              throw new Error("Invalid waypoint object format");
             }
           }
-        }
 
-        const newGlobalPaths = await GlobalPath.insertMany(globalPathData);
+          return {
+            waypoints: entry.waypoints,
+            timestamp: entry.timestamp || new Date().toISOString()
+          };
+        });
+
+        const newGlobalPaths = await GlobalPath.insertMany(processedPaths);
 
         res.status(201).json({ success: true, message: "GlobalPath data stored", data: newGlobalPaths });
       } catch (error) {
-        res.status(500).json({ success: false, message: (error as Error).message });
+        res.status(400).json({ success: false, message: error.message });
       }
       break;
 
