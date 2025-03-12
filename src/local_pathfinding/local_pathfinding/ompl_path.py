@@ -101,11 +101,11 @@ class OMPLPath:
             )
 
         # LAND
-        # convert the current XY state space back to latlon coordinates
-        # to generate land obstacles
         if state_space_xy is None:
             state_space_latlon = None
         else:
+            # convert the current XY state space back to latlon coordinates
+            # to generate land obstacles
             state_space_latlon = cs.xy_polygon_to_latlon_polygon(
                 reference=local_path_state.reference_latlon, poly=state_space_xy
             )
