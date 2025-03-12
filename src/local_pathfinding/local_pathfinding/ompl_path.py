@@ -8,12 +8,13 @@ https://ompl.kavrakilab.org/api_overview.html.
 
 from __future__ import annotations
 
+import pickle
 from typing import TYPE_CHECKING, List
 
 import pyompl
 from custom_interfaces.msg import HelperLatLon
 from rclpy.impl.rcutils_logger import RcutilsLogger
-from shapely.geometry import MultiPolygon, Point, Polygon, box
+from shapely.geometry import MultiPolygon, Point, Polygon, box, multipolygon
 
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.obstacles as ob
@@ -40,6 +41,7 @@ class OMPLPath:
         obstacles (List[Polygon]): The list of all obstacles Sailbot is currently aware of.
     """
 
+    LAND = Multipolygon()  # stopped here
     obstacles: List[ob.Obstacle] = []
 
     def __init__(
@@ -90,6 +92,9 @@ class OMPLPath:
                     ship,
                 )
             )
+        state_space_latlon = cs.xy_polygon_to_latlon_polygon(
+            reference=local_path_state.reference_latlon, poly=state_space_xy
+        )
 
         return obstacles
 
