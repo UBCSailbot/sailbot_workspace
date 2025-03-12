@@ -13,7 +13,7 @@ from custom_interfaces.msg import (
     WindSensor,
 )
 from rclpy.impl.rcutils_logger import RcutilsLogger
-from shapely.geometry import Point, Polygon
+from shapely.geometry import Point
 
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.obstacles as ob
@@ -98,7 +98,6 @@ def test_init_obstacles():
     assert isinstance(obstacles[0], ob.Boat)
     assert isinstance(obstacles[1], ob.Boat)
     assert isinstance(obstacles[2], ob.Land)
-    assert len(obstacles) > 2  # should be some land obstacles based on the chose coords
 
 
 @pytest.mark.parametrize(
