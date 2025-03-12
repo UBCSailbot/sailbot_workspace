@@ -10,6 +10,8 @@ if [[ $LOCAL_RUN != "true" ]]; then
     ./scripts/build.sh
     source $ROS_WORKSPACE/install/setup.bash
 fi
+ls -la
+sudo chown -R $(whoami):$(whoami) $ROS_WORKSPACE
 
 echo "Integration tests started"
 cd $ROS_WORKSPACE/src/integration_tests
