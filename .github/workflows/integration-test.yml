@@ -16,17 +16,8 @@ jobs:
     steps:
       - name: Checkout workspace
         uses: actions/checkout@v4
+
+      - name: ROS Integration Test
+        uses: ./.github/actions/
         with:
-          fetch-depth: 1
-
-      - name: Debug script location
-        run: |
-          echo "Checking if script exists..."
-          ls -l $GITHUB_WORKSPACE/scripts/
-          ls -ld $GITHUB_WORKSPACE/scripts/
-
-      - name: Set execute permissions for scripts
-        run: chmod +x ./scripts/run_integration_tests.sh
-
-      - name: Run integration tests
-        run: './scripts/run-tests'
+          script: './scripts/run_integration_tests.sh'
