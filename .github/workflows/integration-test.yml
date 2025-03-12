@@ -15,4 +15,4 @@ jobs:
             - name: Run integration tests
               uses: ./.github/actions/
               with:
-                script: './scripts/run-integration-tests'
+                script: './scripts/run_integration_tests'
