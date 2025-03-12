@@ -9,12 +9,12 @@ https://ompl.kavrakilab.org/api_overview.html.
 from __future__ import annotations
 
 import pickle
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, Any, List
 
 import pyompl
 from custom_interfaces.msg import HelperLatLon
 from rclpy.impl.rcutils_logger import RcutilsLogger
-from shapely.geometry import MultiPolygon, Point, Polygon, box, multipolygon
+from shapely.geometry import MultiPolygon, Point, Polygon, box
 
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.obstacles as ob
@@ -38,10 +38,13 @@ class OMPLPath:
         solved (bool): True if the path is a solution to the OMPL query, else false.
 
     Static Attributes
+        all_land_data (MultiPolygon): All land polygons along the entire global voyage
         obstacles (List[Polygon]): The list of all obstacles Sailbot is currently aware of.
+                                   This is a static attribute so that OMPL can access it when
+                                   accessing the is_state_valid function pointer.
     """
 
-    LAND = Multipolygon()  # stopped here
+    all_land_data = None
     obstacles: List[ob.Obstacle] = []
 
     def __init__(
@@ -68,23 +71,27 @@ class OMPLPath:
         #     # try to shorten the path
         #     simple_setup.simplifySolution()
 
+    @staticmethod
     def init_obstacles(
-        self, local_path_state: LocalPathState, state_space_xy: Polygon
-    ) -> List[Polygon]:
-        """Extracts obstacle data from local_path_state and compiles it into a list of Polygons
+        local_path_state: LocalPathState, state_space_xy: Polygon = None
+    ) -> List[ob.Obstacle]:
+        """Extracts obstacle data from local_path_state and compiles it into a list of Obstacles
 
         Places Boats first in the list as states are more likely to conflict with Boats than Land.
 
         Args:
             local_path_state (LocalPathState): a wrapper class containing all the necessary data
                                                 to generate the obstacle list.
+            state_space_xy: (Polygon): the current state space in which we want to initialize all
+                                       obstacles
 
         """
-        obstacles = []
-        ais_ships = local_path_state.ais_ships.ships  # type:ignore
+        OMPLPath.obstacles = []
 
+        # BOATS
+        ais_ships = local_path_state.ais_ships  # type:ignore
         for ship in ais_ships:
-            obstacles.append(
+            OMPLPath.obstacles.append(
                 ob.Boat(
                     local_path_state.reference_latlon,
                     local_path_state.position,
@@ -92,11 +99,35 @@ class OMPLPath:
                     ship,
                 )
             )
-        state_space_latlon = cs.xy_polygon_to_latlon_polygon(
-            reference=local_path_state.reference_latlon, poly=state_space_xy
+
+        # LAND
+        # convert the current XY state space back to latlon coordinates
+        # to generate land obstacles
+        if state_space_xy is None:
+            state_space_latlon = None
+        else:
+            state_space_latlon = cs.xy_polygon_to_latlon_polygon(
+                reference=local_path_state.reference_latlon, poly=state_space_xy
+            )
+
+        if OMPLPath.all_land_data is None:
+            try:
+                LAND = load_pkl(
+                    "/workspaces/sailbot_workspace/src/local_pathfinding/land/pkl/land.pkl"
+                )
+            except RuntimeError as e:
+                exit(f"could not load the land.pkl file {e}")
+
+        OMPLPath.obstacles.append(
+            ob.Land(
+                reference=local_path_state.reference_latlon,
+                sailbot_position=local_path_state.position,
+                all_land_data=LAND,
+                state_space=state_space_latlon,
+            )
         )
 
-        return obstacles
+        return OMPLPath.obstacles  # for testing
 
     def get_cost(self):
         """Get the cost of the path generated.
@@ -186,7 +217,7 @@ class OMPLPath:
         bounds.check()  # check if bounds are valid
         space.setBounds(bounds)
 
-        self.obstacles = self.init_obstacles(local_path_state, state_space_xy=state_space)
+        OMPLPath.init_obstacles(local_path_state=local_path_state, state_space_xy=state_space)
 
         # create a simple setup object
         simple_setup = pyompl.SimpleSetup(space)
@@ -259,3 +290,8 @@ def get_planner_class():
             defaults to RRT* if `planner` is not implemented in this function.
     """
     return "rrtstar", pyompl.RRTstar
+
+
+def load_pkl(file_path: str) -> Any:
+    with open(file_path, "rb") as f:
+        return pickle.load(f)

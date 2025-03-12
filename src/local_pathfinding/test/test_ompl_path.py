@@ -95,9 +95,10 @@ def test_init_obstacles():
 
     obstacles = ompl_path.OMPLPath.init_obstacles(local_path_state=local_path_state)
     assert isinstance(obstacles, list)
-    assert isinstance(obstacles[0], Polygon)
-    assert isinstance(obstacles[1], Polygon)
-    assert len(obstacles > 2)  # should be some land obstacles based on the chose coords
+    assert isinstance(obstacles[0], ob.Boat)
+    assert isinstance(obstacles[1], ob.Boat)
+    assert isinstance(obstacles[2], ob.Land)
+    assert len(obstacles) > 2  # should be some land obstacles based on the chose coords
 
 
 @pytest.mark.parametrize(

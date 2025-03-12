@@ -73,7 +73,7 @@ class Obstacle:
         else:
             # Land Obstacle
             self._update_land_collision_zone(  # type: ignore
-                state_space=kwargs.get("state_space"),
+                state_space_latlon=kwargs.get("state_space"),
                 land_multi_polygon=kwargs.get("land_multi_polygon"),
             )
 
@@ -126,7 +126,7 @@ class Land(Obstacle):
         reference: HelperLatLon,
         sailbot_position: HelperLatLon,
         all_land_data: MultiPolygon,
-        bbox_buffer_amount: float,
+        bbox_buffer_amount: float = 0.1,
         state_space: Polygon = None,
         land_multi_polygon: MultiPolygon = None,
     ):
@@ -134,7 +134,7 @@ class Land(Obstacle):
         self.all_land_data = all_land_data
         self.bbox_buffer_amount = bbox_buffer_amount
         self._update_land_collision_zone(
-            state_space=state_space, land_multi_polygon=land_multi_polygon
+            state_space_latlon=state_space, land_multi_polygon=land_multi_polygon
         )
 
     def _update_land_collision_zone(
