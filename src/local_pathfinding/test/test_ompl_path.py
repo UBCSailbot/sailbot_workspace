@@ -1,5 +1,3 @@
-from typing import List
-
 import pyompl
 import pytest
 from custom_interfaces.msg import (
