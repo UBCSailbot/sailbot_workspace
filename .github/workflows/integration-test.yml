@@ -3,16 +3,22 @@ on:
       - cron: '00 4 * * 0' # Runs at 8:00 am PST (4:00 am UTC) on Sunday
     workflow_dispatch:
     pull_request:
+      branches:
+        - main
+        - develop
 
 
 jobs:
-    ros_integration_test:
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout workspace
-              uses: actions/checkout@v4
+  ros_integration_test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout workspace
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
-            - name: Run integration tests
-              uses: ./.github/actions/
-              with:
-                script: './scripts/run_integration_tests'
+      - name: Set execute permissions for scripts
+        run: chmod +x scripts/run_integration_tests
+
+      - name: Run integration tests
+        run: ./scripts/run_integration_tests
