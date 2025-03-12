@@ -25,8 +25,8 @@ jobs:
           ls -l $GITHUB_WORKSPACE/scripts/
           ls -ld $GITHUB_WORKSPACE/scripts/
 
-      # - name: Set execute permissions for scripts
-      #   run: chmod +x $GITHUB_WORKSPACE/scripts/run_integration_tests.sh
+      - name: Set execute permissions for scripts
+        run: chmod +x $GITHUB_WORKSPACE/scripts/run_integration_tests.sh
 
       - name: Run integration tests
         run: $GITHUB_WORKSPACE/scripts/run_integration_tests.sh
