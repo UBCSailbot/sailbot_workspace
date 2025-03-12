@@ -1,12 +1,23 @@
+name: Integration-Tests
+
 on:
     schedule:
       - cron: '00 4 * * 0' # Runs at 8:00 am PST (4:00 am UTC) on Sunday
     workflow_dispatch:
+    pull_request:
+      branches:
+        - main
+        - develop
 
 
 jobs:
-    test_schedule:
-        runs-on: ubuntu-latest
-        steps:
-            - name: ros_integration_test
-              run: ./scripts/run_integration_tests.sh
+  ros_integration_test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout workspace
+        uses: actions/checkout@v4
+
+      - name: ROS Integration Test
+        uses: ./.github/actions/
+        with:
+          script: './scripts/run_integration_tests'

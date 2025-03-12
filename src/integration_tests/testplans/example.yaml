@@ -1,5 +1,5 @@
 # Example testplan - Does not currently show HTTP I/O
-timeout_sec: 10
+timeout_sec: 3
 
 required_packages:
   - name: local_pathfinding
