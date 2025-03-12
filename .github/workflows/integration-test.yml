@@ -1,3 +1,5 @@
+name: Integration-Tests
+
 on:
     schedule:
       - cron: '00 4 * * 0' # Runs at 8:00 am PST (4:00 am UTC) on Sunday
@@ -17,8 +19,14 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Debug script location
+        run: |
+          echo "Checking if script exists..."
+          ls -l $GITHUB_WORKSPACE/scripts/
+          ls -ld $GITHUB_WORKSPACE/scripts/
+
       - name: Set execute permissions for scripts
-        run: chmod +x scripts/run_integration_tests
+        run: chmod +x $GITHUB_WORKSPACE/scripts/run_integration_tests
 
       - name: Run integration tests
-        run: ./scripts/run_integration_tests
+        run: $GITHUB_WORKSPACE/scripts/run_integration_tests
