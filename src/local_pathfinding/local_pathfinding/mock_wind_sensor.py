@@ -63,8 +63,8 @@ class MockWindSensor(Node):
         msg = ci.WindSensor()
         msg.speed, msg.direction = wind_speed_knots, direction
 
+        self.get_logger().info(f"Publishing to {self.__wind_sensors_pub.topic}: {msg}")
         self.__wind_sensors_pub.publish(msg)
-        self.get_logger().debug(f"Publishing to {self.__wind_sensors_pub.topic}: {msg}")
 
     def get_mock_wind_speed(self) -> ci.HelperSpeed:
         """Generates a random wind speed based on a Weibull distribution centered around the mean.
@@ -77,7 +77,7 @@ class MockWindSensor(Node):
 
         scale = self.__mean_wind_speed
         wind_speed_knots = weibull_min.rvs(c=2, scale=scale, size=1)
-        return ci.HelperSpeed(wind_speed_knots)
+        return ci.HelperSpeed(speed=wind_speed_knots[0])
 
     def get_direction_value(self) -> int:
         """Generates a random wind direction based on a von Mises distribution centered around the
