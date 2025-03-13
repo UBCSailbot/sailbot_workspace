@@ -70,6 +70,7 @@ def setup_launch(context: LaunchContext) -> List[Node]:
     launch_description_entities.append(get_navigate_node_description(context))
     if mode == "development":
         launch_description_entities.append(get_mock_global_path_node_description(context))
+        launch_description_entities.append(get_mock_wind_sensor_node_description(context))
         launch_description_entities.append(get_mock_ais_node_description(context))
     return launch_description_entities
 
@@ -134,12 +135,7 @@ def get_mock_global_path_node_description(context: LaunchContext) -> Node:
 
 def get_mock_ais_node_description(context: LaunchContext) -> Node:
     """Gets the launch description for the navigate_main node.
-
-    Args:
-        context (LaunchContext): The current launch context.
-
-    Returns:
-        Node: The node object that launches the navigate_main node.
+    Node: The node object that launches the navigate_main node.
     """
     node_name = "mock_ais_node"
     ros_parameters = [LaunchConfiguration("config").perform(context)]
@@ -151,6 +147,34 @@ def get_mock_ais_node_description(context: LaunchContext) -> Node:
     node = Node(
         package=PACKAGE_NAME,
         executable="mock_ais_node",
+        name=node_name,
+        output="screen",
+        emulate_tty=True,
+        parameters=ros_parameters,
+        ros_arguments=ros_arguments,
+    )
+
+    return node
+
+
+def get_mock_wind_sensor_node_description(context: LaunchContext) -> Node:
+    """Gets the launch description for the mgp_main node.
+    Args:
+        context (LaunchContext): The current launch context.
+
+    Returns:
+        Node: The node object that launches the mgp_main node.
+    """
+    node_name = "mock_wind_sensor"
+    ros_parameters = [LaunchConfiguration("config").perform(context)]
+    ros_arguments: List[SomeSubstitutionsType] = [
+        "--log-level",
+        [f"{node_name}:=", LaunchConfiguration("log_level")],
+    ]
+
+    node = Node(
+        package=PACKAGE_NAME,
+        executable="mock_wind_sensor",
         name=node_name,
         output="screen",
         emulate_tty=True,
