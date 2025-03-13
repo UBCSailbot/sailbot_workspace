@@ -131,8 +131,9 @@ def get_mock_global_path_node_description(context: LaunchContext) -> Node:
     )
 
     return node
-  
-  def get_mock_ais_node_description(context: LaunchContext) -> Node:
+
+
+def get_mock_ais_node_description(context: LaunchContext) -> Node:
     """Gets the launch description for the navigate_main node.
     Node: The node object that launches the navigate_main node.
     """
@@ -154,8 +155,6 @@ def get_mock_global_path_node_description(context: LaunchContext) -> Node:
     )
 
     return node
-    
-
 
 
 def get_mock_wind_sensor_node_description(context: LaunchContext) -> Node:
