@@ -274,7 +274,9 @@ class OMPLPath:
         for o in OMPLPath.obstacles:
             state_is_valid = o.is_valid(cs.XY(state.getX(), state.getY()))
             if not state_is_valid:
-                log_invalid_state(state=cs.XY(state.getX(), state.getY()), obstacle=o)
+                # uncomment this if you want to log which states are being labeled invalid
+                # its commented out for now to avoid unnecessary file I/O
+                # log_invalid_state(state=cs.XY(state.getX(), state.getY()), obstacle=o)
                 return state_is_valid
 
         return state_is_valid
