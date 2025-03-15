@@ -238,9 +238,9 @@ void HTTPServer::doPost()
             curl = curl_easy_init();
 
             std::string EC            = "B";
-            std::string IMEI          = "300434065264590";
-            std::string USERNAME      = "myuser";
-            std::string ROCKBLOCK_WEB = "localhost:8100";
+            std::string IMEI          = "300434065264590"; // arbitrary IMEI chosen, change to actual RockBlock IMEI
+            std::string USERNAME      = "myuser";          // arbitrary username chosen, change to actual username of rockblock account
+            std::string ROCKBLOCK_WEB = "localhost:8100";  // localhost:8100 chosen for testing, change to rockblock endpoint for prod
 
             char * encoded_data = curl_easy_escape(curl, data.c_str(), 0);
 
