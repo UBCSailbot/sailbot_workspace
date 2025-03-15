@@ -274,9 +274,23 @@ class OMPLPath:
         for o in OMPLPath.obstacles:
             state_is_valid = o.is_valid(cs.XY(state.getX(), state.getY()))
             if not state_is_valid:
+                log_invalid_state(state=cs.XY(state.getX(), state.getY()), obstacle=o)
                 return state_is_valid
 
         return state_is_valid
+
+
+def log_invalid_state(state: XY, obstacle: ob.Obstacle):
+    """
+    Logs details about a state and the obstacle that makes it invalid for use in a path.
+    """
+    with open(
+        "/workspaces/sailbot_workspace/src/local_pathfinding/local_pathfinding/ros_logs/invalid_states.log",  # noqa
+        "a",
+    ) as log_file:
+        log_file.write(
+            f"State at ({state.x:.2f},{state.y:.2f}) was invalidated by obstacle: {type(obstacle)}\n"  # noqa
+        )
 
 
 def get_planner_class():
