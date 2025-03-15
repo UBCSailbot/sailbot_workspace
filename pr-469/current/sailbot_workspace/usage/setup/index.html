@@ -20,7 +20,7 @@
       
       
       <link rel="icon" href="../../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.8">
     
     
       
@@ -2770,9 +2770,8 @@ which aren't ideal for development on laptops. GitHub Codespaces provide a seaml
 off-device, especially if they specify a Dev Container like Sailbot Workspace. Codespaces can run in VS Code
 or even in a browser for times when you aren't on your programming computer.</p>
 <ol>
-<li>Create a GitHub Codespace following the steps in the relevant GitHub Docs page:
-<a href="https://docs.github.com/en/codespaces/developing-in-codespaces/creating-a-codespace-for-a-repository#creating-a-codespace-for-a-repository" target="_blank">create a codespace for a repository</a>.
-A couple things to note:<ul>
+<li>go to <a href="https://github.com/UBCSailbot/sailbot_workspace" target="_blank">sailbot_workspace</a> repo on GitHub.<ul>
+<li><a href="https://docs.github.com/en/codespaces/developing-in-codespaces/creating-a-codespace-for-a-repository#creating-a-codespace-for-a-repository" target="_blank">create a codespace for a repository</a></li>
 <li>For the best Sailbot Workspace development experience, select the high-spec machine available</li>
 <li>There are usage limits if you don't want to pay:
 <a href="https://docs.github.com/en/billing/managing-billing-for-github-codespaces/about-billing-for-github-codespaces#monthly-included-storage-and-core-hours-for-personal-accounts" target="_blank">monthly included storage and core hours for personal accounts</a><ul>
@@ -2786,7 +2785,35 @@ A couple things to note:<ul>
 </li>
 </ul>
 </li>
-<li>Follow the local setup instructions starting from <a href="#5-open-the-workspace-file">5. Open the workspace file</a></li>
+<li>
+<p>click <strong>Code → Codespaces → +</strong>, a new tab will open, wait as the browser IDE sets up.</p>
+</li>
+<li>
+<p>Open <code>sailbot.code-workspace</code> and click <strong>Open Workspace</strong>,
+wait a moment as the work space sets up, the IDE should have a blue border.</p>
+</li>
+<li>
+<p>Open the command palette (<code>ctrl + shift + p</code> on windows) and type <strong>Run Build Tasks</strong> then select <strong>Build All</strong>.</p>
+<details class="bug">
+<summary><code>custom_interfaces</code> package fails to build</summary>
+<p>if any bugs occur with building custom_interfaces package run following command in the terminal:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>colcon build --packages-select custom_interfaces --merge-install
+</code></pre></div></p>
+</details>
+</li>
+<li>
+<p>run command in the terminal:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>source install/setup.sh
+</code></pre></div>
+</li>
+<li>
+<p>then run command to launch entire system:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>ros2 launch $ROS_WORKSPACE/src/global_launch/main_launch.py
+</code></pre></div>
+</li>
+<li>
+<p>if things are working you are done! you can use <code>ctrl + c</code> to stop the system.</p>
+</li>
 </ol>
 <p>Once you have a codespace set up:</p>
 <ul>
