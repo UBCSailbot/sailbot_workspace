@@ -89,16 +89,18 @@ class OMPLPath:
         OMPLPath.obstacles = []
 
         # BOATS
-        ais_ships = local_path_state.ais_ships  # type:ignore
-        for ship in ais_ships:
-            OMPLPath.obstacles.append(
-                ob.Boat(
-                    local_path_state.reference_latlon,
-                    local_path_state.position,
-                    local_path_state.speed,
-                    ship,
+        ais_ships = local_path_state.ais_ships
+
+        if ais_ships:
+            for ship in ais_ships:
+                OMPLPath.obstacles.append(
+                    ob.Boat(
+                        local_path_state.reference_latlon,
+                        local_path_state.position,
+                        local_path_state.speed,
+                        ship,
+                    )
                 )
-            )
 
         # LAND
         if state_space_xy is None:
@@ -269,17 +271,16 @@ class OMPLPath:
         Returns:
             bool: True if state is valid, else false.
         """
-        state_is_valid = True
 
         for o in OMPLPath.obstacles:
             state_is_valid = o.is_valid(cs.XY(state.getX(), state.getY()))
             if not state_is_valid:
                 # uncomment this if you want to log which states are being labeled invalid
                 # its commented out for now to avoid unnecessary file I/O
-                # log_invalid_state(state=cs.XY(state.getX(), state.getY()), obstacle=o)
-                return state_is_valid
+                log_invalid_state(state=cs.XY(state.getX(), state.getY()), obstacle=o)
+                return False
 
-        return state_is_valid
+        return True
 
 
 def log_invalid_state(state: XY, obstacle: ob.Obstacle):

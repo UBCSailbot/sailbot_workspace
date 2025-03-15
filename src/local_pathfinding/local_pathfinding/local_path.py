@@ -55,6 +55,8 @@ class LocalPathState:
 
         if ais_ships:  # TODO: remove when mock can be run
             self.ais_ships = [ship for ship in ais_ships.ships]
+        else:
+            ais_ships = None
 
         if global_path:  # TODO: remove when mock can be run
             self.global_path = [
