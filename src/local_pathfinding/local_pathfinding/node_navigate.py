@@ -6,6 +6,8 @@ from rclpy.node import Node
 import custom_interfaces.msg as ci
 from local_pathfinding.local_path import LocalPath
 
+from pyproj import Geod
+
 
 def main(args=None):
     rclpy.init(args=args)
@@ -105,6 +107,8 @@ class Sailbot(Node):
         self.gps = None
         self.global_path = None
         self.filtered_wind_sensor = None
+        self.current_waypoint_index = 0
+        self.current_coord = self.local_path.waypoints[self.current_waypoint_index]
 
         # attributes
         self.local_path = LocalPath(parent_logger=self.get_logger())
@@ -171,12 +175,44 @@ class Sailbot(Node):
             self._log_inactive_subs_warning()
             return -1.0
 
-        self.local_path.update_if_needed(
+        path_is_updated = self.local_path.update_if_needed(
             self.gps, self.ais_ships, self.global_path, self.filtered_wind_sensor, self.planner
         )
 
-        # TODO: create function to compute the heading from current position to next local waypoint
-        return 0.0
+        boat_lat = self.gps.position.lat_lon.latitude
+        boat_long = self.gps.position.lat_lon.longitude
+
+        if (path_is_updated):
+            self.current_waypoint_index = 0
+
+        return self.get_angle(boat_lat, boat_long, self.current_coord.latitude,
+                              self.current_coord.longitude)
+
+    def get_angle(self, boat_lat, boat_long, current_lat, current_long):
+        # calculate distance from current position of boat to next local waypoint
+        distance = self.calculate_distance(boat_lat, boat_long, current_lat, current_long)
+        # update waypoint
+        threshold = 0.5
+        self.update_waypoint(distance, threshold)
+        # return angle of direction
+        return self.calculate_angle(boat_lat, boat_long, current_lat, current_long)
+
+    def update_waypoint(self, distance, threshold):
+        if (distance < threshold):
+            # then update the next local waypoint by increasing index by 1
+            self.current_waypoint_index += 1
+
+        return self.local_path.waypoints[self.current_waypoint_index]
+
+    def calculate_distance(lat1, lon1, lat2, lon2):
+        GEODESIC = Geod(ellps="WGS84")
+        _, _, distance = GEODESIC.inv(lon1, lat1, lon2, lat2)
+        return distance
+
+    def calculate_angle(lat1, lon1, lat2, lon2):
+        GEODESIC = Geod(ellps="WGS84")
+        forward_azimuth, _, _ = GEODESIC.inv(lon1, lat1, lon2, lat2)
+        return forward_azimuth
 
     def update_params(self):
         """Update instance variables that depend on parameters if they have changed."""
