@@ -8,6 +8,7 @@ from local_pathfinding.local_path import LocalPath
 
 from pyproj import Geod
 
+WAYPOINT_THRESHOLD = 0.5
 
 def main(args=None):
     rclpy.init(args=args)
@@ -163,7 +164,6 @@ class Sailbot(Node):
         self.get_logger().debug(f"Publishing to {self.lpath_data_pub.topic}: {msg}")
 
     # helper functions
-
     def get_desired_heading(self) -> float:
         """Get the desired heading.
 
@@ -188,27 +188,33 @@ class Sailbot(Node):
         return self.get_angle(boat_lat, boat_long, self.current_coord.latitude,
                               self.current_coord.longitude)
 
+    def calculate_desired_headings(waypoint_index, angle, latitudes, longitudes):
+
+        return get_angle(boat_lat, boat_long, self.current_coord.latitude,
+                              self.current_coord.longitude)
+
     def get_angle(self, boat_lat, boat_long, current_lat, current_long):
         # calculate distance from current position of boat to next local waypoint
         distance = self.calculate_distance(boat_lat, boat_long, current_lat, current_long)
         # update waypoint
-        threshold = 0.5
-        self.update_waypoint(distance, threshold)
+        self.update_waypoint(distance)
         # return angle of direction
         return self.calculate_angle(boat_lat, boat_long, current_lat, current_long)
 
-    def update_waypoint(self, distance, threshold):
-        if (distance < threshold):
+    def update_waypoint(self, distance):
+        if (distance < WAYPOINT_THRESHOLD):
             # then update the next local waypoint by increasing index by 1
             self.current_waypoint_index += 1
 
         return self.local_path.waypoints[self.current_waypoint_index]
 
+    @staticmethod
     def calculate_distance(lat1, lon1, lat2, lon2):
         GEODESIC = Geod(ellps="WGS84")
         _, _, distance = GEODESIC.inv(lon1, lat1, lon2, lat2)
         return distance
 
+    @staticmethod
     def calculate_angle(lat1, lon1, lat2, lon2):
         GEODESIC = Geod(ellps="WGS84")
         forward_azimuth, _, _ = GEODESIC.inv(lon1, lat1, lon2, lat2)
