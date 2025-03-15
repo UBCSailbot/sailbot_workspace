@@ -47,12 +47,16 @@ class LocalPathState:
             self.speed = gps.speed.speed
             self.heading = gps.heading.heading
         else:
-            self.position = HelperLatLon(latitude=0.0, longitude=0.0)
+            # this position has been verified to be close enough to land that
+            # land obstacles should be generated
+            self.position = HelperLatLon(latitude=49.29, longitude=-126.32)
             self.speed = 0.0
             self.heading = 0.0
 
         if ais_ships:  # TODO: remove when mock can be run
             self.ais_ships = [ship for ship in ais_ships.ships]
+        else:
+            ais_ships = None
 
         if global_path:  # TODO: remove when mock can be run
             self.global_path = [
