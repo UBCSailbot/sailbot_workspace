@@ -297,7 +297,7 @@ def log_invalid_state(state: XY, obstacle: ob.Obstacle):
     Logs details about a state and the obstacle that makes it invalid for use in a path.
     """
     with open(
-        "/workspaces/sailbot_workspace/src/local_pathfinding/local_pathfinding/ros_logs/invalid_states.log",  # noqa
+        "/workspaces/sailbot_workspace/src/local_pathfinding/local_pathfinding/invalid_states.log",
         "a",
     ) as log_file:
         log_file.write(
