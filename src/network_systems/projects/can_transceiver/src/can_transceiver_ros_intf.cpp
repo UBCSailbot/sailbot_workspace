@@ -242,7 +242,6 @@ private:
         msg::WindSensor & wind_sensor_msg = wind_sensors_.wind_sensors[idx];
         wind_sensor_msg                   = wind_sensor.toRosMsg();
         wind_sensors_pub_->publish(wind_sensors_);
-        std::cerr << "try to publish" << std::endl;
         publishFilteredWindSensor();
         RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), wind_sensor.toString().c_str());
     }
