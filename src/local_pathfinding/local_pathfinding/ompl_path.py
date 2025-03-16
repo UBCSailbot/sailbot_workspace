@@ -11,15 +11,16 @@ from __future__ import annotations
 import pickle
 from typing import TYPE_CHECKING, Any, List, Union
 
+from custom_interfaces.msg import HelperLatLon
 from ompl import base
 from ompl import geometric as og
-from ompl import util as ou
+
+# from ompl import util as ou
 from rclpy.impl.rcutils_logger import RcutilsLogger
 from shapely.geometry import MultiPolygon, Point, Polygon, box
 
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.obstacles as ob
-from custom_interfaces.msg import HelperLatLon
 from local_pathfinding.coord_systems import XY
 from local_pathfinding.objectives import get_sailing_objective
 
@@ -27,7 +28,7 @@ if TYPE_CHECKING:
     from local_pathfinding.local_path import LocalPathState
 
 # OMPL logging: only log warnings and above
-ou.setLogLevel(ou.LOG_WARN)
+# ou.setLogLevel(ou.LOG_WARN)
 
 
 class OMPLPath:
