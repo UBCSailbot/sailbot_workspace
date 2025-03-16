@@ -9,9 +9,8 @@ https://ompl.kavrakilab.org/api_overview.html.
 from __future__ import annotations
 
 import pickle
-from typing import TYPE_CHECKING, Any, List
+from typing import TYPE_CHECKING, Any, List, Union
 
-from custom_interfaces.msg import HelperLatLon
 from ompl import base
 from ompl import geometric as og
 from ompl import util as ou
@@ -20,6 +19,7 @@ from shapely.geometry import MultiPolygon, Point, Polygon, box
 
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.obstacles as ob
+from custom_interfaces.msg import HelperLatLon
 from local_pathfinding.coord_systems import XY
 from local_pathfinding.objectives import get_sailing_objective
 
@@ -231,12 +231,12 @@ class OMPLPath:
         goal = base.State(space)
         start().setXY(start_x, start_y)
         goal().setXY(goal_x, goal_y)
-        """self._logger.debug(
+        self._logger.debug(
             "start and goal state: "
             f"start=({start().getX()}, {start().getY()}); "
             f"goal=({goal().getX()}, {goal().getY()})"
-        )"""
-        simple_setup.setStartAndGoalStatesSE2(start, goal)
+        )
+        simple_setup.setStartAndGoalStates(start, goal)
 
         # Constructs a space information instance for this simple setup
         space_information = simple_setup.getSpaceInformation()
@@ -263,19 +263,25 @@ class OMPLPath:
 
         return simple_setup
 
-    def is_state_valid(state: base.SE2StateSpace) -> bool:
+    def is_state_valid(state: Union[base.State, base.SE2StateInternal]) -> bool:
         """Evaluate a state to determine if the configuration collides with an environment
         obstacle.
 
         Args:
-            state (base.SE2StateSpace): State to check.
+            state (base.SE2StateInternal): State to check.
 
         Returns:
             bool: True if state is valid, else false.
         """
 
         for o in OMPLPath.obstacles:
-            state_is_valid = o.is_valid(cs.XY(state.getX(), state.getY()))
+
+            if isinstance(state, base.State):  # for testing purposes
+                state_is_valid = o.is_valid(cs.XY(state().getX(), state().getY()))
+
+            else:  # when OMPL uses this function, it will pass in an SE2StateInternal object
+                state_is_valid = o.is_valid(cs.XY(state.getX(), state.getY()))
+
             if not state_is_valid:
                 # uncomment this if you want to log which states are being labeled invalid
                 # its commented out for now to avoid unnecessary file I/O

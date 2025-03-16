@@ -105,8 +105,8 @@ def test_init_obstacles():
     [(0.5, 0.5, True), (-14, 0.5, False), (-16, 0.5, True)],
 )
 def test_is_state_valid(x: float, y: float, is_valid: bool):
-    state = base.ScopedState(PATH._simple_setup.getStateSpace())
-    state.setXY(x, y)
+    state = base.State(PATH._simple_setup.getStateSpace())
+    state().setXY(x, y)
 
     # Sample AIS SHIP message
     ais_ship = HelperAISShip(
