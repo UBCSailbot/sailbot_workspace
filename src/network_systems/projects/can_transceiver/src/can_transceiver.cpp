@@ -114,7 +114,6 @@ void CanTransceiver::receive()
                 std::cerr << "CAN read error: read " << bytes_read << "B but CAN frames are expected to be "
                           << sizeof(CanFrame) << "B" << std::endl;
             } else {
-                std::cerr << "bytes read: " << bytes_read << std::endl;
                 onNewCanData(frame);
             }
         } else if (bytes_read < 0) {

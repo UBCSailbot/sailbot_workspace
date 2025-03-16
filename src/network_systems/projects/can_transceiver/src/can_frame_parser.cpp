@@ -229,7 +229,6 @@ void MainTrimTab::checkBounds() const
 
 WindSensor::WindSensor(const CanFrame & cf) : WindSensor(static_cast<CanId>(cf.can_id))
 {
-    std::cerr << "in Can_FD WindSensor parser" << std::endl;
     int16_t raw_wind_speed;
     int16_t raw_wind_dir;
 
