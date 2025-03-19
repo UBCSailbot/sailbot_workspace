@@ -5,26 +5,18 @@ The node is represented by the `MockGlobalPath` class."""
 import os
 import time
 
+import custom_interfaces.msg as ci
 import rclpy
-from custom_interfaces.msg import GPS, HelperLatLon
 from rclpy.node import Node
 
 from local_pathfinding.coord_systems import GEODESIC, meters_to_km
-from local_pathfinding.global_path import (
-    GPS_URL,
-    PATH_URL,
-    _interpolate_path,
-    calculate_interval_spacing,
-    generate_path,
-    get_path,
-    get_pos,
-    path_to_dict,
-    post_path,
-)
+import local_pathfinding.global_path as gp
 
 # Mock gps data to get things running until we have a running gps node
 # TODO Remove when NET publishes GPS
-MOCK_GPS = GPS(lat_lon=HelperLatLon(latitude=49.1154488073483, longitude=-125.95696431913618))
+MOCK_GPS = ci.GPS(
+    lat_lon=ci.HelperLatLon(latitude=49.1154488073483, longitude=-125.95696431913618)
+)
 
 
 def main(args=None):
@@ -40,13 +32,12 @@ def main(args=None):
 class MockGlobalPath(Node):
     """Stores and publishes the mock global path to the global_path topic.
 
-    Subscribers:
+    Subscriber:
         gps_sub (Subscription): Subscribe to a `GPS` msg which contains the current GPS location of
         sailbot.
 
-    Publishers and their timers:
+    Publisher:
         global_path_pub (Publisher): Publishes a `Path` msg containing the global path
-        global_path_timer (Timer): Periodically run the global path callback
 
     Attributes from subscribers:
         gps (GPS): Data from the GPS sensor
@@ -77,30 +68,30 @@ class MockGlobalPath(Node):
         pub_period_sec = self.get_parameter("pub_period_sec").get_parameter_value().double_value
         self.get_logger().debug(f"Got parameter: {pub_period_sec=}")
 
-        # mock global path callback runs repeatedly on a timer
-        self.global_path_timer = self.create_timer(
-            timer_period_sec=pub_period_sec,
-            callback=self.global_path_callback,
+        # Subscriber
+        self.gps_sub = self.create_subscription(
+            msg_type=ci.GPS, topic="gps", callback=self.global_path_callback, qos_profile=10
         )
+
+        # Publisher
+        self.global_path_pub = self.create_publisher(
+            msg_type=ci.Path, topic="global_path", qos_profile=10
+        )
+
         # Attributes
         self.pos = MOCK_GPS.lat_lon
         self.path_mod_tmstmp = None
         self.file_path = None
         self.period = pub_period_sec
 
-    def check_pos(self):
+    def check_pos(self, msg: ci.GPS):
         """Get the gps data and check if the global path needs to be updated.
 
         If the position has changed by more than gps_threshold * interval_spacing since last step,
         the force parameter set to true, bypassing any checks in the global_path_callback.
         """
-        self.get_logger().info(
-            f"Retreiving current position from {GPS_URL}", throttle_duration_sec=1
-        )
 
-        pos = get_pos()
-        if pos is None:
-            return  # error is logged in calling function
+        pos = msg.lat_lon
 
         position_delta = meters_to_km(
             GEODESIC.inv(
@@ -124,7 +115,7 @@ class MockGlobalPath(Node):
         self.pos = pos
 
     # Timer callbacks
-    def global_path_callback(self):
+    def global_path_callback(self, msg: ci.GPS = None):
         """Check if the global path csv file has changed. If it has, the new path is published.
 
         This function also checks if the gps data has changed by more than
@@ -144,11 +135,7 @@ class MockGlobalPath(Node):
         # check when global path was changed last
         path_mod_tmstmp = time.ctime(os.path.getmtime(file_path))
 
-        self.check_pos()
-
-        if self.pos is None:
-            self.log_no_pos()
-            return
+        self.check_pos(msg)
 
         # check if the global path has been forced to update by a parameter change
         force = self.get_parameter("force")._value
@@ -160,12 +147,12 @@ class MockGlobalPath(Node):
         self.get_logger().info(
             f"Global path file is: {os.path.basename(file_path)}\n Reading path"
         )
-        global_path = get_path(file_path=file_path)
+        global_path = gp.get_path(file_path=file_path)
 
         pos = self.pos
 
         # obtain the actual distances between every waypoint in the global path
-        path_spacing = calculate_interval_spacing(pos, global_path.waypoints)
+        path_spacing = gp.calculate_interval_spacing(pos, global_path.waypoints)
 
         # obtain desired interval spacing
         interval_spacing = self.get_parameter("interval_spacing")._value
@@ -182,7 +169,7 @@ class MockGlobalPath(Node):
             if write:
                 self.get_logger().info("Writing generated path to new file")
 
-            msg = generate_path(
+            msg = gp.generate_path(
                 dest=global_path.waypoints[0],
                 interval_spacing=interval_spacing,
                 pos=pos,
@@ -200,7 +187,7 @@ class MockGlobalPath(Node):
             if write:
                 self.get_logger().info("Writing generated path to new file")
 
-            msg = _interpolate_path(
+            msg = gp._interpolate_path(
                 global_path=global_path,
                 interval_spacing=interval_spacing,
                 pos=pos,
@@ -212,22 +199,13 @@ class MockGlobalPath(Node):
         else:
             msg = global_path
 
-        # post global path
-        if post_path(msg):
-            self.get_logger().info(f"Posting path to {PATH_URL}: {path_to_dict(msg)}")
-            self.set_parameters([rclpy.Parameter("force", rclpy.Parameter.Type.BOOL, False)])
-            self.path_mod_tmstmp = path_mod_tmstmp
-            self.file_path = file_path
-        else:
-            self.log_failed_post()
+        self.get_logger().debug(f"Publishing mock global path: {gp.path_to_dict(msg)}")
+        self.global_path_pub.publish(msg)
 
-    def log_no_pos(self):
-        self.get_logger().warn(
-            f"Failed to get position from {GPS_URL} will retry in {self.period} seconds."
-        )
-
-    def log_failed_post(self):
-        self.get_logger().warn(f"Failed to post path to {PATH_URL}")
+        # reset all checks for next function call
+        self.set_parameters([rclpy.Parameter("force", rclpy.Parameter.Type.BOOL, False)])
+        self.path_mod_tmstmp = path_mod_tmstmp
+        self.file_path = file_path
 
 
 if __name__ == "__main__":
