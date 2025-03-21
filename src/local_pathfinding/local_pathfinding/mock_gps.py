@@ -37,25 +37,25 @@ class MockGPS(Node):
             self.get_parameter("pub_period_sec").get_parameter_value().double_value
         )
 
-        # Mock wind sensor timer
+        # Mock GPS timere
         self.__mock_gps_timer = self.create_timer(
             timer_period_sec=self.pub_period_sec, callback=self.mock_gps_callback
         )
 
-        # Mock wind sensor publisher initialization
+        # Mock GPS publisher initialization
         self.__gps_pub = self.create_publisher(
             msg_type=ci.GPS,
             topic="gps",
             qos_profile=10,
         )
 
-        self.__mean_speed = ci.HelperSpeed(speed=15.0)  # mean boat speed in knots
+        self.__mean_speed = ci.HelperSpeed(speed=15.0)  # mean boat speed in kmph
         self.__current_location = ci.HelperLatLon(latitude=49.2827,
                                                   longitude=-123.1207)  # Vancouver
         self.__heading = ci.HelperHeading(heading=-60.0)  # in degrees, heading of the boat
 
     def mock_gps_callback(self) -> None:
-        """Callback function for the mock wind sensor timer. Publishes mock gps data to the ROS
+        """Callback function for the mock GPS timer. Publishes mock gps data to the ROS
         network.
         """
         self.get_next_location()
