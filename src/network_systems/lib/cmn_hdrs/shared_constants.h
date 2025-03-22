@@ -64,3 +64,7 @@ constexpr float BATT_CURR_UBND = 200.0;   // Placeholder number
 /***** Bounds for Wind Sensor ******/
 constexpr int WIND_DIRECTION_LBND = -180;
 constexpr int WIND_DIRECTION_UBND = 179;
+
+/***** Bounds for Temp Sensor ******/
+constexpr int TEMP_LBND = -60.0;  // Placeholder
+constexpr int TEMP_UBND = 125.0;  // Placeholder

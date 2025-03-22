@@ -820,4 +820,77 @@ void RudderData::checkBounds() const
     // DesiredHeading private END
     // DesiredHeading END
 }
+
+// TempSensor START
+// TempSensor public START
+TempSensor::TempSensor(const CanFrame & cf) : TempSensor(static_cast<CanId>(cf.can_id))
+{
+    int16_t raw_temp;
+
+    std::memcpy(&raw_temp, cf.data + BYTE_OFF_TEMP, sizeof(int16_t));
+
+    // divide by 1000 to get temperature
+    temp_ = static_cast<float>(raw_temp / 1000.0);  // NOLINT(readability-magic-numbers)
+
+    checkBounds();
+}
+
+TempSensor::TempSensor(msg::TempSensor ros_temp_sensor, CanId id)
+: BaseFrame(id, CAN_BYTE_DLEN_), temp_(ros_temp_sensor.temp.temp)
+{
+    checkBounds();
+}
+
+msg::TempSensor TempSensor::toRosMsg() const
+{
+    msg::TempSensor msg;
+    msg::HelperTemp temp;
+    temp.set__temp(temp_);
+    msg.set__temp(temp);
+    return msg;
+}
+
+CanFrame TempSensor::toLinuxCan() const
+{
+    // convert kmph to knots before setting value
+    int16_t raw_temp = static_cast<int16_t>(temp_ * 1000.0);  // NOLINT(readability-magic-numbers)
+
+    CanFrame cf = BaseFrame::toLinuxCan();
+    std::memcpy(cf.data + BYTE_OFF_TEMP, &raw_temp, sizeof(int16_t));
+
+    return cf;
+}
+
+std::string TempSensor::debugStr() const
+{
+    std::stringstream ss;
+    ss << BaseFrame::debugStr() << "\n"
+       << "Temperature (degrees Celsius): " << temp_;
+    return ss.str();
+}
+
+std::string TempSensor::toString() const
+{
+    std::stringstream ss;
+    ss << "[TEMP SENSOR] Temp: " << temp_;
+    return ss.str();
+}
+
+// TempSensor public END
+// TempSensor private START
+
+TempSensor::TempSensor(CanId id) : BaseFrame(std::span{TEMP_SENSOR_IDS}, id, CAN_BYTE_DLEN_) {}
+
+void TempSensor::checkBounds() const
+{
+    auto err = utils::isOutOfBounds<float>(temp_, TEMP_LBND, TEMP_UBND);
+    if (err) {
+        std::string err_msg = err.value();
+        throw std::out_of_range("Temperature is out of bounds!\n" + debugStr() + "\n" + err_msg);
+    }
+}
+
+// TempSensor private END
+// TempSensor END
+
 }  // namespace CAN_FP

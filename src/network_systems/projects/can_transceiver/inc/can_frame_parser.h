@@ -10,6 +10,7 @@
 #include <custom_interfaces/msg/gps.hpp>
 #include <custom_interfaces/msg/helper_ais_ship.hpp>
 #include <custom_interfaces/msg/sail_cmd.hpp>
+#include <custom_interfaces/msg/temp_sensor.hpp>
 #include <custom_interfaces/msg/wind_sensor.hpp>
 #include <map>
 #include <optional>
@@ -40,6 +41,22 @@ enum class CanId : canid_t {
     RUDDER_DATA_FRAME    = 0x50,
     SAIL_AIS             = 0x60,
     PATH_GPS_DATA_FRAME  = 0x70,
+    TEMP_SENSOR_START    = 0x100,
+    TEMP_1               = 0x101,
+    TEMP_2               = 0x102,
+    TEMP_3               = 0x103,
+    TEMP_4               = 0x104,
+    TEMP_5               = 0x105,
+    TEMP_6               = 0x106,
+    TEMP_7               = 0x107,
+    TEMP_8               = 0x108,
+    TEMP_9               = 0x109,
+    TEMP_10              = 0x10A,
+    TEMP_11              = 0x10B,
+    TEMP_12              = 0x10C,
+    TEMP_13              = 0x10D,
+    TEMP_14              = 0x10E,
+    TEMP_SENSOR_END      = 0x10F,
     GENERIC_SENSOR_START = 0x100,
     GENERIC_SENSOR_END   = 0x1FF
 };
@@ -760,6 +777,92 @@ private:
     void checkBounds() const;
 
     float heading_;
+};
+
+/**
+ * @brief A temp class derived from the BaseFrame. Represents temperature data.
+ *
+ */
+class TempSensor final : public BaseFrame
+{
+public:
+    static constexpr std::array<CanId, 16> TEMP_SENSOR_IDS = {
+      CanId::TEMP_SENSOR_START,
+      CanId::TEMP_1,
+      CanId::TEMP_2,
+      CanId::TEMP_3,
+      CanId::TEMP_4,
+      CanId::TEMP_5,
+      CanId::TEMP_6,
+      CanId::TEMP_7,
+      CanId::TEMP_8,
+      CanId::TEMP_9,
+      CanId::TEMP_10,
+      CanId::TEMP_11,
+      CanId::TEMP_12,
+      CanId::TEMP_13,
+      CanId::TEMP_14,
+      CanId::TEMP_SENSOR_END};
+    static constexpr uint8_t CAN_BYTE_DLEN_ = 2;
+    static constexpr uint8_t BYTE_OFF_TEMP  = 0;
+
+    /**
+      * @brief Explicitly deleted no-argument constructor
+      *
+      */
+    TempSensor() = delete;
+
+    /**
+      * @brief Construct a Temp object from a Linux CanFrame representation
+      *
+      * @param cf Linux CanFrame
+      */
+    explicit TempSensor(const CanFrame & cf);
+
+    /**
+      * @brief Construct a TempSensor object from a custom_interfaces ROS msg representation
+      *
+      * @param ros_wind_sensor custom_interfaces representation of a TempSensor
+      * @param id      CanId of the GPS (use the rosIdxToCanId() method if unknown)
+      */
+    explicit TempSensor(msg::TempSensor ros_temp_sensor, CanId id);
+
+    /**
+      * @return the custom_interfaces ROS representation of the TempSensor
+      */
+    msg::TempSensor toRosMsg() const;
+
+    /**
+      * @return the Linux CanFrame representation of the GPS object
+      */
+    CanFrame toLinuxCan() const override;
+
+    /**
+      * @return A string that can be printed or logged to debug a GPS object
+      */
+    std::string debugStr() const override;
+
+    /**
+      * @brief A string representation of the TempSensor object
+      *
+      */
+    std::string toString() const override;
+
+private:
+    /**
+      * @brief Private helper constructor for Temp objects
+      *
+      * @param id CanId of the TempSensor Object
+      */
+    explicit TempSensor(CanId id);
+
+    /**
+      * @brief Check if the assigned fields after constructing a temp object are within bounds.
+      * @throws std::out_of_range if any assigned fields are outside of expected bounds
+      */
+    void checkBounds() const;
+
+    float temp_;
 };
 
 }  // namespace CAN_FP
