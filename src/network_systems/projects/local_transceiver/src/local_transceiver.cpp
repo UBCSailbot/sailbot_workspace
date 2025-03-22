@@ -87,11 +87,14 @@ LocalTransceiver::LocalTransceiver(const std::string & port_name, const uint32_t
     serial_.set_option(bio::serial_port_base::baud_rate(baud_rate));
     // Set a timeout for read/write operations on the serial port
     setsockopt(serial_.native_handle(), SOL_SOCKET, SO_RCVTIMEO, &TIMEOUT, sizeof(TIMEOUT));
+    std::ofstream cacheFile(CACHE_PATH);
+    cacheFile.close();
 };
 
 LocalTransceiver::~LocalTransceiver()
 {
-    // Intentionally left blank
+    std::filesystem::remove(CACHE_PATH);
+    std::filesystem::remove(CACHE_TEMP_PATH);
 }
 
 void LocalTransceiver::stop()
@@ -207,32 +210,17 @@ std::optional<std::string> LocalTransceiver::debugSend(const std::string & cmd)
     return readRsp();
 }
 
-std::future<void> LocalTransceiver::cacheGlobalWaypointsAsync(std::string receivedDataBuffer)
+void LocalTransceiver::cacheGlobalWaypoints(std::string receivedDataBuffer)
 {
-    return std::async(std::launch::async, [receivedDataBuffer] {
-        try {
-            std::filesystem::path cache{CACHE_PATH};
-            if (std::filesystem::exists(cache)) {
-                std::filesystem::path cache_temp{CACHE_TEMP_PATH};
-                std::ofstream         writeFile(CACHE_TEMP_PATH, std::ios::binary);
-                if (!writeFile) {
-                    std::cerr << "Failed to create temp cache file" << std::endl;
-                }
-                writeFile.write(receivedDataBuffer.data(), static_cast<std::streamsize>(receivedDataBuffer.size()));
-                writeFile.close();
-                std::filesystem::rename(CACHE_TEMP_PATH, CACHE_PATH);
-            } else {
-                std::ofstream writeFile(CACHE_PATH, std::ios::binary);
-                if (!writeFile) {
-                    std::cerr << "Failed to create cache file" << std::endl;
-                }
-                writeFile.write(receivedDataBuffer.data(), static_cast<std::streamsize>(receivedDataBuffer.size()));
-                writeFile.close();
-            }
-        } catch (const std::exception & e) {
-            std::cerr << "Error caching global waypoints: " << e.what() << std::endl;
-        }
-    });
+    std::filesystem::path cache{CACHE_PATH};
+    std::filesystem::path cache_temp{CACHE_TEMP_PATH};
+    std::ofstream         writeFile(CACHE_TEMP_PATH, std::ios::binary);
+    if (!writeFile) {
+        std::cerr << "Failed to create temp cache file" << std::endl;
+    }
+    writeFile.write(receivedDataBuffer.data(), static_cast<std::streamsize>(receivedDataBuffer.size()));
+    writeFile.close();
+    std::filesystem::rename(CACHE_TEMP_PATH, CACHE_PATH);
 }
 
 custom_interfaces::msg::Path LocalTransceiver::receive()
@@ -331,10 +319,12 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
         receivedDataBuffer = message;
         break;
     }
-
-    cacheGlobalWaypointsAsync(receivedDataBuffer);
+    
+    std::future<void> fut = std::async(std::launch::async, cacheGlobalWaypoints, receivedDataBuffer);
 
     custom_interfaces::msg::Path to_publish = parseInMsg(receivedDataBuffer);
+
+    fut.get();
     return to_publish;
 }
 
@@ -371,12 +361,11 @@ custom_interfaces::msg::Path LocalTransceiver::parseInMsg(const std::string & ms
 
 std::optional<custom_interfaces::msg::Path> LocalTransceiver::getCache()
 {
-    std::filesystem::path cache{CACHE_PATH};
-    if (std::filesystem::exists(cache)) {
+    if (std::filesystem::exists(CACHE_PATH) && std::filesystem::file_size(CACHE_PATH) > 0) {
         std::ifstream                input(CACHE_PATH, std::ios::binary);
         std::string                  cachedDataBuffer(std::istreambuf_iterator<char>(input), {});
         custom_interfaces::msg::Path to_publish = parseInMsg(cachedDataBuffer);
-        return to_publish;
+        return std::make_optional(to_publish);
     }
     return std::nullopt;
 }

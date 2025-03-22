@@ -117,7 +117,7 @@ public:
      * @param receivedDataBuffer string to cache
      * @return future object representing completion of the function
      */
-    static std::future<void> cacheGlobalWaypointsAsync(std::string receivedDataBuffer);
+    static void cacheGlobalWaypoints(std::string receivedDataBuffer);
 
     /**
      * @brief Retrieve the latest message from the remote server via the serial port

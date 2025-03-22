@@ -50,15 +50,20 @@ public:
                 //vi needs to run in background
                 vi_thread.detach();
 
-                const int   MAX_ATTEMPTS = 100;  // 100ms timeout, should only take <5
-                int         attempts     = 0;
-                const int   SLEEP_MS     = 1;
-                std::string set_baud_cmd = "stty 19200 < $LOCAL_TRANSCEIVER_TEST_PORT";
+                const int   MAX_ATTEMPTS   = 100;  // 100ms timeout, should only take <5
+                int         attempts       = 0;
+                const int   SLEEP_MS       = 1;
+                const int   IOCTL_ERR_CODE = 256;
+                std::string set_baud_cmd   = "stty 19200 < $LOCAL_TRANSCEIVER_TEST_PORT 2>/dev/null";
+                //silence stderr to not clutter console while polling
                 while (attempts < MAX_ATTEMPTS) {
                     if (std::filesystem::exists(LOCAL_TRANSCEIVER_TEST_PORT)) {
                         int result = std::system(set_baud_cmd.c_str());  //NOLINT(concurrency-mt-unsafe)
                         if (result == 0) {
                             break;
+                        }
+                        if (result != IOCTL_ERR_CODE) {
+                            std::cerr << "Failed to set baud rate with code: " << result << std::endl;
                         }
                     }
                     std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_MS));
@@ -84,6 +89,9 @@ public:
               this->get_logger(), "Running Local Transceiver in mode: %s, with port: %s.", mode.c_str(), port.c_str());
             lcl_trns_ = std::make_unique<LocalTransceiver>(port, SATELLITE_BAUD_RATE);
 
+            std::future<std::optional<custom_interfaces::msg::Path>> fut =
+              std::async(std::launch::async, lcl_trns_->getCache);
+
             static constexpr int  ROS_Q_SIZE     = 5;
             static constexpr auto TIMER_INTERVAL = std::chrono::milliseconds(300000);
             timer_ = this->create_wall_timer(TIMER_INTERVAL, std::bind(&LocalTransceiverIntf::pub_cb, this));
@@ -105,8 +113,10 @@ public:
               ros_topics::LOCAL_PATH, ROS_Q_SIZE,
               std::bind(&LocalTransceiverIntf::sub_local_path_data_cb, this, std::placeholders::_1));
 
-            std::thread cache_thread(&LocalTransceiverIntf::getAndPublishCache, this);
-            cache_thread.detach();
+            std::optional<custom_interfaces::msg::Path> msg = fut.get();
+            if (msg) {
+                pub_->publish(*msg);
+            }
         }
     }
 
@@ -120,16 +130,6 @@ private:
     rclcpp::Subscription<custom_interfaces::msg::GenericSensors>::SharedPtr sub_data_sensors;
     rclcpp::Subscription<custom_interfaces::msg::GPS>::SharedPtr            sub_gps;
     rclcpp::Subscription<custom_interfaces::msg::LPathData>::SharedPtr      sub_local_path_data;
-
-    // may want mutex to ensure cached waypoints can't be published after newly received waypoints,
-    // but don't think practically necessary since pub_cb won't fire until 5 minutes after cache call.
-    void getAndPublishCache()
-    {
-        auto msg = lcl_trns_->getCache();
-        if (msg) {
-            pub_->publish(*msg);
-        }
-    }
 
     /**
      * @brief Callback function to publish to onboard ROS network
