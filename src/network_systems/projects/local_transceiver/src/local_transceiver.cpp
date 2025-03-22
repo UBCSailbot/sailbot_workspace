@@ -274,7 +274,7 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
             continue;
         }
 
-        if (!rcvRsps({message_to_queue_cmd, AT::Line("\n")})) {
+        if (!rcvRsps({message_to_queue_cmd, AT::Line("\n"), AT::Line("+SBDRB:"), AT::Line("\n")})) {
             continue;
         }
 
@@ -283,21 +283,25 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
             continue;
         }
 
-        std::regex re(
-          R"(name=\"data\"; filename=\"[^\"]*\"\r?\n(?:.*\r?\n)*\r?\n([\s\S]*?)\r?\n--)", std::regex::ECMAScript);
+        std::string message_size_str;
+        std::string message;
+        std::string checksum;
+        uint16_t    message_size_int = 0;
 
         std::smatch match;
 
-        if (std::regex_search(*buffer_data, match, re)) {
-            *buffer_data = match[1];
-            std::stringstream ss;
-            ss << *buffer_data;
-            std::cout << ss.str() << std::endl;
+        if (buffer_data && buffer_data->size() >= 2) {
+            message_size_str = buffer_data->substr(0, 2);
         } else {
-            std::cout << "No match found." << std::endl;
+            continue;
         }
 
-        receivedDataBuffer = buffer_data.value();
+        message_size_int = (static_cast<uint8_t>(message_size_str[0]) << 8) |  //NOLINT(readability-magic-numbers)
+                           static_cast<uint8_t>(message_size_str[1]);          //NOLINT(readability-magic-numbers)
+        message = buffer_data->substr(2, message_size_int);
+
+        receivedDataBuffer = message;
+
         break;
     }
 
@@ -367,7 +371,7 @@ std::optional<std::string> LocalTransceiver::readRsp()
     error_code     ec;
 
     // Caution: will hang if another proccess is reading from serial port
-    bio::read_until(serial_, buf, AT::DELIMITER, ec);
+    bio::read_until(serial_, buf, AT::STATUS_OK, ec);
     if (ec) {
         return std::nullopt;
     }

@@ -68,7 +68,7 @@ This repository supports user-specific configuration files. To set this up, see
 
 ### Run Raye's Software
 
-[Raye](https://www.ubcsailbot.org/discover-raye) was our previous project.
+[Raye](https://www.ubcsailbot.org/rayes-story) was our previous project.
 Her software can be run in the [`raye` branch](https://github.com/UBCSailbot/sailbot_workspace/tree/raye)
 following the instructions in [How to run Raye's software](https://ubcsailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/usage/how_to/#run-rayes-software).
 The initial differences between the `main` and `raye` branches are summarized in
