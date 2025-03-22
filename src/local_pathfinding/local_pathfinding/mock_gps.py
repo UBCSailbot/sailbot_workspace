@@ -5,6 +5,7 @@ import custom_interfaces.msg as ci
 import rclpy
 from rclpy.node import Node
 from geopy.distance import great_circle
+from node_navigate import get_desired_heading
 
 
 class MockGPS(Node):
@@ -59,6 +60,7 @@ class MockGPS(Node):
         network.
         """
         self.get_next_location()
+        self.__heading = get_desired_heading()
         msg: ci.GPS = ci.GPS(lat_lon=self.__current_location,
                              speed=self.__mean_speed, heading=self.__heading)
         self.get_logger().debug(f"Publishing to {self.__gps_pub.topic}, heading: {msg.heading}")
