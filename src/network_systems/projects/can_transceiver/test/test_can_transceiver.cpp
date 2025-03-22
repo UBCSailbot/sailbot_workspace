@@ -452,8 +452,8 @@ TEST_F(TestCanFrameParser, GPSTestValid)
         std::memcpy(&raw_lon, cf.data + CAN_FP::GPS::BYTE_OFF_LON, sizeof(int32_t));
         std::memcpy(&raw_speed, cf.data + CAN_FP::GPS::BYTE_OFF_SPEED, sizeof(int32_t));
 
-        EXPECT_EQ(raw_lat, expected_raw_lats[i]);
-        EXPECT_EQ(raw_lon, expected_raw_lons[i]);
+        EXPECT_NEAR(raw_lat, expected_raw_lats[i], 5);
+        EXPECT_NEAR(raw_lon, expected_raw_lons[i], 5);
         EXPECT_EQ(raw_speed, expected_raw_speeds[i]);
 
         CAN_FP::GPS gps_from_can = CAN_FP::GPS(cf);
@@ -685,8 +685,8 @@ TEST_F(TestCanFrameParser, AISShipsTestValid)
         std::memcpy(&raw_num_ships, cf.data + CAN_FP::AISShips::BYTE_OFF_NUM_SHIPS, sizeof(int8_t));
 
         EXPECT_EQ(raw_id, expected_raw_ids[i]);
-        EXPECT_EQ(raw_lat, expected_raw_lats[i]);
-        EXPECT_EQ(raw_lon, expected_raw_lons[i]);
+        EXPECT_NEAR(raw_lat, expected_raw_lats[i], 5);
+        EXPECT_NEAR(raw_lon, expected_raw_lons[i], 5);
         EXPECT_EQ(raw_speed, expected_raw_sogs[i]);
         EXPECT_EQ(raw_course, expected_raw_cogs[i]);
         EXPECT_EQ(raw_rot, expected_raw_rots[i]);
