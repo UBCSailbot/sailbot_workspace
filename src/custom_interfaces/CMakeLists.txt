@@ -28,6 +28,9 @@ set(common_msg
   "msg/WindSensor.msg"
   "msg/WindSensors.msg"
   "msg/TempSensor.msg"
+  "msg/PhSensor.msg"
+  "msg/SalinitySensor.msg"
+  "msg/PressureSensor.msg"
 
   # internal
   "msg/HelperAISShip.msg"
@@ -39,6 +42,9 @@ set(common_msg
   "msg/HelperROT.msg"
   "msg/HelperSpeed.msg"
   "msg/HelperTemp.msg"
+  "msg/HelperPh.msg"
+  "msg/HelperSalinity.msg"
+  "msg/HelperPressure.msg"
 )
 
 # Boat simulator custom messages

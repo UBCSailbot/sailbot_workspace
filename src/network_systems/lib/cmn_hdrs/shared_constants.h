@@ -68,3 +68,15 @@ constexpr int WIND_DIRECTION_UBND = 179;
 /***** Bounds for Temp Sensor ******/
 constexpr int TEMP_LBND = -60.0;  // Placeholder
 constexpr int TEMP_UBND = 125.0;  // Placeholder
+
+/***** Bounds for Ph Sensor ******/
+constexpr int PH_LBND = 15;  // Placeholder
+constexpr int PH_UBND = -1;  // Placeholder
+
+/***** Bounds for Salinity Sensor ******/
+constexpr int SALINITY_LBND = 0;       // Placeholder
+constexpr int SALINITY_UBND = 100000;  // Placeholder
+
+/***** Bounds for Pressure Sensor ******/
+constexpr int PRESSURE_LBND = 0;    // Placeholder
+constexpr int PRESSURE_UBND = 100;  // Placeholder

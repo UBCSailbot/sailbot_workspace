@@ -893,4 +893,219 @@ void TempSensor::checkBounds() const
 // TempSensor private END
 // TempSensor END
 
+// PhSensor START
+// PhSensor public START
+PhSensor::PhSensor(const CanFrame & cf) : PhSensor(static_cast<CanId>(cf.can_id))
+{
+    int16_t raw_ph;
+
+    std::memcpy(&raw_ph, cf.data + BYTE_OFF_PH, sizeof(int16_t));
+
+    // divide by 1000 to get ph
+    ph_ = static_cast<float>(raw_ph / 1000.0);  // NOLINT(readability-magic-numbers)
+
+    checkBounds();
+}
+
+PhSensor::PhSensor(msg::PhSensor ros_ph_sensor, CanId id) : BaseFrame(id, CAN_BYTE_DLEN_), ph_(ros_ph_sensor.ph.ph)
+{
+    checkBounds();
+}
+
+msg::PhSensor PhSensor::toRosMsg() const
+{
+    msg::PhSensor msg;
+    msg::HelperPh ph;
+    ph.set__ph(ph_);
+    msg.set__ph(ph);
+    return msg;
+}
+
+CanFrame PhSensor::toLinuxCan() const
+{
+    // convert kmph to knots before setting value
+    int16_t raw_ph = static_cast<int16_t>(ph_ * 1000.0);  // NOLINT(readability-magic-numbers)
+
+    CanFrame cf = BaseFrame::toLinuxCan();
+    std::memcpy(cf.data + BYTE_OFF_PH, &raw_ph, sizeof(int16_t));
+
+    return cf;
+}
+
+std::string PhSensor::debugStr() const
+{
+    std::stringstream ss;
+    ss << BaseFrame::debugStr() << "\n"
+       << "pH: " << ph_;
+    return ss.str();
+}
+
+std::string PhSensor::toString() const
+{
+    std::stringstream ss;
+    ss << "[PH SENSOR] Ph: " << ph_;
+    return ss.str();
+}
+
+// PhSensor public END
+// PhSensor private START
+
+PhSensor::PhSensor(CanId id) : BaseFrame(std::span{PH_SENSOR_IDS}, id, CAN_BYTE_DLEN_) {}
+
+void PhSensor::checkBounds() const
+{
+    auto err = utils::isOutOfBounds<float>(ph_, PH_LBND, PH_UBND);
+    if (err) {
+        std::string err_msg = err.value();
+        throw std::out_of_range("pH is out of bounds!\n" + debugStr() + "\n" + err_msg);
+    }
+}
+
+// PhSensor private END
+// PhSensor END
+
+// SalinitySensor START
+// SalinitySensor public START
+SalinitySensor::SalinitySensor(const CanFrame & cf) : SalinitySensor(static_cast<CanId>(cf.can_id))
+{
+    int16_t raw_salinity;
+
+    std::memcpy(&raw_salinity, cf.data + BYTE_OFF_SALINITY, sizeof(int16_t));
+
+    // divide by 1000 to get salinity
+    salinity_ = static_cast<float>(raw_salinity / 1000.0);  // NOLINT(readability-magic-numbers)
+
+    checkBounds();
+}
+
+SalinitySensor::SalinitySensor(msg::SalinitySensor ros_salinity_sensor, CanId id)
+: BaseFrame(id, CAN_BYTE_DLEN_), salinity_(ros_salinity_sensor.salinity.salinity)
+{
+    checkBounds();
+}
+
+msg::SalinitySensor SalinitySensor::toRosMsg() const
+{
+    msg::SalinitySensor msg;
+    msg::HelperSalinity salinity;
+    salinity.set__salinity(salinity_);
+    msg.set__salinity(salinity);
+    return msg;
+}
+
+CanFrame SalinitySensor::toLinuxCan() const
+{
+    // multiply by 1000 to make int before setting value
+    int16_t raw_salinity = static_cast<int16_t>(salinity_ * 1000.0);  // NOLINT(readability-magic-numbers)
+
+    CanFrame cf = BaseFrame::toLinuxCan();
+    std::memcpy(cf.data + BYTE_OFF_SALINITY, &raw_salinity, sizeof(int16_t));
+
+    return cf;
+}
+
+std::string SalinitySensor::debugStr() const
+{
+    std::stringstream ss;
+    ss << BaseFrame::debugStr() << "\n"
+       << "Salinity: " << salinity_;
+    return ss.str();
+}
+
+std::string SalinitySensor::toString() const
+{
+    std::stringstream ss;
+    ss << "[SALINITY SENSOR] Conductivity: " << salinity_;
+    return ss.str();
+}
+
+// SalinitySensor public END
+// SalinitySensor private START
+
+SalinitySensor::SalinitySensor(CanId id) : BaseFrame(std::span{SALINITY_SENSOR_IDS}, id, CAN_BYTE_DLEN_) {}
+
+void SalinitySensor::checkBounds() const
+{
+    auto err = utils::isOutOfBounds<float>(salinity_, SALINITY_LBND, SALINITY_UBND);
+    if (err) {
+        std::string err_msg = err.value();
+        throw std::out_of_range("Salinity is out of bounds!\n" + debugStr() + "\n" + err_msg);
+    }
+}
+
+// SalinitySensor private END
+// SalinitySensor END
+
+// PressureSensor START
+// PressureSensor public START
+PressureSensor::PressureSensor(const CanFrame & cf) : PressureSensor(static_cast<CanId>(cf.can_id))
+{
+    int16_t raw_pressure;
+
+    std::memcpy(&raw_pressure, cf.data + BYTE_OFF_PRESSURE, sizeof(int16_t));
+
+    // divide by 1000 to get pressure
+    pressure_ = static_cast<float>(raw_pressure / 1000.0);  // NOLINT(readability-magic-numbers)
+
+    checkBounds();
+}
+
+PressureSensor::PressureSensor(msg::PressureSensor ros_pressure_sensor, CanId id)
+: BaseFrame(id, CAN_BYTE_DLEN_), pressure_(ros_pressure_sensor.pressure.pressure)
+{
+    checkBounds();
+}
+
+msg::PressureSensor PressureSensor::toRosMsg() const
+{
+    msg::PressureSensor msg;
+    msg::HelperPressure pressure;
+    pressure.set__pressure(pressure_);
+    msg.set__pressure(pressure);
+    return msg;
+}
+
+CanFrame PressureSensor::toLinuxCan() const
+{
+    // multiply by 1000 to make int before setting value
+    int16_t raw_pressure = static_cast<int16_t>(pressure_ * 1000.0);  // NOLINT(readability-magic-numbers)
+
+    CanFrame cf = BaseFrame::toLinuxCan();
+    std::memcpy(cf.data + BYTE_OFF_PRESSURE, &raw_pressure, sizeof(int16_t));
+
+    return cf;
+}
+
+std::string PressureSensor::debugStr() const
+{
+    std::stringstream ss;
+    ss << BaseFrame::debugStr() << "\n"
+       << "Pressure: " << pressure_;
+    return ss.str();
+}
+
+std::string PressureSensor::toString() const
+{
+    std::stringstream ss;
+    ss << "[PRESSURE SENSOR] Conductivity: " << pressure_;
+    return ss.str();
+}
+
+// PressureSensor public END
+// PressureSensor private START
+
+PressureSensor::PressureSensor(CanId id) : BaseFrame(std::span{PRESSURE_SENSOR_IDS}, id, CAN_BYTE_DLEN_) {}
+
+void PressureSensor::checkBounds() const
+{
+    auto err = utils::isOutOfBounds<float>(pressure_, PRESSURE_LBND, PRESSURE_UBND);
+    if (err) {
+        std::string err_msg = err.value();
+        throw std::out_of_range("Pressure is out of bounds!\n" + debugStr() + "\n" + err_msg);
+    }
+}
+
+// PressureSensor private END
+// PressureSensor END
+
 }  // namespace CAN_FP

@@ -9,7 +9,10 @@
 #include <custom_interfaces/msg/desired_heading.hpp>
 #include <custom_interfaces/msg/gps.hpp>
 #include <custom_interfaces/msg/helper_ais_ship.hpp>
+#include <custom_interfaces/msg/ph_sensor.hpp>
+#include <custom_interfaces/msg/pressure_sensor.hpp>
 #include <custom_interfaces/msg/sail_cmd.hpp>
+#include <custom_interfaces/msg/salinity_sensor.hpp>
 #include <custom_interfaces/msg/temp_sensor.hpp>
 #include <custom_interfaces/msg/wind_sensor.hpp>
 #include <map>
@@ -31,34 +34,82 @@ namespace msg    = custom_interfaces::msg;
  *
  */
 enum class CanId : canid_t {
-    PWR_MODE             = 0x00,
-    MAIN_HEADING         = 0x01,
-    MAIN_TR_TAB          = 0x02,
-    RESERVED             = 0x29,
-    BMS_DATA_FRAME       = 0x30,
-    SAIL_WIND            = 0x40,
-    DATA_WIND            = 0x41,
-    RUDDER_DATA_FRAME    = 0x50,
-    SAIL_AIS             = 0x60,
-    PATH_GPS_DATA_FRAME  = 0x70,
-    TEMP_SENSOR_START    = 0x100,
-    TEMP_1               = 0x101,
-    TEMP_2               = 0x102,
-    TEMP_3               = 0x103,
-    TEMP_4               = 0x104,
-    TEMP_5               = 0x105,
-    TEMP_6               = 0x106,
-    TEMP_7               = 0x107,
-    TEMP_8               = 0x108,
-    TEMP_9               = 0x109,
-    TEMP_10              = 0x10A,
-    TEMP_11              = 0x10B,
-    TEMP_12              = 0x10C,
-    TEMP_13              = 0x10D,
-    TEMP_14              = 0x10E,
-    TEMP_SENSOR_END      = 0x10F,
-    GENERIC_SENSOR_START = 0x100,
-    GENERIC_SENSOR_END   = 0x1FF
+    PWR_MODE              = 0x00,
+    MAIN_HEADING          = 0x01,
+    MAIN_TR_TAB           = 0x02,
+    RESERVED              = 0x29,
+    BMS_DATA_FRAME        = 0x30,
+    SAIL_WIND             = 0x40,
+    DATA_WIND             = 0x41,
+    RUDDER_DATA_FRAME     = 0x50,
+    SAIL_AIS              = 0x60,
+    PATH_GPS_DATA_FRAME   = 0x70,
+    TEMP_SENSOR_START     = 0x100,
+    TEMP_1                = 0x101,
+    TEMP_2                = 0x102,
+    TEMP_3                = 0x103,
+    TEMP_4                = 0x104,
+    TEMP_5                = 0x105,
+    TEMP_6                = 0x106,
+    TEMP_7                = 0x107,
+    TEMP_8                = 0x108,
+    TEMP_9                = 0x109,
+    TEMP_10               = 0x10A,
+    TEMP_11               = 0x10B,
+    TEMP_12               = 0x10C,
+    TEMP_13               = 0x10D,
+    TEMP_14               = 0x10E,
+    TEMP_SENSOR_END       = 0x10F,
+    PH_SENSOR_START       = 0x110,
+    PH_1                  = 0x111,
+    PH_2                  = 0x112,
+    PH_3                  = 0x113,
+    PH_4                  = 0x114,
+    PH_5                  = 0x115,
+    PH_6                  = 0x116,
+    PH_7                  = 0x117,
+    PH_8                  = 0x118,
+    PH_9                  = 0x119,
+    PH_10                 = 0x11A,
+    PH_11                 = 0x11B,
+    PH_12                 = 0x11C,
+    PH_13                 = 0x11D,
+    PH_14                 = 0x11E,
+    PH_SENSOR_END         = 0x11F,
+    SALINITY_SENSOR_START = 0x120,
+    SALINITY_1            = 0x121,
+    SALINITY_2            = 0x122,
+    SALINITY_3            = 0x123,
+    SALINITY_4            = 0x124,
+    SALINITY_5            = 0x125,
+    SALINITY_6            = 0x126,
+    SALINITY_7            = 0x127,
+    SALINITY_8            = 0x128,
+    SALINITY_9            = 0x129,
+    SALINITY_10           = 0x12A,
+    SALINITY_11           = 0x12B,
+    SALINITY_12           = 0x12C,
+    SALINITY_13           = 0x12D,
+    SALINITY_14           = 0x12E,
+    SALINITY_SENSOR_END   = 0x12F,
+    PRESSURE_SENSOR_START = 0x130,
+    PRESSURE_1            = 0x131,
+    PRESSURE_2            = 0x132,
+    PRESSURE_3            = 0x133,
+    PRESSURE_4            = 0x134,
+    PRESSURE_5            = 0x135,
+    PRESSURE_6            = 0x136,
+    PRESSURE_7            = 0x137,
+    PRESSURE_8            = 0x138,
+    PRESSURE_9            = 0x139,
+    PRESSURE_10           = 0x13A,
+    PRESSURE_11           = 0x13B,
+    PRESSURE_12           = 0x13C,
+    PRESSURE_13           = 0x13D,
+    PRESSURE_14           = 0x13E,
+    PRESSURE_SENSOR_END   = 0x13F,
+    GENERIC_SENSOR_START  = 0x140,
+    GENERIC_SENSOR_END    = 0x1FF
 };
 
 /**
@@ -333,7 +384,7 @@ public:
      * @brief Construct a WindSensor object from a custom_interfaces ROS msg representation
      *
      * @param ros_wind_sensor custom_interfaces representation of a WindSensor
-     * @param id      CanId of the GPS (use the rosIdxToCanId() method if unknown)
+     * @param id      CanId of the WindSensor (use the rosIdxToCanId() method if unknown)
      */
     explicit WindSensor(msg::WindSensor ros_wind_sensor, CanId id);
 
@@ -343,12 +394,12 @@ public:
     msg::WindSensor toRosMsg() const;
 
     /**
-     * @return the Linux CanFrame representation of the GPS object
+     * @return the Linux CanFrame representation of the WindSensor object
      */
     CanFrame toLinuxCan() const override;
 
     /**
-     * @return A string that can be printed or logged to debug a GPS object
+     * @return A string that can be printed or logged to debug a WindSensor object
      */
     std::string debugStr() const override;
 
@@ -369,14 +420,14 @@ public:
 
 private:
     /**
-     * @brief Private helper constructor for GPS objects
+     * @brief Private helper constructor for WindSensor objects
      *
      * @param id CanId of the WindSensor Object
      */
     explicit WindSensor(CanId id);
 
     /**
-     * @brief Check if the assigned fields after constructing a GPS object are within bounds.
+     * @brief Check if the assigned fields after constructing a WindSensor object are within bounds.
      * @throws std::out_of_range if any assigned fields are outside of expected bounds
      */
     void checkBounds() const;
@@ -780,7 +831,7 @@ private:
 };
 
 /**
- * @brief A temp class derived from the BaseFrame. Represents temperature data.
+ * @brief A Temp Sensor class derived from the BaseFrame. Represents temperature data.
  *
  */
 class TempSensor final : public BaseFrame
@@ -822,7 +873,7 @@ public:
     /**
       * @brief Construct a TempSensor object from a custom_interfaces ROS msg representation
       *
-      * @param ros_wind_sensor custom_interfaces representation of a TempSensor
+      * @param ros_temp_sensor custom_interfaces representation of a TempSensor
       * @param id      CanId of the GPS (use the rosIdxToCanId() method if unknown)
       */
     explicit TempSensor(msg::TempSensor ros_temp_sensor, CanId id);
@@ -833,12 +884,12 @@ public:
     msg::TempSensor toRosMsg() const;
 
     /**
-      * @return the Linux CanFrame representation of the GPS object
+      * @return the Linux CanFrame representation of the TempSensor object
       */
     CanFrame toLinuxCan() const override;
 
     /**
-      * @return A string that can be printed or logged to debug a GPS object
+      * @return A string that can be printed or logged to debug a TempSensor object
       */
     std::string debugStr() const override;
 
@@ -863,6 +914,260 @@ private:
     void checkBounds() const;
 
     float temp_;
+};
+
+/**
+ * @brief A Ph Sensor class derived from the BaseFrame. Represents pH data.
+ *
+ */
+class PhSensor final : public BaseFrame
+{
+public:
+    static constexpr std::array<CanId, 16> PH_SENSOR_IDS = {
+      CanId::PH_SENSOR_START,
+      CanId::PH_1,
+      CanId::PH_2,
+      CanId::PH_3,
+      CanId::PH_4,
+      CanId::PH_5,
+      CanId::PH_6,
+      CanId::PH_7,
+      CanId::PH_8,
+      CanId::PH_9,
+      CanId::PH_10,
+      CanId::PH_11,
+      CanId::PH_12,
+      CanId::PH_13,
+      CanId::PH_14,
+      CanId::PH_SENSOR_END};
+    static constexpr uint8_t CAN_BYTE_DLEN_ = 2;
+    static constexpr uint8_t BYTE_OFF_PH    = 0;
+
+    /**
+       * @brief Explicitly deleted no-argument constructor
+       *
+       */
+    PhSensor() = delete;
+
+    /**
+       * @brief Construct a Ph object from a Linux CanFrame representation
+       *
+       * @param cf Linux CanFrame
+       */
+    explicit PhSensor(const CanFrame & cf);
+
+    /**
+       * @brief Construct a PhSensor object from a custom_interfaces ROS msg representation
+       *
+       * @param ros_ph_sensor custom_interfaces representation of a PhSensor
+       * @param id      CanId of the GPS (use the rosIdxToCanId() method if unknown)
+       */
+    explicit PhSensor(msg::PhSensor ros_ph_sensor, CanId id);
+
+    /**
+       * @return the custom_interfaces ROS representation of the PhSensor
+       */
+    msg::PhSensor toRosMsg() const;
+
+    /**
+       * @return the Linux CanFrame representation of the PhSensor object
+       */
+    CanFrame toLinuxCan() const override;
+
+    /**
+       * @return A string that can be printed or logged to debug a PhSensor object
+       */
+    std::string debugStr() const override;
+
+    /**
+       * @brief A string representation of the PhSensor object
+       *
+       */
+    std::string toString() const override;
+
+private:
+    /**
+       * @brief Private helper constructor for Ph objects
+       *
+       * @param id CanId of the PhSensor Object
+       */
+    explicit PhSensor(CanId id);
+
+    /**
+       * @brief Check if the assigned fields after constructing a Ph object are within bounds.
+       * @throws std::out_of_range if any assigned fields are outside of expected bounds
+       */
+    void checkBounds() const;
+
+    float ph_;
+};
+
+/**
+ * @brief A Salinity Sensor class derived from the BaseFrame. Represents salinity data.
+ *
+ */
+class SalinitySensor final : public BaseFrame
+{
+public:
+    static constexpr std::array<CanId, 16> SALINITY_SENSOR_IDS = {
+      CanId::SALINITY_SENSOR_START,
+      CanId::SALINITY_1,
+      CanId::SALINITY_2,
+      CanId::SALINITY_3,
+      CanId::SALINITY_4,
+      CanId::SALINITY_5,
+      CanId::SALINITY_6,
+      CanId::SALINITY_7,
+      CanId::SALINITY_8,
+      CanId::SALINITY_9,
+      CanId::SALINITY_10,
+      CanId::SALINITY_11,
+      CanId::SALINITY_12,
+      CanId::SALINITY_13,
+      CanId::SALINITY_14,
+      CanId::SALINITY_SENSOR_END};
+    static constexpr uint8_t CAN_BYTE_DLEN_    = 4;
+    static constexpr uint8_t BYTE_OFF_SALINITY = 0;
+
+    /**
+        * @brief Explicitly deleted no-argument constructor
+        *
+        */
+    SalinitySensor() = delete;
+
+    /**
+        * @brief Construct a Salinity object from a Linux CanFrame representation
+        *
+        * @param cf Linux CanFrame
+        */
+    explicit SalinitySensor(const CanFrame & cf);
+
+    /**
+        * @brief Construct a SalinitySensor object from a custom_interfaces ROS msg representation
+        *
+        * @param ros_salinity_sensor custom_interfaces representation of a SalinitySensor
+        * @param id      CanId of the GPS (use the rosIdxToCanId() method if unknown)
+        */
+    explicit SalinitySensor(msg::SalinitySensor ros_salinity_sensor, CanId id);
+
+    /**
+        * @return the custom_interfaces ROS representation of the SalinitySensor
+        */
+    msg::SalinitySensor toRosMsg() const;
+
+    /**
+        * @return the Linux CanFrame representation of the SalinitySensor object
+        */
+    CanFrame toLinuxCan() const override;
+
+    /**
+        * @return A string that can be printed or logged to debug a SalinitySensor object
+        */
+    std::string debugStr() const override;
+
+    /**
+        * @brief A string representation of the SalinitySensor object
+        *
+        */
+    std::string toString() const override;
+
+private:
+    /**
+        * @brief Private helper constructor for Salinity objects
+        *
+        * @param id CanId of the SalinitySensor Object
+        */
+    explicit SalinitySensor(CanId id);
+
+    /**
+        * @brief Check if the assigned fields after constructing a Salinity object are within bounds.
+        * @throws std::out_of_range if any assigned fields are outside of expected bounds
+        */
+    void checkBounds() const;
+
+    float salinity_;
+};
+
+class PressureSensor final : public BaseFrame
+{
+public:
+    static constexpr std::array<CanId, 16> PRESSURE_SENSOR_IDS = {
+      CanId::PRESSURE_SENSOR_START,
+      CanId::PRESSURE_1,
+      CanId::PRESSURE_2,
+      CanId::PRESSURE_3,
+      CanId::PRESSURE_4,
+      CanId::PRESSURE_5,
+      CanId::PRESSURE_6,
+      CanId::PRESSURE_7,
+      CanId::PRESSURE_8,
+      CanId::PRESSURE_9,
+      CanId::PRESSURE_10,
+      CanId::PRESSURE_11,
+      CanId::PRESSURE_12,
+      CanId::PRESSURE_13,
+      CanId::PRESSURE_14,
+      CanId::PRESSURE_SENSOR_END};
+    static constexpr uint8_t CAN_BYTE_DLEN_    = 4;
+    static constexpr uint8_t BYTE_OFF_PRESSURE = 0;
+
+    /**
+        * @brief Explicitly deleted no-argument constructor
+        *
+        */
+    PressureSensor() = delete;
+
+    /**
+        * @brief Construct a Pressure object from a Linux CanFrame representation
+        *
+        * @param cf Linux CanFrame
+        */
+    explicit PressureSensor(const CanFrame & cf);
+
+    /**
+        * @brief Construct a PressureSensor object from a custom_interfaces ROS msg representation
+        *
+        * @param ros_pressure_sensor custom_interfaces representation of a PressureSensor
+        * @param id      CanId of the GPS (use the rosIdxToCanId() method if unknown)
+        */
+    explicit PressureSensor(msg::PressureSensor ros_pressure_sensor, CanId id);
+
+    /**
+        * @return the custom_interfaces ROS representation of the PressureSensor
+        */
+    msg::PressureSensor toRosMsg() const;
+
+    /**
+        * @return the Linux CanFrame representation of the Pressure object
+        */
+    CanFrame toLinuxCan() const override;
+
+    /**
+        * @return A string that can be printed or logged to debug a Pressure object
+        */
+    std::string debugStr() const override;
+
+    /**
+        * @brief A string representation of the PressureSensor object
+        *
+        */
+    std::string toString() const override;
+
+private:
+    /**
+        * @brief Private helper constructor for Pressure objects
+        *
+        * @param id CanId of the PressureSensor Object
+        */
+    explicit PressureSensor(CanId id);
+
+    /**
+        * @brief Check if the assigned fields after constructing a Pressure object are within bounds.
+        * @throws std::out_of_range if any assigned fields are outside of expected bounds
+        */
+    void checkBounds() const;
+
+    float pressure_;
 };
 
 }  // namespace CAN_FP
