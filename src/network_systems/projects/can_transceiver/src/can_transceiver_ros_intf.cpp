@@ -75,6 +75,18 @@ public:
                  CanId::BMS_DATA_FRAME,
                  std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishBattery(frame); })),
                std::make_pair(
+                 CanId::TEMP_SENSOR_START,
+                 std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishTemp(frame); })),
+               std::make_pair(
+                 CanId::PH_SENSOR_START,
+                 std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishPh(frame); })),
+               std::make_pair(
+                 CanId::SALINITY_SENSOR_START,
+                 std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishSalinity(frame); })),
+               std::make_pair(
+                 CanId::PRESSURE_SENSOR_START,
+                 std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishPressure(frame); })),
+               std::make_pair(
                  CanId::PATH_GPS_DATA_FRAME,
                  std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishGPS(frame); })),
                std::make_pair(CanId::SAIL_WIND, std::function<void(const CanFrame &)>([this](const CanFrame & frame) {
@@ -177,7 +189,7 @@ private:
 
     /**
      * @brief Publish a battery_frame
-     *        Inteneded to be registered as a callback with the CAN Transceiver instance
+     *        Intended to be registered as a callback with the CAN Transceiver instance
      *
      * @param battery_frame battery CAN frame read from the CAN bus
      */
@@ -211,9 +223,9 @@ private:
 
     /**
      * @brief Publish a GPS frame
-     *        Intended to be registered as a callback with the CAN Tranceiver instance
+     *        Intended to be registered as a callback with the CAN Transceiver instance
      *
-     * @param gps_frame gps CAN rfame read from the CAN bus
+     * @param gps_frame gps CAN frame read from the CAN bus
      */
     void publishGPS(const CanFrame & gps_frame)
     {
@@ -276,6 +288,44 @@ private:
         std::stringstream ss;
         ss << "[WIND SENSOR] Speed: " << filtered_speed.speed << " Angle: " << average_direction;
         RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), ss.str().c_str());
+    }
+
+    /**
+     * @brief Publish a TempSensor frame
+     *        Intended to be registered as a callback with the CAN Transceiver instance
+     *
+     * @param temp_frame temp CAN frame read from the CAN bus
+     */
+    void publishTemp(const CanFrame & temp_frame)
+    {
+        CAN_FP::TempSensor temp(temp_frame);
+
+        std::cerr << temp.toString().c_str() << std::endl;
+        RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), temp.toString().c_str());
+    }
+
+    void publishPh(const CanFrame & ph_frame)
+    {
+        CAN_FP::TempSensor ph(ph_frame);
+
+        std::cerr << ph.toString().c_str() << std::endl;
+        RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), ph.toString().c_str());
+    }
+
+    void publishSalinity(const CanFrame & salinity_frame)
+    {
+        CAN_FP::TempSensor salinity(salinity_frame);
+
+        std::cerr << salinity.toString().c_str() << std::endl;
+        RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), salinity.toString().c_str());
+    }
+
+    void publishPressure(const CanFrame & pressure_frame)
+    {
+        CAN_FP::TempSensor pressure(pressure_frame);
+
+        std::cerr << pressure.toString().c_str() << std::endl;
+        RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), pressure.toString().c_str());
     }
 
     /**
