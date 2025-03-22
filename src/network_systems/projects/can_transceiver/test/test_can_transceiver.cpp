@@ -415,8 +415,8 @@ TEST_F(TestCanFrameParser, GPSTestValid)
     constexpr std::array<float, 2>   expected_lats{48.6, -57.3};
     constexpr std::array<float, 2>   expected_lons{-32.1, 112.9};
     constexpr std::array<float, 2>   expected_speeds{3.5, 8.0};
-    constexpr std::array<int32_t, 2> expected_raw_lats{138600, 32700};
-    constexpr std::array<int32_t, 2> expected_raw_lons{147900, 292900};
+    constexpr std::array<int32_t, 2> expected_raw_lats{138600000, 32700000};
+    constexpr std::array<int32_t, 2> expected_raw_lons{147900000, 292900000};
     constexpr std::array<int32_t, 2> expected_raw_speeds{3500, 8000};
 
     for (size_t i = 0; i < 2; i++) {
@@ -606,8 +606,8 @@ TEST_F(TestCanFrameParser, AISShipsTestValid)
     constexpr std::array<float, 2>   expected_lengths{15, 360};
 
     constexpr std::array<uint32_t, 2> expected_raw_ids{1010, 9193};
-    constexpr std::array<uint32_t, 2> expected_raw_lats{138600, 32700};
-    constexpr std::array<uint32_t, 2> expected_raw_lons{147900, 292900};
+    constexpr std::array<uint32_t, 2> expected_raw_lats{138600000, 32700000};
+    constexpr std::array<uint32_t, 2> expected_raw_lons{147900000, 292900000};
     constexpr std::array<uint16_t, 2> expected_raw_cogs{1004, 432};
     constexpr std::array<uint16_t, 2> expected_raw_sogs{50, 22};
     constexpr std::array<int8_t, 2>   expected_raw_rots{-10, 50};

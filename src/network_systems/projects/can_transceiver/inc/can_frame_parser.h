@@ -464,10 +464,10 @@ public:
     static constexpr uint16_t             BYTE_OFF_COURSE    = 14;
     static constexpr uint16_t             BYTE_OFF_HEADING   = 16;
     static constexpr uint8_t              BYTE_OFF_ROT       = 18;
-    static constexpr uint16_t             BYTE_OFF_LENGTH    = 20;
-    static constexpr uint8_t              BYTE_OFF_WIDTH     = 22;
-    static constexpr uint8_t              BYTE_OFF_IDX       = 24;
-    static constexpr uint8_t              BYTE_OFF_NUM_SHIPS = 25;
+    static constexpr uint16_t             BYTE_OFF_LENGTH    = 19;
+    static constexpr uint8_t              BYTE_OFF_WIDTH     = 21;
+    static constexpr uint8_t              BYTE_OFF_IDX       = 23;
+    static constexpr uint8_t              BYTE_OFF_NUM_SHIPS = 24;
 
     /**
      * @brief Explicitly deleted no-argument constructor
