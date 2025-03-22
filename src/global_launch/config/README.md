@@ -91,15 +91,15 @@ ROS parameters specific to the nodes in the Controller.
 - _Datatype_: `double`
 - _Range_: `(-180.0, 180.0]`
 
-**`apparent_wind_threshold`**
+**`apparent_wind_lower_threshold`**
 
-- _Description_: The high wind threshold value for apparent wind.
+- _Description_: The lower wind threshold value for apparent wind.
 - _Datatype_: 'double'
 - _Range_: '[0.0, MAX_DOUBLE)'
 
-**`scaling_coef`**
+**`apparent_wind_upper_threshold`**
 
-- _Description_: The coefficient used to scale trim tab angle.
+- _Description_: The higher wind threshold value for apparent wind.
 - _Datatype_: 'double'
 - _Range_: '[0.0, MAX_DOUBLE)'
 
