@@ -83,6 +83,27 @@ def xy_to_latlon(reference: HelperLatLon, xy: XY) -> HelperLatLon:
     return HelperLatLon(latitude=dest_lat, longitude=dest_lon)
 
 
+def xy_polygon_to_latlon_polygon(reference: HelperLatLon, poly: Polygon):
+    """
+    Transforms a polygon in XY coordinates to a rectangular polygon in lat lon coordinates.
+    """
+    if poly.is_empty:
+        return poly
+
+    def _xy_point_to_latlon_point(xy_point: XY) -> Point:
+        latlon = xy_to_latlon(reference=reference, xy=xy_point)
+        return Point(latlon.longitude, latlon.latitude)
+
+    return Polygon(
+        list(
+            map(
+                _xy_point_to_latlon_point,
+                [XY(x=point[0], y=point[1]) for point in poly.exterior.coords],
+            )
+        )
+    )
+
+
 def latlon_polygon_list_to_xy_polygon_list(
     polygons: List[Polygon], reference: HelperLatLon
 ) -> List[Polygon]:
