@@ -334,9 +334,9 @@ GPS::GPS(const CanFrame & cf) : GPS(static_cast<CanId>(cf.can_id))
     std::memcpy(&raw_hour, cf.data + BYTE_OFF_HOUR, sizeof(int8_t));
     std::memcpy(&raw_speed, cf.data + BYTE_OFF_SPEED, sizeof(int32_t));
 
-    lat_   = static_cast<float>(raw_lat / 1000.0 - 90);     //NOLINT(readability-magic-numbers)
-    lon_   = static_cast<float>(raw_lon / 1000.0 - 180.0);  //NOLINT(readability-magic-numbers)
-    sec_   = static_cast<float>(raw_sec / 1000.0);          //NOLINT(readability-magic-numbers)
+    lat_   = static_cast<float>(raw_lat / 1000000.0 - 90);     //NOLINT(readability-magic-numbers)
+    lon_   = static_cast<float>(raw_lon / 1000000.0 - 180.0);  //NOLINT(readability-magic-numbers)
+    sec_   = static_cast<float>(raw_sec / 1000.0);             //NOLINT(readability-magic-numbers)
     min_   = static_cast<float>(raw_min);
     hour_  = static_cast<float>(raw_hour);
     speed_ = static_cast<float>(raw_speed / 1000.0);  //NOLINT(readability-magic-numbers)
@@ -469,9 +469,9 @@ AISShips::AISShips(const CanFrame & cf) : AISShips(static_cast<CanId>(cf.can_id)
     std::memcpy(&raw_num_ships, cf.data + BYTE_OFF_NUM_SHIPS, sizeof(int8_t));
 
     num_ships_ = raw_num_ships;
-    lat_       = static_cast<float>(raw_lat / 1000.0 - 90);     //NOLINT(readability-magic-numbers)
-    lon_       = static_cast<float>(raw_lon / 1000.0 - 180.0);  //NOLINT(readability-magic-numbers)
-    speed_     = static_cast<float>(raw_speed / 10.0 * 1.852);  //NOLINT(readability-magic-numbers)
+    lat_       = static_cast<float>(raw_lat / 1000000.0 - 90);     //NOLINT(readability-magic-numbers)
+    lon_       = static_cast<float>(raw_lon / 1000000.0 - 180.0);  //NOLINT(readability-magic-numbers)
+    speed_     = static_cast<float>(raw_speed / 10.0 * 1.852);     //NOLINT(readability-magic-numbers)
     rot_       = raw_rot;
     course_    = static_cast<float>(raw_course / 10.0);  //NOLINT(readability-magic-numbers)
     heading_   = raw_heading;
@@ -707,7 +707,7 @@ DesiredHeading::DesiredHeading(const CanFrame & cf) : DesiredHeading(static_cast
 }
 
 DesiredHeading::DesiredHeading(msg::DesiredHeading ros_desired_heading, CanId id)
-: BaseFrame(id, CAN_BYTE_DLEN_), heading_(ros_desired_heading.heading.heading)
+: BaseFrame(id, CAN_BYTE_DLEN_), heading_(ros_desired_heading.heading.heading), steering_(ros_desired_heading.steering)
 {
     checkBounds();
 }
@@ -718,6 +718,7 @@ msg::DesiredHeading DesiredHeading::toRosMsg() const
     helper_msg.set__heading(heading_);
     msg::DesiredHeading msg;
     msg.set__heading(helper_msg);
+    msg.set__steering(steering_);
     return msg;
 }
 
@@ -765,69 +766,70 @@ void DesiredHeading::checkBounds() const
     if (static_cast<bool>(steering_ & bit_mask)) {
         throw std::out_of_range("Invalid rudder steering bits!\n" + debugStr() + "\n");
     }
+}
+
+// DesiredHeading private END
+// DesiredHeading END
+
+// RudderData START
+// RudderData public START
+
+RudderData::RudderData(const CanFrame & cf) : RudderData(static_cast<CanId>(cf.can_id))
+{
+    uint32_t raw_heading;
+
+    std::memcpy(&raw_heading, cf.data + BYTE_OFF_HEADING, sizeof(uint32_t));
+
+    heading_ = static_cast<float>(raw_heading) / 1000;  //NOLINT(readability-magic-numbers)
+
+    checkBounds();
+}
+
+RudderData::RudderData(msg::HelperHeading ros_rudder_data, CanId id)
+: BaseFrame(id, CAN_BYTE_DLEN_), heading_(ros_rudder_data.heading)
+{
+    checkBounds();
+}
+
+msg::HelperHeading RudderData::toRosMsg() const
+{
+    msg::HelperHeading msg;
+    msg.set__heading(heading_);
+    return msg;
+}
+
+CanFrame RudderData::toLinuxCan() const
+{
+    uint32_t raw_heading = static_cast<uint32_t>(heading_) * 1000;  //NOLINT(readability-magic-numbers)
+
+    CanFrame cf = BaseFrame::toLinuxCan();
+    std::memcpy(cf.data + BYTE_OFF_HEADING, &raw_heading, sizeof(uint32_t));
+
+    return cf;
+}
+
+std::string RudderData::debugStr() const
+{
+    std::stringstream ss;
+    ss << BaseFrame::debugStr() << "\n"
+       << "Rudder heading: " << heading_;
+    return ss.str();
+}
+
+// DesiredHeading public END
+// DesiredHeading private START
+
+RudderData::RudderData(CanId id) : BaseFrame(std::span{RUDDER_DATA_IDS}, id, CAN_BYTE_DLEN_) {}
+
+void RudderData::checkBounds() const
+{
+    auto err = utils::isOutOfBounds<float>(heading_, HEADING_LBND, HEADING_UBND);
+    if (err) {
+        std::string err_msg = err.value();
+        throw std::out_of_range("Rudder heading is out of bounds!\n" + debugStr() + "\n" + err_msg);
+    }
 
     // DesiredHeading private END
     // DesiredHeading END
-
-    // RudderData START
-    // RudderData public START
-
-    RudderData::RudderData(const CanFrame & cf) : RudderData(static_cast<CanId>(cf.can_id))
-    {
-        uint32_t raw_heading;
-
-        std::memcpy(&raw_heading, cf.data + BYTE_OFF_HEADING, sizeof(uint32_t));
-
-        heading_ = static_cast<float>(raw_heading) / 1000;  //NOLINT(readability-magic-numbers)
-
-        checkBounds();
-    }
-
-    RudderData::RudderData(msg::HelperHeading ros_rudder_data, CanId id)
-    : BaseFrame(id, CAN_BYTE_DLEN_), heading_(ros_rudder_data.heading)
-    {
-        checkBounds();
-    }
-
-    msg::HelperHeading RudderData::toRosMsg() const
-    {
-        msg::HelperHeading msg;
-        msg.set__heading(heading_);
-        return msg;
-    }
-
-    CanFrame RudderData::toLinuxCan() const
-    {
-        uint32_t raw_heading = static_cast<uint32_t>(heading_) * 1000;  //NOLINT(readability-magic-numbers)
-
-        CanFrame cf = BaseFrame::toLinuxCan();
-        std::memcpy(cf.data + BYTE_OFF_HEADING, &raw_heading, sizeof(uint32_t));
-
-        return cf;
-    }
-
-    std::string RudderData::debugStr() const
-    {
-        std::stringstream ss;
-        ss << BaseFrame::debugStr() << "\n"
-           << "Rudder heading: " << heading_;
-        return ss.str();
-    }
-
-    // DesiredHeading public END
-    // DesiredHeading private START
-
-    RudderData::RudderData(CanId id) : BaseFrame(std::span{RUDDER_DATA_IDS}, id, CAN_BYTE_DLEN_) {}
-
-    void RudderData::checkBounds() const
-    {
-        auto err = utils::isOutOfBounds<float>(heading_, HEADING_LBND, HEADING_UBND);
-        if (err) {
-            std::string err_msg = err.value();
-            throw std::out_of_range("Rudder heading is out of bounds!\n" + debugStr() + "\n" + err_msg);
-        }
-
-        // DesiredHeading private END
-        // DesiredHeading END
-    }
+}
 }  // namespace CAN_FP
