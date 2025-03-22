@@ -85,15 +85,15 @@ class MockAISNode(Node):
         ship_latlon = HelperLatLon(
             latitude=ship.lat_lon.latitude, longitude=ship.lat_lon.longitude
         )
-        rot = ship.rot.rot
 
-        # Convert ROT to degrees per minute
-        if rot == -128:
-            rot_dpm = 0
-        elif abs(rot) == 127:
-            rot_dpm = 10
-        else:
-            rot_dpm = (abs(rot)/4.733) ** 2
+        # rot = ship.rot.rot
+        # # Convert ROT to degrees per minute
+        # if rot == -128:
+        #     rot_dpm = 0
+        # elif abs(rot) == 127:
+        #     rot_dpm = 10
+        # else:
+        #     rot_dpm = (abs(rot)/4.733) ** 2
 
         # Convert ship position to cartesian coordinates
         ship_cartesian = latlon_to_xy(ref, ship_latlon)
