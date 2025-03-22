@@ -159,7 +159,7 @@ class WingsailControllerNode(Node):
         scaling_coef = 1
         if apparent_speed > apparent_lower_threshold and apparent_speed < apparent_upper_threshold:
             difference = apparent_upper_threshold - apparent_lower_threshold
-            scaling_coef = (apparent_speed - apparent_lower_threshold) / difference
+            scaling_coef = -1 * (apparent_speed - apparent_lower_threshold) / difference + 1
         elif apparent_speed >= apparent_upper_threshold:
             scaling_coef = 0
 
