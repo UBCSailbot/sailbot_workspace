@@ -63,7 +63,7 @@ class MockWindSensor(Node):
         msg = ci.WindSensor()
         msg.speed, msg.direction = wind_speed_knots, direction
 
-        self.get_logger().info(f"Publishing to {self.__wind_sensors_pub.topic}: {msg}")
+        self.get_logger().debug(f"Publishing to {self.__wind_sensors_pub.topic}: {msg}")
         self.__wind_sensors_pub.publish(msg)
 
     def get_mock_wind_speed(self) -> ci.HelperSpeed:

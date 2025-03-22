@@ -61,7 +61,14 @@ class MockGPS(Node):
         self.get_next_location()
         msg: ci.GPS = ci.GPS(lat_lon=self.__current_location,
                              speed=self.__mean_speed, heading=self.__heading)
-        self.get_logger().info(f"Publishing to {self.__gps_pub.topic}: {msg}")
+        self.get_logger().debug(f"Publishing to {self.__gps_pub.topic}, heading: {msg.heading}")
+        self.get_logger().debug(f"Publishing to {self.__gps_pub.topic}, speed: {msg.speed}")
+        self.get_logger().debug(
+            f"Publishing to {self.__gps_pub.topic}, latitude: {msg.lat_lon.latitude}"
+        )
+        self.get_logger().debug(
+            f"Publishing to {self.__gps_pub.topic}, longitude: {msg.lat_lon.longitude}"
+        )
         self.__gps_pub.publish(msg)
 
     def get_next_location(self) -> None:
