@@ -59,7 +59,7 @@ SCRIPT_DIR="$(dirname "$(realpath "$0")")"
 HOST_WORKSPACE_ROOT="$SCRIPT_DIR/../.."
 
 # common arguments for docker compose commmands
-MONGO_TAG="4.4.18"
+MONGO_TAG="7.0"
 PROJECT_NAME="deployment"
 DOCKER_COMPOSE_ARGS="docker compose --project-name $PROJECT_NAME --file .devcontainer/docker-compose.yml $WEBSITE_ARG"
 

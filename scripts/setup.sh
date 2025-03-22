@@ -22,9 +22,4 @@ if wget -q --spider --timeout=1 http://google.com; then
 fi
 rosdep install --from-paths src --ignore-src -y --rosdistro $ROS_DISTRO
 
-echo "" >> $HOME/.bashrc
-echo "# set up links  for ompl python bindings" >> $HOME/.bashrc
-echo "sudo ln -sf /usr/share/libompl.so /usr/lib/libompl.so" >> $HOME/.bashrc
-echo "export LD_LIBRARY_PATH=/usr/share:$LD_LIBRARY_PATH" >> $HOME/.bashrc
-
 source $HOME/.bashrc

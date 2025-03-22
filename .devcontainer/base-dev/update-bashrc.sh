@@ -20,3 +20,8 @@ echo "    source $ROS_WORKSPACE/install/local_setup.bash" >> $HOME/.bashrc
 echo "else" >> $HOME/.bashrc
 echo "    echo -e \"\\\e[1;33mWARNING: Can't find the ROS workspace overlay: build then run 'source $ROS_WORKSPACE/install/local_setup.bash'\\\e[0m\"" >> $HOME/.bashrc
 echo "fi" >> $HOME/.bashrc
+
+echo "" >> $HOME/.bashrc
+echo "# set up links for ompl python bindings and ROS type supports" >> $HOME/.bashrc
+echo "sudo ln -sf /usr/share/libompl.so /usr/lib/libompl.so" >> $HOME/.bashrc
+echo "export LD_LIBRARY_PATH=/usr/share:/workspaces/sailbot_workspace/install/lib:$LD_LIBRARY_PATH" >> $HOME/.bashrc
