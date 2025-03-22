@@ -2,9 +2,9 @@
 Mock class for the wind sensor. Publishes basic wind data to the ROS network.
 """
 
-import rclpy
-import numpy as np
 import custom_interfaces.msg as ci
+import numpy as np
+import rclpy
 from rclpy.node import Node
 from scipy.stats import vonmises, weibull_min
 
@@ -76,7 +76,7 @@ class MockWindSensor(Node):
         # Shape=2 (typical for wind under normal calm conditions), Scale=7 knots (mean)
 
         scale = self.__mean_wind_speed
-        wind_speed_knots = weibull_min.rvs(c=2, scale=scale, size=1)
+        wind_speed_knots = weibull_min.rvs(c=10, scale=scale, size=1)
         return ci.HelperSpeed(speed=wind_speed_knots[0])
 
     def get_direction_value(self) -> int:
@@ -86,7 +86,7 @@ class MockWindSensor(Node):
             int: The wind direction in degrees.
         """
 
-        direction = int(np.degrees(vonmises.rvs(kappa=10, loc=self.__mean_direction, size=1)))
+        direction = int(np.degrees(vonmises.rvs(kappa=55, loc=self.__mean_direction, size=1)))
         return self.ensure_correct_range(direction)
 
     def ensure_correct_range(self, direction_value: int) -> int:
