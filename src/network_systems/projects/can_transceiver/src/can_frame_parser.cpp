@@ -2,6 +2,7 @@
 
 #include <linux/can.h>
 
+#include <bitset>
 #include <cstring>
 #include <iostream>
 #include <span>
@@ -694,10 +695,13 @@ void PwrMode::checkBounds() const
 DesiredHeading::DesiredHeading(const CanFrame & cf) : DesiredHeading(static_cast<CanId>(cf.can_id))
 {
     uint32_t raw_heading;
+    uint8_t  raw_steering;
 
     std::memcpy(&raw_heading, cf.data + BYTE_OFF_HEADING, sizeof(uint32_t));
+    std::memcpy(&raw_steering, cf.data + BYTE_OFF_STEERING, sizeof(uint8_t));
 
-    heading_ = static_cast<float>(raw_heading) / 1000;  //NOLINT(readability-magic-numbers)
+    heading_  = static_cast<float>(raw_heading) / 1000;  //NOLINT(readability-magic-numbers)
+    steering_ = raw_steering;
 
     checkBounds();
 }
@@ -719,10 +723,12 @@ msg::DesiredHeading DesiredHeading::toRosMsg() const
 
 CanFrame DesiredHeading::toLinuxCan() const
 {
-    uint32_t raw_heading = static_cast<uint32_t>(heading_) * 1000;  //NOLINT(readability-magic-numbers)
+    uint32_t raw_heading  = static_cast<uint32_t>(heading_) * 1000;  //NOLINT(readability-magic-numbers)
+    uint8_t  raw_steering = steering_;
 
     CanFrame cf = BaseFrame::toLinuxCan();
     std::memcpy(cf.data + BYTE_OFF_HEADING, &raw_heading, sizeof(uint32_t));
+    std::memcpy(cf.data + BYTE_OFF_STEERING, &raw_steering, sizeof(uint8_t));
 
     return cf;
 }
@@ -731,7 +737,8 @@ std::string DesiredHeading::debugStr() const
 {
     std::stringstream ss;
     ss << BaseFrame::debugStr() << "\n"
-       << "Desired heading: " << heading_;
+       << "Desired heading: " << heading_ << "\n"
+       << "Steering bit: " << std::bitset<8>(steering_);  //NONT(readability-magic-numbers)
     return ss.str();
 }
 
@@ -749,75 +756,78 @@ DesiredHeading::DesiredHeading(CanId id) : BaseFrame(std::span{DESIRED_HEADING_I
 
 void DesiredHeading::checkBounds() const
 {
-    auto err = utils::isOutOfBounds<float>(heading_, HEADING_LBND, HEADING_UBND);
+    uint8_t bit_mask = 0b00011111;  //NOLINT(readability-magic-numbers)
+    auto    err      = utils::isOutOfBounds<float>(heading_, HEADING_LBND, HEADING_UBND);
     if (err) {
         std::string err_msg = err.value();
         throw std::out_of_range("Desired heading is out of bounds!\n" + debugStr() + "\n" + err_msg);
     }
-}
-
-// DesiredHeading private END
-// DesiredHeading END
-
-// RudderData START
-// RudderData public START
-
-RudderData::RudderData(const CanFrame & cf) : RudderData(static_cast<CanId>(cf.can_id))
-{
-    uint32_t raw_heading;
-
-    std::memcpy(&raw_heading, cf.data + BYTE_OFF_HEADING, sizeof(uint32_t));
-
-    heading_ = static_cast<float>(raw_heading) / 1000;  //NOLINT(readability-magic-numbers)
-
-    checkBounds();
-}
-
-RudderData::RudderData(msg::HelperHeading ros_rudder_data, CanId id)
-: BaseFrame(id, CAN_BYTE_DLEN_), heading_(ros_rudder_data.heading)
-{
-    checkBounds();
-}
-
-msg::HelperHeading RudderData::toRosMsg() const
-{
-    msg::HelperHeading msg;
-    msg.set__heading(heading_);
-    return msg;
-}
-
-CanFrame RudderData::toLinuxCan() const
-{
-    uint32_t raw_heading = static_cast<uint32_t>(heading_) * 1000;  //NOLINT(readability-magic-numbers)
-
-    CanFrame cf = BaseFrame::toLinuxCan();
-    std::memcpy(cf.data + BYTE_OFF_HEADING, &raw_heading, sizeof(uint32_t));
-
-    return cf;
-}
-
-std::string RudderData::debugStr() const
-{
-    std::stringstream ss;
-    ss << BaseFrame::debugStr() << "\n"
-       << "Rudder heading: " << heading_;
-    return ss.str();
-}
-
-// DesiredHeading public END
-// DesiredHeading private START
-
-RudderData::RudderData(CanId id) : BaseFrame(std::span{RUDDER_DATA_IDS}, id, CAN_BYTE_DLEN_) {}
-
-void RudderData::checkBounds() const
-{
-    auto err = utils::isOutOfBounds<float>(heading_, HEADING_LBND, HEADING_UBND);
-    if (err) {
-        std::string err_msg = err.value();
-        throw std::out_of_range("Rudder heading is out of bounds!\n" + debugStr() + "\n" + err_msg);
+    if (static_cast<bool>(steering_ & bit_mask)) {
+        throw std::out_of_range("Invalid rudder steering bits!\n" + debugStr() + "\n");
     }
 
     // DesiredHeading private END
     // DesiredHeading END
-}
+
+    // RudderData START
+    // RudderData public START
+
+    RudderData::RudderData(const CanFrame & cf) : RudderData(static_cast<CanId>(cf.can_id))
+    {
+        uint32_t raw_heading;
+
+        std::memcpy(&raw_heading, cf.data + BYTE_OFF_HEADING, sizeof(uint32_t));
+
+        heading_ = static_cast<float>(raw_heading) / 1000;  //NOLINT(readability-magic-numbers)
+
+        checkBounds();
+    }
+
+    RudderData::RudderData(msg::HelperHeading ros_rudder_data, CanId id)
+    : BaseFrame(id, CAN_BYTE_DLEN_), heading_(ros_rudder_data.heading)
+    {
+        checkBounds();
+    }
+
+    msg::HelperHeading RudderData::toRosMsg() const
+    {
+        msg::HelperHeading msg;
+        msg.set__heading(heading_);
+        return msg;
+    }
+
+    CanFrame RudderData::toLinuxCan() const
+    {
+        uint32_t raw_heading = static_cast<uint32_t>(heading_) * 1000;  //NOLINT(readability-magic-numbers)
+
+        CanFrame cf = BaseFrame::toLinuxCan();
+        std::memcpy(cf.data + BYTE_OFF_HEADING, &raw_heading, sizeof(uint32_t));
+
+        return cf;
+    }
+
+    std::string RudderData::debugStr() const
+    {
+        std::stringstream ss;
+        ss << BaseFrame::debugStr() << "\n"
+           << "Rudder heading: " << heading_;
+        return ss.str();
+    }
+
+    // DesiredHeading public END
+    // DesiredHeading private START
+
+    RudderData::RudderData(CanId id) : BaseFrame(std::span{RUDDER_DATA_IDS}, id, CAN_BYTE_DLEN_) {}
+
+    void RudderData::checkBounds() const
+    {
+        auto err = utils::isOutOfBounds<float>(heading_, HEADING_LBND, HEADING_UBND);
+        if (err) {
+            std::string err_msg = err.value();
+            throw std::out_of_range("Rudder heading is out of bounds!\n" + debugStr() + "\n" + err_msg);
+        }
+
+        // DesiredHeading private END
+        // DesiredHeading END
+    }
 }  // namespace CAN_FP
