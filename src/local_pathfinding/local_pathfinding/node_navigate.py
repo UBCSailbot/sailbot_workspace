@@ -150,8 +150,10 @@ class Sailbot(Node):
 
     def lpath_data_callback(self):
         """Get and publish the local path."""
-
-        current_local_path = ci.Path(waypoints=self.local_path.waypoints)
+        if self.local_path.waypoints is None:
+            current_local_path = ci.Path(waypoints=list())
+        else:
+            current_local_path = ci.Path(waypoints=self.local_path.waypoints)
 
         msg = ci.LPathData(local_path=current_local_path)
 
