@@ -11,7 +11,6 @@ from local_pathfinding.global_path import (
     generate_path,
     get_most_recent_file,
     get_path,
-    get_pos,
     interpolate_path,
     path_to_dict,
     post_path,
@@ -221,7 +220,7 @@ def test_get_most_recent_file(file_path: str, global_path: Path, tmstmp: bool):
 # ------------------------- TEST GET_PATH -------------------------
 @pytest.mark.parametrize(
     "file_path",
-    [("/workspaces/sailbot_workspace/src/local_pathfinding/global_paths/mock_global_path.csv")],
+    ["/workspaces/sailbot_workspace/src/local_pathfinding/global_paths/mock_global_path.csv"],
 )
 def test_get_path(file_path: str):
     """ "
@@ -240,19 +239,21 @@ def test_get_path(file_path: str):
 
 
 # ------------------------- TEST GET_POS -------------------------
-@pytest.mark.parametrize(
-    "pos", [HelperLatLon(latitude=49.34175775635472, longitude=-123.35453636335373)]
-)
-def test_get_pos(pos: HelperLatLon):
-    """
-    Args:
-        pos (HelperLatLon): The position of the Sailbot.
-    """
+# This should be an integration test
+# it relies on web and db containers running
+# @pytest.mark.parametrize(
+#     "pos", [HelperLatLon(latitude=49.34175775635472, longitude=-123.35453636335373)]
+# )
+# def test_get_pos(pos: HelperLatLon):
+#     """
+#     Args:
+#         pos (HelperLatLon): The position of the Sailbot.
+#     """
 
-    pos = get_pos()
-    assert pos is not None, "No position data received"
-    assert pos.latitude is not None, "No latitude"
-    assert pos.longitude is not None, "No longitude"
+#     pos = get_pos()
+#     assert pos is not None, "No position data received"
+#     assert pos.latitude is not None, "No latitude"
+#     assert pos.longitude is not None, "No longitude"
 
 
 # ------------------------- TEST INTERPOLATE_PATH -------------------------
@@ -320,14 +321,12 @@ def test_path_to_dict(path: Path, expected: dict[int, str]):
 @pytest.mark.parametrize(
     "global_path",
     [
-        (
-            Path(
-                waypoints=[
-                    HelperLatLon(latitude=48.95, longitude=123.56),
-                    HelperLatLon(latitude=38.95, longitude=133.36),
-                    HelperLatLon(latitude=28.95, longitude=143.36),
-                ]
-            )
+        Path(
+            waypoints=[
+                HelperLatLon(latitude=48.95, longitude=123.56),
+                HelperLatLon(latitude=38.95, longitude=133.36),
+                HelperLatLon(latitude=28.95, longitude=143.36),
+            ]
         )
     ],
 )
