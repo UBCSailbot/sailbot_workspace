@@ -9,8 +9,8 @@ import custom_interfaces.msg as ci
 import rclpy
 from rclpy.node import Node
 
-from local_pathfinding.coord_systems import GEODESIC, meters_to_km
 import local_pathfinding.global_path as gp
+from local_pathfinding.coord_systems import GEODESIC, meters_to_km
 
 # Mock gps data to get things running until we have a running gps node
 # TODO Remove when NET publishes GPS

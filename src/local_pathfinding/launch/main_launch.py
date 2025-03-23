@@ -85,7 +85,7 @@ def get_navigate_node_description(context: LaunchContext) -> Node:
     Returns:
         Node: The node object that launches the navigate_main node.
     """
-    node_name = "navigate_main"
+    node_name = "navigate"
     ros_parameters = [LaunchConfiguration("config").perform(context)]
     ros_arguments: List[SomeSubstitutionsType] = [
         "--log-level",
@@ -114,7 +114,7 @@ def get_mock_global_path_node_description(context: LaunchContext) -> Node:
     Returns:
         Node: The node object that launches the mgp_main node.
     """
-    node_name = "mgp_main"
+    node_name = "mock_global_path"
     ros_parameters = [LaunchConfiguration("config").perform(context)]
     ros_arguments: List[SomeSubstitutionsType] = [
         "--log-level",
@@ -138,7 +138,7 @@ def get_mock_ais_node_description(context: LaunchContext) -> Node:
     """Gets the launch description for the navigate_main node.
     Node: The node object that launches the navigate_main node.
     """
-    node_name = "mock_ais_node"
+    node_name = "mock_ais"
     ros_parameters = [LaunchConfiguration("config").perform(context)]
     ros_arguments: List[SomeSubstitutionsType] = [
         "--log-level",
@@ -147,7 +147,7 @@ def get_mock_ais_node_description(context: LaunchContext) -> Node:
 
     node = Node(
         package=PACKAGE_NAME,
-        executable="mock_ais_node",
+        executable="mock_ais",
         name=node_name,
         output="screen",
         emulate_tty=True,
