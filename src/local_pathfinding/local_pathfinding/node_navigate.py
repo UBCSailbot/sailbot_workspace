@@ -176,7 +176,7 @@ class Sailbot(Node):
         )
 
         # TODO: create function to compute the heading from current position to next local waypoint
-        return 0.0
+        return -45.0
 
     def update_params(self):
         """Update instance variables that depend on parameters if they have changed."""
