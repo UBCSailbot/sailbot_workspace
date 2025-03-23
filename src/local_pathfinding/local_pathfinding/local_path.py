@@ -98,6 +98,7 @@ class LocalPath:
         planner: str,
     ):
         """Updates the OMPL path and waypoints. The path is updated if a new path is found.
+        Returns true if the path is updated and false otherwise.
 
         Args:
             `gps` (GPS): GPS data.
@@ -114,6 +115,8 @@ class LocalPath:
         if ompl_path.solved:
             self._logger.info("Updating local path")
             self._update(ompl_path)
+            return True
+        return False
 
     def _update(self, ompl_path: OMPLPath):
         self._ompl_path = ompl_path

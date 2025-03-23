@@ -1,10 +1,15 @@
 """The main node of the local_pathfinding package, represented by the `Sailbot` class."""
 
+import coord_systems as cs
 import custom_interfaces.msg as ci
 import rclpy
+from pyproj import Geod
 from rclpy.node import Node
 
 from local_pathfinding.local_path import LocalPath
+
+WAYPOINT_REACHED_THRESH_KM = 0.5
+GEODESIC = Geod(ellps="WGS84")
 
 
 def main(args=None):
@@ -108,6 +113,7 @@ class Sailbot(Node):
 
         # attributes
         self.local_path = LocalPath(parent_logger=self.get_logger())
+        self.current_waypoint_index = 0
         self.planner = self.get_parameter("path_planner").get_parameter_value().string_value
         self.get_logger().debug(f"Got parameter: {self.planner=}")
 
@@ -165,18 +171,37 @@ class Sailbot(Node):
 
         Returns:
             float: The desired heading if all subscribers are active, else a number that violates
-                the heading convention.
+                the heading convention (-404 for error)
         """
         if not self._all_subs_active():
             self._log_inactive_subs_warning()
-            return -1.0
+            return -404.0
 
-        self.local_path.update_if_needed(
+        received_new_path = self.local_path.update_if_needed(
             self.gps, self.ais_ships, self.global_path, self.filtered_wind_sensor, self.planner
         )
 
-        # TODO: create function to compute the heading from current position to next local waypoint
-        return -45.0
+        if received_new_path:
+            self.current_waypoint_index = 0
+
+        desired_heading, distance_to_waypoint_m = self.get_heading_and_distance()
+
+        if cs.meters_to_km(distance_to_waypoint_m) < WAYPOINT_REACHED_THRESH_KM:
+            # If we reached the local waypoint, update local waypoint and recalculate heading
+            self.current_waypoint_index += 1
+            desired_heading, distance_to_waypoint_m = self.get_heading_and_distance()
+
+        return cs.bound_to_180(desired_heading)
+
+    def get_heading_and_distance(self):
+        """Helper function; wrapper for GEODESIC.inv() to get heading and distance to waypoint"""
+
+        boat = self.gps.lat_lon
+        waypoint = self.local_path.waypoints[self.current_waypoint_index]
+        desired_heading, _, distance_to_waypoint_m = GEODESIC.inv(
+            boat.longitude, boat.latitude, waypoint.longitude, waypoint.latitude
+        )
+        return desired_heading, distance_to_waypoint_m
 
     def update_params(self):
         """Update instance variables that depend on parameters if they have changed."""
