@@ -74,7 +74,7 @@ class MockGlobalPath(Node):
         self.file_path = None
 
     # Timer callbacks
-    def global_path_callback(self, msg: ci.GPS = None):
+    def global_path_callback(self, msg: ci.GPS):
         """Check if the global path csv file has changed. If it has, the new path is published.
 
         This function also checks if the gps data has changed by more than
@@ -157,7 +157,7 @@ class MockGlobalPath(Node):
         else:
             msg = global_path
 
-        self.get_logger().debug(f"Publishing mock global path: {gp.path_to_dict(msg)}")
+        self.get_logger().info(f"Publishing mock global path: {gp.path_to_dict(msg)}")
         self.global_path_pub.publish(msg)
 
         # reset all checks for next function call
