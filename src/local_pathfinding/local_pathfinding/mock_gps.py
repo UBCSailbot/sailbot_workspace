@@ -40,7 +40,7 @@ class MockGPS(Node):
             self.get_parameter("pub_period_sec").get_parameter_value().double_value
         )
 
-        # Mock GPS timere
+        # Mock GPS timer
         self.__mock_gps_timer = self.create_timer(
             timer_period_sec=self.pub_period_sec, callback=self.mock_gps_callback
         )
