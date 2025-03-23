@@ -2,12 +2,12 @@
 Mock class for the GPS. Publishes basic GPS data to the ROS network.
 """
 
+import math
+
 import custom_interfaces.msg as ci
 import rclpy
 from geopy.distance import great_circle
 from rclpy.node import Node
-
-from local_pathfinding.coord_systems import degrees_to_radians
 
 
 class MockGPS(Node):
@@ -90,7 +90,7 @@ class MockGPS(Node):
             self.__current_location.latitude,
             self.__current_location.longitude,
         )
-        radian_angle = degrees_to_radians(self.__heading.heading)
+        radian_angle = math.radians(self.__heading.heading)
         destination = great_circle(kilometers=distance_km).destination(start, radian_angle)
         self.__current_location = ci.HelperLatLon(
             latitude=destination.latitude, longitude=destination.longitude

@@ -3,9 +3,10 @@
 import math
 from typing import List, NamedTuple
 
-from custom_interfaces.msg import HelperLatLon
 from pyproj import Geod
 from shapely.geometry import Point, Polygon
+
+from custom_interfaces.msg import HelperLatLon
 
 GEODESIC = Geod(ellps="WGS84")
 
@@ -141,15 +142,3 @@ def latlon_polygon_list_to_xy_polygon_list(
         )
 
     return list(map(_latlon_polygon_to_xy_polygon, polygons))
-
-
-def degrees_to_radians(angle: float):
-    """Converts angle from degrees to radians
-
-    Args:
-        angle (float): angle in degrees
-
-    Returns:
-        float: angle in radians
-    """
-    return angle/180.0
