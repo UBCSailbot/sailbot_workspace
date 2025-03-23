@@ -1,10 +1,12 @@
 """
 Mock class for the GPS. Publishes basic GPS data to the ROS network.
 """
+
 import custom_interfaces.msg as ci
 import rclpy
-from rclpy.node import Node
 from geopy.distance import great_circle
+from rclpy.node import Node
+
 from local_pathfinding.coord_systems import degrees_to_radians
 
 
@@ -55,7 +57,7 @@ class MockGPS(Node):
             msg_type=ci.DesiredHeading,
             topic="desired_heading",
             callback=self.desired_heading_callback,
-            qos_profile=10
+            qos_profile=10,
         )
 
         self.__mean_speed = ci.HelperSpeed(speed=15.0)  # mean boat speed in kmph
@@ -67,8 +69,9 @@ class MockGPS(Node):
         network.
         """
         self.get_next_location()
-        msg: ci.GPS = ci.GPS(lat_lon=self.__current_location,
-                             speed=self.__mean_speed, heading=self.__heading)
+        msg: ci.GPS = ci.GPS(
+            lat_lon=self.__current_location, speed=self.__mean_speed, heading=self.__heading
+        )
         self.get_logger().debug(f"Publishing to {self.__gps_pub.topic}, heading: {msg.heading}")
         self.get_logger().debug(f"Publishing to {self.__gps_pub.topic}, speed: {msg.speed}")
         self.get_logger().debug(
@@ -80,22 +83,24 @@ class MockGPS(Node):
         self.__gps_pub.publish(msg)
 
     def get_next_location(self) -> None:
-        """Get the next location by following the great circle. Assumes constant speed and heading
-        """
+        """Get the next location by following the great circle. Assumes constant speed and heading"""  # noqa
         # distance travelled = speed * calback time (s)
-        distance_km: float = self.__mean_speed.speed * (self.pub_period_sec/3600)
-        start: tuple[float, float] = (self.__current_location.latitude,
-                                      self.__current_location.longitude)
+        distance_km: float = self.__mean_speed.speed * (self.pub_period_sec / 3600)
+        start: tuple[float, float] = (
+            self.__current_location.latitude,
+            self.__current_location.longitude,
+        )
         radian_angle = degrees_to_radians(self.__heading.heading)
         destination = great_circle(kilometers=distance_km).destination(start, radian_angle)
-        self.__current_location = ci.HelperLatLon(latitude=destination.latitude,
-                                                  longitude=destination.longitude)
+        self.__current_location = ci.HelperLatLon(
+            latitude=destination.latitude, longitude=destination.longitude
+        )
 
     def desired_heading_callback(self, msg: ci.DesiredHeading):
         """Callback for topic desired heading
 
         Args:
-            msg (ci.DesiredHeading): The desired heading for the boat. 
+            msg (ci.DesiredHeading): The desired heading for the boat.
         """
         self._logger.debug(f"Received data from {self.__desired_heading_sub.topic}: {msg}")
         self.__heading = msg.heading
