@@ -1,4 +1,4 @@
-"""import math
+import math
 
 import pytest
 from custom_interfaces.msg import GPS, AISShips, HelperLatLon, Path, WindSensor
@@ -98,7 +98,7 @@ def test_minimum_turning_objective(method: objectives.MinimumTurningMethod):
     minimum_turning_objective = objectives.MinimumTurningObjective(
         PATH._simple_setup.getSpaceInformation(),
         PATH._simple_setup,
-        PATH.state.heading_direction,
+        PATH.state.heading,
         method,
     )
     assert minimum_turning_objective is not None
@@ -236,7 +236,7 @@ def test_angle_between(afir: float, amid: float, asec: float, expected: float):
 def test_speed_objective(method: objectives.SpeedObjectiveMethod):
     speed_objective = objectives.SpeedObjective(
         PATH._simple_setup.getSpaceInformation(),
-        PATH.state.heading_direction,
+        PATH.state.heading,
         PATH.state.wind_direction,
         PATH.state.wind_speed,
         method,
@@ -304,4 +304,3 @@ def test_continuous_cost(speed: float, expected: int):
     assert objectives.SpeedObjective.get_continuous_cost(speed) == pytest.approx(
         expected, abs=1e-3
     )
-"""

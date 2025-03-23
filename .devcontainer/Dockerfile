@@ -1,4 +1,4 @@
-FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:add-pybind11
+FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:no-ompl-install
 
 # Copy configuration files (e.g., .vimrc) from config/ to the container's home directory
 ARG USERNAME=ros

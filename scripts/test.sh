@@ -1,10 +1,8 @@
 #!/bin/bash
 set -e
-export LD_LIBRARY_PATH=/usr/share:$LD_LIBRARY_PATH
-echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
-echo "PYTHON_PATH: $PYTHONPATH"
-echo "locating pyompl shared object"
-find . -name "pyompl*.so"
+export PYTHONPATH=/opt/ros/humble/local/lib/python3.10/dist-packages:$PYTHONPATH
+echo "PYTHONPATH: $PYTHONPATH"
+
 
 # Display a help message for using this script
 function helpMessage() {
