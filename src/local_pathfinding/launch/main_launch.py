@@ -94,7 +94,7 @@ def get_navigate_node_description(context: LaunchContext) -> Node:
 
     node = Node(
         package=PACKAGE_NAME,
-        executable="navigate_main",
+        executable="navigate",
         name=node_name,
         output="screen",
         emulate_tty=True,
