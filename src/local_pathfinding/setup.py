@@ -23,7 +23,7 @@ setup(
     tests_require=["pytest"],
     entry_points={
         "console_scripts": [
-            "navigate = local_pathfinding.node_navigate:main",
+            "navigate_main = local_pathfinding.node_navigate:main",
             "mock_global_path = local_pathfinding.node_mock_global_path:main",
             "mock_wind_sensor = local_pathfinding.node_mock_wind_sensor:main",
             "mock_ais = local_pathfinding.node_mock_ais:main",

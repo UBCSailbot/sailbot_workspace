@@ -12,12 +12,6 @@ from rclpy.node import Node
 import local_pathfinding.global_path as gp
 from local_pathfinding.coord_systems import GEODESIC, meters_to_km
 
-# Mock gps data to get things running until we have a running gps node
-# TODO Remove when NET publishes GPS
-MOCK_GPS = ci.GPS(
-    lat_lon=ci.HelperLatLon(latitude=49.1154488073483, longitude=-125.95696431913618)
-)
-
 
 def main(args=None):
     rclpy.init(args=args)
@@ -40,7 +34,7 @@ class MockGlobalPath(Node):
         global_path_pub (Publisher): Publishes a `Path` msg containing the global path
 
     Attributes from subscribers:
-        gps (GPS): Data from the GPS sensor
+        gps (GPS): Data from the GPS topic
 
     Attributes:
         path_mod_tmstmp (Str): The modified timestamp of the global path csv file
@@ -56,7 +50,6 @@ class MockGlobalPath(Node):
         self.declare_parameters(
             namespace="",
             parameters=[
-                ("pub_period_sec", rclpy.Parameter.Type.DOUBLE),
                 ("global_path_filepath", rclpy.Parameter.Type.STRING),
                 ("interval_spacing", rclpy.Parameter.Type.DOUBLE),
                 ("write", rclpy.Parameter.Type.BOOL),
@@ -64,9 +57,6 @@ class MockGlobalPath(Node):
                 ("force", rclpy.Parameter.Type.BOOL),
             ],
         )
-        # get the publishing period parameter to use for callbacks
-        pub_period_sec = self.get_parameter("pub_period_sec").get_parameter_value().double_value
-        self.get_logger().debug(f"Got parameter: {pub_period_sec=}")
 
         # Subscriber
         self.gps_sub = self.create_subscription(
@@ -79,40 +69,9 @@ class MockGlobalPath(Node):
         )
 
         # Attributes
-        self.pos = MOCK_GPS.lat_lon
+        self.pos = None
         self.path_mod_tmstmp = None
         self.file_path = None
-        self.period = pub_period_sec
-
-    def check_pos(self, msg: ci.GPS):
-        """Get the gps data and check if the global path needs to be updated.
-
-        If the position has changed by more than gps_threshold * interval_spacing since last step,
-        the force parameter set to true, bypassing any checks in the global_path_callback.
-        """
-
-        pos = msg.lat_lon
-
-        position_delta = meters_to_km(
-            GEODESIC.inv(
-                lats1=self.pos.latitude,
-                lons1=self.pos.longitude,
-                lats2=pos.latitude,
-                lons2=pos.longitude,
-            )[2]
-        )
-        gps_threshold = self.get_parameter("gps_threshold")._value
-        interval_spacing = self.get_parameter("interval_spacing")._value
-
-        if position_delta > gps_threshold * interval_spacing:
-            self.get_logger().info(
-                f"GPS data changed by more than {gps_threshold*interval_spacing} km. Running "
-                "global path callback"
-            )
-
-            self.set_parameters([rclpy.Parameter("force", rclpy.Parameter.Type.BOOL, True)])
-
-        self.pos = pos
 
     # Timer callbacks
     def global_path_callback(self, msg: ci.GPS = None):
@@ -135,6 +94,8 @@ class MockGlobalPath(Node):
         # check when global path was changed last
         path_mod_tmstmp = time.ctime(os.path.getmtime(file_path))
 
+        # this function updates self.pos internally because it needs to compare
+        # the new position to the current self.pos
         self.check_pos(msg)
 
         # check if the global path has been forced to update by a parameter change
@@ -144,9 +105,6 @@ class MockGlobalPath(Node):
         if path_mod_tmstmp == self.path_mod_tmstmp and self.file_path == file_path and not force:
             return
 
-        self.get_logger().info(
-            f"Global path file is: {os.path.basename(file_path)}\n Reading path"
-        )
         global_path = gp.get_path(file_path=file_path)
 
         pos = self.pos
@@ -159,7 +117,7 @@ class MockGlobalPath(Node):
 
         # check if global path is just a destination point
         if len(global_path.waypoints) < 2:
-            self.get_logger().info(
+            self.get_logger().debug(
                 f"Generating new path from {pos.latitude:.4f}, {pos.longitude:.4f} to "
                 f"{global_path.waypoints[0].latitude:.4f}, "
                 f"{global_path.waypoints[0].longitude:.4f}"
@@ -167,7 +125,7 @@ class MockGlobalPath(Node):
 
             write = self.get_parameter("write")._value
             if write:
-                self.get_logger().info("Writing generated path to new file")
+                self.get_logger().debug("Writing generated path to new file")
 
             msg = gp.generate_path(
                 dest=global_path.waypoints[0],
@@ -178,14 +136,14 @@ class MockGlobalPath(Node):
             )
         # Check if any waypoints are too far apart
         elif max(path_spacing) > interval_spacing:
-            self.get_logger().info(
+            self.get_logger().debug(
                 f"Some waypoints in the global path exceed the maximum interval spacing of"
                 f" {interval_spacing} km. Interpolating between waypoints and generating path"
             )
 
             write = self.get_parameter("write")._value
             if write:
-                self.get_logger().info("Writing generated path to new file")
+                self.get_logger().debug("Writing generated path to new file")
 
             msg = gp._interpolate_path(
                 global_path=global_path,
@@ -206,6 +164,40 @@ class MockGlobalPath(Node):
         self.set_parameters([rclpy.Parameter("force", rclpy.Parameter.Type.BOOL, False)])
         self.path_mod_tmstmp = path_mod_tmstmp
         self.file_path = file_path
+
+    def check_pos(self, msg: ci.GPS):
+        """Get the gps data and check if the global path needs to be updated.
+
+        If the position has changed by more than gps_threshold * interval_spacing since last step,
+        the force parameter set to true, bypassing any checks in the global_path_callback.
+        """
+
+        pos = msg.lat_lon
+        if self.pos:
+            position_delta = meters_to_km(
+                GEODESIC.inv(
+                    lats1=self.pos.latitude,
+                    lons1=self.pos.longitude,
+                    lats2=pos.latitude,
+                    lons2=pos.longitude,
+                )[2]
+            )
+            gps_threshold = self.get_parameter("gps_threshold")._value
+            interval_spacing = self.get_parameter("interval_spacing")._value
+
+            if position_delta > gps_threshold * interval_spacing:
+                self.get_logger().debug(
+                    f"GPS data changed by more than {gps_threshold*interval_spacing} km. Running "
+                    "global path callback"
+                )
+
+                self.set_parameters([rclpy.Parameter("force", rclpy.Parameter.Type.BOOL, True)])
+        else:
+            # first time being called
+            # should always force mock global path to update
+            self.set_parameters([rclpy.Parameter("force", rclpy.Parameter.Type.BOOL, True)])
+
+        self.pos = pos
 
 
 if __name__ == "__main__":

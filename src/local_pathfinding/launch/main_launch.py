@@ -85,7 +85,7 @@ def get_navigate_node_description(context: LaunchContext) -> Node:
     Returns:
         Node: The node object that launches the navigate_main node.
     """
-    node_name = "navigate"
+    node_name = "navigate_main"
     ros_parameters = [LaunchConfiguration("config").perform(context)]
     ros_arguments: List[SomeSubstitutionsType] = [
         "--log-level",
@@ -94,7 +94,7 @@ def get_navigate_node_description(context: LaunchContext) -> Node:
 
     node = Node(
         package=PACKAGE_NAME,
-        executable="navigate",
+        executable="navigate_main",
         name=node_name,
         output="screen",
         emulate_tty=True,

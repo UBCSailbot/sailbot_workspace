@@ -9,6 +9,10 @@ import rclpy
 from geopy.distance import great_circle
 from rclpy.node import Node
 
+MEAN_SPEED = ci.HelperSpeed(speed=15.0)  # mean boat speed in kmph
+START_POINT = ci.HelperLatLon(latitude=48.86, longitude=-129.32)  # Starting location of the mock
+START_HEADING = ci.HelperHeading(heading=0.0)  # in degrees, heading of the boat
+
 
 class MockGPS(Node):
 
@@ -60,9 +64,9 @@ class MockGPS(Node):
             qos_profile=10,
         )
 
-        self.__mean_speed = ci.HelperSpeed(speed=15.0)  # mean boat speed in kmph
-        self.__current_location = ci.HelperLatLon(latitude=49.29, longitude=-126.32)
-        self.__heading = ci.HelperHeading(heading=-60.0)  # in degrees, heading of the boat
+        self.__mean_speed = MEAN_SPEED
+        self.__current_location = START_POINT
+        self.__heading = START_HEADING
 
     def mock_gps_callback(self) -> None:
         """Callback function for the mock GPS timer. Publishes mock gps data to the ROS

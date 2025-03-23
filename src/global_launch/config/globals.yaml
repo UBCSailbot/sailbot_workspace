@@ -12,7 +12,7 @@ mock_global_path:
       write: false
       gps_threshold: 1.5
       force: false
-navigate:
+navigate_main:
    ros__parameters:
       path_planner: "rrtstar"
 
