@@ -74,7 +74,7 @@ class MockGlobalPath(Node):
         self.file_path = None
 
     # Timer callbacks
-    def global_path_callback(self, msg: ci.GPS):
+    def global_path_callback(self, gps: ci.GPS):
         """Check if the global path csv file has changed. If it has, the new path is published.
 
         This function also checks if the gps data has changed by more than
@@ -96,7 +96,7 @@ class MockGlobalPath(Node):
 
         # this function updates self.pos internally because it needs to compare
         # the new position to the current self.pos
-        self.check_pos(msg)
+        self.check_pos(gps)
 
         # check if the global path has been forced to update by a parameter change
         force = self.get_parameter("force")._value
@@ -157,7 +157,7 @@ class MockGlobalPath(Node):
         else:
             msg = global_path
 
-        self.get_logger().info(f"Publishing mock global path: {gp.path_to_dict(msg)}")
+        self.get_logger().debug(f"Publishing mock global path: {gp.path_to_dict(msg)}")
         self.global_path_pub.publish(msg)
 
         # reset all checks for next function call
@@ -165,14 +165,14 @@ class MockGlobalPath(Node):
         self.path_mod_tmstmp = path_mod_tmstmp
         self.file_path = file_path
 
-    def check_pos(self, msg: ci.GPS):
+    def check_pos(self, gps: ci.GPS):
         """Get the gps data and check if the global path needs to be updated.
 
         If the position has changed by more than gps_threshold * interval_spacing since last step,
         the force parameter set to true, bypassing any checks in the global_path_callback.
         """
 
-        pos = msg.lat_lon
+        pos = gps.lat_lon
         if self.pos:
             position_delta = meters_to_km(
                 GEODESIC.inv(
