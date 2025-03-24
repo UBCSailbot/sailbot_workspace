@@ -202,7 +202,6 @@ class Sailbot(Node):
             self.planner = planner
 
     def _all_subs_active(self) -> bool:
-        return True  # TODO: this line is a placeholder, delete when mocks can be run
         return self.ais_ships and self.gps and self.global_path and self.filtered_wind_sensor
 
     def _log_inactive_subs_warning(self):
