@@ -142,7 +142,7 @@ class Sailbot(Node):
         self.update_params()
 
         desired_heading = self.get_desired_heading()
-        if desired_heading <= -180  or 180 < desired_heading:
+        if (desired_heading <= -180) or (180 < desired_heading):
             self.get_logger().warning(f"Heading {desired_heading} not in (-180, 180]")
 
         msg = ci.DesiredHeading()
