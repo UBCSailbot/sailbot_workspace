@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Any, List, Union
 from custom_interfaces.msg import HelperLatLon
 from ompl import base
 from ompl import geometric as og
+from ompl import util as ou
 
 # from ompl import util as ou
 from rclpy.impl.rcutils_logger import RcutilsLogger
@@ -28,7 +29,7 @@ if TYPE_CHECKING:
     from local_pathfinding.local_path import LocalPathState
 
 # OMPL logging: only log warnings and above
-# ou.setLogLevel(ou.LOG_WARN)
+ou.setLogLevel(ou.LOG_WARN)
 
 
 class OMPLPath:
