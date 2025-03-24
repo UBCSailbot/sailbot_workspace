@@ -40,6 +40,21 @@ def test_km_to_meters(km: float, meters: float):
 
 
 @pytest.mark.parametrize(
+    "unbounded,bounded",
+    [
+        (0.0, 0.0),
+        (-180.0, -180.0),
+        (179.0, 179.0),
+        (180.0, -180.0),
+        (-181.0, 179.0),
+        (3696.0, 69.0),
+    ],
+)
+def test_bound_to_180(unbounded: float, bounded: float):
+    assert cs.bound_to_180(unbounded) == pytest.approx(bounded), "incorrect angle conversion"
+
+
+@pytest.mark.parametrize(
     "ref_lat,ref_lon,true_bearing_deg,dist_km",
     [
         (30.0, -123.0, 0.00, 30.0),
