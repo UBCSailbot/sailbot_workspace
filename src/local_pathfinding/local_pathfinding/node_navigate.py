@@ -4,6 +4,7 @@ import custom_interfaces.msg as ci
 import rclpy
 from rclpy.node import Node
 
+import local_pathfinding.global_path as gp
 from local_pathfinding.local_path import LocalPath
 
 
@@ -122,7 +123,9 @@ class Sailbot(Node):
         self.gps = msg
 
     def global_path_callback(self, msg: ci.Path):
-        self.get_logger().debug(f"Received data from {self.global_path_sub.topic}: {msg}")
+        self.get_logger().debug(
+            f"Received data from {self.global_path_sub.topic}: {gp.path_to_dict(msg)}"
+        )
         self.global_path = msg
 
     def filtered_wind_sensor_callback(self, msg: ci.WindSensor):
@@ -139,8 +142,8 @@ class Sailbot(Node):
         self.update_params()
 
         desired_heading = self.get_desired_heading()
-        if desired_heading < 0 or 360 <= desired_heading:
-            self.get_logger().warning(f"Heading {desired_heading} not in [0, 360)")
+        if (desired_heading <= -180) or (180 < desired_heading):
+            self.get_logger().warning(f"Heading {desired_heading} not in (-180, 180]")
 
         msg = ci.DesiredHeading()
         msg.heading.heading = desired_heading
