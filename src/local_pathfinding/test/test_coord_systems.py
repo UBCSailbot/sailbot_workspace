@@ -47,7 +47,7 @@ def test_km_to_meters(km: float, meters: float):
         (179.0, 179.0),
         (180.0, -180.0),
         (-181.0, 179.0),
-        (3696.0, 69.0),
+        (3603.14, 3.14),
     ],
 )
 def test_bound_to_180(unbounded: float, bounded: float):
