@@ -1,8 +1,5 @@
 #!/bin/bash
 set -e
-export PYTHONPATH=/opt/ros/humble/local/lib/python3.10/dist-packages:$PYTHONPATH
-echo "PYTHONPATH: $PYTHONPATH"
-
 
 # Display a help message for using this script
 function helpMessage() {
