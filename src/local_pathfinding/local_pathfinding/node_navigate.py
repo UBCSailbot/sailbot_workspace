@@ -1,11 +1,11 @@
 """The main node of the local_pathfinding package, represented by the `Sailbot` class."""
 
-import coord_systems as cs
 import custom_interfaces.msg as ci
 import rclpy
 from pyproj import Geod
 from rclpy.node import Node
 
+import local_pathfinding.coord_systems as cs
 from local_pathfinding.local_path import LocalPath
 
 WAYPOINT_REACHED_THRESH_KM = 0.5
