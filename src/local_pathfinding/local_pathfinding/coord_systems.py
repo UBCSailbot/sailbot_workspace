@@ -3,9 +3,10 @@
 import math
 from typing import List, NamedTuple
 
-from custom_interfaces.msg import HelperLatLon
 from pyproj import Geod
 from shapely.geometry import Point, Polygon
+
+from custom_interfaces.msg import HelperLatLon
 
 GEODESIC = Geod(ellps="WGS84")
 

@@ -1,0 +1,39 @@
+timeout: 3
+required_packages:
+- name: local_pathfinding
+  configs: null
+- name: network_systems
+  configs:
+  - all_disable.yaml
+  - example/example_en.yaml
+  - mock_ais/mock_ais_en_default.yaml
+inputs:
+- type: HTTP
+  name: aisships
+  data:
+    dtype: AISShips
+    ships:
+    - ID: 0
+      lat: 39.85
+      lon: -130.05
+      headingDegrees: 0
+      speedKmph: 10
+      rot: -85.54068189145534
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:12'
+expected_outputs:
+- type: HTTP
+  name: aisships
+  data:
+    dtype: AISShips
+    ships:
+    - ID: 0
+      lat: 39.85
+      lon: -130.05
+      headingDegrees: 0
+      speedKmph: 10
+      rot: -85.54068189145534
+      width: 10
+      length: 20
+      timestamp: '2024-07-10 03:55:12'
