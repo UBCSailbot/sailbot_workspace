@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     from local_pathfinding.local_path import LocalPathState
 
 # OMPL logging: only log warnings and above
-# ou.setLogLevel(ou.LOG_WARN)
+ou.setLogLevel(ou.LOG_WARN)
 
 
 class OMPLPath:

@@ -135,9 +135,7 @@ def get_mock_global_path_node_description(context: LaunchContext) -> Node:
 
 
 def get_mock_ais_node_description(context: LaunchContext) -> Node:
-    """Gets the launch description for the navigate_main node.
-    Node: The node object that launches the navigate_main node.
-    """
+    """Gets the launch description for the mock ais node."""
     node_name = "mock_ais"
     ros_parameters = [LaunchConfiguration("config").perform(context)]
     ros_arguments: List[SomeSubstitutionsType] = [
@@ -159,13 +157,7 @@ def get_mock_ais_node_description(context: LaunchContext) -> Node:
 
 
 def get_mock_wind_sensor_node_description(context: LaunchContext) -> Node:
-    """Gets the launch description for the mgp_main node.
-    Args:
-        context (LaunchContext): The current launch context.
-
-    Returns:
-        Node: The node object that launches the mgp_main node.
-    """
+    """Gets the launch description for the mock wind sensor node"""
     node_name = "mock_wind_sensor"
     ros_parameters = [LaunchConfiguration("config").perform(context)]
     ros_arguments: List[SomeSubstitutionsType] = [
@@ -187,12 +179,7 @@ def get_mock_wind_sensor_node_description(context: LaunchContext) -> Node:
 
 
 def get_mock_gps_node_description(context: LaunchContext) -> Node:
-    """Gets the launch description for the mgp_main node.
-    Args:
-        context (LaunchContext): The current launch context.
-
-    Returns:
-        Node: The node object that launches the mgp_main node.
+    """Gets the launch description for the mock gps node
     """
     node_name = "mock_gps"
     ros_parameters = [LaunchConfiguration("config").perform(context)]
