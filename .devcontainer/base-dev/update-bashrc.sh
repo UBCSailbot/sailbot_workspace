@@ -23,6 +23,6 @@ echo "fi" >> $HOME/.bashrc
 
 echo "" >> $HOME/.bashrc
 echo "# Add locations for ROS type support modules to PATH" >> $HOME/.bashrc
-echo "export LD_LIBRARY_PATH=/workspaces/sailbot_workspace/install/lib:$LD_LIBRARY_PATH" >> $HOME/.bashrc
+echo 'export LD_LIBRARY_PATH=/workspaces/sailbot_workspace/install/lib:$LD_LIBRARY_PATH' >> $HOME/.bashrc
 echo "# This is required for rosidl_parser to be findable on the RPI" >> $HOME/.bashrc
-echo "export PYTHONPATH=/opt/ros/humble/local/lib/python3.10/dist-packages:$PYTHONPATH" >> $HOME/.bashrc
+echo 'export PYTHONPATH=/opt/ros/humble/local/lib/python3.10/dist-packages:$PYTHONPATH' >> $HOME/.bashrc
