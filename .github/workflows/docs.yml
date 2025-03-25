@@ -1,12 +1,18 @@
 name: Docs Site
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    # default types and closed
-    types: [opened, synchronize, reopened, closed]
+    push:
+      branches:
+        - main
+      paths:
+        - 'docs/**'
+    pull_request:
+      types: [opened, synchronize, reopened, closed]
+      paths:
+        - 'docs/**'
+    schedule:
+      - cron: '0 0 * * 0'  # Runs on main every Sunday at midnight UTC
+
 
 jobs:
   # https://github.com/nosborn/github-action-markdown-cli
