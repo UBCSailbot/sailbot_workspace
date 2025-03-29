@@ -60,11 +60,10 @@ class LocalPathState:
             self.wind_speed = 0.0
             self.wind_direction = 0
 
-        self.reference_latlon = (
-            self.global_path.waypoints[-1]
-            if self.global_path
-            else HelperLatLon(latitude=0.0, longitude=0.0)
-        )
+        if self.global_path:
+            self.reference_latlon = self.global_path.waypoints[-1]
+        else:
+            self.reference_latlon = HelperLatLon(latitude=0.0, longitude=0.0)
 
         self.planner = planner
 
