@@ -2,6 +2,7 @@ import argparse
 import random
 import re
 import subprocess
+import time
 
 # *************** CONSTANTS ***************
 
@@ -217,10 +218,20 @@ def run_command(command):
 
 
 def capture_log(process):
-    with open(LOG_FILE, "w") as log_file:
-        stdout, stderr = process.communicate()
-        log_file.write(stdout)
-        log_file.write(stderr)
+    # Continuously capture the logs while the process is running
+    with open(LOG_FILE, "w") as f:
+        while True:
+            # Read the output from the process' stdout and stderr
+            output = process.stdout.readline()
+            error = process.stderr.readline()
+            if output:
+                f.write(output)  # Write stdout to the log file
+            if error:
+                f.write(error)  # Write stderr to the log file
+            # If the process ends (manually or otherwise), break out of the loop
+            if output == "" and error == "" and process.poll() is not None:
+                break
+            time.sleep(0.1)  # Avoid tight loop, allows other processes to run
 
 
 def setup_can():
@@ -263,12 +274,10 @@ def result_verify(frames, t_info, process):
         ),
         "RUDDER_DATA_FRAME": re.compile(r"\[DESIRED HEADING\] Heading: ([\d.]+)"),
     }
-    for pattern in patterns:
-        if pattern not in frames:
-            patterns.pop(pattern)
+    filtered_patterns = {frame: patterns[frame] for frame in frames if frame in patterns}
 
     for line in log_data:
-        for frame, pattern in patterns.items():
+        for frame, pattern in filtered_patterns.items():
             match = pattern.search(line)
             if match:
                 if frame == "BMS_DATA_FRAME":
@@ -440,14 +449,14 @@ def main():
                 print(f"Error sending frame {frame}: {output}")
             else:
                 print(f"Frame {frame} sent successfully")
-    process.terminate()
-    process.stdout.close()
-    process.wait()
     capture_log(process)
     if result_verify(frames, t_info, process) != 0:
         print("Test failed")
     else:
         print("Test passed")
+    process.terminate()
+    process.stdout.close()
+    process.wait()
 
 
 if __name__ == "__main__":
