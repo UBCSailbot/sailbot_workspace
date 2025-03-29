@@ -9,10 +9,14 @@ https://ompl.kavrakilab.org/api_overview.html.
 from __future__ import annotations
 
 import pickle
-from typing import TYPE_CHECKING, Any, List
+from typing import TYPE_CHECKING, Any, List, Union
 
-import pyompl
 from custom_interfaces.msg import HelperLatLon
+from ompl import base
+from ompl import geometric as og
+from ompl import util as ou
+
+# from ompl import util as ou
 from rclpy.impl.rcutils_logger import RcutilsLogger
 from shapely.geometry import MultiPolygon, Point, Polygon, box
 
@@ -25,7 +29,7 @@ if TYPE_CHECKING:
     from local_pathfinding.local_path import LocalPathState
 
 # OMPL logging: only log warnings and above
-# ou.setLogLevel(ou.LOG_WARN)
+ou.setLogLevel(ou.LOG_WARN)
 
 
 class OMPLPath:
@@ -179,7 +183,7 @@ class OMPLPath:
         """
         raise NotImplementedError
 
-    def _init_simple_setup(self, local_path_state) -> pyompl.SimpleSetup:
+    def _init_simple_setup(self, local_path_state) -> og.SimpleSetup:
         self.state = local_path_state
 
         # Create buffered spaces and extract their centers
@@ -198,10 +202,10 @@ class OMPLPath:
             goal_x, goal_y = goal_position_in_xy
 
         # create an SE2 state space: rotation and translation in a plane
-        space = pyompl.SE2StateSpace()
+        space = base.SE2StateSpace()
 
         # set the bounds of the state space
-        bounds = pyompl.RealVectorBounds(dim=2)
+        bounds = base.RealVectorBounds(dim=2)
         state_space = box(*MultiPolygon([start_box, goal_polygon]).bounds)
         x_min, y_min, x_max, y_max = state_space.bounds
 
@@ -222,25 +226,25 @@ class OMPLPath:
         OMPLPath.init_obstacles(local_path_state=local_path_state, state_space_xy=state_space)
 
         # create a simple setup object
-        simple_setup = pyompl.SimpleSetup(space)
-        simple_setup.setStateValidityChecker(OMPLPath.is_state_valid)
+        simple_setup = og.SimpleSetup(space)
+        simple_setup.setStateValidityChecker(base.StateValidityCheckerFn(OMPLPath.is_state_valid))
 
-        start = pyompl.ScopedState(space)
-        goal = pyompl.ScopedState(space)
-        start.setXY(start_x, start_y)
-        goal.setXY(goal_x, goal_y)
-        """self._logger.debug(
+        start = base.State(space)
+        goal = base.State(space)
+        start().setXY(start_x, start_y)
+        goal().setXY(goal_x, goal_y)
+        self._logger.debug(
             "start and goal state: "
             f"start=({start().getX()}, {start().getY()}); "
             f"goal=({goal().getX()}, {goal().getY()})"
-        )"""
-        simple_setup.setStartAndGoalStatesSE2(start, goal)
+        )
+        simple_setup.setStartAndGoalStates(start, goal)
 
         # Constructs a space information instance for this simple setup
         space_information = simple_setup.getSpaceInformation()
 
         # figure this out
-        self.state.planner = pyompl.RRTstar(space_information)
+        self.state.planner = og.RRTstar(space_information)
 
         # set the optimization objective of the simple setup object
         # TODO: implement and add optimization objective here
@@ -257,23 +261,29 @@ class OMPLPath:
         simple_setup.setOptimizationObjective(objective)
 
         # set the planner of the simple setup object
-        simple_setup.setPlanner(pyompl.RRTstar(space_information))
+        simple_setup.setPlanner(og.RRTstar(space_information))
 
         return simple_setup
 
-    def is_state_valid(state: pyompl.SE2StateSpace) -> bool:
+    def is_state_valid(state: Union[base.State, base.SE2StateInternal]) -> bool:
         """Evaluate a state to determine if the configuration collides with an environment
         obstacle.
 
         Args:
-            state (ob.SE2StateSpace): State to check.
+            state (base.SE2StateInternal): State to check.
 
         Returns:
             bool: True if state is valid, else false.
         """
 
         for o in OMPLPath.obstacles:
-            state_is_valid = o.is_valid(cs.XY(state.getX(), state.getY()))
+
+            if isinstance(state, base.State):  # for testing purposes
+                state_is_valid = o.is_valid(cs.XY(state().getX(), state().getY()))
+
+            else:  # when OMPL uses this function, it will pass in an SE2StateInternal object
+                state_is_valid = o.is_valid(cs.XY(state.getX(), state.getY()))
+
             if not state_is_valid:
                 # uncomment this if you want to log which states are being labeled invalid
                 # its commented out for now to avoid unnecessary file I/O
@@ -288,7 +298,7 @@ def log_invalid_state(state: XY, obstacle: ob.Obstacle):
     Logs details about a state and the obstacle that makes it invalid for use in a path.
     """
     with open(
-        "/workspaces/sailbot_workspace/src/local_pathfinding/local_pathfinding/ros_logs/invalid_states.log",  # noqa
+        "/workspaces/sailbot_workspace/src/local_pathfinding/local_pathfinding/invalid_states.log",
         "a",
     ) as log_file:
         log_file.write(
@@ -303,10 +313,10 @@ def get_planner_class():
         planner (str): Name of the planner to use.
 
     Returns:
-        Tuple[str, Type[ob.Planner]]: The name and class of the planner to use for the OMPL query,
-            defaults to RRT* if `planner` is not implemented in this function.
+        Tuple[str, Type[base.Planner]]: The name and class of the planner to use for the OMPL
+        query, defaults to RRT* if `planner` is not implemented in this function.
     """
-    return "rrtstar", pyompl.RRTstar
+    return "rrtstar", og.RRTstar
 
 
 def load_pkl(file_path: str) -> Any:
