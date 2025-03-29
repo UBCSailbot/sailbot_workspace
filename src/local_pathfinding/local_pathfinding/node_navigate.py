@@ -34,7 +34,6 @@ class Sailbot(Node):
     Publisher timers:
         pub_period_sec (float): The period of the publisher timers.
         desired_heading_timer (Timer): Call the desired heading callback function.
-        lpath_data_timer (Timer): Call the local path callback function.
 
     Attributes from subscribers:
         ais_ships (ci.AISShips): Data from other boats.
@@ -97,9 +96,6 @@ class Sailbot(Node):
         self.desired_heading_timer = self.create_timer(
             timer_period_sec=self.pub_period_sec, callback=self.desired_heading_callback
         )
-        self.lpath_data_timer = self.create_timer(
-            timer_period_sec=self.pub_period_sec, callback=self.lpath_data_callback
-        )
 
         # attributes from subscribers
         self.ais_ships = None
@@ -148,10 +144,13 @@ class Sailbot(Node):
         msg = ci.DesiredHeading()
         msg.heading.heading = desired_heading
 
-        self.desired_heading_pub.publish(msg)
         self.get_logger().debug(f"Publishing to {self.desired_heading_pub.topic}: {msg}")
+        self.desired_heading_pub.publish(msg)
 
-    def lpath_data_callback(self):
+        self.get_logger().debug(f"Publishing local path data to {self.lpath_data_pub.topic}")
+        self.publish_local_path_data()
+
+    def publish_local_path_data(self):
         """Collect all navigation data and publish it in one message"""
         raise NotImplementedError
 
@@ -192,9 +191,6 @@ class Sailbot(Node):
             self.pub_period_sec = pub_period_sec
             self.desired_heading_timer = self.create_timer(
                 timer_period_sec=self.pub_period_sec, callback=self.desired_heading_callback
-            )
-            self.lpath_data_timer = self.create_timer(
-                timer_period_sec=self.pub_period_sec, callback=self.lpath_data_callback
             )
 
         planner = self.get_parameter("path_planner").get_parameter_value().string_value
