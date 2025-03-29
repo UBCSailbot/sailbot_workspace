@@ -347,9 +347,9 @@ class PhysicsEngineNode(Node):
         heading = self.__boat_state.angular_position[0]
 
         if self.__sim_gps:
-            self.__sim_gps.lat_lon(lat_lon)
-            self.__sim_gps.speed(speed)
-            self.__sim_gps.heading(heading)
+            self.__sim_gps.lat_lon = lat_lon
+            self.__sim_gps.speed = speed
+            self.__sim_gps.heading = heading
         else:
             self.__sim_gps = SimGPS(
                 lat_lon=lat_lon, speed=speed, heading=heading, enable_noise=True
@@ -395,12 +395,25 @@ class PhysicsEngineNode(Node):
     def __publish_kinematics(self):
         """Publishes the kinematics data of the simulated boat."""
         # TODO Update to publish real data
-        msg = SimWorldState()
+        lat_lon = self.__boat_state.global_position
+        speed = np.linalg.norm(self.__boat_state.global_velocity)
+        heading = self.__boat_state.angular_position[0]
 
-        msg.global_gps.lat_lon.latitude = 0.0
-        msg.global_gps.lat_lon.longitude = 0.0
-        msg.global_gps.speed.speed = 0.0
-        msg.global_gps.heading.heading = 0.0
+        if self.__sim_gps:
+            self.__sim_gps.lat_lon = lat_lon
+            self.__sim_gps.speed = speed
+            self.__sim_gps.heading = heading
+        else:
+            self.__sim_gps = SimGPS(
+                lat_lon=lat_lon, speed=speed, heading=heading, enable_noise=True
+            )
+
+        msg = SimWorldState()
+        lat, lon, _ = self.__sim_gps.lat_lon
+        msg.global_gps.lat_lon.latitude = float(lat)
+        msg.global_gps.lat_lon.longitude = float(lon)
+        msg.global_gps.speed.speed = self.__sim_gps.speed
+        msg.global_gps.heading.heading = self.__sim_gps.heading
 
         msg.global_pose.position.x = self.__boat_state.global_position.item(0)
         msg.global_pose.position.y = self.__boat_state.global_position.item(1)
