@@ -1,6 +1,6 @@
 """The path to the next global waypoint, represented by the `LocalPath` class."""
 
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 from custom_interfaces.msg import GPS, AISShips, HelperLatLon, Path, WindSensor
 from rclpy.impl.rcutils_logger import RcutilsLogger
@@ -52,10 +52,12 @@ class LocalPathState:
             self.ais_ships = []  # ensures this attribute is always set, to avoid AtributeError
 
         if global_path:  # TODO: remove when mock can be run
-            self.global_path = [
+            self.global_path = Path()
+            self.global_path.waypoints = [
                 HelperLatLon(latitude=waypoint.latitude, longitude=waypoint.longitude)
                 for waypoint in global_path.waypoints
             ]
+
         else:
             self.global_path = global_path
 
@@ -67,7 +69,9 @@ class LocalPathState:
             self.wind_direction = 0
 
         self.reference_latlon = (
-            self.global_path[-1] if self.global_path else HelperLatLon(latitude=0.0, longitude=0.0)
+            self.global_path.waypoints[-1]
+            if self.global_path
+            else HelperLatLon(latitude=0.0, longitude=0.0)
         )
 
         self.planner = planner
@@ -87,7 +91,7 @@ class LocalPath:
         """Initializes the LocalPath class."""
         self._logger = parent_logger.get_child(name="local_path")
         self._ompl_path: Optional[OMPLPath] = None
-        self.waypoints: Optional[List[Tuple[float, float]]] = None
+        self.waypoints: Optional[List[HelperLatLon]] = None
 
     def update_if_needed(
         self,
