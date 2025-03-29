@@ -64,9 +64,9 @@ class LowLevelControlNode(Node):
         self.__init_feedback_execution_rates()
         self.__init_subscriptions()
         self.__init_action_servers()
+        self.__init_rudder_controller()
+        self.__init_sail_controller()
         self.get_logger().debug("Node initialization complete. Starting execution...")
-        self.init_rudder_controller()
-        self.init_sail_controller()
 
     def __init_private_attributes(self):
         """Initializes private attributes of this class that are not initialized anywhere else
@@ -186,7 +186,7 @@ class LowLevelControlNode(Node):
             callback_group=self.sail_action_callback_group,
         )
 
-    def init_rudder_controller(self):
+    def __init_rudder_controller(self):
         # initial heading value needed here
         current_heading = 0.0
         desired_heading = 0.0
@@ -203,7 +203,7 @@ class LowLevelControlNode(Node):
             current_heading, desired_heading, current_control_ang, time_step, kp, cp, control_speed
         )
 
-    def init_sail_controller(self):
+    def __init_sail_controller(self):
         target_angle = (
             self.get_parameter("wingsail.fixed_angle_deg").get_parameter_value().double_value
         )
