@@ -29,7 +29,7 @@ class Sailbot(Node):
 
     Publishers:
         desired_heading_pub (Publisher): Publish the desired heading in a `DesiredHeading` msg.
-        lpath_data_pub (Publisher): Publish the local path in a `LPathData` msg.
+        lpath_data_pub (Publisher): Publish all local path data in a `LPathData` msg.
 
     Publisher timers:
         pub_period_sec (float): The period of the publisher timers.
