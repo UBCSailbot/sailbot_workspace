@@ -69,6 +69,13 @@ public:
             filtered_wind_sensor_pub_ =
               this->create_publisher<msg::WindSensor>(ros_topics::FILTERED_WIND_SENSOR, QUEUE_SIZE);
             generic_sensors_pub_ = this->create_publisher<msg::GenericSensors>(ros_topics::DATA_SENSORS, QUEUE_SIZE);
+            rudder_pub_          = this->create_publisher<msg::HelperHeading>(ros_topics::RUDDER, QUEUE_SIZE);
+            temp_sensors_pub_    = this->create_publisher<msg::TempSensor>(ros_topics::TEMP_SENSORS, QUEUE_SIZE);
+            ph_sensors_pub_      = this->create_publisher<msg::PhSensor>(ros_topics::PH_SENSORS, QUEUE_SIZE);
+            salinity_sensors_pub_ =
+              this->create_publisher<msg::SalinitySensor>(ros_topics::SALINITY_SENSORS, QUEUE_SIZE);
+            pressure_sensors_pub_ =
+              this->create_publisher<msg::PressureSensor>(ros_topics::PRESSURE_SENSORS, QUEUE_SIZE);
 
             can_trns_->registerCanCbs(
               {std::make_pair(
@@ -143,6 +150,16 @@ private:
     rclcpp::Subscription<msg::DesiredHeading>::SharedPtr desired_heading_sub_;
     rclcpp::Subscription<msg::SailCmd>::SharedPtr        sail_cmd_sub_;
     msg::SailCmd                                         sail_cmd_;
+    rclcpp::Publisher<msg::HelperHeading>::SharedPtr     rudder_pub_;
+    msg::HelperHeading                                   rudder_;
+    rclcpp::Publisher<msg::TempSensor>::SharedPtr        temp_sensors_pub_;
+    msg::TempSensor                                      temp_sensor_;
+    rclcpp::Publisher<msg::PhSensor>::SharedPtr          ph_sensors_pub_;
+    msg::PhSensor                                        ph_sensor_;
+    rclcpp::Publisher<msg::SalinitySensor>::SharedPtr    salinity_sensors_pub_;
+    msg::SalinitySensor                                  salinity_sensor_;
+    rclcpp::Publisher<msg::PressureSensor>::SharedPtr    pressure_sensors_pub_;
+    msg::PressureSensor                                  pressure_sensor_;
 
     // Simulation only publishers and subscribers
     rclcpp::Subscription<msg::AISShips>::SharedPtr     mock_ais_sub_;
@@ -290,6 +307,16 @@ private:
         RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), ss.str().c_str());
     }
 
+    void publishRudder(const CanFrame & rudder_frame)
+    {
+        CAN_FP::RudderData rudder(rudder_frame);
+
+        // std::cerr << pressure.toString().c_str() << std::endl;
+        msg::HelperHeading rudder_ = rudder.toRosMsg();
+        rudder_pub_->publish(rudder_);
+        RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), rudder.toString().c_str());
+    }
+
     /**
      * @brief Publish a TempSensor frame
      *        Intended to be registered as a callback with the CAN Transceiver instance
@@ -298,34 +325,57 @@ private:
      */
     void publishTemp(const CanFrame & temp_frame)
     {
-        CAN_FP::TempSensor temp(temp_frame);
+        // if we want individual handling for each type of temp sensor
+        // CAN_FP::TempSensor temp_sensor(temp_frame);
+        // size_t             idx;
+        // for (size_t i = 0;; i++) {
+        //     if ((temp_sensor.id_ == CAN_FP::TempSensor::TEMP_SENSOR_IDS[i])) {
+        //         idx = i;
+        //         break;
+        //     }
+        // }
 
-        std::cerr << temp.toString().c_str() << std::endl;
-        RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), temp.toString().c_str());
+        // msg::TempSensor & temp_sensor_msg = temp_sensor_.temp_sensor[idx];
+        // temp_sensor_msg                   = temp_sensor.toRosMsg();
+        // temp_sensors_pub_->publish(temp_sensor_);
+        // // publishFilteredWindSensor();
+        // RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), temp_sensor.toString().c_str());
+
+        CAN_FP::TempSensor temp_sensor(temp_frame);
+
+        msg::TempSensor temp_sensor_ = temp_sensor.toRosMsg();
+        temp_sensors_pub_->publish(temp_sensor_);
+        RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), temp_sensor.toString().c_str());
     }
 
     void publishPh(const CanFrame & ph_frame)
     {
-        CAN_FP::TempSensor ph(ph_frame);
+        CAN_FP::PhSensor ph_sensor(ph_frame);
 
-        std::cerr << ph.toString().c_str() << std::endl;
-        RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), ph.toString().c_str());
+        // std::cerr << ph_sensor.toString().c_str() << std::endl;
+        msg::PhSensor ph_sensor_ = ph_sensor.toRosMsg();
+        ph_sensors_pub_->publish(ph_sensor_);
+        RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), ph_sensor.toString().c_str());
     }
 
     void publishSalinity(const CanFrame & salinity_frame)
     {
-        CAN_FP::TempSensor salinity(salinity_frame);
+        CAN_FP::SalinitySensor salinity_sensor(salinity_frame);
 
-        std::cerr << salinity.toString().c_str() << std::endl;
-        RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), salinity.toString().c_str());
+        // std::cerr << salinity.toString().c_str() << std::endl;
+        msg::SalinitySensor salinity_sensor_ = salinity_sensor.toRosMsg();
+        salinity_sensors_pub_->publish(salinity_sensor_);
+        RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), salinity_sensor.toString().c_str());
     }
 
     void publishPressure(const CanFrame & pressure_frame)
     {
-        CAN_FP::TempSensor pressure(pressure_frame);
+        CAN_FP::PressureSensor pressure_sensor(pressure_frame);
 
-        std::cerr << pressure.toString().c_str() << std::endl;
-        RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), pressure.toString().c_str());
+        // std::cerr << pressure.toString().c_str() << std::endl;
+        msg::PressureSensor pressure_sensor_ = pressure_sensor.toRosMsg();
+        pressure_sensors_pub_->publish(pressure_sensor_);
+        RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), pressure_sensor.toString().c_str());
     }
 
     /**

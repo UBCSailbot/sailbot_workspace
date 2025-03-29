@@ -813,6 +813,12 @@ public:
      */
     std::string debugStr() const override;
 
+    /**
+      * @brief A string representation of the RudderData object
+      *
+      */
+    std::string toString() const override;
+
 private:
     /**
      * @brief Private helper constructor for DesiredHeading objects

@@ -804,6 +804,13 @@ std::string RudderData::debugStr() const
     return ss.str();
 }
 
+std::string RudderData::toString() const
+{
+    std::stringstream ss;
+    ss << "[RUDDER DATA] Heading: " << heading_;
+    return ss.str();
+}
+
 // DesiredHeading public END
 // DesiredHeading private START
 
