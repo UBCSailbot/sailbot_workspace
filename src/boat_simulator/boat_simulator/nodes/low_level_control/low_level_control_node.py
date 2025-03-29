@@ -135,11 +135,17 @@ class LowLevelControlNode(Node):
         """
         self.get_logger().debug("Initializing rate objects...")
         self.__rudder_action_feedback_rate = self.create_rate(
-            frequency=1.0 / self._parameters["rudder.actuation_execution_period_sec"].value,
+            frequency=1.0
+            / self.get_parameter("rudder.actuation_execution_period_sec")
+            .get_parameter_value()
+            .double_value,
             clock=self.get_clock(),
         )
         self.__sail_action_feedback_rate = self.create_rate(
-            frequency=1.0 / self._parameters["wingsail.actuation_execution_period_sec"].value,
+            frequency=1.0
+            / self.get_parameter("wingsail.actuation_execution_period_sec")
+            .get_parameter_value()
+            .double_value,
             clock=self.get_clock(),
         )
 
@@ -181,19 +187,35 @@ class LowLevelControlNode(Node):
         current_heading = self.gps.heading.heading
         desired_heading = self.gps.heading.heading
         current_control_ang = self.rudder_angle
-        time_step = self._parameters["rudder.actuation_execution_period_sec"].value
-        kp = self._parameters["rudder.pid.kp"].value
-        cp = self._parameters["rudder.pid.kp"].value  # not sure if this is the right value to use
+        time_step = (
+            self.get_parameter("rudder.actuation_execution_period_sec")
+            .get_parameter_value()
+            .double_value
+        )
+        kp = self.get_parameter("rudder.pid.kp").get_parameter_value().double_value
+        cp = self.get_parameter("rudder.pid.kp").get_parameter_value().double_value
         control_speed = 1 / time_step  # not sure if this is the right value to use
         self.__rudder_controller = RudderController(
             current_heading, desired_heading, current_control_ang, time_step, kp, cp, control_speed
         )
 
     def init_sail_controller(self):
-        target_angle = self._parameters["wingsail.fixed_angle_deg"].value
-        current_control_ang = self._parameters["wingsail.fixed_angle_deg"].value
-        time_step = self._parameters["wingsail.actuation_execution_period_sec"].value
-        control_speed = self._parameters["wingsail.actuation_speed_deg_per_sec"].value
+        target_angle = (
+            self.get_parameter("wingsail.fixed_angle_deg").get_parameter_value().double_value
+        )
+        current_control_ang = (
+            self.get_parameter("wingsail.fixed_angle_deg").get_parameter_value().double_value
+        )
+        time_step = (
+            self.get_parameter("wingsail.actuation_execution_period_sec")
+            .get_parameter_value()
+            .double_value
+        )
+        control_speed = (
+            self.get_parameter("wingsail.actuation_speed_deg_per_sec")
+            .get_parameter_value()
+            .double_value
+        )
         self.__sail_controller = SailController(
             target_angle, current_control_ang, time_step, control_speed
         )
@@ -228,7 +250,7 @@ class LowLevelControlNode(Node):
         if not self.__rudder_controller:
             self.init_rudder_controller()
 
-        if self._parameters["rudder.disable_actuation"].value:
+        if self.get_parameter("rudder.disable_actuation").get_parameter_value().bool_value:
             self.get_logger().info("Rudder actuation disabled.")
 
         else:
@@ -276,7 +298,7 @@ class LowLevelControlNode(Node):
         if not self.__sail_controller:
             self.init_sail_controller()
 
-        if self._parameters["wingsail.disable_actuation"].value:
+        if self.get_parameter("wingsail.disable_actuation").get_parameter_value().bool_value:
             self.get_logger().info("Trim tab actuation disabled.")
 
         else:
