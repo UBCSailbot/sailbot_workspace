@@ -22,6 +22,7 @@ echo "    echo -e \"\\\e[1;33mWARNING: Can't find the ROS workspace overlay: bui
 echo "fi" >> $HOME/.bashrc
 
 echo "" >> $HOME/.bashrc
-echo "# set up links for ompl python bindings and ROS type supports" >> $HOME/.bashrc
-echo "sudo ln -sf /usr/share/libompl.so /usr/lib/libompl.so" >> $HOME/.bashrc
-echo "export LD_LIBRARY_PATH=/usr/share:/workspaces/sailbot_workspace/install/lib:$LD_LIBRARY_PATH" >> $HOME/.bashrc
+echo "# Add locations for ROS type support modules to PATH" >> $HOME/.bashrc
+echo 'export LD_LIBRARY_PATH=/workspaces/sailbot_workspace/install/lib:$LD_LIBRARY_PATH' >> $HOME/.bashrc
+echo "# This is required for rosidl_parser to be findable on the RPI" >> $HOME/.bashrc
+echo 'export PYTHONPATH=/opt/ros/humble/local/lib/python3.10/dist-packages:$PYTHONPATH' >> $HOME/.bashrc

@@ -1,10 +1,5 @@
 #!/bin/bash
 set -e
-export LD_LIBRARY_PATH=/usr/share:$LD_LIBRARY_PATH
-echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
-echo "PYTHON_PATH: $PYTHONPATH"
-echo "locating pyompl shared object"
-find . -name "pyompl*.so"
 
 # Display a help message for using this script
 function helpMessage() {
