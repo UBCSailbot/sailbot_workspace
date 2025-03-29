@@ -1,9 +1,10 @@
 """The main node of the local_pathfinding package, represented by the `Sailbot` class."""
 
+import custom_interfaces.msg as ci
 import rclpy
 from rclpy.node import Node
 
-import custom_interfaces.msg as ci
+import local_pathfinding.global_path as gp
 from local_pathfinding.local_path import LocalPath
 
 
@@ -122,7 +123,9 @@ class Sailbot(Node):
         self.gps = msg
 
     def global_path_callback(self, msg: ci.Path):
-        self.get_logger().debug(f"Received data from {self.global_path_sub.topic}: {msg}")
+        self.get_logger().debug(
+            f"Received data from {self.global_path_sub.topic}: {gp.path_to_dict(msg)}"
+        )
         self.global_path = msg
 
     def filtered_wind_sensor_callback(self, msg: ci.WindSensor):
@@ -139,8 +142,8 @@ class Sailbot(Node):
         self.update_params()
 
         desired_heading = self.get_desired_heading()
-        if desired_heading < 0 or 360 <= desired_heading:
-            self.get_logger().warning(f"Heading {desired_heading} not in [0, 360)")
+        if (desired_heading <= -180) or (180 < desired_heading):
+            self.get_logger().warning(f"Heading {desired_heading} not in (-180, 180]")
 
         msg = ci.DesiredHeading()
         msg.heading.heading = desired_heading
@@ -176,7 +179,7 @@ class Sailbot(Node):
         )
 
         # TODO: create function to compute the heading from current position to next local waypoint
-        return 0.0
+        return -45.0
 
     def update_params(self):
         """Update instance variables that depend on parameters if they have changed."""
@@ -199,7 +202,6 @@ class Sailbot(Node):
             self.planner = planner
 
     def _all_subs_active(self) -> bool:
-        return True  # TODO: this line is a placeholder, delete when mocks can be run
         return self.ais_ships and self.gps and self.global_path and self.filtered_wind_sensor
 
     def _log_inactive_subs_warning(self):

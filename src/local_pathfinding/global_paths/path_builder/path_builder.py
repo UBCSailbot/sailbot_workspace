@@ -17,7 +17,6 @@ import re
 import webbrowser
 from os import walk
 from typing import Dict, List, Tuple
-
 import numpy as np
 import plotly.graph_objects as go
 from custom_interfaces.msg import HelperLatLon, Path
