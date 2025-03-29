@@ -158,21 +158,29 @@ private:
      */
     void publishAIS(const CanFrame & ais_frame)
     {
-        CAN_FP::AISShips ais_ship(ais_frame);
-        if (ais_ships_num_ == 0) {
-            ais_ships_num_ = ais_ship.getNumShips();
-            ais_ships_holder_.reserve(ais_ships_num_);
-        }
+        try {
+            CAN_FP::AISShips ais_ship(ais_frame);
 
-        ais_ships_holder_[ais_ship.getShipIndex()] = ais_ship.toRosMsg();  //maybe change to pushback later
+            if (ais_ships_num_ == 0) {
+                ais_ships_num_ = ais_ship.getNumShips();
+                ais_ships_holder_.reserve(ais_ships_num_);
+            }
 
-        if (ais_ships_holder_.size() == static_cast<size_t>(ais_ships_num_)) {
-            ais_ships_.ships = ais_ships_holder_;
-            ais_pub_->publish(ais_ships_);
-            ais_ships_holder_.clear();
-            ais_ships_num_ = 0;  // reset the number of ships
+            ais_ships_holder_[ais_ship.getShipIndex()] = ais_ship.toRosMsg();  //maybe change to pushback later
+
+            if (ais_ships_holder_.size() == static_cast<size_t>(ais_ships_num_)) {
+                ais_ships_.ships = ais_ships_holder_;
+                ais_pub_->publish(ais_ships_);
+                ais_ships_holder_.clear();
+                ais_ships_num_ = 0;  // reset the number of ships
+            }
+            RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), ais_ship.toString().c_str());
+        } catch (std::out_of_range err) {
+            RCLCPP_INFO(
+              this->get_logger(), "%s Attempted to construct AISShips but was out of range",
+              getCurrentTimeString().c_str());
+            return;
         }
-        RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), ais_ship.toString().c_str());
     }
 
     /**
@@ -183,45 +191,58 @@ private:
      */
     void publishBattery(const CanFrame & battery_frame)
     {
-        CAN_FP::Battery      bat(battery_frame);
-        msg::HelperBattery & bat_msg = batteries_;
-        bat_msg                      = bat.toRosMsg();
-        batteries_pub_->publish(batteries_);
-        // Voltage < 10V means low power mode
-        // If in low power mode, power mode will only change back to normal if voltage reaches >= 12V.
-        if (bat_msg.voltage < 10) {  //NOLINT(readability-magic-numbers)
-            set_pwr_mode = CAN_FP::PwrMode::POWER_MODE_LOW;
-        } else if (bat_msg.voltage >= 12) {  //NOLINT(readability-magic-numbers)
-            set_pwr_mode = CAN_FP::PwrMode::POWER_MODE_NORMAL;
+        try {
+            CAN_FP::Battery      bat(battery_frame);
+            msg::HelperBattery & bat_msg = batteries_;
+            bat_msg                      = bat.toRosMsg();
+            batteries_pub_->publish(batteries_);
+            // Voltage < 10V means low power mode
+            // If in low power mode, power mode will only change back to normal if voltage reaches >= 12V.
+            if (bat_msg.voltage < 10) {  //NOLINT(readability-magic-numbers)
+                set_pwr_mode = CAN_FP::PwrMode::POWER_MODE_LOW;
+            } else if (bat_msg.voltage >= 12) {  //NOLINT(readability-magic-numbers)
+                set_pwr_mode = CAN_FP::PwrMode::POWER_MODE_NORMAL;
+            }
+            CAN_FP::PwrMode power_mode(set_pwr_mode, CAN_FP::CanId::PWR_MODE);
+            can_trns_->send(power_mode.toLinuxCan());
+
+            // Get the current time as a time_point
+            auto now = std::chrono::system_clock::now();
+
+            // Convert it to a time_t object for extracting hours and minutes
+            std::time_t currentTime = std::chrono::system_clock::to_time_t(now);
+
+            std::stringstream ss;
+            ss << currentTime;
+
+            RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), bat.toString().c_str());
+        } catch (std::out_of_range err) {
+            RCLCPP_INFO(
+              this->get_logger(), "%s Attempted to construct battery but was out of range",
+              getCurrentTimeString().c_str());
+            return;
         }
-        CAN_FP::PwrMode power_mode(set_pwr_mode, CAN_FP::CanId::PWR_MODE);
-        can_trns_->send(power_mode.toLinuxCan());
-
-        // Get the current time as a time_point
-        auto now = std::chrono::system_clock::now();
-
-        // Convert it to a time_t object for extracting hours and minutes
-        std::time_t currentTime = std::chrono::system_clock::to_time_t(now);
-
-        std::stringstream ss;
-        ss << currentTime;
-
-        RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), bat.toString().c_str());
     }
 
     /**
      * @brief Publish a GPS frame
-     *        Intended to be registered as a callback with the CAN Tranceiver instance
+     *        Intended to be registered as a callback with the CAN Transceiver instance
      *
-     * @param gps_frame gps CAN rfame read from the CAN bus
+     * @param gps_frame gps CAN frame read from the CAN bus
      */
     void publishGPS(const CanFrame & gps_frame)
     {
-        CAN_FP::GPS gps(gps_frame);
+        try {
+            CAN_FP::GPS gps(gps_frame);
 
-        msg::GPS gps_ = gps.toRosMsg();
-        gps_pub_->publish(gps_);
-        RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), gps.toString().c_str());
+            msg::GPS gps_ = gps.toRosMsg();
+            gps_pub_->publish(gps_);
+            RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), gps.toString().c_str());
+        } catch (std::out_of_range err) {
+            RCLCPP_INFO(
+              this->get_logger(), "%s Attempted to construct GPS but was out of range", getCurrentTimeString().c_str());
+            return;
+        }
     }
 
     /**
@@ -231,19 +252,26 @@ private:
      */
     void publishWindSensor(const CanFrame & wind_sensor_frame)
     {
-        CAN_FP::WindSensor wind_sensor(wind_sensor_frame);
-        size_t             idx;
-        for (size_t i = 0;; i++) {
-            if ((wind_sensor.id_ == CAN_FP::WindSensor::WIND_SENSOR_IDS[i])) {
-                idx = i;
-                break;
+        try {
+            CAN_FP::WindSensor wind_sensor(wind_sensor_frame);
+            size_t             idx;
+            for (size_t i = 0;; i++) {
+                if ((wind_sensor.id_ == CAN_FP::WindSensor::WIND_SENSOR_IDS[i])) {
+                    idx = i;
+                    break;
+                }
             }
+            msg::WindSensor & wind_sensor_msg = wind_sensors_.wind_sensors[idx];
+            wind_sensor_msg                   = wind_sensor.toRosMsg();
+            wind_sensors_pub_->publish(wind_sensors_);
+            publishFilteredWindSensor();
+            RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), wind_sensor.toString().c_str());
+        } catch (std::out_of_range err) {
+            RCLCPP_INFO(
+              this->get_logger(), "%s Attempted to construct battery but was out of range",
+              getCurrentTimeString().c_str());
+            return;
         }
-        msg::WindSensor & wind_sensor_msg = wind_sensors_.wind_sensors[idx];
-        wind_sensor_msg                   = wind_sensor.toRosMsg();
-        wind_sensors_pub_->publish(wind_sensors_);
-        publishFilteredWindSensor();
-        RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), wind_sensor.toString().c_str());
     }
 
     /**
@@ -328,10 +356,17 @@ private:
     {
         sail_cmd_ = sail_cmd_input;
         boat_sim_input_msg_.set__sail_cmd(sail_cmd_);
-        auto main_trim_tab_frame = CAN_FP::MainTrimTab(sail_cmd_input, CanId::MAIN_TR_TAB);
-        can_trns_->send(main_trim_tab_frame.toLinuxCan());
-        RCLCPP_INFO(
-          this->get_logger(), "%s %s", getCurrentTimeString().c_str(), main_trim_tab_frame.toString().c_str());
+        try {
+            CAN_FP::MainTrimTab main_trim_tab_frame(sail_cmd_input, CanId::MAIN_TR_TAB);
+            can_trns_->send(main_trim_tab_frame.toLinuxCan());
+            RCLCPP_INFO(
+              this->get_logger(), "%s %s", getCurrentTimeString().c_str(), main_trim_tab_frame.toString().c_str());
+        } catch (std::out_of_range err) {
+            RCLCPP_INFO(
+              this->get_logger(), "%s Attempted to construct MainTrimTab but was out of range",
+              getCurrentTimeString().c_str());
+            return;
+        }
     }
 
     /**
@@ -352,7 +387,8 @@ private:
     void subDesiredHeadingCb(msg::DesiredHeading desired_heading)
     {
         boat_sim_input_msg_.set__heading(desired_heading);
-        auto desired_heading_frame = CAN_FP::DesiredHeading(desired_heading, CanId::MAIN_TR_TAB);
+        // desired heading should get through even if bounds are bad for debug purposes
+        CAN_FP::DesiredHeading desired_heading_frame(desired_heading, CanId::MAIN_TR_TAB);
         can_trns_->send(desired_heading_frame.toLinuxCan());
         RCLCPP_INFO(
           this->get_logger(), "%s %s", getCurrentTimeString().c_str(), desired_heading_frame.toString().c_str());

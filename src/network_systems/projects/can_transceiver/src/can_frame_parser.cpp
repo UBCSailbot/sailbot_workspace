@@ -699,7 +699,11 @@ DesiredHeading::DesiredHeading(const CanFrame & cf) : DesiredHeading(static_cast
 
     heading_ = static_cast<float>(raw_heading) / 1000;  //NOLINT(readability-magic-numbers)
 
-    checkBounds();
+    try {
+        checkBounds();
+    } catch (std::out_of_range err) {
+        std::cerr << "DESIRED HEADING OUT OF BOUNDS" << std::endl;
+    }
 }
 
 DesiredHeading::DesiredHeading(msg::DesiredHeading ros_desired_heading, CanId id)
