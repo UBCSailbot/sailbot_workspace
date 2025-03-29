@@ -75,7 +75,7 @@ def bound_to_360(angle: ScalarOrArray, isDegrees: bool = True) -> ScalarOrArray:
     return bound_angle
 
 
-def get_wind_speed(wind: NDArray) -> float:
+def get_wind_speed(wind: NDArray) -> Scalar:
     """Calculates wind speed.
 
     Args:
@@ -89,7 +89,7 @@ def get_wind_speed(wind: NDArray) -> float:
     return math.sqrt(sum_of_squares)
 
 
-def get_wind_direction(wind: NDArray) -> float:
+def get_wind_direction(wind: NDArray) -> Scalar:
     """Calculates wind direction in x-y plane.
 
     Args:
