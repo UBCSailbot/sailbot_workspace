@@ -300,11 +300,11 @@ TEST_F(TestLocalTransceiver, checkCache)
     EXPECT_EQ(parsed_test.waypoints[1].longitude, parsed_cache.waypoints[0].longitude);
 }
 
-std::mutex port_mutex;
+// std::mutex port_mutex;
 
-TEST_F(TestLocalTransceiver, testMailboxBlackbox)
-{
-    std::lock_guard<std::mutex> lock(port_mutex);  // because same port is being used
+// TEST_F(TestLocalTransceiver, testMailboxBlackbox)
+// {
+//     std::lock_guard<std::mutex> lock(port_mutex);  // because same port is being used
 
 //     std::string holder  = "curl -X POST -F \"test=1234\" http://localhost:8080";
 //     std::string holder2 = "printf \"at+sbdix\r\" > $LOCAL_TRANSCEIVER_TEST_PORT";
