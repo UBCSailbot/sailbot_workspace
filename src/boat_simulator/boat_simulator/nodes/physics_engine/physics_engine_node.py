@@ -361,7 +361,7 @@ class PhysicsEngineNode(Node):
         ws1 = SimWindSensor()
         wind1 = ws1._wind()
         ws2 = SimWindSensor()
-        wind2 = ws2.wind()
+        wind2 = ws2._wind()
 
         windSensor1 = WindSensor()
         windSensor1.speed.speed = Utils.get_wind_speed(wind1)
