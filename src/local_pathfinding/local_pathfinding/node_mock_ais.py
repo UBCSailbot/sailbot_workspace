@@ -75,10 +75,7 @@ class MockAISNode(Node):
         Update the ship's position based on its speed, heading and rate of turn (ROT)
         """
 
-        # TODO: update ship based on turnspeed as well
-
-        # Set heading, speed and time
-        heading = math.radians(ship.cog.heading)
+        # Get speed and time
         speed = ship.sog.speed / 3600
         time = self.timer_period
         ref = HelperLatLon(latitude=0.0, longitude=0.0)
@@ -86,14 +83,25 @@ class MockAISNode(Node):
             latitude=ship.lat_lon.latitude, longitude=ship.lat_lon.longitude
         )
 
-        # rot = ship.rot.rot
-        # # Convert ROT to degrees per minute
-        # if rot == -128:
-        #     rot_dpm = 0
-        # elif abs(rot) == 127:
-        #     rot_dpm = 10
-        # else:
-        #     rot_dpm = (abs(rot)/4.733) ** 2
+        # Get ROT in radians per second
+        rot = ship.rot.rot
+        if rot == -128:
+            rot_dpm = 0
+        elif abs(rot) == 127:
+            rot_dpm = 10
+        else:
+            rot_dpm = (rot / 4.733) ** 2
+        rot_rps = math.radians(rot_dpm / 60)
+        if rot < 0:
+            rot_rps *= -1
+
+        # Update heading
+        ship.cog.heading += math.degrees(rot_rps * time)
+        if ship.cog.heading > 180:
+            ship.cog.heading -= 360
+        elif ship.cog.heading <= -180:
+            ship.cog.heading += 360
+        heading = math.radians(ship.cog.heading)
 
         # Convert ship position to cartesian coordinates
         ship_cartesian = latlon_to_xy(ref, ship_latlon)
