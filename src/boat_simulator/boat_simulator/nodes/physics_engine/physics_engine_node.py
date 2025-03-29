@@ -358,9 +358,8 @@ class PhysicsEngineNode(Node):
 
     def __publish_wind_sensors(self):
         """Publishes mock wind sensor data."""
-        ws = SimWindSensor()
-        wind1 = ws.__sim_wind_sensor.wind
-        wind2 = ws.__sim_wind_sensor.wind
+        wind1 = self.__sim_wind_sensor.wind
+        wind2 = self.__sim_wind_sensor.wind
 
         windSensor1 = WindSensor()
         windSensor1.speed.speed = Utils.get_wind_speed(wind1)
