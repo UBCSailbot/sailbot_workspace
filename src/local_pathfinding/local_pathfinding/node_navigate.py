@@ -187,6 +187,13 @@ class Sailbot(Node):
         if received_new_path:
             self.current_waypoint_index = 0
 
+        desired_heading, self.current_waypoint_index = (
+            calculate_desired_heading_and_waypoint_index(
+                self.local_path,
+                self.current_waypoint_index,
+            )
+        )
+
         desired_heading, distance_to_waypoint_m = self.get_heading_and_distance()
 
         if cs.meters_to_km(distance_to_waypoint_m) < WAYPOINT_REACHED_THRESH_KM:
@@ -205,6 +212,28 @@ class Sailbot(Node):
             boat.longitude, boat.latitude, waypoint.longitude, waypoint.latitude
         )
         return desired_heading, distance_to_waypoint_m
+
+    @staticmethod
+    def calculate_desired_heading_and_waypoint_index(
+        local_path: LocalPath, waypoint_index: int, gps: ci.GPS
+    ):
+        if (local_path is None) or (local_path.waypoints is None):
+            raise TypeError("local_path cannot be None")
+
+        boat = gps.lat_lon
+        waypoint = local_path.waypoints[waypoint_index]
+        desired_heading, _, distance_to_waypoint_m = GEODESIC.inv(
+            boat.longitude, boat.latitude, waypoint.longitude, waypoint.latitude
+        )
+
+        if cs.meters_to_km(distance_to_waypoint_m) < WAYPOINT_REACHED_THRESH_KM:
+            waypoint_index += 1
+            waypoint = local_path.waypoints[waypoint_index]
+            desired_heading, _, distance_to_waypoint_m = GEODESIC.inv(
+                boat.longitude, boat.latitude, waypoint.longitude, waypoint.latitude
+            )
+
+        return cs.bound_to_180(desired_heading), waypoint_index
 
     def update_params(self):
         """Update instance variables that depend on parameters if they have changed."""
