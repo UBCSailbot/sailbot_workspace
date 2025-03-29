@@ -82,7 +82,7 @@ def get_wind_speed(wind: NDArray) -> Scalar:
         wind (NDArray): Wind velocity in each coordinate.
 
     Returns:
-        float: Magnitude of wind velocity. Output units match 'wind'.
+        Scalar: Magnitude of wind velocity. Output units match 'wind'.
     """
     wind_squared = np.square(wind)
     sum_of_squares = np.sum(wind_squared)
@@ -96,7 +96,7 @@ def get_wind_direction(wind: NDArray) -> Scalar:
         wind (NDArray): Wind velocity in each coordinate.
 
     Returns:
-        float: Direction of wind, in degrees. Angle is in [-180, 180).
+        Scalar: Direction of wind, in degrees. Angle is in [-180, 180).
     """
     angle_deg = np.arctan2(wind[0], wind[1]) * 180 / np.pi
     return bound_to_180(angle_deg, isDegrees=True)
