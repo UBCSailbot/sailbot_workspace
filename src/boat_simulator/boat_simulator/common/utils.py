@@ -34,15 +34,13 @@ def degrees_to_rad(angle: Scalar) -> Scalar:
 
 
 @overload
-def bound_to_180(angle: Scalar, isDegrees: bool = True) -> Scalar:
-    ...
+def bound_to_180(angle: Scalar, isDegrees: bool = True) -> Scalar: ...
 
 
 @overload
 def bound_to_180(
     angle: NDArray[Union[np.int32, np.float32]], isDegrees: bool = True
-) -> NDArray[Union[np.int32, np.float32]]:
-    ...
+) -> NDArray[Union[np.int32, np.float32]]: ...
 
 
 def bound_to_180(angle: ScalarOrArray, isDegrees: bool = True) -> ScalarOrArray:
@@ -75,3 +73,30 @@ def bound_to_360(angle: ScalarOrArray, isDegrees: bool = True) -> ScalarOrArray:
     bound_angle = angle % bound
 
     return bound_angle
+
+
+def get_wind_speed(wind: NDArray) -> float:
+    """Calculates wind speed.
+
+    Args:
+        wind (NDArray): Wind velocity in each coordinate.
+
+    Returns:
+        float: Magnitude of wind velocity. Output units match 'wind'.
+    """
+    wind_squared = np.square(wind)
+    sum_of_squares = np.sum(wind_squared)
+    return math.sqrt(sum_of_squares)
+
+
+def get_wind_direction(wind: NDArray) -> float:
+    """Calculates wind direction in x-y plane.
+
+    Args:
+        wind (NDArray): Wind velocity in each coordinate.
+
+    Returns:
+        float: Direction of wind, in degrees. Angle is in [-180, 180).
+    """
+    angle_deg = np.arctan2(wind[0], wind[1]) * 180 / np.pi
+    return bound_to_180(angle_deg, isDegrees=True)
