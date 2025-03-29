@@ -172,14 +172,18 @@
         "python.analysis.diagnosticMode": "workspace",
         "python.analysis.extraPaths": [
             "/workspaces/sailbot_workspace/install/lib/python3.10/site-packages",
-            "/opt/ros/humble/lib/python3.10/site-packages"
+            "/workspaces/sailbot_workspace/install/local/lib/python3.10/dist-packages",
+            "/opt/ros/humble/lib/python3.10/site-packages",
+            "/opt/ros/humble/local/lib/python3.10/dist-packages"
         ],
         "python.analysis.include": ["${workspaceFolder:sailbot_workspace}/src"],
         "python.analysis.exclude": ["${workspaceFolder:sailbot_workspace}/src/virtual_iridium"],
         // Autocomplete from ros python packages
         "python.autoComplete.extraPaths": [
             "/workspaces/sailbot_workspace/install/lib/python3.10/site-packages",
-            "/opt/ros/humble/lib/python3.10/site-packages"
+            "/workspaces/sailbot_workspace/install/local/lib/python3.10/dist-packages",
+            "/opt/ros/humble/lib/python3.10/site-packages",
+            "/opt/ros/humble/local/lib/python3.10/dist-packages"
         ],
         "python.defaultInterpreterPath": "/usr/bin/python3",
         // Environment file lets vscode find python files within workspace
