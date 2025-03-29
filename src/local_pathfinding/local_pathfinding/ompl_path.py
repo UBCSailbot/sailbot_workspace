@@ -196,7 +196,7 @@ class OMPLPath:
             goal_polygon = self.create_buffer_around_position(cs.XY(0, 0))
             goal_x, goal_y = (0.0, 0.0)
         else:
-            goal_position = self.state.global_path[-1]
+            goal_position = self.state.global_path.waypoints[-1]
             goal_position_in_xy = cs.latlon_to_xy(self.state.reference_latlon, goal_position)
             goal_polygon = self.create_buffer_around_position(goal_position_in_xy)
             goal_x, goal_y = goal_position_in_xy
