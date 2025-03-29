@@ -254,14 +254,13 @@ class LowLevelControlNode(Node):
 
         if self.get_parameter("rudder.disable_actuation").get_parameter_value().bool_value:
             self.get_logger().info("Rudder actuation disabled.")
-
+        elif not self.gps:
+            self.get_logger().error("No GPS Data available.")
         else:
             self.get_logger().info("Rudder actuation enabled.")
-            current_heading = 0.0
-            if self.gps:
-                current_heading = self.gps.heading.heading
-            else:
-                self.get_logger().error("No GPS Data available.")
+
+            current_heading = self.gps.heading.heading
+
             desired_heading = goal_handle.request.desired_heading.heading.heading
 
             self.__rudder_controller.reset_setpoint(desired_heading, current_heading)
