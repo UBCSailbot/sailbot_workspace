@@ -38,6 +38,7 @@ low_level_control_node:
             kp: 0.01
             ki: 0.01
             kd: 0.01
+            cp: 0.01
             buffer_size: 50
       wingsail:
          disable_actuation: false

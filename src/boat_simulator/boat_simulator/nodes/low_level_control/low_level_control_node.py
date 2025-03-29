@@ -98,6 +98,7 @@ class LowLevelControlNode(Node):
                 ("rudder.pid.kp", rclpy.Parameter.Type.DOUBLE),
                 ("rudder.pid.ki", rclpy.Parameter.Type.DOUBLE),
                 ("rudder.pid.kd", rclpy.Parameter.Type.DOUBLE),
+                ("rudder.pid.cp", rclpy.Parameter.Type.DOUBLE),
                 ("rudder.pid.buffer_size", rclpy.Parameter.Type.INTEGER),
                 ("wingsail.disable_actuation", rclpy.Parameter.Type.BOOL),
                 ("wingsail.fixed_angle_deg", rclpy.Parameter.Type.DOUBLE),
@@ -193,7 +194,7 @@ class LowLevelControlNode(Node):
             .double_value
         )
         kp = self.get_parameter("rudder.pid.kp").get_parameter_value().double_value
-        cp = self.get_parameter("rudder.pid.kp").get_parameter_value().double_value
+        cp = self.get_parameter("rudder.pid.cp").get_parameter_value().double_value
         control_speed = 1 / time_step  # not sure if this is the right value to use
         self.__rudder_controller = RudderController(
             current_heading, desired_heading, current_control_ang, time_step, kp, cp, control_speed
