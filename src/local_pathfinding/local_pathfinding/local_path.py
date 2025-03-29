@@ -52,14 +52,10 @@ class LocalPathState:
             self.ais_ships = []  # ensures this attribute is always set, to avoid AtributeError
 
         if global_path:  # TODO: remove when mock can be run
-            self.global_path = Path()
-            self.global_path.waypoints = [
-                HelperLatLon(latitude=waypoint.latitude, longitude=waypoint.longitude)
-                for waypoint in global_path.waypoints
-            ]
-
-        else:
             self.global_path = global_path
+        else:
+            self.global_path = Path()
+            self.global_path.waypoints = []
 
         if filtered_wind_sensor:  # TODO: remove when mock can be run
             self.wind_speed = filtered_wind_sensor.speed.speed
