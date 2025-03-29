@@ -61,7 +61,7 @@ class LocalPathState:
             self.wind_direction = 0
 
         if self.global_path and len(self.global_path.waypoints) > 0:
-            self.reference_latlon = self.global_path.waypoints[-1]
+            self.reference_latlon = self.global_path.waypoints[len(self.global_path.waypoints)]
         else:
             self.reference_latlon = HelperLatLon(latitude=0.0, longitude=0.0)
 
