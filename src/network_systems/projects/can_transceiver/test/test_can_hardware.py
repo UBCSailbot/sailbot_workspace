@@ -435,6 +435,7 @@ def main():
     else:
         print("Test passed")
 
+    process.terminate()
     process.stdout.close()
     process.wait()
 
