@@ -152,7 +152,8 @@ class Sailbot(Node):
         self.get_logger().debug(f"Publishing to {self.desired_heading_pub.topic}: {msg}")
 
     def lpath_data_callback(self):
-        """Get and publish the local path."""
+        """Collect all navigation data and publish it in one message"""
+        raise NotImplementedError
 
         current_local_path = ci.Path(waypoints=self.local_path.waypoints)
 
