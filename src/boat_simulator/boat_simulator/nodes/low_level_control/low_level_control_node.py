@@ -65,6 +65,8 @@ class LowLevelControlNode(Node):
         self.__init_subscriptions()
         self.__init_action_servers()
         self.get_logger().debug("Node initialization complete. Starting execution...")
+        self.init_rudder_controller()
+        self.init_sail_controller()
 
     def __init_private_attributes(self):
         """Initializes private attributes of this class that are not initialized anywhere else
@@ -185,8 +187,9 @@ class LowLevelControlNode(Node):
         )
 
     def init_rudder_controller(self):
-        current_heading = self.gps.heading.heading
-        desired_heading = self.gps.heading.heading
+        # initial heading value needed here
+        current_heading = 0.0
+        desired_heading = 0.0
         current_control_ang = self.rudder_angle
         time_step = (
             self.get_parameter("rudder.actuation_execution_period_sec")
@@ -248,8 +251,6 @@ class LowLevelControlNode(Node):
         Returns:
             Optional[SimRudderActuation_Result]: The result message if successful.
         """
-        if not self.__rudder_controller:
-            self.init_rudder_controller()
 
         if self.get_parameter("rudder.disable_actuation").get_parameter_value().bool_value:
             self.get_logger().info("Rudder actuation disabled.")
@@ -259,6 +260,8 @@ class LowLevelControlNode(Node):
             current_heading = 0.0
             if self.gps:
                 current_heading = self.gps.heading.heading
+            else:
+                self.get_logger().error("No GPS Data available.")
             desired_heading = goal_handle.request.desired_heading.heading.heading
 
             self.__rudder_controller.reset_setpoint(desired_heading, current_heading)
@@ -275,9 +278,10 @@ class LowLevelControlNode(Node):
                 goal_handle.publish_feedback(feedback=feedback_msg)
                 self.__rudder_angle = i
                 self.rudder_action_feedback_rate.sleep()
+            self.get_logger().info(f"New rudder angle: {self.rudder_angle}")
+            self.get_logger().info("Rudder actuation complete.")
+
         self._is_rudder_action_active = False
-        self.get_logger().info(f"New rudder angle: {self.rudder_angle}")
-        self.get_logger().info("Rudder actuation complete.")
         goal_handle.succeed()
         result = SimRudderActuation.Result()
         result.remaining_angular_distance = 0.0
@@ -296,8 +300,6 @@ class LowLevelControlNode(Node):
         Returns:
             Optional[SimSailTrimTabActuation_Result]: The result message if successful.
         """
-        if not self.__sail_controller:
-            self.init_sail_controller()
 
         if self.get_parameter("wingsail.disable_actuation").get_parameter_value().bool_value:
             self.get_logger().info("Trim tab actuation disabled.")
@@ -321,11 +323,11 @@ class LowLevelControlNode(Node):
                 goal_handle.publish_feedback(feedback=feedback_msg)
                 self.__sail_trim_tab_angle = i
                 self.sail_action_feedback_rate.sleep()
-
+            self.get_logger().info(
+                f"New trim tab angle {self.__sail_controller.current_control_ang}"
+            )
+            self.get_logger().info("Trim tab actuation complete.")
         self._is_sail_action_active = False
-        self.get_logger().info(f"New trim tab angle {self.__sail_controller.current_control_ang}")
-        self.get_logger().info("Trim tab actuation complete.")
-
         goal_handle.succeed()
 
         result = SimSailTrimTabActuation.Result()
