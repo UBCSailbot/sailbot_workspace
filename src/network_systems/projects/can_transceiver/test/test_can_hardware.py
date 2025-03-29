@@ -2,11 +2,8 @@ import argparse
 import random
 import re
 import subprocess
-import time
 
 # *************** CONSTANTS ***************
-
-LOG_FILE = "test_logs.txt"
 # Upper and lower bounds
 
 # Bounds for Latitude and Longitude
@@ -217,23 +214,6 @@ def run_command(command):
     return process.returncode, stdout
 
 
-def capture_log(process):
-    # Continuously capture the logs while the process is running
-    with open(LOG_FILE, "w") as f:
-        while True:
-            # Read the output from the process' stdout and stderr
-            output = process.stdout.readline()
-            error = process.stderr.readline()
-            if output:
-                f.write(output)  # Write stdout to the log file
-            if error:
-                f.write(error)  # Write stderr to the log file
-            # If the process ends (manually or otherwise), break out of the loop
-            if output == "" and error == "" and process.poll() is not None:
-                break
-            time.sleep(0.1)  # Avoid tight loop, allows other processes to run
-
-
 def setup_can():
     r_code, output = run_command(
         "$ROS_WORKSPACE/sailbot_workspace/scripts/deployment/helpers/setup_can.sh"
@@ -257,11 +237,21 @@ def test_setup(frames, t_info):
             t_info[frame] = gen_path_gps_data_frame_cmd()
 
 
-def result_verify(frames, t_info, process):
+def result_verify(frames, t_info):
 
-    with open(LOG_FILE, "r") as log_file:
-        log_data = log_file.readlines()
-
+    res_data = {}
+    filename = ""
+    patterns = {
+        "BMS_DATA_FRAME": re.compile(r"\[BATTERY\] Voltage: ([\d.]+)"),
+        "SAIL_WIND": re.compile(r"\[WIND SENSOR\] Speed: ([\d.]+) Angle: ([\d.]+)"),
+        "PATH_GPS_DATA_FRAME": re.compile(
+            r"\[GPS\] Latitude: ([\d.]+) Longitude: ([\d.]+) Speed: ([\d.]+)"
+        ),
+        "SAIL_AIS": re.compile(
+            r"\[AIS SHIP\] ID: ([\d.]+) Latitude: ([\d.]+) Longitude: ([\d.]+)"
+        ),
+        "RUDDER_DATA_FRAME": re.compile(r"\[DESIRED HEADING\] Heading: ([\d.]+)"),
+    }
     res_data = {}
     patterns = {
         "BMS_DATA_FRAME": re.compile(r"\[BATTERY\] Voltage: ([\d.]+)"),
@@ -276,69 +266,66 @@ def result_verify(frames, t_info, process):
     }
     filtered_patterns = {frame: patterns[frame] for frame in frames if frame in patterns}
 
-    for line in log_data:
-        for frame, pattern in filtered_patterns.items():
-            match = pattern.search(line)
-            if match:
-                if frame == "BMS_DATA_FRAME":
-                    res_data[frame].append({"voltage": float(match.group(1))})
-                elif frame == "MAIN_TRIM_TAB":
-                    res_data[frame].append({"angle": float(match.group(1))})
-                elif frame == "SAIL_WIND":
-                    res_data[frame].append(
-                        {
-                            "wind_speed": float(match.group(1)),
-                            "wind_angle": float(match.group(2)),
-                        }
-                    )
-                elif frame == "PATH_GPS_DATA_FRAME":
-                    res_data[frame].append(
-                        {
-                            "lat": float(match.group(1)),
-                            "lon": float(match.group(2)),
-                            "speed": float(match.group(3)),
-                        }
-                    )
-                elif frame == "SAIL_AIS":
-                    res_data[frame].append(
-                        {
-                            "ship_id": match.group(1),
-                            "lat": float(match.group(2)),
-                            "lon": float(match.group(3)),
-                        }
-                    )
-                elif frame == "RUDDER_DATA_FRAME":
-                    res_data[frame].append({"heading": float(match.group(1))})
+    with open(filename, "r") as file:
+        for line in file:
+            for frame, pattern in filtered_patterns.items():
+                match = pattern.search(line)
+                if match:
+                    if frame == "BMS_DATA_FRAME":
+                        res_data[frame].append({"voltage": float(match.group(1))})
+                    elif frame == "MAIN_TRIM_TAB":
+                        res_data[frame].append({"angle": float(match.group(1))})
+                    elif frame == "SAIL_WIND":
+                        res_data[frame].append(
+                            {
+                                "wind_speed": float(match.group(1)),
+                                "wind_angle": float(match.group(2)),
+                            }
+                        )
+                    elif frame == "PATH_GPS_DATA_FRAME":
+                        res_data[frame].append(
+                            {
+                                "lat": float(match.group(1)),
+                                "lon": float(match.group(2)),
+                                "speed": float(match.group(3)),
+                            }
+                        )
+                    elif frame == "SAIL_AIS":
+                        res_data[frame].append(
+                            {
+                                "ship_id": match.group(1),
+                                "lat": float(match.group(2)),
+                                "lon": float(match.group(3)),
+                            }
+                        )
+                    elif frame == "RUDDER_DATA_FRAME":
+                        res_data[frame].append({"heading": float(match.group(1))})
 
     for frame, info in t_info.items():
         if frame == "BMS_DATA_FRAME":
             for i in range(0, 3):
                 if res_data[frame][i]["voltage"] != info[i]["voltage"]:
                     print(
-                        f"Voltage mismatch for {frame}: {res_data[frame][i]['voltage']} \
-                            != {info[i]['voltage']}"
+                        f"Voltage mismatch for {frame}: {res_data[frame][i]['voltage']} != {info[i]['voltage']}"
                     )
                     return -1
         elif frame == "MAIN_TRIM_TAB":
             for i in range(0, 3):
                 if res_data[frame][i]["angle"] != info[i]["angle"]:
                     print(
-                        f"Angle mismatch for {frame}: {res_data[frame][i]['angle']} \
-                            != {info[i]['angle']}"
+                        f"Angle mismatch for {frame}: {res_data[frame][i]['angle']} != {info[i]['angle']}"
                     )
                     return -1
         elif frame == "SAIL_WIND":
             for i in range(0, 3):
                 if res_data[frame][i]["wind_speed"] != info[i]["wind_speed"]:
                     print(
-                        f"Wind speed mismatch for {frame}: {res_data[frame][i]['wind_speed']} \
-                            != {info[i]['wind_speed']}"
+                        f"Wind speed mismatch for {frame}: {res_data[frame][i]['wind_speed']} != {info[i]['wind_speed']}"
                     )
                     return -1
                 if res_data[frame][i]["wind_angle"] != info[i]["wind_angle"]:
                     print(
-                        f"Wind angle mismatch for {frame}: {res_data[frame][i]['wind_angle']} \
-                            != {info[i]['wind_angle']}"
+                        f"Wind angle mismatch for {frame}: {res_data[frame][i]['wind_angle']} != {info[i]['wind_angle']}"
                     )
                     return -1
         elif frame == "PATH_GPS_DATA_FRAME":
@@ -428,15 +415,6 @@ def main():
         frames = [frame for frame in frames if frame in specified_frames]
     print(frames)
 
-    print("Starting ROS...")
-
-    process = subprocess.Popen(
-        ["ros2", "launch", "network_systems", "main_launch.py", "mode:=production"],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-    )
-
     t_info = {}
     test_setup(frames, t_info)
     for frame, info in t_info.items():
@@ -449,14 +427,10 @@ def main():
                 print(f"Error sending frame {frame}: {output}")
             else:
                 print(f"Frame {frame} sent successfully")
-    capture_log(process)
-    if result_verify(frames, t_info, process) != 0:
+    if result_verify(frames, t_info) != 0:
         print("Test failed")
     else:
         print("Test passed")
-    process.terminate()
-    process.stdout.close()
-    process.wait()
 
 
 if __name__ == "__main__":
