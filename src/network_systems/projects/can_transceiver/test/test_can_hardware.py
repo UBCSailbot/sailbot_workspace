@@ -4,6 +4,8 @@ import re
 import subprocess
 
 # *************** CONSTANTS ***************
+
+LOG_FILE = "test_logs.txt"
 # Upper and lower bounds
 
 # Bounds for Latitude and Longitude
@@ -214,6 +216,13 @@ def run_command(command):
     return process.returncode, stdout
 
 
+def capture_log(process):
+    with open(LOG_FILE, "w") as log_file:
+        stdout, stderr = process.communicate()
+        log_file.write(stdout)
+        log_file.write(stderr)
+
+
 def setup_can():
     r_code, output = run_command(
         "$ROS_WORKSPACE/sailbot_workspace/scripts/deployment/helpers/setup_can.sh"
@@ -239,7 +248,8 @@ def test_setup(frames, t_info):
 
 def result_verify(frames, t_info, process):
 
-    stdout, stderr = process.communicate()
+    with open(LOG_FILE, "r") as log_file:
+        log_data = log_file.readlines()
 
     res_data = {}
     patterns = {
@@ -257,7 +267,7 @@ def result_verify(frames, t_info, process):
         if pattern not in frames:
             patterns.pop(pattern)
 
-    for line in stdout:
+    for line in log_data:
         for frame, pattern in patterns.items():
             match = pattern.search(line)
             if match:
@@ -430,14 +440,14 @@ def main():
                 print(f"Error sending frame {frame}: {output}")
             else:
                 print(f"Frame {frame} sent successfully")
+    process.terminate()
+    process.stdout.close()
+    process.wait()
+    capture_log(process)
     if result_verify(frames, t_info, process) != 0:
         print("Test failed")
     else:
         print("Test passed")
-
-    process.terminate()
-    process.stdout.close()
-    process.wait()
 
 
 if __name__ == "__main__":
