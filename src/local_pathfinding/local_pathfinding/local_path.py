@@ -2,14 +2,7 @@
 
 from typing import List, Optional, Tuple
 
-from custom_interfaces.msg import (
-    GPS,
-    AISShips,
-    HelperLatLon,
-    HelperSpeed,
-    Path,
-    WindSensor,
-)
+from custom_interfaces.msg import GPS, AISShips, HelperLatLon, Path, WindSensor
 from rclpy.impl.rcutils_logger import RcutilsLogger
 
 from local_pathfinding.ompl_path import OMPLPath
@@ -56,7 +49,7 @@ class LocalPathState:
         if ais_ships:  # TODO: remove when mock can be run
             self.ais_ships = [ship for ship in ais_ships.ships]
         else:
-            ais_ships = []  # ensures this attribute is always set, to avoid AtributeError
+            self.ais_ships = []  # ensures this attribute is always set, to avoid AtributeError
 
         if global_path:  # TODO: remove when mock can be run
             self.global_path = [
@@ -70,7 +63,7 @@ class LocalPathState:
             self.wind_speed = filtered_wind_sensor.speed.speed
             self.wind_direction = filtered_wind_sensor.direction
         else:
-            self.wind_speed = HelperSpeed(speed=0.0)
+            self.wind_speed = 0.0
             self.wind_direction = 0
 
         self.reference_latlon = (

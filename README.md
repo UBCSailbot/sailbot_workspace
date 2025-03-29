@@ -36,7 +36,7 @@ Our Dev Container configuration can be found in [`.devcontainer/`](https://githu
 
 ### VS Code Workspace
 
-[Workspaces](https://code.visualstudio.com/docs/editor/workspaces) are VS Code instances that contain one or more folders.
+[Workspaces](https://code.visualstudio.com/docs) are VS Code instances that contain one or more folders.
 Our workspace configuration file can be found at
 [`sailbot.code-workspace`](https://github.com/UBCSailbot/sailbot_workspace/blob/main/sailbot.code-workspace).
 
