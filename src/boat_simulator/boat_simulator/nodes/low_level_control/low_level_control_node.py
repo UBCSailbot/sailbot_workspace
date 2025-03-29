@@ -273,7 +273,7 @@ class LowLevelControlNode(Node):
             while not self.__rudder_controller.is_target_reached:
                 self.__rudder_controller.update_state()
                 i = self.__rudder_controller.current_control_ang
-                feedback_msg.rudder_angle = float(i)
+                feedback_msg.rudder_angle = i
                 goal_handle.publish_feedback(feedback=feedback_msg)
                 self.__rudder_angle = i
                 self.rudder_action_feedback_rate.sleep()
@@ -318,7 +318,7 @@ class LowLevelControlNode(Node):
             while not self.__sail_controller.is_target_reached:
                 self.__sail_controller.update_state()
                 i = self.__sail_controller.current_control_ang
-                feedback_msg.current_angular_position = float(i)
+                feedback_msg.current_angular_position = i
                 goal_handle.publish_feedback(feedback=feedback_msg)
                 self.__sail_trim_tab_angle = i
                 self.sail_action_feedback_rate.sleep()
