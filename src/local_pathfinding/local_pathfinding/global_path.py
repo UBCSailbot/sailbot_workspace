@@ -187,20 +187,20 @@ def get_pos() -> HelperLatLon:
         position = json.loads(urlopen(GPS_URL).read())
     except HTTPError as http_error:
         print(f"HTTP Error: {http_error.code}")
-        return None
+        return None  # type: ignore
     except URLError as url_error:
         print(f"URL Error: {url_error.reason}")
-        return None
+        return None  # type: ignore
     except ConnectionResetError as connect_error:
         print(f"Connection Reset Error: {connect_error}")
-        return None
+        return None  # type: ignore
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
-        return None
+        return None  # type: ignore
 
     if len(position["data"]) == 0:
         print(f"Connection to {GPS_URL} successful. No position data available.")
-        return None
+        return None  # type: ignore
 
     latitude = position["data"][-1]["latitude"]
     longitude = position["data"][-1]["longitude"]
@@ -391,7 +391,7 @@ def calculate_interval_spacing(pos: HelperLatLon, waypoints: list[HelperLatLon])
     return distances
 
 
-def write_to_file(file_path: str, global_path: Path, tmstmp: bool = True) -> Path:
+def write_to_file(file_path: str, global_path: Path, tmstmp: bool = True):
     """Writes the global path to a new, timestamped csv file.
 
     Args
