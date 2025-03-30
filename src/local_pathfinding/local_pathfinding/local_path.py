@@ -44,7 +44,6 @@ class LocalPathState:
             # this position has been verified to be close enough to land that
             # land obstacles should be generated
             self.position = ci.HelperLatLon(latitude=49.29, longitude=-126.32)
-            self.position = ci.HelperLatLon(latitude=49.29, longitude=-126.32)
             self.speed = 0.0
             self.heading = 0.0
 
@@ -53,9 +52,6 @@ class LocalPathState:
         else:
             self.ais_ships = []  # ensures this attribute is always set, to avoid AtributeError
 
-        self.global_path = global_path
-        self.global_path = global_path
-
         if filtered_wind_sensor:  # TODO: remove when mock can be run
             self.wind_speed = filtered_wind_sensor.speed.speed
             self.wind_direction = filtered_wind_sensor.direction
@@ -63,16 +59,15 @@ class LocalPathState:
             self.wind_speed = 0.0
             self.wind_direction = 0
 
-        if self.global_path and self.global_path.waypoints:
-            self.reference_latlon = self.global_path.waypoints[-1]
-        else:
-            raise ValueError("Cannot create a LocalPathState with an empty global_path")
+        self.global_path = global_path
+
         if self.global_path and self.global_path.waypoints:
             self.reference_latlon = self.global_path.waypoints[-1]
         else:
             raise ValueError("Cannot create a LocalPathState with an empty global_path")
 
         self.planner = planner
+
         # obstacles are initialized by OMPLPath right before solving
         self.obstacles: List[ob.Obstacle] = []
 
