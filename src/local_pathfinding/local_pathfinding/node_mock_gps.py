@@ -10,8 +10,9 @@ from geopy.distance import great_circle
 from rclpy.node import Node
 
 MEAN_SPEED = ci.HelperSpeed(speed=15.0)  # mean boat speed in kmph
-START_POINT = ci.HelperLatLon(latitude=48.86, longitude=-129.32)  # Starting location of the mock
-START_HEADING = ci.HelperHeading(heading=0.0)  # in degrees, heading of the boat
+
+START_POINT = ci.HelperLatLon(latitude=48.46, longitude=-125.1)  # Starting location of the mock
+START_HEADING = ci.HelperHeading(heading=180.0)  # in degrees, heading of the boat
 
 
 class MockGPS(Node):
