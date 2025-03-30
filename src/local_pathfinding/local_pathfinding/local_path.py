@@ -1,10 +1,11 @@
 """The path to the next global waypoint, represented by the LocalPath class."""
 
-from typing import Optional
+from typing import List, Optional
 
 import custom_interfaces.msg as ci
 from rclpy.impl.rcutils_logger import RcutilsLogger
 
+import local_pathfinding.obstacles as ob
 from local_pathfinding.ompl_path import OMPLPath
 
 
@@ -23,8 +24,8 @@ class LocalPathState:
         wind_speed (float): Wind speed.
         wind_direction (int): Wind direction.
         planner (str): Planner to use for the OMPL query.
-        reference` (ci.HelperLatLon): Lat and lon position of the next global waypoint.
-        `obstacles (List[Obstacle]): All obstacles in the state space
+        reference (ci.HelperLatLon): Lat and lon position of the next global waypoint.
+        obstacles (List[Obstacle]): All obstacles in the state space
     """
 
     def __init__(
@@ -66,7 +67,8 @@ class LocalPathState:
             raise ValueError("Cannot create a LocalPathState with an empty global_path")
 
         self.planner = planner
-        self.obstacles = []  # obstacles are initialized by OMPLPath before solving
+        # obstacles are initialized by OMPLPath right before solving
+        self.obstacles: List[ob.Obstacle] = []
 
 
 class LocalPath:
@@ -77,14 +79,14 @@ class LocalPath:
         _ompl_path (Optional[OMPLPath]): Raw representation of the path from OMPL.
         path (Path): Collection of coordinates that form the local path to the next
                           global waypoint.
-        `state` (LocalPathState): the current local path state.
+        state (LocalPathState): the current local path state.
     """
 
     def __init__(self, parent_logger: RcutilsLogger):
         self._logger = parent_logger.get_child(name="local_path")
         self._ompl_path: Optional[OMPLPath] = None
         self.path: Optional[ci.Path] = None
-        self.state = None
+        self.state: Optional[LocalPathState] = None
 
     def update_if_needed(
         self,
