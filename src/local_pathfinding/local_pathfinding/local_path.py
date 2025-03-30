@@ -1,9 +1,7 @@
 """The path to the next global waypoint, represented by the LocalPath class."""
-"""The path to the next global waypoint, represented by the LocalPath class."""
 
 from typing import List, Optional
 
-import custom_interfaces.msg as ci
 import custom_interfaces.msg as ci
 from rclpy.impl.rcutils_logger import RcutilsLogger
 
@@ -12,7 +10,6 @@ from local_pathfinding.ompl_path import OMPLPath
 
 
 class LocalPathState:
-    """Stores the current state of Sailbot's navigation data.
     """Stores the current state of Sailbot's navigation data.
     The attributes' units and conventions can be found in the ROS msgs they are derived from in the
     custom_interfaces package.
@@ -23,12 +20,7 @@ class LocalPathState:
         heading (float): Direction that Sailbot is pointing.
         ais_ships (List[HelperAISShip]): Information about nearby ships.
         global_path (List[Tuple[float, float]]): Path to the destination that Sailbot is
-        position (ci.HelperLatLon): Latitude and longitude of Sailbot.
-        speed (float): Speed of Sailbot.
-        heading (float): Direction that Sailbot is pointing.
-        ais_ships (List[HelperAISShip]): Information about nearby ships.
-        global_path (List[Tuple[float, float]]): Path to the destination that Sailbot is
-            navigating along.
+                                                 navigating along.
         wind_speed (float): Wind speed.
         wind_direction (int): Wind direction.
         planner (str): Planner to use for the OMPL query.
@@ -38,10 +30,6 @@ class LocalPathState:
 
     def __init__(
         self,
-        gps: ci.GPS,
-        ais_ships: ci.AISShips,
-        global_path: ci.Path,
-        filtered_wind_sensor: ci.WindSensor,
         gps: ci.GPS,
         ais_ships: ci.AISShips,
         global_path: ci.Path,
