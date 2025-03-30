@@ -147,7 +147,7 @@ class OMPLPath:
         """Get a list of waypoints for the boat to follow.
 
         Returns:
-            list: A list of tuples representing the x and y coordinates of the waypoints.
+            list: A list of tuples representing the lat lon coordinates of the waypoints.
                   Output an empty list and print a warning message if path not solved.
         """
         if not self.solved:
