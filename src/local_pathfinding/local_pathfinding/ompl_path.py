@@ -194,15 +194,10 @@ class OMPLPath:
         start_x = start_position_in_xy.x
         start_y = start_position_in_xy.y
 
-        # TODO this needs to be removed when mocks are ready
-        if not self.state.global_path:
-            goal_polygon = self.create_buffer_around_position(cs.XY(0, 0))
-            goal_x, goal_y = (0.0, 0.0)
-        else:
-            goal_position = self.state.global_path.waypoints[-1]
-            goal_position_in_xy = cs.latlon_to_xy(self.state.reference_latlon, goal_position)
-            goal_polygon = self.create_buffer_around_position(goal_position_in_xy)
-            goal_x, goal_y = goal_position_in_xy
+        goal_position = self.state.global_path.waypoints[-1]
+        goal_position_in_xy = cs.latlon_to_xy(self.state.reference_latlon, goal_position)
+        goal_polygon = self.create_buffer_around_position(goal_position_in_xy)
+        goal_x, goal_y = goal_position_in_xy
 
         # create an SE2 state space: rotation and translation in a plane
         space = base.SE2StateSpace()
