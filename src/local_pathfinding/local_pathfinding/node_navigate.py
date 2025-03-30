@@ -212,6 +212,8 @@ class Sailbot(Node):
         Returns:
             float: The desired heading if all subscribers are active, else a number that violates
                 the heading convention.
+        Raises:
+            RuntimeWarning: if some ros topics have not yet been published to.
         """
         if not self._all_subs_active():
             self._log_inactive_subs_warning()
