@@ -1,7 +1,9 @@
 """The path to the next global waypoint, represented by the LocalPath class."""
+"""The path to the next global waypoint, represented by the LocalPath class."""
 
 from typing import List, Optional
 
+import custom_interfaces.msg as ci
 import custom_interfaces.msg as ci
 from rclpy.impl.rcutils_logger import RcutilsLogger
 
@@ -11,10 +13,16 @@ from local_pathfinding.ompl_path import OMPLPath
 
 class LocalPathState:
     """Stores the current state of Sailbot's navigation data.
+    """Stores the current state of Sailbot's navigation data.
     The attributes' units and conventions can be found in the ROS msgs they are derived from in the
     custom_interfaces package.
 
     Attributes:
+        position (ci.HelperLatLon): Latitude and longitude of Sailbot.
+        speed (float): Speed of Sailbot.
+        heading (float): Direction that Sailbot is pointing.
+        ais_ships (List[HelperAISShip]): Information about nearby ships.
+        global_path (List[Tuple[float, float]]): Path to the destination that Sailbot is
         position (ci.HelperLatLon): Latitude and longitude of Sailbot.
         speed (float): Speed of Sailbot.
         heading (float): Direction that Sailbot is pointing.
@@ -34,6 +42,10 @@ class LocalPathState:
         ais_ships: ci.AISShips,
         global_path: ci.Path,
         filtered_wind_sensor: ci.WindSensor,
+        gps: ci.GPS,
+        ais_ships: ci.AISShips,
+        global_path: ci.Path,
+        filtered_wind_sensor: ci.WindSensor,
         planner: str,
     ):
         if gps:  # TODO: remove when mock can be run
@@ -44,6 +56,7 @@ class LocalPathState:
             # this position has been verified to be close enough to land that
             # land obstacles should be generated
             self.position = ci.HelperLatLon(latitude=49.29, longitude=-126.32)
+            self.position = ci.HelperLatLon(latitude=49.29, longitude=-126.32)
             self.speed = 0.0
             self.heading = 0.0
 
@@ -53,6 +66,7 @@ class LocalPathState:
             self.ais_ships = []  # ensures this attribute is always set, to avoid AtributeError
 
         self.global_path = global_path
+        self.global_path = global_path
 
         if filtered_wind_sensor:  # TODO: remove when mock can be run
             self.wind_speed = filtered_wind_sensor.speed.speed
@@ -61,6 +75,10 @@ class LocalPathState:
             self.wind_speed = 0.0
             self.wind_direction = 0
 
+        if self.global_path and self.global_path.waypoints:
+            self.reference_latlon = self.global_path.waypoints[-1]
+        else:
+            raise ValueError("Cannot create a LocalPathState with an empty global_path")
         if self.global_path and self.global_path.waypoints:
             self.reference_latlon = self.global_path.waypoints[-1]
         else:
