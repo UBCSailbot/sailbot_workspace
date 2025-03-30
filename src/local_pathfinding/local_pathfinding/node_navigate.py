@@ -155,7 +155,7 @@ class Sailbot(Node):
         """Collect all navigation data and publish it in one message"""
         return
 
-        current_local_path = ci.Path(waypoints=self.local_path.waypoints)
+        current_local_path = self.local_path.waypoints
 
         msg = ci.LPathData(local_path=current_local_path)
 

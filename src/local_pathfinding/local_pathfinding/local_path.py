@@ -1,6 +1,6 @@
 """The path to the next global waypoint, represented by the LocalPath class."""
 
-from typing import List, Optional
+from typing import Optional
 
 import custom_interfaces.msg as ci
 from rclpy.impl.rcutils_logger import RcutilsLogger
@@ -73,14 +73,14 @@ class LocalPath:
     Attributes:
         _logger (RcutilsLogger): ROS logger.
         _ompl_path (Optional[OMPLPath]): Raw representation of the path from OMPL.
-        waypoints (Path): Collection of coordinates that form the local path to the next
+        path (Path): Collection of coordinates that form the local path to the next
                           global waypoint.
     """
 
     def __init__(self, parent_logger: RcutilsLogger):
         self._logger = parent_logger.get_child(name="local_path")
         self._ompl_path: Optional[OMPLPath] = None
-        self.waypoints: Optional[List[ci.HelperLatLon]] = None
+        self.path: Optional[ci.Path] = None
 
     def update_if_needed(
         self,
@@ -110,4 +110,4 @@ class LocalPath:
 
     def _update(self, ompl_path: OMPLPath):
         self._ompl_path = ompl_path
-        self.waypoints = self._ompl_path.get_waypoints()
+        self.path = self._ompl_path.get_path()

@@ -20,5 +20,5 @@ def test_LocalPath_update_if_needed():
         filtered_wind_sensor=WindSensor(),
         planner="rrtstar",
     )
-    assert PATH.waypoints is not None, "waypoints is not initialized"
-    assert len(PATH.waypoints) > 1, "waypoints length <= 1"
+    assert PATH.path is not None, "waypoints is not initialized"
+    assert len(PATH.path.waypoints) > 1, "waypoints length <= 1"

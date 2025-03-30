@@ -48,7 +48,7 @@ def test_OMPLPath_get_cost():
 
 
 def test_OMPLPath_get_waypoint():
-    waypoints = OMPL_PATH.get_waypoints()  # List[HelperLatLon]
+    waypoints = OMPL_PATH.get_path().waypoints  # List[HelperLatLon]
     start_state_latlon = OMPL_PATH.state.position
 
     test_start = waypoints[0]

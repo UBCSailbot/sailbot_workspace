@@ -11,7 +11,7 @@ from __future__ import annotations
 import pickle
 from typing import TYPE_CHECKING, Any, List, Union
 
-from custom_interfaces.msg import HelperLatLon
+import custom_interfaces.msg as ci
 from ompl import base
 from ompl import geometric as og
 from ompl import util as ou
@@ -140,16 +140,18 @@ class OMPLPath:
         """
         raise NotImplementedError
 
-    def get_waypoints(self) -> List[HelperLatLon]:
-        """Get a list of waypoints for the boat to follow.
+    def get_path(self) -> ci.Path:
+        """Get the collection of waypoints for the boat to follow.
 
         Returns:
-            list: A list of tuples representing the lat lon coordinates of the waypoints.
-                  Output an empty list and print a warning message if path not solved.
+            ci.Path: A collection of lat lon coordinates for the waypoints to follow.
+                    First waypoint should be the current position and final waypoint should be the
+                    next global waypoint.
+                    Output an empty Path and print a warning message if path not solved.
         """
         if not self.solved:
             self._logger.warning("Trying to get the waypoints of an unsolved OMPLPath")
-            return []
+            return ci.Path()
 
         solution_path = self._simple_setup.getSolutionPath()
 
@@ -159,12 +161,12 @@ class OMPLPath:
             waypoint_XY = cs.XY(state.getX(), state.getY())
             waypoint_latlon = cs.xy_to_latlon(self.state.reference_latlon, waypoint_XY)
             waypoints.append(
-                HelperLatLon(
+                ci.HelperLatLon(
                     latitude=waypoint_latlon.latitude, longitude=waypoint_latlon.longitude
                 )
             )
 
-        return waypoints
+        return ci.Path(waypoints=waypoints)
 
     def create_buffer_around_position(self: OMPLPath, position: cs.XY) -> Polygon:
         """Create a space around the given position. Position is the center of the space and
