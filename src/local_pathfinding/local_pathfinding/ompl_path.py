@@ -192,6 +192,7 @@ class OMPLPath:
         start_x = start_position_in_xy.x
         start_y = start_position_in_xy.y
 
+        # TODO this needs to be removed when mocks are ready
         if not self.state.global_path:
             goal_polygon = self.create_buffer_around_position(cs.XY(0, 0))
             goal_x, goal_y = (0.0, 0.0)

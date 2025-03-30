@@ -60,10 +60,10 @@ class LocalPathState:
             self.wind_speed = 0.0
             self.wind_direction = 0
 
-        if self.global_path and len(self.global_path.waypoints) > 0:
-            self.reference_latlon = self.global_path.waypoints[len(self.global_path.waypoints)]
+        if self.global_path and self.global_path.waypoints:
+            self.reference_latlon = self.global_path.waypoints[-1]
         else:
-            self.reference_latlon = HelperLatLon(latitude=0.0, longitude=0.0)
+            raise ValueError("Cannot create a LocalPathState with an empty global_path")
 
         self.planner = planner
 
