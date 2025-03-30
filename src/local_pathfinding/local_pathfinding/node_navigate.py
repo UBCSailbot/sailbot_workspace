@@ -139,13 +139,16 @@ class Sailbot(Node):
         """
         self.update_params()
 
-        desired_heading = self.get_desired_heading()
-        if (desired_heading <= -180) or (180 < desired_heading):
-            self.get_logger().warning(f"Heading {desired_heading} not in (-180, 180]")
+        try:
+            desired_heading = self.get_desired_heading()
+            if (desired_heading <= -180) or (180 < desired_heading):
+                self.get_logger().warning(f"Heading {desired_heading} not in (-180, 180]")
+        except RuntimeWarning:
+            return  # do not continue, return and wait for next loop
 
         msg = ci.DesiredHeading()
         msg.heading.heading = desired_heading
-        self.desired_heading = msg  # desired_heading attribute should be of type ci.DesiredHeading
+        self.desired_heading = msg
 
         self.get_logger().debug(f"Publishing to {self.desired_heading_pub.topic}: {msg}")
         self.desired_heading_pub.publish(msg)
@@ -178,7 +181,10 @@ class Sailbot(Node):
         """
         if not self._all_subs_active():
             self._log_inactive_subs_warning()
-            return -1.0
+            # raise a RuntimeWarning because there isn't a great choice for a heading
+            # value to return that will indicate something is wrong
+            # that is more clear than just raising a warning
+            raise RuntimeWarning("Some required topics have not been published yet")
 
         self.local_path.update_if_needed(
             self.gps, self.ais_ships, self.global_path, self.filtered_wind_sensor, self.planner
