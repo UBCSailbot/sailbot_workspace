@@ -51,7 +51,7 @@ class LocalPathState:
         self.wind_speed = filtered_wind_sensor.speed.speed
         self.wind_direction = filtered_wind_sensor.direction
 
-        if not (global_path or global_path.waypoints):
+        if not (global_path and global_path.waypoints):
             raise ValueError("Cannot create a LocalPathState with an empty global_path")
         self.global_path = global_path
         self.reference_latlon = self.global_path.waypoints[-1]
@@ -98,6 +98,7 @@ class LocalPath:
             global_path (ci.Path): Path to the destination.
             filtered_wind_sensor (ci.WindSensor): Wind data.
         """
+        # this raises ValueError if any of the parameters are not properly initialized
         state = LocalPathState(gps, ais_ships, global_path, filtered_wind_sensor, planner)
         self.state = state
         ompl_path = OMPLPath(
