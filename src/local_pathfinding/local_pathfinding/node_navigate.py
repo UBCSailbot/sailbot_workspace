@@ -30,6 +30,7 @@ class Sailbot(Node):
     Publishers:
         desired_heading_pub (Publisher): Publish the desired heading in a `DesiredHeading` msg.
         lpath_data_pub (Publisher): Publish all local path data in a `LPathData` msg.
+        lpath_data_pub (Publisher): Publish all local path data in a `LPathData` msg.
 
     Publisher timers:
         pub_period_sec (float): The period of the publisher timers.
@@ -153,10 +154,11 @@ class Sailbot(Node):
         self.get_logger().debug(f"Publishing local path data to {self.lpath_data_pub.topic}")
         self.publish_local_path_data()
 
-    def publish_local_path_data(self):
+    def lpath_data_callback(self):
         """Collect all navigation data and publish it in one message"""
+        return
 
-        current_local_path = ci.Path(waypoints=self.local_path.waypoints)
+        current_local_path = self.local_path.waypoints
 
         msg = ci.LPathData(
             global_path=self.global_path,

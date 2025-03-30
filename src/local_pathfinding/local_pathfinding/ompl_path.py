@@ -11,18 +11,15 @@ from __future__ import annotations
 import pickle
 from typing import TYPE_CHECKING, Any, List, Union
 
-from custom_interfaces.msg import HelperLatLon
+import custom_interfaces.msg as ci
 from ompl import base
 from ompl import geometric as og
 from ompl import util as ou
-
-# from ompl import util as ou
 from rclpy.impl.rcutils_logger import RcutilsLogger
 from shapely.geometry import MultiPolygon, Point, Polygon, box
 
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.obstacles as ob
-from local_pathfinding.coord_systems import XY
 from local_pathfinding.objectives import get_sailing_objective
 
 if TYPE_CHECKING:
@@ -146,16 +143,18 @@ class OMPLPath:
         """
         raise NotImplementedError
 
-    def get_waypoints(self) -> List[HelperLatLon]:
-        """Get a list of waypoints for the boat to follow.
+    def get_path(self) -> ci.Path:
+        """Get the collection of waypoints for the boat to follow.
 
         Returns:
-            list: A list of tuples representing the x and y coordinates of the waypoints.
-                  Output an empty list and print a warning message if path not solved.
+            ci.Path: A collection of lat lon coordinates for the waypoints to follow.
+                    First waypoint should be the current position and final waypoint should be the
+                    next global waypoint.
+                    Output an empty Path and print a warning message if path not solved.
         """
         if not self.solved:
             self._logger.warning("Trying to get the waypoints of an unsolved OMPLPath")
-            return []
+            return ci.Path()
 
         solution_path = self._simple_setup.getSolutionPath()
 
@@ -165,14 +164,14 @@ class OMPLPath:
             waypoint_XY = cs.XY(state.getX(), state.getY())
             waypoint_latlon = cs.xy_to_latlon(self.state.reference_latlon, waypoint_XY)
             waypoints.append(
-                HelperLatLon(
+                ci.HelperLatLon(
                     latitude=waypoint_latlon.latitude, longitude=waypoint_latlon.longitude
                 )
             )
 
-        return waypoints
+        return ci.Path(waypoints=waypoints)
 
-    def create_buffer_around_position(self: OMPLPath, position: XY) -> Polygon:
+    def create_buffer_around_position(self: OMPLPath, position: cs.XY) -> Polygon:
         """Create a space around the given position. Position is the center of the space and
         is a tuple of x and y.
         """
@@ -195,11 +194,12 @@ class OMPLPath:
         start_x = start_position_in_xy.x
         start_y = start_position_in_xy.y
 
+        # TODO this needs to be removed when mocks are ready
         if not self.state.global_path:
             goal_polygon = self.create_buffer_around_position(cs.XY(0, 0))
             goal_x, goal_y = (0.0, 0.0)
         else:
-            goal_position = self.state.global_path[-1]
+            goal_position = self.state.global_path.waypoints[-1]
             goal_position_in_xy = cs.latlon_to_xy(self.state.reference_latlon, goal_position)
             goal_polygon = self.create_buffer_around_position(goal_position_in_xy)
             goal_x, goal_y = goal_position_in_xy
@@ -296,7 +296,7 @@ class OMPLPath:
         return True
 
 
-def log_invalid_state(state: XY, obstacle: ob.Obstacle):
+def log_invalid_state(state: cs.XY, obstacle: ob.Obstacle):
     """
     Logs details about a state and the obstacle that makes it invalid for use in a path.
     """
