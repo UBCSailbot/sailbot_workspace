@@ -56,6 +56,36 @@ class MockAISNode(Node):
             self.first_run = False
 
         else:
+            csv_ship_ids = []
+            ships_to_remove = []
+
+            with open(AIS_SHIPS_FILE_PATH, "r") as file:
+                reader = csv.reader(file)
+                next(reader)
+                for row in reader:
+                    id = int(row[0])
+                    csv_ship_ids.append(id)
+                    current_ship_ids = [ship.id for ship in self.ships]
+                    if id > 0 and id not in current_ship_ids:
+                        ship = HelperAISShip()
+                        ship.id = int(row[0])
+                        ship.lat_lon.latitude = float(row[1])
+                        ship.lat_lon.longitude = float(row[2])
+                        ship.cog.heading = float(row[3])
+                        ship.sog.speed = float(row[4])
+                        ship.rot.rot = int(row[5])
+                        ship.length.dimension = float(row[6])
+                        ship.width.dimension = float(row[7])
+                        self.ships.append(ship)
+                        msg.ships.append(ship)
+
+            for ship in self.ships:
+                if ship.id not in csv_ship_ids:
+                    ships_to_remove.append(ship)
+
+            for ship in ships_to_remove:
+                self.ships.remove(ship)
+
             for ship in self.ships:
                 self.update_ship_position(ship)
                 msg.ships.append(ship)
@@ -75,10 +105,7 @@ class MockAISNode(Node):
         Update the ship's position based on its speed, heading and rate of turn (ROT)
         """
 
-        # TODO: update ship based on turnspeed as well
-
-        # Set heading, speed and time
-        heading = math.radians(ship.cog.heading)
+        # Get speed and time
         speed = ship.sog.speed / 3600
         time = self.timer_period
         ref = HelperLatLon(latitude=0.0, longitude=0.0)
@@ -86,14 +113,25 @@ class MockAISNode(Node):
             latitude=ship.lat_lon.latitude, longitude=ship.lat_lon.longitude
         )
 
-        # rot = ship.rot.rot
-        # # Convert ROT to degrees per minute
-        # if rot == -128:
-        #     rot_dpm = 0
-        # elif abs(rot) == 127:
-        #     rot_dpm = 10
-        # else:
-        #     rot_dpm = (abs(rot)/4.733) ** 2
+        # Get ROT in radians per second
+        rot = ship.rot.rot
+        if rot == -128:
+            rot_dpm = 0
+        elif abs(rot) == 127:
+            rot_dpm = 10
+        else:
+            rot_dpm = (rot / 4.733) ** 2
+        rot_rps = math.radians(rot_dpm / 60)
+        if rot < 0:
+            rot_rps *= -1
+
+        # Update heading
+        ship.cog.heading += math.degrees(rot_rps * time)
+        if ship.cog.heading > 180:
+            ship.cog.heading -= 360
+        elif ship.cog.heading <= -180:
+            ship.cog.heading += 360
+        heading = math.radians(ship.cog.heading)
 
         # Convert ship position to cartesian coordinates
         ship_cartesian = latlon_to_xy(ref, ship_latlon)
