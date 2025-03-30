@@ -15,10 +15,10 @@ from datetime import datetime
 from urllib.error import HTTPError, URLError
 from urllib.request import urlopen
 
+import custom_interfaces.msg as ci
 import numpy as np
-from custom_interfaces.msg import HelperLatLon, Path
 
-from local_pathfinding.coord_systems import GEODESIC, meters_to_km
+import local_pathfinding.coord_systems as cs
 
 GPS_URL = "http://localhost:3005/api/gps"
 PATH_URL = "http://localhost:8081/global-path"
@@ -55,8 +55,8 @@ def main():
             print(f"Failed to retrieve position from {GPS_URL}")
             continue
 
-        position_delta = meters_to_km(
-            GEODESIC.inv(
+        position_delta = cs.meters_to_km(
+            cs.GEODESIC.inv(
                 lats1=pos.latitude,
                 lons1=pos.longitude,
                 lats2=path.waypoints[0].latitude,
@@ -120,31 +120,31 @@ def get_most_recent_file(directory_path: str) -> str:
         return ""
 
 
-def get_path(file_path: str) -> Path:
+def get_path(file_path: str) -> ci.Path:
     """Returns the global path from the specified file path.
 
     Args:
         file_path (str): The path to the global path csv file.
 
     Returns:
-        (Path): The global path retrieved from the csv file.
+        (ci.Path): The global path retrieved from the csv file.
     """
-    path = Path()
+    path = ci.Path()
 
     with open(file_path, "r") as file:
         reader = csv.reader(file)
         # skip header
         reader.__next__()
         for row in reader:
-            path.waypoints.append(HelperLatLon(latitude=float(row[0]), longitude=float(row[1])))
+            path.waypoints.append(ci.HelperLatLon(latitude=float(row[0]), longitude=float(row[1])))
     return path
 
 
-def post_path(path: Path, url: str = PATH_URL) -> bool:
+def post_path(path: ci.Path, url: str = PATH_URL) -> bool:
     """Sends the global path to NET via POST request.
 
     Args:
-        path (Path): The global path.
+        path (ci.Path): The global path.
         url (str): URL to post path to. Should always use default value except for tests.
 
     Returns:
@@ -175,11 +175,11 @@ def post_path(path: Path, url: str = PATH_URL) -> bool:
     return False
 
 
-def get_pos() -> HelperLatLon:
+def get_pos() -> ci.HelperLatLon:
     """Returns the current position of sailbot, retrieved from the an http GET request.
 
     Returns:
-        HelperLatLon: The current position of sailbot
+        ci.HelperLatLon: The current position of sailbot
             OR
         None: If the position could not be retrieved.
     """
@@ -187,35 +187,35 @@ def get_pos() -> HelperLatLon:
         position = json.loads(urlopen(GPS_URL).read())
     except HTTPError as http_error:
         print(f"HTTP Error: {http_error.code}")
-        return None
+        return None  # type: ignore
     except URLError as url_error:
         print(f"URL Error: {url_error.reason}")
-        return None
+        return None  # type: ignore
     except ConnectionResetError as connect_error:
         print(f"Connection Reset Error: {connect_error}")
-        return None
+        return None  # type: ignore
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
-        return None
+        return None  # type: ignore
 
     if len(position["data"]) == 0:
         print(f"Connection to {GPS_URL} successful. No position data available.")
-        return None
+        return None  # type: ignore
 
     latitude = position["data"][-1]["latitude"]
     longitude = position["data"][-1]["longitude"]
-    pos = HelperLatLon(latitude=latitude, longitude=longitude)
+    pos = ci.HelperLatLon(latitude=latitude, longitude=longitude)
 
     return pos
 
 
 def generate_path(
-    dest: HelperLatLon,
+    dest: ci.HelperLatLon,
     interval_spacing: float,
-    pos: HelperLatLon,
+    pos: ci.HelperLatLon,
     write: bool = False,
     file_path: str = "",
-) -> Path:
+) -> ci.Path:
     """Returns a path from the current GPS location to the destination point.
     Waypoints are evenly spaced along the path according to the interval_spacing parameter.
     Path does not include pos, but does include dest as the final element.
@@ -224,16 +224,16 @@ def generate_path(
     with the name of the original file, appended with a timestamp.
 
     Args:
-        dest (HelperLatLon): The destination point
+        dest (ci.HelperLatLon): The destination point
         interval_spacing (float): The desired distance between waypoints on the path
-        pos (HelperLatLon): The current GPS location
+        pos (ci.HelperLatLon): The current GPS location
         write (bool, optional): Whether to write the path to a new csv file, default False
         file_path (str, optional): The filepath to the global path csv file, default empty
 
     Returns:
-        Path: The generated path
+        ci.Path: The generated path
     """
-    global_path = Path()
+    global_path = ci.Path()
 
     lat1 = pos.latitude
     lon1 = pos.longitude
@@ -241,21 +241,21 @@ def generate_path(
     lat2 = dest.latitude
     lon2 = dest.longitude
 
-    distance = meters_to_km(GEODESIC.inv(lats1=lat1, lons1=lon1, lats2=lat2, lons2=lon2)[2])
+    distance = cs.meters_to_km(cs.GEODESIC.inv(lats1=lat1, lons1=lon1, lats2=lat2, lons2=lon2)[2])
 
     # minimum number of waypoints to not exceed interval_spacing
     n = np.floor(distance / interval_spacing)
     n = max(1, n)
 
     # npts returns a path with neither pos nor dest included
-    global_path_tuples = GEODESIC.npts(lon1=lon1, lat1=lat1, lon2=lon2, lat2=lat2, npts=n)
+    global_path_tuples = cs.GEODESIC.npts(lon1=lon1, lat1=lat1, lon2=lon2, lat2=lat2, npts=n)
 
     # npts returns (lon,lat) tuples, its backwards for some reason
     for lon, lat in global_path_tuples:
-        global_path.waypoints.append(HelperLatLon(latitude=lat, longitude=lon))
+        global_path.waypoints.append(ci.HelperLatLon(latitude=lat, longitude=lon))
 
     # append the destination point
-    global_path.waypoints.append(HelperLatLon(latitude=lat2, longitude=lon2))
+    global_path.waypoints.append(ci.HelperLatLon(latitude=lat2, longitude=lon2))
 
     if write:
         write_to_file(file_path=file_path, global_path=global_path)
@@ -264,25 +264,25 @@ def generate_path(
 
 
 def _interpolate_path(
-    global_path: Path,
+    global_path: ci.Path,
     interval_spacing: float,
-    pos: HelperLatLon,
+    pos: ci.HelperLatLon,
     path_spacing: list[float],
     write: bool = False,
     file_path: str = "",
-) -> Path:
+) -> ci.Path:
     """Interpolates and inserts subpaths between any waypoints which are spaced too far apart.
 
     Args:
-        global_path (Path): The path to interpolate between
+        global_path (ci.Path): The path to interpolate between
         interval_spacing (float): The desired spacing between waypoints
-        pos (HelperLatLon): The current GPS location
+        pos (ci.HelperLatLon): The current GPS location
         path_spacing (list[float]): The distances between pairs of points in global_path
         write (bool, optional): Whether to write the path to a new csv file, default False
         file_path (str, optional): The filepath to the global path csv file, default empty
 
     Returns:
-        Path: The interpolated path
+        ci.Path: The interpolated path
     """
 
     waypoints = [pos] + global_path.waypoints
@@ -318,24 +318,24 @@ def _interpolate_path(
 
 
 def interpolate_path(
-    path: Path,
-    pos: HelperLatLon,
+    path: ci.Path,
+    pos: ci.HelperLatLon,
     interval_spacing: float,
     file_path: str,
     write=True,
-) -> Path:
+) -> ci.Path:
     """Interpolates path to ensure the interval lengths are less than or equal to the specified
     interval spacing.
 
     Args:
-        path (Path): The global path.
-        pos (HelperLatLon): The current position of the vehicle.
+        path (ci.Path): The global path.
+        pos (ci.HelperLatLon): The current position of the vehicle.
         interval_spacing (float): The desired interval spacing.
         file_path (str): The path to the global path csv file.
         write (bool, optional): Whether or not to write the new path to a csv file. Default True.
 
     Returns:
-        Path: The interpolated path.
+        ci.Path: The interpolated path.
     """
 
     # obtain the actual distances between every waypoint in the path
@@ -364,13 +364,15 @@ def interpolate_path(
     return path
 
 
-def calculate_interval_spacing(pos: HelperLatLon, waypoints: list[HelperLatLon]) -> list[float]:
+def calculate_interval_spacing(
+    pos: ci.HelperLatLon, waypoints: list[ci.HelperLatLon]
+) -> list[float]:
     """Returns the distances between pairs of points in a list of latitudes and longitudes,
     including pos as the first point.
 
     Args:
-        pos (HelperLatLon): The gps position of the boat
-        waypoints (list[HelperLatLon]): The list of waypoints
+        pos (ci.HelperLatLon): The gps position of the boat
+        waypoints (list[ci.HelperLatLon]): The list of waypoints
 
     Returns:
         list[float]: The distances between pairs of points in waypoints [km]
@@ -384,19 +386,19 @@ def calculate_interval_spacing(pos: HelperLatLon, waypoints: list[HelperLatLon])
     lats1, lons1 = coords_array[:-1].T
     lats2, lons2 = coords_array[1:].T
 
-    distances = GEODESIC.inv(lats1=lats1, lons1=lons1, lats2=lats2, lons2=lons2)[2]
+    distances = cs.GEODESIC.inv(lats1=lats1, lons1=lons1, lats2=lats2, lons2=lons2)[2]
 
-    distances = [meters_to_km(distance) for distance in distances]
+    distances = [cs.meters_to_km(distance) for distance in distances]
 
     return distances
 
 
-def write_to_file(file_path: str, global_path: Path, tmstmp: bool = True) -> Path:
+def write_to_file(file_path: str, global_path: ci.Path, tmstmp: bool = True):
     """Writes the global path to a new, timestamped csv file.
 
     Args
         file_path (str): The filepath to the global path csv file
-        global_path (Path): The global path to write to file
+        global_path (ci.Path): The global path to write to file
         tmstmp (bool, optional): Whether to append a timestamp to the file name, default True
 
     Raises:
@@ -422,11 +424,11 @@ def write_to_file(file_path: str, global_path: Path, tmstmp: bool = True) -> Pat
             writer.writerow([waypoint.latitude, waypoint.longitude])
 
 
-def path_to_dict(path: Path, num_decimals: int = 4) -> dict[int, str]:
-    """Converts a Path msg to a dictionary suitable for printing.
+def path_to_dict(path: ci.Path, num_decimals: int = 4) -> dict[int, str]:
+    """Converts a ci.Path msg to a dictionary suitable for printing.
 
     Args:
-        path (Path): The Path msg to be converted.
+        path (ci.Path): The Path msg to be converted.
         num_decimals (int, optional): The number of decimal places to round to, default 4.
 
     Returns:
