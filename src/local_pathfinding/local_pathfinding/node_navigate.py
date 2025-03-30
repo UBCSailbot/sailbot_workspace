@@ -4,7 +4,9 @@ import custom_interfaces.msg as ci
 import rclpy
 from rclpy.node import Node
 
+import local_pathfinding.coord_systems as cs
 import local_pathfinding.global_path as gp
+import local_pathfinding.obstacles as ob
 from local_pathfinding.local_path import LocalPath
 
 
@@ -159,13 +161,31 @@ class Sailbot(Node):
     def publish_local_path_data(self):
         """Collect all navigation data and publish it in one message"""
 
+        helper_obstacles = []
+
+        for obst in self.local_path.state.obstacles:
+            if isinstance(obst, ob.Land):
+                for polygon in obst.collision_zone.geoms:
+                    latlon_polygon = cs.xy_polygon_to_latlon_polygon(
+                        self.state.reference_latlon, polygon
+                    )
+                    # each point of the polygon is in lat lon now
+                    # but you cant construct a shapely polgyon out of HelperLatLon objects
+                    # so each point is a shapely Point that needs to be converted to a HelperLatLon
+                    helper_latlons = [ci.HelperLatLon(longitude=point[0], latitude=point[1]) for point in latlon_polygon.exterior.coords]
+                    helper_obstacles.append(
+                        ci.HelperObstacle(points=helper_latlons, obstacle_type="Land")
+                    )
+            else:  # is a Boat
+                pass
+
         msg = ci.LPathData(
             global_path=self.global_path,
             local_path=self.local_path.path,
             gps=self.gps,
             filtered_wind_sensor=self.filtered_wind_sensor,
             ais_ships=self.ais_ships,
-            obstacles=self.local_path.state.obstacles,
+            obstacles=helper_obstacles,
             desired_heading=self.desired_heading,
         )
 
