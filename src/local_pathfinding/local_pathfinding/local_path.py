@@ -9,7 +9,7 @@ from local_pathfinding.ompl_path import OMPLPath
 
 
 class LocalPathState:
-    """Gathers and stores the state of Sailbot.
+    """Stores the current state of Sailbot's navigation data.
     The attributes' units and conventions can be found in the ROS msgs they are derived from in the
     custom_interfaces package.
 
