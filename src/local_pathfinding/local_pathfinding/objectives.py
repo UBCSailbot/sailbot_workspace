@@ -3,8 +3,8 @@
 import math
 from enum import Enum, auto
 
+import custom_interfaces.msg as ci
 import numpy as np
-from custom_interfaces.msg import HelperLatLon
 from ompl import base as ob
 
 import local_pathfinding.coord_systems as cs
@@ -84,7 +84,7 @@ class DistanceObjective(Objective):
         method (DistanceMethod): The method of the distance objective function
         ompl_path_objective (ob.PathLengthOptimizationObjective): The OMPL path length objective.
             Only defined if the method is OMPL path length.
-        reference (HelperLatLon): The XY origin when converting from latlon to XY.
+        reference (ci.HelperLatLon): The XY origin when converting from latlon to XY.
             Only defined if the method is latlon.
     """
 
@@ -92,7 +92,7 @@ class DistanceObjective(Objective):
         self,
         space_information,
         method: DistanceMethod,
-        reference=HelperLatLon(latitude=0.0, longitude=0.0),
+        reference=ci.HelperLatLon(latitude=0.0, longitude=0.0),
     ):
         super().__init__(space_information)
         self.method = method
@@ -144,7 +144,9 @@ class DistanceObjective(Objective):
         return math.hypot(s2.y - s1.y, s2.x - s1.x)
 
     @staticmethod
-    def get_latlon_path_length_objective(s1: cs.XY, s2: cs.XY, reference: HelperLatLon) -> float:
+    def get_latlon_path_length_objective(
+        s1: cs.XY, s2: cs.XY, reference: ci.HelperLatLon
+    ) -> float:
         """Generates the "great circle" distance between two points
 
         I am assuming that we are using the lat and long coordinates in determining the distance

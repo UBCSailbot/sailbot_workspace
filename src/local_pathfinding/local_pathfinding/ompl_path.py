@@ -15,14 +15,11 @@ from custom_interfaces.msg import HelperLatLon
 from ompl import base
 from ompl import geometric as og
 from ompl import util as ou
-
-# from ompl import util as ou
 from rclpy.impl.rcutils_logger import RcutilsLogger
 from shapely.geometry import MultiPolygon, Point, Polygon, box
 
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.obstacles as ob
-from local_pathfinding.coord_systems import XY
 from local_pathfinding.objectives import get_sailing_objective
 
 if TYPE_CHECKING:
@@ -169,7 +166,7 @@ class OMPLPath:
 
         return waypoints
 
-    def create_buffer_around_position(self: OMPLPath, position: XY) -> Polygon:
+    def create_buffer_around_position(self: OMPLPath, position: cs.XY) -> Polygon:
         """Create a space around the given position. Position is the center of the space and
         is a tuple of x and y.
         """
@@ -294,7 +291,7 @@ class OMPLPath:
         return True
 
 
-def log_invalid_state(state: XY, obstacle: ob.Obstacle):
+def log_invalid_state(state: cs.XY, obstacle: ob.Obstacle):
     """
     Logs details about a state and the obstacle that makes it invalid for use in a path.
     """
