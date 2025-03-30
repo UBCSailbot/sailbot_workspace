@@ -34,7 +34,6 @@ class LocalPathState:
         filtered_wind_sensor: ci.WindSensor,
         planner: str,
     ):
-        """Initializes the state from ROS msgs."""
         if gps:  # TODO: remove when mock can be run
             self.position = gps.lat_lon
             self.speed = gps.speed.speed
@@ -74,12 +73,11 @@ class LocalPath:
     Attributes:
         _logger (RcutilsLogger): ROS logger.
         _ompl_path (Optional[OMPLPath]): Raw representation of the path from OMPL.
-        waypoints (Optional[List[Tuple[float, float]]]): List of coordinates that form the path
-            to the next global waypoint.
+        waypoints (Path): Collection of coordinates that form the local path to the next
+                          global waypoint.
     """
 
     def __init__(self, parent_logger: RcutilsLogger):
-        """Initializes the LocalPath class."""
         self._logger = parent_logger.get_child(name="local_path")
         self._ompl_path: Optional[OMPLPath] = None
         self.waypoints: Optional[List[ci.HelperLatLon]] = None
