@@ -40,6 +40,7 @@ class Sailbot(Node):
         gps (ci.GPS): Data from the GPS sensor.
         global_path (ci.Path): Path that we are following.
         filtered_wind_sensor (ci.WindSensor): Filtered data from the wind sensors.
+        desired_heading (ci.DesiredHeading): current desired heading.
 
     Attributes:
         local_path (LocalPath): The path that `Sailbot` is following.
@@ -102,6 +103,7 @@ class Sailbot(Node):
         self.gps = None
         self.global_path = None
         self.filtered_wind_sensor = None
+        self.desired_heading = None
 
         # attributes
         self.local_path = LocalPath(parent_logger=self.get_logger())
@@ -143,6 +145,7 @@ class Sailbot(Node):
 
         msg = ci.DesiredHeading()
         msg.heading.heading = desired_heading
+        self.desired_heading = msg  # desired_heading attribute should be of type ci.DesiredHeading
 
         self.get_logger().debug(f"Publishing to {self.desired_heading_pub.topic}: {msg}")
         self.desired_heading_pub.publish(msg)
@@ -152,11 +155,18 @@ class Sailbot(Node):
 
     def publish_local_path_data(self):
         """Collect all navigation data and publish it in one message"""
-        raise NotImplementedError
 
         current_local_path = ci.Path(waypoints=self.local_path.waypoints)
 
-        msg = ci.LPathData(local_path=current_local_path)
+        msg = ci.LPathData(
+            global_path=self.global_path,
+            local_path=current_local_path,
+            gps=self.gps,
+            filtered_wind_sensor=self.filtered_wind_sensor,
+            ais_ships=self.ais_ships,
+            obstacles=self.local_path.state.obstacles,
+            desired_heading=self.desired_heading,
+        )
 
         self.lpath_data_pub.publish(msg)
         self.get_logger().debug(f"Publishing to {self.lpath_data_pub.topic}: {msg}")

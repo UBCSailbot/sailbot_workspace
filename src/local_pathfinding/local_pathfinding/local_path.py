@@ -23,7 +23,8 @@ class LocalPathState:
         `wind_speed` (float): Wind speed.
         `wind_direction` (int): Wind direction.
         `planner` (str): Planner to use for the OMPL query.
-        `reference (HelperLatLon): Lat and lon position of the next global waypoint.
+        `reference` (HelperLatLon): Lat and lon position of the next global waypoint.
+        `obstacles (List[Obstacle]): All obstacles in the state space
     """
 
     def __init__(
@@ -71,6 +72,7 @@ class LocalPathState:
         )
 
         self.planner = planner
+        self.obstacles = []  # obstacles are initialized by OMPLPath before solving
 
 
 class LocalPath:
@@ -81,6 +83,7 @@ class LocalPath:
         `_ompl_path` (Optional[OMPLPath]): Raw representation of the path from OMPL.
         `waypoints` (Optional[List[Tuple[float, float]]]): List of coordinates that form the path
             to the next global waypoint.
+        `state` (LocalPathState): the current local path state.
     """
 
     def __init__(self, parent_logger: RcutilsLogger):
@@ -88,6 +91,7 @@ class LocalPath:
         self._logger = parent_logger.get_child(name="local_path")
         self._ompl_path: Optional[OMPLPath] = None
         self.waypoints: Optional[List[Tuple[float, float]]] = None
+        self.state = None
 
     def update_if_needed(
         self,
@@ -96,8 +100,9 @@ class LocalPath:
         global_path: Path,
         filtered_wind_sensor: WindSensor,
         planner: str,
-    ):
-        """Updates the OMPL path and waypoints. The path is updated if a new path is found.
+    ) -> None:
+        """Updates the OMPL path, waypoints and current state. The path is updated if a new path
+            is found.
 
         Args:
             `gps` (GPS): GPS data.
@@ -106,6 +111,7 @@ class LocalPath:
             `filtered_wind_sensor` (WindSensor): Wind data.
         """
         state = LocalPathState(gps, ais_ships, global_path, filtered_wind_sensor, planner)
+        self.state = state
         ompl_path = OMPLPath(
             parent_logger=self._logger,
             max_runtime=1.0,

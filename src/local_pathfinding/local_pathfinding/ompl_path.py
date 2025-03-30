@@ -133,6 +133,9 @@ class OMPLPath:
             )
         )
 
+        # obstacles are also stored in the local_path_state object
+        # so that the navigate node can access and publish the obstacles
+        local_path_state.obstacles = OMPLPath.obstacles
         return OMPLPath.obstacles  # for testing
 
     def get_cost(self):
