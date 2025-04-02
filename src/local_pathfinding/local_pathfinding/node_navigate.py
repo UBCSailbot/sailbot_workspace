@@ -162,7 +162,12 @@ class Sailbot(Node):
         self.publish_local_path_data()
 
     def publish_local_path_data(self):
-        """Collect all navigation data and publish it in one message"""
+        """
+        Collect all navigation data and publish it in one message.
+        In development mode, all navigation data is published.
+        In production mode, only the local path is published, with all other data set to 0 or empty
+
+        """
 
         # publish all navigation data when in dev mode
         if self.mode == "development":
