@@ -137,21 +137,15 @@ class Sailbot(Node):
     # publisher callbacks
 
     def desired_heading_callback(self):
-        """Get and publish the desired heading.
+        """Get and publish the desired heading."""
 
-        Warn if not following the heading conventions in custom_interfaces/msg/HelperHeading.msg.
-        """
+        if not self._all_subs_active():
+            self._log_inactive_subs_warning()
+            return  # should not continue, return and try again next loop
+
         self.update_params()
 
         desired_heading = self.get_desired_heading()
-
-        if desired_heading is None:
-            self.get_logger().info("Desired heading was not calculated")
-            return  # should not continue, return and try again next loop
-
-        if (desired_heading <= -180) or (180 < desired_heading):
-            self.get_logger().warning(f"Heading {desired_heading} not in (-180, 180]")
-
         msg = ci.DesiredHeading()
         msg.heading.heading = desired_heading
         if self.desired_heading is None or desired_heading != self.desired_heading.heading.heading:
@@ -224,15 +218,8 @@ class Sailbot(Node):
         """Get the desired heading.
 
         Returns:
-            float: The desired heading if all subscribers are active, else a number that violates
-                the heading convention.
+            float: The desired heading
         """
-        if not self._all_subs_active():
-            self._log_inactive_subs_warning()
-            # do not proceed with calculating a path
-            # do not even return a float value
-            return None  # type: ignore
-
         self.local_path.update_if_needed(
             self.gps, self.ais_ships, self.global_path, self.filtered_wind_sensor, self.planner
         )
