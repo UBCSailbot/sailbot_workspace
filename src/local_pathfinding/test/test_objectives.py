@@ -13,14 +13,18 @@ from local_pathfinding.local_path import LocalPathState
 UPWIND_MULTIPLIER = 3000.0
 DOWNWIND_MULTIPLIER = 3000.0
 
-
-PATH = ompl_path.OMPLPath(
+OMPL_PATH = ompl_path.OMPLPath(
     parent_logger=RcutilsLogger(),
     max_runtime=1,
     local_path_state=LocalPathState(
         gps=GPS(),
         ais_ships=AISShips(),
-        global_path=Path(),
+        global_path=Path(
+            waypoints=[
+                HelperLatLon(latitude=0.0, longitude=0.0),
+                HelperLatLon(latitude=1.0, longitude=1.0),
+            ]
+        ),
         filtered_wind_sensor=WindSensor(),
         planner="rrtstar",
     ),
@@ -37,7 +41,7 @@ PATH = ompl_path.OMPLPath(
 )
 def test_distance_objective(method: objectives.DistanceMethod):
     distance_objective = objectives.DistanceObjective(
-        PATH._simple_setup.getSpaceInformation(),
+        OMPL_PATH._simple_setup.getSpaceInformation(),
         method,
     )
     assert distance_objective is not None
@@ -96,9 +100,9 @@ def test_get_latlon_path_length_objective(rf: tuple, cs1: tuple, cs2: tuple):
 )
 def test_minimum_turning_objective(method: objectives.MinimumTurningMethod):
     minimum_turning_objective = objectives.MinimumTurningObjective(
-        PATH._simple_setup.getSpaceInformation(),
-        PATH._simple_setup,
-        PATH.state.heading,
+        OMPL_PATH._simple_setup.getSpaceInformation(),
+        OMPL_PATH._simple_setup,
+        OMPL_PATH.state.heading,
         method,
     )
     assert minimum_turning_objective is not None
@@ -235,10 +239,10 @@ def test_angle_between(afir: float, amid: float, asec: float, expected: float):
 )
 def test_speed_objective(method: objectives.SpeedObjectiveMethod):
     speed_objective = objectives.SpeedObjective(
-        PATH._simple_setup.getSpaceInformation(),
-        PATH.state.heading,
-        PATH.state.wind_direction,
-        PATH.state.wind_speed,
+        OMPL_PATH._simple_setup.getSpaceInformation(),
+        OMPL_PATH.state.heading,
+        OMPL_PATH.state.wind_direction,
+        OMPL_PATH.state.wind_speed,
         method,
     )
     assert speed_objective is not None

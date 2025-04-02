@@ -20,13 +20,18 @@ import local_pathfinding.obstacles as ob
 import local_pathfinding.ompl_path as ompl_path
 from local_pathfinding.local_path import LocalPathState
 
-PATH = ompl_path.OMPLPath(
+OMPL_PATH = ompl_path.OMPLPath(
     parent_logger=RcutilsLogger(),
     max_runtime=1,
     local_path_state=LocalPathState(
         gps=GPS(),
         ais_ships=AISShips(),
-        global_path=Path(),
+        global_path=Path(
+            waypoints=[
+                HelperLatLon(latitude=0.0, longitude=0.0),
+                HelperLatLon(latitude=1.0, longitude=1.0),
+            ]
+        ),
         filtered_wind_sensor=WindSensor(),
         planner="rrtstar",
     ),
@@ -34,18 +39,17 @@ PATH = ompl_path.OMPLPath(
 
 
 def test_OMPLPath___init__():
-    assert PATH.solved
+    assert OMPL_PATH.solved
 
 
 def test_OMPLPath_get_cost():
     with pytest.raises(NotImplementedError):
-        PATH.get_cost()
+        OMPL_PATH.get_cost()
 
 
 def test_OMPLPath_get_waypoint():
-    waypoints = PATH.get_waypoints()
-    waypoint_XY = cs.XY(PATH.state.position.latitude, PATH.state.position.longitude)
-    start_state_latlon = cs.xy_to_latlon(PATH.state.reference_latlon, waypoint_XY)
+    waypoints = OMPL_PATH.get_path().waypoints  # List[HelperLatLon]
+    start_state_latlon = OMPL_PATH.state.position
 
     test_start = waypoints[0]
     test_goal = waypoints[-1]
@@ -54,13 +58,14 @@ def test_OMPLPath_get_waypoint():
         (start_state_latlon.latitude, start_state_latlon.longitude), abs=1e-2
     ), "first waypoint should be start state"
     assert (test_goal.latitude, test_goal.longitude) == pytest.approx(
-        (PATH.state.reference_latlon.latitude, PATH.state.reference_latlon.longitude), abs=1e-2
+        (OMPL_PATH.state.reference_latlon.latitude, OMPL_PATH.state.reference_latlon.longitude),
+        abs=1e-2,
     ), "last waypoint should be goal state"
 
 
 def test_OMPLPath_update_objectives():
     with pytest.raises(NotImplementedError):
-        PATH.update_objectives()
+        OMPL_PATH.update_objectives()
 
 
 def test_init_obstacles():
@@ -88,7 +93,12 @@ def test_init_obstacles():
                 ),
             ]
         ),
-        global_path=Path(),
+        global_path=Path(
+            waypoints=[
+                HelperLatLon(latitude=0.0, longitude=0.0),
+                HelperLatLon(latitude=1.0, longitude=1.0),
+            ]
+        ),
         filtered_wind_sensor=WindSensor(),
         planner="rrtstar",
     )
@@ -105,7 +115,7 @@ def test_init_obstacles():
     [(0.5, 0.5, True), (-14, 0.5, False), (-16, 0.5, True)],
 )
 def test_is_state_valid(x: float, y: float, is_valid: bool):
-    state = base.State(PATH._simple_setup.getStateSpace())
+    state = base.State(OMPL_PATH._simple_setup.getStateSpace())
     state().setXY(x, y)
 
     # Sample AIS SHIP message
@@ -152,7 +162,7 @@ def test_is_state_valid(x: float, y: float, is_valid: bool):
 def test_create_space(position: cs.XY, expected_area, expected_bounds):
     """Test creation of buffered space around positions"""
     # Given an OMPLPath instance
-    space = PATH.create_buffer_around_position(position)
+    space = OMPL_PATH.create_buffer_around_position(position)
 
     assert space.area == expected_area, "Space area should match buffer size"
     assert space.bounds == pytest.approx(expected_bounds, abs=1.0), "Bounds should match expected"

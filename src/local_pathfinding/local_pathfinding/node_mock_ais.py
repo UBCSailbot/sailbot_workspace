@@ -1,19 +1,17 @@
 import csv
 import math
 
+import custom_interfaces.msg as ci
 import rclpy
-from custom_interfaces.msg import AISShips, HelperAISShip, HelperLatLon
 from rclpy.node import Node
 
-from local_pathfinding.coord_systems import XY, latlon_to_xy, xy_to_latlon
+import local_pathfinding.coord_systems as cs
 
 """
 Defines a Mock AIS Node that publishes AIS ships to the ROS Network for testing purposes
-based on following:
-https://docs.ros.org/en/humble/Tutorials/Beginner-Client-Libraries/Writing-A-Simple-Py-Publisher-And-Subscriber.html
 
 Publishers:
-publisher_: Publishes mock AIS data in 'AISShips' message
+    publisher_: Publishes mock AIS data in 'AISShips' message
 """
 
 AIS_SHIPS_FILE_PATH = (
@@ -26,7 +24,7 @@ class MockAISNode(Node):
     def __init__(self):
         super().__init__("mock_ais_node")
         self.publisher_ = self.create_publisher(
-            msg_type=AISShips, topic="ais_ships", qos_profile=10
+            msg_type=ci.AISShips, topic="ais_ships", qos_profile=10
         )
         self.timer_period = 0.5
         self.first_run = True
@@ -34,7 +32,7 @@ class MockAISNode(Node):
         self.timer = self.create_timer(self.timer_period, self.timer_callback)
 
     def timer_callback(self):
-        msg = AISShips()
+        msg = ci.AISShips()
         if self.first_run:
             # read mock ais ships from csv
             with open(AIS_SHIPS_FILE_PATH, "r") as file:
@@ -42,7 +40,7 @@ class MockAISNode(Node):
                 # skip header
                 next(reader)
                 for row in reader:
-                    ship = HelperAISShip()
+                    ship = ci.HelperAISShip()
                     ship.id = int(row[0])
                     ship.lat_lon.latitude = float(row[1])
                     ship.lat_lon.longitude = float(row[2])
@@ -108,8 +106,8 @@ class MockAISNode(Node):
         # Get speed and time
         speed = ship.sog.speed / 3600
         time = self.timer_period
-        ref = HelperLatLon(latitude=0.0, longitude=0.0)
-        ship_latlon = HelperLatLon(
+        ref = ci.HelperLatLon(latitude=0.0, longitude=0.0)
+        ship_latlon = ci.HelperLatLon(
             latitude=ship.lat_lon.latitude, longitude=ship.lat_lon.longitude
         )
 
@@ -134,7 +132,7 @@ class MockAISNode(Node):
         heading = math.radians(ship.cog.heading)
 
         # Convert ship position to cartesian coordinates
-        ship_cartesian = latlon_to_xy(ref, ship_latlon)
+        ship_cartesian = cs.latlon_to_xy(ref, ship_latlon)
         vx = speed * math.sin(heading)
         vy = speed * math.cos(heading)
 
@@ -143,8 +141,8 @@ class MockAISNode(Node):
         new_y = ship_cartesian.y + vy * time
 
         # Convert back to lat_lon
-        new_xy = XY(x=new_x, y=new_y)
-        new_latlon = xy_to_latlon(ref, new_xy)
+        new_xy = cs.XY(x=new_x, y=new_y)
+        new_latlon = cs.xy_to_latlon(ref, new_xy)
 
         # Update ship position
         ship.lat_lon.latitude = new_latlon.latitude
