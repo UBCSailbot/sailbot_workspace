@@ -65,7 +65,7 @@ class MockAISNode(Node):
                     csv_ship_ids.append(id)
                     current_ship_ids = [ship.id for ship in self.ships]
                     if id > 0 and id not in current_ship_ids:
-                        ship = HelperAISShip()
+                        ship = ci.HelperAISShip()
                         ship.id = int(row[0])
                         ship.lat_lon.latitude = float(row[1])
                         ship.lat_lon.longitude = float(row[2])
