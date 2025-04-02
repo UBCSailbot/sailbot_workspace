@@ -55,6 +55,7 @@ class Sailbot(Node):
         self.declare_parameters(
             namespace="",
             parameters=[
+                ("mode", rclpy.Parameter.Type.STRING),
                 ("pub_period_sec", rclpy.Parameter.Type.DOUBLE),
                 ("path_planner", rclpy.Parameter.Type.STRING),
             ],
@@ -109,6 +110,7 @@ class Sailbot(Node):
 
         # attributes
         self.local_path = LocalPath(parent_logger=self.get_logger())
+        self.mode = self.get_parameter("mode").get_parameter_value().string_value
         self.planner = self.get_parameter("path_planner").get_parameter_value().string_value
         self.get_logger().debug(f"Got parameter: {self.planner=}")
 
@@ -141,18 +143,28 @@ class Sailbot(Node):
         """
         self.update_params()
 
-        try:
-            desired_heading = self.get_desired_heading()
-            if (desired_heading <= -180) or (180 < desired_heading):
-                self.get_logger().warning(f"Heading {desired_heading} not in (-180, 180]")
-        except RuntimeWarning:
-            return  # do not continue, return and wait for next loop
+        # desired_heading = self.get_desired_heading()
+
+        # if desired_heading is None:
+        #     self.get_logger().info("Desired heading was not calculated")
+        #     return  # should not continue, return and try again next loop
+
+        # if (desired_heading <= -180) or (180 < desired_heading):
+        #     self.get_logger().warning(f"Heading {desired_heading} not in (-180, 180]")
+
+        desired_heading = 9.0
+        self.local_path.path = ci.Path()
 
         msg = ci.DesiredHeading()
         msg.heading.heading = desired_heading
+        if self.desired_heading is None or desired_heading != self.desired_heading.heading.heading:
+            self.get_logger().info(f"Updating desired heading to: {msg.heading.heading:.2f}")
+
         self.desired_heading = msg
 
-        self.get_logger().debug(f"Publishing to {self.desired_heading_pub.topic}: {msg}")
+        self.get_logger().debug(
+            f"Publishing to {self.desired_heading_pub.topic}: {msg.heading.heading}"
+        )
         self.desired_heading_pub.publish(msg)
 
         self.get_logger().debug(f"Publishing local path data to {self.lpath_data_pub.topic}")
@@ -161,47 +173,52 @@ class Sailbot(Node):
     def publish_local_path_data(self):
         """Collect all navigation data and publish it in one message"""
 
-        helper_obstacles = []
+        # publish all navigation data when in dev mode
+        if self.mode == "development":
+            helper_obstacles = []
 
-        for obst in self.local_path.state.obstacles:
+            for obst in self.local_path.state.obstacles:
 
-            if isinstance(obst, ob.Land):
-                for polygon in obst.collision_zone.geoms:
+                if isinstance(obst, ob.Land):
+                    for polygon in obst.collision_zone.geoms:
+                        latlon_polygon = cs.xy_polygon_to_latlon_polygon(
+                            self.local_path.state.reference_latlon, polygon
+                        )
+                        # each point of the polygon is in lat lon now
+                        # but you cant construct a shapely polgyon out of HelperLatLon objects
+                        # so each point is a shapely Point that needs to be converted to a
+                        # HelperLatLon, before it can be published to ROS
+                        helper_latlons = [
+                            ci.HelperLatLon(longitude=point[0], latitude=point[1])
+                            for point in latlon_polygon.exterior.coords
+                        ]
+                        helper_obstacles.append(
+                            ci.HelperObstacle(points=helper_latlons, obstacle_type="Land")
+                        )
+                else:  # is a Boat
                     latlon_polygon = cs.xy_polygon_to_latlon_polygon(
-                        self.local_path.state.reference_latlon, polygon
+                        self.local_path.state.reference_latlon, obst.collision_zone
                     )
-                    # each point of the polygon is in lat lon now
-                    # but you cant construct a shapely polgyon out of HelperLatLon objects
-                    # so each point is a shapely Point that needs to be converted to a HelperLatLon
-                    # before it can be published to ROS
                     helper_latlons = [
                         ci.HelperLatLon(longitude=point[0], latitude=point[1])
                         for point in latlon_polygon.exterior.coords
                     ]
                     helper_obstacles.append(
-                        ci.HelperObstacle(points=helper_latlons, obstacle_type="Land")
+                        ci.HelperObstacle(points=helper_latlons, obstacle_type="Boat")
                     )
-            else:  # is a Boat
-                latlon_polygon = cs.xy_polygon_to_latlon_polygon(
-                    self.local_path.state.reference_latlon, obst.collision_zone
-                )
-                helper_latlons = [
-                    ci.HelperLatLon(longitude=point[0], latitude=point[1])
-                    for point in latlon_polygon.exterior.coords
-                ]
-                helper_obstacles.append(
-                    ci.HelperObstacle(points=helper_latlons, obstacle_type="Boat")
-                )
 
-        msg = ci.LPathData(
-            global_path=self.global_path,
-            local_path=self.local_path.path,
-            gps=self.gps,
-            filtered_wind_sensor=self.filtered_wind_sensor,
-            ais_ships=self.ais_ships,
-            obstacles=helper_obstacles,
-            desired_heading=self.desired_heading,
-        )
+            msg = ci.LPathData(
+                global_path=self.global_path,
+                local_path=self.local_path.path,
+                gps=self.gps,
+                filtered_wind_sensor=self.filtered_wind_sensor,
+                ais_ships=self.ais_ships,
+                obstacles=helper_obstacles,
+                desired_heading=self.desired_heading,
+            )
+        else:
+            # in production only publish the local path for website
+            msg = ci.LPathData(local_path=self.local_path.path)
 
         self.lpath_data_pub.publish(msg)
 
@@ -215,10 +232,9 @@ class Sailbot(Node):
         """
         if not self._all_subs_active():
             self._log_inactive_subs_warning()
-            # raise a RuntimeWarning because there isn't a great choice for a heading
-            # value to return that will indicate something is wrong
-            # that is more clear than just raising a warning
-            raise RuntimeWarning("Some required topics have not been published yet")
+            # do not proceed with calculating a path
+            # do not even return a float value
+            return None  # type: ignore
 
         self.local_path.update_if_needed(
             self.gps, self.ais_ships, self.global_path, self.filtered_wind_sensor, self.planner
@@ -229,6 +245,12 @@ class Sailbot(Node):
 
     def update_params(self):
         """Update instance variables that depend on parameters if they have changed."""
+
+        mode = self.get_parameter("mode").get_parameter_value().string_value
+        if mode != self.mode:
+            self.get_logger().debug(f"switching from {self.mode} mode to {mode} mode")
+            self.mode = mode
+
         pub_period_sec = self.get_parameter("pub_period_sec").get_parameter_value().double_value
         if pub_period_sec != self.pub_period_sec:
             self.get_logger().debug(
