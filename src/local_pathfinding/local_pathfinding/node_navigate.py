@@ -143,17 +143,14 @@ class Sailbot(Node):
         """
         self.update_params()
 
-        # desired_heading = self.get_desired_heading()
+        desired_heading = self.get_desired_heading()
 
-        # if desired_heading is None:
-        #     self.get_logger().info("Desired heading was not calculated")
-        #     return  # should not continue, return and try again next loop
+        if desired_heading is None:
+            self.get_logger().info("Desired heading was not calculated")
+            return  # should not continue, return and try again next loop
 
-        # if (desired_heading <= -180) or (180 < desired_heading):
-        #     self.get_logger().warning(f"Heading {desired_heading} not in (-180, 180]")
-
-        desired_heading = 9.0
-        self.local_path.path = ci.Path()
+        if (desired_heading <= -180) or (180 < desired_heading):
+            self.get_logger().warning(f"Heading {desired_heading} not in (-180, 180]")
 
         msg = ci.DesiredHeading()
         msg.heading.heading = desired_heading
