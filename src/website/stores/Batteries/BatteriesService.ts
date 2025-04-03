@@ -6,7 +6,7 @@ export const BatteriesService = {
     let isError = false;
 
     return yield fetch(
-      `${process.env.NEXT_PUBLIC_SERVER_HOST}:${process.env.NEXT_PUBLIC_SERVER_PORT}/api/batteries`,
+      `/api/batteries`,
       {
         method: 'GET',
       },

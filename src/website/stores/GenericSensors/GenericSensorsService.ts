@@ -6,7 +6,7 @@ export const GenericSensorsService = {
     let isError = false;
 
     return yield fetch(
-      `${process.env.NEXT_PUBLIC_SERVER_HOST}:${process.env.NEXT_PUBLIC_SERVER_PORT}/api/generic-sensors`,
+      `/api/generic-sensors`,
       {
         method: 'GET',
       },
