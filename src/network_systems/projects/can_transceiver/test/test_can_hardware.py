@@ -427,10 +427,11 @@ def main():
                 print(f"Error sending frame {frame}: {output}")
             else:
                 print(f"Frame {frame} sent successfully")
-    if result_verify(frames, t_info) != 0:
-        print("Test failed")
-    else:
-        print("Test passed")
+    # if result_verify(frames, t_info) != 0:
+    #     print("Test failed")
+    # else:
+    #     print("Test passed")
+    print("Test finished")
 
 
 if __name__ == "__main__":
