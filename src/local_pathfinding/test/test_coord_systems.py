@@ -1,8 +1,8 @@
 import math
 from typing import List
 
+import custom_interfaces.msg as ci
 import pytest
-from custom_interfaces.msg import HelperLatLon
 from shapely.geometry import MultiPolygon, Point, Polygon, box
 
 import local_pathfinding.coord_systems as cs
@@ -67,11 +67,11 @@ def test_bound_to_180(unbounded: float, bounded: float):
 )
 def test_latlon_to_xy(ref_lat: float, ref_lon: float, true_bearing_deg: float, dist_km: float):
     # create inputs
-    reference = HelperLatLon(latitude=ref_lat, longitude=ref_lon)
+    reference = ci.HelperLatLon(latitude=ref_lat, longitude=ref_lon)
     lon, lat, _ = cs.GEODESIC.fwd(
         lons=ref_lon, lats=ref_lat, az=true_bearing_deg, dist=dist_km * 1000
     )
-    latlon = HelperLatLon(latitude=lat, longitude=lon)
+    latlon = ci.HelperLatLon(latitude=lat, longitude=lon)
 
     # create expected output
     true_bearing = math.radians(true_bearing_deg)
@@ -106,11 +106,11 @@ def test_xy_to_latlon(ref_lat: float, ref_lon: float, true_bearing_deg: float, d
     )
 
     # create expected output
-    reference = HelperLatLon(latitude=ref_lat, longitude=ref_lon)
+    reference = ci.HelperLatLon(latitude=ref_lat, longitude=ref_lon)
     lon, lat, _ = cs.GEODESIC.fwd(
         lons=ref_lon, lats=ref_lat, az=true_bearing_deg, dist=dist_km * 1000
     )
-    latlon = HelperLatLon(latitude=lat, longitude=lon)
+    latlon = ci.HelperLatLon(latitude=lat, longitude=lon)
 
     converted_latlon = cs.xy_to_latlon(reference, xy)
     assert (converted_latlon.latitude, converted_latlon.longitude) == pytest.approx(
@@ -122,19 +122,19 @@ def test_xy_to_latlon(ref_lat: float, ref_lon: float, true_bearing_deg: float, d
     "reference_latlon, polygon",
     [
         (
-            HelperLatLon(latitude=50.0, longitude=100.0),
+            ci.HelperLatLon(latitude=50.0, longitude=100.0),
             Polygon([Point([0, 0]), Point([0, 1]), Point([1, 1]), Point([1, 0])]),
         )
     ],
 )
-def test_xy_polygon_to_latlon_polygon(reference_latlon: HelperLatLon, polygon: Polygon):
+def test_xy_polygon_to_latlon_polygon(reference_latlon: ci.HelperLatLon, polygon: Polygon):
 
     latlon_polygon = cs.xy_polygon_to_latlon_polygon(reference=reference_latlon, poly=polygon)
 
     for i, point in enumerate(latlon_polygon.exterior.coords):
         assert (
             cs.latlon_to_xy(
-                reference_latlon, cs.HelperLatLon(longitude=point[0], latitude=point[1])
+                reference_latlon, ci.HelperLatLon(longitude=point[0], latitude=point[1])
             )
         ) == pytest.approx(
             polygon.exterior.coords[i]
@@ -180,7 +180,7 @@ def test_xy_polygon_to_latlon_polygon(reference_latlon: HelperLatLon, polygon: P
                     ),
                 ]
             ),
-            HelperLatLon(latitude=51.527884, longitude=-132.643800),
+            ci.HelperLatLon(latitude=51.527884, longitude=-132.643800),
         ),
         (
             MultiPolygon(
@@ -216,7 +216,7 @@ def test_xy_polygon_to_latlon_polygon(reference_latlon: HelperLatLon, polygon: P
                     ),
                 ]
             ).geoms,
-            HelperLatLon(latitude=51.527884, longitude=-132.643800),
+            ci.HelperLatLon(latitude=51.527884, longitude=-132.643800),
         ),
         (
             list(
@@ -231,16 +231,16 @@ def test_xy_polygon_to_latlon_polygon(reference_latlon: HelperLatLon, polygon: P
                     ),
                 ]
             ),
-            HelperLatLon(latitude=51.527884, longitude=-132.643800),
+            ci.HelperLatLon(latitude=51.527884, longitude=-132.643800),
         ),
         (
             list([]),
-            HelperLatLon(latitude=51.527884, longitude=-132.643800),
+            ci.HelperLatLon(latitude=51.527884, longitude=-132.643800),
         ),
     ],
 )
 def test_latlon_polygons_to_xy_polygons(
-    latlon_polygons: List[Polygon], reference_point: HelperLatLon
+    latlon_polygons: List[Polygon], reference_point: ci.HelperLatLon
 ):
 
     xy_polygons = cs.latlon_polygon_list_to_xy_polygon_list(latlon_polygons, reference_point)
@@ -259,14 +259,14 @@ def test_latlon_polygons_to_xy_polygons(
                 assert xy_point == pytest.approx(
                     cs.latlon_to_xy(
                         reference_point,
-                        HelperLatLon(longitude=latlon_point[0], latitude=latlon_point[1]),
+                        ci.HelperLatLon(longitude=latlon_point[0], latitude=latlon_point[1]),
                     )
                 )
 
 
 def test_latlon_polygons_to_xy_polygons_empty_Polygon():
 
-    reference_point = HelperLatLon(latitude=51.527884, longitude=-132.643800)
+    reference_point = ci.HelperLatLon(latitude=51.527884, longitude=-132.643800)
     b1 = box(0, 0, 1, 1)
     b3 = box(2, 2, 3, 3)
 
