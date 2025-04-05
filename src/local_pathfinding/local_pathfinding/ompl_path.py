@@ -130,6 +130,9 @@ class OMPLPath:
             )
         )
 
+        # obstacles are also stored in the local_path_state object
+        # so that the navigate node can access and publish the obstacles
+        local_path_state.obstacles = OMPLPath.obstacles
         return OMPLPath.obstacles  # for testing
 
     def get_cost(self):
@@ -287,7 +290,11 @@ class OMPLPath:
             if not state_is_valid:
                 # uncomment this if you want to log which states are being labeled invalid
                 # its commented out for now to avoid unnecessary file I/O
-                # log_invalid_state(state=cs.XY(state.getX(), state.getY()), obstacle=o)
+
+                # if isinstance(state, base.State):  # only happens in unit tests
+                #     log_invalid_state(state=cs.XY(state().getX(), state().getY()), obstacle=o)
+                # else:  # happens in prod
+                #     log_invalid_state(state=cs.XY(state.getX(), state.getY()), obstacle=o)
                 return False
 
         return True
