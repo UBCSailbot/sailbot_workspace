@@ -115,7 +115,6 @@ class Sailbot(Node):
         self.get_logger().debug(f"Got parameter: {self.planner=}")
 
     # subscriber callbacks
-
     def ais_ships_callback(self, msg: ci.AISShips):
         self.get_logger().debug(f"Received data from {self.ais_ships_sub.topic}: {msg}")
         self.ais_ships = msg
@@ -135,7 +134,6 @@ class Sailbot(Node):
         self.filtered_wind_sensor = msg
 
     # publisher callbacks
-
     def desired_heading_callback(self):
         """Get and publish the desired heading."""
 
