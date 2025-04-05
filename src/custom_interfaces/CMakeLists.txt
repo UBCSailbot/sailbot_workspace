@@ -45,6 +45,7 @@ set(common_msg
   "msg/HelperPh.msg"
   "msg/HelperSalinity.msg"
   "msg/HelperPressure.msg"
+  "msg/HelperObstacle.msg"
 )
 
 # Boat simulator custom messages
