@@ -3,7 +3,7 @@
 import math
 from typing import List, NamedTuple
 
-from custom_interfaces.msg import HelperLatLon
+import custom_interfaces.msg as ci
 from pyproj import Geod
 from shapely.geometry import Point, Polygon
 
@@ -42,12 +42,12 @@ def km_to_meters(km: float) -> float:
     return km * 1000
 
 
-def latlon_to_xy(reference: HelperLatLon, latlon: HelperLatLon) -> XY:
+def latlon_to_xy(reference: ci.HelperLatLon, latlon: ci.HelperLatLon) -> XY:
     """Convert a geographical coordinate to a 2D Cartesian coordinate given a reference point.
 
     Args:
-        reference (HelperLatLon): Origin of the Cartesian coordinate system.
-        latlon (HelperLatLon): Coordinate to be converted to the Cartesian coordinate system.
+        reference (ci.HelperLatLon): Origin of the Cartesian coordinate system.
+        latlon (ci.HelperLatLon): Coordinate to be converted to the Cartesian coordinate system.
 
     Returns:
         XY: The x and y components in km.
@@ -64,15 +64,16 @@ def latlon_to_xy(reference: HelperLatLon, latlon: HelperLatLon) -> XY:
     )
 
 
-def xy_to_latlon(reference: HelperLatLon, xy: XY) -> HelperLatLon:
+def xy_to_latlon(reference: ci.HelperLatLon, xy: XY) -> ci.HelperLatLon:
     """Convert a 2D Cartesian coordinate to a geographical coordinate given a reference point.
 
     Args:
-        reference (HelperLatLon): Coordinate that is the origin of the Cartesian coordinate system.
+        reference (ci.HelperLatLon): Coordinate that is the origin of the Cartesian coordinate
+                                     system.
         xy (XY): Coordinate to be converted to the geographical coordinate system.
 
     Returns:
-        HelperLatLon: The latitude and longitude in degrees.
+        ci.HelperLatLon: The latitude and longitude in degrees.
     """
     true_bearing = math.degrees(math.atan2(xy.x, xy.y))
     distance = km_to_meters(math.hypot(*xy))
@@ -80,10 +81,10 @@ def xy_to_latlon(reference: HelperLatLon, xy: XY) -> HelperLatLon:
         reference.longitude, reference.latitude, true_bearing, distance
     )
 
-    return HelperLatLon(latitude=dest_lat, longitude=dest_lon)
+    return ci.HelperLatLon(latitude=dest_lat, longitude=dest_lon)
 
 
-def xy_polygon_to_latlon_polygon(reference: HelperLatLon, poly: Polygon):
+def xy_polygon_to_latlon_polygon(reference: ci.HelperLatLon, poly: Polygon):
     """
     Transforms a polygon in XY coordinates to a rectangular polygon in lat lon coordinates.
     """
@@ -105,7 +106,7 @@ def xy_polygon_to_latlon_polygon(reference: HelperLatLon, poly: Polygon):
 
 
 def latlon_polygon_list_to_xy_polygon_list(
-    polygons: List[Polygon], reference: HelperLatLon
+    polygons: List[Polygon], reference: ci.HelperLatLon
 ) -> List[Polygon]:
     """
     Transforms a list of one or more polygons from the global lat/lon coordinate system to
@@ -113,13 +114,13 @@ def latlon_polygon_list_to_xy_polygon_list(
 
     Args:
         polygons (List[Polygon]): List of polygons to be transformed.
-        reference (HelperLatLon): Lat and lon position of the reference point.
+        reference (ci.HelperLatLon): Lat and lon position of the reference point.
 
     Returns:
         List[Polygon]: List of transformed polygons.
 
     Inner Functions:
-        _latlon_to_xy_point(point: HelperLatLon) -> Point:
+        _latlon_to_xy_point(point: ci.HelperLatLon) -> Point:
             Converts a latlon point to a 2D Cartesian point.
         _latlons_to_xy_points(poly: Polygon) -> Polygon:
             Applies the _latlon_to_point function to every point of poly
@@ -136,7 +137,7 @@ def latlon_polygon_list_to_xy_polygon_list(
             *latlon_to_xy(
                 reference=reference,
                 # points are (lon, lat) in the land dataset
-                latlon=HelperLatLon(longitude=latlon_point[0], latitude=latlon_point[1]),
+                latlon=ci.HelperLatLon(longitude=latlon_point[0], latitude=latlon_point[1]),
             )
         )
 

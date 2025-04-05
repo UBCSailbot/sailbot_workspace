@@ -1,0 +1,55 @@
+data:
+  dtype: AIS
+  ships:
+  - cog:
+      dtype: float32
+      val:
+      - 3
+      - 48.67857163621956
+      - -124.4259853981998
+      - 301.0
+      - 7.0
+    dtype: HelperLatLon
+    id:
+      dtype: uint32
+      val:
+      - 0
+      - 48.34466788365575
+      - -124.98262441708803
+      - 85.0
+      - 8.0
+    latitude:
+      dtype: float32
+      val:
+      - 1
+      - 48.52374935036434
+      - -124.85749961243438
+      - 225.0
+      - 1.0
+    length:
+      dtype: float32
+      val: 20
+    longitude:
+      dtype: float32
+      val:
+      - 2
+      - 48.058801833927184
+      - -124.6720328042949
+      - 93.0
+      - 3.0
+    rot:
+      dtype: float32
+      val: 53.26506157725612
+    sog:
+      dtype: float32
+      val:
+      - 4
+      - 48.484802108229275
+      - -125.19292205687523
+      - 229.0
+      - 13.0
+    width:
+      dtype: float32
+      val: 10
+name: aisships
+type: ROS
