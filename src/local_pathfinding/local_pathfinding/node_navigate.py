@@ -189,47 +189,30 @@ class Sailbot(Node):
             self.current_waypoint_index = 0
 
         desired_heading, self.current_waypoint_index = (
-            calculate_desired_heading_and_waypoint_index(
-                self.local_path,
-                self.current_waypoint_index,
+            self.calculate_desired_heading_and_waypoint_index(
+                self.local_path, self.current_waypoint_index, self.gps
             )
         )
 
-        desired_heading, distance_to_waypoint_m = self.get_heading_and_distance()
-
-        if cs.meters_to_km(distance_to_waypoint_m) < WAYPOINT_REACHED_THRESH_KM:
-            # If we reached the local waypoint, update local waypoint and recalculate heading
-            self.current_waypoint_index += 1
-            desired_heading, distance_to_waypoint_m = self.get_heading_and_distance()
-
-        return cs.bound_to_180(desired_heading)
-
-    def get_heading_and_distance(self):
-        """Helper function; wrapper for GEODESIC.inv() to get heading and distance to waypoint"""
-
-        boat = self.gps.lat_lon
-        waypoint = self.local_path.waypoints[self.current_waypoint_index]
-        desired_heading, _, distance_to_waypoint_m = GEODESIC.inv(
-            boat.longitude, boat.latitude, waypoint.longitude, waypoint.latitude
-        )
-        return desired_heading, distance_to_waypoint_m
+        return desired_heading
 
     @staticmethod
     def calculate_desired_heading_and_waypoint_index(
         local_path: LocalPath, waypoint_index: int, gps: ci.GPS
     ):
-        if (local_path is None) or (local_path.waypoints is None):
-            raise TypeError("local_path cannot be None")
+        if (local_path is None) or (local_path.path is None):
+            raise TypeError("local_path.path cannot be None")
 
         boat = gps.lat_lon
-        waypoint = local_path.waypoints[waypoint_index]
+        waypoint = local_path.path.waypoints[waypoint_index]
         desired_heading, _, distance_to_waypoint_m = GEODESIC.inv(
             boat.longitude, boat.latitude, waypoint.longitude, waypoint.latitude
         )
 
         if cs.meters_to_km(distance_to_waypoint_m) < WAYPOINT_REACHED_THRESH_KM:
+            # If we reached the current local waypoint, aim for the next one
             waypoint_index += 1
-            waypoint = local_path.waypoints[waypoint_index]
+            waypoint = local_path.path.waypoints[waypoint_index]
             desired_heading, _, distance_to_waypoint_m = GEODESIC.inv(
                 boat.longitude, boat.latitude, waypoint.longitude, waypoint.latitude
             )
