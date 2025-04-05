@@ -98,5 +98,5 @@ def get_wind_direction(wind: NDArray) -> Scalar:
     Returns:
         Scalar: Direction of wind, in degrees. Angle is in [-180, 180).
     """
-    angle_deg = np.arctan2(wind[0], wind[1]) * 180 / np.pi
-    return int(bound_to_180(angle_deg, isDegrees=True))
+    angle_deg = round(np.arctan2(wind[0], wind[1]) * 180 / np.pi)
+    return bound_to_180(angle_deg, isDegrees=True)
