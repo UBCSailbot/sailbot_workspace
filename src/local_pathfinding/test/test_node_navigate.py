@@ -5,7 +5,7 @@ import local_pathfinding.node_navigate as nn
 
 
 @pytest.mark.parametrize(
-    "local_path, waypoint_index, boat_lat_lon, correct_heading, new_wp_index",
+    "path, waypoint_index, boat_lat_lon, correct_heading, new_wp_index",
     [
         (
             ci.Path(waypoints=[ci.HelperLatLon(latitude=0.0, longitude=0.0)]),

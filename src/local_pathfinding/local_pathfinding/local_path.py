@@ -88,7 +88,7 @@ class LocalPath:
         global_path: ci.Path,
         filtered_wind_sensor: ci.WindSensor,
         planner: str,
-    ) -> None:
+    ) -> bool:
         """Updates the OMPL path, waypoints and current state. The path is updated if a new path
             is found. Returns true if the path is updated and false otherwise.
 
