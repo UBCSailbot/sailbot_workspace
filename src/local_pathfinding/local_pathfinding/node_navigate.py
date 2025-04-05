@@ -7,6 +7,7 @@ from rclpy.node import Node
 
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.global_path as gp
+import local_pathfinding.obstacles as ob
 from local_pathfinding.local_path import LocalPath
 
 WAYPOINT_REACHED_THRESH_KM = 0.5
@@ -39,13 +40,13 @@ class Sailbot(Node):
     Publisher timers:
         pub_period_sec (float): The period of the publisher timers.
         desired_heading_timer (Timer): Call the desired heading callback function.
-        lpath_data_timer (Timer): Call the local path callback function.
 
     Attributes from subscribers:
         ais_ships (ci.AISShips): Data from other boats.
         gps (ci.GPS): Data from the GPS sensor.
         global_path (ci.Path): Path that we are following.
         filtered_wind_sensor (ci.WindSensor): Filtered data from the wind sensors.
+        desired_heading (ci.DesiredHeading): current desired heading.
 
     Attributes:
         local_path (LocalPath): The path that `Sailbot` is following.
@@ -58,6 +59,7 @@ class Sailbot(Node):
         self.declare_parameters(
             namespace="",
             parameters=[
+                ("mode", rclpy.Parameter.Type.STRING),
                 ("pub_period_sec", rclpy.Parameter.Type.DOUBLE),
                 ("path_planner", rclpy.Parameter.Type.STRING),
             ],
@@ -102,24 +104,22 @@ class Sailbot(Node):
         self.desired_heading_timer = self.create_timer(
             timer_period_sec=self.pub_period_sec, callback=self.desired_heading_callback
         )
-        self.lpath_data_timer = self.create_timer(
-            timer_period_sec=self.pub_period_sec, callback=self.lpath_data_callback
-        )
 
         # attributes from subscribers
         self.ais_ships = None
         self.gps = None
         self.global_path = None
         self.filtered_wind_sensor = None
+        self.desired_heading = None
 
         # attributes
         self.local_path = LocalPath(parent_logger=self.get_logger())
         self.current_waypoint_index = 0
+        self.mode = self.get_parameter("mode").get_parameter_value().string_value
         self.planner = self.get_parameter("path_planner").get_parameter_value().string_value
         self.get_logger().debug(f"Got parameter: {self.planner=}")
 
     # subscriber callbacks
-
     def ais_ships_callback(self, msg: ci.AISShips):
         self.get_logger().debug(f"Received data from {self.ais_ships_sub.topic}: {msg}")
         self.ais_ships = msg
@@ -139,48 +139,95 @@ class Sailbot(Node):
         self.filtered_wind_sensor = msg
 
     # publisher callbacks
-
     def desired_heading_callback(self):
-        """Get and publish the desired heading.
+        """Get and publish the desired heading."""
 
-        Warn if not following the heading conventions in custom_interfaces/msg/HelperHeading.msg.
-        """
+        if not self._all_subs_active():
+            self._log_inactive_subs_warning()
+            return  # should not continue, return and try again next loop
+
         self.update_params()
 
         desired_heading = self.get_desired_heading()
-        if (desired_heading <= -180) or (180 < desired_heading):
-            self.get_logger().warning(f"Heading {desired_heading} not in (-180, 180]")
-
         msg = ci.DesiredHeading()
         msg.heading.heading = desired_heading
+        if self.desired_heading is None or desired_heading != self.desired_heading.heading.heading:
+            self.get_logger().info(f"Updating desired heading to: {msg.heading.heading:.2f}")
 
+        self.desired_heading = msg
+
+        self.get_logger().debug(
+            f"Publishing to {self.desired_heading_pub.topic}: {msg.heading.heading}"
+        )
         self.desired_heading_pub.publish(msg)
-        self.get_logger().debug(f"Publishing to {self.desired_heading_pub.topic}: {msg}")
 
-    def lpath_data_callback(self):
-        """Collect all navigation data and publish it in one message"""
-        return
+        self.get_logger().debug(f"Publishing local path data to {self.lpath_data_pub.topic}")
+        self.publish_local_path_data()
 
-        current_local_path = self.local_path.waypoints
+    def publish_local_path_data(self):
+        """
+        Collect all navigation data and publish it in one message.
+        In development mode, all navigation data is published.
+        In production mode, only the local path is published, with all other data set to 0 or empty
 
-        msg = ci.LPathData(local_path=current_local_path)
+        """
+
+        # publish all navigation data when in dev mode
+        if self.mode == "development":
+            helper_obstacles = []
+
+            for obst in self.local_path.state.obstacles:
+
+                if isinstance(obst, ob.Land):
+                    for polygon in obst.collision_zone.geoms:
+                        latlon_polygon = cs.xy_polygon_to_latlon_polygon(
+                            self.local_path.state.reference_latlon, polygon
+                        )
+                        # each point of the polygon is in lat lon now
+                        # but you cant construct a shapely polgyon out of HelperLatLon objects
+                        # so each point is a shapely Point that needs to be converted to a
+                        # HelperLatLon, before it can be published to ROS
+                        helper_latlons = [
+                            ci.HelperLatLon(longitude=point[0], latitude=point[1])
+                            for point in latlon_polygon.exterior.coords
+                        ]
+                        helper_obstacles.append(
+                            ci.HelperObstacle(points=helper_latlons, obstacle_type="Land")
+                        )
+                else:  # is a Boat
+                    latlon_polygon = cs.xy_polygon_to_latlon_polygon(
+                        self.local_path.state.reference_latlon, obst.collision_zone
+                    )
+                    helper_latlons = [
+                        ci.HelperLatLon(longitude=point[0], latitude=point[1])
+                        for point in latlon_polygon.exterior.coords
+                    ]
+                    helper_obstacles.append(
+                        ci.HelperObstacle(points=helper_latlons, obstacle_type="Boat")
+                    )
+
+            msg = ci.LPathData(
+                global_path=self.global_path,
+                local_path=self.local_path.path,
+                gps=self.gps,
+                filtered_wind_sensor=self.filtered_wind_sensor,
+                ais_ships=self.ais_ships,
+                obstacles=helper_obstacles,
+                desired_heading=self.desired_heading,
+            )
+        else:
+            # in production only publish the local path for website
+            msg = ci.LPathData(local_path=self.local_path.path)
 
         self.lpath_data_pub.publish(msg)
-        self.get_logger().debug(f"Publishing to {self.lpath_data_pub.topic}: {msg}")
 
     # helper functions
-
     def get_desired_heading(self) -> float:
         """Get the desired heading.
 
         Returns:
-            float: The desired heading if all subscribers are active, else a number that violates
-                the heading convention (-404 for error)
+            float: The desired heading
         """
-        if not self._all_subs_active():
-            self._log_inactive_subs_warning()
-            return -404.0
-
         received_new_path = self.local_path.update_if_needed(
             self.gps, self.ais_ships, self.global_path, self.filtered_wind_sensor, self.planner
         )
@@ -220,6 +267,12 @@ class Sailbot(Node):
 
     def update_params(self):
         """Update instance variables that depend on parameters if they have changed."""
+
+        mode = self.get_parameter("mode").get_parameter_value().string_value
+        if mode != self.mode:
+            self.get_logger().debug(f"switching from {self.mode} mode to {mode} mode")
+            self.mode = mode
+
         pub_period_sec = self.get_parameter("pub_period_sec").get_parameter_value().double_value
         if pub_period_sec != self.pub_period_sec:
             self.get_logger().debug(
@@ -228,9 +281,6 @@ class Sailbot(Node):
             self.pub_period_sec = pub_period_sec
             self.desired_heading_timer = self.create_timer(
                 timer_period_sec=self.pub_period_sec, callback=self.desired_heading_callback
-            )
-            self.lpath_data_timer = self.create_timer(
-                timer_period_sec=self.pub_period_sec, callback=self.lpath_data_callback
             )
 
         planner = self.get_parameter("path_planner").get_parameter_value().string_value

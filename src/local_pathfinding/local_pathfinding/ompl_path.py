@@ -28,6 +28,8 @@ if TYPE_CHECKING:
 # OMPL logging: only log warnings and above
 ou.setLogLevel(ou.LOG_WARN)
 
+BOX_BUFFER_SIZE = 1.0  # km
+
 
 class OMPLPath:
     """Represents the general OMPL Path.
@@ -61,7 +63,7 @@ class OMPLPath:
             max_runtime (float): Maximum amount of time in seconds to look for a solution path.
             local_path_state (LocalPathState): State of Sailbot.
         """
-        self._box_buffer = 1
+        self._box_buffer = BOX_BUFFER_SIZE
         self._logger = parent_logger.get_child(name="ompl_path")
         self._simple_setup = self._init_simple_setup(local_path_state)  # this needs state
 
@@ -130,6 +132,9 @@ class OMPLPath:
             )
         )
 
+        # obstacles are also stored in the local_path_state object
+        # so that the navigate node can access and publish the obstacles
+        local_path_state.obstacles = OMPLPath.obstacles
         return OMPLPath.obstacles  # for testing
 
     def get_cost(self):
@@ -191,15 +196,10 @@ class OMPLPath:
         start_x = start_position_in_xy.x
         start_y = start_position_in_xy.y
 
-        # TODO this needs to be removed when mocks are ready
-        if not self.state.global_path:
-            goal_polygon = self.create_buffer_around_position(cs.XY(0, 0))
-            goal_x, goal_y = (0.0, 0.0)
-        else:
-            goal_position = self.state.global_path.waypoints[-1]
-            goal_position_in_xy = cs.latlon_to_xy(self.state.reference_latlon, goal_position)
-            goal_polygon = self.create_buffer_around_position(goal_position_in_xy)
-            goal_x, goal_y = goal_position_in_xy
+        goal_position = self.state.global_path.waypoints[-1]
+        goal_position_in_xy = cs.latlon_to_xy(self.state.reference_latlon, goal_position)
+        goal_polygon = self.create_buffer_around_position(goal_position_in_xy)
+        goal_x, goal_y = goal_position_in_xy
 
         # create an SE2 state space: rotation and translation in a plane
         space = base.SE2StateSpace()
@@ -287,7 +287,11 @@ class OMPLPath:
             if not state_is_valid:
                 # uncomment this if you want to log which states are being labeled invalid
                 # its commented out for now to avoid unnecessary file I/O
-                # log_invalid_state(state=cs.XY(state.getX(), state.getY()), obstacle=o)
+
+                # if isinstance(state, base.State):  # only happens in unit tests
+                #     log_invalid_state(state=cs.XY(state().getX(), state().getY()), obstacle=o)
+                # else:  # happens in prod
+                #     log_invalid_state(state=cs.XY(state.getX(), state.getY()), obstacle=o)
                 return False
 
         return True
