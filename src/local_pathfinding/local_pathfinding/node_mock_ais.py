@@ -54,6 +54,36 @@ class MockAISNode(Node):
             self.first_run = False
 
         else:
+            csv_ship_ids = []
+            ships_to_remove = []
+
+            with open(AIS_SHIPS_FILE_PATH, "r") as file:
+                reader = csv.reader(file)
+                next(reader)
+                for row in reader:
+                    id = int(row[0])
+                    csv_ship_ids.append(id)
+                    current_ship_ids = [ship.id for ship in self.ships]
+                    if id > 0 and id not in current_ship_ids:
+                        ship = ci.HelperAISShip()
+                        ship.id = int(row[0])
+                        ship.lat_lon.latitude = float(row[1])
+                        ship.lat_lon.longitude = float(row[2])
+                        ship.cog.heading = float(row[3])
+                        ship.sog.speed = float(row[4])
+                        ship.rot.rot = int(row[5])
+                        ship.length.dimension = float(row[6])
+                        ship.width.dimension = float(row[7])
+                        self.ships.append(ship)
+                        msg.ships.append(ship)
+
+            for ship in self.ships:
+                if ship.id not in csv_ship_ids:
+                    ships_to_remove.append(ship)
+
+            for ship in ships_to_remove:
+                self.ships.remove(ship)
+
             for ship in self.ships:
                 self.update_ship_position(ship)
                 msg.ships.append(ship)
