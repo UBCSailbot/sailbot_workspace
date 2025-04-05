@@ -29,7 +29,7 @@ def test_LocalPathState_parameter_checking():
     with pytest.raises(ValueError):
         lps = (
             lp.LocalPathState(
-                None,
+                gps=None,
                 ais_ships=AISShips(),
                 global_path=Path(
                     waypoints=[

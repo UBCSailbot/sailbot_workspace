@@ -28,6 +28,8 @@ if TYPE_CHECKING:
 # OMPL logging: only log warnings and above
 ou.setLogLevel(ou.LOG_WARN)
 
+BOX_BUFFER_SIZE = 1.0  # km
+
 
 class OMPLPath:
     """Represents the general OMPL Path.
@@ -61,7 +63,7 @@ class OMPLPath:
             max_runtime (float): Maximum amount of time in seconds to look for a solution path.
             local_path_state (LocalPathState): State of Sailbot.
         """
-        self._box_buffer = 1
+        self._box_buffer = BOX_BUFFER_SIZE
         self._logger = parent_logger.get_child(name="ompl_path")
         self._simple_setup = self._init_simple_setup(local_path_state)  # this needs state
 
