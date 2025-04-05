@@ -86,7 +86,8 @@ def get_navigate_node_description(context: LaunchContext) -> Node:
         Node: The node object that launches the navigate_main node.
     """
     node_name = "navigate_main"
-    ros_parameters = [LaunchConfiguration("config").perform(context)]
+    mode = LaunchConfiguration("mode").perform(context)
+    ros_parameters = [{"mode": mode}, LaunchConfiguration("config").perform(context)]
     ros_arguments: List[SomeSubstitutionsType] = [
         "--log-level",
         [f"{node_name}:=", LaunchConfiguration("log_level")],
@@ -179,8 +180,7 @@ def get_mock_wind_sensor_node_description(context: LaunchContext) -> Node:
 
 
 def get_mock_gps_node_description(context: LaunchContext) -> Node:
-    """Gets the launch description for the mock gps node
-    """
+    """Gets the launch description for the mock gps node"""
     node_name = "mock_gps"
     ros_parameters = [LaunchConfiguration("config").perform(context)]
     ros_arguments: List[SomeSubstitutionsType] = [

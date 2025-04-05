@@ -107,7 +107,7 @@ class LocalPath:
             local_path_state=state,
         )
         if ompl_path.solved:
-            self._logger.info("Updating local path")
+            self._logger.debug("Updating local path")
             self._update(ompl_path)
 
     def _update(self, ompl_path: OMPLPath):
