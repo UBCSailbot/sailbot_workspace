@@ -24,7 +24,7 @@ import local_pathfinding.node_navigate as nn
         (
             ci.Path(waypoints=[ci.HelperLatLon(latitude=0.0, longitude=0.0)]),
             0,
-            ci.HelperLatLon(latitude=0.06, longitude=0.06),
+            ci.HelperLatLon(latitude=0.1, longitude=0.1),
             -135.0,
             0,
         ),
@@ -39,7 +39,7 @@ import local_pathfinding.node_navigate as nn
             0,
             ci.HelperLatLon(latitude=0.0, longitude=0.09999),
             -90.0,
-            0,
+            1,
         ),
     ],
 )
