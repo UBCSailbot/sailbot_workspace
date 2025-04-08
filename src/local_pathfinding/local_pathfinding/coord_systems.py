@@ -42,6 +42,10 @@ def km_to_meters(km: float) -> float:
     return km * 1000
 
 
+def bound_to_180(angle_degrees: float) -> float:
+    return ((angle_degrees + 180) % 360) - 180
+
+
 def latlon_to_xy(reference: ci.HelperLatLon, latlon: ci.HelperLatLon) -> XY:
     """Convert a geographical coordinate to a 2D Cartesian coordinate given a reference point.
 
