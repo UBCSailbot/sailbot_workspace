@@ -8,6 +8,8 @@ import custom_interfaces.msg as ci
 import rclpy
 from geopy.distance import great_circle
 from rclpy.node import Node
+from objectives import SpeedObjective
+
 
 MEAN_SPEED = ci.HelperSpeed(speed=15.0)  # mean boat speed in kmph
 
@@ -65,6 +67,13 @@ class MockGPS(Node):
             qos_profile=10,
         )
 
+        self.__mock_wind_sensor_sub = self.create_subscription(
+            msg_type=ci.WindSensor,
+            topic="filtered_wind_sensor",
+            callback=self.wind_sensor_callback,
+            qos_profile=10,
+        )
+
         self.__mean_speed = MEAN_SPEED
         self.__current_location = START_POINT
         self.__heading = START_HEADING
@@ -109,6 +118,23 @@ class MockGPS(Node):
         """
         self._logger.debug(f"Received data from {self.__desired_heading_sub.topic}: {msg}")
         self.__heading = msg.heading
+
+    def wind_sensor_callback(self, msg: ci.WindSensor):
+        """Callback for the data published by the wind sensor node (mock)
+        Calls SpeedObjective.get_sailbot_speed to get the updated mean speed
+
+        Args:
+            msg (ci.WindSensor): the wind sensor speed
+        """
+
+        self._logger.debug(f"Received data from {self.__mock_wind_sensor_sub.topic}: {msg}")
+        wind_speed: float = msg.speed.speed
+        wind_direction: int = msg.direction
+        self.__mean_speed = SpeedObjective.get_sailbot_speed(
+            heading=self.__heading,
+            wind_speed=wind_speed,
+            wind_direction=wind_direction,
+        )
 
 
 def main(args=None):
