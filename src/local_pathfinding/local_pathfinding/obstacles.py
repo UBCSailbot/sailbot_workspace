@@ -153,7 +153,7 @@ class Land(Obstacle):
             self.collision_zone = collision_zone
             return
 
-        if state_space_latlon is None:  # create a default one
+        if state_space_latlon is None:
             raise ValueError("state_space_latlon must not be None")
 
         latlon_polygons = self.all_land_data.intersection(state_space_latlon)
