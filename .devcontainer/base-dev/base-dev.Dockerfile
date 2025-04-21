@@ -318,3 +318,4 @@ ENV DEBIAN_FRONTEND=
 RUN pip3 install \
     # for juypter notebooks
     ipykernel \
+    ompl==1.7.0
