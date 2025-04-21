@@ -28,6 +28,8 @@ if TYPE_CHECKING:
 # OMPL logging: only log warnings and above
 ou.setLogLevel(ou.LOG_WARN)
 
+BOX_BUFFER_SIZE = 1.0  # km
+
 
 class OMPLPath:
     """Represents the general OMPL Path.
@@ -61,7 +63,7 @@ class OMPLPath:
             max_runtime (float): Maximum amount of time in seconds to look for a solution path.
             local_path_state (LocalPathState): State of Sailbot.
         """
-        self._box_buffer = 1
+        self._box_buffer = BOX_BUFFER_SIZE
         self._logger = parent_logger.get_child(name="ompl_path")
         self._simple_setup = self._init_simple_setup(local_path_state)  # this needs state
 
@@ -194,15 +196,10 @@ class OMPLPath:
         start_x = start_position_in_xy.x
         start_y = start_position_in_xy.y
 
-        # TODO this needs to be removed when mocks are ready
-        if not self.state.global_path:
-            goal_polygon = self.create_buffer_around_position(cs.XY(0, 0))
-            goal_x, goal_y = (0.0, 0.0)
-        else:
-            goal_position = self.state.global_path.waypoints[-1]
-            goal_position_in_xy = cs.latlon_to_xy(self.state.reference_latlon, goal_position)
-            goal_polygon = self.create_buffer_around_position(goal_position_in_xy)
-            goal_x, goal_y = goal_position_in_xy
+        goal_position = self.state.global_path.waypoints[-1]
+        goal_position_in_xy = cs.latlon_to_xy(self.state.reference_latlon, goal_position)
+        goal_polygon = self.create_buffer_around_position(goal_position_in_xy)
+        goal_x, goal_y = goal_position_in_xy
 
         # create an SE2 state space: rotation and translation in a plane
         space = base.SE2StateSpace()
