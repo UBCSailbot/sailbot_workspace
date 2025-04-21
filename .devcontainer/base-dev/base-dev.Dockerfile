@@ -306,7 +306,6 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         less \
-        unzip \
         openssh-client \
         tmux \
     && apt-get autoremove -y \

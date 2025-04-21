@@ -1,4 +1,4 @@
-FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:added-unzip
+FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:install-ompl
 
 # Copy configuration files (e.g., .vimrc) from config/ to the container's home directory
 ARG USERNAME=ros
