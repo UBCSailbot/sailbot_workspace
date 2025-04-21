@@ -1,30 +1,52 @@
 #!/bin/bash
 set -e
 
+REPO="ompl/ompl"
+RELEASE_TAG="1.7.0"
+PYTHON_VERSION="cp310"
+TMP_DIR="/tmp"
+
 arch=$(uname -m)
-AARCH_64_WHL_URL="https://github.com/ompl/ompl/releases/download/prerelease/ompl-1.6.0-cp310-cp310-manylinux_2_28_aarch64.whl"
-AARCH_64_WHL_FILE="/tmp/ompl-1.6.0-cp310-cp310-manylinux_2_28_aarch64.whl"
-X86_64_WHL_URL="https://github.com/ompl/ompl/releases/download/prerelease/ompl-1.6.0-cp310-cp310-manylinux_2_28_x86_64.whl"
-X86_64_WHL_FILE="/tmp/ompl-1.6.0-cp310-cp310-manylinux_2_28_x86_64.whl"
 
 if [ "$arch" = "x86_64" ]; then
-    echo "running on x86_64 architecture."
-    curl -L -o "$X86_64_WHL_FILE" "$X86_64_WHL_URL"
-    pip3 install "$X86_64_WHL_FILE"
-    rm -f "$X86_64_WHL_FILE"
-    # sudo ln -sf /path/to/ompl/installation /workspaces/sailbot_workspace/install/lib/python3.10/site-packages
-    # sudo ln -sf /path/to/ompl/installation /usr/lib/python3/dist-packages
+    ZIP_ASSET="wheels-ubuntu-latest-x86_64.zip"
 elif [ "$arch" = "aarch64" ]; then
-    echo "running on aarch64 architecture."
-    curl -L -o "$AARCH_64_WHL_FILE" "$AARCH_64_WHL_URL"
-    pip3 install "$AARCH_64_WHL_FILE"
-    rm -f "$AARCH_64_WHL_FILE"
-    # sudo ln -sf /path/to/ompl/installation /workspaces/sailbot_workspace/install/lib/python3.10/site-packages
-    # sudo ln -sf /path/to/ompl/installation /usr/lib/python3/dist-packages
+    ZIP_ASSET="wheels-ubuntu-24.04-arm-aarch64.zip"
 else
-    echo "Unknown architecture: $arch"
+    echo "Unsupported architecture: $arch"
+    exit 1
 fi
 
-if pip3 show ompl 2>&1 | grep -q "not found"; then
-    echo "ompl installation failed"
+# using the github api is more stable than using hardcoded links to assets
+API_URL="https://api.github.com/repos/${REPO}/releases/tags/${RELEASE_TAG}"
+RESPONSE=$(curl -s "$API_URL")
+ZIP_ASSET_URL=$(echo "$RESPONSE" | grep "browser_download_url" | grep "$ZIP_ASSET" | sed -E 's/.*"([^"]+)".*/\1/')
+
+if [ -z "$ZIP_ASSET_URL" ]; then
+    echo "Could not find the required asset from ompl release $RELEASE_TAG"
+    exit 1
+fi
+
+ZIP_FILENAME=$(basename "$ZIP_ASSET_URL")
+ZIP_PATH="${TMP_DIR}/${ZIP_FILENAME}"
+curl -L -o "$ZIP_PATH" "$ZIP_ASSET_URL"
+
+unzip -q "$ZIP_PATH" -d "$TMP_DIR"
+WHL_FILE=$(find "$TMP_DIR" -type f -name "*.whl" | grep "$PYTHON_VERSION")
+
+if [ -z "$WHL_FILE" ]; then
+    echo "Could not find a matching .whl file inside the zip archive."
+    exit 1
+fi
+
+pip3 install "$WHL_FILE"
+
+rm -f "$ZIP_PATH"
+rm -f "$TMP_DIR/*.whl"
+
+if ! pip3 show ompl >/dev/null 2>&1; then
+    echo "OMPL installation failed."
+    exit 1
+else
+    echo "OMPL successfully installed."
 fi
