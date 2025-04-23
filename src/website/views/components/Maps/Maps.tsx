@@ -72,7 +72,13 @@ export default class Maps extends React.Component<IMapsProps, IMapsState> {
    *              This instance is used for various map operations within the component.
    */
   setMapRef = (map: L.Map) => {
-    this.setState((state) => ({ ...state, map: map }));
+    if (map) {
+      this.setState({ map }, () => {
+        setTimeout(() => {
+          map.invalidateSize();
+        }, 100);
+      });
+    }
   };
 
   /**
