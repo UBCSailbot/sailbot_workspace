@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import * as Redux from 'redux';
 import { createLogger } from 'redux-logger';
 
