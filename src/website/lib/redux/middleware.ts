@@ -1,8 +1,8 @@
-// @ts-nocheck
-
 import * as Redux from 'redux';
 import { createLogger } from 'redux-logger';
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
 const logger = createLogger({
   duration: true,
   timestamp: true,
