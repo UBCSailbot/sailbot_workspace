@@ -17,6 +17,6 @@ const logger = createLogger({
   predicate: () => typeof window !== 'undefined',
 });
 
-const middleware: Redux.Middleware[] = [logger];
+const middleware = [logger] as Redux.Middleware[];
 
 export { middleware };
