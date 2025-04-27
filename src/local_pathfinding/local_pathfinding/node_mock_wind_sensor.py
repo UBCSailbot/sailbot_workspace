@@ -7,6 +7,7 @@ import numpy as np
 import rclpy
 from rclpy.node import Node
 from scipy.stats import vonmises, weibull_min
+from coord_systems import bound_to_180
 
 
 class MockWindSensor(Node):
@@ -44,9 +45,6 @@ class MockWindSensor(Node):
             self.get_parameter("pub_period_sec").get_parameter_value().double_value
         )
 
-        # initializes the mean_wind_speed and mean_direction fields
-        self.get_latest_speed_and_direction_values()
-
         # Mock wind sensor timer
         self.__mock_wind_sensor_timer = self.create_timer(
             timer_period_sec=self.pub_period_sec, callback=self.mock_wind_sensor_callback
@@ -63,6 +61,8 @@ class MockWindSensor(Node):
         """Callback function for the mock wind sensor timer. Publishes mock wind data to the ROS
         network.
         """
+
+        self.get_latest_speed_and_direction_values()
         wind_speed_knots = self.get_mock_wind_speed()
         direction = self.get_direction_value()
 
@@ -95,33 +95,11 @@ class MockWindSensor(Node):
 
         self.get_latest_speed_and_direction_values()
         direction = int(np.degrees(vonmises.rvs(kappa=55, loc=self.__mean_direction, size=1)))
-        return self.ensure_correct_range(direction)
-
-    def ensure_correct_range(self, direction_value: int) -> int:
-        """Helper function to ensure the wind direction is in the range (-180, 180].
-        Args:
-            direction_value (int): The wind direction in degrees which may not be in the correct
-            range.
-        Returns:
-            int: The corrected wind direction in degrees.
-        """
-
-        normalized_direction = direction_value % 360
-        if normalized_direction > 180:
-            normalized_direction -= 360
-
-        return normalized_direction
+        return bound_to_180(direction)
 
     def get_latest_speed_and_direction_values(self) -> None:
         """Updates the instance variables storing mean wind speed and direction with the latest
         values from ROS parameters.
-
-        This method retrieves the current parameter values from the ROS parameter server and
-        updates the internal class variables (__mean_wind_speed and __mean_direction) to ensure
-        all calculations use the most recent settings.
-
-        Called before generating mock wind data to allow runtime parameter changes to take effect
-        immediately.
         """
 
         self.__mean_wind_speed = (
