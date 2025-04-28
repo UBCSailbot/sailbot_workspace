@@ -5,9 +5,9 @@ Mock class for the wind sensor. Publishes basic wind data to the ROS network.
 import custom_interfaces.msg as ci
 import numpy as np
 import rclpy
+from coord_systems import bound_to_180
 from rclpy.node import Node
 from scipy.stats import vonmises, weibull_min
-from coord_systems import bound_to_180
 
 
 class MockWindSensor(Node):
@@ -37,7 +37,7 @@ class MockWindSensor(Node):
             parameters=[
                 ("pub_period_sec", rclpy.Parameter.Type.DOUBLE),
                 ("mean_wind_speed", 7.0),
-                ("mean_direction", 0)
+                ("mean_direction", 0),
             ],
         )
 
@@ -79,9 +79,8 @@ class MockWindSensor(Node):
         Returns:
             HelperSpeed: The wind speed in knots.
         """
-        # Shape=2 (typical for wind under normal calm conditions), Scale=7 knots (mean)
 
-        self.get_latest_speed_and_direction_values()
+        # Shape=2 (typical for wind under normal calm conditions), Scale=7 knots (mean)
         scale = self.__mean_wind_speed
         wind_speed_knots = weibull_min.rvs(c=10, scale=scale, size=1)
         return ci.HelperSpeed(speed=wind_speed_knots[0])
@@ -93,14 +92,11 @@ class MockWindSensor(Node):
             int: The wind direction in degrees.
         """
 
-        self.get_latest_speed_and_direction_values()
         direction = int(np.degrees(vonmises.rvs(kappa=55, loc=self.__mean_direction, size=1)))
         return bound_to_180(direction)
 
     def get_latest_speed_and_direction_values(self) -> None:
-        """Updates the instance variables storing mean wind speed and direction with the latest
-        values from ROS parameters.
-        """
+        """Updates mean wind speed and direction with the latest values from ROS parameters."""
 
         self.__mean_wind_speed = (
             self.get_parameter("mean_wind_speed").get_parameter_value().double_value
