@@ -62,6 +62,8 @@ class Sailbot(Node):
                 ("mode", rclpy.Parameter.Type.STRING),
                 ("pub_period_sec", rclpy.Parameter.Type.DOUBLE),
                 ("path_planner", rclpy.Parameter.Type.STRING),
+                ("use_mock_land", rclpy.Parameter.Type.BOOL),
+                ("mock_land_file", rclpy.Parameter.Type.STRING),
             ],
         )
 
@@ -115,6 +117,8 @@ class Sailbot(Node):
         # attributes
         self.local_path = LocalPath(parent_logger=self.get_logger())
         self.current_waypoint_index = 0
+        self.use_mock_land = self.get_parameter("use_mock_land").get_parameter_value().bool_value
+        self.mock_land_file = self.get_parameter("mock_land_file").get_parameter_value().string_value
         self.mode = self.get_parameter("mode").get_parameter_value().string_value
         self.planner = self.get_parameter("path_planner").get_parameter_value().string_value
         self.get_logger().debug(f"Got parameter: {self.planner=}")
