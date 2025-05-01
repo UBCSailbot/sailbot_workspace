@@ -9,6 +9,7 @@ import local_pathfinding.coord_systems as cs
 import local_pathfinding.global_path as gp
 import local_pathfinding.obstacles as ob
 from local_pathfinding.local_path import LocalPath
+from local_pathfinding.obstacle_manager import ObstacleManager
 
 WAYPOINT_REACHED_THRESH_KM = 0.5
 GEODESIC = Geod(ellps="WGS84")
@@ -122,6 +123,11 @@ class Sailbot(Node):
         self.mode = self.get_parameter("mode").get_parameter_value().string_value
         self.planner = self.get_parameter("path_planner").get_parameter_value().string_value
         self.get_logger().debug(f"Got parameter: {self.planner=}")
+
+        # obstacle manager
+        self.obstacle_manager = ObstacleManager()
+        self.obstacle_manager.use_mock_land = self.use_mock_land
+        self.obstacle_manager.load_land_data(self.mock_land_file)
 
     # subscriber callbacks
     def ais_ships_callback(self, msg: ci.AISShips):
