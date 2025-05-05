@@ -88,9 +88,9 @@ class LocalPath:
         global_path: ci.Path,
         filtered_wind_sensor: ci.WindSensor,
         planner: str,
-    ) -> None:
+    ) -> bool:
         """Updates the OMPL path, waypoints and current state. The path is updated if a new path
-            is found.
+            is found. Returns true if the path is updated and false otherwise.
 
         Args:
             gps (ci.GPS): GPS data.
@@ -109,6 +109,8 @@ class LocalPath:
         if ompl_path.solved:
             self._logger.debug("Updating local path")
             self._update(ompl_path)
+            return True
+        return False
 
     def _update(self, ompl_path: OMPLPath):
         self._ompl_path = ompl_path
