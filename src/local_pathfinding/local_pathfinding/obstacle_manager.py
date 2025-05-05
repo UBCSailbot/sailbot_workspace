@@ -1,8 +1,10 @@
 import pickle
-from typing import List, Any, Union
-import local_pathfinding.obstacles as ob
+from typing import Any, List, Union
+
 from ompl import base
+
 import local_pathfinding.coord_systems as cs
+import local_pathfinding.obstacles as ob
 
 
 class ObstacleManager:
@@ -21,9 +23,9 @@ class ObstacleManager:
     def load_land_data(self, mock_land_file=None):
         """ Load land data (mock or real) """
         if self.use_mock_land and mock_land_file:
-            self.all_land_data = self._load_pkl(mock_land_file)
+            self.all_land_data = self.load_pkl(mock_land_file)
         else:
-            self.all_land_data = self._load_pkl(
+            self.all_land_data = self.load_pkl(
                 "/workspaces/sailbot_workspace/src/local_pathfinding/land/pkl/land.pkl"
             )
 

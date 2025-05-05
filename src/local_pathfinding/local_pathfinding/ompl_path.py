@@ -48,6 +48,8 @@ class OMPLPath:
     """
 
     all_land_data = None
+    all_ships = []
+    all_ship_obstacles: List[ob.Obstacle] = []
     obstacles: List[ob.Obstacle] = []
 
     def __init__(
@@ -89,21 +91,36 @@ class OMPLPath:
                                        obstacles
 
         """
+
         OMPLPath.obstacles = []
 
         # BOATS
         ais_ships = local_path_state.ais_ships
+        ship_map = {ship.id: ship for ship in ais_ships}
+        existing_obstacles = {ob.ais_ship.id: ob for ob in OMPLPath.all_ship_obstacles}
 
         if ais_ships:
-            for ship in ais_ships:
-                OMPLPath.obstacles.append(
-                    ob.Boat(
+            for ship_id, ship in ship_map.items():
+                if ship_id in existing_obstacles:
+                    # If the ship is already in the obstacles, update its information
+                    existing_boat = existing_obstacles[ship_id]
+                    existing_boat.update_sailbot_data(
+                        sailbot_position=local_path_state.position,
+                        sailbot_speed=local_path_state.speed,
+                    )
+                    existing_boat.update_collision_zone()
+                    OMPLPath.obstacles.append(existing_boat)
+                else:
+                    # Otherwise, create a new Obstacle object
+                    new_boat = ob.Boat(
                         local_path_state.reference_latlon,
                         local_path_state.position,
                         local_path_state.speed,
                         ship,
                     )
-                )
+                    OMPLPath.obstacles.append(new_boat)
+                    OMPLPath.all_obstacles.append(new_boat)
+                    OMPLPath.all_ships.append(ship)
 
         # LAND
         if state_space_xy is None:
