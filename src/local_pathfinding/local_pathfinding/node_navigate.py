@@ -10,8 +10,7 @@ import local_pathfinding.coord_systems as cs
 import local_pathfinding.global_path as gp
 import local_pathfinding.obstacles as ob
 from local_pathfinding.local_path import LocalPath
-from local_pathfinding.obstacle_manager import ObstacleManager
-from shapely.geometry import MultiPolygon, Point, Polygon, box
+from shapely.geometry import MultiPolygon, Polygon
 
 WAYPOINT_REACHED_THRESH_KM = 0.5
 GEODESIC = Geod(ellps="WGS84")
@@ -235,8 +234,18 @@ class Sailbot(Node):
             float: The desired heading
         """
 
+        # Initialize mock land obstacle
+        multi_land_polygon = None
+        if self.use_mock_land:
+            with open(self.mock_land_file, 'r') as f:
+                data = json.load(f)
+                polygons = [Polygon(p) for p in data.get('land_polygons', [])]
+                multi_land_polygon = MultiPolygon(polygons)
+                self.get_logger().info("Loaded mock land data.")
+
         received_new_path = self.local_path.update_if_needed(
-            self.gps, self.ais_ships, self.global_path, self.filtered_wind_sensor, self.planner
+            self.gps, self.ais_ships, self.global_path, self.filtered_wind_sensor, self.planner,
+            multi_land_polygon
         )
 
         if received_new_path:
