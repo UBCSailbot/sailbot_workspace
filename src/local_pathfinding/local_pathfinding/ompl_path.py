@@ -48,8 +48,8 @@ class OMPLPath:
     """
 
     all_land_data = None
-    all_ships = []
-    all_ship_obstacles: List[ob.Obstacle] = []
+    all_ships: List[ci.HelperAISShip] = []
+    all_ship_obstacles: List[ob.Boat] = []
     obstacles: List[ob.Obstacle] = []
 
     def __init__(
@@ -78,7 +78,9 @@ class OMPLPath:
 
     @staticmethod
     def init_obstacles(
-        local_path_state: LocalPathState, state_space_xy: Polygon = None
+        local_path_state: LocalPathState,
+        state_space_xy: Polygon = None,
+        land_multi_polygon: MultiPolygon = None,
     ) -> List[ob.Obstacle]:
         """Extracts obstacle data from local_path_state and compiles it into a list of Obstacles
 
@@ -119,7 +121,7 @@ class OMPLPath:
                         ship,
                     )
                     OMPLPath.obstacles.append(new_boat)
-                    OMPLPath.all_obstacles.append(new_boat)
+                    OMPLPath.all_ship_obstacles.append(new_boat)
                     OMPLPath.all_ships.append(ship)
 
         # LAND
@@ -146,6 +148,7 @@ class OMPLPath:
                 sailbot_position=local_path_state.position,
                 all_land_data=LAND,
                 state_space=state_space_latlon,
+                land_multi_polygon=land_multi_polygon
             )
         )
 
