@@ -57,6 +57,7 @@ class OMPLPath:
         parent_logger: RcutilsLogger,
         max_runtime: float,
         local_path_state: LocalPathState,
+        multi_land_polygon: MultiPolygon
     ):
         """Initialize the OMPLPath Class. Attempt to solve for a path.
 
@@ -67,7 +68,7 @@ class OMPLPath:
         """
         self._box_buffer = BOX_BUFFER_SIZE
         self._logger = parent_logger.get_child(name="ompl_path")
-        self._simple_setup = self._init_simple_setup(local_path_state)  # this needs state
+        self._simple_setup = self._init_simple_setup(local_path_state, multi_land_polygon)  # this needs state
 
         self.solved = self._simple_setup.solve(time=max_runtime)  # time is in seconds
 
@@ -80,7 +81,7 @@ class OMPLPath:
     def init_obstacles(
         local_path_state: LocalPathState,
         state_space_xy: Polygon = None,
-        land_multi_polygon: MultiPolygon = None,
+        multi_land_polygon: MultiPolygon = None,
     ) -> List[ob.Obstacle]:
         """Extracts obstacle data from local_path_state and compiles it into a list of Obstacles
 
@@ -148,7 +149,7 @@ class OMPLPath:
                 sailbot_position=local_path_state.position,
                 all_land_data=LAND,
                 state_space=state_space_latlon,
-                land_multi_polygon=land_multi_polygon
+                land_multi_polygon=multi_land_polygon
             )
         )
 
@@ -207,7 +208,7 @@ class OMPLPath:
         """
         raise NotImplementedError
 
-    def _init_simple_setup(self, local_path_state) -> og.SimpleSetup:
+    def _init_simple_setup(self, local_path_state, multi_land_polygon) -> og.SimpleSetup:
         self.state = local_path_state
 
         # Create buffered spaces and extract their centers
@@ -243,7 +244,8 @@ class OMPLPath:
         bounds.check()  # check if bounds are valid
         space.setBounds(bounds)
 
-        OMPLPath.init_obstacles(local_path_state=local_path_state, state_space_xy=state_space)
+        OMPLPath.init_obstacles(local_path_state=local_path_state, state_space_xy=state_space,
+                                multi_land_polygon=multi_land_polygon)
 
         # create a simple setup object
         simple_setup = og.SimpleSetup(space)
