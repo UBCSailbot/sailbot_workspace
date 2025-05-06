@@ -1,16 +1,17 @@
 """The main node of the local_pathfinding package, represented by the `Sailbot` class."""
 
+import json
+
 import custom_interfaces.msg as ci
 import rclpy
 from pyproj import Geod
 from rclpy.node import Node
-import json
+from shapely.geometry import MultiPolygon, Polygon
 
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.global_path as gp
 import local_pathfinding.obstacles as ob
 from local_pathfinding.local_path import LocalPath
-from shapely.geometry import MultiPolygon, Polygon
 
 WAYPOINT_REACHED_THRESH_KM = 0.5
 GEODESIC = Geod(ellps="WGS84")
@@ -64,7 +65,8 @@ class Sailbot(Node):
                 ("mode", rclpy.Parameter.Type.STRING),
                 ("pub_period_sec", rclpy.Parameter.Type.DOUBLE),
                 ("path_planner", rclpy.Parameter.Type.STRING),
-                ("use_mock_land", rclpy.Parameter.Type.BOOL),
+                ("use_mock_land", False),
+                ("mock_land_file", "/workspaces/sailbot_workspace/src/local_pathfinding/land/mock/mock_land.json")
             ],
         )
 
