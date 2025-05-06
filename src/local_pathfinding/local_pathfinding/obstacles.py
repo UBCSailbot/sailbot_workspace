@@ -143,7 +143,7 @@ class Land(Obstacle):
             state_space_latlon (Polygon): A custom state space.
             land_multi_polygon (MultiPolygon): Custom land data. Useful for testing.
         """
-        if land_multi_polygon is not None:  # for testing
+        if land_multi_polygon is not None:  # for testing (injecting mock land data)
 
             collision_zone = land_multi_polygon.buffer(0)
 
@@ -154,7 +154,6 @@ class Land(Obstacle):
             return
 
         if state_space_latlon is None:  # create a default one
-load
             sailbot_box = Point(
                 self.sailbot_position_latlon.longitude, self.sailbot_position_latlon.latitude
             ).buffer(self.bbox_buffer_amount, cap_style=3, join_style=2)
