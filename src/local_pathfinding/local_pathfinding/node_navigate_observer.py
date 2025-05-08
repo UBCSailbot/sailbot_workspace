@@ -18,6 +18,20 @@ def main(args=None):
     rclpy.shutdown()
 
 
+class VisualizerState:
+    """State of the visualizer.
+
+    Attributes:
+
+    """
+
+    def __init__(self, local_path: ci.LPathData):
+        if not local_path:
+            raise ValueError("local_path must not be None")
+        self.gps = local_path.gps
+
+
+
 class SailbotObserver(Node):
     """Observes the Sailbot node, through the local_path topic, as it navigates.
 
@@ -25,7 +39,7 @@ class SailbotObserver(Node):
         local_path_sub (Subscription): Subscribe to a `LPathData` msg.
 
     Attributes From Subscribers:
-        local_path: (ci.LPathData
+        local_path: (ci.LPathData)
     """
 
     def __init__(self):
