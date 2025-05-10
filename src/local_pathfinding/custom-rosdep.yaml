@@ -1,0 +1,4 @@
+python3-plotly:
+  ubuntu:
+    pip:
+      packages: [plotly]

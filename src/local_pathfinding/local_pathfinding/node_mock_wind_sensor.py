@@ -2,12 +2,13 @@
 Mock class for the wind sensor. Publishes basic wind data to the ROS network.
 """
 
-import custom_interfaces.msg as ci
 import numpy as np
 import rclpy
-from coord_systems import bound_to_180
 from rclpy.node import Node
 from scipy.stats import vonmises, weibull_min
+
+import custom_interfaces.msg as ci
+from local_pathfinding.coord_systems import bound_to_180
 
 
 class MockWindSensor(Node):
