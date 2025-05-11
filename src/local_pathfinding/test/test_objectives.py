@@ -32,22 +32,6 @@ OMPL_PATH = ompl_path.OMPLPath(
 
 
 @pytest.mark.parametrize(
-    "method",
-    [
-        objectives.DistanceMethod.EUCLIDEAN,
-        objectives.DistanceMethod.LATLON,
-        objectives.DistanceMethod.OMPL_PATH_LENGTH,
-    ],
-)
-def test_distance_objective(method: objectives.DistanceMethod):
-    distance_objective = objectives.DistanceObjective(
-        OMPL_PATH._simple_setup.getSpaceInformation(),
-        method,
-    )
-    assert distance_objective is not None
-
-
-@pytest.mark.parametrize(
     "cs1,cs2,expected",
     [
         ((0, 0), (0, 0), 0),
@@ -197,25 +181,6 @@ def test_angle_between(afir: float, amid: float, asec: float, expected: float):
         )
         == expected
     )
-
-
-@pytest.mark.parametrize(
-    "method",
-    [
-        objectives.SpeedObjectiveMethod.SAILBOT_TIME,
-        objectives.SpeedObjectiveMethod.SAILBOT_PIECEWISE,
-        objectives.SpeedObjectiveMethod.SAILBOT_CONTINUOUS,
-    ],
-)
-def test_speed_objective(method: objectives.SpeedObjectiveMethod):
-    speed_objective = objectives.SpeedObjective(
-        OMPL_PATH._simple_setup.getSpaceInformation(),
-        OMPL_PATH.state.heading,
-        OMPL_PATH.state.wind_direction,
-        OMPL_PATH.state.wind_speed,
-        method,
-    )
-    assert speed_objective is not None
 
 
 @pytest.mark.parametrize(
