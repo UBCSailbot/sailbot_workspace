@@ -66,7 +66,7 @@ class VisualizerState:
         self.sailbot_pos_xy = [
             latlon_to_xy(reference=self.reference_latlon, latlon=sailbot_pos)
             for sailbot_pos in self.sailbot_pos_lat_lon
-        ]  # TODO: Get a list of sailbot gps positions from the start of the simulation
+        ]
 
         self.all_waypoints_pos_xy = [
             [
@@ -88,11 +88,11 @@ class VisualizerState:
         self.last_local_waypoints_y = [point.y for point in self.last_waypoints_pos_xy]
 
         self.all_local_waypoints_x = [
-            point.x for waypoints in self.all_waypoints_pos_xy for point in waypoints
+            [point.x for point in waypoints] for waypoints in self.all_waypoints_pos_xy
         ]
 
         self.all_local_waypoints_y = [
-            point.y for waypoints in self.all_waypoints_pos_xy for point in waypoints
+            [point.y for point in waypoints] for waypoints in self.all_waypoints_pos_xy
         ]
 
 
@@ -288,24 +288,24 @@ def animated_update_plot(state: VisualizerState):
     )
     initial_state = [
         go.Scatter(
-            x=[state.all_local_waypoints_x[0]],
-            y=[state.all_local_waypoints_y[0]],
+            x=[state.all_local_waypoints_x[0][0]],
+            y=[state.all_local_waypoints_y[0][0]],
             mode="markers",
             marker=go.scatter.Marker(size=14),
             text=["Start"],
             name="Start",
         ),
         go.Scatter(
-            x=state.all_local_waypoints_x[1 : num_waypoints - 1],
-            y=state.all_local_waypoints_y[1 : num_waypoints - 1],
+            x=state.all_local_waypoints_x[0][1 : num_waypoints - 1],
+            y=state.all_local_waypoints_y[0][1 : num_waypoints - 1],
             mode="markers",
             marker=go.scatter.Marker(size=14),
             text=["Intermediate"] * (num_waypoints - 2),
             name="Intermediate",
         ),
         go.Scatter(
-            x=[state.all_local_waypoints_x[-1]],
-            y=[state.all_local_waypoints_y[-1]],
+            x=[state.all_local_waypoints_x[0][-1]],
+            y=[state.all_local_waypoints_y[0][-1]],
             mode="markers",
             marker=go.scatter.Marker(size=14),
             text=["Goal"] * (num_waypoints - 2),
@@ -314,7 +314,32 @@ def animated_update_plot(state: VisualizerState):
     ]
     new_frames = [
         go.Frame(
-            data=initial_state
+            data=[
+                go.Scatter(
+                    x=[state.all_local_waypoints_x[i][0]],
+                    y=[state.all_local_waypoints_y[i][0]],
+                    mode="markers",
+                    marker=go.scatter.Marker(size=14),
+                    text=["Start"],
+                    name="Start",
+                ),
+                go.Scatter(
+                    x=state.all_local_waypoints_x[i][1 : num_waypoints - 1],
+                    y=state.all_local_waypoints_y[i][1 : num_waypoints - 1],
+                    mode="markers",
+                    marker=go.scatter.Marker(size=14),
+                    text=["Intermediate"] * (num_waypoints - 2),
+                    name="Intermediate",
+                ),
+                go.Scatter(
+                    x=[state.all_local_waypoints_x[i][-1]],
+                    y=[state.all_local_waypoints_y[i][-1]],
+                    mode="markers",
+                    marker=go.scatter.Marker(size=14),
+                    text=["Goal"] * (num_waypoints - 2),
+                    name="Goal",
+                ),
+            ]
             + [
                 go.Scatter(
                     x=[state.sailbot_pos_x[i]],
