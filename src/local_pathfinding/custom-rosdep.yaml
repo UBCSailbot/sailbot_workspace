@@ -7,3 +7,8 @@ python3-dash:
   ubuntu:
     pip:
       packages: [dash]
+
+python3-anywidget:
+  ubuntu:
+    pip:
+      packages: [anywidget]

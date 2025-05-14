@@ -18,6 +18,8 @@
   <exec_depend>python3-geopandas</exec_depend>
   <exec_depend>python3-plotly</exec_depend>
   <exec_depend>python3-dash</exec_depend>
+  <exec_depend>python3-anywidget</exec_depend>
+
 
 
   <!--Test Dependencies-->
