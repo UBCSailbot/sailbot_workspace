@@ -1,5 +1,5 @@
 from multiprocessing import Queue
-from typing import List
+from typing import List, Optional
 
 import custom_interfaces.msg as ci
 import dash
@@ -11,7 +11,7 @@ from local_pathfinding.coord_systems import latlon_to_xy
 
 app = dash.Dash(__name__)
 
-queue: Queue = None
+queue: Optional[Queue] = None  # type: ignore
 
 
 class VisualizerState:
@@ -100,8 +100,8 @@ def dash_app(q: Queue):
     Args:
         q (Queue): The queue to receive data from the ROS node.
     """
-
-    global queue  # Allows it to be accessed in the callbacks
+    # Allows it to be accessed in the callbacks
+    global queue  # type: ignore
     queue = q
 
     app.layout = html.Div(
@@ -124,7 +124,7 @@ def live_plot(n_intervals) -> go.Figure:
     Updates the live graph to the latest path planning data.
     """
     global queue
-    state = queue.get()
+    state = queue.get() # type: ignore
     fig = live_update_plot(state)
     return fig
 
@@ -137,7 +137,7 @@ def animated_plot(n_intervals) -> go.Figure:
     Updates the animated graph to the accumulated LPathData ROS messages.
     """
     global queue
-    state = queue.get()
+    state = queue.get() # type: ignore
     fig = animated_update_plot(state)
     return fig
 

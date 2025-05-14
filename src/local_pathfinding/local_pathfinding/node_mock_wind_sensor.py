@@ -86,7 +86,7 @@ class MockWindSensor(Node):
         wind_speed_knots = weibull_min.rvs(c=10, scale=scale, size=1)
         return ci.HelperSpeed(speed=wind_speed_knots[0])
 
-    def get_direction_value(self) -> int:
+    def get_direction_value(self) -> float:
         """Generates a random wind direction based on a von Mises distribution centered around the
         mean. This distribution is a circular distribution, which is perfect for wind direction.
         Returns:
