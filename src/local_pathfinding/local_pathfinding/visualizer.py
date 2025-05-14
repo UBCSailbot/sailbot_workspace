@@ -11,6 +11,8 @@ from local_pathfinding.coord_systems import latlon_to_xy
 
 app = dash.Dash(__name__)
 
+queue: Queue = None
+
 
 class VisualizerState:
     """
