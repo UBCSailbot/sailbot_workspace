@@ -1,13 +1,15 @@
 from multiprocessing import Queue
 from typing import List, Optional
 
-import custom_interfaces.msg as ci
 import dash
 import plotly.graph_objects as go
 from dash import dcc, html
 from dash.dependencies import Input, Output
 
+import custom_interfaces.msg as ci
 from local_pathfinding.coord_systems import latlon_to_xy
+import local_pathfinding.coord_systems as cs
+
 
 app = dash.Dash(__name__)
 
@@ -20,58 +22,54 @@ class VisualizerState:
     """
 
     def __init__(self, msgs: List[ci.LPathData]):
-        self.local_path_data = msgs[-1]
+        if not msgs:
+            raise ValueError("msgs must not be None")
 
-        if not self.local_path_data:
-            raise ValueError("local_path must not be None")
+        self.curr_msg = msgs[-1]
+        self._validate_message(self.curr_msg)
 
-        if not self.local_path_data.gps:
-            raise ValueError("gps must not be None")
-        self.sailbot_pos_lat_lon = [msg.gps.lat_lon for msg in msgs]
+        self.sailbot_lat_lon = [msg.gps.lat_lon for msg in msgs]
+        self.all_local_wp = [msg.local_path.waypoints for msg in msgs]
 
-        if not self.local_path_data.local_path:
-            raise ValueError("local path must not be None")
-        self.all_local_waypoints = [msg.local_path.waypoints for msg in msgs]
-
-        if not self.local_path_data.global_path:
-            raise ValueError("global path must not be None")
-
-        self.all_global_waypoints = [msg.global_path.waypoints for msg in msgs]
-
-        self.global_path = self.local_path_data.global_path
+        self.global_path = self.curr_msg.global_path
         self.reference_latlon = self.global_path.waypoints[-1]
 
-        self.sailbot_pos_xy = [
-            latlon_to_xy(reference=self.reference_latlon, latlon=sailbot_pos)
-            for sailbot_pos in self.sailbot_pos_lat_lon
+        # Converts the lat/lon coordinates to x/y coordinates
+        self.sailbot_xy = self._convert_to_xy(self.sailbot_lat_lon)
+        self.all_wp_xy = [
+            self._convert_to_xy(waypoints) for waypoints in self.all_local_wp
         ]
 
-        self.all_waypoints_pos_xy = [
-            [
-                latlon_to_xy(reference=self.reference_latlon, latlon=waypoint)
-                for waypoint in waypoints
-            ]
-            for waypoints in self.all_local_waypoints
-        ]
+        # Splits the x/y coordinates into separate lists
+        self.sailbot_pos_x, self.sailbot_pos_y = self._split_coordinates(self.sailbot_xy)
 
-        self.last_waypoints_pos_xy = [
-            latlon_to_xy(reference=self.reference_latlon, latlon=waypoint)
-            for waypoint in self.all_local_waypoints[-1]
-        ]
+        self.final_local_wp_x, self.final_local_wp_y = self._split_coordinates(
+            self.all_wp_xy[-1]
+        )
+        self.all_local_wp_x, self.all_local_wp_y = zip(
+            *[self._split_coordinates(waypoints) for waypoints in self.all_wp_xy]
+        )
 
-        self.sailbot_pos_x = [pos.x for pos in self.sailbot_pos_xy]
-        self.sailbot_pos_y = [pos.y for pos in self.sailbot_pos_xy]
+    def _validate_message(self, msg: ci.LPathData):
+        """Checks if the sailbot observer node recieved any messages.
+        If not, it raises a ValueError.
+        """
+        if not msg.local_path:
+            raise ValueError("local path must not be None")
+        if not msg.global_path:
+            raise ValueError("global path must not be None")
+        if not msg.gps:
+            raise ValueError("gps must not be None")
 
-        self.last_local_waypoints_x = [point.x for point in self.last_waypoints_pos_xy]
-        self.last_local_waypoints_y = [point.y for point in self.last_waypoints_pos_xy]
+    def _convert_to_xy(self, lat_lon_list: List[ci.HelperLatLon]) -> List[cs.XY]:
+        """Converts a list of lat/lon coordinates to x/y coordinates."""
+        return [latlon_to_xy(reference=self.reference_latlon, latlon=pos) for pos in lat_lon_list]
 
-        self.all_local_waypoints_x = [
-            [point.x for point in waypoints] for waypoints in self.all_waypoints_pos_xy
-        ]
-
-        self.all_local_waypoints_y = [
-            [point.y for point in waypoints] for waypoints in self.all_waypoints_pos_xy
-        ]
+    def _split_coordinates(self, positions) -> List[float]:
+        """Splits a list of positions into x and y components."""
+        x_coords = [pos.x for pos in positions]
+        y_coords = [pos.y for pos in positions]
+        return x_coords, y_coords
 
 
 def initial_plot() -> go.Figure:
@@ -151,8 +149,8 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
 
     # Plotting Local Waypoints
     start_trace = go.Scatter(
-        x=[state.last_local_waypoints_x[0]],
-        y=[state.last_local_waypoints_y[0]],
+        x=[state.final_local_wp_x[0]],
+        y=[state.final_local_wp_y[0]],
         mode="markers",
         marker=dict(color="green", size=10),
         name="Start",
@@ -160,8 +158,8 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
 
     # Intermediate waypoints (blue)
     intermediate_trace = go.Scatter(
-        x=state.last_local_waypoints_x[1:-1],
-        y=state.last_local_waypoints_y[1:-1],
+        x=state.final_local_wp_x[1:-1],
+        y=state.final_local_wp_y[1:-1],
         mode="markers",
         marker=dict(color="blue", size=8),
         name="Intermediate",
@@ -169,8 +167,8 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
 
     # Goal point (red)
     goal_trace = go.Scatter(
-        x=[state.last_local_waypoints_x[-1]],
-        y=[state.last_local_waypoints_y[-1]],
+        x=[state.final_local_wp_x[-1]],
+        y=[state.final_local_wp_y[-1]],
         mode="markers",
         marker=dict(color="red", size=10),
         name="Goal",
@@ -196,10 +194,10 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
     fig.add_trace(boat_trace)
 
     # Set axis limits dynamically
-    x_min = min(state.last_local_waypoints_x) - 10
-    x_max = max(state.last_local_waypoints_x) + 10
-    y_min = min(state.last_local_waypoints_y) - 10
-    y_max = max(state.last_local_waypoints_y) + 10
+    x_min = min(state.final_local_wp_x) - 10
+    x_max = max(state.final_local_wp_x) + 10
+    y_min = min(state.final_local_wp_y) - 10
+    y_max = max(state.final_local_wp_y) + 10
 
     # Update Layout
     fig.update_layout(
@@ -225,7 +223,7 @@ def animated_update_plot(state: VisualizerState) -> go.Figure:
     # Initializing the plot
     fig = initial_plot()
 
-    num_waypoints = len(state.all_waypoints_pos_xy[-1])
+    num_waypoints = len(state.all_wp_xy[-1])
     initial_boat_state = go.Scatter(
         x=[state.sailbot_pos_x[0]],
         y=[state.sailbot_pos_y[0]],
@@ -240,24 +238,24 @@ def animated_update_plot(state: VisualizerState) -> go.Figure:
     )
     initial_state = [
         go.Scatter(
-            x=[state.all_local_waypoints_x[0][0]],
-            y=[state.all_local_waypoints_y[0][0]],
+            x=[state.all_local_wp_x[0][0]],
+            y=[state.all_local_wp_y[0][0]],
             mode="markers",
             marker=go.scatter.Marker(size=14),
             text=["Start"],
             name="Start",
         ),
         go.Scatter(
-            x=state.all_local_waypoints_x[0][1 : num_waypoints - 1],
-            y=state.all_local_waypoints_y[0][1 : num_waypoints - 1],
+            x=state.all_local_wp_x[0][1 : num_waypoints - 1],
+            y=state.all_local_wp_y[0][1 : num_waypoints - 1],
             mode="markers",
             marker=go.scatter.Marker(size=14),
             text=["Intermediate"] * (num_waypoints - 2),
             name="Intermediate",
         ),
         go.Scatter(
-            x=[state.all_local_waypoints_x[0][-1]],
-            y=[state.all_local_waypoints_y[0][-1]],
+            x=[state.all_local_wp_x[0][-1]],
+            y=[state.all_local_wp_y[0][-1]],
             mode="markers",
             marker=go.scatter.Marker(size=14),
             text=["Goal"] * (num_waypoints - 2),
@@ -268,24 +266,24 @@ def animated_update_plot(state: VisualizerState) -> go.Figure:
         go.Frame(
             data=[
                 go.Scatter(
-                    x=[state.all_local_waypoints_x[i][0]],
-                    y=[state.all_local_waypoints_y[i][0]],
+                    x=[state.all_local_wp_x[i][0]],
+                    y=[state.all_local_wp_y[i][0]],
                     mode="markers",
                     marker=go.scatter.Marker(size=14),
                     text=["Start"],
                     name="Start",
                 ),
                 go.Scatter(
-                    x=state.all_local_waypoints_x[i][1 : num_waypoints - 1],
-                    y=state.all_local_waypoints_y[i][1 : num_waypoints - 1],
+                    x=state.all_local_wp_x[i][1 : num_waypoints - 1],
+                    y=state.all_local_wp_y[i][1 : num_waypoints - 1],
                     mode="markers",
                     marker=go.scatter.Marker(size=14),
                     text=["Intermediate"] * (num_waypoints - 2),
                     name="Intermediate",
                 ),
                 go.Scatter(
-                    x=[state.all_local_waypoints_x[i][-1]],
-                    y=[state.all_local_waypoints_y[i][-1]],
+                    x=[state.all_local_wp_x[i][-1]],
+                    y=[state.all_local_wp_y[i][-1]],
                     mode="markers",
                     marker=go.scatter.Marker(size=14),
                     text=["Goal"] * (num_waypoints - 2),
@@ -308,14 +306,14 @@ def animated_update_plot(state: VisualizerState) -> go.Figure:
             ],
             name=f"Boat {i}",
         )
-        for i in range(0, len(state.sailbot_pos_xy))
+        for i in range(0, len(state.sailbot_xy))
     ]
 
     # Set axis limits dynamically
-    x_min = min(state.last_local_waypoints_x) - 10
-    x_max = max(state.last_local_waypoints_x) + 10
-    y_min = min(state.last_local_waypoints_y) - 10
-    y_max = max(state.last_local_waypoints_y) + 10
+    x_min = min(state.final_local_wp_x) - 10
+    x_max = max(state.final_local_wp_x) + 10
+    y_min = min(state.final_local_wp_y) - 10
+    y_max = max(state.final_local_wp_y) + 10
 
     # Set up the animated plot
     fig = go.Figure(
