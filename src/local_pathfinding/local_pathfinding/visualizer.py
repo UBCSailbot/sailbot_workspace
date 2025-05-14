@@ -13,6 +13,10 @@ app = dash.Dash(__name__)
 
 
 class VisualizerState:
+    """
+    Converts the ROS message to a format that can be used by the visualizer.
+    """
+
     def __init__(self, msgs: List[ci.LPathData]):
         self.local_path_data = msgs[-1]
 
@@ -68,7 +72,11 @@ class VisualizerState:
         ]
 
 
-def initial_plot():
+def initial_plot() -> go.Figure:
+    """
+    Initializes the plot with default settings.
+    """
+
     figure = go.Figure()
     fig = go.FigureWidget(figure)
 
@@ -84,8 +92,16 @@ def initial_plot():
 
 
 def dash_app(q: Queue):
-    global queue
+    """
+    Creates a Dash app and sets up the HTML layout of the app.
+
+    Args:
+        q (Queue): The queue to receive data from the ROS node.
+    """
+
+    global queue  # Allows it to be accessed in the callbacks
     queue = q
+
     app.layout = html.Div(
         [
             html.H2("Live Path Planning"),
@@ -101,7 +117,10 @@ def dash_app(q: Queue):
 
 
 @app.callback(Output("live-graph", "figure"), [Input("interval-component", "n_intervals")])
-def live_plot(n_intervals):
+def live_plot(n_intervals) -> go.Figure:
+    """
+    Updates the live graph to the latest path planning data.
+    """
     global queue
     state = queue.get()
     fig = live_update_plot(state)
@@ -111,15 +130,21 @@ def live_plot(n_intervals):
 @app.callback(
     Output("animated-live-graph", "figure"), [Input("interval-component2", "n_intervals")]
 )
-def animated_plot(n_intervals):
+def animated_plot(n_intervals) -> go.Figure:
+    """
+    Updates the animated graph to the accumulated LPathData ROS messages.
+    """
     global queue
     state = queue.get()
     fig = animated_update_plot(state)
     return fig
 
 
-def live_update_plot(state: VisualizerState):
-    raw_symbols = "arrow"
+def live_update_plot(state: VisualizerState) -> go.Figure:
+    """
+    Updates the live graph to the latest path planning data.
+    """
+
     fig = initial_plot()
 
     # Plotting Local Waypoints
@@ -154,7 +179,7 @@ def live_update_plot(state: VisualizerState):
         x=[state.sailbot_pos_x[-1]],
         y=[state.sailbot_pos_y[-1]],
         mode="markers",
-        marker_symbol=raw_symbols,
+        marker_symbol="arrow",
         marker_line_color="darkseagreen",
         marker_color="lightgreen",
         marker_line_width=2,
@@ -188,15 +213,16 @@ def live_update_plot(state: VisualizerState):
     return fig
 
 
-def animated_update_plot(state: VisualizerState):
-    fig = initial_plot()
-    # Set axis limits dynamically
-    x_min = min(state.last_local_waypoints_x) - 10
-    x_max = max(state.last_local_waypoints_x) + 10
-    y_min = min(state.last_local_waypoints_y) - 10
-    y_max = max(state.last_local_waypoints_y) + 10
+def animated_update_plot(state: VisualizerState) -> go.Figure:
+    """
+    Generates an animated plot every interval with the aggregated LPathData ROS messages.
+    It is interactive with play/pause buttons.
 
-    # Initial plot
+    """
+
+    # Initializing the plot
+    fig = initial_plot()
+
     num_waypoints = len(state.all_waypoints_pos_xy[-1])
     initial_boat_state = go.Scatter(
         x=[state.sailbot_pos_x[0]],
@@ -282,6 +308,14 @@ def animated_update_plot(state: VisualizerState):
         )
         for i in range(0, len(state.sailbot_pos_xy))
     ]
+
+    # Set axis limits dynamically
+    x_min = min(state.last_local_waypoints_x) - 10
+    x_max = max(state.last_local_waypoints_x) + 10
+    y_min = min(state.last_local_waypoints_y) - 10
+    y_max = max(state.last_local_waypoints_y) + 10
+
+    # Set up the animated plot
     fig = go.Figure(
         data=initial_state + [initial_boat_state],
         layout=go.Layout(
