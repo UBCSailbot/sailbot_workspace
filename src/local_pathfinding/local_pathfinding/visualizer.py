@@ -124,7 +124,7 @@ def live_plot(n_intervals) -> go.Figure:
     Updates the live graph to the latest path planning data.
     """
     global queue
-    state = queue.get() # type: ignore
+    state = queue.get()  # type: ignore
     fig = live_update_plot(state)
     return fig
 
@@ -137,7 +137,7 @@ def animated_plot(n_intervals) -> go.Figure:
     Updates the animated graph to the accumulated LPathData ROS messages.
     """
     global queue
-    state = queue.get() # type: ignore
+    state = queue.get()  # type: ignore
     fig = animated_update_plot(state)
     return fig
 
