@@ -2,3 +2,8 @@ python3-plotly:
   ubuntu:
     pip:
       packages: [plotly]
+
+python3-dash:
+  ubuntu:
+    pip:
+      packages: [dash]

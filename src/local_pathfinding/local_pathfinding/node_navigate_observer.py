@@ -5,10 +5,10 @@ topic.
 
 from multiprocessing import Manager, Process
 
-import custom_interfaces.msg as ci
 import rclpy
 from rclpy.node import Node
 
+import custom_interfaces.msg as ci
 import local_pathfinding.visualizer as visualizer
 
 
@@ -64,7 +64,7 @@ class SailbotObserver(Node):
         self.prev_msg = msg
         self.msgs.append(msg)
 
-        self.get_logger().debug(f"Received new local path message: {self.msg}")
+        self.get_logger().debug(f"Received new local path message: {msg}")
 
         self.state = visualizer.VisualizerState(msgs=self.msgs)
         self.queue.put(self.state)
