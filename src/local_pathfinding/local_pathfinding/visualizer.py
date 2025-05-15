@@ -1,15 +1,14 @@
 from multiprocessing import Queue
-from typing import List, Optional
+from typing import List, Optional, Tuple, Any
 
+import custom_interfaces.msg as ci
 import dash
 import plotly.graph_objects as go
 from dash import dcc, html
 from dash.dependencies import Input, Output
 
-import custom_interfaces.msg as ci
-from local_pathfinding.coord_systems import latlon_to_xy
 import local_pathfinding.coord_systems as cs
-
+from local_pathfinding.coord_systems import latlon_to_xy
 
 app = dash.Dash(__name__)
 
@@ -36,16 +35,12 @@ class VisualizerState:
 
         # Converts the lat/lon coordinates to x/y coordinates
         self.sailbot_xy = self._convert_to_xy(self.sailbot_lat_lon)
-        self.all_wp_xy = [
-            self._convert_to_xy(waypoints) for waypoints in self.all_local_wp
-        ]
+        self.all_wp_xy = [self._convert_to_xy(waypoints) for waypoints in self.all_local_wp]
 
         # Splits the x/y coordinates into separate lists
         self.sailbot_pos_x, self.sailbot_pos_y = self._split_coordinates(self.sailbot_xy)
 
-        self.final_local_wp_x, self.final_local_wp_y = self._split_coordinates(
-            self.all_wp_xy[-1]
-        )
+        self.final_local_wp_x, self.final_local_wp_y = self._split_coordinates(self.all_wp_xy[-1])
         self.all_local_wp_x, self.all_local_wp_y = zip(
             *[self._split_coordinates(waypoints) for waypoints in self.all_wp_xy]
         )
@@ -65,7 +60,7 @@ class VisualizerState:
         """Converts a list of lat/lon coordinates to x/y coordinates."""
         return [latlon_to_xy(reference=self.reference_latlon, latlon=pos) for pos in lat_lon_list]
 
-    def _split_coordinates(self, positions) -> List[float]:
+    def _split_coordinates(self, positions) -> Tuple[List[float], List[float]]:
         """Splits a list of positions into x and y components."""
         x_coords = [pos.x for pos in positions]
         y_coords = [pos.y for pos in positions]
