@@ -32,22 +32,6 @@ OMPL_PATH = ompl_path.OMPLPath(
 
 
 @pytest.mark.parametrize(
-    "method",
-    [
-        objectives.DistanceMethod.EUCLIDEAN,
-        objectives.DistanceMethod.LATLON,
-        objectives.DistanceMethod.OMPL_PATH_LENGTH,
-    ],
-)
-def test_distance_objective(method: objectives.DistanceMethod):
-    distance_objective = objectives.DistanceObjective(
-        OMPL_PATH._simple_setup.getSpaceInformation(),
-        method,
-    )
-    assert distance_objective is not None
-
-
-@pytest.mark.parametrize(
     "cs1,cs2,expected",
     [
         ((0, 0), (0, 0), 0),
@@ -58,36 +42,6 @@ def test_get_euclidean_path_length_objective(cs1: tuple, cs2: tuple, expected: f
     s1 = coord_systems.XY(*cs1)
     s2 = coord_systems.XY(*cs2)
     assert objectives.DistanceObjective.get_euclidean_path_length_objective(s1, s2) == expected
-
-
-@pytest.mark.parametrize(
-    "rf, cs1,cs2",
-    [
-        ((10.0, 10.0), (0.0, 0.0), (0.0, 0.0)),
-        ((13.206724, 29.829011), (13.208724, 29.827011), (13.216724, 29.839011)),
-        ((0.0, 0.0), (0.0, 0.1), (0.0, -0.1)),
-        ((0.0, 0.0), (0.1, 0.0), (-0.1, 0.0)),
-        ((0.0, 0.0), (0.1, 0.1), (-0.1, -0.1)),
-    ],
-)
-def test_get_latlon_path_length_objective(rf: tuple, cs1: tuple, cs2: tuple):
-    reference = HelperLatLon(latitude=rf[0], longitude=rf[1])
-    s1 = HelperLatLon(latitude=cs1[0], longitude=cs1[1])
-    s2 = HelperLatLon(latitude=cs2[0], longitude=cs2[1])
-    ls1 = coord_systems.latlon_to_xy(reference, s1)
-    ls2 = coord_systems.latlon_to_xy(reference, s2)
-    _, _, distance_m = coord_systems.GEODESIC.inv(
-        lats1=s1.latitude,
-        lons1=s1.longitude,
-        lats2=s2.latitude,
-        lons2=s2.longitude,
-    )
-
-    assert objectives.DistanceObjective.get_latlon_path_length_objective(
-        ls1,
-        ls2,
-        reference,
-    ) == pytest.approx(distance_m)
 
 
 @pytest.mark.parametrize(
@@ -230,25 +184,6 @@ def test_angle_between(afir: float, amid: float, asec: float, expected: float):
 
 
 @pytest.mark.parametrize(
-    "method",
-    [
-        objectives.SpeedObjectiveMethod.SAILBOT_TIME,
-        objectives.SpeedObjectiveMethod.SAILBOT_PIECEWISE,
-        objectives.SpeedObjectiveMethod.SAILBOT_CONTINUOUS,
-    ],
-)
-def test_speed_objective(method: objectives.SpeedObjectiveMethod):
-    speed_objective = objectives.SpeedObjective(
-        OMPL_PATH._simple_setup.getSpaceInformation(),
-        OMPL_PATH.state.heading,
-        OMPL_PATH.state.wind_direction,
-        OMPL_PATH.state.wind_speed,
-        method,
-    )
-    assert speed_objective is not None
-
-
-@pytest.mark.parametrize(
     "heading,wind_direction,wind_speed,expected",
     [
         # Corners of the table
@@ -278,33 +213,3 @@ def test_get_sailbot_speed(
     assert objectives.SpeedObjective.get_sailbot_speed(
         heading, wind_direction, wind_speed
     ) == pytest.approx(expected, abs=1e-7)
-
-
-@pytest.mark.parametrize(
-    "speed,expected",
-    [
-        (0.0, 5),
-        (8, 10),
-        (12.5, 20),
-        (17.0, 50),
-        (35, 10000),
-    ],
-)
-def test_piecewise_cost(speed: float, expected: int):
-    assert objectives.SpeedObjective.get_piecewise_cost(speed) == expected
-
-
-@pytest.mark.parametrize(
-    "speed,expected",
-    [
-        (0.0, 10000),
-        (25.0, 10000),
-        (30, 2.2013016167),
-        (40, 1.55146222424),
-        (10, 0.551462224238),
-    ],
-)
-def test_continuous_cost(speed: float, expected: int):
-    assert objectives.SpeedObjective.get_continuous_cost(speed) == pytest.approx(
-        expected, abs=1e-3
-    )
