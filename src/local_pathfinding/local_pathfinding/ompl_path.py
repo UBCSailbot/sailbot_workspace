@@ -48,6 +48,8 @@ class OMPLPath:
     """
 
     all_land_data = None
+    all_ships: List[ci.HelperAISShip] = []
+    all_ship_obstacles: List[ob.Boat] = []
     obstacles: List[ob.Obstacle] = []
 
     def __init__(
@@ -55,6 +57,7 @@ class OMPLPath:
         parent_logger: RcutilsLogger,
         max_runtime: float,
         local_path_state: LocalPathState,
+        multi_land_polygon: MultiPolygon
     ):
         """Initialize the OMPLPath Class. Attempt to solve for a path.
 
@@ -65,7 +68,8 @@ class OMPLPath:
         """
         self._box_buffer = BOX_BUFFER_SIZE
         self._logger = parent_logger.get_child(name="ompl_path")
-        self._simple_setup = self._init_simple_setup(local_path_state)  # this needs state
+        # this needs state
+        self._simple_setup = self._init_simple_setup(local_path_state, multi_land_polygon)
 
         self.solved = self._simple_setup.solve(time=max_runtime)  # time is in seconds
 
@@ -76,7 +80,9 @@ class OMPLPath:
 
     @staticmethod
     def init_obstacles(
-        local_path_state: LocalPathState, state_space_xy: Polygon = None
+        local_path_state: LocalPathState,
+        state_space_xy: Polygon = None,
+        multi_land_polygon: MultiPolygon = None,
     ) -> List[ob.Obstacle]:
         """Extracts obstacle data from local_path_state and compiles it into a list of Obstacles
 
@@ -89,21 +95,36 @@ class OMPLPath:
                                        obstacles
 
         """
+
         OMPLPath.obstacles = []
 
         # BOATS
         ais_ships = local_path_state.ais_ships
+        ship_map = {ship.id: ship for ship in ais_ships}
+        existing_obstacles = {ob.ais_ship.id: ob for ob in OMPLPath.all_ship_obstacles}
 
         if ais_ships:
-            for ship in ais_ships:
-                OMPLPath.obstacles.append(
-                    ob.Boat(
+            for ship_id, ship in ship_map.items():
+                if ship_id in existing_obstacles:
+                    # If the ship is already in the obstacles, update its information
+                    existing_boat = existing_obstacles[ship_id]
+                    existing_boat.update_sailbot_data(
+                        sailbot_position=local_path_state.position,
+                        sailbot_speed=local_path_state.speed,
+                    )
+                    existing_boat.update_collision_zone()
+                    OMPLPath.obstacles.append(existing_boat)
+                else:
+                    # Otherwise, create a new Obstacle object
+                    new_boat = ob.Boat(
                         local_path_state.reference_latlon,
                         local_path_state.position,
                         local_path_state.speed,
                         ship,
                     )
-                )
+                    OMPLPath.obstacles.append(new_boat)
+                    OMPLPath.all_ship_obstacles.append(new_boat)
+                    OMPLPath.all_ships.append(ship)
 
         # LAND
         if state_space_xy is None:
@@ -117,7 +138,7 @@ class OMPLPath:
 
         if OMPLPath.all_land_data is None:
             try:
-                LAND = load_pkl(
+                OMPLPath.all_land_data = load_pkl(
                     "/workspaces/sailbot_workspace/src/local_pathfinding/land/pkl/land.pkl"
                 )
             except RuntimeError as e:
@@ -127,8 +148,9 @@ class OMPLPath:
             ob.Land(
                 reference=local_path_state.reference_latlon,
                 sailbot_position=local_path_state.position,
-                all_land_data=LAND,
+                all_land_data=OMPLPath.all_land_data,
                 state_space=state_space_latlon,
+                land_multi_polygon=multi_land_polygon
             )
         )
 
@@ -187,7 +209,7 @@ class OMPLPath:
         """
         raise NotImplementedError
 
-    def _init_simple_setup(self, local_path_state) -> og.SimpleSetup:
+    def _init_simple_setup(self, local_path_state, multi_land_polygon) -> og.SimpleSetup:
         self.state = local_path_state
 
         # Create buffered spaces and extract their centers
@@ -223,7 +245,8 @@ class OMPLPath:
         bounds.check()  # check if bounds are valid
         space.setBounds(bounds)
 
-        OMPLPath.init_obstacles(local_path_state=local_path_state, state_space_xy=state_space)
+        OMPLPath.init_obstacles(local_path_state=local_path_state, state_space_xy=state_space,
+                                multi_land_polygon=multi_land_polygon)
 
         # create a simple setup object
         simple_setup = og.SimpleSetup(space)
