@@ -68,7 +68,8 @@ class OMPLPath:
         """
         self._box_buffer = BOX_BUFFER_SIZE
         self._logger = parent_logger.get_child(name="ompl_path")
-        self._simple_setup = self._init_simple_setup(local_path_state, multi_land_polygon)  # this needs state
+        # this needs state
+        self._simple_setup = self._init_simple_setup(local_path_state, multi_land_polygon)
 
         self.solved = self._simple_setup.solve(time=max_runtime)  # time is in seconds
 
