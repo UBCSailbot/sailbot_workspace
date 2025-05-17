@@ -1,5 +1,5 @@
 from multiprocessing import Queue
-from typing import List, Optional, Tuple, Any
+from typing import List, Optional, Tuple
 
 import custom_interfaces.msg as ci
 import dash
