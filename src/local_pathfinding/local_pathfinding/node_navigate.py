@@ -191,6 +191,7 @@ class Sailbot(Node):
                         latlon_polygon = cs.xy_polygon_to_latlon_polygon(
                             self.local_path.state.reference_latlon, polygon
                         )
+
                         # each point of the polygon is in lat lon now
                         # but you cant construct a shapely polgyon out of HelperLatLon objects
                         # so each point is a shapely Point that needs to be converted to a
