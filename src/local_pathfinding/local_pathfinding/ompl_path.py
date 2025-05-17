@@ -137,7 +137,7 @@ class OMPLPath:
 
         if OMPLPath.all_land_data is None:
             try:
-                LAND = load_pkl(
+                OMPLPath.all_land_data = load_pkl(
                     "/workspaces/sailbot_workspace/src/local_pathfinding/land/pkl/land.pkl"
                 )
             except RuntimeError as e:
@@ -147,7 +147,7 @@ class OMPLPath:
             ob.Land(
                 reference=local_path_state.reference_latlon,
                 sailbot_position=local_path_state.position,
-                all_land_data=LAND,
+                all_land_data=OMPLPath.all_land_data,
                 state_space=state_space_latlon,
                 land_multi_polygon=multi_land_polygon
             )
