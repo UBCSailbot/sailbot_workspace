@@ -20,6 +20,7 @@ from rclpy.impl.rcutils_logger import RcutilsLogger
 from shapely.geometry import MultiPolygon, Point, Polygon, box
 
 import local_pathfinding.coord_systems as cs
+import local_pathfinding.objectives as objectives
 import local_pathfinding.obstacles as ob
 
 if TYPE_CHECKING:
@@ -161,7 +162,9 @@ class OMPLPath:
             waypoint_latlon = cs.xy_to_latlon(self.state.reference_latlon, waypoint_XY)
             waypoints.append(
                 ci.HelperLatLon(
-                    latitude=waypoint_latlon.latitude, longitude=waypoint_latlon.longitude
+                    latitude=waypoint_latlon.latitude,
+                    longitude=waypoint_latlon.longitude,
+                    yaw=state.getYaw(),
                 )
             )
 
@@ -183,15 +186,12 @@ class OMPLPath:
         start_x = start_position_in_xy.x
         start_y = start_position_in_xy.y
 
-        goal_position = self.state.global_path.waypoints[-1]
+        goal_position = self.state.global_path.waypoints[0]
         goal_position_in_xy = cs.latlon_to_xy(self.state.reference_latlon, goal_position)
         goal_polygon = self.create_buffer_around_position(goal_position_in_xy)
         goal_x, goal_y = goal_position_in_xy
 
-        # create an SE2 state space: rotation and translation in a plane
         space = base.SE2StateSpace()
-
-        # set the bounds of the state space
         bounds = base.RealVectorBounds(dim=2)
         state_space = box(*MultiPolygon([start_box, goal_polygon]).bounds)
         x_min, y_min, x_max, y_max = state_space.bounds
@@ -208,38 +208,47 @@ class OMPLPath:
             f"x=[{bounds.low[0]}, {bounds.high[0]}]; "
             f"y=[{bounds.low[1]}, {bounds.high[1]}]"
         )"""
-        bounds.check()  # check if bounds are valid
+        bounds.check()
         space.setBounds(bounds)
 
         OMPLPath.init_obstacles(local_path_state=local_path_state, state_space_xy=state_space)
 
-        cspace = oc.RealVectorControlSpace(space, 2)
-        cbounds = base.RealVectorBounds(2)
-        cbounds.setLow(0, 0.0)
-        cbounds.setLow(1, -1.0)
-        cbounds.setHigh(0, 5.0)
-        cbounds.setHigh(1, 1.0)
+        cspace = oc.RealVectorControlSpace(space, 1)
+        cbounds = base.RealVectorBounds(1)
+        cbounds.setLow(0, -1.0)  # rudder angle or turn rate bounds
+        cbounds.setHigh(0, 1.0)
         cspace.setBounds(cbounds)
 
         ss = oc.SimpleSetup(cspace)
         si = ss.getSpaceInformation()
         ss.setStateValidityChecker(base.StateValidityCheckerFn(OMPLPath.is_state_valid))
 
-        def ode(state, control, duration, out):
-            x = state.getX()
-            y = state.getY()
-            theta = state.getYaw()
-            v = control[0]
-            omega = control[1]
-            out[0] = v * np.cos(theta)
-            out[1] = v * np.sin(theta)
-            out[2] = omega
+        # def ode(state, control, duration, out):
+        #     x = state.getX()
+        #     y = state.getY()
+        #     theta = state.getYaw()
+        #     v = control[0]
+        #     omega = control[1]
+        #     out[0] = v * np.cos(theta)
+        #     out[1] = v * np.sin(theta)
+        #     out[2] = omega
+
+        # oc.ODESolver.addODE(ode)
+        # ss.setStatePropagator(oc.ODESolver.getStatePropagator(ode_solver))
 
         def propagate(start, control, duration, result):
             x = start.getX()
             y = start.getY()
             theta = start.getYaw()
-            v = control[0]
+
+            # v = objectives.SpeedObjective.get_sailbot_speed(
+            #     np.rad2deg(start.getYaw()),
+            #     local_path_state.wind_direction,
+            #     local_path_state.wind_speed,
+            # )
+            # print(v)
+            v = 10
+            # just use the one from control space, assume its achievable from turning the rudder
             omega = control[1]
             dt = duration
             result.setX(x + v * np.cos(theta) * dt)
@@ -253,13 +262,18 @@ class OMPLPath:
 
         start[0] = start_x
         start[1] = start_y
-        start[2] = 0.0  # yaw in radians, adjust if needed
+        # yaw in radians pointed in direction of current heading
+        start[2] = 0.0  # np.deg2rad(self.state.heading)
 
         goal[0] = goal_x
         goal[1] = goal_y
-        goal[2] = 0.0  # yaw in radians, adjust if needed
+        next_goal = self.state.global_path.waypoints[1]
+        next_goal_xy = cs.latlon_to_xy(self.state.reference_latlon, next_goal)
+        next_goal_x, next_goal_y = next_goal_xy
+        # heading in radians pointed towards next goal
+        goal[2] = 0.0  # np.arctan((next_goal_y - goal_y) / (next_goal_x - goal_x))
 
-        ss.setStartAndGoalStates(start, goal, threshold=10.0)
+        ss.setStartAndGoalStates(start, goal, threshold=0.05)
 
         planner = oc.RRT(si)
         ss.setPlanner(planner)
@@ -309,19 +323,6 @@ def log_invalid_state(state: cs.XY, obstacle: ob.Obstacle):
         log_file.write(
             f"State at ({state.x:.2f},{state.y:.2f}) was invalidated by obstacle: {type(obstacle)}\n"  # noqa
         )
-
-
-def get_planner_class():
-    """Choose the planner to use for the OMPL query.
-
-    Args:
-        planner (str): Name of the planner to use.
-
-    Returns:
-        Tuple[str, Type[base.Planner]]: The name and class of the planner to use for the OMPL
-        query, defaults to RRT* if `planner` is not implemented in this function.
-    """
-    return "rrtstar", og.RRTstar
 
 
 def load_pkl(file_path: str) -> Any:
