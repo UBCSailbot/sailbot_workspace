@@ -12,15 +12,15 @@ import pickle
 from typing import TYPE_CHECKING, Any, List, Union
 
 import custom_interfaces.msg as ci
+import numpy as np
 from ompl import base
-from ompl import geometric as og
+from ompl import control as oc
 from ompl import util as ou
 from rclpy.impl.rcutils_logger import RcutilsLogger
 from shapely.geometry import MultiPolygon, Point, Polygon, box
 
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.obstacles as ob
-from local_pathfinding.objectives import get_sailing_objective
 
 if TYPE_CHECKING:
     from local_pathfinding.local_path import LocalPathState
@@ -65,14 +65,8 @@ class OMPLPath:
         """
         self._box_buffer = BOX_BUFFER_SIZE
         self._logger = parent_logger.get_child(name="ompl_path")
-        self._simple_setup = self._init_simple_setup(local_path_state)  # this needs state
-
-        self.solved = self._simple_setup.solve(time=max_runtime)  # time is in seconds
-
-        # TODO: play around with simplifySolution()
-        # if self.solved:
-        #     # try to shorten the path
-        #     simple_setup.simplifySolution()
+        self._simple_setup = self._init_simple_setup(local_path_state)
+        self.solved = self._simple_setup.solve(time=max_runtime)
 
     @staticmethod
     def init_obstacles(
@@ -180,14 +174,7 @@ class OMPLPath:
         space = Point(position.x, position.y).buffer(self._box_buffer, cap_style=3, join_style=2)
         return space
 
-    def update_objectives(self):
-        """Update the objectives on the basis of which the path is optimized.
-        Raises:
-            NotImplementedError: Method or function hasn't been implemented yet.
-        """
-        raise NotImplementedError
-
-    def _init_simple_setup(self, local_path_state) -> og.SimpleSetup:
+    def _init_simple_setup(self, local_path_state) -> oc.SimpleSetup:
         self.state = local_path_state
 
         # Create buffered spaces and extract their centers
@@ -211,6 +198,7 @@ class OMPLPath:
 
         if x_max <= x_min or y_max <= y_min:
             raise ValueError(f"Invalid bounds: x=[{x_min}, {x_max}], y=[{y_min}, {y_max}]")
+
         bounds.setLow(0, x_min)
         bounds.setLow(1, y_min)
         bounds.setHigh(0, x_max)
@@ -225,45 +213,58 @@ class OMPLPath:
 
         OMPLPath.init_obstacles(local_path_state=local_path_state, state_space_xy=state_space)
 
-        # create a simple setup object
-        simple_setup = og.SimpleSetup(space)
-        simple_setup.setStateValidityChecker(base.StateValidityCheckerFn(OMPLPath.is_state_valid))
+        cspace = oc.RealVectorControlSpace(space, 2)
+        cbounds = base.RealVectorBounds(2)
+        cbounds.setLow(0, 0.0)
+        cbounds.setLow(1, -1.0)
+        cbounds.setHigh(0, 5.0)
+        cbounds.setHigh(1, 1.0)
+        cspace.setBounds(cbounds)
+
+        ss = oc.SimpleSetup(cspace)
+        si = ss.getSpaceInformation()
+        ss.setStateValidityChecker(base.StateValidityCheckerFn(OMPLPath.is_state_valid))
+
+        def ode(state, control, duration, out):
+            x = state.getX()
+            y = state.getY()
+            theta = state.getYaw()
+            v = control[0]
+            omega = control[1]
+            out[0] = v * np.cos(theta)
+            out[1] = v * np.sin(theta)
+            out[2] = omega
+
+        def propagate(start, control, duration, result):
+            x = start.getX()
+            y = start.getY()
+            theta = start.getYaw()
+            v = control[0]
+            omega = control[1]
+            dt = duration
+            result.setX(x + v * np.cos(theta) * dt)
+            result.setY(y + v * np.sin(theta) * dt)
+            result.setYaw(theta + omega * dt)
+
+        ss.setStatePropagator(oc.StatePropagatorFn(propagate))
 
         start = base.State(space)
         goal = base.State(space)
-        start().setXY(start_x, start_y)
-        goal().setXY(goal_x, goal_y)
-        self._logger.debug(
-            "start and goal state: "
-            f"start=({start().getX()}, {start().getY()}); "
-            f"goal=({goal().getX()}, {goal().getY()})"
-        )
-        simple_setup.setStartAndGoalStates(start, goal)
 
-        # Constructs a space information instance for this simple setup
-        space_information = simple_setup.getSpaceInformation()
+        start[0] = start_x
+        start[1] = start_y
+        start[2] = 0.0  # yaw in radians, adjust if needed
 
-        # figure this out
-        self.state.planner = og.RRTstar(space_information)
+        goal[0] = goal_x
+        goal[1] = goal_y
+        goal[2] = 0.0  # yaw in radians, adjust if needed
 
-        # set the optimization objective of the simple setup object
-        # TODO: implement and add optimization objective here
+        ss.setStartAndGoalStates(start, goal, threshold=10.0)
 
-        objective = get_sailing_objective(
-            space_information,
-            simple_setup,
-            # This too
-            self.state.heading,
-            self.state.wind_direction,
-            self.state.wind_speed,
-        )
+        planner = oc.RRT(si)
+        ss.setPlanner(planner)
 
-        simple_setup.setOptimizationObjective(objective)
-
-        # set the planner of the simple setup object
-        simple_setup.setPlanner(og.RRTstar(space_information))
-
-        return simple_setup
+        return ss
 
     def is_state_valid(state: Union[base.State, base.SE2StateInternal]) -> bool:
         """Evaluate a state to determine if the configuration collides with an environment
