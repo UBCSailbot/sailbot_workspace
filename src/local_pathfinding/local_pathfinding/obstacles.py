@@ -129,7 +129,8 @@ class Land(Obstacle):
         self.all_land_data = all_land_data
         self.bbox_buffer_amount = bbox_buffer_amount
 
-        self.collision_zone = MultiPolygon(cs.latlon_polygon_list_to_xy_polygon_list(land_multi_polygon.geoms, reference))
+        self.collision_zone = MultiPolygon(cs.latlon_polygon_list_to_xy_polygon_list(
+            land_multi_polygon.geoms, reference))
 
         self._update_land_collision_zone(
             state_space_latlon=state_space, land_multi_polygon=land_multi_polygon
