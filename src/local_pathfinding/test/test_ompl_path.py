@@ -13,7 +13,7 @@ from custom_interfaces.msg import (
 )
 from ompl import base
 from rclpy.impl.rcutils_logger import RcutilsLogger
-from shapely.geometry import Point
+from shapely.geometry import MultiPolygon, Point, box
 
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.obstacles as ob
@@ -69,8 +69,11 @@ def test_OMPLPath_update_objectives():
 
 
 def test_init_obstacles():
+    sailbot_position = HelperLatLon(latitude=49.29, longitude=-126.32)
+    goal_position = HelperLatLon(latitude=1.0, longitude=1.0)
+
     local_path_state = LocalPathState(
-        gps=GPS(lat_lon=HelperLatLon(latitude=49.29, longitude=-126.32)),
+        gps=GPS(lat_lon=sailbot_position),
         ais_ships=AISShips(
             ships=[
                 HelperAISShip(
@@ -96,14 +99,31 @@ def test_init_obstacles():
         global_path=Path(
             waypoints=[
                 HelperLatLon(latitude=0.0, longitude=0.0),
-                HelperLatLon(latitude=1.0, longitude=1.0),
+                goal_position,
             ]
         ),
         filtered_wind_sensor=WindSensor(),
         planner="rrtstar",
     )
 
-    obstacles = ompl_path.OMPLPath.init_obstacles(local_path_state=local_path_state)
+    # create the xy state space from the specified positions of sailbot and the goal
+    sailbot_box = Point(sailbot_position.longitude, sailbot_position.latitude).buffer(
+        0.1, cap_style=3, join_style=2
+    )
+
+    goal_box = Point(goal_position.longitude, sailbot_position.latitude).buffer(
+        0.1, cap_style=3, join_style=2
+    )
+
+    state_space_latlon = box(*MultiPolygon([sailbot_box, goal_box]).bounds)
+
+    state_space_xy = cs.latlon_polygon_list_to_xy_polygon_list(
+        [state_space_latlon], goal_position
+    )[0]
+
+    obstacles = ompl_path.OMPLPath.init_obstacles(
+        local_path_state=local_path_state, state_space_xy=state_space_xy
+    )
     assert isinstance(obstacles, list)
     assert isinstance(obstacles[0], ob.Boat)
     assert isinstance(obstacles[1], ob.Boat)
