@@ -300,7 +300,7 @@ def _interpolate_path(
                 pos=pos,
             )
             # insert sub path into path
-            waypoints[j + 1 : j + 1] = sub_path.waypoints[:-1]
+            waypoints[j+1:j+1] = sub_path.waypoints[:-1]
             # shift indices to account for path insertion
             j += len(sub_path.waypoints) - 1
 

@@ -120,7 +120,9 @@ class Sailbot(Node):
         self.local_path = LocalPath(parent_logger=self.get_logger())
         self.current_waypoint_index = 0
         self.use_mock_land = self.get_parameter("use_mock_land").get_parameter_value().bool_value
-        self.mock_land_file = "/workspaces/sailbot_workspace/src/local_pathfinding/land/mock/mock_land.json"
+        self.mock_land_file = (
+            "/workspaces/sailbot_workspace/src/local_pathfinding/land/mock/mock_land.json"
+        )
         self.mode = self.get_parameter("mode").get_parameter_value().string_value
         self.planner = self.get_parameter("path_planner").get_parameter_value().string_value
         self.get_logger().debug(f"Got parameter: {self.planner=}")
