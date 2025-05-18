@@ -57,7 +57,7 @@ class OMPLPath:
         parent_logger: RcutilsLogger,
         max_runtime: float,
         local_path_state: LocalPathState,
-        multi_land_polygon: MultiPolygon
+        multi_land_polygon: MultiPolygon = None
     ):
         """Initialize the OMPLPath Class. Attempt to solve for a path.
 
