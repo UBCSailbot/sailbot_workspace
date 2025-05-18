@@ -6,6 +6,7 @@ from enum import Enum, auto
 import custom_interfaces.msg as ci
 import numpy as np
 from ompl import base as ob
+from local_pathfinding.coord_systems import bound_to_180
 
 import local_pathfinding.coord_systems as cs
 
@@ -246,10 +247,50 @@ class WindObjective(Objective):
         wind_direction (float): The direction of the wind in radians (-pi, pi]
     """
 
-    def __init__(self, space_information, wind_direction_degrees: float):
+    def __init__(self, space_information, wind_direction_degrees: float, wind_speed: float,
+                 heading_degrees: float, speed: float):
         super().__init__(space_information)
         assert -180 < wind_direction_degrees <= 180
-        self.wind_direction = math.radians(wind_direction_degrees)
+        self.wind_direction = self.get_true_wind_direction(
+            wind_direction_degrees,
+            wind_speed,
+            heading_degrees,
+            speed
+        )
+
+    def get_true_wind_direction(self, wind_direction_degrees: float, wind_speed: float,
+                                heading_degrees: float, speed: float) -> float:
+        """Calculates the true wind direction based on the boat's heading and speed.
+        Args:
+            wind_direction_degrees (float): The direction of the wind in degrees (-180, 180]. This
+            is the apparent wind derived from the wind sensor
+            wind_speed (float): The speed of the wind in kmph. This is the apparent wind derived
+            from the wind sensor
+            heading_degrees (float): The heading of the boat in degrees (-180, 180]. This is
+            derived from the GPS
+            speed (float): The speed of the boat in kmph. This is derived from the GPS.
+        Returns:
+            float: The true wind direction in radians (-pi, pi]
+        """
+        wind_radians = math.radians(wind_direction_degrees)
+
+        # we want the angle that is opposite to heading_degrees
+        heading_radians = math.radians(bound_to_180(heading_degrees + 180))
+
+        apparent_wind_x = wind_speed * math.cos(wind_radians)
+        apparent_wind_y = wind_speed * math.sin(wind_radians)
+
+        boat_speed_x = speed * math.cos(heading_radians)
+        boat_speed_y = speed * math.sin(heading_radians)
+
+        true_x = apparent_wind_x - boat_speed_x
+        true_y = apparent_wind_y - boat_speed_y
+
+        print(math.atan2(true_y,  true_x))
+        print(wind_radians)
+        print(heading_radians)
+
+        return math.atan2(true_y, true_x)
 
     def motionCost(self, s1: ob.SE2StateSpace, s2: ob.SE2StateSpace) -> ob.Cost:
         """Generates the cost associated with the upwind and downwind directions of the boat in
@@ -471,6 +512,7 @@ def get_sailing_objective(
     space_information,
     simple_setup,
     heading_degrees: float,
+    speed: float,
     wind_direction_degrees: float,
     wind_speed: float,
 ) -> ob.OptimizationObjective:
@@ -486,7 +528,14 @@ def get_sailing_objective(
         weight=100.0,
     )
     objective.addObjective(
-        objective=WindObjective(space_information, wind_direction_degrees), weight=1.0
+        objective=WindObjective(
+            space_information,
+            wind_direction_degrees,
+            wind_speed,
+            heading_degrees,
+            speed
+        ),
+        weight=1.0
     )
     objective.addObjective(
         objective=SpeedObjective(
