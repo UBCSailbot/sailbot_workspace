@@ -128,10 +128,6 @@ class Land(Obstacle):
         super().__init__(reference, sailbot_position)
         self.all_land_data = all_land_data
         self.bbox_buffer_amount = bbox_buffer_amount
-
-        self.collision_zone = MultiPolygon(cs.latlon_polygon_list_to_xy_polygon_list(
-            land_multi_polygon.geoms, reference))
-
         self._update_land_collision_zone(
             state_space_latlon=state_space, land_multi_polygon=land_multi_polygon
         )
@@ -149,12 +145,8 @@ class Land(Obstacle):
         """
         if land_multi_polygon is not None:  # for testing (injecting mock land data)
 
-            collision_zone = land_multi_polygon.buffer(0)
-
-            if collision_zone.geom_type == "Polygon":
-                collision_zone = MultiPolygon([collision_zone])
-
-            self.collision_zone = collision_zone
+            self.collision_zone = MultiPolygon(cs.latlon_polygon_list_to_xy_polygon_list(
+                land_multi_polygon.geoms, self.reference))
             return
 
         if state_space_latlon is None:  # create a default one
