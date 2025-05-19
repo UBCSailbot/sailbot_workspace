@@ -146,3 +146,8 @@ def latlon_polygon_list_to_xy_polygon_list(
         )
 
     return list(map(_latlon_polygon_to_xy_polygon, polygons))
+
+
+def latlon_list_to_xy_list(reference_latlon, lat_lon_list: List[ci.HelperLatLon]) -> List[XY]:
+    """Converts a list of lat/lon coordinates to x/y coordinates."""
+    return [latlon_to_xy(reference=reference_latlon, latlon=pos) for pos in lat_lon_list]
