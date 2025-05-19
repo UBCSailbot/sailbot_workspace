@@ -123,5 +123,5 @@ def get_include_launch_descriptions(ros_package_list: List[str]) -> List[Include
                 launch_file_path=pkg_main_launch
             )
         )
-        include_launch_descriptions.append(launch_description) 
+        include_launch_descriptions.append(launch_description)
     return include_launch_descriptions
