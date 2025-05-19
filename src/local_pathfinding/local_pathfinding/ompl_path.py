@@ -128,7 +128,7 @@ class OMPLPath:
                 reference=local_path_state.reference_latlon,
                 sailbot_position=local_path_state.position,
                 all_land_data=LAND,
-                state_space=state_space_latlon,
+                state_space_latlon=state_space_latlon,
             )
         )
 
@@ -254,6 +254,7 @@ class OMPLPath:
             simple_setup,
             # This too
             self.state.heading,
+            self.state.speed,
             self.state.wind_direction,
             self.state.wind_speed,
         )

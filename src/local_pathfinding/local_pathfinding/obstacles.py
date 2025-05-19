@@ -6,7 +6,7 @@ from typing import Optional
 import custom_interfaces.msg as ci
 import numpy as np
 from shapely.affinity import affine_transform
-from shapely.geometry import MultiPolygon, Point, Polygon, box
+from shapely.geometry import MultiPolygon, Point, Polygon
 
 import local_pathfinding.coord_systems as cs
 
@@ -68,7 +68,7 @@ class Obstacle:
         else:
             # Land Obstacle
             self._update_land_collision_zone(  # type: ignore
-                state_space_latlon=kwargs.get("state_space"),
+                state_space_latlon=kwargs.get("state_space_latlon"),
                 land_multi_polygon=kwargs.get("land_multi_polygon"),
             )
 
@@ -122,14 +122,14 @@ class Land(Obstacle):
         sailbot_position: ci.HelperLatLon,
         all_land_data: MultiPolygon,
         bbox_buffer_amount: float = 0.1,
-        state_space: Polygon = None,
+        state_space_latlon: Polygon = None,
         land_multi_polygon: MultiPolygon = None,
     ):
         super().__init__(reference, sailbot_position)
         self.all_land_data = all_land_data
         self.bbox_buffer_amount = bbox_buffer_amount
         self._update_land_collision_zone(
-            state_space_latlon=state_space, land_multi_polygon=land_multi_polygon
+            state_space_latlon=state_space_latlon, land_multi_polygon=land_multi_polygon
         )
 
     def _update_land_collision_zone(
@@ -153,16 +153,8 @@ class Land(Obstacle):
             self.collision_zone = collision_zone
             return
 
-        if state_space_latlon is None:  # create a default one
-
-            sailbot_box = Point(
-                self.sailbot_position_latlon.longitude, self.sailbot_position_latlon.latitude
-            ).buffer(self.bbox_buffer_amount, cap_style=3, join_style=2)
-
-            waypoint_box = Point(self.reference.longitude, self.reference.latitude).buffer(
-                self.bbox_buffer_amount, cap_style=3, join_style=2
-            )
-            state_space_latlon = box(*MultiPolygon([sailbot_box, waypoint_box]).bounds)
+        if state_space_latlon is None:
+            raise ValueError("state_space_latlon must not be None")
 
         latlon_polygons = self.all_land_data.intersection(state_space_latlon)
 
