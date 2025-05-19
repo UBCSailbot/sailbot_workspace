@@ -9,7 +9,6 @@ from rclpy.node import Node
 from scipy.stats import vonmises, weibull_min
 
 import local_pathfinding.coord_systems as cs
-from local_pathfinding.coord_systems import bound_to_180
 
 
 class MockWindSensor(Node):
