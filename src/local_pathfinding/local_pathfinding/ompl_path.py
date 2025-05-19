@@ -50,14 +50,14 @@ class OMPLPath:
     all_land_data = None
     all_ships: List[ci.HelperAISShip] = []
     all_ship_obstacles: List[ob.Boat] = []
-    obstacles: List[ob.Obstacle] = []
+    obstacles = []
 
     def __init__(
         self,
         parent_logger: RcutilsLogger,
         max_runtime: float,
         local_path_state: LocalPathState,
-        multi_land_polygon: MultiPolygon = None
+        multi_land_polygon: MultiPolygon = None,
     ):
         """Initialize the OMPLPath Class. Attempt to solve for a path.
 
@@ -150,7 +150,7 @@ class OMPLPath:
                 sailbot_position=local_path_state.position,
                 all_land_data=OMPLPath.all_land_data,
                 state_space=state_space_latlon,
-                land_multi_polygon=multi_land_polygon
+                land_multi_polygon=multi_land_polygon,
             )
         )
 
@@ -245,8 +245,11 @@ class OMPLPath:
         bounds.check()  # check if bounds are valid
         space.setBounds(bounds)
 
-        OMPLPath.init_obstacles(local_path_state=local_path_state, state_space_xy=state_space,
-                                multi_land_polygon=multi_land_polygon)
+        OMPLPath.init_obstacles(
+            local_path_state=local_path_state,
+            state_space_xy=state_space,
+            multi_land_polygon=multi_land_polygon,
+        )
 
         # create a simple setup object
         simple_setup = og.SimpleSetup(space)
