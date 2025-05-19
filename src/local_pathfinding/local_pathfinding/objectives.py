@@ -1,7 +1,6 @@
 """Our custom OMPL optimization objectives."""
 
 import math
-from enum import Enum, auto
 
 import custom_interfaces.msg as ci
 import numpy as np
@@ -30,14 +29,6 @@ BOATSPEEDS = np.array(
 
 WINDSPEEDS = [0, 9.3, 18.5, 27.8, 37.0]  # The row labels
 ANGLES = [0, 20, 30, 45, 90, 135, 180]  # The column labels
-
-
-class MinimumTurningMethod(Enum):
-    """Enumeration for minimum turning objective methods"""
-
-    GOAL_HEADING = auto()
-    GOAL_PATH = auto()
-    HEADING_PATH = auto()
 
 
 class Objective(ob.StateCostIntegralObjective):
@@ -126,7 +117,6 @@ class MinimumTurningObjective(Objective):
         space_information,
         simple_setup,
         heading_degrees: float,
-        method: MinimumTurningMethod,
     ):
         super().__init__(space_information)
         self.goal = cs.XY(
@@ -134,7 +124,6 @@ class MinimumTurningObjective(Objective):
         )
         assert -180 < heading_degrees <= 180
         self.heading = math.radians(heading_degrees)
-        self.method = method
 
     def motionCost(self, s1: ob.SE2StateSpace, s2: ob.SE2StateSpace) -> ob.Cost:
         """Generates the turning cost between s1, s2, heading or the goal position
@@ -151,52 +140,10 @@ class MinimumTurningObjective(Objective):
         """
         s1_xy = cs.XY(s1.getX(), s1.getY())
         s2_xy = cs.XY(s2.getX(), s2.getY())
-        if self.method == MinimumTurningMethod.GOAL_HEADING:
-            angle = self.goal_heading_turn_cost(s1_xy, self.goal, self.heading)
-        elif self.method == MinimumTurningMethod.GOAL_PATH:
-            angle = self.goal_path_turn_cost(s1_xy, s2_xy, self.goal)
-        elif self.method == MinimumTurningMethod.HEADING_PATH:
-            angle = self.heading_path_turn_cost(s1_xy, s2_xy, self.heading)
-        else:
-            ValueError(f"Method {self.method} not supported")
+
+        angle = self.heading_path_turn_cost(s1_xy, s2_xy, self.heading)
+
         return ob.Cost(angle)
-
-    @staticmethod
-    def goal_heading_turn_cost(s1: cs.XY, goal: cs.XY, heading: float) -> float:
-        """Determine the smallest turn angle between s1-goal and heading
-
-        Args:
-            s1 (cs.XY): The starting point of the local start state
-            goal (cs.XY): The goal position of the sailbot
-            heading (float): The heading of the sailbot in radians (-pi, pi]
-
-        Returns:
-            float: the turning angle from s2 to s1 in degrees
-        """
-        # Calculate the true bearing of the goal from s1
-        global_goal_direction = math.atan2(goal.x - s1.x, goal.y - s1.y)
-
-        return MinimumTurningObjective.min_turn_angle(global_goal_direction, heading)
-
-    @staticmethod
-    def goal_path_turn_cost(s1: cs.XY, s2: cs.XY, goal: cs.XY) -> float:
-        """Determine the smallest turn angle between s1-s2 and s1-goal
-
-        Args:
-            s1 (cs.XY): The starting point of the local start state
-            s2 (cs.XY): The ending point of the local goal state
-            goal (cs.XY): The goal position of the sailbot
-
-        Returns:
-            float: the turning angle from s2 to s1 in degrees
-        """
-        # Calculate the true bearing of s2 from s1
-        path_direction = math.atan2(s2.x - s1.x, s2.y - s1.y)
-
-        # Calculate the true bearing of the goal from s1
-        global_goal_direction = math.atan2(goal.x - s1.x, goal.y - s1.y)
-
-        return MinimumTurningObjective.min_turn_angle(global_goal_direction, path_direction)
 
     @staticmethod
     def heading_path_turn_cost(s1: cs.XY, s2: cs.XY, heading: float) -> float:
@@ -480,9 +427,7 @@ def get_sailing_objective(
         weight=1.0,
     )
     objective.addObjective(
-        objective=MinimumTurningObjective(
-            space_information, simple_setup, heading_degrees, MinimumTurningMethod.GOAL_HEADING
-        ),
+        objective=MinimumTurningObjective(space_information, simple_setup, heading_degrees),
         weight=100.0,
     )
     objective.addObjective(
