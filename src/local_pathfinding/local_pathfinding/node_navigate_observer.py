@@ -3,14 +3,14 @@ Creates two processes, one for the ROS node and one for the Dash app.
 The ROS node subscribes to the local_path topic and the Dash app visualizes the data.
 """
 
+from collections import deque
 from multiprocessing import Manager, Process
 
+import custom_interfaces.msg as ci
 import rclpy
 from rclpy.node import Node
 
-import custom_interfaces.msg as ci
 import local_pathfinding.visualizer as vz
-from collections import deque
 
 
 def ros_node(queue):
