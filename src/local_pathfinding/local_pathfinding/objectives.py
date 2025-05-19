@@ -280,15 +280,11 @@ class WindObjective(Objective):
         apparent_wind_x = wind_speed * math.cos(wind_radians)
         apparent_wind_y = wind_speed * math.sin(wind_radians)
 
-        boat_speed_x = speed * math.cos(heading_radians)
-        boat_speed_y = speed * math.sin(heading_radians)
+        boat_wind_x = speed * math.cos(heading_radians)
+        boat_wind_y = speed * math.sin(heading_radians)
 
-        true_x = apparent_wind_x - boat_speed_x
-        true_y = apparent_wind_y - boat_speed_y
-
-        print(math.atan2(true_y,  true_x))
-        print(wind_radians)
-        print(heading_radians)
+        true_x = apparent_wind_x - boat_wind_x
+        true_y = apparent_wind_y - boat_wind_y
 
         return math.atan2(true_y, true_x)
 
