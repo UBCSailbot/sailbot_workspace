@@ -44,55 +44,13 @@ def test_get_euclidean_path_length_objective(cs1: tuple, cs2: tuple, expected: f
     assert objectives.DistanceObjective.get_euclidean_path_length_objective(s1, s2) == expected
 
 
-@pytest.mark.parametrize(
-    "method",
-    [
-        objectives.MinimumTurningMethod.GOAL_HEADING,
-        objectives.MinimumTurningMethod.GOAL_PATH,
-        objectives.MinimumTurningMethod.HEADING_PATH,
-    ],
-)
-def test_minimum_turning_objective(method: objectives.MinimumTurningMethod):
+def test_minimum_turning_objective():
     minimum_turning_objective = objectives.MinimumTurningObjective(
         OMPL_PATH._simple_setup.getSpaceInformation(),
         OMPL_PATH._simple_setup,
         OMPL_PATH.state.heading,
-        method,
     )
     assert minimum_turning_objective is not None
-
-
-@pytest.mark.parametrize(
-    "cs1,sf,heading_degrees,expected",
-    [
-        ((0, 0), (0, 0), 0, 0),
-        ((-1, -1), (0.1, 0.2), 45, 2.490),
-    ],
-)
-def test_goal_heading_turn_cost(cs1: tuple, sf: tuple, heading_degrees: float, expected: float):
-    s1 = coord_systems.XY(*cs1)
-    goal = coord_systems.XY(*sf)
-    heading = math.radians(heading_degrees)
-    assert objectives.MinimumTurningObjective.goal_heading_turn_cost(
-        s1, goal, heading
-    ) == pytest.approx(expected, abs=1e-3)
-
-
-@pytest.mark.parametrize(
-    "cs1,cs2,sf,expected",
-    [
-        ((0, 0), (0, 0), (0, 0), 0),
-        ((-1, -1), (2, 1), (0.1, 0.2), 13.799),
-    ],
-)
-def test_goal_path_turn_cost(cs1: tuple, cs2: tuple, sf: tuple, expected: float):
-    s1 = coord_systems.XY(*cs1)
-    s2 = coord_systems.XY(*cs2)
-    goal = coord_systems.XY(*sf)
-
-    assert objectives.MinimumTurningObjective.goal_path_turn_cost(s1, s2, goal) == pytest.approx(
-        expected, abs=1e-3
-    )
 
 
 @pytest.mark.parametrize(
