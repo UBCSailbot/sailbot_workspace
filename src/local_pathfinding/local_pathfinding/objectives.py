@@ -1,7 +1,6 @@
 """Our custom OMPL optimization objectives."""
 
 import math
-from enum import Enum, auto
 
 import numpy as np
 from ompl import base as ob
