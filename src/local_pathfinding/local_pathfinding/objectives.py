@@ -32,6 +32,37 @@ WINDSPEEDS = [0, 9.3, 18.5, 27.8, 37.0]  # The row labels
 ANGLES = [0, 20, 30, 45, 90, 135, 180]  # The column labels
 
 
+def get_true_wind_direction(apparent_wind_direction: float, apparent_wind_speed: float,
+                            heading_degrees: float, boat_speed_over_ground: float) -> float:
+    """Calculates the true wind direction based on the boat's heading and speed.
+    Args:
+        apparent_wind_direction (float): The direction of the wind in degrees (-180, 180]. This
+        is the apparent wind derived from the wind sensor
+        apparent_wind_speed (float): The speed of the wind in kmph. This is the apparent wind
+        derived from the wind sensor
+        heading_degrees (float): The heading of the boat in degrees (-180, 180]. This is
+        derived from the GPS
+        speed (float): The speed of the boat in kmph. This is derived from the GPS.
+    Returns:
+        float: The true wind direction in radians (-pi, pi]
+    """
+    wind_radians = math.radians(apparent_wind_direction)
+
+    # boat wind is in the direction of the boat heading
+    boat_wind_radians = math.radians(bound_to_180(heading_degrees + 180))
+
+    apparent_wind_east = apparent_wind_speed * math.sin(wind_radians)
+    apparent_wind_north = apparent_wind_speed * math.cos(wind_radians)
+
+    boat_wind_east = boat_speed_over_ground * math.sin(boat_wind_radians)
+    boat_wind_north = boat_speed_over_ground * math.cos(boat_wind_radians)
+
+    true_east = apparent_wind_east - boat_wind_east
+    true_north = apparent_wind_north - boat_wind_north
+
+    return math.atan2(true_east, true_north)
+
+
 class Objective(ob.StateCostIntegralObjective):
     """All of our optimization objectives inherit from this class.
 
@@ -198,42 +229,12 @@ class WindObjective(Objective):
                  heading_degrees: float, speed: float):
         super().__init__(space_information)
         assert -180 < wind_direction_degrees <= 180
-        self.wind_direction = self.get_true_wind_direction(
+        self.wind_direction = get_true_wind_direction(
             wind_direction_degrees,
             wind_speed,
             heading_degrees,
             speed
         )
-
-    def get_true_wind_direction(self, apparent_wind_direction: float, apparent_wind_speed: float,
-                                heading_degrees: float, boat_speed_over_ground: float) -> float:
-        """Calculates the true wind direction based on the boat's heading and speed.
-        Args:
-            apparent_wind_direction (float): The direction of the wind in degrees (-180, 180]. This
-            is the apparent wind derived from the wind sensor
-            apparent_wind_speed (float): The speed of the wind in kmph. This is the apparent wind
-            derived from the wind sensor
-            heading_degrees (float): The heading of the boat in degrees (-180, 180]. This is
-            derived from the GPS
-            speed (float): The speed of the boat in kmph. This is derived from the GPS.
-        Returns:
-            float: The true wind direction in radians (-pi, pi]
-        """
-        wind_radians = math.radians(apparent_wind_direction)
-
-        # boat wind is in the direction of the boat heading
-        boat_wind_radians = math.radians(bound_to_180(heading_degrees + 180))
-
-        apparent_wind_east = apparent_wind_speed * math.sin(wind_radians)
-        apparent_wind_north = apparent_wind_speed * math.cos(wind_radians)
-
-        boat_wind_east = boat_speed_over_ground * math.sin(boat_wind_radians)
-        boat_wind_north = boat_speed_over_ground * math.cos(boat_wind_radians)
-
-        true_east = apparent_wind_east - boat_wind_east
-        true_north = apparent_wind_north - boat_wind_north
-
-        return math.atan2(true_east, true_north)
 
     def motionCost(self, s1: ob.SE2StateSpace, s2: ob.SE2StateSpace) -> ob.Cost:
         """Generates the cost associated with the upwind and downwind directions of the boat in
