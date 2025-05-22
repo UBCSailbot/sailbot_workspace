@@ -171,7 +171,8 @@ def test_get_sailbot_speed(
         (10, 0, 10, 10, 10),
         (179, 17, 179, 9, 179),
         (180, 17, 179, 9, 179.65),
-        (140, 17, 45, 9, 111.06)
+        (140, 17, 45, 9, 111.06),
+        (80, 5, -70, 8, -35.74)
     ]
 )
 def test_get_true_wind_direction(
@@ -179,14 +180,14 @@ def test_get_true_wind_direction(
     wind_speed: float,
     heading_degrees: float,
     speed: float,
-    expected_direction: float
+    expected_direction: float,
 ):
     wind_obj = objectives.WindObjective(
         OMPL_PATH._simple_setup.getSpaceInformation(),
         wind_direction_degrees,
         wind_speed,
         heading_degrees,
-        speed
+        speed,
     )
 
     true_wind_direction = wind_obj.get_true_wind_direction(
