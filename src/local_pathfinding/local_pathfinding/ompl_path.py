@@ -57,7 +57,7 @@ class OMPLPath:
         parent_logger: RcutilsLogger,
         max_runtime: float,
         local_path_state: LocalPathState,
-        multi_land_polygon: MultiPolygon = None,
+        land_multi_polygon: MultiPolygon = None,
     ):
         """Initialize the OMPLPath Class. Attempt to solve for a path.
 
@@ -69,7 +69,7 @@ class OMPLPath:
         self._box_buffer = BOX_BUFFER_SIZE
         self._logger = parent_logger.get_child(name="ompl_path")
         # this needs state
-        self._simple_setup = self._init_simple_setup(local_path_state, multi_land_polygon)
+        self._simple_setup = self._init_simple_setup(local_path_state, land_multi_polygon)
 
         self.solved = self._simple_setup.solve(time=max_runtime)  # time is in seconds
 
@@ -82,7 +82,7 @@ class OMPLPath:
     def init_obstacles(
         local_path_state: LocalPathState,
         state_space_xy: Polygon = None,
-        multi_land_polygon: MultiPolygon = None,
+        land_multi_polygon: MultiPolygon = None,
     ) -> List[ob.Obstacle]:
         """Extracts obstacle data from local_path_state and compiles it into a list of Obstacles
 
@@ -93,6 +93,8 @@ class OMPLPath:
                                                 to generate the obstacle list.
             state_space_xy: (Polygon): the current state space in which we want to initialize all
                                        obstacles
+            land_multi_polygon: (MultiPolygon): a collection of mock land obstacles represented
+                                                as polygons.
 
         """
 
@@ -147,7 +149,7 @@ class OMPLPath:
                 sailbot_position=local_path_state.position,
                 all_land_data=OMPLPath.all_land_data,
                 state_space_latlon=state_space_latlon,
-                land_multi_polygon=multi_land_polygon,
+                land_multi_polygon=land_multi_polygon,
             )
         )
 
@@ -206,7 +208,7 @@ class OMPLPath:
         """
         raise NotImplementedError
 
-    def _init_simple_setup(self, local_path_state, multi_land_polygon) -> og.SimpleSetup:
+    def _init_simple_setup(self, local_path_state, land_multi_polygon) -> og.SimpleSetup:
         self.state = local_path_state
 
         # Create buffered spaces and extract their centers
@@ -245,7 +247,7 @@ class OMPLPath:
         OMPLPath.init_obstacles(
             local_path_state=local_path_state,
             state_space_xy=state_space,
-            multi_land_polygon=multi_land_polygon,
+            land_multi_polygon=land_multi_polygon,
         )
 
         # create a simple setup object
@@ -310,10 +312,10 @@ class OMPLPath:
                 # uncomment this if you want to log which states are being labeled invalid
                 # its commented out for now to avoid unnecessary file I/O
 
-                if isinstance(state, base.State):  # only happens in unit tests
-                    log_invalid_state(state=cs.XY(state().getX(), state().getY()), obstacle=o)
-                else:  # happens in prod
-                    log_invalid_state(state=cs.XY(state.getX(), state.getY()), obstacle=o)
+                # if isinstance(state, base.State):  # only happens in unit tests
+                #     log_invalid_state(state=cs.XY(state().getX(), state().getY()), obstacle=o)
+                # else:  # happens in prod
+                #     log_invalid_state(state=cs.XY(state.getX(), state.getY()), obstacle=o)
                 return False
 
         return True

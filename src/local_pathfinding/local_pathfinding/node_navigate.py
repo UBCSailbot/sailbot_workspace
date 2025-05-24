@@ -239,17 +239,17 @@ class Sailbot(Node):
         """
 
         # Initialize mock land obstacle
-        multi_land_polygon = None
+        land_multi_polygon = None
         if self.use_mock_land:
             with open(self.mock_land_file, 'r') as f:
                 data = json.load(f)
                 polygons = [Polygon(p) for p in data.get('land_polygons', [])]
-                multi_land_polygon = MultiPolygon(polygons)
+                land_multi_polygon = MultiPolygon(polygons)
                 self.get_logger().info("Loaded mock land data.")
 
         received_new_path = self.local_path.update_if_needed(
             self.gps, self.ais_ships, self.global_path, self.filtered_wind_sensor, self.planner,
-            multi_land_polygon
+            land_multi_polygon
         )
 
         if received_new_path:

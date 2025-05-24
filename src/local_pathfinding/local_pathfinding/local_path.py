@@ -89,7 +89,7 @@ class LocalPath:
         global_path: ci.Path,
         filtered_wind_sensor: ci.WindSensor,
         planner: str,
-        multi_land_polygon: MultiPolygon = None,
+        land_multi_polygon: MultiPolygon = None,
     ) -> bool:
         """Updates the OMPL path, waypoints and current state. The path is updated if a new path
             is found. Returns true if the path is updated and false otherwise.
@@ -107,7 +107,7 @@ class LocalPath:
             parent_logger=self._logger,
             max_runtime=1.0,
             local_path_state=state,
-            multi_land_polygon=multi_land_polygon,
+            land_multi_polygon=land_multi_polygon,
         )
         if ompl_path.solved:
             self._logger.debug("Updating local path")
