@@ -29,6 +29,7 @@ if TYPE_CHECKING:
 ou.setLogLevel(ou.LOG_WARN)
 
 BOX_BUFFER_SIZE = 1.0  # km
+LAND_KEY = -1
 
 
 class OMPLPath:
@@ -48,9 +49,7 @@ class OMPLPath:
     """
 
     all_land_data = None
-    all_ships: List[ci.HelperAISShip] = []
-    all_ship_obstacles: List[ob.Boat] = []
-    obstacles: List[ob.Obstacle] = []
+    obstacles: Union[dict[int, ob.Obstacle], None] = None
 
     def __init__(
         self,
@@ -98,23 +97,28 @@ class OMPLPath:
 
         """
 
-        OMPLPath.obstacles = []
+        if OMPLPath.obstacles is None:
+            OMPLPath.obstacles = {}
 
         # BOATS
         ais_ships = local_path_state.ais_ships
-        ship_map = {ship.id: ship for ship in ais_ships}
-        existing_obstacles = {ob.ais_ship.id: ob for ob in OMPLPath.all_ship_obstacles}
+        current_ship_ids = [ship.id for ship in ais_ships]
 
-        for ship_id, ship in ship_map.items():
-            if ship_id in existing_obstacles:
+        # Remove boats no longer in ais_ships
+        boat_ids_to_remove = [ship_id for ship_id in OMPLPath.obstacles.keys()
+                              if ship_id != LAND_KEY and ship_id not in current_ship_ids]
+        for ship_id in boat_ids_to_remove:
+            del OMPLPath.obstacles[ship_id]
+
+        for ship in ais_ships:
+            if ship.id in OMPLPath.obstacles:
                 # If the ship is already in the obstacles, update its information
-                existing_boat = existing_obstacles[ship_id]
+                existing_boat = OMPLPath.obstacles[ship.id]
                 existing_boat.update_sailbot_data(
                     sailbot_position=local_path_state.position,
                     sailbot_speed=local_path_state.speed,
                 )
                 existing_boat.update_collision_zone()
-                OMPLPath.obstacles.append(existing_boat)
             else:
                 # Otherwise, create a new Obstacle object
                 new_boat = ob.Boat(
@@ -123,9 +127,7 @@ class OMPLPath:
                     local_path_state.speed,
                     ship,
                 )
-                OMPLPath.obstacles.append(new_boat)
-                OMPLPath.all_ship_obstacles.append(new_boat)
-                OMPLPath.all_ships.append(ship)
+                OMPLPath.obstacles[ship.id] = new_boat
 
         # LAND
         if state_space_xy is None:
@@ -143,20 +145,19 @@ class OMPLPath:
             except FileNotFoundError as e:
                 exit(f"could not load the land.pkl file {e}")
 
-        OMPLPath.obstacles.append(
-            ob.Land(
-                reference=local_path_state.reference_latlon,
-                sailbot_position=local_path_state.position,
-                all_land_data=OMPLPath.all_land_data,
-                state_space_latlon=state_space_latlon,
-                land_multi_polygon=land_multi_polygon,
-            )
+        OMPLPath.obstacles[LAND_KEY] = ob.Land(
+            reference=local_path_state.reference_latlon,
+            sailbot_position=local_path_state.position,
+            all_land_data=OMPLPath.all_land_data,
+            state_space_latlon=state_space_latlon,
+            land_multi_polygon=land_multi_polygon,
         )
 
         # obstacles are also stored in the local_path_state object
         # so that the navigate node can access and publish the obstacles
-        local_path_state.obstacles = OMPLPath.obstacles
-        return OMPLPath.obstacles  # for testing
+        obstacles_list = list(OMPLPath.obstacles.values())
+        local_path_state.obstacles = obstacles_list
+        return obstacles_list  # for testing
 
     def get_cost(self):
         """Get the cost of the path generated.
