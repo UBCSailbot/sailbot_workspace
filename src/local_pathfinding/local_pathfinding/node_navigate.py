@@ -173,7 +173,7 @@ class Sailbot(Node):
         """
 
         # publish all navigation data when in dev mode
-        if self.mode == "development":
+        if self.mode == "development" or self.mode == "simulation":
             helper_obstacles = []
 
             for obst in self.local_path.state.obstacles:

@@ -11,7 +11,9 @@ from launch.launch_context import LaunchContext
 from launch.launch_description import LaunchDescription
 from launch.some_substitutions_type import SomeSubstitutionsType
 from launch.substitutions import LaunchConfiguration
-
+from launch.actions import IncludeLaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from ament_index_python.packages import get_package_share_directory
 # Local launch arguments and constants
 PACKAGE_NAME = "local_pathfinding"
 
@@ -73,6 +75,10 @@ def setup_launch(context: LaunchContext) -> List[Node]:
         launch_description_entities.append(get_mock_wind_sensor_node_description(context))
         launch_description_entities.append(get_mock_ais_node_description(context))
         launch_description_entities.append(get_mock_gps_node_description(context))
+        launch_description_entities.append(get_navigate_observer_node_description(context))
+    if mode == "simulation":
+        launch_description_entities.append(get_mock_global_path_node_description(context))
+        launch_description_entities.append(get_mock_ais_node_description(context))
         launch_description_entities.append(get_navigate_observer_node_description(context))
     return launch_description_entities
 

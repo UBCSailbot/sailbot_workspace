@@ -45,10 +45,18 @@ class SailbotObserver(Node):
         super().__init__("navigate_observer")
         self.get_logger().info("SailbotObserver node initialized")
 
+
         # Simple subscription to verify callback
         self.local_path_sub = self.create_subscription(
             ci.LPathData,  # Ensure this matches the actual message type
             "local_path",  # Ensure the topic name is correct
+            self.local_path_callback,
+            10,  # QoS profile
+        )
+
+        self.mock_gps_sub = self.create_subscription(
+            ci.GPS,
+            "mock_gps",
             self.local_path_callback,
             10,  # QoS profile
         )
