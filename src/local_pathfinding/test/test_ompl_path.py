@@ -20,6 +20,8 @@ import local_pathfinding.obstacles as ob
 import local_pathfinding.ompl_path as ompl_path
 from local_pathfinding.local_path import LocalPathState
 
+LAND_KEY = -1
+
 OMPL_PATH = ompl_path.OMPLPath(
     parent_logger=RcutilsLogger(),
     max_runtime=1,
@@ -124,10 +126,12 @@ def test_init_obstacles():
     obstacles = ompl_path.OMPLPath.init_obstacles(
         local_path_state=local_path_state, state_space_xy=state_space_xy
     )
-    assert isinstance(obstacles, list)
-    assert isinstance(obstacles[0], ob.Boat)
+    assert isinstance(obstacles, dict)
+    assert 1 in obstacles.keys()
+    assert 2 in obstacles.keys()
     assert isinstance(obstacles[1], ob.Boat)
-    assert isinstance(obstacles[2], ob.Land)
+    assert isinstance(obstacles[2], ob.Boat)
+    assert LAND_KEY in obstacles.keys()
 
 
 @pytest.mark.parametrize(
@@ -163,7 +167,8 @@ def test_is_state_valid(x: float, y: float, is_valid: bool):
         ais_ship,
     )
 
-    ompl_path.OMPLPath.obstacles.append(boat1)
+    ompl_path.OMPLPath.obstacles = {}
+    ompl_path.OMPLPath.obstacles[1] = boat1
 
     if is_valid:
         assert ompl_path.OMPLPath.is_state_valid(state), "state should be valid"
