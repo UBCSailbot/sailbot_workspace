@@ -65,7 +65,7 @@ class Sailbot(Node):
                 ("mode", rclpy.Parameter.Type.STRING),
                 ("pub_period_sec", rclpy.Parameter.Type.DOUBLE),
                 ("path_planner", rclpy.Parameter.Type.STRING),
-                ("use_mock_land", False)
+                ("use_mock_land", False),
             ],
         )
 
@@ -121,18 +121,18 @@ class Sailbot(Node):
         self.current_waypoint_index = 0
         self.use_mock_land = self.get_parameter("use_mock_land").get_parameter_value().bool_value
         self.mock_land_file = (
-            "../land/mock/mock_land.json"
+            "/workspaces/sailbot_workspace/src/local_pathfinding/land/mock/mock_land.json"
         )
         self.mode = self.get_parameter("mode").get_parameter_value().string_value
         self.planner = self.get_parameter("path_planner").get_parameter_value().string_value
-        self.get_logger().debug(f"Got parameter: {self.planner=}")]
+        self.get_logger().debug(f"Got parameter: {self.planner=}")
 
         # Initialize mock land obstacle
         self.land_multi_polygon = None
         if self.use_mock_land:
-            with open(self.mock_land_file, 'r') as f:
+            with open(self.mock_land_file, "r") as f:
                 data = json.load(f)
-                polygons = [Polygon(p) for p in data.get('land_polygons', [])]
+                polygons = [Polygon(p) for p in data.get("land_polygons", [])]
                 self.land_multi_polygon = MultiPolygon(polygons)
                 self.get_logger().info("Loaded mock land data.")
 
@@ -248,8 +248,12 @@ class Sailbot(Node):
         """
 
         received_new_path = self.local_path.update_if_needed(
-            self.gps, self.ais_ships, self.global_path, self.filtered_wind_sensor, self.planner,
-            self.land_multi_polygon
+            self.gps,
+            self.ais_ships,
+            self.global_path,
+            self.filtered_wind_sensor,
+            self.planner,
+            self.land_multi_polygon,
         )
 
         if received_new_path:

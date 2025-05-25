@@ -43,9 +43,10 @@ class OMPLPath:
 
     Static Attributes
         all_land_data (MultiPolygon): All land polygons along the entire global voyage
-        obstacles (List[Polygon]): The list of all obstacles Sailbot is currently aware of.
-                                   This is a static attribute so that OMPL can access it when
-                                   accessing the is_state_valid function pointer.
+        obstacles (Dictionary[int, Polygon]):
+                                    The dictionary of all obstacles Sailbot is currently aware of.
+                                    This is a static attribute so that OMPL can access it when
+                                    accessing the is_state_valid function pointer.
     """
 
     all_land_data = None
@@ -82,7 +83,7 @@ class OMPLPath:
         local_path_state: LocalPathState,
         state_space_xy: Polygon = None,
         land_multi_polygon: MultiPolygon = None,
-    ) -> List[ob.Obstacle]:
+    ) -> dict[int, ob.Obstacle]:
         """Extracts obstacle data from local_path_state and compiles it into a list of Obstacles
 
         Places Boats first in the list as states are more likely to conflict with Boats than Land.
@@ -105,8 +106,11 @@ class OMPLPath:
         current_ship_ids = [ship.id for ship in ais_ships]
 
         # Remove boats no longer in ais_ships
-        boat_ids_to_remove = [ship_id for ship_id in OMPLPath.obstacles.keys()
-                              if ship_id != LAND_KEY and ship_id not in current_ship_ids]
+        boat_ids_to_remove = [
+            ship_id
+            for ship_id in OMPLPath.obstacles.keys()
+            if ship_id != LAND_KEY and ship_id not in current_ship_ids
+        ]
         for ship_id in boat_ids_to_remove:
             del OMPLPath.obstacles[ship_id]
 
@@ -141,8 +145,10 @@ class OMPLPath:
 
         if OMPLPath.all_land_data is None:
             try:
-                OMPLPath.all_land_data = load_pkl("../land/pkl/land.pkl")
-            except FileNotFoundError as e:
+                OMPLPath.all_land_data = load_pkl(
+                    "/workspaces/sailbot_workspace/src/local_pathfinding/land/pkl/land.pkl"
+                )
+            except RuntimeError as e:
                 exit(f"could not load the land.pkl file {e}")
 
         OMPLPath.obstacles[LAND_KEY] = ob.Land(
@@ -157,7 +163,7 @@ class OMPLPath:
         # so that the navigate node can access and publish the obstacles
         obstacles_list = list(OMPLPath.obstacles.values())
         local_path_state.obstacles = obstacles_list
-        return obstacles_list  # for testing
+        return OMPLPath.obstacles  # for testing
 
     def get_cost(self):
         """Get the cost of the path generated.
@@ -301,23 +307,24 @@ class OMPLPath:
         Returns:
             bool: True if state is valid, else false.
         """
+        if OMPLPath.obstacles:
 
-        for o in OMPLPath.obstacles:
-            if isinstance(state, base.State):  # for testing purposes
-                state_is_valid = o.is_valid(cs.XY(state().getX(), state().getY()))
+            for o in OMPLPath.obstacles.values():
+                if isinstance(state, base.State):  # for testing purposes
+                    state_is_valid = o.is_valid(cs.XY(state().getX(), state().getY()))
 
-            else:  # when OMPL uses this function, it will pass in an SE2StateInternal object
-                state_is_valid = o.is_valid(cs.XY(state.getX(), state.getY()))
+                else:  # when OMPL uses this function, it will pass in an SE2StateInternal object
+                    state_is_valid = o.is_valid(cs.XY(state.getX(), state.getY()))
 
-            if not state_is_valid:
-                # uncomment this if you want to log which states are being labeled invalid
-                # its commented out for now to avoid unnecessary file I/O
+                if not state_is_valid:
+                    # uncomment this if you want to log which states are being labeled invalid
+                    # its commented out for now to avoid unnecessary file I/O
 
-                # if isinstance(state, base.State):  # only happens in unit tests
-                #     log_invalid_state(state=cs.XY(state().getX(), state().getY()), obstacle=o)
-                # else:  # happens in prod
-                #     log_invalid_state(state=cs.XY(state.getX(), state.getY()), obstacle=o)
-                return False
+                    if isinstance(state, base.State):  # only happens in unit tests
+                        log_invalid_state(state=cs.XY(state().getX(), state().getY()), obstacle=o)
+                    else:  # happens in prod
+                        log_invalid_state(state=cs.XY(state.getX(), state.getY()), obstacle=o)
+                    return False
 
         return True
 
