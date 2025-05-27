@@ -274,6 +274,8 @@ TEST_F(TestLocalTransceiver, parseReceiveMessageBlackbox)
 
     std::string holder2 = "curl -X POST --data-binary @/tmp/serialized_data.bin http://localhost:8080";
     std::system(holder2.c_str());  //NOLINT
+    std::string test_cmd = "hexdump -C /tmp/serialized_data.bin";
+    std::system(test_cmd.c_str());  //NOLINT
 
     custom_interfaces::msg::Path received_data = lcl_trns_->receive();
 
