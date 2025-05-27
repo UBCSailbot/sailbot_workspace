@@ -740,7 +740,7 @@ std::string DesiredHeading::debugStr() const
     std::stringstream ss;
     ss << BaseFrame::debugStr() << "\n"
        << "Desired heading: " << heading_ << "\n"
-       << "Steering bit: " << std::bitset<8>(steering_);  //NONT(readability-magic-numbers)
+       << "Steering bit: " << std::bitset<8>(steering_);  //NOLINT(readability-magic-numbers)
     return ss.str();
 }
 
