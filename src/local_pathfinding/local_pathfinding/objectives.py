@@ -184,7 +184,7 @@ class MinimumTurningObjective(Objective):
         if math.fabs(s2.getYaw() - angle_s1_s2) > threshold:
             # the orientation of the boat doesn't make sense even after accounting for drift
             # nuke the cost
-            return ob.cost(3000)
+            return ob.Cost(3000)
         else:
             return ob.Cost(angle_s1_s2)
 
@@ -461,7 +461,7 @@ def get_sailing_objective(
     )
     objective.addObjective(
         objective=MinimumTurningObjective(space_information, simple_setup, heading_degrees),
-        weight=1.0,
+        weight=10.0,
     )
     objective.addObjective(
         objective=WindObjective(
@@ -471,7 +471,7 @@ def get_sailing_objective(
             heading_degrees,
             speed
         ),
-        weight=1.0
+        weight=10.0
     )
     objective.addObjective(
         objective=SpeedObjective(
@@ -480,7 +480,7 @@ def get_sailing_objective(
             wind_direction_degrees,
             wind_speed,
         ),
-        weight=1.0,
+        weight=0,
     )
 
     return objective

@@ -262,8 +262,10 @@ class OMPLPath:
         simple_setup.setOptimizationObjective(objective)
 
         # set the planner of the simple setup object
-        planner = og.RRTstar(space_information).setRange(2.0)
+        planner = og.RRTstar(space_information)
+        planner.setRange(200.0)
         simple_setup.setPlanner(planner)
+        print(planner)
 
         return simple_setup
 
