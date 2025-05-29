@@ -9,7 +9,7 @@ https://ompl.kavrakilab.org/api_overview.html.
 from __future__ import annotations
 
 import pickle
-from typing import TYPE_CHECKING, Any, List, Union
+from typing import TYPE_CHECKING, Any, Union
 
 import custom_interfaces.msg as ci
 from ompl import base

@@ -1,3 +1,5 @@
+import copy
+
 import pytest
 from custom_interfaces.msg import (
     GPS,
@@ -40,6 +42,26 @@ OMPL_PATH = ompl_path.OMPLPath(
 )
 
 
+@pytest.fixture
+def fresh_ompl_path():
+    return ompl_path.OMPLPath(
+        parent_logger=RcutilsLogger(),
+        max_runtime=1,
+        local_path_state=LocalPathState(
+            gps=GPS(),
+            ais_ships=AISShips(),
+            global_path=Path(
+                waypoints=[
+                    HelperLatLon(latitude=0.0, longitude=0.0),
+                    HelperLatLon(latitude=1.0, longitude=1.0),
+                ]
+            ),
+            filtered_wind_sensor=WindSensor(),
+            planner="rrtstar",
+        ),
+    )
+
+
 def test_OMPLPath___init__():
     assert OMPL_PATH.solved
 
@@ -49,8 +71,8 @@ def test_OMPLPath_get_cost():
         OMPL_PATH.get_cost()
 
 
-def test_OMPLPath_get_waypoint():
-    waypoints = OMPL_PATH.get_path().waypoints  # List[HelperLatLon]
+def test_OMPLPath_get_waypoint(fresh_ompl_path):
+    waypoints = fresh_ompl_path.get_path().waypoints  # List[HelperLatLon]
     start_state_latlon = OMPL_PATH.state.position
 
     test_start = waypoints[0]
@@ -126,12 +148,79 @@ def test_init_obstacles():
     obstacles = ompl_path.OMPLPath.init_obstacles(
         local_path_state=local_path_state, state_space_xy=state_space_xy
     )
+
+    old_boat1 = obstacles[1]
+
     assert isinstance(obstacles, dict)
     assert 1 in obstacles.keys()
     assert 2 in obstacles.keys()
     assert isinstance(obstacles[1], ob.Boat)
     assert isinstance(obstacles[2], ob.Boat)
     assert LAND_KEY in obstacles.keys()
+
+    sailbot_position = HelperLatLon(latitude=49.29, longitude=-126.32)
+    goal_position = HelperLatLon(latitude=1.0, longitude=1.0)
+    sailbot_box = Point(sailbot_position.longitude, sailbot_position.latitude).buffer(
+        0.1, cap_style=3, join_style=2
+    )
+
+    goal_box = Point(goal_position.longitude, sailbot_position.latitude).buffer(
+        0.1, cap_style=3, join_style=2
+    )
+
+    state_space_latlon = box(*MultiPolygon([sailbot_box, goal_box]).bounds)
+
+    state_space_xy = cs.latlon_polygon_list_to_xy_polygon_list(
+        [state_space_latlon], goal_position
+    )[0]
+
+    # Call again with one existing boat (id=1) and one new (id=3), i.e. id=2 should be evicted
+    updated_local_path_state = LocalPathState(
+        gps=GPS(lat_lon=sailbot_position),
+        ais_ships=AISShips(
+            ships=[
+                HelperAISShip(
+                    id=1,
+                    lat_lon=HelperLatLon(latitude=49.2801, longitude=-126.3101),
+                    cog=HelperHeading(heading=35.0),
+                    sog=HelperSpeed(speed=19.0),
+                    width=HelperDimension(dimension=22.0),
+                    length=HelperDimension(dimension=102.0),
+                    rot=HelperROT(rot=1),
+                ),
+                # new boat
+                HelperAISShip(
+                    id=3,
+                    lat_lon=HelperLatLon(latitude=49.31, longitude=-126.29),
+                    cog=HelperHeading(heading=90.0),
+                    sog=HelperSpeed(speed=15.0),
+                    width=HelperDimension(dimension=18.0),
+                    length=HelperDimension(dimension=80.0),
+                    rot=HelperROT(rot=0),
+                ),
+            ]
+        ),
+        global_path=Path(
+            waypoints=[
+                HelperLatLon(latitude=0.0, longitude=0.0),
+                goal_position,
+            ]
+        ),
+        filtered_wind_sensor=WindSensor(),
+        planner="rrtstar",
+    )
+
+    updated_obstacles = ompl_path.OMPLPath.init_obstacles(
+        local_path_state=updated_local_path_state, state_space_xy=state_space_xy
+    )
+
+    assert set(updated_obstacles.keys()) == {LAND_KEY, 1, 3}
+    # Check that boat 1 was updated, not replaced
+    assert old_boat1 is updated_obstacles[1]
+    # Check that boat 2 is evicted
+    assert 2 not in updated_obstacles
+    # Check that boat 3 is added
+    assert isinstance(updated_obstacles[3], ob.Boat)
 
 
 @pytest.mark.parametrize(
