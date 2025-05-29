@@ -1,5 +1,3 @@
-import copy
-
 import pytest
 from custom_interfaces.msg import (
     GPS,
