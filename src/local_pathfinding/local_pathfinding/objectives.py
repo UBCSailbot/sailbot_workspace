@@ -181,12 +181,12 @@ class MinimumTurningObjective(Objective):
         angle_s1_s2 = MinimumTurningObjective.min_turn_angle(raw_angle_s1_s2, s1.getYaw())
 
         # now we need to ensure that the s2's orientation isn't horrendous given s2_xy
-        if math.fabs(s2.getYaw() - angle_s1_s2) > threshold:
+        if MinimumTurningObjective.min_turn_angle(s2.getYaw(), raw_angle_s1_s2) > threshold:
             # the orientation of the boat doesn't make sense even after accounting for drift
             # nuke the cost
             return ob.Cost(3000)
         else:
-            return ob.Cost(angle_s1_s2)
+            return ob.Cost(math.degrees(angle_s1_s2))
 
     @staticmethod
     def min_turn_angle(angle1: float, angle2: float) -> float:
@@ -198,7 +198,7 @@ class MinimumTurningObjective(Objective):
                 Must be bounded within 2pi radians of `angle1`
 
         Returns:
-            float: The minimum turning angle between the two angles in degrees
+            float: The minimum turning angle between the two angles in radians
         """
         # Calculate the uncorrected turn size [0, 2pi]
         turn_size_bias = math.fabs(angle1 - angle2)
@@ -209,7 +209,7 @@ class MinimumTurningObjective(Objective):
         else:
             turn_size_unbias = turn_size_bias
 
-        return math.degrees(math.fabs(turn_size_unbias))
+        return math.fabs(turn_size_unbias)
 
 
 class WindObjective(Objective):
@@ -461,7 +461,7 @@ def get_sailing_objective(
     )
     objective.addObjective(
         objective=MinimumTurningObjective(space_information, simple_setup, heading_degrees),
-        weight=5.0,
+        weight=3.0,
     )
     objective.addObjective(
         objective=WindObjective(
@@ -471,7 +471,7 @@ def get_sailing_objective(
             heading_degrees,
             speed
         ),
-        weight=3.0
+        weight=5.0
     )
     objective.addObjective(
         objective=SpeedObjective(
