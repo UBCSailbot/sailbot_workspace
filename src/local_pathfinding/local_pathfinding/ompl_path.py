@@ -286,6 +286,7 @@ class OMPLPath:
             simple_setup,
             # This too
             self.state.heading,
+            self.state.speed,
             self.state.wind_direction,
             self.state.wind_speed,
         )
