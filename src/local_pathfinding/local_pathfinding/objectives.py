@@ -186,7 +186,7 @@ class MinimumTurningObjective(Objective):
             # nuke the cost
             return ob.Cost(3000)
         else:
-            return ob.Cost(math.degrees(angle_s1_s2))
+            return ob.Cost(angle_s1_s2)
 
     @staticmethod
     def min_turn_angle(angle1: float, angle2: float) -> float:
@@ -461,7 +461,7 @@ def get_sailing_objective(
     )
     objective.addObjective(
         objective=MinimumTurningObjective(space_information, simple_setup, heading_degrees),
-        weight=3.0,
+        weight=10.0,
     )
     objective.addObjective(
         objective=WindObjective(
