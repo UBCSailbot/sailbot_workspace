@@ -145,10 +145,8 @@ class OMPLPath:
 
         if OMPLPath.all_land_data is None:
             try:
-                OMPLPath.all_land_data = load_pkl(
-                    "/workspaces/sailbot_workspace/src/local_pathfinding/land/pkl/land.pkl"
-                )
-            except RuntimeError as e:
+                OMPLPath.all_land_data = load_pkl("src/local_pathfinding/land/pkl/land.pkl")
+            except FileNotFoundError as e:
                 exit(f"could not load the land.pkl file {e}")
 
         OMPLPath.obstacles[LAND_KEY] = ob.Land(
