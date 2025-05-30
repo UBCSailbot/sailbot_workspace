@@ -145,7 +145,7 @@ class OMPLPath:
 
         if OMPLPath.all_land_data is None:
             try:
-                OMPLPath.all_land_data = load_pkl("src/local_pathfinding/land/pkl/land.pkl")
+                OMPLPath.all_land_data = load_pkl("local_pathfinding/land/pkl/land.pkl")
             except FileNotFoundError as e:
                 exit(f"could not load the land.pkl file {e}")
 
