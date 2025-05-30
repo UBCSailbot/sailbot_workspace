@@ -8,6 +8,7 @@ https://ompl.kavrakilab.org/api_overview.html.
 
 from __future__ import annotations
 
+import os
 import pickle
 from typing import TYPE_CHECKING, Any, Union
 
@@ -145,7 +146,9 @@ class OMPLPath:
 
         if OMPLPath.all_land_data is None:
             try:
-                OMPLPath.all_land_data = load_pkl("local_pathfinding/land/pkl/land.pkl")
+                current_dir = os.path.dirname(os.path.abspath(__file__))
+                land_pkl_path = os.path.join(current_dir, "..", "land", "pkl", "land.pkl")
+                OMPLPath.all_land_data = load_pkl(land_pkl_path)
             except FileNotFoundError as e:
                 exit(f"could not load the land.pkl file {e}")
 
