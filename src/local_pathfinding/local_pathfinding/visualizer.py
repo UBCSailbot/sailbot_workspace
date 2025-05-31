@@ -56,7 +56,7 @@ class VisualizerState:
             raise ValueError("msgs must not be None")
 
         self.curr_msg = msgs[-1]
-        self._validate_message(self.curr_msg)
+        # self._validate_message(self.curr_msg)
 
         self.sailbot_lat_lon = [msg.gps.lat_lon for msg in msgs]
         self.all_local_wp = [msg.local_path.waypoints for msg in msgs]

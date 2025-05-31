@@ -87,6 +87,18 @@ class Sailbot(Node):
             callback=self.filtered_wind_sensor_callback,
             qos_profile=10,
         )
+        self.mock_gps_sub = self.create_subscription(
+            msg_type=ci.GPS,
+            topic="mock_gps",
+            callback=self.mock_gps_callback,
+            qos_profile=10,
+        )
+        self.mock_filtered_wind_sensor_sub = self.create_subscription(
+            msg_type=ci.WindSensor,
+            topic="mock_filtered_wind_sensor",
+            callback=self.mock_filtered_wind_sensor_callback,
+            qos_profile=10,
+        )
 
         # publishers
         self.desired_heading_pub = self.create_publisher(
@@ -128,6 +140,10 @@ class Sailbot(Node):
         self.get_logger().debug(f"Received data from {self.gps_sub.topic}: {msg}")
         self.gps = msg
 
+    def mock_gps_callback(self, msg: ci.GPS):
+        self.get_logger().debug(f"Received data from {self.gps_sub.topic}: {msg}")
+        self.gps = msg
+
     def global_path_callback(self, msg: ci.Path):
         self.get_logger().debug(
             f"Received data from {self.global_path_sub.topic}: {gp.path_to_dict(msg)}"
@@ -135,6 +151,10 @@ class Sailbot(Node):
         self.global_path = msg
 
     def filtered_wind_sensor_callback(self, msg: ci.WindSensor):
+        self.get_logger().debug(f"Received data from {self.filtered_wind_sensor_sub.topic}: {msg}")
+        self.filtered_wind_sensor = msg
+
+    def mock_filtered_wind_sensor_callback(self, msg: ci.WindSensor):
         self.get_logger().debug(f"Received data from {self.filtered_wind_sensor_sub.topic}: {msg}")
         self.filtered_wind_sensor = msg
 
