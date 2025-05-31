@@ -8,6 +8,8 @@ import rclpy
 from rclpy.node import Node
 from scipy.stats import vonmises, weibull_min
 
+import local_pathfinding.coord_systems as cs
+
 
 class MockWindSensor(Node):
 
@@ -22,7 +24,11 @@ class MockWindSensor(Node):
             __mock_wind_sensor_timer (Timer): Timer to call the mock wind sensor callback function.
             __wind_sensors_pub (Publisher): Publisher for the filtered wind sensor data.
             __mean_wind_speed (float): Mean wind speed in the Pacific Ocean near Vancouver in July.
+            This parameter can be set during runtime using
+            'ros2 param set /mock_wind_sensor mean_wind_speed {value}'
             __mean_direction (int): Mean direction of the wind during July.
+            This parameter can be set during runtime using
+            'ros2 param set /mock_wind_sensor mean_direction {value}'
         """
         super().__init__("mock_wind_sensor")
 
@@ -31,6 +37,8 @@ class MockWindSensor(Node):
             namespace="",
             parameters=[
                 ("pub_period_sec", rclpy.Parameter.Type.DOUBLE),
+                ("mean_wind_speed", 7.0),
+                ("mean_direction", 0),
             ],
         )
 
@@ -50,13 +58,12 @@ class MockWindSensor(Node):
             qos_profile=10,
         )
 
-        self.__mean_wind_speed = 7.0  # mean wind speed in pacific ocean near Vancouver in July
-        self.__mean_direction = 0  # in degrees, mean direction of wind during July
-
     def mock_wind_sensor_callback(self) -> None:
         """Callback function for the mock wind sensor timer. Publishes mock wind data to the ROS
         network.
         """
+
+        self.get_latest_speed_and_direction_values()
         wind_speed_knots = self.get_mock_wind_speed()
         direction = self.get_direction_value()
 
@@ -73,13 +80,13 @@ class MockWindSensor(Node):
         Returns:
             HelperSpeed: The wind speed in knots.
         """
-        # Shape=2 (typical for wind under normal calm conditions), Scale=7 knots (mean)
 
+        # Shape=2 (typical for wind under normal calm conditions), Scale=7 knots (mean)
         scale = self.__mean_wind_speed
         wind_speed_knots = weibull_min.rvs(c=10, scale=scale, size=1)
         return ci.HelperSpeed(speed=wind_speed_knots[0])
 
-    def get_direction_value(self) -> int:
+    def get_direction_value(self) -> float:
         """Generates a random wind direction based on a von Mises distribution centered around the
         mean. This distribution is a circular distribution, which is perfect for wind direction.
         Returns:
@@ -87,19 +94,18 @@ class MockWindSensor(Node):
         """
 
         direction = int(np.degrees(vonmises.rvs(kappa=55, loc=self.__mean_direction, size=1)))
-        return self.ensure_correct_range(direction)
+        return cs.bound_to_180(direction)
 
-    def ensure_correct_range(self, direction_value: int) -> int:
-        """Helper function to ensure the wind direction is in the range (-180, 180].
-        Args:
-            direction_value (int): The wind direction in degrees which may not be in the correct
-            range.
-        Returns:
-            int: The corrected wind direction in degrees.
-        """
-        if direction_value > 180:
-            return (360 - (direction_value % 360)) * -1
-        return direction_value
+    def get_latest_speed_and_direction_values(self) -> None:
+        """Updates mean wind speed and direction with the latest values from ROS parameters."""
+
+        self.__mean_wind_speed = (
+            self.get_parameter("mean_wind_speed").get_parameter_value().double_value
+        )
+
+        self.__mean_direction = (
+            self.get_parameter("mean_direction").get_parameter_value().integer_value
+        )
 
 
 def main(args=None):

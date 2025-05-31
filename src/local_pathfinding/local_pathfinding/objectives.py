@@ -1,11 +1,11 @@
 """Our custom OMPL optimization objectives."""
 
 import math
-from enum import Enum, auto
 
 import custom_interfaces.msg as ci
 import numpy as np
 from ompl import base as ob
+from local_pathfinding.coord_systems import bound_to_180
 
 import local_pathfinding.coord_systems as cs
 
@@ -32,28 +32,35 @@ WINDSPEEDS = [0, 9.3, 18.5, 27.8, 37.0]  # The row labels
 ANGLES = [0, 20, 30, 45, 90, 135, 180]  # The column labels
 
 
-class DistanceMethod(Enum):
-    """Enumeration for distance objective methods"""
+def get_true_wind_direction(apparent_wind_direction: float, apparent_wind_speed: float,
+                            heading_degrees: float, boat_speed_over_ground: float) -> float:
+    """Calculates the true wind direction based on the boat's heading and speed.
+    Args:
+        apparent_wind_direction (float): The direction of the wind in degrees (-180, 180]. This
+        is the apparent wind derived from the wind sensor
+        apparent_wind_speed (float): The speed of the wind in kmph. This is the apparent wind
+        derived from the wind sensor
+        heading_degrees (float): The heading of the boat in degrees (-180, 180]. This is
+        derived from the GPS
+        speed (float): The speed of the boat in kmph. This is derived from the GPS.
+    Returns:
+        float: The true wind direction in radians (-pi, pi]
+    """
+    wind_radians = math.radians(apparent_wind_direction)
 
-    EUCLIDEAN = auto()
-    LATLON = auto()
-    OMPL_PATH_LENGTH = auto()
+    # boat wind is in the direction of the boat heading
+    boat_wind_radians = math.radians(bound_to_180(heading_degrees + 180))
 
+    apparent_wind_east = apparent_wind_speed * math.sin(wind_radians)
+    apparent_wind_north = apparent_wind_speed * math.cos(wind_radians)
 
-class MinimumTurningMethod(Enum):
-    """Enumeration for minimum turning objective methods"""
+    boat_wind_east = boat_speed_over_ground * math.sin(boat_wind_radians)
+    boat_wind_north = boat_speed_over_ground * math.cos(boat_wind_radians)
 
-    GOAL_HEADING = auto()
-    GOAL_PATH = auto()
-    HEADING_PATH = auto()
+    true_east = apparent_wind_east - boat_wind_east
+    true_north = apparent_wind_north - boat_wind_north
 
-
-class SpeedObjectiveMethod(Enum):
-    """Enumeration for speed objective methods"""
-
-    SAILBOT_PIECEWISE = auto()
-    SAILBOT_CONTINUOUS = auto()
-    SAILBOT_TIME = auto()
+    return math.atan2(true_east, true_north)
 
 
 class Objective(ob.StateCostIntegralObjective):
@@ -91,15 +98,9 @@ class DistanceObjective(Objective):
     def __init__(
         self,
         space_information,
-        method: DistanceMethod,
         reference=ci.HelperLatLon(latitude=0.0, longitude=0.0),
     ):
         super().__init__(space_information)
-        self.method = method
-        if self.method == DistanceMethod.OMPL_PATH_LENGTH:
-            self.ompl_path_objective = ob.PathLengthOptimizationObjective(self.space_information)
-        elif self.method == DistanceMethod.LATLON:
-            self.reference = reference
 
     def motionCost(self, s1: ob.SE2StateSpace, s2: ob.SE2StateSpace) -> ob.Cost:
         """Generates the distance between two points
@@ -116,18 +117,8 @@ class DistanceObjective(Objective):
         """
         s1_xy = cs.XY(s1.getX(), s1.getY())
         s2_xy = cs.XY(s2.getX(), s2.getY())
-        if self.method == DistanceMethod.EUCLIDEAN:
-            distance = DistanceObjective.get_euclidean_path_length_objective(s1_xy, s2_xy)
-            cost = ob.Cost(distance)
-        elif self.method == DistanceMethod.LATLON:
-            distance = DistanceObjective.get_latlon_path_length_objective(
-                s1_xy, s2_xy, self.reference
-            )
-            cost = ob.Cost(distance)
-        elif self.method == DistanceMethod.OMPL_PATH_LENGTH:
-            cost = self.ompl_path_objective.motionCost(s1_xy, s2_xy)
-        else:
-            ValueError(f"Method {self.method} not supported")
+        distance = DistanceObjective.get_euclidean_path_length_objective(s1_xy, s2_xy)
+        cost = ob.Cost(distance)
         return cost
 
     @staticmethod
@@ -142,31 +133,6 @@ class DistanceObjective(Objective):
             float: The euclidean distance between the two points
         """
         return math.hypot(s2.y - s1.y, s2.x - s1.x)
-
-    @staticmethod
-    def get_latlon_path_length_objective(
-        s1: cs.XY, s2: cs.XY, reference: ci.HelperLatLon
-    ) -> float:
-        """Generates the "great circle" distance between two points
-
-        I am assuming that we are using the lat and long coordinates in determining the distance
-        between two points.
-
-        Args:
-            s1 (cs.XY): The starting point of the local start state
-            s2 (cs.XY): The ending point of the local goal state
-
-        Returns:
-            float: The great circle distance between two points
-        """
-        latlon1 = cs.xy_to_latlon(reference, s1)
-        latlon2 = cs.xy_to_latlon(reference, s2)
-
-        _, _, distance_m = cs.GEODESIC.inv(
-            latlon1.longitude, latlon1.latitude, latlon2.longitude, latlon2.latitude
-        )
-
-        return distance_m
 
 
 class MinimumTurningObjective(Objective):
@@ -183,7 +149,6 @@ class MinimumTurningObjective(Objective):
         space_information,
         simple_setup,
         heading_degrees: float,
-        method: MinimumTurningMethod,
     ):
         super().__init__(space_information)
         self.goal = cs.XY(
@@ -191,7 +156,6 @@ class MinimumTurningObjective(Objective):
         )
         assert -180 < heading_degrees <= 180
         self.heading = math.radians(heading_degrees)
-        self.method = method
 
     def motionCost(self, s1: ob.SE2StateSpace, s2: ob.SE2StateSpace) -> ob.Cost:
         """Generates the turning cost between s1, s2, heading or the goal position
@@ -208,52 +172,10 @@ class MinimumTurningObjective(Objective):
         """
         s1_xy = cs.XY(s1.getX(), s1.getY())
         s2_xy = cs.XY(s2.getX(), s2.getY())
-        if self.method == MinimumTurningMethod.GOAL_HEADING:
-            angle = self.goal_heading_turn_cost(s1_xy, self.goal, self.heading)
-        elif self.method == MinimumTurningMethod.GOAL_PATH:
-            angle = self.goal_path_turn_cost(s1_xy, s2_xy, self.goal)
-        elif self.method == MinimumTurningMethod.HEADING_PATH:
-            angle = self.heading_path_turn_cost(s1_xy, s2_xy, self.heading)
-        else:
-            ValueError(f"Method {self.method} not supported")
+
+        angle = self.heading_path_turn_cost(s1_xy, s2_xy, self.heading)
+
         return ob.Cost(angle)
-
-    @staticmethod
-    def goal_heading_turn_cost(s1: cs.XY, goal: cs.XY, heading: float) -> float:
-        """Determine the smallest turn angle between s1-goal and heading
-
-        Args:
-            s1 (cs.XY): The starting point of the local start state
-            goal (cs.XY): The goal position of the sailbot
-            heading (float): The heading of the sailbot in radians (-pi, pi]
-
-        Returns:
-            float: the turning angle from s2 to s1 in degrees
-        """
-        # Calculate the true bearing of the goal from s1
-        global_goal_direction = math.atan2(goal.x - s1.x, goal.y - s1.y)
-
-        return MinimumTurningObjective.min_turn_angle(global_goal_direction, heading)
-
-    @staticmethod
-    def goal_path_turn_cost(s1: cs.XY, s2: cs.XY, goal: cs.XY) -> float:
-        """Determine the smallest turn angle between s1-s2 and s1-goal
-
-        Args:
-            s1 (cs.XY): The starting point of the local start state
-            s2 (cs.XY): The ending point of the local goal state
-            goal (cs.XY): The goal position of the sailbot
-
-        Returns:
-            float: the turning angle from s2 to s1 in degrees
-        """
-        # Calculate the true bearing of s2 from s1
-        path_direction = math.atan2(s2.x - s1.x, s2.y - s1.y)
-
-        # Calculate the true bearing of the goal from s1
-        global_goal_direction = math.atan2(goal.x - s1.x, goal.y - s1.y)
-
-        return MinimumTurningObjective.min_turn_angle(global_goal_direction, path_direction)
 
     @staticmethod
     def heading_path_turn_cost(s1: cs.XY, s2: cs.XY, heading: float) -> float:
@@ -303,10 +225,16 @@ class WindObjective(Objective):
         wind_direction (float): The direction of the wind in radians (-pi, pi]
     """
 
-    def __init__(self, space_information, wind_direction_degrees: float):
+    def __init__(self, space_information, wind_direction_degrees: float, wind_speed: float,
+                 heading_degrees: float, speed: float):
         super().__init__(space_information)
         assert -180 < wind_direction_degrees <= 180
-        self.wind_direction = math.radians(wind_direction_degrees)
+        self.wind_direction = get_true_wind_direction(
+            wind_direction_degrees,
+            wind_speed,
+            heading_degrees,
+            speed
+        )
 
     def motionCost(self, s1: ob.SE2StateSpace, s2: ob.SE2StateSpace) -> ob.Cost:
         """Generates the cost associated with the upwind and downwind directions of the boat in
@@ -425,7 +353,6 @@ class SpeedObjective(Objective):
         heading_direction: float,
         wind_direction: float,
         wind_speed: float,
-        method: SpeedObjectiveMethod,
     ):
         super().__init__(space_information)
         assert -180 < wind_direction <= 180
@@ -435,7 +362,6 @@ class SpeedObjective(Objective):
         self.heading_direction = math.radians(heading_direction)
 
         self.wind_speed = wind_speed
-        self.method = method
 
     def motionCost(self, s1: ob.SE2StateSpace, s2: ob.SE2StateSpace) -> ob.Cost:
         """Generates the cost associated with the speed of the boat.
@@ -458,18 +384,11 @@ class SpeedObjective(Objective):
         if sailbot_speed == 0:
             return ob.Cost(10000)
 
-        if self.method == SpeedObjectiveMethod.SAILBOT_TIME:
-            distance = DistanceObjective.get_euclidean_path_length_objective(s1_xy, s2_xy)
-            time = distance / sailbot_speed
+        distance = DistanceObjective.get_euclidean_path_length_objective(s1_xy, s2_xy)
+        time = distance / sailbot_speed
 
-            cost = ob.Cost(time)
+        cost = ob.Cost(time)
 
-        elif self.method == SpeedObjectiveMethod.SAILBOT_PIECEWISE:
-            cost = ob.Cost(self.get_piecewise_cost(sailbot_speed))
-        elif self.method == SpeedObjectiveMethod.SAILBOT_CONTINUOUS:
-            cost = ob.Cost(self.get_continuous_cost(sailbot_speed))
-        else:
-            ValueError(f"Method {self.method} not supported")
         return cost
 
     @staticmethod
@@ -532,59 +451,33 @@ class SpeedObjective(Objective):
 
         return interpolated_value
 
-    @staticmethod
-    def get_piecewise_cost(speed: float) -> float:
-        """Generates the cost associated with the speed of the boat.
-
-        Args:
-            speed (float): The speed of the boat in m/s
-        """
-
-        if speed < 5:
-            return 5
-        elif 5 < speed < 10:
-            return 10
-        elif 10 < speed < 15:
-            return 20
-        elif 15 < speed < 20:
-            return 50
-        else:
-            return 10000
-
-    @staticmethod
-    def get_continuous_cost(speed: float) -> float:
-        """Generates the cost associated with the speed of the boat.
-
-        Args:
-            speed (float): The speed of the boat in m/s
-        """
-        try:
-            cost = abs(1 / math.sin(math.pi * speed / 25) - 0.5)
-            return min(10000, cost)
-        except ZeroDivisionError:
-            return 10000
-
 
 def get_sailing_objective(
     space_information,
     simple_setup,
     heading_degrees: float,
+    speed: float,
     wind_direction_degrees: float,
     wind_speed: float,
 ) -> ob.OptimizationObjective:
     objective = ob.MultiOptimizationObjective(si=space_information)
     objective.addObjective(
-        objective=DistanceObjective(space_information, DistanceMethod.LATLON),
+        objective=DistanceObjective(space_information),
         weight=1.0,
     )
     objective.addObjective(
-        objective=MinimumTurningObjective(
-            space_information, simple_setup, heading_degrees, MinimumTurningMethod.GOAL_HEADING
-        ),
+        objective=MinimumTurningObjective(space_information, simple_setup, heading_degrees),
         weight=100.0,
     )
     objective.addObjective(
-        objective=WindObjective(space_information, wind_direction_degrees), weight=1.0
+        objective=WindObjective(
+            space_information,
+            wind_direction_degrees,
+            wind_speed,
+            heading_degrees,
+            speed
+        ),
+        weight=1.0
     )
     objective.addObjective(
         objective=SpeedObjective(
@@ -592,7 +485,6 @@ def get_sailing_objective(
             heading_degrees,
             wind_direction_degrees,
             wind_speed,
-            SpeedObjectiveMethod.SAILBOT_TIME,
         ),
         weight=1.0,
     )

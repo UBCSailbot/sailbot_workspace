@@ -8,6 +8,7 @@ import local_pathfinding.coord_systems as coord_systems
 import local_pathfinding.objectives as objectives
 import local_pathfinding.ompl_path as ompl_path
 from local_pathfinding.local_path import LocalPathState
+from local_pathfinding.objectives import get_true_wind_direction
 
 # Upwind downwind cost multipliers
 UPWIND_MULTIPLIER = 3000.0
@@ -32,22 +33,6 @@ OMPL_PATH = ompl_path.OMPLPath(
 
 
 @pytest.mark.parametrize(
-    "method",
-    [
-        objectives.DistanceMethod.EUCLIDEAN,
-        objectives.DistanceMethod.LATLON,
-        objectives.DistanceMethod.OMPL_PATH_LENGTH,
-    ],
-)
-def test_distance_objective(method: objectives.DistanceMethod):
-    distance_objective = objectives.DistanceObjective(
-        OMPL_PATH._simple_setup.getSpaceInformation(),
-        method,
-    )
-    assert distance_objective is not None
-
-
-@pytest.mark.parametrize(
     "cs1,cs2,expected",
     [
         ((0, 0), (0, 0), 0),
@@ -58,87 +43,6 @@ def test_get_euclidean_path_length_objective(cs1: tuple, cs2: tuple, expected: f
     s1 = coord_systems.XY(*cs1)
     s2 = coord_systems.XY(*cs2)
     assert objectives.DistanceObjective.get_euclidean_path_length_objective(s1, s2) == expected
-
-
-@pytest.mark.parametrize(
-    "rf, cs1,cs2",
-    [
-        ((10.0, 10.0), (0.0, 0.0), (0.0, 0.0)),
-        ((13.206724, 29.829011), (13.208724, 29.827011), (13.216724, 29.839011)),
-        ((0.0, 0.0), (0.0, 0.1), (0.0, -0.1)),
-        ((0.0, 0.0), (0.1, 0.0), (-0.1, 0.0)),
-        ((0.0, 0.0), (0.1, 0.1), (-0.1, -0.1)),
-    ],
-)
-def test_get_latlon_path_length_objective(rf: tuple, cs1: tuple, cs2: tuple):
-    reference = HelperLatLon(latitude=rf[0], longitude=rf[1])
-    s1 = HelperLatLon(latitude=cs1[0], longitude=cs1[1])
-    s2 = HelperLatLon(latitude=cs2[0], longitude=cs2[1])
-    ls1 = coord_systems.latlon_to_xy(reference, s1)
-    ls2 = coord_systems.latlon_to_xy(reference, s2)
-    _, _, distance_m = coord_systems.GEODESIC.inv(
-        lats1=s1.latitude,
-        lons1=s1.longitude,
-        lats2=s2.latitude,
-        lons2=s2.longitude,
-    )
-
-    assert objectives.DistanceObjective.get_latlon_path_length_objective(
-        ls1,
-        ls2,
-        reference,
-    ) == pytest.approx(distance_m)
-
-
-@pytest.mark.parametrize(
-    "method",
-    [
-        objectives.MinimumTurningMethod.GOAL_HEADING,
-        objectives.MinimumTurningMethod.GOAL_PATH,
-        objectives.MinimumTurningMethod.HEADING_PATH,
-    ],
-)
-def test_minimum_turning_objective(method: objectives.MinimumTurningMethod):
-    minimum_turning_objective = objectives.MinimumTurningObjective(
-        OMPL_PATH._simple_setup.getSpaceInformation(),
-        OMPL_PATH._simple_setup,
-        OMPL_PATH.state.heading,
-        method,
-    )
-    assert minimum_turning_objective is not None
-
-
-@pytest.mark.parametrize(
-    "cs1,sf,heading_degrees,expected",
-    [
-        ((0, 0), (0, 0), 0, 0),
-        ((-1, -1), (0.1, 0.2), 45, 2.490),
-    ],
-)
-def test_goal_heading_turn_cost(cs1: tuple, sf: tuple, heading_degrees: float, expected: float):
-    s1 = coord_systems.XY(*cs1)
-    goal = coord_systems.XY(*sf)
-    heading = math.radians(heading_degrees)
-    assert objectives.MinimumTurningObjective.goal_heading_turn_cost(
-        s1, goal, heading
-    ) == pytest.approx(expected, abs=1e-3)
-
-
-@pytest.mark.parametrize(
-    "cs1,cs2,sf,expected",
-    [
-        ((0, 0), (0, 0), (0, 0), 0),
-        ((-1, -1), (2, 1), (0.1, 0.2), 13.799),
-    ],
-)
-def test_goal_path_turn_cost(cs1: tuple, cs2: tuple, sf: tuple, expected: float):
-    s1 = coord_systems.XY(*cs1)
-    s2 = coord_systems.XY(*cs2)
-    goal = coord_systems.XY(*sf)
-
-    assert objectives.MinimumTurningObjective.goal_path_turn_cost(s1, s2, goal) == pytest.approx(
-        expected, abs=1e-3
-    )
 
 
 @pytest.mark.parametrize(
@@ -230,25 +134,6 @@ def test_angle_between(afir: float, amid: float, asec: float, expected: float):
 
 
 @pytest.mark.parametrize(
-    "method",
-    [
-        objectives.SpeedObjectiveMethod.SAILBOT_TIME,
-        objectives.SpeedObjectiveMethod.SAILBOT_PIECEWISE,
-        objectives.SpeedObjectiveMethod.SAILBOT_CONTINUOUS,
-    ],
-)
-def test_speed_objective(method: objectives.SpeedObjectiveMethod):
-    speed_objective = objectives.SpeedObjective(
-        OMPL_PATH._simple_setup.getSpaceInformation(),
-        OMPL_PATH.state.heading,
-        OMPL_PATH.state.wind_direction,
-        OMPL_PATH.state.wind_speed,
-        method,
-    )
-    assert speed_objective is not None
-
-
-@pytest.mark.parametrize(
     "heading,wind_direction,wind_speed,expected",
     [
         # Corners of the table
@@ -281,30 +166,28 @@ def test_get_sailbot_speed(
 
 
 @pytest.mark.parametrize(
-    "speed,expected",
+    "wind_direction_degrees,wind_speed,heading_degrees,speed,expected_direction",
     [
-        (0.0, 5),
-        (8, 10),
-        (12.5, 20),
-        (17.0, 50),
-        (35, 10000),
+        (0, 0, 0, 0, 0),
+        (10, 0, 10, 10, 10),
+        (179, 17, 179, 9, 179),
+        (180, 17, 179, 9, 179.65),
+        (140, 17, 45, 9, 111.06),
+        (80, 5, -70, 8, -35.74),
     ],
 )
-def test_piecewise_cost(speed: float, expected: int):
-    assert objectives.SpeedObjective.get_piecewise_cost(speed) == expected
-
-
-@pytest.mark.parametrize(
-    "speed,expected",
-    [
-        (0.0, 10000),
-        (25.0, 10000),
-        (30, 2.2013016167),
-        (40, 1.55146222424),
-        (10, 0.551462224238),
-    ],
-)
-def test_continuous_cost(speed: float, expected: int):
-    assert objectives.SpeedObjective.get_continuous_cost(speed) == pytest.approx(
-        expected, abs=1e-3
+def test_get_true_wind_direction(
+    wind_direction_degrees: float,
+    wind_speed: float,
+    heading_degrees: float,
+    speed: float,
+    expected_direction: float,
+):
+    true_wind_direction = get_true_wind_direction(
+        wind_direction_degrees, wind_speed, heading_degrees, speed
     )
+
+    # Convert radians to degrees for easier comparison
+    true_wind_direction_degrees = math.degrees(true_wind_direction)
+
+    assert true_wind_direction_degrees == pytest.approx(expected=expected_direction, abs=1e-2)
