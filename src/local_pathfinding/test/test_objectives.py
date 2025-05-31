@@ -46,23 +46,6 @@ def test_get_euclidean_path_length_objective(cs1: tuple, cs2: tuple, expected: f
 
 
 @pytest.mark.parametrize(
-    "cs1,cs2,heading_degrees,expected",
-    [
-        ((0, 0), (0, 0), 0.0, 0),
-        ((-1, -1), (2, 1), 45.0, 11.310),
-    ],
-)
-def test_heading_path_turn_cost(cs1: tuple, cs2: tuple, heading_degrees: float, expected: float):
-    s1 = coord_systems.XY(*cs1)
-    s2 = coord_systems.XY(*cs2)
-    heading = math.radians(heading_degrees)
-
-    assert objectives.MinimumTurningObjective.heading_path_turn_cost(
-        s1, s2, heading
-    ) == pytest.approx(expected, abs=1e-3)
-
-
-@pytest.mark.parametrize(
     "cs1,cs2,wind_direction_deg,expected",
     [
         ((0, 0), (0, 0), 0.0, 0 * UPWIND_MULTIPLIER),

@@ -86,15 +86,18 @@ class MockWindSensor(Node):
         wind_speed_knots = weibull_min.rvs(c=10, scale=scale, size=1)
         return ci.HelperSpeed(speed=wind_speed_knots[0])
 
-    def get_direction_value(self) -> float:
+    def get_direction_value(self) -> int:
         """Generates a random wind direction based on a von Mises distribution centered around the
         mean. This distribution is a circular distribution, which is perfect for wind direction.
         Returns:
             int: The wind direction in degrees.
         """
 
-        direction = int(np.degrees(vonmises.rvs(kappa=55, loc=self.__mean_direction, size=1)))
-        return cs.bound_to_180(direction)
+        # Convert mean direction from degrees to radians for vonmises
+        mean_direction_rad = np.radians(self.__mean_direction)
+        direction_rad = vonmises.rvs(kappa=55, loc=mean_direction_rad, size=1)[0]
+        direction_deg = np.degrees(direction_rad)
+        return int(cs.bound_to_180(direction_deg))
 
     def get_latest_speed_and_direction_values(self) -> None:
         """Updates mean wind speed and direction with the latest values from ROS parameters."""
