@@ -3,10 +3,16 @@
 from typing import List, Optional
 
 import custom_interfaces.msg as ci
+from pyproj import Geod
 from rclpy.impl.rcutils_logger import RcutilsLogger
 
+import local_pathfinding.coord_systems as cs
 import local_pathfinding.obstacles as ob
 from local_pathfinding.ompl_path import OMPLPath
+
+GEODESIC = Geod(ellps="WGS84")
+HEADING_DIFFERENCE_THRESH_DEGREES = 0.1
+REDUCTION_FACTOR_THRESH = 0.9
 
 
 class LocalPathState:
@@ -106,12 +112,91 @@ class LocalPath:
             max_runtime=1.0,
             local_path_state=state,
         )
-        if ompl_path.solved:
-            self._logger.debug("Updating local path")
+
+        if (self._ompl_path is None) or (not self.old_path_is_valid(gps, ais_ships, global_path)):
             self._update(ompl_path)
             return True
+
+        old_path_cost, new_path_cost = self._ompl_path.get_cost(), ompl_path.get_cost()
+        new_path_1st_waypoint = ompl_path.get_path().waypoints[0]  # First waypoint is 0 right?
+
+        if self.new_path_changes_desired_heading(gps.lat_lon, new_path_1st_waypoint):
+            path_cost_reduction = 1 - (old_path_cost - new_path_cost) / old_path_cost
+            if path_cost_reduction > REDUCTION_FACTOR_THRESH:
+                self._update(ompl_path)
+                return True
+        elif new_path_cost < old_path_cost:
+            self._update
+            return True
+
+        self._logger.info("Continuing on old local path")
         return False
+
+    def old_path_is_valid(self, gps: ci.GPS, ais_ships: ci.AISShips, global_path: ci.Path) -> bool:
+        """Checks if the old path is valid. A path is valid if:
+        - It does not pass through any boat collision zones. Note: Land won't move into path.
+        - Sailbot has not drifted away from the path
+        - The path reaches the next global waypoint"""
+
+        if self.ais_ship_crosses_old_path(gps, ais_ships):
+            return False
+
+        if self.sailbot_far_from_old_path(gps):
+            return False
+
+        if self.new_global_waypoint():
+            return False
+
+        return True
+
+    def ais_ship_crosses_old_path(self, gps: ci.GPS, ais_ships: ci.AISShips):
+        return False
+
+    def sailbot_far_from_old_path(self, gps):
+        return False
+
+    def new_global_waypoint(self):
+        return False
+
+    def new_path_changes_desired_heading(
+        self, boat: ci.HelperLatLon, new_path_1st_waypoint: ci.HelperLatLon
+    ) -> bool:
+
+        if self._ompl_path is None:
+            return True
+
+        old_path_first_waypoint = self._ompl_path.get_path().waypoints[0]
+
+        old_desired_heading, _, _ = GEODESIC.inv(
+            boat.longitude,
+            boat.latitude,
+            old_path_first_waypoint.longitude,
+            old_path_first_waypoint.latitude,
+        )
+        new_desired_heading, _, _ = GEODESIC.inv(
+            boat.longitude,
+            boat.latitude,
+            new_path_1st_waypoint.longitude,
+            new_path_1st_waypoint.latitude,
+        )
+        return new_desired_heading - old_desired_heading > HEADING_DIFFERENCE_THRESH_DEGREES
+
+    def min_dist_from_path_km(self, gps: ci.GPS) -> float:
+        """Checks each line segment in the local path, computes"""
+
+        if self._ompl_path is None:
+            raise AttributeError
+
+        waypoints = self._ompl_path.get_path().waypoints
+        for wp_num in range(0, len(waypoints) - 1):
+            wp1, wp2 = cs.latlon_to_xy(gps._lat_lon, waypoints[wp_num]), cs.latlon_to_xy(
+                gps._lat_lon, waypoints[wp_num + 1]
+            )
+            # See my onenote
+
+        return 0.0
 
     def _update(self, ompl_path: OMPLPath):
         self._ompl_path = ompl_path
         self.path = self._ompl_path.get_path()
+        self._logger.info("Updating local path")
