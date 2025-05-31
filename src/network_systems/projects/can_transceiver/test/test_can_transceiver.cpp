@@ -1176,6 +1176,124 @@ TEST_F(TestCanTransceiver, TestNewDataWindValid)
 }
 
 /**
+ * @brief Test that callback can be properly registered and invoked on TEMP CanIds
+ *
+ */
+TEST_F(TestCanTransceiver, TestNewDataTempValid)
+{
+    using underlying = std::underlying_type_t<CAN_FP::CanId>;
+    for (underlying id = static_cast<underlying>(CAN_FP::CanId::TEMP_SENSOR_START);
+         id <= static_cast<underlying>(CAN_FP::CanId::TEMP_SENSOR_END); ++id) {
+        CAN_FP::CanId sensor_id = static_cast<CAN_FP::CanId>(id);
+        // for (CAN_FP::CanId id = CAN_FP::CanId::TEMP_SENSOR_START; id <= CAN_FP::CanId::TEMP_SENSOR_END; id++) {
+        volatile bool                         is_cb_called = false;
+        std::function<void(CAN_FP::CanFrame)> test_cb      = [&is_cb_called](CAN_FP::CanFrame /*unused*/) {
+            is_cb_called = true;
+        };
+        canbus_t_->registerCanCbs({{
+          std::make_pair(sensor_id, test_cb),
+        }});
+
+        // just need a valid and matching ID for this test
+        CAN_FP::CanFrame dummy_frame{.can_id = static_cast<canid_t>(sensor_id)};
+
+        canbus_t_->send(dummy_frame);
+
+        std::this_thread::sleep_for(SLEEP_TIME);
+
+        EXPECT_TRUE(is_cb_called);
+    }
+}
+
+/**
+ * @brief Test that callback can be properly registered and invoked on PH CanIds
+ *
+ */
+TEST_F(TestCanTransceiver, TestNewDataPhValid)
+{
+    using underlying = std::underlying_type_t<CAN_FP::CanId>;
+    for (underlying id = static_cast<underlying>(CAN_FP::CanId::PH_SENSOR_START);
+         id <= static_cast<underlying>(CAN_FP::CanId::PH_SENSOR_END); ++id) {
+        CAN_FP::CanId                         sensor_id    = static_cast<CAN_FP::CanId>(id);
+        volatile bool                         is_cb_called = false;
+        std::function<void(CAN_FP::CanFrame)> test_cb      = [&is_cb_called](CAN_FP::CanFrame /*unused*/) {
+            is_cb_called = true;
+        };
+        canbus_t_->registerCanCbs({{
+          std::make_pair(sensor_id, test_cb),
+        }});
+
+        // just need a valid and matching ID for this test
+        CAN_FP::CanFrame dummy_frame{.can_id = static_cast<canid_t>(sensor_id)};
+
+        canbus_t_->send(dummy_frame);
+
+        std::this_thread::sleep_for(SLEEP_TIME);
+
+        EXPECT_TRUE(is_cb_called);
+    }
+}
+
+/**
+ * @brief Test that callback can be properly registered and invoked on SALINITY CanIds
+ *
+ */
+TEST_F(TestCanTransceiver, TestNewDataSalinityValid)
+{
+    using underlying = std::underlying_type_t<CAN_FP::CanId>;
+    for (underlying id = static_cast<underlying>(CAN_FP::CanId::SALINITY_SENSOR_START);
+         id <= static_cast<underlying>(CAN_FP::CanId::SALINITY_SENSOR_END); ++id) {
+        CAN_FP::CanId                         sensor_id    = static_cast<CAN_FP::CanId>(id);
+        volatile bool                         is_cb_called = false;
+        std::function<void(CAN_FP::CanFrame)> test_cb      = [&is_cb_called](CAN_FP::CanFrame /*unused*/) {
+            is_cb_called = true;
+        };
+        canbus_t_->registerCanCbs({{
+          std::make_pair(sensor_id, test_cb),
+        }});
+
+        // just need a valid and matching ID for this test
+        CAN_FP::CanFrame dummy_frame{.can_id = static_cast<canid_t>(sensor_id)};
+
+        canbus_t_->send(dummy_frame);
+
+        std::this_thread::sleep_for(SLEEP_TIME);
+
+        EXPECT_TRUE(is_cb_called);
+    }
+}
+
+/**
+ * @brief Test that callback can be properly registered and invoked on PRESSURE CanIds
+ *
+ */
+TEST_F(TestCanTransceiver, TestNewDataPressureValid)
+{
+    using underlying = std::underlying_type_t<CAN_FP::CanId>;
+    for (underlying id = static_cast<underlying>(CAN_FP::CanId::PRESSURE_SENSOR_START);
+         id <= static_cast<underlying>(CAN_FP::CanId::PRESSURE_SENSOR_END); ++id) {
+        CAN_FP::CanId sensor_id = static_cast<CAN_FP::CanId>(id);
+        // for (CAN_FP::CanId id = CAN_FP::CanId::TEMP_SENSOR_START; id <= CAN_FP::CanId::TEMP_SENSOR_END; id++) {
+        volatile bool                         is_cb_called = false;
+        std::function<void(CAN_FP::CanFrame)> test_cb      = [&is_cb_called](CAN_FP::CanFrame /*unused*/) {
+            is_cb_called = true;
+        };
+        canbus_t_->registerCanCbs({{
+          std::make_pair(sensor_id, test_cb),
+        }});
+
+        // just need a valid and matching ID for this test
+        CAN_FP::CanFrame dummy_frame{.can_id = static_cast<canid_t>(sensor_id)};
+
+        canbus_t_->send(dummy_frame);
+
+        std::this_thread::sleep_for(SLEEP_TIME);
+
+        EXPECT_TRUE(is_cb_called);
+    }
+}
+
+/**
  * @brief Test that the CanTransceiver ignores IDs that we don't register callbacks for
  *
  */

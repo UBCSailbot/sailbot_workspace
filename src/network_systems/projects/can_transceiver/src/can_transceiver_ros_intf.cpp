@@ -77,37 +77,36 @@ public:
             pressure_sensors_pub_ =
               this->create_publisher<msg::PressureSensor>(ros_topics::PRESSURE_SENSORS, QUEUE_SIZE);
 
-            can_trns_->registerCanCbs(
-              {std::make_pair(
-                 CanId::BMS_DATA_FRAME,
-                 std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishBattery(frame); })),
-               std::make_pair(
-                 CanId::TEMP_SENSOR_START,
-                 std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishTemp(frame); })),
-               std::make_pair(
-                 CanId::PH_SENSOR_START,
-                 std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishPh(frame); })),
-               std::make_pair(
-                 CanId::SALINITY_SENSOR_START,
-                 std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishSalinity(frame); })),
-               std::make_pair(
-                 CanId::PRESSURE_SENSOR_START,
-                 std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishPressure(frame); })),
-               std::make_pair(
-                 CanId::PATH_GPS_DATA_FRAME,
-                 std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishGPS(frame); })),
-               std::make_pair(
-                 CanId::RUDDER_DATA_FRAME,
-                 std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishRudder(frame); })),
-               std::make_pair(CanId::SAIL_WIND, std::function<void(const CanFrame &)>([this](const CanFrame & frame) {
-                                  publishWindSensor(frame);
-                              })),
-               std::make_pair(
-                 CanId::GENERIC_SENSOR_START,
-                 std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishGeneric(frame); })),
-               std::make_pair(CanId::SAIL_AIS, std::function<void(const CanFrame &)>([this](const CanFrame & frame) {
-                                  publishAIS(frame);
-                              }))});
+            std::vector<std::pair<CanId, std::function<void(const CanFrame &)>>> canCbs = {
+              std::make_pair(
+                CanId::BMS_DATA_FRAME,
+                std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishBattery(frame); })),
+              std::make_pair(
+                CanId::PATH_GPS_DATA_FRAME,
+                std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishGPS(frame); })),
+              std::make_pair(
+                CanId::RUDDER_DATA_FRAME,
+                std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishRudder(frame); })),
+              std::make_pair(CanId::SAIL_WIND, std::function<void(const CanFrame &)>([this](const CanFrame & frame) {
+                                 publishWindSensor(frame);
+                             })),
+              std::make_pair(
+                CanId::GENERIC_SENSOR_START,
+                std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishGeneric(frame); })),
+              std::make_pair(CanId::SAIL_AIS, std::function<void(const CanFrame &)>([this](const CanFrame & frame) {
+                                 publishAIS(frame);
+                             }))};
+
+            auto append = [&](auto && v) { canCbs.insert(canCbs.end(), v.begin(), v.end()); };
+
+            append(getCbsForRange(CanId::TEMP_SENSOR_START, CanId::TEMP_SENSOR_END, &CanTransceiverIntf::publishTemp));
+            append(getCbsForRange(CanId::PH_SENSOR_START, CanId::PH_SENSOR_END, &CanTransceiverIntf::publishPh));
+            append(getCbsForRange(
+              CanId::SALINITY_SENSOR_START, CanId::SALINITY_SENSOR_END, &CanTransceiverIntf::publishSalinity));
+            append(getCbsForRange(
+              CanId::PRESSURE_SENSOR_START, CanId::PRESSURE_SENSOR_END, &CanTransceiverIntf::publishPressure));
+
+            can_trns_->registerCanCbs(canCbs);
 
             sail_cmd_sub_ = this->create_subscription<msg::SailCmd>(
               ros_topics::SAIL_CMD, QUEUE_SIZE, [this](msg::SailCmd sail_cmd_) { subSailCmdCb(sail_cmd_); });
@@ -183,6 +182,19 @@ private:
 
     // Saved power mode state
     uint8_t set_pwr_mode = CAN_FP::PwrMode::POWER_MODE_NORMAL;
+
+    std::vector<std::pair<CAN_FP::CanId, std::function<void(const CanFrame &)>>> getCbsForRange(
+      CAN_FP::CanId start, CAN_FP::CanId end, void (CanTransceiverIntf::*callback)(const CanFrame &))
+    {
+        using underlying = std::underlying_type_t<CAN_FP::CanId>;
+        std::vector<std::pair<CAN_FP::CanId, std::function<void(const CanFrame &)>>> canCbs;
+
+        for (underlying id = static_cast<underlying>(start); id <= static_cast<underlying>(end); ++id) {
+            CAN_FP::CanId canId = static_cast<CAN_FP::CanId>(id);
+            canCbs.emplace_back(canId, [this, callback](const CanFrame & frame) { (this->*callback)(frame); });
+        }
+        return canCbs;
+    }
 
     /**
      * @brief Publish AIS ships
