@@ -98,6 +98,12 @@ class VisualizerState:
         y_coords = [pos.y for pos in positions]
         return x_coords, y_coords
 
+    def _process_wind_vector(self):
+        pass
+
+    def _process_land_obstacles(self):
+        pass
+
 
 def initial_plot() -> go.Figure:
     """
