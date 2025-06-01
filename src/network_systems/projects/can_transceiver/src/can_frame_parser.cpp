@@ -848,6 +848,14 @@ TempSensor::TempSensor(msg::TempSensor ros_temp_sensor, CanId id)
     checkBounds();
 }
 
+std::optional<CanId> TempSensor::rosIdxToCanId(size_t temp_idx)
+{
+    if (temp_idx < TEMP_SENSOR_IDS.size()) {
+        return TEMP_SENSOR_IDS[temp_idx];
+    }
+    return std::nullopt;
+}
+
 msg::TempSensor TempSensor::toRosMsg() const
 {
     msg::TempSensor msg;
@@ -954,6 +962,14 @@ std::string PhSensor::toString() const
     return ss.str();
 }
 
+std::optional<CanId> PhSensor::rosIdxToCanId(size_t ph_idx)
+{
+    if (ph_idx < PH_SENSOR_IDS.size()) {
+        return PH_SENSOR_IDS[ph_idx];
+    }
+    return std::nullopt;
+}
+
 // PhSensor public END
 // PhSensor private START
 
@@ -975,9 +991,9 @@ void PhSensor::checkBounds() const
 // SalinitySensor public START
 SalinitySensor::SalinitySensor(const CanFrame & cf) : SalinitySensor(static_cast<CanId>(cf.can_id))
 {
-    int16_t raw_salinity;
+    int32_t raw_salinity;
 
-    std::memcpy(&raw_salinity, cf.data + BYTE_OFF_SALINITY, sizeof(int16_t));
+    std::memcpy(&raw_salinity, cf.data + BYTE_OFF_SALINITY, sizeof(int32_t));
 
     // divide by 1000 to get salinity
     salinity_ = static_cast<float>(raw_salinity / 1000.0);  // NOLINT(readability-magic-numbers)
@@ -1003,10 +1019,10 @@ msg::SalinitySensor SalinitySensor::toRosMsg() const
 CanFrame SalinitySensor::toLinuxCan() const
 {
     // multiply by 1000 to make int before setting value
-    int16_t raw_salinity = static_cast<int16_t>(salinity_ * 1000.0);  // NOLINT(readability-magic-numbers)
+    int32_t raw_salinity = static_cast<int32_t>(salinity_ * 1000.0);  // NOLINT(readability-magic-numbers)
 
     CanFrame cf = BaseFrame::toLinuxCan();
-    std::memcpy(cf.data + BYTE_OFF_SALINITY, &raw_salinity, sizeof(int16_t));
+    std::memcpy(cf.data + BYTE_OFF_SALINITY, &raw_salinity, sizeof(int32_t));
 
     return cf;
 }
@@ -1024,6 +1040,14 @@ std::string SalinitySensor::toString() const
     std::stringstream ss;
     ss << "[SALINITY SENSOR] Conductivity: " << salinity_;
     return ss.str();
+}
+
+std::optional<CanId> SalinitySensor::rosIdxToCanId(size_t salinity_idx)
+{
+    if (salinity_idx < SALINITY_SENSOR_IDS.size()) {
+        return SALINITY_SENSOR_IDS[salinity_idx];
+    }
+    return std::nullopt;
 }
 
 // SalinitySensor public END
@@ -1047,9 +1071,9 @@ void SalinitySensor::checkBounds() const
 // PressureSensor public START
 PressureSensor::PressureSensor(const CanFrame & cf) : PressureSensor(static_cast<CanId>(cf.can_id))
 {
-    int16_t raw_pressure;
+    int32_t raw_pressure;
 
-    std::memcpy(&raw_pressure, cf.data + BYTE_OFF_PRESSURE, sizeof(int16_t));
+    std::memcpy(&raw_pressure, cf.data + BYTE_OFF_PRESSURE, sizeof(int32_t));
 
     // divide by 1000 to get pressure
     pressure_ = static_cast<float>(raw_pressure / 1000.0);  // NOLINT(readability-magic-numbers)
@@ -1075,10 +1099,10 @@ msg::PressureSensor PressureSensor::toRosMsg() const
 CanFrame PressureSensor::toLinuxCan() const
 {
     // multiply by 1000 to make int before setting value
-    int16_t raw_pressure = static_cast<int16_t>(pressure_ * 1000.0);  // NOLINT(readability-magic-numbers)
+    int32_t raw_pressure = static_cast<int32_t>(pressure_ * 1000.0);  // NOLINT(readability-magic-numbers)
 
     CanFrame cf = BaseFrame::toLinuxCan();
-    std::memcpy(cf.data + BYTE_OFF_PRESSURE, &raw_pressure, sizeof(int16_t));
+    std::memcpy(cf.data + BYTE_OFF_PRESSURE, &raw_pressure, sizeof(int32_t));
 
     return cf;
 }
@@ -1096,6 +1120,14 @@ std::string PressureSensor::toString() const
     std::stringstream ss;
     ss << "[PRESSURE SENSOR] Conductivity: " << pressure_;
     return ss.str();
+}
+
+std::optional<CanId> PressureSensor::rosIdxToCanId(size_t pressure_idx)
+{
+    if (pressure_idx < PRESSURE_SENSOR_IDS.size()) {
+        return PRESSURE_SENSOR_IDS[pressure_idx];
+    }
+    return std::nullopt;
 }
 
 // PressureSensor public END

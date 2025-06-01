@@ -1,6 +1,10 @@
 #pragma once
 
 #include <custom_interfaces/msg/batteries.hpp>
+#include <custom_interfaces/msg/ph_sensors.hpp>
+#include <custom_interfaces/msg/pressure_sensors.hpp>
+#include <custom_interfaces/msg/salinity_sensors.hpp>
+#include <custom_interfaces/msg/temp_sensors.hpp>
 #include <custom_interfaces/msg/wind_sensors.hpp>
 #include <string>
 
@@ -27,6 +31,30 @@ constexpr int NUM_WIND_SENSORS = []() constexpr
 {
     using wind_sensors_arr = custom_interfaces::msg::WindSensors::_wind_sensors_type;
     return sizeof(wind_sensors_arr) / sizeof(custom_interfaces::msg::WindSensor);
+}
+();
+constexpr int NUM_TEMP_SENSORS = []() constexpr
+{
+    using temp_sensors_arr = custom_interfaces::msg::TempSensors::_temp_sensors_type;
+    return sizeof(temp_sensors_arr) / sizeof(custom_interfaces::msg::TempSensor);
+}
+();
+constexpr int NUM_PH_SENSORS = []() constexpr
+{
+    using ph_sensors_arr = custom_interfaces::msg::PhSensors::_ph_sensors_type;
+    return sizeof(ph_sensors_arr) / sizeof(custom_interfaces::msg::PhSensor);
+}
+();
+constexpr int NUM_PRESSURE_SENSORS = []() constexpr
+{
+    using pressure_sensors_arr = custom_interfaces::msg::PressureSensors::_pressure_sensors_type;
+    return sizeof(pressure_sensors_arr) / sizeof(custom_interfaces::msg::PressureSensor);
+}
+();
+constexpr int NUM_SALINITY_SENSORS = []() constexpr
+{
+    using salinity_sensors_arr = custom_interfaces::msg::SalinitySensors::_salinity_sensors_type;
+    return sizeof(salinity_sensors_arr) / sizeof(custom_interfaces::msg::SalinitySensor);
 }
 ();
 
@@ -66,17 +94,17 @@ constexpr int WIND_DIRECTION_LBND = -180;
 constexpr int WIND_DIRECTION_UBND = 179;
 
 /***** Bounds for Temp Sensor ******/
-constexpr int TEMP_LBND = -60.0;  // Placeholder
-constexpr int TEMP_UBND = 125.0;  // Placeholder
+constexpr float TEMP_LBND = -32.768;  // smallest value to fit in int16_t when * 1000
+constexpr float TEMP_UBND = 32.767;   // largest value to fit in int16_t when * 1000
 
 /***** Bounds for Ph Sensor ******/
-constexpr int PH_LBND = 15;  // Placeholder
-constexpr int PH_UBND = -1;  // Placeholder
+constexpr float PH_LBND = -1.6;  // lbnd of sensor being used
+constexpr float PH_UBND = 15.6;  // ubnd of sensor being used
 
 /***** Bounds for Salinity Sensor ******/
-constexpr int SALINITY_LBND = 0;       // Placeholder
-constexpr int SALINITY_UBND = 100000;  // Placeholder
+constexpr float SALINITY_LBND = 0;       // lbnd of sensor being used is 0.07
+constexpr float SALINITY_UBND = 1000000;  // ubnd of sensor being used is 500000+
 
 /***** Bounds for Pressure Sensor ******/
-constexpr int PRESSURE_LBND = 0;    // Placeholder
-constexpr int PRESSURE_UBND = 100;  // Placeholder
+constexpr float PRESSURE_LBND = -100;    // lowest lbnd of pressure sensors under consideration is -14.5 psi
+constexpr float PRESSURE_UBND = 1000;  // highest lbnd of pressure sensors is 8702 psi

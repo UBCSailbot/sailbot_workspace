@@ -127,7 +127,71 @@ static const std::map<CanId, std::string> CAN_DESC{
   {CanId::SAIL_WIND, "SAIL_WIND (Mast wind sensor)"},
   {CanId::RUDDER_DATA_FRAME, "RUDDER_DATA_FRAME (Rudder data from ecompass)"},
   {CanId::PATH_GPS_DATA_FRAME, "PATH_GPS_DATA_FRAME (GPS latitude)"},
-  {CanId::DATA_WIND, "DATA_WIND (Hull wind sensor)"}};
+  {CanId::DATA_WIND, "DATA_WIND (Hull wind sensor)"},
+  {CanId::TEMP_SENSOR_START, "TEMP_SENSOR_START (Start of temperature sensor range)"},
+  {CanId::TEMP_1, "TEMP_1 (Temperature sensor #1)"},
+  {CanId::TEMP_2, "TEMP_2 (Temperature sensor #2)"},
+  {CanId::TEMP_3, "TEMP_3 (Temperature sensor #3)"},
+  {CanId::TEMP_4, "TEMP_4 (Temperature sensor #4)"},
+  {CanId::TEMP_5, "TEMP_5 (Temperature sensor #5)"},
+  {CanId::TEMP_6, "TEMP_6 (Temperature sensor #6)"},
+  {CanId::TEMP_7, "TEMP_7 (Temperature sensor #7)"},
+  {CanId::TEMP_8, "TEMP_8 (Temperature sensor #8)"},
+  {CanId::TEMP_9, "TEMP_9 (Temperature sensor #9)"},
+  {CanId::TEMP_10, "TEMP_10 (Temperature sensor #10)"},
+  {CanId::TEMP_11, "TEMP_11 (Temperature sensor #11)"},
+  {CanId::TEMP_12, "TEMP_12 (Temperature sensor #12)"},
+  {CanId::TEMP_13, "TEMP_13 (Temperature sensor #13)"},
+  {CanId::TEMP_14, "TEMP_14 (Temperature sensor #14)"},
+  {CanId::TEMP_SENSOR_END, "TEMP_SENSOR_END (End of temperature sensor range)"},
+  {CanId::PH_SENSOR_START, "PH_SENSOR_START (Start of pH sensor range)"},
+  {CanId::PH_1, "PH_1 (pH sensor #1)"},
+  {CanId::PH_2, "PH_2 (pH sensor #2)"},
+  {CanId::PH_3, "PH_3 (pH sensor #3)"},
+  {CanId::PH_4, "PH_4 (pH sensor #4)"},
+  {CanId::PH_5, "PH_5 (pH sensor #5)"},
+  {CanId::PH_6, "PH_6 (pH sensor #6)"},
+  {CanId::PH_7, "PH_7 (pH sensor #7)"},
+  {CanId::PH_8, "PH_8 (pH sensor #8)"},
+  {CanId::PH_9, "PH_9 (pH sensor #9)"},
+  {CanId::PH_10, "PH_10 (pH sensor #10)"},
+  {CanId::PH_11, "PH_11 (pH sensor #11)"},
+  {CanId::PH_12, "PH_12 (pH sensor #12)"},
+  {CanId::PH_13, "PH_13 (pH sensor #13)"},
+  {CanId::PH_14, "PH_14 (pH sensor #14)"},
+  {CanId::PH_SENSOR_END, "PH_SENSOR_END (End of pH sensor range)"},
+  {CanId::SALINITY_SENSOR_START, "SALINITY_SENSOR_START (Start of salinity sensor range)"},
+  {CanId::SALINITY_1, "SALINITY_1 (Salinity sensor #1)"},
+  {CanId::SALINITY_2, "SALINITY_2 (Salinity sensor #2)"},
+  {CanId::SALINITY_3, "SALINITY_3 (Salinity sensor #3)"},
+  {CanId::SALINITY_4, "SALINITY_4 (Salinity sensor #4)"},
+  {CanId::SALINITY_5, "SALINITY_5 (Salinity sensor #5)"},
+  {CanId::SALINITY_6, "SALINITY_6 (Salinity sensor #6)"},
+  {CanId::SALINITY_7, "SALINITY_7 (Salinity sensor #7)"},
+  {CanId::SALINITY_8, "SALINITY_8 (Salinity sensor #8)"},
+  {CanId::SALINITY_9, "SALINITY_9 (Salinity sensor #9)"},
+  {CanId::SALINITY_10, "SALINITY_10 (Salinity sensor #10)"},
+  {CanId::SALINITY_11, "SALINITY_11 (Salinity sensor #11)"},
+  {CanId::SALINITY_12, "SALINITY_12 (Salinity sensor #12)"},
+  {CanId::SALINITY_13, "SALINITY_13 (Salinity sensor #13)"},
+  {CanId::SALINITY_14, "SALINITY_14 (Salinity sensor #14)"},
+  {CanId::SALINITY_SENSOR_END, "SALINITY_SENSOR_END (End of salinity sensor range)"},
+  {CanId::PRESSURE_SENSOR_START, "PRESSURE_SENSOR_START (Start of pressure sensor range)"},
+  {CanId::PRESSURE_1, "PRESSURE_1 (Pressure sensor #1)"},
+  {CanId::PRESSURE_2, "PRESSURE_2 (Pressure sensor #2)"},
+  {CanId::PRESSURE_3, "PRESSURE_3 (Pressure sensor #3)"},
+  {CanId::PRESSURE_4, "PRESSURE_4 (Pressure sensor #4)"},
+  {CanId::PRESSURE_5, "PRESSURE_5 (Pressure sensor #5)"},
+  {CanId::PRESSURE_6, "PRESSURE_6 (Pressure sensor #6)"},
+  {CanId::PRESSURE_7, "PRESSURE_7 (Pressure sensor #7)"},
+  {CanId::PRESSURE_8, "PRESSURE_8 (Pressure sensor #8)"},
+  {CanId::PRESSURE_9, "PRESSURE_9 (Pressure sensor #9)"},
+  {CanId::PRESSURE_10, "PRESSURE_10 (Pressure sensor #10)"},
+  {CanId::PRESSURE_11, "PRESSURE_11 (Pressure sensor #11)"},
+  {CanId::PRESSURE_12, "PRESSURE_12 (Pressure sensor #12)"},
+  {CanId::PRESSURE_13, "PRESSURE_13 (Pressure sensor #13)"},
+  {CanId::PRESSURE_14, "PRESSURE_14 (Pressure sensor #14)"},
+  {CanId::PRESSURE_SENSOR_END, "PRESSURE_SENSOR_END (End of pressure sensor range)"}};
 
 /**
  * @brief Custom exception for when an attempt is made to construct a CAN object with a mismatched ID
@@ -413,7 +477,7 @@ public:
      * @brief Factory method to convert the index of a wind sensor in the custom_interfaces ROS representation
      *        into a CanId if valid.
      *
-     * @param bat_idx idx of the wind sensor in a custom_interfaces::msg::WindSensors array
+     * @param wind_idx idx of the wind sensor in a custom_interfaces::msg::WindSensors array
      * @return CanId if valid, std::nullopt if invalid
      */
     static std::optional<CanId> rosIdxToCanId(size_t wind_idx);
@@ -880,7 +944,7 @@ public:
       * @brief Construct a TempSensor object from a custom_interfaces ROS msg representation
       *
       * @param ros_temp_sensor custom_interfaces representation of a TempSensor
-      * @param id      CanId of the GPS (use the rosIdxToCanId() method if unknown)
+      * @param id      CanId of the TempSensor (use the rosIdxToCanId() method if unknown)
       */
     explicit TempSensor(msg::TempSensor ros_temp_sensor, CanId id);
 
@@ -904,6 +968,15 @@ public:
       *
       */
     std::string toString() const override;
+
+    /**
+     * @brief Factory method to convert the index of a temp sensor in the custom_interfaces ROS representation
+     *        into a CanId if valid.
+     *
+     * @param temp_idx idx of the temp sensor in a custom_interfaces::msg::TempSensors array
+     * @return CanId if valid, std::nullopt if invalid
+     */
+    static std::optional<CanId> rosIdxToCanId(size_t temp_idx);
 
 private:
     /**
@@ -991,6 +1064,15 @@ public:
        */
     std::string toString() const override;
 
+    /**
+     * @brief Factory method to convert the index of a ph sensor in the custom_interfaces ROS representation
+     *        into a CanId if valid.
+     *
+     * @param ph_idx idx of the ph sensor in a custom_interfaces::msg::PhSensors array
+     * @return CanId if valid, std::nullopt if invalid
+     */
+    static std::optional<CanId> rosIdxToCanId(size_t ph_idx);
+
 private:
     /**
        * @brief Private helper constructor for Ph objects
@@ -1077,6 +1159,15 @@ public:
         */
     std::string toString() const override;
 
+    /**
+     * @brief Factory method to convert the index of a salinity sensor in the custom_interfaces ROS representation
+     *        into a CanId if valid.
+     *
+     * @param salinity_idx idx of the salinity sensor in a custom_interfaces::msg::SalinitySensors array
+     * @return CanId if valid, std::nullopt if invalid
+     */
+    static std::optional<CanId> rosIdxToCanId(size_t salinity_idx);
+
 private:
     /**
         * @brief Private helper constructor for Salinity objects
@@ -1158,6 +1249,15 @@ public:
         *
         */
     std::string toString() const override;
+
+    /**
+     * @brief Factory method to convert the index of a pressure sensor in the custom_interfaces ROS representation
+     *        into a CanId if valid.
+     *
+     * @param pressure_idx idx of the pressure sensor in a custom_interfaces::msg::PressureSensors array
+     * @return CanId if valid, std::nullopt if invalid
+     */
+    static std::optional<CanId> rosIdxToCanId(size_t pressure_idx);
 
 private:
     /**
