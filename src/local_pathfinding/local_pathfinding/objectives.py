@@ -1,13 +1,14 @@
 """Our custom OMPL optimization objectives."""
 
 import math
+from typing import Tuple
 
 import custom_interfaces.msg as ci
 import numpy as np
 from ompl import base as ob
-from local_pathfinding.coord_systems import bound_to_180
 
 import local_pathfinding.coord_systems as cs
+from local_pathfinding.coord_systems import bound_to_180
 
 # Upwind downwind cost multipliers
 UPWIND_MULTIPLIER = 3000.0
@@ -32,8 +33,12 @@ WINDSPEEDS = [0, 9.3, 18.5, 27.8, 37.0]  # The row labels
 ANGLES = [0, 20, 30, 45, 90, 135, 180]  # The column labels
 
 
-def get_true_wind_direction(apparent_wind_direction: float, apparent_wind_speed: float,
-                            heading_degrees: float, boat_speed_over_ground: float) -> float:
+def get_true_wind(
+    apparent_wind_direction: float,
+    apparent_wind_speed: float,
+    heading_degrees: float,
+    boat_speed_over_ground: float,
+) -> Tuple[float, float]:
     """Calculates the true wind direction based on the boat's heading and speed.
     Args:
         apparent_wind_direction (float): The direction of the wind in degrees (-180, 180]. This
@@ -60,7 +65,7 @@ def get_true_wind_direction(apparent_wind_direction: float, apparent_wind_speed:
     true_east = apparent_wind_east - boat_wind_east
     true_north = apparent_wind_north - boat_wind_north
 
-    return math.atan2(true_east, true_north)
+    return (math.atan2(true_east, true_north), math.hypot(true_north, true_east))
 
 
 class Objective(ob.StateCostIntegralObjective):
@@ -172,7 +177,7 @@ class MinimumTurningObjective(Objective):
         """
         s1_xy = cs.XY(s1.getX(), s1.getY())
         s2_xy = cs.XY(s2.getX(), s2.getY())
-        threshold = math.pi/9  # 20 degrees around the angle to next waypoint
+        threshold = math.pi / 9  # 20 degrees around the angle to next waypoint
 
         # calculate the difference in angle between s1 and s2
         raw_angle_s1_s2 = math.atan2(s2_xy.y - s1_xy.y, s2_xy.x - s1_xy.x)
@@ -219,15 +224,18 @@ class WindObjective(Objective):
         wind_direction (float): The direction of the wind in radians (-pi, pi]
     """
 
-    def __init__(self, space_information, wind_direction_degrees: float, wind_speed: float,
-                 heading_degrees: float, speed: float):
+    def __init__(
+        self,
+        space_information,
+        wind_direction_degrees: float,
+        wind_speed: float,
+        heading_degrees: float,
+        speed: float,
+    ):
         super().__init__(space_information)
         assert -180 < wind_direction_degrees <= 180
-        self.wind_direction = get_true_wind_direction(
-            wind_direction_degrees,
-            wind_speed,
-            heading_degrees,
-            speed
+        self.wind_direction, _ = get_true_wind(
+            wind_direction_degrees, wind_speed, heading_degrees, speed
         )
 
     def motionCost(self, s1: ob.SE2StateSpace, s2: ob.SE2StateSpace) -> ob.Cost:
@@ -465,13 +473,9 @@ def get_sailing_objective(
     )
     objective.addObjective(
         objective=WindObjective(
-            space_information,
-            wind_direction_degrees,
-            wind_speed,
-            heading_degrees,
-            speed
+            space_information, wind_direction_degrees, wind_speed, heading_degrees, speed
         ),
-        weight=5.0
+        weight=5.0,
     )
     objective.addObjective(
         objective=SpeedObjective(
