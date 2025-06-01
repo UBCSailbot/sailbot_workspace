@@ -172,27 +172,21 @@ class MinimumTurningObjective(Objective):
         """
         s1_xy = cs.XY(s1.getX(), s1.getY())
         s2_xy = cs.XY(s2.getX(), s2.getY())
+        threshold = math.pi/9  # 20 degrees around the angle to next waypoint
 
-        angle = self.heading_path_turn_cost(s1_xy, s2_xy, self.heading)
+        # calculate the difference in angle between s1 and s2
+        raw_angle_s1_s2 = math.atan2(s2_xy.y - s1_xy.y, s2_xy.x - s1_xy.x)
 
-        return ob.Cost(angle)
+        # angle between the orientation of the boat at s1 and the location of the s2
+        angle_s1_s2 = MinimumTurningObjective.min_turn_angle(raw_angle_s1_s2, s1.getYaw())
 
-    @staticmethod
-    def heading_path_turn_cost(s1: cs.XY, s2: cs.XY, heading: float) -> float:
-        """Generates the turning cost between s1-s2 and heading of the sailbot
-
-        Args:
-            s1 (cs.XY): The starting point of the local start state
-            s2 (cs.XY): The ending point of the local goal state
-            heading (float): The heading of the sailbot in radians (-pi, pi]
-
-        Returns:
-            float: The minimum turning angle between s1-s2 and heading in degrees
-        """
-        # Calculate the true bearing of s2 from s1
-        path_direction = math.atan2(s2.x - s1.x, s2.y - s1.y)
-
-        return MinimumTurningObjective.min_turn_angle(path_direction, heading)
+        # now we need to ensure that the s2's orientation isn't horrendous given s2_xy
+        if MinimumTurningObjective.min_turn_angle(s2.getYaw(), raw_angle_s1_s2) > threshold:
+            # the orientation of the boat doesn't make sense even after accounting for drift
+            # nuke the cost
+            return ob.Cost(3000)
+        else:
+            return ob.Cost(angle_s1_s2)
 
     @staticmethod
     def min_turn_angle(angle1: float, angle2: float) -> float:
@@ -204,7 +198,7 @@ class MinimumTurningObjective(Objective):
                 Must be bounded within 2pi radians of `angle1`
 
         Returns:
-            float: The minimum turning angle between the two angles in degrees
+            float: The minimum turning angle between the two angles in radians
         """
         # Calculate the uncorrected turn size [0, 2pi]
         turn_size_bias = math.fabs(angle1 - angle2)
@@ -215,7 +209,7 @@ class MinimumTurningObjective(Objective):
         else:
             turn_size_unbias = turn_size_bias
 
-        return math.degrees(math.fabs(turn_size_unbias))
+        return math.fabs(turn_size_unbias)
 
 
 class WindObjective(Objective):
@@ -467,7 +461,7 @@ def get_sailing_objective(
     )
     objective.addObjective(
         objective=MinimumTurningObjective(space_information, simple_setup, heading_degrees),
-        weight=100.0,
+        weight=10.0,
     )
     objective.addObjective(
         objective=WindObjective(
@@ -477,7 +471,7 @@ def get_sailing_objective(
             heading_degrees,
             speed
         ),
-        weight=1.0
+        weight=5.0
     )
     objective.addObjective(
         objective=SpeedObjective(
@@ -486,7 +480,7 @@ def get_sailing_objective(
             wind_direction_degrees,
             wind_speed,
         ),
-        weight=1.0,
+        weight=0,
     )
 
     return objective
