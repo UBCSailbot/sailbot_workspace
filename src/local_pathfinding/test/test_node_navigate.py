@@ -106,7 +106,7 @@ def test_calculate_desired_heading_and_waypoint_index(
                 ]
             ),
             ci.HelperLatLon(latitude=0.98 * PATH_RANGE_DEG, longitude=1 * PATH_RANGE_DEG),
-            1,
+            3,
         ),
     ],
 )
