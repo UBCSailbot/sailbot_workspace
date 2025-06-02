@@ -33,7 +33,6 @@ class LocalPathState:
         gps: ci.GPS,
         ais_ships: ci.AISShips,
         global_path: ci.Path,
-        global_waypoint_latlon: ci.HelperLatLon,
         filtered_wind_sensor: ci.WindSensor,
         planner: str,
     ):
@@ -55,7 +54,7 @@ class LocalPathState:
         if not (global_path and global_path.waypoints):
             raise ValueError("Cannot create a LocalPathState with an empty global_path")
         self.global_path = global_path
-        self.reference_latlon = global_waypoint_latlon
+        self.reference_latlon = self.global_path.waypoints[-1]
 
         if not planner:
             raise ValueError("planner must not be None")
@@ -87,9 +86,6 @@ class LocalPath:
         gps: ci.GPS,
         ais_ships: ci.AISShips,
         global_path: ci.Path,
-        received_new_global_waypoint: bool,
-        # ^ Placeholder; will be used for conditions to update local path
-        global_waypoint_latlon: ci.HelperLatLon,
         filtered_wind_sensor: ci.WindSensor,
         planner: str,
     ) -> bool:
@@ -103,9 +99,7 @@ class LocalPath:
             filtered_wind_sensor (ci.WindSensor): Wind data.
         """
         # this raises ValueError if any of the parameters are not properly initialized
-        state = LocalPathState(
-            gps, ais_ships, global_path, global_waypoint_latlon, filtered_wind_sensor, planner
-        )
+        state = LocalPathState(gps, ais_ships, global_path, filtered_wind_sensor, planner)
         self.state = state
         ompl_path = OMPLPath(
             parent_logger=self._logger,

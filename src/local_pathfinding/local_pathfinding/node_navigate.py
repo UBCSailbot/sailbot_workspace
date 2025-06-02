@@ -10,10 +10,7 @@ import local_pathfinding.global_path as gp
 import local_pathfinding.obstacles as ob
 from local_pathfinding.local_path import LocalPath
 
-LOCAL_WAYPOINT_REACHED_THRESH_KM = 0.5
-GLOBAL_WAYPOINT_REACHED_THRESH_KM = 3
-PATHFINDING_RANGE_KM = 30
-REALLY_FAR_M = 100000000
+WAYPOINT_REACHED_THRESH_KM = 0.5
 GEODESIC = Geod(ellps="WGS84")
 
 
@@ -117,9 +114,7 @@ class Sailbot(Node):
 
         # attributes
         self.local_path = LocalPath(parent_logger=self.get_logger())
-        self.local_waypoint_index = 0
-        self.global_waypoint_index = -1
-        self.global_waypoint_latlon = None
+        self.current_waypoint_index = 0
         self.mode = self.get_parameter("mode").get_parameter_value().string_value
         self.planner = self.get_parameter("path_planner").get_parameter_value().string_value
         self.get_logger().debug(f"Got parameter: {self.planner=}")
@@ -138,8 +133,6 @@ class Sailbot(Node):
             f"Received data from {self.global_path_sub.topic}: {gp.path_to_dict(msg)}"
         )
         self.global_path = msg
-        if self.global_waypoint_latlon is None:
-            self.global_waypoint_latlon = self.global_path.waypoints[-1]
 
     def filtered_wind_sensor_callback(self, msg: ci.WindSensor):
         self.get_logger().debug(f"Received data from {self.filtered_wind_sensor_sub.topic}: {msg}")
@@ -235,73 +228,20 @@ class Sailbot(Node):
         Returns:
             float: The desired heading
         """
-
-        # Update the target global waypoint as needed
-        received_new_global_waypoint = False
-        if self.global_path.waypoints[self.global_waypoint_index] != self.global_waypoint_latlon:
-            received_new_global_waypoint = True
-            self.global_waypoint_index = self.find_next_global_waypoint_index(
-                self.global_path, self.gps.lat_lon
-            )
-            self.global_waypoint_latlon = self.global_path.waypoints[self.global_waypoint_index]
-
-        _, _, distance_to_waypoint_m = GEODESIC.inv(
-            self.gps.lat_lon.longitude,
-            self.gps.lat_lon.latitude,
-            self.global_waypoint_latlon.longitude,
-            self.global_waypoint_latlon.latitude,
+        received_new_path = self.local_path.update_if_needed(
+            self.gps, self.ais_ships, self.global_path, self.filtered_wind_sensor, self.planner
         )
 
-        if distance_to_waypoint_m < GLOBAL_WAYPOINT_REACHED_THRESH_KM:
-            received_new_global_waypoint = True
-            self.global_waypoint_index -= 1  # Since global waypoints are in reverse order
-            self.global_waypoint_latlon = self.global_path.waypoints[self.global_waypoint_index]
+        if received_new_path:
+            self.current_waypoint_index = 0
 
-        received_new_local_path = self.local_path.update_if_needed(
-            self.gps,
-            self.ais_ships,
-            self.global_path,
-            received_new_global_waypoint,
-            self.filtered_wind_sensor,
-            self.planner,
-        )
-
-        if received_new_local_path:
-            self.local_waypoint_index = 0
-
-        desired_heading, self.local_waypoint_index = (
+        desired_heading, self.current_waypoint_index = (
             self.calculate_desired_heading_and_waypoint_index(
-                self.local_path.path, self.local_waypoint_index, self.gps.lat_lon
+                self.local_path.path, self.current_waypoint_index, self.gps.lat_lon
             )
         )
 
         return desired_heading
-
-    @staticmethod
-    def find_next_global_waypoint_index(global_path: ci.Path, boat_lat_lon: ci.HelperLatLon):
-        """Used when we receive a new global path.
-        Finds the index of the first waypoint within 'pathfinding range' of gps location.
-        If none are found, it returns the index of the nearest waypoint."""
-
-        closest_m, index_of_closest = REALLY_FAR_M, -1
-        for waypoint_index in range(len(global_path.waypoints) - 1, -1, -1):
-            # Note: the global waypoints are in reverse order (index 0 is final waypoint)
-            waypoint = global_path.waypoints[waypoint_index]
-
-            _, _, distance_to_waypoint_m = GEODESIC.inv(
-                boat_lat_lon.longitude,
-                boat_lat_lon.latitude,
-                waypoint.longitude,
-                waypoint.latitude,
-            )
-
-            if distance_to_waypoint_m < closest_m:
-                closest_m, index_of_closest = distance_to_waypoint_m, waypoint_index
-
-            if distance_to_waypoint_m < cs.km_to_meters(PATHFINDING_RANGE_KM):
-                return waypoint_index
-
-        return index_of_closest
 
     @staticmethod
     def calculate_desired_heading_and_waypoint_index(
@@ -312,7 +252,7 @@ class Sailbot(Node):
             boat_lat_lon.longitude, boat_lat_lon.latitude, waypoint.longitude, waypoint.latitude
         )
 
-        if cs.meters_to_km(distance_to_waypoint_m) < LOCAL_WAYPOINT_REACHED_THRESH_KM:
+        if cs.meters_to_km(distance_to_waypoint_m) < WAYPOINT_REACHED_THRESH_KM:
             # If we reached the current local waypoint, aim for the next one
             waypoint_index += 1
             waypoint = path.waypoints[waypoint_index]
@@ -370,5 +310,4 @@ class Sailbot(Node):
 
 
 if __name__ == "__main__":
-    main()
     main()
