@@ -19,6 +19,7 @@ def test_LocalPath_update_if_needed():
             ]
         ),
         received_new_global_waypoint=False,
+        global_waypoint_latlon=HelperLatLon(latitude=1.0, longitude=1.0),
         filtered_wind_sensor=WindSensor(),
         planner="rrtstar",
     )
