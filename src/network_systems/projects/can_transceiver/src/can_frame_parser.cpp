@@ -1118,7 +1118,7 @@ std::string PressureSensor::debugStr() const
 std::string PressureSensor::toString() const
 {
     std::stringstream ss;
-    ss << "[PRESSURE SENSOR] Conductivity: " << pressure_;
+    ss << "[PRESSURE SENSOR] Pressure: " << pressure_;
     return ss.str();
 }
 
