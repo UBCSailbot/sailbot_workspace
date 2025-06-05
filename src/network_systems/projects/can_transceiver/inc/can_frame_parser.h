@@ -123,7 +123,6 @@ static const std::map<CanId, std::string> CAN_DESC{
   {CanId::BMS_DATA_FRAME, "BMS_P_DATA_FRAME (Battery data)"},
   {CanId::RESERVED, "Reserved for mainframe (0x0 - 0x29)"},
   {CanId::SAIL_AIS, "SAIL_AIS (AIS ship data)"},
-  {CanId::MAIN_HEADING, "MAIN_HEADING (Main rudder command)"},
   {CanId::SAIL_WIND, "SAIL_WIND (Mast wind sensor)"},
   {CanId::RUDDER_DATA_FRAME, "RUDDER_DATA_FRAME (Rudder data from ecompass)"},
   {CanId::PATH_GPS_DATA_FRAME, "PATH_GPS_DATA_FRAME (GPS latitude)"},
@@ -597,10 +596,10 @@ public:
     static constexpr uint16_t             BYTE_OFF_COURSE    = 14;
     static constexpr uint16_t             BYTE_OFF_HEADING   = 16;
     static constexpr uint8_t              BYTE_OFF_ROT       = 18;
-    static constexpr uint16_t             BYTE_OFF_LENGTH    = 20;
-    static constexpr uint8_t              BYTE_OFF_WIDTH     = 22;
-    static constexpr uint8_t              BYTE_OFF_IDX       = 24;
-    static constexpr uint8_t              BYTE_OFF_NUM_SHIPS = 25;
+    static constexpr uint16_t             BYTE_OFF_LENGTH    = 19;
+    static constexpr uint8_t              BYTE_OFF_WIDTH     = 21;
+    static constexpr uint8_t              BYTE_OFF_IDX       = 23;
+    static constexpr uint8_t              BYTE_OFF_NUM_SHIPS = 24;
 
     /**
      * @brief Explicitly deleted no-argument constructor
@@ -768,8 +767,9 @@ class DesiredHeading final : public BaseFrame
 {
 public:
     static constexpr std::array<CanId, 1> DESIRED_HEADING_IDS = {CanId::MAIN_HEADING};
-    static constexpr uint8_t              CAN_BYTE_DLEN_      = 4;
+    static constexpr uint8_t              CAN_BYTE_DLEN_      = 5;
     static constexpr uint8_t              BYTE_OFF_HEADING    = 0;
+    static constexpr uint8_t              BYTE_OFF_STEERING   = 4;
 
     /**
      * @brief Explicitly deleted no-argument constructor
@@ -827,7 +827,8 @@ private:
      */
     void checkBounds() const;
 
-    float heading_;  // Angle specified by the command
+    float   heading_;  // Angle specified by the command
+    uint8_t steering_;
 };
 
 /**

@@ -415,8 +415,8 @@ TEST_F(TestCanFrameParser, GPSTestValid)
     constexpr std::array<float, 2>   expected_lats{48.6, -57.3};
     constexpr std::array<float, 2>   expected_lons{-32.1, 112.9};
     constexpr std::array<float, 2>   expected_speeds{3.5, 8.0};
-    constexpr std::array<int32_t, 2> expected_raw_lats{138600, 32700};
-    constexpr std::array<int32_t, 2> expected_raw_lons{147900, 292900};
+    constexpr std::array<int32_t, 2> expected_raw_lats{138600000, 32700000};
+    constexpr std::array<int32_t, 2> expected_raw_lons{147900000, 292900000};
     constexpr std::array<int32_t, 2> expected_raw_speeds{3500, 8000};
 
     for (size_t i = 0; i < 2; i++) {
@@ -452,8 +452,8 @@ TEST_F(TestCanFrameParser, GPSTestValid)
         std::memcpy(&raw_lon, cf.data + CAN_FP::GPS::BYTE_OFF_LON, sizeof(int32_t));
         std::memcpy(&raw_speed, cf.data + CAN_FP::GPS::BYTE_OFF_SPEED, sizeof(int32_t));
 
-        EXPECT_EQ(raw_lat, expected_raw_lats[i]);
-        EXPECT_EQ(raw_lon, expected_raw_lons[i]);
+        EXPECT_NEAR(raw_lat, expected_raw_lats[i], 5);
+        EXPECT_NEAR(raw_lon, expected_raw_lons[i], 5);
         EXPECT_EQ(raw_speed, expected_raw_speeds[i]);
 
         CAN_FP::GPS gps_from_can = CAN_FP::GPS(cf);
@@ -606,8 +606,8 @@ TEST_F(TestCanFrameParser, AISShipsTestValid)
     constexpr std::array<float, 2>   expected_lengths{15, 360};
 
     constexpr std::array<uint32_t, 2> expected_raw_ids{1010, 9193};
-    constexpr std::array<uint32_t, 2> expected_raw_lats{138600, 32700};
-    constexpr std::array<uint32_t, 2> expected_raw_lons{147900, 292900};
+    constexpr std::array<uint32_t, 2> expected_raw_lats{138600000, 32700000};
+    constexpr std::array<uint32_t, 2> expected_raw_lons{147900000, 292900000};
     constexpr std::array<uint16_t, 2> expected_raw_cogs{1004, 432};
     constexpr std::array<uint16_t, 2> expected_raw_sogs{50, 22};
     constexpr std::array<int8_t, 2>   expected_raw_rots{-10, 50};
@@ -685,8 +685,8 @@ TEST_F(TestCanFrameParser, AISShipsTestValid)
         std::memcpy(&raw_num_ships, cf.data + CAN_FP::AISShips::BYTE_OFF_NUM_SHIPS, sizeof(int8_t));
 
         EXPECT_EQ(raw_id, expected_raw_ids[i]);
-        EXPECT_EQ(raw_lat, expected_raw_lats[i]);
-        EXPECT_EQ(raw_lon, expected_raw_lons[i]);
+        EXPECT_NEAR(raw_lat, expected_raw_lats[i], 5);
+        EXPECT_NEAR(raw_lon, expected_raw_lons[i], 5);
         EXPECT_EQ(raw_speed, expected_raw_sogs[i]);
         EXPECT_EQ(raw_course, expected_raw_cogs[i]);
         EXPECT_EQ(raw_rot, expected_raw_rots[i]);

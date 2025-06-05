@@ -2,6 +2,7 @@
 
 #include <linux/can.h>
 
+#include <bitset>
 #include <cstring>
 #include <iostream>
 #include <span>
@@ -333,9 +334,9 @@ GPS::GPS(const CanFrame & cf) : GPS(static_cast<CanId>(cf.can_id))
     std::memcpy(&raw_hour, cf.data + BYTE_OFF_HOUR, sizeof(int8_t));
     std::memcpy(&raw_speed, cf.data + BYTE_OFF_SPEED, sizeof(int32_t));
 
-    lat_   = static_cast<float>(raw_lat / 1000.0 - 90);     //NOLINT(readability-magic-numbers)
-    lon_   = static_cast<float>(raw_lon / 1000.0 - 180.0);  //NOLINT(readability-magic-numbers)
-    sec_   = static_cast<float>(raw_sec / 1000.0);          //NOLINT(readability-magic-numbers)
+    lat_   = static_cast<float>(raw_lat / 1000000.0 - 90);     //NOLINT(readability-magic-numbers)
+    lon_   = static_cast<float>(raw_lon / 1000000.0 - 180.0);  //NOLINT(readability-magic-numbers)
+    sec_   = static_cast<float>(raw_sec / 1000.0);             //NOLINT(readability-magic-numbers)
     min_   = static_cast<float>(raw_min);
     hour_  = static_cast<float>(raw_hour);
     speed_ = static_cast<float>(raw_speed / 1000.0);  //NOLINT(readability-magic-numbers)
@@ -373,10 +374,10 @@ msg::GPS GPS::toRosMsg() const
 
 CanFrame GPS::toLinuxCan() const
 {
-    int32_t raw_lat   = static_cast<int32_t>(std::round((lat_ + 90.0) * 1000.0));   //NOLINT(readability-magic-numbers)
-    int32_t raw_lon   = static_cast<int32_t>(std::round((lon_ + 180.0) * 1000.0));  //NOLINT(readability-magic-numbers)
-    int32_t raw_sec   = static_cast<int32_t>(sec_ * 1000);                          //NOLINT(readability-magic-numbers)
-    int8_t  raw_min   = static_cast<int8_t>(min_);
+    int32_t raw_lat = static_cast<int32_t>(std::round((lat_ + 90.0) * 1000000.0));   //NOLINT(readability-magic-numbers)
+    int32_t raw_lon = static_cast<int32_t>(std::round((lon_ + 180.0) * 1000000.0));  //NOLINT(readability-magic-numbers)
+    int32_t raw_sec = static_cast<int32_t>(sec_ * 1000);                             //NOLINT(readability-magic-numbers)
+    int8_t  raw_min = static_cast<int8_t>(min_);
     int8_t  raw_hour  = static_cast<int8_t>(hour_);
     int32_t raw_speed = static_cast<int32_t>(speed_ * 1000);  //NOLINT(readability-magic-numbers)
 
@@ -468,9 +469,9 @@ AISShips::AISShips(const CanFrame & cf) : AISShips(static_cast<CanId>(cf.can_id)
     std::memcpy(&raw_num_ships, cf.data + BYTE_OFF_NUM_SHIPS, sizeof(int8_t));
 
     num_ships_ = raw_num_ships;
-    lat_       = static_cast<float>(raw_lat / 1000.0 - 90);     //NOLINT(readability-magic-numbers)
-    lon_       = static_cast<float>(raw_lon / 1000.0 - 180.0);  //NOLINT(readability-magic-numbers)
-    speed_     = static_cast<float>(raw_speed / 10.0 * 1.852);  //NOLINT(readability-magic-numbers)
+    lat_       = static_cast<float>(raw_lat / 1000000.0 - 90);     //NOLINT(readability-magic-numbers)
+    lon_       = static_cast<float>(raw_lon / 1000000.0 - 180.0);  //NOLINT(readability-magic-numbers)
+    speed_     = static_cast<float>(raw_speed / 10.0 * 1.852);     //NOLINT(readability-magic-numbers)
     rot_       = raw_rot;
     course_    = static_cast<float>(raw_course / 10.0);  //NOLINT(readability-magic-numbers)
     heading_   = raw_heading;
@@ -535,10 +536,11 @@ msg::HelperAISShip AISShips::toRosMsg() const
 CanFrame AISShips::toLinuxCan() const
 {
     //NOTE: Implemented rounding for km/hr to knots conversion, is this ok?
-    uint32_t raw_id    = ship_id_;
-    uint32_t raw_lat   = static_cast<int32_t>(std::round((lat_ + 90.0) * 1000.0));   //NOLINT(readability-magic-numbers)
-    uint32_t raw_lon   = static_cast<int32_t>(std::round((lon_ + 180.0) * 1000.0));  //NOLINT(readability-magic-numbers)
-    uint16_t raw_speed = static_cast<int16_t>(std::round(speed_ / 1.852 * 10));      //NOLINT(readability-magic-numbers)
+    uint32_t raw_id  = ship_id_;
+    uint32_t raw_lat = static_cast<int32_t>(std::round((lat_ + 90.0) * 1000000.0));  //NOLINT(readability-magic-numbers)
+    uint32_t raw_lon =
+      static_cast<int32_t>(std::round((lon_ + 180.0) * 1000000.0));                  //NOLINT(readability-magic-numbers)
+    uint16_t raw_speed     = static_cast<int16_t>(std::round(speed_ / 1.852 * 10));  //NOLINT(readability-magic-numbers)
     uint16_t raw_course    = static_cast<int16_t>(course_ * 10);                     //NOLINT(readability-magic-numbers)
     uint16_t raw_heading   = static_cast<int16_t>(heading_);
     int8_t   raw_rot       = rot_;
@@ -694,16 +696,19 @@ void PwrMode::checkBounds() const
 DesiredHeading::DesiredHeading(const CanFrame & cf) : DesiredHeading(static_cast<CanId>(cf.can_id))
 {
     uint32_t raw_heading;
+    uint8_t  raw_steering;
 
     std::memcpy(&raw_heading, cf.data + BYTE_OFF_HEADING, sizeof(uint32_t));
+    std::memcpy(&raw_steering, cf.data + BYTE_OFF_STEERING, sizeof(uint8_t));
 
-    heading_ = static_cast<float>(raw_heading) / 1000;  //NOLINT(readability-magic-numbers)
+    heading_  = static_cast<float>(raw_heading) / 1000;  //NOLINT(readability-magic-numbers)
+    steering_ = raw_steering;
 
     checkBounds();
 }
 
 DesiredHeading::DesiredHeading(msg::DesiredHeading ros_desired_heading, CanId id)
-: BaseFrame(id, CAN_BYTE_DLEN_), heading_(ros_desired_heading.heading.heading)
+: BaseFrame(id, CAN_BYTE_DLEN_), heading_(ros_desired_heading.heading.heading), steering_(ros_desired_heading.steering)
 {
     checkBounds();
 }
@@ -714,15 +719,18 @@ msg::DesiredHeading DesiredHeading::toRosMsg() const
     helper_msg.set__heading(heading_);
     msg::DesiredHeading msg;
     msg.set__heading(helper_msg);
+    msg.set__steering(steering_);
     return msg;
 }
 
 CanFrame DesiredHeading::toLinuxCan() const
 {
-    uint32_t raw_heading = static_cast<uint32_t>(heading_) * 1000;  //NOLINT(readability-magic-numbers)
+    uint32_t raw_heading  = static_cast<uint32_t>(heading_) * 1000;  //NOLINT(readability-magic-numbers)
+    uint8_t  raw_steering = steering_;
 
     CanFrame cf = BaseFrame::toLinuxCan();
     std::memcpy(cf.data + BYTE_OFF_HEADING, &raw_heading, sizeof(uint32_t));
+    std::memcpy(cf.data + BYTE_OFF_STEERING, &raw_steering, sizeof(uint8_t));
 
     return cf;
 }
@@ -731,7 +739,8 @@ std::string DesiredHeading::debugStr() const
 {
     std::stringstream ss;
     ss << BaseFrame::debugStr() << "\n"
-       << "Desired heading: " << heading_;
+       << "Desired heading: " << heading_ << "\n"
+       << "Steering bit: " << std::bitset<8>(steering_);  //NOLINT(readability-magic-numbers)
     return ss.str();
 }
 
@@ -749,10 +758,14 @@ DesiredHeading::DesiredHeading(CanId id) : BaseFrame(std::span{DESIRED_HEADING_I
 
 void DesiredHeading::checkBounds() const
 {
-    auto err = utils::isOutOfBounds<float>(heading_, HEADING_LBND, HEADING_UBND);
+    uint8_t bit_mask = 0b00011111;  //NOLINT(readability-magic-numbers)
+    auto    err      = utils::isOutOfBounds<float>(heading_, HEADING_LBND, HEADING_UBND);
     if (err) {
         std::string err_msg = err.value();
         throw std::out_of_range("Desired heading is out of bounds!\n" + debugStr() + "\n" + err_msg);
+    }
+    if (static_cast<bool>(steering_ & bit_mask)) {
+        throw std::out_of_range("Invalid rudder steering bits!\n" + debugStr() + "\n");
     }
 }
 
