@@ -28,6 +28,7 @@ setup(
             "mock_wind_sensor = local_pathfinding.node_mock_wind_sensor:main",
             "mock_ais = local_pathfinding.node_mock_ais:main",
             "mock_gps = local_pathfinding.node_mock_gps:main",
+            "navigate_observer = local_pathfinding.node_navigate_observer:main",
         ],
     },
 )

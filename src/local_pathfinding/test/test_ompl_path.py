@@ -13,20 +13,25 @@ from custom_interfaces.msg import (
 )
 from ompl import base
 from rclpy.impl.rcutils_logger import RcutilsLogger
-from shapely.geometry import Point
+from shapely.geometry import MultiPolygon, Point, box
 
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.obstacles as ob
 import local_pathfinding.ompl_path as ompl_path
 from local_pathfinding.local_path import LocalPathState
 
-PATH = ompl_path.OMPLPath(
+OMPL_PATH = ompl_path.OMPLPath(
     parent_logger=RcutilsLogger(),
     max_runtime=1,
     local_path_state=LocalPathState(
         gps=GPS(),
         ais_ships=AISShips(),
-        global_path=Path(),
+        global_path=Path(
+            waypoints=[
+                HelperLatLon(latitude=0.0, longitude=0.0),
+                HelperLatLon(latitude=1.0, longitude=1.0),
+            ]
+        ),
         filtered_wind_sensor=WindSensor(),
         planner="rrtstar",
     ),
@@ -34,18 +39,17 @@ PATH = ompl_path.OMPLPath(
 
 
 def test_OMPLPath___init__():
-    assert PATH.solved
+    assert OMPL_PATH.solved
 
 
 def test_OMPLPath_get_cost():
     with pytest.raises(NotImplementedError):
-        PATH.get_cost()
+        OMPL_PATH.get_cost()
 
 
 def test_OMPLPath_get_waypoint():
-    waypoints = PATH.get_waypoints()
-    waypoint_XY = cs.XY(PATH.state.position.latitude, PATH.state.position.longitude)
-    start_state_latlon = cs.xy_to_latlon(PATH.state.reference_latlon, waypoint_XY)
+    waypoints = OMPL_PATH.get_path().waypoints  # List[HelperLatLon]
+    start_state_latlon = OMPL_PATH.state.position
 
     test_start = waypoints[0]
     test_goal = waypoints[-1]
@@ -54,18 +58,22 @@ def test_OMPLPath_get_waypoint():
         (start_state_latlon.latitude, start_state_latlon.longitude), abs=1e-2
     ), "first waypoint should be start state"
     assert (test_goal.latitude, test_goal.longitude) == pytest.approx(
-        (PATH.state.reference_latlon.latitude, PATH.state.reference_latlon.longitude), abs=1e-2
+        (OMPL_PATH.state.reference_latlon.latitude, OMPL_PATH.state.reference_latlon.longitude),
+        abs=1e-2,
     ), "last waypoint should be goal state"
 
 
 def test_OMPLPath_update_objectives():
     with pytest.raises(NotImplementedError):
-        PATH.update_objectives()
+        OMPL_PATH.update_objectives()
 
 
 def test_init_obstacles():
+    sailbot_position = HelperLatLon(latitude=49.29, longitude=-126.32)
+    goal_position = HelperLatLon(latitude=1.0, longitude=1.0)
+
     local_path_state = LocalPathState(
-        gps=GPS(lat_lon=HelperLatLon(latitude=49.29, longitude=-126.32)),
+        gps=GPS(lat_lon=sailbot_position),
         ais_ships=AISShips(
             ships=[
                 HelperAISShip(
@@ -88,12 +96,34 @@ def test_init_obstacles():
                 ),
             ]
         ),
-        global_path=Path(),
+        global_path=Path(
+            waypoints=[
+                HelperLatLon(latitude=0.0, longitude=0.0),
+                goal_position,
+            ]
+        ),
         filtered_wind_sensor=WindSensor(),
         planner="rrtstar",
     )
 
-    obstacles = ompl_path.OMPLPath.init_obstacles(local_path_state=local_path_state)
+    # create the xy state space from the specified positions of sailbot and the goal
+    sailbot_box = Point(sailbot_position.longitude, sailbot_position.latitude).buffer(
+        0.1, cap_style=3, join_style=2
+    )
+
+    goal_box = Point(goal_position.longitude, sailbot_position.latitude).buffer(
+        0.1, cap_style=3, join_style=2
+    )
+
+    state_space_latlon = box(*MultiPolygon([sailbot_box, goal_box]).bounds)
+
+    state_space_xy = cs.latlon_polygon_list_to_xy_polygon_list(
+        [state_space_latlon], goal_position
+    )[0]
+
+    obstacles = ompl_path.OMPLPath.init_obstacles(
+        local_path_state=local_path_state, state_space_xy=state_space_xy
+    )
     assert isinstance(obstacles, list)
     assert isinstance(obstacles[0], ob.Boat)
     assert isinstance(obstacles[1], ob.Boat)
@@ -105,7 +135,7 @@ def test_init_obstacles():
     [(0.5, 0.5, True), (-14, 0.5, False), (-16, 0.5, True)],
 )
 def test_is_state_valid(x: float, y: float, is_valid: bool):
-    state = base.State(PATH._simple_setup.getStateSpace())
+    state = base.State(OMPL_PATH._simple_setup.getStateSpace())
     state().setXY(x, y)
 
     # Sample AIS SHIP message
@@ -152,7 +182,7 @@ def test_is_state_valid(x: float, y: float, is_valid: bool):
 def test_create_space(position: cs.XY, expected_area, expected_bounds):
     """Test creation of buffered space around positions"""
     # Given an OMPLPath instance
-    space = PATH.create_buffer_around_position(position)
+    space = OMPL_PATH.create_buffer_around_position(position)
 
     assert space.area == expected_area, "Space area should match buffer size"
     assert space.bounds == pytest.approx(expected_bounds, abs=1.0), "Bounds should match expected"
