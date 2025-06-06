@@ -1130,8 +1130,8 @@ TEST_F(TestCanFrameParser, PressureSensorTestValid)
     constexpr std::uint8_t NUM_SENSORS = CAN_FP::PressureSensor::PRESSURE_SENSOR_IDS.size();
     std::vector<float>     expected_pressures;
     float                  increment = (PRESSURE_UBND - PRESSURE_LBND) / NUM_SENSORS;
-    for (float i = 0; i < NUM_SENSORS; i++) {
-        expected_pressures.push_back(PRESSURE_LBND + (increment * i));
+    for (int i = 0; i < NUM_SENSORS; i++) {
+        expected_pressures.push_back(static_cast<float>(PRESSURE_LBND + (increment * i)));
     }
 
     for (size_t i = 0; i < NUM_SENSORS; i++) {
@@ -1211,8 +1211,8 @@ TEST_F(TestCanFrameParser, SalinitySensorTestValid)
     constexpr std::uint8_t NUM_SENSORS = CAN_FP::SalinitySensor::SALINITY_SENSOR_IDS.size();
     std::vector<float>     expected_salinities;
     float                  increment = (SALINITY_UBND - SALINITY_LBND) / NUM_SENSORS;
-    for (float i = 0; i < NUM_SENSORS; i++) {
-        expected_salinities.push_back(SALINITY_LBND + (increment * i));
+    for (int i = 0; i < NUM_SENSORS; i++) {
+        expected_salinities.push_back(static_cast<float>(SALINITY_LBND + (increment * i)));
     }
 
     for (size_t i = 0; i < NUM_SENSORS; i++) {
