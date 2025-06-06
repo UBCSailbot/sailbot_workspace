@@ -1049,8 +1049,8 @@ TEST_F(TestCanFrameParser, PhSensorTestValid)
     constexpr std::uint8_t NUM_SENSORS = CAN_FP::PhSensor::PH_SENSOR_IDS.size();
     std::vector<float>     expected_phs;
     float                  increment = (PH_UBND - PH_LBND) / NUM_SENSORS;
-    for (float i = 0; i < NUM_SENSORS; i++) {
-        expected_phs.push_back(PH_LBND + (increment * i));
+    for (int i = 0; i < NUM_SENSORS; i++) {
+        expected_phs.push_back(static_cast<float>(PH_LBND + (increment * i)));
     }
 
     for (size_t i = 0; i < NUM_SENSORS; i++) {
