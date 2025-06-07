@@ -441,12 +441,24 @@ int main(int argc, char * argv[])
     rclcpp::init(argc, argv);
     try {
         std::shared_ptr<CanTransceiverIntf> node = std::make_shared<CanTransceiverIntf>();
-        try {
-            rclcpp::spin(node);
-        } catch (std::exception & e) {
-            RCLCPP_ERROR(node->get_logger(), "%s", e.what());
-            throw e;
+        while (rclcpp::ok()) {
+            try {
+                rclcpp::spin(node);
+            } catch (const std::out_of_range & e) {
+                RCLCPP_WARN(node->get_logger(), "%s", e.what());
+            } catch (const CAN_FP::CanIdMismatchException & e) {
+                RCLCPP_FATAL(node->get_logger(), "%s", e.what());
+            } catch (const std::exception & e) {
+                RCLCPP_ERROR(node->get_logger(), "%s", e.what());
+                break;
+            }
         }
+        // try {
+        //     rclcpp::spin(node);
+        // } catch (std::exception & e) {
+        //     RCLCPP_ERROR(node->get_logger(), "%s", e.what());
+        //     throw e;
+        // }
     } catch (std::exception & e) {
         std::cerr << e.what() << std::endl;
         err = true;
