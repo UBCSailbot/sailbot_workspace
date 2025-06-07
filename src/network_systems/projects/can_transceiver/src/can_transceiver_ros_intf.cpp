@@ -110,6 +110,9 @@ public:
 
             sail_cmd_sub_ = this->create_subscription<msg::SailCmd>(
               ros_topics::SAIL_CMD, QUEUE_SIZE, [this](msg::SailCmd sail_cmd_) { subSailCmdCb(sail_cmd_); });
+            desired_heading_sub_ = this->create_subscription<msg::DesiredHeading>(
+              ros_topics::DESIRED_HEADING, QUEUE_SIZE,
+              [this](msg::DesiredHeading desired_heading_) { subDesiredHeading(desired_heading_); });
 
             if (mode == SYSTEM_MODE::DEV) {  // Initialize the CAN Sim Intf
                 mock_ais_sub_ = this->create_subscription<msg::AISShips>(
@@ -150,6 +153,7 @@ private:
     rclcpp::Publisher<msg::GenericSensors>::SharedPtr    generic_sensors_pub_;
     msg::GenericSensors                                  generic_sensors_;
     rclcpp::Subscription<msg::DesiredHeading>::SharedPtr desired_heading_sub_;
+    msg::DesiredHeading                                  desired_heading_;
     rclcpp::Subscription<msg::SailCmd>::SharedPtr        sail_cmd_sub_;
     msg::SailCmd                                         sail_cmd_;
     rclcpp::Publisher<msg::HelperHeading>::SharedPtr     rudder_pub_;
@@ -458,6 +462,23 @@ private:
         std::stringstream ss;
         ss << "[GENERIC SENSOR] CanID: " << generic_frame.can_id << " Data: " << generic_data;
         RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), ss.str().c_str());
+    }
+
+    /**
+     * @brief Subscribe to a MAIN_HEADING frame
+     *        Intended to be registered as a callback with the CAN Tranceiver instance
+     *
+     * @param heading_frame main_heading CAN frame read from the CAN bus
+     */
+    void subDesiredHeading(msg::DesiredHeading & desired_heading_input)
+    {
+        msg::HelperHeading helper_msg;
+        helper_msg = desired_heading_input.heading;
+        desired_heading_.set__heading(helper_msg);
+        desired_heading_.set__steering(desired_heading_input.steering);
+        auto main_heading_frame = CAN_FP::DesiredHeading(desired_heading_, CanId::MAIN_HEADING);
+        can_trns_->send(main_heading_frame.toLinuxCan());
+        RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), main_heading_frame.toString().c_str());
     }
 
     // SIMULATION CALLBACKS //
