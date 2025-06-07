@@ -119,8 +119,6 @@ void CanTransceiver::receive()
         } else if (bytes_read < 0) {
             std::cerr << "CAN read error: " << errno << "(" << strerror(errno)  // NOLINT(concurrency-mt-unsafe)
                       << ")" << std::endl;
-        } else {
-            std::cerr << "Received 0 bytes" << std::endl;
         }
     }
 }

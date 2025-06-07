@@ -1050,7 +1050,7 @@ TEST_F(TestCanFrameParser, PhSensorTestValid)
     std::vector<float>     expected_phs;
     float                  increment = (PH_UBND - PH_LBND) / NUM_SENSORS;
     for (int i = 0; i < NUM_SENSORS; i++) {
-        expected_phs.push_back(static_cast<float>(PH_LBND + (increment * i)));
+        expected_phs.push_back(PH_LBND + (increment * static_cast<float>(i)));
     }
 
     for (size_t i = 0; i < NUM_SENSORS; i++) {
@@ -1131,7 +1131,7 @@ TEST_F(TestCanFrameParser, PressureSensorTestValid)
     std::vector<float>     expected_pressures;
     float                  increment = (PRESSURE_UBND - PRESSURE_LBND) / NUM_SENSORS;
     for (int i = 0; i < NUM_SENSORS; i++) {
-        expected_pressures.push_back(static_cast<float>(PRESSURE_LBND + (increment * i)));
+        expected_pressures.push_back(PRESSURE_LBND + (increment * static_cast<float>(i)));
     }
 
     for (size_t i = 0; i < NUM_SENSORS; i++) {
@@ -1212,7 +1212,7 @@ TEST_F(TestCanFrameParser, SalinitySensorTestValid)
     std::vector<float>     expected_salinities;
     float                  increment = (SALINITY_UBND - SALINITY_LBND) / NUM_SENSORS;
     for (int i = 0; i < NUM_SENSORS; i++) {
-        expected_salinities.push_back(static_cast<float>(SALINITY_LBND + (increment * i)));
+        expected_salinities.push_back(SALINITY_LBND + (increment * static_cast<float>(i)));
     }
 
     for (size_t i = 0; i < NUM_SENSORS; i++) {

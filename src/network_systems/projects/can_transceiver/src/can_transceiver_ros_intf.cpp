@@ -326,7 +326,6 @@ private:
     {
         CAN_FP::RudderData rudder(rudder_frame);
 
-        // std::cerr << pressure.toString().c_str() << std::endl;
         msg::HelperHeading rudder_ = rudder.toRosMsg();
         rudder_pub_->publish(rudder_);
         RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), rudder.toString().c_str());
