@@ -26,6 +26,7 @@ OMPL_PATH = ompl_path.OMPLPath(
                 HelperLatLon(latitude=1.0, longitude=1.0),
             ]
         ),
+        global_waypoint_latlon=HelperLatLon(latitude=1.0, longitude=1.0),
         filtered_wind_sensor=WindSensor(),
         planner="rrtstar",
     ),
