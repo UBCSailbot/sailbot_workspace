@@ -39,7 +39,7 @@ void CanTransceiver::registerCanCb(const std::pair<CanId, std::function<void(con
 }
 
 void CanTransceiver::registerCanCbs(
-  const std::initializer_list<std::pair<CanId, std::function<void(const CanFrame &)>>> & cb_kvps)
+  const std::vector<std::pair<CanId, std::function<void(const CanFrame &)>>> & cb_kvps)
 {
     for (const auto & cb_kvp : cb_kvps) {
         registerCanCb(cb_kvp);
@@ -119,8 +119,6 @@ void CanTransceiver::receive()
         } else if (bytes_read < 0) {
             std::cerr << "CAN read error: " << errno << "(" << strerror(errno)  // NOLINT(concurrency-mt-unsafe)
                       << ")" << std::endl;
-        } else {
-            std::cerr << "Received 0 bytes" << std::endl;
         }
     }
 }
