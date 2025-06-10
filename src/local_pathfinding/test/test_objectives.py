@@ -8,7 +8,7 @@ import local_pathfinding.coord_systems as coord_systems
 import local_pathfinding.objectives as objectives
 import local_pathfinding.ompl_path as ompl_path
 from local_pathfinding.local_path import LocalPathState
-from local_pathfinding.objectives import get_true_wind_direction
+from local_pathfinding.objectives import get_true_wind
 
 # Upwind downwind cost multipliers
 UPWIND_MULTIPLIER = 3000.0
@@ -43,23 +43,6 @@ def test_get_euclidean_path_length_objective(cs1: tuple, cs2: tuple, expected: f
     s1 = coord_systems.XY(*cs1)
     s2 = coord_systems.XY(*cs2)
     assert objectives.DistanceObjective.get_euclidean_path_length_objective(s1, s2) == expected
-
-
-@pytest.mark.parametrize(
-    "cs1,cs2,heading_degrees,expected",
-    [
-        ((0, 0), (0, 0), 0.0, 0),
-        ((-1, -1), (2, 1), 45.0, 11.310),
-    ],
-)
-def test_heading_path_turn_cost(cs1: tuple, cs2: tuple, heading_degrees: float, expected: float):
-    s1 = coord_systems.XY(*cs1)
-    s2 = coord_systems.XY(*cs2)
-    heading = math.radians(heading_degrees)
-
-    assert objectives.MinimumTurningObjective.heading_path_turn_cost(
-        s1, s2, heading
-    ) == pytest.approx(expected, abs=1e-3)
 
 
 @pytest.mark.parametrize(
@@ -166,14 +149,14 @@ def test_get_sailbot_speed(
 
 
 @pytest.mark.parametrize(
-    "wind_direction_degrees,wind_speed,heading_degrees,speed,expected_direction",
+    "wind_direction_degrees,wind_speed,heading_degrees,speed,expected_direction, expected_speed",
     [
-        (0, 0, 0, 0, 0),
-        (10, 0, 10, 10, 10),
-        (179, 17, 179, 9, 179),
-        (180, 17, 179, 9, 179.65),
-        (140, 17, 45, 9, 111.06),
-        (80, 5, -70, 8, -35.74),
+        (0, 0, 0, 0, 0, 0),
+        (10, 0, 10, 10, 10, 10),
+        (179, 17, 179, 9, 179, 26),
+        (180, 17, 179, 9, 179.65, 26),
+        (140, 17, 45, 9, 111.06, 18.52),
+        (80, 5, -70, 8, -35.74, 4.44),
     ],
 )
 def test_get_true_wind_direction(
@@ -182,12 +165,15 @@ def test_get_true_wind_direction(
     heading_degrees: float,
     speed: float,
     expected_direction: float,
+    expected_speed: float,
 ):
-    true_wind_direction = get_true_wind_direction(
+    true_wind_direction, true_wind_speed = get_true_wind(
         wind_direction_degrees, wind_speed, heading_degrees, speed
     )
 
     # Convert radians to degrees for easier comparison
     true_wind_direction_degrees = math.degrees(true_wind_direction)
 
-    assert true_wind_direction_degrees == pytest.approx(expected=expected_direction, abs=1e-2)
+    assert true_wind_direction_degrees == pytest.approx(
+        expected=expected_direction, abs=1e-2
+    ) and true_wind_speed == pytest.approx(expected=expected_speed, abs=1e-2)

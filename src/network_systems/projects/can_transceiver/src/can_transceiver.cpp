@@ -10,6 +10,7 @@
 #include <thread>
 
 #include "can_frame_parser.h"
+#include "linux/can/raw.h"
 
 using IFreq       = struct ifreq;
 using SockAddr    = struct sockaddr;
@@ -38,7 +39,7 @@ void CanTransceiver::registerCanCb(const std::pair<CanId, std::function<void(con
 }
 
 void CanTransceiver::registerCanCbs(
-  const std::initializer_list<std::pair<CanId, std::function<void(const CanFrame &)>>> & cb_kvps)
+  const std::vector<std::pair<CanId, std::function<void(const CanFrame &)>>> & cb_kvps)
 {
     for (const auto & cb_kvp : cb_kvps) {
         registerCanCb(cb_kvp);
@@ -48,7 +49,7 @@ void CanTransceiver::registerCanCbs(
 CanTransceiver::CanTransceiver() : is_can_simulated_(false)
 {
     // See: https://www.kernel.org/doc/html/next/networking/can.html#how-to-use-socketcan
-    static const char * CAN_INST = "can0";
+    static const char * CAN_INST = "can1";
 
     // Everything between this comment and the initiation of the receive thread is pretty much
     // magic from the socketcan documentation
@@ -61,6 +62,17 @@ CanTransceiver::CanTransceiver() : is_can_simulated_(false)
 
     IFreq       ifr;
     SockAddrCan addr;
+
+    // Enable reception of CAN FD frames
+    {
+        int enable = 1;
+
+        if (setsockopt(sock_desc_, SOL_CAN_RAW, CAN_RAW_FD_FRAMES, &enable, sizeof(enable)) < 0) {
+            std::string err_msg = "Failed to set CAN FD";
+
+            throw std::runtime_error(err_msg);
+        }
+    }
 
     strncpy(ifr.ifr_name, CAN_INST, IFNAMSIZ);
     ioctl(sock_desc_, SIOCGIFINDEX, &ifr);

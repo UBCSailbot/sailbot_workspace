@@ -5,16 +5,107 @@ Mock class for the GPS. Publishes basic GPS data to the ROS network.
 import math
 
 import custom_interfaces.msg as ci
+import numpy as np
 import rclpy
 from geopy.distance import great_circle
 from rclpy.node import Node
-from local_pathfinding.objectives import SpeedObjective
 
+from local_pathfinding.objectives import get_true_wind
 
 MEAN_SPEED = ci.HelperSpeed(speed=15.0)  # mean boat speed in kmph
 
 START_POINT = ci.HelperLatLon(latitude=48.46, longitude=-125.1)  # Starting location of the mock
 START_HEADING = ci.HelperHeading(heading=180.0)  # in degrees, heading of the boat
+
+
+BOATSPEEDS = np.array(
+    [
+        [0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0.4, 1.1, 3.2, 3.7, 2.8],
+        [0, 0.3, 1.9, 3.7, 9.3, 13.0, 9.2],
+        [0, 0.9, 3.7, 7.4, 14.8, 18.5, 13.0],
+        [0, 1.3, 5.6, 9.3, 18.5, 24.1, 18.5],
+    ]
+)
+
+WINDSPEEDS = [0, 9.3, 18.5, 27.8, 37.0]  # The row labels
+ANGLES = [0, 20, 30, 45, 90, 135, 180]  # The column labels
+
+
+def get_sailbot_speed(
+    heading: float, apparent_wind_direction: float, apparent_wind_speed: float, boat_speed: float
+) -> float:
+    """Get an estimated boat speed given the wind conditions and the speed of the boat from the
+    previous iteration.
+
+    Returns:
+        float: the interpolated boat speed
+    """
+
+    true_wind_direction, true_wind_speed = get_true_wind(
+        apparent_wind_direction=apparent_wind_direction,
+        apparent_wind_speed=apparent_wind_speed,
+        heading_degrees=heading,
+        boat_speed_over_ground=boat_speed,
+    )
+
+    # Get the sailing angle: [0, 180]
+    sailing_angle = abs(heading - true_wind_direction)
+    sailing_angle = min(sailing_angle, 360 - sailing_angle)
+
+    # Find the nearest windspeed values above and below the true windspeed
+    lower_windspeed_index = max([i for i, ws in enumerate(WINDSPEEDS) if ws <= true_wind_speed])
+    upper_windspeed_index = (
+        lower_windspeed_index + 1
+        if lower_windspeed_index < len(WINDSPEEDS) - 1
+        else lower_windspeed_index
+    )
+
+    # Find the nearest angle values above and below the sailing angle
+    lower_angle_index = max([i for i, ang in enumerate(ANGLES) if ang <= sailing_angle])
+    upper_angle_index = (
+        lower_angle_index + 1 if lower_angle_index < len(ANGLES) - 1 else lower_angle_index
+    )
+
+    # Find the maximum angle and maximum windspeed based on the actual data in the table
+    max_angle = max(ANGLES)
+    max_windspeed = max(WINDSPEEDS)
+
+    # Handle the case of maximum angle (use the dynamic max_angle)
+    if upper_angle_index == len(ANGLES) - 1:
+        lower_angle_index = ANGLES.index(max_angle) - 1
+        upper_angle_index = ANGLES.index(max_angle)
+
+    # Handle the case of the maximum windspeed (use the dynamic max_windspeed)
+    if upper_windspeed_index == len(WINDSPEEDS) - 1:
+        lower_windspeed_index = WINDSPEEDS.index(max_windspeed) - 1
+        upper_windspeed_index = WINDSPEEDS.index(max_windspeed)
+
+    # Perform linear interpolation
+    lower_windspeed = WINDSPEEDS[lower_windspeed_index]
+    upper_windspeed = WINDSPEEDS[upper_windspeed_index]
+    lower_angle = ANGLES[lower_angle_index]
+    upper_angle = ANGLES[upper_angle_index]
+
+    boat_speed_lower = BOATSPEEDS[lower_windspeed_index][lower_angle_index]
+    boat_speed_upper = BOATSPEEDS[upper_windspeed_index][lower_angle_index]
+
+    interpolated_1 = boat_speed_lower + (true_wind_speed - lower_windspeed) * (
+        boat_speed_upper - boat_speed_lower
+    ) / (upper_windspeed - lower_windspeed)
+
+    boat_speed_lower = BOATSPEEDS[lower_windspeed_index][upper_angle_index]
+    boat_speed_upper = BOATSPEEDS[upper_windspeed_index][upper_angle_index]
+
+    interpolated_2 = boat_speed_lower + (true_wind_speed - lower_windspeed) * (
+        boat_speed_upper - boat_speed_lower
+    ) / (upper_windspeed - lower_windspeed)
+
+    interpolated_value = interpolated_1 + (sailing_angle - lower_angle) * (
+        interpolated_2 - interpolated_1
+    ) / (upper_angle - lower_angle)
+
+    return interpolated_value
 
 
 class MockGPS(Node):
@@ -129,14 +220,15 @@ class MockGPS(Node):
         """
 
         self._logger.debug(f"Received data from {self.__mock_wind_sensor_sub.topic}: {msg}")
-        wind_speed: float = msg.speed.speed
-        wind_direction: float = msg.direction
+        apparent_wind_speed: float = msg.speed.speed
+        apparent_wind_direction: float = msg.direction
         self.__mean_speed = ci.HelperSpeed(
-            speed=SpeedObjective.get_sailbot_speed(
-                    heading=self.__heading.heading,
-                    wind_direction=wind_direction,
-                    wind_speed=wind_speed,
-                )
+            speed=get_sailbot_speed(
+                heading=self.__heading.heading,
+                apparent_wind_direction=apparent_wind_direction,
+                apparent_wind_speed=apparent_wind_speed,
+                boat_speed=self.__mean_speed.speed,
+            )
         )
 
 
