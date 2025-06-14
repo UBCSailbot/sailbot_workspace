@@ -3,7 +3,7 @@
 	"name": "Sailbot Workspace",
 	"dockerComposeFile": [
 		"docker-compose.yml",
-		"website/docker-compose.website.yml", // website
+		// "website/docker-compose.website.yml", // website
 
 		// Uncomment the files containing the programs you need
 		// "docs/docker-compose.docs.yml", // docs
