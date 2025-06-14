@@ -112,6 +112,29 @@ enum class CanId : canid_t {
     GENERIC_SENSOR_END    = 0x1FF
 };
 
+inline bool isValidCanId(canid_t id)
+{
+    return id == static_cast<canid_t>(CanId::PWR_MODE) || id == static_cast<canid_t>(CanId::MAIN_HEADING) ||
+           id == static_cast<canid_t>(CanId::MAIN_TR_TAB) || id == static_cast<canid_t>(CanId::RESERVED) ||
+           id == static_cast<canid_t>(CanId::BMS_DATA_FRAME) || id == static_cast<canid_t>(CanId::SAIL_WIND) ||
+           id == static_cast<canid_t>(CanId::DATA_WIND) || id == static_cast<canid_t>(CanId::RUDDER_DATA_FRAME) ||
+           id == static_cast<canid_t>(CanId::SAIL_AIS) || id == static_cast<canid_t>(CanId::PATH_GPS_DATA_FRAME) ||
+
+           (id >= static_cast<canid_t>(CanId::TEMP_SENSOR_START) &&
+            id <= static_cast<canid_t>(CanId::TEMP_SENSOR_END)) ||
+
+           (id >= static_cast<canid_t>(CanId::PH_SENSOR_START) && id <= static_cast<canid_t>(CanId::PH_SENSOR_END)) ||
+
+           (id >= static_cast<canid_t>(CanId::SALINITY_SENSOR_START) &&
+            id <= static_cast<canid_t>(CanId::SALINITY_SENSOR_END)) ||
+
+           (id >= static_cast<canid_t>(CanId::PRESSURE_SENSOR_START) &&
+            id <= static_cast<canid_t>(CanId::PRESSURE_SENSOR_END)) ||
+
+           (id >= static_cast<canid_t>(CanId::GENERIC_SENSOR_START) &&
+            id <= static_cast<canid_t>(CanId::GENERIC_SENSOR_END));
+}
+
 /**
  * @brief Map the CanId enum to a description
  *
