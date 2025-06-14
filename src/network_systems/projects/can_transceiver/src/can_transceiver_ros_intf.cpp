@@ -262,7 +262,7 @@ private:
             RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), bat.toString().c_str());
         } catch (std::out_of_range err) {
             RCLCPP_WARN(
-              this->get_logger(), "%s Attempted to construct battery but was out of range",
+              this->get_logger(), "%s Attempted to construct Battery but was out of range",
               getCurrentTimeString().c_str());
             return;
         }
@@ -312,7 +312,7 @@ private:
             RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), wind_sensor.toString().c_str());
         } catch (std::out_of_range err) {
             RCLCPP_WARN(
-              this->get_logger(), "%s Attempted to construct battery but was out of range",
+              this->get_logger(), "%s Attempted to construct Wind Sensor but was out of range",
               getCurrentTimeString().c_str());
             return;
         }
@@ -352,11 +352,17 @@ private:
 
     void publishRudder(const CanFrame & rudder_frame)
     {
-        CAN_FP::RudderData rudder(rudder_frame);
-
-        msg::HelperHeading rudder_ = rudder.toRosMsg();
-        rudder_pub_->publish(rudder_);
-        RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), rudder.toString().c_str());
+        try {
+            CAN_FP::RudderData rudder(rudder_frame);
+            msg::HelperHeading rudder_ = rudder.toRosMsg();
+            rudder_pub_->publish(rudder_);
+            RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), rudder.toString().c_str());
+        } catch (std::out_of_range err) {
+            RCLCPP_WARN(
+            this->get_logger(), "%s Attempted to construct Rudder but was out of range",
+            getCurrentTimeString().c_str());
+            return;
+        }
     }
 
     /**
