@@ -367,96 +367,114 @@ private:
      */
     void publishTemp(const CanFrame & temp_frame)
     {
-        // if we want individual handling for each type of temp sensor
-        CAN_FP::TempSensor temp_sensor(temp_frame);
-        size_t             idx;
-        for (size_t i = 0;; i++) {
-            if ((temp_sensor.id_ == CAN_FP::TempSensor::TEMP_SENSOR_IDS[i])) {
-                idx = i;
-                break;
+        try {
+            CAN_FP::TempSensor temp_sensor(temp_frame);
+            size_t length = temp_sensors_.temp_sensors.size();
+            size_t idx = length;
+            for (size_t i = 0; i < length; i++) {
+                if ((temp_sensor.id_ == CAN_FP::TempSensor::TEMP_SENSOR_IDS[i])) {
+                    idx = i;
+                    break;
+                }
             }
+            if (idx == length) {
+                RCLCPP_WARN(this->get_logger(), "Unknown Temp sensor ID: 0x%X", temp_frame.can_id);
+                return;
+            }
+            msg::TempSensor & temp_sensor_msg = temp_sensors_.temp_sensors[idx];
+            temp_sensor_msg                   = temp_sensor.toRosMsg();
+            temp_sensors_pub_->publish(temp_sensors_);
+            RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), temp_sensor.toString().c_str());
+        } catch (std::out_of_range err) {
+            RCLCPP_INFO(
+              this->get_logger(), "%s Attempted to construct Temp Sensor but was out of range",
+              getCurrentTimeString().c_str());
+            return;
         }
-
-        msg::TempSensor & temp_sensor_msg = temp_sensors_.temp_sensors[idx];
-        temp_sensor_msg                   = temp_sensor.toRosMsg();
-        temp_sensors_pub_->publish(temp_sensors_);
-        // publishFilteredWindSensor();
-        RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), temp_sensor.toString().c_str());
-
-        // CAN_FP::TempSensor temp_sensor(temp_frame);
-
-        // msg::TempSensor temp_sensor_ = temp_sensor.toRosMsg();
-        // temp_sensors_pub_->publish(temp_sensor_);
-        // RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), temp_sensor.toString().c_str());
     }
 
     void publishPh(const CanFrame & ph_frame)
     {
-        CAN_FP::PhSensor ph_sensor(ph_frame);
-        size_t           idx;
-        for (size_t i = 0;; i++) {
-            if ((ph_sensor.id_ == CAN_FP::PhSensor::PH_SENSOR_IDS[i])) {
-                idx = i;
-                break;
+        try {
+            CAN_FP::PhSensor ph_sensor(ph_frame);
+            size_t length = ph_sensors_.ph_sensors.size();
+            size_t idx = length;
+            for (size_t i = 0; i < length; i++) {
+                if ((ph_sensor.id_ == CAN_FP::PhSensor::PH_SENSOR_IDS[i])) {
+                    idx = i;
+                    break;
+                }
             }
+            if (idx == length) {
+                RCLCPP_WARN(this->get_logger(), "Unknown Ph sensor ID: 0x%X", ph_frame.can_id);
+                return;
+            }
+            msg::PhSensor & ph_sensor_msg = ph_sensors_.ph_sensors[idx];
+            ph_sensor_msg                 = ph_sensor.toRosMsg();
+            ph_sensors_pub_->publish(ph_sensors_);
+            RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), ph_sensor.toString().c_str());
+        } catch (std::out_of_range err) {
+            RCLCPP_INFO(
+              this->get_logger(), "%s Attempted to construct Ph Sensor but was out of range",
+              getCurrentTimeString().c_str());
+            return;
         }
-
-        msg::PhSensor & ph_sensor_msg = ph_sensors_.ph_sensors[idx];
-        ph_sensor_msg                 = ph_sensor.toRosMsg();
-        ph_sensors_pub_->publish(ph_sensors_);
-        // publishFilteredWindSensor();
-        RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), ph_sensor.toString().c_str());
-        // CAN_FP::PhSensor ph_sensor(ph_frame);
-
-        // msg::PhSensor ph_sensor_ = ph_sensor.toRosMsg();
-        // ph_sensors_pub_->publish(ph_sensor_);
-        // RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), ph_sensor.toString().c_str());
     }
 
     void publishSalinity(const CanFrame & salinity_frame)
     {
-        CAN_FP::SalinitySensor salinity_sensor(salinity_frame);
-        size_t                 idx;
-        for (size_t i = 0;; i++) {
-            if ((salinity_sensor.id_ == CAN_FP::SalinitySensor::SALINITY_SENSOR_IDS[i])) {
-                idx = i;
-                break;
+        try {
+            CAN_FP::SalinitySensor salinity_sensor(salinity_frame);
+            size_t length = salinity_sensors_.salinity_sensors.size();
+            size_t idx = length;
+            for (size_t i = 0; i < length; i++) {
+                if ((salinity_sensor.id_ == CAN_FP::SalinitySensor::SALINITY_SENSOR_IDS[i])) {
+                    idx = i;
+                    break;
+                }
             }
+            if (idx == length) {
+                RCLCPP_WARN(this->get_logger(), "Unknown salinity sensor ID: 0x%X", salinity_frame.can_id);
+                return;
+            }
+            msg::SalinitySensor & salinity_sensor_msg = salinity_sensors_.salinity_sensors[idx];
+            salinity_sensor_msg                       = salinity_sensor.toRosMsg();
+            salinity_sensors_pub_->publish(salinity_sensors_);
+            RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), salinity_sensor.toString().c_str());
+        } catch (std::out_of_range err) {
+            RCLCPP_INFO(
+              this->get_logger(), "%s Attempted to construct Salinity Sensor but was out of range",
+              getCurrentTimeString().c_str());
+            return;
         }
-
-        msg::SalinitySensor & salinity_sensor_msg = salinity_sensors_.salinity_sensors[idx];
-        salinity_sensor_msg                       = salinity_sensor.toRosMsg();
-        salinity_sensors_pub_->publish(salinity_sensors_);
-        // publishFilteredWindSensor();
-        RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), salinity_sensor.toString().c_str());
-        // CAN_FP::SalinitySensor salinity_sensor(salinity_frame);
-
-        // msg::SalinitySensor salinity_sensor_ = salinity_sensor.toRosMsg();
-        // salinity_sensors_pub_->publish(salinity_sensor_);
-        // RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), salinity_sensor.toString().c_str());
     }
 
     void publishPressure(const CanFrame & pressure_frame)
     {
-        CAN_FP::PressureSensor pressure_sensor(pressure_frame);
-        size_t                 idx;
-        for (size_t i = 0;; i++) {
-            if ((pressure_sensor.id_ == CAN_FP::PressureSensor::PRESSURE_SENSOR_IDS[i])) {
-                idx = i;
-                break;
+        try {
+            CAN_FP::PressureSensor pressure_sensor(pressure_frame);
+            size_t length = pressure_sensors_.pressure_sensors.size();
+            size_t idx = length;
+            for (size_t i = 0; i < length; i++) {
+                if ((pressure_sensor.id_ == CAN_FP::PressureSensor::PRESSURE_SENSOR_IDS[i])) {
+                    idx = i;
+                    break;
+                }
             }
+            if (idx == length) {
+                RCLCPP_WARN(this->get_logger(), "Unknown pressure sensor ID: 0x%X", pressure_frame.can_id);
+                return;
+            }
+            msg::PressureSensor & pressure_sensor_msg = pressure_sensors_.pressure_sensors[idx];
+            pressure_sensor_msg                       = pressure_sensor.toRosMsg();
+            pressure_sensors_pub_->publish(pressure_sensors_);
+            RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), pressure_sensor.toString().c_str());
+        } catch (std::out_of_range err) {
+            RCLCPP_WARN(
+              this->get_logger(), "%s Attempted to construct Pressure Sensor but was out of range",
+              getCurrentTimeString().c_str());
+            return;
         }
-
-        msg::PressureSensor & pressure_sensor_msg = pressure_sensors_.pressure_sensors[idx];
-        pressure_sensor_msg                       = pressure_sensor.toRosMsg();
-        pressure_sensors_pub_->publish(pressure_sensors_);
-        // publishFilteredWindSensor();
-        RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), pressure_sensor.toString().c_str());
-        // CAN_FP::PressureSensor pressure_sensor(pressure_frame);
-
-        // msg::PressureSensor pressure_sensor_ = pressure_sensor.toRosMsg();
-        // pressure_sensors_pub_->publish(pressure_sensor_);
-        // RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), pressure_sensor.toString().c_str());
     }
 
     /**
@@ -468,12 +486,18 @@ private:
     {
         //check all generic sensors in the ROS msg for the matching id
         //assumes this sensor is in the "generic_sensors_" array of sensors, however generic sensors do not have a constructor in can_frame_parser
-        size_t idx;
-        for (size_t i = 0;; i++) {
+        size_t length = generic_sensors_.generic_sensors.size();
+        size_t idx = length;
+        for (size_t i = 0; i < length; i++) {
             if (generic_frame.can_id == generic_sensors_.generic_sensors[i].id) {
                 idx = i;
                 break;
             }
+        }
+
+        if (idx == length) {
+            RCLCPP_WARN(this->get_logger(), "Unknown generic sensor ID: 0x%X", generic_frame.can_id);
+            return;
         }
 
         uint64_t generic_data = 0;
