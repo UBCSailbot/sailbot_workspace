@@ -531,7 +531,7 @@ private:
      */
     void subDesiredHeadingCb(msg::DesiredHeading desired_heading)
     {
-        desired_heading_           = desired_heading;
+        desired_heading_ = desired_heading;
         try {
             CAN_FP::DesiredHeading desired_heading_frame(desired_heading, CanId::MAIN_TR_TAB);
             can_trns_->send(desired_heading_frame.toLinuxCan());
