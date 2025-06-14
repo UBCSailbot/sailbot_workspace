@@ -532,10 +532,17 @@ private:
     void subDesiredHeadingCb(msg::DesiredHeading desired_heading)
     {
         desired_heading_           = desired_heading;
-        auto desired_heading_frame = CAN_FP::DesiredHeading(desired_heading_, CanId::MAIN_TR_TAB);
-        can_trns_->send(desired_heading_frame.toLinuxCan());
-        RCLCPP_INFO(
-          this->get_logger(), "%s %s", getCurrentTimeString().c_str(), desired_heading_frame.toString().c_str());
+        try {
+            CAN_FP::DesiredHeading desired_heading_frame(desired_heading, CanId::MAIN_TR_TAB);
+            can_trns_->send(desired_heading_frame.toLinuxCan());
+            RCLCPP_INFO(
+              this->get_logger(), "%s %s", getCurrentTimeString().c_str(), desired_heading_frame.toString().c_str());
+        } catch (const std::out_of_range & e) {
+            RCLCPP_WARN(
+              this->get_logger(), "%s Attempted to construct DesiredHeading but was out of range",
+              getCurrentTimeString().c_str());
+            return;
+        }
     }
 
     /**
