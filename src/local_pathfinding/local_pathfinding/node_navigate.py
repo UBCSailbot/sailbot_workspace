@@ -262,6 +262,7 @@ class Sailbot(Node):
             self.ais_ships,
             self.global_path,
             received_new_global_waypoint,
+            self.global_waypoint_latlon,
             self.filtered_wind_sensor,
             self.planner,
         )
