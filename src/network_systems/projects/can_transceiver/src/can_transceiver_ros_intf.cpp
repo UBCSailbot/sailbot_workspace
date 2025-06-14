@@ -359,8 +359,8 @@ private:
             RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), rudder.toString().c_str());
         } catch (std::out_of_range err) {
             RCLCPP_WARN(
-            this->get_logger(), "%s Attempted to construct Rudder but was out of range",
-            getCurrentTimeString().c_str());
+              this->get_logger(), "%s Attempted to construct Rudder but was out of range",
+              getCurrentTimeString().c_str());
             return;
         }
     }
