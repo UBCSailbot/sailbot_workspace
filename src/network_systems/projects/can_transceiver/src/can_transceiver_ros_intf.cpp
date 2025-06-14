@@ -112,7 +112,7 @@ public:
               ros_topics::SAIL_CMD, QUEUE_SIZE, [this](msg::SailCmd sail_cmd_) { subSailCmdCb(sail_cmd_); });
             desired_heading_sub_ = this->create_subscription<msg::DesiredHeading>(
               ros_topics::DESIRED_HEADING, QUEUE_SIZE,
-              [this](msg::DesiredHeading desired_heading_) { subDesiredHeading(desired_heading_); });
+              [this](msg::DesiredHeading desired_heading_) { subDesiredHeadingCb(desired_heading_); });
 
             if (mode == SYSTEM_MODE::DEV) {  // Initialize the CAN Sim Intf
                 mock_ais_sub_ = this->create_subscription<msg::AISShips>(
@@ -465,20 +465,31 @@ private:
     }
 
     /**
-     * @brief Subscribe to a MAIN_HEADING frame
-     *        Intended to be registered as a callback with the CAN Tranceiver instance
+     * @brief Desired heading topic callback
      *
-     * @param heading_frame main_heading CAN frame read from the CAN bus
+     * @param desired_heading desired_heading received from the Desired Heading topic
      */
-    void subDesiredHeading(msg::DesiredHeading & desired_heading_input)
+    void subDesiredHeadingCb(msg::DesiredHeading desired_heading)
     {
-        msg::HelperHeading helper_msg;
-        helper_msg = desired_heading_input.heading;
-        desired_heading_.set__heading(helper_msg);
-        desired_heading_.set__steering(desired_heading_input.steering);
-        auto main_heading_frame = CAN_FP::DesiredHeading(desired_heading_, CanId::MAIN_HEADING);
-        can_trns_->send(main_heading_frame.toLinuxCan());
-        RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), main_heading_frame.toString().c_str());
+        desired_heading_           = desired_heading;
+        auto desired_heading_frame = CAN_FP::DesiredHeading(desired_heading_, CanId::MAIN_TR_TAB);
+        can_trns_->send(desired_heading_frame.toLinuxCan());
+        RCLCPP_INFO(
+          this->get_logger(), "%s %s", getCurrentTimeString().c_str(), desired_heading_frame.toString().c_str());
+    }
+
+    /**
+     * @brief SailCmd subscriber callback
+     *
+     * @param sail_cmd_
+     */
+    void subSailCmdCb(const msg::SailCmd & sail_cmd_input)
+    {
+        sail_cmd_                = sail_cmd_input;
+        auto main_trim_tab_frame = CAN_FP::MainTrimTab(sail_cmd_, CanId::MAIN_TR_TAB);
+        can_trns_->send(main_trim_tab_frame.toLinuxCan());
+        RCLCPP_INFO(
+          this->get_logger(), "%s %s", getCurrentTimeString().c_str(), main_trim_tab_frame.toString().c_str());
     }
 
     // SIMULATION CALLBACKS //
@@ -498,7 +509,7 @@ private:
      *
      * @param sail_cmd_
      */
-    void subSailCmdCb(const msg::SailCmd & sail_cmd_input)
+    void subSimSailCmdCb(const msg::SailCmd & sail_cmd_input)
     {
         sail_cmd_ = sail_cmd_input;
         boat_sim_input_msg_.set__sail_cmd(sail_cmd_);
@@ -517,19 +528,6 @@ private:
     {
         ais_ships_ = mock_ais_ships;
         ais_pub_->publish(ais_ships_);
-    }
-    /**
-     * @brief Desired heading topic callback
-     *
-     * @param desired_heading desired_heading received from the Desired Heading topic
-     */
-    void subDesiredHeadingCb(msg::DesiredHeading desired_heading)
-    {
-        boat_sim_input_msg_.set__heading(desired_heading);
-        auto desired_heading_frame = CAN_FP::DesiredHeading(desired_heading, CanId::MAIN_TR_TAB);
-        can_trns_->send(desired_heading_frame.toLinuxCan());
-        RCLCPP_INFO(
-          this->get_logger(), "%s %s", getCurrentTimeString().c_str(), desired_heading_frame.toString().c_str());
     }
 
     /**
