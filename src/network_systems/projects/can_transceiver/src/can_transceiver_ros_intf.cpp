@@ -220,7 +220,7 @@ private:
             }
             RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), ais_ship.toString().c_str());
         } catch (std::out_of_range err) {
-            RCLCPP_INFO(
+            RCLCPP_WARN(
               this->get_logger(), "%s Attempted to construct AISShips but was out of range",
               getCurrentTimeString().c_str());
             return;
@@ -261,7 +261,7 @@ private:
 
             RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), bat.toString().c_str());
         } catch (std::out_of_range err) {
-            RCLCPP_INFO(
+            RCLCPP_WARN(
               this->get_logger(), "%s Attempted to construct battery but was out of range",
               getCurrentTimeString().c_str());
             return;
@@ -283,7 +283,7 @@ private:
             gps_pub_->publish(gps_);
             RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), gps.toString().c_str());
         } catch (std::out_of_range err) {
-            RCLCPP_INFO(
+            RCLCPP_WARN(
               this->get_logger(), "%s Attempted to construct GPS but was out of range", getCurrentTimeString().c_str());
             return;
         }
@@ -311,7 +311,7 @@ private:
             publishFilteredWindSensor();
             RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), wind_sensor.toString().c_str());
         } catch (std::out_of_range err) {
-            RCLCPP_INFO(
+            RCLCPP_WARN(
               this->get_logger(), "%s Attempted to construct battery but was out of range",
               getCurrentTimeString().c_str());
             return;
@@ -386,7 +386,7 @@ private:
             temp_sensors_pub_->publish(temp_sensors_);
             RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), temp_sensor.toString().c_str());
         } catch (std::out_of_range err) {
-            RCLCPP_INFO(
+            RCLCPP_WARN(
               this->get_logger(), "%s Attempted to construct Temp Sensor but was out of range",
               getCurrentTimeString().c_str());
             return;
@@ -414,7 +414,7 @@ private:
             ph_sensors_pub_->publish(ph_sensors_);
             RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), ph_sensor.toString().c_str());
         } catch (std::out_of_range err) {
-            RCLCPP_INFO(
+            RCLCPP_WARN(
               this->get_logger(), "%s Attempted to construct Ph Sensor but was out of range",
               getCurrentTimeString().c_str());
             return;
@@ -443,7 +443,7 @@ private:
             RCLCPP_INFO(
               this->get_logger(), "%s %s", getCurrentTimeString().c_str(), salinity_sensor.toString().c_str());
         } catch (std::out_of_range err) {
-            RCLCPP_INFO(
+            RCLCPP_WARN(
               this->get_logger(), "%s Attempted to construct Salinity Sensor but was out of range",
               getCurrentTimeString().c_str());
             return;
@@ -541,7 +541,7 @@ private:
             RCLCPP_INFO(
               this->get_logger(), "%s %s", getCurrentTimeString().c_str(), main_trim_tab_frame.toString().c_str());
         } catch (std::out_of_range err) {
-            RCLCPP_INFO(
+            RCLCPP_WARN(
               this->get_logger(), "%s Attempted to construct MainTrimTab but was out of range",
               getCurrentTimeString().c_str());
             return;
@@ -566,11 +566,17 @@ private:
     void subDesiredHeadingCb(msg::DesiredHeading desired_heading)
     {
         boat_sim_input_msg_.set__heading(desired_heading);
-        // desired heading should get through even if bounds are bad for debug purposes
-        CAN_FP::DesiredHeading desired_heading_frame(desired_heading, CanId::MAIN_TR_TAB);
-        can_trns_->send(desired_heading_frame.toLinuxCan());
-        RCLCPP_INFO(
-          this->get_logger(), "%s %s", getCurrentTimeString().c_str(), desired_heading_frame.toString().c_str());
+        try {
+            CAN_FP::DesiredHeading desired_heading_frame(desired_heading, CanId::MAIN_TR_TAB);
+            can_trns_->send(desired_heading_frame.toLinuxCan());
+            RCLCPP_INFO(
+              this->get_logger(), "%s %s", getCurrentTimeString().c_str(), desired_heading_frame.toString().c_str());
+        } catch (const std::out_of_range & e) {
+            RCLCPP_WARN(
+              this->get_logger(), "%s Attempted to construct DesiredHeading but was out of range",
+              getCurrentTimeString().c_str());
+            return;
+        }
     }
 
     /**
@@ -626,18 +632,12 @@ int main(int argc, char * argv[])
             } catch (const std::out_of_range & e) {
                 RCLCPP_WARN(node->get_logger(), "%s", e.what());
             } catch (const CAN_FP::CanIdMismatchException & e) {
-                RCLCPP_FATAL(node->get_logger(), "%s", e.what());
+                RCLCPP_WARN(node->get_logger(), "%s", e.what());
             } catch (const std::exception & e) {
                 RCLCPP_ERROR(node->get_logger(), "%s", e.what());
                 break;
             }
         }
-        // try {
-        //     rclcpp::spin(node);
-        // } catch (std::exception & e) {
-        //     RCLCPP_ERROR(node->get_logger(), "%s", e.what());
-        //     throw e;
-        // }
     } catch (std::exception & e) {
         std::cerr << e.what() << std::endl;
         err = true;
