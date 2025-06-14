@@ -369,8 +369,8 @@ private:
     {
         try {
             CAN_FP::TempSensor temp_sensor(temp_frame);
-            size_t length = temp_sensors_.temp_sensors.size();
-            size_t idx = length;
+            size_t             length = temp_sensors_.temp_sensors.size();
+            size_t             idx    = length;
             for (size_t i = 0; i < length; i++) {
                 if ((temp_sensor.id_ == CAN_FP::TempSensor::TEMP_SENSOR_IDS[i])) {
                     idx = i;
@@ -397,8 +397,8 @@ private:
     {
         try {
             CAN_FP::PhSensor ph_sensor(ph_frame);
-            size_t length = ph_sensors_.ph_sensors.size();
-            size_t idx = length;
+            size_t           length = ph_sensors_.ph_sensors.size();
+            size_t           idx    = length;
             for (size_t i = 0; i < length; i++) {
                 if ((ph_sensor.id_ == CAN_FP::PhSensor::PH_SENSOR_IDS[i])) {
                     idx = i;
@@ -425,8 +425,8 @@ private:
     {
         try {
             CAN_FP::SalinitySensor salinity_sensor(salinity_frame);
-            size_t length = salinity_sensors_.salinity_sensors.size();
-            size_t idx = length;
+            size_t                 length = salinity_sensors_.salinity_sensors.size();
+            size_t                 idx    = length;
             for (size_t i = 0; i < length; i++) {
                 if ((salinity_sensor.id_ == CAN_FP::SalinitySensor::SALINITY_SENSOR_IDS[i])) {
                     idx = i;
@@ -440,7 +440,8 @@ private:
             msg::SalinitySensor & salinity_sensor_msg = salinity_sensors_.salinity_sensors[idx];
             salinity_sensor_msg                       = salinity_sensor.toRosMsg();
             salinity_sensors_pub_->publish(salinity_sensors_);
-            RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), salinity_sensor.toString().c_str());
+            RCLCPP_INFO(
+              this->get_logger(), "%s %s", getCurrentTimeString().c_str(), salinity_sensor.toString().c_str());
         } catch (std::out_of_range err) {
             RCLCPP_INFO(
               this->get_logger(), "%s Attempted to construct Salinity Sensor but was out of range",
@@ -453,8 +454,8 @@ private:
     {
         try {
             CAN_FP::PressureSensor pressure_sensor(pressure_frame);
-            size_t length = pressure_sensors_.pressure_sensors.size();
-            size_t idx = length;
+            size_t                 length = pressure_sensors_.pressure_sensors.size();
+            size_t                 idx    = length;
             for (size_t i = 0; i < length; i++) {
                 if ((pressure_sensor.id_ == CAN_FP::PressureSensor::PRESSURE_SENSOR_IDS[i])) {
                     idx = i;
@@ -468,7 +469,8 @@ private:
             msg::PressureSensor & pressure_sensor_msg = pressure_sensors_.pressure_sensors[idx];
             pressure_sensor_msg                       = pressure_sensor.toRosMsg();
             pressure_sensors_pub_->publish(pressure_sensors_);
-            RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), pressure_sensor.toString().c_str());
+            RCLCPP_INFO(
+              this->get_logger(), "%s %s", getCurrentTimeString().c_str(), pressure_sensor.toString().c_str());
         } catch (std::out_of_range err) {
             RCLCPP_WARN(
               this->get_logger(), "%s Attempted to construct Pressure Sensor but was out of range",
@@ -487,7 +489,7 @@ private:
         //check all generic sensors in the ROS msg for the matching id
         //assumes this sensor is in the "generic_sensors_" array of sensors, however generic sensors do not have a constructor in can_frame_parser
         size_t length = generic_sensors_.generic_sensors.size();
-        size_t idx = length;
+        size_t idx    = length;
         for (size_t i = 0; i < length; i++) {
             if (generic_frame.can_id == generic_sensors_.generic_sensors[i].id) {
                 idx = i;
