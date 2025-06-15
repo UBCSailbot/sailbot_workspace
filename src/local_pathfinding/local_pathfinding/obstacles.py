@@ -143,14 +143,11 @@ class Land(Obstacle):
             state_space_latlon (Polygon): A custom state space.
             land_multi_polygon (MultiPolygon): Custom land data. Useful for testing.
         """
-        if land_multi_polygon is not None:  # for testing
+        if land_multi_polygon is not None:  # for testing (injecting mock land data)
 
-            collision_zone = land_multi_polygon.buffer(0)
-
-            if collision_zone.geom_type == "Polygon":
-                collision_zone = MultiPolygon([collision_zone])
-
-            self.collision_zone = collision_zone
+            self.collision_zone = MultiPolygon(
+                cs.latlon_polygon_list_to_xy_polygon_list(land_multi_polygon.geoms, self.reference)
+            )
             return
 
         if state_space_latlon is None:

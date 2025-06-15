@@ -747,7 +747,8 @@ std::string DesiredHeading::debugStr() const
 std::string DesiredHeading::toString() const
 {
     std::stringstream ss;
-    ss << "[DESIRED HEADING] Heading: " << heading_;
+    ss << "[DESIRED HEADING] Heading: " << heading_ << "\n"
+       << "Steering bit: " << steering_ << "\n";
     return ss.str();
 }
 

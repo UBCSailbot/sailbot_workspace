@@ -21,6 +21,10 @@ using CAN_FP::CanId;
 
 void CanTransceiver::onNewCanData(const CanFrame & frame) const
 {
+    if (!CAN_FP::isValidCanId(frame.can_id)) {
+        std::cerr << "Invalid CAN ID received: 0x" << std::hex << frame.can_id << std::endl;
+        return;
+    }
     CanId id{frame.can_id};
     if (read_callbacks_.contains(id)) {
         read_callbacks_.at(id)(frame);  // invoke the callback function mapped to id

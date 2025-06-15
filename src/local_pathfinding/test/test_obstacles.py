@@ -101,17 +101,22 @@ def test_create_land_no_state_space():
     "reference_point, sailbot_position, all_land_data, bbox_buffer_amount, invalid_point, valid_point, mock_land",  # noqa
     [
         (
-            HelperLatLon(latitude=52.26, longitude=-136.91),
+            HelperLatLon(latitude=48.541341, longitude=-127.424606),
             HelperLatLon(latitude=51.95, longitude=-136.26),
             LAND,
             0.1,  # degrees
-            XY(0.5, 0.5),
-            XY(5, 5),
+            XY(0, 0),
+            XY(100, 100),
             MultiPolygon(
                 [
-                    Polygon([Point([0, 0]), Point([0, 1]), Point([1, 1]), Point([1, 0])]),
-                    Polygon([Point([0, 0]), Point([0, 1]), Point([2, 1]), Point([2, 0])]),
-                    Polygon([Point([2, 2]), Point([2, 3]), Point([3, 3]), Point([3, 2])]),
+                    Polygon(
+                        [
+                            Point([-127.336762, 49.220467]),
+                            Point([-128.401875, 49.047950]),
+                            Point([-127.929711, 48.308044]),
+                            Point([-126.568123, 48.526792]),
+                        ]
+                    ),
                 ]
             ),
         )
