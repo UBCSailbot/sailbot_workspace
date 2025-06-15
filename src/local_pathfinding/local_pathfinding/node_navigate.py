@@ -1,9 +1,11 @@
 """The main node of the local_pathfinding package, represented by the `Sailbot` class."""
 
 import json
+import os
 
 import custom_interfaces.msg as ci
 import rclpy
+from ament_index_python.packages import get_package_share_directory
 from pyproj import Geod
 from rclpy.node import Node
 from shapely.geometry import MultiPolygon, Polygon
@@ -123,7 +125,11 @@ class Sailbot(Node):
         self.mode = self.get_parameter("mode").get_parameter_value().string_value
         self.planner = self.get_parameter("path_planner").get_parameter_value().string_value
         self.get_logger().debug(f"Got parameter: {self.planner=}")
-        self.mock_land_file = "../land/mock/mock_land.json"
+
+        mock_land_dir = os.path.join(
+            get_package_share_directory("local_pathfinding"), "land", "mock"
+        )
+        self.mock_land_file = os.path.join(mock_land_dir, "mock_land.json")
 
         # Initialize mock land obstacle
         self.land_multi_polygon = None
