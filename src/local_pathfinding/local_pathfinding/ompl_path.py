@@ -31,6 +31,8 @@ ou.setLogLevel(ou.LOG_WARN)
 
 BOX_BUFFER_SIZE = 1.0  # km
 LAND_KEY = -1
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+LAND_PKL_FILE_PATH = os.path.join(CURRENT_DIR, "..", "land", "pkl", "land.pkl")
 
 
 class OMPLPath:
@@ -146,9 +148,7 @@ class OMPLPath:
 
         if OMPLPath.all_land_data is None:
             try:
-                current_dir = os.path.dirname(os.path.abspath(__file__))
-                land_pkl_path = os.path.join(current_dir, "..", "land", "pkl", "land.pkl")
-                OMPLPath.all_land_data = load_pkl(land_pkl_path)
+                OMPLPath.all_land_data = load_pkl(LAND_PKL_FILE_PATH)
             except FileNotFoundError as e:
                 exit(f"could not load the land.pkl file {e}")
 
