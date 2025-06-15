@@ -298,7 +298,7 @@ class OMPLPath:
         planner = og.RRTstar(space_information)
         planner.setRange(200.0)
         simple_setup.setPlanner(planner)
-        print(planner)
+        # print(planner)
 
         return simple_setup
 
