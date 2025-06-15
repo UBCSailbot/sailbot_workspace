@@ -23,6 +23,7 @@ import dash
 import plotly.graph_objects as go
 from dash import dcc, html
 from dash.dependencies import Input, Output
+from shapely.geometry import Polygon
 
 import local_pathfinding.coord_systems as cs
 
@@ -81,6 +82,10 @@ class VisualizerState:
 
         # TODO: Include other LPathData attributes for plotting their data
 
+        # Process land obstacles and wind vectors
+        self.land_obstacles_xy = self._process_land_obstacles(self.curr_msg.obstacles)
+        self.wind_vector = self._process_wind_vector(self.curr_msg.filtered_wind_sensor)
+
     def _validate_message(self, msg: ci.LPathData):
         """Checks if the sailbot observer node recieved any messages.
         If not, it raises a ValueError.
@@ -98,11 +103,14 @@ class VisualizerState:
         y_coords = [pos.y for pos in positions]
         return x_coords, y_coords
 
-    def _process_wind_vector(self):
+    def _process_wind_vector(self, wind_sensor):
         pass
 
-    def _process_land_obstacles(self):
-        pass
+    def _process_land_obstacles(self, land_obstacles):
+        obstacle2 = Polygon([(15, 10), (25, 10), (25, 25), (15, 25)])
+        obstacle3 = Polygon([(400, 20), (500, 20), (500, 60), (400, 60)])
+
+        return [obstacle2, obstacle3]
 
 
 def initial_plot() -> go.Figure:
@@ -248,6 +256,24 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
         legend=dict(x=0, y=1),  # Position the legend at the top left
         showlegend=True,
     )
+
+    # Add hardcoded land obstacles
+    for poly in state.land_obstacles_xy:
+        if not poly.is_empty:
+            x = list(poly.exterior.xy[0])
+            y = list(poly.exterior.xy[1])
+            fig.add_trace(
+                go.Scatter(
+                    x=x,
+                    y=y,
+                    fill="toself",
+                    mode="lines",
+                    line=dict(color="lightgreen"),
+                    fillcolor="lightgreen",
+                    opacity=0.5,
+                    name="Land Obstacle",
+                )
+            )
 
     return fig
 
