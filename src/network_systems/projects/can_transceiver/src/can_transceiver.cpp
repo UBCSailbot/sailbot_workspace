@@ -21,6 +21,10 @@ using CAN_FP::CanId;
 
 void CanTransceiver::onNewCanData(const CanFrame & frame) const
 {
+    if (!CAN_FP::isValidCanId(frame.can_id)) {
+        std::cerr << "Invalid CAN ID received: 0x" << std::hex << frame.can_id << std::endl;
+        return;
+    }
     CanId id{frame.can_id};
     if (read_callbacks_.contains(id)) {
         read_callbacks_.at(id)(frame);  // invoke the callback function mapped to id
@@ -39,7 +43,7 @@ void CanTransceiver::registerCanCb(const std::pair<CanId, std::function<void(con
 }
 
 void CanTransceiver::registerCanCbs(
-  const std::initializer_list<std::pair<CanId, std::function<void(const CanFrame &)>>> & cb_kvps)
+  const std::vector<std::pair<CanId, std::function<void(const CanFrame &)>>> & cb_kvps)
 {
     for (const auto & cb_kvp : cb_kvps) {
         registerCanCb(cb_kvp);
@@ -119,8 +123,6 @@ void CanTransceiver::receive()
         } else if (bytes_read < 0) {
             std::cerr << "CAN read error: " << errno << "(" << strerror(errno)  // NOLINT(concurrency-mt-unsafe)
                       << ")" << std::endl;
-        } else {
-            std::cerr << "Received 0 bytes" << std::endl;
         }
     }
 }

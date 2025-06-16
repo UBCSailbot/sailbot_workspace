@@ -1,13 +1,14 @@
 """Our custom OMPL optimization objectives."""
 
 import math
+from typing import Tuple
 
 import custom_interfaces.msg as ci
 import numpy as np
 from ompl import base as ob
-from local_pathfinding.coord_systems import bound_to_180
 
 import local_pathfinding.coord_systems as cs
+from local_pathfinding.coord_systems import bound_to_180
 
 # Upwind downwind cost multipliers
 UPWIND_MULTIPLIER = 3000.0
@@ -32,8 +33,12 @@ WINDSPEEDS = [0, 9.3, 18.5, 27.8, 37.0]  # The row labels
 ANGLES = [0, 20, 30, 45, 90, 135, 180]  # The column labels
 
 
-def get_true_wind_direction(apparent_wind_direction: float, apparent_wind_speed: float,
-                            heading_degrees: float, boat_speed_over_ground: float) -> float:
+def get_true_wind(
+    apparent_wind_direction: float,
+    apparent_wind_speed: float,
+    heading_degrees: float,
+    boat_speed_over_ground: float,
+) -> Tuple[float, float]:
     """Calculates the true wind direction based on the boat's heading and speed.
     Args:
         apparent_wind_direction (float): The direction of the wind in degrees (-180, 180]. This
@@ -60,7 +65,7 @@ def get_true_wind_direction(apparent_wind_direction: float, apparent_wind_speed:
     true_east = apparent_wind_east - boat_wind_east
     true_north = apparent_wind_north - boat_wind_north
 
-    return math.atan2(true_east, true_north)
+    return (math.atan2(true_east, true_north), math.hypot(true_north, true_east))
 
 
 class Objective(ob.StateCostIntegralObjective):
@@ -172,27 +177,21 @@ class MinimumTurningObjective(Objective):
         """
         s1_xy = cs.XY(s1.getX(), s1.getY())
         s2_xy = cs.XY(s2.getX(), s2.getY())
+        threshold = math.pi / 9  # 20 degrees around the angle to next waypoint
 
-        angle = self.heading_path_turn_cost(s1_xy, s2_xy, self.heading)
+        # calculate the difference in angle between s1 and s2
+        raw_angle_s1_s2 = math.atan2(s2_xy.y - s1_xy.y, s2_xy.x - s1_xy.x)
 
-        return ob.Cost(angle)
+        # angle between the orientation of the boat at s1 and the location of the s2
+        angle_s1_s2 = MinimumTurningObjective.min_turn_angle(raw_angle_s1_s2, s1.getYaw())
 
-    @staticmethod
-    def heading_path_turn_cost(s1: cs.XY, s2: cs.XY, heading: float) -> float:
-        """Generates the turning cost between s1-s2 and heading of the sailbot
-
-        Args:
-            s1 (cs.XY): The starting point of the local start state
-            s2 (cs.XY): The ending point of the local goal state
-            heading (float): The heading of the sailbot in radians (-pi, pi]
-
-        Returns:
-            float: The minimum turning angle between s1-s2 and heading in degrees
-        """
-        # Calculate the true bearing of s2 from s1
-        path_direction = math.atan2(s2.x - s1.x, s2.y - s1.y)
-
-        return MinimumTurningObjective.min_turn_angle(path_direction, heading)
+        # now we need to ensure that the s2's orientation isn't horrendous given s2_xy
+        if MinimumTurningObjective.min_turn_angle(s2.getYaw(), raw_angle_s1_s2) > threshold:
+            # the orientation of the boat doesn't make sense even after accounting for drift
+            # nuke the cost
+            return ob.Cost(3000)
+        else:
+            return ob.Cost(angle_s1_s2)
 
     @staticmethod
     def min_turn_angle(angle1: float, angle2: float) -> float:
@@ -204,7 +203,7 @@ class MinimumTurningObjective(Objective):
                 Must be bounded within 2pi radians of `angle1`
 
         Returns:
-            float: The minimum turning angle between the two angles in degrees
+            float: The minimum turning angle between the two angles in radians
         """
         # Calculate the uncorrected turn size [0, 2pi]
         turn_size_bias = math.fabs(angle1 - angle2)
@@ -215,7 +214,7 @@ class MinimumTurningObjective(Objective):
         else:
             turn_size_unbias = turn_size_bias
 
-        return math.degrees(math.fabs(turn_size_unbias))
+        return math.fabs(turn_size_unbias)
 
 
 class WindObjective(Objective):
@@ -225,15 +224,18 @@ class WindObjective(Objective):
         wind_direction (float): The direction of the wind in radians (-pi, pi]
     """
 
-    def __init__(self, space_information, wind_direction_degrees: float, wind_speed: float,
-                 heading_degrees: float, speed: float):
+    def __init__(
+        self,
+        space_information,
+        wind_direction_degrees: float,
+        wind_speed: float,
+        heading_degrees: float,
+        speed: float,
+    ):
         super().__init__(space_information)
         assert -180 < wind_direction_degrees <= 180
-        self.wind_direction = get_true_wind_direction(
-            wind_direction_degrees,
-            wind_speed,
-            heading_degrees,
-            speed
+        self.wind_direction, _ = get_true_wind(
+            wind_direction_degrees, wind_speed, heading_degrees, speed
         )
 
     def motionCost(self, s1: ob.SE2StateSpace, s2: ob.SE2StateSpace) -> ob.Cost:
@@ -467,17 +469,13 @@ def get_sailing_objective(
     )
     objective.addObjective(
         objective=MinimumTurningObjective(space_information, simple_setup, heading_degrees),
-        weight=100.0,
+        weight=10.0,
     )
     objective.addObjective(
         objective=WindObjective(
-            space_information,
-            wind_direction_degrees,
-            wind_speed,
-            heading_degrees,
-            speed
+            space_information, wind_direction_degrees, wind_speed, heading_degrees, speed
         ),
-        weight=1.0
+        weight=5.0,
     )
     objective.addObjective(
         objective=SpeedObjective(
@@ -486,7 +484,7 @@ def get_sailing_objective(
             wind_direction_degrees,
             wind_speed,
         ),
-        weight=1.0,
+        weight=0,
     )
 
     return objective

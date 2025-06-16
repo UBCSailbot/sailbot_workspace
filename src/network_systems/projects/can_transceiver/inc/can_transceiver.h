@@ -56,7 +56,7 @@ public:
      * @param cb_kvps initializer list of cb_kvp pairs
      */
     void registerCanCbs(
-      const std::initializer_list<std::pair<CAN_FP::CanId, std::function<void(const CAN_FP::CanFrame &)>>> & cb_kvps);
+      const std::vector<std::pair<CAN_FP::CanId, std::function<void(const CAN_FP::CanFrame &)>>> & cb_kvps);
 
 private:
     // CAN socket this instance is attached to (can be a normal file descriptor when simulating)

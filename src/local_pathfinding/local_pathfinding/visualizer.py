@@ -60,6 +60,7 @@ class VisualizerState:
         self._validate_message(self.curr_msg)
 
         self.sailbot_lat_lon = [msg.gps.lat_lon for msg in msgs]
+        self.sailbot_gps = [msg.gps for msg in msgs]
         self.all_local_wp = [msg.local_path.waypoints for msg in msgs]
 
         self.global_path = self.curr_msg.global_path
@@ -208,15 +209,6 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
 
     fig = initial_plot()
 
-    # start local waypoint
-    start_trace = go.Scatter(
-        x=[state.final_local_wp_x[0]],
-        y=[state.final_local_wp_y[0]],
-        mode="markers",
-        marker=dict(color="green", size=10),
-        name="Start",
-    )
-
     # local path waypoints
     intermediate_trace = go.Scatter(
         x=state.final_local_wp_x[1:-1],
@@ -235,7 +227,7 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
         name="Goal",
     )
 
-    # boat marker (current position, red with larger size)
+    # boat marker (current position)
     boat_trace = go.Scatter(
         x=[state.sailbot_pos_x[-1]],
         y=[state.sailbot_pos_y[-1]],
@@ -246,10 +238,15 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
         marker_line_width=2,
         marker_size=15,
         name="Boat",
+        hovertemplate="<b>🚢 Sailbot Current Position</b><br>" +
+        "X: %{x:.2f} meters<br>" +
+        "Y: %{y:.2f} meters<br>" +
+        "Heading: " + f"{state.sailbot_gps[-1].heading.heading:.1f}°<br>" +
+        "Speed: " + f"{state.sailbot_gps[-1].speed.speed:.1f}<br>" +
+        "<extra></extra>"
     )
 
     # Add all traces to the figure
-    fig.add_trace(start_trace)
     fig.add_trace(intermediate_trace)
     fig.add_trace(goal_trace)
     fig.add_trace(boat_trace)
@@ -314,6 +311,12 @@ def animated_update_plot(state: VisualizerState) -> go.Figure:
         marker_size=15,
         text=["Boat"],
         name="Boat",
+        hovertemplate="<b>🚢 Sailbot Current Position</b><br>" +
+        "X: %{x:.2f} meters<br>" +
+        "Y: %{y:.2f} meters<br>" +
+        "Heading: " + f"{state.sailbot_gps[0].heading.heading:.1f}°<br>" +
+        "Speed: " + f"{state.sailbot_gps[0].speed.speed:.1f}<br>" +
+        "<extra></extra>"
     )
     initial_state = [
         go.Scatter(
@@ -381,6 +384,12 @@ def animated_update_plot(state: VisualizerState) -> go.Figure:
                     marker_size=15,
                     text=["Boat"],
                     name="Boat",
+                    hovertemplate="<b>🚢 Sailbot Current Position</b><br>" +
+                    "X: %{x:.2f} meters<br>" +
+                    "Y: %{y:.2f} meters<br>" +
+                    "Heading: " + f"{state.sailbot_gps[i].heading.heading:.1f}°<br>" +
+                    "Speed: " + f"{state.sailbot_gps[i].speed.speed:.1f}<br>" +
+                    "<extra></extra>"
                 )
             ],
             name=f"Boat {i}",
