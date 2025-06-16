@@ -83,7 +83,9 @@ class VisualizerState:
         # TODO: Include other LPathData attributes for plotting their data
 
         # Process land obstacles and wind vectors
-        self.land_obstacles_xy = self._process_land_obstacles(self.curr_msg.obstacles)
+        self.land_obstacles_xy = self._process_land_obstacles(
+            self.curr_msg.obstacles, self.reference_latlon
+        )
         self.wind_vector = self._process_wind_vector(self.curr_msg.filtered_wind_sensor)
 
     def _validate_message(self, msg: ci.LPathData):
@@ -106,11 +108,23 @@ class VisualizerState:
     def _process_wind_vector(self, wind_sensor):
         pass
 
-    def _process_land_obstacles(self, land_obstacles):
-        obstacle2 = Polygon([(15, 10), (25, 10), (25, 25), (15, 25)])
-        obstacle3 = Polygon([(400, 20), (500, 20), (500, 60), (400, 60)])
+    def _process_land_obstacles(self, obstacles, reference):
+        processed_obstacles = []
 
-        return [obstacle2, obstacle3]
+        for ob in obstacles:
+            if ob.obstacle_type == "Land":
+                # Convert each latlon point to XY
+                xy_points = []
+                for point in ob.points:
+                    xy = cs.latlon_to_xy(reference, point)
+                    xy_points.append((xy.x, xy.y))  # store as (x, y) tuple
+
+                # Create a Shapely polygon from the XY points
+                if len(xy_points) >= 3:
+                    poly = Polygon(xy_points)
+                    processed_obstacles.append(poly)
+
+        return processed_obstacles
 
 
 def initial_plot() -> go.Figure:
