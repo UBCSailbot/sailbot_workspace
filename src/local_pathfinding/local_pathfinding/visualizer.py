@@ -110,6 +110,10 @@ class VisualizerState:
         pass
 
     def _process_land_obstacles(self, obstacles, reference):
+        """
+        Converts land obstacles from latitude/longitude to XY coordinates and builds Shapely
+        polygons.
+        """
         processed_obstacles = []
 
         for ob in obstacles:
@@ -118,9 +122,8 @@ class VisualizerState:
                 xy_points = []
                 for point in ob.points:
                     xy = cs.latlon_to_xy(reference, point)
-                    xy_points.append((xy.x, xy.y))  # store as (x, y) tuple
+                    xy_points.append((xy.x, xy.y))
 
-                # Create a Shapely polygon from the XY points
                 if len(xy_points) >= 3:
                     poly = Polygon(xy_points)
                     processed_obstacles.append(poly)
