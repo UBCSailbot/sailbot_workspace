@@ -9,7 +9,7 @@ package_name = "local_pathfinding"
 land_subdirs = ["cache", "csv", "mock", "pkl", "shp"]
 
 # Collect top-level land files (geojson, notebooks, excluding scripts)
-top_land_patterns = ["*.geojson", "*.ipynb"]  # Removed *.py to avoid copying launch scripts
+top_land_patterns = ["*.geojson"]  # Removed *.py to avoid copying launch scripts
 top_land_files = []
 for pattern in top_land_patterns:
     top_land_files.extend(glob(os.path.join("land", pattern)))
