@@ -15,15 +15,16 @@ usage:
 Call the `dash_app` function with a multiprocessing shared Manager.queue to start the Dash app.
 """
 
+import math
 from multiprocessing import Queue
 from typing import List, Optional, Tuple
 
-import math
 import custom_interfaces.msg as ci
 import dash
 import plotly.graph_objects as go
 from dash import dcc, html
 from dash.dependencies import Input, Output
+from objectives import get_true_wind
 from shapely.geometry import Polygon
 
 import local_pathfinding.coord_systems as cs
@@ -88,10 +89,22 @@ class VisualizerState:
         self.land_obstacles_xy = self._process_land_obstacles(
             self.curr_msg.obstacles, self.reference_latlon
         )
-        self.wind_vector = self._process_wind_vector(self.curr_msg.filtered_wind_sensor)
+        self.wind_vector = self._process_apparent_wind_vector(self.curr_msg.filtered_wind_sensor)
+        true_wind = get_true_wind(
+            self.curr_msg.filtered_wind_sensor.direction,
+            self.curr_msg.filtered_wind_sensor.speed,
+            self.curr_msg.gps.heading,
+            self.curr_msg.gps.speed,
+        )
+        self.true_wind_vector = self._process_true_wind_vector(true_wind)
+        # calculate boat wind
+        boat_wind_radians = math.radians(cs.bound_to_180(self.curr_msg.gps.heading + 180))
+        boat_wind_east = self.curr_msg.filtered_wind_sensor.speed * math.sin(boat_wind_radians)
+        boat_wind_north = self.curr_msg.filtered_wind_sensor.speed * math.cos(boat_wind_radians)
+        self.boat_wind_vector = cs.XY(boat_wind_east, boat_wind_north)
 
     def _validate_message(self, msg: ci.LPathData):
-        """Checks if the sailbot observer node recieved any messages.
+        """Checks if the sailbot observer node received any messages.
         If not, it raises a ValueError.
         """
         if not msg.local_path:
@@ -107,13 +120,23 @@ class VisualizerState:
         y_coords = [pos.y for pos in positions]
         return x_coords, y_coords
 
-    def _process_wind_vector(self, wind_sensor):
+    def _process_apparent_wind_vector(self, wind_sensor):
+        """
+        Processes wind_sensor data to extract the apparent wind vector components
+        """
         speed = wind_sensor.speed.speed
         direction_deg = wind_sensor.direction
         direction_rad = math.radians(direction_deg)
 
         dx = -speed * math.sin(direction_rad)
         dy = -speed * math.cos(direction_rad)
+
+        return cs.XY(x=dx, y=dy)
+
+    def _process_true_wind_vector(self, true_wind):
+        true_wind_direction_rad, true_wind_magnitude = true_wind
+        dx = true_wind_magnitude * math.sin(true_wind_direction_rad)
+        dy = true_wind_magnitude * math.cos(true_wind_direction_rad)
 
         return cs.XY(x=dx, y=dy)
 
@@ -280,7 +303,7 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
 
     # wind vector
     x0 = state.sailbot_pos_x[-1]
-    y0 = state.sailbot_pos_y[-1] - boat_marker_size/2
+    y0 = state.sailbot_pos_y[-1] - boat_marker_size / 2
     x1 = x0 + 3 * state.wind_vector.x
     y1 = y0 + 3 * state.wind_vector.y
 
@@ -307,7 +330,6 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
         ),
         hoverlabel=dict(bgcolor="white"),
     )
-
 
     # Add all traces to the figure
     fig.add_trace(intermediate_trace)
