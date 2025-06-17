@@ -5,6 +5,7 @@ import os
 
 import custom_interfaces.msg as ci
 import rclpy
+import os
 from pyproj import Geod
 from rclpy.node import Node
 from shapely.geometry import MultiPolygon, Polygon
