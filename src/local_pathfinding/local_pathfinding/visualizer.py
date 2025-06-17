@@ -18,6 +18,7 @@ Call the `dash_app` function with a multiprocessing shared Manager.queue to star
 from multiprocessing import Queue
 from typing import List, Optional, Tuple
 
+import math
 import custom_interfaces.msg as ci
 import dash
 import plotly.graph_objects as go
@@ -107,7 +108,14 @@ class VisualizerState:
         return x_coords, y_coords
 
     def _process_wind_vector(self, wind_sensor):
-        pass
+        speed = wind_sensor.speed.speed
+        direction_deg = wind_sensor.direction
+        direction_rad = math.radians(direction_deg)
+
+        dx = -speed * math.sin(direction_rad)
+        dy = -speed * math.cos(direction_rad)
+
+        return cs.XY(x=dx, y=dy)
 
     def _process_land_obstacles(self, obstacles, reference):
         """
@@ -231,6 +239,7 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
     )
 
     # boat marker (current position)
+    boat_marker_size = 15
     boat_trace = go.Scatter(
         x=[state.sailbot_pos_x[-1]],
         y=[state.sailbot_pos_y[-1]],
@@ -239,15 +248,66 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
         marker_line_color="darkseagreen",
         marker_color="lightgreen",
         marker_line_width=2,
-        marker_size=15,
+        marker_size=boat_marker_size,
         name="Boat",
-        hovertemplate="<b>🚢 Sailbot Current Position</b><br>" +
-        "X: %{x:.2f} meters<br>" +
-        "Y: %{y:.2f} meters<br>" +
-        "Heading: " + f"{state.sailbot_gps[-1].heading.heading:.1f}°<br>" +
-        "Speed: " + f"{state.sailbot_gps[-1].speed.speed:.1f}<br>" +
-        "<extra></extra>"
+        hovertemplate="<b>🚢 Sailbot Current Position</b><br>"
+        + "X: %{x:.2f} meters<br>"
+        + "Y: %{y:.2f} meters<br>"
+        + "Heading: "
+        + f"{state.sailbot_gps[-1].heading.heading:.1f}°<br>"
+        + "Speed: "
+        + f"{state.sailbot_gps[-1].speed.speed:.1f}<br>"
+        + "<extra></extra>",
     )
+
+    # land obstacles
+    for poly in state.land_obstacles_xy:
+        if not poly.is_empty:
+            x = list(poly.exterior.xy[0])
+            y = list(poly.exterior.xy[1])
+            fig.add_trace(
+                go.Scatter(
+                    x=x,
+                    y=y,
+                    fill="toself",
+                    mode="lines",
+                    line=dict(color="lightgreen"),
+                    fillcolor="lightgreen",
+                    opacity=0.5,
+                    name="Land Obstacle",
+                )
+            )
+
+    # wind vector
+    x0 = state.sailbot_pos_x[-1]
+    y0 = state.sailbot_pos_y[-1] - boat_marker_size/2
+    x1 = x0 + 3 * state.wind_vector.x
+    y1 = y0 + 3 * state.wind_vector.y
+
+    fig.add_annotation(
+        x=x1,
+        y=y1,
+        ax=x0,
+        ay=y0,
+        xref="x",
+        yref="y",
+        axref="x",
+        ayref="y",
+        showarrow=True,
+        arrowhead=3,
+        arrowsize=0.5,
+        arrowwidth=3,
+        arrowcolor="purple",
+        standoff=5,
+        text="",
+        hovertext=(
+            f"<b>🌬️ Wind Vector</b><br>"
+            f"dx: {state.wind_vector.x:.2f} km<br>"
+            f"dy: {state.wind_vector.y:.2f} km"
+        ),
+        hoverlabel=dict(bgcolor="white"),
+    )
+
 
     # Add all traces to the figure
     fig.add_trace(intermediate_trace)
@@ -270,24 +330,6 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
         legend=dict(x=0, y=1),  # Position the legend at the top left
         showlegend=True,
     )
-
-    # Add hardcoded land obstacles
-    for poly in state.land_obstacles_xy:
-        if not poly.is_empty:
-            x = list(poly.exterior.xy[0])
-            y = list(poly.exterior.xy[1])
-            fig.add_trace(
-                go.Scatter(
-                    x=x,
-                    y=y,
-                    fill="toself",
-                    mode="lines",
-                    line=dict(color="lightgreen"),
-                    fillcolor="lightgreen",
-                    opacity=0.5,
-                    name="Land Obstacle",
-                )
-            )
 
     return fig
 
@@ -314,12 +356,14 @@ def animated_update_plot(state: VisualizerState) -> go.Figure:
         marker_size=15,
         text=["Boat"],
         name="Boat",
-        hovertemplate="<b>🚢 Sailbot Current Position</b><br>" +
-        "X: %{x:.2f} meters<br>" +
-        "Y: %{y:.2f} meters<br>" +
-        "Heading: " + f"{state.sailbot_gps[0].heading.heading:.1f}°<br>" +
-        "Speed: " + f"{state.sailbot_gps[0].speed.speed:.1f}<br>" +
-        "<extra></extra>"
+        hovertemplate="<b>🚢 Sailbot Current Position</b><br>"
+        + "X: %{x:.2f} meters<br>"
+        + "Y: %{y:.2f} meters<br>"
+        + "Heading: "
+        + f"{state.sailbot_gps[0].heading.heading:.1f}°<br>"
+        + "Speed: "
+        + f"{state.sailbot_gps[0].speed.speed:.1f}<br>"
+        + "<extra></extra>",
     )
     initial_state = [
         go.Scatter(
@@ -387,12 +431,14 @@ def animated_update_plot(state: VisualizerState) -> go.Figure:
                     marker_size=15,
                     text=["Boat"],
                     name="Boat",
-                    hovertemplate="<b>🚢 Sailbot Current Position</b><br>" +
-                    "X: %{x:.2f} meters<br>" +
-                    "Y: %{y:.2f} meters<br>" +
-                    "Heading: " + f"{state.sailbot_gps[i].heading.heading:.1f}°<br>" +
-                    "Speed: " + f"{state.sailbot_gps[i].speed.speed:.1f}<br>" +
-                    "<extra></extra>"
+                    hovertemplate="<b>🚢 Sailbot Current Position</b><br>"
+                    + "X: %{x:.2f} meters<br>"
+                    + "Y: %{y:.2f} meters<br>"
+                    + "Heading: "
+                    + f"{state.sailbot_gps[i].heading.heading:.1f}°<br>"
+                    + "Speed: "
+                    + f"{state.sailbot_gps[i].speed.speed:.1f}<br>"
+                    + "<extra></extra>",
                 )
             ],
             name=f"Boat {i}",
