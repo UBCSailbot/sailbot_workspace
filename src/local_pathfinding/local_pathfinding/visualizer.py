@@ -84,7 +84,7 @@ class VisualizerState:
         )
 
         # TODO: Include other LPathData attributes for plotting their data
-        
+
         # Process land obstacles
         self.land_obstacles_xy = self._process_land_obstacles(
             self.curr_msg.obstacles, self.reference_latlon
@@ -137,8 +137,8 @@ class VisualizerState:
         direction_deg = wind_sensor.direction
         direction_rad = math.radians(direction_deg)
 
-        dx = -speed * math.sin(direction_rad)
-        dy = -speed * math.cos(direction_rad)
+        dx = speed * math.sin(direction_rad)
+        dy = speed * math.cos(direction_rad)
 
         return cs.XY(x=dx, y=dy)
 
@@ -312,7 +312,7 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
 
     # wind vector
     actual_x0 = state.sailbot_pos_x[-1]
-    actual_y0 = state.sailbot_pos_y[-1] - boat_marker_size / 2
+    actual_y0 = state.sailbot_pos_y[-1]
     actual_x1 = actual_x0 + 3 * state.wind_vector.x
     actual_y1 = actual_y0 + 3 * state.wind_vector.y
 
@@ -333,12 +333,13 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
         standoff=5,
         text="",
         hovertext=(
-            f"<b>🌬️ Wind Vector</b><br>"
+            f"<b>🌬️ Apparent Wind Vector</b><br>"
             f"speed: {math.hypot(state.wind_vector.x, state.wind_vector.y):.2f} km/h<br>"
         ),
         hoverlabel=dict(bgcolor="white"),
     )
 
+    # box for boat wind vector and true wind vector
     fig.update_layout(
         xaxis2=dict(
             domain=[0.85, 0.98],
@@ -360,9 +361,9 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
 
     # true wind vector in box
     fig.add_annotation(
-        x=state.true_wind_vector.x,
+        x=state.true_wind_vector.x + 4,
         y=state.true_wind_vector.y,
-        ax=0,
+        ax=4,
         ay=0,
         xref="x2",
         yref="y2",
@@ -384,9 +385,9 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
 
     # boat vector in box
     fig.add_annotation(
-        x=state.boat_wind_vector.x,
+        x=state.boat_wind_vector.x + 4,
         y=state.boat_wind_vector.y,
-        ax=0,
+        ax=4,
         ay=0,
         xref="x2",
         yref="y2",
@@ -418,9 +419,10 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
         line=dict(width=4),
     )
 
+    # add boat and true wind labels
     fig.add_annotation(
-        x=-6,
-        y=7,
+        x=-4,
+        y=4,
         xref="x2",
         yref="y2",
         text="Boat wind",
@@ -429,8 +431,8 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
     )
 
     fig.add_annotation(
-        x=-6,
-        y=3,
+        x=-4,
+        y=0,
         xref="x2",
         yref="y2",
         text="True wind",
