@@ -24,6 +24,29 @@ def test_cartesian_to_true_bearing(cartesian: float, true_bearing: float):
 
 
 @pytest.mark.parametrize(
+    "true_bearing, plotly_cartesian",
+    [
+        (0.0, 0.0),
+        (-90.0, 270.0),
+        (180.0, 180.0),
+        (90.0, 90.0),
+        (45.0, 45.0),
+        (-45.0, 315.0),
+        (135.0, 135.0),
+        (-135.0, 225.0),
+        (1.0, 1.0),
+        (-1.0, 359.0),
+        (-179.0, 181.0),
+        (179.0, 179.0),
+    ],
+)
+def test_true_bearing_to_plotly_cartesian(true_bearing: float, plotly_cartesian: float):
+    assert cs.true_bearing_to_plotly_cartesian(true_bearing) == pytest.approx(
+        plotly_cartesian
+    ), "incorrect angle conversion"
+
+
+@pytest.mark.parametrize(
     "meters,km",
     [(0.0, 0.0), (30, 0.03), (500, 0.5), (-30.5, -0.0305), (-0.0, 0.0)],
 )
