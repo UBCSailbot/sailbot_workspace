@@ -23,7 +23,7 @@ import dash
 import plotly.graph_objects as go
 from dash import dcc, html
 from dash.dependencies import Input, Output
-
+import math
 import local_pathfinding.coord_systems as cs
 
 app = dash.Dash(__name__)
@@ -190,13 +190,24 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
         name="Intermediate",
     )
 
+    goal_x = [state.final_local_wp_x[-1]]
+    goal_y = [state.final_local_wp_y[-1]]
+    boat_x = [state.sailbot_pos_x[-1]]
+    boat_y = [state.sailbot_pos_y[-1]]
+    angle_from_boat = math.atan2(goal_x[0] - boat_x[0], goal_y[0] - boat_y[0])
+    angle_degrees = math.degrees(angle_from_boat)
+
     # goal local waypoint
     goal_trace = go.Scatter(
-        x=[state.final_local_wp_x[-1]],
-        y=[state.final_local_wp_y[-1]],
+        x=goal_x,
+        y=goal_y,
         mode="markers",
         marker=dict(color="red", size=10),
         name="Goal",
+        hovertemplate="X: %{x:.2f} <br>" +
+        "Y: %{y:.2f} <br>" +
+        "Angle from the boat: " + f"{angle_degrees:.1f}°" +
+        "<extra></extra>"
     )
 
     # boat marker (current position)
@@ -211,8 +222,8 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
         marker_size=15,
         name="Boat",
         hovertemplate="<b>🚢 Sailbot Current Position</b><br>" +
-        "X: %{x:.2f} meters<br>" +
-        "Y: %{y:.2f} meters<br>" +
+        "X: %{x:.2f} <br>" +
+        "Y: %{y:.2f} <br>" +
         "Heading: " + f"{state.sailbot_gps[-1].heading.heading:.1f}°<br>" +
         "Speed: " + f"{state.sailbot_gps[-1].speed.speed:.1f}<br>" +
         "<extra></extra>"
