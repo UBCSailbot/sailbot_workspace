@@ -46,9 +46,10 @@ def true_bearing_to_plotly_cartesian(true_bearing: float) -> float:
     """
     assert -180 < true_bearing <= 180
 
+    plotly_cartesian = true_bearing
     if -180 < true_bearing < 0:
-        true_bearing += 360.0
-    return true_bearing
+        plotly_cartesian += 360.0
+    return plotly_cartesian
 
 
 def meters_to_km(meters: float) -> float:
