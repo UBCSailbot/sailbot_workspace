@@ -34,6 +34,23 @@ def cartesian_to_true_bearing(cartesian: float) -> float:
     return (90 - cartesian + 360) % 360
 
 
+def true_bearing_to_plotly_cartesian(true_bearing: float) -> float:
+    """Convert a true bearing angle to the equivalent cartesian angle .
+
+    Args:
+        true_bearing (float): Angle where 0 is true north. Range: -180 < heading <= 180.
+        Increases in the clockwise direction till 180 degrees.
+        Decreases in the counter-clockwise direction till -180 (exclusive)
+    Returns:
+        float:  Angle where 0 is north and values increase counter-clockwise.
+    """
+    assert -180 < true_bearing <= 180
+
+    if -180 < true_bearing < 0:
+        true_bearing += 360.0
+    return true_bearing
+
+
 def meters_to_km(meters: float) -> float:
     return meters / 1000
 

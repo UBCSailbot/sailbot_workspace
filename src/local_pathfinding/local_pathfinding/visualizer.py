@@ -210,24 +210,33 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
         "<extra></extra>"
     )
 
-    # boat marker (current position)
     boat_trace = go.Scatter(
         x=[state.sailbot_pos_x[-1]],
         y=[state.sailbot_pos_y[-1]],
         mode="markers",
-        marker_symbol="arrow",
-        marker_line_color="darkseagreen",
-        marker_color="lightgreen",
-        marker_line_width=2,
-        marker_size=15,
         name="Boat",
-        hovertemplate="<b>🚢 Sailbot Current Position</b><br>" +
-        "X: %{x:.2f} <br>" +
-        "Y: %{y:.2f} <br>" +
-        "Heading: " + f"{state.sailbot_gps[-1].heading.heading:.1f}°<br>" +
-        "Speed: " + f"{state.sailbot_gps[-1].speed.speed:.1f}<br>" +
-        "<extra></extra>"
+        hovertemplate=(
+            "<b>🚢 Sailbot Current Position</b><br>"
+            "X: %{x:.2f} <br>"
+            "Y: %{y:.2f} <br>"
+            "Heading: " +
+            f"{state.sailbot_gps[-1].heading.heading:.1f}°<br>"
+            f"Speed: {state.sailbot_gps[-1].speed.speed:.1f}<br>"
+            "<extra></extra>"
+        ),
+        marker=dict(
+            symbol="arrow-wide",
+            line_color="darkseagreen",
+            color="lightgreen",
+            line_width=2,
+            size=15,
+            angleref="up",
+            angle=cs.true_bearing_to_plotly_cartesian(
+                state.sailbot_gps[-1].heading.heading
+            )
+        )
     )
+
 
     # Add all traces to the figure
     fig.add_trace(intermediate_trace)
