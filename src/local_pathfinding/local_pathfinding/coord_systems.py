@@ -42,7 +42,7 @@ def true_bearing_to_plotly_cartesian(true_bearing: float) -> float:
         Increases in the clockwise direction till 180 degrees.
         Decreases in the counter-clockwise direction till -180 (exclusive)
     Returns:
-        float:  Angle where 0 is north and values increase counter-clockwise.
+        float:  Angle where 0 is north and values increases clockwise.
     """
     assert -180 < true_bearing <= 180
 
