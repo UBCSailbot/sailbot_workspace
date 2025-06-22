@@ -19,14 +19,14 @@
 /src/controller @eomielan
 
 # diagnostics
-/src/diagnostics @samdai01
+/src/diagnostics @Jng468
 
 # docs
-/docs/ @jamenkaye
+/docs/ @FireBoyAJ24
 
 # local_pathfinding
-/notebooks/local_pathfinding @jamenkaye @FireBoyAJ24 @SPDonaghy
-/src/local_pathfinding @jamenkaye @FireBoyAJ24 @SPDonaghy
+/notebooks/local_pathfinding @FireBoyAJ24 @SPDonaghy
+/src/local_pathfinding @FireBoyAJ24 @SPDonaghy
 
 # network_systems
 /src/network_systems @Jng468 @vaibhavambastha

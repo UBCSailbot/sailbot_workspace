@@ -32,3 +32,6 @@ venv/
 .cache/
 # Build
 site/
+
+# Website
+package-lock.json
