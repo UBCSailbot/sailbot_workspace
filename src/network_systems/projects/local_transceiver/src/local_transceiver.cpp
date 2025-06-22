@@ -8,7 +8,6 @@
 #include <boost/asio/streambuf.hpp>
 #include <boost/asio/write.hpp>
 #include <boost/system/error_code.hpp>
-#include <custom_interfaces/msg/ais_ships.hpp>
 #include <custom_interfaces/msg/batteries.hpp>
 #include <custom_interfaces/msg/generic_sensors.hpp>
 #include <custom_interfaces/msg/gps.hpp>
@@ -36,22 +35,6 @@ void LocalTransceiver::updateSensor(msg::GPS gps)
     sensors_.mutable_gps()->set_latitude(gps.lat_lon.latitude);
     sensors_.mutable_gps()->set_longitude(gps.lat_lon.longitude);
     sensors_.mutable_gps()->set_speed(gps.speed.speed);
-}
-
-void LocalTransceiver::updateSensor(msg::AISShips ships)
-{
-    sensors_.clear_ais_ships();
-    for (const msg::HelperAISShip & ship : ships.ships) {
-        Sensors::Ais * new_ship = sensors_.add_ais_ships();
-        new_ship->set_id(ship.id);
-        new_ship->set_cog(ship.cog.heading);
-        new_ship->set_latitude(ship.lat_lon.latitude);
-        new_ship->set_longitude(ship.lat_lon.longitude);
-        new_ship->set_sog(ship.sog.speed);
-        new_ship->set_rot(ship.rot.rot);
-        new_ship->set_width(ship.width.dimension);
-        new_ship->set_length(ship.length.dimension);
-    }
 }
 
 void LocalTransceiver::updateSensor(msg::WindSensors wind)
@@ -291,7 +274,7 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
             continue;
         }
 
-        if (!rcvRsps({message_to_queue_cmd, AT::Line("\n")})) {
+        if (!rcvRsps({message_to_queue_cmd, AT::Line("\n"), AT::Line("+SBDRB:"), AT::Line("\n")})) {
             continue;
         }
 
@@ -300,21 +283,25 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
             continue;
         }
 
-        std::regex re(
-          R"(name=\"data\"; filename=\"[^\"]*\"\r?\n(?:.*\r?\n)*\r?\n([\s\S]*?)\r?\n--)", std::regex::ECMAScript);
+        std::string message_size_str;
+        std::string message;
+        std::string checksum;
+        uint16_t    message_size_int = 0;
 
         std::smatch match;
 
-        if (std::regex_search(*buffer_data, match, re)) {
-            *buffer_data = match[1];
-            std::stringstream ss;
-            ss << *buffer_data;
-            std::cout << ss.str() << std::endl;
+        if (buffer_data && buffer_data->size() >= 2) {
+            message_size_str = buffer_data->substr(0, 2);
         } else {
-            std::cout << "No match found." << std::endl;
+            continue;
         }
 
-        receivedDataBuffer = buffer_data.value();
+        message_size_int = (static_cast<uint8_t>(message_size_str[0]) << 8) |  //NOLINT(readability-magic-numbers)
+                           static_cast<uint8_t>(message_size_str[1]);          //NOLINT(readability-magic-numbers)
+        message = buffer_data->substr(2, message_size_int);
+
+        receivedDataBuffer = message;
+
         break;
     }
 
@@ -384,7 +371,7 @@ std::optional<std::string> LocalTransceiver::readRsp()
     error_code     ec;
 
     // Caution: will hang if another proccess is reading from serial port
-    bio::read_until(serial_, buf, AT::DELIMITER, ec);
+    bio::read_until(serial_, buf, AT::STATUS_OK, ec);
     if (ec) {
         return std::nullopt;
     }
