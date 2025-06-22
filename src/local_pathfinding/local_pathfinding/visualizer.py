@@ -107,6 +107,7 @@ class VisualizerState:
         self.true_wind_vector = self._process_true_wind_vector(true_wind)
 
         # boat wind vector
+        # The boat's motion creates an apparent wind in the opposite direction of its heading, so we add 180°
         boat_wind_radians = math.radians(cs.bound_to_180(boat_heading + 180))
         boat_wind_east = boat_sog * math.sin(boat_wind_radians)
         boat_wind_north = boat_sog * math.cos(boat_wind_radians)
@@ -310,35 +311,6 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
                 )
             )
 
-    # wind vector
-    actual_x0 = state.sailbot_pos_x[-1]
-    actual_y0 = state.sailbot_pos_y[-1]
-    actual_x1 = actual_x0 + 3 * state.wind_vector.x
-    actual_y1 = actual_y0 + 3 * state.wind_vector.y
-
-    fig.add_annotation(
-        x=actual_x1,
-        y=actual_y1,
-        ax=actual_x0,
-        ay=actual_y0,
-        xref="x",
-        yref="y",
-        axref="x",
-        ayref="y",
-        showarrow=True,
-        arrowhead=3,
-        arrowsize=0.5,
-        arrowwidth=3,
-        arrowcolor="purple",
-        standoff=5,
-        text="",
-        hovertext=(
-            f"<b>🌬️ Apparent Wind Vector</b><br>"
-            f"speed: {math.hypot(state.wind_vector.x, state.wind_vector.y):.2f} km/h<br>"
-        ),
-        hoverlabel=dict(bgcolor="white"),
-    )
-
     # box for boat wind vector and true wind vector
     fig.update_layout(
         xaxis2=dict(
@@ -359,12 +331,40 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
         ),
     )
 
-    # true wind vector in box
+    # apparent wind vector in box
+    dx = state.wind_vector.x * 1.5
+    dy = state.wind_vector.y * 1.5
     fig.add_annotation(
-        x=state.true_wind_vector.x + 4,
-        y=state.true_wind_vector.y,
-        ax=4,
-        ay=0,
+        x=4,
+        y=0,
+        ax=4 - dx,
+        ay=0 - dy,
+        xref="x2",
+        yref="y2",
+        axref="x2",
+        ayref="y2",
+        showarrow=True,
+        arrowhead=3,
+        arrowsize=0.5,
+        arrowwidth=3,
+        arrowcolor="purple",
+        standoff=2,
+        text="",
+        hovertext=(
+            f"<b>🌬️ Apparent Wind</b><br>"
+            f"speed: {math.hypot(state.wind_vector.x, state.wind_vector.y):.2f} km/h<br>"
+        ),
+        hoverlabel=dict(bgcolor="white"),
+    )
+
+    # true wind vector in box
+    dx = state.true_wind_vector.x * 1.5
+    dy = state.true_wind_vector.y * 1.5
+    fig.add_annotation(
+        x=4,
+        y=0,
+        ax=4 - dx,
+        ay=0 - dy,
         xref="x2",
         yref="y2",
         axref="x2",
@@ -384,11 +384,13 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
     )
 
     # boat vector in box
+    dx = state.boat_wind_vector.x * 1.5
+    dy = state.boat_wind_vector.y * 1.5
     fig.add_annotation(
-        x=state.boat_wind_vector.x + 4,
-        y=state.boat_wind_vector.y,
-        ax=4,
-        ay=0,
+        x=4,
+        y=0,
+        ax=4 - dx,
+        ay=0 - dy,
         xref="x2",
         yref="y2",
         axref="x2",
@@ -397,7 +399,7 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
         arrowhead=3,
         arrowsize=0.5,
         arrowwidth=3,
-        arrowcolor="green",
+        arrowcolor="red",
         standoff=2,
         text="",
         hovertext=(
@@ -407,6 +409,7 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
         hoverlabel=dict(bgcolor="white"),
     )
 
+    # Fill in box
     fig.add_shape(
         type="rect",
         xref="paper",
@@ -420,24 +423,63 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
     )
 
     # add boat and true wind labels
+
     fig.add_annotation(
-        x=-4,
+        x=-8,
         y=4,
         xref="x2",
         yref="y2",
-        text="Boat wind",
+        text="Boat",
         showarrow=False,
-        font=dict(size=12, color="green"),
+        align="left",
+        xanchor="left",
+        font=dict(size=12, color="red"),
     )
 
     fig.add_annotation(
-        x=-4,
+        x=-8,
         y=0,
         xref="x2",
         yref="y2",
-        text="True wind",
+        text="True",
         showarrow=False,
+        align="left",
+        xanchor="left",
         font=dict(size=12, color="blue"),
+    )
+
+    fig.add_annotation(
+        x=-8,
+        y=-4,
+        xref="x2",
+        yref="y2",
+        text="Apparent",
+        showarrow=False,
+        align="left",
+        xanchor="left",
+        font=dict(size=12, color="purple"),
+    )
+
+    # Box title
+    fig.add_annotation(
+        x=0,
+        y=6,
+        xref="x2",
+        yref="y2",
+        showarrow=False,
+        text="<b>Wind</b>",
+        font=dict(size=12, color="black"),
+    )
+
+    # Circle representing boat on wind box
+    fig.add_annotation(
+        x=4,
+        y=0,
+        xref="x2",
+        yref="y2",
+        showarrow=False,
+        text="●",  # Unicode solid circle
+        font=dict(size=12, color="lightgreen"),
     )
 
     # Add all traces to the figure
