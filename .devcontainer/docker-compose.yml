@@ -5,6 +5,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    network_mode: host
+    privileged: true
     user: ros
     ports:
       # website

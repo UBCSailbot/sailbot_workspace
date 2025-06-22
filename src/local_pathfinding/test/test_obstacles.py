@@ -57,11 +57,26 @@ def test_create_land(
     bbox_buffer_amount: float,
     land_present: bool,
 ):
+
+    goal_position = reference_point
+
+    # create the xy state space from the specified positions of sailbot and the goal
+    sailbot_box = Point(sailbot_position.longitude, sailbot_position.latitude).buffer(
+        0.1, cap_style=3, join_style=2
+    )
+
+    goal_box = Point(goal_position.longitude, sailbot_position.latitude).buffer(
+        0.1, cap_style=3, join_style=2
+    )
+
+    state_space_latlon = box(*MultiPolygon([sailbot_box, goal_box]).bounds)
+
     land = Land(
         reference=reference_point,
         sailbot_position=sailbot_position,
         all_land_data=all_land_data,
         bbox_buffer_amount=bbox_buffer_amount,
+        state_space_latlon=state_space_latlon,
     )
 
     assert isinstance(land.collision_zone, MultiPolygon)
@@ -71,22 +86,37 @@ def test_create_land(
         assert len(land.collision_zone.geoms) == 0  # type: ignore
 
 
+def test_create_land_no_state_space():
+    with pytest.raises(ValueError):
+        Land(
+            reference=HelperLatLon(),
+            sailbot_position=HelperLatLon(),
+            all_land_data=LAND,
+            bbox_buffer_amount=0.1,
+        )
+
+
 # Test is_valid
 @pytest.mark.parametrize(
     "reference_point, sailbot_position, all_land_data, bbox_buffer_amount, invalid_point, valid_point, mock_land",  # noqa
     [
         (
-            HelperLatLon(latitude=52.26, longitude=-136.91),
+            HelperLatLon(latitude=48.541341, longitude=-127.424606),
             HelperLatLon(latitude=51.95, longitude=-136.26),
             LAND,
             0.1,  # degrees
-            XY(0.5, 0.5),
-            XY(5, 5),
+            XY(0, 0),
+            XY(100, 100),
             MultiPolygon(
                 [
-                    Polygon([Point([0, 0]), Point([0, 1]), Point([1, 1]), Point([1, 0])]),
-                    Polygon([Point([0, 0]), Point([0, 1]), Point([2, 1]), Point([2, 0])]),
-                    Polygon([Point([2, 2]), Point([2, 3]), Point([3, 3]), Point([3, 2])]),
+                    Polygon(
+                        [
+                            Point([-127.336762, 49.220467]),
+                            Point([-128.401875, 49.047950]),
+                            Point([-127.929711, 48.308044]),
+                            Point([-126.568123, 48.526792]),
+                        ]
+                    ),
                 ]
             ),
         )
@@ -131,67 +161,30 @@ def test_collision_zone_land(
     all_land_data: MultiPolygon,
     bbox_buffer_amount,
 ):
-    land = Land(
-        reference=reference_point,
-        sailbot_position=sailbot_position,
-        all_land_data=all_land_data,
-        bbox_buffer_amount=bbox_buffer_amount,
-    )
-    land.update_collision_zone()
+    goal_position = reference_point
 
-    assert isinstance(land.collision_zone, MultiPolygon)
-    assert len(land.collision_zone.geoms) != 0
-
-
-# Test passing a custom bbox to update_collision_zone works as well
-@pytest.mark.parametrize(
-    "reference_point, sailbot_position, all_land_data, bbox_buffer_amount, valid_point, invalid_point",  # noqa
-    [
-        (
-            HelperLatLon(latitude=49.155485, longitude=-126.987704),
-            HelperLatLon(latitude=48.838328, longitude=-126.380390),
-            LAND,
-            0.1,  # degrees
-            HelperLatLon(latitude=48.955695, longitude=-126.743129),
-            HelperLatLon(latitude=49.159077, longitude=-126.322681),
-        )
-    ],
-)
-def test_custom_state_space_passed_to_update_collision_zone_land(
-    reference_point: HelperLatLon,
-    sailbot_position: HelperLatLon,
-    all_land_data: MultiPolygon,
-    bbox_buffer_amount: float,
-    valid_point: HelperLatLon,
-    invalid_point: HelperLatLon,
-):
-    land = Land(
-        reference=reference_point,
-        sailbot_position=sailbot_position,
-        all_land_data=all_land_data,
-        bbox_buffer_amount=bbox_buffer_amount,
-    )
-
+    # create the xy state space from the specified positions of sailbot and the goal
     sailbot_box = Point(sailbot_position.longitude, sailbot_position.latitude).buffer(
-        bbox_buffer_amount, cap_style=3, join_style=2
+        0.1, cap_style=3, join_style=2
     )
-    # create a box around the next waypoint
-    waypoint_box = Point(reference_point.longitude, reference_point.latitude).buffer(
-        bbox_buffer_amount, cap_style=3, join_style=2
-    )
-    # create a bounding box around both boxes
-    custom_state_space = box(*MultiPolygon([sailbot_box, waypoint_box]).bounds)
 
-    land.update_collision_zone(state_space=custom_state_space)
+    goal_box = Point(goal_position.longitude, sailbot_position.latitude).buffer(
+        0.1, cap_style=3, join_style=2
+    )
+
+    state_space_latlon = box(*MultiPolygon([sailbot_box, goal_box]).bounds)
+
+    land = Land(
+        reference=reference_point,
+        sailbot_position=sailbot_position,
+        all_land_data=all_land_data,
+        bbox_buffer_amount=bbox_buffer_amount,
+        state_space_latlon=state_space_latlon,
+    )
+    land.update_collision_zone(state_space_latlon=state_space_latlon)
 
     assert isinstance(land.collision_zone, MultiPolygon)
     assert len(land.collision_zone.geoms) != 0
-
-    valid_xy = latlon_to_xy(reference_point, valid_point)
-    invalid_xy = latlon_to_xy(reference_point, invalid_point)
-
-    assert land.is_valid(valid_xy)
-    assert not land.is_valid(invalid_xy)
 
 
 # Test updating Sailbot data
@@ -214,11 +207,25 @@ def test_update_sailbot_data_land(
     all_land_data: MultiPolygon,
     bbox_buffer_amount,
 ):
+
+    # create the xy state space from the specified positions of sailbot and the goal
+    goal_position = reference_point
+    sailbot_box = Point(sailbot_position_1.longitude, sailbot_position_1.latitude).buffer(
+        0.1, cap_style=3, join_style=2
+    )
+
+    goal_box = Point(goal_position.longitude, sailbot_position_1.latitude).buffer(
+        0.1, cap_style=3, join_style=2
+    )
+
+    state_space_latlon = box(*MultiPolygon([sailbot_box, goal_box]).bounds)
+
     land = Land(
         reference=reference_point,
         sailbot_position=sailbot_position_1,
         all_land_data=all_land_data,
         bbox_buffer_amount=bbox_buffer_amount,
+        state_space_latlon=state_space_latlon,
     )
 
     land.update_sailbot_data(sailbot_position_2)
@@ -251,13 +258,13 @@ def test_update_reference_point_land(
     # when the reference point is updated
     # otherwise the land obstacle would have a different shape and we couldn't check if it
     # was translated properly
-    state_space = box(-180, -90, 180, 90)
+    state_space_latlon = box(-180, -90, 180, 90)
     land = Land(
         reference=reference_point_1,
         sailbot_position=sailbot_position,
         all_land_data=all_land_data,
         bbox_buffer_amount=bbox_buffer_amount,
-        state_space=state_space,
+        state_space_latlon=state_space_latlon,
     )
 
     assert land.reference == reference_point_1
@@ -266,7 +273,7 @@ def test_update_reference_point_land(
     )
     centroid1 = land.collision_zone.centroid  # type: ignore
 
-    land.update_reference_point(reference=reference_point_2, state_space=state_space)
+    land.update_reference_point(reference=reference_point_2, state_space_latlon=state_space_latlon)
     assert land.reference == reference_point_2
     assert land.sailbot_position_latlon == sailbot_position
     assert land.sailbot_position == pytest.approx(
