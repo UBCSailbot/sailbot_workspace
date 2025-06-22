@@ -8,7 +8,7 @@ from typing import List, Tuple
 from launch_ros.actions import Node
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, OpaqueFunction
+from launch.actions import DeclareLaunchArgument, OpaqueFunction, SetEnvironmentVariable
 from launch.launch_context import LaunchContext
 from launch.some_substitutions_type import SomeSubstitutionsType
 from launch.substitutions import LaunchConfiguration
@@ -81,6 +81,11 @@ def setup_launch(context: LaunchContext) -> List[Node]:
     Returns:
         List[Nodes]: Nodes to launch.
     """
+    mode = LaunchConfiguration("mode").perform(context)
+    if mode == "development":
+        SetEnvironmentVariable(
+            name="ROS_LOG_DIR", value="/workspaces/sailbot_workspace/log"
+        ).visit(context)
     launch_description_entities = list()
     launch_description_entities.append(get_cached_fib_description(context))
     launch_description_entities.append(get_mock_ais_description(context))

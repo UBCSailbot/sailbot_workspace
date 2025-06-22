@@ -5,6 +5,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    network_mode: host
+    privileged: true
     user: ros
     ports:
       # website
@@ -28,7 +30,7 @@ services:
 
   # URL: mongodb://localhost:27017
   mongodb:
-    image: mongo:${MONGO_TAG:-4.4.18}
+    image: mongo:${MONGO_TAG:-7.0}
     restart: unless-stopped
     volumes:
       - mongodb-data:/data/db:delegated

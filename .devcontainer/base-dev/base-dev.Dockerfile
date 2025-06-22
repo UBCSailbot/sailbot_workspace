@@ -9,17 +9,6 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
 ENV DEBIAN_FRONTEND=
 
-FROM fix-certificates AS ompl-source
-
-ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends git \
-    && apt-get autoremove -y \
-    && apt-get clean -y \
-    && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
-RUN git clone https://github.com/ompl/ompl.git && cd ompl && git reset --hard 2db81e2
-
-# From https://github.com/athackst/dockerfiles/blob/32a872348af0ad25ec4a6e6184cb803357acb6ab/ros2/humble.Dockerfile
 FROM fix-certificates AS ros-pre-base
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -63,55 +52,6 @@ ENV ROS_PYTHON_VERSION=3
 ENV ROS_VERSION=2
 ENV DEBIAN_FRONTEND=
 
-# Based on https://github.com/ompl/ompl/blob/2db81e2154cad93f4b823b2afcd3e7c021ea2b2f/scripts/docker/ompl.Dockerfile
-FROM fix-certificates AS ompl-builder
-# avoid interactive configuration dialog from tzdata, which gets pulled in
-# as a dependency
-ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        build-essential \
-        castxml \
-        cmake \
-        libboost-filesystem-dev \
-        libboost-numpy-dev \
-        libboost-program-options-dev \
-        libboost-python-dev \
-        libboost-serialization-dev \
-        libboost-system-dev \
-        libboost-test-dev \
-        libeigen3-dev \
-        libexpat1 \
-        libflann-dev \
-        libtriangle-dev \
-        ninja-build \
-        pkg-config \
-        python3-dev \
-        python3-numpy \
-        python3-pip \
-        pypy3 \
-        wget \
-    && apt-get autoremove -y \
-    && apt-get clean -y \
-    && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
-RUN pip3 install pygccxml pyplusplus
-COPY --from=ompl-source /ompl /ompl
-WORKDIR /ompl
-RUN cmake \
-        -G Ninja \
-        -B build \
-        -DPYTHON_EXEC=/usr/bin/python3 \
-        -DOMPL_REGISTRATION=OFF \
-        -DCMAKE_INSTALL_PREFIX=/usr \
-    && cmake --build build -t update_bindings \
-    && NPROC=$(nproc) \
-    && HALF_NPROC=$((NPROC / 2)) \
-    && cmake --build build -- -j $HALF_NPROC \
-    && cmake --install build \
-    && cd tests/cmake_export \
-    && cmake -B build -DCMAKE_INSTALL_PREFIX=../../install \
-    && cmake --build build
-
 FROM fix-certificates AS mongo-cxx-driver-builder
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -120,6 +60,9 @@ RUN apt-get update \
         build-essential \
         cmake \
         git \
+        libbson-dev \
+        libbson-1.0-0 \
+        libmongoc-1.0-0\
         libmongoc-dev \
         ninja-build \
         wget \
@@ -168,7 +111,6 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
 ENV DEBIAN_FRONTEND=
 
-COPY --from=ompl-builder /usr /usr
 COPY --from=mongo-cxx-driver-builder /usr/local /usr/local
 
 FROM pre-base as base
@@ -364,6 +306,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         less \
+        unzip \
         openssh-client \
         tmux \
     && apt-get autoremove -y \
@@ -375,5 +318,3 @@ ENV DEBIAN_FRONTEND=
 RUN pip3 install \
     # for juypter notebooks
     ipykernel \
-    # to generate ompl python bindings
-    pybind11
