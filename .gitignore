@@ -34,4 +34,4 @@ venv/
 site/
 
 # Website
-package-lock.json
+**/package-lock.json
