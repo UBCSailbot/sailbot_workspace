@@ -34,6 +34,24 @@ def cartesian_to_true_bearing(cartesian: float) -> float:
     return (90 - cartesian + 360) % 360
 
 
+def true_bearing_to_plotly_cartesian(true_bearing: float) -> float:
+    """Convert a true bearing angle to the equivalent cartesian angle .
+
+    Args:
+        true_bearing (float): Angle where 0 is true north. Range: -180 < heading <= 180.
+        Increases in the clockwise direction till 180 degrees.
+        Decreases in the counter-clockwise direction till -180 (exclusive)
+    Returns:
+        float:  Angle where 0 is north and values increases clockwise.
+    """
+    assert -180 < true_bearing <= 180
+
+    plotly_cartesian = true_bearing
+    if -180 < true_bearing < 0:
+        plotly_cartesian += 360.0
+    return plotly_cartesian
+
+
 def meters_to_km(meters: float) -> float:
     return meters / 1000
 
@@ -146,3 +164,8 @@ def latlon_polygon_list_to_xy_polygon_list(
         )
 
     return list(map(_latlon_polygon_to_xy_polygon, polygons))
+
+
+def latlon_list_to_xy_list(reference_latlon, lat_lon_list: List[ci.HelperLatLon]) -> List[XY]:
+    """Converts a list of lat/lon coordinates to x/y coordinates."""
+    return [latlon_to_xy(reference=reference_latlon, latlon=pos) for pos in lat_lon_list]
