@@ -107,7 +107,8 @@ class VisualizerState:
         self.true_wind_vector = self._process_true_wind_vector(true_wind)
 
         # boat wind vector
-        # The boat's motion creates an apparent wind in the opposite direction of its heading, so we add 180°
+        # The boat's motion creates an apparent wind in the opposite direction of its heading,
+        # so we add 180°
         boat_wind_radians = math.radians(cs.bound_to_180(boat_heading + 180))
         boat_wind_east = boat_sog * math.sin(boat_wind_radians)
         boat_wind_north = boat_sog * math.cos(boat_wind_radians)
