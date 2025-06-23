@@ -305,14 +305,6 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
             angleref="up",
             angle=cs.true_bearing_to_plotly_cartesian(state.sailbot_gps[-1].heading.heading),
         ),
-        hovertemplate="<b>🚢 Sailbot Current Position</b><br>"
-        + "X: %{x:.2f} meters<br>"
-        + "Y: %{y:.2f} meters<br>"
-        + "Heading: "
-        + f"{state.sailbot_gps[-1].heading.heading:.1f}°<br>"
-        + "Speed: "
-        + f"{state.sailbot_gps[-1].speed.speed:.1f}<br>"
-        + "<extra></extra>",
     )
 
     # land obstacles
@@ -559,14 +551,6 @@ def animated_update_plot(state: VisualizerState) -> go.Figure:
         + "Speed: "
         + f"{state.sailbot_gps[0].speed.speed:.1f}<br>"
         + "<extra></extra>",
-        hovertemplate="<b>🚢 Sailbot Current Position</b><br>"
-        + "X: %{x:.2f} meters<br>"
-        + "Y: %{y:.2f} meters<br>"
-        + "Heading: "
-        + f"{state.sailbot_gps[0].heading.heading:.1f}°<br>"
-        + "Speed: "
-        + f"{state.sailbot_gps[0].speed.speed:.1f}<br>"
-        + "<extra></extra>",
     )
     initial_state = [
         go.Scatter(
@@ -634,14 +618,6 @@ def animated_update_plot(state: VisualizerState) -> go.Figure:
                     marker_size=15,
                     text=["Boat"],
                     name="Boat",
-                    hovertemplate="<b>🚢 Sailbot Current Position</b><br>"
-                    + "X: %{x:.2f} meters<br>"
-                    + "Y: %{y:.2f} meters<br>"
-                    + "Heading: "
-                    + f"{state.sailbot_gps[i].heading.heading:.1f}°<br>"
-                    + "Speed: "
-                    + f"{state.sailbot_gps[i].speed.speed:.1f}<br>"
-                    + "<extra></extra>",
                     hovertemplate="<b>🚢 Sailbot Current Position</b><br>"
                     + "X: %{x:.2f} meters<br>"
                     + "Y: %{y:.2f} meters<br>"
