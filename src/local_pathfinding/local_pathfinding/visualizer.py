@@ -261,6 +261,11 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
         mode="markers",
         marker=dict(color="blue", size=8),
         name="Intermediate",
+        hovertemplate=(
+            "X: %{x:.2f} <br>"
+            "Y: %{y:.2f} <br>"
+            "<extra></extra>"
+        ),
     )
 
     goal_x = [state.final_local_wp_x[-1]]

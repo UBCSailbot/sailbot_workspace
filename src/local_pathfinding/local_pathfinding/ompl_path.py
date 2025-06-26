@@ -296,7 +296,7 @@ class OMPLPath:
 
         # set the planner of the simple setup object
         planner = og.RRTstar(space_information)
-        planner.setRange(200.0)
+        planner.setRange(300.0)
         simple_setup.setPlanner(planner)
         # print(planner)
 

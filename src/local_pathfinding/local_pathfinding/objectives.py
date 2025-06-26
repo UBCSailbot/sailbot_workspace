@@ -469,13 +469,13 @@ def get_sailing_objective(
     )
     objective.addObjective(
         objective=MinimumTurningObjective(space_information, simple_setup, heading_degrees),
-        weight=10.0,
+        weight=1.50,
     )
     objective.addObjective(
         objective=WindObjective(
             space_information, wind_direction_degrees, wind_speed, heading_degrees, speed
         ),
-        weight=5.0,
+        weight=1.70,
     )
     objective.addObjective(
         objective=SpeedObjective(
