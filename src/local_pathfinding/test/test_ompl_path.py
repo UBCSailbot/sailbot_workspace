@@ -55,6 +55,7 @@ def fresh_ompl_path():
                     HelperLatLon(latitude=1.0, longitude=1.0),
                 ]
             ),
+            global_waypoint_latlon=HelperLatLon(latitude=0.0, longitude=0.0),
             filtered_wind_sensor=WindSensor(),
             planner="rrtstar",
         ),
@@ -206,6 +207,7 @@ def test_init_obstacles():
                 goal_position,
             ]
         ),
+        global_waypoint_latlon=HelperLatLon(latitude=0.0, longitude=0.0),
         filtered_wind_sensor=WindSensor(),
         planner="rrtstar",
     )
