@@ -4,6 +4,7 @@ from typing import List, Optional
 
 import custom_interfaces.msg as ci
 from rclpy.impl.rcutils_logger import RcutilsLogger
+from shapely.geometry import MultiPolygon
 
 import local_pathfinding.obstacles as ob
 from local_pathfinding.ompl_path import OMPLPath
@@ -92,6 +93,7 @@ class LocalPath:
         global_waypoint_latlon: ci.HelperLatLon,
         filtered_wind_sensor: ci.WindSensor,
         planner: str,
+        land_multi_polygon: MultiPolygon = None,
     ) -> bool:
         """Updates the OMPL path, waypoints and current state. The path is updated if a new path
             is found. Returns true if the path is updated and false otherwise.
@@ -111,6 +113,7 @@ class LocalPath:
             parent_logger=self._logger,
             max_runtime=1.0,
             local_path_state=state,
+            land_multi_polygon=land_multi_polygon,
         )
         if ompl_path.solved:
             self._logger.debug("Updating local path")
