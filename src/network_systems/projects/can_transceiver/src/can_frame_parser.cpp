@@ -275,7 +275,7 @@ std::string WindSensor::debugStr() const
 {
     std::stringstream ss;
     ss << BaseFrame::debugStr() << "\n"
-       << "Wind speed (m/s): " << wind_speed_ << "\n"
+       << "Wind speed (km/h): " << wind_speed_ << "\n"
        << "Wind angle (degrees): " << wind_angle_;
     return ss.str();
 }
