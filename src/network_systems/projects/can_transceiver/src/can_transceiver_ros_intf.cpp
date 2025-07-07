@@ -87,9 +87,12 @@ public:
               std::make_pair(
                 CanId::RUDDER_DATA_FRAME,
                 std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishRudder(frame); })),
-              std::make_pair(CanId::SAIL_WIND, std::function<void(const CanFrame &)>([this](const CanFrame & frame) {
-                                 publishWindSensor(frame);
-                             })),
+              std::make_pair(
+                CanId::SAIL_WIND,
+                std::function<void(const CanFrame &)>([this](const CanFrame & frame) {publishWindSensor(frame); })),
+              std::make_pair(
+                CanId::DATA_WIND,
+                std::function<void(const CanFrame &)>([this](const CanFrame & frame) {publishWindSensor(frame); })),
               std::make_pair(
                 CanId::GENERIC_SENSOR_START,
                 std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishGeneric(frame); })),
