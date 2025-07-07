@@ -15,6 +15,7 @@ usage:
 Call the `dash_app` function with a multiprocessing shared Manager.queue to start the Dash app.
 """
 
+import math
 from multiprocessing import Queue
 from typing import List, Optional, Tuple
 
@@ -23,8 +24,10 @@ import dash
 import plotly.graph_objects as go
 from dash import dcc, html
 from dash.dependencies import Input, Output
+from shapely.geometry import Polygon
 
 import local_pathfinding.coord_systems as cs
+from local_pathfinding.objectives import get_true_wind
 
 app = dash.Dash(__name__)
 
@@ -59,6 +62,7 @@ class VisualizerState:
         self._validate_message(self.curr_msg)
 
         self.sailbot_lat_lon = [msg.gps.lat_lon for msg in msgs]
+        self.sailbot_gps = [msg.gps for msg in msgs]
         self.all_local_wp = [msg.local_path.waypoints for msg in msgs]
 
         self.global_path = self.curr_msg.global_path
@@ -81,8 +85,37 @@ class VisualizerState:
 
         # TODO: Include other LPathData attributes for plotting their data
 
+        # Process land obstacles
+        self.land_obstacles_xy = self._process_land_obstacles(
+            self.curr_msg.obstacles, self.reference_latlon
+        )
+
+        # Process wind vectors
+
+        # apparent wind vector
+        self.wind_vector = self._process_apparent_wind_vector(self.curr_msg.filtered_wind_sensor)
+
+        # true wind vector
+        boat_sog = self.curr_msg.gps.speed.speed
+        boat_heading = self.curr_msg.gps.heading.heading
+        true_wind = get_true_wind(
+            self.curr_msg.filtered_wind_sensor.direction,
+            self.curr_msg.filtered_wind_sensor.speed.speed,
+            boat_heading,
+            boat_sog,
+        )
+        self.true_wind_vector = self._process_true_wind_vector(true_wind)
+
+        # boat wind vector
+        # The boat's motion creates an apparent wind in the opposite direction of its heading,
+        # so we add 180°
+        boat_wind_radians = math.radians(cs.bound_to_180(boat_heading + 180))
+        boat_wind_east = boat_sog * math.sin(boat_wind_radians)
+        boat_wind_north = boat_sog * math.cos(boat_wind_radians)
+        self.boat_wind_vector = cs.XY(boat_wind_east, boat_wind_north)
+
     def _validate_message(self, msg: ci.LPathData):
-        """Checks if the sailbot observer node recieved any messages.
+        """Checks if the sailbot observer node received any messages.
         If not, it raises a ValueError.
         """
         if not msg.local_path:
@@ -97,6 +130,47 @@ class VisualizerState:
         x_coords = [pos.x for pos in positions]
         y_coords = [pos.y for pos in positions]
         return x_coords, y_coords
+
+    def _process_apparent_wind_vector(self, wind_sensor):
+        """
+        Processes wind_sensor data to extract the apparent wind vector components
+        """
+        speed = wind_sensor.speed.speed
+        direction_deg = wind_sensor.direction
+        direction_rad = math.radians(direction_deg)
+
+        dx = speed * math.sin(direction_rad)
+        dy = speed * math.cos(direction_rad)
+
+        return cs.XY(x=dx, y=dy)
+
+    def _process_true_wind_vector(self, true_wind):
+        true_wind_direction_rad, true_wind_magnitude = true_wind
+        dx = true_wind_magnitude * math.sin(true_wind_direction_rad)
+        dy = true_wind_magnitude * math.cos(true_wind_direction_rad)
+
+        return cs.XY(x=dx, y=dy)
+
+    def _process_land_obstacles(self, obstacles, reference):
+        """
+        Converts land obstacles from latitude/longitude to XY coordinates and builds Shapely
+        polygons.
+        """
+        processed_obstacles = []
+
+        for ob in obstacles:
+            if ob.obstacle_type == "Land":
+                # Convert each latlon point to XY
+                xy_points = []
+                for point in ob.points:
+                    xy = cs.latlon_to_xy(reference, point)
+                    xy_points.append((xy.x, xy.y))
+
+                if len(xy_points) >= 3:
+                    poly = Polygon(xy_points)
+                    processed_obstacles.append(poly)
+
+        return processed_obstacles
 
 
 def initial_plot() -> go.Figure:
@@ -180,15 +254,6 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
 
     fig = initial_plot()
 
-    # start local waypoint
-    start_trace = go.Scatter(
-        x=[state.final_local_wp_x[0]],
-        y=[state.final_local_wp_y[0]],
-        mode="markers",
-        marker=dict(color="green", size=10),
-        name="Start",
-    )
-
     # local path waypoints
     intermediate_trace = go.Scatter(
         x=state.final_local_wp_x[1:-1],
@@ -198,30 +263,241 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
         name="Intermediate",
     )
 
+    goal_x = [state.final_local_wp_x[-1]]
+    goal_y = [state.final_local_wp_y[-1]]
+    boat_x = [state.sailbot_pos_x[-1]]
+    boat_y = [state.sailbot_pos_y[-1]]
+    angle_from_boat = math.atan2(goal_x[0] - boat_x[0], goal_y[0] - boat_y[0])
+    angle_degrees = math.degrees(angle_from_boat)
+
     # goal local waypoint
     goal_trace = go.Scatter(
-        x=[state.final_local_wp_x[-1]],
-        y=[state.final_local_wp_y[-1]],
+        x=goal_x,
+        y=goal_y,
         mode="markers",
         marker=dict(color="red", size=10),
         name="Goal",
+        hovertemplate="X: %{x:.2f} <br>"
+        + "Y: %{y:.2f} <br>"
+        + "Angle from the boat: "
+        + f"{angle_degrees:.1f}°"
+        + "<extra></extra>",
     )
 
-    # boat marker (current position, red with larger size)
     boat_trace = go.Scatter(
         x=[state.sailbot_pos_x[-1]],
         y=[state.sailbot_pos_y[-1]],
         mode="markers",
-        marker_symbol="arrow",
-        marker_line_color="darkseagreen",
-        marker_color="lightgreen",
-        marker_line_width=2,
-        marker_size=15,
         name="Boat",
+        hovertemplate=(
+            "<b>🚢 Sailbot Current Position</b><br>"
+            "X: %{x:.2f} <br>"
+            "Y: %{y:.2f} <br>"
+            "Heading: " + f"{state.sailbot_gps[-1].heading.heading:.1f}°<br>"
+            f"Speed: {state.sailbot_gps[-1].speed.speed:.1f}<br>"
+            "<extra></extra>"
+        ),
+        marker=dict(
+            symbol="arrow-wide",
+            line_color="darkseagreen",
+            color="lightgreen",
+            line_width=2,
+            size=15,
+            angleref="up",
+            angle=cs.true_bearing_to_plotly_cartesian(state.sailbot_gps[-1].heading.heading),
+        ),
+    )
+
+    # land obstacles
+    for poly in state.land_obstacles_xy:
+        if not poly.is_empty:
+            x = list(poly.exterior.xy[0])
+            y = list(poly.exterior.xy[1])
+            fig.add_trace(
+                go.Scatter(
+                    x=x,
+                    y=y,
+                    fill="toself",
+                    mode="lines",
+                    line=dict(color="lightgreen"),
+                    fillcolor="lightgreen",
+                    opacity=0.5,
+                    name="Land Obstacle",
+                )
+            )
+
+    # box for boat wind vector and true wind vector
+    fig.update_layout(
+        xaxis2=dict(
+            domain=[0.85, 0.98],
+            anchor="y2",
+            range=[-10, 10],
+            showgrid=False,
+            zeroline=True,
+            visible=False,
+        ),
+        yaxis2=dict(
+            domain=[0.05, 0.25],
+            anchor="x2",
+            range=[-10, 10],
+            showgrid=False,
+            zeroline=True,
+            visible=False,
+        ),
+    )
+
+    # apparent wind vector in box
+    dx = state.wind_vector.x * 1.5
+    dy = state.wind_vector.y * 1.5
+    fig.add_annotation(
+        x=4,
+        y=0,
+        ax=4 - dx,
+        ay=0 - dy,
+        xref="x2",
+        yref="y2",
+        axref="x2",
+        ayref="y2",
+        showarrow=True,
+        arrowhead=3,
+        arrowsize=0.5,
+        arrowwidth=3,
+        arrowcolor="purple",
+        standoff=2,
+        text="",
+        hovertext=(
+            f"<b>🌬️ Apparent Wind</b><br>"
+            f"speed: {math.hypot(state.wind_vector.x, state.wind_vector.y):.2f} km/h<br>"
+        ),
+        hoverlabel=dict(bgcolor="white"),
+    )
+
+    # true wind vector in box
+    dx = state.true_wind_vector.x * 1.5
+    dy = state.true_wind_vector.y * 1.5
+    fig.add_annotation(
+        x=4,
+        y=0,
+        ax=4 - dx,
+        ay=0 - dy,
+        xref="x2",
+        yref="y2",
+        axref="x2",
+        ayref="y2",
+        showarrow=True,
+        arrowhead=3,
+        arrowsize=0.5,
+        arrowwidth=3,
+        arrowcolor="blue",
+        standoff=2,
+        text="",
+        hovertext=(
+            f"<b>🌬️ True Wind</b><br>"
+            f"speed: {math.hypot(state.true_wind_vector.x, state.true_wind_vector.y):.2f} km/h<br>"
+        ),
+        hoverlabel=dict(bgcolor="white"),
+    )
+
+    # boat vector in box
+    dx = state.boat_wind_vector.x * 1.5
+    dy = state.boat_wind_vector.y * 1.5
+    fig.add_annotation(
+        x=4,
+        y=0,
+        ax=4 - dx,
+        ay=0 - dy,
+        xref="x2",
+        yref="y2",
+        axref="x2",
+        ayref="y2",
+        showarrow=True,
+        arrowhead=3,
+        arrowsize=0.5,
+        arrowwidth=3,
+        arrowcolor="red",
+        standoff=2,
+        text="",
+        hovertext=(
+            f"<b>🛶 Boat Wind</b><br>"
+            f"speed: {math.hypot(state.boat_wind_vector.x, state.boat_wind_vector.y):.2f} km/h<br>"
+        ),
+        hoverlabel=dict(bgcolor="white"),
+    )
+
+    # Fill in box
+    fig.add_shape(
+        type="rect",
+        xref="paper",
+        yref="paper",
+        x0=0.85,
+        y0=0.05,
+        x1=0.98,
+        y1=0.25,
+        fillcolor="white",
+        line=dict(width=4),
+    )
+
+    # add boat and true wind labels
+
+    fig.add_annotation(
+        x=-8,
+        y=4,
+        xref="x2",
+        yref="y2",
+        text="Boat",
+        showarrow=False,
+        align="left",
+        xanchor="left",
+        font=dict(size=12, color="red"),
+    )
+
+    fig.add_annotation(
+        x=-8,
+        y=0,
+        xref="x2",
+        yref="y2",
+        text="True",
+        showarrow=False,
+        align="left",
+        xanchor="left",
+        font=dict(size=12, color="blue"),
+    )
+
+    fig.add_annotation(
+        x=-8,
+        y=-4,
+        xref="x2",
+        yref="y2",
+        text="Apparent",
+        showarrow=False,
+        align="left",
+        xanchor="left",
+        font=dict(size=12, color="purple"),
+    )
+
+    # Box title
+    fig.add_annotation(
+        x=0,
+        y=6,
+        xref="x2",
+        yref="y2",
+        showarrow=False,
+        text="<b>Wind</b>",
+        font=dict(size=12, color="black"),
+    )
+
+    # Circle representing boat on wind box
+    fig.add_annotation(
+        x=4,
+        y=0,
+        xref="x2",
+        yref="y2",
+        showarrow=False,
+        text="●",  # Unicode solid circle
+        font=dict(size=12, color="lightgreen"),
     )
 
     # Add all traces to the figure
-    fig.add_trace(start_trace)
     fig.add_trace(intermediate_trace)
     fig.add_trace(goal_trace)
     fig.add_trace(boat_trace)
@@ -268,6 +544,14 @@ def animated_update_plot(state: VisualizerState) -> go.Figure:
         marker_size=15,
         text=["Boat"],
         name="Boat",
+        hovertemplate="<b>🚢 Sailbot Current Position</b><br>"
+        + "X: %{x:.2f} meters<br>"
+        + "Y: %{y:.2f} meters<br>"
+        + "Heading: "
+        + f"{state.sailbot_gps[0].heading.heading:.1f}°<br>"
+        + "Speed: "
+        + f"{state.sailbot_gps[0].speed.speed:.1f}<br>"
+        + "<extra></extra>",
     )
     initial_state = [
         go.Scatter(
@@ -335,6 +619,14 @@ def animated_update_plot(state: VisualizerState) -> go.Figure:
                     marker_size=15,
                     text=["Boat"],
                     name="Boat",
+                    hovertemplate="<b>🚢 Sailbot Current Position</b><br>"
+                    + "X: %{x:.2f} meters<br>"
+                    + "Y: %{y:.2f} meters<br>"
+                    + "Heading: "
+                    + f"{state.sailbot_gps[i].heading.heading:.1f}°<br>"
+                    + "Speed: "
+                    + f"{state.sailbot_gps[i].speed.speed:.1f}<br>"
+                    + "<extra></extra>",
                 )
             ],
             name=f"Boat {i}",
