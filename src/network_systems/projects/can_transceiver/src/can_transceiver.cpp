@@ -120,9 +120,9 @@ void CanTransceiver::receive()
     }
     while (!shutdown_flag_) {
         // make sure the lock is acquired and released INSIDE the loop, otherwise send() will never get the lock
-        CanFrame                    frame;
+        CanFrame                     frame;
         std::unique_lock<std::mutex> lock(can_mtx_);
-        ssize_t                     bytes_read = read(sock_desc_, &frame, sizeof(CanFrame));
+        ssize_t                      bytes_read = read(sock_desc_, &frame, sizeof(CanFrame));
         lock.unlock();
         if (bytes_read > 0) {
             if (bytes_read != sizeof(CanFrame)) {
