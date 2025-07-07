@@ -1,6 +1,7 @@
 """The main node of the local_pathfinding package, represented by the `Sailbot` class."""
 
 import json
+import os
 
 import custom_interfaces.msg as ci
 import rclpy
@@ -123,11 +124,16 @@ class Sailbot(Node):
         self.mode = self.get_parameter("mode").get_parameter_value().string_value
         self.planner = self.get_parameter("path_planner").get_parameter_value().string_value
         self.get_logger().debug(f"Got parameter: {self.planner=}")
-        self.mock_land_file = "../land/mock/mock_land.json"
 
         # Initialize mock land obstacle
         self.land_multi_polygon = None
         if self.use_mock_land:
+
+            # find the mock land file
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            mock_land_dir = os.path.join(current_dir, "..", "land", "mock")
+            self.mock_land_file = os.path.join(mock_land_dir, "mock_land.json")
+
             with open(self.mock_land_file, "r") as f:
                 data = json.load(f)
                 polygons = [Polygon(p) for p in data.get("land_polygons", [])]
