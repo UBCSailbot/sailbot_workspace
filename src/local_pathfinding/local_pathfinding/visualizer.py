@@ -83,6 +83,13 @@ class VisualizerState:
             *[self._split_coordinates(waypoints) for waypoints in self.all_wp_xy]
         )
 
+        # AIS ships
+        self.ais_ships = self.curr_msg.ais_ships.ships
+        ais_ship_latlons = [ship.lat_lon for ship in self.ais_ships]
+        self.ais_ship_ids = [ship.id for ship in self.ais_ships]
+        ais_ship_xy = cs.latlon_list_to_xy_list(self.reference_latlon, ais_ship_latlons)
+        self.ais_pos_x, self.ais_pos_y = self._split_coordinates(ais_ship_xy)
+
         # TODO: Include other LPathData attributes for plotting their data
 
         # Process land obstacles
@@ -507,6 +514,23 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
     x_max = max(state.final_local_wp_x) + 10
     y_min = min(state.final_local_wp_y) - 10
     y_max = max(state.final_local_wp_y) + 10
+
+    # Display AIS Ships
+    ais_trace = go.Scatter(
+        x=state.ais_pos_x,
+        y=state.ais_pos_y,
+        mode="markers",
+        name="AIS Ship",
+        marker=dict(color="orange", size=10, symbol="diamond"),
+        text=[f"ID: {id}" for id in state.ais_ship_ids],
+        hovertemplate=(
+            "<b>🚢 AIS Ship</b><br>"
+            "X: %{x:.2f}<br>"
+            "Y: %{y:.2f}<br>"
+            "%{text}<extra></extra>"
+        ),
+    )
+    fig.add_trace(ais_trace)
 
     # Update Layout
     fig.update_layout(
