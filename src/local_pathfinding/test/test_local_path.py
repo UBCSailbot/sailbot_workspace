@@ -19,7 +19,7 @@ def test_LocalPath_update_if_needed():
             ]
         ),
         received_new_global_waypoint=False,
-        global_waypoint_latlon=HelperLatLon(latitude=1.0, longitude=1.0),
+        target_global_waypoint=HelperLatLon(latitude=1.0, longitude=1.0),
         filtered_wind_sensor=WindSensor(),
         planner="rrtstar",
     )
@@ -39,7 +39,7 @@ def test_LocalPathState_parameter_checking():
                         HelperLatLon(latitude=1.0, longitude=1.0),
                     ]
                 ),
-                global_waypoint_latlon=HelperLatLon(latitude=1.0, longitude=1.0),
+                target_global_waypoint=HelperLatLon(latitude=1.0, longitude=1.0),
                 filtered_wind_sensor=WindSensor(),
                 planner="rrtstar",
             ),
@@ -56,7 +56,7 @@ def test_LocalPathState_parameter_checking():
                         HelperLatLon(latitude=1.0, longitude=1.0),
                     ]
                 ),
-                global_waypoint_latlon=HelperLatLon(latitude=1.0, longitude=1.0),
+                target_global_waypoint=HelperLatLon(latitude=1.0, longitude=1.0),
                 filtered_wind_sensor=WindSensor(),
                 planner="rrtstar",
             ),
@@ -68,7 +68,7 @@ def test_LocalPathState_parameter_checking():
                 gps=GPS(),
                 ais_ships=AISShips(),
                 global_path=Path(waypoints=[]),
-                global_waypoint_latlon=HelperLatLon(),
+                target_global_waypoint=HelperLatLon(),
                 filtered_wind_sensor=WindSensor(),
                 planner="rrtstar",
             ),
@@ -80,7 +80,7 @@ def test_LocalPathState_parameter_checking():
                 gps=GPS(),
                 ais_ships=AISShips(),
                 global_path=None,
-                global_waypoint_latlon=None,
+                target_global_waypoint=None,
                 filtered_wind_sensor=WindSensor(),
                 planner="rrtstar",
             ),
@@ -97,7 +97,7 @@ def test_LocalPathState_parameter_checking():
                         HelperLatLon(latitude=1.0, longitude=1.0),
                     ]
                 ),
-                global_waypoint_latlon=HelperLatLon(latitude=1.0, longitude=1.0),
+                target_global_waypoint=HelperLatLon(latitude=1.0, longitude=1.0),
                 filtered_wind_sensor=None,
                 planner="rrtstar",
             ),
@@ -113,7 +113,7 @@ def test_LocalPathState_parameter_checking():
                         HelperLatLon(latitude=1.0, longitude=1.0),
                     ]
                 ),
-                global_waypoint_latlon=HelperLatLon(latitude=1.0, longitude=1.0),
+                target_global_waypoint=HelperLatLon(latitude=1.0, longitude=1.0),
                 filtered_wind_sensor=WindSensor(),
                 planner=None,
             ),

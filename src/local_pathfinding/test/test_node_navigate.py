@@ -113,5 +113,7 @@ def test_calculate_desired_heading_and_waypoint_index(
 def test_find_next_global_waypoint_index(
     global_path: ci.Path, boat_lat_lon: ci.HelperLatLon, correct_index: int
 ):
-    calculated_answer = nn.Sailbot.find_next_global_waypoint_index(global_path, boat_lat_lon)
+    calculated_answer = nn.Sailbot.determine_start_point_in_new_global_path(
+        global_path, boat_lat_lon
+    )
     assert calculated_answer == correct_index

@@ -30,11 +30,11 @@ OMPL_PATH = ompl_path.OMPLPath(
         ais_ships=AISShips(),
         global_path=Path(
             waypoints=[
-                HelperLatLon(latitude=0.0, longitude=0.0),
-                HelperLatLon(latitude=1.0, longitude=1.0),
+                HelperLatLon(latitude=1.0, longitude=2.0),
+                HelperLatLon(latitude=3.0, longitude=4.0),
             ]
         ),
-        global_waypoint_latlon=HelperLatLon(latitude=1.0, longitude=1.0),
+        target_global_waypoint=HelperLatLon(latitude=1.0, longitude=2.0),
         filtered_wind_sensor=WindSensor(),
         planner="rrtstar",
     ),
@@ -51,11 +51,11 @@ def fresh_ompl_path():
             ais_ships=AISShips(),
             global_path=Path(
                 waypoints=[
-                    HelperLatLon(latitude=0.0, longitude=0.0),
-                    HelperLatLon(latitude=1.0, longitude=1.0),
+                    HelperLatLon(latitude=1.0, longitude=2.0),
+                    HelperLatLon(latitude=3.0, longitude=4.0),
                 ]
             ),
-            global_waypoint_latlon=HelperLatLon(latitude=0.0, longitude=0.0),
+            target_global_waypoint=HelperLatLon(latitude=1.0, longitude=2.0),
             filtered_wind_sensor=WindSensor(),
             planner="rrtstar",
         ),
@@ -126,7 +126,7 @@ def test_init_obstacles():
                 goal_position,
             ]
         ),
-        global_waypoint_latlon=goal_position,
+        target_global_waypoint=goal_position,
         filtered_wind_sensor=WindSensor(),
         planner="rrtstar",
     )
@@ -207,7 +207,7 @@ def test_init_obstacles():
                 goal_position,
             ]
         ),
-        global_waypoint_latlon=HelperLatLon(latitude=0.0, longitude=0.0),
+        target_global_waypoint=HelperLatLon(latitude=0.0, longitude=0.0),
         filtered_wind_sensor=WindSensor(),
         planner="rrtstar",
     )
