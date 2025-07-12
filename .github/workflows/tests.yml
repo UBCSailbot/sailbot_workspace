@@ -15,6 +15,9 @@ jobs:
     steps:
     - name: Checkout workspace
       uses: actions/checkout@v4
+      with:
+        arch: aarch64
+        distro: ubuntu22.04
 
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -56,6 +59,9 @@ jobs:
     steps:
     - name: Checkout workspace
       uses: actions/checkout@v4
+      with:
+        arch: aarch64
+        distro: ubuntu22.04
 
     - name: Run linter
       uses: ./.github/actions/
