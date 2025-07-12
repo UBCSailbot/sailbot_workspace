@@ -537,12 +537,12 @@ private:
             can_trns_->send(desired_heading_frame.toLinuxCan());
             RCLCPP_INFO(
               this->get_logger(), "%s %s", getCurrentTimeString().c_str(), desired_heading_frame.toString().c_str());
-        // } catch (const std::out_of_range & e) {
-        //     RCLCPP_WARN(
-        //       this->get_logger(), "%s Attempted to construct DesiredHeading but was out of range",
-        //       getCurrentTimeString().c_str());
-        //     return;
-        // }
+        } catch (const std::out_of_range & e) {
+            RCLCPP_WARN(
+              this->get_logger(), "%s Attempted to construct DesiredHeading but was out of range",
+              getCurrentTimeString().c_str());
+            return;
+        }
     }
 
     /**
