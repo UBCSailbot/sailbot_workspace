@@ -67,8 +67,8 @@ constexpr float LON_LBND = -180.0;
 constexpr float LON_UBND = 180.0;
 
 /***** Bounds for Speed ******/
-constexpr float SPEED_LBND = -10.0;  // Placeholder number
-constexpr float SPEED_UBND = 10.0;   // Placeholder number
+constexpr float SPEED_LBND = -10.0;  // Placeholder number (kmph)
+constexpr float SPEED_UBND = 10.0;   // Placeholder number (kmph)
 
 /***** Bounds for Heading ******/
 constexpr float HEADING_LBND = 0.0;
@@ -102,9 +102,9 @@ constexpr float PH_LBND = -1.6;  // lbnd of sensor being used
 constexpr float PH_UBND = 15.6;  // ubnd of sensor being used
 
 /***** Bounds for Salinity Sensor ******/
-constexpr float SALINITY_LBND = 0;       // lbnd of sensor being used is 0.07
+constexpr float SALINITY_LBND = 0;        // lbnd of sensor being used is 0.07
 constexpr float SALINITY_UBND = 1000000;  // ubnd of sensor being used is 500000+
 
 /***** Bounds for Pressure Sensor ******/
-constexpr float PRESSURE_LBND = -100;    // lowest lbnd of pressure sensors under consideration is -14.5 psi
+constexpr float PRESSURE_LBND = -100;  // lowest lbnd of pressure sensors under consideration is -14.5 psi
 constexpr float PRESSURE_UBND = 1000;  // highest lbnd of pressure sensors is 8702 psi
