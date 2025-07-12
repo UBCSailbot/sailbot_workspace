@@ -535,7 +535,7 @@ private:
     void subDesiredHeadingCb(msg::DesiredHeading desired_heading)
     {
         desired_heading_ = desired_heading;
-        // try {
+        try {
             auto desired_heading_frame = CAN_FP::DesiredHeading(desired_heading_, CanId::MAIN_HEADING);
             can_trns_->send(desired_heading_frame.toLinuxCan());
             RCLCPP_INFO(
