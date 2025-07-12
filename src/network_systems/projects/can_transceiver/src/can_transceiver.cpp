@@ -120,9 +120,10 @@ void CanTransceiver::receive()
     }
     while (!shutdown_flag_) {
         // make sure the lock is acquired and released INSIDE the loop, otherwise send() will never get the lock
-        CanFrame                    frame;
-        std::lock_guard<std::mutex> lock(can_mtx_);
-        ssize_t                     bytes_read = read(sock_desc_, &frame, sizeof(CanFrame));
+        CanFrame                     frame;
+        std::unique_lock<std::mutex> lock(can_mtx_);
+        ssize_t                      bytes_read = read(sock_desc_, &frame, sizeof(CanFrame));
+        lock.unlock();
         if (bytes_read > 0) {
             if (bytes_read != sizeof(CanFrame)) {
                 std::cerr << "CAN read error: read " << bytes_read << "B but CAN frames are expected to be "
@@ -134,6 +135,8 @@ void CanTransceiver::receive()
             if (errno != EAGAIN && errno != EWOULDBLOCK) {
                 std::cerr << "CAN read error: " << errno << "(" << strerror(errno)  // NOLINT(concurrency-mt-unsafe)
                           << ")" << std::endl;
+            } else {
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
             }
         }
     }
