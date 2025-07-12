@@ -2,7 +2,6 @@
 
 #include <errno.h>
 #include <fcntl.h>
-#include <fcntl.h>
 #include <linux/can.h>
 #include <net/if.h>
 #include <sys/ioctl.h>
@@ -110,15 +109,6 @@ CanTransceiver::~CanTransceiver()
 
 void CanTransceiver::receive()
 {
-    int flags = fcntl(sock_desc_, F_GETFL, 0);
-    if (flags == -1) {
-        std::cerr << "failed to get flags for CAN socket fd" << std::endl;
-    }
-    // make read() non-blocking so mutex gets released
-    flags |= O_NONBLOCK;
-    if (fcntl(sock_desc_, F_SETFL, flags) == -1) {
-        std::cerr << "failed to set flags for CAN socket fd" << std::endl;
-    }
     int flags = fcntl(sock_desc_, F_GETFL, 0);
     if (flags == -1) {
         std::cerr << "failed to get flags for CAN socket fd" << std::endl;
