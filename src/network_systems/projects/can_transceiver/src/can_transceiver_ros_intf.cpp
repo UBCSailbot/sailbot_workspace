@@ -87,12 +87,12 @@ public:
               std::make_pair(
                 CanId::RUDDER_DATA_FRAME,
                 std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishRudder(frame); })),
-              std::make_pair(
-                CanId::SAIL_WIND,
-                std::function<void(const CanFrame &)>([this](const CanFrame & frame) {publishWindSensor(frame); })),
-              std::make_pair(
-                CanId::DATA_WIND,
-                std::function<void(const CanFrame &)>([this](const CanFrame & frame) {publishWindSensor(frame); })),
+              std::make_pair(CanId::SAIL_WIND, std::function<void(const CanFrame &)>([this](const CanFrame & frame) {
+                                 publishWindSensor(frame);
+                             })),
+              std::make_pair(CanId::DATA_WIND, std::function<void(const CanFrame &)>([this](const CanFrame & frame) {
+                                 publishWindSensor(frame);
+                             })),
               std::make_pair(
                 CanId::GENERIC_SENSOR_START,
                 std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishGeneric(frame); })),
@@ -540,12 +540,12 @@ private:
             can_trns_->send(desired_heading_frame.toLinuxCan());
             RCLCPP_INFO(
               this->get_logger(), "%s %s", getCurrentTimeString().c_str(), desired_heading_frame.toString().c_str());
-        // } catch (const std::out_of_range & e) {
-        //     RCLCPP_WARN(
-        //       this->get_logger(), "%s Attempted to construct DesiredHeading but was out of range",
-        //       getCurrentTimeString().c_str());
-        //     return;
-        // }
+        } catch (const std::out_of_range & e) {
+            RCLCPP_WARN(
+              this->get_logger(), "%s Attempted to construct DesiredHeading but was out of range",
+              getCurrentTimeString().c_str());
+            return;
+        }
     }
 
     /**
