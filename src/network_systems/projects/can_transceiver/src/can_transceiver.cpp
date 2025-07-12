@@ -1,6 +1,7 @@
 #include "can_transceiver.h"
 
 #include <errno.h>
+#include <fcntl.h>
 #include <linux/can.h>
 #include <net/if.h>
 #include <sys/ioctl.h>
@@ -108,10 +109,19 @@ CanTransceiver::~CanTransceiver()
 
 void CanTransceiver::receive()
 {
+    int flags = fcntl(sock_desc_, F_GETFL, 0);
+    if (flags == -1) {
+        std::cerr << "failed to get flags for CAN socket fd" << std::endl;
+    }
+    // make read() non-blocking so mutex gets released
+    flags |= O_NONBLOCK;
+    if (fcntl(sock_desc_, F_SETFL, flags) == -1) {
+        std::cerr << "failed to set flags for CAN socket fd" << std::endl;
+    }
     while (!shutdown_flag_) {
         // make sure the lock is acquired and released INSIDE the loop, otherwise send() will never get the lock
-        std::lock_guard<std::mutex> lock(can_mtx_);
         CanFrame                    frame;
+        std::lock_guard<std::mutex> lock(can_mtx_);
         ssize_t                     bytes_read = read(sock_desc_, &frame, sizeof(CanFrame));
         if (bytes_read > 0) {
             if (bytes_read != sizeof(CanFrame)) {
@@ -121,8 +131,10 @@ void CanTransceiver::receive()
                 onNewCanData(frame);
             }
         } else if (bytes_read < 0) {
-            std::cerr << "CAN read error: " << errno << "(" << strerror(errno)  // NOLINT(concurrency-mt-unsafe)
-                      << ")" << std::endl;
+            if (errno != EAGAIN && errno != EWOULDBLOCK) {
+                std::cerr << "CAN read error: " << errno << "(" << strerror(errno)  // NOLINT(concurrency-mt-unsafe)
+                          << ")" << std::endl;
+            }
         }
     }
 }
