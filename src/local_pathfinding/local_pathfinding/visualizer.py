@@ -89,6 +89,7 @@ class VisualizerState:
         self.ais_ship_ids = [ship.id for ship in self.ais_ships]
         ais_ship_xy = cs.latlon_list_to_xy_list(self.reference_latlon, ais_ship_latlons)
         self.ais_pos_x, self.ais_pos_y = self._split_coordinates(ais_ship_xy)
+        self.ais_headings = [ship.cog.heading for ship in self.ais_ships]
 
         # TODO: Include other LPathData attributes for plotting their data
 
@@ -516,21 +517,33 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
     y_max = max(state.final_local_wp_y) + 10
 
     # Display AIS Ships
-    ais_trace = go.Scatter(
-        x=state.ais_pos_x,
-        y=state.ais_pos_y,
-        mode="markers",
-        name="AIS Ship",
-        marker=dict(color="orange", size=10, symbol="diamond"),
-        text=[f"ID: {id}" for id in state.ais_ship_ids],
-        hovertemplate=(
-            "<b>🚢 AIS Ship</b><br>"
-            "X: %{x:.2f}<br>"
-            "Y: %{y:.2f}<br>"
-            "%{text}<extra></extra>"
-        ),
-    )
-    fig.add_trace(ais_trace)
+    for x_val, y_val, heading, ais_id in zip(
+        state.ais_pos_x, state.ais_pos_y, state.ais_headings, state.ais_ship_ids
+    ):
+        fig.add_trace(
+            go.Scatter(
+                x=[x_val],
+                y=[y_val],
+                mode="markers",
+                name=f"AIS {str(ais_id)}",
+                hovertemplate=(
+                    f"<b>🚢 AIS Ship {str(ais_id)}</b><br>"
+                    f"X: {x_val:.2f}<br>"
+                    f"Y: {y_val:.2f}<br>"
+                    f"Heading: {heading:.1f}°<extra></extra>"
+                ),
+                marker=dict(
+                    symbol="arrow-wide",
+                    line_color="orange",
+                    color="orange",
+                    line_width=2,
+                    size=15,
+                    angleref="up",
+                    angle=cs.true_bearing_to_plotly_cartesian(heading),
+                ),
+                showlegend=False,
+            )
+        )
 
     # Update Layout
     fig.update_layout(
