@@ -22,6 +22,8 @@ class LocalPathState:
         ais_ships (List[HelperAISShip]): Information about nearby ships.
         global_path (List[Tuple[float, float]]): Path to the destination that Sailbot is
                                                  navigating along.
+        target_global_waypoint (ci.HelperLatLon): The global waypoint that we are heading towards.
+            The global waypoint is the same as the reference latlon.
         wind_speed (float): Wind speed.
         wind_direction (int): Wind direction.
         planner (str): Planner to use for the OMPL query.
@@ -34,6 +36,7 @@ class LocalPathState:
         gps: ci.GPS,
         ais_ships: ci.AISShips,
         global_path: ci.Path,
+        target_global_waypoint: ci.HelperLatLon,
         filtered_wind_sensor: ci.WindSensor,
         planner: str,
     ):
@@ -55,7 +58,7 @@ class LocalPathState:
         if not (global_path and global_path.waypoints):
             raise ValueError("Cannot create a LocalPathState with an empty global_path")
         self.global_path = global_path
-        self.reference_latlon = self.global_path.waypoints[-1]
+        self.reference_latlon = target_global_waypoint
 
         if not planner:
             raise ValueError("planner must not be None")
@@ -87,6 +90,9 @@ class LocalPath:
         gps: ci.GPS,
         ais_ships: ci.AISShips,
         global_path: ci.Path,
+        received_new_global_waypoint: bool,
+        # ^ Placeholder; will be used for conditions to update local path
+        target_global_waypoint: ci.HelperLatLon,
         filtered_wind_sensor: ci.WindSensor,
         planner: str,
         land_multi_polygon: MultiPolygon = None,
@@ -101,7 +107,9 @@ class LocalPath:
             filtered_wind_sensor (ci.WindSensor): Wind data.
         """
         # this raises ValueError if any of the parameters are not properly initialized
-        state = LocalPathState(gps, ais_ships, global_path, filtered_wind_sensor, planner)
+        state = LocalPathState(
+            gps, ais_ships, global_path, target_global_waypoint, filtered_wind_sensor, planner
+        )
         self.state = state
         ompl_path = OMPLPath(
             parent_logger=self._logger,
