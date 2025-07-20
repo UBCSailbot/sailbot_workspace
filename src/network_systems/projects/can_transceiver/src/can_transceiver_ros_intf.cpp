@@ -90,6 +90,9 @@ public:
               std::make_pair(CanId::SAIL_WIND, std::function<void(const CanFrame &)>([this](const CanFrame & frame) {
                                  publishWindSensor(frame);
                              })),
+              std::make_pair(CanId::DATA_WIND, std::function<void(const CanFrame &)>([this](const CanFrame & frame) {
+                                 publishWindSensor(frame);
+                             })),
               std::make_pair(
                 CanId::GENERIC_SENSOR_START,
                 std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishGeneric(frame); })),
@@ -533,7 +536,7 @@ private:
     {
         desired_heading_ = desired_heading;
         try {
-            CAN_FP::DesiredHeading desired_heading_frame(desired_heading, CanId::MAIN_TR_TAB);
+            auto desired_heading_frame = CAN_FP::DesiredHeading(desired_heading_, CanId::MAIN_HEADING);
             can_trns_->send(desired_heading_frame.toLinuxCan());
             RCLCPP_INFO(
               this->get_logger(), "%s %s", getCurrentTimeString().c_str(), desired_heading_frame.toString().c_str());

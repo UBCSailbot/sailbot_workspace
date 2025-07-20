@@ -21,7 +21,7 @@ from shapely.geometry import MultiPolygon, Point, Polygon, box
 
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.obstacles as ob
-from local_pathfinding.objectives import get_sailing_objective
+from local_pathfinding.ompl_objectives import get_sailing_objective
 
 if TYPE_CHECKING:
     from local_pathfinding.local_path import LocalPathState

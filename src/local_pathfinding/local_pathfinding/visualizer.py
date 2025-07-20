@@ -27,7 +27,7 @@ from dash.dependencies import Input, Output
 from shapely.geometry import Polygon
 
 import local_pathfinding.coord_systems as cs
-from local_pathfinding.objectives import get_true_wind
+from local_pathfinding.ompl_objectives import get_true_wind
 
 app = dash.Dash(__name__)
 
