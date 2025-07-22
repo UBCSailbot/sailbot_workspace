@@ -35,7 +35,8 @@ class WingsailControllerNode(Node):
         __gps_sub (Subscription): Subscribes to the gps topic
 
     Publishers:
-        TO BE ADDED
+        __trim_tab_angle_pub (Publisher): Publishes a SailCmd message with the trim tab angle from
+        the __publish callback
     """
 
     def __init__(self):
