@@ -32,7 +32,7 @@ The [ament linters](https://github.com/ament/ament_lint/tree/humble) are configu
 [Dev Containers](https://code.visualstudio.com/docs/devcontainers/containers) enable us to use a
 [Docker container](https://www.docker.com/resources/what-container/) as a fully-featured development environment
 containing all our configuration and dependencies.
-Our Dev Container configuration can be found in [`.devcontainer/`](https://github.com/UBCSailbot/sailbot_workspace/blob/main/.devcontainer).
+Our Dev Container configuration can be found in [`.devcontainer/`](https://github.com/UBCSailbot/sailbot_workspace/tree/main/.devcontainer).
 
 ### VS Code Workspace
 

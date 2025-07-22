@@ -1,7 +1,7 @@
 # Custom Interfaces
 
-UBC Sailbot's custom interfaces ROS package. To add `custom_interfaces` to another ROS package, follow the instructions
-[here](https://docs.ros.org/en/humble/Tutorials/Beginner-Client-Libraries/Custom-ROS2-Interfaces.html#test-the-new-interfaces).
+UBC Sailbot's custom interfaces ROS package. To add `custom_interfaces` to another ROS package, follow the instructions to
+[create and test custom msg files](https://docs.ros.org/en/humble/Tutorials/Beginner-Client-Libraries/Custom-ROS2-Interfaces.html#test-the-new-interfaces).
 
 The terminology that we use in this document are the following:
 
