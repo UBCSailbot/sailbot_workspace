@@ -227,9 +227,7 @@ private:
             }
             RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), ais_ship.toString().c_str());
         } catch (std::out_of_range err) {
-            RCLCPP_WARN(
-              this->get_logger(), "%s Attempted to construct AISShips but was out of range",
-              getCurrentTimeString().c_str());
+            RCLCPP_WARN(this->get_logger(), "%s", err.what());
             return;
         }
     }
@@ -268,9 +266,7 @@ private:
 
             RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), bat.toString().c_str());
         } catch (std::out_of_range err) {
-            RCLCPP_WARN(
-              this->get_logger(), "%s Attempted to construct Battery but was out of range",
-              getCurrentTimeString().c_str());
+            RCLCPP_WARN(this->get_logger(), "%s", err.what());
             return;
         }
     }
@@ -290,8 +286,7 @@ private:
             gps_pub_->publish(gps_);
             RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), gps.toString().c_str());
         } catch (std::out_of_range err) {
-            RCLCPP_WARN(
-              this->get_logger(), "%s Attempted to construct GPS but was out of range", getCurrentTimeString().c_str());
+            RCLCPP_WARN(this->get_logger(), "%s", err.what());
             return;
         }
     }
@@ -318,9 +313,7 @@ private:
             publishFilteredWindSensor();
             RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), wind_sensor.toString().c_str());
         } catch (std::out_of_range err) {
-            RCLCPP_WARN(
-              this->get_logger(), "%s Attempted to construct Wind Sensor but was out of range",
-              getCurrentTimeString().c_str());
+            RCLCPP_WARN(this->get_logger(), "%s", err.what());
             return;
         }
     }
@@ -365,9 +358,7 @@ private:
             rudder_pub_->publish(rudder_);
             RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), rudder.toString().c_str());
         } catch (std::out_of_range err) {
-            RCLCPP_WARN(
-              this->get_logger(), "%s Attempted to construct Rudder but was out of range",
-              getCurrentTimeString().c_str());
+            RCLCPP_WARN(this->get_logger(), "%s", err.what());
             return;
         }
     }
@@ -399,9 +390,7 @@ private:
             temp_sensors_pub_->publish(temp_sensors_);
             RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), temp_sensor.toString().c_str());
         } catch (std::out_of_range err) {
-            RCLCPP_WARN(
-              this->get_logger(), "%s Attempted to construct Temp Sensor but was out of range",
-              getCurrentTimeString().c_str());
+            RCLCPP_WARN(this->get_logger(), "%s", err.what());
             return;
         }
     }
@@ -427,9 +416,7 @@ private:
             ph_sensors_pub_->publish(ph_sensors_);
             RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), ph_sensor.toString().c_str());
         } catch (std::out_of_range err) {
-            RCLCPP_WARN(
-              this->get_logger(), "%s Attempted to construct Ph Sensor but was out of range",
-              getCurrentTimeString().c_str());
+            RCLCPP_WARN(this->get_logger(), "%s", err.what());
             return;
         }
     }
@@ -456,9 +443,7 @@ private:
             RCLCPP_INFO(
               this->get_logger(), "%s %s", getCurrentTimeString().c_str(), salinity_sensor.toString().c_str());
         } catch (std::out_of_range err) {
-            RCLCPP_WARN(
-              this->get_logger(), "%s Attempted to construct Salinity Sensor but was out of range",
-              getCurrentTimeString().c_str());
+            RCLCPP_WARN(this->get_logger(), "%s", err.what());
             return;
         }
     }
@@ -485,9 +470,7 @@ private:
             RCLCPP_INFO(
               this->get_logger(), "%s %s", getCurrentTimeString().c_str(), pressure_sensor.toString().c_str());
         } catch (std::out_of_range err) {
-            RCLCPP_WARN(
-              this->get_logger(), "%s Attempted to construct Pressure Sensor but was out of range",
-              getCurrentTimeString().c_str());
+            RCLCPP_WARN(this->get_logger(), "%s", err.what());
             return;
         }
     }
@@ -541,9 +524,7 @@ private:
             RCLCPP_INFO(
               this->get_logger(), "%s %s", getCurrentTimeString().c_str(), desired_heading_frame.toString().c_str());
         } catch (const std::out_of_range & e) {
-            RCLCPP_WARN(
-              this->get_logger(), "%s Attempted to construct DesiredHeading but was out of range",
-              getCurrentTimeString().c_str());
+            RCLCPP_WARN(this->get_logger(), "%s", e.what());
             return;
         }
     }
@@ -589,9 +570,7 @@ private:
             RCLCPP_INFO(
               this->get_logger(), "%s %s", getCurrentTimeString().c_str(), main_trim_tab_frame.toString().c_str());
         } catch (std::out_of_range err) {
-            RCLCPP_WARN(
-              this->get_logger(), "%s Attempted to construct MainTrimTab but was out of range",
-              getCurrentTimeString().c_str());
+            RCLCPP_WARN(this->get_logger(), "%s", err.what());
             return;
         }
     }
