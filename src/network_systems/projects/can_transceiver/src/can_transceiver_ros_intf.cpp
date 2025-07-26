@@ -98,6 +98,9 @@ public:
                 std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishGeneric(frame); })),
               std::make_pair(CanId::SAIL_AIS, std::function<void(const CanFrame &)>([this](const CanFrame & frame) {
                                  publishAIS(frame);
+                             })),
+              std::make_pair(CanId::CAN_MODE, std::function<void(const CanFrame &)>([this](const CanFrame & frame) {
+                                 toggleCanMode(frame);
                              }))};
 
             auto append = [&](auto && v) { canCbs.insert(canCbs.end(), v.begin(), v.end()); };
@@ -525,6 +528,37 @@ private:
         std::stringstream ss;
         ss << "[GENERIC SENSOR] CanID: " << generic_frame.can_id << " Data: " << generic_data;
         RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), ss.str().c_str());
+    }
+
+    /**
+     * @brief Toggle the CAN mode (Normal <--> Manual)
+     *        Intended to be registered as a callback with the CAN Transceiver instance
+     *
+     * @param canmode_frame CanMode CAN frame read from the CAN bus
+     */
+    void toggleCanMode(const CanFrame & canmode_frame)
+    {
+        try {
+            CAN_FP::CanMode canmode(canmode_frame);
+            // can_trns_->send(canmode.toLinuxCan());
+            can_trns_->setCanMode(canmode.mode_);
+
+            // Get the current time as a time_point
+            auto now = std::chrono::system_clock::now();
+
+            // Convert it to a time_t object for extracting hours and minutes
+            std::time_t currentTime = std::chrono::system_clock::to_time_t(now);
+
+            std::stringstream ss;
+            ss << currentTime;
+
+            RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), canmode.toString().c_str());
+        } catch (std::out_of_range err) {
+            RCLCPP_WARN(
+              this->get_logger(), "%s Attempted to construct CanMode but was out of range",
+              getCurrentTimeString().c_str());
+            return;
+        }
     }
 
     /**

@@ -20,6 +20,10 @@ using SockAddrCan = struct sockaddr_can;
 using CAN_FP::CanFrame;
 using CAN_FP::CanId;
 
+enum CAN_MODE { NORMAL, MANUAL };
+
+int mode = CAN_MODE::NORMAL;
+
 void CanTransceiver::onNewCanData(const CanFrame & frame) const
 {
     if (!CAN_FP::isValidCanId(frame.can_id)) {
@@ -41,6 +45,15 @@ void CanTransceiver::registerCanCb(const std::pair<CanId, std::function<void(con
 {
     auto [key, cb]       = cb_kvp;
     read_callbacks_[key] = cb;
+}
+
+void CanTransceiver::setCanMode(uint8_t newMode)
+{
+    if (newMode == CAN_MODE::NORMAL || newMode == CAN_MODE::MANUAL) {
+        mode = newMode;
+    } else {
+        std::cerr << "Received invalid mode for CAN: " << newMode << std::endl;
+    }
 }
 
 void CanTransceiver::registerCanCbs(
@@ -144,6 +157,9 @@ void CanTransceiver::receive()
 
 void CanTransceiver::send(const CanFrame & frame) const
 {
+    if (mode == CAN_MODE::MANUAL) {
+        return;
+    }
     std::lock_guard<std::mutex> lock(can_mtx_);
     ssize_t                     bytes_written = write(sock_desc_, &frame, sizeof(CanFrame));
     if (bytes_written < 0) {

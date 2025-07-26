@@ -109,7 +109,8 @@ enum class CanId : canid_t {
     PRESSURE_14           = 0x13E,
     PRESSURE_SENSOR_END   = 0x13F,
     GENERIC_SENSOR_START  = 0x140,
-    GENERIC_SENSOR_END    = 0x1FF
+    GENERIC_SENSOR_END    = 0x1FF,
+    CAN_MODE              = 0x999
 };
 
 inline bool isValidCanId(canid_t id)
@@ -132,7 +133,9 @@ inline bool isValidCanId(canid_t id)
             id <= static_cast<canid_t>(CanId::PRESSURE_SENSOR_END)) ||
 
            (id >= static_cast<canid_t>(CanId::GENERIC_SENSOR_START) &&
-            id <= static_cast<canid_t>(CanId::GENERIC_SENSOR_END));
+            id <= static_cast<canid_t>(CanId::GENERIC_SENSOR_END)) ||
+
+           id == static_cast<canid_t>(CanId::CAN_MODE);
 }
 
 /**
@@ -213,7 +216,8 @@ static const std::map<CanId, std::string> CAN_DESC{
   {CanId::PRESSURE_12, "PRESSURE_12 (Pressure sensor #12)"},
   {CanId::PRESSURE_13, "PRESSURE_13 (Pressure sensor #13)"},
   {CanId::PRESSURE_14, "PRESSURE_14 (Pressure sensor #14)"},
-  {CanId::PRESSURE_SENSOR_END, "PRESSURE_SENSOR_END (End of pressure sensor range)"}};
+  {CanId::PRESSURE_SENSOR_END, "PRESSURE_SENSOR_END (End of pressure sensor range)"},
+  {CanId::CAN_MODE, "CAN_MODE (When mode is MANUAL no messages sent on the CAN bus)"}};
 
 /**
  * @brief Custom exception for when an attempt is made to construct a CAN object with a mismatched ID
@@ -1298,6 +1302,70 @@ private:
     void checkBounds() const;
 
     float pressure_;
+};
+
+class CanMode final : public BaseFrame
+{
+public:
+    static constexpr std::array<CanId, 1>   CAN_MODE_IDS    = {CanId::CAN_MODE};
+    static constexpr uint8_t                CAN_BYTE_DLEN_  = 1;
+    static constexpr uint8_t                BYTE_OFF_MODE   = 0;
+    static constexpr uint8_t                CAN_MODE_NORMAL = 0;
+    static constexpr uint8_t                CAN_MODE_MANUAL = 1;
+    static constexpr std::array<uint8_t, 2> CAN_MODES       = {CAN_MODE_NORMAL, CAN_MODE_MANUAL};
+
+    /**
+     * @brief Explicitly deleted no-argument constructor
+     *
+     */
+    CanMode() = delete;
+
+    /**
+     * @brief Construct an CanMode object from a Linux CanFrame representation
+     *
+     * @param cf Linux CanFrame
+     */
+    explicit CanMode(const CanFrame & cf);
+
+    /**
+     * @brief Construct a CanMode object given a mode and CAN ID
+     *
+     * @param mode    Power mode select
+     * @param id      CanId of the CanMode
+     */
+    explicit CanMode(uint8_t mode, CanId id);
+
+    /**
+     * @return the Linux CanFrame representation of the CanMode object
+     */
+    CanFrame toLinuxCan() const override;
+
+    /**
+     * @return A string that can be printed or logged to debug a CanMode object
+     */
+    std::string debugStr() const override;
+
+    /**
+     * @brief A string representation of the CanMode object
+     *
+     */
+    std::string toString() const override;
+
+    uint8_t mode_;
+
+private:
+    /**
+     * @brief Private helper constructor for CanMode objects
+     *
+     * @param id CanId of the CanMode
+     */
+    explicit CanMode(CanId id);
+
+    /**
+     * @brief Check if the assigned fields after constructing a CanMode object are within bounds.
+     * @throws std::out_of_range if any assigned fields are outside of expected bounds
+     */
+    void checkBounds() const;
 };
 
 }  // namespace CAN_FP

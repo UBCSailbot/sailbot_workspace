@@ -1161,4 +1161,67 @@ void PressureSensor::checkBounds() const
 // PressureSensor private END
 // PressureSensor END
 
+//CanMode START
+//CanMode public START
+
+CanMode::CanMode(const CanFrame & cf) : CanMode(static_cast<CanId>(cf.can_id))
+{
+    uint8_t raw_mode;
+
+    std::memcpy(&raw_mode, cf.data + BYTE_OFF_MODE, sizeof(uint8_t));
+
+    mode_ = raw_mode;
+
+    checkBounds();
+}
+
+CanMode::CanMode(uint8_t mode, CanId id) : BaseFrame(id, CAN_BYTE_DLEN_), mode_(mode) { checkBounds(); }
+
+CanFrame CanMode::toLinuxCan() const
+{
+    uint8_t raw_mode = mode_;
+
+    CanFrame cf = BaseFrame::toLinuxCan();
+    std::memcpy(cf.data + BYTE_OFF_MODE, &raw_mode, sizeof(uint8_t));
+
+    return cf;
+}
+
+std::string CanMode::debugStr() const
+{
+    std::stringstream ss;
+    ss << BaseFrame::debugStr() << "\n"
+       << "CAN mode: " << mode_;
+    return ss.str();
+}
+
+std::string CanMode::toString() const
+{
+    std::stringstream ss;
+    std::string       mode;
+    if (mode_ == CAN_MODE_NORMAL) {
+        mode = "Normal";
+    } else {
+        mode = "Manual";
+    }
+    ss << "[CAN_MODE] Mode: " << mode;
+    return ss.str();
+}
+
+// CanMode public END
+// CanMode private START
+
+CanMode::CanMode(CanId id) : BaseFrame(std::span{CAN_MODE_IDS}, id, CAN_BYTE_DLEN_) {}
+
+void CanMode::checkBounds() const
+{
+    auto err = utils::isOutOfBounds<float>(mode_, CAN_MODE_NORMAL, CAN_MODE_MANUAL);
+    if (err) {
+        std::string err_msg = err.value();
+        throw std::out_of_range("CAN mode value is out of bounds!\n" + debugStr() + "\n" + err_msg);
+    }
+}
+// CanMode private END
+// CanMode END
+
 }  // namespace CAN_FP
