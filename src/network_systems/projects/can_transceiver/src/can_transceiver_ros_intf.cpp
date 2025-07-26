@@ -185,7 +185,7 @@ private:
 
     // Holder for AISShips before publishing
     std::vector<msg::HelperAISShip> ais_ships_holder_;
-    int                             ais_ships_num_;
+    int                             total_ais_ships = 0;
 
     // Mock CAN file descriptor for simulation
     int sim_intf_fd_;
@@ -215,18 +215,18 @@ private:
         try {
             CAN_FP::AISShips ais_ship(ais_frame);
 
-            if (ais_ships_num_ == 0) {
-                ais_ships_num_ = ais_ship.getNumShips();
-                ais_ships_holder_.reserve(ais_ships_num_);
+            if (total_ais_ships == 0) {
+                total_ais_ships = ais_ship.getNumShips();
+                ais_ships_holder_.resize(total_ais_ships);  // temporary holder vector for AIS ships
             }
 
             ais_ships_holder_[ais_ship.getShipIndex()] = ais_ship.toRosMsg();  //maybe change to pushback later
 
-            if (ais_ships_holder_.size() == static_cast<size_t>(ais_ships_num_)) {
+            if (ais_ships_holder_.size() == static_cast<size_t>(total_ais_ships)) {
                 ais_ships_.ships = ais_ships_holder_;
                 ais_pub_->publish(ais_ships_);
-                ais_ships_holder_.clear();
-                ais_ships_num_ = 0;  // reset the number of ships
+                ais_ships_holder_.clear();  // reset holder vector
+                total_ais_ships = 0;        // reset the number of ships
             }
             RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), ais_ship.toString().c_str());
         } catch (std::out_of_range err) {

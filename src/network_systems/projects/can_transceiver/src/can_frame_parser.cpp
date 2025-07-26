@@ -129,7 +129,7 @@ std::string Battery::debugStr() const
 std::string Battery::toString() const
 {
     std::stringstream ss;
-    ss << "[BATTERY] Voltage: " << volt_;
+    ss << "[BATTERY] Voltage: " << volt_ << "V Current: " << curr_ << "A";
     return ss.str();
 }
 
