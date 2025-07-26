@@ -1307,12 +1307,14 @@ private:
 class CanMode final : public BaseFrame
 {
 public:
-    static constexpr std::array<CanId, 1>   CAN_MODE_IDS    = {CanId::CAN_MODE};
-    static constexpr uint8_t                CAN_BYTE_DLEN_  = 1;
-    static constexpr uint8_t                BYTE_OFF_MODE   = 0;
-    static constexpr uint8_t                CAN_MODE_NORMAL = 0;
-    static constexpr uint8_t                CAN_MODE_MANUAL = 1;
-    static constexpr std::array<uint8_t, 2> CAN_MODES       = {CAN_MODE_NORMAL, CAN_MODE_MANUAL};
+    static constexpr std::array<CanId, 1>   CAN_MODE_IDS        = {CanId::CAN_MODE};
+    static constexpr uint8_t                CAN_BYTE_DLEN_      = 1;
+    static constexpr uint8_t                BYTE_OFF_MODE       = 0;
+    static constexpr uint8_t                CAN_MODE_NORMAL     = 0;
+    static constexpr uint8_t                CAN_MODE_MANUAL     = 1;
+    static constexpr uint8_t                CAN_MODE_NORMAL_ACK = 0x00;
+    static constexpr uint8_t                CAN_MODE_MANUAL_ACK = 0x11;
+    static constexpr std::array<uint8_t, 2> CAN_MODES           = {CAN_MODE_NORMAL, CAN_MODE_MANUAL};
 
     /**
      * @brief Explicitly deleted no-argument constructor

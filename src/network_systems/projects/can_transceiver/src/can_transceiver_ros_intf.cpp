@@ -540,7 +540,7 @@ private:
     {
         try {
             CAN_FP::CanMode canmode(canmode_frame);
-            // can_trns_->send(canmode.toLinuxCan());
+            can_trns_->send(canmode.toLinuxCan());
             can_trns_->setCanMode(canmode.mode_);
 
             // Get the current time as a time_point

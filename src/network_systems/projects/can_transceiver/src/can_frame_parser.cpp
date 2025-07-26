@@ -1179,7 +1179,7 @@ CanMode::CanMode(uint8_t mode, CanId id) : BaseFrame(id, CAN_BYTE_DLEN_), mode_(
 
 CanFrame CanMode::toLinuxCan() const
 {
-    uint8_t raw_mode = mode_;
+    uint8_t raw_mode = mode_ == CAN_MODE_NORMAL ? CAN_MODE_NORMAL_ACK : CAN_MODE_MANUAL_ACK;
 
     CanFrame cf = BaseFrame::toLinuxCan();
     std::memcpy(cf.data + BYTE_OFF_MODE, &raw_mode, sizeof(uint8_t));
