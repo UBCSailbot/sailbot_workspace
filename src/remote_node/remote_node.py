@@ -1,5 +1,6 @@
 import subprocess
 import paramiko
+import time
 
 # IMPORTANT: 
 ''' Notes on CAN
@@ -46,7 +47,8 @@ def convert_to_little_endian(hex):
     new = bytes.fromhex(hex)
     new = new[::-1]
     return new.hex()
-        
+
+# EFFECTS: sshes into pi & executes given command, returns the output and error messages
 def send_command(cmd):
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -55,6 +57,36 @@ def send_command(cmd):
     # print("stdout: ", stdout.read().decode())
     # print("stderr: ", stderr.read().decode())
     client.close()
+    return stdout, stderr
+
+# EFFECTS: sshes into pi, executes candump, parses data for the message with given id
+# TODO: may call send_command
+def get_data(id):
+    client = paramiko.SSHClient()
+    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    client.connect(hostname, username=username, password=password)
+    stdin, stdout, stderr = client.exec_command("candump can1 -T 10000")
+    # TODO: if nothing received, return error message
+    # print(stdout.read().decode())
+    # print("stdout: ", stdout.read().decode())
+    # print("stderr: ", stderr.read().decode())
+
+    data = stdout.read().decode() # (ChannelFile) --> .read() --> (bytes) --> .decode() --> (String)
+    split = data.splitlines()
+    relevant_data = []
+    for line in split:
+        if (line[5:8] == "030"):
+            relevant_data.append(line[14:])
+
+    client.close()
+    return relevant_data, stderr.read().decode()
+
+# EFFECTS: parse the given candump line string for the needed data, switches it around (back to big-endian), converts & returns it as an int
+#          line = candump line string, start = starting index, end = ending index
+def get_line_data(line, start, end):
+    result = 0
+    # TODO
+    return result
 
 # EFFECTS: Sends can frame for MAIN_TR_TAB
 def main_tr_tab():
@@ -91,7 +123,9 @@ def rdr_heading():
 
 # EFFECTS: Get data from can frame BMS_DATA_FRAME
 def get_pdb_data():
-    # TODO
+    # TODO: add graphing capabilities - right now it just returns the numbers it collected - do I need to store pdb as a list outside of this function & add to it?
+    relevant_data, error = get_data("030")
+
     return
 
 
@@ -103,6 +137,7 @@ print("\n1.", SAIL_CMD,"\n2.", RDR_CMD, "\n3.", PDB_CMD)
 while True:
     cmd = input("Enter command: ")
     cmd = cmd.lower()
+    send_message = True
     msg = ""
 
     if (cmd == SAIL_CMD):
@@ -113,7 +148,8 @@ while True:
         break
     elif (cmd == PDB_CMD):
         # TODO
-        print("todo")
+        send_message = False
+        get_pdb_data()
         break
     elif (cmd == EXIT_CMD):
         print("Exiting program...\n")
@@ -122,4 +158,4 @@ while True:
         # TODO
         print("[ERR] Command not recognized")
 
-send_command(msg)
+if (send_message): send_command(msg)
