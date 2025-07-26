@@ -58,6 +58,13 @@ public:
     void registerCanCbs(
       const std::vector<std::pair<CAN_FP::CanId, std::function<void(const CAN_FP::CanFrame &)>>> & cb_kvps);
 
+    /**
+     * @brief Set the CAN mode to normal or manual.
+     *
+     * @param newMode new mode to set to
+     */
+    static void setCanMode(uint8_t newMode);
+
 private:
     // CAN socket this instance is attached to (can be a normal file descriptor when simulating)
     int sock_desc_;
