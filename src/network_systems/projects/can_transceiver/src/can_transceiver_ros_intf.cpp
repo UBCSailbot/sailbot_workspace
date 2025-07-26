@@ -554,9 +554,7 @@ private:
 
             RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), canmode.toString().c_str());
         } catch (std::out_of_range err) {
-            RCLCPP_WARN(
-              this->get_logger(), "%s Attempted to construct CanMode but was out of range",
-              getCurrentTimeString().c_str());
+            RCLCPP_WARN(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), err.what());
             return;
         }
     }
