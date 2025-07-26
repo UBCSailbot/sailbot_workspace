@@ -53,7 +53,7 @@ while True:
                 msg += convert_to_little_endian(convert_to_hex(int(num) * 1000, 8)) # Need 8 hex digits
                 print()
                 print(msg)
-                subprocess.run(msg)
+                subprocess.Popen(msg, shell=True)
                 # subprocess.run("python test.py")
                 break
             except ValueError:
