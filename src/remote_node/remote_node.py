@@ -5,9 +5,11 @@ import subprocess
 # Green = CAN high
 # Yellow = Ground
 
-SAIL_CMD = "sail"
-RDR_CMD = "rudder"
-PDB_CMD = "pdb"
+# TODO: Simplify program, make it easy to add new functions/frames
+
+SAIL_CMD = "1"
+RDR_CMD = "2"
+PDB_CMD = "3"
 EXIT_CMD = "exit"
 BACK_CMD = "back"
 
@@ -22,6 +24,13 @@ def convert_to_hex(decimal, num_digits):
         return add + hex
 
     return hex
+
+# EFFECTS: switches the order of characters in the given string, two at a time (eg. "abcdef" --> "efcdab")
+def convert_to_little_endian(hex):
+    # note: hex is a string of a hexadecimal number
+    new = bytes.fromhex(hex)
+    new = new[::-1]
+    return new.hex()
 
 
 ### MAIN ###
@@ -41,11 +50,11 @@ while True:
 
                 if (num == EXIT_CMD): break
 
-                msg += convert_to_hex(int(num) * 1000, 8) # Need 8 hex digits
+                msg += convert_to_little_endian(convert_to_hex(int(num) * 1000, 8)) # Need 8 hex digits
                 print()
                 print(msg)
-                # subprocess.run(msg)
-                subprocess.run("python test.py")
+                subprocess.run(msg)
+                # subprocess.run("python test.py")
                 break
             except ValueError:
                 print("[ERR] Value entered is not an integer")
