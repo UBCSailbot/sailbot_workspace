@@ -110,7 +110,7 @@ enum class CanId : canid_t {
     PRESSURE_SENSOR_END   = 0x13F,
     GENERIC_SENSOR_START  = 0x140,
     GENERIC_SENSOR_END    = 0x1FF,
-    CAN_MODE              = 0x999
+    CAN_MODE              = 0x210
 };
 
 inline bool isValidCanId(canid_t id)
