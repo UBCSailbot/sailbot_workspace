@@ -7,9 +7,9 @@ import subprocess
 
 # TODO: Simplify program, make it easy to add new functions/frames
 
-SAIL_CMD = "1"
-RDR_CMD = "2"
-PDB_CMD = "3"
+SAIL_CMD = "sail"
+RDR_CMD = "rudder"
+PDB_CMD = "pdb"
 EXIT_CMD = "exit"
 BACK_CMD = "back"
 
@@ -33,6 +33,25 @@ def convert_to_little_endian(hex):
     return new.hex()
 
 
+def main_tr_tab():
+    msg += "cansend can1 002##0"
+        
+    while True:
+        try:
+            num = input("\nEnter trim tab angle: ")
+
+            if (num == EXIT_CMD): break
+
+            msg += convert_to_little_endian(convert_to_hex(int(num) * 1000, 8)) # Need 8 hex digits
+            print()
+            print(msg)
+            subprocess.Popen(msg, shell=True)
+            break
+        except ValueError:
+            print("[ERR] Value entered is not an integer")
+        
+
+
 ### MAIN ###
 print("\n1.", SAIL_CMD,"\n2.", RDR_CMD, "\n3.", PDB_CMD)
 
@@ -42,22 +61,22 @@ while True:
     msg = ""
 
     if (cmd == SAIL_CMD):
-        msg += "cansend can1 002##0"
+        # msg += "cansend can1 002##0"
         
-        while True:
-            try:
-                num = input("\nEnter trim tab angle: ")
+        # while True:
+        #     try:
+        #         num = input("\nEnter trim tab angle: ")
 
-                if (num == EXIT_CMD): break
+        #         if (num == EXIT_CMD): break
 
-                msg += convert_to_little_endian(convert_to_hex(int(num) * 1000, 8)) # Need 8 hex digits
-                print()
-                print(msg)
-                subprocess.Popen(msg, shell=True)
-                # subprocess.run("python test.py")
-                break
-            except ValueError:
-                print("[ERR] Value entered is not an integer")
+        #         msg += convert_to_little_endian(convert_to_hex(int(num) * 1000, 8)) # Need 8 hex digits
+        #         print()
+        #         print(msg)
+        #         subprocess.Popen(msg, shell=True)
+        #         break
+        #     except ValueError:
+        #         print("[ERR] Value entered is not an integer")
+        main_tr_tab()
         break
     elif (cmd == RDR_CMD):
         # TODO
