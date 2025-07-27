@@ -540,8 +540,14 @@ private:
     {
         try {
             CAN_FP::CanMode canmode(canmode_frame);
-            can_trns_->send(canmode.toLinuxCan());
-            can_trns_->setCanMode(canmode.mode_);
+            if (canmode.mode_ == CAN_FP::CanMode::CAN_MODE_MANUAL) {
+                can_trns_->send(canmode.toLinuxCan());
+                can_trns_->setCanMode(canmode.mode_);
+            } else {
+                can_trns_->setCanMode(canmode.mode_);
+                can_trns_->send(canmode.toLinuxCan());
+            }
+
 
             // Get the current time as a time_point
             auto now = std::chrono::system_clock::now();

@@ -1312,7 +1312,7 @@ public:
     static constexpr uint8_t                BYTE_OFF_MODE       = 0;
     static constexpr uint8_t                CAN_MODE_NORMAL     = 0;
     static constexpr uint8_t                CAN_MODE_MANUAL     = 1;
-    static constexpr uint8_t                CAN_MODE_NORMAL_ACK = 0x00;
+    static constexpr uint8_t                CAN_MODE_NORMAL_ACK = 0x10;
     static constexpr uint8_t                CAN_MODE_MANUAL_ACK = 0x11;
     static constexpr std::array<uint8_t, 2> CAN_MODES           = {CAN_MODE_NORMAL, CAN_MODE_MANUAL};
 
