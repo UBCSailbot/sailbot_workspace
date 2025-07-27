@@ -17,7 +17,7 @@ import time
 # Green = CAN high
 # Yellow = Ground
 
-# TODO 1: Implement main function such that the script can be running constantly, collecting data when not receiving instructions
+# TODO 1: Implement a second python script whose only job is to track data with cansend & process it
 # TODO 2: WASD, arrow keys to control angle of rudder + trim tab, add/subtract values of angle, send thru can, down-arrow resets angle to zero
 
 # TODO: Simplify program, make it easy to add new functions/frames
