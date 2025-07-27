@@ -548,7 +548,6 @@ private:
                 can_trns_->send(canmode.toLinuxCan());
             }
 
-
             // Get the current time as a time_point
             auto now = std::chrono::system_clock::now();
 
