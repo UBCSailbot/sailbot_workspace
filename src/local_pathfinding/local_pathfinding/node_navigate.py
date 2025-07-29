@@ -140,6 +140,10 @@ class Sailbot(Node):
                 self.land_multi_polygon = MultiPolygon(polygons)
                 self.get_logger().info("Loaded mock land data.")
 
+        # Simulated voyage metrics
+        self._desired_heading_change_count = 0
+        self._desired_heading_callback_cycles = 0
+
     # subscriber callbacks
     def ais_ships_callback(self, msg: ci.AISShips):
         self.get_logger().debug(f"Received data from {self.ais_ships_sub.topic}: {msg}")
@@ -163,6 +167,9 @@ class Sailbot(Node):
     def desired_heading_callback(self):
         """Get and publish the desired heading."""
 
+        # Count this cycle
+        self._desired_heading_callback_cycles += 1
+
         if not self._all_subs_active():
             self._log_inactive_subs_warning()
             return  # should not continue, return and try again next loop
@@ -172,10 +179,20 @@ class Sailbot(Node):
         desired_heading = self.get_desired_heading()
         msg = ci.DesiredHeading()
         msg.heading.heading = desired_heading
+
+        # Check if desired heading actually changed
         if self.desired_heading is None or desired_heading != self.desired_heading.heading.heading:
+            self.desired_heading_change_count += 1
             self.get_logger().info(f"Updating desired heading to: {msg.heading.heading:.2f}")
 
         self.desired_heading = msg
+
+        # log the ratio every 10 cycles
+        if self.desired_heading_callback_cycles % 10 == 0:
+            ratio = self._desired_heading_change_count / self._desired_heading_callback_cycles
+            self.get_logger().debug(
+                f"Desired heading changes to cycles ratio: {ratio:.2f}"
+            )
 
         self.get_logger().debug(
             f"Publishing to {self.desired_heading_pub.topic}: {msg.heading.heading}"
