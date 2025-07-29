@@ -143,6 +143,7 @@ class Sailbot(Node):
         # Simulated voyage metrics
         self._desired_heading_change_count = 0
         self._desired_heading_callback_cycles = 0
+        self._path_switch_count = 0
 
     # subscriber callbacks
     def ais_ships_callback(self, msg: ci.AISShips):
@@ -189,9 +190,11 @@ class Sailbot(Node):
 
         # log the ratio every 10 cycles
         if self.desired_heading_callback_cycles % 10 == 0:
-            ratio = self._desired_heading_change_count / self._desired_heading_callback_cycles
+            heading_ratio = self._desired_heading_change_count / self._desired_heading_callback_cycles
+            switch_ratio = self._path_switch_count / self._desired_heading_callback_cycles
             self.get_logger().debug(
-                f"Desired heading changes to cycles ratio: {ratio:.2f}"
+                f"Desired heading changes to cycles ratio: {heading_ratio:.2f}"
+                f"Path switch ratio: {switch_ratio:.2f}"
             )
 
         self.get_logger().debug(
@@ -279,6 +282,7 @@ class Sailbot(Node):
 
         if received_new_path:
             self.current_waypoint_index = 0
+            self._path_switch_count += 1
 
         desired_heading, self.current_waypoint_index = (
             self.calculate_desired_heading_and_waypoint_index(
