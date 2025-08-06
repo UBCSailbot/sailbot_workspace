@@ -15,4 +15,7 @@ build/*
 install/*
 log/*
 
+
+land/shp/*
+
 *.log
