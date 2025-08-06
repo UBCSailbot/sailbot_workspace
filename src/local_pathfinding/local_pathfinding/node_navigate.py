@@ -3,6 +3,7 @@
 import json
 import os
 
+import math
 import custom_interfaces.msg as ci
 import rclpy
 from pyproj import Geod
@@ -144,6 +145,8 @@ class Sailbot(Node):
         self._desired_heading_change_count = 0
         self._desired_heading_callback_cycles = 0
         self._path_switch_count = 0
+        self._voyage_total_distance_km = 0
+        self._voyage_total_time_s = 0
 
     # subscriber callbacks
     def ais_ships_callback(self, msg: ci.AISShips):
@@ -188,13 +191,23 @@ class Sailbot(Node):
 
         self.desired_heading = msg
 
+        # Update voyage metrics
+        speed_kmh = self.gps.speed.speed
+        distance = speed_kmh * self.pub_period_sec / 3600
+        self._voyage_total_distance_km += distance
+        self._voyage_total_time_s += self.pub_period_sec
+
         # log the ratio every 10 cycles
         if self.desired_heading_callback_cycles % 10 == 0:
-            heading_ratio = self._desired_heading_change_count / self._desired_heading_callback_cycles
+            heading_ratio = (
+                self._desired_heading_change_count / self._desired_heading_callback_cycles
+            )
             switch_ratio = self._path_switch_count / self._desired_heading_callback_cycles
+            distance_ratio = distance / self.straight_line_distance_km()
             self.get_logger().debug(
                 f"Desired heading changes to cycles ratio: {heading_ratio:.2f}"
                 f"Path switch ratio: {switch_ratio:.2f}"
+                f"Distance travelled to straight line distance ratio: {distance_ratio:.2f}"
             )
 
         self.get_logger().debug(
@@ -204,6 +217,17 @@ class Sailbot(Node):
 
         self.get_logger().debug(f"Publishing local path data to {self.lpath_data_pub.topic}")
         self.publish_local_path_data()
+
+    def straight_line_distance_km(self):
+        ref = ci.HelperLatLon(latitude=0.0, longitude=0.0)
+        start_latlon = ci.HelperLatLon(latitude=49.2734, longitude=-123.1930)
+        dest_latlon = ci.HelperLatLon(latitude=49.3132, longitude=-123.0726)
+        start_xy = cs.latlon_to_xy(ref, start_latlon)
+        dest_xy = cs.latlon_to_xy(ref, dest_latlon)
+        delta_x = abs(start_xy.x - dest_xy.x)
+        delta_y = abs(start_xy.y - dest_xy.y)
+        return math.hypot(delta_x, delta_y)
+
 
     def publish_local_path_data(self):
         """
