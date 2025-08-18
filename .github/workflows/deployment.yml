@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout workspace
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
     - name: Update docker image
       uses: appleboy/ssh-action@v1.2.2
       with:
