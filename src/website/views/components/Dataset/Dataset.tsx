@@ -1,16 +1,25 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import styles from './dataset.module.css';
+import Select, { SingleValue } from 'react-select';
 
 interface DatasetProps {
   title: string;
   content: string[];
-  downloadAction: () => any;
+  downloadAction: (fileType: string) => any;
 }
 
 const Dataset = ({ title, content, downloadAction }: DatasetProps) => {
   const titles = ['DATA TYPE', 'TIMESCALE', 'FILE', 'ACCESS'];
+  const fileTypes = [
+    { value: 'JSON', label: 'JSON' },
+    { value: 'CSV', label: 'CSV' },
+    { value: 'XLSX', label: 'EXCEL' },
+  ];
+
+  const [selectedFileType, setSelectedFileType] = useState('JSON');
+
   return (
     <Accordion className={styles.accordionCustom}>
       <AccordionSummary
@@ -39,9 +48,20 @@ const Dataset = ({ title, content, downloadAction }: DatasetProps) => {
             </div>
           ))}
           <div className={styles.flexItemContainer}>
+            <Select 
+              options={fileTypes} 
+              defaultValue={fileTypes[0]} 
+              onChange={(newValue: SingleValue<{ value: string; label: string }>) => {
+                if (newValue) {
+                  setSelectedFileType(newValue.value);
+                }
+              }}
+            />
+          </div>
+          <div className={styles.flexItemContainer}>
             <span
               style={{ cursor: 'pointer', textDecoration: 'underline' }}
-              onClick={downloadAction}
+              onClick={() => downloadAction(selectedFileType)}
             >
             JSON
             </span>

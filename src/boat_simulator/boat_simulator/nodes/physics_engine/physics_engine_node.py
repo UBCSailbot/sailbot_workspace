@@ -32,7 +32,9 @@ from rclpy.publisher import Publisher
 from rclpy.subscription import Subscription
 
 import boat_simulator.common.constants as Constants
+import boat_simulator.common.utils as Utils
 from boat_simulator.common.generators import MVGaussianGenerator
+from boat_simulator.common.sensors import SimWindSensor
 from boat_simulator.common.types import Scalar
 from boat_simulator.nodes.physics_engine.fluid_generation import FluidGenerator
 from boat_simulator.nodes.physics_engine.model import BoatState
@@ -182,6 +184,10 @@ class PhysicsEngineNode(Node):
             generator=MVGaussianGenerator(current_mean, current_cov)
         )
 
+        # No delay in this instance
+        sim_wind = self.__wind_generator.next()
+        self.__sim_wind_sensor = SimWindSensor(sim_wind, enable_noise=True)
+
     def __init_callback_groups(self):
         """Initializes the callback groups. Whether multithreading is enabled or not will affect
         how callbacks are executed.
@@ -318,6 +324,21 @@ class PhysicsEngineNode(Node):
         self.__publish_kinematics()
         self.__publish_counter += 1
 
+    def __update_boat_state(self):
+        """
+        Generates the next vectors for wind_generator and current_generator and updates the
+        boat_state with the new wind and current vectors along with the rudder_angle and
+        sail_trim_tab_angle.
+        """
+        # Wind parameter in line below introduces noise
+        self.__sim_wind_sensor.wind = self.__wind_generator.next()
+        self.__boat_state.step(
+            self.__sim_wind_sensor.wind,
+            self.__current_generator.next(),
+            self.__rudder_angle,
+            self.__sail_trim_tab_angle,
+        )
+
     def __publish_gps(self):
         """Publishes mock GPS data."""
         # TODO Update to publish real data
@@ -337,14 +358,16 @@ class PhysicsEngineNode(Node):
 
     def __publish_wind_sensors(self):
         """Publishes mock wind sensor data."""
-        # TODO Update to publish real data
+        wind1 = self.__sim_wind_sensor.wind
+        wind2 = self.__sim_wind_sensor.wind
+
         windSensor1 = WindSensor()
-        windSensor1.speed.speed = 0.0
-        windSensor1.direction = 0
+        windSensor1.speed.speed = Utils.get_wind_speed(wind1)
+        windSensor1.direction = Utils.get_wind_direction(wind1)
 
         windSensor2 = WindSensor()
-        windSensor2.speed.speed = 0.0
-        windSensor2.direction = 0
+        windSensor2.speed.speed = Utils.get_wind_speed(wind2)
+        windSensor2.direction = Utils.get_wind_direction(wind2)
 
         msg = WindSensors()
         msg.wind_sensors = [windSensor1, windSensor2]
@@ -367,20 +390,20 @@ class PhysicsEngineNode(Node):
         msg.global_gps.speed.speed = 0.0
         msg.global_gps.heading.heading = 0.0
 
-        msg.global_pose.position.x = 0.0
-        msg.global_pose.position.y = 0.0
-        msg.global_pose.position.z = 0.0
-        msg.global_pose.orientation.x = 0.0
-        msg.global_pose.orientation.y = 0.0
-        msg.global_pose.orientation.z = 0.0
+        msg.global_pose.position.x = self.__boat_state.global_position.item(0)
+        msg.global_pose.position.y = self.__boat_state.global_position.item(1)
+        msg.global_pose.position.z = self.__boat_state.global_position.item(2)
+        msg.global_pose.orientation.x = self.__boat_state.angular_position.item(0)
+        msg.global_pose.orientation.y = self.__boat_state.angular_position.item(1)
+        msg.global_pose.orientation.z = self.__boat_state.angular_position.item(2)
         msg.global_pose.orientation.w = 1.0
 
-        msg.wind_velocity.x = 0.0
-        msg.wind_velocity.y = 0.0
+        msg.wind_velocity.x = self.__wind_generator.velocity[0]
+        msg.wind_velocity.y = self.__wind_generator.velocity[1]
         msg.wind_velocity.z = 0.0
 
-        msg.current_velocity.x = 0.0
-        msg.current_velocity.y = 0.0
+        msg.current_velocity.x = self.__current_generator.velocity[0]
+        msg.current_velocity.y = self.__current_generator.velocity[1]
         msg.current_velocity.z = 0.0
 
         sec, nanosec = divmod(self.pub_period * self.publish_counter, 1)
@@ -584,19 +607,6 @@ class PhysicsEngineNode(Node):
             throttle_duration_sec=self.get_parameter("info_log_throttle_period_sec")
             .get_parameter_value()
             .double_value,
-        )
-
-    def __update_boat_state(self):
-        """
-        Generates the next vectors for wind_generator and current_generator and updates the
-        boat_state with the new wind and current vectors along with the rudder_angle and
-        sail_trim_tab_angle.
-        """
-        self.__boat_state.step(
-            self.__wind_generator.next(),
-            self.__current_generator.next(),
-            self.__rudder_angle,
-            self.__sail_trim_tab_angle,
         )
 
     # CLASS PROPERTY PUBLIC GETTERS

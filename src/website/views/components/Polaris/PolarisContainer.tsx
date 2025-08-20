@@ -13,9 +13,8 @@ import {
 import Dataset from '@/views/components/Dataset/Dataset';
 
 const PolarisContainer = () => {
-
   function stringToParagraphs(text: string) {
-    return text.split('\\n').map((item, key) => (
+    return text.split('\n').map((item, key) => (
       <span key={key}>
         {item}
         <br />
@@ -36,37 +35,37 @@ const PolarisContainer = () => {
   const customContents = [
     {
       title: 'GPS',
-      data: ['GPS', '12 hours', 'JSON'],
+      data: ['GPS', '12 hours'],
       action: downloadGPSData,
     },
     {
       title: 'AIS Ships',
-      data: ['AIS Ships', '12 hours', 'JSON'],
+      data: ['AIS Ships', '12 hours'],
       action: downloadAISShipsData,
     },
     {
       title: 'Global Path',
-      data: ['Global Path', '12 hours', 'JSON'],
+      data: ['Global Path', '12 hours'],
       action: downloadGlobalPathData,
     },
     {
       title: 'Local Path',
-      data: ['Local Path', '12 hours', 'JSON'],
+      data: ['Local Path', '12 hours'],
       action: downloadLocalPathData,
     },
     {
       title: 'Batteries',
-      data: ['Batteries', '12 hours', 'JSON'],
+      data: ['Batteries', '12 hours'],
       action: downloadBatteriesData,
     },
     {
       title: 'Wind Sensors',
-      data: ['Wind Sensors', '12 hours', 'JSON'],
+      data: ['Wind Sensors', '12 hours'],
       action: downloadWindSensorsData,
     },
     {
       title: 'Generic Sensors',
-      data: ['Generic Sensors', '12 hours', 'JSON'],
+      data: ['Generic Sensors', '12 hours'],
       action: downloadGenericSensorsData,
     },
   ];

@@ -76,6 +76,8 @@ class WingsailControllerNode(Node):
                 ("pub_period_sec", rclpy.Parameter.Type.DOUBLE),
                 ("reynolds_number", rclpy.Parameter.Type.DOUBLE_ARRAY),
                 ("angle_of_attack", rclpy.Parameter.Type.DOUBLE_ARRAY),
+                ("apparent_wind_lower_threshold", rclpy.Parameter.Type.DOUBLE),
+                ("apparent_wind_upper_threshold", rclpy.Parameter.Type.DOUBLE),
             ],
         )
 
@@ -140,9 +142,28 @@ class WingsailControllerNode(Node):
         It also logs information about the publication to the logger."""
         msg = SailCmd()
 
-        self.__trim_tab_angle = self.__wingsailController.get_trim_tab_angle(
-            self.__filtered_wind_sensor.speed.speed, self.__filtered_wind_sensor.direction
+        apparent_speed = self.__filtered_wind_sensor.speed.speed
+        apparent_direction = self.__filtered_wind_sensor.direction
+        apparent_lower_threshold = (
+            self.get_parameter("apparent_wind_lower_threshold").get_parameter_value().double_value
         )
+        apparent_upper_threshold = (
+            self.get_parameter("apparent_wind_upper_threshold").get_parameter_value().double_value
+        )
+
+        self.__trim_tab_angle = self.__wingsailController.get_trim_tab_angle(
+            apparent_speed, apparent_direction
+        )
+
+        # Gets scaling factor based on wind speed thresholds
+        scaling_coef = 1
+        if apparent_speed > apparent_lower_threshold and apparent_speed < apparent_upper_threshold:
+            difference = apparent_upper_threshold - apparent_lower_threshold
+            scaling_coef = -1 * (apparent_speed - apparent_lower_threshold) / difference + 1
+        elif apparent_speed >= apparent_upper_threshold:
+            scaling_coef = 0
+
+        self.__trim_tab_angle = scaling_coef * self.__trim_tab_angle
 
         msg.trim_tab_angle_degrees = self.__trim_tab_angle
 

@@ -1,6 +1,7 @@
 #include "can_transceiver.h"
 
 #include <errno.h>
+#include <fcntl.h>
 #include <linux/can.h>
 #include <net/if.h>
 #include <sys/ioctl.h>
@@ -10,6 +11,7 @@
 #include <thread>
 
 #include "can_frame_parser.h"
+#include "linux/can/raw.h"
 
 using IFreq       = struct ifreq;
 using SockAddr    = struct sockaddr;
@@ -20,6 +22,10 @@ using CAN_FP::CanId;
 
 void CanTransceiver::onNewCanData(const CanFrame & frame) const
 {
+    if (!CAN_FP::isValidCanId(frame.can_id)) {
+        std::cerr << "Invalid CAN ID received: 0x" << std::hex << frame.can_id << std::endl;
+        return;
+    }
     CanId id{frame.can_id};
     if (read_callbacks_.contains(id)) {
         read_callbacks_.at(id)(frame);  // invoke the callback function mapped to id
@@ -38,7 +44,7 @@ void CanTransceiver::registerCanCb(const std::pair<CanId, std::function<void(con
 }
 
 void CanTransceiver::registerCanCbs(
-  const std::initializer_list<std::pair<CanId, std::function<void(const CanFrame &)>>> & cb_kvps)
+  const std::vector<std::pair<CanId, std::function<void(const CanFrame &)>>> & cb_kvps)
 {
     for (const auto & cb_kvp : cb_kvps) {
         registerCanCb(cb_kvp);
@@ -48,7 +54,7 @@ void CanTransceiver::registerCanCbs(
 CanTransceiver::CanTransceiver() : is_can_simulated_(false)
 {
     // See: https://www.kernel.org/doc/html/next/networking/can.html#how-to-use-socketcan
-    static const char * CAN_INST = "can0";
+    static const char * CAN_INST = "can1";
 
     // Everything between this comment and the initiation of the receive thread is pretty much
     // magic from the socketcan documentation
@@ -61,6 +67,17 @@ CanTransceiver::CanTransceiver() : is_can_simulated_(false)
 
     IFreq       ifr;
     SockAddrCan addr;
+
+    // Enable reception of CAN FD frames
+    {
+        int enable = 1;
+
+        if (setsockopt(sock_desc_, SOL_CAN_RAW, CAN_RAW_FD_FRAMES, &enable, sizeof(enable)) < 0) {
+            std::string err_msg = "Failed to set CAN FD";
+
+            throw std::runtime_error(err_msg);
+        }
+    }
 
     strncpy(ifr.ifr_name, CAN_INST, IFNAMSIZ);
     ioctl(sock_desc_, SIOCGIFINDEX, &ifr);
@@ -92,11 +109,21 @@ CanTransceiver::~CanTransceiver()
 
 void CanTransceiver::receive()
 {
+    int flags = fcntl(sock_desc_, F_GETFL, 0);
+    if (flags == -1) {
+        std::cerr << "failed to get flags for CAN socket fd" << std::endl;
+    }
+    // make read() non-blocking so mutex gets released
+    flags |= O_NONBLOCK;
+    if (fcntl(sock_desc_, F_SETFL, flags) == -1) {
+        std::cerr << "failed to set flags for CAN socket fd" << std::endl;
+    }
     while (!shutdown_flag_) {
         // make sure the lock is acquired and released INSIDE the loop, otherwise send() will never get the lock
-        std::lock_guard<std::mutex> lock(can_mtx_);
-        CanFrame                    frame;
-        ssize_t                     bytes_read = read(sock_desc_, &frame, sizeof(CanFrame));
+        CanFrame                     frame;
+        std::unique_lock<std::mutex> lock(can_mtx_);
+        ssize_t                      bytes_read = read(sock_desc_, &frame, sizeof(CanFrame));
+        lock.unlock();
         if (bytes_read > 0) {
             if (bytes_read != sizeof(CanFrame)) {
                 std::cerr << "CAN read error: read " << bytes_read << "B but CAN frames are expected to be "
@@ -105,8 +132,12 @@ void CanTransceiver::receive()
                 onNewCanData(frame);
             }
         } else if (bytes_read < 0) {
-            std::cerr << "CAN read error: " << errno << "(" << strerror(errno)  // NOLINT(concurrency-mt-unsafe)
-                      << ")" << std::endl;
+            if (errno != EAGAIN && errno != EWOULDBLOCK) {
+                std::cerr << "CAN read error: " << errno << "(" << strerror(errno)  // NOLINT(concurrency-mt-unsafe)
+                          << ")" << std::endl;
+            } else {
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            }
         }
     }
 }

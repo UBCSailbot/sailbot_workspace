@@ -1,14 +1,14 @@
-from boat_simulator.common.sensors import GPS
+from boat_simulator.common.sensors import SimGPS
 import numpy as np
 
 
-class TestGPS:
+class TestSimGPS:
     def test_gps_init(self):
         lat_lon = np.array([1, 0])
         speed = 100
         heading = 1.09
 
-        gps = GPS(
+        gps = SimGPS(
             lat_lon=lat_lon,
             speed=speed,
             heading=heading,
@@ -23,7 +23,7 @@ class TestGPS:
         speed = np.random.randint(0, 100)
         heading = np.random.rand()
 
-        gps = GPS(lat_lon=lat_lon, speed=speed, heading=heading, enable_noise=False)
+        gps = SimGPS(lat_lon=lat_lon, speed=speed, heading=heading, enable_noise=False)
 
         assert np.all(gps.read("lat_lon") == lat_lon)
         assert gps.read("speed") == speed
@@ -35,7 +35,7 @@ class TestGPS:
         heading = np.random.rand()
         mean = 0
 
-        gps = GPS(
+        gps = SimGPS(
             lat_lon=lat_lon,
             speed=speed,
             heading=heading,
@@ -62,7 +62,7 @@ class TestGPS:
         speed = 0
         heading = 0
 
-        gps = GPS(
+        gps = SimGPS(
             lat_lon=lat_lon,
             speed=speed,
             heading=heading,
@@ -88,7 +88,7 @@ class TestGPS:
         heading = 0
 
         # Initialized data is read without delay
-        gps = GPS(lat_lon=lat_lon, speed=speed0, heading=heading, enable_delay=True)
+        gps = SimGPS(lat_lon=lat_lon, speed=speed0, heading=heading, enable_delay=True)
         assert gps.read("speed") == speed0
 
         NUM_UPDATES = 3

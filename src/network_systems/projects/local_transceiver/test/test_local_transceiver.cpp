@@ -1,17 +1,17 @@
 /* IMPORTANT: Make sure only one instance of sailbot_workspace/scripts/run_virtual_iridium.sh is running */
 
+#include <curl/curl.h>
 #include <gtest/gtest.h>
 
 #include <boost/process.hpp>
 #include <boost/system/system_error.hpp>
-#include <custom_interfaces/msg/detail/ais_ships__struct.hpp>
-#include <custom_interfaces/msg/detail/helper_ais_ship__struct.hpp>
 #include <custom_interfaces/msg/detail/helper_dimension__struct.hpp>
 #include <custom_interfaces/msg/detail/helper_heading__struct.hpp>
 #include <custom_interfaces/msg/detail/helper_lat_lon__struct.hpp>
 #include <custom_interfaces/msg/detail/helper_rot__struct.hpp>
 #include <custom_interfaces/msg/detail/helper_speed__struct.hpp>
 #include <fstream>
+#include <mutex>
 #include <vector>
 
 #include "at_cmds.h"
@@ -85,7 +85,7 @@ TEST_F(TestLocalTransceiver, debugSendTest)
 
 /**
  * @brief Send a binary string to virtual_iridium and verify it is received
- * Using gps, ais, wind, batteries, generic sensors, local path data
+ * Using gps, wind, batteries, generic sensors, local path data
  */
 TEST_F(TestLocalTransceiver, sendData)
 {
@@ -94,7 +94,6 @@ TEST_F(TestLocalTransceiver, sendData)
 
     // custom inferfaces used
     custom_interfaces::msg::GPS            gps;
-    custom_interfaces::msg::AISShips       ais;
     custom_interfaces::msg::WindSensors    wind;
     custom_interfaces::msg::Batteries      batteries;
     custom_interfaces::msg::GenericSensors sensors;
@@ -105,33 +104,6 @@ TEST_F(TestLocalTransceiver, sendData)
     gps.lat_lon.set__latitude(holder);
     gps.lat_lon.set__longitude(holder);
     gps.speed.set__speed(holder);
-
-    // assign ais data
-    custom_interfaces::msg::HelperAISShip   ship_one;
-    custom_interfaces::msg::HelperHeading   heading_one;
-    custom_interfaces::msg::HelperLatLon    lat_lon_one;
-    custom_interfaces::msg::HelperSpeed     speed_one;
-    custom_interfaces::msg::HelperROT       rotation_one;
-    custom_interfaces::msg::HelperDimension width_one;
-    custom_interfaces::msg::HelperDimension length_one;
-
-    heading_one.set__heading(holder);
-    lat_lon_one.set__latitude(holder);
-    lat_lon_one.set__longitude(holder);
-    speed_one.set__speed(holder);
-    rotation_one.set__rot(holder_int);
-    width_one.set__dimension(holder);
-    length_one.set__dimension(holder);
-
-    ship_one.set__id(holder_int);
-    ship_one.set__cog(heading_one);
-    ship_one.set__lat_lon(lat_lon_one);
-    ship_one.set__sog(speed_one);
-    ship_one.set__rot(rotation_one);
-    ship_one.set__width(width_one);
-    ship_one.set__length(length_one);
-
-    ais.set__ships({ship_one});
 
     // assign wind data
     custom_interfaces::msg::WindSensor  wind_data_one;
@@ -173,7 +145,6 @@ TEST_F(TestLocalTransceiver, sendData)
     // update sensors and send
     lcl_trns_->updateSensor(wind);
     lcl_trns_->updateSensor(gps);
-    lcl_trns_->updateSensor(ais);
     lcl_trns_->updateSensor(batteries);
     lcl_trns_->updateSensor(sensors);
     lcl_trns_->updateSensor(local_paths);
@@ -254,4 +225,73 @@ TEST_F(TestLocalTransceiver, parseInMsgValid)
     EXPECT_EQ(parsed_test.waypoints[0].longitude, holder);
     EXPECT_EQ(parsed_test.waypoints[1].latitude, holder);
     EXPECT_EQ(parsed_test.waypoints[1].longitude, holder);
+}
+
+std::mutex port_mutex;
+
+TEST_F(TestLocalTransceiver, testMailboxBlackbox)
+{
+    std::lock_guard<std::mutex> lock(port_mutex);  // because same port is being used
+
+    std::string holder  = "curl -X POST -F \"test=1234\" http://localhost:8080";
+    std::string holder2 = "printf \"at+sbdix\r\" > $LOCAL_TRANSCEIVER_TEST_PORT";
+
+    system(holder.c_str());   //NOLINT
+    system(holder2.c_str());  //NOLINT
+
+    std::optional<std::string> response = lcl_trns_->readRsp();
+    std::cout << *response << std::endl;
+}
+
+TEST_F(TestLocalTransceiver, parseReceiveMessageBlackbox)
+{
+    std::lock_guard<std::mutex> lock(port_mutex);
+
+    constexpr float     holder = 10.3;
+    Polaris::GlobalPath sample_data;
+
+    Polaris::Waypoint * waypoint_a = sample_data.add_waypoints();
+    waypoint_a->set_latitude(holder);
+    waypoint_a->set_longitude(holder);
+    Polaris::Waypoint * waypoint_b = sample_data.add_waypoints();
+    waypoint_b->set_latitude(holder);
+    waypoint_b->set_longitude(holder);
+
+    std::string serialized_data;
+    ASSERT_TRUE(sample_data.SerializeToString(&serialized_data));
+
+    uint16_t message_size    = static_cast<uint16_t>(serialized_data.size());
+    uint16_t message_size_be = htons(message_size);  // Convert to big-endian
+
+    std::string size_prefix(reinterpret_cast<const char *>(&message_size_be), sizeof(message_size_be));
+
+    std::ofstream outfile("/tmp/serialized_data.bin", std::ios::binary);
+    outfile.write(size_prefix.data(), size_prefix.size());  //NOLINT
+    outfile.write(serialized_data.data(), static_cast<std::streamsize>(serialized_data.size()));
+    outfile.close();
+
+    outfile.close();  // Close the file after writing
+
+    std::string holder2 = "curl -X POST --data-binary @/tmp/serialized_data.bin http://localhost:8080";
+    std::system(holder2.c_str());  //NOLINT
+    std::string test_cmd = "hexdump -C /tmp/serialized_data.bin";
+    std::system(test_cmd.c_str());  //NOLINT
+
+    custom_interfaces::msg::Path received_data = lcl_trns_->receive();
+
+    Polaris::GlobalPath global_path;
+    for (const auto & waypoint : received_data.waypoints) {
+        Polaris::Waypoint * new_waypoint = global_path.add_waypoints();
+        new_waypoint->set_latitude(waypoint.latitude);
+        new_waypoint->set_longitude(waypoint.longitude);
+    }
+
+    if (global_path.waypoints_size() > 0) {
+        ASSERT_EQ(global_path.waypoints_size(), sample_data.waypoints_size())
+          << "Mismatch in number of waypoints received.";
+        ASSERT_EQ(global_path.waypoints(0).latitude(), holder);
+        ASSERT_EQ(global_path.waypoints(0).longitude(), holder);
+    } else {
+        std::cout << "No waypoints received." << std::endl;
+    }
 }

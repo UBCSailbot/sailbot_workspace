@@ -21,7 +21,7 @@ allowing it to be installed on Windows and macOS in addition to Linux.
 
 [^1]: [Wikipedia Docker page](https://en.wikipedia.org/wiki/Docker_(software)){target=_blank}
 [^2]: [Get Docker](https://docs.docker.com/get-docker/){target=_blank}
-[^3]: [What is the difference between Docker Desktop for Linux and Docker Engine](https://docs.docker.com/desktop/faqs/linuxfaqs/#what-is-the-difference-between-docker-desktop-for-linux-and-docker-engine){target=_blank}
+[^3]: [What is the difference between Docker Desktop for Linux and Docker Engine](https://www.docker.com/blog/how-to-check-docker-version/){target=_blank}
 
 === ":material-microsoft-windows: Windows"
 
@@ -270,9 +270,8 @@ which aren't ideal for development on laptops. GitHub Codespaces provide a seaml
 off-device, especially if they specify a Dev Container like Sailbot Workspace. Codespaces can run in VS Code
 or even in a browser for times when you aren't on your programming computer.
 
-1. Create a GitHub Codespace following the steps in the relevant GitHub Docs page:
-[create a codespace for a repository](https://docs.github.com/en/codespaces/developing-in-codespaces/creating-a-codespace-for-a-repository#creating-a-codespace-for-a-repository){target=_blank}.
-A couple things to note:
+1. go to [sailbot_workspace](https://github.com/UBCSailbot/sailbot_workspace){target=_blank} repo on GitHub.
+    - [create a codespace for a repository](https://docs.github.com/en/codespaces/developing-in-codespaces/creating-a-codespace-for-a-repository#creating-a-codespace-for-a-repository){target=_blank}
     - For the best Sailbot Workspace development experience, select the high-spec machine available
     - There are usage limits if you don't want to pay:
     [monthly included storage and core hours for personal accounts](https://docs.github.com/en/billing/managing-billing-for-github-codespaces/about-billing-for-github-codespaces#monthly-included-storage-and-core-hours-for-personal-accounts){target=_blank}
@@ -282,7 +281,33 @@ A couple things to note:
         [stopping a codespace](https://docs.github.com/en/codespaces/developing-in-codespaces/stopping-and-starting-a-codespace#stopping-a-codespace){target=_blank}
         - Delete codespaces that you do not plan to use anymore:
         [deleting a codespace](https://docs.github.com/en/codespaces/developing-in-codespaces/deleting-a-codespace#deleting-a-codespace){target=_blank}
-2. Follow the local setup instructions starting from [5. Open the workspace file](#5-open-the-workspace-file)
+2. click **Code → Codespaces → +**, a new tab will open, wait as the browser IDE sets up.
+
+3. Open `sailbot.code-workspace` and click **Open Workspace**,
+wait a moment as the work space sets up, the IDE should have a blue border.
+
+4. Open the command palette (`ctrl + shift + p` on windows) and type **Run Build Tasks** then select **Build All**.
+
+    ??? bug "`custom_interfaces` package fails to build"
+
+        if any bugs occur with building custom_interfaces package run following command in the terminal:
+        ```
+        colcon build --packages-select custom_interfaces --merge-install
+        ```
+
+5. run command in the terminal:
+
+    ```
+    source install/setup.sh
+    ```
+
+6. then run command to launch entire system:
+
+    ```
+    ros2 launch $ROS_WORKSPACE/src/global_launch/main_launch.py
+    ```
+
+7. if things are working you are done! you can use `ctrl + c` to stop the system.
 
 Once you have a codespace set up:
 

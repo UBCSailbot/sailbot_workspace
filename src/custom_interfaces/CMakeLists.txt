@@ -27,6 +27,14 @@ set(common_msg
   "msg/SailCmd.msg"
   "msg/WindSensor.msg"
   "msg/WindSensors.msg"
+  "msg/TempSensor.msg"
+  "msg/TempSensors.msg"
+  "msg/PhSensor.msg"
+  "msg/PhSensors.msg"
+  "msg/SalinitySensor.msg"
+  "msg/SalinitySensors.msg"
+  "msg/PressureSensor.msg"
+  "msg/PressureSensors.msg"
 
   # internal
   "msg/HelperAISShip.msg"
@@ -37,6 +45,11 @@ set(common_msg
   "msg/HelperLatLon.msg"
   "msg/HelperROT.msg"
   "msg/HelperSpeed.msg"
+  "msg/HelperTemp.msg"
+  "msg/HelperPh.msg"
+  "msg/HelperSalinity.msg"
+  "msg/HelperPressure.msg"
+  "msg/HelperObstacle.msg"
 )
 
 # Boat simulator custom messages
