@@ -5,10 +5,10 @@ from custom_interfaces.msg import GPS, AISShips, HelperLatLon, Path, WindSensor
 from rclpy.impl.rcutils_logger import RcutilsLogger
 
 import local_pathfinding.coord_systems as coord_systems
-import local_pathfinding.objectives as objectives
+import local_pathfinding.ompl_objectives as objectives
 import local_pathfinding.ompl_path as ompl_path
 from local_pathfinding.local_path import LocalPathState
-from local_pathfinding.objectives import get_true_wind
+from local_pathfinding.ompl_objectives import get_true_wind
 
 # Upwind downwind cost multipliers
 UPWIND_MULTIPLIER = 3000.0
@@ -26,6 +26,7 @@ OMPL_PATH = ompl_path.OMPLPath(
                 HelperLatLon(latitude=1.0, longitude=1.0),
             ]
         ),
+        target_global_waypoint=HelperLatLon(latitude=1.0, longitude=1.0),
         filtered_wind_sensor=WindSensor(),
         planner="rrtstar",
     ),

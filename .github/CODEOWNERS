@@ -5,7 +5,7 @@
 # the repo. Unless a later match takes precedence,
 # these owners will be requested for
 # review when someone opens a pull request.
-* @SPDonaghy
+* @SPDonaghy @FireBoyAJ24
 
 # boat_simulator
 /notebooks/boat_simulator @eomielan
@@ -19,17 +19,17 @@
 /src/controller @eomielan
 
 # diagnostics
-/src/diagnostics @samdai01
+/src/diagnostics @Jng468
 
 # docs
-/docs/ @jamenkaye
+/docs/ @FireBoyAJ24
 
 # local_pathfinding
-/notebooks/local_pathfinding @jamenkaye @FireBoyAJ24 @SPDonaghy
-/src/local_pathfinding @jamenkaye @FireBoyAJ24 @SPDonaghy
+/notebooks/local_pathfinding @FireBoyAJ24 @SPDonaghy
+/src/local_pathfinding @FireBoyAJ24 @SPDonaghy
 
 # network_systems
-/src/network_systems @Jng468 @vaibhavambastha
+/src/network_systems @Jng468 @vaibhavambastha @lross03
 
 # website
-/src/website @JordanChen123
+/src/website @JordanChen123 @fyang151
