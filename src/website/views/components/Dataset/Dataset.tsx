@@ -63,6 +63,14 @@ const Dataset = ({ title, content, downloadAction }: DatasetProps) => {
               style={{ cursor: 'pointer', textDecoration: 'underline' }}
               onClick={() => downloadAction(selectedFileType)}
             >
+            JSON
+            </span>
+          </div>
+          <div className={styles.flexItemContainer}>
+            <span
+              style={{ cursor: 'pointer', textDecoration: 'underline' }}
+              onClick={downloadAction}
+            >
               Download
             </span>
           </div>
