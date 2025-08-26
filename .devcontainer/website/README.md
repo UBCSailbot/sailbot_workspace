@@ -1,3 +1,5 @@
+#### NOTE: We now only use this for deployment! We do website development locally now. Hmph.
+
 # Website Image
 
 Used for running [our website](https://github.com/UBCSailbot/sailbot_workspace/tree/main/src/website).
