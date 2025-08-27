@@ -20,7 +20,7 @@ using SockAddrCan = struct sockaddr_can;
 using CAN_FP::CanFrame;
 using CAN_FP::CanId;
 
-extern bool g_manual_mode;
+bool g_manual_mode = false;
 
 void CanTransceiver::onNewCanData(const CanFrame & frame) const
 {

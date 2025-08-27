@@ -21,7 +21,7 @@ constexpr int  QUEUE_SIZE     = 10;  // Arbitrary number
 constexpr auto TIMER_INTERVAL = std::chrono::milliseconds(500);
 
 // Global variable for manual mode
-bool g_manual_mode = false;
+extern bool g_manual_mode;
 
 namespace msg = custom_interfaces::msg;
 using CAN_FP::CanFrame;
