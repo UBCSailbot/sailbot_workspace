@@ -20,6 +20,8 @@ using SockAddrCan = struct sockaddr_can;
 using CAN_FP::CanFrame;
 using CAN_FP::CanId;
 
+extern bool g_manual_mode;
+
 void CanTransceiver::onNewCanData(const CanFrame & frame) const
 {
     if (!CAN_FP::isValidCanId(frame.can_id)) {
@@ -144,6 +146,9 @@ void CanTransceiver::receive()
 
 void CanTransceiver::send(const CanFrame & frame) const
 {
+    if (g_manual_mode) {
+        return;
+    }
     std::lock_guard<std::mutex> lock(can_mtx_);
     ssize_t                     bytes_written = write(sock_desc_, &frame, sizeof(CanFrame));
     if (bytes_written < 0) {
