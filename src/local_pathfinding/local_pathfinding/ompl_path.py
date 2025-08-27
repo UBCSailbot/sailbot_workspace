@@ -42,8 +42,8 @@ class OMPLPath:
         _logger (RcutilsLogger): ROS logger of this class.
         _simple_setup (og.SimpleSetup): OMPL SimpleSetup object.
         _box_buffer (float): buffer around the sailbot position and the goal position in km
-        solved (bool): True if the path is a solution to the OMPL query, else false.
-
+        ** solved (bool): True if the path is a solution to the OMPL query, else false. **
+        ** do null checks on solved. True == object exists and False == None **
     Static Attributes
         all_land_data (MultiPolygon): All land polygons along the entire global voyage
         obstacles (Dictionary[int, Polygon]):
@@ -172,7 +172,25 @@ class OMPLPath:
         Raises:
             NotImplementedError: Method or function hasn't been implemented yet.
         """
-        raise NotImplementedError
+        try:
+            solution_path = self._simple_setup.getSolutionPath()
+        except Exception as e:
+            self._logger.debug(f"solution path does not exist exception thrown: {e}")
+            return float('inf')
+
+        cost = 0.0
+
+        states = solution_path.getStates()
+        objective = self._simple_setup.getOptimizationObjective()
+        for i in range(len(states)):
+            state = states[i]
+            state_cost_i = objective.stateCost(state).value()
+            motion_cost = (
+                objective.motionCost(state, states[i + 1]).value() if i + 1 < len(states) else 0
+            )
+            cost = cost + state_cost_i + motion_cost
+
+        return cost
 
     def get_path(self) -> ci.Path:
         """Get the collection of waypoints for the boat to follow.

@@ -291,6 +291,7 @@ class Sailbot(Node):
                 self.global_waypoint_index
             ]
 
+        self._logger.info("check 1")
         received_new_local_path = self.local_path.update_if_needed(
             self.gps,
             self.ais_ships,

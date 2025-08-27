@@ -117,8 +117,29 @@ class LocalPath:
             local_path_state=state,
             land_multi_polygon=land_multi_polygon,
         )
-        if ompl_path.solved:
-            self._logger.debug("Updating local path")
+        old_ompl_path = self._ompl_path
+        if old_ompl_path is None or received_new_global_waypoint:
+            if ompl_path.solved:
+                self._logger.debug("Updating local path")
+                self._update(ompl_path)
+                return True
+            return False
+
+        while not ompl_path.solved:
+            # wait for the path to be solved
+            self._logger.info("Old path exists, but the new one is not ready for comparison")
+            # TODO: add a counter here
+            continue
+        self._logger.debug("New path ready")
+
+        old_cost = old_ompl_path.get_cost()
+        new_cost = ompl_path.get_cost()
+        if old_cost >= new_cost:
+            self._logger.debug(
+                f"New path is cheaper, updating local path "
+                f"(old cost: {old_cost:.2f}, "
+                f"new cost: {new_cost:.2f})"
+            )
             self._update(ompl_path)
             return True
         return False
