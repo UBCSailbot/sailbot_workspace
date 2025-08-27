@@ -30,6 +30,7 @@ public:
     CanTransceiverIntf() : NetNode(ros_nodes::CAN_TRANSCEIVER)
     {
         this->declare_parameter("enabled", true);
+        this->declare_parameter("manual_mode", false);
 
         if (!this->get_parameter("enabled").as_bool()) {
             RCLCPP_INFO(this->get_logger(), "CAN Transceiver is DISABLED");
@@ -61,7 +62,8 @@ public:
                 RCLCPP_ERROR(this->get_logger(), "%s", msg.c_str());
                 throw std::runtime_error(msg);
             }
-
+            param_cb_handle_ = this->add_on_set_parameters_callback(
+              std::bind(&CanTransceiverIntf::onParamChange, this, std::placeholders::_1));
             ais_pub_          = this->create_publisher<msg::AISShips>(ros_topics::AIS_SHIPS, QUEUE_SIZE);
             batteries_pub_    = this->create_publisher<msg::HelperBattery>(ros_topics::BATTERIES, QUEUE_SIZE);
             gps_pub_          = this->create_publisher<msg::GPS>(ros_topics::GPS, QUEUE_SIZE);
@@ -138,6 +140,8 @@ public:
         }
     }
 
+    bool get_manual_mode() const { return manual_mode_; }
+
 private:
     // pointer to the CAN Transceiver implementation
     std::unique_ptr<CanTransceiver> can_trns_;
@@ -180,6 +184,10 @@ private:
     // Timer for anything that just needs a repeatedly written value in simulation
     rclcpp::TimerBase::SharedPtr timer_;
 
+    // ROS param callback for setting manual mode
+    bool                                                              manual_mode_;
+    rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr param_cb_handle_;
+
     // Holder for AISShips before publishing
     std::vector<msg::HelperAISShip> ais_ships_holder_;
     int                             total_ais_ships = 0;
@@ -201,6 +209,22 @@ private:
             canCbs.emplace_back(canId, [this, callback](const CanFrame & frame) { (this->*callback)(frame); });
         }
         return canCbs;
+    }
+
+    /**
+     * @brief Manual mode callback function
+     *
+     */
+    rcl_interfaces::msg::SetParametersResult onParamChange(const std::vector<rclcpp::Parameter> & params)
+    {
+        for (const auto & param : params) {
+            if (param.get_name() == "manual_mode") {
+                manual_mode_ = param.as_bool();
+            }
+        }
+        rcl_interfaces::msg::SetParametersResult result;
+        result.successful = true;
+        return result;
     }
 
     /**
@@ -635,7 +659,12 @@ int main(int argc, char * argv[])
         std::shared_ptr<CanTransceiverIntf> node = std::make_shared<CanTransceiverIntf>();
         while (rclcpp::ok()) {
             try {
-                rclcpp::spin(node);
+                if (!node->get_manual_mode()) {
+                    rclcpp::spin_some(node);
+                } else {
+                    // Manual mode: skip callbacks, sleep a tiny bit to reduce CPU usage
+                    std::this_thread::sleep_for(std::chrono::milliseconds(10));  //NOLINT-readability-magic-numbers
+                }
             } catch (const std::out_of_range & e) {
                 RCLCPP_WARN(node->get_logger(), "%s", e.what());
             } catch (const CAN_FP::CanIdMismatchException & e) {
