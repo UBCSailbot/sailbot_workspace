@@ -5,6 +5,7 @@
     "db:start": "docker compose -f ../../.devcontainer/website/docker-compose.mongodb.yml up -d",
     "db:stop": "docker compose -f ../../.devcontainer/website/docker-compose.mongodb.yml down",
     "web:dev": "next dev -p 3005",
+    "web:dev:no-api": "DISABLE_API=true next dev -p 3005",
     "dev": "npm run db:start && npm run web:dev",
     "web:build": "next build",
     "web:start": "next start -p 3005",
