@@ -139,8 +139,6 @@ public:
         }
     }
 
-    static bool get_manual_mode() { return manual_mode_; }
-
 private:
     // pointer to the CAN Transceiver implementation
     std::unique_ptr<CanTransceiver> can_trns_;
