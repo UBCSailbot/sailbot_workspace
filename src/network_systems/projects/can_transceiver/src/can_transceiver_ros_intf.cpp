@@ -20,9 +20,6 @@
 constexpr int  QUEUE_SIZE     = 10;  // Arbitrary number
 constexpr auto TIMER_INTERVAL = std::chrono::milliseconds(500);
 
-// Global variable for manual mode
-static bool g_manual_mode;
-
 namespace msg = custom_interfaces::msg;
 using CAN_FP::CanFrame;
 using CAN_FP::CanId;
@@ -142,7 +139,7 @@ public:
         }
     }
 
-    static bool get_manual_mode() { return g_manual_mode; }
+    static bool get_manual_mode() { return manual_mode_; }
 
 private:
     // pointer to the CAN Transceiver implementation
@@ -199,6 +196,9 @@ private:
     // Saved power mode state
     uint8_t set_pwr_mode = CAN_FP::PwrMode::POWER_MODE_NORMAL;
 
+    // manual mode status
+    static bool manual_mode_;
+
     std::vector<std::pair<CAN_FP::CanId, std::function<void(const CanFrame &)>>> getCbsForRange(
       CAN_FP::CanId start, CAN_FP::CanId end, void (CanTransceiverIntf::*callback)(const CanFrame &))
     {
@@ -220,7 +220,7 @@ private:
     {
         for (const auto & param : params) {
             if (param.get_name() == "manual_mode") {
-                g_manual_mode = param.as_bool();
+                manual_mode_ = param.as_bool();
             }
         }
         rcl_interfaces::msg::SetParametersResult result;
@@ -278,7 +278,7 @@ private:
                 set_pwr_mode = CAN_FP::PwrMode::POWER_MODE_NORMAL;
             }
             CAN_FP::PwrMode power_mode(set_pwr_mode, CAN_FP::CanId::PWR_MODE);
-            if (!g_manual_mode) {
+            if (!manual_mode_) {
                 can_trns_->send(power_mode.toLinuxCan());
             }
 
@@ -544,7 +544,7 @@ private:
      */
     void subDesiredHeadingCb(msg::DesiredHeading desired_heading)
     {
-        if (g_manual_mode) {
+        if (manual_mode_) {
             return;
         }
         desired_heading_ = desired_heading;
@@ -566,7 +566,7 @@ private:
      */
     void subSailCmdCb(const msg::SailCmd & sail_cmd_input)
     {
-        if (g_manual_mode) {
+        if (manual_mode_) {
             return;
         }
         sail_cmd_                = sail_cmd_input;
@@ -595,7 +595,7 @@ private:
      */
     void subSimSailCmdCb(const msg::SailCmd & sail_cmd_input)
     {
-        if (g_manual_mode) {
+        if (manual_mode_) {
             return;
         }
         sail_cmd_ = sail_cmd_input;
@@ -671,7 +671,7 @@ int main(int argc, char * argv[])
         std::shared_ptr<CanTransceiverIntf> node = std::make_shared<CanTransceiverIntf>();
         while (rclcpp::ok()) {
             try {
-                rclcpp::spin_some(node);
+                rclcpp::spin(node);
             } catch (const std::out_of_range & e) {
                 RCLCPP_WARN(node->get_logger(), "%s", e.what());
             } catch (const CAN_FP::CanIdMismatchException & e) {
