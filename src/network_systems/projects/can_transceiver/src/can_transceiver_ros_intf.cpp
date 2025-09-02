@@ -21,7 +21,7 @@ constexpr int  QUEUE_SIZE     = 10;  // Arbitrary number
 constexpr auto TIMER_INTERVAL = std::chrono::milliseconds(500);
 
 // Global variable for manual mode
-extern bool g_manual_mode;
+static bool g_manual_mode;
 
 namespace msg = custom_interfaces::msg;
 using CAN_FP::CanFrame;
@@ -278,7 +278,9 @@ private:
                 set_pwr_mode = CAN_FP::PwrMode::POWER_MODE_NORMAL;
             }
             CAN_FP::PwrMode power_mode(set_pwr_mode, CAN_FP::CanId::PWR_MODE);
-            can_trns_->send(power_mode.toLinuxCan());
+            if (!g_manual_mode) {
+                can_trns_->send(power_mode.toLinuxCan());
+            }
 
             // Get the current time as a time_point
             auto now = std::chrono::system_clock::now();
@@ -542,6 +544,9 @@ private:
      */
     void subDesiredHeadingCb(msg::DesiredHeading desired_heading)
     {
+        if (g_manual_mode) {
+            return;
+        }
         desired_heading_ = desired_heading;
         try {
             auto desired_heading_frame = CAN_FP::DesiredHeading(desired_heading_, CanId::MAIN_HEADING);
@@ -561,6 +566,9 @@ private:
      */
     void subSailCmdCb(const msg::SailCmd & sail_cmd_input)
     {
+        if (g_manual_mode) {
+            return;
+        }
         sail_cmd_                = sail_cmd_input;
         auto main_trim_tab_frame = CAN_FP::MainTrimTab(sail_cmd_, CanId::MAIN_TR_TAB);
         can_trns_->send(main_trim_tab_frame.toLinuxCan());
@@ -587,6 +595,9 @@ private:
      */
     void subSimSailCmdCb(const msg::SailCmd & sail_cmd_input)
     {
+        if (g_manual_mode) {
+            return;
+        }
         sail_cmd_ = sail_cmd_input;
         boat_sim_input_msg_.set__sail_cmd(sail_cmd_);
         try {
