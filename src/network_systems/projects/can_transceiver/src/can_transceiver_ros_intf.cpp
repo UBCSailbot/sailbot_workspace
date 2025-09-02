@@ -195,7 +195,7 @@ private:
     uint8_t set_pwr_mode = CAN_FP::PwrMode::POWER_MODE_NORMAL;
 
     // manual mode status
-    static bool manual_mode_;
+    inline static bool manual_mode_ = false;
 
     std::vector<std::pair<CAN_FP::CanId, std::function<void(const CanFrame &)>>> getCbsForRange(
       CAN_FP::CanId start, CAN_FP::CanId end, void (CanTransceiverIntf::*callback)(const CanFrame &))
