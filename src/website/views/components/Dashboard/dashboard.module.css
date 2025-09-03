@@ -1,0 +1,8 @@
+.dashboard {
+  display: flex;
+  width: 100%;
+  height: calc(100vh - 80px);
+  gap: 16px;
+  padding-left: 8px;
+  padding-right: 8px;
+}

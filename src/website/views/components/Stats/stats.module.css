@@ -1,0 +1,45 @@
+.stats {
+  width: 50%;
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.heading {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 20px;
+}
+
+.title {
+  font-size: 20px;
+}
+
+.summary {
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.lineCharts {
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.toolbar {
+  display: flex;
+  gap: 24px;
+}
+
+.toolbarItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.toolbarItem svg {
+  width: 20px;
+  height: 20px;
+}

@@ -1,43 +1,98 @@
-import React from 'react';
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from 'recharts';
+'use client';
 
-export interface ILineChartProps {
+import { useState, useLayoutEffect, useEffect, useRef } from 'react';
+// import uPlot from 'uplot';
+import UplotReact from 'uplot-react';
+import DownloadIcon from '@/public/icons/download.svg';
+
+import styles from './lineChartStyles.module.css';
+
+interface LineChartProps {
   data: any[];
-  xAxisKey: string;
-  yAxisKey: string;
 }
 
-export interface ILineChartState {}
+const LineChart = ({ data }: LineChartProps) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(0);
 
-export default class LineChartComponent extends React.Component<
-  ILineChartProps,
-  ILineChartState
-> {
-  render() {
-    const { data, xAxisKey, yAxisKey } = this.props;
-    return (
-      <ResponsiveContainer width='100%' height={250}>
-        <LineChart
-          data={data}
-          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-        >
-          <CartesianGrid strokeDasharray='3 3' />
-          <XAxis dataKey={xAxisKey} />
-          <YAxis />
-          <Tooltip />
-          <Legend />
-          <Line type='monotone' dataKey={yAxisKey} stroke='#8884d8' />
-        </LineChart>
-      </ResponsiveContainer>
-    );
-  }
-}
+  useLayoutEffect(() => {
+    if (!containerRef.current) return;
+
+    setWidth(containerRef.current.offsetWidth);
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setWidth(entry.contentRect.width);
+      }
+    });
+
+    resizeObserver.observe(containerRef.current);
+
+    return () => resizeObserver.disconnect();
+  }, []);
+
+  const options = {
+    // when resizing the window, there may be a vertical scrollbar.
+    // this is likely because react "lags behind" when rerendering multiple times quickly
+    // if we resize the window too quickly, react might be holding on to a stale width value
+    // so we just multiply by 0.99 to make sure the actual size is ever so slightly smaller
+    // so even if we are using a stale width, it should still fit.
+    width: width * 0.99,
+    height: 300,
+    axes: [
+      {
+        font: "12px 'Fira Code', 'SF Mono', Consolas, 'Courier New', monospace",
+        stroke: '#ffffff',
+        grid: {
+          stroke: '#6b6b6b',
+          width: 0.5,
+        },
+      },
+      {
+        font: "12px 'Fira Code', 'SF Mono', Consolas, 'Courier New', monospace",
+        stroke: '#ffffff',
+        grid: {
+          stroke: '#6b6b6b',
+          width: 0.5,
+        },
+      },
+    ],
+    series: [
+      {
+        label: 'Time',
+      },
+      {
+        label: 'Value',
+        stroke: 'white',
+        width: 2,
+      },
+    ],
+  };
+
+  return (
+    <div className={styles.lineChart}>
+      <div className={styles.header}>
+        <h3 className={styles.title}>BATTERIES</h3>
+        <div className={styles.downloadOptions}>
+          <div className={styles.downloadButton}>
+            <DownloadIcon />
+            csv
+          </div>
+          <div className={styles.downloadButton}>
+            <DownloadIcon />
+            xlsx
+          </div>
+        </div>
+      </div>
+      <div ref={containerRef}>
+        {width ? (
+          <UplotReact options={options} data={data} />
+        ) : (
+          <div className={styles.placeholder} />
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default LineChart;

@@ -17,6 +17,7 @@ import L from 'leaflet';
 import 'leaflet-geometryutil';
 import { GPS } from '@/stores/GPS/GPSTypes';
 import { AISShip } from '@/stores/AISShips/AISShipsTypes';
+import styles from './maps.module.css';
 
 export interface IMapsProps {
   gpsLocation: GPS | undefined;
@@ -186,14 +187,20 @@ export default class Maps extends React.Component<IMapsProps, IMapsState> {
         center={convertToLatLng(this.props.gpsLocation)}
         zoom={13}
         scrollWheelZoom={true}
-        style={{ height: 'calc(100vh - 115px)', width: '100wh' }}
+        // style={{ height: '100%', width: '100%' }}
+        className={styles.maps}
         ref={this.setMapRef}
       >
+        {/* <TileLayer
+          attribution='&copy; OpenStreetMap contributors &copy; CARTO'
+          url='https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
+        /> */}
         <TileLayer
-          attribution='&copy; OpenStreetMap contributors'
-          url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+          attribution='&copy; OpenStreetMap contributors &copy; CARTO'
+          url='https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
         />
-        <LayersControl position='bottomleft'>
+
+        {/* <LayersControl position='bottomleft'>
           <LayersControl.Overlay name='AIS Ships' checked>
             <LayerGroup>{this.renderShips()}</LayerGroup>
           </LayersControl.Overlay>
@@ -209,8 +216,11 @@ export default class Maps extends React.Component<IMapsProps, IMapsState> {
               positions={this.props.globalPath}
             />
           </LayersControl.Overlay>
-        </LayersControl>
-        <Marker position={convertToLatLng(this.props.gpsLocation)}>
+        </LayersControl> */}
+        <Marker
+          position={convertToLatLng(this.props.gpsLocation)}
+          icon={createCustomIcon()}
+        >
           <Popup>{printObjectInfo(this.props.gpsLocation)}</Popup>
         </Marker>
         <Polyline
@@ -221,3 +231,34 @@ export default class Maps extends React.Component<IMapsProps, IMapsState> {
     );
   }
 }
+
+const createCustomIcon = () => {
+  return L.divIcon({
+    className: 'custom-marker',
+    html: `
+      <div style="
+        width: 20px;
+        height: 20px;
+        background: #2563eb;
+        border: 3px solid white;
+        border-radius: 50%;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        position: relative;
+      ">
+        <div style="
+          position: absolute;
+          top: -8px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 0;
+          height: 0;
+          border-left: 6px solid transparent;
+          border-right: 6px solid transparent;
+          border-bottom: 8px solid #2563eb;
+        "></div>
+      </div>
+    `,
+    iconSize: [20, 20],
+    iconAnchor: [10, 10],
+  });
+};

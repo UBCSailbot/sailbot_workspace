@@ -1,4 +1,9 @@
-.mainContainer {
+.header {
+  height: 100px;
+  width: 100%;
+}
+
+/* .mainContainer {
   display: grid;
   grid-template-columns: 1fr 1fr;
   margin-top: 0;
@@ -49,4 +54,4 @@
   margin: auto;
   height: 100px;
   width: 100px;
-}
+} */
