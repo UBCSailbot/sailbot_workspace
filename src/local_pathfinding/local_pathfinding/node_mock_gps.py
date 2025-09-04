@@ -10,7 +10,7 @@ import rclpy
 from geopy.distance import great_circle
 from rclpy.node import Node
 
-from local_pathfinding.objectives import get_true_wind
+from local_pathfinding.ompl_objectives import get_true_wind
 
 MEAN_SPEED = ci.HelperSpeed(speed=15.0)  # mean boat speed in kmph
 
