@@ -9,7 +9,6 @@
 .heading {
   display: flex;
   flex-direction: column;
-  gap: 4px;
   margin-bottom: 20px;
 }
 
@@ -20,6 +19,13 @@
 .summary {
   font-size: 24px;
   font-weight: bold;
+  margin-top: 8px;
+}
+
+.toolbar {
+  display: flex;
+  gap: 24px;
+  margin-top: 10px;
 }
 
 .lineCharts {
@@ -27,19 +33,42 @@
   scrollbar-width: none;
 }
 
-.toolbar {
-  display: flex;
-  gap: 24px;
-}
-
-.toolbarItem {
+.dropdownButton {
   display: flex;
   align-items: center;
   gap: 8px;
   cursor: pointer;
+  user-select: none;
+  width: 300px;
 }
 
-.toolbarItem svg {
+.dropdown {
+  position: relative;
+}
+
+.dropdownButton svg {
   width: 20px;
   height: 20px;
+}
+
+.dropdownMenu {
+  display: flex;
+  flex-direction: column;
+  position: absolute;
+  border-radius: 4px;
+  min-width: 100%;
+  margin-top: 8px;
+  padding: 8px;
+  z-index: 1000;
+}
+
+.dropdownItem {
+  height: 60px;
+  padding: 8px;
+  margin: 4px 0;
+  border-radius: 4px;
+  width: 100%;
+  right: 10px;
+  background-color: #262626;
+  user-select: none;
 }

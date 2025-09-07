@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import styles from './header.module.css';
 
 const Header = () => {
@@ -8,9 +9,8 @@ const Header = () => {
         <h1>POLARISTRACKER.COM</h1>
       </div>
       <div className={styles.links}>
-        <h2>LINK</h2>
-        <h2>LINK</h2>
-        <h2>LINK</h2>
+        <Link href='/'>DASHBOARD</Link>
+        <Link href='/about'>ABOUT</Link>
       </div>
     </div>
   );

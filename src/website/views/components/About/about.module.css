@@ -1,0 +1,12 @@
+.about {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.description {
+  margin-top: 10px;
+  margin-left: 20px;
+  margin-right: 20px;
+  max-width: 1800px;
+}

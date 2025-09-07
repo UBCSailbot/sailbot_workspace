@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useLayoutEffect, useEffect, useRef } from 'react';
-// import uPlot from 'uplot';
+import { useState, useLayoutEffect, useRef } from 'react';
 import UplotReact from 'uplot-react';
+import StatsDropdown from '../Stats/StatsDropdown';
 import DownloadIcon from '@/public/icons/download.svg';
 
 import styles from './lineChartStyles.module.css';

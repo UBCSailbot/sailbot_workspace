@@ -24,7 +24,9 @@ const TimestampBtn = ({ gps, dataFilter }: TimestampFilterBtnProps) => {
 
   return (
     <div className='menuContainer'>
-      <div
+      test
+      <TimestampFilter />
+      {/* <div
         suppressHydrationWarning={true}
         className={showMenu ? styles.iconButtonOpen : styles.iconButton}
         onClick={handleClick}
@@ -36,15 +38,15 @@ const TimestampBtn = ({ gps, dataFilter }: TimestampFilterBtnProps) => {
         } to ${
           dataFilter.timestamps.endDate
             ? fmtDate(tzDate(parseISOString(dataFilter.timestamps.endDate)))
-            // @ts-ignore
-            : fmtDate(tzDate(parseISOString(gps.data.at(-1).timestamp)))
+            : // @ts-ignore
+              fmtDate(tzDate(parseISOString(gps.data.at(-1).timestamp)))
         }`}
       </div>
       <div
         className={showMenu ? styles.dropdownActive : styles.dropdownInactive}
       >
         <TimestampFilter />
-      </div>
+      </div> */}
     </div>
   );
 };

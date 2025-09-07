@@ -5,4 +5,5 @@
   gap: 16px;
   padding-left: 8px;
   padding-right: 8px;
+  text-transform: uppercase !important;
 }
