@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import styles from './statsDropdown.module.css';
 
+// TODO remove this
 // includes the dropdown button as well
 const StatsDropdown = ({
   button,

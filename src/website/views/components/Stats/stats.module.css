@@ -33,22 +33,22 @@
   scrollbar-width: none;
 }
 
+.dropdown {
+  flex: 1;
+}
+
 .dropdownButton {
   display: flex;
   align-items: center;
   gap: 8px;
   cursor: pointer;
   user-select: none;
-  width: 300px;
-}
-
-.dropdown {
-  position: relative;
 }
 
 .dropdownButton svg {
   width: 20px;
   height: 20px;
+  flex-shrink: 0;
 }
 
 .dropdownMenu {
