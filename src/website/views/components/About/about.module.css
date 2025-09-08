@@ -1,12 +1,22 @@
-.about {
+.aboutContainer {
   display: flex;
   justify-content: center;
   width: 100%;
 }
 
-.description {
-  margin-top: 10px;
-  margin-left: 20px;
-  margin-right: 20px;
-  max-width: 1800px;
+.about {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 1000px;
+}
+
+.about h2 {
+  width: 100%;
+  font-weight: 500;
+  font-size: 32px;
+}
+
+.about p {
+  font-size: 18px;
 }

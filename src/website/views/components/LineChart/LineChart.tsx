@@ -3,6 +3,7 @@
 import { useState, useLayoutEffect, useRef } from 'react';
 import UplotReact from 'uplot-react';
 import DownloadIcon from '@/public/icons/download.svg';
+import { downloadDataFromJSON } from '@/utils/DownloadData';
 
 import styles from './lineChartStyles.module.css';
 
@@ -72,18 +73,37 @@ const LineChart = ({ data, title, seriesData }: LineChartProps) => {
     ],
   };
 
+  const seriesNames = seriesData.map((series) => series.label);
+
+  const download = (format: string) => {
+    downloadDataFromJSON(data, title, format, seriesNames);
+  };
+
   return (
     <div className={styles.lineChart}>
       <div className={styles.header}>
         <h3 className={styles.title}>{title}</h3>
         <div className={styles.downloadOptions}>
-          <div className={styles.downloadButton}>
+          <div
+            className={styles.downloadButton}
+            onClick={() => download('CSV')}
+          >
             <DownloadIcon />
-            csv
+            CSV
           </div>
-          <div className={styles.downloadButton}>
+          <div
+            className={styles.downloadButton}
+            onClick={() => download('XLSX')}
+          >
             <DownloadIcon />
-            xlsx
+            XLSX
+          </div>
+          <div
+            className={styles.downloadButton}
+            onClick={() => download('JSON')}
+          >
+            <DownloadIcon />
+            JSON
           </div>
         </div>
       </div>

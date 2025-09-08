@@ -10,7 +10,14 @@ import {
   WindSensorsState,
 } from '@/stores/WindSensors/WindSensorsTypes';
 import { DataFilterState } from '@/stores/DataFilter/DataFilterTypes';
+import {
+  downloadGPSData,
+  downloadBatteriesData,
+  downloadWindSensorsData,
+  downloadDataFromJSON,
+} from '@/utils/DownloadData';
 
+// LineChart needs to be rendered client side
 const LineChart = dynamic(() => import('../LineChart/LineChart'), {
   ssr: false,
 });
@@ -182,7 +189,7 @@ const Stats = ({
         />
         <LineChart
           data={batteriesVoltageData}
-          title='Batteries'
+          title='Batteries Voltage'
           seriesData={[
             { label: 'Time' },
             { label: 'Battery 1 Voltage' },
@@ -191,7 +198,7 @@ const Stats = ({
         />
         <LineChart
           data={batteriesCurrentData}
-          title='Batteries'
+          title='Batteries Current'
           seriesData={[
             { label: 'Time' },
             { label: 'Battery 1 Current' },
