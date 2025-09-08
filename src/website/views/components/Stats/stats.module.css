@@ -56,7 +56,6 @@
   flex-direction: column;
   position: absolute;
   border-radius: 4px;
-  min-width: 100%;
   margin-top: 8px;
   padding: 8px;
   z-index: 1000;
