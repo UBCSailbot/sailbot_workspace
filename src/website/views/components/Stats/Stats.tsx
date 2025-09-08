@@ -10,12 +10,6 @@ import {
   WindSensorsState,
 } from '@/stores/WindSensors/WindSensorsTypes';
 import { DataFilterState } from '@/stores/DataFilter/DataFilterTypes';
-import {
-  downloadGPSData,
-  downloadBatteriesData,
-  downloadWindSensorsData,
-  downloadDataFromJSON,
-} from '@/utils/DownloadData';
 
 // LineChart needs to be rendered client side
 const LineChart = dynamic(() => import('../LineChart/LineChart'), {
@@ -47,6 +41,58 @@ const isValidTimestamp = (
   }
 
   return false;
+};
+
+const GPSGGraph = (gpsChartData: any) => {
+  return (
+    <LineChart
+      data={gpsChartData}
+      title='GPS'
+      seriesData={[{ label: 'Time' }, { label: 'Speed' }]}
+    />
+  );
+};
+
+const BatteriesVoltageGraph = (batteriesVoltageData: any) => {
+  return (
+    <LineChart
+      data={batteriesVoltageData}
+      title='Batteries Voltage'
+      seriesData={[
+        { label: 'Time' },
+        { label: 'Battery 1 Voltage' },
+        { label: 'Battery 2 Voltage' },
+      ]}
+    />
+  );
+};
+
+const BatteriesCurrentGraph = (batteriesCurrentData: any) => {
+  return (
+    <LineChart
+      data={batteriesCurrentData}
+      title='Batteries Current'
+      seriesData={[
+        { label: 'Time' },
+        { label: 'Battery 1 Current' },
+        { label: 'Battery 2 Current' },
+      ]}
+    />
+  );
+};
+
+const WindSensorsSpeedGraph = (windSensorsSpeedData: any) => {
+  return (
+    <LineChart
+      data={windSensorsSpeedData}
+      title='Wind Sensors'
+      seriesData={[
+        { label: 'Time' },
+        { label: 'Wind Sensor 1 Speed' },
+        { label: 'Wind Sensor 2 Speed' },
+      ]}
+    />
+  );
 };
 
 interface StatsProps {
@@ -169,6 +215,17 @@ const Stats = ({
       .map((data: WindSensors) => data.windSensors[1].speed),
   ];
 
+  const graphsMap = {
+    GPS: GPSGGraph(gpsChartData),
+    BatteriesVoltage: BatteriesVoltageGraph(batteriesVoltageData),
+    BatteriesCurrent: BatteriesCurrentGraph(batteriesCurrentData),
+    WindSensors: WindSensorsSpeedGraph(windSensorsSpeedData),
+  };
+
+  const graphs = graphsOrder.map(
+    (graph: string) => graphsMap[graph as keyof typeof graphsMap],
+  );
+
   return (
     <div className={styles.stats}>
       <div className={styles.heading}>
@@ -181,40 +238,7 @@ const Stats = ({
           <RearrangeGraphDropdown />
         </div>
       </div>
-      <div className={styles.lineCharts}>
-        <LineChart
-          data={gpsChartData}
-          title='GPS'
-          seriesData={[{ label: 'Time' }, { label: 'Speed' }]}
-        />
-        <LineChart
-          data={batteriesVoltageData}
-          title='Batteries Voltage'
-          seriesData={[
-            { label: 'Time' },
-            { label: 'Battery 1 Voltage' },
-            { label: 'Battery 2 Voltage' },
-          ]}
-        />
-        <LineChart
-          data={batteriesCurrentData}
-          title='Batteries Current'
-          seriesData={[
-            { label: 'Time' },
-            { label: 'Battery 1 Current' },
-            { label: 'Battery 2 Current' },
-          ]}
-        />
-        <LineChart
-          data={windSensorsSpeedData}
-          title='Wind Sensors'
-          seriesData={[
-            { label: 'Time' },
-            { label: 'Wind Sensor 1 Speed' },
-            { label: 'Wind Sensor 2 Speed' },
-          ]}
-        />
-      </div>
+      <div className={styles.lineCharts}>{graphs}</div>
     </div>
   );
 };
