@@ -2,16 +2,22 @@
 
 import { useState, useLayoutEffect, useRef } from 'react';
 import UplotReact from 'uplot-react';
-import StatsDropdown from '../Stats/StatsDropdown';
 import DownloadIcon from '@/public/icons/download.svg';
 
 import styles from './lineChartStyles.module.css';
 
-interface LineChartProps {
-  data: any[];
+interface SeriesData {
+  label: string;
 }
 
-const LineChart = ({ data }: LineChartProps) => {
+// change this later fr
+interface LineChartProps {
+  data: any[];
+  title: string;
+  seriesData: SeriesData[];
+}
+
+const LineChart = ({ data, title, seriesData }: LineChartProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
 
@@ -58,21 +64,18 @@ const LineChart = ({ data }: LineChartProps) => {
       },
     ],
     series: [
-      {
-        label: 'Time',
-      },
-      {
-        label: 'Value',
+      ...seriesData.map((series) => ({
+        label: series.label,
         stroke: 'white',
         width: 2,
-      },
+      })),
     ],
   };
 
   return (
     <div className={styles.lineChart}>
       <div className={styles.header}>
-        <h3 className={styles.title}>BATTERIES</h3>
+        <h3 className={styles.title}>{title}</h3>
         <div className={styles.downloadOptions}>
           <div className={styles.downloadButton}>
             <DownloadIcon />
@@ -86,7 +89,11 @@ const LineChart = ({ data }: LineChartProps) => {
       </div>
       <div ref={containerRef}>
         {width ? (
-          <UplotReact options={options} data={data} />
+          data[0].length === 0 ? (
+            <div className={styles.noData}>No data to display</div>
+          ) : (
+            <UplotReact options={options} data={data} />
+          )
         ) : (
           <div className={styles.placeholder} />
         )}
