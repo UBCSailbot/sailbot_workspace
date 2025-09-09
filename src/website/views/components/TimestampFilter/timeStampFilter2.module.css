@@ -109,3 +109,8 @@
   display: flex;
   gap: 8px;
 }
+
+.reset {
+  cursor: pointer;
+  color: white;
+}

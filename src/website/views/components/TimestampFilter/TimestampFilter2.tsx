@@ -1,29 +1,33 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { connect } from 'react-redux';
 import DatePicker from 'react-datepicker';
 import styles from './timeStampFilter2.module.css';
 import DataFilterActions from '@/stores/DataFilter/DataFilterActions';
 import clsx from 'clsx';
+import { DataFilterState } from '@/stores/DataFilter/DataFilterTypes';
 
 interface TimestampFilterProps {
+  dataFilter: DataFilterState;
   setTimestamp: (timestamps: any) => any;
 }
 
-const TimestampFilter2 = ({ setTimestamp }: TimestampFilterProps) => {
+const TimestampFilter2 = ({
+  dataFilter,
+  setTimestamp,
+}: TimestampFilterProps) => {
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
 
-  const handleApplyChange = () => {
+  useEffect(() => {
     if (!startDate || !endDate) return;
-    if (endDate <= startDate) return;
 
     setTimestamp({
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
     });
-  };
+  }, [startDate, endDate]);
 
-  const handleResetChange = () => {
+  const handleReset = () => {
     setStartDate(null);
     setEndDate(null);
     setTimestamp({
@@ -38,7 +42,11 @@ const TimestampFilter2 = ({ setTimestamp }: TimestampFilterProps) => {
         <div className={styles.dateGroup}>
           <label>FROM:</label>
           <DatePicker
-            selected={startDate}
+            selected={
+              dataFilter.timestamps.startDate
+                ? new Date(dataFilter.timestamps.startDate)
+                : startDate
+            }
             onChange={(date) => setStartDate(date)}
             showTimeSelect
             timeFormat='HH:mm'
@@ -52,7 +60,11 @@ const TimestampFilter2 = ({ setTimestamp }: TimestampFilterProps) => {
         <div className={styles.dateGroup}>
           <label>TO:</label>
           <DatePicker
-            selected={endDate}
+            selected={
+              dataFilter.timestamps.endDate
+                ? new Date(dataFilter.timestamps.endDate)
+                : endDate
+            }
             onChange={(date) => setEndDate(date)}
             showTimeSelect
             timeFormat='HH:mm'
@@ -64,10 +76,17 @@ const TimestampFilter2 = ({ setTimestamp }: TimestampFilterProps) => {
             calendarClassName={styles.calendar}
           />
         </div>
+        <div className={styles.reset} onClick={handleReset}>
+          Reset
+        </div>
       </div>
     </div>
   );
 };
+
+const mapStateToProps = (state: any) => ({
+  dataFilter: state.dataFilter,
+});
 
 const mapDispatchToProps = {
   setTimestamp: (timestamps: any) => ({
@@ -76,4 +95,4 @@ const mapDispatchToProps = {
   }),
 };
 
-export default connect(null, mapDispatchToProps)(TimestampFilter2);
+export default connect(mapStateToProps, mapDispatchToProps)(TimestampFilter2);
