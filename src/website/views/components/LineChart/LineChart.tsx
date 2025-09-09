@@ -9,6 +9,7 @@ import styles from './lineChartStyles.module.css';
 
 interface SeriesData {
   label: string;
+  unit?: string;
 }
 
 // change this later fr
@@ -69,6 +70,9 @@ const LineChart = ({ data, title, seriesData }: LineChartProps) => {
         label: series.label,
         stroke: 'white',
         width: 2,
+        value: series.unit
+          ? (_u: any, v: any) => (v === null ? '--' : `${v} ${series.unit}`)
+          : undefined,
       })),
     ],
   };

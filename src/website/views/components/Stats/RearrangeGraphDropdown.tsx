@@ -14,15 +14,14 @@ import {
   arrayMove,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
+import DragIndicatorIcon from '@/public/icons/drag_indicator.svg';
 import styles from './stats.module.css';
-import {
-  restrictToVerticalAxis,
-} from '@dnd-kit/modifiers';
+import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import GraphsActions from '@/stores/Graphs/GraphsActions';
 import { connect } from 'react-redux';
 
 const graphsOrderNamesMap = {
-  GPS: 'GPS',
+  GPS: 'Speed',
   BatteriesVoltage: 'Batteries Voltage',
   BatteriesCurrent: 'Batteries Current',
   WindSensors: 'Wind Sensors',
@@ -53,6 +52,7 @@ const SortableItem = ({
       {...attributes}
       {...listeners}
     >
+      <DragIndicatorIcon />
       {graphsOrderNamesMap[id as keyof typeof graphsOrderNamesMap]}
     </div>
   );
@@ -135,7 +135,7 @@ const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs }: any) => {
   );
 
   return (
-    <div className={styles.dropdown} ref={dropdownRef}>
+    <div ref={dropdownRef}>
       <div className={styles.dropdownButton} onClick={handleClick}>
         <RearrangeIcon />
         Rearrange Graphs
@@ -160,6 +160,7 @@ const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs }: any) => {
             <DragOverlay>
               {activeId ? (
                 <div className={styles.dropdownItem}>
+                  <DragIndicatorIcon />
                   {
                     graphsOrderNamesMap[
                       activeId as keyof typeof graphsOrderNamesMap

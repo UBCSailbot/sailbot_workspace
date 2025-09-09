@@ -43,13 +43,13 @@ const isValidTimestamp = (
   return false;
 };
 
-const GPSGGraph = (gpsChartData: any) => {
+const speedGraph = (speedChartData: any) => {
   return (
     <LineChart
-      key='gpsChartData'
-      data={gpsChartData}
-      title='GPS'
-      seriesData={[{ label: 'Time' }, { label: 'Speed' }]}
+      key='speedChartData'
+      data={speedChartData}
+      title='Speed'
+      seriesData={[{ label: 'Time' }, { label: 'Speed', unit: 'km/hr' }]}
     />
   );
 };
@@ -62,8 +62,8 @@ const BatteriesVoltageGraph = (batteriesVoltageData: any) => {
       title='Batteries Voltage'
       seriesData={[
         { label: 'Time' },
-        { label: 'Battery 1 Voltage' },
-        { label: 'Battery 2 Voltage' },
+        { label: 'Battery 1 Voltage', unit: 'V' },
+        { label: 'Battery 2 Voltage', unit: 'V' },
       ]}
     />
   );
@@ -77,8 +77,8 @@ const BatteriesCurrentGraph = (batteriesCurrentData: any) => {
       title='Batteries Current'
       seriesData={[
         { label: 'Time' },
-        { label: 'Battery 1 Current' },
-        { label: 'Battery 2 Current' },
+        { label: 'Battery 1 Current', unit: 'A' },
+        { label: 'Battery 2 Current', unit: 'A' },
       ]}
     />
   );
@@ -92,8 +92,8 @@ const WindSensorsSpeedGraph = (windSensorsSpeedData: any) => {
       title='Wind Sensors'
       seriesData={[
         { label: 'Time' },
-        { label: 'Wind Sensor 1 Speed' },
-        { label: 'Wind Sensor 2 Speed' },
+        { label: 'Wind Sensor 1 Speed', unit: 'm/s' },
+        { label: 'Wind Sensor 2 Speed', unit: 'm/s' },
       ]}
     />
   );
@@ -107,6 +107,7 @@ interface StatsProps {
   dataFilter: DataFilterState;
 }
 
+// make this cleaner later
 const Stats = ({
   gps,
   batteries,
@@ -117,7 +118,14 @@ const Stats = ({
   const startDate = dataFilter.timestamps.startDate;
   const endDate = dataFilter.timestamps.endDate;
 
-  const gpsChartData = [
+  const filteredGpsData = gps.data.filter(
+    (data: GPS) =>
+      isValidTimestamp(parseISOString(data.timestamp), startDate, endDate) ===
+      true,
+  );
+  const lastValidGpsData = filteredGpsData[filteredGpsData.length - 1];
+
+  const speedChartData = [
     gps.data
       .map((data: GPS) => parseISOString(data.timestamp))
       .filter(
@@ -220,7 +228,7 @@ const Stats = ({
   ];
 
   const graphsMap = {
-    GPS: GPSGGraph(gpsChartData),
+    GPS: speedGraph(speedChartData),
     BatteriesVoltage: BatteriesVoltageGraph(batteriesVoltageData),
     BatteriesCurrent: BatteriesCurrentGraph(batteriesCurrentData),
     WindSensors: WindSensorsSpeedGraph(windSensorsSpeedData),
@@ -235,7 +243,8 @@ const Stats = ({
       <div className={styles.heading}>
         <div className={styles.title}>POLARIS IS CURRENTLY:</div>
         <div className={styles.summary}>
-          12.5 KNOTS | 278.3° | 37.7749° N, 122.4194° W
+          {lastValidGpsData.speed} KM/HR | {lastValidGpsData.heading}° |{' '}
+          {lastValidGpsData.latitude}° N, {lastValidGpsData.longitude}° W
         </div>
         <div className={styles.toolbar}>
           <HistoricDataDropdown />
