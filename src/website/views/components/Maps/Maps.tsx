@@ -23,8 +23,11 @@ export interface IMapsProps {
   gpsLocation: GPS | undefined;
   gpsPath: L.LatLngExpression[];
   globalPath: L.LatLngExpression[];
+  showGlobalPath: boolean;
   localPath: L.LatLngExpression[];
+  showLocalPath: boolean;
   aisShips: AISShip[];
+  showAIShips: boolean;
 }
 
 export interface IMapsState {
@@ -200,23 +203,21 @@ export default class Maps extends React.Component<IMapsProps, IMapsState> {
           url='https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
         />
 
-        {/* <LayersControl position='bottomleft'>
-          <LayersControl.Overlay name='AIS Ships' checked>
-            <LayerGroup>{this.renderShips()}</LayerGroup>
-          </LayersControl.Overlay>
-          <LayersControl.Overlay name='Local Path' checked>
-            <Polyline
-              pathOptions={{ color: 'red' }}
-              positions={this.props.localPath}
-            />
-          </LayersControl.Overlay>
-          <LayersControl.Overlay name='Global Path' checked>
-            <Polyline
-              pathOptions={{ color: 'black', opacity: 0.25 }}
-              positions={this.props.globalPath}
-            />
-          </LayersControl.Overlay>
-        </LayersControl> */}
+        {this.props.showAIShips && (
+          <LayerGroup>{this.renderShips()}</LayerGroup>
+        )}
+        {this.props.showLocalPath && (
+          <Polyline
+            pathOptions={{ color: 'red' }}
+            positions={this.props.localPath}
+          />
+        )}
+        {this.props.showGlobalPath && (
+          <Polyline
+            pathOptions={{ color: 'black', opacity: 0.25 }}
+            positions={this.props.globalPath}
+          />
+        )}
         <Marker
           position={convertToLatLng(this.props.gpsLocation)}
           icon={createCustomIcon()}

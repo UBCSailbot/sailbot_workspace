@@ -46,6 +46,7 @@ const isValidTimestamp = (
 const GPSGGraph = (gpsChartData: any) => {
   return (
     <LineChart
+      key='gpsChartData'
       data={gpsChartData}
       title='GPS'
       seriesData={[{ label: 'Time' }, { label: 'Speed' }]}
@@ -56,6 +57,7 @@ const GPSGGraph = (gpsChartData: any) => {
 const BatteriesVoltageGraph = (batteriesVoltageData: any) => {
   return (
     <LineChart
+      key='batteriesVoltageData'
       data={batteriesVoltageData}
       title='Batteries Voltage'
       seriesData={[
@@ -70,6 +72,7 @@ const BatteriesVoltageGraph = (batteriesVoltageData: any) => {
 const BatteriesCurrentGraph = (batteriesCurrentData: any) => {
   return (
     <LineChart
+      key='batteriesCurrentData'
       data={batteriesCurrentData}
       title='Batteries Current'
       seriesData={[
@@ -84,6 +87,7 @@ const BatteriesCurrentGraph = (batteriesCurrentData: any) => {
 const WindSensorsSpeedGraph = (windSensorsSpeedData: any) => {
   return (
     <LineChart
+      key='windSensorsSpeedData'
       data={windSensorsSpeedData}
       title='Wind Sensors'
       seriesData={[

@@ -1,6 +1,11 @@
-import React from 'react';
+import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import styles from './map.module.css';
+import { connect } from 'react-redux';
+import { GPSState } from '@/stores/GPS/GPSTypes';
+import { GlobalPathState } from '@/stores/GlobalPath/GlobalPathTypes';
+import { LocalPathState } from '@/stores/LocalPath/LocalPathTypes';
+import { AISShipsState } from '@/stores/AISShips/AISShipsTypes';
 
 // Dynamically import Maps component with SSR disabled
 const Maps = dynamic(() => import('../Maps/Maps'), {
@@ -116,30 +121,71 @@ const fakeAISShips = [
   },
 ];
 
-const Map = () => {
+const Map = ({
+  gps,
+  globalPath,
+  localPath,
+  aisShips,
+}: {
+  gps: GPSState;
+  globalPath: GlobalPathState;
+  localPath: LocalPathState;
+  aisShips: AISShipsState;
+}) => {
+  const [showAIShips, setShowAIShips] = useState(true);
+  const [showGlobalPath, setShowGlobalPath] = useState(true);
+  const [showLocalPath, setShowLocalPath] = useState(true);
+
+  const gpsData = gps.data;
+  const globalPathData = globalPath.data;
+  const localPathData = localPath.data;
+  const aisShipsData = aisShips.data;
+
   return (
     <div className={styles.map}>
       <Maps
-        gpsLocation={currentGPSLocation}
-        gpsPath={fakeGPSData.map((gpsPoint) => convertToLatLng(gpsPoint))}
-        globalPath={fakeGlobalPath.map((waypoint) => convertToLatLng(waypoint))}
-        localPath={fakeLocalPath.map((waypoint) => convertToLatLng(waypoint))}
-        aisShips={fakeAISShips}
+        gpsLocation={gpsData[gpsData.length - 1]}
+        gpsPath={gpsData.map((gpsPoint) => convertToLatLng(gpsPoint))}
+        globalPath={globalPathData.waypoints.map((waypoint) =>
+          convertToLatLng(waypoint),
+        )}
+        showGlobalPath={showGlobalPath}
+        localPath={localPathData.waypoints.map((waypoint) =>
+          convertToLatLng(waypoint),
+        )}
+        showLocalPath={showLocalPath}
+        aisShips={aisShipsData.ships}
+        showAIShips={showAIShips}
       />
       <div className={styles.toolbar}>
         <div className={styles.filter}>
           <label>
-            <input type='checkbox' defaultChecked /> AIS Ships
+            <input
+              type='checkbox'
+              defaultChecked
+              onChange={(e) => setShowAIShips(e.target.checked)}
+            />
+            AIS Ships
           </label>
         </div>
         <div className={styles.filter}>
           <label>
-            <input type='checkbox' defaultChecked /> Global Path
+            <input
+              type='checkbox'
+              defaultChecked
+              onChange={(e) => setShowGlobalPath(e.target.checked)}
+            />
+            Global Path
           </label>
         </div>
         <div className={styles.filter}>
           <label>
-            <input type='checkbox' defaultChecked /> Local Path
+            <input
+              type='checkbox'
+              defaultChecked
+              onChange={(e) => setShowLocalPath(e.target.checked)}
+            />
+            Local Path
           </label>
         </div>
       </div>
@@ -147,4 +193,11 @@ const Map = () => {
   );
 };
 
-export default Map;
+const mapStateToProps = (state: any) => ({
+  gps: state.gps,
+  globalPath: state.globalPath,
+  localPath: state.localPath,
+  aisShips: state.aisShips,
+});
+
+export default connect(mapStateToProps, null)(Map);
