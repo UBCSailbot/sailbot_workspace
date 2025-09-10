@@ -99,6 +99,15 @@ const WindSensorsSpeedGraph = (windSensorsSpeedData: any) => {
   );
 };
 
+const getStatsSummary = (filteredGpsData: GPS[]) => {
+  if (!filteredGpsData.length) {
+    return 'NO DATA';
+  }
+
+  const lastValidGpsData = filteredGpsData[filteredGpsData.length - 1];
+  return `${lastValidGpsData.speed} KM/HR | ${lastValidGpsData.heading}° | ${lastValidGpsData.latitude}° N, ${lastValidGpsData.longitude}° W`;
+};
+
 interface StatsProps {
   gps: GPSState;
   batteries: BatteriesState;
@@ -117,13 +126,6 @@ const Stats = ({
 }: StatsProps) => {
   const startDate = dataFilter.timestamps.startDate;
   const endDate = dataFilter.timestamps.endDate;
-
-  const filteredGpsData = gps.data.filter(
-    (data: GPS) =>
-      isValidTimestamp(parseISOString(data.timestamp), startDate, endDate) ===
-      true,
-  );
-  const lastValidGpsData = filteredGpsData[filteredGpsData.length - 1];
 
   const speedChartData = [
     gps.data
@@ -238,14 +240,17 @@ const Stats = ({
     (graph: string) => graphsMap[graph as keyof typeof graphsMap],
   );
 
+  const filteredGpsData = gps.data.filter(
+    (data: GPS) =>
+      isValidTimestamp(parseISOString(data.timestamp), startDate, endDate) ===
+      true,
+  );
+
   return (
     <div className={styles.stats}>
       <div className={styles.heading}>
         <div className={styles.title}>POLARIS IS CURRENTLY:</div>
-        <div className={styles.summary}>
-          {lastValidGpsData.speed} KM/HR | {lastValidGpsData.heading}° |{' '}
-          {lastValidGpsData.latitude}° N, {lastValidGpsData.longitude}° W
-        </div>
+        <div className={styles.summary}>{getStatsSummary(filteredGpsData)}</div>
         <div className={styles.toolbar}>
           <HistoricDataDropdown />
           <RearrangeGraphDropdown />
