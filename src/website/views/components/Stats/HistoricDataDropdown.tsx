@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import HistoryIcon from '@/public/icons/history.svg';
 import styles from './stats.module.css';
-import TimestampFilter2 from '../TimestampFilter/TimestampFilter2';
+import TimestampFilter from '@/views/components/TimestampFilter/TimestampFilter';
 
 const HistoricDataDropdown = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -31,7 +31,7 @@ const HistoricDataDropdown = () => {
       </div>
       {isOpen && (
         <div className={styles.dropdownMenu}>
-          <TimestampFilter2 />
+          <TimestampFilter />
         </div>
       )}
     </div>
