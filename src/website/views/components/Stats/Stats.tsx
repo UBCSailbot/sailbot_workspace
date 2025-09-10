@@ -1,4 +1,5 @@
-import dynamic from 'next/dynamic';
+import { useLayoutEffect, useState } from 'react';
+import LineChart from '../LineChart/LineChart';
 import styles from './stats.module.css';
 import HistoricDataDropdown from './HistoricDataDropdown';
 import RearrangeGraphDropdown from './RearrangeGraphDropdown';
@@ -10,11 +11,6 @@ import {
   WindSensorsState,
 } from '@/stores/WindSensors/WindSensorsTypes';
 import { DataFilterState } from '@/stores/DataFilter/DataFilterTypes';
-
-// LineChart needs to be rendered client side
-const LineChart = dynamic(() => import('../LineChart/LineChart'), {
-  ssr: false,
-});
 
 const parseISOString = (s: string) => {
   return Math.floor(Date.parse(s) / 1000); // Converts to seconds
@@ -124,8 +120,20 @@ const Stats = ({
   graphsOrder,
   dataFilter,
 }: StatsProps) => {
+  const [summary, setSummary] = useState<string>('');
+
   const startDate = dataFilter.timestamps.startDate;
   const endDate = dataFilter.timestamps.endDate;
+
+  useLayoutEffect(() => {
+    const filteredGpsData = gps.data.filter(
+      (data: GPS) =>
+        isValidTimestamp(parseISOString(data.timestamp), startDate, endDate) ===
+        true,
+    );
+
+    setSummary(getStatsSummary(filteredGpsData));
+  }, []);
 
   const speedChartData = [
     gps.data
@@ -240,17 +248,11 @@ const Stats = ({
     (graph: string) => graphsMap[graph as keyof typeof graphsMap],
   );
 
-  const filteredGpsData = gps.data.filter(
-    (data: GPS) =>
-      isValidTimestamp(parseISOString(data.timestamp), startDate, endDate) ===
-      true,
-  );
-
   return (
     <div className={styles.stats}>
       <div className={styles.heading}>
         <div className={styles.title}>POLARIS IS CURRENTLY:</div>
-        <div className={styles.summary}>{getStatsSummary(filteredGpsData)}</div>
+        <div className={styles.summary}>{summary}</div>
         <div className={styles.toolbar}>
           <HistoricDataDropdown />
           <RearrangeGraphDropdown />
