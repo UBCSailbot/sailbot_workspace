@@ -3,6 +3,8 @@
 	"name": "Sailbot Workspace",
 	"dockerComposeFile": [
 		"docker-compose.yml",
+    // We do not use anymore. We pulled website development out of docker in PR #614
+		// "website/docker-compose.website.yml", // website
 
 		// Uncomment the files containing the programs you need
 		// "docs/docker-compose.docs.yml", // docs
