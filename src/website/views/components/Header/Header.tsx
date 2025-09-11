@@ -1,35 +1,35 @@
-import React from 'react';
-import { IconButton } from '@mui/material';
-import InfoIcon from '@mui/icons-material/Info';
+import Link from 'next/link';
 import styles from './header.module.css';
-import DropdownBtn from '@/views/components/DropDown/DropDown';
-import TimestampFilter from '../TimestampFilter/TimestampFilter';
-import TimestampBtn from '../TimestampFilter/TimestampBtn';
+import { useRouter } from 'next/router';
 
-interface HeaderProps {
-  onInfoButtonClick: () => void;
-}
+const Header = () => {
+  const router = useRouter();
+  const currentPath = router.pathname;
 
-function Header({ onInfoButtonClick }: HeaderProps) {
   return (
-    <header className={styles.header}>
-      <div className={styles.headerContainer}>
-        <img
-          src='Sailbot Logo Plain (white).png'
-          alt='Logo'
-          className={styles.logo}
-        />
-        <h1 className={styles.title}>UBC SAILBOT</h1>
+    <div className={styles.header}>
+      <div className={styles.title}>
+        <img src='LogoPlainWhite.svg' alt='Logo' className={styles.logo} />
+        <h1>SAILBOTPOLARIS.COM</h1>
       </div>
-      <div className={styles.infoButton}>
-        <TimestampBtn />
-        <DropdownBtn />
-        <IconButton onClick={onInfoButtonClick} color='inherit'>
-          <InfoIcon />
-        </IconButton>
+      <div className={styles.links}>
+        <Link
+          href='/'
+          style={currentPath === '/' ? { textDecoration: 'underline' } : {}}
+        >
+          DASHBOARD
+        </Link>
+        <Link
+          href='/about'
+          style={
+            currentPath === '/about' ? { textDecoration: 'underline' } : {}
+          }
+        >
+          ABOUT
+        </Link>
       </div>
-    </header>
+    </div>
   );
-}
+};
 
 export default Header;

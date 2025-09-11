@@ -38,7 +38,7 @@
     "lib/dotenv.js",
     "models/helper/parser.js",
     "utils/DownloadData.js"
-  ],
+, "next.config.js"  ],
   "exclude": [
     "node_modules"
   ]

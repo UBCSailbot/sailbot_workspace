@@ -1,35 +1,33 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { connect } from 'react-redux';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { Button } from '@mui/material';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
-import styles from './timestampfilter.module.css';
+import DatePicker from 'react-datepicker';
+import styles from './timeStampFilter.module.css';
 import DataFilterActions from '@/stores/DataFilter/DataFilterActions';
+import clsx from 'clsx';
+import { DataFilterState } from '@/stores/DataFilter/DataFilterTypes';
 
 interface TimestampFilterProps {
+  dataFilter: DataFilterState;
   setTimestamp: (timestamps: any) => any;
 }
 
-function TimestampFilter({ setTimestamp }: TimestampFilterProps) {
-  const [startDate, setStartDate] = useState(null);
-  const [endDate, setEndDate] = useState(null);
+const TimestampFilter2 = ({
+  dataFilter,
+  setTimestamp,
+}: TimestampFilterProps) => {
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
 
-  const handleApplyChange = () => {
-    let emptyDate = startDate != null && endDate != null;
-    let validDate = parseISOString(endDate) > parseISOString(startDate);
+  useEffect(() => {
+    if (!startDate || !endDate) return;
 
-    if (emptyDate == true && validDate == true) {
-      setTimestamp({
-        // @ts-ignore
-        startDate: startDate.toISOString(),
-        // @ts-ignore
-        endDate: endDate.toISOString(),
-      });
-    }
-  };
+    setTimestamp({
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+    });
+  }, [startDate, endDate]);
 
-  const handleResetChange = () => {
+  const handleReset = () => {
     setStartDate(null);
     setEndDate(null);
     setTimestamp({
@@ -38,75 +36,63 @@ function TimestampFilter({ setTimestamp }: TimestampFilterProps) {
     });
   };
 
-  const handleStartChange = (newStartDate: any) => {
-    setStartDate(newStartDate);
-  };
-
-  const handleEndChange = (newEndDate: any) => {
-    setEndDate(newEndDate);
-  };
-
-  function parseISOString(s: string | null) {
-    if (s === null) return 0;
-    return Math.floor(Date.parse(s) / 1000); // Converts to seconds
-  }
-
   return (
-    <div className={styles.dropdownMenu}>
-      <LocalizationProvider dateAdapter={AdapterDayjs}>
-        <DateTimePicker
-          label='Starting Date'
-          value={startDate}
-          onChange={handleStartChange}
-          slotProps={{
-            field: { clearable: true },
-            popper: {
-              disablePortal: true,
-            },
-          }}
-          className={styles.dropdownItem}
-        />
-      </LocalizationProvider>
-      <LocalizationProvider dateAdapter={AdapterDayjs}>
-        <DateTimePicker
-          label='Ending Date'
-          value={endDate}
-          onChange={handleEndChange}
-          slotProps={{
-            field: { clearable: true },
-            popper: {
-              disablePortal: true,
-            },
-          }}
-          className={styles.dropdownItem}
-        />
-      </LocalizationProvider>
-      <Button
-        variant='contained'
-        className={styles.dropdownBtn}
-        disableElevation
-        onClick={handleApplyChange}
-      >
-        APPLY
-      </Button>
-      <Button
-        variant='outlined'
-        className={styles.dropdownBtn}
-        onClick={handleResetChange}
-      >
-        RESET
-      </Button>
+    <div className={styles.container}>
+      <div className={clsx(styles.inputs, styles.calendarWrapper)}>
+        <div className={styles.dateGroup}>
+          <label>FROM:</label>
+          <DatePicker
+            selected={
+              dataFilter.timestamps.startDate
+                ? new Date(dataFilter.timestamps.startDate)
+                : startDate
+            }
+            onChange={(date) => setStartDate(date)}
+            showTimeSelect
+            timeFormat='HH:mm'
+            timeIntervals={15}
+            dateFormat='MMMM d, yyyy h:mm aa'
+            placeholderText='MMMM d, yyyy h:mm aa'
+            className={styles.input}
+            calendarClassName={styles.calendar}
+          />
+        </div>
+        <div className={styles.dateGroup}>
+          <label>TO:</label>
+          <DatePicker
+            selected={
+              dataFilter.timestamps.endDate
+                ? new Date(dataFilter.timestamps.endDate)
+                : endDate
+            }
+            onChange={(date) => setEndDate(date)}
+            showTimeSelect
+            timeFormat='HH:mm'
+            timeIntervals={15}
+            dateFormat='MMMM d, yyyy h:mm aa'
+            placeholderText='MMMM d, yyyy h:mm aa'
+            minDate={startDate ?? undefined}
+            className={styles.input}
+            calendarClassName={styles.calendar}
+          />
+        </div>
+        <div className={styles.reset} onClick={handleReset}>
+          Reset
+        </div>
+      </div>
     </div>
   );
-}
-
-const mapDispatchToProps = {
-  setTimestamp: (timestamps: any) => {
-    return {
-      type: DataFilterActions.SET_TIMESTAMP,
-      payload: timestamps,
-    };
-  },
 };
 
-export default connect(null, mapDispatchToProps)(TimestampFilter);
+const mapStateToProps = (state: any) => ({
+  dataFilter: state.dataFilter,
+});
+
+const mapDispatchToProps = {
+  setTimestamp: (timestamps: any) => ({
+    type: DataFilterActions.SET_TIMESTAMP,
+    payload: timestamps,
+  }),
+};
+
+export default connect(mapStateToProps, mapDispatchToProps)(TimestampFilter2);

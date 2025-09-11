@@ -1,11 +1,11 @@
 import Header from '@/views/components/Header/Header';
-import Dashboard from '@/views/components/Dashboard/Dashboard';
+import About from '@/views/components/About/About';
 
 export default function Home() {
   return (
     <>
       <Header />
-      <Dashboard />
+      <About />
     </>
   );
 }
