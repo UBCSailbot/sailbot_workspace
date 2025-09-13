@@ -30,6 +30,7 @@ public:
     CanTransceiverIntf() : NetNode(ros_nodes::CAN_TRANSCEIVER)
     {
         this->declare_parameter("enabled", true);
+        this->declare_parameter("manual_mode", false);
 
         if (!this->get_parameter("enabled").as_bool()) {
             RCLCPP_INFO(this->get_logger(), "CAN Transceiver is DISABLED");
@@ -61,7 +62,7 @@ public:
                 RCLCPP_ERROR(this->get_logger(), "%s", msg.c_str());
                 throw std::runtime_error(msg);
             }
-
+            param_cb_handle_  = this->add_on_set_parameters_callback(CanTransceiverIntf::onParamChange);
             ais_pub_          = this->create_publisher<msg::AISShips>(ros_topics::AIS_SHIPS, QUEUE_SIZE);
             batteries_pub_    = this->create_publisher<msg::HelperBattery>(ros_topics::BATTERIES, QUEUE_SIZE);
             gps_pub_          = this->create_publisher<msg::GPS>(ros_topics::GPS, QUEUE_SIZE);
@@ -183,6 +184,9 @@ private:
     // Timer for anything that just needs a repeatedly written value in simulation
     rclcpp::TimerBase::SharedPtr timer_;
 
+    // ROS param callback for setting manual mode
+    rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr param_cb_handle_;
+
     // Holder for AISShips before publishing
     std::vector<msg::HelperAISShip> ais_ships_holder_;
     int                             total_ais_ships = 0;
@@ -192,6 +196,9 @@ private:
 
     // Saved power mode state
     uint8_t set_pwr_mode = CAN_FP::PwrMode::POWER_MODE_NORMAL;
+
+    // manual mode status
+    inline static bool manual_mode_ = false;
 
     std::vector<std::pair<CAN_FP::CanId, std::function<void(const CanFrame &)>>> getCbsForRange(
       CAN_FP::CanId start, CAN_FP::CanId end, void (CanTransceiverIntf::*callback)(const CanFrame &))
@@ -204,6 +211,22 @@ private:
             canCbs.emplace_back(canId, [this, callback](const CanFrame & frame) { (this->*callback)(frame); });
         }
         return canCbs;
+    }
+
+    /**
+     * @brief Manual mode callback function
+     *
+     */
+    static rcl_interfaces::msg::SetParametersResult onParamChange(const std::vector<rclcpp::Parameter> & params)
+    {
+        for (const auto & param : params) {
+            if (param.get_name() == "manual_mode") {
+                manual_mode_ = param.as_bool();
+            }
+        }
+        rcl_interfaces::msg::SetParametersResult result;
+        result.successful = true;
+        return result;
     }
 
     /**
@@ -256,7 +279,9 @@ private:
                 set_pwr_mode = CAN_FP::PwrMode::POWER_MODE_NORMAL;
             }
             CAN_FP::PwrMode power_mode(set_pwr_mode, CAN_FP::CanId::PWR_MODE);
-            can_trns_->send(power_mode.toLinuxCan());
+            if (!manual_mode_) {
+                can_trns_->send(power_mode.toLinuxCan());
+            }
 
             // Get the current time as a time_point
             auto now = std::chrono::system_clock::now();
@@ -554,6 +579,9 @@ private:
      */
     void subDesiredHeadingCb(msg::DesiredHeading desired_heading)
     {
+        if (manual_mode_) {
+            return;
+        }
         desired_heading_ = desired_heading;
         try {
             auto desired_heading_frame = CAN_FP::DesiredHeading(desired_heading_, CanId::MAIN_HEADING);
@@ -573,6 +601,9 @@ private:
      */
     void subSailCmdCb(const msg::SailCmd & sail_cmd_input)
     {
+        if (manual_mode_) {
+            return;
+        }
         sail_cmd_                = sail_cmd_input;
         auto main_trim_tab_frame = CAN_FP::MainTrimTab(sail_cmd_, CanId::MAIN_TR_TAB);
         can_trns_->send(main_trim_tab_frame.toLinuxCan());
@@ -599,6 +630,9 @@ private:
      */
     void subSimSailCmdCb(const msg::SailCmd & sail_cmd_input)
     {
+        if (manual_mode_) {
+            return;
+        }
         sail_cmd_ = sail_cmd_input;
         boat_sim_input_msg_.set__sail_cmd(sail_cmd_);
         try {
