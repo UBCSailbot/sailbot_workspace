@@ -1,10 +1,11 @@
+'use client';
+
 import Link from 'next/link';
 import styles from './header.module.css';
-import { useRouter } from 'next/router';
+import { usePathname } from 'next/navigation';
 
 const Header = () => {
-  const router = useRouter();
-  const currentPath = router.pathname;
+  const currentPath = usePathname();
 
   return (
     <div className={styles.header}>

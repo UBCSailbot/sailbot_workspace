@@ -1,14 +1,19 @@
 import React from 'react';
 import { Providers } from '@/lib/providers';
-import type { AppProps } from 'next/app';
 import '../styles/globals.css';
 import '../styles/uplot.css';
 import 'react-datepicker/dist/react-datepicker.css';
 
-export default function App({ Component, pageProps }: AppProps) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <Providers>
-      <Component {...pageProps} />
-    </Providers>
+    <html lang='en'>
+      <body>
+        <Providers>{children}</Providers>
+      </body>
+    </html>
   );
 }

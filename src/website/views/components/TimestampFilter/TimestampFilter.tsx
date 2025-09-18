@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from 'react';
+'use client';
+
+import { useEffect, useState } from 'react';
 import { connect } from 'react-redux';
 import DatePicker from 'react-datepicker';
 import styles from './timeStampFilter.module.css';

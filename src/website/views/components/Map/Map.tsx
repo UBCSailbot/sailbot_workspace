@@ -1,4 +1,6 @@
-import { useState, useMemo } from 'react';
+'use client';
+
+import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import styles from './map.module.css';
 import { connect } from 'react-redux';
@@ -10,7 +12,7 @@ import { AISShipsState } from '@/stores/AISShips/AISShipsTypes';
 // Dynamically import Maps component with SSR disabled
 const Maps = dynamic(() => import('../Maps/Maps'), {
   ssr: false,
-  loading: () => <div>Loading map...</div>,
+  loading: () => <div className={styles.loading}>Loading map...</div>,
 });
 
 // Create a simple conversion function that doesn't depend on Leaflet

@@ -1,3 +1,5 @@
+'use client';
+
 import { useLayoutEffect, useState } from 'react';
 import LineChart from '../LineChart/LineChart';
 import styles from './stats.module.css';
@@ -120,7 +122,7 @@ const Stats = ({
   graphsOrder,
   dataFilter,
 }: StatsProps) => {
-  const [summary, setSummary] = useState<string>('');
+  const [summary, setSummary] = useState<string>('LOADING...');
 
   const startDate = dataFilter.timestamps.startDate;
   const endDate = dataFilter.timestamps.endDate;
@@ -133,7 +135,7 @@ const Stats = ({
     );
 
     setSummary(getStatsSummary(filteredGpsData));
-  }, []);
+  }, [gps.data, startDate, endDate]);
 
   const speedChartData = [
     gps.data

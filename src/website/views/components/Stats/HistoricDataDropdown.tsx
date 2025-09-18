@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect, useRef } from 'react';
 import HistoryIcon from '@/public/icons/history.svg';
 import styles from './stats.module.css';
