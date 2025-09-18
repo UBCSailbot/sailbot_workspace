@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useCallback } from 'react';
 /* Leaflet related imports */
 import {
   MapContainer,
@@ -6,7 +6,6 @@ import {
   Popup,
   TileLayer,
   Polyline,
-  LayersControl,
   LayerGroup,
   Polygon,
 } from 'react-leaflet';
@@ -17,13 +16,17 @@ import L from 'leaflet';
 import 'leaflet-geometryutil';
 import { GPS } from '@/stores/GPS/GPSTypes';
 import { AISShip } from '@/stores/AISShips/AISShipsTypes';
+import styles from './maps.module.css';
 
 export interface IMapsProps {
   gpsLocation: GPS | undefined;
   gpsPath: L.LatLngExpression[];
   globalPath: L.LatLngExpression[];
+  showGlobalPath: boolean;
   localPath: L.LatLngExpression[];
+  showLocalPath: boolean;
   aisShips: AISShip[];
+  showAIShips: boolean;
 }
 
 export interface IMapsState {
@@ -60,26 +63,32 @@ export const convertToLatLng = (obj: any): L.LatLngExpression => {
   return L.latLng(obj.latitude, obj.longitude);
 };
 
-export default class Maps extends React.Component<IMapsProps, IMapsState> {
-  readonly state: IMapsState = {
-    map: null,
-  };
+const Maps: React.FC<IMapsProps> = ({
+  gpsLocation,
+  gpsPath,
+  globalPath,
+  showGlobalPath,
+  localPath,
+  showLocalPath,
+  aisShips,
+  showAIShips,
+}) => {
+  const mapRef = useRef<L.Map | null>(null);
 
   /**
-   * Sets the map reference in the component's state.
+   * Sets the map reference.
    *
-   * @param map - The Leaflet map instance to be stored in the component's state.
+   * @param mapInstance - The Leaflet map instance to be stored in the ref.
    *              This instance is used for various map operations within the component.
    */
-  setMapRef = (map: L.Map) => {
-    if (map) {
-      this.setState({ map }, () => {
-        setTimeout(() => {
-          map.invalidateSize();
-        }, 100);
-      });
+  const setMapRef = useCallback((mapInstance: L.Map) => {
+    if (mapInstance) {
+      mapRef.current = mapInstance;
+      setTimeout(() => {
+        mapInstance.invalidateSize();
+      }, 100);
     }
-  };
+  }, []);
 
   /**
    * Rotates a point around a specified axis by a given angle.
@@ -93,17 +102,15 @@ export default class Maps extends React.Component<IMapsProps, IMapsState> {
    * @returns     - The rotated point as an L.LatLngExpression. If the map is not
    *                initialized, the original point is returned without modification.
    */
-  rotatePoint = (
-    point: L.LatLngExpression,
-    angle: number,
-    axis: L.LatLngExpression,
-  ) => {
-    const map = this.state.map;
-    if (map == null) {
-      return point;
-    }
-    return L.GeometryUtil.rotatePoint(map, point, angle, axis);
-  };
+  const rotatePoint = useCallback(
+    (point: L.LatLngExpression, angle: number, axis: L.LatLngExpression) => {
+      if (!mapRef.current) {
+        return point;
+      }
+      return L.GeometryUtil.rotatePoint(mapRef.current, point, angle, axis);
+    },
+    [mapRef],
+  );
 
   /**
    * Renders ships on a map as rectangles. Each ship is represented by a rectangle
@@ -116,11 +123,11 @@ export default class Maps extends React.Component<IMapsProps, IMapsState> {
    *            with red borders and contain a Popup that shows the ship's information.
    *            If the aisShips prop is empty, no Polygons are rendered.
    */
-  renderShips = () => {
+  const renderShips = useCallback(() => {
     const EARTH_RADIUS_METERS = 6378000;
     const PI = Math.PI;
 
-    return this.props.aisShips.map((ship, index) => {
+    return aisShips.map((ship, index) => {
       const { latitude, longitude, width, length, cog } = ship;
 
       // Assuming that length and width are in meters
@@ -141,22 +148,22 @@ export default class Maps extends React.Component<IMapsProps, IMapsState> {
         ((dx / EARTH_RADIUS_METERS) * (180 / PI)) /
           Math.cos((latitude * PI) / 180);
 
-      const topLeftRotated = this.rotatePoint(
+      const topLeftRotated = rotatePoint(
         L.latLng(newLatitudeNorth, newLongitudeWest),
         cog,
         L.latLng(latitude, longitude),
       );
-      const topRightRotated = this.rotatePoint(
+      const topRightRotated = rotatePoint(
         L.latLng(newLatitudeNorth, newLongitudeEast),
         cog,
         L.latLng(latitude, longitude),
       );
-      const bottomLeftRotated = this.rotatePoint(
+      const bottomLeftRotated = rotatePoint(
         L.latLng(newLatitudeSouth, newLongitudeWest),
         cog,
         L.latLng(latitude, longitude),
       );
-      const bottomRightRotated = this.rotatePoint(
+      const bottomRightRotated = rotatePoint(
         L.latLng(newLatitudeSouth, newLongitudeEast),
         cog,
         L.latLng(latitude, longitude),
@@ -178,46 +185,73 @@ export default class Maps extends React.Component<IMapsProps, IMapsState> {
         </Polygon>
       );
     });
-  };
+  }, [aisShips, rotatePoint]);
 
-  render() {
-    return (
-      <MapContainer
-        center={convertToLatLng(this.props.gpsLocation)}
-        zoom={13}
-        scrollWheelZoom={true}
-        style={{ height: 'calc(100vh - 115px)', width: '100wh' }}
-        ref={this.setMapRef}
-      >
-        <TileLayer
-          attribution='&copy; OpenStreetMap contributors'
-          url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
-        />
-        <LayersControl position='bottomleft'>
-          <LayersControl.Overlay name='AIS Ships' checked>
-            <LayerGroup>{this.renderShips()}</LayerGroup>
-          </LayersControl.Overlay>
-          <LayersControl.Overlay name='Local Path' checked>
-            <Polyline
-              pathOptions={{ color: 'red' }}
-              positions={this.props.localPath}
-            />
-          </LayersControl.Overlay>
-          <LayersControl.Overlay name='Global Path' checked>
-            <Polyline
-              pathOptions={{ color: 'black', opacity: 0.25 }}
-              positions={this.props.globalPath}
-            />
-          </LayersControl.Overlay>
-        </LayersControl>
-        <Marker position={convertToLatLng(this.props.gpsLocation)}>
-          <Popup>{printObjectInfo(this.props.gpsLocation)}</Popup>
-        </Marker>
+  return (
+    <MapContainer
+      center={convertToLatLng(gpsLocation)}
+      zoom={13}
+      scrollWheelZoom={true}
+      className={styles.maps}
+      ref={setMapRef}
+    >
+      {/* this for future light mode */}
+      {/* <TileLayer
+        attribution='&copy; OpenStreetMap contributors &copy; CARTO'
+        url='https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
+      /> */}
+      <TileLayer
+        attribution='&copy; OpenStreetMap contributors &copy; CARTO'
+        url='https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+      />
+
+      {showAIShips && <LayerGroup>{renderShips()}</LayerGroup>}
+      {showLocalPath && (
+        <Polyline pathOptions={{ color: 'red' }} positions={localPath} />
+      )}
+      {showGlobalPath && (
         <Polyline
-          pathOptions={{ color: 'black' }}
-          positions={this.props.gpsPath}
+          pathOptions={{ color: 'black', opacity: 0.25 }}
+          positions={globalPath}
         />
-      </MapContainer>
-    );
-  }
-}
+      )}
+      <Marker position={convertToLatLng(gpsLocation)} icon={createCustomIcon()}>
+        <Popup>{printObjectInfo(gpsLocation)}</Popup>
+      </Marker>
+      <Polyline pathOptions={{ color: 'black' }} positions={gpsPath} />
+    </MapContainer>
+  );
+};
+
+export default Maps;
+
+const createCustomIcon = () => {
+  return L.divIcon({
+    className: 'custom-marker',
+    html: `
+      <div style="
+        width: 20px;
+        height: 20px;
+        background: #2563eb;
+        border: 3px solid white;
+        border-radius: 50%;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        position: relative;
+      ">
+        <div style="
+          position: absolute;
+          top: -8px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 0;
+          height: 0;
+          border-left: 6px solid transparent;
+          border-right: 6px solid transparent;
+          border-bottom: 8px solid #2563eb;
+        "></div>
+      </div>
+    `,
+    iconSize: [20, 20],
+    iconAnchor: [10, 10],
+  });
+};
