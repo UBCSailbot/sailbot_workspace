@@ -7,6 +7,7 @@ import styles from './timeStampFilter.module.css';
 import DataFilterActions from '@/stores/DataFilter/DataFilterActions';
 import clsx from 'clsx';
 import { DataFilterState } from '@/stores/DataFilter/DataFilterTypes';
+import 'react-datepicker/dist/react-datepicker.css';
 
 interface TimestampFilterProps {
   dataFilter: DataFilterState;

@@ -6,6 +6,7 @@ import DownloadIcon from '@/public/icons/download.svg';
 import { downloadDataFromJSON } from '@/utils/DownloadData';
 
 import styles from './lineChartStyles.module.css';
+import './customUplot.css';
 
 interface SeriesData {
   label: string;

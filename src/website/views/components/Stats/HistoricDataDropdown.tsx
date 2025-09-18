@@ -3,7 +3,11 @@
 import { useState, useEffect, useRef } from 'react';
 import HistoryIcon from '@/public/icons/history.svg';
 import styles from './stats.module.css';
-import TimestampFilter from '@/views/components/TimestampFilter/TimestampFilter';
+import dynamic from 'next/dynamic';
+
+const TimestampFilter = dynamic(
+  () => import('@/views/components/TimestampFilter/TimestampFilter'),
+);
 
 const HistoricDataDropdown = () => {
   const [isOpen, setIsOpen] = useState(false);

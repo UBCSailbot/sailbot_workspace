@@ -1,15 +1,9 @@
 {
   "compilerOptions": {
     "target": "es5",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./*"]
     },
     "allowJs": true,
     "skipLibCheck": true,
@@ -37,9 +31,8 @@
     "hooks/useSessionState.js",
     "lib/dotenv.js",
     "models/helper/parser.js",
-    "utils/DownloadData.js"
-, "next.config.js"  ],
-  "exclude": [
-    "node_modules"
-  ]
+    "utils/DownloadData.js",
+    "next.config.js"
+  ],
+  "exclude": ["node_modules"]
 }
