@@ -15,6 +15,7 @@ mock_global_path:
 navigate_main:
    ros__parameters:
       path_planner: "rrtstar"
+      use_mock_land: false
 
 # controller parameters
 wingsail_ctrl_node:

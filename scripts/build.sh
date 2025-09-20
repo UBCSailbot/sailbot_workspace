@@ -44,9 +44,6 @@ colcon build \
 
 if [[ "$PACKAGE" == "local_pathfinding" || "$PACKAGE" == "" ]]; then
     if pip3 show ompl 2>&1 | grep -q "not found"; then
-        echo "installing ompl python modules..."
-        /workspaces/sailbot_workspace/src/local_pathfinding/src/build/install_ompl.sh
-    else
-        echo "ompl is installed."
+        pip3 install ompl==1.7.0
     fi
 fi
