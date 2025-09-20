@@ -690,6 +690,46 @@ void PwrMode::checkBounds() const
 // PwrMode private END
 // PwrMode END
 
+//PowerOff START
+//PowerOff public START
+
+PowerOff::PowerOff(const CanFrame & cf) : PowerOff(static_cast<CanId>(cf.can_id))
+{
+    uint8_t raw_val;
+
+    std::memcpy(&raw_val, cf.data + BYTE_OFF_VAL, sizeof(uint8_t));
+
+    val_ = raw_val;
+
+    checkBounds();
+}
+
+PowerOff::PowerOff(uint8_t val, CanId id) : BaseFrame(id, CAN_BYTE_DLEN_), val_(val) { checkBounds(); }
+
+std::string PowerOff::debugStr() const
+{
+    std::stringstream ss;
+    ss << BaseFrame::debugStr() << "\n"
+       << "Power off value: " << val_;
+    return ss.str();
+}
+
+// PowerOff public END
+// PowerOff private START
+
+PowerOff::PowerOff(CanId id) : BaseFrame(std::span{POWER_OFF_IDS}, id, CAN_BYTE_DLEN_) {}
+
+void PowerOff::checkBounds() const
+{
+    auto err = utils::isOutOfBounds<float>(val_, POWER_OFF_VAL, POWER_OFF_VAL);
+    if (err) {
+        std::string err_msg = err.value();
+        throw std::out_of_range("Power off value is not expected value!\n" + debugStr() + "\n" + err_msg);
+    }
+}
+// PowerOff private END
+// PowerOff END
+
 // DesiredHeading START
 // DesiredHeading public START
 

@@ -80,6 +80,9 @@ public:
 
             std::vector<std::pair<CanId, std::function<void(const CanFrame &)>>> canCbs = {
               std::make_pair(
+                CanId::POWER_OFF,
+                std::function<void(const CanFrame &)>([this](const CanFrame & frame) { powerOff(frame); })),
+              std::make_pair(
                 CanId::BMS_DATA_FRAME,
                 std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishBattery(frame); })),
               std::make_pair(
@@ -208,6 +211,22 @@ private:
             canCbs.emplace_back(canId, [this, callback](const CanFrame & frame) { (this->*callback)(frame); });
         }
         return canCbs;
+    }
+
+    /**
+     * @brief Power off callback function
+     *
+     */
+    void powerOff(const CanFrame & po_frame)
+    {
+        try {
+            CAN_FP::PowerOff po(po_frame);
+            RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), "Powering off...");
+            system("poweroff.sh"); //NOLINT(concurrency-mt-unsafe)
+        } catch (std::out_of_range err) {
+            RCLCPP_WARN(this->get_logger(), "%s", err.what());
+            return;
+        }
     }
 
     /**
