@@ -319,9 +319,9 @@ RUN pip3 install \
     # for juypter notebooks
     ipykernel \
 
-COPY src ./src
-COPY scripts/build.sh ./build.sh
-COPY scripts/setup.sh ./setup.sh
+COPY src src
+COPY scripts/build.sh scripts/build.sh
+COPY scripts/setup.sh scripts/setup.sh
 
 # Build binaries for our software
 RUN ./setup.sh
