@@ -317,12 +317,15 @@ ENV DEBIAN_FRONTEND=
 # install dev python3 dependencies
 RUN pip3 install \
     # for juypter notebooks
-    ipykernel \
+    ipykernel
 
-COPY src src
+COPY src/ ./src
 COPY scripts/build.sh scripts/build.sh
 COPY scripts/setup.sh scripts/setup.sh
 
 # Build binaries for our software
-RUN ./setup.sh
-RUN ./build.sh
+# temporarily set ROS_WORKSPACE to current directory so that setup.sh can find src/
+ENV ROS_WORKSPACE=.
+RUN ./scripts/setup.sh
+RUN ./scripts/build.sh
+ENV ROS_WORKSPACE=workspaces/sailbot_workspace
