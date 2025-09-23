@@ -3,9 +3,11 @@
 import Link from 'next/link';
 import styles from './header.module.css';
 import { usePathname } from 'next/navigation';
+import { useTheme } from '@/app/hooks/useTheme';
 
 const Header = () => {
   const currentPath = usePathname();
+  const { theme, toggleTheme } = useTheme();
 
   return (
     <div className={styles.header}>
@@ -28,6 +30,9 @@ const Header = () => {
         >
           ABOUT
         </Link>
+        <button onClick={toggleTheme}>
+          {theme ? 'Light Mode' : 'Dark Mode'}
+        </button>
       </div>
     </div>
   );

@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useLayoutEffect, useRef } from 'react';
+import { useState, useLayoutEffect, useRef, useMemo } from 'react';
 import UplotReact from 'uplot-react';
 import DownloadIcon from '@/public/icons/download.svg';
 import { downloadDataFromJSON } from '@/utils/DownloadData';
 
 import styles from './lineChartStyles.module.css';
 import './customUplot.css';
+import { useTheme } from '@/app/hooks/useTheme';
 
 interface SeriesData {
   label: string;
