@@ -36,7 +36,6 @@ UNIT_TEST="ON"
 
 # Build ROS packages in src directory
 colcon build \
-        --base-paths $ROS_WORKSPACE/src \
         ${PACKAGE:+--packages-select $PACKAGE} \
         --packages-ignore virtual_iridium \
         --merge-install \
