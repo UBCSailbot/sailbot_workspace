@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+set -x
 
 # Create/overwrite the custom rosdep list file
 CUSTOM_ROSDEP_LIST="/etc/ros/rosdep/sources.list.d/20-sailbot.list"
@@ -10,11 +11,11 @@ for DIR in $ROS_WORKSPACE/src/*; do
         FILE="$DIR/$CUSTOM_ROSDEP_FILE"
         if [ -f $FILE ]; then
             echo "Adding $FILE to $CUSTOM_ROSDEP_LIST"
-            echo "yaml file://$FILE" | sudo tee --append $CUSTOM_ROSDEP_LIST > /dev/null
+            echo "yaml file://$(realpath "$FILE")" | sudo tee --append $CUSTOM_ROSDEP_LIST > /dev/null
         fi
     fi
 done
-
+cat $CUSTOM_ROSDEP_LIST
 sudo apt-get update
 if wget -q --spider --timeout=1 http://google.com; then
     # only run if connected to the internet
