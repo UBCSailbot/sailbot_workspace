@@ -170,6 +170,12 @@ Otherwise, the PID mechanism is used to control the rudder angle.
 - _Datatype_: `double`
 - _Range_: `[0.0, MAX_DOUBLE)`
 
+**`rudder.pid.cp`**
+
+- _Description_: The tuning parameter for the rudder control action. Only used if `rudder.disable_actuation` is false.
+- _Datatype_: `double`
+- _Range_: `[0.0, MAX_DOUBLE)`
+
 **`wingsail.actuation_execution_period_sec`**
 
 - _Description_: The period at which the main loop in the sail action server executes in seconds.
