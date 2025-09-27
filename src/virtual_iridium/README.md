@@ -19,14 +19,14 @@ In your Unix shell of choice:
 
  FOR HTTP_POST MODE:
  $ python2 Iridium9602.py --webhook_server_endpoint <endpoint> --http_server_port <port #> -d <serial_device> -m HTTP_POST
-   
+
    <webhook_server_endpoint> where to post webhooks to. Includes port #. Ex: "127.0.0.1:6665".
 
    <http_server_port> the port the iridium http server will be running on.
 
-   <serial_device> one of the socat pairs created. READ the bbb_rockblock_listener README for more info. 
+   <serial_device> one of the socat pairs created. READ the bbb_rockblock_listener README for more info.
 
-   (ex. python2 Iridium9602.py --webhook_server_endpoint localhost:8000 --http_server_port 8080 -d /dev/pts/5 -m HTTP_POST)  
+   (ex. python2 Iridium9602.py --webhook_server_endpoint localhost:8000 --http_server_port 8080 -d /dev/pts/5 -m HTTP_POST)
 ```
 The specified serial device, in the example above: ttyUSB0 , should connect to the external device that you are developing your Iridium communications app on. You can also use a virtual serial port (like a pair of SOCAT TTYs), to connect to another application on the same PC.
 
@@ -37,5 +37,4 @@ Other Resources
 
 Iridium 9602 - Developers Manual{TODO}Link to repofile
 
-Thanks to the original autor J.Malsbury. Maybe his repo is more up to date or has mre features.
-[![githalytics.com alpha](https://cruel-carlota.pagodabox.com/bdb824945e9b3e4a959feb550731a1e0 "githalytics.com")](http://githalytics.com/jmalsbury/virtual_iridium)
+Thanks to the original author J.Malsbury.
