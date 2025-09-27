@@ -523,8 +523,22 @@
                 "type": "shell",
                 "command": "./scripts/setup.sh",
                 "problemMatcher": []
+            },
+            // ROS Launch Tasks
+            {
+                "label": "Launch Package",
+                "detail": "Launch a specifc ROS package.",
+                "type": "shell",
+                "command": "package=${input:ROS_package}; flags=\"${input:package_flags}\"; if [ ! -z \"${flags}\" ]; then flags=\"-f ${flags}\"; fi; ./scripts/launch.sh -p \"${package}\" \"${flags}\"",
+                "problemMatcher": []
+            },
+            {
+                "label": "Launch All",
+                "detail": "Launch all ROS packages.",
+                "type": "shell",
+                "command": "./scripts/launch.sh",
+                "problemMatcher": []
             }
-
         ],
         "inputs": [
             {
@@ -541,6 +555,22 @@
                     "network_systems",
                 ]
             },
+            {
+                "id": "ROS_package",
+                "type": "pickString",
+                "description": "ROS Package to select",
+                "options": [
+                    "boat_simulator",
+                    "controller",
+                    "local_pathfinding",
+                    "network_systems",
+                ]
+            },
+            {
+                "id": "package_flags",
+                "type": "promptString",
+                "description": "Optional ROS package launch flags or arguments",
+            }
         ]
     }
 }
