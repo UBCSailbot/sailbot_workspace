@@ -1,35 +1,48 @@
-# This is a comment.
-# Each line is a file pattern followed by one or more owners.
+# This is a comment
+
+# Each line is a file pattern followed by one or more owners
 
 # These owners will be the default owners for everything in
-# the repo. Unless a later match takes precedence,
+
+# the repo. Unless a later match takes precedence
+
 # these owners will be requested for
-# review when someone opens a pull request.
+
+# review when someone opens a pull request
+
 * @SPDonaghy @FireBoyAJ24
 
 # boat_simulator
-/notebooks/boat_simulator @eomielan
-/src/boat_simulator @eomielan
+
+/notebooks/boat_simulator @alberto-escobar @stevenxu27
+/src/boat_simulator @alberto-escobar @stevenxu27
 
 # custom_interfaces
+
 /src/custom_interfaces @UBCSailbot/soft-admin
 
 # controller
-/notebooks/controller @eomielan
-/src/controller @eomielan
+
+/notebooks/controller @alberto-escobar @stevenxu27
+/src/controller @alberto-escobar @stevenxu27
 
 # diagnostics
+
 /src/diagnostics @Jng468
 
 # docs
+
 /docs/ @FireBoyAJ24
 
 # local_pathfinding
-/notebooks/local_pathfinding @FireBoyAJ24 @SPDonaghy
-/src/local_pathfinding @FireBoyAJ24 @SPDonaghy
+
+/notebooks/local_pathfinding @raghumanimehta
+/src/local_pathfinding @raghumanimehta
 
 # network_systems
-/src/network_systems @Jng468 @vaibhavambastha @lross03
+
+/src/network_systems @Jng468 @lross03
 
 # website
+
 /src/website @JordanChen123 @fyang151
