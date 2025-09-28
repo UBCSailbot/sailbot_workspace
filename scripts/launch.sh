@@ -39,6 +39,6 @@ case ${PACKAGE} in
     controller) ros2 launch controller main_launch.py $flags ;;
     local_pathfinding) ros2 launch local_pathfinding main_launch.py $flags ;;
     network_systems) ros2 launch network_systems main_launch.py $flags ;;
-    "") echo ros2 launch src/global_launch/main_launch.py ;;
+    "") ros2 launch src/global_launch/main_launch.py ;;
     *) echo "No ROS launch command found" ;;
 esac
