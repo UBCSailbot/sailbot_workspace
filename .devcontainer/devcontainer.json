@@ -59,7 +59,7 @@
 				"matepek.vscode-catch2-test-adapter",
 				"mechatroner.rainbow-csv",
 				"mongodb.mongodb-vscode",
-				"ms-iot.vscode-ros",
+				"ranch-hand-robotics.rde-ros-2",
 				"ms-python.black-formatter",
 				"ms-python.isort",
 				"ms-python.vscode-pylance",
