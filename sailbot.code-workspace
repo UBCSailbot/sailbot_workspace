@@ -290,6 +290,7 @@
         "plantuml.exportIncludeFolderHeirarchy": false,
         "plantuml.exportOutDir": "diagrams/out",
         "plantuml.exportSubFolder": false,
+        "ros.distro": "humble",
     },
     "launch": {
         // Use IntelliSense to learn about possible attributes.
