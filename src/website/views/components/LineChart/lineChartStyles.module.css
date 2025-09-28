@@ -1,0 +1,53 @@
+.lineChart {
+  margin-top: 32px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: white;
+}
+
+.downloadOptions {
+  display: flex;
+  gap: 16px;
+  margin-left: 8px;
+  margin-right: 20px;
+}
+
+.downloadButton {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.downloadButton svg {
+  width: 20px;
+  height: 20px;
+}
+
+.placeholder {
+  /* the height of the graph including the legens is about 330. there are better ways to do this dynamically. i am too lazy to. */
+  height: 330px;
+}
+
+.noData {
+  height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b6b6b;
+  font-size: 16px;
+  border: 1px solid #6b6b6b;
+  border-radius: 4px;
+}

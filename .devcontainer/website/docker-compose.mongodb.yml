@@ -1,0 +1,15 @@
+# hello from website team
+# website development only needs mongodb and not the other fancy ros services
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: sailbot-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb-data:/data/db:delegated
+    restart: unless-stopped
+
+volumes:
+  mongodb-data:
