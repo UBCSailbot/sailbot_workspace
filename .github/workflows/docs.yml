@@ -12,7 +12,7 @@ on:
         - 'docs/**'
     schedule:
       - cron: '0 0 * * 0'  # Runs on main every Sunday at midnight UTC
-
+    workflow_dispatch:
 
 jobs:
   # https://github.com/nosborn/github-action-markdown-cli
@@ -21,7 +21,7 @@ jobs:
     timeout-minutes: 1
     steps:
     - name: Checkout workspace
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Run linter
       uses: nosborn/github-action-markdown-cli@v3.5.0
@@ -36,7 +36,7 @@ jobs:
     timeout-minutes: 2
     steps:
     - name: Checkout workspace
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Run linter
       uses: gaurav-nelson/github-action-markdown-link-check@v1
@@ -48,11 +48,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Python 3.10
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.10"
 
@@ -74,7 +74,7 @@ jobs:
         run: sleep 120
 
       - name: Check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           # checkout all commits to get accurate page revision times
           # for the git-revision-date-localized plugin
