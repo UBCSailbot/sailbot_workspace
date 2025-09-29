@@ -23,5 +23,5 @@
         }
     ],
 
-    "aliveStatusCodes": [403, 200]
+    "aliveStatusCodes": [403, 200, 429]
 }

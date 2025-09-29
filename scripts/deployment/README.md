@@ -2,10 +2,10 @@
 
 Deploying our software to our autonomous sailboat's main computer.
 
-
-# Deployment on the RaspberryPi and the Remote Server (Digital Ocean Droplet)
+## Deployment on the RaspberryPi and the Remote Server (Digital Ocean Droplet)
 
 Comment out the website's docker compose file in the `devcontainer.json` to prevent the database from running.
+
 ```
 	"dockerComposeFile": [
 		"docker-compose.yml",
