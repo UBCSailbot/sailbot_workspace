@@ -8,12 +8,12 @@ services:
     network_mode: host
     privileged: true
     user: ros
-    ports:
-      # website
-      #### We do not use anymore. We pulled website development out of docker in PR #614
-      # - "3005:3005"
-      # docs
-      # - "8000:8000"
+    # ports:
+    # website
+    #### We do not use anymore. We pulled website development out of docker in PR #614
+    # - "3005:3005"
+    # docs
+    # - "8000:8000"
     volumes:
       - ..:/workspaces/sailbot_workspace:cached
       - sailbot-new-project-bashhistory:/home/ros/commandhistory:delegated
