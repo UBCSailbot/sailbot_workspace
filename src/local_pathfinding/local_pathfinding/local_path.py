@@ -4,12 +4,12 @@ from typing import List, Optional
 
 import custom_interfaces.msg as ci
 from rclpy.impl.rcutils_logger import RcutilsLogger
-from shapely.geometry import MultiPolygon
+from shapely.geometry import MultiPolygon, LineString
 
 import local_pathfinding.obstacles as ob
 from local_pathfinding.ompl_path import OMPLPath
 
-
+LOW_WIND_SPEED_THRESHOLD = 9.26 # 5 knots
 class LocalPathState:
     """Stores the current state of Sailbot's navigation data.
     The attributes' units and conventions can be found in the ROS msgs they are derived from in the
@@ -85,6 +85,27 @@ class LocalPath:
         self.path: Optional[ci.Path] = None
         self.state: Optional[LocalPathState] = None
 
+    def in_collision_zone(self):
+        """
+        Checks if the stored path is in a collision zone or not
+
+        Returns:
+            boolean: True if the path intersects a collision zone
+        """
+        path = self.path.waypoints
+        obstacles = self.state.obstacles
+        for i in range(len(path) - 1):
+            p1 = path[i]
+            p1 = (p1.latitude, p1.longitude)
+            p2 = path[i + 1]
+            p2 = (p2.latitude, p2.longitude)
+            segment = LineString([p1, p2])
+            for o in obstacles:
+                if segment.intersects(o.collision_zone):
+                    return True
+
+        return False
+
     def update_if_needed(
         self,
         gps: ci.GPS,
@@ -125,6 +146,16 @@ class LocalPath:
                 return True
             return False
 
+        # check if the current path goes through a collision zone.
+        # No need to check for new path since it's fresh and ompl doesn't generate path that
+        # go through a collision zone
+        if self.in_collision_zone():
+            self._update(ompl_path)
+            return True
+
+        if self.state.wind_speed < LOW_WIND_SPEED_THRESHOLD:
+            return False
+
         while not ompl_path.solved:
             # wait for the path to be solved
             self._logger.info("Old path exists, but the new one is not ready for comparison")
@@ -134,6 +165,8 @@ class LocalPath:
 
         old_cost = old_ompl_path.get_cost()
         new_cost = ompl_path.get_cost()
+
+        # TODO: add the logic to compare the heading changes to decide whether the new path is worth taking or not
         if old_cost >= new_cost:
             self._logger.debug(
                 f"New path is cheaper, updating local path "
