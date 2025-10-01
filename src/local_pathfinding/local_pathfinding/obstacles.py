@@ -12,8 +12,8 @@ import local_pathfinding.coord_systems as cs
 
 # Constants
 PROJ_HOURS_NO_COLLISION = 3  # hours
-BOAT_BUFFER = 0.5  # km
-COLLISION_ZONE_STRETCH_FACTOR = 1.5  # This factor changes the width of the boat collision zone
+BOAT_BUFFER = 0.25  # km
+COLLISION_ZONE_STRETCH_FACTOR = 1.25  # This factor changes the width of the boat collision zone
 
 
 class Obstacle:

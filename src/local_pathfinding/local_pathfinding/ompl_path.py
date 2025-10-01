@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 # OMPL logging: only log warnings and above
 ou.setLogLevel(ou.LOG_WARN)
 
-BOX_BUFFER_SIZE = 1.0  # km
+BOX_BUFFER_SIZE = 0.5  # km
 LAND_KEY = -1
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 LAND_PKL_FILE_PATH = os.path.join(CURRENT_DIR, "..", "land", "pkl", "land.pkl")
@@ -166,11 +166,9 @@ class OMPLPath:
         local_path_state.obstacles = obstacles_list
         return OMPLPath.obstacles  # for testing
 
-    def get_cost(self):
-        """Get the cost of the path generated.
-
-        Raises:
-            NotImplementedError: Method or function hasn't been implemented yet.
+    def get_cost(self, waypoint_index):
+        """
+        Get the cost of the path generated.
         """
         try:
             solution_path = self._simple_setup.getSolutionPath()
@@ -182,7 +180,7 @@ class OMPLPath:
 
         states = solution_path.getStates()
         objective = self._simple_setup.getOptimizationObjective()
-        for i in range(len(states)):
+        for i in range(waypoint_index, len(states)):
             state = states[i]
             state_cost_i = objective.stateCost(state).value()
             motion_cost = (
