@@ -21,10 +21,12 @@ runs:
       shell: bash
       run: docker compose -f .devcontainer/docker-compose.yml up -d
 
-    - name: Run website image
-      if: inputs.run-website == 'true'
-      shell: bash
-      run: docker compose -f .devcontainer/docker-compose.yml -f .devcontainer/website/docker-compose.website.yml up -d
+    #### We do not use anymore. We pulled website development out of docker in PR #614
+    #### TODO: run website tests in ci
+    # - name: Run website image
+    #   if: inputs.run-website == 'true'
+    #   shell: bash
+    #   run: docker compose -f .devcontainer/docker-compose.yml -f .devcontainer/website/docker-compose.website.yml up -d
 
     - name: Run script inside sailbot workspace image
       shell: bash
