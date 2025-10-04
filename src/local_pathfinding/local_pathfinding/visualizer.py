@@ -24,8 +24,10 @@ import dash
 import plotly.graph_objects as go
 from dash import dcc, html
 from dash.dependencies import Input, Output
+from shapely.geometry import Polygon
 
 import local_pathfinding.coord_systems as cs
+from local_pathfinding.ompl_objectives import get_true_wind
 
 app = dash.Dash(__name__)
 
@@ -81,10 +83,47 @@ class VisualizerState:
             *[self._split_coordinates(waypoints) for waypoints in self.all_wp_xy]
         )
 
+        # AIS ships
+        self.ais_ships = self.curr_msg.ais_ships.ships
+        ais_ship_latlons = [ship.lat_lon for ship in self.ais_ships]
+        self.ais_ship_ids = [ship.id for ship in self.ais_ships]
+        ais_ship_xy = cs.latlon_list_to_xy_list(self.reference_latlon, ais_ship_latlons)
+        self.ais_pos_x, self.ais_pos_y = self._split_coordinates(ais_ship_xy)
+        self.ais_headings = [ship.cog.heading for ship in self.ais_ships]
+
         # TODO: Include other LPathData attributes for plotting their data
 
+        # Process land obstacles
+        self.land_obstacles_xy = self._process_land_obstacles(
+            self.curr_msg.obstacles, self.reference_latlon
+        )
+
+        # Process wind vectors
+
+        # apparent wind vector
+        self.wind_vector = self._process_apparent_wind_vector(self.curr_msg.filtered_wind_sensor)
+
+        # true wind vector
+        boat_sog = self.curr_msg.gps.speed.speed
+        boat_heading = self.curr_msg.gps.heading.heading
+        true_wind = get_true_wind(
+            self.curr_msg.filtered_wind_sensor.direction,
+            self.curr_msg.filtered_wind_sensor.speed.speed,
+            boat_heading,
+            boat_sog,
+        )
+        self.true_wind_vector = self._process_true_wind_vector(true_wind)
+
+        # boat wind vector
+        # The boat's motion creates an apparent wind in the opposite direction of its heading,
+        # so we add 180°
+        boat_wind_radians = math.radians(cs.bound_to_180(boat_heading + 180))
+        boat_wind_east = boat_sog * math.sin(boat_wind_radians)
+        boat_wind_north = boat_sog * math.cos(boat_wind_radians)
+        self.boat_wind_vector = cs.XY(boat_wind_east, boat_wind_north)
+
     def _validate_message(self, msg: ci.LPathData):
-        """Checks if the sailbot observer node recieved any messages.
+        """Checks if the sailbot observer node received any messages.
         If not, it raises a ValueError.
         """
         if not msg.local_path:
@@ -99,6 +138,47 @@ class VisualizerState:
         x_coords = [pos.x for pos in positions]
         y_coords = [pos.y for pos in positions]
         return x_coords, y_coords
+
+    def _process_apparent_wind_vector(self, wind_sensor):
+        """
+        Processes wind_sensor data to extract the apparent wind vector components
+        """
+        speed = wind_sensor.speed.speed
+        direction_deg = wind_sensor.direction
+        direction_rad = math.radians(direction_deg)
+
+        dx = speed * math.sin(direction_rad)
+        dy = speed * math.cos(direction_rad)
+
+        return cs.XY(x=dx, y=dy)
+
+    def _process_true_wind_vector(self, true_wind):
+        true_wind_direction_rad, true_wind_magnitude = true_wind
+        dx = true_wind_magnitude * math.sin(true_wind_direction_rad)
+        dy = true_wind_magnitude * math.cos(true_wind_direction_rad)
+
+        return cs.XY(x=dx, y=dy)
+
+    def _process_land_obstacles(self, obstacles, reference):
+        """
+        Converts land obstacles from latitude/longitude to XY coordinates and builds Shapely
+        polygons.
+        """
+        processed_obstacles = []
+
+        for ob in obstacles:
+            if ob.obstacle_type == "Land":
+                # Convert each latlon point to XY
+                xy_points = []
+                for point in ob.points:
+                    xy = cs.latlon_to_xy(reference, point)
+                    xy_points.append((xy.x, xy.y))
+
+                if len(xy_points) >= 3:
+                    poly = Polygon(xy_points)
+                    processed_obstacles.append(poly)
+
+        return processed_obstacles
 
 
 def initial_plot() -> go.Figure:
@@ -115,6 +195,7 @@ def initial_plot() -> go.Figure:
         yaxis_title="Y Coordinate",
         xaxis=dict(range=[-100, 100]),
         yaxis=dict(range=[-100, 100]),
+
     )
 
     return fig
@@ -131,19 +212,39 @@ def dash_app(q: Queue):
     global queue  # type: ignore
     queue = q
 
+    # app.layout = html.Div(
+    #     [
+    #         html.H2("Live Path Planning"),
+    #         dcc.Graph(id="live-graph"),
+    #         dcc.Interval(id="interval-component", interval=5000, n_intervals=0),
+    #         # Commented out animated path planning
+    #         # html.H2("Animated Path Planning"),
+    #         # dcc.Graph(id="animated-live-graph"),
+    #         # dcc.Interval(id="interval-component2", interval=10000, n_intervals=0),
+    #         # TODO: Add more graphs and data visualizations as needed
+    #         # dcc.Graph(id="another-graph"),
+    #         # dcc.Interval(id="another-interval", interval=1000, n_intervals=0),
+    #     ],
+    # )
+    # app.title = "Sailbot Path Planning"
+    # app.run(debug=True, use_reloader=False)
+
     app.layout = html.Div(
-        [
+        style={"height": "100vh", "width": "100vw", "margin": 0, "padding": 0},
+        children=[
             html.H2("Live Path Planning"),
-            dcc.Graph(id="live-graph"),
-            dcc.Interval(id="interval-component", interval=5000, n_intervals=0),
-            html.H2("Animated Path Planning"),
-            dcc.Graph(id="animated-live-graph"),
-            dcc.Interval(id="interval-component2", interval=10000, n_intervals=0),
-            # TODO: Add more graphs and data visualizations as needed
-            # dcc.Graph(id="another-graph"),
-            # dcc.Interval(id="another-interval", interval=1000, n_intervals=0),
+            dcc.Graph(
+                id="live-graph",
+                style={"height": "90vh", "width": "100%"}
+            ),
+            dcc.Interval(
+                id="interval-component",
+                interval=5000,
+                n_intervals=0
+            ),
         ],
     )
+
     app.title = "Sailbot Path Planning"
     app.run(debug=True, use_reloader=False)
 
@@ -159,17 +260,18 @@ def live_plot(n_intervals) -> go.Figure:
     return fig
 
 
-@app.callback(
-    Output("animated-live-graph", "figure"), [Input("interval-component2", "n_intervals")]
-)
-def animated_plot(n_intervals) -> go.Figure:
-    """
-    Updates the animated graph to the accumulated LPathData ROS messages.
-    """
-    global queue
-    state = queue.get()  # type: ignore
-    fig = animated_update_plot(state)
-    return fig
+# Commented out animated path planning
+# @app.callback(
+#     Output("animated-live-graph", "figure"), [Input("interval-component2", "n_intervals")]
+# )
+# def animated_plot(n_intervals) -> go.Figure:
+#     """
+#     Updates the animated graph to the accumulated LPathData ROS messages.
+#     """
+#     global queue
+#     state = queue.get()  # type: ignore
+#     fig = animated_update_plot(state)
+#     return fig
 
 
 # TODO: Add more callbacks for other graphs and data visualizations as needed
@@ -236,6 +338,195 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
         ),
     )
 
+    # land obstacles
+    for poly in state.land_obstacles_xy:
+        if not poly.is_empty:
+            x = list(poly.exterior.xy[0])
+            y = list(poly.exterior.xy[1])
+            fig.add_trace(
+                go.Scatter(
+                    x=x,
+                    y=y,
+                    fill="toself",
+                    mode="lines",
+                    line=dict(color="lightgreen"),
+                    fillcolor="lightgreen",
+                    opacity=0.5,
+                    name="Land Obstacle",
+                )
+            )
+
+    # box for boat wind vector and true wind vector
+    fig.update_layout(
+        xaxis2=dict(
+            domain=[0.85, 0.98],
+            anchor="y2",
+            range=[-10, 10],
+            showgrid=False,
+            zeroline=True,
+            visible=False,
+        ),
+        yaxis2=dict(
+            domain=[0.05, 0.25],
+            anchor="x2",
+            range=[-10, 10],
+            showgrid=False,
+            zeroline=True,
+            visible=False,
+        ),
+    )
+
+    # apparent wind vector in box
+    dx = state.wind_vector.x * 1.5
+    dy = state.wind_vector.y * 1.5
+    fig.add_annotation(
+        x=4,
+        y=0,
+        ax=4 - dx,
+        ay=0 - dy,
+        xref="x2",
+        yref="y2",
+        axref="x2",
+        ayref="y2",
+        showarrow=True,
+        arrowhead=3,
+        arrowsize=0.5,
+        arrowwidth=3,
+        arrowcolor="purple",
+        standoff=2,
+        text="",
+        hovertext=(
+            f"<b>🌬️ Apparent Wind</b><br>"
+            f"speed: {math.hypot(state.wind_vector.x, state.wind_vector.y):.2f} km/h<br>"
+        ),
+        hoverlabel=dict(bgcolor="white"),
+    )
+
+    # true wind vector in box
+    dx = state.true_wind_vector.x * 1.5
+    dy = state.true_wind_vector.y * 1.5
+    fig.add_annotation(
+        x=4,
+        y=0,
+        ax=4 - dx,
+        ay=0 - dy,
+        xref="x2",
+        yref="y2",
+        axref="x2",
+        ayref="y2",
+        showarrow=True,
+        arrowhead=3,
+        arrowsize=0.5,
+        arrowwidth=3,
+        arrowcolor="blue",
+        standoff=2,
+        text="",
+        hovertext=(
+            f"<b>🌬️ True Wind</b><br>"
+            f"speed: {math.hypot(state.true_wind_vector.x, state.true_wind_vector.y):.2f} km/h<br>"
+        ),
+        hoverlabel=dict(bgcolor="white"),
+    )
+
+    # boat vector in box
+    dx = state.boat_wind_vector.x * 1.5
+    dy = state.boat_wind_vector.y * 1.5
+    fig.add_annotation(
+        x=4,
+        y=0,
+        ax=4 - dx,
+        ay=0 - dy,
+        xref="x2",
+        yref="y2",
+        axref="x2",
+        ayref="y2",
+        showarrow=True,
+        arrowhead=3,
+        arrowsize=0.5,
+        arrowwidth=3,
+        arrowcolor="red",
+        standoff=2,
+        text="",
+        hovertext=(
+            f"<b>🛶 Boat Wind</b><br>"
+            f"speed: {math.hypot(state.boat_wind_vector.x, state.boat_wind_vector.y):.2f} km/h<br>"
+        ),
+        hoverlabel=dict(bgcolor="white"),
+    )
+
+    # Fill in box
+    fig.add_shape(
+        type="rect",
+        xref="paper",
+        yref="paper",
+        x0=0.85,
+        y0=0.05,
+        x1=0.98,
+        y1=0.25,
+        fillcolor="white",
+        line=dict(width=4),
+    )
+
+    # add boat and true wind labels
+
+    fig.add_annotation(
+        x=-8,
+        y=4,
+        xref="x2",
+        yref="y2",
+        text="Boat",
+        showarrow=False,
+        align="left",
+        xanchor="left",
+        font=dict(size=12, color="red"),
+    )
+
+    fig.add_annotation(
+        x=-8,
+        y=0,
+        xref="x2",
+        yref="y2",
+        text="True",
+        showarrow=False,
+        align="left",
+        xanchor="left",
+        font=dict(size=12, color="blue"),
+    )
+
+    fig.add_annotation(
+        x=-8,
+        y=-4,
+        xref="x2",
+        yref="y2",
+        text="Apparent",
+        showarrow=False,
+        align="left",
+        xanchor="left",
+        font=dict(size=12, color="purple"),
+    )
+
+    # Box title
+    fig.add_annotation(
+        x=0,
+        y=6,
+        xref="x2",
+        yref="y2",
+        showarrow=False,
+        text="<b>Wind</b>",
+        font=dict(size=12, color="black"),
+    )
+
+    # Circle representing boat on wind box
+    fig.add_annotation(
+        x=4,
+        y=0,
+        xref="x2",
+        yref="y2",
+        showarrow=False,
+        text="●",  # Unicode solid circle
+        font=dict(size=12, color="lightgreen"),
+    )
+
     # Add all traces to the figure
     fig.add_trace(intermediate_trace)
     fig.add_trace(goal_trace)
@@ -246,6 +537,35 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
     x_max = max(state.final_local_wp_x) + 10
     y_min = min(state.final_local_wp_y) - 10
     y_max = max(state.final_local_wp_y) + 10
+
+    # Display AIS Ships
+    for x_val, y_val, heading, ais_id in zip(
+        state.ais_pos_x, state.ais_pos_y, state.ais_headings, state.ais_ship_ids
+    ):
+        fig.add_trace(
+            go.Scatter(
+                x=[x_val],
+                y=[y_val],
+                mode="markers",
+                name=f"AIS {str(ais_id)}",
+                hovertemplate=(
+                    f"<b>🚢 AIS Ship {str(ais_id)}</b><br>"
+                    f"X: {x_val:.2f}<br>"
+                    f"Y: {y_val:.2f}<br>"
+                    f"Heading: {heading:.1f}°<extra></extra>"
+                ),
+                marker=dict(
+                    symbol="arrow-wide",
+                    line_color="orange",
+                    color="orange",
+                    line_width=2,
+                    size=15,
+                    angleref="up",
+                    angle=cs.true_bearing_to_plotly_cartesian(heading),
+                ),
+                showlegend=False,
+            )
+        )
 
     # Update Layout
     fig.update_layout(
@@ -261,171 +581,171 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
     return fig
 
 
-def animated_update_plot(state: VisualizerState) -> go.Figure:
-    """
-    Generates an animated plot every interval with the aggregated LPathData ROS messages.
-    It is interactive with play/pause buttons.
+# def animated_update_plot(state: VisualizerState) -> go.Figure:
+#     """
+#     Generates an animated plot every interval with the aggregated LPathData ROS messages.
+#     It is interactive with play/pause buttons.
 
-    """
+#     """
 
-    # Initializing the plot
-    fig = initial_plot()
+#     # Initializing the plot
+#     fig = initial_plot()
 
-    num_waypoints = len(state.all_wp_xy[-1])
-    initial_boat_state = go.Scatter(
-        x=[state.sailbot_pos_x[0]],
-        y=[state.sailbot_pos_y[0]],
-        mode="markers",
-        marker_symbol="arrow",
-        marker_line_color="darkseagreen",
-        marker_color="lightgreen",
-        marker_line_width=2,
-        marker_size=15,
-        text=["Boat"],
-        name="Boat",
-        hovertemplate="<b>🚢 Sailbot Current Position</b><br>"
-        + "X: %{x:.2f} meters<br>"
-        + "Y: %{y:.2f} meters<br>"
-        + "Heading: "
-        + f"{state.sailbot_gps[0].heading.heading:.1f}°<br>"
-        + "Speed: "
-        + f"{state.sailbot_gps[0].speed.speed:.1f}<br>"
-        + "<extra></extra>",
-    )
-    initial_state = [
-        go.Scatter(
-            x=[state.all_local_wp_x[0][0]],
-            y=[state.all_local_wp_y[0][0]],
-            mode="markers",
-            marker=go.scatter.Marker(size=14),
-            text=["Start"],
-            name="Start",
-        ),
-        go.Scatter(
-            x=state.all_local_wp_x[0][1 : num_waypoints - 1],
-            y=state.all_local_wp_y[0][1 : num_waypoints - 1],
-            mode="markers",
-            marker=go.scatter.Marker(size=14),
-            text=["Intermediate"] * (num_waypoints - 2),
-            name="Intermediate",
-        ),
-        go.Scatter(
-            x=[state.all_local_wp_x[0][-1]],
-            y=[state.all_local_wp_y[0][-1]],
-            mode="markers",
-            marker=go.scatter.Marker(size=14),
-            text=["Goal"] * (num_waypoints - 2),
-            name="Goal",
-        ),
-    ]
-    new_frames = [
-        go.Frame(
-            data=[
-                go.Scatter(
-                    x=[state.all_local_wp_x[i][0]],
-                    y=[state.all_local_wp_y[i][0]],
-                    mode="markers",
-                    marker=go.scatter.Marker(size=14),
-                    text=["Start"],
-                    name="Start",
-                ),
-                go.Scatter(
-                    x=state.all_local_wp_x[i][1 : num_waypoints - 1],
-                    y=state.all_local_wp_y[i][1 : num_waypoints - 1],
-                    mode="markers",
-                    marker=go.scatter.Marker(size=14),
-                    text=["Intermediate"] * (num_waypoints - 2),
-                    name="Intermediate",
-                ),
-                go.Scatter(
-                    x=[state.all_local_wp_x[i][-1]],
-                    y=[state.all_local_wp_y[i][-1]],
-                    mode="markers",
-                    marker=go.scatter.Marker(size=14),
-                    text=["Goal"] * (num_waypoints - 2),
-                    name="Goal",
-                ),
-            ]
-            + [
-                go.Scatter(
-                    x=[state.sailbot_pos_x[i]],
-                    y=[state.sailbot_pos_y[i]],
-                    mode="markers",
-                    marker_symbol="arrow",
-                    marker_line_color="darkseagreen",
-                    marker_color="lightgreen",
-                    marker_line_width=2,
-                    marker_size=15,
-                    text=["Boat"],
-                    name="Boat",
-                    hovertemplate="<b>🚢 Sailbot Current Position</b><br>"
-                    + "X: %{x:.2f} meters<br>"
-                    + "Y: %{y:.2f} meters<br>"
-                    + "Heading: "
-                    + f"{state.sailbot_gps[i].heading.heading:.1f}°<br>"
-                    + "Speed: "
-                    + f"{state.sailbot_gps[i].speed.speed:.1f}<br>"
-                    + "<extra></extra>",
-                )
-            ],
-            name=f"Boat {i}",
-        )
-        for i in range(0, len(state.sailbot_xy))
-    ]
+#     num_waypoints = len(state.all_wp_xy[-1])
+#     initial_boat_state = go.Scatter(
+#         x=[state.sailbot_pos_x[0]],
+#         y=[state.sailbot_pos_y[0]],
+#         mode="markers",
+#         marker_symbol="arrow",
+#         marker_line_color="darkseagreen",
+#         marker_color="lightgreen",
+#         marker_line_width=2,
+#         marker_size=15,
+#         text=["Boat"],
+#         name="Boat",
+#         hovertemplate="<b>🚢 Sailbot Current Position</b><br>"
+#         + "X: %{x:.2f} meters<br>"
+#         + "Y: %{y:.2f} meters<br>"
+#         + "Heading: "
+#         + f"{state.sailbot_gps[0].heading.heading:.1f}°<br>"
+#         + "Speed: "
+#         + f"{state.sailbot_gps[0].speed.speed:.1f}<br>"
+#         + "<extra></extra>",
+#     )
+#     initial_state = [
+#         go.Scatter(
+#             x=[state.all_local_wp_x[0][0]],
+#             y=[state.all_local_wp_y[0][0]],
+#             mode="markers",
+#             marker=go.scatter.Marker(size=14),
+#             text=["Start"],
+#             name="Start",
+#         ),
+#         go.Scatter(
+#             x=state.all_local_wp_x[0][1 : num_waypoints - 1],
+#             y=state.all_local_wp_y[0][1 : num_waypoints - 1],
+#             mode="markers",
+#             marker=go.scatter.Marker(size=14),
+#             text=["Intermediate"] * (num_waypoints - 2),
+#             name="Intermediate",
+#         ),
+#         go.Scatter(
+#             x=[state.all_local_wp_x[0][-1]],
+#             y=[state.all_local_wp_y[0][-1]],
+#             mode="markers",
+#             marker=go.scatter.Marker(size=14),
+#             text=["Goal"] * (num_waypoints - 2),
+#             name="Goal",
+#         ),
+#     ]
+#     new_frames = [
+#         go.Frame(
+#             data=[
+#                 go.Scatter(
+#                     x=[state.all_local_wp_x[i][0]],
+#                     y=[state.all_local_wp_y[i][0]],
+#                     mode="markers",
+#                     marker=go.scatter.Marker(size=14),
+#                     text=["Start"],
+#                     name="Start",
+#                 ),
+#                 go.Scatter(
+#                     x=state.all_local_wp_x[i][1 : num_waypoints - 1],
+#                     y=state.all_local_wp_y[i][1 : num_waypoints - 1],
+#                     mode="markers",
+#                     marker=go.scatter.Marker(size=14),
+#                     text=["Intermediate"] * (num_waypoints - 2),
+#                     name="Intermediate",
+#                 ),
+#                 go.Scatter(
+#                     x=[state.all_local_wp_x[i][-1]],
+#                     y=[state.all_local_wp_y[i][-1]],
+#                     mode="markers",
+#                     marker=go.scatter.Marker(size=14),
+#                     text=["Goal"] * (num_waypoints - 2),
+#                     name="Goal",
+#                 ),
+#             ]
+#             + [
+#                 go.Scatter(
+#                     x=[state.sailbot_pos_x[i]],
+#                     y=[state.sailbot_pos_y[i]],
+#                     mode="markers",
+#                     marker_symbol="arrow",
+#                     marker_line_color="darkseagreen",
+#                     marker_color="lightgreen",
+#                     marker_line_width=2,
+#                     marker_size=15,
+#                     text=["Boat"],
+#                     name="Boat",
+#                     hovertemplate="<b>🚢 Sailbot Current Position</b><br>"
+#                     + "X: %{x:.2f} meters<br>"
+#                     + "Y: %{y:.2f} meters<br>"
+#                     + "Heading: "
+#                     + f"{state.sailbot_gps[i].heading.heading:.1f}°<br>"
+#                     + "Speed: "
+#                     + f"{state.sailbot_gps[i].speed.speed:.1f}<br>"
+#                     + "<extra></extra>",
+#                 )
+#             ],
+#             name=f"Boat {i}",
+#         )
+#         for i in range(0, len(state.sailbot_xy))
+#     ]
 
-    # Set axis limits dynamically
-    x_min = min(state.final_local_wp_x) - 10
-    x_max = max(state.final_local_wp_x) + 10
-    y_min = min(state.final_local_wp_y) - 10
-    y_max = max(state.final_local_wp_y) + 10
+#     # Set axis limits dynamically
+#     x_min = min(state.final_local_wp_x) - 10
+#     x_max = max(state.final_local_wp_x) + 10
+#     y_min = min(state.final_local_wp_y) - 10
+#     y_max = max(state.final_local_wp_y) + 10
 
-    # Set up the animated plot
-    fig = go.Figure(
-        data=initial_state + [initial_boat_state],
-        layout=go.Layout(
-            xaxis_title="X Coordinate",
-            yaxis_title="Y Coordinate",
-            xaxis=dict(range=[x_min, x_max]),
-            yaxis=dict(range=[y_min, y_max]),
-            legend=dict(x=0, y=1),  # Position the legend at the top left
-            showlegend=True,
-            updatemenus=[
-                dict(
-                    type="buttons",
-                    showactive=False,
-                    buttons=[
-                        dict(
-                            label="Play",
-                            method="animate",
-                            args=[
-                                None,
-                                {
-                                    "frame": {"duration": 1000, "redraw": True},
-                                    "mode": "immediate",
-                                    "fromcurrent": True,
-                                },
-                            ],
-                        ),
-                        dict(
-                            label="Pause",
-                            method="animate",
-                            args=[
-                                [None],
-                                {
-                                    "frame": {"duration": 0, "redraw": True},
-                                    "mode": "immediate",
-                                    "fromcurrent": False,
-                                },
-                            ],
-                        ),
-                    ],
-                )
-            ],
-        ),
-        frames=new_frames,
-    )
+#     # Set up the animated plot
+#     fig = go.Figure(
+#         data=initial_state + [initial_boat_state],
+#         layout=go.Layout(
+#             xaxis_title="X Coordinate",
+#             yaxis_title="Y Coordinate",
+#             xaxis=dict(range=[x_min, x_max]),
+#             yaxis=dict(range=[y_min, y_max]),
+#             legend=dict(x=0, y=1),  # Position the legend at the top left
+#             showlegend=True,
+#             updatemenus=[
+#                 dict(
+#                     type="buttons",
+#                     showactive=False,
+#                     buttons=[
+#                         dict(
+#                             label="Play",
+#                             method="animate",
+#                             args=[
+#                                 None,
+#                                 {
+#                                     "frame": {"duration": 1000, "redraw": True},
+#                                     "mode": "immediate",
+#                                     "fromcurrent": True,
+#                                 },
+#                             ],
+#                         ),
+#                         dict(
+#                             label="Pause",
+#                             method="animate",
+#                             args=[
+#                                 [None],
+#                                 {
+#                                     "frame": {"duration": 0, "redraw": True},
+#                                     "mode": "immediate",
+#                                     "fromcurrent": False,
+#                                 },
+#                             ],
+#                         ),
+#                     ],
+#                 )
+#             ],
+#         ),
+#         frames=new_frames,
+#     )
 
-    return fig
+#     return fig
 
 
 # TODO: Add more plotting functions as needed

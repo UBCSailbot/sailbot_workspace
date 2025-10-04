@@ -21,7 +21,7 @@ from shapely.geometry import MultiPolygon, Point, Polygon, box
 
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.obstacles as ob
-from local_pathfinding.objectives import get_sailing_objective
+from local_pathfinding.ompl_objectives import get_sailing_objective
 
 if TYPE_CHECKING:
     from local_pathfinding.local_path import LocalPathState
@@ -225,8 +225,7 @@ class OMPLPath:
         start_x = start_position_in_xy.x
         start_y = start_position_in_xy.y
 
-        goal_position = self.state.global_path.waypoints[-1]
-        goal_position_in_xy = cs.latlon_to_xy(self.state.reference_latlon, goal_position)
+        goal_position_in_xy = cs.XY(0, 0)  # Global waypoint is used as the reference point
         goal_polygon = self.create_buffer_around_position(goal_position_in_xy)
         goal_x, goal_y = goal_position_in_xy
 

@@ -30,6 +30,7 @@ public:
     CanTransceiverIntf() : NetNode(ros_nodes::CAN_TRANSCEIVER)
     {
         this->declare_parameter("enabled", true);
+        this->declare_parameter("manual_mode", false);
 
         if (!this->get_parameter("enabled").as_bool()) {
             RCLCPP_INFO(this->get_logger(), "CAN Transceiver is DISABLED");
@@ -61,7 +62,7 @@ public:
                 RCLCPP_ERROR(this->get_logger(), "%s", msg.c_str());
                 throw std::runtime_error(msg);
             }
-
+            param_cb_handle_  = this->add_on_set_parameters_callback(CanTransceiverIntf::onParamChange);
             ais_pub_          = this->create_publisher<msg::AISShips>(ros_topics::AIS_SHIPS, QUEUE_SIZE);
             batteries_pub_    = this->create_publisher<msg::HelperBattery>(ros_topics::BATTERIES, QUEUE_SIZE);
             gps_pub_          = this->create_publisher<msg::GPS>(ros_topics::GPS, QUEUE_SIZE);
@@ -88,6 +89,9 @@ public:
                 CanId::RUDDER_DATA_FRAME,
                 std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishRudder(frame); })),
               std::make_pair(CanId::SAIL_WIND, std::function<void(const CanFrame &)>([this](const CanFrame & frame) {
+                                 publishWindSensor(frame);
+                             })),
+              std::make_pair(CanId::DATA_WIND, std::function<void(const CanFrame &)>([this](const CanFrame & frame) {
                                  publishWindSensor(frame);
                              })),
               std::make_pair(
@@ -177,15 +181,21 @@ private:
     // Timer for anything that just needs a repeatedly written value in simulation
     rclcpp::TimerBase::SharedPtr timer_;
 
+    // ROS param callback for setting manual mode
+    rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr param_cb_handle_;
+
     // Holder for AISShips before publishing
     std::vector<msg::HelperAISShip> ais_ships_holder_;
-    int                             ais_ships_num_;
+    int                             total_ais_ships = 0;
 
     // Mock CAN file descriptor for simulation
     int sim_intf_fd_;
 
     // Saved power mode state
     uint8_t set_pwr_mode = CAN_FP::PwrMode::POWER_MODE_NORMAL;
+
+    // manual mode status
+    inline static bool manual_mode_ = false;
 
     std::vector<std::pair<CAN_FP::CanId, std::function<void(const CanFrame &)>>> getCbsForRange(
       CAN_FP::CanId start, CAN_FP::CanId end, void (CanTransceiverIntf::*callback)(const CanFrame &))
@@ -201,6 +211,22 @@ private:
     }
 
     /**
+     * @brief Manual mode callback function
+     *
+     */
+    static rcl_interfaces::msg::SetParametersResult onParamChange(const std::vector<rclcpp::Parameter> & params)
+    {
+        for (const auto & param : params) {
+            if (param.get_name() == "manual_mode") {
+                manual_mode_ = param.as_bool();
+            }
+        }
+        rcl_interfaces::msg::SetParametersResult result;
+        result.successful = true;
+        return result;
+    }
+
+    /**
      * @brief Publish AIS ships
      *
      */
@@ -209,24 +235,22 @@ private:
         try {
             CAN_FP::AISShips ais_ship(ais_frame);
 
-            if (ais_ships_num_ == 0) {
-                ais_ships_num_ = ais_ship.getNumShips();
-                ais_ships_holder_.reserve(ais_ships_num_);
+            if (total_ais_ships == 0) {
+                total_ais_ships = ais_ship.getNumShips();
+                ais_ships_holder_.resize(total_ais_ships);  // temporary holder vector for AIS ships
             }
 
             ais_ships_holder_[ais_ship.getShipIndex()] = ais_ship.toRosMsg();  //maybe change to pushback later
 
-            if (ais_ships_holder_.size() == static_cast<size_t>(ais_ships_num_)) {
+            if (ais_ships_holder_.size() == static_cast<size_t>(total_ais_ships)) {
                 ais_ships_.ships = ais_ships_holder_;
                 ais_pub_->publish(ais_ships_);
-                ais_ships_holder_.clear();
-                ais_ships_num_ = 0;  // reset the number of ships
+                ais_ships_holder_.clear();  // reset holder vector
+                total_ais_ships = 0;        // reset the number of ships
             }
             RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), ais_ship.toString().c_str());
         } catch (std::out_of_range err) {
-            RCLCPP_WARN(
-              this->get_logger(), "%s Attempted to construct AISShips but was out of range",
-              getCurrentTimeString().c_str());
+            RCLCPP_WARN(this->get_logger(), "%s", err.what());
             return;
         }
     }
@@ -252,7 +276,9 @@ private:
                 set_pwr_mode = CAN_FP::PwrMode::POWER_MODE_NORMAL;
             }
             CAN_FP::PwrMode power_mode(set_pwr_mode, CAN_FP::CanId::PWR_MODE);
-            can_trns_->send(power_mode.toLinuxCan());
+            if (!manual_mode_) {
+                can_trns_->send(power_mode.toLinuxCan());
+            }
 
             // Get the current time as a time_point
             auto now = std::chrono::system_clock::now();
@@ -265,9 +291,7 @@ private:
 
             RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), bat.toString().c_str());
         } catch (std::out_of_range err) {
-            RCLCPP_WARN(
-              this->get_logger(), "%s Attempted to construct Battery but was out of range",
-              getCurrentTimeString().c_str());
+            RCLCPP_WARN(this->get_logger(), "%s", err.what());
             return;
         }
     }
@@ -287,8 +311,7 @@ private:
             gps_pub_->publish(gps_);
             RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), gps.toString().c_str());
         } catch (std::out_of_range err) {
-            RCLCPP_WARN(
-              this->get_logger(), "%s Attempted to construct GPS but was out of range", getCurrentTimeString().c_str());
+            RCLCPP_WARN(this->get_logger(), "%s", err.what());
             return;
         }
     }
@@ -315,9 +338,7 @@ private:
             publishFilteredWindSensor();
             RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), wind_sensor.toString().c_str());
         } catch (std::out_of_range err) {
-            RCLCPP_WARN(
-              this->get_logger(), "%s Attempted to construct Wind Sensor but was out of range",
-              getCurrentTimeString().c_str());
+            RCLCPP_WARN(this->get_logger(), "%s", err.what());
             return;
         }
     }
@@ -362,9 +383,7 @@ private:
             rudder_pub_->publish(rudder_);
             RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), rudder.toString().c_str());
         } catch (std::out_of_range err) {
-            RCLCPP_WARN(
-              this->get_logger(), "%s Attempted to construct Rudder but was out of range",
-              getCurrentTimeString().c_str());
+            RCLCPP_WARN(this->get_logger(), "%s", err.what());
             return;
         }
     }
@@ -396,9 +415,7 @@ private:
             temp_sensors_pub_->publish(temp_sensors_);
             RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), temp_sensor.toString().c_str());
         } catch (std::out_of_range err) {
-            RCLCPP_WARN(
-              this->get_logger(), "%s Attempted to construct Temp Sensor but was out of range",
-              getCurrentTimeString().c_str());
+            RCLCPP_WARN(this->get_logger(), "%s", err.what());
             return;
         }
     }
@@ -424,9 +441,7 @@ private:
             ph_sensors_pub_->publish(ph_sensors_);
             RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), ph_sensor.toString().c_str());
         } catch (std::out_of_range err) {
-            RCLCPP_WARN(
-              this->get_logger(), "%s Attempted to construct Ph Sensor but was out of range",
-              getCurrentTimeString().c_str());
+            RCLCPP_WARN(this->get_logger(), "%s", err.what());
             return;
         }
     }
@@ -453,9 +468,7 @@ private:
             RCLCPP_INFO(
               this->get_logger(), "%s %s", getCurrentTimeString().c_str(), salinity_sensor.toString().c_str());
         } catch (std::out_of_range err) {
-            RCLCPP_WARN(
-              this->get_logger(), "%s Attempted to construct Salinity Sensor but was out of range",
-              getCurrentTimeString().c_str());
+            RCLCPP_WARN(this->get_logger(), "%s", err.what());
             return;
         }
     }
@@ -482,9 +495,7 @@ private:
             RCLCPP_INFO(
               this->get_logger(), "%s %s", getCurrentTimeString().c_str(), pressure_sensor.toString().c_str());
         } catch (std::out_of_range err) {
-            RCLCPP_WARN(
-              this->get_logger(), "%s Attempted to construct Pressure Sensor but was out of range",
-              getCurrentTimeString().c_str());
+            RCLCPP_WARN(this->get_logger(), "%s", err.what());
             return;
         }
     }
@@ -531,16 +542,17 @@ private:
      */
     void subDesiredHeadingCb(msg::DesiredHeading desired_heading)
     {
+        if (manual_mode_) {
+            return;
+        }
         desired_heading_ = desired_heading;
         try {
-            CAN_FP::DesiredHeading desired_heading_frame(desired_heading, CanId::MAIN_TR_TAB);
+            auto desired_heading_frame = CAN_FP::DesiredHeading(desired_heading_, CanId::MAIN_HEADING);
             can_trns_->send(desired_heading_frame.toLinuxCan());
             RCLCPP_INFO(
               this->get_logger(), "%s %s", getCurrentTimeString().c_str(), desired_heading_frame.toString().c_str());
         } catch (const std::out_of_range & e) {
-            RCLCPP_WARN(
-              this->get_logger(), "%s Attempted to construct DesiredHeading but was out of range",
-              getCurrentTimeString().c_str());
+            RCLCPP_WARN(this->get_logger(), "%s", e.what());
             return;
         }
     }
@@ -552,6 +564,9 @@ private:
      */
     void subSailCmdCb(const msg::SailCmd & sail_cmd_input)
     {
+        if (manual_mode_) {
+            return;
+        }
         sail_cmd_                = sail_cmd_input;
         auto main_trim_tab_frame = CAN_FP::MainTrimTab(sail_cmd_, CanId::MAIN_TR_TAB);
         can_trns_->send(main_trim_tab_frame.toLinuxCan());
@@ -578,6 +593,9 @@ private:
      */
     void subSimSailCmdCb(const msg::SailCmd & sail_cmd_input)
     {
+        if (manual_mode_) {
+            return;
+        }
         sail_cmd_ = sail_cmd_input;
         boat_sim_input_msg_.set__sail_cmd(sail_cmd_);
         try {
@@ -586,9 +604,7 @@ private:
             RCLCPP_INFO(
               this->get_logger(), "%s %s", getCurrentTimeString().c_str(), main_trim_tab_frame.toString().c_str());
         } catch (std::out_of_range err) {
-            RCLCPP_WARN(
-              this->get_logger(), "%s Attempted to construct MainTrimTab but was out of range",
-              getCurrentTimeString().c_str());
+            RCLCPP_WARN(this->get_logger(), "%s", err.what());
             return;
         }
     }
