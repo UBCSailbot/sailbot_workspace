@@ -29,16 +29,6 @@ using boost::system::error_code;
 using Polaris::Sensors;
 namespace bio = boost::asio;
 
-void LocalTransceiver::updateSensor(msg::Batteries battery)
-{
-    sensors_.clear_batteries();
-    for (const msg::HelperBattery & battery_info : battery.batteries) {
-        Sensors::Battery * new_battery = sensors_.add_batteries();
-        new_battery->set_current(battery_info.current);
-        new_battery->set_voltage(battery_info.voltage);
-    }
-}
-
 void LocalTransceiver::updateSensor(msg::GenericSensors msg)
 {
     sensors_.clear_data_sensors();
