@@ -29,24 +29,6 @@ using boost::system::error_code;
 using Polaris::Sensors;
 namespace bio = boost::asio;
 
-void LocalTransceiver::updateSensor(msg::GPS gps)
-{
-    sensors_.mutable_gps()->set_heading(gps.heading.heading);
-    sensors_.mutable_gps()->set_latitude(gps.lat_lon.latitude);
-    sensors_.mutable_gps()->set_longitude(gps.lat_lon.longitude);
-    sensors_.mutable_gps()->set_speed(gps.speed.speed);
-}
-
-void LocalTransceiver::updateSensor(msg::WindSensors wind)
-{
-    sensors_.clear_wind_sensors();
-    for (const msg::WindSensor & wind_data : wind.wind_sensors) {
-        Sensors::Wind * new_wind = sensors_.add_wind_sensors();
-        new_wind->set_direction(wind_data.direction);
-        new_wind->set_speed(wind_data.speed.speed);
-    }
-}
-
 void LocalTransceiver::updateSensor(msg::Batteries battery)
 {
     sensors_.clear_batteries();
