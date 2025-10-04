@@ -80,14 +80,17 @@ class TestBoatState:
         relative_wind_vel = glo_wind_vel - input_kinematics.linear_velocity
         relative_water_vel = glo_water_vel - input_kinematics.linear_velocity
 
-        total_force, total_torque = test_boat_state._BoatState__compute_net_force_and_torque(
+        total_force, total_torque = getattr(
+            test_boat_state,
+            "_BoatState__compute_net_force_and_torque"
+            )(
             relative_wind_vel, relative_water_vel, rudder_angle_deg, trim_tab_angle
         )
 
         actual_step = test_boat_state.step(
             glo_wind_vel, glo_water_vel, rudder_angle_deg, trim_tab_angle
         )
-        expected_step = test_boat_state._BoatState__kinematics_computation.step(
+        expected_step = getattr(test_boat_state, "_BoatState__kinematics_computation").step(
             total_force, total_torque
         )
 
