@@ -505,6 +505,21 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
         font=dict(size=12, color="lightgreen"),
     )
 
+    # Draw Boat State space
+    margin = 1
+    ss_max_x = max(state.sailbot_pos_x[-1], state.final_local_wp_x[-1]) + margin
+    ss_min_x = min(state.sailbot_pos_x[-1], state.final_local_wp_x[-1]) - margin
+    ss_max_y = max(state.sailbot_pos_y[-1], state.final_local_wp_y[-1]) + margin
+    ss_min_y = min(state.sailbot_pos_y[-1], state.final_local_wp_y[-1]) - margin
+
+    fig.add_shape(
+        type="rect",
+        x0=ss_min_x, y0=ss_min_y,
+        x1=ss_max_x, y1=ss_max_y,
+        fillcolor="rgba(255,0,0,0.1)",
+        layer="below"
+    )
+
     # Add all traces to the figure
     fig.add_trace(intermediate_trace)
     fig.add_trace(goal_trace)
