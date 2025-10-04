@@ -9,3 +9,13 @@ __pycache__/
 
 # Python Bindings
 src/local_pathfinding/src/build/pyompl.cpython-310-x86_64-linux-gnu.so
+
+# Generated directories from ROS
+build/*
+install/*
+log/*
+
+
+land/shp/*
+
+*.log

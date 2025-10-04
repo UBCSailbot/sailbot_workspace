@@ -34,16 +34,11 @@ The [ament linters](https://github.com/ament/ament_lint/tree/humble) are configu
 containing all our configuration and dependencies.
 Our Dev Container configuration can be found in [`.devcontainer/`](https://github.com/UBCSailbot/sailbot_workspace/blob/main/.devcontainer).
 
-### Multi-Root Workspace
+### VS Code Workspace
 
-[Workspaces](https://code.visualstudio.com/docs/editor/workspaces) are VS Code instances that contain one or more folders.
+[Workspaces](https://code.visualstudio.com/docs) are VS Code instances that contain one or more folders.
 Our workspace configuration file can be found at
 [`sailbot.code-workspace`](https://github.com/UBCSailbot/sailbot_workspace/blob/main/sailbot.code-workspace).
-
-Our software spans many repositories: [software team repositories](https://github.com/orgs/UBCSailbot/teams/software-team/repositories).
-[Multi-root workspaces](https://code.visualstudio.com/docs/editor/multi-root-workspaces)
-make it easy to work with multiple repositories at the same time.
-Our roots are defined in the `folders` section of our workspace file.
 
 ### Debugging
 
@@ -73,7 +68,7 @@ This repository supports user-specific configuration files. To set this up, see
 
 ### Run Raye's Software
 
-[Raye](https://www.ubcsailbot.org/discover-raye) was our previous project.
+[Raye](https://www.ubcsailbot.org/rayes-story) was our previous project.
 Her software can be run in the [`raye` branch](https://github.com/UBCSailbot/sailbot_workspace/tree/raye)
 following the instructions in [How to run Raye's software](https://ubcsailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/usage/how_to/#run-rayes-software).
 The initial differences between the `main` and `raye` branches are summarized in

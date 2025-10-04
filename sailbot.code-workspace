@@ -172,14 +172,18 @@
         "python.analysis.diagnosticMode": "workspace",
         "python.analysis.extraPaths": [
             "/workspaces/sailbot_workspace/install/lib/python3.10/site-packages",
-            "/opt/ros/humble/lib/python3.10/site-packages"
+            "/workspaces/sailbot_workspace/install/local/lib/python3.10/dist-packages",
+            "/opt/ros/humble/lib/python3.10/site-packages",
+            "/opt/ros/humble/local/lib/python3.10/dist-packages"
         ],
         "python.analysis.include": ["${workspaceFolder:sailbot_workspace}/src"],
         "python.analysis.exclude": ["${workspaceFolder:sailbot_workspace}/src/virtual_iridium"],
         // Autocomplete from ros python packages
         "python.autoComplete.extraPaths": [
             "/workspaces/sailbot_workspace/install/lib/python3.10/site-packages",
-            "/opt/ros/humble/lib/python3.10/site-packages"
+            "/workspaces/sailbot_workspace/install/local/lib/python3.10/dist-packages",
+            "/opt/ros/humble/lib/python3.10/site-packages",
+            "/opt/ros/humble/local/lib/python3.10/dist-packages"
         ],
         "python.defaultInterpreterPath": "/usr/bin/python3",
         // Environment file lets vscode find python files within workspace
@@ -286,6 +290,7 @@
         "plantuml.exportIncludeFolderHeirarchy": false,
         "plantuml.exportOutDir": "diagrams/out",
         "plantuml.exportSubFolder": false,
+        "ros.distro": "humble",
     },
     "launch": {
         // Use IntelliSense to learn about possible attributes.
@@ -403,10 +408,20 @@
             },
             // Test tasks
             {
-                "label": "test",
+                "label": "Test All",
                 "detail": "Run all unit tests and show results.",
                 "type": "shell",
                 "command": "${workspaceFolder:sailbot_workspace}/scripts/test.sh",
+                "group": {
+                    "kind": "test",
+                    "isDefault": true
+                }
+            },
+            {
+                "label": "Test Package",
+                "detail": "Run unit tests for a specific package and show results.",
+                "type": "shell",
+                "command": "${workspaceFolder:sailbot_workspace}/scripts/test.sh -p ${input:package}",
                 "group": {
                     "kind": "test",
                     "isDefault": true
@@ -509,8 +524,22 @@
                 "type": "shell",
                 "command": "./scripts/setup.sh",
                 "problemMatcher": []
+            },
+            // ROS Launch Tasks
+            {
+                "label": "Launch Package",
+                "detail": "Launch a specifc ROS package.",
+                "type": "shell",
+                "command": "package=${input:ROS_package}; flags=\"${input:package_flags}\"; if [ ! -z \"${flags}\" ]; then flags=\"-f ${flags}\"; fi; ./scripts/launch.sh -p \"${package}\" \"${flags}\"",
+                "problemMatcher": []
+            },
+            {
+                "label": "Launch All",
+                "detail": "Launch all ROS packages.",
+                "type": "shell",
+                "command": "./scripts/launch.sh",
+                "problemMatcher": []
             }
-
         ],
         "inputs": [
             {
@@ -527,6 +556,22 @@
                     "network_systems",
                 ]
             },
+            {
+                "id": "ROS_package",
+                "type": "pickString",
+                "description": "ROS Package to select",
+                "options": [
+                    "boat_simulator",
+                    "controller",
+                    "local_pathfinding",
+                    "network_systems",
+                ]
+            },
+            {
+                "id": "package_flags",
+                "type": "promptString",
+                "description": "Optional ROS package launch flags or arguments",
+            }
         ]
     }
 }
