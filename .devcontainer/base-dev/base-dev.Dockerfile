@@ -326,6 +326,7 @@ COPY scripts/setup.sh scripts/setup.sh
 # Build binaries for our software
 # temporarily set ROS_WORKSPACE to current directory so that setup.sh can find src/
 ENV ROS_WORKSPACE=.
-RUN ./scripts/setup.sh
-RUN ./scripts/build.sh
+RUN source /opt/ros/${ROS_DISTRO}/setup.bash \
+    && ./scripts/setup.sh \
+    && ./scripts/build.sh
 ENV ROS_WORKSPACE=workspaces/sailbot_workspace
