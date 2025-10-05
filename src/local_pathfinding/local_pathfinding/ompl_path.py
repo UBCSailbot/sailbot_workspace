@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 # OMPL logging: only log warnings and above
 ou.setLogLevel(ou.LOG_WARN)
 
-BOX_BUFFER_SIZE = 0.5  # km
+BOX_BUFFER_SIZE = 1.0  # km
 LAND_KEY = -1
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 LAND_PKL_FILE_PATH = os.path.join(CURRENT_DIR, "..", "land", "pkl", "land.pkl")

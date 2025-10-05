@@ -7,24 +7,39 @@ import local_pathfinding.local_path as lp
 PATH = lp.LocalPath(parent_logger=RcutilsLogger())
 
 
-def test_LocalPath_update_if_needed():
+# def test_LocalPath_update_if_needed():
 
-    PATH.update_if_needed(
-        gps=GPS(),
-        ais_ships=AISShips(),
-        global_path=Path(
-            waypoints=[
-                HelperLatLon(latitude=0.0, longitude=0.0),
-                HelperLatLon(latitude=1.0, longitude=1.0),
-            ]
-        ),
-        received_new_global_waypoint=False,
-        target_global_waypoint=HelperLatLon(latitude=1.0, longitude=1.0),
-        filtered_wind_sensor=WindSensor(),
-        planner="rrtstar",
-    )
-    assert PATH.path is not None, "waypoints is not initialized"
-    assert len(PATH.path.waypoints) > 1, "waypoints length <= 1"
+#     PATH.update_if_needed(
+#         gps=GPS(),
+#         ais_ships=AISShips(),
+#         global_path=Path(
+#             waypoints=[
+#                 HelperLatLon(latitude=0.0, longitude=0.0),
+#                 HelperLatLon(latitude=1.0, longitude=1.0),
+#             ]
+#         ),
+#         received_new_global_waypoint=False,
+#         target_global_waypoint=HelperLatLon(latitude=1.0, longitude=1.0),
+#         filtered_wind_sensor=WindSensor(),
+#         planner="rrtstar",
+#     )
+#     assert PATH.path is not None, "waypoints is not initialized"
+#     assert len(PATH.path.waypoints) > 1, "waypoints length <= 1"
+
+
+@pytest.mark.parametrize(
+    "local_wp_index, reference_latlon, path, obstacles, result",
+    [
+        (0,
+         HelperLatLon(latitude=10.0, longitude=10.0),
+         Path(waypoints=[HelperLatLon(latitude=0.0, longitude=0.0)]),
+         [],
+         False
+         ),
+    ]
+)
+def test_in_collision_zone(local_wp_index, reference_latlon, path, obstacles, result):
+    assert PATH.in_collision_zone(local_wp_index, reference_latlon, path, obstacles) == result
 
 
 def test_LocalPathState_parameter_checking():

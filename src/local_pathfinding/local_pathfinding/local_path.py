@@ -114,16 +114,15 @@ class LocalPath:
 
         return cs.bound_to_180(desired_heading), waypoint_index
 
-    def in_collision_zone(self, local_wp_index):
+    @staticmethod
+    def in_collision_zone(local_wp_index, reference_latlon, path, obstacles):
         """
         Checks if the stored path is in a collision zone or not
 
         Returns:
             boolean: True if the path intersects a collision zone
         """
-        reference_latlon = self.state.reference_latlon
-        path = list(map(lambda x: (cs.latlon_to_xy(reference_latlon, x)), self.path.waypoints))
-        obstacles = self.state.obstacles
+        path = list(map(lambda x: (cs.latlon_to_xy(reference_latlon, x)), path.waypoints))
         for i in range(local_wp_index, len(path) - 1):
             p1, p2 = path[i], path[i + 1]
             p1, p2 = (p1.x, p1.y), (p2.x, p2.y)
@@ -191,7 +190,7 @@ class LocalPath:
         # check if the current path goes through a collision zone.
         # No need to check for new path since it's fresh and ompl doesn't generate path that
         # go through a collision zone
-        if self.in_collision_zone(local_waypoint_index):
+        if self.in_collision_zone(local_waypoint_index, self.state.reference_latlon, self.path, self.state.obstacles):
             print("old path is in collision zone")
             self._update(ompl_path)
             return heading_new_path, wp_index
