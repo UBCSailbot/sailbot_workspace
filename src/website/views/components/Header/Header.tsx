@@ -3,19 +3,40 @@
 import Link from 'next/link';
 import styles from './header.module.css';
 import { usePathname } from 'next/navigation';
-import { useTheme } from '@/app/hooks/useTheme';
+import { useDispatch, useSelector } from 'react-redux';
+import { toggleTheme, selectTheme, Theme } from '@/lib/redux/theme/themeSlice';
+import LightModeIcon from '@/public/icons/light_mode.svg';
+import DarkModeIcon from '@/public/icons/dark_mode.svg';
+import LogoPlainBlack from '@/public/LogoPlainBlack.svg';
+import LogoPlainWhite from '@/public/LogoPlainWhite.svg';
+import { useEffect, useState } from 'react';
 
 const Header = () => {
   const currentPath = usePathname();
-  const { theme, toggleTheme } = useTheme();
+  const dispatch = useDispatch();
+  const theme = useSelector(selectTheme);
+
+  const [hasMounted, setHasMounted] = useState(false);
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
 
   return (
     <div className={styles.header}>
       <div className={styles.title}>
-        <img src='LogoPlainWhite.svg' alt='Logo' className={styles.logo} />
+        {hasMounted ? (
+          theme === Theme.Light ? (
+            <LogoPlainBlack width={50} height={50} />
+          ) : (
+            <LogoPlainWhite width={50} height={50} />
+          )
+        ) : (
+          <div style={{ width: 50, height: 50 }} />
+        )}
         <h1>SAILBOTPOLARIS.COM</h1>
       </div>
-      <div className={styles.links}>
+      <div className={styles.right}>
         <Link
           href='/'
           style={currentPath === '/' ? { textDecoration: 'underline' } : {}}
@@ -30,9 +51,16 @@ const Header = () => {
         >
           ABOUT
         </Link>
-        <button onClick={toggleTheme}>
-          {theme ? 'Light Mode' : 'Dark Mode'}
-        </button>
+        <div
+          onClick={() => dispatch(toggleTheme())}
+          className={styles.themeToggle}
+        >
+          {theme === Theme.Light ? (
+            <DarkModeIcon width={30} height={30} />
+          ) : (
+            <LightModeIcon width={30} height={30} />
+          )}
+        </div>
       </div>
     </div>
   );

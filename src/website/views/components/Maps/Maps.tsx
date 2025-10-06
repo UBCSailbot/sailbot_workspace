@@ -16,6 +16,8 @@ import L from 'leaflet';
 import 'leaflet-geometryutil';
 import { GPS } from '@/stores/GPS/GPSTypes';
 import { AISShip } from '@/stores/AISShips/AISShipsTypes';
+import { useSelector } from 'react-redux';
+import { selectTheme, Theme } from '@/lib/redux/theme/themeSlice';
 import styles from './maps.module.css';
 
 export interface IMapsProps {
@@ -74,6 +76,7 @@ const Maps: React.FC<IMapsProps> = ({
   showAIShips,
 }) => {
   const mapRef = useRef<L.Map | null>(null);
+  const theme = useSelector(selectTheme);
 
   /**
    * Sets the map reference.
@@ -195,16 +198,17 @@ const Maps: React.FC<IMapsProps> = ({
       className={styles.maps}
       ref={setMapRef}
     >
-      {/* this for future light mode */}
-      {/* <TileLayer
-        attribution='&copy; OpenStreetMap contributors &copy; CARTO'
-        url='https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
-      /> */}
-      <TileLayer
-        attribution='&copy; OpenStreetMap contributors &copy; CARTO'
-        url='https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-      />
-
+      {theme === Theme.Light ? (
+        <TileLayer
+          attribution='&copy; OpenStreetMap contributors &copy; CARTO'
+          url='https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
+        />
+      ) : (
+        <TileLayer
+          attribution='&copy; OpenStreetMap contributors &copy; CARTO'
+          url='https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+        />
+      )}
       {showAIShips && <LayerGroup>{renderShips()}</LayerGroup>}
       {showLocalPath && (
         <Polyline pathOptions={{ color: 'red' }} positions={localPath} />
