@@ -57,13 +57,39 @@ void LocalTransceiver::updateSensor(msg::Batteries battery)
     }
 }
 
-void LocalTransceiver::updateSensor(msg::GenericSensors msg)
+void LocalTransceiver::updateSensor(msg::TempSensors temperature)
 {
-    sensors_.clear_data_sensors();
-    for (const msg::HelperGenericSensor & sensors_data : msg.generic_sensors) {
-        Sensors::Generic * new_sensor = sensors_.add_data_sensors();
-        new_sensor->set_data(sensors_data.data);
-        new_sensor->set_id(sensors_data.id);
+    sensors_.clear_wind_sensors();
+    for (const msg::TempSensor & temperature_data : temperature.temp_sensors) {
+        Sensors::Temp * new_temperature = sensors_.add_temp_sensors();
+        new_temperature->set_temp(temperature_data.temp.temp);
+    }
+}
+
+void LocalTransceiver::updateSensor(msg::PhSensors ph)
+{
+    sensors_.clear_ph_sensors();
+    for (const msg::PhSensor & ph_data : ph.ph_sensors) {
+        Sensors::Ph * new_ph = sensors_.add_ph_sensors();
+        new_ph->set_ph(ph_data.ph.ph);
+    }
+}
+
+void LocalTransceiver::updateSensor(msg::SalinitySensors salinity)
+{
+    sensors_.clear_salinity_sensors();
+    for (const msg::SalinitySensor & salinity_data : salinity.salinity_sensors) {
+        Sensors::Salinity * new_salinity = sensors_.add_salinity_sensors();
+        new_salinity->set_salinity(salinity_data.salinity.salinity);
+    }
+}
+
+void LocalTransceiver::updateSensor(msg::PressureSensors pressure)
+{
+    sensors_.clear_pressure_sensors();
+    for (const msg::PressureSensor & pressure_data : pressure.pressure_sensors) {
+        Sensors::Pressure * new_pressure = sensors_.add_pressure_sensors();
+        new_pressure->set_pressure(pressure_data.pressure.pressure);
     }
 }
 

@@ -85,7 +85,7 @@ TEST_F(TestLocalTransceiver, debugSendTest)
 
 /**
  * @brief Send a binary string to virtual_iridium and verify it is received
- * Using gps, wind, batteries, generic sensors, local path data
+ * Using gps, wind, batteries, temperature, ph, salinity, pressure, local path data
  */
 TEST_F(TestLocalTransceiver, sendData)
 {
@@ -93,11 +93,15 @@ TEST_F(TestLocalTransceiver, sendData)
     constexpr int32_t holder_int = 11;
 
     // custom inferfaces used
-    custom_interfaces::msg::GPS            gps;
-    custom_interfaces::msg::WindSensors    wind;
-    custom_interfaces::msg::Batteries      batteries;
-    custom_interfaces::msg::GenericSensors sensors;
-    custom_interfaces::msg::LPathData      local_paths;
+    custom_interfaces::msg::GPS             gps;
+    custom_interfaces::msg::WindSensors     wind;
+    custom_interfaces::msg::Batteries       batteries;
+    custom_interfaces::msg::TempSensors     temp;
+    custom_interfaces::msg::PhSensors       ph;
+    custom_interfaces::msg::PressureSensors pressure;
+    custom_interfaces::msg::SalinitySensors salinity;
+    custom_interfaces::msg::LPathData       local_paths;
+    // custom_interfaces::msg::GenericSensors sensors;
 
     // assign gps data
     gps.heading.set__heading(holder);
@@ -128,11 +132,19 @@ TEST_F(TestLocalTransceiver, sendData)
     batteries.set__batteries({battery_one, battery_two});
 
     // assign generic sensors data
-    custom_interfaces::msg::HelperGenericSensor sensor;
+    // Now replaced with specific ROS sensor data assignments
+    // custom_interfaces::msg::HelperGenericSensor sensor;
+    custom_interfaces::msg::HelperTemp     temp_data;
+    custom_interfaces::msg::HelperPh       ph_data;
+    custom_interfaces::msg::HelperPressure pressure_data;
+    custom_interfaces::msg::HelperSalinity salinity_data;
 
-    sensor.set__data(holder_int);
-    sensor.set__id(holder_int);
-    sensors.set__generic_sensors({sensor});
+    temp_data.set__temp(holder_int);          // TODO: Confirm test value
+    ph_data.set__ph(holder_int);              // TODO: Confirm test value
+    pressure_data.set__pressure(holder_int);  // TODO: Confirm test value
+    salinity_data.set__salinity(holder_int);  // TODO: Confirm test value
+
+    // sensors.set__generic_sensors({sensor});
 
     // assign local path data
     custom_interfaces::msg::Path         local_path;

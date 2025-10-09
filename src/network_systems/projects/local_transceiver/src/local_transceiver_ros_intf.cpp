@@ -92,9 +92,20 @@ public:
             sub_batteries = this->create_subscription<custom_interfaces::msg::Batteries>(
               ros_topics::BATTERIES, ROS_Q_SIZE,
               std::bind(&LocalTransceiverIntf::sub_batteries_cb, this, std::placeholders::_1));
-            sub_data_sensors = this->create_subscription<custom_interfaces::msg::GenericSensors>(
-              ros_topics::DATA_SENSORS, ROS_Q_SIZE,
-              std::bind(&LocalTransceiverIntf::sub_data_sensors_cb, this, std::placeholders::_1));
+
+            sub_temp_sensor = this->create_subscription<custom_interfaces::msg::TempSensors>(
+              ros_topics::TEMP_SENSORS, ROS_Q_SIZE,
+              std::bind(&LocalTransceiverIntf::sub_temp_sensor_cb, this, std::placeholders::_1));
+            sub_ph_sensor = this->create_subscription<custom_interfaces::msg::PhSensors>(
+              ros_topics::PH_SENSORS, ROS_Q_SIZE,
+              std::bind(&LocalTransceiverIntf::sub_ph_sensor_cb, this, std::placeholders::_1));
+            sub_salinity_sensor = this->create_subscription<custom_interfaces::msg::SalinitySensors>(
+              ros_topics::SALINITY_SENSORS, ROS_Q_SIZE,
+              std::bind(&LocalTransceiverIntf::sub_salinity_sensor_cb, this, std::placeholders::_1));
+            sub_pressure_sensor = this->create_subscription<custom_interfaces::msg::PressureSensors>(
+              ros_topics::PRESSURE_SENSORS, ROS_Q_SIZE,
+              std::bind(&LocalTransceiverIntf::sub_pressure_sensor_cb, this, std::placeholders::_1));
+
             sub_gps = this->create_subscription<custom_interfaces::msg::GPS>(
               ros_topics::GPS, ROS_Q_SIZE, std::bind(&LocalTransceiverIntf::sub_gps_cb, this, std::placeholders::_1));
             sub_local_path_data = this->create_subscription<custom_interfaces::msg::LPathData>(
@@ -108,11 +119,14 @@ private:
     rclcpp::TimerBase::SharedPtr                               timer_;     // Publishing timer
     rclcpp::Publisher<custom_interfaces::msg::Path>::SharedPtr pub_;
 
-    rclcpp::Subscription<custom_interfaces::msg::WindSensors>::SharedPtr    sub_wind_sensor;
-    rclcpp::Subscription<custom_interfaces::msg::Batteries>::SharedPtr      sub_batteries;
-    rclcpp::Subscription<custom_interfaces::msg::GenericSensors>::SharedPtr sub_data_sensors;
-    rclcpp::Subscription<custom_interfaces::msg::GPS>::SharedPtr            sub_gps;
-    rclcpp::Subscription<custom_interfaces::msg::LPathData>::SharedPtr      sub_local_path_data;
+    rclcpp::Subscription<custom_interfaces::msg::WindSensors>::SharedPtr     sub_wind_sensor;
+    rclcpp::Subscription<custom_interfaces::msg::Batteries>::SharedPtr       sub_batteries;
+    rclcpp::Subscription<custom_interfaces::msg::TempSensors>::SharedPtr     sub_temp_sensor;
+    rclcpp::Subscription<custom_interfaces::msg::PhSensors>::SharedPtr       sub_ph_sensor;
+    rclcpp::Subscription<custom_interfaces::msg::SalinitySensors>::SharedPtr sub_salinity_sensor;
+    rclcpp::Subscription<custom_interfaces::msg::PressureSensors>::SharedPtr sub_pressure_sensor;
+    rclcpp::Subscription<custom_interfaces::msg::GPS>::SharedPtr             sub_gps;
+    rclcpp::Subscription<custom_interfaces::msg::LPathData>::SharedPtr       sub_local_path_data;
 
     /**
      * @brief Callback function to publish to onboard ROS network
@@ -135,9 +149,24 @@ private:
     void sub_batteries_cb(custom_interfaces::msg::Batteries in_msg) { lcl_trns_->updateSensor(in_msg); }
 
     /**
-     * @brief Callback function to subscribe to the onboard ROS network for generic sensors
+     * @brief Callback function to subscribe to the onboard ROS network for batteries
      */
-    void sub_data_sensors_cb(custom_interfaces::msg::GenericSensors in_msg) { lcl_trns_->updateSensor(in_msg); }
+    void sub_temp_sensor_cb(custom_interfaces::msg::TempSensors in_msg) { lcl_trns_->updateSensor(in_msg); }
+
+    /**
+     * @brief Callback function to subscribe to the onboard ROS network for batteries
+     */
+    void sub_ph_sensor_cb(custom_interfaces::msg::PhSensors in_msg) { lcl_trns_->updateSensor(in_msg); }
+
+    /**
+     * @brief Callback function to subscribe to the onboard ROS network for batteries
+     */
+    void sub_salinity_sensor_cb(custom_interfaces::msg::SalinitySensors in_msg) { lcl_trns_->updateSensor(in_msg); }
+
+    /**
+     * @brief Callback function to subscribe to the onboard ROS network for batteries
+     */
+    void sub_pressure_sensor_cb(custom_interfaces::msg::PressureSensors in_msg) { lcl_trns_->updateSensor(in_msg); }
 
     /**
      * @brief Callback function to subscribe to the onboard ROS network for GPS
