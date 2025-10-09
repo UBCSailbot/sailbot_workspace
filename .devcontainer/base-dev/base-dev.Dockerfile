@@ -322,6 +322,7 @@ RUN pip3 install \
 COPY src/ ./src
 COPY scripts/build.sh scripts/build.sh
 COPY scripts/setup.sh scripts/setup.sh
+COPY src/network_systems/ros_info.yaml ./src/network_systems/ros_info.yaml
 
 # Build binaries for our software
 # temporarily set ROS_WORKSPACE to current directory so that setup.sh can find src/
