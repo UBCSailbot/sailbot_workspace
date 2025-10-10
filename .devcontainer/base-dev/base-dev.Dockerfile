@@ -326,7 +326,7 @@ COPY scripts/setup.sh scripts/setup.sh
 
 # Build binaries for our software
 # temporarily set ROS_WORKSPACE to current directory so that setup.sh can find src/
-# ENV ROS_WORKSPACE=.
+ENV ROS_WORKSPACE=.
 RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash \
     && ./scripts/setup.sh \
     && ./scripts/build.sh"
