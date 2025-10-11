@@ -221,8 +221,8 @@ private:
     {
         try {
             CAN_FP::PowerOff po(po_frame);
-            RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), "Powering off...");
-            system("poweroff.sh"); //NOLINT(concurrency-mt-unsafe)
+            RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), "Shutting down...");
+            system("$ROS_WORKSPACE/src/network_systems/scripts/shutdown.sh"); //NOLINT(concurrency-mt-unsafe)
         } catch (std::out_of_range err) {
             RCLCPP_WARN(this->get_logger(), "%s", err.what());
             return;
