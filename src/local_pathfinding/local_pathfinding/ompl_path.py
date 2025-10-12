@@ -17,11 +17,11 @@ from ompl import base
 from ompl import geometric as og
 from ompl import util as ou
 from rclpy.impl.rcutils_logger import RcutilsLogger
-from shapely.geometry import MultiPolygon, Point, Polygon, box
+from shapely.geometry import MultiPolygon, Polygon, box
 
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.obstacles as ob
-from local_pathfinding.ompl_objectives import get_sailing_objective
+from local_pathfinding.ompl_objectives import get_sailing_objective, create_buffer_around_position
 
 if TYPE_CHECKING:
     from local_pathfinding.local_path import LocalPathState
@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 # OMPL logging: only log warnings and above
 ou.setLogLevel(ou.LOG_WARN)
 
-BOX_BUFFER_SIZE = 1.0  # km
+
 LAND_KEY = -1
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 LAND_PKL_FILE_PATH = os.path.join(CURRENT_DIR, "..", "land", "pkl", "land.pkl")
@@ -69,7 +69,6 @@ class OMPLPath:
             max_runtime (float): Maximum amount of time in seconds to look for a solution path.
             local_path_state (LocalPathState): State of Sailbot.
         """
-        self._box_buffer = BOX_BUFFER_SIZE
         self._logger = parent_logger.get_child(name="ompl_path")
         # this needs state
         self._simple_setup = self._init_simple_setup(local_path_state, land_multi_polygon)
@@ -202,13 +201,6 @@ class OMPLPath:
 
         return ci.Path(waypoints=waypoints)
 
-    def create_buffer_around_position(self: OMPLPath, position: cs.XY) -> Polygon:
-        """Create a space around the given position. Position is the center of the space and
-        is a tuple of x and y.
-        """
-        space = Point(position.x, position.y).buffer(self._box_buffer, cap_style=3, join_style=2)
-        return space
-
     def update_objectives(self):
         """Update the objectives on the basis of which the path is optimized.
         Raises:
@@ -221,12 +213,12 @@ class OMPLPath:
 
         # Create buffered spaces and extract their centers
         start_position_in_xy = cs.latlon_to_xy(self.state.reference_latlon, self.state.position)
-        start_box = self.create_buffer_around_position(start_position_in_xy)
+        start_box = create_buffer_around_position(start_position_in_xy)
         start_x = start_position_in_xy.x
         start_y = start_position_in_xy.y
 
         goal_position_in_xy = cs.XY(0, 0)  # Global waypoint is used as the reference point
-        goal_polygon = self.create_buffer_around_position(goal_position_in_xy)
+        goal_polygon = create_buffer_around_position(goal_position_in_xy)
         goal_x, goal_y = goal_position_in_xy
 
         # create an SE2 state space: rotation and translation in a plane
