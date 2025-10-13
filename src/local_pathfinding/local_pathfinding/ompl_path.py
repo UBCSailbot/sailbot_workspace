@@ -125,7 +125,18 @@ class OMPLPath:
                     sailbot_position=local_path_state.position,
                     sailbot_speed=local_path_state.speed,
                 )
-                existing_boat.update_collision_zone()
+                existing_boat.update_collision_zone(ais_ship=ship)
+
+                # Debugging print statements
+                # lat = ship.lat_lon.latitude
+                # lon = ship.lat_lon.longitude
+                # print(f"Ship ID {ship.id}: lat={lat:.6f}, lon={lon:.6f}")
+                # if existing_boat.collision_zone is not None:
+                #     coords = list(existing_boat.collision_zone.exterior.coords)
+                #     print(f"Ship {existing_boat.ais_ship.id} collision zone vertices:")
+                #     for i, (x, y) in enumerate(coords):
+                #         print(f"  P{i}: ({x:.6f}, {y:.6f})")
+
             else:
                 # Otherwise, create a new Obstacle object
                 new_boat = ob.Boat(
@@ -135,7 +146,6 @@ class OMPLPath:
                     ship,
                 )
                 OMPLPath.obstacles[ship.id] = new_boat
-
         # LAND
         if state_space_xy is None:
             state_space_latlon = None

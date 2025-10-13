@@ -244,6 +244,12 @@ class Sailbot(Node):
                 obstacles=helper_obstacles,
                 desired_heading=self.desired_heading,
             )
+
+            # for i, helper_obstacle in enumerate(helper_obstacles):
+            #     if helper_obstacle.obstacle_type == "Boat":
+            #         first_point = helper_obstacle.points[0]
+            #         print(f"Boat {i}: ({first_point.latitude:.6f}, {first_point.longitude:.6f})")
+
         else:
             # in production only publish the local path for website
             msg = ci.LPathData(local_path=self.local_path.path)
