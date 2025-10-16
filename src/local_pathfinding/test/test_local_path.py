@@ -36,6 +36,16 @@ PATH = lp.LocalPath(parent_logger=RcutilsLogger())
          [],
          False
          ),
+        (0,
+         HelperLatLon(latitude=10.0, longitude=10.0),
+         Path(waypoints=[HelperLatLon(latitude=0.0, longitude=0.0),
+                         HelperLatLon(latitude=2.5, longitude=2.5),
+                         HelperLatLon(latitude=5.0, longitude=5.0),
+                         HelperLatLon(latitude=7.5, longitude=7.5),
+                         HelperLatLon(latitude=10.0, longitude=10.0),
+                         ]),
+         
+         )
     ]
 )
 def test_in_collision_zone(local_wp_index, reference_latlon, path, obstacles, result):
