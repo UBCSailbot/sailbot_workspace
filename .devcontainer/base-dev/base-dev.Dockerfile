@@ -323,13 +323,6 @@ RUN pip3 install \
 COPY src/ ./src
 COPY scripts/build.sh scripts/build.sh
 COPY scripts/setup.sh scripts/setup.sh
-# this copies a file with references to our custom rosdep yaml files into the image
-COPY /etc/ros/rosdep/sources.list.d/*.list /etc/ros/rosdep/sources.list.d/
-
-RUN apt-get update && apt-get install -y python3-rosdep && \
-    # rosdep init &&  not sure if init is required yet
-    rosdep update
-
 
 # Build binaries for our software
 # temporarily set ROS_WORKSPACE to current directory so that setup.sh can find src/

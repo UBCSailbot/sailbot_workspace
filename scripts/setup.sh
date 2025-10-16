@@ -17,10 +17,11 @@ for DIR in $ROS_WORKSPACE/src/*; do
 done
 cat $CUSTOM_ROSDEP_LIST
 sudo apt-get update
-if wget -q --spider --timeout=1 http://google.com; then
-    # only run if connected to the internet
-    rosdep update --rosdistro $ROS_DISTRO
-fi
+rosdep update --rosdistro $ROS_DISTRO
+# if wget -q --spider --timeout=1 http://google.com; then
+#     # only run if connected to the internet
+#     rosdep update --rosdistro $ROS_DISTRO
+# fi
 rosdep install --from-paths src --ignore-src -y --rosdistro $ROS_DISTRO
 
 source $HOME/.bashrc
