@@ -320,14 +320,10 @@ RUN pip3 install \
     # for juypter notebooks
     ipykernel
 
+WORKDIR ${ROS_WORKSPACE}
 COPY src/ ./src
-COPY scripts/build.sh scripts/build.sh
-COPY scripts/setup.sh scripts/setup.sh
+COPY scripts/ ./scripts
 
-# Build binaries for our software
-# temporarily set ROS_WORKSPACE to current directory so that setup.sh can find src/
-ENV ROS_WORKSPACE=.
 RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash \
     && ./scripts/setup.sh \
     && ./scripts/build.sh"
-ENV ROS_WORKSPACE=workspaces/sailbot_workspace
