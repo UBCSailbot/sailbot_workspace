@@ -237,7 +237,7 @@ WindSensor::WindSensor(const CanFrame & cf) : WindSensor(static_cast<CanId>(cf.c
 
     // convert knots to kmph before setting value
     wind_speed_ = static_cast<float>(raw_wind_speed * 1.852 / 10.0);  // NOLINT(readability-magic-numbers)
-    wind_angle_ = static_cast<int16_t>(raw_wind_dir);
+    wind_angle_ = static_cast<float>(raw_wind_dir);
 
     checkBounds();
 }
@@ -252,7 +252,7 @@ msg::WindSensor WindSensor::toRosMsg() const
 {
     msg::WindSensor  msg;
     msg::HelperSpeed speed;
-    msg.set__direction(static_cast<int16_t>(wind_angle_));
+    msg.set__direction(static_cast<float32_t>(wind_angle_));
     speed.set__speed(wind_speed_);
     msg.set__speed(speed);
     return msg;
