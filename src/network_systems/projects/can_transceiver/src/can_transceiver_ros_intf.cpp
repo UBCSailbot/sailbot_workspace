@@ -6,6 +6,7 @@
 #include <custom_interfaces/msg/generic_sensors.hpp>
 #include <custom_interfaces/msg/gps.hpp>
 #include <custom_interfaces/msg/wind_sensors.hpp>
+#include <queue>
 #include <rclcpp/publisher.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/subscription.hpp>
@@ -191,6 +192,11 @@ private:
     std::vector<msg::HelperAISShip> ais_ships_holder_;
     int                             total_ais_ships = 0;
 
+    //queue of previous k wind sensor readings (either sail or hull) for moving average
+    std::queue<msg::WindSensor> wind_sensor_readings;
+    // previous filtered wind sensor reading (simple moving average of wind_sensor_readings)
+    msg::WindSensor curr_sma;
+
     // Mock CAN file descriptor for simulation
     int sim_intf_fd_;
 
@@ -354,6 +360,26 @@ private:
             msg::WindSensor & wind_sensor_msg = wind_sensors_.wind_sensors[idx];
             wind_sensor_msg                   = wind_sensor.toRosMsg();
             wind_sensors_pub_->publish(wind_sensors_);
+
+            // NUM_WIND_SENSORS is a placeholder,
+            // replace with number of data points wanted in the simple moving average
+            size_t k = NUM_WIND_SENSORS;
+
+            wind_sensor_readings.push(wind_sensor_msg);
+
+            if (wind_sensor_readings.size() <= static_cast<size_t>(k)) {
+                // need to fill the queue, so compute filtered data as cumulative average
+                k = wind_sensor_readings.size();
+                curr_sma.speed.speed = ((curr_sma.speed.speed * (k - 1)) + wind_sensor_msg.speed.speed) / k;
+                curr_sma.direction = ((curr_sma.direction * (k - 1)) + wind_sensor_msg.direction) / k;
+            } else {
+                // queue is full, compute filtered data as simple moving average
+                msg::WindSensor & oldest_reading = wind_sensor_readings.front();
+                curr_sma.speed.speed = curr_sma.speed.speed + ((wind_sensor_msg.speed.speed - oldest_reading.speed.speed) / k);
+                curr_sma.direction = curr_sma.direction + ((wind_sensor_msg.direction - oldest_reading.direction) / k);
+                wind_sensor_readings.pop();
+            }
+
             publishFilteredWindSensor();
             RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), wind_sensor.toString().c_str());
         } catch (std::out_of_range err) {
@@ -368,29 +394,9 @@ private:
      */
     void publishFilteredWindSensor()
     {
-        // TODO(): Currently a simple average of the two wind sensors, but we'll want something more substantial
-        // with issue #271
-        int32_t average_direction = 0;
-        for (size_t i = 0; i < NUM_WIND_SENSORS; i++) {
-            average_direction += wind_sensors_.wind_sensors[i].direction;
-        }
-        average_direction /= NUM_WIND_SENSORS;
-
-        float average_speed = 0;
-        for (size_t i = 0; i < NUM_WIND_SENSORS; i++) {
-            average_speed += wind_sensors_.wind_sensors[i].speed.speed;
-        }
-        average_speed /= NUM_WIND_SENSORS;
-
-        msg::HelperSpeed & filtered_speed = filtered_wind_sensor_.speed;
-        filtered_speed.set__speed(average_speed);
-
-        filtered_wind_sensor_.set__speed(filtered_speed);
-        filtered_wind_sensor_.set__direction(static_cast<int16_t>(average_direction));
-
-        filtered_wind_sensor_pub_->publish(filtered_wind_sensor_);
+        filtered_wind_sensor_pub_->publish(curr_sma);
         std::stringstream ss;
-        ss << "[WIND SENSOR] Speed: " << filtered_speed.speed << " Angle: " << average_direction;
+        ss << "[WIND SENSOR] Speed: " << curr_sma.speed.speed << " Angle: " << curr_sma.direction;
         RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), ss.str().c_str());
     }
 
