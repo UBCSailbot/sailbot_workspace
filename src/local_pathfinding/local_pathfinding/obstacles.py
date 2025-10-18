@@ -59,11 +59,13 @@ class Obstacle:
     def update_collision_zone(self, **kwargs) -> None:
         """
         Updates the collision zone of the obstacle to reflect updated attributes.
-        If attributes of the obstacle have not been changed, this function will have no effect.
+        For Boats, pass `ais_ship=...` in kwargs.
+        For Land, pass `state_space_latlon=...` and `land_multi_polygon=...`.
         """
         if isinstance(self, Boat):
             # Boat Obstacle
-            self._update_boat_collision_zone()
+            ais_ship = kwargs.get("ais_ship")
+            self._update_boat_collision_zone(ais_ship=ais_ship)
 
         else:
             # Land Obstacle
