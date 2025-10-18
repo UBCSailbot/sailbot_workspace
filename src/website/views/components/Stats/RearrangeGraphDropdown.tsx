@@ -20,7 +20,7 @@ import DragIndicatorIcon from '@/public/icons/drag_indicator.svg';
 import styles from './stats.module.css';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import GraphsActions from '@/stores/Graphs/GraphsActions';
-import { connect } from 'react-redux';
+import { connect, useDispatch, useSelector } from 'react-redux';
 
 const graphsOrderNamesMap = {
   GPS: 'Speed',
@@ -46,6 +46,21 @@ const SortableItem = ({
     cursor: 'grab',
   };
 
+  // Read current layout (full/half) from Redux and provide a local dispatcher
+  // Keep this self-contained: no parent prop changes required.
+  const dispatch = useDispatch();
+  const layout: 'full' | 'half' =
+    useSelector((state: any) => state?.graphs?.layout?.[id]) ?? 'full';
+
+  const setLayout = (value: 'full' | 'half') => {
+    // Prevent unnecessary dispatches
+    if (value === layout) return;
+    dispatch({
+      type: GraphsActions.SET_GRAPH_LAYOUT,
+      payload: { id, value },
+    });
+  };
+
   return (
     <div
       className={styles.dropdownItem}
@@ -56,6 +71,43 @@ const SortableItem = ({
     >
       <DragIndicatorIcon />
       {graphsOrderNamesMap[id as keyof typeof graphsOrderNamesMap]}
+      {/* Right-aligned Full/Half toggle. Stop propagation so clicking doesn't drag. */}
+      <div
+        style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          type='button'
+          onClick={() => setLayout('full')}
+          style={{
+            padding: '4px 8px',
+            borderRadius: 4,
+            border: '1px solid rgba(255,255,255,0.5)',
+            background: 'transparent',
+            color: 'inherit',
+            opacity: layout === 'full' ? 1 : 0.6,
+            cursor: 'pointer',
+          }}
+        >
+          Full
+        </button>
+        <button
+          type='button'
+          onClick={() => setLayout('half')}
+          style={{
+            padding: '4px 8px',
+            borderRadius: 4,
+            border: '1px solid rgba(255,255,255,0.5)',
+            background: 'transparent',
+            color: 'inherit',
+            opacity: layout === 'half' ? 1 : 0.6,
+            cursor: 'pointer',
+          }}
+        >
+          Half
+        </button>
+      </div>
     </div>
   );
 };

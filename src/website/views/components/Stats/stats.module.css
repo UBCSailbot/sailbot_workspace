@@ -28,10 +28,26 @@
 }
 
 .lineCharts {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
   overflow-y: auto;
   scrollbar-width: none;
 }
 
+@media (min-width: 900px) {
+  .lineCharts {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.chartItem {
+  grid-column: 1/-1;
+}
+
+.chartItemHalf {
+  grid-column: span 1;
+}
 .dropdownButton {
   display: flex;
   align-items: center;

@@ -1,8 +1,7 @@
-export type Graphs = {
-  id: string;
-};
+export type GraphId = 'GPS' | 'BatteriesVoltage' | 'BatteriesCurrent' | 'WindSensors';
 
 export type GraphsState = {
-  order: Graphs[];
+  order: GraphId[];
+  layout: Record<GraphId, 'full' | 'half'>;
   error?: any;
 };

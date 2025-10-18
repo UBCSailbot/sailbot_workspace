@@ -112,6 +112,7 @@ interface StatsProps {
   windSensors: WindSensorsState;
   graphsOrder: string[];
   dataFilter: DataFilterState;
+  graphsLayout: { [key: string]: string };
 }
 
 // make this cleaner later
@@ -121,6 +122,7 @@ const Stats = ({
   windSensors,
   graphsOrder,
   dataFilter,
+  graphsLayout,
 }: StatsProps) => {
   const [summary, setSummary] = useState<string>('LOADING...');
 
@@ -260,7 +262,21 @@ const Stats = ({
           <RearrangeGraphDropdown />
         </div>
       </div>
-      <div className={styles.lineCharts}>{graphs}</div>
+      <div className={styles.lineCharts}>
+        {graphsOrder.map((key) => {
+          const node = graphsMap[key as keyof typeof graphsMap];
+          const isHalf = graphsLayout[key as keyof typeof graphsLayout] === 'half';
+          return (
+            <div
+              key={key}
+              className={`${styles.chartItem} ${isHalf ? styles.chartItemHalf : ''}`}
+            >
+              {node}
+            </div>
+          );
+        })}
+      </div>
+
     </div>
   );
 };
@@ -271,6 +287,7 @@ const mapStateToProps = (state: any) => ({
   windSensors: state.windSensors,
   graphsOrder: state.graphs.order,
   dataFilter: state.dataFilter,
+  graphsLayout: state.graphs.layout,
 });
 
 const mapDispatchToProps = {};
