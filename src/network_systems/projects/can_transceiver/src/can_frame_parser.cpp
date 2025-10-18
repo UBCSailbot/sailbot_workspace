@@ -214,7 +214,7 @@ MainTrimTab::MainTrimTab(CanId id) : BaseFrame(std::span{TRIM_TAB_IDS}, id, CAN_
 
 void MainTrimTab::checkBounds() const
 {
-    auto err = utils::isOutOfBounds<float>(angle_, HEADING_LBND, HEADING_UBND);
+    auto err = utils::isOutOfBounds<float>(angle_, TRIM_LBND, TRIM_UBND);
     if (err) {
         std::string err_msg = err.value();
         throw std::out_of_range("Sail angle is out of bounds!\n" + debugStr() + "\n" + err_msg);
@@ -306,7 +306,7 @@ void WindSensor::checkBounds() const
         std::string err_msg = err.value();
         throw std::out_of_range("Wind angle is out of bounds!\n" + debugStr() + "\n" + err_msg);
     }
-    err = utils::isOutOfBounds<float>(wind_speed_, SPEED_LBND, SPEED_UBND);
+    err = utils::isOutOfBounds<float>(wind_speed_, WIND_SPEED_LBND, WIND_SPEED_UBND);
     if (err) {
         std::string err_msg = err.value();
         throw std::out_of_range("Wind speed is out of bounds!\n" + debugStr() + "\n" + err_msg);
@@ -429,7 +429,7 @@ void GPS::checkBounds() const
         std::string err_msg = err.value();
         throw std::out_of_range("Longitude is out of bounds!\n" + debugStr() + "\n" + err_msg);
     }
-    err = utils::isOutOfBounds<float>(speed_, SPEED_LBND, SPEED_UBND);
+    err = utils::isOutOfBounds<float>(speed_, BOAT_SPEED_LBND, BOAT_SPEED_UBND);
     if (err) {
         std::string err_msg = err.value();
         throw std::out_of_range("Speed is out of bounds!\n" + debugStr() + "\n" + err_msg);
@@ -611,7 +611,7 @@ void AISShips::checkBounds() const
         std::string err_msg = err.value();
         throw std::out_of_range("Longitude is out of bounds!\n" + debugStr() + "\n" + err_msg);
     }
-    err = utils::isOutOfBounds<float>(speed_, SPEED_LBND, SPEED_UBND);
+    err = utils::isOutOfBounds<float>(speed_, SOG_SPEED_LBND, SOG_SPEED_UBND);
     if (err) {
         std::string err_msg = err.value();
         throw std::out_of_range("Speed is out of bounds!\n" + debugStr() + "\n" + err_msg);
