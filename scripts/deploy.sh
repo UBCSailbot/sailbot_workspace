@@ -34,20 +34,18 @@ while getopts "t:h" flags; do
   esac
 done
 
+# Login to our GitHub Container Registry
 echo $PAT | docker login ghcr.io -u $USERNAME --password-stdin
 
-# docker buildx create --name sailbot --platform linux/arm64,linux/amd64
+# Check if Docker buildx drivers are present
+if ! docker buildx inspect sailbot >/dev/null 2>&1; then
+  docker buildx create --name sailbot --platform linux/arm64,linux/amd64
+fi
 
+# Build release image
 docker buildx build . \
     --file .devcontainer/release/release.Dockerfile \
     --tag ghcr.io/ubcsailbot/sailbot_workspace/release:${TAG} \
     --platform linux/arm64,linux/amd64 \
     --builder sailbot \
     --push
-
-
-
-# docker build --progress=plain -f .devcontainer/release/release.Dockerfile \
-#   -t ghcr.io/ubcsailbot/sailbot_workspace/release:${TAG} \
-#   .
-# docker push ghcr.io/ubcsailbot/sailbot_workspace/release:${TAG}
