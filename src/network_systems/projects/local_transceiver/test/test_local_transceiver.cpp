@@ -92,6 +92,11 @@ TEST_F(TestLocalTransceiver, sendData)
     constexpr float   holder     = 14.3;
     constexpr int32_t holder_int = 11;
 
+    static const int NUM_TEMP_SENSORS     = 16;
+    static const int NUM_PH_SENSORS       = 16;
+    static const int NUM_PRESSURE_SENSORS = 16;
+    static const int NUM_SALINITY_SENSORS = 16;
+
     // custom inferfaces used
     custom_interfaces::msg::GPS             gps;
     custom_interfaces::msg::WindSensors     wind;
@@ -134,15 +139,37 @@ TEST_F(TestLocalTransceiver, sendData)
     // assign generic sensors data
     // Now replaced with specific ROS sensor data assignments
     // custom_interfaces::msg::HelperGenericSensor sensor;
-    custom_interfaces::msg::HelperTemp     temp_data;
-    custom_interfaces::msg::HelperPh       ph_data;
-    custom_interfaces::msg::HelperPressure pressure_data;
-    custom_interfaces::msg::HelperSalinity salinity_data;
+    std::array<custom_interfaces::msg::TempSensor, NUM_TEMP_SENSORS> temp_array;
+    for (int i = 0; i < NUM_TEMP_SENSORS; i++) {
+        custom_interfaces::msg::HelperTemp temp_data;
+        temp_data.set__temp(holder);
+        temp_array[i].set__temp(temp_data);
+    }
+    temp.set__temp_sensors(temp_array);
 
-    temp_data.set__temp(holder);
-    ph_data.set__ph(holder);
-    pressure_data.set__pressure(holder);
-    salinity_data.set__salinity(holder);
+    std::array<custom_interfaces::msg::PhSensor, NUM_PH_SENSORS> ph_array;
+    for (int i = 0; i < NUM_PH_SENSORS; i++) {
+        custom_interfaces::msg::HelperPh ph_data;
+        ph_data.set__ph(holder);
+        ph_array[i].set__ph(ph_data);
+    }
+    ph.set__ph_sensors(ph_array);
+
+    std::array<custom_interfaces::msg::PressureSensor, NUM_PRESSURE_SENSORS> pressure_array;
+    for (int i = 0; i < NUM_PRESSURE_SENSORS; i++) {
+        custom_interfaces::msg::HelperPressure pressure_data;
+        pressure_data.set__pressure(holder);
+        pressure_array[i].set__pressure(pressure_data);
+    }
+    pressure.set__pressure_sensors(pressure_array);
+
+    std::array<custom_interfaces::msg::SalinitySensor, NUM_SALINITY_SENSORS> salinity_array;
+    for (int i = 0; i < NUM_SALINITY_SENSORS; i++) {
+        custom_interfaces::msg::HelperSalinity salinity_data;
+        salinity_data.set__salinity(holder);
+        salinity_array[i].set__salinity(salinity_data);
+    }
+    salinity.set__salinity_sensors(salinity_array);
 
     // sensors.set__generic_sensors({sensor});
 
@@ -165,6 +192,227 @@ TEST_F(TestLocalTransceiver, sendData)
     lcl_trns_->updateSensor(local_paths);
 
     EXPECT_TRUE(lcl_trns_->send());
+}
+
+/**
+ * @brief Test that wind sensor data is serialized correctly
+ */
+TEST_F(TestLocalTransceiver, SerializeWindSensors)
+{
+    constexpr float   expected_speed     = 15.5;
+    constexpr int32_t expected_direction = 270;
+
+    custom_interfaces::msg::WindSensors wind;
+    custom_interfaces::msg::WindSensor  wind_data;
+    custom_interfaces::msg::HelperSpeed wind_speed;
+
+    wind_speed.set__speed(expected_speed);
+    wind_data.set__direction(expected_direction);
+    wind_data.set__speed(wind_speed);
+    wind.set__wind_sensors({wind_data, wind_data});
+
+    lcl_trns_->updateSensor(wind);
+    Polaris::Sensors sensors(lcl_trns_->sensors());
+
+    EXPECT_EQ(sensors.wind_sensors_size(), 2);
+    EXPECT_FLOAT_EQ(sensors.wind_sensors(0).speed(), expected_speed);
+    EXPECT_EQ(sensors.wind_sensors(0).direction(), expected_direction);
+    EXPECT_FLOAT_EQ(sensors.wind_sensors(1).speed(), expected_speed);
+    EXPECT_EQ(sensors.wind_sensors(1).direction(), expected_direction);
+
+    // Test serialization
+    std::string serialized;
+    EXPECT_TRUE(sensors.SerializeToString(&serialized));
+    EXPECT_GT(serialized.size(), 0);
+
+    // Test deserialization
+    Polaris::Sensors deserialized;
+    EXPECT_TRUE(deserialized.ParseFromString(serialized));
+    EXPECT_EQ(deserialized.wind_sensors_size(), 2);
+    EXPECT_FLOAT_EQ(deserialized.wind_sensors(0).speed(), expected_speed);
+    EXPECT_EQ(deserialized.wind_sensors(0).direction(), expected_direction);
+}
+
+/**
+ * @brief Test that battery data is serialized correctly
+ */
+TEST_F(TestLocalTransceiver, SerializeBatteries)
+{
+    constexpr float expected_voltage = 12.5;
+    constexpr float expected_current = 3.2;
+
+    custom_interfaces::msg::Batteries     batteries;
+    custom_interfaces::msg::HelperBattery battery;
+
+    battery.set__voltage(expected_voltage);
+    battery.set__current(expected_current);
+    batteries.set__batteries({battery, battery});
+
+    lcl_trns_->updateSensor(batteries);
+    Polaris::Sensors sensors(lcl_trns_->sensors());
+
+    EXPECT_EQ(sensors.batteries_size(), 2);
+    EXPECT_FLOAT_EQ(sensors.batteries(0).voltage(), expected_voltage);
+    EXPECT_FLOAT_EQ(sensors.batteries(0).current(), expected_current);
+
+    // Test serialization
+    std::string serialized;
+    EXPECT_TRUE(sensors.SerializeToString(&serialized));
+    EXPECT_GT(serialized.size(), 0);
+
+    // Test deserialization
+    Polaris::Sensors deserialized;
+    EXPECT_TRUE(deserialized.ParseFromString(serialized));
+    EXPECT_EQ(deserialized.batteries_size(), 2);
+    EXPECT_FLOAT_EQ(deserialized.batteries(0).voltage(), expected_voltage);
+    EXPECT_FLOAT_EQ(deserialized.batteries(0).current(), expected_current);
+}
+
+/**
+ * @brief Test that temperature sensor data is serialized correctly
+ */
+TEST_F(TestLocalTransceiver, SerializeTempSensors)
+{
+    constexpr float expected_temp = 22.5;
+
+    custom_interfaces::msg::TempSensors temp_sensors;
+    custom_interfaces::msg::TempSensor  temp_sensor;
+    custom_interfaces::msg::HelperTemp  temp_data;
+
+    temp_data.set__temp(expected_temp);
+    temp_sensor.set__temp(temp_data);
+    std::array<custom_interfaces::msg::TempSensor, NUM_TEMP_SENSORS> temp_array;
+    for (int i = 0; i < NUM_TEMP_SENSORS; i++) {
+        temp_array[i] = temp_sensor;
+    }
+    temp_sensors.set__temp_sensors(temp_array);
+    lcl_trns_->updateSensor(temp_sensors);
+
+    Polaris::Sensors sensors(lcl_trns_->sensors());
+    EXPECT_EQ(sensors.temp_sensors_size(), 2);
+    EXPECT_FLOAT_EQ(sensors.temp_sensors(0).temp(), expected_temp);
+
+    // Test serialization
+    std::string serialized;
+    EXPECT_TRUE(sensors.SerializeToString(&serialized));
+    EXPECT_GT(serialized.size(), 0);
+
+    // Test deserialization
+    Polaris::Sensors deserialized;
+    EXPECT_TRUE(deserialized.ParseFromString(serialized));
+    EXPECT_EQ(deserialized.temp_sensors_size(), 2);
+    EXPECT_FLOAT_EQ(deserialized.temp_sensors(0).temp(), expected_temp);
+}
+
+/**
+ * @brief Test that pH sensor data is serialized correctly
+ */
+TEST_F(TestLocalTransceiver, SerializePhSensors)
+{
+    constexpr float expected_ph = 7.5;
+
+    custom_interfaces::msg::PhSensors ph_sensors;
+    custom_interfaces::msg::PhSensor  ph_sensor;
+    custom_interfaces::msg::HelperPh  ph_data;
+
+    ph_data.set__ph(expected_ph);
+    ph_sensor.set__ph(ph_data);
+    std::array<custom_interfaces::msg::PhSensor, NUM_PH_SENSORS> ph_array;
+    for (int i = 0; i < NUM_PH_SENSORS; i++) {
+        ph_array[i] = ph_sensor;
+    }
+    ph_sensors.set__ph_sensors(ph_array);
+
+    lcl_trns_->updateSensor(ph_sensors);
+    Polaris::Sensors sensors(lcl_trns_->sensors());
+
+    EXPECT_EQ(sensors.ph_sensors_size(), 2);
+    EXPECT_FLOAT_EQ(sensors.ph_sensors(0).ph(), expected_ph);
+
+    // Test serialization
+    std::string serialized;
+    EXPECT_TRUE(sensors.SerializeToString(&serialized));
+    EXPECT_GT(serialized.size(), 0);
+
+    // Test deserialization
+    Polaris::Sensors deserialized;
+    EXPECT_TRUE(deserialized.ParseFromString(serialized));
+    EXPECT_EQ(deserialized.ph_sensors_size(), 2);
+    EXPECT_FLOAT_EQ(deserialized.ph_sensors(0).ph(), expected_ph);
+}
+
+/**
+ * @brief Test that salinity sensor data is serialized correctly
+ */
+TEST_F(TestLocalTransceiver, SerializeSalinitySensors)
+{
+    constexpr float expected_salinity = 35.0;
+
+    custom_interfaces::msg::SalinitySensors salinity_sensors;
+    custom_interfaces::msg::SalinitySensor  salinity_sensor;
+    custom_interfaces::msg::HelperSalinity  salinity_data;
+
+    salinity_data.set__salinity(expected_salinity);
+    salinity_sensor.set__salinity(salinity_data);
+    std::array<custom_interfaces::msg::SalinitySensor, NUM_SALINITY_SENSORS> salinity_array;
+    for (int i = 0; i < NUM_SALINITY_SENSORS; i++) {
+        salinity_array[i] = salinity_sensor;
+    }
+    salinity_sensors.set__salinity_sensors(salinity_array);
+
+    lcl_trns_->updateSensor(salinity_sensors);
+    Polaris::Sensors sensors(lcl_trns_->sensors());
+
+    EXPECT_EQ(sensors.salinity_sensors_size(), 2);
+    EXPECT_FLOAT_EQ(sensors.salinity_sensors(0).salinity(), expected_salinity);
+
+    // Test serialization
+    std::string serialized;
+    EXPECT_TRUE(sensors.SerializeToString(&serialized));
+    EXPECT_GT(serialized.size(), 0);
+
+    // Test deserialization
+    Polaris::Sensors deserialized;
+    EXPECT_TRUE(deserialized.ParseFromString(serialized));
+    EXPECT_EQ(deserialized.salinity_sensors_size(), 2);
+    EXPECT_FLOAT_EQ(deserialized.salinity_sensors(0).salinity(), expected_salinity);
+}
+
+/**
+ * @brief Test that pressure sensor data is serialized correctly
+ */
+TEST_F(TestLocalTransceiver, SerializePressureSensors)
+{
+    constexpr float expected_pressure = 101.3;
+
+    custom_interfaces::msg::PressureSensors pressure_sensors;
+    custom_interfaces::msg::PressureSensor  pressure_sensor;
+    custom_interfaces::msg::HelperPressure  pressure_data;
+
+    pressure_data.set__pressure(expected_pressure);
+    pressure_sensor.set__pressure(pressure_data);
+    std::array<custom_interfaces::msg::PressureSensor, NUM_PRESSURE_SENSORS> pressure_array;
+    for (int i = 0; i < NUM_PRESSURE_SENSORS; i++) {
+        pressure_array[i] = pressure_sensor;
+    }
+    pressure_sensors.set__pressure_sensors(pressure_array);
+
+    lcl_trns_->updateSensor(pressure_sensors);
+    Polaris::Sensors sensors(lcl_trns_->sensors());
+
+    EXPECT_EQ(sensors.pressure_sensors_size(), 2);
+    EXPECT_FLOAT_EQ(sensors.pressure_sensors(0).pressure(), expected_pressure);
+
+    // Test serialization
+    std::string serialized;
+    EXPECT_TRUE(sensors.SerializeToString(&serialized));
+    EXPECT_GT(serialized.size(), 0);
+
+    // Test deserialization
+    Polaris::Sensors deserialized;
+    EXPECT_TRUE(deserialized.ParseFromString(serialized));
+    EXPECT_EQ(deserialized.pressure_sensors_size(), 2);
+    EXPECT_FLOAT_EQ(deserialized.pressure_sensors(0).pressure(), expected_pressure);
 }
 
 /**
