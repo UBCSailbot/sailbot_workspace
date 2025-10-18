@@ -57,9 +57,19 @@ void LocalTransceiver::updateSensor(msg::Batteries battery)
     }
 }
 
+// void LocalTransceiver::updateSensor(msg::GenericSensors msg)
+// {
+//     sensors_.clear_data_sensors();
+//     for (const msg::HelperGenericSensor & sensors_data : msg.generic_sensors) {
+//         Sensors::Generic * new_sensor = sensors_.add_data_sensors();
+//         new_sensor->set_data(sensors_data.data);
+//         new_sensor->set_id(sensors_data.id);
+//     }
+// }
+
 void LocalTransceiver::updateSensor(msg::TempSensors temperature)
 {
-    sensors_.clear_wind_sensors();
+    sensors_.clear_temp_sensors();
     for (const msg::TempSensor & temperature_data : temperature.temp_sensors) {
         Sensors::Temp * new_temperature = sensors_.add_temp_sensors();
         new_temperature->set_temp(temperature_data.temp.temp);
