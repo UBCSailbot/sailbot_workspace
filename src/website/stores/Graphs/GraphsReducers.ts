@@ -7,10 +7,10 @@ import { initSessionStorageData } from '@/utils/SessionStorage';
 export default class GraphsReducer extends BaseReducer {
   initialState: GraphsState = {
     order: initSessionStorageData('Current Order', [
-      'speed',
-      'battery voltage',
-      'battery current',
-      'wind sensor',
+      'GPS',
+      'BatteriesVoltage',
+      'BatteriesCurrent',
+      'WindSensors',
     ]),
     error: null,
   };

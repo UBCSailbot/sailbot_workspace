@@ -1,0 +1,35 @@
+/* note to self use fredoka */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  background-color: #090909;
+  color: #ffffff;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Fira Code', 'SF Mono', Consolas, 'Courier New', monospace;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.leaflet-container,
+.leaflet-container * {
+  background-color: transparent !important;
+}
+
+svg {
+  fill: white;
+}

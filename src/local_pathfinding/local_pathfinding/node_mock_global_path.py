@@ -8,8 +8,8 @@ import custom_interfaces.msg as ci
 import rclpy
 from rclpy.node import Node
 
+import local_pathfinding.coord_systems as cs
 import local_pathfinding.global_path as gp
-from local_pathfinding.coord_systems import GEODESIC, meters_to_km
 
 
 def main(args=None):
@@ -180,8 +180,8 @@ class MockGlobalPath(Node):
 
         pos = gps.lat_lon
         if self.pos:
-            position_delta = meters_to_km(
-                GEODESIC.inv(
+            position_delta = cs.meters_to_km(
+                cs.GEODESIC.inv(
                     lats1=self.pos.latitude,
                     lons1=self.pos.longitude,
                     lats2=pos.latitude,

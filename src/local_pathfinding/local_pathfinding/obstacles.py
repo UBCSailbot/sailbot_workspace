@@ -3,17 +3,12 @@
 import math
 from typing import Optional
 
+import custom_interfaces.msg as ci
 import numpy as np
-from custom_interfaces.msg import HelperAISShip, HelperLatLon
 from shapely.affinity import affine_transform
-from shapely.geometry import MultiPolygon, Point, Polygon, box
+from shapely.geometry import MultiPolygon, Point, Polygon
 
-from local_pathfinding.coord_systems import (
-    XY,
-    latlon_polygon_list_to_xy_polygon_list,
-    latlon_to_xy,
-    meters_to_km,
-)
+import local_pathfinding.coord_systems as cs
 
 # Constants
 PROJ_HOURS_NO_COLLISION = 3  # hours
@@ -29,26 +24,26 @@ class Obstacle:
     Do not instantiate an Obstacle object directly, use one of the subclasses instead.
 
     Attributes:
-        reference (HelperLatLon): Lat and lon position of the next global waypoint.
-        sailbot_position (HelperLatLon): Lat and lon position of SailBot.
+        reference (ci.HelperLatLon): Lat and lon position of the next global waypoint.
+        sailbot_position (ci.HelperLatLon): Lat and lon position of SailBot.
         collision_zone ([Polygon or MultiPolygon]): Shapely geometry representing the
             obstacle's collision zone. Shape depends on the child class.
     """
 
-    def __init__(self, reference: HelperLatLon, sailbot_position: HelperLatLon):
+    def __init__(self, reference: ci.HelperLatLon, sailbot_position: ci.HelperLatLon):
         self.reference = reference
         self.sailbot_position_latlon = sailbot_position
-        self.sailbot_position = latlon_to_xy(self.reference, self.sailbot_position_latlon)
+        self.sailbot_position = cs.latlon_to_xy(self.reference, self.sailbot_position_latlon)
 
         # Defined later by the child class
         self.collision_zone = None
 
-    def is_valid(self, point: XY) -> bool:
+    def is_valid(self, point: cs.XY) -> bool:
         """
         Checks if a path planner's state point is inside the obstacle's collision zone.
 
         Args:
-            point (HelperLatLon): Point representing the state point to be checked.
+            point (ci.HelperLatLon): Point representing the state point to be checked.
 
         Returns:
             bool: True if the point is not within the obstacle's collision zone, false otherwise.
@@ -73,33 +68,33 @@ class Obstacle:
         else:
             # Land Obstacle
             self._update_land_collision_zone(  # type: ignore
-                state_space_latlon=kwargs.get("state_space"),
+                state_space_latlon=kwargs.get("state_space_latlon"),
                 land_multi_polygon=kwargs.get("land_multi_polygon"),
             )
 
     def update_sailbot_data(
-        self, sailbot_position: HelperLatLon, sailbot_speed: Optional[float] = None
+        self, sailbot_position: ci.HelperLatLon, sailbot_speed: Optional[float] = None
     ) -> None:
         """Updates Sailbot's position, and Sailbot's speed (if the caller is a Boat object).
 
         Args:
-            sailbot_position (HelperLatLon): Position of the SailBot.
+            sailbot_position (ci.HelperLatLon): Position of the SailBot.
             sailbot_speed (float): Speed of the SailBot in kmph.
         """
         self.sailbot_position_latlon = sailbot_position
-        self.sailbot_position = latlon_to_xy(self.reference, sailbot_position)
+        self.sailbot_position = cs.latlon_to_xy(self.reference, sailbot_position)
 
         if isinstance(self, Boat):
             self.sailbot_speed = sailbot_speed
 
-    def update_reference_point(self, reference: HelperLatLon, **kwargs) -> None:
+    def update_reference_point(self, reference: ci.HelperLatLon, **kwargs) -> None:
         """Updates the reference point and updates the collision zone.
 
         Args:
-            reference (HelperLatLon): Position of the updated global waypoint.
+            reference (ci.HelperLatLon): Position of the updated global waypoint.
         """
         self.reference = reference
-        self.sailbot_position = latlon_to_xy(self.reference, self.sailbot_position_latlon)
+        self.sailbot_position = cs.latlon_to_xy(self.reference, self.sailbot_position_latlon)
         self.update_collision_zone(**kwargs)
 
 
@@ -123,18 +118,18 @@ class Land(Obstacle):
 
     def __init__(
         self,
-        reference: HelperLatLon,
-        sailbot_position: HelperLatLon,
+        reference: ci.HelperLatLon,
+        sailbot_position: ci.HelperLatLon,
         all_land_data: MultiPolygon,
         bbox_buffer_amount: float = 0.1,
-        state_space: Polygon = None,
+        state_space_latlon: Polygon = None,
         land_multi_polygon: MultiPolygon = None,
     ):
         super().__init__(reference, sailbot_position)
         self.all_land_data = all_land_data
         self.bbox_buffer_amount = bbox_buffer_amount
         self._update_land_collision_zone(
-            state_space_latlon=state_space, land_multi_polygon=land_multi_polygon
+            state_space_latlon=state_space_latlon, land_multi_polygon=land_multi_polygon
         )
 
     def _update_land_collision_zone(
@@ -148,38 +143,29 @@ class Land(Obstacle):
             state_space_latlon (Polygon): A custom state space.
             land_multi_polygon (MultiPolygon): Custom land data. Useful for testing.
         """
-        if land_multi_polygon is not None:  # for testing
+        if land_multi_polygon is not None:  # for testing (injecting mock land data)
 
-            collision_zone = land_multi_polygon.buffer(0)
-
-            if collision_zone.geom_type == "Polygon":
-                collision_zone = MultiPolygon([collision_zone])
-
-            self.collision_zone = collision_zone
+            self.collision_zone = MultiPolygon(
+                cs.latlon_polygon_list_to_xy_polygon_list(land_multi_polygon.geoms, self.reference)
+            )
             return
 
-        if state_space_latlon is None:  # create a default one
-
-            sailbot_box = Point(
-                self.sailbot_position_latlon.longitude, self.sailbot_position_latlon.latitude
-            ).buffer(self.bbox_buffer_amount, cap_style=3, join_style=2)
-
-            waypoint_box = Point(self.reference.longitude, self.reference.latitude).buffer(
-                self.bbox_buffer_amount, cap_style=3, join_style=2
-            )
-            state_space_latlon = box(*MultiPolygon([sailbot_box, waypoint_box]).bounds)
+        if state_space_latlon is None:
+            raise ValueError("state_space_latlon must not be None")
 
         latlon_polygons = self.all_land_data.intersection(state_space_latlon)
 
         if isinstance(latlon_polygons, MultiPolygon):
             # non-empty MultiPolygon
-            xy_polygons = latlon_polygon_list_to_xy_polygon_list(
+            xy_polygons = cs.latlon_polygon_list_to_xy_polygon_list(
                 latlon_polygons.geoms, self.reference
             )
         else:
             # single Polygon (empty or non-empty)
             # pass it inside a list for consistency
-            xy_polygons = latlon_polygon_list_to_xy_polygon_list([latlon_polygons], self.reference)
+            xy_polygons = cs.latlon_polygon_list_to_xy_polygon_list(
+                [latlon_polygons], self.reference
+            )
 
         collision_zone = MultiPolygon(xy_polygons)
 
@@ -202,30 +188,30 @@ class Boat(Obstacle):
     Also referred to target ships or boat obstacles.
 
     Attributes:
-       ais_ship (HelperAISShip): AIS Ship message containing information about the boat.
+       ais_ship (ci.HelperAISShip): AIS Ship message containing information about the boat.
        width (float): Width of the boat in km.
        length (float): Length of the boat in km.
     """
 
     def __init__(
         self,
-        reference: HelperLatLon,
-        sailbot_position: HelperLatLon,
+        reference: ci.HelperLatLon,
+        sailbot_position: ci.HelperLatLon,
         sailbot_speed: float,
-        ais_ship: HelperAISShip,
+        ais_ship: ci.HelperAISShip,
     ):
         super().__init__(reference, sailbot_position)
         self.sailbot_speed = sailbot_speed
         self.ais_ship = ais_ship
-        self.width = meters_to_km(self.ais_ship.width.dimension)
-        self.length = meters_to_km(self.ais_ship.length.dimension)
+        self.width = cs.meters_to_km(self.ais_ship.width.dimension)
+        self.length = cs.meters_to_km(self.ais_ship.length.dimension)
         self._update_boat_collision_zone()
 
-    def _update_boat_collision_zone(self, ais_ship: Optional[HelperAISShip] = None) -> None:
+    def _update_boat_collision_zone(self, ais_ship: Optional[ci.HelperAISShip] = None) -> None:
         """Sets or regenerates a Shapely Polygon that represents the boat's collision zone.
 
         Args:
-            ais_ship (Optional[HelperAISShip]): AIS Ship message containing boat information.
+            ais_ship (Optional[ci.HelperAISShip]): AIS Ship message containing boat information.
         """
         if ais_ship is not None:
             if ais_ship.id != self.ais_ship.id:
@@ -240,7 +226,7 @@ class Boat(Obstacle):
         length = self.length
 
         # coordinates of the center of the boat
-        position = latlon_to_xy(self.reference, ais_ship.lat_lon)
+        position = cs.latlon_to_xy(self.reference, ais_ship.lat_lon)
 
         # Course over ground of the boat
         cog = ais_ship.cog.heading
@@ -288,7 +274,7 @@ class Boat(Obstacle):
             float: Distance the boat will travel before collision or the max projection distance
                    if a collision is not possible.
         """
-        position = latlon_to_xy(self.reference, self.ais_ship.lat_lon)
+        position = cs.latlon_to_xy(self.reference, self.ais_ship.lat_lon)
 
         # vector components of the boat's speed over ground
         cog_rad = math.radians(self.ais_ship.cog.heading)

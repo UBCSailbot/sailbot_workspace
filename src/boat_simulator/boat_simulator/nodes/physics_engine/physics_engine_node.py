@@ -32,6 +32,7 @@ from rclpy.publisher import Publisher
 from rclpy.subscription import Subscription
 
 import boat_simulator.common.constants as Constants
+import boat_simulator.common.utils as Utils
 from boat_simulator.common.generators import MVGaussianGenerator
 from boat_simulator.common.sensors import SimGPS, SimWindSensor
 from boat_simulator.common.types import Scalar
@@ -371,14 +372,16 @@ class PhysicsEngineNode(Node):
 
     def __publish_wind_sensors(self):
         """Publishes mock wind sensor data."""
-        # TODO Update to publish real data
+        wind1 = self.__sim_wind_sensor.wind
+        wind2 = self.__sim_wind_sensor.wind
+
         windSensor1 = WindSensor()
-        windSensor1.speed.speed = 0.0
-        windSensor1.direction = 0
+        windSensor1.speed.speed = Utils.get_wind_speed(wind1)
+        windSensor1.direction = Utils.get_wind_direction(wind1)
 
         windSensor2 = WindSensor()
-        windSensor2.speed.speed = 0.0
-        windSensor2.direction = 0
+        windSensor2.speed.speed = Utils.get_wind_speed(wind2)
+        windSensor2.direction = Utils.get_wind_direction(wind2)
 
         msg = WindSensors()
         msg.wind_sensors = [windSensor1, windSensor2]
