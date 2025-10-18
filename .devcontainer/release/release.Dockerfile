@@ -9,7 +9,5 @@ RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash \
     && ./scripts/setup.sh \
     && ./scripts/build.sh"
 
-RUN rm -rf ./scripts ./src
-
 USER ros
 WORKDIR ${ROS_WORKSPACE}
