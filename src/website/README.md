@@ -36,30 +36,48 @@ This directory contains all installed packages.
 
 When installing a new package to the website, please follow the steps below:
 
-1. Access the terminal of the website container on Docker.
-
-2. Run the command `npm install <package-name>`.
+1. Run the command `npm install <package-name>`.
    Replace `<package-name>` with the actual name of the package you want to add.
 
    - Should you encounter errors related to resolving peer dependencies, please re-run the command with
      the header `--legacy-peer-deps`. Do not to use `--force` unless you're well aware of the potential consequences.
 
-3. Review the `package.json` file to ensure the new package and its version have been added to the dependencies section.
+2. Review the `package.json` file to ensure the new package and its version have been added to the dependencies section.
    - Confirm that `package-lock.json` has also been updated.
      This file holds specific version information to ensure consistent installations across different environments.
-4. Once the installation process is finished, please make sure to commit the files `package.json` and `package-lock.json`.
+3. Once the installation process is finished, please make sure to commit the files `package.json` and `package-lock.json`.
    These files are essential for version controlling the dependencies that have been added.
 
 ## Run
 
-Using [Sailbot Workspace](https://github.com/UBCSailbot/sailbot_workspace),
-the website should be up and running on [http://localhost:3005](http://localhost:3005).
-
-Otherwise, you execute the following commands to run it in development mode:
+You can run the website in development mode by executing the following command:
 
 ```bash
 npm run dev
 ```
+
+This will start the website in development mode and spin up a Docker container for our MongoDB database.
+Make sure you have Docker installed!
+
+Once you have run the website in development mode, you can access it at [http://localhost:3005](http://localhost:3005).
+
+After spinning up the database, it will keep running in the background until Docker is stopped. You can just manually stop the database by running:
+
+```bash
+npm run db:stop
+```
+
+Otherwise, here are some useful commands:
+
+| Command              | Description                                              |
+| -------------------- | -------------------------------------------------------- |
+| `npm run db:start`   | Starts the MongoDB database container                    |
+| `npm run db:stop`    | Stops the MongoDB database container                     |
+| `npm run web:dev`    | Runs the website in development mode on port 3005        |
+| `npm run dev`        | Starts both the database and website in development mode |
+| `npm run web:build`  | Builds the website for production                        |
+| `npm run web:start`  | Starts the production website on port 3005               |
+| `npm run simulation` | Runs the simulation script                               |
 
 ## Linters
 
