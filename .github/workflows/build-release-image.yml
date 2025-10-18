@@ -34,7 +34,7 @@ jobs:
           password: ${{ secrets.PAT_TOKEN }}
 
       - name: Generate CACHEBUST timestamp
-        id: metas
+        id: meta
         run: echo "timestamp=$(($(date +%s%3N)))" >> $GITHUB_OUTPUT
 
       - name: Build and push release
