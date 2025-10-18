@@ -20,7 +20,7 @@
 namespace bstream = bsoncxx::builder::stream;
 using Polaris::Sensors;
 
-mongocxx::instance SailbotDB::inst_{};  // staticallly initialize instance
+mongocxx::instance SailbotDB::inst_{};  // statically initialize instance
 
 // PUBLIC
 
@@ -74,7 +74,11 @@ bool SailbotDB::storeNewSensors(const Sensors & sensors_pb, RcvdMsgInfo new_info
     const std::string &   timestamp = new_info.timestamp_;
     mongocxx::pool::entry entry     = pool_->acquire();
     return storeGps(sensors_pb.gps(), timestamp, *entry) && storeAis(sensors_pb.ais_ships(), timestamp, *entry) &&
-           storeGenericSensors(sensors_pb.data_sensors(), timestamp, *entry) &&
+           //    storeGenericSensors(sensors_pb.data_sensors(), timestamp, *entry) &&
+           storeTempSensors(sensors_pb.temp_sensors(), timestamp, *entry) &&
+           storePhSensors(sensors_pb.ph_sensors(), timestamp, *entry) &&
+           storeSalinitySensors(sensors_pb.salinity_sensors(), timestamp, *entry) &&
+           storePressureSensors(sensors_pb.pressure_sensors(), timestamp, *entry) &&
            storeBatteries(sensors_pb.batteries(), timestamp, *entry) &&
            storeWindSensors(sensors_pb.wind_sensors(), timestamp, *entry) &&
            storePathSensors(sensors_pb.local_path_data(), timestamp, *entry);
@@ -114,19 +118,81 @@ bool SailbotDB::storeAis(
     return static_cast<bool>(ais_coll.insert_one(ais_ships_doc.view()));
 }
 
-bool SailbotDB::storeGenericSensors(
-  const ProtoList<Sensors::Generic> & generic_pb, const std::string & timestamp, mongocxx::client & client)
+// bool SailbotDB::storeGenericSensors(
+//   const ProtoList<Sensors::Generic> & generic_pb, const std::string & timestamp, mongocxx::client & client)
+// {
+//     mongocxx::database   db           = client[db_name_];
+//     mongocxx::collection generic_coll = db[COLLECTION_DATA_SENSORS];
+//     bstream::document    doc_builder{};
+//     auto                 generic_doc_arr = doc_builder << "genericSensors" << bstream::open_array;
+//     for (const Sensors::Generic & generic : generic_pb) {
+//         generic_doc_arr = generic_doc_arr << bstream::open_document << "id" << static_cast<int64_t>(generic.id())
+//                                           << "data" << static_cast<int64_t>(generic.data()) << bstream::close_document;
+//     }
+//     DocVal generic_doc = generic_doc_arr << bstream::close_array << "timestamp" << timestamp << bstream::finalize;
+//     return static_cast<bool>(generic_coll.insert_one(generic_doc.view()));
+// }
+
+bool SailbotDB::storeTempSensors(
+  const ProtoList<Sensors::Temp> & temp_pb, const std::string & timestamp, mongocxx::client & client)
 {
-    mongocxx::database   db           = client[db_name_];
-    mongocxx::collection generic_coll = db[COLLECTION_DATA_SENSORS];
+    mongocxx::database   db        = client[db_name_];
+    mongocxx::collection temp_coll = db[COLLECTION_DATA_SENSORS];
     bstream::document    doc_builder{};
-    auto                 generic_doc_arr = doc_builder << "genericSensors" << bstream::open_array;
-    for (const Sensors::Generic & generic : generic_pb) {
-        generic_doc_arr = generic_doc_arr << bstream::open_document << "id" << static_cast<int64_t>(generic.id())
-                                          << "data" << static_cast<int64_t>(generic.data()) << bstream::close_document;
+    auto                 temp_doc_arr = doc_builder << "tempSensors" << bstream::open_array;
+    for (const Sensors::Temp & temp_sensor : temp_pb) {
+        temp_doc_arr = temp_doc_arr << bstream::open_document << "temperature"
+                                    << static_cast<int64_t>(temp_sensor.temp()) << bstream::close_document;
     }
-    DocVal generic_doc = generic_doc_arr << bstream::close_array << "timestamp" << timestamp << bstream::finalize;
-    return static_cast<bool>(generic_coll.insert_one(generic_doc.view()));
+    DocVal temp_doc = temp_doc_arr << bstream::close_array << "timestamp" << timestamp << bstream::finalize;
+    return static_cast<bool>(temp_coll.insert_one(temp_doc.view()));
+}
+
+bool SailbotDB::storePhSensors(
+  const ProtoList<Sensors::Ph> & ph_pb, const std::string & timestamp, mongocxx::client & client)
+{
+    mongocxx::database   db      = client[db_name_];
+    mongocxx::collection ph_coll = db[COLLECTION_DATA_SENSORS];
+    bstream::document    doc_builder{};
+    auto                 ph_doc_arr = doc_builder << "phSensors" << bstream::open_array;
+    for (const Sensors::Ph & ph_sensor : ph_pb) {
+        ph_doc_arr = ph_doc_arr << bstream::open_document << "ph" << static_cast<int64_t>(ph_sensor.ph())
+                                << bstream::close_document;
+    }
+    DocVal ph_doc = ph_doc_arr << bstream::close_array << "timestamp" << timestamp << bstream::finalize;
+    return static_cast<bool>(ph_coll.insert_one(ph_doc.view()));
+}
+
+bool SailbotDB::storeSalinitySensors(
+  const ProtoList<Sensors::Salinity> & salinity_pb, const std::string & timestamp, mongocxx::client & client)
+{
+    mongocxx::database   db            = client[db_name_];
+    mongocxx::collection salinity_coll = db[COLLECTION_DATA_SENSORS];
+    bstream::document    doc_builder{};
+    auto                 salinity_doc_arr = doc_builder << "salinitySensors" << bstream::open_array;
+    for (const Sensors::Salinity & salinity_sensor : salinity_pb) {
+        salinity_doc_arr = salinity_doc_arr << bstream::open_document << "salinity"
+                                            << static_cast<int64_t>(salinity_sensor.salinity())
+                                            << bstream::close_document;
+    }
+    DocVal salinity_doc = salinity_doc_arr << bstream::close_array << "timestamp" << timestamp << bstream::finalize;
+    return static_cast<bool>(salinity_coll.insert_one(salinity_doc.view()));
+}
+
+bool SailbotDB::storePressureSensors(
+  const ProtoList<Sensors::Pressure> & pressure_pb, const std::string & timestamp, mongocxx::client & client)
+{
+    mongocxx::database   db            = client[db_name_];
+    mongocxx::collection pressure_coll = db[COLLECTION_DATA_SENSORS];
+    bstream::document    doc_builder{};
+    auto                 pressure_doc_arr = doc_builder << "pressureSensors" << bstream::open_array;
+    for (const Sensors::Pressure & pressure_sensor : pressure_pb) {
+        pressure_doc_arr = pressure_doc_arr << bstream::open_document << "pressure"
+                                            << static_cast<int64_t>(pressure_sensor.pressure())
+                                            << bstream::close_document;
+    }
+    DocVal pressure_doc = pressure_doc_arr << bstream::close_array << "timestamp" << timestamp << bstream::finalize;
+    return static_cast<bool>(pressure_coll.insert_one(pressure_doc.view()));
 }
 
 bool SailbotDB::storeBatteries(

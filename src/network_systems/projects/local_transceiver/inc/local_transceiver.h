@@ -80,7 +80,7 @@ public:
     *
     * @param battery custom_interfaces SalinitySensors object
     */
-    void updateSensor(msg::SalinitySensors pressure);
+    void updateSensor(msg::SalinitySensors salinity);
 
     /**
     * @brief Update the sensor with new pH data

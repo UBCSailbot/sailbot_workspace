@@ -10,9 +10,9 @@
 class UtilDB : public SailbotDB
 {
 public:
-    static constexpr int NUM_AIS_SHIPS       = 15;  // arbitrary number
-    static constexpr int NUM_GENERIC_SENSORS = 5;   // arbitrary number
-    static constexpr int NUM_PATH_WAYPOINTS  = 5;   // arbitrary number
+    static constexpr int NUM_AIS_SHIPS = 15;  // arbitrary number
+    // static constexpr int NUM_GENERIC_SENSORS = 5;   // arbitrary number
+    static constexpr int NUM_PATH_WAYPOINTS = 5;  // arbitrary number
 
     /**
      * @brief Construct a UtilDB, which has debug utilities for SailbotDB
@@ -85,11 +85,41 @@ private:
     void genRandAisData(Polaris::Sensors::Ais & ais_ship);
 
     /**
-    * @brief generate random generic sensor data
+    // * @brief generate random generic sensor data
+    // *
+    // * @param generic_sensor Generic sensor data to modify
+    // */
+    // void genRandGenericSensorData(Polaris::Sensors::Generic & generic_sensor);
+
+    /**
+     * @brief
+     *
+     *
     *
-    * @param generic_sensor Generic sensor data to modify
+    * @param temp_sensor Temperature sensor data to modify
     */
-    void genRandGenericSensorData(Polaris::Sensors::Generic & generic_sensor);
+    void genRandTempSensorData(Polaris::Sensors::Temp & temp_sensor);
+
+    /**
+    * @brief generate random pH sensor data
+    *
+    * @param ph_sensor pH sensor data to modify
+    */
+    void genRandPhSensorData(Polaris::Sensors::Ph & ph_sensor);
+
+    /**
+    * @brief generate random pressure sensor data
+    *
+    * @param pressure_sensor Pressure sensor data to modify
+    */
+    void genRandPressureSensorData(Polaris::Sensors::Pressure & pressure_sensor);
+
+    /**
+    * @brief generate random salinity sensor data
+    *
+    * @param salinity_sensor Salinity sensor data to modify
+    */
+    void genRandSalinitySensorData(Polaris::Sensors::Salinity & salinity_sensor);
 
     /**
     * @brief generate random battery data
