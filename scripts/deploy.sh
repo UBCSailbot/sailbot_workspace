@@ -34,9 +34,20 @@ while getopts "t:h" flags; do
   esac
 done
 
-docker build -f /workspaces/sailbot_workspace/.devcontainer/release/release.Dockerfile \
-  -t ghcr.io/ubcsailbot/sailbot_workspace/release:${TAG} \
-  /workspaces/sailbot_workspace/
+echo $PAT | docker login ghcr.io -u $USERNAME --password-stdin
 
-echo $PAT | docker login -u $USERNAME --password-stdin
-docker push ghcr.io/ubcsailbot/sailbot_workspace/release:${TAG}
+# docker buildx create --name sailbot --platform linux/arm64,linux/amd64
+
+docker buildx build . \
+    --file .devcontainer/release/release.Dockerfile \
+    --tag ghcr.io/ubcsailbot/sailbot_workspace/release:${TAG} \
+    --platform linux/arm64,linux/amd64 \
+    --builder sailbot \
+    --push
+
+
+
+# docker build --progress=plain -f .devcontainer/release/release.Dockerfile \
+#   -t ghcr.io/ubcsailbot/sailbot_workspace/release:${TAG} \
+#   .
+# docker push ghcr.io/ubcsailbot/sailbot_workspace/release:${TAG}
