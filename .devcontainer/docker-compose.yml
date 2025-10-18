@@ -18,6 +18,7 @@ services:
       - ..:/workspaces/sailbot_workspace:cached
       - sailbot-new-project-bashhistory:/home/ros/commandhistory:delegated
       - sailbot-new-project-roslog:/home/ros/.ros/log:delegated
+      - ~/.ssh/id_ed25519:/home/ros/.ssh/id_ed25519
 
     # Overrides default command so things don't shut down after the process ends.
     command: sleep infinity
