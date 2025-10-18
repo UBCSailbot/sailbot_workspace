@@ -1,14 +1,15 @@
 FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:latest
 
 WORKDIR ${ROS_WORKSPACE}
-COPY src/ ./src
 COPY scripts/ ./scripts
+ARG CACHEBUST
+COPY src/ ./src
 
-RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && ./scripts/setup.sh"
-RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && ./scripts/build.sh"
+RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash \
+    && ./scripts/setup.sh \
+    && ./scripts/build.sh"
 
-RUN rm -rf ./scripts \
-    && rm -rf ./src
+RUN rm -rf ./scripts ./src
 
-USER ${USERNAME}
+USER ros
 WORKDIR ${ROS_WORKSPACE}
