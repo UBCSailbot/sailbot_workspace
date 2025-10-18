@@ -10,7 +10,7 @@ using Polaris::Sensors;
 static std::random_device g_rd        = std::random_device();  // random number sampler
 static uint32_t           g_rand_seed = g_rd();                // seed used for random number generation
 static std::mt19937       g_mt(g_rand_seed);                   // initialize random number generator with seed
-static UtilDB             g_test_db("test", MONGODB_CONN_STR, std::make_shared<std::mt19937>(g_mt));
+static UtilDB             g_test_db("test", SailbotDB::MONGODB_CONN_STR(), std::make_shared<std::mt19937>(g_mt));
 class TestSailbotDB : public ::testing::Test
 {
 protected:

@@ -35,6 +35,19 @@ std::ostream & operator<<(std::ostream & os, const SailbotDB::RcvdMsgInfo & info
     return os;
 }
 
+const std::string & SailbotDB::MONGODB_CONN_STR()
+{
+    static const std::string conn_str = [] {
+        const char * pwd = std::getenv("MONGODB_PASSWORD");  //NOLINT(concurrency-mt-unsafe)
+        if (pwd == nullptr) {
+            throw std::runtime_error("MONGODB_PASSWORD not set");
+        }
+        return "mongodb+srv://software:" + std::string(pwd) +
+               "@dev.khxge.mongodb.net/?authSource=admin&retryWrites=true&w=majority&appName=dev";
+    }();
+    return conn_str;
+}
+
 std::string SailbotDB::mkTimestamp(const std::tm & tm)
 {
     constexpr int     YEAR_OFFSET  = 1900;  // tm_year is years since 1900
