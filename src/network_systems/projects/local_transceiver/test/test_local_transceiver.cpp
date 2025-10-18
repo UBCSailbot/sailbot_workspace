@@ -139,10 +139,10 @@ TEST_F(TestLocalTransceiver, sendData)
     custom_interfaces::msg::HelperPressure pressure_data;
     custom_interfaces::msg::HelperSalinity salinity_data;
 
-    temp_data.set__temp(holder_int);          // TODO: Confirm test value
-    ph_data.set__ph(holder_int);              // TODO: Confirm test value
-    pressure_data.set__pressure(holder_int);  // TODO: Confirm test value
-    salinity_data.set__salinity(holder_int);  // TODO: Confirm test value
+    temp_data.set__temp(holder);
+    ph_data.set__ph(holder);
+    pressure_data.set__pressure(holder);
+    salinity_data.set__salinity(holder);
 
     // sensors.set__generic_sensors({sensor});
 
@@ -157,8 +157,11 @@ TEST_F(TestLocalTransceiver, sendData)
     // update sensors and send
     lcl_trns_->updateSensor(wind);
     lcl_trns_->updateSensor(gps);
+    lcl_trns_->updateSensor(temp);
+    lcl_trns_->updateSensor(pressure);
+    lcl_trns_->updateSensor(ph);
+    lcl_trns_->updateSensor(salinity);
     lcl_trns_->updateSensor(batteries);
-    lcl_trns_->updateSensor(sensors);
     lcl_trns_->updateSensor(local_paths);
 
     EXPECT_TRUE(lcl_trns_->send());
