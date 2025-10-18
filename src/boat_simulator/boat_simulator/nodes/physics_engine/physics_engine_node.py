@@ -341,7 +341,6 @@ class PhysicsEngineNode(Node):
 
     def __publish_gps(self):
         """Publishes mock GPS data."""
-        # TODO Update to publish real data
         lat_lon = self.__boat_state.global_position
         speed = np.linalg.norm(self.__boat_state.global_velocity)
         heading = self.__boat_state.angular_position[0]
@@ -394,7 +393,6 @@ class PhysicsEngineNode(Node):
 
     def __publish_kinematics(self):
         """Publishes the kinematics data of the simulated boat."""
-        # TODO Update to publish real data
         lat_lon = self.__boat_state.global_position
         speed = np.linalg.norm(self.__boat_state.global_velocity)
         heading = self.__boat_state.angular_position[0]
