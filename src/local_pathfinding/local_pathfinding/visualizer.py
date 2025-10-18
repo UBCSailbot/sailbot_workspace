@@ -506,25 +506,23 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
     )
 
     # Draw Boat State space
-    if state.sailbot_xy and state.final_local_wp_x and state.final_local_wp_y:
+    boat_pos = cs.XY(boat_x[0], boat_y[0])
+    goal_pos = cs.XY(goal_x[0], goal_y[0])
 
-        boat_pos = cs.XY(*state.sailbot_xy[-1])
-        dest_pos = cs.XY(state.final_local_wp_x[-1], state.final_local_wp_y[-1])
+    boat_box = create_buffer_around_position(boat_pos)
+    goal_box = create_buffer_around_position(goal_pos)
 
-        boat_box = create_buffer_around_position(boat_pos)
-        dest_box = create_buffer_around_position(dest_pos)
+    # Set state space bounds
+    state_space = MultiPolygon([boat_box, goal_box])
+    x_min, y_min, x_max, y_max = state_space.bounds
 
-        # Set state space bounds
-        combined_region = MultiPolygon([boat_box, dest_box])
-        x_min, y_min, x_max, y_max = combined_region.bounds
-
-        fig.add_shape(
-            type="rect",
-            x0=x_min, y0=y_min, x1=x_max, y1=y_max,
-            fillcolor="rgba(255, 100, 100, 0.25)",  # light red, semi-transparent
-            line=dict(width=0),
-            layer="below",
-        )
+    fig.add_shape(
+        type="rect",
+        x0=x_min, y0=y_min, x1=x_max, y1=y_max,
+        fillcolor="rgba(255, 100, 100, 0.25)",  # light red, semi-transparent
+        line=dict(width=0),
+        layer="below",
+    )
 
     # Add all traces to the figure
     fig.add_trace(intermediate_trace)
