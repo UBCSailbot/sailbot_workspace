@@ -19,6 +19,7 @@
 #include <optional>
 #include <span>
 #include <stdexcept>
+#include <type_traits>
 
 // CAN frame definitions from: https://ubcsailbot.atlassian.net/wiki/spaces/prjt22/pages/1827176527/CAN+Frames
 namespace CAN_FP
@@ -266,6 +267,53 @@ public:
     friend std::ostream & operator<<(std::ostream & os, const BaseFrame & can);
 
 protected:
+    /**
+     * @brief Generic function that takes angle in range [0, 360) and bounds them  (-180 <= 180]
+     *
+     * @tparam Type Generic type
+     * @param angle Input angle (guaranteed to be [0,360))
+     * @return auto Returns the same type as the input if signed, otherwise returns the signed
+               type of the same bit width
+     */
+    template <typename Type>
+    static auto boundTo180(Type angle)
+    {
+        // Return type: signed version if input is unsigned, else same type
+        using ReturnType = std::conditional_t<std::is_unsigned_v<Type>, std::make_signed_t<Type>, Type>;
+
+        ReturnType angle_copy = static_cast<ReturnType>(angle);
+
+        if (angle_copy > 180) {  //NOLINT(readability-magic-numbers)
+            angle_copy -= 360;   //NOLINT(readability-magic-numbers)
+        }
+
+        return angle_copy;
+    }
+
+    /**
+     * @brief Generic function that takes angles and bounds them to [0, 360)
+     *
+     * @tparam Type Generic type
+     * @param angle Input angle (note: the angle is not guaranteed by CAN transceiver to be (-180, 180].
+                    Angle validity is checked later by checkbounds().
+     * @return auto Returns the same type as the input if signed, otherwise returns the signed
+                    type of the same bit width
+     */
+    template <typename Type>
+    static auto boundTo360(Type angle)
+    {
+        // Return type: signed version if input is unsigned, else same type
+        using ReturnType = std::conditional_t<std::is_unsigned_v<Type>, std::make_signed_t<Type>, Type>;
+
+        ReturnType angle_copy = static_cast<ReturnType>(angle);
+
+        if (angle_copy < 0) {   //NOLINT(readability-magic-numbers)
+            angle_copy += 360;  //NOLINT(readability-magic-numbers)
+        }
+
+        return angle_copy;
+    }
+
     /**
      * @brief Derived classes can instantiate a base frame using an CanId and a data length
      *
