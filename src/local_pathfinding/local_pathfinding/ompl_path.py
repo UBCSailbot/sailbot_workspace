@@ -125,7 +125,7 @@ class OMPLPath:
                     sailbot_position=local_path_state.position,
                     sailbot_speed=local_path_state.speed,
                 )
-                existing_boat.update_collision_zone()
+                existing_boat.update_collision_zone(ais_ship=ship)
             else:
                 # Otherwise, create a new Obstacle object
                 new_boat = ob.Boat(
@@ -135,7 +135,6 @@ class OMPLPath:
                     ship,
                 )
                 OMPLPath.obstacles[ship.id] = new_boat
-
         # LAND
         if state_space_xy is None:
             state_space_latlon = None
