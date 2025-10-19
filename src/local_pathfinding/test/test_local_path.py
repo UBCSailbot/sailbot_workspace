@@ -11,7 +11,7 @@ from shapely.geometry import MultiPolygon, Polygon
 
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.local_path as lp
-from local_pathfinding.obstacles import Boat, Land, Obstacle
+from local_pathfinding.obstacles import Obstacle
 
 REF = HelperLatLon(latitude=10.0, longitude=10.0)
 
@@ -138,7 +138,8 @@ PATH = lp.LocalPath(parent_logger=RcutilsLogger())
                     reference=HelperLatLon(
                         latitude=48.113521575927734, longitude=-135.67999267578125
                     ),
-                    sailbot_position=cs.xy_to_latlon(REF, cs.XY(x=878.268119211102, y=106.06146253551834)),
+                    sailbot_position=cs.xy_to_latlon(REF, cs.XY(x=878.268119211102,
+                                                                y=106.06146253551834)),
                     collision_zone=Polygon(
                         [
                             # already in XY
@@ -155,7 +156,8 @@ PATH = lp.LocalPath(parent_logger=RcutilsLogger())
                     reference=HelperLatLon(
                         latitude=48.197017669677734, longitude=-128.9371337890625
                     ),
-                    sailbot_position=cs.xy_to_latlon(REF, cs.XY(x=878.268119211102, y=106.06146253551834)),
+                    sailbot_position=cs.xy_to_latlon(REF, cs.XY(x=878.268119211102,
+                                                                y=106.06146253551834)),
                     collision_zone=Polygon(
                         [
                             (599.7313118870519, 39.76370963196999),
@@ -171,7 +173,8 @@ PATH = lp.LocalPath(parent_logger=RcutilsLogger())
                     reference=HelperLatLon(
                         latitude=48.510276794433594, longitude=-126.15927124023438
                     ),
-                    sailbot_position=cs.xy_to_latlon(REF, cs.XY(x=878.268119211102, y=106.06146253551834)),
+                    sailbot_position=cs.xy_to_latlon(REF, cs.XY(x=878.268119211102,
+                                                                y=106.06146253551834)),
                     collision_zone=Polygon(
                         [
                             (799.7261319438433, 99.77070315844303),

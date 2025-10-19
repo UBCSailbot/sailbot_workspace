@@ -3,11 +3,11 @@
 import math
 from typing import List, Optional
 
-import custom_interfaces.msg as ci
 from rclpy.impl.rcutils_logger import RcutilsLogger
 from shapely.geometry import LineString, MultiPolygon
 
 import local_pathfinding.coord_systems as cs
+import custom_interfaces.msg as ci
 import local_pathfinding.obstacles as ob
 from local_pathfinding.ompl_path import OMPLPath
 
@@ -137,7 +137,7 @@ class LocalPath:
 
         Args:
             local_wp_index (int): Index of the current local waypoint in the path.
-            reference_latlon (ci.HelperLatLon): Reference latitude and longitude (typically the next global waypoint).
+            reference_latlon (ci.HelperLatLon): lat lon of the next global waypoint
             path (ci.Path): Collection of waypoints forming the local path.
             obstacles (List[Obstacle]): List of obstacles in the state space.
 
