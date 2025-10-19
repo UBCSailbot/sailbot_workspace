@@ -95,7 +95,7 @@ class LocalPath:
     def calculate_desired_heading_and_waypoint_index(
         path: ci.Path, waypoint_index: int, boat_lat_lon: ci.HelperLatLon
     ):
-        """ Calculates the desired heading using GEODESIC. Updates the waypoint index (i.e. change
+        """Calculates the desired heading using GEODESIC. Updates the waypoint index (i.e. change
         the waypoint) if the boat is close enough to the current waypoint.
 
         Args:
@@ -126,19 +126,27 @@ class LocalPath:
         return cs.bound_to_180(desired_heading), waypoint_index
 
     @staticmethod
-    def in_collision_zone(local_wp_index: int,
-                          reference_latlon: ci.HelperLatLon,
-                          path: ci.Path,
-                          obstacles: List[ob.Obstacle]):
+    def in_collision_zone(
+        local_wp_index: int,
+        reference_latlon: ci.HelperLatLon,
+        path: ci.Path,
+        obstacles: List[ob.Obstacle],
+    ):
         """
-        Checks if the path is in a collision zone or not
+        Checks if the path is in a collision zone or not.
 
         Args:
-            local_wp_index
+            local_wp_index (int): Index of the current local waypoint in the path.
+            reference_latlon (ci.HelperLatLon): Reference latitude and longitude (typically the next global waypoint).
+            path (ci.Path): Collection of waypoints forming the local path.
+            obstacles (List[Obstacle]): List of obstacles in the state space.
+
         Returns:
-            boolean: True if the path intersects a collision zone
+            boolean: True if the path intersects a collision zone, False otherwise.
         """
-        xy_path = list(map(lambda x: (cs.latlon_to_xy(reference_latlon, x)), path.waypoints))
+        xy_path = list(
+            map(lambda lat_lon: (cs.latlon_to_xy(reference_latlon, lat_lon)), path.waypoints)
+        )
         for i in range(local_wp_index, len(xy_path) - 1):
             p1, p2 = xy_path[i], xy_path[i + 1]
             segment = LineString([(p1.x, p1.y), (p2.x, p2.y)])
