@@ -138,8 +138,7 @@ ENV DEBIAN_FRONTEND=
 
 # root bash configuration
 ENV ROS_WORKSPACE=/workspaces/sailbot_workspace
-
-COPY .devcontainer/base-dev/update-bashrc.sh /sbin/update-bashrc
+COPY update-bashrc.sh /sbin/update-bashrc
 RUN chmod +x /sbin/update-bashrc \
     && sync \
     && /bin/bash -c /sbin/update-bashrc \
@@ -266,7 +265,7 @@ RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=${HOME}/comma
     && echo $SNIPPET >> "${HOME}/.bashrc"
 
 # ros bash configuration
-COPY .devcontainer/base-dev/update-bashrc.sh /sbin/update-bashrc
+COPY update-bashrc.sh /sbin/update-bashrc
 RUN chmod +x /sbin/update-bashrc \
     && chown ros /sbin/update-bashrc \
     && sync \
@@ -318,4 +317,4 @@ ENV DEBIAN_FRONTEND=
 # install dev python3 dependencies
 RUN pip3 install \
     # for juypter notebooks
-    ipykernel
+    ipykernel \

@@ -1,6 +1,5 @@
 #!/bin/bash
 set -e
-set -x
 
 # Create/overwrite the custom rosdep list file
 CUSTOM_ROSDEP_LIST="/etc/ros/rosdep/sources.list.d/20-sailbot.list"
