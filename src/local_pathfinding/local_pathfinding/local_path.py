@@ -4,7 +4,6 @@ import math
 from typing import List, Optional
 
 import custom_interfaces.msg as ci
-from pyproj import Geod
 from rclpy.impl.rcutils_logger import RcutilsLogger
 from shapely.geometry import LineString, MultiPolygon
 
@@ -12,7 +11,6 @@ import local_pathfinding.coord_systems as cs
 import local_pathfinding.obstacles as ob
 from local_pathfinding.ompl_path import OMPLPath
 
-GEODESIC = Geod(ellps="WGS84")
 LOCAL_WAYPOINT_REACHED_THRESH_KM = 0.5
 
 
@@ -80,7 +78,8 @@ class LocalPath:
     Attributes:
         _logger (RcutilsLogger): ROS logger.
         _ompl_path (Optional[OMPLPath]): Raw representation of the path from OMPL.
-        _waypoint_index
+        _waypoint_index: Local waypoint index (i.e. pointer to the next local waypoint that the
+        boat is following)
         path (Path): Collection of coordinates that form the local path to the next
                           global waypoint.
         state (LocalPathState): the current local path state.
@@ -101,15 +100,15 @@ class LocalPath:
 
         Args:
             path (ci.Path): Array of waypoints
-            waypoint_index (int): Pointer to the current waypoint index in path array (i.e. the
-            waypoint sailbot is heading towards)
+            waypoint_index (int): Pointer to the current local waypoint index in path array
+            (i.e. the waypoint sailbot is heading towards)
             boat_lat_lon (ci.HelperLatLon): boat coordinates
 
         Returns:
             _type_: _description_
         """
         waypoint = path.waypoints[waypoint_index]
-        desired_heading, _, distance_to_waypoint_m = GEODESIC.inv(
+        desired_heading, _, distance_to_waypoint_m = cs.GEODESIC.inv(
             boat_lat_lon.longitude, boat_lat_lon.latitude, waypoint.longitude, waypoint.latitude
         )
 
@@ -117,7 +116,7 @@ class LocalPath:
             # If we reached the current local waypoint, aim for the next one
             waypoint_index += 1
             waypoint = path.waypoints[waypoint_index]
-            desired_heading, _, distance_to_waypoint_m = GEODESIC.inv(
+            desired_heading, _, distance_to_waypoint_m = cs.GEODESIC.inv(
                 boat_lat_lon.longitude,
                 boat_lat_lon.latitude,
                 waypoint.longitude,
