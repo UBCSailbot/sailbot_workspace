@@ -3,10 +3,7 @@ based on the local path."""
 
 import argparse
 import json
-from math import radians, sin, cos, sqrt, atan2
-
-from shapely.geometry import LineString, Point
-from geopy.distance import geodesic
+from shapely.geometry import LineString
 
 
 def get_points_along_line(start, end):
