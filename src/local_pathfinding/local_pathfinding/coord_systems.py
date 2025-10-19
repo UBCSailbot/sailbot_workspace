@@ -64,7 +64,7 @@ def bound_to_180(angle_degrees: float) -> float:
     return ((angle_degrees + 180) % 360) - 180
 
 
-def calculate_heading_dff(boat_heading: float, desired_heading):
+def calculate_heading_diff(boat_heading: float, desired_heading):
     return abs((desired_heading - boat_heading + 180) % 360 - 180)
 
 
