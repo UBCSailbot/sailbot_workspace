@@ -10,6 +10,7 @@ from pyproj import Geod
 import local_pathfinding.obstacles as ob
 from local_pathfinding.ompl_path import OMPLPath
 import local_pathfinding.coord_systems as cs
+import math
 
 LOW_WIND_SPEED_THRESHOLD = 9.26  # 5 knots
 GEODESIC = Geod(ellps="WGS84")
@@ -122,13 +123,18 @@ class LocalPath:
         Returns:
             boolean: True if the path intersects a collision zone
         """
+        # print(f"path: {path}")
         path = list(map(lambda x: (cs.latlon_to_xy(reference_latlon, x)), path.waypoints))
         for i in range(local_wp_index, len(path) - 1):
             p1, p2 = path[i], path[i + 1]
             p1, p2 = (p1.x, p1.y), (p2.x, p2.y)
             segment = LineString([p1, p2])
+
+            # print(f"reference_latlon: {reference_latlon}")
+            # print(f"local_wp_index: {local_wp_index}")
             for o in obstacles:
-                if segment.crosses(o.collision_zone):
+                # print(f"obstacles: {o.print_info()}")
+                if segment.crosses(o.collision_zone) or segment.touches(o.collision_zone):
                     return True
 
         return False
@@ -195,8 +201,9 @@ class LocalPath:
             self._update(ompl_path)
             return heading_new_path, wp_index
 
-        if self.state.wind_speed < LOW_WIND_SPEED_THRESHOLD:
-            return heading_old_path, updated_wp_index
+        # if self.state.wind_speed < LOW_WIND_SPEED_THRESHOLD:
+        #     print("windspeed is low, no need to change the path")
+        #     return heading_old_path, updated_wp_index
 
         heading_diff_old_path = cs.calculate_heading_dff(self.state.heading, heading_old_path)
         heading_diff_new_path = cs.calculate_heading_dff(self.state.heading, heading_new_path)
@@ -204,16 +211,46 @@ class LocalPath:
         old_cost = old_ompl_path.get_cost(updated_wp_index)
         new_cost = ompl_path.get_cost(wp_index)
 
-        if heading_diff_new_path <= heading_diff_old_path:
-            if new_cost <= old_cost:
-                print(
-                    f"New path is cheaper, updating local path "
-                    f"(old cost: {old_cost:.2f}, "
-                    f"new cost: {new_cost:.2f})"
-                )
-                self._update(ompl_path)
-                return heading_new_path, wp_index
-        return heading_old_path, updated_wp_index
+        max_cost = max(old_cost, new_cost, 1)
+        old_cost_normalized = old_cost/max_cost
+        new_cost_normalized = new_cost/max_cost
+
+        max_heading_diff = max(math.fabs(heading_diff_new_path),
+                               math.fabs(heading_diff_old_path),
+                               1.0)
+
+        heading_diff_new_normalized = heading_diff_new_path/max_heading_diff
+        heading_diff_old_normalized = heading_diff_old_path/max_heading_diff
+
+        w_h = 0.6
+        w_c = 0.4
+
+        metric_old = w_h * heading_diff_old_normalized + w_c * old_cost_normalized
+        metric_new = w_h * heading_diff_new_normalized + w_c * new_cost_normalized
+
+        if metric_new < metric_old:
+            print(
+                f"New path is cheaper, updating local path "
+                f"(old cost: {old_cost:.2f}, "
+                f"new cost: {new_cost:.2f})"
+                f", metric_old: {metric_old:.2f}, "
+                f"metric_new: {metric_new:.2f}, "
+                f"old_cost_normalized: {old_cost_normalized:.2f}, "
+                f"new_cost_normalized: {new_cost_normalized:.2f}"
+            )
+            self._update(ompl_path)
+            return heading_new_path, wp_index
+        else:
+            print(
+                f"old path is cheaper, continuing on the same path"
+                f"(old cost: {old_cost:.2f}, "
+                f"new cost: {new_cost:.2f})"
+                f", metric_old: {metric_old:.2f}, "
+                f"metric_new: {metric_new:.2f}, "
+                f"old_cost_normalized: {old_cost_normalized:.2f}, "
+                f"new_cost_normalized: {new_cost_normalized:.2f}"
+            )
+            return heading_old_path, wp_index
 
     def _update(self, ompl_path: OMPLPath):
         print("switching path")
