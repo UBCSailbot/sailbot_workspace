@@ -407,10 +407,15 @@
                 "problemMatcher": "$gcc"
             },
             {
-                "label": "Build and Deploy Image",
-                "detail": "Build the docker image with binaries and uploads it to GitHub.",
+                "label": "Build and Upload Image",
+                "detail": "Build the release docker image with binaries and upload it to GitHub.",
                 "type": "shell",
-                "command": "./scripts/deploy.sh ${input:github_PAT} ${input:github_username} ${input:docker_tag}",
+                "options": {
+                    "env": {
+                        "TAG": "${input:docker_tag}",
+                    }
+                },
+                "command": "./scripts/deploy.sh ${input:github_PAT} ${input:github_username} -t ${TAG:-default}",
                 "group": {
                     "kind": "build",
                     "isDefault": true
@@ -541,9 +546,13 @@
                 "label": "Launch Package",
                 "detail": "Launch a specifc ROS package.",
                 "type": "shell",
-                "command": "./scripts/launch.sh -p ${input:ROS_package} -f ${input:package_flags}",
+                "options": {
+                    "env": {
+                        "PACKAGE_FLAGS": "${input:package_flags}",
+                    }
+                },
+                "command": "./scripts/launch.sh -p ${input:ROS_package} ${PACKAGE_FLAGS:+-f} ${PACKAGE_FLAGS}",
                 "problemMatcher": []
-
             },
             {
                 "label": "Launch All",

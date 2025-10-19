@@ -117,8 +117,7 @@ MONGO_TAG=$MONGO_TAG $DOCKER_COMPOSE_ARGS up --build --detach --pull never
 if [[ "$INTERACTIVE" = true ]]; then
     $DOCKER_COMPOSE_ARGS exec --interactive --tty sailbot-workspace /bin/bash
 else
-    $DOCKER_COMPOSE_ARGS exec --no-TTY sailbot-workspace /bin/bash -c \
-        "source ./install/local_setup.bash && ros2 launch src/global_launch/main_launch.py"
+    $DOCKER_COMPOSE_ARGS exec --no-TTY sailbot-workspace /bin/bash -c "./scripts/run_software.sh"
 fi
 
 # stop containers
