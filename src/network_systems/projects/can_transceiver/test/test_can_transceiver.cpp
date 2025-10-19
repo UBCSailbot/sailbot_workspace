@@ -122,7 +122,7 @@ TEST_F(TestCanFrameParser, TestBatteryInvalid)
  */
 TEST_F(TestCanFrameParser, MainTrimTabTestValid)
 {
-    constexpr std::array<float, 2> expected_angles{12, 128};
+    constexpr std::array<float, 2> expected_angles{12, 33};
     CAN_FP::CanId                  id = CAN_FP::CanId::MAIN_TR_TAB;
 
     for (size_t i = 0; i < 2; i++) {
@@ -162,7 +162,7 @@ TEST_F(TestCanFrameParser, TestMainTrimTabInvalid)
 
     EXPECT_THROW(CAN_FP::MainTrimTab tmp(cf), CAN_FP::CanIdMismatchException);
 
-    std::vector<float> invalid_angles{HEADING_LBND - 1, HEADING_UBND + 1};
+    std::vector<float> invalid_angles{TRIM_LBND - 1, TRIM_UBND + 1};
 
     CAN_FP::CanId valid_id = CAN_FP::CanId::MAIN_TR_TAB;
     msg::SailCmd  msg;
@@ -227,9 +227,9 @@ TEST_F(TestCanFrameParser, TestDesiredHeadingInvalid)
 
     EXPECT_THROW(CAN_FP::DesiredHeading tmp(cf), CAN_FP::CanIdMismatchException);
 
-    std::vector<float> invalid_angles{HEADING_LBND - 1, HEADING_UBND + 1};
+    std::vector<float> invalid_angles{-361, 361};  //NOLINT(readability-magic-numbers)
 
-    CAN_FP::CanId       valid_id = CAN_FP::CanId::MAIN_TR_TAB;
+    CAN_FP::CanId       valid_id = CAN_FP::CanId::MAIN_HEADING;
     msg::DesiredHeading msg;
     msg::HelperHeading  helper_msg;
 
@@ -293,9 +293,9 @@ TEST_F(TestCanFrameParser, TestRudderDataInvalid)
 
     EXPECT_THROW(CAN_FP::RudderData tmp(cf), CAN_FP::CanIdMismatchException);
 
-    std::vector<float> invalid_angles{HEADING_LBND - 1, HEADING_UBND + 1};
+    std::vector<float> invalid_angles{-361, 361};  //NOLINT(readability-magic-numbers)
 
-    CAN_FP::CanId      valid_id = CAN_FP::CanId::MAIN_TR_TAB;
+    CAN_FP::CanId      valid_id = CAN_FP::CanId::MAIN_HEADING;
     msg::HelperHeading helper_msg;
 
     for (float invalid_angle : invalid_angles) {
@@ -376,8 +376,8 @@ TEST_F(TestCanFrameParser, TestWindSensorInvalid)
 
     EXPECT_THROW(CAN_FP::WindSensor tmp(cf), CAN_FP::CanIdMismatchException);
 
-    std::vector<int16_t> invalid_angles{WIND_DIRECTION_LBND - 1, WIND_DIRECTION_UBND + 1};
-    std::vector<float>   invalid_speeds{SPEED_LBND - 1, SPEED_UBND + 1};
+    std::vector<int16_t> invalid_angles{-1000, 361};  //NOLINT(readability-magic-numbers)
+    std::vector<float>   invalid_speeds{WIND_SPEED_LBND - 1, WIND_SPEED_UBND + 1};
 
     optId = CAN_FP::WindSensor::rosIdxToCanId(0);
     ASSERT_TRUE(optId.has_value());
@@ -389,7 +389,7 @@ TEST_F(TestCanFrameParser, TestWindSensorInvalid)
     for (int16_t invalid_angle : invalid_angles) {
         msg.set__direction(invalid_angle);
         msg::HelperSpeed tmp_speed_msg;
-        tmp_speed_msg.set__speed(SPEED_LBND);
+        tmp_speed_msg.set__speed(WIND_SPEED_LBND);
         msg.set__speed(tmp_speed_msg);
 
         EXPECT_THROW(CAN_FP::WindSensor tmp(msg, valid_id), std::out_of_range);
@@ -482,7 +482,7 @@ TEST_F(TestCanFrameParser, TestGPSInvalid)
 
     std::vector<float> invalid_lons{LON_LBND - 1, LON_UBND + 1};
     std::vector<float> invalid_lats{LAT_LBND - 1, LAT_UBND + 1};
-    std::vector<float> invalid_speeds{SPEED_LBND - 1, SPEED_UBND + 1};
+    std::vector<float> invalid_speeds{BOAT_SPEED_LBND - 1, BOAT_SPEED_UBND + 1};
 
     CAN_FP::CanId valid_id = CAN_FP::CanId::PATH_GPS_DATA_FRAME;
     msg::GPS      msg;
@@ -496,7 +496,7 @@ TEST_F(TestCanFrameParser, TestGPSInvalid)
         msg_latlon.set__longitude(invalid_lon);
         msg.set__lat_lon(msg_latlon);
 
-        msg_speed.set__speed(SPEED_UBND);
+        msg_speed.set__speed(BOAT_SPEED_UBND);
         msg.set__speed(msg_speed);
 
         msg_heading.set__heading(HEADING_UBND);
@@ -514,7 +514,7 @@ TEST_F(TestCanFrameParser, TestGPSInvalid)
         msg_latlon.set__longitude(LON_UBND);
         msg.set__lat_lon(msg_latlon);
 
-        msg_speed.set__speed(SPEED_UBND);
+        msg_speed.set__speed(BOAT_SPEED_UBND);
         msg.set__speed(msg_speed);
 
         msg_heading.set__heading(HEADING_UBND);
@@ -724,8 +724,8 @@ TEST_F(TestCanFrameParser, TestAISShipsInvalid)
 
     constexpr std::array<float, 2>  invalid_lats{LAT_LBND - 1, LAT_UBND + 1};
     constexpr std::array<float, 2>  invalid_lons{LON_LBND - 1, LON_UBND + 1};
-    constexpr std::array<float, 2>  invalid_cogs{HEADING_LBND - 1, HEADING_UBND + 1};
-    constexpr std::array<float, 2>  invalid_sogs{SPEED_LBND - 1, SPEED_UBND + 1};
+    constexpr std::array<float, 2>  invalid_cogs{-361, 361};
+    constexpr std::array<float, 2>  invalid_sogs{SOG_SPEED_LBND - 1, SOG_SPEED_UBND + 1};
     constexpr std::array<int8_t, 2> invalid_rots{ROT_LBND - 1, ROT_UBND + 1};
     constexpr std::array<float, 2>  invalid_widths{SHIP_DIMENSION_LBND - 1, SHIP_DIMENSION_UBND + 1};
     constexpr std::array<float, 2>  invalid_lengths{SHIP_DIMENSION_LBND - 1, SHIP_DIMENSION_UBND + 1};
@@ -743,7 +743,7 @@ TEST_F(TestCanFrameParser, TestAISShipsInvalid)
 
         msg::HelperSpeed sog;
         //convert to km/h
-        sog.set__speed(SPEED_LBND);
+        sog.set__speed(SOG_SPEED_LBND);
 
         msg::HelperROT rot;
         rot.set__rot(ROT_UBND);
@@ -775,7 +775,7 @@ TEST_F(TestCanFrameParser, TestAISShipsInvalid)
 
         msg::HelperSpeed sog;
         //convert to km/h
-        sog.set__speed(SPEED_LBND);
+        sog.set__speed(SOG_SPEED_LBND);
 
         msg::HelperROT rot;
         rot.set__rot(ROT_UBND);
@@ -807,7 +807,7 @@ TEST_F(TestCanFrameParser, TestAISShipsInvalid)
 
         msg::HelperSpeed sog;
         //convert to km/h
-        sog.set__speed(SPEED_LBND);
+        sog.set__speed(SOG_SPEED_LBND);
 
         msg::HelperROT rot;
         rot.set__rot(ROT_UBND);
@@ -871,7 +871,7 @@ TEST_F(TestCanFrameParser, TestAISShipsInvalid)
 
         msg::HelperSpeed sog;
         //convert to km/h
-        sog.set__speed(SPEED_UBND);
+        sog.set__speed(SOG_SPEED_UBND);
 
         msg::HelperROT rot;
         rot.set__rot(invalid_rot);
@@ -903,7 +903,7 @@ TEST_F(TestCanFrameParser, TestAISShipsInvalid)
 
         msg::HelperSpeed sog;
         //convert to km/h
-        sog.set__speed(SPEED_UBND);
+        sog.set__speed(SOG_SPEED_UBND);
 
         msg::HelperROT rot;
         rot.set__rot(ROT_UBND);
@@ -935,7 +935,7 @@ TEST_F(TestCanFrameParser, TestAISShipsInvalid)
 
         msg::HelperSpeed sog;
         //convert to km/h
-        sog.set__speed(SPEED_UBND);
+        sog.set__speed(SOG_SPEED_UBND);
 
         msg::HelperROT rot;
         rot.set__rot(ROT_UBND);

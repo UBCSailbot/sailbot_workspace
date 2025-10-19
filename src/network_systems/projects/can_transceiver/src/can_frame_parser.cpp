@@ -243,7 +243,9 @@ WindSensor::WindSensor(const CanFrame & cf) : WindSensor(static_cast<CanId>(cf.c
 }
 
 WindSensor::WindSensor(msg::WindSensor ros_wind_sensor, CanId id)
-: BaseFrame(id, CAN_BYTE_DLEN_), wind_angle_(ros_wind_sensor.direction), wind_speed_(ros_wind_sensor.speed.speed)
+: BaseFrame(id, CAN_BYTE_DLEN_),
+  wind_angle_(boundTo360(ros_wind_sensor.direction)),
+  wind_speed_(ros_wind_sensor.speed.speed)
 {
     checkBounds();
 }
@@ -252,7 +254,7 @@ msg::WindSensor WindSensor::toRosMsg() const
 {
     msg::WindSensor  msg;
     msg::HelperSpeed speed;
-    msg.set__direction(static_cast<int16_t>(wind_angle_));
+    msg.set__direction(static_cast<int16_t>(boundTo180(wind_angle_)));
     speed.set__speed(wind_speed_);
     msg.set__speed(speed);
     return msg;
@@ -490,7 +492,7 @@ AISShips::AISShips(msg::HelperAISShip ros_ship, CanId id)
   lon_(ros_ship.lat_lon.longitude),
   speed_(ros_ship.sog.speed),
   rot_(ros_ship.rot.rot),
-  course_(ros_ship.cog.heading),
+  course_(boundTo360(ros_ship.cog.heading)),
   width_(ros_ship.width.dimension),
   length_(ros_ship.length.dimension),
   ship_id_(ros_ship.id)
@@ -507,7 +509,7 @@ msg::HelperAISShip AISShips::toRosMsg() const
     lat_lon.set__longitude(lon_);
 
     msg::HelperHeading cog;
-    cog.set__heading(course_);
+    cog.set__heading(boundTo180(course_));
 
     msg::HelperSpeed sog;
     //convert to km/h
@@ -748,7 +750,9 @@ DesiredHeading::DesiredHeading(const CanFrame & cf) : DesiredHeading(static_cast
 }
 
 DesiredHeading::DesiredHeading(msg::DesiredHeading ros_desired_heading, CanId id)
-: BaseFrame(id, CAN_BYTE_DLEN_), heading_(ros_desired_heading.heading.heading), steering_(ros_desired_heading.steering)
+: BaseFrame(id, CAN_BYTE_DLEN_),
+  heading_(boundTo360(ros_desired_heading.heading.heading)),
+  steering_(ros_desired_heading.steering)
 {
     checkBounds();
 }
@@ -756,7 +760,7 @@ DesiredHeading::DesiredHeading(msg::DesiredHeading ros_desired_heading, CanId id
 msg::DesiredHeading DesiredHeading::toRosMsg() const
 {
     msg::HelperHeading helper_msg;
-    helper_msg.set__heading(heading_);
+    helper_msg.set__heading(boundTo180(heading_));
     msg::DesiredHeading msg;
     msg.set__heading(helper_msg);
     msg.set__steering(steering_);
@@ -828,7 +832,7 @@ RudderData::RudderData(const CanFrame & cf) : RudderData(static_cast<CanId>(cf.c
 }
 
 RudderData::RudderData(msg::HelperHeading ros_rudder_data, CanId id)
-: BaseFrame(id, CAN_BYTE_DLEN_), heading_(ros_rudder_data.heading)
+: BaseFrame(id, CAN_BYTE_DLEN_), heading_(boundTo360(ros_rudder_data.heading))
 {
     checkBounds();
 }
@@ -836,7 +840,7 @@ RudderData::RudderData(msg::HelperHeading ros_rudder_data, CanId id)
 msg::HelperHeading RudderData::toRosMsg() const
 {
     msg::HelperHeading msg;
-    msg.set__heading(heading_);
+    msg.set__heading(boundTo180(heading_));
     return msg;
 }
 

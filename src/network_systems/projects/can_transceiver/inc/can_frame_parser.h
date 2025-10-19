@@ -278,16 +278,20 @@ protected:
     template <typename Type>
     static auto boundTo180(Type angle)
     {
-        // Return type: signed version if input is unsigned, else same type
-        using ReturnType = std::conditional_t<std::is_unsigned_v<Type>, std::make_signed_t<Type>, Type>;
-
-        ReturnType angle_copy = static_cast<ReturnType>(angle);
-
-        if (angle_copy > 180) {  //NOLINT(readability-magic-numbers)
-            angle_copy -= 360;   //NOLINT(readability-magic-numbers)
+        if constexpr (std::is_integral_v<Type> && std::is_unsigned_v<Type>) {
+            using ReturnType      = std::make_signed_t<Type>;
+            ReturnType angle_copy = static_cast<ReturnType>(angle);
+            if (angle_copy > 180) {  //NOLINT(readability-magic-numbers)
+                angle_copy -= 360;   //NOLINT(readability-magic-numbers)
+            }
+            return angle_copy;
+        } else {
+            // signed integer or floating point
+            if (angle > 180) {  //NOLINT(readability-magic-numbers)
+                angle -= 360;   //NOLINT(readability-magic-numbers)
+            }
+            return angle;
         }
-
-        return angle_copy;
     }
 
     /**
@@ -295,23 +299,28 @@ protected:
      *
      * @tparam Type Generic type
      * @param angle Input angle (note: the angle is not guaranteed by CAN transceiver to be (-180, 180].
-                    Angle validity is checked later by checkbounds().
+                    We assume this by definition of HelperHeading.msg
      * @return auto Returns the same type as the input if signed, otherwise returns the signed
                     type of the same bit width
      */
     template <typename Type>
     static auto boundTo360(Type angle)
     {
-        // Return type: signed version if input is unsigned, else same type
-        using ReturnType = std::conditional_t<std::is_unsigned_v<Type>, std::make_signed_t<Type>, Type>;
-
-        ReturnType angle_copy = static_cast<ReturnType>(angle);
-
-        if (angle_copy < 0) {   //NOLINT(readability-magic-numbers)
-            angle_copy += 360;  //NOLINT(readability-magic-numbers)
+        // if unsigned int
+        if constexpr (std::is_integral_v<Type> && std::is_unsigned_v<Type>) {
+            using ReturnType      = std::make_signed_t<Type>;
+            ReturnType angle_copy = static_cast<ReturnType>(angle);
+            if (angle_copy < 0) {
+                angle_copy += 360;  //NOLINT(readability-magic-numbers)
+            }
+            return angle_copy;
+        } else {
+            // is signed int or float
+            if (angle < 0) {
+                angle += 360;  //NOLINT(readability-magic-numbers)
+            }
+            return angle;
         }
-
-        return angle_copy;
     }
 
     /**
