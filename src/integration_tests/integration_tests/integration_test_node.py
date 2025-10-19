@@ -39,6 +39,47 @@ POST_URL = "http://localhost:8081/global-path"
 PULL_URL = "http://localhost:3005/api/"
 
 
+def ros_pretty_str(msg, indent=0):
+    """Recursively pretty-print any ROS 2 message."""
+
+    indent_str = "  " * indent
+    result = []
+
+    # Get the message type name (e.g., custom_interfaces.msg.HelperLatLon)
+    typename = f"{msg.__class__.__module__}.{msg.__class__.__name__}"
+
+    # Iterate over all declared fields
+    for field_name, field_type in msg.get_fields_and_field_types().items():
+        value = getattr(msg, field_name)
+
+        # Handle sequences (like lists or arrays)
+        if isinstance(value, (list, tuple)):
+            if len(value) == 0:
+                field_str = "[]"
+            else:
+                # If the list contains ROS messages, recurse
+                if hasattr(value[0], "get_fields_and_field_types"):
+                    field_str = (
+                        "[\n"
+                        + ",\n".join(ros_pretty_str(v, indent + 2) for v in value)
+                        + f"\n{indent_str}  ]"
+                    )
+                else:
+                    field_str = str(value)
+        # Handle nested ROS messages
+        elif hasattr(value, "get_fields_and_field_types"):
+            field_str = "\n" + ros_pretty_str(value, indent + 1)
+        else:
+            field_str = repr(value)
+
+        result.append(f"{indent_str}  {field_name}: {field_str}")
+
+    if indent == 0:
+        return f"{typename} {{\n" + "\n".join(result) + f"\n{indent_str}}}"
+    else:
+        return f"{typename}(\n" + "\n".join(result) + f"\n{indent_str})"
+
+
 def main(args=None):
     rclpy.init(args=args)
     node = IntegrationTestNode()
@@ -581,11 +622,10 @@ class Monitor:
                 num_matches = entry.rcvd_msgs.count(entry.expected_msg)
                 if num_matches == 0:
                     logger.error(
-                        f"""
-                                 No matching messages for: {name}!
-                                 Expected: {entry.expected_msg}
-                                 Received: {entry.rcvd_msgs}
-                                 """
+                        f"No matching messages for: {name}!"
+                        + f"\nExpected: {ros_pretty_str(entry.expected_msg)}"
+                        + "Received: "
+                        + "\n  ".join(list(map(ros_pretty_str, entry.rcvd_msgs)))
                     )
                     num_fails += 1
                 elif num_matches < num_rcvd:
@@ -680,7 +720,7 @@ class IntegrationTestNode(Node):
                 self.drive_inputs()
 
                 self.timeout = self.create_timer(
-                    self.__test_inst.timeout_sec(), self.__timeout_cb()  # type: ignore
+                    self.__test_inst.timeout_sec(), self.__timeout_cb  # type: ignore
                 )
             except Exception as e:
                 # At this point, the test instance has successfully started all package processes.
