@@ -181,7 +181,7 @@ def test_get_true_wind_direction(
     ) and true_wind_speed == pytest.approx(expected=expected_speed, abs=1e-2)
 
 
-@pytest.mark.paramerize(
+@pytest.mark.parametrize(
     "position,expected_area,expected_bounds",
     [
         (coord_systems.XY(0.0, 0.0), pytest.approx(4, rel=1e-2), (-1, -1, 1, 1)),
