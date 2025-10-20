@@ -262,9 +262,7 @@ class LocalPath:
         metric_old = w_h * heading_diff_old_normalized + w_c * old_cost_normalized
         metric_new = w_h * heading_diff_new_normalized + w_c * new_cost_normalized
 
-        if metric_new < metric_old:
-            self._logger.debug(
-                f"New path is cheaper, updating local path "
+        self._logger.debug(
                 f"(old cost: {old_cost:.2f}, "
                 f"new cost: {new_cost:.2f})"
                 f", metric_old: {metric_old:.2f}, "
@@ -272,17 +270,15 @@ class LocalPath:
                 f"old_cost_normalized: {old_cost_normalized:.2f}, "
                 f"new_cost_normalized: {new_cost_normalized:.2f}"
             )
+        if metric_new < metric_old:
+            self._logger.debug(
+                "New path is cheaper, updating local path "
+            )
             self._update(ompl_path)
             return heading_new_path, wp_index
         else:
             self._logger.debug(
-                f"old path is cheaper, continuing on the same path"
-                f"(old cost: {old_cost:.2f}, "
-                f"new cost: {new_cost:.2f})"
-                f", metric_old: {metric_old:.2f}, "
-                f"metric_new: {metric_new:.2f}, "
-                f"old_cost_normalized: {old_cost_normalized:.2f}, "
-                f"new_cost_normalized: {new_cost_normalized:.2f}"
+                "old path is cheaper, continuing on the same path"
             )
             return heading_old_path, wp_index
 
