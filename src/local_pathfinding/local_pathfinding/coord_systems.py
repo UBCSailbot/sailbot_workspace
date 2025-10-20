@@ -65,7 +65,7 @@ def bound_to_180(angle_degrees: float) -> float:
 
 
 def calculate_heading_diff(boat_heading: float, desired_heading):
-    return abs((desired_heading - boat_heading + 180) % 360 - 180)
+    return abs(bound_to_180(desired_heading - boat_heading))
 
 
 def latlon_to_xy(reference: ci.HelperLatLon, latlon: ci.HelperLatLon) -> XY:
