@@ -34,7 +34,7 @@ from rclpy.subscription import Subscription
 import boat_simulator.common.constants as Constants
 import boat_simulator.common.utils as Utils
 from boat_simulator.common.generators import MVGaussianGenerator
-from boat_simulator.common.sensors import SimWindSensor
+from boat_simulator.common.sensors import SimGPS, SimWindSensor
 from boat_simulator.common.types import Scalar
 from boat_simulator.nodes.physics_engine.fluid_generation import FluidGenerator
 from boat_simulator.nodes.physics_engine.model import BoatState
@@ -149,6 +149,7 @@ class PhysicsEngineNode(Node):
         self.__sail_trim_tab_angle = 0
         self.__desired_heading = None
         self.__boat_state = BoatState(self.pub_period)
+        self.__sim_gps = None
 
         wind_mean = np.array(
             self.get_parameter("wind_generation.mvgaussian_params.mean")
@@ -341,12 +342,25 @@ class PhysicsEngineNode(Node):
 
     def __publish_gps(self):
         """Publishes mock GPS data."""
-        # TODO Update to publish real data
+        lat_lon = self.__boat_state.global_position
+        speed = np.linalg.norm(self.__boat_state.global_velocity)
+        heading = self.__boat_state.angular_position[0]
+
+        if self.__sim_gps:
+            self.__sim_gps.lat_lon = lat_lon
+            self.__sim_gps.speed = speed
+            self.__sim_gps.heading = heading
+        else:
+            self.__sim_gps = SimGPS(
+                lat_lon=lat_lon, speed=speed, heading=heading, enable_noise=True
+            )
+
         msg = GPS()
-        msg.lat_lon.latitude = 0.0
-        msg.lat_lon.longitude = 0.0
-        msg.speed.speed = 0.0
-        msg.heading.heading = 0.0
+        lat, lon, _ = self.__sim_gps.lat_lon
+        msg.lat_lon.latitude = float(lat)
+        msg.lat_lon.longitude = float(lon)
+        msg.speed.speed = self.__sim_gps.speed
+        msg.heading.heading = self.__sim_gps.heading
 
         self.gps_pub.publish(msg)
         self.get_logger().info(
@@ -382,13 +396,25 @@ class PhysicsEngineNode(Node):
 
     def __publish_kinematics(self):
         """Publishes the kinematics data of the simulated boat."""
-        # TODO Update to publish real data
-        msg = SimWorldState()
+        lat_lon = self.__boat_state.global_position
+        speed = np.linalg.norm(self.__boat_state.global_velocity)
+        heading = self.__boat_state.angular_position[0]
 
-        msg.global_gps.lat_lon.latitude = 0.0
-        msg.global_gps.lat_lon.longitude = 0.0
-        msg.global_gps.speed.speed = 0.0
-        msg.global_gps.heading.heading = 0.0
+        if self.__sim_gps:
+            self.__sim_gps.lat_lon = lat_lon
+            self.__sim_gps.speed = speed
+            self.__sim_gps.heading = heading
+        else:
+            self.__sim_gps = SimGPS(
+                lat_lon=lat_lon, speed=speed, heading=heading, enable_noise=True
+            )
+
+        msg = SimWorldState()
+        lat, lon, _ = self.__sim_gps.lat_lon
+        msg.global_gps.lat_lon.latitude = float(lat)
+        msg.global_gps.lat_lon.longitude = float(lon)
+        msg.global_gps.speed.speed = self.__sim_gps.speed
+        msg.global_gps.heading.heading = self.__sim_gps.heading
 
         msg.global_pose.position.x = self.__boat_state.global_position.item(0)
         msg.global_pose.position.y = self.__boat_state.global_position.item(1)
