@@ -12,6 +12,8 @@ import local_pathfinding.obstacles as ob
 from local_pathfinding.ompl_path import OMPLPath
 
 LOCAL_WAYPOINT_REACHED_THRESH_KM = 0.5
+HEADING_WEIGHT = 0.6
+COST_WEIGHT = 0.4
 
 
 class LocalPathState:
@@ -175,8 +177,8 @@ class LocalPath:
         - Current path intersecting with collision zones
         - New path having a better cost-heading metric than the old path
 
-        The decision metric combines normalized heading difference (60% weight) and
-        normalized path cost (40% weight) to balance directional efficiency with
+        The decision metric combines normalized heading difference and
+        normalized path cost to balance directional efficiency with
         obstacle avoidance. The weights can be changed to tune the system better.
 
             gps (ci.GPS): Current GPS position and heading data.
@@ -256,8 +258,8 @@ class LocalPath:
         heading_diff_new_normalized = heading_diff_new_path / max_heading_diff
         heading_diff_old_normalized = heading_diff_old_path / max_heading_diff
 
-        w_h = 0.6
-        w_c = 0.4
+        w_h = HEADING_WEIGHT
+        w_c = COST_WEIGHT
 
         metric_old = w_h * heading_diff_old_normalized + w_c * old_cost_normalized
         metric_new = w_h * heading_diff_new_normalized + w_c * new_cost_normalized
