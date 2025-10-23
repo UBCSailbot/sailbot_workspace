@@ -1,5 +1,6 @@
 *
 !.devcontainer/base-dev/*
+!src/
 !src/**
 !scripts/build.sh
 !scripts/setup.sh
