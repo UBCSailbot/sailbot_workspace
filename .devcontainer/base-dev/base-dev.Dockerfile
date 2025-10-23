@@ -317,4 +317,11 @@ ENV DEBIAN_FRONTEND=
 # install dev python3 dependencies
 RUN pip3 install \
     # for juypter notebooks
-    ipykernel \
+    ipykernel
+
+WORKDIR ${ROS_WORKSPACE}
+COPY scripts/ ./scripts
+COPY src/ ./src
+
+RUN "source /opt/ros/${ROS_DISTRO}/setup.bash && ./scripts/setup.sh"
+RUN rm -rf ./scripts
