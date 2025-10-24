@@ -1,4 +1,4 @@
-name: Build Release Image
+name: Build Release Image test
 
 on:
   workflow_dispatch:
@@ -7,6 +7,7 @@ on:
         description: 'Tag of the Docker image'
         required: true
         type: string
+  pull_request:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
