@@ -37,7 +37,7 @@ jobs:
               uses: docker/build-push-action@v6
               with:
                   context: "{{defaultContext}}"
-                  file: .devcontainer/base-devbase-dev.Dockerfile
+                  file: .devcontainer/base-dev/base-dev.Dockerfile
                   push: true
                   tags: |
                       ghcr.io/ubcsailbot/sailbot_workspace/dev:${{ inputs.tag }}
