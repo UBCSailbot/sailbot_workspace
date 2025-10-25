@@ -14,8 +14,8 @@ concurrency:
 
 jobs:
   docker:
-    runs-on: ubuntu-24.04-arm64
-    timeout-minutes: 240
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 45
 
     steps:
       - name: Set up Docker Buildx
