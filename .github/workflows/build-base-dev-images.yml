@@ -36,8 +36,8 @@ jobs:
             - name: Build and push dev
               uses: docker/build-push-action@v6
               with:
-                  context: "{{defaultContext}}:.devcontainer/base-dev"
-                  file: base-dev.Dockerfile
+                  context: "{{defaultContext}}"
+                  file: .devcontainer/base-dev/base-dev.Dockerfile
                   push: true
                   tags: |
                       ghcr.io/ubcsailbot/sailbot_workspace/dev:${{ inputs.tag }}
