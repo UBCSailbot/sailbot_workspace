@@ -33,6 +33,8 @@ app = dash.Dash(__name__)
 
 queue: Optional[Queue] = None  # type: ignore
 
+BOX_BUFFER_SIZE = 1.0  # km
+
 
 class VisualizerState:
     """
@@ -531,8 +533,8 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
     boat_pos = cs.XY(boat_x[0], boat_y[0])
     goal_pos = cs.XY(goal_x[0], goal_y[0])
 
-    boat_box = create_buffer_around_position(boat_pos)
-    goal_box = create_buffer_around_position(goal_pos)
+    boat_box = create_buffer_around_position(boat_pos, BOX_BUFFER_SIZE)
+    goal_box = create_buffer_around_position(goal_pos, BOX_BUFFER_SIZE)
 
     # Set state space bounds
     state_space = MultiPolygon([boat_box, goal_box])

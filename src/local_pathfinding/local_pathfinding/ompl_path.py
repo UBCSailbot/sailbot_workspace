@@ -29,6 +29,7 @@ if TYPE_CHECKING:
 # OMPL logging: only log warnings and above
 ou.setLogLevel(ou.LOG_WARN)
 
+BOX_BUFFER_SIZE = 1.0  # km
 
 LAND_KEY = -1
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -69,6 +70,7 @@ class OMPLPath:
             max_runtime (float): Maximum amount of time in seconds to look for a solution path.
             local_path_state (LocalPathState): State of Sailbot.
         """
+        self._box_buffer = BOX_BUFFER_SIZE
         self._logger = parent_logger.get_child(name="ompl_path")
         # this needs state
         self._simple_setup = self._init_simple_setup(local_path_state, land_multi_polygon)
@@ -213,12 +215,12 @@ class OMPLPath:
 
         # Create buffered spaces and extract their centers
         start_position_in_xy = cs.latlon_to_xy(self.state.reference_latlon, self.state.position)
-        start_box = create_buffer_around_position(start_position_in_xy)
+        start_box = create_buffer_around_position(start_position_in_xy, self._box_buffer)
         start_x = start_position_in_xy.x
         start_y = start_position_in_xy.y
 
         goal_position_in_xy = cs.XY(0, 0)  # Global waypoint is used as the reference point
-        goal_polygon = create_buffer_around_position(goal_position_in_xy)
+        goal_polygon = create_buffer_around_position(goal_position_in_xy, self._box_buffer)
         goal_x, goal_y = goal_position_in_xy
 
         # create an SE2 state space: rotation and translation in a plane
