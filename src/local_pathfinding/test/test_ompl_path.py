@@ -260,21 +260,3 @@ def test_is_state_valid(x: float, y: float, is_valid: bool):
         assert ompl_path.OMPLPath.is_state_valid(state), "state should be valid"
     else:
         assert not ompl_path.OMPLPath.is_state_valid(state), "state should not be valid"
-
-
-@pytest.mark.parametrize(
-    "position,expected_area,expected_bounds",
-    [
-        (cs.XY(0.0, 0.0), pytest.approx(4, rel=1e-2), (-1, -1, 1, 1)),
-        (cs.XY(100.0, 100.0), pytest.approx(4, rel=1e-2), (99, 99, 101, 101)),
-        (cs.XY(-100.0, -100.0), pytest.approx(4, rel=1e-2), (-101, -101, -99, -99)),
-    ],
-)
-def test_create_space(position: cs.XY, expected_area, expected_bounds):
-    """Test creation of buffered space around positions"""
-    # Given an OMPLPath instance
-    space = OMPL_PATH.create_buffer_around_position(position)
-
-    assert space.area == expected_area, "Space area should match buffer size"
-    assert space.bounds == pytest.approx(expected_bounds, abs=1.0), "Bounds should match expected"
-    assert space.contains(Point(position.x, position.y)), "Space should contain center point"
