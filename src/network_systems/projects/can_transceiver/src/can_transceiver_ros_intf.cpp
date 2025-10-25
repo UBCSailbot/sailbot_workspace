@@ -1,4 +1,5 @@
 #include <chrono>
+#include <cmath>
 #include <custom_interfaces/msg/ais_ships.hpp>
 #include <custom_interfaces/msg/batteries.hpp>
 #include <custom_interfaces/msg/can_sim_to_boat_sim.hpp>
@@ -24,6 +25,12 @@ constexpr auto TIMER_INTERVAL = std::chrono::milliseconds(500);
 namespace msg = custom_interfaces::msg;
 using CAN_FP::CanFrame;
 using CAN_FP::CanId;
+
+struct vec
+{
+    double x;
+    double y;
+};
 
 class CanTransceiverIntf : public NetNode
 {
@@ -80,9 +87,9 @@ public:
               this->create_publisher<msg::PressureSensors>(ros_topics::PRESSURE_SENSORS, QUEUE_SIZE);
 
             std::vector<std::pair<CanId, std::function<void(const CanFrame &)>>> canCbs = {
-              std::make_pair(
-                CanId::POWER_OFF,
-                std::function<void(const CanFrame &)>([this](const CanFrame & frame) { powerOff(frame); })),
+              std::make_pair(CanId::POWER_OFF, std::function<void(const CanFrame &)>([this](const CanFrame & frame) {
+                                 powerOff(frame);
+                             })),
               std::make_pair(
                 CanId::BMS_DATA_FRAME,
                 std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishBattery(frame); })),
@@ -193,9 +200,9 @@ private:
     int                             total_ais_ships = 0;
 
     //queue of previous k wind sensor readings (either sail or hull) for moving average
-    std::queue<msg::WindSensor> wind_sensor_readings;
+    std::queue<vec> wind_sensor_readings;
     // previous filtered wind sensor reading (simple moving average of wind_sensor_readings)
-    msg::WindSensor curr_sma;
+    vec curr_sma;
 
     // Mock CAN file descriptor for simulation
     int sim_intf_fd_;
@@ -228,7 +235,7 @@ private:
         try {
             CAN_FP::PowerOff po(po_frame);
             RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), "Shutting down...");
-            system("$ROS_WORKSPACE/src/network_systems/scripts/shutdown.sh"); //NOLINT(concurrency-mt-unsafe)
+            system("$ROS_WORKSPACE/src/network_systems/scripts/shutdown.sh");  //NOLINT(concurrency-mt-unsafe)
         } catch (std::out_of_range err) {
             RCLCPP_WARN(this->get_logger(), "%s", err.what());
             return;
@@ -362,21 +369,29 @@ private:
             wind_sensors_pub_->publish(wind_sensors_);
 
             // NUM_WIND_SENSORS is a placeholder,
-            // replace with number of data points wanted in the simple moving average
-            size_t k = NUM_WIND_SENSORS;
+            // replace with number of data points wanted in the moving average
+            double k = 1;
+            // convert deg to rad
+            double angle = wind_sensor_msg.direction * (M_PI / 180.0);  // NOLINT(readability-magic-numbers)
+            double y     = wind_sensor_msg.speed.speed * sin(angle);
+            double x     = wind_sensor_msg.speed.speed * cos(angle);
 
-            wind_sensor_readings.push(wind_sensor_msg);
+            vec msg_vec;
+            msg_vec.x = x;
+            msg_vec.y = y;
+            wind_sensor_readings.push(msg_vec);
 
             if (wind_sensor_readings.size() <= static_cast<size_t>(k)) {
                 // need to fill the queue, so compute filtered data as cumulative average
-                k = wind_sensor_readings.size();
-                curr_sma.speed.speed = ((curr_sma.speed.speed * (k - 1)) + wind_sensor_msg.speed.speed) / k;
-                curr_sma.direction = ((curr_sma.direction * (k - 1)) + wind_sensor_msg.direction) / k;
+                k = static_cast<double>(wind_sensor_readings.size());
+
+                curr_sma.x = ((curr_sma.x * (k - 1)) + x) / k;
+                curr_sma.y = ((curr_sma.y * (k - 1)) + y) / k;
             } else {
                 // queue is full, compute filtered data as simple moving average
-                msg::WindSensor & oldest_reading = wind_sensor_readings.front();
-                curr_sma.speed.speed = curr_sma.speed.speed + ((wind_sensor_msg.speed.speed - oldest_reading.speed.speed) / k);
-                curr_sma.direction = curr_sma.direction + ((wind_sensor_msg.direction - oldest_reading.direction) / k);
+                vec & oldest_reading = wind_sensor_readings.front();
+                curr_sma.x           = curr_sma.x + ((x - oldest_reading.x) / k);
+                curr_sma.y           = curr_sma.y + ((y - oldest_reading.y) / k);
                 wind_sensor_readings.pop();
             }
 
@@ -394,9 +409,18 @@ private:
      */
     void publishFilteredWindSensor()
     {
-        filtered_wind_sensor_pub_->publish(curr_sma);
+        // construct a wind sensor ros message from the current simple moving average (stored as an x and y value)
+        double speed     = sqrt(pow(curr_sma.x, 2) + pow(curr_sma.y, 2));
+        double direction = atan2(curr_sma.y, curr_sma.x) * (180.0 / M_PI);  //NOLINT(readability-magic-numbers)
+        // PATH expects [-180, 180], so shift down by 180 and ensure we aren't out of bounds due to floating point shenanigans
+        direction = std::clamp(direction - 180.0, -180.0, 180.0);  //NOLINT(readability-magic-numbers)
+
+        msg::WindSensor filtered_wind;
+        filtered_wind.speed.speed = static_cast<float>(speed);
+        filtered_wind.direction   = static_cast<int16_t>(direction);
+        filtered_wind_sensor_pub_->publish(filtered_wind);
         std::stringstream ss;
-        ss << "[WIND SENSOR] Speed: " << curr_sma.speed.speed << " Angle: " << curr_sma.direction;
+        ss << "[FILTERED WIND SENSOR] Speed: " << filtered_wind.speed.speed << " Angle: " << filtered_wind.direction;
         RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), ss.str().c_str());
     }
 

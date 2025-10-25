@@ -67,8 +67,8 @@ constexpr float LON_LBND = -180.0;
 constexpr float LON_UBND = 180.0;
 
 /***** Bounds for Speed ******/
-constexpr float SPEED_LBND = 0.0;  // Placeholder number (kmph)
-constexpr float SPEED_UBND = 150.0;   // Placeholder number (kmph)
+constexpr float SPEED_LBND = 0.0;    // Placeholder number (kmph)
+constexpr float SPEED_UBND = 150.0;  // Placeholder number (kmph)
 
 /***** Bounds for Heading ******/
 constexpr float HEADING_LBND = 0.0;
@@ -90,8 +90,8 @@ constexpr float BATT_CURR_LBND = -200.0;  // Placeholder number
 constexpr float BATT_CURR_UBND = 200.0;   // Placeholder number
 
 /***** Bounds for Wind Sensor ******/
-constexpr int WIND_DIRECTION_LBND = -180.0;
-constexpr int WIND_DIRECTION_UBND = 179.9;
+constexpr int WIND_DIRECTION_LBND = 0;
+constexpr int WIND_DIRECTION_UBND = 359;
 
 /***** Bounds for Temp Sensor ******/
 constexpr float TEMP_LBND = -32.768;  // smallest value to fit in int16_t when * 1000
