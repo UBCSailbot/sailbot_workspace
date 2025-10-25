@@ -7,8 +7,6 @@ on:
         description: 'Tag of the Docker image'
         required: true
         type: string
-  pull_request:
-    types: [opened, reopened]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
