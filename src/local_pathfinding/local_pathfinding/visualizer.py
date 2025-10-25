@@ -104,7 +104,7 @@ class VisualizerState:
         # Process Boat Obstacles
         self.boat_obstacles_xy = self._process_boat_obstacles(
             self.curr_msg.obstacles, self.reference_latlon
-            )
+        )
 
         # Process wind vectors
 
@@ -228,7 +228,6 @@ def initial_plot() -> go.Figure:
         yaxis_title="Y Coordinate",
         xaxis=dict(range=[-100, 100]),
         yaxis=dict(range=[-100, 100]),
-
     )
 
     return fig
@@ -266,15 +265,8 @@ def dash_app(q: Queue):
         style={"height": "100vh", "width": "100vw", "margin": 0, "padding": 0},
         children=[
             html.H2("Live Path Planning"),
-            dcc.Graph(
-                id="live-graph",
-                style={"height": "90vh", "width": "100%"}
-            ),
-            dcc.Interval(
-                id="interval-component",
-                interval=5000,
-                n_intervals=0
-            ),
+            dcc.Graph(id="live-graph", style={"height": "90vh", "width": "100%"}),
+            dcc.Interval(id="interval-component", interval=5000, n_intervals=0),
         ],
     )
 
@@ -361,7 +353,7 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
             "<extra></extra>"
         ),
         marker=dict(
-            symbol="arrow-wide",
+            symbol="arrow",
             line_color="darkseagreen",
             color="lightgreen",
             line_width=2,
@@ -573,7 +565,10 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
 
     fig.add_shape(
         type="rect",
-        x0=x_min, y0=y_min, x1=x_max, y1=y_max,
+        x0=x_min,
+        y0=y_min,
+        x1=x_max,
+        y1=y_max,
         fillcolor="rgba(255, 100, 100, 0.25)",  # light red, semi-transparent
         line=dict(width=0),
         layer="below",
@@ -607,7 +602,7 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
                     f"Heading: {heading:.1f}°<extra></extra>"
                 ),
                 marker=dict(
-                    symbol="arrow-wide",
+                    symbol="arrow",
                     line_color="orange",
                     color="orange",
                     line_width=2,
