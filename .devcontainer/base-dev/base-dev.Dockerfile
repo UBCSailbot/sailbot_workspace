@@ -320,6 +320,8 @@ RUN pip3 install \
     ipykernel
 
 WORKDIR ${ROS_WORKSPACE}
+USER ros
+
 COPY scripts/ ./scripts
 COPY src/ ./src
 
