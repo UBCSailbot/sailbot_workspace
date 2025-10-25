@@ -107,6 +107,7 @@ class MockGlobalPath(Node):
             # to ensure that node_navigate will still receive the waypoints
             # in the event that this node launches first and publishes the
             # mock global path once into the void
+            self.get_logger().debug("Publishing the global path unchanged")
             msg = self.global_path
 
         else:
@@ -164,6 +165,7 @@ class MockGlobalPath(Node):
 
         self.get_logger().debug(f"Publishing mock global path: {gp.path_to_dict(msg)}")
         self.global_path = msg
+        msg.waypoints = list(reversed(msg.waypoints))
         self.global_path_pub.publish(msg)
 
         # reset all checks for next function call
