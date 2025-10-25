@@ -96,3 +96,117 @@ npm run lint
 
 This command runs [ESLint](https://eslint.org/docs/latest/use/getting-started) to analyze the code for potential errors
 and enforce coding style based on the rules defined in the configuration file `.eslintrc`.
+
+## Access dev server on a mobile device (optional)
+
+Want to develop our website and see how it looks on your phone? Easy!
+Note: This process will probably require a home internet connection. UBC has some chastity "security" policies that will prevent one or more of these steps.
+
+### 1. Run the website
+
+On your computer, run any of the commands you would normally use suffixed with `:host`. This is a variant of the command that will expose the website on all network hosts. This changes your server's attitude:
+Before: "I will only accept connections from the same computer".
+After: "I will accept any and all connections".
+This is still safe, as long as you are using your own secure home network. Anything else won't be able to reach it at all.
+
+_Example:_
+```
+➜  website git:(main) ✗ npm run web:dev:no-api:host
+
+> web:dev:no-api:host
+> cross-env DISABLE_API=true next dev -p 3005 -H 0.0.0.0
+
+   ▲ Next.js 14.1.4
+   - Local:        http://localhost:3005
+   - Network:      http://0.0.0.0:3005
+   - Environments: .env.development
+```
+
+You will notice the new line `- Network:      http://0.0.0.0:3005`. Yay!
+
+### 2. Find the IP address of your computer
+
+#### Windows
+
+In powershell, type `ipconfig` and look for your `IPv4 Address`:
+
+_Example:_
+```
+Wireless LAN adapter Wi-Fi:
+
+   Connection-specific DNS Suffix  . :
+   Link-local IPv6 Address . . . . . : fe80::1997:afee:6ac0:6a8%5
+   IPv4 Address. . . . . . . . . . . : 192.168.1.164
+   Subnet Mask . . . . . . . . . . . : 255.255.255.0
+   Default Gateway . . . . . . . . . : 192.168.1.1
+```
+
+#### MacOS
+
+In your Mac terminal, run: `ipconfig getifaddr en1`. Use `en0` if you use ethernet connection instead.
+
+I don't know exactly what the output should look like, but with enough digging you should be able to find it.
+TODO: update this instructions once I get my hands on someone that wisely uses Mac over Windows.
+
+### 3. Connect (don't worry if this doesn't work)
+
+We expose our website on port `3005`, so open your browser and enter `{your IP}:3005`. If that doesn't work try `http://{your IP}:3005`.
+
+_Example:_
+`192.168.1.164:3005`
+
+If this works, you should also be able to connect on your phone by going to the same URL!
+
+### 4. Deal with stupid Windows
+
+If you are using Windows and the above method worked for you, congratulations for the miracle. Otherwise you will be sorely disappointed. We need to tell your firewall to allow this. Open a powershell terminal as administrator and enter `New-NetFirewallRule -DisplayName "Next.js Dev Server" -Direction Inbound -LocalPort 3005 -Protocol TCP -Action Allow`
+
+_Example:_
+```
+PS C:\WINDOWS\system32> New-NetFirewallRule -DisplayName "Next.js Dev Server" -Direction Inbound -LocalPort 3005 -Protocol TCP -Action Allow
+
+
+Name                          : {d723d87f-07c1-4520-8acd-2b12d96f3536}
+DisplayName                   : Next.js Dev Server
+Description                   :
+DisplayGroup                  :
+Group                         :
+Enabled                       : True
+Profile                       : Any
+Platform                      : {}
+Direction                     : Inbound
+Action                        : Allow
+EdgeTraversalPolicy           : Block
+LooseSourceMapping            : False
+LocalOnlyMapping              : False
+Owner                         :
+PrimaryStatus                 : OK
+Status                        : The rule was parsed successfully from the store. (65536)
+EnforcementStatus             : NotApplicable
+PolicyStoreSource             : PersistentStore
+PolicyStoreSourceType         : Local
+RemoteDynamicKeywordAddresses : {}
+PolicyAppId                   :
+PackageFamilyName             :
+```
+
+If you are not using WSL try it again!
+Otherwise, you will need to forward port 3005 from your network to WSL.
+In your WSL terminal, run: `ip route` to get your ip info:
+
+_Example:_
+```
+➜  sailbot_workspace git:(main) ✗ ip route               
+default via 172.26.224.1 dev eth0 proto kernel 
+172.26.224.0/20 dev eth0 proto kernel scope link src 172.26.237.182 
+```
+
+In your administrator powershell, type: `netsh interface portproxy add v4tov4 listenport=3005 listenaddress=0.0.0.0 connectport=3005 connectaddress={your WSL IP}`:
+
+_Example:_
+```
+PS C:\WINDOWS\system32> netsh interface portproxy add v4tov4 listenport=3005 listenaddress=0.0.0.0 connectport=3005 connectaddress=172.26.237.182
+```
+
+### I ran into an error in this process. What can I do?
+`https://chatgpt.com/`
