@@ -92,6 +92,7 @@ TEST_F(TestLocalTransceiver, sendData)
     constexpr float   holder     = 14.3;
     constexpr int32_t holder_int = 11;
 
+    // * The below constants are already defined in the constants file, but some files define seem to define them again
     // static const int NUM_TEMP_SENSORS     = 16;
     // static const int NUM_PH_SENSORS       = 16;
     // static const int NUM_PRESSURE_SENSORS = 16;
@@ -139,37 +140,38 @@ TEST_F(TestLocalTransceiver, sendData)
     // assign generic sensors data
     // Now replaced with specific ROS sensor data assignments
     // custom_interfaces::msg::HelperGenericSensor sensor;
-    // std::array<custom_interfaces::msg::TempSensor, NUM_TEMP_SENSORS> temp_array;
-    // for (int i = 0; i < NUM_TEMP_SENSORS; i++) {
-    //     custom_interfaces::msg::HelperTemp temp_data;
-    //     temp_data.set__temp(holder);
-    //     temp_array[i].set__temp(temp_data);
-    // }
-    // temp.set__temp_sensors(temp_array);
 
-    // std::array<custom_interfaces::msg::PhSensor, NUM_PH_SENSORS> ph_array;
-    // for (int i = 0; i < NUM_PH_SENSORS; i++) {
-    //     custom_interfaces::msg::HelperPh ph_data;
-    //     ph_data.set__ph(holder);
-    //     ph_array[i].set__ph(ph_data);
-    // }
-    // ph.set__ph_sensors(ph_array);
+    std::array<custom_interfaces::msg::TempSensor, NUM_TEMP_SENSORS> temp_array;
+    for (int i = 0; i < NUM_TEMP_SENSORS; i++) {
+        custom_interfaces::msg::HelperTemp temp_data;
+        temp_data.set__temp(holder);
+        temp_array[i].set__temp(temp_data);
+    }
+    temp.set__temp_sensors(temp_array);
 
-    // std::array<custom_interfaces::msg::PressureSensor, NUM_PRESSURE_SENSORS> pressure_array;
-    // for (int i = 0; i < NUM_PRESSURE_SENSORS; i++) {
-    //     custom_interfaces::msg::HelperPressure pressure_data;
-    //     pressure_data.set__pressure(holder);
-    //     pressure_array[i].set__pressure(pressure_data);
-    // }
-    // pressure.set__pressure_sensors(pressure_array);
+    std::array<custom_interfaces::msg::PhSensor, NUM_PH_SENSORS> ph_array;
+    for (int i = 0; i < NUM_PH_SENSORS; i++) {
+        custom_interfaces::msg::HelperPh ph_data;
+        ph_data.set__ph(holder);
+        ph_array[i].set__ph(ph_data);
+    }
+    ph.set__ph_sensors(ph_array);
 
-    // std::array<custom_interfaces::msg::SalinitySensor, NUM_SALINITY_SENSORS> salinity_array;
-    // for (int i = 0; i < NUM_SALINITY_SENSORS; i++) {
-    //     custom_interfaces::msg::HelperSalinity salinity_data;
-    //     salinity_data.set__salinity(holder);
-    //     salinity_array[i].set__salinity(salinity_data);
-    // }
-    // salinity.set__salinity_sensors(salinity_array);
+    std::array<custom_interfaces::msg::PressureSensor, NUM_PRESSURE_SENSORS> pressure_array;
+    for (int i = 0; i < NUM_PRESSURE_SENSORS; i++) {
+        custom_interfaces::msg::HelperPressure pressure_data;
+        pressure_data.set__pressure(holder);
+        pressure_array[i].set__pressure(pressure_data);
+    }
+    pressure.set__pressure_sensors(pressure_array);
+
+    std::array<custom_interfaces::msg::SalinitySensor, NUM_SALINITY_SENSORS> salinity_array;
+    for (int i = 0; i < NUM_SALINITY_SENSORS; i++) {
+        custom_interfaces::msg::HelperSalinity salinity_data;
+        salinity_data.set__salinity(holder);
+        salinity_array[i].set__salinity(salinity_data);
+    }
+    salinity.set__salinity_sensors(salinity_array);
 
     // sensors.set__generic_sensors({sensor});
 
@@ -184,10 +186,10 @@ TEST_F(TestLocalTransceiver, sendData)
     // update sensors and send
     lcl_trns_->updateSensor(wind);
     lcl_trns_->updateSensor(gps);
-    // lcl_trns_->updateSensor(temp);
-    // lcl_trns_->updateSensor(pressure);
-    // lcl_trns_->updateSensor(ph);
-    // lcl_trns_->updateSensor(salinity);
+    lcl_trns_->updateSensor(temp);
+    lcl_trns_->updateSensor(pressure);
+    lcl_trns_->updateSensor(ph);
+    lcl_trns_->updateSensor(salinity);
     lcl_trns_->updateSensor(batteries);
     lcl_trns_->updateSensor(local_paths);
 
