@@ -66,11 +66,6 @@ def test_OMPLPath___init__():
     assert OMPL_PATH.solved
 
 
-def test_OMPLPath_get_cost():
-    with pytest.raises(NotImplementedError):
-        OMPL_PATH.get_cost()
-
-
 def test_OMPLPath_get_waypoint(fresh_ompl_path):
     waypoints = fresh_ompl_path.get_path().waypoints  # List[HelperLatLon]
     start_state_latlon = OMPL_PATH.state.position

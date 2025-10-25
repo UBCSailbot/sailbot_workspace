@@ -12,8 +12,8 @@ import local_pathfinding.coord_systems as cs
 
 # Constants
 PROJ_HOURS_NO_COLLISION = 3  # hours
-BOAT_BUFFER = 0.5  # km
-COLLISION_ZONE_STRETCH_FACTOR = 1.5  # This factor changes the width of the boat collision zone
+BOAT_BUFFER = 0.25  # km
+COLLISION_ZONE_STRETCH_FACTOR = 1.25  # This factor changes the width of the boat collision zone
 
 
 class Obstacle:
@@ -30,13 +30,15 @@ class Obstacle:
             obstacle's collision zone. Shape depends on the child class.
     """
 
-    def __init__(self, reference: ci.HelperLatLon, sailbot_position: ci.HelperLatLon):
+    def __init__(self, reference: ci.HelperLatLon,
+                 sailbot_position: ci.HelperLatLon,
+                 collision_zone: MultiPolygon = None):
         self.reference = reference
         self.sailbot_position_latlon = sailbot_position
         self.sailbot_position = cs.latlon_to_xy(self.reference, self.sailbot_position_latlon)
 
         # Defined later by the child class
-        self.collision_zone = None
+        self.collision_zone = collision_zone
 
     def is_valid(self, point: cs.XY) -> bool:
         """
@@ -99,6 +101,10 @@ class Obstacle:
         self.sailbot_position = cs.latlon_to_xy(self.reference, self.sailbot_position_latlon)
         self.update_collision_zone(**kwargs)
 
+    def print_info(self):
+        for name, value in self.__dict__.items():
+            print(name, value)
+
 
 class Land(Obstacle):
     """
@@ -146,7 +152,6 @@ class Land(Obstacle):
             land_multi_polygon (MultiPolygon): Custom land data. Useful for testing.
         """
         if land_multi_polygon is not None:  # for testing (injecting mock land data)
-
             self.collision_zone = MultiPolygon(
                 cs.latlon_polygon_list_to_xy_polygon_list(land_multi_polygon.geoms, self.reference)
             )
