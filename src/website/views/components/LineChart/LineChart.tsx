@@ -7,10 +7,12 @@ import { downloadDataFromJSON } from '@/utils/DownloadData';
 
 import styles from './lineChartStyles.module.css';
 import './customUplot.css';
+import { WithRouterProps } from 'next/dist/client/with-router';
 
 interface SeriesData {
   label: string;
   unit?: string;
+  stroke?: string;
 }
 
 // change this later fr
@@ -69,7 +71,7 @@ const LineChart = ({ data, title, seriesData }: LineChartProps) => {
     series: [
       ...seriesData.map((series) => ({
         label: series.label,
-        stroke: 'white',
+        stroke: series.stroke,
         width: 2,
         value: series.unit
           ? (_u: any, v: any) => (v === null ? '--' : `${v} ${series.unit}`)
