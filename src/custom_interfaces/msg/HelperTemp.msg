@@ -1,2 +1,2 @@
-# unit: degrees Celsius
+# unit: Kelvin
 float32 temp
