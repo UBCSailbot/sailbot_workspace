@@ -71,8 +71,7 @@ void LocalTransceiver::updateSensor(msg::TempSensors temperature)
 {
     sensors_.clear_temp_sensors();
     for (const msg::TempSensor & temperature_data : temperature.temp_sensors) {
-        Sensors::Temp * new_temperature = sensors_.add_temp_sensors();
-        new_temperature->set_temp(temperature_data.temp.temp);
+        sensors_.add_temp_sensors(temperature_data.temp.temp);
     }
 }
 
@@ -80,8 +79,7 @@ void LocalTransceiver::updateSensor(msg::PhSensors ph)
 {
     sensors_.clear_ph_sensors();
     for (const msg::PhSensor & ph_data : ph.ph_sensors) {
-        Sensors::Ph * new_ph = sensors_.add_ph_sensors();
-        new_ph->set_ph(ph_data.ph.ph);
+        sensors_.add_ph_sensors(ph_data.ph.ph);
     }
 }
 
@@ -89,8 +87,7 @@ void LocalTransceiver::updateSensor(msg::SalinitySensors salinity)
 {
     sensors_.clear_salinity_sensors();
     for (const msg::SalinitySensor & salinity_data : salinity.salinity_sensors) {
-        Sensors::Salinity * new_salinity = sensors_.add_salinity_sensors();
-        new_salinity->set_salinity(salinity_data.salinity.salinity);
+        sensors_.add_salinity_sensors(salinity_data.salinity.salinity);
     }
 }
 
@@ -98,8 +95,7 @@ void LocalTransceiver::updateSensor(msg::PressureSensors pressure)
 {
     sensors_.clear_pressure_sensors();
     for (const msg::PressureSensor & pressure_data : pressure.pressure_sensors) {
-        Sensors::Pressure * new_pressure = sensors_.add_pressure_sensors();
-        new_pressure->set_pressure(pressure_data.pressure.pressure);
+        sensors_.add_pressure_sensors(pressure_data.pressure.pressure);
     }
 }
 

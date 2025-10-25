@@ -60,22 +60,30 @@ Sensors UtilDB::genRandSensors()
 
     // temperature sensors
     for (int i = 0; i < NUM_TEMP_SENSORS; i++) {
-        genRandTempSensorData(*sensors.add_temp_sensors());
+        float v{};
+        genRandTempSensorData(v);
+        sensors.add_temp_sensors(v);
     }
 
     // pH sensors
     for (int i = 0; i < NUM_PH_SENSORS; i++) {
-        genRandPhSensorData(*sensors.add_ph_sensors());
+        float v{};
+        genRandPhSensorData(v);
+        sensors.add_ph_sensors(v);
     }
 
     // pressure sensors
     for (int i = 0; i < NUM_PRESSURE_SENSORS; i++) {
-        genRandPressureSensorData(*sensors.add_pressure_sensors());
+        float v{};
+        genRandPressureSensorData(v);
+        sensors.add_pressure_sensors(v);
     }
 
     // salinity sensors
     for (int i = 0; i < NUM_SALINITY_SENSORS; i++) {
-        genRandSalinitySensorData(*sensors.add_salinity_sensors());
+        float v{};
+        genRandSalinitySensorData(v);
+        sensors.add_salinity_sensors(v);
     }
 
     // batteries
@@ -167,30 +175,30 @@ bool UtilDB::verifyDBWrite(std::span<Sensors> expected_sensors, std::span<Sailbo
 
         // temperature sensors
         for (int j = 0; j < NUM_TEMP_SENSORS; j++) {
-            const Sensors::Temp & dumped_temp_sensor   = dumped_sensors[i].temp_sensors(j);
-            const Sensors::Temp & expected_temp_sensor = expected_sensors[i].temp_sensors(j);
-            expectFloatEQ(dumped_temp_sensor.temp(), expected_temp_sensor.temp(), "");
+            const float dumped_temp_sensor   = dumped_sensors[i].temp_sensors(j);
+            const float expected_temp_sensor = expected_sensors[i].temp_sensors(j);
+            expectFloatEQ(dumped_temp_sensor, expected_temp_sensor, "");
         }
 
         // pressure sensors
         for (int j = 0; j < NUM_PRESSURE_SENSORS; j++) {
-            const Sensors::Pressure & dumped_pressure_sensor   = dumped_sensors[i].pressure_sensors(j);
-            const Sensors::Pressure & expected_pressure_sensor = expected_sensors[i].pressure_sensors(j);
-            expectFloatEQ(dumped_pressure_sensor.pressure(), expected_pressure_sensor.pressure(), "");
+            const float dumped_pressure_sensor   = dumped_sensors[i].pressure_sensors(j);
+            const float expected_pressure_sensor = expected_sensors[i].pressure_sensors(j);
+            expectFloatEQ(dumped_pressure_sensor, expected_pressure_sensor, "");
         }
 
         // salinity sensors
         for (int j = 0; j < NUM_SALINITY_SENSORS; j++) {
-            const Sensors::Salinity & dumped_salinity_sensor   = dumped_sensors[i].salinity_sensors(j);
-            const Sensors::Salinity & expected_salinity_sensor = expected_sensors[i].salinity_sensors(j);
-            expectFloatEQ(dumped_salinity_sensor.salinity(), expected_salinity_sensor.salinity(), "");
+            const float dumped_salinity_sensor   = dumped_sensors[i].salinity_sensors(j);
+            const float expected_salinity_sensor = expected_sensors[i].salinity_sensors(j);
+            expectFloatEQ(dumped_salinity_sensor, expected_salinity_sensor, "");
         }
 
         // pH sensors
         for (int j = 0; j < NUM_PH_SENSORS; j++) {
-            const Sensors::Ph & dumped_ph_sensor   = dumped_sensors[i].ph_sensors(j);
-            const Sensors::Ph & expected_ph_sensor = expected_sensors[i].ph_sensors(j);
-            expectFloatEQ(dumped_ph_sensor.ph(), expected_ph_sensor.ph(), "");
+            const float dumped_ph_sensor   = dumped_sensors[i].ph_sensors(j);
+            const float expected_ph_sensor = expected_sensors[i].ph_sensors(j);
+            expectFloatEQ(dumped_ph_sensor, expected_ph_sensor, "");
         }
 
         // batteries
@@ -318,8 +326,7 @@ std::pair<std::vector<Sensors>, std::vector<std::string>> UtilDB::dumpSensors(
         const std::string &           timestamp = timestamp_vec[i];
         const bsoncxx::document::view temp_doc  = *temp_doc_it;
         for (bsoncxx::array::element temp_doc : temp_doc["tempSensors"].get_array().value) {
-            Sensors::Temp * temp = sensors.add_temp_sensors();
-            temp->set_temp(static_cast<float>(temp_doc["temperature"].get_double().value));
+            sensors.add_temp_sensors(static_cast<float>(temp_doc["temperature"].get_double().value));
         }
         expectEQ(sensors.temp_sensors().size(), NUM_TEMP_SENSORS, "Size mismatch when reading temp sensors from DB");
         expectEQ(temp_doc["timestamp"].get_utf8().value.to_string(), timestamp, "Document timestamp mismatch");
@@ -339,8 +346,7 @@ std::pair<std::vector<Sensors>, std::vector<std::string>> UtilDB::dumpSensors(
         const std::string &           timestamp    = timestamp_vec[i];
         const bsoncxx::document::view pressure_doc = *pressure_doc_it;
         for (bsoncxx::array::element pressure_doc : pressure_doc["pressureSensors"].get_array().value) {
-            Sensors::Pressure * pressure = sensors.add_pressure_sensors();
-            pressure->set_pressure(static_cast<float>(pressure_doc["pressure"].get_double().value));
+            sensors.add_pressure_sensors(static_cast<float>(pressure_doc["pressure"].get_double().value));
         }
         expectEQ(
           sensors.pressure_sensors().size(), NUM_PRESSURE_SENSORS,
@@ -362,8 +368,7 @@ std::pair<std::vector<Sensors>, std::vector<std::string>> UtilDB::dumpSensors(
         const std::string &           timestamp    = timestamp_vec[i];
         const bsoncxx::document::view salinity_doc = *salinity_doc_it;
         for (bsoncxx::array::element salinity_doc : salinity_doc["salinitySensors"].get_array().value) {
-            Sensors::Salinity * salinity = sensors.add_salinity_sensors();
-            salinity->set_salinity(static_cast<float>(salinity_doc["salinity"].get_double().value));
+            sensors.add_salinity_sensors(static_cast<float>(salinity_doc["salinity"].get_double().value));
         }
         expectEQ(
           sensors.salinity_sensors().size(), NUM_SALINITY_SENSORS,
@@ -384,8 +389,7 @@ std::pair<std::vector<Sensors>, std::vector<std::string>> UtilDB::dumpSensors(
         const std::string &           timestamp = timestamp_vec[i];
         const bsoncxx::document::view ph_doc    = *ph_doc_it;
         for (bsoncxx::array::element ph_doc : ph_doc["phSensors"].get_array().value) {
-            Sensors::Ph * ph = sensors.add_ph_sensors();
-            ph->set_ph(static_cast<float>(ph_doc["ph"].get_double().value));
+            sensors.add_ph_sensors(static_cast<float>(ph_doc["ph"].get_double().value));
         }
         expectEQ(sensors.ph_sensors().size(), NUM_PH_SENSORS, "Size mismatch when reading pH sensors from DB");
         expectEQ(ph_doc["timestamp"].get_utf8().value.to_string(), timestamp, "Document timestamp mismatch");
@@ -505,28 +509,28 @@ void UtilDB::genRandAisData(Sensors::Ais & ais_ship)
 //     generic_sensor.set_data(data_generic(*rng_));
 // }
 
-void UtilDB::genRandTempSensorData(Sensors::Temp & temp_sensor)
+void UtilDB::genRandTempSensorData(float & temp_sensor)
 {
     std::uniform_real_distribution<float> temp_dist(TEMP_LBND, TEMP_UBND);
-    temp_sensor.set_temp(temp_dist(*rng_));
+    temp_sensor = temp_dist(*rng_);
 }
 
-void UtilDB::genRandPhSensorData(Sensors::Ph & ph_sensor)
+void UtilDB::genRandPhSensorData(float & ph_sensor)
 {
     std::uniform_real_distribution<float> ph_dist(PH_LBND, PH_UBND);
-    ph_sensor.set_ph(ph_dist(*rng_));
+    ph_sensor = ph_dist(*rng_);
 }
 
-void UtilDB::genRandPressureSensorData(Sensors::Pressure & pressure_sensor)
+void UtilDB::genRandPressureSensorData(float & pressure_sensor)
 {
     std::uniform_real_distribution<float> pressure_dist(PRESSURE_LBND, PRESSURE_UBND);
-    pressure_sensor.set_pressure(pressure_dist(*rng_));
+    pressure_sensor = pressure_dist(*rng_);
 }
 
-void UtilDB::genRandSalinitySensorData(Sensors::Salinity & salinity_sensor)
+void UtilDB::genRandSalinitySensorData(float & salinity_sensor)
 {
     std::uniform_real_distribution<float> salinity_dist(SALINITY_LBND, SALINITY_UBND);
-    salinity_sensor.set_salinity(salinity_dist(*rng_));
+    salinity_sensor = salinity_dist(*rng_);
 }
 
 void UtilDB::genRandBatteryData(Sensors::Battery & battery)

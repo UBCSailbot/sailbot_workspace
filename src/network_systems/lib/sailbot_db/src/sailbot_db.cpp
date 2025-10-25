@@ -134,45 +134,43 @@ bool SailbotDB::storeAis(
 // }
 
 bool SailbotDB::storeTempSensors(
-  const ProtoList<Sensors::Temp> & temp_pb, const std::string & timestamp, mongocxx::client & client)
+  const ProtoPrimitiveList<float> & temp_pb, const std::string & timestamp, mongocxx::client & client)
 {
     mongocxx::database   db        = client[db_name_];
     mongocxx::collection temp_coll = db[COLLECTION_DATA_SENSORS];
     bstream::document    doc_builder{};
     auto                 temp_doc_arr = doc_builder << "tempSensors" << bstream::open_array;
-    for (const Sensors::Temp & temp_sensor : temp_pb) {
-        temp_doc_arr = temp_doc_arr << bstream::open_document << "temperature"
-                                    << static_cast<int64_t>(temp_sensor.temp()) << bstream::close_document;
+    for (const float & temp_sensor : temp_pb) {
+        temp_doc_arr = temp_doc_arr << bstream::open_document << "temperature" << temp_sensor
+                                    << bstream::close_document;
     }
     DocVal temp_doc = temp_doc_arr << bstream::close_array << "timestamp" << timestamp << bstream::finalize;
     return static_cast<bool>(temp_coll.insert_one(temp_doc.view()));
 }
 
 bool SailbotDB::storePhSensors(
-  const ProtoList<Sensors::Ph> & ph_pb, const std::string & timestamp, mongocxx::client & client)
+  const ProtoPrimitiveList<float> & ph_pb, const std::string & timestamp, mongocxx::client & client)
 {
     mongocxx::database   db      = client[db_name_];
     mongocxx::collection ph_coll = db[COLLECTION_DATA_SENSORS];
     bstream::document    doc_builder{};
     auto                 ph_doc_arr = doc_builder << "phSensors" << bstream::open_array;
-    for (const Sensors::Ph & ph_sensor : ph_pb) {
-        ph_doc_arr = ph_doc_arr << bstream::open_document << "ph" << static_cast<int64_t>(ph_sensor.ph())
-                                << bstream::close_document;
+    for (const float & ph_sensor : ph_pb) {
+        ph_doc_arr = ph_doc_arr << bstream::open_document << "ph" << ph_sensor << bstream::close_document;
     }
     DocVal ph_doc = ph_doc_arr << bstream::close_array << "timestamp" << timestamp << bstream::finalize;
     return static_cast<bool>(ph_coll.insert_one(ph_doc.view()));
 }
 
 bool SailbotDB::storeSalinitySensors(
-  const ProtoList<Sensors::Salinity> & salinity_pb, const std::string & timestamp, mongocxx::client & client)
+  const ProtoPrimitiveList<float> & salinity_pb, const std::string & timestamp, mongocxx::client & client)
 {
     mongocxx::database   db            = client[db_name_];
     mongocxx::collection salinity_coll = db[COLLECTION_DATA_SENSORS];
     bstream::document    doc_builder{};
     auto                 salinity_doc_arr = doc_builder << "salinitySensors" << bstream::open_array;
-    for (const Sensors::Salinity & salinity_sensor : salinity_pb) {
-        salinity_doc_arr = salinity_doc_arr << bstream::open_document << "salinity"
-                                            << static_cast<int64_t>(salinity_sensor.salinity())
+    for (const float & salinity_sensor : salinity_pb) {
+        salinity_doc_arr = salinity_doc_arr << bstream::open_document << "salinity" << salinity_sensor
                                             << bstream::close_document;
     }
     DocVal salinity_doc = salinity_doc_arr << bstream::close_array << "timestamp" << timestamp << bstream::finalize;
@@ -180,15 +178,14 @@ bool SailbotDB::storeSalinitySensors(
 }
 
 bool SailbotDB::storePressureSensors(
-  const ProtoList<Sensors::Pressure> & pressure_pb, const std::string & timestamp, mongocxx::client & client)
+  const ProtoPrimitiveList<float> & pressure_pb, const std::string & timestamp, mongocxx::client & client)
 {
     mongocxx::database   db            = client[db_name_];
     mongocxx::collection pressure_coll = db[COLLECTION_DATA_SENSORS];
     bstream::document    doc_builder{};
     auto                 pressure_doc_arr = doc_builder << "pressureSensors" << bstream::open_array;
-    for (const Sensors::Pressure & pressure_sensor : pressure_pb) {
-        pressure_doc_arr = pressure_doc_arr << bstream::open_document << "pressure"
-                                            << static_cast<int64_t>(pressure_sensor.pressure())
+    for (const float & pressure_sensor : pressure_pb) {
+        pressure_doc_arr = pressure_doc_arr << bstream::open_document << "pressure" << pressure_sensor
                                             << bstream::close_document;
     }
     DocVal pressure_doc = pressure_doc_arr << bstream::close_array << "timestamp" << timestamp << bstream::finalize;

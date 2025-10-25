@@ -98,28 +98,28 @@ private:
     *
     * @param temp_sensor Temperature sensor data to modify
     */
-    void genRandTempSensorData(Polaris::Sensors::Temp & temp_sensor);
+    void genRandTempSensorData(float & temp_sensor);
 
     /**
     * @brief generate random pH sensor data
     *
     * @param ph_sensor pH sensor data to modify
     */
-    void genRandPhSensorData(Polaris::Sensors::Ph & ph_sensor);
+    void genRandPhSensorData(float & ph_sensor);
 
     /**
     * @brief generate random pressure sensor data
     *
     * @param pressure_sensor Pressure sensor data to modify
     */
-    void genRandPressureSensorData(Polaris::Sensors::Pressure & pressure_sensor);
+    void genRandPressureSensorData(float & pressure_sensor);
 
     /**
     * @brief generate random salinity sensor data
     *
     * @param salinity_sensor Salinity sensor data to modify
     */
-    void genRandSalinitySensorData(Polaris::Sensors::Salinity & salinity_sensor);
+    void genRandSalinitySensorData(float & salinity_sensor);
 
     /**
     * @brief generate random battery data

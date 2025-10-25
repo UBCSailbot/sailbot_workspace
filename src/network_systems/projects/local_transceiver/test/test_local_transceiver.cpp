@@ -292,7 +292,7 @@ TEST_F(TestLocalTransceiver, SerializeTempSensors)
 
     Polaris::Sensors sensors(lcl_trns_->sensors());
     EXPECT_EQ(sensors.temp_sensors_size(), NUM_TEMP_SENSORS);
-    EXPECT_FLOAT_EQ(sensors.temp_sensors(0).temp(), expected_temp);
+    EXPECT_FLOAT_EQ(sensors.temp_sensors(0), expected_temp);
 
     // Test serialization
     std::string serialized;
@@ -303,7 +303,7 @@ TEST_F(TestLocalTransceiver, SerializeTempSensors)
     Polaris::Sensors deserialized;
     EXPECT_TRUE(deserialized.ParseFromString(serialized));
     EXPECT_EQ(deserialized.temp_sensors_size(), NUM_TEMP_SENSORS);
-    EXPECT_FLOAT_EQ(deserialized.temp_sensors(0).temp(), expected_temp);
+    EXPECT_FLOAT_EQ(deserialized.temp_sensors(0), expected_temp);
 }
 
 /**
@@ -329,7 +329,7 @@ TEST_F(TestLocalTransceiver, SerializePhSensors)
     Polaris::Sensors sensors(lcl_trns_->sensors());
 
     EXPECT_EQ(sensors.ph_sensors_size(), NUM_PH_SENSORS);
-    EXPECT_FLOAT_EQ(sensors.ph_sensors(0).ph(), expected_ph);
+    EXPECT_FLOAT_EQ(sensors.ph_sensors(0), expected_ph);
 
     // Test serialization
     std::string serialized;
@@ -340,7 +340,7 @@ TEST_F(TestLocalTransceiver, SerializePhSensors)
     Polaris::Sensors deserialized;
     EXPECT_TRUE(deserialized.ParseFromString(serialized));
     EXPECT_EQ(deserialized.ph_sensors_size(), NUM_PH_SENSORS);
-    EXPECT_FLOAT_EQ(deserialized.ph_sensors(0).ph(), expected_ph);
+    EXPECT_FLOAT_EQ(deserialized.ph_sensors(0), expected_ph);
 }
 
 /**
@@ -366,7 +366,7 @@ TEST_F(TestLocalTransceiver, SerializeSalinitySensors)
     Polaris::Sensors sensors(lcl_trns_->sensors());
 
     EXPECT_EQ(sensors.salinity_sensors_size(), NUM_SALINITY_SENSORS);
-    EXPECT_FLOAT_EQ(sensors.salinity_sensors(0).salinity(), expected_salinity);
+    EXPECT_FLOAT_EQ(sensors.salinity_sensors(0), expected_salinity);
 
     // Test serialization
     std::string serialized;
@@ -377,7 +377,7 @@ TEST_F(TestLocalTransceiver, SerializeSalinitySensors)
     Polaris::Sensors deserialized;
     EXPECT_TRUE(deserialized.ParseFromString(serialized));
     EXPECT_EQ(deserialized.salinity_sensors_size(), NUM_SALINITY_SENSORS);
-    EXPECT_FLOAT_EQ(deserialized.salinity_sensors(0).salinity(), expected_salinity);
+    EXPECT_FLOAT_EQ(deserialized.salinity_sensors(0), expected_salinity);
 }
 
 /**
@@ -403,7 +403,7 @@ TEST_F(TestLocalTransceiver, SerializePressureSensors)
     Polaris::Sensors sensors(lcl_trns_->sensors());
 
     EXPECT_EQ(sensors.pressure_sensors_size(), NUM_PRESSURE_SENSORS);
-    EXPECT_FLOAT_EQ(sensors.pressure_sensors(0).pressure(), expected_pressure);
+    EXPECT_FLOAT_EQ(sensors.pressure_sensors(0), expected_pressure);
 
     // Test serialization
     std::string serialized;
@@ -414,7 +414,7 @@ TEST_F(TestLocalTransceiver, SerializePressureSensors)
     Polaris::Sensors deserialized;
     EXPECT_TRUE(deserialized.ParseFromString(serialized));
     EXPECT_EQ(deserialized.pressure_sensors_size(), NUM_PRESSURE_SENSORS);
-    EXPECT_FLOAT_EQ(deserialized.pressure_sensors(0).pressure(), expected_pressure);
+    EXPECT_FLOAT_EQ(deserialized.pressure_sensors(0), expected_pressure);
 }
 
 /**

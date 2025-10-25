@@ -28,7 +28,11 @@ const std::string MONGODB_CONN_STR        = "mongodb://localhost:27017";
 
 template <typename T>
 using ProtoList = google::protobuf::RepeatedPtrField<T>;
-using DocVal    = bsoncxx::document::view_or_value;
+
+template <typename T>
+using ProtoPrimitiveList = google::protobuf::RepeatedField<T>;
+
+using DocVal = bsoncxx::document::view_or_value;
 
 /**
  * Thread-safe class that encapsulates a Sailbot MongoDB database
@@ -163,7 +167,7 @@ private:
     * @return True if sensor is added, false otherwise
     */
     bool storeTempSensors(
-      const ProtoList<Polaris::Sensors::Temp> & temp_pb, const std::string & timestamp, mongocxx::client & client);
+      const ProtoPrimitiveList<float> & temp_pb, const std::string & timestamp, mongocxx::client & client);
 
     /**
     * @brief Adds pH sensors to the database
@@ -175,7 +179,7 @@ private:
     * @return True if sensor is added, false otherwise
     */
     bool storePhSensors(
-      const ProtoList<Polaris::Sensors::Ph> & ph_pb, const std::string & timestamp, mongocxx::client & client);
+      const ProtoPrimitiveList<float> & ph_pb, const std::string & timestamp, mongocxx::client & client);
 
     /**
     * @brief Adds salinity sensors to the database
@@ -187,8 +191,7 @@ private:
     * @return True if sensor is added, false otherwise
     */
     bool storeSalinitySensors(
-      const ProtoList<Polaris::Sensors::Salinity> & salinity_pb, const std::string & timestamp,
-      mongocxx::client & client);
+      const ProtoPrimitiveList<float> & salinity_pb, const std::string & timestamp, mongocxx::client & client);
 
     /**
     * @brief Adds pressure sensors to the database
@@ -200,8 +203,7 @@ private:
     * @return True if sensor is added, false otherwise
     */
     bool storePressureSensors(
-      const ProtoList<Polaris::Sensors::Pressure> & pressure_pb, const std::string & timestamp,
-      mongocxx::client & client);
+      const ProtoPrimitiveList<float> & pressure_pb, const std::string & timestamp, mongocxx::client & client);
 
     /**
     * @brief Adds a battery sensors to the database
