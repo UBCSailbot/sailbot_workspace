@@ -1,3 +1,5 @@
+#### We do not use anymore. We pulled website development out of docker in PR #614
+
 FROM node:20-alpine
 
 # [Optional] Uncomment this section to install additional OS packages.
