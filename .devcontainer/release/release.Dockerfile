@@ -33,10 +33,6 @@ COPY --from=builder ${ROS_WORKSPACE}/src/ ./src
 COPY --from=builder ${ROS_WORKSPACE}/scripts/ ./scripts
 COPY --from=builder /opt/ros/humble /opt/ros/humble
 
-RUN apt-get install -y --no-install-recommends \
-
-    && rm -rf /var/lib/apt/lists/*
-
 # Install all runtime dependencies in a single layer
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
