@@ -1,1 +1,0 @@
-../base-dev/update-bashrc.sh
