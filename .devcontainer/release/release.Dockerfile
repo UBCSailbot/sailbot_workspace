@@ -48,11 +48,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         python3-argcomplete \
         python3-colcon-common-extensions \
         python3-pip \
-        python3-rosdep \
-        python3 \
-        ros-humble-ros-base \
-        python3-argcomplete \
-        python3-rosdep \
         curl \
         gnupg2 \
         lsb-release \
@@ -62,6 +57,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get update && apt-get install -y --no-install-recommends \
         ros-humble-ros-base \
         python3-argcomplete \
+        python3-rosdep \
     && locale-gen en_US.UTF-8 \
     && update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 \
     && ln -fs /usr/share/zoneinfo/UTC /etc/localtime \
