@@ -321,7 +321,7 @@ RUN pip3 install \
 
 # Change user to ros so the directories setup.sh create are accessible to ROS.
 WORKDIR ${ROS_WORKSPACE}
-USER USERNAME
+USER ${USERNAME}
 
 COPY scripts/ ./scripts
 COPY src/ ./src
