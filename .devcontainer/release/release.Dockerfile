@@ -9,16 +9,10 @@ COPY src/ ./src
 RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && ./scripts/build.sh"
 
 FROM ubuntu:jammy-20240111 AS runtime
-WORKDIR ${ROS_WORKSPACE}
-COPY --from=builder build/ ./build
-COPY --from=builder install/ ./install
-COPY --from=builder log/ ./log
-COPY --from=builder /opt/ros/humble /opt/ros/humble
 
 ENV DEBIAN_FRONTEND=noninteractive \
     LANG=en_US.UTF-8 \
     TZ="America/Vancouver" \
-    ROS_WORKSPACE=/workspaces/sailbot_workspace \
     ROS_DISTRO=humble \
     AMENT_PREFIX_PATH=/opt/ros/humble \
     COLCON_PREFIX_PATH=/opt/ros/humble \
@@ -30,6 +24,16 @@ ENV DEBIAN_FRONTEND=noninteractive \
     AMENT_CPPCHECK_ALLOW_SLOW_VERSIONS=1 \
     LOCAL_TRANSCEIVER_TEST_PORT="/tmp/local_transceiver_test_port" \
     VIRTUAL_IRIDIUM_PORT="/tmp/virtual_iridium_port"
+
+WORKDIR ${ROS_WORKSPACE}
+COPY --from=builder build/ ./build
+COPY --from=builder install/ ./install
+COPY --from=builder log/ ./log
+COPY --from=builder src/ ./src
+COPY --from=builder scripts/ ./scripts
+COPY --from=builder /opt/ros/humble /opt/ros/humble
+
+RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && ./scripts/setup.sh exec"
 
 # Install all runtime dependencies in a single layer
 RUN apt-get update && apt-get install -y --no-install-recommends \
