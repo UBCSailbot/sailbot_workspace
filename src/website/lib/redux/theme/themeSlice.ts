@@ -33,12 +33,7 @@ export const themeSlice = createSlice({
         'dark',
         newTheme === Theme.Dark,
       );
-      try {
-        localStorage.setItem(
-          'theme',
-          newTheme === Theme.Dark ? 'dark' : 'light',
-        );
-      } catch {}
+      localStorage.setItem('theme', newTheme === Theme.Dark ? 'dark' : 'light');
     },
   },
 });

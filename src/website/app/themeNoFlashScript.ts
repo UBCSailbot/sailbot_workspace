@@ -3,9 +3,7 @@
 
 export const SET_THEME = `
 (function(){
-  try {
-    var stored = localStorage.getItem('theme');
-    document.documentElement.classList.toggle(stored ?? 'dark');
-  } catch (e) {}
+  var stored = localStorage.getItem('theme');
+  document.documentElement.classList.toggle(stored ?? 'dark');
 })();
 `;
