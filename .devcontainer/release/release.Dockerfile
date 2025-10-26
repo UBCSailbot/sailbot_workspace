@@ -75,7 +75,6 @@ RUN groupadd --gid $USER_GID $USERNAME \
     # && echo "if [ -f /opt/ros/${ROS_DISTRO}/setup.bash ]; then source /opt/ros/${ROS_DISTRO}/setup.bash; fi" >> /home/$USERNAME/.bashrc
 
 ARG HOME=/home/$USERNAME
-COPY --chown=${USERNAME}:${USERNAME} config ${HOME}
 # persist ROS logs
 RUN mkdir -p ${HOME}/.ros/log \
     && chown -R ${USERNAME} ${HOME}/.ros
