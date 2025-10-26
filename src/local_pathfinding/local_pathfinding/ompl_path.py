@@ -21,7 +21,10 @@ from shapely.geometry import MultiPolygon, Polygon, box
 
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.obstacles as ob
-from local_pathfinding.ompl_objectives import get_sailing_objective, create_buffer_around_position
+from local_pathfinding.ompl_objectives import (
+    create_buffer_around_position,
+    get_sailing_objective,
+)
 
 if TYPE_CHECKING:
     from local_pathfinding.local_path import LocalPathState
@@ -345,10 +348,10 @@ class OMPLPath:
                     # uncomment this if you want to log which states are being labeled invalid
                     # its commented out for now to avoid unnecessary file I/O
 
-                    if isinstance(state, base.State):  # only happens in unit tests
-                        log_invalid_state(state=cs.XY(state().getX(), state().getY()), obstacle=o)
-                    else:  # happens in prod
-                        log_invalid_state(state=cs.XY(state.getX(), state.getY()), obstacle=o)
+                    # if isinstance(state, base.State):  # only happens in unit tests
+                    #     log_invalid_state(state=cs.XY(state().getX(), state().getY()), obstacle=o) # noqa
+                    # else:  # happens in prod
+                    #     log_invalid_state(state=cs.XY(state.getX(), state.getY()), obstacle=o)
                     return False
 
         return True
