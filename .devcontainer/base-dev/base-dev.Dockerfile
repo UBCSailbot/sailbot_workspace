@@ -326,4 +326,4 @@ COPY scripts/ ./scripts
 COPY src/ ./src
 
 RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && ./scripts/setup.sh"
-RUN rm -rf ./scripts ./src
+RUN /bin/bash -c "sudo rm -rf ./scripts ./src"
