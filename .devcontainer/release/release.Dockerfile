@@ -39,6 +39,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates \
         locales \
         tzdata \
+        sudo \
         python3-numpy \
         can-utils \
         iproute2 \
