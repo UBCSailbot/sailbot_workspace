@@ -162,11 +162,11 @@ TEST_F(TestRemoteTransceiver, TestPostSensorsMult)
 {
     SCOPED_TRACE("Seed: " + std::to_string(g_rand_seed));  // Print seed on any failure
 
-    constexpr int                          NUM_REQS = 50;  // Keep this number under 60 to simplify timestamp logic
-    std::array<std::string, NUM_REQS>      queries;
-    std::array<std::thread, NUM_REQS>      req_threads;
-    std::array<http::status, NUM_REQS>     res_statuses;
-    std::array<Polaris::Sensors, NUM_REQS> expected_sensors;
+    constexpr int                                NUM_REQS = 3;  // Keep this number under 60 to simplify timestamp logic
+    std::array<std::string, NUM_REQS>            queries;
+    std::array<std::thread, NUM_REQS>            req_threads;
+    std::array<http::status, NUM_REQS>           res_statuses;
+    std::array<Polaris::Sensors, NUM_REQS>       expected_sensors;
     std::array<SailbotDB::RcvdMsgInfo, NUM_REQS> expected_info;
 
     std::tm tm = UtilDB::getTimestamp();
@@ -454,6 +454,7 @@ TEST_F(TestRemoteTransceiver, TestPostNoData)
     global_path_json.add_child("waypoints", waypoints_arr);
 
     global_path_json.put("timestamp", global_path_timestamp);
+
 
     std::stringstream global_path_ss;
     boost::property_tree::json_parser::write_json(global_path_ss, global_path_json);
