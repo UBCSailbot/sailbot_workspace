@@ -1,4 +1,4 @@
-FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:deferred-path-variable-evaluation AS builder
+FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:setup-included AS builder
 WORKDIR ${ROS_WORKSPACE}
 COPY scripts/ ./scripts
 # CACHEBUST forces Docker to invalidate the cache for this layer.
@@ -62,7 +62,6 @@ ARG USER_GID=$USER_UID
 # Create a non-root user
 RUN groupadd --gid $USER_GID $USERNAME \
     && useradd -s /bin/bash --uid $USER_UID --gid $USER_GID -m $USERNAME \
-    # [Optional] Add sudo support for the non-root user
     && apt-get update \
     && apt-get install -y sudo \
     && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME\
@@ -70,8 +69,6 @@ RUN groupadd --gid $USER_GID $USERNAME \
     # Cleanup
     && rm -rf /var/lib/apt/lists/* \
     && echo "source /usr/share/bash-completion/completions/git" >> /home/$USERNAME/.bashrc
-    # Sourcing overlay in update-bashrc.sh instead
-    # && echo "if [ -f /opt/ros/${ROS_DISTRO}/setup.bash ]; then source /opt/ros/${ROS_DISTRO}/setup.bash; fi" >> /home/$USERNAME/.bashrc
 
 ARG HOME=/home/$USERNAME
 # persist ROS logs
