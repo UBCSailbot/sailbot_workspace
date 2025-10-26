@@ -1,4 +1,4 @@
-#### NOTE: We now only use this for deployment! We do website development locally now. Hmph.
+#### NOTE: We now only use this for deployment! We do website development locally now. Hmph
 
 # Website Image
 

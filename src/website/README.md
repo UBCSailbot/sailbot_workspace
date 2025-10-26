@@ -61,7 +61,8 @@ Make sure you have Docker installed!
 
 Once you have run the website in development mode, you can access it at [http://localhost:3005](http://localhost:3005).
 
-After spinning up the database, it will keep running in the background until Docker is stopped. You can just manually stop the database by running:
+After spinning up the database, it will keep running in the background until Docker is stopped.
+You can just manually stop the database by running:
 
 ```bash
 npm run db:stop
@@ -100,16 +101,19 @@ and enforce coding style based on the rules defined in the configuration file `.
 ## Access dev server on a mobile device (optional)
 
 Want to develop our website and see how it looks on your phone? Easy!
-Note: This process will probably require a home internet connection. UBC has some chastity "security" policies that will prevent one or more of these steps.
+Note: This process will probably require a home internet connection.
+UBC has some chastity "security" policies that will prevent one or more of these steps.
 
 ### 1. Run the website
 
-On your computer, run any of the commands you would normally use suffixed with `:host`. This is a variant of the command that will expose the website on all network hosts. This changes your server's attitude:
+On your computer, run any of the commands you would normally use suffixed with `:host`.
+This is a variant of the command that will expose the website on all network hosts. This changes your server's attitude:
 Before: "I will only accept connections from the same computer".
 After: "I will accept any and all connections".
 This is still safe, as long as you are using your own secure home network. Anything else won't be able to reach it at all.
 
 _Example:_
+
 ```
 ➜  website git:(main) ✗ npm run web:dev:no-api:host
 
@@ -131,6 +135,7 @@ You will notice the new line `- Network:      http://0.0.0.0:3005`. Yay!
 In powershell, type `ipconfig` and look for your `IPv4 Address`:
 
 _Example:_
+
 ```
 Wireless LAN adapter Wi-Fi:
 
@@ -150,7 +155,8 @@ TODO: update this instructions once I get my hands on someone that wisely uses M
 
 ### 3. Connect (don't worry if this doesn't work)
 
-We expose our website on port `3005`, so open your browser and enter `{your IP}:3005`. If that doesn't work try `http://{your IP}:3005`.
+We expose our website on port `3005`, so open your browser and enter `{your IP}:3005`.
+If that doesn't work try `http://{your IP}:3005`.
 
 _Example:_
 `192.168.1.164:3005`
@@ -159,9 +165,13 @@ If this works, you should also be able to connect on your phone by going to the 
 
 ### 4. Deal with stupid Windows
 
-If you are using Windows and the above method worked for you, congratulations for the miracle. Otherwise you will be sorely disappointed. We need to tell your firewall to allow this. Open a powershell terminal as administrator and enter `New-NetFirewallRule -DisplayName "Next.js Dev Server" -Direction Inbound -LocalPort 3005 -Protocol TCP -Action Allow`
+If you are using Windows and the above method worked for you, congratulations for the miracle.
+Otherwise you will be sorely disappointed. We need to tell your firewall to allow this.
+Open a powershell terminal as administrator and enter:
+`New-NetFirewallRule -DisplayName "Next.js Dev Server" -Direction Inbound -LocalPort 3005 -Protocol TCP -Action Allow`
 
 _Example:_
+
 ```
 PS C:\WINDOWS\system32> New-NetFirewallRule -DisplayName "Next.js Dev Server" -Direction Inbound -LocalPort 3005 -Protocol TCP -Action Allow
 
@@ -195,18 +205,22 @@ Otherwise, you will need to forward port 3005 from your network to WSL.
 In your WSL terminal, run: `ip route` to get your ip info:
 
 _Example:_
+
 ```
-➜  sailbot_workspace git:(main) ✗ ip route               
-default via 172.26.224.1 dev eth0 proto kernel 
-172.26.224.0/20 dev eth0 proto kernel scope link src 172.26.237.182 
+➜  sailbot_workspace git:(main) ✗ ip route
+default via 172.26.224.1 dev eth0 proto kernel
+172.26.224.0/20 dev eth0 proto kernel scope link src 172.26.237.182
 ```
 
-In your administrator powershell, type: `netsh interface portproxy add v4tov4 listenport=3005 listenaddress=0.0.0.0 connectport=3005 connectaddress={your WSL IP}`:
+In your administrator powershell, type:
+`netsh interface portproxy add v4tov4 listenport=3005 listenaddress=0.0.0.0 connectport=3005 connectaddress={your WSL IP}`:
 
 _Example:_
+
 ```
 PS C:\WINDOWS\system32> netsh interface portproxy add v4tov4 listenport=3005 listenaddress=0.0.0.0 connectport=3005 connectaddress=172.26.237.182
 ```
 
 ### I ran into an error in this process. What can I do?
+
 `https://chatgpt.com/`
