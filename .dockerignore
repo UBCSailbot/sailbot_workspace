@@ -3,3 +3,4 @@
 !src/**
 !scripts/build.sh
 !scripts/setup.sh
+!docs/requirements.txt
