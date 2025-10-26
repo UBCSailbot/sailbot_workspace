@@ -1,4 +1,6 @@
 FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:latest AS builder
+ARG USERNAME=ros
+USER ${USERNAME}
 WORKDIR ${ROS_WORKSPACE}
 COPY scripts/ ./scripts
 # CACHEBUST forces Docker to invalidate the cache for this layer.
