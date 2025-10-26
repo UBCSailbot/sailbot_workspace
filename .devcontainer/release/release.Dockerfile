@@ -45,6 +45,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         iproute2 \
         tmux \
         screen \
+        ros-humble-ros-base \
+        python3-argcomplete \
         python3-rosdep \
     && locale-gen en_US.UTF-8 \
     && update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 \
