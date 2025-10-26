@@ -368,9 +368,15 @@ private:
             wind_sensor_msg                   = wind_sensor.toRosMsg();
             wind_sensors_pub_->publish(wind_sensors_);
 
+            // PATH expects [-179, 180] where 0 means wind is coming from bow to stern and angle increases clockwise
+            // ELEC sends [0, 359] where 0 means the same and angle also increases clockwise
+            if (wind_sensor_msg.direction > 180) {  // NOLINT(readability-magic-numbers)
+                wind_sensor_msg.direction -= 360;   // NOLINT(readability-magic-numbers)
+            }
+
             // NUM_WIND_SENSORS is a placeholder,
             // replace with number of data points wanted in the moving average
-            double k = 1;
+            double k = NUM_WIND_SENSORS;
             // convert deg to rad
             double angle = wind_sensor_msg.direction * (M_PI / 180.0);  // NOLINT(readability-magic-numbers)
             double y     = wind_sensor_msg.speed.speed * sin(angle);
@@ -412,8 +418,9 @@ private:
         // construct a wind sensor ros message from the current simple moving average (stored as an x and y value)
         double speed     = sqrt(pow(curr_sma.x, 2) + pow(curr_sma.y, 2));
         double direction = atan2(curr_sma.y, curr_sma.x) * (180.0 / M_PI);  //NOLINT(readability-magic-numbers)
-        // PATH expects [-180, 180], so shift down by 180 and ensure we aren't out of bounds due to floating point shenanigans
-        direction = std::clamp(direction - 180.0, -180.0, 180.0);  //NOLINT(readability-magic-numbers)
+
+        // round to nearest integer, and ensure we aren't out of bounds due to floating point shenanigans
+        direction = std::clamp(round(direction), -179.0, 180.0);  //NOLINT(readability-magic-numbers)
 
         msg::WindSensor filtered_wind;
         filtered_wind.speed.speed = static_cast<float>(speed);

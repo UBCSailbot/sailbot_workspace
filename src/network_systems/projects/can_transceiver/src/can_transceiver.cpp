@@ -54,7 +54,7 @@ void CanTransceiver::registerCanCbs(
 CanTransceiver::CanTransceiver() : is_can_simulated_(false)
 {
     // See: https://www.kernel.org/doc/html/next/networking/can.html#how-to-use-socketcan
-    static const char * CAN_INST = "can0";
+    static const char * CAN_INST = "can1";
 
     // Everything between this comment and the initiation of the receive thread is pretty much
     // magic from the socketcan documentation
