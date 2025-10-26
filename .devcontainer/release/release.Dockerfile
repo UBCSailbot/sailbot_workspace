@@ -1,6 +1,4 @@
 FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:latest AS builder
-ARG USERNAME=ros
-USER ${USERNAME}
 WORKDIR ${ROS_WORKSPACE}
 COPY scripts/ ./scripts
 # CACHEBUST forces Docker to invalidate the cache for this layer.
@@ -8,6 +6,8 @@ COPY scripts/ ./scripts
 # CACHEBUST is defined as a build-arg set to the current timestamp.
 ARG CACHEBUST
 COPY src/ ./src
+# Make sure the workspace is writable by the current user
+RUN chmod -R a+rwX ${ROS_WORKSPACE}
 RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && ./scripts/build.sh"
 
 FROM ubuntu:jammy-20240111 AS runtime
@@ -51,7 +51,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ENV DEBIAN_FRONTEND=
 
 # root bash configuration
-ENV ROS_WORKSPACE=/workspaces/sailbot_workspace
 COPY .devcontainer/base-dev/update-bashrc.sh /sbin/update-bashrc
 RUN chmod +x /sbin/update-bashrc \
     && sync \
