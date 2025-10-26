@@ -45,6 +45,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         iproute2 \
         tmux \
         screen \
+        python3 \
         ros-humble-ros-base \
         python3-argcomplete \
         python3-rosdep \
