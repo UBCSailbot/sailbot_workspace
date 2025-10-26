@@ -33,6 +33,10 @@ COPY --from=builder ${ROS_WORKSPACE}/src/ ./src
 COPY --from=builder ${ROS_WORKSPACE}/scripts/ ./scripts
 COPY --from=builder /opt/ros/humble /opt/ros/humble
 
+RUN apt-get install -y --no-install-recommends \
+
+    && rm -rf /var/lib/apt/lists/*
+
 # Install all runtime dependencies in a single layer
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -45,10 +49,23 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         iproute2 \
         tmux \
         screen \
+        python3-argcomplete \
+        python3-colcon-common-extensions \
+        python3-pip \
+        python3-rosdep \
         python3 \
         ros-humble-ros-base \
         python3-argcomplete \
         python3-rosdep \
+        curl \
+        gnupg2 \
+        lsb-release \
+        sudo \
+    && curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null \
+    && apt-get update && apt-get install -y --no-install-recommends \
+        ros-humble-ros-base \
+        python3-argcomplete \
     && locale-gen en_US.UTF-8 \
     && update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 \
     && ln -fs /usr/share/zoneinfo/UTC /etc/localtime \
