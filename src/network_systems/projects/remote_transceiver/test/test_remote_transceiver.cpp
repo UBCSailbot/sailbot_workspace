@@ -455,7 +455,6 @@ TEST_F(TestRemoteTransceiver, TestPostNoData)
 
     global_path_json.put("timestamp", global_path_timestamp);
 
-
     std::stringstream global_path_ss;
     boost::property_tree::json_parser::write_json(global_path_ss, global_path_json);
 
