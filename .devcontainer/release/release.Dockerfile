@@ -11,7 +11,6 @@ RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && ./scripts/build.sh
 FROM ubuntu:jammy-20240111 AS runtime
 COPY --from=builder build/ ./build
 COPY --from=builder install/ ./install
-COPY --from=builder log/ ./log
 COPY --from=builder /opt/ros/humble /opt/ros/humble
 
 ENV DEBIAN_FRONTEND=noninteractive \
