@@ -330,7 +330,7 @@ void UtilDB::genRandGpsData(Sensors::Gps & gps_data)
 {
     std::uniform_real_distribution<float> lat_dist(LAT_LBND, LAT_UBND);
     std::uniform_real_distribution<float> lon_dist(LON_LBND, LON_UBND);
-    std::uniform_real_distribution<float> speed_dist(SPEED_LBND, SPEED_UBND);
+    std::uniform_real_distribution<float> speed_dist(BOAT_SPEED_LBND, BOAT_SPEED_UBND);
     std::uniform_real_distribution<float> heading_dist(HEADING_LBND, HEADING_UBND);
     gps_data.set_latitude(lat_dist(*rng_));
     gps_data.set_longitude(lon_dist(*rng_));
@@ -343,7 +343,7 @@ void UtilDB::genRandAisData(Sensors::Ais & ais_ship)
     std::uniform_int_distribution<uint32_t> id_dist(0, UINT32_MAX);
     std::uniform_real_distribution<float>   lat_dist(LAT_LBND, LAT_UBND);
     std::uniform_real_distribution<float>   lon_dist(LON_LBND, LON_UBND);
-    std::uniform_real_distribution<float>   speed_dist(SPEED_LBND, SPEED_UBND);
+    std::uniform_real_distribution<float>   speed_dist(SOG_SPEED_LBND, SOG_SPEED_UBND);
     std::uniform_real_distribution<float>   heading_dist(HEADING_LBND, HEADING_UBND);
     std::uniform_real_distribution<float>   rot_dist(ROT_LBND, ROT_UBND);
     std::uniform_real_distribution<float>   width_dist(SHIP_DIMENSION_LBND, SHIP_DIMENSION_UBND);
@@ -379,7 +379,7 @@ void UtilDB::genRandBatteryData(Sensors::Battery & battery)
 
 void UtilDB::genRandWindData(Sensors::Wind & wind_data)
 {
-    std::uniform_real_distribution<float> speed_wind(SPEED_LBND, SPEED_UBND);
+    std::uniform_real_distribution<float> speed_wind(WIND_SPEED_LBND, WIND_SPEED_UBND);
     std::uniform_int_distribution<int>    direction_wind(WIND_DIRECTION_LBND, WIND_DIRECTION_UBND);
 
     wind_data.set_speed(speed_wind(*rng_));
