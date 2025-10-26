@@ -10,6 +10,7 @@ RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && ./scripts/build.sh
 
 FROM ubuntu:jammy-20240111 AS runtime
 
+FROM runtime AS set-envs
 ENV DEBIAN_FRONTEND=noninteractive \
     LANG=en_US.UTF-8 \
     TZ="America/Vancouver" \
@@ -24,16 +25,15 @@ ENV DEBIAN_FRONTEND=noninteractive \
     AMENT_CPPCHECK_ALLOW_SLOW_VERSIONS=1 \
     LOCAL_TRANSCEIVER_TEST_PORT="/tmp/local_transceiver_test_port" \
     VIRTUAL_IRIDIUM_PORT="/tmp/virtual_iridium_port"
-
 WORKDIR ${ROS_WORKSPACE}
+
+FROM set-envs AS import-build-artifacts
 COPY --from=builder ${ROS_WORKSPACE}/build/ ./build
 COPY --from=builder ${ROS_WORKSPACE}/install/ ./install
 COPY --from=builder ${ROS_WORKSPACE}/log/ ./log
 COPY --from=builder ${ROS_WORKSPACE}/src/ ./src
 COPY --from=builder ${ROS_WORKSPACE}/scripts/ ./scripts
 COPY --from=builder /opt/ros/humble /opt/ros/humble
-
-RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && ./scripts/setup.sh exec"
 
 # Install all runtime dependencies in a single layer
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -52,6 +52,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 ENV DEBIAN_FRONTEND=
+
+RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && ./scripts/setup.sh exec" \
+    # downgrade setuptools
+    # https://answers.ros.org/question/396439/setuptoolsdeprecationwarning-setuppy-install-is-deprecated-use-build-and-pip-and-other-standards-based-tools/?answer=400052#post-id-400052
+    && pip3 install setuptools==58.2.0
 
 # root bash configuration
 COPY .devcontainer/base-dev/update-bashrc.sh /sbin/update-bashrc
