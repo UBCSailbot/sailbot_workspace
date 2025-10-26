@@ -1,4 +1,4 @@
-FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:latest AS builder
+FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:deferred-path-variable-evaluation AS builder
 WORKDIR ${ROS_WORKSPACE}
 COPY scripts/ ./scripts
 # CACHEBUST forces Docker to invalidate the cache for this layer.
@@ -6,8 +6,6 @@ COPY scripts/ ./scripts
 # CACHEBUST is defined as a build-arg set to the current timestamp.
 ARG CACHEBUST
 COPY src/ ./src
-# Make sure the workspace is writable by the current user
-RUN chmod -R a+rwX ${ROS_WORKSPACE}
 RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && ./scripts/build.sh"
 
 FROM ubuntu:jammy-20240111 AS runtime
