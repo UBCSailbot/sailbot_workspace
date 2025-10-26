@@ -26,11 +26,11 @@ ENV DEBIAN_FRONTEND=noninteractive \
     VIRTUAL_IRIDIUM_PORT="/tmp/virtual_iridium_port"
 
 WORKDIR ${ROS_WORKSPACE}
-COPY --from=builder build/ ./build
-COPY --from=builder install/ ./install
-COPY --from=builder log/ ./log
-COPY --from=builder src/ ./src
-COPY --from=builder scripts/ ./scripts
+COPY --from=builder ${ROS_WORKSPACE}/build/ ./build
+COPY --from=builder ${ROS_WORKSPACE}/install/ ./install
+COPY --from=builder ${ROS_WORKSPACE}/log/ ./log
+COPY --from=builder ${ROS_WORKSPACE}/src/ ./src
+COPY --from=builder ${ROS_WORKSPACE}/scripts/ ./scripts
 COPY --from=builder /opt/ros/humble /opt/ros/humble
 
 RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && ./scripts/setup.sh exec"
