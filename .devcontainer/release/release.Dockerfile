@@ -8,10 +8,8 @@ ARG CACHEBUST
 COPY src/ ./src
 RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && ./scripts/build.sh"
 
-FROM ubuntu:jammy-20240111 AS runtime
-
-FROM runtime AS set-envs
-ENV DEBIAN_FRONTEND=noninteractive \
+FROM ubuntu:jammy-20240111 AS env
+ENV ROS_WORKSPACE=/workspaces/sailbot_workspace \
     LANG=en_US.UTF-8 \
     TZ="America/Vancouver" \
     ROS_DISTRO=humble \
@@ -27,7 +25,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     VIRTUAL_IRIDIUM_PORT="/tmp/virtual_iridium_port"
 WORKDIR ${ROS_WORKSPACE}
 
-FROM set-envs AS import-build-artifacts
+FROM env AS import-build-artifacts
 COPY --from=builder ${ROS_WORKSPACE}/build/ ./build
 COPY --from=builder ${ROS_WORKSPACE}/install/ ./install
 COPY --from=builder ${ROS_WORKSPACE}/log/ ./log
@@ -36,6 +34,7 @@ COPY --from=builder ${ROS_WORKSPACE}/scripts/ ./scripts
 COPY --from=builder /opt/ros/humble /opt/ros/humble
 
 # Install all runtime dependencies in a single layer
+ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates \
         locales \
@@ -48,9 +47,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && locale-gen en_US.UTF-8 \
     && update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 \
     && ln -fs /usr/share/zoneinfo/UTC /etc/localtime \
-    && dpkg-reconfigure --frontend noninteractive tzdata \
-    && apt-get clean -y \
-    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+    && dpkg-reconfigure --frontend noninteractive tzdata
 ENV DEBIAN_FRONTEND=
 
 RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && ./scripts/setup.sh exec" \
@@ -72,12 +69,12 @@ ARG USER_GID=$USER_UID
 # Create a non-root user
 RUN groupadd --gid $USER_GID $USERNAME \
     && useradd -s /bin/bash --uid $USER_UID --gid $USER_GID -m $USERNAME \
-    && apt-get update \
     && apt-get install -y sudo \
     && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME\
     && chmod 0440 /etc/sudoers.d/$USERNAME \
     # Cleanup
-    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean -y \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
     && echo "source /usr/share/bash-completion/completions/git" >> /home/$USERNAME/.bashrc
 
 ARG HOME=/home/$USERNAME
