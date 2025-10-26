@@ -319,11 +319,15 @@ RUN pip3 install \
     # for juypter notebooks
     ipykernel
 
+# Change user to ros so the directories setup.sh create are accessible to ROS.
 WORKDIR ${ROS_WORKSPACE}
-USER ros
+USER USERNAME
 
 COPY scripts/ ./scripts
 COPY src/ ./src
 
 RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && ./scripts/setup.sh"
-RUN /bin/bash -c "sudo rm -rf ./scripts ./src"
+
+# Change user back to root
+USER root
+RUN rm -rf ./scripts ./src
