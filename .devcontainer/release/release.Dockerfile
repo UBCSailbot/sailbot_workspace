@@ -45,10 +45,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         iproute2 \
         tmux \
         screen \
+        python3-rosdep \
     && locale-gen en_US.UTF-8 \
     && update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 \
     && ln -fs /usr/share/zoneinfo/UTC /etc/localtime \
-    && dpkg-reconfigure --frontend noninteractive tzdata
+    && dpkg-reconfigure --frontend noninteractive tzdata \
+    && rosdep init || echo "rosdep already initialized"
 ENV DEBIAN_FRONTEND=
 
 RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && ./scripts/setup.sh exec" \
