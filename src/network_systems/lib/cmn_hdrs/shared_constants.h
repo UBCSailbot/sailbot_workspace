@@ -67,12 +67,20 @@ constexpr float LON_LBND = -180.0;
 constexpr float LON_UBND = 180.0;
 
 /***** Bounds for Speed ******/
-constexpr float SPEED_LBND = 0.0;    // Placeholder number (kmph)
-constexpr float SPEED_UBND = 150.0;  // Placeholder number (kmph)
+constexpr float BOAT_SPEED_LBND = 0.0;    // Arbitrary number (kmph)
+constexpr float BOAT_SPEED_UBND = 80.0;   // Arbitrary number (kmph)
+constexpr float WIND_SPEED_LBND = 0.0;    // Arbitrary number (kmph)
+constexpr float WIND_SPEED_UBND = 250.0;  // Arbitrary number (kmph)
+constexpr float SOG_SPEED_LBND  = 0.0;    // Arbitrary number (kmph)
+constexpr float SOG_SPEED_UBND  = 200.0;  // Arbitrary number (kmph)
 
 /***** Bounds for Heading ******/
 constexpr float HEADING_LBND = 0.0;
 constexpr float HEADING_UBND = 360.0;
+
+/***** Bounds for Trim Tab *****/
+constexpr float TRIM_LBND = -40.0;
+constexpr float TRIM_UBND = 40.0;
 
 // boat rotation
 // See https://documentation.spire.com/ais-fundamentals/rate-of-turn-rot/ for how ROT works

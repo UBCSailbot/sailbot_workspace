@@ -14,7 +14,6 @@ import local_pathfinding.global_path as gp
 import local_pathfinding.obstacles as ob
 from local_pathfinding.local_path import LocalPath
 
-LOCAL_WAYPOINT_REACHED_THRESH_KM = 0.5
 GLOBAL_WAYPOINT_REACHED_THRESH_KM = 3
 PATHFINDING_RANGE_KM = 30
 REALLY_FAR_M = 100000000
@@ -199,7 +198,6 @@ class Sailbot(Node):
         In production mode, only the local path is published, with all other data set to 0 or empty
 
         """
-
         # publish all navigation data when in dev mode
         if self.mode == "development":
             helper_obstacles = []
@@ -291,26 +289,17 @@ class Sailbot(Node):
                 self.global_waypoint_index
             ]
 
-        received_new_local_path = self.local_path.update_if_needed(
+        desired_heading, self.local_waypoint_index = self.local_path.update_if_needed(
             self.gps,
             self.ais_ships,
             self.global_path,
+            self.local_waypoint_index,
             received_new_global_waypoint,
             self.saved_target_global_waypoint,
             self.filtered_wind_sensor,
             self.planner,
             self.land_multi_polygon,
         )
-
-        if received_new_local_path:
-            self.local_waypoint_index = 0
-
-        desired_heading, self.local_waypoint_index = (
-            self.calculate_desired_heading_and_waypoint_index(
-                self.local_path.path, self.local_waypoint_index, self.gps.lat_lon
-            )
-        )
-
         return desired_heading
 
     @staticmethod
@@ -340,28 +329,6 @@ class Sailbot(Node):
                 return waypoint_index
 
         return index_of_closest
-
-    @staticmethod
-    def calculate_desired_heading_and_waypoint_index(
-        path: ci.Path, waypoint_index: int, boat_lat_lon: ci.HelperLatLon
-    ):
-        waypoint = path.waypoints[waypoint_index]
-        desired_heading, _, distance_to_waypoint_m = GEODESIC.inv(
-            boat_lat_lon.longitude, boat_lat_lon.latitude, waypoint.longitude, waypoint.latitude
-        )
-
-        if cs.meters_to_km(distance_to_waypoint_m) < LOCAL_WAYPOINT_REACHED_THRESH_KM:
-            # If we reached the current local waypoint, aim for the next one
-            waypoint_index += 1
-            waypoint = path.waypoints[waypoint_index]
-            desired_heading, _, distance_to_waypoint_m = GEODESIC.inv(
-                boat_lat_lon.longitude,
-                boat_lat_lon.latitude,
-                waypoint.longitude,
-                waypoint.latitude,
-            )
-
-        return cs.bound_to_180(desired_heading), waypoint_index
 
     def update_params(self):
         """Update instance variables that depend on parameters if they have changed."""
