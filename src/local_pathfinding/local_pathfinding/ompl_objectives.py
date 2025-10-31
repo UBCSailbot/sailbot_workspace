@@ -6,7 +6,7 @@ from typing import Tuple
 import custom_interfaces.msg as ci
 import numpy as np
 from ompl import base as ob
-from shapely.geometry import Polygon, Point
+from shapely.geometry import Point, Polygon
 
 import local_pathfinding.coord_systems as cs
 from local_pathfinding.coord_systems import bound_to_180
@@ -275,14 +275,13 @@ class WindObjective(Objective):
         Returns:
             float: The cost of going upwind or downwind
         """
-        distance = math.hypot(s2.y - s1.y, s2.x - s1.x)
         boat_direction_radians = math.atan2(s2.x - s1.x, s2.y - s1.y)
         assert -math.pi <= boat_direction_radians <= math.pi
 
         if WindObjective.is_upwind(wind_direction, boat_direction_radians):
-            return UPWIND_MULTIPLIER * distance
+            return UPWIND_MULTIPLIER
         elif WindObjective.is_downwind(wind_direction, boat_direction_radians):
-            return DOWNWIND_MULTIPLIER * distance
+            return DOWNWIND_MULTIPLIER
         else:
             return 0.0
 
