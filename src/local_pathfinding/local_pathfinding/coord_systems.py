@@ -64,6 +64,10 @@ def bound_to_180(angle_degrees: float) -> float:
     return ((angle_degrees + 180) % 360) - 180
 
 
+def bound_to_pi(angle_rad: float) -> float:
+    return ((angle_rad + math.pi) % (2 * math.pi)) - math.pi
+
+
 def calculate_heading_diff(boat_heading: float, desired_heading):
     return abs(bound_to_180(desired_heading - boat_heading))
 

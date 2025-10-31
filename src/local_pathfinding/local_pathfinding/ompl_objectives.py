@@ -275,15 +275,31 @@ class WindObjective(Objective):
         Returns:
             float: The cost of going upwind or downwind
         """
+        # boat_direction_radians = math.atan2(s2.x - s1.x, s2.y - s1.y)
+        # assert -math.pi <= boat_direction_radians <= math.pi
+
+        # if WindObjective.is_upwind(wind_direction, boat_direction_radians):
+        #     return UPWIND_MULTIPLIER
+        # elif WindObjective.is_downwind(wind_direction, boat_direction_radians):
+        #     return DOWNWIND_MULTIPLIER
+        # else:
+        #     return 0.0
+
         boat_direction_radians = math.atan2(s2.x - s1.x, s2.y - s1.y)
         assert -math.pi <= boat_direction_radians <= math.pi
 
-        if WindObjective.is_upwind(wind_direction, boat_direction_radians):
-            return UPWIND_MULTIPLIER
-        elif WindObjective.is_downwind(wind_direction, boat_direction_radians):
-            return DOWNWIND_MULTIPLIER
+        angle_diff = boat_direction_radians - wind_direction
+        angle_diff = cs.bound_to_pi(angle_diff)
+        cos_angle = math.cos(angle_diff)
+
+        # cos_angle:
+        #  = 1 when heading directly into wind (upwind)
+        #  = 0 when heading perpendicular (crosswind)
+        #  = -1 when heading with wind (downwind)
+        if cos_angle > 0:
+            return UPWIND_MULTIPLIER * cos_angle
         else:
-            return 0.0
+            return DOWNWIND_MULTIPLIER * abs(cos_angle)
 
     @staticmethod
     def is_upwind(wind_direction: float, boat_direction: float) -> bool:
