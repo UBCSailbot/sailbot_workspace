@@ -14,11 +14,10 @@ import {
 import {
   SortableContext,
   arrayMove,
-  verticalListSortingStrategy,
+  rectSortingStrategy,
 } from '@dnd-kit/sortable';
 import DragIndicatorIcon from '@/public/icons/drag_indicator.svg';
 import styles from './stats.module.css';
-import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import GraphsActions from '@/stores/Graphs/GraphsActions';
 import { connect } from 'react-redux';
 
@@ -32,9 +31,11 @@ const graphsOrderNamesMap = {
 const SortableItem = ({
   id,
   isDragging,
+  isHalf,
 }: {
   id: string;
   isDragging?: boolean;
+  isHalf?: boolean;
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({ id });
@@ -46,9 +47,11 @@ const SortableItem = ({
     cursor: 'grab',
   };
 
+  const itemClass = `${styles.dropdownItem} ${isHalf ? styles.dropdownItemHalf : styles.dropdownItemFull}`;
+
   return (
     <div
-      className={styles.dropdownItem}
+      className={itemClass}
       ref={setNodeRef}
       style={style}
       {...attributes}
@@ -234,15 +237,20 @@ const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs, setGraphLayout }: any
           >
             <SortableContext
               items={graphsOrder}
-              strategy={verticalListSortingStrategy}
+              strategy={rectSortingStrategy}
             >
               {graphsOrder.map((id: any) => (
-                <SortableItem key={id} id={id} isDragging={id === activeId} />
+                <SortableItem
+                  key={id}
+                  id={id}
+                  isDragging={id === activeId}
+                  isHalf={graphs.layout[id] === 'half'}
+                />
               ))}
             </SortableContext>
             <DragOverlay>
               {activeId ? (
-                <div className={styles.dropdownItem}>
+                <div className={`${styles.dropdownItem} ${graphs.layout[activeId] === 'half' ? styles.dropdownItemHalf : styles.dropdownItemFull}`}>
                   <DragIndicatorIcon />
                   {
                     graphsOrderNamesMap[
