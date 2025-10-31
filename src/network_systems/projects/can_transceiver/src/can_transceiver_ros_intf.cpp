@@ -368,12 +368,6 @@ private:
             wind_sensor_msg                   = wind_sensor.toRosMsg();
             wind_sensors_pub_->publish(wind_sensors_);
 
-            // PATH expects [-179, 180] where 0 means wind is coming from bow to stern and angle increases clockwise
-            // ELEC sends [0, 359] where 0 means the same and angle also increases clockwise
-            if (wind_sensor_msg.direction > 180) {  // NOLINT(readability-magic-numbers)
-                wind_sensor_msg.direction -= 360;   // NOLINT(readability-magic-numbers)
-            }
-
             // NUM_WIND_SENSORS is a placeholder,
             // replace with number of data points wanted in the moving average
             double k = NUM_WIND_SENSORS;
