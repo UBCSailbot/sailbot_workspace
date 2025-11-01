@@ -19,17 +19,18 @@ import { rootSaga } from './rootSaga';
 import { Theme } from './theme/themeSlice';
 
 const getPreloadedTheme = () => {
+  if (typeof window === 'undefined') {
+    return Theme.Dark;
+  }
+
   try {
-    const stored =
-      typeof window !== 'undefined' ? localStorage.getItem('theme') : null;
+    const stored = localStorage.getItem('theme');
     if (stored === 'dark') return Theme.Dark;
     if (stored === 'light') return Theme.Light;
-  } catch {}
-  if (typeof window !== 'undefined' && window.matchMedia) {
-    return window.matchMedia('(prefers-color-scheme: dark)').matches
-      ? Theme.Dark
-      : Theme.Light;
+  } catch {
+    // may error out if user disables localstorage or something. thats fine.
   }
+
   return Theme.Dark;
 };
 
