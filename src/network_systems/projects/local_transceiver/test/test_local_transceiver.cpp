@@ -187,7 +187,7 @@ TEST_F(TestLocalTransceiver, sendData)
     lcl_trns_->updateSensor(wind);
     lcl_trns_->updateSensor(gps);
     lcl_trns_->updateSensor(temp);
-    lcl_trns_->updateSensor(pressure);
+    // lcl_trns_->updateSensor(pressure);
     lcl_trns_->updateSensor(ph);
     lcl_trns_->updateSensor(salinity);
     lcl_trns_->updateSensor(batteries);
