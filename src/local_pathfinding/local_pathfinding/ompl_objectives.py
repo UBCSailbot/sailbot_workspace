@@ -275,16 +275,6 @@ class WindObjective(Objective):
         Returns:
             float: The cost of going upwind or downwind
         """
-        # boat_direction_radians = math.atan2(s2.x - s1.x, s2.y - s1.y)
-        # assert -math.pi <= boat_direction_radians <= math.pi
-
-        # if WindObjective.is_upwind(wind_direction, boat_direction_radians):
-        #     return UPWIND_MULTIPLIER
-        # elif WindObjective.is_downwind(wind_direction, boat_direction_radians):
-        #     return DOWNWIND_MULTIPLIER
-        # else:
-        #     return 0.0
-
         boat_direction_radians = math.atan2(s2.x - s1.x, s2.y - s1.y)
         assert -math.pi <= boat_direction_radians <= math.pi
 
@@ -300,70 +290,6 @@ class WindObjective(Objective):
             return UPWIND_MULTIPLIER * cos_angle
         else:
             return DOWNWIND_MULTIPLIER * abs(cos_angle)
-
-    @staticmethod
-    def is_upwind(wind_direction: float, boat_direction: float) -> bool:
-        """Determines whether the boat is upwind or not and its associated cost
-
-        Args:
-            wind_direction (float): The true wind direction (radians). (-pi, pi]
-            boat_direction (float): The direction of the boat (radians). [-pi, pi]
-
-        Returns:
-            bool: The cost associated with the upwind direction
-        """
-        theta_min = wind_direction - HIGHEST_UPWIND_ANGLE_RADIANS
-        theta_max = wind_direction + HIGHEST_UPWIND_ANGLE_RADIANS
-
-        return WindObjective.is_angle_between(theta_min, boat_direction, theta_max)
-
-    @staticmethod
-    def is_downwind(wind_direction: float, boat_direction: float) -> bool:
-        """Generates the cost associated with the downwind direction
-
-        Args:
-            wind_direction (float): The true wind direction (radians). (-pi, pi]
-            boat_direction_radians (float)): The direction of the boat (radians). [-pi, pi]
-
-        Returns:
-            bool: The cost associated with the downwind direction
-        """
-        downwind_wind_direction = (wind_direction + math.pi) % (2 * math.pi)
-
-        theta_min = downwind_wind_direction - LOWEST_DOWNWIND_ANGLE_RADIANS
-
-        theta_max = downwind_wind_direction + LOWEST_DOWNWIND_ANGLE_RADIANS
-
-        return WindObjective.is_angle_between(theta_min, boat_direction, theta_max)
-
-    @staticmethod
-    def is_angle_between(first_angle: float, middle_angle: float, second_angle: float) -> bool:
-        """Determines whether an angle is between two other angles
-
-        Args:
-            first_angle (float): The first bounding angle in radians
-            middle_angle (float): The angle in question in radians
-            second_angle (float): The second bounding angle in radians
-
-        Returns:
-            bool: True when `middle_angle` is not in the reflex angle of
-                `first_angle` and `second_angle`, false otherwise.
-        """
-        # Bound the angles to [0, 2pi)
-        first_angle = first_angle % (2 * math.pi)
-        middle_angle = middle_angle % (2 * math.pi)
-        second_angle = second_angle % (2 * math.pi)
-
-        if first_angle <= second_angle:
-            if second_angle - math.pi == first_angle:
-                # Assume all angles are between first and second
-                return middle_angle != first_angle and middle_angle != second_angle
-            elif second_angle - math.pi < first_angle:
-                return middle_angle > first_angle and middle_angle < second_angle
-            else:
-                return middle_angle < first_angle or middle_angle > second_angle
-        else:
-            return WindObjective.is_angle_between(second_angle, middle_angle, first_angle)
 
 
 class SpeedObjective(Objective):
