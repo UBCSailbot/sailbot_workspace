@@ -191,19 +191,9 @@ class OMPLPath:
             self._logger.debug(f"Solution path does not exist. Exception thrown: {e}")
             return float("inf")
 
-        cost = 0.0
-
-        states = solution_path.getStates()
-        objective = self._simple_setup.getOptimizationObjective()
-        for i in range(waypoint_index, len(states)):
-            state = states[i]
-            state_cost_i = objective.stateCost(state).value()
-            motion_cost = (
-                objective.motionCost(state, states[i + 1]).value() if i + 1 < len(states) else 0
-            )
-            cost += state_cost_i + motion_cost
-
-        return cost
+        obj = self._simple_setup.getOptimizationObjective()
+        cost = solution_path.cost(obj)
+        return cost.value()
 
     def get_path(self) -> ci.Path:
         """Get the collection of waypoints for the boat to follow.
@@ -219,7 +209,6 @@ class OMPLPath:
             return ci.Path()
 
         solution_path = self._simple_setup.getSolutionPath()
-
         waypoints = []
 
         for state in solution_path.getStates():
