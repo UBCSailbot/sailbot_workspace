@@ -63,10 +63,18 @@ const SortableItem = ({
   );
 };
 
-const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs, setGraphLayout }: any) => {
+const RearrangeGraphDropdown = ({
+  graphs,
+  rearrangeGraphs,
+  setGraphLayout,
+}: any) => {
   const [isOpen, setIsOpen] = useState(false);
   const [graphsOrder, setGraphsOrder] = useState(graphs.order);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [activeSize, setActiveSize] = useState<{
+    width: number;
+    height: number;
+  } | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -87,22 +95,33 @@ const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs, setGraphLayout }: any
 
   const onDragStart = (event: any) => {
     setActiveId(event.active.id);
+    const initialRect = event.active?.rect?.current?.initial;
+    if (initialRect) {
+      setActiveSize({
+        width: initialRect.width,
+        height: initialRect.height,
+      });
+    } else {
+      setActiveSize(null);
+    }
   };
-  
-  const getIsRightDrop = (event: any) => { 
-    const overRect = event.over?.rect; // graph to drop onto
-    const activeRect = event.active?.rect?.current?.translated || event.active?.rect?.current; // graph to drag/drop
-    
+
+  const getIsRightDrop = (event: any) => {
+    const overRect = event.over?.rect;
+    const activeRect =
+      event.active?.rect?.current?.translated ||
+      event.active?.rect?.current;
+
     if (!overRect || !activeRect) return null;
-    
+
     const centerX = activeRect.left + activeRect.width / 2;
     const midX = overRect.left + overRect.width / 2;
-    const threshold = Math.min(overRect.width * 0.25, 60); // deadzone
-    
+    const threshold = Math.min(overRect.width * 0.25, 60);
+
     if (Math.abs(centerX - midX) < threshold) return null;
-    
+
     return centerX > midX;
-  }
+  };
 
   const buildOrderWithSideInsert = (order: string[], sourceId: string, targetId: string, insertRight: boolean) => {
     // if dragging item onto itself no change needed
@@ -123,33 +142,58 @@ const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs, setGraphLayout }: any
     return base;
   };
 
-  const applyLayoutPairAndNormalize = (order: string[], currentLayout: Record<string, 'full'|'half'>, pair: [string, string]) => {
-    // create a copy of layout to modify
-    const next = { ...currentLayout };
-    
-    // make both items in the pair half-width
-    const [a, b] = pair;
-    next[a] = 'half';
-    next[b] = 'half';
-    
-    // loop through all graphs to find "orphan" half-width graphs
-    for (let i = 0; i < order.length; i++) {
+  const buildNormalizedLayout = (
+    order: string[],
+    currentLayout: Record<string, 'full' | 'half'>,
+    forcedPair?: [string, string],
+  ) => {
+    const next: Record<string, 'full' | 'half'> = {} as Record<
+      string,
+      'full' | 'half'
+    >;
+    const forcedSet = new Set(forcedPair ?? []);
+    const paired = new Set<string>();
+
+    order.forEach((id) => {
+      next[id] = 'full';
+    });
+
+    for (let i = 0; i < order.length - 1; i++) {
       const id = order[i];
-      
-      if (next[id] !== 'half') continue;
-      
-      // check neighbours
-      const leftId = i > 0 ? order[i - 1] : null;
-      const rightId = i < order.length - 1 ? order[i + 1] : null;
-      
-      // are neighbours half?
-      const leftHalf = leftId && next[leftId] === 'half';
-      const rightHalf = rightId && next[rightId] === 'half';
-      
-      // if no half-width neighbours, make it full-width
-      if (!leftHalf && !rightHalf) next[id] = 'full';
+      const neighborId = order[i + 1];
+
+      if (
+        paired.has(id) ||
+        paired.has(neighborId) ||
+        forcedSet.has(id) ||
+        forcedSet.has(neighborId)
+      ) {
+        continue;
+      }
+
+      if (
+        currentLayout[id as keyof typeof currentLayout] === 'half' &&
+        currentLayout[neighborId as keyof typeof currentLayout] === 'half'
+      ) {
+        next[id] = 'half';
+        next[neighborId] = 'half';
+        paired.add(id);
+        paired.add(neighborId);
+        i += 1;
+      }
     }
-    
+
+    if (forcedPair) {
+      const [a, b] = forcedPair;
+      const indexA = order.indexOf(a);
+      const indexB = order.indexOf(b);
+
+      if (indexA !== -1 && indexB !== -1 && Math.abs(indexA - indexB) === 1) {
+        next[a] = 'half';
+        next[b] = 'half';
+      }
+    }
+
     return next;
   };
   useEffect(() => {
@@ -182,6 +226,7 @@ const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs, setGraphLayout }: any
   const onDragEnd = (event: any) => {
     const { active, over } = event;
     setActiveId(null);
+    setActiveSize(null);
 
     if (!over) return;
     if (active.id === over.id) return;
@@ -191,21 +236,37 @@ const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs, setGraphLayout }: any
     if (isRight === null) {
       const oldIndex = graphsOrder.indexOf(active.id);
       const newIndex = graphsOrder.indexOf(over.id);
-      setGraphsOrder(arrayMove(graphsOrder, oldIndex, newIndex));
+      const newOrder = arrayMove(graphsOrder, oldIndex, newIndex);
+      setGraphsOrder(newOrder);
+
+      const normalizedLayout = buildNormalizedLayout(
+        newOrder,
+        graphs.layout,
+      );
+
+      Object.keys(normalizedLayout).forEach((id) => {
+        if (graphs.layout[id] !== normalizedLayout[id]) {
+          setGraphLayout(id, normalizedLayout[id]);
+        }
+      });
       return;
     }
 
-    // dropped on left or right -> place side-by-side
-    const newOrder = buildOrderWithSideInsert(graphsOrder, active.id, over.id, isRight);
+    const newOrder = buildOrderWithSideInsert(
+      graphsOrder,
+      active.id,
+      over.id,
+      isRight,
+    );
     setGraphsOrder(newOrder);
 
-    const pair = isRight 
-      ? [over.id, active.id] as [string, string]   // right drop: [target, dragged]
-      : [active.id, over.id] as [string, string];  // left drop: [dragged, target] 
-    
-    const nextLayout = applyLayoutPairAndNormalize(newOrder, graphs.layout, pair);
+    const pair = isRight
+      ? ([over.id, active.id] as [string, string])
+      : ([active.id, over.id] as [string, string]);
 
-    Object.keys(nextLayout).forEach((id) => { // update redux
+    const nextLayout = buildNormalizedLayout(newOrder, graphs.layout, pair);
+
+    Object.keys(nextLayout).forEach((id) => {
       if (graphs.layout[id] !== nextLayout[id]) {
         setGraphLayout(id, nextLayout[id]);
       }
@@ -250,7 +311,17 @@ const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs, setGraphLayout }: any
             </SortableContext>
             <DragOverlay>
               {activeId ? (
-                <div className={`${styles.dropdownItem} ${graphs.layout[activeId] === 'half' ? styles.dropdownItemHalf : styles.dropdownItemFull}`}>
+                <div
+                  className={`${styles.dropdownItem} ${
+                    graphs.layout[activeId] === 'half'
+                      ? styles.dropdownItemHalf
+                      : styles.dropdownItemFull
+                  }`}
+                  style={{
+                    width: activeSize?.width,
+                    height: activeSize?.height,
+                  }}
+                >
                   <DragIndicatorIcon />
                   {
                     graphsOrderNamesMap[
