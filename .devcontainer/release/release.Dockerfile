@@ -1,3 +1,4 @@
+# TODO use a specific stable image tag, not latest
 FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:latest AS builder
 WORKDIR ${ROS_WORKSPACE}
 COPY scripts/ ./scripts
