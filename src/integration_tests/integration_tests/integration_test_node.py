@@ -435,10 +435,10 @@ class IntegrationTestSequence:
                 if GLOBAL_PATH_API_NAME == input_dict["name"]:
                     # This is a GlobalPath message
                     msg, msg_type = parse_http_data(data)  # type: ignore
-                    new_input = IOEntry(name=input_dict["name"], msg_type=msg_type, msg=msg)
+                    new_input = IOEntry(name=input_dict["name"], msg_type=msg_type, msg=msg)  # type: ignore # noqa
                 else:
                     msg, msg_type = parse_ros_data(data)  # type: ignore
-                    new_input = IOEntry(name=input_dict["name"], msg_type=msg_type, msg=msg)
+                    new_input = IOEntry(name=input_dict["name"], msg_type=msg_type, msg=msg)  # type: ignore # noqa
 
                 self.__http_inputs.append(new_input)
 
@@ -460,14 +460,14 @@ class IntegrationTestSequence:
                 data = output["data"]
                 msg, msg_type = parse_ros_data(data)  # type: ignore
 
-                new_output = IOEntry(name=output["name"], msg_type=msg_type, msg=msg)
+                new_output = IOEntry(name=output["name"], msg_type=msg_type, msg=msg)  # type: ignore # noqa
                 self.__ros_e_outputs.append(new_output)
 
             elif output["type"] == "HTTP":
                 data = output["data"]
 
                 msg, msg_type = parse_http_data(data)  # type: ignore
-                new_output = IOEntry(name=output["name"], msg_type=msg_type, msg=msg)
+                new_output = IOEntry(name=output["name"], msg_type=msg_type, msg=msg)  # type: ignore # noqa
                 self.__http_e_outputs.append(new_output)
 
             else:
