@@ -9,11 +9,14 @@ import local_pathfinding.coord_systems as coord_systems
 import local_pathfinding.ompl_objectives as objectives
 import local_pathfinding.ompl_path as ompl_path
 from local_pathfinding.local_path import LocalPathState
-from local_pathfinding.ompl_objectives import get_true_wind, create_buffer_around_position
+from local_pathfinding.ompl_objectives import (
+    create_buffer_around_position,
+    get_true_wind,
+)
 
 # Upwind downwind cost multipliers
-UPWIND_MULTIPLIER = 3000.0
-DOWNWIND_MULTIPLIER = 3000.0
+UPWIND_MULTIPLIER = 1.0
+DOWNWIND_MULTIPLIER = 1.0
 
 OMPL_PATH = ompl_path.OMPLPath(
     parent_logger=RcutilsLogger(),
@@ -192,7 +195,7 @@ def test_get_true_wind_direction(
     ],
 )
 def test_create_space(
-        position: coord_systems.XY, expected_area, expected_bounds, box_buffer_size: float
+    position: coord_systems.XY, expected_area, expected_bounds, box_buffer_size: float
 ):
     """Test creation of buffered space around positions"""
     # Given an OMPLPath instance
@@ -200,6 +203,7 @@ def test_create_space(
     space = create_buffer_around_position(position, box_buffer_size)
 
     assert space.area == expected_area, "Space area should match buffer size"
-    assert space.bounds == pytest.approx(expected_bounds,
-                                         abs=box_buffer_size), "Bounds should match expected"
+    assert space.bounds == pytest.approx(
+        expected_bounds, abs=box_buffer_size
+    ), "Bounds should match expected"
     assert space.contains(Point(position.x, position.y)), "Space should contain center point"
