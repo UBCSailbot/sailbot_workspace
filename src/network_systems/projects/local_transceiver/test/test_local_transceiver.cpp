@@ -216,7 +216,7 @@ TEST_F(TestLocalTransceiver, SerializeWindSensors)
     lcl_trns_->updateSensor(wind);
     Polaris::Sensors sensors(lcl_trns_->sensors());
 
-    EXPECT_EQ(sensors.wind_sensors_size(), 2);  // TODO: Replace 2 with Constant?
+    EXPECT_EQ(sensors.wind_sensors_size(), NUM_WIND_SENSORS);
     EXPECT_FLOAT_EQ(sensors.wind_sensors(0).speed(), expected_speed);
     EXPECT_EQ(sensors.wind_sensors(0).direction(), expected_direction);
     EXPECT_FLOAT_EQ(sensors.wind_sensors(1).speed(), expected_speed);
@@ -230,7 +230,7 @@ TEST_F(TestLocalTransceiver, SerializeWindSensors)
     // Test deserialization
     Polaris::Sensors deserialized;
     EXPECT_TRUE(deserialized.ParseFromString(serialized));
-    EXPECT_EQ(deserialized.wind_sensors_size(), 2);  // TODO: Replace 2 with Constant?
+    EXPECT_EQ(deserialized.wind_sensors_size(), NUM_WIND_SENSORS);
     EXPECT_FLOAT_EQ(deserialized.wind_sensors(0).speed(), expected_speed);
     EXPECT_EQ(deserialized.wind_sensors(0).direction(), expected_direction);
 }
@@ -253,7 +253,7 @@ TEST_F(TestLocalTransceiver, SerializeBatteries)
     lcl_trns_->updateSensor(batteries);
     Polaris::Sensors sensors(lcl_trns_->sensors());
 
-    EXPECT_EQ(sensors.batteries_size(), 2);  // TODO: Replace 2 with Constant?
+    EXPECT_EQ(sensors.batteries_size(), NUM_BATTERIES);
     EXPECT_FLOAT_EQ(sensors.batteries(0).voltage(), expected_voltage);
     EXPECT_FLOAT_EQ(sensors.batteries(0).current(), expected_current);
 
@@ -265,7 +265,7 @@ TEST_F(TestLocalTransceiver, SerializeBatteries)
     // Test deserialization
     Polaris::Sensors deserialized;
     EXPECT_TRUE(deserialized.ParseFromString(serialized));
-    EXPECT_EQ(deserialized.batteries_size(), 2);  // TODO: Replace 2 with Constant?
+    EXPECT_EQ(deserialized.batteries_size(), NUM_BATTERIES);
     EXPECT_FLOAT_EQ(deserialized.batteries(0).voltage(), expected_voltage);
     EXPECT_FLOAT_EQ(deserialized.batteries(0).current(), expected_current);
 }
