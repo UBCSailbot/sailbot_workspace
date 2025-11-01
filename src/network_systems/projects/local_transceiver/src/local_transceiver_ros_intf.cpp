@@ -6,6 +6,7 @@
 #include <rclcpp/subscription.hpp>
 #include <rclcpp/timer.hpp>
 #include <std_msgs/msg/string.hpp>
+#include <std_srvs/srv/trigger.hpp>
 
 #include "cmn_hdrs/ros_info.h"
 #include "cmn_hdrs/shared_constants.h"
@@ -109,6 +110,11 @@ public:
             sub_local_path_data = this->create_subscription<custom_interfaces::msg::LPathData>(
               ros_topics::LOCAL_PATH, ROS_Q_SIZE,
               std::bind(&LocalTransceiverIntf::sub_local_path_data_cb, this, std::placeholders::_1));
+
+            srv_send_ = this->create_service<std_srvs::srv::Trigger>(
+                "send_data",
+                std::bind(&LocalTransceiverIntf::send_request_handler, this,
+                std::placeholders::_1, std::placeholders::_2));
         }
     }
 
@@ -122,6 +128,8 @@ private:
     rclcpp::Subscription<custom_interfaces::msg::GenericSensors>::SharedPtr sub_data_sensors;
     rclcpp::Subscription<custom_interfaces::msg::GPS>::SharedPtr            sub_gps;
     rclcpp::Subscription<custom_interfaces::msg::LPathData>::SharedPtr      sub_local_path_data;
+
+    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_send_;
 
     /**
      * @brief Callback function to publish to onboard ROS network
@@ -154,6 +162,31 @@ private:
     void sub_gps_cb(custom_interfaces::msg::GPS in_msg) { lcl_trns_->updateSensor(in_msg); }
 
     void sub_local_path_data_cb(custom_interfaces::msg::LPathData in_msg) { lcl_trns_->updateSensor(in_msg); }
+
+    void send_request_handler (
+        std::shared_ptr<std_srvs::srv::Trigger::Request> request,
+        std::shared_ptr<std_srvs::srv::Trigger::Response> response) 
+    {
+        (void)request;
+        
+        try {
+            bool success = lcl_trns_->send();
+            if (success) {
+                RCLCPP_INFO(this->get_logger(), "Successfully sent data via Local Transceiver");
+                response->success = true;
+                response->message = "Transmission Successful";
+            } else {
+                RCLCPP_INFO(this->get_logger(), "Send is unsuccessful");
+                response->success = false;
+                response->message = "Transmission Failed";
+            }
+
+        } catch (const std::exception &e) {
+            RCLCPP_ERROR(this->get_logger(), "Exception during send(): %s", e.what());
+            response->success = false;
+            response->message = std::string("Exception: ") + e.what();
+        }
+    }
 };
 
 int main(int argc, char * argv[])
