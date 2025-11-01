@@ -184,7 +184,8 @@ msg::SailCmd MainTrimTab::toRosMsg() const
 
 CanFrame MainTrimTab::toLinuxCan() const
 {
-    uint32_t raw_angle = static_cast<uint32_t>(angle_) * 1000;  //NOLINT(readability-magic-numbers)
+    // From CAN Frames documentation: ELEC expects (TT Angle + 90) * 1000
+    uint32_t raw_angle = static_cast<uint32_t>(angle_ + 90) * 1000;  //NOLINT(readability-magic-numbers)
 
     CanFrame cf = BaseFrame::toLinuxCan();
     std::memcpy(cf.data + BYTE_OFF_ANGLE, &raw_angle, sizeof(uint32_t));
@@ -890,9 +891,9 @@ void RudderData::checkBounds() const
 // TempSensor public START
 TempSensor::TempSensor(const CanFrame & cf) : TempSensor(static_cast<CanId>(cf.can_id))
 {
-    int16_t raw_temp;
+    int32_t raw_temp;
 
-    std::memcpy(&raw_temp, cf.data + BYTE_OFF_TEMP, sizeof(int16_t));
+    std::memcpy(&raw_temp, cf.data + BYTE_OFF_TEMP, sizeof(int32_t));
 
     // divide by 1000 to get temperature
     temp_ = static_cast<float>(raw_temp / 1000.0);  // NOLINT(readability-magic-numbers)
@@ -926,10 +927,10 @@ msg::TempSensor TempSensor::toRosMsg() const
 CanFrame TempSensor::toLinuxCan() const
 {
     // convert kmph to knots before setting value
-    int16_t raw_temp = static_cast<int16_t>(temp_ * 1000.0);  // NOLINT(readability-magic-numbers)
+    int32_t raw_temp = static_cast<int32_t>(temp_ * 1000.0);  // NOLINT(readability-magic-numbers)
 
     CanFrame cf = BaseFrame::toLinuxCan();
-    std::memcpy(cf.data + BYTE_OFF_TEMP, &raw_temp, sizeof(int16_t));
+    std::memcpy(cf.data + BYTE_OFF_TEMP, &raw_temp, sizeof(int32_t));
 
     return cf;
 }
@@ -1129,9 +1130,9 @@ void SalinitySensor::checkBounds() const
 // PressureSensor public START
 PressureSensor::PressureSensor(const CanFrame & cf) : PressureSensor(static_cast<CanId>(cf.can_id))
 {
-    int32_t raw_pressure;
+    int16_t raw_pressure;
 
-    std::memcpy(&raw_pressure, cf.data + BYTE_OFF_PRESSURE, sizeof(int32_t));
+    std::memcpy(&raw_pressure, cf.data + BYTE_OFF_PRESSURE, sizeof(int16_t));
 
     // divide by 1000 to get pressure
     pressure_ = static_cast<float>(raw_pressure / 1000.0);  // NOLINT(readability-magic-numbers)
@@ -1157,10 +1158,10 @@ msg::PressureSensor PressureSensor::toRosMsg() const
 CanFrame PressureSensor::toLinuxCan() const
 {
     // multiply by 1000 to make int before setting value
-    int32_t raw_pressure = static_cast<int32_t>(pressure_ * 1000.0);  // NOLINT(readability-magic-numbers)
+    int16_t raw_pressure = static_cast<int16_t>(pressure_ * 1000.0);  // NOLINT(readability-magic-numbers)
 
     CanFrame cf = BaseFrame::toLinuxCan();
-    std::memcpy(cf.data + BYTE_OFF_PRESSURE, &raw_pressure, sizeof(int32_t));
+    std::memcpy(cf.data + BYTE_OFF_PRESSURE, &raw_pressure, sizeof(int16_t));
 
     return cf;
 }
