@@ -290,6 +290,7 @@
         "plantuml.exportIncludeFolderHeirarchy": false,
         "plantuml.exportOutDir": "diagrams/out",
         "plantuml.exportSubFolder": false,
+        "ros.distro": "humble",
     },
     "launch": {
         // Use IntelliSense to learn about possible attributes.
@@ -404,6 +405,22 @@
                 "command": "${workspaceFolder:sailbot_workspace}/scripts/build.sh Debug",
                 "group": "build",
                 "problemMatcher": "$gcc"
+            },
+            {
+                "label": "Build and Upload Image",
+                "detail": "Build the release docker image with binaries and upload it to GitHub.",
+                "type": "shell",
+                "options": {
+                    "env": {
+                        "TAG": "${input:docker_tag}",
+                    }
+                },
+                "command": "./scripts/deploy.sh ${input:github_PAT} ${input:github_username} -t ${TAG:-default}",
+                "group": {
+                    "kind": "build",
+                    "isDefault": true
+                },
+                "problemMatcher": []
             },
             // Test tasks
             {
@@ -523,8 +540,27 @@
                 "type": "shell",
                 "command": "./scripts/setup.sh",
                 "problemMatcher": []
+            },
+            // ROS Launch Tasks
+            {
+                "label": "Launch Package",
+                "detail": "Launch a specifc ROS package.",
+                "type": "shell",
+                "options": {
+                    "env": {
+                        "PACKAGE_FLAGS": "${input:package_flags}",
+                    }
+                },
+                "command": "./scripts/launch.sh -p ${input:ROS_package} ${PACKAGE_FLAGS:+-f} ${PACKAGE_FLAGS}",
+                "problemMatcher": []
+            },
+            {
+                "label": "Launch All",
+                "detail": "Launch all ROS packages.",
+                "type": "shell",
+                "command": "./scripts/launch.sh",
+                "problemMatcher": []
             }
-
         ],
         "inputs": [
             {
@@ -540,6 +576,39 @@
                     "local_pathfinding",
                     "network_systems",
                 ]
+            },
+            {
+                "id": "ROS_package",
+                "type": "pickString",
+                "description": "ROS Package to select",
+                "options": [
+                    "boat_simulator",
+                    "controller",
+                    "local_pathfinding",
+                    "network_systems",
+                ]
+            },
+            {
+                "id": "package_flags",
+                "type": "promptString",
+                "description": "Optional ROS package launch flags or arguments",
+                "default": ""
+            },
+            {
+                "id": "docker_tag",
+                "type": "promptString",
+                "description": "Optional Docker tag. The default is latest.",
+                "default": ""
+            },
+            {
+                "id": "github_PAT",
+                "type": "promptString",
+                "description": "GitHub personal access token."
+            },
+            {
+                "id": "github_username",
+                "type": "promptString",
+                "description": "GitHub username."
             },
         ]
     }

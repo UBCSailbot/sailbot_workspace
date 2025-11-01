@@ -1,11 +1,9 @@
-"""Interpolates points on a line between two waypoints. Used to create a series of GPS points based on the local path."""
+"""Interpolates points on a line between two waypoints. Used to create a series of GPS points
+based on the local path."""
 
 import argparse
 import json
-from math import radians, sin, cos, sqrt, atan2
-
-from shapely.geometry import LineString, Point
-from geopy.distance import geodesic
+from shapely.geometry import LineString
 
 
 def get_points_along_line(start, end):
@@ -17,10 +15,12 @@ def get_points_along_line(start, end):
     points.append(end)
     return points
 
+
 def read_json_file(input_file):
     with open(input_file, "r") as file:
         data = json.load(file)
     return data
+
 
 def write_json_file(output_file, data):
     doc = []
@@ -43,6 +43,7 @@ def write_json_file(output_file, data):
 
     with open(output_file, "w") as file:
         json.dump(doc, file, indent=4)
+
 
 def main():
     parser = argparse.ArgumentParser(
