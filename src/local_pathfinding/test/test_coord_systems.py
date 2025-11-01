@@ -78,6 +78,25 @@ def test_bound_to_180(unbounded: float, bounded: float):
 
 
 @pytest.mark.parametrize(
+    "boat_heading,desired_heading,heading_diff",
+    [
+        (0.0, 0.0, 0.0),
+        (0.0, 1.0, 1.0),
+        (0.0, -1.0, 1.0),
+        (1.0, 0.0, 1.0),
+        (180.0, -90.0, 90.0),
+        (180.0, 90.0, 90.0),
+        (270.0, 90.0, 180.0),
+        (0.0, -179.0, 179.0),
+        (0.0, 179.0, 179.0),
+        (3610.14, 7.0, 3.14)
+    ]
+)
+def test_calculate_heading_diff(boat_heading: float, desired_heading: float, heading_diff: float):
+    assert cs.calculate_heading_diff(boat_heading, desired_heading) == pytest.approx(heading_diff)
+
+
+@pytest.mark.parametrize(
     "ref_lat,ref_lon,true_bearing_deg,dist_km",
     [
         (30.0, -123.0, 0.00, 30.0),
