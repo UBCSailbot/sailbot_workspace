@@ -16,6 +16,7 @@ namespace SYSTEM_MODE
 {
 static const std::string PROD = "production";
 static const std::string DEV  = "development";
+static const std::string TEST_SAT = "test_satellite"
 };  // namespace SYSTEM_MODE
 
 constexpr unsigned int MAX_LOCAL_TO_REMOTE_PAYLOAD_SIZE_BYTES = 340;
