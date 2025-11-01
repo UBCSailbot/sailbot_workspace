@@ -151,6 +151,7 @@ bool LocalTransceiver::send()
           "No implementation to handle this!";
         throw std::length_error(err_string);
     }
+    std::cout << "Sending " + std::to_string(data.size()) + " bytes\n";
 
     std::string write_bin_cmd_str = AT::write_bin::CMD + std::to_string(data.size());  //according to specs
     AT::Line    at_write_cmd(write_bin_cmd_str);
