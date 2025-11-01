@@ -24,14 +24,17 @@ import dash
 import plotly.graph_objects as go
 from dash import dcc, html
 from dash.dependencies import Input, Output
-from shapely.geometry import Polygon
+from shapely.geometry import MultiPolygon, Polygon
 
 import local_pathfinding.coord_systems as cs
-from local_pathfinding.ompl_objectives import get_true_wind
+from local_pathfinding.ompl_objectives import get_true_wind, create_buffer_around_position
+
 
 app = dash.Dash(__name__)
 
 queue: Optional[Queue] = None  # type: ignore
+
+BOX_BUFFER_SIZE = 1.0  # km
 
 
 class VisualizerState:
@@ -97,6 +100,11 @@ class VisualizerState:
         self.land_obstacles_xy = self._process_land_obstacles(
             self.curr_msg.obstacles, self.reference_latlon
         )
+
+        # Process Boat Obstacles
+        self.boat_obstacles_xy = self._process_boat_obstacles(
+            self.curr_msg.obstacles, self.reference_latlon
+            )
 
         # Process wind vectors
 
@@ -177,6 +185,31 @@ class VisualizerState:
                 if len(xy_points) >= 3:
                     poly = Polygon(xy_points)
                     processed_obstacles.append(poly)
+
+        return processed_obstacles
+
+    def _process_boat_obstacles(self, obstacles, reference):
+        """
+        Converts Boat obstacles from latitude/longitude to XY coordinates and builds Shapely
+        polygons.
+        processed_obstacles of type List[Polygon].
+        """
+        processed_obstacles = []
+        if obstacles is None:
+            return processed_obstacles
+
+        for obs in obstacles:
+            if obs.obstacle_type != "Boat":
+                continue
+            # Convert each latlon point to XY
+            xy_points = []
+            for point in obs.points:
+                xy = cs.latlon_to_xy(reference, point)
+                xy_points.append((xy.x, xy.y))
+
+            if len(xy_points) >= 3:
+                poly = Polygon(xy_points)
+                processed_obstacles.append(poly)
 
         return processed_obstacles
 
@@ -527,6 +560,25 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
         font=dict(size=12, color="lightgreen"),
     )
 
+    # Draw Boat State space
+    boat_pos = cs.XY(boat_x[0], boat_y[0])
+    goal_pos = cs.XY(goal_x[0], goal_y[0])
+
+    boat_box = create_buffer_around_position(boat_pos, BOX_BUFFER_SIZE)
+    goal_box = create_buffer_around_position(goal_pos, BOX_BUFFER_SIZE)
+
+    # Set state space bounds
+    state_space = MultiPolygon([boat_box, goal_box])
+    x_min, y_min, x_max, y_max = state_space.bounds
+
+    fig.add_shape(
+        type="rect",
+        x0=x_min, y0=y_min, x1=x_max, y1=y_max,
+        fillcolor="rgba(255, 100, 100, 0.25)",  # light red, semi-transparent
+        line=dict(width=0),
+        layer="below",
+    )
+
     # Add all traces to the figure
     fig.add_trace(intermediate_trace)
     fig.add_trace(goal_trace)
@@ -563,9 +615,28 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
                     angleref="up",
                     angle=cs.true_bearing_to_plotly_cartesian(heading),
                 ),
-                showlegend=False,
+                showlegend=True,
             )
         )
+    # Display collision zone for Boat Obstacles
+    for poly in state.boat_obstacles_xy:
+        if poly and not poly.is_empty:
+            x = list(poly.exterior.xy[0])
+            y = list(poly.exterior.xy[1])
+            fig.add_trace(
+                go.Scatter(
+                    x=x,
+                    y=y,
+                    mode="lines",
+                    fill="toself",
+                    line=dict(width=2),
+                    fillcolor="rgba(255,165,0,0.25)",
+                    name="AIS Collision Zone",
+                    hoverinfo="skip",
+                    showlegend=True,
+                    opacity=0.5,
+                )
+            )
 
     # Update Layout
     fig.update_layout(

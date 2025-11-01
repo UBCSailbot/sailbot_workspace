@@ -406,6 +406,22 @@
                 "group": "build",
                 "problemMatcher": "$gcc"
             },
+            {
+                "label": "Build and Upload Image",
+                "detail": "Build the release docker image with binaries and upload it to GitHub.",
+                "type": "shell",
+                "options": {
+                    "env": {
+                        "TAG": "${input:docker_tag}",
+                    }
+                },
+                "command": "./scripts/deploy.sh ${input:github_PAT} ${input:github_username} -t ${TAG:-default}",
+                "group": {
+                    "kind": "build",
+                    "isDefault": true
+                },
+                "problemMatcher": []
+            },
             // Test tasks
             {
                 "label": "Test All",
@@ -530,7 +546,12 @@
                 "label": "Launch Package",
                 "detail": "Launch a specifc ROS package.",
                 "type": "shell",
-                "command": "package=${input:ROS_package}; flags=\"${input:package_flags}\"; if [ ! -z \"${flags}\" ]; then flags=\"-f ${flags}\"; fi; ./scripts/launch.sh -p \"${package}\" \"${flags}\"",
+                "options": {
+                    "env": {
+                        "PACKAGE_FLAGS": "${input:package_flags}",
+                    }
+                },
+                "command": "./scripts/launch.sh -p ${input:ROS_package} ${PACKAGE_FLAGS:+-f} ${PACKAGE_FLAGS}",
                 "problemMatcher": []
             },
             {
@@ -571,7 +592,24 @@
                 "id": "package_flags",
                 "type": "promptString",
                 "description": "Optional ROS package launch flags or arguments",
-            }
+                "default": ""
+            },
+            {
+                "id": "docker_tag",
+                "type": "promptString",
+                "description": "Optional Docker tag. The default is latest.",
+                "default": ""
+            },
+            {
+                "id": "github_PAT",
+                "type": "promptString",
+                "description": "GitHub personal access token."
+            },
+            {
+                "id": "github_username",
+                "type": "promptString",
+                "description": "GitHub username."
+            },
         ]
     }
 }
