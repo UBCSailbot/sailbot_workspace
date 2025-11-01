@@ -1,12 +1,13 @@
-# TODO use a specific stable image tag, not latest
-FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:latest AS builder
+FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:setup-included-2 AS builder
+ARG USERNAME=ros
 WORKDIR ${ROS_WORKSPACE}
-COPY scripts/ ./scripts
+COPY --chown=${USERNAME}:${USERNAME} scripts/ ./scripts
 # CACHEBUST forces Docker to invalidate the cache for this layer.
 # This ensures that changes in src/ are picked up during the build.
 # CACHEBUST is defined as a build-arg set to the current timestamp.
 ARG CACHEBUST
-COPY src/ ./src
+COPY --chown=${USERNAME}:${USERNAME} src/ ./src
+USER ${USERNAME}
 RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && ./scripts/build.sh"
 
 FROM ubuntu:jammy-20240111 AS env
@@ -26,12 +27,26 @@ ENV ROS_WORKSPACE=/workspaces/sailbot_workspace \
     VIRTUAL_IRIDIUM_PORT="/tmp/virtual_iridium_port"
 WORKDIR ${ROS_WORKSPACE}
 
+# Create the non-root user: ros
+ARG USERNAME=ros
+ARG USER_UID=1000
+ARG USER_GID=$USER_UID
+RUN groupadd --gid $USER_GID $USERNAME \
+    && useradd -s /bin/bash --uid $USER_UID --gid $USER_GID -m $USERNAME \
+    && apt-get install -y sudo \
+    && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME\
+    && chmod 0440 /etc/sudoers.d/$USERNAME \
+    # Cleanup
+    && apt-get clean -y \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
+    && echo "source /usr/share/bash-completion/completions/git" >> /home/$USERNAME/.bashrc
+
 FROM env AS import-build-artifacts
-COPY --from=builder ${ROS_WORKSPACE}/build/ ./build
-COPY --from=builder ${ROS_WORKSPACE}/install/ ./install
-COPY --from=builder ${ROS_WORKSPACE}/log/ ./log
-COPY --from=builder ${ROS_WORKSPACE}/src/ ./src
-COPY --from=builder ${ROS_WORKSPACE}/scripts/ ./scripts
+COPY --from=builder --chown=${USERNAME}:${USERNAME} ${ROS_WORKSPACE}/build/ ./build
+COPY --from=builder --chown=${USERNAME}:${USERNAME} ${ROS_WORKSPACE}/install/ ./install
+COPY --from=builder --chown=${USERNAME}:${USERNAME} ${ROS_WORKSPACE}/log/ ./log
+COPY --from=builder --chown=${USERNAME}:${USERNAME} ${ROS_WORKSPACE}/src/ ./src
+COPY --from=builder --chown=${USERNAME}:${USERNAME} ${ROS_WORKSPACE}/scripts/ ./scripts
 COPY --from=builder /opt/ros/humble /opt/ros/humble
 
 # Install all runtime dependencies in a single layer
@@ -41,6 +56,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         locales \
         tzdata \
         sudo \
+        python3 \
+        python3-dev \
         python3-numpy \
         can-utils \
         iproute2 \
@@ -77,21 +94,6 @@ RUN chmod +x /sbin/update-bashrc \
     && sync \
     && /bin/bash -c /sbin/update-bashrc \
     && rm /sbin/update-bashrc
-
-ARG USERNAME=ros
-ARG USER_UID=1000
-ARG USER_GID=$USER_UID
-
-# Create a non-root user
-RUN groupadd --gid $USER_GID $USERNAME \
-    && useradd -s /bin/bash --uid $USER_UID --gid $USER_GID -m $USERNAME \
-    && apt-get install -y sudo \
-    && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME\
-    && chmod 0440 /etc/sudoers.d/$USERNAME \
-    # Cleanup
-    && apt-get clean -y \
-    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
-    && echo "source /usr/share/bash-completion/completions/git" >> /home/$USERNAME/.bashrc
 
 ARG HOME=/home/$USERNAME
 # persist ROS logs
