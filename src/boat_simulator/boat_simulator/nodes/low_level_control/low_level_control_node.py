@@ -187,7 +187,6 @@ class LowLevelControlNode(Node):
         )
 
     def __init_rudder_controller(self):
-        # initial heading value needed here
         current_heading = 0.0
         desired_heading = 0.0
         current_control_ang = self.rudder_angle
