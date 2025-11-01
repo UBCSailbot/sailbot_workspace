@@ -191,7 +191,7 @@ class OMPLPath:
             self._logger.debug(f"Solution path does not exist. Exception thrown: {e}")
             return float("inf")
 
-        obj = self._simple_setup.getProblemDefinition().getOptimizationObjective()
+        obj = self._simple_setup.getOptimizationObjective()
         cost = solution_path.cost(obj)
         return cost.value()
 
