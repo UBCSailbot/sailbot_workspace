@@ -6,7 +6,7 @@ COPY scripts/ ./scripts
 # CACHEBUST forces Docker to invalidate the cache for this layer.
 # This ensures that changes in src/ are picked up during the build.
 # CACHEBUST is defined as a build-arg set to the current timestamp.
-ARG CACHEBUST
+# ARG CACHEBUST
 COPY src/ ./src
 RUN chown -R ${USERNAME}:${USERNAME} ${ROS_WORKSPACE} ${HOME}
 USER ${USERNAME}
@@ -91,8 +91,8 @@ RUN chown -R ${USERNAME}:${USERNAME} ${ROS_WORKSPACE} ${HOME}
 COPY --from=builder /opt/ros/humble /opt/ros/humble
 
 FROM import-build-artifacts AS setup
-RUN ln -s /usr/bin/python3.10 /usr/bin/python3 || true
-RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && ./scripts/setup.sh exec" \
+RUN ln -s /usr/bin/python3.10 /usr/bin/python3 || true \
+    /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && ./scripts/setup.sh exec" \
     # downgrade setuptools
     # https://answers.ros.org/question/396439/setuptoolsdeprecationwarning-setuppy-install-is-deprecated-use-build-and-pip-and-other-standards-based-tools/?answer=400052#post-id-400052
     && pip3 install setuptools==58.2.0
