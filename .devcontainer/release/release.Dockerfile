@@ -1,18 +1,22 @@
 FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:setup-included-2 AS builder
 ARG USERNAME=ros
+ARG HOME=/home/${USERNAME}
 WORKDIR ${ROS_WORKSPACE}
-COPY --chown=${USERNAME}:${USERNAME} scripts/ ./scripts
+COPY scripts/ ./scripts
 # CACHEBUST forces Docker to invalidate the cache for this layer.
 # This ensures that changes in src/ are picked up during the build.
 # CACHEBUST is defined as a build-arg set to the current timestamp.
 ARG CACHEBUST
-COPY --chown=${USERNAME}:${USERNAME} src/ ./src
+COPY src/ ./src
+RUN chown -R ${USERNAME}:${USERNAME} ${ROS_WORKSPACE} ${HOME}
 USER ${USERNAME}
 RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && ./scripts/build.sh"
 
 FROM ubuntu:jammy-20240111 AS env
+ARG USERNAME=ros
+ARG HOME=/home/${USERNAME}
 ENV ROS_WORKSPACE=/workspaces/sailbot_workspace \
-    LANG=en_US.UTF-8 \
+LANG=en_US.UTF-8 \
     TZ="America/Vancouver" \
     ROS_DISTRO=humble \
     AMENT_PREFIX_PATH=/opt/ros/humble \
@@ -25,10 +29,8 @@ ENV ROS_WORKSPACE=/workspaces/sailbot_workspace \
     AMENT_CPPCHECK_ALLOW_SLOW_VERSIONS=1 \
     LOCAL_TRANSCEIVER_TEST_PORT="/tmp/local_transceiver_test_port" \
     VIRTUAL_IRIDIUM_PORT="/tmp/virtual_iridium_port"
-WORKDIR ${ROS_WORKSPACE}
 
 # Create the non-root user: ros
-ARG USERNAME=ros
 ARG USER_UID=1000
 ARG USER_GID=$USER_UID
 RUN groupadd --gid $USER_GID $USERNAME \
@@ -42,13 +44,6 @@ RUN groupadd --gid $USER_GID $USERNAME \
     && echo "source /usr/share/bash-completion/completions/git" >> /home/$USERNAME/.bashrc
 
 FROM env AS import-build-artifacts
-COPY --from=builder --chown=${USERNAME}:${USERNAME} ${ROS_WORKSPACE}/build/ ./build
-COPY --from=builder --chown=${USERNAME}:${USERNAME} ${ROS_WORKSPACE}/install/ ./install
-COPY --from=builder --chown=${USERNAME}:${USERNAME} ${ROS_WORKSPACE}/log/ ./log
-COPY --from=builder --chown=${USERNAME}:${USERNAME} ${ROS_WORKSPACE}/src/ ./src
-COPY --from=builder --chown=${USERNAME}:${USERNAME} ${ROS_WORKSPACE}/scripts/ ./scripts
-COPY --from=builder /opt/ros/humble /opt/ros/humble
-
 # Install all runtime dependencies in a single layer
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -95,9 +90,18 @@ RUN chmod +x /sbin/update-bashrc \
     && /bin/bash -c /sbin/update-bashrc \
     && rm /sbin/update-bashrc
 
+WORKDIR ${ROS_WORKSPACE}
+COPY --from=builder ${ROS_WORKSPACE}/build/ ./build
+COPY --from=builder ${ROS_WORKSPACE}/install/ ./install
+COPY --from=builder ${ROS_WORKSPACE}/log/ ./log
+COPY --from=builder ${ROS_WORKSPACE}/src/ ./src
+COPY --from=builder ${ROS_WORKSPACE}/scripts/ ./scripts
+RUN chown -R ${USERNAME}:${USERNAME} ${ROS_WORKSPACE} ${HOME}
+COPY --from=builder /opt/ros/humble /opt/ros/humble
+
 ARG HOME=/home/$USERNAME
 # persist ROS logs
 RUN mkdir -p ${HOME}/.ros/log \
     && chown -R ${USERNAME} ${HOME}/.ros
+
 USER ${USERNAME}
-WORKDIR ${ROS_WORKSPACE}
