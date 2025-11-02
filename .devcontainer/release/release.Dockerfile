@@ -64,7 +64,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && dpkg-reconfigure --frontend noninteractive tzdata \
     && rosdep init || echo "rosdep already initialized"
 ENV DEBIAN_FRONTEND=
+
+WORKDIR ${ROS_WORKSPACE}
+COPY --from=builder ${ROS_WORKSPACE}/build/ ./build
+COPY --from=builder ${ROS_WORKSPACE}/install/ ./install
+COPY --from=builder ${ROS_WORKSPACE}/log/ ./log
+COPY --from=builder ${ROS_WORKSPACE}/src/ ./src
+COPY --from=builder ${ROS_WORKSPACE}/scripts/ ./scripts
+RUN chown -R ${USERNAME}:${USERNAME} ${ROS_WORKSPACE} ${HOME}
 COPY --from=builder /opt/ros/humble /opt/ros/humble
+
 RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && ./scripts/setup.sh exec" \
     # downgrade setuptools
     # https://answers.ros.org/question/396439/setuptoolsdeprecationwarning-setuppy-install-is-deprecated-use-build-and-pip-and-other-standards-based-tools/?answer=400052#post-id-400052
@@ -89,14 +98,6 @@ RUN groupadd --gid $USER_GID $USERNAME \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
     && echo "source /usr/share/bash-completion/completions/git" >> /home/$USERNAME/.bashrc
-
-WORKDIR ${ROS_WORKSPACE}
-COPY --from=builder ${ROS_WORKSPACE}/build/ ./build
-COPY --from=builder ${ROS_WORKSPACE}/install/ ./install
-COPY --from=builder ${ROS_WORKSPACE}/log/ ./log
-COPY --from=builder ${ROS_WORKSPACE}/src/ ./src
-COPY --from=builder ${ROS_WORKSPACE}/scripts/ ./scripts
-RUN chown -R ${USERNAME}:${USERNAME} ${ROS_WORKSPACE} ${HOME}
 
 ARG HOME=/home/$USERNAME
 # persist ROS logs
