@@ -210,7 +210,7 @@ class WindObjective(Objective):
         super().__init__(space_information)
         assert -180 < wind_direction_degrees <= 180
         self.wind_direction, _ = wcs.get_true_wind(
-            wcs.boat_to_global_coordinate(wind_direction_degrees),
+            wcs.boat_to_global_coordinate(wind_direction_degrees, heading_degrees),
             wind_speed,
             heading_degrees,
             speed

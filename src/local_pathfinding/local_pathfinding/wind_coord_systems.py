@@ -15,7 +15,7 @@ def boat_to_global_coordinate(boat_heading: float, wind_direction: float):
     Returns:
         float: Global wind bearing in degrees within [-180, 180].
     Examples:
-        >>> boat_to_global_coordinate(0, 0)      # 0 + 0 + 180 -> 180
+        >>> boat_to_global_coordinate(0, 0)      # 0 + 0 + 180 -> -180
         180
         >>> boat_to_global_coordinate(170, 30)   # 170 + 30 + 180 = 380 -> 20
         20
