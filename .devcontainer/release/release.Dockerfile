@@ -30,7 +30,7 @@ LANG=en_US.UTF-8 \
     LOCAL_TRANSCEIVER_TEST_PORT="/tmp/local_transceiver_test_port" \
     VIRTUAL_IRIDIUM_PORT="/tmp/virtual_iridium_port"
 
-FROM env AS import-build-artifacts
+FROM env AS runtime-dependencies
 # Install all runtime dependencies in a single layer
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -65,8 +65,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rosdep init || echo "rosdep already initialized"
 ENV DEBIAN_FRONTEND=
 
-RUN python3 --version
-
+FROM runtime-dependencies AS import-build-artifacts
+ARG USERNAME=ros
+ARG HOME=/home/${USERNAME}
 # Create the non-root user: ros
 ARG USER_UID=1000
 ARG USER_GID=$USER_UID
@@ -89,6 +90,7 @@ COPY --from=builder ${ROS_WORKSPACE}/scripts/ ./scripts
 RUN chown -R ${USERNAME}:${USERNAME} ${ROS_WORKSPACE} ${HOME}
 COPY --from=builder /opt/ros/humble /opt/ros/humble
 
+FROM import-build-artifacts AS setup
 RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && ./scripts/setup.sh exec" \
     # downgrade setuptools
     # https://answers.ros.org/question/396439/setuptoolsdeprecationwarning-setuppy-install-is-deprecated-use-build-and-pip-and-other-standards-based-tools/?answer=400052#post-id-400052
