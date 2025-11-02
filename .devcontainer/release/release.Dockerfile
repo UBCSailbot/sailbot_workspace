@@ -91,6 +91,7 @@ RUN chown -R ${USERNAME}:${USERNAME} ${ROS_WORKSPACE} ${HOME}
 COPY --from=builder /opt/ros/humble /opt/ros/humble
 
 FROM import-build-artifacts AS setup
+RUN ln -s /usr/bin/python3.10 /usr/bin/python3 || true
 RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && ./scripts/setup.sh exec" \
     # downgrade setuptools
     # https://answers.ros.org/question/396439/setuptoolsdeprecationwarning-setuppy-install-is-deprecated-use-build-and-pip-and-other-standards-based-tools/?answer=400052#post-id-400052
