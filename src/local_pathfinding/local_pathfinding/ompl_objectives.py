@@ -9,18 +9,15 @@ from ompl import base as ob
 from shapely.geometry import Polygon, Point
 
 import local_pathfinding.coord_systems as cs
-from local_pathfinding.coord_systems import bound_to_180
+import local_pathfinding.wind_coord_systems as wcs
 
 # Upwind downwind cost multipliers
 UPWIND_MULTIPLIER = 3000.0
 DOWNWIND_MULTIPLIER = 3000.0
 
 # Upwind downwind constants
-UPWIND_THRESHOLD = 40.0
-DOWNWIND_THRESHOLD = 20.0
-
-DOWNWIND = 180.0
-UPWIND = 0.0
+HIGHEST_UPWIND_ANGLE_RADIANS = math.radians(40.0)
+LOWEST_DOWNWIND_ANGLE_RADIANS = math.radians(20.0)
 
 
 BOATSPEEDS = np.array(
@@ -44,41 +41,6 @@ def create_buffer_around_position(position: cs.XY, box_buffer_size: float) -> Po
     """
     space = Point(position.x, position.y).buffer(box_buffer_size, cap_style=3, join_style=2)
     return space
-
-
-def get_true_wind(
-    apparent_wind_direction: float,
-    apparent_wind_speed: float,
-    heading_degrees: float,
-    boat_speed_over_ground: float,
-) -> Tuple[float, float]:
-    """Calculates the true wind direction based on the boat's heading and speed.
-    Args:
-        apparent_wind_direction (float): The direction of the wind in degrees (-180, 180]. This
-        is the apparent wind derived from the wind sensor
-        apparent_wind_speed (float): The speed of the wind in kmph. This is the apparent wind
-        derived from the wind sensor
-        heading_degrees (float): The heading of the boat in degrees (-180, 180]. This is
-        derived from the GPS
-        speed (float): The speed of the boat in kmph. This is derived from the GPS.
-    Returns:
-        float: The true wind direction in radians (-pi, pi]
-    """
-    wind_radians = math.radians(apparent_wind_direction)
-
-    # boat wind is in the direction of the boat heading
-    boat_wind_radians = math.radians(bound_to_180(heading_degrees + 180))
-
-    apparent_wind_east = apparent_wind_speed * math.sin(wind_radians)
-    apparent_wind_north = apparent_wind_speed * math.cos(wind_radians)
-
-    boat_wind_east = boat_speed_over_ground * math.sin(boat_wind_radians)
-    boat_wind_north = boat_speed_over_ground * math.cos(boat_wind_radians)
-
-    true_east = apparent_wind_east - boat_wind_east
-    true_north = apparent_wind_north - boat_wind_north
-
-    return (math.atan2(true_east, true_north), math.hypot(true_north, true_east))
 
 
 class Objective(ob.StateCostIntegralObjective):
@@ -246,11 +208,13 @@ class WindObjective(Objective):
         speed: float,
     ):
         super().__init__(space_information)
-        # self.wind_direction, _ = get_true_wind(
-        #     wind_direction_degrees, wind_speed, heading_degrees, speed
-        # )
-        self.apparent_wind_direction = bound_to_180(wind_direction_degrees)
-        self.apparent_wind_speed = wind_speed
+        assert -180 < wind_direction_degrees <= 180
+        self.wind_direction, _ = wcs.get_true_wind(
+            wcs.boat_to_global_coordinate(wind_direction_degrees),
+            wind_speed,
+            heading_degrees,
+            speed
+        )
 
     def motionCost(self, s1: ob.SE2StateSpace, s2: ob.SE2StateSpace) -> ob.Cost:
         """Generates the cost associated with the upwind and downwind directions of the boat in
@@ -263,12 +227,12 @@ class WindObjective(Objective):
         Returns:
             ob.Cost: The cost of going upwind or downwind
         """
-        # s1_xy = cs.XY(s1.getX(), s1.getY())
-        # s2_xy = cs.XY(s2.getX(), s2.getY())
-        return ob.Cost(WindObjective.wind_direction_cost(self.wind_direction))
+        s1_xy = cs.XY(s1.getX(), s1.getY())
+        s2_xy = cs.XY(s2.getX(), s2.getY())
+        return ob.Cost(WindObjective.wind_direction_cost(s1_xy, s2_xy, self.wind_direction))
 
     @staticmethod
-    def wind_direction_cost(wind_direction: float) -> float:
+    def wind_direction_cost(s1: cs.XY, s2: cs.XY, wind_direction: float) -> float:
         """Punishes the boat for going up/downwind.
 
         Args:
@@ -279,15 +243,19 @@ class WindObjective(Objective):
         Returns:
             float: The cost of going upwind or downwind
         """
-        if WindObjective.is_upwind(wind_direction):
-            return UPWIND_MULTIPLIER  
-        elif WindObjective.is_downwind(wind_direction):
-            return DOWNWIND_MULTIPLIER  
+        distance = math.hypot(s2.y - s1.y, s2.x - s1.x)
+        boat_direction_radians = math.atan2(s2.x - s1.x, s2.y - s1.y)
+        assert -math.pi <= boat_direction_radians <= math.pi
+
+        if WindObjective.is_upwind(wind_direction, boat_direction_radians):
+            return UPWIND_MULTIPLIER * distance
+        elif WindObjective.is_downwind(wind_direction, boat_direction_radians):
+            return DOWNWIND_MULTIPLIER * distance
         else:
             return 0.0
 
     @staticmethod
-    def is_upwind(wind_direction: float) -> bool:
+    def is_upwind(wind_direction: float, boat_direction: float) -> bool:
         """Determines whether the boat is upwind or not and its associated cost
 
         Args:
@@ -297,11 +265,11 @@ class WindObjective(Objective):
         Returns:
             bool: The cost associated with the upwind direction
         """
-        theta_min = math.radians(bound_to_180(UPWIND - UPWIND_THRESHOLD))
-        theta_max = math.radians(bound_to_180(UPWIND + UPWIND_THRESHOLD))
-        wind_direction = math.
-        return WindObjective.is_angle_between(theta_min, wind_direction, theta_max)
-    
+        theta_min = wind_direction - HIGHEST_UPWIND_ANGLE_RADIANS
+        theta_max = wind_direction + HIGHEST_UPWIND_ANGLE_RADIANS
+
+        return WindObjective.is_angle_between(theta_min, boat_direction, theta_max)
+
     @staticmethod
     def is_downwind(wind_direction: float, boat_direction: float) -> bool:
         """Generates the cost associated with the downwind direction
@@ -313,11 +281,12 @@ class WindObjective(Objective):
         Returns:
             bool: The cost associated with the downwind direction
         """
+        downwind_wind_direction = (wind_direction + math.pi) % (2 * math.pi)
 
-        theta_min = bound_to_180(DOWNWIND - DOWNWIND_THRESHOLD)
-        theta_max = bound_to_180(DOWNWIND + DOWNWIND_THRESHOLD)
+        theta_min = downwind_wind_direction - LOWEST_DOWNWIND_ANGLE_RADIANS
+        theta_max = downwind_wind_direction + LOWEST_DOWNWIND_ANGLE_RADIANS
 
-        return WindObjective.is_angle_between(theta_min, wind_direction, theta_max)
+        return WindObjective.is_angle_between(theta_min, boat_direction, theta_max)
 
     @staticmethod
     def is_angle_between(first_angle: float, middle_angle: float, second_angle: float) -> bool:

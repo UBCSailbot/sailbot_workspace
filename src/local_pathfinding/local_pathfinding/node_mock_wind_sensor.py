@@ -64,6 +64,13 @@ class MockWindSensor(Node):
             qos_profile=10,
         )
 
+        self.__gps_sub = self.create_subscription(
+            msg_type=ci.GPS,
+            topic="gps",
+            callback=self.gps_callback,
+            qos_profile=10
+        )
+
         self.__last_direction = int(
             self.get_parameter("mean_direction").get_parameter_value().double_value
         )
@@ -151,12 +158,18 @@ class MockWindSensor(Node):
             self.get_parameter("mode").get_parameter_value().string_value
         )
 
-    def get_apparent_wind(true_wind, boat_wind):
-        tw_radians = math.radians(true_wind)
-        bw_radians = math.radians(boat_wind)
-        
-        tw_x = math.cos(tw_radians)
-        tw_y = 
+    def gps_callback(self, msg: ci.GPS) -> None:
+        """Callback function for the GPS subscription. Updates the boat's position.
+
+        Args:
+            msg (ci.GPS): The GPS message containing the boat's position.
+        """
+
+        self.get_logger().debug(f"received n {self.__wind_sensors_pub.topic}: {msg}")
+        self.__lat_lon = msg.lat_lon
+        self.__boat_heading = msg.heading.heading
+        self.__boat_speed = msg.speed.speed
+
 
 def main(args=None):
     rclpy.init(args=args)
