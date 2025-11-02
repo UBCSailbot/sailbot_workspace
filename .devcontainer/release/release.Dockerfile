@@ -65,6 +65,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rosdep init || echo "rosdep already initialized"
 ENV DEBIAN_FRONTEND=
 
+RUN ln -s /usr/bin/python3 /usr/bin/python3 || true
+RUN python3 --version
+
 # Create the non-root user: ros
 ARG USER_UID=1000
 ARG USER_GID=$USER_UID
