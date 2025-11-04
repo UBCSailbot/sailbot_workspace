@@ -12,8 +12,8 @@ import local_pathfinding.coord_systems as cs
 from local_pathfinding.coord_systems import bound_to_180
 
 # Upwind downwind cost multipliers
-UPWIND_MULTIPLIER = 3000.0
-DOWNWIND_MULTIPLIER = 3000.0
+UPWIND_MULTIPLIER = 1.0
+DOWNWIND_MULTIPLIER = 0.75
 
 # Upwind downwind constants
 HIGHEST_UPWIND_ANGLE_RADIANS = math.radians(40.0)
