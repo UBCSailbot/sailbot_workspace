@@ -5,8 +5,8 @@ import math
 import local_pathfinding.coord_systems as cs
 from typing import Tuple
 
-FLOATING_POINT_ERROR_FIX
-ZERO_VECTOR_CONSTANT = 2 * math.pi
+FLOATING_POINT_ERROR_THRESHOLD = 1e-9
+ZERO_VECTOR_CONSTANT = 0.0
 
 
 def boat_to_global_coordinate(boat_heading: float, wind_direction: float):
@@ -61,7 +61,12 @@ def get_true_wind(
     true_east = apparent_wind_east - boat_wind_east
     true_north = apparent_wind_north - boat_wind_north
 
-    return (math.atan2(true_east, true_north), math.hypot(true_north, true_east))
+    magnitude = math.hypot(true_east, true_north)
+    angle = math.atan2(true_east, true_north)
+
+    if magnitude > FLOATING_POINT_ERROR_THRESHOLD:
+        return angle, magnitude
+    return ZERO_VECTOR_CONSTANT, 0.0
 
 
 def get_apparent_wind(tw_direction, tw_speed, boat_heading, boat_speed) -> tuple[float, float]:
@@ -78,7 +83,10 @@ def get_apparent_wind(tw_direction, tw_speed, boat_heading, boat_speed) -> tuple
 
     aw_speed_east = tw_speed_east + boat_wind_east
     aw_speed_north = tw_speed_north + boat_wind_north
-    print(boat_wind_east)
-    print(tw_speed_east)
-    print(aw_speed_east)
-    return math.atan2(aw_speed_east, aw_speed_north), math.hypot(aw_speed_east, aw_speed_north)
+
+    magnitude = math.hypot(aw_speed_east, aw_speed_north)
+    angle = math.atan2(aw_speed_east, aw_speed_north)
+
+    if magnitude > FLOATING_POINT_ERROR_THRESHOLD:
+        return angle, magnitude
+    return ZERO_VECTOR_CONSTANT, 0.0
