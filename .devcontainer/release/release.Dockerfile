@@ -31,6 +31,9 @@ LANG=en_US.UTF-8 \
     VIRTUAL_IRIDIUM_PORT="/tmp/virtual_iridium_port"
 
 FROM env AS runtime-dependencies
+# Copy over ros2 instalation 
+COPY --from=builder /opt/ros/humble /opt/ros/humble
+
 # Install all runtime dependencies in a single layer
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -88,10 +91,10 @@ COPY --from=builder ${ROS_WORKSPACE}/log/ ./log
 COPY --from=builder ${ROS_WORKSPACE}/src/ ./src
 COPY --from=builder ${ROS_WORKSPACE}/scripts/ ./scripts
 RUN chown -R ${USERNAME}:${USERNAME} ${ROS_WORKSPACE} ${HOME}
-COPY --from=builder /opt/ros/humble /opt/ros/humble
 
 FROM import-build-artifacts AS setup
-RUN ln -s /usr/bin/python3.10 /usr/bin/python3 || true \
+# We need to make this directory because setup.sh can only create the file.
+RUN sudo mkdir -p /etc/ros/rosdep/sources.list.d \
     && /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && ./scripts/setup.sh exec" \
     # downgrade setuptools
     # https://answers.ros.org/question/396439/setuptoolsdeprecationwarning-setuppy-install-is-deprecated-use-build-and-pip-and-other-standards-based-tools/?answer=400052#post-id-400052
