@@ -27,36 +27,56 @@ def boat_to_global_coordinate(boat_heading: float, wind_direction: float):
 
 
 def global_to_boat_coordinate(boat_heading: float, global_wind_direction: float):
+    """
+    Convert a global-frame wind bearing to a boat-frame wind direction.
+    Args:
+        boat_heading (float): Boat heading in degrees (global frame), in (-180, 180].
+        global_wind_direction (float): Wind bearing in global frame (degrees), in (-180, 180].
+    Returns:
+        float: Wind direction in boat coordinates (degrees) within (-180, 180].
+    """
     return cs.bound_to_180(global_wind_direction - boat_heading + 180.0)
 
 
 def get_true_wind(
-    apparent_wind_direction: float,
-    apparent_wind_speed: float,
-    heading_degrees: float,
-    boat_speed_over_ground: float,
-) -> Tuple[float, float]:
-    """Calculates the true wind direction based on the boat's heading and speed.
+    aw_direction: float,
+    aw_speed: float,
+    boat_heading: float,
+    boat_speed: float,
+) -> tuple[float, float]:
+    """Compute the true wind vector from apparent wind and boat motion.
+
     Args:
-        apparent_wind_direction (float): The direction of the wind in degrees (-180, 180]. This
-        is the apparent wind derived from the wind sensor
-        apparent_wind_speed (float): The speed of the wind in kmph. This is the apparent wind
-        derived from the wind sensor
-        heading_degrees (float): The heading of the boat in degrees (-180, 180]. This is
-        derived from the GPS
-        speed (float): The speed of the boat in kmph. This is derived from the GPS.
+        aw_direction (float): Apparent wind direction in degrees (-180, 180]. This is the wind
+            as measured relative to the boat (sensor reading).
+        aw_speed (float): Apparent wind speed (same units as boat_speed), e.g., km/h.
+        boat_heading (float): Boat heading in degrees (-180, 180].
+        boat_speed (float): Boat speed over ground (same units as aw_speed), e.g., km/h.
+        NOTE: All the angles are with respect to global true bearing. It is the
+        responsibility of the caller to ensure this. Particularly, the apparent wind read by the
+        sensor is in boat coordinates
+
     Returns:
-        float: The true wind direction in radians (-pi, pi]
+        tuple[float, float]: (tw_angle, tw_magnitude)
+            - tw_angle: true wind direction in radians within (-pi, pi].
+            - tw_magnitude: true wind speed
+        If the resulting vector magnitude is effectively zero (<= FLOATING_POINT_ERROR_THRESHOLD),
+        returns (0.0, 0.0). NOTE: The caller is responsible for handling this case, otherwise the
+        calculations will break down.
+
+    Notes:
+        The function computes vector components in an east/north frame, subtracting the boat
+        motion from the apparent wind to obtain the true wind.
     """
-    wind_radians = math.radians(apparent_wind_direction)
+    wind_radians = math.radians(aw_direction)
 
-    # boat wind is in the direction of the boat heading
-    boat_wind_radians = math.radians(cs.bound_to_180(heading_degrees + 180))
-    apparent_wind_east = apparent_wind_speed * math.sin(wind_radians)
-    apparent_wind_north = apparent_wind_speed * math.cos(wind_radians)
+    # boat wind is in the direction of the boat heading (reverse of boat heading)
+    boat_wind_radians = math.radians(cs.bound_to_180(boat_heading + 180))
+    apparent_wind_east = aw_speed * math.sin(wind_radians)
+    apparent_wind_north = aw_speed * math.cos(wind_radians)
 
-    boat_wind_east = boat_speed_over_ground * math.sin(boat_wind_radians)
-    boat_wind_north = boat_speed_over_ground * math.cos(boat_wind_radians)
+    boat_wind_east = boat_speed * math.sin(boat_wind_radians)
+    boat_wind_north = boat_speed * math.cos(boat_wind_radians)
 
     true_east = apparent_wind_east - boat_wind_east
     true_north = apparent_wind_north - boat_wind_north
@@ -70,6 +90,26 @@ def get_true_wind(
 
 
 def get_apparent_wind(tw_direction, tw_speed, boat_heading, boat_speed) -> tuple[float, float]:
+    """Compute the apparent wind vector from true wind and boat motion.
+
+    Args:
+        tw_direction (float): True wind direction in radians (measured as atan2(east, north) style)
+            or degrees if caller uses degrees consistently. (This routine converts using math.radians # noqa
+            in the original code; keep inputs consistent with usage.)
+        tw_speed (float): True wind speed (same units as boat_speed), e.g., km/h.
+        boat_heading (float): Boat heading in degrees (-180, 180].
+        boat_speed (float): Boat speed over ground (same units as tw_speed), e.g., km/h.
+        NOTE: All the angles are with respect to global true bearing. It is the
+        responsibility of the caller to ensure this.
+
+    Returns:
+        tuple[float, float]: (aw_angle, aw_magnitude)
+            - aw_angle: apparent wind direction in radians within (-pi, pi]
+            - aw_magnitude: apparent wind speed (same units as inputs).
+        If the resulting vector magnitude is effectively zero (<= FLOATING_POINT_ERROR_THRESHOLD),
+        returns (0.0, 0.0). NOTE: The caller is responsible for handling this case, otherwise the
+        calculations will break down.
+    """
     tw_direction = math.radians(tw_direction)
 
     bw_speed = boat_speed
