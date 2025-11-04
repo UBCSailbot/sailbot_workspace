@@ -61,7 +61,18 @@ def km_to_meters(km: float) -> float:
 
 
 def bound_to_180(angle_degrees: float) -> float:
-    return ((angle_degrees + 180) % 360) - 180
+    """Normalize an angle to the range (-180, 180].
+
+    Args:
+        angle_degrees (float): Angle in degrees to be normalized.
+
+    Returns:
+        float: The normalized angle in degrees within (-180, 180].
+    """
+    angle = ((angle_degrees + 180) % 360) - 180
+    if angle == -180.0:
+        return 180.0
+    return angle
 
 
 def calculate_heading_diff(boat_heading: float, desired_heading):

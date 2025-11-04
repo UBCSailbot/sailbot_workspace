@@ -5,6 +5,9 @@ import math
 import local_pathfinding.coord_systems as cs
 from typing import Tuple
 
+FLOATING_POINT_ERROR_FIX
+ZERO_VECTOR_CONSTANT = 2 * math.pi
+
 
 def boat_to_global_coordinate(boat_heading: float, wind_direction: float):
     """
@@ -22,9 +25,9 @@ def boat_to_global_coordinate(boat_heading: float, wind_direction: float):
     """
     return cs.bound_to_180(boat_heading + wind_direction + 180.0)
 
-# def global_to_boat_coordinate(boat_heading: float, global_wind_direction: float):
 
-
+def global_to_boat_coordinate(boat_heading: float, global_wind_direction: float):
+    return cs.bound_to_180(global_wind_direction - boat_heading + 180.0)
 
 
 def get_true_wind(
@@ -49,7 +52,6 @@ def get_true_wind(
 
     # boat wind is in the direction of the boat heading
     boat_wind_radians = math.radians(cs.bound_to_180(heading_degrees + 180))
-
     apparent_wind_east = apparent_wind_speed * math.sin(wind_radians)
     apparent_wind_north = apparent_wind_speed * math.cos(wind_radians)
 
@@ -62,13 +64,21 @@ def get_true_wind(
     return (math.atan2(true_east, true_north), math.hypot(true_north, true_east))
 
 
-def get_apparent_wind(self)-> tuple[float, float]:
-    tw_speed = self.get_mock_wind_speed().speed
-    tw_direction = math.radians(self.get_direction_value())
+def get_apparent_wind(tw_direction, tw_speed, boat_heading, boat_speed) -> tuple[float, float]:
+    tw_direction = math.radians(tw_direction)
 
-    bw_speed = self.__boat_speed
-    bw_direction = math.radians(cs.bound_to_180(self.__heading + 180.0))
-
+    bw_speed = boat_speed
+    bw_direction = math.radians(cs.bound_to_180(boat_heading + 180.0))
+    # print(math.degrees(bw_direction))
     boat_wind_east = bw_speed * math.sin(bw_direction)
     boat_wind_north = bw_speed * math.cos(bw_direction)
-    return 0.0
+
+    tw_speed_east = tw_speed * math.sin(tw_direction)
+    tw_speed_north = tw_speed * math.cos(tw_direction)
+
+    aw_speed_east = tw_speed_east + boat_wind_east
+    aw_speed_north = tw_speed_north + boat_wind_north
+    print(boat_wind_east)
+    print(tw_speed_east)
+    print(aw_speed_east)
+    return math.atan2(aw_speed_east, aw_speed_north), math.hypot(aw_speed_east, aw_speed_north)
