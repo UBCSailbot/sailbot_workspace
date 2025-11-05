@@ -11,18 +11,7 @@ from geopy.distance import great_circle
 from rclpy.node import Node
 
 from local_pathfinding.wind_coord_systems import get_true_wind
-
-MEAN_SPEED = ci.HelperSpeed(speed=15.0)  # mean boat speed in kmph
-
-START_POINT = ci.HelperLatLon(latitude=48.46, longitude=-125.1)  # Starting location of the mock
-
-'''
-For further tests:
-START_POINT = ci.HelperLatLon(latitude=49.308157, longitude=-123.244801)
-Change last line of mock_global_path.csv to: 49.289686,-123.195877
-'''
-
-START_HEADING = ci.HelperHeading(heading=180.0)  # in degrees, heading of the boat
+import shared_constants as sc
 
 
 BOATSPEEDS = np.array(
@@ -173,9 +162,9 @@ class MockGPS(Node):
             qos_profile=10,
         )
 
-        self.__mean_speed = MEAN_SPEED
-        self.__current_location = START_POINT
-        self.__heading = START_HEADING
+        self.__mean_speed = sc.MEAN_SPEED
+        self.__current_location = sc.START_POINT
+        self.__heading = sc.START_HEADING
 
     def mock_gps_callback(self) -> None:
         """Callback function for the mock GPS timer. Publishes mock gps data to the ROS
