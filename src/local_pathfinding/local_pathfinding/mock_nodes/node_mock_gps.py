@@ -1,5 +1,7 @@
 """
 Mock class for the GPS. Publishes basic GPS data to the ROS network.
+
+USES constants defined in mock_nodes.shared_constants
 """
 
 import math
@@ -11,7 +13,7 @@ from geopy.distance import great_circle
 from rclpy.node import Node
 
 from local_pathfinding.wind_coord_systems import get_true_wind
-import shared_constants as sc
+import local_pathfinding.mock_nodes.shared_constants as sc
 
 
 BOATSPEEDS = np.array(

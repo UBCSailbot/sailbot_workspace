@@ -1,9 +1,11 @@
 """This file has the helpers related to coordinate systems concerned with wind conversions.
+NOTE: Boat coordinate is defined with 0 degrees in the opposite direction of the boat's heading.
+The value increases clockwise wrt to the boat coordinate and decreases counter-clockwise. Follows
+true bearing conventions.
 """
 
 import math
 import local_pathfinding.coord_systems as cs
-from typing import Tuple
 
 FLOATING_POINT_ERROR_THRESHOLD = 1e-9
 ZERO_VECTOR_CONSTANT = 0.0
@@ -13,10 +15,10 @@ def boat_to_global_coordinate(boat_heading: float, wind_direction: float):
     """
     Convert a boat-frame wind direction to a global-frame bearing (degrees) in (-180, 180]
     Args:
-        boat_heading (float): Boat heading in degrees (global frame).
-        wind_direction (float): Wind direction in boat coordinates (degrees).
+        boat_heading (float): Boat heading in degrees (global frame) in (-180, 180].
+        wind_direction (float): Wind direction in boat coordinates (-180, 180] (degrees).
     Returns:
-        float: Global wind bearing in degrees within [-180, 180].
+        float: Global wind bearing in degrees within (-180, 180].
     Examples:
         >>> boat_to_global_coordinate(0, 0)      # 0 + 0 + 180 -> -180
         180

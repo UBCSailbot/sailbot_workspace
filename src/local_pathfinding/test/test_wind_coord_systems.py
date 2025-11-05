@@ -1,11 +1,5 @@
 import math
-from typing import List
-
-import custom_interfaces.msg as ci
 import pytest
-from shapely.geometry import MultiPolygon, Point, Polygon, box
-
-import local_pathfinding.coord_systems as cs
 import local_pathfinding.wind_coord_systems as wcs
 
 
@@ -15,7 +9,14 @@ import local_pathfinding.wind_coord_systems as wcs
         (0.0, 0.0, 180.0),
         (45.0, 0.0, -135.0),
         (170.0, 30.0, 20.0),
-        #TODO: Add more test cases before PR
+        (-45.0, -135.0, 0.0),
+        (0.0, 90.0, -90.0),
+        (90.0, 90.0, 0.0),
+        (180.0, 0.0, 0.0),
+        (179.0, 1.0, 0.0),
+        (-170.0, -30.0, -20.0),
+        (120.0, -150.0, 150.0),
+        (-45.0, 135.0, -90.0),
     ]
 )
 def test_boat_to_global_coordinate(boat_heading: float, wind_direction: float, expected: float):
@@ -30,7 +31,12 @@ def test_boat_to_global_coordinate(boat_heading: float, wind_direction: float, e
         (0.0, 0.0, 180.0),
         (45.0, 0.0, 135.0),
         (170.0, 30.0, 40.0),
-        #TODO: Add more test cases before PR
+        (0.0, 180.0, 0.0),
+        (90.0, 0.0, 90.0),
+        (90.0, 180.0, -90.0),
+        (180.0, 0.0, 0.0),
+        (-170.0, 150.0, 140.0),
+        (120.0, -150.0, -90.0),
     ]
 )
 def test_global_to_boat_coordinate(boat_heading: float,
@@ -78,6 +84,8 @@ def test_get_true_wind_direction(
         (0, 0, 0, 0, 0, 0),
         (45.0, 3.0, 225.0, 3.0, 45.0, 6.0),
         (45.0, 3.0, 45.0, 3.0, 0.0, 0.0),
+        (180.0, 10.0, 0.0, 5.0, 180.0, 15.0),
+        (90.0, 8.0, -90.0, 8.0, 90.0, 16.0),
     ],
 )
 def test_get_apparent_wind_direction(
