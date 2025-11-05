@@ -939,7 +939,7 @@ std::string TempSensor::debugStr() const
 {
     std::stringstream ss;
     ss << BaseFrame::debugStr() << "\n"
-       << "Temperature (degrees Celsius): " << temp_;
+       << "Temperature (K): " << temp_;
     return ss.str();
 }
 
