@@ -21,7 +21,10 @@ from shapely.geometry import MultiPolygon, Polygon, box
 
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.obstacles as ob
-from local_pathfinding.ompl_objectives import get_sailing_objective, create_buffer_around_position
+from local_pathfinding.ompl_objectives import (
+    create_buffer_around_position,
+    get_sailing_objective,
+)
 
 if TYPE_CHECKING:
     from local_pathfinding.local_path import LocalPathState
@@ -188,19 +191,9 @@ class OMPLPath:
             self._logger.debug(f"Solution path does not exist. Exception thrown: {e}")
             return float("inf")
 
-        cost = 0.0
-
-        states = solution_path.getStates()
-        objective = self._simple_setup.getOptimizationObjective()
-        for i in range(waypoint_index, len(states)):
-            state = states[i]
-            state_cost_i = objective.stateCost(state).value()
-            motion_cost = (
-                objective.motionCost(state, states[i + 1]).value() if i + 1 < len(states) else 0
-            )
-            cost += state_cost_i + motion_cost
-
-        return cost
+        obj = self._simple_setup.getOptimizationObjective()
+        cost = solution_path.cost(obj)
+        return cost.value()
 
     def get_path(self) -> ci.Path:
         """Get the collection of waypoints for the boat to follow.
@@ -216,7 +209,6 @@ class OMPLPath:
             return ci.Path()
 
         solution_path = self._simple_setup.getSolutionPath()
-
         waypoints = []
 
         for state in solution_path.getStates():
@@ -345,10 +337,10 @@ class OMPLPath:
                     # uncomment this if you want to log which states are being labeled invalid
                     # its commented out for now to avoid unnecessary file I/O
 
-                    if isinstance(state, base.State):  # only happens in unit tests
-                        log_invalid_state(state=cs.XY(state().getX(), state().getY()), obstacle=o)
-                    else:  # happens in prod
-                        log_invalid_state(state=cs.XY(state.getX(), state.getY()), obstacle=o)
+                    # if isinstance(state, base.State):  # only happens in unit tests
+                    #     log_invalid_state(state=cs.XY(state().getX(), state().getY()), obstacle=o) # noqa
+                    # else:  # happens in prod
+                    #     log_invalid_state(state=cs.XY(state.getX(), state.getY()), obstacle=o)
                     return False
 
         return True
