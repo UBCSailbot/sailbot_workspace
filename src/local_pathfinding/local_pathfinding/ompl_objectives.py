@@ -1,7 +1,6 @@
 """Our custom OMPL optimization objectives."""
 
 import math
-from typing import Tuple
 
 import custom_interfaces.msg as ci
 import numpy as np
