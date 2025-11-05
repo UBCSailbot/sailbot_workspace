@@ -93,8 +93,7 @@ LocalTransceiver::LocalTransceiver(const std::string & port_name, const uint32_t
 
 LocalTransceiver::~LocalTransceiver()
 {
-    std::filesystem::remove(CACHE_PATH);
-    std::filesystem::remove(CACHE_TEMP_PATH);
+    // Intentionally left blank
 }
 
 void LocalTransceiver::stop()
@@ -322,7 +321,7 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
 
         break;
     }
-    
+
     std::future<void> fut = std::async(std::launch::async, cacheGlobalWaypoints, receivedDataBuffer);
 
     custom_interfaces::msg::Path to_publish = parseInMsg(receivedDataBuffer);
