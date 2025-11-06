@@ -268,62 +268,6 @@ public:
 
 protected:
     /**
-     * @brief Generic function that takes angle in range [0, 360) and bounds them  (-180 <= 180]
-     *
-     * @tparam Type Generic type
-     * @param angle Input angle (guaranteed to be [0,360))
-     * @return auto Returns the same type as the input if signed, otherwise returns the signed
-               type of the same bit width
-     */
-    template <typename Type>
-    static auto boundTo180(Type angle)
-    {
-        if constexpr (std::is_integral_v<Type> && std::is_unsigned_v<Type>) {
-            using ReturnType      = std::make_signed_t<Type>;
-            ReturnType angle_copy = static_cast<ReturnType>(angle);
-            if (angle_copy > 180) {  //NOLINT(readability-magic-numbers)
-                angle_copy -= 360;   //NOLINT(readability-magic-numbers)
-            }
-            return angle_copy;
-        } else {
-            // signed integer or floating point
-            if (angle > 180) {  //NOLINT(readability-magic-numbers)
-                angle -= 360;   //NOLINT(readability-magic-numbers)
-            }
-            return angle;
-        }
-    }
-
-    /**
-     * @brief Generic function that takes angles and bounds them to [0, 360)
-     *
-     * @tparam Type Generic type
-     * @param angle Input angle (note: the angle is not guaranteed by CAN transceiver to be (-180, 180].
-                    We assume this by definition of HelperHeading.msg
-     * @return auto Returns the same type as the input if signed, otherwise returns the signed
-                    type of the same bit width
-     */
-    template <typename Type>
-    static auto boundTo360(Type angle)
-    {
-        // if unsigned int
-        if constexpr (std::is_integral_v<Type> && std::is_unsigned_v<Type>) {
-            using ReturnType      = std::make_signed_t<Type>;
-            ReturnType angle_copy = static_cast<ReturnType>(angle);
-            if (angle_copy < 0) {
-                angle_copy += 360;  //NOLINT(readability-magic-numbers)
-            }
-            return angle_copy;
-        } else {
-            // is signed int or float
-            if (angle < 0) {
-                angle += 360;  //NOLINT(readability-magic-numbers)
-            }
-            return angle;
-        }
-    }
-
-    /**
      * @brief Derived classes can instantiate a base frame using an CanId and a data length
      *
      * @param id            CanId of the fraeme
@@ -1063,7 +1007,7 @@ public:
       CanId::TEMP_13,
       CanId::TEMP_14,
       CanId::TEMP_SENSOR_END};
-    static constexpr uint8_t CAN_BYTE_DLEN_ = 2;
+    static constexpr uint8_t CAN_BYTE_DLEN_ = 4;
     static constexpr uint8_t BYTE_OFF_TEMP  = 0;
 
     /**
@@ -1344,7 +1288,7 @@ public:
       CanId::PRESSURE_13,
       CanId::PRESSURE_14,
       CanId::PRESSURE_SENSOR_END};
-    static constexpr uint8_t CAN_BYTE_DLEN_    = 4;
+    static constexpr uint8_t CAN_BYTE_DLEN_    = 2;
     static constexpr uint8_t BYTE_OFF_PRESSURE = 0;
 
     /**
