@@ -261,6 +261,7 @@ def test_is_state_valid(x: float, y: float, is_valid: bool):
     else:
         assert not ompl_path.OMPLPath.is_state_valid(state), "state should not be valid"
 
+
 @pytest.mark.parametrize(
     "position,expected_area,expected_bounds,box_buffer_size",
     [
