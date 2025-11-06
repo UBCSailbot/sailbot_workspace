@@ -114,5 +114,5 @@ constexpr float SALINITY_LBND = 0;        // lbnd of sensor being used is 0.07
 constexpr float SALINITY_UBND = 1000000;  // ubnd of sensor being used is 500000+
 
 /***** Bounds for Pressure Sensor ******/
-constexpr float PRESSURE_LBND = -100;  // lowest lbnd of pressure sensors under consideration is -14.5 psi
-constexpr float PRESSURE_UBND = 1000;  // highest lbnd of pressure sensors is 8702 psi
+constexpr float PRESSURE_LBND = -14.5;  // lowest lbnd of pressure sensors under consideration is -14.5 psi
+constexpr float PRESSURE_UBND = 32.6;   // max int16_t, since ubnd of sensors under consideration is way higher

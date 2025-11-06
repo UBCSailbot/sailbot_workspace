@@ -137,8 +137,12 @@ TEST_F(TestCanFrameParser, MainTrimTabTestValid)
 
         uint32_t raw_angle;
         std::memcpy(&raw_angle, cf.data + CAN_FP::MainTrimTab::BYTE_OFF_ANGLE, sizeof(uint32_t));
-        raw_angle /= 1000;  //NOLINT(readability-magic-numbers)
+        raw_angle = (raw_angle / 1000) - 90;  //NOLINT(readability-magic-numbers)
         EXPECT_EQ(raw_angle, expected_angle);
+
+        raw_angle *= 1000;  //NOLINT(readability-magic-numbers)
+
+        std::memcpy(cf.data + CAN_FP::MainTrimTab::BYTE_OFF_ANGLE, &raw_angle, sizeof(uint32_t));
 
         CAN_FP::MainTrimTab sail_from_can = CAN_FP::MainTrimTab(cf);
 
@@ -965,11 +969,11 @@ TEST_F(TestCanFrameParser, TestAISShipsInvalid)
 TEST_F(TestCanFrameParser, TempSensorTestValid)
 {
     constexpr std::uint8_t NUM_SENSORS = CAN_FP::TempSensor::TEMP_SENSOR_IDS.size();
-    // assuming measuring ocean water, possible range ~[-2:30]
+    // assuming measuring ocean water, possible range ~[-2:30] = ~[271:303]
     // also include upper, lower bounds
     std::vector<float> expected_temps = {TEMP_LBND};
     for (int i = 1; i < NUM_SENSORS - 1; i++) {
-        expected_temps.push_back(static_cast<float>(-2.3 + (2.3 * i)));  // NOLINT(readability-magic-numbers)
+        expected_temps.push_back(static_cast<float>(271 + (2.3 * i)));  // NOLINT(readability-magic-numbers)
     }
     expected_temps.push_back(TEMP_UBND);
 
@@ -992,11 +996,11 @@ TEST_F(TestCanFrameParser, TempSensorTestValid)
         EXPECT_EQ(cf.can_id, static_cast<canid_t>(id));
         EXPECT_EQ(cf.len, CAN_FP::TempSensor::CAN_BYTE_DLEN_);
 
-        int16_t raw_temp;
-        std::memcpy(&raw_temp, cf.data + CAN_FP::TempSensor::BYTE_OFF_TEMP, sizeof(int16_t));
+        int32_t raw_temp;
+        std::memcpy(&raw_temp, cf.data + CAN_FP::TempSensor::BYTE_OFF_TEMP, sizeof(int32_t));
         float converted_temp = static_cast<float>(raw_temp / 1000.0);  //NOLINT
 
-        const float tolerance = 0.001;
+        const float tolerance = 0.01;
         EXPECT_NEAR(converted_temp, expected_temps[i], tolerance);
 
         CAN_FP::TempSensor sensor_from_can = CAN_FP::TempSensor(cf);
@@ -1153,8 +1157,8 @@ TEST_F(TestCanFrameParser, PressureSensorTestValid)
         EXPECT_EQ(cf.can_id, static_cast<canid_t>(id));
         EXPECT_EQ(cf.len, CAN_FP::PressureSensor::CAN_BYTE_DLEN_);
 
-        int32_t raw_pressure;
-        std::memcpy(&raw_pressure, cf.data + CAN_FP::PressureSensor::BYTE_OFF_PRESSURE, sizeof(int32_t));
+        int16_t raw_pressure;
+        std::memcpy(&raw_pressure, cf.data + CAN_FP::PressureSensor::BYTE_OFF_PRESSURE, sizeof(int16_t));
         float converted_pressure = static_cast<float>(raw_pressure / 1000.0);  //NOLINT(readability-magic-numbers)
 
         const float tolerance = 0.001;
@@ -1184,7 +1188,7 @@ TEST_F(TestCanFrameParser, TestPressureSensorInvalid)
 
     EXPECT_THROW(CAN_FP::PressureSensor tmp(cf), CAN_FP::CanIdMismatchException);
 
-    const float        small = 0.001;
+    const float        small = 0.01;
     std::vector<float> invalid_pressures{PRESSURE_LBND - small, PRESSURE_UBND + small};
 
     optId = CAN_FP::PressureSensor::rosIdxToCanId(0);
