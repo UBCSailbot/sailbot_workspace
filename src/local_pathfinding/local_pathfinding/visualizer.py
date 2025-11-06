@@ -318,6 +318,7 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
     fig = initial_plot()
 
     # Get the boat's current position to use as the reference point for translation
+    # The VisualizerState constructor ensures these arrays are non-empty
     boat_x_actual = state.sailbot_pos_x[-1]
     boat_y_actual = state.sailbot_pos_y[-1]
     
@@ -595,6 +596,7 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
 
     # Set axis limits dynamically - now centered around the boat (at origin)
     # Calculate the extent based on all translated waypoints
+    # Note: boat_x and boat_y always contain at least one element ([0.0])
     all_x_coords = intermediate_x + goal_x + boat_x
     all_y_coords = intermediate_y + goal_y + boat_y
     

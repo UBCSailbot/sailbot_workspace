@@ -1,5 +1,7 @@
 """Test visualizer coordinate translation logic."""
 
+import math
+
 import custom_interfaces.msg as ci
 import pytest
 
@@ -88,9 +90,9 @@ def test_visualizer_coordinate_translation():
     goal_y_translated = goal_y_original - boat_y_original
 
     # Verify that the translation preserves relative distances
-    original_distance = ((goal_x_original - boat_x_original) ** 2 +
-                        (goal_y_original - boat_y_original) ** 2) ** 0.5
-    translated_distance = (goal_x_translated ** 2 + goal_y_translated ** 2) ** 0.5
+    original_distance = math.hypot(goal_x_original - boat_x_original,
+                                    goal_y_original - boat_y_original)
+    translated_distance = math.hypot(goal_x_translated, goal_y_translated)
 
     assert original_distance == pytest.approx(translated_distance, rel=1e-6)
 
