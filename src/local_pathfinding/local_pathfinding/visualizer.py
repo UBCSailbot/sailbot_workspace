@@ -317,19 +317,28 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
 
     fig = initial_plot()
 
+    # Get the boat's current position to use as the reference point for translation
+    boat_x_actual = state.sailbot_pos_x[-1]
+    boat_y_actual = state.sailbot_pos_y[-1]
+    
+    # Translate all waypoints relative to the boat's position
+    # This makes the boat appear at (0, 0) and everything else moves relative to it
+    intermediate_x = [x - boat_x_actual for x in state.final_local_wp_x[1:-1]]
+    intermediate_y = [y - boat_y_actual for y in state.final_local_wp_y[1:-1]]
+    
     # local path waypoints
     intermediate_trace = go.Scatter(
-        x=state.final_local_wp_x[1:-1],
-        y=state.final_local_wp_y[1:-1],
+        x=intermediate_x,
+        y=intermediate_y,
         mode="markers",
         marker=dict(color="blue", size=8),
         name="Intermediate",
     )
 
-    goal_x = [state.final_local_wp_x[-1]]
-    goal_y = [state.final_local_wp_y[-1]]
-    boat_x = [state.sailbot_pos_x[-1]]
-    boat_y = [state.sailbot_pos_y[-1]]
+    goal_x = [state.final_local_wp_x[-1] - boat_x_actual]
+    goal_y = [state.final_local_wp_y[-1] - boat_y_actual]
+    boat_x = [0.0]  # Boat is now at the origin
+    boat_y = [0.0]
     angle_from_boat = math.atan2(goal_x[0] - boat_x[0], goal_y[0] - boat_y[0])
     angle_degrees = math.degrees(angle_from_boat)
 
@@ -348,8 +357,8 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
     )
 
     boat_trace = go.Scatter(
-        x=[state.sailbot_pos_x[-1]],
-        y=[state.sailbot_pos_y[-1]],
+        x=boat_x,  # Boat is at the origin
+        y=boat_y,
         mode="markers",
         name="Boat",
         hovertemplate=(
@@ -371,11 +380,11 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
         ),
     )
 
-    # land obstacles
+    # land obstacles - translate relative to boat position
     for poly in state.land_obstacles_xy:
         if not poly.is_empty:
-            x = list(poly.exterior.xy[0])
-            y = list(poly.exterior.xy[1])
+            x = [coord - boat_x_actual for coord in poly.exterior.xy[0]]
+            y = [coord - boat_y_actual for coord in poly.exterior.xy[1]]
             fig.add_trace(
                 go.Scatter(
                     x=x,
@@ -584,20 +593,37 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
     fig.add_trace(goal_trace)
     fig.add_trace(boat_trace)
 
-    # Set axis limits dynamically
-    x_min = min(state.final_local_wp_x) - 10
-    x_max = max(state.final_local_wp_x) + 10
-    y_min = min(state.final_local_wp_y) - 10
-    y_max = max(state.final_local_wp_y) + 10
+    # Set axis limits dynamically - now centered around the boat (at origin)
+    # Calculate the extent based on all translated waypoints
+    all_x_coords = intermediate_x + goal_x + boat_x
+    all_y_coords = intermediate_y + goal_y + boat_y
+    
+    # Add some margin and ensure the view is reasonable
+    margin = 10
+    x_min = min(all_x_coords) - margin
+    x_max = max(all_x_coords) + margin
+    y_min = min(all_y_coords) - margin
+    y_max = max(all_y_coords) + margin
+    
+    # Ensure minimum view size for better visualization
+    min_range = 20  # minimum range in km
+    if (x_max - x_min) < min_range:
+        x_center = (x_max + x_min) / 2
+        x_min = x_center - min_range / 2
+        x_max = x_center + min_range / 2
+    if (y_max - y_min) < min_range:
+        y_center = (y_max + y_min) / 2
+        y_min = y_center - min_range / 2
+        y_max = y_center + min_range / 2
 
-    # Display AIS Ships
+    # Display AIS Ships - translate relative to boat position
     for x_val, y_val, heading, ais_id in zip(
         state.ais_pos_x, state.ais_pos_y, state.ais_headings, state.ais_ship_ids
     ):
         fig.add_trace(
             go.Scatter(
-                x=[x_val],
-                y=[y_val],
+                x=[x_val - boat_x_actual],
+                y=[y_val - boat_y_actual],
                 mode="markers",
                 name=f"AIS {str(ais_id)}",
                 hovertemplate=(
@@ -618,11 +644,11 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
                 showlegend=True,
             )
         )
-    # Display collision zone for Boat Obstacles
+    # Display collision zone for Boat Obstacles - translate relative to boat position
     for poly in state.boat_obstacles_xy:
         if poly and not poly.is_empty:
-            x = list(poly.exterior.xy[0])
-            y = list(poly.exterior.xy[1])
+            x = [coord - boat_x_actual for coord in poly.exterior.xy[0]]
+            y = [coord - boat_y_actual for coord in poly.exterior.xy[1]]
             fig.add_trace(
                 go.Scatter(
                     x=x,
