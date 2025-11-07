@@ -218,7 +218,7 @@ def generate_path(
 ) -> ci.Path:
     """Returns a path from the current GPS location to the destination point.
     Waypoints are evenly spaced along the path according to the interval_spacing parameter.
-    Path does not include pos, but does include dest as the final element.
+    Path does not include pos, but does include dest as the last element.
 
     If write is True, the path is written to a new csv file in the same directory as file_path,
     with the name of the original file, appended with a timestamp.
@@ -271,7 +271,9 @@ def _interpolate_path(
     write: bool = False,
     file_path: str = "",
 ) -> ci.Path:
-    """Interpolates and inserts subpaths between any waypoints which are spaced too far apart.
+    """Interpolates and inserts geodesic subpaths between any waypoints which are spaced too far
+       apart. This functions uses the convention that the last point in the global path is the next
+       global waypoint for sailbot to sail to.
 
     Args:
         global_path (ci.Path): The path to interpolate between
@@ -285,7 +287,7 @@ def _interpolate_path(
         ci.Path: The interpolated path
     """
 
-    waypoints = [pos] + global_path.waypoints
+    waypoints = global_path.waypoints + [pos]
 
     i, j = 0, 0
     while i < len(path_spacing):
@@ -300,14 +302,14 @@ def _interpolate_path(
                 pos=pos,
             )
             # insert sub path into path
-            waypoints[j + 1: j + 1] = sub_path.waypoints[:-1]
+            waypoints[j + 1 : j + 1] = sub_path.waypoints[:-1]
             # shift indices to account for path insertion
             j += len(sub_path.waypoints) - 1
 
         i += 1
         j += 1
     # remove pos from waypoints again
-    waypoints.pop(0)
+    waypoints.pop(-1)
 
     global_path.waypoints = waypoints
 
@@ -367,8 +369,8 @@ def interpolate_path(
 def calculate_interval_spacing(
     pos: ci.HelperLatLon, waypoints: list[ci.HelperLatLon]
 ) -> list[float]:
-    """Returns the distances between pairs of points in a list of latitudes and longitudes,
-    including pos as the first point.
+    """Returns the distances in km between pairs of points in a list of latitudes and
+    longitudes, including pos as the last point.
 
     Args:
         pos (ci.HelperLatLon): The gps position of the boat
@@ -377,8 +379,8 @@ def calculate_interval_spacing(
     Returns:
         list[float]: The distances between pairs of points in waypoints [km]
     """
-    all_coords = [(pos.latitude, pos.longitude)] + [
-        (waypoint.latitude, waypoint.longitude) for waypoint in waypoints
+    all_coords = [(waypoint.latitude, waypoint.longitude) for waypoint in waypoints] + [
+        (pos.latitude, pos.longitude)
     ]
 
     coords_array = np.array(all_coords)
