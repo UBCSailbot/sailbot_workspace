@@ -37,6 +37,8 @@ queue: Optional[Queue] = None  # type: ignore
 
 BOX_BUFFER_SIZE = 1.0  # km
 
+LAST_GOAL = None  # for the msg_to_display
+
 
 class VisualizerState:
     """
@@ -289,6 +291,7 @@ def live_plot(n_intervals) -> go.Figure:
     Updates the live graph to the latest path planning data.
     """
     global queue
+
     state = queue.get()  # type: ignore
     fig = live_update_plot(state)
     return fig
@@ -319,11 +322,16 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
     fig = initial_plot()
 
     # local path waypoints
+    ix = state.final_local_wp_x
+    iy = state.final_local_wp_y
+    labels = [f"LW{i}" for i in range(1, max(1, len(ix)-1))]
     intermediate_trace = go.Scatter(
-        x=state.final_local_wp_x[1:-1],
-        y=state.final_local_wp_y[1:-1],
-        mode="markers",
+        x=ix[1:-1],
+        y=iy[1:-1],
+        mode="markers+text",
         marker=dict(color="blue", size=8),
+        text=labels,
+        textposition="top center",
         name="Intermediate",
     )
 
@@ -333,6 +341,13 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
     boat_y = [state.sailbot_pos_y[-1]]
     angle_from_boat = math.atan2(goal_x[0] - boat_x[0], goal_y[0] - boat_y[0])
     angle_degrees = math.degrees(angle_from_boat)
+
+    global LAST_GOAL
+    msg_to_display = None
+    gh = (round(goal_x[0], 3), round(goal_y[0], 3))
+    if LAST_GOAL is not None and gh != LAST_GOAL:
+        msg_to_display = f"Local goal advanced to ({gh[0]}, {gh[1]})"
+    LAST_GOAL = gh
 
     # goal local waypoint
     goal_trace = go.Scatter(
@@ -580,16 +595,33 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
         layer="below",
     )
 
+    # Path trace (path to goal point)
+    if state.final_local_wp_x and state.final_local_wp_y:
+        planned_x = [boat_x[0]] + list(state.final_local_wp_x)
+        planned_y = [boat_y[0]] + list(state.final_local_wp_y)
+        path_trace = go.Scatter(
+            x=planned_x,
+            y=planned_y,
+            mode="lines",
+            name="Path to Goal",
+            line=dict(width=2, dash="dot", color="orange"),
+            hovertemplate="X: %{x:.2f}<br>Y: %{y:.2f}<extra></extra>",
+        )
+
     # Add all traces to the figure
     fig.add_trace(intermediate_trace)
     fig.add_trace(goal_trace)
     fig.add_trace(boat_trace)
+    fig.add_trace(path_trace)
 
     # Set axis limits dynamically
-    x_min = min(state.final_local_wp_x) - 10
-    x_max = max(state.final_local_wp_x) + 10
-    y_min = min(state.final_local_wp_y) - 10
-    y_max = max(state.final_local_wp_y) + 10
+    PAD = 10.0
+    x_candidates = [boat_x[0]] + list(state.final_local_wp_x)
+    y_candidates = [boat_y[0]] + list(state.final_local_wp_y)
+    x_min = min(x_candidates) - PAD
+    x_max = max(x_candidates) + PAD
+    y_min = min(y_candidates) - PAD
+    y_max = max(y_candidates) + PAD
 
     # Display AIS Ships
     for x_val, y_val, heading, ais_id in zip(
@@ -639,6 +671,17 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
                 )
             )
 
+    if msg_to_display:
+        fig.add_annotation(
+            text=msg_to_display,
+            xref="paper", yref="paper",
+            x=0.02, y=0.98,
+            showarrow=False,
+            bgcolor="rgba(255,230,150,0.9)",
+            bordercolor="rgba(0,0,0,0.2)",
+            borderwidth=1,
+        )
+
     # Update Layout
     fig.update_layout(
         title="Path Planning",
@@ -648,6 +691,7 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
         yaxis=dict(range=[y_min, y_max]),
         legend=dict(x=0, y=1),  # Position the legend at the top left
         showlegend=True,
+        uirevision="stay"
     )
 
     return fig
