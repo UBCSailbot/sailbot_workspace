@@ -5,7 +5,7 @@ import math
 import custom_interfaces.msg as ci
 import numpy as np
 from ompl import base as ob
-from shapely.geometry import Polygon, Point
+
 
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.wind_coord_systems as wcs
@@ -31,15 +31,6 @@ BOATSPEEDS = np.array(
 
 WINDSPEEDS = [0, 9.3, 18.5, 27.8, 37.0]  # The row labels
 ANGLES = [0, 20, 30, 45, 90, 135, 180]  # The column labels
-
-
-def create_buffer_around_position(position: cs.XY, box_buffer_size: float) -> Polygon:
-    """Create a space around the given position. Position is the center of the space and
-    is a tuple of x and y. Box_buffer_size represents the size of the buffer around position.
-    Used in visualizer and ompl_path.
-    """
-    space = Point(position.x, position.y).buffer(box_buffer_size, cap_style=3, join_style=2)
-    return space
 
 
 class Objective(ob.StateCostIntegralObjective):

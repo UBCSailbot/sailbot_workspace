@@ -27,8 +27,8 @@ from dash.dependencies import Input, Output
 from shapely.geometry import MultiPolygon, Polygon
 
 import local_pathfinding.coord_systems as cs
-from local_pathfinding.ompl_objectives import create_buffer_around_position
 from local_pathfinding.wind_coord_systems import get_true_wind
+from local_pathfinding.ompl_path import OMPLPath
 
 
 app = dash.Dash(__name__)
@@ -565,8 +565,8 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
     boat_pos = cs.XY(boat_x[0], boat_y[0])
     goal_pos = cs.XY(goal_x[0], goal_y[0])
 
-    boat_box = create_buffer_around_position(boat_pos, BOX_BUFFER_SIZE)
-    goal_box = create_buffer_around_position(goal_pos, BOX_BUFFER_SIZE)
+    boat_box = OMPLPath.create_buffer_around_position(boat_pos, BOX_BUFFER_SIZE)
+    goal_box = OMPLPath.create_buffer_around_position(goal_pos, BOX_BUFFER_SIZE)
 
     # Set state space bounds
     state_space = MultiPolygon([boat_box, goal_box])

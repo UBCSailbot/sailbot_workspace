@@ -3,13 +3,12 @@ import math
 import pytest
 from custom_interfaces.msg import GPS, AISShips, HelperLatLon, Path, WindSensor
 from rclpy.impl.rcutils_logger import RcutilsLogger
-from shapely.geometry import Point
 
 import local_pathfinding.coord_systems as coord_systems
 import local_pathfinding.ompl_objectives as objectives
 import local_pathfinding.ompl_path as ompl_path
 from local_pathfinding.local_path import LocalPathState
-from local_pathfinding.ompl_objectives import create_buffer_around_position
+
 
 # Upwind downwind cost multipliers
 UPWIND_MULTIPLIER = 3000.0
@@ -148,27 +147,3 @@ def test_get_sailbot_speed(
     assert objectives.SpeedObjective.get_sailbot_speed(
         heading, wind_direction, wind_speed
     ) == pytest.approx(expected, abs=1e-7)
-
-
-@pytest.mark.parametrize(
-    "position,expected_area,expected_bounds,box_buffer_size",
-    [
-        (coord_systems.XY(0.0, 0.0), pytest.approx(4, rel=1e-2), (-1, -1, 1, 1), 1.0),
-        (coord_systems.XY(100.0, 100.0), pytest.approx(4, rel=1e-2), (99, 99, 101, 101), 1.0),
-        (coord_systems.XY(-50.0, -50.0), pytest.approx(4, rel=1e-2), (-51, -51, -49, -49), 1.0),
-        (coord_systems.XY(100.0, 100.0), pytest.approx(36, rel=1e-2), (97, 97, 103, 103), 3.0),
-        (coord_systems.XY(-50.0, -50.0), pytest.approx(36, rel=1e-2), (-53, -53, -47, -47), 3.0),
-    ],
-)
-def test_create_space(
-        position: coord_systems.XY, expected_area, expected_bounds, box_buffer_size: float
-):
-    """Test creation of buffered space around positions"""
-    # Given an OMPLPath instance
-
-    space = create_buffer_around_position(position, box_buffer_size)
-
-    assert space.area == expected_area, "Space area should match buffer size"
-    assert space.bounds == pytest.approx(expected_bounds,
-                                         abs=box_buffer_size), "Bounds should match expected"
-    assert space.contains(Point(position.x, position.y)), "Space should contain center point"
