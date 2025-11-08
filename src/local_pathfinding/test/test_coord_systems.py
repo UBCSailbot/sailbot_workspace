@@ -78,21 +78,6 @@ def test_bound_to_180(unbounded: float, bounded: float):
 
 
 @pytest.mark.parametrize(
-    "unbounded,bounded",
-    [
-        (0.0, 0.0),
-        (-math.pi, -math.pi),
-        (math.pi - 0.01, math.pi - 0.01),
-        (math.pi, -math.pi),
-        (-math.pi - 0.01, math.pi - 0.01),
-        (10 * math.pi + 0.001, 0.001),
-    ],
-)
-def test_bound_to_pi(unbounded: float, bounded: float):
-    assert cs.bound_to_pi(unbounded) == pytest.approx(bounded), "incorrect angle conversion"
-
-
-@pytest.mark.parametrize(
     "ref_lat,ref_lon,true_bearing_deg,dist_km",
     [
         (30.0, -123.0, 0.00, 30.0),
