@@ -324,7 +324,8 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
     # local path waypoints
     ix = state.final_local_wp_x
     iy = state.final_local_wp_y
-    labels = [f"LW{i}" for i in range(1, max(1, len(ix)-1))]
+    # iterating from the 2nd to the 2nd last element in ix
+    labels = [f"LW{i+1}" for i, _ in enumerate(ix[1:-1])]
     intermediate_trace = go.Scatter(
         x=ix[1:-1],
         y=iy[1:-1],
@@ -342,12 +343,15 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
     angle_from_boat = math.atan2(goal_x[0] - boat_x[0], goal_y[0] - boat_y[0])
     angle_degrees = math.degrees(angle_from_boat)
 
+    # Track changes in the local goal point to display a popup message when it updates
     global LAST_GOAL
     msg_to_display = None
-    gh = (round(goal_x[0], 3), round(goal_y[0], 3))
-    if LAST_GOAL is not None and gh != LAST_GOAL:
-        msg_to_display = f"Local goal advanced to ({gh[0]}, {gh[1]})"
-    LAST_GOAL = gh
+    # To avoid spam messages due to tiny float jitter
+    current_goal_xy = (round(goal_x[0], 3), round(goal_y[0], 3))
+    # form the message to display if the local goal point has changed from last time
+    if LAST_GOAL is not None and current_goal_xy != LAST_GOAL:
+        msg_to_display = f"Local goal advanced to ({current_goal_xy[0]}, {current_goal_xy[1]})"
+    LAST_GOAL = current_goal_xy
 
     # goal local waypoint
     goal_trace = go.Scatter(
@@ -671,6 +675,7 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
                 )
             )
 
+    # Display message if local goal point has changed
     if msg_to_display:
         fig.add_annotation(
             text=msg_to_display,
