@@ -89,8 +89,6 @@ class MockGlobalPath(Node):
         """
 
         file_path = self.get_parameter("global_path_filepath")._value
-
-        # check when global path was changed last
         path_mod_tmstmp = time.ctime(os.path.getmtime(file_path))
 
         # this function updates self.pos internally because it needs to compare
@@ -100,8 +98,8 @@ class MockGlobalPath(Node):
         # check if the global path has been forced to update by a parameter change
         force = self.get_parameter("force")._value
 
-        # Only calculate a new path if the path has changed or gps has changed by more than
-        # gps_threshold
+        # We should only calculate a new path if the path has changed or gps has
+        # changed by more than gps_threshold
         if path_mod_tmstmp == self.path_mod_tmstmp and self.file_path == file_path and not force:
             # need to still publish the path even if its unchanged
             # to ensure that node_navigate will still receive the waypoints
@@ -115,13 +113,11 @@ class MockGlobalPath(Node):
 
             pos = self.pos
 
-            # obtain the actual distances between every waypoint in the global path
+            # we need to obtain the actual distances between every waypoint in the global path
             path_spacing = gp.calculate_interval_spacing(pos, global_path.waypoints)
-
-            # obtain desired interval spacing
             interval_spacing = self.get_parameter("interval_spacing")._value
 
-            # check if global path is just a destination point
+            # this checks if global path is just a destination point
             if len(global_path.waypoints) < 2:
                 self.get_logger().debug(
                     f"Generating new path from {pos.latitude:.4f}, {pos.longitude:.4f} to "
@@ -140,6 +136,7 @@ class MockGlobalPath(Node):
                     write=write,
                     file_path=file_path,
                 )
+
             # Check if any waypoints are too far apart
             elif max(path_spacing) > interval_spacing:
                 self.get_logger().debug(
@@ -165,7 +162,6 @@ class MockGlobalPath(Node):
 
         self.get_logger().debug(f"Publishing mock global path: {gp.path_to_dict(msg)}")
         self.global_path = msg
-        msg.waypoints = list(reversed(msg.waypoints))
         self.global_path_pub.publish(msg)
 
         # reset all checks for next function call
