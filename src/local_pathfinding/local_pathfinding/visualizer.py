@@ -27,7 +27,7 @@ from dash.dependencies import Input, Output
 from shapely.geometry import MultiPolygon, Polygon
 
 import local_pathfinding.coord_systems as cs
-from local_pathfinding.ompl_objectives import get_true_wind
+from local_pathfinding.wind_coord_systems import get_true_wind
 from local_pathfinding.ompl_path import OMPLPath
 
 

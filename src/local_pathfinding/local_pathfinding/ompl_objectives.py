@@ -1,7 +1,6 @@
 """Our custom OMPL optimization objectives."""
 
 import math
-from typing import Tuple
 
 import custom_interfaces.msg as ci
 import numpy as np
@@ -9,7 +8,7 @@ from ompl import base as ob
 
 
 import local_pathfinding.coord_systems as cs
-from local_pathfinding.coord_systems import bound_to_180
+import local_pathfinding.wind_coord_systems as wcs
 
 # Upwind downwind cost multipliers
 UPWIND_MULTIPLIER = 3000.0
@@ -32,41 +31,6 @@ BOATSPEEDS = np.array(
 
 WINDSPEEDS = [0, 9.3, 18.5, 27.8, 37.0]  # The row labels
 ANGLES = [0, 20, 30, 45, 90, 135, 180]  # The column labels
-
-
-def get_true_wind(
-    apparent_wind_direction: float,
-    apparent_wind_speed: float,
-    heading_degrees: float,
-    boat_speed_over_ground: float,
-) -> Tuple[float, float]:
-    """Calculates the true wind direction based on the boat's heading and speed.
-    Args:
-        apparent_wind_direction (float): The direction of the wind in degrees (-180, 180]. This
-        is the apparent wind derived from the wind sensor
-        apparent_wind_speed (float): The speed of the wind in kmph. This is the apparent wind
-        derived from the wind sensor
-        heading_degrees (float): The heading of the boat in degrees (-180, 180]. This is
-        derived from the GPS
-        speed (float): The speed of the boat in kmph. This is derived from the GPS.
-    Returns:
-        float: The true wind direction in radians (-pi, pi]
-    """
-    wind_radians = math.radians(apparent_wind_direction)
-
-    # boat wind is in the direction of the boat heading
-    boat_wind_radians = math.radians(bound_to_180(heading_degrees + 180))
-
-    apparent_wind_east = apparent_wind_speed * math.sin(wind_radians)
-    apparent_wind_north = apparent_wind_speed * math.cos(wind_radians)
-
-    boat_wind_east = boat_speed_over_ground * math.sin(boat_wind_radians)
-    boat_wind_north = boat_speed_over_ground * math.cos(boat_wind_radians)
-
-    true_east = apparent_wind_east - boat_wind_east
-    true_north = apparent_wind_north - boat_wind_north
-
-    return (math.atan2(true_east, true_north), math.hypot(true_north, true_east))
 
 
 class Objective(ob.StateCostIntegralObjective):
@@ -235,8 +199,11 @@ class WindObjective(Objective):
     ):
         super().__init__(space_information)
         assert -180 < wind_direction_degrees <= 180
-        self.wind_direction, _ = get_true_wind(
-            wind_direction_degrees, wind_speed, heading_degrees, speed
+        self.wind_direction, _ = wcs.get_true_wind(
+            wcs.boat_to_global_coordinate(wind_direction_degrees, heading_degrees),
+            wind_speed,
+            heading_degrees,
+            speed
         )
 
     def motionCost(self, s1: ob.SE2StateSpace, s2: ob.SE2StateSpace) -> ob.Cost:
@@ -307,7 +274,6 @@ class WindObjective(Objective):
         downwind_wind_direction = (wind_direction + math.pi) % (2 * math.pi)
 
         theta_min = downwind_wind_direction - LOWEST_DOWNWIND_ANGLE_RADIANS
-
         theta_max = downwind_wind_direction + LOWEST_DOWNWIND_ANGLE_RADIANS
 
         return WindObjective.is_angle_between(theta_min, boat_direction, theta_max)
