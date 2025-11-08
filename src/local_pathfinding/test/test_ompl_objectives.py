@@ -3,16 +3,17 @@ import math
 import pytest
 from custom_interfaces.msg import GPS, AISShips, HelperLatLon, Path, WindSensor
 from rclpy.impl.rcutils_logger import RcutilsLogger
+from shapely.geometry import Point
 
 import local_pathfinding.coord_systems as coord_systems
 import local_pathfinding.ompl_objectives as objectives
 import local_pathfinding.ompl_path as ompl_path
+import local_pathfinding.wind_coord_systems as wcs
 from local_pathfinding.local_path import LocalPathState
 from local_pathfinding.ompl_objectives import (
     DOWNWIND_MULTIPLIER,
     UPWIND_MULTIPLIER,
-    create_buffer_around_position,
-    get_true_wind,
+    get_sailing_objective,
 )
 
 OMPL_PATH = ompl_path.OMPLPath(
@@ -138,7 +139,7 @@ def test_get_true_wind_direction(
     expected_direction: float,
     expected_speed: float,
 ):
-    true_wind_direction, true_wind_speed = get_true_wind(
+    true_wind_direction, true_wind_speed = wcs.get_true_wind(
         wind_direction_degrees, wind_speed, heading_degrees, speed
     )
 
@@ -166,7 +167,7 @@ def test_create_space(
     """Test creation of buffered space around positions"""
     # Given an OMPLPath instance
 
-    space = create_buffer_around_position(position, box_buffer_size)
+    space = OMPL_PATH.create_buffer_around_position(position, box_buffer_size)
 
     assert space.area == expected_area, "Space area should match buffer size"
     assert space.bounds == pytest.approx(

@@ -6,7 +6,6 @@ import custom_interfaces.msg as ci
 import numpy as np
 from ompl import base as ob
 
-
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.wind_coord_systems as wcs
 
@@ -203,7 +202,7 @@ class WindObjective(Objective):
             wcs.boat_to_global_coordinate(wind_direction_degrees, heading_degrees),
             wind_speed,
             heading_degrees,
-            speed
+            speed,
         )
 
     def motionCost(self, s1: ob.SE2StateSpace, s2: ob.SE2StateSpace) -> ob.Cost:

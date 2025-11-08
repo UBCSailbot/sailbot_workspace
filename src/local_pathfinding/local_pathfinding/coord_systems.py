@@ -77,13 +77,13 @@ def bound_to_180(angle_degrees: float) -> float:
 
 def bound_to_pi(angle_rad: float) -> float:
     """
-    Bounds an angle to the interval [-pi, pi].
+    Bounds an angle to the interval (-pi, pi].
 
     Args:
         angle_rad (float): The input angle in radians to be bounded
 
     Returns:
-        float: The equivalent angle bounded to [-pi, pi] in radians
+        float: The equivalent angle bounded to (-pi, pi] in radians
     """
     return ((angle_rad + math.pi) % (2 * math.pi)) - math.pi
 
