@@ -75,19 +75,6 @@ def bound_to_180(angle_degrees: float) -> float:
     return angle
 
 
-def bound_to_pi(angle_rad: float) -> float:
-    """
-    Bounds an angle to the interval (-pi, pi].
-
-    Args:
-        angle_rad (float): The input angle in radians to be bounded
-
-    Returns:
-        float: The equivalent angle bounded to (-pi, pi] in radians
-    """
-    return ((angle_rad + math.pi) % (2 * math.pi)) - math.pi
-
-
 def calculate_heading_diff(boat_heading: float, desired_heading):
     return abs(bound_to_180(desired_heading - boat_heading))
 

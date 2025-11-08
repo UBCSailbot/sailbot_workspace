@@ -236,7 +236,7 @@ class WindObjective(Objective):
         assert -math.pi <= boat_direction_radians <= math.pi
 
         angle_diff = boat_direction_radians - wind_direction
-        angle_diff = cs.bound_to_pi(angle_diff)
+        angle_diff = math.radians(cs.bound_to_180(math.degrees(angle_diff)))
         cos_angle = math.cos(angle_diff)
 
         # cos_angle:
