@@ -14,10 +14,6 @@ from local_pathfinding.ompl_objectives import (
     get_true_wind,
 )
 
-# Upwind downwind cost multipliers
-UPWIND_MULTIPLIER = 1.0
-DOWNWIND_MULTIPLIER = 0.75
-
 OMPL_PATH = ompl_path.OMPLPath(
     parent_logger=RcutilsLogger(),
     max_runtime=1,
@@ -54,31 +50,31 @@ def test_get_euclidean_path_length_objective(cs1: tuple, cs2: tuple, expected: f
     "cs1,cs2,wind_direction_deg,expected",
     [
         # Moving directly into wind (upwind)
-        ((0, 0), (0, 1), 0.0, UPWIND_MULTIPLIER * 1.0),
+        ((0, 0), (0, 1), 0.0, objectives.UPWIND_MULTIPLIER * 1.0),
         # Moving perpendicular to wind (crosswind)
         ((0, 0), (1, 0), 0.0, 0.0),
         # Moving directly with the wind (downwind)
-        ((0, 0), (0, -1), 0.0, DOWNWIND_MULTIPLIER * 1.0),
+        ((0, 0), (0, -1), 0.0, objectives.DOWNWIND_MULTIPLIER * 1.0),
         # Moving at 45° off upwind
-        ((0, 0), (1, 1), 0.0, UPWIND_MULTIPLIER * math.cos(math.radians(45))),
+        ((0, 0), (1, 1), 0.0, objectives.UPWIND_MULTIPLIER * math.cos(math.radians(45))),
         # Moving 30° off upwind
         (
             (0, 0),
             (math.sin(math.radians(30)), math.cos(math.radians(30))),
             0.0,
-            UPWIND_MULTIPLIER * math.cos(math.radians(30)),
+            objectives.UPWIND_MULTIPLIER * math.cos(math.radians(30)),
         ),
         # Moving 135° off upwind (45° off downwind)
         (
             (0, 0),
             (math.sin(math.radians(135)), math.cos(math.radians(135))),
             0.0,
-            DOWNWIND_MULTIPLIER * abs(math.cos(math.radians(135))),
+            objectives.DOWNWIND_MULTIPLIER * abs(math.cos(math.radians(135))),
         ),
         # Wind from 179°, boat moving North
-        ((0, 0), (0, 1), 179.0, DOWNWIND_MULTIPLIER * math.cos(math.radians(1))),
+        ((0, 0), (0, 1), 179.0, objectives.DOWNWIND_MULTIPLIER * math.cos(math.radians(1))),
         # Wind from -179°, boat moving North
-        ((0, 0), (0, 1), -179.0, DOWNWIND_MULTIPLIER * math.cos(math.radians(1))),
+        ((0, 0), (0, 1), -179.0, objectives.DOWNWIND_MULTIPLIER * math.cos(math.radians(1))),
     ],
 )
 def test_wind_direction_cost(cs1: tuple, cs2: tuple, wind_direction_deg: float, expected: float):
