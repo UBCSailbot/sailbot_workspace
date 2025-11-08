@@ -2,8 +2,8 @@
 Mock wind sensor node for ROS 2.
 
 This node publishes mock data as if it were real apparent wind speed and direction (AWSD)
-data coming from the wind sensors on the boat. It obtains true wind speed and direction data 
-(TWSD) from either a statistical model or user input and uses the current boat heading and 
+data coming from the wind sensors on the boat. It obtains true wind speed and direction data
+(TWSD) from either a statistical model or user input and uses the current boat heading and
 speed to convert the TWSD to AWSD and publishes the AWSD to the filtered_wind_sensor topic.
 
 Node name:
