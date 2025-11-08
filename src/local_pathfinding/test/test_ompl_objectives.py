@@ -10,11 +10,7 @@ import local_pathfinding.ompl_objectives as objectives
 import local_pathfinding.ompl_path as ompl_path
 import local_pathfinding.wind_coord_systems as wcs
 from local_pathfinding.local_path import LocalPathState
-from local_pathfinding.ompl_objectives import (
-    DOWNWIND_MULTIPLIER,
-    UPWIND_MULTIPLIER,
-    get_sailing_objective,
-)
+from local_pathfinding.ompl_objectives import DOWNWIND_MULTIPLIER, UPWIND_MULTIPLIER
 
 OMPL_PATH = ompl_path.OMPLPath(
     parent_logger=RcutilsLogger(),
