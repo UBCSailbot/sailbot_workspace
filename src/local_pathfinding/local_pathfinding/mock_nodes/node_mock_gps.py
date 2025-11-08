@@ -1,5 +1,7 @@
 """
 Mock class for the GPS. Publishes basic GPS data to the ROS network.
+
+USES constants defined in mock_nodes.shared_constants
 """
 
 import math
@@ -10,19 +12,8 @@ import rclpy
 from geopy.distance import great_circle
 from rclpy.node import Node
 
-from local_pathfinding.ompl_objectives import get_true_wind
-
-MEAN_SPEED = ci.HelperSpeed(speed=15.0)  # mean boat speed in kmph
-
-START_POINT = ci.HelperLatLon(latitude=48.46, longitude=-125.1)  # Starting location of the mock
-
-'''
-For further tests:
-START_POINT = ci.HelperLatLon(latitude=49.308157, longitude=-123.244801)
-Change last line of mock_global_path.csv to: 49.289686,-123.195877
-'''
-
-START_HEADING = ci.HelperHeading(heading=180.0)  # in degrees, heading of the boat
+from local_pathfinding.wind_coord_systems import get_true_wind
+import local_pathfinding.mock_nodes.shared_constants as sc
 
 
 BOATSPEEDS = np.array(
@@ -50,10 +41,10 @@ def get_sailbot_speed(
     """
 
     true_wind_direction, true_wind_speed = get_true_wind(
-        apparent_wind_direction=apparent_wind_direction,
-        apparent_wind_speed=apparent_wind_speed,
-        heading_degrees=heading,
-        boat_speed_over_ground=boat_speed,
+        apparent_wind_direction,
+        apparent_wind_speed,
+        heading,
+        boat_speed,
     )
 
     # Get the sailing angle: [0, 180]
@@ -173,9 +164,9 @@ class MockGPS(Node):
             qos_profile=10,
         )
 
-        self.__mean_speed = MEAN_SPEED
-        self.__current_location = START_POINT
-        self.__heading = START_HEADING
+        self.__mean_speed = sc.MEAN_SPEED
+        self.__current_location = sc.START_POINT
+        self.__heading = sc.START_HEADING
 
     def mock_gps_callback(self) -> None:
         """Callback function for the mock GPS timer. Publishes mock gps data to the ROS

@@ -3,7 +3,6 @@ import math
 import pytest
 from custom_interfaces.msg import GPS, AISShips, HelperLatLon, Path, WindSensor
 from rclpy.impl.rcutils_logger import RcutilsLogger
-from shapely.geometry import Point
 
 import local_pathfinding.coord_systems as coord_systems
 import local_pathfinding.ompl_objectives as objectives
