@@ -11,13 +11,17 @@ import local_pathfinding.coord_systems as cs
 @pytest.mark.parametrize(
     "cartesian,true_bearing",
     [
-        (0.0, 90.0),
-        (90.0, 0.0),
-        (180.0, 270.0),
-        (270.0, 180.0),
+        (0.0, 90.0, False),
+        (90.0, 0.0, False),
+        (180.0, 270.0, False),
+        (270.0, 180.0, False),
+        (0.0, math.pi / 2, True),
+        (math.pi / 2, 0.0, True),
+        (math.pi, (3 / 2) * math.pi, True),
+        ((3 / 2) * math.pi, math.pi, True),
     ],
 )
-def test_cartesian_to_true_bearing(cartesian: float, true_bearing: float):
+def test_cartesian_to_true_bearing(cartesian: float, true_bearing: float, rad: bool):
     assert cs.cartesian_to_true_bearing(cartesian) == pytest.approx(
         true_bearing
     ), "incorrect angle conversion"

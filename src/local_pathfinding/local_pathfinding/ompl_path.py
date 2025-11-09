@@ -17,7 +17,7 @@ from ompl import base
 from ompl import geometric as og
 from ompl import util as ou
 from rclpy.impl.rcutils_logger import RcutilsLogger
-from shapely.geometry import MultiPolygon, Polygon, box, Point
+from shapely.geometry import MultiPolygon, Point, Polygon, box
 
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.obstacles as ob
@@ -77,10 +77,8 @@ class OMPLPath:
 
         self.solved = self._simple_setup.solve(time=max_runtime)  # time is in seconds
 
-        # TODO: play around with simplifySolution()
-        # if self.solved:
-        #     # try to shorten the path
-        #     simple_setup.simplifySolution()
+        if self.solved:
+            self._simple_setup.simplifySolution()
 
     @staticmethod
     def init_obstacles(
