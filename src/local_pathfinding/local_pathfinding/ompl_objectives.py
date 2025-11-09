@@ -41,28 +41,7 @@ TRUE_WIND_SPEEDS = [0, 9.3, 18.5, 27.8, 37.0]
 SAILING_ANGLES = [0, 20, 30, 45, 90, 135, 180]
 
 
-class Objective(ob.OptimizationObjective):
-    """The base optimization objective class which all our custom objective classes inherit.
-
-    Notes:
-    - This class inherits from the OMPL class OptimizationObjective:
-        https://ompl.kavrakilab.org/classompl_1_1base_1_1OptimizationObjective.html
-    - Camelcase is used for functions that override OMPL functions, as that is their convention.
-
-    Attributes:
-        space_information (StateSpacePtr): Contains all the information about
-            the space planning is done in.
-    """
-
-    def __init__(self, space_information):
-        super().__init__(si=space_information, enableMotionCostInterpolation=True)
-        self.space_information = space_information
-
-    def motionCost(self, s1: ob.SE2StateSpace, s2: ob.SE2StateSpace) -> ob.Cost:
-        raise NotImplementedError
-
-
-class WindObjective(Objective):
+class WindObjective(ob.OptimizationObjective):
     """The WindObjective assigns a high cost to any path segment which is oriented directly
     (or almost directly) upwind or downwind.
 
@@ -123,7 +102,7 @@ class WindObjective(Objective):
             return DOWNWIND_COST_MULTIPLIER * abs(cos_angle)
 
 
-class SpeedObjective(Objective):
+class SpeedObjective(ob.OptimizationObjective):
     """The Speed Objective assigns a cost, to any path segment, that is proportional to the
     estimated time it will take for the boat to travel from the start of the segment to the
     end of the segment.
