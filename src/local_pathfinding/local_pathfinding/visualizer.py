@@ -27,9 +27,8 @@ from dash.dependencies import Input, Output
 from shapely.geometry import MultiPolygon, Polygon
 
 import local_pathfinding.coord_systems as cs
-from local_pathfinding.wind_coord_systems import get_true_wind
+import local_pathfinding.wind_coord_systems as wcs
 from local_pathfinding.ompl_path import OMPLPath
-
 
 app = dash.Dash(__name__)
 
@@ -109,28 +108,28 @@ class VisualizerState:
             self.curr_msg.obstacles, self.reference_latlon
             )
 
-        # Process wind vectors
-
-        # apparent wind vector
-        self.wind_vector = self._process_apparent_wind_vector(self.curr_msg.filtered_wind_sensor)
-
-        # true wind vector
-        boat_sog = self.curr_msg.gps.speed.speed
+        # Shared boat state
+        boat_speed = self.curr_msg.gps.speed.speed
         boat_heading = self.curr_msg.gps.heading.heading
-        true_wind = get_true_wind(
-            self.curr_msg.filtered_wind_sensor.direction,
-            self.curr_msg.filtered_wind_sensor.speed.speed,
-            boat_heading,
-            boat_sog,
-        )
-        self.true_wind_vector = self._process_true_wind_vector(true_wind)
 
-        # boat wind vector
-        # The boat's motion creates an apparent wind in the opposite direction of its heading,
-        # so we add 180°
+        # Apparent wind from sensor
+        aw_speed = self.curr_msg.filtered_wind_sensor.speed.speed
+        aw_dir_boat = self.curr_msg.filtered_wind_sensor.direction
+        # Convert Apparent wind to global frame
+        aw_dir_global = wcs.boat_to_global_coordinate(boat_heading, aw_dir_boat)
+
+        # Apparent wind vector
+        self.wind_vector = self._bearing_to_vector(aw_dir_global, aw_speed)
+
+        # True wind from apparent
+        true_wind_angle_rad, true_wind_mag = wcs.get_true_wind(
+            aw_dir_global, aw_speed, boat_heading, boat_speed)
+        self.true_wind_vector = self._angle_to_vector(true_wind_angle_rad, true_wind_mag)
+
+        # Boat wind vector
         boat_wind_radians = math.radians(cs.bound_to_180(boat_heading + 180))
-        boat_wind_east = boat_sog * math.sin(boat_wind_radians)
-        boat_wind_north = boat_sog * math.cos(boat_wind_radians)
+        boat_wind_east = boat_speed * math.sin(boat_wind_radians)
+        boat_wind_north = boat_speed * math.cos(boat_wind_radians)
         self.boat_wind_vector = cs.XY(boat_wind_east, boat_wind_north)
 
     def _validate_message(self, msg: ci.LPathData):
@@ -150,25 +149,37 @@ class VisualizerState:
         y_coords = [pos.y for pos in positions]
         return x_coords, y_coords
 
-    def _process_apparent_wind_vector(self, wind_sensor):
+    def _bearing_to_vector(self, bearing_deg: float, magnitude: float) -> cs.XY:
         """
-        Processes wind_sensor data to extract the apparent wind vector components
+            Converts a global true bearing (0° = North, increasing clockwise) and magnitude into 2D
+            Cartesian components (x = East and y = North).
+
+        Args:
+            bearing_deg (float): Direction in global bearing convention, e.g., from
+            boat_to_global_coordinate(). 0° points North, 90° East, etc.
+            magnitude (float): Vector magnitude, e.g., wind sped in knots.
+
+        Returns:
+            cs.XY: Components of the vector in the global XY plane (East, North).
         """
-        speed = wind_sensor.speed.speed
-        direction_deg = wind_sensor.direction
-        direction_rad = math.radians(direction_deg)
+        r = math.radians(bearing_deg)
+        return cs.XY(x=magnitude * math.sin(r), y=magnitude * math.cos(r))
 
-        dx = speed * math.sin(direction_rad)
-        dy = speed * math.cos(direction_rad)
+    def _angle_to_vector(self, angle_rad: float, magnitude: float) -> cs.XY:
+        """
+            Convert a vector expressed by its angle (radians) and magnitude into 2D components.
 
-        return cs.XY(x=dx, y=dy)
+            The angle is assumed to follow the atan2(East, North) convention used in
+            wind_coord_systems.py.
 
-    def _process_true_wind_vector(self, true_wind):
-        true_wind_direction_rad, true_wind_magnitude = true_wind
-        dx = true_wind_magnitude * math.sin(true_wind_direction_rad)
-        dy = true_wind_magnitude * math.cos(true_wind_direction_rad)
+        Args:
+            angle_rad (float): Direction angle in radians.
+            magnitude (float): Vector magnitude (e.g., true wind speed in knots).
 
-        return cs.XY(x=dx, y=dy)
+        Returns:
+            cs.XY: Components of the vector in the global XY plane (East, North).
+        """
+        return cs.XY(x=magnitude * math.sin(angle_rad), y=magnitude * math.cos(angle_rad))
 
     def _process_land_obstacles(self, obstacles, reference):
         """
@@ -429,14 +440,32 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
         ),
     )
 
+    # Scaling and offset for better visualization
+    # Compute magnitudes and scale factor
+    aw_mag = math.hypot(state.wind_vector.x, state.wind_vector.y)
+    tw_mag = math.hypot(state.true_wind_vector.x, state.true_wind_vector.y)
+    bw_mag = math.hypot(state.boat_wind_vector.x, state.boat_wind_vector.y)
+    max_mag = max(aw_mag, tw_mag, bw_mag, 1e-6)
+    arrow_scale = 8.0 / max_mag
+
+    # Scaled component vectors
+    aw_dx, aw_dy = state.wind_vector.x * arrow_scale, state.wind_vector.y * arrow_scale
+    tw_dx, tw_dy = state.true_wind_vector.x * arrow_scale, state.true_wind_vector.y * arrow_scale
+    bw_dx, bw_dy = state.boat_wind_vector.x * arrow_scale, state.boat_wind_vector.y * arrow_scale
+
+    # Small vertical offsets so the arrows don't overlap
+    origin_x, origin_y = 4, 0
+    y_offset = 1.0
+
+    orig_boat = (origin_x, origin_y + y_offset)
+    orig_true = (origin_x, origin_y)
+    orig_app = (origin_x, origin_y - y_offset)
+
     # apparent wind vector in box
-    dx = state.wind_vector.x * 1.5
-    dy = state.wind_vector.y * 1.5
     fig.add_annotation(
-        x=4,
-        y=0,
-        ax=4 - dx,
-        ay=0 - dy,
+        x=orig_app[0], y=orig_app[1],
+        ax=orig_app[0] - aw_dx,
+        ay=orig_app[1] - aw_dy,
         xref="x2",
         yref="y2",
         axref="x2",
@@ -450,19 +479,17 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
         text="",
         hovertext=(
             f"<b>🌬️ Apparent Wind</b><br>"
-            f"speed: {math.hypot(state.wind_vector.x, state.wind_vector.y):.2f} km/h<br>"
+            f"speed: {aw_mag:.2f} kn<br>"
         ),
         hoverlabel=dict(bgcolor="white"),
     )
 
     # true wind vector in box
-    dx = state.true_wind_vector.x * 1.5
-    dy = state.true_wind_vector.y * 1.5
     fig.add_annotation(
-        x=4,
-        y=0,
-        ax=4 - dx,
-        ay=0 - dy,
+        x=orig_true[0],
+        y=orig_true[1],
+        ax=orig_true[0] - tw_dx,
+        ay=orig_true[1] - tw_dy,
         xref="x2",
         yref="y2",
         axref="x2",
@@ -476,19 +503,17 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
         text="",
         hovertext=(
             f"<b>🌬️ True Wind</b><br>"
-            f"speed: {math.hypot(state.true_wind_vector.x, state.true_wind_vector.y):.2f} km/h<br>"
+            f"speed: {tw_mag:.2f} kn<br>"
         ),
         hoverlabel=dict(bgcolor="white"),
     )
 
     # boat vector in box
-    dx = state.boat_wind_vector.x * 1.5
-    dy = state.boat_wind_vector.y * 1.5
     fig.add_annotation(
-        x=4,
-        y=0,
-        ax=4 - dx,
-        ay=0 - dy,
+        x=orig_boat[0],
+        y=orig_boat[1],
+        ax=orig_boat[0] - bw_dx,
+        ay=orig_boat[1] - bw_dy,
         xref="x2",
         yref="y2",
         axref="x2",
@@ -502,7 +527,7 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
         text="",
         hovertext=(
             f"<b>🛶 Boat Wind</b><br>"
-            f"speed: {math.hypot(state.boat_wind_vector.x, state.boat_wind_vector.y):.2f} km/h<br>"
+            f"speed: {bw_mag:.2f} kn<br>"
         ),
         hoverlabel=dict(bgcolor="white"),
     )
