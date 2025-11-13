@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - web-653-autobuild-web  # For testing before merge
     paths:
       - 'src/website/**'
       - '.github/workflows/deploy-website.yml'
@@ -87,6 +86,11 @@ jobs:
             set -e
             
             echo "Starting deployment..."
+            
+            # Load NVM and use Node 18
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            nvm use 18
             
             # Create logs directory if it doesn't exist
             mkdir -p /root/sailbot_workspace/logs
