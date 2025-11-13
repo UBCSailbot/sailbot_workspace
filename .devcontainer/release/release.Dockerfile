@@ -31,26 +31,37 @@ LANG=en_US.UTF-8 \
     VIRTUAL_IRIDIUM_PORT="/tmp/virtual_iridium_port"
 
 FROM env AS runtime-dependencies
-# Copy over ros2 instalation 
-COPY --from=builder /opt/ros/humble /opt/ros/humble
 
-# Install all runtime dependencies in a single layer
 ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get install -y --no-install-recommends \
+
+# Fix certificates
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
         ca-certificates \
+    && apt-get autoremove -y \
+    && apt-get clean -y \
+    && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
+
+# Install language and timezone
+RUN ln -fs /usr/share/zoneinfo/UTC /etc/localtime \
+    && export DEBIAN_FRONTEND=noninteractive \
+    && apt-get update && apt-get install -y --no-install-recommends \
         locales \
         tzdata \
-        sudo \
-        python3 \
-        python3-dev \
-        python3-numpy \
-        can-utils \
-        iproute2 \
-        tmux \
-        screen \
-        python3-argcomplete \
-        python3-colcon-common-extensions \
-        python3-pip \
+    && locale-gen en_US.UTF-8 \
+    && update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 \
+    && dpkg-reconfigure --frontend noninteractive tzdata \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy over ros2 instalation
+# COPY --from=builder /opt/ros/humble /opt/ros/humble
+# This unfortunately doesn't work out of the box.
+# I think it can replace installing ros-humble-ros-base and python3-argcomplete.
+# Which saves ~3 minutes.
+# However, it causes a complete failure in launching the ros2 packages for some reason.
+
+# Install ros2
+RUN apt-get update && apt-get install -y --no-install-recommends \
         curl \
         gnupg2 \
         lsb-release \
@@ -60,11 +71,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get update && apt-get install -y --no-install-recommends \
         ros-humble-ros-base \
         python3-argcomplete \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install all runtime dependencies in a single layer
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        python3-dev \
+        python3-numpy \
+        python3-pip \
+        tmux \
+        screen \
+        python3-colcon-common-extensions \
         python3-rosdep \
-    && locale-gen en_US.UTF-8 \
-    && update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 \
-    && ln -fs /usr/share/zoneinfo/UTC /etc/localtime \
-    && dpkg-reconfigure --frontend noninteractive tzdata \
+        iproute2 \
+        can-utils \
+    && apt-get autoremove -y \
+    && apt-get clean -y \
+    && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/* \
     && rosdep init || echo "rosdep already initialized"
 ENV DEBIAN_FRONTEND=
 
@@ -94,11 +116,13 @@ RUN chown -R ${USERNAME}:${USERNAME} ${ROS_WORKSPACE} ${HOME}
 
 FROM import-build-artifacts AS setup
 # We need to make this directory because setup.sh can only create the file.
+USER ${USERNAME}
 RUN sudo mkdir -p /etc/ros/rosdep/sources.list.d \
     && /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && ./scripts/setup.sh exec" \
     # downgrade setuptools
     # https://answers.ros.org/question/396439/setuptoolsdeprecationwarning-setuppy-install-is-deprecated-use-build-and-pip-and-other-standards-based-tools/?answer=400052#post-id-400052
     && pip3 install setuptools==58.2.0
+USER root
 
 # root bash configuration
 COPY .devcontainer/base-dev/update-bashrc.sh /sbin/update-bashrc
