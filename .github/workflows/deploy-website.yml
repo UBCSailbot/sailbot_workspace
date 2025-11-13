@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - web-653-autobuild-web  # Temporary for testing
     paths:
       - 'src/website/**'
       - '.github/workflows/deploy-website.yml'
