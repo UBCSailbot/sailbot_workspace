@@ -87,7 +87,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get autoremove -y \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/* \
-    && rosdep init || echo "rosdep already initialized"
+    && rosdep init || echo "rosdep already initialized" \
+    && pip3 install ompl==1.7.0 # pathfinding
 ENV DEBIAN_FRONTEND=
 
 FROM runtime-dependencies AS import-build-artifacts
