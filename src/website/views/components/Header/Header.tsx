@@ -11,7 +11,7 @@ const Header = () => {
     <div className={styles.header}>
       <div className={styles.title}>
         <img src='LogoPlainWhite.svg' alt='Logo' className={styles.logo} />
-        <h1>SAILBOTPOLARIS.COM</h1>
+        <h1>testtest123</h1>
       </div>
       <div className={styles.links}>
         <Link
