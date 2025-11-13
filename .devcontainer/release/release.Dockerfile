@@ -80,6 +80,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         python3-pip \
         tmux \
         screen \
+        git \
+        bash-completion \
         python3-colcon-common-extensions \
         python3-rosdep \
         iproute2 \
