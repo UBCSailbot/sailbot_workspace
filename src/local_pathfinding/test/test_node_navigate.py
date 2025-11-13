@@ -24,7 +24,7 @@ PATH_RANGE_DEG = PATHFINDING_RANGE_KM / ONE_DEGREE_KM
             ci.Path(waypoints=[ci.HelperLatLon(latitude=0.0, longitude=0.0)]),
             0,
             ci.HelperLatLon(latitude=0.1, longitude=0.0),
-            -180.0,
+            180.0,
             0,
         ),
         (

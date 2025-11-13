@@ -406,22 +406,6 @@
                 "group": "build",
                 "problemMatcher": "$gcc"
             },
-            {
-                "label": "Build and Upload Image",
-                "detail": "Build the release docker image with binaries and upload it to GitHub.",
-                "type": "shell",
-                "options": {
-                    "env": {
-                        "TAG": "${input:docker_tag}",
-                    }
-                },
-                "command": "./scripts/deploy.sh ${input:github_PAT} ${input:github_username} -t ${TAG:-default}",
-                "group": {
-                    "kind": "build",
-                    "isDefault": true
-                },
-                "problemMatcher": []
-            },
             // Test tasks
             {
                 "label": "Test All",
@@ -593,23 +577,7 @@
                 "type": "promptString",
                 "description": "Optional ROS package launch flags or arguments",
                 "default": ""
-            },
-            {
-                "id": "docker_tag",
-                "type": "promptString",
-                "description": "Optional Docker tag. The default is latest.",
-                "default": ""
-            },
-            {
-                "id": "github_PAT",
-                "type": "promptString",
-                "description": "GitHub personal access token."
-            },
-            {
-                "id": "github_username",
-                "type": "promptString",
-                "description": "GitHub username."
-            },
+            }
         ]
     }
 }
