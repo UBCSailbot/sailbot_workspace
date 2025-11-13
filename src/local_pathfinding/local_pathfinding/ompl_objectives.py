@@ -147,8 +147,14 @@ class SpeedObjective(ob.OptimizationObjective):
         s1_xy = cs.XY(s1.getX(), s1.getY())
         s2_xy = cs.XY(s2.getX(), s2.getY())
 
+        path_segment_true_bearing_radians = cs.get_path_segment_true_bearing(
+            s1_xy, s2_xy, rad=True
+        )
+
         sailbot_speed = self.get_sailbot_speed(
-            s1_xy, s2_xy, self.true_wind_direction_radians, self.true_wind_speed_kmph
+            path_segment_true_bearing_radians,
+            self.true_wind_direction_radians,
+            self.true_wind_speed_kmph,
         )
 
         if math.isclose(sailbot_speed, 0):
@@ -163,14 +169,15 @@ class SpeedObjective(ob.OptimizationObjective):
 
     @staticmethod
     def get_sailbot_speed(
-        s1: cs.XY, s2: cs.XY, true_wind_direction_radians: float, true_wind_speed_kmph: float
+        path_segment_true_bearing_radians: float,
+        true_wind_direction_radians: float,
+        true_wind_speed_kmph: float,
     ) -> float:
-
-        path_segment_true_bearing_radians = cs.get_path_segment_true_bearing(s1, s2, rad=True)
         sailing_angle_radians = abs(
             path_segment_true_bearing_radians - true_wind_direction_radians
         )
-        sailing_angle_degrees = math.degrees(sailing_angle_radians)
+        # the sailing angle can always be represented by a positive value between 0 and 180 degrees
+        sailing_angle_degrees = abs(cs.bound_to_180(math.degrees(sailing_angle_radians)))
 
         return SpeedObjective.interpolation((true_wind_speed_kmph, sailing_angle_degrees))
 
