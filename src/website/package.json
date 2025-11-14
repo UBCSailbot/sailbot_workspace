@@ -28,8 +28,8 @@
     "leaflet-defaulticon-compatibility": "^0.1.2",
     "leaflet-geometryutil": "^0.10.2",
     "mongodb": "^4.17.2",
-    "mongoose": "^7.5.0",
-    "next": "^14.1.3",
+    "mongoose": "^7.8.4",
+    "next": "^14.2.32",
     "react": "^18.2.0",
     "react-datepicker": "^8.7.0",
     "react-dom": "^18.2.0",
@@ -38,7 +38,7 @@
     "redux": "^4.2.1",
     "redux-logger": "^3.0.6",
     "redux-saga": "^1.2.3",
-    "uplot": "^1.6.30",
+    "uplot": "^1.6.32",
     "uplot-react": "^1.1.5"
   },
   "devDependencies": {
