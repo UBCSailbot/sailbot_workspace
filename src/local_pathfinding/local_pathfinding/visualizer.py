@@ -300,6 +300,7 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
     """
 
     fig = initial_plot()
+    fig.update_layout(uirevision="constant")
 
     # local path waypoints
     ix = state.final_local_wp_x
