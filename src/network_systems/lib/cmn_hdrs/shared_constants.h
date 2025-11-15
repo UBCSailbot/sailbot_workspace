@@ -119,8 +119,8 @@ constexpr int WIND_DIRECTION_LBND = 0;
 constexpr int WIND_DIRECTION_UBND = 359;
 
 /***** Bounds for Temp Sensor ******/
-constexpr float TEMP_LBND = -32.768;  // smallest value to fit in int16_t when * 1000
-constexpr float TEMP_UBND = 32.767;   // largest value to fit in int16_t when * 1000
+constexpr float TEMP_LBND = 73.15;   // lbnd of sensor being used (Kelvin)
+constexpr float TEMP_UBND = 473.15;  // ubnd of sensor being used (Kelvin)
 
 /***** Bounds for Ph Sensor ******/
 constexpr float PH_LBND = -1.6;  // lbnd of sensor being used
@@ -131,5 +131,5 @@ constexpr float SALINITY_LBND = 0;        // lbnd of sensor being used is 0.07
 constexpr float SALINITY_UBND = 1000000;  // ubnd of sensor being used is 500000+
 
 /***** Bounds for Pressure Sensor ******/
-constexpr float PRESSURE_LBND = -100;  // lowest lbnd of pressure sensors under consideration is -14.5 psi
-constexpr float PRESSURE_UBND = 1000;  // highest lbnd of pressure sensors is 8702 psi
+constexpr float PRESSURE_LBND = -14.5;  // lowest lbnd of pressure sensors under consideration is -14.5 psi
+constexpr float PRESSURE_UBND = 32.6;   // max int16_t, since ubnd of sensors under consideration is way higher
