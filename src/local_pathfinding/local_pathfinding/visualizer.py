@@ -429,12 +429,12 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
     bw_dx, bw_dy = bw_unit_vec.x * ARROW_LEN, bw_unit_vec.y * ARROW_LEN
 
     # Small vertical offsets so the arrows don't overlap
-    origin_x, origin_y = 4, 0
+    ORIGIN_X, ORIGIN_Y = 4, 0
     y_offset = 1.0
 
-    boat_arrow_origin = (origin_x, origin_y + y_offset)
-    true_wind_arrow_origin = (origin_x, origin_y)
-    apparent_wind_arrow_origin = (origin_x, origin_y - y_offset)
+    boat_arrow_origin = (ORIGIN_X, ORIGIN_Y + y_offset)
+    true_wind_arrow_origin = (ORIGIN_X, ORIGIN_Y)
+    apparent_wind_arrow_origin = (ORIGIN_X, ORIGIN_Y - y_offset)
 
     # apparent wind vector in box
     fig.add_annotation(
