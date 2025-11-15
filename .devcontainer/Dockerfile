@@ -1,4 +1,4 @@
-FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:deferred-path-variable-evaluation
+FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:setup-included-2
 
 # Copy configuration files (e.g., .vimrc) from config/ to the container's home directory
 ARG USERNAME=ros
@@ -6,7 +6,7 @@ ARG HOME=/home/${USERNAME}
 COPY --chown=${USERNAME}:${USERNAME} config ${HOME}
 
 # # Uncomment this section to install additional apt packages
-# ENV DEBIAN_FRONTEND=noninteractive
+# ENV DEBIAN_FRONTEND=nonintesudo
 # RUN apt-get update \
 #     && apt-get install -y --no-install-recommends \
 #         # Your package list here

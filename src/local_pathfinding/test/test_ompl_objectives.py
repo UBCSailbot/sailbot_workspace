@@ -3,16 +3,14 @@ import math
 import pytest
 from custom_interfaces.msg import GPS, AISShips, HelperLatLon, Path, WindSensor
 from rclpy.impl.rcutils_logger import RcutilsLogger
+from shapely.geometry import Point
 
 import local_pathfinding.coord_systems as coord_systems
 import local_pathfinding.ompl_objectives as objectives
 import local_pathfinding.ompl_path as ompl_path
+import local_pathfinding.wind_coord_systems as wcs
 from local_pathfinding.local_path import LocalPathState
-from local_pathfinding.ompl_objectives import get_true_wind
-
-# Upwind downwind cost multipliers
-UPWIND_MULTIPLIER = 3000.0
-DOWNWIND_MULTIPLIER = 3000.0
+from local_pathfinding.ompl_objectives import DOWNWIND_MULTIPLIER, UPWIND_MULTIPLIER
 
 OMPL_PATH = ompl_path.OMPLPath(
     parent_logger=RcutilsLogger(),
@@ -49,8 +47,32 @@ def test_get_euclidean_path_length_objective(cs1: tuple, cs2: tuple, expected: f
 @pytest.mark.parametrize(
     "cs1,cs2,wind_direction_deg,expected",
     [
-        ((0, 0), (0, 0), 0.0, 0 * UPWIND_MULTIPLIER),
-        ((-1, -1), (2, 1), 45.0, 3.605551275 * UPWIND_MULTIPLIER),
+        # Moving directly into wind (upwind)
+        ((0, 0), (0, 1), 0.0, UPWIND_MULTIPLIER * 1.0),
+        # Moving perpendicular to wind (crosswind)
+        ((0, 0), (1, 0), 0.0, 0.0),
+        # Moving directly with the wind (downwind)
+        ((0, 0), (0, -1), 0.0, DOWNWIND_MULTIPLIER * 1.0),
+        # Moving at 45° off upwind
+        ((0, 0), (1, 1), 0.0, UPWIND_MULTIPLIER * math.cos(math.radians(45))),
+        # Moving 30° off upwind
+        (
+            (0, 0),
+            (math.sin(math.radians(30)), math.cos(math.radians(30))),
+            0.0,
+            UPWIND_MULTIPLIER * math.cos(math.radians(30)),
+        ),
+        # Moving 135° off upwind (45° off downwind)
+        (
+            (0, 0),
+            (math.sin(math.radians(135)), math.cos(math.radians(135))),
+            0.0,
+            DOWNWIND_MULTIPLIER * abs(math.cos(math.radians(135))),
+        ),
+        # Wind from 179°, boat moving North
+        ((0, 0), (0, 1), 179.0, DOWNWIND_MULTIPLIER * math.cos(math.radians(1))),
+        # Wind from -179°, boat moving North
+        ((0, 0), (0, 1), -179.0, DOWNWIND_MULTIPLIER * math.cos(math.radians(1))),
     ],
 )
 def test_wind_direction_cost(cs1: tuple, cs2: tuple, wind_direction_deg: float, expected: float):
@@ -59,61 +81,6 @@ def test_wind_direction_cost(cs1: tuple, cs2: tuple, wind_direction_deg: float, 
     wind_direction = math.radians(wind_direction_deg)
     assert objectives.WindObjective.wind_direction_cost(s1, s2, wind_direction) == pytest.approx(
         expected, abs=1e-3
-    )
-
-
-@pytest.mark.parametrize(
-    "wind_direction_deg,heading_deg,expected",
-    [
-        (0, 0.0, True),
-        (0.0, 45.0, False),
-    ],
-)
-def test_is_upwind(wind_direction_deg: float, heading_deg: float, expected: float):
-    wind_direction = math.radians(wind_direction_deg)
-    heading = math.radians(heading_deg)
-
-    assert objectives.WindObjective.is_upwind(wind_direction, heading) == expected
-
-
-@pytest.mark.parametrize(
-    "wind_direction_deg,heading_deg,expected",
-    [
-        (0.0, 0.0, False),
-        (25.0, 46.0, False),
-        (0, 180, True),
-        (225, 45, True),
-    ],
-)
-def test_is_downwind(wind_direction_deg: float, heading_deg: float, expected: float):
-    wind_direction = math.radians(wind_direction_deg)
-    heading = math.radians(heading_deg)
-
-    assert objectives.WindObjective.is_downwind(wind_direction, heading) == expected
-
-
-@pytest.mark.parametrize(
-    "afir,amid,asec,expected",
-    [
-        (0, 1, 2, 1),
-        (0, 20, 360, 0),
-        (-20, 10, 40, 1),
-        (0, 30, 60, 1),
-        (-170, -130, -90, 1),
-        (-170, -130, 100, 0),
-        (400, 410, 420, 1),
-        (400, 420, 410, 0),
-        (370, 0, -370, 1),
-        (370, 15, -370, 0),
-        (-90, 270, 450, 0),
-    ],
-)
-def test_angle_between(afir: float, amid: float, asec: float, expected: float):
-    assert (
-        objectives.WindObjective.is_angle_between(
-            math.radians(afir), math.radians(amid), math.radians(asec)
-        )
-        == expected
     )
 
 
@@ -168,7 +135,7 @@ def test_get_true_wind_direction(
     expected_direction: float,
     expected_speed: float,
 ):
-    true_wind_direction, true_wind_speed = get_true_wind(
+    true_wind_direction, true_wind_speed = wcs.get_true_wind(
         wind_direction_degrees, wind_speed, heading_degrees, speed
     )
 
@@ -178,3 +145,28 @@ def test_get_true_wind_direction(
     assert true_wind_direction_degrees == pytest.approx(
         expected=expected_direction, abs=1e-2
     ) and true_wind_speed == pytest.approx(expected=expected_speed, abs=1e-2)
+
+
+@pytest.mark.parametrize(
+    "position,expected_area,expected_bounds,box_buffer_size",
+    [
+        (coord_systems.XY(0.0, 0.0), pytest.approx(4, rel=1e-2), (-1, -1, 1, 1), 1.0),
+        (coord_systems.XY(100.0, 100.0), pytest.approx(4, rel=1e-2), (99, 99, 101, 101), 1.0),
+        (coord_systems.XY(-50.0, -50.0), pytest.approx(4, rel=1e-2), (-51, -51, -49, -49), 1.0),
+        (coord_systems.XY(100.0, 100.0), pytest.approx(36, rel=1e-2), (97, 97, 103, 103), 3.0),
+        (coord_systems.XY(-50.0, -50.0), pytest.approx(36, rel=1e-2), (-53, -53, -47, -47), 3.0),
+    ],
+)
+def test_create_space(
+    position: coord_systems.XY, expected_area, expected_bounds, box_buffer_size: float
+):
+    """Test creation of buffered space around positions"""
+    # Given an OMPLPath instance
+
+    space = OMPL_PATH.create_buffer_around_position(position, box_buffer_size)
+
+    assert space.area == expected_area, "Space area should match buffer size"
+    assert space.bounds == pytest.approx(
+        expected_bounds, abs=box_buffer_size
+    ), "Bounds should match expected"
+    assert space.contains(Point(position.x, position.y)), "Space should contain center point"

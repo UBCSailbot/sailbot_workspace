@@ -2,7 +2,7 @@ import custom_interfaces.msg as ci
 import pytest
 
 import local_pathfinding.node_navigate as nn
-
+from local_pathfinding.local_path import LocalPath
 LOCAL_WAYPOINT_REACHED_THRESH_KM = 0.5
 GLOBAL_WAYPOINT_REACHED_THRESH_KM = 3
 PATHFINDING_RANGE_KM = 30
@@ -24,7 +24,7 @@ PATH_RANGE_DEG = PATHFINDING_RANGE_KM / ONE_DEGREE_KM
             ci.Path(waypoints=[ci.HelperLatLon(latitude=0.0, longitude=0.0)]),
             0,
             ci.HelperLatLon(latitude=0.1, longitude=0.0),
-            -180.0,
+            180.0,
             0,
         ),
         (
@@ -56,7 +56,7 @@ def test_calculate_desired_heading_and_waypoint_index(
     correct_heading: float,
     new_wp_index: int,
 ):
-    calculated_answer = nn.Sailbot.calculate_desired_heading_and_waypoint_index(
+    calculated_answer = LocalPath.calculate_desired_heading_and_waypoint_index(
         path, waypoint_index, boat_lat_lon
     )
     assert calculated_answer[0] == pytest.approx(correct_heading, abs=3e-1)

@@ -13,7 +13,7 @@ const logger = createLogger({
     error: () => '#ff0005',
   },
   predicate: () => typeof window !== 'undefined',
-}) as Redux.Middleware;
+});
 
 const middleware: Redux.Middleware[] = [logger];
 
