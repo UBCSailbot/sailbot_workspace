@@ -4,7 +4,8 @@ import { useState, useLayoutEffect, useRef } from 'react';
 import UplotReact from 'uplot-react';
 import DownloadIcon from '@/public/icons/download.svg';
 import { downloadDataFromJSON } from '@/utils/DownloadData';
-
+import { useSelector } from 'react-redux';
+import { selectTheme, Theme } from '@/lib/redux/theme/themeSlice';
 import styles from './lineChartStyles.module.css';
 import './customUplot.css';
 
@@ -23,6 +24,8 @@ interface LineChartProps {
 const LineChart = ({ data, title, seriesData }: LineChartProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
+
+  const theme = useSelector(selectTheme);
 
   useLayoutEffect(() => {
     if (!containerRef.current) return;
@@ -51,7 +54,7 @@ const LineChart = ({ data, title, seriesData }: LineChartProps) => {
     axes: [
       {
         font: "12px 'Fira Code', 'SF Mono', Consolas, 'Courier New', monospace",
-        stroke: '#ffffff',
+        stroke: theme === Theme.Dark ? '#ffffff' : '#000000',
         grid: {
           stroke: '#6b6b6b',
           width: 0.5,
@@ -59,7 +62,7 @@ const LineChart = ({ data, title, seriesData }: LineChartProps) => {
       },
       {
         font: "12px 'Fira Code', 'SF Mono', Consolas, 'Courier New', monospace",
-        stroke: '#ffffff',
+        stroke: theme === Theme.Dark ? '#ffffff' : '#000000',
         grid: {
           stroke: '#6b6b6b',
           width: 0.5,
@@ -69,7 +72,7 @@ const LineChart = ({ data, title, seriesData }: LineChartProps) => {
     series: [
       ...seriesData.map((series) => ({
         label: series.label,
-        stroke: 'white',
+        stroke: theme === Theme.Dark ? '#ffffff' : '#000000',
         width: 2,
         value: series.unit
           ? (_u: any, v: any) => (v === null ? '--' : `${v} ${series.unit}`)
