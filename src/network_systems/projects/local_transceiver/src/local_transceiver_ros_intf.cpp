@@ -1,3 +1,5 @@
+#include <bits/stdc++.h>
+
 #include <chrono>
 #include <functional>
 #include <memory>
@@ -53,17 +55,33 @@ public:
                 }
             } else if (mode == SYSTEM_MODE::DEV) {
                 default_port                = LOCAL_TRANSCEIVER_TEST_PORT;
-                std::string run_iridium_cmd = "$ROS_WORKSPACE/scripts/run_virtual_iridium.sh &"; // HEREE
-                int         result          = std::system(run_iridium_cmd.c_str());  //NOLINT(concurrency-mt-unsafe)
-                if (result != 0) {
-                    std::string msg = "Error: could not start virtual iridium";
-                    std::cerr << msg << std::endl;
-                    throw std::exception();
+                std::string run_iridium_cmd = "$ROS_WORKSPACE/scripts/run_virtual_iridium.sh";
+                std::thread vi_thread(std::system, run_iridium_cmd.c_str());
+                //vi needs to run in background
+                vi_thread.detach();
+
+                const int   MAX_ATTEMPTS   = 100;  // 100ms timeout, should only take <5
+                int         attempts       = 0;
+                const int   SLEEP_MS       = 1;
+                const int   IOCTL_ERR_CODE = 256;
+                std::string set_baud_cmd   = "stty 19200 < $LOCAL_TRANSCEIVER_TEST_PORT 2>/dev/null";
+                //silence stderr to not clutter console while polling
+                while (attempts < MAX_ATTEMPTS) {
+                    if (std::filesystem::exists(LOCAL_TRANSCEIVER_TEST_PORT)) {
+                        int result = std::system(set_baud_cmd.c_str());  //NOLINT(concurrency-mt-unsafe)
+                        if (result == 0) {
+                            break;
+                        }
+                        if (result != IOCTL_ERR_CODE) {
+                            std::cerr << "Failed to set baud rate with code: " << result << std::endl;
+                        }
+                    }
+                    std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_MS));
+                    attempts++;
                 }
-                std::string set_baud_cmd = "stty 19200 < $LOCAL_TRANSCEIVER_TEST_PORT";
-                result                   = std::system(set_baud_cmd.c_str());  //NOLINT(concurrency-mt-unsafe)
-                if (result != 0) {
-                    std::string msg = "Error: could not set baud rate for virtual iridium";
+
+                if (attempts == MAX_ATTEMPTS) {
+                    std::string msg = "Error: could not start virtual iridium";
                     std::cerr << msg << std::endl;
                     throw std::exception();
                 }
@@ -90,6 +108,9 @@ public:
               this->get_logger(), "Running Local Transceiver in mode: %s, with port: %s.", mode.c_str(), port.c_str());
             lcl_trns_ = std::make_unique<LocalTransceiver>(port, SATELLITE_BAUD_RATE);
 
+            std::future<std::optional<custom_interfaces::msg::Path>> fut =
+              std::async(std::launch::async, lcl_trns_->getCache);
+
             static constexpr int  ROS_Q_SIZE     = 5;
             static constexpr auto TIMER_INTERVAL = std::chrono::milliseconds(300000);
             timer_ = this->create_wall_timer(TIMER_INTERVAL, std::bind(&LocalTransceiverIntf::pub_cb, this));
@@ -111,13 +132,10 @@ public:
               ros_topics::LOCAL_PATH, ROS_Q_SIZE,
               std::bind(&LocalTransceiverIntf::sub_local_path_data_cb, this, std::placeholders::_1));
 
-            RCLCPP_INFO(this->get_logger(), "About to create send_data service");
-            srv_send_ = this->create_service<std_srvs::srv::Trigger>(
-                "send_data",
-                std::bind(&LocalTransceiverIntf::send_request_handler, this,
-                        std::placeholders::_1, std::placeholders::_2));
-            RCLCPP_INFO(this->get_logger(), "send_data service created");
-
+            std::optional<custom_interfaces::msg::Path> msg = fut.get();
+            if (msg) {
+                pub_->publish(*msg);
+            }
         }
     }
 
