@@ -214,9 +214,8 @@ def initial_plot() -> go.Figure:
     fig = go.FigureWidget(figure)
 
     fig.update_layout(
-        title="Path Planning",
-        xaxis_title="X Coordinate",
-        yaxis_title="Y Coordinate",
+        xaxis_title="X (Km)",
+        yaxis_title="Y (Km)",
         xaxis=dict(range=[-100, 100]),
         yaxis=dict(range=[-100, 100]),
     )
@@ -235,33 +234,25 @@ def dash_app(q: Queue):
     global queue  # type: ignore
     queue = q
 
-    # app.layout = html.Div(
-    #     [
-    #         html.H2("Live Path Planning"),
-    #         dcc.Graph(id="live-graph"),
-    #         dcc.Interval(id="interval-component", interval=5000, n_intervals=0),
-    #         # Commented out animated path planning
-    #         # html.H2("Animated Path Planning"),
-    #         # dcc.Graph(id="animated-live-graph"),
-    #         # dcc.Interval(id="interval-component2", interval=10000, n_intervals=0),
-    #         # TODO: Add more graphs and data visualizations as needed
-    #         # dcc.Graph(id="another-graph"),
-    #         # dcc.Interval(id="another-interval", interval=1000, n_intervals=0),
-    #     ],
-    # )
-    # app.title = "Sailbot Path Planning"
-    # app.run(debug=True, use_reloader=False)
-
     app.layout = html.Div(
-        style={"height": "100vh", "width": "100vw", "margin": 0, "padding": 0},
+        style={
+            "height": "100vh",
+            "width": "100vw",
+            "margin": 0,
+            "padding": 0,
+        },
         children=[
-            html.H2("Live Path Planning"),
-            dcc.Graph(id="live-graph", style={"height": "90vh", "width": "100%"}),
+            html.H2(
+                "UBC Sailbot Pathfinding",
+                style={"fontFamily": "Consolas, monospace", "color": "rgb(18, 70, 139)"},
+            ),
+            dcc.Graph(
+                id="live-graph",
+                style={"height": "90vh", "width": "100%"},
+            ),
             dcc.Interval(id="interval-component", interval=5000, n_intervals=0),
         ],
     )
-
-    app.title = "Sailbot Path Planning"
     app.run(debug=True, use_reloader=False)
 
 
@@ -275,23 +266,6 @@ def live_plot(n_intervals) -> go.Figure:
     state = queue.get()  # type: ignore
     fig = live_update_plot(state)
     return fig
-
-
-# Commented out animated path planning
-# @app.callback(
-#     Output("animated-live-graph", "figure"), [Input("interval-component2", "n_intervals")]
-# )
-# def animated_plot(n_intervals) -> go.Figure:
-#     """
-#     Updates the animated graph to the accumulated LPathData ROS messages.
-#     """
-#     global queue
-#     state = queue.get()  # type: ignore
-#     fig = animated_update_plot(state)
-#     return fig
-
-
-# TODO: Add more callbacks for other graphs and data visualizations as needed
 
 
 def live_update_plot(state: VisualizerState) -> go.Figure:
@@ -607,7 +581,7 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
             y=planned_y,
             mode="lines",
             name="Path to Goal",
-            line=dict(width=2, dash="dot", color="orange"),
+            line=dict(width=2, dash="dot", color="blue"),
             hovertemplate="X: %{x:.2f}<br>Y: %{y:.2f}<extra></extra>",
         )
 
@@ -660,7 +634,7 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
                     fillcolor="rgba(255,165,0,0.25)",
                     name="AIS Collision Zone",
                     hoverinfo="skip",
-                    showlegend=True,
+                    showlegend=False,
                     opacity=0.5,
                 )
             )
@@ -682,12 +656,17 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
     # Update Layout
     x_min, y_min, x_max, y_max = state_space.bounds
     fig.update_layout(
-        title="Path Planning",
-        xaxis_title="X Coordinate",
-        yaxis_title="Y Coordinate",
+        xaxis_title="X (Km)",
+        yaxis_title="Y (Km)",
+        font=dict(color="rgb(18, 70, 139)"),
         xaxis=dict(range=[x_min, x_max]),
         yaxis=dict(range=[y_min, y_max]),
-        legend=dict(x=0, y=1),  # Position the legend at the top left
+        legend=dict(
+            orientation="h",
+            y=1.15,
+            x=0.5,
+            xanchor="center",
+        ),
         showlegend=True,
         uirevision="constant",
     )
