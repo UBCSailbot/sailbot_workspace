@@ -1,10 +1,12 @@
-name: Deployment
+name: Deployment (Legacy - Docker based)
+
+# Old Docker-based deployment - disabled in favor of deploy-website.yml
 
 on:
-  # Uncomment once we are ready to deploy
-  #push:
-  #  branches:
-  #    - main
+  # Disabled
+  # push:
+  #   branches:
+  #     - main
   workflow_dispatch:
 
 jobs:
