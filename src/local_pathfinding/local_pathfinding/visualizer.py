@@ -300,7 +300,6 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
     """
 
     fig = initial_plot()
-    fig.update_layout(uirevision="constant")
 
     # local path waypoints
     ix = state.final_local_wp_x
@@ -366,8 +365,7 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
         ),
         marker=dict(
             symbol="arrow",
-            line_color="darkseagreen",
-            color="lightgreen",
+            color="yellow",
             line=dict(width=2, color="DarkSlateGrey"),
             size=20,
             angleref="up",
@@ -520,7 +518,6 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
     )
 
     # add boat and true wind labels
-
     fig.add_annotation(
         x=-8,
         y=4,
@@ -596,7 +593,7 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
         y0=y_min,
         x1=x_max,
         y1=y_max,
-        fillcolor="rgba(255, 100, 100, 0.25)",  # light red, semi-transparent
+        fillcolor="rgba(000, 100, 255, 0.25)",  # light red, semi-transparent
         line=dict(width=0),
         layer="below",
     )
@@ -619,15 +616,6 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
     fig.add_trace(goal_trace)
     fig.add_trace(boat_trace)
     fig.add_trace(path_trace)
-
-    # Set axis limits dynamically
-    PAD = 10.0
-    x_candidates = [boat_x[0]] + list(state.final_local_wp_x)
-    y_candidates = [boat_y[0]] + list(state.final_local_wp_y)
-    x_min = min(x_candidates) - PAD
-    x_max = max(x_candidates) + PAD
-    y_min = min(y_candidates) - PAD
-    y_max = max(y_candidates) + PAD
 
     # Display AIS Ships
     for x_val, y_val, heading, ais_id, speed in zip(
@@ -692,6 +680,7 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
         )
 
     # Update Layout
+    x_min, y_min, x_max, y_max = state_space.bounds
     fig.update_layout(
         title="Path Planning",
         xaxis_title="X Coordinate",
@@ -700,7 +689,7 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
         yaxis=dict(range=[y_min, y_max]),
         legend=dict(x=0, y=1),  # Position the legend at the top left
         showlegend=True,
-        uirevision="stay",
+        uirevision="constant",
     )
 
     return fig
