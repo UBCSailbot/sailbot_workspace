@@ -53,7 +53,7 @@ public:
                 }
             } else if (mode == SYSTEM_MODE::DEV) {
                 default_port                = LOCAL_TRANSCEIVER_TEST_PORT;
-                std::string run_iridium_cmd = "$ROS_WORKSPACE/scripts/run_virtual_iridium.sh";
+                std::string run_iridium_cmd = "$ROS_WORKSPACE/scripts/run_virtual_iridium.sh &"; // HEREE
                 int         result          = std::system(run_iridium_cmd.c_str());  //NOLINT(concurrency-mt-unsafe)
                 if (result != 0) {
                     std::string msg = "Error: could not start virtual iridium";
@@ -111,10 +111,13 @@ public:
               ros_topics::LOCAL_PATH, ROS_Q_SIZE,
               std::bind(&LocalTransceiverIntf::sub_local_path_data_cb, this, std::placeholders::_1));
 
+            RCLCPP_INFO(this->get_logger(), "About to create send_data service");
             srv_send_ = this->create_service<std_srvs::srv::Trigger>(
                 "send_data",
                 std::bind(&LocalTransceiverIntf::send_request_handler, this,
-                std::placeholders::_1, std::placeholders::_2));
+                        std::placeholders::_1, std::placeholders::_2));
+            RCLCPP_INFO(this->get_logger(), "send_data service created");
+
         }
     }
 
