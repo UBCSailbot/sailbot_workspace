@@ -73,7 +73,7 @@ def get_path_segment_true_bearing(s1: XY, s2: XY, rad: bool = False):
                The returned angle is always within the range (-180, 180] by default or (-pi, pi]
                radians if rad = True
     """
-    segment_cartesian_angle_radians = math.atan2(s2.x - s1.x, s2.y - s1.y)
+    segment_cartesian_angle_radians = math.atan2(s2.y - s1.y, s2.x - s1.x)
     segment_true_bearing_radians = cartesian_to_true_bearing(
         segment_cartesian_angle_radians, rad=True
     )

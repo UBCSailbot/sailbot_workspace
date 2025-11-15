@@ -11,7 +11,7 @@ import local_pathfinding.wind_coord_systems as wcs
 
 UPWIND_COST_MULTIPLIER = 1.0
 DOWNWIND_COST_MULTIPLIER = 1.0
-ZERO_SPEED_COST = 1e9
+ZERO_SPEED_COST = 1.0
 ACCEPTABLE_COST_THRESHOLD = 0.0
 WIND_OBJECTIVE_WEIGHT = 1.0
 SPEED_OBJECTIVE_WEIGHT = 1.0
@@ -42,6 +42,8 @@ BOAT_SPEEDS = np.array(
 )
 TRUE_WIND_SPEEDS = [0, 9.3, 18.5, 27.8, 37.0]
 SAILING_ANGLES = [0, 20, 30, 45, 90, 135, 180]
+
+ESTIMATED_TOP_BOAT_SPEED = np.max(BOAT_SPEEDS)
 
 
 class WindObjective(ob.OptimizationObjective):
@@ -92,7 +94,7 @@ class WindObjective(ob.OptimizationObjective):
         Returns:
             float: The cost the path segment from s1 to s2
         """
-        segment_heading_radians = cs.get_path_segment_true_bearing(s1, s2)
+        segment_heading_radians = cs.get_path_segment_true_bearing(s1, s2, rad=True)
         angle_diff_radians = segment_heading_radians - true_wind_direction_radians
         cos_angle = math.cos(angle_diff_radians)
 
@@ -105,8 +107,8 @@ class WindObjective(ob.OptimizationObjective):
             return DOWNWIND_COST_MULTIPLIER * abs(cos_angle)
 
 
-class SpeedObjective(ob.OptimizationObjective):
-    """The Speed Objective assigns a cost, to any path segment, that is proportional to the
+class TimeObjective(ob.OptimizationObjective):
+    """The Time Objective assigns a cost, to any path segment, that is proportional to the
     estimated time it will take for the boat to travel from the start of the segment to the
     end of the segment.
 
@@ -146,26 +148,52 @@ class SpeedObjective(ob.OptimizationObjective):
 
         s1_xy = cs.XY(s1.getX(), s1.getY())
         s2_xy = cs.XY(s2.getX(), s2.getY())
-
-        path_segment_true_bearing_radians = cs.get_path_segment_true_bearing(
-            s1_xy, s2_xy, rad=True
+        return ob.Cost(0.0)
+        return ob.Cost(
+            TimeObjective.time_cost(
+                s1_xy,
+                s2_xy,
+                self.true_wind_direction_radians,
+                self.true_wind_speed_kmph,
+            )
         )
 
-        sailbot_speed = self.get_sailbot_speed(
+    @staticmethod
+    def time_cost(
+        s1: cs.XY, s2: cs.XY, true_wind_direction_radians: float, true_wind_speed_kmph
+    ) -> float:
+        """Returns a cost proportional to the estimated amount of time it will take for the boat
+           to travel from s1 to s2.
+
+        Args:
+            s1 (cs.XY): The start point of the path segment
+            s2 (cs.XY): The end point of the path segment
+            true_wind_direction_radians (float): The direction of the true wind in
+            radians (-pi, pi]
+            true_wind_speed_kmph (float): The true wind speed in km/h
+
+        Returns:
+            float: The cost the path segment from s1 to s2
+        """
+        path_segment_true_bearing_radians = cs.get_path_segment_true_bearing(s1, s2, rad=True)
+
+        sailbot_speed = TimeObjective.get_sailbot_speed(
             path_segment_true_bearing_radians,
-            self.true_wind_direction_radians,
-            self.true_wind_speed_kmph,
+            true_wind_direction_radians,
+            true_wind_speed_kmph,
         )
 
+        # exit early to avoid dividing by sailbot_speed when it's close to 0
         if math.isclose(sailbot_speed, 0):
-            return ob.Cost(ZERO_SPEED_COST)
+            return ZERO_SPEED_COST
 
-        distance = math.hypot(s2_xy.y - s1_xy.y, s2_xy.x - s1_xy.x)
+        distance = math.hypot(s2.y - s1.y, s2.x - s1.x)
         time = distance / sailbot_speed
-
-        cost = ob.Cost(time)
-
-        return cost
+        ideal_time = distance / ESTIMATED_TOP_BOAT_SPEED
+        deltaT = time - ideal_time
+        # This normalizes the time to an interval of (0,1) more efficiently than sigmoid
+        normalized_time = deltaT / (1 + abs(deltaT))
+        return normalized_time
 
     @staticmethod
     def get_sailbot_speed(
@@ -179,7 +207,7 @@ class SpeedObjective(ob.OptimizationObjective):
         # the sailing angle can always be represented by a positive value between 0 and 180 degrees
         sailing_angle_degrees = abs(cs.bound_to_180(math.degrees(sailing_angle_radians)))
 
-        return SpeedObjective.interpolation((true_wind_speed_kmph, sailing_angle_degrees))
+        return TimeObjective.interpolation((true_wind_speed_kmph, sailing_angle_degrees))
 
 
 def get_sailing_objective(
@@ -212,7 +240,7 @@ def get_sailing_objective(
     )
 
     multiObjective.addObjective(
-        objective=SpeedObjective(
+        objective=TimeObjective(
             space_information, true_wind_direction_radians, true_wind_speed_kmph
         ),
         weight=SPEED_OBJECTIVE_WEIGHT,

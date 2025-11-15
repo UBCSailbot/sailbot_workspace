@@ -6,25 +6,59 @@ import pytest
 from shapely.geometry import MultiPolygon, Point, Polygon, box
 
 import local_pathfinding.coord_systems as cs
+from local_pathfinding.coord_systems import XY
 
 
 @pytest.mark.parametrize(
-    "cartesian,true_bearing,useRad",
+    "cartesian,useRad,true_bearing",
     [
-        (0.0, 90.0, False),
-        (90.0, 0.0, False),
-        (180.0, 270.0, False),
-        (270.0, 180.0, False),
-        (0.0, math.pi / 2, True),
-        (math.pi / 2, 0.0, True),
-        (math.pi, (3 / 2) * math.pi, True),
-        ((3 / 2) * math.pi, math.pi, True),
+        (0.0, False, 90.0),
+        (90.0, False, 0.0),
+        (180.0, False, 270.0),
+        (270.0, False, 180.0),
+        (0.0, True, math.pi / 2),
+        (math.pi / 2, True, 0.0),
+        (math.pi, True, (3 / 2) * math.pi),
+        ((3 / 2) * math.pi, True, math.pi),
     ],
 )
-def test_cartesian_to_true_bearing(cartesian: float, true_bearing: float, useRad: bool):
+def test_cartesian_to_true_bearing(
+    cartesian: float,
+    useRad: bool,
+    true_bearing: float,
+):
     assert cs.cartesian_to_true_bearing(cartesian, rad=useRad) == pytest.approx(
         true_bearing
     ), "incorrect angle conversion"
+
+
+@pytest.mark.parametrize(
+    "s1,s2,useRad,true_bearing",
+    [
+        (XY(0, 0), XY(0, 1), False, 0.0),  # north
+        (XY(0, 0), XY(1, 0), False, 90.0),  # east
+        (XY(0, 0), XY(0, -1), False, 180.0),  # south
+        (XY(0, 0), XY(-1, 0), False, -90.0),  # west
+        (XY(0, 0), XY(1, 1), False, 45.0),  # northeast
+        (XY(0, 0), XY(-1, 1), False, -45.0),  # northwest
+        (XY(0, 0), XY(1, -1), False, 135.0),  # southeast
+        (XY(0, 0), XY(-1, -1), False, -135.0),  # southwest
+        (XY(3, 3), XY(4, 4), False, 45.0),  # neither point is at the origin
+        (XY(0, 0), XY(0, 1), True, math.radians(0.0)),
+        (XY(0, 0), XY(1, 0), True, math.radians(90.0)),
+        (XY(0, 0), XY(0, -1), True, math.radians(180.0)),
+        (XY(0, 0), XY(-1, 0), True, math.radians(-90.0)),
+        (XY(0, 0), XY(1, 1), True, math.radians(45.0)),
+        (XY(0, 0), XY(-1, 1), True, math.radians(-45.0)),
+        (XY(0, 0), XY(1, -1), True, math.radians(135.0)),
+        (XY(0, 0), XY(-1, -1), True, math.radians(-135.0)),
+        (XY(3, 3), XY(4, 4), True, math.radians(45.0)),
+    ],
+)
+def test_get_path_segment_true_bearing(s1: XY, s2: XY, useRad: bool, true_bearing: float):
+    assert cs.get_path_segment_true_bearing(s1, s2, rad=useRad) == pytest.approx(
+        true_bearing
+    ), "incorrect bearing"
 
 
 @pytest.mark.parametrize(
