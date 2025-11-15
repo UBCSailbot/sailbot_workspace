@@ -119,12 +119,12 @@ class VisualizerState:
         self.aw_wind_vector = cs.true_bearing_to_xy_vector(aw_dir_global, aw_speed)
 
         # True wind from apparent
-        true_wind_angle_rad, true_wind_mag = wcs.get_true_wind(
+        true_wind_angle_rad, true_wind_speed = wcs.get_true_wind(
             aw_dir_global, aw_speed, boat_heading, boat_speed)
-        self.true_wind_vector = cs.angle_to_xy_vector(true_wind_angle_rad, true_wind_mag)
+        self.true_wind_vector = cs.angle_to_xy_vector(true_wind_angle_rad, true_wind_speed)
 
         # Boat wind vector
-        boat_wind_radians = math.radians(cs.bound_to_180(boat_heading + 180))
+        boat_wind_radians = math.radians(cs.bound_to_180(boat_heading + 180.0))
         boat_wind_east = boat_speed * math.sin(boat_wind_radians)
         boat_wind_north = boat_speed * math.cos(boat_wind_radians)
         self.boat_wind_vector = cs.XY(boat_wind_east, boat_wind_north)
