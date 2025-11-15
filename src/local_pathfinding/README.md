@@ -12,11 +12,14 @@ Launch arguments are added to the run command in the format `<name>:=<value>`.
 
 | name        | description   | value                                                 |
 | ----------- | ------------- | ----------------------------------------------------- |
-| `log_level` | Logging level | A [severity level][severity level] (case insensitive) |
+| `log_level` | Logging level (default: `{INFO}`) | A [severity level][severity level] (case insensitive) `{DEBUG, INFO, WARN, ERROR, and FATAL}` |
+|`mode` | Mode (default: `{DEVELOPMENT}`) | `{DEVELOPMENT, PRODUCTION}`|
 
-[severity level]: <https://docs.ros.org/en/humble/Concepts/About-Logging.html#severity-level>
+## Some other important commands
 
-### Server Files
-
-The server files: `get_server.py` and `post_server.py` are basic http server files which are used for testing the
-global_path module's GET and POST methods.
+- `ros2 topic list`: Lists all the topics ([ROS 2 topic list documentation](https://docs.ros.org/en/humble/Tutorials/Beginner-CLI-Tools/Understanding-ROS2-Topics/Understanding-ROS2-Topics.html#ros2-topic-list))
+- `ros2 node list`: Lists all the nodes that are running
+- `ros2 topic echo <topic name>`, e.g.: `ros2 topic echo /filtered_wind_sensor`: ([ROS2 topic echo documentation](https://docs.ros.org/en/humble/Tutorials/Beginner-CLI-Tools/Understanding-ROS2-Topics/Understanding-ROS2-Topics.html#ros2-topic-echo:~:text=to%20avoid%20confusion.-,4%20ros2%20topic%20echo,-%EF%83%81))
+[severity level]: <https://docs.ros.org/en/humble/Concepts/About-Logging.html#severity-level>.
+- You can also do `ros2 topic echo <topic name> --field <field name>` to isolate a field in a topic (eg. `speed` in `\filtered_wind_sensor`)
+- `ros2 <command> -h` can be used to get more info about any command.
