@@ -58,9 +58,8 @@ def true_bearing_to_xy_vector(true_bearing_deg: float, speed_knots: float) -> XY
 
     Args:
         true_bearing_deg (float): Direction of the vector in **global true-bearing**
-        coordinates,
-            measured clockwise from north (0° = north, 90° = east).
-            Range: (-180, 180] or [0, 360) depending on context.
+        coordinates, measured clockwise from north (0° = north, 90° = east).
+        Range: (-180, 180] or [0, 360) depending on context.
         speed_knots (float): Magnitude of the vector, e.g., wind or boat speed (knots).
 
     Returns:
@@ -125,8 +124,18 @@ def bound_to_180(angle_degrees: float) -> float:
     return angle
 
 
-def calculate_heading_diff(boat_heading: float, desired_heading):
-    return abs(bound_to_180(desired_heading - boat_heading))
+def calculate_heading_diff(heading1: float, heading2: float):
+    """
+    calculates the difference in heading between any 2 headings
+
+    Args:
+        heading1: the first heading
+        heading2: the second heading
+
+    Returns:
+        The absolute heading difference with minimum being 0.0 and maximum being 180.0
+    """
+    return abs(bound_to_180(heading2 - heading1))
 
 
 def latlon_to_xy(reference: ci.HelperLatLon, latlon: ci.HelperLatLon) -> XY:
