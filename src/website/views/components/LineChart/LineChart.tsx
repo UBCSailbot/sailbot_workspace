@@ -12,6 +12,7 @@ import './customUplot.css';
 interface SeriesData {
   label: string;
   unit?: string;
+  stroke?: string;
 }
 
 // change this later fr
@@ -24,7 +25,6 @@ interface LineChartProps {
 const LineChart = ({ data, title, seriesData }: LineChartProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
-
   const theme = useSelector(selectTheme);
 
   useLayoutEffect(() => {
@@ -72,7 +72,7 @@ const LineChart = ({ data, title, seriesData }: LineChartProps) => {
     series: [
       ...seriesData.map((series) => ({
         label: series.label,
-        stroke: theme === Theme.Dark ? '#ffffff' : '#000000',
+        stroke: series.stroke,   
         width: 2,
         value: series.unit
           ? (_u: any, v: any) => (v === null ? '--' : `${v} ${series.unit}`)
