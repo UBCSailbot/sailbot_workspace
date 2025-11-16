@@ -136,6 +136,13 @@ public:
             if (msg) {
                 pub_->publish(*msg);
             }
+            
+            srv_send_ = this->create_service<std_srvs::srv::Trigger>(
+                "send_data",
+                std::bind(&LocalTransceiverIntf::send_request_handler, 
+                        this, std::placeholders::_1, std::placeholders::_2));
+            RCLCPP_INFO(this->get_logger(), "send_data service created");
+
         }
     }
 
