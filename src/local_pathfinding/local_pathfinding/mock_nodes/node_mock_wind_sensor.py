@@ -127,101 +127,46 @@ class MockWindSensor(Node):
         """Timer callback to sample or hold wind values and publish a WindSensor message."""
         self.get_latest_speed_and_direction_values()
 
-        wind_speed_, direction = self.get_speed_and_direction()
+        wind_speed, direction = self.get_speed_and_direction()
 
         msg = ci.WindSensor()
-        msg.speed, msg.direction = wind_speed_, direction
+        msg.speed, msg.direction = wind_speed, direction
 
         self.get_logger().debug(f"Publishing to {self.__wind_sensors_pub.topic}: {msg}")
         self.__wind_sensors_pub.publish(msg)
 
-    def get_speed_and_direction(self):
-
+    def get_speed_and_direction(self) -> tuple[ci.HelperSpeed, int]:
+        print(self.__start)
         if self.__mode == "constant" or self.__start:
-            return ci.HelperSpeed(speed=self.__mean_wind_speed)
+            return ci.HelperSpeed(speed=self.__mean_wind_speed), self.__mean_direction
 
         if self.__ticks_so_far < self.__ticks:
             self.__ticks_so_far += 1
             return self.__last_speed, self.__last_direction
 
-        mean = self.__mean_wind_speed
-        sd = self.__sd_wind_speed
+        k = (self.__mean_wind_speed / self.__sd_wind_speed) ** 2
+        theta = (self.__sd_wind_speed**2) / self.__mean_wind_speed
 
-        k = (mean / sd) ** 2
-        theta = (sd**2) / mean
-
-        wind_speed = gamma.rvs(a=k, scale=theta)
-        self.__last_speed = ci.HelperSpeed(speed=abs(wind_speed))
+        true_wind_speed = gamma.rvs(a=k, scale=theta)
 
         # Convert true wind to apparent wind (global frame)
         mean_aw_direction, mean_aw_speed = wcs.get_apparent_wind(
-            self.__mean_direction, wind_speed,  self.__boat_heading, self.__boat_speed
+            self.__mean_direction, true_wind_speed,  self.__boat_heading, self.__boat_speed
         )
 
-
-
-      def get_mock_wind_speed(self) -> ci.HelperSpeed:
-        """Return a wind speed sample or a held value.
-
-        - In "constant" mode, returns the configured mean speed.
-        - Otherwise, holds the previous sample for 60–120 ticks. When refreshing, samples
-          from a Gamma distribution parameterized to match the configured mean and SD.
-        """
-        if self.__mode == "constant" or self.__start:
-            return ci.HelperSpeed(speed=self.__mean_wind_speed)
-
-        if self.__ticks_so_far < self.__ticks:
-            self.__ticks_so_far += 1
-            return self.__last_speed
-
-        mean = self.__mean_wind_speed
-        sd = self.__sd_wind_speed
-
-        k = (mean / sd) ** 2
-        theta = (sd**2) / mean
-
-        wind_speed_ = gamma.rvs(a=k, scale=theta)
-        self.__last_speed = ci.HelperSpeed(speed=abs(wind_speed_))
-        return self.__last_speed
-
-    def get_direction_value(self) -> int:
-        """Return a wind direction sample (degrees, boat frame) or a held value.
-
-        - In "constant" mode, returns the configured mean direction (converted to boat frame).
-        - Otherwise, holds the previous sample for 60–120 ticks. When refreshing:
-          1) Converts mean true wind to mean apparent wind given boat heading/speed.
-          2) Samples from a von Mises distribution centered at that mean with concentration
-             'direction_kappa' (higher = tighter).
-          3) Converts the sample to degrees and into the boat coordinate frame.
-        """
-        # Convert true wind to apparent wind (global frame)
-        mean_aw_direction, _ = wcs.get_apparent_wind(
-            self.__mean_direction, self.__mean_wind_speed, self.__boat_heading, self.__boat_speed
-        )
-
-        if self.__mode == "constant" or self.__start:
-            return int(
-              wcs.global_to_boat_coordinate(self.__boat_heading, cs.bound_to_180(np.degrees()))
-            )
-
-        if self.__ticks_so_far < self.__ticks:
-            self.__ticks_so_far += 1
-            return self.__last_direction
-
-        self.__ticks = random.randint(60, 120)
-        self.__ticks_so_far = 0
-
-
-        # Sample around the mean apparent wind in radians and convert back to degrees
-        mean_direction_rad = np.radians(mean_aw_direction)
-        direction_rad = vonmises.rvs(kappa=self.__direction_kappa, loc=mean_direction_rad, size=1)[0] # noqa
+        mean_aw_dir_rad = np.radians(mean_aw_direction)
+        direction_rad = vonmises.rvs(kappa=self.__direction_kappa, loc=mean_aw_dir_rad, size=1)[0] # noqa
         direction_deg = np.degrees(direction_rad)
 
-        result = int(
+        speed_value = ci.HelperSpeed(speed=mean_aw_speed)
+        direction_value = int(
             wcs.global_to_boat_coordinate(self.__boat_heading, cs.bound_to_180(direction_deg))
         )
-        self.__last_direction = result
-        return result
+
+        self._last_speed = speed_value
+        self.__last_direction = direction_value
+
+        return speed_value, direction_value
 
     def get_latest_speed_and_direction_values(self) -> None:
         """Updates mean wind speed and direction with the latest values from ROS parameters."""
