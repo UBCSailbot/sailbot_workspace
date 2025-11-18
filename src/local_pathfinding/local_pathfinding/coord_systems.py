@@ -52,54 +52,40 @@ def true_bearing_to_plotly_cartesian(true_bearing: float) -> float:
     return plotly_cartesian
 
 
-def true_bearing_to_xy_vector(true_bearing_deg: float, speed_knots: float) -> XY:
-    """
-        Convert a true-bearing direction and scalar speed to east/north Cartesian components.
+def angle_to_vector_projections(vector_angle_rad: float, vector_magnitude: float) -> XY:
+    """Convert a polar vector (angle in radians, speed_knots) to east/north Cartesian components.
 
     Args:
-        true_bearing_deg (float): Direction of the vector in **global true-bearing**
-        coordinates,
-            measured clockwise from north (0° = north, 90° = east).
-            Range: (-180, 180] or [0, 360) depending on context.
-        speed_knots (float): Magnitude of the vector, e.g., wind or boat speed (knots).
+        vector_angle_rad (float): Direction angle in radians. Range: (-π, π], where 0 rad = north,
+            +π/2 = east.
+        vector_magnitude (float): Vector speed (e.g., true wind speed in kmph).
 
     Returns:
-        cs.XY: Decomposed vector components in the global (east, north) frame:
+        XY: Decomposed vector components in the global (east, north) frame:
             - x → east component
             - y → north component
-
-    Notes:
-        Converts polar coordinates in true-bearing convention to a 2D Cartesian vector.
-        Positive x corresponds to eastward motion; positive y corresponds to northward motion.
-        This helper is used to express directional quantities (e.g., apparent wind, true wind)
-        in the global reference frame.
     """
-    r = math.radians(true_bearing_deg)
-    return XY(x=speed_knots * math.sin(r), y=speed_knots * math.cos(r))
-
-
-def angle_to_xy_vector(angle_rad: float, speed_knots: float) -> XY:
-    """
-    Convert a polar vector (angle in radians, speed_knots) to east/north Cartesian components.
-
-    Args:
-        angle_rad (float): Direction angle in radians following the **atan2(east, north)**
-        convention used throughout wind_coord_systems.py. Range: (-π, π], where 0 rad = north,
-        +π/2 = east.
-        speed_knots (float): Vector speed_knots (e.g., true wind speed, in knots).
-
-    Returns:
-        cs.XY: Decomposed vector components in the global (east, north) frame:
-            - x → east component
-            - y → north component
-
-    Notes:
-        This helper converts a polar representation (angle, speed_knots) into its Cartesian
-        form. It is primarily used when wind_coord_systems.py returns a direction in radians
-        from atan2(). Maintains consistency with the east/north coordinate system used across
-        the path visualizer.
-    """
-    return XY(x=speed_knots * math.sin(angle_rad), y=speed_knots * math.cos(angle_rad))
+    # case 1: vector in quadrant I
+    if (0 <= vector_angle_rad <= math.pi / 2):
+        return XY(x=vector_magnitude * math.sin(vector_angle_rad),
+                  y=vector_magnitude * math.cos(vector_angle_rad))
+    # case 2: vector in quadrant IV
+    elif (math.pi / 2 < vector_angle_rad <= math.pi):
+        alpha = vector_angle_rad - (math.pi / 2)  # alpha is with respect to positive x-axis
+        return XY(x=vector_magnitude * math.cos(alpha),
+                  y=vector_magnitude * -1 * math.sin(alpha))
+    # case 3: vector in quadrant II
+    elif (-math.pi / 2 <= vector_angle_rad < 0):
+        alpha = abs(vector_angle_rad)  # vector_angle_rad is negative in quadrant II
+        return XY(x=vector_magnitude * -1 * math.sin(alpha),
+                  y=vector_magnitude * math.cos(alpha))
+    # case 4: vector in quadrant III
+    elif (-math.pi <= vector_angle_rad < -math.pi / 2):
+        # vector_angle_rad is negative in quadrant III and alpha is with respect to negative x-axis
+        alpha = abs(vector_angle_rad) - (math.pi / 2)
+        return XY(x=vector_magnitude * -1 * math.cos(alpha),
+                  y=vector_magnitude * -1 * math.sin(alpha))
+    return XY(x=0.0, y=0.0)  # place holder for invalid input
 
 
 def meters_to_km(meters: float) -> float:

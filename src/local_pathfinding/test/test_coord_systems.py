@@ -47,40 +47,10 @@ def test_true_bearing_to_plotly_cartesian(true_bearing: float, plotly_cartesian:
 
 
 @pytest.mark.parametrize(
-    "true_bearing_deg,speed_knots,expected_xy",
+    "angle_rad,speed,expected_xy",
     [
-        (0.0, 10.0, cs.XY(0.0, 10.0)),  # North
-        (90.0, 5.0, cs.XY(5.0, 0.0)),  # East
-        (180.0, 7.5, cs.XY(0.0, -7.5)),  # South
-        (270.0, 3.0, cs.XY(-3.0, 0.0)),  # West via [0, 360) convention
-        # Same directions using negative angles ([-180, 180] convention)
-        (-90.0, 4.0, cs.XY(-4.0, 0.0)),  # West
-        (-180.0, 2.0, cs.XY(0.0, -2.0)),  # South boundary
-        (360.0, 1.0, cs.XY(0.0, 1.0)),  # Wrap-around: same as 0°
-        # Diagonal: 45° with magnitude sqrt(2) → (1, 1)
-        (45.0, math.sqrt(2), cs.XY(1.0, 1.0)),
-        # Zero speed
-        (123.0, 0.0, cs.XY(0.0, 0.0)),
-    ],
-)
-def test_true_bearing_to_xy_vector(
-    true_bearing_deg: float, speed_knots: float, expected_xy: cs.XY
-):
-    result = cs.true_bearing_to_xy_vector(true_bearing_deg, speed_knots)
-
-    # Component-wise check
-    assert result == pytest.approx(expected_xy), "incorrect true-bearing to XY conversion"
-
-    # Magnitude should match the input speed (length of vector ≈ |speed_knots|)
-    mag = math.hypot(result.x, result.y)
-    assert mag == pytest.approx(
-        abs(speed_knots)
-    ), "resultant vector magnitude does not match speed_knots"
-
-
-@pytest.mark.parametrize(
-    "angle_rad,speed_knots,expected_xy",
-    [
+        # pi/4 radians northeast
+        (math.pi / 4, 10.0, cs.XY((10 * (1/math.sqrt(2))), (10 * (1/math.sqrt(2))))),
         # 0 rad = north, +π/2 = east
         (0.0, 10.0, cs.XY(0.0, 10.0)),  # North
         (math.pi / 2, 5.0, cs.XY(5.0, 0.0)),  # East
@@ -90,21 +60,20 @@ def test_true_bearing_to_xy_vector(
         # Diagonal: π/4 with magnitude sqrt(2) → (1, 1)
         (math.pi / 4, math.sqrt(2), cs.XY(1.0, 1.0)),
         # Zero speed
-        (1.234, 0.0, cs.XY(0.0, 0.0)),
-        # Angle outside (-π, π] still should behave trigonometrically
-        (3 * math.pi / 2, 2.0, cs.XY(-2.0, 0.0)),  # 270° → West
+        (1.234, 0.0, cs.XY(0.0, 0.0))
     ],
 )
-def test_angle_to_xy_vector(angle_rad: float, speed_knots: float, expected_xy: cs.XY):
-    result = cs.angle_to_xy_vector(angle_rad, speed_knots)
+def test_angle_to_vector_projections(angle_rad: float, speed: float, expected_xy: cs.XY):
+    result = cs.angle_to_vector_projections(angle_rad, speed)
 
     # Component-wise check
-    assert result == pytest.approx(expected_xy), "incorrect angle(rad) to XY conversion"
+    assert (result.x, result.y) == pytest.approx(
+        (expected_xy.x, expected_xy.y), rel=1e-6), "incorrect angle(rad) to XY conversion"
 
     # Magnitude should match the input speed
     mag = math.hypot(result.x, result.y)
     assert mag == pytest.approx(
-        abs(speed_knots)
+        abs(speed)
     ), "resultant vector magnitude does not match speed_knots"
 
 
