@@ -605,8 +605,6 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
 
     # Path trace (path to goal point)
     if state.final_local_wp_x and state.final_local_wp_y:
-        # planned_x = [boat_x[0]] + list(state.final_local_wp_x)
-        # planned_y = [boat_y[0]] + list(state.final_local_wp_y)
         planned_x = list(state.final_local_wp_x)
         planned_y = list(state.final_local_wp_y)
         path_trace = go.Scatter(
@@ -706,8 +704,6 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
             range=[y_min, y_max],
             domain=[0.25, 1.0],
         ),
-        # xaxis=dict(range=[x_min, x_max]),
-        # yaxis=dict(range=[y_min, y_max]),
         legend=dict(x=0, y=1),  # Position the legend at the top left
         showlegend=True,
         uirevision="stay"
