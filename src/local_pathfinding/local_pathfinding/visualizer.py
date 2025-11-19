@@ -115,21 +115,19 @@ class VisualizerState:
         aw_dir_boat = self.curr_msg.filtered_wind_sensor.direction
         # Convert Apparent wind to global frame
         aw_dir_global = wcs.boat_to_global_coordinate(boat_heading, aw_dir_boat)
+        aw_dir_global_rad = math.radians(aw_dir_global)
 
         # Compute apparent wind vector (in global frame)
-        self.aw_wind_vector = cs.true_bearing_to_xy_vector(aw_dir_global, aw_speed)
+        self.aw_wind_vector = cs.angle_to_vector_projections(aw_dir_global_rad, aw_speed)
 
         # True wind from apparent
-        true_wind_angle_rad, true_wind_speed = wcs.get_true_wind(
+        true_wind_angle_rad, true_wind_mag = wcs.get_true_wind(
             aw_dir_global, aw_speed, boat_heading, boat_speed
         )
-        self.true_wind_vector = cs.angle_to_xy_vector(true_wind_angle_rad, true_wind_speed)
-
+        self.true_wind_vector = cs.angle_to_vector_projections(true_wind_angle_rad, true_wind_mag)
         # Boat wind vector
-        boat_wind_radians = math.radians(cs.bound_to_180(boat_heading + 180.0))
-        boat_wind_east = boat_speed * math.sin(boat_wind_radians)
-        boat_wind_north = boat_speed * math.cos(boat_wind_radians)
-        self.boat_wind_vector = cs.XY(boat_wind_east, boat_wind_north)
+        boat_wind_radians = math.radians(cs.bound_to_180(boat_heading + 180))
+        self.boat_wind_vector = cs.angle_to_vector_projections(boat_wind_radians, boat_speed)
 
     def _validate_message(self, msg: ci.LPathData):
         """Checks if the sailbot observer node received any messages.
@@ -248,9 +246,13 @@ def dash_app(q: Queue):
             ),
             dcc.Graph(
                 id="live-graph",
-                style={"height": "90vh", "width": "100%"},
+                style={"height": "90vh", "width": "100%"}
             ),
-            dcc.Interval(id="interval-component", interval=5000, n_intervals=0),
+            dcc.Interval(
+                id="interval-component",
+                interval=2500,
+                n_intervals=0
+            ),
         ],
     )
     app.run(debug=True, use_reloader=False)
@@ -365,10 +367,10 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
                 )
             )
 
-    # box for boat wind vector and true wind vector
+    # box for boat wind, true wind and apparent wind vectors
     fig.update_layout(
         xaxis2=dict(
-            domain=[0.85, 0.98],
+            domain=[0.76, 0.99],
             anchor="y2",
             range=[-10, 10],
             showgrid=False,
@@ -376,7 +378,7 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
             visible=False,
         ),
         yaxis2=dict(
-            domain=[0.05, 0.25],
+            domain=[0.00, 0.22],
             anchor="x2",
             range=[-10, 10],
             showgrid=False,
@@ -391,7 +393,11 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
     tw_unit_vec = get_unit_vector(state.true_wind_vector)
     bw_unit_vec = get_unit_vector(state.boat_wind_vector)
 
-    ARROW_LEN = 6.0
+    aw_mag = math.hypot(state.aw_wind_vector.x, state.aw_wind_vector.y)
+    tw_mag = math.hypot(state.true_wind_vector.x, state.true_wind_vector.y)
+    bw_mag = math.hypot(state.boat_wind_vector.x, state.boat_wind_vector.y)
+
+    ARROW_LEN = 4.0
 
     # Scaled component vectors
     aw_dx, aw_dy = aw_unit_vec.x * ARROW_LEN, aw_unit_vec.y * ARROW_LEN
@@ -399,7 +405,7 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
     bw_dx, bw_dy = bw_unit_vec.x * ARROW_LEN, bw_unit_vec.y * ARROW_LEN
 
     # Small vertical offsets so the arrows don't overlap
-    ORIGIN_X, ORIGIN_Y = 4, 0
+    ORIGIN_X, ORIGIN_Y = 6, 0
     Y_OFFSET = 1.0
 
     boat_arrow_origin = (ORIGIN_X, ORIGIN_Y + Y_OFFSET)
@@ -410,8 +416,8 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
     fig.add_annotation(
         x=apparent_wind_arrow_origin[0],
         y=apparent_wind_arrow_origin[1],
-        ax=apparent_wind_arrow_origin[0] - aw_dx,
-        ay=apparent_wind_arrow_origin[1] - aw_dy,
+        ax=apparent_wind_arrow_origin[0] + aw_dx,
+        ay=apparent_wind_arrow_origin[1] + aw_dy,
         xref="x2",
         yref="y2",
         axref="x2",
@@ -425,7 +431,7 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
         text="",
         hovertext=(
             f"<b>🌬️ Apparent Wind</b><br>"
-            f"speed: {math.hypot(state.aw_wind_vector.x, state.aw_wind_vector.y):.2f} kn<br>"
+            f"speed: {aw_mag:.2f} kmph<br>"
         ),
         hoverlabel=dict(bgcolor="white"),
     )
@@ -434,8 +440,8 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
     fig.add_annotation(
         x=true_wind_arrow_origin[0],
         y=true_wind_arrow_origin[1],
-        ax=true_wind_arrow_origin[0] - tw_dx,
-        ay=true_wind_arrow_origin[1] - tw_dy,
+        ax=true_wind_arrow_origin[0] + tw_dx,
+        ay=true_wind_arrow_origin[1] + tw_dy,
         xref="x2",
         yref="y2",
         axref="x2",
@@ -449,7 +455,7 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
         text="",
         hovertext=(
             f"<b>🌬️ True Wind</b><br>"
-            f"speed: {math.hypot(state.true_wind_vector.x, state.true_wind_vector.y):.2f} kn<br>"
+            f"speed: {tw_mag:.2f} kmph<br>"
         ),
         hoverlabel=dict(bgcolor="white"),
     )
@@ -458,8 +464,8 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
     fig.add_annotation(
         x=boat_arrow_origin[0],
         y=boat_arrow_origin[1],
-        ax=boat_arrow_origin[0] - bw_dx,
-        ay=boat_arrow_origin[1] - bw_dy,
+        ax=boat_arrow_origin[0] + bw_dx,
+        ay=boat_arrow_origin[1] + bw_dy,
         xref="x2",
         yref="y2",
         axref="x2",
@@ -473,7 +479,7 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
         text="",
         hovertext=(
             f"<b>🛶 Boat Wind</b><br>"
-            f"speed: {math.hypot(state.boat_wind_vector.x, state.boat_wind_vector.y):.2f} kn<br>"
+            f"speed: {bw_mag:.2f} kmph<br>"
         ),
         hoverlabel=dict(bgcolor="white"),
     )
@@ -483,10 +489,10 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
         type="rect",
         xref="paper",
         yref="paper",
-        x0=0.85,
-        y0=0.05,
-        x1=0.98,
-        y1=0.25,
+        x0=0.76,
+        y0=0.00,
+        x1=0.99,
+        y1=0.22,
         fillcolor="white",
         line=dict(width=4),
     )
@@ -497,7 +503,7 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
         y=4,
         xref="x2",
         yref="y2",
-        text="Boat",
+        text=f"Boat - {bw_mag:.2f} kmph",
         showarrow=False,
         align="left",
         xanchor="left",
@@ -509,7 +515,7 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
         y=0,
         xref="x2",
         yref="y2",
-        text="True",
+        text=f"True - {tw_mag:.2f} kmph",
         showarrow=False,
         align="left",
         xanchor="left",
@@ -521,7 +527,7 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
         y=-4,
         xref="x2",
         yref="y2",
-        text="Apparent",
+        text=f"Apparent - {aw_mag:.2f} kmph",
         showarrow=False,
         align="left",
         xanchor="left",
@@ -541,7 +547,7 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
 
     # Circle representing boat on wind box
     fig.add_annotation(
-        x=4,
+        x=6,
         y=0,
         xref="x2",
         yref="y2",
@@ -574,8 +580,8 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
 
     # Path trace (path to goal point)
     if state.final_local_wp_x and state.final_local_wp_y:
-        planned_x = [boat_x[0]] + list(state.final_local_wp_x)
-        planned_y = [boat_y[0]] + list(state.final_local_wp_y)
+        planned_x = list(state.final_local_wp_x)
+        planned_y = list(state.final_local_wp_y)
         path_trace = go.Scatter(
             x=planned_x,
             y=planned_y,
@@ -656,17 +662,18 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
     # Update Layout
     x_min, y_min, x_max, y_max = state_space.bounds
     fig.update_layout(
-        xaxis_title="X (Km)",
-        yaxis_title="Y (Km)",
-        font=dict(color="rgb(18, 70, 139)"),
-        xaxis=dict(range=[x_min, x_max]),
-        yaxis=dict(range=[y_min, y_max]),
-        legend=dict(
-            orientation="h",
-            y=1.15,
-            x=0.5,
-            xanchor="center",
+        title="Path Planning",
+        xaxis_title="X Coordinate",
+        yaxis_title="Y Coordinate",
+        xaxis=dict(
+            range=[x_min, x_max],
+            domain=[0.0, 0.98],
         ),
+        yaxis=dict(
+            range=[y_min, y_max],
+            domain=[0.25, 1.0],
+        ),
+        legend=dict(x=0, y=1),  # Position the legend at the top left
         showlegend=True,
         uirevision="constant",
     )
