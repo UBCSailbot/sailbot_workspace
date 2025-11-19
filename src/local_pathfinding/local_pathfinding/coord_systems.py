@@ -111,8 +111,18 @@ def bound_to_180(angle_degrees: float) -> float:
     return angle
 
 
-def calculate_heading_diff(boat_heading: float, desired_heading):
-    return abs(bound_to_180(desired_heading - boat_heading))
+def calculate_heading_diff(heading1: float, heading2: float):
+    """
+    calculates the difference in heading between any 2 headings
+
+    Args:
+        heading1: the first heading
+        heading2: the second heading
+
+    Returns:
+        The absolute heading difference with minimum being 0.0 and maximum being 180.0
+    """
+    return abs(bound_to_180(heading2 - heading1))
 
 
 def latlon_to_xy(reference: ci.HelperLatLon, latlon: ci.HelperLatLon) -> XY:
