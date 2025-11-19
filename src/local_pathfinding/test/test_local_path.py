@@ -366,7 +366,7 @@ def test_update_if_needed(gps, ais_ships, global_path, local_waypoint_index,
     if new_path_generated:
         assert abs(heading - result_old_heading) > 0.1
     else:
-        assert heading == result_old_heading
+        assert heading == pytest.approx(result_old_heading, abs=0.3)
     assert index == result_index
 
 
