@@ -67,7 +67,7 @@ jobs:
           echo "Archive created: $(ls -lh website-build.tar.gz)"
 
       - name: Transfer build to droplet
-        uses: appleboy/scp-action@v0.1.7
+        uses: appleboy/scp-action@v1.0.0
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
