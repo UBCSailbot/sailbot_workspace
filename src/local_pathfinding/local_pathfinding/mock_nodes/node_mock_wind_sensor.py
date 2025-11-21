@@ -138,9 +138,8 @@ class MockWindSensor(Node):
     def get_speed_and_direction(self) -> tuple[ci.HelperSpeed, int]:
         """Returns the latest speed and direction value based on the state of the node.
         Returns:
-            tuple[ci.HelperSpeed, int]: Returns a tuple of wind_speed
-            (apparent wind in boat coordinate (refer to WindSensor.msg for more details) and
-            wind speed in kmph.
+            tuple[ci.HelperSpeed, int]: Returns apparent wind in the format ready to be published. 
+            The values returned are in standard wind units as mentioned in WindSensor.msg
         """
         aw_speed, aw_direction = wcs.get_apparent_wind(
             self.__mean_direction, self.__mean_wind_speed, self.__boat_heading, self.__boat_heading
