@@ -6,7 +6,7 @@ COPY scripts/ ./scripts
 # CACHEBUST forces Docker to invalidate the cache for this layer.
 # This ensures that changes in src/ are picked up during the build.
 # CACHEBUST is defined as a build-arg set to the current timestamp.
-# ARG CACHEBUST
+ARG CACHEBUST
 COPY src/ ./src
 RUN chown -R ${USERNAME}:${USERNAME} ${ROS_WORKSPACE} ${HOME}
 USER ${USERNAME}
