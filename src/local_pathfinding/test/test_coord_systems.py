@@ -46,6 +46,55 @@ def test_true_bearing_to_plotly_cartesian(true_bearing: float, plotly_cartesian:
     ), "incorrect angle conversion"
 
 
+# Bearing constants (radians, in the "0 = north, +π/2 = east" convention)
+NORTH = 0.0
+EAST = math.pi / 2
+SOUTH_PI = math.pi  # +π
+SOUTH_NEG_PI = -math.pi  # -π, same physical direction as +π
+WEST = -math.pi / 2
+NORTHEAST = math.pi / 4
+NORTHWEST = - math.pi / 4
+SOUTHEAST = 3 * math.pi / 4
+SOUTHWEST = -3 * math.pi / 4
+
+# Shared factors
+sin45 = 1.0 / math.sqrt(2.0)  # sin(π/4) = sin(45) = 1/√2
+cos45 = 1.0 / math.sqrt(2.0)  # cos(π/4) = sin(45) = 1/√2
+
+
+@pytest.mark.parametrize(
+    "angle_rad,speed,expected_xy",
+    [
+        # Cardinal directions
+        (NORTH, 10.0, cs.XY(0.0, 10.0)),        # North
+        (EAST,  5.0,  cs.XY(5.0, 0.0)),         # East
+        (SOUTH_PI,  2.0, cs.XY(0.0, -2.0)),     # South (+π)
+        (WEST,  4.0,  cs.XY(-4.0, 0.0)),        # West (-π/2)
+        (SOUTH_NEG_PI, 3.0, cs.XY(0.0, -3.0)),  # South (-π), same as +π
+
+        # Diagonals / 45° bearings
+        (NORTHEAST, 10.0, cs.XY(10.0 * sin45, 10.0 * cos45)),
+        (NORTHWEST, 10.0, cs.XY(-10.0 * sin45, 10.0 * cos45)),
+        (SOUTHEAST, 10.0, cs.XY(10.0 * sin45, -10.0 * cos45)),
+        (SOUTHWEST, 10.0, cs.XY(-10.0 * sin45, -10.0 * cos45)),
+        # Zero speed should always give zero vector regardless of angle
+        (NORTHEAST, 0.0, cs.XY(0.0, 0.0))
+    ],
+)
+def test_angle_to_vector_projections(angle_rad: float, speed: float, expected_xy: cs.XY):
+    result = cs.angle_to_vector_projections(angle_rad, speed)
+
+    # Component-wise check
+    assert (result.x, result.y) == pytest.approx(
+        (expected_xy.x, expected_xy.y), rel=1e-6), "incorrect angle(rad) to XY conversion"
+
+    # Magnitude should match the input speed
+    mag = math.hypot(result.x, result.y)
+    assert mag == pytest.approx(
+        abs(speed)
+    ), "resultant vector magnitude does not match speed_knots"
+
+
 @pytest.mark.parametrize(
     "meters,km",
     [(0.0, 0.0), (30, 0.03), (500, 0.5), (-30.5, -0.0305), (-0.0, 0.0)],

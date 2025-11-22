@@ -30,6 +30,7 @@ class LocalTransceiver
     friend class TestLocalTransceiver_parseInMsgValid_Test;
     friend class TestLocalTransceiver_SendAndReceiveMessage;
     friend class TestLocalTransceiver_testMailboxBlackbox_Test;
+    friend class TestLocalTransceiver_checkCache_Test;
 
 public:
     /**
@@ -145,6 +146,14 @@ public:
     std::optional<std::string> debugSend(const std::string & cmd);
 
     /**
+     * @brief Asynchronously save the received serialized data to a local file
+     *
+     * @param receivedDataBuffer string to cache
+     * @return future object representing completion of the function
+     */
+    static void cacheGlobalWaypoints(std::string receivedDataBuffer);
+
+    /**
      * @brief Retrieve the latest message from the remote server via the serial port
      *
      * @return The message as a binary string
@@ -153,6 +162,13 @@ public:
 
     // TEST
     bool checkMailbox();
+
+    /**
+     * @brief Read and parse the data from the global waypoints file, if it exists
+     *
+     * @return The global waypoints from the cache
+     */
+    static std::optional<custom_interfaces::msg::Path> getCache();
 
 private:
     // Serial port read/write timeout
