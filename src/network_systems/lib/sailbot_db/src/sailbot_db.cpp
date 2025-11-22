@@ -74,11 +74,11 @@ bool SailbotDB::storeNewSensors(const Sensors & sensors_pb, RcvdMsgInfo new_info
     const std::string &   timestamp = new_info.timestamp_;
     mongocxx::pool::entry entry     = pool_->acquire();
     return storeGps(sensors_pb.gps(), timestamp, *entry) && storeAis(sensors_pb.ais_ships(), timestamp, *entry) &&
-           //    storeGenericSensors(sensors_pb.data_sensors(), timestamp, *entry) &&
+           //    storeGenericSensors(sensors_pb.data_sensors(), timestamp, *entry) && // * Generic sensors are replaced by Temp, Salinity, pH, Pressure
            storeTempSensors(sensors_pb.temp_sensors(), timestamp, *entry) &&
            storePhSensors(sensors_pb.ph_sensors(), timestamp, *entry) &&
            storeSalinitySensors(sensors_pb.salinity_sensors(), timestamp, *entry) &&
-           storePressureSensors(sensors_pb.pressure_sensors(), timestamp, *entry) &&
+           //    storePressureSensors(sensors_pb.pressure_sensors(), timestamp, *entry) && // * We aren't using pH Sensors as of Nov 2025
            storeBatteries(sensors_pb.batteries(), timestamp, *entry) &&
            storeWindSensors(sensors_pb.wind_sensors(), timestamp, *entry) &&
            storePathSensors(sensors_pb.local_path_data(), timestamp, *entry);

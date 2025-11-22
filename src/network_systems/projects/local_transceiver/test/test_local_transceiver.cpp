@@ -5,6 +5,7 @@
 
 #include <boost/process.hpp>
 #include <boost/system/system_error.hpp>
+#include <chrono>  // added
 #include <custom_interfaces/msg/detail/helper_dimension__struct.hpp>
 #include <custom_interfaces/msg/detail/helper_heading__struct.hpp>
 #include <custom_interfaces/msg/detail/helper_lat_lon__struct.hpp>
@@ -12,6 +13,7 @@
 #include <custom_interfaces/msg/detail/helper_speed__struct.hpp>
 #include <fstream>
 #include <mutex>
+#include <thread>  // added
 #include <vector>
 
 #include "at_cmds.h"
@@ -194,6 +196,25 @@ TEST_F(TestLocalTransceiver, sendData)
     lcl_trns_->updateSensor(local_paths);
 
     EXPECT_TRUE(lcl_trns_->send());
+
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+
+    curl_global_init(CURL_GLOBAL_DEFAULT);
+
+    CURL * curl = curl_easy_init();
+    ASSERT_TRUE(curl != nullptr);
+    std::string response_body;
+    curl_easy_setopt(curl, CURLOPT_URL, "http://127.0.0.1:8081/last");  // adjust endpoint as needed
+    curl_easy_setopt(
+      curl, CURLOPT_WRITEFUNCTION, +[](char * ptr, size_t size, size_t nmemb, void * userdata) -> size_t {
+          static_cast<std::string *>(userdata)->append(ptr, size * nmemb);
+          return size * nmemb;
+      });
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response_body);
+    CURLcode res = curl_easy_perform(curl);
+    curl_easy_cleanup(curl);
+    ASSERT_EQ(res, CURLE_OK) << "Failed to query echo server";
+    ASSERT_FALSE(response_body.empty()) << "Echo server returned empty body — webhook may not have received payload";
 }
 
 /**
