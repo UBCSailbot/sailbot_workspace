@@ -194,9 +194,10 @@ class LocalPath:
                 to avoid. Defaults to None.
 
         Returns:
-            tuple[Optional[float], Optional[int]]: A tuple containing:
+            tuple[Optional[float], Optional[int], Optional[boolean]]: A tuple containing:
                 - Desired heading in degrees
                 - Updated waypoint index
+                - Whether the path was updated
             The method decides whether to return the heading for new path or old path
         """
         # this raises ValueError if any of the parameters are not properly initialized
@@ -220,13 +221,13 @@ class LocalPath:
         if received_new_global_waypoint:
             self._logger.debug("Updating local path because we have a new global waypoint")
             self._update(ompl_path)
-            return heading_new_path, wp_index
+            return heading_new_path, wp_index, True
 
         if old_ompl_path is None or self.path is None:
             # continue on the same path
             self._logger.debug("old path is none")
             self._update(ompl_path)
-            return heading_new_path, wp_index
+            return heading_new_path, wp_index, True
 
         heading_old_path, updated_wp_index = self.calculate_desired_heading_and_waypoint_index(
             old_ompl_path.get_path(), local_waypoint_index, gps.lat_lon
@@ -239,7 +240,7 @@ class LocalPath:
         ):
             self._logger.debug("old path is in collision zone")
             self._update(ompl_path)
-            return heading_new_path, wp_index
+            return heading_new_path, wp_index, True
 
         heading_diff_old_path = cs.calculate_heading_diff(self.state.heading, heading_old_path)
         heading_diff_new_path = cs.calculate_heading_diff(self.state.heading, heading_new_path)
@@ -277,12 +278,12 @@ class LocalPath:
                 "New path is cheaper, updating local path "
             )
             self._update(ompl_path)
-            return heading_new_path, wp_index
+            return heading_new_path, wp_index, True
         else:
             self._logger.debug(
                 "old path is cheaper, continuing on the same path"
             )
-            return heading_old_path, wp_index
+            return heading_old_path, wp_index, False
 
     def _update(self, ompl_path: OMPLPath):
 
