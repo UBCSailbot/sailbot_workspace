@@ -1,9 +1,6 @@
 #!/bin/bash
 set -e
 
-# Set MongoDB password first
-export MONGODB_PASSWORD="f2oVKVrhukoIbaI8"
-
 # Display a help message for using this script
 function helpMessage() {
     echo -e "Test ROS package(s) in the Sailbot Workspace."
