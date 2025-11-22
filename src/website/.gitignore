@@ -34,3 +34,6 @@ next-env.d.ts
 
 # lockfile
 package-lock.json
+
+# env
+.env.development
