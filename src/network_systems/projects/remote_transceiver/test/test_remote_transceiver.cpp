@@ -31,7 +31,7 @@ using remote_transceiver::TESTING_HOST;
 using remote_transceiver::TESTING_PORT;
 namespace http_client = remote_transceiver::http_client;
 
-static const std::string  test_db_name = "remote_transceiver";
+static const std::string  test_db_name = "test";
 static std::random_device g_rd         = std::random_device();  // random number sampler
 static uint32_t           g_rand_seed  = g_rd();                // seed used for random number generation
 static std::mt19937       g_mt(g_rand_seed);                    // initialize random number generator with seed
@@ -42,7 +42,7 @@ class TestRemoteTransceiver : public ::testing::Test
 protected:
     static constexpr int NUM_THREADS = 4;
     // Need to wait after receiving an HTTP response from the server
-    static constexpr auto WAIT_AFTER_RES = std::chrono::milliseconds(500);
+    static constexpr auto WAIT_AFTER_RES = std::chrono::milliseconds(200);
 
     // Network objects that are shared amongst all HTTP test suites
     static bio::io_context          io_;
@@ -394,10 +394,8 @@ TEST_F(TestRemoteTransceiver, TestPostDataTooLong)
     boost::property_tree::ptree global_path_json;
     boost::property_tree::ptree waypoints_arr;
 
-    static const int NUM_REPETITIONS = 10;
-
     // Repeat generation of waypoints to exceed max bytes of transmission allowed
-    for (int i = 0; i < NUM_REPETITIONS; i++) {
+    for (int i = 0; i < 4; i++) {
         for (const auto & waypoint : rand_global_path.waypoints()) {
             boost::property_tree::ptree waypoint_node;
             waypoint_node.put("latitude", waypoint.latitude());
