@@ -88,7 +88,7 @@ std::tm UtilDB::getTimestamp()
 {
     // Get the current time
     std::time_t t  = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-    std::tm *   tm = std::localtime(&t);  // NOLINT(concurrency-mt-unsafe)
+    std::tm *   tm = std::gmtime(&t);  // NOLINT(concurrency-mt-unsafe)
     // tm stores years since 1900 by default, the schema expects years since 2000
     tm->tm_year -= 100;  // NOLINT(readability-magic-numbers)
     return *tm;

@@ -22,10 +22,7 @@ const std::string COLLECTION_WIND_SENSORS     = "wind_sensors";
 const std::string COLLECTION_LOCAL_PATH       = "local_path";
 const std::string COLLECTION_GLOBAL_PATH      = "global_path";
 const std::string COLLECTION_IRIDIUM_RESPONSE = "iridium_response";
-const std::string MONGODB_CONN_STR =
-  "mongodb+srv://software:xSZRMaAEwQniKePh@dev.khxge.mongodb.net/"
-  "?authSource=admin&retryWrites=true&w=majority&appName=dev";
-// "mongodb://localhost:27017";
+const std::string MONGODB_CONN_STR            = "mongodb://localhost:27017";
 
 template <typename T>
 using ProtoList = google::protobuf::RepeatedPtrField<T>;

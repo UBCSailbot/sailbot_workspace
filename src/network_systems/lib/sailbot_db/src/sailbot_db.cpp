@@ -37,15 +37,13 @@ std::ostream & operator<<(std::ostream & os, const SailbotDB::RcvdMsgInfo & info
 
 std::string SailbotDB::mkTimestamp(const std::tm & tm)
 {
-    constexpr int     YEAR_OFFSET  = 1900;  // tm_year is years since 1900
-    constexpr int     YEAR_MODULUS = 100;   // used to extract the last two digits of the year
+    // This is impossible to read. It's reading each field of tm and 0 padding it to 2 digits with either "-" or ":"
+    // in between each number
     std::stringstream tm_ss;
-    tm_ss << std::setfill('0') << std::setw(2)
-          << (tm.tm_year + YEAR_OFFSET) % YEAR_MODULUS  // format last 2 digits of year (e.g., 2025 → 25)
-          << "-" << std::setfill('0') << std::setw(2) << (tm.tm_mon + 1)  // months are 0-based (0 = January)
-          << "-" << std::setfill('0') << std::setw(2) << tm.tm_mday << " " << std::setfill('0') << std::setw(2)  // hour
-          << tm.tm_hour << ":" << std::setfill('0') << std::setw(2) << tm.tm_min << ":" << std::setfill('0')  // minute
-          << std::setw(2) << tm.tm_sec;                                                                       // second
+    tm_ss << std::setfill('0') << std::setw(2) << tm.tm_year << "-" << std::setfill('0') << std::setw(2) << tm.tm_mon
+          << "-" << std::setfill('0') << std::setw(2) << tm.tm_mday << " " << std::setfill('0') << std::setw(2)
+          << tm.tm_hour << ":" << std::setfill('0') << std::setw(2) << tm.tm_min << ":" << std::setfill('0')
+          << std::setw(2) << tm.tm_sec;
     return tm_ss.str();
 }
 
