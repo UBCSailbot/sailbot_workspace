@@ -54,13 +54,6 @@ RUN ln -fs /usr/share/zoneinfo/UTC /etc/localtime \
     && dpkg-reconfigure --frontend noninteractive tzdata \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy over ros2 instalation
-# COPY --from=builder /opt/ros/humble /opt/ros/humble
-# This unfortunately doesn't work out of the box.
-# I think it can replace installing ros-humble-ros-base and python3-argcomplete.
-# Which saves ~3 minutes.
-# However, it causes a complete failure in launching the ros2 packages for some reason.
-
 # Install ros2
 RUN apt-get update && apt-get install -y --no-install-recommends \
         curl \
