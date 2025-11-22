@@ -19,6 +19,7 @@
 #include <optional>
 #include <span>
 #include <stdexcept>
+#include <type_traits>
 
 // CAN frame definitions from: https://ubcsailbot.atlassian.net/wiki/spaces/prjt22/pages/1827176527/CAN+Frames
 namespace CAN_FP
@@ -1006,7 +1007,7 @@ public:
       CanId::TEMP_13,
       CanId::TEMP_14,
       CanId::TEMP_SENSOR_END};
-    static constexpr uint8_t CAN_BYTE_DLEN_ = 2;
+    static constexpr uint8_t CAN_BYTE_DLEN_ = 4;
     static constexpr uint8_t BYTE_OFF_TEMP  = 0;
 
     /**
@@ -1287,7 +1288,7 @@ public:
       CanId::PRESSURE_13,
       CanId::PRESSURE_14,
       CanId::PRESSURE_SENSOR_END};
-    static constexpr uint8_t CAN_BYTE_DLEN_    = 4;
+    static constexpr uint8_t CAN_BYTE_DLEN_    = 2;
     static constexpr uint8_t BYTE_OFF_PRESSURE = 0;
 
     /**
