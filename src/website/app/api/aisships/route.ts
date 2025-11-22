@@ -7,13 +7,18 @@ export async function GET() {
   try {
     await ConnectMongoDB();
 
-    const aisships: AISShipsDocument[] = await AISShips.find({}).select({
-      'ships._id': 0,
-      _id: 0,
-      __v: 0,
-    });
+    const latestAISShip: AISShipsDocument | null = await AISShips.findOne({})
+      .sort({ timestamp: -1 })
+      .select({
+        'ships._id': 0,
+        _id: 0,
+        __v: 0,
+      });
 
-    return NextResponse.json({ success: true, data: aisships });
+    return NextResponse.json({
+      success: true,
+      data: latestAISShip ? [latestAISShip] : [],
+    });
   } catch (error) {
     return NextResponse.json(
       { success: false, message: (error as Error).message },

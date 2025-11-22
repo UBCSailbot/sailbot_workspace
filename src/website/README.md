@@ -22,6 +22,12 @@ the other for production `.env.production`. The values may vary, but the environ
 - `NEXT_PUBLIC_SERVER_HOST`: The host URL of the website.
 - `NEXT_PUBLIC_SERVER_PORT`: The port number of the website.
 - `NEXT_PUBLIC_POLLING_TIME_MS`: The time interval for polling the database in milliseconds.
+- `AISSTREAM_API_KEY`: API key from aisstream.io (kept server-side only).
+- `AISSTREAM_BOUNDING_BOXES`: JSON string of bounding boxes (e.g. [[[-90,-180],[90,180]]]); set this to your sailing region to limit traffic.
+- `AISSTREAM_FILTER_SHIP_MMSI`: Optional comma-separated MMSI allowlist.
+- `AISSTREAM_FILTER_MESSAGE_TYPES`: Optional comma-separated AIS message types. Defaults to Position and Static types.
+- `AISSTREAM_FLUSH_INTERVAL_MS`: How often to write snapshots to MongoDB (default 15000 ms).
+- `AISSTREAM_MAX_SNAPSHOTS`: How many snapshots to retain before trimming (default 50).
 
 ### Package installation
 
@@ -78,6 +84,7 @@ Otherwise, here are some useful commands:
 | `npm run web:build`  | Builds the website for production                        |
 | `npm run web:start`  | Starts the production website on port 3005               |
 | `npm run simulation` | Runs the simulation script                               |
+| `node scripts/aisstream-ingest.js` | Starts the AIS ingest worker that pulls data from aisstream.io into MongoDB |
 
 ## Linters
 

@@ -9,6 +9,7 @@
     "dev": "npm run db:start && npm run web:dev",
     "web:build": "next build",
     "web:start": "next start -p 3005",
+    "ais:ingest": "node scripts/aisstream-ingest.js",
     "simulation": "bash scripts/run-simulation.sh",
     "lint": "prettier --check . && stylelint --allow-empty-input \"**/*.{css,scss}\" && next lint",
     "format": "prettier --write ."
