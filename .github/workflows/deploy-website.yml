@@ -1,0 +1,149 @@
+name: Deploy Website to Droplet
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/website/**'
+      - '.github/workflows/deploy-website.yml'
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy Website
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: src/website/package-lock.json
+
+      - name: Install dependencies
+        working-directory: src/website
+        run: npm ci
+
+      - name: Build website (standalone mode)
+        working-directory: src/website
+        run: npm run web:build
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          NEXT_PUBLIC_SERVER_HOST: ${{ secrets.NEXT_PUBLIC_SERVER_HOST }}
+          NEXT_PUBLIC_SERVER_PORT: ${{ secrets.NEXT_PUBLIC_SERVER_PORT || '3005' }}
+          NEXT_PUBLIC_POLLING_TIME_MS: ${{ secrets.NEXT_PUBLIC_POLLING_TIME_MS || '1000' }}
+
+      - name: Prepare deployment package
+        working-directory: src/website
+        run: |
+          # Create deployment directory
+          mkdir -p deploy-package
+          
+          # Copy standalone build contents (not the folder itself)
+          cp -r .next/standalone/. deploy-package/
+          
+          # Copy static files
+          mkdir -p deploy-package/.next/static
+          cp -r .next/static/. deploy-package/.next/static/
+          
+          # Copy public files
+          cp -r public deploy-package/public
+          
+          # Copy PM2 config
+          cp ecosystem.config.js deploy-package/
+          
+          echo "Deployment package prepared"
+          ls -la deploy-package/
+
+      - name: Create deployment archive
+        working-directory: src/website
+        run: |
+          tar -czf website-build.tar.gz -C deploy-package .
+          echo "Archive created: $(ls -lh website-build.tar.gz)"
+
+      - name: Transfer build to droplet
+        uses: appleboy/scp-action@v1.0.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          source: "src/website/website-build.tar.gz"
+          target: "/tmp/"
+          strip_components: 2
+
+      - name: Deploy with PM2
+        uses: appleboy/ssh-action@v1.2.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            set -e
+            
+            echo "Starting deployment..."
+            
+            # Load NVM and use Node 18
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            nvm use 18
+            
+            # Create logs directory if it doesn't exist
+            mkdir -p /root/sailbot_workspace/logs
+            
+            # Navigate to website directory
+            cd /root/sailbot_workspace/src/website
+            
+            # Backup current build (if exists)
+            if [ -d ".next" ]; then
+              echo "Backing up current build..."
+              rm -rf .next.backup
+              mv .next .next.backup
+            fi
+            
+            # Extract new build
+            echo "Extracting new build..."
+            tar -xzf /tmp/website-build.tar.gz -C /root/sailbot_workspace/src/website
+            rm /tmp/website-build.tar.gz
+            
+            # Set environment variables for PM2
+            export MONGODB_URI="${{ secrets.MONGODB_URI }}"
+            export NEXT_PUBLIC_SERVER_HOST="${{ secrets.NEXT_PUBLIC_SERVER_HOST }}"
+            export NEXT_PUBLIC_SERVER_PORT="${{ secrets.NEXT_PUBLIC_SERVER_PORT || '3005' }}"
+            export NEXT_PUBLIC_POLLING_TIME_MS="${{ secrets.NEXT_PUBLIC_POLLING_TIME_MS || '1000' }}"
+            
+            # Update PM2 ecosystem file with current env vars
+            cat > /root/sailbot_workspace/src/website/.env.production << EOF
+            MONGODB_URI=$MONGODB_URI
+            NEXT_PUBLIC_SERVER_HOST=$NEXT_PUBLIC_SERVER_HOST
+            NEXT_PUBLIC_SERVER_PORT=$NEXT_PUBLIC_SERVER_PORT
+            NEXT_PUBLIC_POLLING_TIME_MS=$NEXT_PUBLIC_POLLING_TIME_MS
+            NODE_ENV=production
+            PORT=3005
+            EOF
+            
+            # Check if PM2 process exists
+            if pm2 list | grep -q "sailbot-website"; then
+              echo "Reloading existing PM2 process..."
+              pm2 reload ecosystem.config.js --update-env
+            else
+              echo "Starting new PM2 process..."
+              pm2 start ecosystem.config.js
+            fi
+            
+            # Save PM2 process list
+            pm2 save
+            
+            # Show PM2 status
+            echo "Deployment complete"
+            pm2 list
+            pm2 info sailbot-website
+            
+            # Cleanup old backup after successful deployment
+            rm -rf .next.backup
+            
+            echo "Website deployed successfully"

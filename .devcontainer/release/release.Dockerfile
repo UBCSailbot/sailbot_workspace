@@ -2,6 +2,7 @@ FROM ghcr.io/ubcsailbot/sailbot_workspace/dev:setup-included-2 AS builder
 ARG USERNAME=ros
 ARG HOME=/home/${USERNAME}
 WORKDIR ${ROS_WORKSPACE}
+
 COPY scripts/ ./scripts
 # CACHEBUST forces Docker to invalidate the cache for this layer.
 # This ensures that changes in src/ are picked up during the build.
