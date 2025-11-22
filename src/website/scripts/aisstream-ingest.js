@@ -240,11 +240,26 @@ const handleStaticData = (aisMessage) => {
   }
 };
 
-const processMessage = (rawData) => {
+const readPayload = async (rawData) => {
+  if (typeof rawData === 'string') {
+    return rawData;
+  }
+  // Node WebSocket may deliver Buffer/Uint8Array
+  if (rawData instanceof Buffer || rawData instanceof Uint8Array) {
+    return rawData.toString('utf8');
+  }
+  // Undici WebSocket can deliver Blob
+  if (rawData && typeof rawData.text === 'function') {
+    return await rawData.text();
+  }
+  // Fallback
+  return String(rawData);
+};
+
+const processMessage = async (rawData) => {
   let parsed;
   try {
-    const payload =
-      typeof rawData === 'string' ? rawData : rawData.toString('utf8');
+    const payload = await readPayload(rawData);
     parsed = JSON.parse(payload);
   } catch (err) {
     console.warn('Received non-JSON AIS message', err);
@@ -342,7 +357,7 @@ const startWebSocket = () => {
     flushIntervalId = setInterval(flushSnapshot, DEFAULT_FLUSH_INTERVAL_MS);
   };
 
-  socket.onmessage = (event) => processMessage(event.data);
+  socket.onmessage = async (event) => processMessage(event.data);
 
   socket.onerror = (err) => {
     console.error('WebSocket error', err);
