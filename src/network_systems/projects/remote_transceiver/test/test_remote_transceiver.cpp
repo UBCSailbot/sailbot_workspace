@@ -35,7 +35,7 @@ static const std::string  test_db_name = "test";
 static std::random_device g_rd         = std::random_device();  // random number sampler
 static uint32_t           g_rand_seed  = g_rd();                // seed used for random number generation
 static std::mt19937       g_mt(g_rand_seed);                    // initialize random number generator with seed
-static UtilDB             g_test_db(test_db_name, SailbotDB::MONGODB_CONN_STR(), std::make_shared<std::mt19937>(g_mt));
+static UtilDB             g_test_db(test_db_name, MONGODB_CONN_STR, std::make_shared<std::mt19937>(g_mt));
 
 class TestRemoteTransceiver : public ::testing::Test
 {
@@ -84,7 +84,7 @@ protected:
 // Initialize static objects
 bio::io_context  TestRemoteTransceiver::io_{TestRemoteTransceiver::NUM_THREADS};
 std::vector      TestRemoteTransceiver::io_threads_ = std::vector<std::thread>(NUM_THREADS);
-SailbotDB        TestRemoteTransceiver::server_db_  = SailbotDB(test_db_name, SailbotDB::MONGODB_CONN_STR());
+SailbotDB        TestRemoteTransceiver::server_db_  = SailbotDB(test_db_name, MONGODB_CONN_STR);
 bio::ip::address TestRemoteTransceiver::addr_       = bio::ip::make_address(TESTING_HOST);
 
 /**
