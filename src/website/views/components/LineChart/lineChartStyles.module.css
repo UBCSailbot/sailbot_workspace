@@ -13,7 +13,6 @@
   margin: 0;
   font-size: 18px;
   font-weight: 600;
-  color: white;
 }
 
 .downloadOptions {
@@ -46,8 +45,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #6b6b6b;
+  color: var(--accent-color-3);
   font-size: 16px;
-  border: 1px solid #6b6b6b;
+  border: 1px solid var(--accent-color-3);
   border-radius: 4px;
 }
