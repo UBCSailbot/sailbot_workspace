@@ -44,6 +44,7 @@ TRUE_WIND_SPEEDS = [0, 9.3, 18.5, 27.8, 37.0]
 SAILING_ANGLES = [0, 20, 30, 45, 90, 135, 180]
 
 ESTIMATED_TOP_BOAT_SPEED = np.max(BOAT_SPEEDS)
+TURN_THRESHOLD_ANGLE_RADIANS = 0.01
 
 
 class WindObjective(ob.OptimizationObjective):
@@ -148,7 +149,6 @@ class TimeObjective(ob.OptimizationObjective):
 
         s1_xy = cs.XY(s1.getX(), s1.getY())
         s2_xy = cs.XY(s2.getX(), s2.getY())
-        return ob.Cost(0.0)
         return ob.Cost(
             TimeObjective.time_cost(
                 s1_xy,
@@ -208,6 +208,40 @@ class TimeObjective(ob.OptimizationObjective):
         sailing_angle_degrees = abs(cs.bound_to_180(math.degrees(sailing_angle_radians)))
 
         return TimeObjective.interpolation((true_wind_speed_kmph, sailing_angle_degrees))
+
+
+class MinimumTurnsObjective(ob.OptimizationObjective):
+    """The Minimum Turns Objective assigns a cost, to any path segment with a turn in it that is
+    proportional to the magnitude of the turn. A turn is detected when the yaw of s1 != yaw of s2.
+    The magnitude of the turn is defined as |(yaw of s1) - (yaw of s2)|.
+    """
+
+    def __init__(self, space_information):
+        super().__init__(space_information)
+
+    def motionCost(self, s1: ob.SE2StateSpace, s2: ob.SE2StateSpace) -> ob.Cost:
+        yaw1_radians = cs.bound_to_pi(s1.get().getYaw())
+        yaw2_radians = cs.bound_to_pi(s2.get().getYaw())
+        return ob.Cost(
+            MinimumTurnsObjective.turn_cost(
+                yaw1_radians, yaw2_radians, TURN_THRESHOLD_ANGLE_RADIANS
+            )
+        )
+
+    def turn_cost(yaw1_radians: float, yaw2_radians: float, thresh_radians: float) -> float:
+        """If the acute angle difference between yaw1_radians and yaw2_radians is above
+        thresh_radians this function returns a cost proportional to the difference between
+        yaw1_radians and yaw2_radians.
+
+        Args:
+            yaw1_radians (float): the yaw of state 1 in (-pi, pi]
+            yaw2_radians (float): the yaw of state 2 in (-pi, pi]
+
+        Returns:
+            float: the cost of the turning from yaw1 to yaw2
+        """
+        deltaYaw = yaw2_radians - yaw1_radians
+        return abs(math.sin(deltaYaw)) if deltaYaw > thresh_radians else 0.0
 
 
 def get_sailing_objective(
