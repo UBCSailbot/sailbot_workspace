@@ -35,6 +35,7 @@ set(ROS_DEPS
     rclcpp
     std_msgs
     custom_interfaces
+    std_srvs
 )
 find_package(ament_cmake REQUIRED)
 foreach(dep IN LISTS ROS_DEPS)
