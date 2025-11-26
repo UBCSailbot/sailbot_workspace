@@ -23,6 +23,16 @@ REF = HelperLatLon(latitude=10.0, longitude=10.0)
 
 PATH = lp.LocalPath(parent_logger=RcutilsLogger())
 
+LOCALPATHSTATE = lp.LocalPathState(
+                        gps=GPS(lat_lon=HelperLatLon(latitude=0.0, longitude=0.0),
+                                heading=HelperHeading(heading=0.0)),
+                        ais_ships=AISShips(),
+                        global_path=Path(),
+                        target_global_waypoint=HelperLatLon(latitude=3.0, longitude=3.0),
+                        filtered_wind_sensor=WindSensor(),
+                        planner="rrtstar",
+                    )
+
 
 @pytest.mark.parametrize(
     "path, waypoint_index, boat_lat_lon, correct_heading, new_wp_index",
@@ -354,10 +364,12 @@ def test_in_collision_zone(local_wp_index, reference_latlon, path, obstacles, re
         ),
     ],
 )
-def test_update_if_needed(gps, ais_ships, global_path, local_waypoint_index,
+def test_update_if_needed(
+                          gps, ais_ships, global_path, local_waypoint_index,
                           received_new_global_waypoint, target_global_waypoint,
                           filtered_wind_sensor, planner, land_multi_polygon,
-                          result_old_heading, result_index, new_path):
+                          result_old_heading, result_index, new_path
+                          ):
     heading, index, update = PATH.update_if_needed(
         gps, ais_ships, global_path,
         local_waypoint_index, received_new_global_waypoint,
@@ -374,6 +386,55 @@ def test_update_if_needed(gps, ais_ships, global_path, local_waypoint_index,
         assert heading == pytest.approx(result_old_heading, abs=1)
     assert index == result_index
     assert new_path == update
+
+
+@pytest.mark.parametrize(
+    '''
+    state, old_path, old_path_waypoint_index,
+    old_path_heading, new_path, new_path_waypoint_index,
+    new_path_heading, return_path_chosen
+    ''',
+    [
+        (
+            LOCALPATHSTATE,
+            Path(  # Old Path
+                waypoints=[
+                    HelperLatLon(latitude=0.0, longitude=0.0),
+                    HelperLatLon(latitude=1.5, longitude=1.5),  # 45 degree heading diff
+                    HelperLatLon(latitude=3.0, longitude=3.0)
+                ]
+            ),
+            1,
+            cs.GEODESIC.inv(0.0, 0.0, 1.5, 1.5),
+            Path(  # New Path
+                waypoints=[
+                    HelperLatLon(latitude=0.0, longitude=0.0),
+                    HelperLatLon(latitude=0.0, longitude=3.0),  # 90 degree heading diff
+                    HelperLatLon(latitude=3.0, longitude=3.0)
+                ]
+            ),
+            1,
+            cs.GEODESIC.inv(0.0, 0.0, 0.0, 3.0),
+            False  # Chooses old path
+        ),
+    ]
+)
+def test_compare_path_costs(
+                            state, old_path, old_path_waypoint_index, old_path_heading,
+                            new_path, new_path_waypoint_index,
+                            new_path_heading, return_path_chosen
+                            ):
+    heading, index, path = lp.compare_path_costs(state, old_path, old_path_waypoint_index,
+                                                 old_path_heading, new_path,
+                                                 new_path_waypoint_index, new_path_heading,
+                                                 return_path_chosen)
+    assert return_path_chosen == path
+    if path:
+        assert heading == pytest.approx(new_path_heading, abs=0.3)
+        assert index == new_path_waypoint_index
+    else:
+        assert heading == pytest.approx(old_path_heading, abs=0.3)
+        assert index == old_path_waypoint_index
 
 
 def test_LocalPathState_parameter_checking():
