@@ -1,6 +1,6 @@
 /**
  * AIS Stream ingest worker.
- * - Connects to aisstream.io via WebSocket using your API key.
+ * - Connects to aisstream.io via WebSocket.
  * - Listens for ship position/static messages.
  * - Keeps the latest position per vessel in memory and periodically writes a snapshot to MongoDB.
  * - Trims old snapshots to avoid unbounded growth.
