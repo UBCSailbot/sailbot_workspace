@@ -23,6 +23,7 @@ REF = HelperLatLon(latitude=10.0, longitude=10.0)
 
 PATH = lp.LocalPath(parent_logger=RcutilsLogger())
 
+
 @pytest.mark.parametrize(
     "path, waypoint_index, boat_lat_lon, correct_heading, new_wp_index",
     [
@@ -260,7 +261,7 @@ def test_in_collision_zone(local_wp_index, reference_latlon, path, obstacles, re
     ''',
     [
         (   # New global waypoint and new path, adjust heading and reset index to 1
-            GPS(lat_lon = HelperLatLon(latitude=0.0, longitude=0.0)),
+            GPS(lat_lon=HelperLatLon(latitude=0.0, longitude=0.0)),
             AISShips(),
             Path(
                 waypoints=[
@@ -279,7 +280,7 @@ def test_in_collision_zone(local_wp_index, reference_latlon, path, obstacles, re
             True
         ),
         (   # Old path hits collision zone, new path constructed with new heading, index reset to 1
-            GPS(lat_lon = HelperLatLon(latitude=1.0, longitude=1.0)), # Boat GPS
+            GPS(lat_lon=HelperLatLon(latitude=1.0, longitude=1.0)),  # Boat GPS
             AISShips(
                 ships=[
                     HelperAISShip(
@@ -297,7 +298,7 @@ def test_in_collision_zone(local_wp_index, reference_latlon, path, obstacles, re
                 waypoints=[
                     HelperLatLon(latitude=0.0, longitude=0.0),
                     HelperLatLon(latitude=1.0, longitude=1.0),
-                    HelperLatLon(latitude=2.0, longitude=2.0), # Collision zone here
+                    HelperLatLon(latitude=2.0, longitude=2.0),  # Collision zone here
                     HelperLatLon(latitude=3.0, longitude=3.0),
                 ]
             ),
@@ -312,27 +313,27 @@ def test_in_collision_zone(local_wp_index, reference_latlon, path, obstacles, re
             True
         ),
         (   # Old path is most optimal, continue to next waypoint, keep index
-            GPS(lat_lon = HelperLatLon(latitude=0.0, longitude=0.0), # Boat GPS
-                heading = HelperHeading(heading=cs.GEODESIC.inv(0.0, 0.0, 0.1, 0.1)[0])),
-            AISShips(), # AIS Ships
-            Path(       # Local path waypoints
+            GPS(lat_lon=HelperLatLon(latitude=0.0, longitude=0.0),  # Boat GPS
+                heading=HelperHeading(heading=cs.GEODESIC.inv(0.0, 0.0, 0.1, 0.1)[0])),
+            AISShips(),  # AIS Ships
+            Path(        # Local path waypoints
                 waypoints=[
                     HelperLatLon(latitude=0.0, longitude=0.0),
                     HelperLatLon(latitude=0.1, longitude=0.1),
                 ]
             ),
-            1,      # Local waypoint index
-            False,  # Received new global waypoint
-            HelperLatLon(latitude=0.1, longitude=0.1), # Target global waypoint
-            WindSensor(), # Filtered wind sensor
-            "rrtstar", # Planner
-            None,   # Land Obstacles
+            1,             # Local waypoint index
+            False,         # Received new global waypoint
+            HelperLatLon(latitude=0.1, longitude=0.1),  # Target global waypoint
+            WindSensor(),  # Filtered wind sensor
+            "rrtstar",     # Planner
+            None,          # Land Obstacles
             cs.GEODESIC.inv(0.0, 0.0, 0.1, 0.1)[0],  # Old heading
-            1,      # Expected waypoint index
-            False   # New path
+            1,             # Expected waypoint index
+            False          # New path
         ),
         (   # Old path is not optimal, reconstruct new path with new heading and index reset to 1
-            GPS(lat_lon = HelperLatLon(latitude=1.5, longitude=1.5)),
+            GPS(lat_lon=HelperLatLon(latitude=1.5, longitude=1.5)),
             AISShips(),
             Path(
                 waypoints=[
@@ -357,10 +358,12 @@ def test_update_if_needed(gps, ais_ships, global_path, local_waypoint_index,
                           received_new_global_waypoint, target_global_waypoint,
                           filtered_wind_sensor, planner, land_multi_polygon,
                           result_old_heading, result_index, new_path):
-    heading, index, update = PATH.update_if_needed(gps, ais_ships, global_path,
-                            local_waypoint_index, received_new_global_waypoint,
-                            target_global_waypoint, filtered_wind_sensor,
-                            planner, land_multi_polygon)
+    heading, index, update = PATH.update_if_needed(
+        gps, ais_ships, global_path,
+        local_waypoint_index, received_new_global_waypoint,
+        target_global_waypoint, filtered_wind_sensor,
+        planner, land_multi_polygon
+    )
     '''
     If a new path is generated, new heading should not be
     equal to old heading, otherwise they should be equal.

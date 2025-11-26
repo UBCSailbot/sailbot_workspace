@@ -168,7 +168,7 @@ class LocalPath:
         filtered_wind_sensor: ci.WindSensor,
         planner: str,
         land_multi_polygon: MultiPolygon = None,
-    ) -> tuple[Optional[float], Optional[int]]:
+    ) -> tuple[Optional[float], Optional[int], bool]:
         """Updates the local path using OMPL if conditions warrant a path change.
 
         Evaluates whether to update the current path based on several criteria:
@@ -242,20 +242,20 @@ class LocalPath:
             self._update(ompl_path)
             return heading_new_path, wp_index, True
 
-        return self.compare_path_costs(old_ompl_path, updated_wp_index, heading_old_path,
-                                        ompl_path, wp_index, heading_new_path)
-
-
+        return self.compare_path_costs(state, old_ompl_path, updated_wp_index, heading_old_path,
+                                       ompl_path, wp_index, heading_new_path)
 
     def compare_path_costs(
         self,
-        old_path: ci.Path,
+        state: LocalPathState,
+        old_path: OMPLPath,
         old_path_waypoint_index: int,
         old_path_heading: float,
-        new_path: ci.Path,
+        new_path: OMPLPath,
         new_path_waypoint_index: int,
         new_path_heading: float
     ):
+        self.state = state
         heading_diff_old_path = cs.calculate_heading_diff(self.state.heading, old_path_heading)
         heading_diff_new_path = cs.calculate_heading_diff(self.state.heading, new_path_heading)
 
@@ -291,13 +291,13 @@ class LocalPath:
             self._logger.debug(
                 "New path is cheaper, updating local path "
             )
-            self._update(ompl_path)
-            return heading_new_path, wp_index, True
+            self._update(new_path)
+            return new_path_heading, new_path_waypoint_index, True
         else:
             self._logger.debug(
                 "old path is cheaper, continuing on the same path"
             )
-            return heading_old_path, wp_index, False
+            return old_path_heading, old_path_waypoint_index, False
 
     def _update(self, ompl_path: OMPLPath):
 
