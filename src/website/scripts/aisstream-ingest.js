@@ -31,6 +31,7 @@ const envCandidates = [
   path.resolve(__dirname, '../.env'),
 ];
 envCandidates.forEach((envPath) => {
+  // Load the first env file we find so local dev stays simple.
   if (fs.existsSync(envPath)) {
     dotenv.config({ path: envPath });
   }
@@ -96,6 +97,7 @@ const messageTypeFilter =
     : POSITION_MESSAGE_TYPES;
 
 const subscriptionPayload = {
+  // aisstream.io subscription body; bounding box + filters drive what we ingest.
   APIKey: AISSTREAM_API_KEY,
   BoundingBoxes: boundingBoxes,
   FilterMessageTypes: messageTypeFilter,
@@ -241,6 +243,7 @@ const handleStaticData = (aisMessage) => {
 };
 
 const readPayload = async (rawData) => {
+  // Normalize WebSocket payloads across Node (Buffer/Uint8Array) and undici (Blob).
   if (typeof rawData === 'string') {
     return rawData;
   }
@@ -291,6 +294,7 @@ const flushSnapshot = async () => {
   if (vesselPositions.size === 0) {
     return;
   }
+  // Persist the latest known positions for each vessel as a single snapshot.
   const ships = Array.from(vesselPositions.values()).map((ship) => ({
     id: ship.id,
     latitude: ship.latitude,
@@ -339,6 +343,7 @@ let reconnectAttempts = 0;
 let flushIntervalId = null;
 
 const startWebSocket = () => {
+  // Connect and keep a long-lived WebSocket alive with exponential backoff.
   console.log('Connecting to aisstream.io ...');
   const socket = new WebSocket('wss://stream.aisstream.io/v0/stream');
 
