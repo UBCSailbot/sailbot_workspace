@@ -44,7 +44,6 @@ TRUE_WIND_SPEEDS = [0, 9.3, 18.5, 27.8, 37.0]
 SAILING_ANGLES = [0, 20, 30, 45, 90, 135, 180]
 
 ESTIMATED_TOP_BOAT_SPEED = np.max(BOAT_SPEEDS)
-TURN_THRESHOLD_ANGLE_RADIANS = 0.01
 
 
 class WindObjective(ob.OptimizationObjective):
@@ -93,7 +92,7 @@ class WindObjective(ob.OptimizationObjective):
             radians (-pi, pi]
 
         Returns:
-            float: The cost the path segment from s1 to s2
+            float: The cost the path segment from s1 to s2, in the interval [0, 1]
         """
         segment_heading_radians = cs.get_path_segment_true_bearing(s1, s2, rad=True)
         angle_diff_radians = segment_heading_radians - true_wind_direction_radians
@@ -173,7 +172,8 @@ class TimeObjective(ob.OptimizationObjective):
             true_wind_speed_kmph (float): The true wind speed in km/h
 
         Returns:
-            float: The cost the path segment from s1 to s2
+            float: The cost the path segment from s1 to s2, in the interval [0, 1]
+
         """
         path_segment_true_bearing_radians = cs.get_path_segment_true_bearing(s1, s2, rad=True)
 
@@ -228,9 +228,9 @@ class MinimumTurnsObjective(ob.OptimizationObjective):
             )
         )
 
-    def turn_cost(yaw1_radians: float, yaw2_radians: float, thresh_radians: float) -> float:
-        """If the acute angle difference between yaw1_radians and yaw2_radians is above
-        thresh_radians this function returns a cost proportional to the difference between
+    @staticmethod
+    def turn_cost(yaw1_radians: float, yaw2_radians: float) -> float:
+        """This function returns a cost proportional to the size of the acute angle between
         yaw1_radians and yaw2_radians.
 
         Args:
@@ -238,10 +238,9 @@ class MinimumTurnsObjective(ob.OptimizationObjective):
             yaw2_radians (float): the yaw of state 2 in (-pi, pi]
 
         Returns:
-            float: the cost of the turning from yaw1 to yaw2
+            float: the cost of the turning from yaw1 to yaw2, in the interval [0, 1]
         """
-        deltaYaw = yaw2_radians - yaw1_radians
-        return abs(math.sin(deltaYaw)) if deltaYaw > thresh_radians else 0.0
+        return abs(cs.bound_to_pi(yaw2_radians - yaw1_radians)) / np.pi # dividing by pi normalizes to [0, 1]
 
 
 def get_sailing_objective(
