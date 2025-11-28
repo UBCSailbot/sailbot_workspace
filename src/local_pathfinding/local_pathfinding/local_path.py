@@ -242,12 +242,11 @@ class LocalPath:
             self._update(ompl_path)
             return heading_new_path, wp_index, True
 
-        return self.compare_path_costs(state, old_ompl_path, updated_wp_index, heading_old_path,
+        return self.compare_path_costs(old_ompl_path, updated_wp_index, heading_old_path,
                                        ompl_path, wp_index, heading_new_path)
 
     def compare_path_costs(
         self,
-        state: LocalPathState,
         old_path: OMPLPath,
         old_path_waypoint_index: int,
         old_path_heading: float,
@@ -255,9 +254,10 @@ class LocalPath:
         new_path_waypoint_index: int,
         new_path_heading: float
     ):
-        self.state = state
-        heading_diff_old_path = cs.calculate_heading_diff(self.state.heading, old_path_heading)
-        heading_diff_new_path = cs.calculate_heading_diff(self.state.heading, new_path_heading)
+        heading = self.state.heading if self.state else 0.0
+
+        heading_diff_old_path = cs.calculate_heading_diff(heading, old_path_heading)
+        heading_diff_new_path = cs.calculate_heading_diff(heading, new_path_heading)
 
         old_cost = old_path.get_cost(old_path_waypoint_index)
         new_cost = new_path.get_cost(new_path_waypoint_index)
