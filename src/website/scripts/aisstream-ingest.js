@@ -24,6 +24,7 @@ const fs = require('fs');
 const path = require('path');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
+const WebSocket = require('ws');
 
 const envCandidates = [
   path.resolve(__dirname, '../.env.development'),
