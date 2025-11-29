@@ -138,6 +138,17 @@ public:
     bool send();
 
     /**
+     * @brief Debug helper that sends a small payload through the same
+     *        flow used by `send()` but using the provided bytes. Useful for
+     *        testing without serializing the full sensors protobuf.
+     *        ticket #714
+     *
+     * @param data payload to send
+     * @return true on success, false on failure
+     */
+    bool debugSendAT(const std::string & data);
+
+    /**
      * @brief Send a debug command and return the output
      *
      * @param cmd string to send to the serial port
@@ -190,6 +201,7 @@ private:
      * @param cmd command to send
      */
     bool send(const AT::Line & cmd);
+
 
     /**
      * @brief Read responses from serial
