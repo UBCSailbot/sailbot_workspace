@@ -222,11 +222,7 @@ class MinimumTurnsObjective(ob.OptimizationObjective):
     def motionCost(self, s1: ob.SE2StateSpace, s2: ob.SE2StateSpace) -> ob.Cost:
         yaw1_radians = cs.bound_to_pi(s1.get().getYaw())
         yaw2_radians = cs.bound_to_pi(s2.get().getYaw())
-        return ob.Cost(
-            MinimumTurnsObjective.turn_cost(
-                yaw1_radians, yaw2_radians, TURN_THRESHOLD_ANGLE_RADIANS
-            )
-        )
+        return ob.Cost(MinimumTurnsObjective.turn_cost(yaw1_radians, yaw2_radians))
 
     @staticmethod
     def turn_cost(yaw1_radians: float, yaw2_radians: float) -> float:
@@ -240,7 +236,8 @@ class MinimumTurnsObjective(ob.OptimizationObjective):
         Returns:
             float: the cost of the turning from yaw1 to yaw2, in the interval [0, 1]
         """
-        return abs(cs.bound_to_pi(yaw2_radians - yaw1_radians)) / np.pi # dividing by pi normalizes to [0, 1]
+        # dividing by pi normalizes to [0, 1]
+        return abs(cs.bound_to_pi(yaw2_radians - yaw1_radians)) / np.pi
 
 
 def get_sailing_objective(
