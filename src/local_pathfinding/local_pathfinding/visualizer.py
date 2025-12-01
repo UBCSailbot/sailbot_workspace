@@ -646,18 +646,20 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
     # Update Layout
     x_min, y_min, x_max, y_max = state_space.bounds
     fig.update_layout(
-        title="Path Planning",
-        xaxis_title="X Coordinate",
-        yaxis_title="Y Coordinate",
+        xaxis_title="X (Km)",
+        yaxis_title="Y (Km)",
+        font=dict(color="rgb(18, 70, 139)"),
         xaxis=dict(
             range=[x_min, x_max],
             domain=[0.0, 0.98],
         ),
-        yaxis=dict(
-            range=[y_min, y_max],
-            domain=[0.25, 1.0],
+        yaxis=dict(range=[y_min, y_max], domain=[0.30, 1.0]),
+        legend=dict(
+            orientation="h",
+            y=1.15,
+            x=0.5,
+            xanchor="center",
         ),
-        legend=dict(x=0, y=1),  # Position the legend at the top left
         showlegend=True,
         uirevision="constant",
     )
