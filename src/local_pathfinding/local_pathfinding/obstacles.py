@@ -30,9 +30,12 @@ class Obstacle:
             obstacle's collision zone. Shape depends on the child class.
     """
 
-    def __init__(self, reference: ci.HelperLatLon,
-                 sailbot_position: ci.HelperLatLon,
-                 collision_zone: MultiPolygon = None):
+    def __init__(
+        self,
+        reference: ci.HelperLatLon,
+        sailbot_position: ci.HelperLatLon,
+        collision_zone: MultiPolygon = None,
+    ):
         self.reference = reference
         self.sailbot_position_latlon = sailbot_position
         self.sailbot_position = cs.latlon_to_xy(self.reference, self.sailbot_position_latlon)
@@ -310,7 +313,8 @@ class Boat(Obstacle):
 
         if len(quad_roots) == 0:
             # Sailbot and this Boat will never collide
-            return PROJ_HOURS_NO_COLLISION * self.ais_ship.sog.speed
+            # return PROJ_HOURS_NO_COLLISION * self.ais_ship.sog.speed
+            return 0.0
 
         # Use the smaller positive time, if there is one
         t = min(quad_roots)

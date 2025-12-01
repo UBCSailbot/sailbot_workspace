@@ -268,7 +268,6 @@ def get_sailing_objective(
         ),
         weight=WIND_OBJECTIVE_WEIGHT,
     )
-
     multiObjective.addObjective(
         objective=TimeObjective(
             space_information, true_wind_direction_radians, true_wind_speed_kmph
