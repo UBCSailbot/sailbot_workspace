@@ -6,12 +6,12 @@ The main function of this file spawns two processes:
 """
 
 from collections import deque
-from multiprocessing import Manager, Process
+from multiprocessing import Manager, Process, Queue
 
-import custom_interfaces.msg as ci
 import rclpy
 from rclpy.node import Node
 
+import custom_interfaces.msg as ci
 import local_pathfinding.visualizer as vz
 
 
@@ -36,7 +36,7 @@ def main():
         dash_process.join()
 
 
-def ros_node(queue: Manager.Queue):
+def ros_node(queue: Queue):
     """Launches the observer node.
 
     Args:
@@ -62,17 +62,17 @@ class SailbotObserver(Node):
         local_path_sub (Subscription): Subscribes to the `LPathData` topic.
 
     Attributes From Subscribers:
-        queue (Manager.Queue): An interprocess queue used to pipe local pathfinding data to the
+        queue (Queue): An interprocess queue used to pipe local pathfinding data to the
                                dash app process
         msgs (deque): An ordinary queue for storing the last x messages received by the subscriber
     """
 
-    def __init__(self, queue: Manager.Queue):
+    def __init__(self, queue: Queue):
         super().__init__("navigate_observer")
         self.get_logger().info("SailbotObserver node initialized")
 
         self.local_path_sub = self.create_subscription(
-            ms_type=ci.LPathData,
+            msg_type=ci.LPathData,
             topic="local_path",
             callback=self.local_path_callback,
             qos_profile=10,
