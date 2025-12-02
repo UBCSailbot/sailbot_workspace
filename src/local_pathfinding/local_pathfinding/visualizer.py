@@ -244,15 +244,8 @@ def dash_app(q: Queue):
                 "UBC Sailbot Pathfinding",
                 style={"fontFamily": "Consolas, monospace", "color": "rgb(18, 70, 139)"},
             ),
-            dcc.Graph(
-                id="live-graph",
-                style={"height": "90vh", "width": "100%"}
-            ),
-            dcc.Interval(
-                id="interval-component",
-                interval=2500,
-                n_intervals=0
-            ),
+            dcc.Graph(id="live-graph", style={"height": "90vh", "width": "100%"}),
+            dcc.Interval(id="interval-component", interval=2500, n_intervals=0),
         ],
     )
     app.run(debug=True, use_reloader=False)
@@ -429,10 +422,7 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
         arrowcolor="purple",
         standoff=2,
         text="",
-        hovertext=(
-            f"<b>🌬️ Apparent Wind</b><br>"
-            f"speed: {aw_mag:.2f} kmph<br>"
-        ),
+        hovertext=(f"<b>🌬️ Apparent Wind</b><br>" f"speed: {aw_mag:.2f} kmph<br>"),
         hoverlabel=dict(bgcolor="white"),
     )
 
@@ -453,10 +443,7 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
         arrowcolor="blue",
         standoff=2,
         text="",
-        hovertext=(
-            f"<b>🌬️ True Wind</b><br>"
-            f"speed: {tw_mag:.2f} kmph<br>"
-        ),
+        hovertext=(f"<b>🌬️ True Wind</b><br>" f"speed: {tw_mag:.2f} kmph<br>"),
         hoverlabel=dict(bgcolor="white"),
     )
 
@@ -477,10 +464,7 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
         arrowcolor="red",
         standoff=2,
         text="",
-        hovertext=(
-            f"<b>🛶 Boat Wind</b><br>"
-            f"speed: {bw_mag:.2f} kmph<br>"
-        ),
+        hovertext=(f"<b>🛶 Boat Wind</b><br>" f"speed: {bw_mag:.2f} kmph<br>"),
         hoverlabel=dict(bgcolor="white"),
     )
 
@@ -662,18 +646,20 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
     # Update Layout
     x_min, y_min, x_max, y_max = state_space.bounds
     fig.update_layout(
-        title="Path Planning",
-        xaxis_title="X Coordinate",
-        yaxis_title="Y Coordinate",
+        xaxis_title="X (Km)",
+        yaxis_title="Y (Km)",
+        font=dict(color="rgb(18, 70, 139)"),
         xaxis=dict(
             range=[x_min, x_max],
             domain=[0.0, 0.98],
         ),
-        yaxis=dict(
-            range=[y_min, y_max],
-            domain=[0.25, 1.0],
+        yaxis=dict(range=[y_min, y_max], domain=[0.30, 1.0]),
+        legend=dict(
+            orientation="h",
+            y=1.15,
+            x=0.5,
+            xanchor="center",
         ),
-        legend=dict(x=0, y=1),  # Position the legend at the top left
         showlegend=True,
         uirevision="constant",
     )
