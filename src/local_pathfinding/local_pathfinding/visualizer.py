@@ -13,6 +13,7 @@ Main Components:
 """
 
 import math
+from collections import deque
 from multiprocessing import Queue
 from typing import List, Optional, Tuple
 
@@ -55,7 +56,7 @@ class VisualizerState:
         final_local_wp_y (List[Tuple[float, float]]): Y coordinates of the final local waypoint
     """
 
-    def __init__(self, msgs: List[ci.LPathData]):
+    def __init__(self, msgs: deque[ci.LPathData]):
         if not msgs:
             raise ValueError("msgs must not be None")
 

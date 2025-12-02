@@ -7,11 +7,12 @@ The main function of this file spawns two processes:
 
 from collections import deque
 from multiprocessing import Manager, Process, Queue
+from typing import Deque
 
+import custom_interfaces.msg as ci
 import rclpy
 from rclpy.node import Node
 
-import custom_interfaces.msg as ci
 import local_pathfinding.visualizer as vz
 
 
@@ -77,7 +78,7 @@ class SailbotObserver(Node):
             callback=self.local_path_callback,
             qos_profile=10,
         )
-        self.msgs = deque(maxlen=100)
+        self.msgs: Deque[ci.LPathData] = deque(maxlen=100)
         self.queue = queue
 
     def local_path_callback(self, msg: ci.LPathData):
