@@ -1,6 +1,8 @@
 """
-Creates two processes, one for the ROS node and one for the Dash app.
-The ROS node subscribes to the local_path topic and the Dash app visualizes the data.
+The main function of this file spawns two processes:
+    1. The SailbotObserver node which observes the navigate node
+    2. the Dash app to display the visualizer data
+
 """
 
 from collections import deque
@@ -13,8 +15,29 @@ from rclpy.node import Node
 import local_pathfinding.visualizer as vz
 
 
-def ros_node(queue):
-    """Spins up the ROS node.
+def main():
+    interprocess_manager = Manager()
+    interprocess_queue = interprocess_manager.Queue()
+
+    ros_process = Process(target=ros_node, args=(interprocess_queue,), daemon=True)
+    dash_process = Process(target=vz.dash_app, args=(interprocess_queue,), daemon=True)
+
+    ros_process.start()
+    dash_process.start()
+
+    try:
+        ros_process.join()
+        dash_process.join()
+    except KeyboardInterrupt:
+        print("Keyboard interrupt [^C], shutting down.")
+        ros_process.terminate()
+        dash_process.terminate()
+        ros_process.join()
+        dash_process.join()
+
+
+def ros_node(queue: Manager.Queue):
+    """Launches the observer node.
 
     Args:
         queue (Manager.Queue): Stores VisualizerState Objects for visualization in the dash app
@@ -32,89 +55,35 @@ def ros_node(queue):
 
 
 class SailbotObserver(Node):
-    """Observes the Sailbot node, through the local_path topic, as it navigates.
+    """Observes all the data that the navigate node is currently aware of and is using to produce
+       a local path.
 
     Subscribers:
-        local_path_sub (Subscription): Subscribe to a `LPathData` msg.
+        local_path_sub (Subscription): Subscribes to the `LPathData` topic.
 
     Attributes From Subscribers:
-        local_path: (ci.LPathData)
+        queue (Manager.Queue): An interprocess queue used to pipe local pathfinding data to the
+                               dash app process
+        msgs (deque): An ordinary queue for storing the last x messages received by the subscriber
     """
 
-    def __init__(self, queue):
+    def __init__(self, queue: Manager.Queue):
         super().__init__("navigate_observer")
         self.get_logger().info("SailbotObserver node initialized")
 
-        # Simple subscription to verify callback
         self.local_path_sub = self.create_subscription(
-            ci.LPathData,  # Ensure this matches the actual message type
-            "local_path",  # Ensure the topic name is correct
-            self.local_path_callback,
-            10,  # QoS profile
+            ms_type=ci.LPathData,
+            topic="local_path",
+            callback=self.local_path_callback,
+            qos_profile=10,
         )
-
-        self.msgs = deque(maxlen=100)  # Store the last 100 messages
-        self.prev_msg = None
+        self.msgs = deque(maxlen=100)
         self.queue = queue
 
-    def local_path_callback(self, msg):
-        if not self.is_msg_different(msg):
-            self.get_logger().debug("Message is the same as previous, skipping update.")
-            return
-
-        self.prev_msg = msg
-        self.msgs.append(msg)
-
+    def local_path_callback(self, msg: ci.LPathData):
         self.get_logger().debug(f"Received new local path message: {msg}")
-
-        self.state = vz.VisualizerState(msgs=self.msgs)
-        self.queue.put(self.state)
-
-    # helper functions
-    def is_msg_different(self, msg) -> bool:
-        """Check if the current message is different from the previous one.
-        This is used to avoid sending the same message multiple times.
-
-        Args:
-            msg (ci.LPathData): The current message to compare.
-
-        Returns:
-            bool: True if the message is different, False otherwise.
-        """
-        if self.prev_msg is None:
-            return True
-
-        # Compare previous messages to the current messages
-        if self.prev_msg.local_path.waypoints != msg.local_path.waypoints:
-            return True
-        if self.prev_msg.global_path.waypoints != msg.global_path.waypoints:
-            return True
-        if self.prev_msg.gps != msg.gps:
-            return True
-        # TODO: Add more comparisons when checking other ROS message attributes
-
-        return False
-
-
-def main():
-    manager = Manager()  # Create a manager object to share data between processes
-    queue = manager.Queue()
-
-    ros_process = Process(target=ros_node, args=(queue,), daemon=True)
-    dash_process = Process(target=vz.dash_app, args=(queue,), daemon=True)
-
-    ros_process.start()
-    dash_process.start()
-
-    try:
-        ros_process.join()
-        dash_process.join()
-    except KeyboardInterrupt:
-        print("Keyboard interrupt [^C], shutting down.")
-        ros_process.terminate()
-        dash_process.terminate()
-        ros_process.join()
-        dash_process.join()
+        self.msgs.append(msg)
+        self.queue.put(vz.VisualizerState(msgs=self.msgs))
 
 
 if __name__ == "__main__":
