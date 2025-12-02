@@ -10,9 +10,6 @@ Main Components:
 2. Dash App: A web application that displays the path planning data in real-time.
 3. Plotting Functions: Functions to create and update the plots based on the processed data.
 4. Callbacks: Functions that update the plots at regular intervals.
-
-usage:
-Call the `dash_app` function with a multiprocessing shared Manager.queue to start the Dash app.
 """
 
 import math
