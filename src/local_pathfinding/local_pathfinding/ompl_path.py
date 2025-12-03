@@ -17,7 +17,7 @@ from ompl import base
 from ompl import geometric as og
 from ompl import util as ou
 from rclpy.impl.rcutils_logger import RcutilsLogger
-from shapely.geometry import MultiPolygon, Polygon, box, Point
+from shapely.geometry import MultiPolygon, Point, Polygon, box
 
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.obstacles as ob
@@ -77,10 +77,8 @@ class OMPLPath:
 
         self.solved = self._simple_setup.solve(time=max_runtime)  # time is in seconds
 
-        # TODO: play around with simplifySolution()
-        # if self.solved:
-        #     # try to shorten the path
-        #     simple_setup.simplifySolution()
+        if self.solved:
+            self._simple_setup.simplifySolution()
 
     @staticmethod
     def init_obstacles(
@@ -238,20 +236,19 @@ class OMPLPath:
     def _init_simple_setup(self, local_path_state, land_multi_polygon) -> og.SimpleSetup:
         self.state = local_path_state
 
-        # Create buffered spaces and extract their centers
+        # Create buffered rectangles around sailbot's position and the goal state
         start_position_in_xy = cs.latlon_to_xy(self.state.reference_latlon, self.state.position)
         start_box = self.create_buffer_around_position(start_position_in_xy, self._box_buffer)
         start_x = start_position_in_xy.x
         start_y = start_position_in_xy.y
 
-        goal_position_in_xy = cs.XY(0, 0)  # Global waypoint is used as the reference point
+        # goal is at (0,0) because global waypoint is used as the reference point
+        goal_position_in_xy = cs.XY(0, 0)
         goal_polygon = self.create_buffer_around_position(goal_position_in_xy, self._box_buffer)
         goal_x, goal_y = goal_position_in_xy
 
         # create an SE2 state space: rotation and translation in a plane
         space = base.SE2StateSpace()
-
-        # set the bounds of the state space
         bounds = base.RealVectorBounds(dim=2)
         state_space = box(*MultiPolygon([start_box, goal_polygon]).bounds)
         x_min, y_min, x_max, y_max = state_space.bounds
@@ -276,7 +273,6 @@ class OMPLPath:
             land_multi_polygon=land_multi_polygon,
         )
 
-        # create a simple setup object
         simple_setup = og.SimpleSetup(space)
         simple_setup.setStateValidityChecker(base.StateValidityCheckerFn(OMPLPath.is_state_valid))
 
@@ -291,19 +287,13 @@ class OMPLPath:
         )
         simple_setup.setStartAndGoalStates(start, goal)
 
-        # Constructs a space information instance for this simple setup
         space_information = simple_setup.getSpaceInformation()
 
-        # figure this out
         self.state.planner = og.RRTstar(space_information)
-
-        # set the optimization objective of the simple setup object
-        # TODO: implement and add optimization objective here
 
         objective = get_sailing_objective(
             space_information,
             simple_setup,
-            # This too
             self.state.heading,
             self.state.speed,
             self.state.wind_direction,
@@ -311,12 +301,9 @@ class OMPLPath:
         )
 
         simple_setup.setOptimizationObjective(objective)
-
-        # set the planner of the simple setup object
         planner = og.RRTstar(space_information)
         planner.setRange(200.0)
         simple_setup.setPlanner(planner)
-        # print(planner)
 
         return simple_setup
 
