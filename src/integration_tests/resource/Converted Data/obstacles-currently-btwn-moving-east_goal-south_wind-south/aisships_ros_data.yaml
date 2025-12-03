@@ -1,0 +1,95 @@
+timeout: 3
+required_packages:
+- name: local_pathfinding
+  configs: null
+- name: network_systems
+  configs:
+  - all_disable.yaml
+  - example/example_en.yaml
+  - mock_ais/mock_ais_en_default.yaml
+inputs:
+- type: ROS
+  name: aisships
+  data:
+    dtype: AISShips
+    ships:
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 0
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 39.85
+        longitude:
+          dtype: float32
+          val: -130
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 10
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: 97
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
+expected_outputs:
+- type: ROS
+  name: aisships
+  data:
+    dtype: AISShips
+    ships:
+    - dtype: HelperAISShip
+      id:
+        dtype: uint32
+        val: 0
+      lat_lon:
+        dtype: HelperLatLon
+        latitude:
+          dtype: float32
+          val: 39.85
+        longitude:
+          dtype: float32
+          val: -130
+      cog:
+        dtype: HelperHeading
+        heading:
+          dtype: float32
+          val: 0
+      sog:
+        dtype: HelperSpeed
+        speed:
+          dtype: float32
+          val: 10
+      rot:
+        dtype: HelperROT
+        rot:
+          dtype: int8
+          val: 97
+      width:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 10
+      length:
+        dtype: HelperDimension
+        dimension:
+          dtype: float32
+          val: 20
