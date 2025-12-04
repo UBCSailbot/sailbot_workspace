@@ -11,7 +11,13 @@ class node_navigate_observer.SailbotObserver {
 
 }
 
-class node_navigate_observer.InterProcessManager {
+class visualizer.module_level_functions {
+    + get_unit_vector(XY) -> XY
+    + initial_plot() -> Figure
+    + dash_app(Queue)
+    + live_plot(int) -> Figure
+    + live_update_plot(VisualizerState) -> Figure
+
 }
 
 class visualizer.VisualizerState {
@@ -32,15 +38,11 @@ class visualizer.VisualizerState {
     + _process_boat_obstacles(List[HelperObstacle], HelperLatLon) -> List[Polygon]
 }
 
-class visualizer.module_level_functions {
-    + get_unit_vector(XY) -> XY
-    + initial_plot() -> Figure
-    + dash_app(Queue)
-    + live_plot(int) -> Figure
-    + live_update_plot(VisualizerState) -> Figure
-
+class node_navigate_observer.InterProcessManager {
 }
 
-node_navigate_observer.InterProcessManager --> SailbotObserver: launches
+
+
 node_navigate_observer.InterProcessManager --> visualizer.module_level_functions: calls dash_app()
+node_navigate_observer.InterProcessManager --> SailbotObserver: launches
 @enduml
