@@ -1,0 +1,50 @@
+@startuml
+
+skinparam style strictuml
+
+class node_navigate_observer.SailbotObserver {
+    + local_path_sub
+    + queue
+    + msgs
+    + __init__(queue)
+    + local_path_callback(msg)
+
+}
+
+class visualizer.module_level_functions {
+    + get_unit_vector(XY) -> XY
+    + initial_plot() -> Figure
+    + dash_app(Queue)
+    + live_plot(int) -> Figure
+    + live_update_plot(VisualizerState) -> Figure
+
+}
+
+class visualizer.VisualizerState {
+    + sailbot_lat_lon
+    + all_local_wp
+    + global_path
+    + reference_latlon
+    + sailbot_xy
+    + all_wp_xy
+    + sailbot_pos_x
+    + sailbot_pos_y
+    + final_local_wp_x
+    + final_local_wp_y
+    + __init__(deque[LPathData])
+    + _validate_message(LPathData)
+    + _split_coordinates(List[XY]) -> Tuple[List[float], List[float]]
+    + _process_land_obstacles(List[HelperObstacle], HelperLatLon) -> List[Polygon]
+    + _process_boat_obstacles(List[HelperObstacle], HelperLatLon) -> List[Polygon]
+}
+
+class node_navigate_observer.main {
+}
+
+node_navigate_observer.main --> visualizer.module_level_functions: calls dash_app()
+node_navigate_observer.main --> SailbotObserver: launches
+node_navigate_observer.SailbotObserver -> visualizer.VisualizerState: creates
+visualizer.module_level_functions -> visualizer.VisualizerState: consumes and plots
+
+
+@enduml
