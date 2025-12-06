@@ -38,11 +38,11 @@ class visualizer.VisualizerState {
     + _process_boat_obstacles(List[HelperObstacle], HelperLatLon) -> List[Polygon]
 }
 
-class node_navigate_observer.InterProcessManager {
+class node_navigate_observer.main {
 }
 
-
-
-node_navigate_observer.InterProcessManager --> visualizer.module_level_functions: calls dash_app()
-node_navigate_observer.InterProcessManager --> SailbotObserver: launches
+node_navigate_observer.main --> visualizer.module_level_functions: calls dash_app()
+node_navigate_observer.main --> SailbotObserver: launches
+node_navigate_observer.SailbotObserver -> visualizer.VisualizerState: creates
+visualizer.module_level_functions -> visualizer.VisualizerState: consumes and plots
 @enduml
