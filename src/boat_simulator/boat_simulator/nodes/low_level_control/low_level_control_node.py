@@ -21,6 +21,10 @@ from rclpy.timer import Rate
 
 import boat_simulator.common.constants as Constants
 from boat_simulator.common.types import Scalar
+from boat_simulator.nodes.low_level_control.controller import (
+    RudderController,
+    SailController,
+)
 from boat_simulator.nodes.low_level_control.decorators import (
     MutuallyExclusiveActionRoutine,
 )
@@ -60,6 +64,8 @@ class LowLevelControlNode(Node):
         self.__init_feedback_execution_rates()
         self.__init_subscriptions()
         self.__init_action_servers()
+        self.__init_rudder_controller()
+        self.__init_sail_controller()
         self.get_logger().debug("Node initialization complete. Starting execution...")
 
     def __init_private_attributes(self):
@@ -71,6 +77,8 @@ class LowLevelControlNode(Node):
         self._is_rudder_action_active = False
         self._is_sail_action_active = False
         self.__gps = None
+        self.__rudder_controller = None
+        self.__sail_controller = None
 
     def __declare_ros_parameters(self):
         """Declares ROS parameters from the global configuration file that will be used in this
@@ -92,6 +100,7 @@ class LowLevelControlNode(Node):
                 ("rudder.pid.kp", rclpy.Parameter.Type.DOUBLE),
                 ("rudder.pid.ki", rclpy.Parameter.Type.DOUBLE),
                 ("rudder.pid.kd", rclpy.Parameter.Type.DOUBLE),
+                ("rudder.pid.cp", rclpy.Parameter.Type.DOUBLE),
                 ("rudder.pid.buffer_size", rclpy.Parameter.Type.INTEGER),
                 ("wingsail.disable_actuation", rclpy.Parameter.Type.BOOL),
                 ("wingsail.fixed_angle_deg", rclpy.Parameter.Type.DOUBLE),
@@ -129,13 +138,15 @@ class LowLevelControlNode(Node):
         """
         self.get_logger().debug("Initializing rate objects...")
         self.__rudder_action_feedback_rate = self.create_rate(
-            frequency=self.get_parameter("rudder.actuation_execution_period_sec")
+            frequency=1.0
+            / self.get_parameter("rudder.actuation_execution_period_sec")
             .get_parameter_value()
             .double_value,
             clock=self.get_clock(),
         )
         self.__sail_action_feedback_rate = self.create_rate(
-            frequency=self.get_parameter("wingsail.actuation_execution_period_sec")
+            frequency=1.0
+            / self.get_parameter("wingsail.actuation_execution_period_sec")
             .get_parameter_value()
             .double_value,
             clock=self.get_clock(),
@@ -175,6 +186,43 @@ class LowLevelControlNode(Node):
             callback_group=self.sail_action_callback_group,
         )
 
+    def __init_rudder_controller(self):
+        current_heading = 0.0
+        desired_heading = 0.0
+        current_control_ang = self.rudder_angle
+        time_step = (
+            self.get_parameter("rudder.actuation_execution_period_sec")
+            .get_parameter_value()
+            .double_value
+        )
+        kp = self.get_parameter("rudder.pid.kp").get_parameter_value().double_value
+        cp = self.get_parameter("rudder.pid.cp").get_parameter_value().double_value
+        control_speed = 1 / time_step  # not sure if this is the right value to use
+        self.__rudder_controller = RudderController(
+            current_heading, desired_heading, current_control_ang, time_step, kp, cp, control_speed
+        )
+
+    def __init_sail_controller(self):
+        target_angle = (
+            self.get_parameter("wingsail.fixed_angle_deg").get_parameter_value().double_value
+        )
+        current_control_ang = (
+            self.get_parameter("wingsail.fixed_angle_deg").get_parameter_value().double_value
+        )
+        time_step = (
+            self.get_parameter("wingsail.actuation_execution_period_sec")
+            .get_parameter_value()
+            .double_value
+        )
+        control_speed = (
+            self.get_parameter("wingsail.actuation_speed_deg_per_sec")
+            .get_parameter_value()
+            .double_value
+        )
+        self.__sail_controller = SailController(
+            target_angle, current_control_ang, time_step, control_speed
+        )
+
     def __gps_sub_callback(self, msg: GPS):
         """Stores the latest GPS data.
 
@@ -202,19 +250,37 @@ class LowLevelControlNode(Node):
         Returns:
             Optional[SimRudderActuation_Result]: The result message if successful.
         """
-        self.get_logger().debug("Beginning rudder actuation...")
 
-        # TODO Placeholder loop. Replace with PID ctrl once implemented.
-        feedback_msg = SimRudderActuation.Feedback()
-        for i in range(Constants.RUDDER_ACTUATION_NUM_LOOP_EXECUTIONS):
-            feedback_msg.rudder_angle = float(i)
-            self.get_logger().debug(f"Rudder Action Server feedback: {i}")
-            self.get_logger().debug(f"Is Rudder Action Active? {self.is_rudder_action_active}")
-            goal_handle.publish_feedback(feedback=feedback_msg)
-            self.rudder_action_feedback_rate.sleep()
+        if self.get_parameter("rudder.disable_actuation").get_parameter_value().bool_value:
+            self.get_logger().info("Rudder actuation disabled.")
+        elif not self.gps:
+            self.get_logger().error("No GPS Data available.")
+        else:
+            self.get_logger().info("Rudder actuation enabled.")
 
+            current_heading = self.gps.heading.heading
+
+            desired_heading = goal_handle.request.desired_heading.heading.heading
+
+            self.__rudder_controller.reset_setpoint(desired_heading, current_heading)
+            self.get_logger().info(
+                f"Current rudder angle: {self.__rudder_controller.current_control_ang} "
+                + f"Desired rudder angle: {self.__rudder_controller.setpoint}"
+            )
+            feedback_msg = SimRudderActuation.Feedback()
+            self._is_rudder_action_active = True
+            while not self.__rudder_controller.is_target_reached:
+                self.__rudder_controller.update_state()
+                i = self.__rudder_controller.current_control_ang
+                feedback_msg.rudder_angle = i
+                goal_handle.publish_feedback(feedback=feedback_msg)
+                self.__rudder_angle = i
+                self.rudder_action_feedback_rate.sleep()
+            self.get_logger().info(f"New rudder angle: {self.rudder_angle}")
+            self.get_logger().info("Rudder actuation complete.")
+
+        self._is_rudder_action_active = False
         goal_handle.succeed()
-
         result = SimRudderActuation.Result()
         result.remaining_angular_distance = 0.0
         return result
@@ -232,17 +298,34 @@ class LowLevelControlNode(Node):
         Returns:
             Optional[SimSailTrimTabActuation_Result]: The result message if successful.
         """
-        self.get_logger().debug("Beginning sail actuation...")
 
-        # TODO Placeholder loop. Replace with sail ctrl once implemented.
-        feedback_msg = SimSailTrimTabActuation.Feedback()
-        for i in range(Constants.SAIL_ACTUATION_NUM_LOOP_EXECUTIONS):
-            feedback_msg.current_angular_position = float(i)
-            self.get_logger().debug(f"Sail Action Server feedback: {i}")
-            self.get_logger().debug(f"Is Sail Action Active? {self.is_sail_action_active}")
-            goal_handle.publish_feedback(feedback=feedback_msg)
-            self.sail_action_feedback_rate.sleep()
+        if self.get_parameter("wingsail.disable_actuation").get_parameter_value().bool_value:
+            self.get_logger().info("Trim tab actuation disabled.")
 
+        else:
+            self.get_logger().info("Trim tab actuation enabled.")
+            current_trim_tab_angle = self.sail_trim_tab_angle
+            desired_trim_tab_angle = goal_handle.request.desired_angular_position
+            self.get_logger().info(
+                f"Current trim tab angle: {current_trim_tab_angle} "
+                + f"Desired trim tab angle: {desired_trim_tab_angle}"
+            )
+            self.__sail_controller.reset_setpoint(desired_trim_tab_angle)
+
+            feedback_msg = SimSailTrimTabActuation.Feedback()
+            self._is_sail_action_active = True
+            while not self.__sail_controller.is_target_reached:
+                self.__sail_controller.update_state()
+                i = self.__sail_controller.current_control_ang
+                feedback_msg.current_angular_position = i
+                goal_handle.publish_feedback(feedback=feedback_msg)
+                self.__sail_trim_tab_angle = i
+                self.sail_action_feedback_rate.sleep()
+            self.get_logger().info(
+                f"New trim tab angle {self.__sail_controller.current_control_ang}"
+            )
+            self.get_logger().info("Trim tab actuation complete.")
+        self._is_sail_action_active = False
         goal_handle.succeed()
 
         result = SimSailTrimTabActuation.Result()
