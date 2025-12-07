@@ -114,7 +114,7 @@ class MockWindSensor(Node):
             parameters=[
                 ("pub_period_sec", rclpy.Parameter.Type.DOUBLE),
                 ("true_wind_speed_kmph", 10.0),
-                ("true_wind_direction_deg", 0),  # from the bow to the stern of the boat
+                ("true_wind_direction_deg", 90),  # from the bow to the stern of the boat
                 ("sd_speed_kmph", 1.0),
                 ("mode", "constant"),  # set constant for fixing the value to a constant
                 ("direction_kappa", 50.0),  # concentration for von Mises (higher = tighter)
