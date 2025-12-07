@@ -40,7 +40,7 @@ Behavior:
   speed, true wind direction, boat heading, and boat speed.
 - The apparent wind speed and direction are calculated using the `get_apparent_wind` function
   from `local_pathfinding.wind_coord_systems`.
-- The apparent wind direction is converted to boat coordinates using the `global_to_boat_coordinate`
+- The apparent wind direction is converted to boat coordinates using the `global_to_boat_coordinate` # noqa 
   function from `local_pathfinding.wind_coord_systems`.
 
 Example runtime usage:
@@ -92,7 +92,7 @@ class ConstantWindModel(WindModel):
             self.__true_wind_heading_deg, self.__true_wind_speed_kmph, self.__boat_heading, self.__boat_speed # noqa
         )
 
-        aw_direction_deg_boat_coord = wcs.global_to_boat_coordinate(self.__boat_heading, np.degrees(aw_direction_rad)) #noqa
+        aw_direction_deg_boat_coord = wcs.global_to_boat_coordinate(self.__boat_heading, np.degrees(aw_direction_rad)) # noqa
         return aw_speed_kmph, int(aw_direction_deg_boat_coord)
 
 
