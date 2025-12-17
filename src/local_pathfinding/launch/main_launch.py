@@ -13,7 +13,7 @@ from launch.some_substitutions_type import SomeSubstitutionsType
 from launch.substitutions import LaunchConfiguration
 
 # Local launch arguments and constants
-PACKAGE_NAME = "local_pathfinding"
+PACKAGE_NAME = "src"
 
 # Add args with DeclareLaunchArguments object(s) and utilize in setup_launch()
 LOCAL_LAUNCH_ARGUMENTS: List[DeclareLaunchArgument] = []

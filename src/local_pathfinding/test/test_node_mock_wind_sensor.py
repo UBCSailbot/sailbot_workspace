@@ -1,7 +1,7 @@
 import pytest
 import rclpy
 from rclpy.node import Node
-import custom_interfaces as ci
+import custom_interfaces.msg as ci
 
 
 class TestMockWindSensorNode(Node):
@@ -91,3 +91,13 @@ class FakeGPSNode(Node):
             f"Publishing to {self.__gps_pub.topic}, longitude: {msg.lat_lon.longitude}"
         )
         self.__gps_pub.publish(msg)
+
+
+def main(args=None):
+    rclpy.init(args=args)
+    mock_gps = FakeGPSNode()
+
+    rclpy.spin(node=mock_gps)
+
+    mock_gps.destroy_node()
+    rclpy.shutdown()
