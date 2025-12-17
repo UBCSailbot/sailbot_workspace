@@ -13,7 +13,6 @@ PACKAGE_NAME = "local_pathfinding"
 
 def generate_test_description():
 
-    node_name = "mock_wind_sensor"
     return (
         launch.LaunchDescription(
             [
@@ -21,14 +20,14 @@ def generate_test_description():
                 launch_ros.actions.Node(
                     package=PACKAGE_NAME,
                     executable="mock_wind_sensor",
-                    name=node_name,
+                    name="mock_wind_sensor",
                 ),
 
                 # Fake node
                 launch_ros.actions.Node(
                     package=PACKAGE_NAME,
-                    executable="",
-                    name=node_name,
+                    executable="fake_gps",
+                    name="fake_gps",
                 ),
 
 
