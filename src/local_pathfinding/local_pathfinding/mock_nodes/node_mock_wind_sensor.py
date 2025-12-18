@@ -44,8 +44,8 @@ def _validate_true_wind_direction_deg(value: int) -> None:
 
 
 class MockWindSensor(Node):
-    def __init__(self):
-        super().__init__("mock_wind_sensor")
+    def _init__(self):
+        super()._init__("mock_wind_sensor")
         self.declare_parameters(
             namespace="",
             parameters=[
@@ -59,25 +59,25 @@ class MockWindSensor(Node):
             self.get_parameter("pub_period_sec").get_parameter_value().double_value
         )
 
-        self.__mock_wind_sensor_timer = self.create_timer(
+        self._mock_wind_sensor_timer = self.create_timer(
             timer_period_sec=self.pub_period_sec, callback=self.mock_wind_sensor_callback
         )
-        self.__wind_sensors_pub = self.create_publisher(
+        self._wind_sensors_pub = self.create_publisher(
             msg_type=ci.WindSensor,
             topic="filtered_wind_sensor",
             qos_profile=10,
         )
-        self.__gps_sub = self.create_subscription(
+        self._gps_sub = self.create_subscription(
             msg_type=ci.GPS, topic="gps", callback=self.gps_callback, qos_profile=10
         )
-        self.__boat_heading = sc.START_HEADING.heading
-        self.__boat_speed = sc.MEAN_SPEED.speed
+        self._boat_heading = sc.START_HEADING.heading
+        self._boat_speed = sc.MEAN_SPEED.speed
 
         # Cached parameter-backed values (updated through on-set-parameters callback).
-        self.__true_wind_speed_kmph = float(
+        self._true_wind_speed_kmph = float(
             self.get_parameter("true_wind_speed_kmph").value
         )
-        self.__true_wind_direction_deg = int(
+        self._true_wind_direction_deg = int(
             self.get_parameter("true_wind_direction_deg").value
         )
 
@@ -85,21 +85,21 @@ class MockWindSensor(Node):
 
     def mock_wind_sensor_callback(self):
         aw_speed_kmph, aw_direction_rad = wcs.get_apparent_wind(
-            self.__true_wind_direction_deg,
-            self.__true_wind_speed_kmph,
-            self.__boat_heading,
-            self.__boat_speed,
+            self._true_wind_direction_deg,
+            self._true_wind_speed_kmph,
+            self._boat_heading,
+            self._boat_speed,
         )
         aw_direction_boat_coord_deg = wcs.global_to_boat_coordinate(
-            self.__boat_heading,
+            self._boat_heading,
             np.degrees(aw_direction_rad),
         )
         msg = ci.WindSensor(
             speed=ci.HelperSpeed(speed=aw_speed_kmph),
             direction=int(aw_direction_boat_coord_deg),
         )
-        self.get_logger().debug(f"Publishing to {self.__wind_sensors_pub.topic}: {msg}")
-        self.__wind_sensors_pub.publish(msg)
+        self.get_logger().debug(f"Publishing to {self._wind_sensors_pub.topic}: {msg}")
+        self._wind_sensors_pub.publish(msg)
 
     def _on_set_parameters(self, params: List[Parameter]) -> SetParametersResult:
         """ROS2 parameter update callback.
@@ -111,9 +111,9 @@ class MockWindSensor(Node):
                 if p.name == "true_wind_direction_deg":
                     new_direction_deg = int(p.value)
                     _validate_true_wind_direction_deg(new_direction_deg)
-                    self.__true_wind_direction_deg = new_direction_deg
+                    self._true_wind_direction_deg = new_direction_deg
                 else:
-                    self.__true_wind_speed_kmph = p.value
+                    self._true_wind_speed_kmph = p.value
             return SetParametersResult(successful=True)
         except Exception:
             reason = f"Please enter the direction in (-180, 180]. Got {p.value}."
@@ -126,9 +126,9 @@ class MockWindSensor(Node):
             msg (ci.GPS): The GPS message containing the boat's position.
         """
 
-        self.get_logger().debug(f"received n {self.__wind_sensors_pub.topic}: {msg}")
-        self.__boat_heading = msg.heading.heading
-        self.__boat_speed = msg.speed.speed
+        self.get_logger().debug(f"received n {self._wind_sensors_pub.topic}: {msg}")
+        self._boat_heading = msg.heading.heading
+        self._boat_speed = msg.speed.speed
 
 
 def main(args=None):
