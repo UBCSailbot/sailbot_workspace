@@ -21,6 +21,7 @@ Parameters:
 * ``true_wind_speed_kmph`` (double, default: 10.0): true wind speed (kmph)
 * ``true_wind_direction_deg`` (int, default: 90): true wind direction in global frame (deg)
     * Valid range: (-180, 180]
+* Use ros2 param set {parameter_name} {value} to update parameters at runtime.
 """
 
 import custom_interfaces.msg as ci
