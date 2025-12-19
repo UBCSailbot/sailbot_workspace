@@ -5,8 +5,6 @@ This node publishes mock data that mimics the boat's wind sensors.
 It takes **true wind** inputs in the **global frame** via ROS parameters and publishes
 **apparent wind** outputs in the **boat frame** on ``filtered_wind_sensor``.
 
-Important design notes:
-
 Node name:
 * ``mock_wind_sensor``
 
