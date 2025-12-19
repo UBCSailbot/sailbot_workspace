@@ -236,7 +236,6 @@ class MinimumTurnsObjective(ob.OptimizationObjective):
         Returns:
             float: the cost of the turning from yaw1 to yaw2, in the interval [0, 1]
         """
-        # dividing by pi normalizes to [0, 1]
         return abs(cs.bound_to_pi(yaw2_radians - yaw1_radians)) / np.pi
 
 
