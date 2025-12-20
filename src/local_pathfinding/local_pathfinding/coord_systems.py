@@ -95,23 +95,23 @@ def angle_to_vector_projections(vector_angle_rad: float, vector_magnitude: float
             - y → north component
     """
     # case 1: vector in quadrant I
-    if 0 <= vector_angle_rad <= math.pi / 2:
+    if 0 <= vector_angle_rad <= PI / 2:
         return XY(
             x=vector_magnitude * math.sin(vector_angle_rad),
             y=vector_magnitude * math.cos(vector_angle_rad),
         )
     # case 2: vector in quadrant IV
-    elif math.pi / 2 < vector_angle_rad <= math.pi:
-        alpha = vector_angle_rad - (math.pi / 2)  # alpha is with respect to positive x-axis
+    elif PI / 2 < vector_angle_rad <= PI:
+        alpha = vector_angle_rad - (PI / 2)  # alpha is with respect to positive x-axis
         return XY(x=vector_magnitude * math.cos(alpha), y=vector_magnitude * -1 * math.sin(alpha))
     # case 3: vector in quadrant II
-    elif -math.pi / 2 <= vector_angle_rad < 0:
+    elif -PI / 2 <= vector_angle_rad < 0:
         alpha = abs(vector_angle_rad)  # vector_angle_rad is negative in quadrant II
         return XY(x=vector_magnitude * -1 * math.sin(alpha), y=vector_magnitude * math.cos(alpha))
     # case 4: vector in quadrant III
-    elif -math.pi <= vector_angle_rad < -math.pi / 2:
+    elif -PI <= vector_angle_rad < -PI / 2:
         # vector_angle_rad is negative in quadrant III and alpha is with respect to negative x-axis
-        alpha = abs(vector_angle_rad) - (math.pi / 2)
+        alpha = abs(vector_angle_rad) - (PI / 2)
         return XY(
             x=vector_magnitude * -1 * math.cos(alpha), y=vector_magnitude * -1 * math.sin(alpha)
         )
