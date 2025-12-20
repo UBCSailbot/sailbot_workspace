@@ -40,7 +40,7 @@ def cartesian_to_true_bearing(cartesian_angle: float, rad: bool = False) -> floa
     return (90 - cartesian_angle + 360) % 360
 
 
-def true_bearing_to_plotly_cartesian(true_bearing_degrees: float) -> float:
+def true_bearing_to_plotly_cartesian(true_bearing_deg: float) -> float:
     """Convert a true bearing angle to the equivalent cartesian angle .
 
     Args:
@@ -50,10 +50,10 @@ def true_bearing_to_plotly_cartesian(true_bearing_degrees: float) -> float:
     Returns:
         float:  Angle where 0 is north and values increases clockwise.
     """
-    assert -180 < true_bearing_degrees <= 180
+    assert -180 < true_bearing_deg <= 180
 
-    plotly_cartesian = true_bearing_degrees
-    if -180 < true_bearing_degrees < 0:
+    plotly_cartesian = true_bearing_deg
+    if -180 < true_bearing_deg < 0:
         plotly_cartesian += 360.0
     return plotly_cartesian
 
@@ -73,14 +73,12 @@ def get_path_segment_true_bearing(s1: XY, s2: XY, rad: bool = False):
                The returned angle is always within the range (-180, 180] by default or (-pi, pi]
                radians if rad = True
     """
-    segment_cartesian_angle_radians = math.atan2(s2.y - s1.y, s2.x - s1.x)
-    segment_true_bearing_radians = cartesian_to_true_bearing(
-        segment_cartesian_angle_radians, rad=True
-    )
+    segment_cartesian_angle_rad = math.atan2(s2.y - s1.y, s2.x - s1.x)
+    segment_true_bearing_rad = cartesian_to_true_bearing(segment_cartesian_angle_rad, rad=True)
 
     if rad:
-        return bound_to_pi(segment_true_bearing_radians)
-    return bound_to_180(math.degrees(segment_true_bearing_radians))
+        return bound_to_180(segment_true_bearing_rad, rad=True)
+    return bound_to_180(math.degrees(segment_true_bearing_rad))
 
 
 def angle_to_vector_projections(vector_angle_rad: float, vector_magnitude: float) -> XY:
@@ -128,34 +126,25 @@ def km_to_meters(km: float) -> float:
     return km * 1000
 
 
-def bound_to_180(angle_degrees: float) -> float:
+def bound_to_180(angle: float, rad: bool = False) -> float:
     """Normalize an angle to the range (-180, 180].
 
     Args:
-        angle_degrees (float): Angle in degrees to be normalized.
+        angle (float): Angle in degrees to be normalized.
+        rad (bool, default False): When set to true angle is assumed to be in radians and is bound
+                                   to (-pi, pi]
 
     Returns:
-        float: The normalized angle in degrees within (-180, 180].
+        float: The normalized angle within (-180, 180] degrees or (-pi, pi] radians.
     """
-    angle = ((angle_degrees + 180) % 360) - 180
-    if math.isclose(angle, -180.0):
-        return 180.0
-    return angle
 
+    half = PI if rad else 180
+    full = 2 * PI if rad else 360
 
-def bound_to_pi(angle_radians: float) -> float:
-    """Normalize an angle to the range (-pi, pi].
-
-    Args:
-        angle_radians (float): Angle in radians to be normalized.
-
-    Returns:
-        float: The normalized angle in radians within (-pi, pi].
-    """
-    angle = ((angle_radians + PI) % (2 * PI)) - PI
-    if math.isclose(angle, -PI):
-        return PI
-    return angle
+    a = ((angle + half) % full) - half
+    if math.isclose(a, -half):
+        a = half
+    return float(a)
 
 
 def calculate_heading_diff(heading1: float, heading2: float):
@@ -205,10 +194,10 @@ def xy_to_latlon(reference: ci.HelperLatLon, xy: XY) -> ci.HelperLatLon:
     Returns:
         ci.HelperLatLon: The latitude and longitude in degrees.
     """
-    true_bearing = math.degrees(math.atan2(xy.x, xy.y))
-    distance = km_to_meters(math.hypot(*xy))
+    true_bearing_deg = math.degrees(math.atan2(xy.x, xy.y))
+    distance_m = km_to_meters(math.hypot(*xy))
     dest_lon, dest_lat, _ = GEODESIC.fwd(
-        reference.longitude, reference.latitude, true_bearing, distance
+        reference.longitude, reference.latitude, true_bearing_deg, distance_m
     )
 
     return ci.HelperLatLon(latitude=dest_lat, longitude=dest_lon)
