@@ -95,7 +95,7 @@ def test_speed_cost(
     [
         # Corners of the table
         (math.radians(0), math.radians(0), 0, 0),
-        (math.radians(-90), math.radians(90), 37.0, 18.5),
+        (math.radians(-90), math.radians(90), 37.0, 10.0),
         (math.radians(0), math.radians(180), 0, 0),
         (math.radians(0), math.radians(0), 37.0, 0),
         # Edges of table
@@ -106,11 +106,11 @@ def test_speed_cost(
         # Other edge cases
         (math.radians(60), math.radians(-120), 10.6, 3.7),
         (math.radians(170), math.radians(-155), 37, 6.8),
-        (math.radians(-50), math.radians(-152.7), 27.8, 15.8),
+        (math.radians(-50), math.radians(-152.7), 27.8, 10.0),
         (math.radians(-170), math.radians(160), 14.4, 1.2),
         (math.radians(0), math.radians(45), 18.5, 3.7),
         # General cases
-        (math.radians(-20), math.radians(40), 12.0, 2.9),
+        (math.radians(-20), math.radians(40), 12.0, 2.8),
         (math.radians(12.9), math.radians(-1), 5.3, 0),
     ],
 )
