@@ -23,7 +23,6 @@ Parameters:
 """
 
 import custom_interfaces.msg as ci
-import numpy as np
 import rclpy
 from rclpy.node import Node
 from rclpy.parameter import Parameter
