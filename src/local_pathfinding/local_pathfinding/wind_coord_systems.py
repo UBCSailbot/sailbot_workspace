@@ -88,11 +88,13 @@ def get_true_wind(
     tw_speed_kmph = math.hypot(tw_east_kmph, tw_north_kmph)
     tw_dir_rad = math.atan2(tw_east_kmph, tw_north_kmph)
 
-    if not ret_rad:
-        tw_dir_rad = math.degrees(tw_dir_rad)
+    if ret_rad:
+        tw_dir = tw_dir_rad
+    else:
+        tw_dir = math.degrees(tw_dir_rad)
 
     if tw_speed_kmph > FLOATING_POINT_ERROR_THRESHOLD:
-        return tw_dir_rad, tw_speed_kmph
+        return tw_dir, tw_speed_kmph
     return ZERO_VECTOR_CONSTANT, 0.0
 
 
@@ -138,9 +140,11 @@ def get_apparent_wind(
     aw_speed_kmph = math.hypot(aw_east_kmph, aw_north_kmph)
     aw_dir_rad = math.atan2(aw_east_kmph, aw_north_kmph)
 
-    if not ret_rad:
-        tw_dir_rad = math.degrees(tw_dir_rad)
+    if ret_rad:
+        aw_dir = aw_dir_rad
+    else:
+        aw_dir = math.degrees(aw_dir_rad)
 
     if aw_speed_kmph > FLOATING_POINT_ERROR_THRESHOLD:
-        return aw_dir_rad, aw_speed_kmph
+        return aw_dir, aw_speed_kmph
     return ZERO_VECTOR_CONSTANT, 0.0
