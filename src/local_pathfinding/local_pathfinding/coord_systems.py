@@ -83,8 +83,8 @@ def polar_to_cartesian(angle_rad: float, magnitude: float) -> XY:
     """Convert polar coordinates to Cartesian coordinates.
 
     Args:
-        angle_rad (float): Direction angle in radians. Range: (-π, π], where 0 rad = north,
-            +π/2 = east.
+        angle_rad (float): Direction angle in radians. Range: (-pi, pi], where 0 rad = north,
+            +pi/2 = east.
         magnitude (float): Vector magnitude (e.g., speed in kmph).
 
     Returns:

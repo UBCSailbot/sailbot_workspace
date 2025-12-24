@@ -45,6 +45,7 @@ def get_true_wind(
     aw_speed_kmph: float,
     boat_heading_deg: float,
     boat_speed_kmph: float,
+    ret_rad: bool = True,
 ) -> tuple[float, float]:
     """Compute the true wind vector from apparent wind and boat motion.
 
@@ -54,6 +55,7 @@ def get_true_wind(
         aw_speed_kmph (float): Apparent wind speed in km/h.
         boat_heading_deg (float): Boat heading in degrees (-180, 180].
         boat_speed_kmph (float): Boat speed over ground in km/h.
+        ret_rad (bool): If True, return wind direction in radians. If False, return in degrees.
         NOTE: All the angles are with respect to global true bearing. It is the
         responsibility of the caller to ensure this. Particularly, the apparent wind read by the
         sensor is in boat coordinates
@@ -86,13 +88,20 @@ def get_true_wind(
     tw_speed_kmph = math.hypot(tw_east_kmph, tw_north_kmph)
     tw_dir_rad = math.atan2(tw_east_kmph, tw_north_kmph)
 
+    if not ret_rad:
+        tw_dir_rad = math.degrees(tw_dir_rad)
+
     if tw_speed_kmph > FLOATING_POINT_ERROR_THRESHOLD:
         return tw_dir_rad, tw_speed_kmph
     return ZERO_VECTOR_CONSTANT, 0.0
 
 
 def get_apparent_wind(
-    tw_dir_deg: float, tw_speed_kmph: float, boat_heading_deg: float, boat_speed_kmph: float
+    tw_dir_deg: float,
+    tw_speed_kmph: float,
+    boat_heading_deg: float,
+    boat_speed_kmph: float,
+    ret_rad: bool = True,
 ) -> tuple[float, float]:
     """Compute the apparent wind vector from true wind and boat motion.
 
@@ -101,6 +110,7 @@ def get_apparent_wind(
         tw_speed_kmph (float): True wind speed in km/h.
         boat_heading_deg (float): Boat heading in degrees (-180, 180].
         boat_speed_kmph (float): Boat speed over ground in km/h.
+        ret_rad (bool): If True, return wind direction in radians. If False, return in degrees.
         NOTE: All the angles are with respect to global true bearing. It is the
         responsibility of the caller to ensure this.
 
@@ -127,6 +137,9 @@ def get_apparent_wind(
 
     aw_speed_kmph = math.hypot(aw_east_kmph, aw_north_kmph)
     aw_dir_rad = math.atan2(aw_east_kmph, aw_north_kmph)
+
+    if not ret_rad:
+        tw_dir_rad = math.degrees(tw_dir_rad)
 
     if aw_speed_kmph > FLOATING_POINT_ERROR_THRESHOLD:
         return aw_dir_rad, aw_speed_kmph
