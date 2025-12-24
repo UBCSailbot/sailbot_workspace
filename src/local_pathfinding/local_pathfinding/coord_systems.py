@@ -50,8 +50,6 @@ def true_bearing_to_plotly_cartesian(true_bearing_deg: float) -> float:
     Returns:
         float:  Angle where 0 is north and values increases clockwise.
     """
-    assert -180 < true_bearing_deg <= 180
-
     plotly_cartesian = true_bearing_deg
     if -180 < true_bearing_deg < 0:
         plotly_cartesian += 360.0
@@ -81,41 +79,23 @@ def get_path_segment_true_bearing(s1: XY, s2: XY, rad: bool = False):
     return bound_to_180(math.degrees(segment_true_bearing_rad))
 
 
-def angle_to_vector_projections(vector_angle_rad: float, vector_magnitude: float) -> XY:
-    """Convert a polar vector (angle in radians, speed_knots) to east/north Cartesian components.
+def polar_to_cartesian(angle_rad: float, magnitude: float) -> XY:
+    """Convert polar coordinates to Cartesian coordinates.
 
     Args:
-        vector_angle_rad (float): Direction angle in radians. Range: (-π, π], where 0 rad = north,
+        angle_rad (float): Direction angle in radians. Range: (-π, π], where 0 rad = north,
             +π/2 = east.
-        vector_magnitude (float): Vector speed (e.g., true wind speed in kmph).
+        magnitude (float): Vector magnitude (e.g., speed in kmph).
 
     Returns:
-        XY: Decomposed vector components in the global (east, north) frame:
+        XY: Cartesian vector components in the global (east, north) frame:
             - x → east component
             - y → north component
     """
-    # case 1: vector in quadrant I
-    if 0 <= vector_angle_rad <= PI / 2:
-        return XY(
-            x=vector_magnitude * math.sin(vector_angle_rad),
-            y=vector_magnitude * math.cos(vector_angle_rad),
-        )
-    # case 2: vector in quadrant IV
-    elif PI / 2 < vector_angle_rad <= PI:
-        alpha = vector_angle_rad - (PI / 2)  # alpha is with respect to positive x-axis
-        return XY(x=vector_magnitude * math.cos(alpha), y=vector_magnitude * -1 * math.sin(alpha))
-    # case 3: vector in quadrant II
-    elif -PI / 2 <= vector_angle_rad < 0:
-        alpha = abs(vector_angle_rad)  # vector_angle_rad is negative in quadrant II
-        return XY(x=vector_magnitude * -1 * math.sin(alpha), y=vector_magnitude * math.cos(alpha))
-    # case 4: vector in quadrant III
-    elif -PI <= vector_angle_rad < -PI / 2:
-        # vector_angle_rad is negative in quadrant III and alpha is with respect to negative x-axis
-        alpha = abs(vector_angle_rad) - (PI / 2)
-        return XY(
-            x=vector_magnitude * -1 * math.cos(alpha), y=vector_magnitude * -1 * math.sin(alpha)
-        )
-    return XY(x=0.0, y=0.0)  # place holder for invalid input
+    return XY(
+        x=magnitude * math.sin(angle_rad),
+        y=magnitude * math.cos(angle_rad)
+    )
 
 
 def meters_to_km(meters: float) -> float:
