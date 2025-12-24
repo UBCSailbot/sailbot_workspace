@@ -66,16 +66,16 @@ def test_get_true_wind_direction(
     expected_direction: float,
     expected_speed: float,
 ):
-    true_wind_direction, true_wind_speed = wcs.get_true_wind(
+    tw_dir_rad, tw_speed_kmph = wcs.get_true_wind(
         wind_direction_degrees, wind_speed, heading_degrees, speed
     )
 
     # Convert radians to degrees for easier comparison
-    true_wind_direction_degrees = math.degrees(true_wind_direction)
+    tw_dir_deg = math.degrees(tw_dir_rad)
 
-    assert true_wind_direction_degrees == pytest.approx(
+    assert tw_dir_deg == pytest.approx(
         expected=expected_direction, abs=1e-2
-    ) and true_wind_speed == pytest.approx(expected=expected_speed, abs=1e-2)
+    ) and tw_speed_kmph == pytest.approx(expected=expected_speed, abs=1e-2)
 
 
 @pytest.mark.parametrize(
@@ -96,14 +96,14 @@ def test_get_apparent_wind_direction(
     expected_direction: float,
     expected_speed: float,
 ):
-    aw_direction, aw_speed = wcs.get_apparent_wind(
+    aw_dir_rad, aw_speed_kmph = wcs.get_apparent_wind(
         tw_direction_degrees,
         tw_speed, heading_degrees, speed
     )
 
     # Convert radians to degrees for easier comparison
-    aw_direction_deg = math.degrees(aw_direction)
+    aw_dir_deg = math.degrees(aw_dir_rad)
 
-    assert aw_direction_deg == pytest.approx(
+    assert aw_dir_deg == pytest.approx(
         expected=expected_direction, abs=1e-2
-    ) and aw_speed == pytest.approx(expected=expected_speed, abs=1e-2)
+    ) and aw_speed_kmph == pytest.approx(expected=expected_speed, abs=1e-2)

@@ -119,8 +119,8 @@ cos45 = 1.0 / math.sqrt(2.0)  # cos(π/4) = sin(45) = 1/√2
         (NORTHEAST, 0.0, cs.XY(0.0, 0.0))
     ],
 )
-def test_angle_to_vector_projections(angle_rad: float, speed: float, expected_xy: cs.XY):
-    result = cs.angle_to_vector_projections(angle_rad, speed)
+def test_polar_to_cartesian(angle_rad: float, speed: float, expected_xy: cs.XY):
+    result = cs.polar_to_cartesian(angle_rad, speed)
 
     # Component-wise check
     assert (result.x, result.y) == pytest.approx(
