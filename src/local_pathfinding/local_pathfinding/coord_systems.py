@@ -8,6 +8,7 @@ from pyproj import Geod
 from shapely.geometry import Point, Polygon
 
 GEODESIC = Geod(ellps="WGS84")
+PI = math.pi
 
 
 class XY(NamedTuple):
@@ -22,34 +23,62 @@ class XY(NamedTuple):
     y: float
 
 
-def cartesian_to_true_bearing(cartesian: float) -> float:
+def cartesian_to_true_bearing(cartesian_angle: float, rad: bool = False) -> float:
     """Convert a cartesian angle to the equivalent true bearing.
 
     Args:
-        cartesian (float): Angle where 0 is east and values increase counter-clockwise.
+        cartesian_angle (float): Angle where 0 is east and values increase counter-clockwise.
+        rad (bool): If set to true cartesian_angle is assumed to be in radians, otherwise
+                    cartesian_angle is assumed to be in degrees by default.
 
     Returns:
-        float: Angle where 0 is north and values increase clockwise.
+        float: Angle where 0 is north and values increase clockwise. If rad is set to True then the
+               returned angle is in radians, otherwise it is in degrees by default.
     """
-    return (90 - cartesian + 360) % 360
+    if rad:
+        return ((PI / 2) - cartesian_angle + (2 * PI)) % (2 * PI)
+    return (90 - cartesian_angle + 360) % 360
 
 
-def true_bearing_to_plotly_cartesian(true_bearing: float) -> float:
+def true_bearing_to_plotly_cartesian(true_bearing_deg: float) -> float:
     """Convert a true bearing angle to the equivalent cartesian angle .
 
     Args:
-        true_bearing (float): Angle where 0 is true north. Range: -180 < heading <= 180.
+        true_bearing_degrees (float): Angle where 0 is true north. Range: -180 < heading <= 180.
         Increases in the clockwise direction till 180 degrees.
         Decreases in the counter-clockwise direction till -180 (exclusive)
     Returns:
         float:  Angle where 0 is north and values increases clockwise.
     """
-    assert -180 < true_bearing <= 180
+    assert -180 < true_bearing_deg <= 180
 
-    plotly_cartesian = true_bearing
-    if -180 < true_bearing < 0:
+    plotly_cartesian = true_bearing_deg
+    if -180 < true_bearing_deg < 0:
         plotly_cartesian += 360.0
     return plotly_cartesian
+
+
+def get_path_segment_true_bearing(s1: XY, s2: XY, rad: bool = False):
+    """Returns the true bearing of a straight path from s1 to s2.
+
+    Args:
+        s1 (SE2StateInternal): The start of the path segment
+        s2 (SE2StateInternal): The end of the path segment
+        rad (bool): If set to true the returned true bearing is in radians, otherwise the returned
+                    true bearing is in degrees by default
+
+    Returns:
+        float: Angle where 0 is north and values increase clockwise. If rad is set to True then the
+               returned angle is in radians, otherwise it is in degrees by default.
+               The returned angle is always within the range (-180, 180] by default or (-pi, pi]
+               radians if rad = True
+    """
+    segment_cartesian_angle_rad = math.atan2(s2.y - s1.y, s2.x - s1.x)
+    segment_true_bearing_rad = cartesian_to_true_bearing(segment_cartesian_angle_rad, rad=True)
+
+    if rad:
+        return bound_to_180(segment_true_bearing_rad, rad=True)
+    return bound_to_180(math.degrees(segment_true_bearing_rad))
 
 
 def angle_to_vector_projections(vector_angle_rad: float, vector_magnitude: float) -> XY:
@@ -66,25 +95,26 @@ def angle_to_vector_projections(vector_angle_rad: float, vector_magnitude: float
             - y → north component
     """
     # case 1: vector in quadrant I
-    if (0 <= vector_angle_rad <= math.pi / 2):
-        return XY(x=vector_magnitude * math.sin(vector_angle_rad),
-                  y=vector_magnitude * math.cos(vector_angle_rad))
+    if 0 <= vector_angle_rad <= PI / 2:
+        return XY(
+            x=vector_magnitude * math.sin(vector_angle_rad),
+            y=vector_magnitude * math.cos(vector_angle_rad),
+        )
     # case 2: vector in quadrant IV
-    elif (math.pi / 2 < vector_angle_rad <= math.pi):
-        alpha = vector_angle_rad - (math.pi / 2)  # alpha is with respect to positive x-axis
-        return XY(x=vector_magnitude * math.cos(alpha),
-                  y=vector_magnitude * -1 * math.sin(alpha))
+    elif PI / 2 < vector_angle_rad <= PI:
+        alpha = vector_angle_rad - (PI / 2)  # alpha is with respect to positive x-axis
+        return XY(x=vector_magnitude * math.cos(alpha), y=vector_magnitude * -1 * math.sin(alpha))
     # case 3: vector in quadrant II
-    elif (-math.pi / 2 <= vector_angle_rad < 0):
+    elif -PI / 2 <= vector_angle_rad < 0:
         alpha = abs(vector_angle_rad)  # vector_angle_rad is negative in quadrant II
-        return XY(x=vector_magnitude * -1 * math.sin(alpha),
-                  y=vector_magnitude * math.cos(alpha))
+        return XY(x=vector_magnitude * -1 * math.sin(alpha), y=vector_magnitude * math.cos(alpha))
     # case 4: vector in quadrant III
-    elif (-math.pi <= vector_angle_rad < -math.pi / 2):
+    elif -PI <= vector_angle_rad < -PI / 2:
         # vector_angle_rad is negative in quadrant III and alpha is with respect to negative x-axis
-        alpha = abs(vector_angle_rad) - (math.pi / 2)
-        return XY(x=vector_magnitude * -1 * math.cos(alpha),
-                  y=vector_magnitude * -1 * math.sin(alpha))
+        alpha = abs(vector_angle_rad) - (PI / 2)
+        return XY(
+            x=vector_magnitude * -1 * math.cos(alpha), y=vector_magnitude * -1 * math.sin(alpha)
+        )
     return XY(x=0.0, y=0.0)  # place holder for invalid input
 
 
@@ -96,19 +126,25 @@ def km_to_meters(km: float) -> float:
     return km * 1000
 
 
-def bound_to_180(angle_degrees: float) -> float:
+def bound_to_180(angle: float, rad: bool = False) -> float:
     """Normalize an angle to the range (-180, 180].
 
     Args:
-        angle_degrees (float): Angle in degrees to be normalized.
+        angle (float): Angle in degrees to be normalized.
+        rad (bool, default False): When set to true angle is assumed to be in radians and is bound
+                                   to (-pi, pi]
 
     Returns:
-        float: The normalized angle in degrees within (-180, 180].
+        float: The normalized angle within (-180, 180] degrees or (-pi, pi] radians.
     """
-    angle = ((angle_degrees + 180) % 360) - 180
-    if angle == -180.0:
-        return 180.0
-    return angle
+
+    half = PI if rad else 180
+    full = 2 * PI if rad else 360
+
+    a = ((angle + half) % full) - half
+    if math.isclose(a, -half):
+        a = half
+    return float(a)
 
 
 def calculate_heading_diff(heading1: float, heading2: float):
@@ -158,10 +194,10 @@ def xy_to_latlon(reference: ci.HelperLatLon, xy: XY) -> ci.HelperLatLon:
     Returns:
         ci.HelperLatLon: The latitude and longitude in degrees.
     """
-    true_bearing = math.degrees(math.atan2(xy.x, xy.y))
-    distance = km_to_meters(math.hypot(*xy))
+    true_bearing_deg = math.degrees(math.atan2(xy.x, xy.y))
+    distance_m = km_to_meters(math.hypot(*xy))
     dest_lon, dest_lat, _ = GEODESIC.fwd(
-        reference.longitude, reference.latitude, true_bearing, distance
+        reference.longitude, reference.latitude, true_bearing_deg, distance_m
     )
 
     return ci.HelperLatLon(latitude=dest_lat, longitude=dest_lon)
