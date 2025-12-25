@@ -381,87 +381,61 @@ def test_update_if_needed(
 
 @pytest.mark.parametrize(
     '''
-    old_path, old_path_waypoint_index,
-    old_path_heading, new_path, new_path_waypoint_index,
-    new_path_heading, return_path_chosen
+    old_path_waypoint_index, old_path_heading, new_path,
+    new_path_waypoint_index, new_path_heading, return_path_chosen
     ''',
     [
-        (   # Same path length, different heading, old chosen
-            Path(  # Old Path
-                waypoints=[
-                    HelperLatLon(latitude=0.0, longitude=0.0),
-                    HelperLatLon(latitude=1.5, longitude=1.5),
-                    HelperLatLon(latitude=3.0, longitude=3.0)
-                ]
-            ),
+        (
             1,
-            cs.GEODESIC.inv(0.0, 0.0, 1.5, 1.5)[0],  # ~45 degree heading diff
+            20.0,  # Old heading
             Path(  # New Path
                 waypoints=[
                     HelperLatLon(latitude=0.0, longitude=0.0),
-                    HelperLatLon(latitude=1.0, longitude=2.0),
-                    HelperLatLon(latitude=3.0, longitude=3.0)
+                    HelperLatLon(latitude=1.0, longitude=1.0)
                 ]
             ),
-            1,
-            cs.GEODESIC.inv(0.0, 0.0, 1.0, 2.0)[0],  # ~63 degree heading diff
-            False  # Chooses old path
-        ),
-        (   # Same path length, different heading, new chosen
-            Path(  # Old Path
-                waypoints=[
-                    HelperLatLon(latitude=0.0, longitude=0.0),
-                    HelperLatLon(latitude=1.0, longitude=2.0),
-                    HelperLatLon(latitude=3.0, longitude=3.0)
-                ]
-            ),
-            1,
-            cs.GEODESIC.inv(0.0, 0.0, 1.0, 2.0)[0],  # ~63 degree heading diff
-            Path(  # New Path
-                waypoints=[
-                    HelperLatLon(latitude=0.0, longitude=0.0),
-                    HelperLatLon(latitude=1.5, longitude=1.5),
-                    HelperLatLon(latitude=3.0, longitude=3.0)
-                ]
-            ),
-            1,
-            cs.GEODESIC.inv(0.0, 0.0, 1.5, 1.5)[0],  # ~45 degree heading diff
+            2,
+            15.0,  # New heading
             True  # Chooses new path
         ),
-        (   # Same heading, same path length, new path more optimal, new chosen
-            Path(  # Old Path
-                waypoints=[
-                    HelperLatLon(latitude=0.0, longitude=0.0),
-                    HelperLatLon(latitude=1.0, longitude=1.0),
-                    HelperLatLon(latitude=2.0, longitude=1.0),
-                    HelperLatLon(latitude=3.0, longitude=3.0)
-                ]
-            ),
+        (   # Same path length, different heading, new chosen
             1,
-            cs.GEODESIC.inv(0.0, 0.0, 1.0, 1.0)[0],  # ~45 degree heading diff
+            -20.0,
             Path(  # New Path
                 waypoints=[
                     HelperLatLon(latitude=0.0, longitude=0.0),
-                    HelperLatLon(latitude=1.0, longitude=1.0),
-                    HelperLatLon(latitude=2.0, longitude=2.0),
-                    HelperLatLon(latitude=3.0, longitude=3.0)
+                    HelperLatLon(latitude=2.0, longitude=2.0)
                 ]
             ),
+            2,
+            -25.0,
+            False  # Chooses old path
+        ),
+        (   # Same heading, same path length, new path more optimal, new chosen
             1,
-            cs.GEODESIC.inv(0.0, 0.0, 1.0, 1.0)[0],  # ~45 degree heading diff
+            -45.0,
+            Path(  # New Path
+                waypoints=[
+                    HelperLatLon(latitude=0.0, longitude=0.0),
+                    HelperLatLon(latitude=1.0, longitude=1.0)
+                ]
+            ),
+            2,
+            44.9,
             True  # Chooses new path
         ),
     ]
 )
-def test_compare_path_costs(old_path, old_path_waypoint_index, old_path_heading, new_path,
+def test_compare_path_costs(old_path_waypoint_index, old_path_heading, new_path,
                             new_path_waypoint_index, new_path_heading, return_path_chosen):
     heading, index, path = PATH.compare_path_costs(
-        HelperHeading(heading=0.0), old_path, old_path_waypoint_index,
-        old_path_heading, new_path, new_path_waypoint_index, new_path_heading)
+        old_path_waypoint_index, old_path_heading, 0, new_path,
+        new_path_waypoint_index, new_path_heading, 0)
     assert return_path_chosen == path
     if path:
         assert heading == pytest.approx(new_path_heading, abs=0.3)
         assert index == new_path_waypoint_index
+        assert path == new_path
     else:
         assert heading == pytest.approx(old_path_heading, abs=0.3)
         assert index == old_path_waypoint_index

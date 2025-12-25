@@ -242,25 +242,26 @@ class LocalPath:
             self._update(ompl_path)
             return heading_new_path, wp_index, True
 
-        return self.compare_path_costs(old_ompl_path, updated_wp_index, heading_old_path,
-                                       ompl_path, wp_index, heading_new_path)
+        old_cost = old_ompl_path.get_cost(updated_wp_index)
+        new_cost = ompl_path.get_cost(wp_index)
+
+        return self.compare_path_costs(updated_wp_index, heading_old_path, old_cost,
+                                       ompl_path, wp_index, heading_new_path, new_cost)
 
     def compare_path_costs(
         self,
-        old_path: OMPLPath,
         old_path_waypoint_index: int,
         old_path_heading: float,
+        old_cost: float,
         new_path: OMPLPath,
         new_path_waypoint_index: int,
-        new_path_heading: float
+        new_path_heading: float,
+        new_cost: float
     ):
         heading = self.state.heading if self.state else 0.0
 
         heading_diff_old_path = cs.calculate_heading_diff(heading, old_path_heading)
         heading_diff_new_path = cs.calculate_heading_diff(heading, new_path_heading)
-
-        old_cost = old_path.get_cost(old_path_waypoint_index)
-        new_cost = new_path.get_cost(new_path_waypoint_index)
 
         max_cost = max(old_cost, new_cost, 1)
         old_cost_normalized = old_cost / max_cost
