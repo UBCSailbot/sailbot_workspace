@@ -380,6 +380,56 @@ def test_update_if_needed(
 
 @pytest.mark.parametrize(
     '''
+    heading, heading_old_path, heading_new_path, new_path_chosen
+    ''',
+    [
+        (
+            0.0,
+            1.0,
+            -1.1,
+            False
+        ),
+        (
+            0.0,
+            1.1,
+            1.0,
+            True
+        ),
+        (
+            50.0,
+            49.8,
+            50.1,
+            True
+        ),
+        (
+            180.0,
+            -179.0,
+            178.0,
+            False
+        ),
+        (
+            0.0,
+            1.0,
+            -1.0,
+            False
+        )
+    ]
+)
+def test_calculate_metric(heading, heading_old_path, heading_new_path, new_path_chosen):
+    metric_old, metric_new = PATH.calculate_metric(heading, heading_old_path, heading_new_path,
+                                                   0.0, 0.0)
+    '''
+    If the new path is chosen, metric_new should be less than metric_old,
+    else metric old must be less than or equal to metric_new.
+    '''
+    if new_path_chosen:
+        assert metric_new > metric_old
+    else:
+        assert metric_old <= metric_new
+
+
+@pytest.mark.parametrize(
+    '''
     old_path_waypoint_index, old_path_heading, new_path,
     new_path_waypoint_index, new_path_heading, return_path_chosen
     ''',

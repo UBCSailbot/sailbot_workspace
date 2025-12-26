@@ -253,18 +253,10 @@ class LocalPath:
 
         heading = self.state.heading if self.state else 0.0
 
-        heading_diff_old = cs.calculate_heading_diff(heading, heading_old_path)
-        heading_diff_new = cs.calculate_heading_diff(heading, heading_new_path)
-
         old_cost_normalized, new_cost_normalized = normalize(old_cost, new_cost)
-        heading_old_normalized, heading_new_normalized = normalize(math.fabs(heading_diff_new),
-                                                                   math.fabs(heading_diff_old))
 
-        w_h = HEADING_WEIGHT
-        w_c = COST_WEIGHT
-
-        metric_old = w_h * heading_old_normalized + w_c * old_cost_normalized
-        metric_new = w_h * heading_new_normalized + w_c * new_cost_normalized
+        metric_old, metric_new = self.calculate_metric(heading, heading_old_path, heading_new_path,
+                                                       old_cost_normalized, new_cost_normalized)
 
         self._logger.debug(
                 f"(old cost: {old_cost:.2f}, "
@@ -285,6 +277,28 @@ class LocalPath:
                 "old path is cheaper, continuing on the same path"
             )
             return heading_old_path, updated_wp_index, False
+
+    def calculate_metric(
+        self,
+        heading: float,
+        heading_old_path: float,
+        heading_new_path: float,
+        old_cost_normalized: float,
+        new_cost_normalized: float
+    ):
+        heading_diff_old = cs.calculate_heading_diff(heading, heading_old_path)
+        heading_diff_new = cs.calculate_heading_diff(heading, heading_new_path)
+
+        heading_old_normalized, heading_new_normalized = normalize(math.fabs(heading_diff_old),
+                                                                   math.fabs(heading_diff_new))
+
+        w_h = HEADING_WEIGHT
+        w_c = COST_WEIGHT
+
+        metric_old = w_h * heading_old_normalized + w_c * old_cost_normalized
+        metric_new = w_h * heading_new_normalized + w_c * new_cost_normalized
+
+        return metric_old, metric_new
 
     def _update(self, ompl_path: OMPLPath):
 
