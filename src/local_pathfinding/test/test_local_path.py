@@ -24,7 +24,6 @@ REF = HelperLatLon(latitude=10.0, longitude=10.0)
 PATH = lp.LocalPath(parent_logger=RcutilsLogger())
 
 
-
 @pytest.mark.parametrize(
     "path, waypoint_index, boat_lat_lon, correct_heading, new_wp_index",
     [

@@ -16,6 +16,12 @@ HEADING_WEIGHT = 0.6
 COST_WEIGHT = 0.4
 
 
+def normalize(x: float, y: float):
+    ''' Returns x and y normalized as a tuple[float, float] '''
+    z = max(x, y, 1)
+    return x/z, y/z
+
+
 class LocalPathState:
     """Stores the current state of Sailbot's navigation data.
     The attributes' units and conventions can be found in the ROS msgs they are derived from in the
@@ -245,40 +251,20 @@ class LocalPath:
         old_cost = old_ompl_path.get_cost(updated_wp_index)
         new_cost = ompl_path.get_cost(wp_index)
 
-        return self.compare_path_costs(updated_wp_index, heading_old_path, old_cost,
-                                       ompl_path, wp_index, heading_new_path, new_cost)
-
-    def compare_path_costs(
-        self,
-        old_path_waypoint_index: int,
-        old_path_heading: float,
-        old_cost: float,
-        new_path: OMPLPath,
-        new_path_waypoint_index: int,
-        new_path_heading: float,
-        new_cost: float
-    ):
         heading = self.state.heading if self.state else 0.0
 
-        heading_diff_old_path = cs.calculate_heading_diff(heading, old_path_heading)
-        heading_diff_new_path = cs.calculate_heading_diff(heading, new_path_heading)
+        heading_diff_old = cs.calculate_heading_diff(heading, heading_old_path)
+        heading_diff_new = cs.calculate_heading_diff(heading, heading_new_path)
 
-        max_cost = max(old_cost, new_cost, 1)
-        old_cost_normalized = old_cost / max_cost
-        new_cost_normalized = new_cost / max_cost
-
-        max_heading_diff = max(
-            math.fabs(heading_diff_new_path), math.fabs(heading_diff_old_path), 1.0
-        )
-
-        heading_diff_new_normalized = heading_diff_new_path / max_heading_diff
-        heading_diff_old_normalized = heading_diff_old_path / max_heading_diff
+        old_cost_normalized, new_cost_normalized = normalize(old_cost, new_cost)
+        heading_old_normalized, heading_new_normalized = normalize(math.fabs(heading_diff_new),
+                                                                   math.fabs(heading_diff_old))
 
         w_h = HEADING_WEIGHT
         w_c = COST_WEIGHT
 
-        metric_old = w_h * heading_diff_old_normalized + w_c * old_cost_normalized
-        metric_new = w_h * heading_diff_new_normalized + w_c * new_cost_normalized
+        metric_old = w_h * heading_old_normalized + w_c * old_cost_normalized
+        metric_new = w_h * heading_new_normalized + w_c * new_cost_normalized
 
         self._logger.debug(
                 f"(old cost: {old_cost:.2f}, "
@@ -292,13 +278,13 @@ class LocalPath:
             self._logger.debug(
                 "New path is cheaper, updating local path "
             )
-            self._update(new_path)
-            return new_path_heading, new_path_waypoint_index, True
+            self._update(ompl_path)
+            return heading_new_path, wp_index, True
         else:
             self._logger.debug(
                 "old path is cheaper, continuing on the same path"
             )
-            return old_path_heading, old_path_waypoint_index, False
+            return heading_old_path, updated_wp_index, False
 
     def _update(self, ompl_path: OMPLPath):
 
