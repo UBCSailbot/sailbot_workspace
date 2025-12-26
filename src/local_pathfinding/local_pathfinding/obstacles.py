@@ -6,6 +6,7 @@ from typing import Optional
 
 import custom_interfaces.msg as ci
 import numpy as np
+from shapely import prepare
 from shapely.affinity import affine_transform
 from shapely.geometry import MultiPolygon, Point, Polygon
 
@@ -126,12 +127,11 @@ class Land(Obstacle):
         super().__init__(reference, sailbot_position)
         self.all_land_data = all_land_data
         self.bbox_buffer_amount = bbox_buffer_amount
-        self.update_collision_zone( state_space_latlon=state_space_latlon, land_multi_polygon=land_multi_polygon
+        self.update_collision_zone(
+            state_space_latlon=state_space_latlon, land_multi_polygon=land_multi_polygon
         )
 
-    def update_collision_zone(
-        self, **kwargs
-    ) -> None:
+    def update_collision_zone(self, **kwargs) -> None:
         """
         Updates the Land object's collision zone with a MultiPolygon representing
         all land obstacles within either a specified or default state space.
@@ -146,6 +146,7 @@ class Land(Obstacle):
             self.collision_zone = MultiPolygon(
                 cs.latlon_polygon_list_to_xy_polygon_list(land_multi_polygon.geoms, self.reference)
             )
+            prepare(self.collision_zone)
             return
 
         if state_space_latlon is None:
@@ -177,7 +178,7 @@ class Land(Obstacle):
                 collision_zone = MultiPolygon([collision_zone])
         else:
             collision_zone = MultiPolygon()
-
+        prepare(collision_zone)
         self.collision_zone = collision_zone
 
 
@@ -256,6 +257,7 @@ class Boat(Obstacle):
         collision_zone = affine_transform(boat_collision_zone, transformation)
 
         self.collision_zone = collision_zone.buffer(BOAT_BUFFER, join_style=2)
+        prepare(self.collision_zone)
 
     def _calculate_projected_distance(self) -> float:
         """Calculates the distance the boat obstacle will travel before collision, if
