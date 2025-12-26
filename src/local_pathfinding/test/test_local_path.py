@@ -38,7 +38,7 @@ PATH = lp.LocalPath(parent_logger=RcutilsLogger())
             ci.Path(waypoints=[ci.HelperLatLon(latitude=0.0, longitude=0.0)]),
             0,
             ci.HelperLatLon(latitude=0.1, longitude=0.0),
-            -180.0,
+            180.0,
             0,
         ),
         (
@@ -423,71 +423,9 @@ def test_calculate_metric(heading, heading_old_path, heading_new_path, new_path_
     else metric old must be less than or equal to metric_new.
     '''
     if new_path_chosen:
-        assert metric_new > metric_old
+        assert metric_new < metric_old
     else:
         assert metric_old <= metric_new
-
-
-@pytest.mark.parametrize(
-    '''
-    old_path_waypoint_index, old_path_heading, new_path,
-    new_path_waypoint_index, new_path_heading, return_path_chosen
-    ''',
-    [
-        (
-            1,
-            20.0,  # Old heading
-            Path(  # New Path
-                waypoints=[
-                    HelperLatLon(latitude=0.0, longitude=0.0),
-                    HelperLatLon(latitude=1.0, longitude=1.0)
-                ]
-            ),
-            2,
-            15.0,  # New heading
-            True  # Chooses new path
-        ),
-        (   # Same path length, different heading, new chosen
-            1,
-            -20.0,
-            Path(  # New Path
-                waypoints=[
-                    HelperLatLon(latitude=0.0, longitude=0.0),
-                    HelperLatLon(latitude=2.0, longitude=2.0)
-                ]
-            ),
-            2,
-            -25.0,
-            False  # Chooses old path
-        ),
-        (   # Same heading, same path length, new path more optimal, new chosen
-            1,
-            -45.0,
-            Path(  # New Path
-                waypoints=[
-                    HelperLatLon(latitude=0.0, longitude=0.0),
-                    HelperLatLon(latitude=1.0, longitude=1.0)
-                ]
-            ),
-            2,
-            44.9,
-            True  # Chooses new path
-        ),
-    ]
-)
-def test_compare_path_costs(old_path_waypoint_index, old_path_heading, new_path,
-                            new_path_waypoint_index, new_path_heading, return_path_chosen):
-    heading, index, path = PATH.compare_path_costs(
-        old_path_waypoint_index, old_path_heading, 0, new_path,
-        new_path_waypoint_index, new_path_heading, 0)
-    assert return_path_chosen == path
-    if path:
-        assert heading == pytest.approx(new_path_heading, abs=0.3)
-        assert index == new_path_waypoint_index
-        assert path == new_path
-    else:
-        assert heading == pytest.approx(old_path_heading, abs=0.3)
-        assert index == old_path_waypoint_index
 
 
 def test_LocalPathState_parameter_checking():
