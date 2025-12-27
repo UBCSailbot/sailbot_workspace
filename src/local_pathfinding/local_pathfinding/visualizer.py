@@ -39,21 +39,21 @@ LAST_GOAL = None  # for the msg_to_display
 class VisualizerState:
     """
     Converts the ROS message to a format that can be used by the visualizer.
-    For example, it converts the lat/lon coordinates to x/y coordinates for GPS and Global/Local
+    For example, it converts the lat/lon s to x/y s for GPS and Global/Local
     paths.
 
 
     Attributes:
-        sailbot_lat_lon (ci.LPathData): List of lat/lon coordinates of the sailbot
+        sailbot_lat_lon (ci.LPathData): List of lat/lon s of the sailbot
         all_local_wp (List[List[Tuple[float, float]]]): List of all local waypoints
         global_path (ci.Path): Global path
-        reference_latlon (ci.HelperLatLon): Reference lat/lon coordinates
-        sailbot_xy (List[Tuple[float, float]]): List of x/y coordinates of the sailbot
-        all_wp_xy (List[List[Tuple[float, float]]]): List of all local waypoints in x/y coordinates
-        sailbot_pos_x (List[Tuple[float, float]]): X coordinates of the sailbot
-        sailbot_pos_y (List[Tuple[float, float]]): Y coordinates of the sailbot
-        final_local_wp_x (List[Tuple[float, float]]): X coordinates of the final local waypoint
-        final_local_wp_y (List[Tuple[float, float]]): Y coordinates of the final local waypoint
+        reference_latlon (ci.HelperLatLon): Reference lat/lon s
+        sailbot_xy (List[Tuple[float, float]]): List of x/y s of the sailbot
+        all_wp_xy (List[List[Tuple[float, float]]]): List of all local waypoints in x/y s
+        sailbot_pos_x (List[Tuple[float, float]]): X s of the sailbot
+        sailbot_pos_y (List[Tuple[float, float]]): Y s of the sailbot
+        final_local_wp_x (List[Tuple[float, float]]): X s of the final local waypoint
+        final_local_wp_y (List[Tuple[float, float]]): Y s of the final local waypoint
     """
 
     def __init__(self, msgs: deque[ci.LPathData]):
@@ -74,8 +74,8 @@ class VisualizerState:
             cs.latlon_list_to_xy_list(self.reference_latlon, waypoints)
             for waypoints in self.all_local_wp
         ]
-        self.sailbot_pos_x, self.sailbot_pos_y = self._split_coordinates(self.sailbot_xy)
-        self.final_local_wp_x, self.final_local_wp_y = self._split_coordinates(self.all_wp_xy[-1])
+        self.sailbot_pos_x, self.sailbot_pos_y = self._split_s(self.sailbot_xy)
+        self.final_local_wp_x, self.final_local_wp_y = self._split_s(self.all_wp_xy[-1])
         self.all_local_wp_x, self.all_local_wp_y = zip(
             *[self._split_coordinates(waypoints) for waypoints in self.all_wp_xy]
         )
@@ -203,8 +203,8 @@ def initial_plot() -> go.Figure:
 
     fig.update_layout(
         title="Path Planning",
-        xaxis_title="X Coordinate",
-        yaxis_title="Y Coordinate",
+        xaxis_title="X (km)",
+        yaxis_title="Y (km)",
         xaxis=dict(range=[-100, 100]),
         yaxis=dict(range=[-100, 100]),
     )
