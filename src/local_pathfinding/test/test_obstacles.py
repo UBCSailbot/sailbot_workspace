@@ -408,7 +408,7 @@ def test_collision_zone_boat(
     sailbot_speed: float,
 ):
     boat1 = Boat(reference_point, sailbot_position, sailbot_speed, ais_ship)
-    boat1._update_boat_collision_zone()
+    boat1.update_collision_zone()
 
     assert isinstance(boat1.collision_zone, Polygon)
     if boat1.collision_zone is not None:
@@ -496,7 +496,7 @@ def test_create_collision_zone_id_mismatch_boat(
     boat1 = Boat(reference_point, sailbot_position, sailbot_speed, ais_ship_1)
 
     with pytest.raises(ValueError):
-        boat1._update_boat_collision_zone(ais_ship_2)
+        boat1.update_collision_zone(ais_ship=ais_ship_2)
 
 
 # Test is_valid
