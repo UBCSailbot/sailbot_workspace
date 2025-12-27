@@ -3,19 +3,17 @@ Sailbot Path Planning Visualizer
 
 This script sets up a Dash web application to visualize the sailbot's path planning data.
 It processes ROS messages such as waypoint coordinates and GPS data, converting them from
-latitude/longitude to x/y coordinates.
+latitude/longitude to XY coordinates in km.
 
 Main Components:
 1. VisualizerState: A class that processes the ROS messages and converts coordinates.
 2. Dash App: A web application that displays the path planning data in real-time.
 3. Plotting Functions: Functions to create and update the plots based on the processed data.
 4. Callbacks: Functions that update the plots at regular intervals.
-
-usage:
-Call the `dash_app` function with a multiprocessing shared Manager.queue to start the Dash app.
 """
 
 import math
+from collections import deque
 from multiprocessing import Queue
 from typing import List, Optional, Tuple
 
@@ -35,7 +33,6 @@ app = dash.Dash(__name__)
 queue: Optional[Queue] = None  # type: ignore
 
 BOX_BUFFER_SIZE = 1.0  # km
-
 LAST_GOAL = None  # for the msg_to_display
 
 
@@ -59,7 +56,7 @@ class VisualizerState:
         final_local_wp_y (List[Tuple[float, float]]): Y coordinates of the final local waypoint
     """
 
-    def __init__(self, msgs: List[ci.LPathData]):
+    def __init__(self, msgs: deque[ci.LPathData]):
         if not msgs:
             raise ValueError("msgs must not be None")
 
@@ -68,21 +65,16 @@ class VisualizerState:
 
         self.sailbot_lat_lon = [msg.gps.lat_lon for msg in msgs]
         self.sailbot_gps = [msg.gps for msg in msgs]
-        self.all_local_wp = [msg.local_path.waypoints for msg in msgs]
 
+        self.all_local_wp = [msg.local_path.waypoints for msg in msgs]
         self.global_path = self.curr_msg.global_path
         self.reference_latlon = self.global_path.waypoints[-1]
-
-        # Converts the lat/lon coordinates to x/y coordinates
         self.sailbot_xy = cs.latlon_list_to_xy_list(self.reference_latlon, self.sailbot_lat_lon)
         self.all_wp_xy = [
             cs.latlon_list_to_xy_list(self.reference_latlon, waypoints)
             for waypoints in self.all_local_wp
         ]
-
-        # Splits the x/y coordinates into separate lists
         self.sailbot_pos_x, self.sailbot_pos_y = self._split_coordinates(self.sailbot_xy)
-
         self.final_local_wp_x, self.final_local_wp_y = self._split_coordinates(self.all_wp_xy[-1])
         self.all_local_wp_x, self.all_local_wp_y = zip(
             *[self._split_coordinates(waypoints) for waypoints in self.all_wp_xy]
@@ -95,8 +87,6 @@ class VisualizerState:
         ais_ship_xy = cs.latlon_list_to_xy_list(self.reference_latlon, ais_ship_latlons)
         self.ais_pos_x, self.ais_pos_y = self._split_coordinates(ais_ship_xy)
         self.ais_headings = [ship.cog.heading for ship in self.ais_ships]
-
-        # TODO: Include other LPathData attributes for plotting their data
 
         # Process land obstacles
         self.land_obstacles_xy = self._process_land_obstacles(
@@ -112,6 +102,7 @@ class VisualizerState:
         boat_heading = self.curr_msg.gps.heading.heading
         aw_speed = self.curr_msg.filtered_wind_sensor.speed.speed
         aw_dir_boat = self.curr_msg.filtered_wind_sensor.direction
+
         # Convert Apparent wind to global frame
         aw_dir_global = wcs.boat_to_global_coordinate(boat_heading, aw_dir_boat)
         aw_dir_global_rad = math.radians(aw_dir_global)
@@ -140,15 +131,15 @@ class VisualizerState:
             raise ValueError("gps must not be None")
 
     def _split_coordinates(self, positions) -> Tuple[List[float], List[float]]:
-        """Splits a list of positions into x and y components."""
+        """Splits a list of XY objects into their separate x and y components."""
         x_coords = [pos.x for pos in positions]
         y_coords = [pos.y for pos in positions]
         return x_coords, y_coords
 
     def _process_land_obstacles(self, obstacles, reference):
         """
-        Converts land obstacles from latitude/longitude to XY coordinates and builds Shapely
-        polygons.
+        Converts land obstacles from latitude/longitude to XY coordinates and builds a Shapely
+        polygon for each polygon in the land obstacle's collison zone.
         """
         processed_obstacles = []
 
@@ -252,7 +243,10 @@ def dash_app(q: Queue):
     app.layout = html.Div(
         style={"height": "100vh", "width": "100vw", "margin": 0, "padding": 0},
         children=[
-            html.H2("Live Path Planning"),
+            html.H2(
+                "UBC Sailbot Pathfinding",
+                style={"fontFamily": "Consolas, monospace", "color": "rgb(18, 70, 139)"},
+            ),
             dcc.Graph(id="live-graph", style={"height": "90vh", "width": "100%"}),
             dcc.Interval(id="interval-component", interval=2500, n_intervals=0),
         ],
@@ -691,190 +685,22 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
 
     # Update Layout
     fig.update_layout(
-        title="Path Planning",
-        xaxis_title="X Coordinate",
-        yaxis_title="Y Coordinate",
+        xaxis_title="X (Km)",
+        yaxis_title="Y (Km)",
+        font=dict(color="rgb(18, 70, 139)"),
         xaxis=dict(
             range=[x_min, x_max],
             domain=[0.0, 0.98],
         ),
-        yaxis=dict(
-            range=[y_min, y_max],
-            domain=[0.25, 1.0],
+        yaxis=dict(range=[y_min, y_max], domain=[0.30, 1.0]),
+        legend=dict(
+            orientation="h",
+            y=1.15,
+            x=0.5,
+            xanchor="center",
         ),
-        legend=dict(x=0, y=1),  # Position the legend at the top left
         showlegend=True,
         uirevision="stay",
     )
 
     return fig
-
-
-# def animated_update_plot(state: VisualizerState) -> go.Figure:
-#     """
-#     Generates an animated plot every interval with the aggregated LPathData ROS messages.
-#     It is interactive with play/pause buttons.
-
-#     """
-
-#     # Initializing the plot
-#     fig = initial_plot()
-
-#     num_waypoints = len(state.all_wp_xy[-1])
-#     initial_boat_state = go.Scatter(
-#         x=[state.sailbot_pos_x[0]],
-#         y=[state.sailbot_pos_y[0]],
-#         mode="markers",
-#         marker_symbol="arrow",
-#         marker_line_color="darkseagreen",
-#         marker_color="lightgreen",
-#         marker_line_width=2,
-#         marker_size=15,
-#         text=["Boat"],
-#         name="Boat",
-#         hovertemplate="<b>🚢 Sailbot Current Position</b><br>"
-#         + "X: %{x:.2f} meters<br>"
-#         + "Y: %{y:.2f} meters<br>"
-#         + "Heading: "
-#         + f"{state.sailbot_gps[0].heading.heading:.1f}°<br>"
-#         + "Speed: "
-#         + f"{state.sailbot_gps[0].speed.speed:.1f}<br>"
-#         + "<extra></extra>",
-#     )
-#     initial_state = [
-#         go.Scatter(
-#             x=[state.all_local_wp_x[0][0]],
-#             y=[state.all_local_wp_y[0][0]],
-#             mode="markers",
-#             marker=go.scatter.Marker(size=14),
-#             text=["Start"],
-#             name="Start",
-#         ),
-#         go.Scatter(
-#             x=state.all_local_wp_x[0][1 : num_waypoints - 1],
-#             y=state.all_local_wp_y[0][1 : num_waypoints - 1],
-#             mode="markers",
-#             marker=go.scatter.Marker(size=14),
-#             text=["Intermediate"] * (num_waypoints - 2),
-#             name="Intermediate",
-#         ),
-#         go.Scatter(
-#             x=[state.all_local_wp_x[0][-1]],
-#             y=[state.all_local_wp_y[0][-1]],
-#             mode="markers",
-#             marker=go.scatter.Marker(size=14),
-#             text=["Goal"] * (num_waypoints - 2),
-#             name="Goal",
-#         ),
-#     ]
-#     new_frames = [
-#         go.Frame(
-#             data=[
-#                 go.Scatter(
-#                     x=[state.all_local_wp_x[i][0]],
-#                     y=[state.all_local_wp_y[i][0]],
-#                     mode="markers",
-#                     marker=go.scatter.Marker(size=14),
-#                     text=["Start"],
-#                     name="Start",
-#                 ),
-#                 go.Scatter(
-#                     x=state.all_local_wp_x[i][1 : num_waypoints - 1],
-#                     y=state.all_local_wp_y[i][1 : num_waypoints - 1],
-#                     mode="markers",
-#                     marker=go.scatter.Marker(size=14),
-#                     text=["Intermediate"] * (num_waypoints - 2),
-#                     name="Intermediate",
-#                 ),
-#                 go.Scatter(
-#                     x=[state.all_local_wp_x[i][-1]],
-#                     y=[state.all_local_wp_y[i][-1]],
-#                     mode="markers",
-#                     marker=go.scatter.Marker(size=14),
-#                     text=["Goal"] * (num_waypoints - 2),
-#                     name="Goal",
-#                 ),
-#             ]
-#             + [
-#                 go.Scatter(
-#                     x=[state.sailbot_pos_x[i]],
-#                     y=[state.sailbot_pos_y[i]],
-#                     mode="markers",
-#                     marker_symbol="arrow",
-#                     marker_line_color="darkseagreen",
-#                     marker_color="lightgreen",
-#                     marker_line_width=2,
-#                     marker_size=15,
-#                     text=["Boat"],
-#                     name="Boat",
-#                     hovertemplate="<b>🚢 Sailbot Current Position</b><br>"
-#                     + "X: %{x:.2f} meters<br>"
-#                     + "Y: %{y:.2f} meters<br>"
-#                     + "Heading: "
-#                     + f"{state.sailbot_gps[i].heading.heading:.1f}°<br>"
-#                     + "Speed: "
-#                     + f"{state.sailbot_gps[i].speed.speed:.1f}<br>"
-#                     + "<extra></extra>",
-#                 )
-#             ],
-#             name=f"Boat {i}",
-#         )
-#         for i in range(0, len(state.sailbot_xy))
-#     ]
-
-#     # Set axis limits dynamically
-#     x_min = min(state.final_local_wp_x) - 10
-#     x_max = max(state.final_local_wp_x) + 10
-#     y_min = min(state.final_local_wp_y) - 10
-#     y_max = max(state.final_local_wp_y) + 10
-
-#     # Set up the animated plot
-#     fig = go.Figure(
-#         data=initial_state + [initial_boat_state],
-#         layout=go.Layout(
-#             xaxis_title="X Coordinate",
-#             yaxis_title="Y Coordinate",
-#             xaxis=dict(range=[x_min, x_max]),
-#             yaxis=dict(range=[y_min, y_max]),
-#             legend=dict(x=0, y=1),  # Position the legend at the top left
-#             showlegend=True,
-#             updatemenus=[
-#                 dict(
-#                     type="buttons",
-#                     showactive=False,
-#                     buttons=[
-#                         dict(
-#                             label="Play",
-#                             method="animate",
-#                             args=[
-#                                 None,
-#                                 {
-#                                     "frame": {"duration": 1000, "redraw": True},
-#                                     "mode": "immediate",
-#                                     "fromcurrent": True,
-#                                 },
-#                             ],
-#                         ),
-#                         dict(
-#                             label="Pause",
-#                             method="animate",
-#                             args=[
-#                                 [None],
-#                                 {
-#                                     "frame": {"duration": 0, "redraw": True},
-#                                     "mode": "immediate",
-#                                     "fromcurrent": False,
-#                                 },
-#                             ],
-#                         ),
-#                     ],
-#                 )
-#             ],
-#         ),
-#         frames=new_frames,
-#     )
-
-#     return fig
-
-
-# TODO: Add more plotting functions as needed

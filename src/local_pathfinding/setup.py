@@ -49,6 +49,7 @@ setup(name=package_name, version="0.0.0",
               "mock_ais = local_pathfinding.mock_nodes.node_mock_ais:main",
               "mock_gps = local_pathfinding.mock_nodes.node_mock_gps:main",
               "navigate_observer = local_pathfinding.node_navigate_observer:main",
+              "fake_gps = local_pathfinding.fake_gps:main",
               ],
           },
       )
