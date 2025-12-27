@@ -39,21 +39,21 @@ LAST_GOAL = None  # for the msg_to_display
 class VisualizerState:
     """
     Converts the ROS message to a format that can be used by the visualizer.
-    For example, it converts the lat/lon coordinates to x/y coordinates for GPS and Global/Local
+    For example, it converts the lat/lon s to x/y s for GPS and Global/Local
     paths.
 
 
     Attributes:
-        sailbot_lat_lon (ci.LPathData): List of lat/lon coordinates of the sailbot
+        sailbot_lat_lon (ci.LPathData): List of lat/lon s of the sailbot
         all_local_wp (List[List[Tuple[float, float]]]): List of all local waypoints
         global_path (ci.Path): Global path
-        reference_latlon (ci.HelperLatLon): Reference lat/lon coordinates
-        sailbot_xy (List[Tuple[float, float]]): List of x/y coordinates of the sailbot
-        all_wp_xy (List[List[Tuple[float, float]]]): List of all local waypoints in x/y coordinates
-        sailbot_pos_x (List[Tuple[float, float]]): X coordinates of the sailbot
-        sailbot_pos_y (List[Tuple[float, float]]): Y coordinates of the sailbot
-        final_local_wp_x (List[Tuple[float, float]]): X coordinates of the final local waypoint
-        final_local_wp_y (List[Tuple[float, float]]): Y coordinates of the final local waypoint
+        reference_latlon (ci.HelperLatLon): Reference lat/lon s
+        sailbot_xy (List[Tuple[float, float]]): List of x/y s of the sailbot
+        all_wp_xy (List[List[Tuple[float, float]]]): List of all local waypoints in x/y s
+        sailbot_pos_x (List[Tuple[float, float]]): X s of the sailbot
+        sailbot_pos_y (List[Tuple[float, float]]): Y s of the sailbot
+        final_local_wp_x (List[Tuple[float, float]]): X s of the final local waypoint
+        final_local_wp_y (List[Tuple[float, float]]): Y s of the final local waypoint
     """
 
     def __init__(self, msgs: deque[ci.LPathData]):
@@ -74,8 +74,8 @@ class VisualizerState:
             cs.latlon_list_to_xy_list(self.reference_latlon, waypoints)
             for waypoints in self.all_local_wp
         ]
-        self.sailbot_pos_x, self.sailbot_pos_y = self._split_coordinates(self.sailbot_xy)
-        self.final_local_wp_x, self.final_local_wp_y = self._split_coordinates(self.all_wp_xy[-1])
+        self.sailbot_pos_x, self.sailbot_pos_y = self._split_s(self.sailbot_xy)
+        self.final_local_wp_x, self.final_local_wp_y = self._split_s(self.all_wp_xy[-1])
         self.all_local_wp_x, self.all_local_wp_y = zip(
             *[self._split_coordinates(waypoints) for waypoints in self.all_wp_xy]
         )
@@ -87,7 +87,6 @@ class VisualizerState:
         ais_ship_xy = cs.latlon_list_to_xy_list(self.reference_latlon, ais_ship_latlons)
         self.ais_pos_x, self.ais_pos_y = self._split_coordinates(ais_ship_xy)
         self.ais_headings = [ship.cog.heading for ship in self.ais_ships]
-        self.ais_speeds = [ship.sog.speed for ship in self.ais_ships]
 
         # Process land obstacles
         self.land_obstacles_xy = self._process_land_obstacles(
@@ -203,8 +202,9 @@ def initial_plot() -> go.Figure:
     fig = go.FigureWidget(figure)
 
     fig.update_layout(
-        xaxis_title="X (Km)",
-        yaxis_title="Y (Km)",
+        title="Path Planning",
+        xaxis_title="X (km)",
+        yaxis_title="Y (km)",
         xaxis=dict(range=[-100, 100]),
         yaxis=dict(range=[-100, 100]),
     )
@@ -223,13 +223,25 @@ def dash_app(q: Queue):
     global queue  # type: ignore
     queue = q
 
+    # app.layout = html.Div(
+    #     [
+    #         html.H2("Live Path Planning"),
+    #         dcc.Graph(id="live-graph"),
+    #         dcc.Interval(id="interval-component", interval=5000, n_intervals=0),
+    #         # Commented out animated path planning
+    #         # html.H2("Animated Path Planning"),
+    #         # dcc.Graph(id="animated-live-graph"),
+    #         # dcc.Interval(id="interval-component2", interval=10000, n_intervals=0),
+    #         # TODO: Add more graphs and data visualizations as needed
+    #         # dcc.Graph(id="another-graph"),
+    #         # dcc.Interval(id="another-interval", interval=1000, n_intervals=0),
+    #     ],
+    # )
+    # app.title = "Sailbot Path Planning"
+    # app.run(debug=True, use_reloader=False)
+
     app.layout = html.Div(
-        style={
-            "height": "100vh",
-            "width": "100vw",
-            "margin": 0,
-            "padding": 0,
-        },
+        style={"height": "100vh", "width": "100vw", "margin": 0, "padding": 0},
         children=[
             html.H2(
                 "UBC Sailbot Pathfinding",
@@ -239,6 +251,8 @@ def dash_app(q: Queue):
             dcc.Interval(id="interval-component", interval=2500, n_intervals=0),
         ],
     )
+
+    app.title = "Sailbot Path Planning"
     app.run(debug=True, use_reloader=False)
 
 
@@ -252,6 +266,23 @@ def live_plot(n_intervals) -> go.Figure:
     state = queue.get()  # type: ignore
     fig = live_update_plot(state)
     return fig
+
+
+# Commented out animated path planning
+# @app.callback(
+#     Output("animated-live-graph", "figure"), [Input("interval-component2", "n_intervals")]
+# )
+# def animated_plot(n_intervals) -> go.Figure:
+#     """
+#     Updates the animated graph to the accumulated LPathData ROS messages.
+#     """
+#     global queue
+#     state = queue.get()  # type: ignore
+#     fig = animated_update_plot(state)
+#     return fig
+
+
+# TODO: Add more callbacks for other graphs and data visualizations as needed
 
 
 def live_update_plot(state: VisualizerState) -> go.Figure:
@@ -282,7 +313,6 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
     boat_y = [state.sailbot_pos_y[-1]]
     angle_from_boat = math.atan2(goal_x[0] - boat_x[0], goal_y[0] - boat_y[0])
     angle_degrees = math.degrees(angle_from_boat)
-    distance_to_goal = math.hypot(goal_x[0] - boat_x[0], goal_y[0] - boat_y[0])
 
     # Track changes in the local goal point to display a popup message when it updates
     global LAST_GOAL
@@ -308,7 +338,6 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
         + "<extra></extra>",
     )
 
-    # Sailbot marker
     boat_trace = go.Scatter(
         x=[state.sailbot_pos_x[-1]],
         y=[state.sailbot_pos_y[-1]],
@@ -319,15 +348,15 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
             "X: %{x:.2f} <br>"
             "Y: %{y:.2f} <br>"
             "Heading: " + f"{state.sailbot_gps[-1].heading.heading:.1f}°<br>"
-            f"Speed: {state.sailbot_gps[-1].speed.speed:.1f} km/h <br>"
-            f"Distance to Goal: {distance_to_goal:.2f} km<br>"
+            f"Speed: {state.sailbot_gps[-1].speed.speed:.1f}<br>"
             "<extra></extra>"
         ),
         marker=dict(
-            symbol="arrow",
-            color="yellow",
-            line=dict(width=2, color="DarkSlateGrey"),
-            size=20,
+            symbol="arrow-wide",
+            line_color="darkseagreen",
+            color="lightgreen",
+            line_width=2,
+            size=15,
             angleref="up",
             angle=cs.true_bearing_to_plotly_cartesian(state.sailbot_gps[-1].heading.heading),
         ),
@@ -368,6 +397,8 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
             showgrid=False,
             zeroline=True,
             visible=False,
+            scaleanchor="x2",
+            scaleratio=1,
         ),
     )
 
@@ -381,15 +412,14 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
     tw_mag = math.hypot(state.true_wind_vector.x, state.true_wind_vector.y)
     bw_mag = math.hypot(state.boat_wind_vector.x, state.boat_wind_vector.y)
 
+    aw_angle = math.degrees(math.atan2(state.aw_wind_vector.x, state.aw_wind_vector.y))
+    tw_angle = math.degrees(math.atan2(state.true_wind_vector.x, state.true_wind_vector.y))
+    bw_angle = math.degrees(math.atan2(state.boat_wind_vector.x, state.boat_wind_vector.y))
+
     ARROW_LEN = 4.0
 
-    # Scaled component vectors
-    aw_dx, aw_dy = aw_unit_vec.x * ARROW_LEN, aw_unit_vec.y * ARROW_LEN
-    tw_dx, tw_dy = tw_unit_vec.x * ARROW_LEN, tw_unit_vec.y * ARROW_LEN
-    bw_dx, bw_dy = bw_unit_vec.x * ARROW_LEN, bw_unit_vec.y * ARROW_LEN
-
     # Small vertical offsets so the arrows don't overlap
-    ORIGIN_X, ORIGIN_Y = 6, 0
+    ORIGIN_X, ORIGIN_Y = 12, 0
     Y_OFFSET = 1.0
 
     boat_arrow_origin = (ORIGIN_X, ORIGIN_Y + Y_OFFSET)
@@ -400,8 +430,8 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
     fig.add_annotation(
         x=apparent_wind_arrow_origin[0],
         y=apparent_wind_arrow_origin[1],
-        ax=apparent_wind_arrow_origin[0] + aw_dx,
-        ay=apparent_wind_arrow_origin[1] + aw_dy,
+        ax=apparent_wind_arrow_origin[0] - aw_unit_vec.x * ARROW_LEN,
+        ay=apparent_wind_arrow_origin[1] - aw_unit_vec.y * ARROW_LEN,
         xref="x2",
         yref="y2",
         axref="x2",
@@ -413,7 +443,10 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
         arrowcolor="purple",
         standoff=2,
         text="",
-        hovertext=(f"<b>🌬️ Apparent Wind</b><br>" f"speed: {aw_mag:.2f} kmph<br>"),
+        hovertext=(
+            f"<b>🌬️ Apparent Wind</b><br>"
+            f"speed: {aw_mag:.2f} kmph<br>, angle: {aw_angle:.2f} deg<br>"
+        ),
         hoverlabel=dict(bgcolor="white"),
     )
 
@@ -421,8 +454,8 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
     fig.add_annotation(
         x=true_wind_arrow_origin[0],
         y=true_wind_arrow_origin[1],
-        ax=true_wind_arrow_origin[0] + tw_dx,
-        ay=true_wind_arrow_origin[1] + tw_dy,
+        ax=true_wind_arrow_origin[0] - tw_unit_vec.x * ARROW_LEN,
+        ay=true_wind_arrow_origin[1] - tw_unit_vec.y * ARROW_LEN,
         xref="x2",
         yref="y2",
         axref="x2",
@@ -434,7 +467,10 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
         arrowcolor="blue",
         standoff=2,
         text="",
-        hovertext=(f"<b>🌬️ True Wind</b><br>" f"speed: {tw_mag:.2f} kmph<br>"),
+        hovertext=(
+            f"<b>🌬️ True Wind</b><br>"
+            f"speed: {tw_mag:.2f} kmph<br>, angle: {tw_angle:.2f} deg<br>"
+        ),
         hoverlabel=dict(bgcolor="white"),
     )
 
@@ -442,8 +478,8 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
     fig.add_annotation(
         x=boat_arrow_origin[0],
         y=boat_arrow_origin[1],
-        ax=boat_arrow_origin[0] + bw_dx,
-        ay=boat_arrow_origin[1] + bw_dy,
+        ax=boat_arrow_origin[0] - bw_unit_vec.x * ARROW_LEN,
+        ay=boat_arrow_origin[1] - bw_unit_vec.y * ARROW_LEN,
         xref="x2",
         yref="y2",
         axref="x2",
@@ -455,7 +491,10 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
         arrowcolor="red",
         standoff=2,
         text="",
-        hovertext=(f"<b>🛶 Boat Wind</b><br>" f"speed: {bw_mag:.2f} kmph<br>"),
+        hovertext=(
+            f"<b>🛶 Boat Wind</b><br>"
+            f"speed: {bw_mag:.2f} kmph<br>, angle: {bw_angle:.2f} deg<br>"
+        ),
         hoverlabel=dict(bgcolor="white"),
     )
 
@@ -473,12 +512,13 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
     )
 
     # add boat and true wind labels
+
     fig.add_annotation(
-        x=-8,
+        x=-22,
         y=4,
         xref="x2",
         yref="y2",
-        text=f"Boat - {bw_mag:.2f} kmph",
+        text=f"Boat - {bw_mag:.2f} kmph, {bw_angle:.2f} deg",
         showarrow=False,
         align="left",
         xanchor="left",
@@ -486,11 +526,11 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
     )
 
     fig.add_annotation(
-        x=-8,
+        x=-22,
         y=0,
         xref="x2",
         yref="y2",
-        text=f"True - {tw_mag:.2f} kmph",
+        text=f"True - {tw_mag:.2f} kmph, {tw_angle:.2f} deg",
         showarrow=False,
         align="left",
         xanchor="left",
@@ -498,11 +538,11 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
     )
 
     fig.add_annotation(
-        x=-8,
+        x=-22,
         y=-4,
         xref="x2",
         yref="y2",
-        text=f"Apparent - {aw_mag:.2f} kmph",
+        text=f"Apparent - {aw_mag:.2f} kmph, {aw_angle:.2f} deg",
         showarrow=False,
         align="left",
         xanchor="left",
@@ -522,7 +562,7 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
 
     # Circle representing boat on wind box
     fig.add_annotation(
-        x=6,
+        x=12,
         y=0,
         xref="x2",
         yref="y2",
@@ -548,7 +588,7 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
         y0=y_min,
         x1=x_max,
         y1=y_max,
-        fillcolor="rgba(000, 100, 255, 0.25)",  # light red, semi-transparent
+        fillcolor="rgba(255, 100, 100, 0.25)",  # light red, semi-transparent
         line=dict(width=0),
         layer="below",
     )
@@ -562,7 +602,7 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
             y=planned_y,
             mode="lines",
             name="Path to Goal",
-            line=dict(width=2, dash="dot", color="blue"),
+            line=dict(width=2, dash="dot", color="orange"),
             hovertemplate="X: %{x:.2f}<br>Y: %{y:.2f}<extra></extra>",
         )
 
@@ -572,9 +612,18 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
     fig.add_trace(boat_trace)
     fig.add_trace(path_trace)
 
+    # Set axis limits dynamically
+    PAD = 10.0
+    x_candidates = [boat_x[0]] + list(state.final_local_wp_x)
+    y_candidates = [boat_y[0]] + list(state.final_local_wp_y)
+    x_min = min(x_candidates) - PAD
+    x_max = max(x_candidates) + PAD
+    y_min = min(y_candidates) - PAD
+    y_max = max(y_candidates) + PAD
+
     # Display AIS Ships
-    for x_val, y_val, heading, ais_id, speed in zip(
-        state.ais_pos_x, state.ais_pos_y, state.ais_headings, state.ais_ship_ids, state.ais_speeds
+    for x_val, y_val, heading, ais_id in zip(
+        state.ais_pos_x, state.ais_pos_y, state.ais_headings, state.ais_ship_ids
     ):
         fig.add_trace(
             go.Scatter(
@@ -587,12 +636,12 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
                     f"X: {x_val:.2f}<br>"
                     f"Y: {y_val:.2f}<br>"
                     f"Heading: {heading:.1f}°<extra></extra>"
-                    f"Speed: {speed:.1f} km/h<br>"
                 ),
                 marker=dict(
-                    symbol="arrow",
+                    symbol="arrow-wide",
+                    line_color="orange",
                     color="orange",
-                    line=dict(width=2, color="DarkSlateGrey"),
+                    line_width=2,
                     size=15,
                     angleref="up",
                     angle=cs.true_bearing_to_plotly_cartesian(heading),
@@ -615,7 +664,7 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
                     fillcolor="rgba(255,165,0,0.25)",
                     name="AIS Collision Zone",
                     hoverinfo="skip",
-                    showlegend=False,
+                    showlegend=True,
                     opacity=0.5,
                 )
             )
@@ -635,7 +684,6 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
         )
 
     # Update Layout
-    x_min, y_min, x_max, y_max = state_space.bounds
     fig.update_layout(
         xaxis_title="X (Km)",
         yaxis_title="Y (Km)",
@@ -652,7 +700,7 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
             xanchor="center",
         ),
         showlegend=True,
-        uirevision="constant",
+        uirevision="stay",
     )
 
     return fig
