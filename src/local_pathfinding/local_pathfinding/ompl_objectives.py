@@ -210,35 +210,6 @@ class TimeObjective(ob.OptimizationObjective):
         return TimeObjective.interpolation((true_wind_speed_kmph, sailing_angle_degrees))
 
 
-class MinimumTurnsObjective(ob.OptimizationObjective):
-    """The Minimum Turns Objective assigns a cost, to any path segment with a turn in it that is
-    proportional to the magnitude of the turn. A turn is detected when the yaw of s1 != yaw of s2.
-    The magnitude of the turn is defined as |(yaw of s1) - (yaw of s2)|.
-    """
-
-    def __init__(self, space_information):
-        super().__init__(space_information)
-
-    def motionCost(self, s1: ob.SE2StateSpace, s2: ob.SE2StateSpace) -> ob.Cost:
-        yaw1_radians = cs.bound_to_180(s1.get().getYaw(), rad=True)
-        yaw2_radians = cs.bound_to_180(s2.get().getYaw(), rad=True)
-        return ob.Cost(MinimumTurnsObjective.turn_cost(yaw1_radians, yaw2_radians))
-
-    @staticmethod
-    def turn_cost(yaw1_radians: float, yaw2_radians: float) -> float:
-        """This function returns a cost proportional to the size of the acute angle between
-        yaw1_radians and yaw2_radians.
-
-        Args:
-            yaw1_radians (float): the yaw of state 1 in (-pi, pi]
-            yaw2_radians (float): the yaw of state 2 in (-pi, pi]
-
-        Returns:
-            float: the cost of the turning from yaw1 to yaw2, in the interval [0, 1]
-        """
-        return abs(cs.bound_to_180(yaw2_radians - yaw1_radians, rad=True)) / np.pi
-
-
 def get_sailing_objective(
     space_information,
     simple_setup,

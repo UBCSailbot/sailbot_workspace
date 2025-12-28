@@ -26,10 +26,10 @@ from local_pathfinding.ompl_objectives import get_sailing_objective
 if TYPE_CHECKING:
     from local_pathfinding.local_path import LocalPathState
 
-# OMPL logging: only log warnings and above
 ou.setLogLevel(ou.LOG_WARN)
 
 BOX_BUFFER_SIZE = 1.0  # km
+MIN_TURNING_RADIUS = 1.0
 
 LAND_KEY = -1
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -248,7 +248,7 @@ class OMPLPath:
         goal_x, goal_y = goal_position_in_xy
 
         # create an SE2 state space: rotation and translation in a plane
-        space = base.SE2StateSpace()
+        space = base.DubinsStateSpace(turningRadius=MIN_TURNING_RADIUS)
         bounds = base.RealVectorBounds(dim=2)
         state_space = box(*MultiPolygon([start_box, goal_polygon]).bounds)
         x_min, y_min, x_max, y_max = state_space.bounds
