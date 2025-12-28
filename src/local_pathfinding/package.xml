@@ -14,7 +14,7 @@
   <!--Python Dependencies-->
   <exec_depend>python3-numpy</exec_depend>
   <exec_depend>python3-pyproj</exec_depend>
-  <exec_depend>python3-shapely2</exec_depend>
+  <exec_depend>python3-shapely</exec_depend>
   <exec_depend>python3-geopandas</exec_depend>
   <exec_depend>python3-plotly</exec_depend>
   <exec_depend>python3-dash</exec_depend>

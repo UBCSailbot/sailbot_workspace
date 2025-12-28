@@ -12,8 +12,3 @@ python3-anywidget:
   ubuntu:
     pip:
       packages: [anywidget]
-
-python3-shapely2:
-  ubuntu:
-    pip:
-      packages: [shapely==2.1.2]
