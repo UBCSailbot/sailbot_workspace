@@ -28,8 +28,15 @@ if TYPE_CHECKING:
 
 ou.setLogLevel(ou.LOG_WARN)
 
-BOX_BUFFER_SIZE = 1.0  # km
-MIN_TURNING_RADIUS = 1.0
+BOX_BUFFER_SIZE_KM = 1.0
+# for now this is statically defined and subject to change or may be made dynamic
+MIN_TURNING_RADIUS_KM = 0.05  # 50 m
+# sets an upper limit on the allowable edge length in the graph formed by the RRT* algorithm
+# We set this as small as possible to reduce instances where both endpoints of a path segment are
+# valid but the segment straddles an obstacle collision zone
+# setting this any smaller can lead to OMPL not being able to construct a tree that reaches
+# the goal state
+MAX_EDGE_LEN_KM = 3.0
 
 LAND_KEY = -1
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -70,7 +77,8 @@ class OMPLPath:
             max_runtime (float): Maximum amount of time in seconds to look for a solution path.
             local_path_state (LocalPathState): State of Sailbot.
         """
-        self._box_buffer = BOX_BUFFER_SIZE
+        self._box_buffer = BOX_BUFFER_SIZE_KM
+
         self._logger = parent_logger.get_child(name="ompl_path")
         # this needs state
         self._simple_setup = self._init_simple_setup(local_path_state, land_multi_polygon)
@@ -247,8 +255,8 @@ class OMPLPath:
         goal_polygon = self.create_buffer_around_position(goal_position_in_xy, self._box_buffer)
         goal_x, goal_y = goal_position_in_xy
 
-        # create an SE2 state space: rotation and translation in a plane
-        space = base.DubinsStateSpace(turningRadius=MIN_TURNING_RADIUS)
+        # RRT* requires a symmetric state space which is not the default for Dubins State Space
+        space = base.DubinsStateSpace(turningRadius=MIN_TURNING_RADIUS_KM, isSymmetric=True)
         bounds = base.RealVectorBounds(dim=2)
         state_space = box(*MultiPolygon([start_box, goal_polygon]).bounds)
         x_min, y_min, x_max, y_max = state_space.bounds
@@ -302,7 +310,7 @@ class OMPLPath:
 
         simple_setup.setOptimizationObjective(objective)
         planner = og.RRTstar(space_information)
-        planner.setRange(200.0)
+        planner.setRange(MAX_EDGE_LEN_KM)
         simple_setup.setPlanner(planner)
 
         return simple_setup
