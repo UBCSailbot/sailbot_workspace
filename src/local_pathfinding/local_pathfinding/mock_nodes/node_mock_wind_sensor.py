@@ -22,13 +22,15 @@ Parameters:
 * Use ros2 param set {parameter_name} {value} to update parameters at runtime.
 """
 
+from typing import List
+
 import custom_interfaces.msg as ci
 import numpy as np
 import rclpy
+from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
 from rclpy.parameter import Parameter
-from rcl_interfaces.msg import SetParametersResult
-from typing import List
+
 import local_pathfinding.mock_nodes.shared_constants as sc
 import local_pathfinding.wind_coord_systems as wcs
 
@@ -36,14 +38,12 @@ import local_pathfinding.wind_coord_systems as wcs
 def _validate_tw_dir_deg(value: int) -> None:
     """Validate direction is in (-180, 180]."""
     if not (-180 < value <= 180):
-        raise ValueError(
-            f"tw_dir_deg must be in (-180, 180]; got {value}"
-        )
+        raise ValueError(f"tw_dir_deg must be in (-180, 180]; got {value}")
 
 
 class MockWindSensor(Node):
-    def _init__(self):
-        super()._init__("mock_wind_sensor")
+    def __init__(self):
+        super().__init__("mock_wind_sensor")
         self.declare_parameters(
             namespace="",
             parameters=[
@@ -72,12 +72,8 @@ class MockWindSensor(Node):
         self._boat_speed = sc.MEAN_SPEED.speed
 
         # Cached parameter-backed values (updated through on-set-parameters callback).
-        self._tw_speed_kmph = float(
-            self.get_parameter("tw_speed_kmph").value
-        )
-        self._tw_dir_deg = int(
-            self.get_parameter("tw_dir_deg").value
-        )
+        self._tw_speed_kmph = float(self.get_parameter("tw_speed_kmph").value)
+        self._tw_dir_deg = int(self.get_parameter("tw_dir_deg").value)
 
         self.add_on_set_parameters_callback(self._on_set_parameters)
 
