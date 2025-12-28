@@ -1,11 +1,5 @@
 import pytest
-from custom_interfaces.msg import (
-    GPS,
-    AISShips,
-    HelperLatLon,
-    Path,
-    WindSensor,
-)
+from custom_interfaces.msg import GPS, AISShips, HelperLatLon, Path, WindSensor
 from rclpy.impl.rcutils_logger import RcutilsLogger
 from shapely.geometry import MultiPolygon, Polygon
 
@@ -75,7 +69,7 @@ PATH = lp.LocalPath(parent_logger=RcutilsLogger())
                             REF,
                         )
                     ),
-                )
+                )  # type: ignore
             ],
             True,
         ),
@@ -110,7 +104,7 @@ PATH = lp.LocalPath(parent_logger=RcutilsLogger())
                             REF,
                         )
                     ),
-                )
+                )  # type: ignore
             ],
             False,
         ),
@@ -138,8 +132,9 @@ PATH = lp.LocalPath(parent_logger=RcutilsLogger())
                     reference=HelperLatLon(
                         latitude=48.113521575927734, longitude=-135.67999267578125
                     ),
-                    sailbot_position=cs.xy_to_latlon(REF, cs.XY(x=878.268119211102,
-                                                                y=106.06146253551834)),
+                    sailbot_position=cs.xy_to_latlon(
+                        REF, cs.XY(x=878.268119211102, y=106.06146253551834)
+                    ),
                     collision_zone=Polygon(
                         [
                             # already in XY
@@ -150,14 +145,15 @@ PATH = lp.LocalPath(parent_logger=RcutilsLogger())
                             (99.6522679584995, -0.0980475891705976),
                         ]
                     ),
-                ),
+                ),  # type: ignore
                 # Obstacle 2
                 Obstacle(
                     reference=HelperLatLon(
                         latitude=48.197017669677734, longitude=-128.9371337890625
                     ),
-                    sailbot_position=cs.xy_to_latlon(REF, cs.XY(x=878.268119211102,
-                                                                y=106.06146253551834)),
+                    sailbot_position=cs.xy_to_latlon(
+                        REF, cs.XY(x=878.268119211102, y=106.06146253551834)
+                    ),
                     collision_zone=Polygon(
                         [
                             (599.7313118870519, 39.76370963196999),
@@ -167,14 +163,15 @@ PATH = lp.LocalPath(parent_logger=RcutilsLogger())
                             (599.7313118870519, 39.76370963196999),
                         ]
                     ),
-                ),
+                ),  # type: ignore
                 # Obstacle 3
                 Obstacle(
                     reference=HelperLatLon(
                         latitude=48.510276794433594, longitude=-126.15927124023438
                     ),
-                    sailbot_position=cs.xy_to_latlon(REF, cs.XY(x=878.268119211102,
-                                                                y=106.06146253551834)),
+                    sailbot_position=cs.xy_to_latlon(
+                        REF, cs.XY(x=878.268119211102, y=106.06146253551834)
+                    ),
                     collision_zone=Polygon(
                         [
                             (799.7261319438433, 99.77070315844303),
@@ -184,7 +181,7 @@ PATH = lp.LocalPath(parent_logger=RcutilsLogger())
                             (799.7261319438433, 99.77070315844303),
                         ]
                     ),
-                ),
+                ),  # type: ignore
             ],
             True,  # Expected result: path is in collision zone
         ),

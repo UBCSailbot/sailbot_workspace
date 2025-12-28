@@ -1,10 +1,12 @@
 """Describes obstacles which the Sailbot must avoid: Boats and Land"""
 
 import math
+from abc import abstractmethod
 from typing import Optional
 
 import custom_interfaces.msg as ci
 import numpy as np
+from shapely import prepared
 from shapely.affinity import affine_transform
 from shapely.geometry import MultiPolygon, Point, Polygon
 
@@ -61,23 +63,12 @@ class Obstacle:
 
         return not self.collision_zone.contains(Point(*point))
 
+    @abstractmethod
     def update_collision_zone(self, **kwargs) -> None:
         """
         Updates the collision zone of the obstacle to reflect updated attributes.
-        For Boats, pass `ais_ship=...` in kwargs.
-        For Land, pass `state_space_latlon=...` and `land_multi_polygon=...`.
         """
-        if isinstance(self, Boat):
-            # Boat Obstacle
-            ais_ship = kwargs.get("ais_ship")
-            self._update_boat_collision_zone(ais_ship=ais_ship)
-
-        else:
-            # Land Obstacle
-            self._update_land_collision_zone(  # type: ignore
-                state_space_latlon=kwargs.get("state_space_latlon"),
-                land_multi_polygon=kwargs.get("land_multi_polygon"),
-            )
+        pass
 
     def update_sailbot_data(
         self, sailbot_position: ci.HelperLatLon, sailbot_speed: Optional[float] = None
@@ -90,9 +81,6 @@ class Obstacle:
         """
         self.sailbot_position_latlon = sailbot_position
         self.sailbot_position = cs.latlon_to_xy(self.reference, sailbot_position)
-
-        if isinstance(self, Boat):
-            self.sailbot_speed = sailbot_speed
 
     def update_reference_point(self, reference: ci.HelperLatLon, **kwargs) -> None:
         """Updates the reference point and updates the collision zone.
@@ -139,13 +127,11 @@ class Land(Obstacle):
         super().__init__(reference, sailbot_position)
         self.all_land_data = all_land_data
         self.bbox_buffer_amount = bbox_buffer_amount
-        self._update_land_collision_zone(
+        self.update_collision_zone(
             state_space_latlon=state_space_latlon, land_multi_polygon=land_multi_polygon
         )
 
-    def _update_land_collision_zone(
-        self, state_space_latlon: Polygon = None, land_multi_polygon: MultiPolygon = None
-    ) -> None:
+    def update_collision_zone(self, **kwargs) -> None:
         """
         Updates the Land object's collision zone with a MultiPolygon representing
         all land obstacles within either a specified or default state space.
@@ -154,10 +140,13 @@ class Land(Obstacle):
             state_space_latlon (Polygon): A custom state space.
             land_multi_polygon (MultiPolygon): Custom land data. Useful for testing.
         """
+        land_multi_polygon = kwargs.get("land_multi_polygon", None)
+        state_space_latlon = kwargs.get("state_space_latlon", None)
         if land_multi_polygon is not None:  # for testing (injecting mock land data)
             self.collision_zone = MultiPolygon(
                 cs.latlon_polygon_list_to_xy_polygon_list(land_multi_polygon.geoms, self.reference)
             )
+            prepared.prep(self.collision_zone)
             return
 
         if state_space_latlon is None:
@@ -189,7 +178,7 @@ class Land(Obstacle):
                 collision_zone = MultiPolygon([collision_zone])
         else:
             collision_zone = MultiPolygon()
-
+        prepared.prep(collision_zone)
         self.collision_zone = collision_zone
 
 
@@ -215,15 +204,30 @@ class Boat(Obstacle):
         self.ais_ship = ais_ship
         self.width = cs.meters_to_km(self.ais_ship.width.dimension)
         self.length = cs.meters_to_km(self.ais_ship.length.dimension)
-        self._update_boat_collision_zone()
+        self.update_collision_zone()
 
-    def _update_boat_collision_zone(self, ais_ship: Optional[ci.HelperAISShip] = None) -> None:
+    def update_sailbot_data(
+        self, sailbot_position: ci.HelperLatLon, sailbot_speed: Optional[float] = None
+    ) -> None:
+        """Updates Sailbot's position, and Sailbot's speed (if provided).
+
+        Args:
+            sailbot_position (ci.HelperLatLon): Position of the SailBot.
+            sailbot_speed (float): Speed of the SailBot in kmph.
+        """
+        super().update_sailbot_data(sailbot_position, sailbot_speed)
+        if sailbot_speed is not None:
+            self.sailbot_speed = sailbot_speed
+
+    def update_collision_zone(self, **kwargs) -> None:
         """Sets or regenerates a Shapely Polygon that represents the boat's collision zone.
 
         Args:
+
             ais_ship (Optional[ci.HelperAISShip]): AIS Ship message containing information about
                                                    the target ship.
         """
+        ais_ship = kwargs.get("ais_ship", None)
         if ais_ship is not None:
             if ais_ship.id != self.ais_ship.id:
                 raise ValueError("Argument AIS Ship ID does not match this Boat instance's ID")
@@ -253,6 +257,7 @@ class Boat(Obstacle):
         collision_zone = affine_transform(boat_collision_zone, transformation)
 
         self.collision_zone = collision_zone.buffer(BOAT_BUFFER, join_style=2)
+        prepared.prep(self.collision_zone)
 
     def _calculate_projected_distance(self) -> float:
         """Calculates the distance the boat obstacle will travel before collision, if
