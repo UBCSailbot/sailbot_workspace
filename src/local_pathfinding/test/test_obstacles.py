@@ -563,7 +563,7 @@ def test_is_valid_no_collision_zone_boat(
     invalid_point: cs.XY,
     valid_point: cs.XY,
 ):
-    obstacle = Obstacle(reference_point, sailbot_position)
+    obstacle = Obstacle(reference_point, sailbot_position)  # type: ignore
     with pytest.raises(RuntimeError):
         obstacle.is_valid(invalid_point)
     with pytest.raises(RuntimeError):
