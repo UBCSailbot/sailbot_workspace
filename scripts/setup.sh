@@ -20,7 +20,8 @@ CUSTOM_ROSDEP_LIST="/etc/ros/rosdep/sources.list.d/20-sailbot.list"
 CUSTOM_ROSDEP_FILE="custom-rosdep.yaml"
 echo "# sailbot" | sudo tee "$CUSTOM_ROSDEP_LIST" > /dev/null
 
-for DIR in "$ROS_WORKSPACE"/src/*; do
+WORKSPACE="${GITHUB_WORKSPACE:-$ROS_WORKSPACE}"
+for DIR in "$WORKSPACE"/src/*; do
     if [ -d "$DIR" ]; then
         FILE="$DIR/$CUSTOM_ROSDEP_FILE"
         if [ -f "$FILE" ]; then
