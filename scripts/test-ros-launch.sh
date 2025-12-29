@@ -29,8 +29,10 @@ UNIT_TEST="ON"
 cd $ROS_WORKSPACE
 source /opt/ros/$ROS_DISTRO/setup.bash
 ./scripts/setup.sh
-
+colcon --log-base $COLCON_LOG_PATH
 colcon build \
+        --build-base $COLCON_BUILD_BASE \
+        --install-base $COLCON_INSTALL_BASE \
         --packages-ignore virtual_iridium \
         --merge-install \
         --symlink-install \
