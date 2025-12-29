@@ -42,13 +42,9 @@ jobs:
             - name: Checkout workspace
               uses: actions/checkout@v6
 
-            - name: pwd
-              run: |
-                  ls -l scripts
-
             - name: Test ROS Launch
               run: |
-                  ./scripts/test-ros-launch
+                  ./scripts/test-ros-launch.sh
 
     # ament-lint:
     #     strategy:
