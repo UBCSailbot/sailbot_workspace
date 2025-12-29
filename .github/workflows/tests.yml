@@ -36,7 +36,7 @@ jobs:
 
         container:
             image: ghcr.io/ubcsailbot/sailbot_workspace/dev:latest
-            options: --user ros
+            options: --user root
 
         steps:
             - name: Checkout workspace
