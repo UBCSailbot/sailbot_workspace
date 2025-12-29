@@ -31,9 +31,6 @@ source /opt/ros/$ROS_DISTRO/setup.bash
 ./scripts/setup.sh
 
 colcon build \
-        --build-base $COLCON_BUILD_BASE \
-        --install-base $COLCON_INSTALL_BASE \
-        --log-base $COLCON_LOG_PATH \
         --packages-ignore virtual_iridium \
         --merge-install \
         --symlink-install \
