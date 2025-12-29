@@ -1,6 +1,12 @@
 #!/bin/bash
 set -e
 
+# the normal directories that colcon would use are not writeable in the github actions env where
+# this script is meant to run
+export COLCON_BUILD_BASE=/tmp/colcon-build
+export COLCON_INSTALL_BASE=/tmp/colcon-install
+export COLCON_LOG_PATH=/tmp/colcon-log
+
 EXPECTED_RUNNING_NODES=(
   /cached_fib_node
   /can_transceiver_node
@@ -16,7 +22,7 @@ cd $ROS_WORKSPACE
 source /opt/ros/$ROS_DISTRO/setup.bash
 ./scripts/setup.sh
 ./scripts/build.sh
-source ./install/local_setup.bash
+source /tmp/colcon-install/setup.bash
 
 ros2 launch src/global_launch/main_launch.py &
 LAUNCH_PID=$!
