@@ -223,7 +223,7 @@ def get_sailing_objective(
         boat_heading_degrees, apparent_wind_direction_degrees
     )
 
-    true_wind_direction_radians, true_wind_speed_kmph = wcs.get_true_wind(
+    tw_dir_rad, tw_speed_kmph = wcs.get_true_wind(
         apparent_wind_direction_degrees_global_coordinates,
         apparent_wind_speed_kmph,
         boat_heading_degrees,
@@ -234,13 +234,13 @@ def get_sailing_objective(
     multiObjective.addObjective(
         objective=WindObjective(
             space_information,
-            true_wind_direction_radians,
+            tw_dir_rad,
         ),
         weight=WIND_OBJECTIVE_WEIGHT,
     )
     multiObjective.addObjective(
         objective=TimeObjective(
-            space_information, true_wind_direction_radians, true_wind_speed_kmph
+            space_information, tw_dir_rad, tw_speed_kmph
         ),
         weight=TIME_OBJECTIVE_WEIGHT,
     )

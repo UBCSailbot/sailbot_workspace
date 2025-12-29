@@ -25,7 +25,6 @@ Parameters:
 from typing import List
 
 import custom_interfaces.msg as ci
-import numpy as np
 import rclpy
 from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
@@ -78,15 +77,16 @@ class MockWindSensor(Node):
         self.add_on_set_parameters_callback(self._on_set_parameters)
 
     def mock_wind_sensor_callback(self):
-        aw_speed_kmph, aw_direction_rad = wcs.get_apparent_wind(
+        aw_dir_deg, aw_speed_kmph = wcs.get_apparent_wind(
             self._tw_dir_deg,
             self._tw_speed_kmph,
             self._boat_heading_deg,
             self._boat_speed,
+            ret_rad=False
         )
         aw_dir_boat_coord_deg = wcs.global_to_boat_coordinate(
             self._boat_heading_deg,
-            np.degrees(aw_direction_rad),
+            aw_dir_deg
         )
         msg = ci.WindSensor(
             speed=ci.HelperSpeed(speed=aw_speed_kmph),
