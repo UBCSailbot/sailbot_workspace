@@ -14,7 +14,7 @@ DOWNWIND_COST_MULTIPLIER = 1.0
 ZERO_SPEED_COST = 1.0
 ACCEPTABLE_COST_THRESHOLD = 0.0
 WIND_OBJECTIVE_WEIGHT = 1.0
-SPEED_OBJECTIVE_WEIGHT = 1.0
+TIME_OBJECTIVE_WEIGHT = 1.0
 
 
 #       Estimated Boat Speeds (kmph) as function of True Wind Speed (kmph)
@@ -242,7 +242,7 @@ def get_sailing_objective(
         objective=TimeObjective(
             space_information, true_wind_direction_radians, true_wind_speed_kmph
         ),
-        weight=SPEED_OBJECTIVE_WEIGHT,
+        weight=TIME_OBJECTIVE_WEIGHT,
     )
     # this allows the objective to be satisfied once a path with a cost
     # below the threshold has been found
