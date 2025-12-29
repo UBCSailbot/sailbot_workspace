@@ -41,7 +41,7 @@ jobs:
             - name: Launch
               uses: ./.github/actions/
               with:
-                  script: "./scripts/test-ros-launch.sh"
+                  script: "./scripts/test-ros-launch"
                   run-website: "false"
 
     ament-lint:
