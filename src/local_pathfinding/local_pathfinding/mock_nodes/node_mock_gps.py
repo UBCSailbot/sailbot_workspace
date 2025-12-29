@@ -113,7 +113,9 @@ class MockGPS(Node):
             latitude=destination.latitude, longitude=destination.longitude
         )
         self._logger.debug(
-            f"Distance Travelled: {cs.km_to_meters(distance_km):.2f} m, direction: {self.__heading_deg.heading:.1f} deg,  speed: {self.__mean_speed_kmph.speed:.2f} kmph"  # noqa
+            f"Distance Travelled: {cs.km_to_meters(distance_km):.2f} m," +
+            f"direction: {self.__heading_deg.heading:.1f} deg," +
+            f"speed: {self.__mean_speed_kmph.speed:.2f} kmph"
         )
 
     def desired_heading_callback(self, msg: ci.DesiredHeading):
