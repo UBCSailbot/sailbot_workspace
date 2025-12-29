@@ -3,9 +3,13 @@ set -e
 
 # the normal directories that colcon would use are not writeable in the github actions env where
 # this script is meant to run
-export COLCON_BUILD_BASE=/tmp/colcon-build
-export COLCON_INSTALL_BASE=/tmp/colcon-install
-export COLCON_LOG_PATH=/tmp/colcon-log
+COLCON_BUILD_BASE="/tmp/colcon-build"
+COLCON_INSTALL_BASE="/tmp/colcon-install"
+COLCON_LOG_PATH="/tmp/colcon-log"
+
+export COLCON_BUILD_BASE=$COLCON_BUILD_BASE
+export COLCON_INSTALL_BASE=$COLCON_INSTALL_BASE
+export COLCON_LOG_PATH=$COLCON_LOG_PATH
 
 EXPECTED_RUNNING_NODES=(
   /cached_fib_node
@@ -18,11 +22,25 @@ EXPECTED_RUNNING_NODES=(
   /wingsail_ctrl_node
 )
 
+BUILD_TYPE="Debug"
+STATIC_ANALYSIS="OFF"
+UNIT_TEST="ON"
+
 cd $ROS_WORKSPACE
 source /opt/ros/$ROS_DISTRO/setup.bash
 ./scripts/setup.sh
-./scripts/build.sh
-source /tmp/colcon-install/setup.bash
+
+colcon build \
+        --build-base $COLCON_BUILD_BASE \
+        --install-base $COLCON_INSTALL_BASE \
+        --log-base $COLCON_LOG_PATH \
+        --packages-ignore virtual_iridium \
+        --merge-install \
+        --symlink-install \
+        --cmake-args "-DCMAKE_BUILD_TYPE=$BUILD_TYPE" "-DSTATIC_ANALYSIS=$STATIC_ANALYSIS" "-DUNIT_TEST=$UNIT_TEST" "--no-warn-unused-cli"
+
+
+source "$COLCON_INSTALL_BASE/setup.bash"
 
 ros2 launch src/global_launch/main_launch.py &
 LAUNCH_PID=$!
