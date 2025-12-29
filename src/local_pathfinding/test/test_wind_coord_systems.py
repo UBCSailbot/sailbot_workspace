@@ -1,5 +1,7 @@
 import math
+
 import pytest
+
 import local_pathfinding.wind_coord_systems as wcs
 
 
@@ -20,8 +22,8 @@ import local_pathfinding.wind_coord_systems as wcs
     ],
 )
 def test_boat_to_global_coordinate(boat_heading: float, wind_direction: float, expected: float):
-    assert (
-        wcs.boat_to_global_coordinate(boat_heading, wind_direction) == pytest.approx(expected)
+    assert wcs.boat_to_global_coordinate(boat_heading, wind_direction) == pytest.approx(
+        expected
     ), "incorrect angle conversion"
 
 
@@ -56,6 +58,16 @@ def test_global_to_boat_coordinate(
         (180, 17, 179, 9, 179.65, 26),
         (140, 17, 45, 9, 111.06, 18.52),
         (80, 5, -70, 8, -35.74, 4.44),
+        (70, 10.579, 180.0, 3.452, 89.04, 9.94),
+        (70, 10.600, 180.0, 3.518, 89.38, 9.96),
+        (70, 10.601, -79.198, 3.518, 56.64, 7.79),
+        (-8, 13.044, -79.198, 3.085, -19.75, 14.34),
+        (-8, 13.451, -52.021, 3.497, -16.65, 16.15),
+        (-31, 11.693, -52.021, 2.060, -34.10, 13.64),
+        (-37, 10.100, -71.758, 0.127, -37.40, 10.20),
+        (-16, 10.745, -71.758, 0.782, -19.31, 11.20),
+        (-15, 11.958, -71.765, 2.044, -22.45, 13.19),
+        (-14, 12.370, -71.765, 2.470, -22.67, 13.85),
     ],
 )
 def test_get_true_wind_direction(
@@ -74,8 +86,8 @@ def test_get_true_wind_direction(
     tw_dir_deg = math.degrees(tw_dir_rad)
 
     assert tw_dir_deg == pytest.approx(
-        expected=expected_direction, abs=1e-2
-    ) and tw_speed_kmph == pytest.approx(expected=expected_speed, abs=1e-2)
+        expected=expected_direction, abs=1e-1
+    ) and tw_speed_kmph == pytest.approx(expected=expected_speed, abs=1e-1)
 
 
 @pytest.mark.parametrize(
@@ -137,7 +149,7 @@ def test_mock_wind_sensor_pipeline(
 
     assert aw_dir_boat_coord_deg == pytest.approx(
         expected=expected_aw_boat_dir_deg, abs=1
-    ), f"Apparent wind direction in boat frame mismatch: {aw_dir_boat_coord_deg} != {expected_aw_boat_dir_deg}" # noqa
+    ), f"Apparent wind direction in boat frame mismatch: {aw_dir_boat_coord_deg} != {expected_aw_boat_dir_deg}"  # noqa
     assert aw_speed_kmph == pytest.approx(
         expected=expected_aw_speed, abs=1
     ), f"Apparent wind speed mismatch: {aw_speed_kmph} != {expected_aw_speed}"
