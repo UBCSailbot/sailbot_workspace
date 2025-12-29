@@ -38,6 +38,9 @@ jobs:
             - name: Checkout workspace
               uses: actions/checkout@v6
 
+            - name: Make workspace writable
+              run: chmod -R u+w $GITHUB_WORKSPACE
+
             - name: Launch
               uses: ./.github/actions/
               with:
