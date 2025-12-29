@@ -12,7 +12,6 @@ EXPECTED_RUNNING_NODES=(
   /wingsail_ctrl_node
 )
 
-cd $ROS_WORKSPACE
 source /opt/ros/$ROS_DISTRO/setup.bash
 ./scripts/setup.sh
 ./scripts/build.sh
