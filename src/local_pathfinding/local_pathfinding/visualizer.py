@@ -586,7 +586,7 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
                     f"<b>🚢 AIS Ship {str(ais_id)}</b><br>"
                     f"X: {x_val:.2f}<br>"
                     f"Y: {y_val:.2f}<br>"
-                    f"Heading: {heading:.1f}°<extra></extra>"
+                    f"Heading: {heading:.1f}°<extra></extra><br>"
                     f"Speed: {speed:.1f} km/h<br>"
                 ),
                 marker=dict(

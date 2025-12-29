@@ -22,24 +22,6 @@ from local_pathfinding.local_path import LocalPathState
 
 LAND_KEY = -1
 
-OMPL_PATH = ompl_path.OMPLPath(
-    parent_logger=RcutilsLogger(),
-    max_runtime=1,
-    local_path_state=LocalPathState(
-        gps=GPS(),
-        ais_ships=AISShips(),
-        global_path=Path(
-            waypoints=[
-                HelperLatLon(latitude=1.0, longitude=2.0),
-                HelperLatLon(latitude=3.0, longitude=4.0),
-            ]
-        ),
-        target_global_waypoint=HelperLatLon(latitude=1.0, longitude=2.0),
-        filtered_wind_sensor=WindSensor(),
-        planner="rrtstar",
-    ),
-)
-
 
 @pytest.fixture
 def fresh_ompl_path():
@@ -47,28 +29,28 @@ def fresh_ompl_path():
         parent_logger=RcutilsLogger(),
         max_runtime=1,
         local_path_state=LocalPathState(
-            gps=GPS(),
+            gps=GPS(lat_lon=HelperLatLon(latitude=0.0, longitude=0.0)),
             ais_ships=AISShips(),
             global_path=Path(
                 waypoints=[
-                    HelperLatLon(latitude=1.0, longitude=2.0),
-                    HelperLatLon(latitude=3.0, longitude=4.0),
+                    HelperLatLon(latitude=0.15, longitude=0.15),
+                    HelperLatLon(latitude=0.1, longitude=0.1),
                 ]
             ),
-            target_global_waypoint=HelperLatLon(latitude=1.0, longitude=2.0),
+            target_global_waypoint=HelperLatLon(latitude=0.1, longitude=0.1),
             filtered_wind_sensor=WindSensor(),
             planner="rrtstar",
         ),
     )
 
 
-def test_OMPLPath___init__():
-    assert OMPL_PATH.solved
+def test_OMPLPath___init__(fresh_ompl_path):
+    assert fresh_ompl_path.solved
 
 
 def test_OMPLPath_get_waypoint(fresh_ompl_path):
     waypoints = fresh_ompl_path.get_path().waypoints  # List[HelperLatLon]
-    start_state_latlon = OMPL_PATH.state.position
+    start_state_latlon = fresh_ompl_path.state.position
 
     test_start = waypoints[0]
     test_goal = waypoints[-1]
@@ -77,14 +59,17 @@ def test_OMPLPath_get_waypoint(fresh_ompl_path):
         (start_state_latlon.latitude, start_state_latlon.longitude), abs=1e-2
     ), "first waypoint should be start state"
     assert (test_goal.latitude, test_goal.longitude) == pytest.approx(
-        (OMPL_PATH.state.reference_latlon.latitude, OMPL_PATH.state.reference_latlon.longitude),
+        (
+            fresh_ompl_path.state.reference_latlon.latitude,
+            fresh_ompl_path.state.reference_latlon.longitude,
+        ),
         abs=1e-2,
     ), "last waypoint should be goal state"
 
 
-def test_OMPLPath_update_objectives():
+def test_OMPLPath_update_objectives(fresh_ompl_path):
     with pytest.raises(NotImplementedError):
-        OMPL_PATH.update_objectives()
+        fresh_ompl_path.update_objectives()
 
 
 def test_init_obstacles():
@@ -224,8 +209,8 @@ def test_init_obstacles():
     "x,y,is_valid",
     [(0.5, 0.5, True), (-14, 0.5, False), (-16, 0.5, True)],
 )
-def test_is_state_valid(x: float, y: float, is_valid: bool):
-    state = base.State(OMPL_PATH._simple_setup.getStateSpace())
+def test_is_state_valid(x: float, y: float, is_valid: bool, fresh_ompl_path):
+    state = base.State(fresh_ompl_path._simple_setup.getStateSpace())
     state().setXY(x, y)
 
     # Sample AIS SHIP message
@@ -272,11 +257,13 @@ def test_is_state_valid(x: float, y: float, is_valid: bool):
         (cs.XY(-50.0, -50.0), pytest.approx(36, rel=1e-2), (-53, -53, -47, -47), 3.0),
     ],
 )
-def test_create_space(position: cs.XY, expected_area, expected_bounds, box_buffer_size: float):
+def test_create_space(
+    position: cs.XY, expected_area, expected_bounds, box_buffer_size: float, fresh_ompl_path
+):
     """Test creation of buffered space around positions"""
     # Given an OMPLPath instance
 
-    space = OMPL_PATH.create_buffer_around_position(position, box_buffer_size)
+    space = fresh_ompl_path.create_buffer_around_position(position, box_buffer_size)
 
     assert space.area == expected_area, "Space area should match buffer size"
     assert space.bounds == pytest.approx(
