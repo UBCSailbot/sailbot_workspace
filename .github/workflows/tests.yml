@@ -41,6 +41,7 @@ jobs:
             - name: Launch
               uses: ./.github/actions/
               with:
+                  run: chmod -R u+w $GITHUB_WORKSPACE
                   script: "./scripts/test-ros-launch"
                   run-website: "false"
 
