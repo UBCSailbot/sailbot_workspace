@@ -253,8 +253,10 @@ class LocalPath:
 
         heading = self.state.heading if self.state else 0.0
 
-        metric_old, metric_new = self.calculate_metric(heading, heading_old_path, heading_new_path,
-                                                       old_cost, new_cost)
+        metric_old = self.calculate_metric(heading, heading_old_path, old_cost,
+                                           heading_new_path, new_cost)
+        metric_new = self.calculate_metric(heading, heading_new_path, new_cost,
+                                           heading_old_path, old_cost)
 
         self._logger.debug(
                 f"(old cost: {old_cost:.2f}, "
@@ -278,24 +280,22 @@ class LocalPath:
         self,
         heading: float,
         heading_old_path: float,
-        heading_new_path: float,
         old_cost: float,
+        heading_new_path: float,
         new_cost: float
     ):
         heading_diff_old = cs.calculate_heading_diff(heading, heading_old_path)
         heading_diff_new = cs.calculate_heading_diff(heading, heading_new_path)
 
-        old_cost_normalized, new_cost_normalized = normalize(old_cost, new_cost)
-        heading_old_normalized, heading_new_normalized = normalize(math.fabs(heading_diff_old),
-                                                                   math.fabs(heading_diff_new))
+        cost_normalized, _ = normalize(old_cost, new_cost)
+        heading_normalized, _ = normalize(math.fabs(heading_diff_old), math.fabs(heading_diff_new))
 
         w_h = HEADING_WEIGHT
         w_c = COST_WEIGHT
 
-        metric_old = w_h * heading_old_normalized + w_c * old_cost_normalized
-        metric_new = w_h * heading_new_normalized + w_c * new_cost_normalized
+        metric = w_h * heading_normalized + w_c * cost_normalized
 
-        return metric_old, metric_new
+        return metric
 
     def _update(self, ompl_path: OMPLPath):
 
