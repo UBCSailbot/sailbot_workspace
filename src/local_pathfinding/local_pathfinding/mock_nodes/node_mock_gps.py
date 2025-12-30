@@ -7,12 +7,11 @@ USES constants defined in mock_nodes.shared_constants
 import math
 
 import custom_interfaces.msg as ci
-import numpy as np
 import rclpy
 from geopy.distance import great_circle
 from rclpy.node import Node
 
-from local_pathfinding.wind_coord_systems import get_true_wind
+import local_pathfinding.coord_systems as cs
 import local_pathfinding.mock_nodes.shared_constants as sc
 import local_pathfinding.wind_coord_systems as wcs
 from local_pathfinding.ompl_objectives import TimeObjective
@@ -30,7 +29,7 @@ class MockGPS(Node):
         Attributes:
             __mock_gps_timer (Timer): Timer to call the mock gps callback function.
             __mock_gps_publisher (Publisher): Publisher for the gps data.
-            __mean_speed (HelperSpeed): Constant speed of the boat.
+            __mean_speed_kmph (HelperSpeed): Constant speed of the boat.
             __current_location (HelperLatLon): Current location of the boat.
             __mean_heading (HelperHeading): Constant heading of the boat.
         """
@@ -76,9 +75,9 @@ class MockGPS(Node):
             qos_profile=10,
         )
 
-        self.__mean_speed = sc.MEAN_SPEED
+        self.__mean_speed_kmph = sc.MEAN_SPEED
         self.__current_location = sc.START_POINT
-        self.__heading = sc.START_HEADING
+        self.__heading_deg = sc.START_HEADING
 
     def mock_gps_callback(self) -> None:
         """Callback function for the mock GPS timer. Publishes mock gps data to the ROS
@@ -86,7 +85,9 @@ class MockGPS(Node):
         """
         self.get_next_location()
         msg: ci.GPS = ci.GPS(
-            lat_lon=self.__current_location, speed=self.__mean_speed, heading=self.__heading
+            lat_lon=self.__current_location,
+            speed=self.__mean_speed_kmph,
+            heading=self.__heading_deg,
         )
         self.get_logger().debug(f"Publishing to {self.__gps_pub.topic}, heading: {msg.heading}")
         self.get_logger().debug(f"Publishing to {self.__gps_pub.topic}, speed: {msg.speed}")
@@ -101,15 +102,18 @@ class MockGPS(Node):
     def get_next_location(self) -> None:
         """Get the next location by following the great circle. Assumes constant speed and heading"""  # noqa
         # distance travelled = speed * calback time (s)
-        distance_km: float = self.__mean_speed.speed * (self.pub_period_sec / 3600)
-        start: tuple[float, float] = (
+        distance_km = self.__mean_speed_kmph.speed * (self.pub_period_sec / 3600.0)
+        start = (
             self.__current_location.latitude,
             self.__current_location.longitude,
         )
-        radian_angle = math.radians(self.__heading.heading)
-        destination = great_circle(kilometers=distance_km).destination(start, radian_angle)
+        heading_radians = math.radians(self.__heading_deg.heading)
+        destination = great_circle(kilometers=distance_km).destination(start, heading_radians)
         self.__current_location = ci.HelperLatLon(
             latitude=destination.latitude, longitude=destination.longitude
+        )
+        self._logger.debug(
+            f"Distance Travelled: {cs.km_to_meters(distance_km):.2f} m, direction: {self.__heading_deg.heading:.1f} deg,  speed: {self.__mean_speed_kmph.speed:.2f} kmph"  # noqa
         )
 
     def desired_heading_callback(self, msg: ci.DesiredHeading):
@@ -119,7 +123,7 @@ class MockGPS(Node):
             msg (ci.DesiredHeading): The desired heading for the boat.
         """
         self._logger.debug(f"Received data from {self.__desired_heading_sub.topic}: {msg}")
-        self.__heading = msg.heading
+        self.__heading_deg = msg.heading
 
     def wind_sensor_callback(self, msg: ci.WindSensor):
         """Callback for the data published by the wind sensor node (mock)

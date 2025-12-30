@@ -2,7 +2,6 @@ import custom_interfaces.msg as ci
 import pytest
 
 import local_pathfinding.node_navigate as nn
-from local_pathfinding.local_path import LocalPath
 LOCAL_WAYPOINT_REACHED_THRESH_KM = 0.5
 GLOBAL_WAYPOINT_REACHED_THRESH_KM = 3
 PATHFINDING_RANGE_KM = 30
