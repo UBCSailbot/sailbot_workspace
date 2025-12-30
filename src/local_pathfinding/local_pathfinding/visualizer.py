@@ -109,16 +109,16 @@ class VisualizerState:
         aw_dir_global_rad = math.radians(aw_dir_global)
 
         # Compute apparent wind vector (in global frame)
-        self.aw_wind_vector = cs.angle_to_vector_projections(aw_dir_global_rad, aw_speed)
+        self.aw_wind_vector = cs.polar_to_cartesian(aw_dir_global_rad, aw_speed)
 
         # True wind from apparent
-        true_wind_angle_rad, true_wind_mag = wcs.get_true_wind(
+        tw_dir_rad, tw_speed_kmph = wcs.get_true_wind(
             aw_dir_global, aw_speed, boat_heading, boat_speed
         )
-        self.true_wind_vector = cs.angle_to_vector_projections(true_wind_angle_rad, true_wind_mag)
+        self.true_wind_vector = cs.polar_to_cartesian(tw_dir_rad, tw_speed_kmph)
         # Boat wind vector
         boat_wind_radians = math.radians(cs.bound_to_180(boat_heading + 180))
-        self.boat_wind_vector = cs.angle_to_vector_projections(boat_wind_radians, boat_speed)
+        self.boat_wind_vector = cs.polar_to_cartesian(boat_wind_radians, boat_speed)
 
     def _validate_message(self, msg: ci.LPathData):
         """Checks if the sailbot observer node received any messages.
@@ -586,7 +586,7 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
                     f"<b>🚢 AIS Ship {str(ais_id)}</b><br>"
                     f"X: {x_val:.2f}<br>"
                     f"Y: {y_val:.2f}<br>"
-                    f"Heading: {heading:.1f}°<extra></extra>"
+                    f"Heading: {heading:.1f}°<extra></extra><br>"
                     f"Speed: {speed:.1f} km/h<br>"
                 ),
                 marker=dict(

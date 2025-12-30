@@ -131,9 +131,12 @@ class MockGPS(Node):
 
         self._logger.debug(f"Received data from {self.__mock_wind_sensor_sub.topic}: {msg}")
         aw_speed_kmph: float = msg.speed.speed
-        aw_direction_deg: float = msg.direction
-        tw_direction_rad, tw_speed_kmph = wcs.get_true_wind(
-            aw_direction_deg,
+        aw_dir_boat_coord_deg: float = msg.direction
+        aw_dir_global_coord_deg: float = wcs.boat_to_global_coordinate(
+            self.__heading_deg.heading, aw_dir_boat_coord_deg
+        )
+        tw_dir_rad, tw_speed_kmph = wcs.get_true_wind(
+            aw_dir_global_coord_deg,
             aw_speed_kmph,
             self.__heading_deg.heading,
             self.__mean_speed_kmph.speed,
@@ -142,7 +145,7 @@ class MockGPS(Node):
             speed=float(
                 TimeObjective.get_sailbot_speed(
                     math.radians(self.__heading_deg.heading),
-                    tw_direction_rad,
+                    tw_dir_rad,
                     tw_speed_kmph,
                 )
             )

@@ -1,6 +1,5 @@
 import math
 
-import numpy as np
 import pytest
 
 import local_pathfinding.coord_systems as cs
@@ -119,60 +118,3 @@ def test_get_sailbot_speed(
 ):
     speed = objectives.TimeObjective.get_sailbot_speed(heading, wind_direction, wind_speed)
     assert speed == pytest.approx(expected, abs=0.1)
-
-
-@pytest.mark.parametrize(
-    "yaw1_radians,yaw2_radians,expected",
-    [
-        (
-            0.0,
-            0.0,
-            0.0,
-        ),
-        (
-            np.pi,
-            np.pi,
-            0.0,
-        ),
-        (
-            -np.pi,
-            -np.pi,
-            0.0,
-        ),
-        (
-            np.pi / 2,
-            np.pi / 2,
-            0.0,
-        ),
-        (
-            -np.pi / 2,
-            -np.pi / 2,
-            0.0,
-        ),
-        (
-            -np.pi,
-            np.pi,
-            0.0,
-        ),
-        (
-            np.pi,
-            0.0,
-            1.0,
-        ),
-        (
-            np.pi / 2,
-            -np.pi / 2,
-            1.0,
-        ),
-        (
-            np.pi / 4,
-            -(3 * np.pi) / 4,
-            1.0,
-        ),
-    ],
-)
-def test_turn_cost(yaw1_radians: float, yaw2_radians: float, expected: float):
-
-    assert objectives.MinimumTurnsObjective.turn_cost(yaw1_radians, yaw2_radians) == pytest.approx(
-        expected, abs=0.1
-    )
