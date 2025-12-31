@@ -315,10 +315,7 @@ class LocalPath:
         heading_normalized, _ = normalize_cost_pair(math.fabs(heading_diff_old),
                                                     math.fabs(heading_diff_new))
 
-        w_h = HEADING_WEIGHT
-        w_c = COST_WEIGHT
-
-        metric = w_h * heading_normalized + w_c * cost_normalized
+        metric = HEADING_WEIGHT * heading_normalized + COST_WEIGHT * cost_normalized
 
         return metric
 
