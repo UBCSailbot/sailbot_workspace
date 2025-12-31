@@ -289,7 +289,7 @@ class Sailbot(Node):
                 self.global_waypoint_index
             ]
 
-        desired_heading, self.local_waypoint_index = self.local_path.update_if_needed(
+        desired_heading, self.local_waypoint_index, _ = self.local_path.update_if_needed(
             self.gps,
             self.ais_ships,
             self.global_path,

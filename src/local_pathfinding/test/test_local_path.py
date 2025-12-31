@@ -5,11 +5,81 @@ from shapely.geometry import MultiPolygon, Polygon
 
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.local_path as lp
+import custom_interfaces.msg as ci
 from local_pathfinding.obstacles import Obstacle
 
 REF = HelperLatLon(latitude=10.0, longitude=10.0)
 
 PATH = lp.LocalPath(parent_logger=RcutilsLogger())
+
+
+@pytest.mark.parametrize(
+    "x, y, x_normalized, y_normalized",
+    [
+        (2.0, 4.0, 0.5, 1.0),
+        (0.2, 0.4, 0.2, 0.4),
+        (3.0, 3.0, 1.0, 1.0),
+        (0.0, 5.0, 0.0, 1.0),
+        (0.0, 0.0, 0.0, 0.0),
+        (0.5, 2.0, 0.25, 1.0),
+    ]
+)
+def test_normalize_cost_pair(x, y, x_normalized, y_normalized):
+    assert x_normalized == lp.normalize_cost_pair(x, y)[0]
+    assert y_normalized == lp.normalize_cost_pair(x, y)[1]
+
+
+@pytest.mark.parametrize(
+    "path, waypoint_index, boat_lat_lon, correct_heading, new_wp_index",
+    [
+        (
+            ci.Path(waypoints=[ci.HelperLatLon(latitude=0.0, longitude=0.0)]),
+            0,
+            ci.HelperLatLon(latitude=0.0, longitude=-0.1),
+            90.0,
+            0,
+        ),
+        (
+            ci.Path(waypoints=[ci.HelperLatLon(latitude=0.0, longitude=0.0)]),
+            0,
+            ci.HelperLatLon(latitude=0.1, longitude=0.0),
+            180.0,
+            0,
+        ),
+        (
+            ci.Path(waypoints=[ci.HelperLatLon(latitude=0.0, longitude=0.0)]),
+            0,
+            ci.HelperLatLon(latitude=0.1, longitude=0.1),
+            -135.0,
+            0,
+        ),
+        (
+            # Test: boat has reached waypoints[0], heading should be to waypoints[1].
+            ci.Path(
+                waypoints=[
+                    ci.HelperLatLon(latitude=0.0, longitude=0.1),
+                    ci.HelperLatLon(latitude=0.0, longitude=0.0),
+                ]
+            ),
+            0,
+            ci.HelperLatLon(latitude=0.0, longitude=0.09999),
+            -90.0,
+            1,
+        ),
+    ],
+)
+def test_calculate_desired_heading_and_waypoint_index(
+    path: ci.Path,
+    waypoint_index: int,
+    boat_lat_lon: ci.HelperLatLon,
+    correct_heading: float,
+    new_wp_index: int,
+):
+    calculated_answer = PATH.calculate_desired_heading_and_waypoint_index(
+        path, waypoint_index, boat_lat_lon
+    )
+    assert calculated_answer[0] == pytest.approx(correct_heading, abs=3e-1)
+    assert calculated_answer[1] == new_wp_index
 
 
 @pytest.mark.parametrize(
@@ -189,6 +259,54 @@ PATH = lp.LocalPath(parent_logger=RcutilsLogger())
 )
 def test_in_collision_zone(local_wp_index, reference_latlon, path, obstacles, result):
     assert PATH.in_collision_zone(local_wp_index, reference_latlon, path, obstacles) == result
+
+
+@pytest.mark.parametrize(
+    '''
+    heading, heading_old_path, heading_new_path, result
+    ''',
+    [
+        (
+            0.0,
+            1.0,
+            -1.1,
+            0.5454545454545455
+        ),
+        (
+            0.0,
+            1.1,
+            1.0,
+            0.6
+        ),
+        (
+            50.0,
+            49.8,
+            50.1,
+            0.12
+        ),
+        (
+            180.0,
+            -179.0,
+            178.0,
+            0.3
+        ),
+        (
+            0.0,
+            1.0,
+            -1.0,
+            0.6
+        ),
+        (
+            1.0,
+            1.0,
+            1.0,
+            0.0
+        )
+    ]
+)
+def test_calculate_metric(heading, heading_old_path, heading_new_path, result):
+    assert result == pytest.approx(PATH.calculate_metric(heading, heading_old_path, 0.0,
+                                                         heading_new_path, 0.0), abs=1e-9)
 
 
 def test_LocalPathState_parameter_checking():
