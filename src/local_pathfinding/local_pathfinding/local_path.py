@@ -16,8 +16,19 @@ HEADING_WEIGHT = 0.6
 COST_WEIGHT = 0.4
 
 
-def normalize(x: float, y: float):
-    ''' Returns x and y normalized as a tuple[float, float] '''
+def normalize_cost_pair(x: float, y: float) -> tuple[float, float]:
+    """Normalizes two path-planning cost values so the larger value is at most 1.0.
+
+    Both costs are divided by max(x, y, 1), which keeps them on a consistent
+    scale for comparison while preserving their relative weighting.
+
+    Args:
+        x (float): First cost value
+        y (float): Second cost value
+
+    Returns:
+        tuple[float, float]: Normalized costs in the interval (0, 1].
+    """
     z = max(x, y, 1)
     return x/z, y/z
 
@@ -284,11 +295,25 @@ class LocalPath:
         heading_new_path: float,
         new_cost: float
     ):
+        """Computes a normalized, weighted score for the old path using heading
+        deviation and total path cost. Lower scores are preferred.
+
+        Args:
+            heading (float): Current heading.
+            heading_old_path (float): Heading of the existing/old path.
+            old_cost (float): Accumulated waypoint cost of the old path.
+            heading_new_path (float): Heading of the new path.
+            new_cost (float): Accumulated waypoint cost of the new path.
+
+        Returns:
+            float: Weighted score for the old path after normalization.
+        """
         heading_diff_old = cs.calculate_heading_diff(heading, heading_old_path)
         heading_diff_new = cs.calculate_heading_diff(heading, heading_new_path)
 
-        cost_normalized, _ = normalize(old_cost, new_cost)
-        heading_normalized, _ = normalize(math.fabs(heading_diff_old), math.fabs(heading_diff_new))
+        cost_normalized, _ = normalize_cost_pair(old_cost, new_cost)
+        heading_normalized, _ = normalize_cost_pair(math.fabs(heading_diff_old),
+                                                    math.fabs(heading_diff_new))
 
         w_h = HEADING_WEIGHT
         w_c = COST_WEIGHT

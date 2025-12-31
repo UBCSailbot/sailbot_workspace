@@ -14,6 +14,22 @@ PATH = lp.LocalPath(parent_logger=RcutilsLogger())
 
 
 @pytest.mark.parametrize(
+    "x, y, x_normalized, y_normalized",
+    [
+        (2.0, 4.0, 0.5, 1.0),
+        (0.2, 0.4, 0.2, 0.4),
+        (3.0, 3.0, 1.0, 1.0),
+        (0.0, 5.0, 0.0, 1.0),
+        (0.0, 0.0, 0.0, 0.0),
+        (0.5, 2.0, 0.25, 1.0),
+    ]
+)
+def test_normalize_cost_pair(x, y, x_normalized, y_normalized):
+    assert x_normalized == lp.normalize_cost_pair(x, y)[0]
+    assert y_normalized == lp.normalize_cost_pair(x, y)[1]
+
+
+@pytest.mark.parametrize(
     "path, waypoint_index, boat_lat_lon, correct_heading, new_wp_index",
     [
         (
