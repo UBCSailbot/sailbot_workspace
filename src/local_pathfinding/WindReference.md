@@ -5,7 +5,7 @@
 ### Global Coordinate System
 
 - Uses true bearing conventions (geographic/earth frame)
-- **0° = North**, increases clockwise till 180°, decrease counter-clockwise till -180° (exclusive)
+- **0° = True North**, increases clockwise till 180°, decrease counter-clockwise till -180° (exclusive)
 - Range: (-180, 180] degrees
 - Used for true wind direction and boat heading
 
