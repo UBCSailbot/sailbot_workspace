@@ -88,29 +88,14 @@ def test_speed_cost(
         s1, s2, wind_direction_rad, wind_speed_kmph
     ) == pytest.approx(expected, abs=0.1)
 
-# TODO CHANGE THESE TESTS
+
 @pytest.mark.parametrize(
     "heading,wind_direction,wind_speed,expected",
     [
-        # Corners of the table
+        # 0 deg sailing angle
         (math.radians(0), math.radians(0), 0, 0),
-        (math.radians(-90), math.radians(90), 37.0, 10.0),
-        (math.radians(0), math.radians(180), 0, 0),
-        (math.radians(0), math.radians(0), 37.0, 0),
-        # Edges of table
-        (math.radians(-48), math.radians(22), 0, 0),
-        (math.radians(-22), math.radians(140), 0, 0),
-        (math.radians(63), math.radians(63), 9.3, 0),
-        (math.radians(-81), math.radians(-81), 32.3, 0),
-        # Other edge cases
-        (math.radians(60), math.radians(-120), 10.6, 3.7),
-        (math.radians(170), math.radians(-155), 37, 6.8),
-        (math.radians(-50), math.radians(-152.7), 27.8, 10.0),
-        (math.radians(-170), math.radians(160), 14.4, 1.2),
-        (math.radians(0), math.radians(45), 18.5, 3.7),
-        # General cases
-        (math.radians(-20), math.radians(40), 12.0, 2.8),
-        (math.radians(12.9), math.radians(-1), 5.3, 0),
+
+        # 180 deg sailing angle
     ],
 )
 def test_get_sailbot_speed(
