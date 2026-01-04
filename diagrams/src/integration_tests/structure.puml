@@ -1,0 +1,74 @@
+@startuml Structure
+title Integration Test Structure
+
+!include %getenv("PLANTUML_TEMPLATE_PATH")
+
+box "Integration Test Node"
+    participant "Main" as main
+    participant "Test Sequence" as seq
+    participant "Driver" as drv
+    participant "Monitor" as mon
+end box
+
+autonumber
+
+-> main ++ : Run Integration Test
+note left of main
+For example:
+<code>
+ros2 launch
+integration_tests
+main_launch.py
+config:=config/example.yaml
+endnote
+
+==Initialization==
+
+--> main : Read ROS parameters (testplan filepath)
+main -> seq --++ : Get testplan
+--> seq : Read testplan file
+seq -> seq : Parse fields
+seq -> seq : Save inputs, expected outputs, timeout
+seq -> seq : Launch packages and save process IDs
+seq -> main --++ : return
+seq --> main : Get inputs
+main --> drv : Set inputs
+seq --> main : Get expected outputs
+main --> mon : Set expected outputs
+
+==Run==
+
+main -> drv  --++ : Send inputs
+drv -> drv : Drive inputs
+drv -> main --++ : return
+main -> main : Wait for timeout
+deactivate main
+
+opt If monitored output is updated
+    mon <-- ++ : Read output
+    mon -> mon : Save output value(s)
+    note left of mon
+        This "if" step is asynchronous
+    endnote
+    /'autonumber and #transparent trick to buffer deactivation'/
+    autonumber stop
+    mon -[#transparent]-> mon
+    autonumber resume
+    deactivate mon
+end
+
+==Evaluation==
+
+main -> main ++ : Timeout triggered
+main -> seq --++ : Notify test sequence
+seq -> seq : Kill package processes
+seq -> main --++ : return
+main -> mon --++ : Verify outputs
+loop for each monitored output
+    mon -> mon : Compare expected with received outputs
+end
+mon -> main --++ : return warnings and failures
+main -> main : Output results
+<- main -- : Exit
+
+@enduml

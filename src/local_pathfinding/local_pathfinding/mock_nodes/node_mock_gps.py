@@ -14,7 +14,7 @@ from rclpy.node import Node
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.mock_nodes.shared_constants as sc
 import local_pathfinding.wind_coord_systems as wcs
-from local_pathfinding.ompl_objectives import SpeedObjective
+from local_pathfinding.ompl_objectives import TimeObjective
 
 
 class MockGPS(Node):
@@ -127,7 +127,7 @@ class MockGPS(Node):
 
     def wind_sensor_callback(self, msg: ci.WindSensor):
         """Callback for the data published by the wind sensor node (mock)
-        Calls SpeedObjective.get_sailbot_speed to get the updated mean speed
+        Calls TimeObjective.get_sailbot_speed to get the updated mean speed
 
         Args:
             msg (ci.WindSensor): the wind sensor speed
@@ -135,18 +135,21 @@ class MockGPS(Node):
 
         self._logger.debug(f"Received data from {self.__mock_wind_sensor_sub.topic}: {msg}")
         aw_speed_kmph: float = msg.speed.speed
-        aw_direction_deg: float = msg.direction
-        tw_direction_rad, tw_speed_kmph = wcs.get_true_wind(
-            aw_direction_deg,
+        aw_dir_boat_coord_deg: float = msg.direction
+        aw_dir_global_coord_deg: float = wcs.boat_to_global_coordinate(
+            self.__heading_deg.heading, aw_dir_boat_coord_deg
+        )
+        tw_dir_rad, tw_speed_kmph = wcs.get_true_wind(
+            aw_dir_global_coord_deg,
             aw_speed_kmph,
             self.__heading_deg.heading,
             self.__mean_speed_kmph.speed,
         )
         self.__mean_speed_kmph = ci.HelperSpeed(
             speed=float(
-                SpeedObjective.get_sailbot_speed(
+                TimeObjective.get_sailbot_speed(
                     math.radians(self.__heading_deg.heading),
-                    tw_direction_rad,
+                    tw_dir_rad,
                     tw_speed_kmph,
                 )
             )

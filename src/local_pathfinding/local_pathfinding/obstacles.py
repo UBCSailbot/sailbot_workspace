@@ -1,17 +1,19 @@
 """Describes obstacles which the Sailbot must avoid: Boats and Land"""
 
 import math
+from abc import abstractmethod
 from typing import Optional
 
 import custom_interfaces.msg as ci
 import numpy as np
+from shapely import prepared
 from shapely.affinity import affine_transform
 from shapely.geometry import MultiPolygon, Point, Polygon
 
 import local_pathfinding.coord_systems as cs
 
 # Constants
-PROJ_HOURS_NO_COLLISION = 3  # hours
+PROJ_DISTANCE_NO_COLLISION = 0.0
 BOAT_BUFFER = 0.25  # km
 COLLISION_ZONE_STRETCH_FACTOR = 1.25  # This factor changes the width of the boat collision zone
 
@@ -30,9 +32,12 @@ class Obstacle:
             obstacle's collision zone. Shape depends on the child class.
     """
 
-    def __init__(self, reference: ci.HelperLatLon,
-                 sailbot_position: ci.HelperLatLon,
-                 collision_zone: MultiPolygon = None):
+    def __init__(
+        self,
+        reference: ci.HelperLatLon,
+        sailbot_position: ci.HelperLatLon,
+        collision_zone: MultiPolygon = None,
+    ):
         self.reference = reference
         self.sailbot_position_latlon = sailbot_position
         self.sailbot_position = cs.latlon_to_xy(self.reference, self.sailbot_position_latlon)
@@ -58,23 +63,12 @@ class Obstacle:
 
         return not self.collision_zone.contains(Point(*point))
 
+    @abstractmethod
     def update_collision_zone(self, **kwargs) -> None:
         """
         Updates the collision zone of the obstacle to reflect updated attributes.
-        For Boats, pass `ais_ship=...` in kwargs.
-        For Land, pass `state_space_latlon=...` and `land_multi_polygon=...`.
         """
-        if isinstance(self, Boat):
-            # Boat Obstacle
-            ais_ship = kwargs.get("ais_ship")
-            self._update_boat_collision_zone(ais_ship=ais_ship)
-
-        else:
-            # Land Obstacle
-            self._update_land_collision_zone(  # type: ignore
-                state_space_latlon=kwargs.get("state_space_latlon"),
-                land_multi_polygon=kwargs.get("land_multi_polygon"),
-            )
+        pass
 
     def update_sailbot_data(
         self, sailbot_position: ci.HelperLatLon, sailbot_speed: Optional[float] = None
@@ -87,9 +81,6 @@ class Obstacle:
         """
         self.sailbot_position_latlon = sailbot_position
         self.sailbot_position = cs.latlon_to_xy(self.reference, sailbot_position)
-
-        if isinstance(self, Boat):
-            self.sailbot_speed = sailbot_speed
 
     def update_reference_point(self, reference: ci.HelperLatLon, **kwargs) -> None:
         """Updates the reference point and updates the collision zone.
@@ -136,13 +127,11 @@ class Land(Obstacle):
         super().__init__(reference, sailbot_position)
         self.all_land_data = all_land_data
         self.bbox_buffer_amount = bbox_buffer_amount
-        self._update_land_collision_zone(
+        self.update_collision_zone(
             state_space_latlon=state_space_latlon, land_multi_polygon=land_multi_polygon
         )
 
-    def _update_land_collision_zone(
-        self, state_space_latlon: Polygon = None, land_multi_polygon: MultiPolygon = None
-    ) -> None:
+    def update_collision_zone(self, **kwargs) -> None:
         """
         Updates the Land object's collision zone with a MultiPolygon representing
         all land obstacles within either a specified or default state space.
@@ -151,10 +140,13 @@ class Land(Obstacle):
             state_space_latlon (Polygon): A custom state space.
             land_multi_polygon (MultiPolygon): Custom land data. Useful for testing.
         """
+        land_multi_polygon = kwargs.get("land_multi_polygon", None)
+        state_space_latlon = kwargs.get("state_space_latlon", None)
         if land_multi_polygon is not None:  # for testing (injecting mock land data)
             self.collision_zone = MultiPolygon(
                 cs.latlon_polygon_list_to_xy_polygon_list(land_multi_polygon.geoms, self.reference)
             )
+            prepared.prep(self.collision_zone)
             return
 
         if state_space_latlon is None:
@@ -186,13 +178,13 @@ class Land(Obstacle):
                 collision_zone = MultiPolygon([collision_zone])
         else:
             collision_zone = MultiPolygon()
-
+        prepared.prep(collision_zone)
         self.collision_zone = collision_zone
 
 
 class Boat(Obstacle):
-    """Describes boat objects which Sailbot must avoid.
-    Also referred to target ships or boat obstacles.
+    """Describes boat objects which Sailbot must avoid. Also referred to target ships or boat
+    obstacles.
 
     Attributes:
        ais_ship (ci.HelperAISShip): AIS Ship message containing information about the boat.
@@ -212,57 +204,60 @@ class Boat(Obstacle):
         self.ais_ship = ais_ship
         self.width = cs.meters_to_km(self.ais_ship.width.dimension)
         self.length = cs.meters_to_km(self.ais_ship.length.dimension)
-        self._update_boat_collision_zone()
+        self.update_collision_zone()
 
-    def _update_boat_collision_zone(self, ais_ship: Optional[ci.HelperAISShip] = None) -> None:
+    def update_sailbot_data(
+        self, sailbot_position: ci.HelperLatLon, sailbot_speed: Optional[float] = None
+    ) -> None:
+        """Updates Sailbot's position, and Sailbot's speed (if provided).
+
+        Args:
+            sailbot_position (ci.HelperLatLon): Position of the SailBot.
+            sailbot_speed (float): Speed of the SailBot in kmph.
+        """
+        super().update_sailbot_data(sailbot_position, sailbot_speed)
+        if sailbot_speed is not None:
+            self.sailbot_speed = sailbot_speed
+
+    def update_collision_zone(self, **kwargs) -> None:
         """Sets or regenerates a Shapely Polygon that represents the boat's collision zone.
 
         Args:
-            ais_ship (Optional[ci.HelperAISShip]): AIS Ship message containing boat information.
+
+            ais_ship (Optional[ci.HelperAISShip]): AIS Ship message containing information about
+                                                   the target ship.
         """
+        ais_ship = kwargs.get("ais_ship", None)
         if ais_ship is not None:
             if ais_ship.id != self.ais_ship.id:
                 raise ValueError("Argument AIS Ship ID does not match this Boat instance's ID")
-
-            # Ensure ais_ship instance variable is the most up to date one
             self.ais_ship = ais_ship
 
-        # Store as local variables for performance
-        ais_ship = self.ais_ship
-        width = self.width
-        length = self.length
-
-        # coordinates of the center of the boat
-        position = cs.latlon_to_xy(self.reference, ais_ship.lat_lon)
-
-        # Course over ground of the boat
-        cog = ais_ship.cog.heading
-
-        # Calculate distance the boat will travel before soonest possible collision with Sailbot
         projected_distance = self._calculate_projected_distance()
 
-        # TODO This feels too arbitrary, maybe will incorporate ROT at a later time
-        collision_zone_width = projected_distance * COLLISION_ZONE_STRETCH_FACTOR * width
+        # TODO maybe incorporate ROT in this calculation at a later time
+        collision_zone_width = projected_distance * COLLISION_ZONE_STRETCH_FACTOR * self.width
 
         # Points of the boat collision cone polygon before rotation and centred at the origin
         boat_collision_zone = Polygon(
             [
-                [-width / 2, -length / 2],
-                [-collision_zone_width, length / 2 + projected_distance],
-                [collision_zone_width, length / 2 + projected_distance],
-                [width / 2, -length / 2],
+                [-self.width / 2, -self.length / 2],
+                [-collision_zone_width, self.length / 2 + projected_distance],
+                [collision_zone_width, self.length / 2 + projected_distance],
+                [self.width / 2, -self.length / 2],
             ]
         )
 
-        dx, dy = position
-        angle_rad = math.radians(-cog)
+        # this code block translates and rotates the collision zone to the correct position
+        dx, dy = cs.latlon_to_xy(self.reference, self.ais_ship.lat_lon)
+        angle_rad = math.radians(-self.ais_ship.cog.heading)
         sin_theta = math.sin(angle_rad)
         cos_theta = math.cos(angle_rad)
-
-        # coefficient matrix for the 2D affine transformation of the collision zone
         transformation = np.array([cos_theta, -sin_theta, sin_theta, cos_theta, dx, dy])
         collision_zone = affine_transform(boat_collision_zone, transformation)
+
         self.collision_zone = collision_zone.buffer(BOAT_BUFFER, join_style=2)
+        prepared.prep(self.collision_zone)
 
     def _calculate_projected_distance(self) -> float:
         """Calculates the distance the boat obstacle will travel before collision, if
@@ -278,20 +273,14 @@ class Boat(Obstacle):
         https://ubcsailbot.atlassian.net/wiki/spaces/prjt22/pages/1881145358/Obstacle+Class+Planning
 
         Returns:
-            float: Distance the boat will travel before collision or the max projection distance
-                   if a collision is not possible.
+            float: Distance in km that the boat will travel before collision or the constant value
+            PROJ_DISTANCE_NO_COLLISION if a collision is not possible.
         """
         position = cs.latlon_to_xy(self.reference, self.ais_ship.lat_lon)
-
-        # vector components of the boat's speed over ground
         cog_rad = math.radians(self.ais_ship.cog.heading)
         v1 = self.ais_ship.sog.speed * math.sin(cog_rad)
         v2 = self.ais_ship.sog.speed * math.cos(cog_rad)
-
-        # coordinates of the boat
         a, b = position
-
-        # coordinates of Sailbot
         c, d = self.sailbot_position
 
         quadratic_coefficients = np.array(
@@ -310,7 +299,7 @@ class Boat(Obstacle):
 
         if len(quad_roots) == 0:
             # Sailbot and this Boat will never collide
-            return PROJ_HOURS_NO_COLLISION * self.ais_ship.sog.speed
+            return PROJ_DISTANCE_NO_COLLISION
 
         # Use the smaller positive time, if there is one
         t = min(quad_roots)
