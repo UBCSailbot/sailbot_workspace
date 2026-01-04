@@ -39,20 +39,20 @@ TIME_OBJECTIVE_WEIGHT = 1.0
 
 BOAT_SPEEDS = np.array(
     [
-        [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
-        [0., 5., 5.4, 5.8, 6.1, 6., 5.6, 5.2, 4.6, 4., 3.6],
-        [0., 5.9, 6.5, 6.9, 7.2, 7.1, 6.8, 6.5, 5.9, 5.3, 4.8],
-        [0., 6.6, 7.3, 7.7, 8.1, 8.1, 7.8, 7.5, 6.9, 6.3, 5.8],
-        [0., 7.2, 7.9, 8.4, 8.7, 8.8, 8.6, 8.4, 7.8, 7.2, 6.7],
-        [0., 7.7, 8.4, 8.7, 9., 9.2, 9., 8.9, 8.5, 8., 7.6],
-        [0., 8., 8.7, 9., 9.3, 9.4, 9.4, 9.2, 9., 8.6, 8.3],
-        [0., 8.2, 8.9, 9.3, 9.6, 10., 10., 9.8, 9.6, 9.3, 9.2],
-        [0., 8.5, 9.3, 9.6, 10., 10., 10., 10., 10., 10., 10.],
-        [0., 8.7, 9.6, 9.8, 10., 10., 10., 10., 10., 10., 10.],
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 5.0, 5.4, 5.8, 6.1, 6.0, 5.6, 5.2, 4.6, 4.0, 3.6],
+        [0.0, 5.9, 6.5, 6.9, 7.2, 7.1, 6.8, 6.5, 5.9, 5.3, 4.8],
+        [0.0, 6.6, 7.3, 7.7, 8.1, 8.1, 7.8, 7.5, 6.9, 6.3, 5.8],
+        [0.0, 7.2, 7.9, 8.4, 8.7, 8.8, 8.6, 8.4, 7.8, 7.2, 6.7],
+        [0.0, 7.7, 8.4, 8.7, 9.0, 9.2, 9.0, 8.9, 8.5, 8.0, 7.6],
+        [0.0, 8.0, 8.7, 9.0, 9.3, 9.4, 9.4, 9.2, 9.0, 8.6, 8.3],
+        [0.0, 8.2, 8.9, 9.3, 9.6, 10.0, 10.0, 9.8, 9.6, 9.3, 9.2],
+        [0.0, 8.5, 9.3, 9.6, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0],
+        [0.0, 8.7, 9.6, 9.8, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0],
     ]
 )
 
-TRUE_WIND_SPEEDS = [0., 11.1, 14.8, 18.5, 22.2, 25.9, 29.6, 37.0, 55.0, 75.0]
+TRUE_WIND_SPEEDS = [0.0, 11.1, 14.8, 18.5, 22.2, 25.9, 29.6, 37.0, 55.0, 75.0]
 SAILING_ANGLES = [0, 45, 50, 60, 75, 90, 110, 120, 135, 150, 180]
 
 ESTIMATED_TOP_BOAT_SPEED = np.max(BOAT_SPEEDS)
@@ -93,22 +93,21 @@ class WindObjective(ob.OptimizationObjective):
         )
 
     @staticmethod
-    def wind_direction_cost(s1: cs.XY, s2: cs.XY, true_wind_direction_radians: float) -> float:
+    def wind_direction_cost(s1: cs.XY, s2: cs.XY, tw_direction_rad: float) -> float:
         """Returns a high cost when the path segment from s1 to s2 is pointing directly
            (or close to directly) upwind or downwind.
 
         Args:
             s1 (cs.XY): The start point of the path segment
             s2 (cs.XY): The end point of the path segment
-            true_wind_direction_radians (float): The direction of the true wind in
-            radians (-pi, pi]
+            tw_direction_rad (float): The direction of the true wind in radians, (-pi, pi]
 
         Returns:
             float: The cost the path segment from s1 to s2, in the interval [0, 1]
         """
-        segment_heading_radians = cs.get_path_segment_true_bearing(s1, s2, rad=True)
-        angle_diff_radians = segment_heading_radians - true_wind_direction_radians
-        cos_angle = math.cos(angle_diff_radians)
+        segment_true_bearing_rad = cs.get_path_segment_true_bearing(s1, s2, rad=True)
+        tw_angle_rad = abs(wcs.get_true_wind_angle(segment_true_bearing_rad, tw_direction_rad))
+        cos_angle = math.cos(tw_angle_rad)
 
         # The target point of sail (POS) is a beam reach for max speed and stability
         # A beam reach is when the true wind direction is perpendicular to the heading of the boat
@@ -133,7 +132,8 @@ class TimeObjective(ob.OptimizationObjective):
         (TRUE_WIND_SPEEDS, SAILING_ANGLES),
         BOAT_SPEEDS,
         bounds_error=False,  # no error on out of bounds call
-        fill_value=0,  # returns 0 for any input outside the range of the table
+        # returns max speed for any input outside the range of the table
+        fill_value=ESTIMATED_TOP_BOAT_SPEED,
     )
 
     def __init__(
@@ -209,17 +209,27 @@ class TimeObjective(ob.OptimizationObjective):
 
     @staticmethod
     def get_sailbot_speed(
-        path_segment_true_bearing_radians: float,
-        true_wind_direction_radians: float,
-        true_wind_speed_kmph: float,
+        path_segment_true_bearing_rad: float,
+        tw_direction_rad: float,
+        tw_speed_kmph: float,
     ) -> float:
-        sailing_angle_radians = abs(
-            path_segment_true_bearing_radians - true_wind_direction_radians
-        )
-        # the sailing angle can always be represented by a positive value between 0 and 180 degrees
-        sailing_angle_degrees = abs(cs.bound_to_180(math.degrees(sailing_angle_radians)))
 
-        return TimeObjective.interpolation((true_wind_speed_kmph, sailing_angle_degrees))
+        tw_angle_rad = abs(
+            wcs.get_true_wind_angle(path_segment_true_bearing_rad, tw_direction_rad)
+        )
+
+        # this bounds the twa to a range of 0 to 180 degrees
+        # we can take the absolute value because we don't care if the wind is blowing
+        # on the port or starboard side when it comes to calculating the estimated speed
+        # and having the twa in the range of [0, 180] means we don't have to cover negative
+        # twa values in the BOAT_SPEEDS table
+        tw_angle_deg = abs(cs.bound_to_180(math.degrees(tw_angle_rad)))
+
+        # since the twa is bounded to [0, 180], the only time the interpolator would need to
+        # use the fill_value is if the tw_speed_kmph is greater than the max accounted for
+        # in the BOAT_SPEEDS table, in which case the interpolator will return it's configured
+        # fill_value (see interpolation definition at top of class)
+        return TimeObjective.interpolation((tw_speed_kmph, tw_angle_deg))
 
 
 def get_sailing_objective(
@@ -251,9 +261,7 @@ def get_sailing_objective(
         weight=WIND_OBJECTIVE_WEIGHT,
     )
     multiObjective.addObjective(
-        objective=TimeObjective(
-            space_information, tw_dir_rad, tw_speed_kmph
-        ),
+        objective=TimeObjective(space_information, tw_dir_rad, tw_speed_kmph),
         weight=TIME_OBJECTIVE_WEIGHT,
     )
     # this allows the objective to be satisfied once a path with a cost

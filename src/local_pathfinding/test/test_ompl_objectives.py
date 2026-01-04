@@ -71,10 +71,10 @@ def test_wind_direction_cost(cs1: tuple, cs2: tuple, wind_direction_rad: float, 
         ),  # ZERO SPEED MAX COST
         (
             cs.XY(0, 0),
-            cs.XY(0.5, math.sqrt(3) / 2),
+            cs.XY(1.0, 1.0),
             0.0,
             9.0,
-            0.7,
+            0.2,
         ),  # SLOW & HIGH COST
         (cs.XY(0, 0), cs.XY(1, -1), 0.0, 37.0, 0.0),  # FAST & LOW COST
     ],
@@ -92,10 +92,12 @@ def test_speed_cost(
 @pytest.mark.parametrize(
     "heading,wind_direction,wind_speed,expected",
     [
-        # 0 deg sailing angle
+        # 0 deg true wind angle (irons)
         (math.radians(0), math.radians(0), 0, 0),
-
-        # 180 deg sailing angle
+        (math.radians(0), math.radians(0), 75.0, 0),
+        # 180 deg true wind angle (dead run)
+        (math.radians(0), math.radians(180), 0, 0),
+        (math.radians(0), math.radians(180), 75.0, 10),
     ],
 )
 def test_get_sailbot_speed(
