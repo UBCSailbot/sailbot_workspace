@@ -6,7 +6,7 @@ The main function of this file spawns two processes:
 """
 
 from collections import deque
-from multiprocessing import Manager, Process, Queue
+from multiprocessing import Manager, Process, Queue, Value
 from typing import Deque
 
 import custom_interfaces.msg as ci
@@ -19,9 +19,10 @@ import local_pathfinding.visualizer as vz
 def main():
     interprocess_manager = Manager()
     interprocess_queue = interprocess_manager.Queue()
+    queue_size = interprocess_manager.Value("i", 0)
 
-    ros_process = Process(target=ros_node, args=(interprocess_queue,), daemon=True)
-    dash_process = Process(target=vz.dash_app, args=(interprocess_queue,), daemon=True)
+    ros_process = Process(target=ros_node, args=(interprocess_queue, queue_size), daemon=True)
+    dash_process = Process(target=vz.dash_app, args=(interprocess_queue, queue_size), daemon=True)
 
     ros_process.start()
     dash_process.start()
@@ -37,14 +38,16 @@ def main():
         dash_process.join()
 
 
-def ros_node(queue: Queue):
+def ros_node(queue: Queue, queue_size: Value):
     """Launches the observer node.
 
     Args:
-        queue (Manager.Queue): Stores VisualizerState Objects for visualization in the dash app
+        queue (Queue): Stores VisualizerState Objects for visualization in the dash app
+        queue_size (Value): Contains the number of messages currently in the queue.
+                            Has a lock by default.
     """
     rclpy.init(args=None)
-    sailbot_observer = SailbotObserver(queue)
+    sailbot_observer = SailbotObserver(queue, queue_size)
 
     try:
         rclpy.spin(node=sailbot_observer)
@@ -68,7 +71,7 @@ class SailbotObserver(Node):
         msgs (deque): An ordinary queue for storing the last x messages received by the subscriber
     """
 
-    def __init__(self, queue: Queue):
+    def __init__(self, queue: Queue, queue_size: Value):
         super().__init__("navigate_observer")
         self.get_logger().info("SailbotObserver node initialized")
 
@@ -80,10 +83,12 @@ class SailbotObserver(Node):
         )
         self.msgs: Deque[ci.LPathData] = deque(maxlen=100)
         self.queue = queue
+        self.queue_size = queue_size
 
     def local_path_callback(self, msg: ci.LPathData):
         self.get_logger().debug(f"Received new local path message: {msg}")
         self.msgs.append(msg)
+        self.queue_size.value += 1
         self.queue.put(vz.VisualizerState(msgs=self.msgs))
 
 

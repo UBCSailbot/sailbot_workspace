@@ -14,7 +14,7 @@ Main Components:
 
 import math
 from collections import deque
-from multiprocessing import Queue
+from multiprocessing import Queue, Value
 from typing import List, Optional, Tuple
 
 import custom_interfaces.msg as ci
@@ -31,6 +31,7 @@ from local_pathfinding.ompl_path import OMPLPath
 app = dash.Dash(__name__)
 
 queue: Optional[Queue] = None  # type: ignore
+queue_size: Optional[Value] = None  # type: ignore
 
 BOX_BUFFER_SIZE = 1.0  # km
 LAST_GOAL = None  # for the msg_to_display
@@ -212,7 +213,7 @@ def initial_plot() -> go.Figure:
     return fig
 
 
-def dash_app(q: Queue):
+def dash_app(q: Queue, q_size: Value):
     """
     Creates a Dash app and sets up the HTML layout of the app.
 
@@ -222,6 +223,9 @@ def dash_app(q: Queue):
     # Allows it to be accessed in the callbacks
     global queue  # type: ignore
     queue = q
+
+    global queue_size  # type: ignore
+    queue_size = q_size
 
     app.layout = html.Div(
         style={
@@ -248,8 +252,11 @@ def live_plot(n_intervals) -> go.Figure:
     Updates the live graph to the latest path planning data.
     """
     global queue
+    global queue_size
 
     state = queue.get()  # type: ignore
+    queue_size.value -= 1
+
     fig = live_update_plot(state)
     return fig
 
@@ -258,6 +265,7 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
     """
     Updates the live graph to the latest path planning data.
     """
+    global queue_size
 
     fig = initial_plot()
 
@@ -653,6 +661,20 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
         ),
         showlegend=True,
         uirevision="constant",
+    )
+
+    fig.add_annotation(
+        xref="paper",
+        yref="paper",
+        x=0.98,
+        y=0.98,
+        text=f"Queue size: {queue_size.value} msgs",
+        showarrow=False,
+        align="right",
+        bgcolor="rgba(255,255,255,0.9)",
+        bordercolor="rgba(0,0,0,0.3)",
+        borderwidth=1,
+        font=dict(size=12),
     )
 
     return fig
