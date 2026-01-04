@@ -168,6 +168,6 @@ def get_true_wind_angle(boat_heading_rad: float, tw_dir_rad: float) -> float:
         tw_dir_rad (float): _description_
 
     Returns:
-        float: _description_
+        float: The true wind angle in the range (-180, 180]
     """
     return cs.bound_to_180((tw_dir_rad - boat_heading_rad), rad=True)
