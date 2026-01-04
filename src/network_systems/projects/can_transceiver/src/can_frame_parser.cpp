@@ -129,7 +129,7 @@ std::string Battery::debugStr() const
 std::string Battery::toString() const
 {
     std::stringstream ss;
-    ss << "[BATTERY] Voltage: " << volt_;
+    ss << "[BATTERY] Voltage: " << volt_ << "V Current: " << curr_ << "A";
     return ss.str();
 }
 
@@ -184,7 +184,8 @@ msg::SailCmd MainTrimTab::toRosMsg() const
 
 CanFrame MainTrimTab::toLinuxCan() const
 {
-    uint32_t raw_angle = static_cast<uint32_t>(angle_) * 1000;  //NOLINT(readability-magic-numbers)
+    // From CAN Frames documentation: ELEC expects (TT Angle + 90) * 1000
+    uint32_t raw_angle = static_cast<uint32_t>(angle_ + 90) * 1000;  //NOLINT(readability-magic-numbers)
 
     CanFrame cf = BaseFrame::toLinuxCan();
     std::memcpy(cf.data + BYTE_OFF_ANGLE, &raw_angle, sizeof(uint32_t));
@@ -214,7 +215,7 @@ MainTrimTab::MainTrimTab(CanId id) : BaseFrame(std::span{TRIM_TAB_IDS}, id, CAN_
 
 void MainTrimTab::checkBounds() const
 {
-    auto err = utils::isOutOfBounds<float>(angle_, HEADING_LBND, HEADING_UBND);
+    auto err = utils::isOutOfBounds<float>(angle_, TRIM_LBND, TRIM_UBND);
     if (err) {
         std::string err_msg = err.value();
         throw std::out_of_range("Sail angle is out of bounds!\n" + debugStr() + "\n" + err_msg);
@@ -243,7 +244,9 @@ WindSensor::WindSensor(const CanFrame & cf) : WindSensor(static_cast<CanId>(cf.c
 }
 
 WindSensor::WindSensor(msg::WindSensor ros_wind_sensor, CanId id)
-: BaseFrame(id, CAN_BYTE_DLEN_), wind_angle_(ros_wind_sensor.direction), wind_speed_(ros_wind_sensor.speed.speed)
+: BaseFrame(id, CAN_BYTE_DLEN_),
+  wind_angle_(utils::boundTo360(ros_wind_sensor.direction)),
+  wind_speed_(ros_wind_sensor.speed.speed)
 {
     checkBounds();
 }
@@ -252,7 +255,7 @@ msg::WindSensor WindSensor::toRosMsg() const
 {
     msg::WindSensor  msg;
     msg::HelperSpeed speed;
-    msg.set__direction(static_cast<int16_t>(wind_angle_));
+    msg.set__direction(static_cast<int16_t>(utils::boundTo180(wind_angle_)));
     speed.set__speed(wind_speed_);
     msg.set__speed(speed);
     return msg;
@@ -275,7 +278,7 @@ std::string WindSensor::debugStr() const
 {
     std::stringstream ss;
     ss << BaseFrame::debugStr() << "\n"
-       << "Wind speed (m/s): " << wind_speed_ << "\n"
+       << "Wind speed (km/h): " << wind_speed_ << "\n"
        << "Wind angle (degrees): " << wind_angle_;
     return ss.str();
 }
@@ -306,7 +309,7 @@ void WindSensor::checkBounds() const
         std::string err_msg = err.value();
         throw std::out_of_range("Wind angle is out of bounds!\n" + debugStr() + "\n" + err_msg);
     }
-    err = utils::isOutOfBounds<float>(wind_speed_, SPEED_LBND, SPEED_UBND);
+    err = utils::isOutOfBounds<float>(wind_speed_, WIND_SPEED_LBND, WIND_SPEED_UBND);
     if (err) {
         std::string err_msg = err.value();
         throw std::out_of_range("Wind speed is out of bounds!\n" + debugStr() + "\n" + err_msg);
@@ -429,7 +432,7 @@ void GPS::checkBounds() const
         std::string err_msg = err.value();
         throw std::out_of_range("Longitude is out of bounds!\n" + debugStr() + "\n" + err_msg);
     }
-    err = utils::isOutOfBounds<float>(speed_, SPEED_LBND, SPEED_UBND);
+    err = utils::isOutOfBounds<float>(speed_, BOAT_SPEED_LBND, BOAT_SPEED_UBND);
     if (err) {
         std::string err_msg = err.value();
         throw std::out_of_range("Speed is out of bounds!\n" + debugStr() + "\n" + err_msg);
@@ -490,7 +493,7 @@ AISShips::AISShips(msg::HelperAISShip ros_ship, CanId id)
   lon_(ros_ship.lat_lon.longitude),
   speed_(ros_ship.sog.speed),
   rot_(ros_ship.rot.rot),
-  course_(ros_ship.cog.heading),
+  course_(utils::boundTo360(ros_ship.cog.heading)),
   width_(ros_ship.width.dimension),
   length_(ros_ship.length.dimension),
   ship_id_(ros_ship.id)
@@ -507,7 +510,7 @@ msg::HelperAISShip AISShips::toRosMsg() const
     lat_lon.set__longitude(lon_);
 
     msg::HelperHeading cog;
-    cog.set__heading(course_);
+    cog.set__heading(utils::boundTo180(course_));
 
     msg::HelperSpeed sog;
     //convert to km/h
@@ -611,7 +614,7 @@ void AISShips::checkBounds() const
         std::string err_msg = err.value();
         throw std::out_of_range("Longitude is out of bounds!\n" + debugStr() + "\n" + err_msg);
     }
-    err = utils::isOutOfBounds<float>(speed_, SPEED_LBND, SPEED_UBND);
+    err = utils::isOutOfBounds<float>(speed_, SOG_SPEED_LBND, SOG_SPEED_UBND);
     if (err) {
         std::string err_msg = err.value();
         throw std::out_of_range("Speed is out of bounds!\n" + debugStr() + "\n" + err_msg);
@@ -690,6 +693,46 @@ void PwrMode::checkBounds() const
 // PwrMode private END
 // PwrMode END
 
+//PowerOff START
+//PowerOff public START
+
+PowerOff::PowerOff(const CanFrame & cf) : PowerOff(static_cast<CanId>(cf.can_id))
+{
+    uint8_t raw_val;
+
+    std::memcpy(&raw_val, cf.data + BYTE_OFF_VAL, sizeof(uint8_t));
+
+    val_ = raw_val;
+
+    checkBounds();
+}
+
+PowerOff::PowerOff(uint8_t val, CanId id) : BaseFrame(id, CAN_BYTE_DLEN_), val_(val) { checkBounds(); }
+
+std::string PowerOff::debugStr() const
+{
+    std::stringstream ss;
+    ss << BaseFrame::debugStr() << "\n"
+       << "Power off value: " << val_;
+    return ss.str();
+}
+
+// PowerOff public END
+// PowerOff private START
+
+PowerOff::PowerOff(CanId id) : BaseFrame(std::span{POWER_OFF_IDS}, id, CAN_BYTE_DLEN_) {}
+
+void PowerOff::checkBounds() const
+{
+    auto err = utils::isOutOfBounds<float>(val_, POWER_OFF_VAL, POWER_OFF_VAL);
+    if (err) {
+        std::string err_msg = err.value();
+        throw std::out_of_range("Power off value is not expected value!\n" + debugStr() + "\n" + err_msg);
+    }
+}
+// PowerOff private END
+// PowerOff END
+
 // DesiredHeading START
 // DesiredHeading public START
 
@@ -708,7 +751,9 @@ DesiredHeading::DesiredHeading(const CanFrame & cf) : DesiredHeading(static_cast
 }
 
 DesiredHeading::DesiredHeading(msg::DesiredHeading ros_desired_heading, CanId id)
-: BaseFrame(id, CAN_BYTE_DLEN_), heading_(ros_desired_heading.heading.heading), steering_(ros_desired_heading.steering)
+: BaseFrame(id, CAN_BYTE_DLEN_),
+  heading_(utils::boundTo360(ros_desired_heading.heading.heading)),
+  steering_(ros_desired_heading.steering)
 {
     checkBounds();
 }
@@ -716,7 +761,7 @@ DesiredHeading::DesiredHeading(msg::DesiredHeading ros_desired_heading, CanId id
 msg::DesiredHeading DesiredHeading::toRosMsg() const
 {
     msg::HelperHeading helper_msg;
-    helper_msg.set__heading(heading_);
+    helper_msg.set__heading(utils::boundTo180(heading_));
     msg::DesiredHeading msg;
     msg.set__heading(helper_msg);
     msg.set__steering(steering_);
@@ -788,7 +833,7 @@ RudderData::RudderData(const CanFrame & cf) : RudderData(static_cast<CanId>(cf.c
 }
 
 RudderData::RudderData(msg::HelperHeading ros_rudder_data, CanId id)
-: BaseFrame(id, CAN_BYTE_DLEN_), heading_(ros_rudder_data.heading)
+: BaseFrame(id, CAN_BYTE_DLEN_), heading_(utils::boundTo360(ros_rudder_data.heading))
 {
     checkBounds();
 }
@@ -796,7 +841,7 @@ RudderData::RudderData(msg::HelperHeading ros_rudder_data, CanId id)
 msg::HelperHeading RudderData::toRosMsg() const
 {
     msg::HelperHeading msg;
-    msg.set__heading(heading_);
+    msg.set__heading(utils::boundTo180(heading_));
     return msg;
 }
 
@@ -846,9 +891,9 @@ void RudderData::checkBounds() const
 // TempSensor public START
 TempSensor::TempSensor(const CanFrame & cf) : TempSensor(static_cast<CanId>(cf.can_id))
 {
-    int16_t raw_temp;
+    int32_t raw_temp;
 
-    std::memcpy(&raw_temp, cf.data + BYTE_OFF_TEMP, sizeof(int16_t));
+    std::memcpy(&raw_temp, cf.data + BYTE_OFF_TEMP, sizeof(int32_t));
 
     // divide by 1000 to get temperature
     temp_ = static_cast<float>(raw_temp / 1000.0);  // NOLINT(readability-magic-numbers)
@@ -882,10 +927,10 @@ msg::TempSensor TempSensor::toRosMsg() const
 CanFrame TempSensor::toLinuxCan() const
 {
     // convert kmph to knots before setting value
-    int16_t raw_temp = static_cast<int16_t>(temp_ * 1000.0);  // NOLINT(readability-magic-numbers)
+    int32_t raw_temp = static_cast<int32_t>(temp_ * 1000.0);  // NOLINT(readability-magic-numbers)
 
     CanFrame cf = BaseFrame::toLinuxCan();
-    std::memcpy(cf.data + BYTE_OFF_TEMP, &raw_temp, sizeof(int16_t));
+    std::memcpy(cf.data + BYTE_OFF_TEMP, &raw_temp, sizeof(int32_t));
 
     return cf;
 }
@@ -894,7 +939,7 @@ std::string TempSensor::debugStr() const
 {
     std::stringstream ss;
     ss << BaseFrame::debugStr() << "\n"
-       << "Temperature (degrees Celsius): " << temp_;
+       << "Temperature (K): " << temp_;
     return ss.str();
 }
 
@@ -1085,9 +1130,9 @@ void SalinitySensor::checkBounds() const
 // PressureSensor public START
 PressureSensor::PressureSensor(const CanFrame & cf) : PressureSensor(static_cast<CanId>(cf.can_id))
 {
-    int32_t raw_pressure;
+    int16_t raw_pressure;
 
-    std::memcpy(&raw_pressure, cf.data + BYTE_OFF_PRESSURE, sizeof(int32_t));
+    std::memcpy(&raw_pressure, cf.data + BYTE_OFF_PRESSURE, sizeof(int16_t));
 
     // divide by 1000 to get pressure
     pressure_ = static_cast<float>(raw_pressure / 1000.0);  // NOLINT(readability-magic-numbers)
@@ -1113,10 +1158,10 @@ msg::PressureSensor PressureSensor::toRosMsg() const
 CanFrame PressureSensor::toLinuxCan() const
 {
     // multiply by 1000 to make int before setting value
-    int32_t raw_pressure = static_cast<int32_t>(pressure_ * 1000.0);  // NOLINT(readability-magic-numbers)
+    int16_t raw_pressure = static_cast<int16_t>(pressure_ * 1000.0);  // NOLINT(readability-magic-numbers)
 
     CanFrame cf = BaseFrame::toLinuxCan();
-    std::memcpy(cf.data + BYTE_OFF_PRESSURE, &raw_pressure, sizeof(int32_t));
+    std::memcpy(cf.data + BYTE_OFF_PRESSURE, &raw_pressure, sizeof(int16_t));
 
     return cf;
 }

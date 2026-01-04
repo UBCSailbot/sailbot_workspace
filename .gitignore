@@ -32,3 +32,9 @@ venv/
 .cache/
 # Build
 site/
+
+# Website
+**/package-lock.json
+
+# Test Coverage
+.coverage

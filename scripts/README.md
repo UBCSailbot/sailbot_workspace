@@ -18,6 +18,10 @@ Script to build all ROS packages in the Sailbot Workspace.
 
 Script to run Clang-Tidy using `ament_clang_tidy.py`.
 
+## `launch.sh`
+
+Script to run a single or all ROS packages.
+
 ## `run_virtual_iridium.sh`
 
 ```shell

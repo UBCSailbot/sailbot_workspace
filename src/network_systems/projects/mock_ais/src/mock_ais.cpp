@@ -57,7 +57,7 @@ MockAisShip::MockAisShip(uint32_t seed, uint32_t id, Vec2DFloat polaris_lat_lon,
     static const std::array<float, 2>       pos_or_neg = {-1.0, 1.0};
     std::uniform_real_distribution<float>   lat_dist(config_.min_ship_dist_, config_.max_ship_dist_);
     std::uniform_real_distribution<float>   lon_dist(config_.min_ship_dist_, config_.max_ship_dist_);
-    std::uniform_real_distribution<float>   speed_dist(SPEED_LBND, SPEED_UBND);
+    std::uniform_real_distribution<float>   speed_dist(SOG_SPEED_LBND, SOG_SPEED_UBND);
     std::uniform_real_distribution<float>   heading_dist(HEADING_LBND, HEADING_UBND);
     std::uniform_int_distribution<uint32_t> pos_or_neg_dist(0, 1);
     std::uniform_int_distribution<uint32_t> beam_dist(config_.min_ship_width_m_, config_.max_ship_width_m_);
@@ -84,10 +84,10 @@ void MockAisShip::tick(const Vec2DFloat & polaris_lat_lon)
     std::uniform_int_distribution<int8_t> rot_dist(ROT_LBND, ROT_UBND);
 
     float speed = speed_dist(mt_rng_);
-    if (speed > SPEED_UBND) {
-        speed = SPEED_UBND;
-    } else if (speed < SPEED_LBND) {
-        speed = SPEED_LBND;
+    if (speed > SOG_SPEED_UBND) {
+        speed = SOG_SPEED_UBND;
+    } else if (speed < SOG_SPEED_LBND) {
+        speed = SOG_SPEED_LBND;
     }
 
     heading_                               = boundHeading(heading_dist(mt_rng_));
