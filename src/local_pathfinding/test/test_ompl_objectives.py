@@ -88,7 +88,7 @@ def test_speed_cost(
         s1, s2, wind_direction_rad, wind_speed_kmph
     ) == pytest.approx(expected, abs=0.1)
 
-
+# TODO CHANGE THESE TESTS
 @pytest.mark.parametrize(
     "heading,wind_direction,wind_speed,expected",
     [
