@@ -5,6 +5,33 @@ import local_pathfinding.visualizer as viz
 import local_pathfinding.coord_systems as cs
 
 
+# --------------------------------------
+# Math Helper Functions Tests
+# --------------------------------------
+@pytest.mark.parametrize(
+    "last_goal, goal_xy, expect_msg",
+    [
+        (None, (1.23456, 7.89012), False),                 # message first render
+        ((1.235, 2.346), (1.2350001, 2.3459999), False),   # same message after rounding
+        ((1.0, 2.0), (1.12345, 2.98765), True),            # should change message
+    ]
+)
+def test_compute_goal_change(last_goal, goal_xy, expect_msg):
+    gc = viz.compute_goal_change(last_goal, goal_xy)
+
+    # always returns rounded
+    assert gc.new_goal_xy_rounded == (
+        round(goal_xy[0], viz.GOAL_CHANGE_ROUND_DECIMALS),
+        round(goal_xy[1], viz.GOAL_CHANGE_ROUND_DECIMALS),
+    )
+
+    if expect_msg:
+        assert gc.message is not None
+        assert "Local goal advanced to" in gc.message
+    else:
+        assert gc.message is None
+
+
 @pytest.mark.parametrize(
     "vec, expected, expect_unit",
     [
@@ -37,3 +64,45 @@ def test_get_unit_vector(vec: cs.XY, expected: cs.XY, expect_unit: bool):
     if expect_unit:
         mag = math.hypot(result.x, result.y)
         assert mag == pytest.approx(1.0), "magnitude of unit vector is not 1"
+
+
+# --------------------------------------
+# Figure Builder Functions Tests
+# --------------------------------------
+@pytest.mark.parametrize(
+    "local_x, local_y, expected_x, expected_y, expected_text",
+    [
+        ([0.0, 1.0], [0.0, 1.0], [], [], []),  # less than 3 points case returns empty
+        ([0.0, 10.0, 20.0], [0.0, 1.0, 2.0], [10.0], [1.0], ["LW1"]),
+        ([0.0, 10.0, 20.0, 30.0], [0.0, 1.0, 2.0, 3.0], [10.0, 20.0], [1.0, 2.0], ["LW1", "LW2"]),
+    ]
+)
+def test_build_intermediate_trace(local_x, local_y, expected_x, expected_y, expected_text):
+    t = viz.build_intermediate_trace(local_x, local_y).to_plotly_json()
+    assert t["x"] == expected_x
+    assert t["y"] == expected_y
+
+    # for empty case, plotly json might omit text; normalize it
+    got_text = t.get("text", [])
+    assert got_text == expected_text
+
+
+@pytest.mark.parametrize(
+    "local_x, local_y, expect_none",
+    [
+        ([], [], True),
+        ([1.0], [], True),
+        ([], [1.0], True),
+        ([0.0, 1.0], [2.0, 3.0], False),
+    ]
+)
+def test_build_path_trace(local_x, local_y, expect_none):
+    t = viz.build_path_trace(local_x, local_y)
+    if expect_none:
+        assert t is None
+    else:
+        j = t.to_plotly_json()
+        assert j["mode"] == "lines"
+        assert j["x"] == local_x
+        assert j["y"] == local_y
+        assert j["name"] == "Path to Goal"
