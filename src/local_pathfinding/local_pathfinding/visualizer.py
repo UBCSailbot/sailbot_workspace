@@ -33,7 +33,7 @@ from local_pathfinding.ompl_path import OMPLPath
 
 UPDATE_INTERVAL_MS = 2500
 
-BOX_BUFFER_SIZE_KM = 1.0  # km
+BOX_BUFFER_SIZE_KM = 1.0
 
 WIND_BOX_X_DOMAIN = (0.76, 0.99)
 WIND_BOX_Y_DOMAIN = (0.00, 0.22)
@@ -355,6 +355,7 @@ def build_path_trace(local_x: List[float], local_y: List[float],
     Args:
         local_x: Local path X coordinates in km.
         local_y: Local path Y coordinates in km.
+        boat_xy: Sailboat's latest (X, Y) coordinates in km.
 
     Returns:
         A Plotly Scatter trace for the path line, or None if input is empty.

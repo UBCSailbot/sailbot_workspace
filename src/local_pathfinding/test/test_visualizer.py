@@ -88,21 +88,21 @@ def test_build_intermediate_trace(local_x, local_y, expected_x, expected_y, expe
 
 
 @pytest.mark.parametrize(
-    "local_x, local_y, expect_none",
+    "local_x, local_y, boat_xy, expect_none",
     [
-        ([], [], True),
-        ([1.0], [], True),
-        ([], [1.0], True),
-        ([0.0, 1.0], [2.0, 3.0], False),
+        ([], [], (0.0, 0.0), True),
+        ([1.0], [], (0.0, 0.0), True),
+        ([], [1.0], (0.0, 0.0), True),
+        ([0.0, 1.0], [2.0, 3.0], (10.0, 20.0), False)
     ]
 )
-def test_build_path_trace(local_x, local_y, expect_none):
-    t = viz.build_path_trace(local_x, local_y)
+def test_build_path_trace(local_x, local_y, boat_xy, expect_none):
+    t = viz.build_path_trace(local_x, local_y, boat_xy)
     if expect_none:
         assert t is None
     else:
         j = t.to_plotly_json()
         assert j["mode"] == "lines"
-        assert j["x"] == local_x
-        assert j["y"] == local_y
         assert j["name"] == "Path to Goal"
+        assert j["x"] == [boat_xy[0]] + list(local_x)
+        assert j["y"] == [boat_xy[1]] + list(local_y)
