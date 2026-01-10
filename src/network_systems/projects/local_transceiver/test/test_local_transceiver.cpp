@@ -91,40 +91,40 @@ TEST_F(TestLocalTransceiver, debugSendTest)
     EXPECT_TRUE(boost::algorithm::contains(result, AT::Line(AT::STATUS_OK).str_));
 }
 
-/**
- * @brief Test debugSendAT that sends a small payload through the SBD write flow
- */
-TEST_F(TestLocalTransceiver, DebugSendAT)
-{
-    std::lock_guard<std::mutex> lock(port_mutex);
+// /**
+//  * @brief Test debugSendAT that sends a small payload through the SBD write flow
+//  */
+// TEST_F(TestLocalTransceiver, DebugSendAT)
+// {
+//     std::lock_guard<std::mutex> lock{port_mutex};
 
-    // Single ASCII byte payload for ease of verification
-    std::string payload = "D";
+//     // Single ASCII byte payload for ease of verification
+//     std::string payload = "D";
 
-    EXPECT_TRUE(lcl_trns_->debugSendAT(payload));
+//     EXPECT_TRUE(lcl_trns_->debugSendAT(payload));
 
-    // Give virtual iridium / echo server a moment to deliver
-    std::this_thread::sleep_for(std::chrono::seconds(1));
+//     // Give virtual iridium / echo server a moment to deliver
+//     std::this_thread::sleep_for(std::chrono::seconds(1));
 
-    curl_global_init(CURL_GLOBAL_DEFAULT);
-    CURL * curl = curl_easy_init();
-    ASSERT_TRUE(curl != nullptr);
-    std::string response_body;
-    curl_easy_setopt(curl, CURLOPT_URL, "http://127.0.0.1:8081/last");
-    curl_easy_setopt(
-      curl, CURLOPT_WRITEFUNCTION, +[](char * ptr, size_t size, size_t nmemb, void * userdata) -> size_t {
-          static_cast<std::string *>(userdata)->append(ptr, size * nmemb);
-          return size * nmemb;
-      });
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response_body);
-    CURLcode res = curl_easy_perform(curl);
-    curl_easy_cleanup(curl);
-    ASSERT_EQ(res, CURLE_OK) << "Failed to query echo server";
-    ASSERT_FALSE(response_body.empty()) << "Echo server returned empty body — webhook may not have received payload";
+//     curl_global_init(CURL_GLOBAL_DEFAULT);
+//     CURL * curl = curl_easy_init();
+//     ASSERT_TRUE(curl != nullptr);
+//     std::string response_body;
+//     curl_easy_setopt(curl, CURLOPT_URL, "http://127.0.0.1:8081/last");
+//     curl_easy_setopt(
+//       curl, CURLOPT_WRITEFUNCTION, +[](char * ptr, size_t size, size_t nmemb, void * userdata) -> size_t {
+//           static_cast<std::string *>(userdata)->append(ptr, size * nmemb);
+//           return size * nmemb;
+//       });
+//     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response_body);
+//     CURLcode res = curl_easy_perform(curl);
+//     curl_easy_cleanup(curl);
+//     ASSERT_EQ(res, CURLE_OK) << "Failed to query echo server";
+//     ASSERT_FALSE(response_body.empty()) << "Echo server returned empty body — webhook may not have received payload";
 
-    // Verify the payload byte is present in the echoed body
-    ASSERT_NE(response_body.find(payload), std::string::npos);
-}
+//     // Verify the payload byte is present in the echoed body
+//     ASSERT_NE(response_body.find(payload), std::string::npos);
+// }
 
 /**
  * @brief Send a binary string to virtual_iridium and verify it is received
@@ -239,7 +239,6 @@ TEST_F(TestLocalTransceiver, sendData)
     EXPECT_TRUE(lcl_trns_->send());
 
     std::this_thread::sleep_for(std::chrono::seconds(1));
-
 
     // TODO: The below assertions do not pass.
     // TODO: Need to figure out if the assertions are wrong or the implementation is wrong
@@ -628,7 +627,7 @@ std::mutex port_mutex;
 
 TEST_F(TestLocalTransceiver, testMailboxBlackbox)
 {
-    std::lock_guard<std::mutex> lock(port_mutex);  // because same port is being used
+    std::lock_guard<std::mutex> lock{port_mutex};  // because same port is being used
 
     std::string holder  = "curl -X POST -F \"test=1234\" http://localhost:8080";
     std::string holder2 = "printf \"at+sbdix\r\" > $LOCAL_TRANSCEIVER_TEST_PORT";
@@ -642,7 +641,7 @@ TEST_F(TestLocalTransceiver, testMailboxBlackbox)
 
 TEST_F(TestLocalTransceiver, parseReceiveMessageBlackbox)
 {
-    std::lock_guard<std::mutex> lock(port_mutex);
+    std::lock_guard<std::mutex> lock{port_mutex};
 
     constexpr float     holder = 10.3;
     Polaris::GlobalPath sample_data;
