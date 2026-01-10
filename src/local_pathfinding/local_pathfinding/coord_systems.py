@@ -55,19 +55,6 @@ def true_bearing_to_plotly_cartesian(true_bearing_deg: float) -> float:
         plotly_cartesian += 360.0
     return plotly_cartesian
 
-def true_bearing_to_cartesian(true_bearing_deg: float) -> float:
-    """_summary_
-
-    Args:
-        true_bearing_deg (float): _description_
-
-    Returns:
-        float: _description_
-    """
-
-    
-
-
 
 def get_path_segment_true_bearing(s1: XY, s2: XY, rad: bool = False):
     """Returns the true bearing of a straight path from s1 to s2.
