@@ -7,6 +7,9 @@
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 
+#include <cstring>
+#include <iostream>
+#include <mutex>
 #include <stdexcept>
 #include <thread>
 

@@ -2,8 +2,8 @@
 
 #include <linux/can.h>
 
-#include <rclcpp/rclcpp.hpp>
 #include <string>
+#include <thread>
 
 #include "can_frame_parser.h"
 

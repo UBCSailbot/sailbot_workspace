@@ -1,7 +1,5 @@
 #include "net_node.h"
 
-#include <rclcpp/rclcpp.hpp>
-
 NetNode::NetNode(const std::string & node_name)
 : rclcpp::Node(node_name),
   // When constructing the new buffers, create a new rclcpp::Logger with ":net_node" appended to the name so that

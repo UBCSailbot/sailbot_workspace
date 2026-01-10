@@ -1,6 +1,5 @@
 #pragma once
-#include <rclcpp/rclcpp.hpp>
-
+#include <rclcpp/node.hpp>
 /**
  * Network Systems custom ROS Node.
  * Redirects std::cout and std::cerr streams to ROS logging macros.
