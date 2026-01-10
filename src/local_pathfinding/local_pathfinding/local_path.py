@@ -229,20 +229,23 @@ class LocalPath:
             local_path_state=state,
             land_multi_polygon=land_multi_polygon,
         )
-        old_ompl_path = self._ompl_path
 
         heading_new_path, wp_index = self.calculate_desired_heading_and_waypoint_index(
             ompl_path.get_path(), 0, gps.lat_lon
         )
 
-        if received_new_global_waypoint:
-            self._logger.debug("Updating local path because we have a new global waypoint")
+        old_ompl_path = self._ompl_path
+
+        if old_ompl_path is None:
+            # continue on the same path
+            self._logger.debug("old path is none")
             self._update(ompl_path)
             return heading_new_path, wp_index, True
 
-        if old_ompl_path is None or self.path is None:
-            # continue on the same path
-            self._logger.debug("old path is none")
+        self.path = old_ompl_path.get_path()
+
+        if received_new_global_waypoint:
+            self._logger.debug("Updating local path because we have a new global waypoint")
             self._update(ompl_path)
             return heading_new_path, wp_index, True
 
@@ -275,7 +278,7 @@ class LocalPath:
                 f", metric_old: {metric_old:.2f}, "
                 f"metric_new: {metric_new:.2f}, "
             )
-        if metric_new < metric_old:
+        if metric_new < metric_old*0.9:
             self._logger.debug(
                 "New path is cheaper, updating local path "
             )
