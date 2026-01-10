@@ -128,7 +128,7 @@ class MockGPS(Node):
 
     def get_next_location(self) -> None:
         """Get the next location by following the great circle. Assumes constant speed and heading"""  # noqa
-        # distance travelled = speed * calback time (s)
+        # distance travelled = speed * callback time (s)
         distance_km = self.__mean_speed_kmph.speed * (self.pub_period_sec / SECONDS_PER_HOUR)
         start = (
             self.__current_location.latitude,
