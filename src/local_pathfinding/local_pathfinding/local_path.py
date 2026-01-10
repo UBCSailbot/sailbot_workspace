@@ -146,10 +146,6 @@ class LocalPath:
         Returns:
             boolean: True if the path intersects a collision zone, False otherwise.
         """
-
-        print(cs.xy_to_latlon(reference_latlon, cs.XY(x=15, y=1.5)))
-
-        print("-------------------------------------------------")
         xy_path = list(
             map(lambda lat_lon: (cs.latlon_to_xy(reference_latlon, lat_lon)), path.waypoints)
         )
