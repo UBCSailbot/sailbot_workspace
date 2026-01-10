@@ -30,9 +30,7 @@ import local_pathfinding.coord_systems as cs
 import local_pathfinding.wind_coord_systems as wcs
 from local_pathfinding.ompl_path import OMPLPath
 
-# -----------------------------
-# Constants
-# -----------------------------
+
 UPDATE_INTERVAL_MS = 2500
 
 BOX_BUFFER_SIZE_KM = 1.0  # km
@@ -84,7 +82,8 @@ class VisualizerState:
         final_local_wp_x (List[float]): X coordinates (km) of the latest local path waypoints.
         final_local_wp_y (List[float]): Y coordinates (km) of the latest local path waypoints.
 
-        sailbot_gps (List[ci.Gps]): GPS messages used for heading and speed display.
+        sailbot_gps (List[ci.Gps]): GPS messages used for heading (degrees) and speed (km/h)
+                                    display.
 
         ais_pos_x (List[float]): X coordinates (km) of AIS ships.
         ais_pos_y (List[float]): Y coordinates (km) of AIS ships.
@@ -242,7 +241,7 @@ def get_unit_vector(vec: cs.XY) -> cs.XY:
         vec: Vector in XY form.
 
     Returns:
-        A unit vector with the same direction as `vec`. If magnitude is ~0,
+        A unit vector with the same direction as `vec`. If magnitude is really small (~0), it
         returns (0.0, 0.0).
     """
     mag = math.hypot(vec.x, vec.y)
@@ -412,7 +411,7 @@ def build_boat_trace(
     )
 
 
-def add_polygon_fills(
+def add_polygon(
     fig: go.Figure,
     polys: List[Polygon],
     *,
@@ -758,18 +757,6 @@ def build_figure(
     # Boat and goal info
     boat_xy = (state.sailbot_pos_x[-1], state.sailbot_pos_y[-1])
 
-    # DEBUG: inspect local path structure
-    # print("BOAT XY:", boat_xy[0], boat_xy[1])
-    # print("PATH[0] XY:", local_x[0], local_y[0])
-    # dx0 = local_x[0] - boat_xy[0]
-    # dy0 = local_y[0] - boat_xy[1]
-    # dist_m = 1000.0 * math.hypot(dx0, dy0)
-    # print(
-    #     f"boat=({boat_xy[0]:.6f},{boat_xy[1]:.6f})  "
-    #     f"path0=({local_x[0]:.6f},{local_y[0]:.6f})  "
-    #     f"offset={dist_m:.2f} m  n_local={len(local_x)}"
-    # )
-
     if not local_x or not local_y:
         raise ValueError("No local waypoints available for plotting")
     goal_xy = (local_x[-1], local_y[-1])
@@ -789,7 +776,7 @@ def build_figure(
         fig.add_trace(path_trace)
 
     # Adding Obstacle (both Land and Boat) and AIS ships to the plot
-    add_polygon_fills(
+    add_polygon(
         fig,
         state.land_obstacles_xy,
         name="Land Obstacle",
@@ -798,7 +785,7 @@ def build_figure(
         opacity=0.5,
         showlegend=True,
     )
-    add_polygon_fills(
+    add_polygon(
         fig,
         state.boat_obstacles_xy,
         name="AIS Collision Zone",
