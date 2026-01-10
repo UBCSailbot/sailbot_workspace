@@ -92,14 +92,14 @@ TEST_F(TestLocalTransceiver, debugSendTest)
 }
 
 /**
- * @brief Test debugSendAT that sends a small payload through the same flow as sendData()
+ * @brief Test debugSendAT that sends a small payload through the same flow as send()
  */
 TEST_F(TestLocalTransceiver, DebugSendAT)
 {
     std::lock_guard<std::mutex> lock{port_mutex};
 
-    // Single ASCII byte payload for ease of verification
-    std::string payload = "D";
+    // // Single ASCII byte payload for ease of verification
+    std::string payload = "Hello";
 
     EXPECT_TRUE(lcl_trns_->debugSendAT(payload));
 
@@ -121,6 +121,7 @@ TEST_F(TestLocalTransceiver, DebugSendAT)
     curl_easy_cleanup(curl);
     ASSERT_EQ(res, CURLE_OK) << "Failed to query echo server";
     ASSERT_FALSE(response_body.empty()) << "Echo server returned empty body — webhook may not have received payload";
+    EXPECT_EQ(response_body, payload) << "Echo server body mismatch";
 
     // Verify the payload byte is present in the echoed body
     ASSERT_NE(response_body.find(payload), std::string::npos);
