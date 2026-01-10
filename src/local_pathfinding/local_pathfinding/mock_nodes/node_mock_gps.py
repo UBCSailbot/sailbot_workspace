@@ -15,6 +15,8 @@ import local_pathfinding.coord_systems as cs
 import local_pathfinding.mock_nodes.shared_utils as sc
 from local_pathfinding.ompl_objectives import TimeObjective
 
+SECONDS_PER_HOUR = 3600
+
 
 class MockGPS(Node):
 
@@ -125,7 +127,7 @@ class MockGPS(Node):
     def get_next_location(self) -> None:
         """Get the next location by following the great circle. Assumes constant speed and heading"""  # noqa
         # distance travelled = speed * calback time (s)
-        distance_km = self.__mean_speed_kmph.speed * (self.pub_period_sec / 3600.0)
+        distance_km = self.__mean_speed_kmph.speed * (self.pub_period_sec / SECONDS_PER_HOUR)
         start = (
             self.__current_location.latitude,
             self.__current_location.longitude,
