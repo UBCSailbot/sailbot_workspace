@@ -4,3 +4,7 @@
 !scripts/build.sh
 !scripts/setup.sh
 !docs/requirements.txt
+!log/**
+!build/**
+!install/**
+!/opt/ros/humble/**
