@@ -16,10 +16,16 @@ Subscribes:
 
 Parameters:
 * ``pub_period_sec`` (double, required): publish period (seconds)
-* ``tw_speed_kmph`` (double, default: 10.0): true wind speed (kmph)
-* ``tw_dir_deg`` (int, default: 90): true wind direction in global frame (deg)
+* ``tw_speed_kmph`` (double): true wind speed (kmph). Set via ``wind_params.sh`` script only.
+* ``tw_dir_deg`` (int): true wind direction in global frame (deg). Set via ``wind_params.sh`` script only.
     * Valid range: (-180, 180]
-* Use ros2 param set {node name} {parameter_name} {value} to update parameters at runtime.
+
+Setting True Wind Parameters:
+* Must modify ``wind_params.yaml`` before running the shell script.
+* Must ensure both ``mock_wind_sensor`` and ``mock_gps`` nodes are running.
+* Run ``./local_pathfinding/mock_nodes/wind_params.sh`` to load parameters.
+* **WARNING**: Do NOT use ``ros2 param set`` for true wind values. This causes parameter
+  mismatch between nodes and breaks calculations. Always use the shell script.
 """
 
 from typing import List

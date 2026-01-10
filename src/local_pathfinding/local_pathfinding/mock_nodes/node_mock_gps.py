@@ -36,7 +36,9 @@ class MockGPS(Node):
         """
         super().__init__("mock_gps")
 
-        # Declare ROS parameters (qos depth and publish period)
+        # Declare ROS parameters (qos depth and publish period).
+        # tw_speed_kmph and tw_dir_deg must be loaded via wind_params.sh script.
+        # Do NOT use ros2 param set for these values as it causes mismatch with mock_wind_sensor.
         self.declare_parameters(
             namespace="",
             parameters=[
