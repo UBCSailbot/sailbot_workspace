@@ -223,9 +223,14 @@ class Boat(Obstacle):
         if sailbot_speed is not None:
             self.sailbot_speed = sailbot_speed
 
-
     def update_collision_zone(self, **kwargs) -> None:
-        ### TODO: Calculate a bunch of mini trapezoids based on where the AIS ship WOULD be at several time steps then stich them together with convex_hull (i.e. solve the projected_distance for each time step instead of using one calculation of projected_distance).
+        """Sets or regenerates a Shapely Polygon that represents the boat's collision zone.
+
+        Args:
+
+            ais_ship (Optional[ci.HelperAISShip]): AIS Ship message containing information about
+                                                the target ship.
+        """
         ais_ship = kwargs.get("ais_ship", None)
         if ais_ship is not None:
             if ais_ship.id != self.ais_ship.id:
@@ -233,16 +238,7 @@ class Boat(Obstacle):
             self.ais_ship = ais_ship
 
         projected_distance = self._calculate_projected_distance()
-        collision_zone_width = projected_distance * COLLISION_ZONE_STRETCH_FACTOR * self.width
 
-        base_trapezoid = self._make_trapezoid(projected_distance, collision_zone_width)
-
-        # Initial pose
-        x, y = cs.latlon_to_xy(self.reference, self.ais_ship.lat_lon)
-        heading = math.radians(self.ais_ship.cog.heading)
-
-        speed = self.ais_ship.sog.speed
-        # Get ROT in radians per second
         rot = self.ais_ship.rot.rot
         if rot == -128:
             rot_dpm = 0
@@ -254,41 +250,29 @@ class Boat(Obstacle):
         if rot < 0:
             rot_rps *= -1
 
-        swept_polygons = []
+        bow_y = self.length / 2
 
-        t = 0.0
-        while t <= PREDICTION_HORIZON:
-            # Rotation matrix
-            sin_theta = math.sin(-heading)
-            cos_theta = math.cos(-heading)
+        A = [0.0, bow_y]
+        B = [0.0, bow_y + projected_distance]
+        delta_heading = rot_rps * 5.0
+        C = [
+            projected_distance * math.sin(delta_heading),
+            bow_y + projected_distance * math.cos(delta_heading),
+        ]
 
-            transform = np.array([cos_theta, -sin_theta, sin_theta, cos_theta, x, y])
+        # Triangle polygon representing collision zone
+        boat_collision_zone = Polygon([A, B, C])
 
-            poly = affine_transform(base_trapezoid, transform)
-            swept_polygons.append(poly)
+        # this code block translates and rotates the collision zone to the correct position
+        dx, dy = cs.latlon_to_xy(self.reference, self.ais_ship.lat_lon)
+        angle_rad = math.radians(-self.ais_ship.cog.heading)
+        sin_theta = math.sin(angle_rad)
+        cos_theta = math.cos(angle_rad)
+        transformation = np.array([cos_theta, -sin_theta, sin_theta, cos_theta, dx, dy])
+        collision_zone = affine_transform(boat_collision_zone, transformation)
 
-            # Integrate forward
-            heading += rot_rps * DT
-            x += speed * math.sin(heading) * DT
-            y += speed * math.cos(heading) * DT
-
-            t += DT
-
-        collision_zone = unary_union(swept_polygons)
-        collision_zone = collision_zone.convex_hull
-
-        self.collision_zone = collision_zone.buffer(BOAT_BUFFER, join_style=2)
+        self.collision_zone = collision_zone
         prepared.prep(self.collision_zone)
-
-    def _make_trapezoid(self, projected_distance, collision_zone_width):
-        return Polygon(
-            [
-                [-self.width / 2, -self.length / 2],
-                [-collision_zone_width, self.length / 2 + projected_distance],
-                [collision_zone_width, self.length / 2 + projected_distance],
-                [self.width / 2, -self.length / 2],
-            ]
-        )
 
     def _calculate_projected_distance(self) -> float:
         """Calculates the distance the boat obstacle will travel before collision, if
