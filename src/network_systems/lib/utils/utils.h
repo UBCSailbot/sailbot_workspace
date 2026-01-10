@@ -1,7 +1,8 @@
 #pragma once
 
-#include <boost/math/special_functions.hpp>
+#include <boost/math/special_functions/next.hpp>
 #include <concepts>
+#include <iostream>
 #include <optional>
 #include <sstream>
 
