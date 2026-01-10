@@ -199,6 +199,7 @@ private:
         try {
             std::string dataToSend = "Hello!";
             bool        success    = lcl_trns_->debugSendAT(dataToSend);
+            // bool        success    = lcl_trns_->send();
             if (success) {
                 RCLCPP_INFO(this->get_logger(), "Successfully sent data via Local Transceiver");
                 response->success = true;
