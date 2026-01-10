@@ -197,6 +197,91 @@ bool LocalTransceiver::send()
     return false;
 }
 
+bool LocalTransceiver::debugSendAT(const std::string & data)
+{
+    // Validate size
+    if (data.size() >= MAX_LOCAL_TO_REMOTE_PAYLOAD_SIZE_BYTES) {
+        std::cerr << "Debug data too large: " << data.size() << " bytes" << std::endl;
+        return false;
+    }
+
+    std::cout << "Debug: Sending " << data.size() << " bytes via debugSendAT\n";
+
+    std::string write_bin_cmd_str = AT::write_bin::CMD + std::to_string(data.size());
+    AT::Line    at_write_cmd(write_bin_cmd_str);
+
+    static constexpr int MAX_NUM_RETRIES = 20;
+    for (int i = 0; i < MAX_NUM_RETRIES; i++) {
+        if (!send(at_write_cmd)) {
+            std::cerr << "Debug: failed to send write command (attempt " << i << ")\n";
+            continue;
+        }
+
+        if (!rcvRsps({
+              at_write_cmd,
+              AT::Line(AT::DELIMITER),
+              AT::Line(AT::RSP_READY),
+              AT::Line("\n"),
+            })) {
+            std::cerr << "Debug: did not receive ready prompt (attempt " << i << ")\n";
+            continue;
+        }
+
+        std::string msg_str = data + checksum(data);
+        AT::Line    msg(msg_str);
+        if (!send(msg)) {
+            std::cerr << "Debug: failed to send payload (attempt " << i << ")\n";
+            continue;
+        }
+
+        if (!rcvRsps({
+              AT::Line(AT::DELIMITER),
+              AT::Line(AT::write_bin::rsp::SUCCESS),
+              AT::Line("\n"),
+              AT::Line(AT::DELIMITER),
+              AT::Line(AT::STATUS_OK),
+              AT::Line("\n"),
+            })) {
+            std::cerr << "Debug: write did not complete successfully (attempt " << i << ")\n";
+            continue;
+        }
+
+        static const AT::Line sbdix_cmd = AT::Line(AT::SBD_SESSION);
+        if (!send(sbdix_cmd)) {
+            std::cerr << "Debug: failed to send SBDIX command (attempt " << i << ")\n";
+            continue;
+        }
+
+        if (!rcvRsps({
+              AT::Line("\r"),
+              sbdix_cmd,
+              AT::Line(AT::DELIMITER),
+            })) {
+            std::cerr << "Debug: did not receive SBDIX response header (attempt " << i << ")\n";
+            continue;
+        }
+
+        auto opt_rsp = readRsp();
+        if (!opt_rsp) {
+            std::cerr << "Debug: readRsp returned no response (attempt " << i << ")\n";
+            continue;
+        }
+
+        std::string              opt_rsp_val = opt_rsp.value();
+        std::vector<std::string> sbd_status_vec;
+        boost::algorithm::split(sbd_status_vec, opt_rsp_val, boost::is_any_of(AT::DELIMITER));
+
+        AT::SBDStatusRsp rsp(sbd_status_vec[0]);
+        if (rsp.MOSuccess()) {
+            std::cout << "Debug: debugSendAT transmitted successfully\n";
+            return true;
+        }
+    }
+
+    std::cerr << "Debug: Failed to transmit debug payload to satellite" << std::endl;
+    return false;
+}
+
 std::optional<std::string> LocalTransceiver::debugSend(const std::string & cmd)
 {
     AT::Line    at_cmd(cmd);
