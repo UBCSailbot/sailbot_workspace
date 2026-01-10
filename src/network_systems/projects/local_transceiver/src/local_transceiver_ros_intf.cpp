@@ -94,7 +94,7 @@ public:
                     std::cerr << msg << std::endl;
                     throw std::exception();
                 }
-                
+
             } else {
                 std::string msg = "Error, invalid system mode" + mode;
                 throw std::runtime_error(msg);
@@ -136,13 +136,12 @@ public:
             if (msg) {
                 pub_->publish(*msg);
             }
-            
-            srv_send_ = this->create_service<std_srvs::srv::Trigger>(
-                "send_data",
-                std::bind(&LocalTransceiverIntf::send_request_handler, 
-                        this, std::placeholders::_1, std::placeholders::_2));
-            RCLCPP_INFO(this->get_logger(), "send_data service created");
 
+            srv_send_ = this->create_service<std_srvs::srv::Trigger>(
+              "send_data",
+              std::bind(
+                &LocalTransceiverIntf::send_request_handler, this, std::placeholders::_1, std::placeholders::_2));
+            RCLCPP_INFO(this->get_logger(), "send_data service created");
         }
     }
 
@@ -191,14 +190,15 @@ private:
 
     void sub_local_path_data_cb(custom_interfaces::msg::LPathData in_msg) { lcl_trns_->updateSensor(in_msg); }
 
-    void send_request_handler (
-        std::shared_ptr<std_srvs::srv::Trigger::Request> request,
-        std::shared_ptr<std_srvs::srv::Trigger::Response> response) 
+    void send_request_handler(
+      std::shared_ptr<std_srvs::srv::Trigger::Request>  request,
+      std::shared_ptr<std_srvs::srv::Trigger::Response> response)
     {
         (void)request;
-        
+
         try {
-            bool success = lcl_trns_->send();
+            std::string dataToSend = "Hello!";
+            bool        success    = lcl_trns_->debugSendAT(dataToSend);
             if (success) {
                 RCLCPP_INFO(this->get_logger(), "Successfully sent data via Local Transceiver");
                 response->success = true;
@@ -209,7 +209,7 @@ private:
                 response->message = "Transmission Failed";
             }
 
-        } catch (const std::exception &e) {
+        } catch (const std::exception & e) {
             RCLCPP_ERROR(this->get_logger(), "Exception during send(): %s", e.what());
             response->success = false;
             response->message = std::string("Exception: ") + e.what();
