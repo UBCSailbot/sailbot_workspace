@@ -21,7 +21,6 @@ Parameters:
     * Valid range: (-180, 180]
 
 Setting True Wind Parameters:
-
 * Must modify ``wind_params.yaml`` before running the shell script.
 * Must ensure both ``mock_wind_sensor`` and ``mock_gps`` nodes are running.
 * Run ``./local_pathfinding/mock_nodes/wind_params.sh`` to load parameters.
