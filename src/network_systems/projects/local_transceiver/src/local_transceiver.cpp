@@ -199,9 +199,10 @@ bool LocalTransceiver::send()
 
 bool LocalTransceiver::debugSendAT(const std::string & data)
 {
-    // Validate size
+    // *
     if (data.size() >= MAX_LOCAL_TO_REMOTE_PAYLOAD_SIZE_BYTES) {
-        std::cerr << "Debug data too large: " << data.size() << " bytes" << std::endl;
+        std::cerr << "Debug message/data too large: " << data.size() << " bytes, but with a limit of "
+                  << MAX_LOCAL_TO_REMOTE_PAYLOAD_SIZE_BYTES << " bytes" << std::endl;
         return false;
     }
 
