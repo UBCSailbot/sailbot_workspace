@@ -347,7 +347,8 @@ def build_goal_trace(goal_xy: Tuple[float, float], angle_deg: float) -> go.Scatt
     )
 
 
-def build_path_trace(local_x: List[float], local_y: List[float]) -> Optional[go.Scatter]:
+def build_path_trace(local_x: List[float], local_y: List[float],
+                     boat_xy: Tuple[float, float]) -> Optional[go.Scatter]:
     """
     Create a dotted line trace connecting the local waypoints to the goal.
 
@@ -361,8 +362,8 @@ def build_path_trace(local_x: List[float], local_y: List[float]) -> Optional[go.
     if not local_x or not local_y:
         return None
     return go.Scatter(
-        x=list(local_x),
-        y=list(local_y),
+        x=[boat_xy[0]] + list(local_x),
+        y=[boat_xy[1]] + list(local_y),
         mode="lines",
         name="Path to Goal",
         line=dict(width=2, dash="dot", color="blue"),
@@ -771,7 +772,7 @@ def build_figure(
     fig.add_trace(build_intermediate_trace(local_x, local_y))
     fig.add_trace(build_goal_trace(goal_xy, angle_deg))
     fig.add_trace(build_boat_trace(state, boat_xy, dist_km))
-    path_trace = build_path_trace(local_x, local_y)
+    path_trace = build_path_trace(local_x, local_y, boat_xy)
     if path_trace is not None:
         fig.add_trace(path_trace)
 
