@@ -14,6 +14,7 @@ from local_pathfinding.ompl_path import OMPLPath
 LOCAL_WAYPOINT_REACHED_THRESH_KM = 0.5
 HEADING_WEIGHT = 0.6
 COST_WEIGHT = 0.4
+IMPROVEMENT_THRESHOLD = 0.1
 
 
 def normalize_cost_pair(x: float, y: float) -> tuple[float, float]:
@@ -274,8 +275,7 @@ class LocalPath:
             heading_new_path,
             heading
         )
-
-        if improvement > 0:
+        if improvement:
             self._logger.debug(
                 "New path is cheaper, updating local path "
             )
@@ -294,13 +294,13 @@ class LocalPath:
         new_cost: float,
         heading_new_path: float,
         heading: float
-    ):
+    ) -> bool:
         """Computes an improvement score comparing a new path against the old path.
 
         The improvement metric normalizes both heading deviation and path cost,
         then combines them using weighted averages (HEADING_WEIGHT, COST_WEIGHT).
-        A positive improvement value indicates the new path is better than the old path
-        and should be adopted.
+        Returns True if the new path is at least IMPROVEMENT_THRESHOLD (10%) better
+        than the old path and should be adopted.
 
         Args:
             old_cost (float): Accumulated waypoint cost of the old/existing path.
@@ -310,11 +310,8 @@ class LocalPath:
             heading (float): Current heading of the boat.
 
         Returns:
-            float: Improvement score (metric_old - metric_new).
-                Positive values mean the new path is better.
-                Negative values mean the old path is better.
-                Value = 0 means that there is little to no difference. In this case, the old path
-                should be preferred.
+            bool: True if the new path is at least 10% better than the old path,
+                False otherwise.
         """
         heading_diff_old = cs.calculate_heading_diff(heading, heading_old_path)
         heading_diff_new = cs.calculate_heading_diff(heading, heading_new_path)
@@ -333,7 +330,8 @@ class LocalPath:
                 f", metric_old: {metric_old:.2f}, "
                 f"metric_new: {metric_new:.2f}, "
         )
-        return metric_old - metric_new
+        improvement_ratio = (metric_old - metric_new)/metric_old
+        return (improvement_ratio > IMPROVEMENT_THRESHOLD)
 
     def _update(self, ompl_path: OMPLPath):
 
