@@ -347,6 +347,102 @@ class OMPLPath:
         return True
 
 
+def create_mock(
+    waypoints: list[ci.HelperLatLon],
+    parent_logger: RcutilsLogger,
+    heading: float = 45.0,
+    speed: float = 5.0,
+    wind_direction: float = 45.0,
+    wind_speed: float = 5.0,
+) -> OMPLPath:
+    """
+    Create a mock OMPLPath with predetermined waypoints.
+
+    Args:
+        waypoints: List of waypoints for the mock path
+        parent_logger: Logger instance
+        heading: Boat heading for optimization objective
+        speed: Boat speed for optimization objective
+        wind_direction: Wind direction for optimization objective
+        wind_speed: Wind speed for optimization objective
+
+    Returns:
+        OMPLPath: A mock path object with the specified waypoints
+    """
+    # Create instance without calling __init__
+    mock_path = OMPLPath.__new__(OMPLPath)
+
+    # Set basic attributes
+    mock_path._box_buffer = BOX_BUFFER_SIZE_KM
+    mock_path._logger = parent_logger.get_child(name="ompl_path")
+    mock_path.solved = True
+
+    reference_latlon = ci.HelperLatLon(latitude=3.0, longitude=3.0)  # Target global waypoint
+
+    # Create minimal state object
+    mock_path.state = type('MockState', (), {
+        'reference_latlon': reference_latlon,
+        'heading': heading,
+        'speed': speed,
+        'wind_direction': wind_direction,
+        'wind_speed': wind_speed,
+    })()
+
+    # Convert waypoints to XY coordinates
+    xy_waypoints = [cs.latlon_to_xy(reference_latlon, wp) for wp in waypoints]
+    x_coords = [xy.x for xy in xy_waypoints]
+    y_coords = [xy.y for xy in xy_waypoints]
+
+    # Create state space with appropriate bounds
+    space = base.SE2StateSpace()
+    bounds = base.RealVectorBounds(dim=2)
+
+    x_min, x_max = min(x_coords) - 100, max(x_coords) + 100
+    y_min, y_max = min(y_coords) - 100, max(y_coords) + 100
+
+    bounds.setLow(0, x_min)
+    bounds.setLow(1, y_min)
+    bounds.setHigh(0, x_max)
+    bounds.setHigh(1, y_max)
+    space.setBounds(bounds)
+
+    simple_setup = og.SimpleSetup(space)
+
+    start = base.State(space)
+    goal = base.State(space)
+    start().setXY(xy_waypoints[0].x, xy_waypoints[0].y)
+    start().setYaw(0.0)
+    goal().setXY(xy_waypoints[-1].x, xy_waypoints[-1].y)
+    goal().setYaw(0.0)
+    simple_setup.setStartAndGoalStates(start, goal)
+
+    # Set optimization objective
+    space_information = simple_setup.getSpaceInformation()
+    objective = get_sailing_objective(
+        space_information,
+        simple_setup,
+        heading,
+        speed,
+        wind_direction,
+        wind_speed,
+    )
+    simple_setup.setOptimizationObjective(objective)
+
+    path_geometric = og.PathGeometric(space_information)
+    for xy in xy_waypoints:
+        state = base.State(space)
+        state().setXY(xy.x, xy.y)
+        state().setYaw(0.0)
+        path_geometric.append(state())
+
+    problem_def = simple_setup.getProblemDefinition()
+    problem_def.addSolutionPath(path_geometric)
+
+    mock_path._simple_setup = simple_setup
+
+    return mock_path
+
+
 def log_invalid_state(state: cs.XY, obstacle: ob.Obstacle):
     """
     Logs details about a state and the obstacle that makes it invalid for use in a path.
