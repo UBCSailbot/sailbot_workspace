@@ -265,20 +265,17 @@ class LocalPath:
         old_cost = old_ompl_path.get_cost(updated_wp_index)
         new_cost = ompl_path.get_cost(wp_index)
 
-        heading = self.state.heading if self.state else 0.0
+        heading = self.state.heading
 
-        metric_old = self.calculate_metric(heading, heading_old_path, old_cost,
-                                           heading_new_path, new_cost)
-        metric_new = self.calculate_metric(heading, heading_new_path, new_cost,
-                                           heading_old_path, old_cost)
+        improvement = self.calculate_improvement(
+            old_cost,
+            heading_old_path,
+            new_cost,
+            heading_new_path,
+            heading
+        )
 
-        self._logger.debug(
-                f"(old cost: {old_cost:.2f}, "
-                f"new cost: {new_cost:.2f})"
-                f", metric_old: {metric_old:.2f}, "
-                f"metric_new: {metric_new:.2f}, "
-            )
-        if metric_new < metric_old*0.9:
+        if improvement > 0:
             self._logger.debug(
                 "New path is cheaper, updating local path "
             )
@@ -290,37 +287,53 @@ class LocalPath:
             )
             return heading_old_path, updated_wp_index, False
 
-    def calculate_metric(
+    def calculate_improvement(
         self,
-        heading: float,
-        heading_old_path: float,
         old_cost: float,
+        heading_old_path: float,
+        new_cost: float,
         heading_new_path: float,
-        new_cost: float
+        heading: float
     ):
-        """Computes a normalized, weighted score for the old path using heading
-        deviation and total path cost. Lower scores are preferred.
+        """Computes an improvement score comparing a new path against the old path.
+
+        The improvement metric normalizes both heading deviation and path cost,
+        then combines them using weighted averages (HEADING_WEIGHT, COST_WEIGHT).
+        A positive improvement value indicates the new path is better than the old path
+        and should be adopted.
 
         Args:
-            heading (float): Current heading.
-            heading_old_path (float): Heading of the existing/old path.
-            old_cost (float): Accumulated waypoint cost of the old path.
-            heading_new_path (float): Heading of the new path.
+            old_cost (float): Accumulated waypoint cost of the old/existing path.
+            heading_old_path (float): Desired heading of the old/existing path.
             new_cost (float): Accumulated waypoint cost of the new path.
+            heading_new_path (float): Desired heading of the new path.
+            heading (float): Current heading of the boat.
 
         Returns:
-            float: Weighted score for the old path after normalization.
+            float: Improvement score (metric_old - metric_new).
+                Positive values mean the new path is better.
+                Negative values mean the old path is better.
+                Value = 0 means that there is little to no difference. In this case, the old path
+                should be preferred.
         """
         heading_diff_old = cs.calculate_heading_diff(heading, heading_old_path)
         heading_diff_new = cs.calculate_heading_diff(heading, heading_new_path)
 
-        cost_normalized, _ = normalize_cost_pair(old_cost, new_cost)
-        heading_normalized, _ = normalize_cost_pair(math.fabs(heading_diff_old),
-                                                    math.fabs(heading_diff_new))
+        cost_norm_old, cost_norm_new = normalize_cost_pair(old_cost, new_cost)
+        heading_diff_norm_old, heading_diff_norm_new = normalize_cost_pair(
+            math.fabs(heading_diff_old),
+            math.fabs(heading_diff_new)
+        )
 
-        metric = HEADING_WEIGHT * heading_normalized + COST_WEIGHT * cost_normalized
-
-        return metric
+        metric_old = HEADING_WEIGHT * heading_diff_norm_old + COST_WEIGHT * cost_norm_old
+        metric_new = HEADING_WEIGHT * heading_diff_norm_new + COST_WEIGHT * cost_norm_new
+        self._logger.debug(
+                f"(old cost: {old_cost:.2f}, "
+                f"new cost: {new_cost:.2f})"
+                f", metric_old: {metric_old:.2f}, "
+                f"metric_new: {metric_new:.2f}, "
+        )
+        return metric_old - metric_new
 
     def _update(self, ompl_path: OMPLPath):
 
