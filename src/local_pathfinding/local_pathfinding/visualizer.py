@@ -76,20 +76,20 @@ class VisualizerState:
         - Headings are degrees in the navigation convention (0° = North, +90° = East)
 
     Attributes:
-        sailbot_pos_x (List[float]): X coordinates (km) of the boat track.
-        sailbot_pos_y (List[float]): Y coordinates (km) of the boat track.
+        sailbot_pos_x_km (List[float]): X coordinates (km) of the boat track.
+        sailbot_pos_y_km (List[float]): Y coordinates (km) of the boat track.
 
-        final_local_wp_x (List[float]): X coordinates (km) of the latest local path waypoints.
-        final_local_wp_y (List[float]): Y coordinates (km) of the latest local path waypoints.
+        final_local_wp_x_km (List[float]): X coordinates (km) of the latest local path waypoints.
+        final_local_wp_y_km (List[float]): Y coordinates (km) of the latest local path waypoints.
 
         sailbot_gps (List[ci.Gps]): GPS messages used for heading (degrees) and speed (km/h)
                                     display.
 
-        ais_pos_x (List[float]): X coordinates (km) of AIS ships.
-        ais_pos_y (List[float]): Y coordinates (km) of AIS ships.
-        ais_headings (List[float]): Headings (degrees) of AIS ships.
+        ais_pos_x_km (List[float]): X coordinates (km) of AIS ships.
+        ais_pos_y_km (List[float]): Y coordinates (km) of AIS ships.
+        ais_headings_deg (List[float]): Headings (degrees) of AIS ships.
         ais_ship_ids (List[int]): AIS ship identifiers.
-        ais_speeds (List[float]): Speeds (km/h) of AIS ships.
+        ais_speeds_kmph (List[float]): Speeds (km/h) of AIS ships.
 
         land_obstacles_xy (List[Polygon]): Land obstacle polygons in XY (km).
         boat_obstacles_xy (List[Polygon]): Boat collision-zone polygons in XY (km).
@@ -120,8 +120,9 @@ class VisualizerState:
             cs.latlon_list_to_xy_list(self.reference_lat_lon, waypoints)
             for waypoints in self.all_local_wp
         ]
-        self.sailbot_pos_x, self.sailbot_pos_y = self._split_coordinates(self.sailbot_xy)
-        self.final_local_wp_x, self.final_local_wp_y = self._split_coordinates(self.all_wp_xy[-1])
+        self.sailbot_pos_x_km, self.sailbot_pos_y_km = self._split_coordinates(self.sailbot_xy)
+        self.final_local_wp_x_km, self.final_local_wp_y_km = self._split_coordinates(
+            self.all_wp_xy[-1])
         self.all_local_wp_x, self.all_local_wp_y = zip(
             *[self._split_coordinates(waypoints) for waypoints in self.all_wp_xy]
         )
@@ -131,9 +132,9 @@ class VisualizerState:
         ais_ship_latlons = [ship.lat_lon for ship in self.ais_ships]
         self.ais_ship_ids = [ship.id for ship in self.ais_ships]
         ais_ship_xy = cs.latlon_list_to_xy_list(self.reference_lat_lon, ais_ship_latlons)
-        self.ais_pos_x, self.ais_pos_y = self._split_coordinates(ais_ship_xy)
-        self.ais_headings = [ship.cog.heading for ship in self.ais_ships]
-        self.ais_speeds = [ship.sog.speed for ship in self.ais_ships]
+        self.ais_pos_x_km, self.ais_pos_y_km = self._split_coordinates(ais_ship_xy)
+        self.ais_headings_deg = [ship.cog.heading for ship in self.ais_ships]
+        self.ais_speeds_kmph = [ship.sog.speed for ship in self.ais_ships]
 
         # Obstacles
         # Process land obstacles
@@ -176,9 +177,9 @@ class VisualizerState:
         Args:
             msg: Latest `ci.LPathData` message to validate.
         """
-        if msg.global_path is None or len(msg.global_path.waypoints) == 0:
+        if msg.global_path is None:
             raise ValueError("No global path received in the message")
-        if msg.local_path is None or len(msg.local_path.waypoints) == 0:
+        if msg.local_path is None:
             raise ValueError("No local path received in the message")
         if msg.gps is None:
             raise ValueError("No GPS data received in the message")
@@ -471,7 +472,8 @@ def add_ais_traces(fig: go.Figure, state: VisualizerState) -> None:
         state: VisualizerState containing AIS ship positions, headings, ids, and speeds.
     """
     for x_val, y_val, heading, ais_id, speed in zip(
-        state.ais_pos_x, state.ais_pos_y, state.ais_headings, state.ais_ship_ids, state.ais_speeds
+        state.ais_pos_x_km, state.ais_pos_y_km, state.ais_headings_deg, state.ais_ship_ids,
+        state.ais_speeds_kmph
     ):
         fig.add_trace(
             go.Scatter(
@@ -753,11 +755,11 @@ def build_figure(
 ) -> Tuple[go.Figure, Tuple[float, float]]:
     fig = initial_plot()
 
-    local_x = list(state.final_local_wp_x)
-    local_y = list(state.final_local_wp_y)
+    local_x = list(state.final_local_wp_x_km)
+    local_y = list(state.final_local_wp_y_km)
 
     # Boat and goal info
-    boat_xy = (state.sailbot_pos_x[-1], state.sailbot_pos_y[-1])
+    boat_xy = (state.sailbot_pos_x_km[-1], state.sailbot_pos_y_km[-1])
 
     if not local_x or not local_y:
         raise ValueError("No local waypoints available for plotting")
