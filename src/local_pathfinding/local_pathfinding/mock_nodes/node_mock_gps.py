@@ -107,7 +107,8 @@ class MockGPS(Node):
             self.__current_location.latitude,
             self.__current_location.longitude,
         )
-        destination = great_circle(kilometers=distance_km).destination(start, self.__heading_deg.heading) # noqa
+        heading_radians = math.radians(self.__heading_deg.heading)
+        destination = great_circle(kilometers=distance_km).destination(start, heading_radians)
         self.__current_location = ci.HelperLatLon(
             latitude=destination.latitude, longitude=destination.longitude
         )

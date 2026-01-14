@@ -17,7 +17,7 @@ import math
 from collections import deque
 from dataclasses import dataclass
 from multiprocessing import Queue
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import custom_interfaces.msg as ci
 import dash
@@ -64,6 +64,24 @@ class GoalChange:
     message: Optional[str]
 
 
+@dataclass(frozen=True)
+class AISShipData:
+    """
+    Stores data for a single AIS ship.
+
+    Attributes:
+        pos_x_km: X coordinate (km) of the AIS ship.
+        pos_y_km: Y coordinate (km) of the AIS ship.
+        heading_deg: Heading (degrees) of the AIS ship.
+        speed_kmph: Speed (km/h) of the AIS ship.
+    """
+
+    pos_x_km: float
+    pos_y_km: float
+    heading_deg: float
+    speed_kmph: float
+
+
 class VisualizerState:
     """
     Converts the ROS message to a format that can be used by the visualizer.
@@ -85,18 +103,15 @@ class VisualizerState:
         sailbot_gps (List[ci.Gps]): GPS messages used for heading (degrees) and speed (km/h)
                                     display.
 
-        ais_pos_x_km (List[float]): X coordinates (km) of AIS ships.
-        ais_pos_y_km (List[float]): Y coordinates (km) of AIS ships.
-        ais_headings_deg (List[float]): Headings (degrees) of AIS ships.
-        ais_ship_ids (List[int]): AIS ship identifiers.
-        ais_speeds_kmph (List[float]): Speeds (km/h) of AIS ships.
+        ais_ships_by_id (Dict[int, AISShipData]): Dictionary mapping AIS ship IDs to their data
+                                                   (position, heading, speed).
 
         land_obstacles_xy (List[Polygon]): Land obstacle polygons in XY (km).
         boat_obstacles_xy (List[Polygon]): Boat collision-zone polygons in XY (km).
 
-        aw_wind_vector (cs.XY): Apparent wind vector in global XY.
-        true_wind_vector (cs.XY): True wind vector in global XY.
-        boat_wind_vector (cs.XY): Boat velocity vector in global XY.
+        aw_vector_kmph (cs.XY): Apparent wind vector in global XY.
+        tw_vector_kmph (cs.XY): True wind vector in global XY.
+        bw_vector_kmph (cs.XY): Boat velocity vector in global XY.
     """
 
     def __init__(self, msgs: deque[ci.LPathData]):
@@ -115,12 +130,12 @@ class VisualizerState:
         self.global_path = self.latest_msg.global_path
 
         self.reference_lat_lon = self.global_path.waypoints[-1]
-        self.sailbot_xy = cs.latlon_list_to_xy_list(self.reference_lat_lon, self.sailbot_lat_lon)
+        self.sailbot_xy_km = cs.latlon_list_to_xy_list(self.reference_lat_lon, self.sailbot_lat_lon) # noqa
         self.all_wp_xy = [
             cs.latlon_list_to_xy_list(self.reference_lat_lon, waypoints)
             for waypoints in self.all_local_wp
         ]
-        self.sailbot_pos_x_km, self.sailbot_pos_y_km = self._split_coordinates(self.sailbot_xy)
+        self.sailbot_pos_x_km, self.sailbot_pos_y_km = self._split_coordinates(self.sailbot_xy_km)
         self.final_local_wp_x_km, self.final_local_wp_y_km = self._split_coordinates(
             self.all_wp_xy[-1])
         self.all_local_wp_x, self.all_local_wp_y = zip(
@@ -130,44 +145,47 @@ class VisualizerState:
         # AIS ships
         self.ais_ships = self.latest_msg.ais_ships.ships
         ais_ship_latlons = [ship.lat_lon for ship in self.ais_ships]
-        self.ais_ship_ids = [ship.id for ship in self.ais_ships]
         ais_ship_xy = cs.latlon_list_to_xy_list(self.reference_lat_lon, ais_ship_latlons)
-        self.ais_pos_x_km, self.ais_pos_y_km = self._split_coordinates(ais_ship_xy)
-        self.ais_headings_deg = [ship.cog.heading for ship in self.ais_ships]
-        self.ais_speeds_kmph = [ship.sog.speed for ship in self.ais_ships]
+        ais_positions = self._split_coordinates(ais_ship_xy)
+
+        self.ais_ships_by_id: Dict[int, AISShipData] = {}
+        for ship, (x, y) in zip(self.ais_ships, zip(ais_positions[0], ais_positions[1])):
+            self.ais_ships_by_id[ship.id] = AISShipData(
+                pos_x_km=x,
+                pos_y_km=y,
+                heading_deg=ship.cog.heading,
+                speed_kmph=ship.sog.speed
+            )
 
         # Obstacles
         # Process land obstacles
         self.land_obstacles_xy = self._process_obstacles_by_type(
             self.latest_msg.obstacles, self.reference_lat_lon, "Land"
         )
-
         # Process Boat Obstacles
         self.boat_obstacles_xy = self._process_obstacles_by_type(
             self.latest_msg.obstacles, self.reference_lat_lon, "Boat"
         )
 
         # Wind Vectors
-        boat_speed = self.latest_msg.gps.speed.speed
-        boat_heading = self.latest_msg.gps.heading.heading
-        aw_speed = self.latest_msg.filtered_wind_sensor.speed.speed
-        aw_dir_boat = self.latest_msg.filtered_wind_sensor.direction
+        boat_speed_kmph = self.latest_msg.gps.speed.speed
+        boat_heading_deg = self.latest_msg.gps.heading.heading
+        aw_speed_kmph = self.latest_msg.filtered_wind_sensor.speed.speed
+        aw_dir_boat_deg = self.latest_msg.filtered_wind_sensor.direction
 
         # Convert Apparent wind to global frame
-        aw_dir_global = wcs.boat_to_global_coordinate(boat_heading, aw_dir_boat)
-        aw_dir_global_rad = math.radians(aw_dir_global)
+        aw_dir_global_deg = wcs.boat_to_global_coordinate(boat_heading_deg, aw_dir_boat_deg)
+        aw_dir_global_rad = math.radians(aw_dir_global_deg)
         # Compute apparent wind vector (in global frame)
-        self.aw_wind_vector = cs.polar_to_cartesian(aw_dir_global_rad, aw_speed)
+        self.aw_vector_kmph = cs.polar_to_cartesian(aw_dir_global_rad, aw_speed_kmph)
 
         # True wind from apparent
-        true_wind_angle_rad, true_wind_mag = wcs.get_true_wind(
-            aw_dir_global, aw_speed, boat_heading, boat_speed
-        )
-        self.true_wind_vector = cs.polar_to_cartesian(true_wind_angle_rad, true_wind_mag)
+        tw_angle_rad, tw_speed_kmph = wcs.get_true_wind(aw_dir_global_deg, aw_speed_kmph, boat_heading_deg, boat_speed_kmph) # noqa
+        self.tw_vector_kmph = cs.polar_to_cartesian(tw_angle_rad, tw_speed_kmph)
 
         # Boat wind vector
-        boat_wind_radians = math.radians(cs.bound_to_180(boat_heading + 180))
-        self.boat_wind_vector = cs.polar_to_cartesian(boat_wind_radians, boat_speed)
+        boat_wind_radians = math.radians(cs.bound_to_180(boat_heading_deg + 180))
+        self.bw_vector_kmph = cs.polar_to_cartesian(boat_wind_radians, boat_speed_kmph)
 
     @staticmethod
     def _validate_message(msg: ci.LPathData) -> None:
@@ -216,12 +234,12 @@ class VisualizerState:
         if obstacles is None:
             return processed
 
-        for ob in obstacles:
-            if ob.obstacle_type != obstacle_type:
+        for obstacle in obstacles:
+            if obstacle.obstacle_type != obstacle_type:
                 continue
 
             xy_points = []
-            for pt in ob.points:
+            for pt in obstacle.points:
                 xy = cs.latlon_to_xy(reference, pt)
                 xy_points.append((xy.x, xy.y))
 
@@ -252,25 +270,25 @@ def get_unit_vector(vec: cs.XY) -> cs.XY:
 
 
 def compute_goal_change(
-    last_goal_xy: Optional[Tuple[float, float]], goal_xy: Tuple[float, float]
+    last_goal_xy_km: Optional[Tuple[float, float]], goal_xy_km: Tuple[float, float]
 ) -> GoalChange:
     """
     Determine whether the local goal moved since the last update (with some jitter tolerance).
 
     Args:
-        last_goal_xy: Previously stored (x, y) goal in km (already rounded), or None if rendered
+        last_goal_xy_km: Previously stored (x, y) goal in km (already rounded), or None if rendered
                       for the first time.
-        goal_xy: Current (x, y) goal in km.
+        goal_xy_km: Current (x, y) goal in km.
 
     Returns:
         GoalChange containing the rounded goal coordinates and an optional popup message.
     """
     rounded = (
-        round(goal_xy[0], GOAL_CHANGE_ROUND_DECIMALS),
-        round(goal_xy[1], GOAL_CHANGE_ROUND_DECIMALS),
+        round(goal_xy_km[0], GOAL_CHANGE_ROUND_DECIMALS),
+        round(goal_xy_km[1], GOAL_CHANGE_ROUND_DECIMALS),
     )
     msg = None
-    if last_goal_xy is not None and rounded != last_goal_xy:
+    if last_goal_xy_km is not None and rounded != last_goal_xy_km:
         msg = f"Local goal advanced to ({rounded[0]}, {rounded[1]})"
     return GoalChange(new_goal_xy_rounded=rounded, message=msg)
 
@@ -297,24 +315,24 @@ def initial_plot() -> go.Figure:
     return fig
 
 
-def build_intermediate_trace(local_x: List[float], local_y: List[float]) -> go.Scatter:
+def build_intermediate_trace(local_x_km: List[float], local_y_km: List[float]) -> go.Scatter:
     """
     Create the scatter trace for intermediate local waypoints (excluding start and goal).
 
     Args:
-        local_x: X coordinates of the local waypoint list (km).
-        local_y: Y coordinates of the local waypoint list (km).
+        local_x_km: X coordinates of the local waypoint list (km).
+        local_y_km: Y coordinates of the local waypoint list (km).
 
     Returns:
         A Plotly Scatter trace containing marker with text labels for intermediate waypoints.
         If fewer than 3 points exist, returns an empty trace (i.e., no intermediate points).
     """
-    if len(local_x) < 3:
+    if len(local_x_km) < 3:
         return go.Scatter(x=[], y=[], mode="markers+text", name="Intermediate")
-    labels = [f"LW{i+1}" for i, _ in enumerate(local_x[1:-1])]
+    labels = [f"LW{i+1}" for i, _ in enumerate(local_x_km[1:-1])]
     return go.Scatter(
-        x=local_x[1:-1],
-        y=local_y[1:-1],
+        x=local_x_km[1:-1],
+        y=local_y_km[1:-1],
         mode="markers+text",
         marker=dict(color="blue", size=8),
         text=labels,
@@ -323,20 +341,20 @@ def build_intermediate_trace(local_x: List[float], local_y: List[float]) -> go.S
     )
 
 
-def build_goal_trace(goal_xy: Tuple[float, float], angle_deg: float) -> go.Scatter:
+def build_goal_trace(goal_xy_km: Tuple[float, float], angle_deg: float) -> go.Scatter:
     """
     Create the marker trace for the local goal waypoint.
 
     Args:
-        goal_xy: (x, y) goal position in km.
+        goal_xy_km: (x, y) goal position in km.
         angle_deg: Angle from boat to goal in degrees (visualizer convention) used in hover text.
 
     Returns:
         A Plotly Scatter trace representing the goal point.
     """
     return go.Scatter(
-        x=[goal_xy[0]],
-        y=[goal_xy[1]],
+        x=[goal_xy_km[0]],
+        y=[goal_xy_km[1]],
         mode="markers",
         marker=dict(color="red", size=10),
         name="Goal",
@@ -348,24 +366,24 @@ def build_goal_trace(goal_xy: Tuple[float, float], angle_deg: float) -> go.Scatt
     )
 
 
-def build_path_trace(local_x: List[float], local_y: List[float],
-                     boat_xy: Tuple[float, float]) -> Optional[go.Scatter]:
+def build_path_trace(local_x_km: List[float], local_y_km: List[float],
+                     boat_xy_km: Tuple[float, float]) -> Optional[go.Scatter]:
     """
     Create a dotted line trace connecting the local waypoints to the goal.
 
     Args:
-        local_x: Local path X coordinates in km.
-        local_y: Local path Y coordinates in km.
-        boat_xy: Sailboat's latest (X, Y) coordinates in km.
+        local_x_km: Local path X coordinates in km.
+        local_y_km: Local path Y coordinates in km.
+        boat_xy_km: Sailboat's latest (X, Y) coordinates in km.
 
     Returns:
         A Plotly Scatter trace for the path line, or None if input is empty.
     """
-    if not local_x or not local_y:
+    if not local_x_km or not local_y_km:
         return None
     return go.Scatter(
-        x=[boat_xy[0]] + list(local_x),
-        y=[boat_xy[1]] + list(local_y),
+        x=[boat_xy_km[0]] + list(local_x_km),
+        y=[boat_xy_km[1]] + list(local_y_km),
         mode="lines",
         name="Path to Goal",
         line=dict(width=2, dash="dot", color="blue"),
@@ -374,14 +392,14 @@ def build_path_trace(local_x: List[float], local_y: List[float],
 
 
 def build_boat_trace(
-    state: VisualizerState, boat_xy: Tuple[float, float], dist_to_goal_km: float
+    state: VisualizerState, boat_xy_km: Tuple[float, float], dist_to_goal_km: float
 ) -> go.Scatter:
     """
     Create the boat marker trace (filled arrow-head/ triangle) at the current boat position.
 
     Args:
         state: VisualizerState containing GPS heading/speed history.
-        boat_xy: (x, y) current boat position in km.
+        boat_xy_km: (x, y) current boat position in km.
         dist_to_goal_km: Current straight-line distance to the goal in km (for hover text).
 
     Returns:
@@ -390,8 +408,8 @@ def build_boat_trace(
     heading = state.sailbot_gps[-1].heading.heading
     speed = state.sailbot_gps[-1].speed.speed
     return go.Scatter(
-        x=[boat_xy[0]],
-        y=[boat_xy[1]],
+        x=[boat_xy_km[0]],
+        y=[boat_xy_km[1]],
         mode="markers",
         name="Boat",
         hovertemplate=(
@@ -469,12 +487,14 @@ def add_ais_traces(fig: go.Figure, state: VisualizerState) -> None:
 
     Args:
         fig: Target Plotly figure.
-        state: VisualizerState containing AIS ship positions, headings, ids, and speeds.
+        state: VisualizerState containing AIS ship data by ID.
     """
-    for x_val, y_val, heading, ais_id, speed in zip(
-        state.ais_pos_x_km, state.ais_pos_y_km, state.ais_headings_deg, state.ais_ship_ids,
-        state.ais_speeds_kmph
-    ):
+    for ais_id, ship_data in state.ais_ships_by_id.items():
+        x_val = ship_data.pos_x_km
+        y_val = ship_data.pos_y_km
+        heading = ship_data.heading_deg
+        speed = ship_data.speed_kmph
+
         fig.add_trace(
             go.Scatter(
                 x=[x_val],
@@ -537,13 +557,13 @@ def add_wind_box(fig: go.Figure, state: VisualizerState) -> None:
     )
 
     # Re-Calculating vectors for better scaling in the wind box inset.
-    aw_unit = get_unit_vector(state.aw_wind_vector)
-    tw_unit = get_unit_vector(state.true_wind_vector)
-    bw_unit = get_unit_vector(state.boat_wind_vector)
+    aw_unit = get_unit_vector(state.aw_vector_kmph)
+    tw_unit = get_unit_vector(state.tw_vector_kmph)
+    bw_unit = get_unit_vector(state.bw_vector_kmph)
 
-    aw_mag = math.hypot(state.aw_wind_vector.x, state.aw_wind_vector.y)
-    tw_mag = math.hypot(state.true_wind_vector.x, state.true_wind_vector.y)
-    bw_mag = math.hypot(state.boat_wind_vector.x, state.boat_wind_vector.y)
+    aw_mag = math.hypot(state.aw_vector_kmph.x, state.aw_vector_kmph.y)
+    tw_mag = math.hypot(state.tw_vector_kmph.x, state.tw_vector_kmph.y)
+    bw_mag = math.hypot(state.bw_vector_kmph.x, state.bw_vector_kmph.y)
 
     aw_dx, aw_dy = aw_unit.x * WIND_ARROW_LEN, aw_unit.y * WIND_ARROW_LEN
     tw_dx, tw_dy = tw_unit.x * WIND_ARROW_LEN, tw_unit.y * WIND_ARROW_LEN
@@ -651,7 +671,7 @@ def add_wind_box(fig: go.Figure, state: VisualizerState) -> None:
 
 
 def compute_and_add_state_space(
-    boat_xy: Tuple[float, float], goal_xy: Tuple[float, float], fig: go.Figure
+    boat_xy_km: Tuple[float, float], goal_xy_km: Tuple[float, float], fig: go.Figure
 ) -> MultiPolygon:
     """
     Build the visualization state-space overlay around the boat and goal. Then, add the built
@@ -662,15 +682,15 @@ def compute_and_add_state_space(
     - A buffer box around the goal
 
     Args:
-        boat_xy: (x, y) boat position in km.
-        goal_xy: (x, y) goal position in km.
+        boat_xy_km: (x, y) boat position in km.
+        goal_xy_km: (x, y) goal position in km.
         fig: Target Plotly figure.
 
     Returns:
         A Shapely MultiPolygon representing the combined buffered regions.
     """
-    boat_pos = cs.XY(boat_xy[0], boat_xy[1])
-    goal_pos = cs.XY(goal_xy[0], goal_xy[1])
+    boat_pos = cs.XY(boat_xy_km[0], boat_xy_km[1])
+    goal_pos = cs.XY(goal_xy_km[0], goal_xy_km[1])
 
     boat_box = OMPLPath.create_buffer_around_position(boat_pos, BOX_BUFFER_SIZE_KM)
     goal_box = OMPLPath.create_buffer_around_position(goal_pos, BOX_BUFFER_SIZE_KM)
@@ -751,31 +771,52 @@ def apply_layout(fig: go.Figure, state_space: MultiPolygon, *, to_set_range: boo
 
 
 def build_figure(
-    state: VisualizerState, last_goal_xy: Optional[Tuple[float, float]]
+    state: VisualizerState, last_goal_xy_km: Optional[Tuple[float, float]]
 ) -> Tuple[go.Figure, Tuple[float, float]]:
+    """
+    Builds and renders the complete path planning visualization figure.
+
+    This function orchestrates all visual elements: boat state, local path, obstacles,
+    AIS ships, wind vectors, and state-space overlay.
+
+    Args:
+        state: VisualizerState containing processed ROS message data (boat position, path,
+               obstacles, AIS ships, wind vectors).
+        last_goal_xy_km: Previous goal position (x, y) in km, or None on first render. Used to
+                      detect goal changes and show a popup message.
+
+    Returns:
+        (fig, new_goal_xy_rounded):
+            - fig: Updated Plotly figure ready for display.
+            - new_goal_xy_rounded: Current goal position rounded to GOAL_CHANGE_ROUND_DECIMALS
+                                for float jitter tolerance.
+
+    Raises:
+        ValueError: If no local waypoints are available for plotting.
+    """
     fig = initial_plot()
 
-    local_x = list(state.final_local_wp_x_km)
-    local_y = list(state.final_local_wp_y_km)
+    local_x_km = list(state.final_local_wp_x_km)
+    local_y_km = list(state.final_local_wp_y_km)
 
     # Boat and goal info
-    boat_xy = (state.sailbot_pos_x_km[-1], state.sailbot_pos_y_km[-1])
+    boat_xy_km = (state.sailbot_pos_x_km[-1], state.sailbot_pos_y_km[-1])
 
-    if not local_x or not local_y:
+    if not local_x_km or not local_y_km:
         raise ValueError("No local waypoints available for plotting")
-    goal_xy = (local_x[-1], local_y[-1])
+    goal_xy_km = (local_x_km[-1], local_y_km[-1])
 
-    goal_change = compute_goal_change(last_goal_xy, goal_xy)
+    goal_change = compute_goal_change(last_goal_xy_km, goal_xy_km)
 
     # Computing angle and distance from boat to goal
-    angle_deg = math.degrees(math.atan2(goal_xy[0] - boat_xy[0], goal_xy[1] - boat_xy[1]))
-    dist_km = math.hypot(goal_xy[0] - boat_xy[0], goal_xy[1] - boat_xy[1])
+    angle_deg = math.degrees(math.atan2(goal_xy_km[0] - boat_xy_km[0], goal_xy_km[1] - boat_xy_km[1])) # noqa
+    dist_km = math.hypot(goal_xy_km[0] - boat_xy_km[0], goal_xy_km[1] - boat_xy_km[1])
 
     # adding all the Traces(intermediate, goal, boat and path) to the plot
-    fig.add_trace(build_intermediate_trace(local_x, local_y))
-    fig.add_trace(build_goal_trace(goal_xy, angle_deg))
-    fig.add_trace(build_boat_trace(state, boat_xy, dist_km))
-    path_trace = build_path_trace(local_x, local_y, boat_xy)
+    fig.add_trace(build_intermediate_trace(local_x_km, local_y_km))
+    fig.add_trace(build_goal_trace(goal_xy_km, angle_deg))
+    fig.add_trace(build_boat_trace(state, boat_xy_km, dist_km))
+    path_trace = build_path_trace(local_x_km, local_y_km, boat_xy_km)
     if path_trace is not None:
         fig.add_trace(path_trace)
 
@@ -805,9 +846,9 @@ def build_figure(
     add_wind_box(fig, state)
 
     # Computing State space overlay and adding it to the plot
-    state_space = compute_and_add_state_space(boat_xy, goal_xy, fig)
+    state_space = compute_and_add_state_space(boat_xy_km, goal_xy_km, fig)
 
-    set_range = last_goal_xy is None  # only on first render
+    set_range = last_goal_xy_km is None  # only on first render
     apply_layout(fig, state_space, to_set_range=set_range)
 
     # Popup
@@ -851,7 +892,7 @@ def dash_app(q: Queue):
     Input("interval-component", "n_intervals"),
     State("goal-store", "data"),
 )
-def live_plot(_: int, last_goal_xy: Optional[List[float]]) -> Tuple[go.Figure, List[float]]:
+def live_plot(_: int, last_goal_xy_km: Optional[List[float]]) -> Tuple[go.Figure, List[float]]:
     """
     Dash callback: fetch the next VisualizerState and render the updated figure.
 
@@ -859,7 +900,7 @@ def live_plot(_: int, last_goal_xy: Optional[List[float]]) -> Tuple[go.Figure, L
 
     Args:
         _: Dash interval tick (unused).
-        last_goal_xy: Previously stored goal as [x, y] or None on first run.
+        last_goal_xy_km: Previously stored goal as [x, y] or None on first run.
 
     Returns:
         (fig, new_goal_as_list):
@@ -869,8 +910,8 @@ def live_plot(_: int, last_goal_xy: Optional[List[float]]) -> Tuple[go.Figure, L
     global queue
     state = queue.get()  # type: ignore
 
-    # last_goal_xy comes from dcc.Store
-    last_goal_tuple = (last_goal_xy[0], last_goal_xy[1]) if last_goal_xy is not None else None
+    # last_goal_xy_km comes from dcc.Store
+    last_goal_tuple = (last_goal_xy_km[0], last_goal_xy_km[1]) if last_goal_xy_km is not None else None # noqa
 
     fig, new_goal_xy = build_figure(state, last_goal_tuple)
     return fig, [new_goal_xy[0], new_goal_xy[1]]
