@@ -138,10 +138,18 @@ public:
             }
 
             srv_send_ = this->create_service<std_srvs::srv::Trigger>(
-              "send_data",
-              std::bind(
-                &LocalTransceiverIntf::send_request_handler, this, std::placeholders::_1, std::placeholders::_2));
+              "send_data", std::bind(
+                             &LocalTransceiverIntf::send_request_handler, this, std::placeholders::_1,
+                             std::placeholders::_2, false));
             RCLCPP_INFO(this->get_logger(), "send_data service created");
+
+            this->declare_parameter<std::string>("debug_data_to_send", "Hello!");
+
+            srv_send_debug_ = this->create_service<std_srvs::srv::Trigger>(
+              "debug_send_data",
+              std::bind(
+                &LocalTransceiverIntf::send_request_handler, this, std::placeholders::_1, std::placeholders::_2, true));
+            RCLCPP_INFO(this->get_logger(), "debug_send_data service created");
         }
     }
 
@@ -157,6 +165,7 @@ private:
     rclcpp::Subscription<custom_interfaces::msg::LPathData>::SharedPtr      sub_local_path_data;
 
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_send_;
+    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_send_debug_;
 
     /**
      * @brief Callback function to publish to onboard ROS network
@@ -192,14 +201,21 @@ private:
 
     void send_request_handler(
       std::shared_ptr<std_srvs::srv::Trigger::Request>  request,
-      std::shared_ptr<std_srvs::srv::Trigger::Response> response)
+      std::shared_ptr<std_srvs::srv::Trigger::Response> response, bool is_debug = false)
     {
         (void)request;
 
         try {
-            std::string dataToSend = "Hello!";
-            bool        success    = lcl_trns_->debugSendAT(dataToSend);
-            // bool        success    = lcl_trns_->send();
+            bool success;
+
+            if (is_debug) {
+                // Retrieve the debug_data_to_send parameter dynamically
+                std::string debug_data = this->get_parameter("debug_data_to_send").as_string();
+                success                = lcl_trns_->debugSendAT(debug_data);
+            } else {
+                success = lcl_trns_->send();
+            }
+
             if (success) {
                 RCLCPP_INFO(this->get_logger(), "Successfully sent data via Local Transceiver");
                 response->success = true;
