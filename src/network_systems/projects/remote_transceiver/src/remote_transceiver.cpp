@@ -237,12 +237,16 @@ void HTTPServer::doPost()
 
             curl = curl_easy_init();
 
-            std::string EC            = "B";
-            std::string IMEI          = "300434065264590"; // arbitrary IMEI chosen, change to actual RockBlock IMEI
-            std::string USERNAME      = "myuser";          // arbitrary username chosen, change to actual username of rockblock account
-            std::string ROCKBLOCK_WEB = "localhost:8100";  // localhost:8100 chosen for testing, change to rockblock endpoint for prod
+            std::string EC   = "B";
+            std::string IMEI = "300434065264590";  // arbitrary IMEI chosen, change to actual RockBlock IMEI
+            std::string USERNAME =
+              "myuser";  // arbitrary username chosen, change to actual username of rockblock account
+            std::string ROCKBLOCK_WEB =
+              "localhost:8100";  // localhost:8100 chosen for testing, change to rockblock endpoint for prod
 
-            char * encoded_data = curl_easy_escape(curl, data.c_str(), 0);
+            char * encoded_data = curl_easy_escape(curl, data.c_str(), static_cast<int>(data.size()));
+
+            std::cout << "Encoded data size: " << std::strlen(encoded_data) << " bytes" << std::endl;
 
             if (num_waypoints <= 1) {
                 EC = "10";

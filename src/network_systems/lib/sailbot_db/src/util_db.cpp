@@ -88,7 +88,7 @@ std::tm UtilDB::getTimestamp()
 {
     // Get the current time
     std::time_t t  = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-    std::tm *   tm = std::gmtime(&t);  // NOLINT(concurrency-mt-unsafe)
+    std::tm *   tm = std::localtime(&t);  // NOLINT(concurrency-mt-unsafe)
     // tm stores years since 1900 by default, the schema expects years since 2000
     tm->tm_year -= 100;  // NOLINT(readability-magic-numbers)
     return *tm;
@@ -363,7 +363,8 @@ std::pair<std::vector<Sensors>, std::vector<std::string>> UtilDB::dumpSensors(
     mongocxx::cursor     gps_docs = gps_coll.find({}, opts);
     expectEQ(
       static_cast<uint64_t>(gps_coll.count_documents({})), num_docs,
-      "Error: TestDB should only have " + std::to_string(num_docs) + " documents per collection");
+      "Error: TestDB should only have " + std::to_string(num_docs) + " GPS documents per collection but has " +
+        std::to_string(static_cast<uint64_t>(gps_coll.count_documents({}))));
 
     for (auto [i, gps_docs_it] = std::tuple{size_t{0}, gps_docs.begin()}; i < num_docs; i++, gps_docs_it++) {
         Sensors &                     sensors   = sensors_vec[i];
@@ -383,7 +384,7 @@ std::pair<std::vector<Sensors>, std::vector<std::string>> UtilDB::dumpSensors(
     mongocxx::cursor     ais_docs = ais_coll.find({}, opts);
     expectEQ(
       static_cast<uint64_t>(ais_coll.count_documents({})), num_docs,
-      "Error: TestDB should only have " + std::to_string(num_docs) + " documents per collection");
+      "Error: TestDB should only have " + std::to_string(num_docs) + " AIS documents per collection");
 
     for (auto [i, ais_docs_it] = std::tuple{size_t{0}, ais_docs.begin()}; i < num_docs; i++, ais_docs_it++) {
         Sensors &                     sensors       = sensors_vec[i];
@@ -410,7 +411,7 @@ std::pair<std::vector<Sensors>, std::vector<std::string>> UtilDB::dumpSensors(
     mongocxx::cursor     generic_sensor_docs = generic_coll.find({}, opts);
     expectEQ(
       static_cast<uint64_t>(generic_coll.count_documents({})), num_docs,
-      "Error: TestDB should only have " + std::to_string(num_docs) + " documents per collection");
+      "Error: TestDB should only have " + std::to_string(num_docs) + " generic sensor documents per collection");
 
     for (auto [i, generic_sensor_docs_it] = std::tuple{size_t{0}, generic_sensor_docs.begin()}; i < num_docs;
          i++, generic_sensor_docs_it++) {
@@ -431,7 +432,7 @@ std::pair<std::vector<Sensors>, std::vector<std::string>> UtilDB::dumpSensors(
     mongocxx::cursor     batteries_data_docs = batteries_coll.find({}, opts);
     expectEQ(
       static_cast<uint64_t>(batteries_coll.count_documents({})), num_docs,
-      "Error: TestDB should only have " + std::to_string(num_docs) + " documents per collection");
+      "Error: TestDB should only have " + std::to_string(num_docs) + " battery documents per collection");
 
     for (auto [i, batteries_doc_it] = std::tuple{size_t{0}, batteries_data_docs.begin()}; i < num_docs;
          i++, batteries_doc_it++) {
@@ -453,7 +454,7 @@ std::pair<std::vector<Sensors>, std::vector<std::string>> UtilDB::dumpSensors(
     mongocxx::cursor     wind_sensors_docs = wind_coll.find({}, opts);
     expectEQ(
       static_cast<uint64_t>(wind_coll.count_documents({})), num_docs,
-      "Error: TestDB should only have " + std::to_string(num_docs) + " documents per collection");
+      "Error: TestDB should only have " + std::to_string(num_docs) + " wind sensor documents per collection");
 
     for (auto [i, wind_doc_it] = std::tuple{size_t{0}, wind_sensors_docs.begin()}; i < num_docs; i++, wind_doc_it++) {
         Sensors &                     sensors   = sensors_vec[i];
@@ -473,7 +474,7 @@ std::pair<std::vector<Sensors>, std::vector<std::string>> UtilDB::dumpSensors(
     mongocxx::cursor     local_path_docs = path_coll.find({}, opts);
     expectEQ(
       static_cast<uint64_t>(path_coll.count_documents({})), num_docs,
-      "Error: TestDB should only have " + std::to_string(num_docs) + " documents per collection");
+      "Error: TestDB should only have " + std::to_string(num_docs) + " local path documents per collection");
 
     for (auto [i, path_doc_it] = std::tuple{size_t{0}, local_path_docs.begin()}; i < num_docs; i++, path_doc_it++) {
         Sensors &                     sensors   = sensors_vec[i];
