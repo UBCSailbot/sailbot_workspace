@@ -151,7 +151,7 @@ class VisualizerState:
         self.reference_lat_lon = self.global_path.waypoints[-1]
         self.sailbot_xy_km = cs.latlon_list_to_xy_list(
             self.reference_lat_lon, self.sailbot_lat_lon
-        )  # noqa
+        )
         self.all_wp_xy = [
             cs.latlon_list_to_xy_list(self.reference_lat_lon, waypoints)
             for waypoints in self.all_local_wp
@@ -201,7 +201,7 @@ class VisualizerState:
         # True wind from apparent
         tw_angle_rad, tw_speed_kmph = wcs.get_true_wind(
             aw_dir_global_deg, aw_speed_kmph, boat_heading_deg, boat_speed_kmph
-        )  # noqa
+        )
         self.tw_vector_kmph = cs.polar_to_cartesian(tw_angle_rad, tw_speed_kmph)
 
         # Boat wind vector
@@ -828,7 +828,7 @@ def build_figure(
     # Computing angle and distance from boat to goal
     angle_deg = math.degrees(
         math.atan2(goal_xy_km[0] - boat_xy_km[0], goal_xy_km[1] - boat_xy_km[1])
-    )  # noqa
+    )
     dist_km = math.hypot(goal_xy_km[0] - boat_xy_km[0], goal_xy_km[1] - boat_xy_km[1])
 
     # adding all the Traces(intermediate, goal, boat and path) to the plot
@@ -929,7 +929,7 @@ def live_plot(_: int, last_goal_xy_km: Optional[List[float]]) -> Tuple[go.Figure
     # last_goal_xy_km comes from dcc.Store
     last_goal_tuple = (
         cs.XY(last_goal_xy_km[0], last_goal_xy_km[1]) if last_goal_xy_km is not None else None
-    )  # noqa
+    )
 
     fig, new_goal_xy = build_figure(state, last_goal_tuple)
     return fig, [new_goal_xy[0], new_goal_xy[1]]
