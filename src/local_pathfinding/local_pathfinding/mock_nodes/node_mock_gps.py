@@ -12,9 +12,10 @@ from geopy.distance import great_circle
 from rclpy.node import Node
 
 import local_pathfinding.coord_systems as cs
-import local_pathfinding.mock_nodes.shared_constants as sc
-import local_pathfinding.wind_coord_systems as wcs
+import local_pathfinding.mock_nodes.shared_utils as sc
 from local_pathfinding.ompl_objectives import TimeObjective
+
+SECONDS_PER_HOUR = 3600
 
 
 class MockGPS(Node):
@@ -35,11 +36,15 @@ class MockGPS(Node):
         """
         super().__init__("mock_gps")
 
-        # Declare ROS parameters (qos depth and publish period)
+        # Declare ROS parameters (qos depth and publish period).
+        # tw_speed_kmph and tw_dir_deg must be loaded via wind_params.sh script.
+        # Do NOT use ros2 param set for these values as it causes mismatch with mock_wind_sensor.
         self.declare_parameters(
             namespace="",
             parameters=[
                 ("pub_period_sec", rclpy.Parameter.Type.DOUBLE),
+                ("tw_speed_kmph", sc.TW_SPEED_KMPH),
+                ("tw_dir_deg", sc.TW_DIRECTION_DEG),
             ],
         )
 
@@ -67,23 +72,24 @@ class MockGPS(Node):
             qos_profile=10,
         )
 
-        # callback for wind sensor sub to update the boat speed
-        self.__mock_wind_sensor_sub = self.create_subscription(
-            msg_type=ci.WindSensor,
-            topic="filtered_wind_sensor",
-            callback=self.wind_sensor_callback,
-            qos_profile=10,
-        )
-
         self.__mean_speed_kmph = sc.MEAN_SPEED
         self.__current_location = sc.START_POINT
         self.__heading_deg = sc.START_HEADING
+
+        # Store true wind parameters
+        self.__tw_speed_kmph = (
+            self.get_parameter("tw_speed_kmph").get_parameter_value().double_value
+        )
+        self.__tw_dir_deg = self.get_parameter("tw_dir_deg").get_parameter_value().integer_value
 
     def mock_gps_callback(self) -> None:
         """Callback function for the mock GPS timer. Publishes mock gps data to the ROS
         network.
         """
+        # Update boat speed based on current heading and true wind
+        self.update_speed()
         self.get_next_location()
+
         msg: ci.GPS = ci.GPS(
             lat_lon=self.__current_location,
             speed=self.__mean_speed_kmph,
@@ -99,16 +105,37 @@ class MockGPS(Node):
         )
         self.__gps_pub.publish(msg)
 
+    def update_speed(self):
+        """Update the boat speed based on current heading and true wind.
+
+        Uses TimeObjective.get_sailbot_speed to calculate realistic boat speed
+        given the current heading relative to true wind direction and speed.
+        """
+        self.__mean_speed_kmph = ci.HelperSpeed(
+            speed=float(
+                100.0 * TimeObjective.get_sailbot_speed(
+                    math.radians(self.__heading_deg.heading),
+                    math.radians(self.__tw_dir_deg),
+                    self.__tw_speed_kmph,
+                )
+            )
+        )
+        self.get_logger().debug(
+            f"Updated speed: {self.__mean_speed_kmph.speed:.2f} kmph "
+            f"(heading: {self.__heading_deg.heading:.1f}°, "
+            f"TW: {self.__tw_speed_kmph:.1f} kmph from {self.__tw_dir_deg}°)"
+        )
+
     def get_next_location(self) -> None:
         """Get the next location by following the great circle. Assumes constant speed and heading"""  # noqa
-        # distance travelled = speed * calback time (s)
-        distance_km = self.__mean_speed_kmph.speed * (self.pub_period_sec / 3600.0)
+        # distance travelled = speed * callback time (s)
+        distance_km = self.__mean_speed_kmph.speed * (self.pub_period_sec / SECONDS_PER_HOUR)
         start = (
             self.__current_location.latitude,
             self.__current_location.longitude,
         )
-        heading_radians = math.radians(self.__heading_deg.heading)
-        destination = great_circle(kilometers=distance_km).destination(start, heading_radians)
+        heading_degrees = self.__heading_deg.heading
+        destination = great_circle(kilometers=distance_km).destination(start, heading_degrees)
         self.__current_location = ci.HelperLatLon(
             latitude=destination.latitude, longitude=destination.longitude
         )
@@ -124,36 +151,6 @@ class MockGPS(Node):
         """
         self._logger.debug(f"Received data from {self.__desired_heading_sub.topic}: {msg}")
         self.__heading_deg = msg.heading
-
-    def wind_sensor_callback(self, msg: ci.WindSensor):
-        """Callback for the data published by the wind sensor node (mock)
-        Calls TimeObjective.get_sailbot_speed to get the updated mean speed
-
-        Args:
-            msg (ci.WindSensor): the wind sensor speed
-        """
-
-        self._logger.debug(f"Received data from {self.__mock_wind_sensor_sub.topic}: {msg}")
-        aw_speed_kmph: float = msg.speed.speed
-        aw_dir_boat_coord_deg: float = msg.direction
-        aw_dir_global_coord_deg: float = wcs.boat_to_global_coordinate(
-            self.__heading_deg.heading, aw_dir_boat_coord_deg
-        )
-        tw_dir_rad, tw_speed_kmph = wcs.get_true_wind(
-            aw_dir_global_coord_deg,
-            aw_speed_kmph,
-            self.__heading_deg.heading,
-            self.__mean_speed_kmph.speed,
-        )
-        self.__mean_speed_kmph = ci.HelperSpeed(
-            speed=float(
-                TimeObjective.get_sailbot_speed(
-                    math.radians(self.__heading_deg.heading),
-                    tw_dir_rad,
-                    tw_speed_kmph,
-                )
-            )
-        )
 
 
 def main(args=None):

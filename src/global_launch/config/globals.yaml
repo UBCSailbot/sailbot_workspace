@@ -89,4 +89,3 @@ mock_data_node:
       mock_sail_trim_tab: True
       mock_sail_trim_tab_lower_bound: -7.0
       mock_sail_trim_tab_upper_bound: 7.0
-      pub_period_sec: 5.0
