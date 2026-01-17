@@ -17,7 +17,7 @@ import math
 from collections import deque
 from dataclasses import dataclass
 from multiprocessing import Queue
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any
 
 import custom_interfaces.msg as ci
 import dash
@@ -30,7 +30,6 @@ import local_pathfinding.coord_systems as cs
 import local_pathfinding.wind_coord_systems as wcs
 from local_pathfinding.ompl_path import OMPLPath
 
-
 UPDATE_INTERVAL_MS = 2500
 
 BOX_BUFFER_SIZE_KM = 1.0
@@ -40,7 +39,7 @@ WIND_BOX_Y_DOMAIN = (0.00, 0.22)
 WIND_BOX_RANGE = (-10, 10)
 
 WIND_ARROW_LEN = 4.0
-WIND_BOX_ORIGIN_XY = (6.0, 0.0)
+WIND_BOX_ORIGIN_XY = cs.XY(6.0, 0.0)
 WIND_BOX_Y_OFFSET = 0.5
 
 GOAL_CHANGE_ROUND_DECIMALS = 3  # avoid float jitter spam
@@ -80,6 +79,26 @@ class AISShipData:
     pos_y_km: float
     heading_deg: float
     speed_kmph: float
+
+
+@dataclass(frozen=True)
+class WindBoxConfig:
+    """
+    Stores configuration data for the wind box inset in the plot.
+
+    Attributes:
+        layout_config: Dict[str, Any]: Configuration for the wind box axes in fig.update_layout().
+        wind_arrows: List[Dict[str, Any]]: List of arrow annotation dicts for wind vectors in
+                                        fig.add_annotation().
+        background_info: Dict[str, Any]: Dict for the background rectangle shape in
+                                    fig.add_shape().
+        annotations: List[Dict[str, Any]]: List of text annotation dicts for wind vector labels in
+                                        fig.add_annotation().
+    """
+    layout_config: Dict[str, Any]
+    wind_arrows: List[Dict[str, Any]]
+    background_info: Dict[str, Any]
+    annotations: List[Dict[str, Any]]
 
 
 class VisualizerState:
@@ -130,14 +149,17 @@ class VisualizerState:
         self.global_path = self.latest_msg.global_path
 
         self.reference_lat_lon = self.global_path.waypoints[-1]
-        self.sailbot_xy_km = cs.latlon_list_to_xy_list(self.reference_lat_lon, self.sailbot_lat_lon) # noqa
+        self.sailbot_xy_km = cs.latlon_list_to_xy_list(
+            self.reference_lat_lon, self.sailbot_lat_lon
+        )  # noqa
         self.all_wp_xy = [
             cs.latlon_list_to_xy_list(self.reference_lat_lon, waypoints)
             for waypoints in self.all_local_wp
         ]
         self.sailbot_pos_x_km, self.sailbot_pos_y_km = self._split_coordinates(self.sailbot_xy_km)
         self.final_local_wp_x_km, self.final_local_wp_y_km = self._split_coordinates(
-            self.all_wp_xy[-1])
+            self.all_wp_xy[-1]
+        )
         self.all_local_wp_x, self.all_local_wp_y = zip(
             *[self._split_coordinates(waypoints) for waypoints in self.all_wp_xy]
         )
@@ -151,10 +173,7 @@ class VisualizerState:
         self.ais_ships_by_id: Dict[int, AISShipData] = {}
         for ship, (x, y) in zip(self.ais_ships, zip(ais_positions[0], ais_positions[1])):
             self.ais_ships_by_id[ship.id] = AISShipData(
-                pos_x_km=x,
-                pos_y_km=y,
-                heading_deg=ship.cog.heading,
-                speed_kmph=ship.sog.speed
+                pos_x_km=x, pos_y_km=y, heading_deg=ship.cog.heading, speed_kmph=ship.sog.speed
             )
 
         # Obstacles
@@ -180,7 +199,9 @@ class VisualizerState:
         self.aw_vector_kmph = cs.polar_to_cartesian(aw_dir_global_rad, aw_speed_kmph)
 
         # True wind from apparent
-        tw_angle_rad, tw_speed_kmph = wcs.get_true_wind(aw_dir_global_deg, aw_speed_kmph, boat_heading_deg, boat_speed_kmph) # noqa
+        tw_angle_rad, tw_speed_kmph = wcs.get_true_wind(
+            aw_dir_global_deg, aw_speed_kmph, boat_heading_deg, boat_speed_kmph
+        )  # noqa
         self.tw_vector_kmph = cs.polar_to_cartesian(tw_angle_rad, tw_speed_kmph)
 
         # Boat wind vector
@@ -270,7 +291,8 @@ def get_unit_vector(vec: cs.XY) -> cs.XY:
 
 
 def compute_goal_change(
-    last_goal_xy_km: Optional[Tuple[float, float]], goal_xy_km: Tuple[float, float]
+    last_goal_xy_km: Optional[Tuple[float, float]],
+    goal_xy_km: Tuple[float, float]
 ) -> GoalChange:
     """
     Determine whether the local goal moved since the last update (with some jitter tolerance).
@@ -366,8 +388,11 @@ def build_goal_trace(goal_xy_km: Tuple[float, float], angle_deg: float) -> go.Sc
     )
 
 
-def build_path_trace(local_x_km: List[float], local_y_km: List[float],
-                     boat_xy_km: Tuple[float, float]) -> Optional[go.Scatter]:
+def build_path_trace(
+    local_x_km: List[float],
+    local_y_km: List[float],
+    boat_xy_km: Tuple[float, float]
+) -> Optional[go.Scatter]:
     """
     Create a dotted line trace connecting the local waypoints to the goal.
 
@@ -392,7 +417,9 @@ def build_path_trace(local_x_km: List[float], local_y_km: List[float],
 
 
 def build_boat_trace(
-    state: VisualizerState, boat_xy_km: Tuple[float, float], dist_to_goal_km: float
+    state: VisualizerState,
+    boat_xy_km: Tuple[float, float],
+    dist_to_goal_km: float
 ) -> go.Scatter:
     """
     Create the boat marker trace (filled arrow-head/ triangle) at the current boat position.
@@ -432,8 +459,7 @@ def build_boat_trace(
     )
 
 
-def add_polygon(
-    fig: go.Figure,
+def build_polygon_traces(
     polys: List[Polygon],
     *,
     name: str,
@@ -442,13 +468,12 @@ def add_polygon(
     opacity: float = 0.5,
     hoverinfo: Optional[str] = None,
     showlegend: bool = True,
-) -> None:
+) -> List[go.Scatter]:
     """
-    Adds filled polygon overlays to the figure.
+    Build filled polygon trace overlays for the figure.
     This is used for land obstacles and boat collision zones.
 
     Args:
-        fig: Target Plotly figure.
         polys: List of Shapely polygons in XY (km).
         name: Legend name for the polygons.
         line: Plotly line dict for polygon edges (e.g., {"color": "lightgreen"}).
@@ -456,7 +481,11 @@ def add_polygon(
         opacity: Opacity for the fill/trace.
         hoverinfo: Optional Plotly hoverinfo mode (e.g., "skip") to disable hover.
         showlegend: Whether this trace should appear in the legend.
+
+    Returns:
+        List of Plotly Scatter traces for the polygons.
     """
+    traces = []
     for poly in polys:
         if poly.is_empty:
             continue
@@ -478,24 +507,29 @@ def add_polygon(
         if hoverinfo is not None:
             scatter_kwargs["hoverinfo"] = hoverinfo
 
-        fig.add_trace(go.Scatter(**scatter_kwargs))
+        traces.append(go.Scatter(**scatter_kwargs))
+
+    return traces
 
 
-def add_ais_traces(fig: go.Figure, state: VisualizerState) -> None:
+def build_ais_traces(state: VisualizerState) -> List[go.Scatter]:
     """
-    Add AIS ship markers (filled arrow-heads/ triangles) to the plot.
+    Build AIS ship markers (filled arrow-heads/ triangles) for the plot.
 
     Args:
-        fig: Target Plotly figure.
         state: VisualizerState containing AIS ship data by ID.
+
+    Returns:
+        List of Plotly Scatter traces for AIS ships.
     """
+    traces = []
     for ais_id, ship_data in state.ais_ships_by_id.items():
         x_val = ship_data.pos_x_km
         y_val = ship_data.pos_y_km
         heading = ship_data.heading_deg
         speed = ship_data.speed_kmph
 
-        fig.add_trace(
+        traces.append(
             go.Scatter(
                 x=[x_val],
                 y=[y_val],
@@ -520,25 +554,32 @@ def add_ais_traces(fig: go.Figure, state: VisualizerState) -> None:
                 showlegend=True,
             )
         )
+    return traces
 
 
-def add_wind_box(fig: go.Figure, state: VisualizerState) -> None:
+def configure_wind_box_elements(state: VisualizerState) -> WindBoxConfig:
     """
-    Add the “wind box” inset (configuring inset axes) and adds scaled
-    apparent wind, true wind, and boat velocity vectors to this configured inset.
+    Build the "wind box" inset configuration with scaled wind and boat velocity vectors.
 
-    This function:
-    - Configures secondary axes (x2/y2) for the inset.
-    - Normalizes/scales vectors for consistent arrow display.
-    - Draws arrow annotations + labels + inset background.
+    Constructs all components needed to render the wind box inset, including:
+    - Secondary axes configuration (x2/y2) for the inset domain and range.
+    - Normalized/scaled arrow annotations for apparent wind, true wind, and boat velocity.
+    - Background rectangle shape for the inset.
+    - Text annotations for wind vector labels and speed values.
 
     Args:
-        fig: Target Plotly figure.
-        state: VisualizerState containing wind vectors in global XY.
+        state: VisualizerState containing wind vectors in global XY frame.
+
+    Returns:
+        WindBoxConfig containing:
+            - layout_config: Dict of axis configuration for fig.update_layout()
+            - wind_arrows: List of arrow annotation dicts for fig.add_annotation()
+            - background_info: Dict for background rect shape to add via fig.add_shape()
+            - annotations: List of text annotation dicts for fig.add_annotation()
     """
     # configure wind box axis
-    fig.update_layout(
-        xaxis2=dict(
+    layout_config = {
+        "xaxis2": dict(
             domain=list(WIND_BOX_X_DOMAIN),
             anchor="y2",
             range=list(WIND_BOX_RANGE),
@@ -546,15 +587,15 @@ def add_wind_box(fig: go.Figure, state: VisualizerState) -> None:
             zeroline=True,
             visible=False,
         ),
-        yaxis2=dict(
+        "yaxis2": dict(
             domain=list(WIND_BOX_Y_DOMAIN),
             anchor="x2",
             range=list(WIND_BOX_RANGE),
             showgrid=False,
             zeroline=True,
             visible=False,
-        ),
-    )
+        )
+    }
 
     # Re-Calculating vectors for better scaling in the wind box inset.
     aw_unit = get_unit_vector(state.aw_vector_kmph)
@@ -574,105 +615,99 @@ def add_wind_box(fig: go.Figure, state: VisualizerState) -> None:
     true_origin = (origin_x, origin_y)
     app_origin = (origin_x, origin_y - WIND_BOX_Y_OFFSET)
 
+    wind_arrows = []
+
     # Function for adding re-calculated wind vectors arrows to the wind box inset
     def add_arrow(origin, dx, dy, color, title, mag):
-        fig.add_annotation(
-            x=origin[0],
-            y=origin[1],
-            ax=origin[0] - dx,
-            ay=origin[1] - dy,
-            xref="x2",
-            yref="y2",
-            axref="x2",
-            ayref="y2",
-            showarrow=True,
-            arrowhead=3,
-            arrowsize=0.5,
-            arrowwidth=3,
-            arrowcolor=color,
-            standoff=2,
-            text="",
-            hovertext=(f"<b>{title}</b><br>" f"speed: {mag:.2f} kmph<br>"),
-            hoverlabel=dict(bgcolor="white"),
-        )
+        wind_arrows.append({
+            "x": origin[0],
+            "y": origin[1],
+            "ax": origin[0] - dx,
+            "ay": origin[1] - dy,
+            "xref": "x2",
+            "yref": "y2",
+            "axref": "x2",
+            "ayref": "y2",
+            "showarrow": True,
+            "arrowhead": 3,
+            "arrowsize": 0.5,
+            "arrowwidth": 3,
+            "arrowcolor": color,
+            "standoff": 2,
+            "text": "",
+            "hovertext": (f"<b>{title}</b><br>" f"speed: {mag:.2f} kmph<br>"),
+            "hoverlabel": dict(bgcolor="white")
+        })
 
     add_arrow(app_origin, aw_dx, aw_dy, "purple", "🌬️ Apparent Wind", aw_mag)
     add_arrow(true_origin, tw_dx, tw_dy, "blue", "🌬️ True Wind", tw_mag)
     add_arrow(boat_origin, bw_dx, bw_dy, "red", "🛶 Boat Wind", bw_mag)
 
     # Wind box background
-    fig.add_shape(
-        type="rect",
-        xref="paper",
-        yref="paper",
-        x0=WIND_BOX_X_DOMAIN[0],
-        y0=WIND_BOX_Y_DOMAIN[0],
-        x1=WIND_BOX_X_DOMAIN[1],
-        y1=WIND_BOX_Y_DOMAIN[1],
-        fillcolor="white",
-        line=dict(width=4),
-    )
+    background_shape = {
+        "type": "rect",
+        "xref": "paper",
+        "yref": "paper",
+        "x0": WIND_BOX_X_DOMAIN[0],
+        "y0": WIND_BOX_Y_DOMAIN[0],
+        "x1": WIND_BOX_X_DOMAIN[1],
+        "y1": WIND_BOX_Y_DOMAIN[1],
+        "fillcolor": "white",
+        "line": {"width": 4},
+    }
 
     # labels for wind vectors and boat vector
-    fig.add_annotation(
-        x=-8,
-        y=4,
-        xref="x2",
-        yref="y2",
-        text=f"Boat - {bw_mag:.2f} kmph",
-        showarrow=False,
-        align="left",
-        xanchor="left",
-        font=dict(size=12, color="red"),
-    )
-    fig.add_annotation(
-        x=-8,
-        y=0,
-        xref="x2",
-        yref="y2",
-        text=f"True - {tw_mag:.2f} kmph",
-        showarrow=False,
-        align="left",
-        xanchor="left",
-        font=dict(size=12, color="blue"),
-    )
-    fig.add_annotation(
-        x=-8,
-        y=-4,
-        xref="x2",
-        yref="y2",
-        text=f"Apparent - {aw_mag:.2f} kmph",
-        showarrow=False,
-        align="left",
-        xanchor="left",
-        font=dict(size=12, color="purple"),
-    )
-
-    fig.add_annotation(
-        x=0,
-        y=6,
-        xref="x2",
-        yref="y2",
-        showarrow=False,
-        text="<b>Wind</b>",
-        font=dict(size=12, color="black"),
-    )
-
-    # Circle representing boat in wind box
-    fig.add_annotation(
-        x=6,
-        y=0,
-        xref="x2",
-        yref="y2",
-        showarrow=False,
-        text="●",
-        font=dict(size=12, color="lightgreen"),
-    )
+    annotations = [
+       {"x": -8,
+        "y": 4,
+        "xref": "x2",
+        "yref": "y2",
+        "text": f"Boat - {bw_mag:.2f} kmph",
+        "showarrow": False,
+        "align": "left",
+        "xanchor": "left",
+        "font": {"size": 12, "color": "red"}},
+       {"x": -8,
+        "y": 0,
+        "xref": "x2",
+        "yref": "y2",
+        "text": f"True - {tw_mag:.2f} kmph",
+        "showarrow": False,
+        "align": "left",
+        "xanchor": "left",
+        "font": {"size": 12, "color": "blue"}},
+       {"x": -8,
+        "y": -4,
+        "xref": "x2",
+        "yref": "y2",
+        "text": f"Apparent - {aw_mag:.2f} kmph",
+        "showarrow": False,
+        "align": "left",
+        "xanchor": "left",
+        "font": {"size": 12, "color": "purple"}},
+       {"x": 0,
+        "y": 6,
+        "xref": "x2",
+        "yref": "y2",
+        "showarrow": False,
+        "text": "<b>Wind</b>",
+        "font": {"size": 12, "color": "black"}},
+       {"x": 6,
+        "y": 0,
+        "xref": "x2",
+        "yref": "y2",
+        "showarrow": False,
+        "text": "●",
+        "font": {"size": 12, "color": "lightgreen"}}
+    ]
+    return WindBoxConfig(layout_config, wind_arrows, background_shape, annotations)
 
 
 def compute_and_add_state_space(
-    boat_xy_km: Tuple[float, float], goal_xy_km: Tuple[float, float], fig: go.Figure
-) -> MultiPolygon:
+    boat_xy_km: Tuple[float, float],
+    goal_xy_km: Tuple[float, float],
+    fig: go.Figure
+):
     """
     Build the visualization state-space overlay around the boat and goal. Then, add the built
     rectangular overlay spanning the bounds of the state space and returns the state-space.
@@ -685,9 +720,6 @@ def compute_and_add_state_space(
         boat_xy_km: (x, y) boat position in km.
         goal_xy_km: (x, y) goal position in km.
         fig: Target Plotly figure.
-
-    Returns:
-        A Shapely MultiPolygon representing the combined buffered regions.
     """
     boat_pos = cs.XY(boat_xy_km[0], boat_xy_km[1])
     goal_pos = cs.XY(goal_xy_km[0], goal_xy_km[1])
@@ -708,7 +740,6 @@ def compute_and_add_state_space(
         line=dict(width=0),
         layer="below",
     )
-    return state_space
 
 
 def add_goal_change_popup(fig: go.Figure, message: Optional[str]) -> None:
@@ -734,29 +765,15 @@ def add_goal_change_popup(fig: go.Figure, message: Optional[str]) -> None:
     )
 
 
-def apply_layout(fig: go.Figure, state_space: MultiPolygon, *, to_set_range: bool) -> None:
+def apply_layout(fig: go.Figure) -> None:
     """
     Apply the main plot layout configuration (axis titles, domains, legend, and optional ranges).
 
-    Why `to_set_range` exists:
-        Plotly/Dash will keep user zoom/pan if `uirevision` is constant.
-        If you repeatedly set axis ranges on every update, you lose the user’s set zoom.
-        So we set ranges only on the first render (or when you explicitly want to reset view).
-
     Args:
         fig: Target Plotly figure.
-        state_space: MultiPolygon used to compute x/y bounds.
-        to_set_range: If True, set axis `range` to the state_space bounds; if False,
-            only set axis domains, preserving user zoom.
     """
-    x_min, y_min, x_max, y_max = state_space.bounds
-
     xaxis = dict(domain=[0.0, 0.98])
     yaxis = dict(domain=[0.30, 1.0])
-
-    if to_set_range:
-        xaxis["range"] = [x_min, x_max]
-        yaxis["range"] = [y_min, y_max]
 
     fig.update_layout(
         xaxis_title="X (Km)",
@@ -771,7 +788,8 @@ def apply_layout(fig: go.Figure, state_space: MultiPolygon, *, to_set_range: boo
 
 
 def build_figure(
-    state: VisualizerState, last_goal_xy_km: Optional[Tuple[float, float]]
+    state: VisualizerState,
+    last_goal_xy_km: Optional[Tuple[float, float]]
 ) -> Tuple[go.Figure, Tuple[float, float]]:
     """
     Builds and renders the complete path planning visualization figure.
@@ -800,16 +818,17 @@ def build_figure(
     local_y_km = list(state.final_local_wp_y_km)
 
     # Boat and goal info
-    boat_xy_km = (state.sailbot_pos_x_km[-1], state.sailbot_pos_y_km[-1])
+    boat_xy_km = cs.XY(state.sailbot_pos_x_km[-1], state.sailbot_pos_y_km[-1])
 
     if not local_x_km or not local_y_km:
         raise ValueError("No local waypoints available for plotting")
-    goal_xy_km = (local_x_km[-1], local_y_km[-1])
-
+    goal_xy_km = cs.XY(local_x_km[-1], local_y_km[-1])
     goal_change = compute_goal_change(last_goal_xy_km, goal_xy_km)
 
     # Computing angle and distance from boat to goal
-    angle_deg = math.degrees(math.atan2(goal_xy_km[0] - boat_xy_km[0], goal_xy_km[1] - boat_xy_km[1])) # noqa
+    angle_deg = math.degrees(
+        math.atan2(goal_xy_km[0] - boat_xy_km[0], goal_xy_km[1] - boat_xy_km[1])
+    )  # noqa
     dist_km = math.hypot(goal_xy_km[0] - boat_xy_km[0], goal_xy_km[1] - boat_xy_km[1])
 
     # adding all the Traces(intermediate, goal, boat and path) to the plot
@@ -821,39 +840,36 @@ def build_figure(
         fig.add_trace(path_trace)
 
     # Adding Obstacle (both Land and Boat) and AIS ships to the plot
-    add_polygon(
-        fig,
-        state.land_obstacles_xy,
-        name="Land Obstacle",
-        line={"color": "lightgreen"},
-        fillcolor="lightgreen",
-        opacity=0.5,
-        showlegend=True,
-    )
-    add_polygon(
-        fig,
-        state.boat_obstacles_xy,
-        name="AIS Collision Zone",
-        line={"width": 2},
-        fillcolor="rgba(255,165,0,0.25)",
-        opacity=0.5,
-        hoverinfo="skip",
-        showlegend=False,
-    )
-    add_ais_traces(fig, state)
+    land_traces = build_polygon_traces(state.land_obstacles_xy,
+                                       name="Land Obstacle",
+                                       line={"color": "lightgreen"},
+                                       fillcolor="lightgreen",
+                                       opacity=0.5,
+                                       showlegend=True
+                                       )
+    boat_traces = build_polygon_traces(state.boat_obstacles_xy,
+                                       name="AIS Collision Zone",
+                                       line={"width": 2},
+                                       fillcolor="rgba(255,165,0,0.25)",
+                                       opacity=0.5,
+                                       hoverinfo="skip",
+                                       showlegend=False)
+    ais_traces = build_ais_traces(state)
+    fig.add_traces(land_traces + boat_traces + ais_traces)
 
     # Creating Wind box and its elements and adding them to the plot
-    add_wind_box(fig, state)
+    wind_config = configure_wind_box_elements(state)
+    fig.update_layout(**wind_config.layout_config)
+    for arrow in wind_config.wind_arrows:
+        fig.add_annotation(arrow)
+    fig.add_shape(**wind_config.background_info)
+    for annotation in wind_config.annotations:
+        fig.add_annotation(annotation)
 
     # Computing State space overlay and adding it to the plot
-    state_space = compute_and_add_state_space(boat_xy_km, goal_xy_km, fig)
-
-    set_range = last_goal_xy_km is None  # only on first render
-    apply_layout(fig, state_space, to_set_range=set_range)
-
-    # Popup
-    add_goal_change_popup(fig, goal_change.message)
-
+    compute_and_add_state_space(boat_xy_km, goal_xy_km, fig)
+    apply_layout(fig)
+    add_goal_change_popup(fig, goal_change.message)  # Popup message for goal change
     return fig, goal_change.new_goal_xy_rounded
 
 
@@ -911,7 +927,9 @@ def live_plot(_: int, last_goal_xy_km: Optional[List[float]]) -> Tuple[go.Figure
     state = queue.get()  # type: ignore
 
     # last_goal_xy_km comes from dcc.Store
-    last_goal_tuple = (last_goal_xy_km[0], last_goal_xy_km[1]) if last_goal_xy_km is not None else None # noqa
+    last_goal_tuple = (
+        cs.XY(last_goal_xy_km[0], last_goal_xy_km[1]) if last_goal_xy_km is not None else None
+    )  # noqa
 
     fig, new_goal_xy = build_figure(state, last_goal_tuple)
     return fig, [new_goal_xy[0], new_goal_xy[1]]
