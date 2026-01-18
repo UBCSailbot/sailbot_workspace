@@ -7,7 +7,7 @@ The main function of this file spawns two processes:
 
 from collections import deque
 from multiprocessing import Manager, Process, Queue
-from typing import Deque
+from typing import Deque, Union
 
 import custom_interfaces.msg as ci
 import rclpy
@@ -80,11 +80,41 @@ class SailbotObserver(Node):
         )
         self.msgs: Deque[ci.LPathData] = deque(maxlen=100)
         self.queue = queue
+        self.msg: Union[ci.LPathData, None] = None
+
+        self.create_timer(5.0, self.update_queue)
 
     def local_path_callback(self, msg: ci.LPathData):
+        """Callback which stores the latest message
+
+        Args:
+            msg (ci.LPathData): Contains all the Local Path Data for Visualization
+        """
+
         self.get_logger().debug(f"Received new local path message: {msg}")
-        self.msgs.append(msg)
+        self.msg = msg
+
+        self.msgs.append(self.msg)
+
+        if self.queue.qsize() < 1:
+            self.update_queue()
+
+    def update_queue(self):
+        """Send the latest state through the pipe to the dash app"""
+
+        if self.msg is None:
+            return
+
+        if self.queue.qsize() >= 1:
+            self.get_logger().info(
+                f"queue size is already {self.queue.qsize()}, "
+                f"not sending another new visualizer state until this is consumed."
+            )
+            return
+
         self.queue.put(vz.VisualizerState(msgs=self.msgs))
+        self.get_logger().info(f"sent new visualizer state with {len(self.msgs)} messages.")
+        self.get_logger().info(f"queue: {self.queue.qsize()}")
 
 
 if __name__ == "__main__":
