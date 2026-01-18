@@ -23,7 +23,7 @@
 
 - Wind velocity in the global/geographic coordinate frame
 - What a stationary observer on the ground would measure
-- **0° = wind blowing FROM south TO north** (meteorological convention)
+- **0° = wind blowing FROM south TO north** (opposite of meteorological convention)
 - Independent of boat motion
 
 ### Boat Wind
