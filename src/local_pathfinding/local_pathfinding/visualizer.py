@@ -56,29 +56,25 @@ class VisualizerState:
         final_local_wp_y (List[Tuple[float, float]]): Y coordinates of the final local waypoint
     """
 
-    def __init__(self, msgs: deque[ci.LPathData]):
-        if not msgs:
-            raise ValueError("msgs must not be None")
+    def __init__(self, msg: ci.LPathData):
+        if not msg:
+            raise ValueError("msg must not be None")
 
-        self.curr_msg = msgs[-1]
+        self.curr_msg = msg
         self._validate_message(self.curr_msg)
 
-        self.sailbot_lat_lon = [msg.gps.lat_lon for msg in msgs]
-        self.sailbot_gps = [msg.gps for msg in msgs]
+        self.sailbot_lat_lon = msg.gps.lat_lon
+        self.sailbot_gps = msg.gps
 
-        self.all_local_wp = [msg.local_path.waypoints for msg in msgs]
+        self.all_local_wp = msg.local_path.waypoints
         self.global_path = self.curr_msg.global_path
         self.reference_latlon = self.global_path.waypoints[-1]
-        self.sailbot_xy = cs.latlon_list_to_xy_list(self.reference_latlon, self.sailbot_lat_lon)
-        self.all_wp_xy = [
-            cs.latlon_list_to_xy_list(self.reference_latlon, waypoints)
-            for waypoints in self.all_local_wp
-        ]
+        # Convert lists of lat/lon points to lists of XY points
+        sailbot_xy_point = cs.latlon_to_xy(self.reference_latlon, self.sailbot_lat_lon)
+        self.sailbot_xy = [sailbot_xy_point]
+        self.all_wp_xy = cs.latlon_list_to_xy_list(self.reference_latlon, self.all_local_wp)
         self.sailbot_pos_x, self.sailbot_pos_y = self._split_coordinates(self.sailbot_xy)
-        self.final_local_wp_x, self.final_local_wp_y = self._split_coordinates(self.all_wp_xy[-1])
-        self.all_local_wp_x, self.all_local_wp_y = zip(
-            *[self._split_coordinates(waypoints) for waypoints in self.all_wp_xy]
-        )
+        self.final_local_wp_x, self.final_local_wp_y = self._split_coordinates(self.all_wp_xy)
 
         # AIS ships
         self.ais_ships = self.curr_msg.ais_ships.ships
@@ -318,8 +314,8 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
             "<b>🚢 Sailbot Current Position</b><br>"
             "X: %{x:.2f} <br>"
             "Y: %{y:.2f} <br>"
-            "Heading: " + f"{state.sailbot_gps[-1].heading.heading:.1f}°<br>"
-            f"Speed: {state.sailbot_gps[-1].speed.speed:.1f} km/h <br>"
+            "Heading: " + f"{state.sailbot_gps.heading.heading:.1f}°<br>"
+            f"Speed: {state.sailbot_gps.speed.speed:.1f} km/h <br>"
             f"Distance to Goal: {distance_to_goal:.2f} km<br>"
             "<extra></extra>"
         ),
@@ -329,7 +325,7 @@ def live_update_plot(state: VisualizerState) -> go.Figure:
             line=dict(width=2, color="DarkSlateGrey"),
             size=20,
             angleref="up",
-            angle=cs.true_bearing_to_plotly_cartesian(state.sailbot_gps[-1].heading.heading),
+            angle=cs.true_bearing_to_plotly_cartesian(state.sailbot_gps.heading.heading),
         ),
     )
 

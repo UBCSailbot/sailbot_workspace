@@ -78,7 +78,6 @@ class SailbotObserver(Node):
             callback=self.local_path_callback,
             qos_profile=10,
         )
-        self.msgs: Deque[ci.LPathData] = deque(maxlen=100)
         self.queue = queue
         self.msg: Union[ci.LPathData, None] = None
 
@@ -93,8 +92,6 @@ class SailbotObserver(Node):
 
         self.get_logger().debug(f"Received new local path message: {msg}")
         self.msg = msg
-
-        self.msgs.append(self.msg)
 
         if self.queue.qsize() < 1:
             self.update_queue()
@@ -112,8 +109,8 @@ class SailbotObserver(Node):
             )
             return
 
-        self.queue.put(vz.VisualizerState(msgs=self.msgs))
-        self.get_logger().info(f"sent new visualizer state with {len(self.msgs)} messages.")
+        self.queue.put(vz.VisualizerState(msg=self.msg))
+        self.get_logger().info(f"sent new visualizer state with 1 message.")
         self.get_logger().info(f"queue: {self.queue.qsize()}")
 
 
