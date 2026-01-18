@@ -64,7 +64,7 @@ class SailbotObserver(Node):
     Attributes From Subscribers:
         queue (Queue): An interprocess queue used to pipe local pathfinding data to the
                                dash app process
-        msgs (deque): An ordinary queue for storing the last x messages received by the subscriber
+        msg (Union[ci.LPathData, None]): Stores the last message received by the subscriber
     """
 
     def __init__(self, queue: Queue):
