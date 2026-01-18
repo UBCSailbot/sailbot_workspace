@@ -5,9 +5,8 @@ The main function of this file spawns two processes:
 
 """
 
-from collections import deque
 from multiprocessing import Manager, Process, Queue
-from typing import Deque, Union
+from typing import Union
 
 import custom_interfaces.msg as ci
 import rclpy
@@ -110,7 +109,7 @@ class SailbotObserver(Node):
             return
 
         self.queue.put(vz.VisualizerState(msg=self.msg))
-        self.get_logger().info(f"sent new visualizer state with 1 message.")
+        self.get_logger().info("sent new visualizer state with 1 message.")
         self.get_logger().info(f"queue: {self.queue.qsize()}")
 
 
