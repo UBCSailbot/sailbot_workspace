@@ -2,7 +2,7 @@
 /**:
    ros__parameters:
       # Publishers' period (seconds): how often the publishers publish
-      pub_period_sec: 0.5
+      pub_period_sec: 1.0
 
 # local_pathfinding parameters
 mock_global_path:
