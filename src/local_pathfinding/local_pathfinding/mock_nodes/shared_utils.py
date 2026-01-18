@@ -6,7 +6,7 @@ START_POINT = ci.HelperLatLon(
 )  # Starting location of the mock
 START_HEADING = ci.HelperHeading(heading=-90.0)  # in degrees, heading of the boat
 TW_SPEED_KMPH = 10.0
-TW_DIRECTION_DEG = -90
+TW_DIRECTION_DEG = 90
 
 """
 For further tests:
