@@ -113,7 +113,7 @@ class MockGPS(Node):
         """
         self.__mean_speed_kmph = ci.HelperSpeed(
             speed=float(
-                100.0 * TimeObjective.get_sailbot_speed(
+                TimeObjective.get_sailbot_speed(
                     math.radians(self.__heading_deg.heading),
                     math.radians(self.__tw_dir_deg),
                     self.__tw_speed_kmph,
