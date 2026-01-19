@@ -5,9 +5,11 @@ USES constants defined in mock_nodes.shared_constants
 """
 
 import math
+import os
 
 import custom_interfaces.msg as ci
 import rclpy
+import yaml
 from geopy.distance import great_circle
 from rclpy.node import Node
 
@@ -40,17 +42,14 @@ class MockGPS(Node):
             namespace="",
             parameters=[
                 ("pub_period_sec", rclpy.Parameter.Type.DOUBLE),
+                ("test_plan", rclpy.Parameter.Type.STRING),
             ],
         )
 
         self.pub_period_sec = (
             self.get_parameter("pub_period_sec").get_parameter_value().double_value
         )
-
-        # Mock GPS timer
-        self.__mock_gps_timer = self.create_timer(
-            timer_period_sec=self.pub_period_sec, callback=self.mock_gps_callback
-        )
+        self.test_plan = self.get_parameter("test_plan").get_parameter_value().string_value
 
         # Mock GPS publisher initialization
         self.__gps_pub = self.create_publisher(
@@ -75,9 +74,19 @@ class MockGPS(Node):
             qos_profile=10,
         )
 
+        # Read attributes from test_plan and update attributes
+        self.test_plan = self.get_parameter("test_plan").get_parameter_value().string_value
+
+        self.initialize_sailbot_state()
+
         self.__mean_speed_kmph = sc.MEAN_SPEED
         self.__current_location = sc.START_POINT
         self.__heading_deg = sc.START_HEADING
+
+        # Mock GPS timer
+        self.__mock_gps_timer = self.create_timer(
+            timer_period_sec=self.pub_period_sec, callback=self.mock_gps_callback
+        )
 
     def mock_gps_callback(self) -> None:
         """Callback function for the mock GPS timer. Publishes mock gps data to the ROS
@@ -154,6 +163,29 @@ class MockGPS(Node):
                 )
             )
         )
+
+    def initialize_sailbot_state(self):
+        """Initialize the sailbot state from the test plan file."""
+
+        _, ext = os.path.splitext(self.test_plan)
+
+        data = sc.read_test_plan_file(self.test_plan)
+
+        try:
+            state = data["gps"]["state"]
+        except (TypeError, KeyError) as exc:  # pragma: no cover - defensive
+            raise ValueError(f"Invalid global path YAML structure in {self.test_plan}.") from exc
+
+        try:
+            self.__mean_speed_kmph = ci.HelperSpeed(speed=float(state["speed"]))
+            self.__current_location = ci.HelperLatLon(
+                latitude=float(state["latitude"]), longitude=float(state["longitude"])
+            )
+            self.__heading_deg = ci.HelperHeading(heading=float(state["heading"]))
+        except (KeyError, TypeError, ValueError) as exc:  # pragma: no cover - defensive
+            raise ValueError(
+                f"Invalid task entry in global path YAML file {self.test_plan}: {state}"
+            ) from exc
 
 
 def main(args=None):

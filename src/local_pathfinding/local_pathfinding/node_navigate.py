@@ -11,6 +11,7 @@ from shapely.geometry import MultiPolygon, Polygon
 
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.global_path as gp
+import local_pathfinding.mock_nodes.shared_constants as sc
 import local_pathfinding.obstacles as ob
 from local_pathfinding.local_path import LocalPath
 
@@ -68,7 +69,8 @@ class Sailbot(Node):
                 ("mode", rclpy.Parameter.Type.STRING),
                 ("pub_period_sec", rclpy.Parameter.Type.DOUBLE),
                 ("path_planner", rclpy.Parameter.Type.STRING),
-                ("use_mock_land", False),
+                ("use_mock_land", rclpy.Parameter.Type.BOOL),
+                ("test_plan", rclpy.Parameter.Type.STRING),
             ],
         )
 
@@ -126,6 +128,7 @@ class Sailbot(Node):
         self.saved_target_global_waypoint = None
         self.use_mock_land = self.get_parameter("use_mock_land").get_parameter_value().bool_value
         self.mode = self.get_parameter("mode").get_parameter_value().string_value
+        self.test_plan = self.get_parameter("test_plan").get_parameter_value().string_value
         self.planner = self.get_parameter("path_planner").get_parameter_value().string_value
         self.get_logger().debug(f"Got parameter: {self.planner=}")
 
@@ -134,15 +137,11 @@ class Sailbot(Node):
         if self.use_mock_land:
 
             # find the mock land file
-            current_dir = os.path.dirname(os.path.abspath(__file__))
-            mock_land_dir = os.path.join(current_dir, "..", "land", "mock")
-            self.mock_land_file = os.path.join(mock_land_dir, "mock_land.json")
-
-            with open(self.mock_land_file, "r") as f:
-                data = json.load(f)
-                polygons = [Polygon(p) for p in data.get("land_polygons", [])]
-                self.land_multi_polygon = MultiPolygon(polygons)
-                self.get_logger().info("Loaded mock land data.")
+            data = sc.read_test_plan_file(self.test_plan)
+            land_polygons = data.get("land_polygons", [])
+            polygons = [Polygon(p) for p in land_polygons]
+            self.land_multi_polygon = MultiPolygon(polygons)
+            self.get_logger().info("Loaded mock land data.")
 
     # subscriber callbacks
     def ais_ships_callback(self, msg: ci.AISShips):

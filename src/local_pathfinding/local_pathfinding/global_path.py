@@ -2,7 +2,7 @@
 sends it to NET via POST request.
 
 The main function accepts two CLI arguments:
-    file_path (str): The path to the global path csv file.
+    file_path (str): The path to the global path definition file (YAML or CSV).
     --interval (float, Optional): The desired path interval length in km.
 """
 
@@ -17,6 +17,7 @@ from urllib.request import urlopen
 
 import custom_interfaces.msg as ci
 import numpy as np
+import yaml
 
 import local_pathfinding.coord_systems as cs
 
@@ -28,7 +29,10 @@ PERIOD = 5  # seconds
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("file_path", help="The path to the global path csv file.")
+    parser.add_argument(
+        "file_path",
+        help="The path to the global path file (YAML or CSV).",
+    )
     parser.add_argument("--interval", help="Desired path interval length.", type=float)
     args = parser.parse_args()
 
@@ -123,20 +127,52 @@ def get_most_recent_file(directory_path: str) -> str:
 def get_path(file_path: str) -> ci.Path:
     """Returns the global path from the specified file path.
 
+    The function supports two formats:
+
+    - YAML files, such as test plans structured like::
+
+        global_path:
+            tasks:
+            - task: 1
+              latitude: 1.0
+              longitude: -1.0
+            - task: 2
+              latitude: 2.0
+              longitude: -2.0
+
     Args:
-        file_path (str): The path to the global path csv file.
+        file_path (str): The path to the global path file (YAML).
 
     Returns:
-        (ci.Path): The global path retrieved from the csv file.
+        ci.Path: The global path retrieved from the file.
     """
+
     path = ci.Path()
 
-    with open(file_path, "r") as file:
-        reader = csv.reader(file)
-        # skip header
-        reader.__next__()
-        for row in reader:
-            path.waypoints.append(ci.HelperLatLon(latitude=float(row[0]), longitude=float(row[1])))
+    _, ext = os.path.splitext(file_path)
+
+    if ext.lower() in {".yaml", ".yml"}:
+        with open(file_path, "r") as file:
+            data = yaml.safe_load(file)
+
+        try:
+            tasks = data["global_path"]["tasks"]
+        except (TypeError, KeyError) as exc:  # pragma: no cover - defensive
+            raise ValueError(f"Invalid global path YAML structure in {file_path}.") from exc
+
+        for task in tasks:
+            try:
+                latitude = float(task["latitude"])
+                longitude = float(task["longitude"])
+            except (KeyError, TypeError, ValueError) as exc:  # pragma: no cover - defensive
+                raise ValueError(
+                    f"Invalid task entry in global path YAML file {file_path}: {task}"
+                ) from exc
+
+            path.waypoints.append(ci.HelperLatLon(latitude=latitude, longitude=longitude))
+    else:
+        return None  # type: ignore
+
     return path
 
 

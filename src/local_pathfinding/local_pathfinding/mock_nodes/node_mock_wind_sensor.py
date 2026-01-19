@@ -47,14 +47,17 @@ class MockWindSensor(Node):
             namespace="",
             parameters=[
                 ("pub_period_sec", rclpy.Parameter.Type.DOUBLE),
+                ("test_plan", rclpy.Parameter.Type.STRING),
+                # Default true wind parameters (can be overridden via params file or CLI)
                 ("tw_speed_kmph", 10.0),
-                ("tw_dir_deg", 90),  # from the bow to the stern of the boat
+                ("tw_dir_deg", 90),
             ],
         )
 
         self.pub_period_sec = (
             self.get_parameter("pub_period_sec").get_parameter_value().double_value
         )
+        self.test_plan = self.get_parameter("test_plan").get_parameter_value().string_value
 
         self._mock_wind_sensor_timer = self.create_timer(
             timer_period_sec=self.pub_period_sec, callback=self.mock_wind_sensor_callback
@@ -67,12 +70,9 @@ class MockWindSensor(Node):
         self._gps_sub = self.create_subscription(
             msg_type=ci.GPS, topic="gps", callback=self.gps_callback, qos_profile=10
         )
-        self._boat_heading_deg = sc.START_HEADING.heading
-        self._boat_speed = sc.MEAN_SPEED.speed
 
         # Cached parameter-backed values (updated through on-set-parameters callback).
-        self._tw_speed_kmph = float(self.get_parameter("tw_speed_kmph").value)
-        self._tw_dir_deg = int(self.get_parameter("tw_dir_deg").value)
+        self.initialize_mock_wind_sensor_params()
 
         self.add_on_set_parameters_callback(self._on_set_parameters)
 
@@ -82,12 +82,9 @@ class MockWindSensor(Node):
             self._tw_speed_kmph,
             self._boat_heading_deg,
             self._boat_speed,
-            ret_rad=False
+            ret_rad=False,
         )
-        aw_dir_boat_coord_deg = wcs.global_to_boat_coordinate(
-            self._boat_heading_deg,
-            aw_dir_deg
-        )
+        aw_dir_boat_coord_deg = wcs.global_to_boat_coordinate(self._boat_heading_deg, aw_dir_deg)
         msg = ci.WindSensor(
             speed=ci.HelperSpeed(speed=aw_speed_kmph),
             direction=int(aw_dir_boat_coord_deg),
@@ -123,6 +120,38 @@ class MockWindSensor(Node):
         self.get_logger().debug(f"received n {self._wind_sensors_pub.topic}: {msg}")
         self._boat_heading_deg = msg.heading.heading
         self._boat_speed = msg.speed.speed
+
+    def initialize_mock_wind_sensor_params(self):
+        """Initialize mock wind sensor parameters from test_plan file."""
+
+        data = sc.read_test_plan_file(self.test_plan)
+
+        wind_sensor_data = data.get("wind_sensor", {})
+
+        tw_speed_kmph = float(self.get_parameter("tw_speed_kmph").value)
+        tw_dir_deg = int(self.get_parameter("tw_dir_deg").value)
+
+        if wind_sensor_data is {}:
+            self.get_logger().warning(
+                f"No wind_sensor section found in test plan file {self.test_plan}. "
+                "Using default parameters."
+            )
+            self._boat_heading_deg = sc.START_HEADING.heading
+            self._boat_speed = sc.MEAN_SPEED.speed
+            self._tw_speed_kmph = tw_speed_kmph
+            self._tw_dir_deg = tw_dir_deg
+        else:
+            self._tw_speed_kmph = float(
+                wind_sensor_data.get("true_wind_speed_kmph", tw_speed_kmph)
+            )
+            self._tw_dir_deg = int(wind_sensor_data.get("true_wind_direction_deg", tw_dir_deg))
+
+            state = data["gps"]["state"]
+            self._boat_heading_deg = float(state["heading"])
+            self._boat_speed = float(state["speed"])
+
+        # Validate and set parameters
+        _validate_tw_dir_deg(tw_dir_deg)
 
 
 def main(args=None):

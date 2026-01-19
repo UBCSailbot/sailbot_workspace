@@ -1,0 +1,34 @@
+global_path:
+    tasks:
+    - task: 1
+      latitude: 48.158391
+      longitude: -130.253906
+
+    - task: 2
+      latitude: 48.121368
+      longitude: -137.022955
+
+gps:
+    state:
+        speed: 15.0  # mean boat speed in kmph
+        latitude: 49.28
+        longitude: -123.185032
+        heading: 180 # in degrees, heading of the boat
+
+wind_sensor:
+    state:
+        tw_speed_kmph: 10.0  # true wind speed in kmph
+        tw_dir_deg: 270  # true wind direction in degrees
+
+ais:
+    # Each entry: [id, latitude, longitude, heading, speed, rot, width, height]
+    vessels:
+        - [1, 49.01261318191024, -135.65593922412154, 90.0, 20.0, 30, 1.0, 1.0]
+        - [2, 48.67919212345747, -132.94724986187234, 90.0, 25.0, 50, 2.0, 2.0]
+        - [3, 48.11352031871804, -135.67990496461405, 30.0, 15.0, -50, 3.0, 3.0]
+        - [4, 48.1970229368345, -128.93710143805356, 4.0, 10.0, -30, 4.0, 4.0]
+        - [5, 48.51027819947852, -126.15925374786544, 5.0, 5.0, 20, 5.0, 5.0]
+
+land_mass:
+    land_polygons:
+        - [[-131.6402015411217, 48.17529213658183], [-131.60225474130834, 48.53388702614243], [-130.25340879955075, 48.46259064994289], [-130.30067606308853, 48.1046204256494]]

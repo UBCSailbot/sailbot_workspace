@@ -10,6 +10,7 @@ from rclpy.node import Node
 
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.global_path as gp
+import local_pathfinding.mock_nodes.shared_constants as sc
 
 
 def main(args=None):
@@ -48,13 +49,16 @@ class MockGlobalPath(Node):
         self.declare_parameters(
             namespace="",
             parameters=[
-                ("global_path_filepath", rclpy.Parameter.Type.STRING),
+                ("mode", rclpy.Parameter.Type.STRING),
                 ("interval_spacing", rclpy.Parameter.Type.DOUBLE),
                 ("write", rclpy.Parameter.Type.BOOL),
                 ("gps_threshold", rclpy.Parameter.Type.DOUBLE),
                 ("force", rclpy.Parameter.Type.BOOL),
+                ("test_plan", rclpy.Parameter.Type.STRING),
             ],
         )
+
+        self.mode = self.get_parameter("mode").get_parameter_value().string_value
 
         # Subscriber
         self.gps_sub = self.create_subscription(
@@ -74,91 +78,52 @@ class MockGlobalPath(Node):
 
     # Timer callbacks
     def global_path_callback(self, gps: ci.GPS):
-        """Check if the global path csv file has changed. If it has, the new path is published.
+        """Publish the current or updated global path.
 
-        This function also checks if the gps data has changed by more than
-        gps_threshold. If it has, the force parameter is set to true, bypassing any checks and
-        updating the path.
-
-        Depending on the boolean value of the write parameter, each generated path may be written
-        to a new csv file in the same directory as the source csv file.
-
-        Global path can be changed by modifying mock_global_path.csv or modifying the
-        global_path_filepath parameter.
-
+        Recomputes the path only when the source file changes, the GPS
+        position moves enough to trigger a forced update, or the file path
+        parameter changes.
         """
+        if self.mode == "development":
+            # Resolve test_plan which may be a bare name like "basic.yaml"
+            test_plan = self.get_parameter("test_plan").get_parameter_value().string_value
+            if os.path.isabs(test_plan):
+                file_path = test_plan
+            else:
+                ros_workspace = os.getenv("ROS_WORKSPACE", "/workspaces/sailbot_workspace")
+                file_path = os.path.join(
+                    ros_workspace,
+                    "src",
+                    "local_pathfinding",
+                    "test_plans",
+                    test_plan,
+                )
+        else:
+            file_path = self.get_parameter("deploy_filepath")._value
 
-        file_path = self.get_parameter("global_path_filepath")._value
         path_mod_tmstmp = time.ctime(os.path.getmtime(file_path))
 
         # this function updates self.pos internally because it needs to compare
         # the new position to the current self.pos
         self.check_pos(gps)
 
-        # check if the global path has been forced to update by a parameter change
+        # parameters used when recomputing the path
         force = self.get_parameter("force")._value
+        interval_spacing = self.get_parameter("interval_spacing")._value
+        write = self.get_parameter("write")._value
 
-        # We should only calculate a new path if the path has changed or gps has
-        # changed by more than gps_threshold
+        # Only calculate a new path if the path file or GPS has effectively changed
         if path_mod_tmstmp == self.path_mod_tmstmp and self.file_path == file_path and not force:
-            # need to still publish the path even if its unchanged
-            # to ensure that node_navigate will still receive the waypoints
-            # in the event that this node launches first and publishes the
-            # mock global path once into the void
+            # still publish the path even if it's unchanged to ensure
+            # downstream nodes receive the waypoints
             self.get_logger().debug("Publishing the global path unchanged")
             msg = self.global_path
-
         else:
-            global_path = gp.get_path(file_path=file_path)
-
-            pos = self.pos
-
-            # we need to obtain the actual distances between every waypoint in the global path
-            path_spacing = gp.calculate_interval_spacing(pos, global_path.waypoints)
-            interval_spacing = self.get_parameter("interval_spacing")._value
-
-            # this checks if global path is just a destination point
-            if len(global_path.waypoints) < 2:
-                self.get_logger().debug(
-                    f"Generating new path from {pos.latitude:.4f}, {pos.longitude:.4f} to "
-                    f"{global_path.waypoints[0].latitude:.4f}, "
-                    f"{global_path.waypoints[0].longitude:.4f}"
-                )
-
-                write = self.get_parameter("write")._value
-                if write:
-                    self.get_logger().debug("Writing generated path to new file")
-
-                msg = gp.generate_path(
-                    dest=global_path.waypoints[0],
-                    interval_spacing=interval_spacing,
-                    pos=pos,
-                    write=write,
-                    file_path=file_path,
-                )
-
-            # Check if any waypoints are too far apart
-            elif max(path_spacing) > interval_spacing:
-                self.get_logger().debug(
-                    f"Some waypoints in the global path exceed the maximum interval spacing of"
-                    f" {interval_spacing} km. Interpolating between waypoints and generating path"
-                )
-
-                write = self.get_parameter("write")._value
-                if write:
-                    self.get_logger().debug("Writing generated path to new file")
-
-                msg = gp._interpolate_path(
-                    global_path=global_path,
-                    interval_spacing=interval_spacing,
-                    pos=pos,
-                    path_spacing=path_spacing,
-                    write=write,
-                    file_path=file_path,
-                )
-
-            else:
-                msg = global_path
+            msg = self._compute_new_global_path(
+                file_path=file_path,
+                interval_spacing=interval_spacing,
+                write=write,
+            )
 
         self.get_logger().debug(f"Publishing mock global path: {gp.path_to_dict(msg)}")
         self.global_path = msg
@@ -168,6 +133,60 @@ class MockGlobalPath(Node):
         self.set_parameters([rclpy.Parameter("force", rclpy.Parameter.Type.BOOL, False)])
         self.path_mod_tmstmp = path_mod_tmstmp
         self.file_path = file_path
+
+    def _compute_new_global_path(
+        self,
+        file_path: str,
+        interval_spacing: float,
+        write: bool,
+    ) -> ci.Path:
+        """Compute a new global path based on the current position and CSV file."""
+
+        global_path = gp.get_path(file_path=file_path)
+        pos = self.pos
+
+        # obtain the actual distances between every waypoint in the global path
+        path_spacing = gp.calculate_interval_spacing(pos, global_path.waypoints)
+
+        # check if global path is just a destination point
+        if len(global_path.waypoints) < 2:
+            self.get_logger().debug(
+                f"Generating new path from {pos.latitude:.4f}, {pos.longitude:.4f} to "
+                f"{global_path.waypoints[0].latitude:.4f}, "
+                f"{global_path.waypoints[0].longitude:.4f}"
+            )
+
+            if write:
+                self.get_logger().debug("Writing generated path to new file")
+
+            return gp.generate_path(
+                dest=global_path.waypoints[0],
+                interval_spacing=interval_spacing,
+                pos=pos,
+                write=write,
+                file_path=file_path,
+            )
+
+        # Check if any waypoints are too far apart
+        if max(path_spacing) > interval_spacing:
+            self.get_logger().debug(
+                f"Some waypoints in the global path exceed the maximum interval spacing of"
+                f" {interval_spacing} km. Interpolating between waypoints and generating path"
+            )
+
+            if write:
+                self.get_logger().debug("Writing generated path to new file")
+
+            return gp._interpolate_path(
+                global_path=global_path,
+                interval_spacing=interval_spacing,
+                pos=pos,
+                path_spacing=path_spacing,
+                write=write,
+                file_path=file_path,
+            )
+
+        return global_path
 
     def check_pos(self, gps: ci.GPS):
         """Get the gps data and check if the global path needs to be updated.

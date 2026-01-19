@@ -3,11 +3,13 @@
    ros__parameters:
       # Publishers' period (seconds): how often the publishers publish
       pub_period_sec: 0.5
+      mode: "development"
+      test_plan: "basic.yaml"
 
 # local_pathfinding parameters
 mock_global_path:
    ros__parameters:
-      global_path_filepath: "/workspaces/sailbot_workspace/src/local_pathfinding/global_paths/mock_global_path.csv"
+      deploy_filepath: "/workspaces/sailbot_workspace/src/local_pathfinding/deploy_plan/deploy.yaml"
       interval_spacing: 30.0
       write: false
       gps_threshold: 1.5
@@ -15,7 +17,7 @@ mock_global_path:
 navigate_main:
    ros__parameters:
       path_planner: "rrtstar"
-      use_mock_land: false
+      use_mock_land: true
 
 # controller parameters
 wingsail_ctrl_node:
