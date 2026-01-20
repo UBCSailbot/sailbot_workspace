@@ -291,6 +291,7 @@
         "plantuml.exportOutDir": "diagrams/out",
         "plantuml.exportSubFolder": false,
         "ros.distro": "humble",
+        "ROS2.distro": "humble",
     },
     "launch": {
         // Use IntelliSense to learn about possible attributes.
