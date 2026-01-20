@@ -2,10 +2,12 @@ set(module local_transceiver)
 
 set(link_libs
     ${PROTOBUF_LINK_LIBS}
+    ${CURL_LIBRARIES}
 )
 
 set(inc_dirs
     ${PROTOBUF_INCLUDE_PATH}
+    ${CURL_INCLUDE_DIR}
 )
 
 set(compile_defs

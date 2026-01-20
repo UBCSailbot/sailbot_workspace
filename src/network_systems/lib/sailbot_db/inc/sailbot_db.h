@@ -13,9 +13,14 @@
 // >>>>IMPORTANT<<<<<
 // BSON document formats from: https://ubcsailbot.atlassian.net/wiki/spaces/prjt22/pages/1907589126/Database+Schemas:
 
-const std::string COLLECTION_AIS_SHIPS    = "ais_ships";
-const std::string COLLECTION_BATTERIES    = "batteries";
-const std::string COLLECTION_DATA_SENSORS = "data_sensors";
+const std::string COLLECTION_AIS_SHIPS = "ais_ships";
+const std::string COLLECTION_BATTERIES = "batteries";
+const std::string COLLECTION_DATA_SENSORS =
+  "data_sensors";  // Replaced with the below temp, ph, salinity, and pressure collections
+// const std::string COLLECTION_TEMP_SENSORS     = "temperature_sensors";
+// const std::string COLLECTION_PH_SENSORS       = "ph_sensors";
+// const std::string COLLECTION_SALINITY_SENSORS = "salinity_sensors";
+// const std::string COLLECTION_PRESSURE_SENSORS = "pressure_sensors";
 const std::string COLLECTION_GPS          = "gps";
 const std::string COLLECTION_WIND_SENSORS = "wind_sensors";
 const std::string COLLECTION_LOCAL_PATH   = "local_path";
@@ -23,7 +28,11 @@ const std::string MONGODB_CONN_STR        = "mongodb://localhost:27017";
 
 template <typename T>
 using ProtoList = google::protobuf::RepeatedPtrField<T>;
-using DocVal    = bsoncxx::document::view_or_value;
+
+template <typename T>
+using ProtoPrimitiveList = google::protobuf::RepeatedField<T>;
+
+using DocVal = bsoncxx::document::view_or_value;
 
 /**
  * Thread-safe class that encapsulates a Sailbot MongoDB database
@@ -149,9 +158,57 @@ private:
       mongocxx::client & client);
 
     /**
+    * @brief Adds temperature sensors to the database
+    *
+    * @param temp_pb   Protobuf list of temperature sensor objects, where the size of the list is the number of sensors
+    * @param timestamp transmission time <year - 2000>-<month>-<day> <hour>:<minute>:<second>
+    * @param client    mongocxx::client instance for the current thread
+    *
+    * @return True if sensor is added, false otherwise
+    */
+    bool storeTempSensors(
+      const ProtoPrimitiveList<float> & temp_pb, const std::string & timestamp, mongocxx::client & client);
+
+    /**
+    * @brief Adds pH sensors to the database
+    *
+    * @param ph_pb     Protobuf list of pH sensor objects, where the size of the list is the number of sensors
+    * @param timestamp transmission time <year - 2000>-<month>-<day> <hour>:<minute>:<second>
+    * @param client    mongocxx::client instance for the current thread
+    *
+    * @return True if sensor is added, false otherwise
+    */
+    bool storePhSensors(
+      const ProtoPrimitiveList<float> & ph_pb, const std::string & timestamp, mongocxx::client & client);
+
+    /**
+    * @brief Adds salinity sensors to the database
+    *
+    * @param salinity_pb Protobuf list of salinity sensor objects, where the size of the list is the number of sensors
+    * @param timestamp   transmission time <year - 2000>-<month>-<day> <hour>:<minute>:<second>
+    * @param client      mongocxx::client instance for the current thread
+    *
+    * @return True if sensor is added, false otherwise
+    */
+    bool storeSalinitySensors(
+      const ProtoPrimitiveList<float> & salinity_pb, const std::string & timestamp, mongocxx::client & client);
+
+    /**
+    * @brief Adds pressure sensors to the database
+    *
+    * @param pressure_pb Protobuf list of pressure sensor objects, where the size of the list is the number of sensors
+    * @param timestamp   transmission time <year - 2000>-<month>-<day> <hour>:<minute>:<second>
+    * @param client      mongocxx::client instance for the current thread
+    *
+    * @return True if sensor is added, false otherwise
+    */
+    bool storePressureSensors(
+      const ProtoPrimitiveList<float> & pressure_pb, const std::string & timestamp, mongocxx::client & client);
+
+    /**
     * @brief Adds a battery sensors to the database
     *
-    * @param generic_pb Protobuf list of battery objects
+    * @param battery_pb Protobuf list of battery objects
     * @param timestamp  transmission time <year - 2000>-<month>-<day> <hour>:<minute>:<second>
     * @param client     mongocxx::client instance for the current thread
     *
