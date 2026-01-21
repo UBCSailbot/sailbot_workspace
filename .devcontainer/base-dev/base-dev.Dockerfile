@@ -221,6 +221,7 @@ RUN apt-get update && apt-get install -y \
     ros-humble-launch-testing \
     ros-humble-launch-testing-ament-cmake \
     ros-humble-launch-testing-ros \
+    ros-humble-desktop \
     python3-autopep8 \
     && rm -rf /var/lib/apt/lists/* \
     && rosdep init || echo "rosdep already initialized" \
