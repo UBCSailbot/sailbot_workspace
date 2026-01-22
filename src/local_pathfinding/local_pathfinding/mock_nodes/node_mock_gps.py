@@ -17,7 +17,6 @@ from typing import List
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.mock_nodes.shared_utils as sc
 from local_pathfinding.ompl_objectives import TimeObjective
-from local_pathfinding.mock_nodes.node_mock_wind_sensor import _validate_tw_dir_deg
 
 SECONDS_PER_HOUR = 3600
 
@@ -120,7 +119,7 @@ class MockGPS(Node):
             for p in params:
                 if p.name == "tw_dir_deg":
                     new_direction_deg = int(p.value)
-                    _validate_tw_dir_deg(new_direction_deg)
+                    sc._validate_tw_dir_deg(new_direction_deg)
                     self.__tw_dir_deg = new_direction_deg
                 else:
                     self.__tw_speed_kmph = p.value
