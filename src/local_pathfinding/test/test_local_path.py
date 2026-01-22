@@ -16,6 +16,8 @@ REF = HelperLatLon(latitude=10.0, longitude=10.0)
 
 PATH = lp.LocalPath(parent_logger=RcutilsLogger())
 
+IMPROVEMENT_THRESHOLD = lp.IMPROVEMENT_THRESHOLD
+
 
 @pytest.mark.parametrize(
     "x, y, x_normalized, y_normalized",
@@ -379,52 +381,24 @@ def test_update_if_needed(
     assert index == result_index
 
 
-# @pytest.mark.parametrize(
-#     '''
-#     heading, heading_old_path, heading_new_path, result
-#     ''',
-#     [
-#         (
-#             0.0,
-#             1.0,
-#             -1.1,
-#             0.5454545454545455
-#         ),
-#         (
-#             0.0,
-#             1.1,
-#             1.0,
-#             0.6
-#         ),
-#         (
-#             50.0,
-#             49.8,
-#             50.1,
-#             0.12
-#         ),
-#         (
-#             180.0,
-#             -179.0,
-#             178.0,
-#             0.3
-#         ),
-#         (
-#             0.0,
-#             1.0,
-#             -1.0,
-#             0.6
-#         ),
-#         (
-#             1.0,
-#             1.0,
-#             1.0,
-#             0.0
-#         )
-#     ]
-# )
-# def test_calculate_metric(heading, heading_old_path, heading_new_path, result):
-#     assert result == pytest.approx(PATH.calculate_metric(heading, heading_old_path, 0.0,
-#                                                          heading_new_path, 0.0), abs=1e-9)
+@pytest.mark.parametrize(
+    "old_cost, heading_old_path, new_cost, heading_new_path, heading, expected_improvement",
+    [
+        (0.0, 1.0, 0.0, -1.1, 0.0, False),
+        (0.0, 1.0, 0.0, -1.0, 0.0, False),
+        (0.0, 1.0, 0.0, 1.0, 0.0, False),
+        (0.0, 1.0, 0.0, -0.8, 0.0, True),
+        (0.0, 49.8, 0.0, 50.1, 50.0, True),
+        (0.0, -179.0, 0.0, 178.0, 180.0, False)
+    ]
+)
+def test_calculate_improvement(
+    old_cost, heading_old_path, new_cost, heading_new_path, heading, expected_improvement
+):
+    result = PATH.calculate_improvement(
+        old_cost, heading_old_path, new_cost, heading_new_path, heading
+    )
+    assert result == expected_improvement
 
 
 def test_LocalPathState_parameter_checking():
