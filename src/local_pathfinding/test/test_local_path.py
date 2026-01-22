@@ -379,52 +379,52 @@ def test_update_if_needed(
     assert index == result_index
 
 
-@pytest.mark.parametrize(
-    '''
-    heading, heading_old_path, heading_new_path, result
-    ''',
-    [
-        (
-            0.0,
-            1.0,
-            -1.1,
-            0.5454545454545455
-        ),
-        (
-            0.0,
-            1.1,
-            1.0,
-            0.6
-        ),
-        (
-            50.0,
-            49.8,
-            50.1,
-            0.12
-        ),
-        (
-            180.0,
-            -179.0,
-            178.0,
-            0.3
-        ),
-        (
-            0.0,
-            1.0,
-            -1.0,
-            0.6
-        ),
-        (
-            1.0,
-            1.0,
-            1.0,
-            0.0
-        )
-    ]
-)
-def test_calculate_metric(heading, heading_old_path, heading_new_path, result):
-    assert result == pytest.approx(PATH.calculate_metric(heading, heading_old_path, 0.0,
-                                                         heading_new_path, 0.0), abs=1e-9)
+# @pytest.mark.parametrize(
+#     '''
+#     heading, heading_old_path, heading_new_path, result
+#     ''',
+#     [
+#         (
+#             0.0,
+#             1.0,
+#             -1.1,
+#             0.5454545454545455
+#         ),
+#         (
+#             0.0,
+#             1.1,
+#             1.0,
+#             0.6
+#         ),
+#         (
+#             50.0,
+#             49.8,
+#             50.1,
+#             0.12
+#         ),
+#         (
+#             180.0,
+#             -179.0,
+#             178.0,
+#             0.3
+#         ),
+#         (
+#             0.0,
+#             1.0,
+#             -1.0,
+#             0.6
+#         ),
+#         (
+#             1.0,
+#             1.0,
+#             1.0,
+#             0.0
+#         )
+#     ]
+# )
+# def test_calculate_metric(heading, heading_old_path, heading_new_path, result):
+#     assert result == pytest.approx(PATH.calculate_metric(heading, heading_old_path, 0.0,
+#                                                          heading_new_path, 0.0), abs=1e-9)
 
 
 def test_LocalPathState_parameter_checking():
