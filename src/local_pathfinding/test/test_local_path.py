@@ -273,13 +273,26 @@ def test_in_collision_zone(local_wp_index, reference_latlon, path, obstacles, re
     old_path, result_index, new_path
     ''',
     [
-        (   # Old path is optimal, do not switch to new path
+        (   # Old path is fully optimal, do not switch to new path
             GPS(lat_lon=HelperLatLon(latitude=0.0, longitude=0.0)),
             AISShips(),
             1,
             False,
             [
                 HelperLatLon(latitude=0.0, longitude=0.0),
+                HelperLatLon(latitude=3.0, longitude=3.0)
+            ],
+            1,
+            False
+        ),
+        (   # Old path is mostly optimal, do not switch to new path
+            GPS(lat_lon=HelperLatLon(latitude=0.0, longitude=0.0)),
+            AISShips(),
+            1,
+            False,
+            [
+                HelperLatLon(latitude=0.0, longitude=0.0),
+                HelperLatLon(latitude=2.0, longitude=1.0),
                 HelperLatLon(latitude=3.0, longitude=3.0)
             ],
             1,
@@ -297,7 +310,7 @@ def test_in_collision_zone(local_wp_index, reference_latlon, path, obstacles, re
             1,
             True
         ),
-        (   # AISShip in path, switch to new path
+        (   # AISShip at second waypoint, switch to new path
             GPS(lat_lon=HelperLatLon(latitude=0.0, longitude=0.0)),
             AISShips(
                 ships=[
@@ -313,7 +326,32 @@ def test_in_collision_zone(local_wp_index, reference_latlon, path, obstacles, re
                 ]
             ),
             1,
-            True,
+            False,
+            [
+                HelperLatLon(latitude=0.0, longitude=0.0),
+                HelperLatLon(latitude=1.0, longitude=1.0),
+                HelperLatLon(latitude=3.0, longitude=3.0)
+            ],
+            1,
+            True
+        ),
+        (   # AISShip between second and third waypoint, switch to new path
+            GPS(lat_lon=HelperLatLon(latitude=0.0, longitude=0.0)),
+            AISShips(
+                ships=[
+                    HelperAISShip(
+                        id=1,
+                        lat_lon=HelperLatLon(latitude=1.01, longitude=1.01),
+                        cog=HelperHeading(heading=45.0),
+                        sog=HelperSpeed(speed=0.0),
+                        width=HelperDimension(dimension=100.0),
+                        length=HelperDimension(dimension=100.0),
+                        rot=HelperROT(rot=0),
+                    )
+                ]
+            ),
+            1,
+            False,
             [
                 HelperLatLon(latitude=0.0, longitude=0.0),
                 HelperLatLon(latitude=1.0, longitude=1.0),
@@ -330,6 +368,19 @@ def test_in_collision_zone(local_wp_index, reference_latlon, path, obstacles, re
             [
                 HelperLatLon(latitude=0.0, longitude=0.0),
                 HelperLatLon(latitude=5.0, longitude=-5.0),
+                HelperLatLon(latitude=3.0, longitude=3.0)
+            ],
+            1,
+            True
+        ),
+        (   # Old path not optimal, switch to new path
+            GPS(lat_lon=HelperLatLon(latitude=0.0, longitude=0.0)),
+            AISShips(),
+            1,
+            False,
+            [
+                HelperLatLon(latitude=0.0, longitude=0.0),
+                HelperLatLon(latitude=0.0, longitude=3.0),
                 HelperLatLon(latitude=3.0, longitude=3.0)
             ],
             1,
