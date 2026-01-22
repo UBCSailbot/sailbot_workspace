@@ -225,7 +225,6 @@ class LocalPath:
         self.state = state
         ompl_path = OMPLPath(
             parent_logger=self._logger,
-            max_runtime=1.0,
             local_path_state=state,
             land_multi_polygon=land_multi_polygon,
         )

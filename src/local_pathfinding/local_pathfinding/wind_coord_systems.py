@@ -5,6 +5,7 @@ true bearing conventions.
 """
 
 import math
+
 import local_pathfinding.coord_systems as cs
 
 FLOATING_POINT_ERROR_THRESHOLD = 1e-9
@@ -148,3 +149,25 @@ def get_apparent_wind(
     if aw_speed_kmph > FLOATING_POINT_ERROR_THRESHOLD:
         return aw_dir, aw_speed_kmph
     return ZERO_VECTOR_CONSTANT, 0.0
+
+
+def get_true_wind_angle(boat_heading_rad: float, tw_dir_rad: float) -> float:
+    """Calculates the true wind angle (TWA) in radians.
+    The TWA is the angle between the heading of a vessel and the true wind direction.
+
+    Here are some practical examples of True Wind Angle values:
+
+        0   : Wind directly from the bow (head wind)
+        45  : Wind from 45 degrees off the starboard bow (close-hauled)
+        -90 : Wind directly from the port side (beam reach)
+        135 : Wind from the starboard quarter (broad reach)
+        180 : Wind directly from astern (running downwind)
+
+    Args:
+        boat_heading_rad (float): _description_
+        tw_dir_rad (float): _description_
+
+    Returns:
+        float: The true wind angle in the range (-180, 180]
+    """
+    return cs.bound_to_180((tw_dir_rad - boat_heading_rad), rad=True)

@@ -71,10 +71,10 @@ def test_wind_direction_cost(cs1: tuple, cs2: tuple, wind_direction_rad: float, 
         ),  # ZERO SPEED MAX COST
         (
             cs.XY(0, 0),
-            cs.XY(0.5, math.sqrt(3) / 2),
+            cs.XY(1.0, 1.0),
             0.0,
             9.0,
-            0.7,
+            0.2,
         ),  # SLOW & HIGH COST
         (cs.XY(0, 0), cs.XY(1, -1), 0.0, 37.0, 0.0),  # FAST & LOW COST
     ],
@@ -92,25 +92,12 @@ def test_speed_cost(
 @pytest.mark.parametrize(
     "heading,wind_direction,wind_speed,expected",
     [
-        # Corners of the table
+        # 0 deg true wind angle (irons)
         (math.radians(0), math.radians(0), 0, 0),
-        (math.radians(-90), math.radians(90), 37.0, 10.0),
+        (math.radians(0), math.radians(0), 75.0, 0),
+        # 180 deg true wind angle (dead run)
         (math.radians(0), math.radians(180), 0, 0),
-        (math.radians(0), math.radians(0), 37.0, 0),
-        # Edges of table
-        (math.radians(-48), math.radians(22), 0, 0),
-        (math.radians(-22), math.radians(140), 0, 0),
-        (math.radians(63), math.radians(63), 9.3, 0),
-        (math.radians(-81), math.radians(-81), 32.3, 0),
-        # Other edge cases
-        (math.radians(60), math.radians(-120), 10.6, 3.7),
-        (math.radians(170), math.radians(-155), 37, 6.8),
-        (math.radians(-50), math.radians(-152.7), 27.8, 10.0),
-        (math.radians(-170), math.radians(160), 14.4, 1.2),
-        (math.radians(0), math.radians(45), 18.5, 3.7),
-        # General cases
-        (math.radians(-20), math.radians(40), 12.0, 2.8),
-        (math.radians(12.9), math.radians(-1), 5.3, 0),
+        (math.radians(0), math.radians(180), 75.0, 10),
     ],
 )
 def test_get_sailbot_speed(

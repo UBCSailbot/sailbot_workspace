@@ -36,7 +36,8 @@ MIN_TURNING_RADIUS_KM = 0.05  # 50 m
 # valid but the segment straddles an obstacle collision zone
 # setting this any smaller can lead to OMPL not being able to construct a tree that reaches
 # the goal state
-MAX_EDGE_LEN_KM = 3.0
+MAX_EDGE_LEN_KM = 5.0
+MAX_SOLVER_RUN_TIME_SEC = 1.0
 
 LAND_KEY = -1
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -66,7 +67,6 @@ class OMPLPath:
     def __init__(
         self,
         parent_logger: RcutilsLogger,
-        max_runtime: float,
         local_path_state: LocalPathState,
         land_multi_polygon: MultiPolygon = None,
     ):
@@ -74,7 +74,6 @@ class OMPLPath:
 
         Args:
             parent_logger (RcutilsLogger): Logger of the parent class.
-            max_runtime (float): Maximum amount of time in seconds to look for a solution path.
             local_path_state (LocalPathState): State of Sailbot.
         """
         self._box_buffer = BOX_BUFFER_SIZE_KM
@@ -83,7 +82,7 @@ class OMPLPath:
         # this needs state
         self._simple_setup = self._init_simple_setup(local_path_state, land_multi_polygon)
 
-        self.solved = self._simple_setup.solve(time=max_runtime)  # time is in seconds
+        self.solved = self._simple_setup.solve(time=MAX_SOLVER_RUN_TIME_SEC)
 
         if self.solved:
             self._simple_setup.simplifySolution()
