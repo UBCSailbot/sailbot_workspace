@@ -23,12 +23,9 @@ gps:
         longitude: -123.185032
         heading: 180 # in degrees, heading of the boat
 
-
-
 wind_sensor:
-    state:
-        tw_dir_deg: *dir  # true wind direction in degrees
-        tw_speed_kmph: *speed  # true wind speed in kmph
+    tw_dir_deg: *dir  # true wind direction in degrees
+    tw_speed_kmph: *speed  # true wind speed in kmph
 
 
 ais:

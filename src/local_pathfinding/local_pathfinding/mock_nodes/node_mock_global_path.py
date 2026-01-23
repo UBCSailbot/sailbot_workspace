@@ -10,7 +10,6 @@ from rclpy.node import Node
 
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.global_path as gp
-import local_pathfinding.mock_nodes.shared_constants as sc
 
 
 def main(args=None):

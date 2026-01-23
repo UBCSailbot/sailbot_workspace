@@ -1,8 +1,5 @@
 """The main node of the local_pathfinding package, represented by the `Sailbot` class."""
 
-import json
-import os
-
 import custom_interfaces.msg as ci
 import rclpy
 from rclpy.node import Node
@@ -10,7 +7,7 @@ from shapely.geometry import MultiPolygon, Polygon
 
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.global_path as gp
-import local_pathfinding.mock_nodes.shared_constants as sc
+import local_pathfinding.mock_nodes.shared_utils as sc
 import local_pathfinding.obstacles as ob
 from local_pathfinding.local_path import LocalPath
 from local_pathfinding.ompl_path import MAX_SOLVER_RUN_TIME_SEC

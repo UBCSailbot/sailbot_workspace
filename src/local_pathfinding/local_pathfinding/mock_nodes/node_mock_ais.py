@@ -5,7 +5,7 @@ import rclpy
 from rclpy.node import Node
 
 import local_pathfinding.coord_systems as cs
-import local_pathfinding.mock_nodes.shared_constants as sc
+import local_pathfinding.mock_nodes.shared_utils as sc
 
 """
 Defines a Mock AIS Node that publishes AIS ships to the ROS Network for testing purposes

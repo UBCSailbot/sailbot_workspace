@@ -1,20 +1,20 @@
 """
 Mock class for the GPS. Publishes basic GPS data to the ROS network.
 
-USES constants defined in mock_nodes.shared_constants
+USES constants defined in mock_nodes.shared_utils
 """
 
 import math
-import os
+
+from typing import List
 
 import custom_interfaces.msg as ci
 import rclpy
-import yaml
+
 from geopy.distance import great_circle
+from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
 from rclpy.parameter import Parameter
-from rcl_interfaces.msg import SetParametersResult
-from typing import List
 
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.mock_nodes.shared_utils as sc
@@ -179,27 +179,33 @@ class MockGPS(Node):
 
         data = sc.read_test_plan_file(self.test_plan)
 
-        try:
-            global_params = data["gps"]["global_params"]
-            state = data["gps"]["state"]
-        except (TypeError, KeyError) as exc:  # pragma: no cover - defensive
-            raise ValueError(f"Invalid global path YAML structure in {self.test_plan}.") from exc
+        gps_data = data.get("gps", {})
 
-        try:
-            # Load true wind parameters
-            self.__tw_speed_kmph = float(global_params["tw_speed_kmph"])
-            self.__tw_dir_deg = int(global_params["tw_dir_deg"])
-
-            # Load sailbot state
-            self.__mean_speed_kmph = ci.HelperSpeed(speed=float(state["speed"]))
-            self.__current_location = ci.HelperLatLon(
-                latitude=float(state["latitude"]), longitude=float(state["longitude"])
+        if gps_data is {}:
+            self.get_logger().fatal(
+                f"No gps section found in test plan file {self.test_plan}. "
+                "Using default parameters."
             )
-            self.__heading_deg = ci.HelperHeading(heading=float(state["heading"]))
-        except (KeyError, TypeError, ValueError) as exc:  # pragma: no cover - defensive
-            raise ValueError(
-                f"Invalid task entry in global path YAML file {self.test_plan}: {state}"
-            ) from exc
+
+        global_params = gps_data.get("global_params", {})
+        state = gps_data.get("state", {})
+
+        if global_params is {} or state is {}:
+            self.get_logger().fatal(
+                f"Invalid gps section found in test plan file {self.test_plan}. "
+                "Using default parameters."
+            )
+
+        # Load true wind parameters
+        self.__tw_speed_kmph = float(global_params["tw_speed_kmph"])
+        self.__tw_dir_deg = int(global_params["tw_dir_deg"])
+
+        # Load sailbot state
+        self.__mean_speed_kmph = ci.HelperSpeed(speed=float(state["speed"]))
+        self.__current_location = ci.HelperLatLon(
+            latitude=float(state["latitude"]), longitude=float(state["longitude"])
+        )
+        self.__heading_deg = ci.HelperHeading(heading=float(state["heading"]))
 
 
 def main(args=None):

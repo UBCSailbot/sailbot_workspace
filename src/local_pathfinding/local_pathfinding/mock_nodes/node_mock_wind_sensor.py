@@ -81,13 +81,10 @@ class MockWindSensor(Node):
             self._tw_speed_kmph,
             self._boat_heading_deg,
             self._boat_speed_kmph,
-            ret_rad=False
+            ret_rad=False,
         )
 
-        aw_dir_boat_coord_deg = wcs.global_to_boat_coordinate(
-            self._boat_heading_deg,
-            aw_dir_deg
-        )
+        aw_dir_boat_coord_deg = wcs.global_to_boat_coordinate(self._boat_heading_deg, aw_dir_deg)
         msg = ci.WindSensor(
             speed=ci.HelperSpeed(speed=aw_speed_kmph),
             direction=int(aw_dir_boat_coord_deg),
@@ -131,58 +128,33 @@ class MockWindSensor(Node):
 
         wind_sensor_data = data.get("wind_sensor", {})
 
-        tw_speed_kmph = float(self.get_parameter("tw_speed_kmph").value)
-        tw_dir_deg = int(self.get_parameter("tw_dir_deg").value)
-
-        if wind_sensor_data is {}:
-            self.get_logger().warning(
-                f"No wind_sensor section found in test plan file {self.test_plan}. "
-                "Using default parameters."
-            )
-            self._boat_heading_deg = sc.START_HEADING.heading
-            self._boat_speed = sc.MEAN_SPEED.speed
-            self._tw_speed_kmph = tw_speed_kmph
-            self._tw_dir_deg = tw_dir_deg
-        else:
-            self._tw_speed_kmph = float(
-                wind_sensor_data.get("true_wind_speed_kmph", tw_speed_kmph)
-            )
-            self._tw_dir_deg = int(wind_sensor_data.get("true_wind_direction_deg", tw_dir_deg))
-
-            state = data["gps"]["state"]
-            self._boat_heading_deg = float(state["heading"])
-            self._boat_speed = float(state["speed"])
-
-        # Validate and set parameters
-        _validate_tw_dir_deg(tw_dir_deg)
-
-    def initialize_mock_wind_sensor_params(self):
-        """Initialize mock wind sensor parameters from test_plan file."""
-
-        data = sc.read_test_plan_file(self.test_plan)
-
-        wind_sensor_data = data.get("wind_sensor", {})
-
-        tw_speed_kmph = float(self.get_parameter("tw_speed_kmph").value)
-        tw_dir_deg = int(self.get_parameter("tw_dir_deg").value)
-
         if wind_sensor_data is {}:
             self.get_logger().fatal(
                 f"No wind_sensor section found in test plan file {self.test_plan}. "
                 "Using default parameters."
             )
-        else:
-            self._tw_speed_kmph = float(
-                wind_sensor_data.get("true_wind_speed_kmph", tw_speed_kmph)
+
+        self._tw_dir_deg = int(wind_sensor_data["tw_dir_deg"])
+        self._tw_speed_kmph = float(wind_sensor_data["tw_speed_kmph"])
+
+        gps_data = data.get("gps", {})
+
+        if gps_data is {}:
+            self.get_logger().fatal(
+                f"No gps section found in test plan file {self.test_plan}. "
+                "Using default parameters."
             )
-            self._tw_dir_deg = int(wind_sensor_data.get("true_wind_direction_deg", tw_dir_deg))
 
-            state = data["gps"]["state"]
-            self._boat_heading_deg = float(state["heading"])
-            self._boat_speed = float(state["speed"])
+        state = gps_data.get("state", {})
 
-        # Validate and set parameters
-        _validate_tw_dir_deg(tw_dir_deg)
+        if state is {}:
+            self.get_logger().fatal(
+                f"No gps section found in test plan file {self.test_plan}. "
+                "Using default parameters."
+            )
+
+        self._boat_heading_deg = float(state["heading"])
+        self._boat_speed_kmph = float(state["speed"])
 
 
 def main(args=None):
