@@ -23,7 +23,7 @@ SECONDS_PER_HOUR = 3600
 
 class MockGPS(Node):
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the MockGPS class. The class is used to publish mock mock gps
         data to the ROS network.
 
@@ -38,6 +38,13 @@ class MockGPS(Node):
             __mean_heading (HelperHeading): Constant heading of the boat.
         """
         super().__init__("mock_gps")
+
+        # Type annotations for instance variables
+        self.__current_location: ci.HelperLatLon
+        self.__mean_speed_kmph: ci.HelperSpeed
+        self.__heading_deg: ci.HelperHeading
+        self.__tw_dir_deg: int
+        self.__tw_speed_kmph: float
 
         # Declare ROS parameters (qos depth and publish period).
         # tw_speed_kmph and tw_dir_deg must be loaded via wind_params.sh script.
@@ -159,7 +166,7 @@ class MockGPS(Node):
             f"Distance Travelled: {cs.km_to_meters(distance_km):.2f} m, direction: {self.__heading_deg.heading:.1f} deg,  speed: {self.__mean_speed_kmph.speed:.2f} kmph"  # noqa
         )
 
-    def desired_heading_callback(self, msg: ci.DesiredHeading):
+    def desired_heading_callback(self, msg: ci.DesiredHeading) -> None:
         """Callback for topic desired heading
 
         Args:
@@ -168,7 +175,7 @@ class MockGPS(Node):
         self._logger.debug(f"Received data from {self.__desired_heading_sub.topic}: {msg}")
         self.__heading_deg = msg.heading
 
-    def initialize_sailbot_state(self):
+    def initialize_sailbot_state(self) -> None:
         """Initialize the sailbot state from the test plan file."""
 
         data = sc.read_test_plan_file(self.test_plan)
