@@ -5,12 +5,10 @@ USES constants defined in mock_nodes.shared_utils
 """
 
 import math
-
 from typing import List
 
 import custom_interfaces.msg as ci
 import rclpy
-
 from geopy.distance import great_circle
 from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
@@ -76,10 +74,6 @@ class MockGPS(Node):
         self.test_plan = self.get_parameter("test_plan").get_parameter_value().string_value
 
         self.initialize_sailbot_state()
-
-        self.__mean_speed_kmph = sc.MEAN_SPEED
-        self.__current_location = sc.START_POINT
-        self.__heading_deg = sc.START_HEADING
 
         # Mock GPS timer
         self.__mock_gps_timer = self.create_timer(
