@@ -23,7 +23,7 @@
 
 - Wind velocity in the global/geographic coordinate frame
 - What a stationary observer on the ground would measure
-- **0° = wind blowing FROM north TO south** (meteorological convention)
+- **0° = wind blowing FROM south TO north** (opposite of meteorological convention)
 - Independent of boat motion
 
 ### Boat Wind
@@ -50,9 +50,9 @@ Available in [`wind_coord_systems.py`](local_pathfinding/wind_coord_systems.py):
 
 ### Wind Conversions
 
-- `get_true_wind(aw_dir_deg, aw_speed_kmph, boat_heading_deg, boat_speed_kmph, ret_rad)`  
+- `get_true_wind(aw_dir_deg, aw_speed_kmph, boat_heading_deg, boat_speed_kmph, ret_rad)`
   Calculate true wind from apparent wind
-- `get_apparent_wind(tw_dir_deg, tw_speed_kmph, boat_heading_deg, boat_speed_kmph, ret_rad)`  
+- `get_apparent_wind(tw_dir_deg, tw_speed_kmph, boat_heading_deg, boat_speed_kmph, ret_rad)`
   Calculate apparent wind from true wind
 
 ## Key Notes

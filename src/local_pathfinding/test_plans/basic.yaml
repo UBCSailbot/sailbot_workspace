@@ -1,3 +1,7 @@
+constants:
+  tw_dir_deg: &dir 0
+  tw_speed_kmph: &speed 100.0 # must be double
+
 global_path:
     tasks:
     - task: 1
@@ -9,16 +13,23 @@ global_path:
       longitude: -137.022955
 
 gps:
+    global_params:
+        tw_dir_deg: *dir
+        tw_speed_kmph: *speed
+
     state:
         speed: 15.0  # mean boat speed in kmph
         latitude: 49.28
         longitude: -123.185032
         heading: 180 # in degrees, heading of the boat
 
+
+
 wind_sensor:
     state:
-        tw_speed_kmph: 10.0  # true wind speed in kmph
-        tw_dir_deg: 270  # true wind direction in degrees
+        tw_dir_deg: *dir  # true wind direction in degrees
+        tw_speed_kmph: *speed  # true wind speed in kmph
+
 
 ais:
     # Each entry: [id, latitude, longitude, heading, speed, rot, width, height]
