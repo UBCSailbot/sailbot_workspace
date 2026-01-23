@@ -112,7 +112,7 @@ class MockWindSensor(Node):
                     self._tw_speed_kmph = p.value
             return SetParametersResult(successful=True)
         except Exception:
-            reason = f"Please enter the direction in (-180, 180]. Got {p.value}."
+            reason = f"Please enter the direction in (-180, 180]."
             return SetParametersResult(successful=False, reason=reason)
 
     def gps_callback(self, msg: ci.GPS) -> None:

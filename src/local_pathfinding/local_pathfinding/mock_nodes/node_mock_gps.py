@@ -125,7 +125,7 @@ class MockGPS(Node):
                     self.__tw_speed_kmph = p.value
             return SetParametersResult(successful=True)
         except Exception:
-            reason = f"Please enter the direction in (-180, 180]. Got {p.value}."
+            reason = f"Please enter the direction in (-180, 180]."
             return SetParametersResult(successful=False, reason=reason)
 
     def update_speed(self):
