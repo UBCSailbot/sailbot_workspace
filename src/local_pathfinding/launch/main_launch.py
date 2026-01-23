@@ -89,7 +89,11 @@ def get_navigate_node_description(context: LaunchContext) -> Node:
     """
     node_name = "navigate_main"
     mode = LaunchConfiguration("mode").perform(context)
-    ros_parameters = [{"mode": mode}, LaunchConfiguration("config").perform(context)]
+    ros_parameters = [
+        {"mode": mode},
+        LaunchConfiguration("config").perform(context),
+        {"test_plan": LaunchConfiguration("test_plan").perform(context)},
+    ]
     ros_arguments: List[SomeSubstitutionsType] = [
         "--log-level",
         [f"{node_name}:=", LaunchConfiguration("log_level")],

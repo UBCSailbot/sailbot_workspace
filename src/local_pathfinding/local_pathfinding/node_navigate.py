@@ -132,13 +132,27 @@ class Sailbot(Node):
         self.planner = self.get_parameter("path_planner").get_parameter_value().string_value
         self.get_logger().debug(f"Got parameter: {self.planner=}")
 
+        self.get_logger().info("test plan: " + self.test_plan)
+
         # Initialize mock land obstacle
         self.land_multi_polygon = None
         if self.use_mock_land:
 
             # find the mock land file
             data = sc.read_test_plan_file(self.test_plan)
-            land_polygons = data.get("land_polygons", [])
+
+            land_mass_data = data.get("land_mass", {})
+            if land_mass_data == {}:
+                self.get_logger().info("No land mass data found in test plan.")
+                return
+
+            land_polygons = land_mass_data.get("land_polygons", [])
+            if land_polygons == []:
+                self.get_logger().info("No land polygons found in test plan.")
+                return
+
+            self.get_logger().info(f"land_mass: {land_mass_data} | land_polygons: {land_polygons}")
+
             polygons = [Polygon(p) for p in land_polygons]
             self.land_multi_polygon = MultiPolygon(polygons)
             self.get_logger().info("Loaded mock land data.")
