@@ -119,7 +119,7 @@ class MockGPS(Node):
             for p in params:
                 if p.name == "tw_dir_deg":
                     new_direction_deg = int(p.value)
-                    sc._validate_tw_dir_deg(new_direction_deg)
+                    sc.validate_tw_dir_deg(new_direction_deg)
                     self.__tw_dir_deg = new_direction_deg
                 else:
                     self.__tw_speed_kmph = p.value

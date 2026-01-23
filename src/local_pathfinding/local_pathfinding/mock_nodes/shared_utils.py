@@ -15,7 +15,7 @@ Change last line of mock_global_path.csv to: 49.289686,-123.195877
 """
 
 
-def _validate_tw_dir_deg(value: int) -> None:
+def validate_tw_dir_deg(value: int) -> None:
     """
     Validate direction is in (-180, 180].
     """

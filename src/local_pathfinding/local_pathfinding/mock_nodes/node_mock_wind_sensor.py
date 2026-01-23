@@ -106,7 +106,7 @@ class MockWindSensor(Node):
             for p in params:
                 if p.name == "tw_dir_deg":
                     new_direction_deg = int(p.value)
-                    sc._validate_tw_dir_deg(new_direction_deg)
+                    sc.validate_tw_dir_deg(new_direction_deg)
                     self._tw_dir_deg = new_direction_deg
                 else:
                     self._tw_speed_kmph = p.value
