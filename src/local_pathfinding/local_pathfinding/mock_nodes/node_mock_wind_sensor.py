@@ -41,12 +41,6 @@ import local_pathfinding.mock_nodes.shared_utils as sc
 import local_pathfinding.wind_coord_systems as wcs
 
 
-def _validate_tw_dir_deg(value: int) -> None:
-    """Validate direction is in (-180, 180]."""
-    if not (-180 < value <= 180):
-        raise ValueError(f"tw_dir_deg must be in (-180, 180]; got {value}")
-
-
 class MockWindSensor(Node):
     def __init__(self):
         super().__init__("mock_wind_sensor")
@@ -112,13 +106,13 @@ class MockWindSensor(Node):
             for p in params:
                 if p.name == "tw_dir_deg":
                     new_direction_deg = int(p.value)
-                    _validate_tw_dir_deg(new_direction_deg)
+                    sc.validate_tw_dir_deg(new_direction_deg)
                     self._tw_dir_deg = new_direction_deg
                 else:
                     self._tw_speed_kmph = p.value
             return SetParametersResult(successful=True)
         except Exception:
-            reason = f"Please enter the direction in (-180, 180]. Got {p.value}."
+            reason = "Please enter the direction in (-180, 180]."
             return SetParametersResult(successful=False, reason=reason)
 
     def gps_callback(self, msg: ci.GPS) -> None:

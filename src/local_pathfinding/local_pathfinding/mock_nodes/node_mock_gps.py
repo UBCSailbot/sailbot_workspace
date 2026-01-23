@@ -10,6 +10,9 @@ import custom_interfaces.msg as ci
 import rclpy
 from geopy.distance import great_circle
 from rclpy.node import Node
+from rclpy.parameter import Parameter
+from rcl_interfaces.msg import SetParametersResult
+from typing import List
 
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.mock_nodes.shared_utils as sc
@@ -82,6 +85,8 @@ class MockGPS(Node):
         )
         self.__tw_dir_deg = self.get_parameter("tw_dir_deg").get_parameter_value().integer_value
 
+        self.add_on_set_parameters_callback(self._on_set_parameters)
+
     def mock_gps_callback(self) -> None:
         """Callback function for the mock GPS timer. Publishes mock gps data to the ROS
         network.
@@ -104,6 +109,24 @@ class MockGPS(Node):
             f"Publishing to {self.__gps_pub.topic}, longitude: {msg.lat_lon.longitude}"
         )
         self.__gps_pub.publish(msg)
+
+    def _on_set_parameters(self, params: List[Parameter]) -> SetParametersResult:
+        """ROS2 parameter update callback.
+
+        Applies updates to true wind speed/direction. Values take effect on the next publish tick.
+        """
+        try:
+            for p in params:
+                if p.name == "tw_dir_deg":
+                    new_direction_deg = int(p.value)
+                    sc.validate_tw_dir_deg(new_direction_deg)
+                    self.__tw_dir_deg = new_direction_deg
+                else:
+                    self.__tw_speed_kmph = p.value
+            return SetParametersResult(successful=True)
+        except Exception:
+            reason = "Please enter the direction in (-180, 180]."
+            return SetParametersResult(successful=False, reason=reason)
 
     def update_speed(self):
         """Update the boat speed based on current heading and true wind.
