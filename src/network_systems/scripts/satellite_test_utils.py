@@ -2,6 +2,8 @@ import argparse
 import random
 
 import custom_interfaces.msg as ci
+from sensors_pb2 import Sensors
+from waypoint_pb2 import Waypoint
 
 
 def encode(filepath):
@@ -22,6 +24,20 @@ def encode(filepath):
         waypoints.append(waypoint)
 
     path.waypoints = waypoints
+
+    path_pb = path_to_proto(path)
+    print(path_pb)
+
+
+def path_to_proto(path):
+    path_pb = Sensors.Path()
+
+    for wp in path.waypoints:
+        waypoint_pb = path_pb.waypoints.add()
+        waypoint_pb.latitude = wp.latitude
+        waypoint_pb.longitude = wp.longitude
+
+    return path_pb
 
 
 def decode(filepath):
