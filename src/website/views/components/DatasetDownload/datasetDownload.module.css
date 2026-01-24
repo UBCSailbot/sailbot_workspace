@@ -1,13 +1,39 @@
+.downloadContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 96px;
+  margin-top: 96px;
+}
+
+.downloadHeader {
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  gap: 8px;
+}
+
 .dataSetDownload {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  gap: 32px;
   padding-bottom: 200px;
+  place-content: center;
+}
+
+.dataSetCard {
+  border-radius: 8px;
+  background-color: #1D1D1D;
+  padding: 32px;
+  max-width: 320px;
 }
 
 @media (max-width: 1200px) {
   .dataSetDownload {
     grid-template-columns: repeat(2, 1fr);
+  }
+  .dataSetCard {
+    max-width: 1030px;
   }
 }
 
@@ -20,11 +46,14 @@
 .title {
   font-size: 24px;
   font-weight: 600;
+  margin-bottom: 12px;
+  width: fill;
 }
 
 .downloadOptions {
   display: flex;
   gap: 16px;
+  margin-top: 32px;
 }
 
 .downloadButton {
@@ -34,4 +63,10 @@
   cursor: pointer;
   user-select: none;
   font-size: 20px;
+  opacity: 0.9;
+}
+
+.description {
+  font-size: 16px;
+  opacity: 0.60;
 }
