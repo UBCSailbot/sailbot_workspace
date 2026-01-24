@@ -71,14 +71,12 @@ Sensors UtilDB::genRandSensors()
     return sensors;
 }
 
-std::tm UtilDB::getTimestamp()
+//returning epoch time in seconds
+int64_t UtilDB::getTimestamp()
 {
-    // Get the current time
-    std::time_t t  = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-    std::tm *   tm = std::gmtime(&t);  // NOLINT(concurrency-mt-unsafe)
-    // tm stores years since 1900 by default, the schema expects years since 2000
-    tm->tm_year -= 100;  // NOLINT(readability-magic-numbers)
-    return *tm;
+    return std::chrono::duration_cast<std::chrono::seconds>(
+        std::chrono::system_clock::now().time_since_epoch()
+    ).count();
 }
 
 std::pair<Sensors, SailbotDB::RcvdMsgInfo> UtilDB::genRandData(const std::tm & tm)

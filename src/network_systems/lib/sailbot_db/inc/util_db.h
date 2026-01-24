@@ -38,7 +38,7 @@ public:
     /**
      * @return timestamp for the current time
      */
-    static std::tm getTimestamp();
+    static int64_t getTimestamp();
 
     /**
     * @brief Generate random sensors and Iridium msg info

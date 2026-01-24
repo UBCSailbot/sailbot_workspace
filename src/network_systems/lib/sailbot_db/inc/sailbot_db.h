@@ -40,7 +40,7 @@ public:
         float       lat_;        // Transmission latitude
         float       lon_;        // Transmission longitude
         uint32_t    cep_;        // Transmission accuracy (km)
-        std::string timestamp_;  // Transmission time (<year - 2000>-<month>-<day> <hour>:<minute>:<second>)
+        int64_t timestamp_;  // Transmission time in seconds
 
         /**
          * @brief overload stream operator
@@ -48,12 +48,12 @@ public:
         friend std::ostream & operator<<(std::ostream & os, const RcvdMsgInfo & info);
 
         /**
-         * @brief Get a properly formatted timestamp string
-         *
+         * @brief Get epoch timestamp in seconds
+         * 
          * @param tm standard C/C++ time structure
-         * @return tm converted to a timestamp string
+         * @return tm converted to epoch seconds
          */
-        static std::string mkTimestamp(const std::tm & tm);
+        static int64_t mkTimestamp(const std::tm & tm);
     };
 
     /**
@@ -107,69 +107,67 @@ private:
      * @return true  if successful
      * @return false on failure
      */
-    bool storeGps(const Polaris::Sensors::Gps & gps_pb, const std::string & timestamp, mongocxx::client & client);
+    bool storeGps(const Polaris::Sensors::Gps & gps_pb, int64_t timestamp, mongocxx::client & client);
 
     /**
      * @brief Write AIS data to the database
      *
      * @param ais_ships_pb Protobuf list of AIS objects, where the size of the list is the number of ships
-     * @param timestamp    transmission time <year - 2000>-<month>-<day> <hour>:<minute>:<second>
+     * @param timestamp    transmission time epoch time in seconds
      * @param client       mongocxx::client instance for the current thread
 
      * @return true  if successful
      * @return false on failure
      */
     bool storeAis(
-      const ProtoList<Polaris::Sensors::Ais> & ais_ships_pb, const std::string & timestamp, mongocxx::client & client);
+      const ProtoList<Polaris::Sensors::Ais> & ais_ships_pb, int64_t timestamp, mongocxx::client & client);
 
     /**
      * @brief Write path sensor data to the database
      *
      * @param generic_pb Protobuf list of path sensor objects, where the size of the list is the number of path sensors
-     * @param timestamp  transmission time <year - 2000>-<month>-<day> <hour>:<minute>:<second>
+     * @param timestamp  transmission time epoch time in seconds
      * @param client     mongocxx::client instance for the current thread
 
      * @return true  if successful
      * @return false on failure
      */
     bool storePathSensors(
-      const Polaris::Sensors::Path & local_path_pb, const std::string & timestamp, mongocxx::client & client);
+      const Polaris::Sensors::Path & local_path_pb, int64_t timestamp, mongocxx::client & client);
 
     /**
     * @brief Adds generic sensors to the database
     *
     * @param generic_pb Protobuf list of generic sensor objects, where the size of the list is the number of sensors
-    * @param timestamp  transmission time <year - 2000>-<month>-<day> <hour>:<minute>:<second>
+    * @param timestamp  transmission time epoch time in seconds
     * @param client     mongocxx::client instance for the current thread
     *
     * @return True if sensor is added, false otherwise
     */
     bool storeGenericSensors(
-      const ProtoList<Polaris::Sensors::Generic> & generic_pb, const std::string & timestamp,
-      mongocxx::client & client);
+      const ProtoList<Polaris::Sensors::Generic> & generic_pb, int64_t timestamp, mongocxx::client & client);
 
     /**
     * @brief Adds a battery sensors to the database
     *
     * @param generic_pb Protobuf list of battery objects
-    * @param timestamp  transmission time <year - 2000>-<month>-<day> <hour>:<minute>:<second>
+    * @param timestamp  transmission time epoch time in seconds
     * @param client     mongocxx::client instance for the current thread
     *
     * @return True if sensor is added, false otherwise
     */
     bool storeBatteries(
-      const ProtoList<Polaris::Sensors::Battery> & battery_pb, const std::string & timestamp,
-      mongocxx::client & client);
+      const ProtoList<Polaris::Sensors::Battery> & battery_pb, int64_t timestamp, mongocxx::client & client);
 
     /**
     * @brief Adds a wind sensor to the database flow
     *
     * @param generic_pb Protobuf list of wind sensor objects
-    * @param timestamp  transmission time <year - 2000>-<month>-<day> <hour>:<minute>:<second>
+    * @param timestamp  transmission time epoch time in seconds
     * @param client     mongocxx::client instance for the current thread
     *
     * @return True if sensor is added, false otherwise
     */
     bool storeWindSensors(
-      const ProtoList<Polaris::Sensors::Wind> & wind_pb, const std::string & timestamp, mongocxx::client & client);
+      const ProtoList<Polaris::Sensors::Wind> & wind_pb, int64_t timestamp, mongocxx::client & client);
 };
