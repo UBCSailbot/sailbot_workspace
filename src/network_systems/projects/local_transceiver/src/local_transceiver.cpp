@@ -212,10 +212,13 @@ bool LocalTransceiver::debugSendAT(const std::string & data)
 
     static constexpr int MAX_NUM_RETRIES = 20;
     for (int i = 0; i < MAX_NUM_RETRIES; i++) {
+        // ::tcflush(serial_.lowest_layer().native_handle(), TCIFLUSH) == 0;
+
         if (!send(at_write_cmd)) {
             std::cerr << "Debug: failed to send write command (attempt " << i << ")\n";
             continue;
         }
+        std::cout << "Debug: sent write command (attempt " << i << "): " << at_write_cmd.str_ << "\n";
 
         if (!rcvRsps({
               at_write_cmd,
@@ -226,6 +229,7 @@ bool LocalTransceiver::debugSendAT(const std::string & data)
             std::cerr << "Debug: did not receive ready prompt (attempt " << i << ")\n";
             continue;
         }
+        std::cout << "Debug: received ready prompt (attempt " << i << ")\n";
 
         std::string msg_str = data + checksum(data);
         AT::Line    msg(msg_str);
@@ -233,6 +237,7 @@ bool LocalTransceiver::debugSendAT(const std::string & data)
             std::cerr << "Debug: failed to send payload (attempt " << i << ")\n";
             continue;
         }
+        std::cout << "Debug: sent payload (attempt " << i << "): " << msg.str_ << "\n";
 
         if (!rcvRsps({
               AT::Line(AT::DELIMITER),
@@ -245,27 +250,31 @@ bool LocalTransceiver::debugSendAT(const std::string & data)
             std::cerr << "Debug: write did not complete successfully (attempt " << i << ")\n";
             continue;
         }
+        std::cout << "Debug: write completed successfully (attempt " << i << ")\n";
 
         static const AT::Line sbdix_cmd = AT::Line(AT::SBD_SESSION);
         if (!send(sbdix_cmd)) {
             std::cerr << "Debug: failed to send SBDIX command (attempt " << i << ")\n";
             continue;
         }
+        std::cout << "Debug: sent SBDIX command (attempt " << i << "): " << sbdix_cmd.str_ << "\n";
 
         if (!rcvRsps({
-              AT::Line("\r"),
+              //   AT::Line("\r"),
               sbdix_cmd,
               AT::Line(AT::DELIMITER),
             })) {
             std::cerr << "Debug: did not receive SBDIX response header (attempt " << i << ")\n";
             continue;
         }
+        std::cout << "Debug: received SBDIX response header (attempt " << i << ")\n";
 
         auto opt_rsp = readRsp();
         if (!opt_rsp) {
             std::cerr << "Debug: readRsp returned no response (attempt " << i << ")\n";
             continue;
         }
+        std::cout << "Debug: readRsp received response (attempt " << i << "): " << opt_rsp.value() << "\n";
 
         std::string              opt_rsp_val = opt_rsp.value();
         std::vector<std::string> sbd_status_vec;
@@ -472,6 +481,7 @@ bool LocalTransceiver::rcvRsp(const AT::Line & expected_rsp)
         std::cerr << "Expected to read: \"" << expected_rsp.str_ << "\"\nbut read: \"" << outstr << "\"" << std::endl;
         return false;
     }
+    std::cout << "Debug: received expected response: " << outstr << "\n";
     return true;
 }
 
