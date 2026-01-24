@@ -274,7 +274,7 @@ class LocalPath:
             heading_new_path,
             heading
         )
-        if improvement:
+        if improvement > IMPROVEMENT_THRESHOLD:
             self._logger.debug(
                 "New path is cheaper, updating local path "
             )
@@ -293,7 +293,7 @@ class LocalPath:
         new_cost: float,
         heading_new_path: float,
         heading: float
-    ) -> bool:
+    ) -> float:
         """Computes an improvement score comparing a new path against the old path.
 
         The improvement metric normalizes both heading deviation and path cost,
@@ -330,7 +330,11 @@ class LocalPath:
                 f"metric_new: {metric_new:.2f}, "
         )
         improvement_ratio = (metric_old - metric_new)/metric_old
-        return (improvement_ratio > IMPROVEMENT_THRESHOLD)
+        return improvement_ratio
+
+        # TODO: This function should just return improvement_ratio (float), update its testing, and
+        # use that to calculate the difference in expected heading in update_if_needed, maybe add
+        # some parameters to update_if_needed testing
 
     def _update(self, ompl_path: OMPLPath):
 

@@ -270,11 +270,12 @@ def test_in_collision_zone(local_wp_index, reference_latlon, path, obstacles, re
 @pytest.mark.parametrize(
     '''
     gps, ais_ships, local_waypoint_index, received_new_global_waypoint,
-    old_path, result_index, new_path
+    old_path_list, result_index, generates_new_path
     ''',
     [
         (   # Old path is fully optimal, do not switch to new path
-            GPS(lat_lon=HelperLatLon(latitude=0.0, longitude=0.0)),
+            GPS(lat_lon=HelperLatLon(latitude=0.0, longitude=0.0),
+                heading=HelperHeading(heading=45.0)),
             AISShips(),
             1,
             False,
@@ -390,21 +391,20 @@ def test_in_collision_zone(local_wp_index, reference_latlon, path, obstacles, re
 )
 def test_update_if_needed(
                         gps, ais_ships, local_waypoint_index, received_new_global_waypoint,
-                        old_path, result_index, new_path
+                        old_path_list, result_index, generates_new_path
                         ):
+    UPDATE_TEST_PATH = lp.LocalPath(parent_logger=RcutilsLogger())
+    mock_old_ompl_path = create_mock(old_path_list, RcutilsLogger())
+    UPDATE_TEST_PATH._ompl_path = mock_old_ompl_path
+    old_path = Path(waypoints=old_path_list)
 
-    mock_ompl_path = create_mock(old_path, RcutilsLogger())
-    PATH._ompl_path = mock_ompl_path
-
-    current_path = mock_ompl_path.get_path()
-
-    old_heading, _ = PATH.calculate_desired_heading_and_waypoint_index(
-        current_path,
+    old_heading, _ = UPDATE_TEST_PATH.calculate_desired_heading_and_waypoint_index(
+        old_path,
         local_waypoint_index,
         gps.lat_lon,
     )
 
-    heading, index, update = PATH.update_if_needed(
+    heading, index, update = UPDATE_TEST_PATH.update_if_needed(
         gps,
         ais_ships,
         Path(
@@ -421,12 +421,12 @@ def test_update_if_needed(
         None,
     )
 
-    if new_path:
-        if not received_new_global_waypoint:
-            assert abs(heading - old_heading) > 3
+    # If new path is generated, new and old heading should be different, else, should be equal
+    if generates_new_path:
+        assert abs(heading - old_heading) > 0.1
         assert update
     else:
-        assert heading == pytest.approx(old_heading, abs=3)
+        assert heading == pytest.approx(old_heading, abs=0.01)
         assert not update
 
     assert index == result_index
@@ -435,12 +435,12 @@ def test_update_if_needed(
 @pytest.mark.parametrize(
     "old_cost, heading_old_path, new_cost, heading_new_path, heading, expected_improvement",
     [
-        (0.0, 1.0, 0.0, -1.1, 0.0, False),
-        (0.0, 1.0, 0.0, -1.0, 0.0, False),
-        (0.0, 1.0, 0.0, 1.0, 0.0, False),
-        (0.0, 1.0, 0.0, -0.8, 0.0, True),
-        (0.0, 49.8, 0.0, 50.1, 50.0, True),
-        (0.0, -179.0, 0.0, 178.0, 180.0, False)
+        (0.0, 1.0, 0.0, -1.1, 0.0, -0.1),
+        (0.0, 1.0, 0.0, -1.0, 0.0, 0.0),
+        (0.0, 1.0, 0.0, 1.0, 0.0, 0.0),
+        (0.0, 1.0, 0.0, -0.8, 0.0, 0.2),
+        (0.0, 49.8, 0.0, 50.1, 50.0, 0.5),
+        (0.0, -179.0, 0.0, 178.0, 180.0, -1.0)
     ]
 )
 def test_calculate_improvement(
@@ -449,7 +449,7 @@ def test_calculate_improvement(
     result = PATH.calculate_improvement(
         old_cost, heading_old_path, new_cost, heading_new_path, heading
     )
-    assert result == expected_improvement
+    assert result == pytest.approx(expected_improvement, abs=1e-3)
 
 
 def test_LocalPathState_parameter_checking():
