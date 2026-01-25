@@ -108,6 +108,12 @@ public:
               this->get_logger(), "Running Local Transceiver in mode: %s, with port: %s.", mode.c_str(), port.c_str());
             lcl_trns_ = std::make_unique<LocalTransceiver>(port, SATELLITE_BAUD_RATE);
 
+            // Set up logging callbacks to use ROS logging
+            // These are callbacks so that the LocalTransceiver class does not need to make direct ROS calls
+            lcl_trns_->setLogCallbacks(
+              [this](const std::string & msg) { RCLCPP_DEBUG(this->get_logger(), "%s", msg.c_str()); },
+              [this](const std::string & msg) { RCLCPP_ERROR(this->get_logger(), "%s", msg.c_str()); });
+
             std::future<std::optional<custom_interfaces::msg::Path>> fut =
               std::async(std::launch::async, lcl_trns_->getCache);
 

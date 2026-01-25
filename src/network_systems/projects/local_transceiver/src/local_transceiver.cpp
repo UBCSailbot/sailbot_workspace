@@ -82,6 +82,12 @@ void LocalTransceiver::updateSensor(msg::LPathData localData)
 
 Sensors LocalTransceiver::sensors() { return sensors_; }
 
+void LocalTransceiver::setLogCallbacks(LogCallback debug_cb, LogCallback error_cb)
+{
+    log_debug_ = debug_cb;
+    log_error_ = error_cb;
+}
+
 LocalTransceiver::LocalTransceiver(const std::string & port_name, const uint32_t baud_rate) : serial_(io_, port_name)
 {
     serial_.set_option(bio::serial_port_base::baud_rate(baud_rate));
@@ -167,7 +173,7 @@ bool LocalTransceiver::send()
         }
 
         if (!rcvRsps({
-              AT::Line("\r"),
+              //   AT::Line("\r"),
               sbdix_cmd,
               AT::Line(AT::DELIMITER),
             })) {
@@ -200,12 +206,17 @@ bool LocalTransceiver::send()
 bool LocalTransceiver::debugSendAT(const std::string & data)
 {
     if (data.size() >= MAX_LOCAL_TO_REMOTE_PAYLOAD_SIZE_BYTES) {
-        std::cerr << "Debug message/data too large: " << data.size() << " bytes, but with a limit of "
-                  << MAX_LOCAL_TO_REMOTE_PAYLOAD_SIZE_BYTES << " bytes" << std::endl;
+        if (log_error_) {
+            log_error_(
+              "Debug message/data too large: " + std::to_string(data.size()) + " bytes, but with a limit of " +
+              std::to_string(MAX_LOCAL_TO_REMOTE_PAYLOAD_SIZE_BYTES) + " bytes");
+        }
         return false;
     }
 
-    std::cout << "Debug: Sending " << data.size() << " bytes via debugSendAT\n";
+    if (log_debug_) {
+        log_debug_("Debug: Sending " + std::to_string(data.size()) + " bytes via debugSendAT");
+    }
 
     std::string write_bin_cmd_str = AT::write_bin::CMD + std::to_string(data.size());
     AT::Line    at_write_cmd(write_bin_cmd_str);
@@ -215,10 +226,14 @@ bool LocalTransceiver::debugSendAT(const std::string & data)
         // ::tcflush(serial_.lowest_layer().native_handle(), TCIFLUSH) == 0;
 
         if (!send(at_write_cmd)) {
-            std::cerr << "Debug: failed to send write command (attempt " << i << ")\n";
+            if (log_error_) {
+                log_error_("Debug: failed to send write command (attempt " + std::to_string(i) + ")");
+            }
             continue;
         }
-        std::cout << "Debug: sent write command (attempt " << i << "): " << at_write_cmd.str_ << "\n";
+        if (log_debug_) {
+            log_debug_("Debug: sent write command (attempt " + std::to_string(i) + "): " + at_write_cmd.str_);
+        }
 
         if (!rcvRsps({
               at_write_cmd,
@@ -226,18 +241,26 @@ bool LocalTransceiver::debugSendAT(const std::string & data)
               AT::Line(AT::RSP_READY),
               AT::Line("\n"),
             })) {
-            std::cerr << "Debug: did not receive ready prompt (attempt " << i << ")\n";
+            if (log_error_) {
+                log_error_("Debug: did not receive ready prompt (attempt " + std::to_string(i) + ")");
+            }
             continue;
         }
-        std::cout << "Debug: received ready prompt (attempt " << i << ")\n";
+        if (log_debug_) {
+            log_debug_("Debug: received ready prompt (attempt " + std::to_string(i) + ")");
+        }
 
         std::string msg_str = data + checksum(data);
         AT::Line    msg(msg_str);
         if (!send(msg)) {
-            std::cerr << "Debug: failed to send payload (attempt " << i << ")\n";
+            if (log_error_) {
+                log_error_("Debug: failed to send payload (attempt " + std::to_string(i) + ")");
+            }
             continue;
         }
-        std::cout << "Debug: sent payload (attempt " << i << "): " << msg.str_ << "\n";
+        if (log_debug_) {
+            log_debug_("Debug: sent payload (attempt " + std::to_string(i) + "): " + msg.str_);
+        }
 
         if (!rcvRsps({
               AT::Line(AT::DELIMITER),
@@ -247,34 +270,50 @@ bool LocalTransceiver::debugSendAT(const std::string & data)
               AT::Line(AT::STATUS_OK),
               AT::Line("\n"),
             })) {
-            std::cerr << "Debug: write did not complete successfully (attempt " << i << ")\n";
+            if (log_error_) {
+                log_error_("Debug: write did not complete successfully (attempt " + std::to_string(i) + ")");
+            }
             continue;
         }
-        std::cout << "Debug: write completed successfully (attempt " << i << ")\n";
+        if (log_debug_) {
+            log_debug_("Debug: write completed successfully (attempt " + std::to_string(i) + ")");
+        }
 
         static const AT::Line sbdix_cmd = AT::Line(AT::SBD_SESSION);
         if (!send(sbdix_cmd)) {
-            std::cerr << "Debug: failed to send SBDIX command (attempt " << i << ")\n";
+            if (log_error_) {
+                log_error_("Debug: failed to send SBDIX command (attempt " + std::to_string(i) + ")");
+            }
             continue;
         }
-        std::cout << "Debug: sent SBDIX command (attempt " << i << "): " << sbdix_cmd.str_ << "\n";
+        if (log_debug_) {
+            log_debug_("Debug: sent SBDIX command (attempt " + std::to_string(i) + "): " + sbdix_cmd.str_);
+        }
 
         if (!rcvRsps({
               //   AT::Line("\r"),
               sbdix_cmd,
               AT::Line(AT::DELIMITER),
             })) {
-            std::cerr << "Debug: did not receive SBDIX response header (attempt " << i << ")\n";
+            if (log_error_) {
+                log_error_("Debug: did not receive SBDIX response header (attempt " + std::to_string(i) + ")");
+            }
             continue;
         }
-        std::cout << "Debug: received SBDIX response header (attempt " << i << ")\n";
+        if (log_debug_) {
+            log_debug_("Debug: received SBDIX response header (attempt " + std::to_string(i) + ")");
+        }
 
         auto opt_rsp = readRsp();
         if (!opt_rsp) {
-            std::cerr << "Debug: readRsp returned no response (attempt " << i << ")\n";
+            if (log_error_) {
+                log_error_("Debug: readRsp returned no response (attempt " + std::to_string(i) + ")");
+            }
             continue;
         }
-        std::cout << "Debug: readRsp received response (attempt " << i << "): " << opt_rsp.value() << "\n";
+        if (log_debug_) {
+            log_debug_("Debug: readRsp received response (attempt " + std::to_string(i) + "): " + opt_rsp.value());
+        }
 
         std::string              opt_rsp_val = opt_rsp.value();
         std::vector<std::string> sbd_status_vec;
@@ -282,12 +321,16 @@ bool LocalTransceiver::debugSendAT(const std::string & data)
 
         AT::SBDStatusRsp rsp(sbd_status_vec[0]);
         if (rsp.MOSuccess()) {
-            std::cout << "Debug: debugSendAT transmitted successfully\n";
+            if (log_debug_) {
+                log_debug_("Debug: debugSendAT transmitted successfully");
+            }
             return true;
         }
     }
 
-    std::cerr << "Debug: Failed to transmit debug payload to satellite" << std::endl;
+    if (log_error_) {
+        log_error_("Debug: Failed to transmit debug payload to satellite");
+    }
     return false;
 }
 
@@ -309,6 +352,7 @@ void LocalTransceiver::cacheGlobalWaypoints(std::string receivedDataBuffer)
     std::filesystem::path cache_temp{CACHE_TEMP_PATH};
     std::ofstream         writeFile(CACHE_TEMP_PATH, std::ios::binary);
     if (!writeFile) {
+        // Note: This is a static method, so no logging callback available
         std::cerr << "Failed to create temp cache file" << std::endl;
     }
     writeFile.write(receivedDataBuffer.data(), static_cast<std::streamsize>(receivedDataBuffer.size()));
@@ -481,7 +525,11 @@ bool LocalTransceiver::rcvRsp(const AT::Line & expected_rsp)
         std::cerr << "Expected to read: \"" << expected_rsp.str_ << "\"\nbut read: \"" << outstr << "\"" << std::endl;
         return false;
     }
-    std::cout << "Debug: received expected response: " << outstr << "\n";
+
+    if (log_debug_) {
+        log_debug_("Debug: received expected response: " + outstr + "\n");
+    }
+
     return true;
 }
 

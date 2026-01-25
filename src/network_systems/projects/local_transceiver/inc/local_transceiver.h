@@ -1,6 +1,7 @@
 #pragma once
 
 #include <boost/asio/streambuf.hpp>
+#include <functional>
 #include <string>
 
 #include "at_cmds.h"
@@ -29,6 +30,17 @@ class LocalTransceiver
     friend class TestLocalTransceiver_checkCache_Test;
 
 public:
+    // Logging callback types
+    using LogCallback = std::function<void(const std::string &)>;
+
+    /**
+    * @brief Set logging callbacks for debug and error messages
+     *
+     * @param debug_cb Callback for debug messages
+     * @param error_cb Callback for error messages
+     */
+    void setLogCallbacks(LogCallback debug_cb, LogCallback error_cb);
+
     /**
     * @brief Update the sensor with new GPS data
     *
@@ -161,6 +173,9 @@ private:
     boost::asio::serial_port serial_;
     // underlying sensors object
     Polaris::Sensors sensors_;
+    // Logging callbacks
+    LogCallback log_debug_;
+    LogCallback log_error_;
 
     /**
      * @brief Send a command to the serial port
