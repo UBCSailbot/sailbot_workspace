@@ -5,7 +5,7 @@ import rclpy
 from rclpy.node import Node
 
 import local_pathfinding.coord_systems as cs
-import local_pathfinding.mock_nodes.shared_utils as sc
+from test_plans.test_plan import TestPlan
 
 """
 Defines a Mock AIS Node that publishes AIS ships to the ROS Network for testing purposes
@@ -13,10 +13,6 @@ Defines a Mock AIS Node that publishes AIS ships to the ROS Network for testing 
 Publishers:
     publisher_: Publishes mock AIS data in 'AISShips' message
 """
-
-AIS_SHIPS_FILE_PATH = (
-    "/workspaces/sailbot_workspace/src/local_pathfinding/mock_ais_files/" "ais_ships.csv"
-)
 
 
 class MockAISNode(Node):
@@ -42,27 +38,11 @@ class MockAISNode(Node):
 
     def timer_callback(self):
         msg = ci.AISShips()
+        test_plan = TestPlan(self.test_plan)
+        ais_ships = test_plan.ais
+
         if self.first_run:
-            # read mock ais ships from test plan file
-            data = sc.read_test_plan_file(self.test_plan)
-
-            ais_section = data.get("ais", {}) if data else {}
-            vessels = ais_section.get("vessels", [])
-
-            for row in vessels:
-                # Expecting: [id, lat, lon, heading, speed, rot, width, length]
-                if not isinstance(row, (list, tuple)) or len(row) < 8:
-                    continue
-
-                ship = ci.HelperAISShip()
-                ship.id = int(row[0])
-                ship.lat_lon.latitude = float(row[1])
-                ship.lat_lon.longitude = float(row[2])
-                ship.cog.heading = float(row[3])
-                ship.sog.speed = float(row[4])
-                ship.rot.rot = int(row[5])
-                ship.width.dimension = float(row[6])
-                ship.length.dimension = float(row[7])
+            for ship in ais_ships:
                 self.ships.append(ship)
                 msg.ships.append(ship)
             self.first_run = False
@@ -71,26 +51,10 @@ class MockAISNode(Node):
             csv_ship_ids = []
             ships_to_remove = []
 
-            data = sc.read_test_plan_file(self.test_plan)
-            ais_section = data.get("ais", {}) if data else {}
-            vessels = ais_section.get("vessels", [])
-
-            for row in vessels:
-                if not isinstance(row, (list, tuple)) or len(row) < 1:
-                    continue
-                id = int(row[0])
-                csv_ship_ids.append(id)
+            for ship in ais_ships:
+                csv_ship_ids.append(ship.id)
                 current_ship_ids = [ship.id for ship in self.ships]
-                if id > 0 and id not in current_ship_ids and len(row) >= 8:
-                    ship = ci.HelperAISShip()
-                    ship.id = int(row[0])
-                    ship.lat_lon.latitude = float(row[1])
-                    ship.lat_lon.longitude = float(row[2])
-                    ship.cog.heading = float(row[3])
-                    ship.sog.speed = float(row[4])
-                    ship.rot.rot = int(row[5])
-                    ship.width.dimension = float(row[6])
-                    ship.length.dimension = float(row[7])
+                if id > 0 and id not in current_ship_ids:
                     self.ships.append(ship)
                     msg.ships.append(ship)
 

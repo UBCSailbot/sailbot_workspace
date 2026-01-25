@@ -3,14 +3,13 @@
 import custom_interfaces.msg as ci
 import rclpy
 from rclpy.node import Node
-from shapely.geometry import MultiPolygon, Polygon
 
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.global_path as gp
-import local_pathfinding.mock_nodes.shared_utils as sc
 import local_pathfinding.obstacles as ob
 from local_pathfinding.local_path import LocalPath
 from local_pathfinding.ompl_path import MAX_SOLVER_RUN_TIME_SEC
+from test_plans.test_plan import TestPlan
 
 GLOBAL_WAYPOINT_REACHED_THRESH_KM = 3
 PATHFINDING_RANGE_KM = 30
@@ -137,24 +136,8 @@ class Sailbot(Node):
         # Initialize mock land obstacle
         self.land_multi_polygon = None
         if self.use_mock_land:
-
-            # find the mock land file
-            data = sc.read_test_plan_file(self.test_plan)
-
-            land_mass_data = data.get("land_mass", {})
-            if land_mass_data == {}:
-                self.get_logger().info("No land mass data found in test plan.")
-                return
-
-            land_polygons = land_mass_data.get("land_polygons", [])
-            if land_polygons == []:
-                self.get_logger().info("No land polygons found in test plan.")
-                return
-
-            self.get_logger().info(f"land_mass: {land_mass_data} | land_polygons: {land_polygons}")
-
-            polygons = [Polygon(p) for p in land_polygons]
-            self.land_multi_polygon = MultiPolygon(polygons)
+            test_plan = TestPlan(self.test_plan)
+            self.land_multi_polygon = test_plan.land
             self.get_logger().info("Loaded mock land data.")
 
     # subscriber callbacks
