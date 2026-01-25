@@ -13,3 +13,11 @@ For further tests:
 START_POINT = ci.HelperLatLon(latitude=49.308157, longitude=-123.244801)
 Change last line of mock_global_path.csv to: 49.289686,-123.195877
 """
+
+
+def validate_tw_dir_deg(value: int) -> None:
+    """
+    Validate direction is in (-180, 180].
+    """
+    if not (-180 < value <= 180):
+        raise ValueError(f"tw_dir_deg must be in (-180, 180]; got {value}")
