@@ -37,6 +37,7 @@ from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 
+import local_pathfinding.coord_systems as cs
 import local_pathfinding.mock_nodes.shared_utils as sc
 import local_pathfinding.wind_coord_systems as wcs
 
@@ -83,13 +84,10 @@ class MockWindSensor(Node):
             self._tw_speed_kmph,
             self._boat_heading_deg,
             self._boat_speed_kmph,
-            ret_rad=False
+            ret_rad=False,
         )
 
-        aw_dir_boat_coord_deg = wcs.global_to_boat_coordinate(
-            self._boat_heading_deg,
-            aw_dir_deg
-        )
+        aw_dir_boat_coord_deg = wcs.global_to_boat_coordinate(self._boat_heading_deg, aw_dir_deg)
         msg = ci.WindSensor(
             speed=ci.HelperSpeed(speed=aw_speed_kmph),
             direction=int(aw_dir_boat_coord_deg),
@@ -101,19 +99,15 @@ class MockWindSensor(Node):
         """ROS2 parameter update callback.
 
         Applies updates to true wind speed/direction. Values take effect on the next publish tick.
+
+        Silently bounds tw_dir_deg to valid range if it is outside that range.
         """
-        try:
-            for p in params:
-                if p.name == "tw_dir_deg":
-                    new_direction_deg = int(p.value)
-                    sc.validate_tw_dir_deg(new_direction_deg)
-                    self._tw_dir_deg = new_direction_deg
-                else:
-                    self._tw_speed_kmph = p.value
-            return SetParametersResult(successful=True)
-        except Exception:
-            reason = "Please enter the direction in (-180, 180]."
-            return SetParametersResult(successful=False, reason=reason)
+        for p in params:
+            if p.name == "tw_dir_deg":
+                self.__tw_dir_deg = cs.bound_to_180(int(p.value))
+            else:
+                self.__tw_speed_kmph = p.value
+        return SetParametersResult(successful=True)
 
     def gps_callback(self, msg: ci.GPS) -> None:
         """Callback function for the GPS subscription. Updates the boat's position.
