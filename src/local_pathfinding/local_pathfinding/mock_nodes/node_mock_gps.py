@@ -115,11 +115,16 @@ class MockGPS(Node):
 
         Applies updates to true wind speed/direction. Values take effect on the next publish tick.
 
-        Silently bounds tw_dir_deg to valid range if it is outside that range.
+        Rejects if tw_dir_deg is not in (-180, 180].
         """
         for p in params:
             if p.name == "tw_dir_deg":
-                self.__tw_dir_deg = cs.bound_to_180(int(p.value))
+                tw_dir_deg = int(p.value)
+                if tw_dir_deg <= -180 or tw_dir_deg > 180:
+                    return SetParametersResult(
+                        successful=False, reason="tw_dir_deg must be in (-180, 180]"
+                    )
+                self.__tw_dir_deg = tw_dir_deg
             else:
                 self.__tw_speed_kmph = p.value
         return SetParametersResult(successful=True)
