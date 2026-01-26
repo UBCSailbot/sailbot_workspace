@@ -393,18 +393,18 @@ def test_update_if_needed(
                         gps, ais_ships, local_waypoint_index, received_new_global_waypoint,
                         old_path_list, result_index, generates_new_path
                         ):
-    UPDATE_TEST_PATH = lp.LocalPath(parent_logger=RcutilsLogger())
+    test_local_path = lp.LocalPath(parent_logger=RcutilsLogger())
     mock_old_ompl_path = create_mock(old_path_list, RcutilsLogger())
-    UPDATE_TEST_PATH._ompl_path = mock_old_ompl_path
+    test_local_path._ompl_path = mock_old_ompl_path
     old_path = Path(waypoints=old_path_list)
 
-    old_heading, _ = UPDATE_TEST_PATH.calculate_desired_heading_and_waypoint_index(
+    old_heading, _ = test_local_path.calculate_desired_heading_and_waypoint_index(
         old_path,
         local_waypoint_index,
         gps.lat_lon,
     )
 
-    heading, index, update = UPDATE_TEST_PATH.update_if_needed(
+    heading, index, update = test_local_path.update_if_needed(
         gps,
         ais_ships,
         Path(
