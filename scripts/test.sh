@@ -15,6 +15,10 @@ function signal_handler() {
     if [ -n "$(pgrep -f virtual_iridium)" ]; then
         pkill -f virtual_iridium
     fi
+
+    if [ -n "$ROCKBLOCK_SERVER_PID" ] && ps -p $ROCKBLOCK_SERVER_PID > /dev/null; then
+        kill $ROCKBLOCK_SERVER_PID
+    fi
 }
 
 # Package to test if selecting an individual package
