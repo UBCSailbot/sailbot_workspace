@@ -48,8 +48,10 @@ class MockWindSensor(Node):
             namespace="",
             parameters=[
                 ("pub_period_sec", rclpy.Parameter.Type.DOUBLE),
-                ("test_plan", rclpy.Parameter.Type.STRING),
                 # Default true wind parameters (can be overridden via params file or CLI)
+                ("tw_speed_kmph", rclpy.Parameter.Type.DOUBLE),
+                ("tw_dir_deg", rclpy.Parameter.Type.INTEGER),
+                ("test_plan", rclpy.Parameter.Type.STRING),
             ],
         )
 
