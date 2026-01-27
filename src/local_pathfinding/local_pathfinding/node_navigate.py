@@ -5,7 +5,6 @@ import os
 
 import custom_interfaces.msg as ci
 import rclpy
-from pyproj import Geod
 from rclpy.node import Node
 from shapely.geometry import MultiPolygon, Polygon
 
@@ -13,11 +12,11 @@ import local_pathfinding.coord_systems as cs
 import local_pathfinding.global_path as gp
 import local_pathfinding.obstacles as ob
 from local_pathfinding.local_path import LocalPath
+from local_pathfinding.ompl_path import MAX_SOLVER_RUN_TIME_SEC
 
 GLOBAL_WAYPOINT_REACHED_THRESH_KM = 3
 PATHFINDING_RANGE_KM = 30
 REALLY_FAR_M = 100000000
-GEODESIC = Geod(ellps="WGS84")
 
 
 def main(args=None):
@@ -108,8 +107,12 @@ class Sailbot(Node):
             self.get_parameter("pub_period_sec").get_parameter_value().double_value
         )
         self.get_logger().debug(f"Got parameter: {self.pub_period_sec=}")
+
+        # we need to give the solver time to run and the callback to return before calling again
+        # so we add the solver max allowed runtime to our publishing period
         self.desired_heading_timer = self.create_timer(
-            timer_period_sec=self.pub_period_sec, callback=self.desired_heading_callback
+            timer_period_sec=self.pub_period_sec + MAX_SOLVER_RUN_TIME_SEC,
+            callback=self.desired_heading_callback,
         )
 
         # attributes from subscribers
@@ -272,7 +275,7 @@ class Sailbot(Node):
             ]
 
         # Check if we're close enough to the global waypoint to head to the next one
-        _, _, distance_to_waypoint_m = GEODESIC.inv(
+        _, _, distance_to_waypoint_m = cs.GEODESIC.inv(
             self.gps.lat_lon.longitude,
             self.gps.lat_lon.latitude,
             self.saved_target_global_waypoint.longitude,
@@ -316,7 +319,7 @@ class Sailbot(Node):
             # Note: the global waypoints are in reverse order (index 0 is final waypoint)
             waypoint = global_path.waypoints[waypoint_index]
 
-            _, _, distance_to_waypoint_m = GEODESIC.inv(
+            _, _, distance_to_waypoint_m = cs.GEODESIC.inv(
                 boat_lat_lon.longitude,
                 boat_lat_lon.latitude,
                 waypoint.longitude,
