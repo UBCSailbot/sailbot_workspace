@@ -43,6 +43,8 @@ class MockGPS(Node):
             namespace="",
             parameters=[
                 ("pub_period_sec", rclpy.Parameter.Type.DOUBLE),
+                ("tw_speed_kmph", rclpy.Parameter.Type.DOUBLE),
+                ("tw_dir_deg", rclpy.Parameter.Type.INTEGER),
                 ("test_plan", rclpy.Parameter.Type.STRING),
             ],
         )
