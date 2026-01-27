@@ -8,7 +8,6 @@ skinparam packageBorderColor #333
 skinparam classBackgroundColor #ffffffff
 skinparam classBorderColor #333
 
-' === ROS Topics ===
 package "ROS 2 Topics" {
     class ROSTopics {
         **Subscribed by Sailbot:**
@@ -34,34 +33,62 @@ package "Production Code" PROD_BG {
         + ais_ships_callback()
         + gps_callback()
         + global_path_callback()
-        + wind_sensor_callback()
-        + publish_desired_heading()
+        + filtered_wind_sensor_callback()
+        + desired_heading_callback()
+        + get_desired_heading()
+        + determine_start_point_in_new_global_path()
         + publish_local_path_data()
+        + update_params()
     }
 
     class LocalPath {
-        + set_path(LocalPathState)
-        + update_waypoint_index()
-        + calculate_desired_heading()
+        + update_if_needed()
+        + calculate_desired_heading_and_waypoint_index()
+        + in_collision_zone()
+        - _update()
     }
 
     class LocalPathState {
-        position, heading, speed
+        position, speed, heading
         ais_ships, global_path
+        target_global_waypoint
         wind_speed, wind_direction
+        planner, reference_latlon
         obstacles
     }
 
     class OMPLPath {
-        + solve_path()
-        + get_solution_path()
-        + configure_state_space()
+        + __init__()
+        + get_path()
+        + get_cost()
+        + init_obstacles()
+        - _init_simple_setup()
     }
+
+    class Obstacle {
+        + is_valid()
+        + update_collision_zone()
+        + update_sailbot_data()
+        + update_reference_point()
+    }
+
+    class Boat {
+        - _update_boat_collision_zone()
+    }
+
+    class Land {
+        - _update_land_collision_zone()
+    }
+
+    Obstacle <|-- Boat
+    Obstacle <|-- Land
 
     class GlobalPath {
         + {static} get_path()
+        + {static} generate_path()
         + {static} interpolate_path()
-        + {static} post_path_to_server()
+        + {static} calculate_interval_spacing()
+        + {static} write_to_file()
     }
 }
 
@@ -112,11 +139,17 @@ package "Test Code" TEST_BG {
 }
 
 ' === Production Relationships ===
-Sailbot --> LocalPath : uses
-Sailbot --> GlobalPath : uses
-LocalPath --> LocalPathState : creates/manages
+Sailbot --> LocalPath : calls update_if_needed()
+LocalPath --> Sailbot : returns (heading, wp_index)
+LocalPath --> LocalPathState : creates
 LocalPath --> OMPLPath : instantiates
-OMPLPath --> LocalPath : returns solution
+OMPLPath --> LocalPath : returns solved path
+LocalPath --> Obstacle : checks collisions
+Obstacle --> LocalPath : returns validity
+OMPLPath --> Obstacle : initializes obstacles\n(via init_obstacles)
+Obstacle --> OMPLPath : returns obstacles
+Sailbot --> GlobalPath : reads global path
+GlobalPath --> Sailbot : returns waypoints
 
 ' === ROS Topic Relationships ===
 Sailbot <-down- ROSTopics : subscribes from\n(ais, gps, global_path, wind)
@@ -131,18 +164,38 @@ SailbotObserver --> VisualizerDashApp : sends data via queue
 VisualizerDashApp --> VisualizerState : consumes state
 
 ' === Test Relationships ===
-UnitTests -.-> Sailbot : tests
-UnitTests -.-> LocalPath : tests
-UnitTests -.-> OMPLPath : tests
-UnitTests -.-> LocalPathState : tests
-MockNodes -.-> Sailbot : provides test inputs
 MockNodes -.-> ROSTopics : publishes mock data
 
 ' === Layout Control ===
 Sailbot -[hidden]right- GlobalPath
 LocalPath -[hidden]down- OMPLPath
+Boat -[hidden]right- Land
 
 SailbotObserver -[hidden]right- VisualizerDashApp
 NodeNavigateObserver -[hidden]down- SailbotObserver
+
+' === Callback Sequence ===
+
+note as CallbackNote
+    **Timer Loop: desired_heading_callback()**
+    Executes every pub_period_sec (~0.5 seconds)
+
+    1. Timer → Sailbot.desired_heading_callback()
+    2. → get_desired_heading()
+    3. → LocalPath.update_if_needed()
+    4. → Create LocalPathState
+    5. → OMPLPath.__init__()
+    6. → OMPLPath.init_obstacles()
+    7. → Obstacle (Boat/Land)
+    8. ← returns solved path
+    9. ← returns (heading, waypoint_index)
+    10. → Publish to ROS desired_heading topic
+    11. → publish_local_path_data()
+    12. → Publish to ROS local_path topic
+
+    **Loop repeats**
+end note
+
+CallbackNote -[hidden]- LocalPath
 
 @enduml
