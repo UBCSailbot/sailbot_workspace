@@ -355,6 +355,7 @@ class Boat(Obstacle):
 
         if len(quad_roots) == 0:
             # Sailbot and this Boat will never collide
+            print("NO COLLISION!!" * 6)
             return PROJ_DISTANCE_NO_COLLISION
 
         # Use the smaller positive time, if there is one
