@@ -52,8 +52,8 @@ class MockGPS(Node):
         test_plan = TestPlan(self.get_parameter("test_plan").get_parameter_value().string_value)
         gps_data = test_plan.gps
 
-        self._tw_speed_kmph = float(test_plan.tw_speed_kmph)
-        self._tw_dir_deg = int(test_plan.tw_dir_deg)
+        self._tw_speed_kmph = test_plan.tw_speed_kmph
+        self._tw_dir_deg = test_plan.tw_dir_deg
         self._mean_speed_kmph = ci.HelperSpeed(speed=gps_data.speed.speed)
         self._heading_deg = ci.HelperHeading(heading=gps_data.heading.heading)
         self._current_location = ci.HelperLatLon(
