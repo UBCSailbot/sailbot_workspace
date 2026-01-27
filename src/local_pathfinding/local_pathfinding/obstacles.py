@@ -257,7 +257,21 @@ class Boat(Obstacle):
         projected_distance = self._calculate_projected_distance(cog_rad)
         bow_y = self.length / 2
 
-        if abs(rot_rps) < 1e-4:
+        if projected_distance == PROJ_DISTANCE_NO_COLLISION:
+
+            boat_collision_zone = Polygon(
+                [
+                    [-self.width / 2, -self.length / 2],
+                    [-self.width / 2, self.length / 2],
+                    [self.width / 2, self.length / 2],
+                    [self.width / 2, -self.length / 2],
+                ]
+            )
+            collision_zone = self._translate_collision_zone(boat_collision_zone)
+            self.collision_zone = collision_zone.buffer(BOAT_BUFFER, join_style=2)
+            prepared.prep(self.collision_zone)
+
+        elif abs(rot_rps) < 1e-4:
             # Straight line
             collision_zone_width = projected_distance * COLLISION_ZONE_STRETCH_FACTOR * self.width
             boat_collision_zone = Polygon(
@@ -299,7 +313,7 @@ class Boat(Obstacle):
 
             boat_collision_zone = Polygon([A, B, C])
             collision_zone = self._translate_collision_zone(boat_collision_zone)
-            self.collision_zone = collision_zone
+            self.collision_zone = collision_zone.buffer(BOAT_BUFFER, join_style=2)
 
         prepared.prep(self.collision_zone)
 
