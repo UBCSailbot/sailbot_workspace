@@ -134,7 +134,7 @@ def main(args=None):
     rclpy.init(args=args)
     node = MockAISNode()
     rclpy.spin(node)
-    node.destroy_node()  # optional; otherwise will be done by gc
+    node.destroy_node()
     rclpy.shutdown()
 
 

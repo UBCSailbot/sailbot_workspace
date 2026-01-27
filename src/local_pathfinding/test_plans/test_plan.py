@@ -40,13 +40,42 @@ class TestPlan:
             )
             for ship in data.get("ais", [])
         ]
+        self._gps = ci.GPS(
+            lat_lon=ci.HelperLatLon(
+                latitude=data["gps"]["latitude"], longitude=data["gps"]["longitude"]
+            ),
+            speed=ci.HelperSpeed(speed=data["gps"]["speed"]),
+            heading=ci.HelperHeading(heading=data["gps"]["heading"]),
+        )
+        self._tw_speed_kmph = data["tw_speed_kmph"]
+        self._tw_dir_deg = data["tw_dir_deg"]
+        self._global_path = ci.Path(
+            waypoints=[
+                ci.HelperLatLon(latitude=wp["latitude"], longitude=wp["longitude"])
+                for wp in data["global_path"]["waypoints"]
+            ]
+        )
 
-        # TODO continue with GPS, wind sensor, and global path data
+    @property
+    def global_path(self):
+        return self._global_path
+
+    @property
+    def gps(self):
+        return self._gps
+
+    @property
+    def ais(self):
+        return self._ais
 
     @property
     def land(self):
         return self._land
 
     @property
-    def ais(self):
-        return self._ais
+    def tw_speed_kmph(self):
+        return self._tw_speed_kmph
+
+    @property
+    def tw_dir_deg(self):
+        return self._tw_dir_deg
