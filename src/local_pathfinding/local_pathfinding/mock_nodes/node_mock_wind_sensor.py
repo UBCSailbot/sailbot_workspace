@@ -36,9 +36,9 @@ import rclpy
 from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
 from rclpy.parameter import Parameter
+from test_plan import TestPlan
 
 import local_pathfinding.wind_coord_systems as wcs
-from local_pathfinding.test_plans.test_plan import TestPlan
 
 
 class MockWindSensor(Node):

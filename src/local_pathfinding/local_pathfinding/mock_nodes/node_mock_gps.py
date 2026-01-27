@@ -11,10 +11,10 @@ from geopy.distance import great_circle
 from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
 from rclpy.parameter import Parameter
+from test_plan import TestPlan
 
 import local_pathfinding.coord_systems as cs
 from local_pathfinding.ompl_objectives import TimeObjective
-from test_plans.test_plan import TestPlan
 
 SECONDS_PER_HOUR = 3600
 

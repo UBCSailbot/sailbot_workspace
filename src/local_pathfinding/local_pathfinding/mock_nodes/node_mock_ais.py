@@ -3,9 +3,9 @@ import math
 import custom_interfaces.msg as ci
 import rclpy
 from rclpy.node import Node
+from test_plan import TestPlan
 
 import local_pathfinding.coord_systems as cs
-from test_plans.test_plan import TestPlan
 
 """
 Defines a Mock AIS Node that publishes AIS ships to the ROS Network for testing purposes
