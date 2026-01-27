@@ -37,8 +37,8 @@ from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 
-import local_pathfinding.mock_nodes.shared_utils as sc
 import local_pathfinding.wind_coord_systems as wcs
+from local_pathfinding.test_plans.test_plan import TestPlan
 
 
 class MockWindSensor(Node):
@@ -54,7 +54,7 @@ class MockWindSensor(Node):
         )
 
         test_plan = TestPlan(self.get_parameter("test_plan").get_parameter_value().string_value)
-        self._tw_dir_deg = itest_plan.tw_dir_deg
+        self._tw_dir_deg = test_plan.tw_dir_deg
         self._tw_speed_kmph = test_plan.tw_speed_kmph
         self._boat_heading_deg = test_plan.gps.heading.heading
         self._boat_speed_kmph = test_plan.gps.speed.speed
