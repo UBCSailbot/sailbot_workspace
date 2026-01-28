@@ -28,7 +28,7 @@
   width: 460px;
   flex-shrink: 0;
   overflow: hidden;
-  border-radius: 12px;
+  border-radius: 8px;
 }
 
 .image {
@@ -104,6 +104,11 @@
 .aboutTitle {
   font-size: 32px;
   font-weight: 600;
+}
+
+.sectionTitle {
+  font-size: 18px;
+  font-weight: 400;
 }
 
 .bodyText {
