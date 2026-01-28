@@ -4,22 +4,9 @@ import { useEffect, useRef } from 'react';
 import { DatasetDownload } from '../DatasetDownload/DatasetDownload';
 import styles from './datasetDownload.module.css';
 import gsap from 'gsap';
-import { useSelector } from 'react-redux';
-import type { GPSState } from '@/stores/GPS/GPSTypes';
-
-const formatTimestamp = (iso: string) => {
-  return iso.replace('T', ' ').split('.')[0];
-};
 
 const Download = () => {
-  // GSAP animation context
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  // Redux selector to get last updated timestamp
-  const gps = useSelector((state: any) => state.gps as GPSState);
-  const lastTimestamp = gps.data.length
-    ? gps.data[gps.data.length - 1].timestamp
-    : null;
+  const containerRef = useRef<HTMLDivElement>(null); // container ref for GSAP animations
 
   useEffect(() => {
     if (!containerRef.current || !containerRef.current.children.length) return;
@@ -43,9 +30,6 @@ const Download = () => {
     <div ref={containerRef} className={styles.downloadContainer}>
       <div className={styles.downloadHeader}>
         <h2>DOWNLOAD OUR DATASETS</h2>
-        <p suppressHydrationWarning>
-          {/* Last Updated: {lastTimestamp ? `${formatTimestamp(lastTimestamp)} PST (UTC-8)` : "NO DATA"} */}
-        </p>
       </div>
       <DatasetDownload />
     </div>

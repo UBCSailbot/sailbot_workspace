@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -182,7 +183,6 @@ const About = () => {
               {Description[displayIndex].title}
             </h3>
           </div>
-
           <p ref={textRef} className={styles.bodyText}>
             {Description[displayIndex].content}
           </p>
@@ -190,13 +190,11 @@ const About = () => {
       </div>
 
       {/* dataset link */}
-      <div className={styles.datasetSection}>
-        <a href='/download' className={styles.datasetAnchor}>
-          <p className={styles.datasetLink}>View our datasets →</p>
-        </a>
-      </div>
+      <Link href='/download' className={styles.datasetSection}>
+        <p className={styles.datasetLink}>View our datasets →</p>
+      </Link>
     </div>
   );
-};
+};  
 
 export default About;
