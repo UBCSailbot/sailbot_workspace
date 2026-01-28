@@ -14,6 +14,7 @@
     "web:start": "next start -p 3005",
     "web:start:host": "next start -p 3005 --hostname 0.0.0.0",
     "simulation": "bash scripts/run-simulation.sh",
+    "aisstream:ingest": "node scripts/aisstream-ingest.js",
     "lint": "prettier --check . && stylelint --allow-empty-input \"**/*.{css,scss}\" && next lint",
     "format": "prettier --write ."
   },

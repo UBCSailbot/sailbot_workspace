@@ -19,7 +19,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && locale-gen en_US.UTF-8 \
     && update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 \
     && rm -rf /var/lib/apt/lists/*
-ENV LANG en_US.UTF-8
+ENV LANG=en_US.UTF-8
 
 # Install timezone
 RUN ln -fs /usr/share/zoneinfo/UTC /etc/localtime \
@@ -82,8 +82,8 @@ RUN wget https://github.com/mongodb/mongo-cxx-driver/releases/download/r3.6.7/mo
     && cmake --build . --target  install
 ENV DEBIAN_FRONTEND=
 
-FROM ros-pre-base as pre-base
-LABEL org.opencontainers.image.source = "https://github.com/UBCSailbot/sailbot_workspace"
+FROM ros-pre-base AS pre-base
+LABEL org.opencontainers.image.source="https://github.com/UBCSailbot/sailbot_workspace"
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
@@ -113,7 +113,7 @@ ENV DEBIAN_FRONTEND=
 
 COPY --from=mongo-cxx-driver-builder /usr/local /usr/local
 
-FROM pre-base as base
+FROM pre-base AS base
 
 # install base apt dependencies
 ENV DEBIAN_FRONTEND=noninteractive
@@ -138,7 +138,7 @@ ENV DEBIAN_FRONTEND=
 
 # root bash configuration
 ENV ROS_WORKSPACE=/workspaces/sailbot_workspace
-COPY update-bashrc.sh /sbin/update-bashrc
+COPY .devcontainer/base-dev/update-bashrc.sh /sbin/update-bashrc
 RUN chmod +x /sbin/update-bashrc \
     && sync \
     && /bin/bash -c /sbin/update-bashrc \
@@ -147,7 +147,7 @@ RUN chmod +x /sbin/update-bashrc \
 # set timezone
 ENV TZ="America/Vancouver"
 
-FROM base as local-base
+FROM base AS local-base
 
 # install virtual iridium dependencies
 ENV DEBIAN_FRONTEND=noninteractive
@@ -197,7 +197,7 @@ RUN tar -xzf rapidyaml-0.5.0-src.tgz && \
     rm -rf *rapidyaml*
 ENV DEBIAN_FRONTEND=
 
-FROM local-base as ros-dev
+FROM local-base AS ros-dev
 
 # From https://github.com/athackst/dockerfiles/blob/32a872348af0ad25ec4a6e6184cb803357acb6ab/ros2/humble.Dockerfile
 ENV DEBIAN_FRONTEND=noninteractive
@@ -248,7 +248,7 @@ RUN groupadd --gid $USER_GID $USERNAME \
 ENV DEBIAN_FRONTEND=
 ENV AMENT_CPPCHECK_ALLOW_SLOW_VERSIONS=1
 
-FROM ros-dev as dev
+FROM ros-dev AS dev
 
 ARG USERNAME=ros
 ARG HOME=/home/$USERNAME
@@ -265,7 +265,7 @@ RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=${HOME}/comma
     && echo $SNIPPET >> "${HOME}/.bashrc"
 
 # ros bash configuration
-COPY update-bashrc.sh /sbin/update-bashrc
+COPY .devcontainer/base-dev/update-bashrc.sh /sbin/update-bashrc
 RUN chmod +x /sbin/update-bashrc \
     && chown ros /sbin/update-bashrc \
     && sync \
@@ -317,4 +317,17 @@ ENV DEBIAN_FRONTEND=
 # install dev python3 dependencies
 RUN pip3 install \
     # for juypter notebooks
-    ipykernel \
+    ipykernel
+
+# Change user to ros so the directories setup.sh create are accessible to ROS.
+WORKDIR ${ROS_WORKSPACE}
+USER ${USERNAME}
+
+COPY scripts/ ./scripts
+COPY src/ ./src
+
+RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && ./scripts/setup.sh"
+
+# Change user back to root
+USER root
+RUN rm -rf ./scripts ./src

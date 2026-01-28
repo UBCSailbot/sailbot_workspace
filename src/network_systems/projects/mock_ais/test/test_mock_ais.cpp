@@ -81,16 +81,16 @@ void checkAisShipInBounds(Vec2DFloat ais_ship_lat_lon, Vec2DFloat polaris_lat_lo
  */
 void checkAisShipTickUpdateLimits(AisShip updated_ship, AisShip past_ship)
 {
-    EXPECT_LE(updated_ship.speed_, SPEED_UBND);
-    EXPECT_GE(updated_ship.speed_, SPEED_LBND);
+    EXPECT_LE(updated_ship.speed_, SOG_SPEED_UBND);
+    EXPECT_GE(updated_ship.speed_, SOG_SPEED_LBND);
     EXPECT_LT(updated_ship.heading_, HEADING_UBND);
     EXPECT_GE(updated_ship.heading_, HEADING_LBND);
 
     if (std::abs(updated_ship.speed_ - past_ship.speed_) > MAX_SPEED_CHANGE) {
         if (updated_ship.speed_ < past_ship.speed_) {
-            EXPECT_LE(updated_ship.speed_ + SPEED_UBND - past_ship.speed_, MAX_SPEED_CHANGE);
+            EXPECT_LE(updated_ship.speed_ + SOG_SPEED_UBND - past_ship.speed_, MAX_SPEED_CHANGE);
         } else {
-            EXPECT_LE(past_ship.speed_ + SPEED_UBND - updated_ship.speed_, MAX_SPEED_CHANGE);
+            EXPECT_LE(past_ship.speed_ + SOG_SPEED_UBND - updated_ship.speed_, MAX_SPEED_CHANGE);
         }
     } else {
         // Passes check

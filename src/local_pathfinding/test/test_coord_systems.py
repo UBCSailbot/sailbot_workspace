@@ -6,21 +6,59 @@ import pytest
 from shapely.geometry import MultiPolygon, Point, Polygon, box
 
 import local_pathfinding.coord_systems as cs
+from local_pathfinding.coord_systems import XY
 
 
 @pytest.mark.parametrize(
-    "cartesian,true_bearing",
+    "cartesian,useRad,true_bearing",
     [
-        (0.0, 90.0),
-        (90.0, 0.0),
-        (180.0, 270.0),
-        (270.0, 180.0),
+        (0.0, False, 90.0),
+        (90.0, False, 0.0),
+        (180.0, False, 270.0),
+        (270.0, False, 180.0),
+        (0.0, True, math.pi / 2),
+        (math.pi / 2, True, 0.0),
+        (math.pi, True, (3 / 2) * math.pi),
+        ((3 / 2) * math.pi, True, math.pi),
     ],
 )
-def test_cartesian_to_true_bearing(cartesian: float, true_bearing: float):
-    assert cs.cartesian_to_true_bearing(cartesian) == pytest.approx(
+def test_cartesian_to_true_bearing(
+    cartesian: float,
+    useRad: bool,
+    true_bearing: float,
+):
+    assert cs.cartesian_to_true_bearing(cartesian, rad=useRad) == pytest.approx(
         true_bearing
     ), "incorrect angle conversion"
+
+
+@pytest.mark.parametrize(
+    "s1,s2,useRad,true_bearing",
+    [
+        (XY(0, 0), XY(0, 1), False, 0.0),  # north
+        (XY(0, 0), XY(1, 0), False, 90.0),  # east
+        (XY(0, 0), XY(0, -1), False, 180.0),  # south
+        (XY(0, 0), XY(-1, 0), False, -90.0),  # west
+        (XY(0, 0), XY(1, 1), False, 45.0),  # northeast
+        (XY(0, 0), XY(-1, 1), False, -45.0),  # northwest
+        (XY(0, 0), XY(1, -1), False, 135.0),  # southeast
+        (XY(0, 0), XY(-1, -1), False, -135.0),  # southwest
+        (XY(3, 3), XY(4, 4), False, 45.0),  # neither point is at the origin
+        (XY(0, 0), XY(0, 1), True, math.radians(0.0)),
+        (XY(0, 0), XY(1, 0), True, math.radians(90.0)),
+        (XY(0, 0), XY(0, -1), True, math.radians(180.0)),
+        (XY(0, 0), XY(-1, 0), True, math.radians(-90.0)),
+        (XY(0, 0), XY(1, 1), True, math.radians(45.0)),
+        (XY(0, 0), XY(-1, 1), True, math.radians(-45.0)),
+        (XY(0, 0), XY(1, -1), True, math.radians(135.0)),
+        (XY(0, 0), XY(-1, -1), True, math.radians(-135.0)),
+        (XY(3, 3), XY(4, 4), True, math.radians(45.0)),
+    ],
+)
+def test_get_path_segment_true_bearing(s1: XY, s2: XY, useRad: bool, true_bearing: float):
+    assert cs.get_path_segment_true_bearing(s1, s2, rad=useRad) == pytest.approx(
+        true_bearing
+    ), "incorrect bearing"
 
 
 @pytest.mark.parametrize(
@@ -46,6 +84,55 @@ def test_true_bearing_to_plotly_cartesian(true_bearing: float, plotly_cartesian:
     ), "incorrect angle conversion"
 
 
+# Bearing constants (radians, in the "0 = north, +π/2 = east" convention)
+NORTH = 0.0
+EAST = math.pi / 2
+SOUTH_PI = math.pi  # +π
+SOUTH_NEG_PI = -math.pi  # -π, same physical direction as +π
+WEST = -math.pi / 2
+NORTHEAST = math.pi / 4
+NORTHWEST = - math.pi / 4
+SOUTHEAST = 3 * math.pi / 4
+SOUTHWEST = -3 * math.pi / 4
+
+# Shared factors
+sin45 = 1.0 / math.sqrt(2.0)  # sin(π/4) = sin(45) = 1/√2
+cos45 = 1.0 / math.sqrt(2.0)  # cos(π/4) = sin(45) = 1/√2
+
+
+@pytest.mark.parametrize(
+    "angle_rad,speed,expected_xy",
+    [
+        # Cardinal directions
+        (NORTH, 10.0, cs.XY(0.0, 10.0)),        # North
+        (EAST,  5.0,  cs.XY(5.0, 0.0)),         # East
+        (SOUTH_PI,  2.0, cs.XY(0.0, -2.0)),     # South (+π)
+        (WEST,  4.0,  cs.XY(-4.0, 0.0)),        # West (-π/2)
+        (SOUTH_NEG_PI, 3.0, cs.XY(0.0, -3.0)),  # South (-π), same as +π
+
+        # Diagonals / 45° bearings
+        (NORTHEAST, 10.0, cs.XY(10.0 * sin45, 10.0 * cos45)),
+        (NORTHWEST, 10.0, cs.XY(-10.0 * sin45, 10.0 * cos45)),
+        (SOUTHEAST, 10.0, cs.XY(10.0 * sin45, -10.0 * cos45)),
+        (SOUTHWEST, 10.0, cs.XY(-10.0 * sin45, -10.0 * cos45)),
+        # Zero speed should always give zero vector regardless of angle
+        (NORTHEAST, 0.0, cs.XY(0.0, 0.0))
+    ],
+)
+def test_polar_to_cartesian(angle_rad: float, speed: float, expected_xy: cs.XY):
+    result = cs.polar_to_cartesian(angle_rad, speed)
+
+    # Component-wise check
+    assert (result.x, result.y) == pytest.approx(
+        (expected_xy.x, expected_xy.y), rel=1e-6), "incorrect angle(rad) to XY conversion"
+
+    # Magnitude should match the input speed
+    mag = math.hypot(result.x, result.y)
+    assert mag == pytest.approx(
+        abs(speed)
+    ), "resultant vector magnitude does not match speed_knots"
+
+
 @pytest.mark.parametrize(
     "meters,km",
     [(0.0, 0.0), (30, 0.03), (500, 0.5), (-30.5, -0.0305), (-0.0, 0.0)],
@@ -66,9 +153,9 @@ def test_km_to_meters(km: float, meters: float):
     "unbounded,bounded",
     [
         (0.0, 0.0),
-        (-180.0, -180.0),
+        (-180.0, 180.0),
         (179.0, 179.0),
-        (180.0, -180.0),
+        (180.0, 180.0),
         (-181.0, 179.0),
         (3603.14, 3.14),
     ],

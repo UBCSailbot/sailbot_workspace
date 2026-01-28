@@ -19,6 +19,7 @@
 #include <optional>
 #include <span>
 #include <stdexcept>
+#include <type_traits>
 
 // CAN frame definitions from: https://ubcsailbot.atlassian.net/wiki/spaces/prjt22/pages/1827176527/CAN+Frames
 namespace CAN_FP
@@ -37,6 +38,7 @@ enum class CanId : canid_t {
     PWR_MODE              = 0x00,
     MAIN_HEADING          = 0x01,
     MAIN_TR_TAB           = 0x02,
+    POWER_OFF             = 0x03,
     RESERVED              = 0x29,
     BMS_DATA_FRAME        = 0x30,
     SAIL_WIND             = 0x40,
@@ -115,10 +117,11 @@ enum class CanId : canid_t {
 inline bool isValidCanId(canid_t id)
 {
     return id == static_cast<canid_t>(CanId::PWR_MODE) || id == static_cast<canid_t>(CanId::MAIN_HEADING) ||
-           id == static_cast<canid_t>(CanId::MAIN_TR_TAB) || id == static_cast<canid_t>(CanId::RESERVED) ||
-           id == static_cast<canid_t>(CanId::BMS_DATA_FRAME) || id == static_cast<canid_t>(CanId::SAIL_WIND) ||
-           id == static_cast<canid_t>(CanId::DATA_WIND) || id == static_cast<canid_t>(CanId::RUDDER_DATA_FRAME) ||
-           id == static_cast<canid_t>(CanId::SAIL_AIS) || id == static_cast<canid_t>(CanId::PATH_GPS_DATA_FRAME) ||
+           id == static_cast<canid_t>(CanId::MAIN_TR_TAB) || id == static_cast<canid_t>(CanId::POWER_OFF) ||
+           id == static_cast<canid_t>(CanId::RESERVED) || id == static_cast<canid_t>(CanId::BMS_DATA_FRAME) ||
+           id == static_cast<canid_t>(CanId::SAIL_WIND) || id == static_cast<canid_t>(CanId::DATA_WIND) ||
+           id == static_cast<canid_t>(CanId::RUDDER_DATA_FRAME) || id == static_cast<canid_t>(CanId::SAIL_AIS) ||
+           id == static_cast<canid_t>(CanId::PATH_GPS_DATA_FRAME) ||
 
            (id >= static_cast<canid_t>(CanId::TEMP_SENSOR_START) &&
             id <= static_cast<canid_t>(CanId::TEMP_SENSOR_END)) ||
@@ -143,6 +146,7 @@ static const std::map<CanId, std::string> CAN_DESC{
   {CanId::PWR_MODE, "PWR_MODE (Power Mode)"},
   {CanId::MAIN_HEADING, "MAIN_HEADING (Main heading for rudder)"},
   {CanId::MAIN_TR_TAB, "MAIN_TR_TAB (Trim tab for sail)"},
+  {CanId::MAIN_HEADING, "POWER_OFF (Power will be shut off)"},
   {CanId::BMS_DATA_FRAME, "BMS_P_DATA_FRAME (Battery data)"},
   {CanId::RESERVED, "Reserved for mainframe (0x0 - 0x29)"},
   {CanId::SAIL_AIS, "SAIL_AIS (AIS ship data)"},
@@ -783,6 +787,61 @@ private:
 };
 
 /**
+ * @brief Power off class derived from BaseFrame. Only ever received when power shutoff is imminent.
+ *
+ */
+class PowerOff final : public BaseFrame
+{
+public:
+    static constexpr std::array<CanId, 1> POWER_OFF_IDS  = {CanId::POWER_OFF};
+    static constexpr uint8_t              CAN_BYTE_DLEN_ = 1;
+    static constexpr uint8_t              BYTE_OFF_VAL   = 0;
+    static constexpr uint8_t              POWER_OFF_VAL  = 0xF;
+
+    /**
+     * @brief Explicitly deleted no-argument constructor
+     *
+     */
+    PowerOff() = delete;
+
+    /**
+     * @brief Construct a PowerOff object from a Linux CanFrame representation
+     *
+     * @param cf Linux CanFrame
+     */
+    explicit PowerOff(const CanFrame & cf);
+
+    /**
+     * @brief Construct a PowerOff object given a byte val and CAN ID
+     *
+     * @param val     Value received
+     * @param id      CanId of the PowerOff frame
+     */
+    explicit PowerOff(uint8_t val, CanId id);
+
+    /**
+     * @return A string that can be printed or logged to debug a PowerOff object
+     */
+    std::string debugStr() const override;
+
+private:
+    /**
+     * @brief Private helper constructor for PowerOff objects
+     *
+     * @param id CanId of the PowerOff
+     */
+    explicit PowerOff(CanId id);
+
+    /**
+     * @brief Check if the assigned fields after constructing a PowerOff object are within bounds.
+     * @throws std::out_of_range if any assigned fields are outside of expected bounds
+     */
+    void checkBounds() const;
+
+    uint8_t val_;
+};
+
+/**
  * @brief A DesiredHeading class derived from the BaseFrame. Represents a desired heading for the rudder.
  *
  */
@@ -948,7 +1007,7 @@ public:
       CanId::TEMP_13,
       CanId::TEMP_14,
       CanId::TEMP_SENSOR_END};
-    static constexpr uint8_t CAN_BYTE_DLEN_ = 2;
+    static constexpr uint8_t CAN_BYTE_DLEN_ = 4;
     static constexpr uint8_t BYTE_OFF_TEMP  = 0;
 
     /**
@@ -1229,7 +1288,7 @@ public:
       CanId::PRESSURE_13,
       CanId::PRESSURE_14,
       CanId::PRESSURE_SENSOR_END};
-    static constexpr uint8_t CAN_BYTE_DLEN_    = 4;
+    static constexpr uint8_t CAN_BYTE_DLEN_    = 2;
     static constexpr uint8_t BYTE_OFF_PRESSURE = 0;
 
     /**
