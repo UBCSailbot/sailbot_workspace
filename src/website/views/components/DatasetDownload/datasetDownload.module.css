@@ -30,7 +30,7 @@
 
 .dataSetCard {
   border-radius: 8px;
-  background-color: #1D1D1D;
+  background-color: #1d1d1d;
   padding: 32px;
   width: 320px;
   display: flex;
@@ -78,6 +78,6 @@
 
 .dateUpdated {
   font-size: 14px;
-  opacity: 0.40;
+  opacity: 0.4;
   margin-top: 4px;
 }

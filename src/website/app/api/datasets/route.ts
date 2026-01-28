@@ -1,14 +1,13 @@
-import { NextResponse } from "next/server";
-import ConnectMongoDB from "@/lib/mongodb";
+import { NextResponse } from 'next/server';
+import ConnectMongoDB from '@/lib/mongodb';
 
-// import your models (names may differ in your repo)
-import AISShips from "@/models/AISShips";
-import Batteries from "@/models/Batteries";
-import GenericSensors from "@/models/GenericSensors";
-import GlobalPath from "@/models/GlobalPath";
-import GPS from "@/models/GPS";
-import LocalPath from "@/models/LocalPath";
-import WindSensors from "@/models/WindSensors";
+import AISShips from '@/models/AISShips';
+import Batteries from '@/models/Batteries';
+import GenericSensors from '@/models/GenericSensors';
+import GlobalPath from '@/models/GlobalPath';
+import GPS from '@/models/GPS';
+import LocalPath from '@/models/LocalPath';
+import WindSensors from '@/models/WindSensors';
 
 type LastUpdatedMap = Record<string, string | null>;
 
@@ -39,7 +38,7 @@ export async function GET() {
   } catch (error) {
     return NextResponse.json(
       { success: false, message: (error as Error).message },
-      { status: 400 }
+      { status: 400 },
     );
   }
 }
