@@ -65,7 +65,6 @@ const formatTimestamp = (iso: string) => {
 };
 
 export const DatasetDownload = () => {
-  // Redux selector to get last updated timestamp
   const [lastUpdated, setLastUpdated] = useState<LastUpdatedMap>({});
 
   useEffect(() => {

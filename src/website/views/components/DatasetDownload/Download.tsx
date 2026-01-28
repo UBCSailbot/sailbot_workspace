@@ -14,7 +14,7 @@ const Download = () => {
     const ctx = gsap.context(() => {
       const query = gsap.utils.selector(containerRef);
 
-      gsap.from(query('*'), {
+      gsap.from(query('*'), { // make EVERYTHING in the container go to their regular state *from* the following opacity & position:
         opacity: 0,
         y: 30,
         duration: 0.6,

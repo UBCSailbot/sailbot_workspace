@@ -24,9 +24,9 @@ const About = () => {
   useEffect(() => {
     if (!rootRef.current) return;
 
-    const context = gsap.context(() => {
-      // fade in all elements on page load
-      gsap.from(
+    const context = gsap.context(() => { // registering all animated items in a GSAP context (this prevents bugs like flickering)
+      // fade in the image, progress bar, and text on page load
+      gsap.from( // make fadeTargets go to their regular state *from* the following opacity & position:
         `.${styles.imageColumn}, .${styles.progress}, .${styles.textColumn}`,
         {
           opacity: 0,
@@ -38,7 +38,7 @@ const About = () => {
         },
       );
 
-      // fade in the dataset link when it reaches the viewport
+      // fade in the dataset link when it appears in the viewport
       gsap.from(`.${styles.datasetLink}`, {
         opacity: 0,
         y: 30,
@@ -47,7 +47,7 @@ const About = () => {
         delay: 0.15,
         scrollTrigger: {
           trigger: `.${styles.datasetLink}`,
-          start: 'top 80%',
+          start: 'top 80%', // specifically, trigger when the top of the element hits 80% of the viewport height
         },
       });
 
@@ -55,14 +55,14 @@ const About = () => {
       imageRefs.current.forEach((image, i) => {
         if (!image) return;
 
+        // when the image enters a given range (top 70% to bottom 30% of viewport), update ActiveIndex & trigger dot animation
         ScrollTrigger.create({
           trigger: image,
           start: 'top 70%',
           end: 'bottom 30%',
           onEnter: () => {
             setActiveIndex(i);
-
-            // dot animation when scrolling down
+            // dot animation when scrolling down:
             if (i >= 1 && i <= 3) {
               const dot = dotRefs.current[i - 1];
               dot && gsap.to(dot, {
@@ -75,8 +75,7 @@ const About = () => {
           },
           onEnterBack: () => {
             setActiveIndex(i);
-
-            // dot animation when scrolling up
+            // dot animation when scrolling up:
             if (i >= 0 && i <= 2) {
               const dot = dotRefs.current[i];
               dot && gsap.to(dot, {
@@ -97,22 +96,22 @@ const About = () => {
   useEffect(() => {
     if (!numberRef.current || !headingRef.current || !textRef.current) return;
 
-    const fadeTargets = [
+    const fadeTargets = [ // items being animated
       numberRef.current,
       headingRef.current,
       textRef.current,
     ];
-
-    const timeline = gsap.timeline();
+    
+    const timeline = gsap.timeline(); // in GSAP, a timeline is just a series of consecutive animations
     timeline
-      .to(fadeTargets, {
+      .to(fadeTargets, { // make fadeTargets go *to* the following opacity & position:
         opacity: 0,
         y: -10,
         duration: 0.2,
         ease: 'power1.out',
         stagger: 0.1,
       })
-      .add(() => setDisplayIndex(activeIndex))
+      .add(() => setDisplayIndex(activeIndex)) // we are only updating the displayIndex once all items are offscreen (prevents flickering)
       .set(fadeTargets, { y: 10 })
       .to(fadeTargets, {
         opacity: 1,
@@ -168,7 +167,7 @@ const About = () => {
                   dotRefs.current[dotIdx] = el;
                 }}
                 className={styles.progressDot}
-                style={{ marginBottom: `${80 - 40 * dotIdx}px` }}
+                style={{ marginBottom: `${80 - 40 * dotIdx}px` }} // styling so Dot 1 is 80px from the bottom of the line, Dot 2 is 40px, & Dot 3 is 0px
               />
             ))}
           </div>
