@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import {
   downloadGPSData,
   downloadAISShipsData,
@@ -11,85 +12,118 @@ import {
 } from '@/utils/DownloadData';
 import DownloadIcon from '@/public/icons/download.svg';
 import styles from './datasetDownload.module.css';
-import { describe } from 'node:test';
+
+type LastUpdatedMap = Record<string, string | null>;
 
 const dataSets = [
   {
-    title: 'GPS',
-    data: ['GPS', '12 hours'],
+    key: "GPS",
+    title: "GPS",
     action: downloadGPSData,
-    description: 'Download GPS data for the last 12 hours.',
+    description: "Vessel position, velocity, and heading measurements.",
   },
   {
-    title: 'AIS Ships',
-    data: ['AIS Ships', '12 hours'],
+    key: "AIS",
+    title: "AIS Ships",
     action: downloadAISShipsData,
-    description: 'Download AIS Ships data for the last 12 hours.',
+    description: "Position and size of nearby AIS ships.",
   },
   {
-    title: 'Global Path',
-    data: ['Global Path', '12 hours'],
+    key: "GlobalPath",
+    title: "Global Path",
     action: downloadGlobalPathData,
-    description: 'Download Global Path data for the last 12 hours.',
+    description: "Global vessel latitude and longitude path.",
   },
   {
-    title: 'Local Path',
-    data: ['Local Path', '12 hours'],
+    key: "LocalPath",
+    title: "Local Path",
     action: downloadLocalPathData,
-    description: 'Download Local Path data for the last 12 hours.',
+    description: "Local vessel latitude and longitude path.",
   },
   {
-    title: 'Batteries',
-    data: ['Batteries', '12 hours'],
+    key: "Batteries",
+    title: "Batteries",
     action: downloadBatteriesData,
-    description: 'Download Batteries data for the last 12 hours.',
+    description: "Battery voltage and current measurements.",
   },
   {
-    title: 'Wind Sensors',
-    data: ['Wind Sensors', '12 hours'],
+    key: "WindSensors",
+    title: "Wind Sensors",
     action: downloadWindSensorsData,
-    description: 'Download Wind Sensors data for the last 12 hours.',
+    description: "Wind speed and direction measurements.",
   },
   {
-    title: 'Generic Sensors',
-    data: ['Generic Sensors', '12 hours'],
+    key: "GenericSensors",
+    title: "Generic Sensors",
     action: downloadGenericSensorsData,
-    description: 'Download Generic Sensors data for the last 12 hours.',
+    description: "Download generic sensor data.",
   },
 ];
 
+const formatTimestamp = (iso: string) => {
+  return iso.split("T")[0];
+};
+
+
 export const DatasetDownload = () => {
+  // Redux selector to get last updated timestamp
+  const [lastUpdated, setLastUpdated] = useState<LastUpdatedMap>({});
+
+  useEffect(() => { 
+  (async () => {
+    const res = await fetch("/api/datasets");
+    const data = await res.json();
+
+    console.log("Last Updated Data:", res.status);
+    console.log("Last Updated Data:", data);
+
+    setLastUpdated(data.data);
+  })();
+}, []);
+
   return (
     <div className={styles.dataSetDownload}>
-      {dataSets.map((dataSet, index) => (
-        <div key={index} className={styles.dataSetCard}>
-          <div className={styles.title}>{dataSet.title}</div>
-          <div className={styles.description}>{dataSet.description}</div>
-          <div className={styles.downloadOptions}>
-            <div
-              className={styles.downloadButton}
-              onClick={() => dataSet.action('CSV')}
-            >
-              <DownloadIcon />
-              CSV
+      {dataSets.map((dataSet, index) => {
+        const lastUpdatedTimestamp = lastUpdated[dataSet.key];
+        return (
+          <div key={index} className={styles.dataSetCard}>
+            <div>
+              <div className={styles.title}>{dataSet.title}</div>
+              <div className={styles.description}>{dataSet.description}</div>
             </div>
-            <div
-              className={styles.downloadButton}
-              onClick={() => dataSet.action('XLSX')}
-            >
-              <DownloadIcon />
-              XLSX
+          <div>
+            <div className={styles.downloadOptions}>
+              <div
+                className={styles.downloadButton}
+                onClick={() => dataSet.action('CSV')}
+              >
+                <DownloadIcon />
+                CSV
+              </div>
+              <div
+                className={styles.downloadButton}
+                onClick={() => dataSet.action('XLSX')}
+              >
+                <DownloadIcon />
+                XLSX
+              </div>
+              <div
+                className={styles.downloadButton}
+                onClick={() => dataSet.action('JSON')}
+              >
+                <DownloadIcon />
+                JSON
+              </div>
             </div>
-            <div
-              className={styles.downloadButton}
-              onClick={() => dataSet.action('JSON')}
-            >
-              <DownloadIcon />
-              JSON
-            </div>
-          </div>
+            <p className={styles.dateUpdated}>
+              Last Updated:{" "}
+              {lastUpdatedTimestamp
+                ? `${formatTimestamp(lastUpdatedTimestamp)}`
+                : "NO DATA"}
+            </p>
         </div>
-      ))}
+        </div>
+      )})}
     </div>
   );
 };

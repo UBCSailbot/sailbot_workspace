@@ -13,47 +13,47 @@
   gap: 8px;
 }
 
+.downloadHeader h2 {
+  font-size: 32px;
+  font-weight: 700;
+}
+
 .dataSetDownload {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  display: flex;
+  flex-wrap: wrap;
+  max-width: 1200px;
   gap: 32px;
   padding-bottom: 200px;
   place-content: center;
+  justify-items: center;
 }
 
 .dataSetCard {
   border-radius: 8px;
   background-color: #1D1D1D;
   padding: 32px;
-  max-width: 320px;
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 @media (max-width: 1200px) {
-  .dataSetDownload {
-    grid-template-columns: repeat(2, 1fr);
-  }
   .dataSetCard {
     max-width: 1030px;
-  }
-}
-
-@media (max-width: 768px) {
-  .dataSetDownload {
-    grid-template-columns: 1fr;
   }
 }
 
 .title {
   font-size: 24px;
   font-weight: 600;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   width: fill;
 }
 
 .downloadOptions {
   display: flex;
   gap: 16px;
-  margin-top: 32px;
 }
 
 .downloadButton {
@@ -66,7 +66,18 @@
   opacity: 0.9;
 }
 
+.downloadButton:hover {
+  text-decoration: underline;
+}
+
 .description {
   font-size: 16px;
-  opacity: 0.60;
+  opacity: 0.75;
+  padding-bottom: 40px;
+}
+
+.dateUpdated {
+  font-size: 14px;
+  opacity: 0.40;
+  margin-top: 4px;
 }

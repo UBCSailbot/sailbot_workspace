@@ -92,7 +92,9 @@ const About = () => {
       .set(fadeTargets, { y: 10 })
       .to(fadeTargets, { opacity: 1, y: 0, duration: 0.25, ease: "power1.in", stagger: 0.15 });
 
-    return () => timeline.kill();
+    return () => {
+      timeline.kill();
+    };
   }, [activeIndex]);
 
   return (
