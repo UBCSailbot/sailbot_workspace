@@ -28,6 +28,14 @@ const Header = () => {
         >
           ABOUT
         </Link>
+        <Link
+          href='/download'
+          style={
+            currentPath === '/download' ? { textDecoration: 'underline' } : {}
+          }
+        >
+          DOWNLOAD
+        </Link>
       </div>
     </div>
   );

@@ -47,7 +47,10 @@ const speedGraph = (speedChartData: any) => {
       key='speedChartData'
       data={speedChartData}
       title='Speed'
-      seriesData={[{ label: 'Time' }, { label: 'Speed', unit: 'km/hr' }]}
+      seriesData={[
+        { label: 'Time' }, 
+        { label: 'Speed', unit: 'km/hr', stroke: 'blue'},
+      ]}
     />
   );
 };
@@ -60,8 +63,8 @@ const BatteriesVoltageGraph = (batteriesVoltageData: any) => {
       title='Batteries Voltage'
       seriesData={[
         { label: 'Time' },
-        { label: 'Battery 1 Voltage', unit: 'V' },
-        { label: 'Battery 2 Voltage', unit: 'V' },
+        { label: 'Battery 1 Voltage', unit: 'V' , stroke: 'blue' },
+        { label: 'Battery 2 Voltage', unit: 'V' , stroke: 'pink' },
       ]}
     />
   );
@@ -75,8 +78,8 @@ const BatteriesCurrentGraph = (batteriesCurrentData: any) => {
       title='Batteries Current'
       seriesData={[
         { label: 'Time' },
-        { label: 'Battery 1 Current', unit: 'A' },
-        { label: 'Battery 2 Current', unit: 'A' },
+        { label: 'Battery 1 Current', unit: 'A' , stroke: 'blue' },
+        { label: 'Battery 2 Current', unit: 'A' , stroke: 'pink' },
       ]}
     />
   );
@@ -90,8 +93,8 @@ const WindSensorsSpeedGraph = (windSensorsSpeedData: any) => {
       title='Wind Sensors'
       seriesData={[
         { label: 'Time' },
-        { label: 'Wind Sensor 1 Speed', unit: 'm/s' },
-        { label: 'Wind Sensor 2 Speed', unit: 'm/s' },
+        { label: 'Wind Sensor 1 Speed', unit: 'm/s' , stroke: 'blue' },
+        { label: 'Wind Sensor 2 Speed', unit: 'm/s' , stroke: 'pink' },
       ]}
     />
   );

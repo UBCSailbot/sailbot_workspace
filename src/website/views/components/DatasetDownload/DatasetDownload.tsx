@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import {
   downloadGPSData,
   downloadAISShipsData,
@@ -12,75 +13,114 @@ import {
 import DownloadIcon from '@/public/icons/download.svg';
 import styles from './datasetDownload.module.css';
 
+type LastUpdatedMap = Record<string, string | null>;
+
 const dataSets = [
   {
+    key: 'GPS',
     title: 'GPS',
-    data: ['GPS', '12 hours'],
     action: downloadGPSData,
+    description: 'Vessel position, velocity, and heading measurements.',
   },
   {
+    key: 'AIS',
     title: 'AIS Ships',
-    data: ['AIS Ships', '12 hours'],
     action: downloadAISShipsData,
+    description: 'Position and size of nearby AIS ships.',
   },
   {
+    key: 'GlobalPath',
     title: 'Global Path',
-    data: ['Global Path', '12 hours'],
     action: downloadGlobalPathData,
+    description: 'Global vessel latitude and longitude path.',
   },
   {
+    key: 'LocalPath',
     title: 'Local Path',
-    data: ['Local Path', '12 hours'],
     action: downloadLocalPathData,
+    description: 'Local vessel latitude and longitude path.',
   },
   {
+    key: 'Batteries',
     title: 'Batteries',
-    data: ['Batteries', '12 hours'],
     action: downloadBatteriesData,
+    description: 'Battery voltage and current measurements.',
   },
   {
+    key: 'WindSensors',
     title: 'Wind Sensors',
-    data: ['Wind Sensors', '12 hours'],
     action: downloadWindSensorsData,
+    description: 'Wind speed and direction measurements.',
   },
   {
+    key: 'GenericSensors',
     title: 'Generic Sensors',
-    data: ['Generic Sensors', '12 hours'],
     action: downloadGenericSensorsData,
+    description: 'Download generic sensor data.',
   },
 ];
 
+const formatTimestamp = (iso: string) => {
+  return iso.split('T')[0];
+};
+
 export const DatasetDownload = () => {
+  // Redux selector to get last updated timestamp
+  const [lastUpdated, setLastUpdated] = useState<LastUpdatedMap>({});
+
+  useEffect(() => {
+    (async () => {
+      const res = await fetch('/api/datasets');
+      const data = await res.json();
+
+      setLastUpdated(data.data);
+    })();
+  }, []);
+
   return (
     <div className={styles.dataSetDownload}>
-      {dataSets.map((dataSet, index) => (
-        <div key={index} className={styles.dataSetCard}>
-          <div className={styles.title}>{dataSet.title}</div>
-          <div className={styles.downloadOptions}>
-            <div
-              className={styles.downloadButton}
-              onClick={() => dataSet.action('CSV')}
-            >
-              <DownloadIcon />
-              CSV
+      {dataSets.map((dataSet, index) => {
+        const lastUpdatedTimestamp = lastUpdated[dataSet.key];
+        return (
+          <div key={index} className={styles.dataSetCard}>
+            <div>
+              <div className={styles.title}>{dataSet.title}</div>
+              <div className={styles.description}>{dataSet.description}</div>
             </div>
-            <div
-              className={styles.downloadButton}
-              onClick={() => dataSet.action('XLSX')}
-            >
-              <DownloadIcon />
-              XLSX
-            </div>
-            <div
-              className={styles.downloadButton}
-              onClick={() => dataSet.action('JSON')}
-            >
-              <DownloadIcon />
-              JSON
+            <div>
+              <div className={styles.downloadOptions}>
+                <div
+                  className={styles.downloadButton}
+                  onClick={() => dataSet.action('CSV')}
+                >
+                  <DownloadIcon />
+                  CSV
+                </div>
+                <div
+                  className={styles.downloadButton}
+                  onClick={() => dataSet.action('XLSX')}
+                >
+                  <DownloadIcon />
+                  XLSX
+                </div>
+                <div
+                  className={styles.downloadButton}
+                  onClick={() => dataSet.action('JSON')}
+                >
+                  <DownloadIcon />
+                  JSON
+                </div>
+              </div>
+              <p className={styles.dateUpdated}>
+                Last Updated:{' '}
+                {lastUpdatedTimestamp
+                  ? `${formatTimestamp(lastUpdatedTimestamp)}`
+                  : 'NO DATA'}
+              </p>
             </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 };
