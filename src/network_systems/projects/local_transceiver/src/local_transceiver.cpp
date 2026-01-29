@@ -135,6 +135,7 @@ bool LocalTransceiver::send()
 
     static constexpr int MAX_NUM_RETRIES = 20;  // allow retries because the connection is imperfect
     for (int i = 0; i < MAX_NUM_RETRIES; i++) {
+        clearSerialBuffer();  // Clear any stale data from previous iteration
         if (!send(at_write_cmd)) {
             continue;
         }
@@ -223,7 +224,7 @@ bool LocalTransceiver::debugSendAT(const std::string & data)
 
     static constexpr int MAX_NUM_RETRIES = 20;
     for (int i = 0; i < MAX_NUM_RETRIES; i++) {
-        // ::tcflush(serial_.lowest_layer().native_handle(), TCIFLUSH) == 0;
+        clearSerialBuffer();  // Clear any stale data from previous iteration
 
         if (!send(at_write_cmd)) {
             if (log_error_) {
@@ -575,4 +576,13 @@ std::string LocalTransceiver::streambufToStr(bio::streambuf & buf)
       bio::buffers_begin(buf.data()), bio::buffers_begin(buf.data()) + static_cast<int64_t>(buf.data().size()));
     buf.consume(buf.size());
     return str;
+}
+
+void LocalTransceiver::clearSerialBuffer()
+{
+    bio::streambuf            buf;
+    boost::system::error_code ec;
+    // Just reads any pending data - consumes it and does nothing with it
+    // This clears stale data in the serial buffer that may have accumulated from previous failed attempts
+    bio::read(serial_, buf, bio::transfer_at_least(0), ec);
 }

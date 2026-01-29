@@ -197,6 +197,13 @@ private:
     std::optional<std::string> readRsp();
 
     /**
+     * @brief Drain/clear any pending data in the serial buffer to remove stale data
+     *        from previous iterations or operations. This helps prevent data from one attempt/operation
+     *        from interfering with subsequent reads.
+     */
+    void clearSerialBuffer();
+
+    /**
      * @brief Parse the message received from the remote server
      *
      * @param msg message received from the remote server
