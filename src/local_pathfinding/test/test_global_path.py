@@ -210,12 +210,12 @@ def test_get_most_recent_file(file_path: str, global_path: Path, tmstmp: bool):
 # ------------------------- TEST GET_PATH -------------------------
 @pytest.mark.parametrize(
     "file_path",
-    ["/workspaces/sailbot_workspace/src/local_pathfinding/global_paths/mock_global_path.csv"],
+    ["/workspaces/sailbot_workspace/src/local_pathfinding/test_plans/basic.yaml"],
 )
 def test_get_path(file_path: str):
     """ "
     Args:
-        file_path (str): The path to the global path csv file.
+        file_path (str): The path to the global path yaml file.
     """
     global_path = get_path(file_path)
 
