@@ -64,12 +64,14 @@ class MockGPS(Node):
             self.get_parameter("pub_period_sec").get_parameter_value().double_value
         )
 
+        # Mock GPS publisher initialization
         self._gps_pub = self.create_publisher(
             msg_type=ci.GPS,
             topic="gps",
             qos_profile=10,
         )
 
+        # Desired heading subscriber
         self._desired_heading_sub = self.create_subscription(
             msg_type=ci.DesiredHeading,
             topic="desired_heading",
@@ -77,6 +79,7 @@ class MockGPS(Node):
             qos_profile=10,
         )
 
+        # Mock GPS timer
         self._mock_gps_timer = self.create_timer(
             timer_period_sec=self.pub_period_sec, callback=self.mock_gps_callback
         )
