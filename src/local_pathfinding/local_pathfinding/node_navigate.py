@@ -9,7 +9,7 @@ import local_pathfinding.global_path as gp
 import local_pathfinding.obstacles as ob
 from local_pathfinding.local_path import LocalPath
 from local_pathfinding.ompl_path import MAX_SOLVER_RUN_TIME_SEC
-from test_plans.test_plan import TestPlan
+from local_pathfinding.test_plans.test_plan import TestPlan
 
 GLOBAL_WAYPOINT_REACHED_THRESH_KM = 3
 PATHFINDING_RANGE_KM = 30
@@ -371,5 +371,4 @@ class Sailbot(Node):
 
 
 if __name__ == "__main__":
-    main()
     main()

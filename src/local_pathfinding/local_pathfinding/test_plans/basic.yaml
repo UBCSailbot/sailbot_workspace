@@ -1,0 +1,23 @@
+tw_dir_deg: 0
+tw_speed_kmph: 100.0 # must be a float
+
+gps:
+  latitude: 49.28
+  longitude: -123.18
+  speed: 15.0  # mean boat speed in kmph
+  heading: 180.0 # in degrees, heading of the boat
+
+ais:
+  - {id: 1, lat: 49.01261318191024, lon: -135.65593922412154, heading: 90.0, speed: 20.0, rot: 30, width: 1.0, height: 1.0}
+  - {id: 2, lat: 48.67919212345747, lon: -132.94724986187234, heading: 90.0, speed: 25.0, rot: 50, width: 2.0, height: 2.0}
+  - {id: 3, lat: 48.11352031871804, lon: -135.67990496461405, heading: 30.0, speed: 15.0, rot: -50, width: 3.0, height: 3.0}
+  - {id: 4, lat: 48.1970229368345, lon: -128.93710143805356, heading: 4.0, speed: 10.0, rot: -30, width: 4.0, height: 4.0}
+  - {id: 5, lat: 48.51027819947852, lon: -126.15925374786544, heading: 5.0, speed: 5.0, rot: 20, width: 5.0, height: 5.0}
+
+land:
+  - [
+      [-131.6402015411217, 48.17529213658183],
+      [-131.60225474130834, 48.53388702614243],
+      [-130.25340879955075, 48.46259064994289],
+      [-130.30067606308853, 48.1046204256494]
+    ]

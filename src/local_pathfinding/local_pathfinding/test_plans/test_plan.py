@@ -24,8 +24,11 @@ class TestPlan:
         if ext.lower() not in [".yaml", ".yml"]:
             raise ValueError(f"Unsupported test plan file extension: {ext}")
 
-        with open(os.path.join(os.path.dirname(__file__), file_name), "r") as file:
-            data = yaml.safe_load(file)
+        try:
+            with open(os.path.join(os.path.dirname(__file__), file_name), "r") as file:
+                data = yaml.safe_load(file)
+        except Exception as e:
+            raise RuntimeError(f"Failed to load test plan file '{file_name}': {e}")
 
         self._land = MultiPolygon([Polygon(p) for p in data.get("land", [])])
         self._ais = [
@@ -40,13 +43,44 @@ class TestPlan:
             )
             for ship in data.get("ais", [])
         ]
+        self._gps = ci.GPS(
+            lat_lon=ci.HelperLatLon(
+                latitude=data["gps"]["latitude"], longitude=data["gps"]["longitude"]
+            ),
+            speed=ci.HelperSpeed(speed=data["gps"]["speed"]),
+            heading=ci.HelperHeading(heading=data["gps"]["heading"]),
+        )
+        self._tw_speed_kmph = data["tw_speed_kmph"]
+        self._tw_dir_deg = data["tw_dir_deg"]
 
-        # TODO continue with GPS, wind sensor, and global path data
+        # global path will be added to TestPlan in a separate PR as its more tricky to handle
+        # self._global_path = ci.Path(
+        #     waypoints=[
+        #         ci.HelperLatLon(latitude=wp["latitude"], longitude=wp["longitude"])
+        #         for wp in data["global_path"]["waypoints"]
+        #     ]
+        # )
+
+    # @property
+    # def global_path(self):
+    #     return self._global_path
+
+    @property
+    def gps(self):
+        return self._gps
+
+    @property
+    def ais(self):
+        return self._ais
 
     @property
     def land(self):
         return self._land
 
     @property
-    def ais(self):
-        return self._ais
+    def tw_speed_kmph(self):
+        return self._tw_speed_kmph
+
+    @property
+    def tw_dir_deg(self):
+        return self._tw_dir_deg

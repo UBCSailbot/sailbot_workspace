@@ -5,7 +5,7 @@ import rclpy
 from rclpy.node import Node
 
 import local_pathfinding.coord_systems as cs
-from test_plans.test_plan import TestPlan
+from local_pathfinding.test_plans.test_plan import TestPlan
 
 """
 Defines a Mock AIS Node that publishes AIS ships to the ROS Network for testing purposes
@@ -54,7 +54,7 @@ class MockAISNode(Node):
             for ship in ais_ships:
                 csv_ship_ids.append(ship.id)
                 current_ship_ids = [ship.id for ship in self.ships]
-                if id > 0 and id not in current_ship_ids:
+                if ship.id > 0 and ship.id not in current_ship_ids:
                     self.ships.append(ship)
                     msg.ships.append(ship)
 
@@ -134,7 +134,7 @@ def main(args=None):
     rclpy.init(args=args)
     node = MockAISNode()
     rclpy.spin(node)
-    node.destroy_node()  # optional; otherwise will be done by gc
+    node.destroy_node()
     rclpy.shutdown()
 
 

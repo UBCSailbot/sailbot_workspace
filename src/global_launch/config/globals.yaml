@@ -10,6 +10,7 @@
 mock_global_path:
    ros__parameters:
       deploy_filepath: "/workspaces/sailbot_workspace/src/local_pathfinding/deploy_plan/deploy.yaml"
+      global_path_filepath: "/workspaces/sailbot_workspace/src/local_pathfinding/global_paths/mock_global_path.csv"
       interval_spacing: 30.0
       write: false
       gps_threshold: 1.5
