@@ -3,7 +3,6 @@
    ros__parameters:
       # Publishers' period (seconds): how often the publishers publish
       pub_period_sec: 1.0
-      mode: "development"
       test_plan: "basic.yaml"
 
 # local_pathfinding parameters
