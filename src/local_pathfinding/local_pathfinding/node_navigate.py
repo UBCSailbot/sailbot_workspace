@@ -64,7 +64,6 @@ class Sailbot(Node):
                 ("mode", rclpy.Parameter.Type.STRING),
                 ("pub_period_sec", rclpy.Parameter.Type.DOUBLE),
                 ("path_planner", rclpy.Parameter.Type.STRING),
-                ("use_mock_land", rclpy.Parameter.Type.BOOL),
                 ("test_plan", rclpy.Parameter.Type.STRING),
             ],
         )
@@ -125,7 +124,6 @@ class Sailbot(Node):
         self.local_waypoint_index = 0
         self.global_waypoint_index = -1
         self.saved_target_global_waypoint = None
-        self.use_mock_land = self.get_parameter("use_mock_land").get_parameter_value().bool_value
         self.mode = self.get_parameter("mode").get_parameter_value().string_value
         self.test_plan = self.get_parameter("test_plan").get_parameter_value().string_value
         self.planner = self.get_parameter("path_planner").get_parameter_value().string_value
@@ -135,7 +133,7 @@ class Sailbot(Node):
 
         # Initialize mock land obstacle
         self.land_multi_polygon = None
-        if self.use_mock_land:
+        if self.mode == "development":
             test_plan = TestPlan(self.test_plan)
             self.land_multi_polygon = test_plan.land
             self.get_logger().info("Loaded mock land data.")
