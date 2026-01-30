@@ -36,8 +36,8 @@ import rclpy
 from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
 from rclpy.parameter import Parameter
+from test_plan import TestPlan
 
-import local_pathfinding.mock_nodes.shared_utils as sc
 import local_pathfinding.wind_coord_systems as wcs
 from test_plans.test_plan import TestPlan
 
@@ -49,15 +49,22 @@ class MockWindSensor(Node):
             namespace="",
             parameters=[
                 ("pub_period_sec", rclpy.Parameter.Type.DOUBLE),
-                ("test_plan", rclpy.Parameter.Type.STRING),
                 # Default true wind parameters (can be overridden via params file or CLI)
+                ("tw_speed_kmph", rclpy.Parameter.Type.DOUBLE),
+                ("tw_dir_deg", rclpy.Parameter.Type.INTEGER),
+                ("test_plan", rclpy.Parameter.Type.STRING),
             ],
         )
+
+        test_plan = TestPlan(self.get_parameter("test_plan").get_parameter_value().string_value)
+        self._tw_dir_deg = test_plan.tw_dir_deg
+        self._tw_speed_kmph = test_plan.tw_speed_kmph
+        self._boat_heading_deg = test_plan.gps.heading.heading
+        self._boat_speed_kmph = test_plan.gps.speed.speed
 
         self.pub_period_sec = (
             self.get_parameter("pub_period_sec").get_parameter_value().double_value
         )
-        self.test_plan = self.get_parameter("test_plan").get_parameter_value().string_value
 
         self._mock_wind_sensor_timer = self.create_timer(
             timer_period_sec=self.pub_period_sec, callback=self.mock_wind_sensor_callback
@@ -70,9 +77,6 @@ class MockWindSensor(Node):
         self._gps_sub = self.create_subscription(
             msg_type=ci.GPS, topic="gps", callback=self.gps_callback, qos_profile=10
         )
-
-        # Cached parameter-backed values (updated through on-set-parameters callback).
-        self.initialize_mock_wind_sensor_params()
 
         self.add_on_set_parameters_callback(self._on_set_parameters)
 
@@ -94,22 +98,24 @@ class MockWindSensor(Node):
         self._wind_sensors_pub.publish(msg)
 
     def _on_set_parameters(self, params: List[Parameter]) -> SetParametersResult:
-        """ROS2 parameter update callback.
+        """This callback function serves as a guard to ensure values entered with `ros2 param set`
+        are valid before they are assigned to the parameters.
 
         Applies updates to true wind speed/direction. Values take effect on the next publish tick.
+
+        Rejects if tw_dir_deg is not in (-180, 180].
         """
-        try:
-            for p in params:
-                if p.name == "tw_dir_deg":
-                    new_direction_deg = int(p.value)
-                    sc.validate_tw_dir_deg(new_direction_deg)
-                    self._tw_dir_deg = new_direction_deg
-                else:
-                    self._tw_speed_kmph = p.value
-            return SetParametersResult(successful=True)
-        except Exception:
-            reason = "Please enter the direction in (-180, 180]."
-            return SetParametersResult(successful=False, reason=reason)
+        for p in params:
+            if p.name == "tw_dir_deg":
+                tw_dir_deg = int(p.value)
+                if tw_dir_deg <= -180 or tw_dir_deg > 180:
+                    return SetParametersResult(
+                        successful=False, reason="tw_dir_deg must be in (-180, 180]"
+                    )
+                self.__tw_dir_deg = tw_dir_deg
+            else:
+                self.__tw_speed_kmph = p.value
+        return SetParametersResult(successful=True)
 
     def gps_callback(self, msg: ci.GPS) -> None:
         """Callback function for the GPS subscription. Updates the boat's position.
