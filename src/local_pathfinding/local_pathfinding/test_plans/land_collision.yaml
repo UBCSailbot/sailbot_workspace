@@ -3,25 +3,18 @@ constants:
   tw_speed_kmph: &speed 15.0
 
 global_path:
-    tasks:
     - task: 1
       latitude: 48.20
       longitude: -130.50
-
     - task: 2
       latitude: 48.25
       longitude: -130.15
 
-gps:
-    global_params:
-        tw_dir_deg: *dir
-        tw_speed_kmph: *speed
-
-    state:
-        speed: 12.0
-        latitude: 48.15
-        longitude: -130.60
-        heading: 45
+sailbot_state:
+    speed: 12.0
+    latitude: 48.15
+    longitude: -130.60
+    heading: 45
 
 wind_sensor:
     tw_dir_deg: *dir

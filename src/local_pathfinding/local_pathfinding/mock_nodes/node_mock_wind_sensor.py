@@ -39,6 +39,7 @@ from rclpy.parameter import Parameter
 
 import local_pathfinding.mock_nodes.shared_utils as sc
 import local_pathfinding.wind_coord_systems as wcs
+from test_plans.test_plan import TestPlan
 
 
 class MockWindSensor(Node):
@@ -124,37 +125,13 @@ class MockWindSensor(Node):
     def initialize_mock_wind_sensor_params(self):
         """Initialize mock wind sensor parameters from test_plan file."""
 
-        data = sc.read_test_plan_file(self.test_plan)
+        test_plan = TestPlan(file_name=self.test_plan)
 
-        wind_sensor_data = data.get("wind_sensor", {})
+        # Load wind sensor data
+        self._tw_dir_deg, self._tw_speed_kmph = test_plan.wind_data
 
-        if wind_sensor_data is {}:
-            self.get_logger().fatal(
-                f"No wind_sensor section found in test plan file {self.test_plan}. "
-                "Using default parameters."
-            )
-
-        self._tw_dir_deg = int(wind_sensor_data["tw_dir_deg"])
-        self._tw_speed_kmph = float(wind_sensor_data["tw_speed_kmph"])
-
-        gps_data = data.get("gps", {})
-
-        if gps_data is {}:
-            self.get_logger().fatal(
-                f"No gps section found in test plan file {self.test_plan}. "
-                "Using default parameters."
-            )
-
-        state = gps_data.get("state", {})
-
-        if state is {}:
-            self.get_logger().fatal(
-                f"No gps section found in test plan file {self.test_plan}. "
-                "Using default parameters."
-            )
-
-        self._boat_heading_deg = float(state["heading"])
-        self._boat_speed_kmph = float(state["speed"])
+        # Load initial boat state
+        self._boat_heading_deg, self._boat_speed_kmph, _ = test_plan.sailbot_state
 
 
 def main(args=None):

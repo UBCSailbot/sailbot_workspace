@@ -3,25 +3,18 @@ constants:
   tw_speed_kmph: &speed 20.0
 
 global_path:
-    tasks:
     - task: 1
       latitude: 48.20
       longitude: -130.30
-
     - task: 2
       latitude: 48.30
       longitude: -130.50
 
-gps:
-    global_params:
-        tw_dir_deg: *dir
-        tw_speed_kmph: *speed
-
-    state:
-        speed: 14.0
-        latitude: 48.10
-        longitude: -130.40
-        heading: 0
+sailbot_state:
+    speed: 14.0
+    latitude: 48.10
+    longitude: -130.40
+    heading: 0
 
 wind_sensor:
     tw_dir_deg: *dir
@@ -31,4 +24,4 @@ ais:
     # Multiple vessels positioned to create collision risk scenarios
     vessels:
         # Vessel 1: Head-on collision course
-        - [101, 48.145, -130.400, 180.0, 18.0, 0, 2.0, 2.0]
+        - {id: 101, lat: 48.145, lon: -130.400, heading: 180.0, speed: 18.0, rot: 0, width: 2.0, height: 2.0}

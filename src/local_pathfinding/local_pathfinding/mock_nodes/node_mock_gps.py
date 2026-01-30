@@ -17,6 +17,7 @@ from rclpy.parameter import Parameter
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.mock_nodes.shared_utils as sc
 from local_pathfinding.ompl_objectives import TimeObjective
+from test_plans.test_plan import TestPlan
 
 SECONDS_PER_HOUR = 3600
 
@@ -178,35 +179,15 @@ class MockGPS(Node):
     def initialize_sailbot_state(self) -> None:
         """Initialize the sailbot state from the test plan file."""
 
-        data = sc.read_test_plan_file(self.test_plan)
-
-        gps_data = data.get("gps", {})
-
-        if gps_data is {}:
-            self.get_logger().fatal(
-                f"No gps section found in test plan file {self.test_plan}. "
-                "Using default parameters."
-            )
-
-        global_params = gps_data.get("global_params", {})
-        state = gps_data.get("state", {})
-
-        if global_params is {} or state is {}:
-            self.get_logger().fatal(
-                f"Invalid gps section found in test plan file {self.test_plan}. "
-                "Using default parameters."
-            )
-
-        # Load true wind parameters
-        self.__tw_speed_kmph = float(global_params["tw_speed_kmph"])
-        self.__tw_dir_deg = int(global_params["tw_dir_deg"])
+        test_plan = TestPlan(file_name=self.test_plan)
 
         # Load sailbot state
-        self.__mean_speed_kmph = ci.HelperSpeed(speed=float(state["speed"]))
-        self.__current_location = ci.HelperLatLon(
-            latitude=float(state["latitude"]), longitude=float(state["longitude"])
+        self.__mean_speed_kmph, self.__heading_deg, self.__current_location = (
+            test_plan.sailbot_state
         )
-        self.__heading_deg = ci.HelperHeading(heading=float(state["heading"]))
+
+        # Load wind data
+        self.__tw_speed_kmph, self.__tw_dir_deg = test_plan.wind_data
 
 
 def main(args=None):
