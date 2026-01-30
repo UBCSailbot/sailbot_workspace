@@ -8,8 +8,6 @@ import custom_interfaces.msg as ci
 import rclpy
 from rclpy.node import Node
 
-from test_plans.test_plan import TestPlan
-
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.global_path as gp
 
@@ -87,9 +85,18 @@ class MockGlobalPath(Node):
         """
         if self.mode == "development":
             # Resolve test_plan which may be a bare name like "basic.yaml"
-            file_name = self.get_parameter("test_plan").get_parameter_value().string_value
-            test_plan = TestPlan(file_name=file_name)
-            self.global_path = test_plan.global_path
+            test_plan = self.get_parameter("test_plan").get_parameter_value().string_value
+            if os.path.isabs(test_plan):
+                file_path = test_plan
+            else:
+                ros_workspace = os.getenv("ROS_WORKSPACE", "/workspaces/sailbot_workspace")
+                file_path = os.path.join(
+                    ros_workspace,
+                    "src",
+                    "local_pathfinding",
+                    "test_plans",
+                    test_plan,
+                )
         else:
             file_path = self.get_parameter("deploy_filepath")._value
 

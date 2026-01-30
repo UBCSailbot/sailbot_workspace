@@ -34,13 +34,4 @@ sudo apt-get update
 rosdep update --rosdistro "$ROS_DISTRO"
 rosdep install --from-paths src --ignore-src --rosdistro "$ROS_DISTRO" $DEP_FLAGS
 
-
-# Add test_plans to PYTHONPATH if not already present
-TEST_PLANS_PATH="/workspaces/sailbot_workspace/src/local_pathfinding/test_plans"
-case ":$PYTHONPATH:" in
-  *":$TEST_PLANS_PATH:"*) ;;
-  *) export PYTHONPATH="$TEST_PLANS_PATH${PYTHONPATH:+:$PYTHONPATH}" ;;
-esac
-
-
 source "$HOME/.bashrc"
