@@ -13,6 +13,10 @@ to South.
 In sailing, we normally talk about "where the wind is **coming from**". Somehow this ends up being more intuitive when
 talking about maneuvers or sail angle adjustments.
 
+**PATH uses convention 2 (meteorological convention)**: wind direction indicates where the wind is **coming from**. 
+For example, 0° in the global coordinate system means wind coming FROM North. See 
+[WindReference.md](../../src/local_pathfinding/WindReference.md) for more details.
+
 However, when describing the wind as a vector, it can make more sense for the vector to represent the actual
 speed and direction the air is flowing. Make sure to document which convention you are using in your work when
 its applicable, and don't be afraid to ask someone to clarify which convention they are using in their work.

@@ -266,7 +266,6 @@ class LocalPath:
         new_cost = ompl_path.get_cost(wp_index)
 
         heading = self.state.heading
-
         improvement = self.calculate_improvement(
             old_cost,
             heading_old_path,
