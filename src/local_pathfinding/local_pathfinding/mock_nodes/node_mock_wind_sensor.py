@@ -16,10 +16,17 @@ Subscribes:
 
 Parameters:
 * ``pub_period_sec`` (double, required): publish period (seconds)
-* ``tw_speed_kmph`` (double, default: 10.0): true wind speed (kmph)
-* ``tw_dir_deg`` (int, default: 90): true wind direction in global frame (deg)
+* ``tw_speed_kmph`` (double): true wind speed (kmph). Set via ``wind_params.sh`` script only.
+* ``tw_dir_deg`` (int): true wind direction in global frame (deg). Set via ``wind_params.sh``
+script only.
     * Valid range: (-180, 180]
-* Use ros2 param set {parameter_name} {value} to update parameters at runtime.
+
+Setting True Wind Parameters:
+* Must modify ``wind_params.yaml`` before running the shell script.
+* Must ensure both ``mock_wind_sensor`` and ``mock_gps`` nodes are running.
+* Run ``./local_pathfinding/mock_nodes/wind_params.sh`` to load parameters.
+* **WARNING**: Do NOT use ``ros2 param set`` for true wind values. This causes parameter
+  mismatch between nodes and breaks calculations. Always use the shell script.
 """
 
 from typing import List
@@ -30,14 +37,8 @@ from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 
-import local_pathfinding.mock_nodes.shared_constants as sc
+import local_pathfinding.mock_nodes.shared_utils as sc
 import local_pathfinding.wind_coord_systems as wcs
-
-
-def _validate_tw_dir_deg(value: int) -> None:
-    """Validate direction is in (-180, 180]."""
-    if not (-180 < value <= 180):
-        raise ValueError(f"tw_dir_deg must be in (-180, 180]; got {value}")
 
 
 class MockWindSensor(Node):
@@ -47,8 +48,8 @@ class MockWindSensor(Node):
             namespace="",
             parameters=[
                 ("pub_period_sec", rclpy.Parameter.Type.DOUBLE),
-                ("tw_speed_kmph", 10.0),
-                ("tw_dir_deg", 90),  # from the bow to the stern of the boat
+                ("tw_speed_kmph", sc.TW_SPEED_KMPH),
+                ("tw_dir_deg", sc.TW_DIRECTION_DEG),  # from the bow to the stern of the boat
             ],
         )
 
@@ -68,7 +69,7 @@ class MockWindSensor(Node):
             msg_type=ci.GPS, topic="gps", callback=self.gps_callback, qos_profile=10
         )
         self._boat_heading_deg = sc.START_HEADING.heading
-        self._boat_speed = sc.MEAN_SPEED.speed
+        self._boat_speed_kmph = sc.MEAN_SPEED.speed
 
         # Cached parameter-backed values (updated through on-set-parameters callback).
         self._tw_speed_kmph = float(self.get_parameter("tw_speed_kmph").value)
@@ -81,13 +82,11 @@ class MockWindSensor(Node):
             self._tw_dir_deg,
             self._tw_speed_kmph,
             self._boat_heading_deg,
-            self._boat_speed,
-            ret_rad=False
+            self._boat_speed_kmph,
+            ret_rad=False,
         )
-        aw_dir_boat_coord_deg = wcs.global_to_boat_coordinate(
-            self._boat_heading_deg,
-            aw_dir_deg
-        )
+
+        aw_dir_boat_coord_deg = wcs.global_to_boat_coordinate(self._boat_heading_deg, aw_dir_deg)
         msg = ci.WindSensor(
             speed=ci.HelperSpeed(speed=aw_speed_kmph),
             direction=int(aw_dir_boat_coord_deg),
@@ -99,19 +98,20 @@ class MockWindSensor(Node):
         """ROS2 parameter update callback.
 
         Applies updates to true wind speed/direction. Values take effect on the next publish tick.
+
+        Rejects if tw_dir_deg is not in (-180, 180].
         """
-        try:
-            for p in params:
-                if p.name == "tw_dir_deg":
-                    new_direction_deg = int(p.value)
-                    _validate_tw_dir_deg(new_direction_deg)
-                    self._tw_dir_deg = new_direction_deg
-                else:
-                    self._tw_speed_kmph = p.value
-            return SetParametersResult(successful=True)
-        except Exception:
-            reason = f"Please enter the direction in (-180, 180]. Got {p.value}."
-            return SetParametersResult(successful=False, reason=reason)
+        for p in params:
+            if p.name == "tw_dir_deg":
+                tw_dir_deg = int(p.value)
+                if tw_dir_deg <= -180 or tw_dir_deg > 180:
+                    return SetParametersResult(
+                        successful=False, reason="tw_dir_deg must be in (-180, 180]"
+                    )
+                self._tw_dir_deg = tw_dir_deg
+            else:
+                self._tw_speed_kmph = p.value
+        return SetParametersResult(successful=True)
 
     def gps_callback(self, msg: ci.GPS) -> None:
         """Callback function for the GPS subscription. Updates the boat's position.
@@ -122,7 +122,7 @@ class MockWindSensor(Node):
 
         self.get_logger().debug(f"received n {self._wind_sensors_pub.topic}: {msg}")
         self._boat_heading_deg = msg.heading.heading
-        self._boat_speed = msg.speed.speed
+        self._boat_speed_kmph = msg.speed.speed
 
 
 def main(args=None):

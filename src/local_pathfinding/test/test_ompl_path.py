@@ -27,7 +27,6 @@ LAND_KEY = -1
 def fresh_ompl_path():
     return ompl_path.OMPLPath(
         parent_logger=RcutilsLogger(),
-        max_runtime=1,
         local_path_state=LocalPathState(
             gps=GPS(lat_lon=HelperLatLon(latitude=0.0, longitude=0.0)),
             ais_ships=AISShips(),
