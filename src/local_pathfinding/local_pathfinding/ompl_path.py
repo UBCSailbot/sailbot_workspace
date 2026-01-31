@@ -393,7 +393,7 @@ def create_mock(
     y_coords = [xy.y for xy in xy_waypoints]
 
     # Create state space with appropriate bounds
-    space = base.SE2StateSpace()
+    space = base.DubinsStateSpace(turningRadius=MIN_TURNING_RADIUS_KM, isSymmetric=True)
     bounds = base.RealVectorBounds(dim=2)
 
     x_min, x_max = min(x_coords) - 100, max(x_coords) + 100
