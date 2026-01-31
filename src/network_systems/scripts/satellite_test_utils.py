@@ -1,9 +1,8 @@
 import argparse
 import random
+import subprocess
 
 import custom_interfaces.msg as ci
-from sensors_pb2 import Sensors
-from waypoint_pb2 import Waypoint
 
 
 def encode(filepath):
@@ -25,23 +24,27 @@ def encode(filepath):
 
     path.waypoints = waypoints
 
-    path_pb = path_to_proto(path)
+    path_pb = path_to_proto_bytes(path)
     print(path_pb)
 
 
-def path_to_proto(path):
-    path_pb = Sensors.Path()
+def path_to_proto_bytes(path):
+    proc = subprocess.Popen(
+        ["./build_path_proto"],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+    )
 
     for wp in path.waypoints:
-        waypoint_pb = path_pb.waypoints.add()
-        waypoint_pb.latitude = wp.latitude
-        waypoint_pb.longitude = wp.longitude
+        proc.stdin.write(f"{wp.latitude} {wp.longitude}\n".encode())
 
-    return path_pb
+    proc.stdin.close()
+    proto_bytes = proc.stdout.read()
+
+    return proto_bytes
 
 
-def decode(filepath):
-    i = 10
+# def decode(filepath):
 
 
 def main():
