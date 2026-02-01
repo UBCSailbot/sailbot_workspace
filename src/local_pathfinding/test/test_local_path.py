@@ -286,6 +286,124 @@ def test_in_collision_zone(local_path, local_wp_index, reference_latlon, path, o
     )  # noqa
 
 
+@pytest.mark.parametrize(
+    "old_cost, heading_old_path, new_cost, heading_new_path, heading, expected_improvement",
+    [
+        (0.0, 1.0, 0.0, -1.1, 0.0, -0.1),
+        (0.0, 1.0, 0.0, -1.0, 0.0, 0.0),
+        (0.0, 1.0, 0.0, 1.0, 0.0, 0.0),
+        (0.0, 1.0, 0.0, -0.8, 0.0, 0.2),
+        (0.0, 49.8, 0.0, 50.1, 50.0, 0.5),
+        (0.0, -179.0, 0.0, 178.0, 180.0, -1.0),
+    ],
+)
+def test_calculate_improvement(
+    local_path,
+    old_cost,
+    heading_old_path,
+    new_cost,
+    heading_new_path,
+    heading,
+    expected_improvement,
+):
+    result = local_path.calculate_improvement(
+        old_cost, heading_old_path, new_cost, heading_new_path, heading
+    )
+    assert result == pytest.approx(expected_improvement, abs=1e-3)
+
+
+def test_LocalPathState_parameter_checking():
+    with pytest.raises(ValueError):
+        lps = (
+            lp.LocalPathState(
+                gps=None,
+                ais_ships=AISShips(),
+                global_path=Path(
+                    waypoints=[
+                        HelperLatLon(latitude=0.0, longitude=0.0),
+                        HelperLatLon(latitude=1.0, longitude=1.0),
+                    ]
+                ),
+                target_global_waypoint=HelperLatLon(latitude=1.0, longitude=1.0),
+                filtered_wind_sensor=WindSensor(),
+                planner="rrtstar",
+            ),
+        )
+
+    with pytest.raises(ValueError):
+        lps = (
+            lp.LocalPathState(
+                gps=GPS(),
+                ais_ships=None,
+                global_path=Path(
+                    waypoints=[
+                        HelperLatLon(latitude=0.0, longitude=0.0),
+                        HelperLatLon(latitude=1.0, longitude=1.0),
+                    ]
+                ),
+                target_global_waypoint=HelperLatLon(latitude=1.0, longitude=1.0),
+                filtered_wind_sensor=WindSensor(),
+                planner="rrtstar",
+            ),
+        )
+
+    with pytest.raises(ValueError):
+        lps = (
+            lp.LocalPathState(
+                gps=GPS(),
+                ais_ships=AISShips(),
+                global_path=Path(waypoints=[]),
+                target_global_waypoint=HelperLatLon(),
+                filtered_wind_sensor=WindSensor(),
+                planner="rrtstar",
+            ),
+        )
+
+    with pytest.raises(ValueError):
+        lps = (
+            lp.LocalPathState(
+                gps=GPS(),
+                ais_ships=AISShips(),
+                global_path=None,
+                target_global_waypoint=None,
+                filtered_wind_sensor=WindSensor(),
+                planner="rrtstar",
+            ),
+        )
+
+    with pytest.raises(ValueError):
+        lps = (
+            lp.LocalPathState(
+                gps=GPS(),
+                ais_ships=AISShips(),
+                global_path=Path(
+                    waypoints=[
+                        HelperLatLon(latitude=0.0, longitude=0.0),
+                        HelperLatLon(latitude=1.0, longitude=1.0),
+                    ]
+                ),
+                target_global_waypoint=HelperLatLon(latitude=1.0, longitude=1.0),
+                filtered_wind_sensor=None,
+                planner="rrtstar",
+            ),
+        )
+    with pytest.raises(ValueError):
+        lps = (  # noqa
+            lp.LocalPathState(
+                gps=GPS(),
+                ais_ships=AISShips(),
+                global_path=Path(
+                    waypoints=[
+                        HelperLatLon(latitude=0.0, longitude=0.0),
+                        HelperLatLon(latitude=1.0, longitude=1.0),
+                    ]
+                ),
+                target_global_waypoint=HelperLatLon(latitude=1.0, longitude=1.0),
+                filtered_wind_sensor=WindSensor(),
+                planner=None,
+            ),
+        )
+
 # @pytest.mark.parametrize(
 #     """
 #     gps, ais_ships, local_waypoint_index, received_new_global_waypoint,
@@ -300,7 +418,8 @@ def test_in_collision_zone(local_path, local_wp_index, reference_latlon, path, o
 #             AISShips(),
 #             1,
 #             False,
-#             [HelperLatLon(latitude=0.0, longitude=0.0), HelperLatLon(latitude=3.0, longitude=3.0)],
+#             [HelperLatLon(latitude=0.0, longitude=0.0),
+#               HelperLatLon(latitude=3.0, longitude=3.0)],
 #             1,
 #             False,
 #         ),
@@ -322,7 +441,8 @@ def test_in_collision_zone(local_path, local_wp_index, reference_latlon, path, o
 #             AISShips(),
 #             1,
 #             True,
-#             [HelperLatLon(latitude=0.0, longitude=0.0), HelperLatLon(latitude=3.0, longitude=3.0)],
+#             [HelperLatLon(latitude=0.0, longitude=0.0),
+#              HelperLatLon(latitude=3.0, longitude=3.0)], #noqa
 #             1,
 #             True,
 #         ),
@@ -453,122 +573,3 @@ def test_in_collision_zone(local_path, local_wp_index, reference_latlon, path, o
 #     ), f"Expected update={generates_new_path}, got update={update}"
 #     assert index == result_index
 #     assert heading is not None, "Heading should always be returned"
-
-
-@pytest.mark.parametrize(
-    "old_cost, heading_old_path, new_cost, heading_new_path, heading, expected_improvement",
-    [
-        (0.0, 1.0, 0.0, -1.1, 0.0, -0.1),
-        (0.0, 1.0, 0.0, -1.0, 0.0, 0.0),
-        (0.0, 1.0, 0.0, 1.0, 0.0, 0.0),
-        (0.0, 1.0, 0.0, -0.8, 0.0, 0.2),
-        (0.0, 49.8, 0.0, 50.1, 50.0, 0.5),
-        (0.0, -179.0, 0.0, 178.0, 180.0, -1.0),
-    ],
-)
-def test_calculate_improvement(
-    local_path,
-    old_cost,
-    heading_old_path,
-    new_cost,
-    heading_new_path,
-    heading,
-    expected_improvement,
-):
-    result = local_path.calculate_improvement(
-        old_cost, heading_old_path, new_cost, heading_new_path, heading
-    )
-    assert result == pytest.approx(expected_improvement, abs=1e-3)
-
-
-def test_LocalPathState_parameter_checking():
-    with pytest.raises(ValueError):
-        lps = (
-            lp.LocalPathState(
-                gps=None,
-                ais_ships=AISShips(),
-                global_path=Path(
-                    waypoints=[
-                        HelperLatLon(latitude=0.0, longitude=0.0),
-                        HelperLatLon(latitude=1.0, longitude=1.0),
-                    ]
-                ),
-                target_global_waypoint=HelperLatLon(latitude=1.0, longitude=1.0),
-                filtered_wind_sensor=WindSensor(),
-                planner="rrtstar",
-            ),
-        )
-
-    with pytest.raises(ValueError):
-        lps = (
-            lp.LocalPathState(
-                gps=GPS(),
-                ais_ships=None,
-                global_path=Path(
-                    waypoints=[
-                        HelperLatLon(latitude=0.0, longitude=0.0),
-                        HelperLatLon(latitude=1.0, longitude=1.0),
-                    ]
-                ),
-                target_global_waypoint=HelperLatLon(latitude=1.0, longitude=1.0),
-                filtered_wind_sensor=WindSensor(),
-                planner="rrtstar",
-            ),
-        )
-
-    with pytest.raises(ValueError):
-        lps = (
-            lp.LocalPathState(
-                gps=GPS(),
-                ais_ships=AISShips(),
-                global_path=Path(waypoints=[]),
-                target_global_waypoint=HelperLatLon(),
-                filtered_wind_sensor=WindSensor(),
-                planner="rrtstar",
-            ),
-        )
-
-    with pytest.raises(ValueError):
-        lps = (
-            lp.LocalPathState(
-                gps=GPS(),
-                ais_ships=AISShips(),
-                global_path=None,
-                target_global_waypoint=None,
-                filtered_wind_sensor=WindSensor(),
-                planner="rrtstar",
-            ),
-        )
-
-    with pytest.raises(ValueError):
-        lps = (
-            lp.LocalPathState(
-                gps=GPS(),
-                ais_ships=AISShips(),
-                global_path=Path(
-                    waypoints=[
-                        HelperLatLon(latitude=0.0, longitude=0.0),
-                        HelperLatLon(latitude=1.0, longitude=1.0),
-                    ]
-                ),
-                target_global_waypoint=HelperLatLon(latitude=1.0, longitude=1.0),
-                filtered_wind_sensor=None,
-                planner="rrtstar",
-            ),
-        )
-    with pytest.raises(ValueError):
-        lps = (  # noqa
-            lp.LocalPathState(
-                gps=GPS(),
-                ais_ships=AISShips(),
-                global_path=Path(
-                    waypoints=[
-                        HelperLatLon(latitude=0.0, longitude=0.0),
-                        HelperLatLon(latitude=1.0, longitude=1.0),
-                    ]
-                ),
-                target_global_waypoint=HelperLatLon(latitude=1.0, longitude=1.0),
-                filtered_wind_sensor=WindSensor(),
-                planner=None,
-            ),
-        )
