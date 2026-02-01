@@ -433,14 +433,7 @@ def test_update_if_needed(
     generates_new_path,
 ):
     mock_old_ompl_path = create_mock(old_path_list, RcutilsLogger())
-    local_path._ompl_path = mock_old_ompl_path  # Use fixture instead
-    old_path = Path(waypoints=old_path_list)
-
-    old_heading, _ = local_path.calculate_desired_heading_and_waypoint_index(
-        old_path,
-        local_waypoint_index,
-        gps.lat_lon,
-    )
+    local_path._ompl_path = mock_old_ompl_path
 
     heading, index, update = local_path.update_if_needed(
         gps,
