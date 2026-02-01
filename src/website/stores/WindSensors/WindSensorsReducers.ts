@@ -25,7 +25,7 @@ export default class WindSensorsReducer extends BaseReducer {
   ) {
     return {
       ...state,
-      data: action.error,
+      error: action.error,
     };
   }
 }
