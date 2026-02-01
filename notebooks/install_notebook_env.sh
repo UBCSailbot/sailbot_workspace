@@ -1,3 +1,16 @@
+# This script creates a virtual environment specifically for use in Jupyter notebooks to ensure
+# compatibility between installations of matplotlib, pandas, and numpy and to keep those installations
+# separate from our base system
+
+
+# To get started using notebooks in the devcontainer:
+# 1. run this script
+# 2. ctl+shift+p  Developer: Reload Window
+# 3. open a .ipynb file and select the kernel: Python (notebook_env)
+#       If the kernel env does not appear, keep running Developer: Reload Window until it does.
+
+
+
 #!/bin/bash
 set -e
 
