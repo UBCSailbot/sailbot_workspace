@@ -8,7 +8,15 @@ from shapely.geometry import MultiPolygon, Polygon
 class TestPlan:
     _instance = None
 
-    """An immutable singleton collection of data defining a local pathfinding test plan."""
+    """An immutable singleton collection of data defining a local pathfinding test plan.
+
+    The choice to make the class immutable is just for simplicity's sake, it gets passed around a
+    lot so it's good to know nothing modifies it anywhere.
+
+    The choice to make it a singleton is to ensure file system I/O is done at most once, to load
+    the test plan from yaml, and then never again for the duration of the test.
+
+    """
 
     def __new__(cls, file_name: str):
         if cls._instance is None:

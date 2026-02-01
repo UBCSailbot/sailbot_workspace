@@ -1,6 +1,7 @@
 import custom_interfaces.msg as ci
 from shapely.geometry import MultiPolygon
-from src.local_pathfinding.test_plans.test_plan import TestPlan
+
+from test_plans.test_plan import TestPlan
 
 BASIC_PLAN = "basic.yaml"
 
