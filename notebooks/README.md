@@ -2,9 +2,11 @@
 
 UBC Sailbot's Jupyter notebooks for researching and exporing implementations.
 
-## Standards
+## Setup
+To get started using notebooks in the devcontainer:
+1. run `install_notebook_env.sh`
+2. ctl + shift + p  `Developer: Reload Window`
+3. open a `.ipynb` file and select the kernel: _Python (notebook_env)_. If the kernel env does not appear, keep running Developer: Reload Window until it does.
 
-1. In addition to the dependencies installed in [Sailbot Workspace](https://github.com/UBCSailbot/sailbot_workspace),
-notebooks may have additional dependencies that are installed in the first code block
-2. Implementations in notebooks should be complete: do not import functions from other UBC Sailbot repositories
-3. Notebooks should be organized into directories named like the UBC Sailbot repositories they correspond to
+## Standards
+1. Notebooks should be organized into directories named like the UBC Sailbot repositories they correspond to
