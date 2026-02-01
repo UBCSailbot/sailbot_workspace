@@ -3,12 +3,7 @@ import pytest
 from custom_interfaces.msg import (
     GPS,
     AISShips,
-    HelperAISShip,
-    HelperDimension,
-    HelperHeading,
     HelperLatLon,
-    HelperROT,
-    HelperSpeed,
     Path,
     WindSensor,
 )
@@ -18,7 +13,7 @@ from shapely.geometry import MultiPolygon, Polygon
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.local_path as lp
 from local_pathfinding.obstacles import Obstacle
-from local_pathfinding.ompl_path import OMPLPath, create_mock
+from local_pathfinding.ompl_path import OMPLPath
 
 REF = HelperLatLon(latitude=10.0, longitude=10.0)
 IMPROVEMENT_THRESHOLD = lp.IMPROVEMENT_THRESHOLD
