@@ -34,11 +34,11 @@ ROS parameters specific to the nodes in the local_pathfinding package.
 
 ### `mgp_main`
 
-**`deploy_filepath`**
+**`global_path_filepath`**
 
-- _Description_: The absolute filepath to a master deploy yaml file.
+- _Description_: The absolute filepath to a global path csv file.
 - _Datatype_: `string`
-- _Acceptable Values_: Any valid filepath to a properly formatted yaml file.
+- _Acceptable Values_: Any valid filepath to a properly formatted csv file.
 
 **`interval_spacing`**
 
