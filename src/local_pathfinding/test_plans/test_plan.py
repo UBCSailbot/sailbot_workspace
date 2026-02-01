@@ -47,8 +47,8 @@ class TestPlan:
             lat_lon=ci.HelperLatLon(
                 latitude=data["gps"]["latitude"], longitude=data["gps"]["longitude"]
             ),
-            speed=ci.HelperSpeed(speed=data["gps"]["speed"]),
-            heading=ci.HelperHeading(heading=data["gps"]["heading"]),
+            speed=ci.HelperSpeed(speed=data["gps"]["speed_kmph"]),
+            heading=ci.HelperHeading(heading=data["gps"]["heading_deg"]),
         )
         self._tw_speed_kmph = data["tw_speed_kmph"]
         self._tw_dir_deg = data["tw_dir_deg"]
