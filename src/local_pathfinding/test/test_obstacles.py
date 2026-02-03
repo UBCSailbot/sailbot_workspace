@@ -321,8 +321,9 @@ def test_calculate_projected_distance_same_loc(
     sailbot_speed: float,
 ):
     boat1 = Boat(reference_point, sailbot_position, sailbot_speed, ais_ship)
+    cog_rad = np.radians(ais_ship.cog.heading)
 
-    assert boat1._calculate_projected_distance() == pytest.approx(
+    assert boat1._calculate_projected_distance(cog_rad) == pytest.approx(
         0.0
     ), "incorrect projected distance"
 
@@ -357,7 +358,8 @@ def test_calculate_projected_distance_diff_loc(
     target_ship = Boat(
         reference_point_latlon, sailbot_position_latlon, sailbot_speed_kmph, ais_ship
     )
-    target_ship_dist_km = target_ship._calculate_projected_distance()
+    cog_rad = np.radians(ais_ship.cog.heading)
+    target_ship_dist_km = target_ship._calculate_projected_distance(cog_rad)
     travel_time_hr = target_ship_dist_km / ais_ship.sog.speed
     target_ship_speed_x_kmph = np.sin(np.radians(ais_ship.cog.heading)) * ais_ship.sog.speed
     target_ship_speed_y_kmph = np.cos(np.radians(ais_ship.cog.heading)) * ais_ship.sog.speed
@@ -381,7 +383,7 @@ def test_calculate_projected_distance_diff_loc(
     )
 
 
-# Test collision zone is created successfully
+# Test collision zone for straight line case
 @pytest.mark.parametrize(
     "reference_point,sailbot_position,ais_ship,sailbot_speed",
     [
@@ -401,7 +403,7 @@ def test_calculate_projected_distance_diff_loc(
         )
     ],
 )
-def test_collision_zone_boat(
+def test_collision_zone_straight_line_boat(
     reference_point: HelperLatLon,
     sailbot_position: HelperLatLon,
     ais_ship: HelperAISShip,
@@ -411,22 +413,21 @@ def test_collision_zone_boat(
     boat1.update_collision_zone()
 
     assert isinstance(boat1.collision_zone, Polygon)
-    if boat1.collision_zone is not None:
-        assert boat1.collision_zone.exterior.coords is not None
+    assert boat1.collision_zone is not None
+    assert boat1.collision_zone.exterior.coords is not None
 
 
-# Test collision zone is positioned correctly
-# ais_ship is positioned at the reference point
+# Test collision zone for no collision case
 @pytest.mark.parametrize(
     "reference_point,sailbot_position,ais_ship,sailbot_speed",
     [
         (
-            HelperLatLon(latitude=52.0, longitude=-136.0),
-            HelperLatLon(latitude=51.95785651405779, longitude=-136.26282894969611),
+            HelperLatLon(latitude=52.268119490007756, longitude=-136.9133983613776),
+            HelperLatLon(latitude=51.957, longitude=-136.262),
             HelperAISShip(
                 id=1,
-                lat_lon=HelperLatLon(latitude=52.0, longitude=-136.0),
-                cog=HelperHeading(heading=0.0),
+                lat_lon=HelperLatLon(latitude=51.957, longitude=-136.262),  # Same as sailbot
+                cog=HelperHeading(heading=30.0),
                 sog=HelperSpeed(speed=20.0),
                 width=HelperDimension(dimension=20.0),
                 length=HelperDimension(dimension=100.0),
@@ -436,7 +437,107 @@ def test_collision_zone_boat(
         )
     ],
 )
-def test_position_collision_zone_boat(
+def test_collision_zone_no_collision_boat(
+    reference_point: HelperLatLon,
+    sailbot_position: HelperLatLon,
+    ais_ship: HelperAISShip,
+    sailbot_speed: float,
+):
+    boat1 = Boat(reference_point, sailbot_position, sailbot_speed, ais_ship)
+    boat1.update_collision_zone()
+
+    assert isinstance(boat1.collision_zone, Polygon)
+    assert boat1.collision_zone is not None
+    # Circular zone should have many vertices
+    assert len(boat1.collision_zone.exterior.coords) > 10
+
+
+# Test collision zone for turning motion case
+@pytest.mark.parametrize(
+    "reference_point,sailbot_position,ais_ship,sailbot_speed",
+    [
+        (
+            HelperLatLon(latitude=52.268119490007756, longitude=-136.9133983613776),
+            HelperLatLon(latitude=51.95785651405779, longitude=-136.26282894969611),
+            HelperAISShip(
+                id=1,
+                lat_lon=HelperLatLon(latitude=51.97917631092298, longitude=-137.1106454702385),
+                cog=HelperHeading(heading=30.0),
+                sog=HelperSpeed(speed=20.0),
+                width=HelperDimension(dimension=20.0),
+                length=HelperDimension(dimension=100.0),
+                rot=HelperROT(rot=20),
+            ),
+            15.0,
+        ),
+        (
+            HelperLatLon(latitude=52.268119490007756, longitude=-136.9133983613776),
+            HelperLatLon(latitude=51.95785651405779, longitude=-136.26282894969611),
+            HelperAISShip(
+                id=1,
+                lat_lon=HelperLatLon(latitude=51.97917631092298, longitude=-137.1106454702385),
+                cog=HelperHeading(heading=30.0),
+                sog=HelperSpeed(speed=20.0),
+                width=HelperDimension(dimension=20.0),
+                length=HelperDimension(dimension=100.0),
+                rot=HelperROT(rot=-20),
+            ),
+            15.0,
+        ),
+    ],
+)
+def test_collision_zone_turning_boat(
+    reference_point: HelperLatLon,
+    sailbot_position: HelperLatLon,
+    ais_ship: HelperAISShip,
+    sailbot_speed: float,
+):
+    boat1 = Boat(reference_point, sailbot_position, sailbot_speed, ais_ship)
+    boat1.update_collision_zone()
+
+    assert isinstance(boat1.collision_zone, Polygon)
+    assert boat1.collision_zone is not None
+    assert boat1.collision_zone.exterior.coords is not None
+
+
+# COLLISION ZONE LOGIC
+
+
+# Test collision zone positioning for straight-line motion
+@pytest.mark.parametrize(
+    "reference_point,sailbot_position,ais_ship,sailbot_speed",
+    [
+        (
+            HelperLatLon(latitude=52.0, longitude=-136.0),
+            HelperLatLon(latitude=52.01, longitude=-136.0),
+            HelperAISShip(
+                id=1,
+                lat_lon=HelperLatLon(latitude=52.0, longitude=-136.0),
+                cog=HelperHeading(heading=0.0),  # north
+                sog=HelperSpeed(speed=20.0),
+                width=HelperDimension(dimension=20.0),
+                length=HelperDimension(dimension=100.0),
+                rot=HelperROT(rot=0),
+            ),
+            15.0,
+        ),
+        (
+            HelperLatLon(latitude=52.0, longitude=-136.0),
+            HelperLatLon(latitude=52.0, longitude=-135.99),
+            HelperAISShip(
+                id=1,
+                lat_lon=HelperLatLon(latitude=52.0, longitude=-136.0),
+                cog=HelperHeading(heading=90.0),
+                sog=HelperSpeed(speed=20.0),
+                width=HelperDimension(dimension=20.0),
+                length=HelperDimension(dimension=100.0),
+                rot=HelperROT(rot=0),
+            ),
+            15.0,
+        ),
+    ],
+)
+def test_straight_line_collision_zone_geometry(
     reference_point: HelperLatLon,
     sailbot_position: HelperLatLon,
     ais_ship: HelperAISShip,
@@ -445,16 +546,116 @@ def test_position_collision_zone_boat(
     boat1 = Boat(reference_point, sailbot_position, sailbot_speed, ais_ship)
 
     if boat1.collision_zone is not None:
-        unbuffered = boat1.collision_zone.buffer(-BOAT_BUFFER, join_style=2)
-        x, y = np.array(unbuffered.exterior.coords.xy)
-        x = np.array(x)
-        y = np.array(y)
-        assert (x[0] + cs.meters_to_km(boat1.ais_ship.width.dimension) / 2) == pytest.approx(
-            0, abs=0.001
+        unbuffered = boat1._raw_collision_zone
+
+        stern_x = -cs.meters_to_km(boat1.ais_ship.width.dimension) / 2
+        stern_y = -cs.meters_to_km(boat1.ais_ship.length.dimension) / 2
+
+        dx, dy = cs.latlon_to_xy(reference_point, ais_ship.lat_lon)
+        angle = np.radians(-ais_ship.cog.heading)
+        cos_t, sin_t = np.cos(angle), np.sin(angle)
+
+        stern_world = np.array(
+            [stern_x * cos_t - stern_y * sin_t + dx, stern_x * sin_t + stern_y * cos_t + dy]
         )
-        assert (y[0] + cs.meters_to_km(boat1.ais_ship.length.dimension) / 2) == pytest.approx(
-            0, abs=0.001
+
+        coords = np.array(unbuffered.exterior.coords)
+        dists = np.linalg.norm(coords - stern_world, axis=1)
+        closest = coords[np.argmin(dists)]
+
+        assert np.allclose(closest, stern_world, atol=0.001)
+
+
+# Test collision zone positioning for turning motion
+@pytest.mark.parametrize(
+    "reference_point,sailbot_position,ais_ship,sailbot_speed",
+    [
+        (
+            HelperLatLon(latitude=52.0, longitude=-136.0),
+            HelperLatLon(latitude=52.002, longitude=-135.998),  # ahead + right
+            HelperAISShip(
+                id=1,
+                lat_lon=HelperLatLon(latitude=52.0, longitude=-136.0),
+                cog=HelperHeading(heading=0.0),
+                sog=HelperSpeed(speed=20.0),
+                width=HelperDimension(dimension=20.0),
+                length=HelperDimension(dimension=100.0),
+                rot=HelperROT(rot=30),  # turning right
+            ),
+            15.0,
+        ),
+    ],
+)
+def test_turning_collision_zone_geometry(
+    reference_point: HelperLatLon,
+    sailbot_position: HelperLatLon,
+    ais_ship: HelperAISShip,
+    sailbot_speed: float,
+):
+    boat = Boat(reference_point, sailbot_position, sailbot_speed, ais_ship)
+
+    if boat._raw_collision_zone is not None:
+
+        unbuffered = boat._raw_collision_zone
+        coords = np.array(unbuffered.exterior.coords[:-1])
+        assert coords.shape == (3, 2)
+
+        bow_y = cs.meters_to_km(ais_ship.length.dimension) / 2
+        cog_rad = np.radians(ais_ship.cog.heading)
+
+        projected_distance = boat._calculate_projected_distance(cog_rad)
+
+        rot = ais_ship.rot.rot
+        rot_rps = cs.rot_to_rad_per_sec(rot)
+        dt = 5.0
+        delta_heading = rot_rps * dt
+        future_cog_rad = cog_rad + delta_heading
+
+        # Compute future boat position
+        speed_kmps = ais_ship.sog.speed / 3600.0
+        R = speed_kmps / abs(rot_rps)
+        x, y = cs.latlon_to_xy(reference_point, ais_ship.lat_lon)
+
+        cx = x - R * np.sin(cog_rad) * np.sign(rot_rps)
+        cy = y + R * np.cos(cog_rad) * np.sign(rot_rps)
+
+        future_x = cx + R * np.sin(cog_rad + delta_heading)
+        future_y = cy + R * np.cos(cog_rad + delta_heading)
+
+        future_projected_distance = boat._calculate_projected_distance(
+            future_cog_rad, position_override=(future_x, future_y)
         )
+
+        A = np.array([0.0, bow_y])
+        B = np.array([0.0, bow_y + projected_distance])
+        C = np.array(
+            [
+                future_projected_distance * np.sin(delta_heading),
+                bow_y + future_projected_distance * np.cos(delta_heading),
+            ]
+        )
+
+        expected_local = np.vstack([A, B, C])
+
+        dx, dy = cs.latlon_to_xy(reference_point, ais_ship.lat_lon)
+        angle_rad = np.radians(-ais_ship.cog.heading)
+        sin_t = np.sin(angle_rad)
+        cos_t = np.cos(angle_rad)
+
+        T = np.array(
+            [
+                [cos_t, -sin_t],
+                [sin_t, cos_t],
+            ]
+        )
+
+        rotated = np.matmul(expected_local, T.T)
+        translation = np.array([dx, dy])
+        expected_world = rotated + translation
+        coords_sorted = coords[np.lexsort((coords[:, 0], coords[:, 1]))]
+        expected_sorted = expected_world[np.lexsort((expected_world[:, 0], expected_world[:, 1]))]
+
+        assert np.allclose(coords_sorted, expected_sorted, atol=1e-6)
 
 
 # Test create collision zone raises error when id of passed ais_ship does not match self's id

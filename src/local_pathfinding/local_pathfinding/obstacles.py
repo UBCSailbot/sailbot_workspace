@@ -208,6 +208,7 @@ class Boat(Obstacle):
         self.ais_ship = ais_ship
         self.width = cs.meters_to_km(self.ais_ship.width.dimension)
         self.length = cs.meters_to_km(self.ais_ship.length.dimension)
+        self._raw_collision_zone = None
         self.update_collision_zone()
 
     def update_sailbot_data(
@@ -239,15 +240,7 @@ class Boat(Obstacle):
 
         # Calculate ROT in radians per second
         rot = self.ais_ship.rot.rot
-        if rot == -128:
-            rot_dpm = 0
-        elif abs(rot) == 127:
-            rot_dpm = 10
-        else:
-            rot_dpm = (rot / 4.733) ** 2
-        rot_rps = math.radians(rot_dpm / 60)
-        if rot < 0:
-            rot_rps *= -1
+        rot_rps = cs.rot_to_rad_per_sec(rot)
 
         # Calculate current and future heading and projected distances
         dt = 5.0
@@ -258,17 +251,15 @@ class Boat(Obstacle):
         bow_y = self.length / 2
 
         if projected_distance == PROJ_DISTANCE_NO_COLLISION:
-
-            boat_collision_zone = Polygon(
-                [
-                    [-self.width / 2, -self.length / 2],
-                    [-self.width / 2, self.length / 2],
-                    [self.width / 2, self.length / 2],
-                    [self.width / 2, -self.length / 2],
-                ]
+            # If no collision, create small collision zone around the boat
+            RADIUS_MULTIPLIER = 5
+            radius = cs.km_to_meters(max(self.width, self.length)) * RADIUS_MULTIPLIER
+            boat_collision_zone = Point(-self.width / 2, -self.length / 2).buffer(
+                radius, resolution=16
             )
-            collision_zone = self._translate_collision_zone(boat_collision_zone)
-            self.collision_zone = collision_zone.buffer(BOAT_BUFFER, join_style=2)
+            raw = self._translate_collision_zone(boat_collision_zone)
+            self._raw_collision_zone = raw
+            self.collision_zone = raw.buffer(radius + BOAT_BUFFER, join_style=2)
             prepared.prep(self.collision_zone)
 
         elif abs(rot_rps) < 1e-4:
@@ -282,8 +273,10 @@ class Boat(Obstacle):
                     [self.width / 2, -self.length / 2],
                 ]
             )
-            collision_zone = self._translate_collision_zone(boat_collision_zone)
-            self.collision_zone = collision_zone.buffer(BOAT_BUFFER, join_style=2)
+            raw = self._translate_collision_zone(boat_collision_zone)
+            self._raw_collision_zone = raw
+            self.collision_zone = raw.buffer(BOAT_BUFFER, join_style=2)
+            prepared.prep(self.collision_zone)
 
         else:
             # Turning motion
@@ -312,10 +305,10 @@ class Boat(Obstacle):
             ]
 
             boat_collision_zone = Polygon([A, B, C])
-            collision_zone = self._translate_collision_zone(boat_collision_zone)
-            self.collision_zone = collision_zone.buffer(BOAT_BUFFER, join_style=2)
-
-        prepared.prep(self.collision_zone)
+            raw = self._translate_collision_zone(boat_collision_zone)
+            self._raw_collision_zone = raw
+            self.collision_zone = raw.buffer(BOAT_BUFFER, join_style=2)
+            prepared.prep(self.collision_zone)
 
     def _translate_collision_zone(self, boat_collision_zone):
         # this code block translates and rotates the collision zone to the correct position
@@ -369,7 +362,6 @@ class Boat(Obstacle):
 
         if len(quad_roots) == 0:
             # Sailbot and this Boat will never collide
-            print("NO COLLISION!!" * 6)
             return PROJ_DISTANCE_NO_COLLISION
 
         # Use the smaller positive time, if there is one
