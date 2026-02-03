@@ -212,9 +212,14 @@ class LocalPath:
         )
         old_ompl_path = self._ompl_path
 
-        heading_new_path, wp_index = self.calculate_desired_heading_and_waypoint_index(
-            ompl_path.get_path(), 0, gps.lat_lon
-        )
+        try:
+            new_path = ompl_path.get_path()
+            heading_new_path, wp_index = self.calculate_desired_heading_and_waypoint_index(
+                new_path, 0, gps.lat_lon
+            )
+        except Exception as e:
+            self._logger.error(f"Failed to get new OMPL path: {e}")
+            return None, local_waypoint_index
 
         if received_new_global_waypoint:
             self._logger.debug("Updating local path because we have a new global waypoint")
@@ -227,9 +232,14 @@ class LocalPath:
             self._update(ompl_path)
             return heading_new_path, wp_index
 
-        heading_old_path, updated_wp_index = self.calculate_desired_heading_and_waypoint_index(
-            old_ompl_path.get_path(), local_waypoint_index, gps.lat_lon
-        )
+        try:
+            old_path = old_ompl_path.get_path()
+            heading_old_path, updated_wp_index = self.calculate_desired_heading_and_waypoint_index(
+                old_path, local_waypoint_index, gps.lat_lon
+            )
+        except Exception as e:
+            self._logger.error(f"Failed to get old OMPL path: {e}")
+            return None, local_waypoint_index
         # check if the current path goes through a collision zone.
         # No need to check for new path since it's fresh and ompl doesn't generate path that
         # go through a collision zone

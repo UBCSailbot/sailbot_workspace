@@ -34,6 +34,39 @@ Update diagram by editing diagrams/src/external_interfaces.puml and the PlantUML
 | HelperROT           | HelperAISShip                      |
 | HelperSpeed         | GPS, HelperAISShip, WindSensor     |
 
+## Safety and Error Handling
+
+### DesiredHeading Message - Stop Logic
+
+The `DesiredHeading` message includes a `sail` boolean field that controls whether the boat should proceed or stop:
+
+- **`sail = True`**: Boat should proceed with the specified heading (normal operation)
+- **`sail = False`**: Boat should stop/not sail (pathfinding failure or safety condition)
+
+#### When `sail` is set to `False`
+
+The local pathfinding node sets `sail = False` when:
+
+- OMPL path planning fails to find a valid solution
+- An exception occurs during path retrieval (e.g., invalid state space)
+- No safe path can be computed due to obstacles or constraints
+
+When `sail = False`:
+
+- The `heading.heading` field is set to `0.0`
+- The `steering` field is set to `0`
+- This signals a stop condition to the boat indicating pathfinding failure.
+
+#### Error Handling Implementation
+
+The pathfinding system uses try-except blocks to gracefully handle OMPL exceptions:
+
+1. **`ompl_path.get_path()`**: Catches exceptions when retrieving waypoints from OMPL solution paths
+2. **`local_path.update_if_needed()`**: Returns `(None, waypoint_index)` when path retrieval fails
+3. **`node_navigate.desired_heading_callback()`**: Detects `None` heading and publishes `DesiredHeading` with `sail = False`
+
+This ensures the boat receives an explicit stop command rather than crashing when pathfinding fails.
+
 ## Boat Simulator Interfaces
 
 ROS messages and services used in our [boat simulator](https://github.com/UBCSailbot/sailbot_workspace/tree/main/src/boat_simulator).

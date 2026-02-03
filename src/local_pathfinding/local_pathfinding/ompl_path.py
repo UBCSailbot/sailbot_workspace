@@ -219,19 +219,23 @@ class OMPLPath:
             self._logger.warning("Trying to get the waypoints of an unsolved OMPLPath")
             return ci.Path()
 
-        solution_path = self._simple_setup.getSolutionPath()
-        waypoints = []
+        try:
+            solution_path = self._simple_setup.getSolutionPath()
+            waypoints = []
 
-        for state in solution_path.getStates():
-            waypoint_XY = cs.XY(state.getX(), state.getY())
-            waypoint_latlon = cs.xy_to_latlon(self.state.reference_latlon, waypoint_XY)
-            waypoints.append(
-                ci.HelperLatLon(
-                    latitude=waypoint_latlon.latitude, longitude=waypoint_latlon.longitude
+            for state in solution_path.getStates():
+                waypoint_XY = cs.XY(state.getX(), state.getY())
+                waypoint_latlon = cs.xy_to_latlon(self.state.reference_latlon, waypoint_XY)
+                waypoints.append(
+                    ci.HelperLatLon(
+                        latitude=waypoint_latlon.latitude, longitude=waypoint_latlon.longitude
+                    )
                 )
-            )
 
-        return ci.Path(waypoints=waypoints)
+            return ci.Path(waypoints=waypoints)
+        except Exception as e:
+            self._logger.error(f"Exception occurred while getting path from OMPL: {e}")
+            return ci.Path()
 
     def update_objectives(self):
         """Update the objectives on the basis of which the path is optimized.
