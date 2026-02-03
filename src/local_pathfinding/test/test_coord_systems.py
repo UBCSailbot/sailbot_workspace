@@ -388,3 +388,21 @@ def test_latlon_polygons_to_xy_polygons_empty_Polygon():
     assert isinstance(result, List)
     assert len(result) == 1
     assert result[0].is_empty
+
+
+@pytest.mark.parametrize(
+    "rot, expected_rps",
+    [
+        (-128, 0.0),
+        (127,  math.radians(10 / 60)),
+        (-127, -math.radians(10 / 60)),
+        (0, 0.0),
+        (10,  math.radians(((10 / 4.733) ** 2) / 60)),
+        (-10, -math.radians(((10 / 4.733) ** 2) / 60)),
+        (50,  math.radians(((50 / 4.733) ** 2) / 60)),
+        (-50, -math.radians(((50 / 4.733) ** 2) / 60)),
+    ],
+)
+def test_rot_to_rad_per_sec(rot: int, expected_rps: float):
+    assert cs.rot_to_rad_per_sec(rot) == pytest.approx(expected_rps), \
+        f"Incorrect ROT conversion for rot={rot}"
