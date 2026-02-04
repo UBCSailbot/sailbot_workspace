@@ -407,8 +407,8 @@ def build_path_trace(
     if not local_x_km or not local_y_km:
         return None
     return go.Scatter(
-        x=[boat_xy_km[0]] + list(local_x_km),
-        y=[boat_xy_km[1]] + list(local_y_km),
+        x=list(local_x_km),
+        y=list(local_y_km),
         mode="lines",
         name="Path to Goal",
         line=dict(width=2, dash="dot", color="blue"),
