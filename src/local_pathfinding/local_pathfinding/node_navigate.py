@@ -189,7 +189,6 @@ class Sailbot(Node):
             msg.sail = False
         else:
             msg.heading.heading = desired_heading
-            msg.steering = 0
             msg.sail = True
 
         if self.desired_heading is None or desired_heading != self.desired_heading.heading.heading:

@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import os
 import pickle
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 import custom_interfaces.msg as ci
 from ompl import base
@@ -206,7 +206,7 @@ class OMPLPath:
         cost = solution_path.cost(obj)
         return cost.value()
 
-    def get_path(self) -> ci.Path:
+    def get_path(self) -> Optional[ci.Path]:
         """Get the collection of waypoints for the boat to follow.
 
         Returns:
@@ -235,7 +235,7 @@ class OMPLPath:
             return ci.Path(waypoints=waypoints)
         except Exception as e:
             self._logger.error(f"Exception occurred while getting path from OMPL: {e}")
-            return ci.Path()
+            return None
 
     def update_objectives(self):
         """Update the objectives on the basis of which the path is optimized.

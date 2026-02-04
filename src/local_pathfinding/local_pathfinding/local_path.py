@@ -214,6 +214,9 @@ class LocalPath:
 
         try:
             new_path = ompl_path.get_path()
+            if new_path is None:
+                self._logger.error("New OMPL path is None")
+                return None, local_waypoint_index
             heading_new_path, wp_index = self.calculate_desired_heading_and_waypoint_index(
                 new_path, 0, gps.lat_lon
             )
@@ -234,6 +237,9 @@ class LocalPath:
 
         try:
             old_path = old_ompl_path.get_path()
+            if old_path is None:
+                self._logger.error("Old OMPL path is None")
+                return None, local_waypoint_index
             heading_old_path, updated_wp_index = self.calculate_desired_heading_and_waypoint_index(
                 old_path, local_waypoint_index, gps.lat_lon
             )
@@ -296,4 +302,7 @@ class LocalPath:
     def _update(self, ompl_path: OMPLPath):
 
         self._ompl_path = ompl_path
-        self.path = self._ompl_path.get_path()
+        local_path = self._ompl_path.get_path()
+        if local_path is None:
+            self._logger.error("OMPL path is None, cannot update local path")
+        self.path = local_path
