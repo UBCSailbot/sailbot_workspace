@@ -9,7 +9,6 @@ import numpy as np
 from shapely import prepared
 from shapely.affinity import affine_transform
 from shapely.geometry import MultiPolygon, Point, Polygon
-from shapely.ops import unary_union
 
 import local_pathfinding.coord_systems as cs
 
@@ -18,7 +17,6 @@ DT = 0.5
 
 # Constants
 PROJ_DISTANCE_NO_COLLISION = 0.0
-BOAT_BUFFER = 0.25  # km
 COLLISION_ZONE_STRETCH_FACTOR = 1.25  # This factor changes the width of the boat collision zone
 
 
@@ -251,7 +249,7 @@ class Boat(Obstacle):
         bow_y = self.length / 2
 
         if projected_distance == PROJ_DISTANCE_NO_COLLISION:
-            # If no collision, create small collision zone around the boat
+            # If no collision detected, create small collision zone around the boat
             RADIUS_MULTIPLIER = 5
             radius = cs.km_to_meters(max(self.width, self.length)) * RADIUS_MULTIPLIER
             boat_collision_zone = Point(-self.width / 2, -self.length / 2).buffer(

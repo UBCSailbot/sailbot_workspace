@@ -258,7 +258,6 @@ class Sailbot(Node):
         Returns:
             float: The desired heading
         """
-        
 
         # Extra logic for when the global waypoint changes due to receiving a new global path
         received_new_global_waypoint = False

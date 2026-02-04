@@ -545,7 +545,7 @@ def test_straight_line_collision_zone_geometry(
 ):
     boat1 = Boat(reference_point, sailbot_position, sailbot_speed, ais_ship)
 
-    if boat1.collision_zone is not None:
+    if boat1._raw_collision_zone is not None:
         unbuffered = boat1._raw_collision_zone
 
         stern_x = -cs.meters_to_km(boat1.ais_ship.width.dimension) / 2
