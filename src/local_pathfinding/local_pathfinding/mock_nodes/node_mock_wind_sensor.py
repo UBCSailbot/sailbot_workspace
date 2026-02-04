@@ -108,9 +108,9 @@ class MockWindSensor(Node):
                     return SetParametersResult(
                         successful=False, reason="tw_dir_deg must be in (-180, 180]"
                     )
-                self.__tw_dir_deg = tw_dir_deg
+                self._tw_dir_deg = tw_dir_deg
             else:
-                self.__tw_speed_kmph = p.value
+                self._tw_speed_kmph = p.value
         return SetParametersResult(successful=True)
 
     def gps_callback(self, msg: ci.GPS) -> None:
