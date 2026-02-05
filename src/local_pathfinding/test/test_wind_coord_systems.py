@@ -19,7 +19,7 @@ import local_pathfinding.wind_coord_systems as wcs
         (-170.0, -30.0, -20.0),
         (120.0, -150.0, 150.0),
         (-45.0, 135.0, -90.0),
-    ]
+    ],
 )
 def test_boat_to_global_coordinate(boat_heading: float, wind_direction: float, expected: float):
     assert wcs.boat_to_global_coordinate(boat_heading, wind_direction) == pytest.approx(
@@ -39,14 +39,14 @@ def test_boat_to_global_coordinate(boat_heading: float, wind_direction: float, e
         (180.0, 0.0, 0.0),
         (-170.0, 150.0, 140.0),
         (120.0, -150.0, -90.0),
-    ]
+    ],
 )
-def test_global_to_boat_coordinate(boat_heading: float,
-                                   global_wind_direction: float,
-                                   expected: float):
-    assert (
-        wcs.global_to_boat_coordinate(boat_heading, global_wind_direction) == pytest.approx(expected) # noqa
-    ), "incorrect angle conversion"
+def test_global_to_boat_coordinate(
+    boat_heading: float, global_wind_direction: float, expected: float
+):
+    assert wcs.global_to_boat_coordinate(boat_heading, global_wind_direction) == pytest.approx(
+        expected
+    ), "incorrect angle conversion"  # noqa
 
 
 @pytest.mark.parametrize(
@@ -109,8 +109,7 @@ def test_get_apparent_wind_direction(
     expected_speed: float,
 ):
     aw_dir_rad, aw_speed_kmph = wcs.get_apparent_wind(
-        tw_direction_degrees,
-        tw_speed, heading_degrees, speed
+        tw_direction_degrees, tw_speed, heading_degrees, speed
     )
 
     # Convert radians to degrees for easier comparison
@@ -152,3 +151,29 @@ def test_mock_wind_sensor_pipeline(
     assert aw_speed_kmph == pytest.approx(
         expected=expected_aw_speed, abs=1
     ), f"Apparent wind speed mismatch: {aw_speed_kmph} != {expected_aw_speed}"
+
+
+@pytest.mark.parametrize(
+    "boat_heading_rad,tw_dir_rad,expected",
+    [
+        (0, 0, 0),
+        (0, math.radians(45), math.radians(45)),
+        (0, math.radians(90), math.radians(90)),
+        (0, math.radians(135), math.radians(135)),
+        (0, math.radians(180), math.radians(180)),
+        (0, math.radians(-45), math.radians(-45)),
+        (0, math.radians(-90), math.radians(-90)),
+        (0, math.radians(-135), math.radians(-135)),
+        (math.radians(45), 0, math.radians(-45)),
+        (math.radians(90), 0, math.radians(-90)),
+        (math.radians(135), 0, math.radians(-135)),
+        (math.radians(180), 0, math.radians(180)),
+        (math.radians(-45), 0, math.radians(45)),
+        (math.radians(-90), 0, math.radians(90)),
+        (math.radians(-135), 0, math.radians(135)),
+        (math.radians(-179), 0, math.radians(179)),
+    ],
+)
+def test_get_true_wind_angle(boat_heading_rad: float, tw_dir_rad: float, expected: float):
+    twa = wcs.get_true_wind_angle(boat_heading_rad, tw_dir_rad)
+    assert twa == pytest.approx(expected, abs=0.1)
