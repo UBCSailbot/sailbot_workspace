@@ -72,7 +72,7 @@ public:
               mode.c_str(), db_name.c_str(), host.c_str(), std::to_string(port).c_str(),
               std::to_string(num_threads).c_str());
 
-            SailbotDB sailbot_db(db_name, MONGODB_CONN_STR);
+            SailbotDB sailbot_db(db_name, SailbotDB::MONGODB_CONN_STR());
             if (!sailbot_db.testConnection()) {
                 throw std::runtime_error("Failed to connect to database");
             }

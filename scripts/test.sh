@@ -39,6 +39,9 @@ trap 'signal_handler' EXIT
 if [ -f install/local_setup.bash ]; then source install/local_setup.bash; fi
 
 if [[ "$PACKAGE" == "network_systems" || "$PACKAGE" == "" ]]; then
+    # Change MONGODB_PASSWORD password
+    export MONGODB_PASSWORD="YE5aQ61K1qnIYJCm"
+
     NET_DIR=src/network_systems
     if [ -d $NET_DIR ]; then
         ./scripts/run_virtual_iridium.sh &> /dev/null &
