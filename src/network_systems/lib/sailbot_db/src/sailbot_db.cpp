@@ -40,7 +40,11 @@ const std::string & SailbotDB::MONGODB_CONN_STR()
     static const std::string conn_str = [] {
         const char * pwd = std::getenv("MONGODB_PASSWORD");  //NOLINT(concurrency-mt-unsafe)
         if (pwd == nullptr || std::strcmp(pwd, "placeholder") == 0) {
-            throw std::runtime_error("set the MONGODB_PASSWORD in test.sh");
+            const char * github_uri = std::getenv("MONGODB_URI");  //NOLINT(concurrency-mt-unsafe)
+            if (github_uri != nullptr) {
+                return std::string(github_uri);  // If running in GitHub Actions, use the full URI from secrets
+            }
+            throw std::runtime_error("set the MONGODB_PASSWORD in test.sh, DO NOT PUSH THE PASSWORD TO GITHUB");  // If running tests locally
         }
         return "mongodb+srv://software:" + std::string(pwd) + "@dev.khxge.mongodb.net/?appName=dev";
     }();

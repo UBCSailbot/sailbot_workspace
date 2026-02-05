@@ -40,7 +40,7 @@ if [ -f install/local_setup.bash ]; then source install/local_setup.bash; fi
 
 if [[ "$PACKAGE" == "network_systems" || "$PACKAGE" == "" ]]; then
     # Change MONGODB_PASSWORD password
-    export MONGODB_PASSWORD="YE5aQ61K1qnIYJCm"
+    export MONGODB_PASSWORD="placeholder"  # DO NOT PUSH THE ACTUAL PASSWORD TO GITHUB
 
     NET_DIR=src/network_systems
     if [ -d $NET_DIR ]; then
