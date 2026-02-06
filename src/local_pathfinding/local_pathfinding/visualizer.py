@@ -17,7 +17,7 @@ import math
 from collections import deque
 from dataclasses import dataclass
 from multiprocessing import Queue
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Any, Dict, List, Optional, Tuple
 
 import custom_interfaces.msg as ci
 import dash
@@ -31,7 +31,7 @@ import local_pathfinding.wind_coord_systems as wcs
 from local_pathfinding.ompl_path import OMPLPath
 
 UPDATE_INTERVAL_MS = 2500
-
+DEFAULT_PLOT_RANGE = [-100, 100]
 BOX_BUFFER_SIZE_KM = 1.0
 
 WIND_BOX_X_DOMAIN = (0.76, 0.99)
@@ -95,6 +95,7 @@ class WindBoxConfig:
         annotations: List[Dict[str, Any]]: List of text annotation dicts for wind vector labels in
                                         fig.add_annotation().
     """
+
     layout_config: Dict[str, Any]
     wind_arrows: List[Dict[str, Any]]
     background_info: Dict[str, Any]
@@ -291,8 +292,7 @@ def get_unit_vector(vec: cs.XY) -> cs.XY:
 
 
 def compute_goal_change(
-    last_goal_xy_km: Optional[Tuple[float, float]],
-    goal_xy_km: Tuple[float, float]
+    last_goal_xy_km: Optional[Tuple[float, float]], goal_xy_km: Tuple[float, float]
 ) -> GoalChange:
     """
     Determine whether the local goal moved since the last update (with some jitter tolerance).
@@ -331,8 +331,8 @@ def initial_plot() -> go.Figure:
     fig.update_layout(
         xaxis_title="X (Km)",
         yaxis_title="Y (Km)",
-        xaxis=dict(range=[-100, 100]),
-        yaxis=dict(range=[-100, 100]),
+        xaxis=dict(range=DEFAULT_PLOT_RANGE),
+        yaxis=dict(range=DEFAULT_PLOT_RANGE),
     )
     return fig
 
@@ -389,9 +389,7 @@ def build_goal_trace(goal_xy_km: Tuple[float, float], angle_deg: float) -> go.Sc
 
 
 def build_path_trace(
-    local_x_km: List[float],
-    local_y_km: List[float],
-    boat_xy_km: Tuple[float, float]
+    local_x_km: List[float], local_y_km: List[float], boat_xy_km: Tuple[float, float]
 ) -> Optional[go.Scatter]:
     """
     Create a dotted line trace connecting the local waypoints to the goal.
@@ -417,9 +415,7 @@ def build_path_trace(
 
 
 def build_boat_trace(
-    state: VisualizerState,
-    boat_xy_km: Tuple[float, float],
-    dist_to_goal_km: float
+    state: VisualizerState, boat_xy_km: Tuple[float, float], dist_to_goal_km: float
 ) -> go.Scatter:
     """
     Create the boat marker trace (filled arrow-head/ triangle) at the current boat position.
@@ -596,7 +592,7 @@ def configure_wind_box_elements(state: VisualizerState) -> WindBoxConfig:
             zeroline=True,
             visible=False,
             fixedrange=True,
-        )
+        ),
     }
 
     # Re-Calculating vectors for better scaling in the wind box inset.
@@ -621,25 +617,27 @@ def configure_wind_box_elements(state: VisualizerState) -> WindBoxConfig:
 
     # Function for adding re-calculated wind vectors arrows to the wind box inset
     def add_arrow(origin, dx, dy, color, title, mag):
-        wind_arrows.append({
-            "x": origin[0],
-            "y": origin[1],
-            "ax": origin[0] - dx,
-            "ay": origin[1] - dy,
-            "xref": "x2",
-            "yref": "y2",
-            "axref": "x2",
-            "ayref": "y2",
-            "showarrow": True,
-            "arrowhead": 3,
-            "arrowsize": 0.5,
-            "arrowwidth": 3,
-            "arrowcolor": color,
-            "standoff": 2,
-            "text": "",
-            "hovertext": (f"<b>{title}</b><br>" f"speed: {mag:.2f} kmph<br>"),
-            "hoverlabel": dict(bgcolor="white")
-        })
+        wind_arrows.append(
+            {
+                "x": origin[0],
+                "y": origin[1],
+                "ax": origin[0] - dx,
+                "ay": origin[1] - dy,
+                "xref": "x2",
+                "yref": "y2",
+                "axref": "x2",
+                "ayref": "y2",
+                "showarrow": True,
+                "arrowhead": 3,
+                "arrowsize": 0.5,
+                "arrowwidth": 3,
+                "arrowcolor": color,
+                "standoff": 2,
+                "text": "",
+                "hovertext": (f"<b>{title}</b><br>" f"speed: {mag:.2f} kmph<br>"),
+                "hoverlabel": dict(bgcolor="white"),
+            }
+        )
 
     add_arrow(app_origin, aw_dx, aw_dy, "purple", "️Apparent Wind", aw_mag)
     add_arrow(true_origin, tw_dx, tw_dy, "blue", "️True Wind", tw_mag)
@@ -660,55 +658,63 @@ def configure_wind_box_elements(state: VisualizerState) -> WindBoxConfig:
 
     # labels for wind vectors and boat vector
     annotations = [
-       {"x": -8,
-        "y": 4,
-        "xref": "x2",
-        "yref": "y2",
-        "text": f"Boat - {bw_mag:.2f} kmph",
-        "showarrow": False,
-        "align": "left",
-        "xanchor": "left",
-        "font": {"size": 12, "color": "red"}},
-       {"x": -8,
-        "y": 0,
-        "xref": "x2",
-        "yref": "y2",
-        "text": f"True - {tw_mag:.2f} kmph",
-        "showarrow": False,
-        "align": "left",
-        "xanchor": "left",
-        "font": {"size": 12, "color": "blue"}},
-       {"x": -8,
-        "y": -4,
-        "xref": "x2",
-        "yref": "y2",
-        "text": f"Apparent - {aw_mag:.2f} kmph",
-        "showarrow": False,
-        "align": "left",
-        "xanchor": "left",
-        "font": {"size": 12, "color": "purple"}},
-       {"x": 0,
-        "y": 6,
-        "xref": "x2",
-        "yref": "y2",
-        "showarrow": False,
-        "text": "<b>Wind</b>",
-        "font": {"size": 12, "color": "black"}},
-       {"x": 6,
-        "y": 0,
-        "xref": "x2",
-        "yref": "y2",
-        "showarrow": False,
-        "text": "●",
-        "font": {"size": 12, "color": "lightgreen"}}
+        {
+            "x": -8,
+            "y": 4,
+            "xref": "x2",
+            "yref": "y2",
+            "text": f"Boat - {bw_mag:.2f} kmph",
+            "showarrow": False,
+            "align": "left",
+            "xanchor": "left",
+            "font": {"size": 12, "color": "red"},
+        },
+        {
+            "x": -8,
+            "y": 0,
+            "xref": "x2",
+            "yref": "y2",
+            "text": f"True - {tw_mag:.2f} kmph",
+            "showarrow": False,
+            "align": "left",
+            "xanchor": "left",
+            "font": {"size": 12, "color": "blue"},
+        },
+        {
+            "x": -8,
+            "y": -4,
+            "xref": "x2",
+            "yref": "y2",
+            "text": f"Apparent - {aw_mag:.2f} kmph",
+            "showarrow": False,
+            "align": "left",
+            "xanchor": "left",
+            "font": {"size": 12, "color": "purple"},
+        },
+        {
+            "x": 0,
+            "y": 6,
+            "xref": "x2",
+            "yref": "y2",
+            "showarrow": False,
+            "text": "<b>Wind</b>",
+            "font": {"size": 12, "color": "black"},
+        },
+        {
+            "x": 6,
+            "y": 0,
+            "xref": "x2",
+            "yref": "y2",
+            "showarrow": False,
+            "text": "●",
+            "font": {"size": 12, "color": "lightgreen"},
+        },
     ]
     return WindBoxConfig(layout_config, wind_arrows, background_shape, annotations)
 
 
 def compute_and_add_state_space(
-    boat_xy_km: Tuple[float, float],
-    goal_xy_km: Tuple[float, float],
-    fig: go.Figure
+    boat_xy_km: Tuple[float, float], goal_xy_km: Tuple[float, float], fig: go.Figure
 ):
     """
     Build the visualization state-space overlay around the boat and goal. Then, add the built
@@ -790,8 +796,7 @@ def apply_layout(fig: go.Figure) -> None:
 
 
 def build_figure(
-    state: VisualizerState,
-    last_goal_xy_km: Optional[Tuple[float, float]]
+    state: VisualizerState, last_goal_xy_km: Optional[Tuple[float, float]]
 ) -> Tuple[go.Figure, Tuple[float, float]]:
     """
     Builds and renders the complete path planning visualization figure.
@@ -842,20 +847,23 @@ def build_figure(
         fig.add_trace(path_trace)
 
     # Adding Obstacle (both Land and Boat) and AIS ships to the plot
-    land_traces = build_polygon_traces(state.land_obstacles_xy,
-                                       name="Land Obstacle",
-                                       line={"color": "lightgreen"},
-                                       fillcolor="lightgreen",
-                                       opacity=0.5,
-                                       showlegend=True
-                                       )
-    boat_traces = build_polygon_traces(state.boat_obstacles_xy,
-                                       name="AIS Collision Zone",
-                                       line={"width": 2},
-                                       fillcolor="rgba(255,165,0,0.25)",
-                                       opacity=0.5,
-                                       hoverinfo="skip",
-                                       showlegend=False)
+    land_traces = build_polygon_traces(
+        state.land_obstacles_xy,
+        name="Land Obstacle",
+        line={"color": "lightgreen"},
+        fillcolor="lightgreen",
+        opacity=0.5,
+        showlegend=True,
+    )
+    boat_traces = build_polygon_traces(
+        state.boat_obstacles_xy,
+        name="AIS Collision Zone",
+        line={"width": 2},
+        fillcolor="rgba(255,165,0,0.25)",
+        opacity=0.5,
+        hoverinfo="skip",
+        showlegend=False,
+    )
     ais_traces = build_ais_traces(state)
     fig.add_traces(land_traces + boat_traces + ais_traces)
 
@@ -899,8 +907,10 @@ def dash_app(q: Queue):
             dcc.Graph(id="live-graph", style={"height": "90vh", "width": "100%"}),
             dcc.Interval(id="interval-component", interval=UPDATE_INTERVAL_MS, n_intervals=0),
             dcc.Store(id="goal-store", data=None),
+            html.Button("Reset the view to state space", id="reset-button", n_clicks=0),
         ],
     )
+
     app.run(debug=True, use_reloader=False)
 
 
@@ -908,16 +918,20 @@ def dash_app(q: Queue):
     Output("live-graph", "figure"),
     Output("goal-store", "data"),
     Input("interval-component", "n_intervals"),
+    Input("reset-button", "n_clicks"),
+    State("live-graph", "figure"),
     State("goal-store", "data"),
+    prevent_initial_call=True,
 )
-def live_plot(_: int, last_goal_xy_km: Optional[List[float]]) -> Tuple[go.Figure, List[float]]:
+def update_graph(_: int, __: int, current_figure, last_goal_xy_km: Optional[List[float]]):
     """
-    Dash callback: fetch the next VisualizerState and render the updated figure.
-
-    The goal position is stored in `dcc.Store` to detect goal changes without using global state.
+    Dash callback: handles both interval updates and reset button clicks.
+    Uses callback_context to determine which input triggered the update.
 
     Args:
         _: Dash interval tick (unused).
+        __: Reset button n_clicks (unused).
+        current_figure: Current figure state from live-graph.
         last_goal_xy_km: Previously stored goal as [x, y] or None on first run.
 
     Returns:
@@ -926,9 +940,27 @@ def live_plot(_: int, last_goal_xy_km: Optional[List[float]]) -> Tuple[go.Figure
             - new_goal_as_list: [x, y] for storage in dcc.Store (JSON serializable)
     """
     global queue
-    state = queue.get()  # type: ignore
+    ctx = dash.callback_context
 
-    # last_goal_xy_km comes from dcc.Store
+    triggered_id = ctx.triggered[0]["prop_id"].split(".")[0] if ctx.triggered else None
+
+    if triggered_id == "reset-button":
+        if current_figure is None:
+            return dash.no_update, dash.no_update
+
+        fig = go.Figure(current_figure)
+        fig.update_layout(
+            xaxis=dict(range=DEFAULT_PLOT_RANGE, autorange=False),
+            yaxis=dict(range=DEFAULT_PLOT_RANGE, autorange=False),
+            uirevision="reset",
+        )
+        return fig, last_goal_xy_km
+
+    # Interval update (default behavior)
+    if queue is None or queue.empty():
+        return dash.no_update, dash.no_update
+
+    state = queue.get()  # type: ignore
     last_goal_tuple = (
         cs.XY(last_goal_xy_km[0], last_goal_xy_km[1]) if last_goal_xy_km is not None else None
     )
