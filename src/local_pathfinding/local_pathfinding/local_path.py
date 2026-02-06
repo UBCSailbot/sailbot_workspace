@@ -3,11 +3,11 @@
 import math
 from typing import List, Optional
 
+import custom_interfaces.msg as ci
 from rclpy.impl.rcutils_logger import RcutilsLogger
 from shapely.geometry import LineString, MultiPolygon
 
 import local_pathfinding.coord_systems as cs
-import custom_interfaces.msg as ci
 import local_pathfinding.obstacles as ob
 from local_pathfinding.ompl_path import OMPLPath
 
@@ -199,6 +199,7 @@ class LocalPath:
                 - Updated waypoint index
             The method decides whether to return the heading for new path or old path
         """
+
         # this raises ValueError if any of the parameters are not properly initialized
         self._waypoint_index = local_waypoint_index
         state = LocalPathState(
@@ -264,23 +265,19 @@ class LocalPath:
         metric_new = w_h * heading_diff_new_normalized + w_c * new_cost_normalized
 
         self._logger.debug(
-                f"(old cost: {old_cost:.2f}, "
-                f"new cost: {new_cost:.2f})"
-                f", metric_old: {metric_old:.2f}, "
-                f"metric_new: {metric_new:.2f}, "
-                f"old_cost_normalized: {old_cost_normalized:.2f}, "
-                f"new_cost_normalized: {new_cost_normalized:.2f}"
-            )
+            f"(old cost: {old_cost:.2f}, "
+            f"new cost: {new_cost:.2f})"
+            f", metric_old: {metric_old:.2f}, "
+            f"metric_new: {metric_new:.2f}, "
+            f"old_cost_normalized: {old_cost_normalized:.2f}, "
+            f"new_cost_normalized: {new_cost_normalized:.2f}"
+        )
         if metric_new < metric_old:
-            self._logger.debug(
-                "New path is cheaper, updating local path "
-            )
+            self._logger.debug("New path is cheaper, updating local path ")
             self._update(ompl_path)
             return heading_new_path, wp_index
         else:
-            self._logger.debug(
-                "old path is cheaper, continuing on the same path"
-            )
+            self._logger.debug("old path is cheaper, continuing on the same path")
             return heading_old_path, wp_index
 
     def _update(self, ompl_path: OMPLPath):
