@@ -586,6 +586,7 @@ def configure_wind_box_elements(state: VisualizerState) -> WindBoxConfig:
             showgrid=False,
             zeroline=True,
             visible=False,
+            fixedrange=True,
         ),
         "yaxis2": dict(
             domain=list(WIND_BOX_Y_DOMAIN),
@@ -594,6 +595,7 @@ def configure_wind_box_elements(state: VisualizerState) -> WindBoxConfig:
             showgrid=False,
             zeroline=True,
             visible=False,
+            fixedrange=True,
         )
     }
 
@@ -639,9 +641,9 @@ def configure_wind_box_elements(state: VisualizerState) -> WindBoxConfig:
             "hoverlabel": dict(bgcolor="white")
         })
 
-    add_arrow(app_origin, aw_dx, aw_dy, "purple", "🌬️ Apparent Wind", aw_mag)
-    add_arrow(true_origin, tw_dx, tw_dy, "blue", "🌬️ True Wind", tw_mag)
-    add_arrow(boat_origin, bw_dx, bw_dy, "red", "🛶 Boat Wind", bw_mag)
+    add_arrow(app_origin, aw_dx, aw_dy, "purple", "️Apparent Wind", aw_mag)
+    add_arrow(true_origin, tw_dx, tw_dy, "blue", "️True Wind", tw_mag)
+    add_arrow(boat_origin, bw_dx, bw_dy, "red", "Boat Wind", bw_mag)
 
     # Wind box background
     background_shape = {
