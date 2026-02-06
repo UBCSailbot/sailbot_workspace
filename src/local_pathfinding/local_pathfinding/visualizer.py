@@ -907,7 +907,18 @@ def dash_app(q: Queue):
             dcc.Graph(id="live-graph", style={"height": "90vh", "width": "100%"}),
             dcc.Interval(id="interval-component", interval=UPDATE_INTERVAL_MS, n_intervals=0),
             dcc.Store(id="goal-store", data=None),
-            html.Button("Reset the view to state space", id="reset-button", n_clicks=0),
+            html.Button(
+                "Reset the view to state space",
+                id="reset-button",
+                n_clicks=0,
+                style={
+                    "position": "absolute",
+                    "top": "20px",
+                    "right": "20px",
+                    "padding": "10px 20px",
+                    "zIndex": 1000,
+                },
+            ),
         ],
     )
 
