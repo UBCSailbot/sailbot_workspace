@@ -36,6 +36,16 @@ const std::string WRONG_SIZE   = "3";
 }  // namespace rsp
 }  // namespace write_bin
 
+namespace signal_quality
+{
+const int NOSIGNAL  = 0;
+const int POOR      = 1;
+const int MARGINAL  = 2;
+const int GOOD      = 3;
+const int VERYGOOD  = 4;
+const int EXCELLENT = 5;
+}  // namespace signal_quality
+
 /**
  * @brief Simple Line struct to help enforce DRY when dealing with strings while performing reads and writes
  *

@@ -137,6 +137,23 @@ bool LocalTransceiver::send()
     for (int i = 0; i < MAX_NUM_RETRIES; i++) {
         clearSerialBuffer();  // Clear any stale data from previous iteration
 
+        int current_iridium_signal_quality = checkIridiumSignalQuality();
+        if (current_iridium_signal_quality == -1) {
+            if (log_error_) {
+                log_error_("Debug: Failed to check Iridium signal quality");
+            }
+            continue;
+        }
+        if (current_iridium_signal_quality < AT::signal_quality::EXCELLENT) {
+            if (log_debug_) {
+                log_debug_(
+                  "Debug: Iridium signal quality is currently " + std::to_string(current_iridium_signal_quality) +
+                  ", retrying...");
+            }
+            std::this_thread::sleep_for(std::chrono::seconds(2));  // Wait a moment before retrying if no signal
+            continue;
+        }
+
         if (!send(at_write_cmd)) {
             continue;
         }
@@ -232,8 +249,31 @@ bool LocalTransceiver::debugSendAT(const std::string & data)
         clearSerialBuffer();  // Clear any stale data from previous iteration
 
         if (log_debug_) {
-            log_debug_("Debug: cleared buffer, sending write command (attempt " + std::to_string(i) + ")");
+            log_debug_("Debug: cleared buffer, checking Iridium signal quality (attempt " + std::to_string(i) + ")");
         }
+
+        int current_iridium_signal_quality = checkIridiumSignalQuality();
+        if (current_iridium_signal_quality == -1) {
+            if (log_error_) {
+                log_error_("Debug: Failed to check Iridium signal quality");
+            }
+            continue;
+        }
+        if (current_iridium_signal_quality < AT::signal_quality::EXCELLENT) {
+            if (log_debug_) {
+                log_debug_(
+                  "Debug: Iridium signal quality is currently " + std::to_string(current_iridium_signal_quality) +
+                  ", retrying...");
+            }
+            std::this_thread::sleep_for(std::chrono::seconds(2));  // Wait a moment before retrying if no signal
+            continue;
+        }
+        if (log_debug_) {
+            log_debug_(
+              "Debug: Iridium signal quality is excellent, proceeding to send write command (attempt " +
+              std::to_string(i) + ")");
+        }
+
         if (!send(at_write_cmd)) {
             if (log_error_) {
                 log_error_("Debug: failed to send write command (attempt " + std::to_string(i) + ")");
