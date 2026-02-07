@@ -128,6 +128,12 @@ public:
     bool debugSendAT(const std::string & data);
 
     /**
+     * @brief Checks Iridium satellite connection strength via AT+CSQ
+     * @return signal strength value from 0-5, or -1 if an error occurs
+     */
+    int checkIridiumSignalQuality();
+
+    /**
      * @brief Send a debug command and return the output
      *
      * @param cmd string to send to the serial port
@@ -202,12 +208,6 @@ private:
      *        from interfering with subsequent reads.
      */
     void clearSerialBuffer();
-
-    /**
-     * @brief Checks Iridium satellite connection strength via AT+CSQ
-     * @return signal strength value from 0-5, or -1 if an error occurs
-     */
-    int checkIridiumSignalQuality();
 
     /**
      * @brief Parse the message received from the remote server
