@@ -12,9 +12,9 @@ import local_pathfinding.wind_coord_systems as wcs
 UPWIND_COST_MULTIPLIER = 1.0
 DOWNWIND_COST_MULTIPLIER = 1.0
 ZERO_SPEED_COST = 1.0
-ACCEPTABLE_COST_THRESHOLD = 0.0
-WIND_OBJECTIVE_WEIGHT = 1.0
-TIME_OBJECTIVE_WEIGHT = 1.0
+ACCEPTABLE_COST_THRESHOLD = 0.85
+WIND_OBJECTIVE_WEIGHT = 0.85
+TIME_OBJECTIVE_WEIGHT = 0.15
 
 
 #               Estimated Boat Speeds (kmph) as function of True Wind Speed (kmph)
@@ -109,13 +109,12 @@ class WindObjective(ob.OptimizationObjective):
         tw_angle_rad = abs(wcs.get_true_wind_angle(segment_true_bearing_rad, tw_direction_rad))
         cos_angle = math.cos(tw_angle_rad)
 
-        # The target point of sail (POS) is a beam reach for max speed and stability
-        # A beam reach is when the true wind direction is perpendicular to the heading of the boat
-        # That is why we assign the min cost of 0 to any segment that corresponds to a beam reach
+        distance = math.hypot(s2.y - s1.y, s2.x - s1.x)
+
         if cos_angle > 0:
-            return UPWIND_COST_MULTIPLIER * cos_angle
+            return UPWIND_COST_MULTIPLIER * cos_angle * distance
         else:
-            return DOWNWIND_COST_MULTIPLIER * abs(cos_angle)
+            return DOWNWIND_COST_MULTIPLIER * abs(cos_angle) * distance
 
 
 class TimeObjective(ob.OptimizationObjective):
@@ -267,6 +266,6 @@ def get_sailing_objective(
     # this allows the objective to be satisfied once a path with a cost
     # below the threshold has been found
     # this can prevent the solver from running until the time limit in some cases
-    multiObjective.setCostThreshold(ACCEPTABLE_COST_THRESHOLD)
+    # multiObjective.setCostThreshold(ACCEPTABLE_COST_THRESHOLD)
 
     return multiObjective

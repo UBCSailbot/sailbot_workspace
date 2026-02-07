@@ -84,8 +84,8 @@ class OMPLPath:
 
         self.solved = self._simple_setup.solve(time=MAX_SOLVER_RUN_TIME_SEC)
 
-        if self.solved:
-            self._simple_setup.simplifySolution()
+        # if self.solved:
+        #     self._simple_setup.simplifySolution()
 
     @staticmethod
     def init_obstacles(
@@ -203,6 +203,7 @@ class OMPLPath:
             return float("inf")
 
         obj = self._simple_setup.getOptimizationObjective()
+        # for i in range(1, len(solution_path)):
         cost = solution_path.cost(obj)
         return cost.value()
 
