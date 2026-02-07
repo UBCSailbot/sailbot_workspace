@@ -227,7 +227,7 @@ bool LocalTransceiver::debugSendAT(const std::string & data)
         if (log_debug_) {
             log_debug_("Debug: clearing buffer (attempt " + std::to_string(i) + ")");
         }
-        // clearSerialBuffer();  // Clear any stale data from previous iteration
+        clearSerialBuffer();  // Clear any stale data from previous iteration
 
         if (log_debug_) {
             log_debug_("Debug: cleared buffer, sending write command (attempt " + std::to_string(i) + ")");
@@ -589,6 +589,33 @@ std::string LocalTransceiver::streambufToStr(bio::streambuf & buf)
 
 void LocalTransceiver::clearSerialBuffer()
 {
+    int fd        = serial_.lowest_layer().native_handle();
+    int old_flags = fcntl(fd, F_GETFL, 0);
+    fcntl(fd, F_SETFL, old_flags | O_NONBLOCK);
+
+    const int SERIAL_BUFFER_SIZE = 1024;
+    char      buf[SERIAL_BUFFER_SIZE];
+
+    while (true) {
+        ssize_t bytes_read = read(fd, buf, SERIAL_BUFFER_SIZE);
+        if (bytes_read > 0) {
+            std::cout << "Cleared " << bytes_read << " bytes from serial buffer." << std::endl;
+            continue;
+        } else if (bytes_read == 0) {
+            std::cout << "Serial buffer cleared successfully." << std::endl;
+            break;
+        } else {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                std::cout << "No more data to read from serial buffer." << std::endl;
+                break;
+            }
+            std::cout << "Failed to read from serial port with error: " << errno << std::endl;
+            break;
+        }
+    }
+
+    fcntl(fd, F_SETFL, old_flags);  // Restore original flags
+
     // if (!serial_.is_open()) {
     //     if (log_debug_) {
     //         log_debug_("Debug: serial port not open, skipping buffer clear");
