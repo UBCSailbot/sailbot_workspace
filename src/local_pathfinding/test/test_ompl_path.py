@@ -269,3 +269,110 @@ def test_create_space(
         expected_bounds, abs=box_buffer_size
     ), "Bounds should match expected"
     assert space.contains(Point(position.x, position.y)), "Space should contain center point"
+
+
+@pytest.fixture
+def mock_waypoints():
+    """Sample waypoints for testing create_mock."""
+    return [
+        HelperLatLon(latitude=3.1, longitude=3.1),
+        HelperLatLon(latitude=3.05, longitude=3.05),
+        HelperLatLon(latitude=3.0, longitude=3.0),
+    ]
+
+
+def test_create_mock_returns_solved_path(mock_waypoints):
+    """Test that create_mock returns an OMPLPath with solved=True."""
+    mock_path = ompl_path.create_mock(
+        waypoints=mock_waypoints,
+        parent_logger=RcutilsLogger(),
+    )
+
+    assert isinstance(mock_path, ompl_path.OMPLPath)
+    assert mock_path.solved is True
+
+
+def test_create_mock_get_path_returns_waypoints(mock_waypoints):
+    """Test that get_path() returns waypoints matching the input."""
+    mock_path = ompl_path.create_mock(
+        waypoints=mock_waypoints,
+        parent_logger=RcutilsLogger(),
+    )
+
+    result_path = mock_path.get_path()
+    result_waypoints = result_path.waypoints
+
+    assert len(result_waypoints) == len(mock_waypoints)
+
+    for expected, actual in zip(mock_waypoints, result_waypoints):
+        assert actual.latitude == pytest.approx(expected.latitude, abs=1e-2)
+        assert actual.longitude == pytest.approx(expected.longitude, abs=1e-2)
+
+
+def test_create_mock_get_cost_returns_finite_value(mock_waypoints):
+    """Test that get_cost() returns a finite cost value."""
+    mock_path = ompl_path.create_mock(
+        waypoints=mock_waypoints,
+        parent_logger=RcutilsLogger(),
+    )
+
+    cost = mock_path.get_cost(waypoint_index=0)
+
+    assert cost != float("inf")
+    assert cost >= 0
+
+
+def test_create_mock_with_custom_parameters():
+    """Test create_mock with custom heading, speed, and wind parameters."""
+    waypoints = [
+        HelperLatLon(latitude=3.2, longitude=3.2),
+        HelperLatLon(latitude=3.0, longitude=3.0),
+    ]
+
+    mock_path = ompl_path.create_mock(
+        waypoints=waypoints,
+        parent_logger=RcutilsLogger(),
+        heading=90.0,
+        speed=10.0,
+        wind_direction=180.0,
+        wind_speed=15.0,
+    )
+
+    assert mock_path.state.heading == 90.0
+    assert mock_path.state.speed == 10.0
+    assert mock_path.state.wind_direction == 180.0
+    assert mock_path.state.wind_speed == 15.0
+
+
+def test_create_mock_with_two_waypoints():
+    """Test create_mock with minimum waypoints (start and goal only)."""
+    waypoints = [
+        HelperLatLon(latitude=3.5, longitude=3.5),
+        HelperLatLon(latitude=3.0, longitude=3.0),
+    ]
+
+    mock_path = ompl_path.create_mock(
+        waypoints=waypoints,
+        parent_logger=RcutilsLogger(),
+    )
+
+    result_path = mock_path.get_path()
+
+    assert len(result_path.waypoints) == 2
+    assert mock_path.solved is True
+
+
+def test_create_mock_has_simple_setup():
+    """Test that create_mock properly initializes _simple_setup."""
+    waypoints = [
+        HelperLatLon(latitude=3.1, longitude=3.1),
+        HelperLatLon(latitude=3.0, longitude=3.0),
+    ]
+
+    mock_path = ompl_path.create_mock(
+        waypoints=waypoints,
+        parent_logger=RcutilsLogger(),
+    )
+
+    assert mock_path._simple_setup is not None
+    assert mock_path._simple_setup.getSolutionPath() is not None

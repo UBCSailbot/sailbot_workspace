@@ -1,15 +1,108 @@
+import custom_interfaces.msg as ci
 import pytest
-from custom_interfaces.msg import GPS, AISShips, HelperLatLon, Path, WindSensor
+from custom_interfaces.msg import (
+    GPS,
+    AISShips,
+    HelperLatLon,
+    Path,
+    WindSensor,
+)
 from rclpy.impl.rcutils_logger import RcutilsLogger
 from shapely.geometry import MultiPolygon, Polygon
 
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.local_path as lp
 from local_pathfinding.obstacles import Obstacle
+from local_pathfinding.ompl_path import OMPLPath
 
 REF = HelperLatLon(latitude=10.0, longitude=10.0)
+IMPROVEMENT_THRESHOLD = lp.IMPROVEMENT_THRESHOLD
 
-PATH = lp.LocalPath(parent_logger=RcutilsLogger())
+
+@pytest.fixture
+def local_path():
+    """Create a fresh LocalPath instance for each test."""
+    return lp.LocalPath(parent_logger=RcutilsLogger())
+
+
+@pytest.fixture(autouse=True)
+def reset_ompl_static_state():
+    """Reset OMPLPath static attributes before and after each test."""
+    OMPLPath.obstacles = None
+    OMPLPath.all_land_data = None
+    yield
+    OMPLPath.obstacles = None
+    OMPLPath.all_land_data = None
+
+
+@pytest.mark.parametrize(
+    "x, y, x_normalized, y_normalized",
+    [
+        (2.0, 4.0, 0.5, 1.0),
+        (0.2, 0.4, 0.2, 0.4),
+        (3.0, 3.0, 1.0, 1.0),
+        (0.0, 5.0, 0.0, 1.0),
+        (0.0, 0.0, 0.0, 0.0),
+        (0.5, 2.0, 0.25, 1.0),
+    ],
+)
+def test_normalize_cost_pair(x, y, x_normalized, y_normalized):
+    assert x_normalized == lp.normalize_cost_pair(x, y)[0]
+    assert y_normalized == lp.normalize_cost_pair(x, y)[1]
+
+
+@pytest.mark.parametrize(
+    "path, waypoint_index, boat_lat_lon, correct_heading, new_wp_index",
+    [
+        (
+            ci.Path(waypoints=[ci.HelperLatLon(latitude=0.0, longitude=0.0)]),
+            0,
+            ci.HelperLatLon(latitude=0.0, longitude=-0.1),
+            90.0,
+            0,
+        ),
+        (
+            ci.Path(waypoints=[ci.HelperLatLon(latitude=0.0, longitude=0.0)]),
+            0,
+            ci.HelperLatLon(latitude=0.1, longitude=0.0),
+            180.0,
+            0,
+        ),
+        (
+            ci.Path(waypoints=[ci.HelperLatLon(latitude=0.0, longitude=0.0)]),
+            0,
+            ci.HelperLatLon(latitude=0.1, longitude=0.1),
+            -135.0,
+            0,
+        ),
+        (
+            # Test: boat has reached waypoints[0], heading should be to waypoints[1].
+            ci.Path(
+                waypoints=[
+                    ci.HelperLatLon(latitude=0.0, longitude=0.1),
+                    ci.HelperLatLon(latitude=0.0, longitude=0.0),
+                ]
+            ),
+            0,
+            ci.HelperLatLon(latitude=0.0, longitude=0.09999),
+            -90.0,
+            1,
+        ),
+    ],
+)
+def test_calculate_desired_heading_and_waypoint_index(
+    local_path,
+    path: ci.Path,
+    waypoint_index: int,
+    boat_lat_lon: ci.HelperLatLon,
+    correct_heading: float,
+    new_wp_index: int,
+):
+    calculated_answer = local_path.calculate_desired_heading_and_waypoint_index(
+        path, waypoint_index, boat_lat_lon
+    )
+    assert calculated_answer[0] == pytest.approx(correct_heading, abs=3e-1)
+    assert calculated_answer[1] == new_wp_index
 
 
 @pytest.mark.parametrize(
@@ -187,8 +280,36 @@ PATH = lp.LocalPath(parent_logger=RcutilsLogger())
         ),
     ],
 )
-def test_in_collision_zone(local_wp_index, reference_latlon, path, obstacles, result):
-    assert PATH.in_collision_zone(local_wp_index, reference_latlon, path, obstacles) == result
+def test_in_collision_zone(local_path, local_wp_index, reference_latlon, path, obstacles, result):
+    assert (
+        local_path.in_collision_zone(local_wp_index, reference_latlon, path, obstacles) == result
+    )  # noqa
+
+
+@pytest.mark.parametrize(
+    "old_cost, heading_old_path, new_cost, heading_new_path, heading, expected_improvement",
+    [
+        (0.0, 1.0, 0.0, -1.1, 0.0, -0.1),
+        (0.0, 1.0, 0.0, -1.0, 0.0, 0.0),
+        (0.0, 1.0, 0.0, 1.0, 0.0, 0.0),
+        (0.0, 1.0, 0.0, -0.8, 0.0, 0.2),
+        (0.0, 49.8, 0.0, 50.1, 50.0, 0.5),
+        (0.0, -179.0, 0.0, 178.0, 180.0, -1.0),
+    ],
+)
+def test_calculate_improvement(
+    local_path,
+    old_cost,
+    heading_old_path,
+    new_cost,
+    heading_new_path,
+    heading,
+    expected_improvement,
+):
+    result = local_path.calculate_improvement(
+        old_cost, heading_old_path, new_cost, heading_new_path, heading
+    )
+    assert result == pytest.approx(expected_improvement, abs=1e-3)
 
 
 def test_LocalPathState_parameter_checking():
@@ -282,3 +403,173 @@ def test_LocalPathState_parameter_checking():
                 planner=None,
             ),
         )
+
+# @pytest.mark.parametrize(
+#     """
+#     gps, ais_ships, local_waypoint_index, received_new_global_waypoint,
+#     old_path_list, result_index, generates_new_path
+#     """,
+#     [
+#         (  # Old path is fully optimal, do not switch to new path
+#             GPS(
+#                 lat_lon=HelperLatLon(latitude=0.0, longitude=0.0),
+#                 heading=HelperHeading(heading=45.0),
+#             ),
+#             AISShips(),
+#             1,
+#             False,
+#             [HelperLatLon(latitude=0.0, longitude=0.0),
+#               HelperLatLon(latitude=3.0, longitude=3.0)],
+#             1,
+#             False,
+#         ),
+#         (  # Old path is mostly optimal, do not switch to new path
+#             GPS(lat_lon=HelperLatLon(latitude=0.0, longitude=0.0)),
+#             AISShips(),
+#             1,
+#             False,
+#             [
+#                 HelperLatLon(latitude=0.0, longitude=0.0),
+#                 HelperLatLon(latitude=2.0, longitude=1.0),
+#                 HelperLatLon(latitude=3.0, longitude=3.0),
+#             ],
+#             1,
+#             False,
+#         ),
+#         (  # New global waypoint received, switch to new path
+#             GPS(lat_lon=HelperLatLon(latitude=0.0, longitude=0.0)),
+#             AISShips(),
+#             1,
+#             True,
+#             [HelperLatLon(latitude=0.0, longitude=0.0),
+#              HelperLatLon(latitude=3.0, longitude=3.0)], #noqa
+#             1,
+#             True,
+#         ),
+#         (  # AISShip at second waypoint, switch to new path
+#             GPS(lat_lon=HelperLatLon(latitude=0.0, longitude=0.0)),
+#             AISShips(
+#                 ships=[
+#                     HelperAISShip(
+#                         id=1,
+#                         lat_lon=HelperLatLon(latitude=1.0, longitude=1.0),
+#                         cog=HelperHeading(heading=45.0),
+#                         sog=HelperSpeed(speed=0.0),
+#                         width=HelperDimension(dimension=50.0),
+#                         length=HelperDimension(dimension=50.0),
+#                         rot=HelperROT(rot=0),
+#                     )
+#                 ]
+#             ),
+#             1,
+#             False,
+#             [
+#                 HelperLatLon(latitude=0.0, longitude=0.0),
+#                 HelperLatLon(latitude=1.0, longitude=1.0),
+#                 HelperLatLon(latitude=3.0, longitude=3.0),
+#             ],
+#             1,
+#             True,
+#         ),
+#         (  # AISShip between second and third waypoint, switch to new path
+#             GPS(lat_lon=HelperLatLon(latitude=0.0, longitude=0.0)),
+#             AISShips(
+#                 ships=[
+#                     HelperAISShip(
+#                         id=1,
+#                         lat_lon=HelperLatLon(latitude=1.01, longitude=1.01),
+#                         cog=HelperHeading(heading=45.0),
+#                         sog=HelperSpeed(speed=0.0),
+#                         width=HelperDimension(dimension=100.0),
+#                         length=HelperDimension(dimension=100.0),
+#                         rot=HelperROT(rot=0),
+#                     )
+#                 ]
+#             ),
+#             1,
+#             False,
+#             [
+#                 HelperLatLon(latitude=0.0, longitude=0.0),
+#                 HelperLatLon(latitude=1.0, longitude=1.0),
+#                 HelperLatLon(latitude=3.0, longitude=3.0),
+#             ],
+#             1,
+#             True,
+#         ),
+#         (  # Old path not optimal, switch to new path
+#             GPS(lat_lon=HelperLatLon(latitude=0.0, longitude=0.0)),
+#             AISShips(),
+#             1,
+#             False,
+#             [
+#                 HelperLatLon(latitude=0.0, longitude=0.0),
+#                 HelperLatLon(latitude=5.0, longitude=-5.0),
+#                 HelperLatLon(latitude=3.0, longitude=3.0),
+#             ],
+#             1,
+#             True,
+#         ),
+#         (  # Old path not optimal, switch to new path
+#             GPS(lat_lon=HelperLatLon(latitude=0.0, longitude=0.0)),
+#             AISShips(),
+#             1,
+#             False,
+#             [
+#                 HelperLatLon(latitude=0.0, longitude=0.0),
+#                 HelperLatLon(latitude=0.0, longitude=3.0),
+#                 HelperLatLon(latitude=3.0, longitude=3.0),
+#             ],
+#             1,
+#             True,
+#         ),
+#         # (  # New path is slightly better but below threshold, do not switch
+#         #     GPS(lat_lon=HelperLatLon(latitude=0.0, longitude=0.0)),
+#         #     AISShips(),
+#         #     1,
+#         #     False,
+#         #     [
+#         #         HelperLatLon(latitude=0.0, longitude=0.0),
+#         #         HelperLatLon(latitude=1.5, longitude=1.0),
+#         #         HelperLatLon(latitude=3.0, longitude=3.0),
+#         #     ],
+#         #     1,
+#         #     False,  # Should NOT switch due to threshold
+#         # ),
+#     ],
+# )
+# def test_update_if_needed(
+#     local_path,
+#     gps,
+#     ais_ships,
+#     local_waypoint_index,
+#     received_new_global_waypoint,
+#     old_path_list,
+#     result_index,
+#     generates_new_path,
+# ):
+#     mock_old_ompl_path = create_mock(old_path_list, RcutilsLogger())
+#     local_path._ompl_path = mock_old_ompl_path
+
+#     heading, index, update, improvement = local_path.update_if_needed(
+#         gps,
+#         ais_ships,
+#         Path(
+#             waypoints=[
+#                 HelperLatLon(latitude=0.0, longitude=0.0),
+#                 HelperLatLon(latitude=3.0, longitude=3.0),
+#             ]
+#         ),
+#         local_waypoint_index,
+#         received_new_global_waypoint,
+#         HelperLatLon(latitude=3.0, longitude=3.0),
+#         WindSensor(),
+#         "rrtstar",
+#         None,
+#     )
+
+#     # The update flag is the definitive indicator of whether a new path was generated
+#     assert (
+#         update == generates_new_path
+#     ), f"Expected update={generates_new_path}, got update={update}"
+#     assert index == result_index
+#     assert heading is not None, "Heading should always be returned"

@@ -1,4 +1,5 @@
 """
+
 The main function of this file spawns two processes:
     1. The SailbotObserver node which observes the navigate node
     2. the Dash app to display the visualizer data

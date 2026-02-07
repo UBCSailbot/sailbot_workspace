@@ -9,17 +9,18 @@
 4. Once the workflow is complete (after 4-5 minutes) connect to the raspberry pi using SSH and navigate to the home directory: `~/`
 
 5. Run the following:
+
 ```bash
   export CR_PAT=<YOUR_GITHUB_PERSONAL_ACCESS_TOKEN>
-  
+
   echo $CR_PAT | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
-  
+
   docker pull ghcr.io/ubcsailbot/sailbot_workspace/release:example-tag
-  
+
   # This step of renaming the image is optional but it will give the image a tidier name :)
   docker tag ghcr.io/ubcsailbot/sailbot_workspace/release:example-tag release
 
   # this starts the container and drops you right into a bash shell inside the container
   # you can exit by running: exit
-  docker run -it --network host --privileged release bash 
+  docker run -it --network host --privileged release bash
 ```

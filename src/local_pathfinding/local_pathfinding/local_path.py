@@ -14,6 +14,24 @@ from local_pathfinding.ompl_path import OMPLPath
 LOCAL_WAYPOINT_REACHED_THRESH_KM = 0.5
 HEADING_WEIGHT = 0.6
 COST_WEIGHT = 0.4
+IMPROVEMENT_THRESHOLD = 0.1
+
+
+def normalize_cost_pair(x: float, y: float) -> tuple[float, float]:
+    """Normalizes two path-planning cost values so the larger value is at most 1.0.
+
+    Both costs are divided by max(x, y, 1), which keeps them on a consistent
+    scale for comparison while preserving their relative weighting.
+
+    Args:
+        x (float): First cost value
+        y (float): Second cost value
+
+    Returns:
+        tuple[float, float]: Normalized costs in the interval (0, 1].
+    """
+    z = max(x, y, 1)
+    return x/z, y/z
 
 
 class LocalPathState:
@@ -168,7 +186,7 @@ class LocalPath:
         filtered_wind_sensor: ci.WindSensor,
         planner: str,
         land_multi_polygon: MultiPolygon = None,
-    ) -> tuple[Optional[float], Optional[int]]:
+    ) -> tuple[Optional[float], Optional[int], bool]:
         """Updates the local path using OMPL if conditions warrant a path change.
 
         Evaluates whether to update the current path based on several criteria:
@@ -194,9 +212,10 @@ class LocalPath:
                 to avoid. Defaults to None.
 
         Returns:
-            tuple[Optional[float], Optional[int]]: A tuple containing:
+            tuple[Optional[float], Optional[int], Optional[boolean]]: A tuple containing:
                 - Desired heading in degrees
                 - Updated waypoint index
+                - Whether the path was updated
             The method decides whether to return the heading for new path or old path
         """
         # this raises ValueError if any of the parameters are not properly initialized
@@ -210,22 +229,25 @@ class LocalPath:
             local_path_state=state,
             land_multi_polygon=land_multi_polygon,
         )
-        old_ompl_path = self._ompl_path
 
         heading_new_path, wp_index = self.calculate_desired_heading_and_waypoint_index(
             ompl_path.get_path(), 0, gps.lat_lon
         )
 
-        if received_new_global_waypoint:
-            self._logger.debug("Updating local path because we have a new global waypoint")
-            self._update(ompl_path)
-            return heading_new_path, wp_index
+        old_ompl_path = self._ompl_path
 
-        if old_ompl_path is None or self.path is None:
+        if old_ompl_path is None:
             # continue on the same path
             self._logger.debug("old path is none")
             self._update(ompl_path)
-            return heading_new_path, wp_index
+            return heading_new_path, wp_index, True
+
+        self.path = old_ompl_path.get_path()
+
+        if received_new_global_waypoint:
+            self._logger.debug("Updating local path because we have a new global waypoint")
+            self._update(ompl_path)
+            return heading_new_path, wp_index, True
 
         heading_old_path, updated_wp_index = self.calculate_desired_heading_and_waypoint_index(
             old_ompl_path.get_path(), local_waypoint_index, gps.lat_lon
@@ -238,50 +260,80 @@ class LocalPath:
         ):
             self._logger.debug("old path is in collision zone")
             self._update(ompl_path)
-            return heading_new_path, wp_index
-
-        heading_diff_old_path = cs.calculate_heading_diff(self.state.heading, heading_old_path)
-        heading_diff_new_path = cs.calculate_heading_diff(self.state.heading, heading_new_path)
+            return heading_new_path, wp_index, True
 
         old_cost = old_ompl_path.get_cost(updated_wp_index)
         new_cost = ompl_path.get_cost(wp_index)
 
-        max_cost = max(old_cost, new_cost, 1)
-        old_cost_normalized = old_cost / max_cost
-        new_cost_normalized = new_cost / max_cost
+        heading = self.state.heading
+        improvement = self.calculate_improvement(
+            old_cost,
+            heading_old_path,
+            new_cost,
+            heading_new_path,
+            heading
+        )
+        if improvement > IMPROVEMENT_THRESHOLD:
+            self._logger.debug(
+                "New path is cheaper, updating local path "
+            )
+            self._update(ompl_path)
+            return heading_new_path, wp_index, True
+        else:
+            self._logger.debug(
+                "old path is cheaper, continuing on the same path"
+            )
+            return heading_old_path, updated_wp_index, False
 
-        max_heading_diff = max(
-            math.fabs(heading_diff_new_path), math.fabs(heading_diff_old_path), 1.0
+    def calculate_improvement(
+        self,
+        old_cost: float,
+        heading_old_path: float,
+        new_cost: float,
+        heading_new_path: float,
+        heading: float
+    ) -> float:
+        """Computes an improvement score comparing a new path against the old path.
+
+        The improvement metric normalizes both heading deviation and path cost,
+        then combines them using weighted averages (HEADING_WEIGHT, COST_WEIGHT).
+        Returns True if the new path is at least IMPROVEMENT_THRESHOLD (10%) better
+        than the old path and should be adopted.
+
+        Args:
+            old_cost (float): Accumulated waypoint cost of the old/existing path.
+            heading_old_path (float): Desired heading of the old/existing path.
+            new_cost (float): Accumulated waypoint cost of the new path.
+            heading_new_path (float): Desired heading of the new path.
+            heading (float): Current heading of the boat.
+
+        Returns:
+            bool: True if the new path is at least 10% better than the old path,
+                False otherwise.
+        """
+        heading_diff_old = cs.calculate_heading_diff(heading, heading_old_path)
+        heading_diff_new = cs.calculate_heading_diff(heading, heading_new_path)
+
+        cost_norm_old, cost_norm_new = normalize_cost_pair(old_cost, new_cost)
+        heading_diff_norm_old, heading_diff_norm_new = normalize_cost_pair(
+            math.fabs(heading_diff_old),
+            math.fabs(heading_diff_new)
         )
 
-        heading_diff_new_normalized = heading_diff_new_path / max_heading_diff
-        heading_diff_old_normalized = heading_diff_old_path / max_heading_diff
-
-        w_h = HEADING_WEIGHT
-        w_c = COST_WEIGHT
-
-        metric_old = w_h * heading_diff_old_normalized + w_c * old_cost_normalized
-        metric_new = w_h * heading_diff_new_normalized + w_c * new_cost_normalized
-
+        metric_old = HEADING_WEIGHT * heading_diff_norm_old + COST_WEIGHT * cost_norm_old
+        metric_new = HEADING_WEIGHT * heading_diff_norm_new + COST_WEIGHT * cost_norm_new
         self._logger.debug(
                 f"(old cost: {old_cost:.2f}, "
                 f"new cost: {new_cost:.2f})"
                 f", metric_old: {metric_old:.2f}, "
                 f"metric_new: {metric_new:.2f}, "
-                f"old_cost_normalized: {old_cost_normalized:.2f}, "
-                f"new_cost_normalized: {new_cost_normalized:.2f}"
-            )
-        if metric_new < metric_old:
-            self._logger.debug(
-                "New path is cheaper, updating local path "
-            )
-            self._update(ompl_path)
-            return heading_new_path, wp_index
-        else:
-            self._logger.debug(
-                "old path is cheaper, continuing on the same path"
-            )
-            return heading_old_path, wp_index
+        )
+        improvement_ratio = (metric_old - metric_new)/metric_old
+        return improvement_ratio
+
+        # TODO: This function should just return improvement_ratio (float), update its testing, and
+        # use that to calculate the difference in expected heading in update_if_needed, maybe add
+        # some parameters to update_if_needed testing
 
     def _update(self, ompl_path: OMPLPath):
 
