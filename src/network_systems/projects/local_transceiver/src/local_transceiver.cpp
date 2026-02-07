@@ -135,7 +135,7 @@ bool LocalTransceiver::send()
 
     static constexpr int MAX_NUM_RETRIES = 20;  // allow retries because the connection is imperfect
     for (int i = 0; i < MAX_NUM_RETRIES; i++) {
-        clearSerialBuffer();  // Clear any stale data from previous iteration
+        // clearSerialBuffer();  // Clear any stale data from previous iteration
         if (!send(at_write_cmd)) {
             continue;
         }
@@ -174,7 +174,7 @@ bool LocalTransceiver::send()
         }
 
         if (!rcvRsps({
-              //   AT::Line("\r"),
+              AT::Line("\r"),
               sbdix_cmd,
               AT::Line(AT::DELIMITER),
             })) {
@@ -224,8 +224,14 @@ bool LocalTransceiver::debugSendAT(const std::string & data)
 
     static constexpr int MAX_NUM_RETRIES = 20;
     for (int i = 0; i < MAX_NUM_RETRIES; i++) {
-        clearSerialBuffer();  // Clear any stale data from previous iteration
+        if (log_debug_) {
+            log_debug_("Debug: clearing buffer (attempt " + std::to_string(i) + ")");
+        }
+        // clearSerialBuffer();  // Clear any stale data from previous iteration
 
+        if (log_debug_) {
+            log_debug_("Debug: cleared buffer, sending write command (attempt " + std::to_string(i) + ")");
+        }
         if (!send(at_write_cmd)) {
             if (log_error_) {
                 log_error_("Debug: failed to send write command (attempt " + std::to_string(i) + ")");
@@ -280,6 +286,8 @@ bool LocalTransceiver::debugSendAT(const std::string & data)
             log_debug_("Debug: write completed successfully (attempt " + std::to_string(i) + ")");
         }
 
+        // clearSerialBuffer();
+
         static const AT::Line sbdix_cmd = AT::Line(AT::SBD_SESSION);
         if (!send(sbdix_cmd)) {
             if (log_error_) {
@@ -292,7 +300,7 @@ bool LocalTransceiver::debugSendAT(const std::string & data)
         }
 
         if (!rcvRsps({
-              //   AT::Line("\r"),
+              AT::Line("\r"),
               sbdix_cmd,
               AT::Line(AT::DELIMITER),
             })) {
@@ -554,6 +562,7 @@ std::optional<std::string> LocalTransceiver::readRsp()
 
     std::string rsp_str = streambufToStr(buf);
     rsp_str.pop_back();  // Remove the "\n"
+
     return rsp_str;
 }
 
@@ -580,9 +589,83 @@ std::string LocalTransceiver::streambufToStr(bio::streambuf & buf)
 
 void LocalTransceiver::clearSerialBuffer()
 {
-    bio::streambuf            buf;
-    boost::system::error_code ec;
-    // Just reads any pending data - consumes it and does nothing with it
-    // This clears stale data in the serial buffer that may have accumulated from previous failed attempts
-    bio::read(serial_, buf, bio::transfer_at_least(0), ec);
+    // if (!serial_.is_open()) {
+    //     if (log_debug_) {
+    //         log_debug_("Debug: serial port not open, skipping buffer clear");
+    //     }
+    //     return;
+    // }
+    // int fd        = serial_.lowest_layer().native_handle();
+    // int old_flags = fcntl(fd, F_GETFL, 0);
+    // fcntl(fd, F_SETFL, old_flags | O_NONBLOCK);
+
+    // const int SERIAL_BUFFER_SIZE = 1024;
+    // char      buf[SERIAL_BUFFER_SIZE];
+    // while (true) {
+    //     std::cout << "Attempting to clear serial buffer..." << std::endl;
+    //     ssize_t bytes_read = read(fd, buf, SERIAL_BUFFER_SIZE);
+    //     if (bytes_read > 0) {
+    //         // Discard data
+    //         // continue;
+    //         std::cout << "Cleared " << bytes_read << " bytes from serial buffer." << std::endl;
+    //     } else if (bytes_read == 0) {
+    //         // No more data
+    //         std::cout << "Serial buffer cleared successfully." << std::endl;
+    //         break;
+    //     } else {
+    //         if (errno == EAGAIN || errno == EWOULDBLOCK) {
+    //             // No more data
+    //             std::cout << "No more data to read from serial buffer." << std::endl;
+    //             break;
+    //         }
+    //         std::cout << "Failed to read from serial port with error: " << errno << std::endl;
+    //         break;
+    //     }
+    // }
+    // fcntl(fd, F_SETFL, old_flags);  // Restore original flags
+    // if (log_debug_) {
+    //     log_debug_("Debug: cleared serial buffer successfully");
+    // }
+    // ================
+    // int fd = serial_.lowest_layer().native_handle();
+    // if (log_debug_) {
+    //     log_debug_("Debug: calling tcflush...");
+    // }
+    // int result = tcflush(fd, TCIFLUSH);
+    // if (result != 0) {
+    //     std::cerr << "Failed to flush serial buffer with error: " << errno << std::endl;
+    // } else {
+    //     if (log_debug_) {
+    //         log_debug_("Debug: cleared serial buffer successfully");
+    //     }
+    // }
+
+    // ==========
+
+    // const int                 SERIAL_BUFFER_SIZE = 1024;
+    // boost::system::error_code ec;
+    // bio::streambuf            buf;
+
+    // if (!serial_.is_open()) {
+    //     std::cout << "Serial port not open!\n";
+    //     return;
+    // }
+
+    // // Set serial port to non-blocking mode
+    // int old_flags = fcntl(fd, F_GETFL, 0);
+    // fcntl(fd, F_SETFL, old_flags | O_NONBLOCK);
+
+    // while (true) {
+    //     std::size_t bytes_read = serial_.read_some(bio::buffer(buf.prepare(SERIAL_BUFFER_SIZE)), ec);
+    //     if (ec == boost::asio::error::would_block || ec == boost::asio::error::try_again || bytes_read == 0) {
+    //         break;
+    //     }
+    //     buf.consume(bytes_read);
+    //     if (ec) {
+    //         break;
+    //     }
+    // }
+
+    // // Restore original flags (blocking mode)
+    // fcntl(fd, F_SETFL, old_flags);
 }

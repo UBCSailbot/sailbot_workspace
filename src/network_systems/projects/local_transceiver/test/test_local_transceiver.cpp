@@ -57,6 +57,9 @@ protected:
     {
         try {
             lcl_trns_ = new LocalTransceiver(LOCAL_TRANSCEIVER_TEST_PORT, SATELLITE_BAUD_RATE);
+            lcl_trns_->setLogCallbacks(
+              [](const std::string & msg) { std::cout << "DEBUG: " << msg << std::endl; },
+              [](const std::string & msg) { std::cout << "ERROR: " << msg << std::endl; });
         } catch (boost::system::system_error & e) {
             std::stringstream ss;
             ss << "Failed to create Local Transceiver for tests, is only one instance of: \""
