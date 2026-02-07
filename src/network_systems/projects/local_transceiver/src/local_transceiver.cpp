@@ -177,7 +177,6 @@ bool LocalTransceiver::send()
         clearSerialBuffer();  // Clear any data that may have come in while waiting for SBDIX response, to ensure the following readRsp gets a clean response
 
         if (!rcvRsps({
-              //   AT::Line("\r"),
               sbdix_cmd,
               AT::Line(AT::DELIMITER),
             })) {
@@ -303,7 +302,6 @@ bool LocalTransceiver::debugSendAT(const std::string & data)
         }
 
         if (!rcvRsps({
-              //   AT::Line("\r"),
               sbdix_cmd,
               AT::Line(AT::DELIMITER),
             })) {
