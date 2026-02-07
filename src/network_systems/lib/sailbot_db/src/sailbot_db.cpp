@@ -44,7 +44,9 @@ const std::string & SailbotDB::MONGODB_CONN_STR()
             if (github_uri != nullptr) {
                 return std::string(github_uri);  // If running in GitHub Actions, use the full URI from secrets
             }
-            throw std::runtime_error("set the MONGODB_PASSWORD in test.sh, DO NOT PUSH THE PASSWORD TO GITHUB");  // If running tests locally
+            // throw std::runtime_error("set the MONGODB_PASSWORD in test.sh, DO NOT PUSH THE PASSWORD TO GITHUB");  // If running tests locally
+            std::cerr << "set the MONGODB_PASSWORD in test.sh, DO NOT PUSH THE PASSWORD TO GITHUB"
+                      << std::endl;  // If running tests locally
         }
         return "mongodb+srv://software:" + std::string(pwd) + "@dev.khxge.mongodb.net/?appName=dev";
     }();
