@@ -19,6 +19,7 @@ data_files = [
     ("share/ament_index/resource_index/packages", ["resource/" + package_name]),
     (os.path.join("share", package_name), ["package.xml"]),
     (os.path.join("share", package_name, "launch"), glob("launch/*_launch.py")),
+    (os.path.join("share", package_name, "test_plan"), glob("test_plan/*.yaml")),
 ]
 
 # Add top-level land files

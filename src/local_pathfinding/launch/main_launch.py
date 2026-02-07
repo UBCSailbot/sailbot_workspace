@@ -66,6 +66,7 @@ def setup_launch(context: LaunchContext) -> List[Node]:
         List[Node]: Nodes to launch.
     """
     mode = LaunchConfiguration("mode").perform(context)
+
     launch_description_entities = []
     launch_description_entities.append(get_navigate_node_description(context))
     if mode == "development":
@@ -88,7 +89,11 @@ def get_navigate_node_description(context: LaunchContext) -> Node:
     """
     node_name = "navigate_main"
     mode = LaunchConfiguration("mode").perform(context)
-    ros_parameters = [{"mode": mode}, LaunchConfiguration("config").perform(context)]
+    ros_parameters = [
+        {"mode": mode},
+        LaunchConfiguration("config").perform(context),
+        {"test_plan": LaunchConfiguration("test_plan").perform(context)},
+    ]
     ros_arguments: List[SomeSubstitutionsType] = [
         "--log-level",
         [f"{node_name}:=", LaunchConfiguration("log_level")],
@@ -117,7 +122,14 @@ def get_mock_global_path_node_description(context: LaunchContext) -> Node:
         Node: The node object that launches the mgp_main node.
     """
     node_name = "mock_global_path"
-    ros_parameters = [LaunchConfiguration("config").perform(context)]
+    mode = LaunchConfiguration("mode").perform(context)
+    test_plan = LaunchConfiguration("test_plan").perform(context)
+    # Pass the shared params file plus inline mode/test_plan dict so only
+    # the first entry is treated as a parameter file path.
+    ros_parameters = [
+        LaunchConfiguration("config").perform(context),
+        {"mode": mode, "test_plan": test_plan},
+    ]
     ros_arguments: List[SomeSubstitutionsType] = [
         "--log-level",
         [f"{node_name}:=", LaunchConfiguration("log_level")],
@@ -139,7 +151,11 @@ def get_mock_global_path_node_description(context: LaunchContext) -> Node:
 def get_mock_ais_node_description(context: LaunchContext) -> Node:
     """Gets the launch description for the mock ais node."""
     node_name = "mock_ais"
-    ros_parameters = [LaunchConfiguration("config").perform(context)]
+    test_plan = LaunchConfiguration("test_plan").perform(context)
+    ros_parameters = [
+        LaunchConfiguration("config").perform(context),
+        {"test_plan": test_plan},
+    ]
     ros_arguments: List[SomeSubstitutionsType] = [
         "--log-level",
         [f"{node_name}:=", LaunchConfiguration("log_level")],
@@ -161,7 +177,11 @@ def get_mock_ais_node_description(context: LaunchContext) -> Node:
 def get_mock_wind_sensor_node_description(context: LaunchContext) -> Node:
     """Gets the launch description for the mock wind sensor node"""
     node_name = "mock_wind_sensor"
-    ros_parameters = [LaunchConfiguration("config").perform(context)]
+    test_plan = LaunchConfiguration("test_plan").perform(context)
+    ros_parameters = [
+        LaunchConfiguration("config").perform(context),
+        {"test_plan": test_plan},
+    ]
     ros_arguments: List[SomeSubstitutionsType] = [
         "--log-level",
         [f"{node_name}:=", LaunchConfiguration("log_level")],
@@ -183,7 +203,11 @@ def get_mock_wind_sensor_node_description(context: LaunchContext) -> Node:
 def get_mock_gps_node_description(context: LaunchContext) -> Node:
     """Gets the launch description for the mock gps node"""
     node_name = "mock_gps"
-    ros_parameters = [LaunchConfiguration("config").perform(context)]
+    test_plan = LaunchConfiguration("test_plan").perform(context)
+    ros_parameters = [
+        LaunchConfiguration("config").perform(context),
+        {"test_plan": test_plan},
+    ]
     ros_arguments: List[SomeSubstitutionsType] = [
         "--log-level",
         [f"{node_name}:=", LaunchConfiguration("log_level")],
