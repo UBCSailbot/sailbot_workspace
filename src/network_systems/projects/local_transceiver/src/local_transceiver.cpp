@@ -596,106 +596,26 @@ void LocalTransceiver::clearSerialBuffer()
     int old_flags = fcntl(fd, F_GETFL, 0);
     fcntl(fd, F_SETFL, old_flags | O_NONBLOCK);
 
-    const int SERIAL_BUFFER_SIZE = 1024;
-    char      buf[SERIAL_BUFFER_SIZE];
+    const std::size_t SERIAL_BUFFER_SIZE = 1024;
+    std::vector<char> buf(SERIAL_BUFFER_SIZE);
 
     while (true) {
-        ssize_t bytes_read = read(fd, buf, SERIAL_BUFFER_SIZE);
+        ssize_t bytes_read = ::read(fd, buf.data(), buf.size());
         if (bytes_read > 0) {
             std::cout << "Cleared " << bytes_read << " bytes from serial buffer." << std::endl;
             continue;
-        } else if (bytes_read == 0) {
+        }
+        if (bytes_read == 0) {
             std::cout << "Serial buffer cleared successfully." << std::endl;
             break;
-        } else {
-            if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                std::cout << "No more data to read from serial buffer." << std::endl;
-                break;
-            }
-            std::cout << "Failed to read from serial port with error: " << errno << std::endl;
+        }
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            std::cout << "No more data to read from serial buffer." << std::endl;
             break;
         }
+        std::cout << "Failed to read from serial port with error: " << errno << std::endl;
+        break;
     }
 
     fcntl(fd, F_SETFL, old_flags);  // Restore original flags
-
-    // if (!serial_.is_open()) {
-    //     if (log_debug_) {
-    //         log_debug_("Debug: serial port not open, skipping buffer clear");
-    //     }
-    //     return;
-    // }
-    // int fd        = serial_.lowest_layer().native_handle();
-    // int old_flags = fcntl(fd, F_GETFL, 0);
-    // fcntl(fd, F_SETFL, old_flags | O_NONBLOCK);
-
-    // const int SERIAL_BUFFER_SIZE = 1024;
-    // char      buf[SERIAL_BUFFER_SIZE];
-    // while (true) {
-    //     std::cout << "Attempting to clear serial buffer..." << std::endl;
-    //     ssize_t bytes_read = read(fd, buf, SERIAL_BUFFER_SIZE);
-    //     if (bytes_read > 0) {
-    //         // Discard data
-    //         // continue;
-    //         std::cout << "Cleared " << bytes_read << " bytes from serial buffer." << std::endl;
-    //     } else if (bytes_read == 0) {
-    //         // No more data
-    //         std::cout << "Serial buffer cleared successfully." << std::endl;
-    //         break;
-    //     } else {
-    //         if (errno == EAGAIN || errno == EWOULDBLOCK) {
-    //             // No more data
-    //             std::cout << "No more data to read from serial buffer." << std::endl;
-    //             break;
-    //         }
-    //         std::cout << "Failed to read from serial port with error: " << errno << std::endl;
-    //         break;
-    //     }
-    // }
-    // fcntl(fd, F_SETFL, old_flags);  // Restore original flags
-    // if (log_debug_) {
-    //     log_debug_("Debug: cleared serial buffer successfully");
-    // }
-    // ================
-    // int fd = serial_.lowest_layer().native_handle();
-    // if (log_debug_) {
-    //     log_debug_("Debug: calling tcflush...");
-    // }
-    // int result = tcflush(fd, TCIFLUSH);
-    // if (result != 0) {
-    //     std::cerr << "Failed to flush serial buffer with error: " << errno << std::endl;
-    // } else {
-    //     if (log_debug_) {
-    //         log_debug_("Debug: cleared serial buffer successfully");
-    //     }
-    // }
-
-    // ==========
-
-    // const int                 SERIAL_BUFFER_SIZE = 1024;
-    // boost::system::error_code ec;
-    // bio::streambuf            buf;
-
-    // if (!serial_.is_open()) {
-    //     std::cout << "Serial port not open!\n";
-    //     return;
-    // }
-
-    // // Set serial port to non-blocking mode
-    // int old_flags = fcntl(fd, F_GETFL, 0);
-    // fcntl(fd, F_SETFL, old_flags | O_NONBLOCK);
-
-    // while (true) {
-    //     std::size_t bytes_read = serial_.read_some(bio::buffer(buf.prepare(SERIAL_BUFFER_SIZE)), ec);
-    //     if (ec == boost::asio::error::would_block || ec == boost::asio::error::try_again || bytes_read == 0) {
-    //         break;
-    //     }
-    //     buf.consume(bytes_read);
-    //     if (ec) {
-    //         break;
-    //     }
-    // }
-
-    // // Restore original flags (blocking mode)
-    // fcntl(fd, F_SETFL, old_flags);
 }
