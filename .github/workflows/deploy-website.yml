@@ -77,7 +77,7 @@ jobs:
           strip_components: 2
 
       - name: Deploy with PM2
-        uses: appleboy/ssh-action@v1.2.4
+        uses: appleboy/ssh-action@v1.2.5
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
