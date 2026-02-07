@@ -993,6 +993,7 @@ def live_plot(_: int, last_goal_xy_km: Optional[List[float]]) -> Tuple[go.Figure
     fig, new_goal_xy = build_figure(state, last_goal_tuple)
     return fig, [new_goal_xy[0], new_goal_xy[1]]
 
+
 @app.callback(
     Output("wind-status", "children"),
     Input("apply-wind-btn", "n_clicks"),
