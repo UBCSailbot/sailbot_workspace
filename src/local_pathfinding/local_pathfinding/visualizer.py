@@ -901,6 +901,8 @@ def write_wind_params(tw_dir_deg: float, tw_speed_kmph: float) -> None:
     with open(WIND_PARAMS_YAML, "w") as f:
         yaml.safe_dump(data, f, sort_keys=False)
 
+    apply_wind_params()
+
 
 def apply_wind_params():
     subprocess.run(
@@ -1045,14 +1047,13 @@ def update_wind(_, tw_dir_deg, tw_speed_kmph):
         if tw_dir_deg is None or tw_speed_kmph is None:
             return "Invalid input"
 
-        if not (0 <= tw_dir_deg <= 360):
-            return "Direction must be 0–360°"
+        if not (-180 < tw_dir_deg <= 180):
+            return "Direction must be (-180, 180]°"
 
         if tw_speed_kmph < 0:
             return "Speed must be ≥ 0"
 
         write_wind_params(tw_dir_deg, tw_speed_kmph)
-        apply_wind_params()
 
         return f"Applied wind: {tw_dir_deg}°, {tw_speed_kmph} km/h"
 
