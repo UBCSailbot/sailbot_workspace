@@ -18,6 +18,9 @@ from collections import deque
 from dataclasses import dataclass
 from multiprocessing import Queue
 from typing import Dict, List, Optional, Tuple, Any
+import subprocess
+import yaml
+from pathlib import Path
 
 import custom_interfaces.msg as ci
 import dash
@@ -43,6 +46,11 @@ WIND_BOX_ORIGIN_XY = cs.XY(6.0, 0.0)
 WIND_BOX_Y_OFFSET = 0.5
 
 GOAL_CHANGE_ROUND_DECIMALS = 3  # avoid float jitter spam
+
+BASE_DIR = Path(__file__).resolve().parent
+MOCK_NODES_DIR = BASE_DIR / "mock_nodes"
+WIND_PARAMS_YAML = MOCK_NODES_DIR / "wind_params.yaml"
+WIND_PARAMS_SH = MOCK_NODES_DIR / "wind_params.sh"
 
 app = dash.Dash(__name__)
 queue: Optional[Queue] = None  # type: ignore
@@ -873,6 +881,30 @@ def build_figure(
     return fig, goal_change.new_goal_xy_rounded
 
 
+def write_wind_params(tw_dir_deg: float, tw_speed_kmph: float) -> None:
+    with open(WIND_PARAMS_YAML, "r") as f:
+        data = yaml.safe_load(f)
+
+    data["constants"]["tw_dir_deg"] = float(tw_dir_deg)
+    data["constants"]["tw_speed_kmph"] = float(tw_speed_kmph)
+
+    data["/mock_wind_sensor"]["ros__parameters"]["tw_dir_deg"] = float(tw_dir_deg)
+    data["/mock_wind_sensor"]["ros__parameters"]["tw_speed_kmph"] = float(tw_speed_kmph)
+
+    data["/mock_gps"]["ros__parameters"]["tw_dir_deg"] = float(tw_dir_deg)
+    data["/mock_gps"]["ros__parameters"]["tw_speed_kmph"] = float(tw_speed_kmph)
+
+    with open(WIND_PARAMS_YAML, "w") as f:
+        yaml.safe_dump(data, f, sort_keys=False)
+
+
+def apply_wind_params():
+    subprocess.run(
+        ["bash", str(WIND_PARAMS_SH)],
+        check=True,
+    )
+
+
 # -----------------------------
 # Dash App entry points
 # -----------------------------
@@ -894,9 +926,36 @@ def dash_app(q: Queue):
                 "UBC Sailbot Pathfinding",
                 style={"fontFamily": "Consolas, monospace", "color": "rgb(18, 70, 139)"},
             ),
+            # Wind controls
+            html.Div(
+                style={"display": "flex", "gap": "10px", "marginBottom": "8px"},
+                children=[
+                    dcc.Input(
+                        id="tw-dir-input",
+                        type="number",
+                        placeholder="Wind Direction",
+                        min=0,
+                        max=360,
+                        step=1,
+                        value=0,
+                        style={"width": "140px"},
+                    ),
+                    dcc.Input(
+                        id="tw-speed-input",
+                        type="number",
+                        placeholder="Wind Speed",
+                        min=0,
+                        step=0.1,
+                        value=10.0,
+                        style={"width": "140px"},
+                    ),
+                    html.Button("Apply Wind", id="apply-wind-btn"),
+                    html.Div(id="wind-status"),
+                ],
+            ),
             dcc.Graph(id="live-graph", style={"height": "90vh", "width": "100%"}),
-            dcc.Interval(id="interval-component", interval=UPDATE_INTERVAL_MS, n_intervals=0),
-            dcc.Store(id="goal-store", data=None),
+            dcc.Interval(id="interval-component", interval=UPDATE_INTERVAL_MS),
+            dcc.Store(id="goal-store"),
         ],
     )
     app.run(debug=True, use_reloader=False)
@@ -933,3 +992,29 @@ def live_plot(_: int, last_goal_xy_km: Optional[List[float]]) -> Tuple[go.Figure
 
     fig, new_goal_xy = build_figure(state, last_goal_tuple)
     return fig, [new_goal_xy[0], new_goal_xy[1]]
+
+@app.callback(
+    Output("wind-status", "children"),
+    Input("apply-wind-btn", "n_clicks"),
+    State("tw-dir-input", "value"),
+    State("tw-speed-input", "value"),
+    prevent_initial_call=True,
+)
+def update_wind(_, tw_dir_deg, tw_speed_kmph):
+    try:
+        if tw_dir_deg is None or tw_speed_kmph is None:
+            return "Invalid input"
+
+        if not (0 <= tw_dir_deg <= 360):
+            return "Direction must be 0–360°"
+
+        if tw_speed_kmph < 0:
+            return "Speed must be ≥ 0"
+
+        write_wind_params(tw_dir_deg, tw_speed_kmph)
+        apply_wind_params()
+
+        return f"Applied wind: {tw_dir_deg}°, {tw_speed_kmph} km/h"
+
+    except Exception as e:
+        return f"Error: {e}"
