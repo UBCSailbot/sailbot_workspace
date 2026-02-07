@@ -27,6 +27,11 @@ def encode(filepath):
     path_pb = path_to_proto_bytes(path)
     print(path_pb)
 
+    with open(filepath, "wb") as f:
+        f.write(path_pb)
+
+    print(f"Protobuf serialized to {filepath}")
+
 
 def path_to_proto_bytes(path):
     proc = subprocess.Popen(
