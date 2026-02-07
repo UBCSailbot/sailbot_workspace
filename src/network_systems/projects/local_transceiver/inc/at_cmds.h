@@ -14,12 +14,14 @@ namespace AT
 const std::string DELIMITER = "\r\n";
 const std::string STATUS_OK = "OK";
 const std::string RSP_READY = "READY";
+const std::string CSQ       = "READY";
 const std::string GARBAGE   = "\n";
 
-const std::string CHECK_CONN    = "AT";
-const std::string SBD_SESSION   = "AT+SBDIX";  // 5.144
-const std::string DSBL_CTRLFLOW = "AT&K0";
-const std::string DNLD_TO_QUEUE = "AT+SBDRB";
+const std::string CHECK_CONN        = "AT";
+const std::string SBD_SESSION       = "AT+SBDIX";  // 5.144
+const std::string DSBL_CTRLFLOW     = "AT&K0";
+const std::string DNLD_TO_QUEUE     = "AT+SBDRB";
+const std::string CHECK_SIG_QUALITY = "AT+CSQ";
 
 namespace write_bin  // 5.154
 {

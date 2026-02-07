@@ -625,3 +625,63 @@ void LocalTransceiver::clearSerialBuffer()
 
     fcntl(fd, F_SETFL, old_flags);  // Restore original flags
 }
+
+int LocalTransceiver::checkIridiumSignalQuality()
+{
+    // Assumes AT is already initialized and ready
+
+    clearSerialBuffer();
+    static const AT::Line at_check_conn_strength_cmd = AT::Line(AT::CHECK_SIG_QUALITY);
+
+    if (!send(at_check_conn_strength_cmd)) {
+        if (log_error_) {
+            log_error_("Debug: failed to send CSQ command");
+            return -1;
+        }
+    }
+    if (log_debug_) {
+        log_debug_("Debug: sent CSQ command");
+    }
+
+    if (!rcvRsps({
+          at_check_conn_strength_cmd,
+          AT::Line(AT::DELIMITER),
+        })) {
+        if (log_error_) {
+            log_error_("Debug: did not receive CSQ response header");
+            return -1;
+        }
+    }
+    if (log_debug_) {
+        log_debug_("Debug: received CSQ response header");
+    }
+
+    auto opt_rsp = readRsp();
+    if (!opt_rsp) {
+        if (log_error_) {
+            log_error_("Debug: readRsp returned no response");
+            return -1;
+        }
+    }
+    if (log_debug_) {
+        log_debug_("Debug: readRsp received response");
+    }
+
+    // This string will look something like:
+    // "+CSQ:<Signal Quality>\r\n\r\nOK\r"
+    // on success
+    std::string opt_rsp_val = opt_rsp.value();
+    // std::vector<std::string> sbd_status_vec;
+    // boost::algorithm::split(sbd_status_vec, opt_rsp_val, boost::is_any_of(AT::DELIMITER));
+
+    // AT::SBDStatusRsp rsp(sbd_status_vec[0]);
+    // if (rsp.MOSuccess()) {
+    //     return true;
+    // }
+    int signal_quality =
+      opt_rsp_val.find("+CSQ:") != std::string::npos ? std::stoi(opt_rsp_val.substr(opt_rsp_val.find(":") + 1)) : -1;
+
+    clearSerialBuffer();  // Clear any data that may have come in while waiting for CSQ response, to ensure the following readRsp gets a clean response
+
+    return signal_quality;
+}

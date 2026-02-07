@@ -198,10 +198,16 @@ private:
 
     /**
      * @brief Drain/clear any pending data in the serial buffer to remove stale data
-     *        from previous iterations or operations. This helps prevent data from one attempt/operation
+     *        from previous iterations or operations. This helps prevent stale data from one attempt/operation
      *        from interfering with subsequent reads.
      */
     void clearSerialBuffer();
+
+    /**
+     * @brief Checks Iridium satellite connection strength via AT+CSQ
+     * @return signal strength value from 0-5, or -1 if an error occurs
+     */
+    int checkIridiumSignalQuality();
 
     /**
      * @brief Parse the message received from the remote server
