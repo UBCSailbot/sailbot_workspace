@@ -33,18 +33,6 @@ std::ostream & operator<<(std::ostream & os, const SailbotDB::RcvdMsgInfo & info
     return os;
 }
 
-std::string SailbotDB::RcvdMsgInfo::mkTimestamp(const std::tm & tm)
-{
-    // This is impossible to read. It's reading each field of tm and 0 padding it to 2 digits with either "-" or ":"
-    // in between each number
-    std::stringstream tm_ss;
-    tm_ss << std::setfill('0') << std::setw(2) << tm.tm_year << "-" << std::setfill('0') << std::setw(2) << tm.tm_mon
-          << "-" << std::setfill('0') << std::setw(2) << tm.tm_mday << " " << std::setfill('0') << std::setw(2)
-          << tm.tm_hour << ":" << std::setfill('0') << std::setw(2) << tm.tm_min << ":" << std::setfill('0')
-          << std::setw(2) << tm.tm_sec;
-    return tm_ss.str();
-}
-
 SailbotDB::SailbotDB(const std::string & db_name, const std::string & mongodb_conn_str) : db_name_(db_name)
 {
     mongocxx::uri uri = mongocxx::uri{mongodb_conn_str};
@@ -71,7 +59,7 @@ bool SailbotDB::testConnection()
 bool SailbotDB::storeNewSensors(const Sensors & sensors_pb, RcvdMsgInfo new_info)
 {
     // Only using timestamp info for now, may use other fields in the future
-    const std::string &   timestamp = new_info.timestamp_;
+    int64_t    timestamp = new_info.timestamp_;
     mongocxx::pool::entry entry     = pool_->acquire();
     return storeGps(sensors_pb.gps(), timestamp, *entry) && storeAis(sensors_pb.ais_ships(), timestamp, *entry) &&
            storeGenericSensors(sensors_pb.data_sensors(), timestamp, *entry) &&
@@ -84,7 +72,7 @@ bool SailbotDB::storeNewSensors(const Sensors & sensors_pb, RcvdMsgInfo new_info
 
 // PRIVATE
 
-bool SailbotDB::storeGps(const Sensors::Gps & gps_pb, const std::string & timestamp, mongocxx::client & client)
+bool SailbotDB::storeGps(const Sensors::Gps & gps_pb, int64_t timestamp, mongocxx::client & client)
 {
     mongocxx::database   db       = client[db_name_];
     mongocxx::collection gps_coll = db[COLLECTION_GPS];
@@ -96,7 +84,7 @@ bool SailbotDB::storeGps(const Sensors::Gps & gps_pb, const std::string & timest
 }
 
 bool SailbotDB::storeAis(
-  const ProtoList<Sensors::Ais> & ais_ships_pb, const std::string & timestamp, mongocxx::client & client)
+  const ProtoList<Sensors::Ais> & ais_ships_pb, int64_t timestamp, mongocxx::client & client)
 {
     mongocxx::database   db       = client[db_name_];
     mongocxx::collection ais_coll = db[COLLECTION_AIS_SHIPS];
@@ -115,7 +103,7 @@ bool SailbotDB::storeAis(
 }
 
 bool SailbotDB::storeGenericSensors(
-  const ProtoList<Sensors::Generic> & generic_pb, const std::string & timestamp, mongocxx::client & client)
+  const ProtoList<Sensors::Generic> & generic_pb, int64_t timestamp, mongocxx::client & client)
 {
     mongocxx::database   db           = client[db_name_];
     mongocxx::collection generic_coll = db[COLLECTION_DATA_SENSORS];
@@ -130,7 +118,7 @@ bool SailbotDB::storeGenericSensors(
 }
 
 bool SailbotDB::storeBatteries(
-  const ProtoList<Sensors::Battery> & battery_pb, const std::string & timestamp, mongocxx::client & client)
+  const ProtoList<Sensors::Battery> & battery_pb, int64_t timestamp, mongocxx::client & client)
 {
     mongocxx::database   db             = client[db_name_];
     mongocxx::collection batteries_coll = db[COLLECTION_BATTERIES];
@@ -145,7 +133,7 @@ bool SailbotDB::storeBatteries(
 }
 
 bool SailbotDB::storeWindSensors(
-  const ProtoList<Sensors::Wind> & wind_pb, const std::string & timestamp, mongocxx::client & client)
+  const ProtoList<Sensors::Wind> & wind_pb, int64_t timestamp, mongocxx::client & client)
 {
     mongocxx::database   db        = client[db_name_];
     mongocxx::collection wind_coll = db[COLLECTION_WIND_SENSORS];
@@ -160,7 +148,7 @@ bool SailbotDB::storeWindSensors(
 }
 
 bool SailbotDB::storePathSensors(
-  const Sensors::Path & local_path_pb, const std::string & timestamp, mongocxx::client & client)
+  const Sensors::Path & local_path_pb, int64_t & timestamp, mongocxx::client & client)
 {
     mongocxx::database           db              = client[db_name_];
     mongocxx::collection         local_path_coll = db[COLLECTION_LOCAL_PATH];

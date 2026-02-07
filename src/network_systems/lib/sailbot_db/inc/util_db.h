@@ -2,6 +2,7 @@
 
 #include <random>
 #include <span>
+#include <cstdint>
 
 #include "sailbot_db.h"
 #include "sensors.pb.h"
@@ -46,11 +47,11 @@ public:
     * @param tm Timestamp returned by getTimestamp() (with any modifications made to it)
     * @return std::pair<Sensors, SailbotDB::RcvdMsgInfo>
     */
-    std::pair<Polaris::Sensors, SailbotDB::RcvdMsgInfo> genRandData(const std::tm & tm);
+    std::pair<Polaris::Sensors, SailbotDB::RcvdMsgInfo> genRandData(int64_t timestamp);
 
     /**
     * @brief Query the database and check that the sensor and message are correct
-    *
+    * 
     * @param expected_sensors
     * @param expected_msg_info
     */
@@ -64,7 +65,7 @@ public:
      * @param expected_num_docs Expected number of documents. tracker is updated if there's a mismatch
      * @return std::pair{Vector of dumped Sensors, Vector of dumped timestamps}
      */
-    std::pair<std::vector<Polaris::Sensors>, std::vector<std::string>> dumpSensors(
+    std::pair<std::vector<Polaris::Sensors>, std::vector<int64_t>> dumpSensors(
       utils::FailTracker & tracker, size_t expected_num_docs = 1);
 
 private:

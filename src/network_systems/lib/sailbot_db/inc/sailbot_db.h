@@ -10,6 +10,8 @@
 #include "sensors.pb.h"
 #include "waypoint.pb.h"
 
+#include <cstdint>
+
 // >>>>IMPORTANT<<<<<
 // BSON document formats from: https://ubcsailbot.atlassian.net/wiki/spaces/prjt22/pages/1907589126/Database+Schemas:
 
@@ -47,13 +49,6 @@ public:
          */
         friend std::ostream & operator<<(std::ostream & os, const RcvdMsgInfo & info);
 
-        /**
-         * @brief Get epoch timestamp in seconds
-         * 
-         * @param tm standard C/C++ time structure
-         * @return tm converted to epoch seconds
-         */
-        static int64_t mkTimestamp(const std::tm & tm);
     };
 
     /**
