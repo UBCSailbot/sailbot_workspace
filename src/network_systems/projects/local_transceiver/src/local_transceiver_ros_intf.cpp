@@ -45,7 +45,7 @@ public:
             if (mode == SYSTEM_MODE::PROD) {
                 if (mode == SYSTEM_MODE::PROD) {
                     default_port             = "/dev/ttyS0";
-                    std::string set_baud_cmd = "sudo stty -F /dev/ttyS0 19200";
+                    std::string set_baud_cmd = "stty -F /dev/ttyS0 19200";
                     int         result       = std::system(set_baud_cmd.c_str());  //NOLINT(concurrency-mt-unsafe)
                     if (result != 0) {
                         std::string msg = "Error: could not set baud rate for local trns port /dev/ttyS0";
@@ -87,7 +87,7 @@ public:
                 }
             } else if (mode == SYSTEM_MODE::TEST_SAT) {
                 default_port             = "/dev/ttyS0";
-                std::string set_baud_cmd = "sudo stty -F /dev/ttyS0 19200";
+                std::string set_baud_cmd = "stty -F /dev/ttyS0 19200";
                 int         result       = std::system(set_baud_cmd.c_str());  //NOLINT(concurrency-mt-unsafe)
                 if (result != 0) {
                     std::string msg = "Error: could not set baud rate for local trns port /dev/ttyS0";
