@@ -1,6 +1,7 @@
 #pragma once
 
 #include <boost/asio/streambuf.hpp>
+#include <functional>
 #include <string>
 
 #include "at_cmds.h"
@@ -29,6 +30,17 @@ class LocalTransceiver
     friend class TestLocalTransceiver_checkCache_Test;
 
 public:
+    // Logging callback types
+    using LogCallback = std::function<void(const std::string &)>;
+
+    /**
+    * @brief Set logging callbacks for debug and error messages
+     *
+     * @param debug_cb Callback for debug messages
+     * @param error_cb Callback for error messages
+     */
+    void setLogCallbacks(LogCallback debug_cb, LogCallback error_cb);
+
     /**
     * @brief Update the sensor with new GPS data
     *
@@ -105,6 +117,17 @@ public:
     bool send();
 
     /**
+     * @brief Debug helper that sends a small payload through the same
+     *        flow used by `send()` but using the provided bytes. Useful for
+     *        testing without serializing the full sensors protobuf.
+     *        ticket #714
+     *
+     * @param data payload to send
+     * @return true on success, false on failure
+     */
+    bool debugSendAT(const std::string & data);
+
+    /**
      * @brief Send a debug command and return the output
      *
      * @param cmd string to send to the serial port
@@ -150,6 +173,9 @@ private:
     boost::asio::serial_port serial_;
     // underlying sensors object
     Polaris::Sensors sensors_;
+    // Logging callbacks
+    LogCallback log_debug_;
+    LogCallback log_error_;
 
     /**
      * @brief Send a command to the serial port
@@ -169,6 +195,13 @@ private:
     bool rcvRsp(const AT::Line & expected_rsp);
 
     std::optional<std::string> readRsp();
+
+    /**
+     * @brief Drain/clear any pending data in the serial buffer to remove stale data
+     *        from previous iterations or operations. This helps prevent data from one attempt/operation
+     *        from interfering with subsequent reads.
+     */
+    void clearSerialBuffer();
 
     /**
      * @brief Parse the message received from the remote server

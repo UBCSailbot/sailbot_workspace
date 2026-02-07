@@ -82,6 +82,12 @@ void LocalTransceiver::updateSensor(msg::LPathData localData)
 
 Sensors LocalTransceiver::sensors() { return sensors_; }
 
+void LocalTransceiver::setLogCallbacks(LogCallback debug_cb, LogCallback error_cb)
+{
+    log_debug_ = debug_cb;
+    log_error_ = error_cb;
+}
+
 LocalTransceiver::LocalTransceiver(const std::string & port_name, const uint32_t baud_rate) : serial_(io_, port_name)
 {
     serial_.set_option(bio::serial_port_base::baud_rate(baud_rate));
@@ -129,6 +135,8 @@ bool LocalTransceiver::send()
 
     static constexpr int MAX_NUM_RETRIES = 20;  // allow retries because the connection is imperfect
     for (int i = 0; i < MAX_NUM_RETRIES; i++) {
+        clearSerialBuffer();  // Clear any stale data from previous iteration
+
         if (!send(at_write_cmd)) {
             continue;
         }
@@ -166,8 +174,9 @@ bool LocalTransceiver::send()
             continue;
         }
 
+        clearSerialBuffer();  // Clear any data that may have come in while waiting for SBDIX response, to ensure the following readRsp gets a clean response
+
         if (!rcvRsps({
-              AT::Line("\r"),
               sbdix_cmd,
               AT::Line(AT::DELIMITER),
             })) {
@@ -197,6 +206,144 @@ bool LocalTransceiver::send()
     return false;
 }
 
+bool LocalTransceiver::debugSendAT(const std::string & data)
+{
+    if (data.size() >= MAX_LOCAL_TO_REMOTE_PAYLOAD_SIZE_BYTES) {
+        if (log_error_) {
+            log_error_(
+              "Debug message/data too large: " + std::to_string(data.size()) + " bytes, but with a limit of " +
+              std::to_string(MAX_LOCAL_TO_REMOTE_PAYLOAD_SIZE_BYTES) + " bytes");
+        }
+        return false;
+    }
+
+    if (log_debug_) {
+        log_debug_("Debug: Sending " + std::to_string(data.size()) + " bytes via debugSendAT");
+    }
+
+    std::string write_bin_cmd_str = AT::write_bin::CMD + std::to_string(data.size());
+    AT::Line    at_write_cmd(write_bin_cmd_str);
+
+    static constexpr int MAX_NUM_RETRIES = 20;
+    for (int i = 0; i < MAX_NUM_RETRIES; i++) {
+        if (log_debug_) {
+            log_debug_("Debug: clearing buffer (attempt " + std::to_string(i) + ")");
+        }
+        clearSerialBuffer();  // Clear any stale data from previous iteration
+
+        if (log_debug_) {
+            log_debug_("Debug: cleared buffer, sending write command (attempt " + std::to_string(i) + ")");
+        }
+        if (!send(at_write_cmd)) {
+            if (log_error_) {
+                log_error_("Debug: failed to send write command (attempt " + std::to_string(i) + ")");
+            }
+            continue;
+        }
+        if (log_debug_) {
+            log_debug_("Debug: sent write command (attempt " + std::to_string(i) + "): " + at_write_cmd.str_);
+        }
+
+        if (!rcvRsps({
+              at_write_cmd,
+              AT::Line(AT::DELIMITER),
+              AT::Line(AT::RSP_READY),
+              AT::Line("\n"),
+            })) {
+            if (log_error_) {
+                log_error_("Debug: did not receive ready prompt (attempt " + std::to_string(i) + ")");
+            }
+            continue;
+        }
+        if (log_debug_) {
+            log_debug_("Debug: received ready prompt (attempt " + std::to_string(i) + ")");
+        }
+
+        std::string msg_str = data + checksum(data);
+        AT::Line    msg(msg_str);
+        if (!send(msg)) {
+            if (log_error_) {
+                log_error_("Debug: failed to send payload (attempt " + std::to_string(i) + ")");
+            }
+            continue;
+        }
+        if (log_debug_) {
+            log_debug_("Debug: sent payload (attempt " + std::to_string(i) + "): " + msg.str_);
+        }
+
+        if (!rcvRsps({
+              AT::Line(AT::DELIMITER),
+              AT::Line(AT::write_bin::rsp::SUCCESS),
+              AT::Line("\n"),
+              AT::Line(AT::DELIMITER),
+              AT::Line(AT::STATUS_OK),
+              AT::Line("\n"),
+            })) {
+            if (log_error_) {
+                log_error_("Debug: write did not complete successfully (attempt " + std::to_string(i) + ")");
+            }
+            continue;
+        }
+        if (log_debug_) {
+            log_debug_("Debug: write completed successfully (attempt " + std::to_string(i) + ")");
+        }
+
+        clearSerialBuffer();
+
+        static const AT::Line sbdix_cmd = AT::Line(AT::SBD_SESSION);
+        if (!send(sbdix_cmd)) {
+            if (log_error_) {
+                log_error_("Debug: failed to send SBDIX command (attempt " + std::to_string(i) + ")");
+            }
+            continue;
+        }
+        if (log_debug_) {
+            log_debug_("Debug: sent SBDIX command (attempt " + std::to_string(i) + "): " + sbdix_cmd.str_);
+        }
+
+        if (!rcvRsps({
+              sbdix_cmd,
+              AT::Line(AT::DELIMITER),
+            })) {
+            if (log_error_) {
+                log_error_("Debug: did not receive SBDIX response header (attempt " + std::to_string(i) + ")");
+            }
+            continue;
+        }
+        if (log_debug_) {
+            log_debug_("Debug: received SBDIX response header (attempt " + std::to_string(i) + ")");
+        }
+
+        auto opt_rsp = readRsp();
+        if (!opt_rsp) {
+            if (log_error_) {
+                log_error_("Debug: readRsp returned no response (attempt " + std::to_string(i) + ")");
+            }
+            continue;
+        }
+        if (log_debug_) {
+            log_debug_("Debug: readRsp received response (attempt " + std::to_string(i) + "): " + opt_rsp.value());
+        }
+
+        std::string              opt_rsp_val = opt_rsp.value();
+        std::vector<std::string> sbd_status_vec;
+        boost::algorithm::split(sbd_status_vec, opt_rsp_val, boost::is_any_of(AT::DELIMITER));
+
+        AT::SBDStatusRsp rsp(sbd_status_vec[0]);
+        if (rsp.MOSuccess()) {
+            if (log_debug_) {
+                log_debug_("Debug: debugSendAT transmitted successfully");
+            }
+            return true;
+        }
+    }
+
+    if (log_error_) {
+        log_error_("Debug: Failed to transmit debug payload to satellite");
+    }
+    return false;
+}
+
 std::optional<std::string> LocalTransceiver::debugSend(const std::string & cmd)
 {
     AT::Line    at_cmd(cmd);
@@ -215,6 +362,7 @@ void LocalTransceiver::cacheGlobalWaypoints(std::string receivedDataBuffer)
     std::filesystem::path cache_temp{CACHE_TEMP_PATH};
     std::ofstream         writeFile(CACHE_TEMP_PATH, std::ios::binary);
     if (!writeFile) {
+        // Note: This is a static method, so no logging callback available
         std::cerr << "Failed to create temp cache file" << std::endl;
     }
     writeFile.write(receivedDataBuffer.data(), static_cast<std::streamsize>(receivedDataBuffer.size()));
@@ -387,6 +535,11 @@ bool LocalTransceiver::rcvRsp(const AT::Line & expected_rsp)
         std::cerr << "Expected to read: \"" << expected_rsp.str_ << "\"\nbut read: \"" << outstr << "\"" << std::endl;
         return false;
     }
+
+    if (log_debug_) {
+        log_debug_("Debug: received expected response: " + outstr + "\n");
+    }
+
     return true;
 }
 
@@ -410,6 +563,7 @@ std::optional<std::string> LocalTransceiver::readRsp()
 
     std::string rsp_str = streambufToStr(buf);
     rsp_str.pop_back();  // Remove the "\n"
+
     return rsp_str;
 }
 
@@ -432,4 +586,42 @@ std::string LocalTransceiver::streambufToStr(bio::streambuf & buf)
       bio::buffers_begin(buf.data()), bio::buffers_begin(buf.data()) + static_cast<int64_t>(buf.data().size()));
     buf.consume(buf.size());
     return str;
+}
+
+void LocalTransceiver::clearSerialBuffer()
+{
+    int fd        = serial_.lowest_layer().native_handle();
+    int old_flags = fcntl(fd, F_GETFL, 0);
+    fcntl(fd, F_SETFL, old_flags | O_NONBLOCK);
+
+    const std::size_t SERIAL_BUFFER_SIZE = 1024;
+    std::vector<char> buf(SERIAL_BUFFER_SIZE);
+
+    while (true) {
+        ssize_t bytes_read = ::read(fd, buf.data(), buf.size());
+        if (bytes_read > 0) {
+            if (log_debug_) {
+                log_debug_("Cleared " + std::to_string(bytes_read) + " bytes from serial buffer.");
+            }
+            continue;
+        }
+        if (bytes_read == 0) {
+            if (log_debug_) {
+                log_debug_("Serial buffer cleared successfully.");
+            }
+            break;
+        }
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            if (log_debug_) {
+                log_debug_("No more data to read from serial buffer.");
+            }
+            break;
+        }
+        if (log_error_) {
+            log_error_("Failed to read from serial port with error: " + std::to_string(errno));
+        }
+        break;
+    }
+
+    fcntl(fd, F_SETFL, old_flags);  // Restore original flags
 }
