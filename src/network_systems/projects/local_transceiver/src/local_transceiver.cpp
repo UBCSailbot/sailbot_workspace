@@ -602,18 +602,26 @@ void LocalTransceiver::clearSerialBuffer()
     while (true) {
         ssize_t bytes_read = ::read(fd, buf.data(), buf.size());
         if (bytes_read > 0) {
-            std::cout << "Cleared " << bytes_read << " bytes from serial buffer." << std::endl;
+            if (log_debug_) {
+                log_debug_("Cleared " + std::to_string(bytes_read) + " bytes from serial buffer.");
+            }
             continue;
         }
         if (bytes_read == 0) {
-            std::cout << "Serial buffer cleared successfully." << std::endl;
+            if (log_debug_) {
+                log_debug_("Serial buffer cleared successfully.");
+            }
             break;
         }
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
-            std::cout << "No more data to read from serial buffer." << std::endl;
+            if (log_debug_) {
+                log_debug_("No more data to read from serial buffer.");
+            }
             break;
         }
-        std::cout << "Failed to read from serial port with error: " << errno << std::endl;
+        if (log_error_) {
+            log_error_("Failed to read from serial port with error: " + std::to_string(errno));
+        }
         break;
     }
 
