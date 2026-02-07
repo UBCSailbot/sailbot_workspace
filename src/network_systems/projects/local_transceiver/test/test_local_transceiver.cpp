@@ -133,6 +133,16 @@ TEST_F(TestLocalTransceiver, DebugSendAT)
 }
 
 /**
+ * @brief Check iridium signal quality and verify it is between 0-5
+ */
+TEST_F(TestLocalTransceiver, checkIridiumSignalQuality)
+{
+    int signal_quality = lcl_trns_->checkIridiumSignalQuality();
+    EXPECT_GE(signal_quality, 0) << "Signal quality should be >= 0";
+    EXPECT_LE(signal_quality, 5) << "Signal quality should be <= 5";
+}
+
+/**
  * @brief Send a binary string to virtual_iridium and verify it is received
  * Using gps, wind, batteries, generic sensors, local path data
  */
