@@ -955,7 +955,7 @@ def dash_app(q: Queue):
                         placeholder="Wind Speed",
                         min=0,
                         step=0.1,
-                        value=10.0,
+                        value=0.0,
                         style={"width": "140px"},
                     ),
                     html.Button("Apply Wind", id="apply-wind-btn"),
