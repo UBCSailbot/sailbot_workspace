@@ -692,9 +692,9 @@ def test_update_reference_point_boat(
 
 # Test to measure actual collision zone dimensions with current constants
 @pytest.mark.parametrize(
-    "reference_point,sailbot_position,ais_ship,sailbot_speed",
+    "reference_point,sailbot_position,ais_ship,sailbot_speed,expected_min_dimension,expected_max_dimension",
     [
-        # Test case with boats at realistic separation
+        # Test case 1: Boats at realistic separation with normal speeds
         (
             HelperLatLon(latitude=52.268119490007756, longitude=-136.9133983613776),
             HelperLatLon(latitude=51.95785651405779, longitude=-136.26282894969611),
@@ -708,6 +708,59 @@ def test_update_reference_point_boat(
                 rot=HelperROT(rot=0),
             ),
             15.0,
+            0.5,  # Min dimension (width should be at least boat width + buffer)
+            50.0,  # Max dimension (should be reasonable, not hundreds of km for this case)
+        ),
+        # Test case 2: AIS ship with zero speed (stationary boat)
+        (
+            HelperLatLon(latitude=50.0, longitude=-130.0),
+            HelperLatLon(latitude=50.0, longitude=-130.1),
+            HelperAISShip(
+                id=2,
+                lat_lon=HelperLatLon(latitude=50.0, longitude=-129.9),
+                cog=HelperHeading(heading=0.0),
+                sog=HelperSpeed(speed=0.0),  # Stationary boat
+                width=HelperDimension(dimension=15.0),
+                length=HelperDimension(dimension=80.0),
+                rot=HelperROT(rot=0),
+            ),
+            10.0,
+            0.2,  # Min dimension
+            2.0,  # Max dimension should be small for stationary boat
+        ),
+        # Test case 3: Fast boat far away
+        (
+            HelperLatLon(latitude=50.0, longitude=-130.0),
+            HelperLatLon(latitude=50.0, longitude=-130.0),
+            HelperAISShip(
+                id=3,
+                lat_lon=HelperLatLon(latitude=51.0, longitude=-130.0),  # 111 km north
+                cog=HelperHeading(heading=180.0),  # Heading south
+                sog=HelperSpeed(speed=50.0),
+                width=HelperDimension(dimension=20.0),
+                length=HelperDimension(dimension=100.0),
+                rot=HelperROT(rot=0),
+            ),
+            15.0,
+            1.0,  # Min dimension
+            100.0,  # Max dimension for fast boat far away
+        ),
+        # Test case 4: Boats very close together
+        (
+            HelperLatLon(latitude=49.283075, longitude=-123.216004),
+            HelperLatLon(latitude=49.283439, longitude=-123.209825),
+            HelperAISShip(
+                id=4,
+                lat_lon=HelperLatLon(latitude=49.284671, longitude=-123.203216),
+                cog=HelperHeading(heading=-60.0),
+                sog=HelperSpeed(speed=20.0),
+                width=HelperDimension(dimension=20.0),
+                length=HelperDimension(dimension=100.0),
+                rot=HelperROT(rot=0),
+            ),
+            15.0,
+            0.5,  # Min dimension
+            50.0,  # Max dimension
         ),
     ],
 )
@@ -716,12 +769,14 @@ def test_measure_boat_collision_zone_dimensions(
     sailbot_position: HelperLatLon,
     ais_ship: HelperAISShip,
     sailbot_speed: float,
+    expected_min_dimension: float,
+    expected_max_dimension: float,
 ):
-    """Measure and report the actual dimensions of boat collision zones.
+    """Test and verify the actual dimensions of boat collision zones.
 
-    This test is for debugging and understanding the actual sizes of collision zones
-    produced by the current implementation. It will print detailed information about
-    the collision zone dimensions.
+    This test verifies that collision zone polygons have reasonable dimensions
+    for various scenarios including normal operation, stationary boats, and edge cases.
+    It ensures polygons are not degenerate (too small) or unreasonably large.
     """
     boat = Boat(reference_point, sailbot_position, sailbot_speed, ais_ship)
 
@@ -732,12 +787,13 @@ def test_measure_boat_collision_zone_dimensions(
     width = maxx - minx
     height = maxy - miny
     max_dimension = max(width, height)
+    min_dimension = min(width, height)
 
     # Get the projected distance
     projected_distance = boat._calculate_projected_distance()
 
     # Print detailed information (this will show up in pytest output with -v or -s)
-    print(f"\n=== Collision Zone Dimensions ===")
+    print(f"\n=== Collision Zone Dimensions for AIS Ship {ais_ship.id} ===")
     print(
         f"Boat dimensions: {cs.meters_to_km(ais_ship.width.dimension):.3f} km × "
         f"{cs.meters_to_km(ais_ship.length.dimension):.3f} km"
@@ -749,7 +805,156 @@ def test_measure_boat_collision_zone_dimensions(
     print(f"Collision zone bounds: ({minx:.2f}, {miny:.2f}) to ({maxx:.2f}, {maxy:.2f})")
     print(f"Collision zone width: {width:.2f} km")
     print(f"Collision zone height: {height:.2f} km")
+    print(f"Collision zone min dimension: {min_dimension:.2f} km")
     print(f"Collision zone max dimension: {max_dimension:.2f} km")
 
-    # This test always passes - it's just for measurement
-    assert True
+    # Assert that collision zone is not degenerate (has reasonable minimum size)
+    assert min_dimension >= expected_min_dimension, (
+        f"Collision zone too small: min dimension {min_dimension:.3f} km "
+        f"is less than expected {expected_min_dimension:.3f} km. "
+        f"Boat: {cs.meters_to_km(ais_ship.width.dimension):.3f} km × "
+        f"{cs.meters_to_km(ais_ship.length.dimension):.3f} km"
+    )
+
+    # Assert that collision zone is not unreasonably large
+    assert max_dimension <= expected_max_dimension, (
+        f"Collision zone too large: max dimension {max_dimension:.2f} km "
+        f"exceeds expected {expected_max_dimension:.2f} km. "
+        f"Projected distance: {projected_distance:.2f} km"
+    )
+
+    # Assert that the collision zone has valid bounds
+    assert width > 0, "Collision zone width must be positive"
+    assert height > 0, "Collision zone height must be positive"
+
+    # Assert collision zone is larger than the boat itself (due to buffer and projection)
+    boat_width_km = cs.meters_to_km(ais_ship.width.dimension)
+    boat_length_km = cs.meters_to_km(ais_ship.length.dimension)
+    assert width >= boat_width_km, (
+        f"Collision zone width {width:.3f} km should be at least "
+        f"boat width {boat_width_km:.3f} km"
+    )
+    assert height >= boat_length_km, (
+        f"Collision zone height {height:.3f} km should be at least "
+        f"boat length {boat_length_km:.3f} km"
+    )
+
+
+# Test edge cases for collision zone generation
+@pytest.mark.parametrize(
+    "reference_point,sailbot_position,ais_ship,sailbot_speed,description",
+    [
+        # Edge case 1: Negative AIS ship speed (invalid but should not crash)
+        (
+            HelperLatLon(latitude=50.0, longitude=-130.0),
+            HelperLatLon(latitude=50.0, longitude=-130.1),
+            HelperAISShip(
+                id=100,
+                lat_lon=HelperLatLon(latitude=50.0, longitude=-129.9),
+                cog=HelperHeading(heading=0.0),
+                sog=HelperSpeed(speed=-10.0),  # Negative speed (invalid)
+                width=HelperDimension(dimension=15.0),
+                length=HelperDimension(dimension=80.0),
+                rot=HelperROT(rot=0),
+            ),
+            10.0,
+            "Negative AIS ship speed",
+        ),
+        # Edge case 2: Zero sailbot speed
+        (
+            HelperLatLon(latitude=50.0, longitude=-130.0),
+            HelperLatLon(latitude=50.0, longitude=-130.1),
+            HelperAISShip(
+                id=101,
+                lat_lon=HelperLatLon(latitude=50.0, longitude=-129.9),
+                cog=HelperHeading(heading=90.0),
+                sog=HelperSpeed(speed=20.0),
+                width=HelperDimension(dimension=15.0),
+                length=HelperDimension(dimension=80.0),
+                rot=HelperROT(rot=0),
+            ),
+            0.0,  # Zero sailbot speed
+            "Zero sailbot speed",
+        ),
+        # Edge case 3: Very small boat dimensions
+        (
+            HelperLatLon(latitude=50.0, longitude=-130.0),
+            HelperLatLon(latitude=50.0, longitude=-130.1),
+            HelperAISShip(
+                id=102,
+                lat_lon=HelperLatLon(latitude=50.0, longitude=-129.9),
+                cog=HelperHeading(heading=0.0),
+                sog=HelperSpeed(speed=10.0),
+                width=HelperDimension(dimension=1.0),  # Very small boat
+                length=HelperDimension(dimension=2.0),
+                rot=HelperROT(rot=0),
+            ),
+            10.0,
+            "Very small boat dimensions",
+        ),
+        # Edge case 4: Both AIS ship and sailbot stationary
+        (
+            HelperLatLon(latitude=50.0, longitude=-130.0),
+            HelperLatLon(latitude=50.0, longitude=-130.1),
+            HelperAISShip(
+                id=103,
+                lat_lon=HelperLatLon(latitude=50.0, longitude=-129.9),
+                cog=HelperHeading(heading=0.0),
+                sog=HelperSpeed(speed=0.0),
+                width=HelperDimension(dimension=15.0),
+                length=HelperDimension(dimension=80.0),
+                rot=HelperROT(rot=0),
+            ),
+            0.0,
+            "Both AIS ship and sailbot stationary",
+        ),
+    ],
+)
+def test_collision_zone_edge_cases(
+    reference_point: HelperLatLon,
+    sailbot_position: HelperLatLon,
+    ais_ship: HelperAISShip,
+    sailbot_speed: float,
+    description: str,
+):
+    """Test edge cases for collision zone generation.
+
+    This test ensures that collision zone generation handles edge cases gracefully,
+    including invalid speeds, zero speeds, and extreme boat dimensions.
+    """
+    print(f"\n=== Testing Edge Case: {description} ===")
+
+    # Create boat object - should not crash even with edge case inputs
+    boat = Boat(reference_point, sailbot_position, sailbot_speed, ais_ship)
+
+    # Verify collision zone was created
+    assert boat.collision_zone is not None, f"Collision zone should exist for: {description}"
+
+    # Get the bounds of the collision zone
+    minx, miny, maxx, maxy = boat.collision_zone.bounds
+
+    # Calculate dimensions
+    width = maxx - minx
+    height = maxy - miny
+
+    print(f"AIS Ship speed: {ais_ship.sog.speed} km/h")
+    print(f"Sailbot speed: {sailbot_speed} km/h")
+    print(f"Collision zone: {width:.3f} km × {height:.3f} km")
+
+    # Basic sanity checks - collision zone should have valid dimensions
+    assert width > 0, f"Collision zone width must be positive for: {description}"
+    assert height > 0, f"Collision zone height must be positive for: {description}"
+    assert not np.isnan(width), f"Collision zone width should not be NaN for: {description}"
+    assert not np.isnan(height), f"Collision zone height should not be NaN for: {description}"
+    assert not np.isinf(width), f"Collision zone width should not be infinite for: {description}"
+    assert not np.isinf(height), f"Collision zone height should not be infinite for: {description}"
+
+    # Verify collision zone is at least as large as the boat
+    boat_width_km = cs.meters_to_km(ais_ship.width.dimension)
+    boat_length_km = cs.meters_to_km(ais_ship.length.dimension)
+    assert width >= boat_width_km * 0.5, (
+        f"Collision zone width should be at least half boat width for: {description}"
+    )
+    assert height >= boat_length_km * 0.5, (
+        f"Collision zone height should be at least half boat length for: {description}"
+    )
