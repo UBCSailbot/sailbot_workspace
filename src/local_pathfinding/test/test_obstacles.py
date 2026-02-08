@@ -692,7 +692,7 @@ def test_update_reference_point_boat(
 
 # Test to measure actual collision zone dimensions with current constants
 @pytest.mark.parametrize(
-    "reference_point,sailbot_position,ais_ship,sailbot_speed,expected_min_dimension,expected_max_dimension",
+    "reference_point,sailbot_position,ais_ship,sailbot_speed,expected_min_dimension,expected_max_dimension", # noqa 
     [
         # Test case 1: Boats at realistic separation with normal speeds
         (
