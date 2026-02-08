@@ -14,7 +14,13 @@ from custom_interfaces.msg import (
 from shapely.geometry import MultiPolygon, Point, Polygon, box
 
 import local_pathfinding.coord_systems as cs
-from local_pathfinding.obstacles import BOAT_BUFFER, Boat, Land, Obstacle
+from local_pathfinding.obstacles import (
+    BOAT_BUFFER,
+    MAX_COLLISION_ZONE_PROJECTION,
+    Boat,
+    Land,
+    Obstacle,
+)
 
 
 def load_pkl(file_path: str) -> Any:
@@ -683,3 +689,143 @@ def test_update_reference_point_boat(
 
     # There is some error in the latlon_to_xy conversion but the results are close
     assert translation == pytest.approx(displacement, rel=0.1), "incorrect translation"
+
+
+# Test boat collision zone size is reasonable (not hundreds of km)
+@pytest.mark.parametrize(
+    "reference_point,sailbot_position,ais_ship,sailbot_speed,max_expected_size_km",
+    [
+        # Boats far apart, moving towards each other
+        (
+            HelperLatLon(latitude=52.268119490007756, longitude=-136.9133983613776),
+            HelperLatLon(latitude=51.95785651405779, longitude=-136.26282894969611),
+            HelperAISShip(
+                id=1,
+                lat_lon=HelperLatLon(latitude=51.97917631092298, longitude=-137.1106454702385),
+                cog=HelperHeading(heading=30.0),
+                sog=HelperSpeed(speed=20.0),
+                width=HelperDimension(dimension=20.0),
+                length=HelperDimension(dimension=100.0),
+                rot=HelperROT(rot=0),
+            ),
+            15.0,
+            10.0,  # Max expected size: 10 km (reasonable for pathfinding)
+        ),
+        # Boats close together
+        (
+            HelperLatLon(latitude=49.283075, longitude=-123.216004),
+            HelperLatLon(latitude=49.283439, longitude=-123.209825),
+            HelperAISShip(
+                id=1,
+                lat_lon=HelperLatLon(latitude=49.284671, longitude=-123.203216),
+                cog=HelperHeading(heading=-60.0),
+                sog=HelperSpeed(speed=20.0),
+                width=HelperDimension(dimension=20.0),
+                length=HelperDimension(dimension=100.0),
+                rot=HelperROT(rot=0),
+            ),
+            15.0,
+            10.0,  # Max expected size: 10 km
+        ),
+    ],
+)
+def test_boat_collision_zone_size_reasonable(
+    reference_point: HelperLatLon,
+    sailbot_position: HelperLatLon,
+    ais_ship: HelperAISShip,
+    sailbot_speed: float,
+    max_expected_size_km: float,
+):
+    """Test that boat collision zones are not unreasonably large (not hundreds of km).
+
+    This test ensures that the collision zone polygon has reasonable dimensions for
+    pathfinding visualization and collision detection. The collision zone should be
+    proportional to the boat's size and the time until potential collision, but should
+    not extend hundreds of kilometers.
+    """
+    boat = Boat(reference_point, sailbot_position, sailbot_speed, ais_ship)
+
+    # Get the bounds of the collision zone
+    minx, miny, maxx, maxy = boat.collision_zone.bounds
+
+    # Calculate the maximum dimension of the collision zone
+    width = maxx - minx
+    height = maxy - miny
+    max_dimension = max(width, height)
+
+    # Get the projected distance to understand the collision zone calculation
+    projected_distance = boat._calculate_projected_distance()
+
+    # Assert that the collision zone is not unreasonably large
+    assert (
+        max_dimension <= max_expected_size_km
+    ), f"Collision zone too large: {max_dimension:.2f} km (max dimension). "
+    f"Projected distance: {projected_distance:.2f} km. "
+    f"Expected max size: {max_expected_size_km} km. "
+    f"Boat dimensions: {cs.meters_to_km(ais_ship.width.dimension):.3f} km × "
+    f"{cs.meters_to_km(ais_ship.length.dimension):.3f} km"
+
+
+# Test to measure actual collision zone dimensions with current constants
+@pytest.mark.parametrize(
+    "reference_point,sailbot_position,ais_ship,sailbot_speed",
+    [
+        # Test case with boats at realistic separation
+        (
+            HelperLatLon(latitude=52.268119490007756, longitude=-136.9133983613776),
+            HelperLatLon(latitude=51.95785651405779, longitude=-136.26282894969611),
+            HelperAISShip(
+                id=1,
+                lat_lon=HelperLatLon(latitude=51.97917631092298, longitude=-137.1106454702385),
+                cog=HelperHeading(heading=30.0),
+                sog=HelperSpeed(speed=20.0),
+                width=HelperDimension(dimension=20.0),
+                length=HelperDimension(dimension=100.0),
+                rot=HelperROT(rot=0),
+            ),
+            15.0,
+        ),
+    ],
+)
+def test_measure_boat_collision_zone_dimensions(
+    reference_point: HelperLatLon,
+    sailbot_position: HelperLatLon,
+    ais_ship: HelperAISShip,
+    sailbot_speed: float,
+):
+    """Measure and report the actual dimensions of boat collision zones.
+
+    This test is for debugging and understanding the actual sizes of collision zones
+    produced by the current implementation. It will print detailed information about
+    the collision zone dimensions.
+    """
+    boat = Boat(reference_point, sailbot_position, sailbot_speed, ais_ship)
+
+    # Get the bounds of the collision zone
+    minx, miny, maxx, maxy = boat.collision_zone.bounds
+
+    # Calculate dimensions
+    width = maxx - minx
+    height = maxy - miny
+    max_dimension = max(width, height)
+
+    # Get the projected distance
+    projected_distance = boat._calculate_projected_distance()
+
+    # Print detailed information (this will show up in pytest output with -v or -s)
+    print(f"\n=== Collision Zone Dimensions ===")
+    print(f"Boat dimensions: {cs.meters_to_km(ais_ship.width.dimension):.3f} km × "
+          f"{cs.meters_to_km(ais_ship.length.dimension):.3f} km")
+    print(f"Boat speed: {ais_ship.sog.speed} km/h")
+    print(f"Sailbot speed: {sailbot_speed} km/h")
+    print(f"Projected distance (raw): {projected_distance:.2f} km")
+    print(f"MAX_COLLISION_ZONE_PROJECTION: {MAX_COLLISION_ZONE_PROJECTION} km")
+    print(f"Projected distance (capped): {min(projected_distance, MAX_COLLISION_ZONE_PROJECTION):.2f} km")
+    print(f"BOAT_BUFFER: {BOAT_BUFFER} km")
+    print(f"Collision zone bounds: ({minx:.2f}, {miny:.2f}) to ({maxx:.2f}, {maxy:.2f})")
+    print(f"Collision zone width: {width:.2f} km")
+    print(f"Collision zone height: {height:.2f} km")
+    print(f"Collision zone max dimension: {max_dimension:.2f} km")
+
+    # This test always passes - it's just for measurement
+    assert True

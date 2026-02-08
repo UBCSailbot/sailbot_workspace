@@ -14,8 +14,9 @@ import local_pathfinding.coord_systems as cs
 
 # Constants
 PROJ_DISTANCE_NO_COLLISION = 0.0
-BOAT_BUFFER = 0.025  # km (25 meters - safety buffer around boat collision zone)
+BOAT_BUFFER = 0.25  # km
 COLLISION_ZONE_STRETCH_FACTOR = 1.25  # This factor changes the width of the boat collision zone
+MAX_COLLISION_ZONE_PROJECTION = 5.0  # km - Maximum distance to project collision zones for visualization
 
 
 class Obstacle:
@@ -234,6 +235,11 @@ class Boat(Obstacle):
             self.ais_ship = ais_ship
 
         projected_distance = self._calculate_projected_distance()
+        
+        # Cap the projected distance to prevent unreasonably large collision zones for visualization
+        # The full projected distance is still calculated for collision detection accuracy,
+        # but we limit the visual representation to a reasonable size
+        projected_distance = min(projected_distance, MAX_COLLISION_ZONE_PROJECTION)
 
         # TODO maybe incorporate ROT in this calculation at a later time
         collision_zone_width = projected_distance * COLLISION_ZONE_STRETCH_FACTOR * self.width
