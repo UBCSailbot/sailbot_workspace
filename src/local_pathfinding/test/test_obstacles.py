@@ -814,8 +814,10 @@ def test_measure_boat_collision_zone_dimensions(
 
     # Print detailed information (this will show up in pytest output with -v or -s)
     print(f"\n=== Collision Zone Dimensions ===")
-    print(f"Boat dimensions: {cs.meters_to_km(ais_ship.width.dimension):.3f} km × "
-          f"{cs.meters_to_km(ais_ship.length.dimension):.3f} km")
+    print(
+        f"Boat dimensions: {cs.meters_to_km(ais_ship.width.dimension):.3f} km × "
+        f"{cs.meters_to_km(ais_ship.length.dimension):.3f} km"
+    )
     print(f"Boat speed: {ais_ship.sog.speed} km/h")
     print(f"Sailbot speed: {sailbot_speed} km/h")
     print(f"Projected distance (raw): {projected_distance:.2f} km")

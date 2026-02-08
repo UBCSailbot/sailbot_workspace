@@ -235,7 +235,7 @@ class Boat(Obstacle):
             self.ais_ship = ais_ship
 
         projected_distance = self._calculate_projected_distance()
-        
+
         # Cap the projected distance to prevent unreasonably large collision zones for visualization
         # The full projected distance is still calculated for collision detection accuracy,
         # but we limit the visual representation to a reasonable size
