@@ -895,8 +895,11 @@ def write_wind_params(tw_dir_deg: float, tw_speed_kmph: float) -> None:
     with open(WIND_PARAMS_YAML, "r") as f:
         data = yaml.safe_load(f)
 
-    data["constants"]["tw_dir_deg"] = tw_dir_deg
-    data["constants"]["tw_speed_kmph"] = float(tw_speed_kmph)
+    data["/mock_wind_sensor"]["ros__parameters"]["tw_dir_deg"] = tw_dir_deg
+    data["/mock_wind_sensor"]["ros__parameters"]["tw_speed_kmph"] = float(tw_speed_kmph)
+
+    data["/mock_gps"]["ros__parameters"]["tw_dir_deg"] = tw_dir_deg
+    data["/mock_gps"]["ros__parameters"]["tw_speed_kmph"] = float(tw_speed_kmph)
 
     with open(WIND_PARAMS_YAML, "w") as f:
         yaml.safe_dump(data, f, sort_keys=False)
@@ -940,8 +943,8 @@ def dash_app(q: Queue):
                         id="tw-dir-input",
                         type="number",
                         placeholder="Wind Direction",
-                        min=0,
-                        max=360,
+                        min=-180,
+                        max=180,
                         step=1,
                         value=0,
                         style={"width": "140px"},
