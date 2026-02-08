@@ -243,8 +243,8 @@ class LocalPath:
         heading_diff_old_path = cs.calculate_heading_diff(self.state.heading, heading_old_path)
         heading_diff_new_path = cs.calculate_heading_diff(self.state.heading, heading_new_path)
 
-        old_cost = old_ompl_path.get_cost(updated_wp_index)
-        new_cost = ompl_path.get_cost(wp_index)
+        old_cost = old_ompl_path.get_remaining_cost(updated_wp_index, gps.lat_lon)
+        new_cost = ompl_path.get_remaining_cost(wp_index, gps.lat_lon)
 
         max_cost = max(old_cost, new_cost, 1)
         old_cost_normalized = old_cost / max_cost
