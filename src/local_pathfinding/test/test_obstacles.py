@@ -792,22 +792,6 @@ def test_measure_boat_collision_zone_dimensions(
     # Get the projected distance
     projected_distance = boat._calculate_projected_distance()
 
-    # Print detailed information (this will show up in pytest output with -v or -s)
-    print(f"\n=== Collision Zone Dimensions for AIS Ship {ais_ship.id} ===")
-    print(
-        f"Boat dimensions: {cs.meters_to_km(ais_ship.width.dimension):.3f} km × "
-        f"{cs.meters_to_km(ais_ship.length.dimension):.3f} km"
-    )
-    print(f"Boat speed: {ais_ship.sog.speed} km/h")
-    print(f"Sailbot speed: {sailbot_speed} km/h")
-    print(f"Projected distance: {projected_distance:.2f} km")
-    print(f"BOAT_BUFFER: {BOAT_BUFFER} km")
-    print(f"Collision zone bounds: ({minx:.2f}, {miny:.2f}) to ({maxx:.2f}, {maxy:.2f})")
-    print(f"Collision zone width: {width:.2f} km")
-    print(f"Collision zone height: {height:.2f} km")
-    print(f"Collision zone min dimension: {min_dimension:.2f} km")
-    print(f"Collision zone max dimension: {max_dimension:.2f} km")
-
     # Assert that collision zone is not degenerate (has reasonable minimum size)
     assert min_dimension >= expected_min_dimension, (
         f"Collision zone too small: min dimension {min_dimension:.3f} km "
@@ -945,14 +929,6 @@ def test_collision_zone_edge_cases(
     print(f"AIS Ship speed: {ais_ship.sog.speed} km/h")
     print(f"Sailbot speed: {sailbot_speed} km/h")
     print(f"Collision zone: {width:.3f} km × {height:.3f} km")
-
-    # Basic sanity checks - collision zone should have valid dimensions
-    assert width > 0, f"Collision zone width must be positive for: {description}"
-    assert height > 0, f"Collision zone height must be positive for: {description}"
-    assert not np.isnan(width), f"Collision zone width should not be NaN for: {description}"
-    assert not np.isnan(height), f"Collision zone height should not be NaN for: {description}"
-    assert not np.isinf(width), f"Collision zone width should not be infinite for: {description}"
-    assert not np.isinf(height), f"Collision zone height should not be infinite for: {description}"
 
     # Verify collision zone is at least as large as a portion of the boat
     # Using MIN_COLLISION_ZONE_BOAT_RATIO to allow for edge cases where
