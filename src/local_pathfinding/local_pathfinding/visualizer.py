@@ -714,7 +714,11 @@ def configure_wind_box_elements(state: VisualizerState) -> WindBoxConfig:
 
 
 def compute_and_add_state_space(
-    boat_xy_km: Tuple[float, float], goal_xy_km: Tuple[float, float], fig: go.Figure
+    boat_xy_km: Tuple[float, float],
+    goal_xy_km: Tuple[float, float],
+    fig: go.Figure,
+    zoom_needed: bool,
+    last_range: Optional[Dict[str, List[float]]]
 ):
     """
     Build the visualization state-space overlay around the boat and goal. Then, add the built
@@ -748,6 +752,21 @@ def compute_and_add_state_space(
         line=dict(width=0),
         layer="below",
     )
+
+    if not zoom_needed and last_range is not None:
+        fig.update_layout(
+            xaxis=dict(range=last_range["x"],
+                       autorange=False),
+            yaxis=dict(range=last_range["y"],
+                       autorange=False),
+        )
+    else:
+        fig.update_layout(
+            xaxis=dict(range=[x_min, x_max],
+                       autorange=False),
+            yaxis=dict(range=[y_min, y_max],
+                       autorange=False),
+        )
 
 
 def add_goal_change_popup(fig: go.Figure, message: Optional[str]) -> None:
@@ -796,7 +815,9 @@ def apply_layout(fig: go.Figure) -> None:
 
 
 def build_figure(
-    state: VisualizerState, last_goal_xy_km: Optional[Tuple[float, float]]
+    state: VisualizerState,
+    last_goal_xy_km: Optional[Tuple[float, float]],
+    last_range: Optional[Dict[str, List[float]]],
 ) -> Tuple[go.Figure, Tuple[float, float]]:
     """
     Builds and renders the complete path planning visualization figure.
@@ -877,7 +898,8 @@ def build_figure(
         fig.add_annotation(annotation)
 
     # Computing State space overlay and adding it to the plot
-    compute_and_add_state_space(boat_xy_km, goal_xy_km, fig)
+    zoom_needed = last_goal_xy_km is None
+    compute_and_add_state_space(boat_xy_km, goal_xy_km, fig, zoom_needed, last_range)
     apply_layout(fig)
     add_goal_change_popup(fig, goal_change.message)  # Popup message for goal change
     return fig, goal_change.new_goal_xy_rounded
@@ -907,6 +929,7 @@ def dash_app(q: Queue):
             dcc.Graph(id="live-graph", style={"height": "90vh", "width": "100%"}),
             dcc.Interval(id="interval-component", interval=UPDATE_INTERVAL_MS, n_intervals=0),
             dcc.Store(id="goal-store", data=None),
+            dcc.Store(id="range-store", data=None),
             html.Button(
                 "Reset the view to state space",
                 id="reset-button",
@@ -928,36 +951,64 @@ def dash_app(q: Queue):
 @app.callback(
     Output("live-graph", "figure"),
     Output("goal-store", "data"),
+    Output("range-store", "data"),
     Input("interval-component", "n_intervals"),
+    Input("live-graph", "relayoutData"),
     Input("reset-button", "n_clicks"),
     State("live-graph", "figure"),
     State("goal-store", "data"),
+    State("range-store", "data"),
     prevent_initial_call=True,
 )
-def update_graph(_: int, __: int, current_figure, last_goal_xy_km: Optional[List[float]]):
+def update_graph(_: int,
+                 relayoutData,
+                 __: int,
+                 current_figure,
+                 last_goal_xy_km: Optional[List[float]],
+                 stored_range):
     """
     Dash callback: handles both interval updates and reset button clicks.
     Uses callback_context to determine which input triggered the update.
 
     Args:
         _: Dash interval tick (unused).
+        relayoutData: Data relayed from Plotly when user pans, zooms in/out, autoscales
         __: Reset button n_clicks (unused).
         current_figure: Current figure state from live-graph.
         last_goal_xy_km: Previously stored goal as [x, y] or None on first run.
+        stored_range: Previously stored range as {"x": [xmin, xmax], "y": [ymin, ymax]}
+                      or None on first run
 
     Returns:
-        (fig, new_goal_as_list):
+        (fig, new_goal_as_list, last_range):
             - fig: The updated Plotly figure
             - new_goal_as_list: [x, y] for storage in dcc.Store (JSON serializable)
+            - last_range: [x-range, y-range] for storage in dcc.Store (JSON serializable)
+
     """
     global queue
+
+    if relayoutData and "xaxis.range[0]" in relayoutData:
+        last_range = {
+            "x": [
+                relayoutData["xaxis.range[0]"],
+                relayoutData["xaxis.range[1]"],
+            ],
+            "y": [
+                relayoutData["yaxis.range[0]"],
+                relayoutData["yaxis.range[1]"],
+            ],
+        }
+    else:
+        last_range = stored_range
+
     ctx = dash.callback_context
 
     triggered_id = ctx.triggered[0]["prop_id"].split(".")[0] if ctx.triggered else None
 
     if triggered_id == "reset-button":
         if current_figure is None:
-            return dash.no_update, dash.no_update
+            return dash.no_update, dash.no_update, dash.no_update
 
         fig = go.Figure(current_figure)
         fig.update_layout(
@@ -965,16 +1016,16 @@ def update_graph(_: int, __: int, current_figure, last_goal_xy_km: Optional[List
             yaxis=dict(range=DEFAULT_PLOT_RANGE, autorange=False),
             uirevision="reset",
         )
-        return fig, last_goal_xy_km
+        return fig, last_goal_xy_km, last_range
 
     # Interval update (default behavior)
     if queue is None or queue.empty():
-        return dash.no_update, dash.no_update
+        return dash.no_update, dash.no_update, dash.no_update
 
     state = queue.get()  # type: ignore
     last_goal_tuple = (
         cs.XY(last_goal_xy_km[0], last_goal_xy_km[1]) if last_goal_xy_km is not None else None
     )
 
-    fig, new_goal_xy = build_figure(state, last_goal_tuple)
-    return fig, [new_goal_xy[0], new_goal_xy[1]]
+    fig, new_goal_xy = build_figure(state, last_goal_tuple, last_range)
+    return fig, [new_goal_xy[0], new_goal_xy[1]], last_range
