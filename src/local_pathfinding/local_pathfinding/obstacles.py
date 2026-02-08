@@ -14,7 +14,7 @@ import local_pathfinding.coord_systems as cs
 
 # Constants
 PROJ_DISTANCE_NO_COLLISION = 0.0
-BOAT_BUFFER = 0.25  # km
+BOAT_BUFFER = 0.025  # km (25 meters - safety buffer around boat collision zone)
 COLLISION_ZONE_STRETCH_FACTOR = 1.25  # This factor changes the width of the boat collision zone
 
 
