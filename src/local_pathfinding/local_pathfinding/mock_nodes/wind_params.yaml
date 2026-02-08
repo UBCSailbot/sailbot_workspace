@@ -1,13 +1,9 @@
-constants:
-  tw_dir_deg: &dir 0
-  tw_speed_kmph: &speed 100.0 # must be double
-
 /mock_wind_sensor:
   ros__parameters:
-    tw_dir_deg: *dir
-    tw_speed_kmph: *speed
+    tw_dir_deg: 0
+    tw_speed_kmph: 0.0
 
 /mock_gps:
   ros__parameters:
-    tw_speed_kmph: *speed
-    tw_dir_deg: *dir
+    tw_dir_deg: 0
+    tw_speed_kmph: 0.0
