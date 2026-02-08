@@ -922,6 +922,11 @@ def test_collision_zone_edge_cases(
     This test ensures that collision zone generation handles edge cases gracefully,
     including invalid speeds, zero speeds, and extreme boat dimensions.
     """
+    # Minimum ratio of collision zone to boat dimension for edge cases
+    # In edge cases (e.g., stationary boats, negative speeds), the collision zone
+    # may be smaller than normal but should still cover at least 50% of boat dimensions
+    MIN_COLLISION_ZONE_BOAT_RATIO = 0.5
+
     print(f"\n=== Testing Edge Case: {description} ===")
 
     # Create boat object - should not crash even with edge case inputs
@@ -949,12 +954,16 @@ def test_collision_zone_edge_cases(
     assert not np.isinf(width), f"Collision zone width should not be infinite for: {description}"
     assert not np.isinf(height), f"Collision zone height should not be infinite for: {description}"
 
-    # Verify collision zone is at least as large as the boat
+    # Verify collision zone is at least as large as a portion of the boat
+    # Using MIN_COLLISION_ZONE_BOAT_RATIO to allow for edge cases where
+    # projected distance is zero (stationary boats)
     boat_width_km = cs.meters_to_km(ais_ship.width.dimension)
     boat_length_km = cs.meters_to_km(ais_ship.length.dimension)
-    assert width >= boat_width_km * 0.5, (
-        f"Collision zone width should be at least half boat width for: {description}"
+    assert width >= boat_width_km * MIN_COLLISION_ZONE_BOAT_RATIO, (
+        f"Collision zone width should be at least {MIN_COLLISION_ZONE_BOAT_RATIO*100}% "
+        f"of boat width for: {description}"
     )
-    assert height >= boat_length_km * 0.5, (
-        f"Collision zone height should be at least half boat length for: {description}"
+    assert height >= boat_length_km * MIN_COLLISION_ZONE_BOAT_RATIO, (
+        f"Collision zone height should be at least {MIN_COLLISION_ZONE_BOAT_RATIO*100}% "
+        f"of boat length for: {description}"
     )
