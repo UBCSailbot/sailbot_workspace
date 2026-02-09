@@ -32,6 +32,12 @@ def fresh_ompl_path():
             ais_ships=AISShips(),
             global_path=Path(
                 waypoints=[
+                    HelperLatLon(latitude=0.02, longitude=0.02),
+                    HelperLatLon(latitude=0.04, longitude=0.03),
+                    HelperLatLon(latitude=0.06, longitude=0.05),
+                    HelperLatLon(latitude=0.08, longitude=0.07),
+                    HelperLatLon(latitude=0.10, longitude=0.09),
+                    HelperLatLon(latitude=0.12, longitude=0.11),
                     HelperLatLon(latitude=0.15, longitude=0.15),
                     HelperLatLon(latitude=0.1, longitude=0.1),
                 ]
@@ -269,3 +275,9 @@ def test_create_space(
         expected_bounds, abs=box_buffer_size
     ), "Bounds should match expected"
     assert space.contains(Point(position.x, position.y)), "Space should contain center point"
+
+
+@pytest.mark.parametrize("boat_latlon", [HelperLatLon(latitude=0.0, longitude=0.0)])
+def get_remaining_cost_full_path(fresh_ompl_path, boat_latlon):
+    assert pytest.approx(
+        fresh_ompl_path.get_remaining_cost(0, boat_latlon), fresh_ompl_path.get_cost(), 0.01)

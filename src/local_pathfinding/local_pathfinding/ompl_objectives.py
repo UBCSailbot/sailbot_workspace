@@ -109,12 +109,10 @@ class WindObjective(ob.OptimizationObjective):
         tw_angle_rad = abs(wcs.get_true_wind_angle(segment_true_bearing_rad, tw_direction_rad))
         cos_angle = math.cos(tw_angle_rad)
 
-        distance = math.hypot(s2.y - s1.y, s2.x - s1.x)
-
         if cos_angle > 0:
-            return UPWIND_COST_MULTIPLIER * cos_angle * distance
+            return UPWIND_COST_MULTIPLIER * cos_angle
         else:
-            return DOWNWIND_COST_MULTIPLIER * abs(cos_angle) * distance
+            return DOWNWIND_COST_MULTIPLIER * abs(cos_angle)
 
 
 class TimeObjective(ob.OptimizationObjective):

@@ -274,8 +274,8 @@ class OMPLPath:
 
         Returns:
             ci.Path: A collection of lat lon coordinates for the waypoints to follow.
-                    First waypoint should be the current position and final waypoint should be the
-                    next global waypoint.
+                    First waypoint is the start state (near the boat's position) and final waypoint
+                    is the goal state (the next global waypoint).
                     Output an empty Path and print a warning message if path not solved.
         """
         if not self.solved:
