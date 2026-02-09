@@ -3,8 +3,8 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  background-color: #090909;
-  color: #ffffff;
+  background-color: var(--accent-color-1);
+  color: var(--accent-color-2);
 }
 
 html,
@@ -31,5 +31,5 @@ a {
 }
 
 svg {
-  fill: white;
+  fill: var(--accent-color-2);
 }
