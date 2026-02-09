@@ -80,8 +80,10 @@ class OMPLPath:
         self._box_buffer = BOX_BUFFER_SIZE_KM
 
         self._logger = parent_logger.get_child(name="ompl_path")
+        # Store the state, which includes the reference point used for this path
+        self.state = local_path_state
         # this needs state
-        self._simple_setup = self._init_simple_setup(local_path_state, land_multi_polygon)
+        self._simple_setup = self._init_simple_setup(land_multi_polygon)
 
         self.solved = self._simple_setup.solve(time=MAX_SOLVER_RUN_TIME_SEC)
 
@@ -209,7 +211,7 @@ class OMPLPath:
 
         Mirrors OMPL's ``PathGeometric::cost()`` formula which computes::
 
-            initialCost(first) + Σ motionCost(s_i, s_{i+1}) + terminalCost(last)
+            initialCost(first) + summation motionCost(s_i, s_{i+1}) + terminalCost(last)
 
         accumulated via ``combineCosts``.  For the remaining path the initial cost is
         omitted (the original start has already been traversed) and the partially
@@ -303,9 +305,7 @@ class OMPLPath:
         """
         raise NotImplementedError
 
-    def _init_simple_setup(self, local_path_state, land_multi_polygon) -> og.SimpleSetup:
-        self.state = local_path_state
-
+    def _init_simple_setup(self, land_multi_polygon) -> og.SimpleSetup:
         # Create buffered rectangles around sailbot's position and the goal state
         start_position_in_xy = cs.latlon_to_xy(self.state.reference_latlon, self.state.position)
         start_box = self.create_buffer_around_position(start_position_in_xy, self._box_buffer)
@@ -338,7 +338,7 @@ class OMPLPath:
         space.setBounds(bounds)
 
         OMPLPath.init_obstacles(
-            local_path_state=local_path_state,
+            local_path_state=self.state,
             state_space_xy=state_space,
             land_multi_polygon=land_multi_polygon,
         )

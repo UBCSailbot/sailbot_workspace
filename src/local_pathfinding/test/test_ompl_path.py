@@ -278,6 +278,21 @@ def test_create_space(
 
 
 @pytest.mark.parametrize("boat_latlon", [HelperLatLon(latitude=0.0, longitude=0.0)])
-def get_remaining_cost_full_path(fresh_ompl_path, boat_latlon):
+def test_get_remaining_cost_full_path(fresh_ompl_path, boat_latlon):
     assert pytest.approx(
-        fresh_ompl_path.get_remaining_cost(0, boat_latlon), fresh_ompl_path.get_cost(), 0.01)
+        fresh_ompl_path.get_remaining_cost(0, boat_latlon), fresh_ompl_path.get_cost(), 0.01
+    )
+
+
+@pytest.mark.parametrize(
+    "boat_latlon", [HelperLatLon(latitude=0.05, longitude=0.04)]  # Halfway through the path
+)
+def test_get_remaining_cost(fresh_ompl_path, boat_latlon):
+    cost = fresh_ompl_path.get_remaining_cost(0, boat_latlon)
+    cost_from_next_wp = fresh_ompl_path.get_remaining_cost(1, boat_latlon)
+    full_cost = fresh_ompl_path.get_cost()
+    assert cost < full_cost, f"Remaining cost {cost} should be less than full cost {full_cost}"
+    assert cost > cost_from_next_wp, (
+        f"Cost from current waypoint {cost} should be greater than "
+        f"cost from next waypoint {cost_from_next_wp}"
+    )
