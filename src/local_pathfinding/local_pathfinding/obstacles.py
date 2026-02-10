@@ -16,6 +16,7 @@ PREDICTION_HORIZON = 10.0  # seconds
 DT = 0.5
 
 # Constants
+BOAT_BUFFER = 0.25  # km
 PROJ_DISTANCE_NO_COLLISION = 0.0
 COLLISION_ZONE_STRETCH_FACTOR = 1.25  # This factor changes the width of the boat collision zone
 
