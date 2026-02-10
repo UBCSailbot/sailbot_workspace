@@ -92,10 +92,7 @@ def polar_to_cartesian(angle_rad: float, magnitude: float) -> XY:
             - x → east component
             - y → north component
     """
-    return XY(
-        x=magnitude * math.sin(angle_rad),
-        y=magnitude * math.cos(angle_rad)
-    )
+    return XY(x=magnitude * math.sin(angle_rad), y=magnitude * math.cos(angle_rad))
 
 
 def meters_to_km(meters: float) -> float:
@@ -246,3 +243,25 @@ def latlon_polygon_list_to_xy_polygon_list(
 def latlon_list_to_xy_list(reference_latlon, lat_lon_list: List[ci.HelperLatLon]) -> List[XY]:
     """Converts a list of lat/lon coordinates to x/y coordinates."""
     return [latlon_to_xy(reference=reference_latlon, latlon=pos) for pos in lat_lon_list]
+
+
+def rot_to_rad_per_sec(rot: int) -> float:
+    """
+    Convert AIS ROT (rate of turn) int8 value into radians per second.
+
+    Returns:
+        float: rate of turn in radians per second.
+    """
+
+    if rot == -128:
+        return 0.0
+
+    if abs(rot) == 127:
+        rot_dpm = 10.0
+    else:
+        rot_dpm = (abs(rot) / 4.733) ** 2
+
+    if rot < 0:
+        rot_dpm *= -1
+
+    return math.radians(rot_dpm / 60.0)
