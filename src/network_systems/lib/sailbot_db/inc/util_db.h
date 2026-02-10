@@ -2,6 +2,7 @@
 
 #include <random>
 #include <span>
+#include <cstdint>
 
 #include "sailbot_db.h"
 #include "sensors.pb.h"
@@ -40,7 +41,7 @@ public:
     /**
      * @return timestamp for the current time
      */
-    static std::tm getTimestamp();
+    static int64_t getTimestamp();
 
     /**
     * @brief Generate random sensors and Iridium msg info
@@ -48,7 +49,7 @@ public:
     * @param tm Timestamp returned by getTimestamp() (with any modifications made to it)
     * @return std::pair<Sensors, SailbotDB::RcvdMsgInfo>
     */
-    std::pair<Polaris::Sensors, SailbotDB::RcvdMsgInfo> genRandData(const std::tm & tm);
+    std::pair<Polaris::Sensors, SailbotDB::RcvdMsgInfo> genRandData(int64_t timestamp);
 
     /**
     * @brief Generate random global path data
@@ -56,7 +57,7 @@ public:
     * @param tm Timestamp returned by getTimestamp() (with any modifications made to it)
     * @return std::pair<Polaris::GlobalPath, std::string>
     */
-    std::pair<Polaris::GlobalPath, std::string> genGlobalData(const std::tm & tm);
+    std::pair<Polaris::GlobalPath, int64_t> genGlobalData(int64_t timestamp);
 
     /**
     * @brief Query the database and check that the sensor and message are correct
@@ -74,7 +75,7 @@ public:
     * @param expected_timestamp
     */
     bool verifyDBWrite_GlobalPath(
-      std::span<Polaris::GlobalPath> expected_globalpath, std::span<std::string> expected_timestamp);
+      std::span<Polaris::GlobalPath> expected_globalpath, std::span<int64_t> expected_timestamp);
 
     /**
     * @brief Query the database and check that the Iridium response, error code, message, and timestamp are correct
@@ -86,7 +87,7 @@ public:
     */
     bool verifyDBWrite_IridiumResponse(
       std::span<std::string> expected_response, std::span<std::string> expected_error,
-      std::span<std::string> expected_message, std::span<std::string> expected_timestamp);
+      std::span<std::string> expected_message, std::span<int64_t> expected_timestamp);
 
     /**
      * @brief Dump and check all sensors and timestamps from the database
@@ -95,7 +96,7 @@ public:
      * @param expected_num_docs Expected number of documents. tracker is updated if there's a mismatch
      * @return std::pair{Vector of dumped Sensors, Vector of dumped timestamps}
      */
-    std::pair<std::vector<Polaris::Sensors>, std::vector<std::string>> dumpSensors(
+    std::pair<std::vector<Polaris::Sensors>, std::vector<int64_t>> dumpSensors(
       utils::FailTracker & tracker, size_t expected_num_docs = 1);
 
     /**
@@ -105,7 +106,7 @@ public:
      * @param expected_num_docs Expected number of documents. tracker is updated if there's a mismatch
      * @return std::pair{Vector of dumped Global Paths, Vector of dumped timestamps}
      */
-    std::pair<std::vector<Polaris::GlobalPath>, std::vector<std::string>> dumpGlobalpath(
+    std::pair<std::vector<Polaris::GlobalPath>, std::vector<int64_t>> dumpGlobalpath(
       utils::FailTracker & tracker, size_t expected_num_docs = 1);
 
     /**
@@ -115,7 +116,7 @@ public:
      * @param expected_num_docs Expected number of documents. tracker is updated if there's a mismatch
      * @return std::tuple{Vector of dumped responses, Vector of dumped error codes, Vector of dumped messages, Vector of dumped timestamps}
      */
-    std::tuple<std::vector<std::string>, std::vector<std::string>, std::vector<std::string>, std::vector<std::string>>
+    std::tuple<std::vector<std::string>, std::vector<std::string>, std::vector<std::string>, std::vector<int64_t>>
     dumpIridiumResponse(utils::FailTracker & tracker, size_t expected_num_docs = 1);
 
 private:
