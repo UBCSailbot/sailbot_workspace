@@ -205,26 +205,36 @@ class OMPLPath:
         cost = solution_path.cost(obj)
         return cost.value()
 
-    def get_remaining_cost(self, wp_index: int, boat_lat_lon: ci.HelperLatLon) -> float:
+    def get_remaining_cost(self, last_lp_wp_index: int, boat_lat_lon: ci.HelperLatLon) -> float:
         """
         Calculate the cost of the remaining path from the boat's current position.
 
-        Mirrors OMPL's ``PathGeometric::cost()`` formula which computes::
+        This mirrors OMPL's ``PathGeometric::cost()`` formula which computes::
 
             initialCost(first) + summation motionCost(s_i, s_{i+1}) + terminalCost(last)
 
-        accumulated via ``combineCosts``.  For the remaining path the initial cost is
-        omitted (the original start has already been traversed) and the partially
-        traversed segment between ``wp_index - 1`` and ``wp_index`` is linearly
-        interpolated using the fraction of that segment still ahead of the boat.
+        accumulated via ``combineCosts``.
+
+        In this codebase, ``last_lp_wp_index`` is the index of the **last local-path waypoint
+        the boat has just traversed** (i.e., the "current" waypoint). The remaining cost is:
+
+        - the *partial* motion cost on the segment from waypoint ``last_lp_wp_index`` to
+          ``last_lp_wp_index + 1`` (based on how far the boat is from the next waypoint), plus
+        - the *full* motion costs of all subsequent segments to the goal, plus
+        - the terminal cost at the final state.
 
         Args:
-            wp_index (int): The index of the next waypoint the boat is heading toward.
+            last_lp_wp_index (int): Index of the last local-path waypoint the boat has just
+                traversed (the current waypoint). The next waypoint to head toward is
+                ``last_lp_wp_index + 1``.
             boat_lat_lon (ci.HelperLatLon): The boat's current latitude/longitude.
 
         Returns:
-            float: The remaining cost of the path. Returns ``float('inf')`` if the
-                   solution path does not exist.
+            float: The remaining cost of the path. Returns ``float('inf')`` if the solution path
+            does not exist.
+
+        Raises:
+            ValueError: If ``last_lp_wp_index`` is out of bounds for the solution path.
         """
         try:
             solution_path = self._simple_setup.getSolutionPath()
@@ -236,18 +246,25 @@ class OMPLPath:
         states = solution_path.getStates()
         num_states = len(states)
 
-        # Edge cases: fall back to total path cost or zero
-        if wp_index <= 0 or num_states < 2:
+        # Edge cases: fall back to total path cost or throw error
+        if num_states < 2:
             return solution_path.cost(obj).value()
-        if wp_index >= num_states:
-            return 0.0
+        if last_lp_wp_index >= num_states:
+            raise ValueError("index out of bound for path; ensure that" +
+                             "the last_lp_wp_index is < number of waypoints in the path")
+
+        # If the boat is at the last waypoint, only terminal cost remains
+        if last_lp_wp_index > num_states:
+            cost = obj.identityCost()
+            cost = obj.combineCosts(cost, obj.terminalCost(states[-1]))
+            return cost.value()
 
         # Start from the identity cost (mirrors OMPL starting from identityCost)
         cost = obj.identityCost()
 
-        # --- Partial cost for the current segment (wp_index-1 -> wp_index) ---
-        seg_start = states[wp_index - 1]
-        seg_end = states[wp_index]
+        # --- Partial cost for the current segment (last_lp_wp_index -> last_lp_wp_index+1) ---
+        seg_start = states[last_lp_wp_index]
+        seg_end = states[last_lp_wp_index + 1]
         total_seg_dist = math.hypot(
             seg_end.getX() - seg_start.getX(),
             seg_end.getY() - seg_start.getY(),
@@ -264,7 +281,7 @@ class OMPLPath:
             partial_seg_cost = base.Cost(fraction_remaining * full_seg_cost)
             cost = obj.combineCosts(cost, partial_seg_cost)
 
-        for i in range(wp_index, num_states - 1):
+        for i in range(last_lp_wp_index, num_states - 1):
             cost = obj.combineCosts(cost, obj.motionCost(states[i], states[i + 1]))
 
         cost = obj.combineCosts(cost, obj.terminalCost(states[-1]))
