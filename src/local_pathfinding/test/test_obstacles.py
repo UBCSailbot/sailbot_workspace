@@ -14,7 +14,7 @@ from custom_interfaces.msg import (
 from shapely.geometry import MultiPolygon, Point, Polygon, box
 
 import local_pathfinding.coord_systems as cs
-from local_pathfinding.obstacles import BOAT_BUFFER, Boat, Land, Obstacle
+from local_pathfinding.obstacles import Boat, Land, Obstacle
 
 
 def load_pkl(file_path: str) -> Any:
