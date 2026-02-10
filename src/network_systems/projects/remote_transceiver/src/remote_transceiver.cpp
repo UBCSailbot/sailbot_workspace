@@ -21,6 +21,9 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <ctime>
+#include <sstream>
+#include <iomanip>
 
 #include "cmn_hdrs/shared_constants.h"
 #include "global_path.pb.h"
@@ -31,6 +34,17 @@ using remote_transceiver::HTTPServer;
 using remote_transceiver::Listener;
 namespace http_client                        = remote_transceiver::http_client;
 static const uint32_t MAX_BYTES_TRANSMISSION = 340;
+
+
+static int64_t parseTransmitTimeMs(const std::string & ts)
+{
+    //converting the received string into an int in ms
+    std::tm tm{};
+    std::istringstream ss(ts);
+    ss >> std::get_time(&tm, "%y-%m-%d %H:%M:%S");
+    tm.tm_isdst = 0;
+    return static_cast<int64_t>(timegm(&tm)) * 1000;
+}
 
 // PUBLIC
 
@@ -58,7 +72,7 @@ remote_transceiver::MOMsgParams::MOMsgParams(const std::string & query_string)
     params_.imei_          = std::stoi(split_strings[IMEI_IDX]);
     params_.serial_        = std::stoi(split_strings[SERIAL_IDX]);
     params_.momsn_         = std::stoi(split_strings[MOMSN_IDX]);
-    params_.transmit_time_ = split_strings[TIME_IDX];
+    params_.transmit_time_ = parseTransmitTimeMs(split_strings[TIME_IDX]);
     params_.lat_           = std::stof(split_strings[LAT_IDX]);
     params_.lon_           = std::stof(split_strings[LON_IDX]);
     params_.cep_           = std::stoi(split_strings[CEP_IDX]);
@@ -204,7 +218,7 @@ void HTTPServer::doPost()
         std::stringstream           ss(json_str);
         boost::property_tree::ptree json_tree;
         boost::property_tree::read_json(ss, json_tree);
-        std::string         timestamp = json_tree.get<std::string>("timestamp");
+        int64_t                     timestamp = json_tree.get<int64_t>("timestamp");
         Polaris::GlobalPath global_path;
         int                 num_waypoints = 0;
         for (const auto & waypoint : json_tree.get_child("waypoints")) {

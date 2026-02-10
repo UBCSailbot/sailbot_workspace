@@ -84,34 +84,31 @@ GlobalPath UtilDB::genGlobalPath()
     return global_path;
 }
 
-std::tm UtilDB::getTimestamp()
+int64_t UtilDB::getTimestamp()
 {
-    // Get the current time
-    std::time_t t  = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-    std::tm *   tm = std::localtime(&t);  // NOLINT(concurrency-mt-unsafe)
-    // tm stores years since 1900 by default, the schema expects years since 2000
-    tm->tm_year -= 100;  // NOLINT(readability-magic-numbers)
-    return *tm;
+    return std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch()
+    ).count();
 }
 
-std::pair<Sensors, SailbotDB::RcvdMsgInfo> UtilDB::genRandData(const std::tm & tm)
+
+std::pair<Sensors, SailbotDB::RcvdMsgInfo> UtilDB::genRandData(int64_t timestamp)
 {
     Sensors rand_sensors = genRandSensors();
-
     SailbotDB::RcvdMsgInfo rand_info{
       .lat_       = 0,  // Not processed yet, so just set to 0
       .lon_       = 0,  // Not processed yet, so just set to 0
       .cep_       = 0,  // Not processed yet, so just set to 0
-      .timestamp_ = SailbotDB::mkTimestamp(tm)};
+      .timestamp_ = timestamp
+    };
     return {rand_sensors, rand_info};
 }
 
-std::pair<Polaris::GlobalPath, std::string> UtilDB::genGlobalData(const std::tm & tm)
+
+std::pair<Polaris::GlobalPath, int64_t> UtilDB::genGlobalData(int64_t timestamp)
 {
     Polaris::GlobalPath global_path_data = genGlobalPath();
-
-    std::string global_timestamp = {SailbotDB::mkTimestamp(tm)};
-    return {global_path_data, global_timestamp};
+    return {global_path_data, timestamp};
 }
 
 bool UtilDB::verifyDBWrite(std::span<Sensors> expected_sensors, std::span<SailbotDB::RcvdMsgInfo> expected_msg_info)
@@ -191,7 +188,7 @@ bool UtilDB::verifyDBWrite(std::span<Sensors> expected_sensors, std::span<Sailbo
 }
 
 bool UtilDB::verifyDBWrite_GlobalPath(
-  std::span<GlobalPath> expected_globalpath, std::span<std::string> expected_timestamp)
+  std::span<GlobalPath> expected_globalpath, std::span<int64_t> expected_timestamp)
 {
     utils::FailTracker tracker;
 
@@ -225,7 +222,7 @@ bool UtilDB::verifyDBWrite_GlobalPath(
 
 bool UtilDB::verifyDBWrite_IridiumResponse(
   std::span<std::string> expected_response, std::span<std::string> expected_error,
-  std::span<std::string> expected_message, std::span<std::string> expected_timestamp)
+  std::span<std::string> expected_message, std::span<int64_t> expected_timestamp)
 {
     utils::FailTracker tracker;
 
@@ -251,7 +248,7 @@ bool UtilDB::verifyDBWrite_IridiumResponse(
     return !tracker.failed();
 }
 
-std::tuple<std::vector<std::string>, std::vector<std::string>, std::vector<std::string>, std::vector<std::string>>
+std::tuple<std::vector<std::string>, std::vector<std::string>, std::vector<std::string>, std::vector<int64_t>>
 UtilDB::dumpIridiumResponse(utils::FailTracker & tracker, size_t num_docs)
 {
     auto expectEQ = [&tracker]<not_float T>(T rcvd, T expected, const std::string & err_msg) -> void {
@@ -261,7 +258,7 @@ UtilDB::dumpIridiumResponse(utils::FailTracker & tracker, size_t num_docs)
     std::vector<std::string> response_vec(num_docs);
     std::vector<std::string> error_vec(num_docs);
     std::vector<std::string> message_vec(num_docs);
-    std::vector<std::string> timestamp_vec(num_docs);
+    std::vector<int64_t> timestamp_vec(num_docs);
     mongocxx::pool::entry    entry = pool_->acquire();
     mongocxx::database       db    = (*entry)[db_name_];
 
@@ -284,31 +281,31 @@ UtilDB::dumpIridiumResponse(utils::FailTracker & tracker, size_t num_docs)
         std::string &                 response  = response_vec[i];
         std::string &                 error     = error_vec[i];
         std::string &                 message   = message_vec[i];
-        std::string &                 timestamp = timestamp_vec[i];
+        int64_t &                     timestamp = timestamp_vec[i];
         const bsoncxx::document::view path_doc  = *path_doc_it;
         response_vec[i]                         = path_doc["response"].get_utf8().value.to_string();
         error_vec[i]                            = path_doc["error"].get_utf8().value.to_string();
         message_vec[i]                          = path_doc["message"].get_utf8().value.to_string();
-        timestamp_vec[i]                        = path_doc["timestamp"].get_utf8().value.to_string();
+        timestamp_vec[i]                        = path_doc["timestamp"].get_int64().value;
 
         expectEQ(path_doc["response"].get_utf8().value.to_string(), response, "Document response mismatch");
         expectEQ(path_doc["error"].get_utf8().value.to_string(), error, "Document error mismatch");
         expectEQ(path_doc["message"].get_utf8().value.to_string(), message, "Document message mismatch");
-        expectEQ(path_doc["timestamp"].get_utf8().value.to_string(), timestamp, "Document timestamp mismatch");
+        expectEQ(path_doc["timestamp"].get_int64().value, timestamp, "Document timestamp mismatch");
     }
 
     return {response_vec, error_vec, message_vec, timestamp_vec};
 }
 
-std::pair<std::vector<GlobalPath>, std::vector<std::string>> UtilDB::dumpGlobalpath(
+std::pair<std::vector<GlobalPath>, std::vector<int64_t>> UtilDB::dumpGlobalpath(
   utils::FailTracker & tracker, size_t num_docs)
 {
     auto expectEQ = [&tracker]<not_float T>(T rcvd, T expected, const std::string & err_msg) -> void {
         tracker.track(utils::checkEQ(rcvd, expected, err_msg));
     };
 
-    std::vector<GlobalPath>  globalpath_vec(num_docs);
-    std::vector<std::string> timestamp_vec(num_docs);
+    std::vector<GlobalPath> globalpath_vec(num_docs);
+    std::vector<int64_t>    timestamp_vec(num_docs);
     mongocxx::pool::entry    entry = pool_->acquire();
     mongocxx::database       db    = (*entry)[db_name_];
 
@@ -328,28 +325,28 @@ std::pair<std::vector<GlobalPath>, std::vector<std::string>> UtilDB::dumpGlobalp
     for (auto [i, path_doc_it] = std::tuple{size_t{0}, global_path_docs.begin()}; i < num_docs; i++, path_doc_it++) {
         GlobalPath &                  globalpath = globalpath_vec[i];
         const bsoncxx::document::view path_doc   = *path_doc_it;
-        timestamp_vec[i]                         = path_doc["timestamp"].get_utf8().value.to_string();
+        timestamp_vec[i]                         = path_doc["timestamp"].get_int64().value;
         for (bsoncxx::array::element path_doc : path_doc["waypoints"].get_array().value) {
             Polaris::Waypoint * path = globalpath.add_waypoints();
             path->set_latitude(static_cast<float>(path_doc["latitude"].get_double().value));
             path->set_longitude(static_cast<float>(path_doc["longitude"].get_double().value));
         }
         expectEQ(globalpath.waypoints_size(), NUM_PATH_WAYPOINTS, "Size mismatch when reading path waypoints from DB");
-        // expectEQ(path_doc["timestamp"].get_utf8().value.to_string(), timestamp, "Document timestamp mismatch");  // issue here
+        // expectEQ(path_doc["timestamp"].get_int64().value, timestamp, "Document timestamp mismatch");  // issue here
     }
 
     return {globalpath_vec, timestamp_vec};
 }
 
-std::pair<std::vector<Sensors>, std::vector<std::string>> UtilDB::dumpSensors(
+std::pair<std::vector<Sensors>, std::vector<int64_t>> UtilDB::dumpSensors(
   utils::FailTracker & tracker, size_t num_docs)
 {
     auto expectEQ = [&tracker]<not_float T>(T rcvd, T expected, const std::string & err_msg) -> void {
         tracker.track(utils::checkEQ(rcvd, expected, err_msg));
     };
 
-    std::vector<Sensors>     sensors_vec(num_docs);
-    std::vector<std::string> timestamp_vec(num_docs);
+    std::vector<Sensors>  sensors_vec(num_docs);
+    std::vector<int64_t>  timestamp_vec(num_docs);
     mongocxx::pool::entry    entry = pool_->acquire();
     mongocxx::database       db    = (*entry)[db_name_];
     // Set the find options to sort by timestamp
@@ -368,7 +365,7 @@ std::pair<std::vector<Sensors>, std::vector<std::string>> UtilDB::dumpSensors(
 
     for (auto [i, gps_docs_it] = std::tuple{size_t{0}, gps_docs.begin()}; i < num_docs; i++, gps_docs_it++) {
         Sensors &                     sensors   = sensors_vec[i];
-        std::string &                 timestamp = timestamp_vec[i];
+        int64_t &                     timestamp = timestamp_vec[i];
         const bsoncxx::document::view gps_doc   = *gps_docs_it;
 
         Sensors::Gps * gps = sensors.mutable_gps();
@@ -376,7 +373,7 @@ std::pair<std::vector<Sensors>, std::vector<std::string>> UtilDB::dumpSensors(
         gps->set_longitude(static_cast<float>(gps_doc["longitude"].get_double().value));
         gps->set_speed(static_cast<float>(gps_doc["speed"].get_double().value));
         gps->set_heading(static_cast<float>(gps_doc["heading"].get_double().value));
-        timestamp = gps_doc["timestamp"].get_utf8().value.to_string();
+        timestamp = gps_doc["timestamp"].get_int64().value;
     }
 
     // ais ships
@@ -388,7 +385,7 @@ std::pair<std::vector<Sensors>, std::vector<std::string>> UtilDB::dumpSensors(
 
     for (auto [i, ais_docs_it] = std::tuple{size_t{0}, ais_docs.begin()}; i < num_docs; i++, ais_docs_it++) {
         Sensors &                     sensors       = sensors_vec[i];
-        const std::string &           timestamp     = timestamp_vec[i];
+        const int64_t &               timestamp     = timestamp_vec[i];
         const bsoncxx::document::view ais_ships_doc = *ais_docs_it;
 
         for (bsoncxx::array::element ais_ships_doc : ais_ships_doc["ships"].get_array().value) {
@@ -403,7 +400,7 @@ std::pair<std::vector<Sensors>, std::vector<std::string>> UtilDB::dumpSensors(
             ais_ship->set_length(static_cast<float>(ais_ships_doc["length"].get_double().value));
         }
         expectEQ(sensors.ais_ships().size(), NUM_AIS_SHIPS, "Size mismatch when reading AIS ships from DB");
-        expectEQ(ais_ships_doc["timestamp"].get_utf8().value.to_string(), timestamp, "Document timestamp mismatch");
+        expectEQ(ais_ships_doc["timestamp"].get_int64().value, timestamp, "Document timestamp mismatch");
     }
 
     // generic sensor
@@ -416,7 +413,7 @@ std::pair<std::vector<Sensors>, std::vector<std::string>> UtilDB::dumpSensors(
     for (auto [i, generic_sensor_docs_it] = std::tuple{size_t{0}, generic_sensor_docs.begin()}; i < num_docs;
          i++, generic_sensor_docs_it++) {
         Sensors &                     sensors     = sensors_vec[i];
-        const std::string &           timestamp   = timestamp_vec[i];
+        const int64_t &               timestamp   = timestamp_vec[i];
         const bsoncxx::document::view generic_doc = *generic_sensor_docs_it;
 
         for (bsoncxx::array::element generic_doc : generic_doc["genericSensors"].get_array().value) {
@@ -424,7 +421,7 @@ std::pair<std::vector<Sensors>, std::vector<std::string>> UtilDB::dumpSensors(
             generic->set_id(static_cast<uint32_t>(generic_doc["id"].get_int64().value));
             generic->set_data(static_cast<uint64_t>(generic_doc["data"].get_int64().value));
         }
-        expectEQ(generic_doc["timestamp"].get_utf8().value.to_string(), timestamp, "Document timestamp mismatch");
+        expectEQ(generic_doc["timestamp"].get_int64().value, timestamp, "Document timestamp mismatch");
     }
 
     // battery
@@ -437,7 +434,7 @@ std::pair<std::vector<Sensors>, std::vector<std::string>> UtilDB::dumpSensors(
     for (auto [i, batteries_doc_it] = std::tuple{size_t{0}, batteries_data_docs.begin()}; i < num_docs;
          i++, batteries_doc_it++) {
         Sensors &                     sensors       = sensors_vec[i];
-        const std::string &           timestamp     = timestamp_vec[i];
+        const int64_t &               timestamp     = timestamp_vec[i];
         const bsoncxx::document::view batteries_doc = *batteries_doc_it;
 
         for (bsoncxx::array::element batteries_doc : batteries_doc["batteries"].get_array().value) {
@@ -446,7 +443,7 @@ std::pair<std::vector<Sensors>, std::vector<std::string>> UtilDB::dumpSensors(
             battery->set_current(static_cast<float>(batteries_doc["current"].get_double().value));
         }
         expectEQ(sensors.batteries().size(), NUM_BATTERIES, "Size mismatch when reading batteries from DB");
-        expectEQ(batteries_doc["timestamp"].get_utf8().value.to_string(), timestamp, "Document timestamp mismatch");
+        expectEQ(batteries_doc["timestamp"].get_int64().value, timestamp, "Document timestamp mismatch");
     }
 
     // wind sensor
@@ -458,7 +455,7 @@ std::pair<std::vector<Sensors>, std::vector<std::string>> UtilDB::dumpSensors(
 
     for (auto [i, wind_doc_it] = std::tuple{size_t{0}, wind_sensors_docs.begin()}; i < num_docs; i++, wind_doc_it++) {
         Sensors &                     sensors   = sensors_vec[i];
-        const std::string &           timestamp = timestamp_vec[i];
+        const int64_t &               timestamp = timestamp_vec[i];
         const bsoncxx::document::view wind_doc  = *wind_doc_it;
         for (bsoncxx::array::element wind_doc : wind_doc["windSensors"].get_array().value) {
             Sensors::Wind * wind = sensors.add_wind_sensors();
@@ -466,7 +463,7 @@ std::pair<std::vector<Sensors>, std::vector<std::string>> UtilDB::dumpSensors(
             wind->set_direction(static_cast<int16_t>(wind_doc["direction"].get_int32().value));
         }
         expectEQ(sensors.wind_sensors().size(), NUM_WIND_SENSORS, "Size mismatch when reading batteries from DB");
-        expectEQ(wind_doc["timestamp"].get_utf8().value.to_string(), timestamp, "Document timestamp mismatch");
+        expectEQ(wind_doc["timestamp"].get_int64().value, timestamp, "Document timestamp mismatch");
     }
 
     // local path
@@ -478,7 +475,7 @@ std::pair<std::vector<Sensors>, std::vector<std::string>> UtilDB::dumpSensors(
 
     for (auto [i, path_doc_it] = std::tuple{size_t{0}, local_path_docs.begin()}; i < num_docs; i++, path_doc_it++) {
         Sensors &                     sensors   = sensors_vec[i];
-        const std::string &           timestamp = timestamp_vec[i];
+        const int64_t &               timestamp = timestamp_vec[i];
         const bsoncxx::document::view path_doc  = *path_doc_it;
         for (bsoncxx::array::element path_doc : path_doc["waypoints"].get_array().value) {
             Polaris::Waypoint * path = sensors.mutable_local_path_data()->add_waypoints();
@@ -488,7 +485,7 @@ std::pair<std::vector<Sensors>, std::vector<std::string>> UtilDB::dumpSensors(
         expectEQ(
           sensors.local_path_data().waypoints_size(), NUM_PATH_WAYPOINTS,
           "Size mismatch when reading path waypoints from DB");
-        expectEQ(path_doc["timestamp"].get_utf8().value.to_string(), timestamp, "Document timestamp mismatch");
+        expectEQ(path_doc["timestamp"].get_int64().value, timestamp, "Document timestamp mismatch");
     }
 
     return {sensors_vec, timestamp_vec};
