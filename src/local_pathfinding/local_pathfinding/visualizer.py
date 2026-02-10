@@ -988,17 +988,26 @@ def update_graph(_: int,
     """
     global queue
 
-    if relayoutData and "xaxis.range[0]" in relayoutData:
-        last_range = {
-            "x": [
-                relayoutData["xaxis.range[0]"],
-                relayoutData["xaxis.range[1]"],
-            ],
-            "y": [
-                relayoutData["yaxis.range[0]"],
-                relayoutData["yaxis.range[1]"],
-            ],
-        }
+    if relayoutData:
+        required_keys = [
+            "xaxis.range[0]",
+            "xaxis.range[1]",
+            "yaxis.range[0]",
+            "yaxis.range[1]",
+        ]
+        if all(key in relayoutData for key in required_keys):
+            last_range = {
+                "x": [
+                    relayoutData["xaxis.range[0]"],
+                    relayoutData["xaxis.range[1]"],
+                ],
+                "y": [
+                    relayoutData["yaxis.range[0]"],
+                    relayoutData["yaxis.range[1]"],
+                ],
+            }
+        else:
+            last_range = stored_range
     else:
         last_range = stored_range
 
