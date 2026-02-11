@@ -13,6 +13,7 @@ import {
   WindSensorsState,
 } from '@/stores/WindSensors/WindSensorsTypes';
 import { DataFilterState } from '@/stores/DataFilter/DataFilterTypes';
+import { GraphId } from '@/stores/Graphs/GraphsTypes';
 
 const parseISOString = (s: string) => {
   return Math.floor(Date.parse(s) / 1000); // Converts to seconds
@@ -110,7 +111,7 @@ interface StatsProps {
   gps: GPSState;
   batteries: BatteriesState;
   windSensors: WindSensorsState;
-  graphsOrder: string[];
+  graphsOrder: GraphId[];
   dataFilter: DataFilterState;
 }
 
@@ -247,7 +248,7 @@ const Stats = ({
   };
 
   const graphs = graphsOrder.map(
-    (graph: string) => graphsMap[graph as keyof typeof graphsMap],
+    (graph: GraphId) => graphsMap[graph],
   );
 
   return (
@@ -269,7 +270,7 @@ const mapStateToProps = (state: any) => ({
   gps: state.gps,
   batteries: state.batteries,
   windSensors: state.windSensors,
-  graphsOrder: state.graphs.order,
+  graphsOrder: state.graphs.layout,
   dataFilter: state.dataFilter,
 });
 

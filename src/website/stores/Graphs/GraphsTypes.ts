@@ -8,7 +8,7 @@ export type Layout = LayoutItem[];
 
 export type GraphsState = {
   layout: Layout;
-  error?: any;
+  error: any;
 };
 
 // Helper to check if a layout item is a split group

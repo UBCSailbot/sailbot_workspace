@@ -62,7 +62,7 @@ const SortableItem = ({
 
 const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs }: any) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [graphsOrder, setGraphsOrder] = useState(graphs.order);
+  const [graphsOrder, setGraphsOrder] = useState(graphs.layout);
   const [activeId, setActiveId] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
