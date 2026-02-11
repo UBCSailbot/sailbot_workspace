@@ -272,7 +272,7 @@ class OMPLPath:
                 seg_end.getX() - boat_xy.x,
                 seg_end.getY() - boat_xy.y,
             )
-            fraction_remaining = dist_to_next / total_seg_dist
+            fraction_remaining = round(dist_to_next / total_seg_dist, 5)
             full_seg_cost = obj.motionCost(seg_start, seg_end).value()
             partial_seg_cost = base.Cost(fraction_remaining * full_seg_cost)
             print("##############################")

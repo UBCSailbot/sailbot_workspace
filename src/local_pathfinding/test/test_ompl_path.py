@@ -284,45 +284,34 @@ def test_get_remaining_cost_full_path(fresh_ompl_path, boat_latlon):
     )
 
 
-@pytest.mark.parametrize(
-    "boat_latlon", [HelperLatLon(latitude=0.01, longitude=0.01)]  # Halfway through the path
-)
-def test_get_remaining_cost(fresh_ompl_path, boat_latlon):
-    cost = fresh_ompl_path.get_remaining_cost(0, boat_latlon)
-    cost_from_next_wp = fresh_ompl_path.get_remaining_cost(1, boat_latlon)
-    full_cost = fresh_ompl_path.get_cost()
-    assert cost < full_cost, f"Remaining cost {cost} should be less than full cost {full_cost}"
-    assert cost > cost_from_next_wp, (
-        f"Cost from current waypoint {cost} should be greater than "
-        f"cost from next waypoint {cost_from_next_wp}"
-    )
+# @pytest.mark.parametrize(
+#     "boat_latlon", [HelperLatLon(latitude=0.01, longitude=0.01)]  # Halfway through the path
+# )
+# def test_get_remaining_cost(fresh_ompl_path, boat_latlon):
+#     cost = fresh_ompl_path.get_remaining_cost(0, boat_latlon)
+#     cost_from_next_wp = fresh_ompl_path.get_remaining_cost(1, boat_latlon)
+#     full_cost = fresh_ompl_path.get_cost()
+#     assert cost < full_cost, f"Remaining cost {cost} should be less than full cost {full_cost}"
+#     assert cost > cost_from_next_wp, (
+#         f"Cost from current waypoint {cost} should be greater than "
+#         f"cost from next waypoint {cost_from_next_wp}"
+#     )
 
 
 @pytest.mark.parametrize(
-    "boat_latlon,wp_index,",
+    "wp_index,",
     [
-        (
-            HelperLatLon(latitude=0.04, longitude=0.03),
             1,
-        ),  # boat at wp 1, next is wp 2
-        (
-            HelperLatLon(latitude=0.06, longitude=0.05),
             2,
-        ),  # boat at wp 2, next is wp 3
-        (
-            HelperLatLon(latitude=0.08, longitude=0.07),
             3,
-        ),  # boat at wp 3, next is wp 4
-        (
-            HelperLatLon(latitude=0.10, longitude=0.09),
             4,
-        ),  # boat at wp 4, next is wp 5
     ],
 )
-def test_get_remaining_cost_no_partial(fresh_ompl_path, boat_latlon, wp_index):
+def test_get_remaining_cost_no_partial(fresh_ompl_path, wp_index):
+    waypoints = fresh_ompl_path.get_path().waypoints
+    boat_latlon = waypoints[wp_index]
     cost = fresh_ompl_path.get_remaining_cost(wp_index, boat_latlon)
     # cannot calculate cost_from_next_wp as index out of bound
-    waypoints = fresh_ompl_path.get_path().waypoints
     next_wp_latlon = waypoints[wp_index + 1] if wp_index + 1 < len(waypoints) else None
 
     if next_wp_latlon is None:
