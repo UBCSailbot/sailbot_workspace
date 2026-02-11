@@ -18,6 +18,7 @@ from shapely.geometry import MultiPolygon, Point, box
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.obstacles as ob
 import local_pathfinding.ompl_path as ompl_path
+import random
 from local_pathfinding.local_path import LocalPathState
 
 LAND_KEY = -1
@@ -284,19 +285,45 @@ def test_get_remaining_cost_full_path(fresh_ompl_path, boat_latlon):
     )
 
 
-# @pytest.mark.parametrize(
-#     "boat_latlon", [HelperLatLon(latitude=0.01, longitude=0.01)]  # Halfway through the path
-# )
-# def test_get_remaining_cost(fresh_ompl_path, boat_latlon):
-#     cost = fresh_ompl_path.get_remaining_cost(0, boat_latlon)
-#     cost_from_next_wp = fresh_ompl_path.get_remaining_cost(1, boat_latlon)
-#     full_cost = fresh_ompl_path.get_cost()
-#     assert cost < full_cost, f"Remaining cost {cost} should be less than full cost {full_cost}"
-#     assert cost > cost_from_next_wp, (
-#         f"Cost from current waypoint {cost} should be greater than "
-#         f"cost from next waypoint {cost_from_next_wp}"
-#     )
+@pytest.mark.parametrize(
+    "wp_index,",
+    [
+        1,
+        2,
+        3,
+        4,
+    ],
+)
+def test_get_remaining_cost_partial(fresh_ompl_path, wp_index):
+    waypoints = fresh_ompl_path.get_path().waypoints
+    boat_latlon = waypoints[wp_index]
+    next_wp_latlon = waypoints[wp_index + 1] if wp_index + 1 < len(waypoints) else None
 
+    def mid_point(start_latlon: HelperLatLon,
+                  end_latlon: HelperLatLon):
+        if end_latlon is None:
+            return start_latlon
+        return HelperLatLon(
+            latitude=(random.uniform(start_latlon.latitude, end_latlon.latitude)), # noqa
+            longitude=( random.uniform(start_latlon.longitude, end_latlon.longitude)), # noqa
+        )
+    boat_latlon = mid_point(boat_latlon, next_wp_latlon)
+    cost = fresh_ompl_path.get_remaining_cost(wp_index, boat_latlon)
+    # cannot calculate cost_from_next_wp as index out of bound
+
+    if next_wp_latlon is None:
+        with pytest.raises(Exception):
+            fresh_ompl_path.get_remaining_cost(wp_index + 1, next_wp_latlon)
+        return
+
+    cost_from_next_wp = fresh_ompl_path.get_remaining_cost(wp_index + 1, next_wp_latlon)
+
+    full_cost = fresh_ompl_path.get_cost()
+    assert cost < full_cost, f"Remaining cost {cost} should be less than full cost {full_cost}"
+    assert cost > cost_from_next_wp, (
+        f"Cost from waypoint {wp_index} ({cost}) should be greater than "
+        f"cost from waypoint {wp_index + 1} ({cost_from_next_wp})"
+    )
 
 @pytest.mark.parametrize(
     "wp_index,",
