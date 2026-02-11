@@ -172,7 +172,8 @@ private:
     {
         0,        // seconds
           200000  // microseconds
-    };
+    };            // * This timeout is used for the socket - it doesn't work with the actual hardware modem
+    static constexpr std::chrono::milliseconds SERIAL_TIMEOUT{std::chrono::seconds(2)};
     // boost io service - required for boost::asio operations
     boost::asio::io_service io_;
     // serial port data where is sent and received
@@ -236,4 +237,7 @@ private:
      * @return checksum value
      */
     static std::string checksum(const std::string & data);
+
+    template <typename AsyncReadOp>
+    bool runWithTimeout(AsyncReadOp && op, boost::system::error_code & out_ec);
 };

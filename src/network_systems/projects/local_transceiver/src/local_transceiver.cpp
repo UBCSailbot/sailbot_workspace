@@ -2,6 +2,7 @@
 
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
+#include <boost/asio/deadline_timer.hpp>
 #include <boost/asio/read.hpp>
 #include <boost/asio/read_until.hpp>
 #include <boost/asio/serial_port.hpp>
@@ -130,6 +131,10 @@ bool LocalTransceiver::send()
         throw std::length_error(err_string);
     }
 
+    if (log_debug_) {
+        log_debug_("send() starting...");
+    }
+
     std::string write_bin_cmd_str = AT::write_bin::CMD + std::to_string(data.size());  //according to specs
     AT::Line    at_write_cmd(write_bin_cmd_str);
 
@@ -246,12 +251,16 @@ bool LocalTransceiver::debugSendAT(const std::string & data)
         if (log_debug_) {
             log_debug_("Debug: clearing buffer (attempt " + std::to_string(i) + ")");
         }
+
+        std::this_thread::sleep_for(std::chrono::seconds(2));
         clearSerialBuffer();  // Clear any stale data from previous iteration
 
+        std::this_thread::sleep_for(std::chrono::seconds(5));  // Wait a moment before retrying if no signal
         if (log_debug_) {
             log_debug_("Debug: cleared buffer, checking Iridium signal quality (attempt " + std::to_string(i) + ")");
         }
 
+        // int current_iridium_signal_quality = 5;
         int current_iridium_signal_quality = checkIridiumSignalQuality();
         if (current_iridium_signal_quality == -1) {
             if (log_error_) {
@@ -259,13 +268,14 @@ bool LocalTransceiver::debugSendAT(const std::string & data)
             }
             continue;
         }
-        if (current_iridium_signal_quality < AT::signal_quality::EXCELLENT) {
+        if (current_iridium_signal_quality < AT::signal_quality::POOR) {
             if (log_debug_) {
                 log_debug_(
                   "Debug: Iridium signal quality is currently " + std::to_string(current_iridium_signal_quality) +
                   ", retrying...");
             }
-            std::this_thread::sleep_for(std::chrono::seconds(2));  // Wait a moment before retrying if no signal
+            std::this_thread::sleep_for(std::chrono::seconds(5));  // Wait a moment before retrying if no signal
+
             continue;
         }
         if (log_debug_) {
@@ -562,22 +572,27 @@ std::optional<custom_interfaces::msg::Path> LocalTransceiver::getCache()
 
 bool LocalTransceiver::rcvRsp(const AT::Line & expected_rsp)
 {
-    bio::streambuf buf;
-    error_code     ec;
-    // Caution: will hang if another proccess is reading from the same serial port
-    bio::read(serial_, buf, bio::transfer_exactly(expected_rsp.str_.size()), ec);
-    if (ec) {
-        std::cerr << "Failed to read with error: " << ec.message() << std::endl;
-        return false;
-    }
-    std::string outstr = streambufToStr(buf);
-    if (outstr != expected_rsp.str_) {
-        std::cerr << "Expected to read: \"" << expected_rsp.str_ << "\"\nbut read: \"" << outstr << "\"" << std::endl;
+    bio::streambuf            buf;
+    boost::system::error_code ec;
+
+    bool success = runWithTimeout(
+      [&](auto handler) { bio::async_read(serial_, buf, bio::transfer_exactly(expected_rsp.str_.size()), handler); },
+      ec);
+
+    if (!success) {
+        if (log_error_) {
+            log_error_("rcvRsp timeout or error: " + ec.message());
+        }
         return false;
     }
 
-    if (log_debug_) {
-        log_debug_("Debug: received expected response: " + outstr + "\n");
+    std::string outstr = streambufToStr(buf);
+
+    if (outstr != expected_rsp.str_) {
+        if (log_error_) {
+            log_error_("Expected: \"" + expected_rsp.str_ + "\" but got: \"" + outstr + "\"");
+        }
+        return false;
     }
 
     return true;
@@ -592,17 +607,21 @@ bool LocalTransceiver::rcvRsps(std::initializer_list<const AT::Line> expected_rs
 
 std::optional<std::string> LocalTransceiver::readRsp()
 {
-    bio::streambuf buf;
-    error_code     ec;
+    bio::streambuf            buf;
+    boost::system::error_code ec;
 
-    // Caution: will hang if another proccess is reading from serial port
-    bio::read_until(serial_, buf, AT::STATUS_OK, ec);
-    if (ec) {
+    bool success =
+      runWithTimeout([&](auto handler) { bio::async_read_until(serial_, buf, AT::STATUS_OK, handler); }, ec);
+
+    if (!success) {
+        if (log_error_) {
+            log_error_("readRsp timeout or error: " + ec.message());
+        }
         return std::nullopt;
     }
 
     std::string rsp_str = streambufToStr(buf);
-    rsp_str.pop_back();  // Remove the "\n"
+    if (!rsp_str.empty()) rsp_str.pop_back();  // remove trailing '\n'
 
     return rsp_str;
 }
@@ -670,8 +689,16 @@ int LocalTransceiver::checkIridiumSignalQuality()
 {
     // Assumes AT is already initialized and ready
 
+    if (log_debug_) {
+        log_debug_("Checking signal quality...");
+    }
+
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+
     clearSerialBuffer();
     static const AT::Line at_check_conn_strength_cmd = AT::Line(AT::CHECK_SIG_QUALITY);
+
+    std::this_thread::sleep_for(std::chrono::seconds(2));
 
     if (!send(at_check_conn_strength_cmd)) {
         if (log_error_) {
@@ -721,7 +748,44 @@ int LocalTransceiver::checkIridiumSignalQuality()
     int signal_quality =
       opt_rsp_val.find("+CSQ:") != std::string::npos ? std::stoi(opt_rsp_val.substr(opt_rsp_val.find(":") + 1)) : -1;
 
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+
     clearSerialBuffer();  // Clear any data that may have come in while waiting for CSQ response, to ensure the following readRsp gets a clean response
 
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+
     return signal_quality;
+}
+
+template <typename AsyncReadOp>
+bool LocalTransceiver::runWithTimeout(AsyncReadOp && op, boost::system::error_code & out_ec)
+{
+    boost::asio::deadline_timer timer(io_);
+    bool                        timed_out = false;
+    bool                        completed = false;
+
+    timer.expires_from_now(boost::posix_time::milliseconds(SERIAL_TIMEOUT.count()));
+
+    timer.async_wait([&](const boost::system::error_code & ec) {
+        if (!ec && !completed) {
+            timed_out = true;
+            serial_.cancel();
+        }
+    });
+
+    op([&](const boost::system::error_code & ec, std::size_t) {
+        completed = true;
+        out_ec    = ec;
+        timer.cancel();
+    });
+
+    io_.run();
+    io_.restart();
+
+    if (timed_out) {
+        out_ec = boost::asio::error::timed_out;
+        return false;
+    }
+
+    return !out_ec;
 }
