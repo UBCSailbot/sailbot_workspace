@@ -111,7 +111,7 @@ public:
             // Set up logging callbacks to use ROS logging
             // These are callbacks so that the LocalTransceiver class does not need to make direct ROS calls
             lcl_trns_->setLogCallbacks(
-              [this](const std::string & msg) { RCLCPP_DEBUG(this->get_logger(), "%s", msg.c_str()); },
+              [this](const std::string & msg) { RCLCPP_INFO(this->get_logger(), "%s", msg.c_str()); },
               [this](const std::string & msg) { RCLCPP_ERROR(this->get_logger(), "%s", msg.c_str()); });
 
             std::future<std::optional<custom_interfaces::msg::Path>> fut =
@@ -224,7 +224,7 @@ private:
             if (signal_quality != -1) {
                 RCLCPP_INFO(this->get_logger(), "Signal quality: %d", signal_quality);
                 response->success = true;
-                response->message = "Signal Quality: " + std::to_string(signal_quality);
+                response->message = "Current Signal Quality: " + std::to_string(signal_quality);
             } else {
                 RCLCPP_INFO(
                   this->get_logger(), "Check signal quality unsuccessful: some error occurred in the function body");
