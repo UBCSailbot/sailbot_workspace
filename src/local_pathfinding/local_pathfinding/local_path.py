@@ -3,11 +3,11 @@
 import math
 from typing import List, Optional
 
+import custom_interfaces.msg as ci
 from rclpy.impl.rcutils_logger import RcutilsLogger
 from shapely.geometry import LineString, MultiPolygon
 
 import local_pathfinding.coord_systems as cs
-import custom_interfaces.msg as ci
 import local_pathfinding.obstacles as ob
 from local_pathfinding.ompl_path import OMPLPath
 
@@ -73,10 +73,9 @@ class LocalPathState:
         # obstacles are initialized by OMPLPath right before solving
         self.obstacles: List[ob.Obstacle] = []
 
-    def update_state(self, gps: ci.GPS,
-                     ais_ships: ci.AISShips,
-                     filtered_wind_sensor: ci.WindSensor
-                     ):
+    def update_state(
+        self, gps: ci.GPS, ais_ships: ci.AISShips, filtered_wind_sensor: ci.WindSensor
+    ):
         """Updates the changeable environment without changing the path or reference_latlon
 
         This method updates only the dynamic state variables (position, heading, speed,
@@ -233,7 +232,11 @@ class LocalPath:
         old_ompl_path = self._ompl_path
 
         # If we need to generate a new path or don't have an existing state
-        if received_new_global_waypoint or old_ompl_path is None or self.path is None:
+        if (
+            (received_new_global_waypoint or old_ompl_path is None)
+            or (self.path is None)
+            or (self.state is None)
+        ):
             # Create a new state with the new target_global_waypoint
             new_state = LocalPathState(
                 gps, ais_ships, global_path, target_global_waypoint, filtered_wind_sensor, planner
@@ -243,23 +246,19 @@ class LocalPath:
                 local_path_state=new_state,
                 land_multi_polygon=land_multi_polygon,
             )
-            
             heading_new_path, wp_index = self.calculate_desired_heading_and_waypoint_index(
                 new_ompl_path.get_path(), 0, gps.lat_lon
             )
-            
             if received_new_global_waypoint:
                 self._logger.debug("Updating local path because we have a new global waypoint")
             else:
                 self._logger.debug("old path is none")
-            
             self.state = new_state
             self._update(new_ompl_path)
             return heading_new_path, wp_index
+        else:
+            self.state.update_state(gps, ais_ships, filtered_wind_sensor)
 
-        # We have an old path - update the existing state without changing reference
-        self.state.update_state(gps, ais_ships, filtered_wind_sensor)
-        
         # Create a new state for evaluating the new path candidate
         new_state = LocalPathState(
             gps, ais_ships, global_path, target_global_waypoint, filtered_wind_sensor, planner
@@ -311,24 +310,20 @@ class LocalPath:
         metric_new = w_h * heading_diff_new_normalized + w_c * new_cost_normalized
 
         self._logger.debug(
-                f"(old cost: {old_cost:.2f}, "
-                f"new cost: {new_cost:.2f})"
-                f", metric_old: {metric_old:.2f}, "
-                f"metric_new: {metric_new:.2f}, "
-                f"old_cost_normalized: {old_cost_normalized:.2f}, "
-                f"new_cost_normalized: {new_cost_normalized:.2f}"
-            )
+            f"(old cost: {old_cost:.2f}, "
+            f"new cost: {new_cost:.2f})"
+            f", metric_old: {metric_old:.2f}, "
+            f"metric_new: {metric_new:.2f}, "
+            f"old_cost_normalized: {old_cost_normalized:.2f}, "
+            f"new_cost_normalized: {new_cost_normalized:.2f}"
+        )
         if metric_new < metric_old:
-            self._logger.debug(
-                "New path is cheaper, updating local path "
-            )
+            self._logger.debug("New path is cheaper, updating local path ")
             self.state = new_state
             self._update(new_ompl_path)
             return heading_new_path, wp_index
         else:
-            self._logger.debug(
-                "old path is cheaper, continuing on the same path"
-            )
+            self._logger.debug("old path is cheaper, continuing on the same path")
             # Keep the old state with old reference (already updated with update_state)
             return heading_old_path, updated_wp_index
 
