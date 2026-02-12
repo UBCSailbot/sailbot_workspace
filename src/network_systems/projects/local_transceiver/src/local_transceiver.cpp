@@ -268,7 +268,7 @@ bool LocalTransceiver::debugSendAT(const std::string & data)
             }
             continue;
         }
-        if (current_iridium_signal_quality < AT::signal_quality::POOR) {
+        if (current_iridium_signal_quality < AT::signal_quality::GOOD) {
             if (log_debug_) {
                 log_debug_(
                   "Debug: Iridium signal quality is currently " + std::to_string(current_iridium_signal_quality) +
@@ -380,7 +380,12 @@ bool LocalTransceiver::debugSendAT(const std::string & data)
         boost::algorithm::split(sbd_status_vec, opt_rsp_val, boost::is_any_of(AT::DELIMITER));
 
         AT::SBDStatusRsp rsp(sbd_status_vec[0]);
-        if (rsp.MOSuccess()) {
+        
+	if (log_debug_) {
+		log_debug_("SBDIX parsed rsp MO Status: " + std::to_string(rsp.MO_status_));
+	}
+	
+	if (rsp.MOSuccess()) {
             if (log_debug_) {
                 log_debug_("Debug: debugSendAT transmitted successfully");
             }
