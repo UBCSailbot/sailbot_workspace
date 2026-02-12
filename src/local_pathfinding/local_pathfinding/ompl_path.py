@@ -43,6 +43,7 @@ MAX_SOLVER_RUN_TIME_SEC = 1.0
 LAND_KEY = -1
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 LAND_PKL_FILE_PATH = os.path.join(CURRENT_DIR, "..", "land", "pkl", "land.pkl")
+DISTANCE_THRESHOLD = 1e-9
 
 
 class OMPLPath:
@@ -247,42 +248,48 @@ class OMPLPath:
         num_states = len(states)
 
         if last_lp_wp_index == num_states - 1:
-            # already at the last waypoint
             return 0.0
         if num_states < 2:
             return solution_path.cost(obj).value()
         if last_lp_wp_index >= num_states:
-            raise ValueError("index out of bound for path; ensure that" +
-                             "the last_lp_wp_index is < number of waypoints in the path")
+            raise ValueError(
+                "index out of bound for path; ensure that "
+                "the last_lp_wp_index is < number of waypoints in the path"
+            )
 
-        # Start from the identity cost (mirrors OMPL starting from identityCost)
         cost = obj.identityCost()
 
         # --- Partial cost for the current segment (last_lp_wp_index -> last_lp_wp_index+1) ---
         seg_start = states[last_lp_wp_index]
         seg_end = states[last_lp_wp_index + 1]
-        total_seg_dist = math.hypot(
-            seg_end.getX() - seg_start.getX(),
-            seg_end.getY() - seg_start.getY(),
-        )
 
-        if total_seg_dist >= 1e-9:
-            boat_xy = cs.latlon_to_xy(self.state.reference_latlon, boat_lat_lon)
-            dist_to_next = math.hypot(
-                seg_end.getX() - boat_xy.x,
-                seg_end.getY() - boat_xy.y,
-            )
-            fraction_remaining = round(dist_to_next / total_seg_dist, 5)
-            full_seg_cost = obj.motionCost(seg_start, seg_end).value()
-            partial_seg_cost = base.Cost(fraction_remaining * full_seg_cost)
-            print("##############################")
-            print(f"curr_index = {last_lp_wp_index}")
-            print(f"fraction of path remaining: {fraction_remaining}")
-            cost = obj.combineCosts(cost, partial_seg_cost)
-            print(f"cost: {cost.value()}")
-            print("##############################")
+        dx_seg = seg_end.getX() - seg_start.getX()
+        dy_seg = seg_end.getY() - seg_start.getY()
+        total_seg_dist = math.hypot(dx_seg, dy_seg)
 
-        for i in range(last_lp_wp_index, num_states - 1):
+        boat_xy = cs.latlon_to_xy(self.state.reference_latlon, boat_lat_lon)
+        dx_boat = boat_xy.x - seg_start.getX()
+        dy_boat = boat_xy.y - seg_start.getY()
+        dist_boat_to_start = math.hypot(dx_boat, dy_boat)
+
+        if total_seg_dist >= DISTANCE_THRESHOLD and dist_boat_to_start >= DISTANCE_THRESHOLD:
+            # Project the boat's position onto the segment vector to compute traveled distance.
+            # dot(boat_vec, seg_vec) / ||seg_vec|| gives the scalar projection length
+            projected_dist = (dx_seg * dx_boat + dy_seg * dy_boat) / total_seg_dist
+
+            # clamp to [0, total_seg_dist]
+            projected_dist = max(0.0, min(projected_dist, total_seg_dist))
+            fraction_travelled = projected_dist / total_seg_dist
+        else:
+            # segment is degenerate or boat is at start
+            fraction_travelled = 0.0
+
+        fraction_remaining = 1.0 - fraction_travelled
+        full_seg_cost = obj.motionCost(seg_start, seg_end).value()
+        cost = obj.combineCosts(cost, base.Cost(fraction_remaining * full_seg_cost))
+
+        # Add full costs for segments strictly after the current one
+        for i in range(last_lp_wp_index + 1, num_states - 1):
             cost = obj.combineCosts(cost, obj.motionCost(states[i], states[i + 1]))
 
         return cost.value()
