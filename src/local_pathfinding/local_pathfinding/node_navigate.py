@@ -185,7 +185,6 @@ class Sailbot(Node):
         if desired_heading is None:
             self.get_logger().error("Pathfinding failed, signaling boat to stop")
             msg.heading.heading = 0.0
-            msg.steering = 0
             msg.sail = False
         else:
             msg.heading.heading = desired_heading
@@ -302,7 +301,7 @@ class Sailbot(Node):
                 self.global_waypoint_index
             ]
 
-        desired_heading, self.local_waypoint_index = self.local_path.update_if_needed(
+        desired_heading, new_wp_index = self.local_path.update_if_needed(
             self.gps,
             self.ais_ships,
             self.global_path,
@@ -313,6 +312,8 @@ class Sailbot(Node):
             self.planner,
             self.land_multi_polygon,
         )
+        if new_wp_index is not None:
+            self.local_waypoint_index = new_wp_index
         return desired_heading
 
     @staticmethod
