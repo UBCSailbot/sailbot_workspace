@@ -140,7 +140,10 @@ bool LocalTransceiver::send()
 
     static constexpr int MAX_NUM_RETRIES = 20;  // allow retries because the connection is imperfect
     for (int i = 0; i < MAX_NUM_RETRIES; i++) {
+        std::this_thread::sleep_for(std::chrono::seconds(SMALL_WAIT));
         clearSerialBuffer();  // Clear any stale data from previous iteration
+
+        std::this_thread::sleep_for(std::chrono::seconds(MEDIUM_WAIT));
 
         int current_iridium_signal_quality = checkIridiumSignalQuality();
         if (current_iridium_signal_quality == -1) {
@@ -149,13 +152,14 @@ bool LocalTransceiver::send()
             }
             continue;
         }
-        if (current_iridium_signal_quality < AT::signal_quality::EXCELLENT) {
+        if (current_iridium_signal_quality < AT::signal_quality::GOOD) {
             if (log_debug_) {
                 log_debug_(
                   "Debug: Iridium signal quality is currently " + std::to_string(current_iridium_signal_quality) +
                   ", retrying...");
             }
-            std::this_thread::sleep_for(std::chrono::seconds(2));  // Wait a moment before retrying if no signal
+            std::this_thread::sleep_for(
+              std::chrono::seconds(MEDIUM_WAIT));  // Wait a moment before retrying if no signal
             continue;
         }
 
@@ -252,10 +256,10 @@ bool LocalTransceiver::debugSendAT(const std::string & data)
             log_debug_("Debug: clearing buffer (attempt " + std::to_string(i) + ")");
         }
 
-        std::this_thread::sleep_for(std::chrono::seconds(2));
+        std::this_thread::sleep_for(std::chrono::seconds(SMALL_WAIT));
         clearSerialBuffer();  // Clear any stale data from previous iteration
 
-        std::this_thread::sleep_for(std::chrono::seconds(5));  // Wait a moment before retrying if no signal
+        std::this_thread::sleep_for(std::chrono::seconds(MEDIUM_WAIT));
         if (log_debug_) {
             log_debug_("Debug: cleared buffer, checking Iridium signal quality (attempt " + std::to_string(i) + ")");
         }
@@ -274,7 +278,8 @@ bool LocalTransceiver::debugSendAT(const std::string & data)
                   "Debug: Iridium signal quality is currently " + std::to_string(current_iridium_signal_quality) +
                   ", retrying...");
             }
-            std::this_thread::sleep_for(std::chrono::seconds(5));  // Wait a moment before retrying if no signal
+            std::this_thread::sleep_for(
+              std::chrono::seconds(MEDIUM_WAIT));  // Wait a moment before retrying if no signal
 
             continue;
         }
@@ -380,12 +385,12 @@ bool LocalTransceiver::debugSendAT(const std::string & data)
         boost::algorithm::split(sbd_status_vec, opt_rsp_val, boost::is_any_of(AT::DELIMITER));
 
         AT::SBDStatusRsp rsp(sbd_status_vec[0]);
-        
-	if (log_debug_) {
-		log_debug_("SBDIX parsed rsp MO Status: " + std::to_string(rsp.MO_status_));
-	}
-	
-	if (rsp.MOSuccess()) {
+
+        if (log_debug_) {
+            log_debug_("SBDIX parsed rsp MO Status: " + std::to_string(rsp.MO_status_));
+        }
+
+        if (rsp.MOSuccess()) {
             if (log_debug_) {
                 log_debug_("Debug: debugSendAT transmitted successfully");
             }
@@ -626,7 +631,9 @@ std::optional<std::string> LocalTransceiver::readRsp()
     }
 
     std::string rsp_str = streambufToStr(buf);
-    if (!rsp_str.empty()) rsp_str.pop_back();  // remove trailing '\n'
+    if (!rsp_str.empty()) {
+        rsp_str.pop_back();  // remove trailing '\n'
+    }
 
     return rsp_str;
 }
@@ -698,12 +705,12 @@ int LocalTransceiver::checkIridiumSignalQuality()
         log_debug_("Checking signal quality...");
     }
 
-    std::this_thread::sleep_for(std::chrono::seconds(2));
+    std::this_thread::sleep_for(std::chrono::seconds(SMALL_WAIT));
 
     clearSerialBuffer();
     static const AT::Line at_check_conn_strength_cmd = AT::Line(AT::CHECK_SIG_QUALITY);
 
-    std::this_thread::sleep_for(std::chrono::seconds(2));
+    std::this_thread::sleep_for(std::chrono::seconds(SMALL_WAIT));
 
     if (!send(at_check_conn_strength_cmd)) {
         if (log_error_) {
@@ -753,11 +760,11 @@ int LocalTransceiver::checkIridiumSignalQuality()
     int signal_quality =
       opt_rsp_val.find("+CSQ:") != std::string::npos ? std::stoi(opt_rsp_val.substr(opt_rsp_val.find(":") + 1)) : -1;
 
-    std::this_thread::sleep_for(std::chrono::seconds(2));
+    std::this_thread::sleep_for(std::chrono::seconds(SMALL_WAIT));
 
     clearSerialBuffer();  // Clear any data that may have come in while waiting for CSQ response, to ensure the following readRsp gets a clean response
 
-    std::this_thread::sleep_for(std::chrono::seconds(2));
+    std::this_thread::sleep_for(std::chrono::seconds(SMALL_WAIT));
 
     return signal_quality;
 }
