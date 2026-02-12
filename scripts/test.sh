@@ -43,7 +43,7 @@ trap 'signal_handler' EXIT
 if [ -f install/local_setup.bash ]; then source install/local_setup.bash; fi
 
 if [[ "$PACKAGE" == "network_systems" || "$PACKAGE" == "" ]]; then
-    # Change MONGODB_PASSWORD password
+    # Change MONGODB_PASSWORD password to do tests on the database
     export MONGODB_PASSWORD="placeholder"  # DO NOT PUSH THE ACTUAL PASSWORD TO GITHUB
 
     NET_DIR=src/network_systems
