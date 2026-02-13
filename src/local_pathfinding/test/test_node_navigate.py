@@ -56,9 +56,11 @@ def test_calculate_desired_heading_and_waypoint_index(
     correct_heading: float,
     new_wp_index: int,
 ):
-    calculated_answer = LocalPath.calculate_desired_heading_and_waypoint_index(
+
+    calculated_answer = LocalPath.calculate_desired_heading_and_last_lp_wp_index(
         path, waypoint_index, boat_lat_lon
     )
+
     assert calculated_answer[0] == pytest.approx(correct_heading, abs=3e-1)
     assert calculated_answer[1] == new_wp_index
 
