@@ -210,19 +210,22 @@ class OMPLPath:
         """
         Calculate the cost of the remaining path from the boat's current position.
 
-        This mirrors OMPL's ``PathGeometric::cost()`` formula which computes::
+        OMPL's ``PathGeometric::cost()`` conceptually computes::
 
             initialCost(first) + summation motionCost(s_i, s_{i+1}) + terminalCost(last)
 
-        accumulated via ``combineCosts``.
+        accumulated via ``combineCosts``. This method currently accumulates **only** the
+        motionCost terms (including a partial cost for the current segment), assuming the
+        optimization objective's initial and terminal costs are zero. If non-zero initial or
+        terminal state costs are introduced in the objective, this method should be updated
+        accordingly.
 
         In this codebase, ``last_lp_wp_index`` is the index of the **last local-path waypoint
         the boat has just traversed** (i.e., the "current" waypoint). The remaining cost is:
 
         - the *partial* motion cost on the segment from waypoint ``last_lp_wp_index`` to
           ``last_lp_wp_index + 1`` (based on how far the boat is from the next waypoint), plus
-        - the *full* motion costs of all subsequent segments to the goal, plus
-        - the terminal cost at the final state.
+        - the *full* motion costs of all subsequent segments to the goal.
 
         Args:
             last_lp_wp_index (int): Index of the last local-path waypoint the boat has just
