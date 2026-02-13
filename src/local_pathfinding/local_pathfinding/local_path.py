@@ -123,7 +123,7 @@ class LocalPath:
         self.state: Optional[LocalPathState] = None
 
     @staticmethod
-    def calculate_desired_heading_and_last_lp_wp_index(
+    def calculate_desired_heading_and_wp_index(
         path: ci.Path, waypoint_index: int, boat_lat_lon: ci.HelperLatLon
     ):
         """Calculates the desired heading using GEODESIC. Updates the waypoint index (i.e. change
@@ -132,7 +132,7 @@ class LocalPath:
         Args:
             path (ci.Path): Array of waypoints
             waypoint_index (int): Pointer to the current local waypoint index in path array
-            (i.e. the waypoint sailbot is heading towards)
+            (i.e. the waypoint sailbot traversed, sailbot is heading towards waypoint_index + 1)
             boat_lat_lon (ci.HelperLatLon): boat coordinates
 
         Returns:
@@ -248,7 +248,7 @@ class LocalPath:
                 local_path_state=new_state,
                 land_multi_polygon=land_multi_polygon,
             )
-            heading_new_path, wp_index = self.calculate_desired_heading_and_last_lp_wp_index(
+            heading_new_path, wp_index = self.calculate_desired_heading_and_wp_index(
                 new_ompl_path.get_path(), 0, gps.lat_lon
             )
             if received_new_global_waypoint:
@@ -271,10 +271,10 @@ class LocalPath:
             land_multi_polygon=land_multi_polygon,
         )
 
-        heading_new_path, wp_index = self.calculate_desired_heading_and_last_lp_wp_index(
+        heading_new_path, wp_index = self.calculate_desired_heading_and_wp_index(
             new_ompl_path.get_path(), 0, gps.lat_lon
         )
-        heading_old_path, updated_wp_index = self.calculate_desired_heading_and_last_lp_wp_index(
+        heading_old_path, updated_wp_index = self.calculate_desired_heading_and_wp_index(
             old_ompl_path.get_path(), last_lp_wp_index, gps.lat_lon
         )
 

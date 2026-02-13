@@ -3,6 +3,7 @@ import pytest
 
 import local_pathfinding.node_navigate as nn
 from local_pathfinding.local_path import LocalPath
+
 LOCAL_WAYPOINT_REACHED_THRESH_KM = 0.5
 GLOBAL_WAYPOINT_REACHED_THRESH_KM = 3
 PATHFINDING_RANGE_KM = 30
@@ -57,7 +58,7 @@ def test_calculate_desired_heading_and_waypoint_index(
     new_wp_index: int,
 ):
 
-    calculated_answer = LocalPath.calculate_desired_heading_and_last_lp_wp_index(
+    calculated_answer = LocalPath.calculate_desired_heading_and_wp_index(
         path, waypoint_index, boat_lat_lon
     )
 
