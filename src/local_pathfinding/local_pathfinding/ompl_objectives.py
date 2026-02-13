@@ -264,6 +264,6 @@ def get_sailing_objective(
     # this allows the objective to be satisfied once a path with a cost
     # below the threshold has been found
     # this can prevent the solver from running until the time limit in some cases
-    # multiObjective.setCostThreshold(ACCEPTABLE_COST_THRESHOLD)
+    multiObjective.setCostThreshold(ACCEPTABLE_COST_THRESHOLD)
 
     return multiObjective
