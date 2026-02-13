@@ -109,7 +109,7 @@ class LocalPath:
     Attributes:
         _logger (RcutilsLogger): ROS logger.
         _ompl_path (Optional[OMPLPath]): Raw representation of the path from OMPL.
-        _waypoint_index: Local waypoint index (i.e. pointer to the next local waypoint that the
+        _last_lp_wp_index: Local waypoint index (i.e. pointer to the next local waypoint that the
         boat is following)
         path (Path): Collection of coordinates that form the local path to the next
                           global waypoint.
@@ -123,7 +123,7 @@ class LocalPath:
         self.state: Optional[LocalPathState] = None
 
     @staticmethod
-    def calculate_desired_heading_and_waypoint_index(
+    def calculate_desired_heading_and_last_lp_wp_index(
         path: ci.Path, waypoint_index: int, boat_lat_lon: ci.HelperLatLon
     ):
         """Calculates the desired heading using GEODESIC. Updates the waypoint index (i.e. change
@@ -230,7 +230,7 @@ class LocalPath:
                 - Updated waypoint index
             The method decides whether to return the heading for new path or old path
         """
-        self._waypoint_index = last_lp_wp_index
+        self._last_lp_wp_index = last_lp_wp_index
         old_ompl_path = self._ompl_path
 
         # If we need to generate a new path or don't have an existing state
@@ -248,7 +248,7 @@ class LocalPath:
                 local_path_state=new_state,
                 land_multi_polygon=land_multi_polygon,
             )
-            heading_new_path, wp_index = self.calculate_desired_heading_and_waypoint_index(
+            heading_new_path, wp_index = self.calculate_desired_heading_and_last_lp_wp_index(
                 new_ompl_path.get_path(), 0, gps.lat_lon
             )
             if received_new_global_waypoint:
@@ -271,10 +271,10 @@ class LocalPath:
             land_multi_polygon=land_multi_polygon,
         )
 
-        heading_new_path, wp_index = self.calculate_desired_heading_and_waypoint_index(
+        heading_new_path, wp_index = self.calculate_desired_heading_and_last_lp_wp_index(
             new_ompl_path.get_path(), 0, gps.lat_lon
         )
-        heading_old_path, updated_wp_index = self.calculate_desired_heading_and_waypoint_index(
+        heading_old_path, updated_wp_index = self.calculate_desired_heading_and_last_lp_wp_index(
             old_ompl_path.get_path(), last_lp_wp_index, gps.lat_lon
         )
 
