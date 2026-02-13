@@ -305,9 +305,12 @@ def test_get_remaining_cost_partial(fresh_ompl_path, wp_index):
     def mid_point(start_latlon: HelperLatLon, end_latlon: HelperLatLon):
         if end_latlon is None:
             return start_latlon
+        end_points_inclusive_factor = 1e-4
         return HelperLatLon(
-            latitude=(random.uniform(start_latlon.latitude, end_latlon.latitude)),  # noqa
-            longitude=(random.uniform(start_latlon.longitude, end_latlon.longitude)),  # noqa
+            latitude=(random.uniform(start_latlon.latitude + end_points_inclusive_factor,
+                                     end_latlon.latitude - end_points_inclusive_factor)),  # noqa
+            longitude=(random.uniform(start_latlon.longitude + end_points_inclusive_factor,
+                                      end_latlon.longitude - end_points_inclusive_factor)),  # noqa
         )
 
     boat_latlon = mid_point(boat_latlon, next_wp_latlon)
