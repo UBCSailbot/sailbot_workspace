@@ -289,7 +289,7 @@ def test_get_remaining_cost_full_path(fresh_ompl_path, boat_latlon):
 
 
 @pytest.mark.parametrize(
-    "wp_index,",
+    "wp_index",
     [
         1,
         2,
