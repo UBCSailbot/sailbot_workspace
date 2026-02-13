@@ -88,9 +88,6 @@ class OMPLPath:
 
         self.solved = self._simple_setup.solve(time=MAX_SOLVER_RUN_TIME_SEC)
 
-        # if self.solved:
-        #     self._simple_setup.simplifySolution()
-
     @staticmethod
     def init_obstacles(
         local_path_state: LocalPathState,
