@@ -64,28 +64,28 @@ Sensors UtilDB::genRandSensors()
     for (int i = 0; i < NUM_TEMP_SENSORS; i++) {
         float v{};
         genRandTempSensorData(v);
-        sensors.add_data_sensors(v);
+        sensors.add_temp_sensors(v);
     }
 
     // pH sensors
     for (int i = 0; i < NUM_PH_SENSORS; i++) {
         float v{};
         genRandPhSensorData(v);
-        sensors.add_data_sensors(v);
+        sensors.add_ph_sensors(v);
     }
 
     // pressure sensors
     for (int i = 0; i < NUM_PRESSURE_SENSORS; i++) {
         float v{};
         genRandPressureSensorData(v);
-        sensors.add_data_sensors(v);
+        sensors.add_pressure_sensors(v);
     }
 
     // salinity sensors
     for (int i = 0; i < NUM_SALINITY_SENSORS; i++) {
         float v{};
         genRandSalinitySensorData(v);
-        sensors.add_data_sensors(v);
+        sensors.add_salinity_sensors(v);
     }
 
     // batteries
@@ -495,9 +495,9 @@ std::pair<std::vector<Sensors>, std::vector<std::string>> UtilDB::dumpSensors(
         const std::string &           timestamp = timestamp_vec[i];
         const bsoncxx::document::view temp_doc  = *temp_doc_it;
         for (bsoncxx::array::element temp_doc : temp_doc["tempSensors"].get_array().value) {
-            sensors.add_data_sensors(static_cast<float>(temp_doc["temperature"].get_double().value));
+            sensors.add_temp_sensors(static_cast<float>(temp_doc["temperature"].get_double().value));
         }
-        expectEQ(sensors.data_sensors().size(), NUM_TEMP_SENSORS, "Size mismatch when reading temp sensors from DB");
+        expectEQ(sensors.temp_sensors().size(), NUM_TEMP_SENSORS, "Size mismatch when reading temp sensors from DB");
         expectEQ(temp_doc["timestamp"].get_utf8().value.to_string(), timestamp, "Document timestamp mismatch");
     }
 
@@ -515,10 +515,11 @@ std::pair<std::vector<Sensors>, std::vector<std::string>> UtilDB::dumpSensors(
         const std::string &           timestamp    = timestamp_vec[i];
         const bsoncxx::document::view pressure_doc = *pressure_doc_it;
         for (bsoncxx::array::element pressure_doc : pressure_doc["pressureSensors"].get_array().value) {
-            sensors.add_data_sensors(static_cast<float>(pressure_doc["pressure"].get_double().value));
+            sensors.add_pressure_sensors(static_cast<float>(pressure_doc["pressure"].get_double().value));
         }
         expectEQ(
-          sensors.data_sensors().size(), NUM_PRESSURE_SENSORS, "Size mismatch when reading pressure sensors from DB");
+          sensors.pressure_sensors().size(), NUM_PRESSURE_SENSORS,
+          "Size mismatch when reading pressure sensors from DB");
         expectEQ(pressure_doc["timestamp"].get_utf8().value.to_string(), timestamp, "Document timestamp mismatch");
     }
 
@@ -536,10 +537,11 @@ std::pair<std::vector<Sensors>, std::vector<std::string>> UtilDB::dumpSensors(
         const std::string &           timestamp    = timestamp_vec[i];
         const bsoncxx::document::view salinity_doc = *salinity_doc_it;
         for (bsoncxx::array::element salinity_doc : salinity_doc["salinitySensors"].get_array().value) {
-            sensors.add_data_sensors(static_cast<float>(salinity_doc["salinity"].get_double().value));
+            sensors.add_salinity_sensors(static_cast<float>(salinity_doc["salinity"].get_double().value));
         }
         expectEQ(
-          sensors.data_sensors().size(), NUM_SALINITY_SENSORS, "Size mismatch when reading salinity sensors from DB");
+          sensors.salinity_sensors().size(), NUM_SALINITY_SENSORS,
+          "Size mismatch when reading salinity sensors from DB");
         expectEQ(salinity_doc["timestamp"].get_utf8().value.to_string(), timestamp, "Document timestamp mismatch");
     }
 
@@ -556,9 +558,9 @@ std::pair<std::vector<Sensors>, std::vector<std::string>> UtilDB::dumpSensors(
         const std::string &           timestamp = timestamp_vec[i];
         const bsoncxx::document::view ph_doc    = *ph_doc_it;
         for (bsoncxx::array::element ph_doc : ph_doc["phSensors"].get_array().value) {
-            sensors.add_data_sensors(static_cast<float>(ph_doc["ph"].get_double().value));
+            sensors.add_ph_sensors(static_cast<float>(ph_doc["ph"].get_double().value));
         }
-        expectEQ(sensors.data_sensors().size(), NUM_PH_SENSORS, "Size mismatch when reading pH sensors from DB");
+        expectEQ(sensors.ph_sensors().size(), NUM_PH_SENSORS, "Size mismatch when reading pH sensors from DB");
         expectEQ(ph_doc["timestamp"].get_utf8().value.to_string(), timestamp, "Document timestamp mismatch");
     }
 
