@@ -60,13 +60,45 @@ void LocalTransceiver::updateSensor(msg::Batteries battery)
     }
 }
 
-void LocalTransceiver::updateSensor(msg::GenericSensors msg)
+// void LocalTransceiver::updateSensor(msg::GenericSensors msg)
+// {
+//     sensors_.clear_data_sensors();
+//     for (const msg::HelperGenericSensor & sensors_data : msg.generic_sensors) {
+//         Sensors::Generic * new_sensor = sensors_.add_data_sensors();
+//         new_sensor->set_data(sensors_data.data);
+//         new_sensor->set_id(sensors_data.id);
+//     }
+// }
+
+void LocalTransceiver::updateSensor(msg::TempSensors temperature)
 {
-    sensors_.clear_data_sensors();
-    for (const msg::HelperGenericSensor & sensors_data : msg.generic_sensors) {
-        Sensors::Generic * new_sensor = sensors_.add_data_sensors();
-        new_sensor->set_data(sensors_data.data);
-        new_sensor->set_id(sensors_data.id);
+    sensors_.clear_temp_sensors();
+    for (const msg::TempSensor & temperature_data : temperature.temp_sensors) {
+        sensors_.add_temp_sensors(temperature_data.temp.temp);
+    }
+}
+
+void LocalTransceiver::updateSensor(msg::PhSensors ph)
+{
+    sensors_.clear_ph_sensors();
+    for (const msg::PhSensor & ph_data : ph.ph_sensors) {
+        sensors_.add_ph_sensors(ph_data.ph.ph);
+    }
+}
+
+void LocalTransceiver::updateSensor(msg::SalinitySensors salinity)
+{
+    sensors_.clear_salinity_sensors();
+    for (const msg::SalinitySensor & salinity_data : salinity.salinity_sensors) {
+        sensors_.add_salinity_sensors(salinity_data.salinity.salinity);
+    }
+}
+
+void LocalTransceiver::updateSensor(msg::PressureSensors pressure)
+{
+    sensors_.clear_pressure_sensors();
+    for (const msg::PressureSensor & pressure_data : pressure.pressure_sensors) {
+        sensors_.add_pressure_sensors(pressure_data.pressure.pressure);
     }
 }
 
@@ -130,6 +162,7 @@ bool LocalTransceiver::send()
           "No implementation to handle this!";
         throw std::length_error(err_string);
     }
+    std::cout << "Sending " + std::to_string(data.size()) + " bytes\n";
 
     if (log_debug_) {
         log_debug_("send() starting...");
