@@ -33,8 +33,8 @@ def main():
             ser.write(cmd.encode("utf-8"))
             time.sleep(
                 0.1
-            )  # Give the virtual iridium some time to respond, adjust this 
-               # if you're finding that responses are staggered
+            )   # Give the virtual iridium some time to respond, adjust this if you're finding that
+            # responses are staggered
             response = read_all(ser)
             if not response:
                 response = ser.read(1024)
