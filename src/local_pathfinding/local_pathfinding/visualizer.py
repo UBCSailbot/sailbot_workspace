@@ -939,6 +939,7 @@ def dash_app(q: Queue):
             html.Div(
                 style={"display": "flex", "gap": "10px", "marginBottom": "8px"},
                 children=[
+                    html.Label("Wind Direction (°):"),
                     dcc.Input(
                         id="tw-dir-input",
                         type="number",
@@ -949,6 +950,7 @@ def dash_app(q: Queue):
                         value=0,
                         style={"width": "140px"},
                     ),
+                    html.Label("  Wind Speed (km/h):"),
                     dcc.Input(
                         id="tw-speed-input",
                         type="number",
