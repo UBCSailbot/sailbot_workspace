@@ -31,7 +31,7 @@ import local_pathfinding.wind_coord_systems as wcs
 from local_pathfinding.ompl_path import OMPLPath
 
 UPDATE_INTERVAL_MS = 2500
-DEFAULT_PLOT_RANGE = [-100, 100]
+DEFAULT_PLOT_RANGE = [-100.0, 100.0]
 BOX_BUFFER_SIZE_KM = 1.0
 
 WIND_BOX_X_DOMAIN = (0.76, 0.99)
@@ -132,6 +132,7 @@ class VisualizerState:
         aw_vector_kmph (cs.XY): Apparent wind vector in global XY.
         tw_vector_kmph (cs.XY): True wind vector in global XY.
         bw_vector_kmph (cs.XY): Boat velocity vector in global XY.
+        state_space (Optional[MultiPolygon]): The computed state-space overlay as a MultiPolygon.
     """
 
     def __init__(self, msgs: deque[ci.LPathData]):
@@ -208,6 +209,9 @@ class VisualizerState:
         # Boat wind vector
         boat_wind_radians = math.radians(cs.bound_to_180(boat_heading_deg + 180))
         self.bw_vector_kmph = cs.polar_to_cartesian(boat_wind_radians, boat_speed_kmph)
+
+        # State space
+        self.state_space: Optional[MultiPolygon] = None
 
     @staticmethod
     def _validate_message(msg: ci.LPathData) -> None:
@@ -714,11 +718,12 @@ def configure_wind_box_elements(state: VisualizerState) -> WindBoxConfig:
 
 
 def compute_and_add_state_space(
+    vs: VisualizerState,
     boat_xy_km: Tuple[float, float],
     goal_xy_km: Tuple[float, float],
     fig: go.Figure,
     zoom_needed: bool,
-    last_range: Optional[Dict[str, List[float]]]
+    last_range: Optional[Dict[str, List[float]]],
 ):
     """
     Build the visualization state-space overlay around the boat and goal. Then, add the built
@@ -732,6 +737,8 @@ def compute_and_add_state_space(
         boat_xy_km: (x, y) boat position in km.
         goal_xy_km: (x, y) goal position in km.
         fig: Target Plotly figure.
+        zoom_needed: whether we want to zoom into the state space
+        last_range: previously stored axis ranges to maintain axes if zoom not needed.
     """
     boat_pos = cs.XY(boat_xy_km[0], boat_xy_km[1])
     goal_pos = cs.XY(goal_xy_km[0], goal_xy_km[1])
@@ -739,6 +746,8 @@ def compute_and_add_state_space(
     boat_box = OMPLPath.create_buffer_around_position(boat_pos, BOX_BUFFER_SIZE_KM)
     goal_box = OMPLPath.create_buffer_around_position(goal_pos, BOX_BUFFER_SIZE_KM)
     state_space = MultiPolygon([boat_box, goal_box])
+
+    vs.state_space = state_space
 
     # Adding the calculated rectangular overlay(state_space) to the plot
     x_min, y_min, x_max, y_max = state_space.bounds
@@ -753,19 +762,15 @@ def compute_and_add_state_space(
         layer="below",
     )
 
-    if not zoom_needed and last_range is not None:
+    if zoom_needed:
         fig.update_layout(
-            xaxis=dict(range=last_range["x"],
-                       autorange=False),
-            yaxis=dict(range=last_range["y"],
-                       autorange=False),
+            xaxis=dict(range=[x_min, x_max], autorange=False),
+            yaxis=dict(range=[y_min, y_max], autorange=False),
         )
-    else:
+    elif last_range is not None:
         fig.update_layout(
-            xaxis=dict(range=[x_min, x_max],
-                       autorange=False),
-            yaxis=dict(range=[y_min, y_max],
-                       autorange=False),
+            xaxis=dict(range=last_range["x"], autorange=False),
+            yaxis=dict(range=last_range["y"], autorange=False),
         )
 
 
@@ -898,11 +903,37 @@ def build_figure(
         fig.add_annotation(annotation)
 
     # Computing State space overlay and adding it to the plot
-    zoom_needed = last_goal_xy_km is None
-    compute_and_add_state_space(boat_xy_km, goal_xy_km, fig, zoom_needed, last_range)
+    zoom_needed = last_goal_xy_km is None or last_range is None
+    compute_and_add_state_space(state, boat_xy_km, goal_xy_km, fig, zoom_needed, last_range)
     apply_layout(fig)
     add_goal_change_popup(fig, goal_change.message)  # Popup message for goal change
     return fig, goal_change.new_goal_xy_rounded
+
+
+def get_state_space_axes(
+    vs: VisualizerState,
+) -> Dict[str, List[float]]:
+    """
+    Resets the view range to match the current state space bounds.
+
+    Args:
+        vs: VisualizerState containing the current state space.
+
+    Returns:
+        A dict with "x" and "y" keys containing the state space bounds as ranges.
+        Falls back to DEFAULT_PLOT_RANGE if state space is not available.
+    """
+    if vs.state_space is None:
+        return {
+            "x": DEFAULT_PLOT_RANGE,
+            "y": DEFAULT_PLOT_RANGE,
+        }
+
+    x_min, y_min, x_max, y_max = vs.state_space.bounds
+    return {
+        "x": [x_min, x_max],
+        "y": [y_min, y_max],
+    }
 
 
 # -----------------------------
@@ -960,19 +991,21 @@ def dash_app(q: Queue):
     State("range-store", "data"),
     prevent_initial_call=True,
 )
-def update_graph(_: int,
-                 relayoutData,
-                 __: int,
-                 current_figure,
-                 last_goal_xy_km: Optional[List[float]],
-                 stored_range):
+def update_graph(
+    _: int,
+    relayout_data,
+    __: int,
+    current_figure,
+    last_goal_xy_km: Optional[List[float]],
+    stored_range,
+):
     """
     Dash callback: handles both interval updates and reset button clicks.
     Uses callback_context to determine which input triggered the update.
 
     Args:
         _: Dash interval tick (unused).
-        relayoutData: Data relayed from Plotly when user pans, zooms in/out, autoscales
+        relayout_data: Data relayed from Plotly when user pans, zooms in/out, autoscales
         __: Reset button n_clicks (unused).
         current_figure: Current figure state from live-graph.
         last_goal_xy_km: Previously stored goal as [x, y] or None on first run.
@@ -988,22 +1021,36 @@ def update_graph(_: int,
     """
     global queue
 
-    if relayoutData:
+    # Interval update (default behavior)
+    if queue is None or queue.empty():
+        return dash.no_update, dash.no_update, stored_range
+
+    vs = queue.get()  # type: ignore
+    last_goal_tuple = (
+        cs.XY(last_goal_xy_km[0], last_goal_xy_km[1]) if last_goal_xy_km is not None else None
+    )
+
+    # Check which input triggered the callback
+    ctx = dash.callback_context
+    triggered_id = ctx.triggered[0]["prop_id"].split(".")[0] if ctx.triggered else None
+
+    if relayout_data and triggered_id == "live-graph":
+        # Only process relayout_data if it was the actual trigger
         required_keys = [
             "xaxis.range[0]",
             "xaxis.range[1]",
             "yaxis.range[0]",
             "yaxis.range[1]",
         ]
-        if all(key in relayoutData for key in required_keys):
+        if all(key in relayout_data for key in required_keys):
             last_range = {
                 "x": [
-                    relayoutData["xaxis.range[0]"],
-                    relayoutData["xaxis.range[1]"],
+                    relayout_data["xaxis.range[0]"],
+                    relayout_data["xaxis.range[1]"],
                 ],
                 "y": [
-                    relayoutData["yaxis.range[0]"],
-                    relayoutData["yaxis.range[1]"],
+                    relayout_data["yaxis.range[0]"],
+                    relayout_data["yaxis.range[1]"],
                 ],
             }
         else:
@@ -1011,30 +1058,23 @@ def update_graph(_: int,
     else:
         last_range = stored_range
 
-    ctx = dash.callback_context
-
-    triggered_id = ctx.triggered[0]["prop_id"].split(".")[0] if ctx.triggered else None
+    fig, new_goal_xy = build_figure(vs, last_goal_tuple, last_range)
 
     if triggered_id == "reset-button":
         if current_figure is None:
             return dash.no_update, dash.no_update, dash.no_update
 
-        fig = go.Figure(current_figure)
+        axes = get_state_space_axes(vs)
+        x_range = axes["x"]
+        y_range = axes["y"]
+        last_range = {
+            "x": x_range,
+            "y": y_range,
+        }
         fig.update_layout(
-            xaxis=dict(range=DEFAULT_PLOT_RANGE, autorange=False),
-            yaxis=dict(range=DEFAULT_PLOT_RANGE, autorange=False),
+            xaxis=dict(range=x_range, autorange=False),
+            yaxis=dict(range=y_range, autorange=False),
             uirevision="reset",
         )
-        return fig, last_goal_xy_km, last_range
 
-    # Interval update (default behavior)
-    if queue is None or queue.empty():
-        return dash.no_update, dash.no_update, dash.no_update
-
-    state = queue.get()  # type: ignore
-    last_goal_tuple = (
-        cs.XY(last_goal_xy_km[0], last_goal_xy_km[1]) if last_goal_xy_km is not None else None
-    )
-
-    fig, new_goal_xy = build_figure(state, last_goal_tuple, last_range)
     return fig, [new_goal_xy[0], new_goal_xy[1]], last_range
