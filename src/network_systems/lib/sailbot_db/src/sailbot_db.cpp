@@ -14,10 +14,12 @@
 #include <mongocxx/instance.hpp>
 #include <sstream>
 
+#include "global_path.pb.h"
 #include "sensors.pb.h"
 #include "waypoint.pb.h"
 
 namespace bstream = bsoncxx::builder::stream;
+using Polaris::GlobalPath;
 using Polaris::Sensors;
 
 mongocxx::instance SailbotDB::inst_{};  // statically initialize instance
@@ -33,15 +35,35 @@ std::ostream & operator<<(std::ostream & os, const SailbotDB::RcvdMsgInfo & info
     return os;
 }
 
-std::string SailbotDB::RcvdMsgInfo::mkTimestamp(const std::tm & tm)
+const std::string & SailbotDB::MONGODB_CONN_STR()
 {
-    // This is impossible to read. It's reading each field of tm and 0 padding it to 2 digits with either "-" or ":"
-    // in between each number
+    static const std::string conn_str = [] {
+        const char * pwd = std::getenv("MONGODB_PASSWORD");  //NOLINT(concurrency-mt-unsafe)
+        if (pwd == nullptr || std::strcmp(pwd, "placeholder") == 0) {
+            const char * github_uri = std::getenv("MONGODB_URI");  //NOLINT(concurrency-mt-unsafe)
+            if (github_uri != nullptr) {
+                return std::string(github_uri);  // If running in GitHub Actions, use the full URI from secrets
+            }
+            printf(
+              "MongoDB password not found (must be inputted into test.sh): Running MongoDB tests locally \n");  // If running tests locally
+            return std::string("mongodb://localhost:27017");
+        }
+        return "mongodb+srv://software:" + std::string(pwd) + "@dev.khxge.mongodb.net/?appName=dev";
+    }();
+    return conn_str;
+}
+
+std::string SailbotDB::mkTimestamp(const std::tm & tm)
+{
+    constexpr int     YEAR_OFFSET  = 1900;  // tm_year is years since 1900
+    constexpr int     YEAR_MODULUS = 100;   // used to extract the last two digits of the year
     std::stringstream tm_ss;
-    tm_ss << std::setfill('0') << std::setw(2) << tm.tm_year << "-" << std::setfill('0') << std::setw(2) << tm.tm_mon
-          << "-" << std::setfill('0') << std::setw(2) << tm.tm_mday << " " << std::setfill('0') << std::setw(2)
-          << tm.tm_hour << ":" << std::setfill('0') << std::setw(2) << tm.tm_min << ":" << std::setfill('0')
-          << std::setw(2) << tm.tm_sec;
+    tm_ss << std::setfill('0') << std::setw(2)
+          << (tm.tm_year + YEAR_OFFSET) % YEAR_MODULUS  // format last 2 digits of year (e.g., 2025 → 25)
+          << "-" << std::setfill('0') << std::setw(2) << (tm.tm_mon + 1)  // months are 0-based (0 = January)
+          << "-" << std::setfill('0') << std::setw(2) << tm.tm_mday << " " << std::setfill('0') << std::setw(2)  // hour
+          << tm.tm_hour << ":" << std::setfill('0') << std::setw(2) << tm.tm_min << ":" << std::setfill('0')  // minute
+          << std::setw(2) << tm.tm_sec;                                                                       // second
     return tm_ss.str();
 }
 
@@ -85,6 +107,19 @@ bool SailbotDB::storeNewSensors(const Sensors & sensors_pb, RcvdMsgInfo new_info
 }
 
 // END PUBLIC
+
+bool SailbotDB::storeNewGlobalPath(const GlobalPath & global_pb, const std::string & timestamp)
+{
+    mongocxx::pool::entry entry = pool_->acquire();
+    return storeNewGlobalPath(global_pb, timestamp, *entry);
+}
+
+bool SailbotDB::storeIridiumResponse(
+  const std::string & response, const std::string & error, const std::string & message, const std::string & timestamp)
+{
+    mongocxx::pool::entry entry = pool_->acquire();
+    return storeIridiumResponse(response, error, message, timestamp, *entry);
+}
 
 // PRIVATE
 
@@ -236,6 +271,36 @@ bool SailbotDB::storePathSensors(
     }
     DocVal local_path_doc = local_path_doc_arr << bstream::close_array << "timestamp" << timestamp << bstream::finalize;
     return static_cast<bool>(local_path_coll.insert_one(local_path_doc.view()));
+}
+
+bool SailbotDB::storeNewGlobalPath(
+  const Polaris::GlobalPath & global_path_pb, const std::string & timestamp, mongocxx::client & client)
+{
+    mongocxx::database           db               = client[db_name_];
+    mongocxx::collection         global_path_coll = db[COLLECTION_GLOBAL_PATH];
+    bstream::document            doc_builder{};
+    auto                         global_path_doc_arr = doc_builder << "waypoints" << bstream::open_array;
+    ProtoList<Polaris::Waypoint> waypoints           = global_path_pb.waypoints();
+    for (const Polaris::Waypoint & waypoint : waypoints) {
+        global_path_doc_arr = global_path_doc_arr << bstream::open_document << "latitude" << waypoint.latitude()
+                                                  << "longitude" << waypoint.longitude() << bstream::close_document;
+    }
+    DocVal global_path_doc = global_path_doc_arr << bstream::close_array << "timestamp" << timestamp
+                                                 << bstream::finalize;
+    return static_cast<bool>(global_path_coll.insert_one(global_path_doc.view()));
+}
+
+bool SailbotDB::storeIridiumResponse(
+  const std::string & response, const std::string & error, const std::string & message, const std::string & timestamp,
+  mongocxx::client & client)
+{
+    mongocxx::database   db                    = client[db_name_];
+    mongocxx::collection iridium_response_coll = db[COLLECTION_IRIDIUM_RESPONSE];
+
+    DocVal iridium_response_doc = bstream::document{} << "response" << response << "error" << error << "timestamp"
+                                                      << timestamp << "message" << message << bstream::finalize;
+
+    return static_cast<bool>(iridium_response_coll.insert_one(iridium_response_doc.view()));
 }
 
 // END PRIVATE
