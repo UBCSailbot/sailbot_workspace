@@ -57,6 +57,11 @@ protected:
     {
         try {
             lcl_trns_ = new LocalTransceiver(LOCAL_TRANSCEIVER_TEST_PORT, SATELLITE_BAUD_RATE);
+            // * Uncomment the below code for further debug logging when running tests.
+            // * It may overwrite some standard testing output on the terminal - seems inconsistent
+            // lcl_trns_->setLogCallbacks(
+            //   [](const std::string & msg) { std::cout << "DEBUG: " << msg << std::endl; },
+            //   [](const std::string & msg) { std::cout << "ERROR: " << msg << std::endl; });
         } catch (boost::system::system_error & e) {
             std::stringstream ss;
             ss << "Failed to create Local Transceiver for tests, is only one instance of: \""
@@ -78,6 +83,8 @@ private:
 };
 bp::child TestLocalTransceiver::http_echo_server_proc_ = {};
 
+std::mutex port_mutex;
+
 /**
  * @brief Verify debugSend
  */
@@ -87,6 +94,52 @@ TEST_F(TestLocalTransceiver, debugSendTest)
     EXPECT_TRUE(opt_result);
     std::string result = opt_result.value();
     EXPECT_TRUE(boost::algorithm::contains(result, AT::Line(AT::STATUS_OK).str_));
+}
+
+/**
+ * @brief Test debugSendAT that sends a small payload through the same flow as send()
+ */
+TEST_F(TestLocalTransceiver, DebugSendAT)
+{
+    std::lock_guard<std::mutex> lock{port_mutex};
+
+    // // Single ASCII byte payload for ease of verification
+    std::string payload = "Hello";
+
+    EXPECT_TRUE(lcl_trns_->debugSendAT(payload));
+
+    // Give virtual iridium / echo server a moment to deliver
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+
+    curl_global_init(CURL_GLOBAL_DEFAULT);
+    CURL * curl = curl_easy_init();
+    ASSERT_TRUE(curl != nullptr);
+    std::string response_body;
+    curl_easy_setopt(curl, CURLOPT_URL, "http://127.0.0.1:8081/last");
+    curl_easy_setopt(
+      curl, CURLOPT_WRITEFUNCTION, +[](char * ptr, size_t size, size_t nmemb, void * userdata) -> size_t {
+          static_cast<std::string *>(userdata)->append(ptr, size * nmemb);
+          return size * nmemb;
+      });
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response_body);
+    CURLcode res = curl_easy_perform(curl);
+    curl_easy_cleanup(curl);
+    ASSERT_EQ(res, CURLE_OK) << "Failed to query echo server";
+    ASSERT_FALSE(response_body.empty()) << "Echo server returned empty body — webhook may not have received payload";
+    EXPECT_EQ(response_body, payload) << "Echo server body mismatch";
+
+    // Verify the payload byte is present in the echoed body
+    ASSERT_NE(response_body.find(payload), std::string::npos);
+}
+
+/**
+ * @brief Check iridium signal quality and verify it is between 0-5
+ */
+TEST_F(TestLocalTransceiver, checkIridiumSignalQuality)
+{
+    int signal_quality = lcl_trns_->checkIridiumSignalQuality();
+    EXPECT_GE(signal_quality, 0) << "Signal quality should be >= 0";
+    EXPECT_LE(signal_quality, 5) << "Signal quality should be <= 5";
 }
 
 /**
@@ -299,8 +352,6 @@ TEST_F(TestLocalTransceiver, checkCache)
     EXPECT_EQ(parsed_test.waypoints[1].latitude, parsed_cache.waypoints[0].latitude);
     EXPECT_EQ(parsed_test.waypoints[1].longitude, parsed_cache.waypoints[0].longitude);
 }
-
-std::mutex port_mutex;
 
 TEST_F(TestLocalTransceiver, testMailboxBlackbox)
 {
