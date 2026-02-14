@@ -935,36 +935,38 @@ def dash_app(q: Queue):
                 "UBC Sailbot Pathfinding",
                 style={"fontFamily": "Consolas, monospace", "color": "rgb(18, 70, 139)"},
             ),
-            # Wind controls
+            dcc.Graph(id="live-graph", style={"height": "90vh", "width": "100%"}),
             html.Div(
-                style={"display": "flex", "gap": "10px", "marginBottom": "8px"},
+                id="control-panel",
+                style={
+                    "position": "absolute",
+                    "bottom": "120px",  # Distance from the very bottom of the screen
+                    "left": "50px",   # Aligns with the Y-axis
+                    "display": "flex",
+                    "gap": "15px",
+                    "alignItems": "center",
+                    "padding": "10px 20px",
+                    "backgroundColor": "rgba(255, 255, 255, 0.8)",  # Semi-transparent white
+                    "borderRadius": "8px",
+                    "border": "1px solid #ccc",
+                    "zIndex": "1000"
+                },
                 children=[
-                    html.Label("Wind Direction (°):"),
-                    dcc.Input(
-                        id="tw-dir-input",
-                        type="number",
-                        placeholder="Wind Direction",
-                        min=-180,
-                        max=180,
-                        step=1,
-                        value=0,
-                        style={"width": "140px"},
+                    html.Label("Wind Direction (°):", style={"fontWeight": "bold"}),
+                    dcc.Input(id="tw-dir-input", type="number",
+                              value=0, style={"width": "80px"}),
+                    html.Label("Wind Speed (km/h):", style={"fontWeight": "bold"}),
+                    dcc.Input(id="tw-speed-input", type="number",
+                              value=0, style={"width": "80px"}),
+                    html.Button(
+                        "Apply Wind",
+                        id="apply-wind-btn",
+                        style={"backgroundColor": "rgb(18, 70, 139)",
+                               "color": "white", "cursor": "pointer"}
                     ),
-                    html.Label("  Wind Speed (km/h):"),
-                    dcc.Input(
-                        id="tw-speed-input",
-                        type="number",
-                        placeholder="Wind Speed",
-                        min=0,
-                        step=0.1,
-                        value=0.0,
-                        style={"width": "140px"},
-                    ),
-                    html.Button("Apply Wind", id="apply-wind-btn"),
                     html.Div(id="wind-status"),
                 ],
             ),
-            dcc.Graph(id="live-graph", style={"height": "90vh", "width": "100%"}),
             dcc.Interval(id="interval-component", interval=UPDATE_INTERVAL_MS, n_intervals=0),
             dcc.Store(id="goal-store", data=None),
             html.Button(
@@ -1064,3 +1066,23 @@ def update_wind(_, tw_dir_deg, tw_speed_kmph):
 
     except Exception as e:
         return f"Error: {e}"
+
+
+app.clientside_callback(
+    """
+    function(status_text) {
+        if (!status_text) return "";
+
+        // Wait 5000ms (5 seconds) then find the div and wipe it
+        setTimeout(function(){
+            const statusDiv = document.getElementById('wind-status');
+            if (statusDiv) statusDiv.innerText = "";
+        }, 5000);
+
+        return status_text;
+    }
+    """,
+    Output("wind-status", "children", allow_duplicate=True),
+    Input("wind-status", "children"),
+    prevent_initial_call=True
+)
