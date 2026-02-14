@@ -8,6 +8,10 @@ services:
     network_mode: host
     privileged: true
     user: ros
+    group_add:
+      - dialout
+    devices:
+      - /dev/ttyS0:/dev/ttyS0
     # ports:
     # website
     #### We do not use anymore. We pulled website development out of docker in PR #614

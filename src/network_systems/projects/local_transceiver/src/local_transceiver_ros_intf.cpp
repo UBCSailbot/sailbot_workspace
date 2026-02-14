@@ -8,6 +8,7 @@
 #include <rclcpp/subscription.hpp>
 #include <rclcpp/timer.hpp>
 #include <std_msgs/msg/string.hpp>
+#include <std_srvs/srv/trigger.hpp>
 
 #include "cmn_hdrs/ros_info.h"
 #include "cmn_hdrs/shared_constants.h"
@@ -84,6 +85,15 @@ public:
                     std::cerr << msg << std::endl;
                     throw std::exception();
                 }
+            } else if (mode == SYSTEM_MODE::TEST_SAT) {
+                default_port             = "/dev/ttyS0";
+                std::string set_baud_cmd = "stty -F /dev/ttyS0 19200";
+                int         result       = std::system(set_baud_cmd.c_str());  //NOLINT(concurrency-mt-unsafe)
+                if (result != 0) {
+                    std::string msg = "Error: could not set baud rate for local trns port /dev/ttyS0";
+                    std::cerr << msg << std::endl;
+                    throw std::exception();
+                }
 
             } else {
                 std::string msg = "Error, invalid system mode" + mode;
@@ -97,6 +107,12 @@ public:
             RCLCPP_INFO(
               this->get_logger(), "Running Local Transceiver in mode: %s, with port: %s.", mode.c_str(), port.c_str());
             lcl_trns_ = std::make_unique<LocalTransceiver>(port, SATELLITE_BAUD_RATE);
+
+            // Set up logging callbacks to use ROS logging
+            // These are callbacks so that the LocalTransceiver class does not need to make direct ROS calls
+            lcl_trns_->setLogCallbacks(
+              [this](const std::string & msg) { RCLCPP_INFO(this->get_logger(), "%s", msg.c_str()); },
+              [this](const std::string & msg) { RCLCPP_ERROR(this->get_logger(), "%s", msg.c_str()); });
 
             std::future<std::optional<custom_interfaces::msg::Path>> fut =
               std::async(std::launch::async, lcl_trns_->getCache);
@@ -137,6 +153,26 @@ public:
             if (msg) {
                 pub_->publish(*msg);
             }
+
+            srv_send_ = this->create_service<std_srvs::srv::Trigger>(
+              "send_data", std::bind(
+                             &LocalTransceiverIntf::send_request_handler, this, std::placeholders::_1,
+                             std::placeholders::_2, false));
+            RCLCPP_INFO(this->get_logger(), "send_data service created");
+
+            this->declare_parameter<std::string>("debug_data_to_send", "Hello!");
+
+            srv_send_debug_ = this->create_service<std_srvs::srv::Trigger>(
+              "debug_send_data",
+              std::bind(
+                &LocalTransceiverIntf::send_request_handler, this, std::placeholders::_1, std::placeholders::_2, true));
+            RCLCPP_INFO(this->get_logger(), "debug_send_data service created");
+
+            srv_check_signal_quality_ = this->create_service<std_srvs::srv::Trigger>(
+              "check_signal_quality", std::bind(
+                                        &LocalTransceiverIntf::check_signal_quality_request_handler, this,
+                                        std::placeholders::_1, std::placeholders::_2));
+            RCLCPP_INFO(this->get_logger(), "check_signal_quality service created");
         }
     }
 
@@ -153,6 +189,10 @@ private:
     rclcpp::Subscription<custom_interfaces::msg::PressureSensors>::SharedPtr sub_pressure_sensor;
     rclcpp::Subscription<custom_interfaces::msg::GPS>::SharedPtr             sub_gps;
     rclcpp::Subscription<custom_interfaces::msg::LPathData>::SharedPtr       sub_local_path_data;
+
+    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_send_;
+    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_send_debug_;
+    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_check_signal_quality_;
 
     /**
      * @brief Callback function to publish to onboard ROS network
@@ -200,6 +240,67 @@ private:
     void sub_gps_cb(custom_interfaces::msg::GPS in_msg) { lcl_trns_->updateSensor(in_msg); }
 
     void sub_local_path_data_cb(custom_interfaces::msg::LPathData in_msg) { lcl_trns_->updateSensor(in_msg); }
+
+    void check_signal_quality_request_handler(
+      std::shared_ptr<std_srvs::srv::Trigger::Request>  request,
+      std::shared_ptr<std_srvs::srv::Trigger::Response> response)
+    {
+        (void)request;
+
+        try {
+            int signal_quality = lcl_trns_->checkIridiumSignalQuality();
+
+            if (signal_quality != -1) {
+                RCLCPP_INFO(this->get_logger(), "Signal quality: %d", signal_quality);
+                response->success = true;
+                response->message = "Current Signal Quality: " + std::to_string(signal_quality);
+            } else {
+                RCLCPP_INFO(
+                  this->get_logger(), "Check signal quality unsuccessful: some error occurred in the function body");
+                response->success = false;
+                response->message = "Check Signal Quality Failed";
+            }
+
+        } catch (const std::exception & e) {
+            RCLCPP_ERROR(this->get_logger(), "Exception during checkIridiumSignalQuality(): %s", e.what());
+            response->success = false;
+            response->message = std::string("Exception: ") + e.what();
+        }
+    }
+
+    void send_request_handler(
+      std::shared_ptr<std_srvs::srv::Trigger::Request>  request,
+      std::shared_ptr<std_srvs::srv::Trigger::Response> response, bool is_debug = false)
+    {
+        (void)request;
+
+        try {
+            bool success;
+
+            if (is_debug) {
+                // Retrieve the debug_data_to_send parameter dynamically
+                std::string debug_data = this->get_parameter("debug_data_to_send").as_string();
+                success                = lcl_trns_->debugSendAT(debug_data);
+            } else {
+                success = lcl_trns_->send();
+            }
+
+            if (success) {
+                RCLCPP_INFO(this->get_logger(), "Successfully sent data via Local Transceiver");
+                response->success = true;
+                response->message = "Transmission Successful";
+            } else {
+                RCLCPP_INFO(this->get_logger(), "Send is unsuccessful");
+                response->success = false;
+                response->message = "Transmission Failed";
+            }
+
+        } catch (const std::exception & e) {
+            RCLCPP_ERROR(this->get_logger(), "Exception during send(): %s", e.what());
+            response->success = false;
+            response->message = std::string("Exception: ") + e.what();
+        }
+    }
 };
 
 int main(int argc, char * argv[])

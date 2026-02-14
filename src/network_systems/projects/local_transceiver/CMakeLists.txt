@@ -2,7 +2,7 @@ set(module local_transceiver)
 
 set(link_libs
     ${PROTOBUF_LINK_LIBS}
-    ${CURL_LIBRARIES}
+    CURL::libcurl
 )
 
 set(inc_dirs

@@ -14,12 +14,14 @@ namespace AT
 const std::string DELIMITER = "\r\n";
 const std::string STATUS_OK = "OK";
 const std::string RSP_READY = "READY";
+const std::string CSQ       = "READY";
 const std::string GARBAGE   = "\n";
 
-const std::string CHECK_CONN    = "AT";
-const std::string SBD_SESSION   = "AT+SBDIX";  // 5.144
-const std::string DSBL_CTRLFLOW = "AT&K0";
-const std::string DNLD_TO_QUEUE = "AT+SBDRB";
+const std::string CHECK_CONN        = "AT";
+const std::string SBD_SESSION       = "AT+SBDIX";  // 5.144
+const std::string DSBL_CTRLFLOW     = "AT&K0";
+const std::string DNLD_TO_QUEUE     = "AT+SBDRB";
+const std::string CHECK_SIG_QUALITY = "AT+CSQ";
 
 namespace write_bin  // 5.154
 {
@@ -33,6 +35,16 @@ const std::string BAD_CHECKSUM = "2";
 const std::string WRONG_SIZE   = "3";
 }  // namespace rsp
 }  // namespace write_bin
+
+namespace signal_quality
+{
+const int NOSIGNAL  = 0;
+const int POOR      = 1;
+const int MARGINAL  = 2;
+const int GOOD      = 3;
+const int VERYGOOD  = 4;
+const int EXCELLENT = 5;
+}  // namespace signal_quality
 
 /**
  * @brief Simple Line struct to help enforce DRY when dealing with strings while performing reads and writes
