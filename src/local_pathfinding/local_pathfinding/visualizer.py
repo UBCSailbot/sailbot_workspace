@@ -31,7 +31,7 @@ import local_pathfinding.wind_coord_systems as wcs
 from local_pathfinding.ompl_path import OMPLPath
 
 UPDATE_INTERVAL_MS = 2500
-DEFAULT_PLOT_RANGE = [-100, 100]
+DEFAULT_PLOT_RANGE = [-100.0, 100.0]
 BOX_BUFFER_SIZE_KM = 1.0
 
 WIND_BOX_X_DOMAIN = (0.76, 0.99)
@@ -132,6 +132,7 @@ class VisualizerState:
         aw_vector_kmph (cs.XY): Apparent wind vector in global XY.
         tw_vector_kmph (cs.XY): True wind vector in global XY.
         bw_vector_kmph (cs.XY): Boat velocity vector in global XY.
+        state_space (Optional[MultiPolygon]): The computed state-space overlay as a MultiPolygon.
     """
 
     def __init__(self, msgs: deque[ci.LPathData]):
@@ -208,6 +209,9 @@ class VisualizerState:
         # Boat wind vector
         boat_wind_radians = math.radians(cs.bound_to_180(boat_heading_deg + 180))
         self.bw_vector_kmph = cs.polar_to_cartesian(boat_wind_radians, boat_speed_kmph)
+
+        # State space
+        self.state_space: Optional[MultiPolygon] = None
 
     @staticmethod
     def _validate_message(msg: ci.LPathData) -> None:
@@ -415,21 +419,21 @@ def build_path_trace(
 
 
 def build_boat_trace(
-    state: VisualizerState, boat_xy_km: Tuple[float, float], dist_to_goal_km: float
+    vs: VisualizerState, boat_xy_km: Tuple[float, float], dist_to_goal_km: float
 ) -> go.Scatter:
     """
     Create the boat marker trace (filled arrow-head/ triangle) at the current boat position.
 
     Args:
-        state: VisualizerState containing GPS heading/speed history.
+        vs: VisualizerState containing GPS heading/speed history.
         boat_xy_km: (x, y) current boat position in km.
         dist_to_goal_km: Current straight-line distance to the goal in km (for hover text).
 
     Returns:
         A Plotly Scatter trace representing the boat marker with heading-based rotation.
     """
-    heading = state.sailbot_gps[-1].heading.heading
-    speed = state.sailbot_gps[-1].speed.speed
+    heading = vs.sailbot_gps[-1].heading.heading
+    speed = vs.sailbot_gps[-1].speed.speed
     return go.Scatter(
         x=[boat_xy_km[0]],
         y=[boat_xy_km[1]],
@@ -508,18 +512,18 @@ def build_polygon_traces(
     return traces
 
 
-def build_ais_traces(state: VisualizerState) -> List[go.Scatter]:
+def build_ais_traces(vs: VisualizerState) -> List[go.Scatter]:
     """
     Build AIS ship markers (filled arrow-heads/ triangles) for the plot.
 
     Args:
-        state: VisualizerState containing AIS ship data by ID.
+        vs: VisualizerState containing AIS ship data by ID.
 
     Returns:
         List of Plotly Scatter traces for AIS ships.
     """
     traces = []
-    for ais_id, ship_data in state.ais_ships_by_id.items():
+    for ais_id, ship_data in vs.ais_ships_by_id.items():
         x_val = ship_data.pos_x_km
         y_val = ship_data.pos_y_km
         heading = ship_data.heading_deg
@@ -553,7 +557,7 @@ def build_ais_traces(state: VisualizerState) -> List[go.Scatter]:
     return traces
 
 
-def configure_wind_box_elements(state: VisualizerState) -> WindBoxConfig:
+def configure_wind_box_elements(vs: VisualizerState) -> WindBoxConfig:
     """
     Build the "wind box" inset configuration with scaled wind and boat velocity vectors.
 
@@ -564,7 +568,7 @@ def configure_wind_box_elements(state: VisualizerState) -> WindBoxConfig:
     - Text annotations for wind vector labels and speed values.
 
     Args:
-        state: VisualizerState containing wind vectors in global XY frame.
+        vs: VisualizerState containing wind vectors in global XY frame.
 
     Returns:
         WindBoxConfig containing:
@@ -596,13 +600,13 @@ def configure_wind_box_elements(state: VisualizerState) -> WindBoxConfig:
     }
 
     # Re-Calculating vectors for better scaling in the wind box inset.
-    aw_unit = get_unit_vector(state.aw_vector_kmph)
-    tw_unit = get_unit_vector(state.tw_vector_kmph)
-    bw_unit = get_unit_vector(state.bw_vector_kmph)
+    aw_unit = get_unit_vector(vs.aw_vector_kmph)
+    tw_unit = get_unit_vector(vs.tw_vector_kmph)
+    bw_unit = get_unit_vector(vs.bw_vector_kmph)
 
-    aw_mag = math.hypot(state.aw_vector_kmph.x, state.aw_vector_kmph.y)
-    tw_mag = math.hypot(state.tw_vector_kmph.x, state.tw_vector_kmph.y)
-    bw_mag = math.hypot(state.bw_vector_kmph.x, state.bw_vector_kmph.y)
+    aw_mag = math.hypot(vs.aw_vector_kmph.x, vs.aw_vector_kmph.y)
+    tw_mag = math.hypot(vs.tw_vector_kmph.x, vs.tw_vector_kmph.y)
+    bw_mag = math.hypot(vs.bw_vector_kmph.x, vs.bw_vector_kmph.y)
 
     aw_dx, aw_dy = aw_unit.x * WIND_ARROW_LEN, aw_unit.y * WIND_ARROW_LEN
     tw_dx, tw_dy = tw_unit.x * WIND_ARROW_LEN, tw_unit.y * WIND_ARROW_LEN
@@ -714,7 +718,10 @@ def configure_wind_box_elements(state: VisualizerState) -> WindBoxConfig:
 
 
 def compute_and_add_state_space(
-    boat_xy_km: Tuple[float, float], goal_xy_km: Tuple[float, float], fig: go.Figure
+    vs: VisualizerState,
+    boat_xy_km: Tuple[float, float],
+    goal_xy_km: Tuple[float, float],
+    fig: go.Figure,
 ):
     """
     Build the visualization state-space overlay around the boat and goal. Then, add the built
@@ -735,6 +742,8 @@ def compute_and_add_state_space(
     boat_box = OMPLPath.create_buffer_around_position(boat_pos, BOX_BUFFER_SIZE_KM)
     goal_box = OMPLPath.create_buffer_around_position(goal_pos, BOX_BUFFER_SIZE_KM)
     state_space = MultiPolygon([boat_box, goal_box])
+
+    vs.state_space = state_space
 
     # Adding the calculated rectangular overlay(state_space) to the plot
     x_min, y_min, x_max, y_max = state_space.bounds
@@ -773,16 +782,24 @@ def add_goal_change_popup(fig: go.Figure, message: Optional[str]) -> None:
     )
 
 
-def apply_layout(fig: go.Figure) -> None:
+def apply_layout(
+    vs: VisualizerState,
+    fig: go.Figure,
+    zoom_needed: bool,
+    last_range: Optional[Dict[str, List[float]]]
+) -> None:
     """
     Apply the main plot layout configuration (axis titles, domains, legend, and optional ranges).
 
     Args:
         fig: Target Plotly figure.
+        zoom_needed: whether we want to zoom into the state space
+        last_range: previously stored axis ranges to maintain axes if zoom not needed.
     """
     xaxis = dict(domain=[0.0, 0.98])
     yaxis = dict(domain=[0.30, 1.0])
 
+    # Base Layout
     fig.update_layout(
         xaxis_title="X (Km)",
         yaxis_title="Y (Km)",
@@ -794,9 +811,24 @@ def apply_layout(fig: go.Figure) -> None:
         uirevision="constant",
     )
 
+    # Behavior for zooming into state space / persisting user changes
+    if zoom_needed:
+        min_bounds, max_bounds = get_state_space_bounds(vs)
+        fig.update_layout(
+            xaxis=dict(range=[min_bounds.x, max_bounds.x], autorange=False),
+            yaxis=dict(range=[min_bounds.y, max_bounds.y], autorange=False),
+        )
+    elif last_range is not None:
+        fig.update_layout(
+            xaxis=dict(range=last_range["x"], autorange=False),
+            yaxis=dict(range=last_range["y"], autorange=False),
+        )
+
 
 def build_figure(
-    state: VisualizerState, last_goal_xy_km: Optional[Tuple[float, float]]
+    vs: VisualizerState,
+    last_goal_xy_km: Optional[Tuple[float, float]],
+    last_range: Optional[Dict[str, List[float]]],
 ) -> Tuple[go.Figure, Tuple[float, float]]:
     """
     Builds and renders the complete path planning visualization figure.
@@ -805,7 +837,7 @@ def build_figure(
     AIS ships, wind vectors, and state-space overlay.
 
     Args:
-        state: VisualizerState containing processed ROS message data (boat position, path,
+        vs: VisualizerState containing processed ROS message data (boat position, path,
                obstacles, AIS ships, wind vectors).
         last_goal_xy_km: Previous goal position (x, y) in km, or None on first render. Used to
                       detect goal changes and show a popup message.
@@ -821,11 +853,11 @@ def build_figure(
     """
     fig = initial_plot()
 
-    local_x_km = list(state.final_local_wp_x_km)
-    local_y_km = list(state.final_local_wp_y_km)
+    local_x_km = list(vs.final_local_wp_x_km)
+    local_y_km = list(vs.final_local_wp_y_km)
 
     # Boat and goal info
-    boat_xy_km = cs.XY(state.sailbot_pos_x_km[-1], state.sailbot_pos_y_km[-1])
+    boat_xy_km = cs.XY(vs.sailbot_pos_x_km[-1], vs.sailbot_pos_y_km[-1])
 
     if not local_x_km or not local_y_km:
         raise ValueError("No local waypoints available for plotting")
@@ -841,14 +873,14 @@ def build_figure(
     # adding all the Traces(intermediate, goal, boat and path) to the plot
     fig.add_trace(build_intermediate_trace(local_x_km, local_y_km))
     fig.add_trace(build_goal_trace(goal_xy_km, angle_deg))
-    fig.add_trace(build_boat_trace(state, boat_xy_km, dist_km))
+    fig.add_trace(build_boat_trace(vs, boat_xy_km, dist_km))
     path_trace = build_path_trace(local_x_km, local_y_km, boat_xy_km)
     if path_trace is not None:
         fig.add_trace(path_trace)
 
     # Adding Obstacle (both Land and Boat) and AIS ships to the plot
     land_traces = build_polygon_traces(
-        state.land_obstacles_xy,
+        vs.land_obstacles_xy,
         name="Land Obstacle",
         line={"color": "lightgreen"},
         fillcolor="lightgreen",
@@ -856,7 +888,7 @@ def build_figure(
         showlegend=True,
     )
     boat_traces = build_polygon_traces(
-        state.boat_obstacles_xy,
+        vs.boat_obstacles_xy,
         name="AIS Collision Zone",
         line={"width": 2},
         fillcolor="rgba(255,165,0,0.25)",
@@ -864,11 +896,11 @@ def build_figure(
         hoverinfo="skip",
         showlegend=False,
     )
-    ais_traces = build_ais_traces(state)
+    ais_traces = build_ais_traces(vs)
     fig.add_traces(land_traces + boat_traces + ais_traces)
 
     # Creating Wind box and its elements and adding them to the plot
-    wind_config = configure_wind_box_elements(state)
+    wind_config = configure_wind_box_elements(vs)
     fig.update_layout(**wind_config.layout_config)
     for arrow in wind_config.wind_arrows:
         fig.add_annotation(arrow)
@@ -877,10 +909,37 @@ def build_figure(
         fig.add_annotation(annotation)
 
     # Computing State space overlay and adding it to the plot
-    compute_and_add_state_space(boat_xy_km, goal_xy_km, fig)
-    apply_layout(fig)
+    zoom_needed = last_range is None
+    compute_and_add_state_space(vs, boat_xy_km, goal_xy_km, fig)
+    apply_layout(vs, fig, zoom_needed, last_range)
     add_goal_change_popup(fig, goal_change.message)  # Popup message for goal change
     return fig, goal_change.new_goal_xy_rounded
+
+
+def get_state_space_bounds(
+    vs: VisualizerState,
+) -> Tuple[cs.XY, cs.XY]:
+    """
+    Gets the state space bounds as min and max XY coordinates.
+
+    Args:
+        vs: VisualizerState containing the current state space.
+
+    Returns:
+        A tuple of (min_xy, max_xy) representing the state space bounds.
+        Falls back to DEFAULT_PLOT_RANGE if state space is not available.
+    """
+    if vs.state_space is None:
+        return (
+            cs.XY(DEFAULT_PLOT_RANGE[0], DEFAULT_PLOT_RANGE[0]),
+            cs.XY(DEFAULT_PLOT_RANGE[1], DEFAULT_PLOT_RANGE[1]),
+        )
+
+    x_min, y_min, x_max, y_max = vs.state_space.bounds
+    return (
+        cs.XY(x_min, y_min),
+        cs.XY(x_max, y_max),
+    )
 
 
 # -----------------------------
@@ -907,6 +966,7 @@ def dash_app(q: Queue):
             dcc.Graph(id="live-graph", style={"height": "90vh", "width": "100%"}),
             dcc.Interval(id="interval-component", interval=UPDATE_INTERVAL_MS, n_intervals=0),
             dcc.Store(id="goal-store", data=None),
+            dcc.Store(id="range-store", data=None),
             html.Button(
                 "Reset the view to state space",
                 id="reset-button",
@@ -928,53 +988,99 @@ def dash_app(q: Queue):
 @app.callback(
     Output("live-graph", "figure"),
     Output("goal-store", "data"),
+    Output("range-store", "data"),
     Input("interval-component", "n_intervals"),
+    Input("live-graph", "relayoutData"),
     Input("reset-button", "n_clicks"),
     State("live-graph", "figure"),
     State("goal-store", "data"),
+    State("range-store", "data"),
     prevent_initial_call=True,
 )
-def update_graph(_: int, __: int, current_figure, last_goal_xy_km: Optional[List[float]]):
+def update_graph(
+    _: int,
+    relayout_data,
+    __: int,
+    current_figure,
+    last_goal_xy_km: Optional[List[float]],
+    stored_range,
+):
     """
     Dash callback: handles both interval updates and reset button clicks.
     Uses callback_context to determine which input triggered the update.
 
     Args:
         _: Dash interval tick (unused).
+        relayout_data: Data relayed from Plotly when user pans, zooms in/out, autoscales
         __: Reset button n_clicks (unused).
         current_figure: Current figure state from live-graph.
         last_goal_xy_km: Previously stored goal as [x, y] or None on first run.
+        stored_range: Previously stored range as {"x": [xmin, xmax], "y": [ymin, ymax]}
+                      or None on first run
 
     Returns:
-        (fig, new_goal_as_list):
+        (fig, new_goal_as_list, last_range):
             - fig: The updated Plotly figure
             - new_goal_as_list: [x, y] for storage in dcc.Store (JSON serializable)
+            - last_range: [x-range, y-range] for storage in dcc.Store (JSON serializable)
+
     """
     global queue
-    ctx = dash.callback_context
-
-    triggered_id = ctx.triggered[0]["prop_id"].split(".")[0] if ctx.triggered else None
-
-    if triggered_id == "reset-button":
-        if current_figure is None:
-            return dash.no_update, dash.no_update
-
-        fig = go.Figure(current_figure)
-        fig.update_layout(
-            xaxis=dict(range=DEFAULT_PLOT_RANGE, autorange=False),
-            yaxis=dict(range=DEFAULT_PLOT_RANGE, autorange=False),
-            uirevision="reset",
-        )
-        return fig, last_goal_xy_km
 
     # Interval update (default behavior)
     if queue is None or queue.empty():
-        return dash.no_update, dash.no_update
+        return dash.no_update, dash.no_update, stored_range
 
-    state = queue.get()  # type: ignore
+    vs = queue.get()  # type: ignore
     last_goal_tuple = (
         cs.XY(last_goal_xy_km[0], last_goal_xy_km[1]) if last_goal_xy_km is not None else None
     )
 
-    fig, new_goal_xy = build_figure(state, last_goal_tuple)
-    return fig, [new_goal_xy[0], new_goal_xy[1]]
+    # Check which input triggered the callback
+    ctx = dash.callback_context
+    triggered_id = ctx.triggered[0]["prop_id"].split(".")[0] if ctx.triggered else None
+
+    if relayout_data and triggered_id == "live-graph":
+        # Only process relayout_data if it was the actual trigger
+        required_keys = [
+            "xaxis.range[0]",
+            "xaxis.range[1]",
+            "yaxis.range[0]",
+            "yaxis.range[1]",
+        ]
+        if all(key in relayout_data for key in required_keys):
+            last_range = {
+                "x": [
+                    relayout_data["xaxis.range[0]"],
+                    relayout_data["xaxis.range[1]"],
+                ],
+                "y": [
+                    relayout_data["yaxis.range[0]"],
+                    relayout_data["yaxis.range[1]"],
+                ],
+            }
+        else:
+            last_range = stored_range
+    else:
+        last_range = stored_range
+
+    fig, new_goal_xy = build_figure(vs, last_goal_tuple, last_range)
+
+    if triggered_id == "reset-button":
+        if current_figure is None:
+            return dash.no_update, dash.no_update, dash.no_update
+
+        min_bounds, max_bounds = get_state_space_bounds(vs)
+        x_range = [min_bounds.x, max_bounds.x]
+        y_range = [min_bounds.y, max_bounds.y]
+        last_range = {
+            "x": x_range,
+            "y": y_range,
+        }
+        fig.update_layout(
+            xaxis=dict(range=x_range, autorange=False),
+            yaxis=dict(range=y_range, autorange=False),
+            uirevision="reset",
+        )
+
+    return fig, [new_goal_xy[0], new_goal_xy[1]], last_range
