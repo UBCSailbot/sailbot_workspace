@@ -722,8 +722,6 @@ def compute_and_add_state_space(
     boat_xy_km: Tuple[float, float],
     goal_xy_km: Tuple[float, float],
     fig: go.Figure,
-    zoom_needed: bool,
-    last_range: Optional[Dict[str, List[float]]],
 ):
     """
     Build the visualization state-space overlay around the boat and goal. Then, add the built
@@ -737,8 +735,6 @@ def compute_and_add_state_space(
         boat_xy_km: (x, y) boat position in km.
         goal_xy_km: (x, y) goal position in km.
         fig: Target Plotly figure.
-        zoom_needed: whether we want to zoom into the state space
-        last_range: previously stored axis ranges to maintain axes if zoom not needed.
     """
     boat_pos = cs.XY(boat_xy_km[0], boat_xy_km[1])
     goal_pos = cs.XY(goal_xy_km[0], goal_xy_km[1])
@@ -761,17 +757,6 @@ def compute_and_add_state_space(
         line=dict(width=0),
         layer="below",
     )
-
-    if zoom_needed:
-        fig.update_layout(
-            xaxis=dict(range=[x_min, x_max], autorange=False),
-            yaxis=dict(range=[y_min, y_max], autorange=False),
-        )
-    elif last_range is not None:
-        fig.update_layout(
-            xaxis=dict(range=last_range["x"], autorange=False),
-            yaxis=dict(range=last_range["y"], autorange=False),
-        )
 
 
 def add_goal_change_popup(fig: go.Figure, message: Optional[str]) -> None:
@@ -797,16 +782,24 @@ def add_goal_change_popup(fig: go.Figure, message: Optional[str]) -> None:
     )
 
 
-def apply_layout(fig: go.Figure) -> None:
+def apply_layout(
+    vs: VisualizerState,
+    fig: go.Figure,
+    zoom_needed: bool,
+    last_range: Optional[Dict[str, List[float]]]
+) -> None:
     """
     Apply the main plot layout configuration (axis titles, domains, legend, and optional ranges).
 
     Args:
         fig: Target Plotly figure.
+        zoom_needed: whether we want to zoom into the state space
+        last_range: previously stored axis ranges to maintain axes if zoom not needed.
     """
     xaxis = dict(domain=[0.0, 0.98])
     yaxis = dict(domain=[0.30, 1.0])
 
+    # Base Layout
     fig.update_layout(
         xaxis_title="X (Km)",
         yaxis_title="Y (Km)",
@@ -817,6 +810,19 @@ def apply_layout(fig: go.Figure) -> None:
         showlegend=True,
         uirevision="constant",
     )
+
+    # Behavior for zooming into state space / persisting user changes
+    if zoom_needed:
+        min_bounds, max_bounds = get_state_space_bounds(vs)
+        fig.update_layout(
+            xaxis=dict(range=[min_bounds.x, max_bounds.x], autorange=False),
+            yaxis=dict(range=[min_bounds.y, max_bounds.y], autorange=False),
+        )
+    elif last_range is not None:
+        fig.update_layout(
+            xaxis=dict(range=last_range["x"], autorange=False),
+            yaxis=dict(range=last_range["y"], autorange=False),
+        )
 
 
 def build_figure(
@@ -903,9 +909,9 @@ def build_figure(
         fig.add_annotation(annotation)
 
     # Computing State space overlay and adding it to the plot
-    zoom_needed = last_goal_xy_km is None or last_range is None
-    compute_and_add_state_space(vs, boat_xy_km, goal_xy_km, fig, zoom_needed, last_range)
-    apply_layout(fig)
+    zoom_needed = last_range is None
+    compute_and_add_state_space(vs, boat_xy_km, goal_xy_km, fig)
+    apply_layout(vs, fig, zoom_needed, last_range)
     add_goal_change_popup(fig, goal_change.message)  # Popup message for goal change
     return fig, goal_change.new_goal_xy_rounded
 
