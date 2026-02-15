@@ -910,30 +910,30 @@ def build_figure(
     return fig, goal_change.new_goal_xy_rounded
 
 
-def get_state_space_axes(
+def get_state_space_bounds(
     vs: VisualizerState,
-) -> Dict[str, List[float]]:
+) -> Tuple[cs.XY, cs.XY]:
     """
-    Resets the view range to match the current state space bounds.
+    Gets the state space bounds as min and max XY coordinates.
 
     Args:
         vs: VisualizerState containing the current state space.
 
     Returns:
-        A dict with "x" and "y" keys containing the state space bounds as ranges.
+        A tuple of (min_xy, max_xy) representing the state space bounds.
         Falls back to DEFAULT_PLOT_RANGE if state space is not available.
     """
     if vs.state_space is None:
-        return {
-            "x": DEFAULT_PLOT_RANGE,
-            "y": DEFAULT_PLOT_RANGE,
-        }
+        return (
+            cs.XY(DEFAULT_PLOT_RANGE[0], DEFAULT_PLOT_RANGE[0]),
+            cs.XY(DEFAULT_PLOT_RANGE[1], DEFAULT_PLOT_RANGE[1]),
+        )
 
     x_min, y_min, x_max, y_max = vs.state_space.bounds
-    return {
-        "x": [x_min, x_max],
-        "y": [y_min, y_max],
-    }
+    return (
+        cs.XY(x_min, y_min),
+        cs.XY(x_max, y_max),
+    )
 
 
 # -----------------------------
@@ -1064,9 +1064,9 @@ def update_graph(
         if current_figure is None:
             return dash.no_update, dash.no_update, dash.no_update
 
-        axes = get_state_space_axes(vs)
-        x_range = axes["x"]
-        y_range = axes["y"]
+        min_bounds, max_bounds = get_state_space_bounds(vs)
+        x_range = [min_bounds.x, max_bounds.x]
+        y_range = [min_bounds.y, max_bounds.y]
         last_range = {
             "x": x_range,
             "y": y_range,
