@@ -419,21 +419,21 @@ def build_path_trace(
 
 
 def build_boat_trace(
-    state: VisualizerState, boat_xy_km: Tuple[float, float], dist_to_goal_km: float
+    vs: VisualizerState, boat_xy_km: Tuple[float, float], dist_to_goal_km: float
 ) -> go.Scatter:
     """
     Create the boat marker trace (filled arrow-head/ triangle) at the current boat position.
 
     Args:
-        state: VisualizerState containing GPS heading/speed history.
+        vs: VisualizerState containing GPS heading/speed history.
         boat_xy_km: (x, y) current boat position in km.
         dist_to_goal_km: Current straight-line distance to the goal in km (for hover text).
 
     Returns:
         A Plotly Scatter trace representing the boat marker with heading-based rotation.
     """
-    heading = state.sailbot_gps[-1].heading.heading
-    speed = state.sailbot_gps[-1].speed.speed
+    heading = vs.sailbot_gps[-1].heading.heading
+    speed = vs.sailbot_gps[-1].speed.speed
     return go.Scatter(
         x=[boat_xy_km[0]],
         y=[boat_xy_km[1]],
@@ -512,18 +512,18 @@ def build_polygon_traces(
     return traces
 
 
-def build_ais_traces(state: VisualizerState) -> List[go.Scatter]:
+def build_ais_traces(vs: VisualizerState) -> List[go.Scatter]:
     """
     Build AIS ship markers (filled arrow-heads/ triangles) for the plot.
 
     Args:
-        state: VisualizerState containing AIS ship data by ID.
+        vs: VisualizerState containing AIS ship data by ID.
 
     Returns:
         List of Plotly Scatter traces for AIS ships.
     """
     traces = []
-    for ais_id, ship_data in state.ais_ships_by_id.items():
+    for ais_id, ship_data in vs.ais_ships_by_id.items():
         x_val = ship_data.pos_x_km
         y_val = ship_data.pos_y_km
         heading = ship_data.heading_deg
@@ -557,7 +557,7 @@ def build_ais_traces(state: VisualizerState) -> List[go.Scatter]:
     return traces
 
 
-def configure_wind_box_elements(state: VisualizerState) -> WindBoxConfig:
+def configure_wind_box_elements(vs: VisualizerState) -> WindBoxConfig:
     """
     Build the "wind box" inset configuration with scaled wind and boat velocity vectors.
 
@@ -568,7 +568,7 @@ def configure_wind_box_elements(state: VisualizerState) -> WindBoxConfig:
     - Text annotations for wind vector labels and speed values.
 
     Args:
-        state: VisualizerState containing wind vectors in global XY frame.
+        vs: VisualizerState containing wind vectors in global XY frame.
 
     Returns:
         WindBoxConfig containing:
@@ -600,13 +600,13 @@ def configure_wind_box_elements(state: VisualizerState) -> WindBoxConfig:
     }
 
     # Re-Calculating vectors for better scaling in the wind box inset.
-    aw_unit = get_unit_vector(state.aw_vector_kmph)
-    tw_unit = get_unit_vector(state.tw_vector_kmph)
-    bw_unit = get_unit_vector(state.bw_vector_kmph)
+    aw_unit = get_unit_vector(vs.aw_vector_kmph)
+    tw_unit = get_unit_vector(vs.tw_vector_kmph)
+    bw_unit = get_unit_vector(vs.bw_vector_kmph)
 
-    aw_mag = math.hypot(state.aw_vector_kmph.x, state.aw_vector_kmph.y)
-    tw_mag = math.hypot(state.tw_vector_kmph.x, state.tw_vector_kmph.y)
-    bw_mag = math.hypot(state.bw_vector_kmph.x, state.bw_vector_kmph.y)
+    aw_mag = math.hypot(vs.aw_vector_kmph.x, vs.aw_vector_kmph.y)
+    tw_mag = math.hypot(vs.tw_vector_kmph.x, vs.tw_vector_kmph.y)
+    bw_mag = math.hypot(vs.bw_vector_kmph.x, vs.bw_vector_kmph.y)
 
     aw_dx, aw_dy = aw_unit.x * WIND_ARROW_LEN, aw_unit.y * WIND_ARROW_LEN
     tw_dx, tw_dy = tw_unit.x * WIND_ARROW_LEN, tw_unit.y * WIND_ARROW_LEN
@@ -820,7 +820,7 @@ def apply_layout(fig: go.Figure) -> None:
 
 
 def build_figure(
-    state: VisualizerState,
+    vs: VisualizerState,
     last_goal_xy_km: Optional[Tuple[float, float]],
     last_range: Optional[Dict[str, List[float]]],
 ) -> Tuple[go.Figure, Tuple[float, float]]:
@@ -831,7 +831,7 @@ def build_figure(
     AIS ships, wind vectors, and state-space overlay.
 
     Args:
-        state: VisualizerState containing processed ROS message data (boat position, path,
+        vs: VisualizerState containing processed ROS message data (boat position, path,
                obstacles, AIS ships, wind vectors).
         last_goal_xy_km: Previous goal position (x, y) in km, or None on first render. Used to
                       detect goal changes and show a popup message.
@@ -847,11 +847,11 @@ def build_figure(
     """
     fig = initial_plot()
 
-    local_x_km = list(state.final_local_wp_x_km)
-    local_y_km = list(state.final_local_wp_y_km)
+    local_x_km = list(vs.final_local_wp_x_km)
+    local_y_km = list(vs.final_local_wp_y_km)
 
     # Boat and goal info
-    boat_xy_km = cs.XY(state.sailbot_pos_x_km[-1], state.sailbot_pos_y_km[-1])
+    boat_xy_km = cs.XY(vs.sailbot_pos_x_km[-1], vs.sailbot_pos_y_km[-1])
 
     if not local_x_km or not local_y_km:
         raise ValueError("No local waypoints available for plotting")
@@ -867,14 +867,14 @@ def build_figure(
     # adding all the Traces(intermediate, goal, boat and path) to the plot
     fig.add_trace(build_intermediate_trace(local_x_km, local_y_km))
     fig.add_trace(build_goal_trace(goal_xy_km, angle_deg))
-    fig.add_trace(build_boat_trace(state, boat_xy_km, dist_km))
+    fig.add_trace(build_boat_trace(vs, boat_xy_km, dist_km))
     path_trace = build_path_trace(local_x_km, local_y_km, boat_xy_km)
     if path_trace is not None:
         fig.add_trace(path_trace)
 
     # Adding Obstacle (both Land and Boat) and AIS ships to the plot
     land_traces = build_polygon_traces(
-        state.land_obstacles_xy,
+        vs.land_obstacles_xy,
         name="Land Obstacle",
         line={"color": "lightgreen"},
         fillcolor="lightgreen",
@@ -882,7 +882,7 @@ def build_figure(
         showlegend=True,
     )
     boat_traces = build_polygon_traces(
-        state.boat_obstacles_xy,
+        vs.boat_obstacles_xy,
         name="AIS Collision Zone",
         line={"width": 2},
         fillcolor="rgba(255,165,0,0.25)",
@@ -890,11 +890,11 @@ def build_figure(
         hoverinfo="skip",
         showlegend=False,
     )
-    ais_traces = build_ais_traces(state)
+    ais_traces = build_ais_traces(vs)
     fig.add_traces(land_traces + boat_traces + ais_traces)
 
     # Creating Wind box and its elements and adding them to the plot
-    wind_config = configure_wind_box_elements(state)
+    wind_config = configure_wind_box_elements(vs)
     fig.update_layout(**wind_config.layout_config)
     for arrow in wind_config.wind_arrows:
         fig.add_annotation(arrow)
@@ -904,7 +904,7 @@ def build_figure(
 
     # Computing State space overlay and adding it to the plot
     zoom_needed = last_goal_xy_km is None or last_range is None
-    compute_and_add_state_space(state, boat_xy_km, goal_xy_km, fig, zoom_needed, last_range)
+    compute_and_add_state_space(vs, boat_xy_km, goal_xy_km, fig, zoom_needed, last_range)
     apply_layout(fig)
     add_goal_change_popup(fig, goal_change.message)  # Popup message for goal change
     return fig, goal_change.new_goal_xy_rounded
