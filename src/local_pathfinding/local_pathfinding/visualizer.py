@@ -944,8 +944,9 @@ def apply_wind_params():
     subprocess.run(
         ["bash", str(WIND_PARAMS_SH)],
         check=True,
-      
-      
+    )
+
+
 def get_state_space_bounds(
     vs: VisualizerState,
 ) -> Tuple[cs.XY, cs.XY]:
@@ -1143,7 +1144,7 @@ def update_graph(
             yaxis=dict(range=y_range, autorange=False),
             uirevision="reset",
         )
-        
+
     return fig, [new_goal_xy[0], new_goal_xy[1]], last_range
 
 
