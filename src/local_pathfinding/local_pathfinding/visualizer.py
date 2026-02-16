@@ -17,7 +17,10 @@ import math
 from collections import deque
 from dataclasses import dataclass
 from multiprocessing import Queue
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any
+import subprocess
+import yaml
+from pathlib import Path
 
 import custom_interfaces.msg as ci
 import dash
@@ -43,6 +46,11 @@ WIND_BOX_ORIGIN_XY = cs.XY(6.0, 0.0)
 WIND_BOX_Y_OFFSET = 0.5
 
 GOAL_CHANGE_ROUND_DECIMALS = 3  # avoid float jitter spam
+
+BASE_DIR = Path(__file__).resolve().parent
+MOCK_NODES_DIR = BASE_DIR / "mock_nodes"
+WIND_PARAMS_YAML = MOCK_NODES_DIR / "wind_params.yaml"
+WIND_PARAMS_SH = MOCK_NODES_DIR / "wind_params.sh"
 
 app = dash.Dash(__name__)
 queue: Optional[Queue] = None  # type: ignore
@@ -916,6 +924,29 @@ def build_figure(
     return fig, goal_change.new_goal_xy_rounded
 
 
+def write_wind_params(tw_dir_deg: float, tw_speed_kmph: float) -> None:
+    with open(WIND_PARAMS_YAML, "r") as f:
+        data = yaml.safe_load(f)
+
+    data["/mock_wind_sensor"]["ros__parameters"]["tw_dir_deg"] = tw_dir_deg
+    data["/mock_wind_sensor"]["ros__parameters"]["tw_speed_kmph"] = float(tw_speed_kmph)
+
+    data["/mock_gps"]["ros__parameters"]["tw_dir_deg"] = tw_dir_deg
+    data["/mock_gps"]["ros__parameters"]["tw_speed_kmph"] = float(tw_speed_kmph)
+
+    with open(WIND_PARAMS_YAML, "w") as f:
+        yaml.safe_dump(data, f, sort_keys=False)
+
+    apply_wind_params()
+
+
+def apply_wind_params():
+    subprocess.run(
+        ["bash", str(WIND_PARAMS_SH)],
+        check=True,
+    )
+
+
 def get_state_space_bounds(
     vs: VisualizerState,
 ) -> Tuple[cs.XY, cs.XY]:
@@ -964,6 +995,37 @@ def dash_app(q: Queue):
                 style={"fontFamily": "Consolas, monospace", "color": "rgb(18, 70, 139)"},
             ),
             dcc.Graph(id="live-graph", style={"height": "90vh", "width": "100%"}),
+            html.Div(
+                id="control-panel",
+                style={
+                    "position": "absolute",
+                    "bottom": "120px",  # Distance from the very bottom of the screen
+                    "left": "50px",   # Aligns with the Y-axis
+                    "display": "flex",
+                    "gap": "15px",
+                    "alignItems": "center",
+                    "padding": "10px 20px",
+                    "backgroundColor": "rgba(255, 255, 255, 0.8)",  # Semi-transparent white
+                    "borderRadius": "8px",
+                    "border": "1px solid #ccc",
+                    "zIndex": "1000"
+                },
+                children=[
+                    html.Label("Wind Direction (°):", style={"fontWeight": "bold"}),
+                    dcc.Input(id="tw-dir-input", type="number",
+                              value=0, style={"width": "80px"}),
+                    html.Label("Wind Speed (km/h):", style={"fontWeight": "bold"}),
+                    dcc.Input(id="tw-speed-input", type="number",
+                              value=0, style={"width": "80px"}),
+                    html.Button(
+                        "Apply Wind",
+                        id="apply-wind-btn",
+                        style={"backgroundColor": "rgb(18, 70, 139)",
+                               "color": "white", "cursor": "pointer"}
+                    ),
+                    html.Div(id="wind-status"),
+                ],
+            ),
             dcc.Interval(id="interval-component", interval=UPDATE_INTERVAL_MS, n_intervals=0),
             dcc.Store(id="goal-store", data=None),
             dcc.Store(id="range-store", data=None),
@@ -1084,3 +1146,49 @@ def update_graph(
         )
 
     return fig, [new_goal_xy[0], new_goal_xy[1]], last_range
+
+
+@app.callback(
+    Output("wind-status", "children"),
+    Input("apply-wind-btn", "n_clicks"),
+    State("tw-dir-input", "value"),
+    State("tw-speed-input", "value"),
+    prevent_initial_call=True,
+)
+def update_wind(_, tw_dir_deg, tw_speed_kmph):
+    try:
+        if tw_dir_deg is None or tw_speed_kmph is None:
+            return "Invalid input"
+
+        if not (-180 < tw_dir_deg <= 180):
+            return "Direction must be (-180, 180]°"
+
+        if tw_speed_kmph < 0:
+            return "Speed must be ≥ 0"
+
+        write_wind_params(tw_dir_deg, tw_speed_kmph)
+
+        return f"Applied wind: {tw_dir_deg}°, {tw_speed_kmph} km/h"
+
+    except Exception as e:
+        return f"Error: {e}"
+
+
+app.clientside_callback(
+    """
+    function(status_text) {
+        if (!status_text) return "";
+
+        // Wait 5000ms (5 seconds) then find the div and wipe it
+        setTimeout(function(){
+            const statusDiv = document.getElementById('wind-status');
+            if (statusDiv) statusDiv.innerText = "";
+        }, 5000);
+
+        return status_text;
+    }
+    """,
+    Output("wind-status", "children", allow_duplicate=True),
+    Input("wind-status", "children"),
+    prevent_initial_call=True
+)
