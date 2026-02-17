@@ -9,11 +9,13 @@ from shapely.geometry import LineString, MultiPolygon
 import local_pathfinding.coord_systems as cs
 import custom_interfaces.msg as ci
 import local_pathfinding.obstacles as ob
+from datetime import timedelta, datetime
 from local_pathfinding.ompl_path import OMPLPath
 
 LOCAL_WAYPOINT_REACHED_THRESH_KM = 0.5
 HEADING_WEIGHT = 0.6
 COST_WEIGHT = 0.4
+PATH_TTL_SEC = 600
 
 
 class LocalPathState:
@@ -72,6 +74,10 @@ class LocalPathState:
 
         # obstacles are initialized by OMPLPath right before solving
         self.obstacles: List[ob.Obstacle] = []
+
+        # To check if the local path has reached timeout
+        self.generated_time = datetime.now()
+        self.timeout = timedelta(seconds=PATH_TTL_SEC)
 
 
 class LocalPath:
