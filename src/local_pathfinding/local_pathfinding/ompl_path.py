@@ -207,7 +207,7 @@ class OMPLPath:
         """
         Calculate the cost of the remaining path from the boat's current position.
 
-        This mirrors OMPL's ``PathGeometric::cost()`` formula which computes::
+        This mirrors OMPL's ``PathGeometric::cost()`` formula which computes:
 
             initialCost(first) + summation motionCost(s_i, s_{i+1}) + terminalCost(last)
 
