@@ -48,7 +48,7 @@ struct MOMsgParams
         uint64_t    imei_;           // Rockblock IMEI
         uint32_t    serial_;         // Rockblock serial #. Don't know the max size
         uint16_t    momsn_;          // # msgs sent from the Rockblock [0, 65535]
-        std::string transmit_time_;  // UTC date and time. Ex: "21-10-31 10:41:50"
+        int64_t transmit_time_;      // Epoch Time in ms
         float       lat_;            // transmitted from this latitude
         float       lon_;            // transmitted from this longitude
         uint32_t    cep_;            // estimate of the accuracy (in km) of the reported lat_ lon_ fields
