@@ -266,8 +266,6 @@ class LocalPath:
             old_ompl_path.get_path(), prev_lp_wp_index, gps.lat_lon
         )
 
-        # Check if the current path goes through a collision zone
-        # Use the old path's reference for collision checking
         if self.in_collision_zone(
             prev_lp_wp_index, self.state.reference_latlon, self.path, self.state.obstacles
         ):
@@ -316,7 +314,6 @@ class LocalPath:
             return heading_new_path, wp_index
         else:
             self._logger.debug("old path is cheaper, continuing on the same path")
-            # Keep the old state with old reference (already updated with update_state)
             return heading_old_path, updated_wp_index
 
     def _update(self, ompl_path: OMPLPath):
