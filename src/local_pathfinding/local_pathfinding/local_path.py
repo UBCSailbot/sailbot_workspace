@@ -46,20 +46,7 @@ class LocalPathState:
         filtered_wind_sensor: ci.WindSensor,
         planner: str,
     ):
-        if not gps:
-            raise ValueError("gps must not be None")
-        self.position = gps.lat_lon
-        self.speed = gps.speed.speed
-        self.heading = gps.heading.heading
-
-        if not ais_ships:
-            raise ValueError("ais_ships must not be None")
-        self.ais_ships = [ship for ship in ais_ships.ships]
-
-        if not filtered_wind_sensor:
-            raise ValueError("filtered_wind_sensor must not be None")
-        self.wind_speed = filtered_wind_sensor.speed.speed
-        self.wind_direction = filtered_wind_sensor.direction
+        self.update_state(gps, ais_ships, filtered_wind_sensor)
 
         if not (global_path and global_path.waypoints):
             raise ValueError("Cannot create a LocalPathState with an empty global_path")
