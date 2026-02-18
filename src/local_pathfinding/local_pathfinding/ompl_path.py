@@ -207,32 +207,32 @@ class OMPLPath:
         """
         Calculate the cost of the remaining path from the boat's current position.
 
-        This mirrors OMPL's ``PathGeometric::cost()`` formula which computes::
+        This mirrors OMPL's PathGeometric::cost() formula which computes:
 
             initialCost(first) + summation motionCost(s_i, s_{i+1}) + terminalCost(last)
 
-        accumulated via ``combineCosts``.
+        accumulated via combineCosts.
 
-        In this codebase, ``last_lp_wp_index`` is the index of the **last local-path waypoint
+        In this codebase, last_lp_wp_index is the index of the **last local-path waypoint
         the boat has just traversed** (i.e., the "current" waypoint). The remaining cost is:
 
-        - the *partial* motion cost on the segment from waypoint ``last_lp_wp_index`` to
-          ``last_lp_wp_index + 1`` (based on how far the boat is from the next waypoint), plus
+        - the *partial* motion cost on the segment from waypoint last_lp_wp_index to
+          last_lp_wp_index + 1 (based on how far the boat is from the next waypoint), plus
         - the *full* motion costs of all subsequent segments to the goal, plus
         - the terminal cost at the final state.
 
         Args:
             last_lp_wp_index (int): Index of the last local-path waypoint the boat has just
                 traversed (the current waypoint). The next waypoint to head toward is
-                ``last_lp_wp_index + 1``.
+                last_lp_wp_index + 1.
             boat_lat_lon (ci.HelperLatLon): The boat's current latitude/longitude.
 
         Returns:
-            float: The remaining cost of the path. Returns ``float('inf')`` if the solution path
+            float: The remaining cost of the path. Returns float('inf') if the solution path
             does not exist.
 
         Raises:
-            ValueError: If ``last_lp_wp_index`` is out of bounds for the solution path.
+            ValueError: If last_lp_wp_index is out of bounds for the solution path.
         """
         try:
             solution_path = self._simple_setup.getSolutionPath()
@@ -290,7 +290,6 @@ class OMPLPath:
 
             fraction_travelled = projected_dist / total_seg_dist
         else:
-            # segment is degenerate or boat is at start
             fraction_travelled = 0.0
 
         fraction_remaining = 1.0 - fraction_travelled
