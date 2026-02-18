@@ -96,7 +96,7 @@ class LocalPath:
     Attributes:
         _logger (RcutilsLogger): ROS logger.
         _ompl_path (Optional[OMPLPath]): Raw representation of the path from OMPL.
-        _last_lp_wp_index: Local waypoint index (i.e. pointer to the next local waypoint that the
+        _last_wp_index: Index of the next local waypoint that the boat is moving towards
         boat is following)
         path (Path): Collection of coordinates that form the local path to the next
                           global waypoint.
