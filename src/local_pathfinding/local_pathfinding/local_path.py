@@ -220,13 +220,11 @@ class LocalPath:
         self._prev_lp_wp_index = prev_lp_wp_index
         old_ompl_path = self._ompl_path
 
-        # If we need to generate a new path or don't have an existing state
         if (
             (received_new_global_waypoint or old_ompl_path is None)
             or (self.path is None)
             or (self.state is None)
         ):
-            # Create a new state with the new target_global_waypoint
             new_state = LocalPathState(
                 gps, ais_ships, global_path, target_global_waypoint, filtered_wind_sensor, planner
             )
@@ -241,14 +239,17 @@ class LocalPath:
             if received_new_global_waypoint:
                 self._logger.debug("Updating local path because we have a new global waypoint")
             else:
-                self._logger.debug("old path is none")
+                self._logger.debug("old path is None")
             self.state = new_state
             self._update(new_ompl_path)
             return heading_new_path, wp_index
         else:
             self.state.update_state(gps, ais_ships, filtered_wind_sensor)
 
-        # Create a new state for evaluating the new path candidate
+        # create a new state with most up-to-date environment information. This is done to compare
+        # a new OMPL path based on this state with the OMPL path that we have been using. Since the
+        # paths are based on environment snapshots of when the path was created, this is important
+        # to ensure that we are not on a bad path.
         new_state = LocalPathState(
             gps, ais_ships, global_path, target_global_waypoint, filtered_wind_sensor, planner
         )
