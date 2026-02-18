@@ -275,7 +275,19 @@ class OMPLPath:
             projected_dist = (dx_seg * dx_boat + dy_seg * dy_boat) / total_seg_dist
 
             # clamp to [0, total_seg_dist]
-            projected_dist = max(0.0, min(projected_dist, total_seg_dist))
+            if projected_dist > total_seg_dist:
+                self._logger.warning("Projection of the boat position wrt" +
+                                     "the segment is longer than the segment itself," +
+                                     "the boat should've switched local waypoint by this point")
+                # assuming pessimistic case
+                projected_dist = total_seg_dist
+            elif projected_dist < 0.0:
+                # This seems like it should never happen. However, our logic updates
+                # prev_lp_wp_index whenever Polaris is near the local waypoint. This update can
+                # take place before the boat has passed the said waypoint.
+                self._logger.info("Boat is behind the prev_lp_wp_index")
+                projected_dist = 0.0
+
             fraction_travelled = projected_dist / total_seg_dist
         else:
             # segment is degenerate or boat is at start
