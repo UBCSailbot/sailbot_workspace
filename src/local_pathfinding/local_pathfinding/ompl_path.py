@@ -278,7 +278,6 @@ class OMPLPath:
             projected_dist = max(0.0, min(projected_dist, total_seg_dist))
             fraction_travelled = projected_dist / total_seg_dist
         else:
-            # segment is degenerate or boat is at start
             fraction_travelled = 0.0
 
         fraction_remaining = 1.0 - fraction_travelled
