@@ -86,11 +86,11 @@ def setup_launch(context: LaunchContext) -> List[Action]:
     target_dir = "/workspaces/sailbot_workspace/notebooks/local_pathfinding/session_recordings"
     os.makedirs(target_dir, exist_ok=True)
 
-    # Creates the file name
+    # Creates the file name with date & time
     timestamp = datetime.datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
     bag_path = os.path.join(target_dir, f"datarecording_{timestamp}")
 
-    # Begins data collection
+    # Begins data collection of gps, local_path, wind_sensors, and ais_ship ROS topics
     data_collection = ExecuteProcess(
         cmd=[
             "ros2",
