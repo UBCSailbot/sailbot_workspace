@@ -16,7 +16,6 @@ sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends p
 python3.10 -m venv ~/ros/notebook_env --system-site-packages
 source ~/ros/notebook_env/bin/activate
 pip3 install --upgrade matplotlib pandas numpy==1.25 numexpr==2.8.4 bottleneck==1.3.6
-=======
 
 pip3 install --upgrade \
  matplotlib==3.10.8 \
