@@ -2,9 +2,12 @@
 
 """The ROS node for the wingsail controller."""
 
+# added DesiredHeading
+
+
 import rclpy
 import rclpy.utilities
-from custom_interfaces.msg import GPS, SailCmd, WindSensor
+from custom_interfaces.msg import GPS, DesiredHeading, SailCmd, WindSensor
 from rclpy.node import Node
 
 from controller.common.constants import (
@@ -33,6 +36,7 @@ class WingsailControllerNode(Node):
     Subscriptions:
         __filtered_wind_sensors_sub (Subscription): Subscribes to the filtered_wind_sensor topic
         __gps_sub (Subscription): Subscribes to the gps topic
+        __desired_heading_sub (Subscription) : Subscribes to the desired heading
 
     Publishers:
         __trim_tab_angle_pub (Publisher): Publishes a SailCmd message with the trim tab angle from
@@ -58,6 +62,8 @@ class WingsailControllerNode(Node):
         self.__trim_tab_angle = 0.0
         self.__filtered_wind_sensor = WindSensor()
         self.__gps = GPS()
+        self.__desired_heading = DesiredHeading()
+        self.__sail = True
         # pull hardcoded table from the right place later...
         # right location should be config.py
         lut = LUT(REYNOLDS_NUMBER_ALPHA_TABLE)
@@ -108,6 +114,16 @@ class WingsailControllerNode(Node):
             msg_type=GPS,
             topic="gps",
             callback=self.__gps_sub_callback,
+            qos_profile=1,
+        )
+
+        # I made this addition
+        # subscribing to desired_heading topic
+
+        self.__desired_heading_sub = self.create_subscription(
+            msg_type=DesiredHeading,
+            topic="desired_heading",
+            callback=self.__desired_heading_sub_callback,
             qos_profile=1,
         )
 
@@ -164,7 +180,11 @@ class WingsailControllerNode(Node):
         elif apparent_speed >= apparent_upper_threshold:
             scaling_coef = 0
 
-        self.__trim_tab_angle = scaling_coef * self.__trim_tab_angle
+        # Added here
+        if self.__sail:
+            self.__trim_tab_angle = scaling_coef * self.__trim_tab_angle
+        else:
+            self.__trim_tab_angle = 0.0
 
         msg.trim_tab_angle_degrees = self.__trim_tab_angle
 
@@ -178,6 +198,10 @@ class WingsailControllerNode(Node):
     @property
     def pub_period(self) -> float:
         return self.get_parameter("pub_period_sec").get_parameter_value().double_value
+
+    @property
+    def mock_desired_heading(self):
+        return self.get_parameter("mock_desired_heading").get_parameter_value().bool_value
 
     @property
     def trim_tab_angle(self) -> float:
@@ -200,6 +224,16 @@ class WingsailControllerNode(Node):
         """
         self.__gps = msg
         self.get_logger().info(f"Received data from {self.__gps_sub.topic}")
+
+    def __desired_heading_sub_callback(self, msg: DesiredHeading) -> None:
+        """Stores the latest desired heading data
+
+        Args:
+            msg (DesiredHeading): desired heading data from CanTrxRosIntf.
+        """
+        self.__desired_heading = msg
+        self.__sail = msg.sail
+        self.get_logger().info(f"Received data from {self.__desired_heading_sub.topic}")
 
 
 if __name__ == "__main__":
