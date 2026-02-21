@@ -15,7 +15,8 @@ ZERO_SPEED_COST = 1.0
 ACCEPTABLE_COST_THRESHOLD = 0.0
 WIND_OBJECTIVE_WEIGHT = 1.0
 TIME_OBJECTIVE_WEIGHT = 1.0
-
+NO_GO_ZONE = math.pi / 4
+WIND_COST_SIN_EXPONENT = 80
 
 #               Estimated Boat Speeds (kmph) as function of True Wind Speed (kmph)
 #                               and the Sailing Angle (deg)
@@ -107,15 +108,10 @@ class WindObjective(ob.OptimizationObjective):
         """
         segment_true_bearing_rad = cs.get_path_segment_true_bearing(s1, s2, rad=True)
         tw_angle_rad = abs(wcs.get_true_wind_angle(segment_true_bearing_rad, tw_direction_rad))
-        cos_angle = math.cos(tw_angle_rad)
-
-        # The target point of sail (POS) is a beam reach for max speed and stability
-        # A beam reach is when the true wind direction is perpendicular to the heading of the boat
-        # That is why we assign the min cost of 0 to any segment that corresponds to a beam reach
-        if cos_angle > 0:
-            return UPWIND_COST_MULTIPLIER * cos_angle
-        else:
-            return DOWNWIND_COST_MULTIPLIER * abs(cos_angle)
+        if tw_angle_rad > NO_GO_ZONE or tw_angle_rad < math.pi - NO_GO_ZONE:
+            cost = math.sin(2*tw_angle_rad) ** WIND_COST_SIN_EXPONENT
+            return cost
+        return 1.0
 
 
 class TimeObjective(ob.OptimizationObjective):
