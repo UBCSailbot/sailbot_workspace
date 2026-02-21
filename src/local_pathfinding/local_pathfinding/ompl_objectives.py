@@ -12,11 +12,12 @@ import local_pathfinding.wind_coord_systems as wcs
 UPWIND_COST_MULTIPLIER = 1.0
 DOWNWIND_COST_MULTIPLIER = 1.0
 ZERO_SPEED_COST = 1.0
-ACCEPTABLE_COST_THRESHOLD = 0.0
-WIND_OBJECTIVE_WEIGHT = 1.0
-TIME_OBJECTIVE_WEIGHT = 1.0
+ACCEPTABLE_COST_THRESHOLD = 0.85
+WIND_OBJECTIVE_WEIGHT = 0.85
+TIME_OBJECTIVE_WEIGHT = 0.15
 NO_GO_ZONE = math.pi / 4
 WIND_COST_SIN_EXPONENT = 80
+
 
 #               Estimated Boat Speeds (kmph) as function of True Wind Speed (kmph)
 #                               and the Sailing Angle (deg)
