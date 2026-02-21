@@ -81,6 +81,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         iproute2 \
         can-utils \
         vim \
+        make \
     && apt-get autoremove -y \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/* \
