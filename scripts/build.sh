@@ -12,6 +12,9 @@ function helpMessage() {
     echo -e "\t-h: Display this message."
 }
 
+# Change to workspace root directory to ensure consistent build location
+cd "$(dirname "$0")/.." || exit 1
+
 # Package to build if selecting an individual package
 # If still empty after argument parsing, all ROS packages are built
 PACKAGE=""

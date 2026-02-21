@@ -83,13 +83,10 @@ class MockWindSensor(Node):
             self._tw_speed_kmph,
             self._boat_heading_deg,
             self._boat_speed_kmph,
-            ret_rad=False
+            ret_rad=False,
         )
 
-        aw_dir_boat_coord_deg = wcs.global_to_boat_coordinate(
-            self._boat_heading_deg,
-            aw_dir_deg
-        )
+        aw_dir_boat_coord_deg = wcs.global_to_boat_coordinate(self._boat_heading_deg, aw_dir_deg)
         msg = ci.WindSensor(
             speed=ci.HelperSpeed(speed=aw_speed_kmph),
             direction=int(aw_dir_boat_coord_deg),
@@ -101,19 +98,20 @@ class MockWindSensor(Node):
         """ROS2 parameter update callback.
 
         Applies updates to true wind speed/direction. Values take effect on the next publish tick.
+
+        Rejects if tw_dir_deg is not in (-180, 180].
         """
-        try:
-            for p in params:
-                if p.name == "tw_dir_deg":
-                    new_direction_deg = int(p.value)
-                    sc.validate_tw_dir_deg(new_direction_deg)
-                    self._tw_dir_deg = new_direction_deg
-                else:
-                    self._tw_speed_kmph = p.value
-            return SetParametersResult(successful=True)
-        except Exception:
-            reason = "Please enter the direction in (-180, 180]."
-            return SetParametersResult(successful=False, reason=reason)
+        for p in params:
+            if p.name == "tw_dir_deg":
+                tw_dir_deg = int(p.value)
+                if tw_dir_deg <= -180 or tw_dir_deg > 180:
+                    return SetParametersResult(
+                        successful=False, reason="tw_dir_deg must be in (-180, 180]"
+                    )
+                self._tw_dir_deg = tw_dir_deg
+            else:
+                self._tw_speed_kmph = p.value
+        return SetParametersResult(successful=True)
 
     def gps_callback(self, msg: ci.GPS) -> None:
         """Callback function for the GPS subscription. Updates the boat's position.
