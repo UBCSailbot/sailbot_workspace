@@ -176,10 +176,10 @@ class LocalPath:
 
         Args:
             avg_tw_speed_kmph (float): Average true wind speed in km/h.
-            avg_tw_dir_deg (float): Average true wind direction in degrees (bounded -180 to 180).
+            avg_tw_dir_deg (float): Average true wind direction in degrees bounded to (-180 to 180]
             tw_speed_kmph (float): Wind speed when the current path was generated in km/h.
             tw_dir_deg (float): Wind direction when the current path was generated in degrees
-                (bounded -180 to 180).
+                bounded to (-180 to 180]
 
         Returns:
             boolean: True if there is a significant change in the wind, False otherwise.

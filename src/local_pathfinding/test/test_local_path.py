@@ -260,7 +260,7 @@ def test_in_collision_zone(local_wp_index, reference_latlon, path, obstacles, re
             10,
             180,
             10,
-            -180,
+            -179.999,
             False
         ),
         (
