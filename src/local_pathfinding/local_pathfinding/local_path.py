@@ -157,6 +157,40 @@ class LocalPath:
                     return True
         return False
 
+    @staticmethod
+    def significant_wind_change(
+        avg_tw_speed_kmph: float,
+        avg_tw_dir_deg: float,
+        tw_speed_kmph: float,
+        tw_dir_deg: float
+    ):
+        """Returns true if there is a significant change in the wind warranting a change in path
+
+        Evaluates a short history of wind speed compared to the wind condition used when previous
+        path was made. Assume that the current wind speed is above MINIMUM_WIND_SPEED.
+
+        The criteria to determine if the wind change is significant include:
+        - A change in average wind speed over X seconds exceeding 30% of the previous speed used
+          to calculate previous path
+        - A change in wind direction exceeding 10 degrees
+
+        Args:
+            avg_tw_speed_kmph (float): Average true wind speed in km/h.
+            avg_tw_dir_deg (float): Average true wind direction in degrees (bounded -180 to 180).
+            tw_speed_kmph (float): Wind speed when the current path was generated in km/h.
+            tw_dir_deg (float): Wind direction when the current path was generated in degrees
+                (bounded -180 to 180).
+
+        Returns:
+            boolean: True if there is a significant change in the wind, False otherwise.
+        """
+
+        # Check for significant changes
+        speed_change_percent = abs(tw_speed_kmph - avg_tw_speed_kmph) / tw_speed_kmph
+        dir_change = abs(cs.bound_to_180(avg_tw_dir_deg - tw_dir_deg))
+
+        return speed_change_percent >= 0.3 or dir_change >= 10
+
     def update_if_needed(
         self,
         gps: ci.GPS,

@@ -191,6 +191,98 @@ def test_in_collision_zone(local_wp_index, reference_latlon, path, obstacles, re
     assert PATH.in_collision_zone(local_wp_index, reference_latlon, path, obstacles) == result
 
 
+@pytest.mark.parametrize(
+    "avg_tw_speed_kmph, avg_tw_dir_deg, tw_speed_kmph, tw_dir_deg, result",
+    [
+        # Basic Test 1 (wind speed change is significant)
+        (
+            15,
+            90,
+            10,
+            95,
+            True
+        ),
+        # Boundaries
+        (
+            13,
+            90,
+            10,
+            90,
+            True
+        ),
+        (
+            7,
+            90,
+            10,
+            95,
+            True
+        ),
+        # Basic Test 2 (wind dir change is significant)
+        (
+            10,
+            90,
+            12,
+            105,
+            True
+        ),
+        # Boundaries
+        (
+            10,
+            90,
+            12,
+            80,
+            True
+        ),
+        (
+            10,
+            90,
+            10,
+            100,
+            True
+        ),
+        # Basic Test 3 (No significant change)
+        (
+            12.9,
+            90,
+            10,
+            99,
+            False
+        ),
+        # Fourth Test: Circular nature of angles
+        (
+            10,
+            175,
+            10,
+            -178.96,
+            False
+        ),
+        (
+            10,
+            180,
+            10,
+            -180,
+            False
+        ),
+        (
+            10,
+            -175,
+            10,
+            175,
+            True
+        ),
+    ],
+)
+def test_significant_wind_change(avg_tw_speed_kmph,
+                                 avg_tw_dir_deg,
+                                 tw_speed_kmph,
+                                 tw_dir_deg,
+                                 result):
+    assert PATH.significant_wind_change(avg_tw_speed_kmph,
+                                        avg_tw_dir_deg,
+                                        tw_speed_kmph,
+                                        tw_dir_deg) == result
+
+
 def test_LocalPathState_parameter_checking():
     with pytest.raises(ValueError):
         lps = (
