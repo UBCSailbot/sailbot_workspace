@@ -11,56 +11,96 @@ from local_pathfinding.ompl_objectives import NO_GO_ZONE
     "s1, s2, tw_direction_rad, expected",
     [
         (
-            # Wind direction and boat heading North
+            # Wind direction and boat heading north
             cs.XY(0.0, 0.0),
             cs.XY(0.0, 1.0),
             0.0,
             1.0
         ),
         (
-            # Wind direction south and boat heading North
+            # Wind direction south and boat heading north
             cs.XY(0.0, 0.0),
             cs.XY(0.0, 1.0),
             math.pi,
             1.0
         ),
         (
-            # Boat heading north, wind at no-go zone on front right
+            # Boat heading north, wind at no-go zone at 45 degrees
             cs.XY(0.0, 0.0),
             cs.XY(0.0, 1.0),
             NO_GO_ZONE,
             1.0
         ),
         (
-            # Boat heading north, wind at no-go zone on front left
+            # Boat heading north, wind at no-go zone at -45 degrees
             cs.XY(0.0, 0.0),
             cs.XY(0.0, 1.0),
             -NO_GO_ZONE,
             1.0
         ),
         (
-            # Boat heading north, wind at no-go zone on back right
+            # Boat heading south, wind at no-go zone at 135 degrees
             cs.XY(0.0, 0.0),
-            cs.XY(0.0, 1.0),
+            cs.XY(0.0, -1.0),
             math.pi - NO_GO_ZONE,
             1.0
         ),
         (
-            # Boat heading north, wind at no-go zone on back left
+            # Boat heading south, wind at no-go zone at -135 degrees
             cs.XY(0.0, 0.0),
-            cs.XY(0.0, 1.0),
-            math.pi + NO_GO_ZONE,
+            cs.XY(0.0, -1.0),
+            - math.pi + NO_GO_ZONE,
             1.0
         ),
+        (
+            # Boat heading east, wind just better than no-go zone
+            cs.XY(0.0, 0.0),
+            cs.XY(1.0, 0.0),
+            NO_GO_ZONE - 0.0001,
+            0.999998400001
+        ),
+        (
+            # Boat heading west, wind heading north
+            cs.XY(0.0, 0.0),
+            cs.XY(-1.0, 0.0),
+            0.0,
+            0.0
+        ),
+        (
+            # Boat heading west, wind heading south
+            cs.XY(0.0, 0.0),
+            cs.XY(-1.0, 0.0),
+            math.pi,
+            0.0
+        ),
+        (
+            # Boat heading north, wind heading at 60 degrees
+            cs.XY(0.0, 0.0),
+            cs.XY(0.0, 1.0),
+            math.pi / 3,
+            0.0000100565851616
+        ),
+        (
+            # Boat heading north, wind heading at -55 degrees (-0.959931 radians)
+            cs.XY(0.0, 0.0),
+            cs.XY(0.0, 1.0),
+            0.959931,
+            0.00690029338186
+        ),
+        (
+            # Boat heading north, wind heading at 50 degrees (0.872665 radians)
+            cs.XY(0.0, 0.0),
+            cs.XY(0.0, 1.0),
+            0.872665,
+            0.293840825304
+        )
     ],
 )
 def test_wind_direction_cost(
     s1: cs.XY, s2: cs.XY, tw_direction_rad: float, expected: float
 ):
     result = ob.WindObjective.wind_direction_cost(s1, s2, tw_direction_rad)
-
-    # We use a slightly higher tolerance for trig functions across different quadrants
-    assert result == pytest.approx(expected, abs=1e-7)
+    assert result == pytest.approx(expected, abs=1e-12)
 
 
 @pytest.mark.parametrize(
