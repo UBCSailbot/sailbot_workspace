@@ -99,6 +99,16 @@ class LocalPath:
         self.path: Optional[ci.Path] = None
         self.state: Optional[LocalPathState] = None
 
+    def _is_path_expired(self) -> bool:
+        """Check if the current path has exceeded the PATH_TTL timeout.
+
+        Returns:
+            bool: True if the path has expired, False otherwise.
+        """
+        if self.state is None:
+            return True
+        return datetime.now() >= (self.state.generated_time + self.state.timeout)
+
     @staticmethod
     def calculate_desired_heading_and_waypoint_index(
         path: ci.Path, waypoint_index: int, boat_lat_lon: ci.HelperLatLon
@@ -230,6 +240,11 @@ class LocalPath:
         if old_ompl_path is None or self.path is None:
             # continue on the same path
             self._logger.debug("old path is none")
+            self._update(ompl_path)
+            return heading_new_path, wp_index
+
+        if self._is_path_expired():
+            self._logger.debug("Updating local path because PATH_TTL has expired")
             self._update(ompl_path)
             return heading_new_path, wp_index
 
