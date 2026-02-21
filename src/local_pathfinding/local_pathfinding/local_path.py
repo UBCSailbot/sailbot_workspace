@@ -96,8 +96,8 @@ class LocalPath:
     Attributes:
         _logger (RcutilsLogger): ROS logger.
         _ompl_path (Optional[OMPLPath]): Raw representation of the path from OMPL.
-        _prev_lp_wp_index: Local waypoint index (i.e. pointer to the next local waypoint that the
-        boat is following)
+        _prev_lp_wp_index (int): index of the local waypoint that Polaris has already traversed in
+        the path array
         path (Path): Collection of coordinates that form the local path to the next
                           global waypoint.
         state (LocalPathState): the current local path state.
@@ -118,7 +118,8 @@ class LocalPath:
 
         Args:
             path (ci.Path): Array of waypoints
-            waypoint_index (int): Pointer to the current local waypoint index in path array
+            prev_lp_wp_index (int): index of the local waypoint that Polaris has already traversed
+            in the path array
             (i.e. the waypoint sailbot traversed, sailbot is heading towards waypoint_index + 1)
             boat_lat_lon (ci.HelperLatLon): boat coordinates
 
