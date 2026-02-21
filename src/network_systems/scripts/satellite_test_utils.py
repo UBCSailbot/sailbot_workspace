@@ -5,32 +5,34 @@ import subprocess
 import custom_interfaces.msg as ci
 
 
-def encode(filepath):
-    print("Creating random global path...")
+def encode(waypoints=None):
+    if waypoints:
+        print(f"Encoding {len(waypoints)} provided waypoints...")
+        path = ci.Path()
+        wps = []
+        for lat, lon in waypoints:
+            waypoint = ci.HelperLatLon()
+            waypoint.latitude, waypoint.longitude = lat, lon
+            print(f"Latitude: {lat}    Longitude: {lon}")
+            wps.append(waypoint)
+        path.waypoints = wps
+    else:
+        print("Creating random global path...")
+        n = random.randint(1, 3)
+        print(f"Creating {n} waypoints...")
+        path = ci.Path()
+        wps = []
+        for _ in range(n):
+            lat = round(random.uniform(-180.0, 180.0), 2)
+            lon = round(random.uniform(-90.0, 90.0), 2)
+            waypoint = ci.HelperLatLon()
+            waypoint.latitude, waypoint.longitude = lat, lon
+            print(f"Latitude: {lat}    Longitude: {lon}")
+            wps.append(waypoint)
+        path.waypoints = wps
 
-    n = random.randint(1, 3)
-    print(f"Creating {n} waypoints...")
-    path = ci.Path()
-    waypoints = []
-
-    for i in range(0, n):
-        lat = round(random.uniform(-180.0, 180.0), 2)
-        lon = round(random.uniform(-90.0, 90.0), 2)
-        waypoint = ci.HelperLatLon()
-        waypoint.latitude, waypoint.longitude = lat, lon
-        print(f"Latidude: {lat}    Longitude: {lon}")
-
-        waypoints.append(waypoint)
-
-    path.waypoints = waypoints
-
-    path_pb = path_to_proto_bytes(path)
-    print(path_pb)
-
-    with open(filepath, "wb") as f:
-        f.write(path_pb)
-
-    print(f"Protobuf serialized to {filepath}")
+    proto_bytes = path_to_proto_bytes(path)
+    print(f"\nEncoded protobuf bytes (hex):\n{proto_bytes.hex()}")
 
 
 def path_to_proto_bytes(path):
@@ -49,24 +51,68 @@ def path_to_proto_bytes(path):
     return proto_bytes
 
 
-# def decode(filepath):
+def decode(hex_bytes):
+    import struct
+
+    proto_bytes = bytes.fromhex(hex_bytes)
+
+    proc = subprocess.Popen(
+        ["protoc", "--decode_raw"],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+
+    stdout, stderr = proc.communicate(input=proto_bytes)
+
+    if stderr:
+        print(f"Error decoding protobuf: {stderr.decode()}")
+        return
+
+    print("Decoded protobuf message:")
+    for line in stdout.decode().splitlines():
+        # look for hex values like 0x3fa5f06f and convert to float
+        if "0x" in line:
+            hex_val = int(line.split("0x")[1].strip(), 16)
+            float_val = struct.unpack("f", struct.pack("I", hex_val))[0]
+            field = line.split(":")[0].strip()
+            print(f"  {field}: {float_val}")
+        else:
+            print(f"  {line}")
 
 
 def main():
     parser = argparse.ArgumentParser(description="Encode or decode protobuf messages")
-
     parser.add_argument("-m", "--mode", type=str, required=True, help="encode/decode")
     parser.add_argument(
-        "-f", "--filepath", type=str, required=True, help="Input/Destination file path"
+        "-w",
+        "--waypoints",
+        type=float,
+        nargs="+",
+        help="Waypoints as flat list of lat lon pairs, e.g. --waypoints 48.5 -123.4 49.1 -122.8",
     )
-    # parser.add_argument('--verbose', action='store_true', help="Enable verbose output")
+    parser.add_argument(
+        "-b",
+        "--bytes",
+        type=str,
+        help="Hex-encoded protobuf bytes to decode",
+    )
 
     args = parser.parse_args()
 
     if args.mode == "encode":
-        encode(args.filepath)
+        waypoints = None
+        if args.waypoints:
+            if len(args.waypoints) % 2 != 0:
+                print("Error: waypoints must be provided as lat lon pairs")
+                return
+            waypoints = list(zip(args.waypoints[::2], args.waypoints[1::2]))
+        encode(waypoints)
     elif args.mode == "decode":
-        encode(args.filepath)
+        if not args.bytes:
+            print("Error: --bytes required for decode mode")
+            return
+        decode(args.bytes)
     else:
         print("Invalid mode argument: encode/decode only")
 
