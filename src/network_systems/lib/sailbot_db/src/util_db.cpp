@@ -25,9 +25,13 @@ void UtilDB::cleanDB()
     mongocxx::pool::entry entry = pool_->acquire();
     mongocxx::database    db    = (*entry)[db_name_];
 
-    mongocxx::collection gps_coll              = db[COLLECTION_GPS];
-    mongocxx::collection ais_coll              = db[COLLECTION_AIS_SHIPS];
-    mongocxx::collection generic_coll          = db[COLLECTION_DATA_SENSORS];
+    mongocxx::collection gps_coll = db[COLLECTION_GPS];
+    mongocxx::collection ais_coll = db[COLLECTION_AIS_SHIPS];
+    // mongocxx::collection generic_coll          = db[COLLECTION_DATA_SENSORS];
+    mongocxx::collection temp_coll     = db[COLLECTION_TEMP_SENSORS];
+    mongocxx::collection ph_coll       = db[COLLECTION_PH_SENSORS];
+    mongocxx::collection salinity_coll = db[COLLECTION_SALINITY_SENSORS];
+    // mongocxx::collection pressure_coll         = db[COLLECTION_PRESSURE_SENSORS];
     mongocxx::collection batteries_coll        = db[COLLECTION_BATTERIES];
     mongocxx::collection wind_coll             = db[COLLECTION_WIND_SENSORS];
     mongocxx::collection local_path_coll       = db[COLLECTION_LOCAL_PATH];
@@ -37,10 +41,10 @@ void UtilDB::cleanDB()
     gps_coll.delete_many(bsoncxx::builder::basic::make_document());
     ais_coll.delete_many(bsoncxx::builder::basic::make_document());
     // generic_coll.delete_many(bsoncxx::builder::basic::make_document());
-    generic_coll.delete_many(bsoncxx::builder::basic::make_document());
-    generic_coll.delete_many(bsoncxx::builder::basic::make_document());
-    generic_coll.delete_many(bsoncxx::builder::basic::make_document());
-    generic_coll.delete_many(bsoncxx::builder::basic::make_document());
+    temp_coll.delete_many(bsoncxx::builder::basic::make_document());
+    // pressure_coll.delete_many(bsoncxx::builder::basic::make_document());
+    salinity_coll.delete_many(bsoncxx::builder::basic::make_document());
+    ph_coll.delete_many(bsoncxx::builder::basic::make_document());
     batteries_coll.delete_many(bsoncxx::builder::basic::make_document());
     wind_coll.delete_many(bsoncxx::builder::basic::make_document());
     local_path_coll.delete_many(bsoncxx::builder::basic::make_document());
@@ -484,7 +488,7 @@ std::pair<std::vector<Sensors>, std::vector<std::string>> UtilDB::dumpSensors(
 
     // temperature sensor
     mongocxx::collection temp_coll =
-      db[COLLECTION_DATA_SENSORS];  // We're using the same collection for temp, pressure, salinity, pH for now
+      db[COLLECTION_TEMP_SENSORS];  // We're using the same collection for temp, pressure, salinity, pH for now
     mongocxx::cursor temp_sensor_docs = temp_coll.find({}, opts);
     expectEQ(
       static_cast<uint64_t>(temp_coll.count_documents({})), num_docs,
@@ -502,30 +506,30 @@ std::pair<std::vector<Sensors>, std::vector<std::string>> UtilDB::dumpSensors(
     }
 
     // pressure sensor
-    mongocxx::collection pressure_coll =
-      db[COLLECTION_DATA_SENSORS];  // We're using the same collection for temp, pressure, salinity, pH for now
-    mongocxx::cursor pressure_sensor_docs = pressure_coll.find({}, opts);
-    expectEQ(
-      static_cast<uint64_t>(pressure_coll.count_documents({})), num_docs,
-      "Error: TestDB should only have " + std::to_string(num_docs) + " documents per collection");
+    // mongocxx::collection pressure_coll =
+    //   db[COLLECTION_PRESSURE_SENSORS];  // We're using the same collection for temp, pressure, salinity, pH for now
+    // mongocxx::cursor pressure_sensor_docs = pressure_coll.find({}, opts);
+    // expectEQ(
+    //   static_cast<uint64_t>(pressure_coll.count_documents({})), num_docs,
+    //   "Error: TestDB should only have " + std::to_string(num_docs) + " documents per collection");
 
-    for (auto [i, pressure_doc_it] = std::tuple{size_t{0}, pressure_sensor_docs.begin()}; i < num_docs;
-         i++, pressure_doc_it++) {
-        Sensors &                     sensors      = sensors_vec[i];
-        const std::string &           timestamp    = timestamp_vec[i];
-        const bsoncxx::document::view pressure_doc = *pressure_doc_it;
-        for (bsoncxx::array::element pressure_doc : pressure_doc["pressureSensors"].get_array().value) {
-            sensors.add_pressure_sensors(static_cast<float>(pressure_doc["pressure"].get_double().value));
-        }
-        expectEQ(
-          sensors.pressure_sensors().size(), NUM_PRESSURE_SENSORS,
-          "Size mismatch when reading pressure sensors from DB");
-        expectEQ(pressure_doc["timestamp"].get_utf8().value.to_string(), timestamp, "Document timestamp mismatch");
-    }
+    // for (auto [i, pressure_doc_it] = std::tuple{size_t{0}, pressure_sensor_docs.begin()}; i < num_docs;
+    //      i++, pressure_doc_it++) {
+    //     Sensors &                     sensors      = sensors_vec[i];
+    //     const std::string &           timestamp    = timestamp_vec[i];
+    //     const bsoncxx::document::view pressure_doc = *pressure_doc_it;
+    //     for (bsoncxx::array::element pressure_doc : pressure_doc["pressureSensors"].get_array().value) {
+    //         sensors.add_pressure_sensors(static_cast<float>(pressure_doc["pressure"].get_double().value));
+    //     }
+    //     expectEQ(
+    //       sensors.pressure_sensors().size(), NUM_PRESSURE_SENSORS,
+    //       "Size mismatch when reading pressure sensors from DB");
+    //     expectEQ(pressure_doc["timestamp"].get_utf8().value.to_string(), timestamp, "Document timestamp mismatch");
+    // }
 
     // salinity sensor
     mongocxx::collection salinity_coll =
-      db[COLLECTION_DATA_SENSORS];  // We're using the same collection for temp, pressure, salinity, pH for now
+      db[COLLECTION_SALINITY_SENSORS];  // We're using the same collection for temp, pressure, salinity, pH for now
     mongocxx::cursor salinity_sensor_docs = salinity_coll.find({}, opts);
     expectEQ(
       static_cast<uint64_t>(salinity_coll.count_documents({})), num_docs,
@@ -547,7 +551,7 @@ std::pair<std::vector<Sensors>, std::vector<std::string>> UtilDB::dumpSensors(
 
     // pH sensor
     mongocxx::collection ph_coll =
-      db[COLLECTION_DATA_SENSORS];  // We're using the same collection for temp, pressure, salinity, pH for now
+      db[COLLECTION_PH_SENSORS];  // We're using the same collection for temp, pressure, salinity, pH for now
     mongocxx::cursor ph_sensor_docs = ph_coll.find({}, opts);
     expectEQ(
       static_cast<uint64_t>(ph_coll.count_documents({})), num_docs,

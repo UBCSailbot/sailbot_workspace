@@ -14,9 +14,13 @@
 // >>>>IMPORTANT<<<<<
 // BSON document formats from: https://ubcsailbot.atlassian.net/wiki/spaces/prjt22/pages/1907589126/Database+Schemas:
 
-const std::string COLLECTION_AIS_SHIPS        = "ais_ships";
-const std::string COLLECTION_BATTERIES        = "batteries";
-const std::string COLLECTION_DATA_SENSORS     = "data_sensors";
+const std::string COLLECTION_AIS_SHIPS = "ais_ships";
+const std::string COLLECTION_BATTERIES = "batteries";
+// const std::string COLLECTION_DATA_SENSORS     = "data_sensors";
+const std::string COLLECTION_TEMP_SENSORS     = "temp_sensors";
+const std::string COLLECTION_PH_SENSORS       = "ph_sensors";
+const std::string COLLECTION_SALINITY_SENSORS = "salinity_sensors";
+// const std::string COLLECTION_PRESSURE_SENSORS     = "pressure_sensors";
 const std::string COLLECTION_GPS              = "gps";
 const std::string COLLECTION_WIND_SENSORS     = "wind_sensors";
 const std::string COLLECTION_LOCAL_PATH       = "local_path";

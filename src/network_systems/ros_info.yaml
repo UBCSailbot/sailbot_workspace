@@ -2,7 +2,10 @@ ros_topics:
   AIS_SHIPS: ais_ships
   BATTERIES: batteries
   DESIRED_HEADING: desired_heading
-  DATA_SENSORS: data_sensors
+  # DATA_SENSORS: data_sensors
+  TEMP_SENSORS: temp_sensors
+  PH_SENSORS: ph_sensors
+  SALINITY_SENSORS: salinity_sensors
   FILTERED_WIND_SENSOR: filtered_wind_sensor
   GLOBAL_PATH: global_path
   GPS: gps

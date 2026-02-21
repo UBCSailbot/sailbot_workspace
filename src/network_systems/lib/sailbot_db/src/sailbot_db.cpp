@@ -172,7 +172,7 @@ bool SailbotDB::storeTempSensors(
   const ProtoPrimitiveList<float> & temp_pb, const std::string & timestamp, mongocxx::client & client)
 {
     mongocxx::database   db        = client[db_name_];
-    mongocxx::collection temp_coll = db[COLLECTION_DATA_SENSORS];
+    mongocxx::collection temp_coll = db[COLLECTION_TEMP_SENSORS];
     bstream::document    doc_builder{};
     auto                 temp_doc_arr = doc_builder << "tempSensors" << bstream::open_array;
     for (const float & temp_sensor : temp_pb) {
@@ -187,7 +187,7 @@ bool SailbotDB::storePhSensors(
   const ProtoPrimitiveList<float> & ph_pb, const std::string & timestamp, mongocxx::client & client)
 {
     mongocxx::database   db      = client[db_name_];
-    mongocxx::collection ph_coll = db[COLLECTION_DATA_SENSORS];
+    mongocxx::collection ph_coll = db[COLLECTION_PH_SENSORS];
     bstream::document    doc_builder{};
     auto                 ph_doc_arr = doc_builder << "phSensors" << bstream::open_array;
     for (const float & ph_sensor : ph_pb) {
@@ -201,7 +201,7 @@ bool SailbotDB::storeSalinitySensors(
   const ProtoPrimitiveList<float> & salinity_pb, const std::string & timestamp, mongocxx::client & client)
 {
     mongocxx::database   db            = client[db_name_];
-    mongocxx::collection salinity_coll = db[COLLECTION_DATA_SENSORS];
+    mongocxx::collection salinity_coll = db[COLLECTION_SALINITY_SENSORS];
     bstream::document    doc_builder{};
     auto                 salinity_doc_arr = doc_builder << "salinitySensors" << bstream::open_array;
     for (const float & salinity_sensor : salinity_pb) {
@@ -212,20 +212,20 @@ bool SailbotDB::storeSalinitySensors(
     return static_cast<bool>(salinity_coll.insert_one(salinity_doc.view()));
 }
 
-bool SailbotDB::storePressureSensors(
-  const ProtoPrimitiveList<float> & pressure_pb, const std::string & timestamp, mongocxx::client & client)
-{
-    mongocxx::database   db            = client[db_name_];
-    mongocxx::collection pressure_coll = db[COLLECTION_DATA_SENSORS];
-    bstream::document    doc_builder{};
-    auto                 pressure_doc_arr = doc_builder << "pressureSensors" << bstream::open_array;
-    for (const float & pressure_sensor : pressure_pb) {
-        pressure_doc_arr = pressure_doc_arr << bstream::open_document << "pressure" << pressure_sensor
-                                            << bstream::close_document;
-    }
-    DocVal pressure_doc = pressure_doc_arr << bstream::close_array << "timestamp" << timestamp << bstream::finalize;
-    return static_cast<bool>(pressure_coll.insert_one(pressure_doc.view()));
-}
+// bool SailbotDB::storePressureSensors(
+//   const ProtoPrimitiveList<float> & pressure_pb, const std::string & timestamp, mongocxx::client & client)
+// {
+//     mongocxx::database   db            = client[db_name_];
+//     mongocxx::collection pressure_coll = db[COLLECTION_PRESSURE_SENSORS];
+//     bstream::document    doc_builder{};
+//     auto                 pressure_doc_arr = doc_builder << "pressureSensors" << bstream::open_array;
+//     for (const float & pressure_sensor : pressure_pb) {
+//         pressure_doc_arr = pressure_doc_arr << bstream::open_document << "pressure" << pressure_sensor
+//                                             << bstream::close_document;
+//     }
+//     DocVal pressure_doc = pressure_doc_arr << bstream::close_array << "timestamp" << timestamp << bstream::finalize;
+//     return static_cast<bool>(pressure_coll.insert_one(pressure_doc.view()));
+// }
 
 bool SailbotDB::storeBatteries(
   const ProtoList<Sensors::Battery> & battery_pb, const std::string & timestamp, mongocxx::client & client)
