@@ -3,7 +3,64 @@ import math
 import pytest
 
 import local_pathfinding.coord_systems as cs
-import local_pathfinding.ompl_objectives as objectives
+import local_pathfinding.ompl_objectives as ob
+from local_pathfinding.ompl_objectives import NO_GO_ZONE
+
+
+@pytest.mark.parametrize(
+    "s1, s2, tw_direction_rad, expected",
+    [
+        (
+            # Wind direction and boat heading North
+            cs.XY(0.0, 0.0),
+            cs.XY(0.0, 1.0),
+            0.0,
+            1.0
+        ),
+        (
+            # Wind direction south and boat heading North
+            cs.XY(0.0, 0.0),
+            cs.XY(0.0, 1.0),
+            math.pi,
+            1.0
+        ),
+        (
+            # Boat heading north, wind at no-go zone on front right
+            cs.XY(0.0, 0.0),
+            cs.XY(0.0, 1.0),
+            NO_GO_ZONE,
+            1.0
+        ),
+        (
+            # Boat heading north, wind at no-go zone on front left
+            cs.XY(0.0, 0.0),
+            cs.XY(0.0, 1.0),
+            -NO_GO_ZONE,
+            1.0
+        ),
+        (
+            # Boat heading north, wind at no-go zone on back right
+            cs.XY(0.0, 0.0),
+            cs.XY(0.0, 1.0),
+            math.pi - NO_GO_ZONE,
+            1.0
+        ),
+        (
+            # Boat heading north, wind at no-go zone on back left
+            cs.XY(0.0, 0.0),
+            cs.XY(0.0, 1.0),
+            math.pi + NO_GO_ZONE,
+            1.0
+        ),
+    ],
+)
+def test_wind_direction_cost(
+    s1: cs.XY, s2: cs.XY, tw_direction_rad: float, expected: float
+):
+    result = ob.WindObjective.wind_direction_cost(s1, s2, tw_direction_rad)
+
+    # We use a slightly higher tolerance for trig functions across different quadrants
+    assert result == pytest.approx(expected, abs=1e-7)
 
 
 @pytest.mark.parametrize(
@@ -31,7 +88,7 @@ def test_speed_cost(
 ):
     s1 = cs.XY(*cs1)
     s2 = cs.XY(*cs2)
-    assert objectives.TimeObjective.time_cost(
+    assert ob.TimeObjective.time_cost(
         s1, s2, wind_direction_rad, wind_speed_kmph
     ) == pytest.approx(expected, abs=0.1)
 
@@ -50,5 +107,5 @@ def test_speed_cost(
 def test_get_sailbot_speed(
     heading: float, wind_direction: float, wind_speed: float, expected: float
 ):
-    speed = objectives.TimeObjective.get_sailbot_speed(heading, wind_direction, wind_speed)
+    speed = ob.TimeObjective.get_sailbot_speed(heading, wind_direction, wind_speed)
     assert speed == pytest.approx(expected, abs=0.1)

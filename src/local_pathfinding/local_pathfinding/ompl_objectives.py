@@ -108,7 +108,7 @@ class WindObjective(ob.OptimizationObjective):
         """
         segment_true_bearing_rad = cs.get_path_segment_true_bearing(s1, s2, rad=True)
         tw_angle_rad = abs(wcs.get_true_wind_angle(segment_true_bearing_rad, tw_direction_rad))
-        if tw_angle_rad > NO_GO_ZONE or tw_angle_rad < math.pi - NO_GO_ZONE:
+        if tw_angle_rad > NO_GO_ZONE and tw_angle_rad < math.pi - NO_GO_ZONE:
             cost = math.sin(2*tw_angle_rad) ** WIND_COST_SIN_EXPONENT
             return cost
         return 1.0
