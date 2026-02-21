@@ -1,5 +1,6 @@
 import pytest
 from custom_interfaces.msg import GPS, AISShips, HelperLatLon, Path, WindSensor
+from local_pathfinding.wind_coord_systems import Wind
 from rclpy.impl.rcutils_logger import RcutilsLogger
 from shapely.geometry import MultiPolygon, Polygon
 
@@ -192,95 +193,33 @@ def test_in_collision_zone(local_wp_index, reference_latlon, path, obstacles, re
 
 
 @pytest.mark.parametrize(
-    "avg_tw_speed_kmph, avg_tw_dir_deg, tw_speed_kmph, tw_dir_deg, result",
+    "avg_tw_speed_kmph, avg_tw_dir_deg, previous_tw_data, result",
     [
         # Basic Test 1 (wind speed change is significant)
-        (
-            15,
-            90,
-            10,
-            95,
-            True
-        ),
+        (15.0, 90.0, Wind(speed_kmph=10.0, dir_deg=95.0), True),
         # Boundaries
-        (
-            13,
-            90,
-            10,
-            90,
-            True
-        ),
-        (
-            7,
-            90,
-            10,
-            95,
-            True
-        ),
+        (13.0, 90.0, Wind(speed_kmph=10.0, dir_deg=90.0), True),
+        (7.0, 90.0, Wind(speed_kmph=10.0, dir_deg=98.0), True),
         # Basic Test 2 (wind dir change is significant)
-        (
-            10,
-            90,
-            12,
-            105,
-            True
-        ),
+        (10.0, 90.0, Wind(speed_kmph=12.0, dir_deg=105.0), True),
         # Boundaries
-        (
-            10,
-            90,
-            12,
-            80,
-            True
-        ),
-        (
-            10,
-            90,
-            10,
-            100,
-            True
-        ),
+        (10.0, 90.0, Wind(speed_kmph=10.0, dir_deg=80.0), True),
+        (10.0, 90.0, Wind(speed_kmph=10.0, dir_deg=100.0), True),
         # Basic Test 3 (No significant change)
-        (
-            12.9,
-            90,
-            10,
-            99,
-            False
-        ),
+        (12.9, 90.0, Wind(speed_kmph=10.0, dir_deg=99.0), False),
         # Fourth Test: Circular nature of angles
-        (
-            10,
-            175,
-            10,
-            -178.96,
-            False
-        ),
-        (
-            10,
-            180,
-            10,
-            -179.999,
-            False
-        ),
-        (
-            10,
-            -175,
-            10,
-            175,
-            True
-        ),
+        (10.0, 175.0, Wind(speed_kmph=10.0, dir_deg=-178.96), False),
+        (10.0, 180.0, Wind(speed_kmph=10.0, dir_deg=-179.999), False),
+        (10.0, -175.0, Wind(speed_kmph=10.0, dir_deg=175.0), True),
     ],
 )
 def test_significant_wind_change(avg_tw_speed_kmph,
                                  avg_tw_dir_deg,
-                                 tw_speed_kmph,
-                                 tw_dir_deg,
+                                 previous_tw_data,
                                  result):
     assert PATH.significant_wind_change(avg_tw_speed_kmph,
                                         avg_tw_dir_deg,
-                                        tw_speed_kmph,
-                                        tw_dir_deg) == result
+                                        previous_tw_data) == result
 
 
 def test_LocalPathState_parameter_checking():
