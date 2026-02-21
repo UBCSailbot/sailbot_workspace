@@ -4,7 +4,7 @@ import pytest
 
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.ompl_objectives as ob
-from local_pathfinding.ompl_objectives import NO_GO_ZONE
+from local_pathfinding.ompl_objectives import (NO_GO_ZONE, WIND_COST_SIN_EXPONENT)
 
 
 @pytest.mark.parametrize(
@@ -57,7 +57,7 @@ from local_pathfinding.ompl_objectives import NO_GO_ZONE
             cs.XY(0.0, 0.0),
             cs.XY(1.0, 0.0),
             NO_GO_ZONE - 0.0001,
-            0.999998400001
+            math.sin(2*(NO_GO_ZONE - 0.0001)) ** WIND_COST_SIN_EXPONENT
         ),
         (
             # Boat heading west, wind heading north
@@ -78,21 +78,21 @@ from local_pathfinding.ompl_objectives import NO_GO_ZONE
             cs.XY(0.0, 0.0),
             cs.XY(0.0, 1.0),
             math.pi / 3,
-            0.0000100565851616
+            math.sin(2*math.pi / 3) ** WIND_COST_SIN_EXPONENT
         ),
         (
             # Boat heading north, wind heading at -55 degrees (-0.959931 radians)
             cs.XY(0.0, 0.0),
             cs.XY(0.0, 1.0),
-            0.959931,
-            0.00690029338186
+            -0.959931,
+            math.sin(2*(-0.959931)) ** WIND_COST_SIN_EXPONENT
         ),
         (
             # Boat heading north, wind heading at 50 degrees (0.872665 radians)
             cs.XY(0.0, 0.0),
             cs.XY(0.0, 1.0),
             0.872665,
-            0.293840825304
+            math.sin(2*0.872665) ** WIND_COST_SIN_EXPONENT
         )
     ],
 )
