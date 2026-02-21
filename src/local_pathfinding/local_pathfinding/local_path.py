@@ -12,6 +12,8 @@ import custom_interfaces.msg as ci
 import local_pathfinding.obstacles as ob
 from local_pathfinding.ompl_path import OMPLPath
 
+WIND_SPEED_CHANGE_THRESH_PROP = 0.3
+WIND_DIRECTION_CHANGE_THRESH_DEG = 10
 LOCAL_WAYPOINT_REACHED_THRESH_KM = 0.5
 HEADING_WEIGHT = 0.6
 COST_WEIGHT = 0.4
@@ -190,7 +192,8 @@ class LocalPath:
         speed_change_percent = abs(tw_speed_kmph - avg_tw_speed_kmph) / tw_speed_kmph
         dir_change = abs(cs.bound_to_180(avg_tw_dir_deg - tw_dir_deg))
 
-        return speed_change_percent >= 0.3 or dir_change >= 10
+        return (speed_change_percent >= WIND_SPEED_CHANGE_THRESH_PROP or
+                dir_change >= WIND_DIRECTION_CHANGE_THRESH_DEG)
 
     def update_if_needed(
         self,
