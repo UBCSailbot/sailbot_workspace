@@ -368,9 +368,8 @@ private:
             wind_sensor_msg                   = wind_sensor.toRosMsg();
             wind_sensors_pub_->publish(wind_sensors_);
 
-            // NUM_WIND_SENSORS is a placeholder,
-            // replace with number of data points wanted in the moving average
-            double k = NUM_WIND_SENSORS;
+            // Arbitrary number of data points for moving average
+            double k = 20;  //NOLINT(readability-magic-numbers)
             // convert deg to rad
             double angle = wind_sensor_msg.direction * (M_PI / 180.0);  // NOLINT(readability-magic-numbers)
             double y     = wind_sensor_msg.speed.speed * sin(angle);

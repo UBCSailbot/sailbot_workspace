@@ -2,6 +2,7 @@
 
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
+#include <boost/asio/deadline_timer.hpp>
 #include <boost/asio/read.hpp>
 #include <boost/asio/read_until.hpp>
 #include <boost/asio/serial_port.hpp>
@@ -82,6 +83,12 @@ void LocalTransceiver::updateSensor(msg::LPathData localData)
 
 Sensors LocalTransceiver::sensors() { return sensors_; }
 
+void LocalTransceiver::setLogCallbacks(LogCallback debug_cb, LogCallback error_cb)
+{
+    log_debug_ = debug_cb;
+    log_error_ = error_cb;
+}
+
 LocalTransceiver::LocalTransceiver(const std::string & port_name, const uint32_t baud_rate) : serial_(io_, port_name)
 {
     serial_.set_option(bio::serial_port_base::baud_rate(baud_rate));
@@ -124,11 +131,38 @@ bool LocalTransceiver::send()
         throw std::length_error(err_string);
     }
 
+    if (log_debug_) {
+        log_debug_("send() starting...");
+    }
+
     std::string write_bin_cmd_str = AT::write_bin::CMD + std::to_string(data.size());  //according to specs
     AT::Line    at_write_cmd(write_bin_cmd_str);
 
     static constexpr int MAX_NUM_RETRIES = 20;  // allow retries because the connection is imperfect
     for (int i = 0; i < MAX_NUM_RETRIES; i++) {
+        std::this_thread::sleep_for(std::chrono::seconds(SMALL_WAIT));
+        clearSerialBuffer();  // Clear any stale data from previous iteration
+
+        std::this_thread::sleep_for(std::chrono::seconds(MEDIUM_WAIT));
+
+        int current_iridium_signal_quality = checkIridiumSignalQuality();
+        if (current_iridium_signal_quality == -1) {
+            if (log_error_) {
+                log_error_("Debug: Failed to check Iridium signal quality");
+            }
+            continue;
+        }
+        if (current_iridium_signal_quality < AT::signal_quality::GOOD) {
+            if (log_debug_) {
+                log_debug_(
+                  "Debug: Iridium signal quality is currently " + std::to_string(current_iridium_signal_quality) +
+                  ", retrying...");
+            }
+            std::this_thread::sleep_for(
+              std::chrono::seconds(MEDIUM_WAIT));  // Wait a moment before retrying if no signal
+            continue;
+        }
+
         if (!send(at_write_cmd)) {
             continue;
         }
@@ -166,8 +200,9 @@ bool LocalTransceiver::send()
             continue;
         }
 
+        clearSerialBuffer();  // Clear any data that may have come in while waiting for SBDIX response, to ensure the following readRsp gets a clean response
+
         if (!rcvRsps({
-              AT::Line("\r"),
               sbdix_cmd,
               AT::Line(AT::DELIMITER),
             })) {
@@ -197,6 +232,178 @@ bool LocalTransceiver::send()
     return false;
 }
 
+bool LocalTransceiver::debugSendAT(const std::string & data)
+{
+    if (data.size() >= MAX_LOCAL_TO_REMOTE_PAYLOAD_SIZE_BYTES) {
+        if (log_error_) {
+            log_error_(
+              "Debug message/data too large: " + std::to_string(data.size()) + " bytes, but with a limit of " +
+              std::to_string(MAX_LOCAL_TO_REMOTE_PAYLOAD_SIZE_BYTES) + " bytes");
+        }
+        return false;
+    }
+
+    if (log_debug_) {
+        log_debug_("Debug: Sending " + std::to_string(data.size()) + " bytes via debugSendAT");
+    }
+
+    std::string write_bin_cmd_str = AT::write_bin::CMD + std::to_string(data.size());
+    AT::Line    at_write_cmd(write_bin_cmd_str);
+
+    static constexpr int MAX_NUM_RETRIES = 20;
+    for (int i = 0; i < MAX_NUM_RETRIES; i++) {
+        if (log_debug_) {
+            log_debug_("Debug: clearing buffer (attempt " + std::to_string(i) + ")");
+        }
+
+        std::this_thread::sleep_for(std::chrono::seconds(SMALL_WAIT));
+        clearSerialBuffer();  // Clear any stale data from previous iteration
+
+        std::this_thread::sleep_for(std::chrono::seconds(MEDIUM_WAIT));
+        if (log_debug_) {
+            log_debug_("Debug: cleared buffer, checking Iridium signal quality (attempt " + std::to_string(i) + ")");
+        }
+
+        // int current_iridium_signal_quality = 5;
+        int current_iridium_signal_quality = checkIridiumSignalQuality();
+        if (current_iridium_signal_quality == -1) {
+            if (log_error_) {
+                log_error_("Debug: Failed to check Iridium signal quality");
+            }
+            continue;
+        }
+        if (current_iridium_signal_quality < AT::signal_quality::GOOD) {
+            if (log_debug_) {
+                log_debug_(
+                  "Debug: Iridium signal quality is currently " + std::to_string(current_iridium_signal_quality) +
+                  ", retrying...");
+            }
+            std::this_thread::sleep_for(
+              std::chrono::seconds(MEDIUM_WAIT));  // Wait a moment before retrying if no signal
+
+            continue;
+        }
+        if (log_debug_) {
+            log_debug_(
+              "Debug: Iridium signal quality is excellent, proceeding to send write command (attempt " +
+              std::to_string(i) + ")");
+        }
+
+        if (!send(at_write_cmd)) {
+            if (log_error_) {
+                log_error_("Debug: failed to send write command (attempt " + std::to_string(i) + ")");
+            }
+            continue;
+        }
+        if (log_debug_) {
+            log_debug_("Debug: sent write command (attempt " + std::to_string(i) + "): " + at_write_cmd.str_);
+        }
+
+        if (!rcvRsps({
+              at_write_cmd,
+              AT::Line(AT::DELIMITER),
+              AT::Line(AT::RSP_READY),
+              AT::Line("\n"),
+            })) {
+            if (log_error_) {
+                log_error_("Debug: did not receive ready prompt (attempt " + std::to_string(i) + ")");
+            }
+            continue;
+        }
+        if (log_debug_) {
+            log_debug_("Debug: received ready prompt (attempt " + std::to_string(i) + ")");
+        }
+
+        std::string msg_str = data + checksum(data);
+        AT::Line    msg(msg_str);
+        if (!send(msg)) {
+            if (log_error_) {
+                log_error_("Debug: failed to send payload (attempt " + std::to_string(i) + ")");
+            }
+            continue;
+        }
+        if (log_debug_) {
+            log_debug_("Debug: sent payload (attempt " + std::to_string(i) + "): " + msg.str_);
+        }
+
+        if (!rcvRsps({
+              AT::Line(AT::DELIMITER),
+              AT::Line(AT::write_bin::rsp::SUCCESS),
+              AT::Line("\n"),
+              AT::Line(AT::DELIMITER),
+              AT::Line(AT::STATUS_OK),
+              AT::Line("\n"),
+            })) {
+            if (log_error_) {
+                log_error_("Debug: write did not complete successfully (attempt " + std::to_string(i) + ")");
+            }
+            continue;
+        }
+        if (log_debug_) {
+            log_debug_("Debug: write completed successfully (attempt " + std::to_string(i) + ")");
+        }
+
+        clearSerialBuffer();
+
+        static const AT::Line sbdix_cmd = AT::Line(AT::SBD_SESSION);
+        if (!send(sbdix_cmd)) {
+            if (log_error_) {
+                log_error_("Debug: failed to send SBDIX command (attempt " + std::to_string(i) + ")");
+            }
+            continue;
+        }
+        if (log_debug_) {
+            log_debug_("Debug: sent SBDIX command (attempt " + std::to_string(i) + "): " + sbdix_cmd.str_);
+        }
+
+        if (!rcvRsps({
+              sbdix_cmd,
+              AT::Line(AT::DELIMITER),
+            })) {
+            if (log_error_) {
+                log_error_("Debug: did not receive SBDIX response header (attempt " + std::to_string(i) + ")");
+            }
+            continue;
+        }
+        if (log_debug_) {
+            log_debug_("Debug: received SBDIX response header (attempt " + std::to_string(i) + ")");
+        }
+
+        auto opt_rsp = readRsp();
+        if (!opt_rsp) {
+            if (log_error_) {
+                log_error_("Debug: readRsp returned no response (attempt " + std::to_string(i) + ")");
+            }
+            continue;
+        }
+        if (log_debug_) {
+            log_debug_("Debug: readRsp received response (attempt " + std::to_string(i) + "): " + opt_rsp.value());
+        }
+
+        std::string              opt_rsp_val = opt_rsp.value();
+        std::vector<std::string> sbd_status_vec;
+        boost::algorithm::split(sbd_status_vec, opt_rsp_val, boost::is_any_of(AT::DELIMITER));
+
+        AT::SBDStatusRsp rsp(sbd_status_vec[0]);
+
+        if (log_debug_) {
+            log_debug_("SBDIX parsed rsp MO Status: " + std::to_string(rsp.MO_status_));
+        }
+
+        if (rsp.MOSuccess()) {
+            if (log_debug_) {
+                log_debug_("Debug: debugSendAT transmitted successfully");
+            }
+            return true;
+        }
+    }
+
+    if (log_error_) {
+        log_error_("Debug: Failed to transmit debug payload to satellite");
+    }
+    return false;
+}
+
 std::optional<std::string> LocalTransceiver::debugSend(const std::string & cmd)
 {
     AT::Line    at_cmd(cmd);
@@ -215,6 +422,7 @@ void LocalTransceiver::cacheGlobalWaypoints(std::string receivedDataBuffer)
     std::filesystem::path cache_temp{CACHE_TEMP_PATH};
     std::ofstream         writeFile(CACHE_TEMP_PATH, std::ios::binary);
     if (!writeFile) {
+        // Note: This is a static method, so no logging callback available
         std::cerr << "Failed to create temp cache file" << std::endl;
     }
     writeFile.write(receivedDataBuffer.data(), static_cast<std::streamsize>(receivedDataBuffer.size()));
@@ -374,19 +582,29 @@ std::optional<custom_interfaces::msg::Path> LocalTransceiver::getCache()
 
 bool LocalTransceiver::rcvRsp(const AT::Line & expected_rsp)
 {
-    bio::streambuf buf;
-    error_code     ec;
-    // Caution: will hang if another proccess is reading from the same serial port
-    bio::read(serial_, buf, bio::transfer_exactly(expected_rsp.str_.size()), ec);
-    if (ec) {
-        std::cerr << "Failed to read with error: " << ec.message() << std::endl;
+    bio::streambuf            buf;
+    boost::system::error_code ec;
+
+    bool success = runWithTimeout(
+      [&](auto handler) { bio::async_read(serial_, buf, bio::transfer_exactly(expected_rsp.str_.size()), handler); },
+      ec);
+
+    if (!success) {
+        if (log_error_) {
+            log_error_("rcvRsp timeout or error: " + ec.message());
+        }
         return false;
     }
+
     std::string outstr = streambufToStr(buf);
+
     if (outstr != expected_rsp.str_) {
-        std::cerr << "Expected to read: \"" << expected_rsp.str_ << "\"\nbut read: \"" << outstr << "\"" << std::endl;
+        if (log_error_) {
+            log_error_("Expected: \"" + expected_rsp.str_ + "\" but got: \"" + outstr + "\"");
+        }
         return false;
     }
+
     return true;
 }
 
@@ -399,17 +617,24 @@ bool LocalTransceiver::rcvRsps(std::initializer_list<const AT::Line> expected_rs
 
 std::optional<std::string> LocalTransceiver::readRsp()
 {
-    bio::streambuf buf;
-    error_code     ec;
+    bio::streambuf            buf;
+    boost::system::error_code ec;
 
-    // Caution: will hang if another proccess is reading from serial port
-    bio::read_until(serial_, buf, AT::STATUS_OK, ec);
-    if (ec) {
+    bool success =
+      runWithTimeout([&](auto handler) { bio::async_read_until(serial_, buf, AT::STATUS_OK, handler); }, ec);
+
+    if (!success) {
+        if (log_error_) {
+            log_error_("readRsp timeout or error: " + ec.message());
+        }
         return std::nullopt;
     }
 
     std::string rsp_str = streambufToStr(buf);
-    rsp_str.pop_back();  // Remove the "\n"
+    if (!rsp_str.empty()) {
+        rsp_str.pop_back();  // remove trailing '\n'
+    }
+
     return rsp_str;
 }
 
@@ -432,4 +657,147 @@ std::string LocalTransceiver::streambufToStr(bio::streambuf & buf)
       bio::buffers_begin(buf.data()), bio::buffers_begin(buf.data()) + static_cast<int64_t>(buf.data().size()));
     buf.consume(buf.size());
     return str;
+}
+
+void LocalTransceiver::clearSerialBuffer()
+{
+    int fd        = serial_.lowest_layer().native_handle();
+    int old_flags = fcntl(fd, F_GETFL, 0);
+    fcntl(fd, F_SETFL, old_flags | O_NONBLOCK);
+
+    const std::size_t SERIAL_BUFFER_SIZE = 1024;
+    std::vector<char> buf(SERIAL_BUFFER_SIZE);
+
+    while (true) {
+        ssize_t bytes_read = ::read(fd, buf.data(), buf.size());
+        if (bytes_read > 0) {
+            if (log_debug_) {
+                log_debug_("Cleared " + std::to_string(bytes_read) + " bytes from serial buffer.");
+            }
+            continue;
+        }
+        if (bytes_read == 0) {
+            if (log_debug_) {
+                log_debug_("Serial buffer cleared successfully.");
+            }
+            break;
+        }
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            if (log_debug_) {
+                log_debug_("No more data to read from serial buffer.");
+            }
+            break;
+        }
+        if (log_error_) {
+            log_error_("Failed to read from serial port with error: " + std::to_string(errno));
+        }
+        break;
+    }
+
+    fcntl(fd, F_SETFL, old_flags);  // Restore original flags
+}
+
+int LocalTransceiver::checkIridiumSignalQuality()
+{
+    // Assumes AT is already initialized and ready
+
+    if (log_debug_) {
+        log_debug_("Checking signal quality...");
+    }
+
+    std::this_thread::sleep_for(std::chrono::seconds(SMALL_WAIT));
+
+    clearSerialBuffer();
+    static const AT::Line at_check_conn_strength_cmd = AT::Line(AT::CHECK_SIG_QUALITY);
+
+    std::this_thread::sleep_for(std::chrono::seconds(SMALL_WAIT));
+
+    if (!send(at_check_conn_strength_cmd)) {
+        if (log_error_) {
+            log_error_("Debug: failed to send CSQ command");
+            return -1;
+        }
+    }
+    if (log_debug_) {
+        log_debug_("Debug: sent CSQ command");
+    }
+
+    if (!rcvRsps({
+          at_check_conn_strength_cmd,
+          AT::Line(AT::DELIMITER),
+        })) {
+        if (log_error_) {
+            log_error_("Debug: did not receive CSQ response header");
+            return -1;
+        }
+    }
+    if (log_debug_) {
+        log_debug_("Debug: received CSQ response header");
+    }
+
+    auto opt_rsp = readRsp();
+    if (!opt_rsp) {
+        if (log_error_) {
+            log_error_("Debug: readRsp returned no response");
+            return -1;
+        }
+    }
+    if (log_debug_) {
+        log_debug_("Debug: readRsp received response");
+    }
+
+    // This string will look something like:
+    // "+CSQ:<Signal Quality>\r\n\r\nOK\r"
+    // on success
+    std::string opt_rsp_val = opt_rsp.value();
+    // std::vector<std::string> sbd_status_vec;
+    // boost::algorithm::split(sbd_status_vec, opt_rsp_val, boost::is_any_of(AT::DELIMITER));
+
+    // AT::SBDStatusRsp rsp(sbd_status_vec[0]);
+    // if (rsp.MOSuccess()) {
+    //     return true;
+    // }
+    int signal_quality =
+      opt_rsp_val.find("+CSQ:") != std::string::npos ? std::stoi(opt_rsp_val.substr(opt_rsp_val.find(":") + 1)) : -1;
+
+    std::this_thread::sleep_for(std::chrono::seconds(SMALL_WAIT));
+
+    clearSerialBuffer();  // Clear any data that may have come in while waiting for CSQ response, to ensure the following readRsp gets a clean response
+
+    std::this_thread::sleep_for(std::chrono::seconds(SMALL_WAIT));
+
+    return signal_quality;
+}
+
+template <typename AsyncReadOp>
+bool LocalTransceiver::runWithTimeout(AsyncReadOp && op, boost::system::error_code & out_ec)
+{
+    boost::asio::deadline_timer timer(io_);
+    bool                        timed_out = false;
+    bool                        completed = false;
+
+    timer.expires_from_now(boost::posix_time::milliseconds(SERIAL_TIMEOUT.count()));
+
+    timer.async_wait([&](const boost::system::error_code & ec) {
+        if (!ec && !completed) {
+            timed_out = true;
+            serial_.cancel();
+        }
+    });
+
+    op([&](const boost::system::error_code & ec, std::size_t) {
+        completed = true;
+        out_ec    = ec;
+        timer.cancel();
+    });
+
+    io_.run();
+    io_.restart();
+
+    if (timed_out) {
+        out_ec = boost::asio::error::timed_out;
+        return false;
+    }
+
+    return !out_ec;
 }
