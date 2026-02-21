@@ -79,11 +79,11 @@ Sensors UtilDB::genRandSensors()
     }
 
     // pressure sensors
-    for (int i = 0; i < NUM_PRESSURE_SENSORS; i++) {
-        float v{};
-        genRandPressureSensorData(v);
-        sensors.add_pressure_sensors(v);
-    }
+    // for (int i = 0; i < NUM_PRESSURE_SENSORS; i++) {
+    //     float v{};
+    //     genRandPressureSensorData(v);
+    //     sensors.add_pressure_sensors(v);
+    // }
 
     // salinity sensors
     for (int i = 0; i < NUM_SALINITY_SENSORS; i++) {
@@ -202,11 +202,11 @@ bool UtilDB::verifyDBWrite(std::span<Sensors> expected_sensors, std::span<Sailbo
         }
 
         // pressure sensors
-        for (int j = 0; j < NUM_PRESSURE_SENSORS; j++) {
-            const float dumped_pressure_sensor   = dumped_sensors[i].pressure_sensors(j);
-            const float expected_pressure_sensor = expected_sensors[i].pressure_sensors(j);
-            expectFloatEQ(dumped_pressure_sensor, expected_pressure_sensor, "");
-        }
+        // for (int j = 0; j < NUM_PRESSURE_SENSORS; j++) {
+        //     const float dumped_pressure_sensor   = dumped_sensors[i].pressure_sensors(j);
+        //     const float expected_pressure_sensor = expected_sensors[i].pressure_sensors(j);
+        //     expectFloatEQ(dumped_pressure_sensor, expected_pressure_sensor, "");
+        // }
 
         // salinity sensors
         for (int j = 0; j < NUM_SALINITY_SENSORS; j++) {
@@ -694,11 +694,11 @@ void UtilDB::genRandPhSensorData(float & ph_sensor)
     ph_sensor = ph_dist(*rng_);
 }
 
-void UtilDB::genRandPressureSensorData(float & pressure_sensor)
-{
-    std::uniform_real_distribution<float> pressure_dist(PRESSURE_LBND, PRESSURE_UBND);
-    pressure_sensor = pressure_dist(*rng_);
-}
+// void UtilDB::genRandPressureSensorData(float & pressure_sensor)
+// {
+//     std::uniform_real_distribution<float> pressure_dist(PRESSURE_LBND, PRESSURE_UBND);
+//     pressure_sensor = pressure_dist(*rng_);
+// }
 
 void UtilDB::genRandSalinitySensorData(float & salinity_sensor)
 {

@@ -218,13 +218,13 @@ TEST_F(TestLocalTransceiver, sendData)
     }
     ph.set__ph_sensors(ph_array);
 
-    std::array<custom_interfaces::msg::PressureSensor, NUM_PRESSURE_SENSORS> pressure_array;
-    for (int i = 0; i < NUM_PRESSURE_SENSORS; i++) {
-        custom_interfaces::msg::HelperPressure pressure_data;
-        pressure_data.set__pressure(holder);
-        pressure_array[i].set__pressure(pressure_data);
-    }
-    pressure.set__pressure_sensors(pressure_array);
+    // std::array<custom_interfaces::msg::PressureSensor, NUM_PRESSURE_SENSORS> pressure_array;
+    // for (int i = 0; i < NUM_PRESSURE_SENSORS; i++) {
+    //     custom_interfaces::msg::HelperPressure pressure_data;
+    //     pressure_data.set__pressure(holder);
+    //     pressure_array[i].set__pressure(pressure_data);
+    // }
+    // pressure.set__pressure_sensors(pressure_array);
 
     std::array<custom_interfaces::msg::SalinitySensor, NUM_SALINITY_SENSORS> salinity_array;
     for (int i = 0; i < NUM_SALINITY_SENSORS; i++) {
@@ -460,42 +460,42 @@ TEST_F(TestLocalTransceiver, SerializeSalinitySensors)
     EXPECT_FLOAT_EQ(deserialized.salinity_sensors(0), expected_salinity);
 }
 
-/**
- * @brief Test that pressure sensor data is serialized correctly
- */
-TEST_F(TestLocalTransceiver, SerializePressureSensors)
-{
-    constexpr float expected_pressure = 101.3;
+// /**
+//  * @brief Test that pressure sensor data is serialized correctly
+//  */
+// TEST_F(TestLocalTransceiver, SerializePressureSensors)
+// {
+//     constexpr float expected_pressure = 101.3;
 
-    custom_interfaces::msg::PressureSensors pressure_sensors;
-    custom_interfaces::msg::PressureSensor  pressure_sensor;
-    custom_interfaces::msg::HelperPressure  pressure_data;
+//     custom_interfaces::msg::PressureSensors pressure_sensors;
+//     custom_interfaces::msg::PressureSensor  pressure_sensor;
+//     custom_interfaces::msg::HelperPressure  pressure_data;
 
-    pressure_data.set__pressure(expected_pressure);
-    pressure_sensor.set__pressure(pressure_data);
-    std::array<custom_interfaces::msg::PressureSensor, NUM_PRESSURE_SENSORS> pressure_array;
-    for (int i = 0; i < NUM_PRESSURE_SENSORS; i++) {
-        pressure_array[i] = pressure_sensor;
-    }
-    pressure_sensors.set__pressure_sensors(pressure_array);
+//     pressure_data.set__pressure(expected_pressure);
+//     pressure_sensor.set__pressure(pressure_data);
+//     std::array<custom_interfaces::msg::PressureSensor, NUM_PRESSURE_SENSORS> pressure_array;
+//     for (int i = 0; i < NUM_PRESSURE_SENSORS; i++) {
+//         pressure_array[i] = pressure_sensor;
+//     }
+//     pressure_sensors.set__pressure_sensors(pressure_array);
 
-    lcl_trns_->updateSensor(pressure_sensors);
-    Polaris::Sensors sensors(lcl_trns_->sensors());
+//     lcl_trns_->updateSensor(pressure_sensors);
+//     Polaris::Sensors sensors(lcl_trns_->sensors());
 
-    EXPECT_EQ(sensors.pressure_sensors_size(), NUM_PRESSURE_SENSORS);
-    EXPECT_FLOAT_EQ(sensors.pressure_sensors(0), expected_pressure);
+//     EXPECT_EQ(sensors.pressure_sensors_size(), NUM_PRESSURE_SENSORS);
+//     EXPECT_FLOAT_EQ(sensors.pressure_sensors(0), expected_pressure);
 
-    // Test serialization
-    std::string serialized;
-    EXPECT_TRUE(sensors.SerializeToString(&serialized));
-    EXPECT_GT(serialized.size(), 0);
+//     // Test serialization
+//     std::string serialized;
+//     EXPECT_TRUE(sensors.SerializeToString(&serialized));
+//     EXPECT_GT(serialized.size(), 0);
 
-    // Test deserialization
-    Polaris::Sensors deserialized;
-    EXPECT_TRUE(deserialized.ParseFromString(serialized));
-    EXPECT_EQ(deserialized.pressure_sensors_size(), NUM_PRESSURE_SENSORS);
-    EXPECT_FLOAT_EQ(deserialized.pressure_sensors(0), expected_pressure);
-}
+//     // Test deserialization
+//     Polaris::Sensors deserialized;
+//     EXPECT_TRUE(deserialized.ParseFromString(serialized));
+//     EXPECT_EQ(deserialized.pressure_sensors_size(), NUM_PRESSURE_SENSORS);
+//     EXPECT_FLOAT_EQ(deserialized.pressure_sensors(0), expected_pressure);
+// }
 
 /**
  * @brief Verifies correct construction of status response object

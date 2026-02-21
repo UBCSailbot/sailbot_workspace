@@ -158,12 +158,12 @@ private:
     */
     void genRandPhSensorData(float & ph_sensor);
 
-    /**
-    * @brief generate random pressure sensor data
-    *
-    * @param pressure_sensor Pressure sensor data to modify
-    */
-    void genRandPressureSensorData(float & pressure_sensor);
+    // /**
+    // * @brief generate random pressure sensor data
+    // *
+    // * @param pressure_sensor Pressure sensor data to modify
+    // */
+    // void genRandPressureSensorData(float & pressure_sensor);
 
     /**
     * @brief generate random salinity sensor data
