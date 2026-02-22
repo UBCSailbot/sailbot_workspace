@@ -77,28 +77,28 @@ public:
     /**
     * @brief Update the sensor with new temperature data
     *
-    * @param battery custom_interfaces TempSensors object
+    * @param temperature custom_interfaces TempSensors object
     */
     void updateSensor(msg::TempSensors temperature);
 
     /**
     * @brief Update the sensor with new pressure data
     *
-    * @param battery custom_interfaces PressureSensors object
+    * @param pressure custom_interfaces PressureSensors object
     */
     void updateSensor(msg::PressureSensors pressure);
 
     /**
     * @brief Update the sensor with new salinity data
     *
-    * @param battery custom_interfaces SalinitySensors object
+    * @param salinity custom_interfaces SalinitySensors object
     */
     void updateSensor(msg::SalinitySensors salinity);
 
     /**
     * @brief Update the sensor with new pH data
     *
-    * @param battery custom_interfaces PhSensors object
+    * @param ph custom_interfaces PhSensors object
     */
     void updateSensor(msg::PhSensors ph);
 
