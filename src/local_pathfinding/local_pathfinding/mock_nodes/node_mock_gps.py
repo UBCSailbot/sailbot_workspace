@@ -14,7 +14,7 @@ from rclpy.parameter import Parameter
 
 import local_pathfinding.coord_systems as cs
 from local_pathfinding.ompl_objectives import TimeObjective
-from local_pathfinding.test_plans.test_plan import TestPlan
+from test_plans.test_plan import TestPlan
 
 SECONDS_PER_HOUR = 3600
 

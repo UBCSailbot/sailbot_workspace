@@ -5,7 +5,7 @@ import rclpy
 from rclpy.node import Node
 
 import local_pathfinding.coord_systems as cs
-from local_pathfinding.test_plans.test_plan import TestPlan
+from test_plans.test_plan import TestPlan
 
 """
 Defines a Mock AIS Node that publishes AIS ships to the ROS Network for testing purposes
