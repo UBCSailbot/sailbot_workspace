@@ -100,7 +100,7 @@ def setup_launch(context: LaunchContext) -> List[Action]:
             bag_path,
             "/gps",
             "/local_path",
-            "/wind_sensors",
+            "/filtered_wind_sensor",
             "/ais_ships",
         ],
         output="screen",
