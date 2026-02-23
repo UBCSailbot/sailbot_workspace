@@ -321,8 +321,9 @@ def test_calculate_projected_distance_same_loc(
     sailbot_speed: float,
 ):
     boat1 = Boat(reference_point, sailbot_position, sailbot_speed, ais_ship)
+    cog_rad = np.radians(ais_ship.cog.heading)
 
-    assert boat1._calculate_projected_distance() == pytest.approx(
+    assert boat1._calculate_projected_distance(cog_rad) == pytest.approx(
         0.0
     ), "incorrect projected distance"
 
@@ -357,7 +358,8 @@ def test_calculate_projected_distance_diff_loc(
     target_ship = Boat(
         reference_point_latlon, sailbot_position_latlon, sailbot_speed_kmph, ais_ship
     )
-    target_ship_dist_km = target_ship._calculate_projected_distance()
+    cog_rad = np.radians(ais_ship.cog.heading)
+    target_ship_dist_km = target_ship._calculate_projected_distance(cog_rad)
     travel_time_hr = target_ship_dist_km / ais_ship.sog.speed
     target_ship_speed_x_kmph = np.sin(np.radians(ais_ship.cog.heading)) * ais_ship.sog.speed
     target_ship_speed_y_kmph = np.cos(np.radians(ais_ship.cog.heading)) * ais_ship.sog.speed

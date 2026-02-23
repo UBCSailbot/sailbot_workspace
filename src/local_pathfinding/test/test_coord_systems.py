@@ -390,23 +390,20 @@ def test_latlon_polygons_to_xy_polygons_empty_Polygon():
     assert result[0].is_empty
 
 
-def rot_to_rad_per_sec(rot: int) -> float:
-    """
-    Convert AIS ROT (rate of turn) int8 value into radians per second.
-
-    Returns:
-        float: rate of turn in radians per second.
-    """
-
-    if rot == -128:
-        return 0.0
-
-    if abs(rot) == 127:
-        rot_dpm = 10.0
-    else:
-        rot_dpm = (abs(rot) / 4.733) ** 2
-
-    if rot < 0:
-        rot_dpm *= -1
-
-    return math.radians(rot_dpm / 60.0)
+@pytest.mark.parametrize(
+    "rot, expected_rps",
+    [
+        (-128, 0.0),
+        (127, math.radians(10 / 60)),
+        (-127, -math.radians(10 / 60)),
+        (0, 0.0),
+        (10, math.radians(((10 / 4.733) ** 2) / 60)),
+        (-10, -math.radians(((10 / 4.733) ** 2) / 60)),
+        (50, math.radians(((50 / 4.733) ** 2) / 60)),
+        (-50, -math.radians(((50 / 4.733) ** 2) / 60)),
+    ],
+)
+def test_rot_to_rad_per_sec(rot: int, expected_rps: float):
+    assert cs.rot_to_rad_per_sec(rot) == pytest.approx(
+        expected_rps
+    ), f"Incorrect ROT conversion for rot={rot}"
