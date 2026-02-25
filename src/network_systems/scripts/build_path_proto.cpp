@@ -1,3 +1,8 @@
+/**
+ * This is a helper utility used in the satellite_test_utils.py script.
+ * It encodes and decodes protobuf objects.
+ * This is primarily used for manual testing of satellite data transfer.
+ */
 #include <iostream>
 #include <string>
 
@@ -22,11 +27,11 @@ int main(int argc, char * argv[])
 
         return 0;
     }
-
     // Default: encode mode
     Polaris::Sensors::Path path;
 
-    double lat, lon;
+    float lat;
+    float lon;
     while (std::cin >> lat >> lon) {
         auto * wp = path.add_waypoints();
         wp->set_latitude(lat);

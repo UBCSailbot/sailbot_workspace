@@ -1,3 +1,40 @@
+# Satellite Test Utilities
+#
+# Description:
+#   In encode mode:
+#     - Generates a protobuf GlobalPath object from:
+#         • Provided waypoint coordinates, or
+#         • Randomly generated waypoints
+#
+#   In decode mode:
+#     - Decodes a protobuf byte string into a human-readable format
+#
+# Usage:
+#   Encode or decode protobuf messages.
+#
+# Options:
+#   -h, --help
+#       Show this help message and exit
+#
+#   -m MODE, --mode MODE
+#       Select mode: encode or decode
+#
+#   -w WAYPOINTS [WAYPOINTS ...], --waypoints WAYPOINTS [WAYPOINTS ...]
+#       Waypoints as a flat list of latitude/longitude pairs
+#       Example:
+#           --waypoints 48.5 -123.4 49.1 -122.8
+#
+#   -b BYTES, --bytes BYTES
+#       Hex-encoded protobuf bytes to decode
+#
+# Examples:
+#   Decode:
+#       python3 satellite_test_utils.py -m decode --bytes 120012070d6ff0a53f107e
+#
+#   Encode:
+#       python3 satellite_test_utils.py -m encode
+
+
 import argparse
 import random
 import subprocess
