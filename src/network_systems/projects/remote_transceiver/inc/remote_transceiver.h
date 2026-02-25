@@ -211,6 +211,17 @@ std::pair<http::status, std::string> get(ConnectionInfo info);
  * @return http::status of the response
  */
 http::status post(ConnectionInfo info, std::string content_type, const std::string & body);
+
+/**
+ * @brief Send an HTTP POST request
+ *
+ * @param info          ConnectionInfo configuration
+ * @param content_type  what kind of content is being posted (ex. application/x-www-form-urlencoded)
+ * @param body          Content to POST
+ * @return http::response of the response
+ */
+http::response<http::dynamic_body> post_response_body(
+  ConnectionInfo info, std::string content_type, const std::string & body);
 }  // namespace http_client
 
 }  // namespace remote_transceiver

@@ -291,6 +291,7 @@
         "plantuml.exportOutDir": "diagrams/out",
         "plantuml.exportSubFolder": false,
         "ros.distro": "humble",
+        "ROS2.distro": "humble",
     },
     "launch": {
         // Use IntelliSense to learn about possible attributes.
@@ -530,7 +531,12 @@
                 "label": "Launch Package",
                 "detail": "Launch a specifc ROS package.",
                 "type": "shell",
-                "command": "package=${input:ROS_package}; flags=\"${input:package_flags}\"; if [ ! -z \"${flags}\" ]; then flags=\"-f ${flags}\"; fi; ./scripts/launch.sh -p \"${package}\" \"${flags}\"",
+                "options": {
+                    "env": {
+                        "PACKAGE_FLAGS": "${input:package_flags}",
+                    }
+                },
+                "command": "./scripts/launch.sh -p ${input:ROS_package} ${PACKAGE_FLAGS:+-f} ${PACKAGE_FLAGS}",
                 "problemMatcher": []
             },
             {
@@ -571,6 +577,7 @@
                 "id": "package_flags",
                 "type": "promptString",
                 "description": "Optional ROS package launch flags or arguments",
+                "default": ""
             }
         ]
     }

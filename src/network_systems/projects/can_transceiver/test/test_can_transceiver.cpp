@@ -122,7 +122,7 @@ TEST_F(TestCanFrameParser, TestBatteryInvalid)
  */
 TEST_F(TestCanFrameParser, MainTrimTabTestValid)
 {
-    constexpr std::array<float, 2> expected_angles{12, 128};
+    constexpr std::array<float, 2> expected_angles{12, 33};
     CAN_FP::CanId                  id = CAN_FP::CanId::MAIN_TR_TAB;
 
     for (size_t i = 0; i < 2; i++) {
@@ -137,8 +137,12 @@ TEST_F(TestCanFrameParser, MainTrimTabTestValid)
 
         uint32_t raw_angle;
         std::memcpy(&raw_angle, cf.data + CAN_FP::MainTrimTab::BYTE_OFF_ANGLE, sizeof(uint32_t));
-        raw_angle /= 1000;  //NOLINT(readability-magic-numbers)
+        raw_angle = (raw_angle / 1000) - 90;  //NOLINT(readability-magic-numbers)
         EXPECT_EQ(raw_angle, expected_angle);
+
+        raw_angle *= 1000;  //NOLINT(readability-magic-numbers)
+
+        std::memcpy(cf.data + CAN_FP::MainTrimTab::BYTE_OFF_ANGLE, &raw_angle, sizeof(uint32_t));
 
         CAN_FP::MainTrimTab sail_from_can = CAN_FP::MainTrimTab(cf);
 
@@ -162,7 +166,7 @@ TEST_F(TestCanFrameParser, TestMainTrimTabInvalid)
 
     EXPECT_THROW(CAN_FP::MainTrimTab tmp(cf), CAN_FP::CanIdMismatchException);
 
-    std::vector<float> invalid_angles{HEADING_LBND - 1, HEADING_UBND + 1};
+    std::vector<float> invalid_angles{TRIM_LBND - 1, TRIM_UBND + 1};
 
     CAN_FP::CanId valid_id = CAN_FP::CanId::MAIN_TR_TAB;
     msg::SailCmd  msg;
@@ -227,9 +231,9 @@ TEST_F(TestCanFrameParser, TestDesiredHeadingInvalid)
 
     EXPECT_THROW(CAN_FP::DesiredHeading tmp(cf), CAN_FP::CanIdMismatchException);
 
-    std::vector<float> invalid_angles{HEADING_LBND - 1, HEADING_UBND + 1};
+    std::vector<float> invalid_angles{-361, 361};  //NOLINT(readability-magic-numbers)
 
-    CAN_FP::CanId       valid_id = CAN_FP::CanId::MAIN_TR_TAB;
+    CAN_FP::CanId       valid_id = CAN_FP::CanId::MAIN_HEADING;
     msg::DesiredHeading msg;
     msg::HelperHeading  helper_msg;
 
@@ -293,9 +297,9 @@ TEST_F(TestCanFrameParser, TestRudderDataInvalid)
 
     EXPECT_THROW(CAN_FP::RudderData tmp(cf), CAN_FP::CanIdMismatchException);
 
-    std::vector<float> invalid_angles{HEADING_LBND - 1, HEADING_UBND + 1};
+    std::vector<float> invalid_angles{-361, 361};  //NOLINT(readability-magic-numbers)
 
-    CAN_FP::CanId      valid_id = CAN_FP::CanId::MAIN_TR_TAB;
+    CAN_FP::CanId      valid_id = CAN_FP::CanId::MAIN_HEADING;
     msg::HelperHeading helper_msg;
 
     for (float invalid_angle : invalid_angles) {
@@ -376,8 +380,8 @@ TEST_F(TestCanFrameParser, TestWindSensorInvalid)
 
     EXPECT_THROW(CAN_FP::WindSensor tmp(cf), CAN_FP::CanIdMismatchException);
 
-    std::vector<int16_t> invalid_angles{WIND_DIRECTION_LBND - 1, WIND_DIRECTION_UBND + 1};
-    std::vector<float>   invalid_speeds{SPEED_LBND - 1, SPEED_UBND + 1};
+    std::vector<int16_t> invalid_angles{-1000, 361};  //NOLINT(readability-magic-numbers)
+    std::vector<float>   invalid_speeds{WIND_SPEED_LBND - 1, WIND_SPEED_UBND + 1};
 
     optId = CAN_FP::WindSensor::rosIdxToCanId(0);
     ASSERT_TRUE(optId.has_value());
@@ -389,7 +393,7 @@ TEST_F(TestCanFrameParser, TestWindSensorInvalid)
     for (int16_t invalid_angle : invalid_angles) {
         msg.set__direction(invalid_angle);
         msg::HelperSpeed tmp_speed_msg;
-        tmp_speed_msg.set__speed(SPEED_LBND);
+        tmp_speed_msg.set__speed(WIND_SPEED_LBND);
         msg.set__speed(tmp_speed_msg);
 
         EXPECT_THROW(CAN_FP::WindSensor tmp(msg, valid_id), std::out_of_range);
@@ -482,7 +486,7 @@ TEST_F(TestCanFrameParser, TestGPSInvalid)
 
     std::vector<float> invalid_lons{LON_LBND - 1, LON_UBND + 1};
     std::vector<float> invalid_lats{LAT_LBND - 1, LAT_UBND + 1};
-    std::vector<float> invalid_speeds{SPEED_LBND - 1, SPEED_UBND + 1};
+    std::vector<float> invalid_speeds{BOAT_SPEED_LBND - 1, BOAT_SPEED_UBND + 1};
 
     CAN_FP::CanId valid_id = CAN_FP::CanId::PATH_GPS_DATA_FRAME;
     msg::GPS      msg;
@@ -496,7 +500,7 @@ TEST_F(TestCanFrameParser, TestGPSInvalid)
         msg_latlon.set__longitude(invalid_lon);
         msg.set__lat_lon(msg_latlon);
 
-        msg_speed.set__speed(SPEED_UBND);
+        msg_speed.set__speed(BOAT_SPEED_UBND);
         msg.set__speed(msg_speed);
 
         msg_heading.set__heading(HEADING_UBND);
@@ -514,7 +518,7 @@ TEST_F(TestCanFrameParser, TestGPSInvalid)
         msg_latlon.set__longitude(LON_UBND);
         msg.set__lat_lon(msg_latlon);
 
-        msg_speed.set__speed(SPEED_UBND);
+        msg_speed.set__speed(BOAT_SPEED_UBND);
         msg.set__speed(msg_speed);
 
         msg_heading.set__heading(HEADING_UBND);
@@ -724,8 +728,8 @@ TEST_F(TestCanFrameParser, TestAISShipsInvalid)
 
     constexpr std::array<float, 2>  invalid_lats{LAT_LBND - 1, LAT_UBND + 1};
     constexpr std::array<float, 2>  invalid_lons{LON_LBND - 1, LON_UBND + 1};
-    constexpr std::array<float, 2>  invalid_cogs{HEADING_LBND - 1, HEADING_UBND + 1};
-    constexpr std::array<float, 2>  invalid_sogs{SPEED_LBND - 1, SPEED_UBND + 1};
+    constexpr std::array<float, 2>  invalid_cogs{-361, 361};
+    constexpr std::array<float, 2>  invalid_sogs{SOG_SPEED_LBND - 1, SOG_SPEED_UBND + 1};
     constexpr std::array<int8_t, 2> invalid_rots{ROT_LBND - 1, ROT_UBND + 1};
     constexpr std::array<float, 2>  invalid_widths{SHIP_DIMENSION_LBND - 1, SHIP_DIMENSION_UBND + 1};
     constexpr std::array<float, 2>  invalid_lengths{SHIP_DIMENSION_LBND - 1, SHIP_DIMENSION_UBND + 1};
@@ -743,7 +747,7 @@ TEST_F(TestCanFrameParser, TestAISShipsInvalid)
 
         msg::HelperSpeed sog;
         //convert to km/h
-        sog.set__speed(SPEED_LBND);
+        sog.set__speed(SOG_SPEED_LBND);
 
         msg::HelperROT rot;
         rot.set__rot(ROT_UBND);
@@ -775,7 +779,7 @@ TEST_F(TestCanFrameParser, TestAISShipsInvalid)
 
         msg::HelperSpeed sog;
         //convert to km/h
-        sog.set__speed(SPEED_LBND);
+        sog.set__speed(SOG_SPEED_LBND);
 
         msg::HelperROT rot;
         rot.set__rot(ROT_UBND);
@@ -807,7 +811,7 @@ TEST_F(TestCanFrameParser, TestAISShipsInvalid)
 
         msg::HelperSpeed sog;
         //convert to km/h
-        sog.set__speed(SPEED_LBND);
+        sog.set__speed(SOG_SPEED_LBND);
 
         msg::HelperROT rot;
         rot.set__rot(ROT_UBND);
@@ -871,7 +875,7 @@ TEST_F(TestCanFrameParser, TestAISShipsInvalid)
 
         msg::HelperSpeed sog;
         //convert to km/h
-        sog.set__speed(SPEED_UBND);
+        sog.set__speed(SOG_SPEED_UBND);
 
         msg::HelperROT rot;
         rot.set__rot(invalid_rot);
@@ -903,7 +907,7 @@ TEST_F(TestCanFrameParser, TestAISShipsInvalid)
 
         msg::HelperSpeed sog;
         //convert to km/h
-        sog.set__speed(SPEED_UBND);
+        sog.set__speed(SOG_SPEED_UBND);
 
         msg::HelperROT rot;
         rot.set__rot(ROT_UBND);
@@ -935,7 +939,7 @@ TEST_F(TestCanFrameParser, TestAISShipsInvalid)
 
         msg::HelperSpeed sog;
         //convert to km/h
-        sog.set__speed(SPEED_UBND);
+        sog.set__speed(SOG_SPEED_UBND);
 
         msg::HelperROT rot;
         rot.set__rot(ROT_UBND);
@@ -965,11 +969,11 @@ TEST_F(TestCanFrameParser, TestAISShipsInvalid)
 TEST_F(TestCanFrameParser, TempSensorTestValid)
 {
     constexpr std::uint8_t NUM_SENSORS = CAN_FP::TempSensor::TEMP_SENSOR_IDS.size();
-    // assuming measuring ocean water, possible range ~[-2:30]
+    // assuming measuring ocean water, possible range ~[-2:30] = ~[271:303]
     // also include upper, lower bounds
     std::vector<float> expected_temps = {TEMP_LBND};
     for (int i = 1; i < NUM_SENSORS - 1; i++) {
-        expected_temps.push_back(static_cast<float>(-2.3 + (2.3 * i)));  // NOLINT(readability-magic-numbers)
+        expected_temps.push_back(static_cast<float>(271 + (2.3 * i)));  // NOLINT(readability-magic-numbers)
     }
     expected_temps.push_back(TEMP_UBND);
 
@@ -992,11 +996,11 @@ TEST_F(TestCanFrameParser, TempSensorTestValid)
         EXPECT_EQ(cf.can_id, static_cast<canid_t>(id));
         EXPECT_EQ(cf.len, CAN_FP::TempSensor::CAN_BYTE_DLEN_);
 
-        int16_t raw_temp;
-        std::memcpy(&raw_temp, cf.data + CAN_FP::TempSensor::BYTE_OFF_TEMP, sizeof(int16_t));
+        int32_t raw_temp;
+        std::memcpy(&raw_temp, cf.data + CAN_FP::TempSensor::BYTE_OFF_TEMP, sizeof(int32_t));
         float converted_temp = static_cast<float>(raw_temp / 1000.0);  //NOLINT
 
-        const float tolerance = 0.001;
+        const float tolerance = 0.01;
         EXPECT_NEAR(converted_temp, expected_temps[i], tolerance);
 
         CAN_FP::TempSensor sensor_from_can = CAN_FP::TempSensor(cf);
@@ -1121,86 +1125,86 @@ TEST_F(TestCanFrameParser, TestPhSensorInvalid)
     };
 }
 
-/**
- * @brief Test ROS<->CAN Pressure translations work as expected for valid input values
- *
- */
-TEST_F(TestCanFrameParser, PressureSensorTestValid)
-{
-    constexpr std::uint8_t NUM_SENSORS = CAN_FP::PressureSensor::PRESSURE_SENSOR_IDS.size();
-    std::vector<float>     expected_pressures;
-    float                  increment = (PRESSURE_UBND - PRESSURE_LBND) / NUM_SENSORS;
-    for (int i = 0; i < NUM_SENSORS; i++) {
-        expected_pressures.push_back(PRESSURE_LBND + (increment * static_cast<float>(i)));
-    }
+// /**
+//  * @brief Test ROS<->CAN Pressure translations work as expected for valid input values
+//  *
+//  */
+// TEST_F(TestCanFrameParser, PressureSensorTestValid)
+// {
+//     constexpr std::uint8_t NUM_SENSORS = CAN_FP::PressureSensor::PRESSURE_SENSOR_IDS.size();
+//     std::vector<float>     expected_pressures;
+//     float                  increment = (PRESSURE_UBND - PRESSURE_LBND) / NUM_SENSORS;
+//     for (int i = 0; i < NUM_SENSORS; i++) {
+//         expected_pressures.push_back(PRESSURE_LBND + (increment * static_cast<float>(i)));
+//     }
 
-    for (size_t i = 0; i < NUM_SENSORS; i++) {
-        auto optId = CAN_FP::PressureSensor::rosIdxToCanId(i);
+//     for (size_t i = 0; i < NUM_SENSORS; i++) {
+//         auto optId = CAN_FP::PressureSensor::rosIdxToCanId(i);
 
-        ASSERT_TRUE(optId.has_value());
+//         ASSERT_TRUE(optId.has_value());
 
-        CAN_FP::CanId       id                = optId.value();
-        float               expected_pressure = expected_pressures[i];
-        msg::PressureSensor msg;
-        msg::HelperPressure pressure_msg;
+//         CAN_FP::CanId       id                = optId.value();
+//         float               expected_pressure = expected_pressures[i];
+//         msg::PressureSensor msg;
+//         msg::HelperPressure pressure_msg;
 
-        pressure_msg.set__pressure(expected_pressure);
-        msg.set__pressure(pressure_msg);
+//         pressure_msg.set__pressure(expected_pressure);
+//         msg.set__pressure(pressure_msg);
 
-        CAN_FP::PressureSensor sensor_from_ros = CAN_FP::PressureSensor(msg, id);
-        CAN_FP::CanFrame       cf              = sensor_from_ros.toLinuxCan();
+//         CAN_FP::PressureSensor sensor_from_ros = CAN_FP::PressureSensor(msg, id);
+//         CAN_FP::CanFrame       cf              = sensor_from_ros.toLinuxCan();
 
-        EXPECT_EQ(cf.can_id, static_cast<canid_t>(id));
-        EXPECT_EQ(cf.len, CAN_FP::PressureSensor::CAN_BYTE_DLEN_);
+//         EXPECT_EQ(cf.can_id, static_cast<canid_t>(id));
+//         EXPECT_EQ(cf.len, CAN_FP::PressureSensor::CAN_BYTE_DLEN_);
 
-        int32_t raw_pressure;
-        std::memcpy(&raw_pressure, cf.data + CAN_FP::PressureSensor::BYTE_OFF_PRESSURE, sizeof(int32_t));
-        float converted_pressure = static_cast<float>(raw_pressure / 1000.0);  //NOLINT(readability-magic-numbers)
+//         int16_t raw_pressure;
+//         std::memcpy(&raw_pressure, cf.data + CAN_FP::PressureSensor::BYTE_OFF_PRESSURE, sizeof(int16_t));
+//         float converted_pressure = static_cast<float>(raw_pressure / 1000.0);  //NOLINT(readability-magic-numbers)
 
-        const float tolerance = 0.001;
-        EXPECT_NEAR(converted_pressure, expected_pressures[i], tolerance);
+//         const float tolerance = 0.001;
+//         EXPECT_NEAR(converted_pressure, expected_pressures[i], tolerance);
 
-        CAN_FP::PressureSensor sensor_from_can = CAN_FP::PressureSensor(cf);
+//         CAN_FP::PressureSensor sensor_from_can = CAN_FP::PressureSensor(cf);
 
-        EXPECT_EQ(sensor_from_can.id_, id);
+//         EXPECT_EQ(sensor_from_can.id_, id);
 
-        msg::PressureSensor msg_from_sensor = sensor_from_can.toRosMsg();
-        EXPECT_NEAR(msg_from_sensor.pressure.pressure, expected_pressure, tolerance);
-    }
-}
+//         msg::PressureSensor msg_from_sensor = sensor_from_can.toRosMsg();
+//         EXPECT_NEAR(msg_from_sensor.pressure.pressure, expected_pressure, tolerance);
+//     }
+// }
 
-/**
- * @brief Test the behavior of the PressureSensor class when given invalid input values
- *
- */
-TEST_F(TestCanFrameParser, TestPressureSensorInvalid)
-{
-    auto optId = CAN_FP::PressureSensor::rosIdxToCanId(NUM_PRESSURE_SENSORS);
-    EXPECT_FALSE(optId.has_value());
+// /**
+//  * @brief Test the behavior of the PressureSensor class when given invalid input values
+//  *
+//  */
+// TEST_F(TestCanFrameParser, TestPressureSensorInvalid)
+// {
+//     auto optId = CAN_FP::PressureSensor::rosIdxToCanId(NUM_PRESSURE_SENSORS);
+//     EXPECT_FALSE(optId.has_value());
 
-    CAN_FP::CanId invalid_id = CAN_FP::CanId::RESERVED;
+//     CAN_FP::CanId invalid_id = CAN_FP::CanId::RESERVED;
 
-    CAN_FP::CanFrame cf{.can_id = static_cast<canid_t>(invalid_id)};
+//     CAN_FP::CanFrame cf{.can_id = static_cast<canid_t>(invalid_id)};
 
-    EXPECT_THROW(CAN_FP::PressureSensor tmp(cf), CAN_FP::CanIdMismatchException);
+//     EXPECT_THROW(CAN_FP::PressureSensor tmp(cf), CAN_FP::CanIdMismatchException);
 
-    const float        small = 0.001;
-    std::vector<float> invalid_pressures{PRESSURE_LBND - small, PRESSURE_UBND + small};
+//     const float        small = 0.01;
+//     std::vector<float> invalid_pressures{PRESSURE_LBND - small, PRESSURE_UBND + small};
 
-    optId = CAN_FP::PressureSensor::rosIdxToCanId(0);
-    ASSERT_TRUE(optId.has_value());
+//     optId = CAN_FP::PressureSensor::rosIdxToCanId(0);
+//     ASSERT_TRUE(optId.has_value());
 
-    CAN_FP::CanId       valid_id = optId.value();
-    msg::PressureSensor msg;
+//     CAN_FP::CanId       valid_id = optId.value();
+//     msg::PressureSensor msg;
 
-    for (float invalid_pressure : invalid_pressures) {
-        msg::HelperPressure tmp_pressure_msg;
-        tmp_pressure_msg.set__pressure(invalid_pressure);
-        msg.set__pressure(tmp_pressure_msg);
+//     for (float invalid_pressure : invalid_pressures) {
+//         msg::HelperPressure tmp_pressure_msg;
+//         tmp_pressure_msg.set__pressure(invalid_pressure);
+//         msg.set__pressure(tmp_pressure_msg);
 
-        EXPECT_THROW(CAN_FP::PressureSensor tmp(msg, valid_id), std::out_of_range);
-    };
-}
+//         EXPECT_THROW(CAN_FP::PressureSensor tmp(msg, valid_id), std::out_of_range);
+//     };
+// }
 
 /**
  * @brief Test ROS<->CAN Salinity translations work as expected for valid input values

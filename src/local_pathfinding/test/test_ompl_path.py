@@ -1,3 +1,6 @@
+import math
+import random
+
 import pytest
 from custom_interfaces.msg import (
     GPS,
@@ -22,58 +25,40 @@ from local_pathfinding.local_path import LocalPathState
 
 LAND_KEY = -1
 
-OMPL_PATH = ompl_path.OMPLPath(
-    parent_logger=RcutilsLogger(),
-    max_runtime=1,
-    local_path_state=LocalPathState(
-        gps=GPS(),
-        ais_ships=AISShips(),
-        global_path=Path(
-            waypoints=[
-                HelperLatLon(latitude=1.0, longitude=2.0),
-                HelperLatLon(latitude=3.0, longitude=4.0),
-            ]
-        ),
-        target_global_waypoint=HelperLatLon(latitude=1.0, longitude=2.0),
-        filtered_wind_sensor=WindSensor(),
-        planner="rrtstar",
-    ),
-)
-
 
 @pytest.fixture
 def fresh_ompl_path():
     return ompl_path.OMPLPath(
         parent_logger=RcutilsLogger(),
-        max_runtime=1,
         local_path_state=LocalPathState(
-            gps=GPS(),
+            gps=GPS(lat_lon=HelperLatLon(latitude=0.0, longitude=0.0)),
             ais_ships=AISShips(),
             global_path=Path(
                 waypoints=[
-                    HelperLatLon(latitude=1.0, longitude=2.0),
-                    HelperLatLon(latitude=3.0, longitude=4.0),
+                    HelperLatLon(latitude=0.02, longitude=0.02),
+                    HelperLatLon(latitude=0.04, longitude=0.03),
+                    HelperLatLon(latitude=0.06, longitude=0.05),
+                    HelperLatLon(latitude=0.08, longitude=0.07),
+                    HelperLatLon(latitude=0.10, longitude=0.09),
+                    HelperLatLon(latitude=0.12, longitude=0.11),
+                    HelperLatLon(latitude=0.15, longitude=0.15),
+                    HelperLatLon(latitude=0.1, longitude=0.1),
                 ]
             ),
-            target_global_waypoint=HelperLatLon(latitude=1.0, longitude=2.0),
+            target_global_waypoint=HelperLatLon(latitude=0.1, longitude=0.1),
             filtered_wind_sensor=WindSensor(),
             planner="rrtstar",
         ),
     )
 
 
-def test_OMPLPath___init__():
-    assert OMPL_PATH.solved
-
-
-def test_OMPLPath_get_cost():
-    with pytest.raises(NotImplementedError):
-        OMPL_PATH.get_cost()
+def test_OMPLPath___init__(fresh_ompl_path):
+    assert fresh_ompl_path.solved
 
 
 def test_OMPLPath_get_waypoint(fresh_ompl_path):
     waypoints = fresh_ompl_path.get_path().waypoints  # List[HelperLatLon]
-    start_state_latlon = OMPL_PATH.state.position
+    start_state_latlon = fresh_ompl_path.state.position
 
     test_start = waypoints[0]
     test_goal = waypoints[-1]
@@ -82,14 +67,17 @@ def test_OMPLPath_get_waypoint(fresh_ompl_path):
         (start_state_latlon.latitude, start_state_latlon.longitude), abs=1e-2
     ), "first waypoint should be start state"
     assert (test_goal.latitude, test_goal.longitude) == pytest.approx(
-        (OMPL_PATH.state.reference_latlon.latitude, OMPL_PATH.state.reference_latlon.longitude),
+        (
+            fresh_ompl_path.state.reference_latlon.latitude,
+            fresh_ompl_path.state.reference_latlon.longitude,
+        ),
         abs=1e-2,
     ), "last waypoint should be goal state"
 
 
-def test_OMPLPath_update_objectives():
+def test_OMPLPath_update_objectives(fresh_ompl_path):
     with pytest.raises(NotImplementedError):
-        OMPL_PATH.update_objectives()
+        fresh_ompl_path.update_objectives()
 
 
 def test_init_obstacles():
@@ -229,8 +217,8 @@ def test_init_obstacles():
     "x,y,is_valid",
     [(0.5, 0.5, True), (-14, 0.5, False), (-16, 0.5, True)],
 )
-def test_is_state_valid(x: float, y: float, is_valid: bool):
-    state = base.State(OMPL_PATH._simple_setup.getStateSpace())
+def test_is_state_valid(x: float, y: float, is_valid: bool, fresh_ompl_path):
+    state = base.State(fresh_ompl_path._simple_setup.getStateSpace())
     state().setXY(x, y)
 
     # Sample AIS SHIP message
@@ -268,18 +256,172 @@ def test_is_state_valid(x: float, y: float, is_valid: bool):
 
 
 @pytest.mark.parametrize(
-    "position,expected_area,expected_bounds",
+    "position,expected_area,expected_bounds,box_buffer_size",
     [
-        (cs.XY(0.0, 0.0), pytest.approx(4, rel=1e-2), (-1, -1, 1, 1)),
-        (cs.XY(100.0, 100.0), pytest.approx(4, rel=1e-2), (99, 99, 101, 101)),
-        (cs.XY(-100.0, -100.0), pytest.approx(4, rel=1e-2), (-101, -101, -99, -99)),
+        (cs.XY(0.0, 0.0), pytest.approx(4, rel=1e-2), (-1, -1, 1, 1), 1.0),
+        (cs.XY(100.0, 100.0), pytest.approx(4, rel=1e-2), (99, 99, 101, 101), 1.0),
+        (cs.XY(-50.0, -50.0), pytest.approx(4, rel=1e-2), (-51, -51, -49, -49), 1.0),
+        (cs.XY(100.0, 100.0), pytest.approx(36, rel=1e-2), (97, 97, 103, 103), 3.0),
+        (cs.XY(-50.0, -50.0), pytest.approx(36, rel=1e-2), (-53, -53, -47, -47), 3.0),
     ],
 )
-def test_create_space(position: cs.XY, expected_area, expected_bounds):
+def test_create_space(
+    position: cs.XY, expected_area, expected_bounds, box_buffer_size: float, fresh_ompl_path
+):
     """Test creation of buffered space around positions"""
     # Given an OMPLPath instance
-    space = OMPL_PATH.create_buffer_around_position(position)
+
+    space = fresh_ompl_path.create_buffer_around_position(position, box_buffer_size)
 
     assert space.area == expected_area, "Space area should match buffer size"
-    assert space.bounds == pytest.approx(expected_bounds, abs=1.0), "Bounds should match expected"
+    assert space.bounds == pytest.approx(
+        expected_bounds, abs=box_buffer_size
+    ), "Bounds should match expected"
     assert space.contains(Point(position.x, position.y)), "Space should contain center point"
+
+
+@pytest.mark.parametrize("boat_latlon", [HelperLatLon(latitude=0.0, longitude=0.0)])
+def test_get_remaining_cost_full_path(fresh_ompl_path, boat_latlon):
+    remaining_cost = fresh_ompl_path.get_remaining_cost(0, boat_latlon)
+    assert remaining_cost == pytest.approx(
+        fresh_ompl_path.get_cost(), abs=0.01
+    )
+
+
+@pytest.mark.parametrize(
+    "wp_index",
+    [
+        1,
+        2,
+        3,
+        4,
+    ],
+)
+def test_get_remaining_cost_partial(fresh_ompl_path, wp_index):
+    waypoints = fresh_ompl_path.get_path().waypoints
+    boat_latlon = waypoints[wp_index]
+    next_wp_latlon = waypoints[wp_index + 1] if wp_index + 1 < len(waypoints) else None
+
+    def mid_point(start_latlon: HelperLatLon, end_latlon: HelperLatLon):
+        if end_latlon is None:
+            return start_latlon
+        end_points_inclusive_factor = 1e-4
+        return HelperLatLon(
+            latitude=(random.uniform(start_latlon.latitude + end_points_inclusive_factor,
+                                     end_latlon.latitude - end_points_inclusive_factor)),  # noqa
+            longitude=(random.uniform(start_latlon.longitude + end_points_inclusive_factor,
+                                      end_latlon.longitude - end_points_inclusive_factor)),  # noqa
+        )
+
+    boat_latlon = mid_point(boat_latlon, next_wp_latlon)
+    cost = fresh_ompl_path.get_remaining_cost(wp_index, boat_latlon)
+
+    # cannot calculate cost_from_next_wp as index out of bound
+    if next_wp_latlon is None:
+        with pytest.raises(Exception):
+            fresh_ompl_path.get_remaining_cost(wp_index + 1, next_wp_latlon)
+        return
+
+    cost_from_next_wp = fresh_ompl_path.get_remaining_cost(wp_index + 1, next_wp_latlon)
+
+    full_cost = fresh_ompl_path.get_cost()
+    assert cost < full_cost, f"Remaining cost {cost} should be less than full cost {full_cost}"
+    assert cost > cost_from_next_wp, (
+        f"Cost from waypoint {wp_index} ({cost}) should be greater than "
+        f"cost from waypoint {wp_index + 1} ({cost_from_next_wp})"
+    )
+
+
+@pytest.mark.parametrize(
+    "wp_index,",
+    [
+        1,
+        2,
+        3,
+        4,
+    ],
+)
+def test_get_remaining_cost_no_partial(fresh_ompl_path, wp_index):
+    waypoints = fresh_ompl_path.get_path().waypoints
+    boat_latlon = waypoints[wp_index]
+    cost = fresh_ompl_path.get_remaining_cost(wp_index, boat_latlon)
+    # cannot calculate cost_from_next_wp as index out of bound
+    next_wp_latlon = waypoints[wp_index + 1] if wp_index + 1 < len(waypoints) else None
+
+    if next_wp_latlon is None:
+        with pytest.raises(Exception):
+            fresh_ompl_path.get_remaining_cost(wp_index + 1, next_wp_latlon)
+        return
+
+    cost_from_next_wp = fresh_ompl_path.get_remaining_cost(wp_index + 1, next_wp_latlon)
+
+    full_cost = fresh_ompl_path.get_cost()
+    assert cost < full_cost, f"Remaining cost {cost} should be less than full cost {full_cost}"
+    assert cost > cost_from_next_wp, (
+        f"Cost from waypoint {wp_index} ({cost}) should be greater than "
+        f"cost from waypoint {wp_index + 1} ({cost_from_next_wp})"
+    )
+
+
+def test_get_remaining_cost_projection_logic(fresh_ompl_path):
+    """
+    Test that get_remaining_cost uses projection logic correctly.
+
+    This test verifies that even when the boat is farther from the segment end
+    than the segment start is (e.g., boat is off to the side), the projection
+    logic correctly determines progress along the segment.
+    """
+    waypoints = fresh_ompl_path.get_path().waypoints
+
+    # Use segment from waypoint 1 to waypoint 2
+    wp_index = 1
+    start_latlon = waypoints[wp_index]
+    end_latlon = waypoints[wp_index + 1]
+
+    # Convert to XY coordinates for easier geometric calculations
+    reference = fresh_ompl_path.state.reference_latlon
+    start_xy = cs.latlon_to_xy(reference, start_latlon)
+    end_xy = cs.latlon_to_xy(reference, end_latlon)
+
+    # Calculate segment vector
+    seg_dx = end_xy.x - start_xy.x
+    seg_dy = end_xy.y - start_xy.y
+    seg_length = math.sqrt(seg_dx**2 + seg_dy**2)
+
+    # Create a boat position at 50% along the segment, but offset perpendicular
+    # This makes the boat farther from the end than the segment length
+    progress = 0.5
+    boat_along_x = start_xy.x + progress * seg_dx
+    boat_along_y = start_xy.y + progress * seg_dy
+
+    # Add perpendicular offset (perpendicular to segment direction)
+    # Perpendicular vector: (-dy, dx) normalized
+    perp_scale = seg_length  # Offset by the segment length
+    perp_x = -seg_dy / seg_length * perp_scale
+    perp_y = seg_dx / seg_length * perp_scale
+
+    boat_xy = cs.XY(boat_along_x + perp_x, boat_along_y + perp_y)
+
+    # Convert back to lat/lon
+    boat_latlon = cs.xy_to_latlon(reference, boat_xy)
+
+    # Verify that boat is farther from end than segment length
+    boat_to_end_dist = math.sqrt((end_xy.x - boat_xy.x) ** 2 + (end_xy.y - boat_xy.y) ** 2)
+    assert boat_to_end_dist > seg_length, (
+        "Test setup: boat should be farther from end than segment length "
+        f"(boat_to_end={boat_to_end_dist:.3f}, seg_length={seg_length:.3f})"
+    )
+
+    # Get remaining cost from this position
+    remaining_cost = fresh_ompl_path.get_remaining_cost(wp_index, boat_latlon)
+
+    # Get cost from the start and end of the segment
+    cost_from_start = fresh_ompl_path.get_remaining_cost(wp_index, start_latlon)
+    cost_from_end = fresh_ompl_path.get_remaining_cost(wp_index + 1, end_latlon)
+
+    # The remaining cost should be between the cost from start and cost from end
+    # since we're 50% along the segment
+    assert cost_from_end < remaining_cost < cost_from_start, (
+        f"Remaining cost from projected position ({remaining_cost:.3f}) should be between "
+        f"cost from start ({cost_from_start:.3f}) and cost from end ({cost_from_end:.3f})"
+    )

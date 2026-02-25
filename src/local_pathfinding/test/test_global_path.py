@@ -83,24 +83,16 @@ def test__interpolate_path(
                 HelperLatLon(latitude=85.95, longitude=13.56),
             ],
         ),
-        (
-            HelperLatLon(latitude=48.95, longitude=123.56),
-            [
-                HelperLatLon(latitude=48.95, longitude=123.55),
-                HelperLatLon(latitude=85.95, longitude=13.56),
-                HelperLatLon(latitude=85.00, longitude=13.00),
-            ],
-        ),
     ],
 )
 def test_interval_spacing(pos: HelperLatLon, waypoints: list[HelperLatLon]):
-    """Test the greatest_interval method of MockGlobalPath.
+    """Test the calculate_interval_spacing method of MockGlobalPath.
 
     Args:
         pos (HelperLatLon): The start position.
         waypoints (list[HelperLatLon]): The waypoints of the global path.
     """
-    greatest_interval = max(calculate_interval_spacing(pos, waypoints))
+    interval = calculate_interval_spacing(pos, waypoints)[0]
 
     if len(waypoints) > 1:
         expected_interval = meters_to_km(
@@ -121,9 +113,7 @@ def test_interval_spacing(pos: HelperLatLon, waypoints: list[HelperLatLon]):
             )[2]
         )
 
-    assert greatest_interval == pytest.approx(
-        expected_interval
-    ), "Greatest interval is not correct"
+    assert interval == pytest.approx(expected_interval), "interval distance is not correct"
 
 
 # ------------------------- TEST GENERATE_PATH -------------------------

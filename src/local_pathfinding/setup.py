@@ -19,6 +19,7 @@ data_files = [
     ("share/ament_index/resource_index/packages", ["resource/" + package_name]),
     (os.path.join("share", package_name), ["package.xml"]),
     (os.path.join("share", package_name, "launch"), glob("launch/*_launch.py")),
+    (os.path.join("share", package_name, "test_plan"), glob("test_plan/*.yaml")),
 ]
 
 # Add top-level land files
@@ -36,7 +37,7 @@ for subdir in land_subdirs:
 setup(
     name=package_name,
     version="0.0.0",
-    packages=[package_name],
+    packages=[package_name, "test_plans"],
     data_files=data_files,
     install_requires=["setuptools"],
     zip_safe=True,
@@ -48,11 +49,12 @@ setup(
     entry_points={
         "console_scripts": [
             "navigate = local_pathfinding.node_navigate:main",
-            "mock_global_path = local_pathfinding.node_mock_global_path:main",
-            "mock_wind_sensor = local_pathfinding.node_mock_wind_sensor:main",
-            "mock_ais = local_pathfinding.node_mock_ais:main",
-            "mock_gps = local_pathfinding.node_mock_gps:main",
+            "mock_global_path = local_pathfinding.mock_nodes.node_mock_global_path:main",
+            "mock_wind_sensor = local_pathfinding.mock_nodes.node_mock_wind_sensor:main",
+            "mock_ais = local_pathfinding.mock_nodes.node_mock_ais:main",
+            "mock_gps = local_pathfinding.mock_nodes.node_mock_gps:main",
             "navigate_observer = local_pathfinding.node_navigate_observer:main",
+            "fake_gps = local_pathfinding.fake_gps:main",
         ],
     },
 )

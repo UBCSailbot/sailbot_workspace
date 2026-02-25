@@ -1,13 +1,18 @@
 #pragma once
 
 #include <boost/asio/streambuf.hpp>
+#include <functional>
 #include <string>
 
 #include "at_cmds.h"
 #include "boost/asio/io_service.hpp"
 #include "boost/asio/serial_port.hpp"
 #include "custom_interfaces/msg/batteries.hpp"
-#include "custom_interfaces/msg/generic_sensors.hpp"
+#include "custom_interfaces/msg/ph_sensors.hpp"
+#include "custom_interfaces/msg/pressure_sensors.hpp"
+#include "custom_interfaces/msg/salinity_sensors.hpp"
+#include "custom_interfaces/msg/temp_sensors.hpp"
+// #include "custom_interfaces/msg/generic_sensors.hpp"
 #include "custom_interfaces/msg/gps.hpp"
 #include "custom_interfaces/msg/l_path_data.hpp"
 #include "custom_interfaces/msg/wind_sensors.hpp"
@@ -26,8 +31,20 @@ class LocalTransceiver
     friend class TestLocalTransceiver_parseInMsgValid_Test;
     friend class TestLocalTransceiver_SendAndReceiveMessage;
     friend class TestLocalTransceiver_testMailboxBlackbox_Test;
+    friend class TestLocalTransceiver_checkCache_Test;
 
 public:
+    // Logging callback types
+    using LogCallback = std::function<void(const std::string &)>;
+
+    /**
+    * @brief Set logging callbacks for debug and error messages
+     *
+     * @param debug_cb Callback for debug messages
+     * @param error_cb Callback for error messages
+     */
+    void setLogCallbacks(LogCallback debug_cb, LogCallback error_cb);
+
     /**
     * @brief Update the sensor with new GPS data
     *
@@ -49,12 +66,41 @@ public:
     */
     void updateSensor(msg::Batteries battery);
 
+    // * Obsolete
+    // /**
+    // * @brief Update the sensor with new generic sensor data
+    // *
+    // * @param generic custom_interfaces GenericSensors object
+    // */
+    // void updateSensor(msg::GenericSensors msg);
+
     /**
-    * @brief Update the sensor with new generic sensor data
+    * @brief Update the sensor with new temperature data
     *
-    * @param generic custom_interfaces GenericSensors object
+    * @param temperature custom_interfaces TempSensors object
     */
-    void updateSensor(msg::GenericSensors msg);
+    void updateSensor(msg::TempSensors temperature);
+
+    /**
+    * @brief Update the sensor with new pressure data
+    *
+    * @param pressure custom_interfaces PressureSensors object
+    */
+    void updateSensor(msg::PressureSensors pressure);
+
+    /**
+    * @brief Update the sensor with new salinity data
+    *
+    * @param salinity custom_interfaces SalinitySensors object
+    */
+    void updateSensor(msg::SalinitySensors salinity);
+
+    /**
+    * @brief Update the sensor with new pH data
+    *
+    * @param ph custom_interfaces PhSensors object
+    */
+    void updateSensor(msg::PhSensors ph);
 
     /**
     * @brief Update the sensor with new local path data
@@ -104,12 +150,37 @@ public:
     bool send();
 
     /**
+     * @brief Debug helper that sends a small payload through the same
+     *        flow used by `send()` but using the provided bytes. Useful for
+     *        testing without serializing the full sensors protobuf.
+     *        ticket #714
+     *
+     * @param data payload to send
+     * @return true on success, false on failure
+     */
+    bool debugSendAT(const std::string & data);
+
+    /**
+     * @brief Checks Iridium satellite connection strength via AT+CSQ
+     * @return signal strength value from 0-5, or -1 if an error occurs
+     */
+    int checkIridiumSignalQuality();
+
+    /**
      * @brief Send a debug command and return the output
      *
      * @param cmd string to send to the serial port
      * @return response to the sent command as a string if successful, std::nullopt on failure
      */
     std::optional<std::string> debugSend(const std::string & cmd);
+
+    /**
+     * @brief Asynchronously save the received serialized data to a local file
+     *
+     * @param receivedDataBuffer string to cache
+     * @return future object representing completion of the function
+     */
+    static void cacheGlobalWaypoints(std::string receivedDataBuffer);
 
     /**
      * @brief Retrieve the latest message from the remote server via the serial port
@@ -121,19 +192,36 @@ public:
     // TEST
     bool checkMailbox();
 
+    /**
+     * @brief Read and parse the data from the global waypoints file, if it exists
+     *
+     * @return The global waypoints from the cache
+     */
+    static std::optional<custom_interfaces::msg::Path> getCache();
+
 private:
     // Serial port read/write timeout
+    // * This 'TIMEOUT' timeout is used for the socket - it doesn't work with the actual hardware modem
     constexpr static const struct timeval TIMEOUT
     {
         0,        // seconds
           200000  // microseconds
     };
+    // * This 'SERIAL_TIMEOUT' timeout actually works for the serial port, both on hardware and virtual
+    static constexpr std::chrono::milliseconds SERIAL_TIMEOUT{std::chrono::seconds(15)};
+
+    static constexpr std::chrono::seconds SMALL_WAIT{std::chrono::seconds(2)};
+    static constexpr std::chrono::seconds MEDIUM_WAIT{std::chrono::seconds(2)};
+
     // boost io service - required for boost::asio operations
     boost::asio::io_service io_;
     // serial port data where is sent and received
     boost::asio::serial_port serial_;
     // underlying sensors object
     Polaris::Sensors sensors_;
+    // Logging callbacks
+    LogCallback log_debug_;
+    LogCallback log_error_;
 
     /**
      * @brief Send a command to the serial port
@@ -153,6 +241,13 @@ private:
     bool rcvRsp(const AT::Line & expected_rsp);
 
     std::optional<std::string> readRsp();
+
+    /**
+     * @brief Drain/clear any pending data in the serial buffer to remove stale data
+     *        from previous iterations or operations. This helps prevent stale data from one attempt/operation
+     *        from interfering with subsequent reads.
+     */
+    void clearSerialBuffer();
 
     /**
      * @brief Parse the message received from the remote server
@@ -181,4 +276,7 @@ private:
      * @return checksum value
      */
     static std::string checksum(const std::string & data);
+
+    template <typename AsyncReadOp>
+    bool runWithTimeout(AsyncReadOp && op, boost::system::error_code & out_ec);
 };

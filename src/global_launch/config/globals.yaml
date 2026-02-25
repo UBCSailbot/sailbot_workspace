@@ -2,7 +2,8 @@
 /**:
    ros__parameters:
       # Publishers' period (seconds): how often the publishers publish
-      pub_period_sec: 0.5
+      pub_period_sec: 1.0
+      test_plan: "basic.yaml"
 
 # local_pathfinding parameters
 mock_global_path:
@@ -15,7 +16,6 @@ mock_global_path:
 navigate_main:
    ros__parameters:
       path_planner: "rrtstar"
-      use_mock_land: false
 
 # controller parameters
 wingsail_ctrl_node:
@@ -36,15 +36,16 @@ low_level_control_node:
          fixed_angle_deg: 0.0
          actuation_execution_period_sec: 0.5
          pid:
-            kp: 0.0
-            ki: 0.0
-            kd: 0.0
+            kp: 0.01
+            ki: 0.01
+            kd: 0.01
+            cp: 0.01
             buffer_size: 50
       wingsail:
          disable_actuation: false
          fixed_angle_deg: 0.0
          actuation_execution_period_sec: 0.5
-         actuation_speed_deg_per_sec: 0.1
+         actuation_speed_deg_per_sec: 1.0
 physics_engine_node:
    ros__parameters:
       logging_throttle_period_sec: 2.0
@@ -86,6 +87,5 @@ mock_data_node:
       mock_desired_heading_lower_bound: -179.99
       mock_desired_heading_upper_bound: 180.00
       mock_sail_trim_tab: True
-      mock_sail_trim_tab_lower_bound: -40.0
-      mock_sail_trim_tab_upper_bound: 40.0
-      pub_period_sec: 5.0
+      mock_sail_trim_tab_lower_bound: -7.0
+      mock_sail_trim_tab_upper_bound: 7.0
