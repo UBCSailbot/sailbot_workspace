@@ -187,7 +187,7 @@ class LocalPath:
            for true wind data.
 
         Evaluates new wind speed compared to the wind condition used when previous
-        path was made. Assume that the current wind speed is above MINIMUM_WIND_SPEED.
+        path was made.
 
         The criteria to determine if the wind change is significant include:
         - A change in wind speed exceeding WIND_SPEED_CHANGE_THRESH_PROP of the previous speed
