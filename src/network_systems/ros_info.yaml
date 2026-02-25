@@ -2,7 +2,10 @@ ros_topics:
   AIS_SHIPS: ais_ships
   BATTERIES: batteries
   DESIRED_HEADING: desired_heading
-  DATA_SENSORS: data_sensors
+  # DATA_SENSORS: data_sensors
+  TEMP_SENSORS: temp_sensors
+  PH_SENSORS: ph_sensors
+  SALINITY_SENSORS: salinity_sensors
   FILTERED_WIND_SENSOR: filtered_wind_sensor
   GLOBAL_PATH: global_path
   GPS: gps
@@ -14,10 +17,6 @@ ros_topics:
   SAIL_CMD: sail_cmd
   BOAT_SIM_INPUT: boat_sim_input
   RUDDER: rudder
-  TEMP_SENSORS: temp_sensors
-  PH_SENSORS: ph_sensors
-  SALINITY_SENSORS: salinity_sensors
-  PRESSURE_SENSORS: pressure_sensors
 
 ros_nodes:
   CAN_TRANSCEIVER: can_transceiver_node
