@@ -178,10 +178,10 @@ class LocalPath:
         return False
 
     @staticmethod
-    def significant_wind_change(
+    def is_significant_wind_change(
         new_tw_data: wcs.Wind,
         previous_tw_data: wcs.Wind,
-    ):
+    ) -> bool:
         """Returns true if there is a significant change in the true wind warranting a change in
            path. Although this function works with any kind of wind, it is specifically designed
            for true wind data.
@@ -209,10 +209,10 @@ class LocalPath:
         current_tw_speed_kmph = new_tw_data.speed_kmph
         current_tw_dir_deg = new_tw_data.dir_deg
 
-        speed_change_percent = abs(prev_tw_speed_kmph - current_tw_speed_kmph) / prev_tw_speed_kmph
+        speed_change_ratio = abs(prev_tw_speed_kmph - current_tw_speed_kmph) / prev_tw_speed_kmph
         dir_change = abs(cs.bound_to_180(current_tw_dir_deg - prev_tw_dir_deg))
 
-        return (speed_change_percent >= WIND_SPEED_CHANGE_THRESH_PROP or
+        return (speed_change_ratio >= WIND_SPEED_CHANGE_THRESH_PROP or
                 dir_change >= WIND_DIRECTION_CHANGE_THRESH_DEG)
 
     def update_if_needed(

@@ -6,8 +6,6 @@ from shapely.geometry import MultiPolygon, Polygon
 
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.local_path as lp
-from local_pathfinding.local_path import (WIND_SPEED_CHANGE_THRESH_PROP,
-                                          WIND_DIRECTION_CHANGE_THRESH_DEG)
 from local_pathfinding.obstacles import Obstacle
 
 REF = HelperLatLon(latitude=10.0, longitude=10.0)
@@ -199,42 +197,42 @@ def test_in_collision_zone(local_wp_index, reference_latlon, path, obstacles, re
     [
         # Basic Test 1 (wind speed change is significant)
         (
-            Wind(speed_kmph=10 + 2 * WIND_SPEED_CHANGE_THRESH_PROP * 10.0, dir_deg=95.0),
+            Wind(speed_kmph=10 + 2 * lp.WIND_SPEED_CHANGE_THRESH_PROP * 10.0, dir_deg=95.0),
             Wind(speed_kmph=10.0, dir_deg=95.0),
             True
         ),
         # Boundaries
         (
-            Wind(speed_kmph=10.0 + WIND_SPEED_CHANGE_THRESH_PROP * 10.0, dir_deg=90.0),
+            Wind(speed_kmph=10.0 + lp.WIND_SPEED_CHANGE_THRESH_PROP * 10.0, dir_deg=90.0),
             Wind(speed_kmph=10.0, dir_deg=90.0),
             True
         ),
         (
-            Wind(speed_kmph=10.0 - WIND_SPEED_CHANGE_THRESH_PROP * 10.0, dir_deg=90.0),
+            Wind(speed_kmph=10.0 - lp.WIND_SPEED_CHANGE_THRESH_PROP * 10.0, dir_deg=90.0),
             Wind(speed_kmph=10.0, dir_deg=90.0),
             True
         ),
         # Basic Test 2 (wind dir change is significant)
         (
-            Wind(speed_kmph=10.0, dir_deg=105.0 - 1.5 * WIND_DIRECTION_CHANGE_THRESH_DEG),
+            Wind(speed_kmph=10.0, dir_deg=105.0 - 1.5 * lp.WIND_DIRECTION_CHANGE_THRESH_DEG),
             Wind(speed_kmph=12.0, dir_deg=105.0),
             True
         ),
         # Boundaries
         (
-            Wind(speed_kmph=10.0, dir_deg=80.0 + WIND_DIRECTION_CHANGE_THRESH_DEG),
+            Wind(speed_kmph=10.0, dir_deg=80.0 + lp.WIND_DIRECTION_CHANGE_THRESH_DEG),
             Wind(speed_kmph=10.0, dir_deg=80.0),
             True
         ),
         (
-            Wind(speed_kmph=10.0, dir_deg=100.0 - WIND_DIRECTION_CHANGE_THRESH_DEG),
+            Wind(speed_kmph=10.0, dir_deg=100.0 - lp.WIND_DIRECTION_CHANGE_THRESH_DEG),
             Wind(speed_kmph=10.0, dir_deg=100.0),
             True
         ),
         # Basic Test 3 (No significant change)
         (
-            Wind(speed_kmph=10.0 + 0.99 * WIND_SPEED_CHANGE_THRESH_PROP * 10.0,
-                 dir_deg=99.0 - 0.9 * WIND_DIRECTION_CHANGE_THRESH_DEG),
+            Wind(speed_kmph=10.0 + 0.99 * lp.WIND_SPEED_CHANGE_THRESH_PROP * 10.0,
+                 dir_deg=99.0 - 0.9 * lp.WIND_DIRECTION_CHANGE_THRESH_DEG),
             Wind(speed_kmph=10.0, dir_deg=99.0),
             False
         ),
@@ -246,7 +244,7 @@ def test_in_collision_zone(local_wp_index, reference_latlon, path, obstacles, re
         ),
         (
             Wind(speed_kmph=10.0, dir_deg=-178.0),
-            Wind(speed_kmph=10.0, dir_deg=180 - WIND_DIRECTION_CHANGE_THRESH_DEG + 2),
+            Wind(speed_kmph=10.0, dir_deg=180 - lp.WIND_DIRECTION_CHANGE_THRESH_DEG + 2),
             True
         ),
     ],
