@@ -249,10 +249,10 @@ def test_in_collision_zone(local_wp_index, reference_latlon, path, obstacles, re
         ),
     ],
 )
-def test_significant_wind_change(new_tw_data,
-                                 previous_tw_data,
-                                 result):
-    assert PATH.significant_wind_change(new_tw_data, previous_tw_data) == result
+def test_is_significant_wind_change(new_tw_data,
+                                    previous_tw_data,
+                                    result):
+    assert PATH.is_significant_wind_change(new_tw_data, previous_tw_data) == result
 
 
 def test_LocalPathState_parameter_checking():
