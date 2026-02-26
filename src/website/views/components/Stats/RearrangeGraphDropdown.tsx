@@ -13,7 +13,6 @@ import {
 } from '@dnd-kit/core';
 import {
   SortableContext,
-  arrayMove,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import DragIndicatorIcon from '@/public/icons/drag_indicator.svg';
@@ -21,19 +20,34 @@ import styles from './stats.module.css';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import GraphsActions from '@/stores/Graphs/GraphsActions';
 import { connect } from 'react-redux';
+import { Layout, LayoutItem, GraphId, isSplitGroup } from '@/stores/Graphs/GraphsTypes';
+import { moveGraph } from '@/stores/Graphs/GraphsLayoutHelpers';
 
-const graphsOrderNamesMap = {
+const graphsOrderNamesMap: Record<GraphId, string> = {
   GPS: 'Speed',
   BatteriesVoltage: 'Batteries Voltage',
   BatteriesCurrent: 'Batteries Current',
   WindSensors: 'Wind Sensors',
 };
 
+const getItemId = (item: LayoutItem): string => {
+  return isSplitGroup(item) ? item[0] : item;
+};
+
+const getItemLabel = (item: LayoutItem): string => {
+  if (isSplitGroup(item)) {
+    return item.map((id) => graphsOrderNamesMap[id]).join(' | ');
+  }
+  return graphsOrderNamesMap[item];
+};
+
 const SortableItem = ({
   id,
+  label,
   isDragging,
 }: {
   id: string;
+  label: string;
   isDragging?: boolean;
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition } =
@@ -55,16 +69,18 @@ const SortableItem = ({
       {...listeners}
     >
       <DragIndicatorIcon />
-      {graphsOrderNamesMap[id as keyof typeof graphsOrderNamesMap]}
+      {label}
     </div>
   );
 };
 
 const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs }: any) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [graphsOrder, setGraphsOrder] = useState(graphs.layout);
+  const [layout, setLayout] = useState<Layout>(graphs.layout);
   const [activeId, setActiveId] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const sortableIds = layout.map(getItemId);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -87,8 +103,8 @@ const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs }: any) => {
   };
 
   useEffect(() => {
-    rearrangeGraphs(graphsOrder);
-  }, [graphsOrder]);
+    rearrangeGraphs(layout);
+  }, [layout]);
 
   const onDragOver = (event: any) => {
     const { active, over } = event;
@@ -97,19 +113,17 @@ const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs }: any) => {
       if (!containerRect) return;
 
       const activeRect = event.active.rect.current.translated;
-      const oldIndex = graphsOrder.indexOf(active.id);
-      let newIndex;
 
+      let targetId: GraphId;
       if (activeRect.top < containerRect.top) {
-        newIndex = 0;
+        targetId = getItemId(layout[0]) as GraphId;
       } else if (activeRect.bottom > containerRect.bottom) {
-        newIndex = graphsOrder.length - 1;
+        targetId = getItemId(layout[layout.length - 1]) as GraphId;
       } else {
         return;
       }
 
-      const newGraphsOrder = arrayMove(graphsOrder, oldIndex, newIndex);
-      setGraphsOrder(newGraphsOrder);
+      setLayout(moveGraph(layout, active.id as GraphId, targetId));
     }
   };
 
@@ -120,11 +134,7 @@ const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs }: any) => {
     if (!over) return;
 
     if (active.id !== over.id) {
-      const oldIndex = graphsOrder.indexOf(active.id);
-      const newIndex = graphsOrder.indexOf(over.id);
-      const newGraphsOrder = arrayMove(graphsOrder, oldIndex, newIndex);
-
-      setGraphsOrder(newGraphsOrder);
+      setLayout(moveGraph(layout, active.id as GraphId, over.id as GraphId));
     }
   };
 
@@ -135,6 +145,10 @@ const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs }: any) => {
       },
     }),
   );
+
+  const activeItem = activeId
+    ? layout.find((item) => getItemId(item) === activeId)
+    : null;
 
   return (
     <div ref={dropdownRef}>
@@ -152,22 +166,26 @@ const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs }: any) => {
             modifiers={[restrictToVerticalAxis]}
           >
             <SortableContext
-              items={graphsOrder}
+              items={sortableIds}
               strategy={verticalListSortingStrategy}
             >
-              {graphsOrder.map((id: any) => (
-                <SortableItem key={id} id={id} isDragging={id === activeId} />
-              ))}
+              {layout.map((item) => {
+                const id = getItemId(item);
+                return (
+                  <SortableItem
+                    key={id}
+                    id={id}
+                    label={getItemLabel(item)}
+                    isDragging={id === activeId}
+                  />
+                );
+              })}
             </SortableContext>
             <DragOverlay>
-              {activeId ? (
+              {activeItem ? (
                 <div className={styles.dropdownItem}>
                   <DragIndicatorIcon />
-                  {
-                    graphsOrderNamesMap[
-                      activeId as keyof typeof graphsOrderNamesMap
-                    ]
-                  }
+                  {getItemLabel(activeItem)}
                 </div>
               ) : null}
             </DragOverlay>
