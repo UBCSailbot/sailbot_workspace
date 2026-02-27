@@ -37,8 +37,8 @@ from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 
-import local_pathfinding.mock_nodes.shared_utils as sc
 import local_pathfinding.wind_coord_systems as wcs
+from test_plans.test_plan import TestPlan
 
 
 class MockWindSensor(Node):
@@ -48,10 +48,17 @@ class MockWindSensor(Node):
             namespace="",
             parameters=[
                 ("pub_period_sec", rclpy.Parameter.Type.DOUBLE),
-                ("tw_speed_kmph", sc.TW_SPEED_KMPH),
-                ("tw_dir_deg", sc.TW_DIRECTION_DEG),  # from the bow to the stern of the boat
+                ("tw_speed_kmph", rclpy.Parameter.Type.DOUBLE),
+                ("tw_dir_deg", rclpy.Parameter.Type.INTEGER),
+                ("test_plan", rclpy.Parameter.Type.STRING),
             ],
         )
+
+        test_plan = TestPlan(self.get_parameter("test_plan").get_parameter_value().string_value)
+        self._tw_dir_deg = test_plan.tw_dir_deg
+        self._tw_speed_kmph = test_plan.tw_speed_kmph
+        self._boat_heading_deg = test_plan.gps.heading.heading
+        self._boat_speed_kmph = test_plan.gps.speed.speed
 
         self.pub_period_sec = (
             self.get_parameter("pub_period_sec").get_parameter_value().double_value
@@ -68,12 +75,6 @@ class MockWindSensor(Node):
         self._gps_sub = self.create_subscription(
             msg_type=ci.GPS, topic="gps", callback=self.gps_callback, qos_profile=10
         )
-        self._boat_heading_deg = sc.START_HEADING.heading
-        self._boat_speed_kmph = sc.MEAN_SPEED.speed
-
-        # Cached parameter-backed values (updated through on-set-parameters callback).
-        self._tw_speed_kmph = float(self.get_parameter("tw_speed_kmph").value)
-        self._tw_dir_deg = int(self.get_parameter("tw_dir_deg").value)
 
         self.add_on_set_parameters_callback(self._on_set_parameters)
 
@@ -95,7 +96,8 @@ class MockWindSensor(Node):
         self._wind_sensors_pub.publish(msg)
 
     def _on_set_parameters(self, params: List[Parameter]) -> SetParametersResult:
-        """ROS2 parameter update callback.
+        """This callback function serves as a guard to ensure values entered with `ros2 param set`
+        are valid before they are assigned to the parameters.
 
         Applies updates to true wind speed/direction. Values take effect on the next publish tick.
 
