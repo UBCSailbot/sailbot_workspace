@@ -3,11 +3,7 @@
 can_transceiver_node:
   ros__parameters:
     enabled: false
-
-cached_fib_subscriber:
-  ros__parameters:
-    enabled: false
-
+    
 local_transceiver_node:
   ros__parameters:
     enabled: false
