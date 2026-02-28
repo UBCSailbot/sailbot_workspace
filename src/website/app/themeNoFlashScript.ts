@@ -1,5 +1,5 @@
-// this is a very gimmicky way of setting theme without using cookies
-// i dont think its worth it so we should just use cookies instead lol
+// this is a very gimmicky way preventing screen flashes when
+// switching themes. we run this before the page is rendered
 
 export const SET_THEME = `
 (function(){

@@ -17,23 +17,10 @@ export const themeSlice = createSlice({
   reducers: {
     setTheme: (state, action: PayloadAction<Theme>) => {
       state.current = action.payload;
-      document.documentElement.classList.toggle(
-        'dark',
-        action.payload === Theme.Dark,
-      );
-      localStorage.setItem(
-        'theme',
-        action.payload === Theme.Dark ? 'dark' : 'light',
-      );
     },
     toggleTheme: (state) => {
-      const newTheme = state.current === Theme.Light ? Theme.Dark : Theme.Light;
-      state.current = newTheme;
-      document.documentElement.classList.toggle(
-        'dark',
-        newTheme === Theme.Dark,
-      );
-      localStorage.setItem('theme', newTheme === Theme.Dark ? 'dark' : 'light');
+      state.current =
+        state.current === Theme.Light ? Theme.Dark : Theme.Light;
     },
   },
 });
