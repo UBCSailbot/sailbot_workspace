@@ -48,6 +48,11 @@ GLOBAL_LAUNCH_ARGUMENTS = [
         + " interfaces",
     ),
     DeclareLaunchArgument(
+        name="test_plan",
+        default_value="basic.yaml",
+        description="Test plan to be used in development mode for local pathfinding.",
+    ),
+    DeclareLaunchArgument(
         name="record",
         default_value="false",
         choices=["true", "false"],
