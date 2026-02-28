@@ -127,15 +127,14 @@ class Sailbot(Node):
         self.global_waypoint_index = -1
         self.saved_target_global_waypoint = None
         self.mode = self.get_parameter("mode").get_parameter_value().string_value
-        self.test_plan = self.get_parameter("test_plan").get_parameter_value().string_value
         self.planner = self.get_parameter("path_planner").get_parameter_value().string_value
         self.get_logger().debug(f"Got parameter: {self.planner=}")
-
-        self.get_logger().info("test plan: " + self.test_plan)
 
         # Initialize mock land obstacle
         self.land_multi_polygon = None
         if self.mode == "development":
+            self.test_plan = self.get_parameter("test_plan").get_parameter_value().string_value
+            self.get_logger().info("test plan: " + self.test_plan)
             test_plan = TestPlan(self.test_plan)
             self.land_multi_polygon = test_plan.land
             self.get_logger().info("Loaded mock land data.")
