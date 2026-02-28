@@ -1,12 +1,16 @@
 # Sailbot Workspace
 
 [![Tests](https://github.com/UBCSailbot/sailbot_workspace/actions/workflows/tests.yml/badge.svg)](https://github.com/UBCSailbot/sailbot_workspace/actions/workflows/tests.yml)
-[![Docs Site](https://github.com/UBCSailbot/sailbot_workspace/actions/workflows/docs.yml/badge.svg)](https://github.com/UBCSailbot/sailbot_workspace/actions/workflows/docs.yml)
+<!--[![Docs Site](https://github.com/UBCSailbot/sailbot_workspace/actions/workflows/docs.yml/badge.svg)](https://github.com/UBCSailbot/sailbot_workspace/actions/workflows/docs.yml)-->
 [![Build Development Image](https://github.com/UBCSailbot/sailbot_workspace/actions/workflows/build-base-dev-images.yml/badge.svg)](https://github.com/UBCSailbot/sailbot_workspace/actions/workflows/build-base-dev-images.yml)
 [![Build Deployment Image](https://github.com/UBCSailbot/sailbot_workspace/actions/workflows/build-release-image.yml/badge.svg)](https://github.com/UBCSailbot/sailbot_workspace/actions/workflows/build-release-image.yml)
 
 This repository will get you set up to develop UBCSailbot's software on VS Code. It is based on athackst's
 [vscode_ros2_workspace](https://github.com/athackst/vscode_ros2_workspace).
+
+## Documentation
+
+Our documentation, including setup and run instructions, can be found on [our Docs website](https://ubcsailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/overview/).
 
 ## Features
 
@@ -74,7 +78,3 @@ Her software can be run in the [`raye` branch](https://github.com/UBCSailbot/sai
 following the instructions in [How to run Raye's software](https://ubcsailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/usage/how_to/#run-rayes-software).
 The initial differences between the `main` and `raye` branches are summarized in
 [this PR](https://github.com/UBCSailbot/sailbot_workspace/pull/61).
-
-## Documentation
-
-Further documentation, including setup and run instructions, can be found on [our Docs website](https://ubcsailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/overview/).

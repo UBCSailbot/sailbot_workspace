@@ -1,11 +1,6 @@
 import pytest
-from custom_interfaces.msg import (
-    GPS,
-    AISShips,
-    HelperLatLon,
-    Path,
-    WindSensor,
-)
+from custom_interfaces.msg import GPS, AISShips, HelperLatLon, Path, WindSensor
+from local_pathfinding.wind_coord_systems import Wind
 from rclpy.impl.rcutils_logger import RcutilsLogger
 from shapely.geometry import MultiPolygon, Polygon
 
@@ -75,7 +70,7 @@ PATH = lp.LocalPath(parent_logger=RcutilsLogger())
                             REF,
                         )
                     ),
-                )
+                )  # type: ignore
             ],
             True,
         ),
@@ -110,7 +105,7 @@ PATH = lp.LocalPath(parent_logger=RcutilsLogger())
                             REF,
                         )
                     ),
-                )
+                )  # type: ignore
             ],
             False,
         ),
@@ -138,8 +133,9 @@ PATH = lp.LocalPath(parent_logger=RcutilsLogger())
                     reference=HelperLatLon(
                         latitude=48.113521575927734, longitude=-135.67999267578125
                     ),
-                    sailbot_position=cs.xy_to_latlon(REF, cs.XY(x=878.268119211102,
-                                                                y=106.06146253551834)),
+                    sailbot_position=cs.xy_to_latlon(
+                        REF, cs.XY(x=878.268119211102, y=106.06146253551834)
+                    ),
                     collision_zone=Polygon(
                         [
                             # already in XY
@@ -150,14 +146,15 @@ PATH = lp.LocalPath(parent_logger=RcutilsLogger())
                             (99.6522679584995, -0.0980475891705976),
                         ]
                     ),
-                ),
+                ),  # type: ignore
                 # Obstacle 2
                 Obstacle(
                     reference=HelperLatLon(
                         latitude=48.197017669677734, longitude=-128.9371337890625
                     ),
-                    sailbot_position=cs.xy_to_latlon(REF, cs.XY(x=878.268119211102,
-                                                                y=106.06146253551834)),
+                    sailbot_position=cs.xy_to_latlon(
+                        REF, cs.XY(x=878.268119211102, y=106.06146253551834)
+                    ),
                     collision_zone=Polygon(
                         [
                             (599.7313118870519, 39.76370963196999),
@@ -167,14 +164,15 @@ PATH = lp.LocalPath(parent_logger=RcutilsLogger())
                             (599.7313118870519, 39.76370963196999),
                         ]
                     ),
-                ),
+                ),  # type: ignore
                 # Obstacle 3
                 Obstacle(
                     reference=HelperLatLon(
                         latitude=48.510276794433594, longitude=-126.15927124023438
                     ),
-                    sailbot_position=cs.xy_to_latlon(REF, cs.XY(x=878.268119211102,
-                                                                y=106.06146253551834)),
+                    sailbot_position=cs.xy_to_latlon(
+                        REF, cs.XY(x=878.268119211102, y=106.06146253551834)
+                    ),
                     collision_zone=Polygon(
                         [
                             (799.7261319438433, 99.77070315844303),
@@ -184,7 +182,7 @@ PATH = lp.LocalPath(parent_logger=RcutilsLogger())
                             (799.7261319438433, 99.77070315844303),
                         ]
                     ),
-                ),
+                ),  # type: ignore
             ],
             True,  # Expected result: path is in collision zone
         ),
@@ -192,6 +190,69 @@ PATH = lp.LocalPath(parent_logger=RcutilsLogger())
 )
 def test_in_collision_zone(local_wp_index, reference_latlon, path, obstacles, result):
     assert PATH.in_collision_zone(local_wp_index, reference_latlon, path, obstacles) == result
+
+
+@pytest.mark.parametrize(
+    "new_tw_data, previous_tw_data, result",
+    [
+        # Basic Test 1 (wind speed change is significant)
+        (
+            Wind(speed_kmph=10 + 2 * lp.WIND_SPEED_CHANGE_THRESH_PROP * 10.0, dir_deg=95.0),
+            Wind(speed_kmph=10.0, dir_deg=95.0),
+            True
+        ),
+        # Boundaries
+        (
+            Wind(speed_kmph=10.0 + lp.WIND_SPEED_CHANGE_THRESH_PROP * 10.0, dir_deg=90.0),
+            Wind(speed_kmph=10.0, dir_deg=90.0),
+            True
+        ),
+        (
+            Wind(speed_kmph=10.0 - lp.WIND_SPEED_CHANGE_THRESH_PROP * 10.0, dir_deg=90.0),
+            Wind(speed_kmph=10.0, dir_deg=90.0),
+            True
+        ),
+        # Basic Test 2 (wind dir change is significant)
+        (
+            Wind(speed_kmph=10.0, dir_deg=105.0 - 1.5 * lp.WIND_DIRECTION_CHANGE_THRESH_DEG),
+            Wind(speed_kmph=12.0, dir_deg=105.0),
+            True
+        ),
+        # Boundaries
+        (
+            Wind(speed_kmph=10.0, dir_deg=80.0 + lp.WIND_DIRECTION_CHANGE_THRESH_DEG),
+            Wind(speed_kmph=10.0, dir_deg=80.0),
+            True
+        ),
+        (
+            Wind(speed_kmph=10.0, dir_deg=100.0 - lp.WIND_DIRECTION_CHANGE_THRESH_DEG),
+            Wind(speed_kmph=10.0, dir_deg=100.0),
+            True
+        ),
+        # Basic Test 3 (No significant change)
+        (
+            Wind(speed_kmph=10.0 + 0.99 * lp.WIND_SPEED_CHANGE_THRESH_PROP * 10.0,
+                 dir_deg=99.0 - 0.9 * lp.WIND_DIRECTION_CHANGE_THRESH_DEG),
+            Wind(speed_kmph=10.0, dir_deg=99.0),
+            False
+        ),
+        # Fourth Test: Circular nature of angles
+        (
+            Wind(speed_kmph=10.0, dir_deg=180),
+            Wind(speed_kmph=10.0, dir_deg=-179.999),
+            False
+        ),
+        (
+            Wind(speed_kmph=10.0, dir_deg=-178.0),
+            Wind(speed_kmph=10.0, dir_deg=180 - lp.WIND_DIRECTION_CHANGE_THRESH_DEG + 2),
+            True
+        ),
+    ],
+)
+def test_is_significant_wind_change(new_tw_data,
+                                    previous_tw_data,
+                                    result):
+    assert PATH.is_significant_wind_change(new_tw_data, previous_tw_data) == result
 
 
 def test_LocalPathState_parameter_checking():

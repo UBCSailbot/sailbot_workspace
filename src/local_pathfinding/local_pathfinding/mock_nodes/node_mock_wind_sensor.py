@@ -1,216 +1,119 @@
-"""
-Mock wind sensor node for ROS 2.
+"""Mock wind sensor node for ROS 2.
 
-This node publishes mock data as if it were real apparent wind speed and direction (AWSD)
-data coming from the wind sensors on the boat. It obtains true wind speed and direction data
-(TWSD) from either a statistical model or user input and uses the current boat heading and
-speed to convert the TWSD to AWSD and publishes the AWSD to the filtered_wind_sensor topic.
+This node publishes mock data that mimics the boat's wind sensors.
+
+It takes **true wind** inputs in the **global frame** via ROS parameters and publishes
+**apparent wind** outputs in the **boat frame** on ``filtered_wind_sensor``.
 
 Node name:
-- mock_wind_sensor
+* ``mock_wind_sensor``
 
 Publishes:
-- topic: filtered_wind_sensor (custom_interfaces/WindSensor)
-  - speed: knots (HelperSpeed)
-  - direction: degrees in boat coordinates (int), wrt boat_coordinates (refer to WindSensor.msg)
+* topic: ``filtered_wind_sensor`` (custom_interfaces/WindSensor)
 
 Subscribes:
-- topic: gps (custom_interfaces/GPS)
-  - used for current boat heading and speed
+* topic: ``gps`` (custom_interfaces/GPS) for boat heading and speed
 
 Parameters:
-- pub_period_sec (double, required)
-  - Publish period in seconds.
-- mean_wind_speed (double, default: 16.0)
-  - Mean true wind speed (knots).
-- mean_direction (int, default: 30)
-  - Mean true wind direction (degrees, global frame).
-- sd_speed (double, default: 1.0)
-  - Standard deviation for wind speed (knots).
-- mode (string, default: "variable")
-  - "variable": samples from the distributions.
-  - "constant": always publishes the mean values.
-- direction_kappa (double, default: 50.0)
-  - Von Mises concentration for direction sampling; higher = tighter around the mean.
-  - Typical values: 10–100.
+* ``pub_period_sec`` (double, required): publish period (seconds)
+* ``tw_speed_kmph`` (double): true wind speed (kmph). Set via ``wind_params.sh`` script only.
+* ``tw_dir_deg`` (int): true wind direction in global frame (deg). Set via ``wind_params.sh``
+script only.
+    * Valid range: (-180, 180]
 
-Behavior:
-- Wind speed is sampled from a Gamma distribution whose shape/scale are chosen to match the
-  configured mean and standard deviation. This yields a positively skewed distribution.
-- Direction is sampled from a von Mises distribution in radians around the mean apparent wind
-  direction, then converted to degrees and into the boat frame.
-- To reduce chattering, sampled values are held constant for a random duration between
-  60 and 120 publish ticks before refreshing.
-
-Example runtime usage:
-- ros2 param set /mock_wind_sensor direction_kappa 75
-- ros2 param set /mock_wind_sensor mode constant
-- ros2 param set /mock_wind_sensor mean_wind_speed 12.5
-- ros2 param set /mock_wind_sensor mean_direction 12.5
-- ros2 param set /mock_wind_sensor sd_speed 3.0
-
-All the declared parameters can be set this way.
-
-USES constants defined in mock_nodes.shared_constants
+Setting True Wind Parameters:
+* Must modify ``wind_params.yaml`` before running the shell script.
+* Must ensure both ``mock_wind_sensor`` and ``mock_gps`` nodes are running.
+* Run ``./local_pathfinding/mock_nodes/wind_params.sh`` to load parameters.
+* **WARNING**: Do NOT use ``ros2 param set`` for true wind values. This causes parameter
+  mismatch between nodes and breaks calculations. Always use the shell script.
 """
 
-import random
-import custom_interfaces.msg as ci
-import numpy as np
-import rclpy
-from rclpy.node import Node
-from scipy.stats import gamma, vonmises
+from typing import List
 
-import local_pathfinding.coord_systems as cs
-import local_pathfinding.mock_nodes.shared_constants as sc
+import custom_interfaces.msg as ci
+import rclpy
+from rcl_interfaces.msg import SetParametersResult
+from rclpy.node import Node
+from rclpy.parameter import Parameter
+
 import local_pathfinding.wind_coord_systems as wcs
+from test_plans.test_plan import TestPlan
 
 
 class MockWindSensor(Node):
-    """Publishes mock apparent wind speed and direction at a fixed rate.
-
-    See the module docstring for topics and parameters.
-    """
-
     def __init__(self):
-        """Initialize timers, publishers, subscriptions, and declare parameters."""
         super().__init__("mock_wind_sensor")
-
-        # Declare ROS parameters (qos depth and publish period)
         self.declare_parameters(
             namespace="",
             parameters=[
                 ("pub_period_sec", rclpy.Parameter.Type.DOUBLE),
-                ("mean_wind_speed", 16.0),
-                ("mean_direction", 30),  # from the bow to the stern of the boat
-                ("sd_speed", 1.0),
-                ("mode", "variable"),  # set constant for fixing the value to a constant
-                ("direction_kappa", 50.0),  # concentration for von Mises (higher = tighter)
+                ("tw_speed_kmph", rclpy.Parameter.Type.DOUBLE),
+                ("tw_dir_deg", rclpy.Parameter.Type.INTEGER),
+                ("test_plan", rclpy.Parameter.Type.STRING),
             ],
         )
+
+        test_plan = TestPlan(self.get_parameter("test_plan").get_parameter_value().string_value)
+        self._tw_dir_deg = test_plan.tw_dir_deg
+        self._tw_speed_kmph = test_plan.tw_speed_kmph
+        self._boat_heading_deg = test_plan.gps.heading.heading
+        self._boat_speed_kmph = test_plan.gps.speed.speed
 
         self.pub_period_sec = (
             self.get_parameter("pub_period_sec").get_parameter_value().double_value
         )
 
-        # Mock wind sensor timer
-        self.__mock_wind_sensor_timer = self.create_timer(
+        self._mock_wind_sensor_timer = self.create_timer(
             timer_period_sec=self.pub_period_sec, callback=self.mock_wind_sensor_callback
         )
-
-        # Mock wind sensor publisher initialization
-        self.__wind_sensors_pub = self.create_publisher(
+        self._wind_sensors_pub = self.create_publisher(
             msg_type=ci.WindSensor,
             topic="filtered_wind_sensor",
             qos_profile=10,
         )
-
-        self.__gps_sub = self.create_subscription(
+        self._gps_sub = self.create_subscription(
             msg_type=ci.GPS, topic="gps", callback=self.gps_callback, qos_profile=10
         )
 
-        self.__last_direction = int(
-            self.get_parameter("mean_direction").get_parameter_value().double_value
+        self.add_on_set_parameters_callback(self._on_set_parameters)
+
+    def mock_wind_sensor_callback(self):
+        aw_dir_deg, aw_speed_kmph = wcs.get_apparent_wind(
+            self._tw_dir_deg,
+            self._tw_speed_kmph,
+            self._boat_heading_deg,
+            self._boat_speed_kmph,
+            ret_rad=False,
         )
 
-        self.__last_speed = ci.HelperSpeed(
-            speed=self.get_parameter("mean_wind_speed").get_parameter_value().double_value
+        aw_dir_boat_coord_deg = wcs.global_to_boat_coordinate(self._boat_heading_deg, aw_dir_deg)
+        msg = ci.WindSensor(
+            speed=ci.HelperSpeed(speed=aw_speed_kmph),
+            direction=int(aw_dir_boat_coord_deg),
         )
+        self.get_logger().debug(f"Publishing to {self._wind_sensors_pub.topic}: {msg}")
+        self._wind_sensors_pub.publish(msg)
 
-        self.__ticks = random.randint(60, 120)
-        self.__ticks_so_far = 0
-        self.__boat_heading = sc.START_HEADING
-        self.__boat_speed = sc.MEAN_SPEED
+    def _on_set_parameters(self, params: List[Parameter]) -> SetParametersResult:
+        """This callback function serves as a guard to ensure values entered with `ros2 param set`
+        are valid before they are assigned to the parameters.
 
-    def mock_wind_sensor_callback(self) -> None:
-        """Timer callback to sample or hold wind values and publish a WindSensor message."""
-        self.get_latest_speed_and_direction_values()
-        wind_speed_knots = self.get_mock_wind_speed()
-        direction = self.get_direction_value()
+        Applies updates to true wind speed/direction. Values take effect on the next publish tick.
 
-        msg = ci.WindSensor()
-        msg.speed, msg.direction = wind_speed_knots, direction
-
-        self.get_logger().debug(f"Publishing to {self.__wind_sensors_pub.topic}: {msg}")
-        self.__wind_sensors_pub.publish(msg)
-
-    def get_mock_wind_speed(self) -> ci.HelperSpeed:
-        """Return a wind speed sample or a held value.
-
-        - In "constant" mode, returns the configured mean speed.
-        - Otherwise, holds the previous sample for 60–120 ticks. When refreshing, samples
-          from a Gamma distribution parameterized to match the configured mean and SD.
+        Rejects if tw_dir_deg is not in (-180, 180].
         """
-        if self.__mode == "constant":
-            return ci.HelperSpeed(speed=self.__mean_wind_speed)
-
-        if self.__ticks_so_far < self.__ticks:
-            self.__ticks_so_far += 1
-            return self.__last_speed
-
-        mean = self.__mean_wind_speed
-        sd = self.__sd_wind_speed
-
-        k = (mean / sd) ** 2
-        theta = (sd**2) / mean
-
-        wind_speed_knots = gamma.rvs(a=k, scale=theta)
-        self.__last_speed = ci.HelperSpeed(speed=abs(wind_speed_knots))
-        return self.__last_speed
-
-    def get_direction_value(self) -> int:
-        """Return a wind direction sample (degrees, boat frame) or a held value.
-
-        - In "constant" mode, returns the configured mean direction (converted to boat frame).
-        - Otherwise, holds the previous sample for 60–120 ticks. When refreshing:
-          1) Converts mean true wind to mean apparent wind given boat heading/speed.
-          2) Samples from a von Mises distribution centered at that mean with concentration
-             'direction_kappa' (higher = tighter).
-          3) Converts the sample to degrees and into the boat coordinate frame.
-        """
-        if self.__mode == "constant":
-            return self.__mean_direction
-
-        if self.__ticks_so_far < self.__ticks:
-            self.__ticks_so_far += 1
-            return self.__last_direction
-
-        self.__ticks = random.randint(60, 120)
-        self.__ticks_so_far = 0
-
-        # Convert true wind to apparent wind (global frame)
-        mean_aw_direction, _ = wcs.get_apparent_wind(
-            self.__mean_direction, self.__mean_wind_speed, self.__boat_heading, self.__boat_speed
-        )
-
-        # Sample around the mean apparent wind in radians and convert back to degrees
-        mean_direction_rad = np.radians(mean_aw_direction)
-        direction_rad = vonmises.rvs(kappa=self.__direction_kappa, loc=mean_direction_rad, size=1)[0] # noqa
-        direction_deg = np.degrees(direction_rad)
-
-        result = int(
-            wcs.global_to_boat_coordinate(self.__boat_heading, cs.bound_to_180(direction_deg))
-        )
-        self.__last_direction = result
-        return result
-
-    def get_latest_speed_and_direction_values(self) -> None:
-        """Updates mean wind speed and direction with the latest values from ROS parameters."""
-
-        self.__mean_wind_speed = (
-            self.get_parameter("mean_wind_speed").get_parameter_value().double_value
-        )
-
-        self.__mean_direction = (
-            self.get_parameter("mean_direction").get_parameter_value().integer_value
-        )
-
-        self.__sd_wind_speed = self.get_parameter("sd_speed").get_parameter_value().double_value
-
-        self.__mode = self.get_parameter("mode").get_parameter_value().string_value
-        self.__direction_kappa = (
-            self.get_parameter("direction_kappa").get_parameter_value().double_value
-        )
+        for p in params:
+            if p.name == "tw_dir_deg":
+                tw_dir_deg = int(p.value)
+                if tw_dir_deg <= -180 or tw_dir_deg > 180:
+                    return SetParametersResult(
+                        successful=False, reason="tw_dir_deg must be in (-180, 180]"
+                    )
+                self._tw_dir_deg = tw_dir_deg
+            else:
+                self._tw_speed_kmph = p.value
+        return SetParametersResult(successful=True)
 
     def gps_callback(self, msg: ci.GPS) -> None:
         """Callback function for the GPS subscription. Updates the boat's position.
@@ -219,9 +122,9 @@ class MockWindSensor(Node):
             msg (ci.GPS): The GPS message containing the boat's position.
         """
 
-        self.get_logger().debug(f"received n {self.__wind_sensors_pub.topic}: {msg}")
-        self.__boat_heading = msg.heading.heading
-        self.__boat_speed = msg.speed.speed
+        self.get_logger().debug(f"received n {self._wind_sensors_pub.topic}: {msg}")
+        self._boat_heading_deg = msg.heading.heading
+        self._boat_speed_kmph = msg.speed.speed
 
 
 def main(args=None):

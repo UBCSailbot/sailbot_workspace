@@ -12,9 +12,11 @@ jobs:
   colcon-test:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      MONGODB_URI: ${{ secrets.MONGODB_URI }}
     steps:
     - name: Checkout workspace
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
 
     - name: Set up Python
       uses: actions/setup-python@v6
@@ -42,7 +44,7 @@ jobs:
     timeout-minutes: 5
     steps:
     - name: Checkout workspace
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
 
     - name: Run linter
       uses: ./.github/actions/
@@ -55,7 +57,7 @@ jobs:
     timeout-minutes: 15
     steps:
     - name: Checkout workspace
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
 
     - name: Run linter
       uses: ./.github/actions/

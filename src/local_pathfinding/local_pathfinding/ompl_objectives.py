@@ -2,397 +2,268 @@
 
 import math
 
-import custom_interfaces.msg as ci
 import numpy as np
 from ompl import base as ob
+from scipy.interpolate import RegularGridInterpolator
 
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.wind_coord_systems as wcs
 
-# Upwind downwind cost multipliers
-UPWIND_MULTIPLIER = 1.0
-DOWNWIND_MULTIPLIER = 0.75
+UPWIND_COST_MULTIPLIER = 1.0
+DOWNWIND_COST_MULTIPLIER = 1.0
+ZERO_SPEED_COST = 1.0
+ACCEPTABLE_COST_THRESHOLD = 0.85
+WIND_OBJECTIVE_WEIGHT = 0.85
+TIME_OBJECTIVE_WEIGHT = 0.15
 
-# Upwind downwind constants
-HIGHEST_UPWIND_ANGLE_RADIANS = math.radians(40.0)
-LOWEST_DOWNWIND_ANGLE_RADIANS = math.radians(20.0)
 
+#               Estimated Boat Speeds (kmph) as function of True Wind Speed (kmph)
+#                               and the Sailing Angle (deg)
+#  __________________________________________________________________________________________
+# | True  |                             Sailing Angle (deg)                                  |
+# | Wind  |__________________________________________________________________________________|
+# | Speed |       |       |       |       |       |       |      |      |      |      |      |
+# | (Kmph)|   0°  |  45°  |  50°  |  60°  |  75°  |  90°  | 110° | 120° | 135° | 150° | 180° |
+# |_______|_______|_______|_______|_______|_______|_______|______|______|______|______|______|
+# |  0.0  |  0.0  |  0.0  |  0.0  |  0.0  |  0.0  |  0.0  |  0.0 |  0.0 |  0.0 |  0.0 |  0.0 |
+# | 11.1  |  0.0  |  5.0  |  5.4  |  5.8  |  6.1  |  6.0  |  5.6 |  5.2 |  4.6 |  4.0 |  3.6 |
+# | 14.8  |  0.0  |  5.9  |  6.5  |  6.9  |  7.2  |  7.1  |  6.8 |  6.5 |  5.9 |  5.3 |  4.8 |
+# | 18.5  |  0.0  |  6.6  |  7.3  |  7.7  |  8.1  |  8.1  |  7.8 |  7.5 |  6.9 |  6.3 |  5.8 |
+# | 22.2  |  0.0  |  7.2  |  7.9  |  8.4  |  8.7  |  8.8  |  8.6 |  8.4 |  7.8 |  7.2 |  6.7 |
+# | 25.9  |  0.0  |  7.7  |  8.4  |  8.7  |  9.0  |  9.2  |  9.0 |  8.9 |  8.5 |  8.0 |  7.6 |
+# | 29.6  |  0.0  |  8.0  |  8.7  |  9.0  |  9.3  |  9.4  |  9.4 |  9.2 |  9.0 |  8.6 |  8.3 |
+# | 37.0  |  0.0  |  8.2  |  8.9  |  9.3  |  9.6  | 10.0  | 10.0 |  9.8 |  9.6 |  9.3 |  9.2 |
+# | 55.0  |  0.0  |  8.5  |  9.3  |  9.6  | 10.0  | 10.0  | 10.0 | 10.0 | 10.0 | 10.0 | 10.0 |
+# | 75.0  |  0.0  |  8.7  |  9.6  |  9.8  | 10.0  | 10.0  | 10.0 | 10.0 | 10.0 | 10.0 | 10.0 |
+# -------------------------------------------------------------------------------------------
 
-BOATSPEEDS = np.array(
+BOAT_SPEEDS = np.array(
     [
-        [0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0.4, 1.1, 3.2, 3.7, 2.8],
-        [0, 0.3, 1.9, 3.7, 9.3, 13.0, 9.2],
-        [0, 0.9, 3.7, 7.4, 14.8, 18.5, 13.0],
-        [0, 1.3, 5.6, 9.3, 18.5, 24.1, 18.5],
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 5.0, 5.4, 5.8, 6.1, 6.0, 5.6, 5.2, 4.6, 4.0, 3.6],
+        [0.0, 5.9, 6.5, 6.9, 7.2, 7.1, 6.8, 6.5, 5.9, 5.3, 4.8],
+        [0.0, 6.6, 7.3, 7.7, 8.1, 8.1, 7.8, 7.5, 6.9, 6.3, 5.8],
+        [0.0, 7.2, 7.9, 8.4, 8.7, 8.8, 8.6, 8.4, 7.8, 7.2, 6.7],
+        [0.0, 7.7, 8.4, 8.7, 9.0, 9.2, 9.0, 8.9, 8.5, 8.0, 7.6],
+        [0.0, 8.0, 8.7, 9.0, 9.3, 9.4, 9.4, 9.2, 9.0, 8.6, 8.3],
+        [0.0, 8.2, 8.9, 9.3, 9.6, 10.0, 10.0, 9.8, 9.6, 9.3, 9.2],
+        [0.0, 8.5, 9.3, 9.6, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0],
+        [0.0, 8.7, 9.6, 9.8, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0],
     ]
 )
 
-WINDSPEEDS = [0, 9.3, 18.5, 27.8, 37.0]  # The row labels
-ANGLES = [0, 20, 30, 45, 90, 135, 180]  # The column labels
+TRUE_WIND_SPEEDS = [0.0, 11.1, 14.8, 18.5, 22.2, 25.9, 29.6, 37.0, 55.0, 75.0]
+SAILING_ANGLES = [0, 45, 50, 60, 75, 90, 110, 120, 135, 150, 180]
+
+ESTIMATED_TOP_BOAT_SPEED = np.max(BOAT_SPEEDS)
 
 
-class Objective(ob.StateCostIntegralObjective):
-    """All of our optimization objectives inherit from this class.
-
-    Notes:
-    - This class inherits from the OMPL class StateCostIntegralObjective:
-        https://ompl.kavrakilab.org/classompl_1_1base_1_1StateCostIntegralObjective.html
-    - Camelcase is used for functions that override OMPL functions, as that is their convention.
+class WindObjective(ob.OptimizationObjective):
+    """The WindObjective assigns a high cost to any path segment which is oriented directly
+    (or almost directly) upwind or downwind.
 
     Attributes:
-        space_information (StateSpacePtr): Contains all the information about
-            the space planning is done in.
-    """
-
-    def __init__(self, space_information):
-        super().__init__(si=space_information, enableMotionCostInterpolation=True)
-        self.space_information = space_information
-
-    def motionCost(self, s1: ob.SE2StateSpace, s2: ob.SE2StateSpace) -> ob.Cost:
-        raise NotImplementedError
-
-
-class DistanceObjective(Objective):
-    """Generates a distance objective function
-
-    Attributes:
-        method (DistanceMethod): The method of the distance objective function
-        ompl_path_objective (ob.PathLengthOptimizationObjective): The OMPL path length objective.
-            Only defined if the method is OMPL path length.
-        reference (ci.HelperLatLon): The XY origin when converting from latlon to XY.
-            Only defined if the method is latlon.
+        true_wind_direction (float): The direction of the true wind in radians (-pi, pi]
     """
 
     def __init__(
         self,
         space_information,
-        reference=ci.HelperLatLon(latitude=0.0, longitude=0.0),
+        true_wind_direction_radians: float,
     ):
         super().__init__(space_information)
+        self.true_wind_direction_radians = true_wind_direction_radians
 
     def motionCost(self, s1: ob.SE2StateSpace, s2: ob.SE2StateSpace) -> ob.Cost:
-        """Generates the distance between two points
+        """Defines the cost of a path segment, from s1 to s2, with regards to the direction of the
+        segment and the wind. The closer the segment is to pointing upwind or downwind the higher
+        the motion cost.
 
         Args:
-            s1 (SE2StateInternal): The starting point of the local start state
-            s2 (SE2StateInternal): The ending point of the local goal state
+            s1 (SE2StateInternal): The starting point of the path segment
+            s2 (SE2StateInternal): The ending point of the path segment
 
         Returns:
-            ob.Cost: The distance between two points object
-
-        Raises:
-            ValueError: If the distance method is not supported
+            ob.Cost: The cost of travelling along the path segment.
         """
         s1_xy = cs.XY(s1.getX(), s1.getY())
         s2_xy = cs.XY(s2.getX(), s2.getY())
-        distance = DistanceObjective.get_euclidean_path_length_objective(s1_xy, s2_xy)
-        cost = ob.Cost(distance)
-        return cost
-
-    @staticmethod
-    def get_euclidean_path_length_objective(s1: cs.XY, s2: cs.XY) -> float:
-        """Generates the euclidean distance between two points
-
-        Args:
-            s1 (cs.XY): The starting point of the local start state
-            s2 (cs.XY): The ending point of the local goal state
-
-        Returns:
-            float: The euclidean distance between the two points
-        """
-        return math.hypot(s2.y - s1.y, s2.x - s1.x)
-
-
-class MinimumTurningObjective(Objective):
-    """Generates a minimum turning objective function
-
-    Attributes:
-        goal (cs.XY): The goal position of the sailbot
-        heading (float): The heading of the sailbot in radians (-pi, pi]
-        method (MinimumTurningMethod): The method of the minimum turning objective function
-    """
-
-    def __init__(
-        self,
-        space_information,
-        simple_setup,
-        heading_degrees: float,
-    ):
-        super().__init__(space_information)
-        self.goal = cs.XY(
-            simple_setup.getGoal().getState().getX(), simple_setup.getGoal().getState().getY()
-        )
-        assert -180 < heading_degrees <= 180
-        self.heading = math.radians(heading_degrees)
-
-    def motionCost(self, s1: ob.SE2StateSpace, s2: ob.SE2StateSpace) -> ob.Cost:
-        """Generates the turning cost between s1, s2, heading or the goal position
-
-        Args:
-            s1 (SE2StateInternal): The starting point of the local start state
-            s2 (SE2StateInternal): The ending point of the local goal state
-
-        Returns:
-            ob.Cost: The minimum turning angle in degrees
-
-        Raises:
-            ValueError: If the minimum turning method is not supported
-        """
-        s1_xy = cs.XY(s1.getX(), s1.getY())
-        s2_xy = cs.XY(s2.getX(), s2.getY())
-        threshold = math.pi / 9  # 20 degrees around the angle to next waypoint
-
-        # calculate the difference in angle between s1 and s2
-        raw_angle_s1_s2 = math.atan2(s2_xy.y - s1_xy.y, s2_xy.x - s1_xy.x)
-
-        # angle between the orientation of the boat at s1 and the location of the s2
-        angle_s1_s2 = MinimumTurningObjective.min_turn_angle(raw_angle_s1_s2, s1.getYaw())
-
-        # now we need to ensure that the s2's orientation isn't horrendous given s2_xy
-        if MinimumTurningObjective.min_turn_angle(s2.getYaw(), raw_angle_s1_s2) > threshold:
-            # the orientation of the boat doesn't make sense even after accounting for drift
-            # nuke the cost
-            return ob.Cost(3000)
-        else:
-            return ob.Cost(angle_s1_s2)
-
-    @staticmethod
-    def min_turn_angle(angle1: float, angle2: float) -> float:
-        """Calculates the minimum turning angle between two angles
-
-        Args:
-            angle1 (float): The first angle in radians
-            angle2 (float): The second angle in radians
-                Must be bounded within 2pi radians of `angle1`
-
-        Returns:
-            float: The minimum turning angle between the two angles in radians
-        """
-        # Calculate the uncorrected turn size [0, 2pi]
-        turn_size_bias = math.fabs(angle1 - angle2)
-
-        # Correct the angle in between [0, pi]
-        if turn_size_bias > math.pi:
-            turn_size_unbias = 2 * math.pi - turn_size_bias
-        else:
-            turn_size_unbias = turn_size_bias
-
-        return math.fabs(turn_size_unbias)
-
-
-class WindObjective(Objective):
-    """Generates a wind objective function
-
-    Attributes:
-        wind_direction (float): The direction of the wind in radians (-pi, pi]
-    """
-
-    def __init__(
-        self,
-        space_information,
-        wind_direction_degrees: float,
-        wind_speed: float,
-        heading_degrees: float,
-        speed: float,
-    ):
-        super().__init__(space_information)
-        assert -180 < wind_direction_degrees <= 180
-        self.wind_direction, _ = wcs.get_true_wind(
-            wcs.boat_to_global_coordinate(wind_direction_degrees, heading_degrees),
-            wind_speed,
-            heading_degrees,
-            speed,
+        return ob.Cost(
+            WindObjective.wind_direction_cost(s1_xy, s2_xy, self.true_wind_direction_radians)
         )
 
-    def motionCost(self, s1: ob.SE2StateSpace, s2: ob.SE2StateSpace) -> ob.Cost:
-        """Generates the cost associated with the upwind and downwind directions of the boat in
-        relation to the wind.
-
-        Args:
-            s1 (SE2StateInternal): The starting point of the local start state
-            s2 (SE2StateInternal): The ending point of the local goal state
-
-        Returns:
-            ob.Cost: The cost of going upwind or downwind
-        """
-        s1_xy = cs.XY(s1.getX(), s1.getY())
-        s2_xy = cs.XY(s2.getX(), s2.getY())
-        return ob.Cost(WindObjective.wind_direction_cost(s1_xy, s2_xy, self.wind_direction))
-
     @staticmethod
-    def wind_direction_cost(s1: cs.XY, s2: cs.XY, wind_direction: float) -> float:
-        """Punishes the boat for going up/downwind.
+    def wind_direction_cost(s1: cs.XY, s2: cs.XY, tw_direction_rad: float) -> float:
+        """Returns a high cost when the path segment from s1 to s2 is pointing directly
+           (or close to directly) upwind or downwind.
 
         Args:
-            s1 (cs.XY): The starting point of the local start state
-            s2 (cs.XY): The ending point of the local goal state
-            wind_direction (float): The direction of the wind in radians (-pi, pi]
+            s1 (cs.XY): The start point of the path segment
+            s2 (cs.XY): The end point of the path segment
+            tw_direction_rad (float): The direction of the true wind in radians, (-pi, pi]
 
         Returns:
-            float: The cost of going upwind or downwind
+            float: The cost the path segment from s1 to s2, in the interval [0, 1]
         """
-        boat_direction_radians = math.atan2(s2.x - s1.x, s2.y - s1.y)
-        assert -math.pi <= boat_direction_radians <= math.pi
+        segment_true_bearing_rad = cs.get_path_segment_true_bearing(s1, s2, rad=True)
+        tw_angle_rad = abs(wcs.get_true_wind_angle(segment_true_bearing_rad, tw_direction_rad))
+        cos_angle = math.cos(tw_angle_rad)
 
-        angle_diff = boat_direction_radians - wind_direction
-        angle_diff = math.radians(cs.bound_to_180(math.degrees(angle_diff)))
-        cos_angle = math.cos(angle_diff)
-
-        # cos_angle:
-        #  = 1 when heading directly into wind (upwind)
-        #  = 0 when heading perpendicular (crosswind)
-        #  = -1 when heading with wind (downwind)
         if cos_angle > 0:
-            return UPWIND_MULTIPLIER * cos_angle
+            return UPWIND_COST_MULTIPLIER * cos_angle
         else:
-            return DOWNWIND_MULTIPLIER * abs(cos_angle)
+            return DOWNWIND_COST_MULTIPLIER * abs(cos_angle)
 
 
-class SpeedObjective(Objective):
-    """Generates a speed objective function
+class TimeObjective(ob.OptimizationObjective):
+    """The Time Objective assigns a cost, to any path segment, that is proportional to the
+    estimated time it will take for the boat to travel from the start of the segment to the
+    end of the segment.
 
     Attributes:
         wind_direction (float): The direction of the wind in radians (-pi, pi]
         wind_speed (float): The speed of the wind in m/s
     """
 
+    interpolation = RegularGridInterpolator(
+        (TRUE_WIND_SPEEDS, SAILING_ANGLES),
+        BOAT_SPEEDS,
+        bounds_error=False,  # no error on out of bounds call
+        # returns max speed for any input outside the range of the table
+        fill_value=ESTIMATED_TOP_BOAT_SPEED,
+    )
+
     def __init__(
         self,
         space_information,
-        heading_direction: float,
-        wind_direction: float,
-        wind_speed: float,
+        true_wind_direction_radians: float,
+        true_wind_speed_kmph: float,
     ):
         super().__init__(space_information)
-        assert -180 < wind_direction <= 180
-        self.wind_direction = math.radians(wind_direction)
-
-        assert -180 < heading_direction <= 180
-        self.heading_direction = math.radians(heading_direction)
-
-        self.wind_speed = wind_speed
+        self.true_wind_direction_radians = true_wind_direction_radians
+        self.true_wind_speed_kmph = true_wind_speed_kmph
 
     def motionCost(self, s1: ob.SE2StateSpace, s2: ob.SE2StateSpace) -> ob.Cost:
-        """Generates the cost associated with the speed of the boat.
+        """Defines the cost of a path segment, from s1 to s2, as the estimated time it will take
+           the boat to travel in a straight line from s1 to s2.
 
         Args:
-            s1 (SE2StateInternal): The starting point of the local start state
-            s2 (SE2StateInternal): The ending point of the local goal state
+            s1 (SE2StateInternal): The start of the path segment
+            s2 (SE2StateInternal): The end of the path segment
 
         Returns:
-            ob.Cost: The cost of going upwind or downwind
+            ob.Cost: The cost of the path segment from s1 to s2
         """
 
         s1_xy = cs.XY(s1.getX(), s1.getY())
         s2_xy = cs.XY(s2.getX(), s2.getY())
-
-        sailbot_speed = self.get_sailbot_speed(
-            self.heading_direction, self.wind_direction, self.wind_speed
+        return ob.Cost(
+            TimeObjective.time_cost(
+                s1_xy,
+                s2_xy,
+                self.true_wind_direction_radians,
+                self.true_wind_speed_kmph,
+            )
         )
-
-        if sailbot_speed == 0:
-            return ob.Cost(10000)
-
-        distance = DistanceObjective.get_euclidean_path_length_objective(s1_xy, s2_xy)
-        time = distance / sailbot_speed
-
-        cost = ob.Cost(time)
-
-        return cost
 
     @staticmethod
-    def get_sailbot_speed(heading: float, wind_direction: float, wind_speed: float) -> float:
-        # Get the sailing angle: [0, 180]
-        sailing_angle = abs(heading - wind_direction)
-        sailing_angle = min(sailing_angle, 360 - sailing_angle)
+    def time_cost(
+        s1: cs.XY, s2: cs.XY, true_wind_direction_radians: float, true_wind_speed_kmph
+    ) -> float:
+        """Returns a cost proportional to the estimated amount of time it will take for the boat
+           to travel from s1 to s2.
 
-        # Find the nearest windspeed values above and below the true windspeed
-        lower_windspeed_index = max([i for i, ws in enumerate(WINDSPEEDS) if ws <= wind_speed])
-        upper_windspeed_index = (
-            lower_windspeed_index + 1
-            if lower_windspeed_index < len(WINDSPEEDS) - 1
-            else lower_windspeed_index
+        Args:
+            s1 (cs.XY): The start point of the path segment
+            s2 (cs.XY): The end point of the path segment
+            true_wind_direction_radians (float): The direction of the true wind in
+            radians (-pi, pi]
+            true_wind_speed_kmph (float): The true wind speed in km/h
+
+        Returns:
+            float: The cost the path segment from s1 to s2, in the interval [0, 1]
+
+        """
+        path_segment_true_bearing_radians = cs.get_path_segment_true_bearing(s1, s2, rad=True)
+
+        sailbot_speed = TimeObjective.get_sailbot_speed(
+            path_segment_true_bearing_radians,
+            true_wind_direction_radians,
+            true_wind_speed_kmph,
         )
 
-        # Find the nearest angle values above and below the sailing angle
-        lower_angle_index = max([i for i, ang in enumerate(ANGLES) if ang <= sailing_angle])
-        upper_angle_index = (
-            lower_angle_index + 1 if lower_angle_index < len(ANGLES) - 1 else lower_angle_index
+        # exit early to avoid dividing by sailbot_speed when it's close to 0
+        if math.isclose(sailbot_speed, 0):
+            return ZERO_SPEED_COST
+
+        distance = math.hypot(s2.y - s1.y, s2.x - s1.x)
+        time = distance / sailbot_speed
+        ideal_time = distance / ESTIMATED_TOP_BOAT_SPEED
+        deltaT = time - ideal_time
+        # This normalizes the time to an interval of (0,1) more efficiently than sigmoid
+        normalized_time = deltaT / (1 + abs(deltaT))
+        return normalized_time
+
+    @staticmethod
+    def get_sailbot_speed(
+        path_segment_true_bearing_rad: float,
+        tw_direction_rad: float,
+        tw_speed_kmph: float,
+    ) -> float:
+
+        tw_angle_rad = abs(
+            wcs.get_true_wind_angle(path_segment_true_bearing_rad, tw_direction_rad)
         )
 
-        # Find the maximum angle and maximum windspeed based on the actual data in the table
-        max_angle = max(ANGLES)
-        max_windspeed = max(WINDSPEEDS)
+        # this bounds the twa to a range of 0 to 180 degrees
+        # we can take the absolute value because we don't care if the wind is blowing
+        # on the port or starboard side when it comes to calculating the estimated speed
+        # and having the twa in the range of [0, 180] means we don't have to cover negative
+        # twa values in the BOAT_SPEEDS table
+        tw_angle_deg = abs(cs.bound_to_180(math.degrees(tw_angle_rad)))
 
-        # Handle the case of maximum angle (use the dynamic max_angle)
-        if upper_angle_index == len(ANGLES) - 1:
-            lower_angle_index = ANGLES.index(max_angle) - 1
-            upper_angle_index = ANGLES.index(max_angle)
-
-        # Handle the case of the maximum windspeed (use the dynamic max_windspeed)
-        if upper_windspeed_index == len(WINDSPEEDS) - 1:
-            lower_windspeed_index = WINDSPEEDS.index(max_windspeed) - 1
-            upper_windspeed_index = WINDSPEEDS.index(max_windspeed)
-
-        # Perform linear interpolation
-        lower_windspeed = WINDSPEEDS[lower_windspeed_index]
-        upper_windspeed = WINDSPEEDS[upper_windspeed_index]
-        lower_angle = ANGLES[lower_angle_index]
-        upper_angle = ANGLES[upper_angle_index]
-
-        boat_speed_lower = BOATSPEEDS[lower_windspeed_index][lower_angle_index]
-        boat_speed_upper = BOATSPEEDS[upper_windspeed_index][lower_angle_index]
-
-        interpolated_1 = boat_speed_lower + (wind_speed - lower_windspeed) * (
-            boat_speed_upper - boat_speed_lower
-        ) / (upper_windspeed - lower_windspeed)
-
-        boat_speed_lower = BOATSPEEDS[lower_windspeed_index][upper_angle_index]
-        boat_speed_upper = BOATSPEEDS[upper_windspeed_index][upper_angle_index]
-
-        interpolated_2 = boat_speed_lower + (wind_speed - lower_windspeed) * (
-            boat_speed_upper - boat_speed_lower
-        ) / (upper_windspeed - lower_windspeed)
-
-        interpolated_value = interpolated_1 + (sailing_angle - lower_angle) * (
-            interpolated_2 - interpolated_1
-        ) / (upper_angle - lower_angle)
-
-        return interpolated_value
+        # since the twa is bounded to [0, 180], the only time the interpolator would need to
+        # use the fill_value is if the tw_speed_kmph is greater than the max accounted for
+        # in the BOAT_SPEEDS table, in which case the interpolator will return it's configured
+        # fill_value (see interpolation definition at top of class)
+        return TimeObjective.interpolation((tw_speed_kmph, tw_angle_deg))
 
 
 def get_sailing_objective(
     space_information,
     simple_setup,
-    heading_degrees: float,
-    speed: float,
-    wind_direction_degrees: float,
-    wind_speed: float,
+    boat_heading_degrees: float,
+    boat_speed_kmph: float,
+    apparent_wind_direction_degrees: float,
+    apparent_wind_speed_kmph: float,
 ) -> ob.OptimizationObjective:
-    objective = ob.MultiOptimizationObjective(si=space_information)
-    objective.addObjective(
-        objective=DistanceObjective(space_information),
-        weight=1.0,
-    )
-    objective.addObjective(
-        objective=MinimumTurningObjective(space_information, simple_setup, heading_degrees),
-        weight=10.0,
-    )
-    objective.addObjective(
-        objective=WindObjective(
-            space_information, wind_direction_degrees, wind_speed, heading_degrees, speed
-        ),
-        weight=5.0,
-    )
-    objective.addObjective(
-        objective=SpeedObjective(
-            space_information,
-            heading_degrees,
-            wind_direction_degrees,
-            wind_speed,
-        ),
-        weight=0,
+
+    apparent_wind_direction_degrees_global_coordinates = wcs.boat_to_global_coordinate(
+        boat_heading_degrees, apparent_wind_direction_degrees
     )
 
-    return objective
+    tw_dir_rad, tw_speed_kmph = wcs.get_true_wind(
+        apparent_wind_direction_degrees_global_coordinates,
+        apparent_wind_speed_kmph,
+        boat_heading_degrees,
+        boat_speed_kmph,
+    )
+
+    multiObjective = ob.MultiOptimizationObjective(si=space_information)
+    multiObjective.addObjective(
+        objective=WindObjective(
+            space_information,
+            tw_dir_rad,
+        ),
+        weight=WIND_OBJECTIVE_WEIGHT,
+    )
+    multiObjective.addObjective(
+        objective=TimeObjective(space_information, tw_dir_rad, tw_speed_kmph),
+        weight=TIME_OBJECTIVE_WEIGHT,
+    )
+    # this allows the objective to be satisfied once a path with a cost
+    # below the threshold has been found
+    # this can prevent the solver from running until the time limit in some cases
+    multiObjective.setCostThreshold(ACCEPTABLE_COST_THRESHOLD)
+
+    return multiObjective

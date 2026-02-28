@@ -5,10 +5,24 @@ true bearing conventions.
 """
 
 import math
+from dataclasses import dataclass
+
 import local_pathfinding.coord_systems as cs
 
 FLOATING_POINT_ERROR_THRESHOLD = 1e-9
 ZERO_VECTOR_CONSTANT = 0.0
+
+
+@dataclass
+class Wind:
+    """Represents wind speed and direction.
+
+    Attributes:
+        speed_kmph (float): Wind speed in kilometers per hour.
+        dir_deg (float): Wind direction in degrees, bounded to (-180, 180].
+    """
+    speed_kmph: float
+    dir_deg: float
 
 
 def boat_to_global_coordinate(boat_heading: float, wind_direction: float):
@@ -41,27 +55,29 @@ def global_to_boat_coordinate(boat_heading: float, global_wind_direction: float)
 
 
 def get_true_wind(
-    aw_direction: float,
-    aw_speed: float,
-    boat_heading: float,
-    boat_speed: float,
+    aw_dir_deg: float,
+    aw_speed_kmph: float,
+    boat_heading_deg: float,
+    boat_speed_kmph: float,
+    ret_rad: bool = True,
 ) -> tuple[float, float]:
     """Compute the true wind vector from apparent wind and boat motion.
 
     Args:
-        aw_direction (float): Apparent wind direction in degrees (-180, 180]. This is the wind
+        aw_dir_deg (float): Apparent wind direction in degrees (-180, 180]. This is the wind
             as measured relative to the boat (sensor reading).
-        aw_speed (float): Apparent wind speed (same units as boat_speed), e.g., km/h.
-        boat_heading (float): Boat heading in degrees (-180, 180].
-        boat_speed (float): Boat speed over ground (same units as aw_speed), e.g., km/h.
+        aw_speed_kmph (float): Apparent wind speed in km/h.
+        boat_heading_deg (float): Boat heading in degrees (-180, 180].
+        boat_speed_kmph (float): Boat speed over ground in km/h.
+        ret_rad (bool): If True, return wind direction in radians. If False, return in degrees.
         NOTE: All the angles are with respect to global true bearing. It is the
         responsibility of the caller to ensure this. Particularly, the apparent wind read by the
         sensor is in boat coordinates
 
     Returns:
-        tuple[float, float]: (tw_angle, tw_magnitude)
-            - tw_angle: true wind direction in radians within (-pi, pi].
-            - tw_magnitude: true wind speed
+        tuple[float, float]: (tw_dir_rad, tw_speed_kmph)
+            - tw_dir_rad: true wind direction in radians within (-pi, pi].
+            - tw_speed_kmph: true wind speed in km/h
         If the resulting vector magnitude is effectively zero (<= FLOATING_POINT_ERROR_THRESHOLD),
         returns (0.0, 0.0). NOTE: The caller is responsible for handling this case, otherwise the
         calculations will break down.
@@ -70,65 +86,101 @@ def get_true_wind(
         The function computes vector components in an east/north frame, subtracting the boat
         motion from the apparent wind to obtain the true wind.
     """
-    wind_radians = math.radians(aw_direction)
+    aw_dir_rad = math.radians(aw_dir_deg)
 
     # boat wind is in the direction of the boat heading (reverse of boat heading)
-    boat_wind_radians = math.radians(cs.bound_to_180(boat_heading + 180))
-    apparent_wind_east = aw_speed * math.sin(wind_radians)
-    apparent_wind_north = aw_speed * math.cos(wind_radians)
+    bw_dir_rad = math.radians(cs.bound_to_180(boat_heading_deg + 180))
+    aw_east_kmph = aw_speed_kmph * math.sin(aw_dir_rad)
+    aw_north_kmph = aw_speed_kmph * math.cos(aw_dir_rad)
 
-    boat_wind_east = boat_speed * math.sin(boat_wind_radians)
-    boat_wind_north = boat_speed * math.cos(boat_wind_radians)
+    bw_east_kmph = boat_speed_kmph * math.sin(bw_dir_rad)
+    bw_north_kmph = boat_speed_kmph * math.cos(bw_dir_rad)
 
-    true_east = apparent_wind_east - boat_wind_east
-    true_north = apparent_wind_north - boat_wind_north
+    tw_east_kmph = aw_east_kmph - bw_east_kmph
+    tw_north_kmph = aw_north_kmph - bw_north_kmph
 
-    magnitude = math.hypot(true_east, true_north)
-    angle = math.atan2(true_east, true_north)
+    tw_speed_kmph = math.hypot(tw_east_kmph, tw_north_kmph)
+    tw_dir_rad = math.atan2(tw_east_kmph, tw_north_kmph)
 
-    if magnitude > FLOATING_POINT_ERROR_THRESHOLD:
-        return angle, magnitude
+    if ret_rad:
+        tw_dir = tw_dir_rad
+    else:
+        tw_dir = math.degrees(tw_dir_rad)
+
+    if tw_speed_kmph > FLOATING_POINT_ERROR_THRESHOLD:
+        return tw_dir, tw_speed_kmph
     return ZERO_VECTOR_CONSTANT, 0.0
 
 
-def get_apparent_wind(tw_direction, tw_speed, boat_heading, boat_speed) -> tuple[float, float]:
+def get_apparent_wind(
+    tw_dir_deg: float,
+    tw_speed_kmph: float,
+    boat_heading_deg: float,
+    boat_speed_kmph: float,
+    ret_rad: bool = True,
+) -> tuple[float, float]:
     """Compute the apparent wind vector from true wind and boat motion.
 
     Args:
-        tw_direction (float): True wind direction in radians (measured as atan2(east, north) style)
-            or degrees if caller uses degrees consistently. (This routine converts using math.radians # noqa
-            in the original code; keep inputs consistent with usage.)
-        tw_speed (float): True wind speed (same units as boat_speed), e.g., km/h.
-        boat_heading (float): Boat heading in degrees (-180, 180].
-        boat_speed (float): Boat speed over ground (same units as tw_speed), e.g., km/h.
+        tw_dir_deg (float): True wind direction in degrees (-180, 180].
+        tw_speed_kmph (float): True wind speed in km/h.
+        boat_heading_deg (float): Boat heading in degrees (-180, 180].
+        boat_speed_kmph (float): Boat speed over ground in km/h.
+        ret_rad (bool): If True, return wind direction in radians. If False, return in degrees.
         NOTE: All the angles are with respect to global true bearing. It is the
         responsibility of the caller to ensure this.
 
     Returns:
-        tuple[float, float]: (aw_angle, aw_magnitude)
-            - aw_angle: apparent wind direction in radians within (-pi, pi]
-            - aw_magnitude: apparent wind speed (same units as inputs).
+        tuple[float, float]: (aw_dir_rad, aw_speed_kmph)
+            - aw_dir_rad: apparent wind direction in radians within (-pi, pi]
+            - aw_speed_kmph: apparent wind speed in km/h.
         If the resulting vector magnitude is effectively zero (<= FLOATING_POINT_ERROR_THRESHOLD),
         returns (0.0, 0.0). NOTE: The caller is responsible for handling this case, otherwise the
         calculations will break down.
     """
-    tw_direction = math.radians(tw_direction)
+    tw_dir_rad = math.radians(tw_dir_deg)
 
-    bw_speed = boat_speed
-    bw_direction = math.radians(cs.bound_to_180(boat_heading + 180.0))
-    # print(math.degrees(bw_direction))
-    boat_wind_east = bw_speed * math.sin(bw_direction)
-    boat_wind_north = bw_speed * math.cos(bw_direction)
+    bw_speed_kmph = boat_speed_kmph
+    bw_dir_rad = math.radians(cs.bound_to_180(boat_heading_deg + 180.0))
+    bw_east_kmph = bw_speed_kmph * math.sin(bw_dir_rad)
+    bw_north_kmph = bw_speed_kmph * math.cos(bw_dir_rad)
 
-    tw_speed_east = tw_speed * math.sin(tw_direction)
-    tw_speed_north = tw_speed * math.cos(tw_direction)
+    tw_east_kmph = tw_speed_kmph * math.sin(tw_dir_rad)
+    tw_north_kmph = tw_speed_kmph * math.cos(tw_dir_rad)
 
-    aw_speed_east = tw_speed_east + boat_wind_east
-    aw_speed_north = tw_speed_north + boat_wind_north
+    aw_east_kmph = tw_east_kmph + bw_east_kmph
+    aw_north_kmph = tw_north_kmph + bw_north_kmph
 
-    magnitude = math.hypot(aw_speed_east, aw_speed_north)
-    angle = math.atan2(aw_speed_east, aw_speed_north)
+    aw_speed_kmph = math.hypot(aw_east_kmph, aw_north_kmph)
+    aw_dir_rad = math.atan2(aw_east_kmph, aw_north_kmph)
 
-    if magnitude > FLOATING_POINT_ERROR_THRESHOLD:
-        return angle, magnitude
+    if ret_rad:
+        aw_dir = aw_dir_rad
+    else:
+        aw_dir = math.degrees(aw_dir_rad)
+
+    if aw_speed_kmph > FLOATING_POINT_ERROR_THRESHOLD:
+        return aw_dir, aw_speed_kmph
     return ZERO_VECTOR_CONSTANT, 0.0
+
+
+def get_true_wind_angle(boat_heading_rad: float, tw_dir_rad: float) -> float:
+    """Calculates the true wind angle (TWA) in radians.
+    The TWA is the angle between the heading of a vessel and the true wind direction.
+
+    Here are some practical examples of True Wind Angle values:
+
+        0   : Wind directly from the bow (head wind)
+        45  : Wind from 45 degrees off the starboard bow (close-hauled)
+        -90 : Wind directly from the port side (beam reach)
+        135 : Wind from the starboard quarter (broad reach)
+        180 : Wind directly from astern (running downwind)
+
+    Args:
+        boat_heading_rad (float): _description_
+        tw_dir_rad (float): _description_
+
+    Returns:
+        float: The true wind angle in the range (-180, 180]
+    """
+    return cs.bound_to_180((tw_dir_rad - boat_heading_rad), rad=True)
