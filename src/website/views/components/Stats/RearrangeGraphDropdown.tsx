@@ -1,8 +1,6 @@
 'use client';
 
-import { CSS } from '@dnd-kit/utilities';
-import { useSortable } from '@dnd-kit/sortable';
-import { useState, useEffect, useRef } from 'react';
+import { Fragment, useState, useEffect, useRef } from 'react';
 import RearrangeIcon from '@/public/icons/format_line_spacing.svg';
 import {
   DndContext,
@@ -10,18 +8,14 @@ import {
   useSensor,
   useSensors,
   PointerSensor,
+  useDraggable,
 } from '@dnd-kit/core';
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
 import DragIndicatorIcon from '@/public/icons/drag_indicator.svg';
 import styles from './stats.module.css';
-import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import GraphsActions from '@/stores/Graphs/GraphsActions';
 import { connect } from 'react-redux';
 import { Layout, LayoutItem, GraphId, isSplitGroup } from '@/stores/Graphs/GraphsTypes';
-import { moveGraph } from '@/stores/Graphs/GraphsLayoutHelpers';
+import { moveGraphToIndex, splitGraph, findLayoutIndex } from '@/stores/Graphs/GraphsLayoutHelpers';
 
 const graphsOrderNamesMap: Record<GraphId, string> = {
   GPS: 'Speed',
@@ -41,30 +35,34 @@ const getItemLabel = (item: LayoutItem): string => {
   return graphsOrderNamesMap[item];
 };
 
-const SortableItem = ({
+const DraggableItem = ({
   id,
   label,
   isDragging,
+  isSplitTarget,
 }: {
   id: string;
   label: string;
   isDragging?: boolean;
+  isSplitTarget?: boolean;
 }) => {
-  const { attributes, listeners, setNodeRef, transform, transition } =
-    useSortable({ id });
+  const { attributes, listeners, setNodeRef } = useDraggable({ id });
 
   const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
+    opacity: isDragging ? 0.35 : 1,
     cursor: 'grab',
   };
 
+  const className = isSplitTarget
+    ? `${styles.dropdownItem} ${styles.dropdownItemSplitTarget}`
+    : styles.dropdownItem;
+
   return (
     <div
-      className={styles.dropdownItem}
+      className={className}
       ref={setNodeRef}
       style={style}
+      data-sortable-id={id}
       {...attributes}
       {...listeners}
     >
@@ -74,13 +72,31 @@ const SortableItem = ({
   );
 };
 
+const DropGap = ({
+  index,
+  isActive,
+}: {
+  index: number;
+  isActive: boolean;
+}) => {
+  const className = isActive
+    ? `${styles.dropGap} ${styles.dropGapActive}`
+    : styles.dropGap;
+
+  return <div className={className} data-drop-gap={index} />;
+};
+
 const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs }: any) => {
   const [isOpen, setIsOpen] = useState(false);
   const [layout, setLayout] = useState<Layout>(graphs.layout);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [splitTargetId, setSplitTargetId] = useState<string | null>(null);
+  const [dropGapIndex, setDropGapIndex] = useState<number | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-  const sortableIds = layout.map(getItemId);
+  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hoverTargetRef = useRef<string | null>(null);
+  const splitTargetRef = useRef<string | null>(null);
+  const dropGapRef = useRef<number | null>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -98,7 +114,28 @@ const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs }: any) => {
 
   const handleClick = () => setIsOpen(!isOpen);
 
+  const clearHoverTimer = () => {
+    if (hoverTimerRef.current) {
+      clearTimeout(hoverTimerRef.current);
+      hoverTimerRef.current = null;
+    }
+    hoverTargetRef.current = null;
+  };
+
+  const updateSplitTarget = (id: string | null) => {
+    splitTargetRef.current = id;
+    setSplitTargetId(id);
+  };
+
+  const updateDropGap = (index: number | null) => {
+    dropGapRef.current = index;
+    setDropGapIndex(index);
+  };
+
   const onDragStart = (event: any) => {
+    clearHoverTimer();
+    updateSplitTarget(null);
+    updateDropGap(null);
     setActiveId(event.active.id);
   };
 
@@ -106,35 +143,93 @@ const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs }: any) => {
     rearrangeGraphs(layout);
   }, [layout]);
 
-  const onDragOver = (event: any) => {
-    const { active, over } = event;
-    if (!over) {
-      const containerRect = dropdownRef.current?.getBoundingClientRect();
-      if (!containerRect) return;
+  // Pointermove listener for split/gap detection (active during drag)
+  useEffect(() => {
+    if (!activeId) return;
 
-      const activeRect = event.active.rect.current.translated;
+    const sourceIndex = findLayoutIndex(layout, activeId as GraphId);
 
-      let targetId: GraphId;
-      if (activeRect.top < containerRect.top) {
-        targetId = getItemId(layout[0]) as GraphId;
-      } else if (activeRect.bottom > containerRect.bottom) {
-        targetId = getItemId(layout[layout.length - 1]) as GraphId;
-      } else {
-        return;
+    const handlePointerMove = (e: PointerEvent) => {
+      // Check items via elementsFromPoint (merge/split intent)
+      const elements = document.elementsFromPoint(e.clientX, e.clientY);
+      for (const el of elements) {
+        const sortableId = (el as HTMLElement).dataset?.sortableId;
+        if (sortableId && sortableId !== activeId) {
+          updateDropGap(null);
+
+          if (sortableId !== hoverTargetRef.current) {
+            clearHoverTimer();
+            updateSplitTarget(null);
+            hoverTargetRef.current = sortableId;
+            hoverTimerRef.current = setTimeout(() => {
+              updateSplitTarget(sortableId);
+            }, 500);
+          }
+          return;
+        }
       }
 
-      setLayout(moveGraph(layout, active.id as GraphId, targetId));
-    }
-  };
+      // Check gaps by bounding rect (reorder intent)
+      // elementsFromPoint misses gaps because DragOverlay's portal sits on top
+      const gapEls = Array.from(document.querySelectorAll<HTMLElement>('[data-drop-gap]'));
+      for (const gapEl of gapEls) {
+        const rect = gapEl.getBoundingClientRect();
+        if (
+          e.clientX >= rect.left &&
+          e.clientX <= rect.right &&
+          e.clientY >= rect.top &&
+          e.clientY <= rect.bottom
+        ) {
+          const gapIndex = parseInt(gapEl.dataset.dropGap!, 10);
+
+          // Skip gaps adjacent to the dragged item (no-op positions)
+          if (gapIndex === sourceIndex || gapIndex === sourceIndex + 1) {
+            clearHoverTimer();
+            updateSplitTarget(null);
+            updateDropGap(null);
+            return;
+          }
+
+          clearHoverTimer();
+          updateSplitTarget(null);
+          updateDropGap(gapIndex);
+          return;
+        }
+      }
+
+      // Pointer is not over any item or gap → clear both
+      clearHoverTimer();
+      updateSplitTarget(null);
+      updateDropGap(null);
+    };
+
+    document.addEventListener('pointermove', handlePointerMove);
+    return () => {
+      document.removeEventListener('pointermove', handlePointerMove);
+      clearHoverTimer();
+      updateSplitTarget(null);
+      updateDropGap(null);
+    };
+  }, [activeId, layout]);
 
   const onDragEnd = (event: any) => {
-    const { active, over } = event;
+    const { active } = event;
+    const currentSplitTarget = splitTargetRef.current;
+    const currentDropGap = dropGapRef.current;
+
+    clearHoverTimer();
+    updateSplitTarget(null);
+    updateDropGap(null);
     setActiveId(null);
 
-    if (!over) return;
+    if (currentSplitTarget) {
+      setLayout(splitGraph(layout, active.id as GraphId, currentSplitTarget as GraphId));
+      return;
+    }
 
-    if (active.id !== over.id) {
-      setLayout(moveGraph(layout, active.id as GraphId, over.id as GraphId));
+    if (currentDropGap !== null) {
+      setLayout(moveGraphToIndex(layout, active.id as GraphId, currentDropGap));
+      return;
     }
   };
 
@@ -161,29 +256,29 @@ const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs }: any) => {
           <DndContext
             sensors={sensors}
             onDragStart={onDragStart}
-            onDragOver={onDragOver}
             onDragEnd={onDragEnd}
-            modifiers={[restrictToVerticalAxis]}
           >
-            <SortableContext
-              items={sortableIds}
-              strategy={verticalListSortingStrategy}
-            >
-              {layout.map((item) => {
-                const id = getItemId(item);
-                return (
-                  <SortableItem
-                    key={id}
+            <DropGap index={0} isActive={dropGapIndex === 0} />
+            {layout.map((item, i) => {
+              const id = getItemId(item);
+              return (
+                <Fragment key={id}>
+                  <DraggableItem
                     id={id}
                     label={getItemLabel(item)}
                     isDragging={id === activeId}
+                    isSplitTarget={id === splitTargetId}
                   />
-                );
-              })}
-            </SortableContext>
+                  <DropGap index={i + 1} isActive={dropGapIndex === i + 1} />
+                </Fragment>
+              );
+            })}
             <DragOverlay>
               {activeItem ? (
-                <div className={styles.dropdownItem}>
+                <div
+                  className={styles.dropdownItem}
+                  style={{ transform: 'scale(0.95)', opacity: 0.85, filter: 'brightness(0.75)', pointerEvents: 'none' }}
+                >
                   <DragIndicatorIcon />
                   {getItemLabel(activeItem)}
                 </div>

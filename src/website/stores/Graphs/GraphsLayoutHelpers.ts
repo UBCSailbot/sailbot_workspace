@@ -73,6 +73,27 @@ export const moveGraph = (
  * - sourceId or targetId is not found
  * - both IDs already belong to the same layout item
  */
+/**
+ * Move the layout item containing sourceId to a specific index position.
+ * Gap index semantics: gap i = "insert before item[i]", gap N = "insert at end".
+ * Gaps adjacent to the source item (sourceIndex and sourceIndex + 1) are no-ops.
+ */
+export const moveGraphToIndex = (
+  layout: Layout,
+  sourceId: GraphId,
+  targetIndex: number,
+): Layout => {
+  const sourceIndex = findLayoutIndex(layout, sourceId);
+  if (sourceIndex === -1) return layout;
+  if (targetIndex === sourceIndex || targetIndex === sourceIndex + 1) return layout;
+
+  const newLayout = [...layout];
+  const [removed] = newLayout.splice(sourceIndex, 1);
+  const adjustedIndex = targetIndex > sourceIndex ? targetIndex - 1 : targetIndex;
+  newLayout.splice(adjustedIndex, 0, removed);
+  return newLayout;
+};
+
 export const splitGraph = (
   layout: Layout,
   sourceId: GraphId,

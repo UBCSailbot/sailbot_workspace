@@ -67,10 +67,33 @@
   padding: 12px;
   padding-right: 32px;
   gap: 8px;
-  margin: 4px 0;
   border: 1px solid rgba(255, 255, 255, 0.5);
   border-radius: 4px;
   width: 100%;
   right: 10px;
   user-select: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dropdownItemSplitTarget {
+  border-color: #4fc3f7;
+  box-shadow: 0 0 8px rgba(79, 195, 247, 0.6);
+}
+
+.dropGap {
+  height: 8px;
+  position: relative;
+}
+
+.dropGapActive::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 2px;
+  background: #4fc3f7;
+  border-radius: 1px;
+  box-shadow: 0 0 6px rgba(79, 195, 247, 0.6);
 }
