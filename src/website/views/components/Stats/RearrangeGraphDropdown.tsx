@@ -163,7 +163,7 @@ const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs }: any) => {
             hoverTargetRef.current = sortableId;
             hoverTimerRef.current = setTimeout(() => {
               updateSplitTarget(sortableId);
-            }, 500);
+            }, 100);
           }
           return;
         }
@@ -276,7 +276,7 @@ const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs }: any) => {
               {activeItem ? (
                 <div
                   className={styles.dropdownItem}
-                  style={{ transform: 'scale(0.95)', opacity: 0.85, filter: 'brightness(0.75)', pointerEvents: 'none' }}
+                  style={{ transform: 'scale(0.90)', opacity: 0.85, filter: 'brightness(0.75)', pointerEvents: 'none' }}
                 >
                   <DragIndicatorIcon />
                   {getItemLabel(activeItem)}
