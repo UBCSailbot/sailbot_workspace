@@ -132,7 +132,7 @@ BOAT_PROPERTIES = BoatProperties(
     sail_dist=0.75,  # defined distance from mast position to centre of gravity of the sailboat
     rudder_dist=1.5,
     hull_drag_factor=0.05,
-    mass=50,
+    mass=1500,
     inertia=np.array([[125, 0, 0], [0, 1125, 0], [0, 0, 500]], dtype=np.float32),
     air_density=1.225,
     water_density=1000,
