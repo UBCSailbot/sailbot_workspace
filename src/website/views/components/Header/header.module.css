@@ -34,4 +34,7 @@
   cursor: pointer;
   display: flex;
   align-items: center;
+  background: none;
+  border: none;
+  padding: 0;
 }

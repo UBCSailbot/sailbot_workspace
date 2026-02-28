@@ -51,16 +51,18 @@ const Header = () => {
         >
           ABOUT
         </Link>
-        <div
+        <button
+          type='button'
           onClick={() => dispatch(toggleTheme())}
           className={styles.themeToggle}
+          aria-label='Toggle theme'
         >
           {theme === Theme.Light ? (
             <DarkModeIcon width={30} height={30} />
           ) : (
             <LightModeIcon width={30} height={30} />
           )}
-        </div>
+        </button>
       </div>
     </div>
   );
