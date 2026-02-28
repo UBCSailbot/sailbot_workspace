@@ -29,8 +29,8 @@ while getopts "hp:q" flag; do
     esac
 done
 
-# Assign build type debug
-BUILD_TYPE="Debug"
+# Assign build type Release (full optimizations and no debug symbols)
+BUILD_TYPE="Release"
 
 # Whether to run clang-tidy during build (unnecessary since we have separate CI and task)
 STATIC_ANALYSIS="OFF"
