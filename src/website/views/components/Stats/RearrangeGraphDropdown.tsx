@@ -169,38 +169,37 @@ const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs }: any) => {
         }
       }
 
-      // Check gaps by bounding rect (reorder intent)
-      // elementsFromPoint misses gaps because DragOverlay's portal sits on top
-      const gapEls = Array.from(document.querySelectorAll<HTMLElement>('[data-drop-gap]'));
-      for (const gapEl of gapEls) {
-        const rect = gapEl.getBoundingClientRect();
-        if (
-          e.clientX >= rect.left &&
-          e.clientX <= rect.right &&
-          e.clientY >= rect.top &&
-          e.clientY <= rect.bottom
-        ) {
-          const gapIndex = parseInt(gapEl.dataset.dropGap!, 10);
+      // Determine gap from Y position (works even when cursor is outside dropdown)
+      // Get all item rects sorted by vertical position
+      const itemEls = Array.from(document.querySelectorAll<HTMLElement>('[data-sortable-id]'));
+      if (itemEls.length === 0) return;
 
-          // Skip gaps adjacent to the dragged item (no-op positions)
-          if (gapIndex === sourceIndex || gapIndex === sourceIndex + 1) {
-            clearHoverTimer();
-            updateSplitTarget(null);
-            updateDropGap(null);
-            return;
-          }
+      const itemRects = itemEls.map((el) => el.getBoundingClientRect());
 
-          clearHoverTimer();
-          updateSplitTarget(null);
-          updateDropGap(gapIndex);
-          return;
+      // Find which gap the cursor's Y level falls into:
+      // Above first item midpoint → gap 0
+      // Between item[i] midpoint and item[i+1] midpoint → gap i+1
+      // Below last item midpoint → gap N (after last)
+      let gapIndex = itemRects.length; // default: below everything
+      for (let i = 0; i < itemRects.length; i++) {
+        const midY = (itemRects[i].top + itemRects[i].bottom) / 2;
+        if (e.clientY < midY) {
+          gapIndex = i;
+          break;
         }
       }
 
-      // Pointer is not over any item or gap → clear both
+      // Skip gaps adjacent to the dragged item (no-op positions)
+      if (gapIndex === sourceIndex || gapIndex === sourceIndex + 1) {
+        clearHoverTimer();
+        updateSplitTarget(null);
+        updateDropGap(null);
+        return;
+      }
+
       clearHoverTimer();
       updateSplitTarget(null);
-      updateDropGap(null);
+      updateDropGap(gapIndex);
     };
 
     document.addEventListener('pointermove', handlePointerMove);
