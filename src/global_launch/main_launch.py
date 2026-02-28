@@ -47,6 +47,12 @@ GLOBAL_LAUNCH_ARGUMENTS = [
         description="System mode. Decides whether the system is ran with development or production"
         + " interfaces",
     ),
+    DeclareLaunchArgument(
+        name="record",
+        default_value="false",
+        choices=["true", "false"],
+        description="Set to 'true' to record a ros2 bag.",
+    ),
 ]
 ENVIRONMENT_VARIABLES = [
     SetEnvironmentVariable("ROS_LOG_DIR", launch_config.log_dir),
@@ -70,43 +76,55 @@ def generate_launch_description() -> LaunchDescription:
 
 
 def setup_launch(context: LaunchContext) -> List[Action]:
-    """Collects launch descriptions from all local launch files.
+    """Collects launch descriptions from all local launch files. Optionally starts a ros2 bag to
+    record data.
 
     Args:
         context (LaunchContext): The current context of the launch.
 
     Returns:
-        List[IncludeLaunchDescription]: Launch file descriptions.
+        actions: Launch file descriptions for all ROS packages, and optionally a ros2 bag process
+        to record data.
     """
     mode = LaunchConfiguration("mode").perform(context)
+    record = LaunchConfiguration("record").perform(context) == "true"
+
     ros_packages = get_running_ros_packages(mode)
     include_launch_descriptions = get_include_launch_descriptions(ros_packages)
 
-    # Specifies the directory that we want the data to be placed in
-    target_dir = "/workspaces/sailbot_workspace/notebooks/local_pathfinding/session_recordings"
-    os.makedirs(target_dir, exist_ok=True)
+    actions: List[Action] = list(include_launch_descriptions)
 
-    # Creates the file name with date & time
-    timestamp = datetime.datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
-    bag_path = os.path.join(target_dir, f"datarecording_{timestamp}")
+    if record:
+        target_dir = os.path.join(
+            os.getenv("ROS_WORKSPACE", default="/workspaces/sailbot_workspace"),
+            "notebooks",
+            "local_pathfinding",
+            "session_recordings",
+        )
 
-    # Begins data collection of gps, local_path, wind_sensors, and ais_ship ROS topics
-    data_collection = ExecuteProcess(
-        cmd=[
-            "ros2",
-            "bag",
-            "record",
-            "-o",
-            bag_path,
-            "/gps",
-            "/local_path",
-            "/filtered_wind_sensor",
-            "/ais_ships",
-        ],
-        output="screen",
-    )
+        os.makedirs(target_dir, exist_ok=True)
 
-    return include_launch_descriptions + [data_collection]
+        timestamp = datetime.datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
+        bag_path = os.path.join(target_dir, f"datarecording_{timestamp}")
+
+        actions.append(
+            ExecuteProcess(
+                cmd=[
+                    "ros2",
+                    "bag",
+                    "record",
+                    "-o",
+                    bag_path,
+                    "/gps",
+                    "/local_path",
+                    "/filtered_wind_sensor",
+                    "/ais_ships",
+                ],
+                output="screen",
+            )
+        )
+
+    return actions
 
 
 def get_running_ros_packages(mode: str) -> List[str]:
