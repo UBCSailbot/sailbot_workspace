@@ -20,7 +20,6 @@ ros_topics:
 
 ros_nodes:
   CAN_TRANSCEIVER: can_transceiver_node
-  CACHED_FIB: cached_fib_node
   LOCAL_TRANSCEIVER: local_transceiver_node
   MOCK_AIS: mock_ais_node
   REMOTE_TRANSCEIVER: remote_transceiver_node
