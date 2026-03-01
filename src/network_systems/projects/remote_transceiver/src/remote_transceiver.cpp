@@ -70,8 +70,6 @@ void HTTPServer::doAccept()
 {
     if (log_callback_) {
         log_callback_("[INFO] doAccept() called, waiting for incoming connections...");
-    } else {
-        std::cout << "[INFO] doAccept() called, waiting for incoming connections..." << std::endl;
     }
     readReq();
 }
@@ -83,9 +81,6 @@ Listener::Listener(bio::io_context & io, tcp::endpoint endpoint, SailbotDB && db
         log_callback_(
           "[INFO] Server starting on IP: " + endpoint.address().to_string() +
           ", Port: " + std::to_string(endpoint.port()));
-    } else {
-        std::cout << "[INFO] Server starting on IP: " << endpoint.address().to_string() << ", Port: " << endpoint.port()
-                  << std::endl;
     }
     beast::error_code ec;
 
@@ -117,6 +112,9 @@ Listener::Listener(bio::io_context & io, tcp::endpoint endpoint, SailbotDB && db
 void Listener::run()
 {
     std::shared_ptr<Listener> self = shared_from_this();
+    if (log_callback_) {
+        log_callback_("[INFO] Waiting for incoming connections...");
+    }
     acceptor_.async_accept(bio::make_strand(io_), [self](beast::error_code e, tcp::socket socket) {
         if (!e) {
             std::make_shared<HTTPServer>(std::move(socket), self->db_)->doAccept();
@@ -148,15 +146,6 @@ void HTTPServer::readReq()
                 }
                 log_callback_("[INFO] Request headers:\n" + headers);
                 log_callback_("[INFO] Request body: " + beast::buffers_to_string(self->req_.body().data()));
-            } else {
-                std::cout << "[INFO] Incoming request: "
-                          << "Method: " << self->req_.method_string() << ", Target: " << self->req_.target()
-                          << ", Bytes: " << bytesTransferred << std::endl;
-                std::cout << "[INFO] Request headers: " << std::endl;
-                for (const auto & field : self->req_) {
-                    std::cout << "    " << field.name_string() << ": " << field.value() << std::endl;
-                }
-                std::cout << "[INFO] Request body: " << beast::buffers_to_string(self->req_.body().data()) << std::endl;
             }
             self->processReq();
         } else {
