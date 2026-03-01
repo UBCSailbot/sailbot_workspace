@@ -94,15 +94,7 @@ class MockAISNode(Node):
 
         # Get ROT in radians per second
         rot = ship.rot.rot
-        if rot == -128:
-            rot_dpm = 0
-        elif abs(rot) == 127:
-            rot_dpm = 10
-        else:
-            rot_dpm = (rot / 4.733) ** 2
-        rot_rps = math.radians(rot_dpm / 60)
-        if rot < 0:
-            rot_rps *= -1
+        rot_rps = cs.rot_to_rad_per_sec(rot)
 
         # Update heading
         ship.cog.heading += math.degrees(rot_rps * time)
