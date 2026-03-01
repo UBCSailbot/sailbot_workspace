@@ -140,7 +140,7 @@ public:
               ros_topics::SALINITY_SENSORS, ROS_Q_SIZE,
               std::bind(&LocalTransceiverIntf::sub_salinity_sensor_cb, this, std::placeholders::_1));
 
-              // sub_pressure_sensor = this->create_subscription<custom_interfaces::msg::PressureSensors>(
+            // sub_pressure_sensor = this->create_subscription<custom_interfaces::msg::PressureSensors>(
             //   ros_topics::PRESSURE_SENSORS, ROS_Q_SIZE,
             //   std::bind(&LocalTransceiverIntf::sub_pressure_sensor_cb, this, std::placeholders::_1));
 
@@ -174,6 +174,12 @@ public:
                                         &LocalTransceiverIntf::check_signal_quality_request_handler, this,
                                         std::placeholders::_1, std::placeholders::_2));
             RCLCPP_INFO(this->get_logger(), "check_signal_quality service created");
+
+            srv_receive_and_pub_ = this->create_service<std_srvs::srv::Trigger>(
+              "receive_and_pub", std::bind(
+                                   &LocalTransceiverIntf::receive_and_pub_request_handler, this, std::placeholders::_1,
+                                   std::placeholders::_2));
+            RCLCPP_INFO(this->get_logger(), "receive_and_pub service created");
         }
     }
 
@@ -188,12 +194,13 @@ private:
     rclcpp::Subscription<custom_interfaces::msg::PhSensors>::SharedPtr       sub_ph_sensor;
     rclcpp::Subscription<custom_interfaces::msg::SalinitySensors>::SharedPtr sub_salinity_sensor;
     // rclcpp::Subscription<custom_interfaces::msg::PressureSensors>::SharedPtr sub_pressure_sensor;
-    rclcpp::Subscription<custom_interfaces::msg::GPS>::SharedPtr             sub_gps;
-    rclcpp::Subscription<custom_interfaces::msg::LPathData>::SharedPtr       sub_local_path_data;
+    rclcpp::Subscription<custom_interfaces::msg::GPS>::SharedPtr       sub_gps;
+    rclcpp::Subscription<custom_interfaces::msg::LPathData>::SharedPtr sub_local_path_data;
 
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_send_;
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_send_debug_;
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_check_signal_quality_;
+    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_receive_and_pub_;
 
     /**
      * @brief Callback function to publish to onboard ROS network
@@ -241,6 +248,26 @@ private:
     void sub_gps_cb(custom_interfaces::msg::GPS in_msg) { lcl_trns_->updateSensor(in_msg); }
 
     void sub_local_path_data_cb(custom_interfaces::msg::LPathData in_msg) { lcl_trns_->updateSensor(in_msg); }
+
+    void receive_and_pub_request_handler(
+      std::shared_ptr<std_srvs::srv::Trigger::Request>  request,
+      std::shared_ptr<std_srvs::srv::Trigger::Response> response)
+    {
+        (void)request;
+
+        try {
+            pub_cb();
+            RCLCPP_INFO(
+              this->get_logger(), "Receive and pub completed, check if path message was published successfully.");
+            response->success = true;
+            response->message = "Receive and publish completed";
+
+        } catch (const std::exception & e) {
+            RCLCPP_ERROR(this->get_logger(), "Exception during pub_cb(receive and publish): %s", e.what());
+            response->success = false;
+            response->message = std::string("Exception: ") + e.what();
+        }
+    }
 
     void check_signal_quality_request_handler(
       std::shared_ptr<std_srvs::srv::Trigger::Request>  request,
