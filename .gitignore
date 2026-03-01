@@ -38,3 +38,6 @@ site/
 
 # Test Coverage
 .coverage
+
+# Data Recordings
+notebooks/local_pathfinding/session_recordings/

@@ -1,11 +1,13 @@
 """Global launch file that starts the entire system."""
 
+import datetime
 import os
 from typing import List
 
-from launch import LaunchDescription
+from launch import Action, LaunchDescription
 from launch.actions import (
     DeclareLaunchArgument,
+    ExecuteProcess,
     IncludeLaunchDescription,
     OpaqueFunction,
     SetEnvironmentVariable,
@@ -50,6 +52,12 @@ GLOBAL_LAUNCH_ARGUMENTS = [
         default_value="basic.yaml",
         description="Test plan to be used in development mode for local pathfinding.",
     ),
+    DeclareLaunchArgument(
+        name="record",
+        default_value="false",
+        choices=["true", "false"],
+        description="Set to 'true' to record a ros2 bag.",
+    ),
 ]
 ENVIRONMENT_VARIABLES = [
     SetEnvironmentVariable("ROS_LOG_DIR", launch_config.log_dir),
@@ -72,18 +80,56 @@ def generate_launch_description() -> LaunchDescription:
     return launch_description
 
 
-def setup_launch(context: LaunchContext) -> List[IncludeLaunchDescription]:
-    """Collects launch descriptions from all local launch files.
+def setup_launch(context: LaunchContext) -> List[Action]:
+    """Collects launch descriptions from all local launch files. Optionally starts a ros2 bag to
+    record data.
 
     Args:
         context (LaunchContext): The current context of the launch.
 
     Returns:
-        List[IncludeLaunchDescription]: Launch file descriptions.
+        actions: Launch file descriptions for all ROS packages, and optionally a ros2 bag process
+        to record data.
     """
     mode = LaunchConfiguration("mode").perform(context)
+    record = LaunchConfiguration("record").perform(context) == "true"
+
     ros_packages = get_running_ros_packages(mode)
-    return get_include_launch_descriptions(ros_packages)
+    include_launch_descriptions = get_include_launch_descriptions(ros_packages)
+
+    actions: List[Action] = list(include_launch_descriptions)
+
+    if record:
+        target_dir = os.path.join(
+            os.getenv("ROS_WORKSPACE", default="/workspaces/sailbot_workspace"),
+            "notebooks",
+            "local_pathfinding",
+            "session_recordings",
+        )
+
+        os.makedirs(target_dir, exist_ok=True)
+
+        timestamp = datetime.datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
+        bag_path = os.path.join(target_dir, f"datarecording_{timestamp}")
+
+        actions.append(
+            ExecuteProcess(
+                cmd=[
+                    "ros2",
+                    "bag",
+                    "record",
+                    "-o",
+                    bag_path,
+                    "/gps",
+                    "/local_path",
+                    "/filtered_wind_sensor",
+                    "/ais_ships",
+                ],
+                output="screen",
+            )
+        )
+
+    return actions
 
 
 def get_running_ros_packages(mode: str) -> List[str]:
