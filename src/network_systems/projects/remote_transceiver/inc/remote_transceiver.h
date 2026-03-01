@@ -79,6 +79,7 @@ struct MOMsgParams
 class HTTPServer : public std::enable_shared_from_this<HTTPServer>
 {
 public:
+    using LogCallback = std::function<void(const std::string &)>;
     /**
      * @brief Construct a new HTTPServer object
      *
@@ -86,6 +87,7 @@ public:
      * @param db     SailbotDB instance
      */
     explicit HTTPServer(tcp::socket socket, SailbotDB & db);
+    void setLogCallback(LogCallback cb) { log_callback_ = std::move(cb); }
 
     /**
      * @brief Process an accepted HTTP request
@@ -94,6 +96,7 @@ public:
     void doAccept();
 
 private:
+    LogCallback log_callback_;
     // Buffer to store request data. Double MAX_LOCAL_TO_REMOTE_PAYLOAD_SIZE_BYTES to have room for Iridium metadata
     beast::flat_buffer                 buf_{static_cast<std::size_t>(MAX_LOCAL_TO_REMOTE_PAYLOAD_SIZE_BYTES * 2)};
     tcp::socket                        socket_;  // Socket the server is attached to
@@ -151,6 +154,7 @@ private:
 class Listener : public std::enable_shared_from_this<Listener>
 {
 public:
+    using LogCallback = std::function<void(const std::string &)>;
     /**
      * @brief Create a new Listener
      *
@@ -159,6 +163,7 @@ public:
      * @param db       SailbotDB instance - the Listener requires that it takes ownership of the db
      */
     Listener(bio::io_context & io, tcp::endpoint endpoint, SailbotDB && db);
+    void setLogCallback(LogCallback cb) { log_callback_ = std::move(cb); }
 
     /**
      * @brief Run the Listener
@@ -167,6 +172,7 @@ public:
     void run();
 
 private:
+    LogCallback       log_callback_;
     bio::io_context & io_;        // io_context used by this Listener
     tcp::acceptor     acceptor_;  //tcp::acceptor configured with desired host, port, and target
     SailbotDB         db_;        // SailbotDB attached to this Listener

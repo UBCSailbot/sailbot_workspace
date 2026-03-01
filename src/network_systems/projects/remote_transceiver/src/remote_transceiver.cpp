@@ -66,11 +66,27 @@ remote_transceiver::MOMsgParams::MOMsgParams(const std::string & query_string)
 
 HTTPServer::HTTPServer(tcp::socket socket, SailbotDB & db) : socket_(std::move(socket)), db_(db) {}
 
-void HTTPServer::doAccept() { readReq(); }
+void HTTPServer::doAccept()
+{
+    if (log_callback_) {
+        log_callback_("[INFO] doAccept() called, waiting for incoming connections...");
+    } else {
+        std::cout << "[INFO] doAccept() called, waiting for incoming connections..." << std::endl;
+    }
+    readReq();
+}
 
 Listener::Listener(bio::io_context & io, tcp::endpoint endpoint, SailbotDB && db)
 : io_(io), acceptor_(bio::make_strand(io)), db_(std::move(db))
 {
+    if (log_callback_) {
+        log_callback_(
+          "[INFO] Server starting on IP: " + endpoint.address().to_string() +
+          ", Port: " + std::to_string(endpoint.port()));
+    } else {
+        std::cout << "[INFO] Server starting on IP: " << endpoint.address().to_string() << ", Port: " << endpoint.port()
+                  << std::endl;
+    }
     beast::error_code ec;
 
     try {
@@ -120,8 +136,28 @@ void HTTPServer::readReq()
 {
     std::shared_ptr<HTTPServer> self = shared_from_this();
     req_                             = {};
-    http::async_read(socket_, buf_, req_, [self](beast::error_code e, std::size_t /*bytesTransferred*/) {
+    http::async_read(socket_, buf_, req_, [self, this](beast::error_code e, std::size_t bytesTransferred) {
         if (!e) {
+            if (log_callback_) {
+                log_callback_(
+                  "[INFO] Incoming request: Method: " + std::string(self->req_.method_string()) +
+                  ", Target: " + std::string(self->req_.target()) + ", Bytes: " + std::to_string(bytesTransferred));
+                std::string headers;
+                for (const auto & field : self->req_) {
+                    headers += "    " + std::string(field.name_string()) + ": " + std::string(field.value()) + "\n";
+                }
+                log_callback_("[INFO] Request headers:\n" + headers);
+                log_callback_("[INFO] Request body: " + beast::buffers_to_string(self->req_.body().data()));
+            } else {
+                std::cout << "[INFO] Incoming request: "
+                          << "Method: " << self->req_.method_string() << ", Target: " << self->req_.target()
+                          << ", Bytes: " << bytesTransferred << std::endl;
+                std::cout << "[INFO] Request headers: " << std::endl;
+                for (const auto & field : self->req_) {
+                    std::cout << "    " << field.name_string() << ": " << field.value() << std::endl;
+                }
+                std::cout << "[INFO] Request body: " << beast::buffers_to_string(self->req_.body().data()) << std::endl;
+            }
             self->processReq();
         } else {
             std::cerr << "Error: " << e.message() << std::endl;
