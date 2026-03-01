@@ -21,7 +21,7 @@ constexpr int DEFAULT_NUM_IO_THREADS = 2;
 
 // Production constants are all placheholders
 static const std::string PROD_DB_NAME = "PLACEHOLDER";
-static const std::string PROD_HOST    = "127.0.0.1";
+static const std::string PROD_HOST    = "0.0.0.0";
 constexpr uint16_t       PROD_PORT    = 8081;
 
 // TESTING constants should match the webhook server endpoint info found in sailbot_workspace/scripts/run_virtual_iridium.sh
