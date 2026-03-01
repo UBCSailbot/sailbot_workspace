@@ -63,6 +63,11 @@ export const convertToLatLng = (obj: any): L.LatLngExpression => {
   return L.latLng(obj.latitude, obj.longitude);
 };
 
+const map_bound = L.latLngBounds(
+  L.latLng(5, -175),
+  L.latLng(75, -40),
+);
+
 const Maps: React.FC<IMapsProps> = ({
   gpsLocation,
   gpsPath,
@@ -191,6 +196,9 @@ const Maps: React.FC<IMapsProps> = ({
     <MapContainer
       center={convertToLatLng(gpsLocation)}
       zoom={13}
+      minZoom={3}
+      maxBounds={map_bound}
+      maxBoundsViscosity={1.0}
       scrollWheelZoom={true}
       className={styles.maps}
       ref={setMapRef}
