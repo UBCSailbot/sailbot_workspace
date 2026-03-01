@@ -94,6 +94,32 @@ export const moveGraphToIndex = (
   return newLayout;
 };
 
+/**
+ * Extract a single graph out of its split group and insert it as a standalone
+ * item at targetIndex (gap semantics: gap i = "insert before item[i]").
+ * If the graph is already standalone, delegates to moveGraphToIndex.
+ */
+export const extractGraph = (
+  layout: Layout,
+  graphId: GraphId,
+  targetIndex: number,
+): Layout => {
+  const sourceIndex = findLayoutIndex(layout, graphId);
+  if (sourceIndex === -1) return layout;
+
+  const sourceItem = layout[sourceIndex];
+  if (!isSplitGroup(sourceItem)) {
+    return moveGraphToIndex(layout, graphId, targetIndex);
+  }
+
+  // removeGraph collapses the group but never removes it (≥2 members → ≥1 remain),
+  // so the layout item count stays the same and gap indices remain valid.
+  const withoutGraph = removeGraph(layout, graphId);
+  const newLayout = [...withoutGraph];
+  newLayout.splice(targetIndex, 0, graphId);
+  return newLayout;
+};
+
 export const splitGraph = (
   layout: Layout,
   sourceId: GraphId,

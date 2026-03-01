@@ -14,8 +14,8 @@ import DragIndicatorIcon from '@/public/icons/drag_indicator.svg';
 import styles from './stats.module.css';
 import GraphsActions from '@/stores/Graphs/GraphsActions';
 import { connect } from 'react-redux';
-import { Layout, LayoutItem, GraphId, isSplitGroup } from '@/stores/Graphs/GraphsTypes';
-import { moveGraphToIndex, splitGraph, findLayoutIndex } from '@/stores/Graphs/GraphsLayoutHelpers';
+import { Layout, GraphId, isSplitGroup } from '@/stores/Graphs/GraphsTypes';
+import { extractGraph, splitGraph, findLayoutIndex } from '@/stores/Graphs/GraphsLayoutHelpers';
 
 const graphsOrderNamesMap: Record<GraphId, string> = {
   GPS: 'Speed',
@@ -24,27 +24,18 @@ const graphsOrderNamesMap: Record<GraphId, string> = {
   WindSensors: 'Wind Sensors',
 };
 
-const getItemId = (item: LayoutItem): string => {
-  return isSplitGroup(item) ? item[0] : item;
-};
-
-const getItemLabel = (item: LayoutItem): string => {
-  if (isSplitGroup(item)) {
-    return item.map((id) => graphsOrderNamesMap[id]).join(' | ');
-  }
-  return graphsOrderNamesMap[item];
-};
-
 const DraggableItem = ({
   id,
   label,
   isDragging,
   isSplitTarget,
+  layoutIndex,
 }: {
   id: string;
   label: string;
   isDragging?: boolean;
   isSplitTarget?: boolean;
+  layoutIndex?: number;
 }) => {
   const { attributes, listeners, setNodeRef } = useDraggable({ id });
 
@@ -63,11 +54,12 @@ const DraggableItem = ({
       ref={setNodeRef}
       style={style}
       data-sortable-id={id}
+      data-layout-index={layoutIndex}
       {...attributes}
       {...listeners}
     >
       <DragIndicatorIcon />
-      {label}
+      <span className={styles.dropdownItemLabel}>{label}</span>
     </div>
   );
 };
@@ -148,6 +140,8 @@ const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs }: any) => {
     if (!activeId) return;
 
     const sourceIndex = findLayoutIndex(layout, activeId as GraphId);
+    const sourceItem = layout[sourceIndex];
+    const activeIsInSplitGroup = isSplitGroup(sourceItem);
 
     const handlePointerMove = (e: PointerEvent) => {
       // Check items via elementsFromPoint (merge/split intent)
@@ -155,6 +149,10 @@ const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs }: any) => {
       for (const el of elements) {
         const sortableId = (el as HTMLElement).dataset?.sortableId;
         if (sortableId && sortableId !== activeId) {
+          // If both graphs are in the same split group, skip — fall through to gap detection
+          const targetLayoutIndex = findLayoutIndex(layout, sortableId as GraphId);
+          if (sourceIndex === targetLayoutIndex) break;
+
           updateDropGap(null);
 
           if (sortableId !== hoverTargetRef.current) {
@@ -169,18 +167,13 @@ const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs }: any) => {
         }
       }
 
-      // Determine gap from Y position (works even when cursor is outside dropdown)
-      // Get all item rects sorted by vertical position
-      const itemEls = Array.from(document.querySelectorAll<HTMLElement>('[data-sortable-id]'));
+      // Determine gap from Y position using layout-level elements
+      const itemEls = Array.from(document.querySelectorAll<HTMLElement>('[data-layout-index]'));
       if (itemEls.length === 0) return;
 
       const itemRects = itemEls.map((el) => el.getBoundingClientRect());
 
-      // Find which gap the cursor's Y level falls into:
-      // Above first item midpoint → gap 0
-      // Between item[i] midpoint and item[i+1] midpoint → gap i+1
-      // Below last item midpoint → gap N (after last)
-      let gapIndex = itemRects.length; // default: below everything
+      let gapIndex = itemRects.length;
       for (let i = 0; i < itemRects.length; i++) {
         const midY = (itemRects[i].top + itemRects[i].bottom) / 2;
         if (e.clientY < midY) {
@@ -189,8 +182,9 @@ const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs }: any) => {
         }
       }
 
-      // Skip gaps adjacent to the dragged item (no-op positions)
-      if (gapIndex === sourceIndex || gapIndex === sourceIndex + 1) {
+      // Skip gaps adjacent to the dragged item only for standalone items.
+      // For items in a split group, adjacent gaps are meaningful (extraction).
+      if (!activeIsInSplitGroup && (gapIndex === sourceIndex || gapIndex === sourceIndex + 1)) {
         clearHoverTimer();
         updateSplitTarget(null);
         updateDropGap(null);
@@ -227,7 +221,9 @@ const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs }: any) => {
     }
 
     if (currentDropGap !== null) {
-      setLayout(moveGraphToIndex(layout, active.id as GraphId, currentDropGap));
+      // extractGraph handles both standalone (delegates to moveGraphToIndex)
+      // and split group members (pulls out and places at gap)
+      setLayout(extractGraph(layout, active.id as GraphId, currentDropGap));
       return;
     }
   };
@@ -240,9 +236,7 @@ const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs }: any) => {
     }),
   );
 
-  const activeItem = activeId
-    ? layout.find((item) => getItemId(item) === activeId)
-    : null;
+  const activeLabel = activeId ? graphsOrderNamesMap[activeId as GraphId] : null;
 
   return (
     <div ref={dropdownRef}>
@@ -258,28 +252,40 @@ const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs }: any) => {
             onDragEnd={onDragEnd}
           >
             <DropGap index={0} isActive={dropGapIndex === 0} />
-            {layout.map((item, i) => {
-              const id = getItemId(item);
-              return (
-                <Fragment key={id}>
+            {layout.map((item, i) => (
+              <Fragment key={isSplitGroup(item) ? item.join('-') : item}>
+                {isSplitGroup(item) ? (
+                  <div className={styles.splitGroupDropdown} data-layout-index={i}>
+                    {item.map((graphId) => (
+                      <DraggableItem
+                        key={graphId}
+                        id={graphId}
+                        label={graphsOrderNamesMap[graphId]}
+                        isDragging={graphId === activeId}
+                        isSplitTarget={graphId === splitTargetId}
+                      />
+                    ))}
+                  </div>
+                ) : (
                   <DraggableItem
-                    id={id}
-                    label={getItemLabel(item)}
-                    isDragging={id === activeId}
-                    isSplitTarget={id === splitTargetId}
+                    id={item}
+                    label={graphsOrderNamesMap[item]}
+                    isDragging={item === activeId}
+                    isSplitTarget={item === splitTargetId}
+                    layoutIndex={i}
                   />
-                  <DropGap index={i + 1} isActive={dropGapIndex === i + 1} />
-                </Fragment>
-              );
-            })}
+                )}
+                <DropGap index={i + 1} isActive={dropGapIndex === i + 1} />
+              </Fragment>
+            ))}
             <DragOverlay>
-              {activeItem ? (
+              {activeLabel ? (
                 <div
                   className={styles.dropdownItem}
                   style={{ transform: 'scale(0.90)', opacity: 0.85, filter: 'brightness(0.75)', pointerEvents: 'none' }}
                 >
                   <DragIndicatorIcon />
-                  {getItemLabel(activeItem)}
+                  <span className={styles.dropdownItemLabel}>{activeLabel}</span>
                 </div>
               ) : null}
             </DragOverlay>
