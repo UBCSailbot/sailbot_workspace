@@ -37,6 +37,11 @@
   gap: 8px;
 }
 
+.splitGroup > * {
+  flex: 1;
+  min-width: 0;
+}
+
 .dropdownButton {
   display: flex;
   align-items: center;
