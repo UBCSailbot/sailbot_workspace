@@ -2,8 +2,6 @@
 
 """The ROS node for the wingsail controller."""
 
-# added DesiredHeading
-
 
 import rclpy
 import rclpy.utilities
