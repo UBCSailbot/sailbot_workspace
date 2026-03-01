@@ -176,10 +176,10 @@ public:
             RCLCPP_INFO(this->get_logger(), "check_signal_quality service created");
 
             srv_receive_and_pub_ = this->create_service<std_srvs::srv::Trigger>(
-              "receive_and_publish", std::bind(
-                                       &LocalTransceiverIntf::receive_and_pub_request_handler, this,
-                                       std::placeholders::_1, std::placeholders::_2));
-            RCLCPP_INFO(this->get_logger(), "receive_and_publish service created");
+              "receive_and_pub", std::bind(
+                                   &LocalTransceiverIntf::receive_and_pub_request_handler, this, std::placeholders::_1,
+                                   std::placeholders::_2));
+            RCLCPP_INFO(this->get_logger(), "receive_and_pub service created");
         }
     }
 

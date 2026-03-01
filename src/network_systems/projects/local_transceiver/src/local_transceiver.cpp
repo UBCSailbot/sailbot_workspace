@@ -565,6 +565,7 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
 
     std::future<void> fut = std::async(std::launch::async, cacheGlobalWaypoints, receivedDataBuffer);
 
+    // For debugging: print the hex representation of the received data buffer
     custom_interfaces::msg::Path to_publish = parseInMsg(receivedDataBuffer);
 
     fut.get();
