@@ -15,6 +15,8 @@ ZERO_SPEED_COST = 1.0
 ACCEPTABLE_COST_THRESHOLD = 0.85
 WIND_OBJECTIVE_WEIGHT = 0.85
 TIME_OBJECTIVE_WEIGHT = 0.15
+NO_GO_ZONE = math.pi / 4
+WIND_COST_SIN_EXPONENT = 80
 
 
 #               Estimated Boat Speeds (kmph) as function of True Wind Speed (kmph)
@@ -94,8 +96,14 @@ class WindObjective(ob.OptimizationObjective):
 
     @staticmethod
     def wind_direction_cost(s1: cs.XY, s2: cs.XY, tw_direction_rad: float) -> float:
-        """Returns a high cost when the path segment from s1 to s2 is pointing directly
-           (or close to directly) upwind or downwind.
+        """Computes a wind alignment cost based on the absolute angle θ between the segment
+        bearing and the true wind direction.
+
+        1) If θ ≤ NO_GO_ZONE or θ ≥ π − NO_GO_ZONE (i.e., within 45 degrees of directly upwind or
+        downwind), the cost is 1.0.
+        2) Otherwise, the cost is sin(2θ) ** WIND_COST_SIN_EXPONENT.
+
+        The cost is symmetric about both upwind (0) and downwind (π) and always lies in [0, 1].
 
         Args:
             s1 (cs.XY): The start point of the path segment
@@ -107,12 +115,13 @@ class WindObjective(ob.OptimizationObjective):
         """
         segment_true_bearing_rad = cs.get_path_segment_true_bearing(s1, s2, rad=True)
         tw_angle_rad = abs(wcs.get_true_wind_angle(segment_true_bearing_rad, tw_direction_rad))
-        cos_angle = math.cos(tw_angle_rad)
 
-        if cos_angle > 0:
-            return UPWIND_COST_MULTIPLIER * cos_angle
-        else:
-            return DOWNWIND_COST_MULTIPLIER * abs(cos_angle)
+        # NO-GO ZONE
+        if tw_angle_rad <= NO_GO_ZONE or tw_angle_rad >= math.pi - NO_GO_ZONE:
+            return 1.0
+
+        cost = math.sin(2*tw_angle_rad) ** WIND_COST_SIN_EXPONENT
+        return cost
 
 
 class TimeObjective(ob.OptimizationObjective):
