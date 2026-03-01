@@ -117,9 +117,6 @@ class WingsailControllerNode(Node):
             qos_profile=1,
         )
 
-        # I made this addition
-        # subscribing to desired_heading topic
-
         self.__desired_heading_sub = self.create_subscription(
             msg_type=DesiredHeading,
             topic="desired_heading",
@@ -180,7 +177,6 @@ class WingsailControllerNode(Node):
         elif apparent_speed >= apparent_upper_threshold:
             scaling_coef = 0
 
-        # Added here
         if self.__sail:
             self.__trim_tab_angle = scaling_coef * self.__trim_tab_angle
         else:
