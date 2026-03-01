@@ -24,17 +24,19 @@ const graphsOrderNamesMap: Record<GraphId, string> = {
   WindSensors: 'Wind Sensors',
 };
 
+type SplitSide = 'left' | 'right' | 'full' | null;
+
 const DraggableItem = ({
   id,
   label,
   isDragging,
-  isSplitTarget,
+  splitTargetSide,
   layoutIndex,
 }: {
   id: string;
   label: string;
   isDragging?: boolean;
-  isSplitTarget?: boolean;
+  splitTargetSide?: SplitSide;
   layoutIndex?: number;
 }) => {
   const { attributes, listeners, setNodeRef } = useDraggable({ id });
@@ -44,9 +46,12 @@ const DraggableItem = ({
     cursor: 'grab',
   };
 
-  const className = isSplitTarget
-    ? `${styles.dropdownItem} ${styles.dropdownItemSplitTarget}`
-    : styles.dropdownItem;
+  const splitClass =
+    splitTargetSide === 'full' ? styles.dropdownItemSplitTarget :
+    splitTargetSide === 'left' ? styles.dropdownItemSplitTargetLeft :
+    splitTargetSide === 'right' ? styles.dropdownItemSplitTargetRight :
+    '';
+  const className = splitClass ? `${styles.dropdownItem} ${splitClass}` : styles.dropdownItem;
 
   return (
     <div
@@ -83,11 +88,13 @@ const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs }: any) => {
   const [layout, setLayout] = useState<Layout>(graphs.layout);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [splitTargetId, setSplitTargetId] = useState<string | null>(null);
+  const [splitSide, setSplitSide] = useState<SplitSide>(null);
   const [dropGapIndex, setDropGapIndex] = useState<number | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hoverTargetRef = useRef<string | null>(null);
   const splitTargetRef = useRef<string | null>(null);
+  const splitSideRef = useRef<SplitSide>(null);
   const dropGapRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -119,6 +126,11 @@ const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs }: any) => {
     setSplitTargetId(id);
   };
 
+  const updateSplitSide = (side: SplitSide) => {
+    splitSideRef.current = side;
+    setSplitSide(side);
+  };
+
   const updateDropGap = (index: number | null) => {
     dropGapRef.current = index;
     setDropGapIndex(index);
@@ -127,6 +139,7 @@ const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs }: any) => {
   const onDragStart = (event: any) => {
     clearHoverTimer();
     updateSplitTarget(null);
+    updateSplitSide(null);
     updateDropGap(null);
     setActiveId(event.active.id);
   };
@@ -154,6 +167,16 @@ const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs }: any) => {
           if (sourceIndex === targetLayoutIndex) break;
 
           updateDropGap(null);
+
+          // Compute merge side in real-time on every pointer move
+          const targetItem = layout[targetLayoutIndex];
+          const isFullGroup = isSplitGroup(targetItem) && targetItem.length >= 2;
+          if (isFullGroup) {
+            updateSplitSide('full');
+          } else {
+            const rect = (el as HTMLElement).getBoundingClientRect();
+            updateSplitSide(e.clientX < rect.left + rect.width / 2 ? 'left' : 'right');
+          }
 
           if (sortableId !== hoverTargetRef.current) {
             clearHoverTimer();
@@ -187,12 +210,14 @@ const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs }: any) => {
       if (!activeIsInSplitGroup && (gapIndex === sourceIndex || gapIndex === sourceIndex + 1)) {
         clearHoverTimer();
         updateSplitTarget(null);
+        updateSplitSide(null);
         updateDropGap(null);
         return;
       }
 
       clearHoverTimer();
       updateSplitTarget(null);
+      updateSplitSide(null);
       updateDropGap(gapIndex);
     };
 
@@ -201,6 +226,7 @@ const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs }: any) => {
       document.removeEventListener('pointermove', handlePointerMove);
       clearHoverTimer();
       updateSplitTarget(null);
+      updateSplitSide(null);
       updateDropGap(null);
     };
   }, [activeId, layout]);
@@ -208,15 +234,18 @@ const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs }: any) => {
   const onDragEnd = (event: any) => {
     const { active } = event;
     const currentSplitTarget = splitTargetRef.current;
+    const currentSplitSide = splitSideRef.current;
     const currentDropGap = dropGapRef.current;
 
     clearHoverTimer();
     updateSplitTarget(null);
+    updateSplitSide(null);
     updateDropGap(null);
     setActiveId(null);
 
     if (currentSplitTarget) {
-      setLayout(splitGraph(layout, active.id as GraphId, currentSplitTarget as GraphId));
+      const side = currentSplitSide === 'left' ? 'left' : 'right';
+      setLayout(splitGraph(layout, active.id as GraphId, currentSplitTarget as GraphId, side));
       return;
     }
 
@@ -262,7 +291,7 @@ const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs }: any) => {
                         id={graphId}
                         label={graphsOrderNamesMap[graphId]}
                         isDragging={graphId === activeId}
-                        isSplitTarget={graphId === splitTargetId}
+                        splitTargetSide={graphId === splitTargetId ? 'full' : null}
                       />
                     ))}
                   </div>
@@ -271,7 +300,7 @@ const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs }: any) => {
                     id={item}
                     label={graphsOrderNamesMap[item]}
                     isDragging={item === activeId}
-                    isSplitTarget={item === splitTargetId}
+                    splitTargetSide={item === splitTargetId ? splitSide : null}
                     layoutIndex={i}
                   />
                 )}

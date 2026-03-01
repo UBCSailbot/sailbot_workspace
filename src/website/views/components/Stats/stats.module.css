@@ -90,10 +90,20 @@
   box-shadow: 0 0 8px rgba(79, 195, 247, 0.6);
 }
 
+.dropdownItemSplitTargetLeft {
+  border-color: #4fc3f7;
+  box-shadow: 0 0 8px rgba(79, 195, 247, 0.4);
+  background: linear-gradient(to right, rgba(79, 195, 247, 0.25) 50%, transparent 50%);
+}
+
+.dropdownItemSplitTargetRight {
+  border-color: #4fc3f7;
+  box-shadow: 0 0 8px rgba(79, 195, 247, 0.4);
+  background: linear-gradient(to right, transparent 50%, rgba(79, 195, 247, 0.25) 50%);
+}
+
 .splitGroupDropdown {
-  border: 1px dashed rgba(79, 195, 247, 0.4);
   border-radius: 4px;
-  padding: 4px;
   display: flex;
   flex-direction: row;
   gap: 4px;

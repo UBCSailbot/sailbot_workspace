@@ -124,6 +124,7 @@ export const splitGraph = (
   layout: Layout,
   sourceId: GraphId,
   targetId: GraphId,
+  side: 'left' | 'right' = 'right',
 ): Layout => {
   if (sourceId === targetId) return layout;
 
@@ -137,10 +138,11 @@ export const splitGraph = (
 
   return withoutSource.map((item) => {
     if (isSplitGroup(item) && item.includes(targetId)) {
+      // Already a group — always append to end regardless of side
       return [...item, sourceId];
     }
     if (item === targetId) {
-      return [targetId, sourceId];
+      return side === 'left' ? [sourceId, targetId] : [targetId, sourceId];
     }
     return item;
   });
