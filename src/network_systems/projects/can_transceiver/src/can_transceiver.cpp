@@ -27,13 +27,21 @@ void CanTransceiver::onNewCanData(const CanFrame & frame) const
         return;
     }
     CanId id{frame.can_id};
-    if (read_callbacks_.contains(id)) {
-        read_callbacks_.at(id)(frame);  // invoke the callback function mapped to id
+
+    if (id >= CanId::DEBUG_START && id <= CanId::DEBUG_END) {
+        // ELEC debug frame, do nothing
+        return;
     }
 
     //0x100 - 0x1FF: Generic sensor data frame range
     if (id >= CanId::GENERIC_SENSOR_START && id <= CanId::GENERIC_SENSOR_END) {
         read_callbacks_.at(CanId::GENERIC_SENSOR_START)(frame);
+        return;
+    }
+
+    if (read_callbacks_.contains(id)) {
+        read_callbacks_.at(id)(frame);  // invoke the callback function mapped to id
+        return;
     }
 }
 
@@ -54,7 +62,7 @@ void CanTransceiver::registerCanCbs(
 CanTransceiver::CanTransceiver() : is_can_simulated_(false)
 {
     // See: https://www.kernel.org/doc/html/next/networking/can.html#how-to-use-socketcan
-    static const char * CAN_INST = "can1";
+    static const char * CAN_INST = "can0";
 
     // Everything between this comment and the initiation of the receive thread is pretty much
     // magic from the socketcan documentation

@@ -45,6 +45,11 @@ GLOBAL_LAUNCH_ARGUMENTS = [
         description="System mode. Decides whether the system is ran with development or production"
         + " interfaces",
     ),
+    DeclareLaunchArgument(
+        name="test_plan",
+        default_value="basic.yaml",
+        description="Test plan to be used in development mode for local pathfinding.",
+    ),
 ]
 ENVIRONMENT_VARIABLES = [
     SetEnvironmentVariable("ROS_LOG_DIR", launch_config.log_dir),

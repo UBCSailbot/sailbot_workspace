@@ -77,14 +77,14 @@ public:
             wind_sensors_pub_ = this->create_publisher<msg::WindSensors>(ros_topics::WIND_SENSORS, QUEUE_SIZE);
             filtered_wind_sensor_pub_ =
               this->create_publisher<msg::WindSensor>(ros_topics::FILTERED_WIND_SENSOR, QUEUE_SIZE);
-            generic_sensors_pub_ = this->create_publisher<msg::GenericSensors>(ros_topics::DATA_SENSORS, QUEUE_SIZE);
-            rudder_pub_          = this->create_publisher<msg::HelperHeading>(ros_topics::RUDDER, QUEUE_SIZE);
-            temp_sensors_pub_    = this->create_publisher<msg::TempSensors>(ros_topics::TEMP_SENSORS, QUEUE_SIZE);
-            ph_sensors_pub_      = this->create_publisher<msg::PhSensors>(ros_topics::PH_SENSORS, QUEUE_SIZE);
+            // generic_sensors_pub_ = this->create_publisher<msg::GenericSensors>(ros_topics::DATA_SENSORS, QUEUE_SIZE);
+            rudder_pub_       = this->create_publisher<msg::HelperHeading>(ros_topics::RUDDER, QUEUE_SIZE);
+            temp_sensors_pub_ = this->create_publisher<msg::TempSensors>(ros_topics::TEMP_SENSORS, QUEUE_SIZE);
+            ph_sensors_pub_   = this->create_publisher<msg::PhSensors>(ros_topics::PH_SENSORS, QUEUE_SIZE);
             salinity_sensors_pub_ =
               this->create_publisher<msg::SalinitySensors>(ros_topics::SALINITY_SENSORS, QUEUE_SIZE);
-            pressure_sensors_pub_ =
-              this->create_publisher<msg::PressureSensors>(ros_topics::PRESSURE_SENSORS, QUEUE_SIZE);
+            // pressure_sensors_pub_ =
+            //   this->create_publisher<msg::PressureSensors>(ros_topics::PRESSURE_SENSORS, QUEUE_SIZE);
 
             std::vector<std::pair<CanId, std::function<void(const CanFrame &)>>> canCbs = {
               std::make_pair(CanId::POWER_OFF, std::function<void(const CanFrame &)>([this](const CanFrame & frame) {
@@ -368,9 +368,8 @@ private:
             wind_sensor_msg                   = wind_sensor.toRosMsg();
             wind_sensors_pub_->publish(wind_sensors_);
 
-            // NUM_WIND_SENSORS is a placeholder,
-            // replace with number of data points wanted in the moving average
-            double k = NUM_WIND_SENSORS;
+            // Arbitrary number of data points for moving average
+            double k = 20;  //NOLINT(readability-magic-numbers)
             // convert deg to rad
             double angle = wind_sensor_msg.direction * (M_PI / 180.0);  // NOLINT(readability-magic-numbers)
             double y     = wind_sensor_msg.speed.speed * sin(angle);
