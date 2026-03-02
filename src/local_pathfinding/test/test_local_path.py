@@ -1,3 +1,6 @@
+from datetime import datetime, timedelta
+from unittest import mock
+
 import pytest
 from custom_interfaces.msg import GPS, AISShips, HelperLatLon, Path, WindSensor
 from rclpy.impl.rcutils_logger import RcutilsLogger
@@ -10,6 +13,37 @@ from local_pathfinding.obstacles import Obstacle
 REF = HelperLatLon(latitude=10.0, longitude=10.0)
 
 PATH = lp.LocalPath(parent_logger=RcutilsLogger())
+
+
+@pytest.fixture
+def basic_local_path_state():
+    gps = mock.Mock()
+    gps.lat_lon = HelperLatLon(latitude=0.0, longitude=0.0)
+    gps.speed = mock.Mock(speed=0.0)
+    gps.heading = mock.Mock(heading=0.0)
+
+    ais_ships = mock.Mock()
+    ais_ships.ships = []
+
+    global_path = Path(
+        waypoints=[
+            HelperLatLon(latitude=0.0, longitude=0.0),
+            HelperLatLon(latitude=1.0, longitude=1.0),
+        ]
+    )
+
+    filtered_wind_sensor = mock.Mock()
+    filtered_wind_sensor.speed = mock.Mock(speed=5.0)
+    filtered_wind_sensor.direction = 90
+
+    return lp.LocalPathState(
+        gps=gps,
+        ais_ships=ais_ships,
+        global_path=global_path,
+        target_global_waypoint=global_path.waypoints[-1],
+        filtered_wind_sensor=filtered_wind_sensor,
+        planner="rrtstar",
+    )
 
 
 @pytest.mark.parametrize(
@@ -282,3 +316,21 @@ def test_LocalPathState_parameter_checking():
                 planner=None,
             ),
         )
+
+
+@pytest.mark.parametrize(
+    "elapsed,expected",
+    [
+        (lp.PATH_TTL_SEC + timedelta(seconds=1), True),
+        (lp.PATH_TTL_SEC, True),
+        (lp.PATH_TTL_SEC - timedelta(seconds=1), False),
+    ],
+)
+def test_is_path_expired(elapsed, expected, basic_local_path_state):
+    mock_parent_logger = mock.Mock()
+    mock_parent_logger.get_child.return_value = mock.Mock()
+    local_path = lp.LocalPath(parent_logger=mock_parent_logger)
+    basic_local_path_state.generated_time = datetime.now() - elapsed
+    local_path.state = basic_local_path_state
+
+    assert local_path._is_path_expired() == expected

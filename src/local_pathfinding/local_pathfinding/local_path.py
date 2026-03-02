@@ -15,7 +15,7 @@ from local_pathfinding.ompl_path import OMPLPath
 LOCAL_WAYPOINT_REACHED_THRESH_KM = 0.5
 HEADING_WEIGHT = 0.6
 COST_WEIGHT = 0.4
-PATH_TTL_SEC = 600
+PATH_TTL_SEC = timedelta(seconds=600)
 
 
 class LocalPathState:
@@ -37,6 +37,7 @@ class LocalPathState:
         planner (str): Planner to use for the OMPL query.
         reference (ci.HelperLatLon): Lat and lon position of the next global waypoint.
         obstacles (List[Obstacle]): All obstacles in the state space
+        path_generated_time (datetime): Time at which the path was generated
     """
 
     def __init__(
@@ -75,9 +76,7 @@ class LocalPathState:
         # obstacles are initialized by OMPLPath right before solving
         self.obstacles: List[ob.Obstacle] = []
 
-        # To check if the local path has reached timeout
-        self.generated_time = datetime.now()
-        self.timeout = timedelta(seconds=PATH_TTL_SEC)
+        self.path_generated_time = datetime.now()
 
 
 class LocalPath:
@@ -107,7 +106,7 @@ class LocalPath:
         """
         if self.state is None:
             return True
-        return datetime.now() >= (self.state.generated_time + self.state.timeout)
+        return datetime.now() >= (self.state.generated_time + PATH_TTL_SEC)
 
     @staticmethod
     def calculate_desired_heading_and_waypoint_index(
