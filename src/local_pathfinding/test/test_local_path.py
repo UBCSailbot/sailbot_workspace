@@ -415,7 +415,7 @@ def test_is_path_expired(elapsed, expected, basic_local_path_state):
     mock_parent_logger = mock.Mock()
     mock_parent_logger.get_child.return_value = mock.Mock()
     local_path = lp.LocalPath(parent_logger=mock_parent_logger)
-    basic_local_path_state.generated_time = datetime.now() - elapsed
+    basic_local_path_state.path_generated_time = datetime.now() - elapsed
     local_path.state = basic_local_path_state
 
-    assert local_path._is_path_expired() == expected
+    assert local_path.is_path_expired() == expected
