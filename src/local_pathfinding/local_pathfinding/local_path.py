@@ -116,7 +116,7 @@ class LocalPath:
         self.path: Optional[ci.Path] = None
         self.state: Optional[LocalPathState] = None
 
-    def _is_path_expired(self) -> bool:
+    def is_path_expired(self) -> bool:
         """Check if the current path has exceeded the PATH_TTL timeout.
 
         Returns:
@@ -246,7 +246,7 @@ class LocalPath:
             or (self.state is None)
             or (self.path is None)
             or (self.in_collision_zone())
-            or (self._is_path_expired())
+            or (self.is_path_expired())
             or (self._prev_lp_wp_index > len(self.path.waypoints))
         )
 
@@ -327,7 +327,7 @@ class LocalPath:
         except ValueError:
             return heading_new_path, new_prev_lp_wp_index
 
-        if self._is_path_expired():
+        if self.is_path_expired():
             self._logger.debug("Updating local path because PATH_TTL has expired")
             self._update(new_ompl_path)
             return heading_new_path, new_prev_lp_wp_index
