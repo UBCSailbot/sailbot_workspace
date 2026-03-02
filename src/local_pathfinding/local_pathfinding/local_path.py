@@ -316,6 +316,7 @@ class LocalPath:
             self._update(new_ompl_path)
             return heading_new_path, new_prev_lp_wp_index
         else:
+            # this assert will never fail!! Added this here to make Pylance happy
             assert self.state is not None
             self.state.update_state(gps, ais_ships, filtered_wind_sensor)
 
