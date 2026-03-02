@@ -321,6 +321,9 @@ class LocalPath:
             self.state.update_state(gps, ais_ships, filtered_wind_sensor)
 
         try:
+            # Same as the previous assert, Python can't statically analyze the fact that
+            # self._ompl_path won't be None for some reason. Removing this assert will lead to
+            # pylance/LSP red squiggles
             assert self._ompl_path is not None
             heading_old_path, old_prev_lp_wp_index = self.calculate_desired_heading_and_wp_index(
                 self._ompl_path.get_path(), prev_lp_wp_index, gps.lat_lon
