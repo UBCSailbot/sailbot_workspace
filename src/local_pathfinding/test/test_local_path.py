@@ -47,6 +47,19 @@ def basic_local_path_state():
     )
 
 
+def create_test_local_path_for_in_collision_zone(prev_lp_wp_index, reference_latlon, path, obstacles): # noqa
+    mock_parent_logger = mock.Mock()
+    mock_parent_logger.get_child.return_value = mock.Mock()
+    local_path = lp.LocalPath(parent_logger=mock_parent_logger)
+    local_path._prev_lp_wp_index = prev_lp_wp_index
+    local_path.path = path
+    local_path.state = mock.Mock(lp.LocalPathState)
+    local_path.reference_latlon = reference_latlon
+    local_path.state.reference_latlon = reference_latlon
+    local_path.state.obstacles = obstacles
+    return local_path
+
+
 @pytest.mark.parametrize(
     "local_wp_index, reference_latlon, path, obstacles, result",
     [
@@ -223,7 +236,15 @@ def basic_local_path_state():
     ],
 )
 def test_in_collision_zone(local_wp_index, reference_latlon, path, obstacles, result):
-    assert PATH.in_collision_zone(local_wp_index, reference_latlon, path, obstacles) == result
+
+    test_lp = create_test_local_path_for_in_collision_zone(
+        local_wp_index,
+        reference_latlon,
+        path,
+        obstacles
+    )
+
+    assert test_lp.in_collision_zone() == result
 
 
 @pytest.mark.parametrize(

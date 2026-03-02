@@ -371,7 +371,7 @@ class LocalPath:
             return heading_new_path, new_prev_lp_wp_index
         else:
             self._logger.debug("old path is cheaper, continuing on the same path")
-            return heading_old_path, old_prev_lp_wp_index 
+            return heading_old_path, old_prev_lp_wp_index
 
     def _update(self, ompl_path: OMPLPath):
 
