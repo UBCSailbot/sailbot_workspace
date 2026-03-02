@@ -1,16 +1,16 @@
 """The path to the next global waypoint, represented by the LocalPath class."""
 
 import math
+from datetime import datetime, timedelta
 from typing import List, Optional
 
-import custom_interfaces.msg as ci
 from rclpy.impl.rcutils_logger import RcutilsLogger
 from shapely.geometry import LineString, MultiPolygon
 
+import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
-import local_pathfinding.wind_coord_systems as wcs
 import local_pathfinding.obstacles as ob
-from datetime import timedelta, datetime
+import local_pathfinding.wind_coord_systems as wcs
 from local_pathfinding.ompl_path import OMPLPath
 
 WIND_SPEED_CHANGE_THRESH_PROP = 0.3
@@ -40,7 +40,7 @@ class LocalPathState:
         planner (str): Planner to use for the OMPL query.
         reference (ci.HelperLatLon): Lat and lon position of the next global waypoint.
         obstacles (List[Obstacle]): All obstacles in the state space
-        path_generated_time (datetime): Time at which the path was generated
+        path_generated_time (datetime): Time when the path was generated
     """
 
     def __init__(
@@ -65,6 +65,7 @@ class LocalPathState:
 
         # obstacles are initialized by OMPLPath right before solving
         self.obstacles: List[ob.Obstacle] = []
+        self.path_generated_time = datetime.now()
 
     def update_state(
         self, gps: ci.GPS, ais_ships: ci.AISShips, filtered_wind_sensor: ci.WindSensor
@@ -95,20 +96,6 @@ class LocalPathState:
         self.wind_speed = filtered_wind_sensor.speed.speed
         self.wind_direction = filtered_wind_sensor.direction
 
-        if not (global_path and global_path.waypoints):
-            raise ValueError("Cannot create a LocalPathState with an empty global_path")
-        self.global_path = global_path
-        self.reference_latlon = target_global_waypoint
-
-        if not planner:
-            raise ValueError("planner must not be None")
-        self.planner = planner
-
-        # obstacles are initialized by OMPLPath right before solving
-        self.obstacles: List[ob.Obstacle] = []
-
-        self.path_generated_time = datetime.now()
-
 
 class LocalPath:
     """Sets and updates the OMPL path and the local waypoints
@@ -116,8 +103,8 @@ class LocalPath:
     Attributes:
         _logger (RcutilsLogger): ROS logger.
         _ompl_path (Optional[OMPLPath]): Raw representation of the path from OMPL.
-        _prev_lp_wp_index (int): index of the local waypoint that Polaris has already traversed in
-        the path array
+        _prev_lp_wp_index (int): Index of the local waypoint that Polaris has already traversed.
+            Polaris heads toward the waypoint at index `_prev_lp_wp_index + 1`.
         path (Path): Collection of coordinates that form the local path to the next
                           global waypoint.
         state (LocalPathState): the current local path state.
@@ -136,15 +123,20 @@ class LocalPath:
             bool: True if the path has expired, False otherwise.
         """
         if self.state is None:
+            self._logger.debug("Path is expired, since the state is None")
             return True
-        return datetime.now() >= (self.state.generated_time + PATH_TTL_SEC)
+        is_expired = datetime.now() >= (self.state.path_generated_time + PATH_TTL_SEC)
+        if is_expired:
+            self._logger.debug("Path is expired")
+        return is_expired
 
     @staticmethod
     def calculate_desired_heading_and_wp_index(
-        path: ci.Path, waypoint_index: int, boat_lat_lon: ci.HelperLatLon
+        path: ci.Path, prev_lp_wp_index: int, boat_lat_lon: ci.HelperLatLon
     ):
         """Calculates the desired heading using GEODESIC. Updates the waypoint index (i.e. change
-        the waypoint) if the boat is close enough to the current waypoint.
+        the waypoint) if the boat is close enough to the next waypoint.
+        The caller MUST ensure that prev_lp_wp_index <= len(path.waypoints)
 
         Args:
             path (ci.Path): Array of waypoints
@@ -155,16 +147,25 @@ class LocalPath:
 
         Returns:
             _type_: _description_
+        Throws:
+            Value error if index out of bounds or path is None
         """
-        waypoint = path.waypoints[waypoint_index]
+        if path is None:
+            raise ValueError("Path is None")
+
+        waypoint = path.waypoints[prev_lp_wp_index]
         desired_heading, _, distance_to_waypoint_m = cs.GEODESIC.inv(
             boat_lat_lon.longitude, boat_lat_lon.latitude, waypoint.longitude, waypoint.latitude
         )
 
         if cs.meters_to_km(distance_to_waypoint_m) < LOCAL_WAYPOINT_REACHED_THRESH_KM:
-            # If we reached the current local waypoint, aim for the next one
-            waypoint_index += 1
-            waypoint = path.waypoints[waypoint_index]
+            # If we reached the next local waypoint, update prev_lp_wp_index to the next waypoint
+            prev_lp_wp_index += 1
+
+            if prev_lp_wp_index > len(path.waypoints):
+                raise ValueError("waypoint idx > len(path.waypoints). Must generate new path")
+
+            waypoint = path.waypoints[prev_lp_wp_index]
             desired_heading, _, distance_to_waypoint_m = cs.GEODESIC.inv(
                 boat_lat_lon.longitude,
                 boat_lat_lon.latitude,
@@ -172,34 +173,29 @@ class LocalPath:
                 waypoint.latitude,
             )
 
-        return cs.bound_to_180(desired_heading), waypoint_index
+        return cs.bound_to_180(desired_heading), prev_lp_wp_index
 
-    @staticmethod
-    def in_collision_zone(
-        local_wp_index: int,
-        reference_latlon: ci.HelperLatLon,
-        path: ci.Path,
-        obstacles: List[ob.Obstacle],
-    ):
+    def in_collision_zone(self):
         """
-        Checks if the path is in a collision zone or not.
+        Checks if the path intersects a collision zone.
 
-        Args:
-            local_wp_index (int): Index of the current local waypoint in the path.
-            reference_latlon (ci.HelperLatLon): lat lon of the next global waypoint
-            path (ci.Path): Collection of waypoints forming the local path.
-            obstacles (List[Obstacle]): List of obstacles in the state space.
+        Uses the current `self.path`, `self.state.obstacles`, and
+        `self._prev_lp_wp_index` to test path segments that have not yet been traversed.
 
         Returns:
-            boolean: True if the path intersects a collision zone, False otherwise.
+            bool: True if the path intersects a collision zone, False otherwise.
         """
+        self._logger.debug("Path in collision zone")
         xy_path = list(
-            map(lambda lat_lon: (cs.latlon_to_xy(reference_latlon, lat_lon)), path.waypoints)
+            map(
+                lambda lat_lon: (cs.latlon_to_xy(self.reference_latlon, lat_lon)),
+                self.path.waypoints,
+            )
         )
-        for i in range(local_wp_index, len(xy_path) - 1):
+        for i in range(self._prev_lp_wp_index, len(xy_path) - 1):
             p1, p2 = xy_path[i], xy_path[i + 1]
             segment = LineString([(p1.x, p1.y), (p2.x, p2.y)])
-            for o in obstacles:
+            for o in self.state.obstacles:
                 if segment.crosses(o.collision_zone) or segment.touches(o.collision_zone):
                     return True
         return False
@@ -239,8 +235,20 @@ class LocalPath:
         speed_change_ratio = abs(prev_tw_speed_kmph - current_tw_speed_kmph) / prev_tw_speed_kmph
         dir_change = abs(cs.bound_to_180(current_tw_dir_deg - prev_tw_dir_deg))
 
-        return (speed_change_ratio >= WIND_SPEED_CHANGE_THRESH_PROP or
-                dir_change >= WIND_DIRECTION_CHANGE_THRESH_DEG)
+        return (
+            speed_change_ratio >= WIND_SPEED_CHANGE_THRESH_PROP
+            or dir_change >= WIND_DIRECTION_CHANGE_THRESH_DEG
+        )
+
+    def must_change_path(self):
+        return (
+            (self._ompl_path is None)
+            or (self.state is None)
+            or (self.path is None)
+            or (self.in_collision_zone())
+            or (self._is_path_expired())
+            or (self._prev_lp_wp_index > len(self.path.waypoints))
+        )
 
     def update_if_needed(
         self,
@@ -269,9 +277,8 @@ class LocalPath:
             gps (ci.GPS): Current GPS position and heading data.
             ais_ships (ci.AISShips): AIS data for nearby ships (obstacles).
             global_path (ci.Path): The global path plan to the destination.
-            prev_lp_wp_index (int): Current index in the local waypoint list.
-            This is the index that the boat last traversed. The boat is heading towards
-            the index following prev_lp_wp_index
+            prev_lp_wp_index (int): Index of the last traversed local waypoint.
+            The boat is heading towards the waypoint at index `prev_lp_wp_index + 1`.
             received_new_global_waypoint (bool): Flag indicating if a new global
                 waypoint was received.
             target_global_waypoint (ci.HelperLatLon): Target waypoint from global path.
@@ -289,36 +296,6 @@ class LocalPath:
         self._prev_lp_wp_index = prev_lp_wp_index
         old_ompl_path = self._ompl_path
 
-        if (
-            (received_new_global_waypoint or old_ompl_path is None)
-            or (self.path is None)
-            or (self.state is None)
-        ):
-            new_state = LocalPathState(
-                gps, ais_ships, global_path, target_global_waypoint, filtered_wind_sensor, planner
-            )
-            new_ompl_path = OMPLPath(
-                parent_logger=self._logger,
-                local_path_state=new_state,
-                land_multi_polygon=land_multi_polygon,
-            )
-            heading_new_path, wp_index = self.calculate_desired_heading_and_wp_index(
-                new_ompl_path.get_path(), 0, gps.lat_lon
-            )
-            if received_new_global_waypoint:
-                self._logger.debug("Updating local path because we have a new global waypoint")
-            else:
-                self._logger.debug("old path is None")
-            self.state = new_state
-            self._update(new_ompl_path)
-            return heading_new_path, wp_index
-        else:
-            self.state.update_state(gps, ais_ships, filtered_wind_sensor)
-
-        # create a new state with most up-to-date environment information. This is done to compare
-        # a new OMPL path based on this state with the OMPL path that we have been using. Since the
-        # paths are based on environment snapshots of when the path was created, this is important
-        # to ensure that we are not on a bad path.
         new_state = LocalPathState(
             gps, ais_ships, global_path, target_global_waypoint, filtered_wind_sensor, planner
         )
@@ -327,44 +304,38 @@ class LocalPath:
             local_path_state=new_state,
             land_multi_polygon=land_multi_polygon,
         )
-
-        heading_new_path, wp_index = self.calculate_desired_heading_and_wp_index(
+        heading_new_path, new_prev_lp_wp_index = self.calculate_desired_heading_and_wp_index(
             new_ompl_path.get_path(), 0, gps.lat_lon
         )
+        if self.must_change_path() or received_new_global_waypoint:
+            if received_new_global_waypoint:
+                self._logger.debug("Updating local path because we have a new global waypoint")
+            else:
+                self._logger.debug("old path is None")
+            self.state = new_state
+            self._update(new_ompl_path)
+            return heading_new_path, new_prev_lp_wp_index
+        else:
+            assert self.state is not None
+            self.state.update_state(gps, ais_ships, filtered_wind_sensor)
 
-        if received_new_global_waypoint:
-            self._logger.debug("Updating local path because we have a new global waypoint")
-            self._update(ompl_path)
-            return heading_new_path, wp_index
-
-        if old_ompl_path is None or self.path is None:
-            # continue on the same path
-            self._logger.debug("old path is none")
-            self._update(ompl_path)
-            return heading_new_path, wp_index
+        try:
+            assert self._ompl_path is not None
+            heading_old_path, old_prev_lp_wp_index = self.calculate_desired_heading_and_wp_index(
+                self._ompl_path.get_path(), prev_lp_wp_index, gps.lat_lon
+            )
+        except ValueError:
+            return heading_new_path, new_prev_lp_wp_index
 
         if self._is_path_expired():
             self._logger.debug("Updating local path because PATH_TTL has expired")
-            self._update(ompl_path)
-            return heading_new_path, wp_index
-
-        heading_old_path, updated_wp_index = self.calculate_desired_heading_and_waypoint_index(
-            old_ompl_path.get_path(), local_waypoint_index, gps.lat_lon
-        )
-
-        if self.in_collision_zone(
-            prev_lp_wp_index, self.state.reference_latlon, self.path, self.state.obstacles
-        ):
-            self._logger.debug("old path is in collision zone")
-            self.state = new_state
             self._update(new_ompl_path)
-            return heading_new_path, wp_index
+            return heading_new_path, new_prev_lp_wp_index
+
+        assert old_ompl_path is not None
 
         heading_diff_old_path = cs.calculate_heading_diff(self.state.heading, heading_old_path)
         heading_diff_new_path = cs.calculate_heading_diff(self.state.heading, heading_new_path)
-
-        old_prev_lp_wp_index = max(updated_wp_index - 1, 0)
-        new_prev_lp_wp_index = max(wp_index - 1, 0)
 
         old_cost = old_ompl_path.get_remaining_cost(old_prev_lp_wp_index, gps.lat_lon)
         new_cost = new_ompl_path.get_remaining_cost(new_prev_lp_wp_index, gps.lat_lon)
@@ -397,10 +368,10 @@ class LocalPath:
             self._logger.debug("New path is cheaper, updating local path ")
             self.state = new_state
             self._update(new_ompl_path)
-            return heading_new_path, wp_index
+            return heading_new_path, new_prev_lp_wp_index
         else:
             self._logger.debug("old path is cheaper, continuing on the same path")
-            return heading_old_path, updated_wp_index
+            return heading_old_path, old_prev_lp_wp_index
 
     def _update(self, ompl_path: OMPLPath):
 

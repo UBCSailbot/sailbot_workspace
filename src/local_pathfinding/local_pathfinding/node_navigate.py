@@ -49,8 +49,8 @@ class Sailbot(Node):
         global_path (ci.Path): Path that we are following.
         filtered_wind_sensor (ci.WindSensor): Filtered data from the wind sensors.
         desired_heading (ci.DesiredHeading): current desired heading.
-        prev_lp_wp_index: local waypoint that Polaris has already traversed/seen. Polaris is moving
-        towards prev_lp_wp_index + 1 waypoint.
+        prev_lp_wp_index: Local waypoint that Polaris has already traversed.
+            Polaris is moving towards waypoint index `prev_lp_wp_index + 1`.
 
     Attributes:
         local_path (LocalPath): The path that `Sailbot` is following.
