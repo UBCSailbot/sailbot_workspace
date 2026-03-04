@@ -72,7 +72,20 @@ const downloadDataFromAPI = async (sensorType, format) => {
       return;
     }
 
-    const apiUrl = `${process.env.NEXT_PUBLIC_SERVER_HOST}:${process.env.NEXT_PUBLIC_SERVER_PORT}/api/${sensorType}`;
+    const getApiUrl = (endpoint) => {
+      if (typeof window !== 'undefined') {
+        const isProduction = window.location.hostname !== 'localhost';
+        if (isProduction) {
+          return endpoint;
+        }
+      }
+      const host = process.env.NEXT_PUBLIC_SERVER_HOST || 'http://localhost';
+      const port = process.env.NEXT_PUBLIC_SERVER_PORT || '3005';
+      const cleanHost = host.replace(/\/$/, '');
+      return `${cleanHost}:${port}${endpoint}`;
+    };
+
+    const apiUrl = getApiUrl(`/api/${sensorType}`);
     const response = await fetch(apiUrl);
     if (!response.ok) {
       throw new Error(`Error: ${response.statusText}`);
