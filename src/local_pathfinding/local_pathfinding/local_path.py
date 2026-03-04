@@ -376,7 +376,8 @@ class LocalPath:
         self.path = self._ompl_path.get_path()
 
     def update_wind_history(self, current_wind: wcs.Wind):
-        """Updates wind history and recalculates the average wind.
+        """Updates wind history and recalculates the average wind. The wind values are all
+        apparent wind.
 
         Maintains a history of up to WIND_HISTORY_LEN wind readings. When the history
         exceeds the max length, the oldest reading is removed.
@@ -392,7 +393,7 @@ class LocalPath:
             self.wind_average = self._calculate_average_wind()
 
     def _calculate_average_wind(self) -> Optional[wcs.Wind]:
-        """Calculates the average wind from the wind history.
+        """Calculates the average wind from the wind history once the deque is full.
 
         Returns:
             Optional[wcs.Wind]: Average wind object, or None if history is empty.
