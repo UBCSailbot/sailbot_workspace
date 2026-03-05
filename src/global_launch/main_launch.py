@@ -67,7 +67,7 @@ GLOBAL_LAUNCH_ARGUMENTS = [
         ),
         description="Allows the user to specify which folder the rosbag will be saved to."
         + " Note that to save to a different folder there should be no leading slash (/)."
-        +" By default, recordings are saved to session_recordings folder."
+        + " By default, recordings are saved to session_recordings folder."
     )
 ]
 ENVIRONMENT_VARIABLES = [
