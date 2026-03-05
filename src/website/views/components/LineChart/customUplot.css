@@ -115,13 +115,13 @@
 .u-hz .u-cursor-x,
 .u-vt .u-cursor-y {
   height: 100%;
-  border-right: 1px dashed #ffffff;
+  border-right: 1px dashed var(--accent-color-2);
 }
 
 .u-hz .u-cursor-y,
 .u-vt .u-cursor-x {
   width: 100%;
-  border-bottom: 1px dashed #ffffff;
+  border-bottom: 1px dashed var(--accent-color-2);
 }
 
 .u-cursor-pt {
