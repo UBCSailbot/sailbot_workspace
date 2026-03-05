@@ -146,9 +146,10 @@ class LocalPath:
             boat_lat_lon (ci.HelperLatLon): boat coordinates
 
         Returns:
-            _type_: _description_
-        Throws:
-            Value error if index out of bounds or path is None
+            tuple[float, int]: Desired heading in degrees and the updated local
+                waypoint index (prev_lp_wp_index).
+        Raises:
+            ValueError: If index out of bounds or path is None
         """
         if path is None:
             raise ValueError("Path is None")
