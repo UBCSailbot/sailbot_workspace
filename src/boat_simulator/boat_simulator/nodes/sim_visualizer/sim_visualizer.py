@@ -76,8 +76,9 @@ class SimVisualizer(Node):
 
     def save_result(self):
         if self.__frames:
-            self.get_logger().info(f"Saving {len(self.__frames)} frames to boat_path.gif")
-            imageio.mimsave("boat_path.gif", self.__frames, fps=10)
+            file_path = "/workspaces/sailbot_workspace/src/boat_simulator/boat_simulator/nodes/sim_visualizer/boat_path.gif"
+            self.get_logger().info(f"Saving to {file_path}...")
+            imageio.mimsave(file_path, self.__frames, fps=10)
             self.get_logger().info("Saved")
 
 
