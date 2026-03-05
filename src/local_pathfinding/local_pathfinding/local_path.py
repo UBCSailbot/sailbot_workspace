@@ -186,12 +186,7 @@ class LocalPath:
         Returns:
             bool: True if the path intersects a collision zone, False otherwise.
         """
-        xy_path = list(
-            map(
-                lambda lat_lon: (cs.latlon_to_xy(self.reference_latlon, lat_lon)),
-                self.path.waypoints,
-            )
-        )
+        xy_path = [cs.latlon_to_xy(self.reference_latlon, wp) for wp in self.path.waypoints]
         for i in range(self._prev_lp_wp_index, len(xy_path) - 1):
             p1, p2 = xy_path[i], xy_path[i + 1]
             segment = LineString([(p1.x, p1.y), (p2.x, p2.y)])
