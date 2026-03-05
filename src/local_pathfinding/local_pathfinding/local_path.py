@@ -312,17 +312,11 @@ class LocalPath:
             self._update(new_ompl_path)
             return heading_new_path, new_prev_lp_wp_index
         else:
-            # this assert will never fail!! Added this here to make Pylance happy
-            assert self.state is not None
-            self.state.update_state(gps, ais_ships, filtered_wind_sensor)
+            self.state.update_state(gps, ais_ships, filtered_wind_sensor)  # type: ignore
 
         try:
-            # Same as the previous assert, Python can't statically analyze the fact that
-            # self._ompl_path won't be None for some reason. Removing this assert will lead to
-            # pylance/LSP red squiggles
-            assert self._ompl_path is not None
             heading_old_path, old_prev_lp_wp_index = self.calculate_desired_heading_and_wp_index(
-                self._ompl_path.get_path(), prev_lp_wp_index, gps.lat_lon
+                self._ompl_path.get_path(), prev_lp_wp_index, gps.lat_lon  # type: ignore
             )
         except ValueError:
             return heading_new_path, new_prev_lp_wp_index
@@ -334,8 +328,14 @@ class LocalPath:
 
         assert old_ompl_path is not None
 
-        heading_diff_old_path = cs.calculate_heading_diff(self.state.heading, heading_old_path)
-        heading_diff_new_path = cs.calculate_heading_diff(self.state.heading, heading_new_path)
+        heading_diff_old_path = cs.calculate_heading_diff(
+            self.state.heading,  # type: ignore
+            heading_old_path,
+        )
+        heading_diff_new_path = cs.calculate_heading_diff(
+            self.state.heading,  # type: ignore
+            heading_new_path,
+        )
 
         old_cost = old_ompl_path.get_remaining_cost(old_prev_lp_wp_index, gps.lat_lon)
         new_cost = new_ompl_path.get_remaining_cost(new_prev_lp_wp_index, gps.lat_lon)
