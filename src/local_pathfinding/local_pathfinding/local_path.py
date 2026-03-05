@@ -186,7 +186,6 @@ class LocalPath:
         Returns:
             bool: True if the path intersects a collision zone, False otherwise.
         """
-        self._logger.debug("Path in collision zone")
         xy_path = list(
             map(
                 lambda lat_lon: (cs.latlon_to_xy(self.reference_latlon, lat_lon)),
@@ -198,6 +197,7 @@ class LocalPath:
             segment = LineString([(p1.x, p1.y), (p2.x, p2.y)])
             for o in self.state.obstacles:
                 if segment.crosses(o.collision_zone) or segment.touches(o.collision_zone):
+                    self._logger.debug("Path intersects with collision zone")
                     return True
         return False
 
