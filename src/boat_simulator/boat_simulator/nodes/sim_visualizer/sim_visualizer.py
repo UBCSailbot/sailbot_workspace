@@ -10,7 +10,6 @@ import matplotlib.markers as mmarkers
 
 import imageio
 import io
-import numpy as np
 
 
 class SimVisualizer(Node):
