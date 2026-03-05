@@ -5,6 +5,7 @@
 #     - Generates a protobuf GlobalPath object from:
 #         • Provided waypoint coordinates, or
 #         • Randomly generated waypoints
+#     - Outputs bytes to terminal and to file ./serialized_data.bin
 #
 #   In decode mode:
 #     - Decodes a protobuf byte string into a human-readable format
