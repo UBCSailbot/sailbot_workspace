@@ -149,7 +149,7 @@ class LocalPath:
             tuple[float, int]: Desired heading in degrees and the updated local
                 waypoint index (prev_lp_wp_index).
         Raises:
-            ValueError: If index out of bounds or path is None
+            IndexError: If index out of bounds or path is None
         """
         if path is None:
             raise ValueError("Path is None")
@@ -164,7 +164,7 @@ class LocalPath:
             prev_lp_wp_index += 1
 
             if prev_lp_wp_index > len(path.waypoints):
-                raise ValueError("waypoint idx > len(path.waypoints). Must generate new path")
+                raise IndexError("waypoint idx > len(path.waypoints). Must generate new path")
 
             waypoint = path.waypoints[prev_lp_wp_index]
             desired_heading, _, distance_to_waypoint_m = cs.GEODESIC.inv(
