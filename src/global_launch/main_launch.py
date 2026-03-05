@@ -58,6 +58,17 @@ GLOBAL_LAUNCH_ARGUMENTS = [
         choices=["true", "false"],
         description="Set to 'true' to record a ros2 bag.",
     ),
+    DeclareLaunchArgument(
+        name="save_path",
+        default_value=os.path.join(
+            "notebooks",
+            "local_pathfinding",
+            "session_recordings",
+        ),
+        description="Allows the user to specify which folder the rosbag will be saved to."
+        + " Note that to save to a different folder there should be no leading slash (/)."
+        +" By default, recordings are saved to session_recordings folder."
+    )
 ]
 ENVIRONMENT_VARIABLES = [
     SetEnvironmentVariable("ROS_LOG_DIR", launch_config.log_dir),
@@ -82,7 +93,8 @@ def generate_launch_description() -> LaunchDescription:
 
 def setup_launch(context: LaunchContext) -> List[Action]:
     """Collects launch descriptions from all local launch files. Optionally starts a ros2 bag to
-    record data.
+    record data. You can specify a path to save to by using the save_path launch argument. For
+    example, 'save_path:=notebooks/local_pathfinding/test_recording'.
 
     Args:
         context (LaunchContext): The current context of the launch.
@@ -100,11 +112,10 @@ def setup_launch(context: LaunchContext) -> List[Action]:
     actions: List[Action] = list(include_launch_descriptions)
 
     if record:
+        save_path = LaunchConfiguration("save_path").perform(context)
         target_dir = os.path.join(
             os.getenv("ROS_WORKSPACE", default="/workspaces/sailbot_workspace"),
-            "notebooks",
-            "local_pathfinding",
-            "session_recordings",
+            save_path
         )
 
         os.makedirs(target_dir, exist_ok=True)
