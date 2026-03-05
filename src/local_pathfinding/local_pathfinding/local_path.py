@@ -300,6 +300,7 @@ class LocalPath:
             local_path_state=new_state,
             land_multi_polygon=land_multi_polygon,
         )
+        # TODO: handle the error thrown here in reworked update_if_needed
         heading_new_path, new_prev_lp_wp_index = self.calculate_desired_heading_and_wp_index(
             new_ompl_path.get_path(), 0, gps.lat_lon
         )
