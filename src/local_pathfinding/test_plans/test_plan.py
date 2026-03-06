@@ -6,6 +6,7 @@ from shapely.geometry import MultiPolygon, Polygon
 
 
 class TestPlan:
+    __test__ = False
     _instance = None
 
     """An immutable singleton collection of data defining a local pathfinding test plan.
