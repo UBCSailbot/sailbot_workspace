@@ -1,8 +1,6 @@
 'use client';
 
-import { CSS } from '@dnd-kit/utilities';
-import { useSortable } from '@dnd-kit/sortable';
-import { useState, useEffect, useRef } from 'react';
+import { Fragment, useState, useEffect, useRef } from 'react';
 import RearrangeIcon from '@/public/icons/format_line_spacing.svg';
 import {
   DndContext,
@@ -10,61 +8,94 @@ import {
   useSensor,
   useSensors,
   PointerSensor,
+  useDraggable,
 } from '@dnd-kit/core';
-import {
-  SortableContext,
-  arrayMove,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
 import DragIndicatorIcon from '@/public/icons/drag_indicator.svg';
 import styles from './stats.module.css';
-import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import GraphsActions from '@/stores/Graphs/GraphsActions';
 import { connect } from 'react-redux';
+import { Layout, GraphId, isSplitGroup } from '@/stores/Graphs/GraphsTypes';
+import { extractGraph, splitGraph, findLayoutIndex } from '@/stores/Graphs/GraphsLayoutHelpers';
 
-const graphsOrderNamesMap = {
+const graphsOrderNamesMap: Record<GraphId, string> = {
   GPS: 'Speed',
   BatteriesVoltage: 'Batteries Voltage',
   BatteriesCurrent: 'Batteries Current',
   WindSensors: 'Wind Sensors',
 };
 
-const SortableItem = ({
+type SplitSide = 'left' | 'right' | 'full' | null;
+
+const DraggableItem = ({
   id,
+  label,
   isDragging,
+  splitTargetSide,
+  layoutIndex,
 }: {
   id: string;
+  label: string;
   isDragging?: boolean;
+  splitTargetSide?: SplitSide;
+  layoutIndex?: number;
 }) => {
-  const { attributes, listeners, setNodeRef, transform, transition } =
-    useSortable({ id });
+  const { attributes, listeners, setNodeRef } = useDraggable({ id });
 
   const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
+    opacity: isDragging ? 0.35 : 1,
     cursor: 'grab',
   };
 
+  const splitClass =
+    splitTargetSide === 'full' ? styles.dropdownItemSplitTarget :
+    splitTargetSide === 'left' ? styles.dropdownItemSplitTargetLeft :
+    splitTargetSide === 'right' ? styles.dropdownItemSplitTargetRight :
+    '';
+  const className = splitClass ? `${styles.dropdownItem} ${splitClass}` : styles.dropdownItem;
+
   return (
     <div
-      className={styles.dropdownItem}
+      className={className}
       ref={setNodeRef}
       style={style}
+      data-sortable-id={id}
+      data-layout-index={layoutIndex}
       {...attributes}
       {...listeners}
     >
       <DragIndicatorIcon />
-      {graphsOrderNamesMap[id as keyof typeof graphsOrderNamesMap]}
+      <span className={styles.dropdownItemLabel}>{label}</span>
     </div>
   );
 };
 
+const DropGap = ({
+  index,
+  isActive,
+}: {
+  index: number;
+  isActive: boolean;
+}) => {
+  const className = isActive
+    ? `${styles.dropGap} ${styles.dropGapActive}`
+    : styles.dropGap;
+
+  return <div className={className} data-drop-gap={index} />;
+};
+
 const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs }: any) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [graphsOrder, setGraphsOrder] = useState(graphs.order);
+  const [layout, setLayout] = useState<Layout>(graphs.layout);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [splitTargetId, setSplitTargetId] = useState<string | null>(null);
+  const [splitSide, setSplitSide] = useState<SplitSide>(null);
+  const [dropGapIndex, setDropGapIndex] = useState<number | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hoverTargetRef = useRef<string | null>(null);
+  const splitTargetRef = useRef<string | null>(null);
+  const splitSideRef = useRef<SplitSide>(null);
+  const dropGapRef = useRef<number | null>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -82,49 +113,147 @@ const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs }: any) => {
 
   const handleClick = () => setIsOpen(!isOpen);
 
+  const clearHoverTimer = () => {
+    if (hoverTimerRef.current) {
+      clearTimeout(hoverTimerRef.current);
+      hoverTimerRef.current = null;
+    }
+    hoverTargetRef.current = null;
+  };
+
+  const updateSplitTarget = (id: string | null) => {
+    splitTargetRef.current = id;
+    setSplitTargetId(id);
+  };
+
+  const updateSplitSide = (side: SplitSide) => {
+    splitSideRef.current = side;
+    setSplitSide(side);
+  };
+
+  const updateDropGap = (index: number | null) => {
+    dropGapRef.current = index;
+    setDropGapIndex(index);
+  };
+
   const onDragStart = (event: any) => {
+    clearHoverTimer();
+    updateSplitTarget(null);
+    updateSplitSide(null);
+    updateDropGap(null);
     setActiveId(event.active.id);
   };
 
   useEffect(() => {
-    rearrangeGraphs(graphsOrder);
-  }, [graphsOrder]);
+    rearrangeGraphs(layout);
+  }, [layout]);
 
-  const onDragOver = (event: any) => {
-    const { active, over } = event;
-    if (!over) {
-      const containerRect = dropdownRef.current?.getBoundingClientRect();
-      if (!containerRect) return;
+  // Pointermove listener for split/gap detection (active during drag)
+  useEffect(() => {
+    if (!activeId) return;
 
-      const activeRect = event.active.rect.current.translated;
-      const oldIndex = graphsOrder.indexOf(active.id);
-      let newIndex;
+    const sourceIndex = findLayoutIndex(layout, activeId as GraphId);
+    const sourceItem = layout[sourceIndex];
+    const activeIsInSplitGroup = isSplitGroup(sourceItem);
 
-      if (activeRect.top < containerRect.top) {
-        newIndex = 0;
-      } else if (activeRect.bottom > containerRect.bottom) {
-        newIndex = graphsOrder.length - 1;
-      } else {
+    const handlePointerMove = (e: PointerEvent) => {
+      // Check items via elementsFromPoint (merge/split intent)
+      const elements = document.elementsFromPoint(e.clientX, e.clientY);
+      for (const el of elements) {
+        const sortableId = (el as HTMLElement).dataset?.sortableId;
+        if (sortableId && sortableId !== activeId) {
+          // If both graphs are in the same split group, skip — fall through to gap detection
+          const targetLayoutIndex = findLayoutIndex(layout, sortableId as GraphId);
+          if (sourceIndex === targetLayoutIndex) break;
+
+          updateDropGap(null);
+
+          // Compute merge side in real-time on every pointer move
+          const targetItem = layout[targetLayoutIndex];
+          const isFullGroup = isSplitGroup(targetItem) && targetItem.length >= 2;
+          if (isFullGroup) {
+            updateSplitSide('full');
+          } else {
+            const rect = (el as HTMLElement).getBoundingClientRect();
+            updateSplitSide(e.clientX < rect.left + rect.width / 2 ? 'left' : 'right');
+          }
+
+          if (sortableId !== hoverTargetRef.current) {
+            clearHoverTimer();
+            updateSplitTarget(null);
+            hoverTargetRef.current = sortableId;
+            hoverTimerRef.current = setTimeout(() => {
+              updateSplitTarget(sortableId);
+            }, 100);
+          }
+          return;
+        }
+      }
+
+      // Determine gap from Y position using layout-level elements
+      const itemEls = Array.from(document.querySelectorAll<HTMLElement>('[data-layout-index]'));
+      if (itemEls.length === 0) return;
+
+      const itemRects = itemEls.map((el) => el.getBoundingClientRect());
+
+      let gapIndex = itemRects.length;
+      for (let i = 0; i < itemRects.length; i++) {
+        const midY = (itemRects[i].top + itemRects[i].bottom) / 2;
+        if (e.clientY < midY) {
+          gapIndex = i;
+          break;
+        }
+      }
+
+      // Skip gaps adjacent to the dragged item only for standalone items.
+      // For items in a split group, adjacent gaps are meaningful (extraction).
+      if (!activeIsInSplitGroup && (gapIndex === sourceIndex || gapIndex === sourceIndex + 1)) {
+        clearHoverTimer();
+        updateSplitTarget(null);
+        updateSplitSide(null);
+        updateDropGap(null);
         return;
       }
 
-      const newGraphsOrder = arrayMove(graphsOrder, oldIndex, newIndex);
-      setGraphsOrder(newGraphsOrder);
-    }
-  };
+      clearHoverTimer();
+      updateSplitTarget(null);
+      updateSplitSide(null);
+      updateDropGap(gapIndex);
+    };
+
+    document.addEventListener('pointermove', handlePointerMove);
+    return () => {
+      document.removeEventListener('pointermove', handlePointerMove);
+      clearHoverTimer();
+      updateSplitTarget(null);
+      updateSplitSide(null);
+      updateDropGap(null);
+    };
+  }, [activeId, layout]);
 
   const onDragEnd = (event: any) => {
-    const { active, over } = event;
+    const { active } = event;
+    const currentSplitTarget = splitTargetRef.current;
+    const currentSplitSide = splitSideRef.current;
+    const currentDropGap = dropGapRef.current;
+
+    clearHoverTimer();
+    updateSplitTarget(null);
+    updateSplitSide(null);
+    updateDropGap(null);
     setActiveId(null);
 
-    if (!over) return;
+    if (currentSplitTarget) {
+      const side = currentSplitSide === 'left' ? 'left' : 'right';
+      setLayout(splitGraph(layout, active.id as GraphId, currentSplitTarget as GraphId, side));
+      return;
+    }
 
-    if (active.id !== over.id) {
-      const oldIndex = graphsOrder.indexOf(active.id);
-      const newIndex = graphsOrder.indexOf(over.id);
-      const newGraphsOrder = arrayMove(graphsOrder, oldIndex, newIndex);
-
-      setGraphsOrder(newGraphsOrder);
+    if (currentDropGap !== null) {
+      // extractGraph handles both standalone (delegates to moveGraphToIndex)
+      // and split group members (pulls out and places at gap)
+      setLayout(extractGraph(layout, active.id as GraphId, currentDropGap));
+      return;
     }
   };
 
@@ -135,6 +264,8 @@ const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs }: any) => {
       },
     }),
   );
+
+  const activeLabel = activeId ? graphsOrderNamesMap[activeId as GraphId] : null;
 
   return (
     <div ref={dropdownRef}>
@@ -147,27 +278,43 @@ const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs }: any) => {
           <DndContext
             sensors={sensors}
             onDragStart={onDragStart}
-            onDragOver={onDragOver}
             onDragEnd={onDragEnd}
-            modifiers={[restrictToVerticalAxis]}
           >
-            <SortableContext
-              items={graphsOrder}
-              strategy={verticalListSortingStrategy}
-            >
-              {graphsOrder.map((id: any) => (
-                <SortableItem key={id} id={id} isDragging={id === activeId} />
-              ))}
-            </SortableContext>
+            <DropGap index={0} isActive={dropGapIndex === 0} />
+            {layout.map((item, i) => (
+              <Fragment key={isSplitGroup(item) ? item.join('-') : item}>
+                {isSplitGroup(item) ? (
+                  <div className={styles.splitGroupDropdown} data-layout-index={i}>
+                    {item.map((graphId) => (
+                      <DraggableItem
+                        key={graphId}
+                        id={graphId}
+                        label={graphsOrderNamesMap[graphId]}
+                        isDragging={graphId === activeId}
+                        splitTargetSide={graphId === splitTargetId ? 'full' : null}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <DraggableItem
+                    id={item}
+                    label={graphsOrderNamesMap[item]}
+                    isDragging={item === activeId}
+                    splitTargetSide={item === splitTargetId ? splitSide : null}
+                    layoutIndex={i}
+                  />
+                )}
+                <DropGap index={i + 1} isActive={dropGapIndex === i + 1} />
+              </Fragment>
+            ))}
             <DragOverlay>
-              {activeId ? (
-                <div className={styles.dropdownItem}>
+              {activeLabel ? (
+                <div
+                  className={styles.dropdownItem}
+                  style={{ transform: 'scale(0.90)', opacity: 0.85, filter: 'brightness(0.75)', pointerEvents: 'none' }}
+                >
                   <DragIndicatorIcon />
-                  {
-                    graphsOrderNamesMap[
-                      activeId as keyof typeof graphsOrderNamesMap
-                    ]
-                  }
+                  <span className={styles.dropdownItemLabel}>{activeLabel}</span>
                 </div>
               ) : null}
             </DragOverlay>
