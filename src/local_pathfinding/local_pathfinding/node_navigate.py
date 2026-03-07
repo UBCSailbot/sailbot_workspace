@@ -1,18 +1,18 @@
 """The main node of the local_pathfinding package, represented by the `Sailbot` class."""
 
-import custom_interfaces.msg as ci
 import rclpy
 from rclpy.node import Node
+from test_plans.test_plan import TestPlan
 
+import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.global_path as gp
 import local_pathfinding.obstacles as ob
 from local_pathfinding.local_path import LocalPath
 from local_pathfinding.ompl_path import MAX_SOLVER_RUN_TIME_SEC
-from test_plans.test_plan import TestPlan
 
 GLOBAL_WAYPOINT_REACHED_THRESH_KM = 3
-PATHFINDING_RANGE_KM = 30
+PATHFINDING_RANGE_KM = 3.0
 REALLY_FAR_M = 100000000
 
 

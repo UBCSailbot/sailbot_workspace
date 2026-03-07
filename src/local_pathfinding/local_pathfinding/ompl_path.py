@@ -13,13 +13,13 @@ import os
 import pickle
 from typing import TYPE_CHECKING, Any, Union
 
-import custom_interfaces.msg as ci
 from ompl import base
 from ompl import geometric as og
 from ompl import util as ou
 from rclpy.impl.rcutils_logger import RcutilsLogger
 from shapely.geometry import MultiPolygon, Point, Polygon, box
 
+import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.obstacles as ob
 from local_pathfinding.ompl_objectives import get_sailing_objective
@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 
 ou.setLogLevel(ou.LOG_WARN)
 
-BOX_BUFFER_SIZE_KM = 1.0
+BOX_BUFFER_SIZE_KM = 2.0
 # for now this is statically defined and subject to change or may be made dynamic
 MIN_TURNING_RADIUS_KM = 0.05  # 50 m
 # sets an upper limit on the allowable edge length in the graph formed by the RRT* algorithm
@@ -37,7 +37,7 @@ MIN_TURNING_RADIUS_KM = 0.05  # 50 m
 # valid but the segment straddles an obstacle collision zone
 # setting this any smaller can lead to OMPL not being able to construct a tree that reaches
 # the goal state
-MAX_EDGE_LEN_KM = 5.0
+MAX_EDGE_LEN_KM = 0.5
 MAX_SOLVER_RUN_TIME_SEC = 1.0
 
 LAND_KEY = -1
@@ -276,9 +276,11 @@ class OMPLPath:
 
             # clamp to [0, total_seg_dist]
             if projected_dist > total_seg_dist:
-                self._logger.warning("Projection of the boat position wrt" +
-                                     "the segment is longer than the segment itself," +
-                                     "the boat should've switched local waypoint by this point")
+                self._logger.warning(
+                    "Projection of the boat position wrt"
+                    + "the segment is longer than the segment itself,"
+                    + "the boat should've switched local waypoint by this point"
+                )
                 # assuming pessimistic case
                 projected_dist = total_seg_dist
             elif projected_dist < 0.0:
