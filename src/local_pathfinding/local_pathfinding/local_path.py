@@ -389,14 +389,14 @@ class LocalPath:
             self.wind_average = self._calculate_average_wind()
 
     def _calculate_average_wind(self) -> Optional[wcs.Wind]:
-        """Calculates the average wind from the wind history once the deque is full.
+        """Calculates the average apparent wind from the wind history once the deque is full.
 
         Returns:
             Optional[wcs.Wind]: Average wind object, or None if history is empty.
         """
         avg_speed = sum(wind.speed_kmph for wind in self.wind_history) / len(self.wind_history)
 
-        # Use circular mean to handle wrap-around at 360 degrees
+        # Use circular mean to handle wrap-around
         sin_sum = sum(math.sin(math.radians(wind.dir_deg)) for wind in self.wind_history)
         cos_sum = sum(math.cos(math.radians(wind.dir_deg)) for wind in self.wind_history)
         avg_direction = math.degrees(math.atan2(sin_sum, cos_sum))
