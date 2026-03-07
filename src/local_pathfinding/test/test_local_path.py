@@ -47,11 +47,13 @@ def basic_local_path_state():
     )
 
 
-def create_test_local_path_for_in_collision_zone(prev_lp_wp_index, reference_latlon, path, obstacles): # noqa
+def create_test_local_path_for_in_collision_zone(
+    target_lp_wp_index, reference_latlon, path, obstacles
+):
     mock_parent_logger = mock.Mock()
     mock_parent_logger.get_child.return_value = mock.Mock()
     local_path = lp.LocalPath(parent_logger=mock_parent_logger)
-    local_path._prev_lp_wp_index = prev_lp_wp_index
+    local_path._target_lp_wp_index = target_lp_wp_index
     local_path.path = path
     local_path.state = mock.Mock(lp.LocalPathState)
     local_path.reference_latlon = reference_latlon
@@ -61,17 +63,17 @@ def create_test_local_path_for_in_collision_zone(prev_lp_wp_index, reference_lat
 
 
 @pytest.mark.parametrize(
-    "local_wp_index, reference_latlon, path, obstacles, result",
+    "target_local_wp_index, reference_latlon, path, obstacles, result",
     [
         (
-            0,
+            1,
             HelperLatLon(latitude=10.0, longitude=10.0),
             Path(waypoints=[HelperLatLon(latitude=0.0, longitude=0.0)]),
             [],
             False,
         ),
         (
-            0,
+            1,
             HelperLatLon(latitude=10.0, longitude=10.0),
             Path(
                 waypoints=[
@@ -87,7 +89,7 @@ def create_test_local_path_for_in_collision_zone(prev_lp_wp_index, reference_lat
         ),
         # Third test: obstacle at midpoint between (0,0) and (10,10)
         (
-            0,
+            1,
             REF,
             Path(
                 waypoints=[
@@ -122,7 +124,7 @@ def create_test_local_path_for_in_collision_zone(prev_lp_wp_index, reference_lat
             True,
         ),
         (
-            0,
+            1,
             REF,
             Path(
                 waypoints=[
@@ -157,7 +159,7 @@ def create_test_local_path_for_in_collision_zone(prev_lp_wp_index, reference_lat
             False,
         ),
         (
-            1,  # local_wp_index
+            2,  # target_local_wp_index
             HelperLatLon(
                 latitude=48.121368408203125, longitude=-137.02294921875
             ),  # reference_latlon
@@ -235,10 +237,10 @@ def create_test_local_path_for_in_collision_zone(prev_lp_wp_index, reference_lat
         ),
     ],
 )
-def test_in_collision_zone(local_wp_index, reference_latlon, path, obstacles, result):
+def test_in_collision_zone(target_local_wp_index, reference_latlon, path, obstacles, result):
 
     test_lp = create_test_local_path_for_in_collision_zone(
-        local_wp_index,
+        target_local_wp_index,
         reference_latlon,
         path,
         obstacles
