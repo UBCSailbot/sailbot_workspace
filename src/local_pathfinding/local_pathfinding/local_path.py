@@ -40,10 +40,6 @@ class LocalPathState:
         planner (str): Planner to use for the OMPL query.
         reference (ci.HelperLatLon): Lat and lon position of the next global waypoint.
         obstacles (List[Obstacle]): All obstacles in the state space
-        wind_history (List[wcs.Wind]): History of wind sensor readings
-            (Queue with max length WIND_HISTORY_LEN).
-        wind_average (wcs.Wind): Average of the wind history, used for path planning.
-            Updated every time a new wind sensor reading is added to wind_history.
     """
 
     def __init__(
