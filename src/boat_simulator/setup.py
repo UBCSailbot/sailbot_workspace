@@ -31,6 +31,8 @@ setup(
             "data_collection_node = "
             + "boat_simulator.nodes.data_collection.data_collection_node:main",
             "mock_data_node = " + "boat_simulator.nodes.mock_data.mock_data_node:main",
+            "sim_visualizer = "
+            + "boat_simulator.nodes.sim_visualizer.sim_visualizer:main",
         ],
     },
 )
