@@ -148,6 +148,7 @@ class LocalPath:
             tuple[float, int]: Desired heading in degrees and the updated local
                 waypoint index (prev_lp_wp_index).
         Raises:
+            ValueError: if the path is None
             IndexError: If index out of bounds or path is None
         """
         if path is None:
