@@ -136,7 +136,6 @@ class LocalPath:
     ):
         """Calculates the desired heading using GEODESIC. Updates the waypoint index (i.e. change
         the waypoint) if the boat is close enough to the next waypoint.
-        The caller MUST ensure that prev_lp_wp_index <= len(path.waypoints)
 
         Args:
             path (ci.Path): Array of waypoints
