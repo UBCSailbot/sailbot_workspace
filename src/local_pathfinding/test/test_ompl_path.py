@@ -2,6 +2,13 @@ import math
 import random
 
 import pytest
+from ompl import base
+from rclpy.impl.rcutils_logger import RcutilsLogger
+from shapely.geometry import MultiPolygon, Point, box
+
+import local_pathfinding.coord_systems as cs
+import local_pathfinding.obstacles as ob
+import local_pathfinding.ompl_path as ompl_path
 from custom_interfaces.msg import (
     GPS,
     AISShips,
@@ -14,13 +21,6 @@ from custom_interfaces.msg import (
     Path,
     WindSensor,
 )
-from ompl import base
-from rclpy.impl.rcutils_logger import RcutilsLogger
-from shapely.geometry import MultiPolygon, Point, box
-
-import local_pathfinding.coord_systems as cs
-import local_pathfinding.obstacles as ob
-import local_pathfinding.ompl_path as ompl_path
 from local_pathfinding.local_path import LocalPathState
 
 LAND_KEY = -1
@@ -35,17 +35,17 @@ def fresh_ompl_path():
             ais_ships=AISShips(),
             global_path=Path(
                 waypoints=[
-                    HelperLatLon(latitude=0.02, longitude=0.02),
-                    HelperLatLon(latitude=0.04, longitude=0.03),
-                    HelperLatLon(latitude=0.06, longitude=0.05),
-                    HelperLatLon(latitude=0.08, longitude=0.07),
-                    HelperLatLon(latitude=0.10, longitude=0.09),
-                    HelperLatLon(latitude=0.12, longitude=0.11),
-                    HelperLatLon(latitude=0.15, longitude=0.15),
                     HelperLatLon(latitude=0.1, longitude=0.1),
+                    HelperLatLon(latitude=0.15, longitude=0.15),
+                    HelperLatLon(latitude=0.12, longitude=0.11),
+                    HelperLatLon(latitude=0.10, longitude=0.09),
+                    HelperLatLon(latitude=0.08, longitude=0.07),
+                    HelperLatLon(latitude=0.06, longitude=0.05),
+                    HelperLatLon(latitude=0.04, longitude=0.03),
+                    HelperLatLon(latitude=0.02, longitude=0.02),
                 ]
             ),
-            target_global_waypoint=HelperLatLon(latitude=0.1, longitude=0.1),
+            target_global_waypoint=HelperLatLon(latitude=0.02, longitude=0.02),
             filtered_wind_sensor=WindSensor(),
             planner="rrtstar",
         ),
@@ -283,9 +283,7 @@ def test_create_space(
 @pytest.mark.parametrize("boat_latlon", [HelperLatLon(latitude=0.0, longitude=0.0)])
 def test_get_remaining_cost_full_path(fresh_ompl_path, boat_latlon):
     remaining_cost = fresh_ompl_path.get_remaining_cost(0, boat_latlon)
-    assert remaining_cost == pytest.approx(
-        fresh_ompl_path.get_cost(), abs=0.01
-    )
+    assert remaining_cost == pytest.approx(fresh_ompl_path.get_cost(), abs=0.01)
 
 
 @pytest.mark.parametrize(
@@ -307,10 +305,18 @@ def test_get_remaining_cost_partial(fresh_ompl_path, wp_index):
             return start_latlon
         end_points_inclusive_factor = 1e-4
         return HelperLatLon(
-            latitude=(random.uniform(start_latlon.latitude + end_points_inclusive_factor,
-                                     end_latlon.latitude - end_points_inclusive_factor)),  # noqa
-            longitude=(random.uniform(start_latlon.longitude + end_points_inclusive_factor,
-                                      end_latlon.longitude - end_points_inclusive_factor)),  # noqa
+            latitude=(
+                random.uniform(
+                    start_latlon.latitude + end_points_inclusive_factor,
+                    end_latlon.latitude - end_points_inclusive_factor,
+                )
+            ),  # noqa
+            longitude=(
+                random.uniform(
+                    start_latlon.longitude + end_points_inclusive_factor,
+                    end_latlon.longitude - end_points_inclusive_factor,
+                )
+            ),  # noqa
         )
 
     boat_latlon = mid_point(boat_latlon, next_wp_latlon)

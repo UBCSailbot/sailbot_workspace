@@ -1,14 +1,13 @@
-import custom_interfaces.msg as ci
 import pytest
 
+import custom_interfaces.msg as ci
 import local_pathfinding.node_navigate as nn
 from local_pathfinding.local_path import LocalPath
 
 LOCAL_WAYPOINT_REACHED_THRESH_KM = 0.5
 GLOBAL_WAYPOINT_REACHED_THRESH_KM = 3
-PATHFINDING_RANGE_KM = 30
 ONE_DEGREE_KM = 111  # One degree longitude at equator = 111km
-PATH_RANGE_DEG = PATHFINDING_RANGE_KM / ONE_DEGREE_KM
+PATH_RANGE_DEG = nn.PATHFINDING_RANGE_KM / ONE_DEGREE_KM
 
 
 @pytest.mark.parametrize(
