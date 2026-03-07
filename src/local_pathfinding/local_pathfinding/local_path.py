@@ -8,9 +8,12 @@ from rclpy.impl.rcutils_logger import RcutilsLogger
 from shapely.geometry import LineString, MultiPolygon
 
 import local_pathfinding.coord_systems as cs
+import local_pathfinding.wind_coord_systems as wcs
 import local_pathfinding.obstacles as ob
 from local_pathfinding.ompl_path import OMPLPath
 
+WIND_SPEED_CHANGE_THRESH_PROP = 0.3
+WIND_DIRECTION_CHANGE_THRESH_DEG = 10
 LOCAL_WAYPOINT_REACHED_THRESH_KM = 0.5
 HEADING_WEIGHT = 0.6
 COST_WEIGHT = 0.4
@@ -173,6 +176,44 @@ class LocalPath:
                 if segment.crosses(o.collision_zone) or segment.touches(o.collision_zone):
                     return True
         return False
+
+    @staticmethod
+    def is_significant_wind_change(
+        new_tw_data: wcs.Wind,
+        previous_tw_data: wcs.Wind,
+    ) -> bool:
+        """Returns true if there is a significant change in the true wind warranting a change in
+           path. Although this function works with any kind of wind, it is specifically designed
+           for true wind data.
+
+        Evaluates new wind speed compared to the wind condition used when previous
+        path was made.
+
+        The criteria to determine if the wind change is significant include:
+        - A change in wind speed exceeding WIND_SPEED_CHANGE_THRESH_PROP of the previous speed
+          used to calculate previous path
+        - A change in wind direction exceeding WIND_DIRECTION_CHANGE_THRESH_DEG degrees
+
+        Args:
+            new_tw_data (wcs.Wind): Current wind speed/direction that may require a change in path
+            previous_tw_data (wcs.Wind): Wind speed/direction when the current path was generated
+
+        Returns:
+            boolean: True if there is a significant change in the wind, False otherwise.
+        """
+
+        # Check for significant changes
+        prev_tw_speed_kmph = previous_tw_data.speed_kmph
+        prev_tw_dir_deg = previous_tw_data.dir_deg
+
+        current_tw_speed_kmph = new_tw_data.speed_kmph
+        current_tw_dir_deg = new_tw_data.dir_deg
+
+        speed_change_ratio = abs(prev_tw_speed_kmph - current_tw_speed_kmph) / prev_tw_speed_kmph
+        dir_change = abs(cs.bound_to_180(current_tw_dir_deg - prev_tw_dir_deg))
+
+        return (speed_change_ratio >= WIND_SPEED_CHANGE_THRESH_PROP or
+                dir_change >= WIND_DIRECTION_CHANGE_THRESH_DEG)
 
     def update_if_needed(
         self,

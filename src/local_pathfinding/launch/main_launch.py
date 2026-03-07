@@ -92,8 +92,10 @@ def get_navigate_node_description(context: LaunchContext) -> Node:
     ros_parameters = [
         {"mode": mode},
         LaunchConfiguration("config").perform(context),
-        {"test_plan": LaunchConfiguration("test_plan").perform(context)},
     ]
+    if mode == "development":
+        ros_parameters[0].update({"test_plan": LaunchConfiguration("test_plan").perform(context)})
+
     ros_arguments: List[SomeSubstitutionsType] = [
         "--log-level",
         [f"{node_name}:=", LaunchConfiguration("log_level")],
@@ -122,13 +124,12 @@ def get_mock_global_path_node_description(context: LaunchContext) -> Node:
         Node: The node object that launches the mgp_main node.
     """
     node_name = "mock_global_path"
-    mode = LaunchConfiguration("mode").perform(context)
     test_plan = LaunchConfiguration("test_plan").perform(context)
     # Pass the shared params file plus inline mode/test_plan dict so only
     # the first entry is treated as a parameter file path.
     ros_parameters = [
         LaunchConfiguration("config").perform(context),
-        {"mode": mode, "test_plan": test_plan},
+        {"test_plan": test_plan},
     ]
     ros_arguments: List[SomeSubstitutionsType] = [
         "--log-level",
@@ -236,8 +237,7 @@ def get_navigate_observer_node_description(context: LaunchContext) -> Node:
         Node: The node object that launches the navigate_observer node.
     """
     node_name = "navigate_observer"
-    mode = LaunchConfiguration("mode").perform(context)
-    ros_parameters = [{"mode": mode}, LaunchConfiguration("config").perform(context)]
+    ros_parameters = [LaunchConfiguration("config").perform(context)]
     ros_arguments: List[SomeSubstitutionsType] = [
         "--log-level",
         [f"{node_name}:=", LaunchConfiguration("log_level")],
