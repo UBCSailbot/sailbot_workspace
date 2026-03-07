@@ -7,8 +7,6 @@ import custom_interfaces.msg as ci
 
 
 class TestPlan:
-    _instance = None
-
     """An immutable singleton collection of data defining a local pathfinding test plan.
 
     The choice to make the class immutable is just for simplicity's sake, it gets passed around a
@@ -18,6 +16,8 @@ class TestPlan:
     the test plan from yaml, and then never again for the duration of the test.
 
     """
+    __test__ = False
+    _instance = None
 
     def __new__(cls, file_name: str):
         if cls._instance is None:
