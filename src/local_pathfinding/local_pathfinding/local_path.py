@@ -240,16 +240,33 @@ class LocalPath:
             or dir_change >= WIND_DIRECTION_CHANGE_THRESH_DEG
         )
 
-    def must_change_path(self) -> bool:
-        return (
-            (self._ompl_path is None)
-            or (self.state is None)
-            or (self.path is None)
-            or (self.in_collision_zone())
-            or (self.is_path_expired())
-            or (self._target_lp_wp_index < 1)
-            or (self._target_lp_wp_index >= len(self.path.waypoints))
-        )
+    def must_change_path(self, received_new_global_waypoint: bool) -> tuple[bool, str]:
+        """Check if the path must be changed.
+
+        Returns:
+            tuple[bool, str]: (should_change_path, reason_description)
+        """
+        if received_new_global_waypoint:
+            return True, "Received new global waypoint"
+        if self._ompl_path is None:
+            return True, "OMPL path is None"
+        if self.state is None:
+            return True, "State is None"
+        if self.path is None:
+            return True, "Path is None"
+        if self.in_collision_zone():
+            return True, "Path intersects collision zone"
+        if self.is_path_expired():
+            return True, "Path has expired (TTL exceeded)"
+        if self._target_lp_wp_index < 1:
+            return True, f"Target waypoint index too low: {self._target_lp_wp_index}"
+        if self._target_lp_wp_index >= len(self.path.waypoints):
+            return (
+                True,
+                f"Target waypoint index out of bounds: {self._target_lp_wp_index} >= {len(self.path.waypoints)}", # noqa
+            )
+
+        return False, "Path is valid, no change needed"
 
     def update_if_needed(
         self,
@@ -315,11 +332,9 @@ class LocalPath:
             # TODO: handle this after merging Jai's PR that sets sail to False
             heading_new_path, new_target_lp_wp_index = None, -1
 
-        if self.must_change_path() or received_new_global_waypoint:
-            if received_new_global_waypoint:
-                self._logger.debug("Updating local path because we have a new global waypoint")
-            else:
-                self._logger.debug("old path is None")
+        must_change, reason = self.must_change_path(received_new_global_waypoint)
+        if must_change:
+            self._logger.debug(f"Updating local path: {reason}")
             self.state = new_state
             self._update(new_ompl_path)
             return heading_new_path, new_target_lp_wp_index
@@ -348,8 +363,7 @@ class LocalPath:
         )
 
         old_cost = old_ompl_path.get_remaining_cost(  # type: ignore
-            old_target_lp_wp_index,
-            gps.lat_lon
+            old_target_lp_wp_index, gps.lat_lon
         )
         new_cost = new_ompl_path.get_remaining_cost(new_target_lp_wp_index, gps.lat_lon)
         max_cost = max(old_cost, new_cost, 1)
