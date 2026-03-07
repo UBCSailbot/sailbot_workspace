@@ -91,7 +91,7 @@ SOUTH_PI = math.pi  # +π
 SOUTH_NEG_PI = -math.pi  # -π, same physical direction as +π
 WEST = -math.pi / 2
 NORTHEAST = math.pi / 4
-NORTHWEST = - math.pi / 4
+NORTHWEST = -math.pi / 4
 SOUTHEAST = 3 * math.pi / 4
 SOUTHWEST = -3 * math.pi / 4
 
@@ -104,19 +104,18 @@ cos45 = 1.0 / math.sqrt(2.0)  # cos(π/4) = sin(45) = 1/√2
     "angle_rad,speed,expected_xy",
     [
         # Cardinal directions
-        (NORTH, 10.0, cs.XY(0.0, 10.0)),        # North
-        (EAST,  5.0,  cs.XY(5.0, 0.0)),         # East
-        (SOUTH_PI,  2.0, cs.XY(0.0, -2.0)),     # South (+π)
-        (WEST,  4.0,  cs.XY(-4.0, 0.0)),        # West (-π/2)
+        (NORTH, 10.0, cs.XY(0.0, 10.0)),  # North
+        (EAST, 5.0, cs.XY(5.0, 0.0)),  # East
+        (SOUTH_PI, 2.0, cs.XY(0.0, -2.0)),  # South (+π)
+        (WEST, 4.0, cs.XY(-4.0, 0.0)),  # West (-π/2)
         (SOUTH_NEG_PI, 3.0, cs.XY(0.0, -3.0)),  # South (-π), same as +π
-
         # Diagonals / 45° bearings
         (NORTHEAST, 10.0, cs.XY(10.0 * sin45, 10.0 * cos45)),
         (NORTHWEST, 10.0, cs.XY(-10.0 * sin45, 10.0 * cos45)),
         (SOUTHEAST, 10.0, cs.XY(10.0 * sin45, -10.0 * cos45)),
         (SOUTHWEST, 10.0, cs.XY(-10.0 * sin45, -10.0 * cos45)),
         # Zero speed should always give zero vector regardless of angle
-        (NORTHEAST, 0.0, cs.XY(0.0, 0.0))
+        (NORTHEAST, 0.0, cs.XY(0.0, 0.0)),
     ],
 )
 def test_polar_to_cartesian(angle_rad: float, speed: float, expected_xy: cs.XY):
@@ -124,7 +123,8 @@ def test_polar_to_cartesian(angle_rad: float, speed: float, expected_xy: cs.XY):
 
     # Component-wise check
     assert (result.x, result.y) == pytest.approx(
-        (expected_xy.x, expected_xy.y), rel=1e-6), "incorrect angle(rad) to XY conversion"
+        (expected_xy.x, expected_xy.y), rel=1e-6
+    ), "incorrect angle(rad) to XY conversion"
 
     # Magnitude should match the input speed
     mag = math.hypot(result.x, result.y)
@@ -388,3 +388,22 @@ def test_latlon_polygons_to_xy_polygons_empty_Polygon():
     assert isinstance(result, List)
     assert len(result) == 1
     assert result[0].is_empty
+
+
+@pytest.mark.parametrize(
+    "rot, expected_rps",
+    [
+        (-128, 0.0),
+        (127, math.radians(10 / 60)),
+        (-127, -math.radians(10 / 60)),
+        (0, 0.0),
+        (10, math.radians(((10 / 4.733) ** 2) / 60)),
+        (-10, -math.radians(((10 / 4.733) ** 2) / 60)),
+        (50, math.radians(((50 / 4.733) ** 2) / 60)),
+        (-50, -math.radians(((50 / 4.733) ** 2) / 60)),
+    ],
+)
+def test_rot_to_rad_per_sec(rot: int, expected_rps: float):
+    assert cs.rot_to_rad_per_sec(rot) == pytest.approx(
+        expected_rps
+    ), f"Incorrect ROT conversion for rot={rot}"
