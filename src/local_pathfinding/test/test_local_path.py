@@ -326,6 +326,12 @@ def test_wind_history_fifo_order():
             ],
             Wind(speed_kmph=60.0/lp.WIND_HISTORY_LEN, dir_deg=0.0),
         ),
+        # Same speed, opposite directions
+        (
+            [Wind(speed_kmph=10.0, dir_deg=0.0) for _ in range(lp.WIND_HISTORY_LEN // 2)] +
+            [Wind(speed_kmph=10.0, dir_deg=180.0) for _ in range(lp.WIND_HISTORY_LEN // 2)],
+            Wind(speed_kmph=10.0, dir_deg=90.0),
+        ),
         # Circular mean of Angles, same speed
         (
             [Wind(speed_kmph=0, dir_deg=180) for _ in range(lp.WIND_HISTORY_LEN - 2)] +
