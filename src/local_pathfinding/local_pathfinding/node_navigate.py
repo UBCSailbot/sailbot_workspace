@@ -172,7 +172,16 @@ class Sailbot(Node):
 
         desired_heading = self.get_desired_heading()
         msg = ci.DesiredHeading()
-        msg.heading.heading = desired_heading
+
+        # If desired_heading is None, pathfinding failed - signal boat to not sail
+        if desired_heading is None:
+            self.get_logger().error("Pathfinding failed, signaling boat to stop")
+            msg.heading.heading = 0.0
+            msg.sail = False
+        else:
+            msg.heading.heading = desired_heading
+            msg.sail = True
+
         if self.desired_heading is None or desired_heading != self.desired_heading.heading.heading:
             self.get_logger().info(f"Updating desired heading to: {msg.heading.heading:.2f}")
 
@@ -295,6 +304,8 @@ class Sailbot(Node):
             self.planner,
             self.land_multi_polygon,
         )
+        if new_wp_index is not None:
+            self.local_waypoint_index = new_wp_index
         return desired_heading
 
     @staticmethod
