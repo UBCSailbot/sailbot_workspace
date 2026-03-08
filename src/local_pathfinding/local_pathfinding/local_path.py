@@ -394,11 +394,15 @@ class LocalPath:
         Returns:
             Optional[wcs.Wind]: Average wind object, or None if history is empty.
         """
-        avg_speed = sum(wind.speed_kmph for wind in self.wind_history) / len(self.wind_history)
 
-        # Use circular mean to handle wrap-around
-        sin_sum = sum(math.sin(math.radians(wind.dir_deg)) for wind in self.wind_history)
-        cos_sum = sum(math.cos(math.radians(wind.dir_deg)) for wind in self.wind_history)
+        avg_speed, sin_sum, cos_sum = 0.0, 0.0, 0.0
+
+        for wind in self.wind_history:
+            avg_speed += wind.speed_kmph / len(self.wind_history)
+            # Use circular mean to handle wrap-around
+            sin_sum += math.sin(math.radians(wind.dir_deg))
+            cos_sum += math.cos(math.radians(wind.dir_deg))
+
         avg_direction = math.degrees(math.atan2(sin_sum, cos_sum))
         avg_direction = cs.bound_to_180(avg_direction)
 
