@@ -13,7 +13,8 @@ Launch arguments are added to the run command in the format `<name>:=<value>`.
 | name        | description   | value                                                 |
 | ----------- | ------------- | ----------------------------------------------------- |
 | `log_level` | Logging level (default: `{INFO}`) | A [severity level][severity level] (case insensitive) `{DEBUG, INFO, WARN, ERROR, and FATAL}` |
-|`mode` | Mode (default: `{DEVELOPMENT}`) | `{DEVELOPMENT, PRODUCTION}`|
+|`mode` | Mode (default: `development`) | `{development, production}`|
+|`test_plan` | Test Plan is not required when `mode=production` | any test definition yaml file in `local_pathfinding/test_plans`. (eg. `test_plan:=basic.yaml`) |
 
 ## Some other important commands
 
