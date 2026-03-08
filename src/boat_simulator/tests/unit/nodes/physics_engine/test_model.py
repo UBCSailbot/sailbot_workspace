@@ -2,96 +2,86 @@
 
 import numpy as np
 import pytest
-from numpy.typing import NDArray
 
-from boat_simulator.common.types import Scalar
-from boat_simulator.nodes.physics_engine.kinematics_data import KinematicsData
+from boat_simulator.common.constants import BOAT_PROPERTIES
 from boat_simulator.nodes.physics_engine.model import BoatState
 
 
-class TestBoatState:
-    @pytest.mark.parametrize(
-        "timestep, glo_wind_vel, glo_water_vel, rudder_angle_deg, trim_tab_angle, input_kin_data",
-        [
-            # Generic test
-            (
-                0.1,
-                np.array([-4.0, 5.5, 0.0], dtype=np.float32),
-                np.array([1.0, -2.0, 0.0], dtype=np.float32),
-                0,
-                3,
-                (
-                    np.zeros(3, dtype=np.float32),
-                    [2.0, 3.0, 0.0],
-                    [1.5, 0.1, 0],
-                    [0.2, 0.0, 3.0],
-                    [0, 0.0, 1.1],
-                    [-0.4, 0.0, 0],
-                ),
-            ),
-            # Test for still water and no wind, angular velocity, or angular acceleration
-            (
-                0.005,
-                np.array([0.0, 0.0, 0.0], dtype=np.float32),
-                np.array([0.0, 0.0, 0.0], dtype=np.float32),
-                15,
-                0,
-                (
-                    [120.0, 52.7, 0.0],
-                    [2.0, 3.0, 0.0],
-                    [-1, 2, 0],
-                    [0.2, 0.0, 0.08],
-                    np.zeros(3, dtype=np.float32),
-                    np.zeros(3, dtype=np.float32),
-                ),
-            ),
-            # Test for long timestep, large parameters, negative angles
-            (
-                8,
-                np.array([5.0, 9.2, 0.0], dtype=np.float32),
-                np.array([-4.23, 3.0, 0.0], dtype=np.float32),
-                -370,
-                -2.6,
-                (
-                    [-2000, -4000, 0.0],
-                    [6.0, 12.0, 0.0],
-                    [3, -5, 0],
-                    [0.0, 0.0, 2],
-                    [0.3, 0.0, 3],
-                    [-0.8, 0.0, 1.1],
-                ),
-            ),
-        ],
+@pytest.mark.parametrize(
+    "rel_wind_vel, rel_water_vel, rudder_angle_deg, trim_tab_angle, timestep",
+    [
+        (np.array([1, 2]), np.array([1, 2]), 45, 45, 1),
+        (np.array([1, 2]), np.array([1, 2]), 45, 45, 1),
+        (np.array([4, 5]), np.array([7, 8]), 30, 60, 2),
+        (np.array([10, 20]), np.array([15, 25]), 90, 120, 1),
+        (np.array([0, 1]), np.array([1, 1]), 0, 90, 3),
+        (np.array([-1, -2]), np.array([-1, -2]), 180, 270, 2),
+        (np.array([3.5, 4.5]), np.array([1.5, 2.5]), 15, 75, 4),
+        (np.array([100, 200]), np.array([300, 200]), 0, 45, 2),
+        # cannot use 0 vector, or will error
+    ],
+)
+def test_compute_net_force_torque(
+    rel_wind_vel,
+    rel_water_vel,
+    rudder_angle_deg,
+    trim_tab_angle,
+    timestep,
+):
+
+    current_state = BoatState(timestep)
+    net_force = current_state._BoatState__compute_net_force_and_torque(
+        rel_wind_vel, rel_water_vel, rudder_angle_deg, trim_tab_angle
     )
-    # Tests BoatState.step()
-    # __compute_net_force_and_torque and __kinematics_computation.step are tested elsewhere
-    def test_step_boat_state(
-        self,
-        timestep: Scalar,
-        glo_wind_vel: NDArray,
-        glo_water_vel: NDArray,
-        rudder_angle_deg: Scalar,
-        trim_tab_angle: Scalar,
-        input_kin_data: NDArray,
-    ):
-        test_boat_state = BoatState(timestep)
-        input_kinematics = KinematicsData(input_kin_data)
 
-        relative_wind_vel = glo_wind_vel - input_kinematics.linear_velocity
-        relative_water_vel = glo_water_vel - input_kinematics.linear_velocity
+    app_wind_vel = np.subtract(rel_wind_vel, current_state.relative_velocity[0:2])
+    app_water_vel = np.subtract(rel_water_vel, current_state.relative_velocity[0:2])
 
-        total_force, total_torque = getattr(
-            test_boat_state,
-            "_BoatState__compute_net_force_and_torque"
-            )(
-            relative_wind_vel, relative_water_vel, rudder_angle_deg, trim_tab_angle
-        )
+    wind_angle = np.arctan2(app_wind_vel[1], app_wind_vel[0])
+    trim_tab_angle_rad = np.radians(trim_tab_angle)
+    main_sail_angle = wind_angle - trim_tab_angle_rad
+    rudder_angle_rad = np.radians(rudder_angle_deg)
 
-        actual_step = test_boat_state.step(
-            glo_wind_vel, glo_water_vel, rudder_angle_deg, trim_tab_angle
-        )
-        expected_step = getattr(test_boat_state, "_BoatState__kinematics_computation").step(
-            total_force, total_torque
-        )
+    test_sail_force = current_state._BoatState__sail_force_computation.compute(
+        app_wind_vel, trim_tab_angle
+    )
+    test_rudder_force = current_state._BoatState__rudder_force_computation.compute(
+        app_water_vel, rudder_angle_deg
+    )
 
-        assert actual_step == expected_step
+    hull_drag_force = current_state.relative_velocity[0:2] * BOAT_PROPERTIES.hull_drag_factor
+
+    total_drag_force = test_sail_force[1] + test_rudder_force[1] + hull_drag_force
+    total_force = test_sail_force[0] + test_rudder_force[0] + total_drag_force
+
+    sail_drag = np.linalg.norm(test_sail_force[1], ord=2)
+    sail_lift = np.linalg.norm(test_sail_force[0], ord=2)
+
+    sail_lift_constant = (
+        BOAT_PROPERTIES.mast_position[1]
+        - (BOAT_PROPERTIES.sail_dist * np.cos(main_sail_angle))
+        - BOAT_PROPERTIES.centre_of_gravity[1]
+    )
+
+    sail_drag_constant = BOAT_PROPERTIES.sail_dist * np.sin(main_sail_angle)
+
+    sail_torque = np.add(sail_drag * sail_drag_constant, sail_lift * sail_lift_constant)
+
+    rudder_drag = np.linalg.norm(test_rudder_force[1], ord=2)
+    rudder_lift = np.linalg.norm(test_rudder_force[0], ord=2)
+
+    rudder_drag_constant = BOAT_PROPERTIES.rudder_dist * np.sin(rudder_angle_rad)
+
+    rudder_lift_constant = (
+        BOAT_PROPERTIES.rudder_dist * np.cos(rudder_angle_rad)
+        + BOAT_PROPERTIES.centre_of_gravity[1]
+    )
+
+    rudder_torque = np.add(rudder_lift * rudder_lift_constant, rudder_drag * rudder_drag_constant)
+
+    total_torque = np.add(sail_torque, rudder_torque)
+
+    final_torque = np.array([0, 0, total_torque])
+
+    assert np.allclose(total_force, net_force[0], 0.5)  # checking force
+    assert np.allclose(final_torque, net_force[1], 0.5)  # checking torque
