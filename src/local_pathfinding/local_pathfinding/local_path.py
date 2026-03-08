@@ -109,7 +109,8 @@ class LocalPath:
         wind_history (List[wcs.Wind]): History of wind sensor readings
             (Queue with max length WIND_HISTORY_LEN).
         wind_average (Optional[wcs.Wind]): Average of the wind history, used for path planning.
-            Updated every time a new wind sensor reading is added to wind_history.
+            Speed is in kmph, direction in degrees. Updated every time a new wind sensor reading is
+            added to wind_history.
     """
 
     def __init__(self, parent_logger: RcutilsLogger):
