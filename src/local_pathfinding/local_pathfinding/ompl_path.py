@@ -213,20 +213,19 @@ class OMPLPath:
 
         accumulated via combineCosts.
 
-                In this codebase, target_lp_wp_index is the 0-based array index of the **next
-                local-path waypoint the boat is currently heading toward**. This starts at 1 because
-                path index 0 is the OMPL start state near the boat. The remaining cost is:
-
-                - the *partial* motion cost on the segment from waypoint
-                    target_lp_wp_index - 1 to target_lp_wp_index,
-                    based on how far the boat is from the next waypoint, plus
-        - the *full* motion costs of all subsequent segments to the goal, plus
-        - the terminal cost at the final state.
+        In this codebase, target_lp_wp_index is the 0-based array index of the **next
+        local-path waypoint the boat is currently heading toward**. This starts at 1 because
+        path index 0 is the OMPL start state near the boat. The remaining cost is:
+            - the *partial* motion cost on the segment from waypoint
+                target_lp_wp_index - 1 to target_lp_wp_index,
+                based on how far the boat is from the next waypoint, plus
+            - the *full* motion costs of all subsequent segments to the goal, plus
+            - the terminal cost at the final state.
 
         Args:
-                        target_lp_wp_index (int): 0-based array index of the next local-path waypoint the
-                                boat is currently heading toward. This should be in
-                                [1, number_of_waypoints - 1].
+            target_lp_wp_index (int): 0-based array index of the next local-path waypoint the
+                boat is currently heading toward. This should be in
+                [1, number_of_waypoints - 1].
             boat_lat_lon (ci.HelperLatLon): The boat's current latitude/longitude.
 
         Returns:
