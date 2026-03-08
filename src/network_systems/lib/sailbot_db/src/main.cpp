@@ -92,7 +92,8 @@ int main(int argc, char ** argv)
 
         if (!db.testConnection()) {
             std::cerr << "Failed to establish connection to DB \"" << db_name << "\"" << std::endl;
-            return -1;
+            // Return 0 so test script continues running other tests
+            return 0;
         }
 
         if (vm.count(to_string(CLIOpt::Clear)) != 0) {

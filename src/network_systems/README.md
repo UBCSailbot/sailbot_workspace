@@ -54,7 +54,7 @@ For example:
 ## Testing
 
 Unit tests specific to Network Systems is done using [GoogleTest](https://github.com/google/googletest). Unit tests
-are defined per module. For example, under [projects/example/test/](projects/example/test/test_cached_fib.cpp).
+are defined per module.
 
 ### Run All Tests
 
@@ -68,7 +68,7 @@ unnecessary.
 ### Run and Debug Specific Tests
 
 This is the preferred way to run and debug tests. When you open a test source file like
-[the example's](projects/example/test/test_cached_fib.cpp), there will be green arrows next to each `TEST_F` macro.
+[the example's](projects/can_transceiver/test/test_can_transceiver.cpp), there will be green arrows next to each `TEST_F` macro.
 Clicking a double green arrow runs a test suite, while clicking single green arrow runs one unit test. Right clicking
 either arrow will open a prompt with a debug test option. When running a test via the debug option, we can set
 breakpoints and step through our code line by line to resolve issues.

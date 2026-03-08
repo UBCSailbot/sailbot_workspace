@@ -3,33 +3,6 @@
         {
             "path": "."
         },
-        {
-            "path": "src/boat_simulator"
-        },
-        {
-            "path": "src/controller"
-        },
-        {
-            "path": "src/custom_interfaces"
-        },
-        {
-            "path": "src/diagnostics"
-        },
-        {
-            "path": "src/global_launch"
-        },
-        {
-            "path": "src/integration_tests"
-        },
-        {
-            "path": "src/local_pathfinding"
-        },
-        {
-            "path": "src/network_systems"
-        },
-        {
-            "path": "src/website"
-        },
     ],
     "settings": {
         // general

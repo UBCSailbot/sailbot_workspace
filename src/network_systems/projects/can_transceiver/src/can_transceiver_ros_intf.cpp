@@ -77,14 +77,14 @@ public:
             wind_sensors_pub_ = this->create_publisher<msg::WindSensors>(ros_topics::WIND_SENSORS, QUEUE_SIZE);
             filtered_wind_sensor_pub_ =
               this->create_publisher<msg::WindSensor>(ros_topics::FILTERED_WIND_SENSOR, QUEUE_SIZE);
-            generic_sensors_pub_ = this->create_publisher<msg::GenericSensors>(ros_topics::DATA_SENSORS, QUEUE_SIZE);
-            rudder_pub_          = this->create_publisher<msg::HelperHeading>(ros_topics::RUDDER, QUEUE_SIZE);
-            temp_sensors_pub_    = this->create_publisher<msg::TempSensors>(ros_topics::TEMP_SENSORS, QUEUE_SIZE);
-            ph_sensors_pub_      = this->create_publisher<msg::PhSensors>(ros_topics::PH_SENSORS, QUEUE_SIZE);
+            // generic_sensors_pub_ = this->create_publisher<msg::GenericSensors>(ros_topics::DATA_SENSORS, QUEUE_SIZE);
+            rudder_pub_       = this->create_publisher<msg::HelperHeading>(ros_topics::RUDDER, QUEUE_SIZE);
+            temp_sensors_pub_ = this->create_publisher<msg::TempSensors>(ros_topics::TEMP_SENSORS, QUEUE_SIZE);
+            ph_sensors_pub_   = this->create_publisher<msg::PhSensors>(ros_topics::PH_SENSORS, QUEUE_SIZE);
             salinity_sensors_pub_ =
               this->create_publisher<msg::SalinitySensors>(ros_topics::SALINITY_SENSORS, QUEUE_SIZE);
-            pressure_sensors_pub_ =
-              this->create_publisher<msg::PressureSensors>(ros_topics::PRESSURE_SENSORS, QUEUE_SIZE);
+            // pressure_sensors_pub_ =
+            //   this->create_publisher<msg::PressureSensors>(ros_topics::PRESSURE_SENSORS, QUEUE_SIZE);
 
             std::vector<std::pair<CanId, std::function<void(const CanFrame &)>>> canCbs = {
               std::make_pair(CanId::POWER_OFF, std::function<void(const CanFrame &)>([this](const CanFrame & frame) {
@@ -142,7 +142,7 @@ public:
                   this->create_publisher<msg::CanSimToBoatSim>(ros_topics::BOAT_SIM_INPUT, QUEUE_SIZE);
 
                 timer_ = this->create_wall_timer(TIMER_INTERVAL, [this]() {
-                    //mockBatteriesCb();
+                    mockBatteriesCb();
                     publishBoatSimInput(boat_sim_input_msg_);
                     // Add any other necessary looping callbacks
                 });
@@ -368,9 +368,8 @@ private:
             wind_sensor_msg                   = wind_sensor.toRosMsg();
             wind_sensors_pub_->publish(wind_sensors_);
 
-            // NUM_WIND_SENSORS is a placeholder,
-            // replace with number of data points wanted in the moving average
-            double k = NUM_WIND_SENSORS;
+            // Arbitrary number of data points for moving average
+            double k = 20;  //NOLINT(readability-magic-numbers)
             // convert deg to rad
             double angle = wind_sensor_msg.direction * (M_PI / 180.0);  // NOLINT(readability-magic-numbers)
             double y     = wind_sensor_msg.speed.speed * sin(angle);
@@ -682,7 +681,40 @@ private:
      *
      * @param mock_wind_sensors mock_wind_sensors received from the Mock Wind Sensors topic
      */
-    void subMockWindSensorsCb(msg::WindSensors mock_wind_sensors) { wind_sensors_ = mock_wind_sensors; }
+    void subMockWindSensorsCb(const msg::WindSensors & mock_wind_sensors)
+    {
+        for (size_t i = 0; i < CAN_FP::WindSensor::WIND_SENSOR_IDS.size(); i++) {
+            msg::WindSensor & wind_sensor_msg = wind_sensors_.wind_sensors[i];
+            wind_sensor_msg                   = mock_wind_sensors.wind_sensors[i];
+
+            // Arbitrary number of data points for moving average
+            double k = 20;  //NOLINT(readability-magic-numbers)
+            // convert deg to rad
+            double angle = wind_sensor_msg.direction * (M_PI / 180.0);  // NOLINT(readability-magic-numbers)
+            double y     = wind_sensor_msg.speed.speed * sin(angle);
+            double x     = wind_sensor_msg.speed.speed * cos(angle);
+
+            vec msg_vec;
+            msg_vec.x = x;
+            msg_vec.y = y;
+            wind_sensor_readings.push(msg_vec);
+
+            if (wind_sensor_readings.size() <= static_cast<size_t>(k)) {
+                // need to fill the queue, so compute filtered data as cumulative average
+                k = static_cast<double>(wind_sensor_readings.size());
+
+                curr_sma.x = ((curr_sma.x * (k - 1)) + x) / k;
+                curr_sma.y = ((curr_sma.y * (k - 1)) + y) / k;
+            } else {
+                // queue is full, compute filtered data as simple moving average
+                vec & oldest_reading = wind_sensor_readings.front();
+                curr_sma.x           = curr_sma.x + ((x - oldest_reading.x) / k);
+                curr_sma.y           = curr_sma.y + ((y - oldest_reading.y) / k);
+                wind_sensor_readings.pop();
+            }
+        }
+        publishFilteredWindSensor();
+    }
 
     /**
      * @brief A mock batteries callback that just sends dummy (but valid) battery values to the simulation CAN intf
