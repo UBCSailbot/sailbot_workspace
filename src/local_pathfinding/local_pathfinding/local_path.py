@@ -394,6 +394,8 @@ class LocalPath:
         Returns:
             Optional[wcs.Wind]: Average wind object, or None if history is empty.
         """
+        if len(self.wind_history) == 0:
+            return None
 
         avg_speed, sin_sum, cos_sum = 0.0, 0.0, 0.0
 
