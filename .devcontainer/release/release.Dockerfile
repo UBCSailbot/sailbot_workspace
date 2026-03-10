@@ -80,6 +80,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         python3-rosdep \
         iproute2 \
         can-utils \
+        vim \
+        make \
     && apt-get autoremove -y \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/* \
@@ -127,6 +129,8 @@ RUN chmod +x /sbin/update-bashrc \
     && sync \
     && /bin/bash -c /sbin/update-bashrc \
     && rm /sbin/update-bashrc
+# add ros user to dialout permission group (for satellite access)
+RUN sudo usermod -aG dialout ${USERNAME}
 
 ARG HOME=/home/$USERNAME
 # persist ROS logs
