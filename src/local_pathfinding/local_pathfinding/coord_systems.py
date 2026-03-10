@@ -247,21 +247,33 @@ def latlon_list_to_xy_list(reference_latlon, lat_lon_list: List[ci.HelperLatLon]
 
 def rot_to_rad_per_sec(rot: int) -> float:
     """
-    Convert AIS ROT (rate of turn) int8 value into radians per second.
+    Convert an AIS rate-of-turn (ROT) value into radians per second via the formula:
 
-    Returns:
-        float: rate of turn in radians per second.
+        ROT_sensor = (ROT_ais / 4.733)²
+
+    Specification: https://documentation.spire.com/ais-fundamentals/understanding-ais-performance-in-high-traffic-zones/
+
+    Special values (not decoded via formula):
+        +127 : turning right at > 10 °/min; Turn Indicator unavailable
+        -127 : turning left  at > 10 °/min; Turn Indicator unavailable
+        -128 : no turning information available
+
+    Raises:
+        ValueError: If rot is outside the valid int8 range [-128, 127].
     """
+
+    if not (-128 <= rot <= 127):
+        raise ValueError(f"rot must be a valid int8 value in [-128, 127], got {rot}")
 
     if rot == -128:
         return 0.0
 
+    # Return magnitude of inf if turn inidicator unavailable
     if abs(rot) == 127:
-        rot_dpm = 10.0
-    else:
-        rot_dpm = (abs(rot) / 4.733) ** 2
+        return math.copysign(math.inf, rot)
 
-    if rot < 0:
-        rot_dpm *= -1
+    # Capture sign before squaring, since (x)² == (-x)²
+    sign = math.copysign(1.0, rot)
+    rot_dpm = (abs(rot) / 4.733) ** 2
 
-    return math.radians(rot_dpm / 60.0)
+    return math.radians(sign * rot_dpm / 60.0)
