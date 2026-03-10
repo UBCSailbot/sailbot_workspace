@@ -57,17 +57,17 @@
   align-items: center;
   justify-content: center;
   height: 38px !important;
-  background: #0d0d0d !important;
-  border-bottom: 1px solid #404040 !important;
+  background: var(--accent-color-1) !important;
+  border-bottom: 1px solid var(--accent-color-3) !important;
 }
 
 .calendar :global(.react-datepicker__current-month),
 .calendar :global(.react-datepicker__day-name) {
-  color: white !important;
+  color: var(--accent-color-2) !important;
 }
 
 .calendar :global(.react-datepicker__day) {
-  color: white !important;
+  color: var(--accent-color-2) !important;
 }
 
 .calendar :global(.react-datepicker__day:hover) {
@@ -112,5 +112,5 @@
 
 .reset {
   cursor: pointer;
-  color: white;
+  color: var(--accent-color-2);
 }
