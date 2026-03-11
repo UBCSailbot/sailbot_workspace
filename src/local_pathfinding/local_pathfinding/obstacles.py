@@ -207,7 +207,7 @@ class Boat(Obstacle):
         self.ais_ship = ais_ship
         self.width = cs.meters_to_km(self.ais_ship.width.dimension)
         self.length = cs.meters_to_km(self.ais_ship.length.dimension)
-        self._raw_collision_zone = None
+        self._raw_collision_zone = Point(0, 0).buffer(0)
         self.update_collision_zone()
 
     def update_sailbot_data(
