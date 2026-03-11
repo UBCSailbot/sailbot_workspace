@@ -1,10 +1,10 @@
 import math
 from typing import List
 
-import custom_interfaces.msg as ci
 import pytest
 from shapely.geometry import MultiPolygon, Point, Polygon, box
 
+import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
 from local_pathfinding.coord_systems import XY
 
