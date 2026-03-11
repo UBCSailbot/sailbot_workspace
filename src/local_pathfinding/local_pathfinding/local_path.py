@@ -3,13 +3,13 @@
 import math
 from typing import List, Optional
 
-import custom_interfaces.msg as ci
 from rclpy.impl.rcutils_logger import RcutilsLogger
 from shapely.geometry import LineString, MultiPolygon
 
+import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
-import local_pathfinding.wind_coord_systems as wcs
 import local_pathfinding.obstacles as ob
+import local_pathfinding.wind_coord_systems as wcs
 from local_pathfinding.ompl_path import OMPLPath
 
 WIND_SPEED_CHANGE_THRESH_PROP = 0.3
@@ -212,8 +212,10 @@ class LocalPath:
         speed_change_ratio = abs(prev_tw_speed_kmph - current_tw_speed_kmph) / prev_tw_speed_kmph
         dir_change = abs(cs.bound_to_180(current_tw_dir_deg - prev_tw_dir_deg))
 
-        return (speed_change_ratio >= WIND_SPEED_CHANGE_THRESH_PROP or
-                dir_change >= WIND_DIRECTION_CHANGE_THRESH_DEG)
+        return (
+            speed_change_ratio >= WIND_SPEED_CHANGE_THRESH_PROP
+            or dir_change >= WIND_DIRECTION_CHANGE_THRESH_DEG
+        )
 
     def update_if_needed(
         self,
