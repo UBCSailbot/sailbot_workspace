@@ -402,8 +402,8 @@ std::string GPS::debugStr() const
        << "Latitude (decimal degrees): " << lat_ << "\n"
        << "Longitude (decimal degrees): " << lon_ << "\n"
        << "Seconds (sec): " << sec_ << "\n"
-       << "Minutes (min): " << min_ << "\n"
-       << "Hours (hr): " << hour_ << "\n"
+       << "Minutes (min): " << static_cast<int>(min_) << "\n"
+       << "Hours (hr): " << static_cast<int>(hour_) << "\n"
        << "Speed (km/hr): " << speed_ << "\n";
     return ss.str();
 }
@@ -572,13 +572,13 @@ std::string AISShips::debugStr() const
 {
     std::stringstream ss;
     ss << BaseFrame::debugStr() << "\n"
-       << "Ship " << idx_ << ":\n"
+       << "Ship " << static_cast<int>(idx_) << ":\n"
        << "ID: " << ship_id_ << "\n"
        << "Latitude (decimal degrees): " << lat_ << "\n"
        << "Longitude (decimal degrees): " << lon_ << "\n"
        << "Heading (degrees): " << heading_ << "\n"
        << "Speed (km/hr): " << speed_ << "\n"
-       << "ROT (degree/min): " << rot_ << "\n"
+       << "ROT (degree/min): " << static_cast<int>(rot_) << "\n"
        << "Width (m): " << width_ << "\n"
        << "Length (m): " << length_ << "\n"
        << "\n";
@@ -673,7 +673,7 @@ std::string PwrMode::debugStr() const
 {
     std::stringstream ss;
     ss << BaseFrame::debugStr() << "\n"
-       << "Power mode: " << mode_;
+       << "Power mode: " << static_cast<int>(mode_);
     return ss.str();
 }
 
