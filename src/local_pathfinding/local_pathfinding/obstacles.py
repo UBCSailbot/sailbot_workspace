@@ -252,9 +252,8 @@ class Boat(Obstacle):
 
         # --- Case 1: No collision projected ---
         if projected_distance == PROJ_DISTANCE_NO_COLLISION:
-            print("No collision detected" * 7)
             # If no collision detected, create small collision zone around the boat
-            radius = cs.km_to_meters(max(self.width, self.length)) * RADIUS_MULTIPLIER
+            radius = cs.km_to_meters(max(self.width, self.length)) * speed_kmps
             boat_collision_zone = Point(-self.width / 2, -self.length / 2).buffer(
                 radius, resolution=16
             )

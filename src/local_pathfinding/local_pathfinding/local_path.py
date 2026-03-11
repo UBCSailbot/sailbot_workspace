@@ -3,10 +3,10 @@
 import math
 from typing import List, Optional
 
-import custom_interfaces.msg as ci
 from rclpy.impl.rcutils_logger import RcutilsLogger
 from shapely.geometry import LineString, MultiPolygon
 
+import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.obstacles as ob
 import local_pathfinding.wind_coord_systems as wcs
@@ -166,7 +166,6 @@ class LocalPath:
         Returns:
             boolean: True if the path intersects a collision zone, False otherwise.
         """
-        print(cs.xy_to_latlon(reference_latlon, cs.XY(15, 1)))
         xy_path = list(
             map(lambda lat_lon: (cs.latlon_to_xy(reference_latlon, lat_lon)), path.waypoints)
         )

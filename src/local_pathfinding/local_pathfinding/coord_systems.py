@@ -252,7 +252,8 @@ def rot_to_rad_per_sec(rot: int) -> float:
 
         ROT_sensor = (ROT_ais / 4.733)²
 
-    Specification: https://documentation.spire.com/ais-fundamentals/understanding-ais-performance-in-high-traffic-zones/
+    Specification:
+    https://documentation.spire.com/ais-fundamentals/understanding-ais-performance-in-high-traffic-zones/
 
     Special values (not decoded via formula):
         +127 : turning right at > 10 °/min; Turn Indicator unavailable — returns minimum bound
