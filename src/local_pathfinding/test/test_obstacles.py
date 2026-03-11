@@ -3,6 +3,9 @@ from typing import Any
 
 import numpy as np
 import pytest
+from shapely.geometry import MultiPolygon, Point, Polygon, box
+
+import local_pathfinding.coord_systems as cs
 from custom_interfaces.msg import (
     HelperAISShip,
     HelperDimension,
@@ -11,9 +14,6 @@ from custom_interfaces.msg import (
     HelperROT,
     HelperSpeed,
 )
-from shapely.geometry import MultiPolygon, Point, Polygon, box
-
-import local_pathfinding.coord_systems as cs
 from local_pathfinding.obstacles import Boat, Land, Obstacle
 
 
@@ -568,7 +568,7 @@ def test_straight_line_collision_zone_geometry(
 
 # Test collision zone positioning for turning motion
 @pytest.mark.parametrize(
-    "reference_point,sailbot_position,ais_ship,sailbot_speed",
+    "reference_point,sailbot_position,ais_ship,sailbot_speed,time_step",
     [
         (
             HelperLatLon(latitude=52.0, longitude=-136.0),
@@ -583,6 +583,7 @@ def test_straight_line_collision_zone_geometry(
                 rot=HelperROT(rot=30),  # turning right
             ),
             15.0,
+            10.0,
         ),
     ],
 )
@@ -591,6 +592,7 @@ def test_turning_collision_zone_geometry(
     sailbot_position: HelperLatLon,
     ais_ship: HelperAISShip,
     sailbot_speed: float,
+    time_step: float,
 ):
     boat = Boat(reference_point, sailbot_position, sailbot_speed, ais_ship)
 
@@ -607,8 +609,8 @@ def test_turning_collision_zone_geometry(
 
         rot = ais_ship.rot.rot
         rot_rps = cs.rot_to_rad_per_sec(rot)
-        dt = 5.0
-        delta_heading = rot_rps * dt
+        time_step = 10.0
+        delta_heading = rot_rps * time_step
         future_cog_rad = cog_rad + delta_heading
 
         # Compute future boat position
@@ -616,11 +618,13 @@ def test_turning_collision_zone_geometry(
         R = speed_kmps / abs(rot_rps)
         x, y = cs.latlon_to_xy(reference_point, ais_ship.lat_lon)
 
-        cx = x - R * np.sin(cog_rad) * np.sign(rot_rps)
-        cy = y + R * np.cos(cog_rad) * np.sign(rot_rps)
+        cx = x + R * np.cos(cog_rad) * np.sign(rot_rps)
+        cy = y - R * np.sin(cog_rad) * np.sign(rot_rps)
 
-        future_x = cx + R * np.sin(cog_rad + delta_heading)
-        future_y = cy + R * np.cos(cog_rad + delta_heading)
+        dx = x - cx
+        dy = y - cy
+        future_x = cx + dx * np.cos(delta_heading) - dy * np.sin(delta_heading)
+        future_y = cy + dx * np.sin(delta_heading) + dy * np.cos(delta_heading)
 
         future_projected_distance = boat._calculate_projected_distance(
             future_cog_rad, position_override=(future_x, future_y)
