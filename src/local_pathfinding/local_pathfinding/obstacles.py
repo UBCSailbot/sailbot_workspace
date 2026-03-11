@@ -276,9 +276,8 @@ class Boat(Obstacle):
                     [self.width / 2, -self.length / 2],
                 ]
             )
-            raw = self._translate_collision_zone(boat_collision_zone)
-            self._raw_collision_zone = raw
-            self.collision_zone = raw.buffer(BOAT_BUFFER, join_style=2)
+            self._raw_collision_zone = self._translate_collision_zone(boat_collision_zone)
+            self.collision_zone = self._raw_collision_zone.buffer(BOAT_BUFFER, join_style=2)
             prepared.prep(self.collision_zone)
 
         # --- Case 3: Turning motion ---
