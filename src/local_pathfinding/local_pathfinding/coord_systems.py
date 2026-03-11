@@ -3,9 +3,10 @@
 import math
 from typing import List, NamedTuple
 
-import custom_interfaces.msg as ci
 from pyproj import Geod
 from shapely.geometry import Point, Polygon
+
+import custom_interfaces.msg as ci
 
 GEODESIC = Geod(ellps="WGS84")
 PI = math.pi
@@ -254,9 +255,9 @@ def rot_to_rad_per_sec(rot: int) -> float:
     Specification: https://documentation.spire.com/ais-fundamentals/understanding-ais-performance-in-high-traffic-zones/
 
     Special values (not decoded via formula):
-        +127 : turning right at > 10 °/min; Turn Indicator unavailable
-        -127 : turning left  at > 10 °/min; Turn Indicator unavailable
-        -128 : no turning information available
+        +127 : turning right at > 10 °/min; Turn Indicator unavailable — returns minimum bound
+        -127 : turning left  at > 10 °/min; Turn Indicator unavailable — returns minimum bound
+        -128 : no turning information available — returns 0.0
 
     Raises:
         ValueError: If rot is outside the valid int8 range [-128, 127].
@@ -268,9 +269,10 @@ def rot_to_rad_per_sec(rot: int) -> float:
     if rot == -128:
         return 0.0
 
-    # Return magnitude of inf if turn inidicator unavailable
+    # Turning indicator unavailable: true rate is unknown but guaranteed > 10 °/min.
+    # Return the minimum known bound with correct sign.
     if abs(rot) == 127:
-        return math.copysign(math.inf, rot)
+        return math.copysign(math.radians(10.0 / 60.0), rot)
 
     # Capture sign before squaring, since (x)² == (-x)²
     sign = math.copysign(1.0, rot)
