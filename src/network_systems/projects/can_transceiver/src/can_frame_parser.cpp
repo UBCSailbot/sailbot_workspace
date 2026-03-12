@@ -572,7 +572,7 @@ std::string AISShips::debugStr() const
 {
     std::stringstream ss;
     ss << BaseFrame::debugStr() << "\n"
-       << "Ship " << static_cast<int>(idx_) << ":\n"
+       << "Ship: " << static_cast<int>(idx_) << "\n"
        << "ID: " << ship_id_ << "\n"
        << "Latitude (decimal degrees): " << lat_ << "\n"
        << "Longitude (decimal degrees): " << lon_ << "\n"
