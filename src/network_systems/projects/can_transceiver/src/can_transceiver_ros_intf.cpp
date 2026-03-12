@@ -272,9 +272,14 @@ private:
                 ais_ships_holder_.resize(total_ais_ships);  // temporary holder vector for AIS ships
             }
 
-            ais_ships_holder_[ais_ship.getShipIndex()] = ais_ship.toRosMsg();  //maybe change to pushback later
+            int ship_idx = ais_ship.getShipIndex();
+            if (ship_idx >= ais_ships_holder_.size() || ship_idx < 0 || ship_idx >= total_ais_ships) {
+                throw std::out_of_range("Received AIS ship index is out of bounds!");
+            }
 
-            if (ais_ships_holder_.size() == static_cast<size_t>(total_ais_ships)) {
+            ais_ships_holder_[ship_idx] = ais_ship.toRosMsg();
+
+            if (ship_idx == static_cast<size_t>(total_ais_ships) - 1) {
                 ais_ships_.ships = ais_ships_holder_;
                 ais_pub_->publish(ais_ships_);
                 ais_ships_holder_.clear();  // reset holder vector

@@ -639,6 +639,11 @@ void AISShips::checkBounds() const
         std::string err_msg = err.value();
         throw std::out_of_range("Length is out of bounds!\n" + debugStr() + "\n" + err_msg);
     }
+    err = num_ships_ <= 0 ? std::optional<std::string>("Number of ships must be positive!") : std::nullopt;
+    if (err) {
+        std::string err_msg = err.value();
+        throw std::out_of_range("Number of ships must be greater than 0!\n" + debugStr() + "\n" + err_msg);
+    }
 }
 //AISShips private END
 //AISShips END
