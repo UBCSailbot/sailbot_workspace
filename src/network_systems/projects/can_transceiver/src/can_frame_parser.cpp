@@ -488,7 +488,7 @@ AISShips::AISShips(const CanFrame & cf) : AISShips(static_cast<CanId>(cf.can_id)
 
 AISShips::AISShips(msg::HelperAISShip ros_ship, CanId id)
 : BaseFrame(id, CAN_BYTE_DLEN_),
-  num_ships_(0),
+  num_ships_(1),
   lat_(ros_ship.lat_lon.latitude),
   lon_(ros_ship.lat_lon.longitude),
   speed_(ros_ship.sog.speed),
