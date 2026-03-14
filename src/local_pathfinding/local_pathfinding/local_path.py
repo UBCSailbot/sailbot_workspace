@@ -118,8 +118,8 @@ class LocalPath:
         self._ompl_path: Optional[OMPLPath] = None
         self.path: Optional[ci.Path] = None
         self.state: Optional[LocalPathState] = None
-        self.wind_history: deque = deque(maxlen=WIND_HISTORY_LEN)
-        self.wind_average: Optional[wcs.Wind] = None
+        self.aw_history: deque = deque(maxlen=WIND_HISTORY_LEN)
+        self.aw_avg: Optional[wcs.Wind] = None
 
     @staticmethod
     def calculate_desired_heading_and_wp_index(
@@ -372,9 +372,9 @@ class LocalPath:
         self._ompl_path = ompl_path
         self.path = self._ompl_path.get_path()
 
-    def update_wind_history(self, current_wind: wcs.Wind):
-        """Updates wind history and recalculates the average wind. The wind values are all
-        apparent wind.
+    def update_aw_history(self, current_wind: wcs.Wind):
+        """Updates apparent wind history and recalculates the average wind. The wind values are
+        all apparent wind.
 
         Maintains a history of up to WIND_HISTORY_LEN wind readings. When the history
         exceeds the max length, the oldest reading is removed.
@@ -383,11 +383,11 @@ class LocalPath:
             current_wind (wcs.Wind): Current wind speed (kmph) and direction (deg)
         """
 
-        self.wind_history.append(current_wind)
+        self.aw_history.append(current_wind)
 
         # Recalculate average wind from history once minimum wind readings reached
-        if len(self.wind_history) == WIND_HISTORY_LEN:
-            self.wind_average = self._calculate_average_wind()
+        if len(self.aw_history) == WIND_HISTORY_LEN:
+            self.aw_avg = self._calculate_average_wind()
 
     def _calculate_average_wind(self) -> Optional[wcs.Wind]:
         """Calculates the average apparent wind from the wind history once the deque is full.
@@ -395,13 +395,13 @@ class LocalPath:
         Returns:
             Optional[wcs.Wind]: Average wind object, or None if history is empty.
         """
-        if len(self.wind_history) == 0:
+        if len(self.aw_history) == 0:
             return None
 
         avg_speed, sin_sum, cos_sum = 0.0, 0.0, 0.0
 
-        for wind in self.wind_history:
-            avg_speed += wind.speed_kmph / len(self.wind_history)
+        for wind in self.aw_history:
+            avg_speed += wind.speed_kmph / len(self.aw_history)
             # Use circular mean to handle wrap-around
             sin_sum += math.sin(math.radians(wind.dir_deg))
             cos_sum += math.cos(math.radians(wind.dir_deg))

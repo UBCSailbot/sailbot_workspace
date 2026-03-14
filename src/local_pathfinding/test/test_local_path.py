@@ -272,17 +272,17 @@ def test_is_significant_wind_change(new_tw_data, previous_tw_data, result):
         ),
     ],
 )
-def test_update_wind_history_length(wind_readings, expected_length):
+def test_update_aw_history_length(wind_readings, expected_length):
     """Test that wind history respects max length constraint."""
-    PATH.wind_history.clear()
+    PATH.aw_history.clear()
 
     for wind in wind_readings:
         PATH.update_wind_history(wind)
 
-    assert len(PATH.wind_history) == expected_length
+    assert len(PATH.aw_history) == expected_length
 
 
-def test_wind_history_fifo_order():
+def test_aw_history_fifo_order():
     """Test that oldest wind readings are removed first."""
     # Clear history for this test
     local_path = lp.LocalPath(parent_logger=RcutilsLogger())
@@ -343,14 +343,14 @@ def test_wind_history_fifo_order():
         ),
     ],
 )
-def test_calculate_average_wind(wind_readings, result):
+def test_calculate_aw_avg(wind_readings, result):
     """Test average wind calculation with basic cases."""
     local_path = lp.LocalPath(parent_logger=RcutilsLogger())
 
     for wind in wind_readings:
         local_path.update_wind_history(wind)
 
-    avg = local_path.wind_average
+    avg = local_path.aw_avg
     if result is None:
         assert avg is None
     else:
@@ -358,7 +358,7 @@ def test_calculate_average_wind(wind_readings, result):
         assert avg.dir_deg == result.dir_deg
 
 
-def test_wind_average_not_set_before_full_history():
+def test_aw_avg_not_set_before_full_history():
     """Test that wind_average isn't set until we have WIND_HISTORY_LEN wind readings."""
     local_path = lp.LocalPath(parent_logger=RcutilsLogger())
 
@@ -366,10 +366,10 @@ def test_wind_average_not_set_before_full_history():
         wind = Wind(speed_kmph=10.0, dir_deg=45.0)
         local_path.update_wind_history(wind)
 
-    assert local_path.wind_average is None
+    assert local_path.aw_avg is None
 
 
-def test_wind_average_updates_with_new_readings():
+def test_aw_avg_updates_with_new_readings():
     """Test that wind_average updates when new readings are added."""
     local_path = lp.LocalPath(parent_logger=RcutilsLogger())
 
@@ -378,12 +378,12 @@ def test_wind_average_updates_with_new_readings():
         wind = Wind(speed_kmph=10.0, dir_deg=45.0)
         local_path.update_wind_history(wind)
 
-    first_avg = local_path.wind_average
+    first_avg = local_path.aw_avg
 
     # Add a different wind reading (oldest will be removed from deque)
     new_wind = Wind(speed_kmph=30.0, dir_deg=45.0)
     local_path.update_wind_history(new_wind)
-    second_avg = local_path.wind_average
+    second_avg = local_path.aw_avg
 
     # Average should increase since we're replacing a 10.0 with a 30.0
     assert second_avg is not None
