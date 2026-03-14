@@ -277,7 +277,7 @@ def test_update_aw_history_length(wind_readings, expected_length):
     PATH.aw_history.clear()
 
     for wind in wind_readings:
-        PATH.update_wind_history(wind)
+        PATH.update_aw_history(wind)
 
     assert len(PATH.aw_history) == expected_length
 
@@ -289,13 +289,13 @@ def test_aw_history_fifo_order():
 
     for i in range(lp.WIND_HISTORY_LEN + 3):
         wind = Wind(speed_kmph=10.0 + i, dir_deg=45.0 + i)
-        local_path.update_wind_history(wind)
+        local_path.update_aw_history(wind)
 
     # Should contain the last WIND_HISTORY_LEN readings
     # First reading should have speed 10.0 + 3.0 (index 3 of original sequence)
-    assert local_path.wind_history[0].speed_kmph == 13.0
+    assert local_path.aw_history[0].speed_kmph == 13.0
     # Last reading should have speed 10.0 + 2.0 + WIND_HISTORY_LEN
-    assert local_path.wind_history[-1].speed_kmph == 12.0 + lp.WIND_HISTORY_LEN
+    assert local_path.aw_history[-1].speed_kmph == 12.0 + lp.WIND_HISTORY_LEN
 
 
 @pytest.mark.parametrize(
@@ -348,7 +348,7 @@ def test_calculate_aw_avg(wind_readings, result):
     local_path = lp.LocalPath(parent_logger=RcutilsLogger())
 
     for wind in wind_readings:
-        local_path.update_wind_history(wind)
+        local_path.update_aw_history(wind)
 
     avg = local_path.aw_avg
     if result is None:
@@ -364,7 +364,7 @@ def test_aw_avg_not_set_before_full_history():
 
     for _ in range(lp.WIND_HISTORY_LEN - 1):
         wind = Wind(speed_kmph=10.0, dir_deg=45.0)
-        local_path.update_wind_history(wind)
+        local_path.update_aw_history(wind)
 
     assert local_path.aw_avg is None
 
@@ -376,13 +376,13 @@ def test_aw_avg_updates_with_new_readings():
     # Fill history with initial readings
     for _ in range(lp.WIND_HISTORY_LEN):
         wind = Wind(speed_kmph=10.0, dir_deg=45.0)
-        local_path.update_wind_history(wind)
+        local_path.update_aw_history(wind)
 
     first_avg = local_path.aw_avg
 
     # Add a different wind reading (oldest will be removed from deque)
     new_wind = Wind(speed_kmph=30.0, dir_deg=45.0)
-    local_path.update_wind_history(new_wind)
+    local_path.update_aw_history(new_wind)
     second_avg = local_path.aw_avg
 
     # Average should increase since we're replacing a 10.0 with a 30.0
