@@ -6,6 +6,13 @@ set -e
 # 2. Generate protobuf files
 # 3. Build with CMake
 
+# Step 0: Set MongoDB password for runtime (export for later use)
+if [ -z "$MONGODB_PASSWORD" ]; then
+  read -sp "Enter MongoDB password (will be used at runtime): " MONGODB_PASSWORD
+  echo
+fi
+export MONGODB_PASSWORD
+
 # Step 1: Install dependencies (optional, comment out if not needed)
 # ./scripts/setup_boost.sh
 # ./scripts/setup_mongo.sh
