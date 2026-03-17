@@ -276,7 +276,7 @@ class OMPLPath:
 
             # clamp to [0, total_seg_dist]
             if projected_dist > total_seg_dist:
-                self._logger.warning("Projection of the boat position wrt" +
+                self._logger.warning("Projection of the boat position wrt " +
                                      "the segment is longer than the segment itself," +
                                      "the boat should've switched local waypoint by this point")
                 # assuming pessimistic case

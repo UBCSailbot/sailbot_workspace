@@ -303,6 +303,7 @@ def test_get_remaining_cost_partial(fresh_ompl_path, target_wp_index):
     next_wp_latlon = waypoints[target_wp_index]
 
     def mid_point(start_latlon: HelperLatLon, end_latlon: HelperLatLon):
+        """Return a random point between waypoints."""
         if end_latlon is None:
             return start_latlon
         end_points_inclusive_factor = 1e-4
