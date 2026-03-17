@@ -56,7 +56,6 @@ def create_test_local_path_for_in_collision_zone(
     local_path._target_lp_wp_index = target_lp_wp_index
     local_path.path = path
     local_path.state = mock.Mock(lp.LocalPathState)
-    local_path.reference_latlon = reference_latlon
     local_path.state.reference_latlon = reference_latlon
     local_path.state.obstacles = obstacles
     return local_path

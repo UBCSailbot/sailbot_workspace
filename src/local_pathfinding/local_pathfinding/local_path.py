@@ -189,7 +189,7 @@ class LocalPath:
         Returns:
             bool: True if the path intersects a collision zone, False otherwise.
         """
-        xy_path = [cs.latlon_to_xy(self.reference_latlon, wp) for wp in self.path.waypoints]
+        xy_path = [cs.latlon_to_xy(self.state.reference_latlon, wp) for wp in self.path.waypoints]
         segment_start_index = max(self._target_lp_wp_index - 1, 0)
         for i in range(segment_start_index, len(xy_path) - 1):
             p1, p2 = xy_path[i], xy_path[i + 1]
