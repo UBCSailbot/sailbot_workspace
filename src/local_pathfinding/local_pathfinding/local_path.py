@@ -348,11 +348,6 @@ class LocalPath:
         except (ValueError, IndexError):
             return heading_new_path, new_target_lp_wp_index
 
-        if self.is_path_expired():
-            self._logger.debug("Updating local path because PATH_TTL has expired")
-            self._update(new_ompl_path)
-            return heading_new_path, new_target_lp_wp_index
-
         heading_diff_old_path = cs.calculate_heading_diff(
             self.state.heading,  # type: ignore
             heading_old_path,
