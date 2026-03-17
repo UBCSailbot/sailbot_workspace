@@ -124,7 +124,8 @@ class LocalPathState:
         """Calculates the average apparent wind from the wind history once the deque is full.
 
         Returns:
-            wcs.Wind: Average wind object.
+            wcs.Wind: Average wind object, returns a default wind object if history is empty, which
+            which shouldn't happen in theory.
         """
 
         # This should never evaluate to true, but remains here as a safeguard
