@@ -40,6 +40,11 @@ class LocalPathState:
         planner (str): Planner to use for the OMPL query.
         reference (ci.HelperLatLon): Lat and lon position of the next global waypoint.
         obstacles (List[Obstacle]): All obstacles in the state space
+        aw_history (List[wcs.Wind]): History of wind sensor readings
+            (Queue with max length WIND_HISTORY_LEN).
+        aw_avg (Optional[wcs.Wind]): Average of the wind history, used for path planning.
+            Speed is in kmph, direction in degrees. Updated every time a new wind sensor reading is
+            added to aw_history. Is None if aw_history is empty. or wind readings's vary too much.
     """
 
     def __init__(
@@ -51,6 +56,8 @@ class LocalPathState:
         filtered_wind_sensor: ci.WindSensor,
         planner: str,
     ):
+        self.aw_history: deque = deque(maxlen=WIND_HISTORY_LEN)
+        self.aw_avg: Optional[wcs.Wind] = None
         self.update_state(gps, ais_ships, filtered_wind_sensor)
 
         if not (global_path and global_path.waypoints):
@@ -94,6 +101,48 @@ class LocalPathState:
         self.wind_speed = filtered_wind_sensor.speed.speed
         self.wind_direction = filtered_wind_sensor.direction
 
+        new_wind_data = wcs.Wind(self.wind_speed, self.wind_direction)
+        self.update_aw_history(new_wind_data)
+
+    def update_aw_history(self, current_wind: wcs.Wind):
+        """Updates apparent wind history and recalculates the average wind. The wind values are
+        all apparent wind.
+
+        Maintains a history of up to WIND_HISTORY_LEN wind readings. When the history
+        exceeds the max length, the oldest reading is removed.
+
+        Args:
+            current_wind (wcs.Wind): Current wind speed (kmph) and direction (deg)
+        """
+
+        self.aw_history.append(current_wind)
+
+        # Recalculate average wind from history once minimum wind readings reached
+        if len(self.aw_history) == WIND_HISTORY_LEN:
+            self.aw_avg = self._calculate_average_wind()
+
+    def _calculate_average_wind(self) -> Optional[wcs.Wind]:
+        """Calculates the average apparent wind from the wind history once the deque is full.
+
+        Returns:
+            Optional[wcs.Wind]: Average wind object, or None if history is empty.
+        """
+        if len(self.aw_history) == 0:
+            return None
+
+        avg_speed, sin_sum, cos_sum = 0.0, 0.0, 0.0
+
+        for wind in self.aw_history:
+            avg_speed += wind.speed_kmph / len(self.aw_history)
+            # Use circular mean to handle wrap-around
+            sin_sum += math.sin(math.radians(wind.dir_deg))
+            cos_sum += math.cos(math.radians(wind.dir_deg))
+
+        avg_direction = math.degrees(math.atan2(sin_sum, cos_sum))
+        avg_direction = cs.bound_to_180(avg_direction)
+
+        return wcs.Wind(avg_speed, avg_direction)
+
 
 class LocalPath:
     """Sets and updates the OMPL path and the local waypoints
@@ -106,11 +155,6 @@ class LocalPath:
         path (Path): Collection of coordinates that form the local path to the next
                           global waypoint.
         state (LocalPathState): the current local path state.
-        wind_history (List[wcs.Wind]): History of wind sensor readings
-            (Queue with max length WIND_HISTORY_LEN).
-        wind_average (Optional[wcs.Wind]): Average of the wind history, used for path planning.
-            Speed is in kmph, direction in degrees. Updated every time a new wind sensor reading is
-            added to wind_history.
     """
 
     def __init__(self, parent_logger: RcutilsLogger):
@@ -118,8 +162,6 @@ class LocalPath:
         self._ompl_path: Optional[OMPLPath] = None
         self.path: Optional[ci.Path] = None
         self.state: Optional[LocalPathState] = None
-        self.aw_history: deque = deque(maxlen=WIND_HISTORY_LEN)
-        self.aw_avg: Optional[wcs.Wind] = None
 
     @staticmethod
     def calculate_desired_heading_and_wp_index(
@@ -371,42 +413,3 @@ class LocalPath:
 
         self._ompl_path = ompl_path
         self.path = self._ompl_path.get_path()
-
-    def update_aw_history(self, current_wind: wcs.Wind):
-        """Updates apparent wind history and recalculates the average wind. The wind values are
-        all apparent wind.
-
-        Maintains a history of up to WIND_HISTORY_LEN wind readings. When the history
-        exceeds the max length, the oldest reading is removed.
-
-        Args:
-            current_wind (wcs.Wind): Current wind speed (kmph) and direction (deg)
-        """
-
-        self.aw_history.append(current_wind)
-
-        # Recalculate average wind from history once minimum wind readings reached
-        if len(self.aw_history) == WIND_HISTORY_LEN:
-            self.aw_avg = self._calculate_average_wind()
-
-    def _calculate_average_wind(self) -> Optional[wcs.Wind]:
-        """Calculates the average apparent wind from the wind history once the deque is full.
-
-        Returns:
-            Optional[wcs.Wind]: Average wind object, or None if history is empty.
-        """
-        if len(self.aw_history) == 0:
-            return None
-
-        avg_speed, sin_sum, cos_sum = 0.0, 0.0, 0.0
-
-        for wind in self.aw_history:
-            avg_speed += wind.speed_kmph / len(self.aw_history)
-            # Use circular mean to handle wrap-around
-            sin_sum += math.sin(math.radians(wind.dir_deg))
-            cos_sum += math.cos(math.radians(wind.dir_deg))
-
-        avg_direction = math.degrees(math.atan2(sin_sum, cos_sum))
-        avg_direction = cs.bound_to_180(avg_direction)
-
-        return wcs.Wind(avg_speed, avg_direction)
