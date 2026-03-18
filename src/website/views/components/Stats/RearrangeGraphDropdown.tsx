@@ -94,6 +94,7 @@ const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs }: any) => {
   const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hoverTargetRef = useRef<string | null>(null);
   const splitTargetRef = useRef<string | null>(null);
+  const splitTargetRectRef = useRef<DOMRect | null>(null);
   const splitSideRef = useRef<SplitSide>(null);
   const dropGapRef = useRef<number | null>(null);
 
@@ -123,6 +124,7 @@ const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs }: any) => {
 
   const updateSplitTarget = (id: string | null) => {
     splitTargetRef.current = id;
+    if (!id) splitTargetRectRef.current = null;
     setSplitTargetId(id);
   };
 
@@ -157,6 +159,31 @@ const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs }: any) => {
     const activeIsInSplitGroup = isSplitGroup(sourceItem);
 
     const handlePointerMove = (e: PointerEvent) => {
+      // If we have a confirmed hover target, use a frozen pre-animation rect to
+      // check if the cursor is still inside. Using a live getBoundingClientRect()
+      // on the target element would return a shifting rect mid-transition (since the
+      // shrink animation moves the element), causing a false drag-leave on every frame.
+      if (splitTargetRef.current) {
+        const rect = splitTargetRectRef.current;
+        if (rect) {
+          const inside =
+            e.clientX >= rect.left && e.clientX <= rect.right &&
+            e.clientY >= rect.top  && e.clientY <= rect.bottom;
+          if (inside) {
+            const targetLayoutIndex = findLayoutIndex(layout, splitTargetRef.current as GraphId);
+            const targetItem = layout[targetLayoutIndex];
+            if (!(isSplitGroup(targetItem) && targetItem.length >= 2)) {
+              splitSideRef.current = e.clientX < rect.left + rect.width / 2 ? 'left' : 'right';
+            }
+            return;
+          }
+        }
+        // Cursor has left the confirmed target — clear and fall through to re-detection
+        clearHoverTimer();
+        updateSplitTarget(null);
+        updateSplitSide(null);
+      }
+
       // Check items via elementsFromPoint (merge/split intent)
       const elements = document.elementsFromPoint(e.clientX, e.clientY);
       for (const el of elements) {
@@ -168,22 +195,28 @@ const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs }: any) => {
 
           updateDropGap(null);
 
-          // Compute merge side in real-time on every pointer move
+          // Update side ref for accurate drop placement
           const targetItem = layout[targetLayoutIndex];
           const isFullGroup = isSplitGroup(targetItem) && targetItem.length >= 2;
           if (isFullGroup) {
-            updateSplitSide('full');
+            splitSideRef.current = 'full';
           } else {
             const rect = (el as HTMLElement).getBoundingClientRect();
-            updateSplitSide(e.clientX < rect.left + rect.width / 2 ? 'left' : 'right');
+            splitSideRef.current = e.clientX < rect.left + rect.width / 2 ? 'left' : 'right';
           }
 
           if (sortableId !== hoverTargetRef.current) {
             clearHoverTimer();
-            updateSplitTarget(null);
             hoverTargetRef.current = sortableId;
             hoverTimerRef.current = setTimeout(() => {
+              // Snapshot the rect before the animation class is applied — the CSS
+              // transition animates margin-left/width, so a live getBoundingClientRect()
+              // mid-animation returns a shifting rect that would immediately fail the
+              // bounds check above and cause a shrink/unshrink flicker loop.
+              const targetEl = document.querySelector<HTMLElement>(`[data-sortable-id="${sortableId}"]`);
+              splitTargetRectRef.current = targetEl ? targetEl.getBoundingClientRect() : null;
               updateSplitTarget(sortableId);
+              setSplitSide(splitSideRef.current);
             }, 100);
           }
           return;
