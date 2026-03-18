@@ -57,7 +57,7 @@ class BoatState:
                 data in the global reference frame, both using SI units.
         """
         rel_wind_vel = glo_wind_vel[:2] - self.global_velocity[:2]
-        rel_water_vel = glo_water_vel[:2] - self.global_velocity[:2]  # slice into 2d vector; temp fix
+        rel_water_vel = glo_water_vel[:2] - self.global_velocity[:2]  # slice into 2d vector
 
         rel_net_force, net_torque = self.__compute_net_force_and_torque(
             rel_wind_vel, rel_water_vel, rudder_angle_deg, trim_tab_angle
