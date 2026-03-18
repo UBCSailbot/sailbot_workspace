@@ -16,8 +16,8 @@ class TestBoatState:
             # Generic test
             (
                 0.1,
-                np.array([[-4.0, 5.5, 0.0]], dtype=np.float32),
-                np.array([[1.0, -2.0, 0.0]], dtype=np.float32),
+                np.array([-4.0, 5.5, 0.0], dtype=np.float32),
+                np.array([1.0, -2.0, 0.0], dtype=np.float32),
                 0,
                 3,
                 (
@@ -32,8 +32,8 @@ class TestBoatState:
             # Test for still water and no wind, angular velocity, or angular acceleration
             (
                 0.005,
-                np.array([[0.0, 0.0, 0.0]], dtype=np.float32),
-                np.array([[0.0, 0.0, 0.0]], dtype=np.float32),
+                np.array([0.0, 0.0, 0.0], dtype=np.float32),
+                np.array([0.0, 0.0, 0.0], dtype=np.float32),
                 15,
                 0,
                 (
@@ -48,8 +48,8 @@ class TestBoatState:
             # Test for long timestep, large parameters, negative angles
             (
                 8,
-                np.array([[5.0, 9.2, 0.0]], dtype=np.float32),
-                np.array([[-4.23, 3.0, 0.0]], dtype=np.float32),
+                np.array([5.0, 9.2, 0.0], dtype=np.float32),
+                np.array([-4.23, 3.0, 0.0], dtype=np.float32),
                 -370,
                 -2.6,
                 (
@@ -77,8 +77,8 @@ class TestBoatState:
         test_boat_state = BoatState(timestep)
         input_kinematics = KinematicsData(input_kin_data)
 
-        relative_wind_vel = glo_wind_vel - input_kinematics.linear_velocity
-        relative_water_vel = glo_water_vel - input_kinematics.linear_velocity
+        relative_wind_vel = glo_wind_vel[:2] - test_boat_state.global_velocity[:2]
+        relative_water_vel = glo_water_vel[:2] - test_boat_state.global_velocity[:2]
 
         total_force, total_torque = getattr(
             test_boat_state,
