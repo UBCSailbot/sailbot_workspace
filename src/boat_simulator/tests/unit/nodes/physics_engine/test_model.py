@@ -16,8 +16,8 @@ class TestBoatState:
             # Generic test
             (
                 0.1,
-                np.array([-4.0, 5.5, 0.0], dtype=np.float32),
-                np.array([1.0, -2.0, 0.0], dtype=np.float32),
+                np.array([[-4.0, 5.5, 0.0]], dtype=np.float32),
+                np.array([[1.0, -2.0, 0.0]], dtype=np.float32),
                 0,
                 3,
                 (
@@ -32,8 +32,8 @@ class TestBoatState:
             # Test for still water and no wind, angular velocity, or angular acceleration
             (
                 0.005,
-                np.array([0.0, 0.0, 0.0], dtype=np.float32),
-                np.array([0.0, 0.0, 0.0], dtype=np.float32),
+                np.array([[0.0, 0.0, 0.0]], dtype=np.float32),
+                np.array([[0.0, 0.0, 0.0]], dtype=np.float32),
                 15,
                 0,
                 (
@@ -48,8 +48,8 @@ class TestBoatState:
             # Test for long timestep, large parameters, negative angles
             (
                 8,
-                np.array([5.0, 9.2, 0.0], dtype=np.float32),
-                np.array([-4.23, 3.0, 0.0], dtype=np.float32),
+                np.array([[5.0, 9.2, 0.0]], dtype=np.float32),
+                np.array([[-4.23, 3.0, 0.0]], dtype=np.float32),
                 -370,
                 -2.6,
                 (
