@@ -77,8 +77,8 @@ class TestBoatState:
         test_boat_state = BoatState(timestep)
         input_kinematics = KinematicsData(input_kin_data)
 
-        relative_wind_vel = glo_wind_vel[:2] - test_boat_state.global_velocity[:2]
-        relative_water_vel = glo_water_vel[:2] - test_boat_state.global_velocity[:2]
+        relative_wind_vel = glo_wind_vel[:2] - input_kinematics.linear_velocity[:2]
+        relative_water_vel = glo_water_vel[:2] - input_kinematics.linear_velocity[:2]
 
         total_force, total_torque = getattr(
             test_boat_state,
