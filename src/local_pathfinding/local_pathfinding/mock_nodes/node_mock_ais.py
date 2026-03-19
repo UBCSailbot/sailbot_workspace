@@ -1,4 +1,3 @@
-import csv
 import math
 
 import custom_interfaces.msg as ci
@@ -6,6 +5,7 @@ import rclpy
 from rclpy.node import Node
 
 import local_pathfinding.coord_systems as cs
+from test_plans.test_plan import TestPlan
 
 """
 Defines a Mock AIS Node that publishes AIS ships to the ROS Network for testing purposes
@@ -14,15 +14,20 @@ Publishers:
     publisher_: Publishes mock AIS data in 'AISShips' message
 """
 
-AIS_SHIPS_FILE_PATH = (
-    "/workspaces/sailbot_workspace/src/local_pathfinding/mock_ais_files/" "ais_ships.csv"
-)
-
 
 class MockAISNode(Node):
 
     def __init__(self):
         super().__init__("mock_ais_node")
+        # Parameters
+        self.declare_parameters(
+            namespace="",
+            parameters=[
+                ("test_plan", rclpy.Parameter.Type.STRING),
+            ],
+        )
+
+        self.test_plan = self.get_parameter("test_plan").get_parameter_value().string_value
         self.publisher_ = self.create_publisher(
             msg_type=ci.AISShips, topic="ais_ships", qos_profile=10
         )
@@ -33,49 +38,25 @@ class MockAISNode(Node):
 
     def timer_callback(self):
         msg = ci.AISShips()
+        test_plan = TestPlan(self.test_plan)
+        ais_ships = test_plan.ais
+
         if self.first_run:
-            # read mock ais ships from csv
-            with open(AIS_SHIPS_FILE_PATH, "r") as file:
-                reader = csv.reader(file)
-                # skip header
-                next(reader)
-                for row in reader:
-                    ship = ci.HelperAISShip()
-                    ship.id = int(row[0])
-                    ship.lat_lon.latitude = float(row[1])
-                    ship.lat_lon.longitude = float(row[2])
-                    ship.cog.heading = float(row[3])
-                    ship.sog.speed = float(row[4])
-                    ship.rot.rot = int(row[5])
-                    ship.length.dimension = float(row[6])
-                    ship.width.dimension = float(row[7])
-                    self.ships.append(ship)
-                    msg.ships.append(ship)
+            for ship in ais_ships:
+                self.ships.append(ship)
+                msg.ships.append(ship)
             self.first_run = False
 
         else:
             csv_ship_ids = []
             ships_to_remove = []
 
-            with open(AIS_SHIPS_FILE_PATH, "r") as file:
-                reader = csv.reader(file)
-                next(reader)
-                for row in reader:
-                    id = int(row[0])
-                    csv_ship_ids.append(id)
-                    current_ship_ids = [ship.id for ship in self.ships]
-                    if id > 0 and id not in current_ship_ids:
-                        ship = ci.HelperAISShip()
-                        ship.id = int(row[0])
-                        ship.lat_lon.latitude = float(row[1])
-                        ship.lat_lon.longitude = float(row[2])
-                        ship.cog.heading = float(row[3])
-                        ship.sog.speed = float(row[4])
-                        ship.rot.rot = int(row[5])
-                        ship.length.dimension = float(row[6])
-                        ship.width.dimension = float(row[7])
-                        self.ships.append(ship)
-                        msg.ships.append(ship)
+            for ship in ais_ships:
+                csv_ship_ids.append(ship.id)
+                current_ship_ids = [ship.id for ship in self.ships]
+                if ship.id > 0 and ship.id not in current_ship_ids:
+                    self.ships.append(ship)
+                    msg.ships.append(ship)
 
             for ship in self.ships:
                 if ship.id not in csv_ship_ids:
@@ -153,7 +134,7 @@ def main(args=None):
     rclpy.init(args=args)
     node = MockAISNode()
     rclpy.spin(node)
-    node.destroy_node()  # optional; otherwise will be done by gc
+    node.destroy_node()
     rclpy.shutdown()
 
 

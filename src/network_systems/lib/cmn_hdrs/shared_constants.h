@@ -14,8 +14,9 @@
  */
 namespace SYSTEM_MODE
 {
-static const std::string PROD = "production";
-static const std::string DEV  = "development";
+static const std::string PROD     = "production";
+static const std::string DEV      = "development";
+static const std::string TEST_SAT = "test_satellite";
 };  // namespace SYSTEM_MODE
 
 constexpr unsigned int MAX_LOCAL_TO_REMOTE_PAYLOAD_SIZE_BYTES = 340;
@@ -62,12 +63,12 @@ constexpr int NUM_PH_SENSORS = []() constexpr
     return sizeof(ph_sensors_arr) / sizeof(custom_interfaces::msg::PhSensor);
 }
 ();
-constexpr int NUM_PRESSURE_SENSORS = []() constexpr
-{
-    using pressure_sensors_arr = custom_interfaces::msg::PressureSensors::_pressure_sensors_type;
-    return sizeof(pressure_sensors_arr) / sizeof(custom_interfaces::msg::PressureSensor);
-}
-();
+// constexpr int NUM_PRESSURE_SENSORS = []() constexpr
+// {
+//     using pressure_sensors_arr = custom_interfaces::msg::PressureSensors::_pressure_sensors_type;
+//     return sizeof(pressure_sensors_arr) / sizeof(custom_interfaces::msg::PressureSensor);
+// }
+// ();
 constexpr int NUM_SALINITY_SENSORS = []() constexpr
 {
     using salinity_sensors_arr = custom_interfaces::msg::SalinitySensors::_salinity_sensors_type;

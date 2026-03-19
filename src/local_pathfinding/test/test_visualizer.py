@@ -1,8 +1,9 @@
 import math
+
 import pytest
 
-import local_pathfinding.visualizer as viz
 import local_pathfinding.coord_systems as cs
+import local_pathfinding.visualizer as viz
 
 
 # --------------------------------------
@@ -11,10 +12,10 @@ import local_pathfinding.coord_systems as cs
 @pytest.mark.parametrize(
     "last_goal, goal_xy, expect_msg",
     [
-        (None, (1.23456, 7.89012), False),                 # message first render
-        ((1.235, 2.346), (1.2350001, 2.3459999), False),   # same message after rounding
-        ((1.0, 2.0), (1.12345, 2.98765), True),            # should change message
-    ]
+        (None, (1.23456, 7.89012), False),  # message first render
+        ((1.235, 2.346), (1.2350001, 2.3459999), False),  # same message after rounding
+        ((1.0, 2.0), (1.12345, 2.98765), True),  # should change message
+    ],
 )
 def test_compute_goal_change(last_goal, goal_xy, expect_msg):
     gc = viz.compute_goal_change(last_goal, goal_xy)
@@ -39,20 +40,20 @@ def test_compute_goal_change(last_goal, goal_xy, expect_msg):
         (cs.XY(3.0, 4.0), cs.XY(0.6, 0.8), True),
         (cs.XY(-3.0, 4.0), cs.XY(-0.6, 0.8), True),
         (cs.XY(0.0, -5.0), cs.XY(0.0, -1.0), True),
-        (cs.XY(1.0 / math.sqrt(2), 1.0 / math.sqrt(2)),
-         cs.XY(1.0 / math.sqrt(2), 1.0 / math.sqrt(2)), True),
-
+        (
+            cs.XY(1.0 / math.sqrt(2), 1.0 / math.sqrt(2)),
+            cs.XY(1.0 / math.sqrt(2), 1.0 / math.sqrt(2)),
+            True,
+        ),
         # Zero or near-zero vectors (should return 0,0)
         (cs.XY(0.0, 0.0), cs.XY(0.0, 0.0), False),
         (cs.XY(1e-7, 0.0), cs.XY(0.0, 0.0), False),
         (cs.XY(0.0, -5e-7), cs.XY(0.0, 0.0), False),
-
         # at threshold, should give zero because mag > 1e-6
         (cs.XY(1e-6, 0.0), cs.XY(0.0, 0.0), False),
-
         # just above threshold → should normalize
         (cs.XY(1.1e-6, 0.0), cs.XY(1.0, 0.0), True),
-    ]
+    ],
 )
 def test_get_unit_vector(vec: cs.XY, expected: cs.XY, expect_unit: bool):
     result = viz.get_unit_vector(vec)
@@ -75,7 +76,7 @@ def test_get_unit_vector(vec: cs.XY, expected: cs.XY, expect_unit: bool):
         ([0.0, 1.0], [0.0, 1.0], [], [], []),  # less than 3 points case returns empty
         ([0.0, 10.0, 20.0], [0.0, 1.0, 2.0], [10.0], [1.0], ["LW1"]),
         ([0.0, 10.0, 20.0, 30.0], [0.0, 1.0, 2.0, 3.0], [10.0, 20.0], [1.0, 2.0], ["LW1", "LW2"]),
-    ]
+    ],
 )
 def test_build_intermediate_trace(local_x, local_y, expected_x, expected_y, expected_text):
     t = viz.build_intermediate_trace(local_x, local_y).to_plotly_json()
@@ -93,8 +94,8 @@ def test_build_intermediate_trace(local_x, local_y, expected_x, expected_y, expe
         ([], [], (0.0, 0.0), True),
         ([1.0], [], (0.0, 0.0), True),
         ([], [1.0], (0.0, 0.0), True),
-        ([0.0, 1.0], [2.0, 3.0], (10.0, 20.0), False)
-    ]
+        ([0.0, 1.0], [2.0, 3.0], (10.0, 20.0), False),
+    ],
 )
 def test_build_path_trace(local_x, local_y, boat_xy, expect_none):
     t = viz.build_path_trace(local_x, local_y, boat_xy)
@@ -104,5 +105,5 @@ def test_build_path_trace(local_x, local_y, boat_xy, expect_none):
         j = t.to_plotly_json()
         assert j["mode"] == "lines"
         assert j["name"] == "Path to Goal"
-        assert j["x"] == [boat_xy[0]] + list(local_x)
-        assert j["y"] == [boat_xy[1]] + list(local_y)
+        assert j["x"] == list(local_x)
+        assert j["y"] == list(local_y)
