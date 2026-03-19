@@ -3,9 +3,10 @@
 import math
 from typing import List, NamedTuple
 
-import custom_interfaces.msg as ci
 from pyproj import Geod
 from shapely.geometry import Point, Polygon
+
+import custom_interfaces.msg as ci
 
 GEODESIC = Geod(ellps="WGS84")
 PI = math.pi
@@ -92,10 +93,7 @@ def polar_to_cartesian(angle_rad: float, magnitude: float) -> XY:
             - x → east component
             - y → north component
     """
-    return XY(
-        x=magnitude * math.sin(angle_rad),
-        y=magnitude * math.cos(angle_rad)
-    )
+    return XY(x=magnitude * math.sin(angle_rad), y=magnitude * math.cos(angle_rad))
 
 
 def meters_to_km(meters: float) -> float:
@@ -246,3 +244,39 @@ def latlon_polygon_list_to_xy_polygon_list(
 def latlon_list_to_xy_list(reference_latlon, lat_lon_list: List[ci.HelperLatLon]) -> List[XY]:
     """Converts a list of lat/lon coordinates to x/y coordinates."""
     return [latlon_to_xy(reference=reference_latlon, latlon=pos) for pos in lat_lon_list]
+
+
+def rot_to_rad_per_sec(rot: int) -> float:
+    """
+    Convert an AIS rate-of-turn (ROT) value into radians per second via the formula:
+
+        ROT_sensor = (ROT_ais / 4.733)²
+
+    Specification:
+    https://documentation.spire.com/ais-fundamentals/understanding-ais-performance-in-high-traffic-zones/
+
+    Special values (not decoded via formula):
+        +127 : turning right at > 10 °/min; Turn Indicator unavailable — returns minimum bound
+        -127 : turning left  at > 10 °/min; Turn Indicator unavailable — returns minimum bound
+        -128 : no turning information available — returns 0.0
+
+    Raises:
+        ValueError: If rot is outside the valid int8 range [-128, 127].
+    """
+
+    if not (-128 <= rot <= 127):
+        raise ValueError(f"rot must be a valid int8 value in [-128, 127], got {rot}")
+
+    if rot == -128:
+        return 0.0
+
+    # Turning indicator unavailable: true rate is unknown but guaranteed > 10 °/min.
+    # Return the minimum known bound with correct sign.
+    if abs(rot) == 127:
+        return math.copysign(math.radians(10.0 / 60.0), rot)
+
+    # Capture sign before squaring, since (x)² == (-x)²
+    sign = math.copysign(1.0, rot)
+    rot_dpm = (abs(rot) / 4.733) ** 2
+
+    return math.radians(sign * rot_dpm / 60.0)
