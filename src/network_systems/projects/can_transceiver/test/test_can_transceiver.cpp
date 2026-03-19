@@ -614,7 +614,7 @@ TEST_F(TestCanFrameParser, AISShipsTestValid)
     constexpr std::array<uint32_t, 2> expected_raw_lons{147900000, 292900000};
     constexpr std::array<uint16_t, 2> expected_raw_cogs{1004, 432};
     constexpr std::array<uint16_t, 2> expected_raw_sogs{50, 22};
-    constexpr std::array<int8_t, 2>   expected_raw_rots{-10, 50};
+    constexpr std::array<uint8_t, 2>  expected_raw_rots{118, 178};
     constexpr std::array<uint8_t, 2>  expected_raw_widths{4, 65};
     constexpr std::array<uint16_t, 2> expected_raw_lengths{15, 360};
 
@@ -670,7 +670,7 @@ TEST_F(TestCanFrameParser, AISShipsTestValid)
         uint16_t raw_speed;
         uint16_t raw_course;
         uint16_t raw_heading;
-        int8_t   raw_rot;
+        uint8_t  raw_rot;
         uint16_t raw_length;
         uint8_t  raw_width;
         uint8_t  raw_idx;
@@ -682,7 +682,7 @@ TEST_F(TestCanFrameParser, AISShipsTestValid)
         std::memcpy(&raw_speed, cf.data + CAN_FP::AISShips::BYTE_OFF_SPEED, sizeof(int16_t));
         std::memcpy(&raw_course, cf.data + CAN_FP::AISShips::BYTE_OFF_COURSE, sizeof(int16_t));
         std::memcpy(&raw_heading, cf.data + CAN_FP::AISShips::BYTE_OFF_HEADING, sizeof(int16_t));
-        std::memcpy(&raw_rot, cf.data + CAN_FP::AISShips::BYTE_OFF_ROT, sizeof(int8_t));
+        std::memcpy(&raw_rot, cf.data + CAN_FP::AISShips::BYTE_OFF_ROT, sizeof(uint8_t));
         std::memcpy(&raw_length, cf.data + CAN_FP::AISShips::BYTE_OFF_LENGTH, sizeof(int16_t));
         std::memcpy(&raw_width, cf.data + CAN_FP::AISShips::BYTE_OFF_WIDTH, sizeof(int8_t));
         std::memcpy(&raw_idx, cf.data + CAN_FP::AISShips::BYTE_OFF_IDX, sizeof(int8_t));

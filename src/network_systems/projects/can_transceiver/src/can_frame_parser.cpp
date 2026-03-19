@@ -453,7 +453,7 @@ AISShips::AISShips(const CanFrame & cf) : AISShips(static_cast<CanId>(cf.can_id)
     uint16_t raw_speed;
     uint16_t raw_course;
     uint16_t raw_heading;
-    int8_t   raw_rot;
+    uint8_t  raw_rot;
     uint16_t raw_length;
     uint16_t raw_width;
     uint8_t  raw_idx;
@@ -475,8 +475,8 @@ AISShips::AISShips(const CanFrame & cf) : AISShips(static_cast<CanId>(cf.can_id)
     lat_       = static_cast<float>(raw_lat / 1000000.0 - 90);     //NOLINT(readability-magic-numbers)
     lon_       = static_cast<float>(raw_lon / 1000000.0 - 180.0);  //NOLINT(readability-magic-numbers)
     speed_     = static_cast<float>(raw_speed / 10.0 * 1.852);     //NOLINT(readability-magic-numbers)
-    rot_       = raw_rot;
-    course_    = static_cast<float>(raw_course / 10.0);  //NOLINT(readability-magic-numbers)
+    rot_       = static_cast<int8_t>(raw_rot - 128);               //NOLINT(readability-magic-numbers)
+    course_    = static_cast<float>(raw_course / 10.0);            //NOLINT(readability-magic-numbers)
     heading_   = raw_heading;
     idx_       = raw_idx;
     width_     = raw_width;
@@ -546,7 +546,7 @@ CanFrame AISShips::toLinuxCan() const
     uint16_t raw_speed     = static_cast<int16_t>(std::round(speed_ / 1.852 * 10));  //NOLINT(readability-magic-numbers)
     uint16_t raw_course    = static_cast<int16_t>(course_ * 10);                     //NOLINT(readability-magic-numbers)
     uint16_t raw_heading   = static_cast<int16_t>(heading_);
-    int8_t   raw_rot       = rot_;
+    uint8_t  raw_rot       = static_cast<uint8_t>(rot_ + 128);  //NOLINT(readability-magic-numbers)
     uint16_t raw_length    = static_cast<int16_t>(length_);
     uint16_t raw_width     = static_cast<int16_t>(width_);
     uint8_t  raw_idx       = idx_;
@@ -559,7 +559,7 @@ CanFrame AISShips::toLinuxCan() const
     std::memcpy(cf.data + BYTE_OFF_SPEED, &raw_speed, sizeof(int16_t));
     std::memcpy(cf.data + BYTE_OFF_COURSE, &raw_course, sizeof(int16_t));
     std::memcpy(cf.data + BYTE_OFF_HEADING, &raw_heading, sizeof(int16_t));
-    std::memcpy(cf.data + BYTE_OFF_ROT, &raw_rot, sizeof(int8_t));
+    std::memcpy(cf.data + BYTE_OFF_ROT, &raw_rot, sizeof(uint8_t));
     std::memcpy(cf.data + BYTE_OFF_LENGTH, &raw_length, sizeof(int16_t));
     std::memcpy(cf.data + BYTE_OFF_WIDTH, &raw_width, sizeof(uint16_t));
     std::memcpy(cf.data + BYTE_OFF_IDX, &raw_idx, sizeof(int8_t));
@@ -578,7 +578,7 @@ std::string AISShips::debugStr() const
        << "Longitude (decimal degrees): " << lon_ << "\n"
        << "Heading (degrees): " << heading_ << "\n"
        << "Speed (km/hr): " << speed_ << "\n"
-       << "ROT (degree/min): " << rot_ << "\n"
+       << "ROT (degree/min): " << static_cast<int8_t>(rot_) << "\n"
        << "Width (m): " << width_ << "\n"
        << "Length (m): " << length_ << "\n"
        << "\n";
