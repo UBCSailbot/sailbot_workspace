@@ -19,6 +19,11 @@ LOCAL_WAYPOINT_REACHED_THRESH_KM = 0.5
 HEADING_WEIGHT = 0.6
 COST_WEIGHT = 0.4
 PATH_TTL_SEC = timedelta(seconds=600)
+MAX_OMPL_PATH_GEN_TRIES = 2
+
+
+class PathNotFoundError(Exception):
+    """Raised when an OMPL path cannot be generated after retries."""
 
 
 class LocalPathState:
@@ -153,9 +158,9 @@ class LocalPath:
             IndexError: If index out of bounds or path is None
         """
         if path is None:
-            raise ValueError("Path is None")
+            raise PathNotFoundError("Path is None")
         if target_lp_wp_index < 1 or target_lp_wp_index >= len(path.waypoints):
-            raise IndexError("target_lp_wp_index must be in [1, len(path.waypoints) - 1]")
+            raise PathNotFoundError("target_lp_wp_index must be in [1, len(path.waypoints) - 1]")
 
         waypoint = path.waypoints[target_lp_wp_index]
         desired_heading, _, distance_to_waypoint_m = cs.GEODESIC.inv(
@@ -263,7 +268,7 @@ class LocalPath:
         if self._target_lp_wp_index >= len(self.path.waypoints):
             return (
                 True,
-                f"Target waypoint index out of bounds: {self._target_lp_wp_index} >= {len(self.path.waypoints)}", # noqa
+                f"Target waypoint index out of bounds: {self._target_lp_wp_index} >= {len(self.path.waypoints)}",  # noqa
             )
 
         return False, "Path is valid, no change needed"
@@ -314,39 +319,49 @@ class LocalPath:
         """
         self._target_lp_wp_index = target_lp_wp_index
         old_ompl_path = self._ompl_path
-
-        new_state = LocalPathState(
-            gps, ais_ships, global_path, target_global_waypoint, filtered_wind_sensor, planner
-        )
-        new_ompl_path = OMPLPath(
-            parent_logger=self._logger,
-            local_path_state=new_state,
-            land_multi_polygon=land_multi_polygon,
-        )
-        # TODO: handle the error thrown here in reworked update_if_needed
-        try:
-            heading_new_path, new_target_lp_wp_index = self.calculate_desired_heading_and_wp_index(
-                new_ompl_path.get_path(), 1, gps.lat_lon
-            )
-        except (ValueError, IndexError):
-            # TODO: handle this after merging Jai's PR that sets sail to False
-            heading_new_path, new_target_lp_wp_index = None, -1
-
         must_change, reason = self.must_change_path(received_new_global_waypoint)
+
         if must_change:
+            tries = 0
+            while tries < MAX_OMPL_PATH_GEN_TRIES:
+                new_state = LocalPathState(
+                    gps,
+                    ais_ships,
+                    global_path,
+                    target_global_waypoint,
+                    filtered_wind_sensor,
+                    planner,
+                )
+                new_ompl_path = OMPLPath(
+                    parent_logger=self._logger,
+                    local_path_state=new_state,
+                    land_multi_polygon=land_multi_polygon,
+                )
+                if new_ompl_path.solved:
+                    break
+                else:
+                    tries += 1
+
+            if not new_ompl_path.solved:
+                raise PathNotFoundError("Old Path must change and new path couldn't be solved" +
+                                        f"within {MAX_OMPL_PATH_GEN_TRIES}")
+
             self._logger.debug(f"Updating local path: {reason}")
             self.state = new_state
             self._update(new_ompl_path)
+
+            heading_new_path, new_target_lp_wp_index = (
+                self.calculate_desired_heading_and_wp_index(  # noqa
+                    new_ompl_path.get_path(), 1, gps.lat_lon
+                )
+            )
             return heading_new_path, new_target_lp_wp_index
         else:
             self.state.update_state(gps, ais_ships, filtered_wind_sensor)  # type: ignore
 
-        try:
-            heading_old_path, old_target_lp_wp_index = self.calculate_desired_heading_and_wp_index(
-                self._ompl_path.get_path(), target_lp_wp_index, gps.lat_lon  # type: ignore
-            )
-        except (ValueError, IndexError):
-            return heading_new_path, new_target_lp_wp_index
+        heading_old_path, old_target_lp_wp_index = self.calculate_desired_heading_and_wp_index(
+            self._ompl_path.get_path(), target_lp_wp_index, gps.lat_lon  # type: ignore
+        )
 
         heading_diff_old_path = cs.calculate_heading_diff(
             self.state.heading,  # type: ignore
