@@ -43,8 +43,9 @@ class LocalPathState:
         aw_history (List[wcs.Wind]): History of wind sensor readings
             (Queue with max length WIND_HISTORY_LEN).
         aw_avg (Optional[wcs.Wind]): Average of the wind history, used for path planning.
-            Speed is in kmph, direction in degrees. Updated every time a new wind sensor reading is
-            added to aw_history. Is None if aw_history is empty. or wind readings's vary too much.
+            Speed is in kmph, direction in degrees. Is None until aw_history reaches full capacity
+            (WIND_HISTORY_LEN readings). Once full, updated every time a new wind sensor reading is
+            added to aw_history.
     """
 
     def __init__(
