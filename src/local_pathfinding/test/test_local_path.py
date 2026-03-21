@@ -323,15 +323,15 @@ def test_aw_history_fifo_order():
 @pytest.mark.parametrize(
     "wind_readings, result",
     [
-        # No readings (Default value that should never be reached)
+        # No readings (No average)
         (
             [],
-            Wind(speed_kmph=0.0, dir_deg=0.0),
+            None,
         ),
-        # Single reading
+        # Single reading (No average)
         (
             [Wind(speed_kmph=15.0, dir_deg=90.0)],
-            Wind(speed_kmph=15.0, dir_deg=90.0),
+            None,
         ),
         # Same speed and direction
         (
@@ -380,7 +380,6 @@ def test_calculate_aw_avg(wind_readings, result):
         filtered_wind_sensor=WindSensor(),
         planner="rrtstar",
     )
-    lps.aw_history.clear()
 
     for wind in wind_readings:
         lps.update_aw_history(wind)
@@ -391,6 +390,30 @@ def test_calculate_aw_avg(wind_readings, result):
     else:
         assert avg.speed_kmph == result.speed_kmph
         assert avg.dir_deg == result.dir_deg
+
+
+def test_aw_avg_not_set_before_full_history():
+    """Test that wind_average isn't set until we have WIND_HISTORY_LEN wind readings."""
+    lps = lp.LocalPathState(
+        gps=GPS(),
+        ais_ships=AISShips(),
+        global_path=Path(
+            waypoints=[
+                HelperLatLon(latitude=0.0, longitude=0.0),
+                HelperLatLon(latitude=1.0, longitude=1.0),
+            ]
+        ),
+        target_global_waypoint=HelperLatLon(latitude=1.0, longitude=1.0),
+        filtered_wind_sensor=WindSensor(),
+        planner="rrtstar",
+    )
+    lps.aw_history.clear()
+
+    for _ in range(lp.WIND_HISTORY_LEN - 1):
+        wind = Wind(speed_kmph=10.0, dir_deg=45.0)
+        lps.update_aw_history(wind)
+
+    assert lps.aw_avg is None
 
 
 def test_aw_avg_updates_with_new_readings():
