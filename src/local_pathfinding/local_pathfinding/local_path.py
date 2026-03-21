@@ -119,9 +119,9 @@ class LocalPathState:
 
         # Recalculate average wind from history once minimum wind readings reached
         if len(self.aw_history) == WIND_HISTORY_LEN:
-            self.aw_avg = self._calculate_average_wind()
+            self.aw_avg = self._calculate_aw_avg()
 
-    def _calculate_average_wind(self) -> Optional[wcs.Wind]:
+    def _calculate_aw_avg(self) -> Optional[wcs.Wind]:
         """Calculates the average apparent wind from the wind history once the deque is full.
 
         Returns:
