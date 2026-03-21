@@ -40,7 +40,8 @@
     "redux-logger": "^3.0.6",
     "redux-saga": "^1.2.3",
     "uplot": "^1.6.30",
-    "uplot-react": "^1.1.5"
+    "uplot-react": "^1.1.5",
+    "ws": "^8.19.0"
   },
   "devDependencies": {
     "@svgr/webpack": "^8.1.0",
