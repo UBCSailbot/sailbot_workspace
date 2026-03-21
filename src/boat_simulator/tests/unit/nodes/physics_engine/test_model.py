@@ -85,3 +85,35 @@ def test_compute_net_force_torque(
 
     assert np.allclose(total_force, net_force[0], 0.5)  # checking force
     assert np.allclose(final_torque, net_force[1], 0.5)  # checking torque
+    # Tests BoatState.step()
+    # __compute_net_force_and_torque and __kinematics_computation.step are tested elsewhere
+    def test_step_boat_state(
+        self,
+        timestep: Scalar,
+        glo_wind_vel: NDArray,
+        glo_water_vel: NDArray,
+        rudder_angle_deg: Scalar,
+        trim_tab_angle: Scalar,
+        input_kin_data: NDArray,
+    ):
+        test_boat_state = BoatState(timestep)
+        input_kinematics = KinematicsData(input_kin_data)
+
+        relative_wind_vel = glo_wind_vel[:2] - input_kinematics.linear_velocity[:2]
+        relative_water_vel = glo_water_vel[:2] - input_kinematics.linear_velocity[:2]
+
+        total_force, total_torque = getattr(
+            test_boat_state,
+            "_BoatState__compute_net_force_and_torque"
+            )(
+            relative_wind_vel, relative_water_vel, rudder_angle_deg, trim_tab_angle
+        )
+
+        actual_step = test_boat_state.step(
+            glo_wind_vel, glo_water_vel, rudder_angle_deg, trim_tab_angle
+        )
+        expected_step = getattr(test_boat_state, "_BoatState__kinematics_computation").step(
+            total_force, total_torque
+        )
+
+        assert actual_step == expected_step
