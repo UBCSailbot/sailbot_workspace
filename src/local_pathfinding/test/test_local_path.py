@@ -1,3 +1,6 @@
+from datetime import datetime, timedelta
+from unittest import mock
+
 import pytest
 from custom_interfaces.msg import GPS, AISShips, HelperLatLon, Path, WindSensor
 from local_pathfinding.wind_coord_systems import Wind
@@ -13,18 +16,63 @@ REF = HelperLatLon(latitude=10.0, longitude=10.0)
 PATH = lp.LocalPath(parent_logger=RcutilsLogger())
 
 
+@pytest.fixture
+def basic_local_path_state():
+    gps = mock.Mock()
+    gps.lat_lon = HelperLatLon(latitude=0.0, longitude=0.0)
+    gps.speed = mock.Mock(speed=0.0)
+    gps.heading = mock.Mock(heading=0.0)
+
+    ais_ships = mock.Mock()
+    ais_ships.ships = []
+
+    global_path = Path(
+        waypoints=[
+            HelperLatLon(latitude=0.0, longitude=0.0),
+            HelperLatLon(latitude=1.0, longitude=1.0),
+        ]
+    )
+
+    filtered_wind_sensor = mock.Mock()
+    filtered_wind_sensor.speed = mock.Mock(speed=5.0)
+    filtered_wind_sensor.direction = 90
+
+    return lp.LocalPathState(
+        gps=gps,
+        ais_ships=ais_ships,
+        global_path=global_path,
+        target_global_waypoint=global_path.waypoints[-1],
+        filtered_wind_sensor=filtered_wind_sensor,
+        planner="rrtstar",
+    )
+
+
+def create_test_local_path_for_in_collision_zone(
+    target_lp_wp_index, reference_latlon, path, obstacles
+):
+    mock_parent_logger = mock.Mock()
+    mock_parent_logger.get_child.return_value = mock.Mock()
+    local_path = lp.LocalPath(parent_logger=mock_parent_logger)
+    local_path._target_lp_wp_index = target_lp_wp_index
+    local_path.path = path
+    local_path.state = mock.Mock(lp.LocalPathState)
+    local_path.state.reference_latlon = reference_latlon
+    local_path.state.obstacles = obstacles
+    return local_path
+
+
 @pytest.mark.parametrize(
-    "local_wp_index, reference_latlon, path, obstacles, result",
+    "target_local_wp_index, reference_latlon, path, obstacles, result",
     [
         (
-            0,
+            1,
             HelperLatLon(latitude=10.0, longitude=10.0),
             Path(waypoints=[HelperLatLon(latitude=0.0, longitude=0.0)]),
             [],
             False,
         ),
         (
-            0,
+            1,
             HelperLatLon(latitude=10.0, longitude=10.0),
             Path(
                 waypoints=[
@@ -40,7 +88,7 @@ PATH = lp.LocalPath(parent_logger=RcutilsLogger())
         ),
         # Third test: obstacle at midpoint between (0,0) and (10,10)
         (
-            0,
+            1,
             REF,
             Path(
                 waypoints=[
@@ -75,7 +123,7 @@ PATH = lp.LocalPath(parent_logger=RcutilsLogger())
             True,
         ),
         (
-            0,
+            1,
             REF,
             Path(
                 waypoints=[
@@ -110,7 +158,7 @@ PATH = lp.LocalPath(parent_logger=RcutilsLogger())
             False,
         ),
         (
-            1,  # local_wp_index
+            2,  # target_local_wp_index
             HelperLatLon(
                 latitude=48.121368408203125, longitude=-137.02294921875
             ),  # reference_latlon
@@ -188,8 +236,16 @@ PATH = lp.LocalPath(parent_logger=RcutilsLogger())
         ),
     ],
 )
-def test_in_collision_zone(local_wp_index, reference_latlon, path, obstacles, result):
-    assert PATH.in_collision_zone(local_wp_index, reference_latlon, path, obstacles) == result
+def test_in_collision_zone(target_local_wp_index, reference_latlon, path, obstacles, result):
+
+    test_lp = create_test_local_path_for_in_collision_zone(
+        target_local_wp_index,
+        reference_latlon,
+        path,
+        obstacles
+    )
+
+    assert test_lp.in_collision_zone() == result
 
 
 @pytest.mark.parametrize(
@@ -346,3 +402,21 @@ def test_LocalPathState_parameter_checking():
                 planner=None,
             ),
         )
+
+
+@pytest.mark.parametrize(
+    "elapsed,expected",
+    [
+        (lp.PATH_TTL_SEC + timedelta(seconds=1), True),
+        (lp.PATH_TTL_SEC, True),
+        (lp.PATH_TTL_SEC - timedelta(seconds=1), False),
+    ],
+)
+def test_is_path_expired(elapsed, expected, basic_local_path_state):
+    mock_parent_logger = mock.Mock()
+    mock_parent_logger.get_child.return_value = mock.Mock()
+    local_path = lp.LocalPath(parent_logger=mock_parent_logger)
+    basic_local_path_state.path_generated_time = datetime.now() - elapsed
+    local_path.state = basic_local_path_state
+
+    assert local_path.is_path_expired() == expected
