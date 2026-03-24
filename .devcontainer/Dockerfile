@@ -16,15 +16,6 @@ COPY --chown=${USERNAME}:${USERNAME} config ${HOME}
 #     && apt-get autoremove -y \
 #     && apt-get clean -y \
 #     && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
-
-ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        python3-imageio \
-    && apt-get autoremove -y \
-    && apt-get clean -y \
-    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
 # set user and working directory
 USER ${USERNAME}
 WORKDIR ${ROS_WORKSPACE}
