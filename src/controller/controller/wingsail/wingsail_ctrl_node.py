@@ -83,6 +83,7 @@ class WingsailControllerNode(Node):
                 ("angle_of_attack", rclpy.Parameter.Type.DOUBLE_ARRAY),
                 ("apparent_wind_lower_threshold", rclpy.Parameter.Type.DOUBLE),
                 ("apparent_wind_upper_threshold", rclpy.Parameter.Type.DOUBLE),
+                ("apparent_wind_zero_threshold", rclpy.Parameter.Type.DOUBLE),
             ],
         )
 
