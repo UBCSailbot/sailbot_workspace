@@ -103,13 +103,10 @@ class LocalPathState:
 
         if not filtered_wind_sensor:
             raise ValueError("filtered_wind_sensor must not be None")
-        self.wind_speed = filtered_wind_sensor.speed.speed
-        self.wind_direction = filtered_wind_sensor.direction
+        self.current_aw = Wind(filtered_wind_sensor.speed.speed, filtered_wind_sensor.direction)
+        self.update_aw_history()
 
-        new_wind_data = Wind(self.wind_speed, self.wind_direction)
-        self.update_aw_history(new_wind_data)
-
-    def update_aw_history(self, current_wind: Wind):
+    def update_aw_history(self):
         """Updates apparent wind history and recalculates the average wind. The wind values are
         all apparent wind.
 
@@ -120,9 +117,8 @@ class LocalPathState:
             current_wind (Wind): Current wind speed (kmph) and direction (deg)
         """
 
-        self.aw_history.append(current_wind)
+        self.aw_history.append(self.current_aw)
 
-        # Recalculate average wind from history once minimum wind readings reached
         self.aw_avg = self._calculate_aw_avg()
 
     def _calculate_aw_avg(self) -> Optional[Wind]:
@@ -138,7 +134,7 @@ class LocalPathState:
 
         for wind in self.aw_history:
             avg_speed += wind.speed_kmph / len(self.aw_history)
-            # Use circular mean to handle wrap-around
+            # Use circular mean to handle wrap-around (https://en.wikipedia.org/wiki/Circular_mean)
             sin_sum += math.sin(math.radians(wind.dir_deg))
             cos_sum += math.cos(math.radians(wind.dir_deg))
 

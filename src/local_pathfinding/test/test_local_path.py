@@ -344,7 +344,8 @@ def test_update_aw_history_length(wind_readings, expected_length):
     lps.aw_history.clear()
 
     for wind in wind_readings:
-        lps.update_aw_history(wind)
+        lps.current_aw = wind
+        lps.update_aw_history()
 
     assert len(lps.aw_history) == expected_length
 
@@ -366,8 +367,8 @@ def test_aw_history_fifo_order():
     )
 
     for i in range(lp.WIND_HISTORY_LEN + 3):
-        wind = Wind(speed_kmph=10.0 + i, dir_deg=45.0 + i)
-        lps.update_aw_history(wind)
+        lps.current_aw = Wind(speed_kmph=10.0 + i, dir_deg=45.0 + i)
+        lps.update_aw_history()
 
     # Should contain the last WIND_HISTORY_LEN readings
     # First reading should have speed 10.0 + 3.0 (index 3 of original sequence)
@@ -438,7 +439,8 @@ def test_calculate_aw_avg(wind_readings, result):
     )
 
     for wind in wind_readings:
-        lps.update_aw_history(wind)
+        lps.current_aw = wind
+        lps.update_aw_history()
 
     avg = lps.aw_avg
     if result is None:
@@ -467,7 +469,8 @@ def test_aw_avg_not_set_before_full_history():
 
     for _ in range(lp.WIND_HISTORY_LEN - 1):
         wind = Wind(speed_kmph=10.0, dir_deg=45.0)
-        lps.update_aw_history(wind)
+        lps.current_aw = wind
+        lps.update_aw_history()
 
     assert lps.aw_avg is None
 
@@ -490,14 +493,14 @@ def test_aw_avg_updates_with_new_readings():
 
     # Fill history with initial readings
     for _ in range(lp.WIND_HISTORY_LEN):
-        wind = Wind(speed_kmph=10.0, dir_deg=45.0)
-        lps.update_aw_history(wind)
+        lps.current_aw = Wind(speed_kmph=10.0, dir_deg=45.0)
+        lps.update_aw_history()
 
     first_avg = lps.aw_avg
 
     # Add a different wind reading (oldest will be removed from deque)
-    new_wind = Wind(speed_kmph=30.0, dir_deg=45.0)
-    lps.update_aw_history(new_wind)
+    lps.current_aw = Wind(speed_kmph=30.0, dir_deg=45.0)
+    lps.update_aw_history()
     second_avg = lps.aw_avg
 
     # Average should increase since we're replacing a 10.0 with a 30.0
