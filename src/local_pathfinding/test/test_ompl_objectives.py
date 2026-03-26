@@ -3,60 +3,104 @@ import math
 import pytest
 
 import local_pathfinding.coord_systems as cs
-import local_pathfinding.ompl_objectives as objectives
-from local_pathfinding.ompl_objectives import (
-    DOWNWIND_COST_MULTIPLIER,
-    UPWIND_COST_MULTIPLIER,
-)
+import local_pathfinding.ompl_objectives as ob
+from local_pathfinding.ompl_objectives import (NO_GO_ZONE, WIND_COST_SIN_EXPONENT)
 
 
 @pytest.mark.parametrize(
-    "cs1,cs2,wind_direction_rad,expected",
+    "s1, s2, tw_direction_rad, expected",
     [
-        # Moving directly into wind (upwind)
-        ((0, 0), (0, 1), 0.0, UPWIND_COST_MULTIPLIER * 1.0),
-        # Moving perpendicular to wind (crosswind)
-        ((0, 0), (1, 0), 0.0, 0.0),
-        # Moving directly with the wind (downwind)
-        ((0, 0), (0, -1), 0.0, DOWNWIND_COST_MULTIPLIER * 1.0),
-        # Moving at 45° off upwind
-        ((0, 0), (1, 1), 0.0, UPWIND_COST_MULTIPLIER * math.cos(math.radians(45))),
-        # Moving 30° off upwind
         (
-            (0, 0),
-            (math.sin(math.radians(30)), math.cos(math.radians(30))),
+            # Wind direction and boat heading north
+            cs.XY(0.0, 0.0),
+            cs.XY(0.0, 1.0),
             0.0,
-            UPWIND_COST_MULTIPLIER * math.cos(math.radians(30)),
+            1.0
         ),
-        # Moving 135° off upwind (45° off downwind)
         (
-            (0, 0),
-            (math.sin(math.radians(135)), math.cos(math.radians(135))),
+            # Wind direction south and boat heading north
+            cs.XY(0.0, 0.0),
+            cs.XY(0.0, 1.0),
+            math.pi,
+            1.0
+        ),
+        (
+            # Boat heading north, wind at no-go zone at 45 degrees
+            cs.XY(0.0, 0.0),
+            cs.XY(0.0, 1.0),
+            NO_GO_ZONE,
+            1.0
+        ),
+        (
+            # Boat heading north, wind at no-go zone at -45 degrees
+            cs.XY(0.0, 0.0),
+            cs.XY(0.0, 1.0),
+            -NO_GO_ZONE,
+            1.0
+        ),
+        (
+            # Boat heading south, wind at no-go zone at 135 degrees
+            cs.XY(0.0, 0.0),
+            cs.XY(0.0, -1.0),
+            math.pi - NO_GO_ZONE,
+            1.0
+        ),
+        (
+            # Boat heading south, wind at no-go zone at -135 degrees
+            cs.XY(0.0, 0.0),
+            cs.XY(0.0, -1.0),
+            - math.pi + NO_GO_ZONE,
+            1.0
+        ),
+        (
+            # Boat heading east, wind just better than no-go zone
+            cs.XY(0.0, 0.0),
+            cs.XY(1.0, 0.0),
+            NO_GO_ZONE - 0.0001,
+            math.sin(2*(NO_GO_ZONE - 0.0001)) ** WIND_COST_SIN_EXPONENT
+        ),
+        (
+            # Boat heading west, wind heading north
+            cs.XY(0.0, 0.0),
+            cs.XY(-1.0, 0.0),
             0.0,
-            DOWNWIND_COST_MULTIPLIER * abs(math.cos(math.radians(135))),
+            0.0
         ),
-        # Wind from 179°, boat moving North
         (
-            (0, 0),
-            (0, 1),
-            math.radians(179.0),
-            DOWNWIND_COST_MULTIPLIER * math.cos(math.radians(1)),
+            # Boat heading west, wind heading south
+            cs.XY(0.0, 0.0),
+            cs.XY(-1.0, 0.0),
+            math.pi,
+            0.0
         ),
-        # Wind from -179°, boat moving North
         (
-            (0, 0),
-            (0, 1),
-            math.radians(-179.0),
-            DOWNWIND_COST_MULTIPLIER * math.cos(math.radians(1)),
+            # Boat heading north, wind heading at 60 degrees
+            cs.XY(0.0, 0.0),
+            cs.XY(0.0, 1.0),
+            math.pi / 3,
+            math.sin(2*math.pi / 3) ** WIND_COST_SIN_EXPONENT
         ),
+        (
+            # Boat heading north, wind heading at -55 degrees (-0.959931 radians)
+            cs.XY(0.0, 0.0),
+            cs.XY(0.0, 1.0),
+            -0.959931,
+            math.sin(2*(-0.959931)) ** WIND_COST_SIN_EXPONENT
+        ),
+        (
+            # Boat heading north, wind heading at 50 degrees (0.872665 radians)
+            cs.XY(0.0, 0.0),
+            cs.XY(0.0, 1.0),
+            0.872665,
+            math.sin(2*0.872665) ** WIND_COST_SIN_EXPONENT
+        )
     ],
 )
-def test_wind_direction_cost(cs1: tuple, cs2: tuple, wind_direction_rad: float, expected: float):
-    s1 = cs.XY(*cs1)
-    s2 = cs.XY(*cs2)
-    assert objectives.WindObjective.wind_direction_cost(
-        s1, s2, wind_direction_rad
-    ) == pytest.approx(expected, abs=1e-3)
+def test_wind_direction_cost(
+    s1: cs.XY, s2: cs.XY, tw_direction_rad: float, expected: float
+):
+    result = ob.WindObjective.wind_direction_cost(s1, s2, tw_direction_rad)
+    assert result == pytest.approx(expected, abs=1e-12)
 
 
 @pytest.mark.parametrize(
@@ -84,7 +128,7 @@ def test_speed_cost(
 ):
     s1 = cs.XY(*cs1)
     s2 = cs.XY(*cs2)
-    assert objectives.TimeObjective.time_cost(
+    assert ob.TimeObjective.time_cost(
         s1, s2, wind_direction_rad, wind_speed_kmph
     ) == pytest.approx(expected, abs=0.1)
 
@@ -103,5 +147,5 @@ def test_speed_cost(
 def test_get_sailbot_speed(
     heading: float, wind_direction: float, wind_speed: float, expected: float
 ):
-    speed = objectives.TimeObjective.get_sailbot_speed(heading, wind_direction, wind_speed)
+    speed = ob.TimeObjective.get_sailbot_speed(heading, wind_direction, wind_speed)
     assert speed == pytest.approx(expected, abs=0.1)
