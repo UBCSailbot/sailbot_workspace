@@ -397,8 +397,8 @@ class OMPLPath:
             simple_setup,
             self.state.heading,
             self.state.speed,
-            self.state.wind_direction,
-            self.state.wind_speed,
+            self.state.current_aw.dir_deg,
+            self.state.current_aw.speed_kmph,
         )
 
         simple_setup.setOptimizationObjective(objective)
