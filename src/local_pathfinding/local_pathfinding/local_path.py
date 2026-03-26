@@ -1,6 +1,7 @@
 """The path to the next global waypoint, represented by the LocalPath class."""
 
 import math
+from collections import deque
 from datetime import datetime, timedelta
 from typing import List, Optional
 
@@ -10,11 +11,12 @@ from shapely.geometry import LineString, MultiPolygon
 import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.obstacles as ob
-import local_pathfinding.wind_coord_systems as wcs
+from local_pathfinding.wind_coord_systems import Wind
 from local_pathfinding.ompl_path import OMPLPath
 
 WIND_SPEED_CHANGE_THRESH_PROP = 0.3
 WIND_DIRECTION_CHANGE_THRESH_DEG = 10
+WIND_HISTORY_LEN = 30
 LOCAL_WAYPOINT_REACHED_THRESH_KM = 0.5
 HEADING_WEIGHT = 0.6
 COST_WEIGHT = 0.4
@@ -40,6 +42,12 @@ class LocalPathState:
         planner (str): Planner to use for the OMPL query.
         reference (ci.HelperLatLon): Lat and lon position of the next global waypoint.
         obstacles (List[Obstacle]): All obstacles in the state space
+        aw_history (List[Wind]): History of wind sensor readings
+            (Queue with max length WIND_HISTORY_LEN).
+        aw_avg (Optional[Wind]): Average of the wind history, used for path planning.
+            Speed is in kmph, direction in degrees. Is None until aw_history reaches full capacity
+            (WIND_HISTORY_LEN readings). Once full, updated every time a new wind sensor reading is
+            added to aw_history.
         path_generated_time (datetime): Time when the path was generated
     """
 
@@ -52,6 +60,8 @@ class LocalPathState:
         filtered_wind_sensor: ci.WindSensor,
         planner: str,
     ):
+        self.aw_history: deque = deque(maxlen=WIND_HISTORY_LEN)
+        self.aw_avg: Optional[Wind] = None
         self.update_state(gps, ais_ships, filtered_wind_sensor)
 
         if not (global_path and global_path.waypoints):
@@ -93,8 +103,45 @@ class LocalPathState:
 
         if not filtered_wind_sensor:
             raise ValueError("filtered_wind_sensor must not be None")
-        self.wind_speed = filtered_wind_sensor.speed.speed
-        self.wind_direction = filtered_wind_sensor.direction
+        self.current_aw = Wind(filtered_wind_sensor.speed.speed, filtered_wind_sensor.direction)
+        self.update_aw_history()
+
+    def update_aw_history(self):
+        """Updates apparent wind history and recalculates the average wind. The wind values are
+        all apparent wind.
+
+        Maintains a history of up to WIND_HISTORY_LEN wind readings. When the history
+        exceeds the max length, the oldest reading is removed.
+
+        Args:
+            current_wind (Wind): Current wind speed (kmph) and direction (deg)
+        """
+
+        self.aw_history.append(self.current_aw)
+
+        self.aw_avg = self._calculate_aw_avg()
+
+    def _calculate_aw_avg(self) -> Optional[Wind]:
+        """Calculates the average apparent wind from the wind history once the deque is full.
+
+        Returns:
+            Optional[Wind]: Average wind object, or None if aw_history is not full
+        """
+        if len(self.aw_history) < WIND_HISTORY_LEN:
+            return None
+
+        avg_speed, sin_sum, cos_sum = 0.0, 0.0, 0.0
+
+        for wind in self.aw_history:
+            avg_speed += wind.speed_kmph / len(self.aw_history)
+            # Use circular mean to handle wrap-around (https://en.wikipedia.org/wiki/Circular_mean)
+            sin_sum += math.sin(math.radians(wind.dir_deg))
+            cos_sum += math.cos(math.radians(wind.dir_deg))
+
+        avg_direction = math.degrees(math.atan2(sin_sum, cos_sum))
+        avg_direction = cs.bound_to_180(avg_direction)
+
+        return Wind(avg_speed, avg_direction)
 
 
 class LocalPath:
@@ -202,8 +249,8 @@ class LocalPath:
 
     @staticmethod
     def is_significant_wind_change(
-        new_tw_data: wcs.Wind,
-        previous_tw_data: wcs.Wind,
+        new_tw_data: Wind,
+        previous_tw_data: Wind,
     ) -> bool:
         """Returns true if there is a significant change in the true wind warranting a change in
            path. Although this function works with any kind of wind, it is specifically designed
@@ -218,8 +265,8 @@ class LocalPath:
         - A change in wind direction exceeding WIND_DIRECTION_CHANGE_THRESH_DEG degrees
 
         Args:
-            new_tw_data (wcs.Wind): Current wind speed/direction that may require a change in path
-            previous_tw_data (wcs.Wind): Wind speed/direction when the current path was generated
+            new_tw_data (Wind): Current wind speed/direction that may require a change in path
+            previous_tw_data (Wind): Wind speed/direction when the current path was generated
 
         Returns:
             boolean: True if there is a significant change in the wind, False otherwise.
