@@ -278,7 +278,7 @@ private:
 
             int ship_idx = ais_ship.getShipIndex();
             if (ship_idx >= static_cast<int>(ais_ships_holder_.size()) || ship_idx < 0 || ship_idx >= total_ais_ships) {
-                throw std::out_of_range("Received AIS ship index is out of bounds!");
+                throw std::out_of_range("Received AIS ship index: " + std::to_string(ship_idx) + " is out of bounds!");
             }
 
             ais_ships_holder_[ship_idx] = ais_ship.toRosMsg();
