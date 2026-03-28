@@ -311,7 +311,7 @@ def test_get_remaining_cost_partial(fresh_ompl_path, target_wp_index):
                     start_latlon.latitude + end_points_inclusive_factor,
                     end_latlon.latitude - end_points_inclusive_factor,
                 )
-            ),  # noqa
+            ),
             longitude=(
                 random.uniform(
                     start_latlon.longitude + end_points_inclusive_factor,
