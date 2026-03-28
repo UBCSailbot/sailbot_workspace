@@ -226,14 +226,15 @@ bool LocalTransceiver::send()
             continue;
         }
 
+        clearSerialBuffer();
+
+        // Clear any data that may have come in while waiting for SBDIX response, to ensure the following readRsp gets a clean response
         // Check SBD Session status to see if data was sent successfully
         // NEEDS AN ACTIVE SERVER ON $WEBHOOK_SERVER_ENDPOINT OR VIRTUAL IRIDIUM WILL CRASH
         static const AT::Line sbdix_cmd = AT::Line(AT::SBD_SESSION);
         if (!send(sbdix_cmd)) {
             continue;
         }
-
-        clearSerialBuffer();  // Clear any data that may have come in while waiting for SBDIX response, to ensure the following readRsp gets a clean response
 
         if (!rcvRsps({
               sbdix_cmd,
