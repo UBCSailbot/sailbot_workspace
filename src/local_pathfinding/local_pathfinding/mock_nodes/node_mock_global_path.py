@@ -4,10 +4,10 @@ The node is represented by the `MockGlobalPath` class."""
 import os
 import time
 
-import custom_interfaces.msg as ci
 import rclpy
 from rclpy.node import Node
 
+import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.global_path as gp
 
@@ -49,7 +49,7 @@ class MockGlobalPath(Node):
             namespace="",
             parameters=[
                 ("global_path_filepath", rclpy.Parameter.Type.STRING),
-                ("interval_spacing", rclpy.Parameter.Type.DOUBLE),
+                ("global_path_interval_spacing", rclpy.Parameter.Type.DOUBLE),
                 ("write", rclpy.Parameter.Type.BOOL),
                 ("gps_threshold", rclpy.Parameter.Type.DOUBLE),
                 ("force", rclpy.Parameter.Type.BOOL),
@@ -115,7 +115,7 @@ class MockGlobalPath(Node):
 
             # we need to obtain the actual distances between every waypoint in the global path
             path_spacing = gp.calculate_interval_spacing(pos, global_path.waypoints)
-            interval_spacing = self.get_parameter("interval_spacing")._value
+            interval_spacing = self.get_parameter("global_path_interval_spacing")._value
 
             # this checks if global path is just a destination point
             if len(global_path.waypoints) < 2:
@@ -187,7 +187,7 @@ class MockGlobalPath(Node):
                 )[2]
             )
             gps_threshold = self.get_parameter("gps_threshold")._value
-            interval_spacing = self.get_parameter("interval_spacing")._value
+            interval_spacing = self.get_parameter("global_path_interval_spacing")._value
 
             if position_delta > gps_threshold * interval_spacing:
                 self.get_logger().debug(

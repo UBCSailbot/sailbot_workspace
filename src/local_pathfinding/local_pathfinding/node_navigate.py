@@ -12,7 +12,6 @@ from local_pathfinding.local_path import LocalPath
 from local_pathfinding.ompl_path import MAX_SOLVER_RUN_TIME_SEC
 
 GLOBAL_WAYPOINT_REACHED_THRESH_KM = 3
-PATHFINDING_RANGE_KM = 3.0
 REALLY_FAR_M = 100000000
 
 
@@ -68,6 +67,7 @@ class Sailbot(Node):
                 ("pub_period_sec", rclpy.Parameter.Type.DOUBLE),
                 ("path_planner", rclpy.Parameter.Type.STRING),
                 ("test_plan", rclpy.Parameter.Type.STRING),
+                ("global_path_interval_spacing", rclpy.Parameter.Type.DOUBLE),
             ],
         )
 
@@ -105,6 +105,9 @@ class Sailbot(Node):
         # publisher timers
         self.pub_period_sec = (
             self.get_parameter("pub_period_sec").get_parameter_value().double_value
+        )
+        self.global_path_interval_spacing = (
+            self.get_parameter("global_path_interval_spacing").get_parameter_value().double_value
         )
         self.get_logger().debug(f"Got parameter: {self.pub_period_sec=}")
 
@@ -300,7 +303,7 @@ class Sailbot(Node):
 
     @staticmethod
     def determine_start_point_in_new_global_path(
-        global_path: ci.Path, boat_lat_lon: ci.HelperLatLon
+        self, global_path: ci.Path, boat_lat_lon: ci.HelperLatLon
     ):
         """Used when we receive a new global path.
         Finds the index of the first waypoint within 'pathfinding range' of gps location.
@@ -321,7 +324,7 @@ class Sailbot(Node):
             if distance_to_waypoint_m < closest_m:
                 closest_m, index_of_closest = distance_to_waypoint_m, waypoint_index
 
-            if distance_to_waypoint_m < cs.km_to_meters(PATHFINDING_RANGE_KM):
+            if distance_to_waypoint_m < cs.km_to_meters(self.global_path_interval_spacing):
                 return waypoint_index
 
         return index_of_closest
