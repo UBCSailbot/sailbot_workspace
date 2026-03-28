@@ -437,6 +437,223 @@ bool LocalTransceiver::debugSendAT(const std::string & data)
     return false;
 }
 
+std::optional<std::string> LocalTransceiver::debugReceiveAT()
+{
+    if (log_debug_) {
+        log_debug_("Debug: Starting debugReceiveAT");
+    }
+
+    static constexpr int MAX_NUM_RETRIES = 20;
+    for (int i = 0; i < MAX_NUM_RETRIES; i++) {
+        if (log_debug_) {
+            log_debug_("Debug: debugReceiveAT clearing buffer (attempt " + std::to_string(i) + ")");
+        }
+
+        std::this_thread::sleep_for(std::chrono::seconds(SMALL_WAIT));
+        clearSerialBuffer();
+
+        std::this_thread::sleep_for(std::chrono::seconds(MEDIUM_WAIT));
+
+        int current_iridium_signal_quality = checkIridiumSignalQuality();
+        if (current_iridium_signal_quality == -1) {
+            if (log_error_) {
+                log_error_(
+                  "Debug: debugReceiveAT failed to check Iridium signal quality (attempt " + std::to_string(i) + ")");
+            }
+            continue;
+        }
+
+        if (current_iridium_signal_quality < AT::signal_quality::GOOD) {
+            if (log_debug_) {
+                log_debug_(
+                  "Debug: debugReceiveAT signal quality is " + std::to_string(current_iridium_signal_quality) +
+                  ", retrying (attempt " + std::to_string(i) + ")");
+            }
+            std::this_thread::sleep_for(std::chrono::seconds(MEDIUM_WAIT));
+            continue;
+        }
+
+        static const AT::Line check_conn_cmd = AT::Line(AT::CHECK_CONN);
+        if (!send(check_conn_cmd)) {
+            if (log_error_) {
+                log_error_("Debug: debugReceiveAT failed to send AT check command (attempt " + std::to_string(i) + ")");
+            }
+            continue;
+        }
+        if (log_debug_) {
+            log_debug_("Debug: debugReceiveAT sent check command (attempt " + std::to_string(i) + ")");
+        }
+
+        if (!rcvRsps({check_conn_cmd, AT::Line(AT::DELIMITER), AT::Line(AT::STATUS_OK), AT::Line("\n")})) {
+            if (log_error_) {
+                log_error_("Debug: debugReceiveAT AT check response invalid (attempt " + std::to_string(i) + ")");
+            }
+            continue;
+        }
+
+        static const AT::Line disable_ctrlflow_cmd = AT::Line(AT::DSBL_CTRLFLOW);
+        if (!send(disable_ctrlflow_cmd)) {
+            if (log_error_) {
+                log_error_(
+                  "Debug: debugReceiveAT failed to send control-flow disable command (attempt " + std::to_string(i) +
+                  ")");
+            }
+            continue;
+        }
+        if (log_debug_) {
+            log_debug_("Debug: debugReceiveAT sent control-flow disable command (attempt " + std::to_string(i) + ")");
+        }
+
+        if (!rcvRsps({disable_ctrlflow_cmd, AT::Line(AT::DELIMITER), AT::Line(AT::STATUS_OK), AT::Line("\n")})) {
+            if (log_error_) {
+                log_error_(
+                  "Debug: debugReceiveAT control-flow disable response invalid (attempt " + std::to_string(i) + ")");
+            }
+            continue;
+        }
+
+        clearSerialBuffer();
+
+        static const AT::Line sbdix_cmd = AT::Line(AT::SBD_SESSION);
+        if (!send(sbdix_cmd)) {
+            if (log_error_) {
+                log_error_("Debug: debugReceiveAT failed to send SBDIX command (attempt " + std::to_string(i) + ")");
+            }
+            continue;
+        }
+        if (log_debug_) {
+            log_debug_("Debug: debugReceiveAT sent SBDIX command (attempt " + std::to_string(i) + ")");
+        }
+
+        auto opt_rsp = readRsp();
+        if (!opt_rsp) {
+            if (log_error_) {
+                log_error_("Debug: debugReceiveAT failed to read SBDIX response (attempt " + std::to_string(i) + ")");
+            }
+            continue;
+        }
+
+        std::string              opt_rsp_val = opt_rsp.value();
+        std::vector<std::string> sbd_status_vec;
+        boost::algorithm::split(sbd_status_vec, opt_rsp_val, boost::is_any_of(AT::DELIMITER));
+
+        std::string sbdix_value;
+        for (const auto & element : sbd_status_vec) {
+            if (element.find("SBDIX:") != std::string::npos) {
+                sbdix_value = element;
+                break;
+            }
+        }
+
+        if (sbdix_value.empty()) {
+            if (log_error_) {
+                log_error_(
+                  "Debug: debugReceiveAT could not parse SBDIX response (attempt " + std::to_string(i) +
+                  "): " + opt_rsp_val);
+            }
+            continue;
+        }
+
+        AT::SBDStatusRsp rsp(sbdix_value);
+        if (log_debug_) {
+            log_debug_(
+              "Debug: debugReceiveAT parsed SBDIX: MO=" + std::to_string(rsp.MO_status_) +
+              " MT=" + std::to_string(rsp.MT_status_) + " MT_len=" + std::to_string(rsp.MT_len_) + " (attempt " +
+              std::to_string(i) + ")");
+        }
+
+        if (rsp.MO_status_ != 0) {
+            if (log_debug_) {
+                log_debug_("Debug: debugReceiveAT MO status is non-zero, retrying (attempt " + std::to_string(i) + ")");
+            }
+            continue;
+        }
+
+        if (rsp.MT_status_ == 0) {
+            if (log_debug_) {
+                log_debug_("Debug: debugReceiveAT mailbox empty");
+            }
+            return std::nullopt;
+        }
+
+        if (rsp.MT_status_ == 2) {
+            if (log_debug_) {
+                log_debug_(
+                  "Debug: debugReceiveAT message transfer still in progress, retrying (attempt " + std::to_string(i) +
+                  ")");
+            }
+            continue;
+        }
+
+        if (rsp.MT_status_ != 1) {
+            if (log_debug_) {
+                log_debug_(
+                  "Debug: debugReceiveAT unexpected MT status " + std::to_string(rsp.MT_status_) +
+                  ", retrying (attempt " + std::to_string(i) + ")");
+            }
+            continue;
+        }
+
+        clearSerialBuffer();
+
+        static const AT::Line message_to_queue_cmd = AT::Line(AT::DNLD_TO_QUEUE);
+        if (!send(message_to_queue_cmd)) {
+            if (log_error_) {
+                log_error_("Debug: debugReceiveAT failed to send SBDRB command (attempt " + std::to_string(i) + ")");
+            }
+            continue;
+        }
+
+        if (!rcvRsps({message_to_queue_cmd, AT::Line("\n"), AT::Line("+SBDRB:"), AT::Line("\n")})) {
+            if (log_error_) {
+                log_error_("Debug: debugReceiveAT failed reading SBDRB header (attempt " + std::to_string(i) + ")");
+            }
+            continue;
+        }
+
+        auto buffer_data = readRsp();
+        if (!buffer_data) {
+            if (log_error_) {
+                log_error_("Debug: debugReceiveAT failed reading SBDRB payload (attempt " + std::to_string(i) + ")");
+            }
+            continue;
+        }
+
+        if (buffer_data->size() < 2) {
+            if (log_error_) {
+                log_error_(
+                  "Debug: debugReceiveAT payload too short for SBDRB size field (attempt " + std::to_string(i) + ")");
+            }
+            continue;
+        }
+
+        const std::string message_size_str = buffer_data->substr(0, 2);
+        const uint16_t    message_size_int =
+          (static_cast<uint8_t>(message_size_str[0]) << 8) | static_cast<uint8_t>(message_size_str[1]);
+
+        if (buffer_data->size() < static_cast<std::size_t>(2 + message_size_int)) {
+            if (log_error_) {
+                log_error_(
+                  "Debug: debugReceiveAT payload shorter than advertised MT length (attempt " + std::to_string(i) +
+                  ")");
+            }
+            continue;
+        }
+
+        std::string message = buffer_data->substr(2, message_size_int);
+        if (log_debug_) {
+            log_debug_("Debug: debugReceiveAT received " + std::to_string(message.size()) + " bytes from mailbox");
+        }
+
+        return message;
+    }
+
+    if (log_error_) {
+        log_error_("Debug: debugReceiveAT failed after all retries");
+    }
+    return std::nullopt;
+}
+
 std::optional<std::string> LocalTransceiver::debugSend(const std::string & cmd)
 {
     AT::Line    at_cmd(cmd);
@@ -465,36 +682,78 @@ void LocalTransceiver::cacheGlobalWaypoints(std::string receivedDataBuffer)
 
 custom_interfaces::msg::Path LocalTransceiver::receive()
 {
+    if (log_debug_) {
+        log_debug_("receive() starting...");
+    }
+
     static constexpr int MAX_NUM_RETRIES = 20;
     for (int i = 0; i <= MAX_NUM_RETRIES; i++) {
         if (i == MAX_NUM_RETRIES) {
+            if (log_error_) {
+                log_error_("receive(): exceeded retries while checking mailbox status");
+            }
             return parseInMsg("-1");
         }
+
+        if (log_debug_) {
+            log_debug_("receive(): mailbox status attempt " + std::to_string(i));
+        }
+
         static const AT::Line check_conn_cmd = AT::Line(AT::CHECK_CONN);
         if (!send(check_conn_cmd)) {
+            if (log_error_) {
+                log_error_("receive(): failed to send AT connectivity check (attempt " + std::to_string(i) + ")");
+            }
             continue;
         }
 
+        if (log_debug_) {
+            log_debug_("receive(): sent AT connectivity check (attempt " + std::to_string(i) + ")");
+        }
+
         if (!rcvRsps({check_conn_cmd, AT::Line(AT::DELIMITER), AT::Line(AT::STATUS_OK), AT::Line("\n")})) {
+            if (log_error_) {
+                log_error_("receive(): connectivity check response invalid (attempt " + std::to_string(i) + ")");
+            }
             continue;
         }
 
         static const AT::Line disable_ctrlflow_cmd = AT::Line(AT::DSBL_CTRLFLOW);
         if (!send(disable_ctrlflow_cmd)) {
+            if (log_error_) {
+                log_error_("receive(): failed to send control-flow disable (attempt " + std::to_string(i) + ")");
+            }
             continue;
         }
 
+        if (log_debug_) {
+            log_debug_("receive(): sent control-flow disable command (attempt " + std::to_string(i) + ")");
+        }
+
         if (!rcvRsps({disable_ctrlflow_cmd, AT::Line(AT::DELIMITER), AT::Line(AT::STATUS_OK), AT::Line("\n")})) {
+            if (log_error_) {
+                log_error_("receive(): control-flow disable response invalid (attempt " + std::to_string(i) + ")");
+            }
             continue;
         }
 
         static const AT::Line sbdix_cmd = AT::Line(AT::SBD_SESSION);
         if (!send(sbdix_cmd)) {
+            if (log_error_) {
+                log_error_("receive(): failed to send SBDIX command (attempt " + std::to_string(i) + ")");
+            }
             continue;
+        }
+
+        if (log_debug_) {
+            log_debug_("receive(): sent SBDIX command (attempt " + std::to_string(i) + ")");
         }
 
         auto opt_rsp = readRsp();
         if (!opt_rsp) {
+            if (log_error_) {
+                log_error_("receive(): failed to read SBDIX response (attempt " + std::to_string(i) + ")");
+            }
             continue;
         }
 
@@ -510,34 +769,78 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
             }
         }
 
+        if (sbdix_value.empty()) {
+            if (log_error_) {
+                log_error_(
+                  "receive(): unable to parse SBDIX line from response (attempt " + std::to_string(i) +
+                  "): " + opt_rsp_val);
+            }
+            continue;
+        }
+
         AT::SBDStatusRsp rsp(sbdix_value);
+
+        if (log_debug_) {
+            log_debug_(
+              "receive(): parsed SBDIX MO=" + std::to_string(rsp.MO_status_) + " MT=" + std::to_string(rsp.MT_status_) +
+              " MT_len=" + std::to_string(rsp.MT_len_) + " (attempt " + std::to_string(i) + ")");
+        }
 
         if (rsp.MO_status_ == 0) {
             if (rsp.MT_status_ == 0) {
+                if (log_debug_) {
+                    log_debug_("receive(): mailbox empty (MT status 0)");
+                }
                 return parseInMsg("-1");
             } else if (rsp.MT_status_ == 1) {  //NOLINT
+                if (log_debug_) {
+                    log_debug_("receive(): unread mailbox message available, proceeding to SBDRB");
+                }
                 break;
             } else if (rsp.MT_status_ == 2) {
+                if (log_debug_) {
+                    log_debug_("receive(): MT message transfer in progress, retrying status check");
+                }
                 continue;
             }
         } else {
+            if (log_debug_) {
+                log_debug_("receive(): MO status non-zero, retrying (MO=" + std::to_string(rsp.MO_status_) + ")");
+            }
             continue;
         }
     }
 
     std::string receivedDataBuffer;
     for (int i = 0; i < MAX_NUM_RETRIES; i++) {
+        if (log_debug_) {
+            log_debug_("receive(): SBDRB read attempt " + std::to_string(i));
+        }
+
         static const AT::Line message_to_queue_cmd = AT::Line(AT::DNLD_TO_QUEUE);
         if (!send(message_to_queue_cmd)) {
+            if (log_error_) {
+                log_error_("receive(): failed to send SBDRB command (attempt " + std::to_string(i) + ")");
+            }
             continue;
         }
 
+        if (log_debug_) {
+            log_debug_("receive(): sent SBDRB command (attempt " + std::to_string(i) + ")");
+        }
+
         if (!rcvRsps({message_to_queue_cmd, AT::Line("\n"), AT::Line("+SBDRB:"), AT::Line("\n")})) {
+            if (log_error_) {
+                log_error_("receive(): SBDRB header mismatch (attempt " + std::to_string(i) + ")");
+            }
             continue;
         }
 
         auto buffer_data = readRsp();
         if (!buffer_data) {
+            if (log_error_) {
+                log_error_("receive(): failed reading SBDRB payload (attempt " + std::to_string(i) + ")");
+            }
             continue;
         }
 
@@ -551,23 +854,54 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
         if (buffer_data && buffer_data->size() >= 2) {
             message_size_str = buffer_data->substr(0, 2);
         } else {
+            if (log_error_) {
+                log_error_(
+                  "receive(): SBDRB payload too short to include size field (attempt " + std::to_string(i) + ")");
+            }
             continue;
         }
 
         message_size_int = (static_cast<uint8_t>(message_size_str[0]) << 8) |  //NOLINT(readability-magic-numbers)
                            static_cast<uint8_t>(message_size_str[1]);          //NOLINT(readability-magic-numbers)
+        if (buffer_data->size() < static_cast<std::size_t>(2 + message_size_int)) {
+            if (log_error_) {
+                log_error_(
+                  "receive(): SBDRB payload shorter than advertised message size (attempt " + std::to_string(i) + ")");
+            }
+            continue;
+        }
+
         message = buffer_data->substr(2, message_size_int);
+
+        if (log_debug_) {
+            log_debug_("receive(): extracted mailbox payload size " + std::to_string(message_size_int) + " bytes");
+        }
 
         receivedDataBuffer = message;
 
         break;
     }
 
+    if (receivedDataBuffer.empty()) {
+        if (log_error_) {
+            log_error_("receive(): failed to retrieve payload from mailbox after retries");
+        }
+    }
+
     std::future<void> fut = std::async(std::launch::async, cacheGlobalWaypoints, receivedDataBuffer);
 
     custom_interfaces::msg::Path to_publish = parseInMsg(receivedDataBuffer);
 
+    if (log_debug_) {
+        log_debug_("receive(): parsed mailbox payload into path message");
+    }
+
     fut.get();
+
+    if (log_debug_) {
+        log_debug_("receive(): cached payload and returning path message");
+    }
+
     return to_publish;
 }
 

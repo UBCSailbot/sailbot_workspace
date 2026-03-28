@@ -161,6 +161,14 @@ public:
     bool debugSendAT(const std::string & data);
 
     /**
+     * @brief Debug helper that reads one unread MT message from mailbox and
+     *        returns the payload bytes as a string.
+     *
+     * @return Mailbox payload on success, std::nullopt on failure/no message
+     */
+    std::optional<std::string> debugReceiveAT();
+
+    /**
      * @brief Checks Iridium satellite connection strength via AT+CSQ
      * @return signal strength value from 0-5, or -1 if an error occurs
      */

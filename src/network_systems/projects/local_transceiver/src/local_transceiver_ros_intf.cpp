@@ -170,6 +170,12 @@ public:
                 &LocalTransceiverIntf::send_request_handler, this, std::placeholders::_1, std::placeholders::_2, true));
             RCLCPP_INFO(this->get_logger(), "debug_send_data service created");
 
+            srv_receive_debug_ = this->create_service<std_srvs::srv::Trigger>(
+              "debug_receive_data", std::bind(
+                                      &LocalTransceiverIntf::debug_receive_request_handler, this, std::placeholders::_1,
+                                      std::placeholders::_2));
+            RCLCPP_INFO(this->get_logger(), "debug_receive_data service created");
+
             srv_check_signal_quality_ = this->create_service<std_srvs::srv::Trigger>(
               "check_signal_quality", std::bind(
                                         &LocalTransceiverIntf::check_signal_quality_request_handler, this,
@@ -201,6 +207,7 @@ private:
 
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_send_;
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_send_debug_;
+    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_receive_debug_;
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_check_signal_quality_;
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_receive_and_pub_;
 
@@ -327,6 +334,32 @@ private:
 
         } catch (const std::exception & e) {
             RCLCPP_ERROR(this->get_logger(), "Exception during send(): %s", e.what());
+            response->success = false;
+            response->message = std::string("Exception: ") + e.what();
+        }
+    }
+
+    void debug_receive_request_handler(
+      std::shared_ptr<std_srvs::srv::Trigger::Request>  request,
+      std::shared_ptr<std_srvs::srv::Trigger::Response> response)
+    {
+        (void)request;
+
+        try {
+            std::optional<std::string> msg = lcl_trns_->debugReceiveAT();
+
+            if (msg) {
+                RCLCPP_INFO(this->get_logger(), "debug_receive_data got %zu bytes", msg->size());
+                RCLCPP_INFO(this->get_logger(), "debug_receive_data payload: %s", msg->c_str());
+                response->success = true;
+                response->message = "Received and logged mailbox payload";
+            } else {
+                RCLCPP_INFO(this->get_logger(), "debug_receive_data found no unread mailbox message");
+                response->success = false;
+                response->message = "No unread mailbox message";
+            }
+        } catch (const std::exception & e) {
+            RCLCPP_ERROR(this->get_logger(), "Exception during debugReceiveAT(): %s", e.what());
             response->success = false;
             response->message = std::string("Exception: ") + e.what();
         }
