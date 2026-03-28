@@ -267,7 +267,11 @@ private:
         try {
             CAN_FP::AISShips ais_ship(ais_frame);
 
-            if (total_ais_ships == 0) {
+            if (ais_ship.getNumShips() == 0) {
+                return;  // ELEC will send number of ships = 0 if no ships are found
+            }
+
+            if (total_ais_ships == -1) {
                 total_ais_ships = ais_ship.getNumShips();
                 ais_ships_holder_.resize(total_ais_ships);  // temporary holder vector for AIS ships
             }
@@ -283,7 +287,7 @@ private:
                 ais_ships_.ships = ais_ships_holder_;
                 ais_pub_->publish(ais_ships_);
                 ais_ships_holder_.clear();  // reset holder vector
-                total_ais_ships = 0;        // reset the number of ships
+                total_ais_ships = -1;       // reset the number of ships
             }
             RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), ais_ship.toString().c_str());
         } catch (std::out_of_range err) {
