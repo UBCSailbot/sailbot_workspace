@@ -23,6 +23,7 @@ from shapely.geometry import MultiPolygon, Point, Polygon, box
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.obstacles as ob
 from local_pathfinding.ompl_objectives import get_sailing_objective
+from local_pathfinding.ompl_objectives import motionCost
 
 if TYPE_CHECKING:
     from local_pathfinding.local_path import LocalPathState
@@ -438,6 +439,15 @@ class OMPLPath:
                     return False
 
         return True
+
+    def simplify_solution(self, waypoints) -> list[ci.HelperLatLon]:
+        """Simplifies solution by removing unnecessary waypoints as long as cost does not increase.
+
+        Args:
+            waypoints (list[ci.HelperLatLon]): List of waypoints that will be simplified
+        """
+
+        return waypoints
 
 
 def log_invalid_state(state: cs.XY, obstacle: ob.Obstacle):
