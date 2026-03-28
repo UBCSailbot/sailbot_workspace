@@ -203,7 +203,7 @@ class OMPLPath:
         cost = solution_path.cost(obj)
         return cost.value()
 
-    def get_remaining_cost(self, last_lp_wp_index: int, boat_lat_lon: ci.HelperLatLon) -> float:
+    def get_remaining_cost(self, target_lp_wp_index: int, boat_lat_lon: ci.HelperLatLon) -> float:
         """
         Calculate the cost of the remaining path from the boat's current position.
 
@@ -213,18 +213,19 @@ class OMPLPath:
 
         accumulated via combineCosts.
 
-        In this codebase, last_lp_wp_index is the index of the **last local-path waypoint
-        the boat has just traversed** (i.e., the "current" waypoint). The remaining cost is:
-
-        - the *partial* motion cost on the segment from waypoint last_lp_wp_index to
-          last_lp_wp_index + 1 (based on how far the boat is from the next waypoint), plus
-        - the *full* motion costs of all subsequent segments to the goal, plus
-        - the terminal cost at the final state.
+        In this codebase, target_lp_wp_index is the 0-based array index of the **next
+        local-path waypoint the boat is currently heading toward**. This starts at 1 because
+        path index 0 is the OMPL start state near the boat. The remaining cost is:
+            - the *partial* motion cost on the segment from waypoint
+                target_lp_wp_index - 1 to target_lp_wp_index,
+                based on how far the boat is from the next waypoint, plus
+            - the *full* motion costs of all subsequent segments to the goal, plus
+            - the terminal cost at the final state.
 
         Args:
-            last_lp_wp_index (int): Index of the last local-path waypoint the boat has just
-                traversed (the current waypoint). The next waypoint to head toward is
-                last_lp_wp_index + 1.
+            target_lp_wp_index (int): 0-based array index of the next local-path waypoint the
+                boat is currently heading toward. This should be in
+                [1, number_of_waypoints - 1].
             boat_lat_lon (ci.HelperLatLon): The boat's current latitude/longitude.
 
         Returns:
@@ -232,7 +233,7 @@ class OMPLPath:
             does not exist.
 
         Raises:
-            ValueError: If last_lp_wp_index is out of bounds for the solution path.
+            IndexError: If target_lp_wp_index is out of bounds for the solution path.
         """
         try:
             solution_path = self._simple_setup.getSolutionPath()
@@ -244,21 +245,20 @@ class OMPLPath:
         states = solution_path.getStates()
         num_states = len(states)
 
-        if last_lp_wp_index == num_states - 1:
-            return 0.0
         if num_states < 2:
             return solution_path.cost(obj).value()
-        if last_lp_wp_index >= num_states:
-            raise ValueError(
+        if target_lp_wp_index < 1 or target_lp_wp_index >= num_states:
+            raise IndexError(
                 "index out of bound for path; ensure that "
-                "the last_lp_wp_index is < number of waypoints in the path"
+                "the target_lp_wp_index is in [1, number of waypoints in the path - 1]"
             )
 
         cost = obj.identityCost()
 
-        # --- Partial cost for the current segment (last_lp_wp_index -> last_lp_wp_index+1) ---
-        seg_start = states[last_lp_wp_index]
-        seg_end = states[last_lp_wp_index + 1]
+        # --- Partial cost for the current segment (target_lp_wp_index-1 -> target_lp_wp_index) ---
+        segment_start_index = target_lp_wp_index - 1
+        seg_start = states[segment_start_index]
+        seg_end = states[target_lp_wp_index]
 
         dx_seg = seg_end.getX() - seg_start.getX()
         dy_seg = seg_end.getY() - seg_start.getY()
@@ -285,9 +285,9 @@ class OMPLPath:
                 projected_dist = total_seg_dist
             elif projected_dist < 0.0:
                 # This seems like it should never happen. However, our logic updates
-                # prev_lp_wp_index whenever Polaris is near the local waypoint. This update can
+                # target_lp_wp_index whenever Polaris is near the local waypoint. This update can
                 # take place before the boat has passed the said waypoint.
-                self._logger.info("Boat is behind the prev_lp_wp_index")
+                self._logger.info("Boat is behind the target_lp_wp_index")
                 projected_dist = 0.0
 
             fraction_travelled = projected_dist / total_seg_dist
@@ -299,7 +299,7 @@ class OMPLPath:
         cost = obj.combineCosts(cost, base.Cost(fraction_remaining * full_seg_cost))
 
         # Add full costs for segments strictly after the current one
-        for i in range(last_lp_wp_index + 1, num_states - 1):
+        for i in range(target_lp_wp_index, num_states - 1):
             cost = obj.combineCosts(cost, obj.motionCost(states[i], states[i + 1]))
 
         return cost.value()
@@ -399,8 +399,8 @@ class OMPLPath:
             simple_setup,
             self.state.heading,
             self.state.speed,
-            self.state.wind_direction,
-            self.state.wind_speed,
+            self.state.current_aw.dir_deg,
+            self.state.current_aw.speed_kmph,
         )
 
         simple_setup.setOptimizationObjective(objective)
