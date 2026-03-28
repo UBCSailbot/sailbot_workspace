@@ -15,11 +15,12 @@ using tcp       = boost::asio::ip::tcp;
 
 namespace remote_transceiver
 {
+    // We're currently using the TESTING_HOST and TESTING_PORT
 constexpr int            DEFAULT_NUM_IO_THREADS = 2;
 static const std::string PROD_DB_NAME           = "PLACEHOLDER";
 static const std::string PROD_HOST              = "0.0.0.0";
 constexpr uint16_t       PROD_PORT              = 8081;
-static const std::string TESTING_HOST           = "127.0.0.1";
+static const std::string TESTING_HOST           = "0.0.0.0";
 constexpr uint16_t       TESTING_PORT           = 8081;
 constexpr int            HTTP_VERSION           = 11;
 namespace targets
