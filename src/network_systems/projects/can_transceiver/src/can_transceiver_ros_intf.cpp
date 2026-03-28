@@ -199,7 +199,7 @@ private:
     std::vector<msg::HelperAISShip> ais_ships_holder_;
     // Track received indices for AISShips
     std::set<int> received_indices_;
-    int           total_ais_ships = 0;
+    int           total_ais_ships = -1;
 
     //queue of previous k wind sensor readings (either sail or hull) for moving average
     std::queue<vec> wind_sensor_readings;
