@@ -13,6 +13,7 @@ import {
   WindSensorsState,
 } from '@/stores/WindSensors/WindSensorsTypes';
 import { DataFilterState } from '@/stores/DataFilter/DataFilterTypes';
+import { GraphId, Layout, LayoutItem, isSplitGroup } from '@/stores/Graphs/GraphsTypes';
 
 const parseISOString = (s: string) => {
   return Math.floor(Date.parse(s) / 1000); // Converts to seconds
@@ -110,7 +111,7 @@ interface StatsProps {
   gps: GPSState;
   batteries: BatteriesState;
   windSensors: WindSensorsState;
-  graphsOrder: string[];
+  layout: Layout;
   dataFilter: DataFilterState;
 }
 
@@ -119,7 +120,7 @@ const Stats = ({
   gps,
   batteries,
   windSensors,
-  graphsOrder,
+  layout,
   dataFilter,
 }: StatsProps) => {
   const [summary, setSummary] = useState<string>('LOADING...');
@@ -246,9 +247,16 @@ const Stats = ({
     WindSensors: WindSensorsSpeedGraph(windSensorsSpeedData),
   };
 
-  const graphs = graphsOrder.map(
-    (graph: string) => graphsMap[graph as keyof typeof graphsMap],
-  );
+  const renderLayoutItem = (item: LayoutItem, index: number) => {
+    if (isSplitGroup(item)) {
+      return (
+        <div key={`split-${index}`} className={styles.splitGroup}>
+          {item.map((graphId) => graphsMap[graphId])}
+        </div>
+      );
+    }
+    return graphsMap[item];
+  };
 
   return (
     <div className={styles.stats}>
@@ -260,7 +268,9 @@ const Stats = ({
           <RearrangeGraphDropdown />
         </div>
       </div>
-      <div className={styles.lineCharts}>{graphs}</div>
+      <div className={styles.lineCharts}>
+        {layout.map(renderLayoutItem)}
+      </div>
     </div>
   );
 };
@@ -269,7 +279,7 @@ const mapStateToProps = (state: any) => ({
   gps: state.gps,
   batteries: state.batteries,
   windSensors: state.windSensors,
-  graphsOrder: state.graphs.order,
+  layout: state.graphs.layout,
   dataFilter: state.dataFilter,
 });
 
