@@ -402,8 +402,8 @@ std::string GPS::debugStr() const
        << "Latitude (decimal degrees): " << lat_ << "\n"
        << "Longitude (decimal degrees): " << lon_ << "\n"
        << "Seconds (sec): " << sec_ << "\n"
-       << "Minutes (min): " << min_ << "\n"
-       << "Hours (hr): " << hour_ << "\n"
+       << "Minutes (min): " << static_cast<int>(min_) << "\n"
+       << "Hours (hr): " << static_cast<int>(hour_) << "\n"
        << "Speed (km/hr): " << speed_ << "\n";
     return ss.str();
 }
@@ -488,7 +488,7 @@ AISShips::AISShips(const CanFrame & cf) : AISShips(static_cast<CanId>(cf.can_id)
 
 AISShips::AISShips(msg::HelperAISShip ros_ship, CanId id)
 : BaseFrame(id, CAN_BYTE_DLEN_),
-  num_ships_(0),
+  num_ships_(1),
   lat_(ros_ship.lat_lon.latitude),
   lon_(ros_ship.lat_lon.longitude),
   speed_(ros_ship.sog.speed),
@@ -572,13 +572,13 @@ std::string AISShips::debugStr() const
 {
     std::stringstream ss;
     ss << BaseFrame::debugStr() << "\n"
-       << "Ship " << idx_ << ":\n"
+       << "Ship: " << static_cast<int>(idx_) << "\n"
        << "ID: " << ship_id_ << "\n"
        << "Latitude (decimal degrees): " << lat_ << "\n"
        << "Longitude (decimal degrees): " << lon_ << "\n"
        << "Heading (degrees): " << heading_ << "\n"
        << "Speed (km/hr): " << speed_ << "\n"
-       << "ROT (degree/min): " << rot_ << "\n"
+       << "ROT (degree/min): " << static_cast<int>(rot_) << "\n"
        << "Width (m): " << width_ << "\n"
        << "Length (m): " << length_ << "\n"
        << "\n";
@@ -639,6 +639,11 @@ void AISShips::checkBounds() const
         std::string err_msg = err.value();
         throw std::out_of_range("Length is out of bounds!\n" + debugStr() + "\n" + err_msg);
     }
+    err = num_ships_ <= 0 ? std::optional<std::string>("Number of ships must be positive!") : std::nullopt;
+    if (err) {
+        std::string err_msg = err.value();
+        throw std::out_of_range("Number of ships must be greater than 0!\n" + debugStr() + "\n" + err_msg);
+    }
 }
 //AISShips private END
 //AISShips END
@@ -673,7 +678,7 @@ std::string PwrMode::debugStr() const
 {
     std::stringstream ss;
     ss << BaseFrame::debugStr() << "\n"
-       << "Power mode: " << mode_;
+       << "Power mode: " << static_cast<int>(mode_);
     return ss.str();
 }
 
