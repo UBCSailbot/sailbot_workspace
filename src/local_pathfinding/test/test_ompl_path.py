@@ -282,7 +282,7 @@ def test_create_space(
 
 @pytest.mark.parametrize("boat_latlon", [HelperLatLon(latitude=0.0, longitude=0.0)])
 def test_get_remaining_cost_full_path(fresh_ompl_path, boat_latlon):
-    remaining_cost = fresh_ompl_path.get_remaining_cost(0, boat_latlon)
+    remaining_cost = fresh_ompl_path.get_remaining_cost(1, boat_latlon)
     assert remaining_cost == pytest.approx(fresh_ompl_path.get_cost(), abs=0.01)
 
 
