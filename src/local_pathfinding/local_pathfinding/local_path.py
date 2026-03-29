@@ -291,7 +291,8 @@ class LocalPath:
         - Receipt of a new global waypoint
         - Absence of an existing path
         - Current path intersecting with collision zones
-        - New path having a better cost-heading metric than the old path
+        - wind conditions changing significantly (not implemented yet TODO)
+        - timer running out for the current path, i.e. current path being stale
 
         The decision metric combines normalized heading difference and
         normalized path cost to balance directional efficiency with
@@ -316,9 +317,10 @@ class LocalPath:
                 - Desired heading in degrees
                 - Updated waypoint index
             The method decides whether to return the heading for new path or old path
+        Raises:
+            PathNotFoundError
         """
         self._target_lp_wp_index = target_lp_wp_index
-        old_ompl_path = self._ompl_path
         must_change, reason = self.must_change_path(received_new_global_waypoint)
 
         if must_change:
@@ -350,9 +352,10 @@ class LocalPath:
             self.state = new_state
             self._update(new_ompl_path)
 
+            init_target_lp_wp_index = 1
             heading_new_path, new_target_lp_wp_index = (
-                self.calculate_desired_heading_and_wp_index(  # noqa
-                    new_ompl_path.get_path(), 1, gps.lat_lon
+                self.calculate_desired_heading_and_wp_index(
+                    new_ompl_path.get_path(), init_target_lp_wp_index, gps.lat_lon
                 )
             )
             return heading_new_path, new_target_lp_wp_index
@@ -362,53 +365,7 @@ class LocalPath:
         heading_old_path, old_target_lp_wp_index = self.calculate_desired_heading_and_wp_index(
             self._ompl_path.get_path(), target_lp_wp_index, gps.lat_lon  # type: ignore
         )
-
-        heading_diff_old_path = cs.calculate_heading_diff(
-            self.state.heading,  # type: ignore
-            heading_old_path,
-        )
-        heading_diff_new_path = cs.calculate_heading_diff(
-            self.state.heading,  # type: ignore
-            heading_new_path,
-        )
-
-        old_cost = old_ompl_path.get_remaining_cost(  # type: ignore
-            old_target_lp_wp_index, gps.lat_lon
-        )
-        new_cost = new_ompl_path.get_remaining_cost(new_target_lp_wp_index, gps.lat_lon)
-        max_cost = max(old_cost, new_cost, 1)
-        old_cost_normalized = old_cost / max_cost
-        new_cost_normalized = new_cost / max_cost
-
-        max_heading_diff = max(
-            math.fabs(heading_diff_new_path), math.fabs(heading_diff_old_path), 1.0
-        )
-
-        heading_diff_new_normalized = heading_diff_new_path / max_heading_diff
-        heading_diff_old_normalized = heading_diff_old_path / max_heading_diff
-
-        w_h = HEADING_WEIGHT
-        w_c = COST_WEIGHT
-
-        metric_old = w_h * heading_diff_old_normalized + w_c * old_cost_normalized
-        metric_new = w_h * heading_diff_new_normalized + w_c * new_cost_normalized
-
-        self._logger.debug(
-            f"(old cost: {old_cost:.2f}, "
-            f"new cost: {new_cost:.2f})"
-            f", metric_old: {metric_old:.2f}, "
-            f"metric_new: {metric_new:.2f}, "
-            f"old_cost_normalized: {old_cost_normalized:.2f}, "
-            f"new_cost_normalized: {new_cost_normalized:.2f}"
-        )
-        if metric_new < metric_old:
-            self._logger.debug("New path is cheaper, updating local path ")
-            self.state = new_state
-            self._update(new_ompl_path)
-            return heading_new_path, new_target_lp_wp_index
-        else:
-            self._logger.debug("old path is cheaper, continuing on the same path")
-            return heading_old_path, old_target_lp_wp_index
+        return heading_old_path, old_target_lp_wp_index
 
     def _update(self, ompl_path: OMPLPath):
 
