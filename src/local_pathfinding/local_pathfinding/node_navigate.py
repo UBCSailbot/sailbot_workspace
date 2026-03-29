@@ -67,7 +67,7 @@ class Sailbot(Node):
                 ("pub_period_sec", rclpy.Parameter.Type.DOUBLE),
                 ("path_planner", rclpy.Parameter.Type.STRING),
                 ("test_plan", rclpy.Parameter.Type.STRING),
-                ("global_path_interval_spacing", rclpy.Parameter.Type.DOUBLE),
+                ("global_path_interval_spacing_km", rclpy.Parameter.Type.DOUBLE),
             ],
         )
 
@@ -106,8 +106,10 @@ class Sailbot(Node):
         self.pub_period_sec = (
             self.get_parameter("pub_period_sec").get_parameter_value().double_value
         )
-        self.global_path_interval_spacing = (
-            self.get_parameter("global_path_interval_spacing").get_parameter_value().double_value
+        self.global_path_interval_spacing_km = (
+            self.get_parameter("global_path_interval_spacing_km")
+            .get_parameter_value()
+            .double_value
         )
         self.get_logger().debug(f"Got parameter: {self.pub_period_sec=}")
 
@@ -263,7 +265,7 @@ class Sailbot(Node):
         ):
             received_new_global_waypoint = True
             self.global_waypoint_index = self.determine_start_point_in_new_global_path(
-                self.global_path, self.gps.lat_lon
+                self.global_path, self.gps.lat_lon, self.global_path_interval_spacing_km
             )
             self.saved_target_global_waypoint = self.global_path.waypoints[
                 self.global_waypoint_index
@@ -303,7 +305,7 @@ class Sailbot(Node):
 
     @staticmethod
     def determine_start_point_in_new_global_path(
-        self, global_path: ci.Path, boat_lat_lon: ci.HelperLatLon
+        global_path: ci.Path, boat_lat_lon: ci.HelperLatLon, global_path_spacing_km: float
     ):
         """Used when we receive a new global path.
         Finds the index of the first waypoint within 'pathfinding range' of gps location.
@@ -324,7 +326,7 @@ class Sailbot(Node):
             if distance_to_waypoint_m < closest_m:
                 closest_m, index_of_closest = distance_to_waypoint_m, waypoint_index
 
-            if distance_to_waypoint_m < cs.km_to_meters(self.global_path_interval_spacing):
+            if distance_to_waypoint_m < cs.km_to_meters(global_path_spacing_km):
                 return waypoint_index
 
         return index_of_closest

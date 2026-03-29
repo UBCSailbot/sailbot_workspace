@@ -3,7 +3,7 @@
    ros__parameters:
       # Publishers' period (seconds): how often the publishers publish
       pub_period_sec: 1.0
-      global_path_interval_spacing: 3.0
+      global_path_interval_spacing_km: 3.0
       test_plan: "basic.yaml"
 
 # local_pathfinding parameters

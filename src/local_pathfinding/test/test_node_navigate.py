@@ -1,4 +1,7 @@
+import os
+
 import pytest
+import yaml
 
 import custom_interfaces.msg as ci
 import local_pathfinding.node_navigate as nn
@@ -7,7 +10,10 @@ from local_pathfinding.local_path import LocalPath
 LOCAL_WAYPOINT_REACHED_THRESH_KM = 0.5
 GLOBAL_WAYPOINT_REACHED_THRESH_KM = 3
 ONE_DEGREE_KM = 111  # One degree longitude at equator = 111km
-PATH_RANGE_DEG = nn.PATHFINDING_RANGE_KM / ONE_DEGREE_KM
+with open(os.getcwd() + "/../global_launch/config/globals.yaml", "r") as f:
+    config = yaml.safe_load(f)
+GLOBAL_PATH_SPACING_KM = config["/**"]["ros__parameters"]["global_path_interval_spacing_km"]
+PATH_RANGE_DEG = GLOBAL_PATH_SPACING_KM / ONE_DEGREE_KM
 
 
 @pytest.mark.parametrize(
@@ -132,6 +138,6 @@ def test_find_next_global_waypoint_index(
     global_path: ci.Path, boat_lat_lon: ci.HelperLatLon, correct_index: int
 ):
     calculated_answer = nn.Sailbot.determine_start_point_in_new_global_path(
-        global_path, boat_lat_lon
+        global_path, boat_lat_lon, GLOBAL_PATH_SPACING_KM
     )
     assert calculated_answer == correct_index
