@@ -7,7 +7,7 @@ from rclpy.node import Node
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.global_path as gp
 import local_pathfinding.obstacles as ob
-from local_pathfinding.local_path import LocalPath
+from local_pathfinding.local_path import LocalPath, PathNotFoundError
 from local_pathfinding.ompl_path import MAX_SOLVER_RUN_TIME_SEC
 from test_plans.test_plan import TestPlan
 
@@ -171,9 +171,10 @@ class Sailbot(Node):
 
         self.update_params()
 
-        desired_heading = self.get_desired_heading()
+        desired_heading, sail = self.get_desired_heading()
         msg = ci.DesiredHeading()
         msg.heading.heading = desired_heading
+        msg.sail = sail
         if self.desired_heading is None or desired_heading != self.desired_heading.heading.heading:
             self.get_logger().info(f"Updating desired heading to: {msg.heading.heading:.2f}")
 
@@ -245,11 +246,11 @@ class Sailbot(Node):
         self.lpath_data_pub.publish(msg)
 
     # helper functions
-    def get_desired_heading(self) -> float:
+    def get_desired_heading(self) -> tuple[float, bool]:
         """Get the desired heading.
 
         Returns:
-            float: The desired heading
+            tuple[float, bool]: The desired heading and whether sailing is allowed.
         """
 
         # Extra logic for when the global waypoint changes due to receiving a new global path
@@ -285,18 +286,22 @@ class Sailbot(Node):
                 self.global_waypoint_index
             ]
 
-        desired_heading, self.target_lp_wp_index = self.local_path.update_if_needed(
-            self.gps,
-            self.ais_ships,
-            self.global_path,
-            self.target_lp_wp_index,
-            received_new_global_waypoint,
-            self.saved_target_global_waypoint,
-            self.filtered_wind_sensor,
-            self.planner,
-            self.land_multi_polygon,
-        )
-        return desired_heading
+        try:
+            desired_heading, self.target_lp_wp_index = self.local_path.update_if_needed(
+                self.gps,
+                self.ais_ships,
+                self.global_path,
+                self.target_lp_wp_index,
+                received_new_global_waypoint,
+                self.saved_target_global_waypoint,
+                self.filtered_wind_sensor,
+                self.planner,
+                self.land_multi_polygon,
+            )
+            return desired_heading, True
+        except PathNotFoundError:
+            self.get_logger().warning("Unable to generate a local path; disabling sail")
+            return 0.0, False
 
     @staticmethod
     def determine_start_point_in_new_global_path(
