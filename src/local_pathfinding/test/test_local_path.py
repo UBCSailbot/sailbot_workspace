@@ -132,6 +132,64 @@ def test_calculate_desired_heading_and_waypoint_index(
 
 
 @pytest.mark.parametrize(
+    "path, target_wp_index, boat_lat_lon, expected_exception",
+    [
+        (
+            Path(
+                waypoints=[
+                    HelperLatLon(latitude=0.0, longitude=0.2),
+                    HelperLatLon(latitude=0.0, longitude=0.1),
+                    HelperLatLon(latitude=0.0, longitude=0.0),
+                ]
+            ),
+            0,
+            HelperLatLon(latitude=0.0, longitude=0.09999),
+            lp.PathNotFoundError,
+        ),
+        (
+            Path(
+                waypoints=[
+                    HelperLatLon(latitude=0.0, longitude=0.2),
+                    HelperLatLon(latitude=0.0, longitude=0.1),
+                    HelperLatLon(latitude=0.0, longitude=0.0),
+                ]
+            ),
+            3,
+            HelperLatLon(latitude=0.0, longitude=0.09999),
+            lp.PathNotFoundError,
+        ),
+        (
+            None,
+            100,
+            HelperLatLon(latitude=0.0, longitude=0.09999),
+            lp.PathNotFoundError,
+        ),
+        (
+            Path(
+                waypoints=[
+                    HelperLatLon(latitude=0.0, longitude=0.1),
+                    HelperLatLon(latitude=0.0, longitude=0.0),
+                ]
+            ),
+            1,
+            HelperLatLon(latitude=0.0, longitude=0.00001),
+            IndexError,
+        ),
+    ],
+)
+def test_calculate_desired_heading_and_waypoint_index_exception(
+    path: Path,
+    target_wp_index: int,
+    boat_lat_lon: HelperLatLon,
+    expected_exception,
+):
+    with pytest.raises(expected_exception):
+        lp.LocalPath.calculate_desired_heading_and_wp_index(
+            path, target_wp_index, boat_lat_lon
+        )
+
+
+@pytest.mark.parametrize(
     "target_local_wp_index, reference_latlon, path, obstacles, result",
     [
         (

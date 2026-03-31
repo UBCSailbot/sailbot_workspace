@@ -154,8 +154,10 @@ class LocalPath:
             tuple[float, int]: Desired heading in degrees and the updated local
                 waypoint index (target_lp_wp_index).
         Raises:
-            ValueError: if the path is None
-            IndexError: If index out of bounds or path is None
+            PathNotFoundError: If `path` is None or `target_lp_wp_index` is outside the
+                valid range `[1, len(path.waypoints) - 1]`.
+            IndexError: If the current waypoint is reached and incrementing
+                `target_lp_wp_index` requires generating a new path.
         """
         if path is None:
             raise PathNotFoundError("Path is None")
