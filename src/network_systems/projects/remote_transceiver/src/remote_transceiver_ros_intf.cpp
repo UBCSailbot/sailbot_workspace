@@ -41,7 +41,7 @@ public:
                 default_db_name = remote_transceiver::PROD_DB_NAME;
                 default_host    = remote_transceiver::PROD_HOST;
                 default_port    = remote_transceiver::PROD_PORT;
-            } else if (mode == SYSTEM_MODE::DEV) {
+            } else if (mode == SYSTEM_MODE::DEV || mode == SYSTEM_MODE::SIM){
                 default_db_name = "test";
                 default_host    = remote_transceiver::TESTING_HOST;
                 default_port    = remote_transceiver::TESTING_PORT;

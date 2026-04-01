@@ -133,7 +133,7 @@ class Sailbot(Node):
 
         # Initialize mock land obstacle
         self.land_multi_polygon = None
-        if self.mode == "development":
+        if self.mode in ("development", "sim"):
             self.test_plan = self.get_parameter("test_plan").get_parameter_value().string_value
             self.get_logger().info("test plan: " + self.test_plan)
             test_plan = TestPlan(self.test_plan)
@@ -154,8 +154,20 @@ class Sailbot(Node):
             f"Received data from {self.global_path_sub.topic}: {gp.path_to_dict(msg)}"
         )
         self.global_path = msg
-        if self.saved_target_global_waypoint is None:
-            self.saved_target_global_waypoint = self.global_path.waypoints[-1]
+        if not self._has_valid_global_path():
+            self.saved_target_global_waypoint = None
+            self.global_waypoint_index = -1
+            self.get_logger().warning("Received global_path with zero waypoints")
+            return
+
+        # Keep waypoint target bookkeeping in sync whenever a new global path arrives.
+        if self.saved_target_global_waypoint is None or not self._is_global_waypoint_index_valid():
+            if not self._sync_global_waypoint_index():
+                # Fallback to final waypoint if nearest-waypoint lookup fails.
+                self.global_waypoint_index = len(self.global_path.waypoints) - 1
+                self.saved_target_global_waypoint = self.global_path.waypoints[
+                    self.global_waypoint_index
+                ]
 
     def filtered_wind_sensor_callback(self, msg: ci.WindSensor):
         self.get_logger().debug(f"Received data from {self.filtered_wind_sensor_sub.topic}: {msg}")
@@ -170,10 +182,10 @@ class Sailbot(Node):
             return  # should not continue, return and try again next loop
 
         self.update_params()
-
         desired_heading = self.get_desired_heading()
         msg = ci.DesiredHeading()
         msg.heading.heading = desired_heading
+        msg.sail = True  # for issue# 805, place holder
         if self.desired_heading is None or desired_heading != self.desired_heading.heading.heading:
             self.get_logger().info(f"Updating desired heading to: {msg.heading.heading:.2f}")
 
@@ -190,12 +202,12 @@ class Sailbot(Node):
     def publish_local_path_data(self):
         """
         Collect all navigation data and publish it in one message.
-        In development mode, all navigation data is published.
+        In development and sim mode, all navigation data is published.
         In production mode, only the local path is published, with all other data set to 0 or empty
 
         """
-        # publish all navigation data when in dev mode
-        if self.mode == "development":
+        # publish all navigation data when in development/sim mode
+        if self.mode in ("development", "sim"):
             helper_obstacles = []
 
             for obst in self.local_path.state.obstacles:
@@ -252,19 +264,30 @@ class Sailbot(Node):
             float: The desired heading
         """
 
+        if not self._has_valid_global_path():
+            self.get_logger().warning("Global path is empty. Skipping desired heading update.")
+            return self._last_desired_heading_or_default()
+
+        if not self._is_global_waypoint_index_valid() and not self._sync_global_waypoint_index():
+            self.get_logger().warning(
+                "Unable to determine valid global waypoint index. Skipping desired heading update."
+            )
+            return self._last_desired_heading_or_default()
+
         # Extra logic for when the global waypoint changes due to receiving a new global path
         received_new_global_waypoint = False
+        current_target_global_waypoint = self.global_path.waypoints[self.global_waypoint_index]
+
         if (
-            self.global_path.waypoints[self.global_waypoint_index]
-            != self.saved_target_global_waypoint
+            self.saved_target_global_waypoint is None
+            or current_target_global_waypoint != self.saved_target_global_waypoint
         ):
             received_new_global_waypoint = True
-            self.global_waypoint_index = self.determine_start_point_in_new_global_path(
-                self.global_path, self.gps.lat_lon
-            )
-            self.saved_target_global_waypoint = self.global_path.waypoints[
-                self.global_waypoint_index
-            ]
+            if not self._sync_global_waypoint_index():
+                self.get_logger().warning(
+                    "Failed to resync global waypoint index from latest global path."
+                )
+                return self._last_desired_heading_or_default()
 
         # Check if we're close enough to the global waypoint to head to the next one
         _, _, distance_to_waypoint_m = cs.GEODESIC.inv(
@@ -273,13 +296,22 @@ class Sailbot(Node):
             self.saved_target_global_waypoint.longitude,
             self.saved_target_global_waypoint.latitude,
         )
-        if distance_to_waypoint_m < GLOBAL_WAYPOINT_REACHED_THRESH_KM:
+        if distance_to_waypoint_m < cs.km_to_meters(GLOBAL_WAYPOINT_REACHED_THRESH_KM):
             received_new_global_waypoint = True
             self.global_waypoint_index -= 1  # Since global waypoints are in reverse order
 
             # At the end of the global path, alternate between the last two waypoints
             if self.global_waypoint_index < 0:
                 self.global_waypoint_index = 1
+
+            if (
+                not self._is_global_waypoint_index_valid()
+                and not self._sync_global_waypoint_index()
+            ):
+                self.get_logger().warning(
+                    "Waypoint index became invalid while advancing global waypoint."
+                )
+                return self._last_desired_heading_or_default()
 
             self.saved_target_global_waypoint = self.global_path.waypoints[
                 self.global_waypoint_index
@@ -326,6 +358,35 @@ class Sailbot(Node):
 
         return index_of_closest
 
+    def _has_valid_global_path(self) -> bool:
+        return self.global_path is not None and len(self.global_path.waypoints) > 0
+
+    def _is_global_waypoint_index_valid(self) -> bool:
+        if not self._has_valid_global_path():
+            return False
+
+        num_waypoints = len(self.global_path.waypoints)
+        return -num_waypoints <= self.global_waypoint_index < num_waypoints
+
+    def _sync_global_waypoint_index(self) -> bool:
+        if not self._has_valid_global_path() or self.gps is None:
+            return False
+
+        new_index = self.determine_start_point_in_new_global_path(
+            self.global_path, self.gps.lat_lon
+        )
+        if new_index < 0 or new_index >= len(self.global_path.waypoints):
+            return False
+
+        self.global_waypoint_index = new_index
+        self.saved_target_global_waypoint = self.global_path.waypoints[new_index]
+        return True
+
+    def _last_desired_heading_or_default(self) -> float:
+        if self.desired_heading is None:
+            return 0.0
+        return self.desired_heading.heading.heading
+
     def update_params(self):
         """Update instance variables that depend on parameters if they have changed."""
 
@@ -350,7 +411,13 @@ class Sailbot(Node):
             self.planner = planner
 
     def _all_subs_active(self) -> bool:
-        return self.ais_ships and self.gps and self.global_path and self.filtered_wind_sensor
+        return (
+            self.ais_ships is not None
+            and self.gps is not None
+            and self.global_path is not None
+            and len(self.global_path.waypoints) > 0
+            and self.filtered_wind_sensor is not None
+        )
 
     def _log_inactive_subs_warning(self):
         """
@@ -363,6 +430,8 @@ class Sailbot(Node):
             inactive_subs.append("gps")
         if self.global_path_sub is None:
             inactive_subs.append("global_path")
+        elif len(self.global_path.waypoints) == 0:
+            inactive_subs.append("global_path(empty)")
         if self.filtered_wind_sensor_sub is None:
             inactive_subs.append("filtered_wind_sensor")
         if len(inactive_subs) == 0:
