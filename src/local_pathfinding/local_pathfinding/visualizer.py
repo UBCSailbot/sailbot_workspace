@@ -14,21 +14,21 @@ Main Components:
 """
 
 import math
+import subprocess
 from collections import deque
 from dataclasses import dataclass
 from multiprocessing import Queue
-from typing import Dict, List, Optional, Tuple, Any
-import subprocess
-import yaml
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
-import custom_interfaces.msg as ci
 import dash
 import plotly.graph_objects as go
+import yaml
 from dash import dcc, html
 from dash.dependencies import Input, Output, State
 from shapely.geometry import MultiPolygon, Polygon
 
+import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.wind_coord_systems as wcs
 from local_pathfinding.ompl_path import OMPLPath
@@ -794,7 +794,7 @@ def apply_layout(
     vs: VisualizerState,
     fig: go.Figure,
     zoom_needed: bool,
-    last_range: Optional[Dict[str, List[float]]]
+    last_range: Optional[Dict[str, List[float]]],
 ) -> None:
     """
     Apply the main plot layout configuration (axis titles, domains, legend, and optional ranges).
@@ -1000,7 +1000,7 @@ def dash_app(q: Queue):
                 style={
                     "position": "absolute",
                     "bottom": "120px",  # Distance from the very bottom of the screen
-                    "left": "50px",   # Aligns with the Y-axis
+                    "left": "50px",  # Aligns with the Y-axis
                     "display": "flex",
                     "gap": "15px",
                     "alignItems": "center",
@@ -1008,20 +1008,23 @@ def dash_app(q: Queue):
                     "backgroundColor": "rgba(255, 255, 255, 0.8)",  # Semi-transparent white
                     "borderRadius": "8px",
                     "border": "1px solid #ccc",
-                    "zIndex": "1000"
+                    "zIndex": "1000",
                 },
                 children=[
                     html.Label("Wind Direction (°):", style={"fontWeight": "bold"}),
-                    dcc.Input(id="tw-dir-input", type="number",
-                              value=0, style={"width": "80px"}),
+                    dcc.Input(id="tw-dir-input", type="number", value=0, style={"width": "80px"}),
                     html.Label("Wind Speed (km/h):", style={"fontWeight": "bold"}),
-                    dcc.Input(id="tw-speed-input", type="number",
-                              value=0, style={"width": "80px"}),
+                    dcc.Input(
+                        id="tw-speed-input", type="number", value=0, style={"width": "80px"}
+                    ),
                     html.Button(
                         "Apply Wind",
                         id="apply-wind-btn",
-                        style={"backgroundColor": "rgb(18, 70, 139)",
-                               "color": "white", "cursor": "pointer"}
+                        style={
+                            "backgroundColor": "rgb(18, 70, 139)",
+                            "color": "white",
+                            "cursor": "pointer",
+                        },
                     ),
                     html.Div(id="wind-status"),
                 ],
@@ -1190,5 +1193,5 @@ app.clientside_callback(
     """,
     Output("wind-status", "children", allow_duplicate=True),
     Input("wind-status", "children"),
-    prevent_initial_call=True
+    prevent_initial_call=True,
 )

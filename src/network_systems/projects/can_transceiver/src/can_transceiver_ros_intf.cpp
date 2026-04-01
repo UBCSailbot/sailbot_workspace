@@ -65,6 +65,8 @@ public:
                     RCLCPP_ERROR(this->get_logger(), "%s", err.what());
                     throw err;
                 }
+            } else if (mode == SYSTEM_MODE::SIM) { // added for issue#805
+                RCLCPP_INFO(this->get_logger(), "Running CAN Transceiver in sim mode");
             } else {
                 std::string msg = "Error, invalid system mode" + mode;
                 RCLCPP_ERROR(this->get_logger(), "%s", msg.c_str());
@@ -86,49 +88,52 @@ public:
             // pressure_sensors_pub_ =
             //   this->create_publisher<msg::PressureSensors>(ros_topics::PRESSURE_SENSORS, QUEUE_SIZE);
 
-            std::vector<std::pair<CanId, std::function<void(const CanFrame &)>>> canCbs = {
-              std::make_pair(CanId::POWER_OFF, std::function<void(const CanFrame &)>([this](const CanFrame & frame) {
-                                 powerOff(frame);
-                             })),
-              std::make_pair(
-                CanId::BMS_DATA_FRAME,
-                std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishBattery(frame); })),
-              std::make_pair(
-                CanId::PATH_GPS_DATA_FRAME,
-                std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishGPS(frame); })),
-              std::make_pair(
-                CanId::RUDDER_DATA_FRAME,
-                std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishRudder(frame); })),
-              std::make_pair(CanId::SAIL_WIND, std::function<void(const CanFrame &)>([this](const CanFrame & frame) {
-                                 publishWindSensor(frame);
-                             })),
-              std::make_pair(CanId::DATA_WIND, std::function<void(const CanFrame &)>([this](const CanFrame & frame) {
-                                 publishWindSensor(frame);
-                             })),
-              std::make_pair(
-                CanId::GENERIC_SENSOR_START,
-                std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishGeneric(frame); })),
-              std::make_pair(CanId::SAIL_AIS, std::function<void(const CanFrame &)>([this](const CanFrame & frame) {
-                                 publishAIS(frame);
-                             }))};
+            //  edited for issue#805
+            if (can_trns_) {
+                std::vector<std::pair<CanId, std::function<void(const CanFrame &)>>> canCbs = {
+                    std::make_pair(CanId::POWER_OFF, std::function<void(const CanFrame &)>([this](const CanFrame & frame) {
+                                        powerOff(frame);
+                                    })),
+                    std::make_pair(
+                    CanId::BMS_DATA_FRAME,
+                    std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishBattery(frame); })),
+                    std::make_pair(
+                    CanId::PATH_GPS_DATA_FRAME,
+                    std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishGPS(frame); })),
+                    std::make_pair(
+                    CanId::RUDDER_DATA_FRAME,
+                    std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishRudder(frame); })),
+                    std::make_pair(CanId::SAIL_WIND, std::function<void(const CanFrame &)>([this](const CanFrame & frame) {
+                                        publishWindSensor(frame);
+                                    })),
+                    std::make_pair(CanId::DATA_WIND, std::function<void(const CanFrame &)>([this](const CanFrame & frame) {
+                                        publishWindSensor(frame);
+                                    })),
+                    std::make_pair(
+                    CanId::GENERIC_SENSOR_START,
+                    std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishGeneric(frame); })),
+                    std::make_pair(CanId::SAIL_AIS, std::function<void(const CanFrame &)>([this](const CanFrame & frame) {
+                                        publishAIS(frame);
+                                    }))};
 
-            auto append = [&](auto && v) { canCbs.insert(canCbs.end(), v.begin(), v.end()); };
+                auto append = [&](auto && v) { canCbs.insert(canCbs.end(), v.begin(), v.end()); };
 
-            append(getCbsForRange(CanId::TEMP_SENSOR_START, CanId::TEMP_SENSOR_END, &CanTransceiverIntf::publishTemp));
-            append(getCbsForRange(CanId::PH_SENSOR_START, CanId::PH_SENSOR_END, &CanTransceiverIntf::publishPh));
-            append(getCbsForRange(
-              CanId::SALINITY_SENSOR_START, CanId::SALINITY_SENSOR_END, &CanTransceiverIntf::publishSalinity));
-            append(getCbsForRange(
-              CanId::PRESSURE_SENSOR_START, CanId::PRESSURE_SENSOR_END, &CanTransceiverIntf::publishPressure));
+                append(getCbsForRange(CanId::TEMP_SENSOR_START, CanId::TEMP_SENSOR_END, &CanTransceiverIntf::publishTemp));
+                append(getCbsForRange(CanId::PH_SENSOR_START, CanId::PH_SENSOR_END, &CanTransceiverIntf::publishPh));
+                append(getCbsForRange(
+                    CanId::SALINITY_SENSOR_START, CanId::SALINITY_SENSOR_END, &CanTransceiverIntf::publishSalinity));
+                append(getCbsForRange(
+                    CanId::PRESSURE_SENSOR_START, CanId::PRESSURE_SENSOR_END, &CanTransceiverIntf::publishPressure));
 
-            can_trns_->registerCanCbs(canCbs);
+                can_trns_->registerCanCbs(canCbs);
 
-            sail_cmd_sub_ = this->create_subscription<msg::SailCmd>(
-              ros_topics::SAIL_CMD, QUEUE_SIZE, [this](msg::SailCmd sail_cmd_) { subSailCmdCb(sail_cmd_); });
-            desired_heading_sub_ = this->create_subscription<msg::DesiredHeading>(
-              ros_topics::DESIRED_HEADING, QUEUE_SIZE,
-              [this](msg::DesiredHeading desired_heading_) { subDesiredHeadingCb(desired_heading_); });
-
+                sail_cmd_sub_ = this->create_subscription<msg::SailCmd>(
+                    ros_topics::SAIL_CMD, QUEUE_SIZE, [this](msg::SailCmd sail_cmd_) { subSailCmdCb(sail_cmd_); });
+                desired_heading_sub_ = this->create_subscription<msg::DesiredHeading>(
+                    ros_topics::DESIRED_HEADING, QUEUE_SIZE,
+                    [this](msg::DesiredHeading desired_heading_) { subDesiredHeadingCb(desired_heading_); });
+            }
+            // till here, if statement
             if (mode == SYSTEM_MODE::DEV) {  // Initialize the CAN Sim Intf
                 mock_ais_sub_ = this->create_subscription<msg::AISShips>(
                   ros_topics::MOCK_AIS_SHIPS, QUEUE_SIZE,
@@ -146,6 +151,11 @@ public:
                     publishBoatSimInput(boat_sim_input_msg_);
                     // Add any other necessary looping callbacks
                 });
+            } else if (mode == SYSTEM_MODE::SIM) { //  added forissue#805
+                // In sim mode, subscribe to mock_wind_sensors to produce filtered_wind_sensor
+                mock_wind_sensors_sub_ = this->create_subscription<msg::WindSensors>(
+                  ros_topics::MOCK_WIND_SENSORS, QUEUE_SIZE,
+                  [this](msg::WindSensors mock_wind_sensors) { subMockWindSensorsCb(mock_wind_sensors); });
             }
         }
     }
