@@ -64,8 +64,9 @@ class MockGlobalPath(Node):
 
     # Timer callbacks
     def global_path_callback(self, gps: ci.GPS):
-        """ """
-
+        """Callback function that determines first if the locally stored version of the global
+        path needs to be updated, and then publishes the global path either way.
+        """
         if self.should_update_gpath(gps):
 
             pos = self.pos
@@ -82,15 +83,10 @@ class MockGlobalPath(Node):
                     f"{self.global_path.waypoints[0].longitude:.4f}"
                 )
 
-                write = self.get_parameter("write")._value
-                if write:
-                    self.get_logger().debug("Writing generated path to new file")
-
                 msg = gp.generate_path(
                     dest=self.global_path.waypoints[0],
                     interval_spacing=interval_spacing,
                     pos=pos,
-                    write=write,
                 )
 
             elif max(path_spacing) > interval_spacing:
@@ -99,16 +95,11 @@ class MockGlobalPath(Node):
                     f" {interval_spacing} km. Interpolating between waypoints and generating path"
                 )
 
-                write = self.get_parameter("write")._value
-                if write:
-                    self.get_logger().debug("Writing generated path to new file")
-
                 msg = gp._interpolate_path(
                     global_path=self.global_path,
                     interval_spacing=interval_spacing,
                     pos=pos,
                     path_spacing=path_spacing,
-                    write=write,
                 )
 
             else:
