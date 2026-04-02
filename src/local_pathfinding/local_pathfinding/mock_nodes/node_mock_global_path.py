@@ -64,9 +64,7 @@ class MockGlobalPath(Node):
 
     # Timer callbacks
     def global_path_callback(self, gps: ci.GPS):
-        """Callback function that determines first if the locally stored version of the global
-        path needs to be updated, and then publishes the global path either way.
-        """
+
         if self.should_update_gpath(gps):
 
             pos = self.pos
