@@ -44,8 +44,7 @@ class MockGlobalPath(Node):
         self.declare_parameters(
             namespace="",
             parameters=[
-                ("interval_spacing", rclpy.Parameter.Type.DOUBLE),
-                ("write", rclpy.Parameter.Type.BOOL),
+                ("global_path_interval_spacing_km", rclpy.Parameter.Type.DOUBLE),
                 ("gps_threshold", rclpy.Parameter.Type.DOUBLE),
                 ("test_plan", rclpy.Parameter.Type.STRING),
             ],
@@ -73,7 +72,7 @@ class MockGlobalPath(Node):
 
             # we need to obtain the actual distances between every waypoint in the global path
             path_spacing = gp.calculate_interval_spacing(pos, self.global_path.waypoints)
-            interval_spacing = self.get_parameter("interval_spacing")._value
+            interval_spacing = self.get_parameter("global_path_interval_spacing_km")._value
 
             # this checks if global path is just a destination point
             if len(self.global_path.waypoints) < 2:
@@ -151,7 +150,7 @@ class MockGlobalPath(Node):
                 )[2]
             )
             gps_threshold = self.get_parameter("gps_threshold")._value
-            interval_spacing = self.get_parameter("interval_spacing")._value
+            interval_spacing = self.get_parameter("global_path_interval_spacing_km")._value
 
             if position_delta > gps_threshold * interval_spacing:
                 self.get_logger().debug(
