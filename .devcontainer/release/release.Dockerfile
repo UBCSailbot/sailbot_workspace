@@ -82,6 +82,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         can-utils \
         vim \
         make \
+        clang \
     && apt-get autoremove -y \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/* \
