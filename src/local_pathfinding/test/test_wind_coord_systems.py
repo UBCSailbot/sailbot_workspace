@@ -55,8 +55,8 @@ def test_global_to_boat_coordinate(
 
 @pytest.mark.parametrize(
     '''
-    aw_dir_deg_bc, aw_speed_kmph_bc, boat_heading_deg_gc,
-    boat_speed_kmph_gc, expected_tw_dir_rad, expected_tw_speed_kmph
+    aw_dir_deg_bc, aw_speed_kmph, boat_heading_deg_gc,
+    boat_speed_kmph, expected_tw_dir_rad, expected_tw_speed_kmph
     ''',
     [
         (0, 0, 0, 0, 0, 0),
@@ -79,14 +79,14 @@ def test_global_to_boat_coordinate(
 )
 def test_get_true_wind_direction(
     aw_dir_deg_bc: float,
-    aw_speed_kmph_bc: float,
+    aw_speed_kmph: float,
     boat_heading_deg_gc: float,
-    boat_speed_kmph_gc: float,
+    boat_speed_kmph: float,
     expected_tw_dir_rad: float,
     expected_tw_speed_kmph: float,
 ):
     tw_dir_rad, tw_speed_kmph = wcs.get_true_wind(
-        aw_dir_deg_bc, aw_speed_kmph_bc, boat_heading_deg_gc, boat_speed_kmph_gc
+        aw_dir_deg_bc, aw_speed_kmph, boat_heading_deg_gc, boat_speed_kmph
     )
 
     # Convert radians to degrees for easier comparison
@@ -99,8 +99,8 @@ def test_get_true_wind_direction(
 
 @pytest.mark.parametrize(
     '''
-    tw_dir_deg_gc, tw_speed_kmph_gc, boat_heading_deg_gc,
-    boat_speed_kmph_gc, expected_aw_dir_rad_bc, expected_aw_speed_kmph_bc
+    tw_dir_deg_gc, tw_speed_kmph, boat_heading_deg_gc,
+    boat_speed_kmph, expected_aw_dir_rad_bc, expected_aw_speed_kmph
     ''',
     [
         (0, 0, 0, 0, 0, 0),
@@ -112,14 +112,14 @@ def test_get_true_wind_direction(
 )
 def test_get_apparent_wind_direction(
     tw_dir_deg_gc: float,
-    tw_speed_kmph_gc: float,
+    tw_speed_kmph: float,
     boat_heading_deg_gc: float,
-    boat_speed_kmph_gc: float,
+    boat_speed_kmph: float,
     expected_aw_dir_rad_bc: float,
-    expected_aw_speed_kmph_bc: float,
+    expected_aw_speed_kmph: float,
 ):
     aw_dir_rad, aw_speed_kmph = wcs.get_apparent_wind(
-        tw_dir_deg_gc, tw_speed_kmph_gc, boat_heading_deg_gc, boat_speed_kmph_gc
+        tw_dir_deg_gc, tw_speed_kmph, boat_heading_deg_gc, boat_speed_kmph
     )
 
     # Convert radians to degrees for easier comparison
@@ -127,13 +127,13 @@ def test_get_apparent_wind_direction(
 
     assert aw_dir_deg == pytest.approx(
         expected=expected_aw_dir_rad_bc, abs=1e-2
-    ) and aw_speed_kmph == pytest.approx(expected=expected_aw_speed_kmph_bc, abs=1e-2)
+    ) and aw_speed_kmph == pytest.approx(expected=expected_aw_speed_kmph, abs=1e-2)
 
 
 @pytest.mark.parametrize(
     '''
-    tw_dir_deg_gc, tw_speed_kmph_gc, boat_heading_deg_gc,
-    boat_speed_gc, expected_aw_direction_deg_bc, expected_aw_speed_kmph_bc
+    tw_dir_deg_gc, tw_speed_kmph, boat_heading_deg_gc,
+    boat_speed, expected_aw_direction_deg_bc, expected_aw_speed_kmph
     ''',  # noqa
     [
         (90.0, 10.0, 0.0, 0.0, 90.0, 10.0),
@@ -146,14 +146,14 @@ def test_get_apparent_wind_direction(
 )
 def test_mock_wind_sensor_pipeline(
     tw_dir_deg_gc: float,
-    tw_speed_kmph_gc: float,
+    tw_speed_kmph: float,
     boat_heading_deg_gc: float,
-    boat_speed_gc: float,
+    boat_speed: float,
     expected_aw_direction_deg_bc: float,
-    expected_aw_speed_kmph_bc: float,
+    expected_aw_speed_kmph: float,
 ):
     aw_dir_deg, aw_speed_kmph = wcs.get_apparent_wind(
-        tw_dir_deg_gc, tw_speed_kmph_gc, boat_heading_deg_gc, boat_speed_gc, ret_rad=False
+        tw_dir_deg_gc, tw_speed_kmph, boat_heading_deg_gc, boat_speed, ret_rad=False
     )
 
     aw_dir_boat_coord_deg = wcs.global_to_boat_coordinate(boat_heading_deg_gc, aw_dir_deg)
@@ -162,8 +162,8 @@ def test_mock_wind_sensor_pipeline(
         expected=expected_aw_direction_deg_bc, abs=1
     ), f"Apparent wind direction in boat frame mismatch: {aw_dir_boat_coord_deg} != {expected_aw_direction_deg_bc}"  # noqa
     assert aw_speed_kmph == pytest.approx(
-        expected=expected_aw_speed_kmph_bc, abs=1
-    ), f"Apparent wind speed mismatch: {aw_speed_kmph} != {expected_aw_speed_kmph_bc}"
+        expected=expected_aw_speed_kmph, abs=1
+    ), f"Apparent wind speed mismatch: {aw_speed_kmph} != {expected_aw_speed_kmph}"
 
 
 @pytest.mark.parametrize(
