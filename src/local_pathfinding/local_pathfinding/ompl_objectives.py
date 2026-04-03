@@ -217,7 +217,7 @@ class TimeObjective(ob.OptimizationObjective):
         tw_speed_kmph: float,
     ) -> float:
 
-        tw_angle_rad_gc = abs(
+        tw_angle_rad_bc = abs(
             wcs.get_true_wind_angle(path_segment_true_bearing_rad, tw_direction_rad_gc)
         )
 
@@ -226,7 +226,7 @@ class TimeObjective(ob.OptimizationObjective):
         # on the port or starboard side when it comes to calculating the estimated speed
         # and having the twa in the range of [0, 180] means we don't have to cover negative
         # twa values in the BOAT_SPEEDS table
-        tw_angle_deg_gc = abs(cs.bound_to_180(math.degrees(tw_angle_rad_gc)))
+        tw_angle_deg_gc = abs(cs.bound_to_180(math.degrees(tw_angle_rad_bc)))
 
         # since the twa is bounded to [0, 180], the only time the interpolator would need to
         # use the fill_value is if the tw_speed_kmph is greater than the max accounted for
