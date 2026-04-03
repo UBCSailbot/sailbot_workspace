@@ -34,12 +34,12 @@ def boat_to_global_coordinate(boat_heading_deg_gc: float, aw_direction_deg_bc: f
     Returns:
         float: Global wind bearing in global coordinate degrees within (-180, 180].
     Examples:
-        >>> boat_to_global_coordinate(0, 0)      # 0 + 0 + 180 -> -180
-        180
-        >>> boat_to_global_coordinate(170, 30)   # 170 + 30 + 180 = 380 -> 20
+        >>> boat_to_global_coordinate(0, 0)      # 0 + 0 -> 0
+        0
+        >>> boat_to_global_coordinate(170, 30)   # 170 + 30 = 200 -> 20
         20
     """
-    return cs.bound_to_180(boat_heading_deg_gc + aw_direction_deg_bc + 180.0)
+    return cs.bound_to_180(boat_heading_deg_gc + aw_direction_deg_bc)
 
 
 def global_to_boat_coordinate(boat_heading_deg_gc: float, tw_direction_deg_gc: float):
@@ -51,12 +51,12 @@ def global_to_boat_coordinate(boat_heading_deg_gc: float, tw_direction_deg_gc: f
     Returns:
         float: Wind direction in boat coordinates (degrees) within (-180, 180].
     Examples:
-        >>> global_to_boat_coordinate(0, 0)      # 0 - 0 + 180 -> -180
-        180
-        >>> global_to_boat_coordinate(170, 30)   # 170 - 30 + 180 = 320 -> -40
-        -40
+        >>> global_to_boat_coordinate(0, 0)      # 0 - 0 -> 0
+        0
+        >>> global_to_boat_coordinate(170, 30)   # 30 - 170 = -140 -> -140
+        -140
     """
-    return cs.bound_to_180(tw_direction_deg_gc - boat_heading_deg_gc + 180.0)
+    return cs.bound_to_180(tw_direction_deg_gc - boat_heading_deg_gc)
 
 
 def get_true_wind(
