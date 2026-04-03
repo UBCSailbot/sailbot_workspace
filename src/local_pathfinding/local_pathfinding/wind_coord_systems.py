@@ -81,8 +81,8 @@ def get_true_wind(
 
     Returns:
         tuple[float, float]: (tw_dir_rad, tw_speed_kmph)
-            - tw_dir_rad: true wind direction in radians within (-pi, pi].
-            - tw_speed_kmph: true wind speed in km/h
+            - tw_dir_rad_gc: true wind direction in radians within (-pi, pi].
+            - tw_speed_kmph_gc: true wind speed in km/h
         If the resulting vector magnitude is effectively zero (<= FLOATING_POINT_ERROR_THRESHOLD),
         returns (0.0, 0.0). NOTE: The caller is responsible for handling this case, otherwise the
         calculations will break down.
@@ -137,8 +137,8 @@ def get_apparent_wind(
 
     Returns:
         tuple[float, float]: (aw_dir_rad, aw_speed_kmph)
-            - aw_dir_rad: apparent wind direction in radians within (-pi, pi]
-            - aw_speed_kmph: apparent wind speed in km/h.
+            - aw_dir_rad_bc: apparent wind direction in radians within (-pi, pi]
+            - aw_speed_kmph_bc: apparent wind speed in km/h.
         If the resulting vector magnitude is effectively zero (<= FLOATING_POINT_ERROR_THRESHOLD),
         returns (0.0, 0.0). NOTE: The caller is responsible for handling this case, otherwise the
         calculations will break down.
@@ -182,7 +182,7 @@ def get_true_wind_angle(boat_heading_rad_gc: float, tw_dir_rad_gc: float) -> flo
         180 : Wind directly from astern (running downwind)
 
     Args:
-        boat_heading_rad (float): _description_
+        boat_heading_rad_gc (float): _description_
         tw_dir_rad_gc (float): _description_
 
     Returns:
