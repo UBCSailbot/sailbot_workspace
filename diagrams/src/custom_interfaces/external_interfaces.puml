@@ -45,6 +45,7 @@ note right of desired_heading
     simulation and
     deployment
 end note
+' TODO: Should split into specific data sensors
 State data_sensors<<Topic>> : GenericSensors
 State gps<<Topic>> : GPS
 State mock_gps<<SimTopic>> : GPS

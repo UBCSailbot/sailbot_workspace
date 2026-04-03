@@ -1,29 +1,78 @@
+from datetime import datetime, timedelta
+from unittest import mock
+
 import pytest
-from custom_interfaces.msg import GPS, AISShips, HelperLatLon, Path, WindSensor
 from rclpy.impl.rcutils_logger import RcutilsLogger
 from shapely.geometry import MultiPolygon, Polygon
 
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.local_path as lp
+from custom_interfaces.msg import GPS, AISShips, HelperLatLon, Path, WindSensor
 from local_pathfinding.obstacles import Obstacle
+from local_pathfinding.wind_coord_systems import Wind
 
 REF = HelperLatLon(latitude=10.0, longitude=10.0)
 
 PATH = lp.LocalPath(parent_logger=RcutilsLogger())
 
 
+@pytest.fixture
+def basic_local_path_state():
+    gps = mock.Mock()
+    gps.lat_lon = HelperLatLon(latitude=0.0, longitude=0.0)
+    gps.speed = mock.Mock(speed=0.0)
+    gps.heading = mock.Mock(heading=0.0)
+
+    ais_ships = mock.Mock()
+    ais_ships.ships = []
+
+    global_path = Path(
+        waypoints=[
+            HelperLatLon(latitude=0.0, longitude=0.0),
+            HelperLatLon(latitude=1.0, longitude=1.0),
+        ]
+    )
+
+    filtered_wind_sensor = mock.Mock()
+    filtered_wind_sensor.speed = mock.Mock(speed=5.0)
+    filtered_wind_sensor.direction = 90
+
+    return lp.LocalPathState(
+        gps=gps,
+        ais_ships=ais_ships,
+        global_path=global_path,
+        target_global_waypoint=global_path.waypoints[-1],
+        filtered_wind_sensor=filtered_wind_sensor,
+        planner="rrtstar",
+    )
+
+
+def create_test_local_path_for_in_collision_zone(
+    target_lp_wp_index, reference_latlon, path, obstacles
+):
+    mock_parent_logger = mock.Mock()
+    mock_parent_logger.get_child.return_value = mock.Mock()
+    local_path = lp.LocalPath(parent_logger=mock_parent_logger)
+    local_path._target_lp_wp_index = target_lp_wp_index
+    local_path.path = path
+    local_path.state = mock.Mock(lp.LocalPathState)
+    local_path.state.reference_latlon = reference_latlon
+    local_path.state.obstacles = obstacles
+    return local_path
+
+
 @pytest.mark.parametrize(
-    "local_wp_index, reference_latlon, path, obstacles, result",
+    "target_local_wp_index, reference_latlon, path, obstacles, result",
     [
         (
-            0,
+            1,
             HelperLatLon(latitude=10.0, longitude=10.0),
             Path(waypoints=[HelperLatLon(latitude=0.0, longitude=0.0)]),
             [],
             False,
         ),
         (
-            0,
+            1,
             HelperLatLon(latitude=10.0, longitude=10.0),
             Path(
                 waypoints=[
@@ -39,7 +88,7 @@ PATH = lp.LocalPath(parent_logger=RcutilsLogger())
         ),
         # Third test: obstacle at midpoint between (0,0) and (10,10)
         (
-            0,
+            1,
             REF,
             Path(
                 waypoints=[
@@ -74,7 +123,7 @@ PATH = lp.LocalPath(parent_logger=RcutilsLogger())
             True,
         ),
         (
-            0,
+            1,
             REF,
             Path(
                 waypoints=[
@@ -109,7 +158,7 @@ PATH = lp.LocalPath(parent_logger=RcutilsLogger())
             False,
         ),
         (
-            1,  # local_wp_index
+            2,  # target_local_wp_index
             HelperLatLon(
                 latitude=48.121368408203125, longitude=-137.02294921875
             ),  # reference_latlon
@@ -187,8 +236,277 @@ PATH = lp.LocalPath(parent_logger=RcutilsLogger())
         ),
     ],
 )
-def test_in_collision_zone(local_wp_index, reference_latlon, path, obstacles, result):
-    assert PATH.in_collision_zone(local_wp_index, reference_latlon, path, obstacles) == result
+def test_in_collision_zone(target_local_wp_index, reference_latlon, path, obstacles, result):
+
+    test_lp = create_test_local_path_for_in_collision_zone(
+        target_local_wp_index,
+        reference_latlon,
+        path,
+        obstacles
+    )
+
+    assert test_lp.in_collision_zone() == result
+
+
+@pytest.mark.parametrize(
+    "new_tw_data, previous_tw_data, result",
+    [
+        # Basic Test 1 (wind speed change is significant)
+        (
+            Wind(speed_kmph=10 + 2 * lp.WIND_SPEED_CHANGE_THRESH_PROP * 10.0, dir_deg=95.0),
+            Wind(speed_kmph=10.0, dir_deg=95.0),
+            True,
+        ),
+        # Boundaries
+        (
+            Wind(speed_kmph=10.0 + lp.WIND_SPEED_CHANGE_THRESH_PROP * 10.0, dir_deg=90.0),
+            Wind(speed_kmph=10.0, dir_deg=90.0),
+            True,
+        ),
+        (
+            Wind(speed_kmph=10.0 - lp.WIND_SPEED_CHANGE_THRESH_PROP * 10.0, dir_deg=90.0),
+            Wind(speed_kmph=10.0, dir_deg=90.0),
+            True,
+        ),
+        # Basic Test 2 (wind dir change is significant)
+        (
+            Wind(speed_kmph=10.0, dir_deg=105.0 - 1.5 * lp.WIND_DIRECTION_CHANGE_THRESH_DEG),
+            Wind(speed_kmph=12.0, dir_deg=105.0),
+            True,
+        ),
+        # Boundaries
+        (
+            Wind(speed_kmph=10.0, dir_deg=80.0 + lp.WIND_DIRECTION_CHANGE_THRESH_DEG),
+            Wind(speed_kmph=10.0, dir_deg=80.0),
+            True,
+        ),
+        (
+            Wind(speed_kmph=10.0, dir_deg=100.0 - lp.WIND_DIRECTION_CHANGE_THRESH_DEG),
+            Wind(speed_kmph=10.0, dir_deg=100.0),
+            True,
+        ),
+        # Basic Test 3 (No significant change)
+        (
+            Wind(
+                speed_kmph=10.0 + 0.99 * lp.WIND_SPEED_CHANGE_THRESH_PROP * 10.0,
+                dir_deg=99.0 - 0.9 * lp.WIND_DIRECTION_CHANGE_THRESH_DEG,
+            ),
+            Wind(speed_kmph=10.0, dir_deg=99.0),
+            False,
+        ),
+        # Fourth Test: Circular nature of angles
+        (Wind(speed_kmph=10.0, dir_deg=180), Wind(speed_kmph=10.0, dir_deg=-179.999), False),
+        (
+            Wind(speed_kmph=10.0, dir_deg=-178.0),
+            Wind(speed_kmph=10.0, dir_deg=180 - lp.WIND_DIRECTION_CHANGE_THRESH_DEG + 2),
+            True,
+        ),
+    ],
+)
+def test_is_significant_wind_change(new_tw_data, previous_tw_data, result):
+    assert PATH.is_significant_wind_change(new_tw_data, previous_tw_data) == result
+
+
+@pytest.mark.parametrize(
+    "wind_readings, expected_length",
+    [
+        # Single reading
+        ([Wind(speed_kmph=10.0, dir_deg=45.0)], 1),
+        # Multiple readings below max
+        ([Wind(speed_kmph=10.0 + i, dir_deg=45.0) for i in range(5)], 5),
+        # Exactly at max length
+        (
+            [Wind(speed_kmph=10.0, dir_deg=45.0) for _ in range(lp.WIND_HISTORY_LEN)],
+            lp.WIND_HISTORY_LEN,
+        ),
+        # Exceeding max length (should stay at max)
+        (
+            [Wind(speed_kmph=10.0, dir_deg=45.0) for _ in range(lp.WIND_HISTORY_LEN + 5)],
+            lp.WIND_HISTORY_LEN,
+        ),
+    ],
+)
+def test_update_aw_history_length(wind_readings, expected_length):
+    """Test that wind history respects max length constraint."""
+    lps = lp.LocalPathState(
+        gps=GPS(),
+        ais_ships=AISShips(),
+        global_path=Path(
+            waypoints=[
+                HelperLatLon(latitude=0.0, longitude=0.0),
+                HelperLatLon(latitude=1.0, longitude=1.0),
+            ]
+        ),
+        target_global_waypoint=HelperLatLon(latitude=1.0, longitude=1.0),
+        filtered_wind_sensor=WindSensor(),
+        planner="rrtstar",
+    )
+    lps.aw_history.clear()
+
+    for wind in wind_readings:
+        lps.current_aw = wind
+        lps.update_aw_history()
+
+    assert len(lps.aw_history) == expected_length
+
+
+def test_aw_history_fifo_order():
+    """Test that oldest wind readings are removed first."""
+    lps = lp.LocalPathState(
+        gps=GPS(),
+        ais_ships=AISShips(),
+        global_path=Path(
+            waypoints=[
+                HelperLatLon(latitude=0.0, longitude=0.0),
+                HelperLatLon(latitude=1.0, longitude=1.0),
+            ]
+        ),
+        target_global_waypoint=HelperLatLon(latitude=1.0, longitude=1.0),
+        filtered_wind_sensor=WindSensor(),
+        planner="rrtstar",
+    )
+
+    for i in range(lp.WIND_HISTORY_LEN + 3):
+        lps.current_aw = Wind(speed_kmph=10.0 + i, dir_deg=45.0 + i)
+        lps.update_aw_history()
+
+    # Should contain the last WIND_HISTORY_LEN readings
+    # First reading should have speed 10.0 + 3.0 (index 3 of original sequence)
+    assert lps.aw_history[0].speed_kmph == 13.0
+    # Last reading should have speed 10.0 + 2.0 + WIND_HISTORY_LEN
+    assert lps.aw_history[-1].speed_kmph == 12.0 + lp.WIND_HISTORY_LEN
+
+
+@pytest.mark.parametrize(
+    "wind_readings, result",
+    [
+        # No readings (No average)
+        (
+            [],
+            None,
+        ),
+        # Single reading (No average)
+        (
+            [Wind(speed_kmph=15.0, dir_deg=90.0)],
+            None,
+        ),
+        # Same speed and direction
+        (
+            [Wind(speed_kmph=10.0, dir_deg=45.0) for _ in range(lp.WIND_HISTORY_LEN)],
+            Wind(speed_kmph=10.0, dir_deg=45.0),
+        ),
+        # Different speeds, same direction
+        (
+            [Wind(speed_kmph=0, dir_deg=0) for _ in range(lp.WIND_HISTORY_LEN - 3)]
+            + [
+                Wind(speed_kmph=10.0, dir_deg=0.0),
+                Wind(speed_kmph=20.0, dir_deg=0.0),
+                Wind(speed_kmph=30.0, dir_deg=0.0),
+            ],
+            Wind(speed_kmph=60.0 / lp.WIND_HISTORY_LEN, dir_deg=0.0),
+        ),
+        # Same speed, opposite directions
+        (
+            [Wind(speed_kmph=10.0, dir_deg=0.0) for _ in range(lp.WIND_HISTORY_LEN // 2)]
+            + [Wind(speed_kmph=10.0, dir_deg=180.0) for _ in range(lp.WIND_HISTORY_LEN // 2)],
+            Wind(speed_kmph=10.0, dir_deg=90.0),
+        ),
+        # Circular mean of Angles, same speed
+        (
+            [Wind(speed_kmph=0, dir_deg=180) for _ in range(lp.WIND_HISTORY_LEN - 2)]
+            + [
+                Wind(speed_kmph=10.0, dir_deg=175.0),
+                Wind(speed_kmph=10.0, dir_deg=-175.0),
+            ],
+            Wind(speed_kmph=20.0 / lp.WIND_HISTORY_LEN, dir_deg=180.0),
+        ),
+    ],
+)
+def test_calculate_aw_avg(wind_readings, result):
+    """Test average wind calculation with basic cases."""
+    lps = lp.LocalPathState(
+        gps=GPS(),
+        ais_ships=AISShips(),
+        global_path=Path(
+            waypoints=[
+                HelperLatLon(latitude=0.0, longitude=0.0),
+                HelperLatLon(latitude=1.0, longitude=1.0),
+            ]
+        ),
+        target_global_waypoint=HelperLatLon(latitude=1.0, longitude=1.0),
+        filtered_wind_sensor=WindSensor(),
+        planner="rrtstar",
+    )
+
+    for wind in wind_readings:
+        lps.current_aw = wind
+        lps.update_aw_history()
+
+    avg = lps.aw_avg
+    if result is None:
+        assert avg is None
+    else:
+        assert avg.speed_kmph == result.speed_kmph
+        assert avg.dir_deg == result.dir_deg
+
+
+def test_aw_avg_not_set_before_full_history():
+    """Test that wind_average isn't set until we have WIND_HISTORY_LEN wind readings."""
+    lps = lp.LocalPathState(
+        gps=GPS(),
+        ais_ships=AISShips(),
+        global_path=Path(
+            waypoints=[
+                HelperLatLon(latitude=0.0, longitude=0.0),
+                HelperLatLon(latitude=1.0, longitude=1.0),
+            ]
+        ),
+        target_global_waypoint=HelperLatLon(latitude=1.0, longitude=1.0),
+        filtered_wind_sensor=WindSensor(),
+        planner="rrtstar",
+    )
+    lps.aw_history.clear()
+
+    for _ in range(lp.WIND_HISTORY_LEN - 1):
+        wind = Wind(speed_kmph=10.0, dir_deg=45.0)
+        lps.current_aw = wind
+        lps.update_aw_history()
+
+    assert lps.aw_avg is None
+
+
+def test_aw_avg_updates_with_new_readings():
+    """Test that wind_average updates when new readings are added."""
+    lps = lp.LocalPathState(
+        gps=GPS(),
+        ais_ships=AISShips(),
+        global_path=Path(
+            waypoints=[
+                HelperLatLon(latitude=0.0, longitude=0.0),
+                HelperLatLon(latitude=1.0, longitude=1.0),
+            ]
+        ),
+        target_global_waypoint=HelperLatLon(latitude=1.0, longitude=1.0),
+        filtered_wind_sensor=WindSensor(),
+        planner="rrtstar",
+    )
+
+    # Fill history with initial readings
+    for _ in range(lp.WIND_HISTORY_LEN):
+        lps.current_aw = Wind(speed_kmph=10.0, dir_deg=45.0)
+        lps.update_aw_history()
+
+    first_avg = lps.aw_avg
+
+    # Add a different wind reading (oldest will be removed from deque)
+    lps.current_aw = Wind(speed_kmph=30.0, dir_deg=45.0)
+    lps.update_aw_history()
+    second_avg = lps.aw_avg
+
+    # Average should increase since we're replacing a 10.0 with a 30.0
+    assert second_avg is not None
+    assert first_avg is not None
+    assert second_avg.speed_kmph > first_avg.speed_kmph
 
 
 def test_LocalPathState_parameter_checking():
@@ -282,3 +600,21 @@ def test_LocalPathState_parameter_checking():
                 planner=None,
             ),
         )
+
+
+@pytest.mark.parametrize(
+    "elapsed,expected",
+    [
+        (lp.PATH_TTL_SEC + timedelta(seconds=1), True),
+        (lp.PATH_TTL_SEC, True),
+        (lp.PATH_TTL_SEC - timedelta(seconds=1), False),
+    ],
+)
+def test_is_path_expired(elapsed, expected, basic_local_path_state):
+    mock_parent_logger = mock.Mock()
+    mock_parent_logger.get_child.return_value = mock.Mock()
+    local_path = lp.LocalPath(parent_logger=mock_parent_logger)
+    basic_local_path_state.path_generated_time = datetime.now() - elapsed
+    local_path.state = basic_local_path_state
+
+    assert local_path.is_path_expired() == expected

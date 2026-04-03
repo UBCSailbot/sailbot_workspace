@@ -8,7 +8,11 @@
 #include "boost/asio/io_service.hpp"
 #include "boost/asio/serial_port.hpp"
 #include "custom_interfaces/msg/batteries.hpp"
-#include "custom_interfaces/msg/generic_sensors.hpp"
+#include "custom_interfaces/msg/ph_sensors.hpp"
+#include "custom_interfaces/msg/pressure_sensors.hpp"
+#include "custom_interfaces/msg/salinity_sensors.hpp"
+#include "custom_interfaces/msg/temp_sensors.hpp"
+// #include "custom_interfaces/msg/generic_sensors.hpp"
 #include "custom_interfaces/msg/gps.hpp"
 #include "custom_interfaces/msg/l_path_data.hpp"
 #include "custom_interfaces/msg/wind_sensors.hpp"
@@ -62,12 +66,41 @@ public:
     */
     void updateSensor(msg::Batteries battery);
 
+    // * Obsolete
+    // /**
+    // * @brief Update the sensor with new generic sensor data
+    // *
+    // * @param generic custom_interfaces GenericSensors object
+    // */
+    // void updateSensor(msg::GenericSensors msg);
+
     /**
-    * @brief Update the sensor with new generic sensor data
+    * @brief Update the sensor with new temperature data
     *
-    * @param generic custom_interfaces GenericSensors object
+    * @param temperature custom_interfaces TempSensors object
     */
-    void updateSensor(msg::GenericSensors msg);
+    void updateSensor(msg::TempSensors temperature);
+
+    /**
+    * @brief Update the sensor with new pressure data
+    *
+    * @param pressure custom_interfaces PressureSensors object
+    */
+    void updateSensor(msg::PressureSensors pressure);
+
+    /**
+    * @brief Update the sensor with new salinity data
+    *
+    * @param salinity custom_interfaces SalinitySensors object
+    */
+    void updateSensor(msg::SalinitySensors salinity);
+
+    /**
+    * @brief Update the sensor with new pH data
+    *
+    * @param ph custom_interfaces PhSensors object
+    */
+    void updateSensor(msg::PhSensors ph);
 
     /**
     * @brief Update the sensor with new local path data

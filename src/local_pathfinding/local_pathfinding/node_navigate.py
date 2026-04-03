@@ -1,13 +1,10 @@
 """The main node of the local_pathfinding package, represented by the `Sailbot` class."""
 
-import json
-import os
-
-import custom_interfaces.msg as ci
 import rclpy
 from rclpy.node import Node
-from shapely.geometry import MultiPolygon, Polygon
+from test_plans.test_plan import TestPlan
 
+import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.global_path as gp
 import local_pathfinding.obstacles as ob
@@ -15,7 +12,6 @@ from local_pathfinding.local_path import LocalPath
 from local_pathfinding.ompl_path import MAX_SOLVER_RUN_TIME_SEC
 
 GLOBAL_WAYPOINT_REACHED_THRESH_KM = 3
-PATHFINDING_RANGE_KM = 30
 REALLY_FAR_M = 100000000
 
 
@@ -52,8 +48,9 @@ class Sailbot(Node):
         global_path (ci.Path): Path that we are following.
         filtered_wind_sensor (ci.WindSensor): Filtered data from the wind sensors.
         desired_heading (ci.DesiredHeading): current desired heading.
-        prev_lp_wp_index: local waypoint that Polaris has already traversed/seen. Polaris is moving
-        towards prev_lp_wp_index + 1 waypoint.
+        target_lp_wp_index (int): 0-based array index of the local waypoint Polaris is currently
+            heading toward. This starts at 1 because OMPL index 0 is the start state near the
+            boat.
 
     Attributes:
         local_path (LocalPath): The path that `Sailbot` is following.
@@ -69,7 +66,8 @@ class Sailbot(Node):
                 ("mode", rclpy.Parameter.Type.STRING),
                 ("pub_period_sec", rclpy.Parameter.Type.DOUBLE),
                 ("path_planner", rclpy.Parameter.Type.STRING),
-                ("use_mock_land", False),
+                ("test_plan", rclpy.Parameter.Type.STRING),
+                ("global_path_interval_spacing_km", rclpy.Parameter.Type.DOUBLE),
             ],
         )
 
@@ -108,6 +106,11 @@ class Sailbot(Node):
         self.pub_period_sec = (
             self.get_parameter("pub_period_sec").get_parameter_value().double_value
         )
+        self.global_path_interval_spacing_km = (
+            self.get_parameter("global_path_interval_spacing_km")
+            .get_parameter_value()
+            .double_value
+        )
         self.get_logger().debug(f"Got parameter: {self.pub_period_sec=}")
 
         # we need to give the solver time to run and the callback to return before calling again
@@ -126,28 +129,21 @@ class Sailbot(Node):
 
         # attributes
         self.local_path = LocalPath(parent_logger=self.get_logger())
-        self.prev_lp_wp_index = 0
+        self.target_lp_wp_index = 1
         self.global_waypoint_index = -1
         self.saved_target_global_waypoint = None
-        self.use_mock_land = self.get_parameter("use_mock_land").get_parameter_value().bool_value
         self.mode = self.get_parameter("mode").get_parameter_value().string_value
         self.planner = self.get_parameter("path_planner").get_parameter_value().string_value
         self.get_logger().debug(f"Got parameter: {self.planner=}")
 
         # Initialize mock land obstacle
         self.land_multi_polygon = None
-        if self.use_mock_land:
-
-            # find the mock land file
-            current_dir = os.path.dirname(os.path.abspath(__file__))
-            mock_land_dir = os.path.join(current_dir, "..", "land", "mock")
-            self.mock_land_file = os.path.join(mock_land_dir, "mock_land.json")
-
-            with open(self.mock_land_file, "r") as f:
-                data = json.load(f)
-                polygons = [Polygon(p) for p in data.get("land_polygons", [])]
-                self.land_multi_polygon = MultiPolygon(polygons)
-                self.get_logger().info("Loaded mock land data.")
+        if self.mode == "development":
+            self.test_plan = self.get_parameter("test_plan").get_parameter_value().string_value
+            self.get_logger().info("test plan: " + self.test_plan)
+            test_plan = TestPlan(self.test_plan)
+            self.land_multi_polygon = test_plan.land
+            self.get_logger().info("Loaded mock land data.")
 
     # subscriber callbacks
     def ais_ships_callback(self, msg: ci.AISShips):
@@ -269,7 +265,7 @@ class Sailbot(Node):
         ):
             received_new_global_waypoint = True
             self.global_waypoint_index = self.determine_start_point_in_new_global_path(
-                self.global_path, self.gps.lat_lon
+                self.global_path, self.gps.lat_lon, self.global_path_interval_spacing_km
             )
             self.saved_target_global_waypoint = self.global_path.waypoints[
                 self.global_waypoint_index
@@ -294,11 +290,11 @@ class Sailbot(Node):
                 self.global_waypoint_index
             ]
 
-        desired_heading, self.prev_lp_wp_index = self.local_path.update_if_needed(
+        desired_heading, self.target_lp_wp_index = self.local_path.update_if_needed(
             self.gps,
             self.ais_ships,
             self.global_path,
-            self.prev_lp_wp_index,
+            self.target_lp_wp_index,
             received_new_global_waypoint,
             self.saved_target_global_waypoint,
             self.filtered_wind_sensor,
@@ -309,7 +305,7 @@ class Sailbot(Node):
 
     @staticmethod
     def determine_start_point_in_new_global_path(
-        global_path: ci.Path, boat_lat_lon: ci.HelperLatLon
+        global_path: ci.Path, boat_lat_lon: ci.HelperLatLon, global_path_spacing_km: float
     ):
         """Used when we receive a new global path.
         Finds the index of the first waypoint within 'pathfinding range' of gps location.
@@ -330,7 +326,7 @@ class Sailbot(Node):
             if distance_to_waypoint_m < closest_m:
                 closest_m, index_of_closest = distance_to_waypoint_m, waypoint_index
 
-            if distance_to_waypoint_m < cs.km_to_meters(PATHFINDING_RANGE_KM):
+            if distance_to_waypoint_m < cs.km_to_meters(global_path_spacing_km):
                 return waypoint_index
 
         return index_of_closest
@@ -380,5 +376,4 @@ class Sailbot(Node):
 
 
 if __name__ == "__main__":
-    main()
     main()

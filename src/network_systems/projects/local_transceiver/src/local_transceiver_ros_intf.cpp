@@ -117,10 +117,11 @@ public:
             std::future<std::optional<custom_interfaces::msg::Path>> fut =
               std::async(std::launch::async, lcl_trns_->getCache);
 
-            static constexpr int  ROS_Q_SIZE     = 5;
-            static constexpr auto TIMER_INTERVAL = std::chrono::milliseconds(300000);
-            timer_ = this->create_wall_timer(TIMER_INTERVAL, std::bind(&LocalTransceiverIntf::pub_cb, this));
-            pub_   = this->create_publisher<custom_interfaces::msg::Path>(ros_topics::GLOBAL_PATH, ROS_Q_SIZE);
+            static constexpr int ROS_Q_SIZE = 5;
+            // disable receive timer until ready for deployment
+            //static constexpr auto TIMER_INTERVAL = std::chrono::milliseconds(300000);
+            //timer_ = this->create_wall_timer(TIMER_INTERVAL, std::bind(&LocalTransceiverIntf::pub_cb, this));
+            pub_ = this->create_publisher<custom_interfaces::msg::Path>(ros_topics::GLOBAL_PATH, ROS_Q_SIZE);
 
             // subscriber nodes
             sub_wind_sensor = this->create_subscription<custom_interfaces::msg::WindSensors>(
@@ -129,9 +130,21 @@ public:
             sub_batteries = this->create_subscription<custom_interfaces::msg::Batteries>(
               ros_topics::BATTERIES, ROS_Q_SIZE,
               std::bind(&LocalTransceiverIntf::sub_batteries_cb, this, std::placeholders::_1));
-            sub_data_sensors = this->create_subscription<custom_interfaces::msg::GenericSensors>(
-              ros_topics::DATA_SENSORS, ROS_Q_SIZE,
-              std::bind(&LocalTransceiverIntf::sub_data_sensors_cb, this, std::placeholders::_1));
+
+            sub_temp_sensor = this->create_subscription<custom_interfaces::msg::TempSensors>(
+              ros_topics::TEMP_SENSORS, ROS_Q_SIZE,
+              std::bind(&LocalTransceiverIntf::sub_temp_sensor_cb, this, std::placeholders::_1));
+            sub_ph_sensor = this->create_subscription<custom_interfaces::msg::PhSensors>(
+              ros_topics::PH_SENSORS, ROS_Q_SIZE,
+              std::bind(&LocalTransceiverIntf::sub_ph_sensor_cb, this, std::placeholders::_1));
+            sub_salinity_sensor = this->create_subscription<custom_interfaces::msg::SalinitySensors>(
+              ros_topics::SALINITY_SENSORS, ROS_Q_SIZE,
+              std::bind(&LocalTransceiverIntf::sub_salinity_sensor_cb, this, std::placeholders::_1));
+
+            // sub_pressure_sensor = this->create_subscription<custom_interfaces::msg::PressureSensors>(
+            //   ros_topics::PRESSURE_SENSORS, ROS_Q_SIZE,
+            //   std::bind(&LocalTransceiverIntf::sub_pressure_sensor_cb, this, std::placeholders::_1));
+
             sub_gps = this->create_subscription<custom_interfaces::msg::GPS>(
               ros_topics::GPS, ROS_Q_SIZE, std::bind(&LocalTransceiverIntf::sub_gps_cb, this, std::placeholders::_1));
             sub_local_path_data = this->create_subscription<custom_interfaces::msg::LPathData>(
@@ -162,23 +175,34 @@ public:
                                         &LocalTransceiverIntf::check_signal_quality_request_handler, this,
                                         std::placeholders::_1, std::placeholders::_2));
             RCLCPP_INFO(this->get_logger(), "check_signal_quality service created");
+
+            srv_receive_and_pub_ = this->create_service<std_srvs::srv::Trigger>(
+              "receive_and_pub", std::bind(
+                                   &LocalTransceiverIntf::receive_and_pub_request_handler, this, std::placeholders::_1,
+                                   std::placeholders::_2));
+            RCLCPP_INFO(this->get_logger(), "receive_and_pub service created");
         }
     }
 
 private:
-    std::unique_ptr<LocalTransceiver>                          lcl_trns_;  // Local Transceiver instance
-    rclcpp::TimerBase::SharedPtr                               timer_;     // Publishing timer
+    std::unique_ptr<LocalTransceiver> lcl_trns_;  // Local Transceiver instance
+    // Publishing timer - disabled until deployment
+    //rclcpp::TimerBase::SharedPtr                               timer_;
     rclcpp::Publisher<custom_interfaces::msg::Path>::SharedPtr pub_;
 
-    rclcpp::Subscription<custom_interfaces::msg::WindSensors>::SharedPtr    sub_wind_sensor;
-    rclcpp::Subscription<custom_interfaces::msg::Batteries>::SharedPtr      sub_batteries;
-    rclcpp::Subscription<custom_interfaces::msg::GenericSensors>::SharedPtr sub_data_sensors;
-    rclcpp::Subscription<custom_interfaces::msg::GPS>::SharedPtr            sub_gps;
-    rclcpp::Subscription<custom_interfaces::msg::LPathData>::SharedPtr      sub_local_path_data;
+    rclcpp::Subscription<custom_interfaces::msg::WindSensors>::SharedPtr     sub_wind_sensor;
+    rclcpp::Subscription<custom_interfaces::msg::Batteries>::SharedPtr       sub_batteries;
+    rclcpp::Subscription<custom_interfaces::msg::TempSensors>::SharedPtr     sub_temp_sensor;
+    rclcpp::Subscription<custom_interfaces::msg::PhSensors>::SharedPtr       sub_ph_sensor;
+    rclcpp::Subscription<custom_interfaces::msg::SalinitySensors>::SharedPtr sub_salinity_sensor;
+    // rclcpp::Subscription<custom_interfaces::msg::PressureSensors>::SharedPtr sub_pressure_sensor;
+    rclcpp::Subscription<custom_interfaces::msg::GPS>::SharedPtr       sub_gps;
+    rclcpp::Subscription<custom_interfaces::msg::LPathData>::SharedPtr sub_local_path_data;
 
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_send_;
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_send_debug_;
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_check_signal_quality_;
+    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_receive_and_pub_;
 
     /**
      * @brief Callback function to publish to onboard ROS network
@@ -201,9 +225,24 @@ private:
     void sub_batteries_cb(custom_interfaces::msg::Batteries in_msg) { lcl_trns_->updateSensor(in_msg); }
 
     /**
-     * @brief Callback function to subscribe to the onboard ROS network for generic sensors
+     * @brief Callback function to subscribe to the onboard ROS network for temperature sensors
      */
-    void sub_data_sensors_cb(custom_interfaces::msg::GenericSensors in_msg) { lcl_trns_->updateSensor(in_msg); }
+    void sub_temp_sensor_cb(custom_interfaces::msg::TempSensors in_msg) { lcl_trns_->updateSensor(in_msg); }
+
+    /**
+     * @brief Callback function to subscribe to the onboard ROS network for pH sensors
+     */
+    void sub_ph_sensor_cb(custom_interfaces::msg::PhSensors in_msg) { lcl_trns_->updateSensor(in_msg); }
+
+    /**
+     * @brief Callback function to subscribe to the onboard ROS network for salinity sensors
+     */
+    void sub_salinity_sensor_cb(custom_interfaces::msg::SalinitySensors in_msg) { lcl_trns_->updateSensor(in_msg); }
+
+    // /**
+    //  * @brief Callback function to subscribe to the onboard ROS network for pressure sensors
+    //  */
+    // void sub_pressure_sensor_cb(custom_interfaces::msg::PressureSensors in_msg) { lcl_trns_->updateSensor(in_msg); }
 
     /**
      * @brief Callback function to subscribe to the onboard ROS network for GPS
@@ -211,6 +250,26 @@ private:
     void sub_gps_cb(custom_interfaces::msg::GPS in_msg) { lcl_trns_->updateSensor(in_msg); }
 
     void sub_local_path_data_cb(custom_interfaces::msg::LPathData in_msg) { lcl_trns_->updateSensor(in_msg); }
+
+    void receive_and_pub_request_handler(
+      std::shared_ptr<std_srvs::srv::Trigger::Request>  request,
+      std::shared_ptr<std_srvs::srv::Trigger::Response> response)
+    {
+        (void)request;
+
+        try {
+            pub_cb();
+            RCLCPP_INFO(
+              this->get_logger(), "Receive and pub completed, check if path message was published successfully.");
+            response->success = true;
+            response->message = "Receive and publish completed";
+
+        } catch (const std::exception & e) {
+            RCLCPP_ERROR(this->get_logger(), "Exception during pub_cb(receive and publish): %s", e.what());
+            response->success = false;
+            response->message = std::string("Exception: ") + e.what();
+        }
+    }
 
     void check_signal_quality_request_handler(
       std::shared_ptr<std_srvs::srv::Trigger::Request>  request,

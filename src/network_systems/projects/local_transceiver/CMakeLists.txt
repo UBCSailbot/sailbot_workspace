@@ -7,6 +7,7 @@ set(link_libs
 
 set(inc_dirs
     ${PROTOBUF_INCLUDE_PATH}
+    ${CURL_INCLUDE_DIR}
 )
 
 set(compile_defs
