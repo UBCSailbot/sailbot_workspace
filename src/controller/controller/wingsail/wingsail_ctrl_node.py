@@ -5,7 +5,6 @@
 
 import rclpy
 import rclpy.utilities
-from custom_interfaces.msg import GPS, DesiredHeading, SailCmd, WindSensor
 from rclpy.node import Node
 
 from controller.common.constants import (
@@ -15,6 +14,7 @@ from controller.common.constants import (
 )
 from controller.common.lut import LUT
 from controller.wingsail.controllers import WingsailController
+from custom_interfaces.msg import GPS, DesiredHeading, SailCmd, WindSensor
 
 
 def main(args=None):
@@ -81,8 +81,8 @@ class WingsailControllerNode(Node):
                 ("pub_period_sec", rclpy.Parameter.Type.DOUBLE),
                 ("reynolds_number", rclpy.Parameter.Type.DOUBLE_ARRAY),
                 ("angle_of_attack", rclpy.Parameter.Type.DOUBLE_ARRAY),
-                ("apparent_wind_lower_threshold", rclpy.Parameter.Type.DOUBLE),
-                ("apparent_wind_upper_threshold", rclpy.Parameter.Type.DOUBLE),
+                ("apparent_wind_lower_threshold_kmph", rclpy.Parameter.Type.DOUBLE),
+                ("apparent_wind_upper_threshold_kmph", rclpy.Parameter.Type.DOUBLE),
             ],
         )
 
@@ -157,10 +157,14 @@ class WingsailControllerNode(Node):
         apparent_speed = self.__filtered_wind_sensor.speed.speed
         apparent_direction = self.__filtered_wind_sensor.direction
         apparent_lower_threshold = (
-            self.get_parameter("apparent_wind_lower_threshold").get_parameter_value().double_value
+            self.get_parameter("apparent_wind_lower_threshold_kmph")
+            .get_parameter_value()
+            .double_value
         )
         apparent_upper_threshold = (
-            self.get_parameter("apparent_wind_upper_threshold").get_parameter_value().double_value
+            self.get_parameter("apparent_wind_upper_threshold_kmph")
+            .get_parameter_value()
+            .double_value
         )
 
         self.__trim_tab_angle = self.__wingsailController.get_trim_tab_angle(
