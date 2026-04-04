@@ -196,6 +196,8 @@ bool LocalTransceiver::send()
             continue;
         }
 
+        std::this_thread::sleep_for(std::chrono::seconds(MEDIUM_WAIT));
+
         if (!send(at_write_cmd)) {
             continue;
         }
@@ -226,14 +228,15 @@ bool LocalTransceiver::send()
             continue;
         }
 
+        clearSerialBuffer();
+
+        // Clear any data that may have come in while waiting for SBDIX response, to ensure the following readRsp gets a clean response
         // Check SBD Session status to see if data was sent successfully
         // NEEDS AN ACTIVE SERVER ON $WEBHOOK_SERVER_ENDPOINT OR VIRTUAL IRIDIUM WILL CRASH
         static const AT::Line sbdix_cmd = AT::Line(AT::SBD_SESSION);
         if (!send(sbdix_cmd)) {
             continue;
         }
-
-        clearSerialBuffer();  // Clear any data that may have come in while waiting for SBDIX response, to ensure the following readRsp gets a clean response
 
         if (!rcvRsps({
               sbdix_cmd,
@@ -793,7 +796,7 @@ int LocalTransceiver::checkIridiumSignalQuality()
     int signal_quality =
       opt_rsp_val.find("+CSQ:") != std::string::npos ? std::stoi(opt_rsp_val.substr(opt_rsp_val.find(":") + 1)) : -1;
 
-    std::this_thread::sleep_for(std::chrono::seconds(SMALL_WAIT));
+    std::this_thread::sleep_for(std::chrono::seconds(MEDIUM_WAIT));
 
     clearSerialBuffer();  // Clear any data that may have come in while waiting for CSQ response, to ensure the following readRsp gets a clean response
 
