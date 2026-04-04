@@ -196,6 +196,8 @@ bool LocalTransceiver::send()
             continue;
         }
 
+        std::this_thread::sleep_for(std::chrono::seconds(MEDIUM_WAIT));
+
         if (!send(at_write_cmd)) {
             continue;
         }
@@ -794,7 +796,7 @@ int LocalTransceiver::checkIridiumSignalQuality()
     int signal_quality =
       opt_rsp_val.find("+CSQ:") != std::string::npos ? std::stoi(opt_rsp_val.substr(opt_rsp_val.find(":") + 1)) : -1;
 
-    std::this_thread::sleep_for(std::chrono::seconds(SMALL_WAIT));
+    std::this_thread::sleep_for(std::chrono::seconds(MEDIUM_WAIT));
 
     clearSerialBuffer();  // Clear any data that may have come in while waiting for CSQ response, to ensure the following readRsp gets a clean response
 
