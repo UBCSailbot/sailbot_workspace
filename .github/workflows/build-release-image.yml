@@ -35,7 +35,7 @@ jobs:
         run: echo "timestamp=$(($(date +%s%3N)))" >> $GITHUB_OUTPUT
 
       - name: Build and push release
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: "{{defaultContext}}"
           file: .devcontainer/release/release.Dockerfile
