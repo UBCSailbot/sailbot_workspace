@@ -1,18 +1,17 @@
 """The main node of the local_pathfinding package, represented by the `Sailbot` class."""
 
-import custom_interfaces.msg as ci
 import rclpy
 from rclpy.node import Node
+from test_plans.test_plan import TestPlan
 
+import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.global_path as gp
 import local_pathfinding.obstacles as ob
 from local_pathfinding.local_path import LocalPath
 from local_pathfinding.ompl_path import MAX_SOLVER_RUN_TIME_SEC
-from test_plans.test_plan import TestPlan
 
 GLOBAL_WAYPOINT_REACHED_THRESH_KM = 3
-PATHFINDING_RANGE_KM = 30
 REALLY_FAR_M = 100000000
 
 
@@ -68,6 +67,7 @@ class Sailbot(Node):
                 ("pub_period_sec", rclpy.Parameter.Type.DOUBLE),
                 ("path_planner", rclpy.Parameter.Type.STRING),
                 ("test_plan", rclpy.Parameter.Type.STRING),
+                ("global_path_interval_spacing_km", rclpy.Parameter.Type.DOUBLE),
             ],
         )
 
@@ -105,6 +105,11 @@ class Sailbot(Node):
         # publisher timers
         self.pub_period_sec = (
             self.get_parameter("pub_period_sec").get_parameter_value().double_value
+        )
+        self.global_path_interval_spacing_km = (
+            self.get_parameter("global_path_interval_spacing_km")
+            .get_parameter_value()
+            .double_value
         )
         self.get_logger().debug(f"Got parameter: {self.pub_period_sec=}")
 
@@ -260,7 +265,7 @@ class Sailbot(Node):
         ):
             received_new_global_waypoint = True
             self.global_waypoint_index = self.determine_start_point_in_new_global_path(
-                self.global_path, self.gps.lat_lon
+                self.global_path, self.gps.lat_lon, self.global_path_interval_spacing_km
             )
             self.saved_target_global_waypoint = self.global_path.waypoints[
                 self.global_waypoint_index
@@ -300,7 +305,7 @@ class Sailbot(Node):
 
     @staticmethod
     def determine_start_point_in_new_global_path(
-        global_path: ci.Path, boat_lat_lon: ci.HelperLatLon
+        global_path: ci.Path, boat_lat_lon: ci.HelperLatLon, global_path_spacing_km: float
     ):
         """Used when we receive a new global path.
         Finds the index of the first waypoint within 'pathfinding range' of gps location.
@@ -321,7 +326,7 @@ class Sailbot(Node):
             if distance_to_waypoint_m < closest_m:
                 closest_m, index_of_closest = distance_to_waypoint_m, waypoint_index
 
-            if distance_to_waypoint_m < cs.km_to_meters(PATHFINDING_RANGE_KM):
+            if distance_to_waypoint_m < cs.km_to_meters(global_path_spacing_km):
                 return waypoint_index
 
         return index_of_closest
