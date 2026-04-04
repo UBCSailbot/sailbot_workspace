@@ -91,17 +91,19 @@ ROS parameters specific to the nodes in the Controller.
 - _Datatype_: `double`
 - _Range_: `(-180.0, 180.0]`
 
-**`apparent_wind_lower_threshold`**
+**`apparent_wind_lower_threshold_kmph`**
 
 - _Description_: The lower wind threshold value for apparent wind.
 - _Datatype_: 'double'
 - _Range_: '[0.0, MAX_DOUBLE)'
+- The value is in Kmph.
 
-**`apparent_wind_upper_threshold`**
+**`apparent_wind_upper_threshold_kmph`**
 
 - _Description_: The higher wind threshold value for apparent wind.
 - _Datatype_: 'double'
 - _Range_: '[0.0, MAX_DOUBLE)'
+- The value is in Kmph.
 
 ## Boat Simulator Parameters
 
