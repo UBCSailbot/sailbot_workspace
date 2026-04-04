@@ -34,7 +34,7 @@ jobs:
                   password: ${{ secrets.PAT_TOKEN }}
 
             - name: Build and push dev
-              uses: docker/build-push-action@v6
+              uses: docker/build-push-action@v7
               with:
                   context: "{{defaultContext}}"
                   file: .devcontainer/base-dev/base-dev.Dockerfile
