@@ -83,6 +83,7 @@ class WingsailControllerNode(Node):
                 ("angle_of_attack", rclpy.Parameter.Type.DOUBLE_ARRAY),
                 ("apparent_wind_lower_threshold_kmph", rclpy.Parameter.Type.DOUBLE),
                 ("apparent_wind_upper_threshold_kmph", rclpy.Parameter.Type.DOUBLE),
+                ("apparent_wind_zero_threshold", rclpy.Parameter.Type.DOUBLE),
             ],
         )
 
@@ -166,6 +167,9 @@ class WingsailControllerNode(Node):
             .get_parameter_value()
             .double_value
         )
+        apparent_zero_threshold = (
+            self.get_parameter("apparent_wind_zero_threshold").get_parameter_value().double_value
+        )
 
         self.__trim_tab_angle = self.__wingsailController.get_trim_tab_angle(
             apparent_speed, apparent_direction
@@ -176,6 +180,8 @@ class WingsailControllerNode(Node):
         if apparent_speed > apparent_lower_threshold and apparent_speed < apparent_upper_threshold:
             difference = apparent_upper_threshold - apparent_lower_threshold
             scaling_coef = -1 * (apparent_speed - apparent_lower_threshold) / difference + 1
+        elif apparent_speed < apparent_zero_threshold:
+            scaling_coef = 0
         elif apparent_speed >= apparent_upper_threshold:
             scaling_coef = 0
 
