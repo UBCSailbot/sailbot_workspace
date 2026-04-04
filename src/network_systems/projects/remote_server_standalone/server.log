@@ -1,0 +1,115 @@
+[INFO] Server starting on IP:0.0.0.0, Port: 8081
+[INFO] Waiting for incoming connections...
+[INFO] Accepting incoming request...
+[INFO] Accepted connection from 212.71.235.32:51516
+[INFO] doAccept() called, reading request...
+readReq() called
+[INFO] Waiting for incoming connections...
+[INFO] Incoming request: Method: POST, Target: /sensors, Bytes: 414
+[INFO] Request headers:
+    User-Agent: Rock7PushApi
+    Content-Type: application/x-www-form-urlencoded
+    Content-Length: 218
+    Host: 137.184.35.110:8081
+    Connection: Keep-Alive
+    Accept-Encoding: gzip
+
+[INFO] Request body: imei=300234068129370&device_type=ROCKBLOCK&serial=16967&momsn=1379&transmit_time=26-03-28%2022%3A05%3A26&iridium_latitude=49.3810&iridium_longitude=-125.7235&iridium_cep=185.0&iridium_session_status=2&data=48656c6c6f21
+[DEBUG] Raw query_string: 'imei=300234068129370&device_type=ROCKBLOCK&serial=16967&momsn=1379&transmit_time=26-03-28%2022%3A05%3A26&iridium_latitude=49.3810&iridium_longitude=-125.7235&iridium_cep=185.0&iridium_session_status=2&data=48656c6c6f21'
+[DEBUG] Parsed split_strings: [0]='imei' [1]='300234068129370' [2]='device_type' [3]='ROCKBLOCK' [4]='serial' [5]='16967' [6]='momsn' [7]='1379' [8]='transmit_time' [9]='26-03-28%2022%3A05%3A26' [10]='iridium_latitude' [11]='49.3810' [12]='iridium_longitude' [13]='-125.7235' [14]='iridium_cep' [15]='185.0' [16]='iridium_session_status' [17]='2'
+[WARN] Invalid number for serial: 'ROCKBLOCK', using -1.
+[DEBUG] Parsed fields: imei=300234068129370, serial=4294967295, momsn=16967, transmit_time='1379', lat=26, lon=49.381, cep=4294967171, data(len)=12
+[INFO] Accepting incoming request...
+[INFO] Accepted connection from 212.71.235.32:51868
+[INFO] doAccept() called, reading request...
+readReq() called
+[INFO] Waiting for incoming connections...
+[INFO] Incoming request: Method: POST, Target: /sensors, Bytes: 414
+[INFO] Request headers:
+    User-Agent: Rock7PushApi
+    Content-Type: application/x-www-form-urlencoded
+    Content-Length: 218
+    Host: 137.184.35.110:8081
+    Connection: Keep-Alive
+    Accept-Encoding: gzip
+
+[INFO] Request body: imei=300234068129370&device_type=ROCKBLOCK&serial=16967&momsn=1380&transmit_time=26-03-28%2022%3A05%3A55&iridium_latitude=49.4032&iridium_longitude=-125.7557&iridium_cep=199.0&iridium_session_status=2&data=48656c6c6f21
+[DEBUG] Raw query_string: 'imei=300234068129370&device_type=ROCKBLOCK&serial=16967&momsn=1380&transmit_time=26-03-28%2022%3A05%3A55&iridium_latitude=49.4032&iridium_longitude=-125.7557&iridium_cep=199.0&iridium_session_status=2&data=48656c6c6f21'
+[DEBUG] Parsed split_strings: [0]='imei' [1]='300234068129370' [2]='device_type' [3]='ROCKBLOCK' [4]='serial' [5]='16967' [6]='momsn' [7]='1380' [8]='transmit_time' [9]='26-03-28%2022%3A05%3A55' [10]='iridium_latitude' [11]='49.4032' [12]='iridium_longitude' [13]='-125.7557' [14]='iridium_cep' [15]='199.0' [16]='iridium_session_status' [17]='2'
+[WARN] Invalid number for serial: 'ROCKBLOCK', using -1.
+[DEBUG] Parsed fields: imei=300234068129370, serial=4294967295, momsn=16967, transmit_time='1380', lat=26, lon=49.4032, cep=4294967171, data(len)=12
+[INFO] Accepting incoming request...
+[INFO] Accepted connection from 212.71.235.32:57112
+[INFO] doAccept() called, reading request...
+readReq() called
+[INFO] Waiting for incoming connections...
+[INFO] Incoming request: Method: POST, Target: /sensors, Bytes: 412
+[INFO] Request headers:
+    User-Agent: Rock7PushApi
+    Content-Type: application/x-www-form-urlencoded
+    Content-Length: 216
+    Host: 137.184.35.110:8081
+    Connection: Keep-Alive
+    Accept-Encoding: gzip
+
+[INFO] Request body: imei=300234068129370&device_type=ROCKBLOCK&serial=16967&momsn=1381&transmit_time=26-03-28%2022%3A12%3A41&iridium_latitude=49.2830&iridium_longitude=-123.2476&iridium_cep=4.0&iridium_session_status=0&data=48656c6c6f21
+[DEBUG] Raw query_string: 'imei=300234068129370&device_type=ROCKBLOCK&serial=16967&momsn=1381&transmit_time=26-03-28%2022%3A12%3A41&iridium_latitude=49.2830&iridium_longitude=-123.2476&iridium_cep=4.0&iridium_session_status=0&data=48656c6c6f21'
+[DEBUG] Parsed split_strings: [0]='imei' [1]='300234068129370' [2]='device_type' [3]='ROCKBLOCK' [4]='serial' [5]='16967' [6]='momsn' [7]='1381' [8]='transmit_time' [9]='26-03-28%2022%3A12%3A41' [10]='iridium_latitude' [11]='49.2830' [12]='iridium_longitude' [13]='-123.2476' [14]='iridium_cep' [15]='4.0' [16]='iridium_session_status' [17]='0'
+[WARN] Invalid number for serial: 'ROCKBLOCK', using -1.
+[DEBUG] Parsed fields: imei=300234068129370, serial=4294967295, momsn=16967, transmit_time='1381', lat=26, lon=49.283, cep=4294967173, data(len)=12
+[INFO] Accepting incoming request...
+[INFO] Accepted connection from 212.71.235.32:57988
+[INFO] doAccept() called, reading request...
+readReq() called
+[INFO] Waiting for incoming connections...
+[INFO] Incoming request: Method: POST, Target: /sensors, Bytes: 412
+[INFO] Request headers:
+    User-Agent: Rock7PushApi
+    Content-Type: application/x-www-form-urlencoded
+    Content-Length: 216
+    Host: 137.184.35.110:8081
+    Connection: Keep-Alive
+    Accept-Encoding: gzip
+
+[INFO] Request body: imei=300234068129370&device_type=ROCKBLOCK&serial=16967&momsn=1382&transmit_time=26-03-28%2022%3A14%3A02&iridium_latitude=49.2830&iridium_longitude=-123.2476&iridium_cep=8.0&iridium_session_status=0&data=48656c6c6f21
+[DEBUG] Raw query_string: 'imei=300234068129370&device_type=ROCKBLOCK&serial=16967&momsn=1382&transmit_time=26-03-28%2022%3A14%3A02&iridium_latitude=49.2830&iridium_longitude=-123.2476&iridium_cep=8.0&iridium_session_status=0&data=48656c6c6f21'
+[DEBUG] Parsed split_strings: [0]='imei' [1]='300234068129370' [2]='device_type' [3]='ROCKBLOCK' [4]='serial' [5]='16967' [6]='momsn' [7]='1382' [8]='transmit_time' [9]='26-03-28%2022%3A14%3A02' [10]='iridium_latitude' [11]='49.2830' [12]='iridium_longitude' [13]='-123.2476' [14]='iridium_cep' [15]='8.0' [16]='iridium_session_status' [17]='0'
+[WARN] Invalid number for serial: 'ROCKBLOCK', using -1.
+[DEBUG] Parsed fields: imei=300234068129370, serial=4294967295, momsn=16967, transmit_time='1382', lat=26, lon=49.283, cep=4294967173, data(len)=12
+[INFO] Accepting incoming request...
+[INFO] Accepted connection from 212.71.235.32:58342
+[INFO] doAccept() called, reading request...
+readReq() called
+[INFO] Waiting for incoming connections...
+[INFO] Incoming request: Method: POST, Target: /sensors, Bytes: 413
+[INFO] Request headers:
+    User-Agent: Rock7PushApi
+    Content-Type: application/x-www-form-urlencoded
+    Content-Length: 217
+    Host: 137.184.35.110:8081
+    Connection: Keep-Alive
+    Accept-Encoding: gzip
+
+[INFO] Request body: imei=300234068129370&device_type=ROCKBLOCK&serial=16967&momsn=1383&transmit_time=26-03-28%2022%3A14%3A31&iridium_latitude=49.2680&iridium_longitude=-123.2935&iridium_cep=11.0&iridium_session_status=0&data=48656c6c6f21
+[DEBUG] Raw query_string: 'imei=300234068129370&device_type=ROCKBLOCK&serial=16967&momsn=1383&transmit_time=26-03-28%2022%3A14%3A31&iridium_latitude=49.2680&iridium_longitude=-123.2935&iridium_cep=11.0&iridium_session_status=0&data=48656c6c6f21'
+[DEBUG] Parsed split_strings: [0]='imei' [1]='300234068129370' [2]='device_type' [3]='ROCKBLOCK' [4]='serial' [5]='16967' [6]='momsn' [7]='1383' [8]='transmit_time' [9]='26-03-28%2022%3A14%3A31' [10]='iridium_latitude' [11]='49.2680' [12]='iridium_longitude' [13]='-123.2935' [14]='iridium_cep' [15]='11.0' [16]='iridium_session_status' [17]='0'
+[WARN] Invalid number for serial: 'ROCKBLOCK', using -1.
+[DEBUG] Parsed fields: imei=300234068129370, serial=4294967295, momsn=16967, transmit_time='1383', lat=26, lon=49.268, cep=4294967173, data(len)=12
+[INFO] Accepting incoming request...
+[INFO] Accepted connection from 212.71.235.32:60560
+[INFO] doAccept() called, reading request...
+readReq() called
+[INFO] Waiting for incoming connections...
+[INFO] Incoming request: Method: POST, Target: /sensors, Bytes: 412
+[INFO] Request headers:
+    User-Agent: Rock7PushApi
+    Content-Type: application/x-www-form-urlencoded
+    Content-Length: 216
+    Host: 137.184.35.110:8081
+    Connection: Keep-Alive
+    Accept-Encoding: gzip
+
+[INFO] Request body: imei=300234068129370&device_type=ROCKBLOCK&serial=16967&momsn=1384&transmit_time=26-03-28%2022%3A17%3A51&iridium_latitude=49.2602&iridium_longitude=-123.2174&iridium_cep=5.0&iridium_session_status=0&data=48656c6c6f21
+[DEBUG] Raw query_string: 'imei=300234068129370&device_type=ROCKBLOCK&serial=16967&momsn=1384&transmit_time=26-03-28%2022%3A17%3A51&iridium_latitude=49.2602&iridium_longitude=-123.2174&iridium_cep=5.0&iridium_session_status=0&data=48656c6c6f21'
+[DEBUG] Parsed split_strings: [0]='imei' [1]='300234068129370' [2]='device_type' [3]='ROCKBLOCK' [4]='serial' [5]='16967' [6]='momsn' [7]='1384' [8]='transmit_time' [9]='26-03-28%2022%3A17%3A51' [10]='iridium_latitude' [11]='49.2602' [12]='iridium_longitude' [13]='-123.2174' [14]='iridium_cep' [15]='5.0' [16]='iridium_session_status' [17]='0'
+[WARN] Invalid number for serial: 'ROCKBLOCK', using -1.

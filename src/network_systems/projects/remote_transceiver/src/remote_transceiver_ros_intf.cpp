@@ -82,9 +82,11 @@ public:
                 io_threads_.reserve(num_threads);
                 bio::ip::address addr = bio::ip::make_address(host);
 
-                std::make_shared<remote_transceiver::Listener>(
-                  *io_, tcp::endpoint{addr, static_cast<uint16_t>(port)}, std::move(sailbot_db))
-                  ->run();
+                auto listener = std::make_shared<remote_transceiver::Listener>(
+                  *io_, tcp::endpoint{addr, static_cast<uint16_t>(port)}, std::move(sailbot_db));
+                listener->setLogCallback(
+                  [this](const std::string & msg) { RCLCPP_INFO(this->get_logger(), "%s", msg.c_str()); });
+                listener->run();
 
                 for (std::thread & io_thread : io_threads_) {
                     io_thread = std::thread([&io_ = io_]() { io_->run(); });
