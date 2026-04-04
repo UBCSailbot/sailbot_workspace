@@ -4,18 +4,21 @@ import math
 from abc import abstractmethod
 from typing import Optional
 
-import custom_interfaces.msg as ci
 import numpy as np
 from shapely import prepared
 from shapely.affinity import affine_transform
 from shapely.geometry import MultiPolygon, Point, Polygon
 
+import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
 
 # Constants
+DT = 10
 PROJ_DISTANCE_NO_COLLISION = 0.0
 BOAT_BUFFER = 0.25  # km
 COLLISION_ZONE_STRETCH_FACTOR = 1.25  # This factor changes the width of the boat collision zone
+RADIUS_MULTIPLIER = 5
+STRAIGHT_LINE_ROT_THRESHOLD = 1e-4
 
 
 class Obstacle:
@@ -204,6 +207,7 @@ class Boat(Obstacle):
         self.ais_ship = ais_ship
         self.width = cs.meters_to_km(self.ais_ship.width.dimension)
         self.length = cs.meters_to_km(self.ais_ship.length.dimension)
+        self._raw_collision_zone = Point(0, 0).buffer(0)
         self.update_collision_zone()
 
     def update_sailbot_data(
@@ -220,46 +224,124 @@ class Boat(Obstacle):
             self.sailbot_speed = sailbot_speed
 
     def update_collision_zone(self, **kwargs) -> None:
-        """Sets or regenerates a Shapely Polygon that represents the boat's collision zone.
-
-        Args:
-
-            ais_ship (Optional[ci.HelperAISShip]): AIS Ship message containing information about
-                                                   the target ship.
         """
+
+        Sets or regenerates a Shapely Polygon that represents the boat's collision zone.
+
+        The collision zone is computed in the boat's local frame then rotated and translated into
+        the world frame to match the boat's current position and COG.
+        """
+
         ais_ship = kwargs.get("ais_ship", None)
         if ais_ship is not None:
             if ais_ship.id != self.ais_ship.id:
                 raise ValueError("Argument AIS Ship ID does not match this Boat instance's ID")
             self.ais_ship = ais_ship
 
-        projected_distance = self._calculate_projected_distance()
+        # -- Shared values used across all cases --
+        rot = self.ais_ship.rot.rot
+        rot_rps = cs.rot_to_rad_per_sec(rot)
+        speed_kmps = self.ais_ship.sog.speed / 3600.0
+        cog_rad = math.radians(self.ais_ship.cog.heading)
 
-        # TODO maybe incorporate ROT in this calculation at a later time
-        collision_zone_width = projected_distance * COLLISION_ZONE_STRETCH_FACTOR * self.width
+        # Current boat position in XY world frame
+        x, y = cs.latlon_to_xy(self.reference, self.ais_ship.lat_lon)
 
-        # Points of the boat collision cone polygon before rotation and centred at the origin
-        boat_collision_zone = Polygon(
-            [
-                [-self.width / 2, -self.length / 2],
-                [-collision_zone_width, self.length / 2 + projected_distance],
-                [collision_zone_width, self.length / 2 + projected_distance],
-                [self.width / 2, -self.length / 2],
+        # Distance along boat's path until a potential collision with Sailbot
+        projected_distance = self._calculate_projected_distance(cog_rad)
+
+        # --- Case 1: No collision projected ---
+        if projected_distance == PROJ_DISTANCE_NO_COLLISION:
+            # If no collision detected, create small collision zone around the boat
+            radius = cs.km_to_meters(max(self.width, self.length)) * speed_kmps
+            boat_collision_zone = Point(-self.width / 2, -self.length / 2).buffer(
+                radius, resolution=16
+            )
+            self._raw_collision_zone = self._translate_collision_zone(boat_collision_zone)
+            self.collision_zone = self._raw_collision_zone.buffer(
+                radius + BOAT_BUFFER, join_style=2
+            )
+            prepared.prep(self.collision_zone)
+
+        # --- Case 2: Straight-line motion ---
+        elif abs(rot_rps) < STRAIGHT_LINE_ROT_THRESHOLD:
+            # Boat is not turning (or turning negligibly), so project a trapezoid ahead of the bow
+            # based on the projected distance until a potential collision
+            boat_collision_zone = Polygon(
+                [
+                    [-self.width / 2, -self.length / 2],
+                    [-self.width / 2, self.length / 2 + projected_distance],
+                    [self.width / 2, self.length / 2 + projected_distance],
+                    [self.width / 2, -self.length / 2],
+                ]
+            )
+            self._raw_collision_zone = self._translate_collision_zone(boat_collision_zone)
+            self.collision_zone = self._raw_collision_zone.buffer(BOAT_BUFFER, join_style=2)
+            prepared.prep(self.collision_zone)
+
+        # --- Case 3: Turning motion ---
+        else:
+            # The boat is following a circular arc. Project where it will be after DT seconds
+            # using the instantaneous radius of curvature, then build a triangle connecting:
+            #   A - current bow tip
+            #   B - straight-ahead projected collision point (as if it weren't turning)
+            #   C - actual projected collision point after turning
+
+            # Radius of circular arc
+            turn_radius_km = speed_kmps / abs(rot_rps)
+            turn_angle = rot_rps * DT
+
+            # Center of rotation in world frame
+            cx = x + turn_radius_km * math.cos(cog_rad) * math.copysign(1, rot_rps)
+            cy = y - turn_radius_km * math.sin(cog_rad) * math.copysign(1, rot_rps)
+
+            # Rotate the ship around the center using standard 2D rotation formula
+            dx = x - cx
+            dy = y - cy
+            future_x = cx + dx * math.cos(turn_angle) - dy * math.sin(turn_angle)
+            future_y = cy + dx * math.sin(turn_angle) + dy * math.cos(turn_angle)
+
+            # Now that we have future position, calculate future projected distance
+            future_cog_rad = cog_rad + turn_angle
+            future_projected_distance = self._calculate_projected_distance(
+                future_cog_rad, position_override=(future_x, future_y)
+            )
+
+            if future_projected_distance == PROJ_DISTANCE_NO_COLLISION:
+                radius = cs.km_to_meters(max(self.width, self.length)) * RADIUS_MULTIPLIER
+                boat_collision_zone = Point(-self.width / 2, -self.length / 2).buffer(
+                    radius, resolution=16
+                )
+                self._raw_collision_zone = self._translate_collision_zone(boat_collision_zone)
+                self.collision_zone = self._raw_collision_zone.buffer(
+                    radius + BOAT_BUFFER, join_style=2
+                )
+                return
+
+            # Construct triangle that makes up the collision zone
+            A = [0.0, self.length / 2]
+            B = [0.0, self.length / 2 + projected_distance]
+            C = [
+                future_projected_distance * math.sin(turn_angle),
+                self.length / 2 + future_projected_distance * math.cos(turn_angle),
             ]
-        )
 
-        # this code block translates and rotates the collision zone to the correct position
+            boat_collision_zone = Polygon([A, B, C])
+            self._raw_collision_zone = self._translate_collision_zone(boat_collision_zone)
+            self.collision_zone = self._raw_collision_zone
+            prepared.prep(self.collision_zone)
+
+    def _translate_collision_zone(self, boat_collision_zone):
+        # this code block translates and rotates the collision zone to the world frame
         dx, dy = cs.latlon_to_xy(self.reference, self.ais_ship.lat_lon)
         angle_rad = math.radians(-self.ais_ship.cog.heading)
         sin_theta = math.sin(angle_rad)
         cos_theta = math.cos(angle_rad)
         transformation = np.array([cos_theta, -sin_theta, sin_theta, cos_theta, dx, dy])
         collision_zone = affine_transform(boat_collision_zone, transformation)
+        return collision_zone
 
-        self.collision_zone = collision_zone.buffer(BOAT_BUFFER, join_style=2)
-        prepared.prep(self.collision_zone)
-
-    def _calculate_projected_distance(self) -> float:
+    def _calculate_projected_distance(self, cog_rad, position_override=None) -> float:
         """Calculates the distance the boat obstacle will travel before collision, if
         Sailbot moves directly towards the soonest possible collision point at its current speed.
         The system is modeled by two parametric lines extending from the positions of the boat
@@ -276,8 +358,10 @@ class Boat(Obstacle):
             float: Distance in km that the boat will travel before collision or the constant value
             PROJ_DISTANCE_NO_COLLISION if a collision is not possible.
         """
-        position = cs.latlon_to_xy(self.reference, self.ais_ship.lat_lon)
-        cog_rad = math.radians(self.ais_ship.cog.heading)
+        if position_override is None:
+            position = cs.latlon_to_xy(self.reference, self.ais_ship.lat_lon)
+        else:
+            position = position_override
         v1 = self.ais_ship.sog.speed * math.sin(cog_rad)
         v2 = self.ais_ship.sog.speed * math.cos(cog_rad)
         a, b = position

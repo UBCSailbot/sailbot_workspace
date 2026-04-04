@@ -215,7 +215,7 @@ def test_init_obstacles():
 
 @pytest.mark.parametrize(
     "x,y,is_valid",
-    [(0.5, 0.5, True), (-14, 0.5, False), (-16, 0.5, True)],
+    [(0.5, 0.5, True), (-13.5, 0.5, False), (-16, 0.5, True)],
 )
 def test_is_state_valid(x: float, y: float, is_valid: bool, fresh_ompl_path):
     state = base.State(fresh_ompl_path._simple_setup.getStateSpace())
@@ -317,7 +317,7 @@ def test_get_remaining_cost_partial(fresh_ompl_path, target_wp_index):
                     start_latlon.longitude + end_points_inclusive_factor,
                     end_latlon.longitude - end_points_inclusive_factor,
                 )
-            ),  # noqa
+            ),
         )
 
     boat_latlon = mid_point(current_wp_latlon, next_wp_latlon)
