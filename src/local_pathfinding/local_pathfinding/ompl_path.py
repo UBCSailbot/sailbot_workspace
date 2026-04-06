@@ -446,19 +446,19 @@ class OMPLPath:
         Args:
             waypoints (list[ci.HelperLatLon]): List of waypoints that will be simplified
         """
-        path = list(waypoints)  # work on a copy
+        path = list(waypoints)
         obj = self._simple_setup.getOptimizationObjective()
         i = 1
 
         while i < len(path) - 1:
-            prev = path[i - 1]
-            curr = path[i]
-            nxt = path[i + 1]
+            previous = path[i-1]
+            current = path[i]
+            nxt = path[i+1]
 
-            cost_with = obj.motionCost(prev, curr).value() + obj.motionCost(curr, nxt).value()
-            cost_without = obj.motionCost(prev, nxt).value()
+            cost_with = obj.motionCost(previous, current).value() + obj.motionCost(current, nxt).value()
+            cost_without = obj.motionCost(previous, nxt).value()
 
-            if cost_without <= cost_with:
+            if (cost_without <= cost_with):
                 path.pop(i)
             else:
                 i += 1
