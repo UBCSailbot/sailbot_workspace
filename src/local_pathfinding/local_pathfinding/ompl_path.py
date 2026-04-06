@@ -446,17 +446,26 @@ class OMPLPath:
         Args:
             waypoints (list[ci.HelperLatLon]): List of waypoints that will be simplified
         """
+
         path = list(waypoints)
         obj = self._simple_setup.getOptimizationObjective()
         i = 1
 
         while i < len(path) - 1:
-            previous = path[i-1]
-            current = path[i]
-            nxt = path[i+1]
+            previous_waypoint_xy = cs.latlon_to_xy(self.state.reference_latlon, path[i-1])
+            current_waypoint_xy = cs.latlon_to_xy(self.state.reference_latlon, path[i])
+            next_waypoint_xy = cs.latlon_to_xy(self.state.reference_latlon, path[i+1])
 
-            cost_with = obj.motionCost(previous, current).value() + obj.motionCost(current, nxt).value()
-            cost_without = obj.motionCost(previous, nxt).value()
+            previous_state = base.State(self._simple_setup.getSpaceInformation().getStateSpace())
+            current_state = base.State(self._simple_setup.getSpaceInformation().getStateSpace())
+            next_state = base.State(self._simple_setup.getSpaceInformation().getStateSpace())
+
+            previous_state().setXY(previous_waypoint_xy.x, previous_waypoint_xy.y)
+            current_state().setXY(current_waypoint_xy.x, current_waypoint_xy.y)
+            next_state().setXY(next_waypoint_xy.x, next_waypoint_xy.y)
+
+            cost_with = obj.motionCost(previous_state, current_state).value() + obj.motionCost(current_state, next_state).value()
+            cost_without = obj.motionCost(previous_state, next_state).value()
 
             if (cost_without <= cost_with):
                 path.pop(i)
