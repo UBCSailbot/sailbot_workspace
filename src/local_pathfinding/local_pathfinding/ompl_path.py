@@ -451,7 +451,7 @@ class OMPLPath:
         obj = self._simple_setup.getOptimizationObjective()
         i = 1
 
-        while i < len(path) - 1:
+        while (i < len(path) - 1):
             previous_waypoint_xy = cs.latlon_to_xy(self.state.reference_latlon, path[i-1])
             current_waypoint_xy = cs.latlon_to_xy(self.state.reference_latlon, path[i])
             next_waypoint_xy = cs.latlon_to_xy(self.state.reference_latlon, path[i+1])
