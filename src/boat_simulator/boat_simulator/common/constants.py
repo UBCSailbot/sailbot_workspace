@@ -20,7 +20,7 @@ class Actions:
 
 @dataclass
 class LowLevelControlSubscriptionTopics:
-    GPS: str = "gps"  # added for #805
+    GPS: str = "gps"
 
 
 @dataclass
@@ -31,7 +31,7 @@ class PhysicsEngineSubscriptionTopics:
 
 @dataclass
 class PhysicsEnginePublisherTopics:
-    GPS: str = "gps"  # added for #805
+    GPS: str = "gps"
     KINEMATICS: str = "mock_kinematics"
     WIND_SENSORS: str = "mock_wind_sensors"
 

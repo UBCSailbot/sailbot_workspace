@@ -66,7 +66,7 @@ def setup_launch(context: LaunchContext) -> List[Node]:
     """
     mode = LaunchConfiguration("mode").perform(context)
 
-    launch_description_entities: List[Node] = []
+    launch_description_entities = []
     launch_description_entities.append(get_navigate_node_description(context))
     if mode == "development":
         launch_description_entities.append(get_mock_global_path_node_description(context))
@@ -75,8 +75,6 @@ def setup_launch(context: LaunchContext) -> List[Node]:
         launch_description_entities.append(get_mock_gps_node_description(context))
         launch_description_entities.append(get_navigate_observer_node_description(context))
     elif mode == "sim":
-        # Mock nodes for global_path and ais_ships.
-        # System-level package orchestration is handled by global_launch.
         launch_description_entities.append(get_mock_global_path_node_description(context))
         launch_description_entities.append(get_mock_ais_node_description(context))
         launch_description_entities.append(get_navigate_observer_node_description(context))

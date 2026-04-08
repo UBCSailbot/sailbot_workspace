@@ -112,12 +112,9 @@ class SailbotObserver(Node):
             )
             return
 
-        try:
-            self.queue.put(vz.VisualizerState(msgs=self.msgs))
-            self.get_logger().info(f"sent new visualizer state with {len(self.msgs)} messages.")
-            self.get_logger().info(f"queue: {self.queue.qsize()}")
-        except Exception as error:
-            self.get_logger().error(f"Failed to send visualizer state: {error}")
+        self.queue.put(vz.VisualizerState(msgs=self.msgs))
+        self.get_logger().info(f"sent new visualizer state with {len(self.msgs)} messages.")
+        self.get_logger().info(f"queue: {self.queue.qsize()}")
 
 
 if __name__ == "__main__":

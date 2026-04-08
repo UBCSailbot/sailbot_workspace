@@ -65,7 +65,7 @@ public:
                     RCLCPP_ERROR(this->get_logger(), "%s", err.what());
                     throw err;
                 }
-            } else if (mode == SYSTEM_MODE::SIM) { // added for issue#805
+            } else if (mode == SYSTEM_MODE::SIM) {
                 RCLCPP_INFO(this->get_logger(), "Running CAN Transceiver in sim mode");
             } else {
                 std::string msg = "Error, invalid system mode" + mode;
@@ -88,7 +88,6 @@ public:
             // pressure_sensors_pub_ =
             //   this->create_publisher<msg::PressureSensors>(ros_topics::PRESSURE_SENSORS, QUEUE_SIZE);
 
-            //  edited for issue#805
             if (can_trns_) {
                 std::vector<std::pair<CanId, std::function<void(const CanFrame &)>>> canCbs = {
                     std::make_pair(CanId::POWER_OFF, std::function<void(const CanFrame &)>([this](const CanFrame & frame) {
@@ -133,7 +132,7 @@ public:
                     ros_topics::DESIRED_HEADING, QUEUE_SIZE,
                     [this](msg::DesiredHeading desired_heading_) { subDesiredHeadingCb(desired_heading_); });
             }
-            // till here, if statement
+
             if (mode == SYSTEM_MODE::DEV) {  // Initialize the CAN Sim Intf
                 mock_ais_sub_ = this->create_subscription<msg::AISShips>(
                   ros_topics::MOCK_AIS_SHIPS, QUEUE_SIZE,
@@ -151,8 +150,7 @@ public:
                     publishBoatSimInput(boat_sim_input_msg_);
                     // Add any other necessary looping callbacks
                 });
-            } else if (mode == SYSTEM_MODE::SIM) { //  added forissue#805
-                // In sim mode, subscribe to mock_wind_sensors to produce filtered_wind_sensor
+            } else if (mode == SYSTEM_MODE::SIM) {  // subscribes to mock_wind_sensors to produce filtered_wind_sensor
                 mock_wind_sensors_sub_ = this->create_subscription<msg::WindSensors>(
                   ros_topics::MOCK_WIND_SENSORS, QUEUE_SIZE,
                   [this](msg::WindSensors mock_wind_sensors) { subMockWindSensorsCb(mock_wind_sensors); });
