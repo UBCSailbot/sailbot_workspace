@@ -1,3 +1,5 @@
+import { getApiUrl } from '@/lib/apiUrl';
+
 /**
  * Defines all saga methods to make requests to the AISShips interface.
  */
@@ -6,7 +8,7 @@ export const AISShipsService = {
     let isError = false;
 
     return yield fetch(
-      `${process.env.NEXT_PUBLIC_SERVER_HOST}:${process.env.NEXT_PUBLIC_SERVER_PORT}/api/aisships`,
+      getApiUrl('/api/aisships'),
       {
         method: 'GET',
       },
