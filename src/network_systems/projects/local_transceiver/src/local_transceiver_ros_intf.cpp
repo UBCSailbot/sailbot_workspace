@@ -117,10 +117,11 @@ public:
             std::future<std::optional<custom_interfaces::msg::Path>> fut =
               std::async(std::launch::async, lcl_trns_->getCache);
 
-            static constexpr int  ROS_Q_SIZE     = 5;
-            static constexpr auto TIMER_INTERVAL = std::chrono::milliseconds(300000);
-            timer_ = this->create_wall_timer(TIMER_INTERVAL, std::bind(&LocalTransceiverIntf::pub_cb, this));
-            pub_   = this->create_publisher<custom_interfaces::msg::Path>(ros_topics::GLOBAL_PATH, ROS_Q_SIZE);
+            static constexpr int ROS_Q_SIZE = 5;
+            // disable receive timer until ready for deployment
+            //static constexpr auto TIMER_INTERVAL = std::chrono::milliseconds(300000);
+            //timer_ = this->create_wall_timer(TIMER_INTERVAL, std::bind(&LocalTransceiverIntf::pub_cb, this));
+            pub_ = this->create_publisher<custom_interfaces::msg::Path>(ros_topics::GLOBAL_PATH, ROS_Q_SIZE);
 
             // subscriber nodes
             sub_wind_sensor = this->create_subscription<custom_interfaces::msg::WindSensors>(
@@ -184,8 +185,9 @@ public:
     }
 
 private:
-    std::unique_ptr<LocalTransceiver>                          lcl_trns_;  // Local Transceiver instance
-    rclcpp::TimerBase::SharedPtr                               timer_;     // Publishing timer
+    std::unique_ptr<LocalTransceiver> lcl_trns_;  // Local Transceiver instance
+    // Publishing timer - disabled until deployment
+    //rclcpp::TimerBase::SharedPtr                               timer_;
     rclcpp::Publisher<custom_interfaces::msg::Path>::SharedPtr pub_;
 
     rclcpp::Subscription<custom_interfaces::msg::WindSensors>::SharedPtr     sub_wind_sensor;

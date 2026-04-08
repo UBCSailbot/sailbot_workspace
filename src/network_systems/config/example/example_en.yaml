@@ -1,4 +1,0 @@
-# Configuration that enables the cached_fib example module
-cached_fib_node:
-  ros__parameters:
-    enabled: true

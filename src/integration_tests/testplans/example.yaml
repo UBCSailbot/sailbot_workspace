@@ -9,11 +9,6 @@ required_packages:
     - mock_ais/mock_ais_en_default.yaml
 inputs:
   - type: ROS
-    name: cached_fib_in
-    data:
-      dtype: uint64
-      val: 6
-  - type: ROS
     name: aisship
     data:
       dtype: AISShips
@@ -93,11 +88,6 @@ inputs:
               val: -3
 
 expected_outputs:
-  - type: ROS
-    name: cached_fib_out
-    data:
-      dtype: uint64
-      val: 5
   - type: ROS
     name: aisships
     data:

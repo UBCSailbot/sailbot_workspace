@@ -1,9 +1,8 @@
 /mock_wind_sensor:
   ros__parameters:
-    tw_dir_deg: 0
-    tw_speed_kmph: 0.0
-
+    tw_dir_deg: 80
+    tw_speed_kmph: 10.0
 /mock_gps:
   ros__parameters:
-    tw_dir_deg: 0
-    tw_speed_kmph: 0.0
+    tw_dir_deg: 80
+    tw_speed_kmph: 10.0
