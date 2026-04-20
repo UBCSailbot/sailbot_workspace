@@ -16,11 +16,35 @@ import createSagaMiddleware from 'redux-saga';
 import { rootReducer } from './rootReducer';
 import { middleware } from './middleware';
 import { rootSaga } from './rootSaga';
+import { Theme } from './theme/themeSlice';
+
+const getPreloadedTheme = () => {
+  if (typeof window === 'undefined') {
+    return Theme.Dark;
+  }
+
+  try {
+    const stored = localStorage.getItem('theme');
+    if (stored === 'dark') return Theme.Dark;
+    if (stored === 'light') return Theme.Light;
+  } catch {
+    // may error out if user disables localstorage or something. thats fine.
+  }
+
+  return Theme.Dark;
+};
 
 const createReduxStore = () => {
   const sagaMiddleWare = createSagaMiddleware();
+  const preloadedState =
+    typeof window !== 'undefined'
+      ? {
+          theme: { current: getPreloadedTheme() },
+        }
+      : undefined;
   const store = configureStore({
     reducer: rootReducer(),
+    preloadedState,
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware().concat([sagaMiddleWare, ...middleware]),
     enhancers: [applyMiddleware(sagaMiddleWare)],

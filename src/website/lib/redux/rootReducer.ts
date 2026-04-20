@@ -1,5 +1,6 @@
 /* Instruments */
 import { combineReducers } from 'redux';
+import themeReducer from './theme/themeSlice';
 import GPSReducer from '@/stores/GPS/GPSReducers';
 import GlobalPathReducer from '@/stores/GlobalPath/GlobalPathReducers';
 import AISShipsReducer from '@/stores/AISShips/AISShipsReducers';
@@ -12,6 +13,7 @@ import DataFilterReducer from '@/stores/DataFilter/DataFilterReducers';
 
 export function rootReducer() {
   const reducerMap = {
+    theme: themeReducer,
     gps: new GPSReducer().reducer,
     aisShips: new AISShipsReducer().reducer,
     localPath: new LocalPathReducer().reducer,

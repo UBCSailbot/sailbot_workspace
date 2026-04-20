@@ -1,0 +1,27 @@
+:root {
+  --light-accent-1: white;
+  --light-accent-2: #090909;
+  --light-accent-3: #262626;
+
+  --dark-accent-1: #090909;
+  --dark-accent-2: white;
+  --dark-accent-3: #6b6b6b;
+
+  --blue: #0059EB;
+  --purple: #8F42D9;
+  --pink: #E7006E;
+  --red: #E60F26;
+  --yellow: #FF9200;
+  --green: #009534;
+  --teal: #00937C;
+
+  --accent-color-1: var(--light-accent-1);
+  --accent-color-2: var(--light-accent-2);
+  --accent-color-3: var(--light-accent-3);
+}
+
+.dark {
+  --accent-color-1: var(--dark-accent-1);
+  --accent-color-2: var(--dark-accent-2);
+  --accent-color-3: var(--dark-accent-3);
+}
