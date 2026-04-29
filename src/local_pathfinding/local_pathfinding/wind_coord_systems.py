@@ -25,38 +25,38 @@ class Wind:
     dir_deg: float
 
 
-def boat_to_global_coordinate(boat_heading_deg_gc: float, aw_direction_deg_bc: float):
+def boat_to_global_coordinate(boat_heading_deg_gc: float, aw_dir_deg_bc: float):
     """
     Convert a boat-frame wind direction to a global-frame bearing (degrees) in (-180, 180]
     Args:
         boat_heading_deg_gc (float): Boat heading in degrees (global frame) in (-180, 180].
-        aw_direction_deg_bc (float): Wind direction in boat coordinate degrees (-180, 180].
+        aw_dir_deg_bc (float): Wind direction in boat coordinate degrees (-180, 180].
     Returns:
         float: Global wind bearing in global coordinate degrees within (-180, 180].
     Examples:
-        >>> boat_to_global_coordinate(0, 0)      # 0 + 0 -> 0
+        >>> boat_to_global_coordinate(0, 0)      # 0 + 0 -> 180
         0
-        >>> boat_to_global_coordinate(170, 30)   # 170 + 30 = 200 -> 20
+        >>> boat_to_global_coordinate(170, 30)   # 170 + 30 = 380 -> 20
         20
     """
-    return cs.bound_to_180(boat_heading_deg_gc + aw_direction_deg_bc)
+    return cs.bound_to_180(boat_heading_deg_gc + aw_dir_deg_bc + 180)
 
 
-def global_to_boat_coordinate(boat_heading_deg_gc: float, tw_direction_deg_gc: float):
+def global_to_boat_coordinate(boat_heading_deg_gc: float, tw_dir_deg_gc: float):
     """
     Convert a global-frame wind bearing to a boat-frame wind direction.
     Args:
         boat_heading_deg_gc (float): Boat heading in degrees (global frame), in (-180, 180].
-        tw_direction_deg_gc (float): Wind direction in global coordinate degrees (-180, 180].
+        tw_dir_deg_gc (float): Wind direction in global coordinate degrees (-180, 180].
     Returns:
         float: Wind direction in boat coordinates (degrees) within (-180, 180].
     Examples:
-        >>> global_to_boat_coordinate(0, 0)      # 0 - 0 -> 0
-        0
-        >>> global_to_boat_coordinate(170, 30)   # 30 - 170 = -140 -> -140
-        -140
+        >>> global_to_boat_coordinate(0, 0)      # 0 - 0 -> 180
+        180
+        >>> global_to_boat_coordinate(170, 30)   # 30 - 170 -> 40
+        40
     """
-    return cs.bound_to_180(tw_direction_deg_gc - boat_heading_deg_gc)
+    return cs.bound_to_180(tw_dir_deg_gc - boat_heading_deg_gc + 180)
 
 
 def get_true_wind(
@@ -94,12 +94,12 @@ def get_true_wind(
     aw_dir_rad_bc = math.radians(aw_dir_deg_bc)
 
     # boat wind is in the direction of the boat heading (reverse of boat heading)
-    bw_dir_rad = math.radians(cs.bound_to_180(boat_heading_deg_gc + 180))
+    bw_dir_rad_gc = math.radians(cs.bound_to_180(boat_heading_deg_gc + 180))
     aw_east_kmph = aw_speed_kmph * math.sin(aw_dir_rad_bc)
     aw_north_kmph = aw_speed_kmph * math.cos(aw_dir_rad_bc)
 
-    bw_east_kmph = boat_speed_kmph * math.sin(bw_dir_rad)
-    bw_north_kmph = boat_speed_kmph * math.cos(bw_dir_rad)
+    bw_east_kmph = boat_speed_kmph * math.sin(bw_dir_rad_gc)
+    bw_north_kmph = boat_speed_kmph * math.cos(bw_dir_rad_gc)
 
     tw_east_kmph = aw_east_kmph - bw_east_kmph
     tw_north_kmph = aw_north_kmph - bw_north_kmph
@@ -143,15 +143,15 @@ def get_apparent_wind(
         returns (0.0, 0.0). NOTE: The caller is responsible for handling this case, otherwise the
         calculations will break down.
     """
-    tw_dir_rad = math.radians(tw_dir_deg_gc)
+    tw_dir_rad_gc = math.radians(tw_dir_deg_gc)
 
     bw_speed_kmph = boat_speed_kmph
-    bw_dir_rad = math.radians(cs.bound_to_180(boat_heading_deg_gc + 180.0))
-    bw_east_kmph = bw_speed_kmph * math.sin(bw_dir_rad)
-    bw_north_kmph = bw_speed_kmph * math.cos(bw_dir_rad)
+    bw_dir_rad_gc = math.radians(cs.bound_to_180(boat_heading_deg_gc + 180.0))
+    bw_east_kmph = bw_speed_kmph * math.sin(bw_dir_rad_gc)
+    bw_north_kmph = bw_speed_kmph * math.cos(bw_dir_rad_gc)
 
-    tw_east_kmph = tw_speed_kmph * math.sin(tw_dir_rad)
-    tw_north_kmph = tw_speed_kmph * math.cos(tw_dir_rad)
+    tw_east_kmph = tw_speed_kmph * math.sin(tw_dir_rad_gc)
+    tw_north_kmph = tw_speed_kmph * math.cos(tw_dir_rad_gc)
 
     aw_east_kmph = tw_east_kmph + bw_east_kmph
     aw_north_kmph = tw_north_kmph + bw_north_kmph
@@ -169,7 +169,11 @@ def get_apparent_wind(
     return ZERO_VECTOR_CONSTANT, 0.0
 
 
-def get_true_wind_angle(boat_heading_rad_gc: float, tw_dir_rad_gc: float) -> float:
+def get_true_wind_angle(
+    boat_heading_rad_gc: float,
+    tw_dir_rad_gc: float,
+    ret_rad: bool = True
+) -> float:
     """Calculates the true wind angle (TWA) in radians.
     The TWA is the angle between the heading of a vessel and the true wind direction.
 
@@ -182,10 +186,14 @@ def get_true_wind_angle(boat_heading_rad_gc: float, tw_dir_rad_gc: float) -> flo
         180 : Wind directly from astern (running downwind)
 
     Args:
-        boat_heading_rad_gc (float): _description_
-        tw_dir_rad_gc (float): _description_
+        boat_heading_rad_gc (float): Boat heading in radians (-pi, pi].
+        tw_dir_rad_gc (float): True wind direction in radians (-pi, pi].
+        ret_rad (bool): If True, return wind direction in radians. If False, return in degrees.
 
     Returns:
         float: The true wind angle in the range (-pi, pi]
     """
-    return cs.bound_to_180((tw_dir_rad_gc - boat_heading_rad_gc), rad=True)
+    result = cs.bound_to_180((tw_dir_rad_gc - boat_heading_rad_gc), rad=True)
+    if ret_rad:
+        return result
+    return math.degrees(result)

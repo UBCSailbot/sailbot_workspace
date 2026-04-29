@@ -39,7 +39,7 @@ WIND_COST_SIN_EXPONENT = 80
 # | 75.0  |  0.0  |  8.7  |  9.6  |  9.8  | 10.0  | 10.0  | 10.0 | 10.0 | 10.0 | 10.0 | 10.0 |
 # -------------------------------------------------------------------------------------------
 
-BOAT_SPEEDS = np.array(
+BOAT_SPEEDS_KMPH = np.array(
     [
         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
         [0.0, 5.0, 5.4, 5.8, 6.1, 6.0, 5.6, 5.2, 4.6, 4.0, 3.6],
@@ -54,10 +54,10 @@ BOAT_SPEEDS = np.array(
     ]
 )
 
-TW_SPEEDS = [0.0, 11.1, 14.8, 18.5, 22.2, 25.9, 29.6, 37.0, 55.0, 75.0]
+TW_SPEEDS_KMPH_GC = [0.0, 11.1, 14.8, 18.5, 22.2, 25.9, 29.6, 37.0, 55.0, 75.0]
 SAILING_ANGLES_DEG = [0, 45, 50, 60, 75, 90, 110, 120, 135, 150, 180]
 
-ESTIMATED_TOP_BOAT_SPEED = np.max(BOAT_SPEEDS)
+ESTIMATED_TOP_BOAT_SPEED = np.max(BOAT_SPEEDS_KMPH)
 
 
 class WindObjective(ob.OptimizationObjective):
@@ -96,8 +96,8 @@ class WindObjective(ob.OptimizationObjective):
 
     @staticmethod
     def wind_direction_cost(s1: cs.XY, s2: cs.XY, tw_direction_rad_gc: float) -> float:
-        """Computes a wind alignment cost based on the absolute angle θ between the segment
-        bearing and the true wind direction.
+        """Computes a wind alignment cost based on theta.
+        theta(θ): absolute angle between the segment bearing and the true wind direction
 
         1) If θ ≤ NO_GO_ZONE or θ ≥ π − NO_GO_ZONE (i.e., within 45 degrees of directly upwind or
         downwind), the cost is 1.0.
@@ -135,8 +135,8 @@ class TimeObjective(ob.OptimizationObjective):
     """
 
     interpolation = RegularGridInterpolator(
-        (TW_SPEEDS, SAILING_ANGLES_DEG),
-        BOAT_SPEEDS,
+        (TW_SPEEDS_KMPH_GC, SAILING_ANGLES_DEG),
+        BOAT_SPEEDS_KMPH,
         bounds_error=False,  # no error on out of bounds call
         # returns max speed for any input outside the range of the table
         fill_value=ESTIMATED_TOP_BOAT_SPEED,
