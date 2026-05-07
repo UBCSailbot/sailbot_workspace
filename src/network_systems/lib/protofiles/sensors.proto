@@ -44,16 +44,37 @@ message Sensors
         uint64 data = 2;
     }
 
+    // Commented out in favor of using packed arrays
+
+    // message Temp {
+    //     float temp = 1;
+    // }
+
+    // message Ph {
+    //     float ph = 1;
+    // }
+
+    // message Salinity {
+    //     float salinity = 1;
+    // }
+
+    // message Pressure {
+    //     float pressure = 1;
+    // }
+
     message Path
     {
         repeated Waypoint waypoints = 1;
         // Will be expanded in the future
     }
 
-    Gps               gps             = 1;
-    repeated Wind     wind_sensors    = 2;
-    repeated Battery  batteries       = 3;
-    repeated Ais      ais_ships       = 4;
-    repeated Generic  data_sensors    = 5;
-    Path              local_path_data = 6;
+    Gps               gps              = 1;
+    repeated Wind     wind_sensors     = 2;
+    repeated Battery  batteries        = 3;
+    repeated Ais      ais_ships        = 4;
+    repeated float    temp_sensors     = 5;
+    repeated float    ph_sensors       = 6;
+    repeated float    salinity_sensors = 7;
+    repeated float    pressure_sensors = 8;
+    Path              local_path_data  = 9;
 }

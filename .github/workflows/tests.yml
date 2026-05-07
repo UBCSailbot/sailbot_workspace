@@ -12,6 +12,8 @@ jobs:
   colcon-test:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      MONGODB_URI: ${{ secrets.MONGODB_URI }}
     steps:
     - name: Checkout workspace
       uses: actions/checkout@v6

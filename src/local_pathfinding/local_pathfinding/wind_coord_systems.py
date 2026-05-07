@@ -5,11 +5,24 @@ true bearing conventions.
 """
 
 import math
+from dataclasses import dataclass
 
 import local_pathfinding.coord_systems as cs
 
 FLOATING_POINT_ERROR_THRESHOLD = 1e-9
 ZERO_VECTOR_CONSTANT = 0.0
+
+
+@dataclass
+class Wind:
+    """Represents wind speed and direction.
+
+    Attributes:
+        speed_kmph (float): Wind speed in kilometers per hour.
+        dir_deg (float): Wind direction in degrees, bounded to (-180, 180].
+    """
+    speed_kmph: float
+    dir_deg: float
 
 
 def boat_to_global_coordinate(boat_heading: float, wind_direction: float):

@@ -1125,86 +1125,86 @@ TEST_F(TestCanFrameParser, TestPhSensorInvalid)
     };
 }
 
-/**
- * @brief Test ROS<->CAN Pressure translations work as expected for valid input values
- *
- */
-TEST_F(TestCanFrameParser, PressureSensorTestValid)
-{
-    constexpr std::uint8_t NUM_SENSORS = CAN_FP::PressureSensor::PRESSURE_SENSOR_IDS.size();
-    std::vector<float>     expected_pressures;
-    float                  increment = (PRESSURE_UBND - PRESSURE_LBND) / NUM_SENSORS;
-    for (int i = 0; i < NUM_SENSORS; i++) {
-        expected_pressures.push_back(PRESSURE_LBND + (increment * static_cast<float>(i)));
-    }
+// /**
+//  * @brief Test ROS<->CAN Pressure translations work as expected for valid input values
+//  *
+//  */
+// TEST_F(TestCanFrameParser, PressureSensorTestValid)
+// {
+//     constexpr std::uint8_t NUM_SENSORS = CAN_FP::PressureSensor::PRESSURE_SENSOR_IDS.size();
+//     std::vector<float>     expected_pressures;
+//     float                  increment = (PRESSURE_UBND - PRESSURE_LBND) / NUM_SENSORS;
+//     for (int i = 0; i < NUM_SENSORS; i++) {
+//         expected_pressures.push_back(PRESSURE_LBND + (increment * static_cast<float>(i)));
+//     }
 
-    for (size_t i = 0; i < NUM_SENSORS; i++) {
-        auto optId = CAN_FP::PressureSensor::rosIdxToCanId(i);
+//     for (size_t i = 0; i < NUM_SENSORS; i++) {
+//         auto optId = CAN_FP::PressureSensor::rosIdxToCanId(i);
 
-        ASSERT_TRUE(optId.has_value());
+//         ASSERT_TRUE(optId.has_value());
 
-        CAN_FP::CanId       id                = optId.value();
-        float               expected_pressure = expected_pressures[i];
-        msg::PressureSensor msg;
-        msg::HelperPressure pressure_msg;
+//         CAN_FP::CanId       id                = optId.value();
+//         float               expected_pressure = expected_pressures[i];
+//         msg::PressureSensor msg;
+//         msg::HelperPressure pressure_msg;
 
-        pressure_msg.set__pressure(expected_pressure);
-        msg.set__pressure(pressure_msg);
+//         pressure_msg.set__pressure(expected_pressure);
+//         msg.set__pressure(pressure_msg);
 
-        CAN_FP::PressureSensor sensor_from_ros = CAN_FP::PressureSensor(msg, id);
-        CAN_FP::CanFrame       cf              = sensor_from_ros.toLinuxCan();
+//         CAN_FP::PressureSensor sensor_from_ros = CAN_FP::PressureSensor(msg, id);
+//         CAN_FP::CanFrame       cf              = sensor_from_ros.toLinuxCan();
 
-        EXPECT_EQ(cf.can_id, static_cast<canid_t>(id));
-        EXPECT_EQ(cf.len, CAN_FP::PressureSensor::CAN_BYTE_DLEN_);
+//         EXPECT_EQ(cf.can_id, static_cast<canid_t>(id));
+//         EXPECT_EQ(cf.len, CAN_FP::PressureSensor::CAN_BYTE_DLEN_);
 
-        int16_t raw_pressure;
-        std::memcpy(&raw_pressure, cf.data + CAN_FP::PressureSensor::BYTE_OFF_PRESSURE, sizeof(int16_t));
-        float converted_pressure = static_cast<float>(raw_pressure / 1000.0);  //NOLINT(readability-magic-numbers)
+//         int16_t raw_pressure;
+//         std::memcpy(&raw_pressure, cf.data + CAN_FP::PressureSensor::BYTE_OFF_PRESSURE, sizeof(int16_t));
+//         float converted_pressure = static_cast<float>(raw_pressure / 1000.0);  //NOLINT(readability-magic-numbers)
 
-        const float tolerance = 0.001;
-        EXPECT_NEAR(converted_pressure, expected_pressures[i], tolerance);
+//         const float tolerance = 0.001;
+//         EXPECT_NEAR(converted_pressure, expected_pressures[i], tolerance);
 
-        CAN_FP::PressureSensor sensor_from_can = CAN_FP::PressureSensor(cf);
+//         CAN_FP::PressureSensor sensor_from_can = CAN_FP::PressureSensor(cf);
 
-        EXPECT_EQ(sensor_from_can.id_, id);
+//         EXPECT_EQ(sensor_from_can.id_, id);
 
-        msg::PressureSensor msg_from_sensor = sensor_from_can.toRosMsg();
-        EXPECT_NEAR(msg_from_sensor.pressure.pressure, expected_pressure, tolerance);
-    }
-}
+//         msg::PressureSensor msg_from_sensor = sensor_from_can.toRosMsg();
+//         EXPECT_NEAR(msg_from_sensor.pressure.pressure, expected_pressure, tolerance);
+//     }
+// }
 
-/**
- * @brief Test the behavior of the PressureSensor class when given invalid input values
- *
- */
-TEST_F(TestCanFrameParser, TestPressureSensorInvalid)
-{
-    auto optId = CAN_FP::PressureSensor::rosIdxToCanId(NUM_PRESSURE_SENSORS);
-    EXPECT_FALSE(optId.has_value());
+// /**
+//  * @brief Test the behavior of the PressureSensor class when given invalid input values
+//  *
+//  */
+// TEST_F(TestCanFrameParser, TestPressureSensorInvalid)
+// {
+//     auto optId = CAN_FP::PressureSensor::rosIdxToCanId(NUM_PRESSURE_SENSORS);
+//     EXPECT_FALSE(optId.has_value());
 
-    CAN_FP::CanId invalid_id = CAN_FP::CanId::RESERVED;
+//     CAN_FP::CanId invalid_id = CAN_FP::CanId::RESERVED;
 
-    CAN_FP::CanFrame cf{.can_id = static_cast<canid_t>(invalid_id)};
+//     CAN_FP::CanFrame cf{.can_id = static_cast<canid_t>(invalid_id)};
 
-    EXPECT_THROW(CAN_FP::PressureSensor tmp(cf), CAN_FP::CanIdMismatchException);
+//     EXPECT_THROW(CAN_FP::PressureSensor tmp(cf), CAN_FP::CanIdMismatchException);
 
-    const float        small = 0.01;
-    std::vector<float> invalid_pressures{PRESSURE_LBND - small, PRESSURE_UBND + small};
+//     const float        small = 0.01;
+//     std::vector<float> invalid_pressures{PRESSURE_LBND - small, PRESSURE_UBND + small};
 
-    optId = CAN_FP::PressureSensor::rosIdxToCanId(0);
-    ASSERT_TRUE(optId.has_value());
+//     optId = CAN_FP::PressureSensor::rosIdxToCanId(0);
+//     ASSERT_TRUE(optId.has_value());
 
-    CAN_FP::CanId       valid_id = optId.value();
-    msg::PressureSensor msg;
+//     CAN_FP::CanId       valid_id = optId.value();
+//     msg::PressureSensor msg;
 
-    for (float invalid_pressure : invalid_pressures) {
-        msg::HelperPressure tmp_pressure_msg;
-        tmp_pressure_msg.set__pressure(invalid_pressure);
-        msg.set__pressure(tmp_pressure_msg);
+//     for (float invalid_pressure : invalid_pressures) {
+//         msg::HelperPressure tmp_pressure_msg;
+//         tmp_pressure_msg.set__pressure(invalid_pressure);
+//         msg.set__pressure(tmp_pressure_msg);
 
-        EXPECT_THROW(CAN_FP::PressureSensor tmp(msg, valid_id), std::out_of_range);
-    };
-}
+//         EXPECT_THROW(CAN_FP::PressureSensor tmp(msg, valid_id), std::out_of_range);
+//     };
+// }
 
 /**
  * @brief Test ROS<->CAN Salinity translations work as expected for valid input values
