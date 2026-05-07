@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
-      MONGODB_URI: ${{ secrets.MONGODB_URI }}
+      MONGODB_URI: ${{ secrets.MONGODB_URI || 'placeholder' }}
     steps:
     - name: Checkout workspace
       uses: actions/checkout@v6
