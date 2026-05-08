@@ -13,13 +13,13 @@ import os
 import pickle
 from typing import TYPE_CHECKING, Any, Union
 
-import custom_interfaces.msg as ci
 from ompl import base
 from ompl import geometric as og
 from ompl import util as ou
 from rclpy.impl.rcutils_logger import RcutilsLogger
 from shapely.geometry import MultiPolygon, Point, Polygon, box
 
+import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.obstacles as ob
 from local_pathfinding.ompl_objectives import get_sailing_objective
@@ -276,9 +276,11 @@ class OMPLPath:
 
             # clamp to [0, total_seg_dist]
             if projected_dist > total_seg_dist:
-                self._logger.warning("Projection of the boat position wrt " +
-                                     "the segment is longer than the segment itself," +
-                                     "the boat should've switched local waypoint by this point")
+                self._logger.warning(
+                    "Projection of the boat position wrt "
+                    + "the segment is longer than the segment itself,"
+                    + "the boat should've switched local waypoint by this point"
+                )
                 # assuming pessimistic case
                 projected_dist = total_seg_dist
             elif projected_dist < 0.0:
@@ -450,10 +452,10 @@ class OMPLPath:
         obj = self._simple_setup.getOptimizationObjective()
         i = 1
 
-        while (i < len(path) - 1):
-            previous_waypoint_xy = cs.latlon_to_xy(self.state.reference_latlon, path[i-1])
+        while i < len(path) - 1:
+            previous_waypoint_xy = cs.latlon_to_xy(self.state.reference_latlon, path[i - 1])
             current_waypoint_xy = cs.latlon_to_xy(self.state.reference_latlon, path[i])
-            next_waypoint_xy = cs.latlon_to_xy(self.state.reference_latlon, path[i+1])
+            next_waypoint_xy = cs.latlon_to_xy(self.state.reference_latlon, path[i + 1])
 
             previous_state = base.State(self._simple_setup.getSpaceInformation().getStateSpace())
             current_state = base.State(self._simple_setup.getSpaceInformation().getStateSpace())
@@ -463,10 +465,13 @@ class OMPLPath:
             current_state().setXY(current_waypoint_xy.x, current_waypoint_xy.y)
             next_state().setXY(next_waypoint_xy.x, next_waypoint_xy.y)
 
-            cost_with = obj.motionCost(previous_state(), current_state()).value() + obj.motionCost(current_state(), next_state()).value()
+            cost_with = (
+                obj.motionCost(previous_state(), current_state()).value()
+                + obj.motionCost(current_state(), next_state()).value()
+            )
             cost_without = obj.motionCost(previous_state(), next_state()).value()
 
-            if (cost_without <= cost_with):
+            if cost_without <= cost_with:
                 path.pop(i)
             else:
                 i += 1
