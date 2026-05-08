@@ -23,7 +23,6 @@ from shapely.geometry import MultiPolygon, Point, Polygon, box
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.obstacles as ob
 from local_pathfinding.ompl_objectives import get_sailing_objective
-from local_pathfinding.ompl_objectives import motionCost
 
 if TYPE_CHECKING:
     from local_pathfinding.local_path import LocalPathState
@@ -464,8 +463,8 @@ class OMPLPath:
             current_state().setXY(current_waypoint_xy.x, current_waypoint_xy.y)
             next_state().setXY(next_waypoint_xy.x, next_waypoint_xy.y)
 
-            cost_with = obj.motionCost(previous_state, current_state).value() + obj.motionCost(current_state, next_state).value()
-            cost_without = obj.motionCost(previous_state, next_state).value()
+            cost_with = obj.motionCost(previous_state(), current_state()).value() + obj.motionCost(current_state(), next_state()).value()
+            cost_without = obj.motionCost(previous_state(), next_state()).value()
 
             if (cost_without <= cost_with):
                 path.pop(i)
