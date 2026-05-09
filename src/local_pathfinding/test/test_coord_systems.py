@@ -401,9 +401,15 @@ def test_latlon_polygons_to_xy_polygons_empty_Polygon():
         (-10, -math.radians(((10 / 4.733) ** 2) / 60)),
         (50, math.radians(((50 / 4.733) ** 2) / 60)),
         (-50, -math.radians(((50 / 4.733) ** 2) / 60)),
+        # The highest rate of rotation based on the documentation rot sensor
+        (
+            126,
+            math.radians(708.7 / 60),
+        ),  # The documentation rounded down from 708.7 to 708. For accuracy, we have chosen 708.7.
+        (-126, -math.radians(708.7 / 60)),
     ],
 )
 def test_rot_to_rad_per_sec(rot: int, expected_rps: float):
     assert cs.rot_to_rad_per_sec(rot) == pytest.approx(
-        expected_rps
+        expected=expected_rps, rel=1e-3
     ), f"Incorrect ROT conversion for rot={rot}"
