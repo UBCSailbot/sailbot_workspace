@@ -19,9 +19,9 @@ The wingsail controller’s goal is to keep the wingsail at a desired angle of a
 ## Specifications
 
 - **Wind → trim tab:** Takes apparent wind speed and direction and converts them to trim tab angle (degrees) using:
-  - Reynolds number from wind speed and sail chord.
-  - A lookup table (Reynolds number → angle of attack) with linear interpolation.
-  - Sign of the trim tab angle follows apparent wind direction (convention: 0° bow-to-stern, angle increasing clockwise; trim tab range typically ±40°).
+    - Reynolds number from wind speed and sail chord.
+    - A lookup table (Reynolds number → angle of attack) with linear interpolation.
+    - Sign of the trim tab angle follows apparent wind direction (convention: 0° bow-to-stern, angle increasing clockwise; trim tab range typically ±40°).
 
 - **Wind scaling (mast protection):** If apparent wind speed is between a **lower** and **upper** threshold (parameters in `globals.yaml`), the trim tab is scaled down linearly (1 at lower threshold, 0 at upper). Above the upper threshold, trim tab is forced to 0 to avoid damaging the mast in high wind.
 
@@ -95,8 +95,8 @@ The **controller**-relevant parameters are under the `wingsail_ctrl_node` namesp
 | **pub_period_sec** (global) | Period (seconds) at which the wingsail node publishes sail commands. |
 | **reynolds_number** | Array of Reynolds numbers for the LUT (x-axis). In the node this is overridden by a hardcoded table in `constants.py`; the param is declared for future use. |
 | **angle_of_attack** | Array of angles of attack (degrees) corresponding to `reynolds_number` (y-axis). Same note as above. |
-| **apparent_wind_lower_threshold** | Lower wind speed threshold (e.g. m/s). Below this, scaling factor is 1. Between this and the upper threshold, trim tab is scaled down. |
-| **apparent_wind_upper_threshold** | Upper wind speed threshold. At or above this, scaling factor is 0 (trim tab forced to 0 for mast protection). |
+| **apparent_wind_lower_threshold_kmph** | Lower wind speed threshold (e.g. m/s). Below this, scaling factor is 1. Between this and the upper threshold, trim tab is scaled down. |
+| **apparent_wind_upper_threshold_kmph** | Upper wind speed threshold. At or above this, scaling factor is 0 (trim tab forced to 0 for mast protection). |
 
 Full parameter descriptions and conventions are in:
 `src/global_launch/config/README.md`.
