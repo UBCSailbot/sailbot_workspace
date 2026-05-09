@@ -81,7 +81,7 @@ def get_true_wind(
 
     Returns:
         tuple[float, float]: (tw_dir_rad, tw_speed_kmph)
-            - tw_dir_rad_gc: true wind direction in radians within (-pi, pi].
+            - tw_dir_gc: true wind direction in radians within (-pi, pi].
             - tw_speed_kmph: true wind speed in km/h
         If the resulting vector magnitude is effectively zero (<= FLOATING_POINT_ERROR_THRESHOLD),
         returns (0.0, 0.0). NOTE: The caller is responsible for handling this case, otherwise the
@@ -105,15 +105,15 @@ def get_true_wind(
     tw_north_kmph = aw_north_kmph - bw_north_kmph
 
     tw_speed_kmph = math.hypot(tw_east_kmph, tw_north_kmph)
-    tw_dir_rad = math.atan2(tw_east_kmph, tw_north_kmph)
+    tw_dir_rad_gc = math.atan2(tw_east_kmph, tw_north_kmph)
 
     if ret_rad:
-        tw_dir = tw_dir_rad
+        tw_dir_gc = tw_dir_rad_gc
     else:
-        tw_dir = math.degrees(tw_dir_rad)
+        tw_dir_gc = math.degrees(tw_dir_rad_gc)
 
     if tw_speed_kmph > FLOATING_POINT_ERROR_THRESHOLD:
-        return tw_dir, tw_speed_kmph
+        return tw_dir_gc, tw_speed_kmph
     return ZERO_VECTOR_CONSTANT, 0.0
 
 
@@ -137,7 +137,7 @@ def get_apparent_wind(
 
     Returns:
         tuple[float, float]: (aw_dir_rad, aw_speed_kmph)
-            - aw_dir_rad_bc: apparent wind direction in radians within (-pi, pi]
+            - aw_dir_bc: apparent wind direction in radians within (-pi, pi]
             - aw_speed_kmph: apparent wind speed in km/h.
         If the resulting vector magnitude is effectively zero (<= FLOATING_POINT_ERROR_THRESHOLD),
         returns (0.0, 0.0). NOTE: The caller is responsible for handling this case, otherwise the
@@ -157,15 +157,15 @@ def get_apparent_wind(
     aw_north_kmph = tw_north_kmph + bw_north_kmph
 
     aw_speed_kmph = math.hypot(aw_east_kmph, aw_north_kmph)
-    aw_dir_rad = math.atan2(aw_east_kmph, aw_north_kmph)
+    aw_dir_rad_bc = math.atan2(aw_east_kmph, aw_north_kmph)
 
     if ret_rad:
-        aw_dir = aw_dir_rad
+        aw_dir_bc = aw_dir_rad_bc
     else:
-        aw_dir = math.degrees(aw_dir_rad)
+        aw_dir_bc = math.degrees(aw_dir_rad_bc)
 
     if aw_speed_kmph > FLOATING_POINT_ERROR_THRESHOLD:
-        return aw_dir, aw_speed_kmph
+        return aw_dir_bc, aw_speed_kmph
     return ZERO_VECTOR_CONSTANT, 0.0
 
 

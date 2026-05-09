@@ -55,7 +55,9 @@ BOAT_SPEEDS_KMPH = np.array(
 )
 
 TW_SPEEDS_KMPH_GC = [0.0, 11.1, 14.8, 18.5, 22.2, 25.9, 29.6, 37.0, 55.0, 75.0]
-SAILING_ANGLES_DEG = [0, 45, 50, 60, 75, 90, 110, 120, 135, 150, 180]
+# True wind angle: absolute value of angle between boat
+# heading and true wind direction bounded by [0°, 180°]
+SAILING_ANGLES_DEG_GC = [0, 45, 50, 60, 75, 90, 110, 120, 135, 150, 180]
 
 ESTIMATED_TOP_BOAT_SPEED = np.max(BOAT_SPEEDS_KMPH)
 
@@ -135,7 +137,7 @@ class TimeObjective(ob.OptimizationObjective):
     """
 
     interpolation = RegularGridInterpolator(
-        (TW_SPEEDS_KMPH_GC, SAILING_ANGLES_DEG),
+        (TW_SPEEDS_KMPH_GC, SAILING_ANGLES_DEG_GC),
         BOAT_SPEEDS_KMPH,
         bounds_error=False,  # no error on out of bounds call
         # returns max speed for any input outside the range of the table
