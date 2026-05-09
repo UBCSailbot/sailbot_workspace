@@ -143,10 +143,10 @@ class Land(Obstacle):
         land_multi_polygon = kwargs.get("land_multi_polygon", None)
         state_space_latlon = kwargs.get("state_space_latlon", None)
         if land_multi_polygon is not None:  # for testing (injecting mock land data)
-            self.collision_zone = MultiPolygon(
+            collision_zone = MultiPolygon(
                 cs.latlon_polygon_list_to_xy_polygon_list(land_multi_polygon.geoms, self.reference)
             )
-            prepared.prep(self.collision_zone)
+            self.collision_zone = prepared.prep(collision_zone)
             return
 
         if state_space_latlon is None:
@@ -178,8 +178,7 @@ class Land(Obstacle):
                 collision_zone = MultiPolygon([collision_zone])
         else:
             collision_zone = MultiPolygon()
-        prepared.prep(collision_zone)
-        self.collision_zone = collision_zone
+        self.collision_zone = prepared.prep(collision_zone)
 
 
 class Boat(Obstacle):
@@ -256,8 +255,8 @@ class Boat(Obstacle):
         transformation = np.array([cos_theta, -sin_theta, sin_theta, cos_theta, dx, dy])
         collision_zone = affine_transform(boat_collision_zone, transformation)
 
-        self.collision_zone = collision_zone.buffer(BOAT_BUFFER, join_style=2)
-        prepared.prep(self.collision_zone)
+        unprepped_collision_zone = collision_zone.buffer(BOAT_BUFFER, join_style=2)
+        self.collision_zone = prepared.prep(unprepped_collision_zone)
 
     def _calculate_projected_distance(self) -> float:
         """Calculates the distance the boat obstacle will travel before collision, if

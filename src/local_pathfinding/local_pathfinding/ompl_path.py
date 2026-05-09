@@ -394,13 +394,15 @@ class OMPLPath:
 
         self.state.planner = og.RRTstar(space_information)
 
+        aw = self.state.aw_avg if self.state.aw_avg is not None else self.state.current_aw
+
         objective = get_sailing_objective(
             space_information,
             simple_setup,
             self.state.heading,
             self.state.speed,
-            self.state.current_aw.dir_deg,
-            self.state.current_aw.speed_kmph,
+            aw.dir_deg,
+            aw.speed_kmph,
         )
 
         simple_setup.setOptimizationObjective(objective)

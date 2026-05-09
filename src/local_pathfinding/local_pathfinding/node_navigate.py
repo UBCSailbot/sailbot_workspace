@@ -278,7 +278,7 @@ class Sailbot(Node):
             self.saved_target_global_waypoint.longitude,
             self.saved_target_global_waypoint.latitude,
         )
-        if distance_to_waypoint_m < GLOBAL_WAYPOINT_REACHED_THRESH_KM:
+        if cs.meters_to_km(distance_to_waypoint_m) < GLOBAL_WAYPOINT_REACHED_THRESH_KM:
             received_new_global_waypoint = True
             self.global_waypoint_index -= 1  # Since global waypoints are in reverse order
 
@@ -359,20 +359,20 @@ class Sailbot(Node):
 
     def _log_inactive_subs_warning(self):
         """
-        Logs a warning message for each inactive subscriber.
+        Logs a warning listing topics that have not yet received any data.
         """
         inactive_subs = []
-        if self.ais_ships_sub is None:
+        if self.ais_ships is None:
             inactive_subs.append("ais_ships")
-        if self.gps_sub is None:
+        if self.gps is None:
             inactive_subs.append("gps")
-        if self.global_path_sub is None:
+        if self.global_path is None:
             inactive_subs.append("global_path")
-        if self.filtered_wind_sensor_sub is None:
+        if self.filtered_wind_sensor is None:
             inactive_subs.append("filtered_wind_sensor")
         if len(inactive_subs) == 0:
             return
-        self._logger.warning("Inactive Subscribers: " + ", ".join(inactive_subs))
+        self.get_logger().warning("Inactive Subscribers: " + ", ".join(inactive_subs))
 
 
 if __name__ == "__main__":
