@@ -25,9 +25,13 @@ void UtilDB::cleanDB()
     mongocxx::pool::entry entry = pool_->acquire();
     mongocxx::database    db    = (*entry)[db_name_];
 
-    mongocxx::collection gps_coll              = db[COLLECTION_GPS];
-    mongocxx::collection ais_coll              = db[COLLECTION_AIS_SHIPS];
-    mongocxx::collection generic_coll          = db[COLLECTION_DATA_SENSORS];
+    mongocxx::collection gps_coll = db[COLLECTION_GPS];
+    mongocxx::collection ais_coll = db[COLLECTION_AIS_SHIPS];
+    // mongocxx::collection generic_coll          = db[COLLECTION_DATA_SENSORS];
+    mongocxx::collection temp_coll     = db[COLLECTION_TEMP_SENSORS];
+    mongocxx::collection ph_coll       = db[COLLECTION_PH_SENSORS];
+    mongocxx::collection salinity_coll = db[COLLECTION_SALINITY_SENSORS];
+    // mongocxx::collection pressure_coll         = db[COLLECTION_PRESSURE_SENSORS];
     mongocxx::collection batteries_coll        = db[COLLECTION_BATTERIES];
     mongocxx::collection wind_coll             = db[COLLECTION_WIND_SENSORS];
     mongocxx::collection local_path_coll       = db[COLLECTION_LOCAL_PATH];
@@ -36,7 +40,11 @@ void UtilDB::cleanDB()
 
     gps_coll.delete_many(bsoncxx::builder::basic::make_document());
     ais_coll.delete_many(bsoncxx::builder::basic::make_document());
-    generic_coll.delete_many(bsoncxx::builder::basic::make_document());
+    // generic_coll.delete_many(bsoncxx::builder::basic::make_document());
+    temp_coll.delete_many(bsoncxx::builder::basic::make_document());
+    // pressure_coll.delete_many(bsoncxx::builder::basic::make_document());
+    salinity_coll.delete_many(bsoncxx::builder::basic::make_document());
+    ph_coll.delete_many(bsoncxx::builder::basic::make_document());
     batteries_coll.delete_many(bsoncxx::builder::basic::make_document());
     wind_coll.delete_many(bsoncxx::builder::basic::make_document());
     local_path_coll.delete_many(bsoncxx::builder::basic::make_document());
@@ -56,9 +64,32 @@ Sensors UtilDB::genRandSensors()
         genRandAisData(*sensors.add_ais_ships());
     }
 
-    // generic sensors
-    for (int i = 0; i < NUM_GENERIC_SENSORS; i++) {
-        genRandGenericSensorData(*sensors.add_data_sensors());
+    // temperature sensors
+    for (int i = 0; i < NUM_TEMP_SENSORS; i++) {
+        float v{};
+        genRandTempSensorData(v);
+        sensors.add_temp_sensors(v);
+    }
+
+    // pH sensors
+    for (int i = 0; i < NUM_PH_SENSORS; i++) {
+        float v{};
+        genRandPhSensorData(v);
+        sensors.add_ph_sensors(v);
+    }
+
+    // pressure sensors
+    // for (int i = 0; i < NUM_PRESSURE_SENSORS; i++) {
+    //     float v{};
+    //     genRandPressureSensorData(v);
+    //     sensors.add_pressure_sensors(v);
+    // }
+
+    // salinity sensors
+    for (int i = 0; i < NUM_SALINITY_SENSORS; i++) {
+        float v{};
+        genRandSalinitySensorData(v);
+        sensors.add_salinity_sensors(v);
     }
 
     // batteries
@@ -155,12 +186,40 @@ bool UtilDB::verifyDBWrite(std::span<Sensors> expected_sensors, std::span<Sailbo
             expectFloatEQ(dumped_ais_ship.length(), expected_ais_ship.length(), "");
         }
 
-        // generic sensors
-        for (int j = 0; j < NUM_GENERIC_SENSORS; j++) {
-            const Sensors::Generic & dumped_data_sensor   = dumped_sensors[i].data_sensors(j);
-            const Sensors::Generic & expected_data_sensor = expected_sensors[i].data_sensors(j);
-            expectEQ(dumped_data_sensor.id(), expected_data_sensor.id(), "");
-            expectEQ(dumped_data_sensor.data(), expected_data_sensor.data(), "");
+        // // generic sensors
+        // for (int j = 0; j < NUM_GENERIC_SENSORS; j++) {
+        //     const Sensors::Generic & dumped_data_sensor   = dumped_sensors[i].data_sensors(j);
+        //     const Sensors::Generic & expected_data_sensor = expected_sensors[i].data_sensors(j);
+        //     expectEQ(dumped_data_sensor.id(), expected_data_sensor.id(), "");
+        //     expectEQ(dumped_data_sensor.data(), expected_data_sensor.data(), "");
+        // }
+
+        // temperature sensors
+        for (int j = 0; j < NUM_TEMP_SENSORS; j++) {
+            const float dumped_temp_sensor   = dumped_sensors[i].temp_sensors(j);
+            const float expected_temp_sensor = expected_sensors[i].temp_sensors(j);
+            expectFloatEQ(dumped_temp_sensor, expected_temp_sensor, "");
+        }
+
+        // pressure sensors
+        // for (int j = 0; j < NUM_PRESSURE_SENSORS; j++) {
+        //     const float dumped_pressure_sensor   = dumped_sensors[i].pressure_sensors(j);
+        //     const float expected_pressure_sensor = expected_sensors[i].pressure_sensors(j);
+        //     expectFloatEQ(dumped_pressure_sensor, expected_pressure_sensor, "");
+        // }
+
+        // salinity sensors
+        for (int j = 0; j < NUM_SALINITY_SENSORS; j++) {
+            const float dumped_salinity_sensor   = dumped_sensors[i].salinity_sensors(j);
+            const float expected_salinity_sensor = expected_sensors[i].salinity_sensors(j);
+            expectFloatEQ(dumped_salinity_sensor, expected_salinity_sensor, "");
+        }
+
+        // pH sensors
+        for (int j = 0; j < NUM_PH_SENSORS; j++) {
+            const float dumped_ph_sensor   = dumped_sensors[i].ph_sensors(j);
+            const float expected_ph_sensor = expected_sensors[i].ph_sensors(j);
+            expectFloatEQ(dumped_ph_sensor, expected_ph_sensor, "");
         }
 
         // batteries
@@ -406,25 +465,107 @@ std::pair<std::vector<Sensors>, std::vector<std::string>> UtilDB::dumpSensors(
         expectEQ(ais_ships_doc["timestamp"].get_utf8().value.to_string(), timestamp, "Document timestamp mismatch");
     }
 
-    // generic sensor
-    mongocxx::collection generic_coll        = db[COLLECTION_DATA_SENSORS];
-    mongocxx::cursor     generic_sensor_docs = generic_coll.find({}, opts);
+    // // generic sensor
+    // mongocxx::collection generic_coll        = db[COLLECTION_DATA_SENSORS];
+    // mongocxx::cursor     generic_sensor_docs = generic_coll.find({}, opts);
+    // expectEQ(
+    //   static_cast<uint64_t>(generic_coll.count_documents({})), num_docs,
+    //   "Error: TestDB should only have " + std::to_string(num_docs) + " documents per collection");
+
+    // for (auto [i, generic_sensor_docs_it] = std::tuple{size_t{0}, generic_sensor_docs.begin()}; i < num_docs;
+    //      i++, generic_sensor_docs_it++) {
+    //     Sensors &                     sensors     = sensors_vec[i];
+    //     const std::string &           timestamp   = timestamp_vec[i];
+    //     const bsoncxx::document::view generic_doc = *generic_sensor_docs_it;
+
+    //     for (bsoncxx::array::element generic_doc : generic_doc["genericSensors"].get_array().value) {
+    //         Sensors::Generic * generic = sensors.add_data_sensors();
+    //         generic->set_id(static_cast<uint32_t>(generic_doc["id"].get_int64().value));
+    //         generic->set_data(static_cast<uint64_t>(generic_doc["data"].get_int64().value));
+    //     }
+    //     expectEQ(generic_doc["timestamp"].get_utf8().value.to_string(), timestamp, "Document timestamp mismatch");
+    // }
+
+    // temperature sensor
+    mongocxx::collection temp_coll =
+      db[COLLECTION_TEMP_SENSORS];  // We're using the same collection for temp, pressure, salinity, pH for now
+    mongocxx::cursor temp_sensor_docs = temp_coll.find({}, opts);
     expectEQ(
-      static_cast<uint64_t>(generic_coll.count_documents({})), num_docs,
-      "Error: TestDB should only have " + std::to_string(num_docs) + " generic sensor documents per collection");
+      static_cast<uint64_t>(temp_coll.count_documents({})), num_docs,
+      "Error: TestDB should only have " + std::to_string(num_docs) + " documents per collection");
 
-    for (auto [i, generic_sensor_docs_it] = std::tuple{size_t{0}, generic_sensor_docs.begin()}; i < num_docs;
-         i++, generic_sensor_docs_it++) {
-        Sensors &                     sensors     = sensors_vec[i];
-        const std::string &           timestamp   = timestamp_vec[i];
-        const bsoncxx::document::view generic_doc = *generic_sensor_docs_it;
-
-        for (bsoncxx::array::element generic_doc : generic_doc["genericSensors"].get_array().value) {
-            Sensors::Generic * generic = sensors.add_data_sensors();
-            generic->set_id(static_cast<uint32_t>(generic_doc["id"].get_int64().value));
-            generic->set_data(static_cast<uint64_t>(generic_doc["data"].get_int64().value));
+    for (auto [i, temp_doc_it] = std::tuple{size_t{0}, temp_sensor_docs.begin()}; i < num_docs; i++, temp_doc_it++) {
+        Sensors &                     sensors   = sensors_vec[i];
+        const std::string &           timestamp = timestamp_vec[i];
+        const bsoncxx::document::view temp_doc  = *temp_doc_it;
+        for (bsoncxx::array::element temp_doc : temp_doc["tempSensors"].get_array().value) {
+            sensors.add_temp_sensors(static_cast<float>(temp_doc["temperature"].get_double().value));
         }
-        expectEQ(generic_doc["timestamp"].get_utf8().value.to_string(), timestamp, "Document timestamp mismatch");
+        expectEQ(sensors.temp_sensors().size(), NUM_TEMP_SENSORS, "Size mismatch when reading temp sensors from DB");
+        expectEQ(temp_doc["timestamp"].get_utf8().value.to_string(), timestamp, "Document timestamp mismatch");
+    }
+
+    // pressure sensor
+    // mongocxx::collection pressure_coll =
+    //   db[COLLECTION_PRESSURE_SENSORS];  // We're using the same collection for temp, pressure, salinity, pH for now
+    // mongocxx::cursor pressure_sensor_docs = pressure_coll.find({}, opts);
+    // expectEQ(
+    //   static_cast<uint64_t>(pressure_coll.count_documents({})), num_docs,
+    //   "Error: TestDB should only have " + std::to_string(num_docs) + " documents per collection");
+
+    // for (auto [i, pressure_doc_it] = std::tuple{size_t{0}, pressure_sensor_docs.begin()}; i < num_docs;
+    //      i++, pressure_doc_it++) {
+    //     Sensors &                     sensors      = sensors_vec[i];
+    //     const std::string &           timestamp    = timestamp_vec[i];
+    //     const bsoncxx::document::view pressure_doc = *pressure_doc_it;
+    //     for (bsoncxx::array::element pressure_doc : pressure_doc["pressureSensors"].get_array().value) {
+    //         sensors.add_pressure_sensors(static_cast<float>(pressure_doc["pressure"].get_double().value));
+    //     }
+    //     expectEQ(
+    //       sensors.pressure_sensors().size(), NUM_PRESSURE_SENSORS,
+    //       "Size mismatch when reading pressure sensors from DB");
+    //     expectEQ(pressure_doc["timestamp"].get_utf8().value.to_string(), timestamp, "Document timestamp mismatch");
+    // }
+
+    // salinity sensor
+    mongocxx::collection salinity_coll =
+      db[COLLECTION_SALINITY_SENSORS];  // We're using the same collection for temp, pressure, salinity, pH for now
+    mongocxx::cursor salinity_sensor_docs = salinity_coll.find({}, opts);
+    expectEQ(
+      static_cast<uint64_t>(salinity_coll.count_documents({})), num_docs,
+      "Error: TestDB should only have " + std::to_string(num_docs) + " documents per collection");
+
+    for (auto [i, salinity_doc_it] = std::tuple{size_t{0}, salinity_sensor_docs.begin()}; i < num_docs;
+         i++, salinity_doc_it++) {
+        Sensors &                     sensors      = sensors_vec[i];
+        const std::string &           timestamp    = timestamp_vec[i];
+        const bsoncxx::document::view salinity_doc = *salinity_doc_it;
+        for (bsoncxx::array::element salinity_doc : salinity_doc["salinitySensors"].get_array().value) {
+            sensors.add_salinity_sensors(static_cast<float>(salinity_doc["salinity"].get_double().value));
+        }
+        expectEQ(
+          sensors.salinity_sensors().size(), NUM_SALINITY_SENSORS,
+          "Size mismatch when reading salinity sensors from DB");
+        expectEQ(salinity_doc["timestamp"].get_utf8().value.to_string(), timestamp, "Document timestamp mismatch");
+    }
+
+    // pH sensor
+    mongocxx::collection ph_coll =
+      db[COLLECTION_PH_SENSORS];  // We're using the same collection for temp, pressure, salinity, pH for now
+    mongocxx::cursor ph_sensor_docs = ph_coll.find({}, opts);
+    expectEQ(
+      static_cast<uint64_t>(ph_coll.count_documents({})), num_docs,
+      "Error: TestDB should only have " + std::to_string(num_docs) + " documents per collection");
+
+    for (auto [i, ph_doc_it] = std::tuple{size_t{0}, ph_sensor_docs.begin()}; i < num_docs; i++, ph_doc_it++) {
+        Sensors &                     sensors   = sensors_vec[i];
+        const std::string &           timestamp = timestamp_vec[i];
+        const bsoncxx::document::view ph_doc    = *ph_doc_it;
+        for (bsoncxx::array::element ph_doc : ph_doc["phSensors"].get_array().value) {
+            sensors.add_ph_sensors(static_cast<float>(ph_doc["ph"].get_double().value));
+        }
+        expectEQ(sensors.ph_sensors().size(), NUM_PH_SENSORS, "Size mismatch when reading pH sensors from DB");
+        expectEQ(ph_doc["timestamp"].get_utf8().value.to_string(), timestamp, "Document timestamp mismatch");
     }
 
     // battery
@@ -532,13 +673,37 @@ void UtilDB::genRandAisData(Sensors::Ais & ais_ship)
     ais_ship.set_length(length_dist(*rng_));
 }
 
-void UtilDB::genRandGenericSensorData(Sensors::Generic & generic_sensor)
-{
-    std::uniform_int_distribution<uint8_t>  id_generic(0, UINT8_MAX);
-    std::uniform_int_distribution<uint64_t> data_generic(0, UINT64_MAX);
+// void UtilDB::genRandGenericSensorData(Sensors::Generic & generic_sensor)
+// {
+//     std::uniform_int_distribution<uint8_t>  id_generic(0, UINT8_MAX);
+//     std::uniform_int_distribution<uint64_t> data_generic(0, UINT64_MAX);
 
-    generic_sensor.set_id(id_generic(*rng_));
-    generic_sensor.set_data(data_generic(*rng_));
+//     generic_sensor.set_id(id_generic(*rng_));
+//     generic_sensor.set_data(data_generic(*rng_));
+// }
+
+void UtilDB::genRandTempSensorData(float & temp_sensor)
+{
+    std::uniform_real_distribution<float> temp_dist(TEMP_LBND, TEMP_UBND);
+    temp_sensor = temp_dist(*rng_);
+}
+
+void UtilDB::genRandPhSensorData(float & ph_sensor)
+{
+    std::uniform_real_distribution<float> ph_dist(PH_LBND, PH_UBND);
+    ph_sensor = ph_dist(*rng_);
+}
+
+// void UtilDB::genRandPressureSensorData(float & pressure_sensor)
+// {
+//     std::uniform_real_distribution<float> pressure_dist(PRESSURE_LBND, PRESSURE_UBND);
+//     pressure_sensor = pressure_dist(*rng_);
+// }
+
+void UtilDB::genRandSalinitySensorData(float & salinity_sensor)
+{
+    std::uniform_real_distribution<float> salinity_dist(SALINITY_LBND, SALINITY_UBND);
+    salinity_sensor = salinity_dist(*rng_);
 }
 
 void UtilDB::genRandBatteryData(Sensors::Battery & battery)
