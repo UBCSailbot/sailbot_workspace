@@ -56,7 +56,7 @@ def global_to_boat_coordinate(boat_heading_deg_gc: float, tw_dir_deg_gc: float):
         >>> global_to_boat_coordinate(170, 30)   # 30 - 170 -> 40
         40
     """
-    return cs.bound_to_180(tw_dir_deg_gc - boat_heading_deg_gc + 180)
+    return cs.bound_to_180(tw_dir_deg_gc - boat_heading_deg_gc + 180.0)
 
 
 def get_true_wind(
