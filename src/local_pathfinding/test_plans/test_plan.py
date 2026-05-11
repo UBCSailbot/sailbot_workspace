@@ -1,8 +1,9 @@
 import os
 
-import custom_interfaces.msg as ci
 import yaml
 from shapely.geometry import MultiPolygon, Polygon
+
+import custom_interfaces.msg as ci
 
 
 class TestPlan:
@@ -61,17 +62,16 @@ class TestPlan:
         self._tw_speed_kmph = data["tw_speed_kmph"]
         self._tw_dir_deg = data["tw_dir_deg"]
 
-        # global path will be added to TestPlan in a separate PR as its more tricky to handle
-        # self._global_path = ci.Path(
-        #     waypoints=[
-        #         ci.HelperLatLon(latitude=wp["latitude"], longitude=wp["longitude"])
-        #         for wp in data["global_path"]["waypoints"]
-        #     ]
-        # )
+        self._global_path = ci.Path(
+            waypoints=[
+                ci.HelperLatLon(latitude=wp["latitude"], longitude=wp["longitude"])
+                for wp in data["global_path"]["waypoints"]
+            ]
+        )
 
-    # @property
-    # def global_path(self):
-    #     return self._global_path
+    @property
+    def global_path(self):
+        return self._global_path
 
     @property
     def gps(self):
