@@ -69,10 +69,10 @@ class WindObjective(ob.OptimizationObjective):
     def __init__(
         self,
         space_information,
-        true_wind_direction_radians: float,
+        tw_dir_rad: float,
     ):
         super().__init__(space_information)
-        self.true_wind_direction_radians = true_wind_direction_radians
+        self.tw_dir_rad = true_wind_direction_radians
 
     def motionCost(self, s1: ob.SE2StateSpace, s2: ob.SE2StateSpace) -> ob.Cost:
         """Defines the cost of a path segment, from s1 to s2, with regards to the direction of the
@@ -89,7 +89,7 @@ class WindObjective(ob.OptimizationObjective):
         s1_xy = cs.XY(s1.getX(), s1.getY())
         s2_xy = cs.XY(s2.getX(), s2.getY())
         return ob.Cost(
-            WindObjective.wind_direction_cost(s1_xy, s2_xy, self.true_wind_direction_radians)
+            WindObjective.wind_direction_cost(s1_xy, s2_xy, self.tw_dir_rad)
         )
 
     @staticmethod
@@ -136,12 +136,12 @@ class TimeObjective(ob.OptimizationObjective):
     def __init__(
         self,
         space_information,
-        true_wind_direction_radians: float,
-        true_wind_speed_kmph: float,
+        tw_dir_rad: float,
+        tw_speed_kmph: float,
     ):
         super().__init__(space_information)
-        self.true_wind_direction_radians = true_wind_direction_radians
-        self.true_wind_speed_kmph = true_wind_speed_kmph
+        self.tw_dir_rad = true_wind_direction_radians
+        self.tw_speed_kmph = true_wind_speed_kmph
 
     def motionCost(self, s1: ob.SE2StateSpace, s2: ob.SE2StateSpace) -> ob.Cost:
         """Defines the cost of a path segment, from s1 to s2, as the estimated time it will take
@@ -161,14 +161,14 @@ class TimeObjective(ob.OptimizationObjective):
             TimeObjective.time_cost(
                 s1_xy,
                 s2_xy,
-                self.true_wind_direction_radians,
-                self.true_wind_speed_kmph,
+                self.tw_dir_rad,
+                self.tw_speed_kmph,
             )
         )
 
     @staticmethod
     def time_cost(
-        s1: cs.XY, s2: cs.XY, true_wind_direction_radians: float, true_wind_speed_kmph
+        s1: cs.XY, s2: cs.XY, tw_dir_rad: float, tw_speed_kmph
     ) -> float:
         """Returns a cost proportional to the estimated amount of time it will take for the boat
            to travel from s1 to s2.
@@ -176,9 +176,9 @@ class TimeObjective(ob.OptimizationObjective):
         Args:
             s1 (cs.XY): The start point of the path segment
             s2 (cs.XY): The end point of the path segment
-            true_wind_direction_radians (float): The direction of the true wind in
+            tw_dir_rad (float): The direction of the true wind in
             radians (-pi, pi]
-            true_wind_speed_kmph (float): The true wind speed in km/h
+            tw_speed_kmph (float): The true wind speed in km/h
 
         Returns:
             float: The cost the path segment from s1 to s2, in the interval [0, 1]
@@ -188,8 +188,8 @@ class TimeObjective(ob.OptimizationObjective):
 
         sailbot_speed = TimeObjective.get_sailbot_speed(
             path_segment_true_bearing_radians,
-            true_wind_direction_radians,
-            true_wind_speed_kmph,
+            tw_dir_rad,
+            tw_speed_kmph,
         )
 
         # exit early to avoid dividing by sailbot_speed when it's close to 0
@@ -232,20 +232,20 @@ class TimeObjective(ob.OptimizationObjective):
 def get_sailing_objective(
     space_information,
     simple_setup,
-    boat_heading_degrees: float,
+    boat_heading_deg: float,
     boat_speed_kmph: float,
-    apparent_wind_direction_degrees: float,
-    apparent_wind_speed_kmph: float,
+    aw_dir_deg: float,
+    aw_speed_kmph: float,
 ) -> ob.OptimizationObjective:
 
-    apparent_wind_direction_degrees_global_coordinates = wcs.boat_to_global_coordinate(
-        boat_heading_degrees, apparent_wind_direction_degrees
+    aw_dir_deg_global_coordinates = wcs.boat_to_global_coordinate(
+        boat_heading_deg, aw_dir_deg
     )
 
     tw_dir_rad, tw_speed_kmph = wcs.get_true_wind(
-        apparent_wind_direction_degrees_global_coordinates,
-        apparent_wind_speed_kmph,
-        boat_heading_degrees,
+        aw_dir_deg_global_coordinates,
+        aw_speed_kmph,
+        boat_heading_deg,
         boat_speed_kmph,
     )
 

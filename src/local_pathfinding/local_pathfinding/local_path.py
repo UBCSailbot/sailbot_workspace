@@ -1,6 +1,5 @@
 """The path to the next global waypoint, represented by the LocalPath class."""
 
-import math
 from datetime import datetime, timedelta
 from typing import List, Optional
 
@@ -23,7 +22,7 @@ MAX_OMPL_PATH_GEN_TRIES = 2
 
 
 class PathNotFoundError(Exception):
-    """Raised when an OMPL path cannot be generated after retries."""
+    """Raised when a usable local path is unavailable."""
 
 
 class LocalPathState:
@@ -36,15 +35,14 @@ class LocalPathState:
         speed (float): Speed of Sailbot.
         heading (float): Direction that Sailbot is pointing.
         ais_ships (List[HelperAISShip]): Information about nearby ships.
-        global_path (List[Tuple[float, float]]): Path to the destination that Sailbot is
-                                                 navigating along.
-        target_global_waypoint (ci.HelperLatLon): The global waypoint that we are heading towards.
+        global_path (ci.Path): Path to the destination that Sailbot is navigating along.
+        reference_latlon (ci.HelperLatLon): The global waypoint that Sailbot is heading toward.
             The global waypoint is the same as the reference latlon.
-        wind_speed (float): Wind speed.
-        wind_direction (int): Wind direction.
+        aw_speed_kmph (float): Apparent wind speed from the filtered wind sensor, in km/h.
+        aw_dir_boat_coord_deg (int): Apparent wind direction from the filtered wind sensor, in boat
+            coordinates, in degrees.
         planner (str): Planner to use for the OMPL query.
-        reference (ci.HelperLatLon): Lat and lon position of the next global waypoint.
-        obstacles (List[Obstacle]): All obstacles in the state space
+        obstacles (List[Obstacle]): All obstacles in the state space.
         path_generated_time (datetime): Time when the path was generated
     """
 
@@ -98,8 +96,8 @@ class LocalPathState:
 
         if not filtered_wind_sensor:
             raise ValueError("filtered_wind_sensor must not be None")
-        self.wind_speed = filtered_wind_sensor.speed.speed
-        self.wind_direction = filtered_wind_sensor.direction
+        self.aw_speed_kmph = filtered_wind_sensor.speed.speed
+        self.aw_dir_boat_coord_deg = filtered_wind_sensor.direction
 
 
 class LocalPath:
@@ -109,8 +107,9 @@ class LocalPath:
         _logger (RcutilsLogger): ROS logger.
         _ompl_path (Optional[OMPLPath]): Raw representation of the path from OMPL.
         _target_lp_wp_index (int): 0-based array index of the local waypoint Polaris is
-            currently heading toward. This is initialized to 1 because OMPL path index 0 is the
-            start state near the boat, and index 1 is the first target waypoint.
+            currently heading toward. This is set by update_if_needed. It usually starts at 1
+            because OMPL path index 0 is the start state near the boat, and index 1 is the first
+            target waypoint.
         path (Path): Collection of coordinates that form the local path to the next
                           global waypoint.
         state (LocalPathState): the current local path state.
@@ -291,15 +290,12 @@ class LocalPath:
 
         Evaluates whether to update the current path based on several criteria:
         - Receipt of a new global waypoint
-        - Absence of an existing path
+        - Absence of an existing OMPL path, local path, or state
         - Current path intersecting with collision zones
-        - wind conditions changing significantly (not implemented yet TODO)
-        - timer running out for the current path, i.e. current path being stale
+        - Current path exceeding its time-to-live
+        - Invalid target local waypoint index
 
-        The decision metric combines normalized heading difference and
-        normalized path cost to balance directional efficiency with
-        obstacle avoidance. The weights can be changed to tune the system better.
-
+        Args:
             gps (ci.GPS): Current GPS position and heading data.
             ais_ships (ci.AISShips): AIS data for nearby ships (obstacles).
             global_path (ci.Path): The global path plan to the destination.
@@ -309,18 +305,24 @@ class LocalPath:
             received_new_global_waypoint (bool): Flag indicating if a new global
                 waypoint was received.
             target_global_waypoint (ci.HelperLatLon): Target waypoint from global path.
-            filtered_wind_sensor (ci.WindSensor): Filtered wind speed and direction data.
+            filtered_wind_sensor (ci.WindSensor): Filtered apparent wind data. Its speed is in
+                km/h, and its direction is in boat coordinates in degrees.
             planner (str): Name of the OMPL planner to use.
             land_multi_polygon (MultiPolygon, optional): Polygon representing land masses
                 to avoid. Defaults to None.
 
         Returns:
-            tuple[Optional[float], Optional[int]]: A tuple containing:
+            tuple[float, int]: A tuple containing:
                 - Desired heading in degrees
                 - Updated waypoint index
-            The method decides whether to return the heading for new path or old path
+            The method decides whether to return the heading for a newly generated path or the
+            existing path.
+
         Raises:
-            PathNotFoundError
+            PathNotFoundError: If a required path is unavailable or a replacement path cannot be
+                generated.
+            ValueError: If the LocalPathState is passed invalid values.
+            IndexError: If the target waypoint is reached and no next local waypoint exists.
         """
         self._target_lp_wp_index = target_lp_wp_index
         must_change, reason = self.must_change_path(received_new_global_waypoint)

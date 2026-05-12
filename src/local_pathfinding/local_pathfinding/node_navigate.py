@@ -56,6 +56,11 @@ class Sailbot(Node):
     Attributes:
         local_path (LocalPath): The path that `Sailbot` is following.
         planner (str): The path planner that `Sailbot` is using.
+        mode (str): Runtime mode. Development mode publishes richer local path data.
+        global_waypoint_index (int): Index of the current target in the reverse-ordered global
+            path.
+        saved_target_global_waypoint (ci.HelperLatLon): Current global waypoint target.
+        land_multi_polygon (MultiPolygon): Optional mock land data used in development mode.
     """
 
     def __init__(self):
@@ -192,7 +197,7 @@ class Sailbot(Node):
         """
         Collect all navigation data and publish it in one message.
         In development mode, all navigation data is published.
-        In production mode, only the local path is published, with all other data set to 0 or empty
+        In production mode, only the local path is published.
 
         """
         # publish all navigation data when in dev mode
@@ -208,7 +213,7 @@ class Sailbot(Node):
                         )
 
                         # each point of the polygon is in lat lon now
-                        # but you cant construct a shapely polgyon out of HelperLatLon objects
+                        # but you can't construct a Shapely polygon out of HelperLatLon objects
                         # so each point is a shapely Point that needs to be converted to a
                         # HelperLatLon, before it can be published to ROS
                         helper_latlons = [
@@ -250,7 +255,8 @@ class Sailbot(Node):
         """Get the desired heading.
 
         Returns:
-            tuple[float, bool]: The desired heading and whether sailing is allowed.
+            tuple[float, bool]: The desired heading and whether sailing is allowed. Sailing is
+            disabled when no local path can be generated.
         """
 
         # Extra logic for when the global waypoint changes due to receiving a new global path
