@@ -61,6 +61,43 @@ def create_test_local_path_for_in_collision_zone(
     return local_path
 
 
+def create_update_if_needed_inputs():
+    gps = mock.Mock()
+    gps.lat_lon = HelperLatLon(latitude=0.0, longitude=-0.1)
+    gps.speed = mock.Mock(speed=0.0)
+    gps.heading = mock.Mock(heading=0.0)
+
+    ais_ships = mock.Mock()
+    ais_ships.ships = []
+
+    global_path = Path(
+        waypoints=[
+            HelperLatLon(latitude=1.0, longitude=1.0),
+            HelperLatLon(latitude=0.0, longitude=0.0),
+        ]
+    )
+
+    filtered_wind_sensor = mock.Mock()
+    filtered_wind_sensor.speed = mock.Mock(speed=5.0)
+    filtered_wind_sensor.direction = 90
+
+    return {
+        "gps": gps,
+        "ais_ships": ais_ships,
+        "global_path": global_path,
+        "target_global_waypoint": global_path.waypoints[-1],
+        "filtered_wind_sensor": filtered_wind_sensor,
+        "planner": "rrtstar",
+    }
+
+
+def create_solved_ompl_path(path):
+    ompl_path = mock.Mock()
+    ompl_path.solved = True
+    ompl_path.get_path.return_value = path
+    return ompl_path
+
+
 @pytest.mark.parametrize(
     "path, target_wp_index, boat_lat_lon, correct_heading, new_target_wp_index",
     [
@@ -548,3 +585,260 @@ def test_is_path_expired(elapsed, expected, basic_local_path_state):
     local_path.state = basic_local_path_state
 
     assert local_path.is_path_expired() == expected
+
+
+@pytest.mark.parametrize(
+    "scenario, received_new_global_waypoint, has_ompl_path, has_state, has_path,"
+    " target_lp_wp_index, in_collision_zone, is_path_expired, expected_reason",
+    [
+        (
+            "received_new_global_waypoint",
+            True,
+            True,
+            True,
+            True,
+            1,
+            False,
+            False,
+            "Received new global waypoint",
+        ),
+        (
+            "ompl_path_is_none",
+            False,
+            False,
+            True,
+            True,
+            1,
+            False,
+            False,
+            "OMPL path is None",
+        ),
+        (
+            "state_is_none",
+            False,
+            True,
+            False,
+            True,
+            1,
+            False,
+            False,
+            "State is None",
+        ),
+        (
+            "path_is_none",
+            False,
+            True,
+            True,
+            False,
+            1,
+            False,
+            False,
+            "Path is None",
+        ),
+        (
+            "path_intersects_collision_zone",
+            False,
+            True,
+            True,
+            True,
+            1,
+            True,
+            False,
+            "Path intersects collision zone",
+        ),
+        (
+            "path_expired",
+            False,
+            True,
+            True,
+            True,
+            1,
+            False,
+            True,
+            "Path has expired (TTL exceeded)",
+        ),
+        (
+            "target_waypoint_index_too_low",
+            False,
+            True,
+            True,
+            True,
+            0,
+            False,
+            False,
+            "Target waypoint index too low: 0",
+        ),
+        (
+            "target_waypoint_index_out_of_bounds",
+            False,
+            True,
+            True,
+            True,
+            2,
+            False,
+            False,
+            "Target waypoint index out of bounds: 2 >= 2",
+        ),
+    ],
+)
+def test_update_if_needed_regenerates_path_when_path_must_change(
+    scenario,  # noqa: ARG001
+    received_new_global_waypoint,
+    has_ompl_path,
+    has_state,
+    has_path,
+    target_lp_wp_index,
+    in_collision_zone,
+    is_path_expired,
+    expected_reason,
+    basic_local_path_state,
+):
+    mock_parent_logger = mock.Mock()
+    mock_parent_logger.get_child.return_value = mock.Mock()
+    local_path = lp.LocalPath(parent_logger=mock_parent_logger)
+
+    old_path = Path(
+        waypoints=[
+            HelperLatLon(latitude=1.0, longitude=1.0),
+            HelperLatLon(latitude=0.0, longitude=0.0),
+        ]
+    )
+    if has_ompl_path:
+        local_path._ompl_path = create_solved_ompl_path(old_path)
+    if has_state:
+        local_path.state = basic_local_path_state
+    if has_path:
+        local_path.path = old_path
+
+    new_path = Path(
+        waypoints=[
+            HelperLatLon(latitude=1.0, longitude=1.0),
+            HelperLatLon(latitude=0.0, longitude=0.0),
+        ]
+    )
+    new_ompl_path = create_solved_ompl_path(new_path)
+    inputs = create_update_if_needed_inputs()
+
+    with (
+        mock.patch.object(local_path, "in_collision_zone", return_value=in_collision_zone),
+        mock.patch.object(local_path, "is_path_expired", return_value=is_path_expired),
+        mock.patch.object(lp, "OMPLPath", return_value=new_ompl_path) as ompl_path_cls,
+    ):
+        desired_heading, new_target_lp_wp_index = local_path.update_if_needed(
+            target_lp_wp_index=target_lp_wp_index,
+            received_new_global_waypoint=received_new_global_waypoint,
+            **inputs,
+        )
+
+    assert desired_heading == pytest.approx(90.0, abs=3e-1)
+    assert new_target_lp_wp_index == 1
+    assert local_path._ompl_path is new_ompl_path
+    assert local_path.path is new_path
+    assert local_path.state.global_path is inputs["global_path"]
+    local_path._logger.debug.assert_any_call(f"Updating local path: {expected_reason}")
+    ompl_path_cls.assert_called_once()
+
+
+def test_update_if_needed_raises_when_path_generation_exceeds_retries():
+    mock_parent_logger = mock.Mock()
+    mock_parent_logger.get_child.return_value = mock.Mock()
+    local_path = lp.LocalPath(parent_logger=mock_parent_logger)
+    inputs = create_update_if_needed_inputs()
+
+    unsolved_ompl_path = mock.Mock()
+    unsolved_ompl_path.solved = False
+
+    with mock.patch.object(lp, "OMPLPath", return_value=unsolved_ompl_path) as ompl_path_cls:
+        with pytest.raises(lp.PathNotFoundError, match="couldn't be solved"):
+            local_path.update_if_needed(
+                target_lp_wp_index=1,
+                received_new_global_waypoint=True,
+                **inputs,
+            )
+
+    assert ompl_path_cls.call_count == lp.MAX_OMPL_PATH_GEN_TRIES
+
+
+def test_update_if_needed_raises_when_new_state_inputs_are_invalid():
+    mock_parent_logger = mock.Mock()
+    mock_parent_logger.get_child.return_value = mock.Mock()
+    local_path = lp.LocalPath(parent_logger=mock_parent_logger)
+    inputs = create_update_if_needed_inputs()
+    inputs["gps"] = None
+
+    with pytest.raises(ValueError, match="gps must not be None"):
+        local_path.update_if_needed(
+            target_lp_wp_index=1,
+            received_new_global_waypoint=True,
+            **inputs,
+        )
+
+
+def test_update_if_needed_raises_when_solved_ompl_path_returns_invalid_path():
+    mock_parent_logger = mock.Mock()
+    mock_parent_logger.get_child.return_value = mock.Mock()
+    local_path = lp.LocalPath(parent_logger=mock_parent_logger)
+    inputs = create_update_if_needed_inputs()
+
+    ompl_path_with_invalid_path = create_solved_ompl_path(None)
+
+    with mock.patch.object(lp, "OMPLPath", return_value=ompl_path_with_invalid_path):
+        with pytest.raises(lp.PathNotFoundError, match="Path is None"):
+            local_path.update_if_needed(
+                target_lp_wp_index=1,
+                received_new_global_waypoint=True,
+                **inputs,
+            )
+
+
+def test_update_if_needed_raises_when_generated_path_has_no_next_waypoint():
+    mock_parent_logger = mock.Mock()
+    mock_parent_logger.get_child.return_value = mock.Mock()
+    local_path = lp.LocalPath(parent_logger=mock_parent_logger)
+    inputs = create_update_if_needed_inputs()
+    inputs["gps"].lat_lon = HelperLatLon(latitude=0.0, longitude=0.00001)
+
+    path_with_reached_final_waypoint = Path(
+        waypoints=[
+            HelperLatLon(latitude=0.0, longitude=0.1),
+            HelperLatLon(latitude=0.0, longitude=0.0),
+        ]
+    )
+    ompl_path_with_reached_final_waypoint = create_solved_ompl_path(
+        path_with_reached_final_waypoint
+    )
+
+    with mock.patch.object(lp, "OMPLPath", return_value=ompl_path_with_reached_final_waypoint):
+        with pytest.raises(IndexError, match="Must generate new path"):
+            local_path.update_if_needed(
+                target_lp_wp_index=1,
+                received_new_global_waypoint=True,
+                **inputs,
+            )
+
+
+def test_update_if_needed_propagates_update_state_errors_when_reusing_path(
+    basic_local_path_state,
+):
+    mock_parent_logger = mock.Mock()
+    mock_parent_logger.get_child.return_value = mock.Mock()
+    local_path = lp.LocalPath(parent_logger=mock_parent_logger)
+    old_path = Path(
+        waypoints=[
+            HelperLatLon(latitude=1.0, longitude=1.0),
+            HelperLatLon(latitude=0.0, longitude=0.0),
+        ]
+    )
+    local_path._ompl_path = create_solved_ompl_path(old_path)
+    local_path.path = old_path
+    local_path.state = basic_local_path_state
+    local_path.state.path_generated_time = datetime.now()
+    inputs = create_update_if_needed_inputs()
+    inputs["gps"] = None
+
+    with pytest.raises(ValueError, match="gps must not be None"):
+        local_path.update_if_needed(
+            target_lp_wp_index=1,
+            received_new_global_waypoint=False,
+            **inputs,
+        )

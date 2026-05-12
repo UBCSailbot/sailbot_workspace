@@ -19,6 +19,7 @@ import local_pathfinding.wind_coord_systems as wcs
         (-170.0, -30.0, -20.0),
         (120.0, -150.0, 150.0),
         (-45.0, 135.0, -90.0),
+        (45.0, 90.0, -45.0)
     ],
 )
 def test_boat_to_global_coordinate(boat_heading: float, wind_direction: float, expected: float):
