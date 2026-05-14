@@ -15,7 +15,7 @@ import local_pathfinding.coord_systems as cs
 # Constants
 DT = 10
 PROJ_DISTANCE_NO_COLLISION = 0.0
-BOAT_BUFFER = 0.25  # km
+BOAT_BUFFER = 0.1  # km
 COLLISION_ZONE_STRETCH_FACTOR = 1.25  # This factor changes the width of the boat collision zone
 RADIUS_MULTIPLIER = 5
 STRAIGHT_LINE_ROT_THRESHOLD = 1e-4
@@ -280,7 +280,7 @@ class Boat(Obstacle):
         """Creates a rectangular collision zone ahead of the boat for straight-line motion.
 
         The rectangle already covers the full projected collision path, so only BOAT_BUFFER
-        is applied — no additional radius term is needed.
+        is applied. No additional radius term is needed.
         """
         boat_collision_zone = Polygon(
             [
@@ -323,8 +323,10 @@ class Boat(Obstacle):
         cx = x + turn_radius_km * math.cos(cog_rad) * math.copysign(1, rot_rps)
         cy = y - turn_radius_km * math.sin(cog_rad) * math.copysign(1, rot_rps)
 
-        # Project the boat's position after DT seconds by rotating it around the center of curvature.
-        # A right turn (positive turn_angle) is clockwise in our coordinate system (x=East, y=North).
+        # Project the boat's position after DT seconds by rotating it around the center of
+        # curvature.
+        # A right turn (positive turn_angle) is clockwise in our coordinate system
+        # (x=East, y=North).
         # Clockwise 2D rotation by angle θ:
         #   new_x = cx + (x-cx)*cos(θ) + (y-cy)*sin(θ)
         #   new_y = cy - (x-cx)*sin(θ) + (y-cy)*cos(θ)
@@ -341,7 +343,7 @@ class Boat(Obstacle):
         if future_projected_distance == PROJ_DISTANCE_NO_COLLISION:
             # After turning, the boat will not reach Sailbot. Use a larger conservative zone
             # than Case 1 because the boat was on a collision course before it turned.
-            radius_km = max(self.width_km, self.length_km) * RADIUS_MULTIPLIER
+            radius_km = max(self.width_km, self.length_km)
             self._set_circular_zone(radius_km)
             return
 
@@ -358,7 +360,8 @@ class Boat(Obstacle):
 
         boat_collision_zone = Polygon([A, B, C])
         self._raw_collision_zone = self._translate_collision_zone(boat_collision_zone)
-        self.collision_zone = self._raw_collision_zone.buffer(BOAT_BUFFER, join_style=2)
+        # self.collision_zone = self._raw_collision_zone.buffer(BOAT_BUFFER, join_style=2)
+        self.collision_zone = self._raw_collision_zone
         prepared.prep(self.collision_zone)
 
     def _translate_collision_zone(self, boat_collision_zone):
