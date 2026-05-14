@@ -251,7 +251,7 @@ class Boat(Obstacle):
             rot_rps = 0.0  # invalid ROT: treat as no rotation information
 
         speed_kmps = self.ais_ship.sog.speed / 3600.0
-        # COG is measured in degrees clockwise from 
+        # COG is measured in degrees clockwise from
         # North (0° = North, 90° = East) and is [0°, 360°)
         cog_rad = math.radians(self.ais_ship.cog.heading)
 
@@ -310,11 +310,11 @@ class Boat(Obstacle):
         projected_distance: float,
     ) -> None:
         """Creates a triangular collision zone for a turning boat.
-        Projects where the boat will be after TURN_PROJECTION_TIME_SECONDS 
-        along its turning arc, then builds a triangle from: the bow tip, 
+        Projects where the boat will be after TURN_PROJECTION_TIME_SECONDS
+        along its turning arc, then builds a triangle from: the bow tip,
         the straight-ahead collision point, and the collision point projected
         along the boat's actual turning direction.
-        No extra buffer is applied; this shape models the swept turning 
+        No extra buffer is applied; this shape models the swept turning
         region directly.
         """
         turn_radius_km = speed_kmps / abs(rot_rps)
@@ -329,7 +329,7 @@ class Boat(Obstacle):
         cx = x + turn_radius_km * math.cos(cog_rad) * math.copysign(1, rot_rps)
         cy = y - turn_radius_km * math.sin(cog_rad) * math.copysign(1, rot_rps)
 
-        # Project the boat's position after TURN_PROJECTION_TIME_SECONDS by 
+        # Project the boat's position after TURN_PROJECTION_TIME_SECONDS by
         # rotating it around the center of curvature.
         # A right turn (positive turn_angle) is clockwise in our coordinate system
         # (x=East, y=North).
