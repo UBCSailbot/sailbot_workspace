@@ -13,7 +13,7 @@ python3-anywidget:
     pip:
       packages: [anywidget]
 
-# python3-ompl:
-#   ubuntu:
-#     pip:
-#       packages: [ompl]
+python3-ompl:
+  ubuntu:
+    pip:
+      packages: [ompl]

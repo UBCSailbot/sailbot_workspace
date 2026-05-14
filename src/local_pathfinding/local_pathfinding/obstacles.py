@@ -13,12 +13,12 @@ import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
 
 # Constants
-DT = 10
-PROJ_DISTANCE_NO_COLLISION = 0.0
-BOAT_BUFFER = 0.1  # km
+TURN_PROJECTION_TIME_SECONDS = 10
+PROJ_DISTANCE_NO_COLLISION_KM = 0.0
+BOAT_BUFFER_KM = 0.1
 COLLISION_ZONE_STRETCH_FACTOR = 1.25  # This factor changes the width of the boat collision zone
 RADIUS_MULTIPLIER = 5
-STRAIGHT_LINE_ROT_THRESHOLD = 1e-4
+STRAIGHT_LINE_ROT_THRESHOLD_RAD_PER_SEC = 1e-4
 
 
 class Obstacle:
@@ -230,6 +230,11 @@ class Boat(Obstacle):
         The collision zone is computed in the boat's local frame then rotated and translated into
         the world frame to match the boat's current position and COG.
 
+        Case dispatch:
+        - no projected collision: circular zone, buffered by (radius + BOAT_BUFFER_KM)
+        - straight-line motion: rectangular zone, buffered by BOAT_BUFFER_KM
+        - turning motion: triangular swept region with no extra buffer
+
         Args:
             ais_ship (ci.HelperAISShip): Updated AIS ship data. Must have the same ID as this Boat.
         """
@@ -246,16 +251,16 @@ class Boat(Obstacle):
             rot_rps = 0.0  # invalid ROT: treat as no rotation information
 
         speed_kmps = self.ais_ship.sog.speed / 3600.0
-        # COG is measured in degrees clockwise from North (0° = North, 90° = East)
+        # COG is measured in degrees clockwise from North (0° = North, 90° = East) and is [0°, 360°)
         cog_rad = math.radians(self.ais_ship.cog.heading)
 
         x, y = cs.latlon_to_xy(self.reference, self.ais_ship.lat_lon)
         projected_distance = self._calculate_projected_distance(cog_rad)
 
-        if projected_distance == PROJ_DISTANCE_NO_COLLISION:
+        if projected_distance == PROJ_DISTANCE_NO_COLLISION_KM:
             radius_km = max(self.width_km, self.length_km)
             self._set_circular_zone(radius_km)
-        elif abs(rot_rps) < STRAIGHT_LINE_ROT_THRESHOLD:
+        elif abs(rot_rps) < STRAIGHT_LINE_ROT_THRESHOLD_RAD_PER_SEC:
             self._set_straight_line_zone(projected_distance)
         else:
             self._set_turning_zone(rot_rps, speed_kmps, cog_rad, x, y, projected_distance)
@@ -264,22 +269,22 @@ class Boat(Obstacle):
         """Creates a circular collision zone centered on the boat.
 
         Used when no collision is projected (Case 1) or when the turning boat will no longer
-        reach Sailbot (Case 3 fallback). The final zone is the circle buffered by BOAT_BUFFER:
-        the circle sets the zone size, and BOAT_BUFFER adds a fixed physical clearance margin.
+        reach Sailbot (Case 3 fallback). The final zone is the circle buffered by BOAT_BUFFER_KM:
+        the circle sets the zone size, and BOAT_BUFFER_KM adds a fixed physical clearance margin.
         """
         boat_collision_zone = Point(-self.width_km / 2, -self.length_km / 2).buffer(
             radius_km, resolution=16
         )
         self._raw_collision_zone = self._translate_collision_zone(boat_collision_zone)
         self.collision_zone = self._raw_collision_zone.buffer(
-            radius_km + BOAT_BUFFER, join_style=2
+            radius_km + BOAT_BUFFER_KM, join_style=2
         )
         prepared.prep(self.collision_zone)
 
     def _set_straight_line_zone(self, projected_distance: float) -> None:
         """Creates a rectangular collision zone ahead of the boat for straight-line motion.
 
-        The rectangle already covers the full projected collision path, so only BOAT_BUFFER
+        The rectangle already covers the full projected collision path, so only BOAT_BUFFER_KM
         is applied. No additional radius term is needed.
         """
         boat_collision_zone = Polygon(
@@ -291,7 +296,7 @@ class Boat(Obstacle):
             ]
         )
         self._raw_collision_zone = self._translate_collision_zone(boat_collision_zone)
-        self.collision_zone = self._raw_collision_zone.buffer(BOAT_BUFFER, join_style=2)
+        self.collision_zone = self._raw_collision_zone.buffer(BOAT_BUFFER_KM, join_style=2)
         prepared.prep(self.collision_zone)
 
     def _set_turning_zone(
@@ -305,15 +310,14 @@ class Boat(Obstacle):
     ) -> None:
         """Creates a triangular collision zone for a turning boat.
 
-        Projects where the boat will be after DT seconds along its turning arc, then
+        Projects where the boat will be after TURN_PROJECTION_TIME_SECONDS along its turning arc, then
         builds a triangle from: the bow tip, the straight-ahead collision point, and
         the collision point projected along the boat's actual turning direction.
-        BOAT_BUFFER is applied to account for positional drift as the boat rotates
-        around the center of curvature.
+        No extra buffer is applied; this shape models the swept turning region directly.
         """
         turn_radius_km = speed_kmps / abs(rot_rps)
         # Positive turn_angle = right turn (clockwise), negative = left turn (counter-clockwise)
-        turn_angle = rot_rps * DT
+        turn_angle = rot_rps * TURN_PROJECTION_TIME_SECONDS
 
         # The center of curvature lies 90° to the right of the heading for right turns,
         # and 90° to the left for left turns.
@@ -323,7 +327,7 @@ class Boat(Obstacle):
         cx = x + turn_radius_km * math.cos(cog_rad) * math.copysign(1, rot_rps)
         cy = y - turn_radius_km * math.sin(cog_rad) * math.copysign(1, rot_rps)
 
-        # Project the boat's position after DT seconds by rotating it around the center of
+        # Project the boat's position after TURN_PROJECTION_TIME_SECONDS by rotating it around the center of
         # curvature.
         # A right turn (positive turn_angle) is clockwise in our coordinate system
         # (x=East, y=North).
@@ -340,7 +344,7 @@ class Boat(Obstacle):
             future_cog_rad, position_override=(future_x, future_y)
         )
 
-        if future_projected_distance == PROJ_DISTANCE_NO_COLLISION:
+        if future_projected_distance == PROJ_DISTANCE_NO_COLLISION_KM:
             # After turning, the boat will not reach Sailbot. Use a larger conservative zone
             # than Case 1 because the boat was on a collision course before it turned.
             radius_km = max(self.width_km, self.length_km)
@@ -360,7 +364,6 @@ class Boat(Obstacle):
 
         boat_collision_zone = Polygon([A, B, C])
         self._raw_collision_zone = self._translate_collision_zone(boat_collision_zone)
-        # self.collision_zone = self._raw_collision_zone.buffer(BOAT_BUFFER, join_style=2)
         self.collision_zone = self._raw_collision_zone
         prepared.prep(self.collision_zone)
 
@@ -398,7 +401,7 @@ class Boat(Obstacle):
 
         Returns:
             float: Distance in km that the boat will travel before collision or the constant value
-            PROJ_DISTANCE_NO_COLLISION if a collision is not possible.
+            PROJ_DISTANCE_NO_COLLISION_KM if a collision is not possible.
         """
         if position_override is None:
             position = cs.latlon_to_xy(self.reference, self.ais_ship.lat_lon)
@@ -425,7 +428,7 @@ class Boat(Obstacle):
 
         if len(quad_roots) == 0:
             # Sailbot and this Boat will never collide
-            return PROJ_DISTANCE_NO_COLLISION
+            return PROJ_DISTANCE_NO_COLLISION_KM
 
         # Use the smaller positive time, if there is one
         t = min(quad_roots)

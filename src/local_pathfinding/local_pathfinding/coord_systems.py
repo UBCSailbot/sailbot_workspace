@@ -93,7 +93,10 @@ def polar_to_cartesian(angle_rad: float, magnitude: float) -> XY:
             - x → east component
             - y → north component
     """
-    return XY(x=magnitude * math.sin(angle_rad), y=magnitude * math.cos(angle_rad))
+    return XY(
+        x=magnitude * math.sin(angle_rad),
+        y=magnitude * math.cos(angle_rad),
+    )
 
 
 def meters_to_km(meters: float) -> float:
