@@ -105,5 +105,5 @@ def test_build_path_trace(local_x, local_y, boat_xy, expect_none):
         j = t.to_plotly_json()
         assert j["mode"] == "lines"
         assert j["name"] == "Path to Goal"
-        assert j["x"] == list(local_x)
-        assert j["y"] == list(local_y)
+        assert j["x"] == [boat_xy[0]] + list(local_x[1:])
+        assert j["y"] == [boat_xy[1]] + list(local_y[1:])
