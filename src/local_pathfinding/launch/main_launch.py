@@ -4,13 +4,12 @@ import importlib
 import os
 from typing import List, Tuple
 
-from launch_ros.actions import Node
-
 from launch.actions import DeclareLaunchArgument, OpaqueFunction
 from launch.launch_context import LaunchContext
 from launch.launch_description import LaunchDescription
 from launch.some_substitutions_type import SomeSubstitutionsType
 from launch.substitutions import LaunchConfiguration
+from launch_ros.actions import Node
 
 # Local launch arguments and constants
 PACKAGE_NAME = "local_pathfinding"
@@ -75,6 +74,10 @@ def setup_launch(context: LaunchContext) -> List[Node]:
         launch_description_entities.append(get_mock_ais_node_description(context))
         launch_description_entities.append(get_mock_gps_node_description(context))
         launch_description_entities.append(get_navigate_observer_node_description(context))
+    elif mode == "sim":
+        launch_description_entities.append(get_mock_global_path_node_description(context))
+        launch_description_entities.append(get_mock_ais_node_description(context))
+        launch_description_entities.append(get_navigate_observer_node_description(context))
     return launch_description_entities
 
 
@@ -89,12 +92,14 @@ def get_navigate_node_description(context: LaunchContext) -> Node:
     """
     node_name = "navigate_main"
     mode = LaunchConfiguration("mode").perform(context)
+    mode_parameters = {"mode": mode}
+    if mode == "development":
+        mode_parameters["test_plan"] = LaunchConfiguration("test_plan").perform(context)
+
     ros_parameters = [
-        {"mode": mode},
+        mode_parameters,
         LaunchConfiguration("config").perform(context),
     ]
-    if mode == "development":
-        ros_parameters[0].update({"test_plan": LaunchConfiguration("test_plan").perform(context)})
 
     ros_arguments: List[SomeSubstitutionsType] = [
         "--log-level",
