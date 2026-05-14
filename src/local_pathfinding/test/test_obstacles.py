@@ -623,8 +623,8 @@ def test_turning_collision_zone_geometry(
 
         dx = x - cx
         dy = y - cy
-        future_x = cx + dx * np.cos(delta_heading) - dy * np.sin(delta_heading)
-        future_y = cy + dx * np.sin(delta_heading) + dy * np.cos(delta_heading)
+        future_x = cx + dx * np.cos(delta_heading) + dy * np.sin(delta_heading)
+        future_y = cy - dx * np.sin(delta_heading) + dy * np.cos(delta_heading)
 
         future_projected_distance = boat._calculate_projected_distance(
             future_cog_rad, position_override=(future_x, future_y)
