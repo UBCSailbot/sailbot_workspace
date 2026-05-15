@@ -72,7 +72,7 @@ class WindObjective(ob.OptimizationObjective):
         tw_dir_rad: float,
     ):
         super().__init__(space_information)
-        self.tw_dir_rad = true_wind_direction_radians
+        self.tw_dir_rad = tw_dir_rad
 
     def motionCost(self, s1: ob.SE2StateSpace, s2: ob.SE2StateSpace) -> ob.Cost:
         """Defines the cost of a path segment, from s1 to s2, with regards to the direction of the
@@ -140,8 +140,8 @@ class TimeObjective(ob.OptimizationObjective):
         tw_speed_kmph: float,
     ):
         super().__init__(space_information)
-        self.tw_dir_rad = true_wind_direction_radians
-        self.tw_speed_kmph = true_wind_speed_kmph
+        self.tw_dir_rad = tw_dir_rad
+        self.tw_speed_kmph = tw_speed_kmph
 
     def motionCost(self, s1: ob.SE2StateSpace, s2: ob.SE2StateSpace) -> ob.Cost:
         """Defines the cost of a path segment, from s1 to s2, as the estimated time it will take
