@@ -1040,3 +1040,51 @@ def test_update_if_needed_propagates_update_state_errors_when_reusing_path(
             received_new_global_waypoint=False,
             **inputs,
         )
+
+
+def test_update_if_needed_no_change(
+    basic_local_path_state,
+):
+    mock_parent_logger = mock.Mock()
+    mock_parent_logger.get_child.return_value = mock.Mock()
+    local_path = lp.LocalPath(parent_logger=mock_parent_logger)
+
+    old_path = Path(
+        waypoints=[
+            HelperLatLon(latitude=1.0, longitude=1.0),
+            HelperLatLon(latitude=0.0, longitude=0.0),
+        ]
+    )
+    old_ompl_path = create_solved_ompl_path(old_path)
+    local_path._ompl_path = old_ompl_path
+    local_path.state = basic_local_path_state
+    local_path.state.path_generated_time = datetime.now()
+    local_path.path = old_path
+
+    inputs = create_update_if_needed_inputs()
+    original_global_path = local_path.state.global_path
+    original_reference_latlon = local_path.state.reference_latlon
+
+    with mock.patch.object(lp, "OMPLPath") as ompl_path_cls:
+        desired_heading, new_target_lp_wp_index = local_path.update_if_needed(
+            target_lp_wp_index=1,
+            received_new_global_waypoint=False,
+            **inputs,
+        )
+
+    assert desired_heading == pytest.approx(90.0, abs=3e-1)
+    assert new_target_lp_wp_index == 1
+    assert local_path._ompl_path is old_ompl_path
+    assert local_path.path is old_path
+    assert local_path.state.global_path is original_global_path
+    assert local_path.state.reference_latlon is original_reference_latlon
+    assert local_path.state.position is inputs["gps"].lat_lon
+    assert local_path.state.speed == inputs["gps"].speed.speed
+    assert local_path.state.heading == inputs["gps"].heading.heading
+    assert local_path.state.current_aw.speed_kmph == inputs["filtered_wind_sensor"].speed.speed
+    assert local_path.state.current_aw.dir_deg == inputs["filtered_wind_sensor"].direction
+    # The apparent-wind average is not available until the history deque is full.
+    assert local_path.state.aw_avg is None
+    old_ompl_path.get_path.assert_called_once()
+    ompl_path_cls.assert_not_called()
+    local_path._logger.debug.assert_not_called()
