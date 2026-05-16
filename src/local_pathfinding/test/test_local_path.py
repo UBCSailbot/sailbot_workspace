@@ -966,10 +966,9 @@ def test_must_change_path_returns_true_for_significant_wind_change(basic_local_p
         mock.patch.object(local_path, "in_collision_zone", return_value=False),
         mock.patch.object(local_path, "is_path_expired", return_value=False),
     ):
-        assert local_path.must_change_path(False, new_aw) == (
-            True,
-            "Significant wind change",
-        )
+        must_change_path = local_path.must_change_path(False, new_aw)
+        assert must_change_path.should_change_path is True
+        assert must_change_path.reason == "Significant wind change"
 
 
 def test_update_if_needed_raises_when_path_generation_exceeds_retries():

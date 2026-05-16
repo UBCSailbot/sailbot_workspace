@@ -30,6 +30,12 @@ class PathNotFoundError(Exception):
 
 
 @dataclass
+class MustChangeReason(Exception):
+    should_change_path: bool
+    reason: str
+
+
+@dataclass
 class LocalPathInputs:
     """Current navigation inputs needed to update or regenerate a local path.
 
@@ -321,37 +327,43 @@ class LocalPath:
 
     def must_change_path(
         self, received_new_global_waypoint: bool, new_aw: Optional[Wind] = None
-    ) -> tuple[bool, str]:
+    ) -> MustChangeReason:
         """Check if the path must be changed.
 
         Returns:
-            tuple[bool, str]: (should_change_path, reason_description)
+            MustChangeReason
         """
         if received_new_global_waypoint:
-            return True, "Received new global waypoint"
+            return MustChangeReason(True, "Received new global waypoint")
         if self._ompl_path is None:
-            return True, "OMPL path is None"
+            return MustChangeReason(True, "OMPL path is None")
         if self.state is None:
-            return True, "State is None"
+            return MustChangeReason(True, "State is None")
         if self.path is None:
-            return True, "Path is None"
+            return MustChangeReason(True, "Path is None")
         if self.in_collision_zone():
-            return True, "Path intersects collision zone"
+            return MustChangeReason(True, "Path intersects collision zone")
         if self.is_path_expired():
-            return True, "Path has expired (TTL exceeded)"
+            return MustChangeReason(True, "Path has expired (TTL exceeded)")
         if new_aw is not None and self.is_significant_wind_change(
             new_aw, self.state.current_aw
         ):
-            return True, "Significant wind change"
+            return MustChangeReason(True, "Significant wind change")
         if self._target_lp_wp_index < 1:
-            return True, f"Target waypoint index too low: {self._target_lp_wp_index}"
+            return MustChangeReason(
+                True,
+                f"Target waypoint index too low: {self._target_lp_wp_index}"
+                )
         if self._target_lp_wp_index >= len(self.path.waypoints):
-            return (
+            return MustChangeReason(
                 True,
                 f"Target waypoint index out of bounds: {self._target_lp_wp_index} >= {len(self.path.waypoints)}",  # noqa
             )
 
-        return False, "Path is valid, no change needed"
+        return MustChangeReason(
+            False,
+            "Path is valid, no change needed"
+        )
 
     def update_if_needed(
         self,
@@ -395,8 +407,8 @@ class LocalPath:
             inputs.filtered_wind_sensor.speed.speed,
             inputs.filtered_wind_sensor.direction,
         )
-        must_change, reason = self.must_change_path(received_new_global_waypoint, new_aw)
-        if must_change:
+        must_change_reason = self.must_change_path(received_new_global_waypoint, new_aw)
+        if must_change_reason.should_change_path:
             tries = 0
             while tries < MAX_OMPL_PATH_GEN_TRIES:
                 new_state = LocalPathState(
@@ -421,7 +433,7 @@ class LocalPath:
                 raise PathNotFoundError("Old Path must change and new path couldn't be solved" +
                                         f"within {MAX_OMPL_PATH_GEN_TRIES}")
 
-            self._logger.debug(f"Updating local path: {reason}")
+            self._logger.debug(f"Updating local path: {must_change_reason.reason}")
             self.state = new_state
             self._update(new_ompl_path)
 
