@@ -54,13 +54,7 @@ class Obstacle:
 
         Returns:
             bool: True if the point is not within the obstacle's collision zone, false otherwise.
-
-        Raises:
-            RuntimeError: If the collision zone has not yet been initialized.
         """
-        if self.collision_zone is None:
-            raise RuntimeError("Collision zone has not been initialized")
-
         return not self.collision_zone.contains(Point(*point))
 
     @abstractmethod
