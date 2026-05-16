@@ -937,6 +937,41 @@ def test_update_if_needed_regenerates_path_when_path_must_change(
     ompl_path_cls.assert_called_once()
 
 
+def test_must_change_path_returns_true_for_significant_wind_change(basic_local_path_state):
+    mock_parent_logger = mock.Mock()
+    mock_parent_logger.get_child.return_value = mock.Mock()
+    local_path = lp.LocalPath(parent_logger=mock_parent_logger)
+    local_path._ompl_path = create_solved_ompl_path(
+        Path(
+            waypoints=[
+                HelperLatLon(latitude=1.0, longitude=1.0),
+                HelperLatLon(latitude=0.0, longitude=0.0),
+            ]
+        )
+    )
+    local_path.state = basic_local_path_state
+    local_path.path = Path(
+        waypoints=[
+            HelperLatLon(latitude=1.0, longitude=1.0),
+            HelperLatLon(latitude=0.0, longitude=0.0),
+        ]
+    )
+    local_path._target_lp_wp_index = 1
+    new_aw = Wind(
+        speed_kmph=basic_local_path_state.current_aw.speed_kmph,
+        dir_deg=basic_local_path_state.current_aw.dir_deg + lp.WIND_DIRECTION_CHANGE_THRESH_DEG,
+    )
+
+    with (
+        mock.patch.object(local_path, "in_collision_zone", return_value=False),
+        mock.patch.object(local_path, "is_path_expired", return_value=False),
+    ):
+        assert local_path.must_change_path(False, new_aw) == (
+            True,
+            "Significant wind change",
+        )
+
+
 def test_update_if_needed_raises_when_path_generation_exceeds_retries():
     mock_parent_logger = mock.Mock()
     mock_parent_logger.get_child.return_value = mock.Mock()

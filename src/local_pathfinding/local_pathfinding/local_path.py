@@ -295,7 +295,9 @@ class LocalPath:
             or dir_change >= WIND_DIRECTION_CHANGE_THRESH_DEG
         )
 
-    def must_change_path(self, received_new_global_waypoint: bool) -> tuple[bool, str]:
+    def must_change_path(
+        self, received_new_global_waypoint: bool, new_aw: Optional[Wind] = None
+    ) -> tuple[bool, str]:
         """Check if the path must be changed.
 
         Returns:
@@ -313,6 +315,10 @@ class LocalPath:
             return True, "Path intersects collision zone"
         if self.is_path_expired():
             return True, "Path has expired (TTL exceeded)"
+        if new_aw is not None and self.is_significant_wind_change(
+            new_aw, self.state.current_aw
+        ):
+            return True, "Significant wind change"
         if self._target_lp_wp_index < 1:
             return True, f"Target waypoint index too low: {self._target_lp_wp_index}"
         if self._target_lp_wp_index >= len(self.path.waypoints):
@@ -374,8 +380,8 @@ class LocalPath:
             IndexError: If the target waypoint is reached and no next local waypoint exists.
         """
         self._target_lp_wp_index = target_lp_wp_index
-        must_change, reason = self.must_change_path(received_new_global_waypoint)
-
+        new_aw = Wind(filtered_wind_sensor.speed.speed, filtered_wind_sensor.direction)
+        must_change, reason = self.must_change_path(received_new_global_waypoint, new_aw)
         if must_change:
             tries = 0
             while tries < MAX_OMPL_PATH_GEN_TRIES:
