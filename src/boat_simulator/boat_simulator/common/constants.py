@@ -20,7 +20,7 @@ class Actions:
 
 @dataclass
 class LowLevelControlSubscriptionTopics:
-    GPS: str = "mock_gps"
+    GPS: str = "gps"
 
 
 @dataclass
@@ -31,7 +31,7 @@ class PhysicsEngineSubscriptionTopics:
 
 @dataclass
 class PhysicsEnginePublisherTopics:
-    GPS: str = "mock_gps"
+    GPS: str = "gps"
     KINEMATICS: str = "mock_kinematics"
     WIND_SENSORS: str = "mock_wind_sensors"
 
@@ -87,6 +87,11 @@ PHYSICS_ENGINE_PUBLISHERS = PhysicsEnginePublisherTopics()
 
 # ROS topic names for physics engine subscriptions
 PHYSICS_ENGINE_SUBSCRIPTIONS = PhysicsEngineSubscriptionTopics()
+
+# PATH test plan basic.yaml gps values
+SIM_GPS_ORIGIN_LATITUDE = 49.28
+SIM_GPS_ORIGIN_LONGITUDE = -123.18
+EARTH_RADIUS_M = 6_371_000.0
 
 # CLI argument name for data collection option
 DATA_COLLECTION_CLI_ARG_NAME = "--enable-data-collection"

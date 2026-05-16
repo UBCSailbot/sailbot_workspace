@@ -65,6 +65,15 @@ public:
                     RCLCPP_ERROR(this->get_logger(), "%s", err.what());
                     throw err;
                 }
+            } else if (mode == SYSTEM_MODE::SIM) {
+                RCLCPP_INFO(this->get_logger(), "Running CAN Transceiver in sim mode with CAN Sim Intf");
+                try {
+                    sim_intf_fd_ = mockCanFd("/tmp/CanSimIntfXXXXXX");
+                    can_trns_    = std::make_unique<CanTransceiver>(sim_intf_fd_);
+                } catch (std::runtime_error err) {
+                    RCLCPP_ERROR(this->get_logger(), "%s", err.what());
+                    throw err;
+                }
             } else {
                 std::string msg = "Error, invalid system mode" + mode;
                 RCLCPP_ERROR(this->get_logger(), "%s", msg.c_str());
@@ -146,6 +155,10 @@ public:
                     publishBoatSimInput(boat_sim_input_msg_);
                     // Add any other necessary looping callbacks
                 });
+            } else if (mode == SYSTEM_MODE::SIM) {  // subscribes to mock_wind_sensors to produce filtered_wind_sensor
+                mock_wind_sensors_sub_ = this->create_subscription<msg::WindSensors>(
+                  ros_topics::MOCK_WIND_SENSORS, QUEUE_SIZE,
+                  [this](msg::WindSensors mock_wind_sensors) { subMockWindSensorsCb(mock_wind_sensors); });
             }
         }
     }
