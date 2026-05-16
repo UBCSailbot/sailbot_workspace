@@ -8,7 +8,7 @@ import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.global_path as gp
 import local_pathfinding.obstacles as ob
-from local_pathfinding.local_path import LocalPath, PathNotFoundError
+from local_pathfinding.local_path import LocalPath, LocalPathInputs, PathNotFoundError
 from local_pathfinding.ompl_path import MAX_SOLVER_RUN_TIME_SEC
 
 GLOBAL_WAYPOINT_REACHED_THRESH_KM = 3
@@ -299,15 +299,17 @@ class Sailbot(Node):
 
         try:
             desired_heading, self.target_lp_wp_index = self.local_path.update_if_needed(
-                self.gps,
-                self.ais_ships,
-                self.global_path,
-                self.target_lp_wp_index,
-                received_new_global_waypoint,
-                self.saved_target_global_waypoint,
-                self.filtered_wind_sensor,
-                self.planner,
-                self.land_multi_polygon,
+                inputs=LocalPathInputs(
+                    gps=self.gps,
+                    ais_ships=self.ais_ships,
+                    global_path=self.global_path,
+                    target_global_waypoint=self.saved_target_global_waypoint,
+                    filtered_wind_sensor=self.filtered_wind_sensor,
+                    planner=self.planner,
+                    land_multi_polygon=self.land_multi_polygon,
+                ),
+                target_lp_wp_index=self.target_lp_wp_index,
+                received_new_global_waypoint=received_new_global_waypoint,
             )
             return desired_heading, True
         except PathNotFoundError:

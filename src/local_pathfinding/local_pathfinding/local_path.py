@@ -2,6 +2,7 @@
 
 import math
 from collections import deque
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import List, Optional
 
@@ -26,6 +27,29 @@ MAX_OMPL_PATH_GEN_TRIES = 2
 
 class PathNotFoundError(Exception):
     """Raised when a usable local path is unavailable."""
+
+
+@dataclass
+class LocalPathInputs:
+    """Current navigation inputs needed to update or regenerate a local path.
+
+    Attributes:
+        gps (ci.GPS): Current GPS position and heading data.
+        ais_ships (ci.AISShips): AIS data for nearby ships.
+        global_path (ci.Path): The global path plan to the destination.
+        target_global_waypoint (ci.HelperLatLon): Target waypoint from the global path.
+        filtered_wind_sensor (ci.WindSensor): Filtered apparent wind data.
+        planner (str): Name of the OMPL planner to use.
+        land_multi_polygon (Optional[MultiPolygon]): Optional land masses to avoid.
+    """
+
+    gps: ci.GPS
+    ais_ships: ci.AISShips
+    global_path: ci.Path
+    target_global_waypoint: ci.HelperLatLon
+    filtered_wind_sensor: ci.WindSensor
+    planner: str
+    land_multi_polygon: Optional[MultiPolygon] = None
 
 
 class LocalPathState:
@@ -331,15 +355,9 @@ class LocalPath:
 
     def update_if_needed(
         self,
-        gps: ci.GPS,
-        ais_ships: ci.AISShips,
-        global_path: ci.Path,
+        inputs: LocalPathInputs,
         target_lp_wp_index: int,
         received_new_global_waypoint: bool,
-        target_global_waypoint: ci.HelperLatLon,
-        filtered_wind_sensor: ci.WindSensor,
-        planner: str,
-        land_multi_polygon: MultiPolygon = None,
     ) -> tuple[Optional[float], Optional[int]]:
         """Updates the local path using OMPL if conditions warrant a path change.
 
@@ -351,20 +369,13 @@ class LocalPath:
         - Invalid target local waypoint index
 
         Args:
-            gps (ci.GPS): Current GPS position and heading data.
-            ais_ships (ci.AISShips): AIS data for nearby ships (obstacles).
-            global_path (ci.Path): The global path plan to the destination.
+            inputs (LocalPathInputs): Current navigation inputs used to update or regenerate
+                the local path.
             target_lp_wp_index (int): 0-based array index of the local waypoint Polaris is
                 currently heading toward. This starts at index 1 because OMPL index 0 is the
                 start state near the boat.
             received_new_global_waypoint (bool): Flag indicating if a new global
                 waypoint was received.
-            target_global_waypoint (ci.HelperLatLon): Target waypoint from global path.
-            filtered_wind_sensor (ci.WindSensor): Filtered apparent wind data. Its speed is in
-                km/h, and its direction is in boat coordinates in degrees.
-            planner (str): Name of the OMPL planner to use.
-            land_multi_polygon (MultiPolygon, optional): Polygon representing land masses
-                to avoid. Defaults to None.
 
         Returns:
             tuple[float, int]: A tuple containing:
@@ -380,23 +391,26 @@ class LocalPath:
             IndexError: If the target waypoint is reached and no next local waypoint exists.
         """
         self._target_lp_wp_index = target_lp_wp_index
-        new_aw = Wind(filtered_wind_sensor.speed.speed, filtered_wind_sensor.direction)
+        new_aw = Wind(
+            inputs.filtered_wind_sensor.speed.speed,
+            inputs.filtered_wind_sensor.direction,
+        )
         must_change, reason = self.must_change_path(received_new_global_waypoint, new_aw)
         if must_change:
             tries = 0
             while tries < MAX_OMPL_PATH_GEN_TRIES:
                 new_state = LocalPathState(
-                    gps,
-                    ais_ships,
-                    global_path,
-                    target_global_waypoint,
-                    filtered_wind_sensor,
-                    planner,
+                    inputs.gps,
+                    inputs.ais_ships,
+                    inputs.global_path,
+                    inputs.target_global_waypoint,
+                    inputs.filtered_wind_sensor,
+                    inputs.planner,
                 )
                 new_ompl_path = OMPLPath(
                     parent_logger=self._logger,
                     local_path_state=new_state,
-                    land_multi_polygon=land_multi_polygon,
+                    land_multi_polygon=inputs.land_multi_polygon,
                 )
                 if new_ompl_path.solved:
                     break
@@ -414,15 +428,19 @@ class LocalPath:
             init_target_lp_wp_index = 1
             heading_new_path, new_target_lp_wp_index = (
                 self.calculate_desired_heading_and_wp_index(
-                    new_ompl_path.get_path(), init_target_lp_wp_index, gps.lat_lon
+                    new_ompl_path.get_path(), init_target_lp_wp_index, inputs.gps.lat_lon
                 )
             )
             return heading_new_path, new_target_lp_wp_index
         else:
-            self.state.update_state(gps, ais_ships, filtered_wind_sensor)  # type: ignore
+            self.state.update_state(  # type: ignore
+                inputs.gps,
+                inputs.ais_ships,
+                inputs.filtered_wind_sensor,
+            )
 
         heading_old_path, old_target_lp_wp_index = self.calculate_desired_heading_and_wp_index(
-            self._ompl_path.get_path(), target_lp_wp_index, gps.lat_lon  # type: ignore
+            self._ompl_path.get_path(), target_lp_wp_index, inputs.gps.lat_lon  # type: ignore
         )
         return heading_old_path, old_target_lp_wp_index
 

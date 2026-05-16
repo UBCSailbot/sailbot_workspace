@@ -81,14 +81,14 @@ def create_update_if_needed_inputs():
     filtered_wind_sensor.speed = mock.Mock(speed=5.0)
     filtered_wind_sensor.direction = 90
 
-    return {
-        "gps": gps,
-        "ais_ships": ais_ships,
-        "global_path": global_path,
-        "target_global_waypoint": global_path.waypoints[-1],
-        "filtered_wind_sensor": filtered_wind_sensor,
-        "planner": "rrtstar",
-    }
+    return lp.LocalPathInputs(
+        gps=gps,
+        ais_ships=ais_ships,
+        global_path=global_path,
+        target_global_waypoint=global_path.waypoints[-1],
+        filtered_wind_sensor=filtered_wind_sensor,
+        planner="rrtstar",
+    )
 
 
 def create_solved_ompl_path(path):
@@ -923,16 +923,16 @@ def test_update_if_needed_regenerates_path_when_path_must_change(
         mock.patch.object(lp, "OMPLPath", return_value=new_ompl_path) as ompl_path_cls,
     ):
         desired_heading, new_target_lp_wp_index = local_path.update_if_needed(
+            inputs=inputs,
             target_lp_wp_index=target_lp_wp_index,
             received_new_global_waypoint=received_new_global_waypoint,
-            **inputs,
         )
 
     assert desired_heading == pytest.approx(90.0, abs=3e-1)
     assert new_target_lp_wp_index == 1
     assert local_path._ompl_path is new_ompl_path
     assert local_path.path is new_path
-    assert local_path.state.global_path is inputs["global_path"]
+    assert local_path.state.global_path is inputs.global_path
     local_path._logger.debug.assert_any_call(f"Updating local path: {expected_reason}")
     ompl_path_cls.assert_called_once()
 
@@ -984,9 +984,9 @@ def test_update_if_needed_raises_when_path_generation_exceeds_retries():
     with mock.patch.object(lp, "OMPLPath", return_value=unsolved_ompl_path) as ompl_path_cls:
         with pytest.raises(lp.PathNotFoundError, match="couldn't be solved"):
             local_path.update_if_needed(
+                inputs=inputs,
                 target_lp_wp_index=1,
                 received_new_global_waypoint=True,
-                **inputs,
             )
 
     assert ompl_path_cls.call_count == lp.MAX_OMPL_PATH_GEN_TRIES
@@ -997,13 +997,13 @@ def test_update_if_needed_raises_when_new_state_inputs_are_invalid():
     mock_parent_logger.get_child.return_value = mock.Mock()
     local_path = lp.LocalPath(parent_logger=mock_parent_logger)
     inputs = create_update_if_needed_inputs()
-    inputs["gps"] = None
+    inputs.gps = None
 
     with pytest.raises(ValueError, match="gps must not be None"):
         local_path.update_if_needed(
+            inputs=inputs,
             target_lp_wp_index=1,
             received_new_global_waypoint=True,
-            **inputs,
         )
 
 
@@ -1018,9 +1018,9 @@ def test_update_if_needed_raises_when_solved_ompl_path_returns_invalid_path():
     with mock.patch.object(lp, "OMPLPath", return_value=ompl_path_with_invalid_path):
         with pytest.raises(lp.PathNotFoundError, match="Path is None"):
             local_path.update_if_needed(
+                inputs=inputs,
                 target_lp_wp_index=1,
                 received_new_global_waypoint=True,
-                **inputs,
             )
 
 
@@ -1029,7 +1029,7 @@ def test_update_if_needed_raises_when_generated_path_has_no_next_waypoint():
     mock_parent_logger.get_child.return_value = mock.Mock()
     local_path = lp.LocalPath(parent_logger=mock_parent_logger)
     inputs = create_update_if_needed_inputs()
-    inputs["gps"].lat_lon = HelperLatLon(latitude=0.0, longitude=0.00001)
+    inputs.gps.lat_lon = HelperLatLon(latitude=0.0, longitude=0.00001)
 
     path_with_reached_final_waypoint = Path(
         waypoints=[
@@ -1044,9 +1044,9 @@ def test_update_if_needed_raises_when_generated_path_has_no_next_waypoint():
     with mock.patch.object(lp, "OMPLPath", return_value=ompl_path_with_reached_final_waypoint):
         with pytest.raises(IndexError, match="Must generate new path"):
             local_path.update_if_needed(
+                inputs=inputs,
                 target_lp_wp_index=1,
                 received_new_global_waypoint=True,
-                **inputs,
             )
 
 
@@ -1067,13 +1067,13 @@ def test_update_if_needed_propagates_update_state_errors_when_reusing_path(
     local_path.state = basic_local_path_state
     local_path.state.path_generated_time = datetime.now()
     inputs = create_update_if_needed_inputs()
-    inputs["gps"] = None
+    inputs.gps = None
 
     with pytest.raises(ValueError, match="gps must not be None"):
         local_path.update_if_needed(
+            inputs=inputs,
             target_lp_wp_index=1,
             received_new_global_waypoint=False,
-            **inputs,
         )
 
 
@@ -1102,9 +1102,9 @@ def test_update_if_needed_no_change(
 
     with mock.patch.object(lp, "OMPLPath") as ompl_path_cls:
         desired_heading, new_target_lp_wp_index = local_path.update_if_needed(
+            inputs=inputs,
             target_lp_wp_index=1,
             received_new_global_waypoint=False,
-            **inputs,
         )
 
     assert desired_heading == pytest.approx(90.0, abs=3e-1)
@@ -1113,11 +1113,11 @@ def test_update_if_needed_no_change(
     assert local_path.path is old_path
     assert local_path.state.global_path is original_global_path
     assert local_path.state.reference_latlon is original_reference_latlon
-    assert local_path.state.position is inputs["gps"].lat_lon
-    assert local_path.state.speed == inputs["gps"].speed.speed
-    assert local_path.state.heading == inputs["gps"].heading.heading
-    assert local_path.state.current_aw.speed_kmph == inputs["filtered_wind_sensor"].speed.speed
-    assert local_path.state.current_aw.dir_deg == inputs["filtered_wind_sensor"].direction
+    assert local_path.state.position is inputs.gps.lat_lon
+    assert local_path.state.speed == inputs.gps.speed.speed
+    assert local_path.state.heading == inputs.gps.heading.heading
+    assert local_path.state.current_aw.speed_kmph == inputs.filtered_wind_sensor.speed.speed
+    assert local_path.state.current_aw.dir_deg == inputs.filtered_wind_sensor.direction
     # The apparent-wind average is not available until the history deque is full.
     assert local_path.state.aw_avg is None
     old_ompl_path.get_path.assert_called_once()
