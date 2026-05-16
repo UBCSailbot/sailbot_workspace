@@ -54,13 +54,7 @@ class Obstacle:
 
         Returns:
             bool: True if the point is not within the obstacle's collision zone, false otherwise.
-
-        Raises:
-            RuntimeError: If the collision zone has not yet been initialized.
         """
-        if self.collision_zone is None:
-            raise RuntimeError("Collision zone has not been initialized")
-
         return not self.collision_zone.contains(Point(*point))
 
     @abstractmethod
@@ -149,9 +143,6 @@ class Land(Obstacle):
             prepared.prep(self.collision_zone)
             return
 
-        if state_space_latlon is None:
-            raise ValueError("state_space_latlon must not be None")
-
         latlon_polygons = self.all_land_data.intersection(state_space_latlon)
 
         if isinstance(latlon_polygons, MultiPolygon):
@@ -229,8 +220,6 @@ class Boat(Obstacle):
         """
         ais_ship = kwargs.get("ais_ship", None)
         if ais_ship is not None:
-            if ais_ship.id != self.ais_ship.id:
-                raise ValueError("Argument AIS Ship ID does not match this Boat instance's ID")
             self.ais_ship = ais_ship
 
         projected_distance = self._calculate_projected_distance()

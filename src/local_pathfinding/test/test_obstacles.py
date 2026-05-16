@@ -14,7 +14,7 @@ from custom_interfaces.msg import (
 from shapely.geometry import MultiPolygon, Point, Polygon, box
 
 import local_pathfinding.coord_systems as cs
-from local_pathfinding.obstacles import BOAT_BUFFER, Boat, Land, Obstacle
+from local_pathfinding.obstacles import BOAT_BUFFER, Boat, Land
 
 
 def load_pkl(file_path: str) -> Any:
@@ -457,48 +457,6 @@ def test_position_collision_zone_boat(
         )
 
 
-# Test create collision zone raises error when id of passed ais_ship does not match self's id
-@pytest.mark.parametrize(
-    "reference_point,sailbot_position,ais_ship_1,ais_ship_2,sailbot_speed",
-    [
-        (
-            HelperLatLon(latitude=52.268119490007756, longitude=-136.9133983613776),
-            HelperLatLon(latitude=51.95785651405779, longitude=-136.26282894969611),
-            HelperAISShip(
-                id=1,
-                lat_lon=HelperLatLon(latitude=51.97917631092298, longitude=-137.1106454702385),
-                cog=HelperHeading(heading=30.0),
-                sog=HelperSpeed(speed=20.0),
-                width=HelperDimension(dimension=20.0),
-                length=HelperDimension(dimension=100.0),
-                rot=HelperROT(rot=0),
-            ),
-            HelperAISShip(
-                id=2,
-                lat_lon=HelperLatLon(latitude=51.97917631092298, longitude=-137.1106454702385),
-                cog=HelperHeading(heading=30.0),
-                sog=HelperSpeed(speed=20.0),
-                width=HelperDimension(dimension=20.0),
-                length=HelperDimension(dimension=100.0),
-                rot=HelperROT(rot=0),
-            ),
-            15.0,
-        )
-    ],
-)
-def test_create_collision_zone_id_mismatch_boat(
-    reference_point: HelperLatLon,
-    sailbot_position: HelperLatLon,
-    ais_ship_1: HelperAISShip,
-    ais_ship_2: HelperAISShip,
-    sailbot_speed: float,
-):
-    boat1 = Boat(reference_point, sailbot_position, sailbot_speed, ais_ship_1)
-
-    with pytest.raises(ValueError):
-        boat1.update_collision_zone(ais_ship=ais_ship_2)
-
-
 # Test is_valid
 @pytest.mark.parametrize(
     "reference_point,sailbot_position,ais_ship,sailbot_speed,invalid_point,valid_point",
@@ -537,37 +495,6 @@ def test_is_valid_boat(
     boat1 = Boat(reference_point, sailbot_position, sailbot_speed, ais_ship)
     assert not boat1.is_valid(invalid_point)
     assert boat1.is_valid(valid_point)
-
-
-# Test is_valid raises error when collision zone has not been set
-@pytest.mark.parametrize(
-    "reference_point,sailbot_position,invalid_point,valid_point",
-    [
-        (
-            HelperLatLon(latitude=52.268119490007756, longitude=-136.9133983613776),
-            HelperLatLon(latitude=51.95785651405779, longitude=-136.26282894969611),
-            cs.latlon_to_xy(
-                HelperLatLon(latitude=52.268119490007756, longitude=-136.9133983613776),
-                HelperLatLon(latitude=52.174842845359755, longitude=-137.10372451905042),
-            ),
-            cs.latlon_to_xy(
-                HelperLatLon(latitude=52.268119490007756, longitude=-136.9133983613776),
-                HelperLatLon(latitude=49.30499213908291, longitude=-123.31330140816111),
-            ),
-        )
-    ],
-)
-def test_is_valid_no_collision_zone_boat(
-    reference_point: HelperLatLon,
-    sailbot_position: HelperLatLon,
-    invalid_point: cs.XY,
-    valid_point: cs.XY,
-):
-    obstacle = Obstacle(reference_point, sailbot_position)  # type: ignore
-    with pytest.raises(RuntimeError):
-        obstacle.is_valid(invalid_point)
-    with pytest.raises(RuntimeError):
-        obstacle.is_valid(valid_point)
 
 
 # Test updating Sailbot data
