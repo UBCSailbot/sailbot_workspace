@@ -19,6 +19,7 @@ from launch.substitutions import LaunchConfiguration
 
 PRODUCTION_ROS_PACKAGES = ["controller", "local_pathfinding", "network_systems"]
 DEVELOPMENT_ROS_PACKAGES = ["controller", "boat_simulator", "local_pathfinding", "network_systems"]
+SIM_ROS_PACKAGES = ["controller", "boat_simulator", "local_pathfinding", "network_systems"]
 
 # Global launch arguments and constants.
 ROS_PACKAGES_DIR = os.path.join(
@@ -43,8 +44,8 @@ GLOBAL_LAUNCH_ARGUMENTS = [
     DeclareLaunchArgument(
         name="mode",
         default_value="development",
-        choices=["production", "development"],
-        description="System mode. Decides whether the system is ran with development or production"
+        choices=["production", "development", "sim"],
+        description="System mode. Decides whether the system is ran with development or production or sim"
         + " interfaces",
     ),
     DeclareLaunchArgument(
@@ -160,8 +161,10 @@ def get_running_ros_packages(mode: str) -> List[str]:
             return PRODUCTION_ROS_PACKAGES
         case "development":
             return DEVELOPMENT_ROS_PACKAGES
+        case "sim":
+            return SIM_ROS_PACKAGES
         case _:
-            raise ValueError("Invalid launch mode. Must be one of 'production', 'development'.")
+            raise ValueError("Invalid launch mode. Must be one of 'production', 'development', 'sim'.")
 
 
 def get_include_launch_descriptions(ros_package_list: List[str]) -> List[IncludeLaunchDescription]:

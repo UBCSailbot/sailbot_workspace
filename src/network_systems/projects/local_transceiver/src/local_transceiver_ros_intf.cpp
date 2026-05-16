@@ -53,7 +53,7 @@ public:
                         throw std::exception();
                     }
                 }
-            } else if (mode == SYSTEM_MODE::DEV) {
+            } else if (mode == SYSTEM_MODE::DEV || mode == SYSTEM_MODE::SIM) {
                 default_port                = LOCAL_TRANSCEIVER_TEST_PORT;
                 std::string run_iridium_cmd = "$ROS_WORKSPACE/scripts/run_virtual_iridium.sh";
                 std::thread vi_thread(std::system, run_iridium_cmd.c_str());
