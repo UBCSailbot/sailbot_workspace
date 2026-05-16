@@ -143,9 +143,6 @@ class Land(Obstacle):
             prepared.prep(self.collision_zone)
             return
 
-        if state_space_latlon is None:
-            raise ValueError("state_space_latlon must not be None")
-
         latlon_polygons = self.all_land_data.intersection(state_space_latlon)
 
         if isinstance(latlon_polygons, MultiPolygon):
