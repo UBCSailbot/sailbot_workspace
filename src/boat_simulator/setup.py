@@ -4,7 +4,7 @@ from os.path import join
 from setuptools import find_packages, setup
 
 PACKAGE_NAME = "boat_simulator"
-REQUIRED_MODULES = ["setuptools", "numpy", "scipy"]
+REQUIRED_MODULES = ["setuptools", "numpy", "pyproj", "scipy"]
 
 setup(
     name=PACKAGE_NAME,
