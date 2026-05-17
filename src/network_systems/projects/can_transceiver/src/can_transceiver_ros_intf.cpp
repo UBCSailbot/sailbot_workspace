@@ -56,17 +56,9 @@ public:
                     RCLCPP_ERROR(this->get_logger(), "%s", err.what());
                     throw err;
                 }
-            } else if (mode == SYSTEM_MODE::DEV) {
-                RCLCPP_INFO(this->get_logger(), "Running CAN Transceiver in development mode with CAN Sim Intf");
-                try {
-                    sim_intf_fd_ = mockCanFd("/tmp/CanSimIntfXXXXXX");
-                    can_trns_    = std::make_unique<CanTransceiver>(sim_intf_fd_);
-                } catch (std::runtime_error err) {
-                    RCLCPP_ERROR(this->get_logger(), "%s", err.what());
-                    throw err;
-                }
-            } else if (mode == SYSTEM_MODE::SIM) {
-                RCLCPP_INFO(this->get_logger(), "Running CAN Transceiver in sim mode with CAN Sim Intf");
+            } else if (mode == SYSTEM_MODE::DEV || mode == SYSTEM_MODE::SIM) {
+                RCLCPP_INFO(
+                  this->get_logger(), "Running CAN Transceiver in %s mode with CAN Sim Intf", mode.c_str());
                 try {
                     sim_intf_fd_ = mockCanFd("/tmp/CanSimIntfXXXXXX");
                     can_trns_    = std::make_unique<CanTransceiver>(sim_intf_fd_);

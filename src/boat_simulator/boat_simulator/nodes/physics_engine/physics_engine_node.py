@@ -3,7 +3,6 @@
 """The ROS node for the physics engine."""
 
 import json
-import math
 import sys
 from typing import Optional
 
@@ -34,28 +33,18 @@ from rclpy.subscription import Subscription
 
 import boat_simulator.common.constants as Constants
 import boat_simulator.common.utils as Utils
+from boat_simulator.common.geo_conversions import local_position_to_gps_lat_lon
 from boat_simulator.common.generators import MVGaussianGenerator
-from boat_simulator.common.sensors import SimGPS, SimWindSensor
+from boat_simulator.common.sensors import SimWindSensor
 from boat_simulator.common.types import Scalar
 from boat_simulator.nodes.physics_engine.fluid_generation import FluidGenerator
 from boat_simulator.nodes.physics_engine.model import BoatState
 
 from .decorators import require_all_subs_active
 
-
-def local_position_to_gps_lat_lon(local_position_m: np.ndarray) -> tuple[float, float]:
-    """Convert simulator-local ENU meter offsets into decimal-degree latitude/longitude."""
-    east_m = float(local_position_m[0])
-    north_m = float(local_position_m[1])
-    origin_lat_rad = math.radians(Constants.SIM_GPS_ORIGIN_LATITUDE)
-
-    latitude = Constants.SIM_GPS_ORIGIN_LATITUDE + math.degrees(
-        north_m / Constants.EARTH_RADIUS_M
-    )
-    longitude = Constants.SIM_GPS_ORIGIN_LONGITUDE + math.degrees(
-        east_m / (Constants.EARTH_RADIUS_M * math.cos(origin_lat_rad))
-    )
-    return latitude, longitude
+# --------------------------------------
+# CONVERSION HELPERS
+# --------------------------------------
 
 
 def sim_velocity_to_gps_speed_kmph(global_velocity_mps: np.ndarray) -> float:
