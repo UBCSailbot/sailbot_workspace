@@ -54,7 +54,8 @@ def test_local_position_to_gps_lat_lon_preserves_distance_and_bearing(local_posi
     expected_distance_m = math.hypot(local_position_m[0], local_position_m[1])
 
     assert distance_m == pytest.approx(expected_distance_m)
-    assert heading_difference_deg(bearing_deg, expected_bearing_deg) == pytest.approx(0.0, abs=1e-6)  # noqa
+    actual_difference = heading_difference_deg(bearing_deg, expected_bearing_deg)
+    assert actual_difference == pytest.approx(0.0, abs=1e-6)
 
 
 def test_local_position_to_gps_lat_lon_ignores_vertical_offset():
