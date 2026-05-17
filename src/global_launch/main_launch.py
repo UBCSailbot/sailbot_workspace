@@ -45,8 +45,8 @@ GLOBAL_LAUNCH_ARGUMENTS = [
         name="mode",
         default_value="development",
         choices=["production", "development", "sim"],
-        description="System mode. Decides whether the system is ran with development or production or sim"
-        + " interfaces",
+        description="System mode. Decides whether the system is ran with development, production"
+        + " or sim interfaces",
     ),
     DeclareLaunchArgument(
         name="test_plan",
@@ -164,7 +164,8 @@ def get_running_ros_packages(mode: str) -> List[str]:
         case "sim":
             return SIM_ROS_PACKAGES
         case _:
-            raise ValueError("Invalid launch mode. Must be one of 'production', 'development', 'sim'.")
+            raise ValueError("Invalid launch mode. Must be one of 'production', 'development',"
+                             " or 'sim'.")
 
 
 def get_include_launch_descriptions(ros_package_list: List[str]) -> List[IncludeLaunchDescription]:
