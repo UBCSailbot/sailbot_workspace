@@ -2,6 +2,7 @@
 
 import math
 from collections import deque
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import List, Optional
 
@@ -21,6 +22,40 @@ LOCAL_WAYPOINT_REACHED_THRESH_KM = 0.5
 HEADING_WEIGHT = 0.6
 COST_WEIGHT = 0.4
 PATH_TTL_SEC = timedelta(seconds=600)
+MAX_OMPL_PATH_GEN_TRIES = 2
+
+
+class PathNotFoundError(Exception):
+    """Raised when a usable local path is unavailable."""
+
+
+@dataclass
+class MustChangeReason(Exception):
+    should_change_path: bool
+    reason: str
+
+
+@dataclass
+class LocalPathInputs:
+    """Current navigation inputs needed to update or regenerate a local path.
+
+    Attributes:
+        gps (ci.GPS): Current GPS position and heading data.
+        ais_ships (ci.AISShips): AIS data for nearby ships.
+        global_path (ci.Path): The global path plan to the destination.
+        target_global_waypoint (ci.HelperLatLon): Target waypoint from the global path.
+        filtered_wind_sensor (ci.WindSensor): Filtered apparent wind data.
+        planner (str): Name of the OMPL planner to use.
+        land_multi_polygon (Optional[MultiPolygon]): Optional land masses to avoid.
+    """
+
+    gps: ci.GPS
+    ais_ships: ci.AISShips
+    global_path: ci.Path
+    target_global_waypoint: ci.HelperLatLon
+    filtered_wind_sensor: ci.WindSensor
+    planner: str
+    land_multi_polygon: Optional[MultiPolygon] = None
 
 
 class LocalPathState:
@@ -33,15 +68,15 @@ class LocalPathState:
         speed (float): Speed of Sailbot.
         heading (float): Direction that Sailbot is pointing.
         ais_ships (List[HelperAISShip]): Information about nearby ships.
-        global_path (List[Tuple[float, float]]): Path to the destination that Sailbot is
-                                                 navigating along.
-        target_global_waypoint (ci.HelperLatLon): The global waypoint that we are heading towards.
+        global_path (ci.Path): Path to the destination that Sailbot is navigating along.
+        reference_latlon (ci.HelperLatLon): The global waypoint that Sailbot is heading toward.
             The global waypoint is the same as the reference latlon.
-        wind_speed (float): Wind speed.
-        wind_direction (int): Wind direction.
+        aw_speed_kmph (float): Apparent wind speed from the filtered wind sensor, in km/h.
+        aw_dir_boat_coord_deg (int): Apparent wind direction from the filtered wind sensor, in boat
+            coordinates, in degrees.
         planner (str): Planner to use for the OMPL query.
-        reference (ci.HelperLatLon): Lat and lon position of the next global waypoint.
-        obstacles (List[Obstacle]): All obstacles in the state space
+        obstacles (List[Obstacle]): All obstacles in the state space.
+        path_generated_time (datetime): Time when the path was generated
         aw_history (List[Wind]): History of wind sensor readings
             (Queue with max length WIND_HISTORY_LEN).
         aw_avg (Optional[Wind]): Average of the wind history, used for path planning.
@@ -151,8 +186,9 @@ class LocalPath:
         _logger (RcutilsLogger): ROS logger.
         _ompl_path (Optional[OMPLPath]): Raw representation of the path from OMPL.
         _target_lp_wp_index (int): 0-based array index of the local waypoint Polaris is
-            currently heading toward. This is initialized to 1 because OMPL path index 0 is the
-            start state near the boat, and index 1 is the first target waypoint.
+            currently heading toward. This is set by update_if_needed. It usually starts at 1
+            because OMPL path index 0 is the start state near the boat, and index 1 is the first
+            target waypoint.
         path (Path): Collection of coordinates that form the local path to the next
                           global waypoint.
         state (LocalPathState): the current local path state.
@@ -196,13 +232,15 @@ class LocalPath:
             tuple[float, int]: Desired heading in degrees and the updated local
                 waypoint index (target_lp_wp_index).
         Raises:
-            ValueError: if the path is None
-            IndexError: If index out of bounds or path is None
+            PathNotFoundError: If `path` is None or `target_lp_wp_index` is outside the
+                valid range `[1, len(path.waypoints) - 1]`.
+            IndexError: If the current waypoint is reached and incrementing
+                `target_lp_wp_index` requires generating a new path.
         """
         if path is None:
-            raise ValueError("Path is None")
+            raise PathNotFoundError("Path is None")
         if target_lp_wp_index < 1 or target_lp_wp_index >= len(path.waypoints):
-            raise IndexError("target_lp_wp_index must be in [1, len(path.waypoints) - 1]")
+            raise PathNotFoundError("target_lp_wp_index must be in [1, len(path.waypoints) - 1]")
 
         waypoint = path.waypoints[target_lp_wp_index]
         desired_heading, _, distance_to_waypoint_m = cs.GEODESIC.inv(
@@ -249,15 +287,14 @@ class LocalPath:
 
     @staticmethod
     def is_significant_wind_change(
-        new_tw_data: Wind,
-        previous_tw_data: Wind,
+        new_wind_data: Wind,
+        previous_wind_data: Wind,
     ) -> bool:
-        """Returns true if there is a significant change in the true wind warranting a change in
-           path. Although this function works with any kind of wind, it is specifically designed
-           for true wind data.
+        """Returns true if a wind change is significant enough to warrant a path change.
 
-        Evaluates new wind speed compared to the wind condition used when previous
-        path was made.
+        This helper compares two wind readings without converting between wind types or coordinate
+        frames. It works for true wind, apparent wind, or any other wind representation as long as
+        both readings use the same representation.
 
         The criteria to determine if the wind change is significant include:
         - A change in wind speed exceeding WIND_SPEED_CHANGE_THRESH_PROP of the previous speed
@@ -265,182 +302,162 @@ class LocalPath:
         - A change in wind direction exceeding WIND_DIRECTION_CHANGE_THRESH_DEG degrees
 
         Args:
-            new_tw_data (Wind): Current wind speed/direction that may require a change in path
-            previous_tw_data (Wind): Wind speed/direction when the current path was generated
+            new_wind_data (Wind): Current wind speed/direction that may require a path change.
+            previous_wind_data (Wind): Wind speed/direction used for the current path. Must be the
+                same wind type and coordinate frame as new_wind_data.
 
         Returns:
             boolean: True if there is a significant change in the wind, False otherwise.
         """
 
         # Check for significant changes
-        prev_tw_speed_kmph = previous_tw_data.speed_kmph
-        prev_tw_dir_deg = previous_tw_data.dir_deg
+        previous_speed_kmph = previous_wind_data.speed_kmph
+        previous_dir_deg = previous_wind_data.dir_deg
 
-        current_tw_speed_kmph = new_tw_data.speed_kmph
-        current_tw_dir_deg = new_tw_data.dir_deg
+        current_speed_kmph = new_wind_data.speed_kmph
+        current_dir_deg = new_wind_data.dir_deg
 
-        speed_change_ratio = abs(prev_tw_speed_kmph - current_tw_speed_kmph) / prev_tw_speed_kmph
-        dir_change = abs(cs.bound_to_180(current_tw_dir_deg - prev_tw_dir_deg))
+        speed_change_ratio = abs(previous_speed_kmph - current_speed_kmph) / previous_speed_kmph
+        dir_change = abs(cs.bound_to_180(current_dir_deg - previous_dir_deg))
 
         return (
             speed_change_ratio >= WIND_SPEED_CHANGE_THRESH_PROP
             or dir_change >= WIND_DIRECTION_CHANGE_THRESH_DEG
         )
 
-    def must_change_path(self, received_new_global_waypoint: bool) -> tuple[bool, str]:
+    def must_change_path(
+        self, received_new_global_waypoint: bool, new_aw: Optional[Wind] = None
+    ) -> MustChangeReason:
         """Check if the path must be changed.
 
         Returns:
-            tuple[bool, str]: (should_change_path, reason_description)
+            MustChangeReason
         """
         if received_new_global_waypoint:
-            return True, "Received new global waypoint"
+            return MustChangeReason(True, "Received new global waypoint")
         if self._ompl_path is None:
-            return True, "OMPL path is None"
+            return MustChangeReason(True, "OMPL path is None")
         if self.state is None:
-            return True, "State is None"
+            return MustChangeReason(True, "State is None")
         if self.path is None:
-            return True, "Path is None"
+            return MustChangeReason(True, "Path is None")
         if self.in_collision_zone():
-            return True, "Path intersects collision zone"
+            return MustChangeReason(True, "Path intersects collision zone")
         if self.is_path_expired():
-            return True, "Path has expired (TTL exceeded)"
+            return MustChangeReason(True, "Path has expired (TTL exceeded)")
+        if (
+            (new_aw is not None)
+            and (self.state.aw_avg is not None)  # must ensure that LocalPathState.aw_avg
+            # is not None; this happens when len(LocalPathState.aw_history < WIND_HISTORY_LEN)
+            and self.is_significant_wind_change(new_aw, self.state.aw_avg)
+        ):
+            return MustChangeReason(True, "Significant wind change")
         if self._target_lp_wp_index < 1:
-            return True, f"Target waypoint index too low: {self._target_lp_wp_index}"
-        if self._target_lp_wp_index >= len(self.path.waypoints):
-            return (
+            return MustChangeReason(
                 True,
-                f"Target waypoint index out of bounds: {self._target_lp_wp_index} >= {len(self.path.waypoints)}", # noqa
+                f"Target waypoint index too low: {self._target_lp_wp_index}"
+                )
+        if self._target_lp_wp_index >= len(self.path.waypoints):
+            return MustChangeReason(
+                True,
+                f"Target waypoint index out of bounds: {self._target_lp_wp_index} >= {len(self.path.waypoints)}",  # noqa
             )
 
-        return False, "Path is valid, no change needed"
+        return MustChangeReason(
+            False,
+            "Path is valid, no change needed"
+        )
 
     def update_if_needed(
         self,
-        gps: ci.GPS,
-        ais_ships: ci.AISShips,
-        global_path: ci.Path,
+        inputs: LocalPathInputs,
         target_lp_wp_index: int,
         received_new_global_waypoint: bool,
-        target_global_waypoint: ci.HelperLatLon,
-        filtered_wind_sensor: ci.WindSensor,
-        planner: str,
-        land_multi_polygon: MultiPolygon = None,
     ) -> tuple[Optional[float], Optional[int]]:
         """Updates the local path using OMPL if conditions warrant a path change.
 
         Evaluates whether to update the current path based on several criteria:
         - Receipt of a new global waypoint
-        - Absence of an existing path
+        - Absence of an existing OMPL path, local path, or state
         - Current path intersecting with collision zones
-        - New path having a better cost-heading metric than the old path
+        - Current path exceeding its time-to-live
+        - Invalid target local waypoint index
 
-        The decision metric combines normalized heading difference and
-        normalized path cost to balance directional efficiency with
-        obstacle avoidance. The weights can be changed to tune the system better.
-
-            gps (ci.GPS): Current GPS position and heading data.
-            ais_ships (ci.AISShips): AIS data for nearby ships (obstacles).
-            global_path (ci.Path): The global path plan to the destination.
+        Args:
+            inputs (LocalPathInputs): Current navigation inputs used to update or regenerate
+                the local path.
             target_lp_wp_index (int): 0-based array index of the local waypoint Polaris is
                 currently heading toward. This starts at index 1 because OMPL index 0 is the
                 start state near the boat.
             received_new_global_waypoint (bool): Flag indicating if a new global
                 waypoint was received.
-            target_global_waypoint (ci.HelperLatLon): Target waypoint from global path.
-            filtered_wind_sensor (ci.WindSensor): Filtered wind speed and direction data.
-            planner (str): Name of the OMPL planner to use.
-            land_multi_polygon (MultiPolygon, optional): Polygon representing land masses
-                to avoid. Defaults to None.
 
         Returns:
-            tuple[Optional[float], Optional[int]]: A tuple containing:
+            tuple[float, int]: A tuple containing:
                 - Desired heading in degrees
                 - Updated waypoint index
-            The method decides whether to return the heading for new path or old path
+            The method decides whether to return the heading for a newly generated path or the
+            existing path.
+
+        Raises:
+            PathNotFoundError: If a required path is unavailable or a replacement path cannot be
+                generated.
+            ValueError: If the LocalPathState is passed invalid values.
+            IndexError: If the target waypoint is reached and no next local waypoint exists.
         """
         self._target_lp_wp_index = target_lp_wp_index
-        old_ompl_path = self._ompl_path
-
-        new_state = LocalPathState(
-            gps, ais_ships, global_path, target_global_waypoint, filtered_wind_sensor, planner
+        new_aw = Wind(
+            inputs.filtered_wind_sensor.speed.speed,
+            inputs.filtered_wind_sensor.direction,
         )
-        new_ompl_path = OMPLPath(
-            parent_logger=self._logger,
-            local_path_state=new_state,
-            land_multi_polygon=land_multi_polygon,
-        )
-        # TODO: handle the error thrown here in reworked update_if_needed
-        try:
-            heading_new_path, new_target_lp_wp_index = self.calculate_desired_heading_and_wp_index(
-                new_ompl_path.get_path(), 1, gps.lat_lon
-            )
-        except (ValueError, IndexError):
-            # TODO: handle this after merging Jai's PR that sets sail to False
-            heading_new_path, new_target_lp_wp_index = None, -1
+        must_change_reason = self.must_change_path(received_new_global_waypoint, new_aw)
+        if must_change_reason.should_change_path:
+            tries = 0
+            while tries < MAX_OMPL_PATH_GEN_TRIES:
+                new_state = LocalPathState(
+                    inputs.gps,
+                    inputs.ais_ships,
+                    inputs.global_path,
+                    inputs.target_global_waypoint,
+                    inputs.filtered_wind_sensor,
+                    inputs.planner,
+                )
+                new_ompl_path = OMPLPath(
+                    parent_logger=self._logger,
+                    local_path_state=new_state,
+                    land_multi_polygon=inputs.land_multi_polygon,
+                )
+                if new_ompl_path.solved:
+                    break
+                else:
+                    tries += 1
 
-        must_change, reason = self.must_change_path(received_new_global_waypoint)
-        if must_change:
-            self._logger.debug(f"Updating local path: {reason}")
+            if not new_ompl_path.solved:
+                raise PathNotFoundError("Old Path must change and new path couldn't be solved" +
+                                        f" within {MAX_OMPL_PATH_GEN_TRIES}")
+
+            self._logger.debug(f"Updating local path: {must_change_reason.reason}")
             self.state = new_state
             self._update(new_ompl_path)
-            return heading_new_path, new_target_lp_wp_index
-        else:
-            self.state.update_state(gps, ais_ships, filtered_wind_sensor)  # type: ignore
 
-        try:
-            heading_old_path, old_target_lp_wp_index = self.calculate_desired_heading_and_wp_index(
-                self._ompl_path.get_path(), target_lp_wp_index, gps.lat_lon  # type: ignore
+            init_target_lp_wp_index = 1
+            heading_new_path, new_target_lp_wp_index = (
+                self.calculate_desired_heading_and_wp_index(
+                    new_ompl_path.get_path(), init_target_lp_wp_index, inputs.gps.lat_lon
+                )
             )
-        except (ValueError, IndexError):
-            return heading_new_path, new_target_lp_wp_index
-
-        heading_diff_old_path = cs.calculate_heading_diff(
-            self.state.heading,  # type: ignore
-            heading_old_path,
-        )
-        heading_diff_new_path = cs.calculate_heading_diff(
-            self.state.heading,  # type: ignore
-            heading_new_path,
-        )
-
-        old_cost = old_ompl_path.get_remaining_cost(  # type: ignore
-            old_target_lp_wp_index, gps.lat_lon
-        )
-        new_cost = new_ompl_path.get_remaining_cost(new_target_lp_wp_index, gps.lat_lon)
-        max_cost = max(old_cost, new_cost, 1)
-        old_cost_normalized = old_cost / max_cost
-        new_cost_normalized = new_cost / max_cost
-
-        max_heading_diff = max(
-            math.fabs(heading_diff_new_path), math.fabs(heading_diff_old_path), 1.0
-        )
-
-        heading_diff_new_normalized = heading_diff_new_path / max_heading_diff
-        heading_diff_old_normalized = heading_diff_old_path / max_heading_diff
-
-        w_h = HEADING_WEIGHT
-        w_c = COST_WEIGHT
-
-        metric_old = w_h * heading_diff_old_normalized + w_c * old_cost_normalized
-        metric_new = w_h * heading_diff_new_normalized + w_c * new_cost_normalized
-
-        self._logger.debug(
-            f"(old cost: {old_cost:.2f}, "
-            f"new cost: {new_cost:.2f})"
-            f", metric_old: {metric_old:.2f}, "
-            f"metric_new: {metric_new:.2f}, "
-            f"old_cost_normalized: {old_cost_normalized:.2f}, "
-            f"new_cost_normalized: {new_cost_normalized:.2f}"
-        )
-        if metric_new < metric_old:
-            self._logger.debug("New path is cheaper, updating local path ")
-            self.state = new_state
-            self._update(new_ompl_path)
             return heading_new_path, new_target_lp_wp_index
         else:
-            self._logger.debug("old path is cheaper, continuing on the same path")
-            return heading_old_path, old_target_lp_wp_index
+            self.state.update_state(  # type: ignore
+                inputs.gps,
+                inputs.ais_ships,
+                inputs.filtered_wind_sensor,
+            )
+
+        heading_old_path, old_target_lp_wp_index = self.calculate_desired_heading_and_wp_index(
+            self._ompl_path.get_path(), target_lp_wp_index, inputs.gps.lat_lon  # type: ignore
+        )
+        return heading_old_path, old_target_lp_wp_index
 
     def _update(self, ompl_path: OMPLPath):
 

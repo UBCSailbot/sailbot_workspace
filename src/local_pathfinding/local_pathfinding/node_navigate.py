@@ -8,7 +8,7 @@ import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.global_path as gp
 import local_pathfinding.obstacles as ob
-from local_pathfinding.local_path import LocalPath
+from local_pathfinding.local_path import LocalPath, LocalPathInputs, PathNotFoundError
 from local_pathfinding.ompl_path import MAX_SOLVER_RUN_TIME_SEC
 
 GLOBAL_WAYPOINT_REACHED_THRESH_KM = 3
@@ -55,6 +55,11 @@ class Sailbot(Node):
     Attributes:
         local_path (LocalPath): The path that `Sailbot` is following.
         planner (str): The path planner that `Sailbot` is using.
+        mode (str): Runtime mode. Development mode publishes richer local path data.
+        global_waypoint_index (int): Index of the current target in the reverse-ordered global
+            path.
+        saved_target_global_waypoint (ci.HelperLatLon): Current global waypoint target.
+        land_multi_polygon (MultiPolygon): Optional mock land data used in development mode.
     """
 
     def __init__(self):
@@ -176,9 +181,10 @@ class Sailbot(Node):
 
         self.update_params()
 
-        desired_heading = self.get_desired_heading()
+        desired_heading, sail = self.get_desired_heading()
         msg = ci.DesiredHeading()
         msg.heading.heading = desired_heading
+        msg.sail = sail
         if self.desired_heading is None or desired_heading != self.desired_heading.heading.heading:
             self.get_logger().info(f"Updating desired heading to: {msg.heading.heading:.2f}")
 
@@ -196,7 +202,7 @@ class Sailbot(Node):
         """
         Collect all navigation data and publish it in one message.
         In development mode, all navigation data is published.
-        In production mode, only the local path is published, with all other data set to 0 or empty
+        In production mode, only the local path is published.
 
         """
         # publish all navigation data when in dev mode
@@ -212,7 +218,7 @@ class Sailbot(Node):
                         )
 
                         # each point of the polygon is in lat lon now
-                        # but you cant construct a shapely polgyon out of HelperLatLon objects
+                        # but you can't construct a Shapely polygon out of HelperLatLon objects
                         # so each point is a shapely Point that needs to be converted to a
                         # HelperLatLon, before it can be published to ROS
                         helper_latlons = [
@@ -250,11 +256,12 @@ class Sailbot(Node):
         self.lpath_data_pub.publish(msg)
 
     # helper functions
-    def get_desired_heading(self) -> float:
+    def get_desired_heading(self) -> tuple[float, bool]:
         """Get the desired heading.
 
         Returns:
-            float: The desired heading
+            tuple[float, bool]: The desired heading and whether sailing is allowed. Sailing is
+            disabled when no local path can be generated.
         """
 
         # Extra logic for when the global waypoint changes due to receiving a new global path
@@ -290,18 +297,24 @@ class Sailbot(Node):
                 self.global_waypoint_index
             ]
 
-        desired_heading, self.target_lp_wp_index = self.local_path.update_if_needed(
-            self.gps,
-            self.ais_ships,
-            self.global_path,
-            self.target_lp_wp_index,
-            received_new_global_waypoint,
-            self.saved_target_global_waypoint,
-            self.filtered_wind_sensor,
-            self.planner,
-            self.land_multi_polygon,
-        )
-        return desired_heading
+        try:
+            desired_heading, self.target_lp_wp_index = self.local_path.update_if_needed(
+                inputs=LocalPathInputs(
+                    gps=self.gps,
+                    ais_ships=self.ais_ships,
+                    global_path=self.global_path,
+                    target_global_waypoint=self.saved_target_global_waypoint,
+                    filtered_wind_sensor=self.filtered_wind_sensor,
+                    planner=self.planner,
+                    land_multi_polygon=self.land_multi_polygon,
+                ),
+                target_lp_wp_index=self.target_lp_wp_index,
+                received_new_global_waypoint=received_new_global_waypoint,
+            )
+            return desired_heading, True
+        except PathNotFoundError:
+            self.get_logger().warning("Unable to generate a local path; disabling sail")
+            return 0.0, False
 
     @staticmethod
     def determine_start_point_in_new_global_path(
