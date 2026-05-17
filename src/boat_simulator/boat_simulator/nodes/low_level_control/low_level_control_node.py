@@ -331,8 +331,8 @@ class LowLevelControlNode(Node):
         return result
 
     @property
-    def is_multithreading_enabled(self) -> bool:  # noqa
-        return self.__is_multithreading_enabled
+    def is_multithreading_enabled(self) -> bool:
+        return self.__is_multithreading_enabled  # noqa
 
     @property
     def pub_sub_callback_group(self) -> CallbackGroup:

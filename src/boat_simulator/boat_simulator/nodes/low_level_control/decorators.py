@@ -52,7 +52,7 @@ class MutuallyExclusiveActionRoutine:
             result = func(obj, *args, **kwargs)
         except RuntimeError:
             obj.get_logger().error(f"An unexpected error occurred in {func.__name__}")
-            return self.__action_type.Result()  # return a blank result instead of Non
+            result = self.__action_type.Result()  # return a blank result instead of None
 
         self.__unset_active_flag(obj)
         return result
