@@ -4,13 +4,12 @@ import importlib
 import os
 from typing import List, Tuple
 
-from launch_ros.actions import Node
-
 from launch.actions import DeclareLaunchArgument, OpaqueFunction
 from launch.launch_context import LaunchContext
 from launch.launch_description import LaunchDescription
 from launch.some_substitutions_type import SomeSubstitutionsType
 from launch.substitutions import LaunchConfiguration
+from launch_ros.actions import Node
 
 # Local launch arguments and constants
 PACKAGE_NAME = "local_pathfinding"
