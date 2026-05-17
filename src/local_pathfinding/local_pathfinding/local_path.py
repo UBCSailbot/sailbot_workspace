@@ -345,8 +345,11 @@ class LocalPath:
             return MustChangeReason(True, "Path intersects collision zone")
         if self.is_path_expired():
             return MustChangeReason(True, "Path has expired (TTL exceeded)")
-        if new_aw is not None and self.is_significant_wind_change(
-            new_aw, self.state.current_aw
+        if (
+            (new_aw is not None)
+            and (self.state.aw_avg is not None)  # must ensure that LocalPathState.aw_avg
+            # is not None; this happens when len(LocalPathState.aw_history < WIND_HISTORY_LEN)
+            and self.is_significant_wind_change(new_aw, self.state.aw_avg)
         ):
             return MustChangeReason(True, "Significant wind change")
         if self._target_lp_wp_index < 1:

@@ -98,6 +98,33 @@ def create_solved_ompl_path(path):
     return ompl_path
 
 
+def create_initialized_local_path_for_update_if_needed(state):
+    mock_parent_logger = mock.Mock()
+    mock_parent_logger.get_child.return_value = mock.Mock()
+    local_path = lp.LocalPath(parent_logger=mock_parent_logger)
+
+    old_path = Path(
+        waypoints=[
+            HelperLatLon(latitude=1.0, longitude=1.0),
+            HelperLatLon(latitude=0.0, longitude=0.0),
+        ]
+    )
+    old_ompl_path = create_solved_ompl_path(old_path)
+    local_path._ompl_path = old_ompl_path
+    local_path.state = state
+    local_path.state.path_generated_time = datetime.now()
+    local_path.path = old_path
+
+    return local_path, old_path, old_ompl_path
+
+
+def set_aw_history(state, wind, history_len):
+    state.aw_history.clear()
+    for _ in range(history_len):
+        state.current_aw = wind
+        state.update_aw_history()
+
+
 @pytest.mark.parametrize(
     "path, target_wp_index, boat_lat_lon, correct_heading, new_target_wp_index",
     [
@@ -937,38 +964,62 @@ def test_update_if_needed_regenerates_path_when_path_must_change(
     ompl_path_cls.assert_called_once()
 
 
-def test_must_change_path_returns_true_for_significant_wind_change(basic_local_path_state):
-    mock_parent_logger = mock.Mock()
-    mock_parent_logger.get_child.return_value = mock.Mock()
-    local_path = lp.LocalPath(parent_logger=mock_parent_logger)
-    local_path._ompl_path = create_solved_ompl_path(
-        Path(
-            waypoints=[
-                HelperLatLon(latitude=1.0, longitude=1.0),
-                HelperLatLon(latitude=0.0, longitude=0.0),
-            ]
-        )
+@pytest.mark.parametrize(
+    "scenario, new_aw_speed, new_aw_dir",
+    [
+        (
+            "aw_speed",
+            5.0 * (1.0 + lp.WIND_SPEED_CHANGE_THRESH_PROP) + 0.1,
+            90.0,
+        ),
+        (
+            "aw_dir",
+            5.0,
+            90.0 + lp.WIND_DIRECTION_CHANGE_THRESH_DEG + 1.0,
+        ),
+    ],
+)
+def test_update_if_needed_regenerates_path_for_significant_wind_change(
+    scenario,  # noqa: ARG001
+    new_aw_speed,
+    new_aw_dir,
+    basic_local_path_state,
+):
+    baseline_aw = Wind(speed_kmph=5.0, dir_deg=90.0)
+    set_aw_history(basic_local_path_state, baseline_aw, lp.WIND_HISTORY_LEN)
+    local_path, _, old_ompl_path = create_initialized_local_path_for_update_if_needed(
+        basic_local_path_state
     )
-    local_path.state = basic_local_path_state
-    local_path.path = Path(
+
+    inputs = create_update_if_needed_inputs()
+    inputs.filtered_wind_sensor.speed.speed = new_aw_speed
+    inputs.filtered_wind_sensor.direction = new_aw_dir
+    new_path = Path(
         waypoints=[
             HelperLatLon(latitude=1.0, longitude=1.0),
             HelperLatLon(latitude=0.0, longitude=0.0),
         ]
     )
-    local_path._target_lp_wp_index = 1
-    new_aw = Wind(
-        speed_kmph=basic_local_path_state.current_aw.speed_kmph,
-        dir_deg=basic_local_path_state.current_aw.dir_deg + lp.WIND_DIRECTION_CHANGE_THRESH_DEG,
-    )
+    new_ompl_path = create_solved_ompl_path(new_path)
 
     with (
         mock.patch.object(local_path, "in_collision_zone", return_value=False),
         mock.patch.object(local_path, "is_path_expired", return_value=False),
+        mock.patch.object(lp, "OMPLPath", return_value=new_ompl_path) as ompl_path_cls,
     ):
-        must_change_path = local_path.must_change_path(False, new_aw)
-        assert must_change_path.should_change_path is True
-        assert must_change_path.reason == "Significant wind change"
+        desired_heading, new_target_lp_wp_index = local_path.update_if_needed(
+            inputs=inputs,
+            target_lp_wp_index=1,
+            received_new_global_waypoint=False,
+        )
+
+    assert desired_heading == pytest.approx(90.0, abs=3e-1)
+    assert new_target_lp_wp_index == 1
+    assert local_path._ompl_path is new_ompl_path
+    assert local_path.path is new_path
+    assert local_path._ompl_path is not old_ompl_path
+    local_path._logger.debug.assert_any_call("Updating local path: Significant wind change")
+    ompl_path_cls.assert_called_once()
 
 
 def test_update_if_needed_raises_when_path_generation_exceeds_retries():
@@ -1076,30 +1127,52 @@ def test_update_if_needed_propagates_update_state_errors_when_reusing_path(
         )
 
 
-def test_update_if_needed_no_change(
+@pytest.mark.parametrize(
+    "scenario, history_len, new_aw",
+    [
+        (
+            "wind_history_length_not_met",
+            lp.WIND_HISTORY_LEN - 1,
+            Wind(
+                speed_kmph=5.0 * (1.0 + lp.WIND_SPEED_CHANGE_THRESH_PROP) + 0.1,
+                dir_deg=90.0,
+            ),
+        ),
+        (
+            "wind_history_length_met_without_wind_change",
+            lp.WIND_HISTORY_LEN,
+            Wind(speed_kmph=5.0, dir_deg=90.0),
+        ),
+    ],
+)
+def test_update_if_needed_reuses_path_without_significant_wind_change(
+    scenario,
+    history_len,
+    new_aw,
     basic_local_path_state,
 ):
-    mock_parent_logger = mock.Mock()
-    mock_parent_logger.get_child.return_value = mock.Mock()
-    local_path = lp.LocalPath(parent_logger=mock_parent_logger)
+    baseline_aw = Wind(speed_kmph=5.0, dir_deg=90.0)
+    set_aw_history(basic_local_path_state, baseline_aw, history_len)
+    if scenario == "wind_history_length_not_met":
+        assert basic_local_path_state.aw_avg is None
+    else:
+        assert basic_local_path_state.aw_avg is not None
 
-    old_path = Path(
-        waypoints=[
-            HelperLatLon(latitude=1.0, longitude=1.0),
-            HelperLatLon(latitude=0.0, longitude=0.0),
-        ]
+    local_path, old_path, old_ompl_path = create_initialized_local_path_for_update_if_needed(
+        basic_local_path_state
     )
-    old_ompl_path = create_solved_ompl_path(old_path)
-    local_path._ompl_path = old_ompl_path
-    local_path.state = basic_local_path_state
-    local_path.state.path_generated_time = datetime.now()
-    local_path.path = old_path
 
     inputs = create_update_if_needed_inputs()
+    inputs.filtered_wind_sensor.speed.speed = new_aw.speed_kmph
+    inputs.filtered_wind_sensor.direction = new_aw.dir_deg
     original_global_path = local_path.state.global_path
     original_reference_latlon = local_path.state.reference_latlon
 
-    with mock.patch.object(lp, "OMPLPath") as ompl_path_cls:
+    with (
+        mock.patch.object(local_path, "in_collision_zone", return_value=False),
+        mock.patch.object(local_path, "is_path_expired", return_value=False),
+        mock.patch.object(lp, "OMPLPath") as ompl_path_cls,
+    ):
         desired_heading, new_target_lp_wp_index = local_path.update_if_needed(
             inputs=inputs,
             target_lp_wp_index=1,
@@ -1117,8 +1190,6 @@ def test_update_if_needed_no_change(
     assert local_path.state.heading == inputs.gps.heading.heading
     assert local_path.state.current_aw.speed_kmph == inputs.filtered_wind_sensor.speed.speed
     assert local_path.state.current_aw.dir_deg == inputs.filtered_wind_sensor.direction
-    # The apparent-wind average is not available until the history deque is full.
-    assert local_path.state.aw_avg is None
     old_ompl_path.get_path.assert_called_once()
     ompl_path_cls.assert_not_called()
     local_path._logger.debug.assert_not_called()
