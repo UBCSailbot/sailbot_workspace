@@ -146,6 +146,8 @@ class PhysicsEngineNode(Node):
                 ("wind_generation.mvgaussian_params.cov", rclpy.Parameter.Type.STRING),
                 ("current_generation.mvgaussian_params.mean", rclpy.Parameter.Type.DOUBLE_ARRAY),
                 ("current_generation.mvgaussian_params.cov", rclpy.Parameter.Type.STRING),
+                (Constants.SIM_GPS_ORIGIN_LATITUDE_PARAM, rclpy.Parameter.Type.DOUBLE),
+                (Constants.SIM_GPS_ORIGIN_LONGITUDE_PARAM, rclpy.Parameter.Type.DOUBLE),
             ],
         )
 
@@ -164,7 +166,16 @@ class PhysicsEngineNode(Node):
         self.__sail_trim_tab_angle = 0
         self.__desired_heading = None
         self.__boat_state = BoatState(self.pub_period)
-        self.__sim_gps = None
+        self.__sim_gps_origin_latitude = (
+            self.get_parameter(Constants.SIM_GPS_ORIGIN_LATITUDE_PARAM)
+            .get_parameter_value()
+            .double_value
+        )
+        self.__sim_gps_origin_longitude = (
+            self.get_parameter(Constants.SIM_GPS_ORIGIN_LONGITUDE_PARAM)
+            .get_parameter_value()
+            .double_value
+        )
 
         wind_mean = np.array(
             self.get_parameter("wind_generation.mvgaussian_params.mean")
@@ -427,7 +438,11 @@ class PhysicsEngineNode(Node):
         )
 
     def __build_gps_msg(self) -> GPS:
-        latitude, longitude = local_position_to_gps_lat_lon(self.__boat_state.global_position)
+        latitude, longitude = local_position_to_gps_lat_lon(
+            self.__boat_state.global_position,
+            origin_latitude=self.__sim_gps_origin_latitude,
+            origin_longitude=self.__sim_gps_origin_longitude,
+        )
         yaw_rad = self.__boat_state.global_angular_position[
             Constants.ORIENTATION_INDICES.YAW.value
         ]

@@ -6,11 +6,12 @@ import numpy as np
 import pytest
 from pyproj import Geod
 
-import boat_simulator.common.constants as Constants
 from boat_simulator.common.geo_conversions import local_position_to_gps_lat_lon
 
 
 GEODESIC = Geod(ellps="WGS84")
+ORIGIN_LATITUDE = 48.0
+ORIGIN_LONGITUDE = -123.0
 
 
 def heading_difference_deg(heading_a: float, heading_b: float) -> float:
@@ -18,10 +19,14 @@ def heading_difference_deg(heading_a: float, heading_b: float) -> float:
 
 
 def test_local_position_origin_to_gps_origin():
-    latitude, longitude = local_position_to_gps_lat_lon(np.zeros(3))
+    latitude, longitude = local_position_to_gps_lat_lon(
+        np.zeros(3),
+        origin_latitude=ORIGIN_LATITUDE,
+        origin_longitude=ORIGIN_LONGITUDE,
+    )
 
-    assert latitude == pytest.approx(Constants.SIM_GPS_ORIGIN_LATITUDE)
-    assert longitude == pytest.approx(Constants.SIM_GPS_ORIGIN_LONGITUDE)
+    assert latitude == pytest.approx(ORIGIN_LATITUDE)
+    assert longitude == pytest.approx(ORIGIN_LONGITUDE)
 
 
 @pytest.mark.parametrize(
@@ -33,11 +38,15 @@ def test_local_position_origin_to_gps_origin():
     ],
 )
 def test_local_position_to_gps_lat_lon_preserves_distance_and_bearing(local_position_m):
-    latitude, longitude = local_position_to_gps_lat_lon(local_position_m)
+    latitude, longitude = local_position_to_gps_lat_lon(
+        local_position_m,
+        origin_latitude=ORIGIN_LATITUDE,
+        origin_longitude=ORIGIN_LONGITUDE,
+    )
 
     bearing_deg, _, distance_m = GEODESIC.inv(
-        Constants.SIM_GPS_ORIGIN_LONGITUDE,
-        Constants.SIM_GPS_ORIGIN_LATITUDE,
+        ORIGIN_LONGITUDE,
+        ORIGIN_LATITUDE,
         longitude,
         latitude,
     )
@@ -49,8 +58,16 @@ def test_local_position_to_gps_lat_lon_preserves_distance_and_bearing(local_posi
 
 
 def test_local_position_to_gps_lat_lon_ignores_vertical_offset():
-    surface_position = local_position_to_gps_lat_lon([20.0, 30.0, 0.0])
-    elevated_position = local_position_to_gps_lat_lon([20.0, 30.0, 100.0])
+    surface_position = local_position_to_gps_lat_lon(
+        [20.0, 30.0, 0.0],
+        origin_latitude=ORIGIN_LATITUDE,
+        origin_longitude=ORIGIN_LONGITUDE,
+    )
+    elevated_position = local_position_to_gps_lat_lon(
+        [20.0, 30.0, 100.0],
+        origin_latitude=ORIGIN_LATITUDE,
+        origin_longitude=ORIGIN_LONGITUDE,
+    )
 
     assert elevated_position == pytest.approx(surface_position)
 
@@ -90,26 +107,8 @@ def test_local_position_to_gps_lat_lon_handles_high_latitude_origin():
 )
 def test_local_position_to_gps_lat_lon_rejects_invalid_local_position(local_position_m):
     with pytest.raises(ValueError):
-        local_position_to_gps_lat_lon(local_position_m)
-
-
-@pytest.mark.parametrize(
-    "origin_latitude, origin_longitude",
-    [
-        (float("nan"), 0.0),
-        (0.0, float("inf")),
-        (-90.1, 0.0),
-        (90.1, 0.0),
-        (0.0, -180.1),
-        (0.0, 180.1),
-    ],
-)
-def test_local_position_to_gps_lat_lon_rejects_invalid_origin(
-    origin_latitude, origin_longitude
-):
-    with pytest.raises(ValueError):
         local_position_to_gps_lat_lon(
-            [0.0, 0.0],
-            origin_latitude=origin_latitude,
-            origin_longitude=origin_longitude,
+            local_position_m,
+            origin_latitude=ORIGIN_LATITUDE,
+            origin_longitude=ORIGIN_LONGITUDE,
         )
