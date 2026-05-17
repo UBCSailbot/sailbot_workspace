@@ -3,26 +3,18 @@
 """The ROS node for the physics engine."""
 
 import json
+import math
 import sys
 from typing import Optional
 
 import numpy as np
 import rclpy
 import rclpy.utilities
-from custom_interfaces.action import SimRudderActuation, SimSailTrimTabActuation
 from custom_interfaces.action._sim_rudder_actuation import (
     SimRudderActuation_FeedbackMessage,
 )
 from custom_interfaces.action._sim_sail_trim_tab_actuation import (
     SimSailTrimTabActuation_FeedbackMessage,
-)
-from custom_interfaces.msg import (
-    GPS,
-    DesiredHeading,
-    SailCmd,
-    SimWorldState,
-    WindSensor,
-    WindSensors,
 )
 from rclpy.action import ActionClient
 from rclpy.action.client import ClientGoalHandle, Future
@@ -38,6 +30,15 @@ from boat_simulator.common.sensors import SimGPS, SimWindSensor
 from boat_simulator.common.types import Scalar
 from boat_simulator.nodes.physics_engine.fluid_generation import FluidGenerator
 from boat_simulator.nodes.physics_engine.model import BoatState
+from custom_interfaces.action import SimRudderActuation, SimSailTrimTabActuation
+from custom_interfaces.msg import (
+    GPS,
+    DesiredHeading,
+    SailCmd,
+    SimWorldState,
+    WindSensor,
+    WindSensors,
+)
 
 from .decorators import require_all_subs_active
 
@@ -343,6 +344,13 @@ class PhysicsEngineNode(Node):
     def __publish_gps(self):
         """Publishes mock GPS data."""
         lat_lon = self.__boat_state.global_position
+
+        if not np.all(np.isfinite(lat_lon)):
+            self.get_logger().error(
+                "Physics Engine crashed: Latitude/Longitude contains NaN or Inf!"
+            )
+            return
+
         speed = np.linalg.norm(self.__boat_state.global_velocity)
         heading = self.__boat_state.angular_position[0]
 
@@ -357,6 +365,21 @@ class PhysicsEngineNode(Node):
 
         msg = GPS()
         lat, lon, _ = self.__sim_gps.lat_lon
+
+        fLat = float(lat)
+        fLon = float(lon)
+
+        maxNum = 3.402823466e38
+        minNum = -3.402823466e38
+
+        if fLat < minNum or fLat > maxNum or math.isnan(fLat):
+            self.get_logger().error(f"GPS Latitude out of bounds ({fLat}). Defaulting to 0.0")
+            lat = 0.0
+
+        if fLon < minNum or fLon > maxNum or math.isnan(fLon):
+            self.get_logger().error(f"GPS Longitude out of bounds ({fLon}). Defaulting to 0.0")
+            lon = 0.0
+
         msg.lat_lon.latitude = float(lat)
         msg.lat_lon.longitude = float(lon)
         msg.speed.speed = self.__sim_gps.speed
@@ -411,6 +434,21 @@ class PhysicsEngineNode(Node):
 
         msg = SimWorldState()
         lat, lon, _ = self.__sim_gps.lat_lon
+
+        fLat = float(lat)
+        fLon = float(lon)
+
+        maxNum = 3.402823466e38
+        minNum = -3.402823466e38
+
+        if fLat < minNum or fLat > maxNum or math.isnan(fLat):
+            self.get_logger().error(f"GPS Latitude out of bounds ({fLat}). Defaulting to 0.0")
+            lat = 0.0
+
+        if fLon < minNum or fLon > maxNum or math.isnan(fLon):
+            self.get_logger().error(f"GPS Longitude out of bounds ({fLon}). Defaulting to 0.0")
+            lon = 0.0
+
         msg.global_gps.lat_lon.latitude = float(lat)
         msg.global_gps.lat_lon.longitude = float(lon)
         msg.global_gps.speed.speed = self.__sim_gps.speed
