@@ -287,15 +287,14 @@ class LocalPath:
 
     @staticmethod
     def is_significant_wind_change(
-        new_tw_data: Wind,
-        previous_tw_data: Wind,
+        new_wind_data: Wind,
+        previous_wind_data: Wind,
     ) -> bool:
-        """Returns true if there is a significant change in the true wind warranting a change in
-           path. Although this function works with any kind of wind, it is specifically designed
-           for true wind data.
+        """Returns true if a wind change is significant enough to warrant a path change.
 
-        Evaluates new wind speed compared to the wind condition used when previous
-        path was made.
+        This helper compares two wind readings without converting between wind types or coordinate
+        frames. It works for true wind, apparent wind, or any other wind representation as long as
+        both readings use the same representation.
 
         The criteria to determine if the wind change is significant include:
         - A change in wind speed exceeding WIND_SPEED_CHANGE_THRESH_PROP of the previous speed
@@ -303,22 +302,23 @@ class LocalPath:
         - A change in wind direction exceeding WIND_DIRECTION_CHANGE_THRESH_DEG degrees
 
         Args:
-            new_tw_data (Wind): Current wind speed/direction that may require a change in path
-            previous_tw_data (Wind): Wind speed/direction when the current path was generated
+            new_wind_data (Wind): Current wind speed/direction that may require a path change.
+            previous_wind_data (Wind): Wind speed/direction used for the current path. Must be the
+                same wind type and coordinate frame as new_wind_data.
 
         Returns:
             boolean: True if there is a significant change in the wind, False otherwise.
         """
 
         # Check for significant changes
-        prev_tw_speed_kmph = previous_tw_data.speed_kmph
-        prev_tw_dir_deg = previous_tw_data.dir_deg
+        previous_speed_kmph = previous_wind_data.speed_kmph
+        previous_dir_deg = previous_wind_data.dir_deg
 
-        current_tw_speed_kmph = new_tw_data.speed_kmph
-        current_tw_dir_deg = new_tw_data.dir_deg
+        current_speed_kmph = new_wind_data.speed_kmph
+        current_dir_deg = new_wind_data.dir_deg
 
-        speed_change_ratio = abs(prev_tw_speed_kmph - current_tw_speed_kmph) / prev_tw_speed_kmph
-        dir_change = abs(cs.bound_to_180(current_tw_dir_deg - prev_tw_dir_deg))
+        speed_change_ratio = abs(previous_speed_kmph - current_speed_kmph) / previous_speed_kmph
+        dir_change = abs(cs.bound_to_180(current_dir_deg - previous_dir_deg))
 
         return (
             speed_change_ratio >= WIND_SPEED_CHANGE_THRESH_PROP

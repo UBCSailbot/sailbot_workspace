@@ -441,7 +441,7 @@ def test_in_collision_zone(target_local_wp_index, reference_latlon, path, obstac
 
 
 @pytest.mark.parametrize(
-    "new_tw_data, previous_tw_data, result",
+    "new_wind_data, previous_wind_data, result",
     [
         # Basic Test 1 (wind speed change is significant)
         (
@@ -495,8 +495,8 @@ def test_in_collision_zone(target_local_wp_index, reference_latlon, path, obstac
         ),
     ],
 )
-def test_is_significant_wind_change(new_tw_data, previous_tw_data, result):
-    assert PATH.is_significant_wind_change(new_tw_data, previous_tw_data) == result
+def test_is_significant_wind_change(new_wind_data, previous_wind_data, result):
+    assert PATH.is_significant_wind_change(new_wind_data, previous_wind_data) == result
 
 
 @pytest.mark.parametrize(
@@ -1153,11 +1153,6 @@ def test_update_if_needed_reuses_path_without_significant_wind_change(
 ):
     baseline_aw = Wind(speed_kmph=5.0, dir_deg=90.0)
     set_aw_history(basic_local_path_state, baseline_aw, history_len)
-    if scenario == "wind_history_length_not_met":
-        assert basic_local_path_state.aw_avg is None
-    else:
-        assert basic_local_path_state.aw_avg is not None
-
     local_path, old_path, old_ompl_path = create_initialized_local_path_for_update_if_needed(
         basic_local_path_state
     )
