@@ -43,6 +43,8 @@ class MutuallyExclusiveActionRoutine:
         )
         goal_handle.abort()
 
+        return self.__action_type.Result()  # return a blank result instead of None
+
     def __execute_action_routine(self, obj, func, *args, **kwargs):
         self.__set_active_flag(obj)
 
@@ -50,7 +52,7 @@ class MutuallyExclusiveActionRoutine:
             result = func(obj, *args, **kwargs)
         except RuntimeError:
             obj.get_logger().error(f"An unexpected error occurred in {func.__name__}")
-            result = None
+            return self.__action_type.Result()  # return a blank result instead of Non
 
         self.__unset_active_flag(obj)
         return result

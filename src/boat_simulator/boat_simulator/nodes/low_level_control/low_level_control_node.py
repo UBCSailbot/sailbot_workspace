@@ -6,12 +6,10 @@ from typing import Optional
 
 import rclpy
 import rclpy.utilities
-from custom_interfaces.action import SimRudderActuation, SimSailTrimTabActuation
 from custom_interfaces.action._sim_rudder_actuation import SimRudderActuation_Result
 from custom_interfaces.action._sim_sail_trim_tab_actuation import (
     SimSailTrimTabActuation_Result,
 )
-from custom_interfaces.msg import GPS
 from rclpy.action import ActionServer
 from rclpy.action.server import ServerGoalHandle
 from rclpy.executors import MultiThreadedExecutor
@@ -28,6 +26,8 @@ from boat_simulator.nodes.low_level_control.controller import (
 from boat_simulator.nodes.low_level_control.decorators import (
     MutuallyExclusiveActionRoutine,
 )
+from custom_interfaces.action import SimRudderActuation, SimSailTrimTabActuation
+from custom_interfaces.msg import GPS
 
 
 def main(args=None):
@@ -268,7 +268,6 @@ class LowLevelControlNode(Node):
                 + f"Desired rudder angle: {self.__rudder_controller.setpoint}"
             )
             feedback_msg = SimRudderActuation.Feedback()
-            self._is_rudder_action_active = True
             while not self.__rudder_controller.is_target_reached:
                 self.__rudder_controller.update_state()
                 i = self.__rudder_controller.current_control_ang
@@ -313,7 +312,6 @@ class LowLevelControlNode(Node):
             self.__sail_controller.reset_setpoint(desired_trim_tab_angle)
 
             feedback_msg = SimSailTrimTabActuation.Feedback()
-            self._is_sail_action_active = True
             while not self.__sail_controller.is_target_reached:
                 self.__sail_controller.update_state()
                 i = self.__sail_controller.current_control_ang
@@ -333,7 +331,7 @@ class LowLevelControlNode(Node):
         return result
 
     @property
-    def is_multithreading_enabled(self) -> bool:
+    def is_multithreading_enabled(self) -> bool:  # noqa
         return self.__is_multithreading_enabled
 
     @property
