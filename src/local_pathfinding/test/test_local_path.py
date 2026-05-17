@@ -178,6 +178,26 @@ def set_aw_history(state, wind, history_len):
             -90.0,
             2,
         ),
+        (
+            # Test: boat has reached waypoints[1], heading should be to waypoints[2].
+            Path(
+                waypoints=[
+                    HelperLatLon(latitude=0.0, longitude=0.2),
+                    HelperLatLon(latitude=0.0, longitude=0.1),
+                    HelperLatLon(latitude=0.0, longitude=0.0),
+                    HelperLatLon(latitude=0.0, longitude=-0.1),
+                    HelperLatLon(latitude=0.0, longitude=-0.2),
+                    HelperLatLon(latitude=0.0, longitude=-0.3),
+                    HelperLatLon(latitude=0.0, longitude=-0.4),
+                    HelperLatLon(latitude=0.0, longitude=-0.5),
+                    HelperLatLon(latitude=0.0, longitude=-0.6),
+                ]
+            ),
+            6,
+            HelperLatLon(latitude=0.0, longitude=-0.39999),
+            -90.0,
+            7,
+        ),
     ],
 )
 def test_calculate_desired_heading_and_waypoint_index(
