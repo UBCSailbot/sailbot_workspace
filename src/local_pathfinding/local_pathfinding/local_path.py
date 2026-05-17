@@ -431,7 +431,7 @@ class LocalPath:
 
             if not new_ompl_path.solved:
                 raise PathNotFoundError("Old Path must change and new path couldn't be solved" +
-                                        f"within {MAX_OMPL_PATH_GEN_TRIES}")
+                                        f" within {MAX_OMPL_PATH_GEN_TRIES}")
 
             self._logger.debug(f"Updating local path: {must_change_reason.reason}")
             self.state = new_state
