@@ -138,7 +138,7 @@ class Sailbot(Node):
 
         # Initialize mock land obstacle
         self.land_multi_polygon = None
-        if self.mode == "development":
+        if self.mode in ["development", "sim"]:
             self.test_plan = self.get_parameter("test_plan").get_parameter_value().string_value
             self.get_logger().info("test plan: " + self.test_plan)
             test_plan = TestPlan(self.test_plan)
@@ -179,6 +179,7 @@ class Sailbot(Node):
         desired_heading = self.get_desired_heading()
         msg = ci.DesiredHeading()
         msg.heading.heading = desired_heading
+        msg.sail = True
         if self.desired_heading is None or desired_heading != self.desired_heading.heading.heading:
             self.get_logger().info(f"Updating desired heading to: {msg.heading.heading:.2f}")
 
@@ -195,12 +196,12 @@ class Sailbot(Node):
     def publish_local_path_data(self):
         """
         Collect all navigation data and publish it in one message.
-        In development mode, all navigation data is published.
+        In developmen and sim mode, all navigation data is published.
         In production mode, only the local path is published, with all other data set to 0 or empty
 
         """
         # publish all navigation data when in dev mode
-        if self.mode == "development":
+        if self.mode in ["development", "sim"]:
             helper_obstacles = []
 
             for obst in self.local_path.state.obstacles:
