@@ -129,6 +129,7 @@ def set_aw_history(state, wind, history_len):
     "path, target_wp_index, boat_lat_lon, correct_heading, new_target_wp_index",
     [
         (
+            # Geodesic heading calculation can reject invalid coordinate inputs.
             Path(
                 waypoints=[
                     HelperLatLon(latitude=1.0, longitude=1.0),
@@ -240,6 +241,7 @@ def test_calculate_desired_heading_and_waypoint_index(
     "path, target_wp_index, boat_lat_lon, expected_exception",
     [
         (
+            # Target waypoint index starts before the first valid local waypoint.
             Path(
                 waypoints=[
                     HelperLatLon(latitude=0.0, longitude=0.2),
@@ -252,6 +254,7 @@ def test_calculate_desired_heading_and_waypoint_index(
             lp.PathNotFoundError,
         ),
         (
+            # Target waypoint index is past the final waypoint in the path.
             Path(
                 waypoints=[
                     HelperLatLon(latitude=0.0, longitude=0.2),
@@ -264,12 +267,14 @@ def test_calculate_desired_heading_and_waypoint_index(
             lp.PathNotFoundError,
         ),
         (
+            # No path is available to calculate a heading from.
             None,
             100,
             HelperLatLon(latitude=0.0, longitude=0.09999),
             lp.PathNotFoundError,
         ),
         (
+            # The final waypoint has been reached, so a new path is required.
             Path(
                 waypoints=[
                     HelperLatLon(latitude=0.0, longitude=0.1),
@@ -282,7 +287,7 @@ def test_calculate_desired_heading_and_waypoint_index(
         ),
     ],
 )
-def test_calculate_desired_heading_and_waypoint_index_exception(
+def test_calculate_desired_heading_and_waypoint_index_exceptions(
     path: Path,
     target_wp_index: int,
     boat_lat_lon: HelperLatLon,
@@ -1083,11 +1088,12 @@ def test_update_if_needed_raises_when_path_generation_exceeds_retries():
     assert ompl_path_cls.call_count == lp.MAX_OMPL_PATH_GEN_TRIES
 
 
-def test_update_if_needed_raises_when_new_state_inputs_are_invalid():
+def test_update_if_needed_raises_value_error_when_new_state_inputs_are_incomplete():
     mock_parent_logger = mock.Mock()
     mock_parent_logger.get_child.return_value = mock.Mock()
     local_path = lp.LocalPath(parent_logger=mock_parent_logger)
     inputs = create_update_if_needed_inputs()
+    # LocalPathState cannot be constructed with incomplete inputs.
     inputs.gps = None
 
     with pytest.raises(ValueError, match="gps must not be None"):
