@@ -6,16 +6,14 @@ import numpy as np
 from numpy.typing import ArrayLike
 from pyproj import Geod
 
-import boat_simulator.common.constants as Constants
-
 
 GEODESIC = Geod(ellps="WGS84")
 
 
 def local_position_to_gps_lat_lon(
     local_position_m: ArrayLike,
-    origin_latitude: float = Constants.SIM_GPS_ORIGIN_LATITUDE,
-    origin_longitude: float = Constants.SIM_GPS_ORIGIN_LONGITUDE,
+    origin_latitude: float,
+    origin_longitude: float,
 ) -> tuple[float, float]:
     """Convert simulator-local ENU meter offsets into decimal-degree latitude/longitude.
 
@@ -37,8 +35,6 @@ def local_position_to_gps_lat_lon(
         ValueError: If the local position or GPS origin is invalid.
     """
     local_position = _validate_local_position(local_position_m)
-    _validate_origin(origin_latitude, origin_longitude)
-
     east_m = float(local_position[0])
     north_m = float(local_position[1])
     distance_m = math.hypot(east_m, north_m)
@@ -84,23 +80,3 @@ def _validate_local_position(local_position_m: ArrayLike) -> np.ndarray:
         raise ValueError("Local position x/y values must be finite")
 
     return local_position
-
-
-def _validate_origin(origin_latitude: float, origin_longitude: float) -> None:
-    """Validate GPS origin latitude and longitude.
-
-    Args:
-        origin_latitude (float): GPS origin latitude in decimal degrees.
-        origin_longitude (float): GPS origin longitude in decimal degrees.
-
-    Raises:
-        ValueError: If either coordinate is non-finite or outside the decimal-degree GPS bounds.
-    """
-    if not np.isfinite([origin_latitude, origin_longitude]).all():
-        raise ValueError("GPS origin latitude/longitude must be finite")
-
-    if not -90.0 <= origin_latitude <= 90.0:
-        raise ValueError("GPS origin latitude must be in decimal degrees within [-90, 90]")
-
-    if not -180.0 <= origin_longitude <= 180.0:
-        raise ValueError("GPS origin longitude must be in decimal degrees within [-180, 180]")
