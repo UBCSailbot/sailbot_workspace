@@ -89,12 +89,15 @@ def get_navigate_node_description(context: LaunchContext) -> Node:
     """
     node_name = "navigate_main"
     mode = LaunchConfiguration("mode").perform(context)
-    ros_parameters = [
-        {"mode": mode},
-        LaunchConfiguration("config").perform(context),
-    ]
+    inline_params = {"mode": mode}
+
     if mode == "development":
-        ros_parameters[0].update({"test_plan": LaunchConfiguration("test_plan").perform(context)})
+        inline_params["test_plan"] = LaunchConfiguration("test_plan").perform(context)
+
+    ros_parameters = [
+        LaunchConfiguration("config").perform(context),
+        inline_params,
+    ]
 
     ros_arguments: List[SomeSubstitutionsType] = [
         "--log-level",
@@ -129,7 +132,7 @@ def get_mock_global_path_node_description(context: LaunchContext) -> Node:
     # the first entry is treated as a parameter file path.
     ros_parameters = [
         LaunchConfiguration("config").perform(context),
-        {"test_plan": test_plan},
+        {"test_plan:=": test_plan},
     ]
     ros_arguments: List[SomeSubstitutionsType] = [
         "--log-level",
