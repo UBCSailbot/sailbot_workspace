@@ -24,8 +24,7 @@ Update diagram by editing diagrams/src/external_interfaces.puml and the
 PlantUML Export Diagram command in VSCode
 --->
 
-<!-- markdownlint-disable-next-line MD013 -->
-![External Interface Diagram](https://github.com/UBCSailbot/sailbot_workspace/blob/main/src/custom_interfaces/diagrams/out/external_interfaces.png?raw=true)
+[External Interface Diagram](../../diagrams/src/custom_interfaces/external_interfaces.puml)
 
 ### Project-wide Internal Interfaces
 
