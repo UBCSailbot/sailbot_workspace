@@ -433,15 +433,13 @@ class OMPLPath:
                 if not state_is_valid:
                     # uncomment this if you want to log which states are being labeled invalid
                     # its commented out for now to avoid unnecessary file I/O
-
-                    # if isinstance(state, base.State):  # only happens in unit tests
-                    #     log_invalid_state(state=cs.XY(state().getX(), state().getY()), obstacle=o) # noqa
-                    # else:  # happens in prod
-                    #     log_invalid_state(state=cs.XY(state.getX(), state.getY()), obstacle=o)
-
                     # uncommented this line in accordance with the comment above for the upcoming
                     # on-water tests. #TODO: remove this before the final launch.
-                    log_invalid_state(state=cs.XY(state.getX(), state.getY()), obstacle=o)
+                    if isinstance(state, base.State):  # only happens in unit tests
+                        log_invalid_state(state=cs.XY(state().getX(), state().getY()), obstacle=o) # noqa
+                    else:  # happens in prod
+                        log_invalid_state(state=cs.XY(state.getX(), state.getY()), obstacle=o)
+
                     return False
 
         return True
