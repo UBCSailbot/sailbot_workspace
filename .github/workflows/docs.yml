@@ -97,6 +97,7 @@ jobs:
           docker compose -f .devcontainer/docker-compose.yml exec -T docs /bin/sh -c "\
             git config user.name ci-bot && \
             git config user.email ci-bot@example.com && \
+            git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} && \
             mike delete --push pr-${{ github.event.number }}"
 
       - name: "Deploy pr-${{ github.event.number }} version of the Docs"
@@ -111,7 +112,7 @@ jobs:
             mike deploy pr-${{ github.event.number }} && \
             git switch gh-pages && \
             git pull --no-rebase && \
-            git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/UBCSailbot/sailbot_workspace.git && \
+            git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} && \
             git push"
 
       - name: Deploy main version of the Docs
@@ -126,5 +127,5 @@ jobs:
             mike deploy --update-aliases main latest && \
             git switch gh-pages && \
             git pull --no-rebase && \
-            git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/UBCSailbot/sailbot_workspace.git && \
+            git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} && \
             git push"
