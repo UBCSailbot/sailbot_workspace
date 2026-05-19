@@ -423,7 +423,8 @@ class OMPLPath:
         if OMPLPath.obstacles:
 
             for o in OMPLPath.obstacles.values():
-                if isinstance(state, base.State):  # for testing purposes
+                if isinstance(state, base.State):
+                    # for testing purposes; the tests use state object
                     state_is_valid = o.is_valid(cs.XY(state().getX(), state().getY()))
 
                 else:  # when OMPL uses this function, it will pass in an SE2StateInternal object
@@ -437,6 +438,10 @@ class OMPLPath:
                     #     log_invalid_state(state=cs.XY(state().getX(), state().getY()), obstacle=o) # noqa
                     # else:  # happens in prod
                     #     log_invalid_state(state=cs.XY(state.getX(), state.getY()), obstacle=o)
+
+                    # uncommented this line in accordance with the comment above for the upcoming
+                    # on-water tests. #TODO: remove this before the final launch.
+                    log_invalid_state(state=cs.XY(state.getX(), state.getY()), obstacle=o)
                     return False
 
         return True
