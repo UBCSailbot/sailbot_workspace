@@ -4,13 +4,17 @@ import math
 from abc import abstractmethod
 from typing import Optional
 
-import custom_interfaces.msg as ci
 import numpy as np
+from rclpy.logging import get_logger
 from shapely import prepared
 from shapely.affinity import affine_transform
 from shapely.geometry import MultiPolygon, Point, Polygon
 
+import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
+
+# module logger
+_LOGGER = get_logger("local_pathfinding.obstacles")
 
 # Constants
 PROJ_DISTANCE_NO_COLLISION = 0.0
@@ -55,6 +59,12 @@ class Obstacle:
         Returns:
             bool: True if the point is not within the obstacle's collision zone, false otherwise.
         """
+        if self.collision_zone is None:
+            _LOGGER.warning(
+                f"collision_zone not initialized for obstacle {type(self)}; treating as invalid"
+            )
+            return False
+
         return not self.collision_zone.contains(Point(*point))
 
     @abstractmethod
@@ -143,6 +153,12 @@ class Land(Obstacle):
             prepared.prep(self.collision_zone)
             return
 
+        if state_space_latlon is None:
+            _LOGGER.error(
+                "state_space_latlon is None; cannot update Land.collision_zone; skipping update"
+            )
+            return
+
         latlon_polygons = self.all_land_data.intersection(state_space_latlon)
 
         if isinstance(latlon_polygons, MultiPolygon):
@@ -220,6 +236,12 @@ class Boat(Obstacle):
         """
         ais_ship = kwargs.get("ais_ship", None)
         if ais_ship is not None:
+            if ais_ship.id != self.ais_ship.id:
+                _LOGGER.error(
+                    "AIS ship id mismatch when updating collision zone: "
+                    f"expected {self.ais_ship.id} got {ais_ship.id}; skipping update"
+                )
+                return
             self.ais_ship = ais_ship
 
         projected_distance = self._calculate_projected_distance()

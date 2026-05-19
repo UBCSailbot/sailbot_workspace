@@ -3,6 +3,9 @@ from typing import Any
 
 import numpy as np
 import pytest
+from shapely.geometry import MultiPolygon, Point, Polygon, box
+
+import local_pathfinding.coord_systems as cs
 from custom_interfaces.msg import (
     HelperAISShip,
     HelperDimension,
@@ -11,9 +14,6 @@ from custom_interfaces.msg import (
     HelperROT,
     HelperSpeed,
 )
-from shapely.geometry import MultiPolygon, Point, Polygon, box
-
-import local_pathfinding.coord_systems as cs
 from local_pathfinding.obstacles import BOAT_BUFFER, Boat, Land, Obstacle
 
 
@@ -87,13 +87,15 @@ def test_create_land(
 
 
 def test_create_land_no_state_space():
-    with pytest.raises(ValueError):
-        Land(
-            reference=HelperLatLon(),
-            sailbot_position=HelperLatLon(),
-            all_land_data=LAND,
-            bbox_buffer_amount=0.1,
-        )
+    # Logs an error and leaves collision_zone uninitialized.
+    land = Land(
+        reference=HelperLatLon(),
+        sailbot_position=HelperLatLon(),
+        all_land_data=LAND,
+        bbox_buffer_amount=0.1,
+    )
+    assert isinstance(land, Land)
+    assert land.collision_zone is None
 
 
 # Test is_valid
@@ -494,9 +496,13 @@ def test_create_collision_zone_id_mismatch_boat(
     sailbot_speed: float,
 ):
     boat1 = Boat(reference_point, sailbot_position, sailbot_speed, ais_ship_1)
+    original_collision_zone = boat1.collision_zone
 
-    with pytest.raises(ValueError):
-        boat1.update_collision_zone(ais_ship=ais_ship_2)
+    # Should log an error and not update the collision zone
+    boat1.update_collision_zone(ais_ship=ais_ship_2)
+
+    # Verify that the collision zone was not updated due to ID mismatch
+    assert boat1.collision_zone == original_collision_zone
 
 
 # Test is_valid
@@ -539,7 +545,7 @@ def test_is_valid_boat(
     assert boat1.is_valid(valid_point)
 
 
-# Test is_valid raises error when collision zone has not been set
+# Test is_valid returns False when collision zone has not been set
 @pytest.mark.parametrize(
     "reference_point,sailbot_position,invalid_point,valid_point",
     [
@@ -564,10 +570,8 @@ def test_is_valid_no_collision_zone_boat(
     valid_point: cs.XY,
 ):
     obstacle = Obstacle(reference_point, sailbot_position)  # type: ignore
-    with pytest.raises(RuntimeError):
-        obstacle.is_valid(invalid_point)
-    with pytest.raises(RuntimeError):
-        obstacle.is_valid(valid_point)
+    assert not obstacle.is_valid(invalid_point)
+    assert not obstacle.is_valid(valid_point)
 
 
 # Test updating Sailbot data
