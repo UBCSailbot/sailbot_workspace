@@ -57,7 +57,8 @@ class Obstacle:
             point (ci.HelperLatLon): Point representing the state point to be checked.
 
         Returns:
-            bool: True if the point is not within the obstacle's collision zone, false otherwise.
+            bool: If the collision zone has not yet been initialized defaults to False.
+                True if the point is not within the obstacle's collision zone, false otherwise.
         """
         if self.collision_zone is None:
             _LOGGER.warning(
@@ -138,7 +139,8 @@ class Land(Obstacle):
     def update_collision_zone(self, **kwargs) -> None:
         """
         Updates the Land object's collision zone with a MultiPolygon representing
-        all land obstacles within either a specified or default state space.
+        all land obstacles within either a specified or default state space. If state_space_latlon
+        is not provided, the operation will not be completed.
 
         Args:
             state_space_latlon (Polygon): A custom state space.
