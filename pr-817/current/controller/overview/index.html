@@ -2905,38 +2905,62 @@
 Its README has been copied below.</p>
 </div>
 <h1 id="controller">Controller<a class="headerlink" href="#controller" title="Permanent link">&para;</a></h1>
-<p>UBC Sailbot's controller for the <strong>Polaris</strong> project. This ROS 2 package computes and publishes trim tab commands for the wingsail based on wind sensor data and desired heading. It is intended for handoff to future engineering students; this README explains the source code, configuration, and how to run and test the package.</p>
+<p>UBC Sailbot's controller for the <strong>Polaris</strong> project. This ROS 2 package
+computes and publishes trim tab commands for the wingsail based on wind sensor
+data and desired heading. It is intended for handoff to future engineering
+students; this README explains the source code, configuration, and how to run
+and test the package.</p>
 <hr />
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p>The controller is part of the UBC Sailbot design club's Polaris autonomous sailboat software. It:</p>
+<p>The controller is part of the UBC Sailbot design club's Polaris autonomous
+sailboat software. It:</p>
 <ul>
-<li>Subscribes to <strong>filtered wind</strong> (speed and direction), <strong>GPS</strong>, and <strong>desired heading</strong> (from pathfinding/navigation).</li>
-<li>Converts apparent wind speed and direction into a <strong>trim tab angle</strong> for the wingsail using a Reynolds-number–based lookup table and scaling logic.</li>
-<li>Publishes <strong>sail commands</strong> (trim tab angle in degrees) at a configurable period.</li>
+<li>Subscribes to <strong>filtered wind</strong> (speed and direction), <strong>GPS</strong>, and
+  <strong>desired heading</strong> (from pathfinding/navigation).</li>
+<li>Converts apparent wind speed and direction into a <strong>trim tab angle</strong> for the
+  wingsail using a Reynolds-number–based lookup table and scaling logic.</li>
+<li>Publishes <strong>sail commands</strong> (trim tab angle in degrees) at a configurable
+  period.</li>
 </ul>
-<p>The wingsail controller’s goal is to keep the wingsail at a desired angle of attack while favoring speed by maximizing lift-to-drag, and to reduce or zero out trim when wind is high or when the system should not sail (e.g. no path found).</p>
+<p>The wingsail controller’s goal is to keep the wingsail at a desired angle of
+attack while favoring speed by maximizing lift-to-drag, and to reduce or zero
+out trim when wind is high or when the system should not sail (e.g. no path
+found).</p>
 <hr />
 <h2 id="specifications">Specifications<a class="headerlink" href="#specifications" title="Permanent link">&para;</a></h2>
 <ul>
 <li>
-<p><strong>Wind → trim tab:</strong> Takes apparent wind speed and direction and converts them to trim tab angle (degrees) using:</p>
+<p><strong>Wind → trim tab:</strong> Takes apparent wind speed and direction and converts
+  them to trim tab angle (degrees) using:</p>
 <ul>
 <li>Reynolds number from wind speed and sail chord.</li>
-<li>A lookup table (Reynolds number → angle of attack) with linear interpolation.</li>
-<li>Sign of the trim tab angle follows apparent wind direction (convention: 0° bow-to-stern, angle increasing clockwise; trim tab range typically ±40°).</li>
+<li>A lookup table (Reynolds number → angle of attack) with linear
+  interpolation.</li>
+<li>Sign of the trim tab angle follows apparent wind direction (convention:
+  0° bow-to-stern, angle increasing clockwise; trim tab range typically
+  ±40°).</li>
 </ul>
 </li>
 <li>
-<p><strong>Wind scaling (mast protection):</strong> If apparent wind speed is between a <strong>lower</strong> and <strong>upper</strong> threshold (parameters in <code>globals.yaml</code>), the trim tab is scaled down linearly (1 at lower threshold, 0 at upper). Above the upper threshold, trim tab is forced to 0 to avoid damaging the mast in high wind.</p>
+<p><strong>Wind scaling (mast protection):</strong> If apparent wind speed is between a
+  <strong>lower</strong> and <strong>upper</strong> threshold (parameters in <code>globals.yaml</code>), the trim
+  tab is scaled down linearly (1 at lower threshold, 0 at upper). Above the
+  upper threshold, trim tab is forced to 0 to avoid damaging the mast in high
+  wind.</p>
 </li>
 <li>
-<p><strong>Stop sailing when no path:</strong> When pathfinding cannot find a path, the navigation stack sets the desired heading’s <code>sail</code> flag to <code>false</code>. The controller subscribes to <code>desired_heading</code> and, when <code>sail</code> is false, publishes trim tab angle 0 and does not drive the boat.</p>
+<p><strong>Stop sailing when no path:</strong> When pathfinding cannot find a path, the
+  navigation stack sets the desired heading’s <code>sail</code> flag to <code>false</code>. The
+  controller subscribes to <code>desired_heading</code> and, when <code>sail</code> is false,
+  publishes trim tab angle 0 and does not drive the boat.</p>
 </li>
 <li>
-<p><strong>Minimum wind speed threshold:</strong> A minimum wind speed threshold for controller activation is planned but <strong>not yet implemented</strong> (to be added).</p>
+<p><strong>Minimum wind speed threshold:</strong> A minimum wind speed threshold for
+  controller activation is planned but <strong>not yet implemented</strong> (to be added).</p>
 </li>
 <li>
-<p><strong>Design reference:</strong> Preliminary design documents: <a href="https://ubcsailbot.atlassian.net/wiki/x/fABxag">Polaris design (Confluence)</a>.</p>
+<p><strong>Design reference:</strong> Preliminary design documents:
+  <a href="https://ubcsailbot.atlassian.net/wiki/x/fABxag">Polaris design (Confluence)</a>.</p>
 </li>
 </ul>
 <hr />
@@ -2969,6 +2993,7 @@ Its README has been copied below.</p>
 <p>(<code>__pycache__</code> and other build/install artifacts are ignored.)</p>
 <hr />
 <h2 id="explanation-of-each-file">Explanation of each file<a class="headerlink" href="#explanation-of-each-file" title="Permanent link">&para;</a></h2>
+<!-- markdownlint-disable MD013 -->
 <table>
 <thead>
 <tr>
@@ -3015,11 +3040,17 @@ Its README has been copied below.</p>
 </tr>
 </tbody>
 </table>
+<!-- markdownlint-enable MD013 -->
+
 <hr />
 <h2 id="configuration-parameters-globalsyaml-global_launch">Configuration parameters (globals.yaml / global_launch)<a class="headerlink" href="#configuration-parameters-globalsyaml-global_launch" title="Permanent link">&para;</a></h2>
-<p>The controller node is launched with a config file path that defaults to the <strong>global_launch</strong> config. That file is:</p>
+<p>The controller node is launched with a config file path that defaults to the
+<strong>global_launch</strong> config. That file is:</p>
 <p><code>src/global_launch/config/globals.yaml</code></p>
-<p>The <strong>controller</strong>-relevant parameters are under the <code>wingsail_ctrl_node</code> namespace. The launch file passes the path via the <code>config</code> launch argument (see <code>global_launch</code>’s <code>GLOBAL_LAUNCH_ARGUMENTS</code>).</p>
+<p>The <strong>controller</strong>-relevant parameters are under the <code>wingsail_ctrl_node</code>
+namespace. The launch file passes the path via the <code>config</code> launch argument
+(see <code>global_launch</code>’s <code>GLOBAL_LAUNCH_ARGUMENTS</code>).</p>
+<!-- markdownlint-disable MD013 -->
 <table>
 <thead>
 <tr>
@@ -3050,10 +3081,13 @@ Its README has been copied below.</p>
 </tr>
 </tbody>
 </table>
+<!-- markdownlint-enable MD013 -->
+
 <p>Full parameter descriptions and conventions are in:
 <code>src/global_launch/config/README.md</code>.</p>
 <hr />
 <h2 id="publishers-and-subscriptions">Publishers and subscriptions<a class="headerlink" href="#publishers-and-subscriptions" title="Permanent link">&para;</a></h2>
+<!-- markdownlint-disable MD013 -->
 <table>
 <thead>
 <tr>
@@ -3090,11 +3124,17 @@ Its README has been copied below.</p>
 </tr>
 </tbody>
 </table>
+<!-- markdownlint-enable MD013 -->
+
 <p>All use QoS profile 1 (reliable, keep last 1).</p>
 <hr />
 <h2 id="testing">Testing<a class="headerlink" href="#testing" title="Permanent link">&para;</a></h2>
+<!-- markdownlint-disable-next-line MD013 -->
 <ul>
 <li><strong>Dry land testing:</strong> <a href="https://ubcsailbot.atlassian.net/wiki/x/EYCRq">Dry land testing (Confluence)</a></li>
+</ul>
+<!-- markdownlint-disable-next-line MD013 -->
+<ul>
 <li><strong>In water testing:</strong> <a href="https://ubcsailbot.atlassian.net/wiki/x/LwA8qg">In water testing (Confluence)</a></li>
 </ul>
 <hr />
@@ -3104,43 +3144,62 @@ Its README has been copied below.</p>
 </code></pre></div>
 <p>Optional arguments (from global_launch) include:</p>
 <ul>
-<li><strong>config</strong> – Path to the ROS parameter YAML (default: <code>global_launch</code>’s <code>globals.yaml</code>).</li>
-<li><strong>log_level</strong> – Logger level: <code>debug</code>, <code>info</code>, <code>warn</code>, <code>error</code>, <code>fatal</code> (default: <code>info</code>).</li>
+<li><strong>config</strong> – Path to the ROS parameter YAML (default: <code>global_launch</code>’s
+  <code>globals.yaml</code>).</li>
+<li><strong>log_level</strong> – Logger level: <code>debug</code>, <code>info</code>, <code>warn</code>, <code>error</code>, <code>fatal</code>
+  (default: <code>info</code>).</li>
 </ul>
 <p>Example with custom config and debug logging:</p>
+<!-- markdownlint-disable MD013 -->
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>ros2<span class="w"> </span>launch<span class="w"> </span>controller<span class="w"> </span>main_launch.py<span class="w"> </span>config:<span class="o">=</span>/path/to/globals.yaml<span class="w"> </span>log_level:<span class="o">=</span>debug
 </code></pre></div>
+<!-- markdownlint-enable MD013 -->
+
 <p>To see all options:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>ros2<span class="w"> </span>launch<span class="w"> </span>controller<span class="w"> </span>main_launch.py<span class="w"> </span>-s
 </code></pre></div>
 <hr />
 <h2 id="how-to-run-unit-tests">How to run unit tests<a class="headerlink" href="#how-to-run-unit-tests" title="Permanent link">&para;</a></h2>
-<p>From the <strong>controller</strong> package directory (or workspace root with the package in the path):</p>
+<p>From the <strong>controller</strong> package directory (or workspace root with the package
+in the path):</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>pytest<span class="w"> </span>src/controller/tests/unit<span class="w"> </span>-v
 </code></pre></div>
 <p>Or, from the workspace root, using the workspace test flow:</p>
 <ul>
-<li>Run the <strong>test</strong> task in the Sailbot Workspace (e.g. via VS Code Command Palette).</li>
-<li>Or use the workspace test script if available (e.g. <code>scripts/test.sh</code>), which runs all packages’ tests including the controller.</li>
+<li>Run the <strong>test</strong> task in the Sailbot Workspace (e.g. via VS Code Command
+  Palette).</li>
+<li>Or use the workspace test script if available (e.g. <code>scripts/test.sh</code>),
+  which runs all packages’ tests including the controller.</li>
 </ul>
 <p>Unit tests live under <code>tests/unit/wingsail/</code> (controllers and LUT).</p>
 <hr />
 <h2 id="integration-tests">Integration tests<a class="headerlink" href="#integration-tests" title="Permanent link">&para;</a></h2>
-<p><strong>TBD.</strong> Integration tests for the controller have not been implemented yet. When they are, this section will be updated with how to run them (e.g. via the <code>integration_tests</code> package and testplans).</p>
+<p><strong>TBD.</strong> Integration tests for the controller have not been implemented yet.
+When they are, this section will be updated with how to run them (e.g. via the
+<code>integration_tests</code> package and testplans).</p>
 <hr />
 <h2 id="remaining-work">Remaining work<a class="headerlink" href="#remaining-work" title="Permanent link">&para;</a></h2>
 <p>Summary of remaining tests and implementation tasks:</p>
 <ol>
 <li>
-<p><strong>Implement min wind speed logic</strong> — Add a minimum apparent wind speed threshold so the controller only activates (publishes non-zero trim tab) when wind is above this value; parameterize via <code>globals.yaml</code> and use it in the wingsail node before computing/publishing trim tab.</p>
+<p><strong>Implement min wind speed logic</strong> — Add a minimum apparent wind speed
+   threshold so the controller only activates (publishes non-zero trim tab)
+   when wind is above this value; parameterize via <code>globals.yaml</code> and use it
+   in the wingsail node before computing/publishing trim tab.</p>
 </li>
 <li>
-<p><strong>Implement integration tests</strong> — Add controller integration tests (e.g. under the <code>integration_tests</code> package with a dedicated testplan) to verify the node with other components (wind, pathfinding, sail actuation) in a single run.</p>
+<p><strong>Implement integration tests</strong> — Add controller integration tests (e.g.
+   under the <code>integration_tests</code> package with a dedicated testplan) to verify
+   the node with other components (wind, pathfinding, sail actuation) in a
+   single run.</p>
 </li>
 <li>
-<p><strong>In water testing</strong> — Execute and document in-water validation of the controller using the procedures in <a href="https://ubcsailbot.atlassian.net/wiki/x/LwA8qg">In water testing (Confluence)</a>.</p>
+<p><strong>In water testing</strong> — Execute and document in-water validation of the
+   controller using the procedures in
+   <!-- markdownlint-disable-next-line MD013 --></p>
 </li>
 </ol>
+<p><a href="https://ubcsailbot.atlassian.net/wiki/x/LwA8qg">In water testing (Confluence)</a>.</p>
 
 
 

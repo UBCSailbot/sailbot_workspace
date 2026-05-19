@@ -2765,7 +2765,8 @@ Its README has been copied below.</p>
 <h1 id="deployment">Deployment<a class="headerlink" href="#deployment" title="Permanent link">&para;</a></h1>
 <p>Deploying our software to our autonomous sailboat's main computer.</p>
 <h2 id="deployment-on-the-raspberrypi-and-the-remote-server-digital-ocean-droplet">Deployment on the RaspberryPi and the Remote Server (Digital Ocean Droplet)<a class="headerlink" href="#deployment-on-the-raspberrypi-and-the-remote-server-digital-ocean-droplet" title="Permanent link">&para;</a></h2>
-<p>Comment out the website's docker compose file in the <code>devcontainer.json</code> to prevent the database from running.</p>
+<p>Comment out the website's docker compose file in the <code>devcontainer.json</code> to
+prevent the database from running.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>    &quot;dockerComposeFile&quot;: [
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>        &quot;docker-compose.yml&quot;,
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>        // &quot;website/docker-compose.website.yml&quot;, // website &lt;- COMMENT OUT
@@ -2774,7 +2775,8 @@ Its README has been copied below.</p>
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>        // &quot;docs/docker-compose.docs.yml&quot;, // docs
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    ],
 </code></pre></div>
-<p>Comment out the following extensions to prevent the raspberryPi from throttling in <code>devcontainer.json</code> as shown below.</p>
+<p>Comment out the following extensions to prevent the raspberryPi from
+throttling in <code>devcontainer.json</code> as shown below.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>            &quot;extensions&quot;: [
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>                // Comment out the extensions when on the RPI
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>                // // template repo
@@ -2824,21 +2826,24 @@ Its README has been copied below.</p>
 </code></pre></div>
 <h2 id="scripts">Scripts<a class="headerlink" href="#scripts" title="Permanent link">&para;</a></h2>
 <h3 id="setup_bootsh"><code>setup_boot.sh</code><a class="headerlink" href="#setup_bootsh" title="Permanent link">&para;</a></h3>
-<p>Configures programs and scripts that need to run when the main computer boots. Only needs to be run once unless the
-script is updated. Does not need to be rerun if any scripts or programs it targets are updated, with the exception of
-renaming or moving the file.</p>
+<p>Configures programs and scripts that need to run when the main computer
+boots. Only needs to be run once unless the script is updated. Does not need
+to be rerun if any scripts or programs it targets are updated, with the
+exception of renaming or moving the file.</p>
 <p>Usage:</p>
 <ul>
 <li>Must be run as root: <code>sudo ./setup_boot.sh</code></li>
 </ul>
 <h3 id="start_containerssh"><code>start_containers.sh</code><a class="headerlink" href="#start_containerssh" title="Permanent link">&para;</a></h3>
 <p>Runs our Docker Compose files. You may have to install commands like <code>wget</code>.
-Would recommend running this script in its own clone of sailbot_workspace (not the one you open in VS Code).</p>
+Would recommend running this script in its own clone of sailbot_workspace
+(not the one you open in VS Code).</p>
 <p>Usage:</p>
 <ul>
 <li>Runs the global launch file by default: <code>./start_containers.sh</code></li>
 <li>Add the <code>--website</code> argument to additionally run the website container</li>
-<li>Add the <code>--interactive</code> argument to manually run commands in the sailbot workspace container</li>
+<li>Add the <code>--interactive</code> argument to manually run commands in the sailbot
+  workspace container</li>
 <li>Add the <code>--help</code> argument to see all available arguments</li>
 </ul>
 

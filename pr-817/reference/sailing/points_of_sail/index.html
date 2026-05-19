@@ -2748,34 +2748,49 @@
 
 
 <h1 id="points-of-sail">Points of Sail<a class="headerlink" href="#points-of-sail" title="Permanent link">&para;</a></h1>
-<p>In sailing, we sometimes talk about different angles that we can sail on with respect to the wind.
-Ranges of angles which are close together have special names. These ranges are called <em>points of sail</em>.
-The discussion below coveres the most important points of sail for software members to understand.</p>
-<p>Notice how for <em>higher</em> points of sail (points of sail closer to straight into the wind), the sail is pulled tightly
-in to the boat. If the boat is on a <em>lower</em> point of sail, the sails should be let further out of the boat. For any
-point of sail, there is an optimum angle that the sail should be adjusted to. If the sails are adjusted too far in
-or too far out, the boat will not go as fast as it could if the sails were adjusted correctly.</p>
+<p>In sailing, we sometimes talk about different angles that we can sail on with
+respect to the wind. Ranges of angles which are close together have special
+names. These ranges are called <em>points of sail</em>.
+The discussion below coveres the most important points of sail for software
+members to understand.</p>
+<p>Notice how for <em>higher</em> points of sail (points of sail closer to straight into
+the wind), the sail is pulled tightly in to the boat. If the boat is on a
+<em>lower</em> point of sail, the sails should be let further out of the boat. For
+any point of sail, there is an optimum angle that the sail should be adjusted
+to. If the sails are adjusted too far in or too far out, the boat will not go
+as fast as it could if the sails were adjusted correctly.</p>
 <p><img alt="image" src="../../../assets/images/sailing/points_of_sail.jpg" /></p>
 <h2 id="irons">Irons<a class="headerlink" href="#irons" title="Permanent link">&para;</a></h2>
-<p>The range of angles where the boat is roughly pointing straight into the wind are called <strong><em>Irons</em></strong>, or the
-<strong><em>No-Go Zone</em></strong>. Our implemented <strong><em>No-Go Zone</em></strong> is when the difference between the boat heading and true wind
-direction is within 45 degrees on either side. In WindObjective, this zone has a cost of 1 in the range of [0,1].</p>
-<p>If the boat is pointing in these directions, the sails will be flapping regardless of how the sheets are adjusted.
-When the sails are flapping, they are not catching the wind in a way that can propell the boat forwards.
-When the boat looses propulsion, water stops flowing over the rudder, and the boat loses steering.
+<p>The range of angles where the boat is roughly pointing straight into the wind
+are called <strong><em>Irons</em></strong>, or the <strong><em>No-Go Zone</em></strong>. Our implemented <strong><em>No-Go
+Zone</em></strong> is when the difference between the boat heading and true wind
+direction is within 45 degrees on either side. In WindObjective, this zone has
+a cost of 1 in the range of [0,1].</p>
+<p>If the boat is pointing in these directions, the sails will be flapping
+regardless of how the sheets are adjusted.
+When the sails are flapping, they are not catching the wind in a way that can
+propell the boat forwards.
+When the boat looses propulsion, water stops flowing over the rudder, and the
+boat loses steering.
 This is why we want our sailbots to avoid being stuck in irons.</p>
 <h2 id="upwind-sailing">Upwind Sailing<a class="headerlink" href="#upwind-sailing" title="Permanent link">&para;</a></h2>
-<p>If we want to sail to a destination that is not on too high or low of an angle upwind or downwind from our starting
-position, we can just point our boat in that direction, adjust our sails, and go there.</p>
-<p>However, sometimes we want to sail to a destination that is straight upwind of our starting position.
+<p>If we want to sail to a destination that is not on too high or low of an angle
+upwind or downwind from our starting position, we can just point our boat in
+that direction, adjust our sails, and go there.</p>
+<p>However, sometimes we want to sail to a destination that is straight upwind of
+our starting position.
 To get there, we will need to do upwind sailing.
-Since we can't point our boat directly into the wind, we need to sail on an angle on the edge of irons.
-We will need to tack back and forth every now and then if we want to go directly upwind.
+Since we can't point our boat directly into the wind, we need to sail on an
+angle on the edge of irons.
+We will need to tack back and forth every now and then if we want to go
+directly upwind.
 The point of sail on the edge of Irons is called <strong><em>Close Hauled</em></strong>.</p>
 <h2 id="downwind-sailing">Downwind Sailing<a class="headerlink" href="#downwind-sailing" title="Permanent link">&para;</a></h2>
-<p>Raye also avoids sailing straight downwind. This means that to reach a goal downwind of the starting position,
-we need to gybe back and forth in a zig-zag pattern. The point of sail straight
-downwind is called a <em>run</em>, and the next point of sail higher than a <em>run</em> is called a <em>broad reach</em>.</p>
+<p>Raye also avoids sailing straight downwind. This means that to reach a goal
+downwind of the starting position, we need to gybe back and forth in a zig-zag
+pattern. The point of sail straight
+downwind is called a <em>run</em>, and the next point of sail higher than a <em>run</em> is
+called a <em>broad reach</em>.</p>
 <p><img alt="image" src="../../../assets/images/sailing/upwind_downwind_sailing.jpg" /></p>
 <h2 id="keywords-on-this-page">Keywords on this Page<a class="headerlink" href="#keywords-on-this-page" title="Permanent link">&para;</a></h2>
 <ul>

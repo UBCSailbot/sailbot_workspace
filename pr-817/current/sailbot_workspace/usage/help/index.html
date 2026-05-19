@@ -2825,32 +2825,47 @@
 
 <h1 id="help">Help<a class="headerlink" href="#help" title="Permanent link">&para;</a></h1>
 <h2 id="performance-issues">Performance Issues<a class="headerlink" href="#performance-issues" title="Permanent link">&para;</a></h2>
-<p>If you are not satisfied with the performance of Sailbot Workspace, here are some things you can try:</p>
+<p>If you are not satisfied with the performance of Sailbot Workspace, here are
+some things you can try:</p>
 <ul>
 <li>Free up memory: close programs that you aren't using</li>
-<li>Free up disk space: permanently delete large programs and files that you don't need anymore</li>
+<li>Free up disk space: permanently delete large programs and files that you
+  don't need anymore</li>
 <li>Run Sailbot Workspace in a GitHub Codespace<ul>
-<li>In a codespace with 8GB of RAM, building all packages from scratch with the <code>-q</code> argument takes about a minute.
-If your computer takes longer than, or you want to free up memory and disk space, you can
+<li>In a codespace with 8GB of RAM, building all packages from scratch with
+the <code>-q</code> argument takes about a minute.
+If your computer takes longer than, or you want to free up memory and
+disk space, you can
+<!-- markdownlint-disable-next-line MD013 -->
 <a href="../setup/#setup-sailbot-workspace-in-a-github-codespace" target="_blank">setup Sailbot Workspace in a GitHub Codespace</a></li>
 </ul>
 </li>
-<li>If you are running Sailbot Workspace on Windows, dual boot Ubuntu and run Sailbot Workspace there<ul>
-<li>Sailbot Workspace performs worse on Windows than bare metal Linux because it uses Docker, which is not natively supported.</li>
-<li>Here is a guide to dual boot the operating systems we recommend: <a href="https://www.linuxtechi.com/dual-boot-ubuntu-22-04-and-windows-11/" target="_blank">How to Dual Boot Ubuntu 22.04 LTS and Windows 11</a><ul>
-<li>We recommend allocating at least 50 GB to Ubuntu to leave some wiggle room for Docker</li>
+<li>If you are running Sailbot Workspace on Windows, dual boot Ubuntu and run
+  Sailbot Workspace there<ul>
+<li>Sailbot Workspace performs worse on Windows than bare metal Linux
+because it uses Docker, which is not natively supported.</li>
+<li>Here is a guide to dual boot the operating systems we recommend:
+<!-- markdownlint-disable-next-line MD013 -->
+<a href="https://www.linuxtechi.com/dual-boot-ubuntu-22-04-and-windows-11/" target="_blank">How to Dual Boot Ubuntu 22.04 LTS and Windows 11</a><ul>
+<li>We recommend allocating at least 50 GB to Ubuntu to leave some
+  wiggle room for Docker</li>
 <li>The process is similar for other Ubuntu and Windows versions,
-  but feel free to search for a guide specific to the combination you want to dual boot</li>
-<li>Since Sailbot Workspace uses Docker, it should be able to run on any Linux distribution, not just Ubuntu.
-  However, we may not be able to provide support if you encounter any difficulties with this</li>
+  but feel free to search for a guide specific to the combination you
+  want to dual boot</li>
+<li>Since Sailbot Workspace uses Docker, it should be able to run on
+  any Linux distribution, not just Ubuntu.
+  However, we may not be able to provide support if you encounter
+  any difficulties with this</li>
 </ul>
 </li>
 </ul>
 </li>
 </ul>
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
-<p>If you are having some trouble running our software, here are some things you can try:</p>
+<p>If you are having some trouble running our software, here are some things you
+can try:</p>
 <h3 id="sailbot-workspace-troubleshooting">Sailbot Workspace Troubleshooting<a class="headerlink" href="#sailbot-workspace-troubleshooting" title="Permanent link">&para;</a></h3>
+<!-- markdownlint-disable-next-line MD013 -->
 <ul>
 <li><a href="../workflow/#2-update-sailbot-workspace" target="_blank">Update Sailbot Workspace</a></li>
 <li>Run the <code>setup</code> task to update package dependencies</li>
@@ -2863,17 +2878,22 @@ If your computer takes longer than, or you want to free up memory and disk space
 </ul>
 <h3 id="vs-code-troubleshooting">VS Code Troubleshooting<a class="headerlink" href="#vs-code-troubleshooting" title="Permanent link">&para;</a></h3>
 <ul>
-<li>Rebuild the Dev Container: run the <code>Dev Containers: Rebuild Container</code> VS Code command</li>
+<li>Rebuild the Dev Container: run the <code>Dev Containers: Rebuild Container</code> VS
+  Code command</li>
 <li>Reload VS Code: run the <code>Developer: Reload Window</code> VS Code command</li>
-<li>Identify broken extension: run the <code>Help: Start Extension Bisect</code> VS Code command<ul>
-<li>Once you have identified a broken extension, you can <a href="https://stackoverflow.com/a/53755378" target="_blank">install a previous version</a>
+<li>Identify broken extension: run the <code>Help: Start Extension Bisect</code> VS Code
+  command<ul>
+<li>Once you have identified a broken extension, you can
+  <!-- markdownlint-disable-next-line MD013 -->
+  <a href="https://stackoverflow.com/a/53755378" target="_blank">install a previous version</a>
   until the issue is fixed in a new release</li>
 </ul>
 </li>
 </ul>
 <h3 id="system-troubleshooting">System Troubleshooting<a class="headerlink" href="#system-troubleshooting" title="Permanent link">&para;</a></h3>
 <ul>
-<li>Restart WSL: close Sailbot Workspace and Docker Desktop then run <code>wsl --shutdown</code> in PowerShell</li>
+<li>Restart WSL: close Sailbot Workspace and Docker Desktop then run
+  <code>wsl --shutdown</code> in PowerShell</li>
 <li>Restart computer</li>
 </ul>
 <h3 id="docker-troubleshooting">Docker Troubleshooting<a class="headerlink" href="#docker-troubleshooting" title="Permanent link">&para;</a></h3>
@@ -2882,26 +2902,41 @@ If your computer takes longer than, or you want to free up memory and disk space
 <p>Delete Docker files</p>
 <details class="tip">
 <summary>Running Docker CLI commands on Windows</summary>
-<p>On Windows, Docker CLI commands should be run in the Ubuntu terminal while Docker Desktop is running.</p>
+<p>On Windows, Docker CLI commands should be run in the Ubuntu terminal
+while Docker Desktop is running.</p>
 </details>
 <ul>
-<li>Run <code>docker system prune</code> to remove all unused containers, networks, and dangling and unreferenced images<ul>
-<li>Add <code>--all</code> to additionally remove unused images (don't have a container associated with them)</li>
-<li>Add <code>--volumes</code> to additionally remove volumes (makes Bash history and ROS logs persist across containers)</li>
+<li>Run <code>docker system prune</code> to remove all unused containers, networks,
+  and dangling and unreferenced images<ul>
+<li>Add <code>--all</code> to additionally remove unused images (don't have a
+  container associated with them)</li>
+<li>Add <code>--volumes</code> to additionally remove volumes (makes Bash history
+  and ROS logs persist across containers)</li>
 </ul>
 </li>
 <li>Run <code>docker rmi -f $(docker images -aq)</code> to remove all images</li>
-<li><a href="https://stackoverflow.com/a/77224786" target="_blank">Install a previous version of Docker Desktop</a></li>
 </ul>
 </li>
 </ul>
+<!-- markdownlint-disable-next-line MD013 -->
+<ul>
+<li><a href="https://stackoverflow.com/a/77224786" target="_blank">Install a previous version of Docker Desktop</a></li>
+</ul>
 <h2 id="shrink-wsl-distributions-size">Shrink WSL Distributions' Size<a class="headerlink" href="#shrink-wsl-distributions-size" title="Permanent link">&para;</a></h2>
-<p>After using Docker and Ubuntu for a while, you may notice that the vdisks are very large. As of May 2024,
-they are located at <code>C:\Users\&lt;user&gt;\AppData\Local\Docker\wsl\data\ext4.vhdx</code> and <code>C:\Users\&lt;user&gt;\AppData\Local\Packages\CanonicalGroupLimited.Ubuntu_79rhkp1fndgsc\LocalState\ext4.vhdx</code>,
+<p>After using Docker and Ubuntu for a while, you may notice that the vdisks are
+very large. As of May 2024,
+they are located at <code>C:\Users\&lt;user&gt;\AppData\Local\Docker\wsl\data\ext4.vhdx</code>
+and</p>
+<!-- markdownlint-disable-next-line MD013 -->
+<p><code>C:\Users\&lt;user&gt;\AppData\Local\Packages\CanonicalGroupLimited.Ubuntu_79rhkp1fndgsc\LocalState\ext4.vhdx</code>,
 respectively.</p>
-<p>The problem is that these vdisks can automatically grow but not shrink, so if you download
-large files (like Docker images) and delete them once they're not needed the space is not freed.
-You can shrink vdisk using <a href="https://github.com/microsoft/WSL/issues/4699#issuecomment-627133168" target="_blank">these commands</a>.</p>
+<p>The problem is that these vdisks can automatically grow but not shrink, so if
+you download
+large files (like Docker images) and delete them once they're not needed the
+space is not freed.
+You can shrink vdisk using</p>
+<!-- markdownlint-disable-next-line MD013 -->
+<p><a href="https://github.com/microsoft/WSL/issues/4699#issuecomment-627133168" target="_blank">these commands</a>.</p>
 
 
 

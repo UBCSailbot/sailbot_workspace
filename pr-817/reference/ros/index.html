@@ -2770,17 +2770,28 @@
 
 
 <h1 id="robot-operating-system">Robot Operating System<a class="headerlink" href="#robot-operating-system" title="Permanent link">&para;</a></h1>
-<p>Robot Operating System (ROS) is a set of software libraries and tools for building robot applications.<sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup>
-It provides functionality for hardware abstraction, device drivers, communication between processes over
-multiple machines, tools for testing and visualization, and much more.<sup id="fnref:2"><a class="footnote-ref" href="#fn:2">2</a></sup></p>
-<p>We use ROS because it is open-source, language-agnostic, and built with cross-collaboration in mind.
-It enables our sub-teams to work independently on well-defined components of our software system
-without having to worry about the hardware it runs on or the implementation of other components.</p>
-<p><a href="https://docs.ros.org/en/humble/index.html" target="_blank">The official ROS 2 documentation</a> contains everything you need
-to get started using ROS. From it we have hand-picked the resources that are most relevant to our current and expected
-future usage of ROS assuming that you use <a href="https://github.com/UBCSailbot/sailbot_workspace" target="_blank">our preconfigured workspace</a>.
-To run our software on your device without our workspace, you would have to <a href="https://docs.ros.org/en/humble/Installation.html" target="_blank">install ROS</a>
-and the dependencies that are in <a href="https://github.com/UBCSailbot/sailbot_workspace/tree/main/.devcontainer" target="_blank">our Docker images</a>
+<p>Robot Operating System (ROS) is a set of software libraries and tools for
+building robot applications.<sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup>
+It provides functionality for hardware abstraction, device drivers,
+communication between processes over multiple machines, tools for testing and
+visualization, and much more.<sup id="fnref:2"><a class="footnote-ref" href="#fn:2">2</a></sup></p>
+<p>We use ROS because it is open-source, language-agnostic, and built with
+cross-collaboration in mind. It enables our sub-teams to work independently on
+well-defined components of our software system without having to worry about
+the hardware it runs on or the implementation of other components.</p>
+<!-- markdownlint-disable-next-line MD013 -->
+<p><a href="https://docs.ros.org/en/humble/index.html" target="_blank">The official ROS 2 documentation</a>
+contains everything you need to get started using ROS. From it we have
+hand-picked the resources that are most relevant to our current and expected
+future usage of ROS assuming that you use</p>
+<!-- markdownlint-disable-next-line MD013 -->
+<p><a href="https://github.com/UBCSailbot/sailbot_workspace" target="_blank">our preconfigured workspace</a>.
+To run our software on your device without our workspace, you would have to</p>
+<!-- markdownlint-disable-next-line MD013 -->
+<p><a href="https://docs.ros.org/en/humble/Installation.html" target="_blank">install ROS</a>
+and the dependencies that are in</p>
+<!-- markdownlint-disable-next-line MD013 -->
+<p><a href="https://github.com/UBCSailbot/sailbot_workspace/tree/main/.devcontainer" target="_blank">our Docker images</a>
 yourself.</p>
 <h2 id="tutorial">Tutorial<a class="headerlink" href="#tutorial" title="Permanent link">&para;</a></h2>
 <!-- markdownlint-disable MD013 -->
@@ -2792,15 +2803,26 @@ yourself.</p>
 <h2 id="workspace-configuration">Workspace Configuration<a class="headerlink" href="#workspace-configuration" title="Permanent link">&para;</a></h2>
 <p>To get our workspace configuration running on your computer:</p>
 <ol>
-<li>Set it up by following the <a href="../../current/sailbot_workspace/usage/setup/">setup instructions</a></li>
-<li>Uncomment the ROS 2 tutorials section in <a href="https://github.com/UBCSailbot/sailbot_workspace/blob/main/.devcontainer/Dockerfile" target="_blank"><code>.devcontainer/Dockerfile</code></a>,
-   then run the "Dev Containers: Rebuild Container" VS Code command, to install the tutorials' dependencies</li>
-<li>Clone the repositories used in the tutuorials: <a href="https://github.com/ros/ros_tutorials/tree/humble" target="_blank">ros_tutorials</a>
-   (<code>humble</code> branch), <a href="https://github.com/UBCSailbot/py_pubsub_ex" target="_blank">py_pubsub_ex</a>, and <a href="https://github.com/UBCSailbot/cpp_pubsub_ex" target="_blank">cpp_pubsub_ex</a>,
-   then run the <code>setup</code> VS Code task to install their dependencies</li>
+<li>Set it up by following the
+   <a href="../../current/sailbot_workspace/usage/setup/">setup instructions</a></li>
+<li>Uncomment the ROS 2 tutorials section in
+   <!-- markdownlint-disable-next-line MD013 --></li>
 </ol>
-<p>Our workspace configuration contains easier methods of accomplishing some of the tutorial steps, or eliminates the need
-for them altogether.</p>
+<p><a href="https://github.com/UBCSailbot/sailbot_workspace/blob/main/.devcontainer/Dockerfile" target="_blank"><code>.devcontainer/Dockerfile</code></a>,
+   then run the "Dev Containers: Rebuild Container" VS Code command, to
+   install the tutorials' dependencies
+3. Clone the repositories used in the tutuorials:
+   <!-- markdownlint-disable-next-line MD013 --></p>
+<p><a href="https://github.com/ros/ros_tutorials/tree/humble" target="_blank">ros_tutorials</a>
+   (<code>humble</code> branch),
+   <a href="https://github.com/UBCSailbot/py_pubsub_ex" target="_blank">py_pubsub_ex</a>,
+   and
+   <!-- markdownlint-disable-next-line MD013 --></p>
+<p><a href="https://github.com/UBCSailbot/cpp_pubsub_ex" target="_blank">cpp_pubsub_ex</a>,
+   then run the <code>setup</code> VS Code task to install their dependencies</p>
+<p>Our workspace configuration contains easier methods of accomplishing some of
+the tutorial steps, or eliminates the need for them altogether.</p>
+<!-- markdownlint-disable MD013 -->
 <table>
 <thead>
 <tr>
@@ -2835,10 +2857,15 @@ for them altogether.</p>
 </tr>
 </tbody>
 </table>
+<!-- markdownlint-enable MD013 -->
+
 <h2 id="tutorials">Tutorials<a class="headerlink" href="#tutorials" title="Permanent link">&para;</a></h2>
-<p>We encourage all software members to work through the <a href="https://docs.ros.org/en/humble/Tutorials.html" target="_blank">ROS tutorials</a>
-that are listed below in order. For tutorials that have both C++ and Python versions,
-NET members should do the C++ version while CTRL and PATH members should do the Python version.</p>
+<p>We encourage all software members to work through the</p>
+<!-- markdownlint-disable-next-line MD013 -->
+<p><a href="https://docs.ros.org/en/humble/Tutorials.html" target="_blank">ROS tutorials</a>
+that are listed below in order. For tutorials that have both C++ and Python
+versions, NET members should do the C++ version while CTRL and PATH members
+should do the Python version.</p>
 <ul>
 <li>Beginner: CLI tools<ul>
 <li>Introducing <code>turtlesim</code> and <code>rqt</code></li>
@@ -2871,23 +2898,34 @@ NET members should do the C++ version while CTRL and PATH members should do the 
 </li>
 </ul>
 <h2 id="concepts">Concepts<a class="headerlink" href="#concepts" title="Permanent link">&para;</a></h2>
-<p>We encourage all software members to read the following documentation on key <a href="https://docs.ros.org/en/humble/Concepts.html" target="_blank">ROS concepts</a>:</p>
+<p>We encourage all software members to read the following documentation on key</p>
+<!-- markdownlint-disable-next-line MD013 -->
+<p><a href="https://docs.ros.org/en/humble/Concepts.html" target="_blank">ROS concepts</a>:</p>
 <ul>
 <li>About logging and logger configuration</li>
 <li>About ROS 2 interfaces</li>
 <li>About parameters in ROS 2</li>
 </ul>
 <h2 id="ros-1-bridge">ROS 1 Bridge<a class="headerlink" href="#ros-1-bridge" title="Permanent link">&para;</a></h2>
-<p>There are two major versions of ROS, aptly named ROS 1 and ROS 2. Our previous project, Raye,
-uses ROS 1 because it was the only version available during her design process. Our new project will
-use ROS 2, a complete re-design of the framework that tackles the shortcomings of ROS 1 to bring it up
-to industry needs and standards.<sup id="fnref:3"><a class="footnote-ref" href="#fn:3">3</a></sup> If you are curious about the changes made in ROS 2 compared to 1,
-<a href="http://design.ros2.org/articles/changes.html" target="_blank">this article</a> is a worthwhile read.</p>
-<p>ROS 2 includes the ROS 1 Bridge, a collection of packages that can be installed alongside ROS 1 to help migrate code
-from ROS 1 to ROS 2. As we will be reusing parts of Raye's codebase, it is essential to know how to use these packages.
-Until we are completely done with Raye, our preconfigured workspace will have ROS 1, ROS 1 Bridge, and ROS 2 installed.</p>
-<p>We encourage all software members work through the <a href="https://github.com/ros2/ros1_bridge/blob/master/README.md" target="_blank">ROS 1 Bridge README</a>.
-For PATH members, the <a href="https://docs.ros.org/en/humble/Tutorials/Launch-files-migration-guide.html" target="_blank">Migrating launch files from ROS 1 to ROS 2 page</a>
+<p>There are two major versions of ROS, aptly named ROS 1 and ROS 2. Our previous
+project, Raye, uses ROS 1 because it was the only version available during her
+design process. Our new project will use ROS 2, a complete re-design of the
+framework that tackles the shortcomings of ROS 1 to bring it up to industry
+needs and standards.<sup id="fnref:3"><a class="footnote-ref" href="#fn:3">3</a></sup> If you are curious about the changes made in ROS 2
+compared to 1,
+<a href="http://design.ros2.org/articles/changes.html" target="_blank">this article</a> is
+a worthwhile read.</p>
+<p>ROS 2 includes the ROS 1 Bridge, a collection of packages that can be
+installed alongside ROS 1 to help migrate code from ROS 1 to ROS 2. As we will
+be reusing parts of Raye's codebase, it is essential to know how to use these
+packages. Until we are completely done with Raye, our preconfigured workspace
+will have ROS 1, ROS 1 Bridge, and ROS 2 installed.</p>
+<p>We encourage all software members work through the</p>
+<!-- markdownlint-disable-next-line MD013 -->
+<p><a href="https://github.com/ros2/ros1_bridge/blob/master/README.md" target="_blank">ROS 1 Bridge README</a>.
+For PATH members, the</p>
+<!-- markdownlint-disable-next-line MD013 -->
+<p><a href="https://docs.ros.org/en/humble/Tutorials/Launch-files-migration-guide.html" target="_blank">Migrating launch files from ROS 1 to ROS 2 page</a>
 will be a helpful reference when we do so.</p>
 <div class="footnote">
 <hr />

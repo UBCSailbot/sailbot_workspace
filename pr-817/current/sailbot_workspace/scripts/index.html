@@ -2884,7 +2884,8 @@ Its README has been copied below.</p>
 </div>
 <h1 id="scripts">Scripts<a class="headerlink" href="#scripts" title="Permanent link">&para;</a></h1>
 <h2 id="how-to-run">how to run<a class="headerlink" href="#how-to-run" title="Permanent link">&para;</a></h2>
-<p>All scripts in this directory should be able to be run with <code>./path/to/script</code> (excluding arguments).
+<p>All scripts in this directory should be able to be run with
+<code>./path/to/script</code> (excluding arguments).
 For this to work, the script will need to have a shebang and be executable.
 For more details, see <a href="https://linuxize.com/post/bash-shebang/">this tutorial</a>.</p>
 <h2 id="ament-lintsh"><code>ament-lint.sh</code><a class="headerlink" href="#ament-lintsh" title="Permanent link">&para;</a></h2>
@@ -2896,14 +2897,20 @@ For more details, see <a href="https://linuxize.com/post/bash-shebang/">this tut
 <h2 id="launchsh"><code>launch.sh</code><a class="headerlink" href="#launchsh" title="Permanent link">&para;</a></h2>
 <p>Script to run a single or all ROS packages.</p>
 <h2 id="run_virtual_iridiumsh"><code>run_virtual_iridium.sh</code><a class="headerlink" href="#run_virtual_iridiumsh" title="Permanent link">&para;</a></h2>
+<!-- markdownlint-disable MD013 -->
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>./run_virtual_iridium.sh<span class="w"> </span>&lt;<span class="o">(</span>optional<span class="o">)</span><span class="w"> </span>webhook<span class="w"> </span>server<span class="w"> </span>url&gt;<span class="w"> </span>&lt;<span class="o">(</span>optional<span class="o">)</span><span class="w"> </span>virtual<span class="w"> </span>iridium<span class="w"> </span>http<span class="w"> </span>server<span class="w"> </span>port&gt;
 </code></pre></div>
-<p>Creates a pair of socat sockets <code>$LOCAL_TRANSCEIVER_TEST_PORT</code> and <code>$VIRTUAL_IRIDIUM_PORT</code> and binds the latter to a
-virtual iridium server running on localhost:8080, which substitutes the Rockblock HTTP server used in deployment.
-Allows testing of satellite code without needing physical hardware.</p>
+<!-- markdownlint-enable MD013 -->
+
+<p>Creates a pair of socat sockets <code>$LOCAL_TRANSCEIVER_TEST_PORT</code> and
+<code>$VIRTUAL_IRIDIUM_PORT</code> and binds the latter to a virtual iridium server
+running on localhost:8080, which substitutes the Rockblock HTTP server used
+in deployment. Allows testing of satellite code without needing physical
+hardware.</p>
 <p>Optional argument - webhook server url:</p>
 <ul>
-<li>Specify where the URL where the Remote Transceiver or whatever other HTTP server is running.</li>
+<li>Specify where the URL where the Remote Transceiver or whatever other HTTP
+  server is running.</li>
 <li>Default is <code>http://127.0.0.1:8081</code>, which assumes fully local testing.</li>
 </ul>
 <p>Optional argument - virtual iridium server port</p>
@@ -2911,22 +2918,28 @@ Allows testing of satellite code without needing physical hardware.</p>
 <li>Specify which localhost port the virtual iridium runs on.</li>
 <li>Default is 8080.</li>
 </ul>
-<p><code>$LOCAL_TRANSCEIVER_TEST_PORT</code> acts as the serial port for AT commands. For example, to test via CLI:</p>
+<p><code>$LOCAL_TRANSCEIVER_TEST_PORT</code> acts as the serial port for AT commands. For
+example, to test via CLI:</p>
 <ol>
 <li><code>./run_virtual_iridium.sh</code></li>
-<li>To monitor just the <code>$LOCAL_TRANSCEIVER_TEST_PORT</code> without extra debug messages, in a new terminal run
-    <code>cat $LOCAL_TRANSCEIVER_TEST_PORT</code>. What you see output from this command will be what the Local Transceiver reads
-    and sends.</li>
-<li>To issue CLI commands, open a new terminal and run <code>stty 19200 &lt; $LOCAL_TRANSCEIVER_TEST_PORT</code> to set the baud rate.</li>
-<li><code>printf "at+sbdix\r" &gt; $LOCAL_TRANSCEIVER_TEST_PORT</code>. This command queries the (currently empty) mailbox.</li>
-<li><code>curl -X POST -F "test=1234" http://localhost:8080</code> (this is garbage data - it doesn't mean
-    anything). You should see the original terminal print that it received a POST request.</li>
-<li><code>printf "at+sbdix\r" &gt; $LOCAL_TRANSCEIVER_TEST_PORT</code> to view the mailbox again. It will now indicate that it has the
-    data.</li>
+<li>To monitor just the <code>$LOCAL_TRANSCEIVER_TEST_PORT</code> without extra debug
+   messages, in a new terminal run <code>cat $LOCAL_TRANSCEIVER_TEST_PORT</code>. What
+   you see output from this command will be what the Local Transceiver reads
+   and sends.</li>
+<li>To issue CLI commands, open a new terminal and run
+   <code>stty 19200 &lt; $LOCAL_TRANSCEIVER_TEST_PORT</code> to set the baud rate.</li>
+<li><code>printf "at+sbdix\r" &gt; $LOCAL_TRANSCEIVER_TEST_PORT</code>. This command queries
+   the (currently empty) mailbox.</li>
+<li><code>curl -X POST -F "test=1234" http://localhost:8080</code> (this is garbage data</li>
+<li>it doesn't mean anything). You should see the original terminal print
+   that it received a POST request.</li>
+<li><code>printf "at+sbdix\r" &gt; $LOCAL_TRANSCEIVER_TEST_PORT</code> to view the mailbox
+   again. It will now indicate that it has the data.</li>
 </ol>
 <p>Other relevant commands include (but are not limited to):</p>
 <ul>
-<li><code>at+sbdwb=&lt;msg_length&gt;\r</code>: Setup the port to receive binary data of length <code>msg_length</code> on next input.</li>
+<li><code>at+sbdwb=&lt;msg_length&gt;\r</code>: Setup the port to receive binary data of length
+  <code>msg_length</code> on next input.</li>
 <li><code>at+sbdrb\r</code>: Read binary content in the mailbox.</li>
 <li><code>at+sbdd2\r</code>: Clear all buffers.</li>
 </ul>

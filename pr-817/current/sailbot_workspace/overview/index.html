@@ -2916,13 +2916,18 @@
 <p>The Sailbot Workspace README has been copied below.</p>
 </div>
 <h1 id="sailbot-workspace">Sailbot Workspace<a class="headerlink" href="#sailbot-workspace" title="Permanent link">&para;</a></h1>
+<!-- markdownlint-disable MD013 -->
 <p><a href="https://github.com/UBCSailbot/sailbot_workspace/actions/workflows/tests.yml"><img alt="Tests" src="https://github.com/UBCSailbot/sailbot_workspace/actions/workflows/tests.yml/badge.svg" /></a></p>
 <!--[![Docs Site](https://github.com/UBCSailbot/sailbot_workspace/actions/workflows/docs.yml/badge.svg)](https://github.com/UBCSailbot/sailbot_workspace/actions/workflows/docs.yml)-->
 <p><a href="https://github.com/UBCSailbot/sailbot_workspace/actions/workflows/build-base-dev-images.yml"><img alt="Build Development Image" src="https://github.com/UBCSailbot/sailbot_workspace/actions/workflows/build-base-dev-images.yml/badge.svg" /></a>
 <a href="https://github.com/UBCSailbot/sailbot_workspace/actions/workflows/build-release-image.yml"><img alt="Build Deployment Image" src="https://github.com/UBCSailbot/sailbot_workspace/actions/workflows/build-release-image.yml/badge.svg" /></a></p>
-<p>This repository will get you set up to develop UBCSailbot's software on VS Code. It is based on athackst's
+<!-- markdownlint-enable MD013 -->
+
+<p>This repository will get you set up to develop UBCSailbot's software on VS
+Code. It is based on athackst's
 <a href="https://github.com/athackst/vscode_ros2_workspace">vscode_ros2_workspace</a>.</p>
 <h2 id="documentation">Documentation<a class="headerlink" href="#documentation" title="Permanent link">&para;</a></h2>
+<!-- markdownlint-disable-next-line MD013 -->
 <p>Our documentation, including setup and run instructions, can be found on <a href="https://ubcsailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/overview/">our Docs website</a>.</p>
 <h2 id="features">Features<a class="headerlink" href="#features" title="Permanent link">&para;</a></h2>
 <p>An overview of Sailbot Workspace's features can be found below.
@@ -2938,45 +2943,62 @@ for how to use these features.</p>
 <li>clang-tidy</li>
 <li>isort</li>
 </ul>
-<p>The <a href="https://github.com/ament/ament_lint/tree/humble">ament linters</a> are configured to be consistent with the
+<p>The <a href="https://github.com/ament/ament_lint/tree/humble">ament linters</a> are
+configured to be consistent with the
 <a href="https://docs.ros.org/en/humble/The-ROS2-Project/Contributing/Code-Style-Language-Versions.html">ROS style guide</a>.</p>
 <h3 id="dev-container">Dev Container<a class="headerlink" href="#dev-container" title="Permanent link">&para;</a></h3>
-<p><a href="https://code.visualstudio.com/docs/devcontainers/containers">Dev Containers</a> enable us to use a
-<a href="https://www.docker.com/resources/what-container/">Docker container</a> as a fully-featured development environment
-containing all our configuration and dependencies.
-Our Dev Container configuration can be found in <a href="https://github.com/UBCSailbot/sailbot_workspace/blob/main/.devcontainer"><code>.devcontainer/</code></a>.</p>
+<p><a href="https://code.visualstudio.com/docs/devcontainers/containers">Dev Containers</a>
+enable us to use a
+<a href="https://www.docker.com/resources/what-container/">Docker container</a> as a
+fully-featured development environment containing all our configuration and
+dependencies.
+Our Dev Container configuration can be found in
+<a href="https://github.com/UBCSailbot/sailbot_workspace/blob/main/.devcontainer"><code>.devcontainer/</code></a>.</p>
 <h3 id="vs-code-workspace">VS Code Workspace<a class="headerlink" href="#vs-code-workspace" title="Permanent link">&para;</a></h3>
-<p><a href="https://code.visualstudio.com/docs">Workspaces</a> are VS Code instances that contain one or more folders.
+<p><a href="https://code.visualstudio.com/docs">Workspaces</a> are VS Code instances that
+contain one or more folders.
 Our workspace configuration file can be found at
 <a href="https://github.com/UBCSailbot/sailbot_workspace/blob/main/sailbot.code-workspace"><code>sailbot.code-workspace</code></a>.</p>
 <h3 id="debugging">Debugging<a class="headerlink" href="#debugging" title="Permanent link">&para;</a></h3>
+<!-- markdownlint-disable-next-line MD013 -->
 <p><a href="https://code.visualstudio.com/docs/editor/debugging#_launch-configurations">Launch configurations</a>
-have been created to debug our software. They are defined in the <code>launch</code> section of
-our workspace file.</p>
+have been created to debug our software. They are defined in the <code>launch</code>
+section of our workspace file.</p>
 <h3 id="tasks">Tasks<a class="headerlink" href="#tasks" title="Permanent link">&para;</a></h3>
-<p><a href="https://code.visualstudio.com/docs/editor/tasks">Tasks</a> provide an alternative to memorizing the multitude of
-CLI commands we use to setup, build, lint, test, and run our software. They are defined in <code>tasks</code> section of
-our workspace file.</p>
+<p><a href="https://code.visualstudio.com/docs/editor/tasks">Tasks</a> provide an
+alternative to memorizing the multitude of CLI commands we use to setup,
+build, lint, test, and run our software. They are defined in <code>tasks</code> section
+of our workspace file.</p>
 <h3 id="continuous-integration">Continuous Integration<a class="headerlink" href="#continuous-integration" title="Permanent link">&para;</a></h3>
 <p><a href="https://docs.github.com/en/actions/learn-github-actions/understanding-github-actions">Actions</a>
-were used to build <a href="https://github.com/orgs/UBCSailbot/packages?repo_name=sailbot_workspace">our Docker containers</a>
-and lint and test our code the same way it is done locally in Sailbot Workspace on GitHub.
-We use a <a href="https://docs.github.com/en/actions/using-workflows/reusing-workflows">reusable workflow</a>
+were used to build
+<a href="https://github.com/orgs/UBCSailbot/packages?repo_name=sailbot_workspace">our Docker containers</a>
+and lint and test our code the same way it is done locally in Sailbot
+Workspace on GitHub.
+We use a
+<a href="https://docs.github.com/en/actions/using-workflows/reusing-workflows">reusable workflow</a>
 to create a single source of truth for our tests across all our repositories.
-Our CI can be found in <a href="https://github.com/UBCSailbot/sailbot_workspace/tree/main/.github/workflows"><code>.github/workflows/</code></a>.</p>
+Our CI can be found in
+<a href="https://github.com/UBCSailbot/sailbot_workspace/tree/main/.github/workflows"><code>.github/workflows/</code></a>.</p>
 <h3 id="customization">Customization<a class="headerlink" href="#customization" title="Permanent link">&para;</a></h3>
-<p>This repository supports user-specific configuration files. To set this up, see
+<p>This repository supports user-specific configuration files. To set this up,
+see
 <a href="https://ubcsailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/usage/how_to/#use-your-dotfiles">How to use your dotfiles</a>.</p>
 <h3 id="run-rayes-software">Run Raye's Software<a class="headerlink" href="#run-rayes-software" title="Permanent link">&para;</a></h3>
 <p><a href="https://www.ubcsailbot.org/rayes-story">Raye</a> was our previous project.
-Her software can be run in the <a href="https://github.com/UBCSailbot/sailbot_workspace/tree/raye"><code>raye</code> branch</a>
-following the instructions in <a href="https://ubcsailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/usage/how_to/#run-rayes-software">How to run Raye's software</a>.
-The initial differences between the <code>main</code> and <code>raye</code> branches are summarized in
+Her software can be run in the
+<a href="https://github.com/UBCSailbot/sailbot_workspace/tree/raye"><code>raye</code> branch</a>
+following the instructions in
+<a href="https://ubcsailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/usage/how_to/#run-rayes-software">How to run Raye's software</a>.
+The initial differences between the <code>main</code> and <code>raye</code> branches are summarized
+in
 <a href="https://github.com/UBCSailbot/sailbot_workspace/pull/61">this PR</a>.</p>
 <h2 id="tutorial">Tutorial<a class="headerlink" href="#tutorial" title="Permanent link">&para;</a></h2>
 <div class="admonition warning">
 <p class="admonition-title">Disclaimer</p>
-<p>This tutorial was done a while ago, so some parts may no longer be relevant. For the most up to date information, consult the docs pages and the software leads.</p>
+<p>This tutorial was done a while ago, so some parts may no longer be
+relevant. For the most up to date information, consult the docs pages and
+the software leads.</p>
 </div>
 <!-- markdownlint-disable MD013 -->
 <div class="video-wrapper">

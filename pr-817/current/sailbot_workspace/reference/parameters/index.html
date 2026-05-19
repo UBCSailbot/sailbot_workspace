@@ -2941,22 +2941,27 @@
 Its README has been copied below.</p>
 </div>
 <h1 id="sailbot-ros-parameter-configuration">Sailbot ROS Parameter Configuration<a class="headerlink" href="#sailbot-ros-parameter-configuration" title="Permanent link">&para;</a></h1>
-<p>The description of each parameter contained in <code>globals.yaml</code> are described in this README. Descriptions of parameters
-for each node are included. These parameters can be changed dynamically as well via the command line interface. To
-learn more, see the ROS 2 documentation on <a href="https://docs.ros.org/en/humble/Concepts/Basic/About-Parameters.html">ROS 2 Parameters</a>.</p>
+<p>The description of each parameter contained in <code>globals.yaml</code> are described in
+this README. Descriptions of parameters for each node are included. These
+parameters can be changed dynamically as well via the command line interface.
+To learn more, see the ROS 2 documentation on</p>
+<!-- markdownlint-disable-next-line MD013 -->
+<p><a href="https://docs.ros.org/en/humble/Concepts/Basic/About-Parameters.html">ROS 2 Parameters</a>.</p>
 <p>Each parameter is specified in the following format:</p>
 <ul>
 <li><em>Description</em>: The description of the parameter.</li>
-<li><em>Datatype</em>: The datatype. If it happens to be an array, the datatype of the elements should be specified and the length
-of the array.</li>
-<li><em>Range</em>/<em>Acceptable Values</em>: Ranges of integers and floating point values are specified with interval notation.
-Namely, <code>[]</code> denotes inclusive boundaries, while <code>()</code> denotes non-inclusive boundaries. For strings, the acceptable
-values are listed.</li>
+<li><em>Datatype</em>: The datatype. If it happens to be an array, the datatype of the
+  elements should be specified and the length of the array.</li>
+<li><em>Range</em>/<em>Acceptable Values</em>: Ranges of integers and floating point values
+  are specified with interval notation. Namely, <code>[]</code> denotes inclusive
+  boundaries, while <code>()</code> denotes non-inclusive boundaries. For strings, the
+  acceptable values are listed.</li>
 </ul>
 <p>Additional information may be included when necessary.</p>
 <blockquote>
 <p>[!IMPORTANT]
-This document should be updated when any changes occur to the ROS parameters specified in <code>globals.yaml</code>.</p>
+This document should be updated when any changes occur to the ROS
+parameters specified in <code>globals.yaml</code>.</p>
 </blockquote>
 <h2 id="global-parameters">Global Parameters<a class="headerlink" href="#global-parameters" title="Permanent link">&para;</a></h2>
 <p>ROS parameters common across all ROS nodes in the network.</p>
@@ -2977,35 +2982,42 @@ This document should be updated when any changes occur to the ROS parameters spe
 </ul>
 <p><strong><code>interval_spacing</code></strong></p>
 <ul>
-<li><em>Description</em>: The upper bound on spacing between each point in the global path in km.</li>
+<li><em>Description</em>: The upper bound on spacing between each point in the global
+  path in km.</li>
 <li><em>Datatype</em>: <code>double</code></li>
 <li><em>Range</em>: <code>(0.0, MAX_DOUBLE)</code></li>
 </ul>
 <p><strong><code>write</code></strong></p>
 <ul>
-<li><em>Description</em>: Whether or not to write a generated global path to a new csv file.</li>
+<li><em>Description</em>: Whether or not to write a generated global path to a new csv
+  file.</li>
 <li><em>Datatype</em>: <code>boolean</code></li>
 <li><em>Acceptable Values</em>: <code>true</code>, <code>false</code></li>
 </ul>
 <p><strong><code>gps_threshold</code></strong></p>
 <ul>
-<li><em>Description</em>: A new path will be generated if the GPS position changed by more thangps_threshold*interval_spacing.</li>
+<li><em>Description</em>: A new path will be generated if the GPS position changed by
+  more thangps_threshold*interval_spacing.</li>
 <li><em>Datatype</em>: <code>double</code></li>
 <li><em>Acceptable Values</em>: <code>(1.0, MAX_DOUBLE)</code></li>
 </ul>
 <p><strong><code>force</code></strong></p>
 <ul>
-<li><em>Description</em>: Force the mock global path callback to update the global path when set to true.</li>
+<li><em>Description</em>: Force the mock global path callback to update the global
+  path when set to true.</li>
 <li><em>Datatype</em>: <code>boolean</code></li>
 <li><em>Acceptable Values</em>: <code>true</code>, <code>false</code></li>
 </ul>
 <h3 id="navigate_main"><code>navigate_main</code><a class="headerlink" href="#navigate_main" title="Permanent link">&para;</a></h3>
 <p><strong><code>path_planner</code></strong></p>
 <ul>
-<li><em>Description</em>: The path planner to use. Planners are from <a href="https://ompl.kavrakilab.org/planners.html">OMPL Library</a>.</li>
+<li><em>Description</em>: The path planner to use. Planners are from
+  <a href="https://ompl.kavrakilab.org/planners.html">OMPL Library</a>.</li>
 <li><em>Datatype</em>: <code>string</code></li>
-<li><em>Acceptable Values</em>: <code>"bitstar"</code>, <code>"bfmtstar"</code>, <code>"fmtstar"</code>, <code>"informedrrtstar"</code>, <code>"lazylbtrrt"</code>, <code>"lazyprmstar"</code>,
-  <code>"lbtrrt"</code>, <code>"prmstar"</code>, <code>"rrtconnect"</code>, <code>"rrtsharp"</code>, <code>"rrtstar"</code>, <code>"rrtxstatic"</code>, <code>"sorrtstar"</code></li>
+<li><em>Acceptable Values</em>: <code>"bitstar"</code>, <code>"bfmtstar"</code>, <code>"fmtstar"</code>,
+  <code>"informedrrtstar"</code>, <code>"lazylbtrrt"</code>, <code>"lazyprmstar"</code>, <code>"lbtrrt"</code>,
+  <code>"prmstar"</code>, <code>"rrtconnect"</code>, <code>"rrtsharp"</code>, <code>"rrtstar"</code>, <code>"rrtxstatic"</code>,
+  <code>"sorrtstar"</code></li>
 </ul>
 <h2 id="controller-parameters">Controller Parameters<a class="headerlink" href="#controller-parameters" title="Permanent link">&para;</a></h2>
 <p>ROS parameters specific to the nodes in the Controller.</p>
@@ -3053,88 +3065,102 @@ This document should be updated when any changes occur to the ROS parameters spe
 </ul>
 <p><strong><code>qos_depth</code></strong></p>
 <ul>
-<li><em>Description</em>: The maximum number of subscription messages to queue for further processing.</li>
+<li><em>Description</em>: The maximum number of subscription messages to queue for
+  further processing.</li>
 <li><em>Datatype</em>: <code>int</code></li>
 <li><em>Range</em>: <code>[1, MAX_INT)</code></li>
 </ul>
 <p><strong><code>rudder.actuation_execution_period_sec</code></strong></p>
 <ul>
-<li><em>Description</em>: The period at which the main loop in the rudder action server executes in seconds.</li>
+<li><em>Description</em>: The period at which the main loop in the rudder action
+  server executes in seconds.</li>
 <li><em>Datatype</em>: <code>double</code></li>
 <li><em>Range</em>: <code>(0.0, MAX_DOUBLE)</code></li>
 </ul>
 <p><strong><code>rudder.disable_actuation</code></strong></p>
 <ul>
-<li><em>Description</em>: Controls whether or not rudder actuation is disabled. If true, the rudder angle is fixed to some value.
-Otherwise, the PID mechanism is used to control the rudder angle.</li>
+<li><em>Description</em>: Controls whether or not rudder actuation is disabled. If
+  true, the rudder angle is fixed to some value. Otherwise, the PID mechanism
+  is used to control the rudder angle.</li>
 <li>Datatype: <code>boolean</code></li>
 <li><em>Acceptable Values</em>: <code>true</code>, <code>false</code></li>
 </ul>
 <p><strong><code>rudder.fixed_angle_deg</code></strong></p>
 <ul>
-<li><em>Description</em>: The angle to fix the rudder in degrees. Only used if <code>rudder.disable_actuation</code> is true.</li>
+<li><em>Description</em>: The angle to fix the rudder in degrees. Only used if
+  <code>rudder.disable_actuation</code> is true.</li>
 <li><em>Datatype</em>: <code>double</code></li>
 <li><em>Range</em>: <code>[-45.0, 45.0]</code></li>
 </ul>
 <p><strong><code>rudder.pid.buffer_size</code></strong></p>
 <ul>
-<li><em>Description</em>: The buffer size of PID that stores previously computed errors over time.</li>
+<li><em>Description</em>: The buffer size of PID that stores previously computed errors
+  over time.</li>
 <li><em>Datatype</em>: <code>int</code></li>
 <li><em>Range</em>: <code>[1, MAX_INT)</code></li>
 </ul>
 <p><strong><code>rudder.pid.kd</code></strong></p>
 <ul>
-<li><em>Description</em>: The PID Derivative constant for the rudder. Only used if <code>rudder.disable_actuation</code> is false.</li>
+<li><em>Description</em>: The PID Derivative constant for the rudder. Only used if
+  <code>rudder.disable_actuation</code> is false.</li>
 <li><em>Datatype</em>: <code>double</code></li>
 <li><em>Range</em>: <code>[0.0, MAX_DOUBLE)</code></li>
 </ul>
 <p><strong><code>rudder.pid.ki</code></strong></p>
 <ul>
-<li><em>Description</em>: The PID Integral constant for the rudder. Only used if <code>rudder.disable_actuation</code> is false.</li>
+<li><em>Description</em>: The PID Integral constant for the rudder. Only used if
+  <code>rudder.disable_actuation</code> is false.</li>
 <li><em>Datatype</em>: <code>double</code></li>
 <li><em>Range</em>: <code>[0.0, MAX_DOUBLE)</code></li>
 </ul>
 <p><strong><code>rudder.pid.kp</code></strong></p>
 <ul>
-<li><em>Description</em>: The PID Proportionality constant for the rudder. Only used if <code>rudder.disable_actuation</code> is false.</li>
+<li><em>Description</em>: The PID Proportionality constant for the rudder. Only used
+  if <code>rudder.disable_actuation</code> is false.</li>
 <li><em>Datatype</em>: <code>double</code></li>
 <li><em>Range</em>: <code>[0.0, MAX_DOUBLE)</code></li>
 </ul>
 <p><strong><code>rudder.pid.cp</code></strong></p>
 <ul>
-<li><em>Description</em>: The tuning parameter for the rudder control action. Only used if <code>rudder.disable_actuation</code> is false.</li>
+<li><em>Description</em>: The tuning parameter for the rudder control action. Only
+  used if <code>rudder.disable_actuation</code> is false.</li>
 <li><em>Datatype</em>: <code>double</code></li>
 <li><em>Range</em>: <code>[0.0, MAX_DOUBLE)</code></li>
 </ul>
 <p><strong><code>wingsail.actuation_execution_period_sec</code></strong></p>
 <ul>
-<li><em>Description</em>: The period at which the main loop in the sail action server executes in seconds.</li>
+<li><em>Description</em>: The period at which the main loop in the sail action server
+  executes in seconds.</li>
 <li><em>Datatype</em>: <code>double</code></li>
 <li><em>Range</em>: <code>(0.0, MAX_DOUBLE)</code></li>
 </ul>
 <p><strong><code>wingsail.actuation_speed_deg_per_sec</code></strong></p>
 <ul>
-<li><em>Description</em>: The speed at which the wingsail trim tab actuates in degrees per second.</li>
+<li><em>Description</em>: The speed at which the wingsail trim tab actuates in degrees
+  per second.</li>
 <li><em>Datatype</em>: <code>double</code></li>
 <li><em>Range</em>: <code>(0.0, MAX_DOUBLE)</code></li>
 </ul>
 <p><strong><code>wingsail.disable_actuation</code></strong></p>
 <ul>
-<li><em>Description</em>: Controls whether or not wingsail trim tab actuation is disabled. If true, the trim tab is fixed to some
-value. Otherwise, the trim tab angle is determined by the wingsail controller.</li>
+<li><em>Description</em>: Controls whether or not wingsail trim tab actuation is
+  disabled. If true, the trim tab is fixed to some value. Otherwise, the trim
+  tab angle is determined by the wingsail controller.</li>
 <li><em>Datatype</em>: <code>boolean</code></li>
 <li><em>Acceptable Values</em>: <code>true</code>, <code>false</code></li>
 </ul>
 <p><strong><code>wingsail.fixed_angle_degree</code></strong></p>
 <ul>
-<li><em>Description</em>: Fixed the wingsail trim tab to some angle in degrees. Only used if <code>wingsail.disable_actuation</code> is true.</li>
+<li><em>Description</em>: Fixed the wingsail trim tab to some angle in degrees. Only
+  used if <code>wingsail.disable_actuation</code> is true.</li>
 <li><em>Datatype</em>: <code>double</code></li>
 <li><em>Range</em>: <code>[-180.0, 180.0)</code></li>
 </ul>
 <h3 id="physics_engine_node"><code>physics_engine_node</code><a class="headerlink" href="#physics_engine_node" title="Permanent link">&para;</a></h3>
 <p><strong><code>action_send_goal_timeout_sec</code></strong></p>
 <ul>
-<li><em>Description</em>: How long the action clients wait for the action server to respond to a request before timing out in seconds.</li>
+<li><em>Description</em>: How long the action clients wait for the action server to
+  respond to a request before timing out in seconds.</li>
 <li><em>Datatype</em>: <code>double</code></li>
 <li><em>Range</em>: <code>(0.0, MAX_DOUBLE)</code></li>
 </ul>
@@ -3152,13 +3178,15 @@ value. Otherwise, the trim tab angle is determined by the wingsail controller.</
 </ul>
 <p><strong><code>qos_depth</code></strong></p>
 <ul>
-<li><em>Description</em>: The maximum number of subscription messages to queue for further processing.</li>
+<li><em>Description</em>: The maximum number of subscription messages to queue for
+  further processing.</li>
 <li><em>Datatype</em>: <code>int</code></li>
 <li><em>Range</em>: <code>[1, MAX_INT)</code></li>
 </ul>
 <p><strong><code>rudder.actuation_request_period_sec</code></strong></p>
 <ul>
-<li><em>Description</em>: How often the rudder action client requests a rudder actuation in seconds.</li>
+<li><em>Description</em>: How often the rudder action client requests a rudder
+  actuation in seconds.</li>
 <li><em>Datatype</em>: <code>double</code></li>
 <li><em>Range</em>: <code>(0.0, MAX_DOUBLE)</code></li>
 </ul>
@@ -3170,90 +3198,102 @@ value. Otherwise, the trim tab angle is determined by the wingsail controller.</
 </ul>
 <p><strong><code>wind_sensor.constant_params.value</code></strong></p>
 <ul>
-<li><em>Description</em>: Specifies the constant vector returned by the constant generator that represents the wind velocity in kmph.
-Namely, the same value is fixed in the wind sensors. The value is an array containing the <code>x</code> and <code>y</code> components of the
-velocity. Only used if <code>wind_sensor.generator_type</code> is <code>constant</code>.</li>
+<li><em>Description</em>: Specifies the constant vector returned by the constant
+  generator that represents the wind velocity in kmph. Namely, the same value
+  is fixed in the wind sensors. The value is an array containing the <code>x</code> and
+  <code>y</code> components of the velocity. Only used if <code>wind_sensor.generator_type</code>
+  is <code>constant</code>.</li>
 <li><em>Datatype</em>: <code>double</code> array, length 2</li>
 <li><em>Range</em>: <code>(MIN_DOUBLE, MAX_DOUBLE)</code></li>
 </ul>
 <p><strong><code>wind_sensor.gaussian_params.corr_xy</code></strong></p>
 <ul>
-<li><em>Description</em>: The correlation coefficient between x and y components of the wind velocity. Only used if
-<code>wind_sensor.generator_type</code> is <code>gaussian</code>.</li>
+<li><em>Description</em>: The correlation coefficient between x and y components of
+  the wind velocity. Only used if <code>wind_sensor.generator_type</code> is <code>gaussian</code>.</li>
 <li><em>Datatype</em>: <code>double</code></li>
 <li><em>Range</em>: <code>[-1.0, 1.0]</code></li>
 </ul>
 <p><strong><code>wind_sensor.gaussian_params.mean</code></strong></p>
 <ul>
-<li><em>Description</em>: The mean wind velocity parameter in kmph for the gaussian generator. The mean is an array containing
-the <code>x</code> and <code>y</code> components of the velocity. Only used if <code>wind_sensor.generator_type</code> is <code>gaussian</code>.</li>
+<li><em>Description</em>: The mean wind velocity parameter in kmph for the gaussian
+  generator. The mean is an array containing the <code>x</code> and <code>y</code> components of
+  the velocity. Only used if <code>wind_sensor.generator_type</code> is <code>gaussian</code>.</li>
 <li><em>Datatype</em>: <code>double</code> array, length 2</li>
 <li><em>Range</em>: <code>(MIN_DOUBLE, MAX_DOUBLE)</code></li>
 </ul>
 <p><strong><code>wind_sensor.gaussian_params.std_dev</code></strong></p>
 <ul>
-<li><em>Description</em>: The standard deviation parameters in kmph for the gaussian generator. There are two standard deviations
-specified within an array: one for the <code>x</code> component, and one for the <code>y</code> component. Only used if
-<code>wind_sensor.generator_type</code> is <code>gaussian</code>.</li>
+<li><em>Description</em>: The standard deviation parameters in kmph for the gaussian
+  generator. There are two standard deviations specified within an array: one
+  for the <code>x</code> component, and one for the <code>y</code> component. Only used if
+  <code>wind_sensor.generator_type</code> is <code>gaussian</code>.</li>
 <li><em>Datatype</em>: <code>double</code> array, length 2</li>
 <li><em>Range</em>: <code>(0.0, MAX_DOUBLE)</code><ul>
-<li>If a standard deviation of zero is desired, then consider using the constant generator instead.</li>
+<li>If a standard deviation of zero is desired, then consider using the
+  constant generator instead.</li>
 </ul>
 </li>
 </ul>
 <p><strong><code>wind_sensor.generator_type</code></strong></p>
 <ul>
-<li><em>Description</em>: Determines the type of random number generator that will be used to generate wind sensor data.</li>
+<li><em>Description</em>: Determines the type of random number generator that will be
+  used to generate wind sensor data.</li>
 <li><em>Datatype</em>: <code>string</code></li>
 <li><em>Acceptable Values</em>: <code>gaussian</code>, <code>constant</code></li>
 </ul>
 <p><strong><code>wind_generation.mvgaussian_params.mean</code></strong></p>
 <ul>
-<li><em>Description</em>: The mean value for the wind generated, expressed in kilometers per hour (km/h), for the multivariate
-Gaussian generator.</li>
+<li><em>Description</em>: The mean value for the wind generated, expressed in
+  kilometers per hour (km/h), for the multivariate Gaussian generator.</li>
 <li><em>Datatype</em>: <code>double</code> array, length 2</li>
 <li><em>Range</em>: <code>(0.0, MAX_DOUBLE)</code></li>
 </ul>
 <p><strong><code>wind_generation.mvgaussian_params.cov</code></strong></p>
 <ul>
-<li><em>Description</em>: The covariance matrix for the generated wind, represented as a string formatted as a 2D <code>double</code> array,
-since ROS parameters do not support native 2D array types.</li>
+<li><em>Description</em>: The covariance matrix for the generated wind, represented as
+  a string formatted as a 2D <code>double</code> array, since ROS parameters do not
+  support native 2D array types.</li>
 <li><em>Datatype</em>: <code>string</code></li>
 <li><em>Range</em>: <code>(0.0, MAX_DOUBLE)</code></li>
 </ul>
 <p><strong><code>current_generation.mvgaussian_params.mean</code></strong></p>
 <ul>
-<li><em>Description</em>: The mean value for the current generated, expressed in kilometers per hour (km/h), for the multivariate
-Gaussian generator.</li>
+<li><em>Description</em>: The mean value for the current generated, expressed in
+  kilometers per hour (km/h), for the multivariate Gaussian generator.</li>
 <li><em>Datatype</em>: <code>double</code> array, length 2</li>
 <li><em>Range</em>: <code>(0.0, MAX_DOUBLE)</code></li>
 </ul>
 <p><strong><code>current_generation.mvgaussian_params.cov</code></strong></p>
 <ul>
-<li><em>Description</em>: The covariance matrix for the generated current, represented as a string formatted as a 2D <code>double</code>
-array, since ROS parameters do not support native 2D array types.</li>
+<li><em>Description</em>: The covariance matrix for the generated current, represented
+  as a string formatted as a 2D <code>double</code> array, since ROS parameters do not
+  support native 2D array types.</li>
 <li><em>Datatype</em>: <code>string</code></li>
 <li><em>Range</em>: <code>(0.0, MAX_DOUBLE)</code></li>
 </ul>
 <h3 id="data_collection_node"><code>data_collection_node</code><a class="headerlink" href="#data_collection_node" title="Permanent link">&para;</a></h3>
 <p><strong><code>file_name</code></strong></p>
 <ul>
-<li><em>Description</em>: The name of the file in which the data is saved, excluding the file extension.</li>
+<li><em>Description</em>: The name of the file in which the data is saved, excluding
+  the file extension.</li>
 <li><em>Datatype</em>: <code>string</code></li>
 <li><em>Acceptable Values</em>: Any valid file name.</li>
 </ul>
 <p><strong><code>qos_depth</code></strong></p>
 <ul>
-<li><em>Description</em>: The maximum number of subscription messages to queue for further processing.</li>
+<li><em>Description</em>: The maximum number of subscription messages to queue for
+  further processing.</li>
 <li><em>Datatype</em>: <code>int</code></li>
 <li><em>Range</em>: <code>[1, MAX_INT)</code></li>
 </ul>
 <p><strong><code>topics</code></strong></p>
 <ul>
-<li><em>Description</em>: Specifies the topics to subscribe to. It should adhere to the format <code>['topic_name_1', 'topic_type_1', ...]</code>.</li>
+<li><em>Description</em>: Specifies the topics to subscribe to. It should adhere to
+  the format <code>['topic_name_1', 'topic_type_1', ...]</code>.</li>
 <li><em>Datatype</em>: <code>string</code> array with an even length</li>
-<li><em>Acceptable Values</em>: Each pair within the array must consist of a valid topic name as the first string and the
-corresponding correct type as the second string.</li>
+<li><em>Acceptable Values</em>: Each pair within the array must consist of a valid
+  topic name as the first string and the corresponding correct type as the
+  second string.</li>
 </ul>
 <p><strong><code>bag</code></strong></p>
 <ul>
@@ -3269,50 +3309,58 @@ corresponding correct type as the second string.</li>
 </ul>
 <p><strong><code>write_period_sec</code></strong></p>
 <ul>
-<li><em>Description</em>: The interval (in seconds) for writing queued data to the JSON file.</li>
+<li><em>Description</em>: The interval (in seconds) for writing queued data to the
+  JSON file.</li>
 <li><em>Datatype</em>: <code>double</code></li>
 <li><em>Range</em>: <code>(0.0, MAX_DOUBLE)</code></li>
 </ul>
 <h3 id="mock-data-node"><code>Mock Data Node</code><a class="headerlink" href="#mock-data-node" title="Permanent link">&para;</a></h3>
 <p><strong><code>qos_depth</code></strong></p>
 <ul>
-<li><em>Description</em>: The maximum number of subscription messages to queue for further processing.</li>
+<li><em>Description</em>: The maximum number of subscription messages to queue for
+  further processing.</li>
 <li><em>Datatype</em>: <code>int</code></li>
 <li><em>Range</em>: <code>[1, MAX_INT)</code></li>
 </ul>
 <p><strong><code>mock_desired_heading</code></strong></p>
 <ul>
-<li><em>Description</em>: Set to True if mock data for desired heading should be generated. False otherwise.</li>
+<li><em>Description</em>: Set to True if mock data for desired heading should be
+  generated. False otherwise.</li>
 <li><em>Datatype</em>: <code>bool</code></li>
 <li><em>Range</em>: <code>(True, False)</code></li>
 </ul>
 <p><strong><code>mock_desired_heading_lower_bound</code></strong></p>
 <ul>
-<li><em>Description</em>: Gives a lower bound for randomizing desired heading values. This value should be less than <code>mock_desired_heading_upper_bound</code>.</li>
+<li><em>Description</em>: Gives a lower bound for randomizing desired heading values.
+  This value should be less than <code>mock_desired_heading_upper_bound</code>.</li>
 <li><em>Datatype</em>: <code>double</code></li>
 <li><em>Range</em>: <code>(-MAX_DOUBLE, MAX_DOUBLE)</code></li>
 </ul>
 <p><strong><code>mock_desired_heading_upper_bound</code></strong></p>
 <ul>
-<li><em>Description</em>: Gives a upper bound for randomizing desired heading values. This value should be greater than <code>mock_desired_heading_upper_bound</code>.</li>
+<li><em>Description</em>: Gives a upper bound for randomizing desired heading values.
+  This value should be greater than <code>mock_desired_heading_upper_bound</code>.</li>
 <li><em>Datatype</em>: <code>double</code></li>
 <li><em>Range</em>: <code>(-MAX_DOUBLE, MAX_DOUBLE)</code></li>
 </ul>
 <p><strong><code>mock_sail_trim_tab</code></strong></p>
 <ul>
-<li><em>Description</em>: Set to True if mock data for sail trim tab should be generated. False otherwise.</li>
+<li><em>Description</em>: Set to True if mock data for sail trim tab should be
+  generated. False otherwise.</li>
 <li><em>Datatype</em>: <code>bool</code></li>
 <li><em>Range</em>: <code>(True, False)</code></li>
 </ul>
 <p><strong><code>mock_sail_trim_tab_lower_bound</code></strong></p>
 <ul>
-<li><em>Description</em>: Gives a lower bound for randomizing sail trim tab values. This value should be less than <code>mock_sail_trim_tab_upper_bound</code>.</li>
+<li><em>Description</em>: Gives a lower bound for randomizing sail trim tab values.
+  This value should be less than <code>mock_sail_trim_tab_upper_bound</code>.</li>
 <li><em>Datatype</em>: <code>double</code></li>
 <li><em>Range</em>: <code>(-MAX_DOUBLE, MAX_DOUBLE)</code></li>
 </ul>
 <p><strong><code>mock_sail_trim_tab_upper_bound</code></strong></p>
 <ul>
-<li><em>Description</em>: Gives a upper bound for randomizing sail trim tab values. This value should be greater than <code>mock_sail_trim_tab_lower_bound</code>.</li>
+<li><em>Description</em>: Gives a upper bound for randomizing sail trim tab values.
+  This value should be greater than <code>mock_sail_trim_tab_lower_bound</code>.</li>
 <li><em>Datatype</em>: <code>double</code></li>
 <li><em>Range</em>: <code>(-MAX_DOUBLE, MAX_DOUBLE)</code></li>
 </ul>

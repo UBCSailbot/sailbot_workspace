@@ -2746,6 +2746,7 @@ Its README has been copied below.</p>
 <p>Using main launch file: <code>ros2 launch local_pathfinding main_launch.py</code></p>
 <h3 id="launch-parameters">Launch Parameters<a class="headerlink" href="#launch-parameters" title="Permanent link">&para;</a></h3>
 <p>Launch arguments are added to the run command in the format <code>&lt;name&gt;:=&lt;value&gt;</code>.</p>
+<!-- markdownlint-disable MD013 -->
 <table>
 <thead>
 <tr>
@@ -2758,7 +2759,7 @@ Its README has been copied below.</p>
 <tr>
 <td><code>log_level</code></td>
 <td>Logging level (default: <code>{INFO}</code>)</td>
-<td>A <a href="https://docs.ros.org/en/humble/Concepts/About-Logging.html#severity-level&gt;.">severity level</a> (case insensitive) <code>{DEBUG, INFO, WARN, ERROR, and FATAL}</code></td>
+<td>A <a href="https://docs.ros.org/en/humble/Concepts/About-Logging.html#severity-level">severity level</a> (case insensitive) <code>{DEBUG, INFO, WARN, ERROR, and FATAL}</code></td>
 </tr>
 <tr>
 <td><code>mode</code></td>
@@ -2772,12 +2773,19 @@ Its README has been copied below.</p>
 </tr>
 </tbody>
 </table>
+<!-- markdownlint-enable MD013 -->
+
 <h2 id="some-other-important-commands">Some other important commands<a class="headerlink" href="#some-other-important-commands" title="Permanent link">&para;</a></h2>
+<!-- markdownlint-disable MD013 -->
 <ul>
-<li><code>ros2 topic list</code>: Lists all the topics (<a href="https://docs.ros.org/en/humble/Tutorials/Beginner-CLI-Tools/Understanding-ROS2-Topics/Understanding-ROS2-Topics.html#ros2-topic-list">ROS 2 topic list documentation</a>)</li>
+<li><code>ros2 topic list</code>: Lists all the topics (<a href="https://docs.ros.org/en/humble/Tutorials/Beginner-CLI-Tools/Understanding-ROS2-Topics/Understanding-ROS2-Topics.html#ros2-topic-list">ROS 2 topic list documentation</a>)</li>
 <li><code>ros2 node list</code>: Lists all the nodes that are running</li>
 <li><code>ros2 topic echo &lt;topic name&gt;</code>, e.g.: <code>ros2 topic echo /filtered_wind_sensor</code>: (<a href="https://docs.ros.org/en/humble/Tutorials/Beginner-CLI-Tools/Understanding-ROS2-Topics/Understanding-ROS2-Topics.html#ros2-topic-echo:~:text=to%20avoid%20confusion.-,4%20ros2%20topic%20echo,-%EF%83%81">ROS2 topic echo documentation</a>)</li>
-<li>You can also do <code>ros2 topic echo &lt;topic name&gt; --field &lt;field name&gt;</code> to isolate a field in a topic (eg. <code>speed</code> in <code>\filtered_wind_sensor</code>)</li>
+<li>You can also do <code>ros2 topic echo &lt;topic name&gt; --field &lt;field name&gt;</code> to isolate
+  a field in a topic (eg. <code>speed</code> in <code>\filtered_wind_sensor</code>)</li>
+</ul>
+<!-- markdownlint-enable MD013 -->
+<ul>
 <li><code>ros2 &lt;command&gt; -h</code> can be used to get more info about any command.</li>
 </ul>
 

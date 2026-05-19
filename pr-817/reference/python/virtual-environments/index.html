@@ -2904,25 +2904,30 @@
 
 
 <h1 id="virtual-environments">Virtual Environments<a class="headerlink" href="#virtual-environments" title="Permanent link">&para;</a></h1>
-<p>The Python virtual environment is a tool for dependency management and project isolation. They solve many
-common issues, including:</p>
+<p>The Python virtual environment is a tool for dependency management and project
+isolation. They solve many common issues, including:</p>
 <ul>
 <li>
-<p><strong>Dependency Resolution:</strong> A project might want a package with version A while another project might want
-a package with version B. With a virtual environment, you can separate which packages that you want to use
-for a given project.</p>
+<p><strong>Dependency Resolution:</strong> A project might want a package with version A
+  while another project might want a package with version B. With a virtual
+  environment, you can separate which packages that you want to use for a
+  given project.</p>
 </li>
 <li>
-<p><strong>Project Isolation:</strong> The environment for your project is self-contained and reproducible by capturing all
-dependencies in a configuration file.</p>
+<p><strong>Project Isolation:</strong> The environment for your project is self-contained
+  and reproducible by capturing all dependencies in a configuration file.</p>
 </li>
 <li>
-<p><strong>Housekeeping:</strong> Virtual environments allow you to keep your global workspace tidy.</p>
+<p><strong>Housekeeping:</strong> Virtual environments allow you to keep your global
+  workspace tidy.</p>
 </li>
 </ul>
-<p>There are two main methods of creating virtual environments: <a href="https://pypi.org/project/virtualenv/" target="_blank">virtualenv</a>
-and <a href="https://www.anaconda.com/" target="_blank">Anaconda</a>. Each have their own benefits and drawbacks. Here are some differences
-between the two:</p>
+<p>There are two main methods of creating virtual environments:</p>
+<!-- markdownlint-disable-next-line MD013 -->
+<p><a href="https://pypi.org/project/virtualenv/" target="_blank">virtualenv</a>
+and <a href="https://www.anaconda.com/" target="_blank">Anaconda</a>. Each have their own
+benefits and drawbacks. Here are some differences between the two:</p>
+<!-- markdownlint-disable MD013 -->
 <table>
 <thead>
 <tr>
@@ -2953,46 +2958,54 @@ between the two:</p>
 </tr>
 </tbody>
 </table>
-<p>We recommend <strong>virtualenv</strong> over Anaconda because of its simplicity. However, feel free to appeal to your preferences.</p>
+<!-- markdownlint-enable MD013 -->
+
+<p>We recommend <strong>virtualenv</strong> over Anaconda because of its simplicity. However,
+feel free to appeal to your preferences.</p>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
 <div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19.14 7.5A2.86 2.86 0 0 1 22 10.36v3.78A2.86 2.86 0 0 1 19.14 17H12c0 .39.32.96.71.96H17v1.68a2.86 2.86 0 0 1-2.86 2.86H9.86A2.86 2.86 0 0 1 7 19.64v-3.75a2.85 2.85 0 0 1 2.86-2.85h5.25a2.85 2.85 0 0 0 2.85-2.86V7.5zm-4.28 11.79c-.4 0-.72.3-.72.89s.32.71.72.71a.71.71 0 0 0 .71-.71c0-.59-.32-.89-.71-.89m-10-1.79A2.86 2.86 0 0 1 2 14.64v-3.78A2.86 2.86 0 0 1 4.86 8H12c0-.39-.32-.96-.71-.96H7V5.36A2.86 2.86 0 0 1 9.86 2.5h4.28A2.86 2.86 0 0 1 17 5.36v3.75a2.85 2.85 0 0 1-2.86 2.85H8.89a2.85 2.85 0 0 0-2.85 2.86v2.68zM9.14 5.71c.4 0 .72-.3.72-.89s-.32-.71-.72-.71c-.39 0-.71.12-.71.71s.32.89.71.89"/></svg></span> Virtualenv</label><label for="__tabbed_1_2"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12.045.033a12.181 12.182 0 0 0-1.361.078 17.512 17.513 0 0 1 1.813 1.433l.48.438-.465.45a15 15 0 0 0-1.126 1.205l-.178.215a9 9 0 0 1 .86-.05 8.154 8.155 0 1 1-4.286 15.149 15.764 15.765 0 0 1-1.841.106h-.86a22 22 0 0 0 .264 2.866 11.966 11.967 0 1 0 6.7-21.89M8.17.678a12.181 12.182 0 0 0-2.624 1.275 16 16 0 0 1 1.813.43A18.551 18.552 0 0 1 8.17.678M9.423.75a16.237 16.238 0 0 0-.995 1.998 16.15 16.152 0 0 1 1.605.66 7 7 0 0 1 .43-.509q.35-.43.716-.817A15 15 0 0 0 9.423.75M4.68 2.949a14.969 14.97 0 0 0 0 2.336c.587-.065 1.196-.1 1.812-.107a17 17 0 0 1 .48-1.748 16.48 16.481 0 0 0-2.292-.481M3.62 3.5a12 12 0 0 0-1.858 2.38 17 17 0 0 1 1.877-.444A17 17 0 0 1 3.62 3.5m4.406.287c-.143.437-.265.888-.38 1.347a8.3 8.3 0 0 1 1.67-.803c-.423-.2-.845-.38-1.29-.544M6.3 6.216a14 14 0 0 0-1.555.108c.064.523.157 1.038.272 1.554A8.4 8.4 0 0 1 6.3 6.216m-2.55.137a15.3 15.3 0 0 0-2.602.716H1.07v.079a17.104 17.105 0 0 0 1.267 2.544l.043.071.072-.049a16 16 0 0 1 1.734-1.083l.057-.035V8.54a17 17 0 0 1-.408-2.094v-.092zM.644 8.095l-.063.2A11.844 11.845 0 0 0 0 11.655v.209l.143-.152a17.706 17.707 0 0 1 1.584-1.447l.057-.043-.043-.064a16 16 0 0 1-1.025-1.87zm3.77 1.253-.18.1c-.465.273-.93.573-1.375.889l-.065.05.05.064c.309.437.645.867.996 1.276l.137.165v-.208a8.2 8.2 0 0 1 .364-2.15zM2.2 10.853l-.072.05a16.6 16.6 0 0 0-1.813 1.734l-.058.058.066.057a15.5 15.5 0 0 0 1.991 1.483l.072.05.043-.08a16.738 16.74 0 0 1 1.053-1.64v-.05l-.043-.05a17 17 0 0 1-1.19-1.54zm1.855 2.071-.121.172a15 15 0 0 0-.917 1.433l-.043.072.071.043a17 17 0 0 0 1.562.766l.193.086-.086-.193a8 8 0 0 1-.66-2.172zm-3.976.48v.2a11.758 11.759 0 0 0 .946 3.326l.078.186.072-.194a16.215 16.216 0 0 1 .845-2l.057-.063-.064-.043a17.197 17.198 0 0 1-1.776-1.284zm2.543 1.805-.035.08a15.764 15.765 0 0 0-.983 2.479v.08h.086a16.15 16.152 0 0 0 2.688.5l.072.007v-.086a18 18 0 0 1 .164-2.056v-.065H4.55a16 16 0 0 1-1.849-.896zm2.544 1.169v.114a17 17 0 0 0-.151 1.828v.078h.931c.287 0 .624.014.946 0h.209l-.166-.129a8 8 0 0 1-1.64-1.834zm-3.29 2.1.115.172a12 12 0 0 0 2.502 2.737l.157.129v-.201a22.578 22.58 0 0 1-.2-2.336v-.071h-.072a16 16 0 0 1-2.3-.387z"/></svg></span> Anaconda</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<p>If you already have python and the pip package manager installed, just execute the following:</p>
+<p>If you already have python and the pip package manager installed, just
+execute the following:</p>
 <div class="highlight"><span class="filename">Using pip to install virtualenv</span><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>virtualenv
 </code></pre></div>
 </div>
 <div class="tabbed-block">
-<p>Go to the official <a href="https://www.anaconda.com/" target="_blank">Anaconda website</a> and follow the installation
-instructions for your operating system.</p>
+<p>Go to the official
+<a href="https://www.anaconda.com/" target="_blank">Anaconda website</a> and follow
+the installation instructions for your operating system.</p>
 </div>
 </div>
 </div>
 <h2 id="using-virtual-environments">Using virtual environments<a class="headerlink" href="#using-virtual-environments" title="Permanent link">&para;</a></h2>
-<p>The name of a virtual environment is configurable. For the purposes of this site, we will use <code>env</code> as the environment
-name unless specified otherwise.</p>
+<p>The name of a virtual environment is configurable. For the purposes of this
+site, we will use <code>env</code> as the environment name unless specified otherwise.</p>
 <h3 id="creating-a-virtual-environment">Creating a virtual environment<a class="headerlink" href="#creating-a-virtual-environment" title="Permanent link">&para;</a></h3>
 <div class="tabbed-set tabbed-alternate" data-tabs="2:2"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19.14 7.5A2.86 2.86 0 0 1 22 10.36v3.78A2.86 2.86 0 0 1 19.14 17H12c0 .39.32.96.71.96H17v1.68a2.86 2.86 0 0 1-2.86 2.86H9.86A2.86 2.86 0 0 1 7 19.64v-3.75a2.85 2.85 0 0 1 2.86-2.85h5.25a2.85 2.85 0 0 0 2.85-2.86V7.5zm-4.28 11.79c-.4 0-.72.3-.72.89s.32.71.72.71a.71.71 0 0 0 .71-.71c0-.59-.32-.89-.71-.89m-10-1.79A2.86 2.86 0 0 1 2 14.64v-3.78A2.86 2.86 0 0 1 4.86 8H12c0-.39-.32-.96-.71-.96H7V5.36A2.86 2.86 0 0 1 9.86 2.5h4.28A2.86 2.86 0 0 1 17 5.36v3.75a2.85 2.85 0 0 1-2.86 2.85H8.89a2.85 2.85 0 0 0-2.85 2.86v2.68zM9.14 5.71c.4 0 .72-.3.72-.89s-.32-.71-.72-.71c-.39 0-.71.12-.71.71s.32.89.71.89"/></svg></span> Virtualenv</label><label for="__tabbed_2_2"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12.045.033a12.181 12.182 0 0 0-1.361.078 17.512 17.513 0 0 1 1.813 1.433l.48.438-.465.45a15 15 0 0 0-1.126 1.205l-.178.215a9 9 0 0 1 .86-.05 8.154 8.155 0 1 1-4.286 15.149 15.764 15.765 0 0 1-1.841.106h-.86a22 22 0 0 0 .264 2.866 11.966 11.967 0 1 0 6.7-21.89M8.17.678a12.181 12.182 0 0 0-2.624 1.275 16 16 0 0 1 1.813.43A18.551 18.552 0 0 1 8.17.678M9.423.75a16.237 16.238 0 0 0-.995 1.998 16.15 16.152 0 0 1 1.605.66 7 7 0 0 1 .43-.509q.35-.43.716-.817A15 15 0 0 0 9.423.75M4.68 2.949a14.969 14.97 0 0 0 0 2.336c.587-.065 1.196-.1 1.812-.107a17 17 0 0 1 .48-1.748 16.48 16.481 0 0 0-2.292-.481M3.62 3.5a12 12 0 0 0-1.858 2.38 17 17 0 0 1 1.877-.444A17 17 0 0 1 3.62 3.5m4.406.287c-.143.437-.265.888-.38 1.347a8.3 8.3 0 0 1 1.67-.803c-.423-.2-.845-.38-1.29-.544M6.3 6.216a14 14 0 0 0-1.555.108c.064.523.157 1.038.272 1.554A8.4 8.4 0 0 1 6.3 6.216m-2.55.137a15.3 15.3 0 0 0-2.602.716H1.07v.079a17.104 17.105 0 0 0 1.267 2.544l.043.071.072-.049a16 16 0 0 1 1.734-1.083l.057-.035V8.54a17 17 0 0 1-.408-2.094v-.092zM.644 8.095l-.063.2A11.844 11.845 0 0 0 0 11.655v.209l.143-.152a17.706 17.707 0 0 1 1.584-1.447l.057-.043-.043-.064a16 16 0 0 1-1.025-1.87zm3.77 1.253-.18.1c-.465.273-.93.573-1.375.889l-.065.05.05.064c.309.437.645.867.996 1.276l.137.165v-.208a8.2 8.2 0 0 1 .364-2.15zM2.2 10.853l-.072.05a16.6 16.6 0 0 0-1.813 1.734l-.058.058.066.057a15.5 15.5 0 0 0 1.991 1.483l.072.05.043-.08a16.738 16.74 0 0 1 1.053-1.64v-.05l-.043-.05a17 17 0 0 1-1.19-1.54zm1.855 2.071-.121.172a15 15 0 0 0-.917 1.433l-.043.072.071.043a17 17 0 0 0 1.562.766l.193.086-.086-.193a8 8 0 0 1-.66-2.172zm-3.976.48v.2a11.758 11.759 0 0 0 .946 3.326l.078.186.072-.194a16.215 16.216 0 0 1 .845-2l.057-.063-.064-.043a17.197 17.198 0 0 1-1.776-1.284zm2.543 1.805-.035.08a15.764 15.765 0 0 0-.983 2.479v.08h.086a16.15 16.152 0 0 0 2.688.5l.072.007v-.086a18 18 0 0 1 .164-2.056v-.065H4.55a16 16 0 0 1-1.849-.896zm2.544 1.169v.114a17 17 0 0 0-.151 1.828v.078h.931c.287 0 .624.014.946 0h.209l-.166-.129a8 8 0 0 1-1.64-1.834zm-3.29 2.1.115.172a12 12 0 0 0 2.502 2.737l.157.129v-.201a22.578 22.58 0 0 1-.2-2.336v-.071h-.072a16 16 0 0 1-2.3-.387z"/></svg></span> Anaconda</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<p>Since virtualenv creates the environment directory in a specific location, make sure that you
-are in the located in the project that you want to work on.</p>
+<p>Since virtualenv creates the environment directory in a specific location,
+make sure that you are in the located in the project that you want to
+work on.</p>
 <div class="highlight"><span class="filename">Create virtual environment with virtualenv</span><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Go to desired location</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nb">cd</span><span class="w"> </span>&lt;PATH<span class="w"> </span>TO<span class="w"> </span>DIRECTORY&gt;
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># Create the environment with the name env</span>
 <a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>python3<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>env
 </code></pre></div>
-<p>Verify that your environment is created by examining your current directory and look for the directory
-that matches the name of your virtual environment.</p>
+<p>Verify that your environment is created by examining your current
+directory and look for the directory that matches the name of your
+virtual environment.</p>
 </div>
 <div class="tabbed-block">
-<p>Since the environment will be available globally, there is no need to go to a specific location to create
-it.</p>
+<p>Since the environment will be available globally, there is no need to go
+to a specific location to create it.</p>
 <div class="highlight"><span class="filename">Create virtual environment with Anaconda</span><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Create environment with name env and python version</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>conda<span class="w"> </span>env<span class="w"> </span>create<span class="w"> </span>-n<span class="w"> </span>env<span class="w"> </span><span class="nv">python</span><span class="o">=</span>&lt;PYTHON<span class="w"> </span>VERSION<span class="w"> </span>NUM&gt;
 </code></pre></div>
-<p>If you don't specify a python version, the default is the version you used when you downloaded and installed Anaconda.
+<p>If you don't specify a python version, the default is the version you
+used when you downloaded and installed Anaconda.
 Verify that your environment is created by executing <code>conda env list</code>.</p>
 </div>
 </div>
@@ -3025,17 +3038,20 @@ Verify that your environment is created by executing <code>conda env list</code>
 </div>
 </div>
 </div>
-<p>After activating your virtual environment, you might see <code>(env)</code> on your terminal before or after
-your current line. Now you are in your virtual environment!</p>
+<p>After activating your virtual environment, you might see <code>(env)</code> on your
+terminal before or after your current line. Now you are in your virtual
+environment!</p>
 <h3 id="installing-dependencies">Installing dependencies<a class="headerlink" href="#installing-dependencies" title="Permanent link">&para;</a></h3>
-<p>Any dependencies that you install while your virtual environment is activated are only available in your virtual
-environment. If you deactivate your environment and try to use those dependencies, you will find that you will get
-errors because they will not be found unless you install those dependencies in the other environment!</p>
+<p>Any dependencies that you install while your virtual environment is activated
+are only available in your virtual environment. If you deactivate your
+environment and try to use those dependencies, you will find that you will
+get errors because they will not be found unless you install those
+dependencies in the other environment!</p>
 <div class="tabbed-set tabbed-alternate" data-tabs="5:2"><input checked="checked" id="__tabbed_5_1" name="__tabbed_5" type="radio" /><input id="__tabbed_5_2" name="__tabbed_5" type="radio" /><div class="tabbed-labels"><label for="__tabbed_5_1"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19.14 7.5A2.86 2.86 0 0 1 22 10.36v3.78A2.86 2.86 0 0 1 19.14 17H12c0 .39.32.96.71.96H17v1.68a2.86 2.86 0 0 1-2.86 2.86H9.86A2.86 2.86 0 0 1 7 19.64v-3.75a2.85 2.85 0 0 1 2.86-2.85h5.25a2.85 2.85 0 0 0 2.85-2.86V7.5zm-4.28 11.79c-.4 0-.72.3-.72.89s.32.71.72.71a.71.71 0 0 0 .71-.71c0-.59-.32-.89-.71-.89m-10-1.79A2.86 2.86 0 0 1 2 14.64v-3.78A2.86 2.86 0 0 1 4.86 8H12c0-.39-.32-.96-.71-.96H7V5.36A2.86 2.86 0 0 1 9.86 2.5h4.28A2.86 2.86 0 0 1 17 5.36v3.75a2.85 2.85 0 0 1-2.86 2.85H8.89a2.85 2.85 0 0 0-2.85 2.86v2.68zM9.14 5.71c.4 0 .72-.3.72-.89s-.32-.71-.72-.71c-.39 0-.71.12-.71.71s.32.89.71.89"/></svg></span> Virtualenv</label><label for="__tabbed_5_2"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12.045.033a12.181 12.182 0 0 0-1.361.078 17.512 17.513 0 0 1 1.813 1.433l.48.438-.465.45a15 15 0 0 0-1.126 1.205l-.178.215a9 9 0 0 1 .86-.05 8.154 8.155 0 1 1-4.286 15.149 15.764 15.765 0 0 1-1.841.106h-.86a22 22 0 0 0 .264 2.866 11.966 11.967 0 1 0 6.7-21.89M8.17.678a12.181 12.182 0 0 0-2.624 1.275 16 16 0 0 1 1.813.43A18.551 18.552 0 0 1 8.17.678M9.423.75a16.237 16.238 0 0 0-.995 1.998 16.15 16.152 0 0 1 1.605.66 7 7 0 0 1 .43-.509q.35-.43.716-.817A15 15 0 0 0 9.423.75M4.68 2.949a14.969 14.97 0 0 0 0 2.336c.587-.065 1.196-.1 1.812-.107a17 17 0 0 1 .48-1.748 16.48 16.481 0 0 0-2.292-.481M3.62 3.5a12 12 0 0 0-1.858 2.38 17 17 0 0 1 1.877-.444A17 17 0 0 1 3.62 3.5m4.406.287c-.143.437-.265.888-.38 1.347a8.3 8.3 0 0 1 1.67-.803c-.423-.2-.845-.38-1.29-.544M6.3 6.216a14 14 0 0 0-1.555.108c.064.523.157 1.038.272 1.554A8.4 8.4 0 0 1 6.3 6.216m-2.55.137a15.3 15.3 0 0 0-2.602.716H1.07v.079a17.104 17.105 0 0 0 1.267 2.544l.043.071.072-.049a16 16 0 0 1 1.734-1.083l.057-.035V8.54a17 17 0 0 1-.408-2.094v-.092zM.644 8.095l-.063.2A11.844 11.845 0 0 0 0 11.655v.209l.143-.152a17.706 17.707 0 0 1 1.584-1.447l.057-.043-.043-.064a16 16 0 0 1-1.025-1.87zm3.77 1.253-.18.1c-.465.273-.93.573-1.375.889l-.065.05.05.064c.309.437.645.867.996 1.276l.137.165v-.208a8.2 8.2 0 0 1 .364-2.15zM2.2 10.853l-.072.05a16.6 16.6 0 0 0-1.813 1.734l-.058.058.066.057a15.5 15.5 0 0 0 1.991 1.483l.072.05.043-.08a16.738 16.74 0 0 1 1.053-1.64v-.05l-.043-.05a17 17 0 0 1-1.19-1.54zm1.855 2.071-.121.172a15 15 0 0 0-.917 1.433l-.043.072.071.043a17 17 0 0 0 1.562.766l.193.086-.086-.193a8 8 0 0 1-.66-2.172zm-3.976.48v.2a11.758 11.759 0 0 0 .946 3.326l.078.186.072-.194a16.215 16.216 0 0 1 .845-2l.057-.063-.064-.043a17.197 17.198 0 0 1-1.776-1.284zm2.543 1.805-.035.08a15.764 15.765 0 0 0-.983 2.479v.08h.086a16.15 16.152 0 0 0 2.688.5l.072.007v-.086a18 18 0 0 1 .164-2.056v-.065H4.55a16 16 0 0 1-1.849-.896zm2.544 1.169v.114a17 17 0 0 0-.151 1.828v.078h.931c.287 0 .624.014.946 0h.209l-.166-.129a8 8 0 0 1-1.64-1.834zm-3.29 2.1.115.172a12 12 0 0 0 2.502 2.737l.157.129v-.201a22.578 22.58 0 0 1-.2-2.336v-.071h-.072a16 16 0 0 1-2.3-.387z"/></svg></span> Anaconda</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<p>Use the <code>pip</code> package manager to install python dependencies. Before installing any Python dependencies, it is good
-practice to upgrade <code>pip</code>:</p>
+<p>Use the <code>pip</code> package manager to install python dependencies. Before
+installing any Python dependencies, it is good practice to upgrade <code>pip</code>:</p>
 <div class="highlight"><span class="filename">Upgrade pip</span><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span>pip
 </code></pre></div>
 <p>Now, install any Python dependencies <code>pip</code>:</p>
@@ -3055,13 +3071,18 @@ practice to upgrade <code>pip</code>:</p>
 </code></pre></div>
 </div>
 <div class="tabbed-block">
-<p>Use the built-in <code>conda</code> package manager to install python dependencies.</p>
+<p>Use the built-in <code>conda</code> package manager to install python
+dependencies.</p>
 <div class="highlight"><span class="filename">Install dependency with conda</span><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>&lt;CHANNEL&gt;<span class="w"> </span>&lt;PACKAGE&gt;
 </code></pre></div>
-<p>Sometimes, installing a package like this simply won't work because you are not installing
-from the correct <a href="https://conda.io/projects/conda/en/latest/user-guide/concepts/channels.html" target="_blank">channel</a>.
-You usually will have to google the command to use in order to install your package correctly because
-it usually comes from a specific channel that you don't know about. Some common channels to try are:</p>
+<p>Sometimes, installing a package like this simply won't work because
+you are not installing from the correct
+<!-- markdownlint-disable-next-line MD013 -->
+<a href="https://conda.io/projects/conda/en/latest/user-guide/concepts/channels.html" target="_blank">channel</a>.
+You usually will have to google the command to use in order to
+install your package correctly because it usually comes from a
+specific channel that you don't know about. Some common channels to
+try are:</p>
 <ul>
 <li>conda-forge</li>
 <li>anaconda</li>
@@ -3075,7 +3096,8 @@ it usually comes from a specific channel that you don't know about. Some common 
 </div>
 </div>
 <h3 id="deactivating-the-virtual-environment">Deactivating the virtual environment<a class="headerlink" href="#deactivating-the-virtual-environment" title="Permanent link">&para;</a></h3>
-<p>When you are finished using your virtual environment, you will need to deactivate it.</p>
+<p>When you are finished using your virtual environment, you will need to
+deactivate it.</p>
 <div class="tabbed-set tabbed-alternate" data-tabs="7:2"><input checked="checked" id="__tabbed_7_1" name="__tabbed_7" type="radio" /><input id="__tabbed_7_2" name="__tabbed_7" type="radio" /><div class="tabbed-labels"><label for="__tabbed_7_1"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19.14 7.5A2.86 2.86 0 0 1 22 10.36v3.78A2.86 2.86 0 0 1 19.14 17H12c0 .39.32.96.71.96H17v1.68a2.86 2.86 0 0 1-2.86 2.86H9.86A2.86 2.86 0 0 1 7 19.64v-3.75a2.85 2.85 0 0 1 2.86-2.85h5.25a2.85 2.85 0 0 0 2.85-2.86V7.5zm-4.28 11.79c-.4 0-.72.3-.72.89s.32.71.72.71a.71.71 0 0 0 .71-.71c0-.59-.32-.89-.71-.89m-10-1.79A2.86 2.86 0 0 1 2 14.64v-3.78A2.86 2.86 0 0 1 4.86 8H12c0-.39-.32-.96-.71-.96H7V5.36A2.86 2.86 0 0 1 9.86 2.5h4.28A2.86 2.86 0 0 1 17 5.36v3.75a2.85 2.85 0 0 1-2.86 2.85H8.89a2.85 2.85 0 0 0-2.85 2.86v2.68zM9.14 5.71c.4 0 .72-.3.72-.89s-.32-.71-.72-.71c-.39 0-.71.12-.71.71s.32.89.71.89"/></svg></span> Virtualenv</label><label for="__tabbed_7_2"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12.045.033a12.181 12.182 0 0 0-1.361.078 17.512 17.513 0 0 1 1.813 1.433l.48.438-.465.45a15 15 0 0 0-1.126 1.205l-.178.215a9 9 0 0 1 .86-.05 8.154 8.155 0 1 1-4.286 15.149 15.764 15.765 0 0 1-1.841.106h-.86a22 22 0 0 0 .264 2.866 11.966 11.967 0 1 0 6.7-21.89M8.17.678a12.181 12.182 0 0 0-2.624 1.275 16 16 0 0 1 1.813.43A18.551 18.552 0 0 1 8.17.678M9.423.75a16.237 16.238 0 0 0-.995 1.998 16.15 16.152 0 0 1 1.605.66 7 7 0 0 1 .43-.509q.35-.43.716-.817A15 15 0 0 0 9.423.75M4.68 2.949a14.969 14.97 0 0 0 0 2.336c.587-.065 1.196-.1 1.812-.107a17 17 0 0 1 .48-1.748 16.48 16.481 0 0 0-2.292-.481M3.62 3.5a12 12 0 0 0-1.858 2.38 17 17 0 0 1 1.877-.444A17 17 0 0 1 3.62 3.5m4.406.287c-.143.437-.265.888-.38 1.347a8.3 8.3 0 0 1 1.67-.803c-.423-.2-.845-.38-1.29-.544M6.3 6.216a14 14 0 0 0-1.555.108c.064.523.157 1.038.272 1.554A8.4 8.4 0 0 1 6.3 6.216m-2.55.137a15.3 15.3 0 0 0-2.602.716H1.07v.079a17.104 17.105 0 0 0 1.267 2.544l.043.071.072-.049a16 16 0 0 1 1.734-1.083l.057-.035V8.54a17 17 0 0 1-.408-2.094v-.092zM.644 8.095l-.063.2A11.844 11.845 0 0 0 0 11.655v.209l.143-.152a17.706 17.707 0 0 1 1.584-1.447l.057-.043-.043-.064a16 16 0 0 1-1.025-1.87zm3.77 1.253-.18.1c-.465.273-.93.573-1.375.889l-.065.05.05.064c.309.437.645.867.996 1.276l.137.165v-.208a8.2 8.2 0 0 1 .364-2.15zM2.2 10.853l-.072.05a16.6 16.6 0 0 0-1.813 1.734l-.058.058.066.057a15.5 15.5 0 0 0 1.991 1.483l.072.05.043-.08a16.738 16.74 0 0 1 1.053-1.64v-.05l-.043-.05a17 17 0 0 1-1.19-1.54zm1.855 2.071-.121.172a15 15 0 0 0-.917 1.433l-.043.072.071.043a17 17 0 0 0 1.562.766l.193.086-.086-.193a8 8 0 0 1-.66-2.172zm-3.976.48v.2a11.758 11.759 0 0 0 .946 3.326l.078.186.072-.194a16.215 16.216 0 0 1 .845-2l.057-.063-.064-.043a17.197 17.198 0 0 1-1.776-1.284zm2.543 1.805-.035.08a15.764 15.765 0 0 0-.983 2.479v.08h.086a16.15 16.152 0 0 0 2.688.5l.072.007v-.086a18 18 0 0 1 .164-2.056v-.065H4.55a16 16 0 0 1-1.849-.896zm2.544 1.169v.114a17 17 0 0 0-.151 1.828v.078h.931c.287 0 .624.014.946 0h.209l-.166-.129a8 8 0 0 1-1.64-1.834zm-3.29 2.1.115.172a12 12 0 0 0 2.502 2.737l.157.129v-.201a22.578 22.58 0 0 1-.2-2.336v-.071h-.072a16 16 0 0 1-2.3-.387z"/></svg></span> Anaconda</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
@@ -3089,38 +3111,46 @@ it usually comes from a specific channel that you don't know about. Some common 
 </div>
 </div>
 <h2 id="reproducing-your-virtual-environment">Reproducing your virtual environment<a class="headerlink" href="#reproducing-your-virtual-environment" title="Permanent link">&para;</a></h2>
-<p>When you want to share your code with others, it is important for others to be able to reproduce the environment
-that you worked in. We discuss two topics in this section: exporting your environment and reproducing the environment.</p>
+<p>When you want to share your code with others, it is important for others to
+be able to reproduce the environment that you worked in. We discuss two
+topics in this section: exporting your environment and reproducing the
+environment.</p>
 <h3 id="exporting-your-virtual-environment">Exporting your virtual environment<a class="headerlink" href="#exporting-your-virtual-environment" title="Permanent link">&para;</a></h3>
-<p>In order to reproduce your virtual environment, you need to export some information about your environment.
-Be sure to follow the instructions below <strong>while your environment is activated</strong>.</p>
+<p>In order to reproduce your virtual environment, you need to export some
+information about your environment.
+Be sure to follow the instructions below <strong>while your environment is
+activated</strong>.</p>
 <div class="tabbed-set tabbed-alternate" data-tabs="8:2"><input checked="checked" id="__tabbed_8_1" name="__tabbed_8" type="radio" /><input id="__tabbed_8_2" name="__tabbed_8" type="radio" /><div class="tabbed-labels"><label for="__tabbed_8_1"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19.14 7.5A2.86 2.86 0 0 1 22 10.36v3.78A2.86 2.86 0 0 1 19.14 17H12c0 .39.32.96.71.96H17v1.68a2.86 2.86 0 0 1-2.86 2.86H9.86A2.86 2.86 0 0 1 7 19.64v-3.75a2.85 2.85 0 0 1 2.86-2.85h5.25a2.85 2.85 0 0 0 2.85-2.86V7.5zm-4.28 11.79c-.4 0-.72.3-.72.89s.32.71.72.71a.71.71 0 0 0 .71-.71c0-.59-.32-.89-.71-.89m-10-1.79A2.86 2.86 0 0 1 2 14.64v-3.78A2.86 2.86 0 0 1 4.86 8H12c0-.39-.32-.96-.71-.96H7V5.36A2.86 2.86 0 0 1 9.86 2.5h4.28A2.86 2.86 0 0 1 17 5.36v3.75a2.85 2.85 0 0 1-2.86 2.85H8.89a2.85 2.85 0 0 0-2.85 2.86v2.68zM9.14 5.71c.4 0 .72-.3.72-.89s-.32-.71-.72-.71c-.39 0-.71.12-.71.71s.32.89.71.89"/></svg></span> Virtualenv</label><label for="__tabbed_8_2"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12.045.033a12.181 12.182 0 0 0-1.361.078 17.512 17.513 0 0 1 1.813 1.433l.48.438-.465.45a15 15 0 0 0-1.126 1.205l-.178.215a9 9 0 0 1 .86-.05 8.154 8.155 0 1 1-4.286 15.149 15.764 15.765 0 0 1-1.841.106h-.86a22 22 0 0 0 .264 2.866 11.966 11.967 0 1 0 6.7-21.89M8.17.678a12.181 12.182 0 0 0-2.624 1.275 16 16 0 0 1 1.813.43A18.551 18.552 0 0 1 8.17.678M9.423.75a16.237 16.238 0 0 0-.995 1.998 16.15 16.152 0 0 1 1.605.66 7 7 0 0 1 .43-.509q.35-.43.716-.817A15 15 0 0 0 9.423.75M4.68 2.949a14.969 14.97 0 0 0 0 2.336c.587-.065 1.196-.1 1.812-.107a17 17 0 0 1 .48-1.748 16.48 16.481 0 0 0-2.292-.481M3.62 3.5a12 12 0 0 0-1.858 2.38 17 17 0 0 1 1.877-.444A17 17 0 0 1 3.62 3.5m4.406.287c-.143.437-.265.888-.38 1.347a8.3 8.3 0 0 1 1.67-.803c-.423-.2-.845-.38-1.29-.544M6.3 6.216a14 14 0 0 0-1.555.108c.064.523.157 1.038.272 1.554A8.4 8.4 0 0 1 6.3 6.216m-2.55.137a15.3 15.3 0 0 0-2.602.716H1.07v.079a17.104 17.105 0 0 0 1.267 2.544l.043.071.072-.049a16 16 0 0 1 1.734-1.083l.057-.035V8.54a17 17 0 0 1-.408-2.094v-.092zM.644 8.095l-.063.2A11.844 11.845 0 0 0 0 11.655v.209l.143-.152a17.706 17.707 0 0 1 1.584-1.447l.057-.043-.043-.064a16 16 0 0 1-1.025-1.87zm3.77 1.253-.18.1c-.465.273-.93.573-1.375.889l-.065.05.05.064c.309.437.645.867.996 1.276l.137.165v-.208a8.2 8.2 0 0 1 .364-2.15zM2.2 10.853l-.072.05a16.6 16.6 0 0 0-1.813 1.734l-.058.058.066.057a15.5 15.5 0 0 0 1.991 1.483l.072.05.043-.08a16.738 16.74 0 0 1 1.053-1.64v-.05l-.043-.05a17 17 0 0 1-1.19-1.54zm1.855 2.071-.121.172a15 15 0 0 0-.917 1.433l-.043.072.071.043a17 17 0 0 0 1.562.766l.193.086-.086-.193a8 8 0 0 1-.66-2.172zm-3.976.48v.2a11.758 11.759 0 0 0 .946 3.326l.078.186.072-.194a16.215 16.216 0 0 1 .845-2l.057-.063-.064-.043a17.197 17.198 0 0 1-1.776-1.284zm2.543 1.805-.035.08a15.764 15.765 0 0 0-.983 2.479v.08h.086a16.15 16.152 0 0 0 2.688.5l.072.007v-.086a18 18 0 0 1 .164-2.056v-.065H4.55a16 16 0 0 1-1.849-.896zm2.544 1.169v.114a17 17 0 0 0-.151 1.828v.078h.931c.287 0 .624.014.946 0h.209l-.166-.129a8 8 0 0 1-1.64-1.834zm-3.29 2.1.115.172a12 12 0 0 0 2.502 2.737l.157.129v-.201a22.578 22.58 0 0 1-.2-2.336v-.071h-.072a16 16 0 0 1-2.3-.387z"/></svg></span> Anaconda</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<p>You will create a <code>requirements.txt</code> file, which essentially lists all of your python dependencies in one
-file:</p>
+<p>You will create a <code>requirements.txt</code> file, which essentially lists all of
+your python dependencies in one file:</p>
 <div class="highlight"><span class="filename">Creating requirements file</span><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>pip<span class="w"> </span>freeze<span class="w"> </span>&gt;<span class="w"> </span>requirements.txt
 </code></pre></div>
-<p>The <code>pip freeze</code> command prints all of your pip dependencies, and <code>&gt; requirements.txt</code> redirects the output
-to a text file.</p>
+<p>The <code>pip freeze</code> command prints all of your pip dependencies, and
+<code>&gt; requirements.txt</code> redirects the output to a text file.</p>
 </div>
 <div class="tabbed-block">
 <p>Anaconda uses configuration files to recreate an environment.</p>
 <div class="tabbed-set tabbed-alternate" data-tabs="9:3"><input checked="checked" id="__tabbed_9_1" name="__tabbed_9" type="radio" /><input id="__tabbed_9_2" name="__tabbed_9" type="radio" /><input id="__tabbed_9_3" name="__tabbed_9" type="radio" /><div class="tabbed-labels"><label for="__tabbed_9_1"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 12V6.75l6-1.32v6.48zm17-9v8.75l-10 .15V5.21zM3 13l6 .09v6.81l-6-1.15zm17 .25V22l-10-1.91V13.1z"/></svg></span> Windows</label><label for="__tabbed_9_2"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11"/></svg></span> macOS</label><label for="__tabbed_9_3"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14.62 8.35c-.42.28-1.75 1.04-1.95 1.19-.39.31-.75.29-1.14-.01-.2-.16-1.53-.92-1.95-1.19-.48-.31-.45-.7.08-.92 1.64-.69 3.28-.64 4.91.03.49.21.51.6.05.9m7.22 7.28c-.93-2.09-2.2-3.99-3.84-5.66a4.3 4.3 0 0 1-1.06-1.88c-.1-.33-.17-.67-.24-1.01-.2-.88-.29-1.78-.7-2.61-.73-1.58-2-2.4-3.84-2.47-1.81.05-3.16.81-3.95 2.4-.21.43-.36.88-.46 1.34-.17.76-.32 1.55-.5 2.32-.15.65-.45 1.21-.96 1.71-1.61 1.57-2.9 3.37-3.88 5.35-.14.29-.28.58-.37.88-.19.66.29 1.12.99.96.44-.09.88-.18 1.3-.31.41-.15.57-.05.67.35.65 2.15 2.07 3.66 4.24 4.5 4.12 1.56 8.93-.66 9.97-4.58.07-.27.17-.37.47-.27.46.14.93.24 1.4.35.49.09.85-.16.92-.64.03-.26-.06-.49-.16-.73"/></svg></span> Linux</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<p>Execute the following command to create a file called <code>environment.yml</code>:</p>
+<p>Execute the following command to create a file called
+<code>environment.yml</code>:</p>
 <div class="highlight"><span class="filename">Create config file</span><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>conda env export <span class="p">&gt;</span> environment.yml
 </code></pre></div>
-<p>Then, open the <code>environment.yml</code> file and delete the line with <code>prefix:</code>.</p>
+<p>Then, open the <code>environment.yml</code> file and delete the line with
+<code>prefix:</code>.</p>
 </div>
 <div class="tabbed-block">
-<p>Execute the following command to create a file called <code>environment.yml</code>:</p>
+<p>Execute the following command to create a file called
+<code>environment.yml</code>:</p>
 <div class="highlight"><span class="filename">Create config file</span><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>conda<span class="w"> </span>env<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-v<span class="w"> </span><span class="s2">&quot;^prefix: &quot;</span><span class="w"> </span>&gt;<span class="w"> </span>environment.yml
 </code></pre></div>
 </div>
 <div class="tabbed-block">
-<p>Execute the following command to create a file called <code>environment.yml</code>:</p>
+<p>Execute the following command to create a file called
+<code>environment.yml</code>:</p>
 <div class="highlight"><span class="filename">Create config file</span><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>conda<span class="w"> </span>env<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-v<span class="w"> </span><span class="s2">&quot;^prefix: &quot;</span><span class="w"> </span>&gt;<span class="w"> </span>environment.yml
 </code></pre></div>
 </div>
@@ -3130,13 +3160,16 @@ to a text file.</p>
 </div>
 </div>
 <h3 id="reproducing-the-environment">Reproducing the environment<a class="headerlink" href="#reproducing-the-environment" title="Permanent link">&para;</a></h3>
-<p>You can reproduce your virtual environment when given the information about it. The steps above tell you how
-to extract the information, and now we will use that information to recreate the virtual environment.
-Remember to <strong>deactivate the current environment</strong> before making a new environment.</p>
+<p>You can reproduce your virtual environment when given the information about
+it. The steps above tell you how to extract the information, and now we will
+use that information to recreate the virtual environment.
+Remember to <strong>deactivate the current environment</strong> before making a new
+environment.</p>
 <div class="tabbed-set tabbed-alternate" data-tabs="10:2"><input checked="checked" id="__tabbed_10_1" name="__tabbed_10" type="radio" /><input id="__tabbed_10_2" name="__tabbed_10" type="radio" /><div class="tabbed-labels"><label for="__tabbed_10_1"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19.14 7.5A2.86 2.86 0 0 1 22 10.36v3.78A2.86 2.86 0 0 1 19.14 17H12c0 .39.32.96.71.96H17v1.68a2.86 2.86 0 0 1-2.86 2.86H9.86A2.86 2.86 0 0 1 7 19.64v-3.75a2.85 2.85 0 0 1 2.86-2.85h5.25a2.85 2.85 0 0 0 2.85-2.86V7.5zm-4.28 11.79c-.4 0-.72.3-.72.89s.32.71.72.71a.71.71 0 0 0 .71-.71c0-.59-.32-.89-.71-.89m-10-1.79A2.86 2.86 0 0 1 2 14.64v-3.78A2.86 2.86 0 0 1 4.86 8H12c0-.39-.32-.96-.71-.96H7V5.36A2.86 2.86 0 0 1 9.86 2.5h4.28A2.86 2.86 0 0 1 17 5.36v3.75a2.85 2.85 0 0 1-2.86 2.85H8.89a2.85 2.85 0 0 0-2.85 2.86v2.68zM9.14 5.71c.4 0 .72-.3.72-.89s-.32-.71-.72-.71c-.39 0-.71.12-.71.71s.32.89.71.89"/></svg></span> Virtualenv</label><label for="__tabbed_10_2"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12.045.033a12.181 12.182 0 0 0-1.361.078 17.512 17.513 0 0 1 1.813 1.433l.48.438-.465.45a15 15 0 0 0-1.126 1.205l-.178.215a9 9 0 0 1 .86-.05 8.154 8.155 0 1 1-4.286 15.149 15.764 15.765 0 0 1-1.841.106h-.86a22 22 0 0 0 .264 2.866 11.966 11.967 0 1 0 6.7-21.89M8.17.678a12.181 12.182 0 0 0-2.624 1.275 16 16 0 0 1 1.813.43A18.551 18.552 0 0 1 8.17.678M9.423.75a16.237 16.238 0 0 0-.995 1.998 16.15 16.152 0 0 1 1.605.66 7 7 0 0 1 .43-.509q.35-.43.716-.817A15 15 0 0 0 9.423.75M4.68 2.949a14.969 14.97 0 0 0 0 2.336c.587-.065 1.196-.1 1.812-.107a17 17 0 0 1 .48-1.748 16.48 16.481 0 0 0-2.292-.481M3.62 3.5a12 12 0 0 0-1.858 2.38 17 17 0 0 1 1.877-.444A17 17 0 0 1 3.62 3.5m4.406.287c-.143.437-.265.888-.38 1.347a8.3 8.3 0 0 1 1.67-.803c-.423-.2-.845-.38-1.29-.544M6.3 6.216a14 14 0 0 0-1.555.108c.064.523.157 1.038.272 1.554A8.4 8.4 0 0 1 6.3 6.216m-2.55.137a15.3 15.3 0 0 0-2.602.716H1.07v.079a17.104 17.105 0 0 0 1.267 2.544l.043.071.072-.049a16 16 0 0 1 1.734-1.083l.057-.035V8.54a17 17 0 0 1-.408-2.094v-.092zM.644 8.095l-.063.2A11.844 11.845 0 0 0 0 11.655v.209l.143-.152a17.706 17.707 0 0 1 1.584-1.447l.057-.043-.043-.064a16 16 0 0 1-1.025-1.87zm3.77 1.253-.18.1c-.465.273-.93.573-1.375.889l-.065.05.05.064c.309.437.645.867.996 1.276l.137.165v-.208a8.2 8.2 0 0 1 .364-2.15zM2.2 10.853l-.072.05a16.6 16.6 0 0 0-1.813 1.734l-.058.058.066.057a15.5 15.5 0 0 0 1.991 1.483l.072.05.043-.08a16.738 16.74 0 0 1 1.053-1.64v-.05l-.043-.05a17 17 0 0 1-1.19-1.54zm1.855 2.071-.121.172a15 15 0 0 0-.917 1.433l-.043.072.071.043a17 17 0 0 0 1.562.766l.193.086-.086-.193a8 8 0 0 1-.66-2.172zm-3.976.48v.2a11.758 11.759 0 0 0 .946 3.326l.078.186.072-.194a16.215 16.216 0 0 1 .845-2l.057-.063-.064-.043a17.197 17.198 0 0 1-1.776-1.284zm2.543 1.805-.035.08a15.764 15.765 0 0 0-.983 2.479v.08h.086a16.15 16.152 0 0 0 2.688.5l.072.007v-.086a18 18 0 0 1 .164-2.056v-.065H4.55a16 16 0 0 1-1.849-.896zm2.544 1.169v.114a17 17 0 0 0-.151 1.828v.078h.931c.287 0 .624.014.946 0h.209l-.166-.129a8 8 0 0 1-1.64-1.834zm-3.29 2.1.115.172a12 12 0 0 0 2.502 2.737l.157.129v-.201a22.578 22.58 0 0 1-.2-2.336v-.071h-.072a16 16 0 0 1-2.3-.387z"/></svg></span> Anaconda</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<p>We use the <code>requirements.txt</code> file that we generated earlier to recreate the environment.</p>
+<p>We use the <code>requirements.txt</code> file that we generated earlier to recreate
+the environment.</p>
 <div class="highlight"><span class="filename">Recreate virtualenv environment</span><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="c1"># Create the new environment</span>
 <a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>python<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>&lt;NEW<span class="w"> </span>ENV<span class="w"> </span>NAME&gt;
 <a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>
@@ -3148,7 +3181,8 @@ Remember to <strong>deactivate the current environment</strong> before making a 
 </code></pre></div>
 </div>
 <div class="tabbed-block">
-<p>We use the <code>environment.yml</code> file that we generated earlier to recreate the environment.</p>
+<p>We use the <code>environment.yml</code> file that we generated earlier to recreate
+the environment.</p>
 <div class="highlight"><span class="filename">Recreate the conda environment</span><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="c1"># Create the new environment with the dependencies</span>
 <a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>conda<span class="w"> </span>env<span class="w"> </span>create<span class="w"> </span>-f<span class="w"> </span>&lt;PATH<span class="w"> </span>TO<span class="w"> </span>environment.yml&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;ENV<span class="w"> </span>NAME&gt;
 </code></pre></div>
@@ -3156,11 +3190,16 @@ Remember to <strong>deactivate the current environment</strong> before making a 
 </div>
 </div>
 <h2 id="official-references">Official references<a class="headerlink" href="#official-references" title="Permanent link">&para;</a></h2>
-<p>In this section, we summarized what virtual environments are, why they are used, and how to use them. We did not
-cover all of the functions of virtual environments, but feel free to consult the official references to learn
-about virtual environments more in depth.</p>
+<p>In this section, we summarized what virtual environments are, why they are
+used, and how to use them. We did not cover all of the functions of virtual
+environments, but feel free to consult the official references to learn about
+virtual environments more in depth.</p>
+<!-- markdownlint-disable-next-line MD013 -->
 <ul>
 <li><a href="https://docs.python.org/3/library/venv.html#module-venv" target="_blank">Virtualenv Reference</a></li>
+</ul>
+<!-- markdownlint-disable-next-line MD013 -->
+<ul>
 <li><a href="https://conda.io/projects/conda/en/latest/user-guide/concepts/environments.html#" target="_blank">Anaconda Reference</a></li>
 </ul>
 

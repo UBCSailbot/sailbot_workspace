@@ -2726,33 +2726,41 @@
 
 
 <h1 id="pull-requests">Pull Requests<a class="headerlink" href="#pull-requests" title="Permanent link">&para;</a></h1>
-<p>Pull requests are used to verify code functionality and quality of a development branch before merging into the main branch,
-accomplished through CI and code reviews.</p>
+<p>Pull requests are used to verify code functionality and quality of a
+development branch before merging into the main branch, accomplished through
+CI and code reviews.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Pull requests are much like issues where we can do many of the same things. This goes for creating
-comments in markdown, assigning reviewers, adding labels, adding projects, or adding milestones.
-Sometimes we skip writing an issue when the change is relatively small.</p>
+<p>Pull requests are much like issues where we can do many of the same
+things. This goes for creating comments in markdown, assigning reviewers,
+adding labels, adding projects, or adding milestones. Sometimes we skip
+writing an issue when the change is relatively small.</p>
 </div>
 <h2 id="creating-a-pull-request">Creating a pull request<a class="headerlink" href="#creating-a-pull-request" title="Permanent link">&para;</a></h2>
-<p>To create a pull request in a repository, to go the <code>Pull requests</code> tab and then click <code>New pull request</code>:</p>
+<p>To create a pull request in a repository, to go the <code>Pull requests</code> tab and
+then click <code>New pull request</code>:</p>
 <p><img alt="image" src="../../../../assets/images/github/workflow/create_pr.png" /></p>
-<p>On the next screen, you need to select the base branch that you are merging into, and the branch that you
-are comparing. For the most part, the base branch will be the main branch, and the branch that you are comparing
-will be the issue branch.</p>
+<p>On the next screen, you need to select the base branch that you are merging
+into, and the branch that you are comparing. For the most part, the base
+branch will be the main branch, and the branch that you are comparing will be
+the issue branch.</p>
 <p><img alt="image" src="../../../../assets/images/github/workflow/branch_comparison.png" /></p>
-<p>Once you have decided on your base and compare branches, click on <code>Create pull request</code>. You should see
-the page below (looking in the dropdown menu, you can open the pull request as a draft to avoid notifying
-reviewers until you are ready):</p>
+<p>Once you have decided on your base and compare branches, click on <code>Create
+pull request</code>. You should see the page below (looking in the dropdown menu,
+you can open the pull request as a draft to avoid notifying reviewers until
+you are ready):</p>
 <p><img alt="image" src="../../../../assets/images/github/workflow/pr_example.png" /></p>
-<p>Notice how this is remarkably similar to the page of an issue. To link a pull request to an issue, simply add
-<code>&lt;KEYWORD&gt; #&lt;ISSUE NUMBER&gt;</code> to the initial comment in the pull request. A list of valid keywords can be found
-<a href="https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue" target="_blank">here</a>.</p>
+<p>Notice how this is remarkably similar to the page of an issue. To link a pull
+request to an issue, simply add <code>&lt;KEYWORD&gt; #&lt;ISSUE NUMBER&gt;</code> to the initial
+comment in the pull request. A list of valid keywords can be found</p>
+<!-- markdownlint-disable-next-line MD013 -->
+<p><a href="https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue" target="_blank">here</a>.</p>
 <div class="admonition example">
 <p class="admonition-title">Example</p>
 <p>"This issue resolves #49. Please review my pull request!"</p>
 </div>
 <p>Observe that the right-hand side banner contains the following:</p>
+<!-- markdownlint-disable MD013 -->
 <table>
 <thead>
 <tr>
@@ -2783,37 +2791,46 @@ reviewers until you are ready):</p>
 </tr>
 </tbody>
 </table>
+<!-- markdownlint-enable MD013 -->
+
 <div class="admonition attention">
 <p class="admonition-title">Attention</p>
-<p>If you linked the pull request to an issue, you <strong>should not</strong> add the pull request to a project or a milestone to
-avoid duplicate cards.</p>
+<p>If you linked the pull request to an issue, you <strong>should not</strong> add the
+pull request to a project or a milestone to avoid duplicate cards.</p>
 </div>
 <h2 id="merging-into-main">Merging into main<a class="headerlink" href="#merging-into-main" title="Permanent link">&para;</a></h2>
-<p>Once the pull request and code reviews are complete, it is time to merge the changes in the pull request into the main
-branch! However, this can only be done when the following conditions are met:</p>
+<p>Once the pull request and code reviews are complete, it is time to merge the
+changes in the pull request into the main branch! However, this can only be
+done when the following conditions are met:</p>
 <ol>
-<li>All CI checks pass (look for a green checkmark beside your latest commit on GitHub).</li>
+<li>All CI checks pass (look for a green checkmark beside your latest commit
+   on GitHub).</li>
 <li>All reviewers have reviewed the PR and approved the PR.</li>
 <li>There are no unresolved comments and suggestions from the reviewers.</li>
 <li>There are no merge conflicts with the main branch.</li>
 </ol>
-<p>If all of these conditions are met, confirm that the merge is good to go by clicking <code>Squash and merge</code>:</p>
+<p>If all of these conditions are met, confirm that the merge is good to go by
+clicking <code>Squash and merge</code>:</p>
 <p><img alt="image" src="../../../../assets/images/github/workflow/pr_merge.png" /></p>
 <h2 id="reviewing-a-pull-request">Reviewing a pull request<a class="headerlink" href="#reviewing-a-pull-request" title="Permanent link">&para;</a></h2>
-<p>A common activity that you will participate in is reviewing pull requests to give your feedback on other's code.
-You will be notified when you have been requested to review a pull request and should promptly review it as
-soon as time permits.</p>
+<p>A common activity that you will participate in is reviewing pull requests to
+give your feedback on other's code.
+You will be notified when you have been requested to review a pull request
+and should promptly review it as soon as time permits.</p>
 <p><img alt="image" src="../../../../assets/images/github/workflow/pr_comment_snippet.png" /></p>
 <p>In particular, you will most likely be doing the following in a pull request:</p>
 <ul>
-<li><strong>Asking Questions:</strong> Clarify your understanding about something that you are not sure about.</li>
-<li><strong>Providing Suggestions:</strong> Give some ideas about how to improve the current implementation and provide feedback to
-your peers. This is a good opportunity to share your knowledge with others.</li>
-<li><strong>Verify Implementations:</strong> Identify potential bugs in the implementation and raise your concerns with the person
-who developed the solution. This will reduce the likelihood of bugs and significantly bring down the number of issues
-in the future.</li>
-<li><strong>Documentation:</strong> Record why certain changes were made, especially if this diverges from the proposed solution
-in the linked issue (if any).</li>
+<li><strong>Asking Questions:</strong> Clarify your understanding about something that you
+  are not sure about.</li>
+<li><strong>Providing Suggestions:</strong> Give some ideas about how to improve the current
+  implementation and provide feedback to your peers. This is a good
+  opportunity to share your knowledge with others.</li>
+<li><strong>Verify Implementations:</strong> Identify potential bugs in the implementation
+  and raise your concerns with the person who developed the solution. This
+  will reduce the likelihood of bugs and significantly bring down the number
+  of issues in the future.</li>
+<li><strong>Documentation:</strong> Record why certain changes were made, especially if
+  this diverges from the proposed solution in the linked issue (if any).</li>
 </ul>
 
 

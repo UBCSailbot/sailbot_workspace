@@ -2816,31 +2816,48 @@
 
 
 <h1 id="conventions">Conventions<a class="headerlink" href="#conventions" title="Permanent link">&para;</a></h1>
-<p>At UBC Sailbot, we follow standards in how we code to maintain a clean and comprehensible codebase.
-This page addresses what conventions we use specifically when programming in Python and the tools to help us maintain
-these conventions.</p>
+<p>At UBC Sailbot, we follow standards in how we code to maintain a clean and
+comprehensible codebase.
+This page addresses what conventions we use specifically when programming in
+Python and the tools to help us maintain these conventions.</p>
 <h2 id="style-guide">Style guide<a class="headerlink" href="#style-guide" title="Permanent link">&para;</a></h2>
 <h3 id="linting">Linting<a class="headerlink" href="#linting" title="Permanent link">&para;</a></h3>
-<p>To ensure that the codebase stays clean, we use <a href="https://flake8.pycqa.org/en/5.0.4/#" target="_blank">flake8</a>, which is a
-tool for style guide enforcement mostly based off <a href="https://peps.python.org/pep-0008/" target="_blank">pep8</a>. To automate
-most of this process, we use <a href="https://github.com/hhatto/autopep8" target="_blank">autopep8</a>, which is a tool that resolves
-most style issues. However, there will be some issues that must be resolved by you!</p>
-<p>Refer to this <a href="https://realpython.com/python-pep8/" target="_blank">guide</a> on how to write readable code in python with the
-pep8 style guide.</p>
+<p>To ensure that the codebase stays clean, we use
+<a href="https://flake8.pycqa.org/en/5.0.4/#" target="_blank">flake8</a>, which is a
+tool for style guide enforcement mostly based off
+<a href="https://peps.python.org/pep-0008/" target="_blank">pep8</a>. To automate
+most of this process, we use
+<a href="https://github.com/hhatto/autopep8" target="_blank">autopep8</a>, which is a tool
+that resolves most style issues. However, there will be some issues that must
+be resolved by you!</p>
+<p>Refer to this <a href="https://realpython.com/python-pep8/" target="_blank">guide</a> on
+how to write readable code in python with the pep8 style guide.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Our CI automatically checks that your code follows the pep8 standard. If it does not, your pull requests will
-be blocked from being merged until those issues are resolved!</p>
+<p>Our CI automatically checks that your code follows the pep8 standard. If
+it does not, your pull requests will be blocked from being merged until
+those issues are resolved!</p>
 </div>
 <h3 id="type-hinting">Type hinting<a class="headerlink" href="#type-hinting" title="Permanent link">&para;</a></h3>
-<p>Even though Python is a dynamically typed language, newer versions support type hinting. Type hinting catches
-errors, documents code, improves IDEs and linters, and helps build and maintain a clean software architecture.<sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup>
-Expanding on how it catches errors, a static type checker such as <a href="https://mypy.readthedocs.io/en/stable/index.html" target="_blank"><code>mypy</code></a>
+<p>Even though Python is a dynamically typed language, newer versions support
+type hinting. Type hinting catches errors, documents code, improves IDEs and
+linters, and helps build and maintain a clean software architecture.<sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup>
+Expanding on how it catches errors, a static type checker such as</p>
+<!-- markdownlint-disable-next-line MD013 -->
+<p><a href="https://mypy.readthedocs.io/en/stable/index.html" target="_blank"><code>mypy</code></a>
 can be used.</p>
-<p>There is some syntax to get familiar in order to use type checking. We recommend the following resources:</p>
+<p>There is some syntax to get familiar in order to use type checking. We
+recommend the following resources:</p>
+<!-- markdownlint-disable-next-line MD013 -->
 <ul>
 <li><a href="https://mypy.readthedocs.io/en/stable/cheat_sheet_py3.html" target="_blank">mypy Typing Cheatsheet</a></li>
+</ul>
+<!-- markdownlint-disable-next-line MD013 -->
+<ul>
 <li><a href="https://peps.python.org/pep-0483/" target="_blank">PEP 483: The Theory of Type Hints (A Simplified Guide)</a></li>
+</ul>
+<!-- markdownlint-disable-next-line MD013 -->
+<ul>
 <li><a href="https://peps.python.org/pep-0484/" target="_blank">PEP 484: Type Hints (Fully Comprehensive Guide)</a></li>
 </ul>
 <p>Below are a few examples of using type hinting:</p>
@@ -2920,8 +2937,9 @@ can be used.</p>
 </code></pre></div>
 </details>
 <h2 id="documentation">Documentation<a class="headerlink" href="#documentation" title="Permanent link">&para;</a></h2>
-<p>Code is written once and read a thousand times, so it is important to provide good documentation for current
-and future members of the software team. The major things that we document in our code are:</p>
+<p>Code is written once and read a thousand times, so it is important to provide
+good documentation for current and future members of the software team. The
+major things that we document in our code are:</p>
 <ol>
 <li><strong>Classes and Objects:</strong><ul>
 <li>What does it represent? What is it used for?</li>
@@ -2934,31 +2952,42 @@ and future members of the software team. The major things that we document in ou
 </ul>
 </li>
 <li><strong>Code:</strong><ul>
-<li>Is a line of code obscure and/or not clear? Add an inline comment to clear things up.</li>
+<li>Is a line of code obscure and/or not clear? Add an inline comment to
+  clear things up.</li>
 <li>Break down a large process.</li>
 </ul>
 </li>
 </ol>
-<p>Ideally, the third point should be avoided as much as possible since we would want our code to be
-self explanatory. It should be done only when absolutely necessary.</p>
+<p>Ideally, the third point should be avoided as much as possible since we would
+want our code to be self explanatory. It should be done only when absolutely
+necessary.</p>
 <h3 id="generating-docstrings">Generating docstrings<a class="headerlink" href="#generating-docstrings" title="Permanent link">&para;</a></h3>
-<p>We use a vscode extension called <a href="https://marketplace.visualstudio.com/items?itemName=njpwerner.autodocstring" target="_blank">autoDocstring</a>
-which autogenerates docstrings that we use to document our code. To install this extension, go to the <code>Extensions</code> tab in
-vscode and search <code>autoDocstring</code> in the marketplace.</p>
-<p>To generate docstrings, type <code>"""</code> at the beginning of the function that you want to document and the template
-will be generated for you! If you use <a href="#type-hinting">type hinting</a>, this extention will autofill some of the
+<p>We use a vscode extension called</p>
+<!-- markdownlint-disable-next-line MD013 -->
+<p><a href="https://marketplace.visualstudio.com/items?itemName=njpwerner.autodocstring" target="_blank">autoDocstring</a>
+which autogenerates docstrings that we use to document our code. To install
+this extension, go to the <code>Extensions</code> tab in vscode and search <code>autoDocstring</code>
+in the marketplace.</p>
+<p>To generate docstrings, type <code>"""</code> at the beginning of the function that you
+want to document and the template will be generated for you! If you use
+<a href="#type-hinting">type hinting</a>, this extention will autofill some of the
 documentation for you!</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>The autoDocstring extension only works for functions. It does not work for classes and objects, so documenting these
-will have to be done manually. Be sure to follow the same format used by functions.</p>
+<p>The autoDocstring extension only works for functions. It does not work for
+classes and objects, so documenting these will have to be done manually.
+Be sure to follow the same format used by functions.</p>
 </div>
 <h3 id="example-on-documentation">Example on documentation<a class="headerlink" href="#example-on-documentation" title="Permanent link">&para;</a></h3>
-<p>It's hard to imagine what good documentation looks like. We provide a few examples below of documenting code using the
-autoDocstring extension. The extension uses <a href="https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings" target="_blank">Google style docstrings</a>
+<p>It's hard to imagine what good documentation looks like. We provide a few
+examples below of documenting code using the autoDocstring extension. The
+extension uses</p>
+<!-- markdownlint-disable-next-line MD013 -->
+<p><a href="https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings" target="_blank">Google style docstrings</a>
 by default.</p>
 <details class="example" open="open">
 <summary>Documentation example on a function</summary>
+<p><!-- markdownlint-disable MD013 -->
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">List</span>
 <a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">inner_product</span><span class="p">(</span><span class="n">v1</span> <span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">v2</span> <span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 <a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -2980,9 +3009,11 @@ by default.</p>
 <a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a>        <span class="n">summation</span> <span class="o">+=</span> <span class="p">(</span><span class="n">e1</span> <span class="o">*</span> <span class="n">e2</span><span class="p">)</span>
 <a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a>    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">summation</span><span class="p">)</span>
 </code></pre></div>
+<!-- markdownlint-enable MD013 --></p>
 </details>
 <details class="example">
 <summary>Documentation example with a stack</summary>
+<p><!-- markdownlint-disable MD013 -->
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
 <a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">Stack</span><span class="p">:</span>
 <a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
@@ -3042,8 +3073,11 @@ by default.</p>
 <a id="__codelineno-7-57" name="__codelineno-7-57" href="#__codelineno-7-57"></a>        <span class="n">length</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__stack</span><span class="p">)</span>
 <a id="__codelineno-7-58" name="__codelineno-7-58" href="#__codelineno-7-58"></a>        <span class="k">return</span> <span class="n">length</span>
 </code></pre></div>
+<!-- markdownlint-enable MD013 --></p>
 </details>
-<p>For more examples, see <a href="https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html" target="_blank">Example Google Style Python Docstrings</a>.</p>
+<p>For more examples, see</p>
+<!-- markdownlint-disable-next-line MD013 -->
+<p><a href="https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html" target="_blank">Example Google Style Python Docstrings</a>.</p>
 <div class="footnote">
 <hr />
 <ol>

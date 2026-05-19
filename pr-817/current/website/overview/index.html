@@ -3007,30 +3007,39 @@
 Its README has been copied below.</p>
 </div>
 <h1 id="website">Website<a class="headerlink" href="#website" title="Permanent link">&para;</a></h1>
-<p>In the website development timeline, we are currently evaluating the folllowing software stack:
-<a href="https://nextjs.org/">Next.js</a> website (this repository), <a href="https://www.typescriptlang.org/docs/">Typescript</a>,
-<a href="https://react.dev/">React</a> + <a href="https://redux-saga.js.org/">Redux</a>, and the <a href="https://www.mongodb.com/">MongoDB</a> database.
-The easiest way to evaluate these potential solutions for our purposes is in <a href="https://github.com/UBCSailbot/sailbot_workspace">sailbot_workspace</a>.</p>
+<p>In the website development timeline, we are currently evaluating the folllowing
+software stack: <a href="https://nextjs.org/">Next.js</a> website (this repository),
+<a href="https://www.typescriptlang.org/docs/">Typescript</a>,
+<a href="https://react.dev/">React</a> + <a href="https://redux-saga.js.org/">Redux</a>, and the
+<a href="https://www.mongodb.com/">MongoDB</a> database. The easiest way to evaluate
+these potential solutions for our purposes is in
+<a href="https://github.com/UBCSailbot/sailbot_workspace">sailbot_workspace</a>.</p>
 <h2 id="database">Database<a class="headerlink" href="#database" title="Permanent link">&para;</a></h2>
-<p><a href="https://www.mongodb.com/">MongoDB</a> is a general purpose, document-based, distributed database built for modern application
-developers and for the cloud era. If you want to learn more about MongoDB, visit their docs site: <a href="https://docs.mongodb.com/">MongoDB Documentation</a>.</p>
+<p><a href="https://www.mongodb.com/">MongoDB</a> is a general purpose, document-based,
+distributed database built for modern application developers and for the
+cloud era. If you want to learn more about MongoDB, visit their docs site:
+<a href="https://docs.mongodb.com/">MongoDB Documentation</a>.</p>
 <h2 id="setup">Setup<a class="headerlink" href="#setup" title="Permanent link">&para;</a></h2>
 <h3 id="environment-variables">Environment variables<a class="headerlink" href="#environment-variables" title="Permanent link">&para;</a></h3>
 <p>We have two separate configurations: one for development <code>.env.development</code>,
-the other for production <code>.env.production</code>. The values may vary, but the environment variables are the same. See below:</p>
+the other for production <code>.env.production</code>. The values may vary, but the
+environment variables are the same. See below:</p>
 <ul>
-<li><code>MONGODB_URI</code>: Your MongoDB connection string. Use <code>mongodb://localhost:27017/&lt;DB_NAME&gt;</code> to establish a connection
-  with the local database.</li>
+<li><code>MONGODB_URI</code>: Your MongoDB connection string. Use
+  <code>mongodb://localhost:27017/&lt;DB_NAME&gt;</code> to establish a connection with the
+  local database.</li>
 <li><code>NEXT_PUBLIC_SERVER_HOST</code>: The host URL of the website.</li>
 <li><code>NEXT_PUBLIC_SERVER_PORT</code>: The port number of the website.</li>
-<li><code>NEXT_PUBLIC_POLLING_TIME_MS</code>: The time interval for polling the database in milliseconds.</li>
+<li><code>NEXT_PUBLIC_POLLING_TIME_MS</code>: The time interval for polling the database in
+  milliseconds.</li>
 </ul>
 <h3 id="package-installation">Package installation<a class="headerlink" href="#package-installation" title="Permanent link">&para;</a></h3>
-<p>The following command installs all required dependencies listed in the <code>package.json</code> file:</p>
+<p>The following command installs all required dependencies listed in the
+<code>package.json</code> file:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>npm install
 </code></pre></div>
-<p>Once the installation is complete, you should see a <code>node_modules</code> directory in the project's root.
-This directory contains all installed packages.</p>
+<p>Once the installation is complete, you should see a <code>node_modules</code> directory
+in the project's root. This directory contains all installed packages.</p>
 <p>When installing a new package to the website, please follow the steps below:</p>
 <ol>
 <li>
@@ -3038,29 +3047,35 @@ This directory contains all installed packages.</p>
    Replace <code>&lt;package-name&gt;</code> with the actual name of the package you want to add.</p>
 </li>
 <li>
-<p>Should you encounter errors related to resolving peer dependencies, please re-run the command with
-     the header <code>--legacy-peer-deps</code>. Do not to use <code>--force</code> unless you're well aware of the potential consequences.</p>
+<p>Should you encounter errors related to resolving peer dependencies,
+     please re-run the command with the header <code>--legacy-peer-deps</code>. Do not
+     to use <code>--force</code> unless you're well aware of the potential consequences.</p>
 </li>
 <li>
-<p>Review the <code>package.json</code> file to ensure the new package and its version have been added to the dependencies section.</p>
+<p>Review the <code>package.json</code> file to ensure the new package and its version
+   have been added to the dependencies section.</p>
 </li>
 <li>Confirm that <code>package-lock.json</code> has also been updated.
-     This file holds specific version information to ensure consistent installations across different environments.</li>
-<li>Once the installation process is finished, please make sure to commit the files <code>package.json</code> and <code>package-lock.json</code>.
-   These files are essential for version controlling the dependencies that have been added.</li>
+     This file holds specific version information to ensure consistent
+     installations across different environments.</li>
+<li>Once the installation process is finished, please make sure to commit the
+   files <code>package.json</code> and <code>package-lock.json</code>. These files are essential for
+   version controlling the dependencies that have been added.</li>
 </ol>
 <h2 id="run">Run<a class="headerlink" href="#run" title="Permanent link">&para;</a></h2>
 <p>You can run the website in development mode by executing the following command:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>npm<span class="w"> </span>run<span class="w"> </span>dev
 </code></pre></div>
-<p>This will start the website in development mode and spin up a Docker container for our MongoDB database.
-Make sure you have Docker installed!</p>
-<p>Once you have run the website in development mode, you can access it at <a href="http://localhost:3005">http://localhost:3005</a>.</p>
-<p>After spinning up the database, it will keep running in the background until Docker is stopped.
-You can just manually stop the database by running:</p>
+<p>This will start the website in development mode and spin up a Docker container
+for our MongoDB database. Make sure you have Docker installed!</p>
+<p>Once you have run the website in development mode, you can access it at
+<a href="http://localhost:3005">http://localhost:3005</a>.</p>
+<p>After spinning up the database, it will keep running in the background until
+Docker is stopped. You can just manually stop the database by running:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>npm<span class="w"> </span>run<span class="w"> </span>db:stop
 </code></pre></div>
 <p>Otherwise, here are some useful commands:</p>
+<!-- markdownlint-disable MD013 -->
 <table>
 <thead>
 <tr>
@@ -3099,26 +3114,34 @@ You can just manually stop the database by running:</p>
 </tr>
 </tbody>
 </table>
+<!-- markdownlint-enable MD013 -->
+
 <h2 id="linters">Linters<a class="headerlink" href="#linters" title="Permanent link">&para;</a></h2>
-<p>Before merging in new changes to the repository, please execute the following commands in order:</p>
+<p>Before merging in new changes to the repository, please execute the following
+commands in order:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>npm<span class="w"> </span>run<span class="w"> </span>format
 </code></pre></div>
-<p>This command runs <a href="https://prettier.io/docs/en/index.html">Prettier</a> to automatically format the code according to
-the rules defined in the configuration file <code>.prettierrc</code>.</p>
+<p>This command runs <a href="https://prettier.io/docs/en/index.html">Prettier</a> to
+automatically format the code according to the rules defined in the
+configuration file <code>.prettierrc</code>.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>npm<span class="w"> </span>run<span class="w"> </span>lint
 </code></pre></div>
-<p>This command runs <a href="https://eslint.org/docs/latest/use/getting-started">ESLint</a> to analyze the code for potential errors
-and enforce coding style based on the rules defined in the configuration file <code>.eslintrc</code>.</p>
+<p>This command runs <a href="https://eslint.org/docs/latest/use/getting-started">ESLint</a>
+to analyze the code for potential errors and enforce coding style based on the
+rules defined in the configuration file <code>.eslintrc</code>.</p>
 <h2 id="access-dev-server-on-a-mobile-device-optional">Access dev server on a mobile device (optional)<a class="headerlink" href="#access-dev-server-on-a-mobile-device-optional" title="Permanent link">&para;</a></h2>
 <p>Want to develop our website and see how it looks on your phone? Easy!
 Note: This process will probably require a home internet connection.
-UBC has some chastity "security" policies that will prevent one or more of these steps.</p>
+UBC has some chastity "security" policies that will prevent one or more of
+these steps.</p>
 <h3 id="1-run-the-website">1. Run the website<a class="headerlink" href="#1-run-the-website" title="Permanent link">&para;</a></h3>
-<p>On your computer, run any of the commands you would normally use suffixed with <code>:host</code>.
-This is a variant of the command that will expose the website on all network hosts. This changes your server's attitude:
+<p>On your computer, run any of the commands you would normally use suffixed
+with <code>:host</code>. This is a variant of the command that will expose the website
+on all network hosts. This changes your server's attitude:
 Before: "I will only accept connections from the same computer".
 After: "I will accept any and all connections".
-This is still safe, as long as you are using your own secure home network. Anything else won't be able to reach it at all.</p>
+This is still safe, as long as you are using your own secure home network.
+Anything else won't be able to reach it at all.</p>
 <p><em>Example:</em></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>➜  website git:(main) ✗ npm run web:dev:no-api:host
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
@@ -3144,21 +3167,29 @@ This is still safe, as long as you are using your own secure home network. Anyth
 <a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>   Default Gateway . . . . . . . . . : 192.168.1.1
 </code></pre></div>
 <h4 id="macos">MacOS<a class="headerlink" href="#macos" title="Permanent link">&para;</a></h4>
-<p>In your Mac terminal, run: <code>ipconfig getifaddr en1</code>. Use <code>en0</code> if you use ethernet connection instead.</p>
-<p>I don't know exactly what the output should look like, but with enough digging you should be able to find it.
-TODO: update this instructions once I get my hands on someone that wisely uses Mac over Windows.</p>
+<p>In your Mac terminal, run: <code>ipconfig getifaddr en1</code>. Use <code>en0</code> if you use
+ethernet connection instead.</p>
+<p>I don't know exactly what the output should look like, but with enough digging
+you should be able to find it.
+TODO: update this instructions once I get my hands on someone that wisely uses
+Mac over Windows.</p>
 <h3 id="3-connect-dont-worry-if-this-doesnt-work">3. Connect (don't worry if this doesn't work)<a class="headerlink" href="#3-connect-dont-worry-if-this-doesnt-work" title="Permanent link">&para;</a></h3>
-<p>We expose our website on port <code>3005</code>, so open your browser and enter <code>{your IP}:3005</code>.
-If that doesn't work try <code>http://{your IP}:3005</code>.</p>
+<p>We expose our website on port <code>3005</code>, so open your browser and enter
+<code>{your IP}:3005</code>. If that doesn't work try <code>http://{your IP}:3005</code>.</p>
 <p><em>Example:</em>
 <code>192.168.1.164:3005</code></p>
-<p>If this works, you should also be able to connect on your phone by going to the same URL!</p>
+<p>If this works, you should also be able to connect on your phone by going to
+the same URL!</p>
 <h3 id="4-deal-with-stupid-windows">4. Deal with stupid Windows<a class="headerlink" href="#4-deal-with-stupid-windows" title="Permanent link">&para;</a></h3>
-<p>If you are using Windows and the above method worked for you, congratulations for the miracle.
-Otherwise you will be sorely disappointed. We need to tell your firewall to allow this.
-Open a powershell terminal as administrator and enter:
-<code>New-NetFirewallRule -DisplayName "Next.js Dev Server" -Direction Inbound -LocalPort 3005 -Protocol TCP -Action Allow</code></p>
+<p>If you are using Windows and the above method worked for you, congratulations
+for the miracle.
+Otherwise you will be sorely disappointed. We need to tell your firewall to
+allow this.
+Open a powershell terminal as administrator and enter:</p>
+<!-- markdownlint-disable-next-line MD013 -->
+<p><code>New-NetFirewallRule -DisplayName "Next.js Dev Server" -Direction Inbound -LocalPort 3005 -Protocol TCP -Action Allow</code></p>
 <p><em>Example:</em></p>
+<!-- markdownlint-disable MD013 -->
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>PS C:\WINDOWS\system32&gt; New-NetFirewallRule -DisplayName &quot;Next.js Dev Server&quot; -Direction Inbound -LocalPort 3005 -Protocol TCP -Action Allow
 <a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
 <a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
@@ -3185,6 +3216,8 @@ Open a powershell terminal as administrator and enter:
 <a id="__codelineno-7-24" name="__codelineno-7-24" href="#__codelineno-7-24"></a>PolicyAppId                   :
 <a id="__codelineno-7-25" name="__codelineno-7-25" href="#__codelineno-7-25"></a>PackageFamilyName             :
 </code></pre></div>
+<!-- markdownlint-enable MD013 -->
+
 <p>If you are not using WSL try it again!
 Otherwise, you will need to forward port 3005 from your network to WSL.
 In your WSL terminal, run: <code>ip route</code> to get your ip info:</p>
@@ -3193,11 +3226,15 @@ In your WSL terminal, run: <code>ip route</code> to get your ip info:</p>
 <a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>default via 172.26.224.1 dev eth0 proto kernel
 <a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>172.26.224.0/20 dev eth0 proto kernel scope link src 172.26.237.182
 </code></pre></div>
-<p>In your administrator powershell, type:
-<code>netsh interface portproxy add v4tov4 listenport=3005 listenaddress=0.0.0.0 connectport=3005 connectaddress={your WSL IP}</code>:</p>
+<p>In your administrator powershell, type:</p>
+<!-- markdownlint-disable-next-line MD013 -->
+<p><code>netsh interface portproxy add v4tov4 listenport=3005 listenaddress=0.0.0.0 connectport=3005 connectaddress={your WSL IP}</code>:</p>
 <p><em>Example:</em></p>
+<!-- markdownlint-disable MD013 -->
 <div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>PS C:\WINDOWS\system32&gt; netsh interface portproxy add v4tov4 listenport=3005 listenaddress=0.0.0.0 connectport=3005 connectaddress=172.26.237.182
 </code></pre></div>
+<!-- markdownlint-enable MD013 -->
+
 <h3 id="i-ran-into-an-error-in-this-process-what-can-i-do">I ran into an error in this process. What can I do?<a class="headerlink" href="#i-ran-into-an-error-in-this-process-what-can-i-do" title="Permanent link">&para;</a></h3>
 <p><code>https://chatgpt.com/</code></p>
 

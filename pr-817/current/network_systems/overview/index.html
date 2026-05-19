@@ -2907,58 +2907,77 @@
 Its README has been copied below.</p>
 </div>
 <h1 id="network-systems">Network Systems<a class="headerlink" href="#network-systems" title="Permanent link">&para;</a></h1>
-<p>This repository contains the source code for all of UBC Sailbot's Network Systems programs. It is made to work as part
-of <a href="https://github.com/UBCSailbot/sailbot_workspace">Sailbot Workspace</a>, and is <strong><em>not</em></strong> meant to be built as an
-independent project.</p>
+<p>This repository contains the source code for all of UBC Sailbot's Network
+Systems programs. It is made to work as part of
+<a href="https://github.com/UBCSailbot/sailbot_workspace">Sailbot Workspace</a>, and is
+<strong><em>not</em></strong> meant to be built as an independent project.</p>
 <h2 id="setup">Setup<a class="headerlink" href="#setup" title="Permanent link">&para;</a></h2>
+<!-- markdownlint-disable-next-line MD013 -->
 <p>For comprehensive setup instructions, follow our <a href="https://ubcsailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/usage/setup/">setup guide</a>.</p>
 <h2 id="building">Building<a class="headerlink" href="#building" title="Permanent link">&para;</a></h2>
-<p><strong>Option A</strong>: With sailbot_workspace open, invoke the VSCode <code>build</code> or <code>debug</code> task.</p>
+<p><strong>Option A</strong>: With sailbot_workspace open, invoke the VSCode <code>build</code> or
+<code>debug</code> task.</p>
 <p><strong>Option B</strong>: Run <code>/workspaces/sailbot_workspace/build.sh</code></p>
 <h2 id="running">Running<a class="headerlink" href="#running" title="Permanent link">&para;</a></h2>
 <h3 id="ros-launch">ROS Launch<a class="headerlink" href="#ros-launch" title="Permanent link">&para;</a></h3>
+<!-- markdownlint-disable-next-line MD013 -->
 <p><a href="https://ubcsailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/reference/launch_files/">Instructions found here.</a></p>
 <p>For example:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>ros2<span class="w"> </span>launch<span class="w"> </span>network_systems<span class="w"> </span>main_launch.py
 </code></pre></div>
-<p>This is the best option if multiple modules need to be run at once. Launch configurations are found under the
-<a href="config/">config</a> folder. These configurations define which modules to enable/disable and what parameters to use.</p>
+<p>This is the best option if multiple modules need to be run at once. Launch
+configurations are found under the <a href="config/">config</a> folder. These
+configurations define which modules to enable/disable and what parameters to
+use.</p>
 <h3 id="ros-run">ROS Run<a class="headerlink" href="#ros-run" title="Permanent link">&para;</a></h3>
-<p>If you just want to run a single module, then this is a direct and easy way to do it.</p>
+<p>If you just want to run a single module, then this is a direct and easy way
+to do it.</p>
 <p>For example:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>ros2<span class="w"> </span>run<span class="w"> </span>network_systems<span class="w"> </span>example<span class="w"> </span>--ros-args<span class="w"> </span>-p<span class="w"> </span>enabled:<span class="o">=</span><span class="nb">true</span>
 </code></pre></div>
 <h3 id="binary">Binary<a class="headerlink" href="#binary" title="Permanent link">&para;</a></h3>
-<p>Not recommended as you cannot pass ROS parameters, so modules may not work by default. Binaries for each module found
-under <a href="projects/">projects</a> can be found under
-<code>/workspaces/sailbot_workspace/build/network_systems/projects/{module_name}/{module_name}</code>.</p>
+<p>Not recommended as you cannot pass ROS parameters, so modules may not work by
+default. Binaries for each module found under <a href="projects/">projects</a> can be
+found under</p>
+<!-- markdownlint-disable-next-line MD013 -->
+<p><code>/workspaces/sailbot_workspace/build/network_systems/projects/{module_name}/{module_name}</code>.</p>
 <p>For example:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>/workspaces/sailbot_workspace/build/network_systems/projects/example/example
 </code></pre></div>
 <h2 id="testing">Testing<a class="headerlink" href="#testing" title="Permanent link">&para;</a></h2>
-<p>Unit tests specific to Network Systems is done using <a href="https://github.com/google/googletest">GoogleTest</a>. Unit tests
-are defined per module.</p>
+<p>Unit tests specific to Network Systems is done using
+<a href="https://github.com/google/googletest">GoogleTest</a>. Unit tests are defined per
+module.</p>
 <h3 id="run-all-tests">Run All Tests<a class="headerlink" href="#run-all-tests" title="Permanent link">&para;</a></h3>
 <p><strong>Option A</strong>: With sailbot_workspace open, invoke the VSCode <code>test</code> task.</p>
-<p><strong>Option B</strong>: Under the sailbot_workspace directory, run <code>/workspaces/sailbot_workspace/scripts/test.sh</code></p>
-<p>Both options will run all of UBC Sailbot's tests, including those from other projects. More often than not, this is
-unnecessary.</p>
+<p><strong>Option B</strong>: Under the sailbot_workspace directory, run
+<code>/workspaces/sailbot_workspace/scripts/test.sh</code></p>
+<p>Both options will run all of UBC Sailbot's tests, including those from other
+projects. More often than not, this is unnecessary.</p>
 <h3 id="run-and-debug-specific-tests">Run and Debug Specific Tests<a class="headerlink" href="#run-and-debug-specific-tests" title="Permanent link">&para;</a></h3>
-<p>This is the preferred way to run and debug tests. When you open a test source file like
-<a href="projects/can_transceiver/test/test_can_transceiver.cpp">the example's</a>, there will be green arrows next to each <code>TEST_F</code> macro.
-Clicking a double green arrow runs a test suite, while clicking single green arrow runs one unit test. Right clicking
-either arrow will open a prompt with a debug test option. When running a test via the debug option, we can set
-breakpoints and step through our code line by line to resolve issues.</p>
-<p>This convenient testing frontend is thank's to the
-<a href="https://marketplace.visualstudio.com/items?itemName=matepek.vscode-catch2-test-adapter">TestMate extension</a>.</p>
-<p><strong>Warning</strong>: Large failing tests can crash VSCode. If this happens, either lower the size of the tests (ex. reduce
-the number of iterations) or <a href="#run-test-binaries">run the test binary directly</a>.</p>
+<p>This is the preferred way to run and debug tests. When you open a test source
+file like
+<a href="projects/can_transceiver/test/test_can_transceiver.cpp">the example's</a>, there
+will be green arrows next to each <code>TEST_F</code> macro. Clicking a double green
+arrow runs a test suite, while clicking single green arrow runs one unit test.
+Right clicking either arrow will open a prompt with a debug test option. When
+running a test via the debug option, we can set breakpoints and step through
+our code line by line to resolve issues.</p>
+<p>This convenient testing frontend is thank's to the</p>
+<!-- markdownlint-disable-next-line MD013 -->
+<p><a href="https://marketplace.visualstudio.com/items?itemName=matepek.vscode-catch2-test-adapter">TestMate extension</a>.</p>
+<p><strong>Warning</strong>: Large failing tests can crash VSCode. If this happens, either
+lower the size of the tests (ex. reduce the number of iterations) or
+<a href="#run-test-binaries">run the test binary directly</a>.</p>
 <h3 id="run-test-binaries">Run Test Binaries<a class="headerlink" href="#run-test-binaries" title="Permanent link">&para;</a></h3>
-<p>Test binaries for each module found under projects can be found under
-<code>/workspaces/sailbot_workspace/build/network_systems/projects/{module_name}/test_{module_name}</code>.</p>
+<p>Test binaries for each module found under projects can be found under</p>
+<!-- markdownlint-disable-next-line MD013 -->
+<p><code>/workspaces/sailbot_workspace/build/network_systems/projects/{module_name}/test_{module_name}</code>.</p>
 <p>For example:</p>
+<!-- markdownlint-disable MD013 -->
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>/workspaces/sailbot_workspace/build/network_systems/projects/example/test_example
 </code></pre></div>
+<!-- markdownlint-enable MD013 -->
 
 
 

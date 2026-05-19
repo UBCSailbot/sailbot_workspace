@@ -2956,20 +2956,32 @@
 
 
 <h1 id="setup-instructions">Setup Instructions<a class="headerlink" href="#setup-instructions" title="Permanent link">&para;</a></h1>
-<p>Sailbot Workspace can be run on Windows, Linux, or macOS, but is the easiest to set up and performs the best on
-<a href="https://ubuntu.com/" target="_blank">Ubuntu</a> and <a href="https://distrowatch.com/search.php?basedon=Ubuntu" target="_blank">its derivatives</a>.
-The workspace may not perform well on Windows computers with 8GB of memory or less;
-in this case, please check out our recommendations in the <a href="../help/#performance-issues" target="_blank">Performance Issues</a>
+<p>Sailbot Workspace can be run on Windows, Linux, or macOS, but is the easiest
+to set up and performs the best on</p>
+<!-- markdownlint-disable-next-line MD013 -->
+<p><a href="https://ubuntu.com/" target="_blank">Ubuntu</a> and <a href="https://distrowatch.com/search.php?basedon=Ubuntu" target="_blank">its derivatives</a>.
+The workspace may not perform well on Windows computers with 8GB of memory or
+less;
+in this case, please check out our recommendations in the</p>
+<!-- markdownlint-disable-next-line MD013 -->
+<p><a href="../help/#performance-issues" target="_blank">Performance Issues</a>
 section.</p>
 <h2 id="1-setup-prerequisites">1. Setup prerequisites<a class="headerlink" href="#1-setup-prerequisites" title="Permanent link">&para;</a></h2>
 <h3 id="docker">Docker<a class="headerlink" href="#docker" title="Permanent link">&para;</a></h3>
-<p><a href="https://www.docker.com/" target="_blank">Docker</a> is a platform that uses OS-level virtualization<sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup> to develop, ship, and
-run applications.<sup id="fnref:2"><a class="footnote-ref" href="#fn:2">2</a></sup> We use it to separate our applications from our infrastructure<sup id="fnref2:2"><a class="footnote-ref" href="#fn:2">2</a></sup> so that we can update and
-version control our infrastructure for every use case (software members, CI, deployment) in one place: this repository.</p>
-<p><a href="https://docs.docker.com/engine/" target="_blank">Docker Engine</a> is a software used to run Docker.
+<p><a href="https://www.docker.com/" target="_blank">Docker</a> is a platform that uses
+OS-level virtualization<sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup> to develop, ship, and
+run applications.<sup id="fnref:2"><a class="footnote-ref" href="#fn:2">2</a></sup> We use it to separate our applications from our
+infrastructure<sup id="fnref2:2"><a class="footnote-ref" href="#fn:2">2</a></sup> so that we can update and
+version control our infrastructure for every use case (software members, CI,
+deployment) in one place: this repository.</p>
+<p><a href="https://docs.docker.com/engine/" target="_blank">Docker Engine</a> is a software
+used to run Docker.
 However, it can only be installed on Linux.
-<a href="https://docs.docker.com/desktop/" target="_blank">Docker Desktop</a> is a software used to run Docker in a VM,<sup id="fnref:3"><a class="footnote-ref" href="#fn:3">3</a></sup>
+<a href="https://docs.docker.com/desktop/" target="_blank">Docker Desktop</a> is a
+software used to run Docker in a VM,<sup id="fnref:3"><a class="footnote-ref" href="#fn:3">3</a></sup>
 allowing it to be installed on Windows and macOS in addition to Linux.</p>
+<!-- markdownlint-disable-next-line MD013 -->
+<!-- markdownlint-disable-next-line MD013 -->
 <div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 12V6.75l6-1.32v6.48zm17-9v8.75l-10 .15V5.21zM3 13l6 .09v6.81l-6-1.15zm17 .25V22l-10-1.91V13.1z"/></svg></span> Windows</label><label for="__tabbed_1_2"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11"/></svg></span> macOS</label><label for="__tabbed_1_3"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14.62 8.35c-.42.28-1.75 1.04-1.95 1.19-.39.31-.75.29-1.14-.01-.2-.16-1.53-.92-1.95-1.19-.48-.31-.45-.7.08-.92 1.64-.69 3.28-.64 4.91.03.49.21.51.6.05.9m7.22 7.28c-.93-2.09-2.2-3.99-3.84-5.66a4.3 4.3 0 0 1-1.06-1.88c-.1-.33-.17-.67-.24-1.01-.2-.88-.29-1.78-.7-2.61-.73-1.58-2-2.4-3.84-2.47-1.81.05-3.16.81-3.95 2.4-.21.43-.36.88-.46 1.34-.17.76-.32 1.55-.5 2.32-.15.65-.45 1.21-.96 1.71-1.61 1.57-2.9 3.37-3.88 5.35-.14.29-.28.58-.37.88-.19.66.29 1.12.99.96.44-.09.88-.18 1.3-.31.41-.15.57-.05.67.35.65 2.15 2.07 3.66 4.24 4.5 4.12 1.56 8.93-.66 9.97-4.58.07-.27.17-.37.47-.27.46.14.93.24 1.4.35.49.09.85-.16.92-.64.03-.26-.06-.49-.16-.73"/></svg></span> Linux</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
@@ -2978,96 +2990,121 @@ allowing it to be installed on Windows and macOS in addition to Linux.</p>
 <p>Set up prerequisites, WSL and Ubuntu:</p>
 <ol>
 <li>
-<p>In PowerShell, run <code>wsl --install Ubuntu</code>, then <code>exit</code>, <code>wsl --update</code>, and <code>wsl --set-default Ubuntu</code></p>
+<p>In PowerShell, run <code>wsl --install Ubuntu</code>, then <code>exit</code>,
+   <code>wsl --update</code>, and <code>wsl --set-default Ubuntu</code></p>
 <details class="warning">
 <summary>Ubuntu is already installed?</summary>
-<p>If Ubuntu is already installed, check that it is the right WSL version:</p>
+<p>If Ubuntu is already installed, check that it is the right
+WSL version:</p>
 <ol>
-<li>Check the WSL versions of Linux distributions with <code>wsl -l -v</code></li>
-<li>If Ubuntu's <code>VERSION</code> is 1, upgrade it to WSL 2 with <code>wsl --set-version Ubuntu 2</code></li>
+<li>Check the WSL versions of Linux distributions with
+   <code>wsl -l -v</code></li>
+<li>If Ubuntu's <code>VERSION</code> is 1, upgrade it to WSL 2 with
+   <code>wsl --set-version Ubuntu 2</code></li>
 </ol>
 </details>
 </li>
 <li>
 <p>Open the Ubuntu app to set up or verify its configuration:</p>
 <ol>
-<li>If you are opening Ubuntu for the first time, a setup process will run;
+<li>If you are opening Ubuntu for the first time, a setup process
+   will run;
 follow the prompts to finish setting it up</li>
 <li>
 <p>Run <code>whoami</code> to verify that it returns your Ubuntu username</p>
 <details class="bug">
 <summary><code>whoami</code> returns <code>root</code></summary>
 <p>If <code>whoami</code> returns <code>root</code>:</p>
-<ol>
-<li><a href="https://www.digitalocean.com/community/tutorials/how-to-add-and-delete-users-on-ubuntu-20-04" target="_blank">Create a non-root user with sudo privileges</a></li>
-<li>Change the default Ubuntu user to this newly-created user: run <code>ubuntu config --default-user &lt;username&gt;</code>
-in PowerShell, replacing <code>&lt;username&gt;</code> with the name of the newly-created user</li>
-<li>Run <code>whoami</code> after closing and reopening Ubuntu, verifying that it returns your Ubuntu username</li>
-</ol>
+<p><!-- markdownlint-disable-next-line MD013 -->
+1. <a href="https://www.digitalocean.com/community/tutorials/how-to-add-and-delete-users-on-ubuntu-20-04" target="_blank">Create a non-root user with sudo privileges</a>
+2. Change the default Ubuntu user to this newly-created
+   user: run <code>ubuntu config --default-user &lt;username&gt;</code>
+in PowerShell, replacing <code>&lt;username&gt;</code> with the name of
+the newly-created user
+3. Run <code>whoami</code> after closing and reopening Ubuntu,
+   verifying that it returns your Ubuntu username</p>
 </details>
 </li>
 </ol>
 </li>
 </ol>
 </li>
-<li>
-<p><a href="https://docs.docker.com/desktop/install/windows-install/" target="_blank">Install Docker Desktop</a>
+</ol>
+<p><!-- markdownlint-disable-next-line MD013 -->
+2. <a href="https://docs.docker.com/desktop/install/windows-install/" target="_blank">Install Docker Desktop</a>
 with the WSL 2 backend</p>
-<details class="bug">
-<summary>Docker Desktop - Unexpected WSL Error</summary>
-<p><img alt="image" src="../../assets/images/sailbot_workspace/workflow/sailbot_bug.png" /></p>
-<p>If the above error shows when trying to start Docker Desktop on your laptop:</p>
-<ol>
-<li>For windows users navigate to <code>C:\Users\user_name</code> and delete the .Docker folder</li>
-<li>Restart Docker Desktop</li>
-</ol>
-</details>
-<details class="bug">
-<summary>Docker Desktop can't start up and WSL hangs when restarting</summary>
-<p>If Ubuntu can't start up and WSL hangs when restarting:</p>
-<ol>
-<li>Open command prompt as administrator and run the command <code>netsh winsock reset</code></li>
-<li>Uninstall and reinstall Docker Desktop</li>
-<li>Restart your computer</li>
-</ol>
-<p>More potential solutions can be found here:
-<a href="https://github.com/docker/for-win/issues/13273" target="_blank">Link</a></p>
-</details>
-</li>
-</ol>
+<div class="highlight"><pre><span></span><code>??? bug &quot;Docker Desktop - Unexpected WSL Error&quot;
+
+    &lt;!-- markdownlint-disable-next-line MD013 --&gt;
+    ![image](../../assets/images/sailbot_workspace/workflow/sailbot_bug.png)
+
+    If the above error shows when trying to start Docker Desktop on
+    your laptop:
+
+    1. For windows users navigate to `C:\Users\user_name` and delete
+       the .Docker folder
+    2. Restart Docker Desktop
+
+??? bug &quot;Docker Desktop can&#39;t start up and WSL hangs when restarting&quot;
+
+    If Ubuntu can&#39;t start up and WSL hangs when restarting:
+
+    1. Open command prompt as administrator and run the command
+       `netsh winsock reset`
+    2. Uninstall and reinstall Docker Desktop
+    3. Restart your computer
+
+    More potential solutions can be found here:
+    &lt;!-- markdownlint-disable-next-line MD013 --&gt;
+    [Link](https://github.com/docker/for-win/issues/13273){target=_blank}
+</code></pre></div>
 </div>
 <div class="tabbed-block">
-<p><a href="https://docs.docker.com/desktop/install/mac-install/" target="_blank">Install Docker Desktop</a> for your computer's CPU.</p>
+<p><!-- markdownlint-disable-next-line MD013 -->
+<a href="https://docs.docker.com/desktop/install/mac-install/" target="_blank">Install Docker Desktop</a> for your computer's CPU.</p>
 </div>
 <div class="tabbed-block">
-<ol>
-<li><a href="https://docs.docker.com/engine/install/" target="_blank">Install Docker Engine</a><ul>
-<li>As of February 2023, Sailbot Workspace (more specifically its use of VS Code Dev Containers) isn't compatible
-  with Docker Desktop for Linux; if you have Docker Desktop installed, uninstall it and install Docker Engine instead.</li>
-</ul>
-</li>
-<li><a href="https://docs.docker.com/engine/install/linux-postinstall/#manage-docker-as-a-non-root-user" target="_blank">Manage Docker as a non-root user</a></li>
-<li><a href="https://docs.docker.com/engine/install/linux-postinstall/#configure-docker-to-start-on-boot" target="_blank">Configure Docker to start on boot</a></li>
-</ol>
+<p><!-- markdownlint-disable-next-line MD013 -->
+1. <a href="https://docs.docker.com/engine/install/" target="_blank">Install Docker Engine</a>
+    - As of February 2023, Sailbot Workspace (more specifically its use
+      of VS Code Dev Containers) isn't compatible
+      with Docker Desktop for Linux; if you have Docker Desktop
+      installed, uninstall it and install Docker Engine instead.
+<!-- markdownlint-disable-next-line MD013 -->
+2. <a href="https://docs.docker.com/engine/install/linux-postinstall/#manage-docker-as-a-non-root-user" target="_blank">Manage Docker as a non-root user</a>
+<!-- markdownlint-disable-next-line MD013 -->
+3. <a href="https://docs.docker.com/engine/install/linux-postinstall/#configure-docker-to-start-on-boot" target="_blank">Configure Docker to start on boot</a></p>
 </div>
 </div>
 </div>
 <h3 id="vs-code">VS Code<a class="headerlink" href="#vs-code" title="Permanent link">&para;</a></h3>
-<p><a href="https://code.visualstudio.com/" target="_blank">Visual Studio Code</a> is a powerful and customizable code editor for
-Windows, Linux, and macOS. We strongly recommend that you use this editor to develop our software so that you can
+<p><a href="https://code.visualstudio.com/" target="_blank">Visual Studio Code</a> is a
+powerful and customizable code editor for
+Windows, Linux, and macOS. We strongly recommend that you use this editor to
+develop our software so that you can
 use all the features of Sailbot Workspace.</p>
+<!-- markdownlint-disable-next-line MD013 -->
 <ol>
 <li><a href="https://code.visualstudio.com/docs/setup/setup-overview" target="_blank">Install VS Code</a></li>
+</ol>
+<!-- markdownlint-disable-next-line MD013 -->
+<ol>
 <li>Install the <a href="https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack" target="_blank">Remote Development Extension Pack</a></li>
 </ol>
 <h3 id="git">Git<a class="headerlink" href="#git" title="Permanent link">&para;</a></h3>
-<p>Git is a free and open source distributed version control system designed to handle everything from
+<p>Git is a free and open source distributed version control system designed to
+handle everything from
 small to very large projects with speed and efficiency.<sup id="fnref:4"><a class="footnote-ref" href="#fn:4">4</a></sup></p>
 <ol>
-<li>Check if Git is installed with <code>git --version</code> (on Windows, run command in PowerShell)<ul>
-<li>If not installed, download and install it from <a href="https://git-scm.com/download" target="_blank">Git Downloads</a></li>
+<li>Check if Git is installed with <code>git --version</code> (on Windows, run command in
+   PowerShell)<ul>
+<li>If not installed, download and install it from
+  <a href="https://git-scm.com/download" target="_blank">Git Downloads</a></li>
 </ul>
 </li>
+</ol>
+<!-- markdownlint-disable-next-line MD013 -->
+<ol>
 <li>Configure your name and email: <a href="https://learn.microsoft.com/en-us/windows/wsl/tutorials/wsl-git#git-config-file-setup" target="_blank">Git config file setup</a>
    (on Windows, run commands in Ubuntu)</li>
 <li>
@@ -3075,22 +3112,22 @@ small to very large projects with speed and efficiency.<sup id="fnref:4"><a clas
 <div class="tabbed-set tabbed-alternate" data-tabs="2:2"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 12V6.75l6-1.32v6.48zm17-9v8.75l-10 .15V5.21zM3 13l6 .09v6.81l-6-1.15zm17 .25V22l-10-1.91V13.1z"/></svg></span> Windows</label><label for="__tabbed_2_2"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11"/></svg></span> macOS / <span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14.62 8.35c-.42.28-1.75 1.04-1.95 1.19-.39.31-.75.29-1.14-.01-.2-.16-1.53-.92-1.95-1.19-.48-.31-.45-.7.08-.92 1.64-.69 3.28-.64 4.91.03.49.21.51.6.05.9m7.22 7.28c-.93-2.09-2.2-3.99-3.84-5.66a4.3 4.3 0 0 1-1.06-1.88c-.1-.33-.17-.67-.24-1.01-.2-.88-.29-1.78-.7-2.61-.73-1.58-2-2.4-3.84-2.47-1.81.05-3.16.81-3.95 2.4-.21.43-.36.88-.46 1.34-.17.76-.32 1.55-.5 2.32-.15.65-.45 1.21-.96 1.71-1.61 1.57-2.9 3.37-3.88 5.35-.14.29-.28.58-.37.88-.19.66.29 1.12.99.96.44-.09.88-.18 1.3-.31.41-.15.57-.05.67.35.65 2.15 2.07 3.66 4.24 4.5 4.12 1.56 8.93-.66 9.97-4.58.07-.27.17-.37.47-.27.46.14.93.24 1.4.35.49.09.85-.16.92-.64.03-.26-.06-.49-.16-.73"/></svg></span> Linux</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<ol>
-<li>
-<p>Run the <code>git config</code> command for your Git version in <a href="https://learn.microsoft.com/en-us/windows/wsl/tutorials/wsl-git#git-credential-manager-setup" target="_blank">Git Credential Manager setup</a> (run command in Ubuntu)</p>
-<div class="admonition warning">
-<p class="admonition-title">Which Git to check</p>
-<p>Git is installed seperately in Windows and Ubuntu, so they could be at different versions.
-We want to check the version of Git on Windows, not Ubuntu:
-run <code>git --version</code> in PowerShell and not Ubuntu.
-However, the <code>git config</code> command itself is run in Ubuntu.</p>
-</div>
-</li>
-</ol>
+<p><!-- markdownlint-disable-next-line MD013 -->
+1. Run the <code>git config</code> command for your Git version in <a href="https://learn.microsoft.com/en-us/windows/wsl/tutorials/wsl-git#git-credential-manager-setup" target="_blank">Git Credential Manager setup</a> (run command in Ubuntu)</p>
+<div class="highlight"><pre><span></span><code>!!! warning &quot;Which Git to check&quot;
+
+    Git is installed seperately in Windows and Ubuntu, so they
+    could be at different versions.
+    We want to check the version of Git on Windows, not Ubuntu:
+    run `git --version` in PowerShell and not Ubuntu.
+    However, the `git config` command itself is run in Ubuntu.
+</code></pre></div>
 </div>
 <div class="tabbed-block">
 <ol>
-<li>Install the GitHub CLI: <a href="https://github.com/cli/cli#installation" target="_blank">Installation</a></li>
+<li>Install the GitHub CLI:
+   <!-- markdownlint-disable-next-line MD013 -->
+   <a href="https://github.com/cli/cli#installation" target="_blank">Installation</a></li>
 <li>Run <code>gh auth login</code> and select the first option for all choices</li>
 </ol>
 </div>
@@ -3098,23 +3135,29 @@ However, the <code>git config</code> command itself is run in Ubuntu.</p>
 </div>
 </li>
 <li>
-<p>Verify that you have successfully logged in to GitHub by cloning a private GitHub repository (run command in Ubuntu)</p>
+<p>Verify that you have successfully logged in to GitHub by cloning a private
+   GitHub repository (run command in Ubuntu)
+    <!-- markdownlint-disable-next-line MD013 --></p>
 <ol>
 <li>If you are a part of the <a href="https://github.com/orgs/UBCSailbot/teams/software-team" target="_blank">UBCSailbot Software GitHub team</a>,
-   you shouldn't see any errors running <code>git clone https://github.com/UBCSailbot/raye-ais.git</code></li>
+   you shouldn't see any errors running
+   <code>git clone https://github.com/UBCSailbot/raye-ais.git</code></li>
 <li>You can delete this repository with <code>rm -rf raye-ais</code></li>
 </ol>
 </li>
 </ol>
 <h2 id="2-setup-x11-forwarding">2. Setup X11 forwarding<a class="headerlink" href="#2-setup-x11-forwarding" title="Permanent link">&para;</a></h2>
-<p>X11 forwarding is a mechanism that enables Sailbot Workspace to run GUI applications.</p>
+<p>X11 forwarding is a mechanism that enables Sailbot Workspace to run GUI
+applications.</p>
 <div class="admonition warning">
-<p>You can skip this step since we currently aren't running any GUI applications</p>
+<p>You can skip this step since we currently aren't running any GUI
+applications</p>
 </div>
 <details class="info">
 <summary>Setup instructions for X11 forwarding</summary>
 <ol>
-<li>Ensure that the versions of VS Code and its Dev Containers extension support X11 forwarding:<ol>
+<li>Ensure that the versions of VS Code and its Dev Containers extension
+   support X11 forwarding:<ol>
 <li>VS Code version &gt;= 1.75</li>
 <li>Dev Containers version &gt;= 0.275.1</li>
 </ol>
@@ -3123,16 +3166,21 @@ However, the <code>git config</code> command itself is run in Ubuntu.</p>
 <p>Verify that <code>echo $DISPLAY</code> returns something like <code>:0</code></p>
 <details class="warning">
 <summary><code>echo $DISPLAY</code> doesn't return anything</summary>
-<p>If <code>echo $DISPLAY</code> doesn't return anything, set it to <code>:0</code> on shell initialization:</p>
+<p>If <code>echo $DISPLAY</code> doesn't return anything, set it to <code>:0</code> on
+shell initialization:</p>
 <ol>
 <li>Find out what shell you are using with <code>echo $SHELL</code><ol>
-<li>Most Linux distributions use Bash by default, whose rc file path is <code>~/.bashrc</code></li>
-<li>macOS uses Zsh by default, whose rc file path is: <code>~/.zshrc</code></li>
+<li>Most Linux distributions use Bash by default, whose rc
+   file path is <code>~/.bashrc</code></li>
+<li>macOS uses Zsh by default, whose rc file path is:
+   <code>~/.zshrc</code></li>
 </ol>
 </li>
-<li>Run <code>echo 'export DISPLAY=:0' &gt;&gt; &lt;rc file path&gt;</code>, replacing <code>&lt;rc file path&gt;</code>
+<li>Run <code>echo 'export DISPLAY=:0' &gt;&gt; &lt;rc file path&gt;</code>, replacing
+   <code>&lt;rc file path&gt;</code>
 with the path to your shell's rc file</li>
-<li>Run <code>echo $DISPLAY</code> after closing and reopening your terminal, verifying it returns something like <code>:0</code></li>
+<li>Run <code>echo $DISPLAY</code> after closing and reopening your terminal,
+   verifying it returns something like <code>:0</code></li>
 </ol>
 </details>
 </li>
@@ -3144,24 +3192,27 @@ with the path to your shell's rc file</li>
 <p>WSL includes a X11 server.</p>
 </div>
 <div class="tabbed-block">
-<ol>
-<li>Set up XQuartz following <a href="https://gist.github.com/sorny/969fe55d85c9b0035b0109a31cbcb088" target="_blank">this guide</a></li>
-<li>Copy the default xinitrc to your home directory: <code>cp /opt/X11/etc/X11/xinit/xinitrc ~/.xinitrc</code></li>
-<li>Add <code>xhost +localhost</code> to <code>~/.xinitrc</code> after its first line</li>
-</ol>
+<p><!-- markdownlint-disable-next-line MD013 -->
+1. Set up XQuartz following <a href="https://gist.github.com/sorny/969fe55d85c9b0035b0109a31cbcb088" target="_blank">this guide</a>
+2. Copy the default xinitrc to your home directory:
+   <code>cp /opt/X11/etc/X11/xinit/xinitrc ~/.xinitrc</code>
+3. Add <code>xhost +localhost</code> to <code>~/.xinitrc</code> after its first line</p>
 </div>
 <div class="tabbed-block">
 <div class="tabbed-set tabbed-alternate" data-tabs="4:2"><input checked="checked" id="__tabbed_4_1" name="__tabbed_4" type="radio" /><input id="__tabbed_4_2" name="__tabbed_4" type="radio" /><div class="tabbed-labels"><label for="__tabbed_4_1"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14.62 8.35c-.42.28-1.75 1.04-1.95 1.19-.39.31-.75.29-1.14-.01-.2-.16-1.53-.92-1.95-1.19-.48-.31-.45-.7.08-.92 1.64-.69 3.28-.64 4.91.03.49.21.51.6.05.9m7.22 7.28c-.93-2.09-2.2-3.99-3.84-5.66a4.3 4.3 0 0 1-1.06-1.88c-.1-.33-.17-.67-.24-1.01-.2-.88-.29-1.78-.7-2.61-.73-1.58-2-2.4-3.84-2.47-1.81.05-3.16.81-3.95 2.4-.21.43-.36.88-.46 1.34-.17.76-.32 1.55-.5 2.32-.15.65-.45 1.21-.96 1.71-1.61 1.57-2.9 3.37-3.88 5.35-.14.29-.28.58-.37.88-.19.66.29 1.12.99.96.44-.09.88-.18 1.3-.31.41-.15.57-.05.67.35.65 2.15 2.07 3.66 4.24 4.5 4.12 1.56 8.93-.66 9.97-4.58.07-.27.17-.37.47-.27.46.14.93.24 1.4.35.49.09.85-.16.92-.64.03-.26-.06-.49-.16-.73"/></svg></span> General</label><label for="__tabbed_4_2"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2c-.89 2.18-1.43 3.61-2.42 5.73.61.64 1.35 1.39 2.56 2.24-1.3-.54-2.19-1.07-2.85-1.63C8 11 6.03 14.75 2 22c3.17-1.83 5.63-2.96 7.92-3.39-.1-.42-.16-.88-.15-1.36v-.1c.05-2.03 1.11-3.59 2.36-3.48 1.25.1 2.22 1.83 2.17 3.87-.01.38-.05.75-.12 1.09 2.26.44 4.69 1.56 7.82 3.37-.62-1.14-1.17-2.16-1.69-3.13-.81-.64-1.7-1.48-3.46-2.37 1.21.3 2.08.66 2.76 1.07C14.26 7.62 13.83 6.3 12 2"/></svg></span> Arch Linux</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<p>As of February 2023, almost all Linux distributions include a X11 server, Xorg.
+<p>As of February 2023, almost all Linux distributions include
+a X11 server, Xorg.
 This may change in the future as Wayland matures.</p>
 </div>
 <div class="tabbed-block">
 <ol>
 <li>Install xhost: <code>sudo pacman -S xorg-xhost</code></li>
-<li>Copy the default xinitrc to your home directory: <code>cp /etc/X11/xinit/xinitrc ~/.xinitrc</code></li>
-<li>Add <code>xhost +local:docker</code> to <code>~/.xinitrc</code> after its first line</li>
+<li>Copy the default xinitrc to your home directory:
+   <code>cp /etc/X11/xinit/xinitrc ~/.xinitrc</code></li>
+<li>Add <code>xhost +local:docker</code> to <code>~/.xinitrc</code> after its first
+   line</li>
 </ol>
 </div>
 </div>
@@ -3190,7 +3241,8 @@ This may change in the future as Wayland matures.</p>
 </div>
 </li>
 <li>
-<p>Verify that running <code>xcalc</code> opens a calculator and that you can use it</p>
+<p>Verify that running <code>xcalc</code> opens a calculator and that you can
+   use it</p>
 </li>
 </ol>
 </li>
@@ -3199,8 +3251,10 @@ This may change in the future as Wayland matures.</p>
 <h2 id="3-clone-sailbot-workspace">3. Clone Sailbot Workspace<a class="headerlink" href="#3-clone-sailbot-workspace" title="Permanent link">&para;</a></h2>
 <div class="admonition tip">
 <p class="admonition-title">Where to clone on Windows</p>
-<p><strong>Run the command below in the Ubuntu app</strong> to clone it in the Ubuntu file system, otherwise sailbot workspace will not work.
-Windows has a native file system as well as file systems for each WSL distribution.</p>
+<p><strong>Run the command below in the Ubuntu app</strong> to clone it in the Ubuntu
+file system, otherwise sailbot workspace will not work.
+Windows has a native file system as well as file systems for each WSL
+distribution.</p>
 </div>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/UBCSailbot/sailbot_workspace.git
 </code></pre></div>
@@ -3214,7 +3268,9 @@ Windows has a native file system as well as file systems for each WSL distributi
 <p>The <code>code</code> command is installed by default.</p>
 </div>
 <div class="tabbed-block">
-<p>See <a href="https://code.visualstudio.com/docs/setup/mac#_launching-from-the-command-line" target="_blank">launching from the command line</a>.</p>
+<p>See
+<!-- markdownlint-disable-next-line MD013 -->
+<a href="https://code.visualstudio.com/docs/setup/mac#_launching-from-the-command-line" target="_blank">launching from the command line</a>.</p>
 </div>
 <div class="tabbed-block">
 <p>The <code>code</code> command is installed by default.</p>
@@ -3223,9 +3279,11 @@ Windows has a native file system as well as file systems for each WSL distributi
 </div>
 </li>
 <li>
-<p>Open the <code>sailbot_workspace/</code> directory in VS Code: run <code>code &lt;relative path to sailbot workspace&gt;</code></p>
+<p>Open the <code>sailbot_workspace/</code> directory in VS Code: run
+   <code>code &lt;relative path to sailbot workspace&gt;</code></p>
 <ul>
-<li>For example, if you just cloned the repository, the command would be <code>code sailbot_workspace</code></li>
+<li>For example, if you just cloned the repository, the command would be
+  <code>code sailbot_workspace</code></li>
 </ul>
 </li>
 </ol>
@@ -3244,51 +3302,67 @@ Windows has a native file system as well as file systems for each WSL distributi
 <h2 id="7-run-the-build-all-task">7. Run the <code>Build All</code> task<a class="headerlink" href="#7-run-the-build-all-task" title="Permanent link">&para;</a></h2>
 <div class="admonition warning">
 <p class="admonition-title">Wait before running</p>
-<p>Ensure that the <code>postCreateCommand from devcontainer.json</code> has completed before running this task.</p>
+<p>Ensure that the <code>postCreateCommand from devcontainer.json</code> has completed
+before running this task.</p>
 </div>
 <p>The <code>Build All</code> task builds all the ROS packages.</p>
 <h2 id="8-reload-the-vs-code-terminals-and-window">8. Reload the VS Code terminals and window<a class="headerlink" href="#8-reload-the-vs-code-terminals-and-window" title="Permanent link">&para;</a></h2>
 <p>Delete all open terminals and run the <code>Developer: Reload Window</code> VS Code command
 to detect the files that were generated from building.</p>
 <h2 id="9-start-the-system">9. Start the system<a class="headerlink" href="#9-start-the-system" title="Permanent link">&para;</a></h2>
-<p>Run the entire system to verify everything is working using the following command in the VS Code terminal:</p>
+<p>Run the entire system to verify everything is working using the following
+command in the VS Code terminal:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>ros2<span class="w"> </span>launch<span class="w"> </span><span class="nv">$ROS_WORKSPACE</span>/src/global_launch/main_launch.py
 </code></pre></div>
 <p>Use <span class="keys"><kbd class="key-control">Ctrl</kbd><span>+</span><kbd class="key-c">C</kbd></span> in the terminal to stop the system.</p>
 <h2 id="setup-sailbot-workspace-in-a-github-codespace">Setup Sailbot Workspace in a GitHub Codespace<a class="headerlink" href="#setup-sailbot-workspace-in-a-github-codespace" title="Permanent link">&para;</a></h2>
 <p>A codespace is a development environment that's hosted in the cloud.<sup id="fnref:5"><a class="footnote-ref" href="#fn:5">5</a></sup>
-Since Sailbot Workspace is resource intensive, it has high hardware requirements and power consumption,
-which aren't ideal for development on laptops. GitHub Codespaces provide a seamless experience to work on repositories
-off-device, especially if they specify a Dev Container like Sailbot Workspace. Codespaces can run in VS Code
+Since Sailbot Workspace is resource intensive, it has high hardware
+requirements and power consumption,
+which aren't ideal for development on laptops. GitHub Codespaces provide a
+seamless experience to work on repositories
+off-device, especially if they specify a Dev Container like Sailbot
+Workspace. Codespaces can run in VS Code
 or even in a browser for times when you aren't on your programming computer.</p>
+<!-- markdownlint-disable-next-line MD013 -->
 <ol>
-<li>go to <a href="https://github.com/UBCSailbot/sailbot_workspace" target="_blank">sailbot_workspace</a> repo on GitHub.<ul>
+<li>go to <a href="https://github.com/UBCSailbot/sailbot_workspace" target="_blank">sailbot_workspace</a> repo on GitHub.
+    <!-- markdownlint-disable-next-line MD013 --><ul>
 <li><a href="https://docs.github.com/en/codespaces/developing-in-codespaces/creating-a-codespace-for-a-repository#creating-a-codespace-for-a-repository" target="_blank">create a codespace for a repository</a></li>
-<li>For the best Sailbot Workspace development experience, select the high-spec machine available</li>
+<li>For the best Sailbot Workspace development experience, select the
+  high-spec machine available</li>
 <li>There are usage limits if you don't want to pay:
+<!-- markdownlint-disable-next-line MD013 -->
 <a href="https://docs.github.com/en/billing/managing-billing-for-github-codespaces/about-billing-for-github-codespaces#monthly-included-storage-and-core-hours-for-personal-accounts" target="_blank">monthly included storage and core hours for personal accounts</a><ul>
-<li>Upgrade to a Pro account for increased usage limits (this is free for students):
+<li>Upgrade to a Pro account for increased usage limits (this is free
+  for students):
+<!-- markdownlint-disable-next-line MD013 -->
 <a href="https://docs.github.com/en/education/explore-the-benefits-of-teaching-and-learning-with-github-education/github-global-campus-for-students/apply-to-github-global-campus-as-a-student" target="_blank">apply to GitHub Global Campus as a student</a></li>
 <li>Stop your codespace as soon as you are done using it:
+<!-- markdownlint-disable-next-line MD013 -->
 <a href="https://docs.github.com/en/codespaces/developing-in-codespaces/stopping-and-starting-a-codespace#stopping-a-codespace" target="_blank">stopping a codespace</a></li>
 <li>Delete codespaces that you do not plan to use anymore:
+<!-- markdownlint-disable-next-line MD013 -->
 <a href="https://docs.github.com/en/codespaces/developing-in-codespaces/deleting-a-codespace#deleting-a-codespace" target="_blank">deleting a codespace</a></li>
 </ul>
 </li>
 </ul>
 </li>
 <li>
-<p>click <strong>Code → Codespaces → +</strong>, a new tab will open, wait as the browser IDE sets up.</p>
+<p>click <strong>Code → Codespaces → +</strong>, a new tab will open, wait as the browser
+   IDE sets up.</p>
 </li>
 <li>
 <p>Open <code>sailbot.code-workspace</code> and click <strong>Open Workspace</strong>,
 wait a moment as the work space sets up, the IDE should have a blue border.</p>
 </li>
 <li>
-<p>Open the command palette (<code>ctrl + shift + p</code> on windows) and type <strong>Run Build Tasks</strong> then select <strong>Build All</strong>.</p>
+<p>Open the command palette (<code>ctrl + shift + p</code> on windows) and type <strong>Run
+   Build Tasks</strong> then select <strong>Build All</strong>.</p>
 <details class="bug">
 <summary><code>custom_interfaces</code> package fails to build</summary>
-<p>if any bugs occur with building custom_interfaces package run following command in the terminal:
+<p>if any bugs occur with building custom_interfaces package run
+following command in the terminal:
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>colcon build --packages-select custom_interfaces --merge-install
 </code></pre></div></p>
 </details>
@@ -3304,23 +3378,29 @@ wait a moment as the work space sets up, the IDE should have a blue border.</p>
 </code></pre></div>
 </li>
 <li>
-<p>if things are working you are done! you can use <code>ctrl + c</code> to stop the system.</p>
+<p>if things are working you are done! you can use <code>ctrl + c</code> to stop the
+   system.</p>
 </li>
 </ol>
 <p>Once you have a codespace set up:</p>
 <ul>
-<li>Open it by following the steps in the relevant GitHub Docs page:
-<a href="https://docs.github.com/en/codespaces/developing-in-codespaces/opening-an-existing-codespace#reopening-a-codespace" target="_blank">reopening a codespace</a></li>
-<li>Close it by running the <code>Codespaces: Stop Current Codespace</code> VS Code command</li>
+<li>Open it by following the steps in the relevant GitHub Docs page:</li>
 </ul>
+<!-- markdownlint-disable-next-line MD013 -->
+<p><a href="https://docs.github.com/en/codespaces/developing-in-codespaces/opening-an-existing-codespace#reopening-a-codespace" target="_blank">reopening a codespace</a>
+- Close it by running the <code>Codespaces: Stop Current Codespace</code> VS Code
+  command</p>
+<!-- markdownlint-disable-next-line MD013 -->
 <div class="admonition warning">
 <p class="admonition-title">Known limitations of running Sailbot Workspace in a GitHub Codespace</p>
 <ul>
 <li>Does not support X11 forwarding to run GUI applications</li>
-<li>High-spec machines not available: as of March 2023, the highest-spec machine that is publically available
+<li>High-spec machines not available: as of March 2023, the highest-spec
+  machine that is publically available
   has a 4-core CPU and 8GB of RAM</li>
 </ul>
 </div>
+<!-- markdownlint-disable-next-line MD013 -->
 <div class="footnote">
 <hr />
 <ol>

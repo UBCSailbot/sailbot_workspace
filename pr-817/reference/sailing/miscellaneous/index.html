@@ -2872,99 +2872,129 @@
 <h1 id="miscellaneous-sailing-knowledge">Miscellaneous Sailing Knowledge<a class="headerlink" href="#miscellaneous-sailing-knowledge" title="Permanent link">&para;</a></h1>
 <p>This section covers some other useful information.</p>
 <h2 id="wind-direction-convention">Wind Direction Convention<a class="headerlink" href="#wind-direction-convention" title="Permanent link">&para;</a></h2>
-<p>Generally speaking, there are two ways to use an angle to describe the wind direction.</p>
+<p>Generally speaking, there are two ways to use an angle to describe the wind
+direction.</p>
 <ol>
-<li>The angle tells you which way the wind is <strong>blowing towards</strong>. For example, 0° means the wind is blowing from North
-to South.</li>
-<li>The angle tells you which way the wind is <strong>coming from</strong>. For example, 0° means the wind is blowing from South to North.</li>
+<li>The angle tells you which way the wind is <strong>blowing towards</strong>. For example,
+   0° means the wind is blowing from North to South.</li>
+<li>The angle tells you which way the wind is <strong>coming from</strong>. For example, 0°
+   means the wind is blowing from South to North.</li>
 </ol>
-<p>In sailing, we normally talk about "where the wind is <strong>coming from</strong>". Somehow this ends up being more intuitive when
-talking about maneuvers or sail angle adjustments.</p>
-<p>However, when describing the wind as a vector, it can make more sense for the vector to represent the actual
-speed and direction the air is flowing. Make sure to document which convention you are using in your work when
-its applicable, and don't be afraid to ask someone to clarify which convention they are using in their work.</p>
+<p>In sailing, we normally talk about "where the wind is <strong>coming from</strong>". Somehow
+this ends up being more intuitive when talking about maneuvers or sail angle
+adjustments.</p>
+<p>However, when describing the wind as a vector, it can make more sense for the
+vector to represent the actual speed and direction the air is flowing. Make
+sure to document which convention you are using in your work when its
+applicable, and don't be afraid to ask someone to clarify which convention they
+are using in their work.</p>
 <h2 id="navigation-terms">Navigation Terms<a class="headerlink" href="#navigation-terms" title="Permanent link">&para;</a></h2>
 <h3 id="heading">Heading<a class="headerlink" href="#heading" title="Permanent link">&para;</a></h3>
-<p>In navigation generally (outside of Sailbot), the <strong><em>Heading</em></strong> is the direction the bow of the boat is pointing
-towards. Headings are typically (but not always at Sailbot) measured relative to true North in the clockwise direction.</p>
+<p>In navigation generally (outside of Sailbot), the <strong><em>Heading</em></strong> is the
+direction the bow of the boat is pointing towards. Headings are typically (but
+not always at Sailbot) measured relative to true North in the clockwise
+direction.</p>
 <h3 id="bearing">Bearing<a class="headerlink" href="#bearing" title="Permanent link">&para;</a></h3>
-<p>A <strong><em>Bearing</em></strong> is used to describe one point in relation to another: the Bearing of point "A" from point "B"
-is the direction you would would look towards if you wanted to see point "A" while standing at point "B". A <em>Range</em>
-is the distance between points "A" and "B", so that a Bearing and Range together can locate point "A" relative to point
-"B" in polar co-ordinates. There are two main ways of measuring bearings:</p>
+<p>A <strong><em>Bearing</em></strong> is used to describe one point in relation to another: the
+Bearing of point "A" from point "B" is the direction you would would look
+towards if you wanted to see point "A" while standing at point "B". A <em>Range</em>
+is the distance between points "A" and "B", so that a Bearing and Range
+together can locate point "A" relative to point "B" in polar co-ordinates.
+There are two main ways of measuring bearings:</p>
 <ul>
-<li>A <em>True Bearing</em> is a bearing where the angle convention is as follows: 0° is towards the <strong>North</strong>,
-angles increase in the clockwise direction, and angles are typically bounded within [0°, 360°)]</li>
-<li>A <em>Relative Bearing</em> is a bearing where the angle convention is as follows: 0° is <strong>straight forwards relative to the
-boat</strong>, and angle measurements increase in the clockwise direction. Angles may be bounded in [-180°, 180°) or [0°, 360°)</li>
+<li>A <em>True Bearing</em> is a bearing where the angle convention is as follows: 0°
+  is towards the <strong>North</strong>, angles increase in the clockwise direction, and
+  angles are typically bounded within [0°, 360°)]</li>
+<li>A <em>Relative Bearing</em> is a bearing where the angle convention is as follows:
+  0° is <strong>straight forwards relative to the boat</strong>, and angle measurements
+  increase in the clockwise direction. Angles may be bounded in [-180°, 180°)
+  or [0°, 360°)</li>
 </ul>
-<p>In the example below, the boat "B" has a Heading (H) of 30°. The True Bearing (<span class="arithmatex">\(B_t\)</span>) of the Lighthouse "A"
-from the boat is 90°. The Relative Bearing (<span class="arithmatex">\(B_r\)</span>) of the lighthouse from the boat is 60°.</p>
+<p>In the example below, the boat "B" has a Heading (H) of 30°. The True Bearing
+(<span class="arithmatex">\(B_t\)</span>) of the Lighthouse "A" from the boat is 90°. The Relative Bearing
+(<span class="arithmatex">\(B_r\)</span>) of the lighthouse from the boat is 60°.</p>
 <p><img alt="image" src="../../../assets/images/sailing/bearing_vs_heading.jpg" /></p>
 <h3 id="track-made-good">Track Made Good<a class="headerlink" href="#track-made-good" title="Permanent link">&para;</a></h3>
-<p>Boats do not necessarily travel in the same direction as their <strong><em>Heading</em></strong>, due to the effects of ocean current and
-wind. The path the boat has traveled relative to the sea floor is called the <strong><em>Track Made Good</em></strong>. This is the
+<p>Boats do not necessarily travel in the same direction as their <strong><em>Heading</em></strong>,
+due to the effects of ocean current and wind. The path the boat has traveled
+relative to the sea floor is called the <strong><em>Track Made Good</em></strong>. This is the
 same as if you measured motion compared to land or with a GPS.</p>
 <p><img alt="image" src="../../../assets/images/sailing/track_made_good.jpg" /></p>
 <h3 id="heading-and-bearing-in-raye-project">Heading and Bearing in Raye Project<a class="headerlink" href="#heading-and-bearing-in-raye-project" title="Permanent link">&para;</a></h3>
-<p>In Sailbot's Raye project, <strong><em>Heading</em></strong> and <strong><em>Bearing</em></strong> are used to refer to different conventions for describing
-which way the boat is pointing.
-The following 3 pieces of information are needed to unambiguously define an angle measuring convention:</p>
+<p>In Sailbot's Raye project, <strong><em>Heading</em></strong> and <strong><em>Bearing</em></strong> are used to refer to
+different conventions for describing which way the boat is pointing.
+The following 3 pieces of information are needed to unambiguously define an
+angle measuring convention:</p>
 <ul>
-<li>What does 0° mean? If 0° is North, is it <strong>towards</strong> the North or <strong>away</strong> from the North?</li>
-<li>Do the angle measurements increase in the clockwise or counter-clockwise direction?</li>
-<li>What range should the angles be bounded to? This part is often unimportant if the angles are only used in
-trigonometry functions.</li>
+<li>What does 0° mean? If 0° is North, is it <strong>towards</strong> the North or <strong>away</strong>
+  from the North?</li>
+<li>Do the angle measurements increase in the clockwise or counter-clockwise
+  direction?</li>
+<li>What range should the angles be bounded to? This part is often unimportant
+  if the angles are only used in trigonometry functions.</li>
 </ul>
 <p>Some common examples of angle measuring conventions which we use are:</p>
 <ul>
-<li>0° means towards the East, angles increase in the counter-clockwise direction, and angles are bounded in
-[-180°, 180°). This is effectively the main angle convention used in most math courses.</li>
-<li>0° means towards the North, angles increase in the clockwise direction, and angles are bounded in [0°, 360°). This
-angle convention is more commonly used by navigators.</li>
+<li>0° means towards the East, angles increase in the counter-clockwise
+  direction, and angles are bounded in [-180°, 180°). This is effectively the
+  main angle convention used in most math courses.</li>
+<li>0° means towards the North, angles increase in the clockwise direction, and
+  angles are bounded in [0°, 360°). This angle convention is more commonly
+  used by navigators.</li>
 </ul>
-<p>The specific angle conventions which we call Heading and Bearing can be ambiguous, and may be subject to change,
-so they are deliberately omitted here. Refer to the applicable source code to determine what the angle conventions are.</p>
+<p>The specific angle conventions which we call Heading and Bearing can be
+ambiguous, and may be subject to change, so they are deliberately omitted
+here. Refer to the applicable source code to determine what the angle
+conventions are.</p>
 <h2 id="true-apparent-and-boat-wind">True, Apparent, and Boat Wind<a class="headerlink" href="#true-apparent-and-boat-wind" title="Permanent link">&para;</a></h2>
 <ul>
-<li><em>True Wind</em> is the wind vector (speed and direction) which you would measure while standing on land (or motionless at
-sea with unchanging GPS co-ordinates). In sailbot code, this may be referred to as <strong><em>Global Wind</em></strong>. When people
-refer to "the wind", they normally mean True Wind.</li>
-<li><em>Boat Wind</em> is the wind vector which you would measure while standing on a moving boat when the True Wind speed is 0.
-This means that boat wind always blows straight onto the bow of the boat, and the magnitude of the boat wind is equal to
-the speed of the boat.</li>
-<li><strong><em>Apparent Wind</em></strong> is the vector sum of the True Wind and the Boat Wind. This is the wind that you would measure while
-standing on a moving boat more generally, even if there is non-zero wind. The apparent wind is also what our wind
-sensors measure, and what our sails feel. In Sailbot code, Apparent Wind may be referred to as <strong><em>Measured Wind</em></strong>.</li>
+<li><em>True Wind</em> is the wind vector (speed and direction) which you would measure
+  while standing on land (or motionless at sea with unchanging GPS
+  co-ordinates). In sailbot code, this may be referred to as <strong><em>Global
+  Wind</em></strong>. When people refer to "the wind", they normally mean True Wind.</li>
+<li><em>Boat Wind</em> is the wind vector which you would measure while standing on a
+  moving boat when the True Wind speed is 0. This means that boat wind always
+  blows straight onto the bow of the boat, and the magnitude of the boat wind
+  is equal to the speed of the boat.</li>
+<li><strong><em>Apparent Wind</em></strong> is the vector sum of the True Wind and the Boat Wind.
+  This is the wind that you would measure while standing on a moving boat
+  more generally, even if there is non-zero wind. The apparent wind is also
+  what our wind sensors measure, and what our sails feel. In Sailbot code,
+  Apparent Wind may be referred to as <strong><em>Measured Wind</em></strong>.</li>
 </ul>
-<p>In the example below, suppose the wind is blowing from the North at 4 m/s, and suppose the boat is moving <strong>towards</strong>
-the East at 3 m/s.</p>
+<p>In the example below, suppose the wind is blowing from the North at 4 m/s, and
+suppose the boat is moving <strong>towards</strong> the East at 3 m/s.</p>
 <ul>
 <li>The True Wind everywhere is blowing at 4 m/s from the North</li>
 <li>The Boat Wind onboard the boat is blowing <strong>from</strong> the East at 3 m/s</li>
-<li>The Apparent Wind onboard the boat is has a magnitude of <span class="arithmatex">\(\sqrt{3^2 + 4^2} = 5 \text{ m/s}\)</span>,
-and is coming from a true bearing of <span class="arithmatex">\(\arctan{(\frac{3}{4})} = 36.9°\)</span>.</li>
+<li>The Apparent Wind onboard the boat is has a magnitude of
+  <span class="arithmatex">\(\sqrt{3^2 + 4^2} = 5 \text{ m/s}\)</span>, and is coming from a true bearing of
+  <span class="arithmatex">\(\arctan{(\frac{3}{4})} = 36.9°\)</span>.</li>
 </ul>
 <p><img alt="image" src="../../../assets/images/sailing/wind_types.jpg" /></p>
 <h2 id="tack">Tack<a class="headerlink" href="#tack" title="Permanent link">&para;</a></h2>
 <p>In the <a href="../turning/#tacking">Types of Turn</a>
-page, we discussed how a <strong><em>Tack</em></strong> is a type of turn. Weirdly, the word "tack" actually has two
-more distinct meanings in sailing. The word "Tack" can refer to:</p>
+page, we discussed how a <strong><em>Tack</em></strong> is a type of turn. Weirdly, the word
+"tack" actually has two more distinct meanings in sailing. The word "Tack" can
+refer to:</p>
 <ul>
 <li>the type of turn, as covered before.</li>
-<li><em>Starboard Tack</em> vs <em>Port Tack</em>: The tack is basically the side of the boat which is further upwind. More thoroughly,
-the tack is the opposite side to the sail. This means that boats change tack when the sail switches sides.<ul>
-<li>In the diagram below,
-the 3 boats on the left of the diagram are on Starboard Tack, and the 3 boats on the right side are on Port Tack.</li>
+<li><em>Starboard Tack</em> vs <em>Port Tack</em>: The tack is basically the side of the boat
+  which is further upwind. More thoroughly, the tack is the opposite side to
+  the sail. This means that boats change tack when the sail switches sides.<ul>
+<li>In the diagram below, the 3 boats on the left of the diagram are on
+  Starboard Tack, and the 3 boats on the right side are on Port Tack.</li>
 <li>The tack of a boat in <em>Irons</em> is undefined.</li>
-<li>The boat in the diagram on a run is on Port Tack. If the boat continued straight but the sail switched sides into
-the position shown by the <strong>dashed</strong> line, the boat would be on Starboard Tack.</li>
+<li>The boat in the diagram on a run is on Port Tack. If the boat continued
+  straight but the sail switched sides into the position shown by the
+  <strong>dashed</strong> line, the boat would be on Starboard Tack.</li>
 </ul>
 </li>
 </ul>
 <p><img alt="image" src="../../../assets/images/sailing/tack_other_meaning.jpg" /></p>
 <ul>
-<li>Finally, the Tack can refer to particular region of the main sail. This is not important for software members.</li>
+<li>Finally, the Tack can refer to particular region of the main sail. This is
+  not important for software members.</li>
 </ul>
 <h2 id="keywords-on-this-page">Keywords on this Page<a class="headerlink" href="#keywords-on-this-page" title="Permanent link">&para;</a></h2>
 <ul>

@@ -2970,8 +2970,10 @@
 
 
 <h1 id="docs-site">Docs Site<a class="headerlink" href="#docs-site" title="Permanent link">&para;</a></h1>
+<!-- markdownlint-disable-next-line MD013 -->
 <p>UBCSailbot software team's documentation site. It is meant to be developed in <a href="https://github.com/UBCSailbot/sailbot_workspace" target="_blank">Sailbot Workspace</a>
-in conjunction with our other software, but doesn't have to be. There are instructions for both cases below.</p>
+in conjunction with our other software, but doesn't have to be. There are
+instructions for both cases below.</p>
 <h2 id="setup">Setup<a class="headerlink" href="#setup" title="Permanent link">&para;</a></h2>
 <h3 id="setup-in-sailbot-workspace">Setup in Sailbot Workspace<a class="headerlink" href="#setup-in-sailbot-workspace" title="Permanent link">&para;</a></h3>
 <ol>
@@ -2979,9 +2981,12 @@ in conjunction with our other software, but doesn't have to be. There are instru
 <li>Uncomment <code>8000:8000</code> in <code>.devcontainer/docker-compose.yml</code></li>
 <li>Rebuild the Dev Container</li>
 </ol>
-<p>Refer to <a href="../../usage/how_to/#work-with-containerized-applications">How to work with containerized applications</a>
+<p>Refer to</p>
+<!-- markdownlint-disable-next-line MD013 -->
+<p><a href="../../usage/how_to/#work-with-containerized-applications">How to work with containerized applications</a>
 for more details.</p>
 <h3 id="setup-standalone">Setup Standalone<a class="headerlink" href="#setup-standalone" title="Permanent link">&para;</a></h3>
+<!-- markdownlint-disable-next-line MD013 -->
 <ol>
 <li>
 <p>Manually install <a href="https://squidfunk.github.io/mkdocs-material/setup/setting-up-social-cards/#dependencies" target="_blank">social plugin OS dependencies</a></p>
@@ -2991,22 +2996,28 @@ for more details.</p>
 <p><code>pip install --upgrade pip
    pip install -Ur docs/requirements.txt</code></p>
 <ul>
-<li>Can do this in a <a href="../../../../reference/python/virtual-environments/">Python virtual environment</a></li>
+<li>Can do this in a
+  <!-- markdownlint-disable-next-line MD013 -->
+  <a href="../../../../reference/python/virtual-environments/">Python virtual environment</a></li>
 </ul>
 </li>
 </ol>
 <h2 id="run">Run<a class="headerlink" href="#run" title="Permanent link">&para;</a></h2>
 <h3 id="run-in-sailbot-workspace">Run in Sailbot Workspace<a class="headerlink" href="#run-in-sailbot-workspace" title="Permanent link">&para;</a></h3>
-<p>After <a href="#setup-in-sailbot-workspace">setup</a>, the Docs site should be running on port 8000.</p>
-<p>Refer to <a href="../../usage/how_to/#work-with-containerized-applications">How to work with containerized applications</a>
+<p>After <a href="#setup-in-sailbot-workspace">setup</a>, the Docs site should be running on
+port 8000.</p>
+<p>Refer to</p>
+<!-- markdownlint-disable-next-line MD013 -->
+<p><a href="../../usage/how_to/#work-with-containerized-applications">How to work with containerized applications</a>
 for more details.</p>
 <h3 id="run-standalone">Run Standalone<a class="headerlink" href="#run-standalone" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>mkdocs serve
 </code></pre></div>
 <h2 id="update-dependencies">Update Dependencies<a class="headerlink" href="#update-dependencies" title="Permanent link">&para;</a></h2>
-<p>This site is built using the latest versions of dependencies in <code>docs/requirements.txt</code>
-at the time of the most recent commit to the main branch.
-To see exactly how the site will look when deployed, ensure your local dependencies are up to date.</p>
+<p>This site is built using the latest versions of dependencies in
+<code>docs/requirements.txt</code> at the time of the most recent commit to the main
+branch. To see exactly how the site will look when deployed, ensure your local
+dependencies are up to date.</p>
 <h3 id="update-dependencies-in-sailbot-workspace">Update Dependencies in Sailbot Workspace<a class="headerlink" href="#update-dependencies-in-sailbot-workspace" title="Permanent link">&para;</a></h3>
 <p>Rebuild the Dev Container.</p>
 <h3 id="update-dependencies-by-itself">Update Dependencies By Itself<a class="headerlink" href="#update-dependencies-by-itself" title="Permanent link">&para;</a></h3>
@@ -3014,21 +3025,27 @@ To see exactly how the site will look when deployed, ensure your local dependenc
 </code></pre></div>
 <h2 id="maintain">Maintain<a class="headerlink" href="#maintain" title="Permanent link">&para;</a></h2>
 <h3 id="contribute-to-this-site">Contribute to This Site<a class="headerlink" href="#contribute-to-this-site" title="Permanent link">&para;</a></h3>
-<p>Read our <a href="../../../../reference/markdown/" target="_blank">Markdown Reference Page</a> for the syntax supported by this site.</p>
+<!-- markdownlint-disable-next-line MD013 -->
+<p>Read our <a href="../../../../reference/markdown/" target="_blank">Markdown Reference Page</a>
+for the syntax supported by this site.</p>
 <h3 id="delete-docs-versions">Delete Docs Versions<a class="headerlink" href="#delete-docs-versions" title="Permanent link">&para;</a></h3>
-<p>A version of the docs site is created when a PR is open, and is deleted when it is merged or closed.
-However, the CI that does this is very finicky, so if 2 PR's are trying to update the site at the exact same time
-one might fail.</p>
-<p>This is especially annoying if this happens to be one that deletes a version, because this means that
-there is a version still open for a merged/closed PR. To manually clean up these PR's, run the following commands in
-the docs container (in Docker Desktop, the exec tab):</p>
+<p>A version of the docs site is created when a PR is open, and is deleted when it
+is merged or closed. However, the CI that does this is very finicky, so if 2
+PR's are trying to update the site at the exact same time one might fail.</p>
+<p>This is especially annoying if this happens to be one that deletes a version,
+because this means that there is a version still open for a merged/closed PR.
+To manually clean up these PR's, run the following commands in the docs
+container (in Docker Desktop, the exec tab):</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>git config user.name &lt;your github username&gt;
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>git config user.email &lt;your github email&gt;
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>mike delete --push pr-&lt;number&gt;
 </code></pre></div>
-<p>If you get an error that your local copy of the <code>gh-pages</code> branch has diverged from the remote, you can delete it
-with <code>git branch -D gh-pages</code> and rerun the <code>mike delete</code> command above.</p>
-<p>It will probably ask you to login to GitHub: enter your username then a <a href="https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens" target="_blank">GitHub access token</a>
+<p>If you get an error that your local copy of the <code>gh-pages</code> branch has diverged
+from the remote, you can delete it with <code>git branch -D gh-pages</code> and rerun the
+<code>mike delete</code> command above.</p>
+<p>It will probably ask you to login to GitHub: enter your username then a</p>
+<!-- markdownlint-disable-next-line MD013 -->
+<p><a href="https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens" target="_blank">GitHub access token</a>
 with write permission.</p>
 
 

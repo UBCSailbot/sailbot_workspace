@@ -2965,21 +2965,27 @@
 Its README has been copied below.</p>
 </div>
 <h1 id="custom-interfaces">Custom Interfaces<a class="headerlink" href="#custom-interfaces" title="Permanent link">&para;</a></h1>
-<p>UBC Sailbot's custom interfaces ROS package. To add <code>custom_interfaces</code> to another ROS package, follow the instructions
-<a href="https://docs.ros.org/en/humble/Tutorials/Beginner-Client-Libraries/Custom-ROS2-Interfaces.html#test-the-new-interfaces">here</a>.</p>
+<p>UBC Sailbot's custom interfaces ROS package. To add <code>custom_interfaces</code> to
+another ROS package, follow the instructions</p>
+<!-- markdownlint-disable-next-line MD013 -->
+<p><a href="https://docs.ros.org/en/humble/Tutorials/Beginner-Client-Libraries/Custom-ROS2-Interfaces.html#test-the-new-interfaces">here</a>.</p>
 <p>The terminology that we use in this document are the following:</p>
 <ul>
-<li><strong>External Interface</strong>: An interface used to communicate data between nodes and ROS packages.</li>
-<li><strong>Internal Interface</strong>: An interface used to standardize conventions across external interfaces. Standards are
-documented in the <code>.msg</code> or <code>.srv</code> file associated with that interface.</li>
+<li><strong>External Interface</strong>: An interface used to communicate data between nodes
+  and ROS packages.</li>
+<li><strong>Internal Interface</strong>: An interface used to standardize conventions across
+  external interfaces. Standards are documented in the <code>.msg</code> or <code>.srv</code> file
+  associated with that interface.</li>
 </ul>
 <h2 id="project-wide-interfaces">Project-wide Interfaces<a class="headerlink" href="#project-wide-interfaces" title="Permanent link">&para;</a></h2>
 <p>ROS messages and services used across many ROS packages in the project.</p>
 <h3 id="project-wide-external-interfaces">Project-wide External Interfaces<a class="headerlink" href="#project-wide-external-interfaces" title="Permanent link">&para;</a></h3>
 <!--
-Update diagram by editing diagrams/src/external_interfaces.puml and the PlantUML Export Diagram command in VSCode
+Update diagram by editing diagrams/src/external_interfaces.puml and the
+PlantUML Export Diagram command in VSCode
 --->
 
+<!-- markdownlint-disable-next-line MD013 -->
 <p><img alt="External Interface Diagram" src="https://github.com/UBCSailbot/sailbot_workspace/blob/main/src/custom_interfaces/diagrams/out/external_interfaces.png?raw=true" /></p>
 <h3 id="project-wide-internal-interfaces">Project-wide Internal Interfaces<a class="headerlink" href="#project-wide-internal-interfaces" title="Permanent link">&para;</a></h3>
 <table>
@@ -3026,10 +3032,13 @@ Update diagram by editing diagrams/src/external_interfaces.puml and the PlantUML
 </table>
 <h2 id="safety-and-error-handling">Safety and Error Handling<a class="headerlink" href="#safety-and-error-handling" title="Permanent link">&para;</a></h2>
 <h3 id="desiredheading-message-stop-logic">DesiredHeading Message - Stop Logic<a class="headerlink" href="#desiredheading-message-stop-logic" title="Permanent link">&para;</a></h3>
-<p>The <code>DesiredHeading</code> message includes a <code>sail</code> boolean field that controls whether the boat should proceed or stop:</p>
+<p>The <code>DesiredHeading</code> message includes a <code>sail</code> boolean field that controls
+whether the boat should proceed or stop:</p>
 <ul>
-<li><strong><code>sail = True</code></strong>: Boat should proceed with the specified heading (normal operation)</li>
-<li><strong><code>sail = False</code></strong>: Boat should stop/not sail (pathfinding failure or safety condition)</li>
+<li><strong><code>sail = True</code></strong>: Boat should proceed with the specified heading (normal
+  operation)</li>
+<li><strong><code>sail = False</code></strong>: Boat should stop/not sail (pathfinding failure or safety
+  condition)</li>
 </ul>
 <h4 id="when-sail-is-set-to-false">When <code>sail</code> is set to <code>False</code><a class="headerlink" href="#when-sail-is-set-to-false" title="Permanent link">&para;</a></h4>
 <p>The local pathfinding node sets <code>sail = False</code> when:</p>
@@ -3045,8 +3054,10 @@ Update diagram by editing diagrams/src/external_interfaces.puml and the PlantUML
 <li>This signals a stop condition to the boat indicating pathfinding failure.</li>
 </ul>
 <h2 id="boat-simulator-interfaces">Boat Simulator Interfaces<a class="headerlink" href="#boat-simulator-interfaces" title="Permanent link">&para;</a></h2>
+<!-- markdownlint-disable-next-line MD013 -->
 <p>ROS messages and services used in our <a href="https://github.com/UBCSailbot/sailbot_workspace/tree/main/src/boat_simulator">boat simulator</a>.</p>
 <h3 id="boat-simulator-external-interfaces">Boat Simulator External Interfaces<a class="headerlink" href="#boat-simulator-external-interfaces" title="Permanent link">&para;</a></h3>
+<!-- markdownlint-disable MD013 -->
 <table>
 <thead>
 <tr>
@@ -3065,7 +3076,10 @@ Update diagram by editing diagrams/src/external_interfaces.puml and the PlantUML
 </tr>
 </tbody>
 </table>
+<!-- markdownlint-enable MD013 -->
+
 <h3 id="boat-simulator-actions">Boat Simulator Actions<a class="headerlink" href="#boat-simulator-actions" title="Permanent link">&para;</a></h3>
+<!-- markdownlint-disable MD013 -->
 <table>
 <thead>
 <tr>
@@ -3087,11 +3101,15 @@ Update diagram by editing diagrams/src/external_interfaces.puml and the PlantUML
 </tr>
 </tbody>
 </table>
+<!-- markdownlint-enable MD013 -->
+
 <h2 id="resources">Resources<a class="headerlink" href="#resources" title="Permanent link">&para;</a></h2>
 <h3 id="common-interfaces">Common Interfaces<a class="headerlink" href="#common-interfaces" title="Permanent link">&para;</a></h3>
+<!-- markdownlint-disable-next-line MD013 -->
 <p>The ROS2 <a href="https://github.com/ros2/common_interfaces/tree/humble">common_interfaces</a> repository defines a set of
-packages which contain common interface files. Since we are using the Humble version of ROS2, see the <code>humble</code> branch.
-These interfaces can be used in this repository or as a reference for ideas and best practices.</p>
+packages which contain common interface files. Since we are using the Humble
+version of ROS2, see the <code>humble</code> branch. These interfaces can be used in this
+repository or as a reference for ideas and best practices.</p>
 <table>
 <thead>
 <tr>
@@ -3126,8 +3144,11 @@ These interfaces can be used in this repository or as a reference for ideas and 
 </tr>
 </tbody>
 </table>
+<!-- markdownlint-disable-next-line MD013 -->
 <p>For more detail on the usefulness of each package, see <a href="https://github.com/UBCSailbot/custom_interfaces/issues/3#issuecomment-1626875658">this issue comment</a>.
-If you are interested in creating your own custom message or service, see the <a href="https://docs.ros.org/en/humble/Tutorials/Beginner-Client-Libraries/Custom-ROS2-Interfaces.html">ROS Humble documentation</a>.</p>
+If you are interested in creating your own custom message or service, see the</p>
+<!-- markdownlint-disable-next-line MD013 -->
+<p><a href="https://docs.ros.org/en/humble/Tutorials/Beginner-Client-Libraries/Custom-ROS2-Interfaces.html">ROS Humble documentation</a>.</p>
 
 
 

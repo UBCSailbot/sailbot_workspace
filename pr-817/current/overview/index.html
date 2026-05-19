@@ -2702,41 +2702,55 @@
 
 
 <h1 id="current-project-overview">Current Project Overview<a class="headerlink" href="#current-project-overview" title="Permanent link">&para;</a></h1>
-<p>Our current project, Polaris, is an autonomous research vessel capable of collecting oceanic and atmospheric data. With our
-expertise in autonomous sailing, the goal is to monitor the health of our oceans while collaborating with stakeholders
-and researchers involved in climate science and oceanography.</p>
-<p>The software team is responsible for designing, implementing, and testing the software system of our autonomous sailboats.
-We work on both low-level and high-level integration, from interfacing with sensors to planning sea routes with pathfinding
-algorithms.</p>
+<p>Our current project, Polaris, is an autonomous research vessel capable of
+collecting oceanic and atmospheric data. With our expertise in autonomous
+sailing, the goal is to monitor the health of our oceans while collaborating
+with stakeholders and researchers involved in climate science and oceanography.</p>
+<p>The software team is responsible for designing, implementing, and testing the
+software system of our autonomous sailboats. We work on both low-level and
+high-level integration, from interfacing with sensors to planning sea routes
+with pathfinding algorithms.</p>
 <h2 id="dataflow">Dataflow<a class="headerlink" href="#dataflow" title="Permanent link">&para;</a></h2>
-<p>The software architecture for our next autonomous sailboat is split across two computers: the on board computer on board
-and the remote server off board. The following paragraphs will follow the flow of data between the software components
-(bolded) on each computer.</p>
-<p>On the remote server, <strong>global pathfinding</strong> uses the A* pathfinding algorithm to create a sailing path, a list of global
-waypoints from the current position to destination. Global sailing paths are sent via the <strong>Remote Transceiver</strong> to the
-<strong>Local Transceiver</strong> on the on board computer.</p>
-<p>On the on board computer, the <strong>CAN Transceiver</strong> receives GPS and wind data from their respective sensors. This raw data
-is filtered before being used in the other software components. <strong>Local Pathfinding</strong> uses GPS and wind data, as well as
-the global path and AIS data from the <strong>AIS Receiver</strong>, to create a local path, a list of local waypoints from the current
-position to the next global waypoint. The <strong>Controller</strong> uses wind data and the relative bearing to the local path to adjust
-the rudder and sails accordingly. The state of the boat and research data we collect is sent via the <strong>Local Transceiver</strong>
-to the <strong>Remote Transceiver</strong> on the remote server.</p>
-<p>Back on the remote server, the <strong>Website</strong> presents the boat state and research data for monitoring and analysis purposes.
-The <strong>Remote Transceiver</strong> additionally includes manual overrides such as resetting the boat state and modifying the global
-path.</p>
-<p>As for the communication mediums, the computers communicate via satellite, and components on the on board computer communicate
-through the <a href="../../reference/ros/" target="_blank">Robot Operating System framework</a>, or ROS for short.</p>
-<p>For software development purposes, all software components will be able to run and communicate with each other locally.
-To accomplish this, we will:</p>
+<p>The software architecture for our next autonomous sailboat is split across two
+computers: the on board computer on board and the remote server off board. The
+following paragraphs will follow the flow of data between the software
+components (bolded) on each computer.</p>
+<p>On the remote server, <strong>global pathfinding</strong> uses the A* pathfinding algorithm
+to create a sailing path, a list of global waypoints from the current position
+to destination. Global sailing paths are sent via the <strong>Remote Transceiver</strong> to
+the <strong>Local Transceiver</strong> on the on board computer.</p>
+<p>On the on board computer, the <strong>CAN Transceiver</strong> receives GPS and wind data
+from their respective sensors. This raw data is filtered before being used in
+the other software components. <strong>Local Pathfinding</strong> uses GPS and wind data, as
+well as the global path and AIS data from the <strong>AIS Receiver</strong>, to create a
+local path, a list of local waypoints from the current position to the next
+global waypoint. The <strong>Controller</strong> uses wind data and the relative bearing to
+the local path to adjust the rudder and sails accordingly. The state of the
+boat and research data we collect is sent via the <strong>Local Transceiver</strong> to the
+<strong>Remote Transceiver</strong> on the remote server.</p>
+<p>Back on the remote server, the <strong>Website</strong> presents the boat state and research
+data for monitoring and analysis purposes. The <strong>Remote Transceiver</strong>
+additionally includes manual overrides such as resetting the boat state and
+modifying the global path.</p>
+<p>As for the communication mediums, the computers communicate via satellite, and
+components on the on board computer communicate through the
+<a href="../../reference/ros/" target="_blank">Robot Operating System framework</a>, or ROS
+for short.</p>
+<p>For software development purposes, all software components will be able to run
+and communicate with each other locally. To accomplish this, we will:</p>
 <ol>
-<li>Create a development environment that has all software component dependencies: <strong>Sailbot Workspace</strong>.</li>
-<li>Develop accurate simulations of the environment and hardware: <strong>Simulator</strong>, <strong>Mock AIS</strong>, <strong>Mock Global Pathfinding</strong>.</li>
-<li>Add configuration options to select between real and simulated hardware as well as running remote server components
-   remotely or locally.</li>
+<li>Create a development environment that has all software component
+   dependencies: <strong>Sailbot Workspace</strong>.</li>
+<li>Develop accurate simulations of the environment and hardware: <strong>Simulator</strong>,
+   <strong>Mock AIS</strong>, <strong>Mock Global Pathfinding</strong>.</li>
+<li>Add configuration options to select between real and simulated hardware as
+   well as running remote server components remotely or locally.</li>
 </ol>
 <h2 id="diagrams">Diagrams<a class="headerlink" href="#diagrams" title="Permanent link">&para;</a></h2>
-<p>In these diagrams, the bubbles represent components of our software system, and the direction of arrows connecting the
-bubbles represent the flow of data between them. The color of the bubbles denote the sub-team leading their development:</p>
+<p>In these diagrams, the bubbles represent components of our software system, and
+the direction of arrows connecting the bubbles represent the flow of data
+between them. The color of the bubbles denote the sub-team leading their
+development:</p>
 <ul>
 <li>Purple: Controls</li>
 <li>Green: Network Systems</li>
@@ -2744,18 +2758,21 @@ bubbles represent the flow of data between them. The color of the bubbles denote
 <li>Red: Website</li>
 <li>White: Not a part of the Software Team's codebase</li>
 </ul>
-<p>Components that are used in both the production and development environments are darker,
-while ones that are only used in one are lighter.</p>
+<p>Components that are used in both the production and development environments
+are darker, while ones that are only used in one are lighter.</p>
 <div class="admonition tip">
 <p class="admonition-title">Interacting with the diagram</p>
 <ul>
-<li>To switch between the production and development environment diagrams, hover over the image to make the toolbar
-  visible and navigate with the arrows on the left side</li>
+<li>To switch between the production and development environment diagrams,
+  hover over the image to make the toolbar visible and navigate with the
+  arrows on the left side</li>
 </ul>
 </div>
+<!-- markdownlint-disable MD013 -->
 <!-- This was generated by going to the source, selecting File > Embed > iFrame, and deselecting Layers, Tags, and Edit -->
 <!-- Source: https://drive.google.com/file/d/1_qC245vcXXuB69TLDhcfBPzdc10g7hwi/view?usp=sharing -->
 <iframe frameborder="0" style="width:100%;height:533px;" src="https://viewer.diagrams.net/?highlight=0000ff&nav=1&title=SOFT%20Architecture%20Diagram#Uhttps%3A%2F%2Fdrive.google.com%2Fuc%3Fid%3D1_qC245vcXXuB69TLDhcfBPzdc10g7hwi%26export%3Ddownload"></iframe>
+<!-- markdownlint-enable MD013 -->
 
 
 

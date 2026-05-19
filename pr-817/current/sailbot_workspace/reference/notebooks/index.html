@@ -1002,6 +1002,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#introducing-rosbags" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Introducing rosbags
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2668,6 +2679,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#introducing-rosbags" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Introducing rosbags
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2713,18 +2735,27 @@ Its README has been copied below.</p>
 <ol>
 <li>run <code>install_notebook_env.sh</code></li>
 <li>ctl + shift + p  <code>Developer: Reload Window</code></li>
-<li>open a <code>.ipynb</code> file and select the kernel: <em>Python (notebook_env)</em>. If the kernel env does not appear, try clicking refresh or keep running Developer: Reload Window until it does.</li>
+<li>open a <code>.ipynb</code> file and select the kernel: <em>Python (notebook_env)</em>. If
+   the kernel env does not appear, try clicking refresh or keep running
+   Developer: Reload Window until it does.</li>
 </ol>
 <h2 id="standards">Standards<a class="headerlink" href="#standards" title="Permanent link">&para;</a></h2>
 <ol>
-<li>Notebooks should be organized into directories named like the UBC Sailbot repositories they correspond to</li>
+<li>Notebooks should be organized into directories named like the UBC Sailbot
+   repositories they correspond to</li>
 </ol>
-<h1 id="introducing-rosbags">Introducing rosbags<a class="headerlink" href="#introducing-rosbags" title="Permanent link">&para;</a></h1>
+<h2 id="introducing-rosbags">Introducing rosbags<a class="headerlink" href="#introducing-rosbags" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Rosbags are sqlite db files which contain messages published to a topic that are being recorded. These are not natively supported.</li>
-<li>By converting these db files into a DataFrame, we can use data to create plots and tables.</li>
-<li>To start, begin by executing the code cells in <code>explore_bag_data.ipynb</code> in order. You can see the DataFrame by running the <code>df.head()</code> command in the third cell. These are the messages that are being published to local_path by gps, wind_sensors, etc.</li>
-<li>By running the 4<sup>th</sup> code cell, you extract the data from each message into numerical values that are being published to the topic.</li>
+<li>Rosbags are sqlite db files which contain messages published to a topic
+  that are being recorded. These are not natively supported.</li>
+<li>By converting these db files into a DataFrame, we can use data to create
+  plots and tables.</li>
+<li>To start, begin by executing the code cells in <code>explore_bag_data.ipynb</code> in
+  order. You can see the DataFrame by running the <code>df.head()</code> command in the
+  third cell. These are the messages that are being published to local_path
+  by gps, wind_sensors, etc.</li>
+<li>By running the 4<sup>th</sup> code cell, you extract the data from each message into
+  numerical values that are being published to the topic.</li>
 </ul>
 
 

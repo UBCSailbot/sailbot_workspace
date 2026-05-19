@@ -2752,30 +2752,39 @@
 <h2 id="mmsi-aka-id">MMSI a.k.a ID<a class="headerlink" href="#mmsi-aka-id" title="Permanent link">&para;</a></h2>
 <p>A 9-digit, unique identification number for the ship.</p>
 <h2 id="cog-course-over-ground">COG: Course over Ground<a class="headerlink" href="#cog-course-over-ground" title="Permanent link">&para;</a></h2>
-<p>The direction the boat is travelling, relative to the sea floor. This is the direction of the rate of change
-of the <a href="../miscellaneous/#track-made-good">Track Made Good</a>.</p>
-<p>This is measured with the navigational angle convention, where 0° is towards the North, and angles increase in the
-clockwise direction. If we make the slight simplification of neglecting the effect of the wind, then</p>
+<p>The direction the boat is travelling, relative to the sea floor. This is the
+direction of the rate of change of the
+<a href="../miscellaneous/#track-made-good">Track Made Good</a>.</p>
+<p>This is measured with the navigational angle convention, where 0° is towards
+the North, and angles increase in the clockwise direction. If we make the
+slight simplification of neglecting the effect of the wind, then</p>
 <ul>
-<li>If the boatspeed is positive and there is no current, the boat's Course over Ground will be the same as the Heading.</li>
-<li>If the boatspeed is zero and there is positive current, the boat's Course over Ground will be the same direction as the
-current is flowing.</li>
+<li>If the boatspeed is positive and there is no current, the boat's Course over
+  Ground will be the same as the Heading.</li>
+<li>If the boatspeed is zero and there is positive current, the boat's Course
+  over Ground will be the same direction as the current is flowing.</li>
 </ul>
 <h2 id="sog-speed-over-ground">SOG: Speed over Ground<a class="headerlink" href="#sog-speed-over-ground" title="Permanent link">&para;</a></h2>
-<p>The speed the boat is travelling at, relative to the sea floor. This is the magnitude of the rate of change
-of the <a href="../miscellaneous/#track-made-good">Track Made Good</a>.</p>
+<p>The speed the boat is travelling at, relative to the sea floor. This is the
+magnitude of the rate of change of the
+<a href="../miscellaneous/#track-made-good">Track Made Good</a>.</p>
+<!-- markdownlint-disable MD013 -->
 <p><span class="arithmatex">\(\begin{align*}
 \text{SoG} &amp;= \left|\frac{d}{dt} \overrightarrow{(\text{Track Made Good})} \right|\\
 \end{align*}\)</span></p>
+<!-- markdownlint-enable MD013 -->
+
 <p>If we make the slight simplification of neglecting the effect of the wind, then</p>
 <ul>
-<li>If the boatspeed is positive and there is no current, the boat's Speed over Ground will be the same as the speed of water
-hitting your hand, if you were sitting on the boat and put your hand in the water.</li>
-<li>If the boatspeed is zero and there is positive current, the boat's Speed over Ground will be the same speed as the
-current.</li>
+<li>If the boatspeed is positive and there is no current, the boat's Speed over
+  Ground will be the same as the speed of water hitting your hand, if you were
+  sitting on the boat and put your hand in the water.</li>
+<li>If the boatspeed is zero and there is positive current, the boat's Speed
+  over Ground will be the same speed as the current.</li>
 </ul>
 <h2 id="rot-rate-of-turn">RoT: Rate of Turn<a class="headerlink" href="#rot-rate-of-turn" title="Permanent link">&para;</a></h2>
-<p>The angular velocity of the boat (how fast it's turning), measured in degrees per minute.</p>
+<p>The angular velocity of the boat (how fast it's turning), measured in degrees
+per minute.</p>
 
 
 
