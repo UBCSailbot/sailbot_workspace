@@ -1,13 +1,19 @@
+<!-- markdownlint-disable-next-line MD013 -->
 #### NOTE: We now only use this for deployment! We do website development locally now. Hmph
 
 # Website Image
 
-Used for running [our website](https://github.com/UBCSailbot/sailbot_workspace/tree/main/src/website).
+Used for running
+<!-- markdownlint-disable-next-line MD013 -->
+[our website](https://github.com/UBCSailbot/sailbot_workspace/tree/main/src/website).
 
 ## Features
 
-- Builds off the [`mcr.microsoft.com/vscode/devcontainers/javascript-node`](https://hub.docker.com/_/microsoft-vscode-devcontainers)
+- Builds off the
+<!-- markdownlint-disable-next-line MD013 -->
+  [`mcr.microsoft.com/vscode/devcontainers/javascript-node`](https://hub.docker.com/_/microsoft-vscode-devcontainers)
   image
 - Installs MongoDB command line tools
-- Installs the dependencies of the site located in the `website/` folder of [`src/`](../../src/)
+- Installs the dependencies of the site located in the `website/` folder of
+  [`src/`](../../src/)
 - When image is run, runs website on port 3005

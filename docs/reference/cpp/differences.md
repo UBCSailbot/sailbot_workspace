@@ -1,13 +1,14 @@
 # Differences Between C and C++
 
-For most use cases, you can think of C++ as a superset of C. While this is not technically true, more often than not
-you are able to write standard C code for a C++ program without issues. However, doing so ignores a lot of the benefits
+For most use cases, you can think of C++ as a superset of C. While this is not
+technically true, more often than not you are able to write standard C code for
+a C++ program without issues. However, doing so ignores a lot of the benefits
 and reasons to use C++.
 
 ## Classes and Structs
 
-In C structs can only contain member variables, but in C++ structs are basically classes but with a default member
-visibility of public instead of private.
+In C structs can only contain member variables, but in C++ structs are basically
+classes but with a default member visibility of public instead of private.
 
 ???+ example
     The following code blocks are equivalent.
@@ -34,16 +35,20 @@ visibility of public instead of private.
 
 ## Namespaces
 
-One problem that is prevalent in C concerns the scoping of names. For example, let there be two files `A.h` and `B.h`
-and a program `ighxy.c`, and let them both contain a `float x` and `int bar(void)`.
+One problem that is prevalent in C concerns the scoping of names. For example,
+let there be two files `A.h` and `B.h` and a program `ighxy.c`, and let them
+both contain a `float x` and `int bar(void)`.
 
-Our program cannot compile because the linker cannot distinguish which `bar()` function we want to use! One way to fix
-this in a C program would be to rename them `a_bar()` and `b_bar()`. Although this fix seems trivial for this example,
-applying it to a file that has potentially 100 functions can be a lot more difficult, especially if two files just
-happen to share the same prefix for their functions!
+Our program cannot compile because the linker cannot distinguish which `bar()`
+function we want to use! One way to fix this in a C program would be to rename
+them `a_bar()` and `b_bar()`. Although this fix seems trivial for this example,
+applying it to a file that has potentially 100 functions can be a lot more
+difficult, especially if two files just happen to share the same prefix for
+their functions!
 
-C++ introduces namespaces to tackle this problem. With namespaces, we can deal with naming conflicts much more easily.
-Though be aware that namespaces are not necessary everywhere. See the following code snippet to see how they work.
+C++ introduces namespaces to tackle this problem. With namespaces, we can deal
+with naming conflicts much more easily. Though be aware that namespaces are not
+necessary everywhere. See the following code snippet to see how they work.
 
 ??? Example
 
@@ -103,6 +108,7 @@ Though be aware that namespaces are not necessary everywhere. See the following 
 ???+ warning
     You may come across something like:
 
+    <!-- markdownlint-disable MD013 -->
     ```C++ title="example.cpp"
     using namespace std;
     namespace io = std::filesystem;
@@ -113,16 +119,19 @@ Though be aware that namespaces are not necessary everywhere. See the following 
         return 0;
     }
     ```
+    <!-- markdownlint-enable MD013 -->
 
     There are two things going on here.
 
-    First, `using namespace std` makes all functions and types defined within the standard namespace and included via 
-    `#include` directives visible to `example.cpp`. If you are familiar with Python, the Python equivalent of this would
-    be `import std as *`. However, it is considered *bad* practice to do this as it eliminates the point of using
-    namespaces.
+    First, `using namespace std` makes all functions and types defined within
+    the standard namespace and included via `#include` directives visible to
+    `example.cpp`. If you are familiar with Python, the Python equivalent of
+    this would be `import std as *`. However, it is considered *bad* practice
+    to do this as it eliminates the point of using namespaces.
 
     === "OK"
 
+        <!-- markdownlint-disable MD013 -->
         ```C++
             class string {
                 // Insert implementation here
@@ -134,6 +143,8 @@ Though be aware that namespaces are not necessary everywhere. See the following 
                 ...
             }
         ```
+        <!-- markdownlint-enable MD013 -->
+
 
     === "Not OK"
 
@@ -148,14 +159,16 @@ Though be aware that namespaces are not necessary everywhere. See the following 
 
         The compiler cannot infer which implementation we want.
 
-    Secondly, `namespace io = std::filesystem` is basically an alias for the `std::filesystem` namespace. This practice
-    is acceptable for long namespace identifiers, but be careful as it can still run into namespace conflicts if your
-    alias is the same as another namespace or alias.
+    Secondly, `namespace io = std::filesystem` is basically an alias for the
+    `std::filesystem` namespace. This practice is acceptable for long namespace
+    identifiers, but be careful as it can still run into namespace conflicts if
+    your alias is the same as another namespace or alias.
 
 ## Constant Expressions
 
-In C, if we want to declare a constant or a function/expression that we want to be evaluated at compile time, we need
-to use `#define` statements. One of the problems with `#define` statements is that they perform a simple copy paste
+In C, if we want to declare a constant or a function/expression that we want to
+be evaluated at compile time, we need to use `#define` statements. One of the
+problems with `#define` statements is that they perform a simple copy paste
 wherever they're used. For example:
 
 === "Before Precompile"
@@ -181,12 +194,17 @@ wherever they're used. For example:
     ```
 
 !!! note
-    `AREA_OF_CIRCLE` is a macro with arguments. If you are confused by it, [this resource](https://www.cs.yale.edu/homes/aspnes/pinewiki/C(2f)Macros.html){target=_blank}
+    `AREA_OF_CIRCLE` is a macro with arguments. If you are confused by it,
+    <!-- markdownlint-disable-next-line MD013 -->
+    [this resource](https://www.cs.yale.edu/homes/aspnes/pinewiki/C(2f)Macros.html){target=_blank}
     has a detailed explanation on how they work.
 
-Because of this copy-pasting, you need to be very careful with syntax, sometimes necessitating an ugly
+Because of this copy-pasting, you need to be very careful with syntax, sometimes
+necessitating an ugly
+<!-- markdownlint-disable-next-line MD013 -->
 [`do {} while(0)` wrapper](https://stackoverflow.com/questions/1067226/c-multi-line-macro-do-while0-vs-scope-block){target=_blank}.
-Moreover, symbols declared with `#define` are always globally visible, ignoring namespaces!
+Moreover, symbols declared with `#define` are always globally visible, ignoring
+namespaces!
 
 In C++, the use of constant expressions are preferred.
 
@@ -197,8 +215,9 @@ constexpr float area_of_circle(float radius) {
 }
 ```
 
-Constant expressions do *not* get copy pasted, and are instead placed in program memory just like a normal variable
-or function. They also respect namespaces and function scopes, meaning the following code compiles.
+Constant expressions do *not* get copy pasted, and are instead placed in program
+memory just like a normal variable or function. They also respect namespaces and
+function scopes, meaning the following code compiles.
 
 ```C++ title="Constant Expression Scoping"
 void foo(void) {
@@ -214,18 +233,23 @@ void bar (void) {
 
 ## Lambdas
 
-Lambdas are primarily useful when you need to register a callback function one time and don't feel it's necessary to
-write out a full function. They are in no way required though, so do not worry about learning them. However, it's
-necessary to know that they exist such that you don't get confused when reading code. For more information, [go here](https://learn.microsoft.com/en-us/cpp/cpp/lambda-expressions-in-cpp?view=msvc-170){target=_blank}
+Lambdas are primarily useful when you need to register a callback function one
+time and don't feel it's necessary to write out a full function. They are in no
+way required though, so do not worry about learning them. However, it's
+necessary to know that they exist such that you don't get confused when reading
+code. For more information,
+<!-- markdownlint-disable-next-line MD013 -->
+[go here](https://learn.microsoft.com/en-us/cpp/cpp/lambda-expressions-in-cpp?view=msvc-170){target=_blank}
 for Microsoft's explanation.
 
 ## Misc
 
 ### Arrays
 
+<!-- markdownlint-disable-next-line MD013 -->
 Using the [C++ implementation of arrays](https://en.cppreference.com/w/cpp/container/array#:~:text=std%3A%3Aarray%20is%\20a%20container%20that%20encapsulates%20fixed%20size,C-style%20array%2C%20it%20doesn%27t%20decay%20to%20T%2A%20automatically.){target=_blank}
-is preferred over C arrays. It is simply easier and safer to work with than a standard C array without any performance
-costs.
+is preferred over C arrays. It is simply easier and safer to work with than a
+standard C array without any performance costs.
 
 ???+ example
 
@@ -252,8 +276,10 @@ costs.
 
     === "C++"
 
-        C++ 20 makes passing arrays around a lot simpler. Do not worry about understanding the code shown below. It uses
-        some fairly advanced concepts and exists to illustrate how different such a simple operation can be.
+        C++ 20 makes passing arrays around a lot simpler. Do not worry about
+        understanding the code shown below. It uses some fairly advanced
+        concepts and exists to illustrate how different such a simple operation
+        can be.
 
         ```C++
         #include <iostream>
@@ -276,5 +302,7 @@ costs.
         The advantages of the C++ version are:
 
         * Size is implicitly part of the object
-        * We guarantee that foo takes a container, but it does not care if it's an array or, say, a vector, which is
-          preferable in this scenario where we simply iterate through the container's existing elements
+        * We guarantee that foo takes a container, but it does not care if
+          it's an array or, say, a vector, which is preferable in this
+          scenario where we simply iterate through the container's existing
+          elements

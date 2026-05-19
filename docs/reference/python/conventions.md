@@ -1,37 +1,50 @@
 # Conventions
 
-At UBC Sailbot, we follow standards in how we code to maintain a clean and comprehensible codebase.
-This page addresses what conventions we use specifically when programming in Python and the tools to help us maintain
-these conventions.
+At UBC Sailbot, we follow standards in how we code to maintain a clean and
+comprehensible codebase.
+This page addresses what conventions we use specifically when programming in
+Python and the tools to help us maintain these conventions.
 
 ## Style guide
 
 ### Linting
 
-To ensure that the codebase stays clean, we use [flake8](https://flake8.pycqa.org/en/5.0.4/#){target=_blank}, which is a
-tool for style guide enforcement mostly based off [pep8](https://peps.python.org/pep-0008/){target=_blank}. To automate
-most of this process, we use [autopep8](https://github.com/hhatto/autopep8){target=_blank}, which is a tool that resolves
-most style issues. However, there will be some issues that must be resolved by you!
+To ensure that the codebase stays clean, we use
+[flake8](https://flake8.pycqa.org/en/5.0.4/#){target=_blank}, which is a
+tool for style guide enforcement mostly based off
+[pep8](https://peps.python.org/pep-0008/){target=_blank}. To automate
+most of this process, we use
+[autopep8](https://github.com/hhatto/autopep8){target=_blank}, which is a tool
+that resolves most style issues. However, there will be some issues that must
+be resolved by you!
 
-Refer to this [guide](https://realpython.com/python-pep8/){target=_blank} on how to write readable code in python with the
-pep8 style guide.
+Refer to this [guide](https://realpython.com/python-pep8/){target=_blank} on
+how to write readable code in python with the pep8 style guide.
 
 !!! note
 
-    Our CI automatically checks that your code follows the pep8 standard. If it does not, your pull requests will
-    be blocked from being merged until those issues are resolved!
+    Our CI automatically checks that your code follows the pep8 standard. If
+    it does not, your pull requests will be blocked from being merged until
+    those issues are resolved!
 
 ### Type hinting
 
-Even though Python is a dynamically typed language, newer versions support type hinting. Type hinting catches
-errors, documents code, improves IDEs and linters, and helps build and maintain a clean software architecture.[^1]
-Expanding on how it catches errors, a static type checker such as [`mypy`](https://mypy.readthedocs.io/en/stable/index.html){target=_blank}
+Even though Python is a dynamically typed language, newer versions support
+type hinting. Type hinting catches errors, documents code, improves IDEs and
+linters, and helps build and maintain a clean software architecture.[^1]
+Expanding on how it catches errors, a static type checker such as
+<!-- markdownlint-disable-next-line MD013 -->
+[`mypy`](https://mypy.readthedocs.io/en/stable/index.html){target=_blank}
 can be used.
 
-There is some syntax to get familiar in order to use type checking. We recommend the following resources:
+There is some syntax to get familiar in order to use type checking. We
+recommend the following resources:
 
+<!-- markdownlint-disable-next-line MD013 -->
 - [mypy Typing Cheatsheet](https://mypy.readthedocs.io/en/stable/cheat_sheet_py3.html){target=_blank}
+<!-- markdownlint-disable-next-line MD013 -->
 - [PEP 483: The Theory of Type Hints (A Simplified Guide)](https://peps.python.org/pep-0483/){target=_blank}
+<!-- markdownlint-disable-next-line MD013 -->
 - [PEP 484: Type Hints (Fully Comprehensive Guide)](https://peps.python.org/pep-0484/){target=_blank}
 
 Below are a few examples of using type hinting:
@@ -116,8 +129,9 @@ Below are a few examples of using type hinting:
 
 ## Documentation
 
-Code is written once and read a thousand times, so it is important to provide good documentation for current
-and future members of the software team. The major things that we document in our code are:
+Code is written once and read a thousand times, so it is important to provide
+good documentation for current and future members of the software team. The
+major things that we document in our code are:
 
 1. **Classes and Objects:**
     - What does it represent? What is it used for?
@@ -126,35 +140,46 @@ and future members of the software team. The major things that we document in ou
     - What are the inputs and outputs?
     - What is the overall behavior and purpose of the function?
 3. **Code:**
-    - Is a line of code obscure and/or not clear? Add an inline comment to clear things up.
+    - Is a line of code obscure and/or not clear? Add an inline comment to
+      clear things up.
     - Break down a large process.
 
-Ideally, the third point should be avoided as much as possible since we would want our code to be
-self explanatory. It should be done only when absolutely necessary.
+Ideally, the third point should be avoided as much as possible since we would
+want our code to be self explanatory. It should be done only when absolutely
+necessary.
 
 ### Generating docstrings
 
-We use a vscode extension called [autoDocstring](https://marketplace.visualstudio.com/items?itemName=njpwerner.autodocstring){target=_blank}
-which autogenerates docstrings that we use to document our code. To install this extension, go to the `Extensions` tab in
-vscode and search `autoDocstring` in the marketplace.
+We use a vscode extension called
+<!-- markdownlint-disable-next-line MD013 -->
+[autoDocstring](https://marketplace.visualstudio.com/items?itemName=njpwerner.autodocstring){target=_blank}
+which autogenerates docstrings that we use to document our code. To install
+this extension, go to the `Extensions` tab in vscode and search `autoDocstring`
+in the marketplace.
 
-To generate docstrings, type `"""` at the beginning of the function that you want to document and the template
-will be generated for you! If you use [type hinting](#type-hinting), this extention will autofill some of the
+To generate docstrings, type `"""` at the beginning of the function that you
+want to document and the template will be generated for you! If you use
+[type hinting](#type-hinting), this extention will autofill some of the
 documentation for you!
 
 !!! note
 
-    The autoDocstring extension only works for functions. It does not work for classes and objects, so documenting these
-    will have to be done manually. Be sure to follow the same format used by functions.
+    The autoDocstring extension only works for functions. It does not work for
+    classes and objects, so documenting these will have to be done manually.
+    Be sure to follow the same format used by functions.
 
 ### Example on documentation
 
-It's hard to imagine what good documentation looks like. We provide a few examples below of documenting code using the
-autoDocstring extension. The extension uses [Google style docstrings](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings){target=_blank}
+It's hard to imagine what good documentation looks like. We provide a few
+examples below of documenting code using the autoDocstring extension. The
+extension uses
+<!-- markdownlint-disable-next-line MD013 -->
+[Google style docstrings](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings){target=_blank}
 by default.
 
 ???+ example "Documentation example on a function"
 
+    <!-- markdownlint-disable MD013 -->
     ```python
     from typing import List
     def inner_product(v1 : List[float], v2 : List[float]) -> float:
@@ -177,9 +202,11 @@ by default.
             summation += (e1 * e2)
         return float(summation)
     ```
+    <!-- markdownlint-enable MD013 -->
 
 ??? example "Documentation example with a stack"
 
+    <!-- markdownlint-disable MD013 -->
     ```python
     from typing import Any
     class Stack:
@@ -240,7 +267,10 @@ by default.
             length = len(self.__stack)
             return length
     ```
+    <!-- markdownlint-enable MD013 -->
 
-For more examples, see [Example Google Style Python Docstrings](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html){target=_blank}.
+For more examples, see
+<!-- markdownlint-disable-next-line MD013 -->
+[Example Google Style Python Docstrings](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html){target=_blank}.
 
 [^1]: <https://realpython.com/lessons/pros-and-cons-type-hints/>

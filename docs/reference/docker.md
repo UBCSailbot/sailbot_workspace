@@ -1,7 +1,7 @@
 # Docker
 
-[Docker](https://www.docker.com/){target=_blank} is a platform that uses OS-level virtualization[^1] to develop, ship, and
-run applications.[^2]
+[Docker](https://www.docker.com/){target=_blank} is a platform that uses
+OS-level virtualization[^1] to develop, ship, and run applications.[^2]
 
 ## Tutorial
 
@@ -11,5 +11,6 @@ run applications.[^2]
 </div>
 <!-- markdownlint-enable MD013 -->
 
+<!-- markdownlint-disable-next-line MD013 -->
 [^1]: [Wikipedia Docker page](https://en.wikipedia.org/wiki/Docker_(software)){target=_blank}
 [^2]: [Get Docker](https://docs.docker.com/get-docker/){target=_blank}

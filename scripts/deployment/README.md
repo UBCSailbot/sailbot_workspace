@@ -4,7 +4,8 @@ Deploying our software to our autonomous sailboat's main computer.
 
 ## Deployment on the RaspberryPi and the Remote Server (Digital Ocean Droplet)
 
-Comment out the website's docker compose file in the `devcontainer.json` to prevent the database from running.
+Comment out the website's docker compose file in the `devcontainer.json` to
+prevent the database from running.
 
 ```
 	"dockerComposeFile": [
@@ -16,7 +17,8 @@ Comment out the website's docker compose file in the `devcontainer.json` to prev
 	],
 ```
 
-Comment out the following extensions to prevent the raspberryPi from throttling in `devcontainer.json` as shown below.
+Comment out the following extensions to prevent the raspberryPi from
+throttling in `devcontainer.json` as shown below.
 
 ```
 			"extensions": [
@@ -71,9 +73,10 @@ Comment out the following extensions to prevent the raspberryPi from throttling 
 
 ### `setup_boot.sh`
 
-Configures programs and scripts that need to run when the main computer boots. Only needs to be run once unless the
-script is updated. Does not need to be rerun if any scripts or programs it targets are updated, with the exception of
-renaming or moving the file.
+Configures programs and scripts that need to run when the main computer
+boots. Only needs to be run once unless the script is updated. Does not need
+to be rerun if any scripts or programs it targets are updated, with the
+exception of renaming or moving the file.
 
 Usage:
 
@@ -82,11 +85,13 @@ Usage:
 ### `start_containers.sh`
 
 Runs our Docker Compose files. You may have to install commands like `wget`.
-Would recommend running this script in its own clone of sailbot_workspace (not the one you open in VS Code).
+Would recommend running this script in its own clone of sailbot_workspace
+(not the one you open in VS Code).
 
 Usage:
 
 - Runs the global launch file by default: `./start_containers.sh`
 - Add the `--website` argument to additionally run the website container
-- Add the `--interactive` argument to manually run commands in the sailbot workspace container
+- Add the `--interactive` argument to manually run commands in the sailbot
+  workspace container
 - Add the `--help` argument to see all available arguments

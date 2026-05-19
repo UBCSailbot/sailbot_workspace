@@ -8,7 +8,9 @@
 
 !!! warning "Disclaimer"
 
-    This tutorial was done a while ago, so some parts may no longer be relevant. For the most up to date information, consult the docs pages and the software leads.
+    This tutorial was done a while ago, so some parts may no longer be
+    relevant. For the most up to date information, consult the docs pages and
+    the software leads.
 
 <!-- markdownlint-disable MD013 -->
 <div class="video-wrapper">

@@ -1,6 +1,7 @@
 # Tests
 
-The tests for the website use [Cucumber.js](https://github.com/cucumber/cucumber-js), with
+The tests for the website use
+[Cucumber.js](https://github.com/cucumber/cucumber-js), with
 [Typescript](https://www.typescriptlang.org/).
 
 ## Prerequisites
@@ -20,5 +21,7 @@ The tests for the website use [Cucumber.js](https://github.com/cucumber/cucumber
 
 - Common test steps -> `./steps/common.ts`
 - All the CRUD API requests -> `./shared/classes/api.ts`
-- If you expect requests to fail ensure `failOnError` is set to false on API request
-- world object `./world/world.ts` defines the global `this` reference inside your steps.
+- If you expect requests to fail ensure `failOnError` is set to false on API
+  request
+- world object `./world/world.ts` defines the global `this` reference inside
+  your steps.
