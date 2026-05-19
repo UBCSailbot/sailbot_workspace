@@ -15,7 +15,7 @@ or too far out, the boat will not go as fast as it could if the sails were adjus
 
 The range of angles where the boat is roughly pointing straight into the wind are called ***Irons***, or the
 ***No-Go Zone***. Our implemented ***No-Go Zone*** is when the difference between the boat heading and true wind
-direction is within 45 degrees. In WindObjective, this zone has a cost of 1 in the range of [0,1].
+direction is within 45 degrees on either side. In WindObjective, this zone has a cost of 1 in the range of [0,1].
 
 If the boat is pointing in these directions, the sails will be flapping regardless of how the sheets are adjusted.
 When the sails are flapping, they are not catching the wind in a way that can propell the boat forwards.
