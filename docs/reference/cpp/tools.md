@@ -146,6 +146,6 @@ We will use
 [llvm-cov](https://llvm.org/docs/CommandGuide/llvm-cov.html){target=_blank} to
 evaluate our test coverage. When used with
 <!-- markdownlint-disable-next-line MD013 -->
-[genhtml](https://www.systutorials.com/docs/linux/man/1-genhtml/){target=_blank},
+[genhtml](https://manpages.debian.org/bookworm/lcov/genhtml.1.en.html){target=_blank},
 we can generate HTML reports that that show our line, function, and branch
 coverage line-by-line.
