@@ -75,7 +75,7 @@ update your local version of Sailbot Workspace:
         VS Code command.
 
 <!-- markdownlint-disable-next-line MD013 -->
-4. If you want to run our docs or website, see [How to work with containerized applications](./how_to.md#work-with-containerized-applications)
+1. If you want to run our docs or website, see [How to work with containerized applications](./how_to.md#work-with-containerized-applications)
 
 ## 3. Make your changes
 

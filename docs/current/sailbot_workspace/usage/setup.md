@@ -129,7 +129,7 @@ use all the features of Sailbot Workspace.
 <!-- markdownlint-disable-next-line MD013 -->
 1. [Install VS Code](https://code.visualstudio.com/docs/setup/setup-overview){target=_blank}
 <!-- markdownlint-disable-next-line MD013 -->
-2. Install the [Remote Development Extension Pack](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack){target=_blank}
+1. Install the [Remote Development Extension Pack](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack){target=_blank}
 
 ### Git
 
@@ -142,9 +142,9 @@ small to very large projects with speed and efficiency.[^4]
     - If not installed, download and install it from
       [Git Downloads](https://git-scm.com/download){target=_blank}
 <!-- markdownlint-disable-next-line MD013 -->
-2. Configure your name and email: [Git config file setup](https://learn.microsoft.com/en-us/windows/wsl/tutorials/wsl-git#git-config-file-setup){target=_blank}
+1. Configure your name and email: [Git config file setup](https://learn.microsoft.com/en-us/windows/wsl/tutorials/wsl-git#git-config-file-setup){target=_blank}
    (on Windows, run commands in Ubuntu)
-3. Login to GitHub
+2. Login to GitHub
 
     === ":material-microsoft-windows: Windows"
 
@@ -166,7 +166,7 @@ small to very large projects with speed and efficiency.[^4]
            [Installation](https://github.com/cli/cli#installation){target=_blank}
         2. Run `gh auth login` and select the first option for all choices
 
-4. Verify that you have successfully logged in to GitHub by cloning a private
+3. Verify that you have successfully logged in to GitHub by cloning a private
    GitHub repository (run command in Ubuntu)
     <!-- markdownlint-disable-next-line MD013 -->
     1. If you are a part of the [UBCSailbot Software GitHub team](https://github.com/orgs/UBCSailbot/teams/software-team){target=_blank},
@@ -399,6 +399,7 @@ Once you have a codespace set up:
 - Open it by following the steps in the relevant GitHub Docs page:
 <!-- markdownlint-disable-next-line MD013 -->
 [reopening a codespace](https://docs.github.com/en/codespaces/developing-in-codespaces/opening-an-existing-codespace#reopening-a-codespace){target=_blank}
+
 - Close it by running the `Codespaces: Stop Current Codespace` VS Code
   command
 

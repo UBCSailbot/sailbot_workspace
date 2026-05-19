@@ -13,6 +13,7 @@ Used for running
 <!-- markdownlint-disable-next-line MD013 -->
   [`mcr.microsoft.com/vscode/devcontainers/javascript-node`](https://hub.docker.com/_/microsoft-vscode-devcontainers)
   image
+
 - Installs MongoDB command line tools
 - Installs the dependencies of the site located in the `website/` folder of
   [`src/`](../../src/)

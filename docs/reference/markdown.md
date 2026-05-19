@@ -132,7 +132,7 @@ If you use VS Code, there is a
 [markdownlint extension](https://marketplace.visualstudio.com/items?itemName=DavidAnson.vscode-markdownlint){target=_blank}.
 
 <!-- markdownlint-disable-next-line MD013 -->
-2. [markdown-link-check](https://github.com/tcort/markdown-link-check){target=_blank}
+1. [markdown-link-check](https://github.com/tcort/markdown-link-check){target=_blank}
 is used to check for broken links. Its configuration file for this repository
 is
 <!-- markdownlint-disable-next-line MD013 -->

@@ -28,15 +28,15 @@ For example, the steps required to add a development dependency:
 1. In [`base-dev.Dockerfile`](base-dev.Dockerfile), add the dependency and push
    your changes
 <!-- markdownlint-disable-next-line MD013 -->
-2. In the [Build Images workflow](https://github.com/UBCSailbot/sailbot_workspace/actions/workflows/build-images.yml),
+1. In the [Build Images workflow](https://github.com/UBCSailbot/sailbot_workspace/actions/workflows/build-images.yml),
    select "Run workflow"
-3. In "Use workflow from", select the branch that your changes are in
-4. Update "Base and dev image tag" with a short description of the changes;
+2. In "Use workflow from", select the branch that your changes are in
+3. Update "Base and dev image tag" with a short description of the changes;
    for example, `add-vim`
-5. Click "Run workflow"
-6. In [`.devcontainer/Dockerfile`](../Dockerfile), update the dev image tag
+4. Click "Run workflow"
+5. In [`.devcontainer/Dockerfile`](../Dockerfile), update the dev image tag
    with the short description above
-7. Once the workflow successfully completes:
+6. Once the workflow successfully completes:
     1. Run the "Dev Containers: Rebuild Container" VS Code command to use the
        newly built image in your Dev Container
     2. Push your changes so that the CI runs with the newly built image

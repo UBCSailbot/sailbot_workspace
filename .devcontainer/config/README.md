@@ -5,6 +5,7 @@
 - Contains the VS Code workspace file which enables
 <!-- markdownlint-disable-next-line MD013 -->
   [multi-root workspaces](https://code.visualstudio.com/docs/editor/multi-root-workspaces)
+
 - Can be used to copy your personal configuration files to the Dev Container
 
 ## Configuration

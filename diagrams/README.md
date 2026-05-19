@@ -80,5 +80,6 @@ a system are connected (ex. ROS topics, publishers, subscribers).
 - For more advanced styling, comprehensive documentation can be found
 <!-- markdownlint-disable-next-line MD013 -->
   [here](https://plantuml-documentation.readthedocs.io/en/latest/formatting/all-skin-params.html).
+
 - The [src/](src/) folder contains some basic diagram examples that utilize
   the template.

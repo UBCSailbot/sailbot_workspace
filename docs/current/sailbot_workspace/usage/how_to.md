@@ -268,16 +268,16 @@ However, you will need to use the GitHub Copilot
 free trial until your account is verified.
 
 <!-- markdownlint-disable-next-line MD013 -->
-2. [Sign up for GitHub Copilot for your personal account](https://docs.github.com/en/copilot/quickstart#signing-up-for-github-copilot-for-your-personal-account){target=_blank}.
+1. [Sign up for GitHub Copilot for your personal account](https://docs.github.com/en/copilot/quickstart#signing-up-for-github-copilot-for-your-personal-account){target=_blank}.
 If it offers a free trial, then take it. You should see a page telling you
 that you can use GitHub Copilot for free
 (if you have a verified student account).
 
-3. Uncomment the `github.copilot` extension in
+2. Uncomment the `github.copilot` extension in
    `.devcontainer/devcontainer.json` and run the
    `Dev Containers: Rebuild Container` VS Code command
 
-4. Sign into your GitHub account in VS Code. The GitHub Copilot extension
+3. Sign into your GitHub account in VS Code. The GitHub Copilot extension
 should automatically prompt you to sign into
 your account if you are not already.
 
@@ -296,7 +296,7 @@ your account if you are not already.
           `Dev Containers: Rebuild Container`
         - If using a Mac, use ++cmd++ instead of ++ctrl++
 
-5. If all the previous steps were done correctly, you should see the
+4. If all the previous steps were done correctly, you should see the
 :octicons-copilot-48: **GitHub Copilot** icon in
 the bottom-right corner of VS Code without any error messages. For more
 information on how to use Copilot and a tutorial,
@@ -359,7 +359,7 @@ Raye was our previous project. Her software can be run in the `raye` branch:
 2. Rebuild the Dev Container: run the `Dev Containers: Rebuild Container` VS
    Code command
 <!-- markdownlint-disable-next-line MD013 -->
-3. If you want to run [Raye's local pathfinding visualizer](https://github.com/UBCSailbot/raye-local-pathfinding?tab=readme-ov-file#visualizing-the-simulation){target=_blank},
+1. If you want to run [Raye's local pathfinding visualizer](https://github.com/UBCSailbot/raye-local-pathfinding?tab=readme-ov-file#visualizing-the-simulation){target=_blank},
    complete
    <!-- markdownlint-disable-next-line MD013 -->
    [step 2 of the setup instructions](./setup.md#2-setup-x11-forwarding){target=_blank}
