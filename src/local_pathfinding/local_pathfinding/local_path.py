@@ -435,6 +435,8 @@ class LocalPath:
                     tries += 1
 
             if not new_ompl_path.solved:
+                self._logger.info("Old Path must change and new path couldn't be solved" +
+                                  f" within {MAX_OMPL_PATH_GEN_TRIES}")
                 raise PathNotFoundError("Old Path must change and new path couldn't be solved" +
                                         f" within {MAX_OMPL_PATH_GEN_TRIES}")
 
@@ -443,11 +445,15 @@ class LocalPath:
             self._update(new_ompl_path)
 
             init_target_lp_wp_index = 1
-            heading_new_path, new_target_lp_wp_index = (
-                self.calculate_desired_heading_and_wp_index(
-                    new_ompl_path.get_path(), init_target_lp_wp_index, inputs.gps.lat_lon
+            try:
+                heading_new_path, new_target_lp_wp_index = (
+                    self.calculate_desired_heading_and_wp_index(
+                        new_ompl_path.get_path(), init_target_lp_wp_index, inputs.gps.lat_lon
+                    )
                 )
-            )
+            except IndexError:
+                self._logger.info("New Path's desired heading index update failed")
+                raise PathNotFoundError("New Path's desired heading index update failed")
             return heading_new_path, new_target_lp_wp_index
         else:
             self.state.update_state(  # type: ignore
