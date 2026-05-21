@@ -7,6 +7,7 @@
   <!-- markdownlint-disable MD013 -->
     - For example, we can look at all the debug statements for all the nodes when we use `loge_level:=debug` as our launch argument.
   <!-- markdownlint-enable MD013 -->
+- To select the mode, we need use `mode:="development"` or `mode:="production"` launch arguments
 
 ## Recording a rosbag file for future analysis
 
@@ -24,5 +25,5 @@
 - When we want to store our logs in a separate file, then we can use the following add command,
 `2>&1 | tee src/global_launch/voyage_log/combined_log.txt`. The logs will be stored in the `combined_log*.txt` file. Where * can be any suffix like `combined_log_1.txt`, `combined_log_clean.txt`, etc.
 - The `esc[32m` is present in the `[DEBUG]` statement, as that is used for colouring that line green.
-- A on-water testing launch would look something like this, `ros2 launch $ROS_WORKSPACE/src/global_launch/main_launch.py record:=true log_level:=debug  2>&1 | tee src/global_launch/voyage_log/combined_log.txt`
+- A on-water testing launch would look something like this, `ros2 launch $ROS_WORKSPACE/src/global_launch/main_launch.py record:=true mode:="production" 2>&1 | tee src/global_launch/voyage_log/combined_log.txt`
 <!-- markdownlint-enable MD013 -->
