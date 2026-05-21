@@ -539,7 +539,7 @@ def test_in_collision_zone(target_local_wp_index, reference_latlon, path, obstac
             Wind(speed_kmph=10.0, dir_deg=180 - lp.WIND_DIRECTION_CHANGE_THRESH_DEG + 2),
             True,
         ),
-        # Fifth Test:
+        # Fifth Test: Division by 0 
         (
             Wind(
                 speed_kmph=10.0 + 0.99 * lp.WIND_SPEED_CHANGE_THRESH_PROP * 10.0,
