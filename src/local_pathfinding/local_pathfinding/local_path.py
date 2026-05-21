@@ -30,7 +30,7 @@ class PathNotFoundError(Exception):
 
 
 @dataclass
-class MustChangeReason(Exception):
+class MustChangeReason:
     should_change_path: bool
     reason: str
 
