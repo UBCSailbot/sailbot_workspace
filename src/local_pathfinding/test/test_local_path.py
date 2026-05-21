@@ -539,6 +539,15 @@ def test_in_collision_zone(target_local_wp_index, reference_latlon, path, obstac
             Wind(speed_kmph=10.0, dir_deg=180 - lp.WIND_DIRECTION_CHANGE_THRESH_DEG + 2),
             True,
         ),
+        # Fifth Test:
+        (
+            Wind(
+                speed_kmph=10.0 + 0.99 * lp.WIND_SPEED_CHANGE_THRESH_PROP * 10.0,
+                dir_deg=99.0 - 0.9 * lp.WIND_DIRECTION_CHANGE_THRESH_DEG,
+            ),
+            Wind(speed_kmph=0.0, dir_deg=99.0),
+            True,
+        )
     ],
 )
 def test_is_significant_wind_change(new_wind_data, previous_wind_data, result):

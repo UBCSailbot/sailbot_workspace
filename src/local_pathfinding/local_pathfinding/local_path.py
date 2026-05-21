@@ -317,6 +317,8 @@ class LocalPath:
         current_speed_kmph = new_wind_data.speed_kmph
         current_dir_deg = new_wind_data.dir_deg
 
+        if previous_speed_kmph == 0.0:
+            previous_speed_kmph = 1e-9
         speed_change_ratio = abs(previous_speed_kmph - current_speed_kmph) / previous_speed_kmph
         dir_change = abs(cs.bound_to_180(current_dir_deg - previous_dir_deg))
 
