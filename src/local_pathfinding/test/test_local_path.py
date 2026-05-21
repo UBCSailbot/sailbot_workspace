@@ -16,6 +16,17 @@ REF = HelperLatLon(latitude=10.0, longitude=10.0)
 PATH = lp.LocalPath(parent_logger=RcutilsLogger())
 
 
+# ========================= TEST HELPERS =========================
+def point_at_distance_from(reference: HelperLatLon, bearing_deg: float, distance_km: float):
+    lon, lat, _ = cs.GEODESIC.fwd(
+        reference.longitude,
+        reference.latitude,
+        bearing_deg,
+        cs.km_to_meters(distance_km),
+    )
+    return HelperLatLon(latitude=lat, longitude=lon)
+
+
 @pytest.fixture
 def basic_local_path_state():
     gps = mock.Mock()
@@ -125,6 +136,8 @@ def set_aw_history(state, wind, history_len):
         state.update_aw_history()
 
 
+# ========================= TESTS =========================
+
 @pytest.mark.parametrize(
     "path, target_wp_index, boat_lat_lon, correct_heading, new_target_wp_index",
     [
@@ -219,7 +232,114 @@ def set_aw_history(state, wind, history_len):
             -90.0,
             6,
         ),
-
+        (
+            # Just inside local waypoint threshold: switch from waypoint[1] to waypoint[2].
+            Path(
+                waypoints=[
+                    HelperLatLon(latitude=0.0, longitude=-0.1),
+                    HelperLatLon(latitude=0.0, longitude=0.0),
+                    HelperLatLon(latitude=0.0, longitude=0.1),
+                ]
+            ),
+            1,
+            point_at_distance_from(
+                HelperLatLon(latitude=0.0, longitude=0.0),
+                bearing_deg=270.0,
+                distance_km=lp.LOCAL_WAYPOINT_REACHED_THRESH_KM * 0.5,
+            ),
+            90.0,
+            2,
+        ),
+        (
+            # One meter inside local waypoint threshold: switch to next waypoint.
+            Path(
+                waypoints=[
+                    HelperLatLon(latitude=0.0, longitude=-0.1),
+                    HelperLatLon(latitude=0.0, longitude=0.0),
+                    HelperLatLon(latitude=0.0, longitude=0.1),
+                ]
+            ),
+            1,
+            point_at_distance_from(
+                HelperLatLon(latitude=0.0, longitude=0.0),
+                bearing_deg=270.0,
+                distance_km=lp.LOCAL_WAYPOINT_REACHED_THRESH_KM - 0.001,
+            ),
+            90.0,
+            2,
+        ),
+        (
+            # Barely outside local waypoint threshold: keep current waypoint.
+            Path(
+                waypoints=[
+                    HelperLatLon(latitude=0.0, longitude=-0.1),
+                    HelperLatLon(latitude=0.0, longitude=0.0),
+                    HelperLatLon(latitude=0.0, longitude=0.1),
+                ]
+            ),
+            1,
+            point_at_distance_from(
+                HelperLatLon(latitude=0.0, longitude=0.0),
+                bearing_deg=270.0,
+                distance_km=lp.LOCAL_WAYPOINT_REACHED_THRESH_KM + 0.0001,
+            ),
+            90.0,
+            1,
+        ),
+        (
+            # One meter outside local waypoint threshold: keep current waypoint.
+            Path(
+                waypoints=[
+                    HelperLatLon(latitude=0.0, longitude=-0.1),
+                    HelperLatLon(latitude=0.0, longitude=0.0),
+                    HelperLatLon(latitude=0.0, longitude=0.1),
+                ]
+            ),
+            1,
+            point_at_distance_from(
+                HelperLatLon(latitude=0.0, longitude=0.0),
+                bearing_deg=270.0,
+                distance_km=lp.LOCAL_WAYPOINT_REACHED_THRESH_KM + 0.001,
+            ),
+            90.0,
+            1,
+        ),
+        (
+            # Threshold behavior should not depend on approach direction.
+            Path(
+                waypoints=[
+                    HelperLatLon(latitude=0.1, longitude=0.0),
+                    HelperLatLon(latitude=0.0, longitude=0.0),
+                    HelperLatLon(latitude=-0.1, longitude=0.0),
+                ]
+            ),
+            1,
+            point_at_distance_from(
+                HelperLatLon(latitude=0.0, longitude=0.0),
+                bearing_deg=0.0,
+                distance_km=lp.LOCAL_WAYPOINT_REACHED_THRESH_KM * 0.5,
+            ),
+            180.0,
+            2,
+        ),
+        (
+            # Threshold behavior should not depend on approach direction.
+            Path(
+                waypoints=[
+                    HelperLatLon(latitude=0.1, longitude=0.0),
+                    HelperLatLon(latitude=0.0, longitude=0.0),
+                    HelperLatLon(latitude=-0.1, longitude=0.0),
+                ]
+            ),
+            1,
+            point_at_distance_from(
+                HelperLatLon(latitude=0.0, longitude=0.0),
+                bearing_deg=0.0,
+                distance_km=lp.LOCAL_WAYPOINT_REACHED_THRESH_KM + 0.001,
+            ),
+            180.0,
+            1,
+        ),
     ],
 )
 def test_calculate_desired_heading_and_waypoint_index(
