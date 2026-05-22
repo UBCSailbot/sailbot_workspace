@@ -227,6 +227,14 @@ class LocalPath:
         self._ompl_path: Optional[OMPLPath] = None
         self.path: Optional[ci.Path] = None
         self.state: Optional[LocalPathState] = None
+        self.last_replan_reason: str = ""
+        self.last_remaining_waypoints: int = 0
+
+    def _count_remaining_waypoints(self) -> int:
+        """Returns waypoints remaining on the current path from the current target index."""
+        if self.path is None or not self.path.waypoints:
+            return 0
+        return max(len(self.path.waypoints) - max(self._target_lp_wp_index, 0), 0)
 
     def is_path_expired(self) -> bool:
         """Check if the current path has exceeded the PATH_TTL timeout.
@@ -582,6 +590,8 @@ class LocalPath:
 
             self._logger.info(f"Updating local path: {must_change_reason.reason}")
             new_state.wind_tracker.using_one_aw_point = new_state.wind_tracker.aw_avg is None
+            self.last_remaining_waypoints = self._count_remaining_waypoints()
+            self.last_replan_reason = must_change_reason.reason
             self.state = new_state
             self._update(new_ompl_path)
 
