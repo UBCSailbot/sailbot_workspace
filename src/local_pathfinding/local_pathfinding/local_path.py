@@ -435,7 +435,7 @@ class LocalPath:
                     tries += 1
 
             if not new_ompl_path.solved:
-                self._logger.info("Old Path must change and new path couldn't be solved" +
+                self._logger.warn("Old Path must change and new path couldn't be solved" +
                                   f" within {MAX_OMPL_PATH_GEN_TRIES}")
                 raise PathNotFoundError("Old Path must change and new path couldn't be solved" +
                                         f" within {MAX_OMPL_PATH_GEN_TRIES}")
