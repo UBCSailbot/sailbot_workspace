@@ -29,3 +29,40 @@
    # the container; you can exit by running: exit
    docker run -it --network host --privileged release bash
    ```
+
+## Instructions for local deployment onto the Raspberry Pi
+
+1. To build and save the release image locally,
+navigate to repository's root directory `sailbot_workspace/`
+and run the following on your machine. Make sure to change (example-tag) accordingly.
+
+   ```bash
+   docker build \
+   --platform linux/arm64 \
+   -f .devcontainer/release/release.Dockerfile \`
+   --build-arg CACHEBUST=$(date +%s%3N) \
+   -t release:example-tag \
+   
+   # Saves the release image as a .tar file to then transfer via rsync.
+   docker save -o release.tar release:example-tag
+   ```
+
+2. Connect to the `raye_wifi` network and connect to the raspberry pi using SSH.
+
+3. Transfer the release image tar file by running the following on your machine.
+
+   ```bash
+   rsync -a release.tar sailbot@192.168.0.10:/home/sailbot/
+   ```
+
+4. Load the release image and start the container on the rpi.
+Run the following on the raspberry pi itself.
+
+   ```bash
+   docker load -i release.tar
+
+   # this starts the container and drops you right into a bash shell inside
+   # the container; you can exit by running: exit
+   docker run -it --network host --privileged release:example-tag bash
+
+   ```
