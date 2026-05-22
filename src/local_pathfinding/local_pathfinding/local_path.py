@@ -336,7 +336,7 @@ class LocalPath:
         # Orthogonal projection of A to Boat onto the line defined by prev and target to find the
         # closest point on the line to the boat
         t = ((boat_xy.x - prev_xy.x) * dx + (boat_xy.y - prev_xy.y) * dy) / segment_len_sq
-        
+
         # Ensures that the closest point is within the line segment defined by prev and target
         t = max(0.0, min(1.0, t))
 
