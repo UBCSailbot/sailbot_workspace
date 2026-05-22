@@ -17,6 +17,7 @@ from local_pathfinding.ompl_path import OMPLPath
 WIND_SPEED_CHANGE_THRESH_PROP = 0.3
 WIND_DIRECTION_CHANGE_THRESH_DEG = 10
 WIND_HISTORY_LEN = 30
+SEGMENT_DEVIATION_THRESHOLD = 0.1
 LOCAL_WAYPOINT_REACHED_THRESH_KM = 0.5
 HEADING_WEIGHT = 0.6
 COST_WEIGHT = 0.4
@@ -286,6 +287,64 @@ class LocalPath:
             speed_change_ratio >= WIND_SPEED_CHANGE_THRESH_PROP
             or dir_change >= WIND_DIRECTION_CHANGE_THRESH_DEG
         )
+
+    @staticmethod
+    def exceeded_segment_deviation(
+        path: ci.Path,
+        target_lp_wp_index: int,
+        boat_lat_lon: ci.HelperLatLon
+    ) -> bool:
+        """Returns true if the boat has deviated from the path segment by more than
+        SEGMENT_DEVIATION_THRESHOLD * length of segment in kilometers.
+
+        This function calculates the shortest distance from the boat's current position to the
+        line segment defined by start_xy and end_xy. If this distance exceeds the defined
+        threshold, it indicates that the boat has deviated significantly from the intended path
+        segment.
+
+        Args:
+            path (ci.Path): Array of waypoints
+            target_lp_wp_index (int): 0-based array index of the local waypoint Polaris is
+                currently heading toward. This should start at index 1 because index 0 is the
+                OMPL start waypoint near the boat.
+            boat_lat_lon (ci.HelperLatLon): boat coordinates
+        """
+        prev_wp = path.waypoints[target_lp_wp_index - 1]
+        target_wp = path.waypoints[target_lp_wp_index]
+
+        _, _, segment_length_m = cs.GEODESIC.inv(
+            prev_wp.longitude,
+            prev_wp.latitude,
+            target_wp.longitude,
+            target_wp.latitude,
+        )
+        segment_length_km = cs.meters_to_km(segment_length_m)
+        max_deviation_km = segment_length_km * SEGMENT_DEVIATION_THRESHOLD
+
+        # Build a local XY frame with prev_wp as origin.
+        prev_xy = cs.XY(0.0, 0.0)
+        target_xy = cs.latlon_to_xy(prev_wp, target_wp)
+        boat_xy = cs.latlon_to_xy(prev_wp, boat_lat_lon)
+
+        dx = target_xy.x - prev_xy.x
+        dy = target_xy.y - prev_xy.y
+        segment_len_sq = dx * dx + dy * dy
+
+        if segment_len_sq == 0.0:
+            return False  # Waypoints are the same, no deviation possible
+
+        # Orthogonal projection of A to Boat onto the line defined by prev and target to find the
+        # closest point on the line to the boat
+        t = ((boat_xy.x - prev_xy.x) * dx + (boat_xy.y - prev_xy.y) * dy) / segment_len_sq
+        
+        # Ensures that the closest point is within the line segment defined by prev and target
+        t = max(0.0, min(1.0, t))
+
+        closest_x = prev_xy.x + t * dx
+        closest_y = prev_xy.y + t * dy
+        distance_to_segment_km = math.hypot(boat_xy.x - closest_x, boat_xy.y - closest_y)
+
+        return distance_to_segment_km > max_deviation_km
 
     def must_change_path(self, received_new_global_waypoint: bool) -> tuple[bool, str]:
         """Check if the path must be changed.
