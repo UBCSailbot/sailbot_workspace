@@ -604,6 +604,7 @@ def _boat_position_for_segment_deviation(
             ),
             False,
         ),
+
         # Basic Exceeded
         (
             EXCEEDED_SEGMENT_DEVIATION_BASIC_PATH,
@@ -616,6 +617,7 @@ def _boat_position_for_segment_deviation(
             ),
             True,
         ),
+
         # Identical Waypoints
         (
             EXCEEDED_SEGMENT_DEVIATION_IDENTICAL_WAYPOINTS_PATH,
@@ -626,6 +628,7 @@ def _boat_position_for_segment_deviation(
             ),
             False,
         ),
+
         # Boat beyond target waypoint
         (
             EXCEEDED_SEGMENT_DEVIATION_BASIC_PATH,
@@ -633,7 +636,7 @@ def _boat_position_for_segment_deviation(
             _boat_position_for_segment_deviation(
                 EXCEEDED_SEGMENT_DEVIATION_BASIC_PATH,
                 1,
-                1.9,
+                1 + lp.SEGMENT_DEVIATION_THRESHOLD * 2,
                 0.5,
             ),
             True,
@@ -644,11 +647,12 @@ def _boat_position_for_segment_deviation(
             _boat_position_for_segment_deviation(
                 EXCEEDED_SEGMENT_DEVIATION_SHORT_PATH,
                 1,
-                1.05,
+                1 + lp.SEGMENT_DEVIATION_THRESHOLD * 0.5,
                 0.5,
             ),
             False,
         ),
+
         # Boat before start waypoint
         (
             EXCEEDED_SEGMENT_DEVIATION_SHORT_PATH,
@@ -656,7 +660,7 @@ def _boat_position_for_segment_deviation(
             _boat_position_for_segment_deviation(
                 EXCEEDED_SEGMENT_DEVIATION_SHORT_PATH,
                 1,
-                -0.3,
+                -lp.SEGMENT_DEVIATION_THRESHOLD * 0.5,
                 0.5,
             ),
             False,
@@ -667,11 +671,12 @@ def _boat_position_for_segment_deviation(
             _boat_position_for_segment_deviation(
                 EXCEEDED_SEGMENT_DEVIATION_SHORT_PATH,
                 1,
-                -0.7,
+                -lp.SEGMENT_DEVIATION_THRESHOLD * 2,
                 0.8,
             ),
             True,
         ),
+
         # Non Horizontal/Vertical Paths
         (
             EXCEEDED_SEGMENT_DEVIATION_DIAGONAL_PATH,
@@ -695,6 +700,11 @@ def _boat_position_for_segment_deviation(
             ),
             True,
         ),
+
+        # Boat on Segment
+
+        # Boat at Threshold
+
     ],
 )
 def test_exceeded_segment_deviation(path, target_index, boat_position, expected):
