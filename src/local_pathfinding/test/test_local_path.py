@@ -702,63 +702,34 @@ def _boat_position_for_segment_deviation(
         ),
 
         # Boat on Segment
+        (
+            EXCEEDED_SEGMENT_DEVIATION_BASIC_PATH,
+            1,
+            _boat_position_for_segment_deviation(
+                EXCEEDED_SEGMENT_DEVIATION_BASIC_PATH,
+                1,
+                0.3,
+                0.0,
+            ),
+            False,
+        ),
 
         # Boat at Threshold
-
+        (
+            EXCEEDED_SEGMENT_DEVIATION_BASIC_PATH,
+            1,
+            _boat_position_for_segment_deviation(
+                EXCEEDED_SEGMENT_DEVIATION_BASIC_PATH,
+                1,
+                0.3,
+                1.0,
+            ),
+            False,
+        ),
     ],
 )
 def test_exceeded_segment_deviation(path, target_index, boat_position, expected):
     assert lp.LocalPath.exceeded_segment_deviation(path, target_index, boat_position) == expected
-
-# TODO Add following 2 tests to the parametrized test above
-
-
-def test_exceeded_segment_deviation_boat_on_segment():
-    path = Path(
-        waypoints=[
-            HelperLatLon(latitude=0.0, longitude=0.0),
-            HelperLatLon(latitude=0.0, longitude=0.01),
-        ]
-    )
-
-    prev_wp = path.waypoints[0]
-    target_wp = path.waypoints[1]
-    target_xy = cs.latlon_to_xy(prev_wp, target_wp)
-    boat_on_segment = cs.xy_to_latlon(
-        prev_wp,
-        cs.XY(x=target_xy.x / 2.0, y=0.0),
-    )
-
-    assert lp.LocalPath.exceeded_segment_deviation(path, 1, boat_on_segment) is False
-
-
-def test_exceeded_segment_deviation_boat_at_threshold():
-    path = Path(
-        waypoints=[
-            HelperLatLon(latitude=0.0, longitude=0.0),
-            HelperLatLon(latitude=0.0, longitude=0.01),
-        ]
-    )
-
-    prev_wp = path.waypoints[0]
-    target_wp = path.waypoints[1]
-
-    _, _, segment_length_m = cs.GEODESIC.inv(
-        prev_wp.longitude,
-        prev_wp.latitude,
-        target_wp.longitude,
-        target_wp.latitude,
-    )
-    segment_length_km = cs.meters_to_km(segment_length_m)
-    threshold_km = segment_length_km * lp.SEGMENT_DEVIATION_THRESHOLD
-
-    target_xy = cs.latlon_to_xy(prev_wp, target_wp)
-    boat_at_threshold = cs.xy_to_latlon(
-        prev_wp,
-        cs.XY(x=target_xy.x / 2.0, y=threshold_km),
-    )
-
-    assert not lp.LocalPath.exceeded_segment_deviation(path, 1, boat_at_threshold)
 
 
 def test_LocalPathState_parameter_checking():
