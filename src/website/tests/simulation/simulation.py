@@ -38,16 +38,16 @@ wind_sensors_data = read_json_file("./data/wind_sensors.json")
 
 # Load all database collections
 gps = db["gps"]
-local_path = db["localpaths"]
-global_path = db["globalpaths"]
-ais_ships = db["aisships"]
+local_path = db["local_path"]
+global_path = db["global_path"]
+ais_ships = db["ais_ships"]
 batteries = db["batteries"]
-wind_sensors = db["windsensors"]
+wind_sensors = db["wind_sensors"]
 
 
 def write_to_mongodb(data, collection, i):
     timestamp = datetime.now() + timedelta(minutes=i*TIME_INTERVAL_M)
-    data["timestamp"] = timestamp.isoformat()
+    data["timestamp"] = timestamp.strftime("%y-%m-%d %H:%M:%S")
     collection.insert_one(data)
     print(f"Data written to MongoDB collection '{collection.name}'")
 
