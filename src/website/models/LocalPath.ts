@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-import { decimal2JSON } from './helper/parser';
+import { decimal2JSON, normalizeTimestamp } from './helper/parser';
 
 interface WayPoint extends mongoose.Document {
   latitude: mongoose.Types.Decimal128;
@@ -24,14 +24,16 @@ const LocalPathSchema = new mongoose.Schema<LocalPath>({
   },
   timestamp: {
     type: String,
-    default: () => new Date().toISOString(),
   },
-});
+// collection name mismatch
+}, { collection: 'local_path' });
 
 LocalPathSchema.set('toJSON', {
   transform: (doc, ret) => {
     // @ts-ignore: Expected 3 arguments, but got 1
     decimal2JSON(ret);
+    // @ts-ignore: toJSON converts string timestamp to Unix seconds number
+    ret.timestamp = ret.timestamp != null ? normalizeTimestamp(ret.timestamp) : 0;
     return ret;
   },
 });

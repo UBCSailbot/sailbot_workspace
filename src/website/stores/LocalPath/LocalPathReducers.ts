@@ -7,7 +7,7 @@ export default class LocalPathReducer extends BaseReducer {
   initialState: LocalPathState = {
     data: {
       waypoints: [],
-      timestamp: new Date().toISOString(),
+      timestamp: 0,
     } as LocalPath,
     error: null,
   };

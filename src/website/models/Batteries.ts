@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-import { decimal2JSON } from './helper/parser';
+import { decimal2JSON, normalizeTimestamp } from './helper/parser';
 
 interface Battery extends mongoose.Document {
   voltage: mongoose.Types.Decimal128;
@@ -28,7 +28,6 @@ const BatteriesSchema = new mongoose.Schema<Batteries>({
   },
   timestamp: {
     type: String,
-    default: () => new Date().toISOString(),
   },
 });
 
@@ -40,6 +39,8 @@ BatteriesSchema.set('toJSON', {
   transform: (doc, ret) => {
     // @ts-ignore: Expected 3 arguments, but got 1
     decimal2JSON(ret);
+    // @ts-ignore: toJSON converts string timestamp to Unix seconds number
+    ret.timestamp = ret.timestamp != null ? normalizeTimestamp(ret.timestamp) : 0;
     return ret;
   },
 });

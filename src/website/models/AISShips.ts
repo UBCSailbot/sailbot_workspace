@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-import { decimal2JSON } from './helper/parser';
+import { decimal2JSON, normalizeTimestamp } from './helper/parser';
 
 interface AISShip extends mongoose.Document {
   id: number;
@@ -36,14 +36,16 @@ const AISShipsSchema = new mongoose.Schema<AISShips>({
   },
   timestamp: {
     type: String,
-    default: () => new Date().toISOString(),
   },
-});
+// collection name mismatch
+}, { collection: 'ais_ships' });
 
 AISShipsSchema.set('toJSON', {
   transform: (doc, ret) => {
     // @ts-ignore: Expected 3 arguments, but got 1
     decimal2JSON(ret);
+    // @ts-ignore: toJSON converts string timestamp to Unix seconds number
+    ret.timestamp = ret.timestamp != null ? normalizeTimestamp(ret.timestamp) : 0;
     return ret;
   },
 });

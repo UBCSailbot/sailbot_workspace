@@ -5,7 +5,7 @@ export type WindSensor = {
 
 export type WindSensors = {
   windSensors: WindSensor[];
-  timestamp: string;
+  timestamp: number;
 };
 
 export type WindSensorsState = {

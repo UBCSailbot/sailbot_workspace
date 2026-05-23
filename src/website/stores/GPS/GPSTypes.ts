@@ -3,7 +3,7 @@ export interface GPS {
   longitude: number;
   speed: number;
   heading: number;
-  timestamp: string;
+  timestamp: number;
 }
 export interface GPSState {
   data: GPS[];

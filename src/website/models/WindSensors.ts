@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-import { decimal2JSON } from './helper/parser';
+import { decimal2JSON, normalizeTimestamp } from './helper/parser';
 
 interface WindSensor extends mongoose.Document {
   speed: mongoose.Types.Decimal128;
@@ -28,9 +28,9 @@ const WindSensorsSchema = new mongoose.Schema<WindSensors>({
   },
   timestamp: {
     type: String,
-    default: () => new Date().toISOString(),
   },
-});
+// collection name mismatch
+}, { collection: 'wind_sensors' });
 
 function validateArrayLimit(val: any) {
   return val.length == 2;
@@ -40,6 +40,8 @@ WindSensorsSchema.set('toJSON', {
   transform: (doc, ret) => {
     // @ts-ignore: Expected 3 arguments, but got 1
     decimal2JSON(ret);
+    // @ts-ignore: toJSON converts string timestamp to Unix seconds number
+    ret.timestamp = ret.timestamp != null ? normalizeTimestamp(ret.timestamp) : 0;
     return ret;
   },
 });

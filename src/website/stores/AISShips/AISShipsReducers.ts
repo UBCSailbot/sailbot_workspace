@@ -7,7 +7,7 @@ export default class AISShipsReducer extends BaseReducer {
   initialState: AISShipsState = {
     data: {
       ships: [],
-      timestamp: new Date().toISOString(),
+      timestamp: 0,
     } as AISShips,
     error: null,
   };

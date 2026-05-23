@@ -130,7 +130,7 @@ const Stats = ({
   useLayoutEffect(() => {
     const filteredGpsData = gps.data.filter(
       (data: GPS) =>
-        isValidTimestamp(parseISOString(data.timestamp), startDate, endDate) ===
+        isValidTimestamp(data.timestamp, startDate, endDate) ===
         true,
     );
 
@@ -139,7 +139,7 @@ const Stats = ({
 
   const speedChartData = [
     gps.data
-      .map((data: GPS) => parseISOString(data.timestamp))
+      .map((data: GPS) => data.timestamp)
       .filter(
         (time: number) => isValidTimestamp(time, startDate, endDate) == true,
       ),
@@ -147,7 +147,7 @@ const Stats = ({
       .filter(
         (data: GPS) =>
           isValidTimestamp(
-            parseISOString(data.timestamp),
+            data.timestamp,
             startDate,
             endDate,
           ) == true,
@@ -157,7 +157,7 @@ const Stats = ({
 
   const batteriesVoltageData = [
     batteries.data
-      .map((data: Batteries) => parseISOString(data.timestamp))
+      .map((data: Batteries) => data.timestamp)
       .filter(
         (time: number) => isValidTimestamp(time, startDate, endDate) == true,
       ),
@@ -165,7 +165,7 @@ const Stats = ({
       .filter(
         (data: Batteries) =>
           isValidTimestamp(
-            parseISOString(data.timestamp),
+            data.timestamp,
             startDate,
             endDate,
           ) == true,
@@ -175,7 +175,7 @@ const Stats = ({
       .filter(
         (data: Batteries) =>
           isValidTimestamp(
-            parseISOString(data.timestamp),
+            data.timestamp,
             startDate,
             endDate,
           ) == true,
@@ -185,7 +185,7 @@ const Stats = ({
 
   const batteriesCurrentData = [
     batteries.data
-      .map((data: Batteries) => parseISOString(data.timestamp))
+      .map((data: Batteries) => data.timestamp)
       .filter(
         (time: number) => isValidTimestamp(time, startDate, endDate) == true,
       ),
@@ -193,7 +193,7 @@ const Stats = ({
       .filter(
         (data: Batteries) =>
           isValidTimestamp(
-            parseISOString(data.timestamp),
+            data.timestamp,
             startDate,
             endDate,
           ) == true,
@@ -203,7 +203,7 @@ const Stats = ({
       .filter(
         (data: Batteries) =>
           isValidTimestamp(
-            parseISOString(data.timestamp),
+            data.timestamp,
             startDate,
             endDate,
           ) == true,
@@ -213,7 +213,7 @@ const Stats = ({
 
   const windSensorsSpeedData = [
     windSensors.data
-      .map((data: WindSensors) => parseISOString(data.timestamp))
+      .map((data: WindSensors) => data.timestamp)
       .filter(
         (time: number) => isValidTimestamp(time, startDate, endDate) == true,
       ),
@@ -221,7 +221,7 @@ const Stats = ({
       .filter(
         (data: WindSensors) =>
           isValidTimestamp(
-            parseISOString(data.timestamp),
+            data.timestamp,
             startDate,
             endDate,
           ) == true,
@@ -231,7 +231,7 @@ const Stats = ({
       .filter(
         (data: WindSensors) =>
           isValidTimestamp(
-            parseISOString(data.timestamp),
+            data.timestamp,
             startDate,
             endDate,
           ) == true,

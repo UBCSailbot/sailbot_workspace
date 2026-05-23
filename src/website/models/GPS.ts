@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-import { decimal2JSON } from './helper/parser';
+import { decimal2JSON, normalizeTimestamp } from './helper/parser';
 
 export interface GPS extends mongoose.Document {
   latitude: mongoose.Types.Decimal128;
@@ -29,7 +29,6 @@ const GPSSchema = new mongoose.Schema<GPS>({
   },
   timestamp: {
     type: String,
-    default: () => new Date().toISOString(),
   },
 });
 
@@ -37,6 +36,8 @@ GPSSchema.set('toJSON', {
   transform: (doc, ret) => {
     // @ts-ignore: Expected 3 arguments, but got 1
     decimal2JSON(ret);
+    // @ts-ignore: toJSON converts string timestamp to Unix seconds number
+    ret.timestamp = ret.timestamp != null ? normalizeTimestamp(ret.timestamp) : 0;
     return ret;
   },
 });

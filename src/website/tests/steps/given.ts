@@ -28,6 +28,7 @@ Given('I insert GPS data into the database', async function () {
     longitude: 4.5552,
     speed: 30,
     heading: 45,
+    timestamp: '26-05-22 12:00:00',
   };
   await GPS.create(gpsData);
 });
@@ -66,12 +67,14 @@ Given('I insert AISShips data into the database', async function () {
         length: 200,
       },
     ],
+    timestamp: '26-05-22 12:00:00',
   };
   await AISShips.create(aisshipData);
 });
 
 Given('I insert GlobalPath data into the database', async function () {
   const globalPathData = {
+    timestamp: '26-05-22 12:00:00',
     waypoints: [
       {
         latitude: 49.37614179786771,
@@ -144,6 +147,7 @@ Given('I insert GlobalPath data into the database', async function () {
 
 Given('I insert LocalPath data into the database', async function () {
   const localPathData = {
+    timestamp: '26-05-22 12:00:00',
     waypoints: [
       {
         latitude: 49.34356040541922,
@@ -164,6 +168,7 @@ Given('I insert LocalPath data into the database', async function () {
 
 Given('I insert Batteries data into the database', async function () {
   const batteriesData = {
+    timestamp: '26-05-22 12:00:00',
     batteries: [
       {
         voltage: -3.33,
@@ -200,6 +205,7 @@ Given('I insert GenericSensors data into the database', async function () {
 
 Given('I insert WindSensors data into the database', async function () {
   const windSensorsData = {
+    timestamp: '26-05-22 12:00:00',
     windSensors: [
       {
         speed: 1.11,

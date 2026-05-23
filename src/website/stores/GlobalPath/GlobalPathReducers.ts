@@ -7,7 +7,7 @@ export default class GlobalPathReducer extends BaseReducer {
   initialState: GlobalPathState = {
     data: {
       waypoints: [],
-      timestamp: new Date().toISOString(),
+      timestamp: 0,
     } as GlobalPath,
     error: null,
   };
