@@ -216,12 +216,10 @@ bool LocalTransceiver::send()
         }
 
         if (!rcvRsps({
-              AT::Line(AT::DELIMITER),
               AT::Line(AT::write_bin::rsp::SUCCESS),
-              AT::Line("\n"),
               AT::Line(AT::DELIMITER),
               AT::Line(AT::STATUS_OK),
-              AT::Line("\n"),
+              AT::Line(AT::DELIMITER),
             })) {
             continue;
         }
@@ -233,7 +231,7 @@ bool LocalTransceiver::send()
             continue;
         }
 
-        clearSerialBuffer();  // Clear any data that may have come in while waiting for SBDIX response, to ensure the following readRsp gets a clean response
+        //clearSerialBuffer();  // Clear any data that may have come in while waiting for SBDIX response, to ensure the following readRsp gets a clean response
 
         if (!rcvRsps({
               sbdix_cmd,
@@ -360,12 +358,10 @@ bool LocalTransceiver::debugSendAT(const std::string & data)
         }
 
         if (!rcvRsps({
-              AT::Line(AT::DELIMITER),
               AT::Line(AT::write_bin::rsp::SUCCESS),
-              AT::Line("\n"),
               AT::Line(AT::DELIMITER),
               AT::Line(AT::STATUS_OK),
-              AT::Line("\n"),
+              AT::Line(AT::DELIMITER),
             })) {
             if (log_error_) {
                 log_error_("Debug: write did not complete successfully (attempt " + std::to_string(i) + ")");
@@ -376,7 +372,7 @@ bool LocalTransceiver::debugSendAT(const std::string & data)
             log_debug_("Debug: write completed successfully (attempt " + std::to_string(i) + ")");
         }
 
-        clearSerialBuffer();
+        //clearSerialBuffer();
 
         static const AT::Line sbdix_cmd = AT::Line(AT::SBD_SESSION);
         if (!send(sbdix_cmd)) {
