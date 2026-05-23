@@ -102,7 +102,8 @@ if(DEFINED CACHE{ENABLE_ABI_TAG_IN_LIBRARY_FILENAMES} AND NOT MSVC)
 endif()
 
 if(DEFINED CACHE{ENABLE_ABI_TAG_IN_PKGCONFIG_FILENAMES} AND NOT $CACHE{ENABLE_ABI_TAG_IN_LIBRARY_FILENAMES})
-    message(WARNING "ENABLE_ABI_TAG_IN_PKGCONFIG_FILENAMES requires ENABLE_ABI_TAG_IN_LIBRARY_FILENAMES=ON and will be ignored by the current configuration")
+    message(WARNING "ENABLE_ABI_TAG_IN_PKGCONFIG_FILENAMES requires ENABLE_ABI_TAG_IN_LIBRARY_FILENAMES=ON
+    and will be ignored by the current configuration")
     unset(ENABLE_ABI_TAG_IN_PKGCONFIG_FILENAMES CACHE)
 endif()
 
@@ -110,7 +111,8 @@ endif()
 cmake_dependent_option(ENABLE_ABI_TAG_IN_LIBRARY_FILENAMES "Embed ABI tag in library filenames" ON "MSVC" OFF)
 
 # Allow user to enable embedding of ABI tag in pkg-config metadata filenames (MSVC only).
-cmake_dependent_option(ENABLE_ABI_TAG_IN_PKGCONFIG_FILENAMES "Embed ABI tag in pkg-config metadata filenames" OFF "ENABLE_ABI_TAG_IN_LIBRARY_FILENAMES" OFF)
+cmake_dependent_option(ENABLE_ABI_TAG_IN_PKGCONFIG_FILENAMES "Embed ABI tag in pkg-config metadata filenames" OFF
+"ENABLE_ABI_TAG_IN_LIBRARY_FILENAMES" OFF)
 
 option(ENABLE_UNINSTALL "Enable creation of uninstall script and associated uninstall build target." ON)
 
@@ -169,7 +171,7 @@ if(BUILD_VERSION STREQUAL "0.0.0")
             # If `CMAKE_BINARY_DIR` is the `build` directory, include `VERSION_CURRENT` in the release tarball.
             set(MONGOCXX_INCLUDE_VERSION_FILE_IN_DIST ON)
             set(MONGOCXX_CURRENT_VERSION_FILE build/VERSION_CURRENT)
-        endif ()
+        endif()
     elseif(EXISTS ${PROJECT_SOURCE_DIR}/build/VERSION_CURRENT)
         set(MONGOCXX_INCLUDE_VERSION_FILE_IN_DIST ON)
         set(MONGOCXX_CURRENT_VERSION_FILE build/VERSION_CURRENT)
@@ -190,7 +192,7 @@ if(BUILD_VERSION STREQUAL "0.0.0")
                 # If python failed above, stderr would tell the user about it
                 message(FATAL_ERROR
                     "BUILD_VERSION not specified and could not be calculated\
- (script invocation failed); specify in CMake command, -DBUILD_VERSION=<version>"
+  (script invocation failed); specify in CMake command, -DBUILD_VERSION=<version>"
                 )
             else()
                 set(BUILD_VERSION ${CALC_RELEASE_VERSION})
@@ -199,7 +201,7 @@ if(BUILD_VERSION STREQUAL "0.0.0")
         else()
             message(FATAL_ERROR
                 "BUILD_VERSION not specified and could not be calculated\
- (Python was not found on the system); specify in CMake command, -DBUILD_VERSION=<version>"
+  (Python was not found on the system); specify in CMake command, -DBUILD_VERSION=<version>"
             )
         endif()
     endif()

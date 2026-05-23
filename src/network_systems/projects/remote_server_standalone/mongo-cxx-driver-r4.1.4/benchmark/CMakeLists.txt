@@ -22,7 +22,7 @@
 
 # Build the examples with vectorcall as the default on Windows
 # so that we shake out missing _CALL macros.
-if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Gv")
 endif()
 
@@ -46,13 +46,13 @@ set(BENCHMARK_LIBRARY
     score_recorder.cpp
 )
 
-file (GLOB benchmark_DIST_hpps RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
+file(GLOB benchmark_DIST_hpps RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
 
-set_dist_list (benchmark_DIST
-   CMakeLists.txt
-   README.md
-   ${BENCHMARK_LIBRARY}
-   ${benchmark_DIST_hpps}
+set_dist_list(benchmark_DIST
+  CMakeLists.txt
+  README.md
+  ${BENCHMARK_LIBRARY}
+  ${benchmark_DIST_hpps}
 )
 
 add_executable(microbenchmarks ${BENCHMARK_LIBRARY})

@@ -44,7 +44,7 @@ set(SOURCES ${APP_SRCS} ${PROTO_SRCS})
 add_executable(remote_server ${SOURCES})
 
 # Link libraries
- target_link_libraries(remote_server
+  target_link_libraries(remote_server
     ${Boost_LIBRARIES}
     ${Protobuf_LIBRARIES}
     ${MONGOCXX_LIBRARIES}
