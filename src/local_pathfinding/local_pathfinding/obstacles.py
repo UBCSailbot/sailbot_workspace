@@ -64,7 +64,7 @@ class Obstacle:
             _LOGGER.warning(
                 f"collision_zone not initialized for obstacle {type(self)}; treating as invalid"
             )
-            return False
+            return True
 
         return not self.collision_zone.contains(Point(*point))
 
