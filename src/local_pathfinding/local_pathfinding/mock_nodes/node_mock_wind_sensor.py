@@ -31,14 +31,14 @@ Setting True Wind Parameters:
 
 from typing import List
 
-import custom_interfaces.msg as ci
 import rclpy
 from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
 from rclpy.parameter import Parameter
-
-import local_pathfinding.wind_coord_systems as wcs
 from test_plans.test_plan import TestPlan
+
+import custom_interfaces.msg as ci
+import local_pathfinding.wind_coord_systems as wcs
 
 
 class MockWindSensor(Node):
@@ -76,6 +76,7 @@ class MockWindSensor(Node):
             msg_type=ci.GPS, topic="gps", callback=self.gps_callback, qos_profile=10
         )
 
+        # Parameter Event Handler (Parameters can change over the life of the simulation)
         self.add_on_set_parameters_callback(self._on_set_parameters)
 
     def mock_wind_sensor_callback(self):
