@@ -57,7 +57,7 @@ class Obstacle:
             point (ci.HelperLatLon): Point representing the state point to be checked.
 
         Returns:
-            bool: If the collision zone has not yet been initialized defaults to False.
+            bool: If the collision zone has not yet been initialized defaults to True.
                 True if the point is not within the obstacle's collision zone, false otherwise.
         """
         if self.collision_zone is None:
