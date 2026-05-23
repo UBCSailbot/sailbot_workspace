@@ -138,11 +138,11 @@ void HTTPServer::readReq()
         if (!e) {
             if (log_callback_) {
                 log_callback_(
-                  "[INFO] Incoming request: Method: " + std::string(self->req_.method_string()) +
-                  ", Target: " + std::string(self->req_.target()) + ", Bytes: " + std::to_string(bytesTransferred));
+                  "[INFO] Incoming request: Method: " + std::string{self->req_.method_string()} +
+                  ", Target: " + std::string{self->req_.target()} + ", Bytes: " + std::to_string(bytesTransferred));
                 std::string headers;
                 for (const auto & field : self->req_) {
-                    headers += "    " + std::string(field.name_string()) + ": " + std::string(field.value()) + "\n";
+                    headers += "    " + std::string{field.name_string()} + ": " + std::string{field.value()} + "\n";
                 }
                 log_callback_("[INFO] Request headers:\n" + headers);
                 log_callback_("[INFO] Request body: " + beast::buffers_to_string(self->req_.body().data()));
@@ -279,7 +279,7 @@ void HTTPServer::doPost()
                 EC = "F";
             }
 
-            std::string url = "http://" + ROCKBLOCK_WEB + "/?data=" + std::string(encoded_data) + "&ec=" + EC +
+            std::string url = "http://" + ROCKBLOCK_WEB + "/?data=" + std::string{encoded_data} + "&ec=" + EC +
                               "&imei=" + IMEI + "&username=" + USERNAME;
 
             if (curl != nullptr) {
