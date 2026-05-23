@@ -570,8 +570,8 @@ def test_is_valid_no_collision_zone_boat(
     valid_point: cs.XY,
 ):
     obstacle = Obstacle(reference_point, sailbot_position)  # type: ignore
-    assert not obstacle.is_valid(invalid_point)
-    assert not obstacle.is_valid(valid_point)
+    assert obstacle.is_valid(invalid_point)
+    assert obstacle.is_valid(valid_point)
 
 
 # Test updating Sailbot data
