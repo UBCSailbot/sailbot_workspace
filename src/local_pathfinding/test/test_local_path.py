@@ -1882,6 +1882,7 @@ def test_must_change_valid_path(basic_local_path_state):
     assert result.reason == "Path is valid, no change needed"
 
 
+
 def test_must_change_single_waypoint_path(basic_local_path_state):
     local_path = make_local_path()
     local_path._ompl_path = mock.Mock()
