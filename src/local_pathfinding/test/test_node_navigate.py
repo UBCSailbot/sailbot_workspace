@@ -1,4 +1,5 @@
 import os
+from unittest import mock
 
 import pytest
 import yaml
@@ -143,6 +144,7 @@ def test_find_next_global_waypoint_index(
     assert calculated_answer == correct_index
 
 
+<<<<<<< HEAD
 def test_get_desired_heading_disables_sail_when_path_not_found():
     sailbot = nn.Sailbot.__new__(nn.Sailbot)
     sailbot.gps = mock.Mock()
@@ -195,3 +197,52 @@ def test_get_desired_heading_disables_sail_when_path_not_found():
     sailbot.get_logger.return_value.warning.assert_called_once_with(
         "Unable to generate a local path; disabling sail"
     )
+=======
+def make_dev_sailbot():
+    sailbot = mock.Mock()
+    sailbot.mode = "development"
+    sailbot.local_path.state.obstacles = []
+    sailbot.local_path.path = ci.Path()
+    sailbot.global_path = ci.Path()
+    sailbot.gps = ci.GPS()
+    sailbot.filtered_wind_sensor = ci.WindSensor()
+    sailbot.ais_ships = ci.AISShips()
+    sailbot.desired_heading = ci.DesiredHeading()
+    return sailbot
+
+
+def test_publish_local_path_data_replan_reason():
+    sailbot = make_dev_sailbot()
+    sailbot.local_path.last_replan_reason = "Path intersects collision zone"
+    sailbot.local_path.last_remaining_waypoints = 3
+
+    nn.Sailbot.publish_local_path_data(sailbot)
+
+    published_msg = sailbot.lpath_data_pub.publish.call_args[0][0]
+    assert published_msg.replan_reason == "Path intersects collision zone"
+    assert published_msg.remaining_waypoints == 3
+
+
+def test_publish_local_path_data_no_replan():
+    sailbot = make_dev_sailbot()
+    sailbot.local_path.last_replan_reason = ""
+    sailbot.local_path.last_remaining_waypoints = 0
+
+    nn.Sailbot.publish_local_path_data(sailbot)
+
+    published_msg = sailbot.lpath_data_pub.publish.call_args[0][0]
+    assert published_msg.replan_reason == ""
+    assert published_msg.remaining_waypoints == 0
+
+
+def test_publish_local_path_data_production_mode():
+    sailbot = mock.Mock()
+    sailbot.mode = "production"
+    sailbot.local_path.path = ci.Path()
+
+    nn.Sailbot.publish_local_path_data(sailbot)
+
+    published_msg = sailbot.lpath_data_pub.publish.call_args[0][0]
+    assert published_msg.replan_reason == ""
+    assert published_msg.remaining_waypoints == 0
+>>>>>>> f83ebe87 (added tests for publishing reasons to switch paths)
