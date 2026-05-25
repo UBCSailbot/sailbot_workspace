@@ -19,9 +19,9 @@ from boat_simulator.nodes.physics_engine.kinematics_formulas import KinematicsFo
 class ExpectedData:
     """Stores expected kinematic data, including position, velocity, and acceleration."""
 
-    position: NDArray = field(default=np.zeros(3, dtype=np.float32))
-    velocity: NDArray = field(default=np.zeros(3, dtype=np.float32))
-    acceleration: NDArray = field(default=np.zeros(3, dtype=np.float32))
+    position: NDArray = field(default_factory=lambda: np.zeros(3, dtype=np.float32))
+    velocity: NDArray = field(default_factory=lambda: np.zeros(3, dtype=np.float32))
+    acceleration: NDArray = field(default_factory=lambda: np.zeros(3, dtype=np.float32))
 
 
 class TestKinematicsComputation:

@@ -3,7 +3,6 @@
 import os
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict
 
 import numpy as np
 from numpy.typing import NDArray
@@ -38,21 +37,17 @@ class PhysicsEnginePublisherTopics:
 
 @dataclass
 class BoatProperties:
-    # A lookup table that maps angles of attack (in degrees) to their corresponding lift
-    # coefficients.
-    sail_lift_coeffs: Dict[Scalar, Scalar]
-    # A lookup table that maps angles of attack (in degrees) to their corresponding drag
-    # coefficients.
-    sail_drag_coeffs: Dict[Scalar, Scalar]
-    # A lookup table that maps angles of attack (in degrees) to their corresponding sail areas
-    # (in square meters).
-    sail_areas: Dict[Scalar, Scalar]
-    # A lookup table that maps angles of attack (in degrees) to their corresponding drag
-    # coefficients for the rudder.
-    rudder_drag_coeffs: Dict[Scalar, Scalar]
-    # A lookup table that maps angles of attack (in degrees) to their corresponding rudder areas
-    # (in square meters).
-    rudder_areas: Dict[Scalar, Scalar]
+    # A lookup table of shape [N, 2] where each row is [angle_of_attack_deg, lift_coefficient].
+    sail_lift_coeffs: NDArray
+    # A lookup table of shape [N, 2] where each row is [angle_of_attack_deg, drag_coefficient].
+    sail_drag_coeffs: NDArray
+    # A lookup table of shape [N, 2] where each row is [angle_of_attack_deg, sail_area_m2].
+    sail_areas: NDArray
+    # A lookup table of shape [N, 2] where each row is
+    # [angle_of_attack_deg, rudder_drag_coefficient].
+    rudder_drag_coeffs: NDArray
+    # A lookup table of shape [N, 2] where each row is [angle_of_attack_deg, rudder_area_m2].
+    rudder_areas: NDArray
     # A scalar representing the distance from the center of effort of the sail to the pivot point
     # (in meters).
     sail_dist: Scalar
@@ -93,6 +88,7 @@ DATA_COLLECTION_CLI_ARG_NAME = "--enable-data-collection"
 
 # CLI argument name for mock data option
 MOCK_DATA_CLI_ARG_NAME = "--enable-mock-data"
+SIM_VISUALIZER_CLI_ARG_NAME = "--enable-sim-visualizer"
 
 # Enumerated orientation indices since indexing pitch, roll, and yaw could be arbitrary
 ORIENTATION_INDICES = Enum("ORIENTATION_INDICES", ["PITCH", "ROLL", "YAW"], start=0)  # x, y, x
@@ -109,14 +105,28 @@ RUDDER_MAX_ANGLE_RANGE = (-45, 45)
 # Max sail actuator control angle range in degrees, min angle [0], max angle [1]
 SAIL_MAX_ANGLE_RANGE = (-7, 7)
 
+# Densities of the mediums, used for force calculations, units in kg/m^3
+AIR_DENSITY = 1.225
+WATER_DENSITY = 1027.0
+
 # Constants related to the physical and mechanical properties of Polaris
 # TODO These are placeholder values which should be replaced when we have real values.
 BOAT_PROPERTIES = BoatProperties(
-    sail_lift_coeffs={0.0: 0.0, 5.0: 0.2, 10.0: 0.5, 15.0: 0.7, 20.0: 1.0},
-    sail_drag_coeffs={0.0: 0.1, 5.0: 0.12, 10.0: 0.15, 15.0: 0.18, 20.0: 0.2},
-    sail_areas={0.0: 20.0, 5.0: 19.8, 10.0: 19.5, 15.0: 19.2, 20.0: 18.8},
-    rudder_drag_coeffs={0.0: 0.2, 5.0: 0.22, 10.0: 0.25, 15.0: 0.28, 20.0: 0.3},
-    rudder_areas={0.0: 2.0, 5.0: 1.9, 10.0: 1.8, 15.0: 1.7, 20.0: 1.6},
+    sail_lift_coeffs=np.array(
+        [[0.0, 0.0], [5.0, 0.2], [10.0, 0.5], [15.0, 0.7], [20.0, 1.0]], dtype=np.float32
+    ),
+    sail_drag_coeffs=np.array(
+        [[0.0, 0.1], [5.0, 0.12], [10.0, 0.15], [15.0, 0.18], [20.0, 0.2]], dtype=np.float32
+    ),
+    sail_areas=np.array(
+        [[0.0, 20.0], [5.0, 19.8], [10.0, 19.5], [15.0, 19.2], [20.0, 18.8]], dtype=np.float32
+    ),
+    rudder_drag_coeffs=np.array(
+        [[0.0, 0.2], [5.0, 0.22], [10.0, 0.25], [15.0, 0.28], [20.0, 0.3]], dtype=np.float32
+    ),
+    rudder_areas=np.array(
+        [[0.0, 2.0], [5.0, 1.9], [10.0, 1.8], [15.0, 1.7], [20.0, 1.6]], dtype=np.float32
+    ),
     sail_dist=0.5,
     rudder_dist=1.0,
     hull_drag_factor=0.05,

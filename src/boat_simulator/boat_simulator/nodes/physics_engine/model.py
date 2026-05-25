@@ -5,8 +5,15 @@ from typing import Tuple
 import numpy as np
 from numpy.typing import NDArray
 
-from boat_simulator.common.constants import BOAT_PROPERTIES
+from boat_simulator.common.constants import (
+    AIR_DENSITY,
+    BOAT_PROPERTIES,
+    ORIENTATION_INDICES,
+    WATER_DENSITY,
+)
 from boat_simulator.common.types import Scalar
+from boat_simulator.common.utils import bound_to_360, rad_to_degrees
+from boat_simulator.nodes.physics_engine.fluid_forces import MediumForceComputation
 from boat_simulator.nodes.physics_engine.kinematics_computation import BoatKinematics
 from boat_simulator.nodes.physics_engine.kinematics_data import KinematicsData
 
@@ -29,6 +36,18 @@ class BoatState:
         """
         self.__kinematics_computation = BoatKinematics(
             timestep, BOAT_PROPERTIES.mass, BOAT_PROPERTIES.inertia
+        )
+        self.sail_force_computation = MediumForceComputation(
+            BOAT_PROPERTIES.sail_lift_coeffs,
+            BOAT_PROPERTIES.sail_drag_coeffs,
+            BOAT_PROPERTIES.sail_areas,
+            AIR_DENSITY,
+        )
+        self.rudder_force_computation = MediumForceComputation(
+            BOAT_PROPERTIES.sail_lift_coeffs,
+            BOAT_PROPERTIES.rudder_drag_coeffs,
+            BOAT_PROPERTIES.rudder_areas,
+            WATER_DENSITY,
         )
 
     def step(
@@ -121,7 +140,7 @@ class BoatState:
 
     @property
     def angular_acceleration(self) -> NDArray:
-        return self.__kinematics_computation.relative_data.angular_position
+        return self.__kinematics_computation.relative_data.angular_acceleration
 
     @property
     def inertia(self) -> NDArray:
@@ -145,5 +164,5 @@ class BoatState:
 
     @property
     def true_bearing(self) -> Scalar:
-        # TODO: Implement this function
-        return 0
+        yaw_rad = self.angular_position[ORIENTATION_INDICES.YAW.value]
+        return bound_to_360(rad_to_degrees(yaw_rad))
