@@ -398,7 +398,7 @@ class PhysicsEngineNode(Node):
         """Publishes the kinematics data of the simulated boat."""
         lat_lon = self.__boat_state.global_position
         speed = np.linalg.norm(self.__boat_state.global_velocity)
-        heading = self.__boat_state.angular_position[0]
+        heading = self.__boat_state.true_bearing
 
         if self.__sim_gps:
             self.__sim_gps.lat_lon = lat_lon

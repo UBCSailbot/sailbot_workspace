@@ -47,7 +47,7 @@ class BoatState:
             AIR_DENSITY,
         )
         self.__rudder_force_computation = MediumForceComputation(
-            BOAT_PROPERTIES.sail_lift_coeffs,
+            BOAT_PROPERTIES.rudder_lift_coeffs,
             BOAT_PROPERTIES.rudder_drag_coeffs,
             BOAT_PROPERTIES.rudder_areas,
             WATER_DENSITY,

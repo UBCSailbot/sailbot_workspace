@@ -91,7 +91,7 @@ class BoatKinematics:
             Scalar: The next angular position along the yaw axis in the global reference frame,
                 expressed in radians (rad).
         """
-        net_torque = np.array([0.0, 0.0, 0.0])
+
         next_ang_acceleration = KinematicsFormulas.next_ang_acceleration(
             net_torque, self.inertia_inverse
         )

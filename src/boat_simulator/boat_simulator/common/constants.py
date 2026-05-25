@@ -45,6 +45,9 @@ class BoatProperties:
     sail_areas: NDArray
     # A lookup table of shape [N, 2] where each row is
     # [angle_of_attack_deg, rudder_drag_coefficient].
+    rudder_lift_coeffs: NDArray
+    # A lookup table of shape [N, 2] where each row is
+    # [angle_of_attack_deg, rudder_drag_coefficient].
     rudder_drag_coeffs: NDArray
     # A lookup table of shape [N, 2] where each row is [angle_of_attack_deg, rudder_area_m2].
     rudder_areas: NDArray
@@ -120,6 +123,20 @@ BOAT_PROPERTIES = BoatProperties(
     ),
     sail_areas=np.array(
         [[0.0, 20.0], [5.0, 19.8], [10.0, 19.5], [15.0, 19.2], [20.0, 18.8]], dtype=np.float32
+    ),
+    rudder_lift_coeffs=np.array(
+        [
+            [-20.0, -0.9],
+            [-15.0, -0.85],
+            [-10.0, -0.6],
+            [-5.0, -0.3],
+            [0.0, 0.0],
+            [5.0, 0.3],
+            [10.0, 0.6],
+            [15.0, 0.85],
+            [20.0, 0.9],
+        ],
+        dtype=np.float32,
     ),
     rudder_drag_coeffs=np.array(
         [[0.0, 0.2], [5.0, 0.22], [10.0, 0.25], [15.0, 0.28], [20.0, 0.3]], dtype=np.float32
