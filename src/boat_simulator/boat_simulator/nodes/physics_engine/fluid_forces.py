@@ -6,8 +6,11 @@ import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy.typing import NDArray
+from rclpy.logging import get_logger
 
 from boat_simulator.common.utils import Scalar
+
+_logger = get_logger(__name__)
 
 
 class MediumForceComputation:
@@ -56,7 +59,13 @@ class MediumForceComputation:
         if np.all(apparent_velocity == 0):
             # Directly return the normalized orientation as the angle of attack
             # Normalize orientation to be within [-180, 180)
-            return ((orientation + 180) % 360) - 180
+            angle_of_attack = ((orientation + 180) % 360) - 180
+            _logger.debug(
+                "calculate_attack_angle: zero velocity, returning orientation=%.2f as aoa=%.2f",
+                orientation,
+                angle_of_attack,
+            )
+            return angle_of_attack
 
         # Calculate the angle in degrees of the apparent velocity
         angle_of_attack_raw = np.rad2deg(np.arctan2(apparent_velocity[1], apparent_velocity[0]))
@@ -70,6 +79,13 @@ class MediumForceComputation:
         # Normalize the angle of attack to [-180, 180) range
         angle_of_attack = ((angle_of_attack + 180) % 360) - 180
 
+        _logger.debug(
+            "calculate_attack_angle: vel=%s orientation=%.2f raw=%.2f aoa=%.2f",
+            apparent_velocity,
+            orientation,
+            angle_of_attack_raw,
+            angle_of_attack,
+        )
         return angle_of_attack
 
     def compute(self, apparent_velocity: NDArray, orientation: Scalar) -> Tuple[NDArray, NDArray]:
@@ -90,6 +106,14 @@ class MediumForceComputation:
         attack_angle = self.calculate_attack_angle(apparent_velocity, orientation)
         lift_coefficient, drag_coefficient = self.interpolate(attack_angle)
         velocity_magnitude = np.linalg.norm(apparent_velocity)
+
+        _logger.debug(
+            "compute: attack_angle=%.2f lift_coeff=%.4f drag_coeff=%.4f vel_mag=%.4f",
+            attack_angle,
+            lift_coefficient,
+            drag_coefficient,
+            velocity_magnitude,
+        )
 
         # Calculate the lift and drag forces
 
@@ -143,6 +167,8 @@ class MediumForceComputation:
 
         lift_force = lift_force_magnitude * lift_force_direction
         drag_force = drag_force_magnitude * drag_force_unit_vector
+
+        _logger.debug("compute: lift_force=%s drag_force=%s", lift_force, drag_force)
 
         return lift_force, drag_force
 
@@ -198,6 +224,12 @@ class MediumForceComputation:
         )
         drag_coefficient = np.interp(
             attack_angle, self.__drag_coefficients[:, 0], self.__drag_coefficients[:, 1]
+        )
+        _logger.debug(
+            "interpolate: attack_angle=%.2f -> lift=%.4f drag=%.4f",
+            attack_angle,
+            lift_coefficient,
+            drag_coefficient,
         )
         return lift_coefficient, drag_coefficient
 

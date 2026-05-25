@@ -4,6 +4,9 @@ from typing import Tuple
 
 import numpy as np
 from numpy.typing import NDArray
+from rclpy.logging import get_logger
+
+_logger = get_logger(__name__)
 
 from boat_simulator.common.constants import (
     AIR_DENSITY,
@@ -78,9 +81,20 @@ class BoatState:
         rel_wind_vel = glo_wind_vel[:2] - self.global_velocity[:2]
         rel_water_vel = glo_water_vel[:2] - self.global_velocity[:2]  # slice into 2d vector
 
+        _logger.debug(
+            "step inputs: rel_wind_vel=%s rel_water_vel=%s rudder_angle=%.2f trim_tab=%.2f",
+            rel_wind_vel,
+            rel_water_vel,
+            rudder_angle_deg,
+            trim_tab_angle,
+        )
+
         rel_net_force, net_torque = self.__compute_net_force_and_torque(
             rel_wind_vel, rel_water_vel, rudder_angle_deg, trim_tab_angle
         )
+
+        _logger.debug("step outputs: rel_net_force=%s net_torque=%s", rel_net_force, net_torque)
+
         return self.__kinematics_computation.step(rel_net_force, net_torque)
 
     def __compute_net_force_and_torque(
@@ -107,6 +121,14 @@ class BoatState:
                 the relative reference frame, expressed in newtons (N), and the second element
                 represents the net torque, expressed in newton-meters (N•m).
         """
+        _logger.debug(
+            "__compute_net_force_and_torque: rel_wind_vel=%s rel_water_vel=%s"
+            " rudder=%.2f trim_tab=%.2f",
+            rel_wind_vel,
+            rel_water_vel,
+            rudder_angle_deg,
+            trim_tab_angle,
+        )
         # TODO Implement this function
         return (np.array([0, 0, 0]), np.array([0, 0, 0]))
 

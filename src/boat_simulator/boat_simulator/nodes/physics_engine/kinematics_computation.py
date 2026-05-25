@@ -4,6 +4,9 @@ from typing import Tuple
 
 import numpy as np
 from numpy.typing import NDArray
+from rclpy.logging import get_logger
+
+_logger = get_logger(__name__)
 
 import boat_simulator.common.constants as constants
 import boat_simulator.common.utils as utils
@@ -61,6 +64,8 @@ class BoatKinematics:
                 first element represents data in the relative reference frame, and the second
                 element represents data in the global reference frame, both using SI units.
         """
+        _logger.debug("step: rel_net_force=%s net_torque=%s", rel_net_force, net_torque)
+
         yaw_radians = self.__update_ang_data(net_torque)
 
         self.__update_linear_relative_data(rel_net_force)
@@ -68,6 +73,13 @@ class BoatKinematics:
         # z-directional acceleration and velocity are neglected
         glo_net_force = rel_net_force * np.array([np.cos(yaw_radians), np.sin(yaw_radians), 0])
         self.__update_linear_global_data(glo_net_force)
+
+        _logger.debug(
+            "step result: yaw=%.4f rad rel_vel=%s glo_pos=%s",
+            yaw_radians,
+            self.relative_data.linear_velocity,
+            self.global_data.linear_position,
+        )
 
         return (self.relative_data, self.global_data)
 
@@ -112,6 +124,14 @@ class BoatKinematics:
 
         yaw_radians = next_ang_position[constants.ORIENTATION_INDICES.YAW.value]
 
+        _logger.debug(
+            "__update_ang_data: ang_acc=%s ang_vel=%s ang_pos=%s yaw=%.4f rad",
+            next_ang_acceleration,
+            next_ang_velocity,
+            next_ang_position,
+            yaw_radians,
+        )
+
         return yaw_radians
 
     def __update_linear_relative_data(self, net_force: NDArray) -> None:
@@ -133,6 +153,12 @@ class BoatKinematics:
         self.__relative_data.linear_acceleration = next_relative_acceleration
         self.__relative_data.linear_velocity = next_relative_velocity
         self.__relative_data.linear_position[:] = 0  # linear position is unused
+
+        _logger.debug(
+            "__update_linear_relative_data: acc=%s vel=%s",
+            next_relative_acceleration,
+            next_relative_velocity,
+        )
 
     def __update_linear_global_data(self, net_force: NDArray) -> None:
         """Updates the linear kinematic data in the global reference frame.
@@ -157,6 +183,13 @@ class BoatKinematics:
         self.__global_data.linear_acceleration = next_global_acceleration
         self.__global_data.linear_velocity = next_global_velocity
         self.__global_data.linear_position = next_global_position
+
+        _logger.debug(
+            "__update_linear_global_data: acc=%s vel=%s pos=%s",
+            next_global_acceleration,
+            next_global_velocity,
+            next_global_position,
+        )
 
     @property
     def relative_data(self) -> KinematicsData:
