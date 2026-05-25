@@ -9,20 +9,11 @@ from typing import Optional
 import numpy as np
 import rclpy
 import rclpy.utilities
-from custom_interfaces.action import SimRudderActuation, SimSailTrimTabActuation
 from custom_interfaces.action._sim_rudder_actuation import (
     SimRudderActuation_FeedbackMessage,
 )
 from custom_interfaces.action._sim_sail_trim_tab_actuation import (
     SimSailTrimTabActuation_FeedbackMessage,
-)
-from custom_interfaces.msg import (
-    GPS,
-    DesiredHeading,
-    SailCmd,
-    SimWorldState,
-    WindSensor,
-    WindSensors,
 )
 from rclpy.action import ActionClient
 from rclpy.action.client import ClientGoalHandle, Future
@@ -38,6 +29,15 @@ from boat_simulator.common.sensors import SimGPS, SimWindSensor
 from boat_simulator.common.types import Scalar
 from boat_simulator.nodes.physics_engine.fluid_generation import FluidGenerator
 from boat_simulator.nodes.physics_engine.model import BoatState
+from custom_interfaces.action import SimRudderActuation, SimSailTrimTabActuation
+from custom_interfaces.msg import (
+    GPS,
+    DesiredHeading,
+    SailCmd,
+    SimWorldState,
+    WindSensor,
+    WindSensors,
+)
 
 from .decorators import require_all_subs_active
 
@@ -344,7 +344,7 @@ class PhysicsEngineNode(Node):
         """Publishes mock GPS data."""
         lat_lon = self.__boat_state.global_position
         speed = np.linalg.norm(self.__boat_state.global_velocity)
-        heading = self.__boat_state.angular_position[0]
+        heading = self.__boat_state.true_bearing
 
         if self.__sim_gps:
             self.__sim_gps.lat_lon = lat_lon

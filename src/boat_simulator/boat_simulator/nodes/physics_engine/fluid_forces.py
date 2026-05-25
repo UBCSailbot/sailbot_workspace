@@ -24,7 +24,8 @@ class MediumForceComputation:
         `drag_coefficients` (NDArray): An array of shape (n, 2) where each row contains a pair
             (x, y) representing an angle of attack, in degrees, and its corresponding drag
             coefficient.
-        `areas` (Scalar): Corresponding area, in square meters (m^2).
+        `areas` (NDArray): A lookup table of shape (n, 2) where each row is
+            [angle_of_attack_deg, area_m2].
         `fluid_density` (Scalar): The density of the fluid acting on the medium, expressed in
             kilograms per cubic meter (kg/m^3).
     """
@@ -33,7 +34,7 @@ class MediumForceComputation:
         self,
         lift_coefficients: NDArray,
         drag_coefficients: NDArray,
-        areas: Scalar,
+        areas: NDArray,
         fluid_density: Scalar,
     ):
         self.__lift_coefficients = lift_coefficients
@@ -61,9 +62,7 @@ class MediumForceComputation:
             # Normalize orientation to be within [-180, 180)
             angle_of_attack = ((orientation + 180) % 360) - 180
             _logger.debug(
-                "calculate_attack_angle: zero velocity, returning orientation=%.2f as aoa=%.2f",
-                orientation,
-                angle_of_attack,
+                f"calculate_attack_angle: zero velocity, returning orientation={orientation:.2f} as aoa={angle_of_attack:.2f}",
             )
             return angle_of_attack
 
@@ -80,11 +79,7 @@ class MediumForceComputation:
         angle_of_attack = ((angle_of_attack + 180) % 360) - 180
 
         _logger.debug(
-            "calculate_attack_angle: vel=%s orientation=%.2f raw=%.2f aoa=%.2f",
-            apparent_velocity,
-            orientation,
-            angle_of_attack_raw,
-            angle_of_attack,
+            f"calculate_attack_angle: vel={apparent_velocity} orientation={orientation:.2f} raw={angle_of_attack_raw:.2f} aoa={angle_of_attack:.2f}"
         )
         return angle_of_attack
 
@@ -104,24 +99,20 @@ class MediumForceComputation:
         """
 
         attack_angle = self.calculate_attack_angle(apparent_velocity, orientation)
-        lift_coefficient, drag_coefficient = self.interpolate(attack_angle)
+        lift_coefficient, drag_coefficient, area = self.interpolate(attack_angle)
         velocity_magnitude = np.linalg.norm(apparent_velocity)
 
         _logger.debug(
-            "compute: attack_angle=%.2f lift_coeff=%.4f drag_coeff=%.4f vel_mag=%.4f",
-            attack_angle,
-            lift_coefficient,
-            drag_coefficient,
-            velocity_magnitude,
+            f"compute: attack_angle={attack_angle} lift_coeff={lift_coefficient} drag_coeff={drag_coefficient} vel_mag={velocity_magnitude}"
         )
 
         # Calculate the lift and drag forces
 
         lift_force_magnitude = self.__calculate_fluid_force_magnitude(
-            lift_coefficient, velocity_magnitude
+            lift_coefficient, velocity_magnitude, area
         )
         drag_force_magnitude = self.__calculate_fluid_force_magnitude(
-            drag_coefficient, velocity_magnitude
+            drag_coefficient, velocity_magnitude, area
         )
 
         drag_force_unit_vector = apparent_velocity / velocity_magnitude
@@ -168,15 +159,15 @@ class MediumForceComputation:
         lift_force = lift_force_magnitude * lift_force_direction
         drag_force = drag_force_magnitude * drag_force_unit_vector
 
-        _logger.debug("compute: lift_force=%s drag_force=%s", lift_force, drag_force)
+        _logger.debug(f"compute: lift_force={lift_force} drag_force={drag_force}")
 
         return lift_force, drag_force
 
     def __calculate_fluid_force_magnitude(
-        self, coefficient: Scalar, velocity_magnitude: Scalar
+        self, coefficient: Scalar, velocity_magnitude: Scalar, area: Scalar
     ) -> Scalar:
-        """Calculates the magnitude of fluid forces based on coefficient and velocity."""
-        return 0.5 * self.__fluid_density * coefficient * self.__areas * (velocity_magnitude**2)
+        """Calculates the magnitude of fluid forces based on coefficient, velocity, and area."""
+        return 0.5 * self.__fluid_density * coefficient * area * (velocity_magnitude**2)
 
     def __rotate_vector(self, v: NDArray, theta_degrees: Scalar, clockwise=True) -> NDArray:
         """
@@ -203,20 +194,17 @@ class MediumForceComputation:
         v_rotated = np.dot(rotation_matrix, v)
         return v_rotated
 
-    def interpolate(self, attack_angle: Scalar) -> Tuple[Scalar, Scalar]:
-        """Performs linear interpolation to estimate the lift and drag coefficients, as well as the
-        associated area upon which the fluid acts, based on the provided angle of attack.
+    def interpolate(self, attack_angle: Scalar) -> Tuple[Scalar, Scalar, Scalar]:
+        """Performs linear interpolation to estimate the lift coefficient, drag coefficient, and
+        area upon which the fluid acts, based on the provided angle of attack.
 
             Args:
                 attack_angle (Scalar): The angle of attack formed between the orientation angle of
                     the medium and the direction of the apparent velocity, expressed in degrees.
 
             Returns:
-                Tuple[Scalar, Scalar]: A tuple representing the computed parameters. The
-                    first scalar denotes the lift coefficient, the second scalar represents the
-                    drag coefficient, and the third scalar indicates the surface area upon which
-                    the fluid acts. Both lift and drag coefficients are unitless, while the
-                    area is expressed in square meters (m^2).
+                Tuple[Scalar, Scalar, Scalar]: A tuple of (lift_coefficient, drag_coefficient,
+                    area). Both coefficients are unitless; area is in square meters (m^2).
         """
 
         lift_coefficient = np.interp(
@@ -225,13 +213,11 @@ class MediumForceComputation:
         drag_coefficient = np.interp(
             attack_angle, self.__drag_coefficients[:, 0], self.__drag_coefficients[:, 1]
         )
+        area = np.interp(attack_angle, self.__areas[:, 0], self.__areas[:, 1])
         _logger.debug(
-            "interpolate: attack_angle=%.2f -> lift=%.4f drag=%.4f",
-            attack_angle,
-            lift_coefficient,
-            drag_coefficient,
+            f"interpolate: attack_angle={attack_angle} -> lift={lift_coefficient} drag={drag_coefficient} area={area}"
         )
-        return lift_coefficient, drag_coefficient
+        return lift_coefficient, drag_coefficient, area
 
     def _draw_boat(ax, position, orientation):
         """Draws a simplified boat shape on the given axes, ensuring it aligns
@@ -369,7 +355,7 @@ class MediumForceComputation:
         return self.__drag_coefficients
 
     @property
-    def areas(self) -> Scalar:
+    def areas(self) -> NDArray:
         return self.__areas
 
     @property

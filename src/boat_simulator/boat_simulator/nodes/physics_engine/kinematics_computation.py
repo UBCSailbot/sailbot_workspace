@@ -64,7 +64,7 @@ class BoatKinematics:
                 first element represents data in the relative reference frame, and the second
                 element represents data in the global reference frame, both using SI units.
         """
-        _logger.debug("step: rel_net_force=%s net_torque=%s", rel_net_force, net_torque)
+        _logger.info(f"step: rel_net_force={rel_net_force} net_torque={net_torque}")
 
         yaw_radians = self.__update_ang_data(net_torque)
 
@@ -75,10 +75,7 @@ class BoatKinematics:
         self.__update_linear_global_data(glo_net_force)
 
         _logger.debug(
-            "step result: yaw=%.4f rad rel_vel=%s glo_pos=%s",
-            yaw_radians,
-            self.relative_data.linear_velocity,
-            self.global_data.linear_position,
+            f"step result: yaw={yaw_radians:.4f} rad rel_vel={self.relative_data.linear_velocity} glo_pos={self.global_data.linear_position}"
         )
 
         return (self.relative_data, self.global_data)
@@ -94,6 +91,7 @@ class BoatKinematics:
             Scalar: The next angular position along the yaw axis in the global reference frame,
                 expressed in radians (rad).
         """
+        net_torque = np.array([0.0, 0.0, 0.0])
         next_ang_acceleration = KinematicsFormulas.next_ang_acceleration(
             net_torque, self.inertia_inverse
         )
@@ -125,11 +123,7 @@ class BoatKinematics:
         yaw_radians = next_ang_position[constants.ORIENTATION_INDICES.YAW.value]
 
         _logger.debug(
-            "__update_ang_data: ang_acc=%s ang_vel=%s ang_pos=%s yaw=%.4f rad",
-            next_ang_acceleration,
-            next_ang_velocity,
-            next_ang_position,
-            yaw_radians,
+            f"__update_ang_data: ang_acc={next_ang_acceleration} ang_vel={next_ang_velocity} ang_pos={next_ang_position} yaw={yaw_radians:.4f} rad"
         )
 
         return yaw_radians
@@ -155,9 +149,7 @@ class BoatKinematics:
         self.__relative_data.linear_position[:] = 0  # linear position is unused
 
         _logger.debug(
-            "__update_linear_relative_data: acc=%s vel=%s",
-            next_relative_acceleration,
-            next_relative_velocity,
+            f"__update_linear_relative_data: acc={next_relative_acceleration} vel={next_relative_velocity}"
         )
 
     def __update_linear_global_data(self, net_force: NDArray) -> None:
@@ -185,10 +177,7 @@ class BoatKinematics:
         self.__global_data.linear_position = next_global_position
 
         _logger.debug(
-            "__update_linear_global_data: acc=%s vel=%s pos=%s",
-            next_global_acceleration,
-            next_global_velocity,
-            next_global_position,
+            f"__update_linear_global_data: acc={next_global_acceleration} vel={next_global_velocity} pos={next_global_position}"
         )
 
     @property

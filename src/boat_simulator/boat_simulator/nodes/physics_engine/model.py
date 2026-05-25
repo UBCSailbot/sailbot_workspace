@@ -40,18 +40,21 @@ class BoatState:
         self.__kinematics_computation = BoatKinematics(
             timestep, BOAT_PROPERTIES.mass, BOAT_PROPERTIES.inertia
         )
-        self.sail_force_computation = MediumForceComputation(
+        self.__sail_force_computation = MediumForceComputation(
             BOAT_PROPERTIES.sail_lift_coeffs,
             BOAT_PROPERTIES.sail_drag_coeffs,
             BOAT_PROPERTIES.sail_areas,
             AIR_DENSITY,
         )
-        self.rudder_force_computation = MediumForceComputation(
+        self.__rudder_force_computation = MediumForceComputation(
             BOAT_PROPERTIES.sail_lift_coeffs,
             BOAT_PROPERTIES.rudder_drag_coeffs,
             BOAT_PROPERTIES.rudder_areas,
             WATER_DENSITY,
         )
+        self.hull_drag_factor = BOAT_PROPERTIES.hull_drag_factor
+        self.sail_dist = BOAT_PROPERTIES.sail_dist
+        self.rudder_dist = BOAT_PROPERTIES.rudder_dist
 
     def step(
         self,
@@ -82,18 +85,14 @@ class BoatState:
         rel_water_vel = glo_water_vel[:2] - self.global_velocity[:2]  # slice into 2d vector
 
         _logger.debug(
-            "step inputs: rel_wind_vel=%s rel_water_vel=%s rudder_angle=%.2f trim_tab=%.2f",
-            rel_wind_vel,
-            rel_water_vel,
-            rudder_angle_deg,
-            trim_tab_angle,
+            f"step inputs: rel_wind_vel={rel_wind_vel} rel_water_vel={rel_water_vel} rudder_angle={rudder_angle_deg:.2f} trim_tab={trim_tab_angle:.2f}"
         )
 
         rel_net_force, net_torque = self.__compute_net_force_and_torque(
             rel_wind_vel, rel_water_vel, rudder_angle_deg, trim_tab_angle
         )
 
-        _logger.debug("step outputs: rel_net_force=%s net_torque=%s", rel_net_force, net_torque)
+        _logger.debug(f"step outputs: rel_net_force={rel_net_force} net_torque={net_torque}")
 
         return self.__kinematics_computation.step(rel_net_force, net_torque)
 
@@ -121,16 +120,26 @@ class BoatState:
                 the relative reference frame, expressed in newtons (N), and the second element
                 represents the net torque, expressed in newton-meters (N•m).
         """
-        _logger.debug(
-            "__compute_net_force_and_torque: rel_wind_vel=%s rel_water_vel=%s"
-            " rudder=%.2f trim_tab=%.2f",
-            rel_wind_vel,
-            rel_water_vel,
-            rudder_angle_deg,
-            trim_tab_angle,
+
+        sail_lift, sail_drag = self.__sail_force_computation.compute(rel_wind_vel, trim_tab_angle)
+        rudder_lift, rudder_drag = self.__rudder_force_computation.compute(
+            rel_water_vel, rudder_angle_deg
         )
-        # TODO Implement this function
-        return (np.array([0, 0, 0]), np.array([0, 0, 0]))
+        rel_vel_2d = self.relative_velocity[:2]
+        hull_drag = -self.hull_drag_factor * np.linalg.norm(rel_vel_2d) * rel_vel_2d
+        net_force = sail_lift + sail_drag + rudder_lift + rudder_drag + hull_drag
+        tau_z = self.sail_dist * (sail_lift[1] + sail_drag[1]) - self.rudder_dist * (
+            rudder_lift[1] + rudder_drag[1]
+        )
+
+        tau_z_vector = np.array([0.0, 0.0, tau_z])
+        net_force = np.array(
+            [net_force[0], net_force[1], 0.0]
+        )  # slice into 2d vector and add zero z-comp
+
+        _logger.info(f"Computed forces: net_force={net_force}, tau_z_vector={tau_z_vector}")
+
+        return (net_force, tau_z_vector)
 
     @property
     def global_position(self) -> NDArray:
@@ -182,7 +191,7 @@ class BoatState:
 
     @property
     def speed(self) -> Scalar:
-        return np.linalg.norm(x=self.relative_velocity, ord=2)
+        return float(np.linalg.norm(x=self.relative_velocity, ord=2))
 
     @property
     def true_bearing(self) -> Scalar:
