@@ -15,6 +15,7 @@
 
   <!-- ROS Dependencies -->
   <exec_depend>custom_interfaces</exec_depend>
+  <exec_depend>local_pathfinding</exec_depend>
   <exec_depend>ros2launch</exec_depend>
   <exec_depend>rosidl_parser</exec_depend>
 

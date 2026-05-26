@@ -15,10 +15,12 @@ from boat_simulator.common.constants import (
     WATER_DENSITY,
 )
 from boat_simulator.common.types import Scalar
-from boat_simulator.common.utils import bound_to_360, rad_to_degrees
+from boat_simulator.common.utils import bound_to_180, rad_to_degrees
 from boat_simulator.nodes.physics_engine.fluid_forces import MediumForceComputation
 from boat_simulator.nodes.physics_engine.kinematics_computation import BoatKinematics
 from boat_simulator.nodes.physics_engine.kinematics_data import KinematicsData
+from custom_interfaces.msg import HelperLatLon
+from local_pathfinding.coord_systems import XY, meters_to_km, xy_to_latlon
 
 
 class BoatState:
@@ -31,12 +33,15 @@ class BoatState:
             expressed in SI units.
     """
 
-    def __init__(self, timestep: Scalar):
+    def __init__(self, timestep: Scalar, reference_latlon: HelperLatLon):
         """Initializes an instance of `BoatState`.
 
         Args:
             timestep (Scalar): The time interval for calculations, expressed in seconds (s).
+            reference_latlon (HelperLatLon): Geographic origin of the simulator's local XY frame,
+                used to project `global_position` (meters) to lat/lon.
         """
+        self.__reference_latlon = reference_latlon
         self.__kinematics_computation = BoatKinematics(
             timestep, BOAT_PROPERTIES.mass, BOAT_PROPERTIES.inertia
         )
@@ -62,7 +67,7 @@ class BoatState:
         glo_water_vel: NDArray,
         rudder_angle_deg: Scalar,
         trim_tab_angle: Scalar,
-    ) -> Tuple[KinematicsData, KinematicsData]:
+    ) -> None:
         """Updates the boat's kinematic data based on applied forces and torques, and returns
         the updated kinematic data in both relative and global reference frames.
 
@@ -77,9 +82,8 @@ class BoatState:
                 Angle convention is 0 degrees is straight, increasing CCW.
 
         Returns:
-            Tuple[KinematicsData, KinematicsData]: A tuple with the first element representing
-                kinematic data in the relative reference frame, and the second element representing
-                data in the global reference frame, both using SI units.
+            None: The method updates the internal state of the boat's kinematics but does not
+            return any data.
         """
         rel_wind_vel = glo_wind_vel[:2] - self.global_velocity[:2]
         rel_water_vel = glo_water_vel[:2] - self.global_velocity[:2]  # slice into 2d vector
@@ -94,7 +98,7 @@ class BoatState:
 
         _logger.debug(f"step outputs: rel_net_force={rel_net_force} net_torque={net_torque}")
 
-        return self.__kinematics_computation.step(rel_net_force, net_torque)
+        self.__kinematics_computation.step(rel_net_force, net_torque)
 
     def __compute_net_force_and_torque(
         self,
@@ -143,7 +147,18 @@ class BoatState:
 
     @property
     def global_position(self) -> NDArray:
+        """Returns the boat's current position in the global reference frame, expressed in meters [m]."""
         return self.__kinematics_computation.global_data.linear_position
+
+    @property
+    def global_lat_lon_position(self) -> NDArray:
+        """Returns the boat's current position projected onto geographic lat/lon coordinates,
+        expressed in degrees [°].
+        """
+        pos_m = self.global_position
+        xy_km = XY(x=meters_to_km(float(pos_m.item(0))), y=meters_to_km(float(pos_m.item(1))))
+        latlon = xy_to_latlon(self.__reference_latlon, xy_km)
+        return np.array([latlon.latitude, latlon.longitude])
 
     @property
     def global_velocity(self) -> NDArray:
@@ -195,5 +210,9 @@ class BoatState:
 
     @property
     def true_bearing(self) -> Scalar:
+        """Calculates the boat's heading in the global reference frame based on its angular
+        position, using the DesiredHeading message's angle convention
+        (0 degrees is straight, increasing CCW). The heading is normalized to the range [-180, 180]
+        degrees."""
         yaw_rad = self.angular_position[ORIENTATION_INDICES.YAW.value]
-        return bound_to_360(rad_to_degrees(yaw_rad))
+        return bound_to_180(rad_to_degrees(yaw_rad))

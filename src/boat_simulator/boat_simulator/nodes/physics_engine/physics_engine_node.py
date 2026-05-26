@@ -33,6 +33,7 @@ from custom_interfaces.action import SimRudderActuation, SimSailTrimTabActuation
 from custom_interfaces.msg import (
     GPS,
     DesiredHeading,
+    HelperLatLon,
     SailCmd,
     SimWorldState,
     WindSensor,
@@ -120,6 +121,7 @@ class PhysicsEngineNode(Node):
                 ("info_log_throttle_period_sec", rclpy.Parameter.Type.DOUBLE),
                 ("action_send_goal_timeout_sec", rclpy.Parameter.Type.DOUBLE),
                 ("qos_depth", rclpy.Parameter.Type.INTEGER),
+                ("reference_lat_lon", rclpy.Parameter.Type.DOUBLE_ARRAY),
                 ("rudder.actuation_request_period_sec", rclpy.Parameter.Type.DOUBLE),
                 ("wingsail.actuation_request_period_sec", rclpy.Parameter.Type.DOUBLE),
                 ("wind_sensor.generator_type", rclpy.Parameter.Type.STRING),
@@ -148,7 +150,13 @@ class PhysicsEngineNode(Node):
         self.__rudder_angle = 0
         self.__sail_trim_tab_angle = 0
         self.__desired_heading = None
-        self.__boat_state = BoatState(self.pub_period)
+        reference_lat_lon = (
+            self.get_parameter("reference_lat_lon").get_parameter_value().double_array_value
+        )
+        self.__reference_latlon = HelperLatLon(
+            latitude=float(reference_lat_lon[0]), longitude=float(reference_lat_lon[1])
+        )
+        self.__boat_state = BoatState(self.pub_period, self.__reference_latlon)
         self.__sim_gps = None
 
         wind_mean = np.array(
@@ -342,7 +350,8 @@ class PhysicsEngineNode(Node):
 
     def __publish_gps(self):
         """Publishes mock GPS data."""
-        lat_lon = self.__boat_state.global_position
+        lat_lon = self.__boat_state.global_lat_lon_position
+        self.get_logger().info(f"Boat global position (lat_lon) to be published: {lat_lon}")
         speed = np.linalg.norm(self.__boat_state.global_velocity)
         heading = self.__boat_state.true_bearing
 
@@ -356,7 +365,7 @@ class PhysicsEngineNode(Node):
             )
 
         msg = GPS()
-        lat, lon, _ = self.__sim_gps.lat_lon
+        lat, lon = self.__sim_gps.lat_lon
         msg.lat_lon.latitude = float(lat)
         msg.lat_lon.longitude = float(lon)
         msg.speed.speed = self.__sim_gps.speed
@@ -396,7 +405,7 @@ class PhysicsEngineNode(Node):
 
     def __publish_kinematics(self):
         """Publishes the kinematics data of the simulated boat."""
-        lat_lon = self.__boat_state.global_position
+        lat_lon = self.__boat_state.global_lat_lon_position
         speed = np.linalg.norm(self.__boat_state.global_velocity)
         heading = self.__boat_state.true_bearing
 
@@ -410,7 +419,7 @@ class PhysicsEngineNode(Node):
             )
 
         msg = SimWorldState()
-        lat, lon, _ = self.__sim_gps.lat_lon
+        lat, lon = self.__sim_gps.lat_lon
         msg.global_gps.lat_lon.latitude = float(lat)
         msg.global_gps.lat_lon.longitude = float(lon)
         msg.global_gps.speed.speed = self.__sim_gps.speed
@@ -547,7 +556,7 @@ class PhysicsEngineNode(Node):
         """
         self.__rudder_angle = feedback_msg.feedback.rudder_angle
         self.get_logger().info(
-            f"Received rudder angle of {self.rudder_angle:.2f} rad from action "
+            f"Received rudder angle of {self.rudder_angle:.2f} degrees from action "
             + f"{self.rudder_actuation_action_client._action_name}",
             throttle_duration_sec=self.get_parameter("info_log_throttle_period_sec")
             .get_parameter_value()
@@ -628,7 +637,7 @@ class PhysicsEngineNode(Node):
         """
         self.__sail_trim_tab_angle = feedback_msg.feedback.current_angular_position
         self.get_logger().info(
-            f"Received sail trim tab angle of {self.sail_trim_tab_angle:.2f} rad from action "
+            f"Received sail trim tab angle of {self.sail_trim_tab_angle:.2f} degrees from action "
             + f"{self.sail_actuation_action_client._action_name}",
             throttle_duration_sec=self.get_parameter("info_log_throttle_period_sec")
             .get_parameter_value()
