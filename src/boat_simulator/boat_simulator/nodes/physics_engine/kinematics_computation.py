@@ -48,9 +48,7 @@ class BoatKinematics:
         self.__relative_data = KinematicsData()
         self.__global_data = KinematicsData()
 
-    def step(
-        self, rel_net_force: NDArray, net_torque: NDArray
-    ) -> Tuple[KinematicsData, KinematicsData]:
+    def step(self, rel_net_force: NDArray, net_torque: NDArray) -> None:
         """Updates the kinematic data based on applied forces and torques.
 
         Args:
@@ -60,9 +58,7 @@ class BoatKinematics:
                 (N•m).
 
         Returns:
-            Tuple[KinematicsData, KinematicsData]: A tuple containing updated kinematic data. The
-                first element represents data in the relative reference frame, and the second
-                element represents data in the global reference frame, both using SI units.
+            None: The method updates the internal state of the boat's kinematics but does not return any data.
         """
         _logger.info(f"step: rel_net_force={rel_net_force} net_torque={net_torque}")
 
@@ -77,8 +73,6 @@ class BoatKinematics:
         _logger.debug(
             f"step result: yaw={yaw_radians:.4f} rad rel_vel={self.relative_data.linear_velocity} glo_pos={self.global_data.linear_position}"
         )
-
-        return (self.relative_data, self.global_data)
 
     def __update_ang_data(self, net_torque: NDArray) -> Scalar:
         """Update the angular kinematics data.
