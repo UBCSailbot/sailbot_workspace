@@ -473,7 +473,7 @@ class LocalPath:
                 # change so an improper state can be ignored. While not ideal, this is better than
                 # stopping the boat.
                 self._logger.warn(e)
-                boat_lat_lon = self.state.position
+                boat_lat_lon = self.state.position  # type: ignore
 
         try:
             heading_old_path, old_target_lp_wp_index = self.calculate_desired_heading_and_wp_index(
