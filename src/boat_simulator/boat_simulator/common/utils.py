@@ -75,6 +75,38 @@ def bound_to_360(angle: ScalarOrArray, isDegrees: bool = True) -> ScalarOrArray:
     return bound_angle
 
 
+def ccw_straight_to_cw_north_deg(angle_deg: Scalar) -> Scalar:
+    """Convert a bearing from the simulator's internal convention
+    (0° pointing 'straight'/north-aligned, increasing CCW) to the
+    HelperHeading convention (0° north, increasing CW), bounded to (-180, 180].
+
+    Why: the physics engine reports `true_bearing` in math-convention
+    (CCW-positive), but ROS message contracts (HelperHeading, DesiredHeading)
+    specify compass-convention (CW-positive, 0° north).
+    """
+    return bound_to_180(-angle_deg, isDegrees=True)
+
+
+def euler_zyx_to_quaternion(
+    roll_rad: Scalar, pitch_rad: Scalar, yaw_rad: Scalar
+) -> NDArray:
+    """Convert intrinsic Z-Y-X Euler angles (roll about x, pitch about y,
+    yaw about z) to a unit quaternion [x, y, z, w].
+
+    Why: SimWorldState.global_pose.orientation is specified as a quaternion
+    in ENU convention, but the physics engine stores angular position as
+    Euler angles in radians.
+    """
+    cr, sr = math.cos(roll_rad / 2.0), math.sin(roll_rad / 2.0)
+    cp, sp = math.cos(pitch_rad / 2.0), math.sin(pitch_rad / 2.0)
+    cy, sy = math.cos(yaw_rad / 2.0), math.sin(yaw_rad / 2.0)
+    x = sr * cp * cy - cr * sp * sy
+    y = cr * sp * cy + sr * cp * sy
+    z = cr * cp * sy - sr * sp * cy
+    w = cr * cp * cy + sr * sp * sy
+    return np.array([x, y, z, w])
+
+
 def get_wind_speed(wind: NDArray) -> Scalar:
     """Calculates wind speed.
 

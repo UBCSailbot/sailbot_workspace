@@ -1,14 +1,13 @@
-from typing import Any
-from numpy.typing import NDArray
-from typing import List
-import numpy as np
+from typing import Any, List
 
-from boat_simulator.common.types import Scalar, ScalarOrArray
+import numpy as np
+from numpy.typing import NDArray
 
 from boat_simulator.common.generators import (
-    MVGaussianGenerator,
     GaussianGenerator,
+    MVGaussianGenerator,
 )
+from boat_simulator.common.types import Scalar, ScalarOrArray
 
 
 class Sensor:
@@ -53,10 +52,8 @@ class Sensor:
             if attr_name in self.__annotations__:
                 setattr(self, attr_name, attr_val)
             else:
-                raise ValueError(
-                    f"{attr_name} not a property in {self.__class__.__name__} \
-                    expected one of {self.__annotations__}"
-                )
+                raise ValueError(f"{attr_name} not a property in {self.__class__.__name__} \
+                    expected one of {self.__annotations__}")
 
     def read(self, key: str) -> Any:
         """
@@ -74,10 +71,8 @@ class Sensor:
         if key in self.__annotations__:
             return getattr(self, key)
         else:
-            raise ValueError(
-                f"{key} not a property in {self.__class__.__name__}. \
-                Available keys: {self.__annotations__}"
-            )
+            raise ValueError(f"{key} not a property in {self.__class__.__name__}. \
+                Available keys: {self.__annotations__}")
 
 
 class SimWindSensor(Sensor):
@@ -85,7 +80,8 @@ class SimWindSensor(Sensor):
     Abstraction for wind sensor.
 
     Properties:
-        wind (ScalarOrArray): Wind x, y components or single value
+        wind (ScalarOrArray): Wind x, y components or single value, in meters per
+            second [m/s].
         enable_noise (bool): Enables noise for fields. False by default.
         enable_delay (bool): Enables delay for fields. False by default.
     """
@@ -143,9 +139,11 @@ class SimGPS(Sensor):
     Abstraction for GPS.
 
     Properties:
-        lat_lon (NDArray): Boat latitude and longitude (2x1 array)
-        speed (Scalar): Boat speed
-        heading (Scalar): Boat heading
+        lat_lon (NDArray): Boat latitude and longitude in degrees [°] (2x1 array,
+            [latitude, longitude]).
+        speed (Scalar): Boat speed in meters per second [m/s].
+        heading (Scalar): Boat heading in degrees [°], normalized to [-180, 180]
+            (0° is straight, increasing CCW).
         enable_noise (bool): Enables noise for fields. False by default.
         enable_delay (bool): Enables delay for fields. False by default.
     """
@@ -159,9 +157,9 @@ class SimGPS(Sensor):
         lat_lon: NDArray,
         speed: Scalar,
         heading: Scalar,
-        lat_lon_noise_stdev: Scalar = 1,
-        speed_noise_stdev: Scalar = 1,
-        heading_noise_stdev: Scalar = 1,
+        lat_lon_noise_stdev: Scalar = 0.00009,
+        speed_noise_stdev: Scalar = 0.1,
+        heading_noise_stdev: Scalar = 0.1,
         enable_noise: bool = False,
         enable_delay: bool = False,
     ):
@@ -196,9 +194,7 @@ class SimGPS(Sensor):
     @property  # type: ignore
     def lat_lon(self) -> NDArray:
         return (
-            self._lat_lon + self.lat_lon_noisemaker.next()
-            if self.enable_noise
-            else self._lat_lon
+            self._lat_lon + self.lat_lon_noisemaker.next() if self.enable_noise else self._lat_lon
         )
 
     @lat_lon.setter

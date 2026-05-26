@@ -26,6 +26,7 @@ import boat_simulator.common.constants as Constants
 import boat_simulator.common.utils as Utils
 from boat_simulator.common.generators import MVGaussianGenerator
 from boat_simulator.common.sensors import SimGPS, SimWindSensor
+from boat_simulator.common.unit_conversions import ConversionFactors
 from boat_simulator.common.types import Scalar
 from boat_simulator.nodes.physics_engine.fluid_generation import FluidGenerator
 from boat_simulator.nodes.physics_engine.model import BoatState
@@ -368,8 +369,12 @@ class PhysicsEngineNode(Node):
         lat, lon = self.__sim_gps.lat_lon
         msg.lat_lon.latitude = float(lat)
         msg.lat_lon.longitude = float(lon)
-        msg.speed.speed = self.__sim_gps.speed
-        msg.heading.heading = self.__sim_gps.heading
+        msg.speed.speed = float(
+            ConversionFactors.mPs_to_kmPh.value.forward_convert(self.__sim_gps.speed)
+        )
+        msg.heading.heading = float(
+            Utils.ccw_straight_to_cw_north_deg(self.__sim_gps.heading)
+        )
 
         self.gps_pub.publish(msg)
         self.get_logger().info(
@@ -384,12 +389,14 @@ class PhysicsEngineNode(Node):
         wind1 = self.__sim_wind_sensor.wind
         wind2 = self.__sim_wind_sensor.wind
 
+        mps_to_kmph = ConversionFactors.mPs_to_kmPh.value.forward_convert
+
         windSensor1 = WindSensor()
-        windSensor1.speed.speed = Utils.get_wind_speed(wind1)
+        windSensor1.speed.speed = float(mps_to_kmph(Utils.get_wind_speed(wind1)))
         windSensor1.direction = Utils.get_wind_direction(wind1)
 
         windSensor2 = WindSensor()
-        windSensor2.speed.speed = Utils.get_wind_speed(wind2)
+        windSensor2.speed.speed = float(mps_to_kmph(Utils.get_wind_speed(wind2)))
         windSensor2.direction = Utils.get_wind_direction(wind2)
 
         msg = WindSensors()
@@ -418,27 +425,39 @@ class PhysicsEngineNode(Node):
                 lat_lon=lat_lon, speed=speed, heading=heading, enable_noise=True
             )
 
+        mps_to_kmph = ConversionFactors.mPs_to_kmPh.value.forward_convert
+        m_to_km = ConversionFactors.m_to_km.value.forward_convert
+
         msg = SimWorldState()
         lat, lon = self.__sim_gps.lat_lon
         msg.global_gps.lat_lon.latitude = float(lat)
         msg.global_gps.lat_lon.longitude = float(lon)
-        msg.global_gps.speed.speed = self.__sim_gps.speed
-        msg.global_gps.heading.heading = self.__sim_gps.heading
+        msg.global_gps.speed.speed = float(mps_to_kmph(self.__sim_gps.speed))
+        msg.global_gps.heading.heading = float(
+            Utils.ccw_straight_to_cw_north_deg(self.__sim_gps.heading)
+        )
 
-        msg.global_pose.position.x = self.__boat_state.global_position.item(0)
-        msg.global_pose.position.y = self.__boat_state.global_position.item(1)
-        msg.global_pose.position.z = self.__boat_state.global_position.item(2)
-        msg.global_pose.orientation.x = self.__boat_state.angular_position.item(0)
-        msg.global_pose.orientation.y = self.__boat_state.angular_position.item(1)
-        msg.global_pose.orientation.z = self.__boat_state.angular_position.item(2)
-        msg.global_pose.orientation.w = 1.0
+        pos_m = self.__boat_state.global_position
+        msg.global_pose.position.x = float(m_to_km(pos_m.item(0)))
+        msg.global_pose.position.y = float(m_to_km(pos_m.item(1)))
+        msg.global_pose.position.z = float(m_to_km(pos_m.item(2)))
 
-        msg.wind_velocity.x = self.__wind_generator.velocity[0]
-        msg.wind_velocity.y = self.__wind_generator.velocity[1]
+        ang = self.__boat_state.angular_position
+        pitch_rad = ang.item(Constants.ORIENTATION_INDICES.PITCH.value)
+        roll_rad = ang.item(Constants.ORIENTATION_INDICES.ROLL.value)
+        yaw_rad = ang.item(Constants.ORIENTATION_INDICES.YAW.value)
+        quat = Utils.euler_zyx_to_quaternion(roll_rad, pitch_rad, yaw_rad)
+        msg.global_pose.orientation.x = float(quat[0])
+        msg.global_pose.orientation.y = float(quat[1])
+        msg.global_pose.orientation.z = float(quat[2])
+        msg.global_pose.orientation.w = float(quat[3])
+
+        msg.wind_velocity.x = float(mps_to_kmph(self.__wind_generator.velocity[0]))
+        msg.wind_velocity.y = float(mps_to_kmph(self.__wind_generator.velocity[1]))
         msg.wind_velocity.z = 0.0
 
-        msg.current_velocity.x = self.__current_generator.velocity[0]
-        msg.current_velocity.y = self.__current_generator.velocity[1]
+        msg.current_velocity.x = float(mps_to_kmph(self.__current_generator.velocity[0]))
+        msg.current_velocity.y = float(mps_to_kmph(self.__current_generator.velocity[1]))
         msg.current_velocity.z = 0.0
 
         sec, nanosec = divmod(self.pub_period * self.publish_counter, 1)

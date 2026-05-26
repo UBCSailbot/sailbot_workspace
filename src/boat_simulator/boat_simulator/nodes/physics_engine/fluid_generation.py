@@ -29,7 +29,8 @@ class FluidGenerator:
         """Generates the next velocity vector for the fluid simulation.
 
         Returns:
-            NDArray: An array representing the updated velocity vector for the fluid simulation.
+            NDArray: An array representing the updated velocity vector (m/s)
+            for the fluid simulation.
         """
         self.__velocity = np.array(self.__generator.next())
         _logger.debug(f"next: velocity={self.__velocity} speed={self.speed} direction={self.direction}")

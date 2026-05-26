@@ -147,7 +147,8 @@ class BoatState:
 
     @property
     def global_position(self) -> NDArray:
-        """Returns the boat's current position in the global reference frame, expressed in meters [m]."""
+        """Returns the boat's current position in the global reference frame,
+        expressed in meters [m]."""
         return self.__kinematics_computation.global_data.linear_position
 
     @property
@@ -162,51 +163,73 @@ class BoatState:
 
     @property
     def global_velocity(self) -> NDArray:
+        """Returns the boat's current velocity in the global reference frame,
+        expressed in meters per second [m/s]."""
         return self.__kinematics_computation.global_data.linear_velocity
 
     @property
     def global_acceleration(self) -> NDArray:
+        """Returns the boat's current acceleration in the global reference frame,
+        expressed in meters per second squared [m/s^2]."""
         return self.__kinematics_computation.global_data.linear_acceleration
 
     @property
     def relative_velocity(self) -> NDArray:
+        """Returns the boat's current velocity in the relative reference frame,
+        expressed in meters per second [m/s]."""
         return self.__kinematics_computation.relative_data.linear_velocity
 
     @property
     def relative_acceleration(self) -> NDArray:
+        """Returns the boat's current acceleration in the relative reference frame,
+        expressed in meters per second squared [m/s^2]."""
         return self.__kinematics_computation.relative_data.linear_acceleration
 
     @property
     def angular_position(self) -> NDArray:
+        """Returns the boat's current angular position along the yaw axis in the global reference
+        frame, expressed in radians [rad]."""
         return self.__kinematics_computation.relative_data.angular_position
 
     @property
     def angular_velocity(self) -> NDArray:
+        """Returns the boat's current angular velocity along the yaw axis in the global reference
+        frame, expressed in radians per second [rad/s]."""
         return self.__kinematics_computation.relative_data.angular_velocity
 
     @property
     def angular_acceleration(self) -> NDArray:
+        """Returns the boat's current angular acceleration along the yaw axis in the
+        global reference frame, expressed in radians per second squared [rad/s^2]."""
         return self.__kinematics_computation.relative_data.angular_acceleration
 
     @property
     def inertia(self) -> NDArray:
+        """Returns the boat's inertia, expressed in kilogram square meters [kg•m^2]."""
         return self.__kinematics_computation.inertia
 
     @property
     def inertia_inverse(self) -> NDArray:
+        """Returns the boat's inverse inertia,
+        expressed in per kilogram square meters [1/(kg•m^2)]."""
         return self.__kinematics_computation.inertia_inverse
 
     @property
     def boat_mass(self) -> Scalar:
+        """Returns the boat's mass, expressed in kilograms [kg]."""
         return self.__kinematics_computation.boat_mass
 
     @property
     def timestep(self) -> Scalar:
+        """Returns the time interval on which the boat's kinematic calculations are based,
+        expressed in seconds [s]."""
         return self.__kinematics_computation.timestep
 
     @property
     def speed(self) -> Scalar:
-        return float(np.linalg.norm(x=self.relative_velocity, ord=2))
+        """Returns the speed on the boat, calculated as the magnitude of the velocity vector in
+        the global reference frame, expressed in meters per second [m/s]."""
+        return float(np.linalg.norm(x=self.global_velocity, ord=2))
 
     @property
     def true_bearing(self) -> Scalar:
