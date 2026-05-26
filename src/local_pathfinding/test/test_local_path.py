@@ -1217,20 +1217,31 @@ def test_update_if_needed_raises_when_path_generation_exceeds_retries():
     assert ompl_path_cls.call_count == lp.MAX_OMPL_PATH_GEN_TRIES
 
 
-def test_update_if_needed_raises_value_error_when_new_state_inputs_are_incomplete():
-    mock_parent_logger = mock.Mock()
-    mock_parent_logger.get_child.return_value = mock.Mock()
-    local_path = lp.LocalPath(parent_logger=mock_parent_logger)
+def test_update_if_needed_preserves_current_path_when_new_state_inputs_are_incomplete(
+    basic_local_path_state,
+):
+    local_path, old_path, old_ompl_path = create_initialized_local_path_for_update_if_needed(
+        basic_local_path_state
+    )
+    old_state = local_path.state
     inputs = create_update_if_needed_inputs()
     # LocalPathState cannot be constructed with incomplete inputs.
     inputs.gps = None
 
-    with pytest.raises(ValueError, match="gps must not be None"):
-        local_path.update_if_needed(
-            inputs=inputs,
-            target_lp_wp_index=1,
-            received_new_global_waypoint=True,
-        )
+    with mock.patch.object(lp, "OMPLPath") as ompl_path_cls:
+        with pytest.raises(lp.PathNotFoundError, match="couldn't be solved"):
+            local_path.update_if_needed(
+                inputs=inputs,
+                target_lp_wp_index=1,
+                received_new_global_waypoint=True,
+            )
+
+    assert local_path.state is old_state
+    assert local_path.path is old_path
+    assert local_path._ompl_path is old_ompl_path
+    ompl_path_cls.assert_not_called()
+    assert local_path._logger.error.call_count == lp.MAX_OMPL_PATH_GEN_TRIES
+    local_path._logger.warn.assert_called_once()
 
 
 def test_update_if_needed_raises_when_solved_ompl_path_returns_invalid_path():
@@ -1268,7 +1279,7 @@ def test_update_if_needed_raises_when_generated_path_has_no_next_waypoint():
     )
 
     with mock.patch.object(lp, "OMPLPath", return_value=ompl_path_with_reached_final_waypoint):
-        with pytest.raises(IndexError, match="Must generate new path"):
+        with pytest.raises(lp.PathNotFoundError, match="desired heading index update failed"):
             local_path.update_if_needed(
                 inputs=inputs,
                 target_lp_wp_index=1,
@@ -1276,31 +1287,57 @@ def test_update_if_needed_raises_when_generated_path_has_no_next_waypoint():
             )
 
 
-def test_update_if_needed_propagates_update_state_errors_when_reusing_path(
+def test_update_if_needed_uses_existing_state_when_reusing_path_with_invalid_inputs(
     basic_local_path_state,
 ):
-    mock_parent_logger = mock.Mock()
-    mock_parent_logger.get_child.return_value = mock.Mock()
-    local_path = lp.LocalPath(parent_logger=mock_parent_logger)
-    old_path = Path(
-        waypoints=[
-            HelperLatLon(latitude=1.0, longitude=1.0),
-            HelperLatLon(latitude=0.0, longitude=0.0),
-        ]
+    local_path, old_path, old_ompl_path = create_initialized_local_path_for_update_if_needed(
+        basic_local_path_state
     )
-    local_path._ompl_path = create_solved_ompl_path(old_path)
-    local_path.path = old_path
-    local_path.state = basic_local_path_state
-    local_path.state.path_generated_time = datetime.now()
+    old_state = local_path.state
+    local_path.state.position = HelperLatLon(latitude=0.0, longitude=-0.1)
     inputs = create_update_if_needed_inputs()
     inputs.gps = None
 
-    with pytest.raises(ValueError, match="gps must not be None"):
-        local_path.update_if_needed(
-            inputs=inputs,
-            target_lp_wp_index=1,
-            received_new_global_waypoint=False,
-        )
+    desired_heading, new_target_lp_wp_index = local_path.update_if_needed(
+        inputs=inputs,
+        target_lp_wp_index=1,
+        received_new_global_waypoint=False,
+    )
+
+    assert desired_heading == pytest.approx(90.0, abs=3e-1)
+    assert new_target_lp_wp_index == 1
+    assert local_path.state is old_state
+    assert local_path.state.position == HelperLatLon(latitude=0.0, longitude=-0.1)
+    assert local_path.path is old_path
+    assert local_path._ompl_path is old_ompl_path
+    local_path._logger.warn.assert_called_once()
+
+
+def test_update_if_needed_uses_existing_state_when_reusing_path_with_missing_ais(
+    basic_local_path_state,
+):
+    local_path, old_path, old_ompl_path = create_initialized_local_path_for_update_if_needed(
+        basic_local_path_state
+    )
+    old_state = local_path.state
+    inputs = create_update_if_needed_inputs()
+    local_path.state.position = inputs.gps.lat_lon
+    old_ais_ships = local_path.state.ais_ships
+    inputs.ais_ships = None
+
+    desired_heading, new_target_lp_wp_index = local_path.update_if_needed(
+        inputs=inputs,
+        target_lp_wp_index=1,
+        received_new_global_waypoint=False,
+    )
+
+    assert desired_heading == pytest.approx(90.0, abs=3e-1)
+    assert new_target_lp_wp_index == 1
+    assert local_path.state is old_state
+    assert local_path.state.ais_ships is old_ais_ships
+    assert local_path.path is old_path
+    assert local_path._ompl_path is old_ompl_path
+    local_path._logger.warn.assert_called_once()
 
 
 @pytest.mark.parametrize(

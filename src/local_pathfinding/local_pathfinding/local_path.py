@@ -415,26 +415,31 @@ class LocalPath:
         must_change_reason = self.must_change_path(received_new_global_waypoint, new_aw)
         if must_change_reason.should_change_path:
             tries = 0
+            new_ompl_path = None
             while tries < MAX_OMPL_PATH_GEN_TRIES:
-                new_state = LocalPathState(
-                    inputs.gps,
-                    inputs.ais_ships,
-                    inputs.global_path,
-                    inputs.target_global_waypoint,
-                    inputs.filtered_wind_sensor,
-                    inputs.planner,
-                )
-                new_ompl_path = OMPLPath(
-                    parent_logger=self._logger,
-                    local_path_state=new_state,
-                    land_multi_polygon=inputs.land_multi_polygon,
-                )
-                if new_ompl_path.solved:
-                    break
-                else:
+                try:
+                    new_state = LocalPathState(
+                        inputs.gps,
+                        inputs.ais_ships,
+                        inputs.global_path,
+                        inputs.target_global_waypoint,
+                        inputs.filtered_wind_sensor,
+                        inputs.planner,
+                    )
+                    new_ompl_path = OMPLPath(
+                        parent_logger=self._logger,
+                        local_path_state=new_state,
+                        land_multi_polygon=inputs.land_multi_polygon,
+                    )
+                    if new_ompl_path.solved:
+                        break
+                    else:
+                        tries += 1
+                except ValueError as e:
+                    self._logger.error(e)
                     tries += 1
 
-            if not new_ompl_path.solved:
+            if not new_ompl_path or not new_ompl_path.solved:
                 self._logger.warn("Old Path must change and new path couldn't be solved" +
                                   f" within {MAX_OMPL_PATH_GEN_TRIES}")
                 raise PathNotFoundError("Old Path must change and new path couldn't be solved" +
@@ -456,15 +461,27 @@ class LocalPath:
                 raise PathNotFoundError("New Path's desired heading index update failed")
             return heading_new_path, new_target_lp_wp_index
         else:
-            self.state.update_state(  # type: ignore
-                inputs.gps,
-                inputs.ais_ships,
-                inputs.filtered_wind_sensor,
-            )
+            try:
+                self.state.update_state(  # type: ignore
+                    inputs.gps,
+                    inputs.ais_ships,
+                    inputs.filtered_wind_sensor,
+                )
+                boat_lat_lon = inputs.gps.lat_lon
+            except ValueError as e:
+                # No need to handle anything else here. There is no compulsion for the path to
+                # change so an improper state can be ignored. While not ideal, this is better than
+                # stopping the boat.
+                self._logger.warn(e)
+                boat_lat_lon = self.state.position
 
-        heading_old_path, old_target_lp_wp_index = self.calculate_desired_heading_and_wp_index(
-            self._ompl_path.get_path(), target_lp_wp_index, inputs.gps.lat_lon  # type: ignore
-        )
+        try:
+            heading_old_path, old_target_lp_wp_index = self.calculate_desired_heading_and_wp_index(
+                self._ompl_path.get_path(), target_lp_wp_index, boat_lat_lon  # type: ignore
+            )
+        except IndexError:
+            self._logger.info("Current Path's desired heading index update failed")
+            raise PathNotFoundError("Current Path's desired heading index update failed")
         return heading_old_path, old_target_lp_wp_index
 
     def _update(self, ompl_path: OMPLPath):
