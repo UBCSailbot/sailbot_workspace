@@ -11,8 +11,8 @@ from shapely.geometry import LineString, MultiPolygon
 import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.obstacles as ob
-from local_pathfinding.wind_coord_systems import Wind
 from local_pathfinding.ompl_path import OMPLPath
+from local_pathfinding.wind_coord_systems import Wind
 
 WIND_SPEED_CHANGE_THRESH_PROP = 0.3
 WIND_DIRECTION_CHANGE_THRESH_DEG = 10
@@ -333,8 +333,8 @@ class LocalPath:
         if segment_len_sq == 0.0:
             return False  # Waypoints are the same, no deviation possible
 
-        # Orthogonal projection of A to Boat onto the line defined by prev and target to find the
-        # closest point on the line to the boat
+        # Orthogonal projection of the boat onto the line defined by prev and target
+        # to find the closest point on the line to the boat
         t = ((boat_xy_km.x - prev_xy_km.x) *
              dx_km + (boat_xy_km.y - prev_xy_km.y) * dy_km) / segment_len_sq
 
