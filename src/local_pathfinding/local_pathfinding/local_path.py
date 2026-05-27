@@ -35,6 +35,64 @@ class MustChangeReason:
     reason: str
 
 
+class WindTracker:
+    """Tracks apparent wind readings and exposes a rolling average.
+
+    The tracker owns wind history separately from LocalPathState so the history
+    survives LocalPathState replacement during path regeneration. Until the
+    history reaches WIND_HISTORY_LEN readings, aw_avg remains None.
+
+    Attributes:
+        aw_history (deque[Wind]): History of wind sensor readings with max length
+            WIND_HISTORY_LEN.
+        aw_avg (Optional[Wind]): Average of aw_history, used for path planning.
+            Speed is in kmph, direction is in degrees. This is None until aw_history reaches
+            full capacity. Once full, it is updated every time a new wind sensor reading is
+            added to aw_history.
+    """
+
+    def __init__(self):
+        self.aw_history: deque = deque(maxlen=WIND_HISTORY_LEN)
+        self.aw_avg: Optional[Wind] = None
+
+    def update_aw_history(self, current_aw: Wind):
+        """Updates apparent wind history and recalculates the average wind. The wind values are
+        all apparent wind.
+
+        Maintains a history of up to WIND_HISTORY_LEN wind readings. When the history
+        exceeds the max length, the oldest reading is removed.
+
+        Args:
+            current_aw (Wind): Current wind speed (kmph) and direction (deg)
+        """
+
+        self.aw_history.append(current_aw)
+
+        self.aw_avg = self._calculate_aw_avg()
+
+    def _calculate_aw_avg(self) -> Optional[Wind]:
+        """Calculates the average apparent wind from the wind history once the deque is full.
+
+        Returns:
+            Optional[Wind]: Average wind object, or None if aw_history is not full
+        """
+        if len(self.aw_history) < WIND_HISTORY_LEN:
+            return None
+
+        avg_speed, sin_sum, cos_sum = 0.0, 0.0, 0.0
+
+        for wind in self.aw_history:
+            avg_speed += wind.speed_kmph / len(self.aw_history)
+            # Use circular mean to handle wrap-around (https://en.wikipedia.org/wiki/Circular_mean)
+            sin_sum += math.sin(math.radians(wind.dir_deg))
+            cos_sum += math.cos(math.radians(wind.dir_deg))
+
+        avg_direction = math.degrees(math.atan2(sin_sum, cos_sum))
+        avg_direction = cs.bound_to_180(avg_direction)
+
+        return Wind(avg_speed, avg_direction)
+
+
 @dataclass
 class LocalPathInputs:
     """Current navigation inputs needed to update or regenerate a local path.
@@ -77,13 +135,13 @@ class LocalPathState:
         planner (str): Planner to use for the OMPL query.
         obstacles (List[Obstacle]): All obstacles in the state space.
         path_generated_time (datetime): Time when the path was generated
-        aw_history (List[Wind]): History of wind sensor readings
-            (Queue with max length WIND_HISTORY_LEN).
-        aw_avg (Optional[Wind]): Average of the wind history, used for path planning.
-            Speed is in kmph, direction in degrees. Is None until aw_history reaches full capacity
-            (WIND_HISTORY_LEN readings). Once full, updated every time a new wind sensor reading is
-            added to aw_history.
-        path_generated_time (datetime): Time when the path was generated
+        current_aw (Wind): Latest apparent wind reading from the filtered wind sensor.
+        wind_tracker (WindTracker): Rolling apparent wind tracker shared across path states.
+            It owns aw_history, a queue of wind readings with max length WIND_HISTORY_LEN, and
+            aw_avg, the rolling apparent wind average used for path planning once aw_history
+            reaches full capacity.
+        path_generated_wind (Wind): Apparent wind value used to generate the current path.
+            This is the rolling average when available; otherwise it falls back to current_aw.
     """
 
     def __init__(
@@ -94,10 +152,11 @@ class LocalPathState:
         target_global_waypoint: ci.HelperLatLon,
         filtered_wind_sensor: ci.WindSensor,
         planner: str,
+        wind_tracker: WindTracker,
     ):
-        self.aw_history: deque = deque(maxlen=WIND_HISTORY_LEN)
-        self.aw_avg: Optional[Wind] = None
+        self.wind_tracker = wind_tracker
         self.update_state(gps, ais_ships, filtered_wind_sensor)
+        self.path_generated_wind = self.wind_tracker.aw_avg or self.current_aw
 
         if not (global_path and global_path.waypoints):
             raise ValueError("Cannot create a LocalPathState with an empty global_path")
@@ -119,7 +178,8 @@ class LocalPathState:
 
         This method updates only the dynamic state variables (position, heading, speed,
         ais_ships, wind) without changing the reference coordinate system or global path.
-        Used when continuing on an existing path to avoid coordinate system mismatches.
+        Wind history is updated by LocalPath before this method is called so LocalPathState
+        construction and OMPL retries do not duplicate wind readings.
 
         Args:
             gps (ci.GPS): Current GPS position and heading data
@@ -139,44 +199,6 @@ class LocalPathState:
         if not filtered_wind_sensor:
             raise ValueError("filtered_wind_sensor must not be None")
         self.current_aw = Wind(filtered_wind_sensor.speed.speed, filtered_wind_sensor.direction)
-        self.update_aw_history()
-
-    def update_aw_history(self):
-        """Updates apparent wind history and recalculates the average wind. The wind values are
-        all apparent wind.
-
-        Maintains a history of up to WIND_HISTORY_LEN wind readings. When the history
-        exceeds the max length, the oldest reading is removed.
-
-        Args:
-            current_wind (Wind): Current wind speed (kmph) and direction (deg)
-        """
-
-        self.aw_history.append(self.current_aw)
-
-        self.aw_avg = self._calculate_aw_avg()
-
-    def _calculate_aw_avg(self) -> Optional[Wind]:
-        """Calculates the average apparent wind from the wind history once the deque is full.
-
-        Returns:
-            Optional[Wind]: Average wind object, or None if aw_history is not full
-        """
-        if len(self.aw_history) < WIND_HISTORY_LEN:
-            return None
-
-        avg_speed, sin_sum, cos_sum = 0.0, 0.0, 0.0
-
-        for wind in self.aw_history:
-            avg_speed += wind.speed_kmph / len(self.aw_history)
-            # Use circular mean to handle wrap-around (https://en.wikipedia.org/wiki/Circular_mean)
-            sin_sum += math.sin(math.radians(wind.dir_deg))
-            cos_sum += math.cos(math.radians(wind.dir_deg))
-
-        avg_direction = math.degrees(math.atan2(sin_sum, cos_sum))
-        avg_direction = cs.bound_to_180(avg_direction)
-
-        return Wind(avg_speed, avg_direction)
 
 
 class LocalPath:
@@ -349,9 +371,10 @@ class LocalPath:
             return MustChangeReason(True, "Path has expired (TTL exceeded)")
         if (
             (new_aw is not None)
-            and (self.state.aw_avg is not None)  # must ensure that LocalPathState.aw_avg
-            # is not None; this happens when len(LocalPathState.aw_history < WIND_HISTORY_LEN)
-            and self.is_significant_wind_change(new_aw, self.state.aw_avg)
+            # Wind-based switching only starts once the rolling average is populated.
+            and (self.state.wind_tracker.aw_avg is not None)
+            and self.state.path_generated_wind is not None
+            and self.is_significant_wind_change(self.state.wind_tracker.aw_avg, self.state.path_generated_wind) # noqa
         ):
             return MustChangeReason(True, "Significant wind change")
         if self._target_lp_wp_index < 1:
@@ -378,11 +401,13 @@ class LocalPath:
     ) -> tuple[Optional[float], Optional[int]]:
         """Updates the local path using OMPL if conditions warrant a path change.
 
-        Evaluates whether to update the current path based on several criteria:
+        Updates the rolling apparent wind tracker, then evaluates whether to update the current
+        path based on several criteria:
         - Receipt of a new global waypoint
         - Absence of an existing OMPL path, local path, or state
         - Current path intersecting with collision zones
         - Current path exceeding its time-to-live
+        - Significant change between current rolling wind and path-generation wind
         - Invalid target local waypoint index
 
         Args:
@@ -412,12 +437,36 @@ class LocalPath:
             inputs.filtered_wind_sensor.speed.speed,
             inputs.filtered_wind_sensor.direction,
         )
+        if self.state and self.state.wind_tracker:
+            self.state.wind_tracker.update_aw_history(new_aw)
+
+        if self.state:
+            try:
+                self.state.update_state(  # type: ignore
+                    inputs.gps,
+                    inputs.ais_ships,
+                    inputs.filtered_wind_sensor,
+                )
+                boat_lat_lon = inputs.gps.lat_lon
+            except ValueError as e:
+                # No need to handle anything else here. There is no compulsion for the path to
+                # change so an improper state can be ignored. While not ideal, this is better than
+                # stopping the boat.
+                self._logger.warn(e)
+                boat_lat_lon = self.state.position  # type: ignore
+
         must_change_reason = self.must_change_path(received_new_global_waypoint, new_aw)
+
         if must_change_reason.should_change_path:
             tries = 0
             new_ompl_path = None
             while tries < MAX_OMPL_PATH_GEN_TRIES:
                 try:
+                    if self.state is None or self.state.wind_tracker is None:
+                        wind_tracker = WindTracker()
+                        wind_tracker.update_aw_history(new_aw)
+                    else:
+                        wind_tracker = self.state.wind_tracker
                     new_state = LocalPathState(
                         inputs.gps,
                         inputs.ais_ships,
@@ -425,6 +474,7 @@ class LocalPath:
                         inputs.target_global_waypoint,
                         inputs.filtered_wind_sensor,
                         inputs.planner,
+                        wind_tracker
                     )
                     new_ompl_path = OMPLPath(
                         parent_logger=self._logger,
@@ -459,21 +509,8 @@ class LocalPath:
             except IndexError:
                 self._logger.info("New Path's desired heading index update failed")
                 raise PathNotFoundError("New Path's desired heading index update failed")
+
             return heading_new_path, new_target_lp_wp_index
-        else:
-            try:
-                self.state.update_state(  # type: ignore
-                    inputs.gps,
-                    inputs.ais_ships,
-                    inputs.filtered_wind_sensor,
-                )
-                boat_lat_lon = inputs.gps.lat_lon
-            except ValueError as e:
-                # No need to handle anything else here. There is no compulsion for the path to
-                # change so an improper state can be ignored. While not ideal, this is better than
-                # stopping the boat.
-                self._logger.warn(e)
-                boat_lat_lon = self.state.position  # type: ignore
 
         try:
             heading_old_path, old_target_lp_wp_index = self.calculate_desired_heading_and_wp_index(
