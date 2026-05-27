@@ -322,27 +322,29 @@ class LocalPath:
         max_deviation_km = segment_length_km * SEGMENT_DEVIATION_THRESHOLD
 
         # Build a local XY frame with prev_wp as origin.
-        prev_xy = cs.XY(0.0, 0.0)
-        target_xy = cs.latlon_to_xy(prev_wp, target_wp)
-        boat_xy = cs.latlon_to_xy(prev_wp, boat_lat_lon)
+        prev_xy_km = cs.XY(0.0, 0.0)
+        target_xy_km = cs.latlon_to_xy(prev_wp, target_wp)
+        boat_xy_km = cs.latlon_to_xy(prev_wp, boat_lat_lon)
 
-        dx = target_xy.x - prev_xy.x
-        dy = target_xy.y - prev_xy.y
-        segment_len_sq = dx * dx + dy * dy
+        dx_km = target_xy_km.x - prev_xy_km.x
+        dy_km = target_xy_km.y - prev_xy_km.y
+        segment_len_sq = dx_km * dx_km + dy_km * dy_km
 
         if segment_len_sq == 0.0:
             return False  # Waypoints are the same, no deviation possible
 
         # Orthogonal projection of A to Boat onto the line defined by prev and target to find the
         # closest point on the line to the boat
-        t = ((boat_xy.x - prev_xy.x) * dx + (boat_xy.y - prev_xy.y) * dy) / segment_len_sq
+        t = ((boat_xy_km.x - prev_xy_km.x) *
+             dx_km + (boat_xy_km.y - prev_xy_km.y) * dy_km) / segment_len_sq
 
         # Ensures that the closest point is within the line segment defined by prev and target
         t = max(0.0, min(1.0, t))
 
-        closest_x = prev_xy.x + t * dx
-        closest_y = prev_xy.y + t * dy
-        distance_to_segment_km = math.hypot(boat_xy.x - closest_x, boat_xy.y - closest_y)
+        closest_x_km = prev_xy_km.x + t * dx_km
+        closest_y_km = prev_xy_km.y + t * dy_km
+        distance_to_segment_km = math.hypot(boat_xy_km.x - closest_x_km,
+                                            boat_xy_km.y - closest_y_km)
 
         return distance_to_segment_km > max_deviation_km
 
