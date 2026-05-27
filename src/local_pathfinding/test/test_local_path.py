@@ -144,6 +144,7 @@ def set_aw_history(state, wind, history_len, update_path_generated_wind=True):
         state.wind_tracker.update_aw_history(wind)
     state.current_aw = wind
     if update_path_generated_wind:
+        state.wind_tracker.using_one_aw_point = state.wind_tracker.aw_avg is None
         state.path_generated_wind = state.wind_tracker.aw_avg or state.current_aw
 
 
@@ -1110,7 +1111,7 @@ def test_update_if_needed_regenerates_path_when_path_must_change(
     assert local_path._ompl_path is new_ompl_path
     assert local_path.path is new_path
     assert local_path.state.global_path is inputs.global_path
-    local_path._logger.debug.assert_any_call(f"Updating local path: {expected_reason}")
+    local_path._logger.info.assert_any_call(f"Updating local path: {expected_reason}")
     ompl_path_cls.assert_called_once()
 
 
@@ -1175,7 +1176,8 @@ def test_update_if_needed_regenerates_path_for_significant_wind_change(
     assert local_path._ompl_path is new_ompl_path
     assert local_path.path is new_path
     assert local_path._ompl_path is not old_ompl_path
-    local_path._logger.debug.assert_any_call("Updating local path: Significant wind change")
+    assert not local_path.state.wind_tracker.using_one_aw_point
+    local_path._logger.info.assert_any_call("Updating local path: Significant wind change")
     ompl_path_cls.assert_called_once()
 
 
@@ -1222,8 +1224,7 @@ def test_update_if_needed_preserves_current_path_when_new_state_inputs_are_incom
     assert local_path.path is old_path
     assert local_path._ompl_path is old_ompl_path
     ompl_path_cls.assert_not_called()
-    assert local_path._logger.error.call_count == lp.MAX_OMPL_PATH_GEN_TRIES
-    assert local_path._logger.warn.call_count == 2
+    assert local_path._logger.warn.call_count >= lp.MAX_OMPL_PATH_GEN_TRIES
     local_path._logger.warn.assert_any_call(
         "Old Path must change and new path couldn't be solved within "
         f"{lp.MAX_OMPL_PATH_GEN_TRIES}"

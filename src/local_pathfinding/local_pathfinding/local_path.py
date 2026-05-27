@@ -49,11 +49,14 @@ class WindTracker:
             Speed is in kmph, direction is in degrees. This is None until aw_history reaches
             full capacity. Once full, it is updated every time a new wind sensor reading is
             added to aw_history.
+        using_one_aw_point (bool): Whether the current accepted path was generated before the
+            rolling average was populated, using only one apparent wind point.
     """
 
     def __init__(self):
         self.aw_history: deque = deque(maxlen=WIND_HISTORY_LEN)
         self.aw_avg: Optional[Wind] = None
+        self.using_one_aw_point: bool = True
 
     def update_aw_history(self, current_aw: Wind):
         """Updates apparent wind history and recalculates the average wind. The wind values are
@@ -140,6 +143,8 @@ class LocalPathState:
             It owns aw_history, a queue of wind readings with max length WIND_HISTORY_LEN, and
             aw_avg, the rolling apparent wind average used for path planning once aw_history
             reaches full capacity.
+            It also tracks whether the current accepted path was generated from one cold-start
+            wind point or from the rolling average.
         path_generated_wind (Wind): Apparent wind value used to generate the current path.
             This is the rolling average when available; otherwise it falls back to current_aw.
     """
@@ -229,11 +234,11 @@ class LocalPath:
             bool: True if the path has expired, False otherwise.
         """
         if self.state is None:
-            self._logger.debug("Path is expired, since the state is None")
+            self._logger.info("Path is expired, since the state is None")
             return True
         is_expired = datetime.now() >= (self.state.path_generated_time + PATH_TTL_SEC)
         if is_expired:
-            self._logger.debug("Path is expired")
+            self._logger.info("Path is expired")
         return is_expired
 
     @staticmethod
@@ -303,12 +308,12 @@ class LocalPath:
             segment = LineString([(p1.x, p1.y), (p2.x, p2.y)])
             for o in self.state.obstacles:
                 if segment.crosses(o.collision_zone) or segment.touches(o.collision_zone):
-                    self._logger.debug("Path intersects with collision zone")
+                    self._logger.info("Path intersects with collision zone")
                     return True
         return False
 
-    @staticmethod
     def is_significant_wind_change(
+        self,
         new_wind_data: Wind,
         previous_wind_data: Wind,
     ) -> bool:
@@ -331,7 +336,6 @@ class LocalPath:
         Returns:
             boolean: True if there is a significant change in the wind, False otherwise.
         """
-
         # Check for significant changes
         previous_speed_kmph = previous_wind_data.speed_kmph
         previous_dir_deg = previous_wind_data.dir_deg
@@ -340,14 +344,28 @@ class LocalPath:
         current_dir_deg = new_wind_data.dir_deg
 
         if previous_speed_kmph == 0.0:
-            previous_speed_kmph = 1e-9
-        speed_change_ratio = abs(previous_speed_kmph - current_speed_kmph) / previous_speed_kmph
+            speed_change_ratio = float("inf")
+        else:
+            speed_change_ratio = (
+                abs(previous_speed_kmph - current_speed_kmph) / previous_speed_kmph
+            )
         dir_change = abs(cs.bound_to_180(current_dir_deg - previous_dir_deg))
 
-        return (
+        significant_change = (
             speed_change_ratio >= WIND_SPEED_CHANGE_THRESH_PROP
             or dir_change >= WIND_DIRECTION_CHANGE_THRESH_DEG
         )
+
+        if significant_change:
+            self._logger.info(
+                "Significant wind change detected: "
+                f"speed {previous_wind_data.speed_kmph:.2f} -> {current_speed_kmph:.2f} km/h "
+                f"({speed_change_ratio:.2%}, threshold {WIND_SPEED_CHANGE_THRESH_PROP:.2%}); "
+                f"direction {previous_dir_deg:.2f} -> {current_dir_deg:.2f} deg "
+                f"({dir_change:.2f} deg, threshold {WIND_DIRECTION_CHANGE_THRESH_DEG:.2f} deg)"
+            )
+
+        return significant_change
 
     def must_change_path(
         self, received_new_global_waypoint: bool, new_aw: Optional[Wind] = None
@@ -373,7 +391,8 @@ class LocalPath:
             (new_aw is not None)
             # Wind-based switching only starts once the rolling average is populated.
             and (self.state.wind_tracker.aw_avg is not None)
-            and self.state.path_generated_wind is not None
+            and (self.state.path_generated_wind is not None)
+            and not self.state.wind_tracker.using_one_aw_point
             and self.is_significant_wind_change(self.state.wind_tracker.aw_avg, self.state.path_generated_wind) # noqa
         ):
             return MustChangeReason(True, "Significant wind change")
@@ -484,9 +503,10 @@ class LocalPath:
                     if new_ompl_path.solved:
                         break
                     else:
+                        self._logger.warn("OMPL path generation attempt did not solve")
                         tries += 1
                 except ValueError as e:
-                    self._logger.error(e)
+                    self._logger.warn(e)
                     tries += 1
 
             if not new_ompl_path or not new_ompl_path.solved:
@@ -495,7 +515,8 @@ class LocalPath:
                 raise PathNotFoundError("Old Path must change and new path couldn't be solved" +
                                         f" within {MAX_OMPL_PATH_GEN_TRIES}")
 
-            self._logger.debug(f"Updating local path: {must_change_reason.reason}")
+            self._logger.info(f"Updating local path: {must_change_reason.reason}")
+            new_state.wind_tracker.using_one_aw_point = new_state.wind_tracker.aw_avg is None
             self.state = new_state
             self._update(new_ompl_path)
 
@@ -507,17 +528,18 @@ class LocalPath:
                     )
                 )
             except IndexError:
-                self._logger.info("New Path's desired heading index update failed")
+                self._logger.warn("New Path's desired heading index update failed")
                 raise PathNotFoundError("New Path's desired heading index update failed")
 
             return heading_new_path, new_target_lp_wp_index
 
         try:
+            self._logger.info(f"Reusing local path: {must_change_reason.reason}")
             heading_old_path, old_target_lp_wp_index = self.calculate_desired_heading_and_wp_index(
                 self._ompl_path.get_path(), target_lp_wp_index, boat_lat_lon  # type: ignore
             )
         except IndexError:
-            self._logger.info("Current Path's desired heading index update failed")
+            self._logger.warn("Current Path's desired heading index update failed")
             raise PathNotFoundError("Current Path's desired heading index update failed")
         return heading_old_path, old_target_lp_wp_index
 
