@@ -17,6 +17,13 @@ PATH = lp.LocalPath(parent_logger=RcutilsLogger())
 
 
 # ========================= TEST HELPERS =========================
+def create_wind_tracker(wind_readings=None):
+    wind_tracker = lp.WindTracker()
+    for wind in wind_readings or []:
+        wind_tracker.update_aw_history(wind)
+    return wind_tracker
+
+
 def point_at_distance_from(reference: HelperLatLon, bearing_deg: float, distance_km: float):
     lon, lat, _ = cs.GEODESIC.fwd(
         reference.longitude,
@@ -55,6 +62,7 @@ def basic_local_path_state():
         target_global_waypoint=global_path.waypoints[-1],
         filtered_wind_sensor=filtered_wind_sensor,
         planner="rrtstar",
+        wind_tracker=create_wind_tracker(),
     )
 
 
@@ -129,11 +137,14 @@ def create_initialized_local_path_for_update_if_needed(state):
     return local_path, old_path, old_ompl_path
 
 
-def set_aw_history(state, wind, history_len):
-    state.aw_history.clear()
+def set_aw_history(state, wind, history_len, update_path_generated_wind=True):
+    state.wind_tracker.aw_history.clear()
+    state.wind_tracker.aw_avg = None
     for _ in range(history_len):
-        state.current_aw = wind
-        state.update_aw_history()
+        state.wind_tracker.update_aw_history(wind)
+    state.current_aw = wind
+    if update_path_generated_wind:
+        state.path_generated_wind = state.wind_tracker.aw_avg or state.current_aw
 
 
 # ========================= TESTS =========================
@@ -695,53 +706,26 @@ def test_is_significant_wind_change(new_wind_data, previous_wind_data, result):
 )
 def test_update_aw_history_length(wind_readings, expected_length):
     """Test that wind history respects max length constraint."""
-    lps = lp.LocalPathState(
-        gps=GPS(),
-        ais_ships=AISShips(),
-        global_path=Path(
-            waypoints=[
-                HelperLatLon(latitude=0.0, longitude=0.0),
-                HelperLatLon(latitude=1.0, longitude=1.0),
-            ]
-        ),
-        target_global_waypoint=HelperLatLon(latitude=1.0, longitude=1.0),
-        filtered_wind_sensor=WindSensor(),
-        planner="rrtstar",
-    )
-    lps.aw_history.clear()
+    wind_tracker = create_wind_tracker()
 
     for wind in wind_readings:
-        lps.current_aw = wind
-        lps.update_aw_history()
+        wind_tracker.update_aw_history(wind)
 
-    assert len(lps.aw_history) == expected_length
+    assert len(wind_tracker.aw_history) == expected_length
 
 
 def test_aw_history_fifo_order():
     """Test that oldest wind readings are removed first."""
-    lps = lp.LocalPathState(
-        gps=GPS(),
-        ais_ships=AISShips(),
-        global_path=Path(
-            waypoints=[
-                HelperLatLon(latitude=0.0, longitude=0.0),
-                HelperLatLon(latitude=1.0, longitude=1.0),
-            ]
-        ),
-        target_global_waypoint=HelperLatLon(latitude=1.0, longitude=1.0),
-        filtered_wind_sensor=WindSensor(),
-        planner="rrtstar",
-    )
+    wind_tracker = create_wind_tracker()
 
     for i in range(lp.WIND_HISTORY_LEN + 3):
-        lps.current_aw = Wind(speed_kmph=10.0 + i, dir_deg=45.0 + i)
-        lps.update_aw_history()
+        wind_tracker.update_aw_history(Wind(speed_kmph=10.0 + i, dir_deg=45.0 + i))
 
     # Should contain the last WIND_HISTORY_LEN readings
     # First reading should have speed 10.0 + 3.0 (index 3 of original sequence)
-    assert lps.aw_history[0].speed_kmph == 13.0
+    assert wind_tracker.aw_history[0].speed_kmph == 13.0
     # Last reading should have speed 10.0 + 2.0 + WIND_HISTORY_LEN
-    assert lps.aw_history[-1].speed_kmph == 12.0 + lp.WIND_HISTORY_LEN
+    assert wind_tracker.aw_history[-1].speed_kmph == 12.0 + lp.WIND_HISTORY_LEN
 
 
 @pytest.mark.parametrize(
@@ -791,25 +775,12 @@ def test_aw_history_fifo_order():
 )
 def test_calculate_aw_avg(wind_readings, result):
     """Test average wind calculation with basic cases."""
-    lps = lp.LocalPathState(
-        gps=GPS(),
-        ais_ships=AISShips(),
-        global_path=Path(
-            waypoints=[
-                HelperLatLon(latitude=0.0, longitude=0.0),
-                HelperLatLon(latitude=1.0, longitude=1.0),
-            ]
-        ),
-        target_global_waypoint=HelperLatLon(latitude=1.0, longitude=1.0),
-        filtered_wind_sensor=WindSensor(),
-        planner="rrtstar",
-    )
+    wind_tracker = create_wind_tracker()
 
     for wind in wind_readings:
-        lps.current_aw = wind
-        lps.update_aw_history()
+        wind_tracker.update_aw_history(wind)
 
-    avg = lps.aw_avg
+    avg = wind_tracker.aw_avg
     if result is None:
         assert avg is None
     else:
@@ -819,61 +790,59 @@ def test_calculate_aw_avg(wind_readings, result):
 
 def test_aw_avg_not_set_before_full_history():
     """Test that wind_average isn't set until we have WIND_HISTORY_LEN wind readings."""
-    lps = lp.LocalPathState(
-        gps=GPS(),
-        ais_ships=AISShips(),
-        global_path=Path(
-            waypoints=[
-                HelperLatLon(latitude=0.0, longitude=0.0),
-                HelperLatLon(latitude=1.0, longitude=1.0),
-            ]
-        ),
-        target_global_waypoint=HelperLatLon(latitude=1.0, longitude=1.0),
-        filtered_wind_sensor=WindSensor(),
-        planner="rrtstar",
-    )
-    lps.aw_history.clear()
+    wind_tracker = create_wind_tracker()
 
     for _ in range(lp.WIND_HISTORY_LEN - 1):
         wind = Wind(speed_kmph=10.0, dir_deg=45.0)
-        lps.current_aw = wind
-        lps.update_aw_history()
+        wind_tracker.update_aw_history(wind)
 
-    assert lps.aw_avg is None
+    assert wind_tracker.aw_avg is None
 
 
 def test_aw_avg_updates_with_new_readings():
     """Test that wind_average updates when new readings are added."""
-    lps = lp.LocalPathState(
-        gps=GPS(),
-        ais_ships=AISShips(),
-        global_path=Path(
-            waypoints=[
-                HelperLatLon(latitude=0.0, longitude=0.0),
-                HelperLatLon(latitude=1.0, longitude=1.0),
-            ]
-        ),
-        target_global_waypoint=HelperLatLon(latitude=1.0, longitude=1.0),
-        filtered_wind_sensor=WindSensor(),
-        planner="rrtstar",
-    )
+    wind_tracker = create_wind_tracker()
 
     # Fill history with initial readings
     for _ in range(lp.WIND_HISTORY_LEN):
-        lps.current_aw = Wind(speed_kmph=10.0, dir_deg=45.0)
-        lps.update_aw_history()
+        wind_tracker.update_aw_history(Wind(speed_kmph=10.0, dir_deg=45.0))
 
-    first_avg = lps.aw_avg
+    first_avg = wind_tracker.aw_avg
 
     # Add a different wind reading (oldest will be removed from deque)
-    lps.current_aw = Wind(speed_kmph=30.0, dir_deg=45.0)
-    lps.update_aw_history()
-    second_avg = lps.aw_avg
+    wind_tracker.update_aw_history(Wind(speed_kmph=30.0, dir_deg=45.0))
+    second_avg = wind_tracker.aw_avg
 
     # Average should increase since we're replacing a 10.0 with a 30.0
     assert second_avg is not None
     assert first_avg is not None
     assert second_avg.speed_kmph > first_avg.speed_kmph
+
+
+def test_LocalPathState_path_generated_wind_uses_current_aw_before_full_history(
+    basic_local_path_state,
+):
+    assert basic_local_path_state.wind_tracker.aw_avg is None
+    assert basic_local_path_state.path_generated_wind == basic_local_path_state.current_aw
+
+
+def test_LocalPathState_path_generated_wind_uses_aw_avg_when_available():
+    inputs = create_update_if_needed_inputs()
+    wind_tracker = create_wind_tracker(
+        [Wind(speed_kmph=10.0, dir_deg=45.0) for _ in range(lp.WIND_HISTORY_LEN)]
+    )
+
+    state = lp.LocalPathState(
+        gps=inputs.gps,
+        ais_ships=inputs.ais_ships,
+        global_path=inputs.global_path,
+        target_global_waypoint=inputs.target_global_waypoint,
+        filtered_wind_sensor=inputs.filtered_wind_sensor,
+        planner=inputs.planner,
+        wind_tracker=wind_tracker,
+    )
+
+    assert state.path_generated_wind is wind_tracker.aw_avg
 
 
 def test_LocalPathState_parameter_checking():
@@ -891,6 +860,7 @@ def test_LocalPathState_parameter_checking():
                 target_global_waypoint=HelperLatLon(latitude=1.0, longitude=1.0),
                 filtered_wind_sensor=WindSensor(),
                 planner="rrtstar",
+                wind_tracker=create_wind_tracker(),
             ),
         )
 
@@ -908,6 +878,7 @@ def test_LocalPathState_parameter_checking():
                 target_global_waypoint=HelperLatLon(latitude=1.0, longitude=1.0),
                 filtered_wind_sensor=WindSensor(),
                 planner="rrtstar",
+                wind_tracker=create_wind_tracker(),
             ),
         )
 
@@ -920,6 +891,7 @@ def test_LocalPathState_parameter_checking():
                 target_global_waypoint=HelperLatLon(),
                 filtered_wind_sensor=WindSensor(),
                 planner="rrtstar",
+                wind_tracker=create_wind_tracker(),
             ),
         )
 
@@ -932,6 +904,7 @@ def test_LocalPathState_parameter_checking():
                 target_global_waypoint=None,
                 filtered_wind_sensor=WindSensor(),
                 planner="rrtstar",
+                wind_tracker=create_wind_tracker(),
             ),
         )
 
@@ -949,6 +922,7 @@ def test_LocalPathState_parameter_checking():
                 target_global_waypoint=HelperLatLon(latitude=1.0, longitude=1.0),
                 filtered_wind_sensor=None,
                 planner="rrtstar",
+                wind_tracker=create_wind_tracker(),
             ),
         )
     with pytest.raises(ValueError):
@@ -965,6 +939,7 @@ def test_LocalPathState_parameter_checking():
                 target_global_waypoint=HelperLatLon(latitude=1.0, longitude=1.0),
                 filtered_wind_sensor=WindSensor(),
                 planner=None,
+                wind_tracker=create_wind_tracker(),
             ),
         )
 
@@ -1162,6 +1137,13 @@ def test_update_if_needed_regenerates_path_for_significant_wind_change(
 ):
     baseline_aw = Wind(speed_kmph=5.0, dir_deg=90.0)
     set_aw_history(basic_local_path_state, baseline_aw, lp.WIND_HISTORY_LEN)
+    basic_local_path_state.path_generated_wind = baseline_aw
+    set_aw_history(
+        basic_local_path_state,
+        Wind(speed_kmph=new_aw_speed, dir_deg=new_aw_dir),
+        lp.WIND_HISTORY_LEN - 1,
+        update_path_generated_wind=False,
+    )
     local_path, _, old_ompl_path = create_initialized_local_path_for_update_if_needed(
         basic_local_path_state
     )
@@ -1241,7 +1223,11 @@ def test_update_if_needed_preserves_current_path_when_new_state_inputs_are_incom
     assert local_path._ompl_path is old_ompl_path
     ompl_path_cls.assert_not_called()
     assert local_path._logger.error.call_count == lp.MAX_OMPL_PATH_GEN_TRIES
-    local_path._logger.warn.assert_called_once()
+    assert local_path._logger.warn.call_count == 2
+    local_path._logger.warn.assert_any_call(
+        "Old Path must change and new path couldn't be solved within "
+        f"{lp.MAX_OMPL_PATH_GEN_TRIES}"
+    )
 
 
 def test_update_if_needed_raises_when_solved_ompl_path_returns_invalid_path():
@@ -1345,7 +1331,7 @@ def test_update_if_needed_uses_existing_state_when_reusing_path_with_missing_ais
     [
         (
             "wind_history_length_not_met",
-            lp.WIND_HISTORY_LEN - 1,
+            lp.WIND_HISTORY_LEN - 2,
             Wind(
                 speed_kmph=5.0 * (1.0 + lp.WIND_SPEED_CHANGE_THRESH_PROP) + 0.1,
                 dir_deg=90.0,

@@ -21,7 +21,7 @@ from custom_interfaces.msg import (
     Path,
     WindSensor,
 )
-from local_pathfinding.local_path import LocalPathState
+from local_pathfinding.local_path import LocalPathState, WindTracker
 
 LAND_KEY = -1
 
@@ -48,6 +48,7 @@ def fresh_ompl_path():
             target_global_waypoint=HelperLatLon(latitude=0.02, longitude=0.02),
             filtered_wind_sensor=WindSensor(),
             planner="rrtstar",
+            wind_tracker=WindTracker(),
         ),
     )
 
@@ -117,6 +118,7 @@ def test_init_obstacles():
         target_global_waypoint=goal_position,
         filtered_wind_sensor=WindSensor(),
         planner="rrtstar",
+        wind_tracker=WindTracker(),
     )
 
     # create the xy state space from the specified positions of sailbot and the goal
@@ -198,6 +200,7 @@ def test_init_obstacles():
         target_global_waypoint=HelperLatLon(latitude=0.0, longitude=0.0),
         filtered_wind_sensor=WindSensor(),
         planner="rrtstar",
+        wind_tracker=WindTracker(),
     )
 
     updated_obstacles = ompl_path.OMPLPath.init_obstacles(

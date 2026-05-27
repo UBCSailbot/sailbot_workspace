@@ -183,6 +183,7 @@ def test_get_desired_heading_disables_sail_when_path_not_found():
         target_global_waypoint=sailbot.saved_target_global_waypoint,
         filtered_wind_sensor=sailbot.filtered_wind_sensor,
         planner=sailbot.planner,
+        wind_tracker=lp.WindTracker(),
     )
     sailbot.local_path._ompl_path = mock.Mock()
     sailbot.local_path._ompl_path.get_path.return_value = None
