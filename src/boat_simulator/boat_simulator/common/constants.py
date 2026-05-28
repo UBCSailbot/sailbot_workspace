@@ -31,7 +31,7 @@ class PhysicsEngineSubscriptionTopics:
 @dataclass
 class PhysicsEnginePublisherTopics:
     GPS: str = "gps"
-    KINEMATICS: str = "mock_kinematics"
+    KINEMATICS: str = "kinematics"
     WIND_SENSORS: str = "wind_sensors"
 
 
@@ -126,10 +126,6 @@ BOAT_PROPERTIES = BoatProperties(
     ),
     rudder_lift_coeffs=np.array(
         [
-            [-20.0, -0.9],
-            [-15.0, -0.85],
-            [-10.0, -0.6],
-            [-5.0, -0.3],
             [0.0, 0.0],
             [5.0, 0.3],
             [10.0, 0.6],
