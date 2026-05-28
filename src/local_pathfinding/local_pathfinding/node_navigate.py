@@ -11,7 +11,7 @@ import local_pathfinding.obstacles as ob
 from local_pathfinding.local_path import LocalPath, LocalPathInputs, PathNotFoundError
 from local_pathfinding.ompl_path import MAX_SOLVER_RUN_TIME_SEC
 
-GLOBAL_WAYPOINT_REACHED_THRESH_KM = 3
+GLOBAL_WAYPOINT_REACHED_THRESH_M = 300
 REALLY_FAR_M = 100000000
 
 
@@ -285,7 +285,7 @@ class Sailbot(Node):
             self.saved_target_global_waypoint.longitude,
             self.saved_target_global_waypoint.latitude,
         )
-        if distance_to_waypoint_m < GLOBAL_WAYPOINT_REACHED_THRESH_KM:
+        if distance_to_waypoint_m < GLOBAL_WAYPOINT_REACHED_THRESH_M:
             received_new_global_waypoint = True
             self.global_waypoint_index -= 1  # Since global waypoints are in reverse order
 
