@@ -623,18 +623,33 @@ def test_in_collision_zone(target_local_wp_index, reference_latlon, path, obstac
     [
         # Basic Test 1 (wind speed change is significant)
         (
-            Wind(speed_kmph=10 + 2 * lp.WIND_SPEED_CHANGE_THRESH_PROP * 10.0, dir_deg=95.0),
+            Wind(
+                speed_kmph=10.0
+                + 2 * lp.WIND_SPEED_CHANGE_THRESH_PROP * 10.0
+                + lp.WIND_SPEED_CHANGE_THRESH_OFFSET_KMPH,
+                dir_deg=95.0,
+            ),
             Wind(speed_kmph=10.0, dir_deg=95.0),
             True,
         ),
         # Boundaries
         (
-            Wind(speed_kmph=10.0 + lp.WIND_SPEED_CHANGE_THRESH_PROP * 10.0, dir_deg=90.0),
+            Wind(
+                speed_kmph=10.0
+                + lp.WIND_SPEED_CHANGE_THRESH_PROP * 10.0
+                + lp.WIND_SPEED_CHANGE_THRESH_OFFSET_KMPH,
+                dir_deg=90.0,
+            ),
             Wind(speed_kmph=10.0, dir_deg=90.0),
             True,
         ),
         (
-            Wind(speed_kmph=10.0 - lp.WIND_SPEED_CHANGE_THRESH_PROP * 10.0, dir_deg=90.0),
+            Wind(
+                speed_kmph=10.0
+                - lp.WIND_SPEED_CHANGE_THRESH_PROP * 10.0
+                - lp.WIND_SPEED_CHANGE_THRESH_OFFSET_KMPH,
+                dir_deg=90.0,
+            ),
             Wind(speed_kmph=10.0, dir_deg=90.0),
             True,
         ),
@@ -658,7 +673,12 @@ def test_in_collision_zone(target_local_wp_index, reference_latlon, path, obstac
         # Basic Test 3 (No significant change)
         (
             Wind(
-                speed_kmph=10.0 + 0.99 * lp.WIND_SPEED_CHANGE_THRESH_PROP * 10.0,
+                speed_kmph=10.0
+                + 0.99
+                * (
+                    lp.WIND_SPEED_CHANGE_THRESH_PROP * 10.0
+                    + lp.WIND_SPEED_CHANGE_THRESH_OFFSET_KMPH
+                ),
                 dir_deg=99.0 - 0.9 * lp.WIND_DIRECTION_CHANGE_THRESH_DEG,
             ),
             Wind(speed_kmph=10.0, dir_deg=99.0),
@@ -674,12 +694,30 @@ def test_in_collision_zone(target_local_wp_index, reference_latlon, path, obstac
         # Fifth Test: Division by 0
         (
             Wind(
-                speed_kmph=10.0 + 0.99 * lp.WIND_SPEED_CHANGE_THRESH_PROP * 10.0,
+                speed_kmph=10.0
+                + lp.WIND_SPEED_CHANGE_THRESH_OFFSET_KMPH,
                 dir_deg=99.0 - 0.9 * lp.WIND_DIRECTION_CHANGE_THRESH_DEG,
             ),
             Wind(speed_kmph=0.0, dir_deg=99.0),
             True,
-        )
+        ),
+        # Small wind changes under the offset threshold should not churn the path.
+        (
+            Wind(speed_kmph=1.0, dir_deg=99.0),
+            Wind(speed_kmph=0.0, dir_deg=99.0),
+            False,
+        ),
+        # The proportional term makes the same absolute change less important at higher speeds.
+        (
+            Wind(speed_kmph=40.0, dir_deg=99.0),
+            Wind(speed_kmph=35.0, dir_deg=99.0),
+            False,
+        ),
+        (
+            Wind(speed_kmph=5.0, dir_deg=99.0),
+            Wind(speed_kmph=0.0, dir_deg=99.0),
+            True,
+        ),
     ],
 )
 def test_is_significant_wind_change(new_wind_data, previous_wind_data, result):
@@ -1120,7 +1158,10 @@ def test_update_if_needed_regenerates_path_when_path_must_change(
     [
         (
             "aw_speed",
-            5.0 * (1.0 + lp.WIND_SPEED_CHANGE_THRESH_PROP) + 0.1,
+            5.0
+            + lp.WIND_SPEED_CHANGE_THRESH_PROP * 5.0
+            + lp.WIND_SPEED_CHANGE_THRESH_OFFSET_KMPH
+            + 0.1,
             90.0,
         ),
         (
@@ -1334,7 +1375,10 @@ def test_update_if_needed_uses_existing_state_when_reusing_path_with_missing_ais
             "wind_history_length_not_met",
             lp.WIND_HISTORY_LEN - 2,
             Wind(
-                speed_kmph=5.0 * (1.0 + lp.WIND_SPEED_CHANGE_THRESH_PROP) + 0.1,
+                speed_kmph=5.0
+                + lp.WIND_SPEED_CHANGE_THRESH_PROP * 5.0
+                + lp.WIND_SPEED_CHANGE_THRESH_OFFSET_KMPH
+                + 0.1,
                 dir_deg=90.0,
             ),
         ),

@@ -16,6 +16,7 @@ from local_pathfinding.wind_coord_systems import Wind
 from local_pathfinding.ompl_path import OMPLPath
 
 WIND_SPEED_CHANGE_THRESH_PROP = 0.3
+WIND_SPEED_CHANGE_THRESH_OFFSET_KMPH = 2.0
 WIND_DIRECTION_CHANGE_THRESH_DEG = 10
 WIND_HISTORY_LEN = 30
 LOCAL_WAYPOINT_REACHED_THRESH_KM = 0.05
@@ -325,7 +326,7 @@ class LocalPath:
 
         The criteria to determine if the wind change is significant include:
         - A change in wind speed exceeding WIND_SPEED_CHANGE_THRESH_PROP of the previous speed
-          used to calculate previous path
+          used to calculate previous path plus WIND_SPEED_CHANGE_THRESH_OFFSET_KMPH
         - A change in wind direction exceeding WIND_DIRECTION_CHANGE_THRESH_DEG degrees
 
         Args:
@@ -343,16 +344,15 @@ class LocalPath:
         current_speed_kmph = new_wind_data.speed_kmph
         current_dir_deg = new_wind_data.dir_deg
 
-        if previous_speed_kmph == 0.0:
-            speed_change_ratio = float("inf")
-        else:
-            speed_change_ratio = (
-                abs(previous_speed_kmph - current_speed_kmph) / previous_speed_kmph
-            )
+        speed_change = abs(previous_speed_kmph - current_speed_kmph)
+        speed_change_threshold = (
+            WIND_SPEED_CHANGE_THRESH_PROP * previous_speed_kmph
+            + WIND_SPEED_CHANGE_THRESH_OFFSET_KMPH
+        )
         dir_change = abs(cs.bound_to_180(current_dir_deg - previous_dir_deg))
 
         significant_change = (
-            speed_change_ratio >= WIND_SPEED_CHANGE_THRESH_PROP
+            speed_change >= speed_change_threshold
             or dir_change >= WIND_DIRECTION_CHANGE_THRESH_DEG
         )
 
@@ -360,7 +360,7 @@ class LocalPath:
             self._logger.info(
                 "Significant wind change detected: "
                 f"speed {previous_wind_data.speed_kmph:.2f} -> {current_speed_kmph:.2f} km/h "
-                f"({speed_change_ratio:.2%}, threshold {WIND_SPEED_CHANGE_THRESH_PROP:.2%}); "
+                f"({speed_change:.2f} km/h, threshold {speed_change_threshold:.2f} km/h); "
                 f"direction {previous_dir_deg:.2f} -> {current_dir_deg:.2f} deg "
                 f"({dir_change:.2f} deg, threshold {WIND_DIRECTION_CHANGE_THRESH_DEG:.2f} deg)"
             )
