@@ -417,7 +417,7 @@ class LocalPath:
         inputs: LocalPathInputs,
         target_lp_wp_index: int,
         received_new_global_waypoint: bool,
-    ) -> tuple[Optional[float], Optional[int]]:
+    ) -> tuple[float, int]:
         """Updates the local path using OMPL if conditions warrant a path change.
 
         Updates the rolling apparent wind tracker, then evaluates whether to update the current
