@@ -1,4 +1,4 @@
-## Instructions to Deploy Our Software to the Raspberry Pi
+## Instructions to deploy our software to the Raspberry Pi
 
 1. Push your changes to your branch on GitHub and go to the Build Release
    Image workflow page on GitHub
@@ -78,4 +78,32 @@ Run the following on the raspberry pi itself.
    release:example-tag \
    bash
 
+   ```
+
+## Instructions for starting our software once deployed
+
+1. After creating the release-container with `docker run ...`, we can
+re-enter the container and start all the ROS nodes if we're SSHed into
+the raspberry Pi.
+
+2. To enter the container and immediately start our software in production,
+run the following and change the container name (example-name) accordingly:
+
+   ```bash
+   docker start example-name && \
+   docker exec -it example-name bash -ic "ros2 launch \
+      src/global_launch/main_launch.py record:=true mode:=production \
+      2>&1 | tee src/global_launch/voyage_log/combined_log.txt"
+   ```
+
+- To enter the containter without starting all ROS nodes, run the following:
+
+   ```bash
+   docker start -i example:name
+   ```
+
+- To extract the log files from the release-container run the following:
+<!-- markdownlint-disable MD013 -->
+   ```bash
+   docker cp example-name:/workspaces/sailbot_workspace/src/global_launch/voyage_log ./voyage_log
    ```
