@@ -42,17 +42,26 @@ and run the following on your machine. Make sure to change (example-tag) accordi
    -f .devcontainer/release/release.Dockerfile \`
    --build-arg CACHEBUST=$(date +%s%3N) \
    -t release:example-tag \
+   .
    
    # Saves the release image as a .tar file to then transfer via rsync.
    docker save -o release.tar release:example-tag
    ```
 
 2. Connect to the `raye_wifi` network and connect to the raspberry pi using SSH.
+Alternatively, you can remote SSH into the raspberry pi. Note that these
+IP addresses are for the raspberry pi that's onboard the boat.
 
 3. Transfer the release image tar file by running the following on your machine.
 
    ```bash
    rsync -a release.tar sailbot@192.168.0.10:/home/sailbot/
+   ```
+
+   If you are using remote SSH, run the following:
+
+   ``` bash
+   rysnc -a release.tar sailbot@100.95.219.39:/home/sailbot/
    ```
 
 4. Load the release image and start the container on the rpi.
