@@ -27,7 +27,7 @@
 
    # this starts the container and drops you right into a bash shell inside
    # the container; you can exit by running: exit
-   docker run -it --network host --privileged release bash
+   docker run --name example-name -it --network host --privileged release bash
    ```
 
 ## Instructions for local deployment onto the Raspberry Pi
@@ -60,7 +60,7 @@ IP addresses are for the raspberry pi that's onboard the boat.
 
    If you are using remote SSH, run the following:
 
-   ``` bash
+   ```bash
    rysnc -a release.tar sailbot@100.95.219.39:/home/sailbot/
    ```
 
@@ -72,6 +72,10 @@ Run the following on the raspberry pi itself.
 
    # this starts the container and drops you right into a bash shell inside
    # the container; you can exit by running: exit
-   docker run -it --network host --privileged release:example-tag bash
+   docker run \
+   --name example-name \
+   -it --network host --privileged \
+   release:example-tag \
+   bash
 
    ```
