@@ -133,9 +133,6 @@ class LocalPathState:
         global_path (ci.Path): Path to the destination that Sailbot is navigating along.
         reference_latlon (ci.HelperLatLon): The global waypoint that Sailbot is heading toward.
             The global waypoint is the same as the reference latlon.
-        aw_speed_kmph (float): Apparent wind speed from the filtered wind sensor, in km/h.
-        aw_dir_boat_coord_deg (int): Apparent wind direction from the filtered wind sensor, in boat
-            coordinates, in degrees.
         planner (str): Planner to use for the OMPL query.
         obstacles (List[Obstacle]): All obstacles in the state space.
         path_generated_time (datetime): Time when the path was generated
@@ -217,9 +214,9 @@ class LocalPath:
             currently heading toward. This is set by update_if_needed. It usually starts at 1
             because OMPL path index 0 is the start state near the boat, and index 1 is the first
             target waypoint.
-        path (Path): Collection of coordinates that form the local path to the next
+        path (Optional[ci.Path]): Collection of coordinates that form the local path to the next
                           global waypoint.
-        state (LocalPathState): the current local path state.
+        state (Optional[LocalPathState]): the current local path state.
     """
 
     def __init__(self, parent_logger: RcutilsLogger):
