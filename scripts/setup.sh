@@ -35,6 +35,6 @@ rosdep update --rosdistro "$ROS_DISTRO"
 rosdep install --from-paths src --ignore-src --rosdistro "$ROS_DISTRO" $DEP_FLAGS
 
 # Create logging folder for all ROS logs.
-mkdir $ROS_WORKSPACE/src/global_launch/voyage_logs
+sudo mkdir $ROS_WORKSPACE/src/global_launch/voyage_logs
 
 source "$HOME/.bashrc"
