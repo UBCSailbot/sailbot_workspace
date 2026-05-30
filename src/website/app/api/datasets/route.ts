@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { type Model } from 'mongoose';
 import ConnectMongoDB from '@/lib/mongodb';
 
 import AISShips from '@/models/AISShips';
@@ -16,7 +15,17 @@ interface WithTimestamp {
   timestamp: string;
 }
 
-async function getLastUpdated(Model: Model<WithTimestamp>): Promise<string | null> {
+interface TimestampModel {
+  findOne(filter?: object): {
+    sort(sort: object): {
+      select(projection: object): {
+        lean<T>(): Promise<T | null>;
+      };
+    };
+  };
+}
+
+async function getLastUpdated(Model: TimestampModel): Promise<string | null> {
   const latest = await Model.findOne({})
     .sort({ timestamp: -1 })
     .select({ timestamp: 1, _id: 0 })
