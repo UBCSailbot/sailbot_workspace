@@ -368,6 +368,7 @@ class LocalPath:
 
     @staticmethod
     def exceeded_segment_deviation(
+        self,
         path: ci.Path,
         target_lp_wp_index: int,
         boat_lat_lon: ci.HelperLatLon
