@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import math
 from unittest import mock
 
 import pytest
@@ -609,10 +610,7 @@ def test_calculate_desired_heading_and_waypoint_index_exceptions(
 def test_in_collision_zone(target_local_wp_index, reference_latlon, path, obstacles, result):
 
     test_lp = create_test_local_path_for_in_collision_zone(
-        target_local_wp_index,
-        reference_latlon,
-        path,
-        obstacles
+        target_local_wp_index, reference_latlon, path, obstacles
     )
 
     assert test_lp.in_collision_zone() == result
@@ -882,6 +880,303 @@ def test_LocalPathState_path_generated_wind_uses_aw_avg_when_available():
     )
 
     assert state.path_generated_wind is wind_tracker.aw_avg
+
+
+EXCEEDED_SEGMENT_DEVIATION_BASIC_PATH = Path(
+    waypoints=[
+        HelperLatLon(latitude=10.0, longitude=-9.0),
+        HelperLatLon(latitude=10.0, longitude=-9.03),
+        HelperLatLon(latitude=10.03, longitude=-9.03),
+    ]
+)
+EXCEEDED_SEGMENT_DEVIATION_SHORT_PATH = Path(
+    waypoints=[
+        HelperLatLon(latitude=0.0, longitude=0.0),
+        HelperLatLon(latitude=0.0, longitude=0.01),
+    ]
+)
+EXCEEDED_SEGMENT_DEVIATION_DIAGONAL_PATH = Path(
+    waypoints=[
+        HelperLatLon(latitude=0.0, longitude=0.0),
+        HelperLatLon(latitude=0.01, longitude=0.01),
+    ]
+)
+EXCEEDED_SEGMENT_DEVIATION_IDENTICAL_WAYPOINTS_PATH = Path(
+    waypoints=[
+        HelperLatLon(latitude=1.0, longitude=1.0),
+        HelperLatLon(latitude=1.0, longitude=1.0),
+    ]
+)
+EXCEEDED_SEGMENT_DEVIATION_VERY_SHORT_PATH = Path(
+    waypoints=[
+        HelperLatLon(latitude=0.0, longitude=0.0),
+        HelperLatLon(latitude=0.0, longitude=0.000009),  # ~1m segment
+    ]
+)
+EXCEEDED_SEGMENT_DEVIATION_NEAR_IDENTICAL_PATH = Path(
+    waypoints=[
+        HelperLatLon(latitude=1.0, longitude=1.0),
+        HelperLatLon(latitude=1.0, longitude=1.0000001),  # ~1cm segment
+    ]
+)
+
+
+def _boat_position_for_segment_deviation(
+    path: Path,
+    target_index: int,
+    along_track_multiplier: float,
+    cross_track_multiplier: float,
+) -> HelperLatLon:
+    """Helper function to decide boat position depending on test
+    Args:
+        path (Path): Array of waypoints
+        target_index (int): Index of the target waypoint
+        along_track_multiplier (float): Multiplier for along-track position
+        (0 = at previous waypoint, 1 = at target waypoint)
+        cross_track_multiplier (float): Multiplier for cross-track position (perpendicular)
+        (0 = on the line, >0 = off the line by cross_track_multiplier * threshold distance)
+
+        Any value >1 for cross_track_multiplier is sufficient to exceed the threshold,
+        while values between 0 and 1 should not exceed it.
+
+    Returns:
+        HelperLatLon: Boat position for the test case based on the provided multipliers
+    """
+    prev_wp = path.waypoints[target_index - 1]
+    target_wp = path.waypoints[target_index]
+
+    _, _, segment_length_m = cs.GEODESIC.inv(
+        prev_wp.longitude,
+        prev_wp.latitude,
+        target_wp.longitude,
+        target_wp.latitude,
+    )
+    segment_length_km = cs.meters_to_km(segment_length_m)
+    threshold_km = segment_length_km * lp.SEGMENT_DEVIATION_THRESHOLD
+
+    target_xy = cs.latlon_to_xy(prev_wp, target_wp)
+    segment_length_xy = math.hypot(target_xy.x, target_xy.y)
+    if segment_length_xy == 0.0:
+        return HelperLatLon(latitude=prev_wp.latitude, longitude=prev_wp.longitude)
+
+    # Calculate unit vectors for along-track and perpendicular directions
+    along_unit_x = target_xy.x / segment_length_xy
+    along_unit_y = target_xy.y / segment_length_xy
+    perpendicular_unit_x = -along_unit_y
+    perpendicular_unit_y = along_unit_x
+
+    return cs.xy_to_latlon(
+        prev_wp,
+        cs.XY(
+            x=(along_unit_x * segment_length_xy * along_track_multiplier)
+            + (perpendicular_unit_x * threshold_km * cross_track_multiplier),
+            y=(along_unit_y * segment_length_xy * along_track_multiplier)
+            + (perpendicular_unit_y * threshold_km * cross_track_multiplier),
+        ),
+    )
+
+
+@pytest.mark.parametrize(
+    "path, target_index, boat_position, expected",
+    [
+        # Basic Not Exceeded
+        (
+            EXCEEDED_SEGMENT_DEVIATION_BASIC_PATH,
+            1,
+            _boat_position_for_segment_deviation(
+                EXCEEDED_SEGMENT_DEVIATION_BASIC_PATH,
+                1,
+                0.5,
+                0.5,
+            ),
+            False,
+        ),
+
+        # Basic Exceeded
+        (
+            EXCEEDED_SEGMENT_DEVIATION_BASIC_PATH,
+            2,
+            _boat_position_for_segment_deviation(
+                EXCEEDED_SEGMENT_DEVIATION_BASIC_PATH,
+                2,
+                0.8,
+                1.5,
+            ),
+            True,
+        ),
+
+        # Identical Waypoints
+        (
+            EXCEEDED_SEGMENT_DEVIATION_IDENTICAL_WAYPOINTS_PATH,
+            1,
+            HelperLatLon(
+                latitude=1.0,
+                longitude=1.0,
+            ),
+            False,
+        ),
+
+        # Boat beyond target waypoint exceeding threshold
+        (
+            EXCEEDED_SEGMENT_DEVIATION_BASIC_PATH,
+            1,
+            _boat_position_for_segment_deviation(
+                EXCEEDED_SEGMENT_DEVIATION_BASIC_PATH,
+                1,
+                1 + lp.SEGMENT_DEVIATION_THRESHOLD * 2,
+                0.5,
+            ),
+            True,
+        ),
+
+        # Boat beyond target waypoint not exceeding threshold
+        (
+            EXCEEDED_SEGMENT_DEVIATION_SHORT_PATH,
+            1,
+            _boat_position_for_segment_deviation(
+                EXCEEDED_SEGMENT_DEVIATION_SHORT_PATH,
+                1,
+                1 + lp.SEGMENT_DEVIATION_THRESHOLD * 0.5,
+                0.5,
+            ),
+            False,
+        ),
+
+        # Boat before start waypoint not exceeding threshold
+        (
+            EXCEEDED_SEGMENT_DEVIATION_SHORT_PATH,
+            1,
+            _boat_position_for_segment_deviation(
+                EXCEEDED_SEGMENT_DEVIATION_SHORT_PATH,
+                1,
+                -lp.SEGMENT_DEVIATION_THRESHOLD * 0.5,
+                0.5,
+            ),
+            False,
+        ),
+
+        # Boat before start waypoint exceeding threshold
+        (
+            EXCEEDED_SEGMENT_DEVIATION_SHORT_PATH,
+            1,
+            _boat_position_for_segment_deviation(
+                EXCEEDED_SEGMENT_DEVIATION_SHORT_PATH,
+                1,
+                -lp.SEGMENT_DEVIATION_THRESHOLD * 2,
+                0.8,
+            ),
+            True,
+        ),
+
+        # Non Horizontal/Vertical Path not exceeding threshold
+        (
+            EXCEEDED_SEGMENT_DEVIATION_DIAGONAL_PATH,
+            1,
+            _boat_position_for_segment_deviation(
+                EXCEEDED_SEGMENT_DEVIATION_DIAGONAL_PATH,
+                1,
+                0.5,
+                0.5,
+            ),
+            False,
+        ),
+
+        # Non Horizontal/Vertical Path exceeding threshold
+        (
+            EXCEEDED_SEGMENT_DEVIATION_DIAGONAL_PATH,
+            1,
+            _boat_position_for_segment_deviation(
+                EXCEEDED_SEGMENT_DEVIATION_DIAGONAL_PATH,
+                1,
+                0.5,
+                1.5,
+            ),
+            True,
+        ),
+
+        # Boat on Segment
+        (
+            EXCEEDED_SEGMENT_DEVIATION_BASIC_PATH,
+            1,
+            _boat_position_for_segment_deviation(
+                EXCEEDED_SEGMENT_DEVIATION_BASIC_PATH,
+                1,
+                0.3,
+                0.0,
+            ),
+            False,
+        ),
+
+        # Boat at Threshold
+        (
+            EXCEEDED_SEGMENT_DEVIATION_BASIC_PATH,
+            1,
+            _boat_position_for_segment_deviation(
+                EXCEEDED_SEGMENT_DEVIATION_BASIC_PATH,
+                1,
+                0.3,
+                0.995,  # Just under the threshold to avoid floating point issues
+            ),
+            False,
+        ),
+
+        # Very short segment, boat 0.5x threshold away, should not exceed
+        (
+            EXCEEDED_SEGMENT_DEVIATION_VERY_SHORT_PATH,
+            1,
+            _boat_position_for_segment_deviation(
+                EXCEEDED_SEGMENT_DEVIATION_VERY_SHORT_PATH,
+                1,
+                0.5,
+                0.5,
+            ),
+            False,
+        ),
+
+        # Very short segment (1m), should exceed, Converts error to meters for a mult
+        (
+            EXCEEDED_SEGMENT_DEVIATION_VERY_SHORT_PATH,
+            1,
+            _boat_position_for_segment_deviation(
+                EXCEEDED_SEGMENT_DEVIATION_VERY_SHORT_PATH,
+                1,
+                0.5,
+                cs.km_to_meters(lp.GPS_POSITION_ERROR_KM + 1),
+            ),
+            True,
+        ),
+
+        # Near-identical waypoints, boat at same position, should not exceed
+        (
+            EXCEEDED_SEGMENT_DEVIATION_NEAR_IDENTICAL_PATH,
+            1,
+            HelperLatLon(latitude=1.0, longitude=1.0),
+            False,
+        ),
+
+        # Near-identical waypoints (~1cm segment) - boat 1m away
+        # GPS_POSITION_ERROR_KM should act as a floor and prevent false positives
+        (
+            EXCEEDED_SEGMENT_DEVIATION_NEAR_IDENTICAL_PATH,
+            1,
+            HelperLatLon(latitude=1.0, longitude=1.00001),  # ~1m away
+            False,
+        ),
+    ],
+)
+def test_exceeded_segment_deviation(path, target_index, boat_position, expected):
+    assert PATH.exceeded_segment_deviation(path, target_index, boat_position) == expected
+
+
+def test_exceeded_segment_deviation_index_out_of_bounds():
+    with pytest.raises(IndexError):
+        PATH.exceeded_segment_deviation(
+            EXCEEDED_SEGMENT_DEVIATION_BASIC_PATH, 0, HelperLatLon(latitude=10.0, longitude=-9.0)
+        )
+    with pytest.raises(IndexError):
+        PATH.exceeded_segment_deviation(
+            EXCEEDED_SEGMENT_DEVIATION_BASIC_PATH, 3, HelperLatLon(latitude=10.0, longitude=-9.0)
+        )
 
 
 def test_LocalPathState_parameter_checking():
