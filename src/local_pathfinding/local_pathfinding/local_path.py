@@ -421,14 +421,15 @@ class LocalPath:
 
         # Orthogonal projection of the boat onto the line defined by prev and target
         # to find the closest point on the line to the boat
-        t = ((boat_xy_km.x - prev_xy_km.x) *
-             dx_km + (boat_xy_km.y - prev_xy_km.y) * dy_km) / segment_len_sq
+        projection_factor = (boat_xy_km.x * dx_km + boat_xy_km.y * dy_km) / segment_len_sq
 
         # Ensures that the closest point is within the line segment defined by prev and target
-        t = max(0.0, min(1.0, t))
+        projection_factor = max(0.0, min(1.0, projection_factor))
 
-        closest_x_km = prev_xy_km.x + t * dx_km
-        closest_y_km = prev_xy_km.y + t * dy_km
+        # Since the previous waypoint is at (0, 0), the closest point's coordinates are just the
+        # projection factor times the segment vector
+        closest_x_km = projection_factor * dx_km
+        closest_y_km = projection_factor * dy_km
         distance_to_segment_km = math.hypot(boat_xy_km.x - closest_x_km,
                                             boat_xy_km.y - closest_y_km)
 
