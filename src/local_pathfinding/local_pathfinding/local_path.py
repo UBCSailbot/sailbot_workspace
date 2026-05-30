@@ -386,7 +386,14 @@ class LocalPath:
                 currently heading toward. This should start at index 1 because index 0 is the
                 OMPL start waypoint near the boat.
             boat_lat_lon (ci.HelperLatLon): boat coordinates
+
+        Raises:
+            IndexError: If target_lp_wp_index is 0, since there is no previous waypoint
         """
+        if (target_lp_wp_index == 0):
+            self._logger.warn("Target waypoint cannot be set to 0, needs to be > 0")
+            raise IndexError("Target Waypoint was set to 0")
+
         prev_wp = path.waypoints[target_lp_wp_index - 1]
         target_wp = path.waypoints[target_lp_wp_index]
 
