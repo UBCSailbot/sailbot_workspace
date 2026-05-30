@@ -8,7 +8,6 @@ from datetime import datetime, timedelta
 from typing import List, Optional
 
 from rclpy.impl.rcutils_logger import RcutilsLogger
-from rclpy.logging import get_logger
 from shapely.geometry import LineString, MultiPolygon
 
 import custom_interfaces.msg as ci
@@ -28,9 +27,6 @@ HEADING_WEIGHT = 0.6
 COST_WEIGHT = 0.4
 PATH_TTL_SEC = timedelta(seconds=600)
 MAX_OMPL_PATH_GEN_TRIES = 2
-
-# module logger
-_LOGGER = get_logger("local_pathfinding.local_path")
 
 
 class PathNotFoundError(Exception):
@@ -371,8 +367,8 @@ class LocalPath:
 
         return significant_change
 
-    @staticmethod
     def exceeded_segment_deviation(
+        self,
         path: ci.Path,
         target_lp_wp_index: int,
         boat_lat_lon: ci.HelperLatLon
@@ -397,7 +393,7 @@ class LocalPath:
             valid preceding/target waypoint is required to define the segment.
         """
         if target_lp_wp_index == 0 or target_lp_wp_index >= len(path.waypoints):
-            _LOGGER.warn("Target waypoint out of bounds, must be in range [1, len(waypoints)")
+            self._logger.warn("Target waypoint out of bounds, must be in range [1, len(waypoints)")
             raise IndexError("Target Waypoint out of bounds, must be in range [1, len(waypoints)")
 
         prev_wp = path.waypoints[target_lp_wp_index - 1]
