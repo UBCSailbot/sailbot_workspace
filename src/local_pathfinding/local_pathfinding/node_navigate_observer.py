@@ -82,7 +82,7 @@ class SailbotObserver(Node):
         self.queue = queue
         self.msg: Union[ci.LPathData, None] = None
 
-        self.create_timer(5.0, self.update_queue)
+        self.create_timer(3.0, self.update_queue)
 
     def local_path_callback(self, msg: ci.LPathData):
         """Callback which stores the latest message

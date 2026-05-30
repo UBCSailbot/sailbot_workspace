@@ -1,0 +1,201 @@
+@startuml local_pathfinding_architecture_readable_midlevel
+
+!define PROD_BG #E8F4F8
+!define DEV_BG #F0E8F8
+!define TEST_BG #F8F4E8
+
+skinparam packageBorderColor #333
+skinparam classBackgroundColor #ffffffff
+skinparam classBorderColor #333
+
+package "ROS 2 Topics" {
+    class ROSTopics {
+        **Subscribed by Sailbot:**
+        - ais_ships (ci.AISShips)
+        - gps (ci.GPS)
+        - global_path (ci.Path)
+        - filtered_wind_sensor (ci.WindSensor)
+        --
+        **Published by Sailbot:**
+        - desired_heading (ci.DesiredHeading)
+        - local_path (ci.LPathData)
+        --
+        **Subscribed by SailbotObserver:**
+        - local_path (ci.LPathData)
+    }
+}
+
+' === Production Code ===
+package "Production Code" PROD_BG {
+    class Sailbot {
+        **ROS 2 Node**
+        --
+        + ais_ships_callback()
+        + gps_callback()
+        + global_path_callback()
+        + filtered_wind_sensor_callback()
+        + desired_heading_callback()
+        + get_desired_heading()
+        + determine_start_point_in_new_global_path()
+        + publish_local_path_data()
+        + update_params()
+    }
+
+    class LocalPath {
+        + update_if_needed()
+        + calculate_desired_heading_and_waypoint_index()
+        + in_collision_zone()
+        - _update()
+    }
+
+    class LocalPathState {
+        position, speed, heading
+        ais_ships, global_path
+        target_global_waypoint
+        wind_speed, wind_direction
+        planner, reference_latlon
+        obstacles
+    }
+
+    class OMPLPath {
+        + __init__()
+        + get_path()
+        + get_cost()
+        + init_obstacles()
+        - _init_simple_setup()
+    }
+
+    class Obstacle {
+        + is_valid()
+        + update_collision_zone()
+        + update_sailbot_data()
+        + update_reference_point()
+    }
+
+    class Boat {
+        - _update_boat_collision_zone()
+    }
+
+    class Land {
+        - _update_land_collision_zone()
+    }
+
+    Obstacle <|-- Boat
+    Obstacle <|-- Land
+
+    class GlobalPath {
+        + {static} get_path()
+        + {static} generate_path()
+        + {static} interpolate_path()
+        + {static} calculate_interval_spacing()
+        + {static} write_to_file()
+    }
+}
+
+' === Development Code ===
+package "Development Code" DEV_BG {
+    class NodeNavigateObserver {
+        **Spawns two processes:**
+        1. SailbotObserver node
+        2. Visualizer app
+    }
+
+    class SailbotObserver {
+        **ROS 2 Node**
+        --
+        + local_path_callback()
+        + queue.put(VisualizerState)
+    }
+
+    class VisualizerState {
+        sailbot_lat_lon, sailbot_xy
+        all_local_wp, global_path
+        ais_ships, obstacles
+    }
+
+    class VisualizerDashApp {
+        + dash_app()
+        + live_plot()
+        + update_plot()
+        + live_update_callback()
+    }
+}
+
+' === Test Code ===
+package "Test Code" TEST_BG {
+    class UnitTests {
+        test_local_path.py
+        test_ompl_path.py
+        test_obstacles.py
+        test_global_path.py
+    }
+
+    class MockNodes {
+        node_mock_gps.py
+        node_mock_ais.py
+        node_mock_wind_sensor.py
+        node_mock_global_path.py
+    }
+}
+
+' === Production Relationships ===
+Sailbot --> LocalPath : calls update_if_needed()
+LocalPath --> Sailbot : returns (heading, wp_index)
+LocalPath --> LocalPathState : creates
+LocalPath --> OMPLPath : instantiates
+OMPLPath --> LocalPath : returns solved path
+LocalPath --> Obstacle : checks collisions
+Obstacle --> LocalPath : returns validity
+OMPLPath --> Obstacle : initializes obstacles\n(via init_obstacles)
+Obstacle --> OMPLPath : returns obstacles
+Sailbot --> GlobalPath : reads global path
+GlobalPath --> Sailbot : returns waypoints
+
+' === ROS Topic Relationships ===
+Sailbot <-down- ROSTopics : subscribes from\n(ais, gps, global_path, wind)
+Sailbot -down-> ROSTopics : publishes to\n(desired_heading, local_path)
+SailbotObserver <-down- ROSTopics : subscribes from\n(local_path)
+
+' === Development Relationships ===
+NodeNavigateObserver --> SailbotObserver : spawns process
+NodeNavigateObserver --> VisualizerDashApp : spawns process
+SailbotObserver --> VisualizerState : creates
+SailbotObserver --> VisualizerDashApp : sends data via queue
+VisualizerDashApp --> VisualizerState : consumes state
+
+' === Test Relationships ===
+MockNodes -.-> ROSTopics : publishes mock data
+
+' === Layout Control ===
+Sailbot -[hidden]right- GlobalPath
+LocalPath -[hidden]down- OMPLPath
+Boat -[hidden]right- Land
+
+SailbotObserver -[hidden]right- VisualizerDashApp
+NodeNavigateObserver -[hidden]down- SailbotObserver
+
+' === Callback Sequence ===
+
+note as CallbackNote
+    **Timer Loop: desired_heading_callback()**
+    Executes every pub_period_sec (~0.5 seconds)
+
+    1. Timer → Sailbot.desired_heading_callback()
+    2. → get_desired_heading()
+    3. → LocalPath.update_if_needed()
+    4. → Create LocalPathState
+    5. → OMPLPath.__init__()
+    6. → OMPLPath.init_obstacles()
+    7. → Obstacle (Boat/Land)
+    8. ← returns solved path
+    9. ← returns (heading, waypoint_index)
+    10. → Publish to ROS desired_heading topic
+    11. → publish_local_path_data()
+    12. → Publish to ROS local_path topic
+
+    **Loop repeats**
+end note
+
+CallbackNote -[hidden]- LocalPath
+
+@enduml

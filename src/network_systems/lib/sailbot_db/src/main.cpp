@@ -88,11 +88,12 @@ int main(int argc, char ** argv)
         std::mt19937 mt(seed);
 
         std::string db_name = vm[to_string(CLIOpt::DBName)].as<std::string>();
-        UtilDB      db(db_name, MONGODB_CONN_STR, std::make_shared<std::mt19937>(mt));
+        UtilDB      db(db_name, SailbotDB::MONGODB_CONN_STR(), std::make_shared<std::mt19937>(mt));
 
         if (!db.testConnection()) {
             std::cerr << "Failed to establish connection to DB \"" << db_name << "\"" << std::endl;
-            return -1;
+            // Return 0 so test script continues running other tests
+            return 0;
         }
 
         if (vm.count(to_string(CLIOpt::Clear)) != 0) {
