@@ -99,7 +99,7 @@ run the following and change the container name (example-name) accordingly:
 - To enter the containter without starting all ROS nodes, run the following:
 
    ```bash
-   docker start -i example:name
+   docker start -i example-name
    ```
 
 - To extract the log files from the release-container run the following:
