@@ -107,3 +107,9 @@ run the following and change the container name (example-name) accordingly:
    ```bash
    docker cp example-name:/workspaces/sailbot_workspace/src/global_launch/voyage_log ./voyage_log
    ```
+
+- To extract ros2bags from the release-container run the following:
+
+   ```bash
+   docker cp example-name:/workspaces/sailbot_workspace/notebooks/local_pathfinding/session_recording ./session_recording
+   ```
