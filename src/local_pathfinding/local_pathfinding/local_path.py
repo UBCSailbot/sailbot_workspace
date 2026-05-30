@@ -405,7 +405,7 @@ class LocalPath:
 
         dx_km = target_xy_km.x - prev_xy_km.x
         dy_km = target_xy_km.y - prev_xy_km.y
-        segment_len_sq = dx_km * dx_km + dy_km * dy_km
+        segment_len_sq = dx_km**2 + dy_km**2
 
         if segment_len_sq == 0.0:
             return False  # Waypoints are the same, no deviation possible
