@@ -1,0 +1,24 @@
+# Polaris tracks westward parallel to a coastline ~1.5 km to the north.
+# Wind from south (tw_dir_deg: 180) blows northward, pushing Polaris toward the coast
+# via leeway.  The planner must compensate for drift and hold the corridor without
+# grounding on the coast to the north.
+tw_dir_deg: 180
+tw_speed_kmph: 12.0
+
+gps:
+  latitude: 49.270
+  longitude: -123.18
+  speed_kmph: 12.0
+  heading_deg: 270.0
+
+# [lon, lat] — continuous coastline along the north side of the channel
+land:
+  - [[-123.55, 49.284],
+     [-123.15, 49.284],
+     [-123.15, 49.400],
+     [-123.55, 49.400]]
+
+global_path:
+  waypoints:
+    - {latitude: 49.270, longitude: -123.50}
+    - {latitude: 49.270, longitude: -123.65}
