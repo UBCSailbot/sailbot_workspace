@@ -1,6 +1,5 @@
 from datetime import datetime, timedelta
 import math
-import random
 from unittest import mock
 
 import pytest
@@ -908,6 +907,18 @@ EXCEEDED_SEGMENT_DEVIATION_IDENTICAL_WAYPOINTS_PATH = Path(
         HelperLatLon(latitude=1.0, longitude=1.0),
     ]
 )
+EXCEEDED_SEGMENT_DEVIATION_VERY_SHORT_PATH = Path(
+    waypoints=[
+        HelperLatLon(latitude=0.0, longitude=0.0),
+        HelperLatLon(latitude=0.0, longitude=0.000009),  # ~1m segment
+    ]
+)
+EXCEEDED_SEGMENT_DEVIATION_NEAR_IDENTICAL_PATH = Path(
+    waypoints=[
+        HelperLatLon(latitude=1.0, longitude=1.0),
+        HelperLatLon(latitude=1.0, longitude=1.0000001),  # ~1cm segment
+    ]
+)
 
 
 def _boat_position_for_segment_deviation(
@@ -941,7 +952,7 @@ def _boat_position_for_segment_deviation(
         target_wp.latitude,
     )
     segment_length_km = cs.meters_to_km(segment_length_m)
-    threshold_km = segment_length_km * lp.SEGMENT_DEVIATION_THRESHOLD + random.uniform(0, 0.003)
+    threshold_km = segment_length_km * lp.SEGMENT_DEVIATION_THRESHOLD
 
     target_xy = cs.latlon_to_xy(prev_wp, target_wp)
     segment_length_xy = math.hypot(target_xy.x, target_xy.y)
@@ -1104,8 +1115,51 @@ def _boat_position_for_segment_deviation(
                 EXCEEDED_SEGMENT_DEVIATION_BASIC_PATH,
                 1,
                 0.3,
-                1.0,
+                0.995,  # Just under the threshold to avoid floating point issues
             ),
+            False,
+        ),
+
+        # Very short segment, boat 0.5x threshold away, should not exceed
+        (
+            EXCEEDED_SEGMENT_DEVIATION_VERY_SHORT_PATH,
+            1,
+            _boat_position_for_segment_deviation(
+                EXCEEDED_SEGMENT_DEVIATION_VERY_SHORT_PATH,
+                1,
+                0.5,
+                0.5,
+            ),
+            False,
+        ),
+
+        # Very short segment, boat 1.5x threshold away, should exceed
+        (
+            EXCEEDED_SEGMENT_DEVIATION_VERY_SHORT_PATH,
+            1,
+            _boat_position_for_segment_deviation(
+                EXCEEDED_SEGMENT_DEVIATION_VERY_SHORT_PATH,
+                1,
+                0.5,
+                1.5,
+            ),
+            True,
+        ),
+
+        # Near-identical waypoints, boat at same position, should not exceed
+        (
+            EXCEEDED_SEGMENT_DEVIATION_NEAR_IDENTICAL_PATH,
+            1,
+            HelperLatLon(latitude=1.0, longitude=1.0),
+            False,
+        ),
+
+        # Near-identical waypoints (~1cm segment) - boat 1m away
+        # GPS_POSITION_ERROR_KM should act as a floor and prevent false positives
+        (
+            EXCEEDED_SEGMENT_DEVIATION_NEAR_IDENTICAL_PATH,
+            1,
+            HelperLatLon(latitude=1.0, longitude=1.00001),  # ~1m away
             False,
         ),
     ],
