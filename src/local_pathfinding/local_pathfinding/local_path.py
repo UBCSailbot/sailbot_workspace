@@ -20,6 +20,7 @@ WIND_SPEED_CHANGE_THRESH_OFFSET_KMPH = 2.0
 WIND_DIRECTION_CHANGE_THRESH_DEG = 10
 WIND_HISTORY_LEN = 30
 SEGMENT_DEVIATION_THRESHOLD = 0.3
+GPS_POSITION_ERROR_KM = 0.003
 LOCAL_WAYPOINT_REACHED_THRESH_KM = 0.05
 HEADING_WEIGHT = 0.6
 COST_WEIGHT = 0.4
@@ -396,7 +397,7 @@ class LocalPath:
             target_wp.latitude,
         )
         segment_length_km = cs.meters_to_km(segment_length_m)
-        max_deviation_km = segment_length_km * SEGMENT_DEVIATION_THRESHOLD
+        max_deviation_km = segment_length_km * SEGMENT_DEVIATION_THRESHOLD + GPS_POSITION_ERROR_KM
 
         # Build a local XY frame with prev_wp as origin.
         prev_xy_km = cs.XY(0.0, 0.0)

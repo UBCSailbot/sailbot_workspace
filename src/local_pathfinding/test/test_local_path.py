@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 import math
+import random
 from unittest import mock
 
 import pytest
@@ -940,7 +941,7 @@ def _boat_position_for_segment_deviation(
         target_wp.latitude,
     )
     segment_length_km = cs.meters_to_km(segment_length_m)
-    threshold_km = segment_length_km * lp.SEGMENT_DEVIATION_THRESHOLD
+    threshold_km = segment_length_km * lp.SEGMENT_DEVIATION_THRESHOLD + random.uniform(0, 0.003)
 
     target_xy = cs.latlon_to_xy(prev_wp, target_wp)
     segment_length_xy = math.hypot(target_xy.x, target_xy.y)
