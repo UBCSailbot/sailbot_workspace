@@ -69,7 +69,9 @@ def setup_launch(context: LaunchContext) -> List[Node]:
 
     launch_description_entities = []
     launch_description_entities.append(get_navigate_node_description(context))
-    if mode == "development":
+    if mode == "production":
+        launch_description_entities.append(get_global_path_node_description(context))
+    elif mode == "development":
         launch_description_entities.append(get_mock_global_path_node_description(context))
         launch_description_entities.append(get_mock_wind_sensor_node_description(context))
         launch_description_entities.append(get_mock_ais_node_description(context))
@@ -104,6 +106,37 @@ def get_navigate_node_description(context: LaunchContext) -> Node:
     node = Node(
         package=PACKAGE_NAME,
         executable="navigate",
+        name=node_name,
+        output="screen",
+        emulate_tty=True,
+        parameters=ros_parameters,
+        ros_arguments=ros_arguments,
+    )
+
+    return node
+
+
+def get_global_path_node_description(context: LaunchContext) -> Node:
+    """Gets the launch description for the global_path node.
+
+    Args:
+        context (LaunchContext): The current launch context.
+
+    Returns:
+        Node: The node object that launches the global_path node.
+    """
+    node_name = "global_path"
+    ros_parameters = [
+        LaunchConfiguration("config").perform(context),
+    ]
+    ros_arguments: List[SomeSubstitutionsType] = [
+        "--log-level",
+        [f"{node_name}:=", LaunchConfiguration("log_level")],
+    ]
+
+    node = Node(
+        package=PACKAGE_NAME,
+        executable="global_path",
         name=node_name,
         output="screen",
         emulate_tty=True,
