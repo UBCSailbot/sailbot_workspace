@@ -1,6 +1,7 @@
 """The path to the next global waypoint, represented by the LocalPath class."""
 
 import math
+import numpy as np
 from collections import deque
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -366,7 +367,6 @@ class LocalPath:
 
         return significant_change
 
-    @staticmethod
     def exceeded_segment_deviation(
         self,
         path: ci.Path,
@@ -389,11 +389,12 @@ class LocalPath:
             boat_lat_lon (ci.HelperLatLon): boat coordinates
 
         Raises:
-            IndexError: If target_lp_wp_index is 0, since there is no previous waypoint
+            IndexError: If target_lp_wp_index is 0 or >= len(path.waypoints), since a
+            valid preceding/target waypoint is required to define the segment.
         """
-        if (target_lp_wp_index == 0):
-            self._logger.warn("Target waypoint cannot be set to 0, needs to be > 0")
-            raise IndexError("Target Waypoint was set to 0")
+        if target_lp_wp_index == 0 or target_lp_wp_index >= len(path.waypoints):
+            self._logger.warn("Target waypoint out of bounds, must be in range [1, len(waypoints)")
+            raise IndexError("Target Waypoint out of bounds, must be in range [1, len(waypoints)")
 
         prev_wp = path.waypoints[target_lp_wp_index - 1]
         target_wp = path.waypoints[target_lp_wp_index]
@@ -408,30 +409,26 @@ class LocalPath:
         max_deviation_km = segment_length_km * SEGMENT_DEVIATION_THRESHOLD + GPS_POSITION_ERROR_KM
 
         # Build a local XY frame with prev_wp as origin.
-        prev_xy_km = cs.XY(0.0, 0.0)
         target_xy_km = cs.latlon_to_xy(prev_wp, target_wp)
         boat_xy_km = cs.latlon_to_xy(prev_wp, boat_lat_lon)
 
-        dx_km = target_xy_km.x - prev_xy_km.x
-        dy_km = target_xy_km.y - prev_xy_km.y
-        segment_len_sq = dx_km**2 + dy_km**2
+        target_wp_vector = np.array([target_xy_km.x, target_xy_km.y])
+        boat_vector = np.array([boat_xy_km.x, boat_xy_km.y])
+
+        segment_len_sq = np.linalg.norm(target_wp_vector) ** 2
 
         if segment_len_sq == 0.0:
             return False  # Waypoints are the same, no deviation possible
 
-        # Orthogonal projection of the boat onto the line defined by prev and target
-        # to find the closest point on the line to the boat
-        projection_factor = (boat_xy_km.x * dx_km + boat_xy_km.y * dy_km) / segment_len_sq
-
-        # Ensures that the closest point is within the line segment defined by prev and target
+        # Project the boat position onto the segment vector, clamped to [0, 1] so the
+        # closest point stays within the segment bounds rather than extending past either end.
+        projection_factor = np.dot(boat_vector, target_wp_vector) / segment_len_sq
         projection_factor = max(0.0, min(1.0, projection_factor))
 
-        # Since the previous waypoint is at (0, 0), the closest point's coordinates are just the
-        # projection factor times the segment vector
-        closest_x_km = projection_factor * dx_km
-        closest_y_km = projection_factor * dy_km
-        distance_to_segment_km = math.hypot(boat_xy_km.x - closest_x_km,
-                                            boat_xy_km.y - closest_y_km)
+        # The closest point on the segment to the boat (prev_wp is origin, no offset needed)
+        projection_vector = projection_factor * target_wp_vector
+        rejection_vector = boat_vector - projection_vector
+        distance_to_segment_km = np.linalg.norm(rejection_vector)
 
         return distance_to_segment_km > max_deviation_km
 
