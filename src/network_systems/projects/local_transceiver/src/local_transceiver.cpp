@@ -231,11 +231,8 @@ bool LocalTransceiver::send()
             continue;
         }
 
-        //clearSerialBuffer();  // Clear any data that may have come in while waiting for SBDIX response, to ensure the following readRsp gets a clean response
-
         if (!rcvRsps({
-              sbdix_cmd,
-              AT::Line(AT::DELIMITER),
+              sbdix_cmd
             })) {
             continue;
         }
@@ -295,7 +292,6 @@ bool LocalTransceiver::debugSendAT(const std::string & data)
             log_debug_("Debug: cleared buffer, checking Iridium signal quality (attempt " + std::to_string(i) + ")");
         }
 
-        // int current_iridium_signal_quality = 5;
         int current_iridium_signal_quality = checkIridiumSignalQuality();
         if (current_iridium_signal_quality == -1) {
             if (log_error_) {
@@ -372,8 +368,6 @@ bool LocalTransceiver::debugSendAT(const std::string & data)
             log_debug_("Debug: write completed successfully (attempt " + std::to_string(i) + ")");
         }
 
-        //clearSerialBuffer();
-
         static const AT::Line sbdix_cmd = AT::Line(AT::SBD_SESSION);
         if (!send(sbdix_cmd)) {
             if (log_error_) {
@@ -386,8 +380,7 @@ bool LocalTransceiver::debugSendAT(const std::string & data)
         }
 
         if (!rcvRsps({
-              sbdix_cmd,
-              AT::Line(AT::DELIMITER),
+              sbdix_cmd
             })) {
             if (log_error_) {
                 log_error_("Debug: did not receive SBDIX response header (attempt " + std::to_string(i) + ")");
