@@ -394,13 +394,20 @@ class OMPLPath:
 
         self.state.planner = og.RRTstar(space_information)
 
+        # Use the wind snapshot stored with this LocalPathState so path planning and
+        # later wind-change comparisons share the same baseline.
+        if self.state.path_generated_wind is None:
+            current_aw = self.state.current_aw
+        else:
+            current_aw = self.state.path_generated_wind
+
         objective = get_sailing_objective(
             space_information,
             simple_setup,
             self.state.heading,
             self.state.speed,
-            self.state.current_aw.dir_deg,
-            self.state.current_aw.speed_kmph,
+            current_aw.dir_deg,
+            current_aw.speed_kmph,
         )
 
         simple_setup.setOptimizationObjective(objective)
