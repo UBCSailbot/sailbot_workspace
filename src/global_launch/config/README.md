@@ -39,7 +39,7 @@ ROS parameters specific to the nodes in the local_pathfinding package.
 
 ### `global_path`
 
-The production node that reads the global path from a csv file and
+The production mode that reads the global path from a csv file and
 publishes it (interpolated to `global_path_interval_spacing_km`) on the
 `global_path` topic for local pathfinding to consume.
 
