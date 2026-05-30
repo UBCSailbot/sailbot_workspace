@@ -1,3 +1,6 @@
+# Polaris heads west through a channel flanked by two land polygons.
+# A single oncoming ship (heading 90°) is also present, forcing the planner to
+# simultaneously avoid a collision and stay clear of both coastlines.
 tw_dir_deg: 180
 tw_speed_kmph: 10.0
 

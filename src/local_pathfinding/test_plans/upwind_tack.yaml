@@ -1,3 +1,7 @@
+# Wind blows directly from the west, the same direction as Polaris's destination.
+# The planner must tack upwind (NW/SW alternating legs) to make westward progress.
+# A single ship on a SE heading (135°) adds a crossing obstacle mid-tack.
+# No-go zone (±45° of 270°): headings 225°–315° are irons.
 tw_dir_deg: 270
 tw_speed_kmph: 15.0
 

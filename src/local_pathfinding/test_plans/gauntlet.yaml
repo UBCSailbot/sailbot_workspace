@@ -1,3 +1,6 @@
+# Seven ships are scattered across Polaris's westbound corridor, each on a different
+# heading and speed.  The planner must thread through all of them in sequence without
+# violating any collision-avoidance rules — a stress test of multi-obstacle routing.
 tw_dir_deg: 180
 tw_speed_kmph: 10.0
 
