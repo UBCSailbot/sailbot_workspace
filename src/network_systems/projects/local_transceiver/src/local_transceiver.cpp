@@ -543,10 +543,7 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
 
         std::string message_size_str;
         std::string message;
-        std::string checksum;
         uint16_t    message_size_int = 0;
-
-        std::smatch match;
 
         if (buffer_data && buffer_data->size() >= 2) {
             message_size_str = buffer_data->substr(0, 2);
@@ -554,12 +551,29 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
             continue;
         }
 
-        message_size_int = (static_cast<uint8_t>(message_size_str[0]) << 8) |  //NOLINT(readability-magic-numbers)
-                           static_cast<uint8_t>(message_size_str[1]);          //NOLINT(readability-magic-numbers)
+        message_size_int = (static_cast<uint8_t>(message_size_str[0]) << 8) |
+                        static_cast<uint8_t>(message_size_str[1]);
+
+        if (buffer_data->size() < static_cast<size_t>(message_size_int) + 4) {
+            continue;
+        }
+
         message = buffer_data->substr(2, message_size_int);
 
-        receivedDataBuffer = message;
+        uint16_t received_checksum =
+            (static_cast<uint8_t>((*buffer_data)[2 + message_size_int]) << 8) |
+            static_cast<uint8_t>((*buffer_data)[3 + message_size_int]);
 
+        uint16_t calculated_checksum = 0;
+        for (unsigned char byte : message) {
+            calculated_checksum += byte;
+        }
+
+        if (received_checksum != calculated_checksum) {
+            continue;
+        }
+
+        receivedDataBuffer = message;
         break;
     }
 
