@@ -44,5 +44,4 @@ WindSensorsSchema.set('toJSON', {
   },
 });
 
-export default mongoose.models.WindSensors ||
-  mongoose.model<WindSensors>('WindSensors', WindSensorsSchema);
+export default (mongoose.models['WindSensors'] as mongoose.Model<WindSensors> | undefined) ?? mongoose.model<WindSensors>('WindSensors', WindSensorsSchema);
