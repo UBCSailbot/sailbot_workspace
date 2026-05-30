@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { type Model } from 'mongoose';
 import ConnectMongoDB from '@/lib/mongodb';
 
 import AISShips from '@/models/AISShips';
@@ -11,11 +12,15 @@ import WindSensors from '@/models/WindSensors';
 
 type LastUpdatedMap = Record<string, string | null>;
 
-async function getLastUpdated(Model: any): Promise<string | null> {
+interface WithTimestamp {
+  timestamp: string;
+}
+
+async function getLastUpdated(Model: Model<WithTimestamp>): Promise<string | null> {
   const latest = await Model.findOne({})
     .sort({ timestamp: -1 })
     .select({ timestamp: 1, _id: 0 })
-    .lean();
+    .lean<WithTimestamp>();
 
   return latest?.timestamp ?? null;
 }

@@ -7,7 +7,6 @@ import { downloadDataFromJSON } from '@/utils/DownloadData';
 
 import styles from './lineChartStyles.module.css';
 import './customUplot.css';
-import { WithRouterProps } from 'next/dist/client/with-router';
 
 interface SeriesData {
   label: string;
