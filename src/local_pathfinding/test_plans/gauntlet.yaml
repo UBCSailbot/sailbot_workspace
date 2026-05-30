@@ -1,0 +1,25 @@
+# Seven ships are scattered across Polaris's westbound corridor, each on a different
+# heading and speed.  The planner must thread through all of them in sequence without
+# violating any collision-avoidance rules — a stress test of multi-obstacle routing.
+tw_dir_deg: 180
+tw_speed_kmph: 10.0
+
+gps:
+  latitude: 49.28
+  longitude: -123.18
+  speed_kmph: 15.0
+  heading_deg: 270.0
+
+ais:
+  - {id: 1, lat: 49.28, lon: -123.23, heading: 90.0, speed: 15.0, rot: 0, width: 3.0, height: 10.0}
+  - {id: 2, lat: 49.27, lon: -123.26, heading: 30.0, speed: 12.0, rot: 0, width: 2.0, height: 8.0}
+  - {id: 3, lat: 49.29, lon: -123.27, heading: 210.0, speed: 10.0, rot: 0, width: 4.0, height: 15.0}
+  - {id: 4, lat: 49.28, lon: -123.31, heading: 90.0, speed: 20.0, rot: 0, width: 2.0, height: 6.0}
+  - {id: 5, lat: 49.27, lon: -123.34, heading: 0.0, speed: 14.0, rot: 0, width: 3.0, height: 12.0}
+  - {id: 6, lat: 49.30, lon: -123.38, heading: 135.0, speed: 12.0, rot: 0, width: 2.0, height: 8.0}
+  - {id: 7, lat: 49.28, lon: -123.40, heading: 270.0, speed: 5.0, rot: 0, width: 3.0, height: 10.0}
+
+global_path:
+  waypoints:
+    - {latitude: 49.28, longitude: -123.50}
+    - {latitude: 49.28, longitude: -123.60}

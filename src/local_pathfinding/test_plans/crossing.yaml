@@ -1,0 +1,21 @@
+# Two ships cross Polaris's northbound path from opposite directions.
+# Ship 1 approaches head-on from the east (heading 270°, fast at 18 km/h);
+# Ship 2 comes from the northwest heading east (heading 90°, 14 km/h).
+# The planner must time a lateral offset to clear both without stopping.
+tw_dir_deg: 270
+tw_speed_kmph: 12.0
+
+gps:
+  latitude: 49.10
+  longitude: -123.18
+  speed_kmph: 12.0
+  heading_deg: 0.0
+
+ais:
+  - {id: 1, lat: 49.11, lon: -123.10, heading: 270.0, speed: 18.0, rot: 0, width: 3.0, height: 12.0}
+  - {id: 2, lat: 49.15, lon: -123.28, heading: 90.0, speed: 14.0, rot: 0, width: 2.0, height: 8.0}
+
+global_path:
+  waypoints:
+    - {latitude: 49.80, longitude: -123.18}
+    - {latitude: 50.20, longitude: -123.18}

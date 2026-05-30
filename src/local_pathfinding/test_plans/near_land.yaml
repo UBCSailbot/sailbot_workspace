@@ -1,0 +1,37 @@
+# Polaris heads west through a channel flanked by two land polygons.
+# A single oncoming ship (heading 90°) is also present, forcing the planner to
+# simultaneously avoid a collision and stay clear of both coastlines.
+tw_dir_deg: 180
+tw_speed_kmph: 10.0
+
+gps:
+  latitude: 49.285
+  longitude: -123.14
+  speed_kmph: 10.0
+  heading_deg: 270.0
+
+ais:
+  - {id: 1, lat: 49.285, lon: -123.27, heading: 90.0, speed: 12.0, rot: 10, width: 3.0, height: 10.0}
+
+# [lon, lat]
+land:
+  - [[-123.208923,49.284647],
+    [-123.209782,49.282744],
+    [-123.206692,49.281512],
+    [-123.198624,49.281736],
+    [-123.196564,49.286775],
+    [-123.200684,49.288119],
+    [-123.20549,49.289014]]
+
+  - [[-123.229094,49.278802],
+    [-123.235703,49.279082],
+    [-123.236647,49.276675],
+    [-123.233128,49.273315],
+    [-123.226604,49.272979],
+    [-123.224287,49.275667],
+    [-123.225403,49.278187]]
+
+global_path:
+  waypoints:
+    - {latitude: 49.285, longitude: -123.45}
+    - {latitude: 49.285, longitude: -123.30}
