@@ -1018,7 +1018,7 @@ def _boat_position_for_segment_deviation(
             True,
         ),
 
-        # Boat beyond taregt waypoint not exceeding threshold
+        # Boat beyond target waypoint not exceeding threshold
         (
             EXCEEDED_SEGMENT_DEVIATION_SHORT_PATH,
             1,
@@ -1112,6 +1112,17 @@ def _boat_position_for_segment_deviation(
 )
 def test_exceeded_segment_deviation(path, target_index, boat_position, expected):
     assert lp.LocalPath.exceeded_segment_deviation(path, target_index, boat_position) == expected
+
+
+def test_exceeded_segment_deviation_index_out_of_bounds():
+    with pytest.raises(IndexError):
+        lp.LocalPath.exceeded_segment_deviation(
+            EXCEEDED_SEGMENT_DEVIATION_BASIC_PATH, 0, HelperLatLon(latitude=10.0, longitude=-9.0)
+        )
+    with pytest.raises(IndexError):
+        lp.LocalPath.exceeded_segment_deviation(
+            EXCEEDED_SEGMENT_DEVIATION_BASIC_PATH, 3, HelperLatLon(latitude=10.0, longitude=-9.0)
+        )
 
 
 def test_LocalPathState_parameter_checking():
