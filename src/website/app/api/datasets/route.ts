@@ -25,6 +25,8 @@ async function getLastUpdated<T extends WithTimestamp>(Model: Model<T>): Promise
   return latest?.timestamp ?? null;
 }
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     await ConnectMongoDB();
