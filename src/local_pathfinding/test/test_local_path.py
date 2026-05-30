@@ -1133,7 +1133,7 @@ def _boat_position_for_segment_deviation(
             False,
         ),
 
-        # Very short segment, boat 1.5x threshold away, should exceed
+        # Very short segment (1m), should exceed, Converts error to meters for a mult
         (
             EXCEEDED_SEGMENT_DEVIATION_VERY_SHORT_PATH,
             1,
@@ -1141,7 +1141,7 @@ def _boat_position_for_segment_deviation(
                 EXCEEDED_SEGMENT_DEVIATION_VERY_SHORT_PATH,
                 1,
                 0.5,
-                1.5,
+                cs.km_to_meters(lp.GPS_POSITION_ERROR_KM + 1),
             ),
             True,
         ),
