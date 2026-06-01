@@ -1729,6 +1729,26 @@ def test_update_if_needed_reuses_path_without_significant_wind_change(
     local_path._logger.debug.assert_not_called()
 
 
+def test_update_if_needed_clears_replan_reason_when_path_reused(basic_local_path_state):
+    local_path, _, _ = create_initialized_local_path_for_update_if_needed(basic_local_path_state)
+    local_path.last_replan_reason = "Path intersects collision zone"
+    local_path.last_remaining_waypoints = 5
+    inputs = create_update_if_needed_inputs()
+
+    with (
+        mock.patch.object(local_path, "in_collision_zone", return_value=False),
+        mock.patch.object(local_path, "is_path_expired", return_value=False),
+    ):
+        local_path.update_if_needed(
+            inputs=inputs,
+            target_lp_wp_index=1,
+            received_new_global_waypoint=False,
+        )
+
+    assert local_path.last_replan_reason == ""
+    assert local_path.last_remaining_waypoints == 0
+
+
 def make_local_path():
     mock_parent_logger = mock.Mock()
     mock_parent_logger.get_child.return_value = mock.Mock()

@@ -608,6 +608,9 @@ class LocalPath:
 
             return heading_new_path, new_target_lp_wp_index
 
+        self.last_replan_reason = ""
+        self.last_remaining_waypoints = 0
+
         try:
             self._logger.info(f"Reusing local path: {must_change_reason.reason}")
             heading_old_path, old_target_lp_wp_index = self.calculate_desired_heading_and_wp_index(
