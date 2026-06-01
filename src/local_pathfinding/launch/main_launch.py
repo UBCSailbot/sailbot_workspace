@@ -66,17 +66,21 @@ def setup_launch(context: LaunchContext) -> List[Node]:
         List[Node]: Nodes to launch.
     """
     mode = LaunchConfiguration("mode").perform(context)
-
+    on_water_mock_ais = LaunchConfiguration("on_water_mock_ais").perform(context)
     launch_description_entities = []
     launch_description_entities.append(get_navigate_node_description(context))
     if mode == "production":
         launch_description_entities.append(get_global_path_node_description(context))
+        if on_water_mock_ais:
+            launch_description_entities.append(get_mock_ais_node_description(context))
+
     elif mode == "development":
         launch_description_entities.append(get_mock_global_path_node_description(context))
         launch_description_entities.append(get_mock_wind_sensor_node_description(context))
         launch_description_entities.append(get_mock_ais_node_description(context))
         launch_description_entities.append(get_mock_gps_node_description(context))
         launch_description_entities.append(get_navigate_observer_node_description(context))
+
     return launch_description_entities
 
 
