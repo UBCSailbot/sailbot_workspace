@@ -144,7 +144,6 @@ def test_find_next_global_waypoint_index(
     assert calculated_answer == correct_index
 
 
-<<<<<<< HEAD
 def test_get_desired_heading_disables_sail_when_path_not_found():
     sailbot = nn.Sailbot.__new__(nn.Sailbot)
     sailbot.gps = mock.Mock()
@@ -197,7 +196,8 @@ def test_get_desired_heading_disables_sail_when_path_not_found():
     sailbot.get_logger.return_value.warning.assert_called_once_with(
         "Unable to generate a local path; disabling sail"
     )
-=======
+
+
 def make_dev_sailbot():
     sailbot = mock.Mock()
     sailbot.mode = "development"
@@ -245,4 +245,3 @@ def test_publish_local_path_data_production_mode():
     published_msg = sailbot.lpath_data_pub.publish.call_args[0][0]
     assert published_msg.replan_reason == ""
     assert published_msg.remaining_waypoints == 0
->>>>>>> f83ebe87 (added tests for publishing reasons to switch paths)
