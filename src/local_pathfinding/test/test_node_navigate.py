@@ -5,7 +5,6 @@ import pytest
 import yaml
 
 import custom_interfaces.msg as ci
-from unittest import mock
 from local_pathfinding.local_path import LocalPath
 import local_pathfinding.local_path as lp
 import local_pathfinding.node_navigate as nn
