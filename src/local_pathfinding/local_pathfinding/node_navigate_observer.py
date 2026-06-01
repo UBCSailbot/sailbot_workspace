@@ -106,15 +106,15 @@ class SailbotObserver(Node):
             return
 
         if self.queue.qsize() >= 1:
-            self.get_logger().info(
+            self.get_logger().debug(
                 f"queue size is already {self.queue.qsize()}, "
                 f"not sending another new visualizer state until this is consumed."
             )
             return
 
         self.queue.put(vz.VisualizerState(msgs=self.msgs))
-        self.get_logger().info(f"sent new visualizer state with {len(self.msgs)} messages.")
-        self.get_logger().info(f"queue: {self.queue.qsize()}")
+        self.get_logger().debug(f"sent new visualizer state with {len(self.msgs)} messages.")
+        self.get_logger().debug(f"queue: {self.queue.qsize()}")
 
 
 if __name__ == "__main__":
