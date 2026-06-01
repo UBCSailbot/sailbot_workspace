@@ -42,7 +42,7 @@ jobs:
       uses: gaurav-nelson/github-action-markdown-link-check@v1
       with:
         config-file: .markdown-link-check.json
-        folder-path: . '!src/network_systems/projects/remote_server_standalone/mongo-cxx-driver-r4.1.4/**'
+        folder-path: '.'
 
   markdown-link-redirection-check:
     runs-on: ubuntu-latest
@@ -58,7 +58,7 @@ jobs:
       - name: Check links to external sites redirect to a new tab
         uses: ./.github/actions/docs-lint/
         with:
-          folder-path: . '!src/network_systems/projects/remote_server_standalone/mongo-cxx-driver-r4.1.4/**'
+          folder-path: '.'
         env:
           ROOT: './docs/'
 
