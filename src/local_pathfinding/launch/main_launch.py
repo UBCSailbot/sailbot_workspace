@@ -4,13 +4,12 @@ import importlib
 import os
 from typing import List, Tuple
 
-from launch_ros.actions import Node
-
 from launch.actions import DeclareLaunchArgument, OpaqueFunction
 from launch.launch_context import LaunchContext
 from launch.launch_description import LaunchDescription
 from launch.some_substitutions_type import SomeSubstitutionsType
 from launch.substitutions import LaunchConfiguration
+from launch_ros.actions import Node
 
 # Local launch arguments and constants
 PACKAGE_NAME = "local_pathfinding"
@@ -95,12 +94,15 @@ def get_navigate_node_description(context: LaunchContext) -> Node:
     """
     node_name = "navigate_main"
     mode = LaunchConfiguration("mode").perform(context)
-    ros_parameters = [
-        {"mode": mode},
-        LaunchConfiguration("config").perform(context),
-    ]
+    inline_params = {"mode": mode}
+
     if mode == "development":
-        ros_parameters[0].update({"test_plan": LaunchConfiguration("test_plan").perform(context)})
+        inline_params["test_plan"] = LaunchConfiguration("test_plan").perform(context)
+
+    ros_parameters = [
+        LaunchConfiguration("config").perform(context),
+        inline_params,
+    ]
 
     ros_arguments: List[SomeSubstitutionsType] = [
         "--log-level",
@@ -166,7 +168,7 @@ def get_mock_global_path_node_description(context: LaunchContext) -> Node:
     # the first entry is treated as a parameter file path.
     ros_parameters = [
         LaunchConfiguration("config").perform(context),
-        {"test_plan": test_plan},
+        {"test_plan:=": test_plan},
     ]
     ros_arguments: List[SomeSubstitutionsType] = [
         "--log-level",

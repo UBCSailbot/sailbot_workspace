@@ -41,4 +41,4 @@ GPSSchema.set('toJSON', {
   },
 });
 
-export default mongoose.models.GPS || mongoose.model<GPS>('GPS', GPSSchema);
+export default (mongoose.models['GPS'] as mongoose.Model<GPS> | undefined) ?? mongoose.model<GPS>('GPS', GPSSchema);
