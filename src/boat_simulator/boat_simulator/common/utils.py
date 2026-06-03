@@ -87,9 +87,7 @@ def ccw_straight_to_cw_north_deg(angle_deg: Scalar) -> Scalar:
     return bound_to_180(-angle_deg, isDegrees=True)
 
 
-def euler_zyx_to_quaternion(
-    roll_rad: Scalar, pitch_rad: Scalar, yaw_rad: Scalar
-) -> NDArray:
+def euler_zyx_to_quaternion(roll_rad: Scalar, pitch_rad: Scalar, yaw_rad: Scalar) -> NDArray:
     """Convert intrinsic Z-Y-X Euler angles (roll about x, pitch about y,
     yaw about z) to a unit quaternion [x, y, z, w].
 

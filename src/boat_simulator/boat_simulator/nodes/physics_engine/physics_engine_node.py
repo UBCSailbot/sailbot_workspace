@@ -377,7 +377,7 @@ class PhysicsEngineNode(Node):
         )
 
         self.gps_pub.publish(msg)
-        self.get_logger().info(
+        self.get_logger().debug(
             f"Publishing to {self.gps_pub.topic}",
             throttle_duration_sec=self.get_parameter("info_log_throttle_period_sec")
             .get_parameter_value()
@@ -403,7 +403,7 @@ class PhysicsEngineNode(Node):
         msg.wind_sensors = [windSensor1, windSensor2]
 
         self.wind_sensors_pub.publish(msg)
-        self.get_logger().info(
+        self.get_logger().debug(
             f"Publishing to {self.wind_sensors_pub.topic}",
             throttle_duration_sec=self.get_parameter("info_log_throttle_period_sec")
             .get_parameter_value()
@@ -562,8 +562,8 @@ class PhysicsEngineNode(Node):
         result = future.result().result
         self.get_logger().debug(
             "Rudder actuation action finished with a heading residual of "
-            + f"{result.remaining_angular_distance:.2f} rad and final "
-            + f"rudder angle of {self.rudder_angle:.2f} rad"
+            + f"{result.remaining_angular_distance:.2f} degrees and final "
+            + f"rudder angle of {self.rudder_angle:.2f} degrees"
         )
 
     def __rudder_action_feedback_callback(self, feedback_msg: SimRudderActuation_FeedbackMessage):
