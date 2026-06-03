@@ -211,8 +211,9 @@ class TestKinematicsComputation:
                 relative_data,
             )
 
-            # z-directional acceleration and velocity are neglected
-            glo_net_force = rel_net_force * np.array([np.cos(yaw_radians), np.sin(yaw_radians), 0])
+            # z-directional acceleration and velocity are neglected. The net force is already in
+            # the global frame, so it is used directly (no rotation applied).
+            glo_net_force = rel_net_force
             prev_expected_glo_lin_data = self.__test_glo_lin_kinematics(
                 timestep,
                 mass,
