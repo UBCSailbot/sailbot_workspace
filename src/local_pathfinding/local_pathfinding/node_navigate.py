@@ -132,9 +132,9 @@ class Sailbot(Node):
         self.global_path = None
         self.filtered_wind_sensor = None
         self.desired_heading = None
-        self.last_gps_msg_time = None
 
         # attributes
+        self.gps_timeout_start_time = self.get_clock().now()
         self.local_path = LocalPath(parent_logger=self.get_logger())
         self.target_lp_wp_index = 1
         self.global_waypoint_index = -1
@@ -160,7 +160,7 @@ class Sailbot(Node):
     def gps_callback(self, msg: ci.GPS):
         self.get_logger().debug(f"Received data from {self.gps_sub.topic}: {msg}")
         self.gps = msg
-        self.last_gps_msg_time = self.get_clock().now()
+        self.gps_timeout_start_time = self.get_clock().now()
 
     def global_path_callback(self, msg: ci.Path):
         self.get_logger().debug(
@@ -416,10 +416,8 @@ class Sailbot(Node):
 
     def _gps_has_timed_out(self) -> bool:
         """Checks if we haven't received a GPS message for more than 2 minutes."""
-        if self.last_gps_msg_time is None:
-            return False
 
-        elapsed_sec = ((self.get_clock().now() - self.last_gps_msg_time).nanoseconds) / (1e9)
+        elapsed_sec = ((self.get_clock().now() - self.gps_timeout_start_time).nanoseconds) / (1e9)
         return (elapsed_sec > GPS_TIMEOUT_SEC)
 
     def _log_inactive_subs_warning(self):
