@@ -48,7 +48,7 @@ class BoatKinematics:
         self.__relative_data = KinematicsData()
         self.__global_data = KinematicsData()
 
-    def step(self, rel_net_force: NDArray, net_torque: NDArray) -> None:
+    def step(self, glo_net_force: NDArray, net_torque: NDArray) -> None:
         """Updates the kinematic data based on applied forces and torques.
 
         Args:
@@ -60,18 +60,23 @@ class BoatKinematics:
         Returns:
             None: The method updates the internal state of the boat's kinematics but does not return any data.
         """
-        _logger.info(f"step: rel_net_force={rel_net_force} net_torque={net_torque}")
 
         yaw_radians = self.__update_ang_data(net_torque)
 
-        self.__update_linear_relative_data(rel_net_force)
+        self.__update_linear_relative_data(glo_net_force)
 
-        # z-directional acceleration and velocity are neglected
-        glo_net_force = rel_net_force * np.array([np.cos(yaw_radians), np.sin(yaw_radians), 0])
+        # z-directional acceleration and velocity are neglected.
+        # The net force from BoatState is already expressed in the global frame (it is computed
+        # from global-frame apparent wind/water velocities and a global-convention orientation),
+        # so it is used directly. The previous `rel_net_force * [cos(yaw), sin(yaw), 0]` was not a
+        # valid rotation — it scaled and zeroed force components (e.g. forcing the y-force to 0
+        # whenever yaw ≈ 0), which destroyed the velocity-squared drag that should oppose the
+        # boat's motion and caused the apparent velocity (and forces) to diverge.
         self.__update_linear_global_data(glo_net_force)
 
         _logger.debug(
-            f"step result: yaw={yaw_radians:.4f} rad rel_vel={self.relative_data.linear_velocity} glo_pos={self.global_data.linear_position}"
+            f"step result: yaw={yaw_radians:.4f}rad rel_vel={self.relative_data.linear_velocity} "
+            f"glo_pos={self.global_data.linear_position}"
         )
 
     def __update_ang_data(self, net_torque: NDArray) -> Scalar:
