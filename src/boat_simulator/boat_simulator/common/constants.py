@@ -60,6 +60,13 @@ class BoatProperties:
     # A dimensionless scalar representing the drag factor of the hull as a function of the boat's
     # velocity.
     hull_drag_factor: Scalar
+    # Scales the commanded trim tab angle to the wingsail's equilibrium angle of attack (degrees of
+    # AoA per degree of command). The sail controller commands the desired AoA directly, so 1.0.
+    trim_tab_gain: Scalar
+    # Natural frequency of the wingsail's rotational response to the trim tab (in rad/s).
+    wingsail_natural_freq: Scalar
+    # Damping ratio of the wingsail's rotational response (dimensionless).
+    wingsail_damping_ratio: Scalar
     # The mass of the boat (in kilograms).
     mass: Scalar
     # The inertia of the boat (in kilograms-meters squared).
@@ -115,34 +122,114 @@ WATER_DENSITY = 1027.0
 # Constants related to the physical and mechanical properties of Polaris
 # TODO These are placeholder values which should be replaced when we have real values.
 BOAT_PROPERTIES = BoatProperties(
+    # Sail: angle of attack 0–90° (wingsail, CL peaks ~25° then stalls)
     sail_lift_coeffs=np.array(
-        [[0.0, 0.0], [5.0, 0.2], [10.0, 0.5], [15.0, 0.7], [20.0, 1.0]], dtype=np.float32
+        [
+            [0.0, 0.00],
+            [5.0, 0.20],
+            [10.0, 0.55],
+            [15.0, 0.85],
+            [20.0, 1.05],
+            [25.0, 1.20],  # peak lift
+            [30.0, 1.10],  # stall onset
+            [40.0, 0.80],
+            [50.0, 0.60],
+            [60.0, 0.50],
+            [75.0, 0.25],
+            [90.0, 0.00],  # dead downwind, pure drag
+        ],
+        dtype=np.float32,
     ),
     sail_drag_coeffs=np.array(
-        [[0.0, 0.1], [5.0, 0.12], [10.0, 0.15], [15.0, 0.18], [20.0, 0.2]], dtype=np.float32
+        [
+            [0.0, 0.01],
+            [5.0, 0.015],
+            [10.0, 0.025],
+            [15.0, 0.032],
+            [20.0, 0.050],
+            [25.0, 0.105],
+            [30.0, 0.830],  # stall — drag spikes
+            [40.0, 0.380],
+            [50.0, 0.580],
+            [60.0, 0.980],
+            [75.0, 1.020],
+            [90.0, 1.200],
+        ],
+        dtype=np.float32,
     ),
     sail_areas=np.array(
-        [[0.0, 20.0], [5.0, 19.8], [10.0, 19.5], [15.0, 19.2], [20.0, 18.8]], dtype=np.float32
+        [
+            [0.0, 20.0],
+            [5.0, 20.0],
+            [10.0, 20.0],
+            [15.0, 20.0],
+            [20.0, 20.0],
+            [25.0, 20.0],
+            [30.0, 20.0],
+            [40.0, 20.0],
+            [50.0, 20.0],
+            [60.0, 20.0],
+            [75.0, 20.0],
+            [90.0, 20.0],
+        ],
+        dtype=np.float32,
     ),
+    # Rudder: ±45° → table covers 0–45° (sign handled by caller)
+    # NACA symmetric foil: stalls ~20–22°
     rudder_lift_coeffs=np.array(
         [
-            [0.0, 0.0],
-            [5.0, 0.3],
-            [10.0, 0.6],
+            [0.0, 0.00],
+            [5.0, 0.30],
+            [10.0, 0.60],
             [15.0, 0.85],
-            [20.0, 0.9],
+            [20.0, 0.92],  # peak (near stall)
+            [25.0, 0.78],  # post-stall drop
+            [30.0, 0.62],
+            [35.0, 0.52],
+            [40.0, 0.44],
+            [45.0, 0.38],
         ],
         dtype=np.float32,
     ),
     rudder_drag_coeffs=np.array(
-        [[0.0, 0.2], [5.0, 0.22], [10.0, 0.25], [15.0, 0.28], [20.0, 0.3]], dtype=np.float32
+        [
+            [0.0, 0.020],
+            [5.0, 0.022],
+            [10.0, 0.026],
+            [15.0, 0.032],
+            [20.0, 0.050],
+            [25.0, 0.120],  # stall — drag spikes
+            [30.0, 0.220],
+            [35.0, 0.330],
+            [40.0, 0.440],
+            [45.0, 0.550],
+        ],
+        dtype=np.float32,
     ),
     rudder_areas=np.array(
-        [[0.0, 2.0], [5.0, 1.9], [10.0, 1.8], [15.0, 1.7], [20.0, 1.6]], dtype=np.float32
+        [
+            [0.0, 0.4],
+            [5.0, 0.4],
+            [10.0, 0.4],
+            [15.0, 0.4],
+            [20.0, 0.4],
+            [25.0, 0.4],
+            [30.0, 0.4],
+            [35.0, 0.4],
+            [40.0, 0.4],
+            [45.0, 0.4],
+        ],
+        dtype=np.float32,
     ),
     sail_dist=0.5,
     rudder_dist=1.0,
-    hull_drag_factor=0.05,
-    mass=1500.0,
+    hull_drag_factor=0.5,
+    # TODO Placeholder wingsail dynamics tuning values, replace with measured/identified values.
+    # The sail controller commands the desired angle of attack directly (LUT outputs ~6-10 deg),
+    # so the equilibrium AoA equals the command and the gain is 1.0.
+    trim_tab_gain=1.0,
+    wingsail_natural_freq=3.0,
+    wingsail_damping_ratio=0.7,
+    mass=225.0,
     inertia=np.array([[125, 0, 0], [0, 1125, 0], [0, 0, 500]], dtype=np.float32),
 )
