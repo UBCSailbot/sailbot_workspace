@@ -102,8 +102,21 @@ class MediumForceComputation:
         lift_coefficient, drag_coefficient, area = self.interpolate(attack_angle)
         velocity_magnitude = np.linalg.norm(apparent_velocity)
 
-        _logger.debug(
-            f"compute: attack_angle={attack_angle} lift_coeff={lift_coefficient} drag_coeff={drag_coefficient} vel_mag={velocity_magnitude}"
+        # With no relative flow there is no lift or drag (force ∝ |v|²). Returning early also avoids
+        # the division by velocity_magnitude below, which would otherwise produce NaN/Inf forces that
+        # propagate irreversibly through the kinematics and blow up the simulation.
+        if velocity_magnitude == 0:
+            zero_force = np.array([0.0, 0.0])
+            _logger.info("compute: zero apparent velocity, returning zero lift/drag force")
+            return zero_force, zero_force
+
+        _logger.info(
+            f"compute: apparent_vel={apparent_velocity} m/s orientation={orientation:6.2f}° "
+            f"aoa={attack_angle:6.2f}° "
+            f"C_l={lift_coefficient:6.3f} C_d={drag_coefficient:6.3f} "
+            f"area={area:.3f} m² |v|={velocity_magnitude:6.2f} m/s "
+            f"|L|={0.5 * self.__fluid_density * lift_coefficient * area * velocity_magnitude**2:8.2f} N "
+            f"|D|={0.5 * self.__fluid_density * drag_coefficient * area * velocity_magnitude**2:8.2f} N"
         )
 
         # Calculate the lift and drag forces
@@ -144,9 +157,12 @@ class MediumForceComputation:
                 [drag_force_unit_vector[1], -drag_force_unit_vector[0]]
             )
         else:
-            # Should not happen if drag force direction is properly normalized
-            # This could be a fallback for an unexpected case
-            lift_force_direction = np.array([0, 0])
+            # The drag unit vector lies exactly on an axis (one component is 0), so it belongs to
+            # neither quadrant test above. Use the CCW perpendicular as a consistent default rather
+            # than zeroing the lift direction, which would silently discard all lift force.
+            lift_force_direction = np.array(
+                [-drag_force_unit_vector[1], drag_force_unit_vector[0]]
+            )
 
         # Rotate the lift and drag forces back to the original orientation
         lift_force_direction = self.__rotate_vector(
@@ -159,7 +175,11 @@ class MediumForceComputation:
         lift_force = lift_force_magnitude * lift_force_direction
         drag_force = drag_force_magnitude * drag_force_unit_vector
 
-        _logger.debug(f"compute: lift_force={lift_force} drag_force={drag_force}")
+        _logger.info(
+            f"compute: lift_force={lift_force} "
+            f"lift_force_direction={lift_force_direction} drag_force={drag_force} "
+            f"drag_force_unit_vector={drag_force_unit_vector}"
+        )
 
         return lift_force, drag_force
 
@@ -207,16 +227,33 @@ class MediumForceComputation:
                     area). Both coefficients are unitless; area is in square meters (m^2).
         """
 
-        lift_coefficient = np.interp(
-            attack_angle, self.__lift_coefficients[:, 0], self.__lift_coefficients[:, 1]
-        )
-        drag_coefficient = np.interp(
-            attack_angle, self.__drag_coefficients[:, 0], self.__drag_coefficients[:, 1]
-        )
-        area = np.interp(attack_angle, self.__areas[:, 0], self.__areas[:, 1])
-        _logger.debug(
-            f"interpolate: attack_angle={attack_angle} -> lift={lift_coefficient} drag={drag_coefficient} area={area}"
-        )
+        # The foils are symmetric, so the lookup tables only store the positive AoA branch:
+        # C_l is odd (C_l(-a) = -C_l(a)) and C_d is even (C_d(-a) = C_d(a)). We interpolate on
+        # |AoA| and re-apply the sign to lift. Beyond the table's max angle the foil is fully
+        # stalled and outside the modeled regime, so we return zero (np.interp would otherwise
+        # silently clamp to the endpoint, producing peak lift at all out-of-range angles →
+        # runaway thrust). Tables are assumed to start at 0°.
+        abs_attack_angle = abs(attack_angle)
+        lift_sign = np.sign(attack_angle)
+        lift_aoa_max = self.__lift_coefficients[-1, 0]
+        drag_aoa_max = self.__drag_coefficients[-1, 0]
+
+        if abs_attack_angle > lift_aoa_max:
+            lift_coefficient = 0.0
+        else:
+            lift_coefficient = lift_sign * np.interp(
+                abs_attack_angle, self.__lift_coefficients[:, 0], self.__lift_coefficients[:, 1]
+            )
+
+        if abs_attack_angle > drag_aoa_max:
+            drag_coefficient = 0.0
+        else:
+            drag_coefficient = np.interp(
+                abs_attack_angle, self.__drag_coefficients[:, 0], self.__drag_coefficients[:, 1]
+            )
+
+        area = np.interp(abs_attack_angle, self.__areas[:, 0], self.__areas[:, 1])
+
         return lift_coefficient, drag_coefficient, area
 
     def _draw_boat(ax, position, orientation):
