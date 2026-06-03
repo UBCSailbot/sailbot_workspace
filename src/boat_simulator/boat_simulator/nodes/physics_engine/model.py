@@ -15,7 +15,10 @@ from boat_simulator.common.constants import (
     WATER_DENSITY,
 )
 from boat_simulator.common.types import Scalar
-from boat_simulator.common.utils import bound_to_180, rad_to_degrees
+from boat_simulator.common.utils import (
+    bound_to_180,
+    rad_to_degrees,
+)
 from boat_simulator.nodes.physics_engine.fluid_forces import MediumForceComputation
 from boat_simulator.nodes.physics_engine.kinematics_computation import BoatKinematics
 from boat_simulator.nodes.physics_engine.kinematics_data import KinematicsData
@@ -61,6 +64,14 @@ class BoatState:
         self.sail_dist = BOAT_PROPERTIES.sail_dist
         self.rudder_dist = BOAT_PROPERTIES.rudder_dist
 
+        # Reduced-order wingsail rotational state. The wing rotates over time toward an
+        # equilibrium angle of attack set by the trim tab deflection (see __update_wing_angle).
+        self.__trim_tab_gain = BOAT_PROPERTIES.trim_tab_gain
+        self.__wingsail_natural_freq = BOAT_PROPERTIES.wingsail_natural_freq
+        self.__wingsail_damping_ratio = BOAT_PROPERTIES.wingsail_damping_ratio
+        self.__wing_angle = None  # degrees, lazily initialized to the wind angle on first step
+        self.__wing_angular_velocity = 0.0  # degrees per second
+
     def step(
         self,
         glo_wind_vel: NDArray,
@@ -77,9 +88,9 @@ class BoatState:
             glo_water_vel (NDArray): The velocity of the current in the global reference frame,
                 expressed in meters per second (m/s).
             rudder_angle_deg (float): The rudder angle with respect to the boat in degrees. Angle
-                convention is 0 degrees is straight, increasing CCW.
+                convention is 0° south, increases CW.
             trim_tab_angle (float): The trim tab angle with respect to the wingsail in degrees.
-                Angle convention is 0 degrees is straight, increasing CCW.
+                Angle convention is 0° south, increases CW.
 
         Returns:
             None: The method updates the internal state of the boat's kinematics but does not
@@ -89,23 +100,82 @@ class BoatState:
         rel_water_vel = glo_water_vel[:2] - self.global_velocity[:2]  # slice into 2d vector
 
         _logger.debug(
-            f"step inputs: rel_wind_vel={rel_wind_vel} rel_water_vel={rel_water_vel} rudder_angle={rudder_angle_deg:.2f} trim_tab={trim_tab_angle:.2f}"
+            f"BS | step inputs: rel_wind_vel={rel_wind_vel} rudder_angle={rudder_angle_deg:.2f} trim_tab={trim_tab_angle:.2f}"
         )
+
+        sail_angle_deg = self.__update_wing_angle(rel_wind_vel, trim_tab_angle)
 
         rel_net_force, net_torque = self.__compute_net_force_and_torque(
-            rel_wind_vel, rel_water_vel, rudder_angle_deg, trim_tab_angle
+            rel_wind_vel, rel_water_vel, rudder_angle_deg, sail_angle_deg
         )
 
-        _logger.debug(f"step outputs: rel_net_force={rel_net_force} net_torque={net_torque}")
+        # Guard the integration boundary: a single non-finite force/torque (e.g. from an upstream
+        # numerical issue) would be integrated into position/velocity and, because NaN/Inf are
+        # absorbing, corrupt every subsequent step irrecoverably. Drop the bad update instead.
+        if not (np.all(np.isfinite(rel_net_force)) and np.all(np.isfinite(net_torque))):
+            _logger.error(
+                f"BS | non-finite force/torque, skipping step: "
+                f"net_force={rel_net_force} net_torque={net_torque}"
+            )
+            return
 
         self.__kinematics_computation.step(rel_net_force, net_torque)
+
+    def __update_wing_angle(self, rel_wind_vel: NDArray, trim_tab_angle: Scalar) -> Scalar:
+        """Advances the wingsail's rotational state by one timestep and returns its new orientation.
+
+        The wingsail is modeled as a damped second-order rotational system whose equilibrium angle
+        of attack is set by the commanded trim tab angle. The wing rotates over time toward that
+        equilibrium rather than snapping to it instantaneously. The sail controller commands the
+        desired angle of attack directly, so the equilibrium AoA equals trim_tab_gain * command.
+
+        Args:
+            rel_wind_vel (NDArray): The apparent wind velocity, expressed in meters per second
+                (m/s), in the same reference frame expected by `MediumForceComputation.compute`.
+            trim_tab_angle (Scalar): The commanded trim tab angle, in degrees.
+
+        Returns:
+            Scalar: The wingsail's current orientation in degrees, using the convention expected by
+                `MediumForceComputation.compute` (0° along +x axis, increasing CCW).
+        """
+        wind_angle = np.degrees(np.arctan2(rel_wind_vel[1], rel_wind_vel[0]))
+
+        # Equilibrium angle of attack set by the tab; compute() defines AoA = wind_angle - orientation.
+        alpha_eq = self.__trim_tab_gain * trim_tab_angle
+        theta_target = wind_angle - alpha_eq
+
+        if self.__wing_angle is None:
+            # Start aligned with the equilibrium to avoid a spurious startup transient.
+            self.__wing_angle = bound_to_180(theta_target)
+            self.__wing_angular_velocity = 0.0
+            return self.__wing_angle
+
+        dt = self.timestep
+        wn = self.__wingsail_natural_freq
+        zeta = self.__wingsail_damping_ratio
+
+        error = bound_to_180(theta_target - self.__wing_angle)
+        angular_acceleration = wn**2 * error - 2 * zeta * wn * self.__wing_angular_velocity
+
+        # Semi-implicit Euler: update velocity first, then position with the new velocity.
+        self.__wing_angular_velocity += angular_acceleration * dt
+        self.__wing_angle = bound_to_180(
+            self.__wing_angle + self.__wing_angular_velocity * dt
+        )
+
+        _logger.debug(
+            f"BS | wing: target={theta_target:.2f} angle={self.__wing_angle:.2f} "
+            f"vel={self.__wing_angular_velocity:.2f} deg/s aoa={wind_angle - self.__wing_angle:.2f}"
+        )
+
+        return self.__wing_angle
 
     def __compute_net_force_and_torque(
         self,
         rel_wind_vel: NDArray,
         rel_water_vel: NDArray,
         rudder_angle_deg: Scalar,
-        trim_tab_angle: Scalar,
+        sail_angle_deg: Scalar,
     ) -> Tuple[NDArray, NDArray]:
         """Calculates the net force and net torque acting on the boat caused by the wind and water.
 
@@ -115,22 +185,25 @@ class BoatState:
             rel_water_vel (NDArray): The velocity of the current in the relative reference frame,
                 expressed in meters per second (m/s).
             rudder_angle_deg (float): The rudder angle with respect to the boat in degrees. Angle
-                convention is 0 degrees is straight, increasing CCW.
-            trim_tab_angle (float): The trim tab angle with respect to the wingsail in degrees.
-                Angle convention is 0 degrees is straight, increasing CCW.
+                convention is 0° south, increases CW.
+            sail_angle_deg (float): The wingsail's current orientation in degrees, using the
+                convention expected by `MediumForceComputation.compute` (0° along +x, CCW positive).
 
         Returns:
             Tuple[NDArray, NDArray]: A tuple where the first element represents the net force in
                 the relative reference frame, expressed in newtons (N), and the second element
                 represents the net torque, expressed in newton-meters (N•m).
         """
-
-        sail_lift, sail_drag = self.__sail_force_computation.compute(rel_wind_vel, trim_tab_angle)
+        # TODO: The force and torque compute assumes The orientation angle of the medium in degrees, where 0 degrees corresponds to the positive x-axis, and angles increase counter-clockwise (CCW).
+        sail_lift, sail_drag = self.__sail_force_computation.compute(rel_wind_vel, sail_angle_deg)
         rudder_lift, rudder_drag = self.__rudder_force_computation.compute(
             rel_water_vel, rudder_angle_deg
         )
-        rel_vel_2d = self.relative_velocity[:2]
-        hull_drag = -self.hull_drag_factor * np.linalg.norm(rel_vel_2d) * rel_vel_2d
+        # Hull drag opposes the boat's motion. The sail/rudder forces above are in the global
+        # frame, so the hull drag must be too — use the global velocity rather than the body-frame
+        # relative velocity, otherwise the summed net force mixes frames when the boat is yawed.
+        glo_vel_2d = self.global_velocity[:2]
+        hull_drag = -self.hull_drag_factor * np.linalg.norm(glo_vel_2d) * glo_vel_2d
         net_force = sail_lift + sail_drag + rudder_lift + rudder_drag + hull_drag
         tau_z = self.sail_dist * (sail_lift[1] + sail_drag[1]) - self.rudder_dist * (
             rudder_lift[1] + rudder_drag[1]
@@ -141,9 +214,27 @@ class BoatState:
             [net_force[0], net_force[1], 0.0]
         )  # slice into 2d vector and add zero z-comp
 
-        _logger.info(f"Computed forces: net_force={net_force}, tau_z_vector={tau_z_vector}")
+        def _fmt(v: NDArray) -> str:
+            return f"[{v[0]:8.2f}, {v[1]:8.2f}]"
+
+        _logger.info(
+            "BS | forces (N): "
+            f"|v_glo|={np.linalg.norm(glo_vel_2d):6.2f} m/s | "
+            f"sail_lift={_fmt(sail_lift)} sail_drag={_fmt(sail_drag)} | "
+            f"rudder_lift={_fmt(rudder_lift)} rudder_drag={_fmt(rudder_drag)} | "
+            f"hull_drag={_fmt(hull_drag)} | "
+            f"net=[{net_force[0]:8.2f}, {net_force[1]:8.2f}] | "
+            f"tau_z={tau_z:8.2f} N·m"
+        )
 
         return (net_force, tau_z_vector)
+
+    @property
+    def wing_angle(self) -> Scalar:
+        """Returns the wingsail's current orientation in degrees, using the convention expected by
+        `MediumForceComputation.compute` (0° along +x axis, increasing CCW). Returns 0.0 before the
+        first `step` initializes the wing state."""
+        return 0.0 if self.__wing_angle is None else self.__wing_angle
 
     @property
     def global_position(self) -> NDArray:
@@ -177,7 +268,12 @@ class BoatState:
     def relative_velocity(self) -> NDArray:
         """Returns the boat's current velocity in the relative reference frame,
         expressed in meters per second [m/s]."""
-        return self.__kinematics_computation.relative_data.linear_velocity
+        yaw = self.__kinematics_computation.global_data.angular_position[
+            ORIENTATION_INDICES.YAW.value
+        ]
+        glo = self.__kinematics_computation.global_data.linear_velocity
+        c, s = np.cos(-yaw), np.sin(-yaw)
+        return np.array([c * glo[0] - s * glo[1], s * glo[0] + c * glo[1], glo[2]])
 
     @property
     def relative_acceleration(self) -> NDArray:
