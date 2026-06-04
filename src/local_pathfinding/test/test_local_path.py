@@ -1558,6 +1558,39 @@ def test_update_if_needed_regenerates_path_when_segment_deviation_exceeded(
     ompl_path_cls.assert_called_once()
 
 
+def test_update_if_needed_reuses_path_when_boat_not_deviated(
+    basic_local_path_state,
+):
+    local_path, old_path, old_ompl_path = create_initialized_local_path_for_update_if_needed(
+        basic_local_path_state
+    )
+    inputs = create_update_if_needed_inputs()
+
+    with (
+        mock.patch.object(local_path, "in_collision_zone", return_value=False),
+        mock.patch.object(local_path, "is_path_expired", return_value=False),
+        mock.patch.object(
+            local_path,
+            "exceeded_segment_deviation",
+            return_value=False,
+        ) as exceeded_segment_deviation,
+        mock.patch.object(lp, "OMPLPath") as ompl_path_cls,
+    ):
+        desired_heading, new_target_lp_wp_index = local_path.update_if_needed(
+            inputs=inputs,
+            target_lp_wp_index=1,
+            received_new_global_waypoint=False,
+        )
+
+    assert desired_heading == pytest.approx(90.0, abs=3e-1)
+    assert new_target_lp_wp_index == 1
+    assert local_path._ompl_path is old_ompl_path
+    assert local_path.path is old_path
+    exceeded_segment_deviation.assert_called_once_with(old_path, 1, inputs.gps.lat_lon)
+    ompl_path_cls.assert_not_called()
+    local_path._logger.info.assert_any_call("Reusing local path: Path is valid, no change needed")
+
+
 def test_update_if_needed_raises_when_path_generation_exceeds_retries():
     mock_parent_logger = mock.Mock()
     mock_parent_logger.get_child.return_value = mock.Mock()
