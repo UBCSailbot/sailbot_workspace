@@ -17,9 +17,6 @@ import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
 from local_pathfinding.ompl_objectives import TimeObjective
 
-SECONDS_PER_HOUR = 3600
-METERS_PER_LAT_DEGREE = 111000.0
-
 
 class MockGPS(Node):
 
