@@ -526,6 +526,8 @@ class LocalPath:
             IndexError: If the target waypoint is reached and no next local waypoint exists.
         """
         self._target_lp_wp_index = target_lp_wp_index
+        boat_lat_lon = None
+
         new_aw = Wind(
             inputs.filtered_wind_sensor.speed.speed,
             inputs.filtered_wind_sensor.direction,
@@ -548,11 +550,11 @@ class LocalPath:
                 self._logger.warn(e)
                 boat_lat_lon = self.state.position  # type: ignore
 
-            must_change_reason = self.must_change_path(
-                received_new_global_waypoint,
-                boat_lat_lon,
-                new_aw,
-            )
+        must_change_reason = self.must_change_path(
+            received_new_global_waypoint,
+            boat_lat_lon,
+            new_aw,
+        )
 
         if must_change_reason.should_change_path:
             tries = 0
