@@ -92,7 +92,7 @@ class MockGPS(Node):
         self.add_on_set_parameters_callback(self._on_set_parameters)
 
     def add_gps_noise(
-        self, lat_lon_msg: ci.HelperLatLon, noise_sigma_meters: float = 3.0
+        self, lat_lon_msg: ci.HelperLatLon, noise_sigma_meters: float = 1.20923184
     ) -> ci.HelperLatLon:
         """Adds Gaussian noise to a coordinate.
 
