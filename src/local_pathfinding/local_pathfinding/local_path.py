@@ -430,7 +430,15 @@ class LocalPath:
         rejection_vector = boat_vector - projection_vector
         distance_to_segment_km = np.linalg.norm(rejection_vector)
 
-        return distance_to_segment_km > max_deviation_km
+        segment_exceeded = distance_to_segment_km > max_deviation_km
+        if segment_exceeded:
+            self._logger.info(
+                "Boat deviated from path segment: "
+                f"distance {distance_to_segment_km:.2f} km, "
+                f"max deviation {max_deviation_km:.2f} km"
+            )
+
+        return segment_exceeded
 
     def must_change_path(
         self,
