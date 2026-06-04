@@ -199,26 +199,38 @@ class Sailbot(Node):
         self.desired_heading = msg
 
         self.get_logger().info(
-            f"Publishing to {self.desired_heading_pub.topic}: {msg.heading.heading}, sail == {msg.sail}"  # noqa
+            f"Publishing to {self.desired_heading_pub.topic}: {msg.heading.heading}, "
+            f"sail == {msg.sail}"  # noqa
         )
         self.desired_heading_pub.publish(msg)
 
-        if msg.sail:
-            self.get_logger().debug(f"Publishing local path data to {self.lpath_data_pub.topic}")
-            self.publish_local_path_data()
+        self.get_logger().debug(f"Publishing local path data to {self.lpath_data_pub.topic}")
+        self.publish_local_path_data(msg.sail)
 
-    def publish_local_path_data(self):
+    def publish_local_path_data(self, sail: bool):
         """
         Collect all navigation data and publish it in one message.
         In development mode, all navigation data is published.
         In production mode, only the local path is published.
 
         """
+
+        # When sail is disabled the planner has no valid local path to follow; publish an empty
+        # Path rather than a stale or None one, so downstream consumers
+        # (e.g. the visualizer and website) render the "no local path" state
+        # instead of crashing on a None / misleading submessage.
+        local_path = (
+            self.local_path.path if (sail and self.local_path.path is not None) else ci.Path()
+        )
+
         # publish all navigation data when in dev mode
         if self.mode == "development":
             helper_obstacles = []
 
-            for obst in self.local_path.state.obstacles:
+            # state is None until the first successful local path. On a sail-disabled failure it
+            # may still hold the obstacles that caused the failure, so iterate only if present.
+            obstacles = self.local_path.state.obstacles if self.local_path.state else []
+            for obst in obstacles:
 
                 if isinstance(obst, ob.Land):
                     for polygon in obst.collision_zone.geoms:
@@ -251,7 +263,7 @@ class Sailbot(Node):
 
             msg = ci.LPathData(
                 global_path=self.global_path,
-                local_path=self.local_path.path,
+                local_path=local_path,
                 gps=self.gps,
                 filtered_wind_sensor=self.filtered_wind_sensor,
                 ais_ships=self.ais_ships,
@@ -260,7 +272,7 @@ class Sailbot(Node):
             )
         else:
             # in production only publish the local path for website
-            msg = ci.LPathData(local_path=self.local_path.path)
+            msg = ci.LPathData(local_path=local_path)
 
         self.lpath_data_pub.publish(msg)
 
@@ -323,6 +335,7 @@ class Sailbot(Node):
             return desired_heading, True
         except PathNotFoundError:
             self.get_logger().warning("Unable to generate a local path; disabling sail")
+            self.local_path.path = ci.Path(waypoints=[])
             return 0.0, False
 
     @staticmethod

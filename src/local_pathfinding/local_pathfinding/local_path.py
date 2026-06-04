@@ -1,12 +1,12 @@
 """The path to the next global waypoint, represented by the LocalPath class."""
 
 import math
-import numpy as np
 from collections import deque
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import List, Optional
 
+import numpy as np
 from rclpy.impl.rcutils_logger import RcutilsLogger
 from shapely.geometry import LineString, MultiPolygon
 
@@ -368,10 +368,7 @@ class LocalPath:
         return significant_change
 
     def exceeded_segment_deviation(
-        self,
-        path: ci.Path,
-        target_lp_wp_index: int,
-        boat_lat_lon: ci.HelperLatLon
+        self, path: ci.Path, target_lp_wp_index: int, boat_lat_lon: ci.HelperLatLon
     ) -> bool:
         """Returns true if the boat has deviated from the path segment by more than
         SEGMENT_DEVIATION_THRESHOLD * length of segment in kilometers.
@@ -458,24 +455,22 @@ class LocalPath:
             and (self.state.wind_tracker.aw_avg is not None)
             and (self.state.path_generated_wind is not None)
             and not self.state.wind_tracker.using_one_aw_point
-            and self.is_significant_wind_change(self.state.wind_tracker.aw_avg, self.state.path_generated_wind) # noqa
+            and self.is_significant_wind_change(
+                self.state.wind_tracker.aw_avg, self.state.path_generated_wind
+            )  # noqa
         ):
             return MustChangeReason(True, "Significant wind change")
         if self._target_lp_wp_index < 1:
             return MustChangeReason(
-                True,
-                f"Target waypoint index too low: {self._target_lp_wp_index}"
-                )
+                True, f"Target waypoint index too low: {self._target_lp_wp_index}"
+            )
         if self._target_lp_wp_index >= len(self.path.waypoints):
             return MustChangeReason(
                 True,
                 f"Target waypoint index out of bounds: {self._target_lp_wp_index} >= {len(self.path.waypoints)}",  # noqa
             )
 
-        return MustChangeReason(
-            False,
-            "Path is valid, no change needed"
-        )
+        return MustChangeReason(False, "Path is valid, no change needed")
 
     def update_if_needed(
         self,
@@ -544,6 +539,7 @@ class LocalPath:
         if must_change_reason.should_change_path:
             tries = 0
             new_ompl_path = None
+            new_state = None
             while tries < MAX_OMPL_PATH_GEN_TRIES:
                 try:
                     if self.state is None or self.state.wind_tracker is None:
@@ -558,7 +554,7 @@ class LocalPath:
                         inputs.target_global_waypoint,
                         inputs.filtered_wind_sensor,
                         inputs.planner,
-                        wind_tracker
+                        wind_tracker,
                     )
                     new_ompl_path = OMPLPath(
                         parent_logger=self._logger,
@@ -575,10 +571,21 @@ class LocalPath:
                     tries += 1
 
             if not new_ompl_path or not new_ompl_path.solved:
-                self._logger.warn("Old Path must change and new path couldn't be solved" +
-                                  f" within {MAX_OMPL_PATH_GEN_TRIES}")
-                raise PathNotFoundError("Old Path must change and new path couldn't be solved" +
-                                        f" within {MAX_OMPL_PATH_GEN_TRIES}")
+                # We failed to generate a new path after several tries,
+                # but the old path is also not valid anymore.
+                if new_state is not None:
+                    new_state.wind_tracker.using_one_aw_point = (
+                        new_state.wind_tracker.aw_avg is None
+                    )
+                    self.state = new_state
+                self._logger.warn(
+                    "Old Path must change and new path couldn't be solved"
+                    + f" within {MAX_OMPL_PATH_GEN_TRIES}"
+                )
+                raise PathNotFoundError(
+                    "Old Path must change and new path couldn't be solved"
+                    + f" within {MAX_OMPL_PATH_GEN_TRIES}"
+                )
 
             self._logger.info(f"Updating local path: {must_change_reason.reason}")
             new_state.wind_tracker.using_one_aw_point = new_state.wind_tracker.aw_avg is None

@@ -1567,6 +1567,34 @@ def test_update_if_needed_preserves_current_path_when_new_state_inputs_are_incom
     )
 
 
+def test_update_if_needed_adopts_new_state_but_keeps_path_when_solver_fails(
+    basic_local_path_state,
+):
+    local_path, old_path, old_ompl_path = create_initialized_local_path_for_update_if_needed(
+        basic_local_path_state
+    )
+    old_state = local_path.state
+    inputs = create_update_if_needed_inputs()
+
+    unsolved_ompl_path = mock.Mock()
+    unsolved_ompl_path.solved = False
+
+    with mock.patch.object(lp, "OMPLPath", return_value=unsolved_ompl_path):
+        with pytest.raises(lp.PathNotFoundError, match="couldn't be solved"):
+            local_path.update_if_needed(
+                inputs=inputs,
+                target_lp_wp_index=1,
+                received_new_global_waypoint=True,
+            )
+
+    # State is refreshed from the failing inputs...
+    assert local_path.state is not old_state
+    assert isinstance(local_path.state, lp.LocalPathState)
+    # ...but the path and OMPL path are left intact (no valid replacement was produced).
+    assert local_path.path is old_path
+    assert local_path._ompl_path is old_ompl_path
+
+
 def test_update_if_needed_raises_when_solved_ompl_path_returns_invalid_path():
     mock_parent_logger = mock.Mock()
     mock_parent_logger.get_child.return_value = mock.Mock()
