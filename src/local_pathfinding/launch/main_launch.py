@@ -4,13 +4,12 @@ import importlib
 import os
 from typing import List, Tuple
 
-from launch_ros.actions import Node
-
 from launch.actions import DeclareLaunchArgument, OpaqueFunction
 from launch.launch_context import LaunchContext
 from launch.launch_description import LaunchDescription
 from launch.some_substitutions_type import SomeSubstitutionsType
 from launch.substitutions import LaunchConfiguration
+from launch_ros.actions import Node
 
 # Local launch arguments and constants
 PACKAGE_NAME = "local_pathfinding"
@@ -205,9 +204,11 @@ def get_mock_gps_node_description(context: LaunchContext) -> Node:
     """Gets the launch description for the mock gps node"""
     node_name = "mock_gps"
     test_plan = LaunchConfiguration("test_plan").perform(context)
+    use_gps_noise = LaunchConfiguration("use_gps_noise").perform(context)
+    use_gps_noise_bool = use_gps_noise.lower() in ["true", "1", "yes"]
     ros_parameters = [
         LaunchConfiguration("config").perform(context),
-        {"test_plan": test_plan},
+        {"test_plan": test_plan, "use_gps_noise": use_gps_noise_bool},
     ]
     ros_arguments: List[SomeSubstitutionsType] = [
         "--log-level",

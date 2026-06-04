@@ -3,6 +3,7 @@ Mock class for the GPS. Publishes basic GPS data to the ROS network.
 """
 
 import math
+import random
 from typing import List
 
 import rclpy
@@ -17,6 +18,7 @@ import local_pathfinding.coord_systems as cs
 from local_pathfinding.ompl_objectives import TimeObjective
 
 SECONDS_PER_HOUR = 3600
+METERS_PER_LAT_DEGREE = 111000.0
 
 
 class MockGPS(Node):
@@ -46,6 +48,7 @@ class MockGPS(Node):
                 ("tw_speed_kmph", rclpy.Parameter.Type.DOUBLE),
                 ("tw_dir_deg", rclpy.Parameter.Type.INTEGER),
                 ("test_plan", rclpy.Parameter.Type.STRING),
+                ("use_gps_noise", rclpy.Parameter.Type.BOOL),
             ],
         )
 
@@ -63,6 +66,8 @@ class MockGPS(Node):
         self.pub_period_sec = (
             self.get_parameter("pub_period_sec").get_parameter_value().double_value
         )
+
+        self._use_noise = self.get_parameter("use_gps_noise").get_parameter_value().bool_value
 
         # Mock GPS publisher initialization
         self._gps_pub = self.create_publisher(
@@ -87,6 +92,24 @@ class MockGPS(Node):
         # Parameter Event Handler (Parameters can change over the life of the simulation)
         self.add_on_set_parameters_callback(self._on_set_parameters)
 
+    def add_gps_noise(
+        self, lat_lon_msg: ci.HelperLatLon, noise_sigma_meters: float = 3.0
+    ) -> ci.HelperLatLon:
+        """Adds Gaussian noise to a coordinate.
+
+        Args:
+            lat_lon_msg (ci.HelperLatLon): The original lat/lon coordinates.
+            noise_sigma_meters (float): The standard deviation of the noise in meters.
+
+        Returns:
+            ci.HelperLatLon: Object containing the new lat/lon coordinates with noise.
+        """
+        noise_meters = cs.XY(
+            random.gauss(0.0, noise_sigma_meters),
+            random.gauss(0.0, noise_sigma_meters),
+        )
+        return cs.xy_to_latlon(reference=lat_lon_msg, xy=noise_meters)
+
     def mock_gps_callback(self) -> None:
         """Updates boat speed based on current heading and true wind.
         Publishes mock gps data.
@@ -94,8 +117,20 @@ class MockGPS(Node):
         self.update_speed()
         self.get_next_location()
 
+        if self._use_noise:
+            published_location = self.add_gps_noise(self._current_location)
+        else:
+            published_location = self._current_location
+
+        self.get_logger().info(
+            f"Actual Lat: {self._current_location.latitude:.7f} "
+            f"Actual Lon: {self._current_location.longitude:.7f}\n"
+            f"Published Lat: {published_location.latitude:.7f} "
+            f"Published Lon: {published_location.longitude:.7f} "
+        )
+
         msg: ci.GPS = ci.GPS(
-            lat_lon=self._current_location,
+            lat_lon=published_location,
             speed=self._mean_speed_kmph,
             heading=self._heading_deg,
         )
@@ -125,6 +160,8 @@ class MockGPS(Node):
                         successful=False, reason="tw_dir_deg must be in (-180, 180]"
                     )
                 self._tw_dir_deg = tw_dir_deg
+            elif p.name == "use_gps_noise":
+                self._use_noise = bool(p.value)
             else:
                 self._tw_speed_kmph = p.value
         return SetParametersResult(successful=True)
