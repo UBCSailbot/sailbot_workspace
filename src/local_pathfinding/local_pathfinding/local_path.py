@@ -588,7 +588,8 @@ class LocalPath:
                 )
 
             self._logger.info(f"Updating local path: {must_change_reason.reason}")
-            new_state.wind_tracker.using_one_aw_point = new_state.wind_tracker.aw_avg is None
+            wind_tracker = new_state.wind_tracker  # type: ignore[union-attr]
+            wind_tracker.using_one_aw_point = wind_tracker.aw_avg is None
             self.state = new_state
             self._update(new_ompl_path)
 
