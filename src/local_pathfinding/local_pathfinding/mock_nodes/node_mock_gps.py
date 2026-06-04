@@ -103,11 +103,11 @@ class MockGPS(Node):
         Returns:
             ci.HelperLatLon: Object containing the new lat/lon coordinates with noise.
         """
-        noise_meters = cs.XY(
-            random.gauss(0.0, noise_sigma_meters),
-            random.gauss(0.0, noise_sigma_meters),
+        noise_km = cs.XY(
+            random.gauss(0.0, noise_sigma_meters) / 1000,
+            random.gauss(0.0, noise_sigma_meters) / 1000,
         )
-        return cs.xy_to_latlon(reference=lat_lon_msg, xy=noise_meters)
+        return cs.xy_to_latlon(reference=lat_lon_msg, xy=noise_km)
 
     def mock_gps_callback(self) -> None:
         """Updates boat speed based on current heading and true wind.
