@@ -110,7 +110,7 @@ SAIL_ACTUATION_NUM_LOOP_EXECUTIONS = 10  # TODO This is a placeholder until the 
 RUDDER_ACTUATION_NUM_LOOP_EXECUTIONS = 10  # TODO This is a placeholder until the PID is integrated
 
 # Max rudder control angle range in degrees, min angle [0] and max angle [1]
-RUDDER_MAX_ANGLE_RANGE = (-45, 45)
+RUDDER_MAX_ANGLE_RANGE = (-30, 30)
 
 # Max sail actuator control angle range in degrees, min angle [0], max angle [1]
 SAIL_MAX_ANGLE_RANGE = (-7, 7)
