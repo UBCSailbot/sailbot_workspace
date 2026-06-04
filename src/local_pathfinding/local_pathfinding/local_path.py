@@ -433,7 +433,10 @@ class LocalPath:
         return distance_to_segment_km > max_deviation_km
 
     def must_change_path(
-        self, received_new_global_waypoint: bool, new_aw: Optional[Wind] = None
+        self,
+        received_new_global_waypoint: bool,
+        boat_lat_lon: Optional[ci.HelperLatLon] = None,
+        new_aw: Optional[Wind] = None,
     ) -> MustChangeReason:
         """Check if the path must be changed.
 
@@ -465,12 +468,18 @@ class LocalPath:
             return MustChangeReason(
                 True,
                 f"Target waypoint index too low: {self._target_lp_wp_index}"
-                )
+            )
         if self._target_lp_wp_index >= len(self.path.waypoints):
             return MustChangeReason(
                 True,
                 f"Target waypoint index out of bounds: {self._target_lp_wp_index} >= {len(self.path.waypoints)}",  # noqa
             )
+        if boat_lat_lon is not None and self.exceeded_segment_deviation(
+            self.path,
+            self._target_lp_wp_index,
+            boat_lat_lon,
+        ):
+            return MustChangeReason(True, "Boat deviated from path segment")
 
         return MustChangeReason(
             False,
@@ -539,7 +548,11 @@ class LocalPath:
                 self._logger.warn(e)
                 boat_lat_lon = self.state.position  # type: ignore
 
-        must_change_reason = self.must_change_path(received_new_global_waypoint, new_aw)
+            must_change_reason = self.must_change_path(
+                received_new_global_waypoint,
+                boat_lat_lon,
+                new_aw,
+            )
 
         if must_change_reason.should_change_path:
             tries = 0
