@@ -177,6 +177,14 @@ class Sailbot(Node):
 
         if not self._all_subs_active():
             self._log_inactive_subs_warning()
+            msg = ci.DesiredHeading()
+            msg.heading.heading = 0.0
+            msg.sail = False
+            self.desired_heading = msg
+            self.get_logger().debug(
+                f"Publishing to {self.desired_heading_pub.topic}: {msg.heading.heading}"
+            )
+            self.desired_heading_pub.publish(msg)
             return  # should not continue, return and try again next loop
 
         self.update_params()
@@ -368,24 +376,33 @@ class Sailbot(Node):
             self.planner = planner
 
     def _all_subs_active(self) -> bool:
-        return self.ais_ships and self.gps and self.global_path and self.filtered_wind_sensor
+        return (
+            self.ais_ships is not None
+            and self.gps is not None
+            and self.global_path is not None
+            and self.filtered_wind_sensor is not None
+        )
 
     def _log_inactive_subs_warning(self):
         """
         Logs a warning message for each inactive subscriber.
         """
         inactive_subs = []
-        if self.ais_ships_sub is None:
+        if self.ais_ships is None:
             inactive_subs.append("ais_ships")
-        if self.gps_sub is None:
+        if self.gps is None:
             inactive_subs.append("gps")
-        if self.global_path_sub is None:
+        if self.global_path is None:
             inactive_subs.append("global_path")
-        if self.filtered_wind_sensor_sub is None:
+        if self.filtered_wind_sensor is None:
             inactive_subs.append("filtered_wind_sensor")
         if len(inactive_subs) == 0:
             return
-        self._logger.warning("Inactive Subscribers: " + ", ".join(inactive_subs))
+        self.get_logger().warning(
+            "Missing navigation inputs: "
+            + ", ".join(inactive_subs)
+            + "; publishing desired heading with sail disabled"
+        )
 
 
 if __name__ == "__main__":
