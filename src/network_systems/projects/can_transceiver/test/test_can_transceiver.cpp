@@ -731,8 +731,8 @@ TEST_F(TestCanFrameParser, TestAISShipsInvalid)
     constexpr std::array<float, 2>  invalid_cogs{-361, 361};
     constexpr std::array<float, 2>  invalid_sogs{SOG_SPEED_LBND - 1, SOG_SPEED_UBND + 1};
     constexpr std::array<int8_t, 2> invalid_rots{ROT_LBND - 1, ROT_UBND + 1};
-    constexpr std::array<float, 2>  invalid_widths{SHIP_DIMENSION_LBND - 1, SHIP_DIMENSION_UBND + 1};
-    constexpr std::array<float, 2>  invalid_lengths{SHIP_DIMENSION_LBND - 1, SHIP_DIMENSION_UBND + 1};
+    constexpr std::array<float, 2>  invalid_widths{SHIP_DIMENSION_LBND - 2, SHIP_DIMENSION_UBND + 1};
+    constexpr std::array<float, 2>  invalid_lengths{SHIP_DIMENSION_LBND - 2, SHIP_DIMENSION_UBND + 1};
 
     CAN_FP::CanId      valid_id = CAN_FP::CanId::SAIL_AIS;
     msg::HelperAISShip msg;

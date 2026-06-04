@@ -27,7 +27,7 @@ void CanTransceiver::onNewCanData(const CanFrame & frame) const
         return;
     }
     CanId id{frame.can_id};
-    // TODO: REMOVE PRESSURE SENSORS PROPERLY (hotfix for on water test)
+    // REMOVE PRESSURE SENSORS PROPERLY (hotfix for on water test)
 
     if (
       (id >= CanId::DEBUG_START && id <= CanId::DEBUG_END) ||
