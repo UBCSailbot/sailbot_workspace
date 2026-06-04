@@ -198,13 +198,14 @@ class Sailbot(Node):
 
         self.desired_heading = msg
 
-        self.get_logger().debug(
-            f"Publishing to {self.desired_heading_pub.topic}: {msg.heading.heading}"
+        self.get_logger().info(
+            f"Publishing to {self.desired_heading_pub.topic}: {msg.heading.heading}, sail == {msg.sail}"  # noqa
         )
         self.desired_heading_pub.publish(msg)
 
-        self.get_logger().debug(f"Publishing local path data to {self.lpath_data_pub.topic}")
-        self.publish_local_path_data()
+        if msg.sail:
+            self.get_logger().debug(f"Publishing local path data to {self.lpath_data_pub.topic}")
+            self.publish_local_path_data()
 
     def publish_local_path_data(self):
         """
