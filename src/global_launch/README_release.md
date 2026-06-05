@@ -1,6 +1,7 @@
 ## Instructions to deploy our software to the Raspberry Pi
 
 NOTE: This is a copy of $ROS_WORKSPACE/.devocntainer/release/README.md
+
 1. Push your changes to your branch on GitHub and go to the Build Release
    Image workflow page on GitHub
 
@@ -8,7 +9,7 @@ NOTE: This is a copy of $ROS_WORKSPACE/.devocntainer/release/README.md
    (example-tag) and click run workflow
 
 3. Obtain a classic personal access token (PAT) from GitHub if you do not
-   already have one. It’s a more secure way to log in to GitHub
+   already have one. It's a more secure way to log in to GitHub
 
 4. Once the workflow is complete (after 4-5 minutes) connect to the raspberry
    pi using SSH and navigate to the home directory: `~/`
