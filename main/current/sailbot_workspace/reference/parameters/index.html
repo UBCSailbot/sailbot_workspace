@@ -1032,10 +1032,21 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#mgp_main" class="md-nav__link">
+  <a href="#global_path" class="md-nav__link">
     <span class="md-ellipsis">
       
-        mgp_main
+        global_path
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mock_global_path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        mock_global_path
       
     </span>
   </a>
@@ -2787,10 +2798,21 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#mgp_main" class="md-nav__link">
+  <a href="#global_path" class="md-nav__link">
     <span class="md-ellipsis">
       
-        mgp_main
+        global_path
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mock_global_path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        mock_global_path
       
     </span>
   </a>
@@ -2973,40 +2995,38 @@ parameters specified in <code>globals.yaml</code>.</p>
 </ul>
 <h2 id="local-pathfinding-parameters">Local Pathfinding Parameters<a class="headerlink" href="#local-pathfinding-parameters" title="Permanent link">&para;</a></h2>
 <p>ROS parameters specific to the nodes in the local_pathfinding package.</p>
-<h3 id="mgp_main"><code>mgp_main</code><a class="headerlink" href="#mgp_main" title="Permanent link">&para;</a></h3>
+<h3 id="global_path"><code>global_path</code><a class="headerlink" href="#global_path" title="Permanent link">&para;</a></h3>
+<p>The production node that reads the global path from a csv file and
+publishes it (interpolated to <code>global_path_interval_spacing_km</code>) on the
+<code>global_path</code> topic for local pathfinding to consume.</p>
 <p><strong><code>global_path_filepath</code></strong></p>
 <ul>
-<li><em>Description</em>: The absolute filepath to a global path csv file.</li>
+<li><em>Description</em>: The absolute filepath to a global path csv file. The file
+  must have a <code>latitude,longitude</code> header followed by one waypoint per row,
+  ordered final destination first and launch area last (<code>navigate</code> treats
+  waypoint index 0 as the final destination and heads toward it starting from
+  the last waypoint).</li>
 <li><em>Datatype</em>: <code>string</code></li>
 <li><em>Acceptable Values</em>: Any valid filepath to a properly formatted csv file.</li>
 </ul>
-<p><strong><code>interval_spacing</code></strong></p>
+<p><strong><code>global_path_interval_spacing_km</code></strong></p>
 <ul>
-<li><em>Description</em>: The upper bound on spacing between each point in the global
-  path in km.</li>
+<li><em>Description</em>: The upper bound on the spacing between consecutive points in
+  the global path in km. The path read from the csv file is interpolated so
+  that no two consecutive waypoints are farther apart than this value. This is
+  a global parameter shared by all nodes.</li>
 <li><em>Datatype</em>: <code>double</code></li>
 <li><em>Range</em>: <code>(0.0, MAX_DOUBLE)</code></li>
 </ul>
-<p><strong><code>write</code></strong></p>
-<ul>
-<li><em>Description</em>: Whether or not to write a generated global path to a new csv
-  file.</li>
-<li><em>Datatype</em>: <code>boolean</code></li>
-<li><em>Acceptable Values</em>: <code>true</code>, <code>false</code></li>
-</ul>
+<h3 id="mock_global_path"><code>mock_global_path</code><a class="headerlink" href="#mock_global_path" title="Permanent link">&para;</a></h3>
+<p>The development-only node that publishes a mock global path sourced from the
+active test plan.</p>
 <p><strong><code>gps_threshold</code></strong></p>
 <ul>
 <li><em>Description</em>: A new path will be generated if the GPS position changed by
-  more thangps_threshold*interval_spacing.</li>
+  more than <code>gps_threshold * global_path_interval_spacing_km</code>.</li>
 <li><em>Datatype</em>: <code>double</code></li>
 <li><em>Acceptable Values</em>: <code>(1.0, MAX_DOUBLE)</code></li>
-</ul>
-<p><strong><code>force</code></strong></p>
-<ul>
-<li><em>Description</em>: Force the mock global path callback to update the global
-  path when set to true.</li>
-<li><em>Datatype</em>: <code>boolean</code></li>
-<li><em>Acceptable Values</em>: <code>true</code>, <code>false</code></li>
 </ul>
 <h3 id="navigate_main"><code>navigate_main</code><a class="headerlink" href="#navigate_main" title="Permanent link">&para;</a></h3>
 <p><strong><code>path_planner</code></strong></p>

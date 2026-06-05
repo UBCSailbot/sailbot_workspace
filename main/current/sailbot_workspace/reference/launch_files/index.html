@@ -3038,7 +3038,7 @@ launch command.</p>
 <summary>Example using the <code>-s</code> flag in a launch command</summary>
 <p>Let's add the <code>-s</code> flag after the global launch command to see the list
 of arguments:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>ros2<span class="w"> </span>launch<span class="w"> </span><span class="nv">$ROS_WORKSPACE</span>/src/global_launch/main_launch.py<span class="w"> </span>-s
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>ros2<span class="w"> </span>launch<span class="w"> </span>global_launch<span class="w"> </span>main_launch.py<span class="w"> </span>-s
 </code></pre></div>
 <p>The following output is observed in the terminal (as of September 2023):</p>
 <p><!-- markdownlint-disable MD013 -->
@@ -3074,7 +3074,7 @@ it may be passed to the global launch file without generating any errors.
 This is valid even though the argument doesn't show up in the argument
 list for the global launch file. For example, the following will run:</p>
 <p><!-- markdownlint-disable MD013 -->
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>ros2<span class="w"> </span>launch<span class="w"> </span><span class="nv">$ROS_WORKSPACE</span>/src/global_launch/main_launch.py<span class="w"> </span>enable_sim_multithreading:<span class="o">=</span><span class="nb">true</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>ros2<span class="w"> </span>launch<span class="w"> </span>global_launch<span class="w"> </span>main_launch.py<span class="w"> </span>enable_sim_multithreading:<span class="o">=</span><span class="nb">true</span>
 </code></pre></div>
 <!-- markdownlint-enable MD013 --></p>
 <p>Compare the argument list between the global launch file and the package

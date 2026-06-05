@@ -1405,7 +1405,18 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Run">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wind-tracking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Wind Tracking
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Wind Tracking">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -2672,7 +2683,18 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Run">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#wind-tracking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Wind Tracking
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Wind Tracking">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -2744,6 +2766,17 @@ Its README has been copied below.</p>
 <p>UBC Sailbot's local pathfinding ROS package</p>
 <h2 id="run">Run<a class="headerlink" href="#run" title="Permanent link">&para;</a></h2>
 <p>Using main launch file: <code>ros2 launch local_pathfinding main_launch.py</code></p>
+<h2 id="wind-tracking">Wind Tracking<a class="headerlink" href="#wind-tracking" title="Permanent link">&para;</a></h2>
+<p>Local pathfinding keeps a rolling apparent-wind history in <code>WindTracker</code> so wind
+history survives <code>LocalPathState</code> replacement during path regeneration. Once the
+history reaches <code>WIND_HISTORY_LEN</code> readings, <code>WindTracker.aw_avg</code> is used as the
+smoothed apparent wind estimate.</p>
+<p>Each generated local path stores <code>path_generated_wind</code>, the apparent wind value
+used by OMPL for that path. This is the rolling average when available; before
+the rolling average is populated, it falls back to the current filtered apparent
+wind reading. Wind-based path switching compares the current rolling average
+against <code>path_generated_wind</code>, so a path is regenerated only when the smoothed
+wind has drifted significantly from the wind used to generate the current path.</p>
 <h3 id="launch-parameters">Launch Parameters<a class="headerlink" href="#launch-parameters" title="Permanent link">&para;</a></h3>
 <p>Launch arguments are added to the run command in the format <code>&lt;name&gt;:=&lt;value&gt;</code>.</p>
 <!-- markdownlint-disable MD013 -->
