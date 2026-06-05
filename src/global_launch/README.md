@@ -5,7 +5,7 @@
 - You can utilize different launch arguments to perform different tasks when
   launching.
   <!-- markdownlint-disable MD013 -->
-    - For example, we can look at all the debug statements for all the nodes when we use `loge_level:=debug` as our launch argument.
+    - For example, we can look at all the debug statements for all the nodes when we use `log_level:=debug` as our launch argument.
   <!-- markdownlint-enable MD013 -->
 - To select the mode, we need use `mode:="development"` or `mode:="production"` launch arguments
 
