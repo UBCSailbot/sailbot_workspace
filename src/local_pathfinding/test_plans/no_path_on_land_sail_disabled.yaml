@@ -1,0 +1,41 @@
+# FAILURE CASE: exercises the sail=False branch of DesiredHeading.
+# Polaris starts on a large landmass that covers its entire local-pathfinding
+# search area, while the global path leads to a goal well to the north. With the
+# start position fully blocked by land there is no valid local path, so the OMPL
+# solver fails and LocalPath.update_if_needed raises PathNotFoundError.
+# node_navigate then publishes a DesiredHeading with heading=0.0 and sail=False
+# (see Sailbot.get_desired_heading in node_navigate.py).
+#
+# NOTE: a single solid landmass is used (rather than a ring enclosing the boat)
+# because mock test-plan land is converted to a MultiPolygon without the
+# buffer(0) repair that real land data receives (see Land.update_collision_zone
+# in obstacles.py), so the geometry must be valid and non-overlapping on its own.
+#
+# Use this plan to confirm the controller/network systems correctly handle the
+# sail-disabled signal when local_pathfinding fails to produce a heading, when running ros2 global_launch
+
+tw_dir_deg: 90
+tw_speed_kmph: 12.0
+
+gps:
+  latitude: 49.20
+  longitude: -123.20
+  speed_kmph: 12.0
+  heading_deg: 0.0
+
+# No AIS traffic — the failure is caused purely by the boat being trapped by land.
+ais: []
+
+# [lon, lat] — one solid landmass covering the whole start search box
+# (the planner buffers ~2 km around the start; this rectangle spans ~4 km each
+# way), so every candidate start state is on land and no local path exists.
+land:
+  - [[-123.24, 49.17],
+     [-123.16, 49.17],
+     [-123.16, 49.23],
+     [-123.24, 49.23]]
+
+global_path:
+  waypoints:
+    - {latitude: 49.30, longitude: -123.20}
+    - {latitude: 49.36, longitude: -123.20}

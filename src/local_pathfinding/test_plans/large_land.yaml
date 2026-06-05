@@ -1,0 +1,23 @@
+# A large rectangular island sits directly in the northbound path.
+# Polaris must navigate around it (east or west) to reach the goal.
+# Wind from east gives a clean beam reach so the test isolates land avoidance.
+tw_dir_deg: 90
+tw_speed_kmph: 12.0
+
+gps:
+  latitude: 49.20
+  longitude: -123.20
+  speed_kmph: 12.0
+  heading_deg: 0.0
+
+# [lon, lat] — large island spanning the direct northbound route
+land:
+  - [[-123.27, 49.25],
+     [-123.13, 49.25],
+     [-123.13, 49.32],
+     [-123.27, 49.32]]
+
+global_path:
+  waypoints:
+    - {latitude: 49.38, longitude: -123.20}
+    - {latitude: 49.44, longitude: -123.20}
