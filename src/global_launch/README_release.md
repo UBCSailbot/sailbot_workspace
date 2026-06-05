@@ -94,7 +94,7 @@ run the following and change the container name (example-name) accordingly:
    ```bash
    docker start example-name && \
    docker exec -it example-name bash -ic "ros2 launch \
-      src/global_launch/main_launch.py record:=true mode:=production \
+      global_launch main_launch.py record:=true mode:=production \
       2>&1 | tee src/global_launch/voyage_log/combined_log_$(date %F_%T).txt"
    ```
 

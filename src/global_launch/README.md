@@ -1,7 +1,7 @@
 # Description
 
 <!-- markdownlint-disable-next-line MD013 -->
-- Running `ros2 launch $ROS_WORKSPACE/src/global_launch/main_launch.py` in the terminal will begin the entire system.
+- Running `ros2 launch global_launch main_launch.py` in the terminal will begin the entire system.
 - You can utilize different launch arguments to perform different tasks when
   launching.
   <!-- markdownlint-disable MD013 -->
@@ -25,5 +25,5 @@
 - When we want to store our logs in a separate file, then we can use the following add command,
 `2>&1 | tee src/global_launch/voyage_log/combined_log.txt`. The logs will be stored in the `combined_log*.txt` file. Where * can be any suffix like `combined_log_1.txt`, `combined_log_clean.txt`, etc.
 - The `esc[32m` is present in the `[DEBUG]` statement, as that is used for colouring that line green.
-- A on-water testing launch would look something like this, `ros2 launch $ROS_WORKSPACE/src/global_launch/main_launch.py record:=true mode:="production" 2>&1 | tee src/global_launch/voyage_log/combined_log.txt`
+- A on-water testing launch would look something like this, `ros2 launch global_launch main_launch.py record:=true mode:="production" 2>&1 | tee src/global_launch/voyage_log/combined_log.txt`
 <!-- markdownlint-enable MD013 -->
