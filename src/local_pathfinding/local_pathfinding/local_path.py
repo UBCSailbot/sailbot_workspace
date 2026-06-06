@@ -390,8 +390,8 @@ class LocalPath:
             valid preceding/target waypoint is required to define the segment.
         """
         if target_lp_wp_index == 0 or target_lp_wp_index >= len(path.waypoints):
-            self._logger.warn("Target waypoint out of bounds, must be in range [1, len(waypoints)")
-            raise IndexError("Target Waypoint out of bounds, must be in range [1, len(waypoints)")
+            self._logger.warn("Target waypoint out of bounds, must be in range [1, len(waypoints))")  # noqa
+            raise IndexError("Target waypoint out of bounds, must be in range [1, len(waypoints))")
 
         prev_wp = path.waypoints[target_lp_wp_index - 1]
         target_wp = path.waypoints[target_lp_wp_index]
