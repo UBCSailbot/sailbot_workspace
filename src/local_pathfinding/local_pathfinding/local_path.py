@@ -445,6 +445,28 @@ class LocalPath:
     ) -> MustChangeReason:
         """Check if the path must be changed.
 
+        Evaluates a prioritized set of conditions and returns a `MustChangeReason` indicating
+        whether a path change is required and a reason.
+
+        Priority of checks (first matching condition wins):
+        - Receipt of a new global waypoint (always requires a new local path)
+        - Missing OMPL path, LocalPathState, or local path
+        - Current path intersects a collision zone
+        - Path time-to-live (TTL) has expired
+        - Significant wind change between the rolling wind average and the wind used to
+          generate the current path (only evaluated when the rolling average is available
+          and the current path was not generated from a single apparent-wind point)
+        - Invalid target local waypoint index (too low or beyond available waypoints)
+        - Boat has deviated from the current path segment beyond the allowed threshold
+
+        Args:
+            received_new_global_waypoint (bool): True when the global path advanced to a
+                new waypoint and a local-path regeneration should be triggered.
+            boat_lat_lon (Optional[ci.HelperLatLon], optional): Current boat position used to
+                evaluate segment deviation. If None, deviation is not evaluated.
+            new_aw (Optional[Wind], optional): The most recent apparent wind reading. This
+                value is used to update wind history before evaluating wind-based switching.
+
         Returns:
             MustChangeReason
         """
