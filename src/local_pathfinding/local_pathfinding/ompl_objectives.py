@@ -17,6 +17,7 @@ WIND_OBJECTIVE_WEIGHT = 0.85
 TIME_OBJECTIVE_WEIGHT = 0.15
 NO_GO_ZONE = math.pi / 4
 WIND_COST_SIN_EXPONENT = 80
+GOAL_DIRECTION_TOLERANCE = 1e-9
 
 
 #               Estimated Boat Speeds (kmph) as function of True Wind Speed (kmph)
@@ -70,11 +71,8 @@ class GoalDirectionObjective(ob.OptimizationObjective):
     allows sideways motion, such as tacking or obstacle avoidance, as long as the segment does
     not move backward relative to the goal direction.
     """
-    def __init__(
-       self,
-       space_information,
-       goal_position_in_xy
-       ):
+
+    def __init__(self, space_information, goal_position_in_xy):
         super().__init__(space_information)
         self.goal_position_in_xy = goal_position_in_xy
 
@@ -83,8 +81,8 @@ class GoalDirectionObjective(ob.OptimizationObjective):
            makes progress toward the goal.
 
         The segment vector is dotted with the direction from s1 to the goal. If the projection
-        is negative, the segment is moving away from the goal and receives infinite cost.
-        Otherwise, the segment receives zero additional cost.
+        is negative beyond GOAL_DIRECTION_TOLERANCE, the segment is moving away from the goal
+        and receives infinite cost. Otherwise, the segment receives zero additional cost.
 
         Args:
             s1 (SE2StateInternal): The start of the path segment
@@ -94,14 +92,14 @@ class GoalDirectionObjective(ob.OptimizationObjective):
             ob.Cost: The cost of the path segment from s1 to s2
         """
 
-        s12_vec = (s2.x - s1.x, s2.y - s1.y)  # vector from s1 to s2
-        s1g_vec = (self.goal_position_in_xy.x - s1.x, self.goal_position_in_xy.y - s1.y)
+        s12_vec = (s2.getX() - s1.getX(), s2.getY() - s1.getY())  # vector from s1 to s2
+        s1g_vec = (self.goal_position_in_xy.x - s1.getX(), self.goal_position_in_xy.y - s1.getY())
 
         s12_vec_arr = np.array(s12_vec)
         s1g_vec_arr = np.array(s1g_vec)
 
         s12_s1g_dot = np.dot(s12_vec_arr, s1g_vec_arr)
-        return ob.Cost(float('inf')) if s12_s1g_dot < 0 else ob.Cost(0)
+        return ob.Cost(float("inf")) if s12_s1g_dot < -GOAL_DIRECTION_TOLERANCE else ob.Cost(0)
 
 
 class WindObjective(ob.OptimizationObjective):
@@ -134,9 +132,7 @@ class WindObjective(ob.OptimizationObjective):
         """
         s1_xy = cs.XY(s1.getX(), s1.getY())
         s2_xy = cs.XY(s2.getX(), s2.getY())
-        return ob.Cost(
-            WindObjective.wind_direction_cost(s1_xy, s2_xy, self.tw_direction_rad_gc)
-        )
+        return ob.Cost(WindObjective.wind_direction_cost(s1_xy, s2_xy, self.tw_direction_rad_gc))
 
     @staticmethod
     def wind_direction_cost(s1: cs.XY, s2: cs.XY, tw_direction_rad_gc: float) -> float:
@@ -158,13 +154,14 @@ class WindObjective(ob.OptimizationObjective):
             float: The cost the path segment from s1 to s2, in the interval [0, 1]
         """
         segment_true_bearing_rad = cs.get_path_segment_true_bearing(s1, s2, rad=True)
-        tw_angle_rad_bc = abs(wcs.get_true_wind_angle(segment_true_bearing_rad,
-                                                      tw_direction_rad_gc))
+        tw_angle_rad_bc = abs(
+            wcs.get_true_wind_angle(segment_true_bearing_rad, tw_direction_rad_gc)
+        )
 
         if tw_angle_rad_bc <= NO_GO_ZONE or tw_angle_rad_bc >= math.pi - NO_GO_ZONE:
             return 1.0
 
-        cost = math.sin(2*tw_angle_rad_bc) ** WIND_COST_SIN_EXPONENT
+        cost = math.sin(2 * tw_angle_rad_bc) ** WIND_COST_SIN_EXPONENT
         return cost
 
 
@@ -286,7 +283,7 @@ def get_sailing_objective(
     boat_speed_kmph: float,
     aw_direction_deg_bc: float,
     aw_speed_kmph: float,
-    goal_position_in_xy: cs.XY
+    goal_position_in_xy: cs.XY,
 ) -> ob.OptimizationObjective:
 
     apparent_wind_direction_degrees_global_coordinates = wcs.boat_to_global_coordinate(
