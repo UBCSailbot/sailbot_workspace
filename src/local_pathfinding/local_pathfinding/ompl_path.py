@@ -408,6 +408,7 @@ class OMPLPath:
             self.state.speed,
             current_aw.dir_deg,
             current_aw.speed_kmph,
+            goal_position_in_xy
         )
 
         simple_setup.setOptimizationObjective(objective)

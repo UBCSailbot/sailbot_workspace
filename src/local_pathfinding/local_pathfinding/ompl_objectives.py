@@ -62,6 +62,48 @@ SAILING_ANGLES_DEG_GC = [0, 45, 50, 60, 75, 90, 110, 120, 135, 150, 180]
 ESTIMATED_TOP_BOAT_SPEED = np.max(BOAT_SPEEDS_KMPH)
 
 
+class GoalDirectionObjective(ob.OptimizationObjective):
+    """The GoalDirectionObjective assigns an infinite cost to path segments that move away
+    from the goal.
+
+    Progress is measured by projecting the segment vector onto a goal direction vector. This
+    allows sideways motion, such as tacking or obstacle avoidance, as long as the segment does
+    not move backward relative to the goal direction.
+    """
+    def __init__(
+       self,
+       space_information,
+       goal_position_in_xy
+       ):
+        super().__init__(space_information)
+        self.goal_position_in_xy = goal_position_in_xy
+
+    def motionCost(self, s1: ob.SE2StateSpace, s2: ob.SE2StateSpace) -> ob.Cost:
+        """Defines the cost of a path segment, from s1 to s2, based on whether the segment
+           makes progress toward the goal.
+
+        The segment vector is dotted with the direction from s1 to the goal. If the projection
+        is negative, the segment is moving away from the goal and receives infinite cost.
+        Otherwise, the segment receives zero additional cost.
+
+        Args:
+            s1 (SE2StateInternal): The start of the path segment
+            s2 (SE2StateInternal): The end of the path segment
+
+        Returns:
+            ob.Cost: The cost of the path segment from s1 to s2
+        """
+
+        s12_vec = (s2.x - s1.x, s2.y - s1.y)  # vector from s1 to s2
+        s1g_vec = (self.goal_position_in_xy.x - s1.x, self.goal_position_in_xy.y - s1.y)
+
+        s12_vec_arr = np.array(s12_vec)
+        s1g_vec_arr = np.array(s1g_vec)
+
+        s12_s1g_dot = np.dot(s12_vec_arr, s1g_vec_arr)
+        return ob.Cost(float('inf')) if s12_s1g_dot < 0 else ob.Cost(0)
+
+
 class WindObjective(ob.OptimizationObjective):
     """The WindObjective assigns a high cost to any path segment which is oriented directly
     (or almost directly) upwind or downwind.
@@ -244,6 +286,7 @@ def get_sailing_objective(
     boat_speed_kmph: float,
     aw_direction_deg_bc: float,
     aw_speed_kmph: float,
+    goal_position_in_xy: cs.XY
 ) -> ob.OptimizationObjective:
 
     apparent_wind_direction_degrees_global_coordinates = wcs.boat_to_global_coordinate(
@@ -268,6 +311,10 @@ def get_sailing_objective(
     multiObjective.addObjective(
         objective=TimeObjective(space_information, tw_dir_rad, tw_speed_kmph),
         weight=TIME_OBJECTIVE_WEIGHT,
+    )
+    multiObjective.addObjective(
+        objective=GoalDirectionObjective(space_information, goal_position_in_xy),
+        weight=1.0,  # should always be 1.0
     )
     # this allows the objective to be satisfied once a path with a cost
     # below the threshold has been found
