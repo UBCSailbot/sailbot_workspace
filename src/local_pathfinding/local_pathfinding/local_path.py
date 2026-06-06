@@ -390,8 +390,8 @@ class LocalPath:
             valid preceding/target waypoint is required to define the segment.
         """
         if target_lp_wp_index == 0 or target_lp_wp_index >= len(path.waypoints):
-            self._logger.warn("Target waypoint out of bounds, must be in range [1, len(waypoints)")
-            raise IndexError("Target Waypoint out of bounds, must be in range [1, len(waypoints)")
+            self._logger.warn("Target waypoint out of bounds, must be in range [1, len(waypoints))")  # noqa
+            raise IndexError("Target waypoint out of bounds, must be in range [1, len(waypoints))")
 
         prev_wp = path.waypoints[target_lp_wp_index - 1]
         target_wp = path.waypoints[target_lp_wp_index]
@@ -427,12 +427,45 @@ class LocalPath:
         rejection_vector = boat_vector - projection_vector
         distance_to_segment_km = np.linalg.norm(rejection_vector)
 
-        return distance_to_segment_km > max_deviation_km
+        segment_exceeded = distance_to_segment_km > max_deviation_km
+        if segment_exceeded:
+            self._logger.info(
+                "Boat deviated from path segment: "
+                f"distance {distance_to_segment_km:.2f} km, "
+                f"max deviation {max_deviation_km:.2f} km"
+            )
+
+        return segment_exceeded
 
     def must_change_path(
-        self, received_new_global_waypoint: bool, new_aw: Optional[Wind] = None
+        self,
+        received_new_global_waypoint: bool,
+        boat_lat_lon: Optional[ci.HelperLatLon] = None,
+        new_aw: Optional[Wind] = None,
     ) -> MustChangeReason:
         """Check if the path must be changed.
+
+        Evaluates a prioritized set of conditions and returns a `MustChangeReason` indicating
+        whether a path change is required and a reason.
+
+        Priority of checks (first matching condition wins):
+        - Receipt of a new global waypoint (always requires a new local path)
+        - Missing OMPL path, LocalPathState, or local path
+        - Current path intersects a collision zone
+        - Path time-to-live (TTL) has expired
+        - Significant wind change between the rolling wind average and the wind used to
+          generate the current path (only evaluated when the rolling average is available
+          and the current path was not generated from a single apparent-wind point)
+        - Invalid target local waypoint index (too low or beyond available waypoints)
+        - Boat has deviated from the current path segment beyond the allowed threshold
+
+        Args:
+            received_new_global_waypoint (bool): True when the global path advanced to a
+                new waypoint and a local-path regeneration should be triggered.
+            boat_lat_lon (Optional[ci.HelperLatLon], optional): Current boat position used to
+                evaluate segment deviation. If None, deviation is not evaluated.
+            new_aw (Optional[Wind], optional): The most recent apparent wind reading. This
+                value is used to update wind history before evaluating wind-based switching.
 
         Returns:
             MustChangeReason
@@ -469,6 +502,12 @@ class LocalPath:
                 True,
                 f"Target waypoint index out of bounds: {self._target_lp_wp_index} >= {len(self.path.waypoints)}",  # noqa
             )
+        if boat_lat_lon is not None and self.exceeded_segment_deviation(
+            self.path,
+            self._target_lp_wp_index,
+            boat_lat_lon,
+        ):
+            return MustChangeReason(True, "Boat deviated from path segment")
 
         return MustChangeReason(False, "Path is valid, no change needed")
 
@@ -512,6 +551,8 @@ class LocalPath:
             IndexError: If the target waypoint is reached and no next local waypoint exists.
         """
         self._target_lp_wp_index = target_lp_wp_index
+        boat_lat_lon = None
+
         new_aw = Wind(
             inputs.filtered_wind_sensor.speed.speed,
             inputs.filtered_wind_sensor.direction,
@@ -534,7 +575,11 @@ class LocalPath:
                 self._logger.warn(e)
                 boat_lat_lon = self.state.position  # type: ignore
 
-        must_change_reason = self.must_change_path(received_new_global_waypoint, new_aw)
+        must_change_reason = self.must_change_path(
+            received_new_global_waypoint,
+            boat_lat_lon,
+            new_aw,
+        )
 
         if must_change_reason.should_change_path:
             tries = 0
