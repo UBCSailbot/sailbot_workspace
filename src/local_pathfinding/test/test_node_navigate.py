@@ -219,3 +219,46 @@ def test_get_desired_heading_disables_sail_when_path_not_found():
     sailbot.get_logger.return_value.warning.assert_called_once_with(
         "Unable to generate a local path; disabling sail"
     )
+
+
+class MockTime:
+    def __init__(self, nanoseconds):
+        self.nanoseconds = nanoseconds
+
+    def __sub__(self, other):
+        return MockTime(self.nanoseconds - other.nanoseconds)
+
+
+def test_desired_heading_callback_publishes_stop_when_gps_times_out():
+    sailbot = nn.Sailbot.__new__(nn.Sailbot)
+    sailbot.gps_timeout_start_time = MockTime(0)
+    sailbot.get_clock = mock.Mock(
+        return_value=mock.Mock(
+            now=mock.Mock(return_value=MockTime(int((nn.GPS_TIMEOUT_SEC + 1) * 1e9)))
+        )
+    )
+    sailbot.desired_heading = None
+    sailbot.desired_heading_pub = mock.Mock(topic="desired_heading")
+    sailbot.get_logger = mock.Mock(return_value=mock.Mock())
+
+    sailbot.desired_heading_callback()
+
+    sailbot.desired_heading_pub.publish.assert_called_once()
+    msg = sailbot.desired_heading_pub.publish.call_args.args[0]
+    assert msg.sail is False
+    assert msg.heading.heading == 0.0
+    assert msg.steering == 1
+
+
+def test_gps_callback_resets_gps_timeout_start_time():
+    sailbot = nn.Sailbot.__new__(nn.Sailbot)
+    now = MockTime(123)
+    sailbot.get_clock = mock.Mock(return_value=mock.Mock(now=mock.Mock(return_value=now)))
+    sailbot.gps_sub = mock.Mock(topic="gps")
+    sailbot.get_logger = mock.Mock(return_value=mock.Mock())
+
+    msg = ci.GPS()
+    sailbot.gps_callback(msg)
+
+    assert sailbot.gps == msg
+    assert sailbot.gps_timeout_start_time == now
