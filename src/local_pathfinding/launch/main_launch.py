@@ -18,19 +18,19 @@ PACKAGE_NAME = "local_pathfinding"
 LOCAL_LAUNCH_ARGUMENTS: List[DeclareLaunchArgument] = [
     DeclareLaunchArgument(
         name="use_gps_noise",
-        default_value="false",
+        default_value="true",
         choices=["true", "false"],
         description="Enable Gaussian noise on GPS readings.",
     ),
     DeclareLaunchArgument(
         name="use_ocean_drift",
-        default_value="false",
+        default_value="true",
         choices=["true", "false"],
         description="Enable cumulative ocean current drift on GPS readings.",
     ),
     DeclareLaunchArgument(
         name="use_drift_randomization",
-        default_value="false",
+        default_value="true",
         choices=["true", "false"],
         description="Enable small random variation to the ocean drift current each tick.",
     ),
@@ -41,13 +41,13 @@ LOCAL_LAUNCH_ARGUMENTS: List[DeclareLaunchArgument] = [
     ),
     DeclareLaunchArgument(
         name="ocean_drift_dir_deg",
-        default_value="90.0",
+        default_value="45.0",
         description="Direction the current flows toward in degrees (0=north, 90=east).",
     ),
     DeclareLaunchArgument(
         name="ocean_drift_accel_kmph2",
         default_value="0.0",
-        description="Acceleration of the drift speed in km/h². Set to 0 for constant drift.",
+        description="Acceleration of the drift speed in km/h^2. Set to 0 for constant drift.",
     ),
 ]
 

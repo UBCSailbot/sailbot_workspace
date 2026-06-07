@@ -85,7 +85,7 @@ class MockGPS(Node):
         self._drift_accel_kmph2 = (
             self.get_parameter("ocean_drift_accel_kmph2").get_parameter_value().double_value
         )
-        self._drift_offset = cs.XY(0.0, 0.0)  # cumulative offset in km
+        self._drift_offset_km = cs.XY(0.0, 0.0)  # cumulative offset in km
 
         # Mock GPS publisher initialization
         self._gps_pub = self.create_publisher(
@@ -128,7 +128,7 @@ class MockGPS(Node):
         )
         return cs.xy_to_latlon(reference=lat_lon_msg, xy=noise_km)
 
-    def add_ocean_drift(self, lat_long_msg: ci.HelperLatLon):
+    def add_ocean_drift(self, lat_long_msg: ci.HelperLatLon) -> ci.HelperLatLon:
         """Applies a current-based offset to the GPS position.
 
 
@@ -152,11 +152,11 @@ class MockGPS(Node):
 
         drift_dir_rad = math.radians(drift_dir)
         step_km = drift_speed * dt_hours
-        self._drift_offset = cs.XY(
-            self._drift_offset.x + step_km * math.sin(drift_dir_rad),
-            self._drift_offset.y + step_km * math.cos(drift_dir_rad),
+        self._drift_offset_km = cs.XY(
+            self._drift_offset_km.x + step_km * math.sin(drift_dir_rad),
+            self._drift_offset_km.y + step_km * math.cos(drift_dir_rad),
         )
-        return cs.xy_to_latlon(reference=lat_long_msg, xy=self._drift_offset)
+        return cs.xy_to_latlon(reference=lat_long_msg, xy=self._drift_offset_km)
 
     def mock_gps_callback(self) -> None:
         """Updates boat speed based on current heading and true wind.
@@ -184,7 +184,7 @@ class MockGPS(Node):
             published_location = self.add_ocean_drift(published_location)
 
             self.get_logger().info(
-                f"Drift Offset: {self._drift_offset}\n"
+                f"Drift Offset: {self._drift_offset_km}\n"
                 f"Drift Speed: {self._drift_speed_kmph}\n"
                 f"Drift Direction {self._drift_dir_deg}"
             )
@@ -225,7 +225,9 @@ class MockGPS(Node):
             elif p.name == "use_ocean_drift":
                 self._use_drift = bool(p.value)
                 if not self._use_drift:
-                    self._drift_offset = cs.XY(0.0, 0.0)
+                    self._drift_offset_km = cs.XY(
+                        0.0, 0.0
+                    )  # resets the drift offset after it's turned off
             elif p.name == "use_drift_randomization":
                 self._use_drift_randomization = bool(p.value)
             elif p.name == "ocean_drift_speed_kmph":
@@ -238,7 +240,7 @@ class MockGPS(Node):
                 self._tw_speed_kmph = p.value
         return SetParametersResult(successful=True)
 
-    def update_speed(self):
+    def update_speed(self) -> None:
         """Update the boat speed based on current heading and true wind.
 
         Uses TimeObjective.get_sailbot_speed to calculate realistic boat speed
