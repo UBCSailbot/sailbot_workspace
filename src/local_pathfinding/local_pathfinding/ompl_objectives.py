@@ -7,6 +7,7 @@ from ompl import base as ob
 from scipy.interpolate import RegularGridInterpolator
 
 import local_pathfinding.coord_systems as cs
+from local_pathfinding.ompl_validity import GoalProgressMotion
 import local_pathfinding.wind_coord_systems as wcs
 
 UPWIND_COST_MULTIPLIER = 1.0
@@ -17,7 +18,6 @@ WIND_OBJECTIVE_WEIGHT = 0.85
 TIME_OBJECTIVE_WEIGHT = 0.15
 NO_GO_ZONE = math.pi / 4
 WIND_COST_SIN_EXPONENT = 80
-GOAL_DIRECTION_TOLERANCE = 1e-9
 
 
 #               Estimated Boat Speeds (kmph) as function of True Wind Speed (kmph)
@@ -63,7 +63,7 @@ SAILING_ANGLES_DEG_GC = [0, 45, 50, 60, 75, 90, 110, 120, 135, 150, 180]
 ESTIMATED_TOP_BOAT_SPEED = np.max(BOAT_SPEEDS_KMPH)
 
 
-class GoalDirectionObjective(ob.OptimizationObjective):
+class GoalDirectionObjective(ob.OptimizationObjective, GoalProgressMotion):
     """The GoalDirectionObjective assigns an infinite cost to path segments that move away
     from the goal.
 
@@ -73,15 +73,15 @@ class GoalDirectionObjective(ob.OptimizationObjective):
     """
 
     def __init__(self, space_information, goal_position_in_xy):
-        super().__init__(space_information)
-        self.goal_position_in_xy = goal_position_in_xy
+        ob.OptimizationObjective.__init__(self, space_information)
+        GoalProgressMotion.__init__(self, goal_position_in_xy)
 
     def motionCost(self, s1: ob.SE2StateSpace, s2: ob.SE2StateSpace) -> ob.Cost:
         """Defines the cost of a path segment, from s1 to s2, based on whether the segment
            makes progress toward the goal.
 
         The segment vector is dotted with the direction from s1 to the goal. If the projection
-        is negative beyond GOAL_DIRECTION_TOLERANCE, the segment is moving away from the goal
+        is negative beyond GOAL_PROGRESS_TOLERANCE, the segment is moving away from the goal
         and receives infinite cost. Otherwise, the segment receives zero additional cost.
 
         Args:
@@ -92,14 +92,11 @@ class GoalDirectionObjective(ob.OptimizationObjective):
             ob.Cost: The cost of the path segment from s1 to s2
         """
 
-        s12_vec = (s2.getX() - s1.getX(), s2.getY() - s1.getY())  # vector from s1 to s2
-        s1g_vec = (self.goal_position_in_xy.x - s1.getX(), self.goal_position_in_xy.y - s1.getY())
-
-        s12_vec_arr = np.array(s12_vec)
-        s1g_vec_arr = np.array(s1g_vec)
-
-        s12_s1g_dot = np.dot(s12_vec_arr, s1g_vec_arr)
-        return ob.Cost(float("inf")) if s12_s1g_dot < -GOAL_DIRECTION_TOLERANCE else ob.Cost(0)
+        return (
+            ob.Cost(0)
+            if self._motion_makes_goal_progress(s1, s2)
+            else ob.Cost(float("inf"))
+        )
 
 
 class WindObjective(ob.OptimizationObjective):
