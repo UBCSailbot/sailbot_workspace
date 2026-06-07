@@ -48,6 +48,11 @@ class MockGPS(Node):
                 ("tw_dir_deg", rclpy.Parameter.Type.INTEGER),
                 ("test_plan", rclpy.Parameter.Type.STRING),
                 ("use_gps_noise", rclpy.Parameter.Type.BOOL),
+                ("use_ocean_drift", rclpy.Parameter.Type.BOOL),
+                ("use_drift_randomization", rclpy.Parameter.Type.BOOL),
+                ("ocean_drift_speed_kmph", rclpy.Parameter.Type.DOUBLE),
+                ("ocean_drift_dir_deg", rclpy.Parameter.Type.DOUBLE),
+                ("ocean_drift_accel_kmph2", rclpy.Parameter.Type.DOUBLE),
             ],
         )
 
@@ -67,6 +72,20 @@ class MockGPS(Node):
         )
 
         self._use_noise = self.get_parameter("use_gps_noise").get_parameter_value().bool_value
+        self._use_drift = self.get_parameter("use_ocean_drift").get_parameter_value().bool_value
+        self._use_drift_randomization = (
+            self.get_parameter("use_drift_randomization").get_parameter_value().bool_value
+        )
+        self._drift_speed_kmph = (
+            self.get_parameter("ocean_drift_speed_kmph").get_parameter_value().double_value
+        )
+        self._drift_dir_deg = (
+            self.get_parameter("ocean_drift_dir_deg").get_parameter_value().double_value
+        )
+        self._drift_accel_kmph2 = (
+            self.get_parameter("ocean_drift_accel_kmph2").get_parameter_value().double_value
+        )
+        self._drift_offset = cs.XY(0.0, 0.0)  # cumulative offset in km
 
         # Mock GPS publisher initialization
         self._gps_pub = self.create_publisher(
@@ -109,6 +128,36 @@ class MockGPS(Node):
         )
         return cs.xy_to_latlon(reference=lat_lon_msg, xy=noise_km)
 
+    def add_ocean_drift(self, lat_long_msg: ci.HelperLatLon):
+        """Applies a current-based offset to the GPS position.
+
+
+        Args:
+            lat_long_msg (ci.HelperLatLon): The original lat/lon coordinates.
+
+        Returns:
+            ci.HelperLatLon: Object containing the new lat/lon coordinates with ocean drift.
+        """
+
+        dt_hours = self.pub_period_sec / SECONDS_PER_HOUR
+
+        self._drift_speed_kmph += self._drift_accel_kmph2 * dt_hours
+
+        drift_speed = self._drift_speed_kmph
+        drift_dir = self._drift_dir_deg
+
+        if self._use_drift_randomization:
+            drift_speed += random.gauss(0.0, drift_speed * 0.05)
+            drift_dir += random.gauss(0.0, 2.0)
+
+        drift_dir_rad = math.radians(drift_dir)
+        step_km = drift_speed * dt_hours
+        self._drift_offset = cs.XY(
+            self._drift_offset.x + step_km * math.sin(drift_dir_rad),
+            self._drift_offset.y + step_km * math.cos(drift_dir_rad),
+        )
+        return cs.xy_to_latlon(reference=lat_long_msg, xy=self._drift_offset)
+
     def mock_gps_callback(self) -> None:
         """Updates boat speed based on current heading and true wind.
         Publishes mock gps data.
@@ -116,17 +165,29 @@ class MockGPS(Node):
         self.update_speed()
         self.get_next_location()
 
-        if self._use_noise:
-            published_location = self.add_gps_noise(self._current_location)
-        else:
-            published_location = self._current_location
-
         self.get_logger().info(
             f"Actual Lat: {self._current_location.latitude:.7f} "
             f"Actual Lon: {self._current_location.longitude:.7f}\n"
-            f"Published Lat: {published_location.latitude:.7f} "
-            f"Published Lon: {published_location.longitude:.7f} "
         )
+
+        if self._use_noise:
+            published_location = self.add_gps_noise(self._current_location)
+
+            self.get_logger().info(
+                f"Published Lat: {published_location.latitude:.7f} "
+                f"Published Lon: {published_location.longitude:.7f} "
+            )
+        else:
+            published_location = self._current_location
+
+        if self._use_drift:
+            published_location = self.add_ocean_drift(published_location)
+
+            self.get_logger().info(
+                f"Drift Offset: {self._drift_offset}\n"
+                f"Drift Speed: {self._drift_speed_kmph}\n"
+                f"Drift Direction {self._drift_dir_deg}"
+            )
 
         msg: ci.GPS = ci.GPS(
             lat_lon=published_location,
@@ -161,6 +222,18 @@ class MockGPS(Node):
                 self._tw_dir_deg = tw_dir_deg
             elif p.name == "use_gps_noise":
                 self._use_noise = bool(p.value)
+            elif p.name == "use_ocean_drift":
+                self._use_drift = bool(p.value)
+                if not self._use_drift:
+                    self._drift_offset = cs.XY(0.0, 0.0)
+            elif p.name == "use_drift_randomization":
+                self._use_drift_randomization = bool(p.value)
+            elif p.name == "ocean_drift_speed_kmph":
+                self._drift_speed_kmph = float(p.value)
+            elif p.name == "ocean_drift_dir_deg":
+                self._drift_dir_deg = float(p.value)
+            elif p.name == "ocean_drift_accel_kmph2":
+                self._drift_accel_kmph2 = float(p.value)
             else:
                 self._tw_speed_kmph = p.value
         return SetParametersResult(successful=True)

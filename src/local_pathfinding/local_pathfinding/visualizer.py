@@ -937,7 +937,11 @@ def write_wind_params(tw_dir_deg: float, tw_speed_kmph: float) -> None:
     with open(WIND_PARAMS_YAML, "w") as f:
         yaml.safe_dump(data, f, sort_keys=False)
 
-    apply_wind_params()
+    def apply_wind_params():
+        subprocess.run(
+            ["bash", str(WIND_PARAMS_SH)],
+            check=True,
+        )
 
 
 def apply_wind_params():
@@ -945,6 +949,29 @@ def apply_wind_params():
         ["bash", str(WIND_PARAMS_SH)],
         check=True,
     )
+
+
+def apply_gps_params(
+    use_gps_noise: bool,
+    use_ocean_drift: bool,
+    use_drift_randomization: bool,
+    drift_speed_kmph: float,
+    drift_dir_deg: float,
+) -> None:
+    """Apply GPS simulation parameters to the live mock_gps ROS node via ros2 param set."""
+    params = [
+        ("use_gps_noise", str(use_gps_noise).lower()),
+        ("use_ocean_drift", str(use_ocean_drift).lower()),
+        ("use_drift_randomization", str(use_drift_randomization).lower()),
+        ("ocean_drift_speed_kmph", str(float(drift_speed_kmph))),
+        ("ocean_drift_dir_deg", str(float(drift_dir_deg))),
+    ]
+    for param_name, value in params:
+        subprocess.run(
+            ["ros2", "param", "set", "/mock_gps", param_name, value],
+            check=True,
+            capture_output=True,
+        )
 
 
 def get_state_space_bounds(
@@ -999,7 +1026,7 @@ def dash_app(q: Queue):
                 id="control-panel",
                 style={
                     "position": "absolute",
-                    "bottom": "120px",  # Distance from the very bottom of the screen
+                    "bottom": "175px",  # Distance from the very bottom of the screen
                     "left": "50px",  # Aligns with the Y-axis
                     "display": "flex",
                     "gap": "15px",
@@ -1018,7 +1045,7 @@ def dash_app(q: Queue):
                         id="tw-speed-input", type="number", value=0, style={"width": "80px"}
                     ),
                     html.Button(
-                        "Apply Wind",
+                        "Apply",
                         id="apply-wind-btn",
                         style={
                             "backgroundColor": "rgb(18, 70, 139)",
@@ -1027,6 +1054,89 @@ def dash_app(q: Queue):
                         },
                     ),
                     html.Div(id="wind-status"),
+                ],
+            ),
+            # ── GPS / Drift control panel ───────────────────────────────────────────
+            html.Div(
+                id="gps-control-panel",
+                style={
+                    "position": "absolute",
+                    "bottom": "95px",
+                    "left": "50px",
+                    "display": "flex",
+                    "flexWrap": "wrap",
+                    "gap": "12px",
+                    "alignItems": "center",
+                    "padding": "10px 16px",
+                    "backgroundColor": "rgba(255, 255, 255, 0.88)",
+                    "borderRadius": "8px",
+                    "border": "1px solid #ccc",
+                    "zIndex": "1000",
+                    "fontFamily": "Consolas, monospace",
+                    "fontSize": "13px",
+                },
+                children=[
+                    html.Span(
+                        "📡 GPS / Drift",
+                        style={
+                            "fontWeight": "bold",
+                            "color": "rgb(18,70,139)",
+                            "whiteSpace": "nowrap",
+                        },
+                    ),
+                    dcc.Checklist(
+                        id="gps-toggles",
+                        options=[
+                            {"label": " GPS Noise", "value": "use_gps_noise"},
+                            {"label": " Ocean Drift", "value": "use_ocean_drift"},
+                            {"label": " Drift Randomization", "value": "use_drift_randomization"},
+                        ],
+                        value=["use_gps_noise", "use_ocean_drift", "use_drift_randomization"],
+                        labelStyle={
+                            "display": "inline-block",
+                            "marginRight": "14px",
+                            "cursor": "pointer",
+                        },
+                        style={"display": "flex", "alignItems": "center"},
+                    ),
+                    html.Label(
+                        "Drift Speed (km/h):", style={"fontWeight": "bold", "whiteSpace": "nowrap"}
+                    ),
+                    dcc.Input(
+                        id="drift-speed-input",
+                        type="number",
+                        value=0.5,
+                        step=0.1,
+                        min=0,
+                        style={"width": "72px"},
+                    ),
+                    html.Label(
+                        "Drift Dir (°):", style={"fontWeight": "bold", "whiteSpace": "nowrap"}
+                    ),
+                    dcc.Input(
+                        id="drift-dir-input",
+                        type="number",
+                        value=90,
+                        min=-180,
+                        max=180,
+                        style={"width": "72px"},
+                    ),
+                    html.Button(
+                        "Apply",
+                        id="apply-gps-btn",
+                        style={
+                            "backgroundColor": "rgb(18, 70, 139)",
+                            "color": "white",
+                            "border": "none",
+                            "borderRadius": "4px",
+                            "padding": "5px 12px",
+                            "cursor": "pointer",
+                        },
+                    ),
+                    html.Div(
+                        id="gps-status",
+                        style={"color": "green", "fontSize": "12px", "minWidth": "160px"},
+                    ),
                 ],
             ),
             dcc.Interval(id="interval-component", interval=UPDATE_INTERVAL_MS, n_intervals=0),
@@ -1193,5 +1303,61 @@ app.clientside_callback(
     """,
     Output("wind-status", "children", allow_duplicate=True),
     Input("wind-status", "children"),
+    prevent_initial_call=True,
+)
+
+
+@app.callback(
+    Output("gps-status", "children"),
+    Input("apply-gps-btn", "n_clicks"),
+    State("gps-toggles", "value"),
+    State("drift-speed-input", "value"),
+    State("drift-dir-input", "value"),
+    prevent_initial_call=True,
+)
+def update_gps_params(_, toggles, drift_speed, drift_dir):
+    try:
+        if drift_speed is None or drift_dir is None:
+            return "⚠ Fill in all numeric fields"
+        if drift_speed < 0:
+            return "⚠ Drift speed must be ≥ 0"
+        if not (-180 < drift_dir <= 180):
+            return "⚠ Drift direction must be in (-180, 180]°"
+
+        active = set(toggles or [])
+        use_gps_noise = "use_gps_noise" in active
+        use_ocean_drift = "use_ocean_drift" in active
+        use_drift_randomization = "use_drift_randomization" in active
+
+        apply_gps_params(
+            use_gps_noise, use_ocean_drift, use_drift_randomization, drift_speed, drift_dir
+        )
+
+        parts = [
+            f"Noise: {'on' if use_gps_noise else 'off'}",
+            f"Drift: {'on' if use_ocean_drift else 'off'}",
+        ]
+        if use_ocean_drift:
+            parts.append(f"Rand: {'on' if use_drift_randomization else 'off'}")
+            parts.append(f"{drift_speed} km/h @ {drift_dir}°")
+        return "✓ " + " | ".join(parts)
+
+    except Exception as e:
+        return f"Error: {e}"
+
+
+app.clientside_callback(
+    """
+    function(status_text) {
+        if (!status_text) return "";
+        setTimeout(function(){
+            const statusDiv = document.getElementById('gps-status');
+            if (statusDiv) statusDiv.innerText = "";
+        }, 5000);
+        return status_text;
+    }
+    """,
+    Output("gps-status", "children", allow_duplicate=True),
+    Input("gps-status", "children"),
     prevent_initial_call=True,
 )
