@@ -37,8 +37,8 @@ UPDATE_INTERVAL_MS = 2500
 DEFAULT_PLOT_RANGE = [-100.0, 100.0]
 BOX_BUFFER_SIZE_KM = 1.0
 
-WIND_BOX_X_DOMAIN = (0.76, 0.99)
-WIND_BOX_Y_DOMAIN = (0.00, 0.22)
+WIND_BOX_X_DOMAIN = (0.80, 0.98)
+WIND_BOX_Y_DOMAIN = (0.78, 0.98)
 WIND_BOX_RANGE = (-10, 10)
 
 WIND_ARROW_LEN = 4.0
@@ -804,7 +804,7 @@ def apply_layout(
         zoom_needed: whether we want to zoom into the state space
         last_range: previously stored axis ranges to maintain axes if zoom not needed.
     """
-    xaxis = dict(domain=[0.0, 0.98])
+    xaxis = dict(domain=[0.0, 0.78])
     yaxis = dict(domain=[0.30, 1.0])
 
     # Base Layout
@@ -1077,7 +1077,7 @@ def dash_app(q: Queue):
                 },
                 children=[
                     html.Span(
-                        "📡 GPS / Drift",
+                        "GPS / Drift",
                         style={
                             "fontWeight": "bold",
                             "color": "rgb(18,70,139)",
@@ -1116,7 +1116,7 @@ def dash_app(q: Queue):
                     dcc.Input(
                         id="drift-dir-input",
                         type="number",
-                        value=90,
+                        value=45,
                         min=-180,
                         max=180,
                         style={"width": "72px"},
