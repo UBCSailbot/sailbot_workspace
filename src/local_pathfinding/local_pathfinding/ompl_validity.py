@@ -5,6 +5,18 @@ GOAL_PROGRESS_TOLERANCE = 1e-9
 
 
 class GoalProgressMotion():
+    """Shared base class for checking whether a motion segment progresses toward the goal.
+
+    This class stores the goal position and provides the shared
+    `_motion_makes_goal_progress` helper used by:
+        - GoalProgressMotionValidator, which rejects invalid OMPL motions during planning.
+        - GoalDirectionObjective, which gives non-progressing motions infinite cost.
+
+    A motion is considered valid for goal progress when the segment from `s1` to `s2` has a
+    non-negative projection onto the vector from `s1` to the goal. This still permits sideways
+    motion, such as tacking or obstacle avoidance, as long as the motion does not go backward
+    relative to the goal.
+    """
 
     def __init__(self, goal_position_in_xy):
         self.goal_position_in_xy = goal_position_in_xy
@@ -21,7 +33,13 @@ class GoalProgressMotion():
 
 
 class GoalProgressMotionValidator(base.MotionValidator, GoalProgressMotion):
-    """Reject motions that do not make progress toward the goal."""
+    """OMPL motion validator that rejects motions that do not progress toward the goal.
+
+    This class inherits from `base.MotionValidator` so it can be installed on OMPL's
+    SpaceInformation, and from `GoalProgressMotion` for the shared goal-progress test. It first
+    rejects segments that move away from the goal, then delegates to OMPL's
+    `DiscreteMotionValidator` for the usual interpolated collision and state-validity checks.
+    """
 
     def __init__(self, space_information, goal_position_in_xy: cs.XY):
         super().__init__(space_information)
