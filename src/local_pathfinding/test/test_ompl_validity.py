@@ -49,6 +49,16 @@ def motion_makes_goal_progress(
             False,
         ),
         (
+            # Movement -91 degrees to the goal direction is slightly backward
+            -91.0,
+            False,
+        ),
+        (
+            # Movement 270 (negative 90 degrees direction) to the goal direction should be allowed
+            270.0,
+            True,
+        ),
+        (
             # Movement 81 degrees to the goal direction still makes forward progress
             81.0,
             True,
