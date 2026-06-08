@@ -170,7 +170,7 @@ launch command.
     of arguments:
 
     ```sh
-    ros2 launch $ROS_WORKSPACE/src/global_launch/main_launch.py -s
+    ros2 launch global_launch main_launch.py -s
     ```
 
     The following output is observed in the terminal (as of September 2023):
@@ -211,7 +211,7 @@ launch command.
 
     <!-- markdownlint-disable MD013 -->
     ```sh
-    ros2 launch $ROS_WORKSPACE/src/global_launch/main_launch.py enable_sim_multithreading:=true
+    ros2 launch global_launch main_launch.py enable_sim_multithreading:=true
     ```
     <!-- markdownlint-enable MD013 -->
 

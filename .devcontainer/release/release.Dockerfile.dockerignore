@@ -1,0 +1,19 @@
+*
+!.devcontainer/base-dev/*
+!src/**
+!scripts/build.sh
+!scripts/setup.sh
+!docs/requirements.txt
+!log/**
+!build/**
+!install/**
+!/opt/ros/humble/**
+
+# Exclude media files from production boat image builds.
+**/*.png
+**/*.jpg
+**/*.jpeg
+**/*.gif
+**/*.svg
+**/*.mp4
+**/*.mov
