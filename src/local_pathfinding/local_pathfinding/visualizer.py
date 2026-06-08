@@ -957,6 +957,7 @@ def apply_gps_params(
     use_drift_randomization: bool,
     drift_speed_kmph: float,
     drift_dir_deg: float,
+    drift_accel_kmph2: float,
 ) -> None:
     """Apply GPS simulation parameters to the live mock_gps ROS node via ros2 param set."""
     params = [
@@ -965,6 +966,7 @@ def apply_gps_params(
         ("use_drift_randomization", str(use_drift_randomization).lower()),
         ("ocean_drift_speed_kmph", str(float(drift_speed_kmph))),
         ("ocean_drift_dir_deg", str(float(drift_dir_deg))),
+        ("ocean_drift_accel_kmph2", str(float(drift_accel_kmph2))),
     ]
     for param_name, value in params:
         subprocess.run(
@@ -1119,6 +1121,17 @@ def dash_app(q: Queue):
                         value=45,
                         min=-180,
                         max=180,
+                        style={"width": "72px"},
+                    ),
+                    html.Label(
+                        "Drift Accel (km/h²):",
+                        style={"fontWeight": "bold", "whiteSpace": "nowrap"},
+                    ),
+                    dcc.Input(
+                        id="drift-accel-input",
+                        type="number",
+                        value=0.0,
+                        step=0.1,
                         style={"width": "72px"},
                     ),
                     html.Button(
@@ -1313,16 +1326,17 @@ app.clientside_callback(
     State("gps-toggles", "value"),
     State("drift-speed-input", "value"),
     State("drift-dir-input", "value"),
+    State("drift-accel-input", "value"),
     prevent_initial_call=True,
 )
-def update_gps_params(_, toggles, drift_speed, drift_dir):
+def update_gps_params(_, toggles, drift_speed, drift_dir, drift_accel):
     try:
-        if drift_speed is None or drift_dir is None:
-            return "⚠ Fill in all numeric fields"
+        if drift_speed is None or drift_dir is None or drift_accel is None:
+            return "Fill in all numeric fields"
         if drift_speed < 0:
-            return "⚠ Drift speed must be ≥ 0"
+            return "Drift speed must be ≥ 0"
         if not (-180 < drift_dir <= 180):
-            return "⚠ Drift direction must be in (-180, 180]°"
+            return "Drift direction must be in (-180, 180]°"
 
         active = set(toggles or [])
         use_gps_noise = "use_gps_noise" in active
@@ -1330,7 +1344,12 @@ def update_gps_params(_, toggles, drift_speed, drift_dir):
         use_drift_randomization = "use_drift_randomization" in active
 
         apply_gps_params(
-            use_gps_noise, use_ocean_drift, use_drift_randomization, drift_speed, drift_dir
+            use_gps_noise,
+            use_ocean_drift,
+            use_drift_randomization,
+            drift_speed,
+            drift_dir,
+            drift_accel,
         )
 
         parts = [
@@ -1339,7 +1358,7 @@ def update_gps_params(_, toggles, drift_speed, drift_dir):
         ]
         if use_ocean_drift:
             parts.append(f"Rand: {'on' if use_drift_randomization else 'off'}")
-            parts.append(f"{drift_speed} km/h @ {drift_dir}°")
+            parts.append(f"{drift_speed} km/h @ {drift_dir}° {drift_accel} km/h²")
         return "✓ " + " | ".join(parts)
 
     except Exception as e:
