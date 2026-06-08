@@ -7,6 +7,7 @@ from ompl import base as ob
 from scipy.interpolate import RegularGridInterpolator
 
 import local_pathfinding.coord_systems as cs
+from local_pathfinding.ompl_validity import GoalProgressMotion
 import local_pathfinding.wind_coord_systems as wcs
 
 UPWIND_COST_MULTIPLIER = 1.0
@@ -62,6 +63,42 @@ SAILING_ANGLES_DEG_GC = [0, 45, 50, 60, 75, 90, 110, 120, 135, 150, 180]
 ESTIMATED_TOP_BOAT_SPEED = np.max(BOAT_SPEEDS_KMPH)
 
 
+class GoalDirectionObjective(ob.OptimizationObjective, GoalProgressMotion):
+    """The GoalDirectionObjective assigns an infinite cost to path segments that move away
+    from the goal.
+
+    Progress is measured by projecting the segment vector onto a goal direction vector. This
+    allows sideways motion, such as tacking or obstacle avoidance, as long as the segment does
+    not move backward relative to the goal direction.
+    """
+
+    def __init__(self, space_information, goal_position_in_xy):
+        ob.OptimizationObjective.__init__(self, space_information)
+        GoalProgressMotion.__init__(self, goal_position_in_xy)
+
+    def motionCost(self, s1: ob.SE2StateSpace, s2: ob.SE2StateSpace) -> ob.Cost:
+        """Defines the cost of a path segment, from s1 to s2, based on whether the segment
+           makes progress toward the goal.
+
+        The segment vector is dotted with the direction from s1 to the goal. If the projection
+        is negative beyond GOAL_PROGRESS_TOLERANCE, the segment is moving away from the goal
+        and receives infinite cost. Otherwise, the segment receives zero additional cost.
+
+        Args:
+            s1 (SE2StateInternal): The start of the path segment
+            s2 (SE2StateInternal): The end of the path segment
+
+        Returns:
+            ob.Cost: The cost of the path segment from s1 to s2
+        """
+
+        return (
+            ob.Cost(0)
+            if self._motion_makes_goal_progress(s1, s2)
+            else ob.Cost(float("inf"))
+        )
+
+
 class WindObjective(ob.OptimizationObjective):
     """The WindObjective assigns a high cost to any path segment which is oriented directly
     (or almost directly) upwind or downwind.
@@ -92,9 +129,7 @@ class WindObjective(ob.OptimizationObjective):
         """
         s1_xy = cs.XY(s1.getX(), s1.getY())
         s2_xy = cs.XY(s2.getX(), s2.getY())
-        return ob.Cost(
-            WindObjective.wind_direction_cost(s1_xy, s2_xy, self.tw_direction_rad_gc)
-        )
+        return ob.Cost(WindObjective.wind_direction_cost(s1_xy, s2_xy, self.tw_direction_rad_gc))
 
     @staticmethod
     def wind_direction_cost(s1: cs.XY, s2: cs.XY, tw_direction_rad_gc: float) -> float:
@@ -116,13 +151,14 @@ class WindObjective(ob.OptimizationObjective):
             float: The cost the path segment from s1 to s2, in the interval [0, 1]
         """
         segment_true_bearing_rad = cs.get_path_segment_true_bearing(s1, s2, rad=True)
-        tw_angle_rad_bc = abs(wcs.get_true_wind_angle(segment_true_bearing_rad,
-                                                      tw_direction_rad_gc))
+        tw_angle_rad_bc = abs(
+            wcs.get_true_wind_angle(segment_true_bearing_rad, tw_direction_rad_gc)
+        )
 
         if tw_angle_rad_bc <= NO_GO_ZONE or tw_angle_rad_bc >= math.pi - NO_GO_ZONE:
             return 1.0
 
-        cost = math.sin(2*tw_angle_rad_bc) ** WIND_COST_SIN_EXPONENT
+        cost = math.sin(2 * tw_angle_rad_bc) ** WIND_COST_SIN_EXPONENT
         return cost
 
 
@@ -244,6 +280,7 @@ def get_sailing_objective(
     boat_speed_kmph: float,
     aw_direction_deg_bc: float,
     aw_speed_kmph: float,
+    goal_position_in_xy: cs.XY,
 ) -> ob.OptimizationObjective:
 
     apparent_wind_direction_degrees_global_coordinates = wcs.boat_to_global_coordinate(
@@ -268,6 +305,10 @@ def get_sailing_objective(
     multiObjective.addObjective(
         objective=TimeObjective(space_information, tw_dir_rad, tw_speed_kmph),
         weight=TIME_OBJECTIVE_WEIGHT,
+    )
+    multiObjective.addObjective(
+        objective=GoalDirectionObjective(space_information, goal_position_in_xy),
+        weight=1.0,  # should always be 1.0
     )
     # this allows the objective to be satisfied once a path with a cost
     # below the threshold has been found
