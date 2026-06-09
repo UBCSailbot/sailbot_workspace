@@ -21,7 +21,7 @@ from custom_interfaces.msg import (
     Path,
     WindSensor,
 )
-from local_pathfinding.local_path import LocalPathState
+from local_pathfinding.local_path import LocalPathState, WindTracker
 
 LAND_KEY = -1
 
@@ -48,6 +48,7 @@ def fresh_ompl_path():
             target_global_waypoint=HelperLatLon(latitude=0.02, longitude=0.02),
             filtered_wind_sensor=WindSensor(),
             planner="rrtstar",
+            wind_tracker=WindTracker(),
         ),
     )
 
@@ -117,6 +118,7 @@ def test_init_obstacles():
         target_global_waypoint=goal_position,
         filtered_wind_sensor=WindSensor(),
         planner="rrtstar",
+        wind_tracker=WindTracker(),
     )
 
     # create the xy state space from the specified positions of sailbot and the goal
@@ -198,6 +200,7 @@ def test_init_obstacles():
         target_global_waypoint=HelperLatLon(latitude=0.0, longitude=0.0),
         filtered_wind_sensor=WindSensor(),
         planner="rrtstar",
+        wind_tracker=WindTracker(),
     )
 
     updated_obstacles = ompl_path.OMPLPath.init_obstacles(
@@ -215,7 +218,7 @@ def test_init_obstacles():
 
 @pytest.mark.parametrize(
     "x,y,is_valid",
-    [(0.5, 0.5, True), (-14, 0.5, False), (-16, 0.5, True)],
+    [(0.5, 0.5, True), (-13.5, 0.5, False), (-16, 0.5, True)],
 )
 def test_is_state_valid(x: float, y: float, is_valid: bool, fresh_ompl_path):
     state = base.State(fresh_ompl_path._simple_setup.getStateSpace())
@@ -283,7 +286,9 @@ def test_create_space(
 @pytest.mark.parametrize("boat_latlon", [HelperLatLon(latitude=0.0, longitude=0.0)])
 def test_get_remaining_cost_full_path(fresh_ompl_path, boat_latlon):
     remaining_cost = fresh_ompl_path.get_remaining_cost(1, boat_latlon)
-    assert remaining_cost == pytest.approx(fresh_ompl_path.get_cost(), abs=0.01)
+    assert remaining_cost == pytest.approx(
+        fresh_ompl_path.get_cost(), abs=0.01
+    )
 
 
 @pytest.mark.parametrize(
@@ -332,9 +337,9 @@ def test_get_remaining_cost_partial(fresh_ompl_path, target_wp_index):
     cost_from_next_wp = fresh_ompl_path.get_remaining_cost(target_wp_index + 1, next_wp_latlon)
 
     full_cost = fresh_ompl_path.get_cost()
-    assert (
-        cost <= full_cost
-    ), f"Remaining cost {cost} should be less than or equal to full cost {full_cost}"
+    assert cost <= full_cost, (
+        f"Remaining cost {cost} should be less than or equal to full cost {full_cost}"
+    )
     assert cost > cost_from_next_wp, (
         f"Cost from waypoint {target_wp_index} ({cost}) should be greater than "
         f"cost from waypoint {target_wp_index + 1} ({cost_from_next_wp})"
@@ -364,9 +369,9 @@ def test_get_remaining_cost_no_partial(fresh_ompl_path, target_wp_index):
     cost_from_next_wp = fresh_ompl_path.get_remaining_cost(target_wp_index + 1, next_wp_latlon)
 
     full_cost = fresh_ompl_path.get_cost()
-    assert (
-        cost <= full_cost
-    ), f"Remaining cost {cost} should be less than or equal to full cost {full_cost}"
+    assert cost <= full_cost, (
+        f"Remaining cost {cost} should be less than or equal to full cost {full_cost}"
+    )
     assert cost > cost_from_next_wp, (
         f"Cost from waypoint {target_wp_index} ({cost}) should be greater than "
         f"cost from waypoint {target_wp_index + 1} ({cost_from_next_wp})"

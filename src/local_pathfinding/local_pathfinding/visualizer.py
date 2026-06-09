@@ -14,21 +14,21 @@ Main Components:
 """
 
 import math
+import subprocess
 from collections import deque
 from dataclasses import dataclass
 from multiprocessing import Queue
-from typing import Dict, List, Optional, Tuple, Any
-import subprocess
-import yaml
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
-import custom_interfaces.msg as ci
 import dash
 import plotly.graph_objects as go
+import yaml
 from dash import dcc, html
 from dash.dependencies import Input, Output, State
 from shapely.geometry import MultiPolygon, Polygon
 
+import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.wind_coord_systems as wcs
 from local_pathfinding.ompl_path import OMPLPath
@@ -417,8 +417,8 @@ def build_path_trace(
     if not local_x_km or not local_y_km:
         return None
     return go.Scatter(
-        x=list(local_x_km),
-        y=list(local_y_km),
+        x=[boat_xy_km[0]] + list(local_x_km[1:]),
+        y=[boat_xy_km[1]] + list(local_y_km[1:]),
         mode="lines",
         name="Path to Goal",
         line=dict(width=2, dash="dot", color="blue"),
@@ -794,7 +794,7 @@ def apply_layout(
     vs: VisualizerState,
     fig: go.Figure,
     zoom_needed: bool,
-    last_range: Optional[Dict[str, List[float]]]
+    last_range: Optional[Dict[str, List[float]]],
 ) -> None:
     """
     Apply the main plot layout configuration (axis titles, domains, legend, and optional ranges).
@@ -868,7 +868,10 @@ def build_figure(
     boat_xy_km = cs.XY(vs.sailbot_pos_x_km[-1], vs.sailbot_pos_y_km[-1])
 
     if not local_x_km or not local_y_km:
-        raise ValueError("No local waypoints available for plotting")
+        # No local path available (e.g. pathfinding failed and sail was disabled).
+        # Still render the boat, obstacles, AIS traffic, and wind so the operator keeps
+        # situational awareness instead of seeing a blank or crashed view.
+        return build_figure_without_local_path(vs, boat_xy_km, last_goal_xy_km, last_range)
     goal_xy_km = cs.XY(local_x_km[-1], local_y_km[-1])
     goal_change = compute_goal_change(last_goal_xy_km, goal_xy_km)
 
@@ -922,6 +925,103 @@ def build_figure(
     apply_layout(vs, fig, zoom_needed, last_range)
     add_goal_change_popup(fig, goal_change.message)  # Popup message for goal change
     return fig, goal_change.new_goal_xy_rounded
+
+
+def build_figure_without_local_path(
+    vs: VisualizerState,
+    boat_xy_km: Tuple[float, float],
+    last_goal_xy_km: Optional[Tuple[float, float]],
+    last_range: Optional[Dict[str, List[float]]],
+) -> Tuple[go.Figure, Tuple[float, float]]:
+    """
+    Build the visualization when no local path is available.
+
+    This happens when local pathfinding fails (e.g. the solver could not produce a path and
+    sail was disabled), so there are no local waypoints or local goal to plot. Everything that
+    does not depend on the local path is still drawn — the boat, land/AIS obstacles, AIS ships,
+    and the wind box — so the operator retains situational awareness instead of seeing a blank
+    or crashed figure.
+
+    Args:
+        vs: VisualizerState containing processed ROS message data.
+        boat_xy_km: (x, y) current boat position in km.
+        last_goal_xy_km: Previous goal position (x, y) in km, or None if never set.
+        last_range: Previously stored axis ranges, or None on first render.
+
+    Returns:
+        (fig, goal_xy): The figure, and the goal position to persist downstream — the previous
+        goal if one is known, otherwise the current boat position so goal-change tracking stays
+        consistent on later frames.
+    """
+    fig = initial_plot()
+
+    # Boat marker (distance-to-goal is unknown without a local path)
+    fig.add_trace(build_boat_trace(vs, boat_xy_km, dist_to_goal_km=0.0))
+
+    # Obstacles (land and AIS collision zones) and AIS ships
+    land_traces = build_polygon_traces(
+        vs.land_obstacles_xy,
+        name="Land Obstacle",
+        line={"color": "lightgreen"},
+        fillcolor="lightgreen",
+        opacity=0.5,
+        showlegend=True,
+    )
+    boat_traces = build_polygon_traces(
+        vs.boat_obstacles_xy,
+        name="AIS Collision Zone",
+        line={"width": 2},
+        fillcolor="rgba(255,165,0,0.25)",
+        opacity=0.5,
+        hoverinfo="skip",
+        showlegend=False,
+    )
+    ais_traces = build_ais_traces(vs)
+    fig.add_traces(land_traces + boat_traces + ais_traces)
+
+    # Wind box and its elements
+    wind_config = configure_wind_box_elements(vs)
+    fig.update_layout(**wind_config.layout_config)
+    for arrow in wind_config.wind_arrows:
+        fig.add_annotation(arrow)
+    fig.add_shape(**wind_config.background_info)
+    for annotation in wind_config.annotations:
+        fig.add_annotation(annotation)
+
+    # State-space overlay around the boat only (there is no goal to include)
+    boat_box = OMPLPath.create_buffer_around_position(
+        cs.XY(boat_xy_km[0], boat_xy_km[1]), BOX_BUFFER_SIZE_KM
+    )
+    vs.state_space = MultiPolygon([boat_box])
+    x_min, y_min, x_max, y_max = vs.state_space.bounds
+    fig.add_shape(
+        type="rect",
+        x0=x_min,
+        y0=y_min,
+        x1=x_max,
+        y1=y_max,
+        fillcolor="rgba(000, 100, 255, 0.25)",
+        line=dict(width=0),
+        layer="below",
+    )
+
+    # Make it obvious why no path is drawn
+    fig.add_annotation(
+        text="⚠️ No local path available (sail disabled)",
+        xref="paper",
+        yref="paper",
+        x=0.5,
+        y=1.0,
+        showarrow=False,
+        font=dict(color="red", size=16),
+        bgcolor="rgba(255, 255, 255, 0.7)",
+    )
+
+    zoom_needed = last_range is None
+    apply_layout(vs, fig, zoom_needed, last_range)
+
+    goal_xy = last_goal_xy_km if last_goal_xy_km is not None else (boat_xy_km[0], boat_xy_km[1])
+    return fig, goal_xy
 
 
 def write_wind_params(tw_dir_deg: float, tw_speed_kmph: float) -> None:
@@ -1000,7 +1100,7 @@ def dash_app(q: Queue):
                 style={
                     "position": "absolute",
                     "bottom": "120px",  # Distance from the very bottom of the screen
-                    "left": "50px",   # Aligns with the Y-axis
+                    "left": "50px",  # Aligns with the Y-axis
                     "display": "flex",
                     "gap": "15px",
                     "alignItems": "center",
@@ -1008,20 +1108,23 @@ def dash_app(q: Queue):
                     "backgroundColor": "rgba(255, 255, 255, 0.8)",  # Semi-transparent white
                     "borderRadius": "8px",
                     "border": "1px solid #ccc",
-                    "zIndex": "1000"
+                    "zIndex": "1000",
                 },
                 children=[
                     html.Label("Wind Direction (°):", style={"fontWeight": "bold"}),
-                    dcc.Input(id="tw-dir-input", type="number",
-                              value=0, style={"width": "80px"}),
+                    dcc.Input(id="tw-dir-input", type="number", value=0, style={"width": "80px"}),
                     html.Label("Wind Speed (km/h):", style={"fontWeight": "bold"}),
-                    dcc.Input(id="tw-speed-input", type="number",
-                              value=0, style={"width": "80px"}),
+                    dcc.Input(
+                        id="tw-speed-input", type="number", value=0, style={"width": "80px"}
+                    ),
                     html.Button(
                         "Apply Wind",
                         id="apply-wind-btn",
-                        style={"backgroundColor": "rgb(18, 70, 139)",
-                               "color": "white", "cursor": "pointer"}
+                        style={
+                            "backgroundColor": "rgb(18, 70, 139)",
+                            "color": "white",
+                            "cursor": "pointer",
+                        },
                     ),
                     html.Div(id="wind-status"),
                 ],
@@ -1190,5 +1293,5 @@ app.clientside_callback(
     """,
     Output("wind-status", "children", allow_duplicate=True),
     Input("wind-status", "children"),
-    prevent_initial_call=True
+    prevent_initial_call=True,
 )

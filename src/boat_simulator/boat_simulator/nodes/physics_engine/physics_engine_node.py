@@ -33,13 +33,28 @@ from rclpy.subscription import Subscription
 
 import boat_simulator.common.constants as Constants
 import boat_simulator.common.utils as Utils
+from boat_simulator.common.geo_conversions import local_position_to_gps_lat_lon
 from boat_simulator.common.generators import MVGaussianGenerator
-from boat_simulator.common.sensors import SimGPS, SimWindSensor
+from boat_simulator.common.sensors import SimWindSensor
 from boat_simulator.common.types import Scalar
 from boat_simulator.nodes.physics_engine.fluid_generation import FluidGenerator
 from boat_simulator.nodes.physics_engine.model import BoatState
 
 from .decorators import require_all_subs_active
+
+# --------------------------------------
+# CONVERSION HELPERS
+# --------------------------------------
+
+
+def sim_velocity_to_gps_speed_kmph(global_velocity_mps: np.ndarray) -> float:
+    """Convert simulator global velocity in m/s into GPS speed in km/h."""
+    return float(np.linalg.norm(global_velocity_mps[:2]) * 3.6)
+
+
+def sim_yaw_to_gps_heading_deg(yaw_rad: float) -> float:
+    """Convert simulator yaw, where 0 rad points east, into true bearing degrees."""
+    return float(Utils.bound_to_180(90.0 - Utils.rad_to_degrees(yaw_rad)))
 
 
 def main(args=None):
@@ -131,6 +146,8 @@ class PhysicsEngineNode(Node):
                 ("wind_generation.mvgaussian_params.cov", rclpy.Parameter.Type.STRING),
                 ("current_generation.mvgaussian_params.mean", rclpy.Parameter.Type.DOUBLE_ARRAY),
                 ("current_generation.mvgaussian_params.cov", rclpy.Parameter.Type.STRING),
+                (Constants.SIM_GPS_ORIGIN_LATITUDE_PARAM, rclpy.Parameter.Type.DOUBLE),
+                (Constants.SIM_GPS_ORIGIN_LONGITUDE_PARAM, rclpy.Parameter.Type.DOUBLE),
             ],
         )
 
@@ -149,7 +166,16 @@ class PhysicsEngineNode(Node):
         self.__sail_trim_tab_angle = 0
         self.__desired_heading = None
         self.__boat_state = BoatState(self.pub_period)
-        self.__sim_gps = None
+        self.__sim_gps_origin_latitude = (
+            self.get_parameter(Constants.SIM_GPS_ORIGIN_LATITUDE_PARAM)
+            .get_parameter_value()
+            .double_value
+        )
+        self.__sim_gps_origin_longitude = (
+            self.get_parameter(Constants.SIM_GPS_ORIGIN_LONGITUDE_PARAM)
+            .get_parameter_value()
+            .double_value
+        )
 
         wind_mean = np.array(
             self.get_parameter("wind_generation.mvgaussian_params.mean")
@@ -342,25 +368,7 @@ class PhysicsEngineNode(Node):
 
     def __publish_gps(self):
         """Publishes mock GPS data."""
-        lat_lon = self.__boat_state.global_position
-        speed = np.linalg.norm(self.__boat_state.global_velocity)
-        heading = self.__boat_state.angular_position[0]
-
-        if self.__sim_gps:
-            self.__sim_gps.lat_lon = lat_lon
-            self.__sim_gps.speed = speed
-            self.__sim_gps.heading = heading
-        else:
-            self.__sim_gps = SimGPS(
-                lat_lon=lat_lon, speed=speed, heading=heading, enable_noise=True
-            )
-
-        msg = GPS()
-        lat, lon, _ = self.__sim_gps.lat_lon
-        msg.lat_lon.latitude = float(lat)
-        msg.lat_lon.longitude = float(lon)
-        msg.speed.speed = self.__sim_gps.speed
-        msg.heading.heading = self.__sim_gps.heading
+        msg = self.__build_gps_msg()
 
         self.gps_pub.publish(msg)
         self.get_logger().info(
@@ -396,32 +404,15 @@ class PhysicsEngineNode(Node):
 
     def __publish_kinematics(self):
         """Publishes the kinematics data of the simulated boat."""
-        lat_lon = self.__boat_state.global_position
-        speed = np.linalg.norm(self.__boat_state.global_velocity)
-        heading = self.__boat_state.angular_position[0]
-
-        if self.__sim_gps:
-            self.__sim_gps.lat_lon = lat_lon
-            self.__sim_gps.speed = speed
-            self.__sim_gps.heading = heading
-        else:
-            self.__sim_gps = SimGPS(
-                lat_lon=lat_lon, speed=speed, heading=heading, enable_noise=True
-            )
-
         msg = SimWorldState()
-        lat, lon, _ = self.__sim_gps.lat_lon
-        msg.global_gps.lat_lon.latitude = float(lat)
-        msg.global_gps.lat_lon.longitude = float(lon)
-        msg.global_gps.speed.speed = self.__sim_gps.speed
-        msg.global_gps.heading.heading = self.__sim_gps.heading
+        msg.global_gps = self.__build_gps_msg()
 
         msg.global_pose.position.x = self.__boat_state.global_position.item(0)
         msg.global_pose.position.y = self.__boat_state.global_position.item(1)
         msg.global_pose.position.z = self.__boat_state.global_position.item(2)
-        msg.global_pose.orientation.x = self.__boat_state.angular_position.item(0)
-        msg.global_pose.orientation.y = self.__boat_state.angular_position.item(1)
-        msg.global_pose.orientation.z = self.__boat_state.angular_position.item(2)
+        msg.global_pose.orientation.x = self.__boat_state.global_angular_position.item(0)
+        msg.global_pose.orientation.y = self.__boat_state.global_angular_position.item(1)
+        msg.global_pose.orientation.z = self.__boat_state.global_angular_position.item(2)
         msg.global_pose.orientation.w = 1.0
 
         msg.wind_velocity.x = self.__wind_generator.velocity[0]
@@ -445,6 +436,23 @@ class PhysicsEngineNode(Node):
             .get_parameter_value()
             .double_value,
         )
+
+    def __build_gps_msg(self) -> GPS:
+        latitude, longitude = local_position_to_gps_lat_lon(
+            self.__boat_state.global_position,
+            origin_latitude=self.__sim_gps_origin_latitude,
+            origin_longitude=self.__sim_gps_origin_longitude,
+        )
+        yaw_rad = self.__boat_state.global_angular_position[
+            Constants.ORIENTATION_INDICES.YAW.value
+        ]
+
+        msg = GPS()
+        msg.lat_lon.latitude = latitude
+        msg.lat_lon.longitude = longitude
+        msg.speed.speed = sim_velocity_to_gps_speed_kmph(self.__boat_state.global_velocity)
+        msg.heading.heading = sim_yaw_to_gps_heading_deg(float(yaw_rad))
+        return msg
 
     # SUBSCRIPTION CALLBACKS
     def __desired_heading_sub_callback(self, msg: DesiredHeading):

@@ -4,13 +4,12 @@ import importlib
 import os
 from typing import List, Tuple
 
-from launch_ros.actions import Node
-
 from launch.actions import DeclareLaunchArgument, OpaqueFunction
 from launch.launch_context import LaunchContext
 from launch.launch_description import LaunchDescription
 from launch.some_substitutions_type import SomeSubstitutionsType
 from launch.substitutions import LaunchConfiguration
+from launch_ros.actions import Node
 
 # Local launch arguments and constants
 PACKAGE_NAME = "local_pathfinding"
@@ -66,14 +65,23 @@ def setup_launch(context: LaunchContext) -> List[Node]:
         List[Node]: Nodes to launch.
     """
     mode = LaunchConfiguration("mode").perform(context)
-
+    on_water_mock_ais = LaunchConfiguration("on_water_mock_ais").perform(context)
     launch_description_entities = []
     launch_description_entities.append(get_navigate_node_description(context))
-    if mode == "development":
+    if mode == "production":
+        launch_description_entities.append(get_global_path_node_description(context))
+        if on_water_mock_ais:
+            launch_description_entities.append(get_mock_ais_node_description(context))
+
+    elif mode == "development":
         launch_description_entities.append(get_mock_global_path_node_description(context))
         launch_description_entities.append(get_mock_wind_sensor_node_description(context))
         launch_description_entities.append(get_mock_ais_node_description(context))
         launch_description_entities.append(get_mock_gps_node_description(context))
+        launch_description_entities.append(get_navigate_observer_node_description(context))
+    elif mode == "sim":
+        launch_description_entities.append(get_mock_global_path_node_description(context))
+        launch_description_entities.append(get_mock_ais_node_description(context))
         launch_description_entities.append(get_navigate_observer_node_description(context))
     return launch_description_entities
 
@@ -89,12 +97,15 @@ def get_navigate_node_description(context: LaunchContext) -> Node:
     """
     node_name = "navigate_main"
     mode = LaunchConfiguration("mode").perform(context)
-    ros_parameters = [
-        {"mode": mode},
-        LaunchConfiguration("config").perform(context),
-    ]
+    inline_params = {"mode": mode}
+
     if mode == "development":
-        ros_parameters[0].update({"test_plan": LaunchConfiguration("test_plan").perform(context)})
+        inline_params["test_plan"] = LaunchConfiguration("test_plan").perform(context)
+
+    ros_parameters = [
+        LaunchConfiguration("config").perform(context),
+        inline_params,
+    ]
 
     ros_arguments: List[SomeSubstitutionsType] = [
         "--log-level",
@@ -104,6 +115,37 @@ def get_navigate_node_description(context: LaunchContext) -> Node:
     node = Node(
         package=PACKAGE_NAME,
         executable="navigate",
+        name=node_name,
+        output="screen",
+        emulate_tty=True,
+        parameters=ros_parameters,
+        ros_arguments=ros_arguments,
+    )
+
+    return node
+
+
+def get_global_path_node_description(context: LaunchContext) -> Node:
+    """Gets the launch description for the global_path node.
+
+    Args:
+        context (LaunchContext): The current launch context.
+
+    Returns:
+        Node: The node object that launches the global_path node.
+    """
+    node_name = "global_path"
+    ros_parameters = [
+        LaunchConfiguration("config").perform(context),
+    ]
+    ros_arguments: List[SomeSubstitutionsType] = [
+        "--log-level",
+        [f"{node_name}:=", LaunchConfiguration("log_level")],
+    ]
+
+    node = Node(
+        package=PACKAGE_NAME,
+        executable="global_path",
         name=node_name,
         output="screen",
         emulate_tty=True,
@@ -129,7 +171,7 @@ def get_mock_global_path_node_description(context: LaunchContext) -> Node:
     # the first entry is treated as a parameter file path.
     ros_parameters = [
         LaunchConfiguration("config").perform(context),
-        {"test_plan": test_plan},
+        {"test_plan:=": test_plan},
     ]
     ros_arguments: List[SomeSubstitutionsType] = [
         "--log-level",
