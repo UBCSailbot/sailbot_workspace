@@ -7,7 +7,10 @@ from ompl import base as ob
 from scipy.interpolate import RegularGridInterpolator
 
 import local_pathfinding.coord_systems as cs
-from local_pathfinding.ompl_validity import GoalProgressMotion
+from local_pathfinding.ompl_validity import (
+    GoalProgressMotion,
+    get_segment_wind_angle_rad_bc,
+)
 import local_pathfinding.wind_coord_systems as wcs
 
 UPWIND_COST_MULTIPLIER = 1.0
@@ -133,14 +136,7 @@ class WindObjective(ob.OptimizationObjective):
 
     @staticmethod
     def wind_direction_cost(s1: cs.XY, s2: cs.XY, tw_direction_rad_gc: float) -> float:
-        """Computes a wind alignment cost based on theta.
-        theta(θ): absolute angle between the segment bearing and the true wind direction
-
-        1) If θ ≤ NO_GO_ZONE or θ ≥ π − NO_GO_ZONE (i.e., within 45 degrees of directly upwind or
-        downwind), the cost is 1.0.
-        2) Otherwise, the cost is sin(2θ) ** WIND_COST_SIN_EXPONENT.
-
-        The cost is symmetric about both upwind (0) and downwind (π) and always lies in [0, 1].
+        """Computes a wind alignment cost for a path segment.
 
         Args:
             s1 (cs.XY): The start point of the path segment
@@ -148,18 +144,19 @@ class WindObjective(ob.OptimizationObjective):
             tw_direction_rad_gc (float): The direction of the true wind in radians, (-pi, pi]
 
         Returns:
-            float: The cost the path segment from s1 to s2, in the interval [0, 1]
+            float: The cost of the path segment from s1 to s2, in the interval [0, 1].
         """
-        segment_true_bearing_rad = cs.get_path_segment_true_bearing(s1, s2, rad=True)
-        tw_angle_rad_bc = abs(
-            wcs.get_true_wind_angle(segment_true_bearing_rad, tw_direction_rad_gc)
+        segment_wind_angle_rad_bc = get_segment_wind_angle_rad_bc(
+            s1,
+            s2,
+            tw_direction_rad_gc,
         )
-
-        if tw_angle_rad_bc <= NO_GO_ZONE or tw_angle_rad_bc >= math.pi - NO_GO_ZONE:
+        if (
+            segment_wind_angle_rad_bc <= NO_GO_ZONE
+            or segment_wind_angle_rad_bc >= math.pi - NO_GO_ZONE
+        ):
             return 1.0
-
-        cost = math.sin(2 * tw_angle_rad_bc) ** WIND_COST_SIN_EXPONENT
-        return cost
+        return math.sin(2 * segment_wind_angle_rad_bc) ** WIND_COST_SIN_EXPONENT
 
 
 class TimeObjective(ob.OptimizationObjective):

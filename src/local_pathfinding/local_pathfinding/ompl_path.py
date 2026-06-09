@@ -23,7 +23,7 @@ import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.obstacles as ob
 from local_pathfinding.ompl_objectives import get_sailing_objective
-from local_pathfinding.ompl_validity import GoalProgressMotionValidator
+from local_pathfinding.ompl_validity import WindMotionValidator
 
 if TYPE_CHECKING:
     from local_pathfinding.local_path import LocalPathState
@@ -391,21 +391,24 @@ class OMPLPath:
         )
         simple_setup.setStartAndGoalStates(start, goal)
 
-        space_information = simple_setup.getSpaceInformation()
-        self._goal_progress_motion_validator = GoalProgressMotionValidator(
-            space_information,
-            goal_position_in_xy,
-        )
-        space_information.setMotionValidator(self._goal_progress_motion_validator)
-
-        self.state.planner = og.RRTstar(space_information)
-
         # Use the wind snapshot stored with this LocalPathState so path planning and
         # later wind-change comparisons share the same baseline.
         if self.state.path_generated_wind is None:
             current_aw = self.state.current_aw
         else:
             current_aw = self.state.path_generated_wind
+
+        space_information = simple_setup.getSpaceInformation()
+        self._wind_motion_validator = WindMotionValidator(
+            space_information,
+            self.state.heading,
+            self.state.speed,
+            current_aw.dir_deg,
+            current_aw.speed_kmph,
+        )
+        space_information.setMotionValidator(self._wind_motion_validator)
+
+        self.state.planner = og.RRTstar(space_information)
 
         objective = get_sailing_objective(
             space_information,
@@ -414,7 +417,7 @@ class OMPLPath:
             self.state.speed,
             current_aw.dir_deg,
             current_aw.speed_kmph,
-            goal_position_in_xy
+            goal_position_in_xy,
         )
 
         simple_setup.setOptimizationObjective(objective)
