@@ -79,7 +79,10 @@ def setup_launch(context: LaunchContext) -> List[Node]:
         launch_description_entities.append(get_mock_ais_node_description(context))
         launch_description_entities.append(get_mock_gps_node_description(context))
         launch_description_entities.append(get_navigate_observer_node_description(context))
-
+    elif mode == "sim":
+        launch_description_entities.append(get_mock_global_path_node_description(context))
+        launch_description_entities.append(get_mock_ais_node_description(context))
+        launch_description_entities.append(get_navigate_observer_node_description(context))
     return launch_description_entities
 
 
