@@ -2,6 +2,7 @@
 
 import rclpy
 from rclpy.node import Node
+from rclpy.time import Time
 from test_plans.test_plan import TestPlan
 
 import custom_interfaces.msg as ci
@@ -134,7 +135,7 @@ class Sailbot(Node):
         self.desired_heading = None
 
         # attributes
-        self.gps_timeout_start_time = self.get_clock().now()
+        self.gps_timeout_start_ros_time: Time = self.get_clock().now()
         self.local_path = LocalPath(parent_logger=self.get_logger())
         self.target_lp_wp_index = 1
         self.global_waypoint_index = -1
@@ -160,7 +161,7 @@ class Sailbot(Node):
     def gps_callback(self, msg: ci.GPS):
         self.get_logger().debug(f"Received data from {self.gps_sub.topic}: {msg}")
         self.gps = msg
-        self.gps_timeout_start_time = self.get_clock().now()
+        self.gps_timeout_start_ros_time = self.get_clock().now()
 
     def global_path_callback(self, msg: ci.Path):
         self.get_logger().debug(
@@ -180,7 +181,6 @@ class Sailbot(Node):
 
         if self._gps_has_timed_out():
             msg = ci.DesiredHeading()
-            msg.steering = 1
             msg.sail = False
 
             self.desired_heading = msg
@@ -417,7 +417,8 @@ class Sailbot(Node):
     def _gps_has_timed_out(self) -> bool:
         """Checks if we haven't received a GPS message for more than 2 minutes."""
 
-        elapsed_sec = ((self.get_clock().now() - self.gps_timeout_start_time).nanoseconds) / (1e9)
+        elapsed_sec = ((self.get_clock().now() -
+                        self.gps_timeout_start_ros_time).nanoseconds) / (1e9)
         return (elapsed_sec > GPS_TIMEOUT_SEC)
 
     def _log_inactive_subs_warning(self):
