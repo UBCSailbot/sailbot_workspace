@@ -193,17 +193,17 @@ const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs }: any) => {
           const targetLayoutIndex = findLayoutIndex(layout, sortableId as GraphId);
           if (sourceIndex === targetLayoutIndex) break;
 
-          updateDropGap(null);
-
           // Update side ref for accurate drop placement
           const targetItem = layout[targetLayoutIndex];
           const isFullGroup = isSplitGroup(targetItem) && targetItem.length >= 2;
           if (isFullGroup) {
-            splitSideRef.current = 'full';
-          } else {
-            const rect = (el as HTMLElement).getBoundingClientRect();
-            splitSideRef.current = e.clientX < rect.left + rect.width / 2 ? 'left' : 'right';
+            // Target group is at max capacity — fall through to gap detection
+            break;
           }
+
+          updateDropGap(null);
+          const rect = (el as HTMLElement).getBoundingClientRect();
+          splitSideRef.current = e.clientX < rect.left + rect.width / 2 ? 'left' : 'right';
 
           if (sortableId !== hoverTargetRef.current) {
             clearHoverTimer();

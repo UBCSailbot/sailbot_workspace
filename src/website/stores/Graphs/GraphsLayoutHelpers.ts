@@ -138,7 +138,8 @@ export const splitGraph = (
 
   return withoutSource.map((item) => {
     if (isSplitGroup(item) && item.includes(targetId)) {
-      // Already a group — always append to end regardless of side
+      // Already a group — reject if already at max 2 graphs
+      if (item.length >= 2) return item;
       return [...item, sourceId];
     }
     if (item === targetId) {
