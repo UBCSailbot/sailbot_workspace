@@ -18,6 +18,9 @@ import local_pathfinding.coord_systems as cs
 from local_pathfinding.ompl_objectives import TimeObjective
 
 SECONDS_PER_HOUR = 3600
+GPS_NOISE_SIGMA_METERS = 0.5
+DRIFT_SPEED_NOISE_SIGMA_SCALE = 0.05
+DRIFT_DIR_NOISE_SIGMA_DEG = 2.0
 
 
 class MockGPS(Node):
@@ -110,21 +113,18 @@ class MockGPS(Node):
         # Parameter Event Handler (Parameters can change over the life of the simulation)
         self.add_on_set_parameters_callback(self._on_set_parameters)
 
-    def add_gps_noise(
-        self, lat_lon_msg: ci.HelperLatLon, noise_sigma_meters: float = 0.5
-    ) -> ci.HelperLatLon:
+    def add_gps_noise(self, lat_lon_msg: ci.HelperLatLon) -> ci.HelperLatLon:
         """Adds Gaussian noise to a coordinate.
 
         Args:
             lat_lon_msg (ci.HelperLatLon): The original lat/lon coordinates.
-            noise_sigma_meters (float): The standard deviation of the noise in meters.
 
         Returns:
             ci.HelperLatLon: Object containing the new lat/lon coordinates with noise.
         """
         noise_km = cs.XY(
-            random.gauss(0.0, noise_sigma_meters) / 1000,
-            random.gauss(0.0, noise_sigma_meters) / 1000,
+            random.gauss(0.0, GPS_NOISE_SIGMA_METERS) / 1000,
+            random.gauss(0.0, GPS_NOISE_SIGMA_METERS) / 1000,
         )
         return cs.xy_to_latlon(reference=lat_lon_msg, xy=noise_km)
 
@@ -147,8 +147,8 @@ class MockGPS(Node):
         drift_dir = self._drift_dir_deg
 
         if self._use_drift_randomization:
-            drift_speed += random.gauss(0.0, drift_speed * 0.05)
-            drift_dir += random.gauss(0.0, 2.0)
+            drift_speed += random.gauss(0.0, drift_speed * DRIFT_SPEED_NOISE_SIGMA_SCALE)
+            drift_dir += random.gauss(0.0, DRIFT_DIR_NOISE_SIGMA_DEG)
 
         drift_dir_rad = math.radians(drift_dir)
         step_km = drift_speed * dt_hours
@@ -170,23 +170,23 @@ class MockGPS(Node):
             f"Actual Lon: {self._current_location.longitude:.7f}\n"
         )
 
-        if self._use_noise:
-            published_location = self.add_gps_noise(self._current_location)
-
-            self.get_logger().info(
-                f"Published Lat: {published_location.latitude:.7f} "
-                f"Published Lon: {published_location.longitude:.7f} "
-            )
-        else:
-            published_location = self._current_location
-
         if self._use_drift:
-            published_location = self.add_ocean_drift(published_location)
+            published_location = self.add_ocean_drift(self._current_location)
 
             self.get_logger().info(
                 f"Drift Offset: {self._drift_offset_km}\n"
                 f"Drift Speed: {self._drift_speed_kmph}\n"
                 f"Drift Direction {self._drift_dir_deg}"
+            )
+        else:
+            published_location = self._current_location
+
+        if self._use_noise:
+            published_location = self.add_gps_noise(published_location)
+
+            self.get_logger().info(
+                f"Published Lat: {published_location.latitude:.7f} "
+                f"Published Lon: {published_location.longitude:.7f} "
             )
 
         msg: ci.GPS = ci.GPS(
