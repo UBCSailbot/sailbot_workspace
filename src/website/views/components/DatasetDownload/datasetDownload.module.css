@@ -1,25 +1,54 @@
+.downloadContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 96px;
+  margin-top: 96px;
+}
+
+.downloadHeader {
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  gap: 8px;
+}
+
+.downloadHeader h2 {
+  font-size: 32px;
+  font-weight: 700;
+}
+
 .dataSetDownload {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  max-width: 1200px;
+  gap: 32px;
   padding-bottom: 200px;
+  place-content: center;
+  justify-items: center;
+}
+
+.dataSetCard {
+  border-radius: 8px;
+  background-color: #1d1d1d;
+  padding: 32px;
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 @media (max-width: 1200px) {
-  .dataSetDownload {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 768px) {
-  .dataSetDownload {
-    grid-template-columns: 1fr;
+  .dataSetCard {
+    max-width: 1030px;
   }
 }
 
 .title {
   font-size: 24px;
   font-weight: 600;
+  margin-bottom: 8px;
+  width: fill;
 }
 
 .downloadOptions {
@@ -34,4 +63,21 @@
   cursor: pointer;
   user-select: none;
   font-size: 20px;
+  opacity: 0.9;
+}
+
+.downloadButton:hover {
+  text-decoration: underline;
+}
+
+.description {
+  font-size: 16px;
+  opacity: 0.75;
+  padding-bottom: 40px;
+}
+
+.dateUpdated {
+  font-size: 14px;
+  opacity: 0.4;
+  margin-top: 4px;
 }

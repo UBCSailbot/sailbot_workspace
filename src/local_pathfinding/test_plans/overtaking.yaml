@@ -1,0 +1,20 @@
+# Polaris (20 km/h) approaches two slower vessels (6 and 9 km/h) moving in the same
+# direction on a westbound heading.  The planner must safely overtake each ship in turn,
+# passing to port or starboard while keeping a safe separation distance.
+tw_dir_deg: 180
+tw_speed_kmph: 12.0
+
+gps:
+  latitude: 49.28
+  longitude: -123.18
+  speed_kmph: 20.0
+  heading_deg: 270.0
+
+ais:
+  - {id: 1, lat: 49.28, lon: -123.25, heading: 270.0, speed: 6.0, rot: 0, width: 3.0, height: 10.0}
+  - {id: 2, lat: 49.29, lon: -123.32, heading: 270.0, speed: 9.0, rot: 0, width: 2.0, height: 8.0}
+
+global_path:
+  waypoints:
+    - {latitude: 49.28, longitude: -123.55}
+    - {latitude: 49.28, longitude: -123.40}

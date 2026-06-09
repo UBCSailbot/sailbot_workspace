@@ -37,41 +37,42 @@ ROS parameters common across all ROS nodes in the network.
 
 ROS parameters specific to the nodes in the local_pathfinding package.
 
-### `mgp_main`
+### `global_path`
+
+The production node that reads the global path from a csv file and
+publishes it (interpolated to `global_path_interval_spacing_km`) on the
+`global_path` topic for local pathfinding to consume.
 
 **`global_path_filepath`**
 
-- _Description_: The absolute filepath to a global path csv file.
+- _Description_: The absolute filepath to a global path csv file. The file
+  must have a `latitude,longitude` header followed by one waypoint per row,
+  ordered final destination first and launch area last (`navigate` treats
+  waypoint index 0 as the final destination and heads toward it starting from
+  the last waypoint).
 - _Datatype_: `string`
 - _Acceptable Values_: Any valid filepath to a properly formatted csv file.
 
-**`interval_spacing`**
+**`global_path_interval_spacing_km`**
 
-- _Description_: The upper bound on spacing between each point in the global
-  path in km.
+- _Description_: The upper bound on the spacing between consecutive points in
+  the global path in km. The path read from the csv file is interpolated so
+  that no two consecutive waypoints are farther apart than this value. This is
+  a global parameter shared by all nodes.
 - _Datatype_: `double`
 - _Range_: `(0.0, MAX_DOUBLE)`
 
-**`write`**
+### `mock_global_path`
 
-- _Description_: Whether or not to write a generated global path to a new csv
-  file.
-- _Datatype_: `boolean`
-- _Acceptable Values_: `true`, `false`
+The development-only node that publishes a mock global path sourced from the
+active test plan.
 
 **`gps_threshold`**
 
 - _Description_: A new path will be generated if the GPS position changed by
-  more thangps_threshold*interval_spacing.
+  more than `gps_threshold * global_path_interval_spacing_km`.
 - _Datatype_: `double`
 - _Acceptable Values_: `(1.0, MAX_DOUBLE)`
-
-**`force`**
-
-- _Description_: Force the mock global path callback to update the global
-  path when set to true.
-- _Datatype_: `boolean`
-- _Acceptable Values_: `true`, `false`
 
 ### `navigate_main`
 

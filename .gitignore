@@ -41,3 +41,6 @@ site/
 
 # Data Recordings
 notebooks/local_pathfinding/session_recordings/
+
+# Log file Recordings
+src/global_launch/voyage_log/combined_log*.txt
