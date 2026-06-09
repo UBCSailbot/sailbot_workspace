@@ -23,7 +23,7 @@ import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.obstacles as ob
 from local_pathfinding.ompl_objectives import get_sailing_objective
-from local_pathfinding.ompl_validity import WindMotionValidator
+from local_pathfinding.ompl_validity import GoalProgressWindMotionValidator
 
 if TYPE_CHECKING:
     from local_pathfinding.local_path import LocalPathState
@@ -399,14 +399,15 @@ class OMPLPath:
             current_aw = self.state.path_generated_wind
 
         space_information = simple_setup.getSpaceInformation()
-        self._wind_motion_validator = WindMotionValidator(
+        self._goal_progress_wind_motion_validator = GoalProgressWindMotionValidator(
             space_information,
+            goal_position_in_xy,
             self.state.heading,
             self.state.speed,
             current_aw.dir_deg,
             current_aw.speed_kmph,
         )
-        space_information.setMotionValidator(self._wind_motion_validator)
+        space_information.setMotionValidator(self._goal_progress_wind_motion_validator)
 
         self.state.planner = og.RRTstar(space_information)
 

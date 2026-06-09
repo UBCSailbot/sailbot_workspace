@@ -8,8 +8,8 @@ from scipy.interpolate import RegularGridInterpolator
 
 import local_pathfinding.coord_systems as cs
 from local_pathfinding.ompl_validity import (
-    GoalProgressMotion,
     get_segment_wind_angle_rad_bc,
+    motion_makes_goal_progress,
 )
 import local_pathfinding.wind_coord_systems as wcs
 
@@ -66,7 +66,7 @@ SAILING_ANGLES_DEG_GC = [0, 45, 50, 60, 75, 90, 110, 120, 135, 150, 180]
 ESTIMATED_TOP_BOAT_SPEED = np.max(BOAT_SPEEDS_KMPH)
 
 
-class GoalDirectionObjective(ob.OptimizationObjective, GoalProgressMotion):
+class GoalDirectionObjective(ob.OptimizationObjective):
     """The GoalDirectionObjective assigns an infinite cost to path segments that move away
     from the goal.
 
@@ -76,8 +76,8 @@ class GoalDirectionObjective(ob.OptimizationObjective, GoalProgressMotion):
     """
 
     def __init__(self, space_information, goal_position_in_xy):
+        self.goal_position_in_xy = goal_position_in_xy
         ob.OptimizationObjective.__init__(self, space_information)
-        GoalProgressMotion.__init__(self, goal_position_in_xy)
 
     def motionCost(self, s1: ob.SE2StateSpace, s2: ob.SE2StateSpace) -> ob.Cost:
         """Defines the cost of a path segment, from s1 to s2, based on whether the segment
@@ -97,7 +97,7 @@ class GoalDirectionObjective(ob.OptimizationObjective, GoalProgressMotion):
 
         return (
             ob.Cost(0)
-            if self._motion_makes_goal_progress(s1, s2)
+            if motion_makes_goal_progress(s1, s2, self.goal_position_in_xy)
             else ob.Cost(float("inf"))
         )
 
