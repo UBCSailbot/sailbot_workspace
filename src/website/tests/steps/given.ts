@@ -229,7 +229,7 @@ Then('the response data matches the data in the database', async function () {
 
   for (const property of propertiesToCompare) {
     expect(apiResponseData_GPS[property]).to.equal(
-      databaseData_GPS[0][property],
+      (databaseData_GPS[0] as Record<string, unknown>)[property],
       `Data in the response does not match data in the database for property: ${property}`,
     );
   }
@@ -253,7 +253,7 @@ Then(
 
       for (const property of propertiesToCompare) {
         expect(apiResponseData_AISShips[property]).to.equal(
-          databaseData_AISShips[0].ships[i][property],
+          (databaseData_AISShips[0].ships[i] as Record<string, unknown>)[property],
           `Data in the response does not match data in the database for property: ${property}`,
         );
       }
@@ -281,7 +281,7 @@ Then(
 
       for (const property of propertiesToCompare) {
         expect(apiResponseData_GlobalPath[property]).to.equal(
-          databaseData_GlobalPath[0].waypoints[i][property],
+          (databaseData_GlobalPath[0].waypoints[i] as Record<string, unknown>)[property],
           `Data in the response does not match data in the database for property: ${property}`,
         );
       }
@@ -309,7 +309,7 @@ Then(
 
       for (const property of propertiesToCompare) {
         expect(apiResponseData_LocalPath[property]).to.equal(
-          databaseData_LocalPath[0].waypoints[i][property],
+          (databaseData_LocalPath[0].waypoints[i] as Record<string, unknown>)[property],
           `Data in the response does not match data in the database for property: ${property}`,
         );
       }
@@ -337,7 +337,7 @@ Then(
 
       for (const property of propertiesToCompare) {
         expect(apiResponseData_Batteries[property]).to.equal(
-          databaseData_Batteries[0].batteries[i][property],
+          (databaseData_Batteries[0].batteries[i] as Record<string, unknown>)[property],
           `Data in the response does not match data in the database for property: ${property}`,
         );
       }
@@ -365,7 +365,7 @@ Then(
 
       for (const property of propertiesToCompare) {
         expect(apiResponseData_WindSensors[property]).to.equal(
-          databaseData_WindSensors[0].windSensors[i][property],
+          (databaseData_WindSensors[0].windSensors[i] as Record<string, unknown>)[property],
           `Data in the response does not match data in the database for property: ${property}`,
         );
       }
@@ -397,7 +397,7 @@ Then(
       for (const property of propertiesToCompare) {
         expect(apiResponseData_GenericSensors[property]).to.equal(
           convertBigIntToString(
-            databaseData_GenericSensors[0].genericSensors[i][property],
+            (databaseData_GenericSensors[0].genericSensors[i] as Record<string, unknown>)[property] as bigint,
           ),
           `Data in the response does not match data in the database for property: ${property}`,
         );

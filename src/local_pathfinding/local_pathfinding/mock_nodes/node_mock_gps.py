@@ -26,7 +26,7 @@ DRIFT_DIR_NOISE_SIGMA_DEG = 2.0
 class MockGPS(Node):
 
     def __init__(self) -> None:
-        """Initialize the MockGPS class. The class is used to publish mock mock gps
+        """Initialize the MockGPS class. The class is used to publish mock gps
         data to the ROS network.
 
         Args:
