@@ -629,12 +629,12 @@ void AISShips::checkBounds() const
         std::string err_msg = err.value();
         throw std::out_of_range("ROT is out of bounds!\n" + debugStr() + "\n" + err_msg);
     }
-    err = utils::isOutOfBounds<float>(width_, SHIP_DIMENSION_LBND, SHIP_DIMENSION_UBND);
+    err = utils::isOutOfBounds<float>(width_, SHIP_DIMENSION_LBND - 1, SHIP_DIMENSION_UBND);
     if (err) {
         std::string err_msg = err.value();
         throw std::out_of_range("Width is out of bounds!\n" + debugStr() + "\n" + err_msg);
     }
-    err = utils::isOutOfBounds<float>(length_, SHIP_DIMENSION_LBND, SHIP_DIMENSION_UBND);
+    err = utils::isOutOfBounds<float>(length_, SHIP_DIMENSION_LBND - 1, SHIP_DIMENSION_UBND);
     if (err) {
         std::string err_msg = err.value();
         throw std::out_of_range("Length is out of bounds!\n" + debugStr() + "\n" + err_msg);

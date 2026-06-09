@@ -67,8 +67,20 @@ GLOBAL_LAUNCH_ARGUMENTS = [
         ),
         description="Allows the user to specify which folder the rosbag will be saved to."
         + " Note that to save to a different folder there should be no leading slash (/)."
-        + " By default, recordings are saved to session_recordings folder."
-    )
+        + " By default, recordings are saved to session_recordings folder.",
+    ),
+    DeclareLaunchArgument(
+        name="on_water_mock_ais",
+        default_value="false",
+        choices=["true", "false"],
+        description="Set to 'true' to use mock AIS data during production mode on-water testing.",
+    ),
+    DeclareLaunchArgument(
+        name="on_water_test_plan",
+        default_value="on_water_mock_ais.yaml",
+        description="The test plan to use for on-water testing when on_water_mock_ais=True. "
+        + "This should be a yaml file in the src/local_pathfinding/test_plans directory",
+    ),
 ]
 ENVIRONMENT_VARIABLES = [
     SetEnvironmentVariable("ROS_LOG_DIR", launch_config.log_dir),
@@ -114,8 +126,7 @@ def setup_launch(context: LaunchContext) -> List[Action]:
     if record:
         save_path = LaunchConfiguration("save_path").perform(context)
         target_dir = os.path.join(
-            os.getenv("ROS_WORKSPACE", default="/workspaces/sailbot_workspace"),
-            save_path
+            os.getenv("ROS_WORKSPACE", default="/workspaces/sailbot_workspace"), save_path
         )
 
         os.makedirs(target_dir, exist_ok=True)

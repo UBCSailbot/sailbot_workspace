@@ -3,6 +3,16 @@
 This directory contains all mock global path CSV files,
 as well as a path_builder.py module.
 
+## CSV Format and Waypoint Ordering
+
+A global path CSV has a `latitude,longitude` header followed by one waypoint
+per row. **Waypoints must be ordered final-destination-first**: the first data
+row becomes `waypoints[0]`, which the navigate node treats as the **final
+destination**, while the **last** data row is the waypoint the boat heads to
+**first** after launch. In other words, list the waypoints in the reverse of
+the order the boat sails them (destination first, launch area last). This is
+the same convention used by the development test plans.
+
 ## path_builder.py Module
 
 The path_builder.py module can be used two different ways:
