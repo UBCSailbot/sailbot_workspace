@@ -605,7 +605,7 @@ class LocalPath:
             while tries < MAX_OMPL_PATH_GEN_TRIES:
                 try:
                     if self.state is None or self.state.wind_tracker is None:
-                        wind_tracker = WindTracker(logger=self._logger.get_child(name="wind_tracker"))
+                        wind_tracker = WindTracker(logger=self._logger.get_child(name="wind_tracker"))  #noqa
                         wind_tracker.update_aw_history(new_aw)
                     else:
                         wind_tracker = self.state.wind_tracker
