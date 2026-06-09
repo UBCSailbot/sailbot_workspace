@@ -1,4 +1,9 @@
+"""Motion-validity helpers and validators for OMPL path planning."""
+
+from __future__ import annotations
+
 import math
+from typing import Any
 
 from ompl import base as ob
 
@@ -9,7 +14,17 @@ GOAL_PROGRESS_TOLERANCE = 1e-9
 NO_GO_ZONE = math.pi / 4
 
 
-def motion_makes_goal_progress(s1, s2, goal_position_in_xy: cs.XY) -> bool:
+def motion_makes_goal_progress(
+    s1: ob.SE2StateInternal,
+    s2: ob.SE2StateInternal,
+    goal_position_in_xy: cs.XY,
+) -> bool:
+    """Return whether a motion segment moves toward or sideways relative to the goal.
+
+    A segment is considered valid when its projection onto the vector from `s1` to the goal is
+    non-negative within `GOAL_PROGRESS_TOLERANCE`. This permits sideways tacking and obstacle
+    avoidance while rejecting backward motion relative to the goal.
+    """
     s12_vec = (s2.getX() - s1.getX(), s2.getY() - s1.getY())
     s1g_vec = (
         goal_position_in_xy.x - s1.getX(),
@@ -60,19 +75,20 @@ def in_wind_no_go_zone(s1: cs.XY, s2: cs.XY, tw_direction_rad_gc: float) -> bool
 class GoalProgressWindMotionValidator(ob.MotionValidator):
     """OMPL motion validator that enforces goal progress and wind feasibility.
 
-    This class checks goal progress and wind feasibility, then delegates to OMPL's
-    `DiscreteMotionValidator` for the interpolated collision and state-validity checks.
+    OMPL exposes one installed motion-validator slot, so this validator composes the hard
+    goal-progress and wind no-go checks before delegating once to OMPL's
+    `DiscreteMotionValidator` for interpolated collision and state-validity checks.
     """
 
     def __init__(
         self,
-        space_information,
+        space_information: ob.SpaceInformation,
         goal_position_in_xy: cs.XY,
         boat_heading_deg_gc: float,
         boat_speed_kmph: float,
         aw_direction_deg_bc: float,
         aw_speed_kmph: float,
-    ):
+    ) -> None:
         ob.MotionValidator.__init__(self, space_information)
         aw_direction_deg_gc = wcs.boat_to_global_coordinate(
             boat_heading_deg_gc,
@@ -89,8 +105,13 @@ class GoalProgressWindMotionValidator(ob.MotionValidator):
         self.goal_position_in_xy = goal_position_in_xy
         self.default_motion_validator = ob.DiscreteMotionValidator(space_information)
 
-    def checkMotion(self, s1, s2, *args) -> bool:
-        """Check goal progress, wind feasibility, and collision validity for a motion."""
+    def checkMotion(
+        self,
+        s1: ob.SE2StateInternal,
+        s2: ob.SE2StateInternal,
+        *args: Any,
+    ) -> bool:
+        """Check goal progress, wind feasibility, and discrete collision validity."""
         if not motion_makes_goal_progress(s1, s2, self.goal_position_in_xy):
             return False
 

@@ -78,6 +78,7 @@ class OMPLPath:
         Args:
             parent_logger (RcutilsLogger): Logger of the parent class.
             local_path_state (LocalPathState): State of Sailbot.
+            land_multi_polygon (MultiPolygon | None): Optional land geometry override for tests.
         """
         self._box_buffer = BOX_BUFFER_SIZE_KM
 
@@ -92,8 +93,8 @@ class OMPLPath:
     @staticmethod
     def init_obstacles(
         local_path_state: LocalPathState,
-        state_space_xy: Polygon = None,
-        land_multi_polygon: MultiPolygon = None,
+        state_space_xy: Polygon | None = None,
+        land_multi_polygon: MultiPolygon | None = None,
     ) -> dict[int, ob.Obstacle]:
         """Extracts obstacle data from local_path_state and compiles it into a list of Obstacles
 
