@@ -1,15 +1,19 @@
 # Sailbot Workspace
 
+<!-- markdownlint-disable MD013 -->
 [![Tests](https://github.com/UBCSailbot/sailbot_workspace/actions/workflows/tests.yml/badge.svg)](https://github.com/UBCSailbot/sailbot_workspace/actions/workflows/tests.yml)
 <!--[![Docs Site](https://github.com/UBCSailbot/sailbot_workspace/actions/workflows/docs.yml/badge.svg)](https://github.com/UBCSailbot/sailbot_workspace/actions/workflows/docs.yml)-->
 [![Build Development Image](https://github.com/UBCSailbot/sailbot_workspace/actions/workflows/build-base-dev-images.yml/badge.svg)](https://github.com/UBCSailbot/sailbot_workspace/actions/workflows/build-base-dev-images.yml)
 [![Build Deployment Image](https://github.com/UBCSailbot/sailbot_workspace/actions/workflows/build-release-image.yml/badge.svg)](https://github.com/UBCSailbot/sailbot_workspace/actions/workflows/build-release-image.yml)
+<!-- markdownlint-enable MD013 -->
 
-This repository will get you set up to develop UBCSailbot's software on VS Code. It is based on athackst's
+This repository will get you set up to develop UBCSailbot's software on VS
+Code. It is based on athackst's
 [vscode_ros2_workspace](https://github.com/athackst/vscode_ros2_workspace).
 
 ## Documentation
 
+<!-- markdownlint-disable-next-line MD013 -->
 Our documentation, including setup and run instructions, can be found on [our Docs website](https://ubcsailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/overview/).
 
 ## Features
@@ -29,52 +33,67 @@ C++ and Python linters and formatters are integrated into Sailbot Workspace:
 - clang-tidy
 - isort
 
-The [ament linters](https://github.com/ament/ament_lint/tree/humble) are configured to be consistent with the
+The [ament linters](https://github.com/ament/ament_lint/tree/humble) are
+configured to be consistent with the
 [ROS style guide](https://docs.ros.org/en/humble/The-ROS2-Project/Contributing/Code-Style-Language-Versions.html).
 
 ### Dev Container
 
-[Dev Containers](https://code.visualstudio.com/docs/devcontainers/containers) enable us to use a
-[Docker container](https://www.docker.com/resources/what-container/) as a fully-featured development environment
-containing all our configuration and dependencies.
-Our Dev Container configuration can be found in [`.devcontainer/`](https://github.com/UBCSailbot/sailbot_workspace/blob/main/.devcontainer).
+[Dev Containers](https://code.visualstudio.com/docs/devcontainers/containers)
+enable us to use a
+[Docker container](https://www.docker.com/resources/what-container/) as a
+fully-featured development environment containing all our configuration and
+dependencies.
+Our Dev Container configuration can be found in
+[`.devcontainer/`](https://github.com/UBCSailbot/sailbot_workspace/blob/main/.devcontainer).
 
 ### VS Code Workspace
 
-[Workspaces](https://code.visualstudio.com/docs) are VS Code instances that contain one or more folders.
+[Workspaces](https://code.visualstudio.com/docs) are VS Code instances that
+contain one or more folders.
 Our workspace configuration file can be found at
 [`sailbot.code-workspace`](https://github.com/UBCSailbot/sailbot_workspace/blob/main/sailbot.code-workspace).
 
 ### Debugging
 
+<!-- markdownlint-disable-next-line MD013 -->
 [Launch configurations](https://code.visualstudio.com/docs/editor/debugging#_launch-configurations)
-have been created to debug our software. They are defined in the `launch` section of
-our workspace file.
+have been created to debug our software. They are defined in the `launch`
+section of our workspace file.
 
 ### Tasks
 
-[Tasks](https://code.visualstudio.com/docs/editor/tasks) provide an alternative to memorizing the multitude of
-CLI commands we use to setup, build, lint, test, and run our software. They are defined in `tasks` section of
-our workspace file.
+[Tasks](https://code.visualstudio.com/docs/editor/tasks) provide an
+alternative to memorizing the multitude of CLI commands we use to setup,
+build, lint, test, and run our software. They are defined in `tasks` section
+of our workspace file.
 
 ### Continuous Integration
 
 [Actions](https://docs.github.com/en/actions/learn-github-actions/understanding-github-actions)
-were used to build [our Docker containers](https://github.com/orgs/UBCSailbot/packages?repo_name=sailbot_workspace)
-and lint and test our code the same way it is done locally in Sailbot Workspace on GitHub.
-We use a [reusable workflow](https://docs.github.com/en/actions/using-workflows/reusing-workflows)
+were used to build
+[our Docker containers](https://github.com/orgs/UBCSailbot/packages?repo_name=sailbot_workspace)
+and lint and test our code the same way it is done locally in Sailbot
+Workspace on GitHub.
+We use a
+[reusable workflow](https://docs.github.com/en/actions/using-workflows/reusing-workflows)
 to create a single source of truth for our tests across all our repositories.
-Our CI can be found in [`.github/workflows/`](https://github.com/UBCSailbot/sailbot_workspace/tree/main/.github/workflows).
+Our CI can be found in
+[`.github/workflows/`](https://github.com/UBCSailbot/sailbot_workspace/tree/main/.github/workflows).
 
 ### Customization
 
-This repository supports user-specific configuration files. To set this up, see
+This repository supports user-specific configuration files. To set this up,
+see
 [How to use your dotfiles](https://ubcsailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/usage/how_to/#use-your-dotfiles).
 
 ### Run Raye's Software
 
 [Raye](https://www.ubcsailbot.org/rayes-story) was our previous project.
-Her software can be run in the [`raye` branch](https://github.com/UBCSailbot/sailbot_workspace/tree/raye)
-following the instructions in [How to run Raye's software](https://ubcsailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/usage/how_to/#run-rayes-software).
-The initial differences between the `main` and `raye` branches are summarized in
+Her software can be run in the
+[`raye` branch](https://github.com/UBCSailbot/sailbot_workspace/tree/raye)
+following the instructions in
+[How to run Raye's software](https://ubcsailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/usage/how_to/#run-rayes-software).
+The initial differences between the `main` and `raye` branches are summarized
+in
 [this PR](https://github.com/UBCSailbot/sailbot_workspace/pull/61).

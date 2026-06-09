@@ -23,6 +23,7 @@ import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.obstacles as ob
 from local_pathfinding.ompl_objectives import get_sailing_objective
+from local_pathfinding.ompl_validity import GoalProgressMotionValidator
 
 if TYPE_CHECKING:
     from local_pathfinding.local_path import LocalPathState
@@ -391,16 +392,29 @@ class OMPLPath:
         simple_setup.setStartAndGoalStates(start, goal)
 
         space_information = simple_setup.getSpaceInformation()
+        self._goal_progress_motion_validator = GoalProgressMotionValidator(
+            space_information,
+            goal_position_in_xy,
+        )
+        space_information.setMotionValidator(self._goal_progress_motion_validator)
 
         self.state.planner = og.RRTstar(space_information)
+
+        # Use the wind snapshot stored with this LocalPathState so path planning and
+        # later wind-change comparisons share the same baseline.
+        if self.state.path_generated_wind is None:
+            current_aw = self.state.current_aw
+        else:
+            current_aw = self.state.path_generated_wind
 
         objective = get_sailing_objective(
             space_information,
             simple_setup,
             self.state.heading,
             self.state.speed,
-            self.state.current_aw.dir_deg,
-            self.state.current_aw.speed_kmph,
+            current_aw.dir_deg,
+            current_aw.speed_kmph,
+            goal_position_in_xy
         )
 
         simple_setup.setOptimizationObjective(objective)
@@ -423,7 +437,8 @@ class OMPLPath:
         if OMPLPath.obstacles:
 
             for o in OMPLPath.obstacles.values():
-                if isinstance(state, base.State):  # for testing purposes
+                if isinstance(state, base.State):
+                    # for testing purposes; the tests use state object
                     state_is_valid = o.is_valid(cs.XY(state().getX(), state().getY()))
 
                 else:  # when OMPL uses this function, it will pass in an SE2StateInternal object
@@ -432,11 +447,13 @@ class OMPLPath:
                 if not state_is_valid:
                     # uncomment this if you want to log which states are being labeled invalid
                     # its commented out for now to avoid unnecessary file I/O
+                    # uncommented this line in accordance with the comment above for the upcoming
+                    # on-water tests. #TODO: remove this before the final launch.
+                    if isinstance(state, base.State):  # only happens in unit tests
+                        log_invalid_state(state=cs.XY(state().getX(), state().getY()), obstacle=o) # noqa
+                    else:  # happens in prod
+                        log_invalid_state(state=cs.XY(state.getX(), state.getY()), obstacle=o)
 
-                    # if isinstance(state, base.State):  # only happens in unit tests
-                    #     log_invalid_state(state=cs.XY(state().getX(), state().getY()), obstacle=o) # noqa
-                    # else:  # happens in prod
-                    #     log_invalid_state(state=cs.XY(state.getX(), state.getY()), obstacle=o)
                     return False
 
         return True

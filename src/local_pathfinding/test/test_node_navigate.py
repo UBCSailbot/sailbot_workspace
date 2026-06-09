@@ -4,11 +4,11 @@ import pytest
 import yaml
 
 import custom_interfaces.msg as ci
-import local_pathfinding.node_navigate as nn
+from unittest import mock
 from local_pathfinding.local_path import LocalPath
+import local_pathfinding.local_path as lp
+import local_pathfinding.node_navigate as nn
 
-LOCAL_WAYPOINT_REACHED_THRESH_KM = 0.5
-GLOBAL_WAYPOINT_REACHED_THRESH_KM = 3
 ONE_DEGREE_KM = 111  # One degree longitude at equator = 111km
 with open(os.getcwd() + "/../global_launch/config/globals.yaml", "r") as f:
     config = yaml.safe_load(f)
@@ -141,3 +141,81 @@ def test_find_next_global_waypoint_index(
         global_path, boat_lat_lon, GLOBAL_PATH_SPACING_KM
     )
     assert calculated_answer == correct_index
+
+
+def test_desired_heading_callback_disables_sail_when_missing_gps_or_ais():
+    sailbot = nn.Sailbot.__new__(nn.Sailbot)
+    sailbot.ais_ships = None
+    sailbot.gps = None
+    sailbot.global_path = mock.Mock()
+    sailbot.filtered_wind_sensor = mock.Mock()
+    sailbot.desired_heading = None
+    sailbot.desired_heading_pub = mock.Mock()
+    sailbot.desired_heading_pub.topic = "desired_heading"
+    sailbot.get_logger = mock.Mock(return_value=mock.Mock())
+
+    sailbot.desired_heading_callback()
+
+    sailbot.desired_heading_pub.publish.assert_called_once()
+    msg = sailbot.desired_heading_pub.publish.call_args.args[0]
+    assert msg.heading.heading == 0.0
+    assert msg.sail is False
+    assert sailbot.desired_heading == msg
+    sailbot.get_logger.return_value.warning.assert_called_once_with(
+        "Missing navigation inputs: ais_ships, gps; "
+        "publishing desired heading with sail disabled"
+    )
+
+
+def test_get_desired_heading_disables_sail_when_path_not_found():
+    sailbot = nn.Sailbot.__new__(nn.Sailbot)
+    sailbot.gps = mock.Mock()
+    sailbot.gps.lat_lon = ci.HelperLatLon(latitude=0.0, longitude=-0.1)
+    sailbot.gps.speed = mock.Mock(speed=0.0)
+    sailbot.gps.heading = mock.Mock(heading=0.0)
+    sailbot.ais_ships = mock.Mock()
+    sailbot.ais_ships.ships = []
+    sailbot.global_path = ci.Path(
+        waypoints=[
+            ci.HelperLatLon(latitude=1.0, longitude=1.0),
+            ci.HelperLatLon(latitude=0.0, longitude=0.0),
+        ]
+    )
+    sailbot.filtered_wind_sensor = mock.Mock()
+    sailbot.filtered_wind_sensor.speed = mock.Mock(speed=5.0)
+    sailbot.filtered_wind_sensor.direction = 90
+    sailbot.target_lp_wp_index = 1
+    sailbot.global_waypoint_index = -1
+    sailbot.saved_target_global_waypoint = sailbot.global_path.waypoints[-1]
+    sailbot.planner = "rrtstar"
+    sailbot.land_multi_polygon = None
+    sailbot.get_logger = mock.Mock(return_value=mock.Mock())
+
+    mock_parent_logger = mock.Mock()
+    mock_parent_logger.get_child.return_value = mock.Mock()
+    sailbot.local_path = lp.LocalPath(parent_logger=mock_parent_logger)
+    sailbot.local_path.path = ci.Path(
+        waypoints=[
+            ci.HelperLatLon(latitude=1.0, longitude=1.0),
+            ci.HelperLatLon(latitude=0.0, longitude=0.0),
+        ]
+    )
+    sailbot.local_path.state = lp.LocalPathState(
+        gps=sailbot.gps,
+        ais_ships=sailbot.ais_ships,
+        global_path=sailbot.global_path,
+        target_global_waypoint=sailbot.saved_target_global_waypoint,
+        filtered_wind_sensor=sailbot.filtered_wind_sensor,
+        planner=sailbot.planner,
+        wind_tracker=lp.WindTracker(),
+    )
+    sailbot.local_path._ompl_path = mock.Mock()
+    sailbot.local_path._ompl_path.get_path.return_value = None
+
+    desired_heading, sail = sailbot.get_desired_heading()
+
+    assert desired_heading == 0.0
+    assert sail is False
+    sailbot.get_logger.return_value.warning.assert_called_once_with(
+        "Unable to generate a local path; disabling sail"
+    )

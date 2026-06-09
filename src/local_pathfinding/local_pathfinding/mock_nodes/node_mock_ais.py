@@ -1,11 +1,11 @@
 import math
 
-import custom_interfaces.msg as ci
 import rclpy
 from rclpy.node import Node
-
-import local_pathfinding.coord_systems as cs
 from test_plans.test_plan import TestPlan
+
+import custom_interfaces.msg as ci
+import local_pathfinding.coord_systems as cs
 
 """
 Defines a Mock AIS Node that publishes AIS ships to the ROS Network for testing purposes
@@ -23,11 +23,30 @@ class MockAISNode(Node):
         self.declare_parameters(
             namespace="",
             parameters=[
+                ("on_water_mock_ais", rclpy.Parameter.Type.BOOL),
                 ("test_plan", rclpy.Parameter.Type.STRING),
+                ("on_water_test_plan", rclpy.Parameter.Type.STRING),
             ],
         )
+        on_water_test = (
+            self.get_parameter("on_water_mock_ais").get_parameter_value().bool_value
+        )  # to avoid unused parameter warning
 
-        self.test_plan = self.get_parameter("test_plan").get_parameter_value().string_value
+        if on_water_test:
+            self.get_logger().info(
+                "Mock AIS is running in in on-water testing. Mock AIS data will be published "
+                + "instead of real AIS data."
+            )
+            self.test_plan = (
+                self.get_parameter("on_water_test_plan").get_parameter_value().string_value
+            )
+        else:
+            self.get_logger().info(
+                "Mock AIS is running in development mode. Mock AIS data will be published for "
+                + "testing purposes."
+            )
+            self.test_plan = self.get_parameter("test_plan").get_parameter_value().string_value
+
         self.publisher_ = self.create_publisher(
             msg_type=ci.AISShips, topic="ais_ships", qos_profile=10
         )

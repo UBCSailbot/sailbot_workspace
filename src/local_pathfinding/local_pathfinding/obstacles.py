@@ -5,12 +5,16 @@ from abc import abstractmethod
 from typing import Optional
 
 import numpy as np
+from rclpy.logging import get_logger
 from shapely import prepared
 from shapely.affinity import affine_transform
 from shapely.geometry import MultiPolygon, Point, Polygon
 
 import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
+
+# module logger
+_LOGGER = get_logger("local_pathfinding.obstacles")
 
 # Constants
 TURN_PROJECTION_TIME_SECONDS = 10
@@ -56,13 +60,14 @@ class Obstacle:
             point (ci.HelperLatLon): Point representing the state point to be checked.
 
         Returns:
-            bool: True if the point is not within the obstacle's collision zone, false otherwise.
-
-        Raises:
-            RuntimeError: If the collision zone has not yet been initialized.
+            bool: If the collision zone has not yet been initialized defaults to True.
+                True if the point is not within the obstacle's collision zone, false otherwise.
         """
         if self.collision_zone is None:
-            raise RuntimeError("Collision zone has not been initialized")
+            _LOGGER.warning(
+                f"collision_zone not initialized for obstacle {type(self)}; treating as invalid"
+            )
+            return True
 
         return not self.collision_zone.contains(Point(*point))
 
@@ -137,7 +142,8 @@ class Land(Obstacle):
     def update_collision_zone(self, **kwargs) -> None:
         """
         Updates the Land object's collision zone with a MultiPolygon representing
-        all land obstacles within either a specified or default state space.
+        all land obstacles within either a specified or default state space. If state_space_latlon
+        is not provided, the operation will not be completed.
 
         Args:
             state_space_latlon (Polygon): A custom state space.
@@ -153,7 +159,10 @@ class Land(Obstacle):
             return
 
         if state_space_latlon is None:
-            raise ValueError("state_space_latlon must not be None")
+            _LOGGER.error(
+                "state_space_latlon is None; cannot update Land.collision_zone; skipping update"
+            )
+            return
 
         latlon_polygons = self.all_land_data.intersection(state_space_latlon)
 
@@ -242,7 +251,11 @@ class Boat(Obstacle):
         ais_ship = kwargs.get("ais_ship", None)
         if ais_ship is not None:
             if ais_ship.id != self.ais_ship.id:
-                raise ValueError("Argument AIS Ship ID does not match this Boat instance's ID")
+                _LOGGER.error(
+                    "AIS ship id mismatch when updating collision zone: "
+                    f"expected {self.ais_ship.id} got {ais_ship.id}; skipping update"
+                )
+                return
             self.ais_ship = ais_ship
 
         try:
