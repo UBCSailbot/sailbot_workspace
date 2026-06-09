@@ -143,7 +143,7 @@ class Sailbot(Node):
 
         # Initialize mock land obstacle
         self.land_multi_polygon = None
-        if self.mode == "development":
+        if self.mode in ["development", "sim"]:
             self.test_plan = self.get_parameter("test_plan").get_parameter_value().string_value
             self.get_logger().info("test plan: " + self.test_plan)
             test_plan = TestPlan(self.test_plan)
@@ -210,7 +210,7 @@ class Sailbot(Node):
     def publish_local_path_data(self, sail: bool):
         """
         Collect all navigation data and publish it in one message.
-        In development mode, all navigation data is published.
+        In development and sim modes, all navigation data is published.
         In production mode, only the local path is published.
 
         """
@@ -224,7 +224,7 @@ class Sailbot(Node):
         )
 
         # publish all navigation data when in dev mode
-        if self.mode == "development":
+        if self.mode in ["development", "sim"]:
             helper_obstacles = []
 
             # state is None until the first successful local path. On a sail-disabled failure it
