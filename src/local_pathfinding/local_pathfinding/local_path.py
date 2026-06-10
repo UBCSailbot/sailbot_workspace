@@ -570,16 +570,19 @@ class LocalPath:
             inputs.filtered_wind_sensor.speed.speed,
             inputs.filtered_wind_sensor.direction,
         )
-        tw_dir_deg, tw_speed_kmph = get_true_wind(
-            aw_dir_deg_bc=new_aw.dir_deg,
-            aw_speed_kmph=new_aw.speed_kmph,
-            boat_heading_deg_gc=inputs.gps.heading.heading,
-            boat_speed_kmph=inputs.gps.speed.speed,
-            ret_rad=False,
-        )
-        new_tw = Wind(tw_speed_kmph, tw_dir_deg)
 
-        if self.state and self.state.wind_tracker:
+        new_tw = None
+        if inputs.gps is not None:
+            tw_dir_deg, tw_speed_kmph = get_true_wind(
+                aw_dir_deg_bc=new_aw.dir_deg,
+                aw_speed_kmph=new_aw.speed_kmph,
+                boat_heading_deg_gc=inputs.gps.heading.heading,
+                boat_speed_kmph=inputs.gps.speed.speed,
+                ret_rad=False,
+            )
+            new_tw = Wind(tw_speed_kmph, tw_dir_deg)
+
+        if self.state and self.state.wind_tracker and new_tw is not None:
             self.state.wind_tracker.update_tw_history(new_tw)
 
         if self.state:
