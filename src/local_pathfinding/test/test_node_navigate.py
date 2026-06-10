@@ -150,6 +150,7 @@ def test_desired_heading_callback_disables_sail_when_missing_gps_or_ais():
     sailbot.global_path = mock.Mock()
     sailbot.filtered_wind_sensor = mock.Mock()
     sailbot.desired_heading = None
+    sailbot._has_gps_timed_out = mock.Mock(return_value=False)
     sailbot.desired_heading_pub = mock.Mock()
     sailbot.desired_heading_pub.topic = "desired_heading"
     sailbot.get_logger = mock.Mock(return_value=mock.Mock())
@@ -237,14 +238,14 @@ class MockTime:
         (nn.GPS_TIMEOUT_SEC + 1, True),
     ],
 )
-def test_gps_has_timed_out(elapsed_sec, expected):
+def test_has_gps_timed_out(elapsed_sec, expected):
     sailbot = nn.Sailbot.__new__(nn.Sailbot)
     sailbot.gps_timeout_start_ros_time = MockTime(0)
     sailbot.get_clock = mock.Mock(
         return_value=mock.Mock(now=mock.Mock(return_value=MockTime(int(elapsed_sec * 1e9))))
     )
 
-    assert sailbot._gps_has_timed_out() is expected
+    assert sailbot._has_gps_timed_out() is expected
 
 
 def test_desired_heading_callback_publishes_stop_when_no_gps_received_after_timeout():

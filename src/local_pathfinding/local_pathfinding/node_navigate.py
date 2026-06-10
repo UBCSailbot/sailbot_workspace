@@ -15,6 +15,7 @@ from local_pathfinding.ompl_path import MAX_SOLVER_RUN_TIME_SEC
 GLOBAL_WAYPOINT_REACHED_THRESH_M = 300
 REALLY_FAR_M = 100000000
 GPS_TIMEOUT_SEC = 120.0
+SEC_TO_NANOSEC = 1000000000
 
 
 def main(args=None):
@@ -179,8 +180,9 @@ class Sailbot(Node):
     def desired_heading_callback(self):
         """Get and publish the desired heading."""
 
-        if self._gps_has_timed_out():
+        if self._has_gps_timed_out():
             msg = ci.DesiredHeading()
+            msg.heading.heading = 0.0
             msg.sail = False
 
             self.desired_heading = msg
@@ -414,12 +416,12 @@ class Sailbot(Node):
             and self.filtered_wind_sensor is not None
         )
 
-    def _gps_has_timed_out(self) -> bool:
+    def _has_gps_timed_out(self) -> bool:
         """Checks if we haven't received a GPS message for more than 2 minutes."""
 
-        elapsed_sec = ((self.get_clock().now() -
-                        self.gps_timeout_start_ros_time).nanoseconds) / (1e9)
-        return (elapsed_sec > GPS_TIMEOUT_SEC)
+        elapsed_ros_time = self.get_clock().now() - self.gps_timeout_start_ros_time
+        elapsed_sec = elapsed_ros_time.nanoseconds / SEC_TO_NANOSEC
+        return elapsed_sec > GPS_TIMEOUT_SEC
 
     def _log_inactive_subs_warning(self):
         """
