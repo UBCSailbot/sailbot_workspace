@@ -1844,10 +1844,11 @@ def test_update_if_needed_reuses_path_when_boat_changes_heading(basic_local_path
 
     # Calculate what apparent wind would be if true wind remains constant
     aw_dir_deg, aw_speed_kmph = get_apparent_wind(
-        tw_dir_deg=baseline_tw.dir_deg,
+        tw_dir_deg_gc=baseline_tw.dir_deg,
         tw_speed_kmph=baseline_tw.speed_kmph,
-        boat_heading_deg=inputs.gps.heading.heading,
+        boat_heading_deg_gc=inputs.gps.heading.heading,
         boat_speed_kmph=inputs.gps.speed.speed,
+        ret_rad=False
     )
     inputs.filtered_wind_sensor.speed.speed = aw_speed_kmph
     inputs.filtered_wind_sensor.direction = aw_dir_deg
