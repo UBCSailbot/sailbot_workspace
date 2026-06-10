@@ -614,7 +614,8 @@ class LocalPath:
                 try:
                     if self.state is None or self.state.wind_tracker is None:
                         wind_tracker = WindTracker()
-                        wind_tracker.update_tw_history(new_tw)
+                        if new_tw is not None:
+                            wind_tracker.update_tw_history(new_tw)
                     else:
                         wind_tracker = self.state.wind_tracker
                     new_state = LocalPathState(
