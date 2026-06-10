@@ -10,7 +10,7 @@ import local_pathfinding.coord_systems as cs
 import local_pathfinding.local_path as lp
 from custom_interfaces.msg import GPS, AISShips, HelperLatLon, Path, WindSensor
 from local_pathfinding.obstacles import Obstacle
-from local_pathfinding.wind_coord_systems import Wind
+from local_pathfinding.wind_coord_systems import Wind, get_apparent_wind
 
 REF = HelperLatLon(latitude=10.0, longitude=10.0)
 
@@ -1839,7 +1839,18 @@ def test_update_if_needed_reuses_path_when_boat_changes_heading(basic_local_path
     set_tw_history(basic_local_path_state, baseline_tw, lp.WIND_HISTORY_LEN)
 
     inputs = create_update_if_needed_inputs()
-    inputs.gps.heading.heading += lp.WIND_DIRECTION_CHANGE_THRESH_DEG + 15
+    inputs.gps.speed.speed = 3.0
+    inputs.gps.heading.heading += lp.WIND_DIRECTION_CHANGE_THRESH_DEG + 30.0
+
+    # Calculate what apparent wind would be if true wind remains constant
+    aw_dir_deg, aw_speed_kmph = get_apparent_wind(
+        tw_dir_deg=baseline_tw.dir_deg,
+        tw_speed_kmph=baseline_tw.speed_kmph,
+        boat_heading_deg=inputs.gps.heading.heading,
+        boat_speed_kmph=inputs.gps.speed.speed,
+    )
+    inputs.filtered_wind_sensor.speed.speed = aw_speed_kmph
+    inputs.filtered_wind_sensor.direction = aw_dir_deg
 
     for _ in range(lp.WIND_HISTORY_LEN):
         local_path.update_if_needed(
