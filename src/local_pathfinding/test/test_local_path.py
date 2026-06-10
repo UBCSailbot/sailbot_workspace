@@ -1831,7 +1831,7 @@ def test_update_if_needed_reuses_path_without_significant_wind_change(
     local_path._logger.debug.assert_not_called()
 
 
-def test_update_if_needed_reuses_path_when_boat_changes_heading():
+def test_update_if_needed_reuses_path_when_boat_changes_heading(basic_local_path_state):
     local_path, old_path, old_ompl_path = create_initialized_local_path_for_update_if_needed(
         basic_local_path_state
     )
@@ -1839,7 +1839,7 @@ def test_update_if_needed_reuses_path_when_boat_changes_heading():
     set_tw_history(basic_local_path_state, baseline_tw, lp.WIND_HISTORY_LEN)
 
     inputs = create_update_if_needed_inputs()
-    inputs.gps.heading.heading += 45.0  # Simulate boat changing heading by 45 degrees
+    inputs.gps.heading.heading += lp.WIND_DIRECTION_CHANGE_THRESH_DEG + 15
 
     local_path.update_if_needed(
             inputs=inputs,
