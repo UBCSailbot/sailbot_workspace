@@ -1841,11 +1841,12 @@ def test_update_if_needed_reuses_path_when_boat_changes_heading(basic_local_path
     inputs = create_update_if_needed_inputs()
     inputs.gps.heading.heading += lp.WIND_DIRECTION_CHANGE_THRESH_DEG + 15
 
-    local_path.update_if_needed(
-            inputs=inputs,
-            target_lp_wp_index=1,
-            received_new_global_waypoint=False,
-        )
+    for _ in range(lp.WIND_HISTORY_LEN):
+        local_path.update_if_needed(
+                inputs=inputs,
+                target_lp_wp_index=1,
+                received_new_global_waypoint=False,
+            )
 
     assert local_path._ompl_path is old_ompl_path
     assert local_path.path is old_path
