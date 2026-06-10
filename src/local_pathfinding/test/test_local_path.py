@@ -146,7 +146,7 @@ def set_tw_history(state, wind, history_len, update_path_generated_wind=True):
     state.current_tw = wind
     if update_path_generated_wind:
         state.wind_tracker.using_one_tw_point = state.wind_tracker.tw_avg is None
-        state.path_generated_tw = state.wind_tracker.tw_avg or state.current_tw
+        state.path_generated_wind = state.wind_tracker.tw_avg or state.current_tw
 
 
 # ========================= TESTS =========================
@@ -1829,3 +1829,24 @@ def test_update_if_needed_reuses_path_without_significant_wind_change(
     old_ompl_path.get_path.assert_called_once()
     ompl_path_cls.assert_not_called()
     local_path._logger.debug.assert_not_called()
+
+
+def test_update_if_needed_reuses_path_when_boat_changes_heading():
+    local_path, old_path, old_ompl_path = create_initialized_local_path_for_update_if_needed(
+        basic_local_path_state
+    )
+    baseline_tw = Wind(speed_kmph=5.0, dir_deg=90.0)
+    set_tw_history(basic_local_path_state, baseline_tw, lp.WIND_HISTORY_LEN)
+
+    inputs = create_update_if_needed_inputs()
+    inputs.gps.heading.heading += 45.0  # Simulate boat changing heading by 45 degrees
+
+    local_path.update_if_needed(
+            inputs=inputs,
+            target_lp_wp_index=1,
+            received_new_global_waypoint=False,
+        )
+
+    assert local_path._ompl_path is old_ompl_path
+    assert local_path.path is old_path
+    local_path._logger.info.assert_any_call("Reusing local path: Path is valid, no change needed")
