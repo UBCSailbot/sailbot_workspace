@@ -65,18 +65,18 @@ class WindTracker:
         self.tw_avg: Optional[Wind] = None
         self.using_one_tw_point: bool = True
 
-    def update_tw_history(self, current_wind: Wind):
+    def update_tw_history(self, new_tw: Wind):
         """Updates wind history and recalculates the average wind.
 
-        Maintains a history of up to WIND_HISTORY_LEN wind readings. When the history
+        Maintains a history of up to WIND_HISTORY_LEN true wind readings. When the history
         exceeds the max length, the oldest reading is removed.
 
         Args:
-            current_wind (Wind): Current wind speed (kmph) and direction (deg).
-                Caller is responsible for ensuring this is in the desired wind representation.
+            new_tw (Wind): Newest true wind reading with speed (kmph) and direction (deg).
+                Caller is responsible for ensuring this is in true wind.
         """
 
-        self.tw_history.append(current_wind)
+        self.tw_history.append(new_tw)
 
         self.tw_avg = self._calculate_wind_avg()
 
