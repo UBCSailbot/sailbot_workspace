@@ -2,7 +2,6 @@
 
 import rclpy
 from rclpy.node import Node
-from rclpy.time import Time
 from test_plans.test_plan import TestPlan
 
 import custom_interfaces.msg as ci
@@ -15,7 +14,7 @@ from local_pathfinding.ompl_path import MAX_SOLVER_RUN_TIME_SEC
 GLOBAL_WAYPOINT_REACHED_THRESH_M = 300
 REALLY_FAR_M = 100000000
 GPS_TIMEOUT_SEC = 120.0
-NANOSEC_PER_SEC = 1e9
+NANOSEC_PER_SEC = 1_000_000_000
 
 
 def main(args=None):
@@ -136,8 +135,11 @@ class Sailbot(Node):
         self.desired_heading = None
 
         # attributes
-        self.gps_timeout_start_ros_time: Time = self.get_clock().now()
-        self.local_path = LocalPath(parent_logger=self.get_logger())
+        self.gps_timeout_start_sec = self._now_sec()
+        self.local_path = LocalPath(
+            parent_logger=self.get_logger(),
+            now_sec=self._now_sec,
+        )
         self.target_lp_wp_index = 1
         self.global_waypoint_index = -1
         self.saved_target_global_waypoint = None
@@ -154,6 +156,10 @@ class Sailbot(Node):
             self.land_multi_polygon = test_plan.land
             self.get_logger().info("Loaded mock land data.")
 
+    def _now_sec(self) -> float:
+        """Return the current ROS clock time in seconds."""
+        return self.get_clock().now().nanoseconds / NANOSEC_PER_SEC
+
     # subscriber callbacks
     def ais_ships_callback(self, msg: ci.AISShips):
         self.get_logger().debug(f"Received data from {self.ais_ships_sub.topic}: {msg}")
@@ -162,7 +168,7 @@ class Sailbot(Node):
     def gps_callback(self, msg: ci.GPS):
         self.get_logger().debug(f"Received data from {self.gps_sub.topic}: {msg}")
         self.gps = msg
-        self.gps_timeout_start_ros_time = self.get_clock().now()
+        self.gps_timeout_start_sec = self._now_sec()
 
     def global_path_callback(self, msg: ci.Path):
         self.get_logger().debug(
@@ -419,8 +425,7 @@ class Sailbot(Node):
     def _has_gps_timed_out(self) -> bool:
         """Checks if we haven't received a GPS message for more than 2 minutes."""
 
-        elapsed_ros_time = self.get_clock().now() - self.gps_timeout_start_ros_time
-        elapsed_sec = elapsed_ros_time.nanoseconds / NANOSEC_PER_SEC
+        elapsed_sec = self._now_sec() - self.gps_timeout_start_sec
         return elapsed_sec > GPS_TIMEOUT_SEC
 
     def _log_inactive_subs_warning(self):

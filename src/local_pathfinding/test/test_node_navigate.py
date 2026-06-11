@@ -222,14 +222,6 @@ def test_get_desired_heading_disables_sail_when_path_not_found():
     )
 
 
-class MockTime:
-    def __init__(self, nanoseconds):
-        self.nanoseconds = nanoseconds
-
-    def __sub__(self, other):
-        return MockTime(self.nanoseconds - other.nanoseconds)
-
-
 @pytest.mark.parametrize(
     "elapsed_sec, expected",
     [
@@ -240,10 +232,8 @@ class MockTime:
 )
 def test_has_gps_timed_out(elapsed_sec, expected):
     sailbot = nn.Sailbot.__new__(nn.Sailbot)
-    sailbot.gps_timeout_start_ros_time = MockTime(0)
-    sailbot.get_clock = mock.Mock(
-        return_value=mock.Mock(now=mock.Mock(return_value=MockTime(int(elapsed_sec * 1e9))))
-    )
+    sailbot.gps_timeout_start_sec = 0.0
+    sailbot._now_sec = mock.Mock(return_value=elapsed_sec)
 
     assert sailbot._has_gps_timed_out() is expected
 
@@ -251,12 +241,8 @@ def test_has_gps_timed_out(elapsed_sec, expected):
 def test_desired_heading_callback_publishes_stop_when_no_gps_received_after_timeout():
     sailbot = nn.Sailbot.__new__(nn.Sailbot)
     sailbot.gps = None
-    sailbot.gps_timeout_start_ros_time = MockTime(0)
-    sailbot.get_clock = mock.Mock(
-        return_value=mock.Mock(
-            now=mock.Mock(return_value=MockTime(int((nn.GPS_TIMEOUT_SEC + 1) * 1e9)))
-        )
-    )
+    sailbot.gps_timeout_start_sec = 0.0
+    sailbot._now_sec = mock.Mock(return_value=nn.GPS_TIMEOUT_SEC + 1)
     sailbot.desired_heading = None
     sailbot.desired_heading_pub = mock.Mock(topic="desired_heading")
     sailbot.get_logger = mock.Mock(return_value=mock.Mock())
@@ -269,10 +255,10 @@ def test_desired_heading_callback_publishes_stop_when_no_gps_received_after_time
     assert msg.heading.heading == 0.0
 
 
-def test_gps_callback_resets_gps_timeout_start_ros_time():
+def test_gps_callback_resets_gps_timeout_start_sec():
     sailbot = nn.Sailbot.__new__(nn.Sailbot)
-    now = MockTime(123)
-    sailbot.get_clock = mock.Mock(return_value=mock.Mock(now=mock.Mock(return_value=now)))
+    now_sec = 123.0
+    sailbot._now_sec = mock.Mock(return_value=now_sec)
     sailbot.gps_sub = mock.Mock(topic="gps")
     sailbot.get_logger = mock.Mock(return_value=mock.Mock())
 
@@ -280,4 +266,4 @@ def test_gps_callback_resets_gps_timeout_start_ros_time():
     sailbot.gps_callback(msg)
 
     assert sailbot.gps == msg
-    assert sailbot.gps_timeout_start_ros_time == now
+    assert sailbot.gps_timeout_start_sec == now_sec
