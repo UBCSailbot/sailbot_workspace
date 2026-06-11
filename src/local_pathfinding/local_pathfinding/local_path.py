@@ -3,8 +3,8 @@
 import math
 from collections import deque
 from dataclasses import dataclass
-from datetime import datetime, timedelta
-from typing import List, Optional
+from time import monotonic
+from typing import Callable, List, Optional
 
 import numpy as np
 from rclpy.impl.rcutils_logger import RcutilsLogger
@@ -26,7 +26,7 @@ GPS_POSITION_ERROR_KM = 0.003
 LOCAL_WAYPOINT_REACHED_THRESH_KM = 0.05
 HEADING_WEIGHT = 0.6
 COST_WEIGHT = 0.4
-PATH_TTL_SEC = timedelta(seconds=600)
+PATH_TTL_SEC = 600.0
 MAX_OMPL_PATH_GEN_TRIES = 2
 
 
@@ -150,7 +150,7 @@ class LocalPathState:
             The global waypoint is the same as the reference latlon.
         planner (str): Planner to use for the OMPL query.
         obstacles (List[Obstacle]): All obstacles in the state space.
-        path_generated_time (datetime): Time when the path was generated
+        path_generated_time_sec (float): Clock time in seconds when the path was generated.
         current_tw (Wind): Latest true wind reading converted from apparent wind reading from the
             filtered wind sensor.
         wind_tracker (WindTracker): Rolling true wind tracker shared across path states.
@@ -172,6 +172,7 @@ class LocalPathState:
         filtered_wind_sensor: ci.WindSensor,
         planner: str,
         wind_tracker: WindTracker,
+        path_generated_time_sec: Optional[float] = None,
     ):
         self.wind_tracker = wind_tracker
         self.update_state(gps, ais_ships, filtered_wind_sensor)
@@ -188,7 +189,11 @@ class LocalPathState:
 
         # obstacles are initialized by OMPLPath right before solving
         self.obstacles: List[ob.Obstacle] = []
-        self.path_generated_time = datetime.now()
+        self.path_generated_time_sec = (
+            monotonic()
+            if path_generated_time_sec is None
+            else path_generated_time_sec
+        )
 
     def update_state(
         self, gps: ci.GPS, ais_ships: ci.AISShips, filtered_wind_sensor: ci.WindSensor
@@ -243,8 +248,13 @@ class LocalPath:
         state (Optional[LocalPathState]): the current local path state.
     """
 
-    def __init__(self, parent_logger: RcutilsLogger):
+    def __init__(
+        self,
+        parent_logger: RcutilsLogger,
+        now_sec: Optional[Callable[[], float]] = None,
+    ):
         self._logger = parent_logger.get_child(name="local_path")
+        self._now_sec = now_sec or monotonic
         self._ompl_path: Optional[OMPLPath] = None
         self.path: Optional[ci.Path] = None
         self.state: Optional[LocalPathState] = None
@@ -258,7 +268,7 @@ class LocalPath:
         if self.state is None:
             self._logger.info("Path is expired, since the state is None")
             return True
-        is_expired = datetime.now() >= (self.state.path_generated_time + PATH_TTL_SEC)
+        is_expired = self._now_sec() >= (self.state.path_generated_time_sec + PATH_TTL_SEC)
         if is_expired:
             self._logger.info("Path is expired")
         return is_expired
@@ -645,6 +655,7 @@ class LocalPath:
                         inputs.filtered_wind_sensor,
                         inputs.planner,
                         wind_tracker,
+                        self._now_sec(),
                     )
                     new_ompl_path = OMPLPath(
                         parent_logger=self._logger,
