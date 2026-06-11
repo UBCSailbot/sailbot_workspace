@@ -10,7 +10,8 @@ import local_pathfinding.local_path as lp
 import local_pathfinding.node_navigate as nn
 
 ONE_DEGREE_KM = 111  # One degree longitude at equator = 111km
-with open(os.getcwd() + "/../global_launch/config/globals.yaml", "r") as f:
+_TEST_DIR = os.path.dirname(os.path.abspath(__file__))
+with open(os.path.join(_TEST_DIR, "..", "..", "global_launch", "config", "globals.yaml")) as f:
     config = yaml.safe_load(f)
 GLOBAL_PATH_SPACING_KM = config["/**"]["ros__parameters"]["global_path_interval_spacing_km"]
 PATH_RANGE_DEG = GLOBAL_PATH_SPACING_KM / ONE_DEGREE_KM
@@ -239,7 +240,7 @@ def test_publish_local_path_data_replan_reason():
     sailbot.local_path.last_replan_reason = "Path intersects collision zone"
     sailbot.local_path.last_remaining_waypoints = 3
 
-    nn.Sailbot.publish_local_path_data(sailbot)
+    nn.Sailbot.publish_local_path_data(sailbot, True)
 
     published_msg = sailbot.lpath_data_pub.publish.call_args[0][0]
     assert published_msg.replan_reason == "Path intersects collision zone"
@@ -251,7 +252,7 @@ def test_publish_local_path_data_no_replan():
     sailbot.local_path.last_replan_reason = ""
     sailbot.local_path.last_remaining_waypoints = 0
 
-    nn.Sailbot.publish_local_path_data(sailbot)
+    nn.Sailbot.publish_local_path_data(sailbot, True)
 
     published_msg = sailbot.lpath_data_pub.publish.call_args[0][0]
     assert published_msg.replan_reason == ""
@@ -263,7 +264,7 @@ def test_publish_local_path_data_production_mode():
     sailbot.mode = "production"
     sailbot.local_path.path = ci.Path()
 
-    nn.Sailbot.publish_local_path_data(sailbot)
+    nn.Sailbot.publish_local_path_data(sailbot, True)
 
     published_msg = sailbot.lpath_data_pub.publish.call_args[0][0]
     assert published_msg.replan_reason == ""
