@@ -78,7 +78,7 @@ class WindTracker:
         self.aw_history.append(current_aw)
         self.aw_avg = self._calculate_aw_avg()
 
-        self._logger.info(
+        self._logger.debug(
             f"WindTracker updated: current_aw speed={current_aw.speed_kmph:.2f} km/h, "
             f"direction={current_aw.dir_deg:.2f} deg, "
             f"history_len={len(self.aw_history)}/{WIND_HISTORY_LEN}, "
