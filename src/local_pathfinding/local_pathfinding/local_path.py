@@ -83,10 +83,10 @@ class WindTracker:
         self.tw_avg = self._calculate_wind_avg()
 
         self._logger.debug(
-            f"WindTracker updated: current_aw speed={current_aw.speed_kmph:.2f} km/h, "
-            f"direction={current_aw.dir_deg:.2f} deg, "
-            f"history_len={len(self.aw_history)}/{WIND_HISTORY_LEN}, "
-            f"aw_avg={self.aw_avg}"
+            f"WindTracker updated: new_tw speed={new_tw.speed_kmph:.2f} km/h, "
+            f"direction={new_tw.dir_deg:.2f} deg, "
+            f"history_len={len(self.tw_history)}/{WIND_HISTORY_LEN}, "
+            f"tw_avg={self.tw_avg}"
         )
 
     def _calculate_wind_avg(self) -> Optional[Wind]:
