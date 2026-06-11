@@ -1517,6 +1517,80 @@ def test_update_if_needed_regenerates_path_for_significant_wind_change(
     ompl_path_cls.assert_called_once()
 
 
+def test_update_if_needed_regenerates_path_when_segment_deviation_exceeded(
+    basic_local_path_state,
+):
+    local_path, old_path, old_ompl_path = create_initialized_local_path_for_update_if_needed(
+        basic_local_path_state
+    )
+    inputs = create_update_if_needed_inputs()
+    new_path = Path(
+        waypoints=[
+            HelperLatLon(latitude=1.0, longitude=1.0),
+            HelperLatLon(latitude=0.0, longitude=0.0),
+        ]
+    )
+    new_ompl_path = create_solved_ompl_path(new_path)
+
+    with (
+        mock.patch.object(local_path, "in_collision_zone", return_value=False),
+        mock.patch.object(local_path, "is_path_expired", return_value=False),
+        mock.patch.object(
+            local_path,
+            "exceeded_segment_deviation",
+            return_value=True,
+        ) as exceeded_segment_deviation,
+        mock.patch.object(lp, "OMPLPath", return_value=new_ompl_path) as ompl_path_cls,
+    ):
+        desired_heading, new_target_lp_wp_index = local_path.update_if_needed(
+            inputs=inputs,
+            target_lp_wp_index=1,
+            received_new_global_waypoint=False,
+        )
+
+    assert desired_heading == pytest.approx(90.0, abs=3e-1)
+    assert new_target_lp_wp_index == 1
+    assert local_path._ompl_path is new_ompl_path
+    assert local_path.path is new_path
+    assert local_path._ompl_path is not old_ompl_path
+    local_path._logger.info.assert_any_call("Updating local path: Boat deviated from path segment")
+    exceeded_segment_deviation.assert_called_once_with(old_path, 1, inputs.gps.lat_lon)
+    ompl_path_cls.assert_called_once()
+
+
+def test_update_if_needed_reuses_path_when_boat_not_deviated(
+    basic_local_path_state,
+):
+    local_path, old_path, old_ompl_path = create_initialized_local_path_for_update_if_needed(
+        basic_local_path_state
+    )
+    inputs = create_update_if_needed_inputs()
+
+    with (
+        mock.patch.object(local_path, "in_collision_zone", return_value=False),
+        mock.patch.object(local_path, "is_path_expired", return_value=False),
+        mock.patch.object(
+            local_path,
+            "exceeded_segment_deviation",
+            return_value=False,
+        ) as exceeded_segment_deviation,
+        mock.patch.object(lp, "OMPLPath") as ompl_path_cls,
+    ):
+        desired_heading, new_target_lp_wp_index = local_path.update_if_needed(
+            inputs=inputs,
+            target_lp_wp_index=1,
+            received_new_global_waypoint=False,
+        )
+
+    assert desired_heading == pytest.approx(90.0, abs=3e-1)
+    assert new_target_lp_wp_index == 1
+    assert local_path._ompl_path is old_ompl_path
+    assert local_path.path is old_path
+    exceeded_segment_deviation.assert_called_once_with(old_path, 1, inputs.gps.lat_lon)
+    ompl_path_cls.assert_not_called()
+    local_path._logger.info.assert_any_call("Reusing local path: Path is valid, no change needed")
+
+
 def test_update_if_needed_raises_when_path_generation_exceeds_retries():
     mock_parent_logger = mock.Mock()
     mock_parent_logger.get_child.return_value = mock.Mock()
@@ -1565,6 +1639,34 @@ def test_update_if_needed_preserves_current_path_when_new_state_inputs_are_incom
         "Old Path must change and new path couldn't be solved within "
         f"{lp.MAX_OMPL_PATH_GEN_TRIES}"
     )
+
+
+def test_update_if_needed_adopts_new_state_but_keeps_path_when_solver_fails(
+    basic_local_path_state,
+):
+    local_path, old_path, old_ompl_path = create_initialized_local_path_for_update_if_needed(
+        basic_local_path_state
+    )
+    old_state = local_path.state
+    inputs = create_update_if_needed_inputs()
+
+    unsolved_ompl_path = mock.Mock()
+    unsolved_ompl_path.solved = False
+
+    with mock.patch.object(lp, "OMPLPath", return_value=unsolved_ompl_path):
+        with pytest.raises(lp.PathNotFoundError, match="couldn't be solved"):
+            local_path.update_if_needed(
+                inputs=inputs,
+                target_lp_wp_index=1,
+                received_new_global_waypoint=True,
+            )
+
+    # State is refreshed from the failing inputs...
+    assert local_path.state is not old_state
+    assert isinstance(local_path.state, lp.LocalPathState)
+    # ...but the path and OMPL path are left intact (no valid replacement was produced).
+    assert local_path.path is old_path
+    assert local_path._ompl_path is old_ompl_path
 
 
 def test_update_if_needed_raises_when_solved_ompl_path_returns_invalid_path():

@@ -143,6 +143,30 @@ def test_find_next_global_waypoint_index(
     assert calculated_answer == correct_index
 
 
+def test_desired_heading_callback_disables_sail_when_missing_gps_or_ais():
+    sailbot = nn.Sailbot.__new__(nn.Sailbot)
+    sailbot.ais_ships = None
+    sailbot.gps = None
+    sailbot.global_path = mock.Mock()
+    sailbot.filtered_wind_sensor = mock.Mock()
+    sailbot.desired_heading = None
+    sailbot.desired_heading_pub = mock.Mock()
+    sailbot.desired_heading_pub.topic = "desired_heading"
+    sailbot.get_logger = mock.Mock(return_value=mock.Mock())
+
+    sailbot.desired_heading_callback()
+
+    sailbot.desired_heading_pub.publish.assert_called_once()
+    msg = sailbot.desired_heading_pub.publish.call_args.args[0]
+    assert msg.heading.heading == 0.0
+    assert msg.sail is False
+    assert sailbot.desired_heading == msg
+    sailbot.get_logger.return_value.warning.assert_called_once_with(
+        "Missing navigation inputs: ais_ships, gps; "
+        "publishing desired heading with sail disabled"
+    )
+
+
 def test_get_desired_heading_disables_sail_when_path_not_found():
     sailbot = nn.Sailbot.__new__(nn.Sailbot)
     sailbot.gps = mock.Mock()
