@@ -16,7 +16,9 @@
  *   AISSTREAM_DYNAMIC_BBOX_ENABLED    true/false to enable GPS-following bounding boxes (default: true)
  *   AISSTREAM_BBOX_RADIUS_KM          Radius in km around boat GPS used to build dynamic bbox (default: 30)
  *   AISSTREAM_BBOX_MOVE_THRESHOLD_KM  Minimum boat movement in km before bbox is shifted (default: 5)
+ *   AISSTREAM_BBOX_CHECK_INTERVAL_MS  How often to re-evaluate the GPS-following bbox (default: flush interval)
  *   AISSTREAM_GPS_STALE_MS            Max allowed age of latest GPS fix in ms before ignoring it (default: 180000)
+ *   AISSTREAM_VESSEL_TTL_MS           Max age of a vessel's last message before it is evicted (default: 600000)
  *   AISSTREAM_FILTER_SHIP_MMSI        Comma-separated MMSI list
  *   AISSTREAM_FILTER_MESSAGE_TYPES    Comma-separated list; defaults to common position/static messages
  *   AISSTREAM_FLUSH_INTERVAL_MS       Defaults to 15000
@@ -30,13 +32,14 @@ const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const WebSocket = require('ws');
 
+// dotenv does not overwrite keys that are already set, so for each variable
+// the first file in this list that defines it wins.
 const envCandidates = [
   path.resolve(__dirname, '../.env.development'),
   path.resolve(__dirname, '../.env.local'),
   path.resolve(__dirname, '../.env'),
 ];
 envCandidates.forEach((envPath) => {
-  // Load the first env file we find so local dev stays simple.
   if (fs.existsSync(envPath)) {
     dotenv.config({ path: envPath });
   }
@@ -49,7 +52,9 @@ const {
   AISSTREAM_DYNAMIC_BBOX_ENABLED,
   AISSTREAM_BBOX_RADIUS_KM,
   AISSTREAM_BBOX_MOVE_THRESHOLD_KM,
+  AISSTREAM_BBOX_CHECK_INTERVAL_MS,
   AISSTREAM_GPS_STALE_MS,
+  AISSTREAM_VESSEL_TTL_MS,
   AISSTREAM_FILTER_SHIP_MMSI,
   AISSTREAM_FILTER_MESSAGE_TYPES,
   AISSTREAM_FLUSH_INTERVAL_MS,
@@ -65,53 +70,60 @@ if (!AISSTREAM_API_KEY) {
   process.exit(1);
 }
 
-const DEFAULT_FLUSH_INTERVAL_MS = Number(AISSTREAM_FLUSH_INTERVAL_MS) || 15000;
-const MAX_SNAPSHOTS = Number(AISSTREAM_MAX_SNAPSHOTS) || 50;
 const DEFAULT_DIMENSIONS = { length: 30, width: 10 };
-// Keep one shared "world" bbox fallback value so all fallback paths stay consistent.
 const WORLD_BOUNDING_BOXES = [[[-90, -180], [90, 180]]];
-// Use Earth radius in km for distance calculations when checking boat movement threshold.
 const EARTH_RADIUS_KM = 6371;
-const POSITION_MESSAGE_TYPES = [
+
+const POSITION_REPORT_TYPES = [
   'PositionReport',
   'StandardClassBPositionReport',
   'ExtendedClassBPositionReport',
-  'ShipStaticData',
 ];
+const SUBSCRIBE_MESSAGE_TYPES = [...POSITION_REPORT_TYPES, 'ShipStaticData'];
 
-// Parse boolean-like env values safely while preserving a default for missing values.
 const parseBoolean = (raw, defaultValue) => {
-  // If the env var is not provided, return the supplied default behavior.
   if (raw === undefined || raw === null || String(raw).trim() === '') {
     return defaultValue;
   }
-  // Normalize common truthy strings so runtime config is forgiving.
   return ['true', '1', 'yes', 'on'].includes(String(raw).trim().toLowerCase());
 };
 
-// Parse positive numeric env values and fallback if parsing fails.
 const parsePositiveNumber = (raw, fallback) => {
-  // Convert once so we can validate numeric correctness.
   const parsed = Number(raw);
-  // Only accept finite positive values; otherwise use the fallback.
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 };
 
-// Toggle dynamic bbox behavior (GPS-following) with safe default enabled.
+const DEFAULT_FLUSH_INTERVAL_MS = parsePositiveNumber(
+  AISSTREAM_FLUSH_INTERVAL_MS,
+  15000,
+);
+const MAX_SNAPSHOTS = parsePositiveNumber(AISSTREAM_MAX_SNAPSHOTS, 50);
 const DYNAMIC_BBOX_ENABLED = parseBoolean(AISSTREAM_DYNAMIC_BBOX_ENABLED, true);
-// Radius used to convert latest boat GPS into a bounding box window.
 const BBOX_RADIUS_KM = parsePositiveNumber(AISSTREAM_BBOX_RADIUS_KM, 30);
-// Movement threshold used to avoid excessive resubscriptions when boat barely moves.
+// On a bbox shift, vessels farther than this multiple of the radius from the
+// new center are evicted immediately, so snapshots switch areas without
+// waiting out the TTL; the margin keeps near-edge ships from flickering.
+const BBOX_PRUNE_RADIUS_FACTOR = 1.5;
+// Minimum boat movement before shifting the bbox, to avoid resubscription churn.
 const BBOX_MOVE_THRESHOLD_KM = parsePositiveNumber(
   AISSTREAM_BBOX_MOVE_THRESHOLD_KM,
   5,
 );
-// Staleness guard so old GPS records do not drive subscription updates.
+// Defaults to the flush cadence so a relocated boat is picked up within one
+// tick; the extra GPS read per tick is a trivial indexed findOne. Raise via
+// env if that ever matters.
+const BBOX_CHECK_INTERVAL_MS = parsePositiveNumber(
+  AISSTREAM_BBOX_CHECK_INTERVAL_MS,
+  DEFAULT_FLUSH_INTERVAL_MS,
+);
+// Ignore GPS fixes older than this so stale records cannot move the bbox.
 const GPS_STALE_MS = parsePositiveNumber(AISSTREAM_GPS_STALE_MS, 180000);
+// AIS gaps can reach ~3min (anchored) and static refresh ~6min, so 10min
+// avoids flicker while still shedding ships that have left the area.
+const VESSEL_TTL_MS = parsePositiveNumber(AISSTREAM_VESSEL_TTL_MS, 600000);
 
 const parseBoundingBoxes = (raw) => {
   if (!raw) {
-    // Fall back to whole-world coverage when no static bbox is provided.
     return WORLD_BOUNDING_BOXES;
   }
   try {
@@ -122,7 +134,6 @@ const parseBoundingBoxes = (raw) => {
   } catch (err) {
     console.warn('Could not parse AISSTREAM_BOUNDING_BOXES, using world coverage.', err);
   }
-  // Fall back to whole-world coverage if parsing fails.
   return WORLD_BOUNDING_BOXES;
 };
 
@@ -134,37 +145,37 @@ const parseList = (raw) =>
         .filter(Boolean)
     : [];
 
-// Parse static bounding boxes once so we can use them as a fallback path.
 const staticBoundingBoxes = parseBoundingBoxes(AISSTREAM_BOUNDING_BOXES);
 const mmsiFilter = parseList(AISSTREAM_FILTER_SHIP_MMSI);
+const configuredMessageTypes = parseList(AISSTREAM_FILTER_MESSAGE_TYPES);
 const messageTypeFilter =
-  parseList(AISSTREAM_FILTER_MESSAGE_TYPES).length > 0
-    ? parseList(AISSTREAM_FILTER_MESSAGE_TYPES)
-    : POSITION_MESSAGE_TYPES;
+  configuredMessageTypes.length > 0
+    ? configuredMessageTypes
+    : SUBSCRIBE_MESSAGE_TYPES;
 
-// Track the currently-active bbox set used when creating subscription payloads.
+// Dynamic bbox state. The static boxes act as the fallback until (and unless)
+// a fresh GPS fix seeds a boat-centered box.
 let currentBoundingBoxes = staticBoundingBoxes;
-// Track the last boat center used to build bbox so we can detect movement in km.
 let lastBoundingBoxCenter = null;
+let lastBoundingBoxCheckMs = 0;
+// Timestamp of the last GPS fix we warned about being stale, so a dead GPS
+// feed is logged once per fix instead of on every check.
+let lastLoggedStaleGpsMs = null;
 
-// Build an aisstream subscription payload from current runtime state.
 const buildSubscriptionPayload = () => {
-  // Always include API key + current bbox + message-type filter.
   const payload = {
     APIKey: AISSTREAM_API_KEY,
     BoundingBoxes: currentBoundingBoxes,
     FilterMessageTypes: messageTypeFilter,
   };
-  // Include MMSI filter only when user configured one.
   if (mmsiFilter.length > 0) {
     payload.FiltersShipMMSI = mmsiFilter;
   }
-  // Return fully assembled payload to caller.
   return payload;
 };
 
 const vesselPositions = new Map(); // MMSI -> latest position
-const vesselStatics = new Map(); // MMSI -> { length, width }
+const vesselStatics = new Map(); // MMSI -> { length, width, receivedAt }
 
 const AISShipsSchema = new mongoose.Schema({
   ships: {
@@ -191,17 +202,19 @@ const AISShipsSchema = new mongoose.Schema({
 const AISShips =
   mongoose.models.AISShips || mongoose.model('AISShips', AISShipsSchema);
 
-const toNumber = (value) =>
-  value === undefined || value === null || Number.isNaN(Number(value))
-    ? undefined
-    : Number(value);
+// Empty strings must be rejected explicitly because Number('') === 0.
+const toNumber = (value) => {
+  if (value === undefined || value === null || value === '') {
+    return undefined;
+  }
+  const parsed = Number(value);
+  return Number.isNaN(parsed) ? undefined : parsed;
+};
 
-// Clamp latitude into valid Earth bounds.
 const clampLatitude = (latitude) => Math.max(-90, Math.min(90, latitude));
 
-// Normalize longitude into the -180..180 range expected by AISstream bounding boxes.
+// Wrap a longitude into the -180..180 range expected by AISstream.
 const normalizeLongitude = (longitude) => {
-  // Wrap longitude values repeatedly into the target interval.
   let normalized = longitude;
   while (normalized > 180) {
     normalized -= 360;
@@ -212,10 +225,9 @@ const normalizeLongitude = (longitude) => {
   return normalized;
 };
 
-// Convert degrees to radians for trigonometric calculations.
 const toRadians = (degrees) => (degrees * Math.PI) / 180;
 
-// Compute great-circle distance in km between two positions for movement threshold checks.
+// Great-circle distance in km between two positions.
 const haversineKm = (lat1, lon1, lat2, lon2) => {
   const deltaLat = toRadians(lat2 - lat1);
   const deltaLon = toRadians(lon2 - lon1);
@@ -225,31 +237,45 @@ const haversineKm = (lat1, lon1, lat2, lon2) => {
   return 2 * EARTH_RADIUS_KM * Math.asin(Math.sqrt(a));
 };
 
-// Build a single AIS bbox from center point + radius in km.
-const buildBoundingBoxAroundCenter = (latitude, longitude, radiusKm) => {
+// Build AIS bbox(es) from a center point + radius in km. Splits into two boxes
+// when the window crosses the antimeridian (±180°) so each box keeps
+// west <= east, which is what AISstream requires.
+const buildBoundingBoxesAroundCenter = (latitude, longitude, radiusKm) => {
   const latitudeDelta = radiusKm / 111;
+  // Longitude degrees shrink with latitude; the 0.1 floor keeps the box finite
+  // near the poles.
   const longitudeScale = Math.max(0.1, Math.cos(toRadians(latitude)));
   const longitudeDelta = radiusKm / (111 * longitudeScale);
-  const southWest = [
-    clampLatitude(latitude - latitudeDelta),
-    normalizeLongitude(longitude - longitudeDelta),
-  ];
-  const northEast = [
-    clampLatitude(latitude + latitudeDelta),
-    normalizeLongitude(longitude + longitudeDelta),
-  ];
-  return [southWest, northEast];
+
+  const south = clampLatitude(latitude - latitudeDelta);
+  const north = clampLatitude(latitude + latitudeDelta);
+
+  // A window spanning >= 360 degrees wraps the whole globe; splitting it would
+  // leave a gap, so cover the full longitude range instead.
+  if (longitudeDelta >= 180) {
+    return [[[south, -180], [north, 180]]];
+  }
+
+  const rawWest = longitude - longitudeDelta;
+  const rawEast = longitude + longitudeDelta;
+
+  if (rawEast > 180 || rawWest < -180) {
+    return [
+      [[south, normalizeLongitude(rawWest)], [north, 180]],
+      [[south, -180], [north, normalizeLongitude(rawEast)]],
+    ];
+  }
+
+  return [[[south, rawWest], [north, rawEast]]];
 };
 
-// Parse a timestamp string into epoch ms, returning undefined for invalid inputs.
 const parseTimestampMs = (timestamp) => {
-  // Parse timestamp using JS Date parser.
   const parsedMs = Date.parse(timestamp);
-  // Reject NaN parse results.
   return Number.isNaN(parsedMs) ? undefined : parsedMs;
 };
 
-// Read latest boat GPS point from MongoDB for dynamic bbox updates.
+// Read the latest boat GPS fix, or null when there is no usable (fresh, valid)
+// fix — in which case the current bbox is silently kept.
 const readLatestBoatGps = async () => {
   try {
     const latest = await mongoose.connection.collection('gps').findOne(
@@ -261,21 +287,12 @@ const readLatestBoatGps = async () => {
     );
 
     if (!latest) {
-      console.warn('No GPS records found; keeping current AIS bounding boxes.');
       return null;
     }
 
-    const latitudeRaw =
-      latest.latitude && typeof latest.latitude.toString === 'function'
-        ? latest.latitude.toString()
-        : latest.latitude;
-    const longitudeRaw =
-      latest.longitude && typeof latest.longitude.toString === 'function'
-        ? latest.longitude.toString()
-        : latest.longitude;
-
-    const latitude = toNumber(latitudeRaw);
-    const longitude = toNumber(longitudeRaw);
+    // Coordinates may be stored as Decimal128, so stringify before converting.
+    const latitude = toNumber(String(latest.latitude));
+    const longitude = toNumber(String(latest.longitude));
 
     if (latitude === undefined || longitude === undefined) {
       console.warn('Latest GPS record has invalid latitude/longitude; skipping bbox update.');
@@ -289,12 +306,13 @@ const readLatestBoatGps = async () => {
       return null;
     }
 
-    const ageMs = Date.now() - timestampMs;
-
-    if (ageMs > GPS_STALE_MS) {
-      console.warn(
-        `Latest GPS fix is stale (${ageMs}ms old); keeping current AIS bounding boxes.`,
-      );
+    if (Date.now() - timestampMs > GPS_STALE_MS) {
+      if (lastLoggedStaleGpsMs !== timestampMs) {
+        lastLoggedStaleGpsMs = timestampMs;
+        console.warn(
+          `Newest GPS fix (${new Date(timestampMs).toISOString()}) is older than ${GPS_STALE_MS} ms; dynamic bbox holding position.`,
+        );
+      }
       return null;
     }
 
@@ -304,107 +322,113 @@ const readLatestBoatGps = async () => {
       timestamp: latest.timestamp,
     };
   } catch (err) {
-    console.warn('Failed reading latest boat GPS; keeping current AIS bounding boxes.', err);
+    console.warn('Failed reading latest boat GPS.', err);
     return null;
   }
 };
 
-// Initialize bbox state from GPS at startup when dynamic mode is enabled.
+// Evict tracked vessels that are no longer near a given center so snapshots
+// switch to the new area immediately instead of waiting out VESSEL_TTL_MS.
+const pruneVesselsOutsideRadius = (center, radiusKm) => {
+  let removed = 0;
+  for (const [mmsi, ship] of vesselPositions) {
+    const distanceKm = haversineKm(
+      center.latitude,
+      center.longitude,
+      ship.latitude,
+      ship.longitude,
+    );
+    if (distanceKm > radiusKm) {
+      vesselPositions.delete(mmsi);
+      removed += 1;
+    }
+  }
+  return removed;
+};
+
+const formatEvictionNote = (count) =>
+  count > 0 ? ` (evicted ${count} out-of-area vessel(s))` : '';
+
+// Re-center the dynamic bbox on a fresh GPS fix and (if connected) resubscribe.
+// Shared by startup, first-fix seeding, and movement-triggered shifts so the
+// bbox state transitions live in exactly one place. Returns how many
+// out-of-area vessels were evicted.
+const applyDynamicBoundingBox = (latestGps, socket) => {
+  currentBoundingBoxes = buildBoundingBoxesAroundCenter(
+    latestGps.latitude,
+    latestGps.longitude,
+    BBOX_RADIUS_KM,
+  );
+  lastBoundingBoxCenter = {
+    latitude: latestGps.latitude,
+    longitude: latestGps.longitude,
+  };
+  // Applying a box counts as an evaluation, so the next throttled check waits
+  // a full interval.
+  lastBoundingBoxCheckMs = Date.now();
+  const pruned = pruneVesselsOutsideRadius(
+    lastBoundingBoxCenter,
+    BBOX_RADIUS_KM * BBOX_PRUNE_RADIUS_FACTOR,
+  );
+  // Resubscribe over the SAME socket (no reconnect) so aisstream switches region.
+  if (socket && socket.readyState === WebSocket.OPEN) {
+    socket.send(JSON.stringify(buildSubscriptionPayload()));
+  }
+  return pruned;
+};
+
 const initializeBoundingBoxesFromBoatGps = async () => {
   if (!DYNAMIC_BBOX_ENABLED) {
     console.log('Dynamic AIS bbox disabled; using static AISSTREAM_BOUNDING_BOXES value.');
     return;
   }
 
-  // Read latest boat GPS so initial subscription starts near boat position.
   const latestGps = await readLatestBoatGps();
-
-  // If no valid GPS is available, retain static fallback bbox.
   if (!latestGps) {
     console.warn('Could not initialize dynamic bbox from GPS; using static fallback bounding box.');
     return;
   }
 
-  // Build bbox centered on latest boat GPS using configured radius.
-  currentBoundingBoxes = [
-    buildBoundingBoxAroundCenter(latestGps.latitude, latestGps.longitude, BBOX_RADIUS_KM),
-  ];
-  // Store center point used for threshold-based movement checks.
-  lastBoundingBoxCenter = {
-    latitude: latestGps.latitude,
-    longitude: latestGps.longitude,
-  };
-  // Emit startup log so operators can confirm dynamic mode is active.
-  console.log('Initialized dynamic AIS bounding box from latest boat GPS.', {
-    currentBoundingBoxes,
-    radiusKm: BBOX_RADIUS_KM,
-  });
+  // No socket exists yet at startup; onopen sends the subscription.
+  applyDynamicBoundingBox(latestGps, null);
+  console.log(
+    `Initialized dynamic AIS bbox from boat GPS (radius ${BBOX_RADIUS_KM} km): ${JSON.stringify(currentBoundingBoxes)}`,
+  );
 };
 
-// Shift bbox when boat movement exceeds threshold and optionally resubscribe immediately.
+// Re-evaluate the dynamic bbox against the latest GPS fix: seed it on the first
+// valid fix, otherwise shift it only once the boat has moved past the threshold.
 const maybeUpdateDynamicBoundingBoxes = async (socket) => {
   if (!DYNAMIC_BBOX_ENABLED) {
     return;
   }
   const latestGps = await readLatestBoatGps();
-
   if (!latestGps) {
     return;
   }
+
   if (!lastBoundingBoxCenter) {
-    currentBoundingBoxes = [
-      buildBoundingBoxAroundCenter(latestGps.latitude, latestGps.longitude, BBOX_RADIUS_KM),
-    ];
-    lastBoundingBoxCenter = {
-      latitude: latestGps.latitude,
-      longitude: latestGps.longitude,
-    };
-    if (socket && socket.readyState === WebSocket.OPEN) {
-      socket.send(JSON.stringify(buildSubscriptionPayload()));
-      console.log('Seeded dynamic AIS bounding box and sent subscription update.');
-    }
+    const pruned = applyDynamicBoundingBox(latestGps, socket);
+    console.log(
+      `Seeded dynamic AIS bbox from boat GPS${formatEvictionNote(pruned)}: ${JSON.stringify(currentBoundingBoxes)}`,
+    );
     return;
   }
 
-  // Compute movement distance from last bbox center to latest GPS point.
   const movedKm = haversineKm(
     lastBoundingBoxCenter.latitude,
     lastBoundingBoxCenter.longitude,
     latestGps.latitude,
     latestGps.longitude,
   );
-
-  // Log movement diagnostics for operations visibility.
-  console.log(
-    `Boat movement since last bbox center: ${movedKm.toFixed(3)} km (threshold: ${BBOX_MOVE_THRESHOLD_KM} km).`,
-  );
-
-  // Avoid bbox churn when movement is below configured threshold.
   if (movedKm < BBOX_MOVE_THRESHOLD_KM) {
     return;
   }
 
-  // Recompute bbox centered on latest boat GPS.
-  currentBoundingBoxes = [
-    buildBoundingBoxAroundCenter(latestGps.latitude, latestGps.longitude, BBOX_RADIUS_KM),
-  ];
-  // Update center baseline after accepted movement.
-  lastBoundingBoxCenter = {
-    latitude: latestGps.latitude,
-    longitude: latestGps.longitude,
-  };
-
-  // Log bbox update so operators can audit live window shifts.
-  console.log('Updated dynamic AIS bounding box after movement threshold crossing.', {
-    currentBoundingBoxes,
-    movedKm,
-  });
-
-  // Send updated subscription immediately when websocket is available.
-  if (socket && socket.readyState === WebSocket.OPEN) {
-    socket.send(JSON.stringify(buildSubscriptionPayload()));
-    console.log('Sent updated AIS subscription payload with shifted dynamic bounding box.');
-  }
+  const pruned = applyDynamicBoundingBox(latestGps, socket);
+  console.log(
+    `Shifted AIS bbox after ${movedKm.toFixed(1)} km of movement${formatEvictionNote(pruned)}: ${JSON.stringify(currentBoundingBoxes)}`,
+  );
 };
 
 const extractDimensions = (shipStaticData = {}) => {
@@ -412,19 +436,17 @@ const extractDimensions = (shipStaticData = {}) => {
   if (!dimension) {
     return null;
   }
+  // AIS reports dimensions as distances from the GPS antenna:
+  // A = to bow, B = to stern, C = to port, D = to starboard.
   const bow = toNumber(dimension.A);
   const stern = toNumber(dimension.B);
   const port = toNumber(dimension.C);
   const starboard = toNumber(dimension.D);
 
   const length =
-    bow !== undefined && stern !== undefined
-      ? bow + stern
-      : undefined;
+    bow !== undefined && stern !== undefined ? bow + stern : undefined;
   const width =
-    port !== undefined && starboard !== undefined
-      ? port + starboard
-      : undefined;
+    port !== undefined && starboard !== undefined ? port + starboard : undefined;
 
   if (length === undefined && width === undefined) {
     return null;
@@ -467,18 +489,11 @@ const normalizePosition = (aisMessage) => {
   const longitude =
     toNumber(meta.longitude ?? meta.Longitude ?? positionPayload.Longitude) ??
     null;
-  const cog =
-    toNumber(positionPayload.Cog ?? positionPayload.CourseOverGround) ??
-    undefined;
-  const sog =
-    toNumber(positionPayload.Sog ?? positionPayload.SpeedOverGround) ??
-    undefined;
-  const rot =
-    toNumber(positionPayload.RateOfTurn ?? positionPayload.Rot) ?? undefined;
+  const cog = toNumber(positionPayload.Cog ?? positionPayload.CourseOverGround);
+  const sog = toNumber(positionPayload.Sog ?? positionPayload.SpeedOverGround);
+  const rot = toNumber(positionPayload.RateOfTurn ?? positionPayload.Rot);
 
   const staticDims = vesselStatics.get(String(mmsi)) || {};
-  const length = staticDims.length ?? DEFAULT_DIMENSIONS.length;
-  const width = staticDims.width ?? DEFAULT_DIMENSIONS.width;
 
   return {
     id: Number(mmsi),
@@ -487,9 +502,11 @@ const normalizePosition = (aisMessage) => {
     cog,
     sog,
     rot,
-    width,
-    length,
+    width: staticDims.width ?? DEFAULT_DIMENSIONS.width,
+    length: staticDims.length ?? DEFAULT_DIMENSIONS.length,
     updatedAt: meta.time_utc || new Date().toISOString(),
+    // Local receive time drives staleness eviction (robust to bad vessel clocks).
+    receivedAt: Date.now(),
   };
 };
 
@@ -506,24 +523,21 @@ const handleStaticData = (aisMessage) => {
   }
   const dims = extractDimensions(shipStatic);
   if (dims) {
-    vesselStatics.set(String(mmsi), dims);
+    vesselStatics.set(String(mmsi), { ...dims, receivedAt: Date.now() });
   }
 };
 
+// Normalize WebSocket payloads across Node (Buffer/Uint8Array) and undici (Blob).
 const readPayload = async (rawData) => {
-  // Normalize WebSocket payloads across Node (Buffer/Uint8Array) and undici (Blob).
   if (typeof rawData === 'string') {
     return rawData;
   }
-  // Node WebSocket may deliver Buffer/Uint8Array
   if (rawData instanceof Buffer || rawData instanceof Uint8Array) {
     return rawData.toString('utf8');
   }
-  // Undici WebSocket can deliver Blob
   if (rawData && typeof rawData.text === 'function') {
     return await rawData.text();
   }
-  // Fallback
   return String(rawData);
 };
 
@@ -537,16 +551,12 @@ const processMessage = async (rawData) => {
     return;
   }
 
-  if (!parsed.MessageType) {
-    return;
-  }
-
   if (parsed.MessageType === 'ShipStaticData') {
     handleStaticData(parsed);
     return;
   }
 
-  if (!POSITION_MESSAGE_TYPES.includes(parsed.MessageType)) {
+  if (!POSITION_REPORT_TYPES.includes(parsed.MessageType)) {
     return;
   }
 
@@ -558,11 +568,53 @@ const processMessage = async (rawData) => {
   vesselPositions.set(String(position.id), position);
 };
 
+// Evict vessels not heard from within VESSEL_TTL_MS so both Maps stay bounded
+// and snapshots only contain ships currently near the boat.
+const pruneStaleVessels = (now = Date.now()) => {
+  let removed = 0;
+  for (const [mmsi, ship] of vesselPositions) {
+    if (now - ship.receivedAt > VESSEL_TTL_MS) {
+      vesselPositions.delete(mmsi);
+      removed += 1;
+    }
+  }
+  // Keep dimensions for actively-tracked vessels even when their static entry
+  // is old, because static data refreshes far less often than positions.
+  for (const [mmsi, dims] of vesselStatics) {
+    if (!vesselPositions.has(mmsi) && now - dims.receivedAt > VESSEL_TTL_MS) {
+      vesselStatics.delete(mmsi);
+    }
+  }
+  if (removed > 0) {
+    console.log(`Evicted ${removed} stale vessel(s) (TTL ${(VESSEL_TTL_MS / 60000).toFixed(1)} min).`);
+  }
+};
+
+// Keep the snapshot collection bounded by deleting the oldest documents.
+// Oldest is determined by _id order (monotonic and default-indexed) rather
+// than the string timestamp field.
+const trimSnapshots = async () => {
+  try {
+    // The newest document past the retention window marks the cutoff;
+    // everything at or below it is excess.
+    const cutoff = await AISShips.findOne({})
+      .sort({ _id: -1 })
+      .skip(MAX_SNAPSHOTS)
+      .select('_id');
+    if (cutoff) {
+      await AISShips.deleteMany({ _id: { $lte: cutoff._id } });
+    }
+  } catch (err) {
+    console.error('Failed trimming AIS snapshots', err);
+  }
+};
+
+// Persist the latest known position of every tracked vessel as one snapshot.
 const flushSnapshot = async () => {
+  pruneStaleVessels();
   if (vesselPositions.size === 0) {
     return;
   }
-  // Persist the latest known positions for each vessel as a single snapshot.
   const ships = Array.from(vesselPositions.values()).map((ship) => ({
     id: ship.id,
     latitude: ship.latitude,
@@ -586,39 +638,45 @@ const flushSnapshot = async () => {
   }
 };
 
-const trimSnapshots = async () => {
+let reconnectAttempts = 0;
+let flushIntervalId = null;
+// Guards against a slow flush/update cycle overlapping the next timer tick.
+let cycleInProgress = false;
+
+const runPeriodicCycle = async (socket) => {
+  if (cycleInProgress) {
+    return;
+  }
+  cycleInProgress = true;
   try {
-    const total = await AISShips.countDocuments();
-    if (total <= MAX_SNAPSHOTS) {
-      return;
+    // Check the bbox before flushing so a relocation (shift + out-of-area
+    // eviction) is reflected in this cycle's snapshot rather than the next.
+    // Throttled to BBOX_CHECK_INTERVAL_MS, except while the box is still
+    // unseeded (e.g. GPS was missing at startup) — then check every tick so
+    // we lock onto the boat the moment a fix arrives.
+    const now = Date.now();
+    const boxSeeded = lastBoundingBoxCenter !== null;
+    if (!boxSeeded || now - lastBoundingBoxCheckMs >= BBOX_CHECK_INTERVAL_MS) {
+      lastBoundingBoxCheckMs = now;
+      await maybeUpdateDynamicBoundingBoxes(socket);
     }
-    const excess = total - MAX_SNAPSHOTS;
-    const oldest = await AISShips.find({})
-      .sort({ timestamp: 1 })
-      .limit(excess)
-      .select('_id');
-    const ids = oldest.map((doc) => doc._id);
-    if (ids.length > 0) {
-      await AISShips.deleteMany({ _id: { $in: ids } });
-      console.log(`Trimmed ${ids.length} old AIS snapshots.`);
-    }
+    await flushSnapshot();
   } catch (err) {
-    console.error('Failed trimming AIS snapshots', err);
+    // Keep the timer alive if one cycle fails.
+    console.error('Periodic flush/update cycle failed.', err);
+  } finally {
+    cycleInProgress = false;
   }
 };
 
-let reconnectAttempts = 0;
-let flushIntervalId = null;
-
 const startWebSocket = () => {
-  // Connect and keep a long-lived WebSocket alive with exponential backoff.
   console.log('Connecting to aisstream.io ...');
   const socket = new WebSocket('wss://stream.aisstream.io/v0/stream');
 
   socket.onopen = () => {
     reconnectAttempts = 0;
     try {
-      // Build payload at send-time so current dynamic/static bbox state is always used.
+      // Build the payload at send-time so current bbox state is always used.
       socket.send(JSON.stringify(buildSubscriptionPayload()));
       console.log('Subscription sent to aisstream.io');
     } catch (err) {
@@ -628,21 +686,17 @@ const startWebSocket = () => {
     if (flushIntervalId) {
       clearInterval(flushIntervalId);
     }
-    // Reuse existing flush timer to also run movement-threshold bbox checks.
-    flushIntervalId = setInterval(async () => {
-      try {
-        // Persist latest AIS vessel snapshot into MongoDB.
-        await flushSnapshot();
-        // Evaluate dynamic bbox shift and resubscribe only when threshold is crossed.
-        await maybeUpdateDynamicBoundingBoxes(socket);
-      } catch (err) {
-        // Keep timer alive if one cycle fails.
-        console.error('Periodic flush/update cycle failed.', err);
-      }
-    }, DEFAULT_FLUSH_INTERVAL_MS);
+    flushIntervalId = setInterval(
+      () => runPeriodicCycle(socket),
+      DEFAULT_FLUSH_INTERVAL_MS,
+    );
   };
 
-  socket.onmessage = async (event) => processMessage(event.data);
+  socket.onmessage = (event) => {
+    processMessage(event.data).catch((err) => {
+      console.error('Failed processing AIS message', err);
+    });
+  };
 
   socket.onerror = (err) => {
     console.error('WebSocket error', err);
@@ -656,11 +710,20 @@ const startWebSocket = () => {
       clearInterval(flushIntervalId);
       flushIntervalId = null;
     }
+    // Detach handlers so the closed socket and its closures are freed promptly
+    // rather than lingering across reconnects.
+    socket.onopen = null;
+    socket.onmessage = null;
+    socket.onerror = null;
+    socket.onclose = null;
     scheduleReconnect();
   };
 };
 
 const scheduleReconnect = () => {
+  if (shuttingDown) {
+    return;
+  }
   reconnectAttempts += 1;
   const backoff = Math.min(30000, 1000 * 2 ** reconnectAttempts);
   setTimeout(startWebSocket, backoff);
@@ -670,20 +733,35 @@ const main = async () => {
   console.log('Starting AIS ingest worker');
   await mongoose.connect(MONGODB_URI);
   console.log('Connected to MongoDB');
-  // Initialize dynamic bbox state after DB connection so GPS queries can run.
+  // Dynamic bbox initialization needs the DB connection for GPS queries.
   await initializeBoundingBoxesFromBoatGps();
   startWebSocket();
 };
 
-process.on('SIGINT', async () => {
-  console.log('Shutting down...');
+let shuttingDown = false;
+// Flush a final snapshot and disconnect cleanly on termination. Containers
+// send SIGTERM (not SIGINT) on stop/redeploy, so handle both.
+const shutdown = async (signal) => {
+  if (shuttingDown) {
+    return;
+  }
+  shuttingDown = true;
+  console.log(`Received ${signal}; shutting down...`);
   if (flushIntervalId) {
     clearInterval(flushIntervalId);
+    flushIntervalId = null;
   }
-  await flushSnapshot();
-  await mongoose.disconnect();
+  try {
+    await flushSnapshot();
+    await mongoose.disconnect();
+  } catch (err) {
+    console.error('Error during shutdown.', err);
+  }
   process.exit(0);
-});
+};
+
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));
 
 main().catch((err) => {
   console.error(err);
