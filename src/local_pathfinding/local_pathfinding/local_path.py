@@ -373,7 +373,7 @@ class LocalPath:
                 f"({dir_change:.2f} deg, threshold {WIND_DIRECTION_CHANGE_THRESH_DEG:.2f} deg)"
             )
         else:
-            self._logger.info(
+            self._logger.debug(
                 f"speed {previous_wind_data.speed_kmph:.2f} -> {current_speed_kmph:.2f} km/h "
                 f"({speed_change:.2f} km/h, threshold {speed_change_threshold:.2f} km/h); "
                 f"direction {previous_dir_deg:.2f} -> {current_dir_deg:.2f} deg "
