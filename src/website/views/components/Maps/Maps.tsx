@@ -226,7 +226,7 @@ const Maps: React.FC<IMapsProps> = ({
       <Marker position={convertToLatLng(gpsLocation)} icon={createCustomIcon()}>
         <Popup>{printObjectInfo(gpsLocation)}</Popup>
       </Marker>
-      <Polyline pathOptions={{ color: 'black' }} positions={gpsPath} />
+      <Polyline pathOptions={{ color: '#2563eb' }} positions={gpsPath} />
     </MapContainer>
   );
 };
