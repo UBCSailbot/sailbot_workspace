@@ -8,6 +8,7 @@ from typing import List, Optional
 
 import numpy as np
 from rclpy.impl.rcutils_logger import RcutilsLogger
+from rclpy.logging import get_logger
 from shapely.geometry import LineString, MultiPolygon
 
 import custom_interfaces.msg as ci
@@ -64,6 +65,7 @@ class WindTracker:
         self.tw_history: deque = deque(maxlen=WIND_HISTORY_LEN)
         self.tw_avg: Optional[Wind] = None
         self.using_one_tw_point: bool = True
+        self._logger = get_logger("wind_tracker")
 
     def update_tw_history(self, new_tw: Wind):
         """Updates wind history and recalculates the average wind.
@@ -79,6 +81,13 @@ class WindTracker:
         self.tw_history.append(new_tw)
 
         self.tw_avg = self._calculate_wind_avg()
+
+        self._logger.debug(
+            f"WindTracker updated: current_aw speed={current_aw.speed_kmph:.2f} km/h, "
+            f"direction={current_aw.dir_deg:.2f} deg, "
+            f"history_len={len(self.aw_history)}/{WIND_HISTORY_LEN}, "
+            f"aw_avg={self.aw_avg}"
+        )
 
     def _calculate_wind_avg(self) -> Optional[Wind]:
         """Calculates the average wind from the wind history once the deque is full.
@@ -376,6 +385,13 @@ class LocalPath:
                 f"direction {previous_dir_deg:.2f} -> {current_dir_deg:.2f} deg "
                 f"({dir_change:.2f} deg, threshold {WIND_DIRECTION_CHANGE_THRESH_DEG:.2f} deg)"
             )
+        else:
+            self._logger.debug(
+                f"speed {previous_wind_data.speed_kmph:.2f} -> {current_speed_kmph:.2f} km/h "
+                f"({speed_change:.2f} km/h, threshold {speed_change_threshold:.2f} km/h); "
+                f"direction {previous_dir_deg:.2f} -> {current_dir_deg:.2f} deg "
+                f"({dir_change:.2f} deg, threshold {WIND_DIRECTION_CHANGE_THRESH_DEG:.2f} deg)"
+            )
 
         return significant_change
 
@@ -402,7 +418,9 @@ class LocalPath:
             valid preceding/target waypoint is required to define the segment.
         """
         if target_lp_wp_index == 0 or target_lp_wp_index >= len(path.waypoints):
-            self._logger.warn("Target waypoint out of bounds, must be in range [1, len(waypoints))")  # noqa
+            self._logger.warn(
+                "Target waypoint out of bounds, must be in range [1, len(waypoints))"
+            )  # noqa
             raise IndexError("Target waypoint out of bounds, must be in range [1, len(waypoints))")
 
         prev_wp = path.waypoints[target_lp_wp_index - 1]
@@ -494,15 +512,16 @@ class LocalPath:
             return MustChangeReason(True, "Path intersects collision zone")
         if self.is_path_expired():
             return MustChangeReason(True, "Path has expired (TTL exceeded)")
-        if (
-            (new_tw is not None)
-            # Wind-based switching only starts once the rolling average is populated.
-            and (self.state.wind_tracker.tw_avg is not None)
-            and (self.state.path_generated_wind is not None)
-            and not self.state.wind_tracker.using_one_tw_point
-            and self.is_significant_wind_change(
-                self.state.wind_tracker.tw_avg, self.state.path_generated_wind
-            )  # noqa
+        if new_tw is None:
+            self._logger.debug("Wind condition not met: new_aw is None")
+        elif self.state.wind_tracker.tw_avg is None:
+            self._logger.debug("Wind condition not met: wind_tracker.tw_avg is None")
+        elif self.state.path_generated_wind is None:
+            self._logger.debug("Wind condition not met: state.path_generated_wind is None")
+        elif self.state.wind_tracker.using_one_tw_point:
+            self._logger.debug("Wind condition not met: wind_tracker.using_one_aw_point is True")
+        elif self.is_significant_wind_change(
+            self.state.wind_tracker.tw_avg, self.state.path_generated_wind
         ):
             return MustChangeReason(True, "Significant wind change")
         if self._target_lp_wp_index < 1:
