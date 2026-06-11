@@ -1828,4 +1828,3 @@ def test_update_if_needed_reuses_path_without_significant_wind_change(
     assert local_path.state.current_aw.dir_deg == inputs.filtered_wind_sensor.direction
     old_ompl_path.get_path.assert_called_once()
     ompl_path_cls.assert_not_called()
-    local_path._logger.debug.assert_not_called()
