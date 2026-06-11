@@ -32,7 +32,6 @@ import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.wind_coord_systems as wcs
 from local_pathfinding.ompl_path import OMPLPath
-from local_pathfinding.ompl_validity import NO_GO_ZONE
 
 UPDATE_INTERVAL_MS = 2500
 DEFAULT_PLOT_RANGE = [-100.0, 100.0]
@@ -47,10 +46,6 @@ WIND_BOX_ORIGIN_XY = cs.XY(6.0, 0.0)
 WIND_BOX_Y_OFFSET = 0.5
 
 GOAL_CHANGE_ROUND_DECIMALS = 3  # avoid float jitter spam
-
-NO_GO_CONE_ARC_POINTS = 40  # number of points to approximate each cone arc
-NO_GO_CONE_DEFAULT_RADIUS_KM = 1.5  # fallback radius when no axis range is available
-NO_GO_CONE_RADIUS_FRACTION = 0.12  # fraction of the visible axis span to use as cone radius
 
 BASE_DIR = Path(__file__).resolve().parent
 MOCK_NODES_DIR = BASE_DIR / "mock_nodes"
@@ -525,119 +520,6 @@ def build_polygon_traces(
     return traces
 
 
-def _compute_cone_radius(last_range: Optional[Dict[str, List[float]]]) -> float:
-    """Pick a cone radius that looks proportional to the current view.
-
-    If the caller has stored axis ranges from a previous render, the radius is
-    a fixed fraction of the smaller visible span so the cones scale with zoom.
-    Otherwise the default constant is returned.
-
-    Args:
-        last_range: Previously stored axis ranges {"x": [lo, hi], "y": [lo, hi]} or None.
-
-    Returns:
-        Radius in km for the no-go zone cone arcs.
-    """
-    if last_range is not None:
-        x_span = abs(last_range["x"][1] - last_range["x"][0])
-        y_span = abs(last_range["y"][1] - last_range["y"][0])
-        return max(min(x_span, y_span) * NO_GO_CONE_RADIUS_FRACTION, 0.2)
-    return NO_GO_CONE_DEFAULT_RADIUS_KM
-
-
-def build_no_go_zone_traces(
-    vs: VisualizerState,
-    boat_xy_km: Tuple[float, float],
-    last_range: Optional[Dict[str, List[float]]] = None,
-) -> List[go.Scatter]:
-    """Build semi-transparent cone traces showing the upwind and downwind no-go zones.
-
-    Each cone is a circular sector (pie-slice) centred on the boat and spanning
-    ±NO_GO_ZONE (45°) either side of the upwind / downwind direction.  The cones
-    are drawn as filled Scatter polygons so they integrate with the existing
-    Plotly figure.
-
-    The true-wind direction is recovered from the Cartesian vector stored in
-    *vs.tw_vector_kmph* — if the wind speed is effectively zero the cones are
-    not drawn (there is no meaningful wind direction).
-
-    Args:
-        vs: VisualizerState containing the true-wind vector.
-        boat_xy_km: (x, y) current boat position in km.
-        last_range: Previously stored axis ranges, used to auto-scale the cone
-                    radius to the current zoom level.
-
-    Returns:
-        List of Plotly Scatter traces (0, 1, or 2 cones).
-    """
-    tw_mag = math.hypot(vs.tw_vector_kmph.x, vs.tw_vector_kmph.y)
-    if tw_mag < 1e-6:
-        return []  # no meaningful wind direction
-
-    # True wind bearing (true-bearing convention: 0 = north, +π/2 = east)
-    tw_dir_rad = math.atan2(vs.tw_vector_kmph.x, vs.tw_vector_kmph.y)
-
-    # Upwind centre is opposite to the wind vector; downwind is with it
-    upwind_centre_rad = tw_dir_rad + math.pi
-    downwind_centre_rad = tw_dir_rad
-
-    radius = _compute_cone_radius(last_range)
-    bx, by = boat_xy_km[0], boat_xy_km[1]
-
-    def _make_sector(centre_rad: float) -> Tuple[List[float], List[float]]:
-        """Return (xs, ys) for a filled pie-slice polygon."""
-        xs = [bx]  # start at the boat
-        ys = [by]
-        start_angle = centre_rad - NO_GO_ZONE
-        end_angle = centre_rad + NO_GO_ZONE
-        for i in range(NO_GO_CONE_ARC_POINTS + 1):
-            theta = start_angle + (end_angle - start_angle) * i / NO_GO_CONE_ARC_POINTS
-            # polar_to_cartesian convention: x = sin(θ), y = cos(θ)
-            xs.append(bx + radius * math.sin(theta))
-            ys.append(by + radius * math.cos(theta))
-        xs.append(bx)  # close back to the boat
-        ys.append(by)
-        return xs, ys
-
-    traces: List[go.Scatter] = []
-
-    # Upwind no-go cone
-    ux, uy = _make_sector(upwind_centre_rad)
-    traces.append(
-        go.Scatter(
-            x=ux,
-            y=uy,
-            fill="toself",
-            mode="lines",
-            line=dict(color="rgba(255, 80, 80, 0.6)", width=1),
-            fillcolor="rgba(255, 80, 80, 0.18)",
-            opacity=1.0,
-            name="Upwind No-Go",
-            hoverinfo="skip",
-            showlegend=True,
-        )
-    )
-
-    # Downwind no-go cone
-    dx, dy = _make_sector(downwind_centre_rad)
-    traces.append(
-        go.Scatter(
-            x=dx,
-            y=dy,
-            fill="toself",
-            mode="lines",
-            line=dict(color="rgba(255, 165, 0, 0.6)", width=1),
-            fillcolor="rgba(255, 165, 0, 0.18)",
-            opacity=1.0,
-            name="Downwind No-Go",
-            hoverinfo="skip",
-            showlegend=True,
-        )
-    )
-
-    return traces
-
-
 def build_ais_traces(vs: VisualizerState) -> List[go.Scatter]:
     """
     Build AIS ship markers (filled arrow-heads/ triangles) for the plot.
@@ -1026,8 +908,7 @@ def build_figure(
         showlegend=False,
     )
     ais_traces = build_ais_traces(vs)
-    no_go_traces = build_no_go_zone_traces(vs, boat_xy_km, last_range)
-    fig.add_traces(land_traces + boat_traces + ais_traces + no_go_traces)
+    fig.add_traces(land_traces + boat_traces + ais_traces)
 
     # Creating Wind box and its elements and adding them to the plot
     wind_config = configure_wind_box_elements(vs)
@@ -1096,8 +977,7 @@ def build_figure_without_local_path(
         showlegend=False,
     )
     ais_traces = build_ais_traces(vs)
-    no_go_traces = build_no_go_zone_traces(vs, boat_xy_km, last_range)
-    fig.add_traces(land_traces + boat_traces + ais_traces + no_go_traces)
+    fig.add_traces(land_traces + boat_traces + ais_traces)
 
     # Wind box and its elements
     wind_config = configure_wind_box_elements(vs)
