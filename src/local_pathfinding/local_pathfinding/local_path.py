@@ -8,6 +8,7 @@ from typing import List, Optional
 
 import numpy as np
 from rclpy.impl.rcutils_logger import RcutilsLogger
+from rclpy.logging import get_logger
 from shapely.geometry import LineString, MultiPolygon
 
 import custom_interfaces.msg as ci
@@ -57,11 +58,11 @@ class WindTracker:
             rolling average was populated, using only one apparent wind point.
     """
 
-    def __init__(self, logger: Optional[RcutilsLogger] = None):
+    def __init__(self):
         self.aw_history: deque = deque(maxlen=WIND_HISTORY_LEN)
         self.aw_avg: Optional[Wind] = None
         self.using_one_aw_point: bool = True
-        self._logger = logger or RcutilsLogger(name="wind_tracker")
+        self._logger = get_logger("wind_tracker")
 
     def update_aw_history(self, current_aw: Wind):
         """Updates apparent wind history and recalculates the average wind. The wind values are
@@ -605,9 +606,7 @@ class LocalPath:
             while tries < MAX_OMPL_PATH_GEN_TRIES:
                 try:
                     if self.state is None or self.state.wind_tracker is None:
-                        wind_tracker = WindTracker(
-                            logger=self._logger.get_child(name="wind_tracker")
-                            )
+                        wind_tracker = WindTracker()
                         wind_tracker.update_aw_history(new_aw)
                     else:
                         wind_tracker = self.state.wind_tracker
