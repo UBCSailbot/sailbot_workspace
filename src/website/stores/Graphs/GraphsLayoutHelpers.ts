@@ -1,4 +1,5 @@
-import { Layout, LayoutItem, GraphId, isSplitGroup } from './GraphsTypes';
+import type { Layout, LayoutItem, GraphId } from './GraphsTypes.ts';
+import { isSplitGroup } from './GraphsTypes.ts';
 
 /**
  * Find the index of the layout item containing a given graphId.
