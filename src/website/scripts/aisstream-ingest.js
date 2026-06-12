@@ -31,6 +31,7 @@ const path = require('path');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const WebSocket = require('ws');
+const { haversineKm, buildBoundingBoxesAroundCenter } = require('./lib/bbox');
 
 // dotenv does not overwrite keys that are already set, so for each variable
 // the first file in this list that defines it wins.
@@ -72,7 +73,6 @@ if (!AISSTREAM_API_KEY) {
 
 const DEFAULT_DIMENSIONS = { length: 30, width: 10 };
 const WORLD_BOUNDING_BOXES = [[[-90, -180], [90, 180]]];
-const EARTH_RADIUS_KM = 6371;
 
 const POSITION_REPORT_TYPES = [
   'PositionReport',
@@ -215,64 +215,6 @@ const toNumber = (value) => {
   return Number.isNaN(parsed) ? undefined : parsed;
 };
 
-const clampLatitude = (latitude) => Math.max(-90, Math.min(90, latitude));
-
-// Wrap a longitude into the -180..180 range expected by AISstream.
-const normalizeLongitude = (longitude) => {
-  let normalized = longitude;
-  while (normalized > 180) {
-    normalized -= 360;
-  }
-  while (normalized < -180) {
-    normalized += 360;
-  }
-  return normalized;
-};
-
-const toRadians = (degrees) => (degrees * Math.PI) / 180;
-
-// Great-circle distance in km between two positions.
-const haversineKm = (lat1, lon1, lat2, lon2) => {
-  const deltaLat = toRadians(lat2 - lat1);
-  const deltaLon = toRadians(lon2 - lon1);
-  const a =
-    Math.sin(deltaLat / 2) ** 2 +
-    Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(deltaLon / 2) ** 2;
-  return 2 * EARTH_RADIUS_KM * Math.asin(Math.sqrt(a));
-};
-
-// Build AIS bbox(es) from a center point + radius in km. Splits into two boxes
-// when the window crosses the antimeridian (±180°) so each box keeps
-// west <= east, which is what AISstream requires.
-const buildBoundingBoxesAroundCenter = (latitude, longitude, radiusKm) => {
-  const latitudeDelta = radiusKm / 111;
-  // Longitude degrees shrink with latitude; the 0.1 floor keeps the box finite
-  // near the poles.
-  const longitudeScale = Math.max(0.1, Math.cos(toRadians(latitude)));
-  const longitudeDelta = radiusKm / (111 * longitudeScale);
-
-  const south = clampLatitude(latitude - latitudeDelta);
-  const north = clampLatitude(latitude + latitudeDelta);
-
-  // A window spanning >= 360 degrees wraps the whole globe; splitting it would
-  // leave a gap, so cover the full longitude range instead.
-  if (longitudeDelta >= 180) {
-    return [[[south, -180], [north, 180]]];
-  }
-
-  const rawWest = longitude - longitudeDelta;
-  const rawEast = longitude + longitudeDelta;
-
-  if (rawEast > 180 || rawWest < -180) {
-    return [
-      [[south, normalizeLongitude(rawWest)], [north, 180]],
-      [[south, -180], [north, normalizeLongitude(rawEast)]],
-    ];
-  }
-
-  return [[[south, rawWest], [north, rawEast]]];
-};
-
 const parseTimestampMs = (timestamp) => {
   const parsedMs = Date.parse(timestamp);
   return Number.isNaN(parsedMs) ? undefined : parsedMs;
@@ -299,14 +241,18 @@ const readLatestBoatGps = async () => {
     const longitude = toNumber(String(latest.longitude));
 
     if (latitude === undefined || longitude === undefined) {
-      console.warn('Latest GPS record has invalid latitude/longitude; skipping bbox update.');
+      console.warn(
+        'Latest GPS record has invalid latitude/longitude; skipping bbox update.',
+      );
       return null;
     }
 
     const timestampMs = parseTimestampMs(latest.timestamp);
 
     if (timestampMs === undefined) {
-      console.warn('Latest GPS record has invalid timestamp; skipping bbox update.');
+      console.warn(
+        'Latest GPS record has invalid timestamp; skipping bbox update.',
+      );
       return null;
     }
 
@@ -314,7 +260,9 @@ const readLatestBoatGps = async () => {
       if (lastLoggedStaleGpsMs !== timestampMs) {
         lastLoggedStaleGpsMs = timestampMs;
         console.warn(
-          `Newest GPS fix (${new Date(timestampMs).toISOString()}) is older than ${GPS_STALE_MS} ms; dynamic bbox holding position.`,
+          `Newest GPS fix (${new Date(
+            timestampMs,
+          ).toISOString()}) is older than ${GPS_STALE_MS} ms; dynamic bbox holding position.`,
         );
       }
       return null;
@@ -388,20 +336,26 @@ const applyDynamicBoundingBox = (latestGps, socket) => {
 
 const initializeBoundingBoxesFromBoatGps = async () => {
   if (!DYNAMIC_BBOX_ENABLED) {
-    console.log('Dynamic AIS bbox disabled; using static AISSTREAM_BOUNDING_BOXES value.');
+    console.log(
+      'Dynamic AIS bbox disabled; using static AISSTREAM_BOUNDING_BOXES value.',
+    );
     return;
   }
 
   const latestGps = await readLatestBoatGps();
   if (!latestGps) {
-    console.warn('Could not initialize dynamic bbox from GPS; using static fallback bounding box.');
+    console.warn(
+      'Could not initialize dynamic bbox from GPS; using static fallback bounding box.',
+    );
     return;
   }
 
   // No socket exists yet at startup; onopen sends the subscription.
   applyDynamicBoundingBox(latestGps, null);
   console.log(
-    `Initialized dynamic AIS bbox from boat GPS (radius ${BBOX_RADIUS_KM} km): ${JSON.stringify(currentBoundingBoxes)}`,
+    `Initialized dynamic AIS bbox from boat GPS (radius ${BBOX_RADIUS_KM} km): ${JSON.stringify(
+      currentBoundingBoxes,
+    )}`,
   );
 };
 
@@ -419,7 +373,9 @@ const maybeUpdateDynamicBoundingBoxes = async (socket) => {
   if (!lastBoundingBoxCenter) {
     const pruned = applyDynamicBoundingBox(latestGps, socket);
     console.log(
-      `Seeded dynamic AIS bbox from boat GPS${formatEvictionNote(pruned)}: ${JSON.stringify(currentBoundingBoxes)}`,
+      `Seeded dynamic AIS bbox from boat GPS${formatEvictionNote(
+        pruned,
+      )}: ${JSON.stringify(currentBoundingBoxes)}`,
     );
     return;
   }
@@ -436,7 +392,11 @@ const maybeUpdateDynamicBoundingBoxes = async (socket) => {
 
   const pruned = applyDynamicBoundingBox(latestGps, socket);
   console.log(
-    `Shifted AIS bbox after ${movedKm.toFixed(1)} km of movement${formatEvictionNote(pruned)}: ${JSON.stringify(currentBoundingBoxes)}`,
+    `Shifted AIS bbox after ${movedKm.toFixed(
+      1,
+    )} km of movement${formatEvictionNote(pruned)}: ${JSON.stringify(
+      currentBoundingBoxes,
+    )}`,
   );
 };
 
@@ -455,7 +415,9 @@ const extractDimensions = (shipStaticData = {}) => {
   const length =
     bow !== undefined && stern !== undefined ? bow + stern : undefined;
   const width =
-    port !== undefined && starboard !== undefined ? port + starboard : undefined;
+    port !== undefined && starboard !== undefined
+      ? port + starboard
+      : undefined;
 
   if (length === undefined && width === undefined) {
     return null;
@@ -595,7 +557,11 @@ const pruneStaleVessels = (now = Date.now()) => {
     }
   }
   if (removed > 0) {
-    console.log(`Evicted ${removed} stale vessel(s) (TTL ${(VESSEL_TTL_MS / 60000).toFixed(1)} min).`);
+    console.log(
+      `Evicted ${removed} stale vessel(s) (TTL ${(
+        VESSEL_TTL_MS / 60000
+      ).toFixed(1)} min).`,
+    );
   }
 };
 
@@ -648,7 +614,9 @@ const flushSnapshot = async () => {
     });
     await trimSnapshots();
     if (writingEmpty) {
-      console.log('Saved empty AIS snapshot (region change cleared all vessels).');
+      console.log(
+        'Saved empty AIS snapshot (region change cleared all vessels).',
+      );
     } else {
       console.log(`Saved AIS snapshot with ${ships.length} ships.`);
     }
