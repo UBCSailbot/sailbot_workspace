@@ -67,5 +67,9 @@ colcon test \
     --packages-ignore virtual_iridium \
     --merge-install \
     --event-handlers console_cohesion+
-colcon test-result
+if [ -n "$PACKAGE" ]; then
+    colcon test-result --test-result-base "build/$PACKAGE"
+else
+    colcon test-result
+fi
 exit 0

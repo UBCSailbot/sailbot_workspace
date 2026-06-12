@@ -148,6 +148,18 @@ def set_tw_history(state, wind, history_len, update_path_generated_wind=True):
         state.path_generated_wind = state.wind_tracker.tw_avg or state.current_tw
 
 
+def set_filtered_wind_sensor_from_true_wind(inputs, true_wind):
+    aw_dir_deg, aw_speed_kmph = get_apparent_wind(
+        tw_dir_deg_gc=true_wind.dir_deg,
+        tw_speed_kmph=true_wind.speed_kmph,
+        boat_heading_deg_gc=inputs.gps.heading.heading,
+        boat_speed_kmph=inputs.gps.speed.speed,
+        ret_rad=False,
+    )
+    inputs.filtered_wind_sensor.speed.speed = aw_speed_kmph
+    inputs.filtered_wind_sensor.direction = aw_dir_deg
+
+
 # ========================= TESTS =========================
 
 @pytest.mark.parametrize(
@@ -1486,8 +1498,8 @@ def test_update_if_needed_regenerates_path_for_significant_wind_change(
     )
 
     inputs = create_update_if_needed_inputs()
-    inputs.filtered_wind_sensor.speed.speed = new_tw_speed
-    inputs.filtered_wind_sensor.direction = new_tw_dir
+    new_tw = Wind(speed_kmph=new_tw_speed, dir_deg=new_tw_dir)
+    set_filtered_wind_sensor_from_true_wind(inputs, new_tw)
     new_path = Path(
         waypoints=[
             HelperLatLon(latitude=1.0, longitude=1.0),
@@ -1799,8 +1811,7 @@ def test_update_if_needed_reuses_path_without_significant_wind_change(
     )
 
     inputs = create_update_if_needed_inputs()
-    inputs.filtered_wind_sensor.speed.speed = new_tw.speed_kmph
-    inputs.filtered_wind_sensor.direction = new_tw.dir_deg
+    set_filtered_wind_sensor_from_true_wind(inputs, new_tw)
     original_global_path = local_path.state.global_path
     original_reference_latlon = local_path.state.reference_latlon
 
@@ -1824,8 +1835,8 @@ def test_update_if_needed_reuses_path_without_significant_wind_change(
     assert local_path.state.position is inputs.gps.lat_lon
     assert local_path.state.speed == inputs.gps.speed.speed
     assert local_path.state.heading == inputs.gps.heading.heading
-    assert local_path.state.current_tw.speed_kmph == inputs.filtered_wind_sensor.speed.speed
-    assert local_path.state.current_tw.dir_deg == inputs.filtered_wind_sensor.direction
+    assert local_path.state.current_tw.speed_kmph == pytest.approx(new_tw.speed_kmph)
+    assert local_path.state.current_tw.dir_deg == pytest.approx(new_tw.dir_deg)
     old_ompl_path.get_path.assert_called_once()
     ompl_path_cls.assert_not_called()
 
@@ -1841,16 +1852,7 @@ def test_update_if_needed_reuses_path_when_boat_changes_heading(basic_local_path
     inputs.gps.speed.speed = 3.0
     inputs.gps.heading.heading += lp.WIND_DIRECTION_CHANGE_THRESH_DEG + 30.0
 
-    # Calculate what apparent wind would be if true wind remains constant
-    aw_dir_deg, aw_speed_kmph = get_apparent_wind(
-        tw_dir_deg_gc=baseline_tw.dir_deg,
-        tw_speed_kmph=baseline_tw.speed_kmph,
-        boat_heading_deg_gc=inputs.gps.heading.heading,
-        boat_speed_kmph=inputs.gps.speed.speed,
-        ret_rad=False
-    )
-    inputs.filtered_wind_sensor.speed.speed = aw_speed_kmph
-    inputs.filtered_wind_sensor.direction = aw_dir_deg
+    set_filtered_wind_sensor_from_true_wind(inputs, baseline_tw)
 
     for _ in range(lp.WIND_HISTORY_LEN):
         local_path.update_if_needed(
