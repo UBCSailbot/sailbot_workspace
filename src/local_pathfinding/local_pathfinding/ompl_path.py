@@ -22,6 +22,7 @@ from shapely.geometry import MultiPolygon, Point, Polygon, box
 import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.obstacles as ob
+import local_pathfinding.wind_coord_systems as wcs
 from local_pathfinding.ompl_objectives import get_sailing_objective
 from local_pathfinding.ompl_validity import GoalProgressWindMotionValidator
 
@@ -395,9 +396,22 @@ class OMPLPath:
         # Use the wind snapshot stored with this LocalPathState so path planning and
         # later wind-change comparisons share the same baseline.
         if self.state.path_generated_wind is None:
-            current_aw = self.state.current_aw
+            current_tw = self.state.current_tw
         else:
-            current_aw = self.state.path_generated_wind
+            current_tw = self.state.path_generated_wind
+
+        current_aw_dir_deg_gc, current_aw_speed_kmph = wcs.tw_gc_to_aw_gc(
+            current_tw.dir_deg,
+            current_tw.speed_kmph,
+            self.state.heading,
+            self.state.speed
+        )
+
+        current_aw_dir_deg_bc = wcs.global_to_boat_coordinate(
+            self.state.heading,
+            current_aw_dir_deg_gc,
+        )
+        current_aw = wcs.Wind(current_aw_speed_kmph, current_aw_dir_deg_bc)
 
         space_information = simple_setup.getSpaceInformation()
         self._goal_progress_wind_motion_validator = GoalProgressWindMotionValidator(
