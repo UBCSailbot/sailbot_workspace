@@ -34,7 +34,7 @@ Launch arguments are added to the run command in the format `<name>:=<value>`.
 |`use_ocean_drift`|Enable ocean current drift (default:`true`)|`{true, false}`|
 |`use_drift_randomization`|Enable ocean current noise (default:`true`)|`{true, false}`|
 |`ocean_drift_speed_kmph`|Speed of the ocean drift (km/h)(default:`0.5`)|Any float|
-|`ocean_drift_dir_deg`|Direction of the ocean drift in degrees (0 = North, 90 = East) (default:`45.0`)|Any float between [-180, 180]|
+|`ocean_drift_dir_deg`|Direction of the ocean drift in degrees (0 = North, 90 = East) (default:`45.0`)|Any float between `(-180, 180]`|
 |`ocean_drift_accel_kmph2`|Acceleration of ocean drift speed (km/h^2)(default:`0.0`)|Any float|
 <!-- markdownlint-enable MD013 -->
 

@@ -42,7 +42,7 @@ LOCAL_LAUNCH_ARGUMENTS: List[DeclareLaunchArgument] = [
     DeclareLaunchArgument(
         name="ocean_drift_dir_deg",
         default_value="45.0",
-        description="Direction the current flows toward in degrees (0=north, 90=east).",
+        description="Direction the current flows toward in degrees (0=north, 90=east). Range is (-180, 180])",
     ),
     DeclareLaunchArgument(
         name="ocean_drift_accel_kmph2",

@@ -1037,12 +1037,6 @@ def write_wind_params(tw_dir_deg: float, tw_speed_kmph: float) -> None:
     with open(WIND_PARAMS_YAML, "w") as f:
         yaml.safe_dump(data, f, sort_keys=False)
 
-    def apply_wind_params():
-        subprocess.run(
-            ["bash", str(WIND_PARAMS_SH)],
-            check=True,
-        )
-
 
 def apply_wind_params():
     subprocess.run(
@@ -1128,7 +1122,7 @@ def dash_app(q: Queue):
                 id="control-panel",
                 style={
                     "position": "absolute",
-                    "bottom": "175px",  # Distance from the very bottom of the screen
+                    "bottom": "175px",
                     "left": "50px",  # Aligns with the Y-axis
                     "display": "flex",
                     "gap": "15px",
