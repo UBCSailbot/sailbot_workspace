@@ -7,7 +7,12 @@
   <!-- markdownlint-disable MD013 -->
     - For example, we can look at all the debug statements for all the nodes when we use `log_level:=debug` as our launch argument.
   <!-- markdownlint-enable MD013 -->
-- To select the mode, we need use `mode:="development"` or `mode:="production"` launch arguments
+- To select the mode, we need use `mode:="development"` or `mode:="production"` or `mode:="sim"` launch arguments
+  <!-- markdownlint-disable MD013 -->
+    - `development` (default): `local_pathfinding` generates the `filtered_wind_sensor` and `gps` data internally (mock/simulated data) for local testing without hardware. `network_systems` runs for the sake of completeness as `controller` uses one of the publishers in `network_systems's` `can_transciever_node`.
+    - `production`: `network_systems` provides the `filtered_wind_sensor` and `gps` data from the real sensors over the network, and `controller` relies on `network_systems`' control publishers/subscribers to drive the boat. Used for on-water operation.
+    - `sim`: launches the additional `boat_simulator` package, which simulates the boat (physics, GPS, wind sensors) to run the full software stack end-to-end against a simulated boat on pathfinding's visualizer.
+  <!-- markdownlint-enable MD013 -->
 
 ## Recording a rosbag file for future analysis
 

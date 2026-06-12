@@ -3,11 +3,21 @@ import ConnectMongoDB from '@/lib/mongodb';
 import AISShips from '@/models/AISShips';
 import { AISShips as AISShipsDocument } from '@/stores/AISShips/AISShipsTypes';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     await ConnectMongoDB();
 
-    const aisships: AISShipsDocument[] = await AISShips.find({}).select({
+    // `?latest=true` returns only the newest snapshot. The map poller uses it;
+    // the full history stays available (default) for dataset downloads.
+    const latestOnly =
+      new URL(request.url).searchParams.get('latest') === 'true';
+
+    let query = AISShips.find({});
+    if (latestOnly) {
+      query = query.sort({ _id: -1 }).limit(1);
+    }
+
+    const aisships: AISShipsDocument[] = await query.select({
       'ships._id': 0,
       _id: 0,
       __v: 0,
