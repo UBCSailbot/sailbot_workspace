@@ -146,9 +146,11 @@ const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs }: any) => {
     setActiveId(event.active.id);
   };
 
-  useEffect(() => {
-    rearrangeGraphs(layout);
-  }, [layout]);
+  const commitLayout = (next: Layout) => {
+    if (next === layout) return;
+    setLayout(next);
+    rearrangeGraphs(next);
+  };
 
   // Pointermove listener for split/gap detection (active during drag)
   useEffect(() => {
@@ -278,14 +280,14 @@ const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs }: any) => {
 
     if (currentSplitTarget) {
       const side = currentSplitSide === 'left' ? 'left' : 'right';
-      setLayout(splitGraph(layout, active.id as GraphId, currentSplitTarget as GraphId, side));
+      commitLayout(splitGraph(layout, active.id as GraphId, currentSplitTarget as GraphId, side));
       return;
     }
 
     if (currentDropGap !== null) {
       // extractGraph handles both standalone (delegates to moveGraphToIndex)
       // and split group members (pulls out and places at gap)
-      setLayout(extractGraph(layout, active.id as GraphId, currentDropGap));
+      commitLayout(extractGraph(layout, active.id as GraphId, currentDropGap));
       return;
     }
   };
