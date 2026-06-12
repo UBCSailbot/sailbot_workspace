@@ -363,9 +363,8 @@ const applyDynamicBoundingBox = (latestGps, socket) => {
     latitude: latestGps.latitude,
     longitude: latestGps.longitude,
   };
-  // Applying a box counts as an evaluation, so the next throttled check waits
-  // a full interval.
-  lastBoundingBoxCheckMs = Date.now();
+  // The throttle counter is owned by runPeriodicCycle, which bumps it on every
+  // check attempt regardless of outcome; we don't bump it again here.
   const pruned = pruneVesselsOutsideRadius(
     lastBoundingBoxCenter,
     BBOX_RADIUS_KM * BBOX_PRUNE_RADIUS_FACTOR,
