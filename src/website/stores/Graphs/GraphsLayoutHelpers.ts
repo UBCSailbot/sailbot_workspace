@@ -61,19 +61,6 @@ export const moveGraph = (
 };
 
 /**
- * Create a vertical split by moving sourceId into the same group as targetId.
- * If targetId is already in a split group, sourceId is appended to it.
- * If targetId is standalone, a new split group [targetId, sourceId] is created.
- *
- * Enforces:
- * - Vertical-only (no nested split groups)
- * - No duplicate graph IDs
- *
- * Returns the original layout unchanged if:
- * - sourceId or targetId is not found
- * - both IDs already belong to the same layout item
- */
-/**
  * Move the layout item containing sourceId to a specific index position.
  * Gap index semantics: gap i = "insert before item[i]", gap N = "insert at end".
  * Gaps adjacent to the source item (sourceIndex and sourceIndex + 1) are no-ops.
@@ -120,6 +107,16 @@ export const extractGraph = (
   return newLayout;
 };
 
+/**
+ * Place sourceId next to targetId as a vertical split row. Capped at two graphs
+ * per row, so dropping onto a target that is already in a split group is a
+ * no-op.
+ *
+ * Returns the original layout unchanged if:
+ * - sourceId or targetId is not found
+ * - both IDs already belong to the same layout item
+ * - targetId is already in a 2-member split group
+ */
 export const splitGraph = (
   layout: Layout,
   sourceId: GraphId,
