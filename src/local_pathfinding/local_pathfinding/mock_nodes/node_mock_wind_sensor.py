@@ -80,7 +80,7 @@ class MockWindSensor(Node):
         self.add_on_set_parameters_callback(self._on_set_parameters)
 
     def mock_wind_sensor_callback(self):
-        aw_dir_deg, aw_speed_kmph = wcs.get_apparent_wind(
+        aw_dir_deg, aw_speed_kmph = wcs.tw_gc_to_aw_gc(
             self._tw_dir_deg,
             self._tw_speed_kmph,
             self._boat_heading_deg,

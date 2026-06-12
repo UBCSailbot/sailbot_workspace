@@ -59,8 +59,8 @@ def global_to_boat_coordinate(boat_heading_deg_gc: float, tw_dir_deg_gc: float):
     return cs.bound_to_180(tw_dir_deg_gc - boat_heading_deg_gc + 180.0)
 
 
-def get_true_wind(
-    aw_dir_deg_bc: float,
+def aw_gc_to_tw_gc(
+    aw_dir_deg_gc: float,
     aw_speed_kmph: float,
     boat_heading_deg_gc: float,
     boat_speed_kmph: float,
@@ -69,19 +69,18 @@ def get_true_wind(
     """Compute the true wind vector from apparent wind and boat motion.
 
     Args:
-        aw_dir_deg_bc (float): Apparent wind direction in degrees (-180, 180]. This is the wind
-            as measured relative to the boat (sensor reading).
+        aw_dir_deg_gc (float): Apparent wind direction in degrees (-180, 180].
         aw_speed_kmph (float): Apparent wind speed in km/h.
         boat_heading_deg_gc (float): Boat heading in degrees (-180, 180].
         boat_speed_kmph (float): Boat speed over ground in km/h.
         ret_rad (bool): If True, return wind direction in radians. If False, return in degrees.
         NOTE: All the angles are with respect to global true bearing. It is the
-        responsibility of the caller to ensure this. Particularly, the apparent wind read by the
-        sensor is in boat coordinates
+        responsibility of the caller to ensure this.
 
     Returns:
-        tuple[float, float]: (tw_dir_rad, tw_speed_kmph)
-            - tw_dir_gc: true wind direction in radians within (-pi, pi].
+        tuple[float, float]: (tw_dir_gc, tw_speed_kmph)
+            - tw_dir_gc: true wind direction in radians within (-pi, pi] if ret_rad = True,
+            otherwise degrees
             - tw_speed_kmph: true wind speed in km/h
         If the resulting vector magnitude is effectively zero (<= FLOATING_POINT_ERROR_THRESHOLD),
         returns (0.0, 0.0). NOTE: The caller is responsible for handling this case, otherwise the
@@ -91,12 +90,12 @@ def get_true_wind(
         The function computes vector components in an east/north frame, subtracting the boat
         motion from the apparent wind to obtain the true wind.
     """
-    aw_dir_rad_bc = math.radians(aw_dir_deg_bc)
+    aw_dir_rad_gc = math.radians(aw_dir_deg_gc)
 
     # boat wind is in the direction of the boat heading (reverse of boat heading)
     bw_dir_rad_gc = math.radians(cs.bound_to_180(boat_heading_deg_gc + 180))
-    aw_east_kmph = aw_speed_kmph * math.sin(aw_dir_rad_bc)
-    aw_north_kmph = aw_speed_kmph * math.cos(aw_dir_rad_bc)
+    aw_east_kmph = aw_speed_kmph * math.sin(aw_dir_rad_gc)
+    aw_north_kmph = aw_speed_kmph * math.cos(aw_dir_rad_gc)
 
     bw_east_kmph = boat_speed_kmph * math.sin(bw_dir_rad_gc)
     bw_north_kmph = boat_speed_kmph * math.cos(bw_dir_rad_gc)
@@ -117,7 +116,7 @@ def get_true_wind(
     return ZERO_VECTOR_CONSTANT, 0.0
 
 
-def get_apparent_wind(
+def tw_gc_to_aw_gc(
     tw_dir_deg_gc: float,
     tw_speed_kmph: float,
     boat_heading_deg_gc: float,
@@ -136,12 +135,17 @@ def get_apparent_wind(
         responsibility of the caller to ensure this.
 
     Returns:
-        tuple[float, float]: (aw_dir_rad, aw_speed_kmph)
-            - aw_dir_bc: apparent wind direction in radians within (-pi, pi]
+        tuple[float, float]: (aw_dir_gc, aw_speed_kmph)
+            - aw_dir_gc: apparent wind direction in radians within (-pi, pi] if ret_rad = True,
+            otherwise degrees.
             - aw_speed_kmph: apparent wind speed in km/h.
         If the resulting vector magnitude is effectively zero (<= FLOATING_POINT_ERROR_THRESHOLD),
         returns (0.0, 0.0). NOTE: The caller is responsible for handling this case, otherwise the
         calculations will break down.
+
+    Notes:
+        The function computes vector components in an east/north frame, summing the boat
+        motion with the true wind to obtain the apparent wind.
     """
     tw_dir_rad_gc = math.radians(tw_dir_deg_gc)
 
@@ -157,15 +161,15 @@ def get_apparent_wind(
     aw_north_kmph = tw_north_kmph + bw_north_kmph
 
     aw_speed_kmph = math.hypot(aw_east_kmph, aw_north_kmph)
-    aw_dir_rad_bc = math.atan2(aw_east_kmph, aw_north_kmph)
+    aw_dir_rad_gc = math.atan2(aw_east_kmph, aw_north_kmph)
 
     if ret_rad:
-        aw_dir_bc = aw_dir_rad_bc
+        aw_dir_gc = aw_dir_rad_gc
     else:
-        aw_dir_bc = math.degrees(aw_dir_rad_bc)
+        aw_dir_gc = math.degrees(aw_dir_rad_gc)
 
     if aw_speed_kmph > FLOATING_POINT_ERROR_THRESHOLD:
-        return aw_dir_bc, aw_speed_kmph
+        return aw_dir_gc, aw_speed_kmph
     return ZERO_VECTOR_CONSTANT, 0.0
 
 

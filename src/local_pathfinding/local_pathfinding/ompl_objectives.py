@@ -303,7 +303,7 @@ def get_sailing_objective(
         boat_heading_deg_gc, aw_direction_deg_bc
     )
 
-    tw_dir_rad, tw_speed_kmph = wcs.get_true_wind(
+    tw_dir_rad, tw_speed_kmph = wcs.aw_gc_to_tw_gc(
         apparent_wind_direction_degrees_global_coordinates,
         aw_speed_kmph,
         boat_heading_deg_gc,

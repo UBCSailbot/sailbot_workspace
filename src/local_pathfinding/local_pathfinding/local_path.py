@@ -15,7 +15,7 @@ import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.obstacles as ob
 from local_pathfinding.ompl_path import OMPLPath
-from local_pathfinding.wind_coord_systems import Wind, get_true_wind
+from local_pathfinding.wind_coord_systems import Wind, aw_gc_to_tw_gc, boat_to_global_coordinate
 
 WIND_SPEED_CHANGE_THRESH_PROP = 0.3
 WIND_SPEED_CHANGE_THRESH_OFFSET_KMPH = 2.0
@@ -223,8 +223,9 @@ class LocalPathState:
         if not filtered_wind_sensor:
             raise ValueError("filtered_wind_sensor must not be None")
         current_aw = Wind(filtered_wind_sensor.speed.speed, filtered_wind_sensor.direction)
-        tw_dir_deg, tw_speed_kmph = get_true_wind(
-            aw_dir_deg_bc=current_aw.dir_deg,
+        current_aw_dir_deg_gc = boat_to_global_coordinate(self.heading, current_aw.dir_deg)
+        tw_dir_deg, tw_speed_kmph = aw_gc_to_tw_gc(
+            aw_dir_deg_gc=current_aw_dir_deg_gc,
             aw_speed_kmph=current_aw.speed_kmph,
             boat_heading_deg_gc=self.heading,
             boat_speed_kmph=self.speed,
@@ -602,8 +603,12 @@ class LocalPath:
 
         new_tw = None
         if inputs.gps is not None:
-            tw_dir_deg, tw_speed_kmph = get_true_wind(
-                aw_dir_deg_bc=new_aw.dir_deg,
+            new_aw_dir_deg_gc = boat_to_global_coordinate(
+                inputs.gps.heading.heading,
+                new_aw.dir_deg
+            )
+            tw_dir_deg, tw_speed_kmph = aw_gc_to_tw_gc(
+                aw_dir_deg_gc=new_aw_dir_deg_gc,
                 aw_speed_kmph=new_aw.speed_kmph,
                 boat_heading_deg_gc=inputs.gps.heading.heading,
                 boat_speed_kmph=inputs.gps.speed.speed,

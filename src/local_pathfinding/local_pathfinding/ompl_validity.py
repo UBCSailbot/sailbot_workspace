@@ -94,7 +94,7 @@ class GoalProgressWindMotionValidator(ob.MotionValidator):
             boat_heading_deg_gc,
             aw_direction_deg_bc,
         )
-        tw_direction_rad_gc, _ = wcs.get_true_wind(
+        tw_direction_rad_gc, _ = wcs.aw_gc_to_tw_gc(
             aw_direction_deg_gc,
             aw_speed_kmph,
             boat_heading_deg_gc,
