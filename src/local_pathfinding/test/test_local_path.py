@@ -157,7 +157,7 @@ def set_filtered_wind_sensor_from_true_wind(inputs, true_wind):
         ret_rad=False,
     )
 
-    aw_dir_deg_bc = global_to_boat_coordinate(aw_dir_deg_gc)
+    aw_dir_deg_bc = global_to_boat_coordinate(inputs.gps.heading.heading, aw_dir_deg_gc)
     inputs.filtered_wind_sensor.speed.speed = aw_speed_kmph
     inputs.filtered_wind_sensor.direction = aw_dir_deg_bc
 
