@@ -57,25 +57,25 @@ def test_global_to_boat_coordinate(
 @pytest.mark.parametrize(
     '''
     aw_dir_deg_bc, aw_speed_kmph, boat_heading_deg_gc,
-    boat_speed_kmph, expected_tw_dir_rad, expected_tw_speed_kmph
+    boat_speed_kmph, expected_tw_dir_deg, expected_tw_speed_kmph
     ''',
     [
         (0, 0, 0, 0, 0, 0),
         (10, 0, 10, 10, 10, 10),
-        (179, 17, 179, 9, 179, 26),
-        (180, 17, 179, 9, 179.65, 26),
-        (140, 17, 45, 9, 111.06, 18.52),
-        (80, 5, -70, 8, -35.74, 4.44),
-        (70, 10.579, 180.0, 3.452, 89.04, 9.94),
-        (70, 10.600, 180.0, 3.518, 89.38, 9.96),
-        (70, 10.601, -79.198, 3.518, 56.64, 7.79),
-        (-8, 13.044, -79.198, 3.085, -19.75, 14.34),
-        (-8, 13.451, -52.021, 3.497, -16.65, 16.15),
-        (-31, 11.693, -52.021, 2.060, -34.10, 13.64),
-        (-37, 10.100, -71.758, 0.127, -37.40, 10.20),
-        (-16, 10.745, -71.758, 0.782, -19.31, 11.20),
-        (-15, 11.958, -71.765, 2.044, -22.45, 13.19),
-        (-14, 12.370, -71.765, 2.470, -22.67, 13.85),
+        (179, 17, 179, 9, -3.13, 8.00),
+        (180, 17, 179, 9, -1.00, 8.00),
+        (140, 17, 45, 9, 155.22, 11.64),
+        (80, 5, -70, 8, -40.94, 10.15),
+        (70, 10.579, 180.0, 3.452, -125.36, 12.20),
+        (70, 10.600, 180.0, 3.518, -125.66, 12.25),
+        (70, 10.601, -79.198, 3.518, -24.83, 12.25),
+        (-8, 13.044, -79.198, 3.085, -94.40, 16.10),
+        (-8, 13.451, -52.021, 3.497, -58.39, 16.92),
+        (-31, 11.693, -52.021, 2.060, -78.46, 13.50),
+        (-37, 10.100, -71.758, 0.127, -108.20, 10.19),
+        (-16, 10.745, -71.758, 0.782, -86.71, 11.50),
+        (-15, 11.958, -71.765, 2.044, -84.59, 13.94),
+        (-14, 12.370, -71.765, 2.470, -83.41, 13.94),
     ],
 )
 def test_get_true_wind_direction(
@@ -83,7 +83,7 @@ def test_get_true_wind_direction(
     aw_speed_kmph: float,
     boat_heading_deg_gc: float,
     boat_speed_kmph: float,
-    expected_tw_dir_rad: float,
+    expected_tw_dir_deg: float,
     expected_tw_speed_kmph: float,
 ):
     tw_dir_rad, tw_speed_kmph = wcs.get_true_wind(
@@ -94,7 +94,7 @@ def test_get_true_wind_direction(
     tw_dir_deg = math.degrees(tw_dir_rad)
 
     assert tw_dir_deg == pytest.approx(
-        expected=expected_tw_dir_rad, abs=1e-1
+        expected=expected_tw_dir_deg, abs=1e-1
     ) and tw_speed_kmph == pytest.approx(expected=expected_tw_speed_kmph, abs=1e-1)
 
 
@@ -105,10 +105,10 @@ def test_get_true_wind_direction(
     ''',
     [
         (0, 0, 0, 0, 0, 0),
-        (45.0, 3.0, 225.0, 3.0, 45.0, 6.0),
-        (45.0, 3.0, 45.0, 3.0, 0.0, 0.0),
+        (45.0, 3.0, 225.0, 3.0, 180.0, 6.0),
+        (45.0, 3.0, 45.0, 3.0, -45.0, 0.0),
         (180.0, 10.0, 0.0, 5.0, 180.0, 15.0),
-        (90.0, 8.0, -90.0, 8.0, 90.0, 16.0),
+        (90.0, 8.0, -90.0, 8.0, 180.0, 16.0),
     ],
 )
 def test_get_apparent_wind_direction(
@@ -116,18 +116,18 @@ def test_get_apparent_wind_direction(
     tw_speed_kmph: float,
     boat_heading_deg_gc: float,
     boat_speed_kmph: float,
-    expected_aw_dir_rad_bc: float,
+    expected_aw_dir_deg_bc: float,
     expected_aw_speed_kmph: float,
 ):
-    aw_dir_rad, aw_speed_kmph = wcs.get_apparent_wind(
+    aw_dir_rad_bc, aw_speed_kmph = wcs.get_apparent_wind(
         tw_dir_deg_gc, tw_speed_kmph, boat_heading_deg_gc, boat_speed_kmph
     )
 
     # Convert radians to degrees for easier comparison
-    aw_dir_deg = math.degrees(aw_dir_rad)
+    aw_dir_deg_bc = math.degrees(aw_dir_rad_bc)
 
-    assert aw_dir_deg == pytest.approx(
-        expected=expected_aw_dir_rad_bc, abs=1e-2
+    assert aw_dir_deg_bc == pytest.approx(
+        expected=expected_aw_dir_deg_bc, abs=1e-2
     ) and aw_speed_kmph == pytest.approx(expected=expected_aw_speed_kmph, abs=1e-2)
 
 
