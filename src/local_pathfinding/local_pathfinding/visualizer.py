@@ -203,24 +203,24 @@ class VisualizerState:
 
         # Wind Vectors
         boat_speed_kmph = self.latest_msg.gps.speed.speed
-        boat_heading_deg = self.latest_msg.gps.heading.heading
+        boat_heading_deg_gc = self.latest_msg.gps.heading.heading
         aw_speed_kmph = self.latest_msg.filtered_wind_sensor.speed.speed
-        aw_dir_boat_deg = self.latest_msg.filtered_wind_sensor.direction
+        aw_dir_deg_bc = self.latest_msg.filtered_wind_sensor.direction
 
         # Convert Apparent wind to global frame
-        aw_dir_global_deg = wcs.boat_to_global_coordinate(boat_heading_deg, aw_dir_boat_deg)
+        aw_dir_global_deg = wcs.boat_to_global_coordinate(boat_heading_deg_gc, aw_dir_deg_bc)
         aw_dir_global_rad = math.radians(aw_dir_global_deg)
         # Compute apparent wind vector (in global frame)
         self.aw_vector_kmph = cs.polar_to_cartesian(aw_dir_global_rad, aw_speed_kmph)
 
         # True wind from apparent
         tw_angle_rad, tw_speed_kmph = wcs.get_true_wind(
-            aw_dir_global_deg, aw_speed_kmph, boat_heading_deg, boat_speed_kmph
+            aw_dir_deg_bc, aw_speed_kmph, boat_heading_deg_gc, boat_speed_kmph
         )
         self.tw_vector_kmph = cs.polar_to_cartesian(tw_angle_rad, tw_speed_kmph)
 
         # Boat wind vector
-        boat_wind_radians = math.radians(cs.bound_to_180(boat_heading_deg + 180))
+        boat_wind_radians = math.radians(cs.bound_to_180(boat_heading_deg_gc + 180))
         self.bw_vector_kmph = cs.polar_to_cartesian(boat_wind_radians, boat_speed_kmph)
 
         # State space
