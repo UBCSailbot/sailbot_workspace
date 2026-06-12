@@ -105,10 +105,10 @@ def test_get_true_wind_direction(
     ''',
     [
         (0, 0, 0, 0, 0, 0),
-        (45.0, 3.0, 225.0, 3.0, 180.0, 6.0),
-        (45.0, 3.0, 45.0, 3.0, -45.0, 0.0),
-        (180.0, 10.0, 0.0, 5.0, 180.0, 15.0),
-        (90.0, 8.0, -90.0, 8.0, 180.0, 16.0),
+        (45.0, 3.0, 225.0, 3.0, 0, 6.0),
+        (45.0, 3.0, 45.0, 3.0, 0, 0.0),
+        (180.0, 10.0, 0.0, 5.0, 0, 15.0),
+        (90.0, 8.0, -90.0, 8.0, 0, 16.0),
     ],
 )
 def test_get_apparent_wind_direction(
@@ -153,15 +153,13 @@ def test_mock_wind_sensor_pipeline(
     expected_aw_direction_deg_bc: float,
     expected_aw_speed_kmph: float,
 ):
-    aw_dir_deg, aw_speed_kmph = wcs.get_apparent_wind(
+    aw_dir_deg_bc, aw_speed_kmph = wcs.get_apparent_wind(
         tw_dir_deg_gc, tw_speed_kmph, boat_heading_deg_gc, boat_speed, ret_rad=False
     )
 
-    aw_dir_boat_coord_deg = wcs.global_to_boat_coordinate(boat_heading_deg_gc, aw_dir_deg)
-
-    assert aw_dir_boat_coord_deg == pytest.approx(
+    assert aw_dir_deg_bc == pytest.approx(
         expected=expected_aw_direction_deg_bc, abs=1
-    ), f"Apparent wind direction in boat frame mismatch: {aw_dir_boat_coord_deg} != {expected_aw_direction_deg_bc}"  # noqa
+    ), f"Apparent wind direction in boat frame mismatch: {aw_dir_deg_bc} != {expected_aw_direction_deg_bc}"  # noqa
     assert aw_speed_kmph == pytest.approx(
         expected=expected_aw_speed_kmph, abs=1
     ), f"Apparent wind speed mismatch: {aw_speed_kmph} != {expected_aw_speed_kmph}"
