@@ -13,6 +13,8 @@ from local_pathfinding.ompl_path import MAX_SOLVER_RUN_TIME_SEC
 
 GLOBAL_WAYPOINT_REACHED_THRESH_M = 300
 REALLY_FAR_M = 100000000
+GPS_TIMEOUT_SEC = 120.0
+NANOSEC_PER_SEC = 1_000_000_000
 
 
 def main(args=None):
@@ -133,7 +135,11 @@ class Sailbot(Node):
         self.desired_heading = None
 
         # attributes
-        self.local_path = LocalPath(parent_logger=self.get_logger())
+        self.gps_timeout_start_sec = self._now_sec()
+        self.local_path = LocalPath(
+            parent_logger=self.get_logger(),
+            now_sec=self._now_sec,
+        )
         self.target_lp_wp_index = 1
         self.global_waypoint_index = -1
         self.saved_target_global_waypoint = None
@@ -150,6 +156,10 @@ class Sailbot(Node):
             self.land_multi_polygon = test_plan.land
             self.get_logger().info("Loaded mock land data.")
 
+    def _now_sec(self) -> float:
+        """Return the current ROS clock time in seconds."""
+        return self.get_clock().now().nanoseconds / NANOSEC_PER_SEC
+
     # subscriber callbacks
     def ais_ships_callback(self, msg: ci.AISShips):
         self.get_logger().debug(f"Received data from {self.ais_ships_sub.topic}: {msg}")
@@ -158,6 +168,7 @@ class Sailbot(Node):
     def gps_callback(self, msg: ci.GPS):
         self.get_logger().debug(f"Received data from {self.gps_sub.topic}: {msg}")
         self.gps = msg
+        self.gps_timeout_start_sec = self._now_sec()
 
     def global_path_callback(self, msg: ci.Path):
         self.get_logger().debug(
@@ -174,6 +185,20 @@ class Sailbot(Node):
     # publisher callbacks
     def desired_heading_callback(self):
         """Get and publish the desired heading."""
+
+        if self._has_gps_timed_out():
+            msg = ci.DesiredHeading()
+            msg.heading.heading = 0.0
+            msg.sail = False
+
+            self.desired_heading = msg
+
+            self.get_logger().warning(
+                f"GPS data has not been received for more than {GPS_TIMEOUT_SEC:.0f} seconds. "
+                f"Publishing to {self.desired_heading_pub.topic}: {msg.heading.heading}"
+            )
+            self.desired_heading_pub.publish(msg)
+            return  # should not continue, try again next loop
 
         if not self._all_subs_active():
             self._log_inactive_subs_warning()
@@ -396,6 +421,12 @@ class Sailbot(Node):
             and self.global_path is not None
             and self.filtered_wind_sensor is not None
         )
+
+    def _has_gps_timed_out(self) -> bool:
+        """Checks if we haven't received a GPS message for more than 2 minutes."""
+
+        elapsed_sec = self._now_sec() - self.gps_timeout_start_sec
+        return elapsed_sec > GPS_TIMEOUT_SEC
 
     def _log_inactive_subs_warning(self):
         """

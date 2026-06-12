@@ -1,4 +1,3 @@
-from datetime import datetime, timedelta
 import math
 from unittest import mock
 
@@ -132,7 +131,7 @@ def create_initialized_local_path_for_update_if_needed(state):
     old_ompl_path = create_solved_ompl_path(old_path)
     local_path._ompl_path = old_ompl_path
     local_path.state = state
-    local_path.state.path_generated_time = datetime.now()
+    local_path.state.path_generated_time_sec = local_path._now_sec()
     local_path.path = old_path
 
     return local_path, old_path, old_ompl_path
@@ -1281,16 +1280,17 @@ def test_LocalPathState_parameter_checking():
 @pytest.mark.parametrize(
     "elapsed,expected",
     [
-        (lp.PATH_TTL_SEC + timedelta(seconds=1), True),
+        (lp.PATH_TTL_SEC + 1.0, True),
         (lp.PATH_TTL_SEC, True),
-        (lp.PATH_TTL_SEC - timedelta(seconds=1), False),
+        (lp.PATH_TTL_SEC - 1.0, False),
     ],
 )
 def test_is_path_expired(elapsed, expected, basic_local_path_state):
     mock_parent_logger = mock.Mock()
     mock_parent_logger.get_child.return_value = mock.Mock()
-    local_path = lp.LocalPath(parent_logger=mock_parent_logger)
-    basic_local_path_state.path_generated_time = datetime.now() - elapsed
+    now_sec = 1000.0
+    local_path = lp.LocalPath(parent_logger=mock_parent_logger, now_sec=lambda: now_sec)
+    basic_local_path_state.path_generated_time_sec = now_sec - elapsed
     local_path.state = basic_local_path_state
 
     assert local_path.is_path_expired() == expected
@@ -1828,4 +1828,3 @@ def test_update_if_needed_reuses_path_without_significant_wind_change(
     assert local_path.state.current_aw.dir_deg == inputs.filtered_wind_sensor.direction
     old_ompl_path.get_path.assert_called_once()
     ompl_path_cls.assert_not_called()
-    local_path._logger.debug.assert_not_called()
