@@ -101,7 +101,7 @@ def test_get_true_wind_direction(
 @pytest.mark.parametrize(
     '''
     tw_dir_deg_gc, tw_speed_kmph, boat_heading_deg_gc,
-    boat_speed_kmph, expected_aw_dir_rad_bc, expected_aw_speed_kmph
+    boat_speed_kmph, expected_aw_dir_deg_bc, expected_aw_speed_kmph
     ''',
     [
         (0, 0, 0, 0, 0, 0),
