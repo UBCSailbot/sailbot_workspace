@@ -44,5 +44,4 @@ BatteriesSchema.set('toJSON', {
   },
 });
 
-export default mongoose.models.Batteries ||
-  mongoose.model<Batteries>('Batteries', BatteriesSchema);
+export default (mongoose.models['Batteries'] as mongoose.Model<Batteries> | undefined) ?? mongoose.model<Batteries>('Batteries', BatteriesSchema);

@@ -6,7 +6,9 @@ ais_ships
 mock_ais_ships
 batteries
 desired_heading
-data_sensors
+temp_sensors
+ph_sensors
+salinity_sensors
 global_path
 gps
 mock_gps

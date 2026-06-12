@@ -1,21 +1,19 @@
 """
 Mock class for the GPS. Publishes basic GPS data to the ROS network.
-
-USES constants defined in mock_nodes.shared_constants
 """
 
 import math
 from typing import List
 
-import custom_interfaces.msg as ci
 import rclpy
 from geopy.distance import great_circle
 from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
 from rclpy.parameter import Parameter
+from test_plans.test_plan import TestPlan
 
+import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
-import local_pathfinding.mock_nodes.shared_utils as sc
 from local_pathfinding.ompl_objectives import TimeObjective
 
 SECONDS_PER_HOUR = 3600
@@ -23,7 +21,7 @@ SECONDS_PER_HOUR = 3600
 
 class MockGPS(Node):
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the MockGPS class. The class is used to publish mock mock gps
         data to the ROS network.
 
@@ -31,33 +29,39 @@ class MockGPS(Node):
             Node (Node): The ROS node that the class will run on.
 
         Attributes:
-            __mock_gps_timer (Timer): Timer to call the mock gps callback function.
-            __mock_gps_publisher (Publisher): Publisher for the gps data.
-            __mean_speed_kmph (HelperSpeed): Constant speed of the boat.
-            __current_location (HelperLatLon): Current location of the boat.
-            __mean_heading (HelperHeading): Constant heading of the boat.
+            _mock_gps_timer (Timer): Timer to call the mock gps callback function.
+            _mock_gps_publisher (Publisher): Publisher for the gps data.
+            _mean_speed_kmph (HelperSpeed): Constant speed of the boat.
+            _current_location (HelperLatLon): Current location of the boat.
+            _mean_heading (HelperHeading): Constant heading of the boat.
         """
         super().__init__("mock_gps")
 
-        # Declare ROS parameters (qos depth and publish period).
         # tw_speed_kmph and tw_dir_deg must be loaded via wind_params.sh script.
         # Do NOT use ros2 param set for these values as it causes mismatch with mock_wind_sensor.
         self.declare_parameters(
             namespace="",
             parameters=[
                 ("pub_period_sec", rclpy.Parameter.Type.DOUBLE),
-                ("tw_speed_kmph", sc.TW_SPEED_KMPH),
-                ("tw_dir_deg", sc.TW_DIRECTION_DEG),
+                ("tw_speed_kmph", rclpy.Parameter.Type.DOUBLE),
+                ("tw_dir_deg", rclpy.Parameter.Type.INTEGER),
+                ("test_plan", rclpy.Parameter.Type.STRING),
             ],
+        )
+
+        test_plan = TestPlan(self.get_parameter("test_plan").get_parameter_value().string_value)
+        gps_data = test_plan.gps
+
+        self._tw_speed_kmph = test_plan.tw_speed_kmph
+        self._tw_dir_deg = test_plan.tw_dir_deg
+        self._mean_speed_kmph = ci.HelperSpeed(speed=gps_data.speed.speed)
+        self._heading_deg = ci.HelperHeading(heading=gps_data.heading.heading)
+        self._current_location = ci.HelperLatLon(
+            latitude=gps_data.lat_lon.latitude, longitude=gps_data.lat_lon.longitude
         )
 
         self.pub_period_sec = (
             self.get_parameter("pub_period_sec").get_parameter_value().double_value
-        )
-
-        # Mock GPS timer
-        self._mock_gps_timer = self.create_timer(
-            timer_period_sec=self.pub_period_sec, callback=self.mock_gps_callback
         )
 
         # Mock GPS publisher initialization
@@ -75,23 +79,18 @@ class MockGPS(Node):
             qos_profile=10,
         )
 
-        self._mean_speed_kmph = sc.MEAN_SPEED
-        self._current_location = sc.START_POINT
-        self._heading_deg = sc.START_HEADING
-
-        # Store true wind parameters
-        self._tw_speed_kmph = (
-            self.get_parameter("tw_speed_kmph").get_parameter_value().double_value
+        # Mock GPS timer
+        self._mock_gps_timer = self.create_timer(
+            timer_period_sec=self.pub_period_sec, callback=self.mock_gps_callback
         )
-        self._tw_dir_deg = self.get_parameter("tw_dir_deg").get_parameter_value().integer_value
 
+        # Parameter Event Handler (Parameters can change over the life of the simulation)
         self.add_on_set_parameters_callback(self._on_set_parameters)
 
     def mock_gps_callback(self) -> None:
-        """Callback function for the mock GPS timer. Publishes mock gps data to the ROS
-        network.
+        """Updates boat speed based on current heading and true wind.
+        Publishes mock gps data.
         """
-        # Update boat speed based on current heading and true wind
         self.update_speed()
         self.get_next_location()
 
@@ -111,7 +110,8 @@ class MockGPS(Node):
         self._gps_pub.publish(msg)
 
     def _on_set_parameters(self, params: List[Parameter]) -> SetParametersResult:
-        """ROS2 parameter update callback.
+        """This callback function serves as a guard to ensure values entered with `ros2 param set`
+        are valid before they are assigned to the parameters.
 
         Applies updates to true wind speed/direction. Values take effect on the next publish tick.
 
@@ -167,7 +167,7 @@ class MockGPS(Node):
             f"Distance Travelled: {cs.km_to_meters(distance_km):.2f} m, direction: {self._heading_deg.heading:.1f} deg,  speed: {self._mean_speed_kmph.speed:.2f} kmph"  # noqa
         )
 
-    def desired_heading_callback(self, msg: ci.DesiredHeading):
+    def desired_heading_callback(self, msg: ci.DesiredHeading) -> None:
         """Callback for topic desired heading
 
         Args:

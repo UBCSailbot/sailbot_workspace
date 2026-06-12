@@ -1,8 +1,10 @@
 # Docker Images
 
-A table detailing the Docker images used to create the Dev Container can be found below.
+A table detailing the Docker images used to create the Dev Container can be
+found below.
 Click on an image to learn more about its features and how to update it.
 
+<!-- markdownlint-disable MD013 -->
 | Image                                         | Parent Image                                        | Source Code                                                 | Why it is Rebuilt                | Where it is Built                      |
 | --------------------------------------------- | --------------------------------------------------- | ----------------------------------------------------------- | -------------------------------- | -------------------------------------- |
 | [`pre-base`][pre-base]{target=_blank}         | [Ubuntu 22.04][Ubuntu Image]{target=_blank}         | [`base-dev.Dockerfile`][base-dev.Dockerfile]{target=_blank} | To install ROS or OMPL           | Personal computer                      |
@@ -12,8 +14,10 @@ Click on an image to learn more about its features and how to update it.
 | [Dev Container][Dev Container]{target=_blank} | [`dev`][dev]{target=_blank}                         | [`Dockerfile`][Dockerfile]{target=_blank}                   | To configure the Dev Container   | VS Code                                |
 | [`docs`][docs]{target=_blank}                 | [`mkdocs-material`][mkdocs-material]{target=_blank} | [`docs.Dockerfile`][docs.Dockerfile]{target=_blank}         | To install and run docs site     | VS Code ([optional][o]{target=_blank}) |
 | [`website`][website]{target=_blank}           | [`javascript-node`][javascript-node]{target=_blank} | [`website.Dockerfile`][website.Dockerfile]{target=_blank}   | To install and run website       | VS Code ([optional][o]{target=_blank}) |
+<!-- markdownlint-enable MD013 -->
 
 <!-- Images URLs -->
+<!-- markdownlint-disable MD013 -->
 [Ubuntu image]: <https://hub.docker.com/_/ubuntu>
 [pre-base]: <https://github.com/UBCSailbot/sailbot_workspace/tree/main/.devcontainer/base-dev>
 [base]: <https://github.com/UBCSailbot/sailbot_workspace/tree/main/.devcontainer/base-dev>
@@ -30,6 +34,7 @@ Click on an image to learn more about its features and how to update it.
 [docs.Dockerfile]: <https://github.com/UBCSailbot/sailbot_workspace/blob/main/.devcontainer/docs/docs.Dockerfile>
 [website.Dockerfile]: <https://github.com/UBCSailbot/sailbot_workspace/blob/main/.devcontainer/website/website.Dockerfile>
 [Dockerfile]: <https://github.com/UBCSailbot/sailbot_workspace/blob/main/.devcontainer/Dockerfile>
+<!-- markdownlint-enable MD013 -->
 
 <!-- Miscellaneous -->
 [o]: ../usage/how_to.md#run-optional-programs

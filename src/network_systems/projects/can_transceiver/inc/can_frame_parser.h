@@ -111,7 +111,9 @@ enum class CanId : canid_t {
     PRESSURE_14           = 0x13E,
     PRESSURE_SENSOR_END   = 0x13F,
     GENERIC_SENSOR_START  = 0x140,
-    GENERIC_SENSOR_END    = 0x1FF
+    GENERIC_SENSOR_END    = 0x1FF,
+    DEBUG_START           = 0x200,
+    DEBUG_END             = 0x2FF
 };
 
 inline bool isValidCanId(canid_t id)
@@ -135,7 +137,9 @@ inline bool isValidCanId(canid_t id)
             id <= static_cast<canid_t>(CanId::PRESSURE_SENSOR_END)) ||
 
            (id >= static_cast<canid_t>(CanId::GENERIC_SENSOR_START) &&
-            id <= static_cast<canid_t>(CanId::GENERIC_SENSOR_END));
+            id <= static_cast<canid_t>(CanId::GENERIC_SENSOR_END)) ||
+
+           (id >= static_cast<canid_t>(CanId::DEBUG_START) && id <= static_cast<canid_t>(CanId::DEBUG_END));
 }
 
 /**

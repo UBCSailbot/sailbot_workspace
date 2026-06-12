@@ -4,17 +4,24 @@ import math
 
 import numpy as np
 from ompl import base as ob
+from ompl import geometric as og
 from scipy.interpolate import RegularGridInterpolator
 
 import local_pathfinding.coord_systems as cs
+from local_pathfinding.ompl_validity import (
+    get_segment_wind_angle_rad_bc,
+    motion_makes_goal_progress,
+)
 import local_pathfinding.wind_coord_systems as wcs
 
 UPWIND_COST_MULTIPLIER = 1.0
 DOWNWIND_COST_MULTIPLIER = 1.0
 ZERO_SPEED_COST = 1.0
-ACCEPTABLE_COST_THRESHOLD = 0.0
-WIND_OBJECTIVE_WEIGHT = 1.0
-TIME_OBJECTIVE_WEIGHT = 1.0
+ACCEPTABLE_COST_THRESHOLD = 0.85
+WIND_OBJECTIVE_WEIGHT = 0.85
+TIME_OBJECTIVE_WEIGHT = 0.15
+NO_GO_ZONE = math.pi / 4
+WIND_COST_SIN_EXPONENT = 80
 
 
 #               Estimated Boat Speeds (kmph) as function of True Wind Speed (kmph)
@@ -37,7 +44,7 @@ TIME_OBJECTIVE_WEIGHT = 1.0
 # | 75.0  |  0.0  |  8.7  |  9.6  |  9.8  | 10.0  | 10.0  | 10.0 | 10.0 | 10.0 | 10.0 | 10.0 |
 # -------------------------------------------------------------------------------------------
 
-BOAT_SPEEDS = np.array(
+BOAT_SPEEDS_KMPH = np.array(
     [
         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
         [0.0, 5.0, 5.4, 5.8, 6.1, 6.0, 5.6, 5.2, 4.6, 4.0, 3.6],
@@ -52,32 +59,77 @@ BOAT_SPEEDS = np.array(
     ]
 )
 
-TRUE_WIND_SPEEDS = [0.0, 11.1, 14.8, 18.5, 22.2, 25.9, 29.6, 37.0, 55.0, 75.0]
-SAILING_ANGLES = [0, 45, 50, 60, 75, 90, 110, 120, 135, 150, 180]
+TW_SPEEDS_KMPH_GC = [0.0, 11.1, 14.8, 18.5, 22.2, 25.9, 29.6, 37.0, 55.0, 75.0]
+# Absolute angle between the path segment bearing and true wind direction, bounded by [0, 180].
+SAILING_ANGLES_DEG_GC = [0, 45, 50, 60, 75, 90, 110, 120, 135, 150, 180]
 
-ESTIMATED_TOP_BOAT_SPEED = np.max(BOAT_SPEEDS)
+ESTIMATED_TOP_BOAT_SPEED = np.max(BOAT_SPEEDS_KMPH)
 
 
-class WindObjective(ob.OptimizationObjective):
-    """The WindObjective assigns a high cost to any path segment which is oriented directly
-    (or almost directly) upwind or downwind.
+class GoalDirectionObjective(ob.OptimizationObjective):
+    """The GoalDirectionObjective assigns an infinite cost to path segments that move away
+    from the goal.
 
-    Attributes:
-        true_wind_direction (float): The direction of the true wind in radians (-pi, pi]
+    Progress is measured by projecting the segment vector onto a goal direction vector. This
+    allows sideways motion, such as tacking or obstacle avoidance, as long as the segment does
+    not move backward relative to the goal direction.
     """
 
     def __init__(
         self,
-        space_information,
-        true_wind_direction_radians: float,
-    ):
-        super().__init__(space_information)
-        self.true_wind_direction_radians = true_wind_direction_radians
+        space_information: ob.SpaceInformation,
+        goal_position_in_xy: cs.XY,
+    ) -> None:
+        self.goal_position_in_xy = goal_position_in_xy
+        ob.OptimizationObjective.__init__(self, space_information)
 
     def motionCost(self, s1: ob.SE2StateSpace, s2: ob.SE2StateSpace) -> ob.Cost:
-        """Defines the cost of a path segment, from s1 to s2, with regards to the direction of the
-        segment and the wind. The closer the segment is to pointing upwind or downwind the higher
-        the motion cost.
+        """Defines the cost of a path segment, from s1 to s2, based on whether the segment
+           makes progress toward the goal.
+
+        The segment vector is dotted with the direction from s1 to the goal. If the projection
+        is negative beyond GOAL_PROGRESS_TOLERANCE, the segment is moving away from the goal
+        and receives infinite cost. Otherwise, the segment receives zero additional cost.
+
+        Args:
+            s1 (SE2StateInternal): The start of the path segment
+            s2 (SE2StateInternal): The end of the path segment
+
+        Returns:
+            ob.Cost: The cost of the path segment from s1 to s2
+        """
+
+        return (
+            ob.Cost(0)
+            if motion_makes_goal_progress(s1, s2, self.goal_position_in_xy)
+            else ob.Cost(float("inf"))
+        )
+
+
+class WindObjective(ob.OptimizationObjective):
+    """Optimization objective that scores path segments by wind alignment.
+
+    The hard wind no-go rejection is handled by `GoalProgressWindMotionValidator`; this objective
+    keeps wind alignment in the optimization cost so the planner still prefers better sailing
+    angles among valid motions.
+
+    Attributes:
+        tw_direction_rad_gc (float): Direction of true wind in global coordinate radians (-pi, pi]
+    """
+
+    def __init__(
+        self,
+        space_information: ob.SpaceInformation,
+        tw_direction_rad_gc: float,
+    ) -> None:
+        super().__init__(space_information)
+        self.tw_direction_rad_gc = tw_direction_rad_gc
+
+    def motionCost(self, s1: ob.SE2StateSpace, s2: ob.SE2StateSpace) -> ob.Cost:
+        """Return the wind-alignment cost for the segment from `s1` to `s2`.
+
+        Segments closer to directly upwind or downwind receive higher cost. Segments inside the
+        no-go zone receive max wind cost here and are also rejected by the motion validator.
 
         Args:
             s1 (SE2StateInternal): The starting point of the path segment
@@ -88,34 +140,31 @@ class WindObjective(ob.OptimizationObjective):
         """
         s1_xy = cs.XY(s1.getX(), s1.getY())
         s2_xy = cs.XY(s2.getX(), s2.getY())
-        return ob.Cost(
-            WindObjective.wind_direction_cost(s1_xy, s2_xy, self.true_wind_direction_radians)
-        )
+        return ob.Cost(WindObjective.wind_direction_cost(s1_xy, s2_xy, self.tw_direction_rad_gc))
 
     @staticmethod
-    def wind_direction_cost(s1: cs.XY, s2: cs.XY, tw_direction_rad: float) -> float:
-        """Returns a high cost when the path segment from s1 to s2 is pointing directly
-           (or close to directly) upwind or downwind.
+    def wind_direction_cost(s1: cs.XY, s2: cs.XY, tw_direction_rad_gc: float) -> float:
+        """Compute a wind-alignment cost for a path segment.
 
         Args:
             s1 (cs.XY): The start point of the path segment
             s2 (cs.XY): The end point of the path segment
-            tw_direction_rad (float): The direction of the true wind in radians, (-pi, pi]
+            tw_direction_rad_gc (float): The direction of the true wind in radians, (-pi, pi]
 
         Returns:
-            float: The cost the path segment from s1 to s2, in the interval [0, 1]
+            float: The cost of the path segment from s1 to s2, in the interval [0, 1].
         """
-        segment_true_bearing_rad = cs.get_path_segment_true_bearing(s1, s2, rad=True)
-        tw_angle_rad = abs(wcs.get_true_wind_angle(segment_true_bearing_rad, tw_direction_rad))
-        cos_angle = math.cos(tw_angle_rad)
-
-        # The target point of sail (POS) is a beam reach for max speed and stability
-        # A beam reach is when the true wind direction is perpendicular to the heading of the boat
-        # That is why we assign the min cost of 0 to any segment that corresponds to a beam reach
-        if cos_angle > 0:
-            return UPWIND_COST_MULTIPLIER * cos_angle
-        else:
-            return DOWNWIND_COST_MULTIPLIER * abs(cos_angle)
+        segment_wind_angle_rad_bc = get_segment_wind_angle_rad_bc(
+            s1,
+            s2,
+            tw_direction_rad_gc,
+        )
+        if (
+            segment_wind_angle_rad_bc <= NO_GO_ZONE
+            or segment_wind_angle_rad_bc >= math.pi - NO_GO_ZONE
+        ):
+            return 1.0
+        return math.sin(2 * segment_wind_angle_rad_bc) ** WIND_COST_SIN_EXPONENT
 
 
 class TimeObjective(ob.OptimizationObjective):
@@ -124,13 +173,13 @@ class TimeObjective(ob.OptimizationObjective):
     end of the segment.
 
     Attributes:
-        wind_direction (float): The direction of the wind in radians (-pi, pi]
-        wind_speed (float): The speed of the wind in m/s
+        tw_direction_rad_gc (float): The direction of wind in global coordinate radians (-pi, pi]
+        tw_speed_kmph (float): The speed of the true wind in km/h
     """
 
     interpolation = RegularGridInterpolator(
-        (TRUE_WIND_SPEEDS, SAILING_ANGLES),
-        BOAT_SPEEDS,
+        (TW_SPEEDS_KMPH_GC, SAILING_ANGLES_DEG_GC),
+        BOAT_SPEEDS_KMPH,
         bounds_error=False,  # no error on out of bounds call
         # returns max speed for any input outside the range of the table
         fill_value=ESTIMATED_TOP_BOAT_SPEED,
@@ -138,13 +187,13 @@ class TimeObjective(ob.OptimizationObjective):
 
     def __init__(
         self,
-        space_information,
-        true_wind_direction_radians: float,
-        true_wind_speed_kmph: float,
-    ):
+        space_information: ob.SpaceInformation,
+        tw_direction_rad_gc: float,
+        tw_speed_kmph: float,
+    ) -> None:
         super().__init__(space_information)
-        self.true_wind_direction_radians = true_wind_direction_radians
-        self.true_wind_speed_kmph = true_wind_speed_kmph
+        self.tw_direction_rad_gc = tw_direction_rad_gc
+        self.tw_speed_kmph = tw_speed_kmph
 
     def motionCost(self, s1: ob.SE2StateSpace, s2: ob.SE2StateSpace) -> ob.Cost:
         """Defines the cost of a path segment, from s1 to s2, as the estimated time it will take
@@ -164,14 +213,17 @@ class TimeObjective(ob.OptimizationObjective):
             TimeObjective.time_cost(
                 s1_xy,
                 s2_xy,
-                self.true_wind_direction_radians,
-                self.true_wind_speed_kmph,
+                self.tw_direction_rad_gc,
+                self.tw_speed_kmph,
             )
         )
 
     @staticmethod
     def time_cost(
-        s1: cs.XY, s2: cs.XY, true_wind_direction_radians: float, true_wind_speed_kmph
+        s1: cs.XY,
+        s2: cs.XY,
+        tw_direction_rad_gc: float,
+        tw_speed_kmph: float,
     ) -> float:
         """Returns a cost proportional to the estimated amount of time it will take for the boat
            to travel from s1 to s2.
@@ -179,9 +231,8 @@ class TimeObjective(ob.OptimizationObjective):
         Args:
             s1 (cs.XY): The start point of the path segment
             s2 (cs.XY): The end point of the path segment
-            true_wind_direction_radians (float): The direction of the true wind in
-            radians (-pi, pi]
-            true_wind_speed_kmph (float): The true wind speed in km/h
+            tw_direction_rad_gc (float): The direction of wind in global coord radians (-pi, pi]
+            tw_speed_kmph (float): The true wind speed in km/h
 
         Returns:
             float: The cost the path segment from s1 to s2, in the interval [0, 1]
@@ -191,8 +242,8 @@ class TimeObjective(ob.OptimizationObjective):
 
         sailbot_speed = TimeObjective.get_sailbot_speed(
             path_segment_true_bearing_radians,
-            true_wind_direction_radians,
-            true_wind_speed_kmph,
+            tw_direction_rad_gc,
+            tw_speed_kmph,
         )
 
         # exit early to avoid dividing by sailbot_speed when it's close to 0
@@ -210,12 +261,12 @@ class TimeObjective(ob.OptimizationObjective):
     @staticmethod
     def get_sailbot_speed(
         path_segment_true_bearing_rad: float,
-        tw_direction_rad: float,
+        tw_direction_rad_gc: float,
         tw_speed_kmph: float,
     ) -> float:
 
-        tw_angle_rad = abs(
-            wcs.get_true_wind_angle(path_segment_true_bearing_rad, tw_direction_rad)
+        tw_angle_rad_bc = abs(
+            wcs.get_true_wind_angle(path_segment_true_bearing_rad, tw_direction_rad_gc)
         )
 
         # this bounds the twa to a range of 0 to 180 degrees
@@ -223,32 +274,39 @@ class TimeObjective(ob.OptimizationObjective):
         # on the port or starboard side when it comes to calculating the estimated speed
         # and having the twa in the range of [0, 180] means we don't have to cover negative
         # twa values in the BOAT_SPEEDS table
-        tw_angle_deg = abs(cs.bound_to_180(math.degrees(tw_angle_rad)))
+        tw_angle_deg_gc = abs(cs.bound_to_180(math.degrees(tw_angle_rad_bc)))
 
         # since the twa is bounded to [0, 180], the only time the interpolator would need to
         # use the fill_value is if the tw_speed_kmph is greater than the max accounted for
         # in the BOAT_SPEEDS table, in which case the interpolator will return it's configured
         # fill_value (see interpolation definition at top of class)
-        return TimeObjective.interpolation((tw_speed_kmph, tw_angle_deg))
+        return TimeObjective.interpolation((tw_speed_kmph, tw_angle_deg_gc))
 
 
 def get_sailing_objective(
-    space_information,
-    simple_setup,
-    boat_heading_degrees: float,
+    space_information: ob.SpaceInformation,
+    simple_setup: og.SimpleSetup,
+    boat_heading_deg_gc: float,
     boat_speed_kmph: float,
-    apparent_wind_direction_degrees: float,
-    apparent_wind_speed_kmph: float,
+    aw_direction_deg_bc: float,
+    aw_speed_kmph: float,
+    goal_position_in_xy: cs.XY,
 ) -> ob.OptimizationObjective:
+    """Build the combined sailing optimization objective for the current wind snapshot.
+
+    Apparent wind is converted to true wind once, then shared by the wind and time objectives.
+    Goal direction remains in the objective stack even though goal progress is also enforced as a
+    hard motion-validity check.
+    """
 
     apparent_wind_direction_degrees_global_coordinates = wcs.boat_to_global_coordinate(
-        boat_heading_degrees, apparent_wind_direction_degrees
+        boat_heading_deg_gc, aw_direction_deg_bc
     )
 
     tw_dir_rad, tw_speed_kmph = wcs.get_true_wind(
         apparent_wind_direction_degrees_global_coordinates,
-        apparent_wind_speed_kmph,
-        boat_heading_degrees,
+        aw_speed_kmph,
+        boat_heading_deg_gc,
         boat_speed_kmph,
     )
 
@@ -263,6 +321,10 @@ def get_sailing_objective(
     multiObjective.addObjective(
         objective=TimeObjective(space_information, tw_dir_rad, tw_speed_kmph),
         weight=TIME_OBJECTIVE_WEIGHT,
+    )
+    multiObjective.addObjective(
+        objective=GoalDirectionObjective(space_information, goal_position_in_xy),
+        weight=1.0,  # should always be 1.0
     )
     # this allows the objective to be satisfied once a path with a cost
     # below the threshold has been found

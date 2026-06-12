@@ -42,7 +42,7 @@ jobs:
       uses: gaurav-nelson/github-action-markdown-link-check@v1
       with:
         config-file: .markdown-link-check.json
-        folder-path: .
+        folder-path: '.'
 
   markdown-link-redirection-check:
     runs-on: ubuntu-latest
@@ -50,7 +50,6 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v6
 
-      - uses: actions/checkout@v6
       - name: Set up Python 3.10
         uses: actions/setup-python@v6
         with:
@@ -58,6 +57,8 @@ jobs:
 
       - name: Check links to external sites redirect to a new tab
         uses: ./.github/actions/docs-lint/
+        with:
+          folder-path: '.'
         env:
           ROOT: './docs/'
 
@@ -88,22 +89,23 @@ jobs:
       - name: Build docs
         if: github.event_name == 'push' || github.event.action != 'closed'
         shell: bash
-        run: docker compose -f .devcontainer/docker-compose.yml exec -T docs /bin/sh -c "mkdocs build"
+        run: docker compose -f .devcontainer/docker-compose.yml -f .devcontainer/docs/docker-compose.docs.yml exec -T docs /bin/sh -c "mkdocs build"
 
       - name: "Delete pr-${{ github.event.number }} version of the Docs"
         if: github.event_name == 'pull_request' && github.event.action == 'closed'
         shell: bash
         run: |
-          docker compose -f .devcontainer/docker-compose.yml exec -T docs /bin/sh -c "\
+          docker compose -f .devcontainer/docker-compose.yml -f .devcontainer/docs/docker-compose.docs.yml exec -T docs /bin/sh -c "\
             git config user.name ci-bot && \
             git config user.email ci-bot@example.com && \
+            git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} && \
             mike delete --push pr-${{ github.event.number }}"
 
       - name: "Deploy pr-${{ github.event.number }} version of the Docs"
         if: github.event_name == 'pull_request' && github.event.action != 'closed'
         shell: bash
         run: |
-          docker compose -f .devcontainer/docker-compose.yml exec -T docs /bin/sh -c "\
+          docker compose -f .devcontainer/docker-compose.yml -f .devcontainer/docs/docker-compose.docs.yml exec -T docs /bin/sh -c "\
             git config user.name ci-bot && \
             git config user.email ci-bot@example.com && \
             git switch gh-pages && \
@@ -111,14 +113,14 @@ jobs:
             mike deploy pr-${{ github.event.number }} && \
             git switch gh-pages && \
             git pull --no-rebase && \
-            git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/UBCSailbot/sailbot_workspace.git && \
+            git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} && \
             git push"
 
       - name: Deploy main version of the Docs
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         shell: bash
         run: |
-          docker compose -f .devcontainer/docker-compose.yml exec -T docs /bin/sh -c "\
+          docker compose -f .devcontainer/docker-compose.yml -f .devcontainer/docs/docker-compose.docs.yml exec -T docs /bin/sh -c "\
             git config user.name ci-bot && \
             git config user.email ci-bot@example.com && \
             git switch gh-pages && \
@@ -126,5 +128,5 @@ jobs:
             mike deploy --update-aliases main latest && \
             git switch gh-pages && \
             git pull --no-rebase && \
-            git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/UBCSailbot/sailbot_workspace.git && \
+            git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} && \
             git push"

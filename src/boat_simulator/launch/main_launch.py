@@ -4,6 +4,7 @@ import importlib
 import os
 from typing import List, Tuple
 
+import yaml
 from launch_ros.actions import Node
 
 import boat_simulator.common.constants as Constants
@@ -35,6 +36,12 @@ LOCAL_LAUNCH_ARGUMENTS: List[DeclareLaunchArgument] = [
         default_value="false",
         choices=["true", "false"],
         description="Enable generation of mock data from pathfinding",
+    ),
+    DeclareLaunchArgument(
+        name="enable-sim-visualizer",
+        default_value="false",
+        choices=["true", "false"],
+        description="Enable plotting of boat path",
     ),
 ]
 
@@ -90,6 +97,7 @@ def setup_launch(context: LaunchContext) -> List[Node]:
     launch_description_entities.append(get_low_level_control_description(context))
     launch_description_entities.append(get_data_collection_description(context))
     launch_description_entities.append(get_mock_data_description(context))
+    launch_description_entities.append(get_sim_visualizer_description(context))
     return launch_description_entities
 
 
@@ -103,7 +111,11 @@ def get_physics_engine_description(context: LaunchContext) -> Node:
         Node: The node object that launches the physics engine node.
     """
     node_name = "physics_engine_node"
-    ros_parameters = [LaunchConfiguration("config").perform(context)]
+    test_plan = LaunchConfiguration("test_plan").perform(context)
+    ros_parameters = [
+        LaunchConfiguration("config").perform(context),
+        get_sim_gps_origin_parameters(test_plan),
+    ]
     ros_arguments: List[SomeSubstitutionsType] = [
         "--log-level",
         [f"{node_name}:=", LaunchConfiguration("log_level")],
@@ -123,6 +135,39 @@ def get_physics_engine_description(context: LaunchContext) -> Node:
     )
 
     return node
+
+
+def get_sim_gps_origin_parameters(test_plan: str) -> dict:
+    """Load simulator GPS origin parameters from the selected PATH test plan."""
+    test_plan_path = get_test_plan_path(test_plan)
+
+    try:
+        with open(test_plan_path, "r") as file:
+            data = yaml.safe_load(file)
+        gps_data = data["gps"]
+        return {
+            Constants.SIM_GPS_ORIGIN_LATITUDE_PARAM: float(gps_data["latitude"]),
+            Constants.SIM_GPS_ORIGIN_LONGITUDE_PARAM: float(gps_data["longitude"]),
+        }
+    except Exception as exc:
+        raise RuntimeError(
+            f"Failed to load simulator GPS origin from test plan '{test_plan_path}': {exc}"
+        ) from exc
+
+
+def get_test_plan_path(test_plan: str) -> str:
+    """Resolve a PATH test plan name to its source YAML file."""
+    if os.path.isabs(test_plan):
+        return test_plan
+
+    ros_workspace = os.getenv("ROS_WORKSPACE", default="/workspaces/sailbot_workspace")
+    return os.path.join(
+        ros_workspace,
+        "src",
+        "local_pathfinding",
+        "test_plans",
+        test_plan,
+    )
 
 
 def get_low_level_control_description(context: LaunchContext) -> Node:
@@ -208,6 +253,42 @@ def get_mock_data_description(context: LaunchContext) -> Node:
     local_arguments: List[SomeSubstitutionsType] = [
         Constants.MOCK_DATA_CLI_ARG_NAME,
         [LaunchConfiguration("enable-mock-data")],
+    ]
+
+    node = Node(
+        package=PACKAGE_NAME,
+        executable=node_name,
+        name=node_name,
+        parameters=ros_parameters,
+        ros_arguments=ros_arguments,
+        arguments=local_arguments,
+    )
+
+    return node
+
+
+def get_sim_visualizer_description(context: LaunchContext) -> Node:
+    """Gets the launch description for the data collection node.
+
+    Args:
+        context (LaunchContext): The current launch context.
+
+    Returns:
+        Node: The node object that launches the data collection node.
+
+    This description is probably incorrect as I have no idea what it means/does
+    but I copy pasted from the previous function and it works.
+    """
+    node_name = "sim_visualizer_node"
+    ros_parameters = [LaunchConfiguration("config").perform(context)]
+    ros_arguments: List[SomeSubstitutionsType] = [
+        "--log-level",
+        [f"{node_name}:=", LaunchConfiguration("log_level")],
+    ]
+    # may not need local arguments.
+    local_arguments: List[SomeSubstitutionsType] = [
+        Constants.MOCK_DATA_CLI_ARG_NAME,
+        [LaunchConfiguration("enable-sim-visualizer")],
     ]
 
     node = Node(

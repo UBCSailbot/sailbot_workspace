@@ -56,8 +56,9 @@ public:
                     RCLCPP_ERROR(this->get_logger(), "%s", err.what());
                     throw err;
                 }
-            } else if (mode == SYSTEM_MODE::DEV) {
-                RCLCPP_INFO(this->get_logger(), "Running CAN Transceiver in development mode with CAN Sim Intf");
+            } else if (mode == SYSTEM_MODE::DEV || mode == SYSTEM_MODE::SIM) {
+                RCLCPP_INFO(
+                  this->get_logger(), "Running CAN Transceiver in %s mode with CAN Sim Intf", mode.c_str());
                 try {
                     sim_intf_fd_ = mockCanFd("/tmp/CanSimIntfXXXXXX");
                     can_trns_    = std::make_unique<CanTransceiver>(sim_intf_fd_);
@@ -77,14 +78,14 @@ public:
             wind_sensors_pub_ = this->create_publisher<msg::WindSensors>(ros_topics::WIND_SENSORS, QUEUE_SIZE);
             filtered_wind_sensor_pub_ =
               this->create_publisher<msg::WindSensor>(ros_topics::FILTERED_WIND_SENSOR, QUEUE_SIZE);
-            generic_sensors_pub_ = this->create_publisher<msg::GenericSensors>(ros_topics::DATA_SENSORS, QUEUE_SIZE);
-            rudder_pub_          = this->create_publisher<msg::HelperHeading>(ros_topics::RUDDER, QUEUE_SIZE);
-            temp_sensors_pub_    = this->create_publisher<msg::TempSensors>(ros_topics::TEMP_SENSORS, QUEUE_SIZE);
-            ph_sensors_pub_      = this->create_publisher<msg::PhSensors>(ros_topics::PH_SENSORS, QUEUE_SIZE);
+            // generic_sensors_pub_ = this->create_publisher<msg::GenericSensors>(ros_topics::DATA_SENSORS, QUEUE_SIZE);
+            rudder_pub_       = this->create_publisher<msg::HelperHeading>(ros_topics::RUDDER, QUEUE_SIZE);
+            temp_sensors_pub_ = this->create_publisher<msg::TempSensors>(ros_topics::TEMP_SENSORS, QUEUE_SIZE);
+            ph_sensors_pub_   = this->create_publisher<msg::PhSensors>(ros_topics::PH_SENSORS, QUEUE_SIZE);
             salinity_sensors_pub_ =
               this->create_publisher<msg::SalinitySensors>(ros_topics::SALINITY_SENSORS, QUEUE_SIZE);
-            pressure_sensors_pub_ =
-              this->create_publisher<msg::PressureSensors>(ros_topics::PRESSURE_SENSORS, QUEUE_SIZE);
+            // pressure_sensors_pub_ =
+            //   this->create_publisher<msg::PressureSensors>(ros_topics::PRESSURE_SENSORS, QUEUE_SIZE);
 
             std::vector<std::pair<CanId, std::function<void(const CanFrame &)>>> canCbs = {
               std::make_pair(CanId::POWER_OFF, std::function<void(const CanFrame &)>([this](const CanFrame & frame) {
@@ -142,10 +143,14 @@ public:
                   this->create_publisher<msg::CanSimToBoatSim>(ros_topics::BOAT_SIM_INPUT, QUEUE_SIZE);
 
                 timer_ = this->create_wall_timer(TIMER_INTERVAL, [this]() {
-                    //mockBatteriesCb();
+                    mockBatteriesCb();
                     publishBoatSimInput(boat_sim_input_msg_);
                     // Add any other necessary looping callbacks
                 });
+            } else if (mode == SYSTEM_MODE::SIM) {  // subscribes to mock_wind_sensors to produce filtered_wind_sensor
+                mock_wind_sensors_sub_ = this->create_subscription<msg::WindSensors>(
+                  ros_topics::MOCK_WIND_SENSORS, QUEUE_SIZE,
+                  [this](msg::WindSensors mock_wind_sensors) { subMockWindSensorsCb(mock_wind_sensors); });
             }
         }
     }
@@ -197,7 +202,9 @@ private:
 
     // Holder for AISShips before publishing
     std::vector<msg::HelperAISShip> ais_ships_holder_;
-    int                             total_ais_ships = 0;
+    // Track received indices for AISShips
+    std::set<int> received_indices_;
+    int           total_ais_ships = -1;
 
     //queue of previous k wind sensor readings (either sail or hull) for moving average
     std::queue<vec> wind_sensor_readings;
@@ -267,23 +274,64 @@ private:
         try {
             CAN_FP::AISShips ais_ship(ais_frame);
 
-            if (total_ais_ships == 0) {
-                total_ais_ships = ais_ship.getNumShips();
-                ais_ships_holder_.resize(total_ais_ships);  // temporary holder vector for AIS ships
+            int num_ships = ais_ship.getNumShips();
+            int ship_idx  = ais_ship.getShipIndex();
+
+            // Case: no ships then publish empty and reset
+            if (num_ships == 0) {
+                ais_ships_.ships.clear();
+                ais_pub_->publish(ais_ships_);
+
+                total_ais_ships = -1;
+                ais_ships_holder_.clear();
+                received_indices_.clear();
+                return;
             }
 
-            ais_ships_holder_[ais_ship.getShipIndex()] = ais_ship.toRosMsg();  //maybe change to pushback later
+            // Initialize on first valid frame
+            if (total_ais_ships == -1) {
+                total_ais_ships = num_ships;
+                ais_ships_holder_.clear();
+                ais_ships_holder_.resize(num_ships);
+                received_indices_.clear();
+            }
 
-            if (ais_ships_holder_.size() == static_cast<size_t>(total_ais_ships)) {
+            // Consistency check
+            if (num_ships != total_ais_ships) {
+                RCLCPP_WARN(
+                  this->get_logger(), "Mismatched numShips (got=%d, expected=%d), resetting", num_ships,
+                  total_ais_ships);
+
+                total_ais_ships = -1;
+                ais_ships_holder_.clear();
+                received_indices_.clear();
+                return;
+            }
+
+            // Bounds check
+            if (ship_idx < 0 || ship_idx >= total_ais_ships) {
+                RCLCPP_WARN(this->get_logger(), "Out of bounds index=%d for size=%d", ship_idx, total_ais_ships);
+                return;
+            }
+
+            // Store ship data
+            ais_ships_holder_[ship_idx] = ais_ship.toRosMsg();
+            received_indices_.insert(ship_idx);
+
+            // Publish only when all ships have been received
+            if (received_indices_.size() == static_cast<size_t>(total_ais_ships)) {
                 ais_ships_.ships = ais_ships_holder_;
                 ais_pub_->publish(ais_ships_);
-                ais_ships_holder_.clear();  // reset holder vector
-                total_ais_ships = 0;        // reset the number of ships
+
+                total_ais_ships = -1;
+                ais_ships_holder_.clear();
+                received_indices_.clear();
             }
+
             RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), ais_ship.toString().c_str());
-        } catch (std::out_of_range err) {
+
+        } catch (const std::exception & err) {
             RCLCPP_WARN(this->get_logger(), "%s", err.what());
-            return;
         }
     }
 
@@ -368,9 +416,8 @@ private:
             wind_sensor_msg                   = wind_sensor.toRosMsg();
             wind_sensors_pub_->publish(wind_sensors_);
 
-            // NUM_WIND_SENSORS is a placeholder,
-            // replace with number of data points wanted in the moving average
-            double k = NUM_WIND_SENSORS;
+            // Arbitrary number of data points for moving average
+            double k = 20;  //NOLINT(readability-magic-numbers)
             // convert deg to rad
             double angle = wind_sensor_msg.direction * (M_PI / 180.0);  // NOLINT(readability-magic-numbers)
             double y     = wind_sensor_msg.speed.speed * sin(angle);
@@ -682,7 +729,40 @@ private:
      *
      * @param mock_wind_sensors mock_wind_sensors received from the Mock Wind Sensors topic
      */
-    void subMockWindSensorsCb(msg::WindSensors mock_wind_sensors) { wind_sensors_ = mock_wind_sensors; }
+    void subMockWindSensorsCb(const msg::WindSensors & mock_wind_sensors)
+    {
+        for (size_t i = 0; i < CAN_FP::WindSensor::WIND_SENSOR_IDS.size(); i++) {
+            msg::WindSensor & wind_sensor_msg = wind_sensors_.wind_sensors[i];
+            wind_sensor_msg                   = mock_wind_sensors.wind_sensors[i];
+
+            // Arbitrary number of data points for moving average
+            double k = 20;  //NOLINT(readability-magic-numbers)
+            // convert deg to rad
+            double angle = wind_sensor_msg.direction * (M_PI / 180.0);  // NOLINT(readability-magic-numbers)
+            double y     = wind_sensor_msg.speed.speed * sin(angle);
+            double x     = wind_sensor_msg.speed.speed * cos(angle);
+
+            vec msg_vec;
+            msg_vec.x = x;
+            msg_vec.y = y;
+            wind_sensor_readings.push(msg_vec);
+
+            if (wind_sensor_readings.size() <= static_cast<size_t>(k)) {
+                // need to fill the queue, so compute filtered data as cumulative average
+                k = static_cast<double>(wind_sensor_readings.size());
+
+                curr_sma.x = ((curr_sma.x * (k - 1)) + x) / k;
+                curr_sma.y = ((curr_sma.y * (k - 1)) + y) / k;
+            } else {
+                // queue is full, compute filtered data as simple moving average
+                vec & oldest_reading = wind_sensor_readings.front();
+                curr_sma.x           = curr_sma.x + ((x - oldest_reading.x) / k);
+                curr_sma.y           = curr_sma.y + ((y - oldest_reading.y) / k);
+                wind_sensor_readings.pop();
+            }
+        }
+        publishFilteredWindSensor();
+    }
 
     /**
      * @brief A mock batteries callback that just sends dummy (but valid) battery values to the simulation CAN intf

@@ -4,7 +4,7 @@ from os.path import join
 from setuptools import find_packages, setup
 
 PACKAGE_NAME = "boat_simulator"
-REQUIRED_MODULES = ["setuptools", "numpy", "scipy"]
+REQUIRED_MODULES = ["setuptools", "numpy", "pyproj", "scipy"]
 
 setup(
     name=PACKAGE_NAME,
@@ -31,6 +31,8 @@ setup(
             "data_collection_node = "
             + "boat_simulator.nodes.data_collection.data_collection_node:main",
             "mock_data_node = " + "boat_simulator.nodes.mock_data.mock_data_node:main",
+            "sim_visualizer_node = "
+            + "boat_simulator.nodes.sim_visualizer.sim_visualizer_node:main",
         ],
     },
 )

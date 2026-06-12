@@ -1,22 +1,20 @@
 """The main node of the local_pathfinding package, represented by the `Sailbot` class."""
 
-import json
-import os
-
-import custom_interfaces.msg as ci
 import rclpy
 from rclpy.node import Node
-from shapely.geometry import MultiPolygon, Polygon
+from test_plans.test_plan import TestPlan
 
+import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.global_path as gp
 import local_pathfinding.obstacles as ob
-from local_pathfinding.local_path import LocalPath
+from local_pathfinding.local_path import LocalPath, LocalPathInputs, PathNotFoundError
 from local_pathfinding.ompl_path import MAX_SOLVER_RUN_TIME_SEC
 
-GLOBAL_WAYPOINT_REACHED_THRESH_KM = 3
-PATHFINDING_RANGE_KM = 30
+GLOBAL_WAYPOINT_REACHED_THRESH_M = 300
 REALLY_FAR_M = 100000000
+GPS_TIMEOUT_SEC = 120.0
+NANOSEC_PER_SEC = 1_000_000_000
 
 
 def main(args=None):
@@ -52,10 +50,18 @@ class Sailbot(Node):
         global_path (ci.Path): Path that we are following.
         filtered_wind_sensor (ci.WindSensor): Filtered data from the wind sensors.
         desired_heading (ci.DesiredHeading): current desired heading.
+        target_lp_wp_index (int): 0-based array index of the local waypoint Polaris is currently
+            heading toward. This starts at 1 because OMPL index 0 is the start state near the
+            boat.
 
     Attributes:
         local_path (LocalPath): The path that `Sailbot` is following.
         planner (str): The path planner that `Sailbot` is using.
+        mode (str): Runtime mode. Development mode publishes richer local path data.
+        global_waypoint_index (int): Index of the current target in the reverse-ordered global
+            path.
+        saved_target_global_waypoint (ci.HelperLatLon): Current global waypoint target.
+        land_multi_polygon (MultiPolygon): Optional mock land data used in development mode.
     """
 
     def __init__(self):
@@ -67,7 +73,8 @@ class Sailbot(Node):
                 ("mode", rclpy.Parameter.Type.STRING),
                 ("pub_period_sec", rclpy.Parameter.Type.DOUBLE),
                 ("path_planner", rclpy.Parameter.Type.STRING),
-                ("use_mock_land", False),
+                ("test_plan", rclpy.Parameter.Type.STRING),
+                ("global_path_interval_spacing_km", rclpy.Parameter.Type.DOUBLE),
             ],
         )
 
@@ -106,6 +113,11 @@ class Sailbot(Node):
         self.pub_period_sec = (
             self.get_parameter("pub_period_sec").get_parameter_value().double_value
         )
+        self.global_path_interval_spacing_km = (
+            self.get_parameter("global_path_interval_spacing_km")
+            .get_parameter_value()
+            .double_value
+        )
         self.get_logger().debug(f"Got parameter: {self.pub_period_sec=}")
 
         # we need to give the solver time to run and the callback to return before calling again
@@ -123,29 +135,30 @@ class Sailbot(Node):
         self.desired_heading = None
 
         # attributes
-        self.local_path = LocalPath(parent_logger=self.get_logger())
-        self.local_waypoint_index = 0
+        self.gps_timeout_start_sec = self._now_sec()
+        self.local_path = LocalPath(
+            parent_logger=self.get_logger(),
+            now_sec=self._now_sec,
+        )
+        self.target_lp_wp_index = 1
         self.global_waypoint_index = -1
         self.saved_target_global_waypoint = None
-        self.use_mock_land = self.get_parameter("use_mock_land").get_parameter_value().bool_value
         self.mode = self.get_parameter("mode").get_parameter_value().string_value
         self.planner = self.get_parameter("path_planner").get_parameter_value().string_value
         self.get_logger().debug(f"Got parameter: {self.planner=}")
 
         # Initialize mock land obstacle
         self.land_multi_polygon = None
-        if self.use_mock_land:
+        if self.mode in ["development", "sim"]:
+            self.test_plan = self.get_parameter("test_plan").get_parameter_value().string_value
+            self.get_logger().info("test plan: " + self.test_plan)
+            test_plan = TestPlan(self.test_plan)
+            self.land_multi_polygon = test_plan.land
+            self.get_logger().info("Loaded mock land data.")
 
-            # find the mock land file
-            current_dir = os.path.dirname(os.path.abspath(__file__))
-            mock_land_dir = os.path.join(current_dir, "..", "land", "mock")
-            self.mock_land_file = os.path.join(mock_land_dir, "mock_land.json")
-
-            with open(self.mock_land_file, "r") as f:
-                data = json.load(f)
-                polygons = [Polygon(p) for p in data.get("land_polygons", [])]
-                self.land_multi_polygon = MultiPolygon(polygons)
-                self.get_logger().info("Loaded mock land data.")
+    def _now_sec(self) -> float:
+        """Return the current ROS clock time in seconds."""
+        return self.get_clock().now().nanoseconds / NANOSEC_PER_SEC
 
     # subscriber callbacks
     def ais_ships_callback(self, msg: ci.AISShips):
@@ -155,6 +168,7 @@ class Sailbot(Node):
     def gps_callback(self, msg: ci.GPS):
         self.get_logger().debug(f"Received data from {self.gps_sub.topic}: {msg}")
         self.gps = msg
+        self.gps_timeout_start_sec = self._now_sec()
 
     def global_path_callback(self, msg: ci.Path):
         self.get_logger().debug(
@@ -172,40 +186,76 @@ class Sailbot(Node):
     def desired_heading_callback(self):
         """Get and publish the desired heading."""
 
+        if self._has_gps_timed_out():
+            msg = ci.DesiredHeading()
+            msg.heading.heading = 0.0
+            msg.sail = False
+
+            self.desired_heading = msg
+
+            self.get_logger().warning(
+                f"GPS data has not been received for more than {GPS_TIMEOUT_SEC:.0f} seconds. "
+                f"Publishing to {self.desired_heading_pub.topic}: {msg.heading.heading}"
+            )
+            self.desired_heading_pub.publish(msg)
+            return  # should not continue, try again next loop
+
         if not self._all_subs_active():
             self._log_inactive_subs_warning()
+            msg = ci.DesiredHeading()
+            msg.heading.heading = 0.0
+            msg.sail = False
+            self.desired_heading = msg
+            self.get_logger().debug(
+                f"Publishing to {self.desired_heading_pub.topic}: {msg.heading.heading}"
+            )
+            self.desired_heading_pub.publish(msg)
             return  # should not continue, return and try again next loop
 
         self.update_params()
 
-        desired_heading = self.get_desired_heading()
+        desired_heading, sail = self.get_desired_heading()
         msg = ci.DesiredHeading()
         msg.heading.heading = desired_heading
+        msg.sail = sail
         if self.desired_heading is None or desired_heading != self.desired_heading.heading.heading:
             self.get_logger().info(f"Updating desired heading to: {msg.heading.heading:.2f}")
 
         self.desired_heading = msg
 
-        self.get_logger().debug(
-            f"Publishing to {self.desired_heading_pub.topic}: {msg.heading.heading}"
+        self.get_logger().info(
+            f"Publishing to {self.desired_heading_pub.topic}: {msg.heading.heading}, "
+            f"sail == {msg.sail}"  # noqa
         )
         self.desired_heading_pub.publish(msg)
 
         self.get_logger().debug(f"Publishing local path data to {self.lpath_data_pub.topic}")
-        self.publish_local_path_data()
+        self.publish_local_path_data(msg.sail)
 
-    def publish_local_path_data(self):
+    def publish_local_path_data(self, sail: bool):
         """
         Collect all navigation data and publish it in one message.
-        In development mode, all navigation data is published.
-        In production mode, only the local path is published, with all other data set to 0 or empty
+        In development and sim modes, all navigation data is published.
+        In production mode, only the local path is published.
 
         """
+
+        # When sail is disabled the planner has no valid local path to follow; publish an empty
+        # Path rather than a stale or None one, so downstream consumers
+        # (e.g. the visualizer and website) render the "no local path" state
+        # instead of crashing on a None / misleading submessage.
+        local_path = (
+            self.local_path.path if (sail and self.local_path.path is not None) else ci.Path()
+        )
+
         # publish all navigation data when in dev mode
-        if self.mode == "development":
+        if self.mode in ["development", "sim"]:
             helper_obstacles = []
 
-            for obst in self.local_path.state.obstacles:
+            # state is None until the first successful local path. On a sail-disabled failure it
+            # may still hold the obstacles that caused the failure, so iterate only if present.
+            obstacles = self.local_path.state.obstacles if self.local_path.state else []
+            for obst in obstacles:
 
                 if isinstance(obst, ob.Land):
                     for polygon in obst.collision_zone.geoms:
@@ -214,7 +264,7 @@ class Sailbot(Node):
                         )
 
                         # each point of the polygon is in lat lon now
-                        # but you cant construct a shapely polgyon out of HelperLatLon objects
+                        # but you can't construct a Shapely polygon out of HelperLatLon objects
                         # so each point is a shapely Point that needs to be converted to a
                         # HelperLatLon, before it can be published to ROS
                         helper_latlons = [
@@ -238,7 +288,7 @@ class Sailbot(Node):
 
             msg = ci.LPathData(
                 global_path=self.global_path,
-                local_path=self.local_path.path,
+                local_path=local_path,
                 gps=self.gps,
                 filtered_wind_sensor=self.filtered_wind_sensor,
                 ais_ships=self.ais_ships,
@@ -247,16 +297,17 @@ class Sailbot(Node):
             )
         else:
             # in production only publish the local path for website
-            msg = ci.LPathData(local_path=self.local_path.path)
+            msg = ci.LPathData(local_path=local_path)
 
         self.lpath_data_pub.publish(msg)
 
     # helper functions
-    def get_desired_heading(self) -> float:
+    def get_desired_heading(self) -> tuple[float, bool]:
         """Get the desired heading.
 
         Returns:
-            float: The desired heading
+            tuple[float, bool]: The desired heading and whether sailing is allowed. Sailing is
+            disabled when no local path can be generated.
         """
 
         # Extra logic for when the global waypoint changes due to receiving a new global path
@@ -267,7 +318,7 @@ class Sailbot(Node):
         ):
             received_new_global_waypoint = True
             self.global_waypoint_index = self.determine_start_point_in_new_global_path(
-                self.global_path, self.gps.lat_lon
+                self.global_path, self.gps.lat_lon, self.global_path_interval_spacing_km
             )
             self.saved_target_global_waypoint = self.global_path.waypoints[
                 self.global_waypoint_index
@@ -280,7 +331,7 @@ class Sailbot(Node):
             self.saved_target_global_waypoint.longitude,
             self.saved_target_global_waypoint.latitude,
         )
-        if distance_to_waypoint_m < GLOBAL_WAYPOINT_REACHED_THRESH_KM:
+        if distance_to_waypoint_m < GLOBAL_WAYPOINT_REACHED_THRESH_M:
             received_new_global_waypoint = True
             self.global_waypoint_index -= 1  # Since global waypoints are in reverse order
 
@@ -292,22 +343,29 @@ class Sailbot(Node):
                 self.global_waypoint_index
             ]
 
-        desired_heading, self.local_waypoint_index = self.local_path.update_if_needed(
-            self.gps,
-            self.ais_ships,
-            self.global_path,
-            self.local_waypoint_index,
-            received_new_global_waypoint,
-            self.saved_target_global_waypoint,
-            self.filtered_wind_sensor,
-            self.planner,
-            self.land_multi_polygon,
-        )
-        return desired_heading
+        try:
+            desired_heading, self.target_lp_wp_index = self.local_path.update_if_needed(
+                inputs=LocalPathInputs(
+                    gps=self.gps,
+                    ais_ships=self.ais_ships,
+                    global_path=self.global_path,
+                    target_global_waypoint=self.saved_target_global_waypoint,
+                    filtered_wind_sensor=self.filtered_wind_sensor,
+                    planner=self.planner,
+                    land_multi_polygon=self.land_multi_polygon,
+                ),
+                target_lp_wp_index=self.target_lp_wp_index,
+                received_new_global_waypoint=received_new_global_waypoint,
+            )
+            return desired_heading, True
+        except PathNotFoundError:
+            self.get_logger().warning("Unable to generate a local path; disabling sail")
+            self.local_path.path = ci.Path(waypoints=[])
+            return 0.0, False
 
     @staticmethod
     def determine_start_point_in_new_global_path(
-        global_path: ci.Path, boat_lat_lon: ci.HelperLatLon
+        global_path: ci.Path, boat_lat_lon: ci.HelperLatLon, global_path_spacing_km: float
     ):
         """Used when we receive a new global path.
         Finds the index of the first waypoint within 'pathfinding range' of gps location.
@@ -328,7 +386,7 @@ class Sailbot(Node):
             if distance_to_waypoint_m < closest_m:
                 closest_m, index_of_closest = distance_to_waypoint_m, waypoint_index
 
-            if distance_to_waypoint_m < cs.km_to_meters(PATHFINDING_RANGE_KM):
+            if distance_to_waypoint_m < cs.km_to_meters(global_path_spacing_km):
                 return waypoint_index
 
         return index_of_closest
@@ -357,26 +415,40 @@ class Sailbot(Node):
             self.planner = planner
 
     def _all_subs_active(self) -> bool:
-        return self.ais_ships and self.gps and self.global_path and self.filtered_wind_sensor
+        return (
+            self.ais_ships is not None
+            and self.gps is not None
+            and self.global_path is not None
+            and self.filtered_wind_sensor is not None
+        )
+
+    def _has_gps_timed_out(self) -> bool:
+        """Checks if we haven't received a GPS message for more than 2 minutes."""
+
+        elapsed_sec = self._now_sec() - self.gps_timeout_start_sec
+        return elapsed_sec > GPS_TIMEOUT_SEC
 
     def _log_inactive_subs_warning(self):
         """
         Logs a warning message for each inactive subscriber.
         """
         inactive_subs = []
-        if self.ais_ships_sub is None:
+        if self.ais_ships is None:
             inactive_subs.append("ais_ships")
-        if self.gps_sub is None:
+        if self.gps is None:
             inactive_subs.append("gps")
-        if self.global_path_sub is None:
+        if self.global_path is None:
             inactive_subs.append("global_path")
-        if self.filtered_wind_sensor_sub is None:
+        if self.filtered_wind_sensor is None:
             inactive_subs.append("filtered_wind_sensor")
         if len(inactive_subs) == 0:
             return
-        self._logger.warning("Inactive Subscribers: " + ", ".join(inactive_subs))
+        self.get_logger().warning(
+            "Missing navigation inputs: "
+            + ", ".join(inactive_subs)
+            + "; publishing desired heading with sail disabled"
+        )
 
 
 if __name__ == "__main__":
-    main()
     main()
