@@ -642,6 +642,8 @@ let reconnectAttempts = 0;
 let flushIntervalId = null;
 // Guards against a slow flush/update cycle overlapping the next timer tick.
 let cycleInProgress = false;
+// Declared up-front so scheduleReconnect can read it before main() runs.
+let shuttingDown = false;
 
 const runPeriodicCycle = async (socket) => {
   if (cycleInProgress) {
@@ -738,7 +740,6 @@ const main = async () => {
   startWebSocket();
 };
 
-let shuttingDown = false;
 // Flush a final snapshot and disconnect cleanly on termination. Containers
 // send SIGTERM (not SIGINT) on stop/redeploy, so handle both.
 const shutdown = async (signal) => {
