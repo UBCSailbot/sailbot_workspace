@@ -24,7 +24,7 @@ const graphsOrderNamesMap: Record<GraphId, string> = {
   WindSensors: 'Wind Sensors',
 };
 
-type SplitSide = 'left' | 'right' | 'full' | null;
+type SplitSide = 'left' | 'right' | null;
 
 const DraggableItem = ({
   id,
@@ -47,7 +47,6 @@ const DraggableItem = ({
   };
 
   const splitClass =
-    splitTargetSide === 'full' ? styles.dropdownItemSplitTarget :
     splitTargetSide === 'left' ? styles.dropdownItemSplitTargetLeft :
     splitTargetSide === 'right' ? styles.dropdownItemSplitTargetRight :
     '';
@@ -326,7 +325,6 @@ const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs }: any) => {
                         id={graphId}
                         label={graphsOrderNamesMap[graphId]}
                         isDragging={graphId === activeId}
-                        splitTargetSide={graphId === splitTargetId ? 'full' : null}
                       />
                     ))}
                   </div>

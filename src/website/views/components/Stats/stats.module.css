@@ -91,11 +91,6 @@
   flex: 1;
 }
 
-.dropdownItemSplitTarget {
-  border-color: #4fc3f7;
-  box-shadow: 0 0 8px rgba(79, 195, 247, 0.6);
-}
-
 /* Cursor on left → dragged item goes left → hovered item shrinks to right half */
 .dropdownItemSplitTargetLeft {
   border-color: #4fc3f7;
