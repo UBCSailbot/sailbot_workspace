@@ -298,13 +298,8 @@ def get_sailing_objective(
     Goal direction remains in the objective stack even though goal progress is also enforced as a
     hard motion-validity check.
     """
-
-    apparent_wind_direction_degrees_global_coordinates = wcs.boat_to_global_coordinate(
-        boat_heading_deg_gc, aw_direction_deg_bc
-    )
-
     tw_dir_rad, tw_speed_kmph = wcs.get_true_wind(
-        apparent_wind_direction_degrees_global_coordinates,
+        aw_direction_deg_bc,
         aw_speed_kmph,
         boat_heading_deg_gc,
         boat_speed_kmph,
