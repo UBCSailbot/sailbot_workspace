@@ -161,6 +161,10 @@ let lastBoundingBoxCheckMs = 0;
 // Timestamp of the last GPS fix we warned about being stale, so a dead GPS
 // feed is logged once per fix instead of on every check.
 let lastLoggedStaleGpsMs = null;
+// Set to true when a bbox shift just evicted vessels, so the next flush is
+// allowed to write an empty snapshot. Without this, a shift to an empty area
+// would leave the old area's ships on the map indefinitely (Rule 2).
+let allowEmptySnapshot = false;
 
 const buildSubscriptionPayload = () => {
   const payload = {
@@ -369,6 +373,12 @@ const applyDynamicBoundingBox = (latestGps, socket) => {
     lastBoundingBoxCenter,
     BBOX_RADIUS_KM * BBOX_PRUNE_RADIUS_FACTOR,
   );
+  // If we just left a populated area, let the next flush write an empty
+  // snapshot so the map clears even if no vessels arrive in the new area for a
+  // while. TTL evictions do NOT set this — Rule 2 still applies to them.
+  if (pruned > 0) {
+    allowEmptySnapshot = true;
+  }
   // Resubscribe over the SAME socket (no reconnect) so aisstream switches region.
   if (socket && socket.readyState === WebSocket.OPEN) {
     socket.send(JSON.stringify(buildSubscriptionPayload()));
@@ -611,9 +621,15 @@ const trimSnapshots = async () => {
 // Persist the latest known position of every tracked vessel as one snapshot.
 const flushSnapshot = async () => {
   pruneStaleVessels();
-  if (vesselPositions.size === 0) {
+  // Empty snapshots are normally suppressed (Rule 2) to avoid flicker from TTL
+  // evictions, but a bbox shift sets allowEmptySnapshot so the map can clear
+  // when the boat enters a region with no ships.
+  const writingEmpty = vesselPositions.size === 0;
+  if (writingEmpty && !allowEmptySnapshot) {
     return;
   }
+  allowEmptySnapshot = false;
+
   const ships = Array.from(vesselPositions.values()).map((ship) => ({
     id: ship.id,
     latitude: ship.latitude,
@@ -631,7 +647,11 @@ const flushSnapshot = async () => {
       timestamp: new Date().toISOString(),
     });
     await trimSnapshots();
-    console.log(`Saved AIS snapshot with ${ships.length} ships.`);
+    if (writingEmpty) {
+      console.log('Saved empty AIS snapshot (region change cleared all vessels).');
+    } else {
+      console.log(`Saved AIS snapshot with ${ships.length} ships.`);
+    }
   } catch (err) {
     console.error('Failed to write AIS snapshot', err);
   }

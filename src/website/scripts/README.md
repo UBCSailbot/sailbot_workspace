@@ -58,7 +58,7 @@ Two mechanisms remove vessels from the in-memory map; the website map follows au
 ## Rules
 
 1. One entry per MMSI: a snapshot never contains two positions for the same vessel.
-2. **Empty snapshots are never written.** If zero vessels are tracked, the last non-empty snapshot remains the newest — the map will keep showing it regardless of age.
+2. **Empty snapshots are suppressed except after a region change.** TTL evictions never produce an empty snapshot (the map keeps the last non-empty one to avoid flicker), but a bbox shift that evicts vessels is allowed to write one empty snapshot so the map clears when the boat enters a region with no ships.
 3. The map is snapshot-driven: anything evicted from the worker's memory disappears from the map at the next flush + poll; nothing is evicted client-side.
 4. Missing `cog`/`rot`/`sog` are stored as `0`; missing dimensions as 30 m × 10 m.
 5. The bbox check always runs before the flush in the same cycle, so shift + spatial eviction land in that cycle's snapshot, not the next.
