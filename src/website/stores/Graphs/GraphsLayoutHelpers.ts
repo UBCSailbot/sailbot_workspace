@@ -131,12 +131,15 @@ export const splitGraph = (
   if (sourceIndex === -1 || targetIndex === -1) return layout;
   if (sourceIndex === targetIndex) return layout;
 
+  // Reject splits into a full target group BEFORE removing the source — otherwise
+  // the source would be dropped from the layout while the group stayed unchanged.
+  const targetItem = layout[targetIndex];
+  if (isSplitGroup(targetItem) && targetItem.length >= 2) return layout;
+
   const withoutSource = removeGraph(layout, sourceId);
 
   return withoutSource.map((item) => {
     if (isSplitGroup(item) && item.includes(targetId)) {
-      // Already a group — reject if already at max 2 graphs
-      if (item.length >= 2) return item;
       return [...item, sourceId];
     }
     if (item === targetId) {
