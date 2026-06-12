@@ -91,13 +91,12 @@ def get_true_wind(
         The function computes vector components in an east/north frame, subtracting the boat
         motion from the apparent wind to obtain the true wind.
     """
-    aw_dir_deg_gc = boat_to_global_coordinate(boat_heading_deg_gc, aw_dir_deg_bc)
-    aw_dir_rad_gc = math.radians(aw_dir_deg_gc)
+    aw_dir_rad_bc = math.radians(aw_dir_deg_bc)
 
     # boat wind is in the direction of the boat heading (reverse of boat heading)
     bw_dir_rad_gc = math.radians(cs.bound_to_180(boat_heading_deg_gc + 180))
-    aw_east_kmph = aw_speed_kmph * math.sin(aw_dir_rad_gc)
-    aw_north_kmph = aw_speed_kmph * math.cos(aw_dir_rad_gc)
+    aw_east_kmph = aw_speed_kmph * math.sin(aw_dir_rad_bc)
+    aw_north_kmph = aw_speed_kmph * math.cos(aw_dir_rad_bc)
 
     bw_east_kmph = boat_speed_kmph * math.sin(bw_dir_rad_gc)
     bw_north_kmph = boat_speed_kmph * math.cos(bw_dir_rad_gc)
@@ -158,10 +157,7 @@ def get_apparent_wind(
     aw_north_kmph = tw_north_kmph + bw_north_kmph
 
     aw_speed_kmph = math.hypot(aw_east_kmph, aw_north_kmph)
-    aw_dir_rad_gc = math.atan2(aw_east_kmph, aw_north_kmph)
-    aw_dir_deg_gc = math.degrees(aw_dir_rad_gc)
-    aw_dir_deg_bc = global_to_boat_coordinate(boat_heading_deg_gc, aw_dir_deg_gc)
-    aw_dir_rad_bc = math.radians(aw_dir_deg_bc)
+    aw_dir_rad_bc = math.atan2(aw_east_kmph, aw_north_kmph)
 
     if ret_rad:
         aw_dir_bc = aw_dir_rad_bc

@@ -56,8 +56,8 @@ Available in [`wind_coord_systems.py`](local_pathfinding/wind_coord_systems.py):
 ### Wind Conversions
 
 <!-- markdownlint-disable-next-line MD013 -->
-- `get_true_wind(aw_dir_deg_bc, aw_speed_kmph, boat_heading_deg_gc, boat_speed_kmph, ret_rad)`
-  Calculate true wind from apparent wind (the apparent wind is in boat coordinates)
+- `get_true_wind(aw_dir_deg, aw_speed_kmph, boat_heading_deg, boat_speed_kmph, ret_rad)`
+  Calculate true wind from apparent wind
 <!-- markdownlint-disable-next-line MD013 -->
 - `get_apparent_wind(tw_dir_deg, tw_speed_kmph, boat_heading_deg, boat_speed_kmph, ret_rad)`
   Calculate apparent wind from true wind

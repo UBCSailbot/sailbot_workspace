@@ -90,8 +90,12 @@ class GoalProgressWindMotionValidator(ob.MotionValidator):
         aw_speed_kmph: float,
     ) -> None:
         ob.MotionValidator.__init__(self, space_information)
-        tw_direction_rad_gc, _ = wcs.get_true_wind(
+        aw_direction_deg_gc = wcs.boat_to_global_coordinate(
+            boat_heading_deg_gc,
             aw_direction_deg_bc,
+        )
+        tw_direction_rad_gc, _ = wcs.get_true_wind(
+            aw_direction_deg_gc,
             aw_speed_kmph,
             boat_heading_deg_gc,
             boat_speed_kmph,
