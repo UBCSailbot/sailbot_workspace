@@ -36,5 +36,4 @@ GlobalPathSchema.set('toJSON', {
   },
 });
 
-export default mongoose.models.GlobalPath ||
-  mongoose.model<GlobalPath>('GlobalPath', GlobalPathSchema);
+export default (mongoose.models['GlobalPath'] as mongoose.Model<GlobalPath> | undefined) ?? mongoose.model<GlobalPath>('GlobalPath', GlobalPathSchema);

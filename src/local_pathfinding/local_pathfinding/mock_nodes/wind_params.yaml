@@ -2,7 +2,6 @@
   ros__parameters:
     tw_dir_deg: 0
     tw_speed_kmph: 0.0
-
 /mock_gps:
   ros__parameters:
     tw_dir_deg: 0

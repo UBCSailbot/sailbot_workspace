@@ -5,16 +5,16 @@ Mock class for the GPS. Publishes basic GPS data to the ROS network.
 import math
 from typing import List
 
-import custom_interfaces.msg as ci
 import rclpy
 from geopy.distance import great_circle
 from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
 from rclpy.parameter import Parameter
+from test_plans.test_plan import TestPlan
 
+import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
 from local_pathfinding.ompl_objectives import TimeObjective
-from test_plans.test_plan import TestPlan
 
 SECONDS_PER_HOUR = 3600
 
@@ -83,6 +83,9 @@ class MockGPS(Node):
         self._mock_gps_timer = self.create_timer(
             timer_period_sec=self.pub_period_sec, callback=self.mock_gps_callback
         )
+
+        # Parameter Event Handler (Parameters can change over the life of the simulation)
+        self.add_on_set_parameters_callback(self._on_set_parameters)
 
     def mock_gps_callback(self) -> None:
         """Updates boat speed based on current heading and true wind.

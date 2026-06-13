@@ -12,7 +12,7 @@ ros_topics:
   LOCAL_PATH: local_path_data
   MOCK_AIS_SHIPS: mock_ais_ships
   MOCK_GPS: mock_gps
-  MOCK_WIND_SENSORS: mock_wind_sensor
+  MOCK_WIND_SENSORS: mock_wind_sensors
   WIND_SENSORS: wind_sensors
   SAIL_CMD: sail_cmd
   BOAT_SIM_INPUT: boat_sim_input
@@ -20,7 +20,6 @@ ros_topics:
 
 ros_nodes:
   CAN_TRANSCEIVER: can_transceiver_node
-  CACHED_FIB: cached_fib_node
   LOCAL_TRANSCEIVER: local_transceiver_node
   MOCK_AIS: mock_ais_node
   REMOTE_TRANSCEIVER: remote_transceiver_node

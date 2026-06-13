@@ -3,11 +3,15 @@
  * It encodes and decodes protobuf objects.
  * This is primarily used for manual testing of satellite data transfer.
  */
+#include <fstream>
 #include <iostream>
 #include <string>
 
+#include "/workspaces/sailbot_workspace/build/network_systems/lib/protofiles/global_path.pb.h"
 #include "/workspaces/sailbot_workspace/build/network_systems/lib/protofiles/sensors.pb.h"
 #include "/workspaces/sailbot_workspace/build/network_systems/lib/protofiles/waypoint.pb.h"
+
+#define htons(x) __bswap_16(x)
 
 int main(int argc, char * argv[])
 {
@@ -28,7 +32,7 @@ int main(int argc, char * argv[])
         return 0;
     }
     // Default: encode mode
-    Polaris::Sensors::Path path;
+    Polaris::GlobalPath path;
 
     float lat;
     float lon;
@@ -40,7 +44,17 @@ int main(int argc, char * argv[])
 
     std::string out;
     path.SerializeToString(&out);
+    uint16_t    size = static_cast<uint16_t>(out.size());
+    uint16_t    be   = htons(size);
+    std::string size_prefix(reinterpret_cast<const char *>(&be), sizeof(be));
 
-    std::cout.write(out.data(), out.size());
+    std::string raw_bytes = size_prefix + out;
+
+    std::ofstream outfile("./serialized_data.bin", std::ios::binary);
+    outfile.write(size_prefix.data(), size_prefix.size());  //NOLINT
+    outfile.write(out.data(), static_cast<std::streamsize>(out.size()));
+    outfile.close();
+
+    std::cout.write(raw_bytes.data(), raw_bytes.size());
     return 0;
 }

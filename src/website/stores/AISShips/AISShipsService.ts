@@ -7,8 +7,9 @@ export const AISShipsService = {
   *getAISShips(): Generator<any, any, any> {
     let isError = false;
 
+    // Only the newest snapshot is rendered, so don't download the full history.
     return yield fetch(
-      getApiUrl('/api/aisships'),
+      getApiUrl('/api/aisships?latest=true'),
       {
         method: 'GET',
       },

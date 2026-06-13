@@ -56,8 +56,9 @@ public:
                     RCLCPP_ERROR(this->get_logger(), "%s", err.what());
                     throw err;
                 }
-            } else if (mode == SYSTEM_MODE::DEV) {
-                RCLCPP_INFO(this->get_logger(), "Running CAN Transceiver in development mode with CAN Sim Intf");
+            } else if (mode == SYSTEM_MODE::DEV || mode == SYSTEM_MODE::SIM) {
+                RCLCPP_INFO(
+                  this->get_logger(), "Running CAN Transceiver in %s mode with CAN Sim Intf", mode.c_str());
                 try {
                     sim_intf_fd_ = mockCanFd("/tmp/CanSimIntfXXXXXX");
                     can_trns_    = std::make_unique<CanTransceiver>(sim_intf_fd_);
@@ -146,6 +147,10 @@ public:
                     publishBoatSimInput(boat_sim_input_msg_);
                     // Add any other necessary looping callbacks
                 });
+            } else if (mode == SYSTEM_MODE::SIM) {  // subscribes to mock_wind_sensors to produce filtered_wind_sensor
+                mock_wind_sensors_sub_ = this->create_subscription<msg::WindSensors>(
+                  ros_topics::MOCK_WIND_SENSORS, QUEUE_SIZE,
+                  [this](msg::WindSensors mock_wind_sensors) { subMockWindSensorsCb(mock_wind_sensors); });
             }
         }
     }
@@ -197,7 +202,9 @@ private:
 
     // Holder for AISShips before publishing
     std::vector<msg::HelperAISShip> ais_ships_holder_;
-    int                             total_ais_ships = 0;
+    // Track received indices for AISShips
+    std::set<int> received_indices_;
+    int           total_ais_ships = -1;
 
     //queue of previous k wind sensor readings (either sail or hull) for moving average
     std::queue<vec> wind_sensor_readings;
@@ -267,23 +274,64 @@ private:
         try {
             CAN_FP::AISShips ais_ship(ais_frame);
 
-            if (total_ais_ships == 0) {
-                total_ais_ships = ais_ship.getNumShips();
-                ais_ships_holder_.resize(total_ais_ships);  // temporary holder vector for AIS ships
+            int num_ships = ais_ship.getNumShips();
+            int ship_idx  = ais_ship.getShipIndex();
+
+            // Case: no ships then publish empty and reset
+            if (num_ships == 0) {
+                ais_ships_.ships.clear();
+                ais_pub_->publish(ais_ships_);
+
+                total_ais_ships = -1;
+                ais_ships_holder_.clear();
+                received_indices_.clear();
+                return;
             }
 
-            ais_ships_holder_[ais_ship.getShipIndex()] = ais_ship.toRosMsg();  //maybe change to pushback later
+            // Initialize on first valid frame
+            if (total_ais_ships == -1) {
+                total_ais_ships = num_ships;
+                ais_ships_holder_.clear();
+                ais_ships_holder_.resize(num_ships);
+                received_indices_.clear();
+            }
 
-            if (ais_ships_holder_.size() == static_cast<size_t>(total_ais_ships)) {
+            // Consistency check
+            if (num_ships != total_ais_ships) {
+                RCLCPP_WARN(
+                  this->get_logger(), "Mismatched numShips (got=%d, expected=%d), resetting", num_ships,
+                  total_ais_ships);
+
+                total_ais_ships = -1;
+                ais_ships_holder_.clear();
+                received_indices_.clear();
+                return;
+            }
+
+            // Bounds check
+            if (ship_idx < 0 || ship_idx >= total_ais_ships) {
+                RCLCPP_WARN(this->get_logger(), "Out of bounds index=%d for size=%d", ship_idx, total_ais_ships);
+                return;
+            }
+
+            // Store ship data
+            ais_ships_holder_[ship_idx] = ais_ship.toRosMsg();
+            received_indices_.insert(ship_idx);
+
+            // Publish only when all ships have been received
+            if (received_indices_.size() == static_cast<size_t>(total_ais_ships)) {
                 ais_ships_.ships = ais_ships_holder_;
                 ais_pub_->publish(ais_ships_);
-                ais_ships_holder_.clear();  // reset holder vector
-                total_ais_ships = 0;        // reset the number of ships
+
+                total_ais_ships = -1;
+                ais_ships_holder_.clear();
+                received_indices_.clear();
             }
+
             RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), ais_ship.toString().c_str());
-        } catch (std::out_of_range err) {
+
+        } catch (const std::exception & err) {
             RCLCPP_WARN(this->get_logger(), "%s", err.what());
-            return;
         }
     }
 

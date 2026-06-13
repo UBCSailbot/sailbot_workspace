@@ -1,3 +1,5 @@
+import { getApiUrl } from '@/lib/apiUrl';
+
 const downloadBlob = async (blob, name) => {
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
@@ -71,19 +73,6 @@ const downloadDataFromAPI = async (sensorType, format) => {
     if (!format) {
       return;
     }
-
-    const getApiUrl = (endpoint) => {
-      if (typeof window !== 'undefined') {
-        const isProduction = window.location.hostname !== 'localhost';
-        if (isProduction) {
-          return endpoint;
-        }
-      }
-      const host = process.env.NEXT_PUBLIC_SERVER_HOST || 'http://localhost';
-      const port = process.env.NEXT_PUBLIC_SERVER_PORT || '3005';
-      const cleanHost = host.replace(/\/$/, '');
-      return `${cleanHost}:${port}${endpoint}`;
-    };
 
     const apiUrl = getApiUrl(`/api/${sensorType}`);
     const response = await fetch(apiUrl);

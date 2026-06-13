@@ -1,13 +1,12 @@
 import os
 
-import custom_interfaces.msg as ci
 import yaml
 from shapely.geometry import MultiPolygon, Polygon
 
+import custom_interfaces.msg as ci
+
 
 class TestPlan:
-    _instance = None
-
     """An immutable singleton collection of data defining a local pathfinding test plan.
 
     The choice to make the class immutable is just for simplicity's sake, it gets passed around a
@@ -17,6 +16,9 @@ class TestPlan:
     the test plan from yaml, and then never again for the duration of the test.
 
     """
+
+    __test__ = False
+    _instance = None
 
     def __new__(cls, file_name: str):
         if cls._instance is None:
@@ -51,27 +53,38 @@ class TestPlan:
             )
             for ship in data.get("ais", [])
         ]
-        self._gps = ci.GPS(
-            lat_lon=ci.HelperLatLon(
-                latitude=data["gps"]["latitude"], longitude=data["gps"]["longitude"]
-            ),
-            speed=ci.HelperSpeed(speed=data["gps"]["speed_kmph"]),
-            heading=ci.HelperHeading(heading=data["gps"]["heading_deg"]),
-        )
-        self._tw_speed_kmph = data["tw_speed_kmph"]
-        self._tw_dir_deg = data["tw_dir_deg"]
 
-        # global path will be added to TestPlan in a separate PR as its more tricky to handle
-        # self._global_path = ci.Path(
-        #     waypoints=[
-        #         ci.HelperLatLon(latitude=wp["latitude"], longitude=wp["longitude"])
-        #         for wp in data["global_path"]["waypoints"]
-        #     ]
-        # )
+        if data.get("gps") is not None:
+            self._gps = ci.GPS(
+                lat_lon=ci.HelperLatLon(
+                    latitude=data["gps"]["latitude"], longitude=data["gps"]["longitude"]
+                ),
+                speed=ci.HelperSpeed(speed=data["gps"]["speed_kmph"]),
+                heading=ci.HelperHeading(heading=data["gps"]["heading_deg"]),
+            )
+        else:
+            self._gps = None
 
-    # @property
-    # def global_path(self):
-    #     return self._global_path
+        if data.get("tw_speed_kmph") is not None or data.get("tw_dir_deg") is not None:
+            self._tw_speed_kmph = data["tw_speed_kmph"]
+            self._tw_dir_deg = data["tw_dir_deg"]
+        else:
+            self._tw_speed_kmph = None
+            self._tw_dir_deg = None
+
+        if data.get("global_path") is not None:
+            self._global_path = ci.Path(
+                waypoints=[
+                    ci.HelperLatLon(latitude=wp["latitude"], longitude=wp["longitude"])
+                    for wp in data["global_path"]["waypoints"]
+                ]
+            )
+        else:
+            self._global_path = None
+
+    @property
+    def global_path(self):
+        return self._global_path
 
     @property
     def gps(self):

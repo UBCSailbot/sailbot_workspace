@@ -34,5 +34,4 @@ const GenericSensorsSchema = new mongoose.Schema<GenericSensors>({
   return this.toString();
 };
 
-export default mongoose.models.GenericSensors ||
-  mongoose.model<GenericSensors>('GenericSensors', GenericSensorsSchema);
+export default (mongoose.models['GenericSensors'] as mongoose.Model<GenericSensors> | undefined) ?? mongoose.model<GenericSensors>('GenericSensors', GenericSensorsSchema);

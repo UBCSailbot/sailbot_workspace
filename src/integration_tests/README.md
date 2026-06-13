@@ -1,13 +1,15 @@
 # Integration Tests
 
-The Integration Tests package defines Polaris' software verification suite. With it, we can specify testplans that
-encompass the entire software project to verify the integration of our various software projects.
+The Integration Tests package defines Polaris' software verification suite.
+With it, we can specify testplans that encompass the entire software project
+to verify the integration of our various software projects.
 
 ## Defining Tests
 
 Tests are defined using `.yaml` files found under the `testplan/` directory.
 Each testplan should implement the following template:
 
+<!-- markdownlint-disable MD013 -->
 ```yaml
 timeout_sec: # Integer (Optional): Number of seconds allowed for the test to run (default 3 seconds)
 
@@ -32,6 +34,7 @@ expected_outputs: # List of expected outputs
       field_name: # dtype (Optional): field_val (both field_name and field_val depend on the dtype)
                   # Required if DONT_CARE is False
 ```
+<!-- markdownlint-enable MD013 -->
 
 See [example.yaml](testplans/example.yaml) for an example implementation.
 

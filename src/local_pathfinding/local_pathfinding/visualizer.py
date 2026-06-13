@@ -14,24 +14,25 @@ Main Components:
 """
 
 import math
+import subprocess
 from collections import deque
 from dataclasses import dataclass
 from multiprocessing import Queue
-from typing import Dict, List, Optional, Tuple, Any
-import subprocess
-import yaml
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
-import custom_interfaces.msg as ci
 import dash
 import plotly.graph_objects as go
+import yaml
 from dash import dcc, html
 from dash.dependencies import Input, Output, State
 from shapely.geometry import MultiPolygon, Polygon
 
+import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.wind_coord_systems as wcs
 from local_pathfinding.ompl_path import OMPLPath
+from local_pathfinding.ompl_validity import NO_GO_ZONE
 
 UPDATE_INTERVAL_MS = 2500
 DEFAULT_PLOT_RANGE = [-100.0, 100.0]
@@ -46,6 +47,10 @@ WIND_BOX_ORIGIN_XY = cs.XY(6.0, 0.0)
 WIND_BOX_Y_OFFSET = 0.5
 
 GOAL_CHANGE_ROUND_DECIMALS = 3  # avoid float jitter spam
+
+NO_GO_CONE_ARC_POINTS = 40  # number of points to approximate each cone arc
+NO_GO_CONE_DEFAULT_RADIUS_KM = 1.5  # fallback radius when no axis range is available
+NO_GO_CONE_RADIUS_FRACTION = 0.12  # fraction of the visible axis span to use as cone radius
 
 BASE_DIR = Path(__file__).resolve().parent
 MOCK_NODES_DIR = BASE_DIR / "mock_nodes"
@@ -417,8 +422,8 @@ def build_path_trace(
     if not local_x_km or not local_y_km:
         return None
     return go.Scatter(
-        x=list(local_x_km),
-        y=list(local_y_km),
+        x=[boat_xy_km[0]] + list(local_x_km[1:]),
+        y=[boat_xy_km[1]] + list(local_y_km[1:]),
         mode="lines",
         name="Path to Goal",
         line=dict(width=2, dash="dot", color="blue"),
@@ -516,6 +521,119 @@ def build_polygon_traces(
             scatter_kwargs["hoverinfo"] = hoverinfo
 
         traces.append(go.Scatter(**scatter_kwargs))
+
+    return traces
+
+
+def _compute_cone_radius(last_range: Optional[Dict[str, List[float]]]) -> float:
+    """Pick a cone radius that looks proportional to the current view.
+
+    If the caller has stored axis ranges from a previous render, the radius is
+    a fixed fraction of the smaller visible span so the cones scale with zoom.
+    Otherwise the default constant is returned.
+
+    Args:
+        last_range: Previously stored axis ranges {"x": [lo, hi], "y": [lo, hi]} or None.
+
+    Returns:
+        Radius in km for the no-go zone cone arcs.
+    """
+    if last_range is not None:
+        x_span = abs(last_range["x"][1] - last_range["x"][0])
+        y_span = abs(last_range["y"][1] - last_range["y"][0])
+        return max(min(x_span, y_span) * NO_GO_CONE_RADIUS_FRACTION, 0.2)
+    return NO_GO_CONE_DEFAULT_RADIUS_KM
+
+
+def build_no_go_zone_traces(
+    vs: VisualizerState,
+    boat_xy_km: Tuple[float, float],
+    last_range: Optional[Dict[str, List[float]]] = None,
+) -> List[go.Scatter]:
+    """Build semi-transparent cone traces showing the upwind and downwind no-go zones.
+
+    Each cone is a circular sector (pie-slice) centred on the boat and spanning
+    ±NO_GO_ZONE (45°) either side of the upwind / downwind direction.  The cones
+    are drawn as filled Scatter polygons so they integrate with the existing
+    Plotly figure.
+
+    The true-wind direction is recovered from the Cartesian vector stored in
+    *vs.tw_vector_kmph* — if the wind speed is effectively zero the cones are
+    not drawn (there is no meaningful wind direction).
+
+    Args:
+        vs: VisualizerState containing the true-wind vector.
+        boat_xy_km: (x, y) current boat position in km.
+        last_range: Previously stored axis ranges, used to auto-scale the cone
+                    radius to the current zoom level.
+
+    Returns:
+        List of Plotly Scatter traces (0, 1, or 2 cones).
+    """
+    tw_mag = math.hypot(vs.tw_vector_kmph.x, vs.tw_vector_kmph.y)
+    if tw_mag < 1e-6:
+        return []  # no meaningful wind direction
+
+    # True wind bearing (true-bearing convention: 0 = north, +π/2 = east)
+    tw_dir_rad = math.atan2(vs.tw_vector_kmph.x, vs.tw_vector_kmph.y)
+
+    # Upwind centre is opposite to the wind vector; downwind is with it
+    upwind_centre_rad = tw_dir_rad + math.pi
+    downwind_centre_rad = tw_dir_rad
+
+    radius = _compute_cone_radius(last_range)
+    bx, by = boat_xy_km[0], boat_xy_km[1]
+
+    def _make_sector(centre_rad: float) -> Tuple[List[float], List[float]]:
+        """Return (xs, ys) for a filled pie-slice polygon."""
+        xs = [bx]  # start at the boat
+        ys = [by]
+        start_angle = centre_rad - NO_GO_ZONE
+        end_angle = centre_rad + NO_GO_ZONE
+        for i in range(NO_GO_CONE_ARC_POINTS + 1):
+            theta = start_angle + (end_angle - start_angle) * i / NO_GO_CONE_ARC_POINTS
+            # polar_to_cartesian convention: x = sin(θ), y = cos(θ)
+            xs.append(bx + radius * math.sin(theta))
+            ys.append(by + radius * math.cos(theta))
+        xs.append(bx)  # close back to the boat
+        ys.append(by)
+        return xs, ys
+
+    traces: List[go.Scatter] = []
+
+    # Upwind no-go cone
+    ux, uy = _make_sector(upwind_centre_rad)
+    traces.append(
+        go.Scatter(
+            x=ux,
+            y=uy,
+            fill="toself",
+            mode="lines",
+            line=dict(color="rgba(255, 80, 80, 0.6)", width=1),
+            fillcolor="rgba(255, 80, 80, 0.18)",
+            opacity=1.0,
+            name="Upwind No-Go",
+            hoverinfo="skip",
+            showlegend=True,
+        )
+    )
+
+    # Downwind no-go cone
+    dx, dy = _make_sector(downwind_centre_rad)
+    traces.append(
+        go.Scatter(
+            x=dx,
+            y=dy,
+            fill="toself",
+            mode="lines",
+            line=dict(color="rgba(255, 165, 0, 0.6)", width=1),
+            fillcolor="rgba(255, 165, 0, 0.18)",
+            opacity=1.0,
+            name="Downwind No-Go",
+            hoverinfo="skip",
+            showlegend=True,
+        )
+    )
 
     return traces
 
@@ -794,7 +912,7 @@ def apply_layout(
     vs: VisualizerState,
     fig: go.Figure,
     zoom_needed: bool,
-    last_range: Optional[Dict[str, List[float]]]
+    last_range: Optional[Dict[str, List[float]]],
 ) -> None:
     """
     Apply the main plot layout configuration (axis titles, domains, legend, and optional ranges).
@@ -868,7 +986,10 @@ def build_figure(
     boat_xy_km = cs.XY(vs.sailbot_pos_x_km[-1], vs.sailbot_pos_y_km[-1])
 
     if not local_x_km or not local_y_km:
-        raise ValueError("No local waypoints available for plotting")
+        # No local path available (e.g. pathfinding failed and sail was disabled).
+        # Still render the boat, obstacles, AIS traffic, and wind so the operator keeps
+        # situational awareness instead of seeing a blank or crashed view.
+        return build_figure_without_local_path(vs, boat_xy_km, last_goal_xy_km, last_range)
     goal_xy_km = cs.XY(local_x_km[-1], local_y_km[-1])
     goal_change = compute_goal_change(last_goal_xy_km, goal_xy_km)
 
@@ -905,7 +1026,8 @@ def build_figure(
         showlegend=False,
     )
     ais_traces = build_ais_traces(vs)
-    fig.add_traces(land_traces + boat_traces + ais_traces)
+    no_go_traces = build_no_go_zone_traces(vs, boat_xy_km, last_range)
+    fig.add_traces(land_traces + boat_traces + ais_traces + no_go_traces)
 
     # Creating Wind box and its elements and adding them to the plot
     wind_config = configure_wind_box_elements(vs)
@@ -922,6 +1044,104 @@ def build_figure(
     apply_layout(vs, fig, zoom_needed, last_range)
     add_goal_change_popup(fig, goal_change.message)  # Popup message for goal change
     return fig, goal_change.new_goal_xy_rounded
+
+
+def build_figure_without_local_path(
+    vs: VisualizerState,
+    boat_xy_km: Tuple[float, float],
+    last_goal_xy_km: Optional[Tuple[float, float]],
+    last_range: Optional[Dict[str, List[float]]],
+) -> Tuple[go.Figure, Tuple[float, float]]:
+    """
+    Build the visualization when no local path is available.
+
+    This happens when local pathfinding fails (e.g. the solver could not produce a path and
+    sail was disabled), so there are no local waypoints or local goal to plot. Everything that
+    does not depend on the local path is still drawn — the boat, land/AIS obstacles, AIS ships,
+    and the wind box — so the operator retains situational awareness instead of seeing a blank
+    or crashed figure.
+
+    Args:
+        vs: VisualizerState containing processed ROS message data.
+        boat_xy_km: (x, y) current boat position in km.
+        last_goal_xy_km: Previous goal position (x, y) in km, or None if never set.
+        last_range: Previously stored axis ranges, or None on first render.
+
+    Returns:
+        (fig, goal_xy): The figure, and the goal position to persist downstream — the previous
+        goal if one is known, otherwise the current boat position so goal-change tracking stays
+        consistent on later frames.
+    """
+    fig = initial_plot()
+
+    # Boat marker (distance-to-goal is unknown without a local path)
+    fig.add_trace(build_boat_trace(vs, boat_xy_km, dist_to_goal_km=0.0))
+
+    # Obstacles (land and AIS collision zones) and AIS ships
+    land_traces = build_polygon_traces(
+        vs.land_obstacles_xy,
+        name="Land Obstacle",
+        line={"color": "lightgreen"},
+        fillcolor="lightgreen",
+        opacity=0.5,
+        showlegend=True,
+    )
+    boat_traces = build_polygon_traces(
+        vs.boat_obstacles_xy,
+        name="AIS Collision Zone",
+        line={"width": 2},
+        fillcolor="rgba(255,165,0,0.25)",
+        opacity=0.5,
+        hoverinfo="skip",
+        showlegend=False,
+    )
+    ais_traces = build_ais_traces(vs)
+    no_go_traces = build_no_go_zone_traces(vs, boat_xy_km, last_range)
+    fig.add_traces(land_traces + boat_traces + ais_traces + no_go_traces)
+
+    # Wind box and its elements
+    wind_config = configure_wind_box_elements(vs)
+    fig.update_layout(**wind_config.layout_config)
+    for arrow in wind_config.wind_arrows:
+        fig.add_annotation(arrow)
+    fig.add_shape(**wind_config.background_info)
+    for annotation in wind_config.annotations:
+        fig.add_annotation(annotation)
+
+    # State-space overlay around the boat only (there is no goal to include)
+    boat_box = OMPLPath.create_buffer_around_position(
+        cs.XY(boat_xy_km[0], boat_xy_km[1]), BOX_BUFFER_SIZE_KM
+    )
+    vs.state_space = MultiPolygon([boat_box])
+    x_min, y_min, x_max, y_max = vs.state_space.bounds
+    fig.add_shape(
+        type="rect",
+        x0=x_min,
+        y0=y_min,
+        x1=x_max,
+        y1=y_max,
+        fillcolor="rgba(000, 100, 255, 0.25)",
+        line=dict(width=0),
+        layer="below",
+    )
+
+    # Make it obvious why no path is drawn
+    fig.add_annotation(
+        text="⚠️ No local path available (sail disabled)",
+        xref="paper",
+        yref="paper",
+        x=0.5,
+        y=1.0,
+        showarrow=False,
+        font=dict(color="red", size=16),
+        bgcolor="rgba(255, 255, 255, 0.7)",
+    )
+
+    zoom_needed = last_range is None
+    apply_layout(vs, fig, zoom_needed, last_range)
+
+    goal_xy = last_goal_xy_km if last_goal_xy_km is not None else (boat_xy_km[0], boat_xy_km[1])
+    return fig, goal_xy
 
 
 def write_wind_params(tw_dir_deg: float, tw_speed_kmph: float) -> None:
@@ -1000,7 +1220,7 @@ def dash_app(q: Queue):
                 style={
                     "position": "absolute",
                     "bottom": "120px",  # Distance from the very bottom of the screen
-                    "left": "50px",   # Aligns with the Y-axis
+                    "left": "50px",  # Aligns with the Y-axis
                     "display": "flex",
                     "gap": "15px",
                     "alignItems": "center",
@@ -1008,20 +1228,23 @@ def dash_app(q: Queue):
                     "backgroundColor": "rgba(255, 255, 255, 0.8)",  # Semi-transparent white
                     "borderRadius": "8px",
                     "border": "1px solid #ccc",
-                    "zIndex": "1000"
+                    "zIndex": "1000",
                 },
                 children=[
                     html.Label("Wind Direction (°):", style={"fontWeight": "bold"}),
-                    dcc.Input(id="tw-dir-input", type="number",
-                              value=0, style={"width": "80px"}),
+                    dcc.Input(id="tw-dir-input", type="number", value=0, style={"width": "80px"}),
                     html.Label("Wind Speed (km/h):", style={"fontWeight": "bold"}),
-                    dcc.Input(id="tw-speed-input", type="number",
-                              value=0, style={"width": "80px"}),
+                    dcc.Input(
+                        id="tw-speed-input", type="number", value=0, style={"width": "80px"}
+                    ),
                     html.Button(
                         "Apply Wind",
                         id="apply-wind-btn",
-                        style={"backgroundColor": "rgb(18, 70, 139)",
-                               "color": "white", "cursor": "pointer"}
+                        style={
+                            "backgroundColor": "rgb(18, 70, 139)",
+                            "color": "white",
+                            "cursor": "pointer",
+                        },
                     ),
                     html.Div(id="wind-status"),
                 ],
@@ -1190,5 +1413,5 @@ app.clientside_callback(
     """,
     Output("wind-status", "children", allow_duplicate=True),
     Input("wind-status", "children"),
-    prevent_initial_call=True
+    prevent_initial_call=True,
 )

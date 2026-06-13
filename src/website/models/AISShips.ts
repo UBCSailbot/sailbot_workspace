@@ -48,5 +48,4 @@ AISShipsSchema.set('toJSON', {
   },
 });
 
-export default mongoose.models.AISShips ||
-  mongoose.model<AISShips>('AISShips', AISShipsSchema);
+export default (mongoose.models['AISShips'] as mongoose.Model<AISShips> | undefined) ?? mongoose.model<AISShips>('AISShips', AISShipsSchema);

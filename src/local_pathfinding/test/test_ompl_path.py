@@ -2,6 +2,13 @@ import math
 import random
 
 import pytest
+from ompl import base
+from rclpy.impl.rcutils_logger import RcutilsLogger
+from shapely.geometry import MultiPolygon, Point, box
+
+import local_pathfinding.coord_systems as cs
+import local_pathfinding.obstacles as ob
+import local_pathfinding.ompl_path as ompl_path
 from custom_interfaces.msg import (
     GPS,
     AISShips,
@@ -14,14 +21,7 @@ from custom_interfaces.msg import (
     Path,
     WindSensor,
 )
-from ompl import base
-from rclpy.impl.rcutils_logger import RcutilsLogger
-from shapely.geometry import MultiPolygon, Point, box
-
-import local_pathfinding.coord_systems as cs
-import local_pathfinding.obstacles as ob
-import local_pathfinding.ompl_path as ompl_path
-from local_pathfinding.local_path import LocalPathState
+from local_pathfinding.local_path import LocalPathState, WindTracker
 
 LAND_KEY = -1
 
@@ -35,19 +35,20 @@ def fresh_ompl_path():
             ais_ships=AISShips(),
             global_path=Path(
                 waypoints=[
-                    HelperLatLon(latitude=0.02, longitude=0.02),
-                    HelperLatLon(latitude=0.04, longitude=0.03),
-                    HelperLatLon(latitude=0.06, longitude=0.05),
-                    HelperLatLon(latitude=0.08, longitude=0.07),
-                    HelperLatLon(latitude=0.10, longitude=0.09),
-                    HelperLatLon(latitude=0.12, longitude=0.11),
-                    HelperLatLon(latitude=0.15, longitude=0.15),
                     HelperLatLon(latitude=0.1, longitude=0.1),
+                    HelperLatLon(latitude=0.15, longitude=0.15),
+                    HelperLatLon(latitude=0.12, longitude=0.11),
+                    HelperLatLon(latitude=0.10, longitude=0.09),
+                    HelperLatLon(latitude=0.08, longitude=0.07),
+                    HelperLatLon(latitude=0.06, longitude=0.05),
+                    HelperLatLon(latitude=0.04, longitude=0.03),
+                    HelperLatLon(latitude=0.02, longitude=0.02),
                 ]
             ),
-            target_global_waypoint=HelperLatLon(latitude=0.1, longitude=0.1),
+            target_global_waypoint=HelperLatLon(latitude=0.02, longitude=0.02),
             filtered_wind_sensor=WindSensor(),
             planner="rrtstar",
+            wind_tracker=WindTracker(),
         ),
     )
 
@@ -117,6 +118,7 @@ def test_init_obstacles():
         target_global_waypoint=goal_position,
         filtered_wind_sensor=WindSensor(),
         planner="rrtstar",
+        wind_tracker=WindTracker(),
     )
 
     # create the xy state space from the specified positions of sailbot and the goal
@@ -198,6 +200,7 @@ def test_init_obstacles():
         target_global_waypoint=HelperLatLon(latitude=0.0, longitude=0.0),
         filtered_wind_sensor=WindSensor(),
         planner="rrtstar",
+        wind_tracker=WindTracker(),
     )
 
     updated_obstacles = ompl_path.OMPLPath.init_obstacles(
@@ -215,7 +218,7 @@ def test_init_obstacles():
 
 @pytest.mark.parametrize(
     "x,y,is_valid",
-    [(0.5, 0.5, True), (-14, 0.5, False), (-16, 0.5, True)],
+    [(0.5, 0.5, True), (-13.5, 0.5, False), (-16, 0.5, True)],
 )
 def test_is_state_valid(x: float, y: float, is_valid: bool, fresh_ompl_path):
     state = base.State(fresh_ompl_path._simple_setup.getStateSpace())
@@ -282,14 +285,14 @@ def test_create_space(
 
 @pytest.mark.parametrize("boat_latlon", [HelperLatLon(latitude=0.0, longitude=0.0)])
 def test_get_remaining_cost_full_path(fresh_ompl_path, boat_latlon):
-    remaining_cost = fresh_ompl_path.get_remaining_cost(0, boat_latlon)
+    remaining_cost = fresh_ompl_path.get_remaining_cost(1, boat_latlon)
     assert remaining_cost == pytest.approx(
         fresh_ompl_path.get_cost(), abs=0.01
     )
 
 
 @pytest.mark.parametrize(
-    "wp_index",
+    "target_wp_index",
     [
         1,
         2,
@@ -297,43 +300,54 @@ def test_get_remaining_cost_full_path(fresh_ompl_path, boat_latlon):
         4,
     ],
 )
-def test_get_remaining_cost_partial(fresh_ompl_path, wp_index):
+def test_get_remaining_cost_partial(fresh_ompl_path, target_wp_index):
     waypoints = fresh_ompl_path.get_path().waypoints
-    boat_latlon = waypoints[wp_index]
-    next_wp_latlon = waypoints[wp_index + 1] if wp_index + 1 < len(waypoints) else None
+    current_wp_latlon = waypoints[target_wp_index - 1]
+    next_wp_latlon = waypoints[target_wp_index]
 
     def mid_point(start_latlon: HelperLatLon, end_latlon: HelperLatLon):
+        """Return a random point between waypoints."""
         if end_latlon is None:
             return start_latlon
         end_points_inclusive_factor = 1e-4
         return HelperLatLon(
-            latitude=(random.uniform(start_latlon.latitude + end_points_inclusive_factor,
-                                     end_latlon.latitude - end_points_inclusive_factor)),  # noqa
-            longitude=(random.uniform(start_latlon.longitude + end_points_inclusive_factor,
-                                      end_latlon.longitude - end_points_inclusive_factor)),  # noqa
+            latitude=(
+                random.uniform(
+                    start_latlon.latitude + end_points_inclusive_factor,
+                    end_latlon.latitude - end_points_inclusive_factor,
+                )
+            ),
+            longitude=(
+                random.uniform(
+                    start_latlon.longitude + end_points_inclusive_factor,
+                    end_latlon.longitude - end_points_inclusive_factor,
+                )
+            ),  # noqa
         )
 
-    boat_latlon = mid_point(boat_latlon, next_wp_latlon)
-    cost = fresh_ompl_path.get_remaining_cost(wp_index, boat_latlon)
+    boat_latlon = mid_point(current_wp_latlon, next_wp_latlon)
+    cost = fresh_ompl_path.get_remaining_cost(target_wp_index, boat_latlon)
 
-    # cannot calculate cost_from_next_wp as index out of bound
-    if next_wp_latlon is None:
+    # cannot calculate cost_from_next_wp as index out of bound for final waypoint
+    if target_wp_index == len(waypoints) - 1:
         with pytest.raises(Exception):
-            fresh_ompl_path.get_remaining_cost(wp_index + 1, next_wp_latlon)
+            fresh_ompl_path.get_remaining_cost(target_wp_index + 1, next_wp_latlon)
         return
 
-    cost_from_next_wp = fresh_ompl_path.get_remaining_cost(wp_index + 1, next_wp_latlon)
+    cost_from_next_wp = fresh_ompl_path.get_remaining_cost(target_wp_index + 1, next_wp_latlon)
 
     full_cost = fresh_ompl_path.get_cost()
-    assert cost < full_cost, f"Remaining cost {cost} should be less than full cost {full_cost}"
+    assert cost <= full_cost, (
+        f"Remaining cost {cost} should be less than or equal to full cost {full_cost}"
+    )
     assert cost > cost_from_next_wp, (
-        f"Cost from waypoint {wp_index} ({cost}) should be greater than "
-        f"cost from waypoint {wp_index + 1} ({cost_from_next_wp})"
+        f"Cost from waypoint {target_wp_index} ({cost}) should be greater than "
+        f"cost from waypoint {target_wp_index + 1} ({cost_from_next_wp})"
     )
 
 
 @pytest.mark.parametrize(
-    "wp_index,",
+    "target_wp_index,",
     [
         1,
         2,
@@ -341,25 +355,26 @@ def test_get_remaining_cost_partial(fresh_ompl_path, wp_index):
         4,
     ],
 )
-def test_get_remaining_cost_no_partial(fresh_ompl_path, wp_index):
+def test_get_remaining_cost_no_partial(fresh_ompl_path, target_wp_index):
     waypoints = fresh_ompl_path.get_path().waypoints
-    boat_latlon = waypoints[wp_index]
-    cost = fresh_ompl_path.get_remaining_cost(wp_index, boat_latlon)
-    # cannot calculate cost_from_next_wp as index out of bound
-    next_wp_latlon = waypoints[wp_index + 1] if wp_index + 1 < len(waypoints) else None
+    boat_latlon = waypoints[target_wp_index - 1]
+    cost = fresh_ompl_path.get_remaining_cost(target_wp_index, boat_latlon)
+    next_wp_latlon = waypoints[target_wp_index]
 
-    if next_wp_latlon is None:
+    if target_wp_index == len(waypoints) - 1:
         with pytest.raises(Exception):
-            fresh_ompl_path.get_remaining_cost(wp_index + 1, next_wp_latlon)
+            fresh_ompl_path.get_remaining_cost(target_wp_index + 1, next_wp_latlon)
         return
 
-    cost_from_next_wp = fresh_ompl_path.get_remaining_cost(wp_index + 1, next_wp_latlon)
+    cost_from_next_wp = fresh_ompl_path.get_remaining_cost(target_wp_index + 1, next_wp_latlon)
 
     full_cost = fresh_ompl_path.get_cost()
-    assert cost < full_cost, f"Remaining cost {cost} should be less than full cost {full_cost}"
+    assert cost <= full_cost, (
+        f"Remaining cost {cost} should be less than or equal to full cost {full_cost}"
+    )
     assert cost > cost_from_next_wp, (
-        f"Cost from waypoint {wp_index} ({cost}) should be greater than "
-        f"cost from waypoint {wp_index + 1} ({cost_from_next_wp})"
+        f"Cost from waypoint {target_wp_index} ({cost}) should be greater than "
+        f"cost from waypoint {target_wp_index + 1} ({cost_from_next_wp})"
     )
 
 
@@ -373,10 +388,10 @@ def test_get_remaining_cost_projection_logic(fresh_ompl_path):
     """
     waypoints = fresh_ompl_path.get_path().waypoints
 
-    # Use segment from waypoint 1 to waypoint 2
-    wp_index = 1
-    start_latlon = waypoints[wp_index]
-    end_latlon = waypoints[wp_index + 1]
+    # Use segment from waypoint 1 to waypoint 2 (target index = 2)
+    target_wp_index = 2
+    start_latlon = waypoints[target_wp_index - 1]
+    end_latlon = waypoints[target_wp_index]
 
     # Convert to XY coordinates for easier geometric calculations
     reference = fresh_ompl_path.state.reference_latlon
@@ -413,11 +428,11 @@ def test_get_remaining_cost_projection_logic(fresh_ompl_path):
     )
 
     # Get remaining cost from this position
-    remaining_cost = fresh_ompl_path.get_remaining_cost(wp_index, boat_latlon)
+    remaining_cost = fresh_ompl_path.get_remaining_cost(target_wp_index, boat_latlon)
 
     # Get cost from the start and end of the segment
-    cost_from_start = fresh_ompl_path.get_remaining_cost(wp_index, start_latlon)
-    cost_from_end = fresh_ompl_path.get_remaining_cost(wp_index + 1, end_latlon)
+    cost_from_start = fresh_ompl_path.get_remaining_cost(target_wp_index, start_latlon)
+    cost_from_end = fresh_ompl_path.get_remaining_cost(target_wp_index + 1, end_latlon)
 
     # The remaining cost should be between the cost from start and cost from end
     # since we're 50% along the segment
