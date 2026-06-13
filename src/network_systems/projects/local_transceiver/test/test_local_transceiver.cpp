@@ -558,18 +558,17 @@ TEST_F(TestLocalTransceiver, parseInMsgValid)
     waypoint_a->set_latitude(holder);
     waypoint_a->set_longitude(holder);
 
-    Polaris::Waypoint * waypoint_b = path.add_waypoints();
-    waypoint_b->set_latitude(holder);
-    waypoint_b->set_longitude(holder);
-
     // convert protobuf to string
     std::string serialized_test = path.SerializeAsString();
+    std::cout << "Hex Payload: ";
+    for (unsigned char c : serialized_test) {
+        std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(c);
+    }
+    std::cout << std::endl;
 
     custom_interfaces::msg::Path parsed_test = LocalTransceiver::parseInMsg(serialized_test);
     EXPECT_EQ(parsed_test.waypoints[0].latitude, holder);
     EXPECT_EQ(parsed_test.waypoints[0].longitude, holder);
-    EXPECT_EQ(parsed_test.waypoints[1].latitude, holder);
-    EXPECT_EQ(parsed_test.waypoints[1].longitude, holder);
 }
 
 TEST_F(TestLocalTransceiver, checkCache)

@@ -467,9 +467,14 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
 {
     static constexpr int MAX_NUM_RETRIES = 20;
     for (int i = 0; i <= MAX_NUM_RETRIES; i++) {
+        std::this_thread::sleep_for(std::chrono::seconds(SMALL_WAIT));
+        clearSerialBuffer();  // Clear any stale data from previous iteration
+
+        std::this_thread::sleep_for(std::chrono::seconds(MEDIUM_WAIT));
         if (i == MAX_NUM_RETRIES) {
             return parseInMsg("-1");
         }
+
         static const AT::Line check_conn_cmd = AT::Line(AT::CHECK_CONN);
         if (!send(check_conn_cmd)) {
             continue;
@@ -477,6 +482,9 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
 
         if (!rcvRsps({check_conn_cmd, AT::Line(AT::DELIMITER), AT::Line(AT::STATUS_OK), AT::Line("\n")})) {
             continue;
+        }
+        if (log_debug_) {
+            log_debug_("DEBUG1");
         }
 
         static const AT::Line disable_ctrlflow_cmd = AT::Line(AT::DSBL_CTRLFLOW);
@@ -487,15 +495,45 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
         if (!rcvRsps({disable_ctrlflow_cmd, AT::Line(AT::DELIMITER), AT::Line(AT::STATUS_OK), AT::Line("\n")})) {
             continue;
         }
+        if (log_debug_) {
+            log_debug_("DEBUG2");
+        }
+
+        clearSerialBuffer();
 
         static const AT::Line sbdix_cmd = AT::Line(AT::SBD_SESSION);
         if (!send(sbdix_cmd)) {
+            if (log_error_) {
+                log_error_("Debug: failed to send SBDIX command (attempt " + std::to_string(i) + ")");
+            }
             continue;
+        }
+        if (log_debug_) {
+            log_debug_("Debug: sent SBDIX command (attempt " + std::to_string(i) + "): " + sbdix_cmd.str_);
+        }
+
+        if (!rcvRsps({
+              sbdix_cmd,
+              AT::Line(AT::DELIMITER),
+            })) {
+            if (log_error_) {
+                log_error_("Debug: did not receive SBDIX response header (attempt " + std::to_string(i) + ")");
+            }
+            continue;
+        }
+        if (log_debug_) {
+            log_debug_("Debug: received SBDIX response header (attempt " + std::to_string(i) + ")");
         }
 
         auto opt_rsp = readRsp();
         if (!opt_rsp) {
+            if (log_error_) {
+                log_error_("Debug: readRsp returned no response (attempt " + std::to_string(i) + ")");
+            }
             continue;
+        }
+        if (log_debug_) {
+            log_debug_("Debug: readRsp received response (attempt " + std::to_string(i) + "): " + opt_rsp.value());
         }
 
         std::string              opt_rsp_val = opt_rsp.value();
@@ -514,7 +552,10 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
 
         if (rsp.MO_status_ == 0) {
             if (rsp.MT_status_ == 0) {
-                return parseInMsg("-1");
+                if (log_debug_) {
+                    log_debug_("DEBUG: MT status 0 continue");
+                }
+                continue;
             } else if (rsp.MT_status_ == 1) {  //NOLINT
                 break;
             } else if (rsp.MT_status_ == 2) {
@@ -524,6 +565,9 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
             continue;
         }
     }
+    if (log_debug_) {
+        log_debug_("DEBUG3");
+    }
 
     std::string receivedDataBuffer;
     for (int i = 0; i < MAX_NUM_RETRIES; i++) {
@@ -532,13 +576,19 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
             continue;
         }
 
-        if (!rcvRsps({message_to_queue_cmd, AT::Line(AT::DELIMITER)})) {
+        if (!rcvRsps({message_to_queue_cmd})) {
             continue;
         }
 
         auto payload = readBinaryRsp();
         if (!payload) {
             continue;
+        }
+        std::cout << "[RAW PAYLOAD][SIZE " << payload.value().size() << " ]: ";
+        std::cout.write(payload.value().data(), payload.value().size());
+        std::cout << std::endl;
+        if (log_debug_) {
+            log_debug_("DEBUG4");
         }
 
         receivedDataBuffer = payload.value();
@@ -548,7 +598,9 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
     std::future<void> fut = std::async(std::launch::async, cacheGlobalWaypoints, receivedDataBuffer);
 
     custom_interfaces::msg::Path to_publish = parseInMsg(receivedDataBuffer);
-
+    if (log_debug_) {
+        log_debug_("DEBUG5");
+    }
     fut.get();
     return to_publish;
 }
