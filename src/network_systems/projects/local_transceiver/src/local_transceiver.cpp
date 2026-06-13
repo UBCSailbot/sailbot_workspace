@@ -532,47 +532,16 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
             continue;
         }
 
-        auto buffer_data = readRsp();
-        if (!buffer_data) {
+        if (!rcvRsps({message_to_queue_cmd, AT::Line(AT::DELIMITER)})) {
             continue;
         }
 
-        std::string message_size_str;
-        std::string message;
-        uint16_t    message_size_int = 0;
-
-        if (buffer_data && buffer_data->size() >= 2) {
-            message_size_str = buffer_data->substr(0, 2);
-        } else {
+        auto payload = readBinaryRsp();
+        if (!payload) {
             continue;
         }
 
-        message_size_int = (static_cast<uint8_t>(message_size_str[0]) << 8) | static_cast<uint8_t>(message_size_str[1]);
-
-        if (message_size_int == 0) {
-            continue;
-        }
-
-        if (buffer_data->size() < static_cast<size_t>(message_size_int) + 4) {
-            continue;
-        }
-
-        message = buffer_data->substr(2, message_size_int);
-
-        uint16_t received_checksum = (static_cast<uint8_t>((*buffer_data)[2 + message_size_int]) << 8) |
-                                     static_cast<uint8_t>((*buffer_data)[3 + message_size_int]);
-
-        uint16_t calculated_checksum = 0;
-
-        for (unsigned char byte : message) {
-            calculated_checksum += byte;
-        }
-
-        if (received_checksum != calculated_checksum) {
-            continue;
-        }
-
-        receivedDataBuffer = message;
+        receivedDataBuffer = payload.value();
         break;
     }
 
@@ -659,6 +628,59 @@ bool LocalTransceiver::rcvRsps(std::initializer_list<const AT::Line> expected_rs
     // All responses must match the expected responses
     return std::all_of(
       expected_rsps.begin(), expected_rsps.end(), [this](const AT::Line & e_rsp) { return rcvRsp(e_rsp); });
+}
+
+std::optional<std::string> LocalTransceiver::readBinaryRsp()
+{
+    std::array<uint8_t, 2>    len_buf;
+    boost::system::error_code ec;
+
+    bool success = runWithTimeout(
+      [&](auto handler) { bio::async_read(serial_, bio::buffer(len_buf), bio::transfer_exactly(2), handler); }, ec);
+
+    if (!success) {
+        if (log_error_) log_error_("readBinaryRsp: failed to read length prefix: " + ec.message());
+        return std::nullopt;
+    }
+
+    uint16_t msg_len = (static_cast<uint16_t>(len_buf[0]) << 8) | static_cast<uint16_t>(len_buf[1]);
+
+    if (msg_len == 0) {
+        if (log_error_) log_error_("readBinaryRsp: zero length message");
+        return std::nullopt;
+    }
+
+    std::string payload(msg_len, '\0');
+    success = runWithTimeout(
+      [&](auto handler) { bio::async_read(serial_, bio::buffer(payload), bio::transfer_exactly(msg_len), handler); },
+      ec);
+
+    if (!success) {
+        if (log_error_) log_error_("readBinaryRsp: failed to read payload: " + ec.message());
+        return std::nullopt;
+    }
+
+    std::array<uint8_t, 2> chk_buf;
+    success = runWithTimeout(
+      [&](auto handler) { bio::async_read(serial_, bio::buffer(chk_buf), bio::transfer_exactly(2), handler); }, ec);
+
+    if (!success) {
+        if (log_error_) log_error_("readBinaryRsp: failed to read checksum: " + ec.message());
+        return std::nullopt;
+    }
+
+    uint16_t received_checksum   = (static_cast<uint16_t>(chk_buf[0]) << 8) | static_cast<uint16_t>(chk_buf[1]);
+    uint16_t calculated_checksum = 0;
+    for (unsigned char byte : payload) {
+        calculated_checksum += byte;
+    }
+
+    if (received_checksum != calculated_checksum) {
+        if (log_error_) log_error_("readBinaryRsp: checksum mismatch");
+        return std::nullopt;
+    }
+
+    return payload;
 }
 
 std::optional<std::string> LocalTransceiver::readRsp()
