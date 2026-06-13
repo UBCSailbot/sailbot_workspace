@@ -1,5 +1,3 @@
-import os
-
 import post_server as ps
 import pytest
 from custom_interfaces.msg import HelperLatLon, Path
@@ -9,12 +7,10 @@ from local_pathfinding.global_path import (
     _interpolate_path,
     calculate_interval_spacing,
     generate_path,
-    get_most_recent_file,
     get_path,
     interpolate_path,
     path_to_dict,
     post_path,
-    write_to_file,
 )
 
 
@@ -55,7 +51,6 @@ def test__interpolate_path(
         interval_spacing=interval_spacing,
         pos=pos,
         path_spacing=path_spacing,
-        write=False,
     )
 
     assert isinstance(interpolated_path, Path)
@@ -184,44 +179,12 @@ def test_generate_path(
         assert dist <= interval_spacing, "Interval spacing is not correct"
 
 
-# ------------------------- TEST GET_MOST_RECENT_FILE -------------------------
-@pytest.mark.parametrize(
-    "file_path,global_path,tmstmp",
-    [
-        (
-            "/workspaces/sailbot_workspace/src/local_pathfinding/global_paths/test_file.csv",
-            Path(),
-            False,
-        )
-    ],
-)
-def test_get_most_recent_file(file_path: str, global_path: Path, tmstmp: bool):
-    # create a file in the directory
-    write_to_file(file_path=file_path, global_path=global_path, tmstmp=tmstmp)
-
-    assert (
-        get_most_recent_file(directory_path=file_path[: -len(file_path.split("/")[-1])])
-        == file_path
-    ), "Did not get most recent file"
-
-    os.remove(file_path)
-
-
 # ------------------------- TEST GET_PATH -------------------------
-@pytest.mark.parametrize(
-    "file_path",
-    ["/workspaces/sailbot_workspace/src/local_pathfinding/global_paths/mock_global_path.csv"],
-)
-def test_get_path(file_path: str):
-    """ "
-    Args:
-        file_path (str): The path to the global path csv file.
-    """
-    global_path = get_path(file_path)
+def test_get_path():
+    global_path = get_path()
 
     assert isinstance(global_path, Path)
 
-    # Check that the path is formatted correctly
     for waypoint in global_path.waypoints:
         assert isinstance(waypoint, HelperLatLon), "Waypoint is not a HelperLatLon"
         assert isinstance(waypoint.latitude, float), "Waypoint latitude is not a float"
@@ -271,7 +234,7 @@ def test_interpolate_path(path: Path, pos: HelperLatLon, interval_spacing: float
         interval_spacing (float): The spacing between each waypoint.
     """
     formatted_path = interpolate_path(
-        path=path, pos=pos, interval_spacing=interval_spacing, file_path="", write=False
+        path=path, pos=pos, interval_spacing=interval_spacing
     )
 
     assert isinstance(formatted_path, Path), "Formatted path is not a Path"
@@ -334,15 +297,3 @@ def test_post_path(global_path: Path):
     ps.shutdown_server(httpd=server)
 
 
-# ------------------------- TEST WRITE_TO_FILE ------------------------------
-@pytest.mark.parametrize(
-    "file_path",
-    [
-        ("/workspaces/sailbot_workspace/src/local_pathfinding/anywhere_else/mock_global_path.csv"),
-        (""),
-        ("/workspaces/sailbot_workspace/src/local_pathfinding/ global_paths/mock_global_path.csv"),
-    ],
-)
-def test_write_to_file(file_path: str):
-    with pytest.raises(ValueError):
-        write_to_file(file_path=file_path, global_path=None)

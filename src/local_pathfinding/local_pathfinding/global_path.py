@@ -1,54 +1,48 @@
-"""The Global Path Module, which retrieves the global path from a specified http source and
+"""The Global Path Module, which retrieves the global path from a constant array and
 sends it to NET via POST request.
 
-The main function accepts two CLI arguments:
-    file_path (str): The path to the global path csv file.
+The main function accepts one CLI argument:
     --interval (float, Optional): The desired path interval length in km.
 """
 
 import argparse
-import csv
 import json
-import os
 import time
 from datetime import datetime
 from urllib.error import HTTPError, URLError
 from urllib.request import urlopen
 
-import custom_interfaces.msg as ci
 import numpy as np
 
+import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
 
 GPS_URL = "http://localhost:3005/api/gps"
 PATH_URL = "http://localhost:8081/global-path"
-GLOBAL_PATHS_FILE_PATH = "/workspaces/sailbot_workspace/src/local_pathfinding/global_paths"
 PERIOD = 5  # seconds
+
+# Global path defined as a list of (latitude, longitude) tuples
+GLOBAL_PATH_WAYPOINTS = [
+    (49.276303, -123.199690),
+    (49.281413, -123.193666),
+    (49.281634, -123.185532),
+    (49.281736, -123.173314),
+    (49.289782, -123.171669),
+]
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("file_path", help="The path to the global path csv file.")
     parser.add_argument("--interval", help="Desired path interval length.", type=float)
     args = parser.parse_args()
 
-    file_path = args.file_path
-    path_mod_tmstmp = None
-    pos = None
-
-    try:
-        path = get_path(file_path)
-        print(f"retrieved path from {file_path}", path_to_dict(path))
-    except FileNotFoundError:
-        print(f"{file_path} not found. Please enter a valid file path.")
-        exit(1)
+    path = get_path()
+    print("Retrieved path from constant array:", path_to_dict(path))
 
     # Main service loop
     while True:
         time.sleep(PERIOD)
-        timestamp = time.ctime(os.path.getmtime(file_path))
 
-        # We should try to retrieve the position on every loop
         pos = get_pos()
 
         if pos is None:
@@ -64,79 +58,32 @@ def main():
             )[2]
         )
 
-        # exit loop if the path has not been modified or interval lengths are fine
-        if (timestamp == path_mod_tmstmp) and (
-            (args.interval is None) or position_delta <= args.interval
-        ):
+        if (args.interval is None) or position_delta <= args.interval:
             continue
 
         if args.interval is not None:
-            # interpolate path will interpolate new path and save it to a new csv file
             path = interpolate_path(
                 path=path,
                 pos=pos,
                 interval_spacing=args.interval,
-                file_path=file_path,
             )
 
         if post_path(path):
             print("Global path successfully updated.")
             print(f"position was {pos}")
-            file_path = get_most_recent_file(GLOBAL_PATHS_FILE_PATH)
-            timestamp = time.ctime(os.path.getmtime(file_path))
         else:
-            # if the post was unsuccessful, we should try again
-            # so don't update the timestamp
             continue
 
-        path_mod_tmstmp = timestamp
 
-
-def get_most_recent_file(directory_path: str) -> str:
-    """
-    Returns the most recently modified file in the specified directory.
-
-    Args:
-        directory_path (str): The path to the directory containing the files.
+def get_path() -> ci.Path:
+    """Returns the global path from the GLOBAL_PATH_WAYPOINTS constant.
 
     Returns:
-        str: The path to the most recently modified file.
-    """
-    all_files = os.listdir(directory_path)
-
-    # Filter out directories and get the full file paths
-    files = [
-        os.path.join(directory_path, file)
-        for file in all_files
-        if os.path.isfile(os.path.join(directory_path, file))
-    ]
-
-    # Sort the files based on their last modification time
-    files.sort(key=lambda x: os.path.getmtime(x), reverse=True)
-
-    if files:
-        return files[0]
-    else:
-        return ""
-
-
-def get_path(file_path: str) -> ci.Path:
-    """Returns the global path from the specified file path.
-
-    Args:
-        file_path (str): The path to the global path csv file.
-
-    Returns:
-        (ci.Path): The global path retrieved from the csv file.
+        (ci.Path): The global path.
     """
     path = ci.Path()
-
-    with open(file_path, "r") as file:
-        reader = csv.reader(file)
-        # skip header
-        reader.__next__()
-        for row in reader:
-            path.waypoints.append(ci.HelperLatLon(latitude=float(row[0]), longitude=float(row[1])))
+    for lat, lon in GLOBAL_PATH_WAYPOINTS:
+        path.waypoints.append(ci.HelperLatLon(latitude=lat, longitude=lon))
     return path
 
 
@@ -213,22 +160,15 @@ def generate_path(
     dest: ci.HelperLatLon,
     interval_spacing: float,
     pos: ci.HelperLatLon,
-    write: bool = False,
-    file_path: str = "",
 ) -> ci.Path:
     """Returns a path from the current GPS location to the destination point.
     Waypoints are evenly spaced along the path according to the interval_spacing parameter.
     Path does not include pos, but does include dest as the last element.
 
-    If write is True, the path is written to a new csv file in the same directory as file_path,
-    with the name of the original file, appended with a timestamp.
-
     Args:
         dest (ci.HelperLatLon): The destination point
         interval_spacing (float): The desired distance between waypoints on the path
         pos (ci.HelperLatLon): The current GPS location
-        write (bool, optional): Whether to write the path to a new csv file, default False
-        file_path (str, optional): The filepath to the global path csv file, default empty
 
     Returns:
         ci.Path: The generated path
@@ -257,9 +197,6 @@ def generate_path(
     # append the destination point
     global_path.waypoints.append(ci.HelperLatLon(latitude=lat2, longitude=lon2))
 
-    if write:
-        write_to_file(file_path=file_path, global_path=global_path)
-
     return global_path
 
 
@@ -268,8 +205,6 @@ def _interpolate_path(
     interval_spacing: float,
     pos: ci.HelperLatLon,
     path_spacing: list[float],
-    write: bool = False,
-    file_path: str = "",
 ) -> ci.Path:
     """Interpolates and inserts geodesic subpaths between any waypoints which are spaced too far
        apart. This functions uses the convention that the last point in the global path is the next
@@ -280,8 +215,6 @@ def _interpolate_path(
         interval_spacing (float): The desired spacing between waypoints
         pos (ci.HelperLatLon): The current GPS location
         path_spacing (list[float]): The distances between pairs of points in global_path
-        write (bool, optional): Whether to write the path to a new csv file, default False
-        file_path (str, optional): The filepath to the global path csv file, default empty
 
     Returns:
         ci.Path: The interpolated path
@@ -313,9 +246,6 @@ def _interpolate_path(
 
     global_path.waypoints = waypoints
 
-    if write:
-        write_to_file(file_path=file_path, global_path=global_path)
-
     return global_path
 
 
@@ -323,8 +253,6 @@ def interpolate_path(
     path: ci.Path,
     pos: ci.HelperLatLon,
     interval_spacing: float,
-    file_path: str,
-    write=True,
 ) -> ci.Path:
     """Interpolates path to ensure the interval lengths are less than or equal to the specified
     interval spacing.
@@ -333,8 +261,6 @@ def interpolate_path(
         path (ci.Path): The global path.
         pos (ci.HelperLatLon): The current position of the vehicle.
         interval_spacing (float): The desired interval spacing.
-        file_path (str): The path to the global path csv file.
-        write (bool, optional): Whether or not to write the new path to a csv file. Default True.
 
     Returns:
         ci.Path: The interpolated path.
@@ -349,8 +275,6 @@ def interpolate_path(
             dest=path.waypoints[0],
             interval_spacing=interval_spacing,
             pos=pos,
-            write=write,
-            file_path=file_path,
         )
     # Check if any waypoints are too far apart
     elif max(path_spacing) > interval_spacing:
@@ -359,8 +283,6 @@ def interpolate_path(
             interval_spacing=interval_spacing,
             pos=pos,
             path_spacing=path_spacing,
-            write=write,
-            file_path=file_path,
         )
 
     return path
@@ -393,37 +315,6 @@ def calculate_interval_spacing(
     distances = [cs.meters_to_km(distance) for distance in distances]
 
     return distances
-
-
-def write_to_file(file_path: str, global_path: ci.Path, tmstmp: bool = True):
-    """Writes the global path to a new, timestamped csv file.
-
-    Args
-        file_path (str): The filepath to the global path csv file
-        global_path (ci.Path): The global path to write to file
-        tmstmp (bool, optional): Whether to append a timestamp to the file name, default True
-
-    Raises:
-        ValueError: If file_path is not to an existing `global_paths` directory
-    """
-
-    # check if file_path is a valid file path
-    if not os.path.isdir(os.path.dirname(file_path)) or not str(
-        os.path.dirname(file_path)
-    ).endswith("global_paths"):
-        raise ValueError(f"Invalid file path: {file_path}")
-
-    if tmstmp:
-        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        dst_file_path = file_path.removesuffix(".csv") + f"_{timestamp}.csv"
-    else:
-        dst_file_path = file_path
-
-    with open(dst_file_path, "w") as file:
-        writer = csv.writer(file)
-        writer.writerow(["latitude", "longitude"])
-        for waypoint in global_path.waypoints:
-            writer.writerow([waypoint.latitude, waypoint.longitude])
 
 
 def path_to_dict(path: ci.Path, num_decimals: int = 4) -> dict[int, str]:

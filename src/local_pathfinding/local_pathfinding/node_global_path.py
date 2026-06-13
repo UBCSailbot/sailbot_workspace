@@ -36,22 +36,22 @@ def main(args=None):
 
 
 def get_global_path(file_path: str, interval_spacing_km: float) -> ci.Path:
-    """Reads the global path from a CSV file and interpolates it so that no two consecutive
+    """Reads the global path from the constant array and interpolates it so that no two consecutive
     waypoints are farther apart than `interval_spacing_km`.
 
     Interpolation is anchored to the path's own final waypoint, so the boat's live position is
-    not required and the result is a pure function of the CSV file. The anchor is a separate
-    argument from the path itself: to anchor interpolation on the boat's live position instead
-    (adding a lead-in segment from the boat onto the route), pass that position as the anchor.
+    not required. The anchor is a separate argument from the path itself: to anchor interpolation
+    on the boat's live position instead (adding a lead-in segment from the boat onto the route),
+    pass that position as the anchor.
 
     Args:
-        file_path (str): The path to the global path csv file.
+        file_path (str): Unused; retained for interface compatibility with the timer callback.
         interval_spacing_km (float): The maximum allowed spacing between waypoints in km.
 
     Returns:
-        ci.Path: The interpolated global path. May be empty if the CSV contains no waypoints.
+        ci.Path: The interpolated global path. May be empty if GLOBAL_PATH_WAYPOINTS is empty.
     """
-    path = gp.get_path(file_path)
+    path = gp.get_path()
 
     if len(path.waypoints) == 0:
         return path
@@ -64,8 +64,6 @@ def get_global_path(file_path: str, interval_spacing_km: float) -> ci.Path:
         path=path,
         pos=anchor,
         interval_spacing=interval_spacing_km,
-        file_path=file_path,
-        write=False,
     )
 
 
