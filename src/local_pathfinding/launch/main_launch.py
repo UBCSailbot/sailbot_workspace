@@ -37,7 +37,7 @@ LOCAL_LAUNCH_ARGUMENTS: List[DeclareLaunchArgument] = [
     DeclareLaunchArgument(
         name="ocean_drift_speed_kmph",
         default_value="0.5",
-        description="Base speed of the ocean current in km/h.",
+        description="Base speed of the ocean current in km/h over ground.",
     ),
     DeclareLaunchArgument(
         name="ocean_drift_dir_deg",
