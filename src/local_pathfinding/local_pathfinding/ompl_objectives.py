@@ -8,11 +8,11 @@ from ompl import geometric as og
 from scipy.interpolate import RegularGridInterpolator
 
 import local_pathfinding.coord_systems as cs
+import local_pathfinding.wind_coord_systems as wcs
 from local_pathfinding.ompl_validity import (
     get_segment_wind_angle_rad_bc,
     motion_makes_goal_progress,
 )
-import local_pathfinding.wind_coord_systems as wcs
 
 UPWIND_COST_MULTIPLIER = 1.0
 DOWNWIND_COST_MULTIPLIER = 1.0

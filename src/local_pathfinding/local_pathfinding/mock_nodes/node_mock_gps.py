@@ -144,13 +144,13 @@ class MockGPS(Node):
         self._drift_speed_kmph += self._drift_accel_kmph2 * dt_hours
 
         drift_speed_kmph = self._drift_speed_kmph
-        drift_dir = self._drift_dir_deg
+        drift_dir_deg = self._drift_dir_deg
 
         if self._use_drift_randomization:
             drift_speed_kmph += random.gauss(0.0, drift_speed_kmph * DRIFT_SPEED_NOISE_SIGMA_SCALE)
-            drift_dir += random.gauss(0.0, DRIFT_DIR_NOISE_SIGMA_DEG)
+            drift_dir_deg += random.gauss(0.0, DRIFT_DIR_NOISE_SIGMA_DEG)
 
-        drift_dir_rad = math.radians(drift_dir)
+        drift_dir_rad = math.radians(drift_dir_deg)
         step_km = drift_speed_kmph * dt_hours
         self._drift_offset_km = cs.XY(
             self._drift_offset_km.x + step_km * math.sin(drift_dir_rad),
