@@ -532,10 +532,6 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
             continue;
         }
 
-        if (!rcvRsps({message_to_queue_cmd, AT::Line("\n"), AT::Line("+SBDRB:"), AT::Line("\n")})) {
-            continue;
-        }
-
         auto buffer_data = readRsp();
         if (!buffer_data) {
             continue;
@@ -551,8 +547,11 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
             continue;
         }
 
-        message_size_int = (static_cast<uint8_t>(message_size_str[0]) << 8) |
-                        static_cast<uint8_t>(message_size_str[1]);
+        message_size_int = (static_cast<uint8_t>(message_size_str[0]) << 8) | static_cast<uint8_t>(message_size_str[1]);
+
+        if (message_size_int == 0) {
+            continue;
+        }
 
         if (buffer_data->size() < static_cast<size_t>(message_size_int) + 4) {
             continue;
@@ -560,11 +559,11 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
 
         message = buffer_data->substr(2, message_size_int);
 
-        uint16_t received_checksum =
-            (static_cast<uint8_t>((*buffer_data)[2 + message_size_int]) << 8) |
-            static_cast<uint8_t>((*buffer_data)[3 + message_size_int]);
+        uint16_t received_checksum = (static_cast<uint8_t>((*buffer_data)[2 + message_size_int]) << 8) |
+                                     static_cast<uint8_t>((*buffer_data)[3 + message_size_int]);
 
         uint16_t calculated_checksum = 0;
+
         for (unsigned char byte : message) {
             calculated_checksum += byte;
         }
