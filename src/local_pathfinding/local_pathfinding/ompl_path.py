@@ -23,7 +23,7 @@ import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.obstacles as ob
 from local_pathfinding.ompl_objectives import get_sailing_objective
-from local_pathfinding.ompl_validity import GoalProgressMotionValidator
+from local_pathfinding.ompl_validity import GoalProgressWindMotionValidator
 
 if TYPE_CHECKING:
     from local_pathfinding.local_path import LocalPathState
@@ -78,6 +78,7 @@ class OMPLPath:
         Args:
             parent_logger (RcutilsLogger): Logger of the parent class.
             local_path_state (LocalPathState): State of Sailbot.
+            land_multi_polygon (MultiPolygon | None): Optional land geometry override for tests.
         """
         self._box_buffer = BOX_BUFFER_SIZE_KM
 
@@ -107,8 +108,8 @@ class OMPLPath:
     @staticmethod
     def init_obstacles(
         local_path_state: LocalPathState,
-        state_space_xy: Polygon = None,
-        land_multi_polygon: MultiPolygon = None,
+        state_space_xy: Polygon | None = None,
+        land_multi_polygon: MultiPolygon | None = None,
     ) -> dict[int, ob.Obstacle]:
         """Extracts obstacle data from local_path_state and compiles it into a list of Obstacles
 
@@ -420,15 +421,6 @@ class OMPLPath:
         )
         simple_setup.setStartAndGoalStates(start, goal)
 
-        space_information = simple_setup.getSpaceInformation()
-        self._goal_progress_motion_validator = GoalProgressMotionValidator(
-            space_information,
-            goal_position_in_xy,
-        )
-        space_information.setMotionValidator(self._goal_progress_motion_validator)
-
-        self.state.planner = og.RRTstar(space_information)
-
         # Use the wind snapshot stored with this LocalPathState so path planning and
         # later wind-change comparisons share the same baseline.
         if self.state.path_generated_wind is None:
@@ -437,7 +429,8 @@ class OMPLPath:
             current_aw = self.state.path_generated_wind
 
         # NaN wind/heading/speed makes OMPL costs undefined and can crash/stall the solver with
-        # no catchable exception, so surface it here (the solve-wrapper can't catch it).
+        # no catchable exception, so surface it here (the solve-wrapper can't catch it). These
+        # values feed both the wind-aware motion validator and the objective below.
         if not (
             math.isfinite(current_aw.dir_deg)
             and math.isfinite(current_aw.speed_kmph)
@@ -451,6 +444,19 @@ class OMPLPath:
                 f"boat_speed={self.state.speed}"
             )
 
+        space_information = simple_setup.getSpaceInformation()
+        self._goal_progress_wind_motion_validator = GoalProgressWindMotionValidator(
+            space_information,
+            goal_position_in_xy,
+            self.state.heading,
+            self.state.speed,
+            current_aw.dir_deg,
+            current_aw.speed_kmph,
+        )
+        space_information.setMotionValidator(self._goal_progress_wind_motion_validator)
+
+        self.state.planner = og.RRTstar(space_information)
+
         objective = get_sailing_objective(
             space_information,
             simple_setup,
@@ -458,7 +464,7 @@ class OMPLPath:
             self.state.speed,
             current_aw.dir_deg,
             current_aw.speed_kmph,
-            goal_position_in_xy
+            goal_position_in_xy,
         )
 
         simple_setup.setOptimizationObjective(objective)

@@ -3,11 +3,12 @@
 import math
 from collections import deque
 from dataclasses import dataclass
-from datetime import datetime, timedelta
-from typing import List, Optional
+from time import monotonic
+from typing import Callable, List, Optional
 
 import numpy as np
 from rclpy.impl.rcutils_logger import RcutilsLogger
+from rclpy.logging import get_logger
 from shapely.geometry import LineString, MultiPolygon
 
 import custom_interfaces.msg as ci
@@ -25,7 +26,7 @@ GPS_POSITION_ERROR_KM = 0.003
 LOCAL_WAYPOINT_REACHED_THRESH_KM = 0.05
 HEADING_WEIGHT = 0.6
 COST_WEIGHT = 0.4
-PATH_TTL_SEC = timedelta(seconds=600)
+PATH_TTL_SEC = 600.0
 MAX_OMPL_PATH_GEN_TRIES = 2
 
 
@@ -61,6 +62,7 @@ class WindTracker:
         self.aw_history: deque = deque(maxlen=WIND_HISTORY_LEN)
         self.aw_avg: Optional[Wind] = None
         self.using_one_aw_point: bool = True
+        self._logger = get_logger("wind_tracker")
 
     def update_aw_history(self, current_aw: Wind):
         """Updates apparent wind history and recalculates the average wind. The wind values are
@@ -74,8 +76,14 @@ class WindTracker:
         """
 
         self.aw_history.append(current_aw)
-
         self.aw_avg = self._calculate_aw_avg()
+
+        self._logger.debug(
+            f"WindTracker updated: current_aw speed={current_aw.speed_kmph:.2f} km/h, "
+            f"direction={current_aw.dir_deg:.2f} deg, "
+            f"history_len={len(self.aw_history)}/{WIND_HISTORY_LEN}, "
+            f"aw_avg={self.aw_avg}"
+        )
 
     def _calculate_aw_avg(self) -> Optional[Wind]:
         """Calculates the average apparent wind from the wind history once the deque is full.
@@ -138,7 +146,7 @@ class LocalPathState:
             The global waypoint is the same as the reference latlon.
         planner (str): Planner to use for the OMPL query.
         obstacles (List[Obstacle]): All obstacles in the state space.
-        path_generated_time (datetime): Time when the path was generated
+        path_generated_time_sec (float): Clock time in seconds when the path was generated.
         current_aw (Wind): Latest apparent wind reading from the filtered wind sensor.
         wind_tracker (WindTracker): Rolling apparent wind tracker shared across path states.
             It owns aw_history, a queue of wind readings with max length WIND_HISTORY_LEN, and
@@ -159,6 +167,7 @@ class LocalPathState:
         filtered_wind_sensor: ci.WindSensor,
         planner: str,
         wind_tracker: WindTracker,
+        path_generated_time_sec: Optional[float] = None,
     ):
         self.wind_tracker = wind_tracker
         self.update_state(gps, ais_ships, filtered_wind_sensor)
@@ -175,7 +184,11 @@ class LocalPathState:
 
         # obstacles are initialized by OMPLPath right before solving
         self.obstacles: List[ob.Obstacle] = []
-        self.path_generated_time = datetime.now()
+        self.path_generated_time_sec = (
+            monotonic()
+            if path_generated_time_sec is None
+            else path_generated_time_sec
+        )
 
     def update_state(
         self, gps: ci.GPS, ais_ships: ci.AISShips, filtered_wind_sensor: ci.WindSensor
@@ -222,8 +235,13 @@ class LocalPath:
         state (Optional[LocalPathState]): the current local path state.
     """
 
-    def __init__(self, parent_logger: RcutilsLogger):
+    def __init__(
+        self,
+        parent_logger: RcutilsLogger,
+        now_sec: Optional[Callable[[], float]] = None,
+    ):
         self._logger = parent_logger.get_child(name="local_path")
+        self._now_sec = now_sec or monotonic
         self._ompl_path: Optional[OMPLPath] = None
         self.path: Optional[ci.Path] = None
         self.state: Optional[LocalPathState] = None
@@ -237,7 +255,7 @@ class LocalPath:
         if self.state is None:
             self._logger.info("Path is expired, since the state is None")
             return True
-        is_expired = datetime.now() >= (self.state.path_generated_time + PATH_TTL_SEC)
+        is_expired = self._now_sec() >= (self.state.path_generated_time_sec + PATH_TTL_SEC)
         if is_expired:
             self._logger.info("Path is expired")
         return is_expired
@@ -364,6 +382,13 @@ class LocalPath:
                 f"direction {previous_dir_deg:.2f} -> {current_dir_deg:.2f} deg "
                 f"({dir_change:.2f} deg, threshold {WIND_DIRECTION_CHANGE_THRESH_DEG:.2f} deg)"
             )
+        else:
+            self._logger.debug(
+                f"speed {previous_wind_data.speed_kmph:.2f} -> {current_speed_kmph:.2f} km/h "
+                f"({speed_change:.2f} km/h, threshold {speed_change_threshold:.2f} km/h); "
+                f"direction {previous_dir_deg:.2f} -> {current_dir_deg:.2f} deg "
+                f"({dir_change:.2f} deg, threshold {WIND_DIRECTION_CHANGE_THRESH_DEG:.2f} deg)"
+            )
 
         return significant_change
 
@@ -390,7 +415,9 @@ class LocalPath:
             valid preceding/target waypoint is required to define the segment.
         """
         if target_lp_wp_index == 0 or target_lp_wp_index >= len(path.waypoints):
-            self._logger.warn("Target waypoint out of bounds, must be in range [1, len(waypoints))")  # noqa
+            self._logger.warn(
+                "Target waypoint out of bounds, must be in range [1, len(waypoints))"
+            )  # noqa
             raise IndexError("Target waypoint out of bounds, must be in range [1, len(waypoints))")
 
         prev_wp = path.waypoints[target_lp_wp_index - 1]
@@ -482,15 +509,16 @@ class LocalPath:
             return MustChangeReason(True, "Path intersects collision zone")
         if self.is_path_expired():
             return MustChangeReason(True, "Path has expired (TTL exceeded)")
-        if (
-            (new_aw is not None)
-            # Wind-based switching only starts once the rolling average is populated.
-            and (self.state.wind_tracker.aw_avg is not None)
-            and (self.state.path_generated_wind is not None)
-            and not self.state.wind_tracker.using_one_aw_point
-            and self.is_significant_wind_change(
-                self.state.wind_tracker.aw_avg, self.state.path_generated_wind
-            )  # noqa
+        if new_aw is None:
+            self._logger.debug("Wind condition not met: new_aw is None")
+        elif self.state.wind_tracker.aw_avg is None:
+            self._logger.debug("Wind condition not met: wind_tracker.aw_avg is None")
+        elif self.state.path_generated_wind is None:
+            self._logger.debug("Wind condition not met: state.path_generated_wind is None")
+        elif self.state.wind_tracker.using_one_aw_point:
+            self._logger.debug("Wind condition not met: wind_tracker.using_one_aw_point is True")
+        elif self.is_significant_wind_change(
+            self.state.wind_tracker.aw_avg, self.state.path_generated_wind
         ):
             return MustChangeReason(True, "Significant wind change")
         if self._target_lp_wp_index < 1:
@@ -600,6 +628,7 @@ class LocalPath:
                         inputs.filtered_wind_sensor,
                         inputs.planner,
                         wind_tracker,
+                        self._now_sec(),
                     )
                     new_ompl_path = OMPLPath(
                         parent_logger=self._logger,
