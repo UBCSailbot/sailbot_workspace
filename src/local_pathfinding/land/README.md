@@ -34,4 +34,8 @@ To create the land mass for either on_water testing or launch, run the following
 
 - `python3 src/local_pathfinding/land/pickle_land_data.py --source production`, run this before launch
 - `python3 src/local_pathfinding/land/pickle_land_data.py --source on_water`, run this before on water testing at Jericho Beach
+
+If you want to add the extrusion (necessary for on water testing):
+
+- `python3 src/local_pathfinding/land/pickle_land_data.py --source on_water --extrude`
 <!-- markdownlint-enable MD013 -->
