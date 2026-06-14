@@ -225,6 +225,10 @@ class LocalPath:
 
     Attributes:
         _logger (RcutilsLogger): ROS logger.
+        _now_sec (Callable[[], float]): Returns an increasing time in seconds, used only for
+            elapsed-time differences (path age / TTL and the switch-duration log). In the running
+            node this is the ROS system clock (seconds since the Unix epoch); it falls back to
+            time.monotonic (arbitrary reference) when no clock is injected, e.g. in tests.
         _ompl_path (Optional[OMPLPath]): Raw representation of the path from OMPL.
         _target_lp_wp_index (int): 0-based array index of the local waypoint Polaris is
             currently heading toward. This is set by update_if_needed. It usually starts at 1
@@ -667,6 +671,11 @@ class LocalPath:
                     + f" within {MAX_OMPL_PATH_GEN_TRIES}"
                 )
 
+            if self.state is not None:
+                time_on_prev_sec = self._now_sec() - self.state.path_generated_time_sec
+                self._logger.info(
+                    f"Previous local path was active for {time_on_prev_sec:.1f}s before switching"
+                )
             self._logger.info(f"Updating local path: {must_change_reason.reason}")
             wind_tracker = new_state.wind_tracker  # type: ignore[union-attr]
             wind_tracker.using_one_aw_point = wind_tracker.aw_avg is None
