@@ -572,7 +572,7 @@ class LocalPath:
                 # No need to handle anything else here. There is no compulsion for the path to
                 # change so an improper state can be ignored. While not ideal, this is better than
                 # stopping the boat.
-                self._logger.warn(e)
+                self._logger.warn(f"State update did not complete: {e}")
                 boat_lat_lon = self.state.position  # type: ignore
 
         must_change_reason = self.must_change_path(
@@ -609,10 +609,16 @@ class LocalPath:
                     if new_ompl_path.solved:
                         break
                     else:
-                        self._logger.warn("OMPL path generation attempt did not solve")
+                        self._logger.warn(
+                            f"OMPL path generation attempt {tries + 1}/{MAX_OMPL_PATH_GEN_TRIES} "
+                            "did not solve"
+                        )
                         tries += 1
                 except ValueError as e:
-                    self._logger.warn(e)
+                    self._logger.warn(
+                        f"OMPL path generation attempt {tries + 1}/{MAX_OMPL_PATH_GEN_TRIES} "
+                        f"raised ValueError: {e}"
+                    )
                     tries += 1
 
             if not new_ompl_path or not new_ompl_path.solved:

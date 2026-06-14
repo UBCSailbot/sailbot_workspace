@@ -87,7 +87,22 @@ class OMPLPath:
         # this needs state
         self._simple_setup = self._init_simple_setup(land_multi_polygon)
 
-        self.solved = self._simple_setup.solve(time=MAX_SOLVER_RUN_TIME_SEC)
+        try:
+            self.solved = self._simple_setup.solve(time=MAX_SOLVER_RUN_TIME_SEC)
+        except Exception as e:
+            # solve() can raise from our callbacks or a native dep (shapely/pyproj/numpy/OMPL).
+            # Log the cause + inputs (update_if_needed only catches ValueError), then re-raise.
+            obstacles = OMPLPath.obstacles or {}
+            boat_count = sum(1 for ship_id in obstacles if ship_id != LAND_KEY)
+            self._logger.error(
+                f"OMPL solve raised {type(e).__name__}: {e} | "
+                f"position=({self.state.position.latitude}, {self.state.position.longitude}), "
+                f"goal=({self.state.reference_latlon.latitude}, "
+                f"{self.state.reference_latlon.longitude}), "
+                f"heading={self.state.heading}, speed={self.state.speed}, "
+                f"boats={boat_count}, land={LAND_KEY in obstacles}"
+            )
+            raise
 
     @staticmethod
     def init_obstacles(
@@ -156,8 +171,12 @@ class OMPLPath:
         if OMPLPath.all_land_data is None:
             try:
                 OMPLPath.all_land_data = load_pkl(LAND_PKL_FILE_PATH)
-            except FileNotFoundError as e:
-                exit(f"could not load the land.pkl file {e}")
+            except (FileNotFoundError, OSError, pickle.UnpicklingError, EOFError) as e:
+                # Required to plan; report the resolved path + error type, not a bare exit.
+                exit(
+                    "could not load the land.pkl file at "
+                    f"{os.path.abspath(LAND_PKL_FILE_PATH)}: {type(e).__name__}: {e}"
+                )
 
         OMPLPath.obstacles[LAND_KEY] = ob.Land(
             reference=local_path_state.reference_latlon,
@@ -342,6 +361,16 @@ class OMPLPath:
     def _init_simple_setup(self, land_multi_polygon) -> og.SimpleSetup:
         # Create buffered rectangles around sailbot's position and the goal state
         start_position_in_xy = cs.latlon_to_xy(self.state.reference_latlon, self.state.position)
+        if not (math.isfinite(start_position_in_xy.x) and math.isfinite(start_position_in_xy.y)):
+            # NaN start (bad GPS/pyproj) poisons OMPL bounds and crashes the solver; raise
+            # ValueError so the retry loop catches it and logs the cause.
+            raise ValueError(
+                "Non-finite start position in XY "
+                f"({start_position_in_xy.x}, {start_position_in_xy.y}) from reference="
+                f"({self.state.reference_latlon.latitude}, "
+                f"{self.state.reference_latlon.longitude}), position="
+                f"({self.state.position.latitude}, {self.state.position.longitude})"
+            )
         start_box = self.create_buffer_around_position(start_position_in_xy, self._box_buffer)
         start_x = start_position_in_xy.x
         start_y = start_position_in_xy.y
@@ -378,7 +407,7 @@ class OMPLPath:
         )
 
         simple_setup = og.SimpleSetup(space)
-        simple_setup.setStateValidityChecker(base.StateValidityCheckerFn(OMPLPath.is_state_valid))
+        simple_setup.setStateValidityChecker(base.StateValidityCheckerFn(self.is_state_valid))
 
         start = base.State(space)
         goal = base.State(space)
@@ -407,6 +436,21 @@ class OMPLPath:
         else:
             current_aw = self.state.path_generated_wind
 
+        # NaN wind/heading/speed makes OMPL costs undefined and can crash/stall the solver with
+        # no catchable exception, so surface it here (the solve-wrapper can't catch it).
+        if not (
+            math.isfinite(current_aw.dir_deg)
+            and math.isfinite(current_aw.speed_kmph)
+            and math.isfinite(self.state.heading)
+            and math.isfinite(self.state.speed)
+        ):
+            self._logger.warning(
+                "Non-finite wind/heading/speed feeding the OMPL objective; segment costs will "
+                f"be undefined. apparent_wind_dir={current_aw.dir_deg}, "
+                f"apparent_wind_speed={current_aw.speed_kmph}, heading={self.state.heading}, "
+                f"boat_speed={self.state.speed}"
+            )
+
         objective = get_sailing_objective(
             space_information,
             simple_setup,
@@ -424,9 +468,13 @@ class OMPLPath:
 
         return simple_setup
 
-    def is_state_valid(state: Union[base.State, base.SE2StateInternal]) -> bool:
+    def is_state_valid(self, state: Union[base.State, base.SE2StateInternal]) -> bool:
         """Evaluate a state to determine if the configuration collides with an environment
         obstacle.
+
+        OMPL calls this for every sampled state during solve(), so it must stay cheap. Invalid
+        states are recorded by log_invalid_state; its call is wrapped in try/except here so a
+        file error can never propagate out of the C++ solve loop and crash the node.
 
         Args:
             state (base.SE2StateInternal): State to check.
@@ -439,21 +487,17 @@ class OMPLPath:
             for o in OMPLPath.obstacles.values():
                 if isinstance(state, base.State):
                     # for testing purposes; the tests use state object
-                    state_is_valid = o.is_valid(cs.XY(state().getX(), state().getY()))
-
+                    point = cs.XY(state().getX(), state().getY())
                 else:  # when OMPL uses this function, it will pass in an SE2StateInternal object
-                    state_is_valid = o.is_valid(cs.XY(state.getX(), state.getY()))
+                    point = cs.XY(state.getX(), state.getY())
 
-                if not state_is_valid:
-                    # uncomment this if you want to log which states are being labeled invalid
-                    # its commented out for now to avoid unnecessary file I/O
-                    # uncommented this line in accordance with the comment above for the upcoming
-                    # on-water tests. #TODO: remove this before the final launch.
-                    if isinstance(state, base.State):  # only happens in unit tests
-                        log_invalid_state(state=cs.XY(state().getX(), state().getY()), obstacle=o) # noqa
-                    else:  # happens in prod
-                        log_invalid_state(state=cs.XY(state.getX(), state.getY()), obstacle=o)
-
+                if not o.is_valid(point):
+                    # Per-state file logging; guarded so a write error can't crash the solver.
+                    # TODO: remove this before the final launch.
+                    try:
+                        log_invalid_state(state=point, obstacle=o)
+                    except Exception as e:
+                        self._logger.debug(f"log_invalid_state failed: {e}")
                     return False
 
         return True
