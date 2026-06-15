@@ -1,5 +1,7 @@
 """The main node of the local_pathfinding package, represented by the `Sailbot` class."""
 
+import traceback
+
 import rclpy
 from rclpy.node import Node
 from test_plans.test_plan import TestPlan
@@ -184,6 +186,28 @@ class Sailbot(Node):
 
     # publisher callbacks
     def desired_heading_callback(self):
+        """Timer callback. Runs one pathfinding tick; if anything unexpected raises, log the
+        cause and the inputs in flight, fail safe (publish sail disabled), and keep the node
+        alive instead of letting an uncaught error kill the navigate node.
+        """
+        try:
+            self.run_pathfinding_tick()
+        except Exception:
+            self.get_logger().error(
+                "Unexpected error in the pathfinding loop; disabling sail and continuing. "
+                f"gps_lat_lon={self.gps.lat_lon if self.gps is not None else None}, "
+                f"target_global_waypoint={self.saved_target_global_waypoint}, "
+                f"global_waypoint_index={self.global_waypoint_index}, "
+                f"target_lp_wp_index={self.target_lp_wp_index}, planner={self.planner}\n"
+                f"{traceback.format_exc()}"
+            )
+            msg = ci.DesiredHeading()
+            msg.heading.heading = 0.0
+            msg.sail = False
+            self.desired_heading = msg
+            self.desired_heading_pub.publish(msg)
+
+    def run_pathfinding_tick(self):
         """Get and publish the desired heading."""
 
         if self._has_gps_timed_out():
