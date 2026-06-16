@@ -303,12 +303,13 @@ def get_sailing_objective(
         boat_heading_deg_gc, aw_direction_deg_bc
     )
 
-    tw_dir_rad, tw_speed_kmph = wcs.aw_gc_to_tw_gc(
+    tw_dir_deg, tw_speed_kmph = wcs.aw_gc_to_tw_gc(
         apparent_wind_direction_degrees_global_coordinates,
         aw_speed_kmph,
         boat_heading_deg_gc,
         boat_speed_kmph,
     )
+    tw_dir_rad = math.radians(tw_dir_deg)
 
     multiObjective = ob.MultiOptimizationObjective(si=space_information)
     multiObjective.addObjective(

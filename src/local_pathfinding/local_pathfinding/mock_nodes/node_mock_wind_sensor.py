@@ -85,7 +85,6 @@ class MockWindSensor(Node):
             self._tw_speed_kmph,
             self._boat_heading_deg,
             self._boat_speed_kmph,
-            ret_rad=False,
         )
 
         aw_dir_boat_coord_deg = wcs.global_to_boat_coordinate(self._boat_heading_deg, aw_dir_deg)

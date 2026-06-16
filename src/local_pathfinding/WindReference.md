@@ -56,10 +56,10 @@ Available in [`wind_coord_systems.py`](local_pathfinding/wind_coord_systems.py):
 ### Wind Conversions
 
 <!-- markdownlint-disable-next-line MD013 -->
-- `aw_gc_to_tw_gc(aw_dir_deg_gc, aw_speed_kmph, boat_heading_deg, boat_speed_kmph, ret_rad)`
+- `aw_gc_to_tw_gc(aw_dir_deg_gc, aw_speed_kmph, boat_heading_deg, boat_speed_kmph)`
   Calculate true wind from apparent wind
 <!-- markdownlint-disable-next-line MD013 -->
-- `tw_gc_to_aw_gc(tw_dir_deg, tw_speed_kmph, boat_heading_deg, boat_speed_kmph, ret_rad)`
+- `tw_gc_to_aw_gc(tw_dir_deg, tw_speed_kmph, boat_heading_deg, boat_speed_kmph)`
   Calculate apparent wind from true wind
 
 ## Key Notes

@@ -229,8 +229,7 @@ class LocalPathState:
             aw_speed_kmph=current_aw.speed_kmph,
             boat_heading_deg_gc=self.heading,
             boat_speed_kmph=self.speed,
-            ret_rad=False
-            )
+        )
         self.current_tw = Wind(tw_speed_kmph, tw_dir_deg)
 
 
@@ -612,7 +611,6 @@ class LocalPath:
                 aw_speed_kmph=new_aw.speed_kmph,
                 boat_heading_deg_gc=inputs.gps.heading.heading,
                 boat_speed_kmph=inputs.gps.speed.speed,
-                ret_rad=False,
             )
             new_tw = Wind(tw_speed_kmph, tw_dir_deg)
 

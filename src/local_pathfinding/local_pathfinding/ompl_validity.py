@@ -94,13 +94,14 @@ class GoalProgressWindMotionValidator(ob.MotionValidator):
             boat_heading_deg_gc,
             aw_direction_deg_bc,
         )
-        tw_direction_rad_gc, _ = wcs.aw_gc_to_tw_gc(
+        tw_dir_deg_gc, _ = wcs.aw_gc_to_tw_gc(
             aw_direction_deg_gc,
             aw_speed_kmph,
             boat_heading_deg_gc,
             boat_speed_kmph,
         )
-        self.tw_direction_rad_gc = tw_direction_rad_gc
+        tw_dir_rad_gc = math.radians(tw_dir_deg_gc)
+        self.tw_direction_rad_gc = tw_dir_rad_gc
         self.space_information = space_information
         self.goal_position_in_xy = goal_position_in_xy
         self.default_motion_validator = ob.DiscreteMotionValidator(space_information)
