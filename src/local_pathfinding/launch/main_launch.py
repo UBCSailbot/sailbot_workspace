@@ -171,7 +171,7 @@ def get_mock_global_path_node_description(context: LaunchContext) -> Node:
     # the first entry is treated as a parameter file path.
     ros_parameters = [
         LaunchConfiguration("config").perform(context),
-        {"test_plan:=": test_plan},
+        {"test_plan": test_plan},
     ]
     ros_arguments: List[SomeSubstitutionsType] = [
         "--log-level",
