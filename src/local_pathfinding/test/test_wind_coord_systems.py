@@ -57,7 +57,7 @@ def test_global_to_boat_coordinate(
 @pytest.mark.parametrize(
     '''
     aw_dir_deg_gc, aw_speed_kmph, boat_heading_deg_gc,
-    boat_speed_kmph, expected_tw_dir_rad, expected_tw_speed_kmph
+    boat_speed_kmph, expected_tw_dir_deg, expected_tw_speed_kmph
     ''',
     [
         (0, 0, 0, 0, 0, 0),
@@ -83,25 +83,22 @@ def test_aw_gc_to_tw_gc(
     aw_speed_kmph: float,
     boat_heading_deg_gc: float,
     boat_speed_kmph: float,
-    expected_tw_dir_rad: float,
+    expected_tw_dir_deg: float,
     expected_tw_speed_kmph: float,
 ):
-    tw_dir_rad, tw_speed_kmph = wcs.aw_gc_to_tw_gc(
+    tw_dir_deg, tw_speed_kmph = wcs.aw_gc_to_tw_gc(
         aw_dir_deg_gc, aw_speed_kmph, boat_heading_deg_gc, boat_speed_kmph
     )
 
-    # Convert radians to degrees for easier comparison
-    tw_dir_deg = math.degrees(tw_dir_rad)
-
     assert tw_dir_deg == pytest.approx(
-        expected=expected_tw_dir_rad, abs=1e-1
+        expected=expected_tw_dir_deg, abs=1e-1
     ) and tw_speed_kmph == pytest.approx(expected=expected_tw_speed_kmph, abs=1e-1)
 
 
 @pytest.mark.parametrize(
     '''
     tw_dir_deg_gc, tw_speed_kmph, boat_heading_deg_gc,
-    boat_speed_kmph, expected_aw_dir_rad_gc, expected_aw_speed_kmph
+    boat_speed_kmph, expected_aw_dir_deg_gc, expected_aw_speed_kmph
     ''',
     [
         (0, 0, 0, 0, 0, 0),
@@ -116,18 +113,15 @@ def test_tw_gc_to_aw_gc(
     tw_speed_kmph: float,
     boat_heading_deg_gc: float,
     boat_speed_kmph: float,
-    expected_aw_dir_rad_gc: float,
+    expected_aw_dir_deg_gc: float,
     expected_aw_speed_kmph: float,
 ):
-    aw_dir_rad, aw_speed_kmph = wcs.tw_gc_to_aw_gc(
+    aw_dir_deg, aw_speed_kmph = wcs.tw_gc_to_aw_gc(
         tw_dir_deg_gc, tw_speed_kmph, boat_heading_deg_gc, boat_speed_kmph
     )
 
-    # Convert radians to degrees for easier comparison
-    aw_dir_deg = math.degrees(aw_dir_rad)
-
     assert aw_dir_deg == pytest.approx(
-        expected=expected_aw_dir_rad_gc, abs=1e-2
+        expected=expected_aw_dir_deg_gc, abs=1e-2
     ) and aw_speed_kmph == pytest.approx(expected=expected_aw_speed_kmph, abs=1e-2)
 
 
@@ -154,7 +148,7 @@ def test_mock_wind_sensor_pipeline(
     expected_aw_speed_kmph: float,
 ):
     aw_dir_deg, aw_speed_kmph = wcs.tw_gc_to_aw_gc(
-        tw_dir_deg_gc, tw_speed_kmph, boat_heading_deg_gc, boat_speed, ret_rad=False
+        tw_dir_deg_gc, tw_speed_kmph, boat_heading_deg_gc, boat_speed
     )
 
     aw_dir_boat_coord_deg = wcs.global_to_boat_coordinate(boat_heading_deg_gc, aw_dir_deg)
