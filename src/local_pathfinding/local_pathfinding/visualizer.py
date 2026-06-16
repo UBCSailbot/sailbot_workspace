@@ -52,6 +52,13 @@ NO_GO_CONE_ARC_POINTS = 40  # number of points to approximate each cone arc
 NO_GO_CONE_DEFAULT_RADIUS_KM = 1.5  # fallback radius when no axis range is available
 NO_GO_CONE_RADIUS_FRACTION = 0.12  # fraction of the visible axis span to use as cone radius
 
+# A global waypoint is considered "reached" (and removed from the plot) once the boat comes within
+# GLOBAL_WP_REACHED_KM of the local waypoint nearest to it, provided that local waypoint is itself
+# within LOCAL_NEAR_GLOBAL_KM of the global waypoint.
+GLOBAL_WP_REACHED_KM = 0.1
+LOCAL_NEAR_GLOBAL_KM = 0.5
+GLOBAL_WP_KEY_DECIMALS = 5  # lat/lon rounding used to identify a global waypoint across frames
+
 BASE_DIR = Path(__file__).resolve().parent
 MOCK_NODES_DIR = BASE_DIR / "mock_nodes"
 WIND_PARAMS_YAML = MOCK_NODES_DIR / "wind_params.yaml"
@@ -84,12 +91,16 @@ class AISShipData:
     Attributes:
         pos_x_km: X coordinate (km) of the AIS ship.
         pos_y_km: Y coordinate (km) of the AIS ship.
+        lat_deg: Latitude (degrees) of the AIS ship.
+        lon_deg: Longitude (degrees) of the AIS ship.
         heading_deg: Heading (degrees) of the AIS ship.
         speed_kmph: Speed (km/h) of the AIS ship.
     """
 
     pos_x_km: float
     pos_y_km: float
+    lat_deg: float
+    lon_deg: float
     heading_deg: float
     speed_kmph: float
 
@@ -164,6 +175,10 @@ class VisualizerState:
         self.global_path = self.latest_msg.global_path
 
         self.reference_lat_lon = self.global_path.waypoints[-1]
+
+        # Global waypoints (lat/lon and XY) for plotting and reached-tracking
+        self.global_wp = list(self.global_path.waypoints)
+        self.global_wp_xy = cs.latlon_list_to_xy_list(self.reference_lat_lon, self.global_wp)
         self.sailbot_xy_km = cs.latlon_list_to_xy_list(
             self.reference_lat_lon, self.sailbot_lat_lon
         )
@@ -188,7 +203,12 @@ class VisualizerState:
         self.ais_ships_by_id: Dict[int, AISShipData] = {}
         for ship, (x, y) in zip(self.ais_ships, zip(ais_positions[0], ais_positions[1])):
             self.ais_ships_by_id[ship.id] = AISShipData(
-                pos_x_km=x, pos_y_km=y, heading_deg=ship.cog.heading, speed_kmph=ship.sog.speed
+                pos_x_km=x,
+                pos_y_km=y,
+                lat_deg=ship.lat_lon.latitude,
+                lon_deg=ship.lat_lon.longitude,
+                heading_deg=ship.cog.heading,
+                speed_kmph=ship.sog.speed,
             )
 
         # Obstacles
@@ -332,6 +352,118 @@ def compute_goal_change(
     return GoalChange(new_goal_xy_rounded=rounded, message=msg)
 
 
+def global_wp_key(waypoint: ci.HelperLatLon) -> str:
+    """Return a stable, JSON-serializable identifier for a global waypoint.
+
+    Global waypoints are identified by their rounded lat/lon (rather than list index) so the
+    reached-set persisted in the browser stays correct even if the global path is reordered.
+
+    Args:
+        waypoint: Global waypoint as a lat/lon.
+
+    Returns:
+        A string key of the form "lat,lon" rounded to GLOBAL_WP_KEY_DECIMALS.
+    """
+    lat = round(waypoint.latitude, GLOBAL_WP_KEY_DECIMALS)
+    lon = round(waypoint.longitude, GLOBAL_WP_KEY_DECIMALS)
+    return f"{lat},{lon}"
+
+
+def compute_reached_global_wps(
+    vs: VisualizerState,
+    boat_xy_km: Tuple[float, float],
+    local_x_km: List[float],
+    local_y_km: List[float],
+    reached_keys: Optional[List[str]],
+) -> List[str]:
+    """Update the set of global waypoints the boat has reached.
+
+    A global waypoint is marked reached once the local waypoint nearest to it (within
+    LOCAL_NEAR_GLOBAL_KM) has been reached by the boat (boat within GLOBAL_WP_REACHED_KM of that
+    local waypoint). Once reached, a waypoint stays reached — the set only grows — so a waypoint
+    does not reappear if the boat later drifts away.
+
+    Args:
+        vs: VisualizerState containing the global waypoints in XY.
+        boat_xy_km: (x, y) current boat position in km.
+        local_x_km: Local path X coordinates in km.
+        local_y_km: Local path Y coordinates in km.
+        reached_keys: Previously reached global waypoint keys, or None on first frame.
+
+    Returns:
+        The updated list of reached global waypoint keys.
+    """
+    reached = set(reached_keys or [])
+    if not local_x_km or not local_y_km:
+        return list(reached)
+
+    bx, by = boat_xy_km[0], boat_xy_km[1]
+    for waypoint, wp_xy in zip(vs.global_wp, vs.global_wp_xy):
+        key = global_wp_key(waypoint)
+        if key in reached:
+            continue
+
+        # nearest local waypoint to this global waypoint
+        nearest_lx, nearest_ly, nearest_dist = min(
+            (
+                (lx, ly, math.hypot(lx - wp_xy.x, ly - wp_xy.y))
+                for lx, ly in zip(local_x_km, local_y_km)
+            ),
+            key=lambda t: t[2],
+        )
+
+        boat_to_local = math.hypot(bx - nearest_lx, by - nearest_ly)
+        if nearest_dist <= LOCAL_NEAR_GLOBAL_KM and boat_to_local <= GLOBAL_WP_REACHED_KM:
+            reached.add(key)
+
+    return list(reached)
+
+
+def build_global_wp_trace(
+    vs: VisualizerState, reached_keys: Optional[List[str]]
+) -> go.Scatter:
+    """Build the marker trace for the (not-yet-reached) global waypoints.
+
+    Args:
+        vs: VisualizerState containing the global waypoints (lat/lon and XY).
+        reached_keys: Keys of global waypoints already reached by the boat; these are omitted.
+
+    Returns:
+        A Plotly Scatter trace of the remaining global waypoints. Empty if all are reached.
+    """
+    reached = set(reached_keys or [])
+    xs: List[float] = []
+    ys: List[float] = []
+    labels: List[str] = []
+    customdata: List[List[float]] = []
+    for i, (waypoint, wp_xy) in enumerate(zip(vs.global_wp, vs.global_wp_xy)):
+        if global_wp_key(waypoint) in reached:
+            continue
+        xs.append(wp_xy.x)
+        ys.append(wp_xy.y)
+        labels.append(f"GW{i+1}")
+        customdata.append([waypoint.latitude, waypoint.longitude])
+
+    return go.Scatter(
+        x=xs,
+        y=ys,
+        mode="markers+text",
+        marker=dict(symbol="star", color="green", size=14, line=dict(width=1, color="darkgreen")),
+        text=labels,
+        textposition="bottom center",
+        name="Global Waypoint",
+        customdata=customdata,
+        hovertemplate=(
+            "<b>🌐 Global Waypoint</b><br>"
+            "Lat: %{customdata[0]:.6f}°<br>"
+            "Lon: %{customdata[1]:.6f}°<br>"
+            "X: %{x:.2f}<br>"
+            "Y: %{y:.2f}<br>"
+            "<extra></extra>"
+        ),
+    )
+
+
 # --------------------------------------
 # Figure Builders
 # --------------------------------------
@@ -354,13 +486,17 @@ def initial_plot() -> go.Figure:
     return fig
 
 
-def build_intermediate_trace(local_x_km: List[float], local_y_km: List[float]) -> go.Scatter:
+def build_intermediate_trace(
+    local_x_km: List[float], local_y_km: List[float], reference: ci.HelperLatLon
+) -> go.Scatter:
     """
     Create the scatter trace for intermediate local waypoints (excluding start and goal).
 
     Args:
         local_x_km: X coordinates of the local waypoint list (km).
         local_y_km: Y coordinates of the local waypoint list (km).
+        reference: Lat/Lon anchor of the XY frame (the global path's final waypoint), used to
+            convert each waypoint's XY back to a true lat/lon for the hover text.
 
     Returns:
         A Plotly Scatter trace containing marker with text labels for intermediate waypoints.
@@ -369,6 +505,11 @@ def build_intermediate_trace(local_x_km: List[float], local_y_km: List[float]) -
     if len(local_x_km) < 3:
         return go.Scatter(x=[], y=[], mode="markers+text", name="Intermediate")
     labels = [f"LW{i+1}" for i, _ in enumerate(local_x_km[1:-1])]
+    latlons = [
+        cs.xy_to_latlon(reference, cs.XY(x, y))
+        for x, y in zip(local_x_km[1:-1], local_y_km[1:-1])
+    ]
+    customdata = [[ll.latitude, ll.longitude] for ll in latlons]
     return go.Scatter(
         x=local_x_km[1:-1],
         y=local_y_km[1:-1],
@@ -377,27 +518,42 @@ def build_intermediate_trace(local_x_km: List[float], local_y_km: List[float]) -
         text=labels,
         textposition="top center",
         name="Intermediate",
+        customdata=customdata,
+        hovertemplate=(
+            "Lat: %{customdata[0]:.6f}°<br>"
+            "Lon: %{customdata[1]:.6f}°<br>"
+            "X: %{x:.2f}<br>"
+            "Y: %{y:.2f}<br>"
+            "<extra></extra>"
+        ),
     )
 
 
-def build_goal_trace(goal_xy_km: Tuple[float, float], angle_deg: float) -> go.Scatter:
+def build_goal_trace(
+    goal_xy_km: Tuple[float, float], angle_deg: float, reference: ci.HelperLatLon
+) -> go.Scatter:
     """
     Create the marker trace for the local goal waypoint.
 
     Args:
         goal_xy_km: (x, y) goal position in km.
         angle_deg: Angle from boat to goal in degrees (visualizer convention) used in hover text.
+        reference: Lat/Lon anchor of the XY frame (the global path's final waypoint), used to
+            convert the goal's XY back to a true lat/lon for the hover text.
 
     Returns:
         A Plotly Scatter trace representing the goal point.
     """
+    goal_latlon = cs.xy_to_latlon(reference, cs.XY(goal_xy_km[0], goal_xy_km[1]))
     return go.Scatter(
         x=[goal_xy_km[0]],
         y=[goal_xy_km[1]],
         mode="markers",
         marker=dict(color="red", size=10),
         name="Goal",
-        hovertemplate="X: %{x:.2f} <br>"
+        hovertemplate=f"Lat: {goal_latlon.latitude:.6f}° <br>"
+        + f"Lon: {goal_latlon.longitude:.6f}° <br>"
+        + "X: %{x:.2f} <br>"
         + "Y: %{y:.2f} <br>"
         + "Angle from the boat: "
         + f"{angle_deg:.1f}°"
@@ -447,6 +603,8 @@ def build_boat_trace(
     """
     heading = vs.sailbot_gps[-1].heading.heading
     speed = vs.sailbot_gps[-1].speed.speed
+    lat = vs.sailbot_lat_lon[-1].latitude
+    lon = vs.sailbot_lat_lon[-1].longitude
     return go.Scatter(
         x=[boat_xy_km[0]],
         y=[boat_xy_km[1]],
@@ -454,6 +612,8 @@ def build_boat_trace(
         name="Boat",
         hovertemplate=(
             "<b>🚢 Sailbot Current Position</b><br>"
+            f"Lat: {lat:.6f}°<br>"
+            f"Lon: {lon:.6f}°<br>"
             "X: %{x:.2f} <br>"
             "Y: %{y:.2f} <br>"
             "Heading: " + f"{heading:.1f}°<br>"
@@ -652,6 +812,8 @@ def build_ais_traces(vs: VisualizerState) -> List[go.Scatter]:
     for ais_id, ship_data in vs.ais_ships_by_id.items():
         x_val = ship_data.pos_x_km
         y_val = ship_data.pos_y_km
+        lat = ship_data.lat_deg
+        lon = ship_data.lon_deg
         heading = ship_data.heading_deg
         speed = ship_data.speed_kmph
 
@@ -663,6 +825,8 @@ def build_ais_traces(vs: VisualizerState) -> List[go.Scatter]:
                 name=f"AIS {ais_id}",
                 hovertemplate=(
                     f"<b>🚢 AIS Ship {ais_id}</b><br>"
+                    f"Lat: {lat:.6f}°<br>"
+                    f"Lon: {lon:.6f}°<br>"
                     f"X: {x_val:.2f}<br>"
                     f"Y: {y_val:.2f}<br>"
                     f"Heading: {heading:.1f}°<br>"
@@ -955,7 +1119,8 @@ def build_figure(
     vs: VisualizerState,
     last_goal_xy_km: Optional[Tuple[float, float]],
     last_range: Optional[Dict[str, List[float]]],
-) -> Tuple[go.Figure, Tuple[float, float]]:
+    reached_global_keys: Optional[List[str]] = None,
+) -> Tuple[go.Figure, Tuple[float, float], List[str]]:
     """
     Builds and renders the complete path planning visualization figure.
 
@@ -967,12 +1132,15 @@ def build_figure(
                obstacles, AIS ships, wind vectors).
         last_goal_xy_km: Previous goal position (x, y) in km, or None on first render. Used to
                       detect goal changes and show a popup message.
+        reached_global_keys: Keys of global waypoints already reached by the boat (persisted
+                      across frames); reached waypoints are not plotted.
 
     Returns:
-        (fig, new_goal_xy_rounded):
+        (fig, new_goal_xy_rounded, reached_global_keys):
             - fig: Updated Plotly figure ready for display.
             - new_goal_xy_rounded: Current goal position rounded to GOAL_CHANGE_ROUND_DECIMALS
                                 for float jitter tolerance.
+            - reached_global_keys: Updated list of reached global waypoint keys.
 
     Raises:
         ValueError: If no local waypoints are available for plotting.
@@ -989,9 +1157,16 @@ def build_figure(
         # No local path available (e.g. pathfinding failed and sail was disabled).
         # Still render the boat, obstacles, AIS traffic, and wind so the operator keeps
         # situational awareness instead of seeing a blank or crashed view.
-        return build_figure_without_local_path(vs, boat_xy_km, last_goal_xy_km, last_range)
+        return build_figure_without_local_path(
+            vs, boat_xy_km, last_goal_xy_km, last_range, reached_global_keys
+        )
     goal_xy_km = cs.XY(local_x_km[-1], local_y_km[-1])
     goal_change = compute_goal_change(last_goal_xy_km, goal_xy_km)
+
+    # Update which global waypoints the boat has reached, then plot the remaining ones
+    reached_global_keys = compute_reached_global_wps(
+        vs, boat_xy_km, local_x_km, local_y_km, reached_global_keys
+    )
 
     # Computing angle and distance from boat to goal
     angle_deg = math.degrees(
@@ -999,9 +1174,10 @@ def build_figure(
     )
     dist_km = math.hypot(goal_xy_km[0] - boat_xy_km[0], goal_xy_km[1] - boat_xy_km[1])
 
-    # adding all the Traces(intermediate, goal, boat and path) to the plot
-    fig.add_trace(build_intermediate_trace(local_x_km, local_y_km))
-    fig.add_trace(build_goal_trace(goal_xy_km, angle_deg))
+    # adding all the Traces(global, intermediate, goal, boat and path) to the plot
+    fig.add_trace(build_global_wp_trace(vs, reached_global_keys))
+    fig.add_trace(build_intermediate_trace(local_x_km, local_y_km, vs.reference_lat_lon))
+    fig.add_trace(build_goal_trace(goal_xy_km, angle_deg, vs.reference_lat_lon))
     fig.add_trace(build_boat_trace(vs, boat_xy_km, dist_km))
     path_trace = build_path_trace(local_x_km, local_y_km, boat_xy_km)
     if path_trace is not None:
@@ -1043,7 +1219,7 @@ def build_figure(
     compute_and_add_state_space(vs, boat_xy_km, goal_xy_km, fig)
     apply_layout(vs, fig, zoom_needed, last_range)
     add_goal_change_popup(fig, goal_change.message)  # Popup message for goal change
-    return fig, goal_change.new_goal_xy_rounded
+    return fig, goal_change.new_goal_xy_rounded, reached_global_keys
 
 
 def build_figure_without_local_path(
@@ -1051,31 +1227,40 @@ def build_figure_without_local_path(
     boat_xy_km: Tuple[float, float],
     last_goal_xy_km: Optional[Tuple[float, float]],
     last_range: Optional[Dict[str, List[float]]],
-) -> Tuple[go.Figure, Tuple[float, float]]:
+    reached_global_keys: Optional[List[str]] = None,
+) -> Tuple[go.Figure, Tuple[float, float], List[str]]:
     """
     Build the visualization when no local path is available.
 
     This happens when local pathfinding fails (e.g. the solver could not produce a path and
     sail was disabled), so there are no local waypoints or local goal to plot. Everything that
-    does not depend on the local path is still drawn — the boat, land/AIS obstacles, AIS ships,
-    and the wind box — so the operator retains situational awareness instead of seeing a blank
-    or crashed figure.
+    does not depend on the local path is still drawn — the boat, global waypoints, land/AIS
+    obstacles, AIS ships, and the wind box — so the operator retains situational awareness
+    instead of seeing a blank or crashed figure.
+
+    Without a local path the reached-set cannot be updated (there is no local waypoint to test
+    against), so the existing reached-set is passed through unchanged.
 
     Args:
         vs: VisualizerState containing processed ROS message data.
         boat_xy_km: (x, y) current boat position in km.
         last_goal_xy_km: Previous goal position (x, y) in km, or None if never set.
         last_range: Previously stored axis ranges, or None on first render.
+        reached_global_keys: Keys of global waypoints already reached; passed through unchanged.
 
     Returns:
-        (fig, goal_xy): The figure, and the goal position to persist downstream — the previous
-        goal if one is known, otherwise the current boat position so goal-change tracking stays
-        consistent on later frames.
+        (fig, goal_xy, reached_global_keys): The figure, the goal position to persist downstream
+        (the previous goal if known, otherwise the current boat position so goal-change tracking
+        stays consistent), and the unchanged reached-set.
     """
     fig = initial_plot()
+    reached_global_keys = list(reached_global_keys or [])
 
     # Boat marker (distance-to-goal is unknown without a local path)
     fig.add_trace(build_boat_trace(vs, boat_xy_km, dist_to_goal_km=0.0))
+
+    # Global waypoints (still useful for situational awareness when the local path is missing)
+    fig.add_trace(build_global_wp_trace(vs, reached_global_keys))
 
     # Obstacles (land and AIS collision zones) and AIS ships
     land_traces = build_polygon_traces(
@@ -1141,7 +1326,7 @@ def build_figure_without_local_path(
     apply_layout(vs, fig, zoom_needed, last_range)
 
     goal_xy = last_goal_xy_km if last_goal_xy_km is not None else (boat_xy_km[0], boat_xy_km[1])
-    return fig, goal_xy
+    return fig, goal_xy, reached_global_keys
 
 
 def write_wind_params(tw_dir_deg: float, tw_speed_kmph: float) -> None:
@@ -1252,6 +1437,7 @@ def dash_app(q: Queue):
             dcc.Interval(id="interval-component", interval=UPDATE_INTERVAL_MS, n_intervals=0),
             dcc.Store(id="goal-store", data=None),
             dcc.Store(id="range-store", data=None),
+            dcc.Store(id="reached-global-store", data=None),
             html.Button(
                 "Reset the view to state space",
                 id="reset-button",
@@ -1274,12 +1460,14 @@ def dash_app(q: Queue):
     Output("live-graph", "figure"),
     Output("goal-store", "data"),
     Output("range-store", "data"),
+    Output("reached-global-store", "data"),
     Input("interval-component", "n_intervals"),
     Input("live-graph", "relayoutData"),
     Input("reset-button", "n_clicks"),
     State("live-graph", "figure"),
     State("goal-store", "data"),
     State("range-store", "data"),
+    State("reached-global-store", "data"),
     prevent_initial_call=True,
 )
 def update_graph(
@@ -1289,6 +1477,7 @@ def update_graph(
     current_figure,
     last_goal_xy_km: Optional[List[float]],
     stored_range,
+    reached_global_keys: Optional[List[str]],
 ):
     """
     Dash callback: handles both interval updates and reset button clicks.
@@ -1302,19 +1491,22 @@ def update_graph(
         last_goal_xy_km: Previously stored goal as [x, y] or None on first run.
         stored_range: Previously stored range as {"x": [xmin, xmax], "y": [ymin, ymax]}
                       or None on first run
+        reached_global_keys: Previously stored keys of reached global waypoints, or None on
+                      first run.
 
     Returns:
-        (fig, new_goal_as_list, last_range):
+        (fig, new_goal_as_list, last_range, reached_global_keys):
             - fig: The updated Plotly figure
             - new_goal_as_list: [x, y] for storage in dcc.Store (JSON serializable)
             - last_range: [x-range, y-range] for storage in dcc.Store (JSON serializable)
+            - reached_global_keys: list of reached global waypoint keys for storage in dcc.Store
 
     """
     global queue
 
     # Interval update (default behavior)
     if queue is None or queue.empty():
-        return dash.no_update, dash.no_update, stored_range
+        return dash.no_update, dash.no_update, stored_range, dash.no_update
 
     vs = queue.get()  # type: ignore
     last_goal_tuple = (
@@ -1349,11 +1541,13 @@ def update_graph(
     else:
         last_range = stored_range
 
-    fig, new_goal_xy = build_figure(vs, last_goal_tuple, last_range)
+    fig, new_goal_xy, reached_global_keys = build_figure(
+        vs, last_goal_tuple, last_range, reached_global_keys
+    )
 
     if triggered_id == "reset-button":
         if current_figure is None:
-            return dash.no_update, dash.no_update, dash.no_update
+            return dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
         min_bounds, max_bounds = get_state_space_bounds(vs)
         x_range = [min_bounds.x, max_bounds.x]
@@ -1368,7 +1562,7 @@ def update_graph(
             uirevision="reset",
         )
 
-    return fig, [new_goal_xy[0], new_goal_xy[1]], last_range
+    return fig, [new_goal_xy[0], new_goal_xy[1]], last_range, reached_global_keys
 
 
 @app.callback(
