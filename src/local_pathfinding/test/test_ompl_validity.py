@@ -59,10 +59,7 @@ def make_goal_progress_wind_motion_validator(
     return ov.GoalProgressWindMotionValidator(
         space_information=space_information,
         goal_position_in_xy=goal_position_in_xy,
-        boat_heading_deg_gc=0.0,
-        boat_speed_kmph=0.0,
-        aw_direction_deg_bc=180.0,
-        aw_speed_kmph=10.0,
+        tw_dir_deg_gc=0.0,
     )
 
 

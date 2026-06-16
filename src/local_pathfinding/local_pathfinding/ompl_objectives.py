@@ -4,7 +4,6 @@ import math
 
 import numpy as np
 from ompl import base as ob
-from ompl import geometric as og
 from scipy.interpolate import RegularGridInterpolator
 
 import local_pathfinding.coord_systems as cs
@@ -285,16 +284,13 @@ class TimeObjective(ob.OptimizationObjective):
 
 def get_sailing_objective(
     space_information: ob.SpaceInformation,
-    simple_setup: og.SimpleSetup,
-    boat_heading_deg_gc: float,
-    boat_speed_kmph: float,
     tw_dir_deg_gc: float,
     tw_speed_kmph: float,
     goal_position_in_xy: cs.XY,
 ) -> ob.OptimizationObjective:
     """Build the combined sailing optimization objective for the current wind snapshot.
 
-    Apparent wind is converted to true wind once, then shared by the wind and time objectives.
+    True wind is converted to radians once, then shared by the wind and time objectives.
     Goal direction remains in the objective stack even though goal progress is also enforced as a
     hard motion-validity check.
     """

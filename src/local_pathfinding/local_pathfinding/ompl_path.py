@@ -22,7 +22,6 @@ from shapely.geometry import MultiPolygon, Point, Polygon, box
 import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.obstacles as ob
-import local_pathfinding.wind_coord_systems as wcs
 from local_pathfinding.ompl_objectives import get_sailing_objective
 from local_pathfinding.ompl_validity import GoalProgressWindMotionValidator
 
@@ -412,9 +411,6 @@ class OMPLPath:
 
         objective = get_sailing_objective(
             space_information,
-            simple_setup,
-            self.state.heading,
-            self.state.speed,
             current_tw.dir_deg,
             current_tw.speed_kmph,
             goal_position_in_xy,
