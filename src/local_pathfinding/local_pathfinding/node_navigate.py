@@ -186,28 +186,6 @@ class Sailbot(Node):
 
     # publisher callbacks
     def desired_heading_callback(self):
-        """Timer callback. Runs one pathfinding tick; if anything unexpected raises, log the
-        cause and the inputs in flight, fail safe (publish sail disabled), and keep the node
-        alive instead of letting an uncaught error kill the navigate node.
-        """
-        try:
-            self.run_pathfinding_tick()
-        except Exception:
-            self.get_logger().error(
-                "Unexpected error in the pathfinding loop; disabling sail and continuing. "
-                f"gps_lat_lon={self.gps.lat_lon if self.gps is not None else None}, "
-                f"target_global_waypoint={self.saved_target_global_waypoint}, "
-                f"global_waypoint_index={self.global_waypoint_index}, "
-                f"target_lp_wp_index={self.target_lp_wp_index}, planner={self.planner}\n"
-                f"{traceback.format_exc()}"
-            )
-            msg = ci.DesiredHeading()
-            msg.heading.heading = 0.0
-            msg.sail = False
-            self.desired_heading = msg
-            self.desired_heading_pub.publish(msg)
-
-    def run_pathfinding_tick(self):
         """Get and publish the desired heading."""
 
         if self._has_gps_timed_out():
@@ -236,25 +214,45 @@ class Sailbot(Node):
             self.desired_heading_pub.publish(msg)
             return  # should not continue, return and try again next loop
 
-        self.update_params()
+        try:
+            self.update_params()
 
-        desired_heading, sail = self.get_desired_heading()
-        msg = ci.DesiredHeading()
-        msg.heading.heading = desired_heading
-        msg.sail = sail
-        if self.desired_heading is None or desired_heading != self.desired_heading.heading.heading:
-            self.get_logger().info(f"Updating desired heading to: {msg.heading.heading:.2f}")
+            desired_heading, sail = self.get_desired_heading()
+            msg = ci.DesiredHeading()
+            msg.heading.heading = desired_heading
+            msg.sail = sail
+            if (
+                self.desired_heading is None
+                or desired_heading != self.desired_heading.heading.heading
+            ):
+                self.get_logger().info(f"Updating desired heading to: {msg.heading.heading:.2f}")
 
-        self.desired_heading = msg
+            self.desired_heading = msg
 
-        self.get_logger().info(
-            f"Publishing to {self.desired_heading_pub.topic}: {msg.heading.heading}, "
-            f"sail == {msg.sail}"  # noqa
-        )
-        self.desired_heading_pub.publish(msg)
+            self.get_logger().info(
+                f"Publishing to {self.desired_heading_pub.topic}: {msg.heading.heading}, "
+                f"sail == {msg.sail}"  # noqa
+            )
+            self.desired_heading_pub.publish(msg)
 
-        self.get_logger().debug(f"Publishing local path data to {self.lpath_data_pub.topic}")
-        self.publish_local_path_data(msg.sail)
+            self.get_logger().debug(f"Publishing local path data to {self.lpath_data_pub.topic}")
+            self.publish_local_path_data(msg.sail)
+        except Exception:
+            # Unexpected error in the pathfinding/publish path: log the cause and the inputs in
+            # flight, fail safe (sail disabled), and keep the node alive.
+            self.get_logger().error(
+                "Unexpected error in the pathfinding loop; disabling sail and continuing. "
+                f"gps_lat_lon={self.gps.lat_lon if self.gps is not None else None}, "
+                f"target_global_waypoint={self.saved_target_global_waypoint}, "
+                f"global_waypoint_index={self.global_waypoint_index}, "
+                f"target_lp_wp_index={self.target_lp_wp_index}, planner={self.planner}\n"
+                f"{traceback.format_exc()}"
+            )
+            msg = ci.DesiredHeading()
+            msg.heading.heading = 0.0
+            msg.sail = False
+            self.desired_heading = msg
+            self.desired_heading_pub.publish(msg)
 
     def publish_local_path_data(self, sail: bool):
         """

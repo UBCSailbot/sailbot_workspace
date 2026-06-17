@@ -362,16 +362,6 @@ class OMPLPath:
     def _init_simple_setup(self, land_multi_polygon) -> og.SimpleSetup:
         # Create buffered rectangles around sailbot's position and the goal state
         start_position_in_xy = cs.latlon_to_xy(self.state.reference_latlon, self.state.position)
-        if not (math.isfinite(start_position_in_xy.x) and math.isfinite(start_position_in_xy.y)):
-            # NaN start (bad GPS/pyproj) poisons OMPL bounds and crashes the solver; raise
-            # ValueError so the retry loop catches it and logs the cause.
-            raise ValueError(
-                "Non-finite start position in XY "
-                f"({start_position_in_xy.x}, {start_position_in_xy.y}) from reference="
-                f"({self.state.reference_latlon.latitude}, "
-                f"{self.state.reference_latlon.longitude}), position="
-                f"({self.state.position.latitude}, {self.state.position.longitude})"
-            )
         start_box = self.create_buffer_around_position(start_position_in_xy, self._box_buffer)
         start_x = start_position_in_xy.x
         start_y = start_position_in_xy.y
@@ -428,22 +418,6 @@ class OMPLPath:
         else:
             current_aw = self.state.path_generated_wind
 
-        # NaN wind/heading/speed makes OMPL costs undefined and can crash/stall the solver with
-        # no catchable exception, so surface it here (the solve-wrapper can't catch it). These
-        # values feed both the wind-aware motion validator and the objective below.
-        if not (
-            math.isfinite(current_aw.dir_deg)
-            and math.isfinite(current_aw.speed_kmph)
-            and math.isfinite(self.state.heading)
-            and math.isfinite(self.state.speed)
-        ):
-            self._logger.warning(
-                "Non-finite wind/heading/speed feeding the OMPL objective; segment costs will "
-                f"be undefined. apparent_wind_dir={current_aw.dir_deg}, "
-                f"apparent_wind_speed={current_aw.speed_kmph}, heading={self.state.heading}, "
-                f"boat_speed={self.state.speed}"
-            )
-
         space_information = simple_setup.getSpaceInformation()
         self._goal_progress_wind_motion_validator = GoalProgressWindMotionValidator(
             space_information,
@@ -478,10 +452,6 @@ class OMPLPath:
         """Evaluate a state to determine if the configuration collides with an environment
         obstacle.
 
-        OMPL calls this for every sampled state during solve(), so it must stay cheap. Invalid
-        states are recorded by log_invalid_state; its call is wrapped in try/except here so a
-        file error can never propagate out of the C++ solve loop and crash the node.
-
         Args:
             state (base.SE2StateInternal): State to check.
 
@@ -499,7 +469,6 @@ class OMPLPath:
 
                 if not o.is_valid(point):
                     # Per-state file logging; guarded so a write error can't crash the solver.
-                    # TODO: remove this before the final launch.
                     try:
                         log_invalid_state(state=point, obstacle=o)
                     except Exception as e:
