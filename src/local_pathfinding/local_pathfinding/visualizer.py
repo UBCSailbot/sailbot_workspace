@@ -1157,6 +1157,8 @@ def write_wind_params(tw_dir_deg: float, tw_speed_kmph: float) -> None:
     with open(WIND_PARAMS_YAML, "w") as f:
         yaml.safe_dump(data, f, sort_keys=False)
 
+    apply_wind_params()
+
 
 def apply_wind_params():
     subprocess.run(
@@ -1427,7 +1429,7 @@ def update_graph(
             - last_range: [x-range, y-range] for storage in dcc.Store (JSON serializable)
 
     """
-    global queue
+    global queue  # noqa
 
     # Interval update (default behavior)
     if queue is None or queue.empty():
