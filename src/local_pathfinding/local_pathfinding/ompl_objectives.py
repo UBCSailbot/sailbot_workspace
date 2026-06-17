@@ -4,7 +4,6 @@ import math
 
 import numpy as np
 from ompl import base as ob
-from ompl import geometric as og
 from scipy.interpolate import RegularGridInterpolator
 
 import local_pathfinding.coord_systems as cs
@@ -114,16 +113,16 @@ class WindObjective(ob.OptimizationObjective):
     angles among valid motions.
 
     Attributes:
-        tw_direction_rad_gc (float): Direction of true wind in global coordinate radians (-pi, pi]
+        tw_dir_rad_gc (float): Direction of true wind in global coordinate radians (-pi, pi]
     """
 
     def __init__(
         self,
         space_information: ob.SpaceInformation,
-        tw_direction_rad_gc: float,
+        tw_dir_rad_gc: float,
     ) -> None:
         super().__init__(space_information)
-        self.tw_direction_rad_gc = tw_direction_rad_gc
+        self.tw_dir_rad_gc = tw_dir_rad_gc
 
     def motionCost(self, s1: ob.SE2StateSpace, s2: ob.SE2StateSpace) -> ob.Cost:
         """Return the wind-alignment cost for the segment from `s1` to `s2`.
@@ -140,16 +139,16 @@ class WindObjective(ob.OptimizationObjective):
         """
         s1_xy = cs.XY(s1.getX(), s1.getY())
         s2_xy = cs.XY(s2.getX(), s2.getY())
-        return ob.Cost(WindObjective.wind_direction_cost(s1_xy, s2_xy, self.tw_direction_rad_gc))
+        return ob.Cost(WindObjective.wind_direction_cost(s1_xy, s2_xy, self.tw_dir_rad_gc))
 
     @staticmethod
-    def wind_direction_cost(s1: cs.XY, s2: cs.XY, tw_direction_rad_gc: float) -> float:
+    def wind_direction_cost(s1: cs.XY, s2: cs.XY, tw_dir_rad_gc: float) -> float:
         """Compute a wind-alignment cost for a path segment.
 
         Args:
             s1 (cs.XY): The start point of the path segment
             s2 (cs.XY): The end point of the path segment
-            tw_direction_rad_gc (float): The direction of the true wind in radians, (-pi, pi]
+            tw_dir_rad_gc (float): The direction of the true wind in radians, (-pi, pi]
 
         Returns:
             float: The cost of the path segment from s1 to s2, in the interval [0, 1].
@@ -157,7 +156,7 @@ class WindObjective(ob.OptimizationObjective):
         segment_wind_angle_rad_bc = get_segment_wind_angle_rad_bc(
             s1,
             s2,
-            tw_direction_rad_gc,
+            tw_dir_rad_gc,
         )
         if (
             segment_wind_angle_rad_bc <= NO_GO_ZONE
@@ -173,7 +172,7 @@ class TimeObjective(ob.OptimizationObjective):
     end of the segment.
 
     Attributes:
-        tw_direction_rad_gc (float): The direction of wind in global coordinate radians (-pi, pi]
+        tw_dir_rad_gc (float): The direction of wind in global coordinate radians (-pi, pi]
         tw_speed_kmph (float): The speed of the true wind in km/h
     """
 
@@ -188,11 +187,11 @@ class TimeObjective(ob.OptimizationObjective):
     def __init__(
         self,
         space_information: ob.SpaceInformation,
-        tw_direction_rad_gc: float,
+        tw_dir_rad_gc: float,
         tw_speed_kmph: float,
     ) -> None:
         super().__init__(space_information)
-        self.tw_direction_rad_gc = tw_direction_rad_gc
+        self.tw_dir_rad_gc = tw_dir_rad_gc
         self.tw_speed_kmph = tw_speed_kmph
 
     def motionCost(self, s1: ob.SE2StateSpace, s2: ob.SE2StateSpace) -> ob.Cost:
@@ -213,7 +212,7 @@ class TimeObjective(ob.OptimizationObjective):
             TimeObjective.time_cost(
                 s1_xy,
                 s2_xy,
-                self.tw_direction_rad_gc,
+                self.tw_dir_rad_gc,
                 self.tw_speed_kmph,
             )
         )
@@ -222,7 +221,7 @@ class TimeObjective(ob.OptimizationObjective):
     def time_cost(
         s1: cs.XY,
         s2: cs.XY,
-        tw_direction_rad_gc: float,
+        tw_dir_rad_gc: float,
         tw_speed_kmph: float,
     ) -> float:
         """Returns a cost proportional to the estimated amount of time it will take for the boat
@@ -231,7 +230,7 @@ class TimeObjective(ob.OptimizationObjective):
         Args:
             s1 (cs.XY): The start point of the path segment
             s2 (cs.XY): The end point of the path segment
-            tw_direction_rad_gc (float): The direction of wind in global coord radians (-pi, pi]
+            tw_dir_rad_gc (float): The direction of wind in global coord radians (-pi, pi]
             tw_speed_kmph (float): The true wind speed in km/h
 
         Returns:
@@ -242,7 +241,7 @@ class TimeObjective(ob.OptimizationObjective):
 
         sailbot_speed = TimeObjective.get_sailbot_speed(
             path_segment_true_bearing_radians,
-            tw_direction_rad_gc,
+            tw_dir_rad_gc,
             tw_speed_kmph,
         )
 
@@ -261,12 +260,12 @@ class TimeObjective(ob.OptimizationObjective):
     @staticmethod
     def get_sailbot_speed(
         path_segment_true_bearing_rad: float,
-        tw_direction_rad_gc: float,
+        tw_dir_rad_gc: float,
         tw_speed_kmph: float,
     ) -> float:
 
         tw_angle_rad_bc = abs(
-            wcs.get_true_wind_angle(path_segment_true_bearing_rad, tw_direction_rad_gc)
+            wcs.get_true_wind_angle(path_segment_true_bearing_rad, tw_dir_rad_gc)
         )
 
         # this bounds the twa to a range of 0 to 180 degrees
@@ -285,41 +284,28 @@ class TimeObjective(ob.OptimizationObjective):
 
 def get_sailing_objective(
     space_information: ob.SpaceInformation,
-    simple_setup: og.SimpleSetup,
-    boat_heading_deg_gc: float,
-    boat_speed_kmph: float,
-    aw_direction_deg_bc: float,
-    aw_speed_kmph: float,
+    tw_dir_deg_gc: float,
+    tw_speed_kmph: float,
     goal_position_in_xy: cs.XY,
 ) -> ob.OptimizationObjective:
     """Build the combined sailing optimization objective for the current wind snapshot.
 
-    Apparent wind is converted to true wind once, then shared by the wind and time objectives.
+    True wind is converted to radians once, then shared by the wind and time objectives.
     Goal direction remains in the objective stack even though goal progress is also enforced as a
     hard motion-validity check.
     """
 
-    apparent_wind_direction_degrees_global_coordinates = wcs.boat_to_global_coordinate(
-        boat_heading_deg_gc, aw_direction_deg_bc
-    )
-
-    tw_dir_rad, tw_speed_kmph = wcs.get_true_wind(
-        apparent_wind_direction_degrees_global_coordinates,
-        aw_speed_kmph,
-        boat_heading_deg_gc,
-        boat_speed_kmph,
-    )
-
+    tw_dir_rad_gc = math.radians(tw_dir_deg_gc)
     multiObjective = ob.MultiOptimizationObjective(si=space_information)
     multiObjective.addObjective(
         objective=WindObjective(
             space_information,
-            tw_dir_rad,
+            tw_dir_rad_gc,
         ),
         weight=WIND_OBJECTIVE_WEIGHT,
     )
     multiObjective.addObjective(
-        objective=TimeObjective(space_information, tw_dir_rad, tw_speed_kmph),
+        objective=TimeObjective(space_information, tw_dir_rad_gc, tw_speed_kmph),
         weight=TIME_OBJECTIVE_WEIGHT,
     )
     multiObjective.addObjective(
