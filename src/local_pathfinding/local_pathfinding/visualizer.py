@@ -17,15 +17,21 @@ import math
 import subprocess
 from collections import deque
 from dataclasses import dataclass
+from io import BytesIO
 from multiprocessing import Queue
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import dash
 import plotly.graph_objects as go
+
+# Optional dependencies for the OpenStreetMap overlay. They are not required for the rest of the
+# visualizer, so a missing install just disables the map toggle instead of breaking the app.
+import requests
 import yaml
 from dash import dcc, html
 from dash.dependencies import Input, Output, State
+from PIL import Image
 from shapely.geometry import MultiPolygon, Polygon
 
 import custom_interfaces.msg as ci
@@ -56,8 +62,22 @@ NO_GO_CONE_RADIUS_FRACTION = 0.12  # fraction of the visible axis span to use as
 # GLOBAL_WP_REACHED_KM of the local waypoint nearest to it, provided that local waypoint is itself
 # within LOCAL_NEAR_GLOBAL_KM of the global waypoint.
 GLOBAL_WP_REACHED_KM = 0.1
-LOCAL_NEAR_GLOBAL_KM = 0.5
+LOCAL_NEAR_GLOBAL_KM = 0.15
 GLOBAL_WP_KEY_DECIMALS = 5  # lat/lon rounding used to identify a global waypoint across frames
+
+# OpenStreetMap overlay (toggleable basemap drawn beneath the data traces).
+OSM_TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+OSM_TILE_SIZE = 256  # px, standard slippy-map tile size
+OSM_MAX_TILES_PER_AXIS = 4  # cap tiles fetched per axis to bound latency and figure payload size
+OSM_MIN_ZOOM = 1
+OSM_MAX_ZOOM = 18
+OSM_REQUEST_TIMEOUT_S = 5
+OSM_USER_AGENT = "UBCSailbot-LocalPathfinding-Visualizer"
+OSM_OVERLAY_OPACITY = 1.0
+
+# Module-level caches so the basemap is not refetched/restitched on every ~2.5 s frame.
+_osm_tile_cache: Dict[Tuple[int, int, int], Any] = {}
+_osm_overlay_cache: Dict[Any, Tuple[Any, Tuple[float, float, float, float]]] = {}
 
 BASE_DIR = Path(__file__).resolve().parent
 MOCK_NODES_DIR = BASE_DIR / "mock_nodes"
@@ -66,6 +86,9 @@ WIND_PARAMS_SH = MOCK_NODES_DIR / "wind_params.sh"
 
 app = dash.Dash(__name__)
 queue: Optional[Queue] = None  # type: ignore
+# Most recent VisualizerState, kept so view-only toggles (e.g. the map) can re-render the last
+# frame immediately instead of waiting for the next ROS message.
+_latest_vs: Optional["VisualizerState"] = None
 
 
 @dataclass(frozen=True)
@@ -419,9 +442,7 @@ def compute_reached_global_wps(
     return list(reached)
 
 
-def build_global_wp_trace(
-    vs: VisualizerState, reached_keys: Optional[List[str]]
-) -> go.Scatter:
+def build_global_wp_trace(vs: VisualizerState, reached_keys: Optional[List[str]]) -> go.Scatter:
     """Build the marker trace for the (not-yet-reached) global waypoints.
 
     Args:
@@ -436,12 +457,15 @@ def build_global_wp_trace(
     ys: List[float] = []
     labels: List[str] = []
     customdata: List[List[float]] = []
+
+    # The last global waypoints is the starting point and the first waypoint is the destination
+    n = len(vs.global_wp)
     for i, (waypoint, wp_xy) in enumerate(zip(vs.global_wp, vs.global_wp_xy)):
         if global_wp_key(waypoint) in reached:
             continue
         xs.append(wp_xy.x)
         ys.append(wp_xy.y)
-        labels.append(f"GW{i+1}")
+        labels.append(f"GW{n-i}")
         customdata.append([waypoint.latitude, waypoint.longitude])
 
     return go.Scatter(
@@ -506,8 +530,7 @@ def build_intermediate_trace(
         return go.Scatter(x=[], y=[], mode="markers+text", name="Intermediate")
     labels = [f"LW{i+1}" for i, _ in enumerate(local_x_km[1:-1])]
     latlons = [
-        cs.xy_to_latlon(reference, cs.XY(x, y))
-        for x, y in zip(local_x_km[1:-1], local_y_km[1:-1])
+        cs.xy_to_latlon(reference, cs.XY(x, y)) for x, y in zip(local_x_km[1:-1], local_y_km[1:-1])
     ]
     customdata = [[ll.latitude, ll.longitude] for ll in latlons]
     return go.Scatter(
@@ -1077,6 +1100,7 @@ def apply_layout(
     fig: go.Figure,
     zoom_needed: bool,
     last_range: Optional[Dict[str, List[float]]],
+    show_map: bool = False,
 ) -> None:
     """
     Apply the main plot layout configuration (axis titles, domains, legend, and optional ranges).
@@ -1085,9 +1109,16 @@ def apply_layout(
         fig: Target Plotly figure.
         zoom_needed: whether we want to zoom into the state space
         last_range: previously stored axis ranges to maintain axes if zoom not needed.
+        show_map: when True, constrain the axes to equal scale so the OpenStreetMap overlay stays
+            geographically proportioned instead of stretched. Left unconstrained otherwise to
+            preserve the default plot behavior.
     """
     xaxis = dict(domain=[0.0, 0.98])
     yaxis = dict(domain=[0.30, 1.0])
+    if show_map:
+        # scaleanchor/scaleratio keep 1 km on X the same on-screen size as 1 km on Y so the
+        # basemap is not distorted. Only applied with the map on, to keep the default look.
+        yaxis.update(scaleanchor="x", scaleratio=1.0)
 
     # Base Layout
     fig.update_layout(
@@ -1120,6 +1151,7 @@ def build_figure(
     last_goal_xy_km: Optional[Tuple[float, float]],
     last_range: Optional[Dict[str, List[float]]],
     reached_global_keys: Optional[List[str]] = None,
+    show_map: bool = False,
 ) -> Tuple[go.Figure, Tuple[float, float], List[str]]:
     """
     Builds and renders the complete path planning visualization figure.
@@ -1134,6 +1166,7 @@ def build_figure(
                       detect goal changes and show a popup message.
         reached_global_keys: Keys of global waypoints already reached by the boat (persisted
                       across frames); reached waypoints are not plotted.
+        show_map: Whether to draw the OpenStreetMap basemap beneath the data.
 
     Returns:
         (fig, new_goal_xy_rounded, reached_global_keys):
@@ -1158,7 +1191,7 @@ def build_figure(
         # Still render the boat, obstacles, AIS traffic, and wind so the operator keeps
         # situational awareness instead of seeing a blank or crashed view.
         return build_figure_without_local_path(
-            vs, boat_xy_km, last_goal_xy_km, last_range, reached_global_keys
+            vs, boat_xy_km, last_goal_xy_km, last_range, reached_global_keys, show_map
         )
     goal_xy_km = cs.XY(local_x_km[-1], local_y_km[-1])
     goal_change = compute_goal_change(last_goal_xy_km, goal_xy_km)
@@ -1217,8 +1250,10 @@ def build_figure(
     # Computing State space overlay and adding it to the plot
     zoom_needed = last_range is None
     compute_and_add_state_space(vs, boat_xy_km, goal_xy_km, fig)
-    apply_layout(vs, fig, zoom_needed, last_range)
+    apply_layout(vs, fig, zoom_needed, last_range, show_map)
     add_goal_change_popup(fig, goal_change.message)  # Popup message for goal change
+    if show_map:
+        add_map_overlay(fig, vs, last_range)
     return fig, goal_change.new_goal_xy_rounded, reached_global_keys
 
 
@@ -1228,6 +1263,7 @@ def build_figure_without_local_path(
     last_goal_xy_km: Optional[Tuple[float, float]],
     last_range: Optional[Dict[str, List[float]]],
     reached_global_keys: Optional[List[str]] = None,
+    show_map: bool = False,
 ) -> Tuple[go.Figure, Tuple[float, float], List[str]]:
     """
     Build the visualization when no local path is available.
@@ -1247,6 +1283,7 @@ def build_figure_without_local_path(
         last_goal_xy_km: Previous goal position (x, y) in km, or None if never set.
         last_range: Previously stored axis ranges, or None on first render.
         reached_global_keys: Keys of global waypoints already reached; passed through unchanged.
+        show_map: Whether to draw the OpenStreetMap basemap beneath the data.
 
     Returns:
         (fig, goal_xy, reached_global_keys): The figure, the goal position to persist downstream
@@ -1323,7 +1360,10 @@ def build_figure_without_local_path(
     )
 
     zoom_needed = last_range is None
-    apply_layout(vs, fig, zoom_needed, last_range)
+    apply_layout(vs, fig, zoom_needed, last_range, show_map)
+
+    if show_map:
+        add_map_overlay(fig, vs, last_range)
 
     goal_xy = last_goal_xy_km if last_goal_xy_km is not None else (boat_xy_km[0], boat_xy_km[1])
     return fig, goal_xy, reached_global_keys
@@ -1375,6 +1415,167 @@ def get_state_space_bounds(
     return (
         cs.XY(x_min, y_min),
         cs.XY(x_max, y_max),
+    )
+
+
+# --------------------------------------
+# OpenStreetMap basemap overlay
+# --------------------------------------
+def _deg2num(lat_deg: float, lon_deg: float, zoom: int) -> Tuple[float, float]:
+    """Convert lat/lon to fractional slippy-map tile coordinates at the given zoom."""
+    lat_rad = math.radians(lat_deg)
+    n = 2.0**zoom
+    xt = (lon_deg + 180.0) / 360.0 * n
+    yt = (1.0 - math.asinh(math.tan(lat_rad)) / math.pi) / 2.0 * n
+    return xt, yt
+
+
+def _num2deg(xt: float, yt: float, zoom: int) -> Tuple[float, float]:
+    """Convert fractional slippy-map tile coordinates to the lat/lon of that tile's NW corner."""
+    n = 2.0**zoom
+    lon = xt / n * 360.0 - 180.0
+    lat = math.degrees(math.atan(math.sinh(math.pi * (1.0 - 2.0 * yt / n))))
+    return lat, lon
+
+
+def _choose_osm_zoom(lat_n: float, lat_s: float, lon_w: float, lon_e: float) -> int:
+    """Pick the highest zoom whose tile span fits within OSM_MAX_TILES_PER_AXIS on both axes."""
+    for zoom in range(OSM_MAX_ZOOM, OSM_MIN_ZOOM - 1, -1):
+        x0 = math.floor(_deg2num(lat_n, lon_w, zoom)[0])
+        x1 = math.floor(_deg2num(lat_s, lon_e, zoom)[0])
+        y0 = math.floor(_deg2num(lat_n, lon_w, zoom)[1])
+        y1 = math.floor(_deg2num(lat_s, lon_e, zoom)[1])
+        if (x1 - x0 + 1) <= OSM_MAX_TILES_PER_AXIS and (y1 - y0 + 1) <= OSM_MAX_TILES_PER_AXIS:
+            return zoom
+    return OSM_MIN_ZOOM
+
+
+def _fetch_osm_tile(zoom: int, x: int, y: int):
+    """Fetch a single OSM tile (RGB), caching it in-process to respect the tile usage policy."""
+    key = (zoom, x, y)
+    if key in _osm_tile_cache:
+        return _osm_tile_cache[key]
+    url = OSM_TILE_URL.format(z=zoom, x=x, y=y)
+    resp = requests.get(url, headers={"User-Agent": OSM_USER_AGENT}, timeout=OSM_REQUEST_TIMEOUT_S)
+    resp.raise_for_status()
+    tile = Image.open(BytesIO(resp.content)).convert("RGB")
+    _osm_tile_cache[key] = tile
+    return tile
+
+
+def _build_osm_image(
+    lat_n: float, lat_s: float, lon_w: float, lon_e: float
+) -> Tuple[Any, Tuple[float, float, float, float]]:
+    """Stitch the OSM tiles covering a lat/lon bbox into one image.
+
+    Args:
+        lat_n, lat_s: North/south latitude bounds of the desired view.
+        lon_w, lon_e: West/east longitude bounds of the desired view.
+
+    Returns:
+        (image, (lat_top, lat_bot, lon_left, lon_right)) where the second element is the actual
+        geographic extent of the stitched mosaic (tile-aligned, so slightly larger than the bbox).
+    """
+    zoom = _choose_osm_zoom(lat_n, lat_s, lon_w, lon_e)
+    x0 = math.floor(_deg2num(lat_n, lon_w, zoom)[0])
+    x1 = math.floor(_deg2num(lat_s, lon_e, zoom)[0])
+    y0 = math.floor(_deg2num(lat_n, lon_w, zoom)[1])
+    y1 = math.floor(_deg2num(lat_s, lon_e, zoom)[1])
+
+    mosaic = Image.new("RGB", ((x1 - x0 + 1) * OSM_TILE_SIZE, (y1 - y0 + 1) * OSM_TILE_SIZE))
+    for xi in range(x0, x1 + 1):
+        for yi in range(y0, y1 + 1):
+            tile = _fetch_osm_tile(zoom, xi, yi)
+            mosaic.paste(tile, ((xi - x0) * OSM_TILE_SIZE, (yi - y0) * OSM_TILE_SIZE))
+
+    lat_top, lon_left = _num2deg(x0, y0, zoom)
+    lat_bot, lon_right = _num2deg(x1 + 1, y1 + 1, zoom)
+    return mosaic, (lat_top, lat_bot, lon_left, lon_right)
+
+
+def _view_bounds_xy(
+    vs: VisualizerState, last_range: Optional[Dict[str, List[float]]]
+) -> Tuple[float, float, float, float]:
+    """Return the (x_min, x_max, y_min, y_max) of the currently displayed view in km."""
+    if last_range is not None:
+        return (last_range["x"][0], last_range["x"][1], last_range["y"][0], last_range["y"][1])
+    min_b, max_b = get_state_space_bounds(vs)
+    return (min_b.x, max_b.x, min_b.y, max_b.y)
+
+
+def add_map_overlay(
+    fig: go.Figure, vs: VisualizerState, last_range: Optional[Dict[str, List[float]]]
+) -> None:
+    """Draw an OpenStreetMap basemap beneath the data traces, georeferenced to the XY (km) frame.
+
+    The visible view bounds (km) are converted to a lat/lon bbox via the goal-anchored reference,
+    the covering OSM tiles are stitched into one image, and that image is placed as a layout image
+    spanning the corresponding XY rectangle. Results are cached by view signature so the basemap is
+    not refetched every frame. Any failure (missing deps, network error) is shown as a small
+    annotation and otherwise ignored so the visualizer keeps working.
+
+    Args:
+        fig: Target Plotly figure.
+        vs: VisualizerState (provides the reference lat/lon and state-space fallback bounds).
+        last_range: Previously stored axis ranges, used as the view extent when available.
+    """
+
+    x_min, x_max, y_min, y_max = _view_bounds_xy(vs, last_range)
+    ref = vs.reference_lat_lon
+
+    # lat/lon bbox of the view's four XY corners
+    corners = [cs.xy_to_latlon(ref, cs.XY(x, y)) for x in (x_min, x_max) for y in (y_min, y_max)]
+    lats = [c.latitude for c in corners]
+    lons = [c.longitude for c in corners]
+    lat_n, lat_s, lon_w, lon_e = max(lats), min(lats), min(lons), max(lons)
+
+    sig = (
+        round(ref.latitude, 4),
+        round(ref.longitude, 4),
+        round(lat_n, 4),
+        round(lat_s, 4),
+        round(lon_w, 4),
+        round(lon_e, 4),
+    )
+    if sig in _osm_overlay_cache:
+        mosaic, extent = _osm_overlay_cache[sig]
+    else:
+        mosaic, extent = _build_osm_image(lat_n, lat_s, lon_w, lon_e)
+        if len(_osm_overlay_cache) > 16:
+            _osm_overlay_cache.clear()
+        _osm_overlay_cache[sig] = (mosaic, extent)
+
+    lat_top, lat_bot, lon_left, lon_right = extent
+    nw = cs.latlon_to_xy(ref, ci.HelperLatLon(latitude=lat_top, longitude=lon_left))
+    se = cs.latlon_to_xy(ref, ci.HelperLatLon(latitude=lat_bot, longitude=lon_right))
+    fig.add_layout_image(
+        dict(
+            source=mosaic,
+            xref="x",
+            yref="y",
+            x=nw.x,
+            y=nw.y,
+            sizex=se.x - nw.x,
+            sizey=nw.y - se.y,
+            xanchor="left",
+            yanchor="top",
+            sizing="stretch",
+            layer="below",
+            opacity=OSM_OVERLAY_OPACITY,
+        )
+    )
+    # OpenStreetMap tile usage policy requires visible attribution.
+    fig.add_annotation(
+        text="Map data from © OpenStreetMap",
+        xref="paper",
+        yref="paper",
+        x=0.98,  # right edge of the plot's x-axis domain
+        y=0.30,  # bottom edge of the plot's y-axis domain
+        xanchor="right",
+        yanchor="bottom",
+        showarrow=False,
+        font=dict(color="black", size=9),
+        bgcolor="rgba(255, 255, 255, 0.6)",
     )
 
 
@@ -1432,6 +1633,12 @@ def dash_app(q: Queue):
                         },
                     ),
                     html.Div(id="wind-status"),
+                    dcc.Checklist(
+                        id="map-toggle",
+                        options=[{"label": " Show map", "value": "on"}],
+                        value=[],
+                        style={"fontWeight": "bold", "marginLeft": "10px"},
+                    ),
                 ],
             ),
             dcc.Interval(id="interval-component", interval=UPDATE_INTERVAL_MS, n_intervals=0),
@@ -1464,6 +1671,7 @@ def dash_app(q: Queue):
     Input("interval-component", "n_intervals"),
     Input("live-graph", "relayoutData"),
     Input("reset-button", "n_clicks"),
+    Input("map-toggle", "value"),
     State("live-graph", "figure"),
     State("goal-store", "data"),
     State("range-store", "data"),
@@ -1474,6 +1682,7 @@ def update_graph(
     _: int,
     relayout_data,
     __: int,
+    map_toggle: Optional[List[str]],
     current_figure,
     last_goal_xy_km: Optional[List[float]],
     stored_range,
@@ -1487,6 +1696,7 @@ def update_graph(
         _: Dash interval tick (unused).
         relayout_data: Data relayed from Plotly when user pans, zooms in/out, autoscales
         __: Reset button n_clicks (unused).
+        map_toggle: Value of the "Show map" checklist (["on"] when enabled).
         current_figure: Current figure state from live-graph.
         last_goal_xy_km: Previously stored goal as [x, y] or None on first run.
         stored_range: Previously stored range as {"x": [xmin, xmax], "y": [ymin, ymax]}
@@ -1502,20 +1712,26 @@ def update_graph(
             - reached_global_keys: list of reached global waypoint keys for storage in dcc.Store
 
     """
-    global queue
-
-    # Interval update (default behavior)
-    if queue is None or queue.empty():
-        return dash.no_update, dash.no_update, stored_range, dash.no_update
-
-    vs = queue.get()  # type: ignore
-    last_goal_tuple = (
-        cs.XY(last_goal_xy_km[0], last_goal_xy_km[1]) if last_goal_xy_km is not None else None
-    )
+    global queue, _latest_vs
 
     # Check which input triggered the callback
     ctx = dash.callback_context
     triggered_id = ctx.triggered[0]["prop_id"].split(".")[0] if ctx.triggered else None
+
+    if queue is not None and not queue.empty():
+        vs = queue.get()  # type: ignore
+        _latest_vs = vs
+    elif triggered_id in ("map-toggle", "reset-button") and _latest_vs is not None:
+        # A view-only control changed but no new ROS message arrived; re-render the last frame
+        # so the toggle/reset takes effect immediately instead of waiting for the next message.
+        vs = _latest_vs
+    else:
+        return dash.no_update, dash.no_update, stored_range, dash.no_update
+
+    last_goal_tuple = (
+        cs.XY(last_goal_xy_km[0], last_goal_xy_km[1]) if last_goal_xy_km is not None else None
+    )
+    show_map = bool(map_toggle) and "on" in map_toggle
 
     if relayout_data and triggered_id == "live-graph":
         # Only process relayout_data if it was the actual trigger
@@ -1542,7 +1758,7 @@ def update_graph(
         last_range = stored_range
 
     fig, new_goal_xy, reached_global_keys = build_figure(
-        vs, last_goal_tuple, last_range, reached_global_keys
+        vs, last_goal_tuple, last_range, reached_global_keys, show_map
     )
 
     if triggered_id == "reset-button":

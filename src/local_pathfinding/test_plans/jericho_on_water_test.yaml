@@ -25,8 +25,8 @@ gps:
 # Finally, it goes west until it infront of the ramp (1.65 km away from the ramp)
 global_path:
   waypoints:
-    - {latitude: 49.281497, longitude: -123.203312}
-    - {latitude: 49.283240, longitude: -123.195196}
-    - {latitude: 49.280927, longitude: -123.189280}
-    - {latitude: 49.277298, longitude: -123.194027}
     - {latitude: 49.278570, longitude: -123.197598}
+    - {latitude: 49.277298, longitude: -123.194027}
+    - {latitude: 49.280927, longitude: -123.189280}
+    - {latitude: 49.283240, longitude: -123.195196}
+    - {latitude: 49.281497, longitude: -123.203312}
