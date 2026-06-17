@@ -1,7 +1,7 @@
 import argparse
 import os
 import pickle
-from typing import Any
+from typing import Any, Optional
 
 import geopandas as gpd
 import matplotlib
