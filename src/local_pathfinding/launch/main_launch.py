@@ -15,7 +15,44 @@ from launch_ros.actions import Node
 PACKAGE_NAME = "local_pathfinding"
 
 # Add args with DeclareLaunchArguments object(s) and utilize in setup_launch()
-LOCAL_LAUNCH_ARGUMENTS: List[DeclareLaunchArgument] = []
+LOCAL_LAUNCH_ARGUMENTS: List[DeclareLaunchArgument] = [
+    DeclareLaunchArgument(
+        name="use_gps_noise",
+        default_value="true",
+        choices=["true", "false"],
+        description="Enable Gaussian noise on GPS readings.",
+    ),
+    DeclareLaunchArgument(
+        name="use_ocean_drift",
+        default_value="true",
+        choices=["true", "false"],
+        description="Enable cumulative ocean current drift on GPS readings.",
+    ),
+    DeclareLaunchArgument(
+        name="use_drift_randomization",
+        default_value="true",
+        choices=["true", "false"],
+        description="Enable small random variation to the ocean drift current each tick.",
+    ),
+    DeclareLaunchArgument(
+        name="ocean_drift_speed_kmph",
+        default_value="0.5",
+        description="Base speed of the ocean current in km/h over ground.",
+    ),
+    DeclareLaunchArgument(
+        name="ocean_drift_dir_deg",
+        default_value="45.0",
+        description=(
+            "Direction the current flows toward in degrees "
+            "(0=north, 90=east). Range is (-180, 180])"
+        ),
+    ),
+    DeclareLaunchArgument(
+        name="ocean_drift_accel_kmph2",
+        default_value="0.0",
+        description="Acceleration of the drift speed in km/h^2. Set to 0 for constant drift.",
+    ),
+]
 
 
 def generate_launch_description() -> LaunchDescription:
@@ -247,9 +284,32 @@ def get_mock_gps_node_description(context: LaunchContext) -> Node:
     """Gets the launch description for the mock gps node"""
     node_name = "mock_gps"
     test_plan = LaunchConfiguration("test_plan").perform(context)
+
+    use_gps_noise = LaunchConfiguration("use_gps_noise").perform(context)
+    use_gps_noise_bool = use_gps_noise.lower() in ["true", "1", "yes"]
+
+    use_ocean_drift = LaunchConfiguration("use_ocean_drift").perform(context)
+    use_ocean_drift_bool = use_ocean_drift.lower() in ["true", "1", "yes"]
+
+    use_drift_randomization = LaunchConfiguration("use_drift_randomization").perform(context)
+    use_drift_randomization_bool = use_drift_randomization.lower() in ["true", "1", "yes"]
+
+    ocean_drift_speed_kmph = float(LaunchConfiguration("ocean_drift_speed_kmph").perform(context))
+    ocean_drift_dir_deg = float(LaunchConfiguration("ocean_drift_dir_deg").perform(context))
+    ocean_drift_accel_kmph2 = float(
+        LaunchConfiguration("ocean_drift_accel_kmph2").perform(context)
+    )
     ros_parameters = [
         LaunchConfiguration("config").perform(context),
-        {"test_plan": test_plan},
+        {
+            "test_plan": test_plan,
+            "use_gps_noise": use_gps_noise_bool,
+            "use_ocean_drift": use_ocean_drift_bool,
+            "use_drift_randomization": use_drift_randomization_bool,
+            "ocean_drift_speed_kmph": ocean_drift_speed_kmph,
+            "ocean_drift_dir_deg": ocean_drift_dir_deg,
+            "ocean_drift_accel_kmph2": ocean_drift_accel_kmph2,
+        },
     ]
     ros_arguments: List[SomeSubstitutionsType] = [
         "--log-level",
