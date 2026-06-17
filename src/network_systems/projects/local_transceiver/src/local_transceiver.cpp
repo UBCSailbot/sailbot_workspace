@@ -579,7 +579,7 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
             continue;
         }
         std::cout << "[RAW PAYLOAD][SIZE " << payload.value().size() << " ]: ";
-        std::cout.write(payload.value().data(), payload.value().size());
+        std::cout.write(payload.value().data(), payload.value().size()); //NOLINT
         std::cout << std::endl;
 
         receivedDataBuffer = payload.value();
