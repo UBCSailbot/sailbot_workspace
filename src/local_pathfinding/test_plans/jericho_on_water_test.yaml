@@ -21,8 +21,12 @@ gps:
 
 
 # Global path replicating the recorded on-water GPS track (gps.csv).
+# The global waypoint makes the sailboat move in a square loop out towards the west and then north and then south.
+# Finally, it goes west until it infront of the ramp (1.65 km away from the ramp)
 global_path:
   waypoints:
-    - {latitude: 49.277248, longitude: -123.197365}
-    - {latitude: 49.282025, longitude: -123.195511}
-    - {latitude: 49.274470, longitude: -123.201093}
+    - {latitude: 49.281497, longitude: -123.203312}
+    - {latitude: 49.283240, longitude: -123.195196}
+    - {latitude: 49.280927, longitude: -123.189280}
+    - {latitude: 49.277298, longitude: -123.194027}
+    - {latitude: 49.278570, longitude: -123.197598}
