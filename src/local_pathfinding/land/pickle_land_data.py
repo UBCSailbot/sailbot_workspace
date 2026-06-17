@@ -123,7 +123,7 @@ def cut_edge_to_point(
     return make_valid(result).buffer(0)
 
 
-def pickle_land(source: str = "offshore", cut_to: tuple = None):
+def pickle_land(source: str = "offshore", cut_to: tuple[float, float] | None = None):
     """Generates a land dataset and stores it in PKL format for long term storage on disk.
 
     Land data is saved to pkl/land.pkl.
