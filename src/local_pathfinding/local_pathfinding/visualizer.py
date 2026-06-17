@@ -254,10 +254,11 @@ class VisualizerState:
         self.aw_vector_kmph = cs.polar_to_cartesian(aw_dir_global_rad, aw_speed_kmph)
 
         # True wind from apparent
-        tw_angle_rad, tw_speed_kmph = wcs.get_true_wind(
+        tw_dir_deg_gc, tw_speed_kmph = wcs.aw_gc_to_tw_gc(
             aw_dir_global_deg, aw_speed_kmph, boat_heading_deg, boat_speed_kmph
         )
-        self.tw_vector_kmph = cs.polar_to_cartesian(tw_angle_rad, tw_speed_kmph)
+        tw_dir_rad_gc = math.radians(tw_dir_deg_gc)
+        self.tw_vector_kmph = cs.polar_to_cartesian(tw_dir_rad_gc, tw_speed_kmph)
 
         # Boat wind vector
         boat_wind_radians = math.radians(cs.bound_to_180(boat_heading_deg + 180))
