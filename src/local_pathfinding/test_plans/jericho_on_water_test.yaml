@@ -14,113 +14,18 @@ tw_speed_kmph: 14.0
 
 # Boat starts at the Jericho Sailing Centre launch, heading out (NE) into the bay.
 gps:
-  latitude: 49.278052
-  longitude: -123.201245
+  latitude: 49.277248
+  longitude: -123.197365
   speed_kmph: 5.0
   heading_deg: 45.0
 
 
-# Global path replicating the recorded on-water GPS track (gps.csv).
+# The global waypoint makes the sailboat move in a square loop out towards the west and then north and then south.
+# Finally, it goes west until it infront of the ramp (1.65 km away from the ramp)
 global_path:
   waypoints:
-    - {latitude: 49.275490, longitude: -123.201091}
-    - {latitude: 49.275150, longitude: -123.200898}
-    - {latitude: 49.275363, longitude: -123.200445}
-    - {latitude: 49.275685, longitude: -123.200186}
-    - {latitude: 49.276036, longitude: -123.200021}
-    - {latitude: 49.276205, longitude: -123.199525}
-    - {latitude: 49.276478, longitude: -123.199138}
-    - {latitude: 49.276740, longitude: -123.198750}
-    - {latitude: 49.276985, longitude: -123.198336}
-    - {latitude: 49.277250, longitude: -123.197963}
-    - {latitude: 49.277460, longitude: -123.197515}
-    - {latitude: 49.277138, longitude: -123.197268}
-    - {latitude: 49.277118, longitude: -123.196710}
-    - {latitude: 49.276838, longitude: -123.196355}
-    - {latitude: 49.276541, longitude: -123.196041}
-    - {latitude: 49.276493, longitude: -123.195486}
-    - {latitude: 49.276265, longitude: -123.195053}
-    - {latitude: 49.276626, longitude: -123.195018}
-    - {latitude: 49.276943, longitude: -123.195281}
-    - {latitude: 49.277306, longitude: -123.195271}
-    - {latitude: 49.277566, longitude: -123.194888}
-    - {latitude: 49.277928, longitude: -123.194905}
-    - {latitude: 49.278291, longitude: -123.194913}
-    - {latitude: 49.278651, longitude: -123.194950}
-    - {latitude: 49.279000, longitude: -123.195095}
-    - {latitude: 49.279360, longitude: -123.195085}
-    - {latitude: 49.279728, longitude: -123.195068}
-    - {latitude: 49.280086, longitude: -123.194970}
-    - {latitude: 49.280375, longitude: -123.194640}
-    - {latitude: 49.280708, longitude: -123.194428}
-    - {latitude: 49.280985, longitude: -123.194073}
-    - {latitude: 49.281348, longitude: -123.194010}
-    - {latitude: 49.281126, longitude: -123.193573}
-    - {latitude: 49.280851, longitude: -123.193205}
-    - {latitude: 49.280560, longitude: -123.192876}
-    - {latitude: 49.280248, longitude: -123.192578}
-    - {latitude: 49.279895, longitude: -123.192435}
-    - {latitude: 49.279543, longitude: -123.192561}
-    - {latitude: 49.279205, longitude: -123.192785}
-    - {latitude: 49.278855, longitude: -123.192935}
-    - {latitude: 49.278515, longitude: -123.193121}
-    - {latitude: 49.278258, longitude: -123.193510}
-    - {latitude: 49.278250, longitude: -123.194066}
-    - {latitude: 49.278305, longitude: -123.194620}
-    - {latitude: 49.278365, longitude: -123.195168}
-    - {latitude: 49.278541, longitude: -123.195653}
-    - {latitude: 49.278765, longitude: -123.196085}
-    - {latitude: 49.278960, longitude: -123.196551}
-    - {latitude: 49.279101, longitude: -123.197061}
-    - {latitude: 49.279176, longitude: -123.197605}
-    - {latitude: 49.279240, longitude: -123.198148}
-    - {latitude: 49.279345, longitude: -123.198690}
-    - {latitude: 49.279463, longitude: -123.199223}
-    - {latitude: 49.279631, longitude: -123.199711}
-    - {latitude: 49.279738, longitude: -123.200243}
-    - {latitude: 49.279826, longitude: -123.200785}
-    - {latitude: 49.280116, longitude: -123.201120}
-    - {latitude: 49.279831, longitude: -123.200770}
-    - {latitude: 49.279830, longitude: -123.200216}
-    - {latitude: 49.279618, longitude: -123.199768}
-    - {latitude: 49.279460, longitude: -123.199270}
-    - {latitude: 49.279803, longitude: -123.199438}
-    - {latitude: 49.280163, longitude: -123.199436}
-    - {latitude: 49.280525, longitude: -123.199383}
-    - {latitude: 49.280886, longitude: -123.199356}
-    - {latitude: 49.281243, longitude: -123.199248}
-    - {latitude: 49.281578, longitude: -123.199043}
-    - {latitude: 49.281893, longitude: -123.198775}
-    - {latitude: 49.282135, longitude: -123.198365}
-    - {latitude: 49.282270, longitude: -123.197851}
-    - {latitude: 49.282250, longitude: -123.197300}
-    - {latitude: 49.282086, longitude: -123.196808}
-    - {latitude: 49.282215, longitude: -123.196293}
-    - {latitude: 49.282345, longitude: -123.195776}
-    - {latitude: 49.282025, longitude: -123.195511}
-    - {latitude: 49.281655, longitude: -123.195433}
-    - {latitude: 49.281315, longitude: -123.195231}
-    - {latitude: 49.280973, longitude: -123.195051}
-    - {latitude: 49.280625, longitude: -123.194906}
-    - {latitude: 49.280271, longitude: -123.194771}
-    - {latitude: 49.279911, longitude: -123.194733}
-    - {latitude: 49.279570, longitude: -123.194926}
-    - {latitude: 49.279270, longitude: -123.195236}
-    - {latitude: 49.278956, longitude: -123.195540}
-    - {latitude: 49.278643, longitude: -123.195818}
-    - {latitude: 49.278333, longitude: -123.196125}
-    - {latitude: 49.278071, longitude: -123.196516}
-    - {latitude: 49.277876, longitude: -123.196990}
-    - {latitude: 49.277611, longitude: -123.197380}
-    - {latitude: 49.277353, longitude: -123.197775}
-    - {latitude: 49.277086, longitude: -123.198156}
-    - {latitude: 49.276786, longitude: -123.198461}
-    - {latitude: 49.276490, longitude: -123.198788}
-    - {latitude: 49.276268, longitude: -123.199223}
-    - {latitude: 49.275453, longitude: -123.200343}
-    - {latitude: 49.275135, longitude: -123.200616}
-    - {latitude: 49.275265, longitude: -123.201141}
-    - {latitude: 49.275153, longitude: -123.201665}
-    - {latitude: 49.274796, longitude: -123.201583}
-    - {latitude: 49.274536, longitude: -123.201185}
-    - {latitude: 49.274470, longitude: -123.201093}
+    - {latitude: 49.278570, longitude: -123.197598}
+    - {latitude: 49.277298, longitude: -123.194027}
+    - {latitude: 49.280927, longitude: -123.189280}
+    - {latitude: 49.283240, longitude: -123.195196}
+    - {latitude: 49.281497, longitude: -123.203312}
