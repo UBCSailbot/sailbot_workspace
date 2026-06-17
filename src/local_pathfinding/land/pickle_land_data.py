@@ -4,37 +4,38 @@ import pickle
 from typing import Any
 
 import geopandas as gpd
+import matplotlib
 import numpy as np
 import pyproj
+import yaml
+from matplotlib import pyplot as plt
+from matplotlib.lines import Line2D
+from matplotlib.patches import Patch
 from shapely.geometry import LineString, MultiPolygon, Point, Polygon
 from shapely.ops import unary_union
 from shapely.validation import make_valid
 
-WGS84 = pyproj.CRS("EPSG:4326")
-MERCATOR = pyproj.CRS("EPSG:3857")
-# UTM zone 10N — a metre-based CRS over southern BC, used for accurate metre offsets.
-UTM_10N = pyproj.CRS("EPSG:26910")
+matplotlib.use("Agg")
 
-# Paths are anchored to this file so the script works regardless of the current directory.
+WGS84 = pyproj.CRS("EPSG:4326")
+UTM_10N = pyproj.CRS("EPSG:26910")  # metre-based CRS over southern BC, for accurate offsets
+
+# Paths are anchored to this file so the script runs regardless of the current directory.
 LAND_DIR = os.path.dirname(os.path.abspath(__file__))
 SHP_DIR = os.path.join(LAND_DIR, "shp")
 PKL_PATH = os.path.join(LAND_DIR, "pkl", "land.pkl")
-# Pristine (pre-edit) on-water boundaries and the test plan used as overlays in the
-# extrusion verification plot.
-PRISTINE_SHP = os.path.join(SHP_DIR, "local-area-boundary_backup.shp")
 TEST_PLAN_PATH = os.path.join(LAND_DIR, "..", "test_plans", "jericho_on_water_test.yaml")
-EXTRUSION_PLOT_PATH = os.path.join(LAND_DIR, "west_point_grey_pier_parallel.png")
+CUT_PLOT_PATH = os.path.join(LAND_DIR, "west_point_grey_pier_parallel.png")
 
-# Land sources: the full OSM Pacific coastline for production, and the Vancouver
-# neighbourhood boundaries used as mock land for on-water test plans.
+# Full OSM Pacific coastline for open ocean scenarios; the original (full-buffer) Vancouver
+# neighbourhood boundaries for on-water scenarios. The on-water buffer is kept as is and only
+# cut back locally at the pier (see cut_edge_to_point).
 SHP_SOURCES = {
-    "production": "complete_land_data.shp",
-    "on_water": "local-area-boundary.shp",
+    "offshore": "complete_land_data.shp",
+    "on_water": "local-area-boundary_backup.shp",
 }
 
-# Jericho Pier (lat, lon) — extrude the nearest land mass out to here so on-water test plans
-# have land coverage up to the pier.
-JERICHO_PIER = (49.277065, -123.201474)
+JERICHO_PIER = (49.277065, -123.201474)  # (lat, lon) pier the on-water edge is cut back to
 
 
 def dump_pkl(object: Any, file_path: str):
@@ -47,7 +48,6 @@ def dump_pkl(object: Any, file_path: str):
     Raises:
         RuntimeError: If there are any issues with pickling the object.
     """
-
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     try:
         with open(file_path, "wb") as f:
@@ -58,87 +58,84 @@ def dump_pkl(object: Any, file_path: str):
         )
 
 
-def extrude_edge_to_point(
+def cut_edge_to_point(
     polygon: Polygon,
     target_lat: float,
     target_lon: float,
-    section_width_m: float = 300.0,
-    reach_margin_m: float = 150.0,
+    cut_width_m: float = 600.0,
     working_crs: pyproj.CRS = UTM_10N,
 ) -> Polygon:
-    """Locally extrude a polygon's nearest edge outward to reach a target point.
+    """Cut a local notch into a polygon's edge so the edge passes through a target point.
 
-    Used to push a coastline land mass back out to a real feature (e.g. a Jericho Pier) over a
-    limited section, after a uniform reduction pulled the edge too far inland. The added
-    section is kept aligned with the coast: its outer edge is parallel to the adjacent
-    coastline, and its side walls are perpendicular to it, so the result follows the local
-    shoreline orientation rather than the lat/lon axes.
+    Keeps the polygon's original outline (its full buffer) everywhere except a short stretch of
+    coast around the target, where the land lying seaward of the target is removed so the edge
+    is pulled back to it (e.g. the Jericho Pier, used as a visible on-water reference). The
+    notch spans ``cut_width_m`` along the coast; its two side walls are intentional
+    discontinuities with the unchanged neighbouring edge.
 
-    The operation is near-idempotent: if the target point is already on the polygon's edge,
-    effectively no area is added.
+    The operation is idempotent when no land lies seaward of the target within the window.
 
     Args:
         polygon (Polygon): Land polygon in WGS84 (EPSG:4326) lat/lon.
-        target_lat (float): Latitude of the point to extrude out to.
-        target_lon (float): Longitude of the point to extrude out to.
-        section_width_m (float): Width of the extruded section along the coast, in metres.
-        reach_margin_m (float): Extra inland depth (metres) beyond the target so the added
-            wedge reliably overlaps the existing polygon.
+        target_lat (float): Latitude of the point to cut the edge back to.
+        target_lon (float): Longitude of the point to cut the edge back to.
+        cut_width_m (float): Width (metres) of the cut section of coast, centred on the target.
         working_crs (pyproj.CRS): Metre-based CRS used for the offset maths.
 
     Returns:
-        Polygon: The extruded land polygon in WGS84 (EPSG:4326).
+        Polygon: The cut land polygon in WGS84 (EPSG:4326).
     """
     poly_m = gpd.GeoSeries([polygon], crs=WGS84).to_crs(working_crs).iloc[0]
     if poly_m.geom_type == "MultiPolygon":
         poly_m = max(poly_m.geoms, key=lambda g: g.area)
+
     point_m = gpd.GeoSeries([Point(target_lon, target_lat)], crs=WGS84).to_crs(working_crs).iloc[0]
     P = np.array([point_m.x, point_m.y])
 
-    # Estimate the local coastline direction by densifying the edge and fitting a line to the
-    # vertices within one section width of the target point.
-    ring = LineString(poly_m.exterior.coords)
-    samples = np.array([ring.interpolate(s).coords[0] for s in np.arange(0, ring.length, 3.0)])
-    near = samples[np.hypot(samples[:, 0] - P[0], samples[:, 1] - P[1]) < section_width_m]
-    if len(near) < 2:
-        raise ValueError("no polygon edge found near the target point")
-    slope = np.polyfit(near[:, 0], near[:, 1], 1)[0]
-    along = np.array([1.0, slope])
-    along /= np.linalg.norm(along)
-    across = np.array([-along[1], along[0]])
+    # Local coast direction = the exterior segment nearest the target; the normal points seaward.
+    coords = np.array(poly_m.exterior.coords)
+    i = min(
+        range(len(coords) - 1),
+        key=lambda i: LineString([coords[i], coords[i + 1]]).distance(point_m),
+    )
+    tangent = (coords[i + 1] - coords[i]) / np.linalg.norm(coords[i + 1] - coords[i])
+    normal = np.array([-tangent[1], tangent[0]])
     centroid = np.array([poly_m.centroid.x, poly_m.centroid.y])
-    if np.dot(P - centroid, across) < 0:
-        across = -across  # orient the across-coast axis from the polygon toward the target
+    if np.dot(coords[i] - centroid, normal) < 0:
+        normal = -normal  # orient seaward, away from the polygon interior
 
-    # Coast-aligned slab capped by the line through the target parallel to the coast.
-    depth = poly_m.boundary.distance(point_m) + reach_margin_m
-    half = section_width_m / 2.0
-    cap = Polygon(
+    # Cutter: a box covering the land seaward of the line through the target (parallel to the
+    # coast), limited to a cut_width_m window along the coast. Subtracting it pulls the edge
+    # back to the target locally and leaves the rest of the outline untouched.
+    half = cut_width_m / 2.0
+    reach = max(0.0, float(((coords - P) @ normal).max())) + 1.0
+    cutter = Polygon(
         [
-            P + a * along + b * across
-            for a, b in [(-half, -depth), (half, -depth), (half, 0.0), (-half, 0.0)]
+            P + a * tangent + b * normal
+            for a, b in [(-half, 0.0), (half, 0.0), (half, reach), (-half, reach)]
         ]
     )
-    wedge = cap.difference(poly_m).intersection(poly_m.buffer(depth))
-    result_m = unary_union([poly_m, wedge]).buffer(0)
+    result_m = poly_m.difference(cutter).buffer(0)
+    if result_m.geom_type == "MultiPolygon":
+        result_m = max(result_m.geoms, key=lambda g: g.area)
 
     result = gpd.GeoSeries([result_m], crs=working_crs).to_crs(WGS84).iloc[0]
     return make_valid(result).buffer(0)
 
 
-def pickle_land(source: str = "production", extrude_to: tuple = None):
+def pickle_land(source: str = "offshore", cut_to: tuple = None):
     """Generates a land dataset and stores it in PKL format for long term storage on disk.
 
     Land data is saved to pkl/land.pkl.
 
     Args:
-        source (str): Which land source to pickle. "production" uses the full OSM Pacific
+        source (str): Which land source to pickle. "offshore" uses the full OSM Pacific
             coastline; "on_water" uses the Vancouver neighbourhood boundaries (mock land for
             on-water test plans).
-        extrude_to (tuple[float, float] | None): Optional (lat, lon) point to extrude the
-            nearest land mass out to (e.g. the Jericho Pier) before pickling. Only the polygon
-            whose edge is closest to the point is extruded; all other land is left unchanged
-            and added back in by the union. If None, no extrusion is applied.
+        cut_to (tuple[float, float] | None): Optional (lat, lon) point to cut the nearest land
+            mass back to (e.g. the Jericho Pier) before pickling. Only the polygon whose edge is
+            closest to the point is cut; all other land is left unchanged. If None, no cut is
+            applied.
 
     Raises:
         ValueError: If source is not a known land source.
@@ -149,17 +146,15 @@ def pickle_land(source: str = "production", extrude_to: tuple = None):
     gdf = gpd.read_file(os.path.join(SHP_DIR, SHP_SOURCES[source]))
     polygons = list(gdf["geometry"])
 
-    if extrude_to is not None:
-        target_lat, target_lon = extrude_to
+    if cut_to is not None:
+        target_lat, target_lon = cut_to
         target = Point(target_lon, target_lat)
-        # Extrude only the land mass nearest the target; the rest is restored by the union below.
         nearest = min(range(len(polygons)), key=lambda i: polygons[i].distance(target))
-        polygons[nearest] = extrude_edge_to_point(polygons[nearest], target_lat, target_lon)
+        polygons[nearest] = cut_edge_to_point(polygons[nearest], target_lat, target_lon)
 
-    # Dissolve all polygons into one geometry and repair any invalid/overlapping rings.
     land = unary_union(polygons).buffer(0)
 
-    # Downstream code expects a MultiPolygon, even if the union collapses to a single Polygon.
+    # Downstream code expects a MultiPolygon, even when the union collapses to one Polygon.
     if land.geom_type == "Polygon":
         land = MultiPolygon([land])
 
@@ -167,47 +162,28 @@ def pickle_land(source: str = "production", extrude_to: tuple = None):
     print("Land data pickled to", PKL_PATH + f" (land source: {source})")
 
 
-def plot_extrusion(source: str, target: tuple, out_path: str = EXTRUSION_PLOT_PATH):
-    """Render a verification figure of the extrusion result and save it to out_path.
+def plot_cut(source: str, target: tuple, out_path: str = CUT_PLOT_PATH):
+    """Render a verification figure of the cut result and save it to out_path.
 
-    Replays the extrusion exactly as pickle_land applies it (the polygon nearest the target is
-    extruded), then plots the extruded land against the pristine original coastline and the
-    on-water test track so the result can be eyeballed.
-
-    Requires matplotlib and pyyaml, which are not runtime dependencies of this package, so the
-    plot is skipped with a message if either is missing.
+    Replays the cut exactly as pickle_land applies it (the polygon nearest the target is cut),
+    then plots the cut land against the original (uncut) coastline and the on-water test track
+    so the result can be eyeballed.
 
     Args:
         source (str): Land source to plot (see SHP_SOURCES).
-        target (tuple[float, float]): (lat, lon) point the land was extruded out to.
+        target (tuple[float, float]): (lat, lon) point the edge was cut back to.
         out_path (str): Where to write the PNG.
     """
-    try:
-        import matplotlib
-
-        matplotlib.use("Agg")
-        import yaml
-        from matplotlib import pyplot as plt
-        from matplotlib.lines import Line2D
-        from matplotlib.patches import Patch
-    except ImportError as e:
-        print(f"skipping extrusion plot; install matplotlib and pyyaml to enable it ({e})")
-        return
-
     target_lat, target_lon = target
     point = Point(target_lon, target_lat)
 
-    # Same selection + extrusion that pickle_land performs.
     gdf = gpd.read_file(os.path.join(SHP_DIR, SHP_SOURCES[source]))
     polygons = list(gdf["geometry"])
     nearest = min(range(len(polygons)), key=lambda i: polygons[i].distance(point))
     name = gdf.iloc[nearest]["Name"]
-    extruded = extrude_edge_to_point(polygons[nearest], target_lat, target_lon)
-
-    # Pristine original edge of the same land mass, and the land removed relative to it.
-    pristine = gpd.read_file(PRISTINE_SHP)
-    original = pristine[pristine["Name"] == name].geometry.iloc[0]
-    removed = make_valid(original.difference(extruded))
+    original = polygons[nearest]
+    cut = cut_edge_to_point(original, target_lat, target_lon)
+    removed = make_valid(original.difference(cut))
 
     with open(TEST_PLAN_PATH) as f:
         waypoints = yaml.safe_load(f)["global_path"]["waypoints"]
@@ -215,7 +191,7 @@ def plot_extrusion(source: str, target: tuple, out_path: str = EXTRUSION_PLOT_PA
     track_lat = [w["latitude"] for w in waypoints]
 
     fig, ax = plt.subplots(figsize=(11, 8))
-    gpd.GeoSeries([extruded]).plot(ax=ax, facecolor="#cdebc5", edgecolor="#2c7a2c", lw=2, zorder=2)
+    gpd.GeoSeries([cut]).plot(ax=ax, facecolor="#cdebc5", edgecolor="#2c7a2c", lw=2, zorder=2)
     gpd.GeoSeries([removed]).plot(
         ax=ax, facecolor="#ff7f0e", alpha=0.55, edgecolor="#d35400", hatch="///", zorder=3
     )
@@ -224,7 +200,7 @@ def plot_extrusion(source: str, target: tuple, out_path: str = EXTRUSION_PLOT_PA
     ax.scatter(track_lon, track_lat, s=8, color="#1f4e8c", zorder=6)
     ax.scatter(target_lon, target_lat, s=180, marker="*", color="black", zorder=7)
     ax.annotate(
-        "extrusion target",
+        "pier reference",
         (target_lon, target_lat),
         textcoords="offset points",
         xytext=(10, -20),
@@ -236,26 +212,24 @@ def plot_extrusion(source: str, target: tuple, out_path: str = EXTRUSION_PLOT_PA
     ax.set_aspect(1 / 0.652)  # rough lon/lat aspect at this latitude so distances look right
     ax.legend(
         handles=[
-            Patch(facecolor="#cdebc5", edgecolor="#2c7a2c", label="Extruded land (--extrude)"),
-            Patch(
-                facecolor="#ff7f0e", alpha=0.55, hatch="///", label="Removed vs pristine (water)"
-            ),
-            Line2D([0], [0], color="#c0392b", ls="--", label="Pristine original edge"),
+            Patch(facecolor="#cdebc5", edgecolor="#2c7a2c", label="Cut land (--cut)"),
+            Patch(facecolor="#ff7f0e", alpha=0.55, hatch="///", label="Removed (cut to pier)"),
+            Line2D([0], [0], color="#c0392b", ls="--", label="Original edge (kept buffer)"),
             Line2D([0], [0], color="#1f4e8c", marker="o", ms=4, label="On-water test track"),
-            Line2D([0], [0], color="black", marker="*", ls="", ms=12, label="Extrusion target"),
+            Line2D([0], [0], color="black", marker="*", ls="", ms=12, label="Pier reference"),
         ],
         loc="lower right",
         fontsize=9,
         framealpha=0.95,
     )
-    ax.set_title(f"{name} - extrusion produced by pickle_land --extrude", fontsize=12)
+    ax.set_title(f"{name} - edge cut to the pier by pickle_land --cut", fontsize=12)
     ax.set_xlabel("Longitude")
     ax.set_ylabel("Latitude")
     ax.grid(True, ls=":", alpha=0.4)
     fig.tight_layout()
     fig.savefig(out_path, dpi=140)
     plt.close(fig)
-    print("Extrusion verification plot saved to", out_path)
+    print("Cut verification plot saved to", out_path)
 
 
 if __name__ == "__main__":
@@ -263,17 +237,19 @@ if __name__ == "__main__":
     parser.add_argument(
         "--source",
         choices=sorted(SHP_SOURCES),
-        default="production",
-        help="Land source to pickle (default: production).",
+        default="offshore",
+        help="Land source to pickle (default: offshore).",
     )
     parser.add_argument(
-        "--extrude",
+        "--cut",
         action="store_true",
-        help="Whether to extrude the land out to a reference for on-water test.",
+        help="Cut the on-water land back to a reference (Jericho Pier) for on-water testing.",
     )
 
     args = parser.parse_args()
-    pickle_land(args.source, extrude_to=JERICHO_PIER if args.extrude else None)
-    if args.extrude:
-        # Save a figure of the extrusion result so the output can be verified.
-        plot_extrusion(args.source, JERICHO_PIER)
+
+    if args.cut:
+        pickle_land(args.source, cut_to=JERICHO_PIER)
+        plot_cut(args.source, JERICHO_PIER)
+    else:
+        pickle_land(args.source, cut_to=None)
