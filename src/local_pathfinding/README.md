@@ -42,3 +42,13 @@ Launch arguments are added to the run command in the format `<name>:=<value>`.
   a field in a topic (eg. `speed` in `\filtered_wind_sensor`)
 <!-- markdownlint-enable MD013 -->
 - `ros2 <command> -h` can be used to get more info about any command.
+
+
+## Setting up the right land mass shape for testing and deployment
+
+<!-- markdownlint-disable MD013 -->
+We have different landmass types depending on whether Polaris is voyaging on the open ocean or near Jericho Beach (near UBC). Review the `src/local_pathfinding/land/README.md` for details on how to set up the land masses for testing/deployment. Rebuild the colcon packages `Tasks -> Build all` to ensure we have the pickle file in the build folder.
+
+- Use the on water testing land pickle file when running the `jericho_on_water_test.yaml`
+- Use the production land pickle file when running the `launch.yaml`
+<!-- markdownlint-enable MD013 -->
