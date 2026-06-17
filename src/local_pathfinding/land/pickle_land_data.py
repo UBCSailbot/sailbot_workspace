@@ -1,14 +1,21 @@
 import argparse
 import os
 import pickle
-from typing import Any
+from typing import Any, Optional
 
 import geopandas as gpd
+import matplotlib
 import numpy as np
 import pyproj
+import yaml
+from matplotlib import pyplot as plt
+from matplotlib.lines import Line2D
+from matplotlib.patches import Patch
 from shapely.geometry import LineString, MultiPolygon, Point, Polygon
 from shapely.ops import unary_union
 from shapely.validation import make_valid
+
+matplotlib.use("Agg")
 
 WGS84 = pyproj.CRS("EPSG:4326")
 MERCATOR = pyproj.CRS("EPSG:3857")
@@ -19,6 +26,7 @@ UTM_10N = pyproj.CRS("EPSG:26910")
 LAND_DIR = os.path.dirname(os.path.abspath(__file__))
 SHP_DIR = os.path.join(LAND_DIR, "shp")
 PKL_PATH = os.path.join(LAND_DIR, "pkl", "land.pkl")
+
 # Pristine (pre-edit) on-water boundaries and the test plan used as overlays in the
 # extrusion verification plot.
 PRISTINE_SHP = os.path.join(SHP_DIR, "local-area-boundary_backup.shp")
@@ -126,7 +134,7 @@ def extrude_edge_to_point(
     return make_valid(result).buffer(0)
 
 
-def pickle_land(source: str = "production", extrude_to: tuple = None):
+def pickle_land(source: str = "production", extrude_to: Optional[tuple] = None):
     """Generates a land dataset and stores it in PKL format for long term storage on disk.
 
     Land data is saved to pkl/land.pkl.
@@ -182,17 +190,6 @@ def plot_extrusion(source: str, target: tuple, out_path: str = EXTRUSION_PLOT_PA
         target (tuple[float, float]): (lat, lon) point the land was extruded out to.
         out_path (str): Where to write the PNG.
     """
-    try:
-        import matplotlib
-
-        matplotlib.use("Agg")
-        import yaml
-        from matplotlib import pyplot as plt
-        from matplotlib.lines import Line2D
-        from matplotlib.patches import Patch
-    except ImportError as e:
-        print(f"skipping extrusion plot; install matplotlib and pyyaml to enable it ({e})")
-        return
 
     target_lat, target_lon = target
     point = Point(target_lon, target_lat)

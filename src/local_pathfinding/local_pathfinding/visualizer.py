@@ -24,10 +24,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import dash
 import plotly.graph_objects as go
-
-# Optional dependencies for the OpenStreetMap overlay. They are not required for the rest of the
-# visualizer, so a missing install just disables the map toggle instead of breaking the app.
-import requests
+import requests  # type: ignore[import-untyped]
 import yaml
 from dash import dcc, html
 from dash.dependencies import Input, Output, State
@@ -1113,8 +1110,8 @@ def apply_layout(
             geographically proportioned instead of stretched. Left unconstrained otherwise to
             preserve the default plot behavior.
     """
-    xaxis = dict(domain=[0.0, 0.98])
-    yaxis = dict(domain=[0.30, 1.0])
+    xaxis: Dict[str, Any] = dict(domain=[0.0, 0.98])
+    yaxis: Dict[str, Any] = dict(domain=[0.30, 1.0])
     if show_map:
         # scaleanchor/scaleratio keep 1 km on X the same on-screen size as 1 km on Y so the
         # basemap is not distorted. Only applied with the map on, to keep the default look.
@@ -1635,7 +1632,7 @@ def dash_app(q: Queue):
                     html.Div(id="wind-status"),
                     dcc.Checklist(
                         id="map-toggle",
-                        options=[{"label": " Show map", "value": "on"}],
+                        options={"on": " Show map"},  # {value: label}
                         value=[],
                         style={"fontWeight": "bold", "marginLeft": "10px"},
                     ),
@@ -1731,7 +1728,7 @@ def update_graph(
     last_goal_tuple = (
         cs.XY(last_goal_xy_km[0], last_goal_xy_km[1]) if last_goal_xy_km is not None else None
     )
-    show_map = bool(map_toggle) and "on" in map_toggle
+    show_map = map_toggle is not None and "on" in map_toggle
 
     if relayout_data and triggered_id == "live-graph":
         # Only process relayout_data if it was the actual trigger
