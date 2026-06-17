@@ -324,6 +324,10 @@ class Sailbot(Node):
                 self.global_waypoint_index
             ]
 
+        self.get_logger().info(
+            f"Current target global waypoint: {self.saved_target_global_waypoint} (index {self.global_waypoint_index})"
+        )
+
         # Check if we're close enough to the global waypoint to head to the next one
         _, _, distance_to_waypoint_m = cs.GEODESIC.inv(
             self.gps.lat_lon.longitude,
