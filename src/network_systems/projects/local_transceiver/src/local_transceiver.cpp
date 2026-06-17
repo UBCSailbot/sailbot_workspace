@@ -680,14 +680,18 @@ std::optional<std::string> LocalTransceiver::readBinaryRsp()
       [&](auto handler) { bio::async_read(serial_, bio::buffer(len_buf), bio::transfer_exactly(2), handler); }, ec);
 
     if (!success) {
-        if (log_error_) log_error_("readBinaryRsp: failed to read length prefix: " + ec.message());
+        if (log_error_) {
+            log_error_("readBinaryRsp: failed to read length prefix: " + ec.message());
+        }
         return std::nullopt;
     }
 
-    uint16_t msg_len = (static_cast<uint16_t>(len_buf[0]) << 8) | static_cast<uint16_t>(len_buf[1]);
+    uint16_t msg_len = (static_cast<uint16_t>(len_buf[0]) << 8) | static_cast<uint16_t>(len_buf[1]);  //NOLINT
 
     if (msg_len == 0) {
-        if (log_error_) log_error_("readBinaryRsp: zero length message");
+        if (log_error_) {
+            log_error_("readBinaryRsp: zero length message");
+        }
         return std::nullopt;
     }
 
@@ -697,7 +701,9 @@ std::optional<std::string> LocalTransceiver::readBinaryRsp()
       ec);
 
     if (!success) {
-        if (log_error_) log_error_("readBinaryRsp: failed to read payload: " + ec.message());
+        if (log_error_) {
+            log_error_("readBinaryRsp: failed to read payload: " + ec.message());
+        }
         return std::nullopt;
     }
 
@@ -706,18 +712,22 @@ std::optional<std::string> LocalTransceiver::readBinaryRsp()
       [&](auto handler) { bio::async_read(serial_, bio::buffer(chk_buf), bio::transfer_exactly(2), handler); }, ec);
 
     if (!success) {
-        if (log_error_) log_error_("readBinaryRsp: failed to read checksum: " + ec.message());
+        if (log_error_) {
+            log_error_("readBinaryRsp: failed to read checksum: " + ec.message());
+        }
         return std::nullopt;
     }
 
-    uint16_t received_checksum   = (static_cast<uint16_t>(chk_buf[0]) << 8) | static_cast<uint16_t>(chk_buf[1]);
+    uint16_t received_checksum = (static_cast<uint16_t>(chk_buf[0]) << 8) | static_cast<uint16_t>(chk_buf[1]);  //NOLINT
     uint16_t calculated_checksum = 0;
     for (unsigned char byte : payload) {
         calculated_checksum += byte;
     }
 
     if (received_checksum != calculated_checksum) {
-        if (log_error_) log_error_("readBinaryRsp: checksum mismatch");
+        if (log_error_) {
+            log_error_("readBinaryRsp: checksum mismatch");
+        }
         return std::nullopt;
     }
 
