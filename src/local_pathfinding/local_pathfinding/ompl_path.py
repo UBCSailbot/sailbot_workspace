@@ -395,18 +395,15 @@ class OMPLPath:
         # Use the wind snapshot stored with this LocalPathState so path planning and
         # later wind-change comparisons share the same baseline.
         if self.state.path_generated_wind is None:
-            current_aw = self.state.current_aw
+            current_tw = self.state.current_tw
         else:
-            current_aw = self.state.path_generated_wind
+            current_tw = self.state.path_generated_wind
 
         space_information = simple_setup.getSpaceInformation()
         self._goal_progress_wind_motion_validator = GoalProgressWindMotionValidator(
             space_information,
             goal_position_in_xy,
-            self.state.heading,
-            self.state.speed,
-            current_aw.dir_deg,
-            current_aw.speed_kmph,
+            current_tw.dir_deg,
         )
         space_information.setMotionValidator(self._goal_progress_wind_motion_validator)
 
@@ -414,11 +411,8 @@ class OMPLPath:
 
         objective = get_sailing_objective(
             space_information,
-            simple_setup,
-            self.state.heading,
-            self.state.speed,
-            current_aw.dir_deg,
-            current_aw.speed_kmph,
+            current_tw.dir_deg,
+            current_tw.speed_kmph,
             goal_position_in_xy,
         )
 

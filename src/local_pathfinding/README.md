@@ -8,17 +8,18 @@ Using main launch file: `ros2 launch local_pathfinding main_launch.py`
 
 ## Wind Tracking
 
-Local pathfinding keeps a rolling apparent-wind history in `WindTracker` so wind
+Local pathfinding keeps a rolling true-wind history in `WindTracker` so wind
 history survives `LocalPathState` replacement during path regeneration. Once the
-history reaches `WIND_HISTORY_LEN` readings, `WindTracker.aw_avg` is used as the
-smoothed apparent wind estimate.
+history reaches `WIND_HISTORY_LEN` readings, `WindTracker.tw_avg` is used as the
+smoothed true wind estimate.
 
-Each generated local path stores `path_generated_wind`, the apparent wind value
+Each generated local path stores `path_generated_wind`, the true wind value
 used by OMPL for that path. This is the rolling average when available; before
 the rolling average is populated, it falls back to the current filtered apparent
-wind reading. Wind-based path switching compares the current rolling average
-against `path_generated_wind`, so a path is regenerated only when the smoothed
-wind has drifted significantly from the wind used to generate the current path.
+wind reading converted to true wind. Wind-based path switching compares the current
+rolling average against `path_generated_wind`, so a path is regenerated only when
+the smoothed wind has drifted significantly from the wind used to generate the
+current path.
 
 ### Launch Parameters
 

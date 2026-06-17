@@ -1,3 +1,5 @@
+import { getApiUrl } from '@/lib/apiUrl';
+
 const downloadBlob = async (blob, name) => {
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
@@ -72,7 +74,7 @@ const downloadDataFromAPI = async (sensorType, format) => {
       return;
     }
 
-    const apiUrl = `${process.env.NEXT_PUBLIC_SERVER_HOST}:${process.env.NEXT_PUBLIC_SERVER_PORT}/api/${sensorType}`;
+    const apiUrl = getApiUrl(`/api/${sensorType}`);
     const response = await fetch(apiUrl);
     if (!response.ok) {
       throw new Error(`Error: ${response.statusText}`);
