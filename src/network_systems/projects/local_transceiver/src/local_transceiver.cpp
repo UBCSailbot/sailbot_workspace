@@ -483,9 +483,6 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
         if (!rcvRsps({check_conn_cmd, AT::Line(AT::DELIMITER), AT::Line(AT::STATUS_OK), AT::Line("\n")})) {
             continue;
         }
-        if (log_debug_) {
-            log_debug_("DEBUG1");
-        }
 
         static const AT::Line disable_ctrlflow_cmd = AT::Line(AT::DSBL_CTRLFLOW);
         if (!send(disable_ctrlflow_cmd)) {
@@ -494,9 +491,6 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
 
         if (!rcvRsps({disable_ctrlflow_cmd, AT::Line(AT::DELIMITER), AT::Line(AT::STATUS_OK), AT::Line("\n")})) {
             continue;
-        }
-        if (log_debug_) {
-            log_debug_("DEBUG2");
         }
 
         clearSerialBuffer();
@@ -587,9 +581,6 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
         std::cout << "[RAW PAYLOAD][SIZE " << payload.value().size() << " ]: ";
         std::cout.write(payload.value().data(), payload.value().size());
         std::cout << std::endl;
-        if (log_debug_) {
-            log_debug_("DEBUG4");
-        }
 
         receivedDataBuffer = payload.value();
         break;
@@ -598,9 +589,7 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
     std::future<void> fut = std::async(std::launch::async, cacheGlobalWaypoints, receivedDataBuffer);
 
     custom_interfaces::msg::Path to_publish = parseInMsg(receivedDataBuffer);
-    if (log_debug_) {
-        log_debug_("DEBUG5");
-    }
+
     fut.get();
     return to_publish;
 }
