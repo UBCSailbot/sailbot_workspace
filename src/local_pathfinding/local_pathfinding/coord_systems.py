@@ -165,7 +165,7 @@ def latlon_to_xy(reference: ci.HelperLatLon, latlon: ci.HelperLatLon) -> XY:
     )
 
 
-def calculate_distance_from_on_water_reference(latlon: ci.HelperLatLon) -> float:
+def calculate_distance_from_on_water_reference_km(latlon: ci.HelperLatLon) -> float:
     """Calculate the geodesic distance from the on-water reference point to a coordinate.
 
     The on-water reference (:data:`ON_WATER_REFERENCE`) is the pier that the on-water edge of
