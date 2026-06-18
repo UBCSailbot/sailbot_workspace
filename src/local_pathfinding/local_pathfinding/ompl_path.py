@@ -23,7 +23,7 @@ import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.obstacles as ob
 from local_pathfinding.ompl_objectives import get_sailing_objective
-from local_pathfinding.ompl_validity import GoalProgressMotionValidator
+from local_pathfinding.ompl_validity import GoalProgressWindMotionValidator
 
 if TYPE_CHECKING:
     from local_pathfinding.local_path import LocalPathState
@@ -40,6 +40,7 @@ MIN_TURNING_RADIUS_KM = 0.05  # 50 m
 # the goal state
 MAX_EDGE_LEN_KM = 0.5
 MAX_SOLVER_RUN_TIME_SEC = 1.0
+MAX_SIMPLIFIER_RUN_TIME_SEC = 0.1
 
 LAND_KEY = -1
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -72,12 +73,14 @@ class OMPLPath:
         parent_logger: RcutilsLogger,
         local_path_state: LocalPathState,
         land_multi_polygon: MultiPolygon = None,
+        should_simplify_path: bool = True
     ):
         """Initialize the OMPLPath Class. Attempt to solve for a path.
 
         Args:
             parent_logger (RcutilsLogger): Logger of the parent class.
             local_path_state (LocalPathState): State of Sailbot.
+            land_multi_polygon (MultiPolygon | None): Optional land geometry override for tests.
         """
         self._box_buffer = BOX_BUFFER_SIZE_KM
 
@@ -88,12 +91,22 @@ class OMPLPath:
         self._simple_setup = self._init_simple_setup(land_multi_polygon)
 
         self.solved = self._simple_setup.solve(time=MAX_SOLVER_RUN_TIME_SEC)
+        if self.solved and should_simplify_path:
+            obj = self._simple_setup.getOptimizationObjective()
+            original = og.PathGeometric(self._simple_setup.getSolutionPath())
+            original_cost = original.cost(obj).value()
+            self._simple_setup.simplifySolution(MAX_SIMPLIFIER_RUN_TIME_SEC)
+
+            simplified = self._simple_setup.getSolutionPath()
+            simplified_cost = simplified.cost(obj).value()
+            if simplified_cost > original_cost:
+                simplified.assign(original)
 
     @staticmethod
     def init_obstacles(
         local_path_state: LocalPathState,
-        state_space_xy: Polygon = None,
-        land_multi_polygon: MultiPolygon = None,
+        state_space_xy: Polygon | None = None,
+        land_multi_polygon: MultiPolygon | None = None,
     ) -> dict[int, ob.Obstacle]:
         """Extracts obstacle data from local_path_state and compiles it into a list of Obstacles
 
@@ -391,30 +404,28 @@ class OMPLPath:
         )
         simple_setup.setStartAndGoalStates(start, goal)
 
-        space_information = simple_setup.getSpaceInformation()
-        self._goal_progress_motion_validator = GoalProgressMotionValidator(
-            space_information,
-            goal_position_in_xy,
-        )
-        space_information.setMotionValidator(self._goal_progress_motion_validator)
-
-        self.state.planner = og.RRTstar(space_information)
-
         # Use the wind snapshot stored with this LocalPathState so path planning and
         # later wind-change comparisons share the same baseline.
         if self.state.path_generated_wind is None:
-            current_aw = self.state.current_aw
+            current_tw = self.state.current_tw
         else:
-            current_aw = self.state.path_generated_wind
+            current_tw = self.state.path_generated_wind
+
+        space_information = simple_setup.getSpaceInformation()
+        self._goal_progress_wind_motion_validator = GoalProgressWindMotionValidator(
+            space_information,
+            goal_position_in_xy,
+            current_tw.dir_deg,
+        )
+        space_information.setMotionValidator(self._goal_progress_wind_motion_validator)
+
+        self.state.planner = og.RRTstar(space_information)
 
         objective = get_sailing_objective(
             space_information,
-            simple_setup,
-            self.state.heading,
-            self.state.speed,
-            current_aw.dir_deg,
-            current_aw.speed_kmph,
-            goal_position_in_xy
+            current_tw.dir_deg,
+            current_tw.speed_kmph,
+            goal_position_in_xy,
         )
 
         simple_setup.setOptimizationObjective(objective)
@@ -450,7 +461,9 @@ class OMPLPath:
                     # uncommented this line in accordance with the comment above for the upcoming
                     # on-water tests. #TODO: remove this before the final launch.
                     if isinstance(state, base.State):  # only happens in unit tests
-                        log_invalid_state(state=cs.XY(state().getX(), state().getY()), obstacle=o) # noqa
+                        log_invalid_state(
+                            state=cs.XY(state().getX(), state().getY()), obstacle=o
+                        )  # noqa
                     else:  # happens in prod
                         log_invalid_state(state=cs.XY(state.getX(), state.getY()), obstacle=o)
 

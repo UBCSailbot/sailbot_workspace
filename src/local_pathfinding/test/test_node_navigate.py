@@ -151,6 +151,7 @@ def test_desired_heading_callback_disables_sail_when_missing_gps_or_ais():
     sailbot.global_path = mock.Mock()
     sailbot.filtered_wind_sensor = mock.Mock()
     sailbot.desired_heading = None
+    sailbot._has_gps_timed_out = mock.Mock(return_value=False)
     sailbot.desired_heading_pub = mock.Mock()
     sailbot.desired_heading_pub.topic = "desired_heading"
     sailbot.get_logger = mock.Mock(return_value=mock.Mock())
@@ -269,3 +270,50 @@ def test_publish_local_path_data_production_mode():
     published_msg = sailbot.lpath_data_pub.publish.call_args[0][0]
     assert published_msg.replan_reason == ""
     assert published_msg.remaining_waypoints == 0
+    
+    
+@pytest.mark.parametrize(
+    "elapsed_sec, expected",
+    [
+        (nn.GPS_TIMEOUT_SEC - 1, False),
+        (nn.GPS_TIMEOUT_SEC, False),
+        (nn.GPS_TIMEOUT_SEC + 1, True),
+    ],
+)
+def test_has_gps_timed_out(elapsed_sec, expected):
+    sailbot = nn.Sailbot.__new__(nn.Sailbot)
+    sailbot.gps_timeout_start_sec = 0.0
+    sailbot._now_sec = mock.Mock(return_value=elapsed_sec)
+
+    assert sailbot._has_gps_timed_out() is expected
+
+
+def test_desired_heading_callback_publishes_stop_when_no_gps_received_after_timeout():
+    sailbot = nn.Sailbot.__new__(nn.Sailbot)
+    sailbot.gps = None
+    sailbot.gps_timeout_start_sec = 0.0
+    sailbot._now_sec = mock.Mock(return_value=nn.GPS_TIMEOUT_SEC + 1)
+    sailbot.desired_heading = None
+    sailbot.desired_heading_pub = mock.Mock(topic="desired_heading")
+    sailbot.get_logger = mock.Mock(return_value=mock.Mock())
+
+    sailbot.desired_heading_callback()
+
+    sailbot.desired_heading_pub.publish.assert_called_once()
+    msg = sailbot.desired_heading_pub.publish.call_args.args[0]
+    assert msg.sail is False
+    assert msg.heading.heading == 0.0
+
+
+def test_gps_callback_resets_gps_timeout_start_sec():
+    sailbot = nn.Sailbot.__new__(nn.Sailbot)
+    now_sec = 123.0
+    sailbot._now_sec = mock.Mock(return_value=now_sec)
+    sailbot.gps_sub = mock.Mock(topic="gps")
+    sailbot.get_logger = mock.Mock(return_value=mock.Mock())
+
+    msg = ci.GPS()
+    sailbot.gps_callback(msg)
+
+    assert sailbot.gps == msg
+    assert sailbot.gps_timeout_start_sec == now_sec

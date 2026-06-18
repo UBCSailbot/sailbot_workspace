@@ -216,13 +216,16 @@ const Stats = ({
 
   const windSensorsSpeedData = [
     windSensors.data
-      .map((data: WindSensors) => parseISOString(data.timestamp))
       .filter(
-        (time: number) => isValidTimestamp(time, startDate, endDate) == true,
-      ),
+        (data: WindSensors) =>
+          data.windSensors?.length >= 2 &&
+          isValidTimestamp(parseISOString(data.timestamp), startDate, endDate) == true,
+      )
+      .map((data: WindSensors) => parseISOString(data.timestamp)),
     windSensors.data
       .filter(
         (data: WindSensors) =>
+          data.windSensors?.length >= 2 &&
           isValidTimestamp(
             parseISOString(data.timestamp),
             startDate,
@@ -233,6 +236,7 @@ const Stats = ({
     windSensors.data
       .filter(
         (data: WindSensors) =>
+          data.windSensors?.length >= 2 &&
           isValidTimestamp(
             parseISOString(data.timestamp),
             startDate,

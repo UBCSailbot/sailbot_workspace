@@ -1,0 +1,39 @@
+# Launch test plan —  (UBC Sailbot)
+#
+# The global_path below provides a rough approximation of what the a launch scenario can be like.
+# Please look at the local pathfinding readme and confluence documentation for more details on the test plan and the rationale behind the global path waypoints.
+# The boat is first towed 10 km from Centennial Park Boat Launch & Moorage (~48.829318, -125.127434)
+# to an "autonomous launch start position" (48.799112, -125.235504) in the Pacific Ocean.
+#
+# From there, the boat is to navigate a 20 km loop through the Pacific Ocean, with the final waypoint
+# being approx. "autonomous launch start position" to test the boat's ability to return to the launch position after going in a loop.
+# runs a series of reaches/tacks out into the Pacific Ocean, and returns to the autonomous launch position.
+#
+# The `land` polygon approximates Canada's west coast shoreline
+# and the planner treats this land as an obstacle boundary.
+
+# True wind
+tw_dir_deg: 270
+tw_speed_kmph: 14.0
+
+# Boat starts at the "autonomous launch start position"
+gps:
+  latitude: 48.799112
+  longitude: -125.235504
+  speed_kmph: 5.0
+  heading_deg: 270.0
+
+
+# The global waypoints are spaced ~3 km apart through using Google Maps measurement tool.
+# The boat goes in a square loop by first starting to travel west and then north, south and finally west again until it reaches the "autonomous launch start position"
+# Do note that the last waypoint as indicated below is the start position and the first waypoint is the destination of the boat after it completes the loop.
+# This is to test the ability of the boat to return to the launch position after going in a loop.
+global_path:
+  waypoints:
+    - {latitude: 48.798547, longitude: -125.235505} # Return back to the "autonomous launch start position"
+    - {latitude: 48.779852, longitude: -125.250425} # Going towards Bluewater Satellites Co-ordinates historical landmark (48.78103389307061, -125.24292040510039)
+    - {latitude: 48.776702, longitude: -125.291108}
+    - {latitude: 48.766383, longitude: -125.328744}
+    - {latitude: 48.789589, longitude: -125.349704}
+    - {latitude: 48.801377, longitude: -125.312928}
+    - {latitude: 48.793398, longitude: -125.27407} # Release Polaris at 10 km mark from "autonomous launch start position"
