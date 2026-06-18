@@ -703,6 +703,10 @@ class LocalPath:
             self._logger.info(f"Updating local path: {must_change_reason.reason}")
             self.last_remaining_waypoints = self._count_remaining_waypoints()
             self.last_replan_reason = must_change_reason.reason
+            # Record whether this newly accepted path was generated before the wind average
+            # was available, since the tracker is shared across path states.
+            wind_tracker = new_state.wind_tracker  # type: ignore[union-attr]
+            wind_tracker.using_one_tw_point = wind_tracker.tw_avg is None
             self.state = new_state
             self._update(new_ompl_path)
 
