@@ -36,6 +36,8 @@ land:
     [-123.224287,49.275667],
     [-123.225403,49.278187]]
 
+# Store the global path as a list of waypoints, each with latitude and longitude. The waypoints are defined in the order they should be followed by the boat.
+# NOTE: The first waypoint is the destination point and the last point is the start point!
 global_path:
   waypoints:
     - {latitude: 48.158391, longitude: -130.253906}
