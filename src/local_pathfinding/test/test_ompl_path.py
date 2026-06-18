@@ -1,5 +1,6 @@
 import math
 import random
+import types
 
 import pytest
 from ompl import base
@@ -215,6 +216,72 @@ def test_init_obstacles():
     assert 2 not in updated_obstacles
     # Check that boat 3 is added
     assert isinstance(updated_obstacles[3], ob.Boat)
+
+
+@pytest.mark.parametrize(
+    "distance_from_reference_km,expected_pkl_path",
+    [
+        (0.0, ompl_path.ON_WATER_LAND_PKL_FILE_PATH),  # at the reference -> on-water
+        (10.0, ompl_path.ON_WATER_LAND_PKL_FILE_PATH),  # within threshold -> on-water
+        (
+            ompl_path.DISTANCE_FROM_ON_WATER_LANDMARK - 0.1,
+            ompl_path.ON_WATER_LAND_PKL_FILE_PATH,
+        ),  # just inside threshold -> on-water
+        (
+            ompl_path.DISTANCE_FROM_ON_WATER_LANDMARK + 0.1,
+            ompl_path.OFFSHORE_LAND_PKL_FILE_PATH,
+        ),  # just past threshold -> offshore
+        (100.0, ompl_path.OFFSHORE_LAND_PKL_FILE_PATH),  # far offshore -> offshore
+    ],
+)
+def test_load_appropriate_land_obstacle(
+    distance_from_reference_km, expected_pkl_path, monkeypatch
+):
+    """The dataset is selected by distance from the on-water reference, not by file contents."""
+    # place a position the requested distance away from the on-water reference
+    ref_lat, ref_lon = cs.ON_WATER_REFERENCE
+    lon, lat, _ = cs.GEODESIC.fwd(
+        lons=ref_lon, lats=ref_lat, az=0.0, dist=distance_from_reference_km * 1000
+    )
+    local_path_state = types.SimpleNamespace(
+        position=HelperLatLon(latitude=lat, longitude=lon)
+    )
+
+    # avoid depending on the real .pkl contents: record the path that would be loaded
+    loaded_paths = []
+
+    def fake_load_pkl(file_path):
+        loaded_paths.append(file_path)
+        return MultiPolygon()
+
+    monkeypatch.setattr(ompl_path, "load_pkl", fake_load_pkl)
+
+    try:
+        ompl_path.OMPLPath.load_appropriate_land_obstacle(local_path_state)
+
+        assert loaded_paths == [expected_pkl_path], "loaded the wrong land dataset"
+        assert ompl_path.OMPLPath.all_land_data is not None
+    finally:
+        # reset shared static state so other tests reload land data as needed
+        ompl_path.OMPLPath.all_land_data = None
+
+
+def test_load_appropriate_land_obstacle_missing_file_exits(monkeypatch):
+    """A missing land .pkl file causes the process to exit rather than propagate the error."""
+    local_path_state = types.SimpleNamespace(
+        position=HelperLatLon(latitude=0.0, longitude=0.0)
+    )
+
+    def raise_not_found(file_path):
+        raise FileNotFoundError(file_path)
+
+    monkeypatch.setattr(ompl_path, "load_pkl", raise_not_found)
+
+    try:
+        with pytest.raises(SystemExit):
+            ompl_path.OMPLPath.load_appropriate_land_obstacle(local_path_state)
+    finally:
+        ompl_path.OMPLPath.all_land_data = None
 
 
 @pytest.mark.parametrize(

@@ -23,9 +23,10 @@ UTM_10N = pyproj.CRS("EPSG:26910")  # metre-based CRS over southern BC, for accu
 # Paths are anchored to this file so the script runs regardless of the current directory.
 LAND_DIR = os.path.dirname(os.path.abspath(__file__))
 SHP_DIR = os.path.join(LAND_DIR, "shp")
-PKL_PATH = os.path.join(LAND_DIR, "pkl", "land.pkl")
+OFFSHORE_PKL_PATH = os.path.join(LAND_DIR, "pkl", "offshore_land.pkl")
+ON_WATER_PKL_PATH = os.path.join(LAND_DIR, "pkl", "on_water_land.pkl")
 TEST_PLAN_PATH = os.path.join(LAND_DIR, "..", "test_plans", "jericho_on_water_test.yaml")
-CUT_PLOT_PATH = os.path.join(LAND_DIR, "west_point_grey_pier_parallel.png")
+CUT_PLOT_PATH = os.path.join(LAND_DIR, "on_water_adapted_offshore_plot.png")
 
 # Full OSM Pacific coastline for open ocean scenarios; the original (full-buffer) Vancouver
 # neighbourhood boundaries for on-water scenarios. The on-water buffer is kept as is and only
@@ -132,7 +133,7 @@ def pickle_land(source: str = "offshore", cut_to: tuple[float, float] | None = N
         source (str): Which land source to pickle. "offshore" uses the full OSM Pacific
             coastline; "on_water" uses the Vancouver neighbourhood boundaries (mock land for
             on-water test plans).
-        cut_to (tuple[float, float] | None): Optional (lat, lon) point to cut the nearest land
+        cut_to (tuple[float, float] | None): (lat, lon) point to cut the nearest land
             mass back to (e.g. the Jericho Pier) before pickling. Only the polygon whose edge is
             closest to the point is cut; all other land is left unchanged. If None, no cut is
             applied.
@@ -158,8 +159,14 @@ def pickle_land(source: str = "offshore", cut_to: tuple[float, float] | None = N
     if land.geom_type == "Polygon":
         land = MultiPolygon([land])
 
-    dump_pkl(land, PKL_PATH)
-    print("Land data pickled to", PKL_PATH + f" (land source: {source})")
+    if source == "offshore":
+        dump_pkl(land, OFFSHORE_PKL_PATH)
+        print("Land data pickled to", OFFSHORE_PKL_PATH + f" (land source: {source})")
+    elif source == "on_water":
+        dump_pkl(land, ON_WATER_PKL_PATH)
+        print("Land data pickled to", ON_WATER_PKL_PATH + f" (land source: {source})")
+    else:
+        print(f"Error: Unknown land source: {source}")
 
 
 def plot_cut(source: str, target: tuple, out_path: str = CUT_PLOT_PATH):
