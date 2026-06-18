@@ -24,7 +24,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import dash
 import plotly.graph_objects as go
-import requests
+import requests  # type: ignore[import-untyped]
 import yaml
 from dash import dcc, html
 from dash.dependencies import Input, Output, State
