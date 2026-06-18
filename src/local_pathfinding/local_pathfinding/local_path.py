@@ -61,7 +61,7 @@ class WindTracker:
             rolling average was populated, using only one true wind point.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.tw_history: deque = deque(maxlen=WIND_HISTORY_LEN)
         self.tw_avg: Optional[Wind] = None
         self.using_one_tw_point: bool = True
