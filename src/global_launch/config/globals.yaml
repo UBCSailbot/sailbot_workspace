@@ -2,6 +2,7 @@
 /**:
    ros__parameters:
       # Publishers' period (seconds): how often the publishers publish
+      config: "globals.yaml"
       pub_period_sec: 1.0
       global_path_interval_spacing_km: 3.0
       test_plan: "basic.yaml"
@@ -24,7 +25,7 @@ mock_gps:
       use_drift_randomization: True
       ocean_drift_speed_kmph: 0.5
       ocean_drift_dir_deg: 45.0
-      ocean_drift_accel_kmph2: 0.0 
+      ocean_drift_accel_kmph2: 0.0
 navigate_main:
    ros__parameters:
       path_planner: "rrtstar"
