@@ -22,35 +22,99 @@ def load_pkl(file_path: str) -> Any:
         return pickle.load(f)
 
 
-LAND = MultiPolygon()
+OFFSHORE_PKL_PATH = MultiPolygon()
+ON_WATER_PKL_PATH = MultiPolygon()
 
 try:
-    LAND = load_pkl("/workspaces/sailbot_workspace/src/local_pathfinding/land/pkl/land.pkl")
+    OFFSHORE_PKL_PATH = load_pkl(
+        "/workspaces/sailbot_workspace/src/local_pathfinding/land/pkl/offshore_land.pkl"
+    )
+    ON_WATER_PKL_PATH = load_pkl(
+        "/workspaces/sailbot_workspace/src/local_pathfinding/land/pkl/on_water_land.pkl"
+    )
 except RuntimeError as e:
-    exit(f"could not load the land.pkl file {e}")
+    exit(f"could not load the pkile file {e}")
 
 
-# LAND OBSTACLES ----------------------------------------------------------------------------------
+# OFFSHORE_PKL_PATH OBSTACLES ----------------------------------------------------------------------------------
 @pytest.mark.parametrize(
     "reference_point, sailbot_position, all_land_data, bbox_buffer_amount, land_present",  # noqa
     [
         (
             HelperLatLon(latitude=48.927646856442834, longitude=-125.18555198866946),
             HelperLatLon(latitude=48.842045056421135, longitude=-125.29181185529734),
-            LAND,
+            OFFSHORE_PKL_PATH,
             0.1,  # degrees
             True,
         ),
         (
             HelperLatLon(latitude=44.112832, longitude=-156.008729),
             HelperLatLon(latitude=44.112832, longitude=-151.260136),
-            LAND,
+            OFFSHORE_PKL_PATH,
             0.1,  # degrees
             False,
         ),
     ],
 )
-def test_create_land(
+def test_create_offshore_land(
+    reference_point: HelperLatLon,
+    sailbot_position: HelperLatLon,
+    all_land_data: MultiPolygon,
+    bbox_buffer_amount: float,
+    land_present: bool,
+):
+
+    goal_position = reference_point
+
+    # create the xy state space from the specified positions of sailbot and the goal
+    sailbot_box = Point(sailbot_position.longitude, sailbot_position.latitude).buffer(
+        0.1, cap_style=3, join_style=2
+    )
+
+    goal_box = Point(goal_position.longitude, sailbot_position.latitude).buffer(
+        0.1, cap_style=3, join_style=2
+    )
+
+    state_space_latlon = box(*MultiPolygon([sailbot_box, goal_box]).bounds)
+
+    land = Land(
+        reference=reference_point,
+        sailbot_position=sailbot_position,
+        all_land_data=all_land_data,
+        bbox_buffer_amount=bbox_buffer_amount,
+        state_space_latlon=state_space_latlon,
+    )
+
+    assert isinstance(land.collision_zone, MultiPolygon)
+    if land_present:
+        assert len(land.collision_zone.geoms) != 0  # type: ignore
+    else:
+        assert len(land.collision_zone.geoms) == 0  # type: ignore
+
+
+# ON_WATER_PKL_PATH OBSTACLES ----------------------------------------------------------------------------------
+@pytest.mark.parametrize(
+    "reference_point, sailbot_position, all_land_data, bbox_buffer_amount, land_present",  # noqa
+    [
+        (
+            # English Bay / Vancouver: the on-water land data covers this region
+            HelperLatLon(latitude=49.27, longitude=-123.15),
+            HelperLatLon(latitude=49.25, longitude=-123.10),
+            ON_WATER_PKL_PATH,
+            0.1,  # degrees
+            True,
+        ),
+        (
+            # Open Pacific: no on-water land nearby
+            HelperLatLon(latitude=44.112832, longitude=-156.008729),
+            HelperLatLon(latitude=44.112832, longitude=-151.260136),
+            ON_WATER_PKL_PATH,
+            0.1,  # degrees
+            False,
+        ),
+    ],
+)
+def test_create_on_water_land(
     reference_point: HelperLatLon,
     sailbot_position: HelperLatLon,
     all_land_data: MultiPolygon,
@@ -91,7 +155,7 @@ def test_create_land_no_state_space():
     land = Land(
         reference=HelperLatLon(),
         sailbot_position=HelperLatLon(),
-        all_land_data=LAND,
+        all_land_data=OFFSHORE_PKL_PATH,
         bbox_buffer_amount=0.1,
     )
     assert isinstance(land, Land)
@@ -105,7 +169,7 @@ def test_create_land_no_state_space():
         (
             HelperLatLon(latitude=48.541341, longitude=-127.424606),
             HelperLatLon(latitude=51.95, longitude=-136.26),
-            LAND,
+            OFFSHORE_PKL_PATH,
             0.1,  # degrees
             cs.XY(0, 0),
             cs.XY(100, 100),
@@ -152,12 +216,56 @@ def test_is_valid_land(
         (
             HelperLatLon(latitude=48.927646856442834, longitude=-125.18555198866946),
             HelperLatLon(latitude=48.842045056421135, longitude=-125.29181185529734),
-            LAND,
+            OFFSHORE_PKL_PATH,
             0.1,  # degrees
         )
     ],
 )
 def test_collision_zone_land(
+    reference_point: HelperLatLon,
+    sailbot_position: HelperLatLon,
+    all_land_data: MultiPolygon,
+    bbox_buffer_amount,
+):
+    goal_position = reference_point
+
+    # create the xy state space from the specified positions of sailbot and the goal
+    sailbot_box = Point(sailbot_position.longitude, sailbot_position.latitude).buffer(
+        0.1, cap_style=3, join_style=2
+    )
+
+    goal_box = Point(goal_position.longitude, sailbot_position.latitude).buffer(
+        0.1, cap_style=3, join_style=2
+    )
+
+    state_space_latlon = box(*MultiPolygon([sailbot_box, goal_box]).bounds)
+
+    land = Land(
+        reference=reference_point,
+        sailbot_position=sailbot_position,
+        all_land_data=all_land_data,
+        bbox_buffer_amount=bbox_buffer_amount,
+        state_space_latlon=state_space_latlon,
+    )
+    land.update_collision_zone(state_space_latlon=state_space_latlon)
+
+    assert isinstance(land.collision_zone, MultiPolygon)
+    assert len(land.collision_zone.geoms) != 0
+
+
+# Test on-water land collision zone is created/updated successfully
+@pytest.mark.parametrize(
+    "reference_point, sailbot_position, all_land_data, bbox_buffer_amount",
+    [
+        (
+            HelperLatLon(latitude=49.27, longitude=-123.15),
+            HelperLatLon(latitude=49.25, longitude=-123.10),
+            ON_WATER_PKL_PATH,
+            0.1,  # degrees
+        )
+    ],
+)
+def test_collision_zone_on_water_land(
     reference_point: HelperLatLon,
     sailbot_position: HelperLatLon,
     all_land_data: MultiPolygon,
@@ -197,7 +305,7 @@ def test_collision_zone_land(
             HelperLatLon(latitude=52.26, longitude=-136.91),
             HelperLatLon(latitude=51.0, longitude=-136.0),
             HelperLatLon(latitude=52.0, longitude=-137.0),
-            LAND,
+            OFFSHORE_PKL_PATH,
             0.1,  # degrees
         )
     ],
@@ -244,7 +352,7 @@ def test_update_sailbot_data_land(
             HelperLatLon(latitude=49.155485, longitude=-126.987704),
             HelperLatLon(latitude=49.1, longitude=-126.1),
             HelperLatLon(latitude=48.838328, longitude=-126.380390),
-            LAND,
+            OFFSHORE_PKL_PATH,
             0.1,  # degrees
         ),
     ],
