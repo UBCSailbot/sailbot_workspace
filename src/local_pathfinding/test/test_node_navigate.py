@@ -270,8 +270,8 @@ def test_publish_local_path_data_production_mode():
     published_msg = sailbot.lpath_data_pub.publish.call_args[0][0]
     assert published_msg.replan_reason == ""
     assert published_msg.remaining_waypoints == 0
-    
-    
+
+
 @pytest.mark.parametrize(
     "elapsed_sec, expected",
     [

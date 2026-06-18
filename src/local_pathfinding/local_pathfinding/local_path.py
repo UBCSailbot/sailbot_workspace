@@ -701,8 +701,6 @@ class LocalPath:
                 )
 
             self._logger.info(f"Updating local path: {must_change_reason.reason}")
-            wind_tracker = new_state.wind_tracker  # type: ignore[union-attr]
-            wind_tracker.using_one_aw_point = wind_tracker.aw_avg is None
             self.last_remaining_waypoints = self._count_remaining_waypoints()
             self.last_replan_reason = must_change_reason.reason
             self.state = new_state
