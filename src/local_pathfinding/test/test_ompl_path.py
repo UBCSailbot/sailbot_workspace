@@ -51,6 +51,7 @@ def fresh_ompl_path():
             planner="rrtstar",
             wind_tracker=WindTracker(),
         ),
+        should_simplify_path=False,
     )
 
 
