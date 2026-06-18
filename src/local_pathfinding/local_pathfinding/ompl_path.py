@@ -40,6 +40,7 @@ MIN_TURNING_RADIUS_KM = 0.05  # 50 m
 # the goal state
 MAX_EDGE_LEN_KM = 0.5
 MAX_SOLVER_RUN_TIME_SEC = 1.0
+MAX_SIMPLIFIER_RUN_TIME_SEC = 0.1
 
 LAND_KEY = -1
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -72,6 +73,7 @@ class OMPLPath:
         parent_logger: RcutilsLogger,
         local_path_state: LocalPathState,
         land_multi_polygon: MultiPolygon = None,
+        should_simplify_path: bool = True
     ):
         """Initialize the OMPLPath Class. Attempt to solve for a path.
 
@@ -89,6 +91,16 @@ class OMPLPath:
         self._simple_setup = self._init_simple_setup(land_multi_polygon)
 
         self.solved = self._simple_setup.solve(time=MAX_SOLVER_RUN_TIME_SEC)
+        if self.solved and should_simplify_path:
+            obj = self._simple_setup.getOptimizationObjective()
+            original = og.PathGeometric(self._simple_setup.getSolutionPath())
+            original_cost = original.cost(obj).value()
+            self._simple_setup.simplifySolution(MAX_SIMPLIFIER_RUN_TIME_SEC)
+
+            simplified = self._simple_setup.getSolutionPath()
+            simplified_cost = simplified.cost(obj).value()
+            if simplified_cost > original_cost:
+                simplified.assign(original)
 
     @staticmethod
     def init_obstacles(

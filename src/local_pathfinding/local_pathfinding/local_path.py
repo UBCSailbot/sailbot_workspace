@@ -528,8 +528,9 @@ class LocalPath:
             self._logger.debug("Wind condition not met: wind_tracker.tw_avg is None")
         elif self.state.path_generated_wind is None:
             self._logger.debug("Wind condition not met: state.path_generated_wind is None")
-        elif self.state.wind_tracker.using_one_tw_point:
-            self._logger.debug("Wind condition not met: wind_tracker.using_one_tw_point is True")
+        # disabled for testing
+        # elif self.state.wind_tracker.using_one_tw_point:
+        #   self._logger.debug("Wind condition not met: wind_tracker.using_one_tw_point is True")
         elif self.is_significant_wind_change(
             self.state.wind_tracker.tw_avg, self.state.path_generated_wind
         ):
