@@ -1,0 +1,33 @@
+# Wind blows directly out of the channel exit (from the west), so Polaris must tack
+# upwind through the narrow passage.  Close-hauled legs are constrained to ~3.3 km of
+# north-south room; the planner must execute short tacks within the channel walls rather
+# than making free-space tacks.
+# No-go zone (±45° of 270°): headings 225°–315° are irons — going straight west is
+# impossible, forcing a NW/SW alternating tack pattern.
+tw_dir_deg: 270
+tw_speed_kmph: 15.0
+
+gps:
+  latitude: 49.280
+  longitude: -123.15
+  speed_kmph: 10.0
+  heading_deg: 315.0
+
+# [lon, lat]
+land:
+  # North land mass
+  - [[-123.45, 49.298],
+     [-123.18, 49.298],
+     [-123.18, 49.400],
+     [-123.45, 49.400]]
+
+  # South land mass
+  - [[-123.45, 49.200],
+     [-123.18, 49.200],
+     [-123.18, 49.265],
+     [-123.45, 49.265]]
+
+global_path:
+  waypoints:
+    - {latitude: 49.280, longitude: -123.50}
+    - {latitude: 49.280, longitude: -123.65}

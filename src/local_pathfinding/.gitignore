@@ -17,3 +17,6 @@ log/*
 
 
 *.log
+
+# Generated ros2 parameters through initiation and simulation
+src/local_pathfinding/local_pathfinding/mock_nodes/wind_params.yaml
