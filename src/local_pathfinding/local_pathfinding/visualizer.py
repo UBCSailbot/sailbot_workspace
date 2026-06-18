@@ -17,6 +17,7 @@ import math
 import subprocess
 from collections import deque
 from dataclasses import dataclass
+from io import BytesIO
 from multiprocessing import Queue
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -27,6 +28,19 @@ import yaml
 from dash import dcc, html
 from dash.dependencies import Input, Output, State
 from shapely.geometry import MultiPolygon, Polygon
+
+# Optional dependencies for the OpenStreetMap basemap overlay. They are only needed when the
+# "Show map" toggle is on, so a missing install must not stop the app from loading; add_map_overlay
+# checks OSM_DEPS_AVAILABLE and degrades gracefully.
+try:
+    import requests
+    from PIL import Image
+
+    OSM_DEPS_AVAILABLE = True
+except ImportError:
+    requests = None  # type: ignore[assignment]
+    Image = None  # type: ignore[assignment]
+    OSM_DEPS_AVAILABLE = False
 
 import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
@@ -52,10 +66,36 @@ NO_GO_CONE_ARC_POINTS = 40  # number of points to approximate each cone arc
 NO_GO_CONE_DEFAULT_RADIUS_KM = 1.5  # fallback radius when no axis range is available
 NO_GO_CONE_RADIUS_FRACTION = 0.12  # fraction of the visible axis span to use as cone radius
 
+# A global waypoint is considered "reached" (and removed from the plot) once the boat comes within
+# GLOBAL_WP_REACHED_KM of the local waypoint nearest to it, provided that local waypoint is itself
+# within LOCAL_NEAR_GLOBAL_KM of the global waypoint.
+GLOBAL_WP_REACHED_KM = 0.1
+LOCAL_NEAR_GLOBAL_KM = 0.15
+GLOBAL_WP_KEY_DECIMALS = 5  # lat/lon rounding used to identify a global waypoint across frames
+
+# OpenStreetMap overlay (toggleable basemap drawn beneath the data traces).
+OSM_TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+OSM_TILE_SIZE = 256  # px, standard slippy-map tile size
+OSM_MAX_TILES_PER_AXIS = 4  # cap tiles fetched per axis to bound latency and figure payload size
+OSM_MIN_ZOOM = 1
+OSM_MAX_ZOOM = 18
+OSM_REQUEST_TIMEOUT_S = 5
+OSM_USER_AGENT = "UBCSailbot-LocalPathfinding-Visualizer"
+OSM_OVERLAY_OPACITY = 1.0
+
+# Module-level caches so the basemap is not refetched/restitched on every ~2.5 s frame.
+_osm_tile_cache: Dict[Tuple[int, int, int], Any] = {}
+_osm_overlay_cache: Dict[Any, Tuple[Any, Tuple[float, float, float, float]]] = {}
+
+
 BASE_DIR = Path(__file__).resolve().parent
 MOCK_NODES_DIR = BASE_DIR / "mock_nodes"
 WIND_PARAMS_YAML = MOCK_NODES_DIR / "wind_params.yaml"
 WIND_PARAMS_SH = MOCK_NODES_DIR / "wind_params.sh"
+
+# Most recent VisualizerState, kept so view-only toggles (e.g. the map) can re-render the last
+# frame immediately instead of waiting for the next ROS message.
+_latest_vs: Optional["VisualizerState"] = None
 
 app = dash.Dash(__name__)
 queue: Optional[Queue] = None  # type: ignore
@@ -84,12 +124,16 @@ class AISShipData:
     Attributes:
         pos_x_km: X coordinate (km) of the AIS ship.
         pos_y_km: Y coordinate (km) of the AIS ship.
+        lat_deg: Latitude (degrees) of the AIS ship.
+        lon_deg: Longitude (degrees) of the AIS ship.
         heading_deg: Heading (degrees) of the AIS ship.
         speed_kmph: Speed (km/h) of the AIS ship.
     """
 
     pos_x_km: float
     pos_y_km: float
+    lat_deg: float
+    lon_deg: float
     heading_deg: float
     speed_kmph: float
 
@@ -163,7 +207,13 @@ class VisualizerState:
         self.all_local_wp = [msg.local_path.waypoints for msg in msgs]
         self.global_path = self.latest_msg.global_path
 
+        # XY frame is anchored to the global path's final waypoint (the voyage destination).
         self.reference_lat_lon = self.global_path.waypoints[-1]
+
+        # Global waypoints (lat/lon and XY) for plotting and reached-tracking
+        self.global_wp = list(self.global_path.waypoints)
+        self.global_wp_xy = cs.latlon_list_to_xy_list(self.reference_lat_lon, self.global_wp)
+
         self.sailbot_xy_km = cs.latlon_list_to_xy_list(
             self.reference_lat_lon, self.sailbot_lat_lon
         )
@@ -188,7 +238,12 @@ class VisualizerState:
         self.ais_ships_by_id: Dict[int, AISShipData] = {}
         for ship, (x, y) in zip(self.ais_ships, zip(ais_positions[0], ais_positions[1])):
             self.ais_ships_by_id[ship.id] = AISShipData(
-                pos_x_km=x, pos_y_km=y, heading_deg=ship.cog.heading, speed_kmph=ship.sog.speed
+                pos_x_km=x,
+                pos_y_km=y,
+                lat_deg=ship.lat_lon.latitude,
+                lon_deg=ship.lat_lon.longitude,
+                heading_deg=ship.cog.heading,
+                speed_kmph=ship.sog.speed,
             )
 
         # Obstacles
@@ -333,6 +388,119 @@ def compute_goal_change(
     return GoalChange(new_goal_xy_rounded=rounded, message=msg)
 
 
+def global_wp_key(waypoint: ci.HelperLatLon) -> str:
+    """Return a stable, JSON-serializable identifier for a global waypoint.
+
+    Global waypoints are identified by their rounded lat/lon (rather than list index) so the
+    reached-set persisted in the browser stays correct even if the global path is reordered.
+
+    Args:
+        waypoint: Global waypoint as a lat/lon.
+
+    Returns:
+        A string key of the form "lat,lon" rounded to GLOBAL_WP_KEY_DECIMALS.
+    """
+    lat = round(waypoint.latitude, GLOBAL_WP_KEY_DECIMALS)
+    lon = round(waypoint.longitude, GLOBAL_WP_KEY_DECIMALS)
+    return f"{lat},{lon}"
+
+
+def compute_reached_global_wps(
+    vs: VisualizerState,
+    boat_xy_km: Tuple[float, float],
+    local_x_km: List[float],
+    local_y_km: List[float],
+    reached_keys: Optional[List[str]],
+) -> List[str]:
+    """Update the set of global waypoints the boat has reached.
+
+    A global waypoint is marked reached once the local waypoint nearest to it (within
+    LOCAL_NEAR_GLOBAL_KM) has been reached by the boat (boat within GLOBAL_WP_REACHED_KM of that
+    local waypoint). Once reached, a waypoint stays reached — the set only grows — so a waypoint
+    does not reappear if the boat later drifts away.
+
+    Args:
+        vs: VisualizerState containing the global waypoints in XY.
+        boat_xy_km: (x, y) current boat position in km.
+        local_x_km: Local path X coordinates in km.
+        local_y_km: Local path Y coordinates in km.
+        reached_keys: Previously reached global waypoint keys, or None on first frame.
+
+    Returns:
+        The updated list of reached global waypoint keys.
+    """
+    reached = set(reached_keys or [])
+    if not local_x_km or not local_y_km:
+        return list(reached)
+
+    bx, by = boat_xy_km[0], boat_xy_km[1]
+    for waypoint, wp_xy in zip(vs.global_wp, vs.global_wp_xy):
+        key = global_wp_key(waypoint)
+        if key in reached:
+            continue
+
+        # nearest local waypoint to this global waypoint
+        nearest_lx, nearest_ly, nearest_dist = min(
+            (
+                (lx, ly, math.hypot(lx - wp_xy.x, ly - wp_xy.y))
+                for lx, ly in zip(local_x_km, local_y_km)
+            ),
+            key=lambda t: t[2],
+        )
+
+        boat_to_local = math.hypot(bx - nearest_lx, by - nearest_ly)
+        if nearest_dist <= LOCAL_NEAR_GLOBAL_KM and boat_to_local <= GLOBAL_WP_REACHED_KM:
+            reached.add(key)
+
+    return list(reached)
+
+
+def build_global_wp_trace(vs: VisualizerState, reached_keys: Optional[List[str]]) -> go.Scatter:
+    """Build the marker trace for the (not-yet-reached) global waypoints.
+
+    Args:
+        vs: VisualizerState containing the global waypoints (lat/lon and XY).
+        reached_keys: Keys of global waypoints already reached by the boat; these are omitted.
+
+    Returns:
+        A Plotly Scatter trace of the remaining global waypoints. Empty if all are reached.
+    """
+    reached = set(reached_keys or [])
+    xs: List[float] = []
+    ys: List[float] = []
+    labels: List[str] = []
+    customdata: List[List[float]] = []
+
+    # The last global waypoints is the starting point and the first waypoint is the destination
+    n = len(vs.global_wp)
+    for i, (waypoint, wp_xy) in enumerate(zip(vs.global_wp, vs.global_wp_xy)):
+        if global_wp_key(waypoint) in reached:
+            continue
+        xs.append(wp_xy.x)
+        ys.append(wp_xy.y)
+        labels.append(f"GW{n-i}")
+        customdata.append([waypoint.latitude, waypoint.longitude])
+
+    return go.Scatter(
+        x=xs,
+        y=ys,
+        mode="markers+text",
+        marker=dict(symbol="star", color="green", size=14, line=dict(width=1, color="darkgreen")),
+        text=labels,
+        textposition="bottom center",
+        name="Global Waypoint",
+        customdata=customdata,
+        hovertemplate=(
+            "<b>🌐 Global Waypoint</b><br>"
+            "Lat: %{customdata[0]:.6f}°<br>"
+            "Lon: %{customdata[1]:.6f}°<br>"
+            "X: %{x:.2f}<br>"
+            "Y: %{y:.2f}<br>"
+            "<extra></extra>"
+        ),
+    )
+
+
 # --------------------------------------
 # Figure Builders
 # --------------------------------------
@@ -355,13 +523,17 @@ def initial_plot() -> go.Figure:
     return fig
 
 
-def build_intermediate_trace(local_x_km: List[float], local_y_km: List[float]) -> go.Scatter:
+def build_intermediate_trace(
+    local_x_km: List[float], local_y_km: List[float], reference: ci.HelperLatLon
+) -> go.Scatter:
     """
     Create the scatter trace for intermediate local waypoints (excluding start and goal).
 
     Args:
         local_x_km: X coordinates of the local waypoint list (km).
         local_y_km: Y coordinates of the local waypoint list (km).
+        reference: Lat/Lon anchor of the XY frame (the global path's final waypoint), used to
+            convert each waypoint's XY back to a true lat/lon for the hover text.
 
     Returns:
         A Plotly Scatter trace containing marker with text labels for intermediate waypoints.
@@ -370,6 +542,10 @@ def build_intermediate_trace(local_x_km: List[float], local_y_km: List[float]) -
     if len(local_x_km) < 3:
         return go.Scatter(x=[], y=[], mode="markers+text", name="Intermediate")
     labels = [f"LW{i+1}" for i, _ in enumerate(local_x_km[1:-1])]
+    latlons = [
+        cs.xy_to_latlon(reference, cs.XY(x, y)) for x, y in zip(local_x_km[1:-1], local_y_km[1:-1])
+    ]
+    customdata = [[ll.latitude, ll.longitude] for ll in latlons]
     return go.Scatter(
         x=local_x_km[1:-1],
         y=local_y_km[1:-1],
@@ -378,27 +554,42 @@ def build_intermediate_trace(local_x_km: List[float], local_y_km: List[float]) -
         text=labels,
         textposition="top center",
         name="Intermediate",
+        customdata=customdata,
+        hovertemplate=(
+            "Lat: %{customdata[0]:.6f}°<br>"
+            "Lon: %{customdata[1]:.6f}°<br>"
+            "X: %{x:.2f}<br>"
+            "Y: %{y:.2f}<br>"
+            "<extra></extra>"
+        ),
     )
 
 
-def build_goal_trace(goal_xy_km: Tuple[float, float], angle_deg: float) -> go.Scatter:
+def build_goal_trace(
+    goal_xy_km: Tuple[float, float], angle_deg: float, reference: ci.HelperLatLon
+) -> go.Scatter:
     """
     Create the marker trace for the local goal waypoint.
 
     Args:
         goal_xy_km: (x, y) goal position in km.
         angle_deg: Angle from boat to goal in degrees (visualizer convention) used in hover text.
+        reference: Lat/Lon anchor of the XY frame (the global path's final waypoint), used to
+            convert the goal's XY back to a true lat/lon for the hover text.
 
     Returns:
         A Plotly Scatter trace representing the goal point.
     """
+    goal_latlon = cs.xy_to_latlon(reference, cs.XY(goal_xy_km[0], goal_xy_km[1]))
     return go.Scatter(
         x=[goal_xy_km[0]],
         y=[goal_xy_km[1]],
         mode="markers",
         marker=dict(color="red", size=10),
         name="Goal",
-        hovertemplate="X: %{x:.2f} <br>"
+        hovertemplate=f"Lat: {goal_latlon.latitude:.6f}° <br>"
+        + f"Lon: {goal_latlon.longitude:.6f}° <br>"
+        + "X: %{x:.2f} <br>"
         + "Y: %{y:.2f} <br>"
         + "Angle from the boat: "
         + f"{angle_deg:.1f}°"
@@ -448,6 +639,8 @@ def build_boat_trace(
     """
     heading = vs.sailbot_gps[-1].heading.heading
     speed = vs.sailbot_gps[-1].speed.speed
+    lat = vs.sailbot_lat_lon[-1].latitude
+    lon = vs.sailbot_lat_lon[-1].longitude
     return go.Scatter(
         x=[boat_xy_km[0]],
         y=[boat_xy_km[1]],
@@ -455,6 +648,8 @@ def build_boat_trace(
         name="Boat",
         hovertemplate=(
             "<b>🚢 Sailbot Current Position</b><br>"
+            f"Lat: {lat:.6f}°<br>"
+            f"Lon: {lon:.6f}°<br>"
             "X: %{x:.2f} <br>"
             "Y: %{y:.2f} <br>"
             "Heading: " + f"{heading:.1f}°<br>"
@@ -653,6 +848,8 @@ def build_ais_traces(vs: VisualizerState) -> List[go.Scatter]:
     for ais_id, ship_data in vs.ais_ships_by_id.items():
         x_val = ship_data.pos_x_km
         y_val = ship_data.pos_y_km
+        lat = ship_data.lat_deg
+        lon = ship_data.lon_deg
         heading = ship_data.heading_deg
         speed = ship_data.speed_kmph
 
@@ -664,6 +861,8 @@ def build_ais_traces(vs: VisualizerState) -> List[go.Scatter]:
                 name=f"AIS {ais_id}",
                 hovertemplate=(
                     f"<b>🚢 AIS Ship {ais_id}</b><br>"
+                    f"Lat: {lat:.6f}°<br>"
+                    f"Lon: {lon:.6f}°<br>"
                     f"X: {x_val:.2f}<br>"
                     f"Y: {y_val:.2f}<br>"
                     f"Heading: {heading:.1f}°<br>"
@@ -914,6 +1113,7 @@ def apply_layout(
     fig: go.Figure,
     zoom_needed: bool,
     last_range: Optional[Dict[str, List[float]]],
+    show_map: bool = False,
 ) -> None:
     """
     Apply the main plot layout configuration (axis titles, domains, legend, and optional ranges).
@@ -922,9 +1122,16 @@ def apply_layout(
         fig: Target Plotly figure.
         zoom_needed: whether we want to zoom into the state space
         last_range: previously stored axis ranges to maintain axes if zoom not needed.
+        show_map: when True, constrain the axes to equal scale so the OpenStreetMap overlay stays
+            geographically proportioned instead of stretched. Left unconstrained otherwise to
+            preserve the default plot behavior.
     """
-    xaxis = dict(domain=[0.0, 0.78])
-    yaxis = dict(domain=[0.30, 1.0])
+    xaxis: Dict[str, Any] = dict(domain=[0.0, 0.98])
+    yaxis: Dict[str, Any] = dict(domain=[0.30, 1.0])
+    if show_map:
+        # scaleanchor/scaleratio keep 1 km on X the same on-screen size as 1 km on Y so the
+        # basemap is not distorted. Only applied with the map on, to keep the default look.
+        yaxis.update(scaleanchor="x", scaleratio=1.0)
 
     # Base Layout
     fig.update_layout(
@@ -956,7 +1163,9 @@ def build_figure(
     vs: VisualizerState,
     last_goal_xy_km: Optional[Tuple[float, float]],
     last_range: Optional[Dict[str, List[float]]],
-) -> Tuple[go.Figure, Tuple[float, float]]:
+    reached_global_keys: Optional[List[str]] = None,
+    show_map: bool = False,
+) -> Tuple[go.Figure, Tuple[float, float], List[str]]:
     """
     Builds and renders the complete path planning visualization figure.
 
@@ -968,9 +1177,12 @@ def build_figure(
                obstacles, AIS ships, wind vectors).
         last_goal_xy_km: Previous goal position (x, y) in km, or None on first render. Used to
                       detect goal changes and show a popup message.
+        reached_global_keys: Keys of global waypoints already reached by the boat (persisted
+                      across frames); reached waypoints are not plotted.
+        show_map: Whether to draw the OpenStreetMap basemap beneath the data.
 
     Returns:
-        (fig, new_goal_xy_rounded):
+       (fig, new_goal_xy_rounded, reached_global_keys):
             - fig: Updated Plotly figure ready for display.
             - new_goal_xy_rounded: Current goal position rounded to GOAL_CHANGE_ROUND_DECIMALS
                                 for float jitter tolerance.
@@ -990,9 +1202,16 @@ def build_figure(
         # No local path available (e.g. pathfinding failed and sail was disabled).
         # Still render the boat, obstacles, AIS traffic, and wind so the operator keeps
         # situational awareness instead of seeing a blank or crashed view.
-        return build_figure_without_local_path(vs, boat_xy_km, last_goal_xy_km, last_range)
+        return build_figure_without_local_path(
+            vs, boat_xy_km, last_goal_xy_km, last_range, reached_global_keys, show_map
+        )
     goal_xy_km = cs.XY(local_x_km[-1], local_y_km[-1])
     goal_change = compute_goal_change(last_goal_xy_km, goal_xy_km)
+
+    # Update which global waypoints the boat has reached, then plot the remaining ones
+    reached_global_keys = compute_reached_global_wps(
+        vs, boat_xy_km, local_x_km, local_y_km, reached_global_keys
+    )
 
     # Computing angle and distance from boat to goal
     angle_deg = math.degrees(
@@ -1000,9 +1219,10 @@ def build_figure(
     )
     dist_km = math.hypot(goal_xy_km[0] - boat_xy_km[0], goal_xy_km[1] - boat_xy_km[1])
 
-    # adding all the Traces(intermediate, goal, boat and path) to the plot
-    fig.add_trace(build_intermediate_trace(local_x_km, local_y_km))
-    fig.add_trace(build_goal_trace(goal_xy_km, angle_deg))
+    # adding all the Traces(global, intermediate, goal, boat and path) to the plot
+    fig.add_trace(build_global_wp_trace(vs, reached_global_keys))
+    fig.add_trace(build_intermediate_trace(local_x_km, local_y_km, vs.reference_lat_lon))
+    fig.add_trace(build_goal_trace(goal_xy_km, angle_deg, vs.reference_lat_lon))
     fig.add_trace(build_boat_trace(vs, boat_xy_km, dist_km))
     path_trace = build_path_trace(local_x_km, local_y_km, boat_xy_km)
     if path_trace is not None:
@@ -1042,9 +1262,13 @@ def build_figure(
     # Computing State space overlay and adding it to the plot
     zoom_needed = last_range is None
     compute_and_add_state_space(vs, boat_xy_km, goal_xy_km, fig)
-    apply_layout(vs, fig, zoom_needed, last_range)
+    apply_layout(vs, fig, zoom_needed, last_range, show_map)
     add_goal_change_popup(fig, goal_change.message)  # Popup message for goal change
-    return fig, goal_change.new_goal_xy_rounded
+
+    if show_map:
+        add_map_overlay(fig, vs, last_range)
+
+    return fig, goal_change.new_goal_xy_rounded, reached_global_keys
 
 
 def build_figure_without_local_path(
@@ -1052,31 +1276,41 @@ def build_figure_without_local_path(
     boat_xy_km: Tuple[float, float],
     last_goal_xy_km: Optional[Tuple[float, float]],
     last_range: Optional[Dict[str, List[float]]],
-) -> Tuple[go.Figure, Tuple[float, float]]:
+    reached_global_keys: Optional[List[str]] = None,
+    show_map: bool = False,
+) -> Tuple[go.Figure, Tuple[float, float], List[str]]:
     """
     Build the visualization when no local path is available.
 
     This happens when local pathfinding fails (e.g. the solver could not produce a path and
     sail was disabled), so there are no local waypoints or local goal to plot. Everything that
-    does not depend on the local path is still drawn — the boat, land/AIS obstacles, AIS ships,
-    and the wind box — so the operator retains situational awareness instead of seeing a blank
-    or crashed figure.
+    does not depend on the local path is still drawn — the boat, global waypoints, land/AIS
+    obstacles, AIS ships, and the wind box — so the operator retains situational awareness
+    instead of seeing a blank or crashed figure.
+
+    Without a local path the reached-set cannot be updated (there is no local waypoint to test
+    against), so the existing reached-set is passed through unchanged.
 
     Args:
         vs: VisualizerState containing processed ROS message data.
         boat_xy_km: (x, y) current boat position in km.
         last_goal_xy_km: Previous goal position (x, y) in km, or None if never set.
         last_range: Previously stored axis ranges, or None on first render.
-
+        reached_global_keys: Keys of global waypoints already reached; passed through unchanged.
+        show_map: Whether to draw the OpenStreetMap basemap beneath the data.
     Returns:
-        (fig, goal_xy): The figure, and the goal position to persist downstream — the previous
-        goal if one is known, otherwise the current boat position so goal-change tracking stays
-        consistent on later frames.
+        (fig, goal_xy, reached_global_keys): The figure, the goal position to persist downstream
+        (the previous goal if known, otherwise the current boat position so goal-change tracking
+        stays consistent), and the unchanged reached-set.
     """
     fig = initial_plot()
+    reached_global_keys = list(reached_global_keys or [])
 
     # Boat marker (distance-to-goal is unknown without a local path)
     fig.add_trace(build_boat_trace(vs, boat_xy_km, dist_to_goal_km=0.0))
+
+    # Global waypoints (still useful for situational awareness when the local path is missing)
+    fig.add_trace(build_global_wp_trace(vs, reached_global_keys))
 
     # Obstacles (land and AIS collision zones) and AIS ships
     land_traces = build_polygon_traces(
@@ -1139,10 +1373,13 @@ def build_figure_without_local_path(
     )
 
     zoom_needed = last_range is None
-    apply_layout(vs, fig, zoom_needed, last_range)
+    apply_layout(vs, fig, zoom_needed, last_range, show_map)
+
+    if show_map:
+        add_map_overlay(fig, vs, last_range)
 
     goal_xy = last_goal_xy_km if last_goal_xy_km is not None else (boat_xy_km[0], boat_xy_km[1])
-    return fig, goal_xy
+    return fig, goal_xy, reached_global_keys
 
 
 def write_wind_params(tw_dir_deg: float, tw_speed_kmph: float) -> None:
@@ -1219,6 +1456,183 @@ def get_state_space_bounds(
     )
 
 
+# --------------------------------------
+# OpenStreetMap basemap overlay
+# --------------------------------------
+def _deg2num(lat_deg: float, lon_deg: float, zoom: int) -> Tuple[float, float]:
+    """Convert lat/lon to fractional slippy-map tile coordinates at the given zoom."""
+    lat_rad = math.radians(lat_deg)
+    n = 2.0**zoom
+    xt = (lon_deg + 180.0) / 360.0 * n
+    yt = (1.0 - math.asinh(math.tan(lat_rad)) / math.pi) / 2.0 * n
+    return xt, yt
+
+
+def _num2deg(xt: float, yt: float, zoom: int) -> Tuple[float, float]:
+    """Convert fractional slippy-map tile coordinates to the lat/lon of that tile's NW corner."""
+    n = 2.0**zoom
+    lon = xt / n * 360.0 - 180.0
+    lat = math.degrees(math.atan(math.sinh(math.pi * (1.0 - 2.0 * yt / n))))
+    return lat, lon
+
+
+def _choose_osm_zoom(lat_n: float, lat_s: float, lon_w: float, lon_e: float) -> int:
+    """Pick the highest zoom whose tile span fits within OSM_MAX_TILES_PER_AXIS on both axes."""
+    for zoom in range(OSM_MAX_ZOOM, OSM_MIN_ZOOM - 1, -1):
+        x0 = math.floor(_deg2num(lat_n, lon_w, zoom)[0])
+        x1 = math.floor(_deg2num(lat_s, lon_e, zoom)[0])
+        y0 = math.floor(_deg2num(lat_n, lon_w, zoom)[1])
+        y1 = math.floor(_deg2num(lat_s, lon_e, zoom)[1])
+        if (x1 - x0 + 1) <= OSM_MAX_TILES_PER_AXIS and (y1 - y0 + 1) <= OSM_MAX_TILES_PER_AXIS:
+            return zoom
+    return OSM_MIN_ZOOM
+
+
+def _fetch_osm_tile(zoom: int, x: int, y: int):
+    """Fetch a single OSM tile (RGB), caching it in-process to respect the tile usage policy."""
+    key = (zoom, x, y)
+    if key in _osm_tile_cache:
+        return _osm_tile_cache[key]
+    url = OSM_TILE_URL.format(z=zoom, x=x, y=y)
+    resp = requests.get(url, headers={"User-Agent": OSM_USER_AGENT}, timeout=OSM_REQUEST_TIMEOUT_S)
+    resp.raise_for_status()
+    tile = Image.open(BytesIO(resp.content)).convert("RGB")
+    _osm_tile_cache[key] = tile
+    return tile
+
+
+def _build_osm_image(
+    lat_n: float, lat_s: float, lon_w: float, lon_e: float
+) -> Tuple[Any, Tuple[float, float, float, float]]:
+    """Stitch the OSM tiles covering a lat/lon bbox into one image.
+
+    Args:
+        lat_n, lat_s: North/south latitude bounds of the desired view.
+        lon_w, lon_e: West/east longitude bounds of the desired view.
+
+    Returns:
+        (image, (lat_top, lat_bot, lon_left, lon_right)) where the second element is the actual
+        geographic extent of the stitched mosaic (tile-aligned, so slightly larger than the bbox).
+    """
+    zoom = _choose_osm_zoom(lat_n, lat_s, lon_w, lon_e)
+    x0 = math.floor(_deg2num(lat_n, lon_w, zoom)[0])
+    x1 = math.floor(_deg2num(lat_s, lon_e, zoom)[0])
+    y0 = math.floor(_deg2num(lat_n, lon_w, zoom)[1])
+    y1 = math.floor(_deg2num(lat_s, lon_e, zoom)[1])
+
+    mosaic = Image.new("RGB", ((x1 - x0 + 1) * OSM_TILE_SIZE, (y1 - y0 + 1) * OSM_TILE_SIZE))
+    for xi in range(x0, x1 + 1):
+        for yi in range(y0, y1 + 1):
+            tile = _fetch_osm_tile(zoom, xi, yi)
+            mosaic.paste(tile, ((xi - x0) * OSM_TILE_SIZE, (yi - y0) * OSM_TILE_SIZE))
+
+    lat_top, lon_left = _num2deg(x0, y0, zoom)
+    lat_bot, lon_right = _num2deg(x1 + 1, y1 + 1, zoom)
+    return mosaic, (lat_top, lat_bot, lon_left, lon_right)
+
+
+def _view_bounds_xy(
+    vs: VisualizerState, last_range: Optional[Dict[str, List[float]]]
+) -> Tuple[float, float, float, float]:
+    """Return the (x_min, x_max, y_min, y_max) of the currently displayed view in km."""
+    if last_range is not None:
+        return (last_range["x"][0], last_range["x"][1], last_range["y"][0], last_range["y"][1])
+    min_b, max_b = get_state_space_bounds(vs)
+    return (min_b.x, max_b.x, min_b.y, max_b.y)
+
+
+def _add_map_message(fig: go.Figure, text: str) -> None:
+    """Show a small bottom-right note on the figure (used for map attribution or errors)."""
+    fig.add_annotation(
+        text=text,
+        xref="paper",
+        yref="paper",
+        x=0.98,  # right edge of the plot's x-axis domain
+        y=0.30,  # bottom edge of the plot's y-axis domain
+        xanchor="right",
+        yanchor="bottom",
+        showarrow=False,
+        font=dict(color="black", size=9),
+        bgcolor="rgba(255, 255, 255, 0.6)",
+    )
+
+
+def add_map_overlay(
+    fig: go.Figure, vs: VisualizerState, last_range: Optional[Dict[str, List[float]]]
+) -> None:
+    """Draw an OpenStreetMap basemap beneath the data traces, georeferenced to the XY (km) frame.
+
+    The visible view bounds (km) are converted to a lat/lon bbox via the goal-anchored reference,
+    the covering OSM tiles are stitched into one image, and that image is placed as a layout image
+    spanning the corresponding XY rectangle. Results are cached by view signature so the basemap is
+    not refetched every frame. Any failure (missing deps, network error) is shown as a small
+    annotation and otherwise ignored so the visualizer keeps working.
+
+    Args:
+        fig: Target Plotly figure.
+        vs: VisualizerState (provides the reference lat/lon and state-space fallback bounds).
+        last_range: Previously stored axis ranges, used as the view extent when available.
+    """
+    if not OSM_DEPS_AVAILABLE:
+        _add_map_message(fig, "Map unavailable (install requests and Pillow)")
+        return
+
+    try:
+        x_min, x_max, y_min, y_max = _view_bounds_xy(vs, last_range)
+        ref = vs.reference_lat_lon
+
+        # lat/lon bbox of the view's four XY corners
+        corners = [
+            cs.xy_to_latlon(ref, cs.XY(x, y)) for x in (x_min, x_max) for y in (y_min, y_max)
+        ]
+        lats = [c.latitude for c in corners]
+        lons = [c.longitude for c in corners]
+        lat_n, lat_s, lon_w, lon_e = max(lats), min(lats), min(lons), max(lons)
+
+        sig = (
+            round(ref.latitude, 4),
+            round(ref.longitude, 4),
+            round(lat_n, 4),
+            round(lat_s, 4),
+            round(lon_w, 4),
+            round(lon_e, 4),
+        )
+        if sig in _osm_overlay_cache:
+            mosaic, extent = _osm_overlay_cache[sig]
+        else:
+            mosaic, extent = _build_osm_image(lat_n, lat_s, lon_w, lon_e)
+            if len(_osm_overlay_cache) > 16:
+                _osm_overlay_cache.clear()
+            _osm_overlay_cache[sig] = (mosaic, extent)
+
+        lat_top, lat_bot, lon_left, lon_right = extent
+        nw = cs.latlon_to_xy(ref, ci.HelperLatLon(latitude=lat_top, longitude=lon_left))
+        se = cs.latlon_to_xy(ref, ci.HelperLatLon(latitude=lat_bot, longitude=lon_right))
+        fig.add_layout_image(
+            dict(
+                source=mosaic,
+                xref="x",
+                yref="y",
+                x=nw.x,
+                y=nw.y,
+                sizex=se.x - nw.x,
+                sizey=nw.y - se.y,
+                xanchor="left",
+                yanchor="top",
+                sizing="stretch",
+                layer="below",
+                opacity=OSM_OVERLAY_OPACITY,
+            )
+        )
+    except Exception as e:
+        # Network/tile/render failure: keep the rest of the figure usable.
+        _add_map_message(fig, f"Map unavailable ({type(e).__name__})")
+        return
+
+    # OpenStreetMap tile usage policy requires visible attribution.
+    _add_map_message(fig, "Map data from © OpenStreetMap")
+
+
 # -----------------------------
 # Dash App entry points
 # -----------------------------
@@ -1255,8 +1669,18 @@ def dash_app(q: Queue):
                     "borderRadius": "8px",
                     "border": "1px solid #ccc",
                     "zIndex": "1000",
+                    "fontFamily": "Consolas, monospace",
+                    "fontSize": "13px",
                 },
                 children=[
+                    html.Span(
+                        "Wind",
+                        style={
+                            "fontWeight": "bold",
+                            "color": "rgb(18,70,139)",
+                            "whiteSpace": "nowrap",
+                        },
+                    ),
                     html.Label("Wind Direction (°):", style={"fontWeight": "bold"}),
                     dcc.Input(id="tw-dir-input", type="number", value=0, style={"width": "80px"}),
                     html.Label("Wind Speed (km/h):", style={"fontWeight": "bold"}),
@@ -1280,7 +1704,7 @@ def dash_app(q: Queue):
                 id="gps-control-panel",
                 style={
                     "position": "absolute",
-                    "bottom": "95px",
+                    "bottom": "113px",
                     "left": "50px",
                     "display": "flex",
                     "flexWrap": "wrap",
@@ -1369,9 +1793,47 @@ def dash_app(q: Queue):
                     ),
                 ],
             ),
+            # ── Map control panel ───────────────────────────────────────────
+            html.Div(
+                id="Map-control-panel",
+                style={
+                    "position": "absolute",
+                    # Stacked above the wind panel (175px); the GPS panel occupies 95px.
+                    "bottom": "50px",
+                    "left": "50px",
+                    "display": "flex",
+                    "flexWrap": "wrap",
+                    "gap": "12px",
+                    "alignItems": "center",
+                    "padding": "10px 16px",
+                    "backgroundColor": "rgba(255, 255, 255, 0.88)",
+                    "borderRadius": "8px",
+                    "border": "1px solid #ccc",
+                    "zIndex": "1000",
+                    "fontFamily": "Consolas, monospace",
+                    "fontSize": "13px",
+                },
+                children=[
+                    html.Span(
+                        "Show Map",
+                        style={
+                            "fontWeight": "bold",
+                            "color": "rgb(18,70,139)",
+                            "whiteSpace": "nowrap",
+                        },
+                    ),
+                    dcc.Checklist(
+                        id="map-toggle",
+                        options={"on": " Show map"},  # {value: label}
+                        value=[],
+                        style={"fontWeight": "bold", "marginLeft": "10px"},
+                    ),
+                ],
+            ),
             dcc.Interval(id="interval-component", interval=UPDATE_INTERVAL_MS, n_intervals=0),
             dcc.Store(id="goal-store", data=None),
             dcc.Store(id="range-store", data=None),
+            dcc.Store(id="reached-global-store", data=None),
             html.Button(
                 "Reset the view to state space",
                 id="reset-button",
@@ -1394,21 +1856,26 @@ def dash_app(q: Queue):
     Output("live-graph", "figure"),
     Output("goal-store", "data"),
     Output("range-store", "data"),
+    Output("reached-global-store", "data"),
     Input("interval-component", "n_intervals"),
     Input("live-graph", "relayoutData"),
     Input("reset-button", "n_clicks"),
+    Input("map-toggle", "value"),
     State("live-graph", "figure"),
     State("goal-store", "data"),
     State("range-store", "data"),
+    State("reached-global-store", "data"),
     prevent_initial_call=True,
 )
 def update_graph(
     _: int,
     relayout_data,
     __: int,
+    map_toggle: Optional[List[str]],
     current_figure,
     last_goal_xy_km: Optional[List[float]],
     stored_range,
+    reached_global_keys: Optional[List[str]],
 ):
     """
     Dash callback: handles both interval updates and reset button clicks.
@@ -1418,32 +1885,44 @@ def update_graph(
         _: Dash interval tick (unused).
         relayout_data: Data relayed from Plotly when user pans, zooms in/out, autoscales
         __: Reset button n_clicks (unused).
+        map_toggle: Value of the "Show map" checklist (["on"] when enabled).
         current_figure: Current figure state from live-graph.
         last_goal_xy_km: Previously stored goal as [x, y] or None on first run.
         stored_range: Previously stored range as {"x": [xmin, xmax], "y": [ymin, ymax]}
                       or None on first run
+        reached_global_keys: Previously stored keys of reached global waypoints, or None on
+                      first run.
 
     Returns:
-        (fig, new_goal_as_list, last_range):
+        (fig, new_goal_as_list, last_range, reached_global_keys):
             - fig: The updated Plotly figure
             - new_goal_as_list: [x, y] for storage in dcc.Store (JSON serializable)
             - last_range: [x-range, y-range] for storage in dcc.Store (JSON serializable)
+            - reached_global_keys: list of reached global waypoint keys for storage in dcc.Store
 
     """
-    global queue  # noqa
-
-    # Interval update (default behavior)
-    if queue is None or queue.empty():
-        return dash.no_update, dash.no_update, stored_range
-
-    vs = queue.get()  # type: ignore
-    last_goal_tuple = (
-        cs.XY(last_goal_xy_km[0], last_goal_xy_km[1]) if last_goal_xy_km is not None else None
-    )
+    global queue, _latest_vs  # noqa
 
     # Check which input triggered the callback
     ctx = dash.callback_context
     triggered_id = ctx.triggered[0]["prop_id"].split(".")[0] if ctx.triggered else None
+
+    # Interval update (default behavior)
+    if queue is not None and not queue.empty():
+        vs = queue.get()  # type: ignore
+        _latest_vs = vs
+    elif triggered_id in ("map-toggle", "reset-button") and _latest_vs is not None:
+        # A view-only control changed but no new ROS message arrived; re-render the last frame
+        # so the toggle/reset takes effect immediately instead of waiting for the next message.
+        vs = _latest_vs
+    else:
+        return dash.no_update, dash.no_update, stored_range, dash.no_update
+
+    last_goal_tuple = (
+        cs.XY(last_goal_xy_km[0], last_goal_xy_km[1]) if last_goal_xy_km is not None else None
+    )
+
+    show_map = map_toggle is not None and "on" in map_toggle
 
     if relayout_data and triggered_id == "live-graph":
         # Only process relayout_data if it was the actual trigger
@@ -1469,11 +1948,13 @@ def update_graph(
     else:
         last_range = stored_range
 
-    fig, new_goal_xy = build_figure(vs, last_goal_tuple, last_range)
+    fig, new_goal_xy, reached_global_keys = build_figure(
+        vs, last_goal_tuple, last_range, reached_global_keys, show_map
+    )
 
     if triggered_id == "reset-button":
         if current_figure is None:
-            return dash.no_update, dash.no_update, dash.no_update
+            return dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
         min_bounds, max_bounds = get_state_space_bounds(vs)
         x_range = [min_bounds.x, max_bounds.x]
@@ -1488,7 +1969,7 @@ def update_graph(
             uirevision="reset",
         )
 
-    return fig, [new_goal_xy[0], new_goal_xy[1]], last_range
+    return fig, [new_goal_xy[0], new_goal_xy[1]], last_range, reached_global_keys
 
 
 @app.callback(
