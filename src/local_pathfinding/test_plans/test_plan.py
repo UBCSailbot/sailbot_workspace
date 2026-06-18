@@ -40,7 +40,11 @@ class TestPlan:
         except Exception as e:
             raise RuntimeError(f"Failed to load test plan file '{file_name}': {e}")
 
-        self._land = MultiPolygon([Polygon(points) for points in data.get("land", [])])
+        if data.get("land") is not None:
+            self._land = MultiPolygon([Polygon(points) for points in data["land"]])
+        else:
+            self._land = None
+
         self._ais = [
             ci.HelperAISShip(
                 id=ship["id"],
