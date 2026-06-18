@@ -43,7 +43,9 @@ MAX_SOLVER_RUN_TIME_SEC = 1.0
 
 LAND_KEY = -1
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-LAND_PKL_FILE_PATH = os.path.join(CURRENT_DIR, "..", "land", "pkl", "land.pkl")
+OFFSHORE_LAND_PKL_FILE_PATH = os.path.join(CURRENT_DIR, "..", "land", "pkl", "offshore_land.pkl")
+ON_WATER_LAND_PKL_FILE_PATH = os.path.join(CURRENT_DIR, "..", "land", "pkl", "on_water_land.pkl")
+DISTANCE_FROM_ON_WATER_LANDMARK = 20  # 20 km
 DISTANCE_THRESHOLD = 1e-9
 
 
@@ -155,10 +157,9 @@ class OMPLPath:
             )
 
         if OMPLPath.all_land_data is None:
-            try:
-                OMPLPath.all_land_data = load_pkl(LAND_PKL_FILE_PATH)
-            except FileNotFoundError as e:
-                exit(f"could not load the land.pkl file {e}")
+            # It is unlikely for Polaris to travel from the open ocean into English bay as that
+            # would interfere with Canadian Law.
+            OMPLPath.load_appropriate_land_obstacle(local_path_state)
 
         OMPLPath.obstacles[LAND_KEY] = ob.Land(
             reference=local_path_state.reference_latlon,
@@ -182,6 +183,34 @@ class OMPLPath:
         """
         space = Point(position.x, position.y).buffer(box_buffer_size, cap_style=3, join_style=2)
         return space
+
+    @staticmethod
+    def load_appropriate_land_obstacle(local_path_state: LocalPathState):
+        """Load the land obstacle dataset that best matches the boat's current position.
+
+        The boat's geodesic distance from the on-water reference point is compared against
+        DISTANCE_FROM_ON_WATER_LANDMARK. When the boat is within that threshold the
+        higher-resolution on-water land data is loaded; otherwise the offshore land data is
+        loaded. The result is stored on OMPLPath.all_land_data.
+
+        Args:
+            local_path_state (LocalPathState): Current local path state, providing the boat's
+                position used to select the appropriate land dataset.
+
+        Raises:
+            SystemExit: If the selected land .pkl file cannot be found.
+        """
+        on_water_ref_dist_km = cs.calculate_distance_from_on_water_reference(
+            local_path_state.position
+        )
+
+        try:
+            if on_water_ref_dist_km < DISTANCE_FROM_ON_WATER_LANDMARK:
+                OMPLPath.all_land_data = load_pkl(ON_WATER_LAND_PKL_FILE_PATH)
+            else:
+                OMPLPath.all_land_data = load_pkl(OFFSHORE_LAND_PKL_FILE_PATH)
+        except FileNotFoundError as e:
+            exit(f"could not load the land.pkl file {e}")
 
     def get_cost(self) -> float:
         """
