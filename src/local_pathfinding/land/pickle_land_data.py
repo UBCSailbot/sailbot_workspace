@@ -62,7 +62,7 @@ def cut_edge_to_point(
     polygon: Polygon,
     target_lat: float,
     target_lon: float,
-    cut_width_m: float = 600.0,
+    cut_width_m: float = 1000.0,
     working_crs: pyproj.CRS = UTM_10N,
 ) -> Polygon:
     """Cut a local notch into a polygon's edge so the edge passes through a target point.
