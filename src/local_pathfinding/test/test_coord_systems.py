@@ -216,7 +216,7 @@ def test_calculate_distance_from_on_water_reference(true_bearing_deg: float, dis
     )
     latlon = ci.HelperLatLon(latitude=lat, longitude=lon)
 
-    assert cs.calculate_distance_from_on_water_reference(latlon) == pytest.approx(
+    assert cs.calculate_distance_from_on_water_reference_km(latlon) == pytest.approx(
         dist_km
     ), "incorrect distance from on-water reference"
 
