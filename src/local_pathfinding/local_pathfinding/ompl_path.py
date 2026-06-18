@@ -212,7 +212,7 @@ class OMPLPath:
         Raises:
             SystemExit: If the selected land .pkl file cannot be found.
         """
-        on_water_ref_dist_km = cs.calculate_distance_from_on_water_reference(
+        on_water_ref_dist_km = cs.calculate_distance_from_on_water_reference_km(
             local_path_state.position
         )
 
