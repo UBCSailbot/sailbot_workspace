@@ -4,7 +4,7 @@ import importlib
 import os
 from typing import List, Tuple
 
-from launch.actions import DeclareLaunchArgument, OpaqueFunction
+from launch.actions import OpaqueFunction
 from launch.launch_context import LaunchContext
 from launch.launch_description import LaunchDescription
 from launch.some_substitutions_type import SomeSubstitutionsType
