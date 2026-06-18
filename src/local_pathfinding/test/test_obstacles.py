@@ -36,7 +36,7 @@ except RuntimeError as e:
     exit(f"could not load the pkile file {e}")
 
 
-# OFFSHORE_PKL_PATH OBSTACLES ----------------------------------------------------------------------------------
+# OFFSHORE_PKL_PATH OBSTACLES ------------------------------------------------------------------
 @pytest.mark.parametrize(
     "reference_point, sailbot_position, all_land_data, bbox_buffer_amount, land_present",  # noqa
     [
@@ -92,7 +92,7 @@ def test_create_offshore_land(
         assert len(land.collision_zone.geoms) == 0  # type: ignore
 
 
-# ON_WATER_PKL_PATH OBSTACLES ----------------------------------------------------------------------------------
+# ON_WATER_PKL_PATH OBSTACLES -------------------------------------------------------------------
 @pytest.mark.parametrize(
     "reference_point, sailbot_position, all_land_data, bbox_buffer_amount, land_present",  # noqa
     [
