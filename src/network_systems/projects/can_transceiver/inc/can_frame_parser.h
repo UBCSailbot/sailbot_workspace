@@ -150,7 +150,7 @@ static const std::map<CanId, std::string> CAN_DESC{
   {CanId::PWR_MODE, "PWR_MODE (Power Mode)"},
   {CanId::MAIN_HEADING, "MAIN_HEADING (Main heading for rudder)"},
   {CanId::MAIN_TR_TAB, "MAIN_TR_TAB (Trim tab for sail)"},
-  {CanId::MAIN_HEADING, "POWER_OFF (Power will be shut off)"},
+  {CanId::POWER_OFF, "POWER_OFF (Power will be shut off)"},
   {CanId::BMS_DATA_FRAME, "BMS_P_DATA_FRAME (Battery data)"},
   {CanId::RESERVED, "Reserved for mainframe (0x0 - 0x29)"},
   {CanId::SAIL_AIS, "SAIL_AIS (AIS ship data)"},
@@ -376,7 +376,7 @@ private:
 
     // Note: Each BMS battery is comprised of multiple battery cells
     float volt_;  // Average voltage of cells in the battery
-    float curr_;  // Current - positive means charging and negative means discharging (powering the boat)
+    float curr_;  // Current - negative means charging and positive means discharging (powering the boat)
 };
 
 /**
