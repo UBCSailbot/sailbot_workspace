@@ -6,7 +6,8 @@ UBC Sailbot's Jupyter notebooks for researching and exporing implementations.
 
 To get started using notebooks in the devcontainer:
 
-1. run `install_notebook_env.sh`
+1. run `install_notebook_env.sh`, or use the VS Code task **Create Notebook Environment**
+   (`Ctrl+Shift+P` → `Tasks: Run Task` → `Create Notebook Environment`)
 2. ctl + shift + p  `Developer: Reload Window`
 3. open a `.ipynb` file and select the kernel: _Python (notebook_env)_. If
    the kernel env does not appear, try clicking refresh or keep running

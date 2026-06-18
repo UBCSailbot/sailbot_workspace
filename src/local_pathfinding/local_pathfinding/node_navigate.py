@@ -294,6 +294,8 @@ class Sailbot(Node):
                 ais_ships=self.ais_ships,
                 obstacles=helper_obstacles,
                 desired_heading=self.desired_heading,
+                replan_reason=self.local_path.last_replan_reason,
+                remaining_waypoints=self.local_path.last_remaining_waypoints,
             )
         else:
             # in production only publish the local path for website

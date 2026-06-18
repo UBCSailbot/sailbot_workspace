@@ -61,7 +61,7 @@ class WindTracker:
             rolling average was populated, using only one true wind point.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.tw_history: deque = deque(maxlen=WIND_HISTORY_LEN)
         self.tw_avg: Optional[Wind] = None
         self.using_one_tw_point: bool = True
@@ -258,6 +258,14 @@ class LocalPath:
         self._ompl_path: Optional[OMPLPath] = None
         self.path: Optional[ci.Path] = None
         self.state: Optional[LocalPathState] = None
+        self.last_replan_reason: str = ""
+        self.last_remaining_waypoints: int = 0
+
+    def _count_remaining_waypoints(self) -> int:
+        """Returns waypoints remaining on the current path from the current target index."""
+        if self.path is None or not self.path.waypoints:
+            return 0
+        return max(len(self.path.waypoints) - max(self._target_lp_wp_index, 0), 0)
 
     def is_path_expired(self) -> bool:
         """Check if the current path has exceeded the PATH_TTL timeout.
@@ -693,6 +701,10 @@ class LocalPath:
                 )
 
             self._logger.info(f"Updating local path: {must_change_reason.reason}")
+            self.last_remaining_waypoints = self._count_remaining_waypoints()
+            self.last_replan_reason = must_change_reason.reason
+            # Record whether this newly accepted path was generated before the wind average
+            # was available, since the tracker is shared across path states.
             wind_tracker = new_state.wind_tracker  # type: ignore[union-attr]
             wind_tracker.using_one_tw_point = wind_tracker.tw_avg is None
             self.state = new_state
@@ -710,6 +722,9 @@ class LocalPath:
                 raise PathNotFoundError("New Path's desired heading index update failed")
 
             return heading_new_path, new_target_lp_wp_index
+
+        self.last_replan_reason = ""
+        self.last_remaining_waypoints = 0
 
         try:
             self._logger.info(f"Reusing local path: {must_change_reason.reason}")
