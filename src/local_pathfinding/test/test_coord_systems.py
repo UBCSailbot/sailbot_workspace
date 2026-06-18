@@ -196,6 +196,32 @@ def test_latlon_to_xy(ref_lat: float, ref_lon: float, true_bearing_deg: float, d
 
 
 @pytest.mark.parametrize(
+    "true_bearing_deg,dist_km",
+    [
+        (0.0, 0.0),  # reference point itself -> zero distance
+        (0.00, 30.0),  # north
+        (45.0, 30.0),  # northeast
+        (90.0, 5.0),  # east
+        (180.0, 12.5),  # south
+        (-120.0, 100.0),  # arbitrary bearing, larger distance
+    ],
+)
+def test_calculate_distance_from_on_water_reference(true_bearing_deg: float, dist_km: float):
+    """A coordinate placed dist_km away from the reference reports that same distance back."""
+    ref_lat, ref_lon = cs.ON_WATER_REFERENCE
+
+    # place a coordinate a known distance/bearing away from the on-water reference
+    lon, lat, _ = cs.GEODESIC.fwd(
+        lons=ref_lon, lats=ref_lat, az=true_bearing_deg, dist=dist_km * 1000
+    )
+    latlon = ci.HelperLatLon(latitude=lat, longitude=lon)
+
+    assert cs.calculate_distance_from_on_water_reference_km(latlon) == pytest.approx(
+        dist_km
+    ), "incorrect distance from on-water reference"
+
+
+@pytest.mark.parametrize(
     "ref_lat,ref_lon,true_bearing_deg,dist_km",
     [
         (30.0, -123.0, 0.00, 30.0),

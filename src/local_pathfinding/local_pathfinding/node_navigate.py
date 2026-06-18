@@ -316,6 +316,8 @@ class Sailbot(Node):
                 ais_ships=self.ais_ships,
                 obstacles=helper_obstacles,
                 desired_heading=self.desired_heading,
+                replan_reason=self.local_path.last_replan_reason,
+                remaining_waypoints=self.local_path.last_remaining_waypoints,
             )
         else:
             # in production only publish the local path for website
@@ -345,6 +347,11 @@ class Sailbot(Node):
             self.saved_target_global_waypoint = self.global_path.waypoints[
                 self.global_waypoint_index
             ]
+
+        self.get_logger().info(
+            f"Current target global waypoint: {self.saved_target_global_waypoint}"
+            + f"(index {self.global_waypoint_index})"
+        )
 
         # Check if we're close enough to the global waypoint to head to the next one
         _, _, distance_to_waypoint_m = cs.GEODESIC.inv(

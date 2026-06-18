@@ -10,6 +10,7 @@ import custom_interfaces.msg as ci
 
 GEODESIC = Geod(ellps="WGS84")
 PI = math.pi
+ON_WATER_REFERENCE = (49.277065, -123.201474)  # (lat, lon) pier the on-water edge is cut back to
 
 
 class XY(NamedTuple):
@@ -162,6 +163,29 @@ def latlon_to_xy(reference: ci.HelperLatLon, latlon: ci.HelperLatLon) -> XY:
         x=distance * math.sin(true_bearing),
         y=distance * math.cos(true_bearing),
     )
+
+
+def calculate_distance_from_on_water_reference_km(latlon: ci.HelperLatLon) -> float:
+    """Calculate the geodesic distance from the on-water reference point to a coordinate.
+
+    The on-water reference (:data:`ON_WATER_REFERENCE`) is the pier that the on-water edge of
+    the land data is cut back to.
+
+    Args:
+        latlon (ci.HelperLatLon): Coordinate to measure the distance to.
+
+    Returns:
+        float: The geodesic distance between the on-water reference and latlon, in km.
+    """
+    on_water_reference_lat, on_water_reference_lon = ON_WATER_REFERENCE
+
+    _, _, distance_m = GEODESIC.inv(
+        on_water_reference_lon, on_water_reference_lat, latlon.longitude, latlon.latitude
+    )
+
+    distance_km = meters_to_km(distance_m)
+
+    return distance_km
 
 
 def xy_to_latlon(reference: ci.HelperLatLon, xy: XY) -> ci.HelperLatLon:

@@ -40,10 +40,13 @@ MIN_TURNING_RADIUS_KM = 0.05  # 50 m
 # the goal state
 MAX_EDGE_LEN_KM = 0.5
 MAX_SOLVER_RUN_TIME_SEC = 1.0
+MAX_SIMPLIFIER_RUN_TIME_SEC = 0.1
 
 LAND_KEY = -1
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-LAND_PKL_FILE_PATH = os.path.join(CURRENT_DIR, "..", "land", "pkl", "land.pkl")
+OFFSHORE_LAND_PKL_FILE_PATH = os.path.join(CURRENT_DIR, "..", "land", "pkl", "offshore_land.pkl")
+ON_WATER_LAND_PKL_FILE_PATH = os.path.join(CURRENT_DIR, "..", "land", "pkl", "on_water_land.pkl")
+DISTANCE_FROM_ON_WATER_LANDMARK = 20  # 20 km
 DISTANCE_THRESHOLD = 1e-9
 
 
@@ -72,6 +75,7 @@ class OMPLPath:
         parent_logger: RcutilsLogger,
         local_path_state: LocalPathState,
         land_multi_polygon: MultiPolygon = None,
+        should_simplify_path: bool = True
     ):
         """Initialize the OMPLPath Class. Attempt to solve for a path.
 
@@ -88,22 +92,17 @@ class OMPLPath:
         # this needs state
         self._simple_setup = self._init_simple_setup(land_multi_polygon)
 
-        try:
-            self.solved = self._simple_setup.solve(time=MAX_SOLVER_RUN_TIME_SEC)
-        except Exception as e:
-            # solve() can raise from our callbacks or a native dep (shapely/pyproj/numpy/OMPL).
-            # Log the cause + inputs (update_if_needed only catches ValueError), then re-raise.
-            obstacles = OMPLPath.obstacles or {}
-            boat_count = sum(1 for ship_id in obstacles if ship_id != LAND_KEY)
-            self._logger.error(
-                f"OMPL solve raised {type(e).__name__}: {e} | "
-                f"position=({self.state.position.latitude}, {self.state.position.longitude}), "
-                f"goal=({self.state.reference_latlon.latitude}, "
-                f"{self.state.reference_latlon.longitude}), "
-                f"heading={self.state.heading}, speed={self.state.speed}, "
-                f"boats={boat_count}, land={LAND_KEY in obstacles}"
-            )
-            raise
+        self.solved = self._simple_setup.solve(time=MAX_SOLVER_RUN_TIME_SEC)
+        if self.solved and should_simplify_path:
+            obj = self._simple_setup.getOptimizationObjective()
+            original = og.PathGeometric(self._simple_setup.getSolutionPath())
+            original_cost = original.cost(obj).value()
+            self._simple_setup.simplifySolution(MAX_SIMPLIFIER_RUN_TIME_SEC)
+
+            simplified = self._simple_setup.getSolutionPath()
+            simplified_cost = simplified.cost(obj).value()
+            if simplified_cost > original_cost:
+                simplified.assign(original)
 
     @staticmethod
     def init_obstacles(
@@ -170,14 +169,9 @@ class OMPLPath:
             )
 
         if OMPLPath.all_land_data is None:
-            try:
-                OMPLPath.all_land_data = load_pkl(LAND_PKL_FILE_PATH)
-            except (FileNotFoundError, OSError, pickle.UnpicklingError, EOFError) as e:
-                # Required to plan; report the resolved path + error type, not a bare exit.
-                exit(
-                    "could not load the land.pkl file at "
-                    f"{os.path.abspath(LAND_PKL_FILE_PATH)}: {type(e).__name__}: {e}"
-                )
+            # It is unlikely for Polaris to travel from the open ocean into English bay as that
+            # would interfere with Canadian Law.
+            OMPLPath.load_appropriate_land_obstacle(local_path_state)
 
         OMPLPath.obstacles[LAND_KEY] = ob.Land(
             reference=local_path_state.reference_latlon,
@@ -201,6 +195,34 @@ class OMPLPath:
         """
         space = Point(position.x, position.y).buffer(box_buffer_size, cap_style=3, join_style=2)
         return space
+
+    @staticmethod
+    def load_appropriate_land_obstacle(local_path_state: LocalPathState):
+        """Load the land obstacle dataset that best matches the boat's current position.
+
+        The boat's geodesic distance from the on-water reference point is compared against
+        DISTANCE_FROM_ON_WATER_LANDMARK. When the boat is within that threshold the
+        higher-resolution on-water land data is loaded; otherwise the offshore land data is
+        loaded. The result is stored on OMPLPath.all_land_data.
+
+        Args:
+            local_path_state (LocalPathState): Current local path state, providing the boat's
+                position used to select the appropriate land dataset.
+
+        Raises:
+            SystemExit: If the selected land .pkl file cannot be found.
+        """
+        on_water_ref_dist_km = cs.calculate_distance_from_on_water_reference_km(
+            local_path_state.position
+        )
+
+        try:
+            if on_water_ref_dist_km < DISTANCE_FROM_ON_WATER_LANDMARK:
+                OMPLPath.all_land_data = load_pkl(ON_WATER_LAND_PKL_FILE_PATH)
+            else:
+                OMPLPath.all_land_data = load_pkl(OFFSHORE_LAND_PKL_FILE_PATH)
+        except FileNotFoundError as e:
+            exit(f"could not load the land.pkl file {e}")
 
     def get_cost(self) -> float:
         """
@@ -414,18 +436,15 @@ class OMPLPath:
         # Use the wind snapshot stored with this LocalPathState so path planning and
         # later wind-change comparisons share the same baseline.
         if self.state.path_generated_wind is None:
-            current_aw = self.state.current_aw
+            current_tw = self.state.current_tw
         else:
-            current_aw = self.state.path_generated_wind
+            current_tw = self.state.path_generated_wind
 
         space_information = simple_setup.getSpaceInformation()
         self._goal_progress_wind_motion_validator = GoalProgressWindMotionValidator(
             space_information,
             goal_position_in_xy,
-            self.state.heading,
-            self.state.speed,
-            current_aw.dir_deg,
-            current_aw.speed_kmph,
+            current_tw.dir_deg,
         )
         space_information.setMotionValidator(self._goal_progress_wind_motion_validator)
 
@@ -433,11 +452,8 @@ class OMPLPath:
 
         objective = get_sailing_objective(
             space_information,
-            simple_setup,
-            self.state.heading,
-            self.state.speed,
-            current_aw.dir_deg,
-            current_aw.speed_kmph,
+            current_tw.dir_deg,
+            current_tw.speed_kmph,
             goal_position_in_xy,
         )
 
@@ -466,9 +482,12 @@ class OMPLPath:
                     point = cs.XY(state().getX(), state().getY())
                 else:  # when OMPL uses this function, it will pass in an SE2StateInternal object
                     point = cs.XY(state.getX(), state.getY())
-
                 if not o.is_valid(point):
                     # Per-state file logging; guarded so a write error can't crash the solver.
+                    # uncomment this if you want to log which states are being labeled invalid
+                    # its commented out for now to avoid unnecessary file I/O
+                    # uncommented this line in accordance with the comment above for the upcoming
+                    # on-water tests. #TODO: remove this before the final launch.
                     try:
                         log_invalid_state(state=point, obstacle=o)
                     except Exception as e:
