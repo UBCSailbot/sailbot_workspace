@@ -1,0 +1,31 @@
+# On-water test plan — Jericho Beach, English Bay, Vancouver (UBC Sailbot)
+#
+# The global_path below replicates the real GPS track recorded during an on-water
+# test off Jericho/Locarno Beach (gps.csv), downsampled to ~40 m waypoint spacing.
+# The track starts near the Jericho Sailing Centre launch (~49.2755, -123.2011),
+# runs a series of reaches/tacks out into English Bay, and returns to the launch.
+#
+# The `land` polygon approximates the Jericho/Locarno shoreline immediately south
+# of the track, so the planner treats the beach as an obstacle boundary.
+
+# True wind: prevailing summer westerly in English Bay.
+tw_dir_deg: 270
+tw_speed_kmph: 14.0
+
+# Boat starts at the Jericho Sailing Centre launch, heading out (NE) into the bay.
+gps:
+  latitude: 49.277248
+  longitude: -123.197365
+  speed_kmph: 5.0
+  heading_deg: 45.0
+
+
+# The global waypoint makes the sailboat move in a square loop out towards the west and then north and then south.
+# Finally, it goes west until it infront of the ramp (1.65 km away from the ramp)
+global_path:
+  waypoints:
+    - {latitude: 49.278570, longitude: -123.197598}
+    - {latitude: 49.277298, longitude: -123.194027}
+    - {latitude: 49.280927, longitude: -123.189280}
+    - {latitude: 49.283240, longitude: -123.195196}
+    - {latitude: 49.281497, longitude: -123.203312}

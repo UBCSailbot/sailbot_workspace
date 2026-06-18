@@ -2,6 +2,7 @@ import math
 
 import pytest
 
+import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.visualizer as viz
 
@@ -79,7 +80,9 @@ def test_get_unit_vector(vec: cs.XY, expected: cs.XY, expect_unit: bool):
     ],
 )
 def test_build_intermediate_trace(local_x, local_y, expected_x, expected_y, expected_text):
-    t = viz.build_intermediate_trace(local_x, local_y).to_plotly_json()
+    # reference only affects hover lat/lon (customdata), not the plotted x/y asserted below
+    reference = ci.HelperLatLon(latitude=49.0, longitude=-123.0)
+    t = viz.build_intermediate_trace(local_x, local_y, reference).to_plotly_json()
     assert t["x"] == expected_x
     assert t["y"] == expected_y
 
@@ -105,5 +108,5 @@ def test_build_path_trace(local_x, local_y, boat_xy, expect_none):
         j = t.to_plotly_json()
         assert j["mode"] == "lines"
         assert j["name"] == "Path to Goal"
-        assert j["x"] == list(local_x)
-        assert j["y"] == list(local_y)
+        assert j["x"] == [boat_xy[0]] + list(local_x[1:])
+        assert j["y"] == [boat_xy[1]] + list(local_y[1:])

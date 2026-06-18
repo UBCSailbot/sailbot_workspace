@@ -1,16 +1,19 @@
 # Network Systems
 
-This repository contains the source code for all of UBC Sailbot's Network Systems programs. It is made to work as part
-of [Sailbot Workspace](https://github.com/UBCSailbot/sailbot_workspace), and is **_not_** meant to be built as an
-independent project.
+This repository contains the source code for all of UBC Sailbot's Network
+Systems programs. It is made to work as part of
+[Sailbot Workspace](https://github.com/UBCSailbot/sailbot_workspace), and is
+**_not_** meant to be built as an independent project.
 
 ## Setup
 
+<!-- markdownlint-disable-next-line MD013 -->
 For comprehensive setup instructions, follow our [setup guide](https://ubcsailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/usage/setup/).
 
 ## Building
 
-**Option A**: With sailbot_workspace open, invoke the VSCode `build` or `debug` task.
+**Option A**: With sailbot_workspace open, invoke the VSCode `build` or
+`debug` task.
 
 **Option B**: Run `/workspaces/sailbot_workspace/build.sh`
 
@@ -18,6 +21,7 @@ For comprehensive setup instructions, follow our [setup guide](https://ubcsailbo
 
 ### ROS Launch
 
+<!-- markdownlint-disable-next-line MD013 -->
 [Instructions found here.](https://ubcsailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/reference/launch_files/)
 
 For example:
@@ -26,12 +30,15 @@ For example:
 ros2 launch network_systems main_launch.py
 ```
 
-This is the best option if multiple modules need to be run at once. Launch configurations are found under the
-[config](config/) folder. These configurations define which modules to enable/disable and what parameters to use.
+This is the best option if multiple modules need to be run at once. Launch
+configurations are found under the [config](config/) folder. These
+configurations define which modules to enable/disable and what parameters to
+use.
 
 ### ROS Run
 
-If you just want to run a single module, then this is a direct and easy way to do it.
+If you just want to run a single module, then this is a direct and easy way
+to do it.
 
 For example:
 
@@ -41,8 +48,10 @@ ros2 run network_systems example --ros-args -p enabled:=true
 
 ### Binary
 
-Not recommended as you cannot pass ROS parameters, so modules may not work by default. Binaries for each module found
-under [projects](projects/) can be found under
+Not recommended as you cannot pass ROS parameters, so modules may not work by
+default. Binaries for each module found under [projects](projects/) can be
+found under
+<!-- markdownlint-disable-next-line MD013 -->
 `/workspaces/sailbot_workspace/build/network_systems/projects/{module_name}/{module_name}`.
 
 For example:
@@ -53,39 +62,49 @@ For example:
 
 ## Testing
 
-Unit tests specific to Network Systems is done using [GoogleTest](https://github.com/google/googletest). Unit tests
-are defined per module.
+Unit tests specific to Network Systems is done using
+[GoogleTest](https://github.com/google/googletest). Unit tests are defined per
+module.
 
 ### Run All Tests
 
 **Option A**: With sailbot_workspace open, invoke the VSCode `test` task.
 
-**Option B**: Under the sailbot_workspace directory, run `/workspaces/sailbot_workspace/scripts/test.sh`
+**Option B**: Under the sailbot_workspace directory, run
+`/workspaces/sailbot_workspace/scripts/test.sh`
 
-Both options will run all of UBC Sailbot's tests, including those from other projects. More often than not, this is
-unnecessary.
+Both options will run all of UBC Sailbot's tests, including those from other
+projects. More often than not, this is unnecessary.
 
 ### Run and Debug Specific Tests
 
-This is the preferred way to run and debug tests. When you open a test source file like
-[the example's](projects/can_transceiver/test/test_can_transceiver.cpp), there will be green arrows next to each `TEST_F` macro.
-Clicking a double green arrow runs a test suite, while clicking single green arrow runs one unit test. Right clicking
-either arrow will open a prompt with a debug test option. When running a test via the debug option, we can set
-breakpoints and step through our code line by line to resolve issues.
+This is the preferred way to run and debug tests. When you open a test source
+file like
+[the example's](projects/can_transceiver/test/test_can_transceiver.cpp), there
+will be green arrows next to each `TEST_F` macro. Clicking a double green
+arrow runs a test suite, while clicking single green arrow runs one unit test.
+Right clicking either arrow will open a prompt with a debug test option. When
+running a test via the debug option, we can set breakpoints and step through
+our code line by line to resolve issues.
 
 This convenient testing frontend is thank's to the
+<!-- markdownlint-disable-next-line MD013 -->
 [TestMate extension](https://marketplace.visualstudio.com/items?itemName=matepek.vscode-catch2-test-adapter).
 
-**Warning**: Large failing tests can crash VSCode. If this happens, either lower the size of the tests (ex. reduce
-the number of iterations) or [run the test binary directly](#run-test-binaries).
+**Warning**: Large failing tests can crash VSCode. If this happens, either
+lower the size of the tests (ex. reduce the number of iterations) or
+[run the test binary directly](#run-test-binaries).
 
 ### Run Test Binaries
 
 Test binaries for each module found under projects can be found under
+<!-- markdownlint-disable-next-line MD013 -->
 `/workspaces/sailbot_workspace/build/network_systems/projects/{module_name}/test_{module_name}`.
 
 For example:
 
+<!-- markdownlint-disable MD013 -->
 ```bash
 /workspaces/sailbot_workspace/build/network_systems/projects/example/test_example
 ```
+<!-- markdownlint-enable MD013 -->

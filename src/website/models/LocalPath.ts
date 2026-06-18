@@ -36,5 +36,4 @@ LocalPathSchema.set('toJSON', {
   },
 });
 
-export default mongoose.models.LocalPath ||
-  mongoose.model<LocalPath>('LocalPath', LocalPathSchema);
+export default (mongoose.models['LocalPath'] as mongoose.Model<LocalPath> | undefined) ?? mongoose.model<LocalPath>('LocalPath', LocalPathSchema);
