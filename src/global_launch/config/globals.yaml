@@ -19,12 +19,12 @@ mock_ais:
       on_water_test_plan: "on_water_mock_ais.yaml"
 mock_gps:
    ros__parameters:
-      use_gps_noise: True # Enable Gaussian noise on GPS readings.
-      use_ocean_drift: True # Enable cumulative ocean current drift on GPS readings.
-      use_drift_randomization: True # Enable small random variation to the ocean drift current each tick.
-      ocean_drift_speed_kmph: 0.5 # Base speed of the ocean current in km/h over ground.
-      ocean_drift_dir_deg: 45.0 # Direction the current flows toward in degrees (0=north, 90=east). Range is (-180, 180])
-      ocean_drift_accel_kmph2: 0.0 # Acceleration of the drift speed in km/h^2. Set to 0 for constant drift.
+      use_gps_noise: True
+      use_ocean_drift: True
+      use_drift_randomization: True
+      ocean_drift_speed_kmph: 0.5
+      ocean_drift_dir_deg: 45.0
+      ocean_drift_accel_kmph2: 0.0 
 navigate_main:
    ros__parameters:
       path_planner: "rrtstar"
