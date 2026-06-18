@@ -380,6 +380,14 @@
                 "group": "build",
                 "problemMatcher": "$gcc"
             },
+            {
+                "label": "Create Notebook Environment",
+                "detail": "Creates a notebook_env virtual environment with all dependencies needed to run jupyter notebooks in the workspace. Only needs to be run once.",
+                "type": "shell",
+                "command": "${workspaceFolder:sailbot_workspace}/notebooks/install_notebook_env.sh",
+                "group": "build",
+                "problemMatcher": "$gcc"
+            },
             // Test tasks
             {
                 "label": "Test All",

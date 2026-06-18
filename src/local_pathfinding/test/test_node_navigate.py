@@ -1,16 +1,17 @@
 import os
+from unittest import mock
 
 import pytest
 import yaml
 
 import custom_interfaces.msg as ci
-from unittest import mock
 from local_pathfinding.local_path import LocalPath
 import local_pathfinding.local_path as lp
 import local_pathfinding.node_navigate as nn
 
 ONE_DEGREE_KM = 111  # One degree longitude at equator = 111km
-with open(os.getcwd() + "/../global_launch/config/globals.yaml", "r") as f:
+_TEST_DIR = os.path.dirname(os.path.abspath(__file__))
+with open(os.path.join(_TEST_DIR, "..", "..", "global_launch", "config", "globals.yaml")) as f:
     config = yaml.safe_load(f)
 GLOBAL_PATH_SPACING_KM = config["/**"]["ros__parameters"]["global_path_interval_spacing_km"]
 PATH_RANGE_DEG = GLOBAL_PATH_SPACING_KM / ONE_DEGREE_KM
@@ -220,6 +221,55 @@ def test_get_desired_heading_disables_sail_when_path_not_found():
     sailbot.get_logger.return_value.warning.assert_called_once_with(
         "Unable to generate a local path; disabling sail"
     )
+
+
+def make_dev_sailbot():
+    sailbot = mock.Mock()
+    sailbot.mode = "development"
+    sailbot.local_path.state.obstacles = []
+    sailbot.local_path.path = ci.Path()
+    sailbot.global_path = ci.Path()
+    sailbot.gps = ci.GPS()
+    sailbot.filtered_wind_sensor = ci.WindSensor()
+    sailbot.ais_ships = ci.AISShips()
+    sailbot.desired_heading = ci.DesiredHeading()
+    return sailbot
+
+
+def test_publish_local_path_data_replan_reason():
+    sailbot = make_dev_sailbot()
+    sailbot.local_path.last_replan_reason = "Path intersects collision zone"
+    sailbot.local_path.last_remaining_waypoints = 3
+
+    nn.Sailbot.publish_local_path_data(sailbot, True)
+
+    published_msg = sailbot.lpath_data_pub.publish.call_args[0][0]
+    assert published_msg.replan_reason == "Path intersects collision zone"
+    assert published_msg.remaining_waypoints == 3
+
+
+def test_publish_local_path_data_no_replan():
+    sailbot = make_dev_sailbot()
+    sailbot.local_path.last_replan_reason = ""
+    sailbot.local_path.last_remaining_waypoints = 0
+
+    nn.Sailbot.publish_local_path_data(sailbot, True)
+
+    published_msg = sailbot.lpath_data_pub.publish.call_args[0][0]
+    assert published_msg.replan_reason == ""
+    assert published_msg.remaining_waypoints == 0
+
+
+def test_publish_local_path_data_production_mode():
+    sailbot = mock.Mock()
+    sailbot.mode = "production"
+    sailbot.local_path.path = ci.Path()
+
+    nn.Sailbot.publish_local_path_data(sailbot, True)
+
+    published_msg = sailbot.lpath_data_pub.publish.call_args[0][0]
+    assert published_msg.replan_reason == ""
+    assert published_msg.remaining_waypoints == 0
 
 
 @pytest.mark.parametrize(
