@@ -238,21 +238,15 @@ class Sailbot(Node):
             self.get_logger().debug(f"Publishing local path data to {self.lpath_data_pub.topic}")
             self.publish_local_path_data(msg.sail)
         except Exception:
-            # Unexpected error in the pathfinding/publish path: log the cause and the inputs in
-            # flight, fail safe (sail disabled), and keep the node alive.
             self.get_logger().error(
-                "Unexpected error in the pathfinding loop; disabling sail and continuing. "
+                "Unexpected error in the pathfinding loop. "
                 f"gps_lat_lon={self.gps.lat_lon if self.gps is not None else None}, "
                 f"target_global_waypoint={self.saved_target_global_waypoint}, "
                 f"global_waypoint_index={self.global_waypoint_index}, "
                 f"target_lp_wp_index={self.target_lp_wp_index}, planner={self.planner}\n"
                 f"{traceback.format_exc()}"
             )
-            msg = ci.DesiredHeading()
-            msg.heading.heading = 0.0
-            msg.sail = False
-            self.desired_heading = msg
-            self.desired_heading_pub.publish(msg)
+            raise
 
     def publish_local_path_data(self, sail: bool):
         """
@@ -386,6 +380,17 @@ class Sailbot(Node):
                 target_lp_wp_index=self.target_lp_wp_index,
                 received_new_global_waypoint=received_new_global_waypoint,
             )
+
+            local_target_wp = None
+            if self.local_path.path is not None and (
+                0 <= self.target_lp_wp_index < len(self.local_path.path.waypoints)
+            ):
+                local_target_wp = self.local_path.path.waypoints[self.target_lp_wp_index]
+            self.get_logger().info(
+                f"Current target local waypoint: {local_target_wp} "
+                f"(index {self.target_lp_wp_index})"
+            )
+
             return desired_heading, True
         except PathNotFoundError:
             self.get_logger().warning("Unable to generate a local path; disabling sail")

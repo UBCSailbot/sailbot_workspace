@@ -483,15 +483,13 @@ class OMPLPath:
                 else:  # when OMPL uses this function, it will pass in an SE2StateInternal object
                     point = cs.XY(state.getX(), state.getY())
                 if not o.is_valid(point):
-                    # Per-state file logging; guarded so a write error can't crash the solver.
-                    # uncomment this if you want to log which states are being labeled invalid
-                    # its commented out for now to avoid unnecessary file I/O
-                    # uncommented this line in accordance with the comment above for the upcoming
-                    # on-water tests. #TODO: remove this before the final launch.
+                    # Per-state file logging for invalid-state. Log a write failure then re-raise
+                    # TODO: remove before final launch to avoid unbounded disk growth.
                     try:
                         log_invalid_state(state=point, obstacle=o)
-                    except Exception as e:
-                        self._logger.debug(f"log_invalid_state failed: {e}")
+                    except OSError as e:
+                        self._logger.error(f"log_invalid_state write failed: {e}")
+                        raise
                     return False
 
         return True
