@@ -24,23 +24,12 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import dash
 import plotly.graph_objects as go
+import requests
 import yaml
 from dash import dcc, html
 from dash.dependencies import Input, Output, State
+from PIL import Image
 from shapely.geometry import MultiPolygon, Polygon
-
-# Optional dependencies for the OpenStreetMap basemap overlay. They are only needed when the
-# "Show map" toggle is on, so a missing install must not stop the app from loading; add_map_overlay
-# checks OSM_DEPS_AVAILABLE and degrades gracefully.
-try:
-    import requests
-    from PIL import Image
-
-    OSM_DEPS_AVAILABLE = True
-except ImportError:
-    requests = None  # type: ignore[assignment]
-    Image = None  # type: ignore[assignment]
-    OSM_DEPS_AVAILABLE = False
 
 import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
@@ -1573,9 +1562,7 @@ def add_map_overlay(
         vs: VisualizerState (provides the reference lat/lon and state-space fallback bounds).
         last_range: Previously stored axis ranges, used as the view extent when available.
     """
-    if not OSM_DEPS_AVAILABLE:
-        _add_map_message(fig, "Map unavailable (install requests and Pillow)")
-        return
+    _add_map_message(fig, "Map unavailable (install requests and Pillow)")
 
     try:
         x_min, x_max, y_min, y_max = _view_bounds_xy(vs, last_range)

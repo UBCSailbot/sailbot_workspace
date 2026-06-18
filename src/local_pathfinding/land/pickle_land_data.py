@@ -1,7 +1,7 @@
 import argparse
 import os
 import pickle
-from typing import Any, Optional
+from typing import Any
 
 import geopandas as gpd
 import matplotlib
@@ -132,7 +132,7 @@ def pickle_land(source: str = "offshore", cut_to: tuple[float, float] | None = N
         source (str): Which land source to pickle. "offshore" uses the full OSM Pacific
             coastline; "on_water" uses the Vancouver neighbourhood boundaries (mock land for
             on-water test plans).
-        cut_to (tuple[float, float] | None): Optional (lat, lon) point to cut the nearest land
+        cut_to (tuple[float, float] | None): (lat, lon) point to cut the nearest land
             mass back to (e.g. the Jericho Pier) before pickling. Only the polygon whose edge is
             closest to the point is cut; all other land is left unchanged. If None, no cut is
             applied.
