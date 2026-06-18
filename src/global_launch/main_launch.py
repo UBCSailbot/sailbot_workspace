@@ -44,7 +44,7 @@ def resolve_config(filename: str) -> str:
 GLOBAL_LAUNCH_ARGUMENTS = [
     DeclareLaunchArgument(
         name="config",
-        default_value="defaults.yaml",
+        default_value="globals.yaml",
         description="ROS parameter config filename in src/global_launch/config. Controls ROS"
         + " parameters passed into ROS nodes",
     ),
@@ -65,8 +65,9 @@ GLOBAL_LAUNCH_ARGUMENTS = [
     ),
     DeclareLaunchArgument(
         name="test_plan",
-        default_value="basic.yaml",
-        description="Test plan to be used in development mode for local pathfinding.",
+        default_value="",
+        description="Test plan to be used in development mode for local pathfinding. Leave empty"
+        + " to use the test_plan specified in the config file.",
     ),
     DeclareLaunchArgument(
         name="record",

@@ -14,46 +14,6 @@ from launch_ros.actions import Node
 # Local launch arguments and constants
 PACKAGE_NAME = "local_pathfinding"
 
-# Add args with DeclareLaunchArguments object(s) and utilize in setup_launch()
-LOCAL_LAUNCH_ARGUMENTS: List[DeclareLaunchArgument] = [
-    DeclareLaunchArgument(
-        name="use_gps_noise",
-        default_value="true",
-        choices=["true", "false"],
-        description="Enable Gaussian noise on GPS readings.",
-    ),
-    DeclareLaunchArgument(
-        name="use_ocean_drift",
-        default_value="true",
-        choices=["true", "false"],
-        description="Enable cumulative ocean current drift on GPS readings.",
-    ),
-    DeclareLaunchArgument(
-        name="use_drift_randomization",
-        default_value="true",
-        choices=["true", "false"],
-        description="Enable small random variation to the ocean drift current each tick.",
-    ),
-    DeclareLaunchArgument(
-        name="ocean_drift_speed_kmph",
-        default_value="0.5",
-        description="Base speed of the ocean current in km/h over ground.",
-    ),
-    DeclareLaunchArgument(
-        name="ocean_drift_dir_deg",
-        default_value="45.0",
-        description=(
-            "Direction the current flows toward in degrees "
-            "(0=north, 90=east). Range is (-180, 180])"
-        ),
-    ),
-    DeclareLaunchArgument(
-        name="ocean_drift_accel_kmph2",
-        default_value="0.0",
-        description="Acceleration of the drift speed in km/h^2. Set to 0 for constant drift.",
-    ),
-]
-
 
 def generate_launch_description() -> LaunchDescription:
     """The launch file entry point. Generates the launch description for the `local_pathfinding`
@@ -67,7 +27,6 @@ def generate_launch_description() -> LaunchDescription:
         [
             *global_launch_arguments,
             *global_environment_vars,
-            *LOCAL_LAUNCH_ARGUMENTS,
             OpaqueFunction(function=setup_launch),
         ]
     )
@@ -137,7 +96,10 @@ def get_navigate_node_description(context: LaunchContext) -> Node:
     inline_params = {"mode": mode}
 
     if mode == "development":
-        inline_params["test_plan"] = LaunchConfiguration("test_plan").perform(context)
+        test_plan = LaunchConfiguration("test_plan").perform(context)
+        # Only override the config's test_plan when one is explicitly provided.
+        if test_plan:
+            inline_params["test_plan"] = test_plan
 
     ros_parameters = [
         LaunchConfiguration("config").perform(context),
@@ -204,12 +166,11 @@ def get_mock_global_path_node_description(context: LaunchContext) -> Node:
     """
     node_name = "mock_global_path"
     test_plan = LaunchConfiguration("test_plan").perform(context)
-    # Pass the shared params file plus inline mode/test_plan dict so only
-    # the first entry is treated as a parameter file path.
-    ros_parameters = [
-        LaunchConfiguration("config").perform(context),
-        {"test_plan": test_plan},
-    ]
+    # Pass the shared params file, then inline the test_plan override only when one is
+    # explicitly provided so the config file's test_plan is used by default.
+    ros_parameters: list = [LaunchConfiguration("config").perform(context)]
+    if test_plan:
+        ros_parameters.append({"test_plan": test_plan})
     ros_arguments: List[SomeSubstitutionsType] = [
         "--log-level",
         [f"{node_name}:=", LaunchConfiguration("log_level")],
@@ -232,10 +193,9 @@ def get_mock_ais_node_description(context: LaunchContext) -> Node:
     """Gets the launch description for the mock ais node."""
     node_name = "mock_ais"
     test_plan = LaunchConfiguration("test_plan").perform(context)
-    ros_parameters = [
-        LaunchConfiguration("config").perform(context),
-        {"test_plan": test_plan},
-    ]
+    ros_parameters: list = [LaunchConfiguration("config").perform(context)]
+    if test_plan:
+        ros_parameters.append({"test_plan": test_plan})
     ros_arguments: List[SomeSubstitutionsType] = [
         "--log-level",
         [f"{node_name}:=", LaunchConfiguration("log_level")],
@@ -258,10 +218,9 @@ def get_mock_wind_sensor_node_description(context: LaunchContext) -> Node:
     """Gets the launch description for the mock wind sensor node"""
     node_name = "mock_wind_sensor"
     test_plan = LaunchConfiguration("test_plan").perform(context)
-    ros_parameters = [
-        LaunchConfiguration("config").perform(context),
-        {"test_plan": test_plan},
-    ]
+    ros_parameters: list = [LaunchConfiguration("config").perform(context)]
+    if test_plan:
+        ros_parameters.append({"test_plan": test_plan})
     ros_arguments: List[SomeSubstitutionsType] = [
         "--log-level",
         [f"{node_name}:=", LaunchConfiguration("log_level")],
@@ -284,32 +243,14 @@ def get_mock_gps_node_description(context: LaunchContext) -> Node:
     """Gets the launch description for the mock gps node"""
     node_name = "mock_gps"
     test_plan = LaunchConfiguration("test_plan").perform(context)
+    inline_params = {}
 
-    use_gps_noise = LaunchConfiguration("use_gps_noise").perform(context)
-    use_gps_noise_bool = use_gps_noise.lower() in ["true", "1", "yes"]
-
-    use_ocean_drift = LaunchConfiguration("use_ocean_drift").perform(context)
-    use_ocean_drift_bool = use_ocean_drift.lower() in ["true", "1", "yes"]
-
-    use_drift_randomization = LaunchConfiguration("use_drift_randomization").perform(context)
-    use_drift_randomization_bool = use_drift_randomization.lower() in ["true", "1", "yes"]
-
-    ocean_drift_speed_kmph = float(LaunchConfiguration("ocean_drift_speed_kmph").perform(context))
-    ocean_drift_dir_deg = float(LaunchConfiguration("ocean_drift_dir_deg").perform(context))
-    ocean_drift_accel_kmph2 = float(
-        LaunchConfiguration("ocean_drift_accel_kmph2").perform(context)
-    )
+    # Only override the config's test_plan when one is explicitly provided.
+    if test_plan:
+        inline_params["test_plan"] = test_plan
     ros_parameters = [
         LaunchConfiguration("config").perform(context),
-        {
-            "test_plan": test_plan,
-            "use_gps_noise": use_gps_noise_bool,
-            "use_ocean_drift": use_ocean_drift_bool,
-            "use_drift_randomization": use_drift_randomization_bool,
-            "ocean_drift_speed_kmph": ocean_drift_speed_kmph,
-            "ocean_drift_dir_deg": ocean_drift_dir_deg,
-            "ocean_drift_accel_kmph2": ocean_drift_accel_kmph2,
-        },
+        inline_params,
     ]
     ros_arguments: List[SomeSubstitutionsType] = [
         "--log-level",

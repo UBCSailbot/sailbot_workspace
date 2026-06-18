@@ -90,6 +90,13 @@ class MockGPS(Node):
         )
         self._drift_offset_km = cs.XY(0.0, 0.0)  # cumulative offset in km
 
+        self.get_logger().debug(
+            f"ROS2 parameters: use_gps_noise={self._use_noise}, "
+            f"use_ocean_drift={self._use_drift}, use_drift_randomization={self._use_drift_randomization}, "
+            f"ocean_drift_speed_kmph={self._drift_speed_kmph}, ocean_drift_dir_deg={self._drift_dir_deg}, "
+            f"ocean_drift_accel_kmph2={self._drift_accel_kmph2}, pub_period_sec={self.pub_period_sec}"
+        )
+
         # Mock GPS publisher initialization
         self._gps_pub = self.create_publisher(
             msg_type=ci.GPS,
