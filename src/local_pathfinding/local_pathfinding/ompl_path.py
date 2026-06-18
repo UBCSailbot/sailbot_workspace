@@ -89,6 +89,16 @@ class OMPLPath:
         self._simple_setup = self._init_simple_setup(land_multi_polygon)
 
         self.solved = self._simple_setup.solve(time=MAX_SOLVER_RUN_TIME_SEC)
+        if self.solved:
+            obj = self._simple_setup.getOptimizationObjective()
+            original = og.PathGeometric(self._simple_setup.getSolutionPath())
+            original_cost = original.cost(obj).value()
+            self._simple_setup.simplifySolution(0.1)
+
+            simplified = self._simple_setup.getSolutionPath()
+            simplified_cost = simplified.cost(obj).value()
+            if simplified_cost > original_cost:
+                simplified.assign(original)
 
     @staticmethod
     def init_obstacles(
