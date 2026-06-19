@@ -40,4 +40,13 @@ if [ ! -d "$LOG_PATH" ]; then
     sudo mkdir -p "$LOG_PATH"
 fi
 
+# Generate land obstacle data so it is always set up on launch for either on-water testing and offshore launch.
+LAND_SCRIPT="$ROS_WORKSPACE/src/local_pathfinding/land/pickle_land_data.py"
+
+# Before launch (full offshore coastline):
+python3 "$LAND_SCRIPT" --source offshore
+
+# Before on-water testing at Jericho Beach (cut to the pier reference):
+python3 "$LAND_SCRIPT" --source on_water --cut
+
 source "$HOME/.bashrc"

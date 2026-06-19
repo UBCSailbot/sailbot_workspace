@@ -17,6 +17,7 @@ from ompl import base
 from ompl import geometric as og
 from ompl import util as ou
 from rclpy.impl.rcutils_logger import RcutilsLogger
+from rclpy.logging import get_logger
 from shapely.geometry import MultiPolygon, Point, Polygon, box
 
 import custom_interfaces.msg as ci
@@ -29,6 +30,7 @@ if TYPE_CHECKING:
     from local_pathfinding.local_path import LocalPathState
 
 ou.setLogLevel(ou.LOG_WARN)
+_LOGGER = get_logger("OMPLPath")
 
 BOX_BUFFER_SIZE_KM = 2.0
 # for now this is statically defined and subject to change or may be made dynamic
@@ -75,7 +77,7 @@ class OMPLPath:
         parent_logger: RcutilsLogger,
         local_path_state: LocalPathState,
         land_multi_polygon: MultiPolygon = None,
-        should_simplify_path: bool = True
+        should_simplify_path: bool = True,
     ):
         """Initialize the OMPLPath Class. Attempt to solve for a path.
 
@@ -222,7 +224,8 @@ class OMPLPath:
             else:
                 OMPLPath.all_land_data = load_pkl(OFFSHORE_LAND_PKL_FILE_PATH)
         except FileNotFoundError as e:
-            exit(f"could not load the land.pkl file {e}")
+            _LOGGER.warn(f"could not load the land.pkl file {e}")
+            OMPLPath.all_land_data = MultiPolygon()
 
     def get_cost(self) -> float:
         """
