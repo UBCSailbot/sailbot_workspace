@@ -314,9 +314,9 @@ def test_is_state_valid(x: float, y: float, is_valid: bool, fresh_ompl_path):
     ompl_path.OMPLPath.obstacles[1] = boat1
 
     if is_valid:
-        assert ompl_path.OMPLPath.is_state_valid(state), "state should be valid"
+        assert fresh_ompl_path.is_state_valid(state), "state should be valid"
     else:
-        assert not ompl_path.OMPLPath.is_state_valid(state), "state should not be valid"
+        assert not fresh_ompl_path.is_state_valid(state), "state should not be valid"
 
 
 @pytest.mark.parametrize(

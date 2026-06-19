@@ -423,7 +423,7 @@ class OMPLPath:
         )
 
         simple_setup = og.SimpleSetup(space)
-        simple_setup.setStateValidityChecker(base.StateValidityCheckerFn(OMPLPath.is_state_valid))
+        simple_setup.setStateValidityChecker(base.StateValidityCheckerFn(self.is_state_valid))
 
         start = base.State(space)
         goal = base.State(space)
@@ -467,7 +467,7 @@ class OMPLPath:
 
         return simple_setup
 
-    def is_state_valid(state: Union[base.State, base.SE2StateInternal]) -> bool:
+    def is_state_valid(self, state: Union[base.State, base.SE2StateInternal]) -> bool:
         """Evaluate a state to determine if the configuration collides with an environment
         obstacle.
 
@@ -482,23 +482,17 @@ class OMPLPath:
             for o in OMPLPath.obstacles.values():
                 if isinstance(state, base.State):
                     # for testing purposes; the tests use state object
-                    state_is_valid = o.is_valid(cs.XY(state().getX(), state().getY()))
-
+                    point = cs.XY(state().getX(), state().getY())
                 else:  # when OMPL uses this function, it will pass in an SE2StateInternal object
-                    state_is_valid = o.is_valid(cs.XY(state.getX(), state.getY()))
-
-                if not state_is_valid:
-                    # uncomment this if you want to log which states are being labeled invalid
-                    # its commented out for now to avoid unnecessary file I/O
-                    # uncommented this line in accordance with the comment above for the upcoming
-                    # on-water tests. #TODO: remove this before the final launch.
-                    if isinstance(state, base.State):  # only happens in unit tests
-                        log_invalid_state(
-                            state=cs.XY(state().getX(), state().getY()), obstacle=o
-                        )  # noqa
-                    else:  # happens in prod
-                        log_invalid_state(state=cs.XY(state.getX(), state.getY()), obstacle=o)
-
+                    point = cs.XY(state.getX(), state.getY())
+                if not o.is_valid(point):
+                    # Per-state file logging for invalid-state. Log a write failure then re-raise
+                    # TODO: remove before final launch to avoid unbounded disk growth.
+                    try:
+                        log_invalid_state(state=point, obstacle=o)
+                    except OSError as e:
+                        self._logger.error(f"log_invalid_state write failed: {e}")
+                        raise
                     return False
 
         return True

@@ -238,6 +238,10 @@ class LocalPath:
 
     Attributes:
         _logger (RcutilsLogger): ROS logger.
+        _now_sec (Callable[[], float]): Returns an increasing time in seconds, used only for
+            elapsed-time differences (path age / TTL and the switch-duration log). In the running
+            node this is the ROS system clock (seconds since the Unix epoch); it falls back to
+            time.monotonic (arbitrary reference) when no clock is injected, e.g. in tests.
         _ompl_path (Optional[OMPLPath]): Raw representation of the path from OMPL.
         _target_lp_wp_index (int): 0-based array index of the local waypoint Polaris is
             currently heading toward. This is set by update_if_needed. It usually starts at 1
@@ -638,7 +642,7 @@ class LocalPath:
                 # No need to handle anything else here. There is no compulsion for the path to
                 # change so an improper state can be ignored. While not ideal, this is better than
                 # stopping the boat.
-                self._logger.warn(e)
+                self._logger.warn(f"State update did not complete: {e}")
                 boat_lat_lon = self.state.position  # type: ignore
 
         must_change_reason = self.must_change_path(
@@ -677,10 +681,16 @@ class LocalPath:
                     if new_ompl_path.solved:
                         break
                     else:
-                        self._logger.warn("OMPL path generation attempt did not solve")
+                        self._logger.warn(
+                            f"OMPL path generation attempt {tries + 1}/{MAX_OMPL_PATH_GEN_TRIES} "
+                            "did not solve"
+                        )
                         tries += 1
                 except ValueError as e:
-                    self._logger.warn(e)
+                    self._logger.warn(
+                        f"OMPL path generation attempt {tries + 1}/{MAX_OMPL_PATH_GEN_TRIES} "
+                        f"raised ValueError: {e}"
+                    )
                     tries += 1
 
             if not new_ompl_path or not new_ompl_path.solved:
@@ -700,6 +710,11 @@ class LocalPath:
                     + f" within {MAX_OMPL_PATH_GEN_TRIES}"
                 )
 
+            if self.state is not None:
+                time_on_prev_sec = self._now_sec() - self.state.path_generated_time_sec
+                self._logger.info(
+                    f"Previous local path was active for {time_on_prev_sec:.1f}s before switching"
+                )
             self._logger.info(f"Updating local path: {must_change_reason.reason}")
             self.last_remaining_waypoints = self._count_remaining_waypoints()
             self.last_replan_reason = must_change_reason.reason
