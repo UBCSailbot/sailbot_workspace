@@ -42,7 +42,7 @@ fi
 
 # Generate land obstacle data so it is always set up on launch for either on-water testing and offshore launch.
 LAND_SCRIPT="$ROS_WORKSPACE/src/local_pathfinding/land/pickle_land_data.py"
-PKL_DIR="$ROS_WORKSPACE/src/local_pathfinding/land/pkl"
+PKL_DIR="$ROS_WORKSPACE/src/local_pathfinding/land"
 
 # Ensure the output dir (and any existing root-owned .pkl files from a prior run)
 # are writable by the current user so regeneration does not fail with PermissionError.
