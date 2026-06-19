@@ -17,7 +17,6 @@
 __pycache__/
 .mypy_cache/
 .pytest_cache/
-src/local_pathfinding/land/pkl/
 
 # exported plantuml diagrams
 /diagrams/out/
