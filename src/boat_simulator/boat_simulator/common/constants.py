@@ -32,7 +32,7 @@ class PhysicsEngineSubscriptionTopics:
 class PhysicsEnginePublisherTopics:
     GPS: str = "gps"
     KINEMATICS: str = "kinematics"
-    WIND_SENSORS: str = "wind_sensors"
+    FILTERED_WIND_SENSORS: str = "filtered_wind_sensor"
 
 
 @dataclass

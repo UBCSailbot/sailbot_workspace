@@ -4,6 +4,7 @@
 
 import json
 import sys
+from collections import deque
 from typing import Optional
 
 import numpy as np
@@ -24,11 +25,11 @@ from rclpy.subscription import Subscription
 
 import boat_simulator.common.constants as Constants
 import boat_simulator.common.utils as Utils
-from boat_simulator.common.geo_conversions import local_position_to_gps_lat_lon
 from boat_simulator.common.generators import MVGaussianGenerator
+from boat_simulator.common.geo_conversions import local_position_to_gps_lat_lon
 from boat_simulator.common.sensors import SimGPS, SimWindSensor
-from boat_simulator.common.unit_conversions import ConversionFactors
 from boat_simulator.common.types import Scalar
+from boat_simulator.common.unit_conversions import ConversionFactors
 from boat_simulator.nodes.physics_engine.fluid_generation import FluidGenerator
 from boat_simulator.nodes.physics_engine.model import BoatState
 from custom_interfaces.action import SimRudderActuation, SimSailTrimTabActuation
@@ -39,7 +40,6 @@ from custom_interfaces.msg import (
     SailCmd,
     SimWorldState,
     WindSensor,
-    WindSensors,
 )
 
 from .decorators import require_all_subs_active
@@ -93,7 +93,7 @@ class PhysicsEngineNode(Node):
 
     Publishers:
         gps_pub (Publisher): Publishes GPS data in a `GPS` message.
-        wind_sensors_pub (Publisher): Publishes wind sensor data in a `WindSensors` message.
+        wind_sensors_pub (Publisher): Publishes filtered wind data in a `WindSensor` message.
         kinematics_pub (Publisher): Publishes kinematics data in a `SimWorldState` message.
 
     Action Clients:
@@ -192,7 +192,8 @@ class PhysicsEngineNode(Node):
             )
         )
         self.__wind_generator = FluidGenerator(generator=MVGaussianGenerator(wind_mean, wind_cov))
-
+        self.__wind_sensor_readings: deque = deque(maxlen=20)
+        self.__sma_wind = np.zeros(2) # Units: kmph
         current_mean = np.array(
             self.get_parameter("current_generation.mvgaussian_params.mean")
             .get_parameter_value()
@@ -211,7 +212,6 @@ class PhysicsEngineNode(Node):
             generator=MVGaussianGenerator(current_mean, current_cov)
         )
 
-        # No delay in this instance
         sim_wind = self.__wind_generator.next()
         self.__sim_wind_sensor = SimWindSensor(sim_wind, enable_noise=True)
 
@@ -280,8 +280,8 @@ class PhysicsEngineNode(Node):
             qos_profile=self.get_parameter("qos_depth").get_parameter_value().integer_value,
         )
         self.__wind_sensors_pub = self.create_publisher(
-            msg_type=WindSensors,
-            topic=Constants.PHYSICS_ENGINE_PUBLISHERS.WIND_SENSORS,
+            msg_type=WindSensor,
+            topic=Constants.PHYSICS_ENGINE_PUBLISHERS.FILTERED_WIND_SENSORS,
             qos_profile=self.get_parameter("qos_depth").get_parameter_value().integer_value,
         )
         self.__kinematics_pub = self.create_publisher(
@@ -357,10 +357,11 @@ class PhysicsEngineNode(Node):
         boat_state with the new wind and current vectors along with the rudder_angle and
         sail_trim_tab_angle.
         """
-        # Wind parameter in line below introduces noise
-        self.__sim_wind_sensor.wind = self.__wind_generator.next()
+        true_wind_mps = self.__wind_generator.next()
+        mps_to_kmph = ConversionFactors.mPs_to_kmPh.value.forward_convert
+        self.__sim_wind_sensor.wind = mps_to_kmph(true_wind_mps)
         self.__boat_state.step(
-            self.__sim_wind_sensor.wind,
+            true_wind_mps,
             self.__current_generator.next(),
             self.__rudder_angle,
             self.__sail_trim_tab_angle,
@@ -402,22 +403,24 @@ class PhysicsEngineNode(Node):
         )
 
     def __publish_wind_sensors(self):
-        """Publishes mock wind sensor data."""
-        wind1 = self.__sim_wind_sensor.wind
-        wind2 = self.__sim_wind_sensor.wind
+        """Publishes filtered wind sensor data using a simple moving average."""
+        raw_wind = self.__sim_wind_sensor.wind
+        k = self.__wind_sensor_readings.maxlen
+        n = len(self.__wind_sensor_readings)
 
-        mps_to_kmph = ConversionFactors.mPs_to_kmPh.value.forward_convert
+        if n < k:
+            # Queue not yet full: approximate with fixed-window weighted update
+            self.__sma_wind = (self.__sma_wind * (k - 1) + raw_wind[:2]) / k
+        else:
+            # Queue full: incremental SMA — add new, subtract oldest
+            oldest = self.__wind_sensor_readings[0]
+            self.__sma_wind = self.__sma_wind + (raw_wind[:2] - oldest) / k
 
-        windSensor1 = WindSensor()
-        windSensor1.speed.speed = float(mps_to_kmph(Utils.get_wind_speed(wind1)))
-        windSensor1.direction = Utils.get_wind_direction(wind1)
+        self.__wind_sensor_readings.append(raw_wind[:2].copy())
 
-        windSensor2 = WindSensor()
-        windSensor2.speed.speed = float(mps_to_kmph(Utils.get_wind_speed(wind2)))
-        windSensor2.direction = Utils.get_wind_direction(wind2)
-
-        msg = WindSensors()
-        msg.wind_sensors = [windSensor1, windSensor2]
+        msg = WindSensor()
+        msg.speed.speed = float(Utils.get_wind_speed(self.__sma_wind))
+        msg.direction = int(Utils.get_wind_direction(self.__sma_wind))
 
         self.wind_sensors_pub.publish(msg)
         self.get_logger().debug(

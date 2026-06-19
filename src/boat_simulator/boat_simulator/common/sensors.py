@@ -75,63 +75,36 @@ class Sensor:
                 Available keys: {self.__annotations__}")
 
 
-class SimWindSensor(Sensor):
-    """
-    Abstraction for wind sensor.
+class SimWindSensor:
+    """Simulates a single wind sensor that adds Gaussian measurement noise to true wind.
 
-    Properties:
-        wind (ScalarOrArray): Wind x, y components or single value, in meters per
-            second [m/s].
-        enable_noise (bool): Enables noise for fields. False by default.
-        enable_delay (bool): Enables delay for fields. False by default.
+    True wind is a 2D velocity vector (x, y) in km/h. Each access to `.wind` returns a
+    freshly-sampled noisy reading when noise is enabled, so callers can gather statistics
+    over many reads without needing to reset the true wind.
     """
-
-    wind: ScalarOrArray
 
     def __init__(
         self,
-        wind: ScalarOrArray,
-        wind_noise_stdev: List[Scalar] = [1.0, 1.0],
+        wind: NDArray,
+        noise_stdev: List[Scalar] = [1.0, 1.0],
         enable_noise: bool = False,
-        enable_delay: bool = False,
     ) -> None:
-        super().__init__(enable_noise=enable_noise, enable_delay=enable_delay)
-        self._wind = wind
-
-        # TODO: Refactor the initialization of data fields and their respective delay controls.
-        # Warning: this is not easy!
-
-        self.wind_queue_next: bool = False
-        self.wind_next_value: ScalarOrArray = wind
-        self.wind_noisemaker: MVGaussianGenerator = MVGaussianGenerator(
-            mean=np.array([0, 0]), cov=np.diag(np.power(wind_noise_stdev, 2))
+        self._enable_noise = enable_noise
+        self._noise_gen = MVGaussianGenerator(
+            mean=np.zeros(2), cov=np.diag(np.square(noise_stdev))
         )
+        self._true_wind = np.asarray(wind, dtype=float)[:2]
 
-    @property  # type: ignore
-    def wind(self) -> ScalarOrArray:
-        # TODO: Ensure attribute value and noisemakers are using the same value shape.
-        # - wind scalars should add with noise scalars.
-        # - wind vectors should add with noise vectors.
-
-        return (
-            self._wind + self.wind_noisemaker.next()  # type: ignore
-            if self.enable_noise
-            else self._wind
-        )
+    @property
+    def wind(self) -> NDArray:
+        """Returns the sensor reading: true wind plus Gaussian noise if enabled."""
+        noise = self._noise_gen.next() if self._enable_noise else np.zeros(2)
+        return self._true_wind + noise
 
     @wind.setter
-    def wind(self, wind: ScalarOrArray):
-
-        if not self.enable_delay:
-            self._wind = wind
-            return
-
-        if self.wind_queue_next:
-            self._wind = self.wind_next_value
-        else:
-            self.wind_queue_next = True
-
-        self.wind_next_value = wind
+    def wind(self, wind: NDArray) -> None:
+        """Updates the true wind vector."""
+        self._true_wind = np.asarray(wind, dtype=float)[:2]
 
 
 class SimGPS(Sensor):
