@@ -5,13 +5,12 @@ import sys
 from importlib.util import module_from_spec, spec_from_file_location
 from typing import List, Tuple
 
-from launch_ros.actions import Node
-
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, OpaqueFunction, SetEnvironmentVariable
 from launch.launch_context import LaunchContext
 from launch.some_substitutions_type import SomeSubstitutionsType
 from launch.substitutions import LaunchConfiguration
+from launch_ros.actions import Node
 
 # Deal with Python import paths
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -25,7 +24,6 @@ from ros_info import (  # noqa: E402
 # Local launch arguments and constants
 PACKAGE_NAME = "network_systems"
 NAMESPACE = ""
-global_launch_config = ""
 
 # Add args with DeclareLaunchArguments object(s) and utilize in setup_launch()
 LOCAL_LAUNCH_ARGUMENTS: List[DeclareLaunchArgument] = []
@@ -64,8 +62,6 @@ def get_global_launch_arguments() -> Tuple:
     spec.loader.exec_module(module)  # type: ignore[union-attr] # spec is not None
     global_launch_arguments = module.GLOBAL_LAUNCH_ARGUMENTS
     global_environment_vars = module.ENVIRONMENT_VARIABLES
-    global global_launch_config
-    global_launch_config = module.GLOBAL_LAUNCH_CONFIG
 
     return global_launch_arguments, global_environment_vars
 
@@ -104,7 +100,6 @@ def get_mock_ais_description(context: LaunchContext) -> Node:
     """
     node_name = MOCK_AIS_NODE
     ros_parameters = [
-        global_launch_config,
         {"mode": LaunchConfiguration("mode")},
         *LaunchConfiguration("config").perform(context).split(","),
     ]
@@ -136,7 +131,6 @@ def get_can_transceiver_description(context: LaunchContext) -> Node:
     """
     node_name = CAN_TRANSCEIVER_NODE
     ros_parameters = [
-        global_launch_config,
         {"mode": LaunchConfiguration("mode")},
         *LaunchConfiguration("config").perform(context).split(","),
     ]
@@ -168,7 +162,6 @@ def get_remote_transceiver_description(context: LaunchContext) -> Node:
     """
     node_name = REMOTE_TRANSCEIVER_NODE
     ros_parameters = [
-        global_launch_config,
         {"mode": LaunchConfiguration("mode")},
         *LaunchConfiguration("config").perform(context).split(","),
     ]
@@ -200,7 +193,6 @@ def get_local_transceiver_description(context: LaunchContext) -> Node:
     """
     node_name = "local_transceiver_node"
     ros_parameters = [
-        global_launch_config,
         {"mode": LaunchConfiguration("mode")},
         *LaunchConfiguration("config").perform(context).split(","),
     ]

@@ -2,10 +2,10 @@
 /**:
    ros__parameters:
       # Publishers' period (seconds): how often the publishers publish
-      config: "globals.yaml"
+      config: "on_water_globals.yaml" # Name of the global config file
       pub_period_sec: 1.0
       global_path_interval_spacing_km: 3.0
-      test_plan: "basic.yaml"
+      test_plan: "jericho_on_water_test.yaml"
 
 # local_pathfinding parameters
 global_path:
@@ -16,7 +16,7 @@ mock_global_path:
       gps_threshold: 1.5
 mock_ais:
    ros__parameters:
-      on_water_mock_ais: False
+      on_water_mock_ais: True
       on_water_test_plan: "on_water_mock_ais.yaml"
 mock_gps:
    ros__parameters:

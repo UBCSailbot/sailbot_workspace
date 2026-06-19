@@ -77,6 +77,7 @@ class Sailbot(Node):
                 ("path_planner", rclpy.Parameter.Type.STRING),
                 ("test_plan", rclpy.Parameter.Type.STRING),
                 ("global_path_interval_spacing_km", rclpy.Parameter.Type.DOUBLE),
+                ("config", rclpy.Parameter.Type.STRING),
             ],
         )
 
@@ -147,16 +148,34 @@ class Sailbot(Node):
         self.saved_target_global_waypoint = None
         self.mode = self.get_parameter("mode").get_parameter_value().string_value
         self.planner = self.get_parameter("path_planner").get_parameter_value().string_value
+        global_config = self.get_parameter("config").get_parameter_value().string_value
         self.get_logger().debug(f"Got parameter: {self.planner=}")
 
         # Initialize mock land obstacle
         self.land_multi_polygon = None
         if self.mode in ["development", "sim"]:
             self.test_plan = self.get_parameter("test_plan").get_parameter_value().string_value
+
+            if self.test_plan:
+                self.get_logger().warn("User has manually overridden test plan through CLI")
+
             self.get_logger().info("test plan: " + self.test_plan)
             test_plan = TestPlan(self.test_plan)
             self.land_multi_polygon = test_plan.land
             self.get_logger().info("Loaded mock land data.")
+
+        if global_config == "on_water_globals.yaml":
+            self.get_logger().info(
+                f"On water globals config ({global_config}) is successfully loaded "
+            )
+        elif global_config == "launch_globals.yaml":
+            self.get_logger().info(
+                f"Launch globals config ({global_config}) is successfully loaded "
+            )
+        else:
+            self.get_logger().info(
+                f"Default globals config ({global_config}) is successfully loaded "
+            )
 
     def _now_sec(self) -> float:
         """Return the current ROS clock time in seconds."""

@@ -111,9 +111,13 @@ def get_physics_engine_description(context: LaunchContext) -> Node:
         Node: The node object that launches the physics engine node.
     """
     node_name = "physics_engine_node"
+    config_path = LaunchConfiguration("config").perform(context)
     test_plan = LaunchConfiguration("test_plan").perform(context)
+    # An empty test_plan arg means "use the test_plan from the config file".
+    if not test_plan:
+        test_plan = get_test_plan_from_config(config_path)
     ros_parameters = [
-        LaunchConfiguration("config").perform(context),
+        config_path,
         get_sim_gps_origin_parameters(test_plan),
     ]
     ros_arguments: List[SomeSubstitutionsType] = [
@@ -152,6 +156,23 @@ def get_sim_gps_origin_parameters(test_plan: str) -> dict:
     except Exception as exc:
         raise RuntimeError(
             f"Failed to load simulator GPS origin from test plan '{test_plan_path}': {exc}"
+        ) from exc
+
+
+def get_test_plan_from_config(config_path: str) -> str:
+    """Read the test_plan parameter from the global config file.
+
+    Used when the test_plan launch argument is empty so the simulator falls back to the value
+    specified in the config file (under the `/**` wildcard's ros__parameters).
+    """
+    try:
+        with open(config_path, "r") as file:
+            data = yaml.safe_load(file)
+        return data["/**"]["ros__parameters"]["test_plan"]
+    except Exception as exc:
+        raise RuntimeError(
+            f"test_plan launch argument is empty and no test_plan could be read from the config"
+            f" file '{config_path}': {exc}"
         ) from exc
 
 
