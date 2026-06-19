@@ -243,9 +243,7 @@ def test_load_appropriate_land_obstacle(
     lon, lat, _ = cs.GEODESIC.fwd(
         lons=ref_lon, lats=ref_lat, az=0.0, dist=distance_from_reference_km * 1000
     )
-    local_path_state = types.SimpleNamespace(
-        position=HelperLatLon(latitude=lat, longitude=lon)
-    )
+    local_path_state = types.SimpleNamespace(position=HelperLatLon(latitude=lat, longitude=lon))
 
     # avoid depending on the real .pkl contents: record the path that would be loaded
     loaded_paths = []
@@ -266,22 +264,17 @@ def test_load_appropriate_land_obstacle(
         ompl_path.OMPLPath.all_land_data = None
 
 
-def test_load_appropriate_land_obstacle_missing_file_exits(monkeypatch):
-    """A missing land .pkl file causes the process to exit rather than propagate the error."""
-    local_path_state = types.SimpleNamespace(
-        position=HelperLatLon(latitude=0.0, longitude=0.0)
-    )
+def test_load_appropriate_land_obstacle_missing_file_warns(monkeypatch):
+    """A missing land .pkl file logs a warning and falls back to an empty MultiPolygon."""
+    local_path_state = types.SimpleNamespace(position=HelperLatLon(latitude=0.0, longitude=0.0))
 
     def raise_not_found(file_path):
         raise FileNotFoundError(file_path)
 
     monkeypatch.setattr(ompl_path, "load_pkl", raise_not_found)
 
-    try:
-        with pytest.raises(SystemExit):
-            ompl_path.OMPLPath.load_appropriate_land_obstacle(local_path_state)
-    finally:
-        ompl_path.OMPLPath.all_land_data = None
+    ompl_path.OMPLPath.load_appropriate_land_obstacle(local_path_state)
+    assert ompl_path.OMPLPath.all_land_data == MultiPolygon()
 
 
 @pytest.mark.parametrize(
@@ -354,9 +347,7 @@ def test_create_space(
 @pytest.mark.parametrize("boat_latlon", [HelperLatLon(latitude=0.0, longitude=0.0)])
 def test_get_remaining_cost_full_path(fresh_ompl_path, boat_latlon):
     remaining_cost = fresh_ompl_path.get_remaining_cost(1, boat_latlon)
-    assert remaining_cost == pytest.approx(
-        fresh_ompl_path.get_cost(), abs=0.01
-    )
+    assert remaining_cost == pytest.approx(fresh_ompl_path.get_cost(), abs=0.01)
 
 
 @pytest.mark.parametrize(
@@ -405,9 +396,9 @@ def test_get_remaining_cost_partial(fresh_ompl_path, target_wp_index):
     cost_from_next_wp = fresh_ompl_path.get_remaining_cost(target_wp_index + 1, next_wp_latlon)
 
     full_cost = fresh_ompl_path.get_cost()
-    assert cost <= full_cost, (
-        f"Remaining cost {cost} should be less than or equal to full cost {full_cost}"
-    )
+    assert (
+        cost <= full_cost
+    ), f"Remaining cost {cost} should be less than or equal to full cost {full_cost}"
     assert cost > cost_from_next_wp, (
         f"Cost from waypoint {target_wp_index} ({cost}) should be greater than "
         f"cost from waypoint {target_wp_index + 1} ({cost_from_next_wp})"
@@ -437,9 +428,9 @@ def test_get_remaining_cost_no_partial(fresh_ompl_path, target_wp_index):
     cost_from_next_wp = fresh_ompl_path.get_remaining_cost(target_wp_index + 1, next_wp_latlon)
 
     full_cost = fresh_ompl_path.get_cost()
-    assert cost <= full_cost, (
-        f"Remaining cost {cost} should be less than or equal to full cost {full_cost}"
-    )
+    assert (
+        cost <= full_cost
+    ), f"Remaining cost {cost} should be less than or equal to full cost {full_cost}"
     assert cost > cost_from_next_wp, (
         f"Cost from waypoint {target_wp_index} ({cost}) should be greater than "
         f"cost from waypoint {target_wp_index + 1} ({cost_from_next_wp})"
