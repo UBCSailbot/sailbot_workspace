@@ -159,9 +159,7 @@ class BoatState:
 
         # Semi-implicit Euler: update velocity first, then position with the new velocity.
         self.__wing_angular_velocity += angular_acceleration * dt
-        self.__wing_angle = bound_to_180(
-            self.__wing_angle + self.__wing_angular_velocity * dt
-        )
+        self.__wing_angle = bound_to_180(self.__wing_angle + self.__wing_angular_velocity * dt)
 
         _logger.debug(
             f"BS | wing: target={theta_target:.2f} angle={self.__wing_angle:.2f} "
@@ -227,7 +225,7 @@ class BoatState:
             f"tau_z={tau_z:8.2f} N·m"
         )
 
-        return (net_force, tau_z_vector)
+        return (np.array([0.0, 0.0, 0.0]), np.array([0.0, 0.0, 0.0]))  # (net_force, tau_z_vector)
 
     @property
     def wing_angle(self) -> Scalar:
