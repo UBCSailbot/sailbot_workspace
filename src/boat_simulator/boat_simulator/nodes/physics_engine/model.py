@@ -265,6 +265,10 @@ class BoatState:
         return self.__kinematics_computation.global_data.linear_acceleration
 
     @property
+    def global_angular_position(self) -> NDArray:
+        return self.__kinematics_computation.global_data.angular_position
+
+    @property
     def relative_velocity(self) -> NDArray:
         """Returns the boat's current velocity in the relative reference frame,
         expressed in meters per second [m/s]."""

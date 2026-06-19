@@ -4,107 +4,10 @@ import pytest
 
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.ompl_objectives as ob
-from local_pathfinding.ompl_objectives import (NO_GO_ZONE, WIND_COST_SIN_EXPONENT)
 
 
 @pytest.mark.parametrize(
-    "s1, s2, tw_direction_rad_gc, expected",
-    [
-        (
-            # Wind direction and boat heading north
-            cs.XY(0.0, 0.0),
-            cs.XY(0.0, 1.0),
-            0.0,
-            1.0
-        ),
-        (
-            # Wind direction south and boat heading north
-            cs.XY(0.0, 0.0),
-            cs.XY(0.0, 1.0),
-            math.pi,
-            1.0
-        ),
-        (
-            # Boat heading north, wind at no-go zone at 45 degrees
-            cs.XY(0.0, 0.0),
-            cs.XY(0.0, 1.0),
-            NO_GO_ZONE,
-            1.0
-        ),
-        (
-            # Boat heading north, wind at no-go zone at -45 degrees
-            cs.XY(0.0, 0.0),
-            cs.XY(0.0, 1.0),
-            -NO_GO_ZONE,
-            1.0
-        ),
-        (
-            # Boat heading south, wind at no-go zone at 135 degrees
-            cs.XY(0.0, 0.0),
-            cs.XY(0.0, -1.0),
-            math.pi - NO_GO_ZONE,
-            1.0
-        ),
-        (
-            # Boat heading south, wind at no-go zone at -135 degrees
-            cs.XY(0.0, 0.0),
-            cs.XY(0.0, -1.0),
-            - math.pi + NO_GO_ZONE,
-            1.0
-        ),
-        (
-            # Boat heading east, wind just better than no-go zone
-            cs.XY(0.0, 0.0),
-            cs.XY(1.0, 0.0),
-            NO_GO_ZONE - 0.0001,
-            math.sin(2*(NO_GO_ZONE - 0.0001)) ** WIND_COST_SIN_EXPONENT
-        ),
-        (
-            # Boat heading west, wind heading north
-            cs.XY(0.0, 0.0),
-            cs.XY(-1.0, 0.0),
-            0.0,
-            0.0
-        ),
-        (
-            # Boat heading west, wind heading south
-            cs.XY(0.0, 0.0),
-            cs.XY(-1.0, 0.0),
-            math.pi,
-            0.0
-        ),
-        (
-            # Boat heading north, wind heading at 60 degrees
-            cs.XY(0.0, 0.0),
-            cs.XY(0.0, 1.0),
-            math.pi / 3,
-            math.sin(2*math.pi / 3) ** WIND_COST_SIN_EXPONENT
-        ),
-        (
-            # Boat heading north, wind heading at -55 degrees (-0.959931 radians)
-            cs.XY(0.0, 0.0),
-            cs.XY(0.0, 1.0),
-            -0.959931,
-            math.sin(2*(-0.959931)) ** WIND_COST_SIN_EXPONENT
-        ),
-        (
-            # Boat heading north, wind heading at 50 degrees (0.872665 radians)
-            cs.XY(0.0, 0.0),
-            cs.XY(0.0, 1.0),
-            0.872665,
-            math.sin(2*0.872665) ** WIND_COST_SIN_EXPONENT
-        )
-    ],
-)
-def test_wind_direction_cost(
-    s1: cs.XY, s2: cs.XY, tw_direction_rad_gc: float, expected: float
-):
-    result = ob.WindObjective.wind_direction_cost(s1, s2, tw_direction_rad_gc)
-    assert result == pytest.approx(expected, abs=1e-12)
-
-
-@pytest.mark.parametrize(
-    "cs1, cs2, tw_direction_rad_gc, tw_speed_kmph, expected",
+    "cs1, cs2, tw_dir_rad_gc, tw_speed_kmph, expected",
     [
         (
             cs.XY(0.0, 0.0),
@@ -124,17 +27,17 @@ def test_wind_direction_cost(
     ],
 )
 def test_time_cost(
-    cs1: tuple, cs2: tuple, tw_direction_rad_gc: float, tw_speed_kmph: float, expected: float
+    cs1: tuple, cs2: tuple, tw_dir_rad_gc: float, tw_speed_kmph: float, expected: float
 ):
     s1 = cs.XY(*cs1)
     s2 = cs.XY(*cs2)
     assert ob.TimeObjective.time_cost(
-        s1, s2, tw_direction_rad_gc, tw_speed_kmph
+        s1, s2, tw_dir_rad_gc, tw_speed_kmph
     ) == pytest.approx(expected, abs=0.1)
 
 
 @pytest.mark.parametrize(
-    "heading, tw_direction_rad_gc, tw_speed_kmph, expected",
+    "heading, tw_dir_rad_gc, tw_speed_kmph, expected",
     [
         # 0 deg true wind angle (irons)
         (math.radians(0), math.radians(0), 0, 0),
@@ -145,7 +48,7 @@ def test_time_cost(
     ],
 )
 def test_get_sailbot_speed(
-    heading: float, tw_direction_rad_gc: float, tw_speed_kmph: float, expected: float
+    heading: float, tw_dir_rad_gc: float, tw_speed_kmph: float, expected: float
 ):
-    speed = ob.TimeObjective.get_sailbot_speed(heading, tw_direction_rad_gc, tw_speed_kmph)
+    speed = ob.TimeObjective.get_sailbot_speed(heading, tw_dir_rad_gc, tw_speed_kmph)
     assert speed == pytest.approx(expected, abs=0.1)

@@ -1,5 +1,7 @@
 """The main node of the local_pathfinding package, represented by the `Sailbot` class."""
 
+import traceback
+
 import rclpy
 from rclpy.node import Node
 from test_plans.test_plan import TestPlan
@@ -13,6 +15,8 @@ from local_pathfinding.ompl_path import MAX_SOLVER_RUN_TIME_SEC
 
 GLOBAL_WAYPOINT_REACHED_THRESH_M = 300
 REALLY_FAR_M = 100000000
+GPS_TIMEOUT_SEC = 120.0
+NANOSEC_PER_SEC = 1_000_000_000
 
 
 def main(args=None):
@@ -73,6 +77,7 @@ class Sailbot(Node):
                 ("path_planner", rclpy.Parameter.Type.STRING),
                 ("test_plan", rclpy.Parameter.Type.STRING),
                 ("global_path_interval_spacing_km", rclpy.Parameter.Type.DOUBLE),
+                ("config", rclpy.Parameter.Type.STRING),
             ],
         )
 
@@ -133,22 +138,48 @@ class Sailbot(Node):
         self.desired_heading = None
 
         # attributes
-        self.local_path = LocalPath(parent_logger=self.get_logger())
+        self.gps_timeout_start_sec = self._now_sec()
+        self.local_path = LocalPath(
+            parent_logger=self.get_logger(),
+            now_sec=self._now_sec,
+        )
         self.target_lp_wp_index = 1
         self.global_waypoint_index = -1
         self.saved_target_global_waypoint = None
         self.mode = self.get_parameter("mode").get_parameter_value().string_value
         self.planner = self.get_parameter("path_planner").get_parameter_value().string_value
+        global_config = self.get_parameter("config").get_parameter_value().string_value
         self.get_logger().debug(f"Got parameter: {self.planner=}")
 
         # Initialize mock land obstacle
         self.land_multi_polygon = None
-        if self.mode == "development":
+        if self.mode in ["development", "sim"]:
             self.test_plan = self.get_parameter("test_plan").get_parameter_value().string_value
+
+            if self.test_plan:
+                self.get_logger().warn("User has manually overridden test plan through CLI")
+
             self.get_logger().info("test plan: " + self.test_plan)
             test_plan = TestPlan(self.test_plan)
             self.land_multi_polygon = test_plan.land
             self.get_logger().info("Loaded mock land data.")
+
+        if global_config == "on_water_globals.yaml":
+            self.get_logger().info(
+                f"On water globals config ({global_config}) is successfully loaded "
+            )
+        elif global_config == "launch_globals.yaml":
+            self.get_logger().info(
+                f"Launch globals config ({global_config}) is successfully loaded "
+            )
+        else:
+            self.get_logger().info(
+                f"Default globals config ({global_config}) is successfully loaded "
+            )
+
+    def _now_sec(self) -> float:
+        """Return the current ROS clock time in seconds."""
+        return self.get_clock().now().nanoseconds / NANOSEC_PER_SEC
 
     # subscriber callbacks
     def ais_ships_callback(self, msg: ci.AISShips):
@@ -158,6 +189,7 @@ class Sailbot(Node):
     def gps_callback(self, msg: ci.GPS):
         self.get_logger().debug(f"Received data from {self.gps_sub.topic}: {msg}")
         self.gps = msg
+        self.gps_timeout_start_sec = self._now_sec()
 
     def global_path_callback(self, msg: ci.Path):
         self.get_logger().debug(
@@ -175,6 +207,20 @@ class Sailbot(Node):
     def desired_heading_callback(self):
         """Get and publish the desired heading."""
 
+        if self._has_gps_timed_out():
+            msg = ci.DesiredHeading()
+            msg.heading.heading = 0.0
+            msg.sail = False
+
+            self.desired_heading = msg
+
+            self.get_logger().warning(
+                f"GPS data has not been received for more than {GPS_TIMEOUT_SEC:.0f} seconds. "
+                f"Publishing to {self.desired_heading_pub.topic}: {msg.heading.heading}"
+            )
+            self.desired_heading_pub.publish(msg)
+            return  # should not continue, try again next loop
+
         if not self._all_subs_active():
             self._log_inactive_subs_warning()
             msg = ci.DesiredHeading()
@@ -187,30 +233,44 @@ class Sailbot(Node):
             self.desired_heading_pub.publish(msg)
             return  # should not continue, return and try again next loop
 
-        self.update_params()
+        try:
+            self.update_params()
 
-        desired_heading, sail = self.get_desired_heading()
-        msg = ci.DesiredHeading()
-        msg.heading.heading = desired_heading
-        msg.sail = sail
-        if self.desired_heading is None or desired_heading != self.desired_heading.heading.heading:
-            self.get_logger().info(f"Updating desired heading to: {msg.heading.heading:.2f}")
+            desired_heading, sail = self.get_desired_heading()
+            msg = ci.DesiredHeading()
+            msg.heading.heading = desired_heading
+            msg.sail = sail
+            if (
+                self.desired_heading is None
+                or desired_heading != self.desired_heading.heading.heading
+            ):
+                self.get_logger().info(f"Updating desired heading to: {msg.heading.heading:.2f}")
 
-        self.desired_heading = msg
+            self.desired_heading = msg
 
-        self.get_logger().info(
-            f"Publishing to {self.desired_heading_pub.topic}: {msg.heading.heading}, "
-            f"sail == {msg.sail}"  # noqa
-        )
-        self.desired_heading_pub.publish(msg)
+            self.get_logger().info(
+                f"Publishing to {self.desired_heading_pub.topic}: {msg.heading.heading}, "
+                f"sail == {msg.sail}"  # noqa
+            )
+            self.desired_heading_pub.publish(msg)
 
-        self.get_logger().debug(f"Publishing local path data to {self.lpath_data_pub.topic}")
-        self.publish_local_path_data(msg.sail)
+            self.get_logger().debug(f"Publishing local path data to {self.lpath_data_pub.topic}")
+            self.publish_local_path_data(msg.sail)
+        except Exception:
+            self.get_logger().error(
+                "Unexpected error in the pathfinding loop. "
+                f"gps_lat_lon={self.gps.lat_lon if self.gps is not None else None}, "
+                f"target_global_waypoint={self.saved_target_global_waypoint}, "
+                f"global_waypoint_index={self.global_waypoint_index}, "
+                f"target_lp_wp_index={self.target_lp_wp_index}, planner={self.planner}\n"
+                f"{traceback.format_exc()}"
+            )
+            raise
 
     def publish_local_path_data(self, sail: bool):
         """
         Collect all navigation data and publish it in one message.
-        In development mode, all navigation data is published.
+        In development and sim modes, all navigation data is published.
         In production mode, only the local path is published.
 
         """
@@ -224,7 +284,7 @@ class Sailbot(Node):
         )
 
         # publish all navigation data when in dev mode
-        if self.mode == "development":
+        if self.mode in ["development", "sim"]:
             helper_obstacles = []
 
             # state is None until the first successful local path. On a sail-disabled failure it
@@ -269,6 +329,8 @@ class Sailbot(Node):
                 ais_ships=self.ais_ships,
                 obstacles=helper_obstacles,
                 desired_heading=self.desired_heading,
+                replan_reason=self.local_path.last_replan_reason,
+                remaining_waypoints=self.local_path.last_remaining_waypoints,
             )
         else:
             # in production only publish the local path for website
@@ -298,6 +360,11 @@ class Sailbot(Node):
             self.saved_target_global_waypoint = self.global_path.waypoints[
                 self.global_waypoint_index
             ]
+
+        self.get_logger().info(
+            f"Current target global waypoint: {self.saved_target_global_waypoint}"
+            + f"(index {self.global_waypoint_index})"
+        )
 
         # Check if we're close enough to the global waypoint to head to the next one
         _, _, distance_to_waypoint_m = cs.GEODESIC.inv(
@@ -332,6 +399,17 @@ class Sailbot(Node):
                 target_lp_wp_index=self.target_lp_wp_index,
                 received_new_global_waypoint=received_new_global_waypoint,
             )
+
+            local_target_wp = None
+            if self.local_path.path is not None and (
+                0 <= self.target_lp_wp_index < len(self.local_path.path.waypoints)
+            ):
+                local_target_wp = self.local_path.path.waypoints[self.target_lp_wp_index]
+            self.get_logger().info(
+                f"Current target local waypoint: {local_target_wp} "
+                f"(index {self.target_lp_wp_index})"
+            )
+
             return desired_heading, True
         except PathNotFoundError:
             self.get_logger().warning("Unable to generate a local path; disabling sail")
@@ -396,6 +474,12 @@ class Sailbot(Node):
             and self.global_path is not None
             and self.filtered_wind_sensor is not None
         )
+
+    def _has_gps_timed_out(self) -> bool:
+        """Checks if we haven't received a GPS message for more than 2 minutes."""
+
+        elapsed_sec = self._now_sec() - self.gps_timeout_start_sec
+        return elapsed_sec > GPS_TIMEOUT_SEC
 
     def _log_inactive_subs_warning(self):
         """

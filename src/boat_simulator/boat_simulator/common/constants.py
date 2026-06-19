@@ -93,6 +93,10 @@ PHYSICS_ENGINE_PUBLISHERS = PhysicsEnginePublisherTopics()
 # ROS topic names for physics engine subscriptions
 PHYSICS_ENGINE_SUBSCRIPTIONS = PhysicsEngineSubscriptionTopics()
 
+# ROS parameter names for the simulator GPS origin.
+SIM_GPS_ORIGIN_LATITUDE_PARAM = "sim_gps_origin_latitude"
+SIM_GPS_ORIGIN_LONGITUDE_PARAM = "sim_gps_origin_longitude"
+
 # CLI argument name for data collection option
 DATA_COLLECTION_CLI_ARG_NAME = "--enable-data-collection"
 

@@ -17,6 +17,7 @@
 __pycache__/
 .mypy_cache/
 .pytest_cache/
+src/local_pathfinding/land/pkl/
 
 # exported plantuml diagrams
 /diagrams/out/
@@ -41,3 +42,7 @@ site/
 
 # Data Recordings
 notebooks/local_pathfinding/session_recordings/
+
+# Log file Recordings
+src/global_launch/voyage_log/combined_log*.txt
+src/local_pathfinding/local_pathfinding/mock_nodes/wind_params.yaml
