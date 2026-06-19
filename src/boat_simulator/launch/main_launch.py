@@ -5,14 +5,14 @@ import os
 from typing import List, Tuple
 
 import yaml
-from launch_ros.actions import Node
-
-import boat_simulator.common.constants as Constants
 from launch.actions import DeclareLaunchArgument, OpaqueFunction
 from launch.launch_context import LaunchContext
 from launch.launch_description import LaunchDescription
 from launch.some_substitutions_type import SomeSubstitutionsType
 from launch.substitutions import LaunchConfiguration
+from launch_ros.actions import Node
+
+import boat_simulator.common.constants as Constants
 
 # Local launch arguments and constants
 PACKAGE_NAME = "boat_simulator"
@@ -92,6 +92,12 @@ def setup_launch(context: LaunchContext) -> List[Node]:
     Returns:
         List[Node]: Nodes to launch.
     """
+    config = LaunchConfiguration("config").perform(context)
+    if not os.path.isabs(config):
+        ros_workspace = os.getenv("ROS_WORKSPACE", default="/workspaces/sailbot_workspace")
+        config = os.path.join(ros_workspace, "src", "global_launch", "config", config)
+        context.launch_configurations["config"] = config
+
     launch_description_entities = list()
     launch_description_entities.append(get_physics_engine_description(context))
     launch_description_entities.append(get_low_level_control_description(context))
