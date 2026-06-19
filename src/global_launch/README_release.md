@@ -1,3 +1,13 @@
+## Memo: Software Deployment and Launch Checklist
+
+**Software Deployment and Launch Checklist** on Confluence (Software-Wide Home):
+<!-- markdownlint-disable MD013 -->
+> [Software Deployment and Checklist](https://ubcsailbot.atlassian.net/wiki/spaces/prjt22/pages/2986967045/Software+Deployment+and+Launch+Checklist)
+>
+> This README remains the authoritative step-by-step for building the release
+> image and launching global launch.
+>
+<!-- markdownlint-enable MD013 -->
 ## Instructions to deploy our software to the Raspberry Pi
 
 NOTE: This is a copy of $ROS_WORKSPACE/.devocntainer/release/README.md
