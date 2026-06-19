@@ -1,5 +1,7 @@
 """The main node of the local_pathfinding package, represented by the `Sailbot` class."""
 
+import traceback
+
 import rclpy
 from rclpy.node import Node
 from test_plans.test_plan import TestPlan
@@ -231,25 +233,39 @@ class Sailbot(Node):
             self.desired_heading_pub.publish(msg)
             return  # should not continue, return and try again next loop
 
-        self.update_params()
+        try:
+            self.update_params()
 
-        desired_heading, sail = self.get_desired_heading()
-        msg = ci.DesiredHeading()
-        msg.heading.heading = desired_heading
-        msg.sail = sail
-        if self.desired_heading is None or desired_heading != self.desired_heading.heading.heading:
-            self.get_logger().info(f"Updating desired heading to: {msg.heading.heading:.2f}")
+            desired_heading, sail = self.get_desired_heading()
+            msg = ci.DesiredHeading()
+            msg.heading.heading = desired_heading
+            msg.sail = sail
+            if (
+                self.desired_heading is None
+                or desired_heading != self.desired_heading.heading.heading
+            ):
+                self.get_logger().info(f"Updating desired heading to: {msg.heading.heading:.2f}")
 
-        self.desired_heading = msg
+            self.desired_heading = msg
 
-        self.get_logger().info(
-            f"Publishing to {self.desired_heading_pub.topic}: {msg.heading.heading}, "
-            f"sail == {msg.sail}"  # noqa
-        )
-        self.desired_heading_pub.publish(msg)
+            self.get_logger().info(
+                f"Publishing to {self.desired_heading_pub.topic}: {msg.heading.heading}, "
+                f"sail == {msg.sail}"  # noqa
+            )
+            self.desired_heading_pub.publish(msg)
 
-        self.get_logger().debug(f"Publishing local path data to {self.lpath_data_pub.topic}")
-        self.publish_local_path_data(msg.sail)
+            self.get_logger().debug(f"Publishing local path data to {self.lpath_data_pub.topic}")
+            self.publish_local_path_data(msg.sail)
+        except Exception:
+            self.get_logger().error(
+                "Unexpected error in the pathfinding loop. "
+                f"gps_lat_lon={self.gps.lat_lon if self.gps is not None else None}, "
+                f"target_global_waypoint={self.saved_target_global_waypoint}, "
+                f"global_waypoint_index={self.global_waypoint_index}, "
+                f"target_lp_wp_index={self.target_lp_wp_index}, planner={self.planner}\n"
+                f"{traceback.format_exc()}"
+            )
+            raise
 
     def publish_local_path_data(self, sail: bool):
         """
@@ -383,6 +399,17 @@ class Sailbot(Node):
                 target_lp_wp_index=self.target_lp_wp_index,
                 received_new_global_waypoint=received_new_global_waypoint,
             )
+
+            local_target_wp = None
+            if self.local_path.path is not None and (
+                0 <= self.target_lp_wp_index < len(self.local_path.path.waypoints)
+            ):
+                local_target_wp = self.local_path.path.waypoints[self.target_lp_wp_index]
+            self.get_logger().info(
+                f"Current target local waypoint: {local_target_wp} "
+                f"(index {self.target_lp_wp_index})"
+            )
+
             return desired_heading, True
         except PathNotFoundError:
             self.get_logger().warning("Unable to generate a local path; disabling sail")
