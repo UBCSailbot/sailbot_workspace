@@ -36,7 +36,6 @@ from custom_interfaces.action import SimRudderActuation, SimSailTrimTabActuation
 from custom_interfaces.msg import (
     GPS,
     DesiredHeading,
-    HelperLatLon,
     SailCmd,
     SimWorldState,
     WindSensor,
