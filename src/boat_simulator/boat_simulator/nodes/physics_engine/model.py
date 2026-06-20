@@ -63,14 +63,6 @@ class BoatState:
         self.sail_dist = BOAT_PROPERTIES.sail_dist
         self.rudder_dist = BOAT_PROPERTIES.rudder_dist
 
-        # Reduced-order wingsail rotational state. The wing rotates over time toward an
-        # equilibrium angle of attack set by the trim tab deflection (see __update_wing_angle).
-        self.__trim_tab_gain = BOAT_PROPERTIES.trim_tab_gain
-        self.__wingsail_natural_freq = BOAT_PROPERTIES.wingsail_natural_freq
-        self.__wingsail_damping_ratio = BOAT_PROPERTIES.wingsail_damping_ratio
-        self.__wing_angle = None  # degrees, lazily initialized to the wind angle on first step
-        self.__wing_angular_velocity = 0.0  # degrees per second
-
     def step(
         self,
         glo_wind_vel: NDArray,
@@ -103,7 +95,7 @@ class BoatState:
             + f"trim_tab={trim_tab_angle:.2f}"
         )
 
-        sail_angle_deg = self.__update_wing_angle(rel_wind_vel, trim_tab_angle)
+        sail_angle_deg = 0.0
 
         rel_net_force, net_torque = self.__compute_net_force_and_torque(
             rel_wind_vel, rel_water_vel, rudder_angle_deg, sail_angle_deg
@@ -120,54 +112,6 @@ class BoatState:
             return
 
         self.__kinematics_computation.step(rel_net_force, net_torque)
-
-    def __update_wing_angle(self, rel_wind_vel: NDArray, trim_tab_angle: Scalar) -> Scalar:
-        """Advances the wingsail's rotational state by one timestep and returns its new orientation.
-
-        The wingsail is modeled as a damped second-order rotational system whose equilibrium angle
-        of attack is set by the commanded trim tab angle. The wing rotates over time toward that
-        equilibrium rather than snapping to it instantaneously. The sail controller commands the
-        desired angle of attack directly, so the equilibrium AoA equals trim_tab_gain * command.
-
-        Args:
-            rel_wind_vel (NDArray): The apparent wind velocity, expressed in meters per second
-                (m/s), in the same reference frame expected by `MediumForceComputation.compute`.
-            trim_tab_angle (Scalar): The commanded trim tab angle, in degrees.
-
-        Returns:
-            Scalar: The wingsail's current orientation in degrees, using the convention expected by
-                `MediumForceComputation.compute` (0° along +x axis, increasing CCW).
-        """
-        wind_angle = np.degrees(np.arctan2(rel_wind_vel[1], rel_wind_vel[0]))
-
-        # Equilibrium angle of attack set by the tab; compute() defines
-        # AoA = wind_angle - orientation.
-        alpha_eq = self.__trim_tab_gain * trim_tab_angle
-        theta_target = wind_angle - alpha_eq
-
-        if self.__wing_angle is None:
-            # Start aligned with the equilibrium to avoid a spurious startup transient.
-            self.__wing_angle = bound_to_180(theta_target)
-            self.__wing_angular_velocity = 0.0
-            return self.__wing_angle
-
-        dt = self.timestep
-        wn = self.__wingsail_natural_freq
-        zeta = self.__wingsail_damping_ratio
-
-        error = bound_to_180(theta_target - self.__wing_angle)
-        angular_acceleration = wn**2 * error - 2 * zeta * wn * self.__wing_angular_velocity
-
-        # Semi-implicit Euler: update velocity first, then position with the new velocity.
-        self.__wing_angular_velocity += angular_acceleration * dt
-        self.__wing_angle = bound_to_180(self.__wing_angle + self.__wing_angular_velocity * dt)
-
-        _logger.debug(
-            f"BS | wing: target={theta_target:.2f} angle={self.__wing_angle:.2f} "
-            f"vel={self.__wing_angular_velocity:.2f} deg/s aoa={wind_angle - self.__wing_angle}"
-        )
-
-        return self.__wing_angle
 
     def __compute_net_force_and_torque(
         self,
@@ -230,13 +174,6 @@ class BoatState:
         )
 
         return (np.array([0.0, 0.0, 0.0]), np.array([0.0, 0.0, 0.0]))  # (net_force, tau_z_vector)
-
-    @property
-    def wing_angle(self) -> Scalar:
-        """Returns the wingsail's current orientation in degrees, using the convention expected by
-        `MediumForceComputation.compute` (0° along +x axis, increasing CCW). Returns 0.0 before the
-        first `step` initializes the wing state."""
-        return 0.0 if self.__wing_angle is None else self.__wing_angle
 
     @property
     def global_position(self) -> NDArray:

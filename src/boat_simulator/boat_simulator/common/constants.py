@@ -60,13 +60,6 @@ class BoatProperties:
     # A dimensionless scalar representing the drag factor of the hull as a function of the boat's
     # velocity.
     hull_drag_factor: Scalar
-    # Scales the commanded trim tab angle to the wingsail's equilibrium angle of attack (degrees of
-    # AoA per degree of command). The sail controller commands the desired AoA directly, so 1.0.
-    trim_tab_gain: Scalar
-    # Natural frequency of the wingsail's rotational response to the trim tab (in rad/s).
-    wingsail_natural_freq: Scalar
-    # Damping ratio of the wingsail's rotational response (dimensionless).
-    wingsail_damping_ratio: Scalar
     # The mass of the boat (in kilograms).
     mass: Scalar
     # The inertia of the boat (in kilograms-meters squared).
@@ -228,12 +221,6 @@ BOAT_PROPERTIES = BoatProperties(
     sail_dist=0.5,
     rudder_dist=1.0,
     hull_drag_factor=0.5,
-    # TODO Placeholder wingsail dynamics tuning values, replace with measured/identified values.
-    # The sail controller commands the desired angle of attack directly (LUT outputs ~6-10 deg),
-    # so the equilibrium AoA equals the command and the gain is 1.0.
-    trim_tab_gain=1.0,
-    wingsail_natural_freq=3.0,
-    wingsail_damping_ratio=0.7,
     mass=225.0,
     inertia=np.array([[125, 0, 0], [0, 1125, 0], [0, 0, 500]], dtype=np.float32),
 )
