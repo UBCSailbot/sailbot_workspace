@@ -97,6 +97,10 @@ constexpr float SOG_SPEED_UBND  = 200.0;  // Arbitrary number (kmph)
 constexpr float HEADING_LBND = 0.0;
 constexpr float HEADING_UBND = 360.0;
 
+/***** Bounds for Rudder Angle ******/
+constexpr float RUDDER_ANGLE_LBND = -90.0;
+constexpr float RUDDER_ANGLE_UBND = 90.0;
+
 /***** Bounds for Trim Tab *****/
 constexpr float TRIM_LBND = -40.0;
 constexpr float TRIM_UBND = 40.0;

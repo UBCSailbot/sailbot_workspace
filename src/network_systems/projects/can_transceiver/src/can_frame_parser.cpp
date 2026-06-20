@@ -754,11 +754,10 @@ DesiredHeading::DesiredHeading(const CanFrame & cf) : DesiredHeading(static_cast
     //                            1 = manual rudder mode ((Rudder Angle + 90) * 1000)
     uint8_t steering_selection_bit_mask = 0b10000000;  //NOLINT(readability-magic-numbers)
     bool    steering_selection          = (raw_steering & steering_selection_bit_mask) != 0;
-
     if (steering_selection) {
-        heading_ = static_cast<float>(raw_heading + 90) * 1000.0f;  //NOLINT(readability-magic-numbers)
+        heading_ = static_cast<float>(raw_heading) / 1000.0F - 90.0F;  //NOLINT(readability-magic-numbers)
     } else {
-        heading_ = static_cast<float>(raw_heading) * 1000.0f;  //NOLINT(readability-magic-numbers)
+        heading_ = static_cast<float>(raw_heading) / 1000.0F;  //NOLINT(readability-magic-numbers)
     }
 
     steering_ = raw_steering;
@@ -786,8 +785,12 @@ msg::DesiredHeading DesiredHeading::toRosMsg() const
 
 CanFrame DesiredHeading::toLinuxCan() const
 {
-    uint32_t raw_heading  = static_cast<uint32_t>(heading_ * 1000);  //NOLINT(readability-magic-numbers)
-    uint8_t  raw_steering = steering_;
+    uint8_t  steering_selection_bit_mask = 0b10000000;  //NOLINT(readability-magic-numbers)
+    bool     is_rudder_mode              = (steering_ & steering_selection_bit_mask) != 0;
+    uint32_t raw_heading                 = is_rudder_mode
+                                             ? static_cast<uint32_t>((heading_ + 90.0F) * 1000)  //NOLINT(readability-magic-numbers)
+                                             : static_cast<uint32_t>(heading_ * 1000);  //NOLINT(readability-magic-numbers)
+    uint8_t  raw_steering                = steering_;
 
     CanFrame cf = BaseFrame::toLinuxCan();
     std::memcpy(cf.data + BYTE_OFF_HEADING, &raw_heading, sizeof(uint32_t));
