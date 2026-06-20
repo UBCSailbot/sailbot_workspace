@@ -5,14 +5,14 @@ import os
 from typing import List, Tuple
 
 import yaml
-from launch_ros.actions import Node
-
-import boat_simulator.common.constants as Constants
 from launch.actions import DeclareLaunchArgument, OpaqueFunction
 from launch.launch_context import LaunchContext
 from launch.launch_description import LaunchDescription
 from launch.some_substitutions_type import SomeSubstitutionsType
 from launch.substitutions import LaunchConfiguration
+from launch_ros.actions import Node
+
+import boat_simulator.common.constants as Constants
 
 # Local launch arguments and constants
 PACKAGE_NAME = "boat_simulator"
@@ -92,6 +92,12 @@ def setup_launch(context: LaunchContext) -> List[Node]:
     Returns:
         List[Node]: Nodes to launch.
     """
+    config = LaunchConfiguration("config").perform(context)
+    if not os.path.isabs(config):
+        ros_workspace = os.getenv("ROS_WORKSPACE", default="/workspaces/sailbot_workspace")
+        config = os.path.join(ros_workspace, "src", "global_launch", "config", config)
+        context.launch_configurations["config"] = config
+
     launch_description_entities = list()
     launch_description_entities.append(get_physics_engine_description(context))
     launch_description_entities.append(get_low_level_control_description(context))
@@ -111,9 +117,13 @@ def get_physics_engine_description(context: LaunchContext) -> Node:
         Node: The node object that launches the physics engine node.
     """
     node_name = "physics_engine_node"
+    config_path = LaunchConfiguration("config").perform(context)
     test_plan = LaunchConfiguration("test_plan").perform(context)
+    # An empty test_plan arg means "use the test_plan from the config file".
+    if not test_plan:
+        test_plan = get_test_plan_from_config(config_path)
     ros_parameters = [
-        LaunchConfiguration("config").perform(context),
+        config_path,
         get_sim_gps_origin_parameters(test_plan),
     ]
     ros_arguments: List[SomeSubstitutionsType] = [
@@ -152,6 +162,23 @@ def get_sim_gps_origin_parameters(test_plan: str) -> dict:
     except Exception as exc:
         raise RuntimeError(
             f"Failed to load simulator GPS origin from test plan '{test_plan_path}': {exc}"
+        ) from exc
+
+
+def get_test_plan_from_config(config_path: str) -> str:
+    """Read the test_plan parameter from the global config file.
+
+    Used when the test_plan launch argument is empty so the simulator falls back to the value
+    specified in the config file (under the `/**` wildcard's ros__parameters).
+    """
+    try:
+        with open(config_path, "r") as file:
+            data = yaml.safe_load(file)
+        return data["/**"]["ros__parameters"]["test_plan"]
+    except Exception as exc:
+        raise RuntimeError(
+            f"test_plan launch argument is empty and no test_plan could be read from the config"
+            f" file '{config_path}': {exc}"
         ) from exc
 
 
