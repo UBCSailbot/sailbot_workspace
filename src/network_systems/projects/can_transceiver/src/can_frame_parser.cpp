@@ -78,8 +78,8 @@ CanFrame BaseFrame::toLinuxCan() const { return CanFrame{.can_id = static_cast<c
 
 Battery::Battery(const CanFrame & cf) : Battery(static_cast<CanId>(cf.can_id))
 {
-    int32_t raw_volt;
-    int32_t raw_curr;
+    uint32_t raw_volt;
+    int32_t  raw_curr;
 
     std::memcpy(&raw_volt, cf.data + BYTE_OFF_VOLT, sizeof(int32_t));
     std::memcpy(&raw_curr, cf.data + BYTE_OFF_CURR, sizeof(int32_t));
@@ -107,8 +107,8 @@ msg::HelperBattery Battery::toRosMsg() const
 
 CanFrame Battery::toLinuxCan() const
 {
-    int32_t raw_volt = static_cast<int32_t>(volt_ * 100);  // NOLINT(readability-magic-numbers)
-    int32_t raw_curr = static_cast<int32_t>(curr_ * 100);  // NOLINT(readability-magic-numbers)
+    uint32_t raw_volt = static_cast<int32_t>(volt_ * 100);  // NOLINT(readability-magic-numbers)
+    int32_t  raw_curr = static_cast<int32_t>(curr_ * 100);  // NOLINT(readability-magic-numbers)
 
     CanFrame cf = BaseFrame::toLinuxCan();
     std::memcpy(cf.data + BYTE_OFF_VOLT, &raw_volt, sizeof(int32_t));
@@ -230,11 +230,11 @@ void MainTrimTab::checkBounds() const
 
 WindSensor::WindSensor(const CanFrame & cf) : WindSensor(static_cast<CanId>(cf.can_id))
 {
-    int16_t raw_wind_speed;
-    int16_t raw_wind_dir;
+    uint16_t raw_wind_speed;
+    uint16_t raw_wind_dir;
 
-    std::memcpy(&raw_wind_speed, cf.data + BYTE_OFF_SPEED, sizeof(int16_t));
-    std::memcpy(&raw_wind_dir, cf.data + BYTE_OFF_ANGLE, sizeof(int16_t));
+    std::memcpy(&raw_wind_speed, cf.data + BYTE_OFF_SPEED, sizeof(uint16_t));
+    std::memcpy(&raw_wind_dir, cf.data + BYTE_OFF_ANGLE, sizeof(uint16_t));
 
     // convert knots to kmph before setting value
     wind_speed_ = static_cast<float>(raw_wind_speed * 1.852 / 10.0);  // NOLINT(readability-magic-numbers)
@@ -264,8 +264,8 @@ msg::WindSensor WindSensor::toRosMsg() const
 CanFrame WindSensor::toLinuxCan() const
 {
     // convert kmph to knots before setting value
-    int16_t raw_wind_speed = static_cast<int16_t>(wind_speed_ * 10 / 1.852);  // NOLINT(readability-magic-numbers)
-    int16_t raw_wind_dir   = static_cast<int16_t>(wind_angle_);
+    uint16_t raw_wind_speed = static_cast<uint16_t>(wind_speed_ * 10 / 1.852);  // NOLINT(readability-magic-numbers)
+    uint16_t raw_wind_dir   = static_cast<uint16_t>(wind_angle_);
 
     CanFrame cf = BaseFrame::toLinuxCan();
     std::memcpy(cf.data + BYTE_OFF_SPEED, &raw_wind_speed, sizeof(int16_t));
@@ -447,13 +447,13 @@ void GPS::checkBounds() const
 
 AISShips::AISShips(const CanFrame & cf) : AISShips(static_cast<CanId>(cf.can_id))
 {
-    int32_t  raw_id;  // CAN documentation says id is uint32, but custom interfaces says its int32
+    uint32_t raw_id;  // CAN documentation says id is uint32, but custom interfaces says its int32
     uint32_t raw_lat;
     uint32_t raw_lon;
     uint16_t raw_speed;
     uint16_t raw_course;
     uint16_t raw_heading;
-    int8_t   raw_rot;
+    uint8_t  raw_rot;
     uint16_t raw_length;
     uint16_t raw_width;
     uint8_t  raw_idx;
@@ -475,8 +475,8 @@ AISShips::AISShips(const CanFrame & cf) : AISShips(static_cast<CanId>(cf.can_id)
     lat_       = static_cast<float>(raw_lat / 1000000.0 - 90);     //NOLINT(readability-magic-numbers)
     lon_       = static_cast<float>(raw_lon / 1000000.0 - 180.0);  //NOLINT(readability-magic-numbers)
     speed_     = static_cast<float>(raw_speed / 10.0 * 1.852);     //NOLINT(readability-magic-numbers)
-    rot_       = raw_rot;
-    course_    = static_cast<float>(raw_course / 10.0);  //NOLINT(readability-magic-numbers)
+    rot_       = static_cast<int8_t>(raw_rot - 128);               //NOLINT(readability-magic-numbers)
+    course_    = static_cast<float>(raw_course / 10.0);            //NOLINT(readability-magic-numbers)
     heading_   = raw_heading;
     idx_       = raw_idx;
     width_     = raw_width;
@@ -546,7 +546,7 @@ CanFrame AISShips::toLinuxCan() const
     uint16_t raw_speed     = static_cast<int16_t>(std::round(speed_ / 1.852 * 10));  //NOLINT(readability-magic-numbers)
     uint16_t raw_course    = static_cast<int16_t>(course_ * 10);                     //NOLINT(readability-magic-numbers)
     uint16_t raw_heading   = static_cast<int16_t>(heading_);
-    int8_t   raw_rot       = rot_;
+    uint8_t  raw_rot       = rot_ + 128;  //NOLINT(readability-magic-numbers)
     uint16_t raw_length    = static_cast<int16_t>(length_);
     uint16_t raw_width     = static_cast<int16_t>(width_);
     uint8_t  raw_idx       = idx_;
@@ -749,7 +749,18 @@ DesiredHeading::DesiredHeading(const CanFrame & cf) : DesiredHeading(static_cast
     std::memcpy(&raw_heading, cf.data + BYTE_OFF_HEADING, sizeof(uint32_t));
     std::memcpy(&raw_steering, cf.data + BYTE_OFF_STEERING, sizeof(uint8_t));
 
-    heading_  = static_cast<float>(raw_heading) / 1000;  //NOLINT(readability-magic-numbers)
+    // Status byte format ab000000:
+    // a) Steering selection bit: 0 = heading mode (Desired Heading * 1000)
+    //                            1 = manual rudder mode ((Rudder Angle + 90) * 1000)
+    uint8_t steering_selection_bit_mask = 0b10000000;  //NOLINT(readability-magic-numbers)
+    bool    steering_selection          = (raw_steering & steering_selection_bit_mask) != 0;
+
+    if (steering_selection) {
+        heading_ = static_cast<float>(raw_heading + 90) * 1000.0f;  //NOLINT(readability-magic-numbers)
+    } else {
+        heading_ = static_cast<float>(raw_heading) * 1000.0f;  //NOLINT(readability-magic-numbers)
+    }
+
     steering_ = raw_steering;
 
     checkBounds();
@@ -775,7 +786,7 @@ msg::DesiredHeading DesiredHeading::toRosMsg() const
 
 CanFrame DesiredHeading::toLinuxCan() const
 {
-    uint32_t raw_heading  = static_cast<uint32_t>(heading_) * 1000;  //NOLINT(readability-magic-numbers)
+    uint32_t raw_heading  = static_cast<uint32_t>(heading_ * 1000);  //NOLINT(readability-magic-numbers)
     uint8_t  raw_steering = steering_;
 
     CanFrame cf = BaseFrame::toLinuxCan();
