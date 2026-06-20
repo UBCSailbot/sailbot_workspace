@@ -60,6 +60,12 @@ def setup_launch(context: LaunchContext) -> List[Node]:
     Returns:
         List[Node]: Nodes to launch.
     """
+    config = LaunchConfiguration("config").perform(context)
+    if not os.path.isabs(config):
+        ros_workspace = os.getenv("ROS_WORKSPACE", default="/workspaces/sailbot_workspace")
+        config = os.path.join(ros_workspace, "src", "global_launch", "config", config)
+        context.launch_configurations["config"] = config
+
     mode = LaunchConfiguration("mode").perform(context)
     on_water_mock_ais = LaunchConfiguration("on_water_mock_ais").perform(context)
     launch_description_entities = []

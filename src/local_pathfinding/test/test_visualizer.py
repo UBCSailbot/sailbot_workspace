@@ -1,4 +1,5 @@
 import math
+from types import SimpleNamespace
 
 import pytest
 
@@ -66,6 +67,22 @@ def test_get_unit_vector(vec: cs.XY, expected: cs.XY, expect_unit: bool):
     if expect_unit:
         mag = math.hypot(result.x, result.y)
         assert mag == pytest.approx(1.0), "magnitude of unit vector is not 1"
+
+
+def test_wind_box_is_below_main_plot():
+    vs = SimpleNamespace(
+        aw_vector_kmph=cs.XY(1.0, 0.0),
+        tw_vector_kmph=cs.XY(0.0, 1.0),
+        bw_vector_kmph=cs.XY(-1.0, 0.0),
+    )
+    wind_config = viz.configure_wind_box_elements(vs)
+    fig = viz.initial_plot()
+    viz.apply_layout(vs, fig, zoom_needed=False, last_range=None)
+
+    wind_y_domain = wind_config.layout_config["yaxis2"]["domain"]
+    assert wind_y_domain[1] < fig.layout.yaxis.domain[0]
+    assert wind_config.background_info["y0"] == wind_y_domain[0]
+    assert wind_config.background_info["y1"] == wind_y_domain[1]
 
 
 # --------------------------------------
