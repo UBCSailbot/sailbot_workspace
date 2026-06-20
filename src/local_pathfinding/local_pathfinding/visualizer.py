@@ -41,12 +41,15 @@ UPDATE_INTERVAL_MS = 2500
 DEFAULT_PLOT_RANGE = [-100.0, 100.0]
 BOX_BUFFER_SIZE_KM = 1.0
 
-WIND_BOX_X_DOMAIN = (0.76, 0.99)
-WIND_BOX_Y_DOMAIN = (0.00, 0.22)
+# Preserve the compact wind inset's width while centering it beneath the main plot.
+WIND_BOX_X_DOMAIN = (0.385, 0.615)
+# Keep the inset below the axis-title band and the main plot.
+WIND_BOX_Y_DOMAIN = (0.02, 0.24)
 WIND_BOX_RANGE = (-10, 10)
 
 WIND_ARROW_LEN = 4.0
-WIND_BOX_ORIGIN_XY = cs.XY(6.0, 0.0)
+# Leave the labels on the left and center the vector indicators in the remaining space.
+WIND_BOX_ORIGIN_XY = cs.XY(3.0, 0.0)
 WIND_BOX_Y_OFFSET = 0.5
 
 GOAL_CHANGE_ROUND_DECIMALS = 3  # avoid float jitter spam
@@ -81,6 +84,7 @@ _osm_overlay_cache: Dict[Any, Tuple[Any, Tuple[float, float, float, float]]] = {
 
 
 BASE_DIR = Path(__file__).resolve().parent
+ASSETS_DIR = BASE_DIR.parents[2] / "docs" / "assets"
 MOCK_NODES_DIR = BASE_DIR / "mock_nodes"
 WIND_PARAMS_YAML = MOCK_NODES_DIR / "wind_params.yaml"
 WIND_PARAMS_SH = MOCK_NODES_DIR / "wind_params.sh"
@@ -89,7 +93,13 @@ WIND_PARAMS_SH = MOCK_NODES_DIR / "wind_params.sh"
 # frame immediately instead of waiting for the next ROS message.
 _latest_vs: Optional["VisualizerState"] = None
 
-app = dash.Dash(__name__)
+app = dash.Dash(__name__, assets_folder=str(ASSETS_DIR))
+# Dash only auto-detects ``favicon.ico``. The repository favicon is a PNG, so replace the
+# generated favicon placeholder with an explicit link while retaining Dash's URL-prefix handling.
+app.index_string = app.index_string.replace(
+    "{%favicon%}",
+    f'<link rel="icon" type="image/png" href="{app.get_asset_url("images/favicon.png")}">',
+)
 queue: Optional[Queue] = None  # type: ignore
 
 
@@ -1094,8 +1104,8 @@ def configure_wind_box_elements(vs: VisualizerState) -> WindBoxConfig:
             "font": {"size": 12, "color": "black"},
         },
         {
-            "x": 6,
-            "y": 0,
+            "x": origin_x,
+            "y": origin_y,
             "xref": "x2",
             "yref": "y2",
             "showarrow": False,
@@ -1190,7 +1200,9 @@ def apply_layout(
             preserve the default plot behavior.
     """
     xaxis: Dict[str, Any] = dict(domain=[0.0, 0.98])
-    yaxis: Dict[str, Any] = dict(domain=[0.30, 1.0])
+    # Reserve the lower portion for the centered wind inset.  The gap from 0.24 to 0.38 gives
+    # Plotly enough room to render the X-axis ticks and title without touching the inset.
+    yaxis: Dict[str, Any] = dict(domain=[0.38, 1.0])
     if show_map:
         # scaleanchor/scaleratio keep 1 km on X the same on-screen size as 1 km on Y so the
         # basemap is not distorted. Only applied with the map on, to keep the default look.
@@ -1290,9 +1302,7 @@ def build_figure(
     path_trace = build_path_trace(local_x_km, local_y_km, boat_xy_km)
     if path_trace is not None:
         fig.add_trace(path_trace)
-    fig.add_trace(
-        build_ompl_yaw_trace(local_x_km, local_y_km, vs.final_local_wp_headings_deg)
-    )
+    fig.add_trace(build_ompl_yaw_trace(local_x_km, local_y_km, vs.final_local_wp_headings_deg))
 
     # Adding Obstacle (both Land and Boat) and AIS ships to the plot
     land_traces = build_polygon_traces(
@@ -1480,20 +1490,50 @@ def apply_gps_params(
     drift_accel_kmph2: float,
 ) -> None:
     """Apply GPS simulation parameters to the live mock_gps ROS node via ros2 param set."""
-    params = [
-        ("use_gps_noise", str(use_gps_noise).lower()),
-        ("use_ocean_drift", str(use_ocean_drift).lower()),
-        ("use_drift_randomization", str(use_drift_randomization).lower()),
-        ("ocean_drift_speed_kmph", str(float(drift_speed_kmph))),
-        ("ocean_drift_dir_deg", str(float(drift_dir_deg))),
-        ("ocean_drift_accel_kmph2", str(float(drift_accel_kmph2))),
-    ]
+    _apply_mock_gps_params(
+        [
+            ("use_gps_noise", str(use_gps_noise).lower()),
+            ("use_ocean_drift", str(use_ocean_drift).lower()),
+            ("use_drift_randomization", str(use_drift_randomization).lower()),
+            ("ocean_drift_speed_kmph", str(float(drift_speed_kmph))),
+            ("ocean_drift_dir_deg", str(float(drift_dir_deg))),
+            ("ocean_drift_accel_kmph2", str(float(drift_accel_kmph2))),
+        ]
+    )
+
+
+def _apply_mock_gps_params(params: List[Tuple[str, str]]) -> None:
+    """Set one or more parameters on the live mock GPS node."""
     for param_name, value in params:
         subprocess.run(
             ["ros2", "param", "set", "/mock_gps", param_name, value],
             check=True,
             capture_output=True,
         )
+
+
+def apply_gps_noise_param(use_gps_noise: bool) -> None:
+    """Apply the GPS-noise toggle without changing ocean-drift settings."""
+    _apply_mock_gps_params([("use_gps_noise", str(use_gps_noise).lower())])
+
+
+def apply_drift_params(
+    use_ocean_drift: bool,
+    use_drift_randomization: bool,
+    drift_speed_kmph: float,
+    drift_dir_deg: float,
+    drift_accel_kmph2: float,
+) -> None:
+    """Apply ocean-drift settings without changing the GPS-noise setting."""
+    _apply_mock_gps_params(
+        [
+            ("use_ocean_drift", str(use_ocean_drift).lower()),
+            ("use_drift_randomization", str(use_drift_randomization).lower()),
+            ("ocean_drift_speed_kmph", str(float(drift_speed_kmph))),
+            ("ocean_drift_dir_deg", str(float(drift_dir_deg))),
+            ("ocean_drift_accel_kmph2", str(float(drift_accel_kmph2))),
+        ]
+    )
 
 
 def get_state_space_bounds(
@@ -1639,7 +1679,6 @@ def add_map_overlay(
         vs: VisualizerState (provides the reference lat/lon and state-space fallback bounds).
         last_range: Previously stored axis ranges, used as the view extent when available.
     """
-    _add_map_message(fig, "Map unavailable (install requests and Pillow)")
 
     try:
         x_min, x_max, y_min, y_max = _view_bounds_xy(vs, last_range)
@@ -1711,205 +1750,387 @@ def dash_app(q: Queue):
     global queue
     queue = q
 
+    # Keep the graph and controls in normal document flow.  A minimum graph height prevents the
+    # controls from squeezing the plot when the viewport is short; the page can scroll instead.
     app.layout = html.Div(
-        style={"height": "100vh", "width": "100vw", "margin": 0, "padding": 0},
+        style={
+            "display": "flex",
+            "flexDirection": "column",
+            "minHeight": "100vh",
+            "width": "100%",
+            "margin": 0,
+            "padding": "0 0 32px 0",
+            "boxSizing": "border-box",
+            "overflowX": "hidden",
+        },
         children=[
-            html.H2(
-                "UBC Sailbot Pathfinding",
-                style={"fontFamily": "Consolas, monospace", "color": "rgb(18, 70, 139)"},
-            ),
-            dcc.Graph(id="live-graph", style={"height": "90vh", "width": "100%"}),
+            # Header with small sailboat logo and coloured background
             html.Div(
-                id="path-status",
-                children="Remaining Waypoints: --\nReplan Reason: --",
                 style={
-                    "position": "absolute",
-                    "bottom": "235px",
-                    "left": "50px",
-                    "padding": "8px 16px",
-                    "backgroundColor": "rgba(255, 255, 255, 0.88)",
-                    "borderRadius": "8px",
-                    "border": "1px solid #ccc",
-                    "zIndex": "1000",
-                    "fontFamily": "Consolas, monospace",
-                    "fontSize": "13px",
-                    "fontWeight": "bold",
-                    "color": "rgb(18,70,139)",
-                    "whiteSpace": "pre-line",
-                },
-            ),
-            html.Div(
-                id="control-panel",
-                style={
-                    "position": "absolute",
-                    "bottom": "175px",
-                    "left": "50px",  # Aligns with the Y-axis
-                    "display": "flex",
-                    "gap": "15px",
-                    "alignItems": "center",
-                    "padding": "10px 20px",
-                    "backgroundColor": "rgba(255, 255, 255, 0.8)",  # Semi-transparent white
-                    "borderRadius": "8px",
-                    "border": "1px solid #ccc",
-                    "zIndex": "1000",
-                    "fontFamily": "Consolas, monospace",
-                    "fontSize": "13px",
-                },
-                children=[
-                    html.Span(
-                        "Wind",
-                        style={
-                            "fontWeight": "bold",
-                            "color": "rgb(18,70,139)",
-                            "whiteSpace": "nowrap",
-                        },
-                    ),
-                    html.Label("Wind Direction (°):", style={"fontWeight": "bold"}),
-                    dcc.Input(id="tw-dir-input", type="number", value=0, style={"width": "80px"}),
-                    html.Label("Wind Speed (km/h):", style={"fontWeight": "bold"}),
-                    dcc.Input(
-                        id="tw-speed-input", type="number", value=0, style={"width": "80px"}
-                    ),
-                    html.Button(
-                        "Apply",
-                        id="apply-wind-btn",
-                        style={
-                            "backgroundColor": "rgb(18, 70, 139)",
-                            "color": "white",
-                            "cursor": "pointer",
-                        },
-                    ),
-                    html.Div(id="wind-status"),
-                ],
-            ),
-            # ── GPS / Drift control panel ───────────────────────────────────────────
-            html.Div(
-                id="gps-control-panel",
-                style={
-                    "position": "absolute",
-                    "bottom": "113px",
-                    "left": "50px",
                     "display": "flex",
                     "flexWrap": "wrap",
-                    "gap": "12px",
                     "alignItems": "center",
+                    "gap": "12px",
                     "padding": "10px 16px",
-                    "backgroundColor": "rgba(255, 255, 255, 0.88)",
-                    "borderRadius": "8px",
-                    "border": "1px solid #ccc",
-                    "zIndex": "1000",
-                    "fontFamily": "Consolas, monospace",
-                    "fontSize": "13px",
+                    "backgroundColor": "rgba(18, 70, 139, 0.14)",
+                    "border": "1px solid rgba(18, 70, 139, 0.18)",
+                    "borderRadius": "6px",
+                    "margin": "8px 12px",
                 },
                 children=[
-                    html.Span(
-                        "GPS / Drift",
+                    html.Img(
+                        src=app.get_asset_url("images/favicon.png"),
+                        style={"height": "36px", "width": "36px"},
+                    ),
+                    html.H2(
+                        "UBC Sailbot Pathfinding",
                         style={
-                            "fontWeight": "bold",
-                            "color": "rgb(18,70,139)",
-                            "whiteSpace": "nowrap",
+                            "fontFamily": "Consolas, monospace",
+                            "color": "rgb(18, 70, 139)",
+                            "margin": 0,
                         },
-                    ),
-                    dcc.Checklist(
-                        id="gps-toggles",
-                        options=[  # type: ignore[arg-type]
-                            {"label": " GPS Noise", "value": "use_gps_noise"},
-                            {"label": " Ocean Drift", "value": "use_ocean_drift"},
-                            {"label": " Drift Randomization", "value": "use_drift_randomization"},
-                        ],
-                        value=["use_gps_noise", "use_ocean_drift", "use_drift_randomization"],
-                        labelStyle={
-                            "display": "inline-block",
-                            "marginRight": "14px",
-                            "cursor": "pointer",
-                        },
-                        style={"display": "flex", "alignItems": "center"},
-                    ),
-                    html.Label(
-                        "Drift Speed (km/h):", style={"fontWeight": "bold", "whiteSpace": "nowrap"}
-                    ),
-                    dcc.Input(
-                        id="drift-speed-input",
-                        type="number",
-                        value=0.5,
-                        step=0.1,
-                        min=0,
-                        style={"width": "72px"},
-                    ),
-                    html.Label(
-                        "Drift Dir (°):", style={"fontWeight": "bold", "whiteSpace": "nowrap"}
-                    ),
-                    dcc.Input(
-                        id="drift-dir-input",
-                        type="number",
-                        value=45,
-                        min=-180,
-                        max=180,
-                        style={"width": "72px"},
-                    ),
-                    html.Label(
-                        "Drift Accel (km/h²):",
-                        style={"fontWeight": "bold", "whiteSpace": "nowrap"},
-                    ),
-                    dcc.Input(
-                        id="drift-accel-input",
-                        type="number",
-                        value=0.0,
-                        step=0.1,
-                        style={"width": "72px"},
                     ),
                     html.Button(
-                        "Apply",
-                        id="apply-gps-btn",
+                        "Reset the view to state space",
+                        id="reset-button",
+                        n_clicks=0,
+                        className="apply-button",
                         style={
+                            "marginLeft": "auto",
+                            "padding": "10px 20px",
                             "backgroundColor": "rgb(18, 70, 139)",
                             "color": "white",
                             "border": "none",
                             "borderRadius": "4px",
-                            "padding": "5px 12px",
                             "cursor": "pointer",
                         },
                     ),
-                    html.Div(
-                        id="gps-status",
-                        style={"color": "green", "fontSize": "12px", "minWidth": "160px"},
+                ],
+            ),
+            # Reserve a useful rectangular plotting area; controls always follow beneath it.
+            dcc.Graph(
+                id="live-graph",
+                style={
+                    "flex": "0 0 auto",
+                    "width": "100%",
+                    "height": "100vh",
+                    "minHeight": "620px",
+                    "boxSizing": "border-box",
+                },
+            ),
+            html.Div(
+                id="controls-heading",
+                style={
+                    "display": "flex",
+                    "justifyContent": "center",
+                    "alignItems": "center",
+                    "padding": "8px 16px",
+                    "margin": "0 24px",
+                    "borderBottom": "1px solid rgba(18, 70, 139, 0.22)",
+                    "boxSizing": "border-box",
+                },
+                children=[
+                    html.H3(
+                        "Control Panel",
+                        style={
+                            "fontFamily": "Consolas, monospace",
+                            "color": "rgb(18, 70, 139)",
+                            "margin": 0,
+                        },
                     ),
                 ],
             ),
-            # ── Map control panel ───────────────────────────────────────────
+            # Wrap content-sized control cards below the graph.  The wrapper's right margin and
+            # padding keep cards clear of the viewport edge, including after they wrap.
             html.Div(
-                id="Map-control-panel",
+                id="controls-wrapper",
                 style={
-                    "position": "absolute",
-                    # Stacked above the wind panel (175px); the GPS panel occupies 95px.
-                    "bottom": "50px",
-                    "left": "50px",
                     "display": "flex",
+                    "flexDirection": "row",
                     "flexWrap": "wrap",
+                    "alignItems": "flex-start",
                     "gap": "12px",
-                    "alignItems": "center",
-                    "padding": "10px 16px",
-                    "backgroundColor": "rgba(255, 255, 255, 0.88)",
-                    "borderRadius": "8px",
-                    "border": "1px solid #ccc",
-                    "zIndex": "1000",
-                    "fontFamily": "Consolas, monospace",
-                    "fontSize": "13px",
+                    "padding": "12px",
+                    "margin": "0 12px 12px 12px",
+                    "width": "auto",
+                    "boxSizing": "border-box",
                 },
                 children=[
-                    html.Span(
-                        "Show Map",
+                    html.Div(
+                        id="path-status",
+                        children="Remaining Waypoints: --\nReplan Reason: --",
                         style={
+                            "padding": "8px 16px",
+                            "backgroundColor": "rgba(255, 255, 255, 0.95)",
+                            "borderRadius": "8px",
+                            "border": "1px solid #ccc",
+                            "fontFamily": "Consolas, monospace",
+                            "fontSize": "13px",
                             "fontWeight": "bold",
                             "color": "rgb(18,70,139)",
-                            "whiteSpace": "nowrap",
+                            "whiteSpace": "pre-line",
+                            "flex": "0 1 auto",
+                            "maxWidth": "100%",
+                            "boxSizing": "border-box",
                         },
                     ),
-                    dcc.Checklist(
-                        id="map-toggle",
-                        options={"on": " Show map"},  # {value: label}
-                        value=[],
-                        style={"fontWeight": "bold", "marginLeft": "10px"},
+                    # Wind panel (now inside the stacked controls)
+                    html.Div(
+                        id="control-panel",
+                        style={
+                            "display": "flex",
+                            "flexWrap": "wrap",
+                            "gap": "12px",
+                            "alignItems": "center",
+                            "padding": "10px 16px",
+                            "backgroundColor": "rgba(255, 255, 255, 0.95)",
+                            "borderRadius": "8px",
+                            "border": "1px solid #ccc",
+                            "fontFamily": "Consolas, monospace",
+                            "fontSize": "13px",
+                            "flex": "0 1 auto",
+                            "maxWidth": "100%",
+                            "boxSizing": "border-box",
+                        },
+                        children=[
+                            html.Span(
+                                "Wind",
+                                style={
+                                    "fontWeight": "bold",
+                                    "color": "rgb(18,70,139)",
+                                    "whiteSpace": "nowrap",
+                                },
+                            ),
+                            html.Label("Wind Direction (°):", style={"fontWeight": "bold"}),
+                            dcc.Input(
+                                id="tw-dir-input", type="number", value=0, style={"width": "80px"}
+                            ),
+                            html.Label("Wind Speed (km/h):", style={"fontWeight": "bold"}),
+                            dcc.Input(
+                                id="tw-speed-input",
+                                type="number",
+                                value=0,
+                                style={"width": "80px"},
+                            ),
+                            html.Button(
+                                "Apply",
+                                id="apply-wind-btn",
+                                className="apply-button",
+                                style={
+                                    "backgroundColor": "rgb(18, 70, 139)",
+                                    "color": "white",
+                                    "cursor": "pointer",
+                                    "border": "none",
+                                    "borderRadius": "4px",
+                                    "padding": "6px 10px",
+                                },
+                            ),
+                            html.Div(
+                                id="wind-status",
+                                style={"color": "green", "fontSize": "12px", "minWidth": "160px"},
+                            ),
+                        ],
+                    ),
+                    # GPS control panel
+                    html.Div(
+                        id="gps-control-panel",
+                        style={
+                            "display": "flex",
+                            "flexWrap": "wrap",
+                            "gap": "12px",
+                            "alignItems": "center",
+                            "padding": "10px 16px",
+                            "backgroundColor": "rgba(255, 255, 255, 0.95)",
+                            "borderRadius": "8px",
+                            "border": "1px solid #ccc",
+                            "fontFamily": "Consolas, monospace",
+                            "fontSize": "13px",
+                            "flex": "0 1 auto",
+                            "maxWidth": "100%",
+                            "boxSizing": "border-box",
+                        },
+                        children=[
+                            html.Span(
+                                "GPS Noise",
+                                style={
+                                    "fontWeight": "bold",
+                                    "color": "rgb(18,70,139)",
+                                    "whiteSpace": "nowrap",
+                                },
+                            ),
+                            dcc.Checklist(
+                                id="gps-toggles",
+                                options=[
+                                    {"label": " GPS Noise", "value": "use_gps_noise"},
+                                ],
+                                value=[
+                                    "use_gps_noise",
+                                ],
+                                labelStyle={
+                                    "display": "inline-block",
+                                    "marginRight": "14px",
+                                    "cursor": "pointer",
+                                },
+                                style={"display": "flex", "alignItems": "center"},
+                            ),
+                            html.Button(
+                                "Apply",
+                                id="apply-gps-btn",
+                                className="apply-button",
+                                style={
+                                    "backgroundColor": "rgb(18, 70, 139)",
+                                    "color": "white",
+                                    "border": "none",
+                                    "borderRadius": "4px",
+                                    "padding": "5px 12px",
+                                    "cursor": "pointer",
+                                },
+                            ),
+                            html.Div(
+                                id="gps-status",
+                                style={"color": "green", "fontSize": "12px", "minWidth": "160px"},
+                            ),
+                        ],
+                    ),
+                    # Ocean Drift Panel
+                    html.Div(
+                        id="drift-control-panel",
+                        style={
+                            "display": "flex",
+                            "flexWrap": "wrap",
+                            "gap": "12px",
+                            "alignItems": "center",
+                            "padding": "10px 16px",
+                            "backgroundColor": "rgba(255, 255, 255, 0.95)",
+                            "borderRadius": "8px",
+                            "border": "1px solid #ccc",
+                            "fontFamily": "Consolas, monospace",
+                            "fontSize": "13px",
+                            "flex": "0 1 auto",
+                            "maxWidth": "100%",
+                            "boxSizing": "border-box",
+                        },
+                        children=[
+                            html.Span(
+                                "Ocean Drift",
+                                style={
+                                    "fontWeight": "bold",
+                                    "color": "rgb(18,70,139)",
+                                    "whiteSpace": "nowrap",
+                                },
+                            ),
+                            dcc.Checklist(
+                                id="drift-toggles",
+                                options=[
+                                    {"label": " Ocean Drift", "value": "use_ocean_drift"},
+                                    {
+                                        "label": " Drift Randomization",
+                                        "value": "use_drift_randomization",
+                                    },
+                                ],
+                                value=[
+                                    "use_ocean_drift",
+                                    "use_drift_randomization",
+                                ],
+                                labelStyle={
+                                    "display": "inline-block",
+                                    "marginRight": "14px",
+                                    "cursor": "pointer",
+                                },
+                                style={
+                                    "display": "flex",
+                                    "flexWrap": "wrap",
+                                    "alignItems": "center",
+                                },
+                            ),
+                            html.Label(
+                                "Drift Speed (km/h):",
+                                style={"fontWeight": "bold", "whiteSpace": "nowrap"},
+                            ),
+                            dcc.Input(
+                                id="drift-speed-input",
+                                type="number",
+                                value=0.5,
+                                step=0.1,
+                                min=0,
+                                style={"width": "72px"},
+                            ),
+                            html.Label(
+                                "Drift Dir (°):",
+                                style={"fontWeight": "bold", "whiteSpace": "nowrap"},
+                            ),
+                            dcc.Input(
+                                id="drift-dir-input",
+                                type="number",
+                                value=45,
+                                min=-180,
+                                max=180,
+                                style={"width": "72px"},
+                            ),
+                            html.Label(
+                                "Drift Accel (km/h²):",
+                                style={"fontWeight": "bold", "whiteSpace": "nowrap"},
+                            ),
+                            dcc.Input(
+                                id="drift-accel-input",
+                                type="number",
+                                value=0.0,
+                                step=0.1,
+                                style={"width": "72px"},
+                            ),
+                            html.Button(
+                                "Apply",
+                                id="apply-drift-btn",
+                                className="apply-button",
+                                style={
+                                    "backgroundColor": "rgb(18, 70, 139)",
+                                    "color": "white",
+                                    "border": "none",
+                                    "borderRadius": "4px",
+                                    "padding": "5px 12px",
+                                    "cursor": "pointer",
+                                },
+                            ),
+                            html.Div(
+                                id="drift-status",
+                                style={"color": "green", "fontSize": "12px", "minWidth": "160px"},
+                            ),
+                        ],
+                    ),
+                    # Map control panel
+                    html.Div(
+                        id="Map-control-panel",
+                        style={
+                            "display": "flex",
+                            "flexWrap": "wrap",
+                            "gap": "12px",
+                            "alignItems": "center",
+                            "padding": "10px 16px",
+                            "backgroundColor": "rgba(255, 255, 255, 0.95)",
+                            "borderRadius": "8px",
+                            "border": "1px solid #ccc",
+                            "fontFamily": "Consolas, monospace",
+                            "fontSize": "13px",
+                            "flex": "0 1 auto",
+                            "maxWidth": "100%",
+                            "boxSizing": "border-box",
+                        },
+                        children=[
+                            html.Span(
+                                "Map",
+                                style={
+                                    "fontWeight": "bold",
+                                    "color": "rgb(18,70,139)",
+                                    "whiteSpace": "nowrap",
+                                },
+                            ),
+                            dcc.Checklist(
+                                id="map-toggle",
+                                options={"on": " Show map"},
+                                value=[],
+                                style={"fontWeight": "bold", "marginLeft": "10px"},
+                            ),
+                        ],
                     ),
                 ],
             ),
@@ -1917,18 +2138,6 @@ def dash_app(q: Queue):
             dcc.Store(id="goal-store", data=None),
             dcc.Store(id="range-store", data=None),
             dcc.Store(id="reached-global-store", data=None),
-            html.Button(
-                "Reset the view to state space",
-                id="reset-button",
-                n_clicks=0,
-                style={
-                    "position": "absolute",
-                    "top": "20px",
-                    "right": "20px",
-                    "padding": "10px 20px",
-                    "zIndex": 1000,
-                },
-            ),
         ],
     )
 
@@ -2118,12 +2327,27 @@ app.clientside_callback(
     Output("gps-status", "children"),
     Input("apply-gps-btn", "n_clicks"),
     State("gps-toggles", "value"),
+    prevent_initial_call=True,
+)
+def update_gps_params(_, toggles):
+    try:
+        use_gps_noise = "use_gps_noise" in (toggles or [])
+        apply_gps_noise_param(use_gps_noise)
+        return f"✓ GPS noise: {'on' if use_gps_noise else 'off'}"
+    except Exception as e:
+        return f"Error: {e}"
+
+
+@app.callback(
+    Output("drift-status", "children"),
+    Input("apply-drift-btn", "n_clicks"),
+    State("drift-toggles", "value"),
     State("drift-speed-input", "value"),
     State("drift-dir-input", "value"),
     State("drift-accel-input", "value"),
     prevent_initial_call=True,
 )
-def update_gps_params(_, toggles, drift_speed, drift_dir, drift_accel):
+def update_drift_params(_, toggles, drift_speed, drift_dir, drift_accel):
     try:
         if drift_speed is None or drift_dir is None or drift_accel is None:
             return "Fill in all numeric fields"
@@ -2133,12 +2357,10 @@ def update_gps_params(_, toggles, drift_speed, drift_dir, drift_accel):
             return "Drift direction must be in (-180, 180]°"
 
         active = set(toggles or [])
-        use_gps_noise = "use_gps_noise" in active
         use_ocean_drift = "use_ocean_drift" in active
         use_drift_randomization = "use_drift_randomization" in active
 
-        apply_gps_params(
-            use_gps_noise,
+        apply_drift_params(
             use_ocean_drift,
             use_drift_randomization,
             drift_speed,
@@ -2147,7 +2369,6 @@ def update_gps_params(_, toggles, drift_speed, drift_dir, drift_accel):
         )
 
         parts = [
-            f"Noise: {'on' if use_gps_noise else 'off'}",
             f"Drift: {'on' if use_ocean_drift else 'off'}",
         ]
         if use_ocean_drift:
@@ -2172,5 +2393,22 @@ app.clientside_callback(
     """,
     Output("gps-status", "children", allow_duplicate=True),
     Input("gps-status", "children"),
+    prevent_initial_call=True,
+)
+
+
+app.clientside_callback(
+    """
+    function(status_text) {
+        if (!status_text) return "";
+        setTimeout(function(){
+            const statusDiv = document.getElementById('drift-status');
+            if (statusDiv) statusDiv.innerText = "";
+        }, 5000);
+        return status_text;
+    }
+    """,
+    Output("drift-status", "children", allow_duplicate=True),
+    Input("drift-status", "children"),
     prevent_initial_call=True,
 )
