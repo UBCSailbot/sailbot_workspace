@@ -1,3 +1,13 @@
+## Memo: Software Deployment and Launch Checklist
+
+**Software Deployment and Launch Checklist** on Confluence (Software-Wide Home):
+<!-- markdownlint-disable MD013 -->
+> [Software Deployment and Checklist](https://ubcsailbot.atlassian.net/wiki/spaces/prjt22/pages/2986967045/Software+Deployment+and+Launch+Checklist)
+>
+> This README remains the authoritative step-by-step for building the release
+> image and launching global launch.
+>
+<!-- markdownlint-enable MD013 -->
 ## Instructions to deploy our software to the Raspberry Pi
 
 NOTE: This is a copy of $ROS_WORKSPACE/.devocntainer/release/README.md
@@ -88,15 +98,18 @@ Run the following on the raspberry pi itself.
 re-enter the container and start all the ROS nodes if we're SSHed into
 the raspberry Pi.
 
-2. To enter the container and immediately start our software in production,
+2. To enter the container and immediately start our software in production (for offshore launch),
 run the following and change the container name (example-name) accordingly:
 
    ```bash
    docker start example-name && \
    docker exec -it example-name bash -ic "ros2 launch \
       global_launch main_launch.py record:=true mode:=production \
-      2>&1 | tee src/global_launch/voyage_log/combined_log_$(date %F_%T).txt"
+      config:=launch_globals.yaml 2>&1 | tee src/global_launch/voyage_log/combined_log_$(date %F_%T).txt"
    ```
+
+- Note: If you want to run a specific production launch scenario, for example, on water testing launch then please
+  refer to the src/global_launch/README.md.
 
 - To enter the containter without starting all ROS nodes, run the following:
 

@@ -11,6 +11,7 @@ from launch.actions import (
     IncludeLaunchDescription,
     OpaqueFunction,
     SetEnvironmentVariable,
+    SetLaunchConfiguration,
 )
 from launch.launch_context import LaunchContext
 from launch.launch_description_sources import PythonLaunchDescriptionSource
@@ -25,13 +26,27 @@ SIM_ROS_PACKAGES = ["controller", "boat_simulator", "local_pathfinding", "networ
 ROS_PACKAGES_DIR = os.path.join(
     os.getenv("ROS_WORKSPACE", default="/workspaces/sailbot_workspace"), "src"
 )
-GLOBAL_LAUNCH_CONFIG = os.path.join(ROS_PACKAGES_DIR, "global_launch", "config", "globals.yaml")
+GLOBAL_LAUNCH_CONFIG_DIR = os.path.join(ROS_PACKAGES_DIR, "global_launch", "config")
+
+
+def resolve_config(filename: str) -> str:
+    """Resolve a `config` filename into its absolute path within GLOBAL_LAUNCH_CONFIG_DIR.
+
+    Args:
+        filename (str): The name of a config file in src/global_launch/config.
+
+    Returns:
+        str: The absolute path to the config file.
+    """
+    return os.path.join(GLOBAL_LAUNCH_CONFIG_DIR, filename)
+
+
 GLOBAL_LAUNCH_ARGUMENTS = [
     DeclareLaunchArgument(
         name="config",
-        default_value=GLOBAL_LAUNCH_CONFIG,
-        description="Path to ROS parameter config file. Controls ROS parameters passed into"
-        + " ROS nodes",
+        default_value="globals.yaml",
+        description="ROS parameter config filename in src/global_launch/config. Controls ROS"
+        + " parameters passed into ROS nodes",
     ),
     # Reference: https://answers.ros.org/question/311471/selecting-log-level-in-ros2-launch-file/
     DeclareLaunchArgument(
@@ -50,8 +65,9 @@ GLOBAL_LAUNCH_ARGUMENTS = [
     ),
     DeclareLaunchArgument(
         name="test_plan",
-        default_value="basic.yaml",
-        description="Test plan to be used in development mode for local pathfinding.",
+        default_value="",
+        description="Test plan to be used in development mode for local pathfinding. Leave empty"
+        + " to use the test_plan specified in the config file.",
     ),
     DeclareLaunchArgument(
         name="record",
@@ -119,10 +135,15 @@ def setup_launch(context: LaunchContext) -> List[Action]:
     mode = LaunchConfiguration("mode").perform(context)
     record = LaunchConfiguration("record").perform(context) == "true"
 
+    config = resolve_config(LaunchConfiguration("config").perform(context))
+
     ros_packages = get_running_ros_packages(mode)
     include_launch_descriptions = get_include_launch_descriptions(ros_packages)
 
-    actions: List[Action] = list(include_launch_descriptions)
+    # Re-publish the resolved absolute config path(s) so the included package launch files,
+    # which read LaunchConfiguration("config") directly, receive a usable file path.
+    actions: List[Action] = [SetLaunchConfiguration("config", config)]
+    actions += list(include_launch_descriptions)
 
     if record:
         save_path = LaunchConfiguration("save_path").perform(context)
@@ -176,7 +197,7 @@ def get_running_ros_packages(mode: str) -> List[str]:
             return SIM_ROS_PACKAGES
         case _:
             raise ValueError(
-                "Invalid launch mode. Must be one of 'production', 'development'," " or 'sim'."
+                "Invalid launch mode. Must be one of 'production'," " 'development', or 'sim'."
             )
 
 
