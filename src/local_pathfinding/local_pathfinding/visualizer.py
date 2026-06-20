@@ -181,11 +181,12 @@ class VisualizerState:
         state_space (Optional[MultiPolygon]): The computed state-space overlay as a MultiPolygon.
     """
 
-    def __init__(self, msgs: deque[ci.LPathData]):
+    def __init__(self, msgs: deque[ci.LPathData], last_replan_reason: str = ""):
         if not msgs:
             raise ValueError("VisualizerState requires at least one message")
 
         self.latest_msg = msgs[-1]
+        self.last_replan_reason = last_replan_reason
         self._validate_message(self.latest_msg)
 
         # Boat history
@@ -1984,9 +1985,9 @@ def update_graph(
         )
 
     remaining_waypoints = vs.latest_msg.remaining_waypoints
-    replan_reason = vs.latest_msg.replan_reason or "None"
+    replan_reason = vs.last_replan_reason or "None"
     path_status = (
-        f"Remaining Waypoints: {remaining_waypoints}\nReplan Reason: {replan_reason}"
+        f"Remaining Waypoints: {remaining_waypoints}\n Last Replan Reason: {replan_reason}"
     )
     return fig, [new_goal_xy[0], new_goal_xy[1]], last_range, reached_global_keys, path_status
 
