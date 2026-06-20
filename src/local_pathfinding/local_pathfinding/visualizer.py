@@ -55,6 +55,9 @@ NO_GO_CONE_ARC_POINTS = 40  # number of points to approximate each cone arc
 NO_GO_CONE_DEFAULT_RADIUS_KM = 1.5  # fallback radius when no axis range is available
 NO_GO_CONE_RADIUS_FRACTION = 0.12  # fraction of the visible axis span to use as cone radius
 
+OMPL_YAW_MARKER_SIZE = 16
+OMPL_YAW_MARKER_COLOR = "darkviolet"
+
 # A global waypoint is considered "reached" (and removed from the plot) once the boat comes within
 # GLOBAL_WP_REACHED_KM of the local waypoint nearest to it, provided that local waypoint is itself
 # within LOCAL_NEAR_GLOBAL_KM of the global waypoint.
@@ -165,6 +168,8 @@ class VisualizerState:
 
         final_local_wp_x_km (List[float]): X coordinates (km) of the latest local path waypoints.
         final_local_wp_y_km (List[float]): Y coordinates (km) of the latest local path waypoints.
+        final_local_wp_headings_deg (List[float]): OMPL state yaws converted to navigation headings
+                                                   (degrees) for the latest local path.
 
         sailbot_gps (List[ci.Gps]): GPS messages used for heading (degrees) and speed (km/h)
                                     display.
@@ -215,6 +220,9 @@ class VisualizerState:
         self.final_local_wp_x_km, self.final_local_wp_y_km = self._split_coordinates(
             self.all_wp_xy[-1]
         )
+        self.final_local_wp_headings_deg = [
+            waypoint.heading.heading for waypoint in self.all_local_wp[-1]
+        ]
         self.all_local_wp_x, self.all_local_wp_y = zip(
             *[self._split_coordinates(waypoints) for waypoints in self.all_wp_xy]
         )
@@ -610,6 +618,71 @@ def build_path_trace(
         name="Path to Goal",
         line=dict(width=2, dash="dot", color="blue"),
         hovertemplate="X: %{x:.2f}<br>Y: %{y:.2f}<extra></extra>",
+    )
+
+
+def build_ompl_yaw_trace(
+    local_x_km: List[float],
+    local_y_km: List[float],
+    headings_deg: List[float],
+) -> go.Scatter:
+    """Draw OMPL's yaw at every state in the latest local path.
+
+    The path message stores each OMPL yaw as a navigation heading in degrees (0 degrees is north,
+    increasing clockwise). Plotly arrow markers use the same visual convention when ``angleref``
+    is ``"up"``. The original OMPL Cartesian yaw is reconstructed for hover text.
+
+    Args:
+        local_x_km: Local path X coordinates in km.
+        local_y_km: Local path Y coordinates in km.
+        headings_deg: OMPL yaws converted to navigation headings in degrees.
+
+    Returns:
+        A Plotly arrow-marker trace with one marker per OMPL path state.
+
+    Raises:
+        ValueError: If the coordinate and heading arrays have different lengths.
+    """
+    if not local_x_km and not local_y_km and not headings_deg:
+        return go.Scatter(x=[], y=[], mode="markers", name="OMPL Yaw")
+
+    if not (len(local_x_km) == len(local_y_km) == len(headings_deg)):
+        raise ValueError("OMPL yaw visualization data must have matching lengths")
+
+    ompl_yaws_rad = [
+        math.atan2(
+            math.sin(math.radians(cs.true_bearing_to_OMPL_cartesian(heading))),
+            math.cos(math.radians(cs.true_bearing_to_OMPL_cartesian(heading))),
+        )
+        for heading in headings_deg
+    ]
+    customdata = [
+        [index, heading, yaw]
+        for index, (heading, yaw) in enumerate(zip(headings_deg, ompl_yaws_rad))
+    ]
+
+    return go.Scatter(
+        x=local_x_km,
+        y=local_y_km,
+        mode="markers",
+        name="OMPL Yaw",
+        customdata=customdata,
+        hovertemplate=(
+            "<b>OMPL state %{customdata[0]}</b><br>"
+            "Heading: %{customdata[1]:.1f} degrees<br>"
+            "OMPL yaw: %{customdata[2]:.3f} rad<br>"
+            "X: %{x:.2f} km<br>"
+            "Y: %{y:.2f} km"
+            "<extra></extra>"
+        ),
+        marker=dict(
+            symbol="arrow",
+            color=OMPL_YAW_MARKER_COLOR,
+            line=dict(width=1, color="white"),
+            size=OMPL_YAW_MARKER_SIZE,
+            angleref="up",
+            angle=[cs.true_bearing_to_plotly_cartesian(heading) for heading in headings_deg],
+        ),
     )
 
 
@@ -1217,6 +1290,9 @@ def build_figure(
     path_trace = build_path_trace(local_x_km, local_y_km, boat_xy_km)
     if path_trace is not None:
         fig.add_trace(path_trace)
+    fig.add_trace(
+        build_ompl_yaw_trace(local_x_km, local_y_km, vs.final_local_wp_headings_deg)
+    )
 
     # Adding Obstacle (both Land and Boat) and AIS ships to the plot
     land_traces = build_polygon_traces(
