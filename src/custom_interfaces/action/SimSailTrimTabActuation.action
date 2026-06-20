@@ -1,6 +1,6 @@
 # Request: The desired position to turn to
-# Units: degrees, 0° south, increases CW
-# Range: [-90, 90] (TODO: Confirm desireable range with MECH team)
+# Unit: degrees, 0° is the neutral position, Increases CCW
+# Range: -40° <= angle <= 40°
 float32 desired_angular_position
 ---
 # Result: The absolute angular distance between the current and desired heading
@@ -9,6 +9,6 @@ float32 desired_angular_position
 float32 remaining_angular_distance
 ---
 # Feedback: The trim tab angle with respect to the wingsail
-# Units: degrees, 0° south, increases CW
-# Range: [-90, 90] (TODO: Confirm desireable range with MECH team)
+# Unit: degrees, 0° is the neutral position, Increases CCW
+# Range: -40° <= angle <= 40°
 float32 current_angular_position
