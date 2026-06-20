@@ -314,7 +314,7 @@ def get_sim_visualizer_description(context: LaunchContext) -> Node:
     ]
     # may not need local arguments.
     local_arguments: List[SomeSubstitutionsType] = [
-        Constants.MOCK_DATA_CLI_ARG_NAME,
+        Constants.SIM_VISUALIZER_CLI_ARG_NAME,
         [LaunchConfiguration("enable-sim-visualizer")],
     ]
 
