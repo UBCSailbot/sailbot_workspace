@@ -9,7 +9,6 @@ from typing import Optional
 
 import numpy as np
 import rclpy
-import rclpy.utilities
 from custom_interfaces.action._sim_rudder_actuation import (
     SimRudderActuation_FeedbackMessage,
 )
@@ -22,6 +21,7 @@ from rclpy.executors import Executor, MultiThreadedExecutor, SingleThreadedExecu
 from rclpy.node import CallbackGroup, MutuallyExclusiveCallbackGroup, Node
 from rclpy.publisher import Publisher
 from rclpy.subscription import Subscription
+from test_plans.test_plan import TestPlan
 
 import boat_simulator.common.constants as Constants
 import boat_simulator.common.utils as Utils
@@ -137,7 +137,7 @@ class PhysicsEngineNode(Node):
                 ("info_log_throttle_period_sec", rclpy.Parameter.Type.DOUBLE),
                 ("action_send_goal_timeout_sec", rclpy.Parameter.Type.DOUBLE),
                 ("qos_depth", rclpy.Parameter.Type.INTEGER),
-                ("reference_lat_lon", rclpy.Parameter.Type.DOUBLE_ARRAY),
+                ("test_plan", rclpy.Parameter.Type.STRING),
                 ("rudder.actuation_request_period_sec", rclpy.Parameter.Type.DOUBLE),
                 ("wingsail.actuation_request_period_sec", rclpy.Parameter.Type.DOUBLE),
                 ("wind_sensor.generator_type", rclpy.Parameter.Type.STRING),
@@ -168,12 +168,11 @@ class PhysicsEngineNode(Node):
         self.__rudder_angle = 0
         self.__sail_trim_tab_angle = 0
         self.__desired_heading = None
-        reference_lat_lon = (
-            self.get_parameter("reference_lat_lon").get_parameter_value().double_array_value
-        )
-        self.__reference_latlon = HelperLatLon(
-            latitude=float(reference_lat_lon[0]), longitude=float(reference_lat_lon[1])
-        )
+
+        self.test_plan = self.get_parameter("test_plan").get_parameter_value().string_value
+        test_plan = TestPlan(self.test_plan)
+        gps = test_plan.gps
+        self.__reference_latlon = gps.lat_lon
         self.__boat_state = BoatState(self.pub_period, self.__reference_latlon)
         self.__sim_gps = None
 

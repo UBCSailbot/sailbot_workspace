@@ -66,8 +66,6 @@ physics_engine_node:
       info_log_throttle_period_sec: 2.0
       action_send_goal_timeout_sec: 2.0
       qos_depth: 1
-      # Origin of the simulator's local XY frame, used to project meters to lat/lon for GPS.
-      reference_lat_lon: [49.28, -123.185032]
       rudder:
          actuation_request_period_sec: 10.0
       wingsail:
