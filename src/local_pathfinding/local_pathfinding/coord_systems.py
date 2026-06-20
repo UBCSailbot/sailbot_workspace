@@ -58,6 +58,19 @@ def true_bearing_to_plotly_cartesian(true_bearing_deg: float) -> float:
     return plotly_cartesian
 
 
+def true_bearing_to_OMPL_cartesian(true_bearing_deg: float) -> float:
+    """Convert a true bearing angle to the equivalent OMPL cartesian angle .
+
+    Args:
+        true_bearing_degrees (float): Angle where 0 is true north. Range: -180 < heading <= 180.
+        Increases in the clockwise direction till 180 degrees.
+        Decreases in the counter-clockwise direction till -180 (exclusive)
+    Returns:
+        float:  Angle where 0 is east and values increases clockwise.
+    """
+    return (90 - true_bearing_deg) % 360.0
+
+
 def get_path_segment_true_bearing(s1: XY, s2: XY, rad: bool = False):
     """Returns the true bearing of a straight path from s1 to s2.
 

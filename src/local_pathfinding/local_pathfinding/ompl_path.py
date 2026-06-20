@@ -368,13 +368,15 @@ class OMPLPath:
 
         for state in solution_path.getStates():
             waypoint_XY = cs.XY(state.getX(), state.getY())
+            waypoint_yaw = state.getYaw()
             waypoint_latlon = cs.xy_to_latlon(self.state.reference_latlon, waypoint_XY)
             waypoints.append(
                 ci.HelperLatLon(
-                    latitude=waypoint_latlon.latitude, longitude=waypoint_latlon.longitude
+                    latitude=waypoint_latlon.latitude, longitude=waypoint_latlon.longitude,
+                    heading=waypoint_yaw
                 )
             )
-
+        print(waypoints)
         return ci.Path(waypoints=waypoints)
 
     def update_objectives(self):
@@ -390,6 +392,7 @@ class OMPLPath:
         start_box = self.create_buffer_around_position(start_position_in_xy, self._box_buffer)
         start_x = start_position_in_xy.x
         start_y = start_position_in_xy.y
+        start_heading = self.state.heading
 
         # goal is at (0,0) because global waypoint is used as the reference point
         goal_position_in_xy = cs.XY(0, 0)
