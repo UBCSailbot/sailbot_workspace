@@ -41,8 +41,8 @@ UPDATE_INTERVAL_MS = 2500
 DEFAULT_PLOT_RANGE = [-100.0, 100.0]
 BOX_BUFFER_SIZE_KM = 1.0
 
-WIND_BOX_X_DOMAIN = (0.80, 0.98)
-WIND_BOX_Y_DOMAIN = (0.78, 0.98)
+WIND_BOX_X_DOMAIN = (0.76, 0.99)
+WIND_BOX_Y_DOMAIN = (0.00, 0.22)
 WIND_BOX_RANGE = (-10, 10)
 
 WIND_ARROW_LEN = 4.0
@@ -1643,6 +1643,25 @@ def dash_app(q: Queue):
             ),
             dcc.Graph(id="live-graph", style={"height": "90vh", "width": "100%"}),
             html.Div(
+                id="path-status",
+                children="Remaining Waypoints: --\nReplan Reason: --",
+                style={
+                    "position": "absolute",
+                    "bottom": "235px",
+                    "left": "50px",
+                    "padding": "8px 16px",
+                    "backgroundColor": "rgba(255, 255, 255, 0.88)",
+                    "borderRadius": "8px",
+                    "border": "1px solid #ccc",
+                    "zIndex": "1000",
+                    "fontFamily": "Consolas, monospace",
+                    "fontSize": "13px",
+                    "fontWeight": "bold",
+                    "color": "rgb(18,70,139)",
+                    "whiteSpace": "pre-line",
+                },
+            ),
+            html.Div(
                 id="control-panel",
                 style={
                     "position": "absolute",
@@ -1844,6 +1863,7 @@ def dash_app(q: Queue):
     Output("goal-store", "data"),
     Output("range-store", "data"),
     Output("reached-global-store", "data"),
+    Output("path-status", "children"),
     Input("interval-component", "n_intervals"),
     Input("live-graph", "relayoutData"),
     Input("reset-button", "n_clicks"),
@@ -1881,11 +1901,12 @@ def update_graph(
                       first run.
 
     Returns:
-        (fig, new_goal_as_list, last_range, reached_global_keys):
+        (fig, new_goal_as_list, last_range, reached_global_keys, path_status):
             - fig: The updated Plotly figure
             - new_goal_as_list: [x, y] for storage in dcc.Store (JSON serializable)
             - last_range: [x-range, y-range] for storage in dcc.Store (JSON serializable)
             - reached_global_keys: list of reached global waypoint keys for storage in dcc.Store
+            - path_status: remaining waypoint count and latest replan reason
 
     """
     global queue, _latest_vs  # noqa
@@ -1903,7 +1924,7 @@ def update_graph(
         # so the toggle/reset takes effect immediately instead of waiting for the next message.
         vs = _latest_vs
     else:
-        return dash.no_update, dash.no_update, stored_range, dash.no_update
+        return dash.no_update, dash.no_update, stored_range, dash.no_update, dash.no_update
 
     last_goal_tuple = (
         cs.XY(last_goal_xy_km[0], last_goal_xy_km[1]) if last_goal_xy_km is not None else None
@@ -1941,7 +1962,13 @@ def update_graph(
 
     if triggered_id == "reset-button":
         if current_figure is None:
-            return dash.no_update, dash.no_update, dash.no_update, dash.no_update
+            return (
+                dash.no_update,
+                dash.no_update,
+                dash.no_update,
+                dash.no_update,
+                dash.no_update,
+            )
 
         min_bounds, max_bounds = get_state_space_bounds(vs)
         x_range = [min_bounds.x, max_bounds.x]
@@ -1956,7 +1983,12 @@ def update_graph(
             uirevision="reset",
         )
 
-    return fig, [new_goal_xy[0], new_goal_xy[1]], last_range, reached_global_keys
+    remaining_waypoints = vs.latest_msg.remaining_waypoints
+    replan_reason = vs.latest_msg.replan_reason or "None"
+    path_status = (
+        f"Remaining Waypoints: {remaining_waypoints}\nReplan Reason: {replan_reason}"
+    )
+    return fig, [new_goal_xy[0], new_goal_xy[1]], last_range, reached_global_keys, path_status
 
 
 @app.callback(
