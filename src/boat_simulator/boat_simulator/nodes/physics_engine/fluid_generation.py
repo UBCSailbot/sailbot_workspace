@@ -4,11 +4,11 @@ import numpy as np
 from numpy.typing import NDArray
 from rclpy.logging import get_logger
 
-_logger = get_logger(__name__)
-
 from boat_simulator.common.generators import VectorGenerator
 from boat_simulator.common.types import Scalar
 from boat_simulator.common.utils import bound_to_180, rad_to_degrees
+
+_logger = get_logger(__name__)
 
 
 class FluidGenerator:
@@ -33,7 +33,9 @@ class FluidGenerator:
             for the fluid simulation.
         """
         self.__velocity = np.array(self.__generator.next())
-        _logger.debug(f"next: velocity={self.__velocity} speed={self.speed} direction={self.direction}")
+        _logger.debug(
+            f"next: velocity={self.__velocity} speed={self.speed} direction={self.direction}"
+        )
         return self.__velocity
 
     @property

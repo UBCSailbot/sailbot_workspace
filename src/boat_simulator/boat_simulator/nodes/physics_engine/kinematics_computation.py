@@ -1,18 +1,16 @@
 """This module contains the kinematics computations for the boat."""
 
-from typing import Tuple
-
 import numpy as np
 from numpy.typing import NDArray
 from rclpy.logging import get_logger
-
-_logger = get_logger(__name__)
 
 import boat_simulator.common.constants as constants
 import boat_simulator.common.utils as utils
 from boat_simulator.common.types import Scalar
 from boat_simulator.nodes.physics_engine.kinematics_data import KinematicsData
 from boat_simulator.nodes.physics_engine.kinematics_formulas import KinematicsFormulas
+
+_logger = get_logger(__name__)
 
 
 class BoatKinematics:
@@ -58,7 +56,8 @@ class BoatKinematics:
                 (N•m).
 
         Returns:
-            None: The method updates the internal state of the boat's kinematics but does not return any data.
+            None: The method updates the internal state of the boat's kinematics but does not
+            return any data.
         """
 
         yaw_radians = self.__update_ang_data(net_torque)
@@ -122,7 +121,8 @@ class BoatKinematics:
         yaw_radians = next_ang_position[constants.ORIENTATION_INDICES.YAW.value]
 
         _logger.debug(
-            f"__update_ang_data: ang_acc={next_ang_acceleration} ang_vel={next_ang_velocity} ang_pos={next_ang_position} yaw={yaw_radians:.4f} rad"
+            f"__update_ang_data: ang_acc={next_ang_acceleration} ang_vel={next_ang_velocity} "
+            + f"ang_pos={next_ang_position} yaw={yaw_radians:.4f} rad"
         )
 
         return yaw_radians
@@ -148,7 +148,8 @@ class BoatKinematics:
         self.__relative_data.linear_position[:] = 0  # linear position is unused
 
         _logger.debug(
-            f"__update_linear_relative_data: acc={next_relative_acceleration} vel={next_relative_velocity}"
+            f"__update_linear_relative_data: acc={next_relative_acceleration} "
+            + f"vel={next_relative_velocity}"
         )
 
     def __update_linear_global_data(self, net_force: NDArray) -> None:
@@ -176,7 +177,8 @@ class BoatKinematics:
         self.__global_data.linear_position = next_global_position
 
         _logger.debug(
-            f"__update_linear_global_data: acc={next_global_acceleration} vel={next_global_velocity} pos={next_global_position}"
+            f"__update_linear_global_data: acc={next_global_acceleration} "
+            + f"vel={next_global_velocity} pos={next_global_position}"
         )
 
     @property

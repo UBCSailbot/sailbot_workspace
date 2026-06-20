@@ -7,7 +7,7 @@ from boat_simulator.common.generators import (
     GaussianGenerator,
     MVGaussianGenerator,
 )
-from boat_simulator.common.types import Scalar, ScalarOrArray
+from boat_simulator.common.types import Scalar
 
 
 class Sensor:

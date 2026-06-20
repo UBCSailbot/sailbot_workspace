@@ -193,7 +193,7 @@ class PhysicsEngineNode(Node):
         )
         self.__wind_generator = FluidGenerator(generator=MVGaussianGenerator(wind_mean, wind_cov))
         self.__wind_sensor_readings: deque = deque(maxlen=20)
-        self.__sma_wind = np.zeros(2) # Units: kmph
+        self.__sma_wind = np.zeros(2)  # Units: kmph
         current_mean = np.array(
             self.get_parameter("current_generation.mvgaussian_params.mean")
             .get_parameter_value()
@@ -390,9 +390,7 @@ class PhysicsEngineNode(Node):
         msg.speed.speed = float(
             ConversionFactors.mPs_to_kmPh.value.forward_convert(self.__sim_gps.speed)
         )
-        msg.heading.heading = float(
-            Utils.ccw_straight_to_cw_north_deg(self.__sim_gps.heading)
-        )
+        msg.heading.heading = float(Utils.ccw_straight_to_cw_north_deg(self.__sim_gps.heading))
 
         self.gps_pub.publish(msg)
         self.get_logger().debug(

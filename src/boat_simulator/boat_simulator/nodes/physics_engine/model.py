@@ -6,8 +6,6 @@ import numpy as np
 from numpy.typing import NDArray
 from rclpy.logging import get_logger
 
-_logger = get_logger(__name__)
-
 from boat_simulator.common.constants import (
     AIR_DENSITY,
     BOAT_PROPERTIES,
@@ -21,9 +19,10 @@ from boat_simulator.common.utils import (
 )
 from boat_simulator.nodes.physics_engine.fluid_forces import MediumForceComputation
 from boat_simulator.nodes.physics_engine.kinematics_computation import BoatKinematics
-from boat_simulator.nodes.physics_engine.kinematics_data import KinematicsData
 from custom_interfaces.msg import HelperLatLon
 from local_pathfinding.coord_systems import XY, meters_to_km, xy_to_latlon
+
+_logger = get_logger(__name__)
 
 
 class BoatState:
@@ -100,7 +99,8 @@ class BoatState:
         rel_water_vel = glo_water_vel[:2] - self.global_velocity[:2]  # slice into 2d vector
 
         _logger.debug(
-            f"BS | step inputs: rel_wind_vel={rel_wind_vel} rudder_angle={rudder_angle_deg:.2f} trim_tab={trim_tab_angle:.2f}"
+            f"BS | step inputs: rel_wind_vel={rel_wind_vel} rudder_angle={rudder_angle_deg:.2f} "
+            + f"trim_tab={trim_tab_angle:.2f}"
         )
 
         sail_angle_deg = self.__update_wing_angle(rel_wind_vel, trim_tab_angle)
@@ -140,7 +140,8 @@ class BoatState:
         """
         wind_angle = np.degrees(np.arctan2(rel_wind_vel[1], rel_wind_vel[0]))
 
-        # Equilibrium angle of attack set by the tab; compute() defines AoA = wind_angle - orientation.
+        # Equilibrium angle of attack set by the tab; compute() defines
+        # AoA = wind_angle - orientation.
         alpha_eq = self.__trim_tab_gain * trim_tab_angle
         theta_target = wind_angle - alpha_eq
 
@@ -163,7 +164,7 @@ class BoatState:
 
         _logger.debug(
             f"BS | wing: target={theta_target:.2f} angle={self.__wing_angle:.2f} "
-            f"vel={self.__wing_angular_velocity:.2f} deg/s aoa={wind_angle - self.__wing_angle:.2f}"
+            f"vel={self.__wing_angular_velocity:.2f} deg/s aoa={wind_angle - self.__wing_angle}"
         )
 
         return self.__wing_angle
@@ -185,14 +186,17 @@ class BoatState:
             rudder_angle_deg (float): The rudder angle with respect to the boat in degrees. Angle
                 convention is 0° south, increases CW.
             sail_angle_deg (float): The wingsail's current orientation in degrees, using the
-                convention expected by `MediumForceComputation.compute` (0° along +x, CCW positive).
+                convention expected by `MediumForceComputation.compute`
+                (0° along +x, CCW positive).
 
         Returns:
             Tuple[NDArray, NDArray]: A tuple where the first element represents the net force in
                 the relative reference frame, expressed in newtons (N), and the second element
                 represents the net torque, expressed in newton-meters (N•m).
         """
-        # TODO: The force and torque compute assumes The orientation angle of the medium in degrees, where 0 degrees corresponds to the positive x-axis, and angles increase counter-clockwise (CCW).
+        # TODO: The force and torque compute assumes The orientation angle of the medium in
+        # degrees, where 0 degrees corresponds to the positive x-axis, and angles increase
+        # counter-clockwise (CCW).
         sail_lift, sail_drag = self.__sail_force_computation.compute(rel_wind_vel, sail_angle_deg)
         rudder_lift, rudder_drag = self.__rudder_force_computation.compute(
             rel_water_vel, rudder_angle_deg
@@ -207,7 +211,7 @@ class BoatState:
             rudder_lift[1] + rudder_drag[1]
         )
 
-        tau_z_vector = np.array([0.0, 0.0, tau_z])
+        # tau_z_vector = np.array([0.0, 0.0, tau_z])
         net_force = np.array(
             [net_force[0], net_force[1], 0.0]
         )  # slice into 2d vector and add zero z-comp

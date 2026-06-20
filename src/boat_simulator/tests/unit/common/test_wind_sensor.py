@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 
 from boat_simulator.common.sensors import SimWindSensor
 

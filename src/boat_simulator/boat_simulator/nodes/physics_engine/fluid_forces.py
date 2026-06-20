@@ -62,7 +62,8 @@ class MediumForceComputation:
             # Normalize orientation to be within [-180, 180)
             angle_of_attack = ((orientation + 180) % 360) - 180
             _logger.debug(
-                f"calculate_attack_angle: zero velocity, returning orientation={orientation:.2f} as aoa={angle_of_attack:.2f}",
+                f"calculate_attack_angle: zero velocity, returning orientation={orientation:.2f} "
+                + f"as aoa={angle_of_attack:.2f}",
             )
             return angle_of_attack
 
@@ -79,7 +80,8 @@ class MediumForceComputation:
         angle_of_attack = ((angle_of_attack + 180) % 360) - 180
 
         _logger.debug(
-            f"calculate_attack_angle: vel={apparent_velocity} orientation={orientation:.2f} raw={angle_of_attack_raw:.2f} aoa={angle_of_attack:.2f}"
+            f"calculate_attack_angle: vel={apparent_velocity} orientation={orientation:.2f} " +
+            f"raw={angle_of_attack_raw:.2f} aoa={angle_of_attack:.2f}"
         )
         return angle_of_attack
 
@@ -102,9 +104,10 @@ class MediumForceComputation:
         lift_coefficient, drag_coefficient, area = self.interpolate(attack_angle)
         velocity_magnitude = np.linalg.norm(apparent_velocity)
 
-        # With no relative flow there is no lift or drag (force ∝ |v|²). Returning early also avoids
-        # the division by velocity_magnitude below, which would otherwise produce NaN/Inf forces that
-        # propagate irreversibly through the kinematics and blow up the simulation.
+        # With no relative flow there is no lift or drag (force ∝ |v|²).
+        # Returning early also avoids the division by velocity_magnitude below, which
+        # would otherwise produce NaN/Inf forces that propagate irreversibly through the
+        # kinematics and blow up the simulation.
         if velocity_magnitude == 0:
             zero_force = np.array([0.0, 0.0])
             _logger.info("compute: zero apparent velocity, returning zero lift/drag force")
@@ -115,8 +118,8 @@ class MediumForceComputation:
             f"aoa={attack_angle:6.2f}° "
             f"C_l={lift_coefficient:6.3f} C_d={drag_coefficient:6.3f} "
             f"area={area:.3f} m² |v|={velocity_magnitude:6.2f} m/s "
-            f"|L|={0.5 * self.__fluid_density * lift_coefficient * area * velocity_magnitude**2:8.2f} N "
-            f"|D|={0.5 * self.__fluid_density * drag_coefficient * area * velocity_magnitude**2:8.2f} N"
+            f"L={0.5 * self.__fluid_density * lift_coefficient * area * velocity_magnitude**2} N "
+            f"D={0.5 * self.__fluid_density * drag_coefficient * area * velocity_magnitude**2} N"
         )
 
         # Calculate the lift and drag forces
