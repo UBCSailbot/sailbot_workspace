@@ -6,3 +6,5 @@ AISShips ais_ships
 # contains Land and Boat obstacles differentiated by obstacle_type attribute
 HelperObstacle[] obstacles
 DesiredHeading desired_heading
+string replan_reason
+int32 remaining_waypoints

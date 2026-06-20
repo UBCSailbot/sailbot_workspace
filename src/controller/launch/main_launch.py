@@ -4,13 +4,12 @@ import importlib
 import os
 from typing import List, Tuple
 
-from launch_ros.actions import Node
-
 from launch.actions import DeclareLaunchArgument, OpaqueFunction
 from launch.launch_context import LaunchContext
 from launch.launch_description import LaunchDescription
 from launch.some_substitutions_type import SomeSubstitutionsType
 from launch.substitutions import LaunchConfiguration
+from launch_ros.actions import Node
 
 # Local launch arguments and constants
 PACKAGE_NAME = "controller"
@@ -65,6 +64,12 @@ def setup_launch(context: LaunchContext) -> List[Node]:
     Returns:
         List[Node]: Nodes to launch.
     """
+    config = LaunchConfiguration("config").perform(context)
+    if not os.path.isabs(config):
+        ros_workspace = os.getenv("ROS_WORKSPACE", default="/workspaces/sailbot_workspace")
+        config = os.path.join(ros_workspace, "src", "global_launch", "config", config)
+        context.launch_configurations["config"] = config
+
     launch_description_entities = list()
     launch_description_entities.append(get_wingsail_controller_description(context))
     return launch_description_entities

@@ -1,5 +1,6 @@
 import math
 import random
+import types
 
 import pytest
 from ompl import base
@@ -21,7 +22,7 @@ from custom_interfaces.msg import (
     Path,
     WindSensor,
 )
-from local_pathfinding.local_path import LocalPathState
+from local_pathfinding.local_path import LocalPathState, WindTracker
 
 LAND_KEY = -1
 
@@ -48,7 +49,9 @@ def fresh_ompl_path():
             target_global_waypoint=HelperLatLon(latitude=0.02, longitude=0.02),
             filtered_wind_sensor=WindSensor(),
             planner="rrtstar",
+            wind_tracker=WindTracker(),
         ),
+        should_simplify_path=False,
     )
 
 
@@ -117,6 +120,7 @@ def test_init_obstacles():
         target_global_waypoint=goal_position,
         filtered_wind_sensor=WindSensor(),
         planner="rrtstar",
+        wind_tracker=WindTracker(),
     )
 
     # create the xy state space from the specified positions of sailbot and the goal
@@ -198,6 +202,7 @@ def test_init_obstacles():
         target_global_waypoint=HelperLatLon(latitude=0.0, longitude=0.0),
         filtered_wind_sensor=WindSensor(),
         planner="rrtstar",
+        wind_tracker=WindTracker(),
     )
 
     updated_obstacles = ompl_path.OMPLPath.init_obstacles(
@@ -214,8 +219,67 @@ def test_init_obstacles():
 
 
 @pytest.mark.parametrize(
+    "distance_from_reference_km,expected_pkl_path",
+    [
+        (0.0, ompl_path.ON_WATER_LAND_PKL_FILE_PATH),  # at the reference -> on-water
+        (10.0, ompl_path.ON_WATER_LAND_PKL_FILE_PATH),  # within threshold -> on-water
+        (
+            ompl_path.DISTANCE_FROM_ON_WATER_LANDMARK - 0.1,
+            ompl_path.ON_WATER_LAND_PKL_FILE_PATH,
+        ),  # just inside threshold -> on-water
+        (
+            ompl_path.DISTANCE_FROM_ON_WATER_LANDMARK + 0.1,
+            ompl_path.OFFSHORE_LAND_PKL_FILE_PATH,
+        ),  # just past threshold -> offshore
+        (100.0, ompl_path.OFFSHORE_LAND_PKL_FILE_PATH),  # far offshore -> offshore
+    ],
+)
+def test_load_appropriate_land_obstacle(
+    distance_from_reference_km, expected_pkl_path, monkeypatch
+):
+    """The dataset is selected by distance from the on-water reference, not by file contents."""
+    # place a position the requested distance away from the on-water reference
+    ref_lat, ref_lon = cs.ON_WATER_REFERENCE
+    lon, lat, _ = cs.GEODESIC.fwd(
+        lons=ref_lon, lats=ref_lat, az=0.0, dist=distance_from_reference_km * 1000
+    )
+    local_path_state = types.SimpleNamespace(position=HelperLatLon(latitude=lat, longitude=lon))
+
+    # avoid depending on the real .pkl contents: record the path that would be loaded
+    loaded_paths = []
+
+    def fake_load_pkl(file_path):
+        loaded_paths.append(file_path)
+        return MultiPolygon()
+
+    monkeypatch.setattr(ompl_path, "load_pkl", fake_load_pkl)
+
+    try:
+        ompl_path.OMPLPath.load_appropriate_land_obstacle(local_path_state)
+
+        assert loaded_paths == [expected_pkl_path], "loaded the wrong land dataset"
+        assert ompl_path.OMPLPath.all_land_data is not None
+    finally:
+        # reset shared static state so other tests reload land data as needed
+        ompl_path.OMPLPath.all_land_data = None
+
+
+def test_load_appropriate_land_obstacle_missing_file_warns(monkeypatch):
+    """A missing land .pkl file logs a warning and falls back to an empty MultiPolygon."""
+    local_path_state = types.SimpleNamespace(position=HelperLatLon(latitude=0.0, longitude=0.0))
+
+    def raise_not_found(file_path):
+        raise FileNotFoundError(file_path)
+
+    monkeypatch.setattr(ompl_path, "load_pkl", raise_not_found)
+
+    ompl_path.OMPLPath.load_appropriate_land_obstacle(local_path_state)
+    assert ompl_path.OMPLPath.all_land_data == MultiPolygon()
+
+
+@pytest.mark.parametrize(
     "x,y,is_valid",
-    [(0.5, 0.5, True), (-14, 0.5, False), (-16, 0.5, True)],
+    [(0.5, 0.5, True), (-13.5, 0.5, False), (-16, 0.5, True)],
 )
 def test_is_state_valid(x: float, y: float, is_valid: bool, fresh_ompl_path):
     state = base.State(fresh_ompl_path._simple_setup.getStateSpace())
@@ -250,9 +314,9 @@ def test_is_state_valid(x: float, y: float, is_valid: bool, fresh_ompl_path):
     ompl_path.OMPLPath.obstacles[1] = boat1
 
     if is_valid:
-        assert ompl_path.OMPLPath.is_state_valid(state), "state should be valid"
+        assert fresh_ompl_path.is_state_valid(state), "state should be valid"
     else:
-        assert not ompl_path.OMPLPath.is_state_valid(state), "state should not be valid"
+        assert not fresh_ompl_path.is_state_valid(state), "state should not be valid"
 
 
 @pytest.mark.parametrize(

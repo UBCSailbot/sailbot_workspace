@@ -2,17 +2,30 @@
 /**:
    ros__parameters:
       # Publishers' period (seconds): how often the publishers publish
+      config: "globals.yaml"
       pub_period_sec: 1.0
       global_path_interval_spacing_km: 3.0
       test_plan: "basic.yaml"
 
 # local_pathfinding parameters
-mock_global_path:
+global_path:
    ros__parameters:
       global_path_filepath: "/workspaces/sailbot_workspace/src/local_pathfinding/global_paths/mock_global_path.csv"
-      write: false
+mock_global_path:
+   ros__parameters:
       gps_threshold: 1.5
-      force: false
+mock_ais:
+   ros__parameters:
+      on_water_mock_ais: False
+      on_water_test_plan: "on_water_mock_ais.yaml"
+mock_gps:
+   ros__parameters:
+      use_gps_noise: True
+      use_ocean_drift: True
+      use_drift_randomization: True
+      ocean_drift_speed_kmph: 0.5
+      ocean_drift_dir_deg: 45.0
+      ocean_drift_accel_kmph2: 0.0
 navigate_main:
    ros__parameters:
       path_planner: "rrtstar"

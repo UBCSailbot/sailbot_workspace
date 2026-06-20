@@ -81,6 +81,7 @@ class SailbotObserver(Node):
         self.msgs: Deque[ci.LPathData] = deque(maxlen=100)
         self.queue = queue
         self.msg: Union[ci.LPathData, None] = None
+        self.last_replan_reason = ""
 
         self.create_timer(3.0, self.update_queue)
 
@@ -93,6 +94,8 @@ class SailbotObserver(Node):
 
         self.get_logger().debug(f"Received new local path message: {msg}")
         self.msg = msg
+        if msg.replan_reason:
+            self.last_replan_reason = msg.replan_reason
 
         self.msgs.append(self.msg)
 
@@ -106,15 +109,20 @@ class SailbotObserver(Node):
             return
 
         if self.queue.qsize() >= 1:
-            self.get_logger().info(
+            self.get_logger().debug(
                 f"queue size is already {self.queue.qsize()}, "
                 f"not sending another new visualizer state until this is consumed."
             )
             return
 
-        self.queue.put(vz.VisualizerState(msgs=self.msgs))
-        self.get_logger().info(f"sent new visualizer state with {len(self.msgs)} messages.")
-        self.get_logger().info(f"queue: {self.queue.qsize()}")
+        self.queue.put(
+            vz.VisualizerState(
+                msgs=self.msgs,
+                last_replan_reason=self.last_replan_reason,
+            )
+        )
+        self.get_logger().debug(f"sent new visualizer state with {len(self.msgs)} messages.")
+        self.get_logger().debug(f"queue: {self.queue.qsize()}")
 
 
 if __name__ == "__main__":

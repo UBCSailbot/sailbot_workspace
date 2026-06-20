@@ -3,12 +3,14 @@
 import math
 from typing import List, NamedTuple
 
-import custom_interfaces.msg as ci
 from pyproj import Geod
 from shapely.geometry import Point, Polygon
 
+import custom_interfaces.msg as ci
+
 GEODESIC = Geod(ellps="WGS84")
 PI = math.pi
+ON_WATER_REFERENCE = (49.277065, -123.201474)  # (lat, lon) pier the on-water edge is cut back to
 
 
 class XY(NamedTuple):
@@ -94,7 +96,7 @@ def polar_to_cartesian(angle_rad: float, magnitude: float) -> XY:
     """
     return XY(
         x=magnitude * math.sin(angle_rad),
-        y=magnitude * math.cos(angle_rad)
+        y=magnitude * math.cos(angle_rad),
     )
 
 
@@ -161,6 +163,29 @@ def latlon_to_xy(reference: ci.HelperLatLon, latlon: ci.HelperLatLon) -> XY:
         x=distance * math.sin(true_bearing),
         y=distance * math.cos(true_bearing),
     )
+
+
+def calculate_distance_from_on_water_reference_km(latlon: ci.HelperLatLon) -> float:
+    """Calculate the geodesic distance from the on-water reference point to a coordinate.
+
+    The on-water reference (:data:`ON_WATER_REFERENCE`) is the pier that the on-water edge of
+    the land data is cut back to.
+
+    Args:
+        latlon (ci.HelperLatLon): Coordinate to measure the distance to.
+
+    Returns:
+        float: The geodesic distance between the on-water reference and latlon, in km.
+    """
+    on_water_reference_lat, on_water_reference_lon = ON_WATER_REFERENCE
+
+    _, _, distance_m = GEODESIC.inv(
+        on_water_reference_lon, on_water_reference_lat, latlon.longitude, latlon.latitude
+    )
+
+    distance_km = meters_to_km(distance_m)
+
+    return distance_km
 
 
 def xy_to_latlon(reference: ci.HelperLatLon, xy: XY) -> ci.HelperLatLon:
@@ -246,3 +271,44 @@ def latlon_polygon_list_to_xy_polygon_list(
 def latlon_list_to_xy_list(reference_latlon, lat_lon_list: List[ci.HelperLatLon]) -> List[XY]:
     """Converts a list of lat/lon coordinates to x/y coordinates."""
     return [latlon_to_xy(reference=reference_latlon, latlon=pos) for pos in lat_lon_list]
+
+
+def rot_to_rad_per_sec(rot: int) -> float:
+    """
+    Convert an AIS rate-of-turn (ROT) value into radians per second.
+
+    The AIS spec defines a two-step conversion:
+      1. Decode to degrees/min:   ROT_deg_per_min = (ROT_ais / 4.733)²
+      2. Convert to rad/s:        ROT_rad_per_sec = ROT_deg_per_min × (π/180) / 60
+
+    Specification:
+    https://documentation.spire.com/ais-fundamentals/understanding-ais-performance-in-high-traffic-zones/
+
+    Special values (not decoded via formula):
+        +127 : turning right at > 10 °/min; Turn Indicator unavailable — returns minimum bound
+        -127 : turning left  at > 10 °/min; Turn Indicator unavailable — returns minimum bound
+        -128 : no turning information available — returns 0.0
+
+    Returns:
+        float: Rate of turn in rad/s. Positive = turning right (starboard), negative = turning left
+
+    Raises:
+        ValueError: If rot is outside the valid int8 range [-128, 127].
+    """
+
+    if not (-128 <= rot <= 127):
+        raise ValueError(f"rot must be a valid int8 value in [-128, 127], got {rot}")
+
+    if rot == -128:
+        return 0.0
+
+    # Turning indicator unavailable: true rate is unknown but guaranteed > 10 °/min.
+    # Return the minimum known bound with correct sign.
+    if abs(rot) == 127:
+        return math.copysign(math.radians(10.0 / 60.0), rot)
+
+    # Capture sign before squaring, since (x)² == (-x)²
+    sign = math.copysign(1.0, rot)
+    rot_dpm = (abs(rot) / 4.733) ** 2
+
+    return math.radians(sign * rot_dpm / 60.0)

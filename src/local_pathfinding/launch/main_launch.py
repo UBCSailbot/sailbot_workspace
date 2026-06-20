@@ -4,19 +4,15 @@ import importlib
 import os
 from typing import List, Tuple
 
-from launch_ros.actions import Node
-
-from launch.actions import DeclareLaunchArgument, OpaqueFunction
+from launch.actions import OpaqueFunction
 from launch.launch_context import LaunchContext
 from launch.launch_description import LaunchDescription
 from launch.some_substitutions_type import SomeSubstitutionsType
 from launch.substitutions import LaunchConfiguration
+from launch_ros.actions import Node
 
 # Local launch arguments and constants
 PACKAGE_NAME = "local_pathfinding"
-
-# Add args with DeclareLaunchArguments object(s) and utilize in setup_launch()
-LOCAL_LAUNCH_ARGUMENTS: List[DeclareLaunchArgument] = []
 
 
 def generate_launch_description() -> LaunchDescription:
@@ -31,7 +27,6 @@ def generate_launch_description() -> LaunchDescription:
         [
             *global_launch_arguments,
             *global_environment_vars,
-            *LOCAL_LAUNCH_ARGUMENTS,
             OpaqueFunction(function=setup_launch),
         ]
     )
@@ -65,15 +60,30 @@ def setup_launch(context: LaunchContext) -> List[Node]:
     Returns:
         List[Node]: Nodes to launch.
     """
-    mode = LaunchConfiguration("mode").perform(context)
+    config = LaunchConfiguration("config").perform(context)
+    if not os.path.isabs(config):
+        ros_workspace = os.getenv("ROS_WORKSPACE", default="/workspaces/sailbot_workspace")
+        config = os.path.join(ros_workspace, "src", "global_launch", "config", config)
+        context.launch_configurations["config"] = config
 
+    mode = LaunchConfiguration("mode").perform(context)
+    on_water_mock_ais = LaunchConfiguration("on_water_mock_ais").perform(context)
     launch_description_entities = []
     launch_description_entities.append(get_navigate_node_description(context))
-    if mode == "development":
+    if mode == "production":
+        launch_description_entities.append(get_global_path_node_description(context))
+        if on_water_mock_ais:
+            launch_description_entities.append(get_mock_ais_node_description(context))
+
+    elif mode == "development":
         launch_description_entities.append(get_mock_global_path_node_description(context))
         launch_description_entities.append(get_mock_wind_sensor_node_description(context))
         launch_description_entities.append(get_mock_ais_node_description(context))
         launch_description_entities.append(get_mock_gps_node_description(context))
+        launch_description_entities.append(get_navigate_observer_node_description(context))
+    elif mode == "sim":
+        launch_description_entities.append(get_mock_global_path_node_description(context))
+        launch_description_entities.append(get_mock_ais_node_description(context))
         launch_description_entities.append(get_navigate_observer_node_description(context))
     return launch_description_entities
 
@@ -89,12 +99,18 @@ def get_navigate_node_description(context: LaunchContext) -> Node:
     """
     node_name = "navigate_main"
     mode = LaunchConfiguration("mode").perform(context)
-    ros_parameters = [
-        {"mode": mode},
-        LaunchConfiguration("config").perform(context),
-    ]
+    inline_params = {"mode": mode}
+
     if mode == "development":
-        ros_parameters[0].update({"test_plan": LaunchConfiguration("test_plan").perform(context)})
+        test_plan = LaunchConfiguration("test_plan").perform(context)
+        # Only override the config's test_plan when one is explicitly provided.
+        if test_plan:
+            inline_params["test_plan"] = test_plan
+
+    ros_parameters = [
+        LaunchConfiguration("config").perform(context),
+        inline_params,
+    ]
 
     ros_arguments: List[SomeSubstitutionsType] = [
         "--log-level",
@@ -104,6 +120,37 @@ def get_navigate_node_description(context: LaunchContext) -> Node:
     node = Node(
         package=PACKAGE_NAME,
         executable="navigate",
+        name=node_name,
+        output="screen",
+        emulate_tty=True,
+        parameters=ros_parameters,
+        ros_arguments=ros_arguments,
+    )
+
+    return node
+
+
+def get_global_path_node_description(context: LaunchContext) -> Node:
+    """Gets the launch description for the global_path node.
+
+    Args:
+        context (LaunchContext): The current launch context.
+
+    Returns:
+        Node: The node object that launches the global_path node.
+    """
+    node_name = "global_path"
+    ros_parameters = [
+        LaunchConfiguration("config").perform(context),
+    ]
+    ros_arguments: List[SomeSubstitutionsType] = [
+        "--log-level",
+        [f"{node_name}:=", LaunchConfiguration("log_level")],
+    ]
+
+    node = Node(
+        package=PACKAGE_NAME,
+        executable="global_path",
         name=node_name,
         output="screen",
         emulate_tty=True,
@@ -125,12 +172,11 @@ def get_mock_global_path_node_description(context: LaunchContext) -> Node:
     """
     node_name = "mock_global_path"
     test_plan = LaunchConfiguration("test_plan").perform(context)
-    # Pass the shared params file plus inline mode/test_plan dict so only
-    # the first entry is treated as a parameter file path.
-    ros_parameters = [
-        LaunchConfiguration("config").perform(context),
-        {"test_plan": test_plan},
-    ]
+    # Pass the shared params file, then inline the test_plan override only when one is
+    # explicitly provided so the config file's test_plan is used by default.
+    ros_parameters: list = [LaunchConfiguration("config").perform(context)]
+    if test_plan:
+        ros_parameters.append({"test_plan": test_plan})
     ros_arguments: List[SomeSubstitutionsType] = [
         "--log-level",
         [f"{node_name}:=", LaunchConfiguration("log_level")],
@@ -153,10 +199,9 @@ def get_mock_ais_node_description(context: LaunchContext) -> Node:
     """Gets the launch description for the mock ais node."""
     node_name = "mock_ais"
     test_plan = LaunchConfiguration("test_plan").perform(context)
-    ros_parameters = [
-        LaunchConfiguration("config").perform(context),
-        {"test_plan": test_plan},
-    ]
+    ros_parameters: list = [LaunchConfiguration("config").perform(context)]
+    if test_plan:
+        ros_parameters.append({"test_plan": test_plan})
     ros_arguments: List[SomeSubstitutionsType] = [
         "--log-level",
         [f"{node_name}:=", LaunchConfiguration("log_level")],
@@ -179,10 +224,9 @@ def get_mock_wind_sensor_node_description(context: LaunchContext) -> Node:
     """Gets the launch description for the mock wind sensor node"""
     node_name = "mock_wind_sensor"
     test_plan = LaunchConfiguration("test_plan").perform(context)
-    ros_parameters = [
-        LaunchConfiguration("config").perform(context),
-        {"test_plan": test_plan},
-    ]
+    ros_parameters: list = [LaunchConfiguration("config").perform(context)]
+    if test_plan:
+        ros_parameters.append({"test_plan": test_plan})
     ros_arguments: List[SomeSubstitutionsType] = [
         "--log-level",
         [f"{node_name}:=", LaunchConfiguration("log_level")],
@@ -205,9 +249,14 @@ def get_mock_gps_node_description(context: LaunchContext) -> Node:
     """Gets the launch description for the mock gps node"""
     node_name = "mock_gps"
     test_plan = LaunchConfiguration("test_plan").perform(context)
+    inline_params = {}
+
+    # Only override the config's test_plan when one is explicitly provided.
+    if test_plan:
+        inline_params["test_plan"] = test_plan
     ros_parameters = [
         LaunchConfiguration("config").perform(context),
-        {"test_plan": test_plan},
+        inline_params,
     ]
     ros_arguments: List[SomeSubstitutionsType] = [
         "--log-level",
