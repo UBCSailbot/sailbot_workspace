@@ -69,8 +69,8 @@ def true_bearing_to_OMPL_cartesian(true_bearing_deg: float) -> float:
         float:  Angle where 0 is east and values increases CCW to 180 deg then
         and decreases CW to -180.
     """
-    angle = (90 - true_bearing_deg) % 360.0
-    if angle > 180.0:
+    angle = (90.0 - true_bearing_deg) % 360.0
+    if angle >= 180.0:
         return - 1.0 * (360.0 - angle)
     return angle
 

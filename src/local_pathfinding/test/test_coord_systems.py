@@ -88,7 +88,9 @@ def test_true_bearing_to_plotly_cartesian(true_bearing: float, plotly_cartesian:
     "true_bearing, ompl_cartesian",
     [
         (0.0, 90.0),
-        (-90.0, 180.0),
+        (-90.0, -180.0),
+        (-89.999, 179.999),
+        (-90.001, -179.999),
         (180.0, -90.0),
         (90.0, 0.0),
         (45.0, 45.0),
