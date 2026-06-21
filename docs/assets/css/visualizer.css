@@ -1,0 +1,18 @@
+.apply-button {
+    transition: background-color 80ms ease, transform 80ms ease, box-shadow 80ms ease;
+}
+
+.apply-button:hover {
+    background-color: rgb(25, 92, 174) !important;
+}
+
+.apply-button:active {
+    background-color: rgb(8, 42, 88) !important;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35);
+    transform: translateY(1px);
+}
+
+.apply-button:focus-visible {
+    outline: 3px solid rgba(18, 70, 139, 0.35);
+    outline-offset: 2px;
+}

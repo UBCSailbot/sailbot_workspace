@@ -81,7 +81,7 @@ physics_engine_node:
       wind_generation:
          mvgaussian_params:
             mean: [5.0, 5.0]
-            cov: "[[25.0, 10.0], [10.0, 15.0]]"
+            cov: "[[4.0, 1.0], [1.0, 4.0]]"
       current_generation:
          mvgaussian_params:
             mean: [1.0, 0.5]
