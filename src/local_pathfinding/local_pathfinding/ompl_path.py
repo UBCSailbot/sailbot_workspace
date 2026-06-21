@@ -412,6 +412,7 @@ class OMPLPath:
         goal_position_in_xy = cs.XY(0, 0)
         goal_polygon = self.create_buffer_around_position(goal_position_in_xy, self._box_buffer)
         goal_x, goal_y = goal_position_in_xy
+        goal_heading_rad = self._compute_goal_heading_rad()
 
         # RRT* requires a symmetric state space which is not the default for Dubins State Space
         space = base.DubinsStateSpace(turningRadius=MIN_TURNING_RADIUS_KM, isSymmetric=True)
@@ -447,8 +448,7 @@ class OMPLPath:
         start().setXY(start_x, start_y)
         start().setYaw(start_heading_rad)
         goal().setXY(goal_x, goal_y)
-        # would be a separate task to do this
-        # goal().setYaw()
+        goal().setYaw(goal_heading_rad)
         self._logger.debug(
             "start and goal state: "
             f"start=({start().getX()}, {start().getY()}); "
@@ -486,6 +486,36 @@ class OMPLPath:
         simple_setup.setPlanner(planner)
 
         return simple_setup
+
+    def _compute_goal_heading_rad(self) -> float:
+        """Compute the yaw to set at the goal state, in OMPL Cartesian radians.
+
+        When the next global waypoint is not the final destination, the yaw is the bearing
+        from that waypoint toward the global waypoint after it, so OMPL plans a path that
+        arrives already aligned for the next leg. When it is the final destination, the
+        arrival orientation is arbitrary and we return 0.0.
+
+        Returns:
+            float: OMPL Cartesian yaw in radians for the goal state.
+        """
+        waypoints = self.state.global_path.waypoints
+        reference = self.state.reference_latlon
+
+        # Global waypoints are stored in reverse order: index 0 is the final destination.
+        if reference == waypoints[0]:
+            return 0.0
+
+        for i in range(1, len(waypoints)):
+            if waypoints[i] == reference:
+                # reference_latlon sits at (0, 0) in the OMPL frame
+                next_to_next_xy = cs.latlon_to_xy(reference, waypoints[i - 1])
+                bearing_deg = cs.get_path_segment_true_bearing(cs.XY(0, 0), next_to_next_xy)
+                return math.radians(cs.true_bearing_to_OMPL_cartesian(bearing_deg))
+
+        self._logger.warning(
+            "reference_latlon not found in global_path waypoints; using default goal yaw 0.0"
+        )
+        return 0.0
 
     def is_state_valid(self, state: Union[base.State, base.SE2StateInternal]) -> bool:
         """Evaluate a state to determine if the configuration collides with an environment
