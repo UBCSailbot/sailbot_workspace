@@ -22,13 +22,14 @@ from boat_simulator.common.frames import (
     Acceleration,
     Body,
     Force,
+    Inertia,
+    Mat3,
     Position,
     Torque,
     Vec2,
     Vec3,
     Velocity,
 )
-from boat_simulator.common.types import Scalar
 from boat_simulator.nodes.physics_engine.fluid_forces import MediumForceComputation
 from boat_simulator.nodes.physics_engine.kinematics_computation import BoatKinematics
 from custom_interfaces.msg import HelperLatLon
@@ -47,11 +48,11 @@ class BoatState:
             expressed in SI units.
     """
 
-    def __init__(self, timestep: Scalar, reference_latlon: HelperLatLon):
+    def __init__(self, timestep: float, reference_latlon: HelperLatLon):
         """Initializes an instance of `BoatState`.
 
         Args:
-            timestep (Scalar): The time interval for calculations, expressed in seconds (s).
+            timestep (float): The time interval for calculations, expressed in seconds (s).
             reference_latlon (HelperLatLon): Geographic origin of the simulator's local XY frame,
                 used to project `global_position` (meters) to lat/lon.
         """
@@ -108,7 +109,7 @@ class BoatState:
             + f"trim_tab={trim_tab_angle.degrees:.2f}"
         )
 
-        sail_angle_deg: TrimTabAngle = 0.0
+        sail_angle_deg: float = 0.0
 
         rel_net_force, net_torque = self.__compute_net_force_and_torque(
             rel_wind_vel, rel_water_vel, rudder_angle_deg, sail_angle_deg
@@ -130,8 +131,8 @@ class BoatState:
         self,
         rel_wind_vel: Vec2[Velocity, Body],
         rel_water_vel: Vec2[Velocity, Body],
-        rudder_angle_deg: RudderAngle,
-        sail_angle_deg: TrimTabAngle,
+        rudder_angle_deg: float,
+        sail_angle_deg: float,
     ) -> Tuple[Vec3[Force, NED], Vec3[Torque, Body]]:
         """Calculates the net force and net torque acting on the boat caused by the wind and water.
 
@@ -259,12 +260,12 @@ class BoatState:
         return self.__kinematics_computation.relative_data.angular_acceleration
 
     @property
-    def inertia(self) -> NDArray:
+    def inertia(self) -> Mat3[Inertia, Body]:
         """Returns the boat's inertia, expressed in kilogram square meters [kg•m^2]."""
         return self.__kinematics_computation.inertia
 
     @property
-    def inertia_inverse(self) -> NDArray:
+    def inertia_inverse(self) -> Mat3[Inertia, Body]:
         """Returns the boat's inverse inertia,
         expressed in per kilogram square meters [1/(kg•m^2)]."""
         return self.__kinematics_computation.inertia_inverse

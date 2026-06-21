@@ -11,7 +11,7 @@ from boat_simulator.common.frames import (
     Velocity,
 )
 
-_ZERO_POSITION = Vec3.from_xyz(0.0, 0.0, 0.0)
+_ZERO_POSITION: Vec3 = Vec3.from_xyz(0.0, 0.0, 0.0)
 
 
 @dataclass

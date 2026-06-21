@@ -33,7 +33,6 @@ from boat_simulator.common.frames import Vec2
 from boat_simulator.common.generators import MVGaussianGenerator
 from boat_simulator.common.geo_conversions import local_position_to_gps_lat_lon
 from boat_simulator.common.sensors import SimGPS, SimWindSensor
-from boat_simulator.common.types import Scalar
 from boat_simulator.common.unit_conversions import ConversionFactors
 from boat_simulator.nodes.physics_engine.fluid_generation import FluidGenerator
 from boat_simulator.nodes.physics_engine.model import BoatState
@@ -757,11 +756,11 @@ class PhysicsEngineNode(Node):
         return self.__desired_heading_sub
 
     @property
-    def rudder_angle(self) -> Scalar:
+    def rudder_angle(self) -> float:
         return self.__rudder_angle
 
     @property
-    def sail_trim_tab_angle(self) -> Scalar:
+    def sail_trim_tab_angle(self) -> float:
         return self.__sail_trim_tab_angle
 
     @property

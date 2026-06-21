@@ -72,8 +72,8 @@ class LowLevelControlNode(Node):
         """Initializes private attributes of this class that are not initialized anywhere else
         during the initialization process.
         """
-        self.__rudder_angle = 0
-        self.__sail_trim_tab_angle = 0
+        self.__rudder_angle = 0.0
+        self.__sail_trim_tab_angle = 0.0
         self._is_rudder_action_active = False
         self._is_sail_action_active = False
         self.__gps = None

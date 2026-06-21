@@ -59,20 +59,20 @@ class GaussianGenerator(VectorGenerator):
     """This class generates random scalars using a univariate gaussian distribution.
 
     Attributes:
-        mean (Scalar): The mean of the gaussian distribution.
-        stdev (Scalar): The standard deviation of the gaussian distribution. This value is
+        mean (float): The mean of the gaussian distribution.
+        stdev (float): The standard deviation of the gaussian distribution. This value is
             strictly positive.
-        value (Scalar): The latest generated scalar.
+        value (float): The latest generated float.
 
     Extends: VectorGenerator
     """
 
-    def __init__(self, mean: Scalar, stdev: Scalar, seed: int = 0):
+    def __init__(self, mean: float, stdev: float, seed: int = 0):
         """Initializes an instance of GaussianGenerator.
 
         Args:
-            mean (Scalar): _description_
-            stdev (Scalar): _description_
+            mean (float): _description_
+            stdev (float): _description_
             seed (int, optional): _description_. Defaults to 0.
         """
         super().__init__(seed=seed)
@@ -80,20 +80,20 @@ class GaussianGenerator(VectorGenerator):
         self.__stdev = stdev
         self.next()
 
-    def _next(self) -> Scalar:
+    def _next(self) -> float:
         self.__value = np.random.normal(self.mean, self.stdev)
         return self.__value
 
     @property
-    def mean(self) -> Scalar:
+    def mean(self) -> float:
         return self.__mean
 
     @property
-    def stdev(self) -> Scalar:
+    def stdev(self) -> float:
         return self.__stdev
 
     @property
-    def value(self) -> Scalar:
+    def value(self) -> float:
         return self.__value
 
 

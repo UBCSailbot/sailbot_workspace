@@ -1,18 +1,17 @@
 """Formulas for estimating the next position, velocity, and acceleration."""
 
-from numpy.typing import NDArray
-
 from boat_simulator.common.frames import (
     Acceleration,
     Body,
     Force,
     Frame,
+    Inertia,
+    Mat3,
     Position,
     Torque,
     Vec3,
     Velocity,
 )
-from boat_simulator.common.types import Scalar
 
 
 class KinematicsFormulas:
@@ -31,7 +30,7 @@ class KinematicsFormulas:
         pos: Vec3[Position, Frame],
         vel: Vec3[Velocity, Frame],
         acc: Vec3[Acceleration, Frame],
-        timestep: Scalar,
+        timestep: float,
     ) -> Vec3[Position, Frame]:
         """Calculates the boat's next position based on previous data and time step. Can be used
         for both linear and angular positions.
@@ -45,7 +44,7 @@ class KinematicsFormulas:
             acc (Vec3[Acceleration, Frame]): The last recorded boat acceleration prior to the
                 current time step, expressed in meters per second squared (m/s^2) for linear, and
                 radians per second squared (rad/s^2) for angular.
-            timestep (Scalar): The time interval on which the calculation is based, expressed in
+            timestep (float): The time interval on which the calculation is based, expressed in
                 seconds (s).
 
         Returns:
@@ -58,7 +57,7 @@ class KinematicsFormulas:
     def next_velocity(
         vel: Vec3[Velocity, Frame],
         acc: Vec3[Acceleration, Frame],
-        timestep: Scalar,
+        timestep: float,
     ) -> Vec3[Velocity, Frame]:
         """Calculates the boat's next velocity based on previous velocity, acceleration, and time
         step. Can be used for both linear and angular velocities.
@@ -70,7 +69,7 @@ class KinematicsFormulas:
             acc (Vec3[Acceleration, Frame]): The last recorded boat acceleration prior to the
                 current time step, expressed in meters per second squared (m/s^2) for linear, and
                 radians per second squared (rad/s^2) for angular.
-            timestep (Scalar): The time interval on which the calculation is based, expressed in
+            timestep (float): The time interval on which the calculation is based, expressed in
                 seconds (s).
 
         Returns:
@@ -81,12 +80,12 @@ class KinematicsFormulas:
 
     @staticmethod
     def next_lin_acceleration(
-        mass: Scalar, net_force: Vec3[Force, Frame]
+        mass: float, net_force: Vec3[Force, Frame]
     ) -> Vec3[Acceleration, Frame]:
         """Calculates the boat's next linear acceleration based on its mass and net force.
 
         Args:
-            mass (Scalar): The mass of the boat, expressed in kilograms (kg).
+            mass (float): The mass of the boat, expressed in kilograms (kg).
             net_force (Vec3[Force, Frame]): The net force acting on the boat, expressed in newtons
                 (N).
 
@@ -98,7 +97,7 @@ class KinematicsFormulas:
 
     @staticmethod
     def next_ang_acceleration(
-        net_torque: Vec3[Torque, Body], inertia_inverse: NDArray
+        net_torque: Vec3[Torque, Body], inertia_inverse: Mat3[Inertia, Body]
     ) -> Vec3[Acceleration, Body]:
         """Calculates the boat's next angular acceleration based on net torque and inverse of
         inertia.
@@ -106,11 +105,11 @@ class KinematicsFormulas:
         Args:
             net_torque (Vec3[Torque, Body]): The net torque acting on the boat, expressed in
                 newton-meters (N•m).
-            inertia_inverse (NDArray): The inverse of the boat's inertia, expressed in per
-                kilograms-meters squared (1/(kg•m^2)).
+            inertia_inverse (Mat3[Inertia, Body]): The inverse of the boat's inertia, expressed in
+                per kilograms-meters squared (1/(kg•m^2)).
 
         Returns:
             Vec3[Acceleration, Body]: The calculated next angular acceleration of the boat,
                 expressed in radians per second squared (rad/s^2).
         """
-        return Vec3(inertia_inverse @ net_torque.data)
+        return Vec3(inertia_inverse.data @ net_torque.data)

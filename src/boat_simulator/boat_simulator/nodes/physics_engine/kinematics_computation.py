@@ -1,19 +1,18 @@
 """This module contains the kinematics computations for the boat."""
 
 import numpy as np
-from numpy.typing import NDArray
 from rclpy.logging import get_logger
 
 import boat_simulator.common.constants as constants
-import boat_simulator.common.utils as utils
 from boat_simulator.common.frames import (
     NED,
     Body,
     Force,
+    Inertia,
+    Mat3,
     Torque,
     Vec3,
 )
-from boat_simulator.common.types import Scalar
 from boat_simulator.nodes.physics_engine.kinematics_data import KinematicsData
 from boat_simulator.nodes.physics_engine.kinematics_formulas import KinematicsFormulas
 
@@ -24,32 +23,31 @@ class BoatKinematics:
     """Computes and stores kinematic data of the boat at different time steps.
 
     Attributes:
-        `timestep` (Scalar): The time interval for calculations, expressed in seconds (s).
-        `boat_mass` (Scalar): The mass of the boat, expressed in kilograms (kg).
-        `inertia` (NDArray): The inertia of the boat, expressed in kilograms-meters squared
-            (kg•m^2).
-        `inertia_inverse` (NDArray): The inverse of the inertia matrix, expressed in
+        `timestep` (float): The time interval for calculations, expressed in seconds (s).
+        `boat_mass` (float): The mass of the boat, expressed in kilograms (kg).
+        `inertia` (Mat3[Inertia, Body]): The body-frame inertia tensor of the boat, expressed in
             kilograms-meters squared (kg•m^2).
+        `inertia_inverse` (Mat3[Inertia, Body]): The inverse of the inertia tensor, expressed in
+            per kilograms-meters squared (1/(kg•m^2)).
         `relative_data` (KinematicsData): Kinematics data in the relative reference frame, using
             SI units.
         `global_data` (KinematicsData): Kinematics data in the global reference frame, using SI
             units.
     """
 
-    def __init__(self, timestep: Scalar, mass: Scalar, inertia: NDArray) -> None:
+    def __init__(self, timestep: float, mass: float, inertia: Mat3[Inertia, Body]) -> None:
         """Initializes an instance of `BoatKinematics`.
 
         Args:
-            timestep (Scalar): The time interval for calculations, expressed in seconds (s).
-            mass (Scalar): The mass of the boat, expressed in kilograms (kg).
-            inertia (NDArray): The inertia of the boat, expressed in kilograms-meters squared
-                (kg•m^2).
+            timestep (float): The time interval for calculations, expressed in seconds (s).
+            mass (float): The mass of the boat, expressed in kilograms (kg).
+            inertia (Mat3[Inertia, Body]): The body-frame inertia tensor of the boat, expressed in
+                kilograms-meters squared (kg•m^2).
         """
         self.__timestep = timestep
         self.__boat_mass = mass
-        assert inertia.shape == (3, 3)
-        self.__inertia = inertia
-        self.__inertia_inverse = np.linalg.inv(inertia)
+        self.__inertia: Mat3[Inertia, Body] = inertia
+        self.__inertia_inverse: Mat3[Inertia, Body] = Mat3(np.linalg.inv(inertia.data))
         self.__relative_data: KinematicsData[Body] = KinematicsData(is_relative=True)
         self.__global_data: KinematicsData[NED] = KinematicsData()
 
@@ -68,7 +66,7 @@ class BoatKinematics:
         """
 
         yaw_radians = self.__update_ang_data(net_torque)
-
+        # BUG: Frame mis match occurs here
         self.__update_linear_relative_data(glo_net_force)
 
         # z-directional acceleration and velocity are neglected.
@@ -97,27 +95,33 @@ class BoatKinematics:
                 expressed in radians (rad).
         """
 
-        next_ang_acceleration = KinematicsFormulas.next_ang_acceleration(
-            net_torque, self.inertia_inverse
+        # For this yaw-only planar model the angular acceleration, velocity, and position are
+        # identical in the Body and NED frames (rotation is purely about the shared z axis), so the
+        # results are stored into both KinematicsData[Body] and KinematicsData[NED]. They are typed
+        # as frame-agnostic Vec3 to reflect that they are valid in either frame.
+        next_ang_acceleration: Vec3 = Vec3(
+            KinematicsFormulas.next_ang_acceleration(net_torque, self.inertia_inverse).data
         )
 
-        next_ang_velocity = KinematicsFormulas.next_velocity(
+        next_ang_velocity: Vec3 = Vec3(
+            KinematicsFormulas.next_velocity(
+                self.global_data.angular_velocity,
+                self.global_data.angular_acceleration,
+                self.timestep,
+            ).data
+        )
+
+        ang_pos = KinematicsFormulas.next_position(
+            self.global_data.angular_position,
             self.global_data.angular_velocity,
             self.global_data.angular_acceleration,
             self.timestep,
-        )
-
-        next_ang_position = Vec3(
-            utils.bound_to_180(
-                KinematicsFormulas.next_position(
-                    self.global_data.angular_position,
-                    self.global_data.angular_velocity,
-                    self.global_data.angular_acceleration,
-                    self.timestep,
-                ).data,
-                isDegrees=False,
-            )
-        )
+        ).data
+        # Wrap each angular component to [-π, π). Equivalent to bound_to_180(isDegrees=False), done
+        # inline so the float64 angular vector is not narrowed by that helper's int32/float32 array
+        # overload.
+        ang_pos = (ang_pos + np.pi) % (2 * np.pi) - np.pi
+        next_ang_position: Vec3 = Vec3(ang_pos)
 
         self.__relative_data.angular_acceleration = next_ang_acceleration
         self.__relative_data.angular_velocity = next_ang_velocity
@@ -141,11 +145,11 @@ class BoatKinematics:
         """Updates the linear kinematic data in the relative reference frame.
 
         Args:
-            net_force (Vec3[Force, Body]): The net force acting on the boat in the relative
+            net_force (Vec3[Force, Body]): The net force acting on the boat in the relative (body)
                 reference frame, expressed in newtons (N).
         """
-        next_relative_acceleration = KinematicsFormulas.next_lin_acceleration(
-            self.boat_mass, net_force
+        next_relative_acceleration: Vec3 = Vec3(
+            KinematicsFormulas.next_lin_acceleration(self.boat_mass, net_force).data
         )
         next_relative_velocity = KinematicsFormulas.next_velocity(
             self.relative_data.linear_velocity,
@@ -205,11 +209,11 @@ class BoatKinematics:
         return self.__timestep
 
     @property
-    def inertia(self) -> NDArray:
+    def inertia(self) -> Mat3[Inertia, Body]:
         return self.__inertia
 
     @property
-    def inertia_inverse(self) -> NDArray:
+    def inertia_inverse(self) -> Mat3[Inertia, Body]:
         return self.__inertia_inverse
 
     @property

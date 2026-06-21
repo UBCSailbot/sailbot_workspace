@@ -14,25 +14,25 @@ class ActuatorController:
     """Abstract class for rudder and sail actuation mechanisms.
 
     Attributes:
-        `current_control_ang` (Scalar): Current control mechanism angle in degrees.
-        `time_step` (Scalar): Time taken per iteration given in seconds.
-        `control_speed` (Scalar): Speed of control angle change in degrees / second.
+        `current_control_ang` (float): Current control mechanism angle in degrees.
+        `time_step` (float): Time taken per iteration given in seconds.
+        `control_speed` (float): Speed of control angle change in degrees / second.
         'max_angle_range' (Tuple): Max control angle range in degrees, minimum[0] and maximum[1]
     """
 
     def __init__(
         self,
-        current_control_ang: Scalar,
-        time_step: Scalar,
-        control_speed: Scalar,
-        max_angle_range: Tuple[Scalar, Scalar],
+        current_control_ang: float,
+        time_step: float,
+        control_speed: float,
+        max_angle_range: Tuple[float, float],
     ):
         """Initializes the class attributes. Note that this class cannot be directly instantiated.
 
         Args:
-            `current_control_ang` (Scalar): Current control mechanism angle in degrees.
-            `time_step` (Scalar): Time per iteration given in seconds.
-            `control_speed` (Scalar): Speed of control angle change in degrees / second.
+            `current_control_ang` (float): Current control mechanism angle in degrees.
+            `time_step` (float): Time per iteration given in seconds.
+            `control_speed` (float): Speed of control angle change in degrees / second.
             'max_angle_range' (Tuple): Max control angle range in degrees,minimum[0] and maximum[1]
         """
         self.current_control_ang = current_control_ang
@@ -81,27 +81,27 @@ class RudderController(ActuatorController):
 
     def __init__(
         self,
-        current_heading: Scalar,
-        desired_heading: Scalar,
-        current_control_ang: Scalar,
-        time_step: Scalar,
-        kp: Scalar,
-        cp: Scalar,
-        control_speed: Scalar,
+        current_heading: float,
+        desired_heading: float,
+        current_control_ang: float,
+        time_step: float,
+        kp: float,
+        cp: float,
+        control_speed: float,
         max_angle_range=RUDDER_MAX_ANGLE_RANGE,
     ):
         """Initializes the class attributes.
 
         Args:
-            `current_heading` (Scalar): Current boat heading direction in degrees,
+            `current_heading` (float): Current boat heading direction in degrees,
              0 degrees (North) at the positive y axis and increasing clockwise.
-            `desired_heading` (Scalar): Target boating heading direction in degrees,
+            `desired_heading` (float): Target boating heading direction in degrees,
              0 degrees (North) at the positive y axis and increasing clockwise.
-            `current_control_ang` (Scalar): Current control mechanism angle in degrees.
-            `time_step` (Scalar): Time per iteration given in seconds.
-            `kp` (Scalar): Proportional constant when calculating error.
-            `cp` (Scalar): Tuning parameter for control action.
-            `control_speed` (Scalar): Speed of controller change in degrees per second.
+            `current_control_ang` (float): Current control mechanism angle in degrees.
+            `time_step` (float): Time per iteration given in seconds.
+            `kp` (float): Proportional constant when calculating error.
+            `cp` (float): Tuning parameter for control action.
+            `control_speed` (float): Speed of controller change in degrees per second.
             'max_angle_range' (Tuple): Max control angle range in degrees,minimum[0] and maximum[1]
 
         """
@@ -120,26 +120,26 @@ class RudderController(ActuatorController):
         self.setpoint = 0.0  # current setpoint angle in degrees
         self.reset_setpoint(self.desired_heading, self.current_heading)
 
-    def reset_setpoint(self, new_desired_heading: Scalar, new_current_heading: Scalar) -> None:
+    def reset_setpoint(self, new_desired_heading: float, new_current_heading: float) -> None:
         """Resets a new desired heading angle, therefore recalculating the corresponding
         setpoint and running error.
 
         Args:
-            `new_desired_heading` (Scalar): New desired heading in degrees
-            `new_current_heading` (Scalar): New current heading in degrees
+            `new_desired_heading` (float): New desired heading in degrees
+            `new_current_heading` (float): New current heading in degrees
         """
 
         self.desired_heading = new_desired_heading
         self.current_heading = new_current_heading
         self._compute_setpoint()
 
-    def _compute_error(self) -> Scalar:
+    def _compute_error(self) -> float:
         """Computes the error between desired and current heading
         implementation taken from: https://stackoverflow.com/a/2007279
         Angles are bound with the convention (-180, 180]
 
         Returns:
-            Scalar: The error between the given headings in radians, 0 radians at positive
+            float: The error between the given headings in radians, 0 radians at positive
             y axis and increasing clockwise
         """
         desired_rad, current_rad = np.deg2rad(self.desired_heading), np.deg2rad(
@@ -150,13 +150,13 @@ class RudderController(ActuatorController):
 
         return error_rad
 
-    def _compute_setpoint(self) -> Scalar:
+    def _compute_setpoint(self) -> float:
         """Computes the corresponding control error angle between current control angle and
         target control angle. Uses Raye's implementation from:
             https://github.com/UBCSailbot/raye-boat-controller/blob/master/python/tack_controller.py
 
         Returns:
-            Scalar: Corresponding error angle between the
+            float: Corresponding error angle between the
             current and target control angle in degrees"""
 
         heading_error_rad = self._compute_error()
@@ -180,7 +180,7 @@ class RudderController(ActuatorController):
         """Changes desired heading to a new angle. Used for testing purposes
 
         Args:
-            `changed_desired_heading` (Scalar): New desired heading in degrees
+            `changed_desired_heading` (float): New desired heading in degrees
 
         """
         self.desired_heading = changed_desired_heading
@@ -194,20 +194,20 @@ class SailController(ActuatorController):
 
     def __init__(
         self,
-        target_angle: Scalar,
-        current_control_ang: Scalar,
-        time_step: Scalar,
-        control_speed: Scalar,
+        target_angle: float,
+        current_control_ang: float,
+        time_step: float,
+        control_speed: float,
         max_angle_range=SAIL_MAX_ANGLE_RANGE,
     ):
         """Initializes the class attributes.
 
         Args:
-            `target_angle` (Scalar): Target angle for the trim tab in degrees.
+            `target_angle` (float): Target angle for the trim tab in degrees.
              0 degrees (North) at the positive y axis and increasing clockwise.
-            `current_control_ang` (Scalar): Current control mechanism angle in degrees.
-            `time_step` (Scalar): Time per iteration given in seconds.
-            `control_speed` (Scalar): Speed in which the controller turns in degrees / seconds.
+            `current_control_ang` (float): Current control mechanism angle in degrees.
+            `time_step` (float): Time per iteration given in seconds.
+            `control_speed` (float): Speed in which the controller turns in degrees / seconds.
             'max_angle_range' (Tuple): Trim tab angle range in degrees,minimum[0] and maximum[1].
 
         """
@@ -220,22 +220,22 @@ class SailController(ActuatorController):
         self.target_angle = target_angle
         self.reset_setpoint(self.target_angle)
 
-    def reset_setpoint(self, new_target: Scalar) -> None:
+    def reset_setpoint(self, new_target: float) -> None:
         """Resets a new desired trim tab angle and updates the running_error
 
         Args:
-            `target_angle` (Scalar): New desired sail controller angle in degrees
+            `target_angle` (float): New desired sail controller angle in degrees
 
         """
         self.target_angle = new_target
         self._compute_error()
 
-    def _compute_error(self) -> Scalar:
+    def _compute_error(self) -> float:
         """Computes the corresponding control error angle between current control angle and
         target control angle
 
         Returns:
-            Scalar: Corresponding error angle between the
+            float: Corresponding error angle between the
             current and target control angle in degrees"""
 
         self.running_error = self.target_angle - self.current_control_ang

@@ -86,7 +86,7 @@ class SimWindSensor:
     def __init__(
         self,
         wind: NDArray,
-        noise_stdev: List[Scalar] = [1.0, 1.0],
+        noise_stdev: List[float] = [1.0, 1.0],
         enable_noise: bool = False,
     ) -> None:
         self._enable_noise = enable_noise
@@ -114,25 +114,25 @@ class SimGPS(Sensor):
     Properties:
         lat_lon (NDArray): Boat latitude and longitude in degrees [°] (2x1 array,
             [latitude, longitude]).
-        speed (Scalar): Boat speed in meters per second [m/s].
-        heading (Scalar): Boat heading in degrees [°], normalized to [-180, 180]
+        speed (float): Boat speed in meters per second [m/s].
+        heading (float): Boat heading in degrees [°], normalized to [-180, 180]
             (0° is straight, increasing CCW).
         enable_noise (bool): Enables noise for fields. False by default.
         enable_delay (bool): Enables delay for fields. False by default.
     """
 
     lat_lon: NDArray
-    speed: Scalar
-    heading: Scalar
+    speed: float
+    heading: float
 
     def __init__(
         self,
         lat_lon: NDArray,
-        speed: Scalar,
-        heading: Scalar,
-        lat_lon_noise_stdev: Scalar = 0.00009,
-        speed_noise_stdev: Scalar = 0.1,
-        heading_noise_stdev: Scalar = 0.1,
+        speed: float,
+        heading: float,
+        lat_lon_noise_stdev: float = 0.00009,
+        speed_noise_stdev: float = 0.1,
+        heading_noise_stdev: float = 0.1,
         enable_noise: bool = False,
         enable_delay: bool = False,
     ):
@@ -149,10 +149,10 @@ class SimGPS(Sensor):
         self.lat_lon_next_value: NDArray = lat_lon
 
         self.speed_queue_next: bool = False
-        self.speed_next_value: Scalar = speed
+        self.speed_next_value: float = speed
 
         self.heading_queue_next: bool = False
-        self.heading_next_value: Scalar = heading
+        self.heading_next_value: float = heading
 
         self.lat_lon_noisemaker: GaussianGenerator = GaussianGenerator(
             mean=0, stdev=lat_lon_noise_stdev
@@ -185,7 +185,7 @@ class SimGPS(Sensor):
         self.lat_lon_next_value = lat_lon
 
     @property  # type: ignore
-    def speed(self) -> Scalar:
+    def speed(self) -> float:
         return (
             self._speed + self.speed_noisemaker.next()  # type: ignore
             if self.enable_noise
@@ -193,7 +193,7 @@ class SimGPS(Sensor):
         )
 
     @speed.setter
-    def speed(self, speed: Scalar):
+    def speed(self, speed: float):
 
         if not self.enable_delay:
             self._speed = speed
@@ -207,7 +207,7 @@ class SimGPS(Sensor):
         self.speed_next_value = speed
 
     @property  # type: ignore
-    def heading(self) -> Scalar:
+    def heading(self) -> float:
         return (
             self._heading + self.heading_noisemaker.next()  # type: ignore
             if self.enable_noise
@@ -215,7 +215,7 @@ class SimGPS(Sensor):
         )
 
     @heading.setter
-    def heading(self, heading: Scalar):
+    def heading(self, heading: float):
 
         if not self.enable_delay:
             self._heading = heading
