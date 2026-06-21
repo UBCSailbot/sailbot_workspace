@@ -59,15 +59,16 @@ def true_bearing_to_plotly_cartesian(true_bearing_deg: float) -> float:
 
 
 def true_bearing_to_OMPL_cartesian(true_bearing_deg: float) -> float:
-    """Convert a true bearing angle to the equivalent OMPL cartesian angle .
+    """Convert a navigation true bearing to an OMPL Cartesian yaw in degrees.
 
     Args:
-        true_bearing_degrees (float): Angle where 0 is true north. Range: -180 < heading <= 180.
-        Increases in the clockwise direction till 180 degrees.
-        Decreases in the counter-clockwise direction till -180 (exclusive)
+        true_bearing_deg: Navigation angle in degrees, where 0 is north and positive values
+            rotate clockwise. Expected range is (-180, 180].
+
     Returns:
-        float:  Angle where 0 is east and values increases CCW to 180 deg then
-        and decreases CW to -180.
+        The equivalent Cartesian angle in degrees, where 0 is east and positive values rotate
+        counterclockwise. The result is in [-180, 180), matching OMPL's SO(2) bounds; west is
+        represented as -180 rather than 180 degrees.
     """
     angle = (90.0 - true_bearing_deg) % 360.0
     if angle >= 180.0:

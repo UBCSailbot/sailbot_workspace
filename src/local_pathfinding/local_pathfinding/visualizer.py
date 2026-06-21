@@ -40,6 +40,7 @@ from local_pathfinding.ompl_validity import NO_GO_ZONE
 UPDATE_INTERVAL_MS = 2500
 DEFAULT_PLOT_RANGE = [-100.0, 100.0]
 BOX_BUFFER_SIZE_KM = 1.0
+STATE_SPACE_VIEW_BUFFER_KM = 0.5
 
 # Preserve the compact wind inset's width while centering it beneath the main plot.
 WIND_BOX_X_DOMAIN = (0.385, 0.615)
@@ -1557,8 +1558,8 @@ def get_state_space_bounds(
 
     x_min, y_min, x_max, y_max = vs.state_space.bounds
     return (
-        cs.XY(x_min, y_min),
-        cs.XY(x_max, y_max),
+        cs.XY(x_min - STATE_SPACE_VIEW_BUFFER_KM, y_min - STATE_SPACE_VIEW_BUFFER_KM),
+        cs.XY(x_max + STATE_SPACE_VIEW_BUFFER_KM, y_max + STATE_SPACE_VIEW_BUFFER_KM),
     )
 
 

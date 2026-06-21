@@ -40,7 +40,7 @@ MIN_TURNING_RADIUS_KM = 0.05  # 50 m
 # valid but the segment straddles an obstacle collision zone
 # setting this any smaller can lead to OMPL not being able to construct a tree that reaches
 # the goal state
-MAX_EDGE_LEN_KM = 0.5
+MAX_EDGE_LEN_KM = 0.1
 MAX_SOLVER_RUN_TIME_SEC = 1.0
 MAX_SIMPLIFIER_RUN_TIME_SEC = 0.1
 
@@ -390,6 +390,17 @@ class OMPLPath:
         raise NotImplementedError
 
     def _init_simple_setup(self, land_multi_polygon) -> og.SimpleSetup:
+        """Build the configured OMPL planning problem for the current local-path state.
+
+        The Dubins state uses an east/north Cartesian frame in kilometres. Its yaw is zero when
+        pointing east, increases counterclockwise, and is bounded to [-pi, pi).
+
+        Args:
+            land_multi_polygon: Optional land geometry override used when initializing obstacles.
+
+        Returns:
+            The configured OMPL simple setup containing the start and goal states.
+        """
         # Create buffered rectangles around sailbot's position and the goal state
         start_position_in_xy = cs.latlon_to_xy(self.state.reference_latlon, self.state.position)
         start_box = self.create_buffer_around_position(start_position_in_xy, self._box_buffer)
@@ -471,7 +482,7 @@ class OMPLPath:
 
         simple_setup.setOptimizationObjective(objective)
         planner = og.RRTstar(space_information)
-        planner.setRange(MAX_EDGE_LEN_KM)
+        # planner.setRange(MAX_EDGE_LEN_KM)
         simple_setup.setPlanner(planner)
 
         return simple_setup
