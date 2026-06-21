@@ -316,7 +316,7 @@ class LowLevelControlNode(Node):
             self._is_sail_action_active = True
             while not self.__sail_controller.is_target_reached:
                 self.__sail_controller.update_state()
-                i = self.__sail_controller.current_control_ang
+                i = float(self.__sail_controller.current_control_ang)
                 feedback_msg.current_angular_position = i
                 goal_handle.publish_feedback(feedback=feedback_msg)
                 self.__sail_trim_tab_angle = i
