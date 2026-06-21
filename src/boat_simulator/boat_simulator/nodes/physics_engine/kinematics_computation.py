@@ -4,15 +4,15 @@ import numpy as np
 from rclpy.logging import get_logger
 
 import boat_simulator.common.constants as constants
-from boat_simulator.common.frames import (
+from boat_simulator.common import utils
+from boat_simulator.common.conventions import (
     NED,
     Body,
     Force,
     Inertia,
-    Mat3,
     Torque,
-    Vec3,
 )
+from boat_simulator.common.types import Mat3, Vec3
 from boat_simulator.nodes.physics_engine.kinematics_data import KinematicsData
 from boat_simulator.nodes.physics_engine.kinematics_formulas import KinematicsFormulas
 
@@ -66,8 +66,15 @@ class BoatKinematics:
         """
 
         yaw_radians = self.__update_ang_data(net_torque)
-        # BUG: Frame mis match occurs here
-        self.__update_linear_relative_data(glo_net_force)
+        # Express the NED force in the body frame before updating body-frame kinematics.
+        orientation = self.global_data.angular_position
+        ned_to_body = utils.ned_to_body_rotation_matrix(
+            roll_rad=orientation.y,
+            pitch_rad=orientation.x,
+            yaw_rad=yaw_radians,
+        )
+        rel_net_force: Vec3[Force, Body] = Vec3(ned_to_body @ glo_net_force.data)
+        self.__update_linear_relative_data(rel_net_force)
 
         # z-directional acceleration and velocity are neglected.
         # The net force from BoatState is already expressed in the global frame (it is computed

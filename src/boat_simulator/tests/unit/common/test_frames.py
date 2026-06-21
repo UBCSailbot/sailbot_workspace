@@ -3,19 +3,15 @@ import math
 import numpy as np
 import pytest
 
-from boat_simulator.common.frames import (
-    Body,
-    Force,
+from boat_simulator.common.angle_conventions import (
     Heading,
-    NED,
-    Position,
-    SteeringAngle,
-    Vec2,
-    Vec3,
+    RudderAngle,
     clamp,
     saturated_steering_angle,
     wrap_to_pi,
 )
+from boat_simulator.common.conventions import NED, Body, Force, Position
+from boat_simulator.common.types import Vec2, Vec3
 
 
 def test_vec3_construction_access_and_arithmetic() -> None:
@@ -81,7 +77,7 @@ def test_angles_reject_non_finite_values(angle: float) -> None:
     with pytest.raises(ValueError, match="finite"):
         Heading(angle)
     with pytest.raises(ValueError, match="finite"):
-        SteeringAngle(angle)
+        RudderAngle(angle)
     with pytest.raises(ValueError, match="finite"):
         saturated_steering_angle(angle)
 
@@ -93,9 +89,9 @@ def test_heading_normalizes_and_converts_units() -> None:
 
 
 def test_steering_angle_validates_and_saturates() -> None:
-    assert SteeringAngle.from_degrees(30).degrees == pytest.approx(30)
+    assert RudderAngle.from_degrees(30).degrees == pytest.approx(30)
     with pytest.raises(ValueError, match=r"\[-30 deg, 30 deg\]"):
-        SteeringAngle.from_degrees(31)
+        RudderAngle.from_degrees(31)
 
     assert saturated_steering_angle(math.radians(45)).degrees == pytest.approx(30)
     assert saturated_steering_angle(math.radians(-45)).degrees == pytest.approx(-30)

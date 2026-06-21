@@ -6,7 +6,7 @@ import numpy as np
 from numpy.typing import NDArray
 from rclpy.logging import get_logger
 
-from boat_simulator.common.angle_convensions import (
+from boat_simulator.common.angle_conventions import (
     Heading,
     RudderAngle,
     TrimTabAngle,
@@ -17,19 +17,18 @@ from boat_simulator.common.constants import (
     ORIENTATION_INDICES,
     WATER_DENSITY,
 )
-from boat_simulator.common.frames import (
+from boat_simulator.common.conventions import (
     NED,
     Acceleration,
     Body,
     Force,
     Inertia,
-    Mat3,
     Position,
     Torque,
-    Vec2,
-    Vec3,
     Velocity,
 )
+from boat_simulator.common.types import Mat3, Vec2, Vec3
+from boat_simulator.common.utils import ned_to_body_rotation_matrix
 from boat_simulator.nodes.physics_engine.fluid_forces import MediumForceComputation
 from boat_simulator.nodes.physics_engine.kinematics_computation import BoatKinematics
 from custom_interfaces.msg import HelperLatLon
@@ -99,8 +98,14 @@ class BoatState:
             return any data.
         """
         glo_vel_2d = self.global_velocity.data[:2]
-        rel_wind_vel: Vec2[Velocity, Body] = Vec2(glo_wind_vel.data[:2] - glo_vel_2d)
-        rel_water_vel: Vec2[Velocity, Body] = Vec2(glo_water_vel.data[:2] - glo_vel_2d)
+        orientation = self.global_angular_position
+        ned_to_body = ned_to_body_rotation_matrix(
+            roll_rad=orientation.y,
+            pitch_rad=orientation.x,
+            yaw_rad=orientation.z,
+        )[:2, :2]
+        rel_wind_vel: Vec2[Velocity, Body] = Vec2(ned_to_body @ (glo_wind_vel.data - glo_vel_2d))
+        rel_water_vel: Vec2[Velocity, Body] = Vec2(ned_to_body @ (glo_water_vel.data - glo_vel_2d))
 
         rudder_angle_deg = rudder_angle.degrees
 
@@ -109,23 +114,23 @@ class BoatState:
             + f"trim_tab={trim_tab_angle.degrees:.2f}"
         )
 
-        sail_angle_deg: float = 0.0
+        sail_angle_deg = trim_tab_angle.degrees
 
-        rel_net_force, net_torque = self.__compute_net_force_and_torque(
+        glo_net_force, net_torque = self.__compute_net_force_and_torque(
             rel_wind_vel, rel_water_vel, rudder_angle_deg, sail_angle_deg
         )
 
         # Guard the integration boundary: a single non-finite force/torque (e.g. from an upstream
         # numerical issue) would be integrated into position/velocity and, because NaN/Inf are
         # absorbing, corrupt every subsequent step irrecoverably. Drop the bad update instead.
-        if not (np.all(np.isfinite(rel_net_force.data)) and np.all(np.isfinite(net_torque.data))):
+        if not (np.all(np.isfinite(glo_net_force.data)) and np.all(np.isfinite(net_torque.data))):
             _logger.error(
                 f"BS | non-finite force/torque, skipping step: "
-                f"net_force={rel_net_force} net_torque={net_torque}"
+                f"net_force={glo_net_force} net_torque={net_torque}"
             )
             return
 
-        self.__kinematics_computation.step(rel_net_force, net_torque)
+        self.__kinematics_computation.step(glo_net_force, net_torque)
 
     def __compute_net_force_and_torque(
         self,
@@ -155,39 +160,29 @@ class BoatState:
         # TODO: The force and torque compute assumes The orientation angle of the medium in
         # degrees, where 0 degrees corresponds to the positive x-axis, and angles increase
         # counter-clockwise (CCW).
-        sail_lift, sail_drag = self.__sail_force_computation.compute(rel_wind_vel, sail_angle_deg)
-        rudder_lift, rudder_drag = self.__rudder_force_computation.compute(
-            rel_water_vel, rudder_angle_deg
-        )
-        # Hull drag opposes the boat's motion. The sail/rudder forces above are in the global
-        # frame, so the hull drag must be too — use the global velocity rather than the body-frame
-        # relative velocity, otherwise the summed net force mixes frames when the boat is yawed.
-        glo_vel_2d = self.global_velocity.data[:2]
-        hull_drag = -self.hull_drag_factor * np.linalg.norm(glo_vel_2d) * glo_vel_2d
-        net_force = (
-            sail_lift.data + sail_drag.data + rudder_lift.data + rudder_drag.data + hull_drag
-        )
-        tau_z = self.sail_dist * (sail_lift.y + sail_drag.y) - self.rudder_dist * (
-            rudder_lift.y + rudder_drag.y
-        )
 
-        # tau_z_vector = np.array([0.0, 0.0, tau_z])
-        net_force = np.array(
-            [net_force[0], net_force[1], 0.0]
-        )  # slice into 2d vector and add zero z-comp
+        # sail_lift, sail_drag = self.__sail_force_computation.compute(rel_wind_vel, sail_angle_deg)
+        # rudder_lift, rudder_drag = self.__rudder_force_computation.compute(
+        #     rel_water_vel, rudder_angle_deg
+        # )
 
-        def _fmt(v: NDArray) -> str:
-            return f"[{v[0]:8.2f}, {v[1]:8.2f}]"
+        # Hull drag is computed in NED from the global velocity. Rotate the body-frame sail and
+        # rudder forces into NED before adding it so the force sum never mixes reference frames.
 
-        _logger.info(
-            "BS | forces (N): "
-            f"|v_glo|={np.linalg.norm(glo_vel_2d):6.2f} m/s | "
-            f"sail_lift={_fmt(sail_lift.data)} sail_drag={_fmt(sail_drag.data)} | "
-            f"rudder_lift={_fmt(rudder_lift.data)} rudder_drag={_fmt(rudder_drag.data)} | "
-            f"hull_drag={_fmt(hull_drag)} | "
-            f"net=[{net_force[0]:8.2f}, {net_force[1]:8.2f}] | "
-            f"tau_z={tau_z:8.2f} N·m"
-        )
+        # glo_vel_2d = self.global_velocity.data[:2]
+        # hull_drag = -self.hull_drag_factor * np.linalg.norm(glo_vel_2d) * glo_vel_2d
+        # body_force = sail_lift.data + sail_drag.data + rudder_lift.data + rudder_drag.data
+        # orientation = self.global_angular_position
+        # body_to_ned = ned_to_body_rotation_matrix(
+        #     roll_rad=orientation.y,
+        #     pitch_rad=orientation.x,
+        #     yaw_rad=orientation.z,
+        # ).T[:2, :2]
+
+        # net_force: Vec3[Force, NED] = Vec3(body_to_ned @ body_force + hull_drag)  # ?
+        # tau_z = self.sail_dist * (sail_lift.y + sail_drag.y) - self.rudder_dist * (
+        #     rudder_lift.y + rudder_drag.y
+        # )
 
         # (net_force, tau_z_vector) — currently stubbed to zero while the dynamics are validated.
         return (Vec3.from_xyz(0.0, 0.0, 0.0), Vec3.from_xyz(0.0, 0.0, 0.0))
@@ -228,12 +223,14 @@ class BoatState:
     def relative_velocity(self) -> Vec3[Velocity, Body]:
         """Returns the boat's current velocity in the relative reference frame,
         expressed in meters per second [m/s]."""
-        yaw = self.__kinematics_computation.global_data.angular_position.data[
-            ORIENTATION_INDICES.YAW.value
-        ]
+        orientation = self.global_angular_position
         glo = self.__kinematics_computation.global_data.linear_velocity.data
-        c, s = np.cos(-yaw), np.sin(-yaw)
-        return Vec3(np.array([c * glo[0] - s * glo[1], s * glo[0] + c * glo[1], glo[2]]))
+        ned_to_body = ned_to_body_rotation_matrix(
+            roll_rad=orientation.y,
+            pitch_rad=orientation.x,
+            yaw_rad=orientation.z,
+        )
+        return Vec3(ned_to_body @ glo)
 
     @property
     def relative_acceleration(self) -> Vec3[Acceleration, Body]:
@@ -293,5 +290,5 @@ class BoatState:
         position, using the DesiredHeading message's angle convention
         (0 degrees is straight, increasing CCW). The heading is normalized to the range [-pi, pi)
         radians (equivalently [-180, 180) degrees)."""
-        yaw_rad = float(self.angular_position.data[ORIENTATION_INDICES.YAW.value])
+        yaw_rad = self.global_angular_position.z
         return Heading(yaw_rad)

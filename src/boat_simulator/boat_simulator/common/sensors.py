@@ -1,13 +1,14 @@
-from typing import Any, List
+from typing import Any, Sequence
 
 import numpy as np
 from numpy.typing import NDArray
 
+from boat_simulator.common.conventions import NED, Velocity
 from boat_simulator.common.generators import (
     GaussianGenerator,
     MVGaussianGenerator,
 )
-from boat_simulator.common.types import Scalar
+from boat_simulator.common.types import Vec2
 
 
 class Sensor:
@@ -85,26 +86,28 @@ class SimWindSensor:
 
     def __init__(
         self,
-        wind: NDArray,
-        noise_stdev: List[float] = [1.0, 1.0],
+        wind: Vec2[Velocity, NED],
+        noise_stdev: Sequence[float] = (1.0, 1.0),
         enable_noise: bool = False,
     ) -> None:
         self._enable_noise = enable_noise
         self._noise_gen = MVGaussianGenerator(
             mean=np.zeros(2), cov=np.diag(np.square(noise_stdev))
         )
-        self._true_wind = np.asarray(wind, dtype=float)[:2]
+        self._true_wind = wind
 
     @property
-    def wind(self) -> NDArray:
+    def wind(self) -> Vec2[Velocity, NED]:
         """Returns the sensor reading: true wind plus Gaussian noise if enabled."""
-        noise = self._noise_gen.next() if self._enable_noise else np.zeros(2)
+        noise: Vec2[Velocity, NED] = Vec2(
+            self._noise_gen.next() if self._enable_noise else np.zeros(2)
+        )
         return self._true_wind + noise
 
     @wind.setter
-    def wind(self, wind: NDArray) -> None:
+    def wind(self, wind: Vec2[Velocity, NED]) -> None:
         """Updates the true wind vector."""
-        self._true_wind = np.asarray(wind, dtype=float)[:2]
+        self._true_wind = wind
 
 
 class SimGPS(Sensor):

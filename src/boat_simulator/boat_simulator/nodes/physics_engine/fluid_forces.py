@@ -1,6 +1,6 @@
 """This module provides functionality for computing the lift and drag forces acting on a medium."""
 
-from typing import Tuple
+from typing import Any, Sequence, Tuple
 
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
@@ -8,7 +8,8 @@ import numpy as np
 from numpy.typing import NDArray
 from rclpy.logging import get_logger
 
-from boat_simulator.common.frames import Body, CoeffTable, Force, Vec2, Velocity
+from boat_simulator.common.conventions import Body, Force, Velocity
+from boat_simulator.common.types import CoeffTable, Vec2
 
 _logger = get_logger(__name__)
 
@@ -260,7 +261,8 @@ class MediumForceComputation:
 
         return lift_coefficient, drag_coefficient, area
 
-    def _draw_boat(ax, position, orientation):
+    @staticmethod
+    def _draw_boat(ax: Any, position: Sequence[float], orientation: float) -> None:
         """Draws a simplified boat shape on the given axes, ensuring it aligns
         with the orientation line."""
         boat_length = 1.0
@@ -313,12 +315,14 @@ class MediumForceComputation:
             [line_start[0], line_end[0]], [line_start[1], line_end[1]], "black", linestyle="--"
         )
 
+    # BUG: Visualize Forces function is never used
+
     def visualize_forces(
         self, apparent_velocity, lift_force, drag_force, position=[0, 0], orientation=0
     ):
         """Visualizes the sailboat, apparent velocity, lift force, and drag force."""
         fig, ax = plt.subplots()
-        apparent_velocity_vec = Vec2(np.asarray(apparent_velocity))
+        apparent_velocity_vec = np.asarray(apparent_velocity)
         attack_angle = self.calculate_attack_angle(apparent_velocity_vec, orientation)
         # Normalize forces for visualization
         norm_apparent_velocity = apparent_velocity / np.linalg.norm(apparent_velocity)

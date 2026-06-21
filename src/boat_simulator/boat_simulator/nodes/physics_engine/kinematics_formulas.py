@@ -1,17 +1,14 @@
 """Formulas for estimating the next position, velocity, and acceleration."""
 
-from boat_simulator.common.frames import (
+from boat_simulator.common.conventions import (
     Acceleration,
-    Body,
     Force,
-    Frame,
     Inertia,
-    Mat3,
     Position,
     Torque,
-    Vec3,
     Velocity,
 )
+from boat_simulator.common.types import Frame, Mat3, Vec3
 
 
 class KinematicsFormulas:
@@ -97,8 +94,8 @@ class KinematicsFormulas:
 
     @staticmethod
     def next_ang_acceleration(
-        net_torque: Vec3[Torque, Body], inertia_inverse: Mat3[Inertia, Body]
-    ) -> Vec3[Acceleration, Body]:
+        net_torque: Vec3[Torque, Frame], inertia_inverse: Mat3[Inertia, Frame]
+    ) -> Vec3[Acceleration, Frame]:
         """Calculates the boat's next angular acceleration based on net torque and inverse of
         inertia.
 

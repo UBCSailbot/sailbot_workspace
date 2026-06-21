@@ -5,7 +5,6 @@
 from typing import Optional
 
 import rclpy
-import rclpy.utilities
 from custom_interfaces.action import SimRudderActuation, SimSailTrimTabActuation
 from custom_interfaces.action._sim_rudder_actuation import SimRudderActuation_Result
 from custom_interfaces.action._sim_sail_trim_tab_actuation import (
@@ -20,7 +19,6 @@ from rclpy.subscription import Subscription
 from rclpy.timer import Rate
 
 import boat_simulator.common.constants as Constants
-from boat_simulator.common.types import Scalar
 from boat_simulator.nodes.low_level_control.controller import (
     RudderController,
     SailController,
@@ -385,11 +383,11 @@ class LowLevelControlNode(Node):
         return self.__gps_sub
 
     @property
-    def rudder_angle(self) -> Scalar:
+    def rudder_angle(self) -> float:
         return self.__rudder_angle
 
     @property
-    def sail_trim_tab_angle(self) -> Scalar:
+    def sail_trim_tab_angle(self) -> float:
         return self.__sail_trim_tab_angle
 
 

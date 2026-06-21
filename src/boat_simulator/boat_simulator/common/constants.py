@@ -6,12 +6,8 @@ from enum import Enum
 
 import numpy as np
 
-from boat_simulator.common.frames import (
-    Body,
-    CoeffTable,
-    Inertia,
-    Mat3,
-)
+from boat_simulator.common.conventions import Body, Inertia
+from boat_simulator.common.types import CoeffTable, Mat3
 
 
 # Class declarations for constants. These are not meant to be accessed directly.
@@ -109,7 +105,7 @@ RUDDER_ACTUATION_NUM_LOOP_EXECUTIONS = 10  # TODO This is a placeholder until th
 RUDDER_MAX_ANGLE_RANGE = (-30, 30)
 
 # Max sail actuator control angle range in degrees, min angle [0], max angle [1]
-SAIL_MAX_ANGLE_RANGE = (-7, 7)
+SAIL_MAX_ANGLE_RANGE = (-40, 40)
 
 # Densities of the mediums, used for force calculations, units in kg/m^3
 AIR_DENSITY = 1.225

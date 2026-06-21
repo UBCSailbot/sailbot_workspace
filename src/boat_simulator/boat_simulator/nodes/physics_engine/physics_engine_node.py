@@ -25,11 +25,11 @@ from test_plans.test_plan import TestPlan
 
 import boat_simulator.common.constants as Constants
 import boat_simulator.common.utils as Utils
-from boat_simulator.common.angle_convensions import (
+from boat_simulator.common.angle_conventions import (
     saturated_steering_angle,
     saturated_trim_tab_angle,
 )
-from boat_simulator.common.frames import Vec2
+from boat_simulator.common.types import Vec2
 from boat_simulator.common.generators import MVGaussianGenerator
 from boat_simulator.common.geo_conversions import local_position_to_gps_lat_lon
 from boat_simulator.common.sensors import SimGPS, SimWindSensor
@@ -194,8 +194,8 @@ class PhysicsEngineNode(Node):
             )
         )
         self.__wind_generator = FluidGenerator(generator=MVGaussianGenerator(wind_mean, wind_cov))
-        self.__wind_sensor_readings: deque = deque(maxlen=20)
-        self.__sma_wind = np.zeros(2)  # Units: kmph
+        self.__wind_sensor_readings: deque[Vec2] = deque(maxlen=20)
+        self.__sma_wind: Vec2 = Vec2.from_xy(0.0, 0.0)  # Units: kmph
         current_mean = np.array(
             self.get_parameter("current_generation.mvgaussian_params.mean")
             .get_parameter_value()
@@ -362,15 +362,15 @@ class PhysicsEngineNode(Node):
         true_wind_mps = self.__wind_generator.next()
         true_current_mps = self.__current_generator.next()
         mps_to_kmph = ConversionFactors.mPs_to_kmPh.value.forward_convert
-        self.__sim_wind_sensor.wind = mps_to_kmph(true_wind_mps)
+        self.__sim_wind_sensor.wind = Vec2(mps_to_kmph(true_wind_mps.data))
         # The stored rudder/trim angles are in degrees; wrap them in the simulator's angle value
         # objects (saturating to their mechanical limits) before forwarding to the boat model. The
         # raw 2D fluid velocities are wrapped in NED-frame velocity vectors for the same reason.
         rudder_angle = saturated_steering_angle(Utils.degrees_to_rad(self.__rudder_angle))
         trim_tab_angle = saturated_trim_tab_angle(Utils.degrees_to_rad(self.__sail_trim_tab_angle))
         self.__boat_state.step(
-            Vec2(true_wind_mps[:2]),
-            Vec2(true_current_mps[:2]),
+            true_wind_mps,
+            true_current_mps,
             rudder_angle,
             trim_tab_angle,
         )
@@ -412,17 +412,23 @@ class PhysicsEngineNode(Node):
         """Publishes filtered wind sensor data using a simple moving average."""
         raw_wind = self.__sim_wind_sensor.wind
         k = self.__wind_sensor_readings.maxlen
+        if k is None:
+            raise RuntimeError("wind sensor reading window must have a fixed size")
         n = len(self.__wind_sensor_readings)
 
         if n < k:
             # Queue not yet full: approximate with fixed-window weighted update
-            self.__sma_wind = (self.__sma_wind * (k - 1) + raw_wind[:2]) / k
+            self.__sma_wind = Vec2(
+                (self.__sma_wind.data * (k - 1) + raw_wind.data) / k
+            )
         else:
             # Queue full: incremental SMA — add new, subtract oldest
             oldest = self.__wind_sensor_readings[0]
-            self.__sma_wind = self.__sma_wind + (raw_wind[:2] - oldest) / k
+            self.__sma_wind = Vec2(
+                self.__sma_wind.data + (raw_wind.data - oldest.data) / k
+            )
 
-        self.__wind_sensor_readings.append(raw_wind[:2].copy())
+        self.__wind_sensor_readings.append(raw_wind)
 
         msg = WindSensor()
         msg.speed.speed = float(Utils.get_wind_speed(self.__sma_wind))
@@ -478,12 +484,12 @@ class PhysicsEngineNode(Node):
         msg.global_pose.orientation.z = float(quat[2])
         msg.global_pose.orientation.w = float(quat[3])
 
-        msg.wind_velocity.x = float(mps_to_kmph(self.__wind_generator.velocity[0]))
-        msg.wind_velocity.y = float(mps_to_kmph(self.__wind_generator.velocity[1]))
+        msg.wind_velocity.x = float(mps_to_kmph(self.__wind_generator.velocity.x))
+        msg.wind_velocity.y = float(mps_to_kmph(self.__wind_generator.velocity.y))
         msg.wind_velocity.z = 0.0
 
-        msg.current_velocity.x = float(mps_to_kmph(self.__current_generator.velocity[0]))
-        msg.current_velocity.y = float(mps_to_kmph(self.__current_generator.velocity[1]))
+        msg.current_velocity.x = float(mps_to_kmph(self.__current_generator.velocity.x))
+        msg.current_velocity.y = float(mps_to_kmph(self.__current_generator.velocity.y))
         msg.current_velocity.z = 0.0
 
         sec, nanosec = divmod(self.pub_period * self.publish_counter, 1)

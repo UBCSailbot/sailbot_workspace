@@ -6,7 +6,6 @@ from typing import Tuple
 import numpy as np
 
 from boat_simulator.common.constants import RUDDER_MAX_ANGLE_RANGE, SAIL_MAX_ANGLE_RANGE
-from boat_simulator.common.types import Scalar
 from boat_simulator.common.utils import bound_to_180
 
 

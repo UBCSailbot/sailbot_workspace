@@ -3,13 +3,12 @@
 from dataclasses import dataclass, field
 from typing import Generic
 
-from boat_simulator.common.frames import (
+from boat_simulator.common.conventions import (
     Acceleration,
-    Frame,
     Position,
-    Vec3,
     Velocity,
 )
+from boat_simulator.common.types import Frame, Vec3
 
 _ZERO_POSITION: Vec3 = Vec3.from_xyz(0.0, 0.0, 0.0)
 
@@ -56,8 +55,6 @@ class KinematicsData(Generic[Frame]):
     )
 
     def __setattr__(self, name: str, value: object) -> None:
-        if name in ("linear_position", "angular_position") and getattr(
-            self, "is_relative", False
-        ):
+        if name in ("linear_position", "angular_position") and getattr(self, "is_relative", False):
             value = _ZERO_POSITION
         object.__setattr__(self, name, value)

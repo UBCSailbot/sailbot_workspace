@@ -1,4 +1,4 @@
-"""angle value objects."""
+"""Angle value objects and normalization helpers used by the simulator."""
 
 from __future__ import annotations
 
@@ -64,7 +64,8 @@ class RudderAngle:
             raise ValueError(f"steering angle must be finite, got {self.radians}")
         if not self.MIN_RAD <= self.radians <= self.MAX_RAD:
             raise ValueError(
-                "SteeringAngle must be in [-30 deg, 30 deg], "
+                "RudderAngle must be in "
+                f"[{RUDDER_MAX_ANGLE_RANGE[0]} deg, {RUDDER_MAX_ANGLE_RANGE[1]} deg], "
                 f"got {math.degrees(self.radians)} deg"
             )
 
@@ -79,7 +80,7 @@ class RudderAngle:
 
 @dataclass(frozen=True)
 class TrimTabAngle:
-    """Trim-tab deflection angle in radians, limited to ±20°.
+    """Trim-tab deflection angle in radians, limited to the configured sail range.
 
     The trim tab modifies the effective angle of attack of the sail foil.
     Pass ``.degrees`` to ``MediumForceComputation.compute()`` as the
@@ -96,7 +97,8 @@ class TrimTabAngle:
             raise ValueError(f"trim-tab angle must be finite, got {self.radians}")
         if not self.MIN_RAD <= self.radians <= self.MAX_RAD:
             raise ValueError(
-                "TrimTabAngle must be in [-20 deg, 20 deg], "
+                "TrimTabAngle must be in "
+                f"[{SAIL_MAX_ANGLE_RANGE[0]} deg, {SAIL_MAX_ANGLE_RANGE[1]} deg], "
                 f"got {math.degrees(self.radians)} deg"
             )
 

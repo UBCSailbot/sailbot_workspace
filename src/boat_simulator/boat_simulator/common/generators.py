@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 from numpy.typing import NDArray
 
-from boat_simulator.common.types import Scalar, ScalarOrArray
+from boat_simulator.common.types import ScalarOrArray
 
 
 class VectorGenerator(ABC):
