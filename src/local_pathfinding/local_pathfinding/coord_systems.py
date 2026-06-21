@@ -66,9 +66,13 @@ def true_bearing_to_OMPL_cartesian(true_bearing_deg: float) -> float:
         Increases in the clockwise direction till 180 degrees.
         Decreases in the counter-clockwise direction till -180 (exclusive)
     Returns:
-        float:  Angle where 0 is east and values increases clockwise.
+        float:  Angle where 0 is east and values increases CCW to 180 deg then
+        and decreases CW to -180.
     """
-    return (90 - true_bearing_deg) % 360.0
+    angle = (90 - true_bearing_deg) % 360.0
+    if angle > 180.0:
+        return - 1.0 * (360.0 - angle)
+    return angle
 
 
 def get_path_segment_true_bearing(s1: XY, s2: XY, rad: bool = False):

@@ -395,7 +395,7 @@ class OMPLPath:
         start_box = self.create_buffer_around_position(start_position_in_xy, self._box_buffer)
         start_x = start_position_in_xy.x
         start_y = start_position_in_xy.y
-        start_heading = math.radians(cs.true_bearing_to_OMPL_cartesian(self.state.heading))
+        start_heading_rad = math.radians(cs.true_bearing_to_OMPL_cartesian(self.state.heading))
 
         # goal is at (0,0) because global waypoint is used as the reference point
         goal_position_in_xy = cs.XY(0, 0)
@@ -434,7 +434,7 @@ class OMPLPath:
         start = base.State(space)
         goal = base.State(space)
         start().setXY(start_x, start_y)
-        start().setYaw(start_heading)
+        start().setYaw(start_heading_rad)
         goal().setXY(goal_x, goal_y)
         # would be a separate task to do this
         # goal().setYaw()
