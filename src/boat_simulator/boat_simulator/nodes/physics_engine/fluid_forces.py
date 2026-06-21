@@ -8,6 +8,7 @@ import numpy as np
 from numpy.typing import NDArray
 from rclpy.logging import get_logger
 
+from boat_simulator.common.frames import Body, Vec2, Velocity, Force
 from boat_simulator.common.utils import Scalar
 
 _logger = get_logger(__name__)
@@ -42,13 +43,15 @@ class MediumForceComputation:
         self.__areas = areas
         self.__fluid_density = fluid_density
 
-    def calculate_attack_angle(self, apparent_velocity: NDArray, orientation: Scalar) -> Scalar:
+    def calculate_attack_angle(
+        self, apparent_velocity: Vec2[Velocity, Body], orientation: Scalar
+    ) -> Scalar:
         """Calculates the angle of attack formed between the orientation angle of the medium
         and the direction of the apparent velocity, bounded between -180 and 180 degrees.
 
         Args:
-            apparent_velocity (NDArray): The apparent (relative) velocity between the fluid and
-                the medium, expressed in meters per second (m/s).
+            apparent_velocity (Vec2[Velocity, Body]): The apparent (relative) velocity between the
+                fluid and the medium, expressed in meters per second (m/s).
             orientation (Scalar): The orientation angle of the medium in degrees.
 
         Returns:
@@ -56,6 +59,7 @@ class MediumForceComputation:
                 the direction of the apparent velocity, expressed in degrees
                 and bounded between -180 and 180 degrees.
         """
+        apparent_velocity = apparent_velocity.data
         # Check if the apparent velocity is [0, 0]
         if np.all(apparent_velocity == 0):
             # Directly return the normalized orientation as the angle of attack
@@ -85,23 +89,27 @@ class MediumForceComputation:
         )
         return angle_of_attack
 
-    def compute(self, apparent_velocity: NDArray, orientation: Scalar) -> Tuple[NDArray, NDArray]:
+    def compute(
+        self, apparent_velocity: Vec2[Velocity, Body], orientation: Scalar
+    ) -> Tuple[Vec2[Force, Body], Vec2[Force, Body]]:
         """Computes the lift and drag forces experienced by a medium immersed in a fluid.
 
         Args:
-            apparent_velocity (NDArray): The apparent (relative) velocity between the fluid and the
-                medium, calculated as the difference between the fluid velocity and the medium
-                velocity (fluid_velocity - medium_velocity), expressed in meters per second (m/s).
+            apparent_velocity (Vec2[Velocity, Body]): The apparent (relative) velocity between the
+                fluid and the medium, calculated as the difference between the fluid velocity and
+                the medium velocity (fluid_velocity - medium_velocity), expressed in meters per
+                second (m/s).
             orientation (Scalar): The orientation angle of the medium in degrees, where 0 degrees
                 corresponds to the positive x-axis, and angles increase counter-clockwise (CCW).
 
         Returns:
-            Tuple[NDArray, NDArray]: A tuple containing the lift force and drag force experienced
-                by the medium, both expressed in newtons (N).
+            Tuple[Vec2[Force, Body], Vec2[Force, Body]]: A tuple containing the lift force and drag
+                force experienced by the medium, both expressed in newtons (N).
         """
 
         attack_angle = self.calculate_attack_angle(apparent_velocity, orientation)
         lift_coefficient, drag_coefficient, area = self.interpolate(attack_angle)
+        apparent_velocity = apparent_velocity.data
         velocity_magnitude = np.linalg.norm(apparent_velocity)
 
         # With no relative flow there is no lift or drag (force ∝ |v|²).
@@ -109,7 +117,7 @@ class MediumForceComputation:
         # would otherwise produce NaN/Inf forces that propagate irreversibly through the
         # kinematics and blow up the simulation.
         if velocity_magnitude == 0:
-            zero_force = np.array([0.0, 0.0])
+            zero_force: Vec2[Force, Body] = Vec2.from_xy(0.0, 0.0)
             _logger.info("compute: zero apparent velocity, returning zero lift/drag force")
             return zero_force, zero_force
 
@@ -184,7 +192,7 @@ class MediumForceComputation:
             f"drag_force_unit_vector={drag_force_unit_vector}"
         )
 
-        return lift_force, drag_force
+        return Vec2(lift_force), Vec2(drag_force)
 
     def __calculate_fluid_force_magnitude(
         self, coefficient: Scalar, velocity_magnitude: Scalar, area: Scalar
@@ -317,7 +325,8 @@ class MediumForceComputation:
     ):
         """Visualizes the sailboat, apparent velocity, lift force, and drag force."""
         fig, ax = plt.subplots()
-        attack_angle = self.calculate_attack_angle(apparent_velocity, orientation)
+        apparent_velocity_vec = Vec2(np.asarray(apparent_velocity))
+        attack_angle = self.calculate_attack_angle(apparent_velocity_vec, orientation)
         # Normalize forces for visualization
         norm_apparent_velocity = apparent_velocity / np.linalg.norm(apparent_velocity)
         norm_lift_force = lift_force / np.linalg.norm(lift_force)

@@ -25,6 +25,11 @@ from test_plans.test_plan import TestPlan
 
 import boat_simulator.common.constants as Constants
 import boat_simulator.common.utils as Utils
+from boat_simulator.common.angle_convensions import (
+    saturated_steering_angle,
+    saturated_trim_tab_angle,
+)
+from boat_simulator.common.frames import Vec2
 from boat_simulator.common.generators import MVGaussianGenerator
 from boat_simulator.common.geo_conversions import local_position_to_gps_lat_lon
 from boat_simulator.common.sensors import SimGPS, SimWindSensor
@@ -356,21 +361,27 @@ class PhysicsEngineNode(Node):
         sail_trim_tab_angle.
         """
         true_wind_mps = self.__wind_generator.next()
+        true_current_mps = self.__current_generator.next()
         mps_to_kmph = ConversionFactors.mPs_to_kmPh.value.forward_convert
         self.__sim_wind_sensor.wind = mps_to_kmph(true_wind_mps)
+        # The stored rudder/trim angles are in degrees; wrap them in the simulator's angle value
+        # objects (saturating to their mechanical limits) before forwarding to the boat model. The
+        # raw 2D fluid velocities are wrapped in NED-frame velocity vectors for the same reason.
+        rudder_angle = saturated_steering_angle(Utils.degrees_to_rad(self.__rudder_angle))
+        trim_tab_angle = saturated_trim_tab_angle(Utils.degrees_to_rad(self.__sail_trim_tab_angle))
         self.__boat_state.step(
-            true_wind_mps,
-            self.__current_generator.next(),
-            self.__rudder_angle,
-            self.__sail_trim_tab_angle,
+            Vec2(true_wind_mps[:2]),
+            Vec2(true_current_mps[:2]),
+            rudder_angle,
+            trim_tab_angle,
         )
 
     def __publish_gps(self):
         """Publishes mock GPS data."""
         lat_lon = self.__boat_state.global_lat_lon_position
         self.get_logger().info(f"Boat global position (lat_lon) to be published: {lat_lon}")
-        speed = np.linalg.norm(self.__boat_state.global_velocity)
-        heading = self.__boat_state.true_bearing
+        speed = self.__boat_state.speed
+        heading = self.__boat_state.true_bearing.degrees
 
         if self.__sim_gps:
             self.__sim_gps.lat_lon = lat_lon
@@ -429,8 +440,8 @@ class PhysicsEngineNode(Node):
     def __publish_kinematics(self):
         """Publishes the kinematics data of the simulated boat."""
         lat_lon = self.__boat_state.global_lat_lon_position
-        speed = np.linalg.norm(self.__boat_state.global_velocity)
-        heading = self.__boat_state.true_bearing
+        speed = self.__boat_state.speed
+        heading = self.__boat_state.true_bearing.degrees
 
         if self.__sim_gps:
             self.__sim_gps.lat_lon = lat_lon
@@ -454,14 +465,14 @@ class PhysicsEngineNode(Node):
         )
 
         pos_m = self.__boat_state.global_position
-        msg.global_pose.position.x = float(m_to_km(pos_m.item(0)))
-        msg.global_pose.position.y = float(m_to_km(pos_m.item(1)))
-        msg.global_pose.position.z = float(m_to_km(pos_m.item(2)))
+        msg.global_pose.position.x = float(m_to_km(pos_m.x))
+        msg.global_pose.position.y = float(m_to_km(pos_m.y))
+        msg.global_pose.position.z = float(m_to_km(pos_m.z))
 
-        ang = self.__boat_state.angular_position
-        pitch_rad = ang.item(Constants.ORIENTATION_INDICES.PITCH.value)
-        roll_rad = ang.item(Constants.ORIENTATION_INDICES.ROLL.value)
-        yaw_rad = ang.item(Constants.ORIENTATION_INDICES.YAW.value)
+        ang = self.__boat_state.angular_position.data
+        pitch_rad = ang[Constants.ORIENTATION_INDICES.PITCH.value]
+        roll_rad = ang[Constants.ORIENTATION_INDICES.ROLL.value]
+        yaw_rad = ang[Constants.ORIENTATION_INDICES.YAW.value]
         quat = Utils.euler_zyx_to_quaternion(roll_rad, pitch_rad, yaw_rad)
         msg.global_pose.orientation.x = float(quat[0])
         msg.global_pose.orientation.y = float(quat[1])
@@ -492,18 +503,18 @@ class PhysicsEngineNode(Node):
 
     def __build_gps_msg(self) -> GPS:
         latitude, longitude = local_position_to_gps_lat_lon(
-            self.__boat_state.global_position,
+            self.__boat_state.global_position.data,
             origin_latitude=self.__sim_gps_origin_latitude,
             origin_longitude=self.__sim_gps_origin_longitude,
         )
-        yaw_rad = self.__boat_state.global_angular_position[
+        yaw_rad = self.__boat_state.global_angular_position.data[
             Constants.ORIENTATION_INDICES.YAW.value
         ]
 
         msg = GPS()
         msg.lat_lon.latitude = latitude
         msg.lat_lon.longitude = longitude
-        msg.speed.speed = sim_velocity_to_gps_speed_kmph(self.__boat_state.global_velocity)
+        msg.speed.speed = sim_velocity_to_gps_speed_kmph(self.__boat_state.global_velocity.data)
         msg.heading.heading = sim_yaw_to_gps_heading_deg(float(yaw_rad))
         return msg
 

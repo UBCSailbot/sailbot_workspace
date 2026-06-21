@@ -6,6 +6,13 @@ from rclpy.logging import get_logger
 
 import boat_simulator.common.constants as constants
 import boat_simulator.common.utils as utils
+from boat_simulator.common.frames import (
+    NED,
+    Body,
+    Force,
+    Torque,
+    Vec3,
+)
 from boat_simulator.common.types import Scalar
 from boat_simulator.nodes.physics_engine.kinematics_data import KinematicsData
 from boat_simulator.nodes.physics_engine.kinematics_formulas import KinematicsFormulas
@@ -43,17 +50,17 @@ class BoatKinematics:
         assert inertia.shape == (3, 3)
         self.__inertia = inertia
         self.__inertia_inverse = np.linalg.inv(inertia)
-        self.__relative_data = KinematicsData()
-        self.__global_data = KinematicsData()
+        self.__relative_data: KinematicsData[Body] = KinematicsData(is_relative=True)
+        self.__global_data: KinematicsData[NED] = KinematicsData()
 
-    def step(self, glo_net_force: NDArray, net_torque: NDArray) -> None:
+    def step(self, glo_net_force: Vec3[Force, NED], net_torque: Vec3[Torque, Body]) -> None:
         """Updates the kinematic data based on applied forces and torques.
 
         Args:
-            rel_net_force (NDArray): The net force acting on the boat in the relative frame,
-                expressed in newtons (N).
-            net_torque (NDArray): The net torque acting on the boat, expressed in newton-meters
-                (N•m).
+            glo_net_force (Vec3[Force, NED]): The net force acting on the boat in the global
+                reference frame, expressed in newtons (N).
+            net_torque (Vec3[Torque, Body]): The net torque acting on the boat, expressed in
+                newton-meters (N•m).
 
         Returns:
             None: The method updates the internal state of the boat's kinematics but does not
@@ -78,15 +85,15 @@ class BoatKinematics:
             f"glo_pos={self.global_data.linear_position}"
         )
 
-    def __update_ang_data(self, net_torque: NDArray) -> Scalar:
+    def __update_ang_data(self, net_torque: Vec3[Torque, Body]) -> float:
         """Update the angular kinematics data.
 
         Args:
-            net_torque (NDArray): The net torque acting on the boat, expressed in newton-meters
-                (N•m).
+            net_torque (Vec3[Torque, Body]): The net torque acting on the boat, expressed in
+                newton-meters (N•m).
 
         Returns:
-            Scalar: The next angular position along the yaw axis in the global reference frame,
+            float: The next angular position along the yaw axis in the global reference frame,
                 expressed in radians (rad).
         """
 
@@ -100,25 +107,28 @@ class BoatKinematics:
             self.timestep,
         )
 
-        next_ang_position = utils.bound_to_180(
-            KinematicsFormulas.next_position(
-                self.global_data.angular_position,
-                self.global_data.angular_velocity,
-                self.global_data.angular_acceleration,
-                self.timestep,
-            ),
-            isDegrees=False,
+        next_ang_position = Vec3(
+            utils.bound_to_180(
+                KinematicsFormulas.next_position(
+                    self.global_data.angular_position,
+                    self.global_data.angular_velocity,
+                    self.global_data.angular_acceleration,
+                    self.timestep,
+                ).data,
+                isDegrees=False,
+            )
         )
 
         self.__relative_data.angular_acceleration = next_ang_acceleration
         self.__relative_data.angular_velocity = next_ang_velocity
-        self.__relative_data.angular_position[:] = 0  # relative angular position is unused
+        # The relative angular position is unused; KinematicsData forces it to zero.
+        self.__relative_data.angular_position = next_ang_position
 
         self.__global_data.angular_acceleration = next_ang_acceleration
         self.__global_data.angular_velocity = next_ang_velocity
         self.__global_data.angular_position = next_ang_position
 
-        yaw_radians = next_ang_position[constants.ORIENTATION_INDICES.YAW.value]
+        yaw_radians = float(next_ang_position.data[constants.ORIENTATION_INDICES.YAW.value])
 
         _logger.debug(
             f"__update_ang_data: ang_acc={next_ang_acceleration} ang_vel={next_ang_velocity} "
@@ -127,12 +137,12 @@ class BoatKinematics:
 
         return yaw_radians
 
-    def __update_linear_relative_data(self, net_force: NDArray) -> None:
+    def __update_linear_relative_data(self, net_force: Vec3[Force, Body]) -> None:
         """Updates the linear kinematic data in the relative reference frame.
 
         Args:
-            net_force (NDArray): The net force acting on the boat in the relative reference
-                frame, expressed in newtons (N).
+            net_force (Vec3[Force, Body]): The net force acting on the boat in the relative
+                reference frame, expressed in newtons (N).
         """
         next_relative_acceleration = KinematicsFormulas.next_lin_acceleration(
             self.boat_mass, net_force
@@ -145,19 +155,20 @@ class BoatKinematics:
 
         self.__relative_data.linear_acceleration = next_relative_acceleration
         self.__relative_data.linear_velocity = next_relative_velocity
-        self.__relative_data.linear_position[:] = 0  # linear position is unused
+        # The relative linear position is unused; KinematicsData forces it to zero.
+        self.__relative_data.linear_position = Vec3.from_xyz(0.0, 0.0, 0.0)
 
         _logger.debug(
             f"__update_linear_relative_data: acc={next_relative_acceleration} "
             + f"vel={next_relative_velocity}"
         )
 
-    def __update_linear_global_data(self, net_force: NDArray) -> None:
+    def __update_linear_global_data(self, net_force: Vec3[Force, NED]) -> None:
         """Updates the linear kinematic data in the global reference frame.
 
         Args:
-            net_force (NDArray): The net force acting on the boat in the global reference frame,
-                expressed in newtons (N).
+            net_force (Vec3[Force, NED]): The net force acting on the boat in the global reference
+                frame, expressed in newtons (N).
         """
         next_global_acceleration = KinematicsFormulas.next_lin_acceleration(
             self.boat_mass, net_force
@@ -182,15 +193,15 @@ class BoatKinematics:
         )
 
     @property
-    def relative_data(self) -> KinematicsData:
+    def relative_data(self) -> KinematicsData[Body]:
         return self.__relative_data
 
     @property
-    def global_data(self) -> KinematicsData:
+    def global_data(self) -> KinematicsData[NED]:
         return self.__global_data
 
     @property
-    def timestep(self) -> Scalar:
+    def timestep(self) -> float:
         return self.__timestep
 
     @property
@@ -202,5 +213,5 @@ class BoatKinematics:
         return self.__inertia_inverse
 
     @property
-    def boat_mass(self) -> Scalar:
+    def boat_mass(self) -> float:
         return self.__boat_mass

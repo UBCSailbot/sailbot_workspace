@@ -7,8 +7,6 @@ from enum import Enum
 import numpy as np
 from numpy.typing import NDArray
 
-from boat_simulator.common.types import Scalar
-
 
 # Class declarations for constants. These are not meant to be accessed directly.
 @dataclass
@@ -37,33 +35,28 @@ class PhysicsEnginePublisherTopics:
 
 @dataclass
 class BoatProperties:
-    # A lookup table of shape [N, 2] where each row is [angle_of_attack_deg, lift_coefficient].
-    sail_lift_coeffs: NDArray
-    # A lookup table of shape [N, 2] where each row is [angle_of_attack_deg, drag_coefficient].
-    sail_drag_coeffs: NDArray
-    # A lookup table of shape [N, 2] where each row is [angle_of_attack_deg, sail_area_m2].
-    sail_areas: NDArray
-    # A lookup table of shape [N, 2] where each row is
-    # [angle_of_attack_deg, rudder_drag_coefficient].
-    rudder_lift_coeffs: NDArray
-    # A lookup table of shape [N, 2] where each row is
-    # [angle_of_attack_deg, rudder_drag_coefficient].
-    rudder_drag_coeffs: NDArray
-    # A lookup table of shape [N, 2] where each row is [angle_of_attack_deg, rudder_area_m2].
-    rudder_areas: NDArray
-    # A scalar representing the distance from the center of effort of the sail to the pivot point
-    # (in meters).
-    sail_dist: Scalar
-    # A scalar representing the distance from the center of effort of the rudder to the pivot
-    # point (in meters).
-    rudder_dist: Scalar
-    # A dimensionless scalar representing the drag factor of the hull as a function of the boat's
-    # velocity.
-    hull_drag_factor: Scalar
-    # The mass of the boat (in kilograms).
-    mass: Scalar
-    # The inertia of the boat (in kilograms-meters squared).
-    inertia: NDArray
+    # Shape [N, 2]: each row is [angle_of_attack_deg, lift_coefficient].
+    sail_lift_coeffs: NDArray[np.float64]
+    # Shape [N, 2]: each row is [angle_of_attack_deg, drag_coefficient].
+    sail_drag_coeffs: NDArray[np.float64]
+    # Shape [N, 2]: each row is [angle_of_attack_deg, sail_area_m2].
+    sail_areas: NDArray[np.float64]
+    # Shape [N, 2]: each row is [angle_of_attack_deg, lift_coefficient].
+    rudder_lift_coeffs: NDArray[np.float64]
+    # Shape [N, 2]: each row is [angle_of_attack_deg, drag_coefficient].
+    rudder_drag_coeffs: NDArray[np.float64]
+    # Shape [N, 2]: each row is [angle_of_attack_deg, rudder_area_m2].
+    rudder_areas: NDArray[np.float64]
+    # Distance from the center of effort of the sail to the pivot point (m).
+    sail_dist: float
+    # Distance from the center of effort of the rudder to the pivot point (m).
+    rudder_dist: float
+    # Dimensionless quadratic drag coefficient for the hull: F_drag = hull_drag_factor * |v| * v.
+    hull_drag_factor: float
+    # Mass of the boat (kg).
+    mass: float
+    # 3×3 body-frame inertia tensor (kg·m²): rows/cols are roll, pitch, yaw axes.
+    inertia: NDArray[np.float64]
 
 
 # Directly accessible constants
@@ -135,7 +128,7 @@ BOAT_PROPERTIES = BoatProperties(
             [75.0, 0.25],
             [90.0, 0.00],  # dead downwind, pure drag
         ],
-        dtype=np.float32,
+        dtype=np.float64,
     ),
     sail_drag_coeffs=np.array(
         [
@@ -152,7 +145,7 @@ BOAT_PROPERTIES = BoatProperties(
             [75.0, 1.020],
             [90.0, 1.200],
         ],
-        dtype=np.float32,
+        dtype=np.float64,
     ),
     sail_areas=np.array(
         [
@@ -169,7 +162,7 @@ BOAT_PROPERTIES = BoatProperties(
             [75.0, 20.0],
             [90.0, 20.0],
         ],
-        dtype=np.float32,
+        dtype=np.float64,
     ),
     # Rudder: ±45° → table covers 0–45° (sign handled by caller)
     # NACA symmetric foil: stalls ~20–22°
@@ -186,7 +179,7 @@ BOAT_PROPERTIES = BoatProperties(
             [40.0, 0.44],
             [45.0, 0.38],
         ],
-        dtype=np.float32,
+        dtype=np.float64,
     ),
     rudder_drag_coeffs=np.array(
         [
@@ -201,7 +194,7 @@ BOAT_PROPERTIES = BoatProperties(
             [40.0, 0.440],
             [45.0, 0.550],
         ],
-        dtype=np.float32,
+        dtype=np.float64,
     ),
     rudder_areas=np.array(
         [
@@ -216,7 +209,7 @@ BOAT_PROPERTIES = BoatProperties(
             [40.0, 0.4],
             [45.0, 0.4],
         ],
-        dtype=np.float32,
+        dtype=np.float64,
     ),
     sail_dist=0.5,
     rudder_dist=1.0,

@@ -1,4 +1,4 @@
-"""Typed vectors, reference-frame markers, and angle value objects.
+"""Typed vectors and reference-frame markers
 
 The generic parameters on :class:`Vec2`, :class:`Vec3`, and :class:`Vec4` are
 phantom types: they exist only for static type checking and have no runtime
@@ -28,7 +28,7 @@ Physics-engine integration points
   ``Vec3[Position, NED]``, ``Vec3[Velocity, NED]``, etc.
 * ``kinematics_computation.BoatKinematics.step()`` — accept
   ``Vec3[Force, NED]`` / ``Vec3[Torque, Body]`` instead of bare NDArray.
-* ``model.BoatState.step()``             — accept ``RudderSteeringAngle`` and
+* ``model.BoatState.step()``             — accept ``RudderAngle`` and
   ``TrimTabAngle`` instead of raw Scalar; call ``.degrees`` when forwarding to
   ``fluid_forces.MediumForceComputation.compute()``.
 * ``fluid_forces.MediumForceComputation.compute()`` — accept
@@ -249,6 +249,69 @@ class Vec4(Generic[Quantity, Frame]):
 
 
 @dataclass(frozen=True, eq=False)
+class Mat3(Generic[FrameOut, FrameIn]):
+    """Immutable 3×3 matrix mapping vectors from *FrameIn* to *FrameOut*."""
+
+    data: NDArray[np.float64]
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "data", _validated_matrix(self.data, 4, 4))
+
+    # Factory methods
+
+    @classmethod
+    def identity(cls) -> Mat3[FrameOut, FrameIn]:
+        """Return the 3×3 identity matrix."""
+        return cls(np.eye(3))
+
+    # Arithmetic
+
+    @overload
+    def __matmul__(self, other: Vec3[_Q, FrameIn]) -> Vec3[_Q, FrameOut]: ...
+
+    @overload
+    def __matmul__(self, other: Mat3[FrameIn, _F]) -> Mat3[FrameOut, _F]: ...
+
+    def __matmul__(self, other: object) -> object:
+        if isinstance(other, Vec3):
+            return Vec3(self.data @ other.data)
+        if isinstance(other, Mat3):
+            return Mat3(self.data @ other.data)
+        return NotImplemented
+
+    def __add__(self, other: Mat3[FrameOut, FrameIn]) -> Mat3[FrameOut, FrameIn]:
+        if not isinstance(other, Mat3):
+            return NotImplemented
+        return type(self)(self.data + other.data)
+
+    def __sub__(self, other: Mat3[FrameOut, FrameIn]) -> Mat3[FrameOut, FrameIn]:
+        if not isinstance(other, Mat3):
+            return NotImplemented
+        return type(self)(self.data - other.data)
+
+    def __mul__(self, scalar: float) -> Mat3[FrameOut, FrameIn]:
+        if not np.isscalar(scalar):
+            return NotImplemented
+        return type(self)(self.data * scalar)
+
+    def __rmul__(self, scalar: float) -> Mat3[FrameOut, FrameIn]:
+        return self * scalar
+
+    def __eq__(self, other: object) -> bool:
+        return isinstance(other, Mat3) and bool(np.array_equal(self.data, other.data))
+
+    def __hash__(self) -> int:
+        return hash((Mat3, self.data.dtype.str, self.data.tobytes()))
+
+    # Properties
+
+    @property
+    def T(self) -> Mat3[FrameIn, FrameOut]:
+        """Transpose — swaps the input and output frame tags."""
+        return Mat3(self.data.T)  # type: ignore[return-value]
+
+
+@dataclass(frozen=True, eq=False)
 class Mat4(Generic[FrameOut, FrameIn]):
     """Immutable 4×4 matrix mapping vectors from *FrameIn* to *FrameOut*.
 
@@ -390,3 +453,11 @@ class Force:
 
 class Torque:
     """Torque / moment quantity, measured in newton-metres."""
+
+
+class LatLon:
+    """Lat/Lon measured in degrees"""
+
+
+class Inertia:
+    """Inertia of the Boat"""

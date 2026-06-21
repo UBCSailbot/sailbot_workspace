@@ -1,12 +1,14 @@
+"""angle value objects."""
+
 from __future__ import annotations
 
 import math
 from dataclasses import dataclass
+
 from boat_simulator.common.constants import RUDDER_MAX_ANGLE_RANGE, SAIL_MAX_ANGLE_RANGE
 
-
-
 # Scalar helpers
+
 
 def wrap_to_pi(angle: float) -> float:
     """Normalize an angle in radians to the half-open interval ``[-pi, pi)``."""
@@ -49,7 +51,7 @@ class Heading:
 
 
 @dataclass(frozen=True)
-class RudderSteeringAngle:
+class RudderAngle:
     """Rudder steering angle in radians, limited to the simulator's ±30° range."""
 
     radians: float
@@ -67,7 +69,7 @@ class RudderSteeringAngle:
             )
 
     @classmethod
-    def from_degrees(cls, degrees: float) -> RudderSteeringAngle:
+    def from_degrees(cls, degrees: float) -> RudderAngle:
         return cls(math.radians(degrees))
 
     @property
@@ -107,19 +109,15 @@ class TrimTabAngle:
         return math.degrees(self.radians)
 
 
-def saturated_steering_angle(raw_radians: float) -> RudderSteeringAngle:
-    """Construct a :class:`RudderSteeringAngle`, saturating finite input at the rudder limits."""
+def saturated_steering_angle(raw_radians: float) -> RudderAngle:
+    """Construct a :class:`RudderAngle`, saturating finite input at the rudder limits."""
     if not math.isfinite(raw_radians):
         raise ValueError(f"steering angle must be finite, got {raw_radians}")
-    return RudderSteeringAngle(
-        clamp(raw_radians, RudderSteeringAngle.MIN_RAD, RudderSteeringAngle.MAX_RAD)
-    )
+    return RudderAngle(clamp(raw_radians, RudderAngle.MIN_RAD, RudderAngle.MAX_RAD))
 
 
 def saturated_trim_tab_angle(raw_radians: float) -> TrimTabAngle:
     """Construct a :class:`TrimTabAngle`, saturating finite input at the trim-tab limits."""
     if not math.isfinite(raw_radians):
         raise ValueError(f"trim-tab angle must be finite, got {raw_radians}")
-    return TrimTabAngle(
-        clamp(raw_radians, TrimTabAngle.MIN_RAD, TrimTabAngle.MAX_RAD)
-    )
+    return TrimTabAngle(clamp(raw_radians, TrimTabAngle.MIN_RAD, TrimTabAngle.MAX_RAD))
