@@ -85,7 +85,7 @@ _osm_overlay_cache: Dict[Any, Tuple[Any, Tuple[float, float, float, float]]] = {
 
 
 BASE_DIR = Path(__file__).resolve().parent
-ASSETS_DIR = BASE_DIR.parents[2] / "docs" / "assets"
+ASSETS_DIR = BASE_DIR / "visualizer_assets"
 MOCK_NODES_DIR = BASE_DIR / "mock_nodes"
 WIND_PARAMS_YAML = MOCK_NODES_DIR / "wind_params.yaml"
 WIND_PARAMS_SH = MOCK_NODES_DIR / "wind_params.sh"
@@ -1780,7 +1780,7 @@ def dash_app(q: Queue):
                 },
                 children=[
                     html.Img(
-                        src=app.get_asset_url("images/favicon.png"),
+                        src=app.get_asset_url("favicon.png"),
                         style={"height": "36px", "width": "36px"},
                     ),
                     html.H2(
