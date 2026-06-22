@@ -1961,9 +1961,7 @@ def dash_app(q: Queue):
                             ),
                             dcc.Checklist(
                                 id="gps-toggles",
-                                options=[
-                                    {"label": " GPS Noise", "value": "use_gps_noise"},
-                                ],
+                                options={"use_gps_noise": " GPS Noise"},
                                 value=[
                                     "use_gps_noise",
                                 ],
@@ -2023,11 +2021,8 @@ def dash_app(q: Queue):
                             dcc.Checklist(
                                 id="drift-toggles",
                                 options=[
-                                    {"label": " Ocean Drift", "value": "use_ocean_drift"},
-                                    {
-                                        "label": " Drift Randomization",
-                                        "value": "use_drift_randomization",
-                                    },
+                                    {"use_ocean_drift": " Ocean Drift"},
+                                    {"use_drift_randomization": " Drift Randomization"},
                                 ],
                                 value=[
                                     "use_ocean_drift",

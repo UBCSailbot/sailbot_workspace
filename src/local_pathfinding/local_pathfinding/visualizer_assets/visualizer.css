@@ -1,3 +1,4 @@
+/* It contains the common visualizer button format used by all the controls buttons */
 .apply-button {
     transition: background-color 80ms ease, transform 80ms ease, box-shadow 80ms ease;
 }
