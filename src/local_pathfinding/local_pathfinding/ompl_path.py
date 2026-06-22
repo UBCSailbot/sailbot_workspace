@@ -23,8 +23,9 @@ from shapely.geometry import MultiPolygon, Point, Polygon, box
 import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.obstacles as ob
+import local_pathfinding.wind_coord_systems as wcs
 from local_pathfinding.ompl_objectives import get_sailing_objective
-from local_pathfinding.ompl_validity import GoalProgressWindMotionValidator
+from local_pathfinding.ompl_validity import NO_GO_ZONE, GoalProgressWindMotionValidator
 
 if TYPE_CHECKING:
     from local_pathfinding.local_path import LocalPathState
@@ -493,7 +494,11 @@ class OMPLPath:
         When the next global waypoint is not the final destination, the yaw is the bearing
         from that waypoint toward the global waypoint after it, so OMPL plans a path that
         arrives already aligned for the next leg. When it is the final destination, the
-        arrival orientation is arbitrary and we return 0.0.
+        arrival orientation is arbitrary and we start from 0.0.
+
+        In either case, if the resulting yaw points into the wind no-go zone (upwind or
+        downwind irons), it is snapped to the nearest edge of the no-go zone so the boat
+        can physically hold that heading at the goal.
 
         Returns:
             float: OMPL Cartesian yaw in radians for the goal state.
@@ -503,19 +508,63 @@ class OMPLPath:
 
         # Global waypoints are stored in reverse order: index 0 is the final destination.
         if reference == waypoints[0]:
-            return 0.0
+            return self._offset_if_in_irons(0.0)
 
         for i in range(1, len(waypoints)):
             if waypoints[i] == reference:
                 # reference_latlon sits at (0, 0) in the OMPL frame
                 next_to_next_xy = cs.latlon_to_xy(reference, waypoints[i - 1])
                 bearing_deg = cs.get_path_segment_true_bearing(cs.XY(0, 0), next_to_next_xy)
-                return math.radians(cs.true_bearing_to_OMPL_cartesian(bearing_deg))
+                target_yaw_rad = math.radians(cs.true_bearing_to_OMPL_cartesian(bearing_deg))
+                return self._offset_if_in_irons(target_yaw_rad)
 
         self._logger.warning(
             "reference_latlon not found in global_path waypoints; using default goal yaw 0.0"
         )
-        return 0.0
+        return self._offset_if_in_irons(0.0)
+
+    def _offset_if_in_irons(self, ompl_yaw_rad: float) -> float:
+        """Snap a goal yaw out of the wind no-go zone, returning it unchanged otherwise.
+
+        A sailboat cannot hold a heading within NO_GO_ZONE of directly upwind or directly
+        downwind. When the proposed yaw is in either cone, this snaps to the closer edge,
+        which is also the edge that keeps the most heading progress toward the original
+        target direction (so it doubles as both the smallest correction and the side that
+        still points generally toward the next-to-next waypoint).
+
+        The planning-wind snapshot (path_generated_wind when available, otherwise the
+        current true wind) is used so the goal yaw, motion validator, and objective all
+        share the same wind baseline.
+
+        Args:
+            ompl_yaw_rad: Proposed goal yaw in OMPL Cartesian radians.
+
+        Returns:
+            float: A goal yaw in OMPL Cartesian radians outside the wind no-go zone.
+        """
+        planning_wind = self.state.path_generated_wind or self.state.current_tw
+        tw_dir_rad_gc = math.radians(planning_wind.dir_deg)
+
+        # OMPL Cartesian yaw → boat heading in true-bearing radians, bounded to (-pi, pi].
+        boat_heading_rad_gc = cs.bound_to_180(
+            cs.cartesian_to_true_bearing(ompl_yaw_rad, rad=True), rad=True
+        )
+        twa = wcs.get_true_wind_angle(boat_heading_rad_gc, tw_dir_rad_gc)
+
+        if abs(twa) < NO_GO_ZONE:
+            # Upwind irons: snap to the closer ±NO_GO_ZONE edge.
+            new_twa = NO_GO_ZONE if twa >= 0 else -NO_GO_ZONE
+        elif abs(twa) > math.pi - NO_GO_ZONE:
+            # Downwind irons: snap to the closer ±(pi - NO_GO_ZONE) edge.
+            new_twa = (math.pi - NO_GO_ZONE) if twa >= 0 else -(math.pi - NO_GO_ZONE)
+        else:
+            return ompl_yaw_rad
+
+        # twa = tw_dir - boat_heading, so boat_heading = tw_dir - twa.
+        new_boat_heading_rad_gc = cs.bound_to_180(tw_dir_rad_gc - new_twa, rad=True)
+        return math.radians(
+            cs.true_bearing_to_OMPL_cartesian(math.degrees(new_boat_heading_rad_gc))
+        )
 
     def is_state_valid(self, state: Union[base.State, base.SE2StateInternal]) -> bool:
         """Evaluate a state to determine if the configuration collides with an environment
