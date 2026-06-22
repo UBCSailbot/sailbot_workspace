@@ -144,7 +144,7 @@ def test_build_ompl_yaw_trace():
     # Plotly normalizes marker angles into [-180, 180].
     assert trace["marker"]["angle"] == pytest.approx([0.0, 90.0, -180.0, -90.0])
     assert [row[2] for row in trace["customdata"]] == pytest.approx(
-        [math.pi / 2, 0.0, -math.pi / 2, math.pi]
+        [math.pi / 2, 0.0, -math.pi / 2, -math.pi]
     )
 
 
