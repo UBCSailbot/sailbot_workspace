@@ -2020,10 +2020,10 @@ def dash_app(q: Queue):
                             ),
                             dcc.Checklist(
                                 id="drift-toggles",
-                                options=[
-                                    {"use_ocean_drift": " Ocean Drift"},
-                                    {"use_drift_randomization": " Drift Randomization"},
-                                ],
+                                options={
+                                    "use_ocean_drift": " Ocean Drift",
+                                    "use_drift_randomization": " Drift Randomization",
+                                },
                                 value=[
                                     "use_ocean_drift",
                                     "use_drift_randomization",
