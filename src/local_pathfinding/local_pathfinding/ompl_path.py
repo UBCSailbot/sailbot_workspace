@@ -558,11 +558,13 @@ class OMPLPath:
         )
         twa = wcs.get_true_wind_angle(boat_heading_rad_gc, tw_dir_rad_gc)
 
-        if abs(twa) < NO_GO_ZONE:
+        abs_twa = abs(twa)
+
+        if abs_twa <= NO_GO_ZONE:
             # Upwind irons: snap just outside the ±NO_GO_ZONE edge (margin pushes away from 0).
             upwind_edge = NO_GO_ZONE + IRONS_MARGIN_RAD
             new_twa = upwind_edge if twa >= 0 else -upwind_edge
-        elif abs(twa) > math.pi - NO_GO_ZONE:
+        elif abs_twa >= math.pi - NO_GO_ZONE:
             # Downwind irons: snap just inside the ±(pi - NO_GO_ZONE) edge (margin toward pi/2).
             downwind_edge = math.pi - NO_GO_ZONE - IRONS_MARGIN_RAD
             new_twa = downwind_edge if twa >= 0 else -downwind_edge
