@@ -35,7 +35,6 @@ State Legend<<Legend>> {
 
 ' Define topics and sim topics
 State ais_ships<<Topic>> : AISShips
-State mock_ais_ships<<SimTopic>> : AISShips
 State batteries<<Topic>> : Batteries
 State boat_sim_input<<SimTopic>> : CanSimToBoatSim
 state desired_heading<<Topic>> : DesiredHeading
@@ -98,17 +97,11 @@ note top of can
     and CanSimIntf
 end note
 
-State "Mock Ais" as ais <<SimNode>> {
-    state "Publish" as ais_pub <<Pub>>
-}
-
 State "Mock Global Path" as g_path <<SimNode>> {
     State "Publish" as g_path_pub <<Pub>>
 }
 
 ' Publisher --> Topic
-
-ais_pub --> mock_ais_ships
 
 can_trx_pub --> ais_ships
 can_trx_pub --> batteries
@@ -153,8 +146,6 @@ gps --> l_trans_sub
 gps --> l_path_sub
 
 local_path_data -up-> l_trans_sub
-
-mock_ais_ships --> can_sim_sub
 
 mock_gps -up-> can_sim_sub
 

@@ -148,7 +148,6 @@ def add_miscellaneous(inputs_outputs: dict[str, Any]) -> dict[str, Any]:
                 "configs": [
                     "all_disable.yaml",
                     "example/example_en.yaml",
-                    "mock_ais/mock_ais_en_default.yaml",
                 ],
             },
         ],
