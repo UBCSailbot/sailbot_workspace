@@ -637,7 +637,8 @@ def test_offset_if_in_irons_uses_current_wind_when_path_generated_wind_missing()
     [
         # A northbound next leg with north wind would be upwind, so it snaps to the edge
         # plus the safety margin.
-        (HelperLatLon(latitude=1.0, longitude=0.0), 0.0, 3 * math.pi / 4 + ompl_path.IRONS_MARGIN_RAD),
+        (HelperLatLon(latitude=1.0, longitude=0.0),
+         0.0, 3 * math.pi / 4 + ompl_path.IRONS_MARGIN_RAD),
     ],
 )
 def test_compute_goal_heading_rad_irons_snaps(next_next_waypoint, tw_dir_deg, expected_yaw):
