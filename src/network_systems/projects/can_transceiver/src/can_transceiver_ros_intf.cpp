@@ -131,9 +131,6 @@ public:
               [this](msg::DesiredHeading desired_heading_) { subDesiredHeadingCb(desired_heading_); });
 
             if (mode == SYSTEM_MODE::DEV) {  // Initialize the CAN Sim Intf
-                mock_ais_sub_ = this->create_subscription<msg::AISShips>(
-                  ros_topics::MOCK_AIS_SHIPS, QUEUE_SIZE,
-                  [this](msg::AISShips mock_ais_ships) { subMockAISCb(mock_ais_ships); });
                 mock_gps_sub_ = this->create_subscription<msg::GPS>(
                   ros_topics::MOCK_GPS, QUEUE_SIZE, [this](msg::GPS mock_gps) { subMockGpsCb(mock_gps); });
                 mock_wind_sensors_sub_ = this->create_subscription<msg::WindSensors>(
@@ -188,7 +185,6 @@ private:
     msg::PressureSensors                                 pressure_sensors_;
 
     // Simulation only publishers and subscribers
-    rclcpp::Subscription<msg::AISShips>::SharedPtr     mock_ais_sub_;
     rclcpp::Subscription<msg::GPS>::SharedPtr          mock_gps_sub_;
     rclcpp::Subscription<msg::WindSensors>::SharedPtr  mock_wind_sensors_sub_;
     rclcpp::Publisher<msg::CanSimToBoatSim>::SharedPtr boat_sim_input_pub_;
@@ -704,17 +700,6 @@ private:
             RCLCPP_WARN(this->get_logger(), "%s", err.what());
             return;
         }
-    }
-
-    /**
-     * @brief Mock AIS topic callback
-     *
-     * @param mock_ais_ships ais_ships received from the Mock AIS topic
-     */
-    void subMockAISCb(msg::AISShips mock_ais_ships)
-    {
-        ais_ships_ = mock_ais_ships;
-        ais_pub_->publish(ais_ships_);
     }
 
     /**
