@@ -1,6 +1,7 @@
 import math
 import random
 import types
+from types import SimpleNamespace
 
 import pytest
 from ompl import base
@@ -23,6 +24,7 @@ from custom_interfaces.msg import (
     WindSensor,
 )
 from local_pathfinding.local_path import LocalPathState, WindTracker
+from local_pathfinding.wind_coord_systems import Wind
 
 LAND_KEY = -1
 
@@ -503,3 +505,153 @@ def test_get_remaining_cost_projection_logic(fresh_ompl_path):
         f"Remaining cost from projected position ({remaining_cost:.3f}) should be between "
         f"cost from start ({cost_from_start:.3f}) and cost from end ({cost_from_end:.3f})"
     )
+
+
+def _yaw_test_self(
+    waypoints,
+    target,
+    tw_dir_deg,
+    tw_speed_kmph=10.0,
+    use_path_generated_wind=True,
+):
+    """Minimal stand-in for an OMPLPath instance, exposing only the attributes the
+    goal-yaw helpers read. Avoids running the OMPL solver in every test.
+    """
+    wind = Wind(tw_speed_kmph, tw_dir_deg)
+    state = SimpleNamespace(
+        global_path=Path(waypoints=waypoints),
+        reference_latlon=target,
+        path_generated_wind=wind if use_path_generated_wind else None,
+        current_tw=wind,
+    )
+    fake = SimpleNamespace(state=state, _logger=RcutilsLogger())
+    fake._offset_if_in_irons_rad = types.MethodType(
+        ompl_path.OMPLPath._offset_if_in_irons_rad, fake
+    )
+    return fake
+
+
+@pytest.mark.parametrize(
+    "next_next_waypoint,tw_dir_deg,expected_yaw",
+    [
+        # After reaching the current target, the next leg goes due east; OMPL yaw 0 faces east.
+        (HelperLatLon(latitude=0.0, longitude=1.0), 0.0, 0.0),
+        # With wind from the east, a due-north next leg is not in irons and keeps north yaw.
+        (HelperLatLon(latitude=1.0, longitude=0.0), 90.0, math.pi / 2),
+        # With wind from the west, a due-south next leg is not in irons and keeps south yaw.
+        (HelperLatLon(latitude=-1.0, longitude=0.0), -90.0, -math.pi / 2),
+        # A due-west next leg exercises the signed OMPL yaw edge at -pi.
+        (HelperLatLon(latitude=0.0, longitude=-1.0), 0.0, -math.pi),
+    ],
+)
+def test_compute_goal_heading_rad_next_next_waypoint(
+    next_next_waypoint, tw_dir_deg, expected_yaw
+):
+    target = HelperLatLon(latitude=0.0, longitude=0.0)
+    fake = _yaw_test_self([next_next_waypoint, target], target, tw_dir_deg=tw_dir_deg)
+
+    yaw = ompl_path.OMPLPath._compute_goal_heading_rad(fake)
+
+    assert yaw == pytest.approx(expected_yaw, abs=1e-6)
+
+
+@pytest.mark.parametrize(
+    "waypoints,target,tw_dir_deg,expected_yaw",
+    [
+        # The target is waypoint 0, so it is the final destination and uses the default yaw.
+        (
+            [
+                HelperLatLon(latitude=0.0, longitude=0.0),
+                HelperLatLon(latitude=1.0, longitude=0.0),
+            ],
+            HelperLatLon(latitude=0.0, longitude=0.0),
+            0.0,
+            0.0,
+        ),
+        # If the target is missing from the global path, the helper falls back to default yaw.
+        (
+            [
+                HelperLatLon(latitude=1.0, longitude=0.0),
+                HelperLatLon(latitude=2.0, longitude=0.0),
+            ],
+            HelperLatLon(latitude=0.0, longitude=0.0),
+            0.0,
+            0.0,
+        ),
+    ],
+)
+def test_compute_goal_heading_rad_default_cases(waypoints, target, tw_dir_deg, expected_yaw):
+    fake = _yaw_test_self(waypoints, target, tw_dir_deg=tw_dir_deg)
+
+    yaw = ompl_path.OMPLPath._compute_goal_heading_rad(fake)
+
+    assert yaw == pytest.approx(expected_yaw, abs=1e-6)
+
+
+@pytest.mark.parametrize(
+    "tw_dir_deg,yaw_in,expected_yaw",
+    [
+        # Eastbound yaw with north wind is a beam reach, so it should stay unchanged.
+        (0.0, 0.0, 0.0),
+        # Northbound yaw with north wind is dead upwind; TWA 0 snaps to the positive edge
+        # plus the safety margin (further off the wind, deeper into the sailable zone).
+        (0.0, math.pi / 2, 3 * math.pi / 4 + ompl_path.IRONS_MARGIN_RAD),
+        # Slightly east of dead upwind has negative TWA and snaps to the northeast edge;
+        # margin pulls OMPL yaw toward east so the boat sits a margin further off the wind.
+        (0.0, math.radians(85.0), math.pi / 4 - ompl_path.IRONS_MARGIN_RAD),
+        # Southbound yaw with north wind is dead downwind; TWA pi snaps to the positive
+        # edge with margin pulled toward beam reach (away from dead downwind).
+        (0.0, -math.pi / 2, -3 * math.pi / 4 - ompl_path.IRONS_MARGIN_RAD),
+        # Slightly west of dead downwind has negative TWA and snaps to the southeast
+        # edge, with margin pulled toward beam reach.
+        (0.0, math.radians(-89.0), -math.pi / 4 + ompl_path.IRONS_MARGIN_RAD),
+    ],
+)
+def test_offset_if_in_irons(tw_dir_deg, yaw_in, expected_yaw):
+    target = HelperLatLon(latitude=0.0, longitude=0.0)
+    fake = _yaw_test_self(
+        [HelperLatLon(latitude=1.0, longitude=0.0), target], target, tw_dir_deg=tw_dir_deg
+    )
+
+    yaw_out = ompl_path.OMPLPath._offset_if_in_irons_rad(fake, yaw_in)
+
+    assert yaw_out == pytest.approx(expected_yaw, abs=1e-6)
+
+
+def test_offset_if_in_irons_uses_current_wind_when_path_generated_wind_missing():
+    target = HelperLatLon(latitude=0.0, longitude=0.0)
+    fake = _yaw_test_self(
+        [HelperLatLon(latitude=1.0, longitude=0.0), target],
+        target,
+        tw_dir_deg=0.0,
+        use_path_generated_wind=False,
+    )
+
+    yaw_out = ompl_path.OMPLPath._offset_if_in_irons_rad(fake, math.pi / 2)
+
+    assert yaw_out == pytest.approx(3 * math.pi / 4 + ompl_path.IRONS_MARGIN_RAD, abs=1e-6)
+
+
+@pytest.mark.parametrize(
+    "next_next_waypoint,tw_dir_deg,expected_yaw",
+    [
+        # A northbound next leg with north wind would be upwind, so it snaps to the edge
+        # plus the safety margin.
+        (HelperLatLon(latitude=1.0, longitude=0.0),
+         0.0, 3 * math.pi / 4 + ompl_path.IRONS_MARGIN_RAD),
+    ],
+)
+def test_compute_goal_heading_rad_irons_snaps(next_next_waypoint, tw_dir_deg, expected_yaw):
+    target = HelperLatLon(latitude=0.0, longitude=0.0)
+    fake = _yaw_test_self([next_next_waypoint, target], target, tw_dir_deg=tw_dir_deg)
+
+    yaw = ompl_path.OMPLPath._compute_goal_heading_rad(fake)
+
+    assert yaw == pytest.approx(expected_yaw, abs=1e-6)
+
+
+def test_init_simple_setup_applies_goal_yaw(fresh_ompl_path):
+    expected_yaw = fresh_ompl_path._compute_goal_heading_rad()
+    goal_state = fresh_ompl_path._simple_setup.getGoal().getState()
+    actual_yaw = goal_state.getYaw()
+    assert actual_yaw == pytest.approx(expected_yaw, abs=1e-6)
