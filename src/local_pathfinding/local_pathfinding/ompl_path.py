@@ -45,6 +45,13 @@ MAX_EDGE_LEN_KM = 0.1
 MAX_SOLVER_RUN_TIME_SEC = 1.0
 MAX_SIMPLIFIER_RUN_TIME_SEC = 0.1
 
+# Extra cushion past the no-go-zone edge when snapping a goal yaw out of irons.
+# Needed because (1) the validator rejects yaws exactly on NO_GO_ZONE (uses <= / >=),
+# and (2) the true wind can shift several degrees between when the goal yaw is computed
+# and when the planner evaluates nearby states. 5 degrees mirrors the "sail a few
+# degrees free of close-hauled" rule of thumb and costs nothing in path quality.
+IRONS_MARGIN_RAD = math.radians(5.0)
+
 LAND_KEY = -1
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 OFFSHORE_LAND_PKL_FILE_PATH = os.path.join(CURRENT_DIR, "..", "land", "pkl", "offshore_land.pkl")
@@ -508,22 +515,22 @@ class OMPLPath:
 
         # Global waypoints are stored in reverse order: index 0 is the final destination.
         if reference == waypoints[0]:
-            return self._offset_if_in_irons(0.0)
+            return self._offset_if_in_irons_rad(0.0)
 
         for i in range(1, len(waypoints)):
-            if waypoints[i] == reference:
-                # reference_latlon sits at (0, 0) in the OMPL frame
-                next_to_next_xy = cs.latlon_to_xy(reference, waypoints[i - 1])
-                bearing_deg = cs.get_path_segment_true_bearing(cs.XY(0, 0), next_to_next_xy)
+            if waypoints[i] == reference:  # reference is next_gw_xy at (0, 0) in OMPL frame
+                # calculates bearing between next_gw_xy and next_to_next_gw_xy
+                next_to_next_gw_xy = cs.latlon_to_xy(reference, waypoints[i - 1])
+                bearing_deg = cs.get_path_segment_true_bearing(cs.XY(0, 0), next_to_next_gw_xy)
                 target_yaw_rad = math.radians(cs.true_bearing_to_OMPL_cartesian(bearing_deg))
-                return self._offset_if_in_irons(target_yaw_rad)
+                return self._offset_if_in_irons_rad(target_yaw_rad)
 
         self._logger.warning(
             "reference_latlon not found in global_path waypoints; using default goal yaw 0.0"
         )
-        return self._offset_if_in_irons(0.0)
+        return self._offset_if_in_irons_rad(0.0)
 
-    def _offset_if_in_irons(self, ompl_yaw_rad: float) -> float:
+    def _offset_if_in_irons_rad(self, target_yaw_rad: float) -> float:
         """Snap a goal yaw out of the wind no-go zone, returning it unchanged otherwise.
 
         A sailboat cannot hold a heading within NO_GO_ZONE of directly upwind or directly
@@ -537,7 +544,7 @@ class OMPLPath:
         share the same wind baseline.
 
         Args:
-            ompl_yaw_rad: Proposed goal yaw in OMPL Cartesian radians.
+            target_yaw_rad: Proposed goal yaw in OMPL Cartesian radians (0 = East, CCW positive).
 
         Returns:
             float: A goal yaw in OMPL Cartesian radians outside the wind no-go zone.
@@ -547,18 +554,20 @@ class OMPLPath:
 
         # OMPL Cartesian yaw → boat heading in true-bearing radians, bounded to (-pi, pi].
         boat_heading_rad_gc = cs.bound_to_180(
-            cs.cartesian_to_true_bearing(ompl_yaw_rad, rad=True), rad=True
+            cs.cartesian_to_true_bearing(target_yaw_rad, rad=True), rad=True
         )
         twa = wcs.get_true_wind_angle(boat_heading_rad_gc, tw_dir_rad_gc)
 
         if abs(twa) < NO_GO_ZONE:
-            # Upwind irons: snap to the closer ±NO_GO_ZONE edge.
-            new_twa = NO_GO_ZONE if twa >= 0 else -NO_GO_ZONE
+            # Upwind irons: snap just outside the ±NO_GO_ZONE edge (margin pushes away from 0).
+            upwind_edge = NO_GO_ZONE + IRONS_MARGIN_RAD
+            new_twa = upwind_edge if twa >= 0 else -upwind_edge
         elif abs(twa) > math.pi - NO_GO_ZONE:
-            # Downwind irons: snap to the closer ±(pi - NO_GO_ZONE) edge.
-            new_twa = (math.pi - NO_GO_ZONE) if twa >= 0 else -(math.pi - NO_GO_ZONE)
+            # Downwind irons: snap just inside the ±(pi - NO_GO_ZONE) edge (margin toward pi/2).
+            downwind_edge = math.pi - NO_GO_ZONE - IRONS_MARGIN_RAD
+            new_twa = downwind_edge if twa >= 0 else -downwind_edge
         else:
-            return ompl_yaw_rad
+            return target_yaw_rad
 
         # twa = tw_dir - boat_heading, so boat_heading = tw_dir - twa.
         new_boat_heading_rad_gc = cs.bound_to_180(tw_dir_rad_gc - new_twa, rad=True)

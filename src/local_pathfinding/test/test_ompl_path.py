@@ -525,7 +525,9 @@ def _yaw_test_self(
         current_tw=wind,
     )
     fake = SimpleNamespace(state=state, _logger=RcutilsLogger())
-    fake._offset_if_in_irons = types.MethodType(ompl_path.OMPLPath._offset_if_in_irons, fake)
+    fake._offset_if_in_irons_rad = types.MethodType(
+        ompl_path.OMPLPath._offset_if_in_irons_rad, fake
+    )
     return fake
 
 
@@ -591,14 +593,18 @@ def test_compute_goal_heading_rad_default_cases(waypoints, target, tw_dir_deg, e
     [
         # Eastbound yaw with north wind is a beam reach, so it should stay unchanged.
         (0.0, 0.0, 0.0),
-        # Northbound yaw with north wind is dead upwind; TWA 0 snaps to the positive edge.
-        (0.0, math.pi / 2, 3 * math.pi / 4),
-        # Slightly east of dead upwind has negative TWA and snaps to the northeast edge.
-        (0.0, math.radians(85.0), math.pi / 4),
-        # Southbound yaw with north wind is dead downwind; TWA pi snaps to the positive edge.
-        (0.0, -math.pi / 2, -3 * math.pi / 4),
-        # Slightly west of dead downwind has negative TWA and snaps to the southeast edge.
-        (0.0, math.radians(-89.0), -math.pi / 4),
+        # Northbound yaw with north wind is dead upwind; TWA 0 snaps to the positive edge
+        # plus the safety margin (further off the wind, deeper into the sailable zone).
+        (0.0, math.pi / 2, 3 * math.pi / 4 + ompl_path.IRONS_MARGIN_RAD),
+        # Slightly east of dead upwind has negative TWA and snaps to the northeast edge;
+        # margin pulls OMPL yaw toward east so the boat sits a margin further off the wind.
+        (0.0, math.radians(85.0), math.pi / 4 - ompl_path.IRONS_MARGIN_RAD),
+        # Southbound yaw with north wind is dead downwind; TWA pi snaps to the positive
+        # edge with margin pulled toward beam reach (away from dead downwind).
+        (0.0, -math.pi / 2, -3 * math.pi / 4 - ompl_path.IRONS_MARGIN_RAD),
+        # Slightly west of dead downwind has negative TWA and snaps to the southeast
+        # edge, with margin pulled toward beam reach.
+        (0.0, math.radians(-89.0), -math.pi / 4 + ompl_path.IRONS_MARGIN_RAD),
     ],
 )
 def test_offset_if_in_irons(tw_dir_deg, yaw_in, expected_yaw):
@@ -607,7 +613,7 @@ def test_offset_if_in_irons(tw_dir_deg, yaw_in, expected_yaw):
         [HelperLatLon(latitude=1.0, longitude=0.0), target], target, tw_dir_deg=tw_dir_deg
     )
 
-    yaw_out = ompl_path.OMPLPath._offset_if_in_irons(fake, yaw_in)
+    yaw_out = ompl_path.OMPLPath._offset_if_in_irons_rad(fake, yaw_in)
 
     assert yaw_out == pytest.approx(expected_yaw, abs=1e-6)
 
@@ -621,16 +627,17 @@ def test_offset_if_in_irons_uses_current_wind_when_path_generated_wind_missing()
         use_path_generated_wind=False,
     )
 
-    yaw_out = ompl_path.OMPLPath._offset_if_in_irons(fake, math.pi / 2)
+    yaw_out = ompl_path.OMPLPath._offset_if_in_irons_rad(fake, math.pi / 2)
 
-    assert yaw_out == pytest.approx(3 * math.pi / 4, abs=1e-6)
+    assert yaw_out == pytest.approx(3 * math.pi / 4 + ompl_path.IRONS_MARGIN_RAD, abs=1e-6)
 
 
 @pytest.mark.parametrize(
     "next_next_waypoint,tw_dir_deg,expected_yaw",
     [
-        # A northbound next leg with north wind would be upwind, so it snaps to the edge.
-        (HelperLatLon(latitude=1.0, longitude=0.0), 0.0, 3 * math.pi / 4),
+        # A northbound next leg with north wind would be upwind, so it snaps to the edge
+        # plus the safety margin.
+        (HelperLatLon(latitude=1.0, longitude=0.0), 0.0, 3 * math.pi / 4 + ompl_path.IRONS_MARGIN_RAD),
     ],
 )
 def test_compute_goal_heading_rad_irons_snaps(next_next_waypoint, tw_dir_deg, expected_yaw):
