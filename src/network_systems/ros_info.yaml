@@ -10,7 +10,6 @@ ros_topics:
   GLOBAL_PATH: global_path
   GPS: gps
   LOCAL_PATH: local_path_data
-  MOCK_AIS_SHIPS: mock_ais_ships
   MOCK_GPS: mock_gps
   MOCK_WIND_SENSORS: mock_wind_sensors
   WIND_SENSORS: wind_sensors
@@ -21,5 +20,4 @@ ros_topics:
 ros_nodes:
   CAN_TRANSCEIVER: can_transceiver_node
   LOCAL_TRANSCEIVER: local_transceiver_node
-  MOCK_AIS: mock_ais_node
   REMOTE_TRANSCEIVER: remote_transceiver_node
