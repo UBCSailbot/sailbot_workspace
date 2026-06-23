@@ -40,7 +40,7 @@ MIN_TURNING_RADIUS_KM = 0.05  # 50 m
 # valid but the segment straddles an obstacle collision zone
 # setting this any smaller can lead to OMPL not being able to construct a tree that reaches
 # the goal state
-MAX_EDGE_LEN_KM = 0.5
+MAX_EDGE_LEN_KM = 0.1
 MAX_SOLVER_RUN_TIME_SEC = 1.0
 MAX_SIMPLIFIER_RUN_TIME_SEC = 0.1
 
@@ -368,13 +368,18 @@ class OMPLPath:
 
         for state in solution_path.getStates():
             waypoint_XY = cs.XY(state.getX(), state.getY())
+            waypoint_yaw = state.getYaw()
+            waypoint_heading_deg = cs.bound_to_180(
+                math.degrees(cs.cartesian_to_true_bearing(waypoint_yaw, rad=True))
+            )
             waypoint_latlon = cs.xy_to_latlon(self.state.reference_latlon, waypoint_XY)
             waypoints.append(
                 ci.HelperLatLon(
-                    latitude=waypoint_latlon.latitude, longitude=waypoint_latlon.longitude
+                    latitude=waypoint_latlon.latitude,
+                    longitude=waypoint_latlon.longitude,
+                    heading=ci.HelperHeading(heading=waypoint_heading_deg),
                 )
             )
-
         return ci.Path(waypoints=waypoints)
 
     def update_objectives(self):
@@ -385,11 +390,23 @@ class OMPLPath:
         raise NotImplementedError
 
     def _init_simple_setup(self, land_multi_polygon) -> og.SimpleSetup:
+        """Build the configured OMPL planning problem for the current local-path state.
+
+        The Dubins state uses an east/north Cartesian frame in kilometres. Its yaw is zero when
+        pointing east, increases counterclockwise, and is bounded to [-pi, pi).
+
+        Args:
+            land_multi_polygon: Optional land geometry override used when initializing obstacles.
+
+        Returns:
+            The configured OMPL simple setup containing the start and goal states.
+        """
         # Create buffered rectangles around sailbot's position and the goal state
         start_position_in_xy = cs.latlon_to_xy(self.state.reference_latlon, self.state.position)
         start_box = self.create_buffer_around_position(start_position_in_xy, self._box_buffer)
         start_x = start_position_in_xy.x
         start_y = start_position_in_xy.y
+        start_heading_rad = math.radians(cs.true_bearing_to_OMPL_cartesian(self.state.heading))
 
         # goal is at (0,0) because global waypoint is used as the reference point
         goal_position_in_xy = cs.XY(0, 0)
@@ -428,7 +445,10 @@ class OMPLPath:
         start = base.State(space)
         goal = base.State(space)
         start().setXY(start_x, start_y)
+        start().setYaw(start_heading_rad)
         goal().setXY(goal_x, goal_y)
+        # would be a separate task to do this
+        # goal().setYaw()
         self._logger.debug(
             "start and goal state: "
             f"start=({start().getX()}, {start().getY()}); "
@@ -462,7 +482,7 @@ class OMPLPath:
 
         simple_setup.setOptimizationObjective(objective)
         planner = og.RRTstar(space_information)
-        planner.setRange(MAX_EDGE_LEN_KM)
+        # planner.setRange(MAX_EDGE_LEN_KM)
         simple_setup.setPlanner(planner)
 
         return simple_setup

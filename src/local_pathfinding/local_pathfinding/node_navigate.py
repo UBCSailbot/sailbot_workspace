@@ -363,7 +363,7 @@ class Sailbot(Node):
 
         self.get_logger().info(
             f"Current target global waypoint: {self.saved_target_global_waypoint}"
-            + f"(index {self.global_waypoint_index})"
+            + f"(index: {self.global_waypoint_index})"
         )
 
         # Check if we're close enough to the global waypoint to head to the next one

@@ -84,6 +84,31 @@ def test_true_bearing_to_plotly_cartesian(true_bearing: float, plotly_cartesian:
     ), "incorrect angle conversion"
 
 
+@pytest.mark.parametrize(
+    "true_bearing, ompl_cartesian",
+    [
+        (0.0, 90.0),
+        (-90.0, -180.0),
+        (-89.999, 179.999),
+        (-90.001, -179.999),
+        (180.0, -90.0),
+        (90.0, 0.0),
+        (45.0, 45.0),
+        (-45.0, 135.0),
+        (135.0, -45.0),
+        (-135.0, -135.0),
+        (1.0, 89.0),
+        (-1.0, 91.0),
+        (-179.0, -91.0),
+        (179.0, -89.0),
+    ],
+)
+def test_true_bearing_to_OMPL_cartesian(true_bearing: float, ompl_cartesian: float):
+    assert cs.true_bearing_to_OMPL_cartesian(true_bearing) == pytest.approx(
+        ompl_cartesian
+    ), "incorrect angle conversion"
+
+
 # Bearing constants (radians, in the "0 = north, +π/2 = east" convention)
 NORTH = 0.0
 EAST = math.pi / 2
