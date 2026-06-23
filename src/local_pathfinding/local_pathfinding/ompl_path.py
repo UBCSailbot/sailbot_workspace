@@ -614,19 +614,6 @@ def log_invalid_state(state: cs.XY, obstacle: ob.Obstacle):
         )
 
 
-def get_planner_class():
-    """Choose the planner to use for the OMPL query.
-
-    Args:
-        planner (str): Name of the planner to use.
-
-    Returns:
-        Tuple[str, Type[base.Planner]]: The name and class of the planner to use for the OMPL
-        query, defaults to RRT* if `planner` is not implemented in this function.
-    """
-    return "rrtstar", og.RRTstar
-
-
 def load_pkl(file_path: str) -> Any:
     with open(file_path, "rb") as f:
         return pickle.load(f)

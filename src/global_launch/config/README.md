@@ -136,13 +136,10 @@ configurable noise and drift.
 
 **`path_planner`**
 
-- _Description_: The path planner to use. Planners are from
-  [OMPL Library](https://ompl.kavrakilab.org/planners.html).
+- _Description_: The path planner used by local pathfinding. Local pathfinding currently
+  uses OMPL RRT* exclusively.
 - _Datatype_: `string`
-- _Acceptable Values_: `"bitstar"`, `"bfmtstar"`, `"fmtstar"`,
-  `"informedrrtstar"`, `"lazylbtrrt"`, `"lazyprmstar"`, `"lbtrrt"`,
-  `"prmstar"`, `"rrtconnect"`, `"rrtsharp"`, `"rrtstar"`, `"rrtxstatic"`,
-  `"sorrtstar"`
+- _Acceptable Values_: `"rrtstar"`
 
 ## Controller Parameters
 
