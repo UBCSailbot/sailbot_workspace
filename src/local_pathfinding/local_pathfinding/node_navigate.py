@@ -458,11 +458,13 @@ class Sailbot(Node):
         pub_period_sec = self.get_parameter("pub_period_sec").get_parameter_value().double_value
         if pub_period_sec != self.pub_period_sec:
             self.get_logger().debug(
-                f"Updating pub period and timers from {self.pub_period_sec} to {pub_period_sec}"
+                f"Updating pub period and timer from {self.pub_period_sec} to {pub_period_sec}"
             )
             self.pub_period_sec = pub_period_sec
+            self.desired_heading_timer.cancel()
             self.desired_heading_timer = self.create_timer(
-                timer_period_sec=self.pub_period_sec, callback=self.desired_heading_callback
+                timer_period_sec=self.pub_period_sec + MAX_SOLVER_RUN_TIME_SEC,
+                callback=self.desired_heading_callback,
             )
 
         planner = self.get_parameter("path_planner").get_parameter_value().string_value
