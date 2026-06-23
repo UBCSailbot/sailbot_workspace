@@ -390,13 +390,6 @@ class OMPLPath:
             )
         return ci.Path(waypoints=waypoints)
 
-    def update_objectives(self):
-        """Update the objectives on the basis of which the path is optimized.
-        Raises:
-            NotImplementedError: Method or function hasn't been implemented yet.
-        """
-        raise NotImplementedError
-
     def _init_simple_setup(self, land_multi_polygon) -> og.SimpleSetup:
         """Build the configured OMPL planning problem for the current local-path state.
 

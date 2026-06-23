@@ -80,11 +80,6 @@ def test_OMPLPath_get_waypoint(fresh_ompl_path):
     ), "last waypoint should be goal state"
 
 
-def test_OMPLPath_update_objectives(fresh_ompl_path):
-    with pytest.raises(NotImplementedError):
-        fresh_ompl_path.update_objectives()
-
-
 def test_init_obstacles():
     sailbot_position = HelperLatLon(latitude=49.29, longitude=-126.32)
     goal_position = HelperLatLon(latitude=1.0, longitude=1.0)
