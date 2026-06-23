@@ -197,7 +197,10 @@ class Sailbot(Node):
         )
         self.global_path = msg
         if self.saved_target_global_waypoint is None:
-            self.saved_target_global_waypoint = self.global_path.waypoints[-1]
+            self.global_waypoint_index = len(self.global_path.waypoints) - 1
+            self.saved_target_global_waypoint = self.global_path.waypoints[
+                self.global_waypoint_index
+            ]
 
     def filtered_wind_sensor_callback(self, msg: ci.WindSensor):
         self.get_logger().debug(f"Received data from {self.filtered_wind_sensor_sub.topic}: {msg}")
