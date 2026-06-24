@@ -17,14 +17,18 @@ _LOGGER = get_logger("angle_conventions")
 def wrap_to_pi(angle: float) -> float:
     """Normalize an angle in radians to the half-open interval ``[-pi, pi)``."""
     if not math.isfinite(angle):
-        raise _LOGGER.warn(f"angle must be finite, got {angle}")
+        message = f"angle must be finite, got {angle}"
+        _LOGGER.warn(message)
+        raise AssertionError(message)
     return (angle + math.pi) % math.tau - math.pi
 
 
 def clamp(value: float, lower: float, upper: float) -> float:
     """Clamp ``value`` to the inclusive interval ``[lower, upper]``."""
     if lower > upper:
-        raise _LOGGER.warn(f"lower bound {lower} exceeds upper bound {upper}")
+        message = f"lower bound {lower} exceeds upper bound {upper}"
+        _LOGGER.warn(message)
+        raise AssertionError(message)
     return max(lower, min(upper, value))
 
 
@@ -74,16 +78,21 @@ class RudderAngle:
 
     def _check_radians(self, radians: float) -> None:
         if not math.isfinite(radians):
-            raise _LOGGER.warn(f"steering angle must be finite, got {radians}")
+            message = f"steering angle must be finite, got {radians}"
+            _LOGGER.warn(message)
+            raise AssertionError(message)
+
         if not self.MIN_RAD <= radians <= self.MAX_RAD:
-            raise _LOGGER.warn(
+            message = (
                 "RudderAngle must be in "
                 f"[{RUDDER_MAX_ANGLE_RANGE[0]} deg, {RUDDER_MAX_ANGLE_RANGE[1]} deg], "
                 f"got {math.degrees(radians)} deg"
             )
+            _LOGGER.warn(message)
+            raise AssertionError(message)
 
     @classmethod
-    def from_deg_to_rad(cls, degrees: float) -> RudderAngle:
+    def from_degrees(cls, degrees: float) -> RudderAngle:
         return cls(math.radians(degrees))
 
     @property
@@ -115,16 +124,21 @@ class TrimTabAngle:
 
     def _check_radians(self, radians: float) -> None:
         if not math.isfinite(radians):
-            raise _LOGGER.warn(f"trim-tab angle must be finite, got {radians}")
+            message = f"trim-tab angle must be finite, got {radians}"
+            _LOGGER.warn(message)
+            raise AssertionError(message)
+        
         if not self.MIN_RAD <= radians <= self.MAX_RAD:
-            raise _LOGGER.warn(
+            message = (
                 "TrimTabAngle must be in "
                 f"[{SAIL_MAX_ANGLE_RANGE[0]} deg, {SAIL_MAX_ANGLE_RANGE[1]} deg], "
                 f"got {math.degrees(radians)} deg"
             )
+            _LOGGER.warn(message)
+            raise AssertionError(message)
 
     @classmethod
-    def from_deg_to_rad(cls, degrees: float) -> TrimTabAngle:
+    def from_degrees(cls, degrees: float) -> TrimTabAngle:
         return cls(math.radians(degrees))
 
     @property
@@ -135,12 +149,16 @@ class TrimTabAngle:
 def saturated_rudder_angle(raw_radians: float) -> RudderAngle:
     """Construct a :class:`RudderAngle`, saturating finite input at the rudder limits."""
     if not math.isfinite(raw_radians):
-        raise _LOGGER.warn(f"Rudder angle must be finite, got {raw_radians}")
+        message = f"Rudder angle must be finite, got {raw_radians}"
+        _LOGGER.warn(message)
+        raise AssertionError(message)
     return RudderAngle(clamp(raw_radians, RudderAngle.MIN_RAD, RudderAngle.MAX_RAD))
 
 
 def saturated_trim_tab_angle(raw_radians: float) -> TrimTabAngle:
     """Construct a :class:`TrimTabAngle`, saturating finite input at the trim-tab limits."""
     if not math.isfinite(raw_radians):
-        raise _LOGGER.warn(f"Trim-tab angle must be finite, got {raw_radians}")
+        message = f"Trim-tab angle must be finite, got {raw_radians}"
+        _LOGGER.warn(message)
+        raise AssertionError(message)
     return TrimTabAngle(clamp(raw_radians, TrimTabAngle.MIN_RAD, TrimTabAngle.MAX_RAD))

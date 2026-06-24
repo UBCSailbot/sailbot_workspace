@@ -1,10 +1,10 @@
 """Low level control logic for actuating the rudder and the sail."""
-
 from math import atan2, copysign, cos, sin
 from typing import Tuple
 
 import numpy as np
 
+from boat_simulator.common.angle_conventions import Heading, RudderAngle, TrimTabAngle
 from boat_simulator.common.constants import RUDDER_MAX_ANGLE_RANGE, SAIL_MAX_ANGLE_RANGE
 from boat_simulator.common.utils import bound_to_180
 
@@ -184,6 +184,26 @@ class RudderController(ActuatorController):
         """
         self.desired_heading = changed_desired_heading
 
+    @property
+    def current_heading_angle(self) -> Heading:
+        """Current NED compass heading as a unit-checked :class:`Heading`."""
+        return Heading.from_degrees(self.current_heading)
+
+    @property
+    def desired_heading_angle(self) -> Heading:
+        """Desired NED compass heading as a unit-checked :class:`Heading`."""
+        return Heading.from_degrees(self.desired_heading)
+
+    @property
+    def rudder_setpoint(self) -> RudderAngle:
+        """Target rudder angle as a range-checked :class:`RudderAngle` (±30°)."""
+        return RudderAngle.from_degrees(self.setpoint)
+
+    @property
+    def current_rudder_angle(self) -> RudderAngle:
+        """Current rudder angle as a range-checked :class:`RudderAngle` (±30°)."""
+        return RudderAngle.from_degrees(self.current_control_ang)
+
 
 class SailController(ActuatorController):
     """General Class for the Actuator Controller.
@@ -239,3 +259,13 @@ class SailController(ActuatorController):
 
         self.running_error = self.target_angle - self.current_control_ang
         return self.running_error
+
+    @property
+    def trim_tab_setpoint(self) -> TrimTabAngle:
+        """Target trim-tab angle as a range-checked :class:`TrimTabAngle` (±40°)."""
+        return TrimTabAngle.from_degrees(self.target_angle)
+
+    @property
+    def current_trim_tab_angle(self) -> TrimTabAngle:
+        """Current trim-tab angle as a range-checked :class:`TrimTabAngle` (±40°)."""
+        return TrimTabAngle.from_degrees(self.current_control_ang)
