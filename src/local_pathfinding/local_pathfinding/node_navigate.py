@@ -196,6 +196,10 @@ class Sailbot(Node):
             f"Received data from {self.global_path_sub.topic}: {gp.path_to_dict(msg)}"
         )
         self.global_path = msg
+        # try:
+        #     gp.write_to_file(self.global_path)
+        # except FileNotFoundError:
+
         if self.saved_target_global_waypoint is None:
             self.global_waypoint_index = len(self.global_path.waypoints) - 1
             self.saved_target_global_waypoint = self.global_path.waypoints[

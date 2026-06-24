@@ -37,28 +37,21 @@ ROS parameters common across all ROS nodes in the network.
 
 ROS parameters specific to the nodes in the local_pathfinding package.
 
-### `global_path`
-
-The production node that reads the global path from a csv file and
-publishes it (interpolated to `global_path_interval_spacing_km`) on the
-`global_path` topic for local pathfinding to consume.
-
 **`global_path_filepath`**
 
-- _Description_: The absolute filepath to a global path csv file. The file
-  must have a `latitude,longitude` header followed by one waypoint per row,
-  ordered final destination first and launch area last (`navigate` treats
-  waypoint index 0 as the final destination and heads toward it starting from
-  the last waypoint).
+- _Description_: Reserved path for storing a global path csv file. This is
+  retained for the planned `navigate` persistence/fallback workflow; production
+  global paths are published by `network_systems`. The file must have a
+  `latitude,longitude` header followed by one waypoint per row, ordered final
+  destination first and launch area last (`navigate` treats waypoint index 0 as
+  the final destination and heads toward it starting from the last waypoint).
 - _Datatype_: `string`
 - _Acceptable Values_: Any valid filepath to a properly formatted csv file.
 
 **`global_path_interval_spacing_km`**
 
-- _Description_: The upper bound on the spacing between consecutive points in
-  the global path in km. The path read from the csv file is interpolated so
-  that no two consecutive waypoints are farther apart than this value. This is
-  a global parameter shared by all nodes.
+- _Description_: Global waypoint spacing parameter shared by local pathfinding
+  nodes.
 - _Datatype_: `double`
 - _Range_: `(0.0, MAX_DOUBLE)`
 
