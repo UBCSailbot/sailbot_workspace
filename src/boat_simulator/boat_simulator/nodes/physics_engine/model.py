@@ -160,7 +160,9 @@ class BoatState:
         """
         # TODO: Complete the net force and torque calculations
 
-        # sail_lift, sail_drag = self.__sail_force_computation.compute(rel_wind_vel, sail_angle_deg)
+        # sail_lift, sail_drag = self.__sail_force_computation.compute(
+        # rel_wind_vel, sail_angle_deg
+        # )
         # rudder_lift, rudder_drag = self.__rudder_force_computation.compute(
         #     rel_water_vel, rudder_angle_deg
         # )

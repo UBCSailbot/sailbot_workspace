@@ -410,6 +410,7 @@ class PhysicsEngineNode(Node):
         """
         if self.__sim_gps is None:
             self.get_logger().warn("sim GPS sensor has not been initialized")
+            return GPS()
 
         msg = GPS()
         lat, lon = self.__sim_gps.lat_lon
