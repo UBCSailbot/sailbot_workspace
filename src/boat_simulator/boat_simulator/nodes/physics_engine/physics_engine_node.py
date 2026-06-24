@@ -28,7 +28,7 @@ import boat_simulator.common.utils as Utils
 from boat_simulator.common.angle_conventions import (
     RudderAngle,
     TrimTabAngle,
-    saturated_steering_angle,
+    saturated_rudder_angle,
     saturated_trim_tab_angle,
 )
 from boat_simulator.common.conventions import NED, Velocity
@@ -629,7 +629,7 @@ class PhysicsEngineNode(Node):
         Args:
             feedback_msg (SimRudderActuation_FeedbackMessage): The feedback message.
         """
-        self.__rudder_angle = saturated_steering_angle(
+        self.__rudder_angle = saturated_rudder_angle(
             Utils.degrees_to_rad(feedback_msg.feedback.rudder_angle)
         )
         self.get_logger().info(

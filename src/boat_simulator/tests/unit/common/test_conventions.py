@@ -7,7 +7,7 @@ from boat_simulator.common.angle_conventions import (
     Heading,
     RudderAngle,
     clamp,
-    saturated_steering_angle,
+    saturated_rudder_angle,
     wrap_to_pi,
 )
 from boat_simulator.common.conventions import NED, Body, Force, Position
@@ -74,12 +74,12 @@ def test_wrap_to_pi(angle: float, expected: float) -> None:
 
 @pytest.mark.parametrize("angle", [math.inf, -math.inf, math.nan])
 def test_angles_reject_non_finite_values(angle: float) -> None:
-    with pytest.raises(ValueError, match="finite"):
+    with pytest.raises(AssertionError, match="finite"):
         Heading(angle)
-    with pytest.raises(ValueError, match="finite"):
+    with pytest.raises(AssertionError, match="finite"):
         RudderAngle(angle)
-    with pytest.raises(ValueError, match="finite"):
-        saturated_steering_angle(angle)
+    with pytest.raises(AssertionError, match="finite"):
+        saturated_rudder_angle(angle)
 
 
 def test_heading_normalizes_and_converts_units() -> None:
@@ -90,14 +90,14 @@ def test_heading_normalizes_and_converts_units() -> None:
 
 def test_steering_angle_validates_and_saturates() -> None:
     assert RudderAngle.from_degrees(30).degrees == pytest.approx(30)
-    with pytest.raises(ValueError, match=r"\[-30 deg, 30 deg\]"):
+    with pytest.raises(AssertionError, match=r"\[-30 deg, 30 deg\]"):
         RudderAngle.from_degrees(31)
 
-    assert saturated_steering_angle(math.radians(45)).degrees == pytest.approx(30)
-    assert saturated_steering_angle(math.radians(-45)).degrees == pytest.approx(-30)
+    assert saturated_rudder_angle(math.radians(45)).degrees == pytest.approx(30)
+    assert saturated_rudder_angle(math.radians(-45)).degrees == pytest.approx(-30)
 
 
 def test_clamp_rejects_reversed_bounds() -> None:
     assert clamp(2, 0, 1) == 1
-    with pytest.raises(ValueError, match="exceeds"):
+    with pytest.raises(AssertionError, match="exceeds"):
         clamp(0, 1, -1)

@@ -132,15 +132,15 @@ class TrimTabAngle:
         return math.degrees(self.radians)
 
 
-def saturated_steering_angle(raw_radians: float) -> RudderAngle:
+def saturated_rudder_angle(raw_radians: float) -> RudderAngle:
     """Construct a :class:`RudderAngle`, saturating finite input at the rudder limits."""
     if not math.isfinite(raw_radians):
-        raise _LOGGER.warn(f"steering angle must be finite, got {raw_radians}")
+        raise _LOGGER.warn(f"Rudder angle must be finite, got {raw_radians}")
     return RudderAngle(clamp(raw_radians, RudderAngle.MIN_RAD, RudderAngle.MAX_RAD))
 
 
 def saturated_trim_tab_angle(raw_radians: float) -> TrimTabAngle:
     """Construct a :class:`TrimTabAngle`, saturating finite input at the trim-tab limits."""
     if not math.isfinite(raw_radians):
-        raise _LOGGER.warn(f"trim-tab angle must be finite, got {raw_radians}")
+        raise _LOGGER.warn(f"Trim-tab angle must be finite, got {raw_radians}")
     return TrimTabAngle(clamp(raw_radians, TrimTabAngle.MIN_RAD, TrimTabAngle.MAX_RAD))
