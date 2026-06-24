@@ -23,8 +23,9 @@ from shapely.geometry import MultiPolygon, Point, Polygon, box
 import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.obstacles as ob
+import local_pathfinding.wind_coord_systems as wcs
 from local_pathfinding.ompl_objectives import get_sailing_objective
-from local_pathfinding.ompl_validity import GoalProgressWindMotionValidator
+from local_pathfinding.ompl_validity import NO_GO_ZONE, GoalProgressWindMotionValidator
 
 if TYPE_CHECKING:
     from local_pathfinding.local_path import LocalPathState
@@ -43,6 +44,13 @@ MIN_TURNING_RADIUS_KM = 0.05  # 50 m
 MAX_EDGE_LEN_KM = 0.1
 MAX_SOLVER_RUN_TIME_SEC = 1.0
 MAX_SIMPLIFIER_RUN_TIME_SEC = 0.1
+
+# Extra cushion past the no-go-zone edge when snapping a goal yaw out of irons.
+# Needed because (1) the validator rejects yaws exactly on NO_GO_ZONE (uses <= / >=),
+# and (2) the true wind can shift several degrees between when the goal yaw is computed
+# and when the planner evaluates nearby states. 5 degrees mirrors the "sail a few
+# degrees free of close-hauled" rule of thumb and costs nothing in path quality.
+IRONS_MARGIN_RAD = math.radians(5.0)
 
 LAND_KEY = -1
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -382,13 +390,6 @@ class OMPLPath:
             )
         return ci.Path(waypoints=waypoints)
 
-    def update_objectives(self):
-        """Update the objectives on the basis of which the path is optimized.
-        Raises:
-            NotImplementedError: Method or function hasn't been implemented yet.
-        """
-        raise NotImplementedError
-
     def _init_simple_setup(self, land_multi_polygon) -> og.SimpleSetup:
         """Build the configured OMPL planning problem for the current local-path state.
 
@@ -412,6 +413,7 @@ class OMPLPath:
         goal_position_in_xy = cs.XY(0, 0)
         goal_polygon = self.create_buffer_around_position(goal_position_in_xy, self._box_buffer)
         goal_x, goal_y = goal_position_in_xy
+        goal_heading_rad = self._compute_goal_heading_rad()
 
         # RRT* requires a symmetric state space which is not the default for Dubins State Space
         space = base.DubinsStateSpace(turningRadius=MIN_TURNING_RADIUS_KM, isSymmetric=True)
@@ -447,8 +449,7 @@ class OMPLPath:
         start().setXY(start_x, start_y)
         start().setYaw(start_heading_rad)
         goal().setXY(goal_x, goal_y)
-        # would be a separate task to do this
-        # goal().setYaw()
+        goal().setYaw(goal_heading_rad)
         self._logger.debug(
             "start and goal state: "
             f"start=({start().getX()}, {start().getY()}); "
@@ -486,6 +487,88 @@ class OMPLPath:
         simple_setup.setPlanner(planner)
 
         return simple_setup
+
+    def _compute_goal_heading_rad(self) -> float:
+        """Compute the yaw to set at the goal state, in OMPL Cartesian radians.
+
+        When the next global waypoint is not the final destination, the yaw is the bearing
+        from that waypoint toward the global waypoint after it, so OMPL plans a path that
+        arrives already aligned for the next leg. When it is the final destination, the
+        arrival orientation is arbitrary and we start from 0.0.
+
+        In either case, if the resulting yaw points into the wind no-go zone (upwind or
+        downwind irons), it is snapped to the nearest edge of the no-go zone so the boat
+        can physically hold that heading at the goal.
+
+        Returns:
+            float: OMPL Cartesian yaw in radians for the goal state.
+        """
+        waypoints = self.state.global_path.waypoints
+        reference = self.state.reference_latlon
+
+        # Global waypoints are stored in reverse order: index 0 is the final destination.
+        if reference == waypoints[0]:
+            return self._offset_if_in_irons_rad(0.0)
+
+        for i in range(1, len(waypoints)):
+            if waypoints[i] == reference:  # reference is next_gw_xy at (0, 0) in OMPL frame
+                # calculates bearing between next_gw_xy and next_to_next_gw_xy
+                next_to_next_gw_xy = cs.latlon_to_xy(reference, waypoints[i - 1])
+                bearing_deg = cs.get_path_segment_true_bearing(cs.XY(0, 0), next_to_next_gw_xy)
+                target_yaw_rad = math.radians(cs.true_bearing_to_OMPL_cartesian(bearing_deg))
+                return self._offset_if_in_irons_rad(target_yaw_rad)
+
+        self._logger.warning(
+            "reference_latlon not found in global_path waypoints; using default goal yaw 0.0"
+        )
+        return self._offset_if_in_irons_rad(0.0)
+
+    def _offset_if_in_irons_rad(self, target_yaw_rad: float) -> float:
+        """Snap a goal yaw out of the wind no-go zone, returning it unchanged otherwise.
+
+        A sailboat cannot hold a heading within NO_GO_ZONE of directly upwind or directly
+        downwind. When the proposed yaw is in either cone, this snaps to the closer edge,
+        which is also the edge that keeps the most heading progress toward the original
+        target direction (so it doubles as both the smallest correction and the side that
+        still points generally toward the next-to-next waypoint).
+
+        The planning-wind snapshot (path_generated_wind when available, otherwise the
+        current true wind) is used so the goal yaw, motion validator, and objective all
+        share the same wind baseline.
+
+        Args:
+            target_yaw_rad: Proposed goal yaw in OMPL Cartesian radians (0 = East, CCW positive).
+
+        Returns:
+            float: A goal yaw in OMPL Cartesian radians outside the wind no-go zone.
+        """
+        planning_wind = self.state.path_generated_wind or self.state.current_tw
+        tw_dir_rad_gc = math.radians(planning_wind.dir_deg)
+
+        # OMPL Cartesian yaw → boat heading in true-bearing radians, bounded to (-pi, pi].
+        boat_heading_rad_gc = cs.bound_to_180(
+            cs.cartesian_to_true_bearing(target_yaw_rad, rad=True), rad=True
+        )
+        twa = wcs.get_true_wind_angle(boat_heading_rad_gc, tw_dir_rad_gc)
+
+        abs_twa = abs(twa)
+
+        if abs_twa <= NO_GO_ZONE:
+            # Upwind irons: snap just outside the ±NO_GO_ZONE edge (margin pushes away from 0).
+            upwind_edge = NO_GO_ZONE + IRONS_MARGIN_RAD
+            new_twa = upwind_edge if twa >= 0 else -upwind_edge
+        elif abs_twa >= math.pi - NO_GO_ZONE:
+            # Downwind irons: snap just inside the ±(pi - NO_GO_ZONE) edge (margin toward pi/2).
+            downwind_edge = math.pi - NO_GO_ZONE - IRONS_MARGIN_RAD
+            new_twa = downwind_edge if twa >= 0 else -downwind_edge
+        else:
+            return target_yaw_rad
+
+        # twa = tw_dir - boat_heading, so boat_heading = tw_dir - twa.
+        new_boat_heading_rad_gc = cs.bound_to_180(tw_dir_rad_gc - new_twa, rad=True)
+        return math.radians(
+            cs.true_bearing_to_OMPL_cartesian(math.degrees(new_boat_heading_rad_gc))
+        )
 
     def is_state_valid(self, state: Union[base.State, base.SE2StateInternal]) -> bool:
         """Evaluate a state to determine if the configuration collides with an environment
@@ -529,19 +612,6 @@ def log_invalid_state(state: cs.XY, obstacle: ob.Obstacle):
         log_file.write(
             f"State at ({state.x:.2f},{state.y:.2f}) was invalidated by obstacle: {type(obstacle)}\n"  # noqa
         )
-
-
-def get_planner_class():
-    """Choose the planner to use for the OMPL query.
-
-    Args:
-        planner (str): Name of the planner to use.
-
-    Returns:
-        Tuple[str, Type[base.Planner]]: The name and class of the planner to use for the OMPL
-        query, defaults to RRT* if `planner` is not implemented in this function.
-    """
-    return "rrtstar", og.RRTstar
 
 
 def load_pkl(file_path: str) -> Any:

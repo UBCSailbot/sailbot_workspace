@@ -30,12 +30,15 @@ def cartesian_to_true_bearing(cartesian_angle: float, rad: bool = False) -> floa
 
     Args:
         cartesian_angle (float): Angle where 0 is east and values increase counter-clockwise.
+            The input may be either unsigned Cartesian ([0, 360) degrees / [0, 2*pi) radians)
+            or signed Cartesian, such as OMPL yaw ([-180, 180) degrees / [-pi, pi) radians);
+            values are interpreted modulo one full turn.
         rad (bool): If set to true cartesian_angle is assumed to be in radians, otherwise
                     cartesian_angle is assumed to be in degrees by default.
 
     Returns:
-        float: Angle where 0 is north and values increase clockwise. If rad is set to True then the
-               returned angle is in radians, otherwise it is in degrees by default.
+        float: Angle where 0 is north and values increase clockwise, normalized to [0, 360)
+               degrees or [0, 2*pi) radians when rad is True.
     """
     if rad:
         return ((PI / 2) - cartesian_angle + (2 * PI)) % (2 * PI)
@@ -68,7 +71,8 @@ def true_bearing_to_OMPL_cartesian(true_bearing_deg: float) -> float:
     Returns:
         The equivalent Cartesian angle in degrees, where 0 is east and positive values rotate
         counterclockwise. The result is in [-180, 180), matching OMPL's SO(2) bounds; west is
-        represented as -180 rather than 180 degrees.
+        represented as -180 rather than 180 degrees. This signed result is equivalent modulo
+        360 degrees to the unsigned Cartesian angle accepted by `cartesian_to_true_bearing`.
     """
     angle = (90.0 - true_bearing_deg) % 360.0
     if angle >= 180.0:

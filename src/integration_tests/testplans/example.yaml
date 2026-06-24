@@ -6,7 +6,6 @@ required_packages:
     configs:
     - all_disable.yaml
     - example/example_en.yaml
-    - mock_ais/mock_ais_en_default.yaml
 inputs:
   - type: ROS
     name: aisship

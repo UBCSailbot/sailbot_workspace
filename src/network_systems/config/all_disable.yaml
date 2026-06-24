@@ -3,12 +3,8 @@
 can_transceiver_node:
   ros__parameters:
     enabled: false
-    
-local_transceiver_node:
-  ros__parameters:
-    enabled: false
 
-mock_ais_node:
+local_transceiver_node:
   ros__parameters:
     enabled: false
 

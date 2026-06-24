@@ -67,7 +67,9 @@ def setup_launch(context: LaunchContext) -> List[Node]:
         context.launch_configurations["config"] = config
 
     mode = LaunchConfiguration("mode").perform(context)
-    on_water_mock_ais = LaunchConfiguration("on_water_mock_ais").perform(context)
+    on_water_mock_ais = (
+        LaunchConfiguration("on_water_mock_ais").perform(context).strip().lower() == "true"
+    )
     launch_description_entities = []
     launch_description_entities.append(get_navigate_node_description(context))
     if mode == "production":

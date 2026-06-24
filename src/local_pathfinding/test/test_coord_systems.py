@@ -16,10 +16,18 @@ from local_pathfinding.coord_systems import XY
         (90.0, False, 0.0),
         (180.0, False, 270.0),
         (270.0, False, 180.0),
+        (-45.0, False, 135.0),
+        (-90.0, False, 180.0),
+        (-135.0, False, 225.0),
+        (-180.0, False, 270.0),
         (0.0, True, math.pi / 2),
         (math.pi / 2, True, 0.0),
         (math.pi, True, (3 / 2) * math.pi),
         ((3 / 2) * math.pi, True, math.pi),
+        (-math.pi / 4, True, 3 * math.pi / 4),
+        (-math.pi / 2, True, math.pi),
+        (-3 * math.pi / 4, True, 5 * math.pi / 4),
+        (-math.pi, True, (3 / 2) * math.pi),
     ],
 )
 def test_cartesian_to_true_bearing(

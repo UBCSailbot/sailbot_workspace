@@ -69,7 +69,12 @@ class Obstacle:
             )
             return True
 
-        return not self.collision_zone.contains(Point(*point))
+        if self.collision_zone.contains(Point(point.x, point.y)):
+            _LOGGER.debug(
+                f"collision_zone contains point: {point}"
+            )
+            return False
+        return True
 
     @abstractmethod
     def update_collision_zone(self, **kwargs) -> None:
