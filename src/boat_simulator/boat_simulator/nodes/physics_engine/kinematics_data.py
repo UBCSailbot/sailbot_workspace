@@ -25,9 +25,9 @@ class KinematicsData:
     """
 
     # TODO: Ensure position is always set to 0 for relative reference frame
-    linear_position: NDArray = field(default=np.zeros(3, dtype=np.float32))
-    linear_velocity: NDArray = field(default=np.zeros(3, dtype=np.float32))
-    linear_acceleration: NDArray = field(default=np.zeros(3, dtype=np.float32))
-    angular_position: NDArray = field(default=np.zeros(3, dtype=np.float32))
-    angular_velocity: NDArray = field(default=np.zeros(3, dtype=np.float32))
-    angular_acceleration: NDArray = field(default=np.zeros(3, dtype=np.float32))
+    linear_position: NDArray = field(default_factory=lambda: np.zeros(3, dtype=np.float32))
+    linear_velocity: NDArray = field(default_factory=lambda: np.zeros(3, dtype=np.float32))
+    linear_acceleration: NDArray = field(default_factory=lambda: np.zeros(3, dtype=np.float32))
+    angular_position: NDArray = field(default_factory=lambda: np.zeros(3, dtype=np.float32))
+    angular_velocity: NDArray = field(default_factory=lambda: np.zeros(3, dtype=np.float32))
+    angular_acceleration: NDArray = field(default_factory=lambda: np.zeros(3, dtype=np.float32))

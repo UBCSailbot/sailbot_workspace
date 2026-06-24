@@ -16,10 +16,18 @@ from local_pathfinding.coord_systems import XY
         (90.0, False, 0.0),
         (180.0, False, 270.0),
         (270.0, False, 180.0),
+        (-45.0, False, 135.0),
+        (-90.0, False, 180.0),
+        (-135.0, False, 225.0),
+        (-180.0, False, 270.0),
         (0.0, True, math.pi / 2),
         (math.pi / 2, True, 0.0),
         (math.pi, True, (3 / 2) * math.pi),
         ((3 / 2) * math.pi, True, math.pi),
+        (-math.pi / 4, True, 3 * math.pi / 4),
+        (-math.pi / 2, True, math.pi),
+        (-3 * math.pi / 4, True, 5 * math.pi / 4),
+        (-math.pi, True, (3 / 2) * math.pi),
     ],
 )
 def test_cartesian_to_true_bearing(
@@ -81,6 +89,31 @@ def test_get_path_segment_true_bearing(s1: XY, s2: XY, useRad: bool, true_bearin
 def test_true_bearing_to_plotly_cartesian(true_bearing: float, plotly_cartesian: float):
     assert cs.true_bearing_to_plotly_cartesian(true_bearing) == pytest.approx(
         plotly_cartesian
+    ), "incorrect angle conversion"
+
+
+@pytest.mark.parametrize(
+    "true_bearing, ompl_cartesian",
+    [
+        (0.0, 90.0),
+        (-90.0, -180.0),
+        (-89.999, 179.999),
+        (-90.001, -179.999),
+        (180.0, -90.0),
+        (90.0, 0.0),
+        (45.0, 45.0),
+        (-45.0, 135.0),
+        (135.0, -45.0),
+        (-135.0, -135.0),
+        (1.0, 89.0),
+        (-1.0, 91.0),
+        (-179.0, -91.0),
+        (179.0, -89.0),
+    ],
+)
+def test_true_bearing_to_OMPL_cartesian(true_bearing: float, ompl_cartesian: float):
+    assert cs.true_bearing_to_OMPL_cartesian(true_bearing) == pytest.approx(
+        ompl_cartesian
     ), "incorrect angle conversion"
 
 
@@ -193,6 +226,32 @@ def test_latlon_to_xy(ref_lat: float, ref_lon: float, true_bearing_deg: float, d
     assert cs.latlon_to_xy(reference, latlon) == pytest.approx(
         xy
     ), "incorrect coordinate conversion"
+
+
+@pytest.mark.parametrize(
+    "true_bearing_deg,dist_km",
+    [
+        (0.0, 0.0),  # reference point itself -> zero distance
+        (0.00, 30.0),  # north
+        (45.0, 30.0),  # northeast
+        (90.0, 5.0),  # east
+        (180.0, 12.5),  # south
+        (-120.0, 100.0),  # arbitrary bearing, larger distance
+    ],
+)
+def test_calculate_distance_from_on_water_reference(true_bearing_deg: float, dist_km: float):
+    """A coordinate placed dist_km away from the reference reports that same distance back."""
+    ref_lat, ref_lon = cs.ON_WATER_REFERENCE
+
+    # place a coordinate a known distance/bearing away from the on-water reference
+    lon, lat, _ = cs.GEODESIC.fwd(
+        lons=ref_lon, lats=ref_lat, az=true_bearing_deg, dist=dist_km * 1000
+    )
+    latlon = ci.HelperLatLon(latitude=lat, longitude=lon)
+
+    assert cs.calculate_distance_from_on_water_reference_km(latlon) == pytest.approx(
+        dist_km
+    ), "incorrect distance from on-water reference"
 
 
 @pytest.mark.parametrize(

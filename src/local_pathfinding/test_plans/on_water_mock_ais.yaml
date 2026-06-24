@@ -1,3 +1,4 @@
 ais:
 # A yacht right in front of Jericho beach, heading west at 5 knots, with a width of 8m and a length of 10m. O
-  - {id: 1, lat: 49.277035, lon: -123.194519, heading: -90.0, speed: 5.0, rot: 0, width: 8.0, height: 10.0}
+  - {id: 1, lat: 49.286806, lon: -123.175055, heading: -90.0, speed: 5.0, rot: 0, width: 8.0, height: 10.0}
+

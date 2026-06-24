@@ -4,25 +4,16 @@
 
 import json
 import sys
+from collections import deque
 from typing import Optional
 
 import numpy as np
 import rclpy
-import rclpy.utilities
-from custom_interfaces.action import SimRudderActuation, SimSailTrimTabActuation
 from custom_interfaces.action._sim_rudder_actuation import (
     SimRudderActuation_FeedbackMessage,
 )
 from custom_interfaces.action._sim_sail_trim_tab_actuation import (
     SimSailTrimTabActuation_FeedbackMessage,
-)
-from custom_interfaces.msg import (
-    GPS,
-    DesiredHeading,
-    SailCmd,
-    SimWorldState,
-    WindSensor,
-    WindSensors,
 )
 from rclpy.action import ActionClient
 from rclpy.action.client import ClientGoalHandle, Future
@@ -30,15 +21,25 @@ from rclpy.executors import Executor, MultiThreadedExecutor, SingleThreadedExecu
 from rclpy.node import CallbackGroup, MutuallyExclusiveCallbackGroup, Node
 from rclpy.publisher import Publisher
 from rclpy.subscription import Subscription
+from test_plans.test_plan import TestPlan
 
 import boat_simulator.common.constants as Constants
 import boat_simulator.common.utils as Utils
-from boat_simulator.common.geo_conversions import local_position_to_gps_lat_lon
 from boat_simulator.common.generators import MVGaussianGenerator
-from boat_simulator.common.sensors import SimWindSensor
+from boat_simulator.common.geo_conversions import local_position_to_gps_lat_lon
+from boat_simulator.common.sensors import SimGPS, SimWindSensor
 from boat_simulator.common.types import Scalar
+from boat_simulator.common.unit_conversions import ConversionFactors
 from boat_simulator.nodes.physics_engine.fluid_generation import FluidGenerator
 from boat_simulator.nodes.physics_engine.model import BoatState
+from custom_interfaces.action import SimRudderActuation, SimSailTrimTabActuation
+from custom_interfaces.msg import (
+    GPS,
+    DesiredHeading,
+    SailCmd,
+    SimWorldState,
+    WindSensor,
+)
 
 from .decorators import require_all_subs_active
 
@@ -91,7 +92,7 @@ class PhysicsEngineNode(Node):
 
     Publishers:
         gps_pub (Publisher): Publishes GPS data in a `GPS` message.
-        wind_sensors_pub (Publisher): Publishes wind sensor data in a `WindSensors` message.
+        wind_sensors_pub (Publisher): Publishes filtered wind data in a `WindSensor` message.
         kinematics_pub (Publisher): Publishes kinematics data in a `SimWorldState` message.
 
     Action Clients:
@@ -135,6 +136,7 @@ class PhysicsEngineNode(Node):
                 ("info_log_throttle_period_sec", rclpy.Parameter.Type.DOUBLE),
                 ("action_send_goal_timeout_sec", rclpy.Parameter.Type.DOUBLE),
                 ("qos_depth", rclpy.Parameter.Type.INTEGER),
+                ("test_plan", rclpy.Parameter.Type.STRING),
                 ("rudder.actuation_request_period_sec", rclpy.Parameter.Type.DOUBLE),
                 ("wingsail.actuation_request_period_sec", rclpy.Parameter.Type.DOUBLE),
                 ("wind_sensor.generator_type", rclpy.Parameter.Type.STRING),
@@ -165,17 +167,13 @@ class PhysicsEngineNode(Node):
         self.__rudder_angle = 0
         self.__sail_trim_tab_angle = 0
         self.__desired_heading = None
-        self.__boat_state = BoatState(self.pub_period)
-        self.__sim_gps_origin_latitude = (
-            self.get_parameter(Constants.SIM_GPS_ORIGIN_LATITUDE_PARAM)
-            .get_parameter_value()
-            .double_value
-        )
-        self.__sim_gps_origin_longitude = (
-            self.get_parameter(Constants.SIM_GPS_ORIGIN_LONGITUDE_PARAM)
-            .get_parameter_value()
-            .double_value
-        )
+
+        self.test_plan = self.get_parameter("test_plan").get_parameter_value().string_value
+        test_plan = TestPlan(self.test_plan)
+        gps = test_plan.gps
+        self.__reference_latlon = gps.lat_lon
+        self.__boat_state = BoatState(self.pub_period, self.__reference_latlon)
+        self.__sim_gps = None
 
         wind_mean = np.array(
             self.get_parameter("wind_generation.mvgaussian_params.mean")
@@ -192,7 +190,8 @@ class PhysicsEngineNode(Node):
             )
         )
         self.__wind_generator = FluidGenerator(generator=MVGaussianGenerator(wind_mean, wind_cov))
-
+        self.__wind_sensor_readings: deque = deque(maxlen=20)
+        self.__sma_wind = np.zeros(2)  # Units: kmph
         current_mean = np.array(
             self.get_parameter("current_generation.mvgaussian_params.mean")
             .get_parameter_value()
@@ -211,7 +210,6 @@ class PhysicsEngineNode(Node):
             generator=MVGaussianGenerator(current_mean, current_cov)
         )
 
-        # No delay in this instance
         sim_wind = self.__wind_generator.next()
         self.__sim_wind_sensor = SimWindSensor(sim_wind, enable_noise=True)
 
@@ -280,8 +278,8 @@ class PhysicsEngineNode(Node):
             qos_profile=self.get_parameter("qos_depth").get_parameter_value().integer_value,
         )
         self.__wind_sensors_pub = self.create_publisher(
-            msg_type=WindSensors,
-            topic=Constants.PHYSICS_ENGINE_PUBLISHERS.WIND_SENSORS,
+            msg_type=WindSensor,
+            topic=Constants.PHYSICS_ENGINE_PUBLISHERS.FILTERED_WIND_SENSORS,
             qos_profile=self.get_parameter("qos_depth").get_parameter_value().integer_value,
         )
         self.__kinematics_pub = self.create_publisher(
@@ -357,10 +355,11 @@ class PhysicsEngineNode(Node):
         boat_state with the new wind and current vectors along with the rudder_angle and
         sail_trim_tab_angle.
         """
-        # Wind parameter in line below introduces noise
-        self.__sim_wind_sensor.wind = self.__wind_generator.next()
+        true_wind_mps = self.__wind_generator.next()
+        mps_to_kmph = ConversionFactors.mPs_to_kmPh.value.forward_convert
+        self.__sim_wind_sensor.wind = mps_to_kmph(true_wind_mps)
         self.__boat_state.step(
-            self.__sim_wind_sensor.wind,
+            true_wind_mps,
             self.__current_generator.next(),
             self.__rudder_angle,
             self.__sail_trim_tab_angle,
@@ -368,10 +367,31 @@ class PhysicsEngineNode(Node):
 
     def __publish_gps(self):
         """Publishes mock GPS data."""
-        msg = self.__build_gps_msg()
+        lat_lon = self.__boat_state.global_lat_lon_position
+        self.get_logger().info(f"Boat global position (lat_lon) to be published: {lat_lon}")
+        speed = np.linalg.norm(self.__boat_state.global_velocity)
+        heading = self.__boat_state.true_bearing
+
+        if self.__sim_gps:
+            self.__sim_gps.lat_lon = lat_lon
+            self.__sim_gps.speed = speed
+            self.__sim_gps.heading = heading
+        else:
+            self.__sim_gps = SimGPS(
+                lat_lon=lat_lon, speed=speed, heading=heading, enable_noise=True
+            )
+
+        msg = GPS()
+        lat, lon = self.__sim_gps.lat_lon
+        msg.lat_lon.latitude = float(lat)
+        msg.lat_lon.longitude = float(lon)
+        msg.speed.speed = float(
+            ConversionFactors.mPs_to_kmPh.value.forward_convert(self.__sim_gps.speed)
+        )
+        msg.heading.heading = float(Utils.ccw_straight_to_cw_north_deg(self.__sim_gps.heading))
 
         self.gps_pub.publish(msg)
-        self.get_logger().info(
+        self.get_logger().debug(
             f"Publishing to {self.gps_pub.topic}",
             throttle_duration_sec=self.get_parameter("info_log_throttle_period_sec")
             .get_parameter_value()
@@ -379,23 +399,27 @@ class PhysicsEngineNode(Node):
         )
 
     def __publish_wind_sensors(self):
-        """Publishes mock wind sensor data."""
-        wind1 = self.__sim_wind_sensor.wind
-        wind2 = self.__sim_wind_sensor.wind
+        """Publishes filtered wind sensor data using a simple moving average."""
+        raw_wind = self.__sim_wind_sensor.wind
+        k = self.__wind_sensor_readings.maxlen
+        n = len(self.__wind_sensor_readings)
 
-        windSensor1 = WindSensor()
-        windSensor1.speed.speed = Utils.get_wind_speed(wind1)
-        windSensor1.direction = Utils.get_wind_direction(wind1)
+        if n < k:
+            # Queue not yet full: approximate with fixed-window weighted update
+            self.__sma_wind = (self.__sma_wind * (k - 1) + raw_wind[:2]) / k
+        else:
+            # Queue full: incremental SMA — add new, subtract oldest
+            oldest = self.__wind_sensor_readings[0]
+            self.__sma_wind = self.__sma_wind + (raw_wind[:2] - oldest) / k
 
-        windSensor2 = WindSensor()
-        windSensor2.speed.speed = Utils.get_wind_speed(wind2)
-        windSensor2.direction = Utils.get_wind_direction(wind2)
+        self.__wind_sensor_readings.append(raw_wind[:2].copy())
 
-        msg = WindSensors()
-        msg.wind_sensors = [windSensor1, windSensor2]
+        msg = WindSensor()
+        msg.speed.speed = float(Utils.get_wind_speed(self.__sma_wind))
+        msg.direction = int(Utils.get_wind_direction(self.__sma_wind))
 
         self.wind_sensors_pub.publish(msg)
-        self.get_logger().info(
+        self.get_logger().debug(
             f"Publishing to {self.wind_sensors_pub.topic}",
             throttle_duration_sec=self.get_parameter("info_log_throttle_period_sec")
             .get_parameter_value()
@@ -404,23 +428,52 @@ class PhysicsEngineNode(Node):
 
     def __publish_kinematics(self):
         """Publishes the kinematics data of the simulated boat."""
+        lat_lon = self.__boat_state.global_lat_lon_position
+        speed = np.linalg.norm(self.__boat_state.global_velocity)
+        heading = self.__boat_state.true_bearing
+
+        if self.__sim_gps:
+            self.__sim_gps.lat_lon = lat_lon
+            self.__sim_gps.speed = speed
+            self.__sim_gps.heading = heading
+        else:
+            self.__sim_gps = SimGPS(
+                lat_lon=lat_lon, speed=speed, heading=heading, enable_noise=True
+            )
+
+        mps_to_kmph = ConversionFactors.mPs_to_kmPh.value.forward_convert
+        m_to_km = ConversionFactors.m_to_km.value.forward_convert
+
         msg = SimWorldState()
-        msg.global_gps = self.__build_gps_msg()
+        lat, lon = self.__sim_gps.lat_lon
+        msg.global_gps.lat_lon.latitude = float(lat)
+        msg.global_gps.lat_lon.longitude = float(lon)
+        msg.global_gps.speed.speed = float(mps_to_kmph(self.__sim_gps.speed))
+        msg.global_gps.heading.heading = float(
+            Utils.ccw_straight_to_cw_north_deg(self.__sim_gps.heading)
+        )
 
-        msg.global_pose.position.x = self.__boat_state.global_position.item(0)
-        msg.global_pose.position.y = self.__boat_state.global_position.item(1)
-        msg.global_pose.position.z = self.__boat_state.global_position.item(2)
-        msg.global_pose.orientation.x = self.__boat_state.global_angular_position.item(0)
-        msg.global_pose.orientation.y = self.__boat_state.global_angular_position.item(1)
-        msg.global_pose.orientation.z = self.__boat_state.global_angular_position.item(2)
-        msg.global_pose.orientation.w = 1.0
+        pos_m = self.__boat_state.global_position
+        msg.global_pose.position.x = float(m_to_km(pos_m.item(0)))
+        msg.global_pose.position.y = float(m_to_km(pos_m.item(1)))
+        msg.global_pose.position.z = float(m_to_km(pos_m.item(2)))
 
-        msg.wind_velocity.x = self.__wind_generator.velocity[0]
-        msg.wind_velocity.y = self.__wind_generator.velocity[1]
+        ang = self.__boat_state.angular_position
+        pitch_rad = ang.item(Constants.ORIENTATION_INDICES.PITCH.value)
+        roll_rad = ang.item(Constants.ORIENTATION_INDICES.ROLL.value)
+        yaw_rad = ang.item(Constants.ORIENTATION_INDICES.YAW.value)
+        quat = Utils.euler_zyx_to_quaternion(roll_rad, pitch_rad, yaw_rad)
+        msg.global_pose.orientation.x = float(quat[0])
+        msg.global_pose.orientation.y = float(quat[1])
+        msg.global_pose.orientation.z = float(quat[2])
+        msg.global_pose.orientation.w = float(quat[3])
+
+        msg.wind_velocity.x = float(mps_to_kmph(self.__wind_generator.velocity[0]))
+        msg.wind_velocity.y = float(mps_to_kmph(self.__wind_generator.velocity[1]))
         msg.wind_velocity.z = 0.0
 
-        msg.current_velocity.x = self.__current_generator.velocity[0]
-        msg.current_velocity.y = self.__current_generator.velocity[1]
+        msg.current_velocity.x = float(mps_to_kmph(self.__current_generator.velocity[0]))
+        msg.current_velocity.y = float(mps_to_kmph(self.__current_generator.velocity[1]))
         msg.current_velocity.z = 0.0
 
         sec, nanosec = divmod(self.pub_period * self.publish_counter, 1)
@@ -542,8 +595,8 @@ class PhysicsEngineNode(Node):
         result = future.result().result
         self.get_logger().debug(
             "Rudder actuation action finished with a heading residual of "
-            + f"{result.remaining_angular_distance:.2f} rad and final "
-            + f"rudder angle of {self.rudder_angle:.2f} rad"
+            + f"{result.remaining_angular_distance:.2f} degrees and final "
+            + f"rudder angle of {self.rudder_angle:.2f} degrees"
         )
 
     def __rudder_action_feedback_callback(self, feedback_msg: SimRudderActuation_FeedbackMessage):
@@ -555,7 +608,7 @@ class PhysicsEngineNode(Node):
         """
         self.__rudder_angle = feedback_msg.feedback.rudder_angle
         self.get_logger().info(
-            f"Received rudder angle of {self.rudder_angle:.2f} rad from action "
+            f"Received rudder angle of {self.rudder_angle:.2f} degrees from action "
             + f"{self.rudder_actuation_action_client._action_name}",
             throttle_duration_sec=self.get_parameter("info_log_throttle_period_sec")
             .get_parameter_value()
@@ -636,7 +689,7 @@ class PhysicsEngineNode(Node):
         """
         self.__sail_trim_tab_angle = feedback_msg.feedback.current_angular_position
         self.get_logger().info(
-            f"Received sail trim tab angle of {self.sail_trim_tab_angle:.2f} rad from action "
+            f"Received sail trim tab angle of {self.sail_trim_tab_angle:.2f} degrees from action "
             + f"{self.sail_actuation_action_client._action_name}",
             throttle_duration_sec=self.get_parameter("info_log_throttle_period_sec")
             .get_parameter_value()

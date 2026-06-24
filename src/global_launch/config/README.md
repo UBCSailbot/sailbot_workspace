@@ -74,17 +74,72 @@ active test plan.
 - _Datatype_: `double`
 - _Acceptable Values_: `(1.0, MAX_DOUBLE)`
 
+### `mock_ais`
+
+The development-only node that publishes mock AIS data in
+different modes based on whether running on water (production) or in development.
+
+**`on_water_mock_ais`**
+
+- _Description_: Enable or disable mock AIS data generation.
+- _Datatype_: `boolean`
+- _Acceptable Values_: `true`, `false`
+
+**`on_water_test_plan`**
+
+- _Description_: The test plan file to use for mock AIS data when on water.
+- _Datatype_: `string`
+- _Acceptable Values_: Any valid test plan filename.
+
+### `mock_gps`
+
+The development-only node that publishes mock GPS data with
+configurable noise and drift.
+
+**`use_gps_noise`**
+
+- _Description_: Enable Gaussian noise on GPS readings.
+- _Datatype_: `boolean`
+- _Acceptable Values_: `true`, `false`
+
+**`use_ocean_drift`**
+
+- _Description_: Enable cumulative ocean current drift on GPS readings.
+- _Datatype_: `boolean`
+- _Acceptable Values_: `true`, `false`
+
+**`use_drift_randomization`**
+
+- _Description_: Enable small random variation to the ocean drift current each tick.
+- _Datatype_: `boolean`
+- _Acceptable Values_: `true`, `false`
+
+**`ocean_drift_speed_kmph`**
+
+- _Description_: Base speed of the ocean current in km/h over ground.
+- _Datatype_: `double`
+- _Range_: `[0.0, MAX_DOUBLE)`
+
+**`ocean_drift_dir_deg`**
+
+- _Description_: Direction the current flows toward in degrees (0=north, 90=east).
+- _Datatype_: `double`
+- _Range_: `(-180.0, 180.0]`
+
+**`ocean_drift_accel_kmph2`**
+
+- _Description_: Acceleration of the drift speed in km/h². Set to 0 for constant drift.
+- _Datatype_: `double`
+- _Range_: `[0.0, MAX_DOUBLE)`
+
 ### `navigate_main`
 
 **`path_planner`**
 
-- _Description_: The path planner to use. Planners are from
-  [OMPL Library](https://ompl.kavrakilab.org/planners.html).
+- _Description_: The path planner used by local pathfinding. Local pathfinding currently
+  uses OMPL RRT* exclusively.
 - _Datatype_: `string`
-- _Acceptable Values_: `"bitstar"`, `"bfmtstar"`, `"fmtstar"`,
-  `"informedrrtstar"`, `"lazylbtrrt"`, `"lazyprmstar"`, `"lbtrrt"`,
-  `"prmstar"`, `"rrtconnect"`, `"rrtsharp"`, `"rrtstar"`, `"rrtxstatic"`,
-  `"sorrtstar"`
+- _Acceptable Values_: `"rrtstar"`
 
 ## Controller Parameters
 

@@ -59,10 +59,7 @@ def make_goal_progress_wind_motion_validator(
     return ov.GoalProgressWindMotionValidator(
         space_information=space_information,
         goal_position_in_xy=goal_position_in_xy,
-        boat_heading_deg_gc=0.0,
-        boat_speed_kmph=0.0,
-        aw_direction_deg_bc=180.0,
-        aw_speed_kmph=10.0,
+        tw_dir_deg_gc=0.0,
     )
 
 
@@ -144,7 +141,7 @@ def test_goal_progress_motion_rejects_movement_away_from_current_goal_direction(
 
 
 @pytest.mark.parametrize(
-    "s1, s2, tw_direction_rad_gc, expected",
+    "s1, s2, tw_dir_rad_gc, expected",
     [
         (
             # Segment points directly into the wind
@@ -172,16 +169,16 @@ def test_goal_progress_motion_rejects_movement_away_from_current_goal_direction(
 def test_get_segment_wind_angle_rad_bc(
     s1: cs.XY,
     s2: cs.XY,
-    tw_direction_rad_gc: float,
+    tw_dir_rad_gc: float,
     expected: float,
 ):
-    assert ov.get_segment_wind_angle_rad_bc(s1, s2, tw_direction_rad_gc) == pytest.approx(
+    assert ov.get_segment_wind_angle_rad_bc(s1, s2, tw_dir_rad_gc) == pytest.approx(
         expected
     )
 
 
 @pytest.mark.parametrize(
-    "s1, s2, tw_direction_rad_gc, expected",
+    "s1, s2, tw_dir_rad_gc, expected",
     [
         (
             # Wind direction and segment both point north
@@ -279,10 +276,10 @@ def test_get_segment_wind_angle_rad_bc(
 def test_in_wind_no_go_zone(
     s1: cs.XY,
     s2: cs.XY,
-    tw_direction_rad_gc: float,
+    tw_dir_rad_gc: float,
     expected: bool,
 ):
-    assert ov.in_wind_no_go_zone(s1, s2, tw_direction_rad_gc) is expected
+    assert ov.in_wind_no_go_zone(s1, s2, tw_dir_rad_gc) is expected
 
 
 @pytest.mark.parametrize(
