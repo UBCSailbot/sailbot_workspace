@@ -213,7 +213,7 @@ class BoatState:
 
     @property
     def global_acceleration(self) -> Vec3[Acceleration, NED]:
-        """Returns the boat's current acceleration in the NEd (global) reference frame,
+        """Returns the boat's current acceleration in the NED (global) reference frame,
         expressed in meters per second squared [m/s^2]."""
         return self.__kinematics_computation.global_data.linear_acceleration
 
@@ -285,7 +285,7 @@ class BoatState:
     @property
     def speed(self) -> float:
         """Returns the speed on the boat, calculated as the magnitude of the velocity vector in
-        the MED (global) reference frame, expressed in meters per second [m/s]."""
+        the NED (global) reference frame, expressed in meters per second [m/s]."""
         return float(np.linalg.norm(x=self.global_velocity.data, ord=2))
 
     @property
