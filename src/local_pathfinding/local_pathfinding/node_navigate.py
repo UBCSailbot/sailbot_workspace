@@ -197,7 +197,10 @@ class Sailbot(Node):
         )
         self.global_path = msg
         if self.saved_target_global_waypoint is None:
-            self.saved_target_global_waypoint = self.global_path.waypoints[-1]
+            self.global_waypoint_index = len(self.global_path.waypoints) - 1
+            self.saved_target_global_waypoint = self.global_path.waypoints[
+                self.global_waypoint_index
+            ]
 
     def filtered_wind_sensor_callback(self, msg: ci.WindSensor):
         self.get_logger().debug(f"Received data from {self.filtered_wind_sensor_sub.topic}: {msg}")
@@ -363,7 +366,7 @@ class Sailbot(Node):
 
         self.get_logger().info(
             f"Current target global waypoint: {self.saved_target_global_waypoint}"
-            + f"(index {self.global_waypoint_index})"
+            + f"(index: {self.global_waypoint_index})"
         )
 
         # Check if we're close enough to the global waypoint to head to the next one
@@ -455,11 +458,13 @@ class Sailbot(Node):
         pub_period_sec = self.get_parameter("pub_period_sec").get_parameter_value().double_value
         if pub_period_sec != self.pub_period_sec:
             self.get_logger().debug(
-                f"Updating pub period and timers from {self.pub_period_sec} to {pub_period_sec}"
+                f"Updating pub period and timer from {self.pub_period_sec} to {pub_period_sec}"
             )
             self.pub_period_sec = pub_period_sec
+            self.desired_heading_timer.cancel()
             self.desired_heading_timer = self.create_timer(
-                timer_period_sec=self.pub_period_sec, callback=self.desired_heading_callback
+                timer_period_sec=self.pub_period_sec + MAX_SOLVER_RUN_TIME_SEC,
+                callback=self.desired_heading_callback,
             )
 
         planner = self.get_parameter("path_planner").get_parameter_value().string_value

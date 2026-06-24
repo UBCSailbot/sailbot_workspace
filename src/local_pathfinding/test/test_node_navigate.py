@@ -144,6 +144,29 @@ def test_find_next_global_waypoint_index(
     assert calculated_answer == correct_index
 
 
+def test_global_path_callback_initializes_target_to_start_waypoint():
+    sailbot = nn.Sailbot.__new__(nn.Sailbot)
+    sailbot.global_path_sub = mock.Mock()
+    sailbot.global_path_sub.topic = "global_path"
+    sailbot.get_logger = mock.Mock(return_value=mock.Mock())
+    sailbot.global_waypoint_index = -1
+    sailbot.saved_target_global_waypoint = None
+
+    global_path = ci.Path(
+        waypoints=[
+            ci.HelperLatLon(latitude=2.0, longitude=2.0),
+            ci.HelperLatLon(latitude=1.0, longitude=1.0),
+            ci.HelperLatLon(latitude=0.0, longitude=0.0),
+        ]
+    )
+
+    sailbot.global_path_callback(global_path)
+
+    assert sailbot.global_path == global_path
+    assert sailbot.global_waypoint_index == 2
+    assert sailbot.saved_target_global_waypoint == global_path.waypoints[2]
+
+
 def test_desired_heading_callback_disables_sail_when_missing_gps_or_ais():
     sailbot = nn.Sailbot.__new__(nn.Sailbot)
     sailbot.ais_ships = None
@@ -187,8 +210,10 @@ def test_get_desired_heading_disables_sail_when_path_not_found():
     sailbot.filtered_wind_sensor.speed = mock.Mock(speed=5.0)
     sailbot.filtered_wind_sensor.direction = 90
     sailbot.target_lp_wp_index = 1
-    sailbot.global_waypoint_index = -1
-    sailbot.saved_target_global_waypoint = sailbot.global_path.waypoints[-1]
+    sailbot.global_waypoint_index = len(sailbot.global_path.waypoints) - 1
+    sailbot.saved_target_global_waypoint = sailbot.global_path.waypoints[
+        sailbot.global_waypoint_index
+    ]
     sailbot.planner = "rrtstar"
     sailbot.land_multi_polygon = None
     sailbot.get_logger = mock.Mock(return_value=mock.Mock())
