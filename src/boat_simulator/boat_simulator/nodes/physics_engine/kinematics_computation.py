@@ -10,6 +10,7 @@ from boat_simulator.common.conventions import (
     Body,
     Force,
     Inertia,
+    InverseInertia,
     Torque,
 )
 from boat_simulator.common.types import Mat3, Vec3
@@ -47,7 +48,7 @@ class BoatKinematics:
         self.__timestep = timestep
         self.__boat_mass = mass
         self.__inertia: Mat3[Inertia, Body] = inertia
-        self.__inertia_inverse: Mat3[Inertia, Body] = Mat3(np.linalg.inv(inertia.data))
+        self.__inertia_inverse: Mat3[InverseInertia, Body] = Mat3(np.linalg.inv(inertia.data))
         self.__relative_data: KinematicsData[Body] = KinematicsData(is_relative=True)
         self.__global_data: KinematicsData[NED] = KinematicsData()
 
@@ -220,7 +221,7 @@ class BoatKinematics:
         return self.__inertia
 
     @property
-    def inertia_inverse(self) -> Mat3[Inertia, Body]:
+    def inertia_inverse(self) -> Mat3[InverseInertia, Body]:
         return self.__inertia_inverse
 
     @property

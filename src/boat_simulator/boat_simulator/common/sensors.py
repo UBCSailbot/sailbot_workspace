@@ -3,6 +3,7 @@ from typing import Any, Sequence
 import numpy as np
 from numpy.typing import NDArray
 
+from boat_simulator.common.angle_conventions import Heading
 from boat_simulator.common.conventions import NED, Velocity
 from boat_simulator.common.generators import (
     GaussianGenerator,
@@ -118,24 +119,24 @@ class SimGPS(Sensor):
         lat_lon (NDArray): Boat latitude and longitude in degrees [°] (2x1 array,
             [latitude, longitude]).
         speed (float): Boat speed in meters per second [m/s].
-        heading (float): Boat heading in degrees [°], normalized to [-180, 180]
-            (0° is straight, increasing CCW).
+        heading (Heading): Boat heading as a Heading value object (radians,
+            normalized to [-pi, pi), 0 is straight, increasing CCW).
         enable_noise (bool): Enables noise for fields. False by default.
         enable_delay (bool): Enables delay for fields. False by default.
     """
 
     lat_lon: NDArray
     speed: float
-    heading: float
+    heading: Heading
 
     def __init__(
         self,
         lat_lon: NDArray,
         speed: float,
-        heading: float,
+        heading: Heading,
         lat_lon_noise_stdev: float = 0.00009,
         speed_noise_stdev: float = 0.1,
-        heading_noise_stdev: float = 0.1,
+        heading_noise_stdev: float = 0.1,  # radians, matching the Heading value object
         enable_noise: bool = False,
         enable_delay: bool = False,
     ):
@@ -155,7 +156,7 @@ class SimGPS(Sensor):
         self.speed_next_value: float = speed
 
         self.heading_queue_next: bool = False
-        self.heading_next_value: float = heading
+        self.heading_next_value: Heading = heading
 
         self.lat_lon_noisemaker: GaussianGenerator = GaussianGenerator(
             mean=0, stdev=lat_lon_noise_stdev
@@ -210,15 +211,14 @@ class SimGPS(Sensor):
         self.speed_next_value = speed
 
     @property  # type: ignore
-    def heading(self) -> float:
-        return (
-            self._heading + self.heading_noisemaker.next()  # type: ignore
-            if self.enable_noise
-            else self._heading
-        )
+    def heading(self) -> Heading:
+        if not self.enable_noise:
+            return self._heading
+        # Apply noise in radians and let Heading re-wrap the result into [-pi, pi).
+        return Heading(self._heading.radians + float(self.heading_noisemaker.next()))
 
     @heading.setter
-    def heading(self, heading: float):
+    def heading(self, heading: Heading):
 
         if not self.enable_delay:
             self._heading = heading

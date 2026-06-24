@@ -23,6 +23,7 @@ from boat_simulator.common.conventions import (
     Body,
     Force,
     Inertia,
+    InverseInertia,
     Position,
     Torque,
     Velocity,
@@ -157,9 +158,7 @@ class BoatState:
                 the net force in the global reference frame, expressed in newtons (N), and the
                 second element represents the net torque, expressed in newton-meters (N•m).
         """
-        # TODO: The force and torque compute assumes The orientation angle of the medium in
-        # degrees, where 0 degrees corresponds to the positive x-axis, and angles increase
-        # counter-clockwise (CCW).
+        # TODO: Complete the net force and torque calculations
 
         # sail_lift, sail_drag = self.__sail_force_computation.compute(rel_wind_vel, sail_angle_deg)
         # rudder_lift, rudder_drag = self.__rudder_force_computation.compute(
@@ -185,6 +184,7 @@ class BoatState:
         # )
 
         # (net_force, tau_z_vector) — currently stubbed to zero while the dynamics are validated.
+
         return (Vec3.from_xyz(0.0, 0.0, 0.0), Vec3.from_xyz(0.0, 0.0, 0.0))
 
     @property
@@ -205,23 +205,25 @@ class BoatState:
 
     @property
     def global_velocity(self) -> Vec3[Velocity, NED]:
-        """Returns the boat's current velocity in the global reference frame,
+        """Returns the boat's current velocity in the NED (global) reference frame,
         expressed in meters per second [m/s]."""
         return self.__kinematics_computation.global_data.linear_velocity
 
     @property
     def global_acceleration(self) -> Vec3[Acceleration, NED]:
-        """Returns the boat's current acceleration in the global reference frame,
+        """Returns the boat's current acceleration in the NEd (global) reference frame,
         expressed in meters per second squared [m/s^2]."""
         return self.__kinematics_computation.global_data.linear_acceleration
 
     @property
     def global_angular_position(self) -> Vec3[Position, NED]:
+        """Returns global angular position in the NED (global) reference frame,
+        expressed in radians"""
         return self.__kinematics_computation.global_data.angular_position
 
     @property
     def relative_velocity(self) -> Vec3[Velocity, Body]:
-        """Returns the boat's current velocity in the relative reference frame,
+        """Returns the boat's current velocity in the Body (relative) reference frame,
         expressed in meters per second [m/s]."""
         orientation = self.global_angular_position
         glo = self.__kinematics_computation.global_data.linear_velocity.data
@@ -234,26 +236,26 @@ class BoatState:
 
     @property
     def relative_acceleration(self) -> Vec3[Acceleration, Body]:
-        """Returns the boat's current acceleration in the relative reference frame,
+        """Returns the boat's current acceleration in the Body (relative) reference frame,
         expressed in meters per second squared [m/s^2]."""
         return self.__kinematics_computation.relative_data.linear_acceleration
 
     @property
     def angular_position(self) -> Vec3[Position, Body]:
-        """Returns the boat's current angular position along the yaw axis in the global reference
-        frame, expressed in radians [rad]."""
+        """Returns the boat's current angular position along the yaw axis in the NED (global)
+        reference frame, expressed in radians [rad]."""
         return self.__kinematics_computation.relative_data.angular_position
 
     @property
     def angular_velocity(self) -> Vec3[Velocity, Body]:
-        """Returns the boat's current angular velocity along the yaw axis in the global reference
-        frame, expressed in radians per second [rad/s]."""
+        """Returns the boat's current angular velocity along the yaw axis in the NED (global)
+        reference frame, expressed in radians per second [rad/s]."""
         return self.__kinematics_computation.relative_data.angular_velocity
 
     @property
     def angular_acceleration(self) -> Vec3[Acceleration, Body]:
-        """Returns the boat's current angular acceleration along the yaw axis in the
-        global reference frame, expressed in radians per second squared [rad/s^2]."""
+        """Returns the boat's current angular acceleration along the yaw axis in the NED
+        (global) reference frame, expressed in radians per second squared [rad/s^2]."""
         return self.__kinematics_computation.relative_data.angular_acceleration
 
     @property
@@ -262,7 +264,7 @@ class BoatState:
         return self.__kinematics_computation.inertia
 
     @property
-    def inertia_inverse(self) -> Mat3[Inertia, Body]:
+    def inertia_inverse(self) -> Mat3[InverseInertia, Body]:
         """Returns the boat's inverse inertia,
         expressed in per kilogram square meters [1/(kg•m^2)]."""
         return self.__kinematics_computation.inertia_inverse
@@ -281,7 +283,7 @@ class BoatState:
     @property
     def speed(self) -> float:
         """Returns the speed on the boat, calculated as the magnitude of the velocity vector in
-        the global reference frame, expressed in meters per second [m/s]."""
+        the MED (global) reference frame, expressed in meters per second [m/s]."""
         return float(np.linalg.norm(x=self.global_velocity.data, ord=2))
 
     @property
@@ -290,5 +292,7 @@ class BoatState:
         position, using the DesiredHeading message's angle convention
         (0 degrees is straight, increasing CCW). The heading is normalized to the range [-pi, pi)
         radians (equivalently [-180, 180) degrees)."""
-        yaw_rad = self.global_angular_position.z
+
+        orientation = ORIENTATION_INDICES["YAW"]
+        yaw_rad = self.global_angular_position.data[orientation.value]
         return Heading(yaw_rad)

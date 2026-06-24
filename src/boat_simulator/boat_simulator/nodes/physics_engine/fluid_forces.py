@@ -1,9 +1,7 @@
 """This module provides functionality for computing the lift and drag forces acting on a medium."""
 
-from typing import Any, Sequence, Tuple
+from typing import Tuple
 
-import matplotlib.patches as patches
-import matplotlib.pyplot as plt
 import numpy as np
 from numpy.typing import NDArray
 from rclpy.logging import get_logger
@@ -260,137 +258,6 @@ class MediumForceComputation:
         area = self.__areas
 
         return lift_coefficient, drag_coefficient, area
-
-    @staticmethod
-    def _draw_boat(ax: Any, position: Sequence[float], orientation: float) -> None:
-        """Draws a simplified boat shape on the given axes, ensuring it aligns
-        with the orientation line."""
-        boat_length = 1.0
-        boat_width = 0.3
-
-        # Center the shape around (0, 0)
-        front_extension = 3 * boat_length / 4
-        rear_extension = -boat_length / 4
-
-        # Calculate the offset to center the shape
-        offset = front_extension + rear_extension
-
-        boat_shape = np.array(
-            [
-                [front_extension - offset, 0],
-                [boat_length / 2 - offset, boat_width / 2],
-                [rear_extension - offset, 0],
-                [boat_length / 2 - offset, -boat_width / 2],
-                [front_extension - offset, 0],
-            ]
-        )
-
-        # Rotation matrix for anticlockwise rotation
-        rotation_matrix = np.array(
-            [
-                [np.cos(np.deg2rad(orientation)), np.sin(np.deg2rad(orientation))],
-                [np.sin(np.deg2rad(orientation)), np.cos(np.deg2rad(orientation))],
-            ]
-        )
-
-        # Apply rotation
-        rotated_boat = np.dot(boat_shape, rotation_matrix)
-
-        # Translate boat to its position
-        translated_boat = rotated_boat + np.array(position)
-
-        # Draw the boat
-        ax.plot(translated_boat[:, 0], translated_boat[:, 1], "k")
-
-        # Ensure the orientation line is drawn correctly
-        # Calculate a point along the orientation direction
-        direction = np.array([np.cos(np.deg2rad(orientation)), np.sin(np.deg2rad(orientation))])
-        line_start = np.array(position)
-        line_end = (
-            line_start + direction * boat_length
-        )  # Extend the line out from the boat's position
-
-        # Draw orientation line
-        ax.plot(
-            [line_start[0], line_end[0]], [line_start[1], line_end[1]], "black", linestyle="--"
-        )
-
-    # BUG: Visualize Forces function is never used
-
-    def visualize_forces(
-        self, apparent_velocity, lift_force, drag_force, position=[0, 0], orientation=0
-    ):
-        """Visualizes the sailboat, apparent velocity, lift force, and drag force."""
-        fig, ax = plt.subplots()
-        apparent_velocity_vec = np.asarray(apparent_velocity)
-        attack_angle = self.calculate_attack_angle(apparent_velocity_vec, orientation)
-        # Normalize forces for visualization
-        norm_apparent_velocity = apparent_velocity / np.linalg.norm(apparent_velocity)
-        norm_lift_force = lift_force / np.linalg.norm(lift_force)
-        norm_drag_force = drag_force / np.linalg.norm(drag_force)
-
-        # Draw the boat
-        MediumForceComputation._draw_boat(ax, position, orientation)
-        # Plot forces and velocity
-        ax.quiver(
-            position[0],
-            position[1],
-            norm_apparent_velocity[0],
-            norm_apparent_velocity[1],
-            color="blue",
-            scale=5,
-            label="Apparent Velocity",
-            pivot="tip",
-        )
-        ax.quiver(
-            position[0],
-            position[1],
-            norm_lift_force[0],
-            norm_lift_force[1],
-            color="red",
-            scale=5,
-            label="Lift Force",
-        )
-        ax.quiver(
-            position[0],
-            position[1],
-            norm_drag_force[0],
-            norm_drag_force[1],
-            color="green",
-            scale=5,
-            label="Drag Force",
-        )
-        orientation_rad = np.deg2rad(orientation)  # Convert orientation to radians
-        ax.axline((0, 0), slope=np.tan(orientation_rad), color="black", linestyle="--")
-
-        # Calculate angle for drag force
-        drag_angle = np.arctan2(norm_drag_force[1], norm_drag_force[0])
-
-        # Determine start and end angles for the arc
-        start_angle = np.rad2deg(orientation_rad)
-        end_angle = np.rad2deg(drag_angle)
-
-        # Draw arc to represent angle between orientation and drag force
-        radius = 0.05
-        arc = patches.Arc(
-            position,
-            2 * radius,
-            2 * radius,
-            angle=0,
-            theta1=min(start_angle, end_angle),
-            theta2=max(start_angle, end_angle),
-            color="purple",
-            label="Angle Arc",
-        )
-        ax.add_patch(arc)
-
-        ax.axis("equal")
-        ax.legend()
-        plt.title("Forces Acting on Sailboat for Attack Angle: " + str(round(attack_angle)))
-        plt.xlabel("X-axis")
-        plt.ylabel("Y-axis")
-        plt.grid(True)
-        plt.show()
 
     @property
     def lift_coefficients(self) -> CoeffTable:

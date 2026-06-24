@@ -5,7 +5,7 @@
 import json
 import sys
 from collections import deque
-from typing import Optional
+from typing import Optional, Union
 
 import numpy as np
 import rclpy
@@ -26,13 +26,15 @@ from test_plans.test_plan import TestPlan
 import boat_simulator.common.constants as Constants
 import boat_simulator.common.utils as Utils
 from boat_simulator.common.angle_conventions import (
+    RudderAngle,
+    TrimTabAngle,
     saturated_steering_angle,
     saturated_trim_tab_angle,
 )
-from boat_simulator.common.types import Vec2
+from boat_simulator.common.conventions import NED, Velocity
 from boat_simulator.common.generators import MVGaussianGenerator
-from boat_simulator.common.geo_conversions import local_position_to_gps_lat_lon
 from boat_simulator.common.sensors import SimGPS, SimWindSensor
+from boat_simulator.common.types import Vec2
 from boat_simulator.common.unit_conversions import ConversionFactors
 from boat_simulator.nodes.physics_engine.fluid_generation import FluidGenerator
 from boat_simulator.nodes.physics_engine.model import BoatState
@@ -40,6 +42,7 @@ from custom_interfaces.action import SimRudderActuation, SimSailTrimTabActuation
 from custom_interfaces.msg import (
     GPS,
     DesiredHeading,
+    HelperLatLon,
     SailCmd,
     SimWorldState,
     WindSensor,
@@ -163,47 +166,47 @@ class PhysicsEngineNode(Node):
             value_str = str(parameter.value)
             self.get_logger().debug(f"Got parameter {name} with value {value_str}")
 
-    def __init_private_attributes(self):
+    def __init_private_attributes(self) -> None:
         """Initializes the private attributes of this class that are not set anywhere else during
         the initialization process.
         """
         self.__publish_counter = 0
-        self.__rudder_angle = 0
-        self.__sail_trim_tab_angle = 0
-        self.__desired_heading = None
+        self.__rudder_angle: RudderAngle = RudderAngle(0.0)
+        self.__sail_trim_tab_angle: TrimTabAngle = TrimTabAngle(0.0)
+        self.__desired_heading: Union[DesiredHeading, None] = None
 
         self.test_plan = self.get_parameter("test_plan").get_parameter_value().string_value
         test_plan = TestPlan(self.test_plan)
         gps = test_plan.gps
-        self.__reference_latlon = gps.lat_lon
+        self.__reference_latlon: HelperLatLon = gps.lat_lon
         self.__boat_state = BoatState(self.pub_period, self.__reference_latlon)
-        self.__sim_gps = None
+        self.__sim_gps: SimGPS = None
 
-        wind_mean = np.array(
+        # MVGaussianGenerator expects raw numpy arrays: a 1D mean vector and a 2D covariance
+        # matrix (parsed from a string, since ROS parameters do not support 2D array types).
+        wind_mean_kmph = np.array(
             self.get_parameter("wind_generation.mvgaussian_params.mean")
             .get_parameter_value()
             .double_array_value
         )
-        # Parse the covariance matrix from a string into a 2D array, as ROS parameters do not
-        # support native 2D array types.
-        wind_cov = np.array(
+        wind_cov_kmph = np.array(
             json.loads(
                 self.get_parameter("wind_generation.mvgaussian_params.cov")
                 .get_parameter_value()
                 .string_value
             )
         )
-        self.__wind_generator = FluidGenerator(generator=MVGaussianGenerator(wind_mean, wind_cov))
-        self.__wind_sensor_readings: deque[Vec2] = deque(maxlen=20)
-        self.__sma_wind: Vec2 = Vec2.from_xy(0.0, 0.0)  # Units: kmph
-        current_mean = np.array(
+        self.__wind_generator = FluidGenerator(
+            generator=MVGaussianGenerator(wind_mean_kmph, wind_cov_kmph)
+        )
+        self.__wind_sensor_readings_mps: deque[Vec2] = deque(maxlen=20)
+        self.__sma_wind_mps: Vec2[Velocity, NED] = Vec2.from_xy(0.0, 0.0)
+        current_mean_mps = np.array(
             self.get_parameter("current_generation.mvgaussian_params.mean")
             .get_parameter_value()
             .double_array_value
         )
-        # Parse the covariance matrix from a string into a 2D array, as ROS parameters do not
-        # support native 2D array types.
-        current_cov = np.array(
+        current_cov_mps = np.array(
             json.loads(
                 self.get_parameter("current_generation.mvgaussian_params.cov")
                 .get_parameter_value()
@@ -211,11 +214,11 @@ class PhysicsEngineNode(Node):
             )
         )
         self.__current_generator = FluidGenerator(
-            generator=MVGaussianGenerator(current_mean, current_cov)
+            generator=MVGaussianGenerator(current_mean_mps, current_cov_mps)
         )
 
-        sim_wind = self.__wind_generator.next()
-        self.__sim_wind_sensor = SimWindSensor(sim_wind, enable_noise=True)
+        sim_wind_mps: Vec2[Velocity, NED] = self.__wind_generator.next()
+        self.__sim_wind_sensor = SimWindSensor(sim_wind_mps, enable_noise=True)
 
     def __init_callback_groups(self):
         """Initializes the callback groups. Whether multithreading is enabled or not will affect
@@ -361,44 +364,34 @@ class PhysicsEngineNode(Node):
         """
         true_wind_mps = self.__wind_generator.next()
         true_current_mps = self.__current_generator.next()
-        mps_to_kmph = ConversionFactors.mPs_to_kmPh.value.forward_convert
-        self.__sim_wind_sensor.wind = Vec2(mps_to_kmph(true_wind_mps.data))
-        # The stored rudder/trim angles are in degrees; wrap them in the simulator's angle value
-        # objects (saturating to their mechanical limits) before forwarding to the boat model. The
-        # raw 2D fluid velocities are wrapped in NED-frame velocity vectors for the same reason.
-        rudder_angle = saturated_steering_angle(Utils.degrees_to_rad(self.__rudder_angle))
-        trim_tab_angle = saturated_trim_tab_angle(Utils.degrees_to_rad(self.__sail_trim_tab_angle))
+        self.__sim_wind_sensor.wind = true_wind_mps
+        # The rudder/trim angles are already saturated value objects (saturation happens at the
+        # actuation-feedback boundary), so they are forwarded to the boat model as-is.
         self.__boat_state.step(
             true_wind_mps,
             true_current_mps,
-            rudder_angle,
-            trim_tab_angle,
+            self.__rudder_angle,
+            self.__sail_trim_tab_angle,
         )
 
     def __publish_gps(self):
         """Publishes mock GPS data."""
         lat_lon = self.__boat_state.global_lat_lon_position
+
         self.get_logger().info(f"Boat global position (lat_lon) to be published: {lat_lon}")
-        speed = self.__boat_state.speed
-        heading = self.__boat_state.true_bearing.degrees
+        speed_mps = self.__boat_state.speed
+        heading = self.__boat_state.true_bearing
 
         if self.__sim_gps:
             self.__sim_gps.lat_lon = lat_lon
-            self.__sim_gps.speed = speed
+            self.__sim_gps.speed = speed_mps
             self.__sim_gps.heading = heading
         else:
             self.__sim_gps = SimGPS(
-                lat_lon=lat_lon, speed=speed, heading=heading, enable_noise=True
+                lat_lon=lat_lon, speed=speed_mps, heading=heading, enable_noise=True
             )
 
-        msg = GPS()
-        lat, lon = self.__sim_gps.lat_lon
-        msg.lat_lon.latitude = float(lat)
-        msg.lat_lon.longitude = float(lon)
-        msg.speed.speed = float(
-            ConversionFactors.mPs_to_kmPh.value.forward_convert(self.__sim_gps.speed)
-        )
-        msg.heading.heading = float(Utils.ccw_straight_to_cw_north_deg(self.__sim_gps.heading))
+        msg = self.__convert_sim_data_to_gps_msg()
 
         self.gps_pub.publish(msg)
         self.get_logger().debug(
@@ -408,31 +401,54 @@ class PhysicsEngineNode(Node):
             .double_value,
         )
 
+    def __convert_sim_data_to_gps_msg(self) -> GPS:
+        """Builds a GPS message from the current sensor readings (noisy if noise is enabled).
+
+        Conversions to the ROS message conventions happen at this I/O boundary: speed from
+        m/s to km/h, and heading from the simulator's CCW-straight convention to the GPS
+        CW-north convention in degrees.
+        """
+        msg = GPS()
+        lat, lon = self.__sim_gps.lat_lon
+        msg.lat_lon.latitude = float(lat)
+        msg.lat_lon.longitude = float(lon)
+        msg.speed.speed = float(
+            ConversionFactors.mPs_to_kmPh.value.forward_convert(self.__sim_gps.speed)
+        )
+        msg.heading.heading = float(
+            Utils.ccw_straight_to_cw_north_deg(self.__sim_gps.heading.degrees)
+        )
+        return msg
+
     def __publish_wind_sensors(self):
         """Publishes filtered wind sensor data using a simple moving average."""
-        raw_wind = self.__sim_wind_sensor.wind
-        k = self.__wind_sensor_readings.maxlen
+        raw_wind_mps = self.__sim_wind_sensor.wind
+        k = self.__wind_sensor_readings_mps.maxlen
         if k is None:
             raise RuntimeError("wind sensor reading window must have a fixed size")
-        n = len(self.__wind_sensor_readings)
+        n = len(self.__wind_sensor_readings_mps)
 
         if n < k:
             # Queue not yet full: approximate with fixed-window weighted update
-            self.__sma_wind = Vec2(
-                (self.__sma_wind.data * (k - 1) + raw_wind.data) / k
+            self.__sma_wind_mps = Vec2(
+                (self.__sma_wind_mps.data * (k - 1) + raw_wind_mps.data) / k
             )
         else:
-            # Queue full: incremental SMA — add new, subtract oldest
-            oldest = self.__wind_sensor_readings[0]
-            self.__sma_wind = Vec2(
-                self.__sma_wind.data + (raw_wind.data - oldest.data) / k
+            # Queue full: incremental SMA — add new, subtract oldest [Units in meters per second]
+            oldest_mps = self.__wind_sensor_readings_mps[0]
+            self.__sma_wind_mps = Vec2(
+                self.__sma_wind_mps.data + (raw_wind_mps.data - oldest_mps.data) / k
             )
 
-        self.__wind_sensor_readings.append(raw_wind)
+        self.__wind_sensor_readings_mps.append(raw_wind_mps)
 
         msg = WindSensor()
-        msg.speed.speed = float(Utils.get_wind_speed(self.__sma_wind))
-        msg.direction = int(Utils.get_wind_direction(self.__sma_wind))
+
+        # Convert sim wind sensor data from SI to ROS message units
+        mps_to_kmph = ConversionFactors.mPs_to_kmPh.value.forward_convert
+        sma_wind_kmph = Vec2(mps_to_kmph(self.__sma_wind_mps.data))
+        msg.speed.speed = float(Utils.get_wind_speed(sma_wind_kmph))
+        msg.direction = int(Utils.get_wind_direction(sma_wind_kmph))
 
         self.wind_sensors_pub.publish(msg)
         self.get_logger().debug(
@@ -445,29 +461,42 @@ class PhysicsEngineNode(Node):
     def __publish_kinematics(self):
         """Publishes the kinematics data of the simulated boat."""
         lat_lon = self.__boat_state.global_lat_lon_position
-        speed = self.__boat_state.speed
-        heading = self.__boat_state.true_bearing.degrees
+        speed_mps = self.__boat_state.speed
+        heading = self.__boat_state.true_bearing
 
         if self.__sim_gps:
             self.__sim_gps.lat_lon = lat_lon
-            self.__sim_gps.speed = speed
+            self.__sim_gps.speed = speed_mps
             self.__sim_gps.heading = heading
         else:
             self.__sim_gps = SimGPS(
-                lat_lon=lat_lon, speed=speed, heading=heading, enable_noise=True
+                lat_lon=lat_lon, speed=speed_mps, heading=heading, enable_noise=True
             )
+
+        msg = self.__convert_sim_data_to_kinematics_msg()
+
+        self.kinematics_pub.publish(msg)
+
+        self.get_logger().info(
+            f"Publishing to {self.kinematics_pub.topic}",
+            throttle_duration_sec=self.get_parameter("info_log_throttle_period_sec")
+            .get_parameter_value()
+            .double_value,
+        )
+
+    def __convert_sim_data_to_kinematics_msg(self) -> SimWorldState:
+        """Builds a SimWorldState message from the current sim state.
+
+        Unit/frame conversions to the message conventions happen here, at the I/O boundary:
+        position from m to km, linear velocities from m/s to km/h, and the boat orientation
+        from Euler angles to a quaternion. The GPS portion is delegated to ``SimGPS``.
+        """
 
         mps_to_kmph = ConversionFactors.mPs_to_kmPh.value.forward_convert
         m_to_km = ConversionFactors.m_to_km.value.forward_convert
 
         msg = SimWorldState()
-        lat, lon = self.__sim_gps.lat_lon
-        msg.global_gps.lat_lon.latitude = float(lat)
-        msg.global_gps.lat_lon.longitude = float(lon)
-        msg.global_gps.speed.speed = float(mps_to_kmph(self.__sim_gps.speed))
-        msg.global_gps.heading.heading = float(
-            Utils.ccw_straight_to_cw_north_deg(self.__sim_gps.heading)
-        )
+        msg.global_gps = self.__convert_sim_data_to_gps_msg()
 
         pos_m = self.__boat_state.global_position
         msg.global_pose.position.x = float(m_to_km(pos_m.x))
@@ -497,30 +526,6 @@ class PhysicsEngineNode(Node):
         msg.header.stamp.nanosec = int(nanosec * 1e9)
         msg.header.frame_id = str(self.publish_counter)
 
-        self.kinematics_pub.publish(msg)
-
-        self.get_logger().info(
-            f"Publishing to {self.kinematics_pub.topic}",
-            throttle_duration_sec=self.get_parameter("info_log_throttle_period_sec")
-            .get_parameter_value()
-            .double_value,
-        )
-
-    def __build_gps_msg(self) -> GPS:
-        latitude, longitude = local_position_to_gps_lat_lon(
-            self.__boat_state.global_position.data,
-            origin_latitude=self.__sim_gps_origin_latitude,
-            origin_longitude=self.__sim_gps_origin_longitude,
-        )
-        yaw_rad = self.__boat_state.global_angular_position.data[
-            Constants.ORIENTATION_INDICES.YAW.value
-        ]
-
-        msg = GPS()
-        msg.lat_lon.latitude = latitude
-        msg.lat_lon.longitude = longitude
-        msg.speed.speed = sim_velocity_to_gps_speed_kmph(self.__boat_state.global_velocity.data)
-        msg.heading.heading = sim_yaw_to_gps_heading_deg(float(yaw_rad))
         return msg
 
     # SUBSCRIPTION CALLBACKS
@@ -550,7 +555,9 @@ class PhysicsEngineNode(Node):
             .get_parameter_value()
             .double_value,
         )
-        self.__sail_trim_tab_angle = msg.trim_tab_angle_degrees
+        self.__sail_trim_tab_angle = saturated_trim_tab_angle(
+            Utils.degrees_to_rad(msg.trim_tab_angle_degrees)
+        )
 
     # RUDDER ACTUATION ACTION CLIENT CALLBACKS
     @require_all_subs_active
@@ -612,7 +619,7 @@ class PhysicsEngineNode(Node):
         self.get_logger().debug(
             "Rudder actuation action finished with a heading residual of "
             + f"{result.remaining_angular_distance:.2f} degrees and final "
-            + f"rudder angle of {self.rudder_angle:.2f} degrees"
+            + f"rudder angle of {self.rudder_angle.degrees:.2f} degrees"
         )
 
     def __rudder_action_feedback_callback(self, feedback_msg: SimRudderActuation_FeedbackMessage):
@@ -622,9 +629,11 @@ class PhysicsEngineNode(Node):
         Args:
             feedback_msg (SimRudderActuation_FeedbackMessage): The feedback message.
         """
-        self.__rudder_angle = feedback_msg.feedback.rudder_angle
+        self.__rudder_angle = saturated_steering_angle(
+            Utils.degrees_to_rad(feedback_msg.feedback.rudder_angle)
+        )
         self.get_logger().info(
-            f"Received rudder angle of {self.rudder_angle:.2f} degrees from action "
+            f"Received rudder angle of {self.rudder_angle.degrees:.2f} degrees from action "
             + f"{self.rudder_actuation_action_client._action_name}",
             throttle_duration_sec=self.get_parameter("info_log_throttle_period_sec")
             .get_parameter_value()
@@ -643,7 +652,7 @@ class PhysicsEngineNode(Node):
 
         # Create the goal message
         goal_msg = SimSailTrimTabActuation.Goal()
-        goal_msg.desired_angular_position = self.sail_trim_tab_angle
+        goal_msg.desired_angular_position = self.sail_trim_tab_angle.degrees
 
         action_send_goal_timeout_sec = (
             self.get_parameter("action_send_goal_timeout_sec").get_parameter_value().double_value
@@ -691,7 +700,7 @@ class PhysicsEngineNode(Node):
         self.get_logger().debug(
             "Sail actuation action finished with an angular residual of "
             + f"{result.remaining_angular_distance:.2f} rad and final "
-            + f"trim tab angle of {self.sail_trim_tab_angle:.2f} rad"
+            + f"trim tab angle of {self.sail_trim_tab_angle.degrees:.2f} degrees"
         )
 
     def __sail_action_feedback_callback(
@@ -703,10 +712,12 @@ class PhysicsEngineNode(Node):
         Args:
             feedback_msg (SimSailTrimTabActuation_FeedbackMessage): The feedback message.
         """
-        self.__sail_trim_tab_angle = feedback_msg.feedback.current_angular_position
+        self.__sail_trim_tab_angle = saturated_trim_tab_angle(
+            Utils.degrees_to_rad(feedback_msg.feedback.current_angular_position)
+        )
         self.get_logger().info(
-            f"Received sail trim tab angle of {self.sail_trim_tab_angle:.2f} degrees from action "
-            + f"{self.sail_actuation_action_client._action_name}",
+            f"Received sail trim tab angle of {self.sail_trim_tab_angle.degrees:.2f} degrees "
+            + f"from action {self.sail_actuation_action_client._action_name}",
             throttle_duration_sec=self.get_parameter("info_log_throttle_period_sec")
             .get_parameter_value()
             .double_value,
@@ -762,11 +773,11 @@ class PhysicsEngineNode(Node):
         return self.__desired_heading_sub
 
     @property
-    def rudder_angle(self) -> float:
+    def rudder_angle(self) -> RudderAngle:
         return self.__rudder_angle
 
     @property
-    def sail_trim_tab_angle(self) -> float:
+    def sail_trim_tab_angle(self) -> TrimTabAngle:
         return self.__sail_trim_tab_angle
 
     @property

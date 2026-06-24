@@ -93,7 +93,7 @@ MOCK_DATA_CLI_ARG_NAME = "--enable-mock-data"
 SIM_VISUALIZER_CLI_ARG_NAME = "--enable-sim-visualizer"
 
 # Enumerated orientation indices since indexing pitch, roll, and yaw could be arbitrary
-ORIENTATION_INDICES = Enum("ORIENTATION_INDICES", ["PITCH", "ROLL", "YAW"], start=0)  # x, y, x
+ORIENTATION_INDICES = Enum("ORIENTATION_INDICES", ["PITCH", "ROLL", "YAW"], start=0)  # x, y, z
 
 # Number of times the sail action server routine's main loop executes
 SAIL_ACTUATION_NUM_LOOP_EXECUTIONS = 10  # TODO This is a placeholder until the ctrl is integrated

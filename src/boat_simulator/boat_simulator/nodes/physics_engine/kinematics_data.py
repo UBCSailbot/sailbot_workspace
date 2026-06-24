@@ -26,7 +26,7 @@ class KinematicsData(Generic[Frame]):
     ``Acceleration`` covers both m/s² (linear) and rad/s² (angular).
 
     Attributes:
-        linear_position (Vec3[Position, Frame]): Linear position, metres.
+        linear_position (Vec3[Position, Frame]): Linear position [x, y, z], metres.
         linear_velocity (Vec3[Velocity, Frame]): Linear velocity, m/s.
         linear_acceleration (Vec3[Acceleration, Frame]): Linear acceleration, m/s².
         angular_position (Vec3[Position, Frame]): Euler angles [pitch, roll, yaw], radians.
