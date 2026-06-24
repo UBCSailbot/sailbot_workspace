@@ -1,5 +1,7 @@
 """The main node of the local_pathfinding package, represented by the `Sailbot` class."""
 
+import csv
+import os
 import traceback
 
 import rclpy
@@ -8,15 +10,15 @@ from test_plans.test_plan import TestPlan
 
 import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
-import local_pathfinding.global_path as gp
 import local_pathfinding.obstacles as ob
 from local_pathfinding.local_path import LocalPath, LocalPathInputs, PathNotFoundError
 from local_pathfinding.ompl_path import MAX_SOLVER_RUN_TIME_SEC
 
 GLOBAL_WAYPOINT_REACHED_THRESH_M = 300
-REALLY_FAR_M = 100000000
 GPS_TIMEOUT_SEC = 120.0
 NANOSEC_PER_SEC = 1_000_000_000
+MAIN_GP_FILE_PATH = "/workspaces/sailbot_workspace/src/local_pathfinding/local_pathfinding/global_path_storage/main_global_path.csv"  # noqa
+BACKUP_GP_FILE_PATH = "/workspaces/sailbot_workspace/src/local_pathfinding/local_pathfinding/global_path_storage/backup_global_path.csv"  # noqa
 
 
 def main(args=None):
@@ -146,6 +148,8 @@ class Sailbot(Node):
         self.target_lp_wp_index = 1
         self.global_waypoint_index = -1
         self.saved_target_global_waypoint = None
+        self.using_backup_global_path = False
+        self._load_persisted_global_path()
         self.mode = self.get_parameter("mode").get_parameter_value().string_value
         self.planner = self.get_parameter("path_planner").get_parameter_value().string_value
         global_config = self.get_parameter("config").get_parameter_value().string_value
@@ -181,6 +185,118 @@ class Sailbot(Node):
         """Return the current ROS clock time in seconds."""
         return self.get_clock().now().nanoseconds / NANOSEC_PER_SEC
 
+    @staticmethod
+    def _path_to_dict(path: ci.Path, num_decimals: int = 4) -> dict[int, str]:
+        """Converts a ci.Path msg to a dictionary suitable for logging."""
+        return {
+            i: f"({waypoint.latitude:.{num_decimals}f}, {waypoint.longitude:.{num_decimals}f})"
+            for i, waypoint in enumerate(path.waypoints)
+        }
+
+    def _write_global_path_to_file(self, path: ci.Path):
+        """Writes the global path to the persisted csv file.
+
+        Creates the file if it does not exist. If it already exists, overwrites it with the
+        latest global path.
+
+        Raises:
+            PermissionError: If the directory or file cannot be written due to insufficient
+                permissions.
+            IsADirectoryError: If MAIN_GP_FILE_PATH points to a directory.
+            NotADirectoryError: If a parent path component is a file instead of a directory.
+            OSError: If another filesystem error occurs while creating the directory, opening
+                the file, or writing the file.
+            AttributeError: If path or one of its waypoints does not have the expected
+                attributes.
+
+
+        TODO: VERIFY THAT ALL THE FILES ARE WRITABLE ON THE PI
+        """
+        parent_dir = os.path.dirname(MAIN_GP_FILE_PATH)
+        if parent_dir:
+            os.makedirs(parent_dir, exist_ok=True)
+
+        if os.path.exists(MAIN_GP_FILE_PATH):
+            self.get_logger().debug(f"Overwriting global path file: {MAIN_GP_FILE_PATH}")
+        else:
+            self.get_logger().debug(f"Creating global path file: {MAIN_GP_FILE_PATH}")
+
+        with open(MAIN_GP_FILE_PATH, "w") as file:
+            writer = csv.writer(file)
+            writer.writerow(["latitude", "longitude"])
+            for waypoint in path.waypoints:
+                writer.writerow([waypoint.latitude, waypoint.longitude])
+        self.get_logger().debug(f"writing path to file: {MAIN_GP_FILE_PATH} successful!!")
+
+    @staticmethod
+    def _read_global_path_from_file(file_path: str) -> ci.Path:
+        """Reads a global path from a csv file.
+
+        Raises:
+            FileNotFoundError: If file_path does not exist.
+            PermissionError: If file_path cannot be read due to insufficient permissions.
+            IsADirectoryError: If file_path points to a directory.
+            NotADirectoryError: If a parent path component is a file instead of a directory.
+            OSError: If another filesystem error occurs while opening or reading the file.
+            StopIteration: If the csv file is empty and does not contain a header row.
+            IndexError: If a waypoint row does not contain both latitude and longitude columns.
+            ValueError: If a waypoint latitude or longitude cannot be converted to a float.
+        """
+        path = ci.Path()
+
+        with open(file_path, "r") as file:
+            reader = csv.reader(file)
+            reader.__next__()
+            for row in reader:
+                path.waypoints.append(
+                    ci.HelperLatLon(latitude=float(row[0]), longitude=float(row[1]))
+                )
+        return path
+
+    def _load_persisted_global_path(self) -> bool:
+        """Load the latest persisted global path or static backup path if available."""
+
+        read_errors = (
+            FileNotFoundError,
+            PermissionError,
+            IsADirectoryError,
+            NotADirectoryError,
+            OSError,
+            StopIteration,
+            IndexError,
+            ValueError,
+        )
+
+        for file_path in [MAIN_GP_FILE_PATH, BACKUP_GP_FILE_PATH]:
+            try:
+                path = self._read_global_path_from_file(file_path)
+                if not path.waypoints:
+                    raise ValueError("global path csv has no waypoints")
+
+                self.global_path = path
+                self.using_backup_global_path = file_path == BACKUP_GP_FILE_PATH
+                self.global_waypoint_index = self.determine_start_point_in_new_global_path(
+                    path
+                )
+                self.saved_target_global_waypoint = path.waypoints[
+                    self.global_waypoint_index
+                ]
+                self.get_logger().info(f"Loaded global path from {file_path}")
+                return True
+            except read_errors as err:
+                log = (
+                    self.get_logger().debug
+                    if file_path == MAIN_GP_FILE_PATH and isinstance(err, FileNotFoundError)
+                    else self.get_logger().warning
+                )
+                log(f"Failed to load global path from {file_path}: {err}")
+
+        self.get_logger().warning(
+            "No persisted global path could be loaded. Waiting for network systems to "
+            "publish global_path."
+        )
+        return False
+
     # subscriber callbacks
     def ais_ships_callback(self, msg: ci.AISShips):
         self.get_logger().debug(f"Received data from {self.ais_ships_sub.topic}: {msg}")
@@ -193,12 +309,27 @@ class Sailbot(Node):
 
     def global_path_callback(self, msg: ci.Path):
         self.get_logger().debug(
-            f"Received data from {self.global_path_sub.topic}: {gp.path_to_dict(msg)}"
+            f"Received data from {self.global_path_sub.topic}: {self._path_to_dict(msg)}"
         )
+        if not msg.waypoints:
+            self.get_logger().warning(
+                "Received empty global path. Keeping current in-memory path if available "
+                "and trying persisted fallback."
+            )
+            if self.global_path is None:
+                self._load_persisted_global_path()
+            return
+
         self.global_path = msg
-        # try:
-        #     gp.write_to_file(self.global_path)
-        # except FileNotFoundError:
+        self.using_backup_global_path = False
+        try:
+            self._write_global_path_to_file(self.global_path)
+        except (OSError, AttributeError) as err:
+            self.get_logger().error(
+                f"Failed to persist global path to {MAIN_GP_FILE_PATH}: {err}. "
+                "Trying persisted fallback."
+            )
+            self._load_persisted_global_path()
 
         if self.saved_target_global_waypoint is None:
             self.global_waypoint_index = len(self.global_path.waypoints) - 1
@@ -213,6 +344,9 @@ class Sailbot(Node):
     # publisher callbacks
     def desired_heading_callback(self):
         """Get and publish the desired heading."""
+
+        if self.global_path is None:
+            self._load_persisted_global_path()
 
         if self._has_gps_timed_out():
             msg = ci.DesiredHeading()
@@ -356,13 +490,13 @@ class Sailbot(Node):
 
         # Extra logic for when the global waypoint changes due to receiving a new global path
         received_new_global_waypoint = False
-        if (
+        if self.using_backup_global_path or (
             self.global_path.waypoints[self.global_waypoint_index]
             != self.saved_target_global_waypoint
         ):
             received_new_global_waypoint = True
             self.global_waypoint_index = self.determine_start_point_in_new_global_path(
-                self.global_path, self.gps.lat_lon, self.global_path_interval_spacing_km
+                self.global_path
             )
             self.saved_target_global_waypoint = self.global_path.waypoints[
                 self.global_waypoint_index
@@ -424,32 +558,44 @@ class Sailbot(Node):
             return 0.0, False
 
     @staticmethod
-    def determine_start_point_in_new_global_path(
-        global_path: ci.Path, boat_lat_lon: ci.HelperLatLon, global_path_spacing_km: float
-    ):
-        """Used when we receive a new global path.
-        Finds the index of the first waypoint within 'pathfinding range' of gps location.
-        If none are found, it returns the index of the nearest waypoint."""
+    def _closest_waypoint_index(global_path: ci.Path, lat_lon: ci.HelperLatLon) -> int:
+        """Return the index of the global waypoint closest to the provided position."""
 
-        closest_m, index_of_closest = REALLY_FAR_M, -1
-        for waypoint_index in range(len(global_path.waypoints) - 1, -1, -1):
-            # Note: the global waypoints are in reverse order (index 0 is final waypoint)
-            waypoint = global_path.waypoints[waypoint_index]
+        return min(
+            range(len(global_path.waypoints)),
+            key=lambda index: cs.GEODESIC.inv(
+                lat_lon.longitude,
+                lat_lon.latitude,
+                global_path.waypoints[index].longitude,
+                global_path.waypoints[index].latitude,
+            )[2],
+        )
 
-            _, _, distance_to_waypoint_m = cs.GEODESIC.inv(
-                boat_lat_lon.longitude,
-                boat_lat_lon.latitude,
-                waypoint.longitude,
-                waypoint.latitude,
+    def determine_start_point_in_new_global_path(self, global_path: ci.Path):
+        """Returns the first waypoint index to target when a new global path is received.
+
+        Global paths are trusted to arrive in local pathfinding's reverse-order convention:
+        index 0 is the final destination, and the last waypoint is the start-side waypoint.
+        Static backup paths are treated as ordered route data, so choose the waypoint closest to
+        the boat before resuming normal reverse-order decrementing.
+        """
+
+        if not global_path.waypoints:
+            return -1
+
+        if self.using_backup_global_path and self.gps is not None:
+            closest_waypoint_index = self._closest_waypoint_index(
+                global_path,
+                self.gps.lat_lon,
             )
+            self.using_backup_global_path = False
+            self.get_logger().info(
+                "Using backup global path. Starting at closest waypoint index: "
+                f"{closest_waypoint_index}"
+            )
+            return closest_waypoint_index
 
-            if distance_to_waypoint_m < closest_m:
-                closest_m, index_of_closest = distance_to_waypoint_m, waypoint_index
-
-            if distance_to_waypoint_m < cs.km_to_meters(global_path_spacing_km):
-                return waypoint_index
-
-        return index_of_closest
+        return len(global_path.waypoints) - 1
 
     def update_params(self):
         """Update instance variables that depend on parameters if they have changed."""
