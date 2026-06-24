@@ -127,7 +127,7 @@ class TrimTabAngle:
             message = f"trim-tab angle must be finite, got {radians}"
             _LOGGER.warn(message)
             raise AssertionError(message)
-        
+
         if not self.MIN_RAD <= radians <= self.MAX_RAD:
             message = (
                 "TrimTabAngle must be in "

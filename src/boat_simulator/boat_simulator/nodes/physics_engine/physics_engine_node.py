@@ -180,7 +180,7 @@ class PhysicsEngineNode(Node):
         gps = test_plan.gps
         self.__reference_latlon: HelperLatLon = gps.lat_lon
         self.__boat_state = BoatState(self.pub_period, self.__reference_latlon)
-        self.__sim_gps: SimGPS = None
+        self.__sim_gps: Optional[SimGPS] = None
 
         # MVGaussianGenerator expects raw numpy arrays: a 1D mean vector and a 2D covariance
         # matrix (parsed from a string, since ROS parameters do not support 2D array types).
@@ -408,6 +408,9 @@ class PhysicsEngineNode(Node):
         m/s to km/h, and heading from the simulator's CCW-straight convention to the GPS
         CW-north convention in degrees.
         """
+        if self.__sim_gps is None:
+            self.get_logger().warn("sim GPS sensor has not been initialized")
+
         msg = GPS()
         lat, lon = self.__sim_gps.lat_lon
         msg.lat_lon.latitude = float(lat)

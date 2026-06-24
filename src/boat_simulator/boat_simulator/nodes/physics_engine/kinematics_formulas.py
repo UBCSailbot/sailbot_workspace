@@ -3,7 +3,7 @@
 from boat_simulator.common.conventions import (
     Acceleration,
     Force,
-    Inertia,
+    InverseInertia,
     Position,
     Torque,
     Velocity,
@@ -94,7 +94,7 @@ class KinematicsFormulas:
 
     @staticmethod
     def next_ang_acceleration(
-        net_torque: Vec3[Torque, Frame], inertia_inverse: Mat3[Inertia, Frame]
+        net_torque: Vec3[Torque, Frame], inertia_inverse: Mat3[InverseInertia, Frame]
     ) -> Vec3[Acceleration, Frame]:
         """Calculates the boat's next angular acceleration based on net torque and inverse of
         inertia.
@@ -102,8 +102,8 @@ class KinematicsFormulas:
         Args:
             net_torque (Vec3[Torque, Body]): The net torque acting on the boat, expressed in
                 newton-meters (N•m).
-            inertia_inverse (Mat3[Inertia, Body]): The inverse of the boat's inertia, expressed in
-                per kilograms-meters squared (1/(kg•m^2)).
+            inertia_inverse (Mat3[InverseInertia, Body]): The inverse of the boat's inertia,
+                expressed in per kilograms-meters squared (1/(kg•m^2)).
 
         Returns:
             Vec3[Acceleration, Body]: The calculated next angular acceleration of the boat,
