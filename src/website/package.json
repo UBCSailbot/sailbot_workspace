@@ -12,6 +12,7 @@
     "simulation": "bash scripts/run-simulation.sh",
     "aisstream:ingest": "node scripts/aisstream-ingest.js",
     "test:scripts": "node --test scripts/__tests__/*.test.js",
+    "test:graphs": "node --test stores/Graphs/__tests__/*.test.ts",
     "lint": "prettier --check . && stylelint --allow-empty-input \"**/*.{css,scss}\" && next lint",
     "format": "prettier --write ."
   },
