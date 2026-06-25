@@ -582,6 +582,10 @@ class Sailbot(Node):
             self.get_logger().info("No global path is available; disabling sail")
             self.local_path.path = ci.Path(waypoints=[])
             return 0.0, False
+        if self.gps is None:
+            self.get_logger().info("No GPS is available; disabling sail")
+            self.local_path.path = ci.Path(waypoints=[])
+            return 0.0, False
 
         target_global_waypoint = self.gp.target_waypoint
         if target_global_waypoint is None:

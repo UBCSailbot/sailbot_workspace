@@ -1,4 +1,5 @@
 from types import SimpleNamespace
+from typing import cast
 
 import custom_interfaces.msg as ci
 
@@ -45,11 +46,25 @@ def waypoint_tuples(waypoints: list[ci.HelperLatLon]) -> list[tuple[float, float
 
 def make_sailbot_shell(gps_lat_lon: ci.HelperLatLon | None = None) -> Sailbot:
     sailbot = object.__new__(Sailbot)
-    sailbot.gps = SimpleNamespace(lat_lon=gps_lat_lon) if gps_lat_lon is not None else None
-    sailbot.logger = FakeLogger()
-    sailbot.global_path_sub = SimpleNamespace(topic="global_path")
-    sailbot.get_logger = lambda: sailbot.logger
+    gps = None
+    if gps_lat_lon is not None:
+        gps = ci.GPS()
+        gps.lat_lon = gps_lat_lon
+    sailbot.gps = gps
+    logger = FakeLogger()
+    setattr(sailbot, "global_path_sub", SimpleNamespace(topic="global_path"))
+    setattr(sailbot, "get_logger", lambda: logger)
     return sailbot
+
+
+def require_gp(sailbot: Sailbot) -> GlobalPath:
+    gp = sailbot.gp
+    assert gp is not None
+    return gp
+
+
+def get_test_logger(sailbot: Sailbot) -> FakeLogger:
+    return cast(FakeLogger, sailbot.get_logger())
 
 
 def test_main_global_path_starts_at_last_waypoint() -> None:
@@ -120,15 +135,16 @@ def test_reaching_final_global_waypoint_disables_sail() -> None:
     final_waypoint = make_waypoint(49.0, -123.0)
     sailbot = make_sailbot_shell(gps_lat_lon=final_waypoint)
     sailbot.gp = GlobalPath(waypoints=[final_waypoint], index=0)
-    sailbot.local_path = SimpleNamespace(path=None)
+    local_path = SimpleNamespace(path=None)
+    setattr(sailbot, "local_path", local_path)
     sailbot.received_new_global_waypoint = False
 
     desired_heading, sail = sailbot.get_desired_heading()
 
     assert desired_heading == 0.0
     assert not sail
-    assert sailbot.gp.index == -1
-    assert sailbot.local_path.path.waypoints == []
+    assert require_gp(sailbot).index == -1
+    assert local_path.path.waypoints == []
 
 
 def test_global_path_callback_success_replaces_gp_after_persisting() -> None:
@@ -137,7 +153,7 @@ def test_global_path_callback_success_replaces_gp_after_persisting() -> None:
     sailbot = make_sailbot_shell()
     sailbot.gp = GlobalPath(waypoints=list(existing_path.waypoints), index=1)
     sailbot.received_new_global_waypoint = False
-    write_calls = []
+    write_calls: list[ci.Path] = []
 
     def write_global_path_to_file(path: ci.Path) -> None:
         write_calls.append(path)
@@ -145,15 +161,16 @@ def test_global_path_callback_success_replaces_gp_after_persisting() -> None:
     def load_persisted_global_path() -> bool:
         raise AssertionError("persisted fallback should not be loaded after successful write")
 
-    sailbot._write_global_path_to_file = write_global_path_to_file
-    sailbot._load_persisted_global_path = load_persisted_global_path
+    setattr(sailbot, "_write_global_path_to_file", write_global_path_to_file)
+    setattr(sailbot, "_load_persisted_global_path", load_persisted_global_path)
 
     sailbot.global_path_callback(incoming_path)
 
+    gp = require_gp(sailbot)
     assert write_calls == [incoming_path]
-    assert waypoint_tuples(sailbot.gp.waypoints) == waypoint_tuples(incoming_path.waypoints)
-    assert sailbot.gp.index == len(incoming_path.waypoints) - 1
-    assert not sailbot.gp.is_backup
+    assert waypoint_tuples(gp.waypoints) == waypoint_tuples(incoming_path.waypoints)
+    assert gp.index == len(incoming_path.waypoints) - 1
+    assert not gp.is_backup
     assert sailbot.received_new_global_waypoint
 
 
@@ -164,8 +181,8 @@ def test_global_path_callback_write_failure_uses_persisted_fallback() -> None:
     sailbot = make_sailbot_shell()
     sailbot.gp = GlobalPath(waypoints=list(existing_path.waypoints), index=1)
     sailbot.received_new_global_waypoint = False
-    write_calls = []
-    load_calls = []
+    write_calls: list[ci.Path] = []
+    load_calls: list[bool] = []
 
     def write_global_path_to_file(path: ci.Path) -> None:
         write_calls.append(path)
@@ -176,17 +193,18 @@ def test_global_path_callback_write_failure_uses_persisted_fallback() -> None:
         sailbot._set_gp(GlobalPath(waypoints=list(fallback_path.waypoints), index=2))
         return True
 
-    sailbot._write_global_path_to_file = write_global_path_to_file
-    sailbot._load_persisted_global_path = load_persisted_global_path
+    setattr(sailbot, "_write_global_path_to_file", write_global_path_to_file)
+    setattr(sailbot, "_load_persisted_global_path", load_persisted_global_path)
 
     sailbot.global_path_callback(incoming_path)
 
+    gp = require_gp(sailbot)
     assert write_calls == [incoming_path]
     assert load_calls == [True]
-    assert sailbot.logger.has_message("error", "Failed to persist global path")
-    assert waypoint_tuples(sailbot.gp.waypoints) == waypoint_tuples(fallback_path.waypoints)
-    assert waypoint_tuples(sailbot.gp.waypoints) != waypoint_tuples(incoming_path.waypoints)
-    assert sailbot.gp.index == len(fallback_path.waypoints) - 1
+    assert get_test_logger(sailbot).has_message("error", "Failed to persist global path")
+    assert waypoint_tuples(gp.waypoints) == waypoint_tuples(fallback_path.waypoints)
+    assert waypoint_tuples(gp.waypoints) != waypoint_tuples(incoming_path.waypoints)
+    assert gp.index == len(fallback_path.waypoints) - 1
     assert sailbot.received_new_global_waypoint
 
 
@@ -198,9 +216,9 @@ def test_global_path_callback_mixed_success_and_failure_sequence() -> None:
     path_d = make_path(53.0, -127.0)
     sailbot = make_sailbot_shell()
     sailbot.gp = GlobalPath(waypoints=list(path_a.waypoints), index=2)
-    successful_writes = []
+    successful_writes: list[ci.Path] = []
     failing_paths = {id(path_c)}
-    load_calls = []
+    load_calls: list[bool] = []
 
     def write_global_path_to_file(path: ci.Path) -> None:
         if id(path) in failing_paths:
@@ -212,23 +230,26 @@ def test_global_path_callback_mixed_success_and_failure_sequence() -> None:
         sailbot._set_gp(GlobalPath(waypoints=list(fallback_path.waypoints), index=2))
         return True
 
-    sailbot._write_global_path_to_file = write_global_path_to_file
-    sailbot._load_persisted_global_path = load_persisted_global_path
+    setattr(sailbot, "_write_global_path_to_file", write_global_path_to_file)
+    setattr(sailbot, "_load_persisted_global_path", load_persisted_global_path)
 
     sailbot.global_path_callback(path_b)
-    assert waypoint_tuples(sailbot.gp.waypoints) == waypoint_tuples(path_b.waypoints)
-    assert sailbot.gp.index == len(path_b.waypoints) - 1
-    assert not sailbot.gp.is_backup
+    gp = require_gp(sailbot)
+    assert waypoint_tuples(gp.waypoints) == waypoint_tuples(path_b.waypoints)
+    assert gp.index == len(path_b.waypoints) - 1
+    assert not gp.is_backup
 
     sailbot.global_path_callback(path_c)
-    assert waypoint_tuples(sailbot.gp.waypoints) == waypoint_tuples(fallback_path.waypoints)
-    assert waypoint_tuples(sailbot.gp.waypoints) != waypoint_tuples(path_c.waypoints)
-    assert sailbot.gp.index == len(fallback_path.waypoints) - 1
+    gp = require_gp(sailbot)
+    assert waypoint_tuples(gp.waypoints) == waypoint_tuples(fallback_path.waypoints)
+    assert waypoint_tuples(gp.waypoints) != waypoint_tuples(path_c.waypoints)
+    assert gp.index == len(fallback_path.waypoints) - 1
 
     sailbot.global_path_callback(path_d)
-    assert waypoint_tuples(sailbot.gp.waypoints) == waypoint_tuples(path_d.waypoints)
-    assert sailbot.gp.index == len(path_d.waypoints) - 1
-    assert not sailbot.gp.is_backup
+    gp = require_gp(sailbot)
+    assert waypoint_tuples(gp.waypoints) == waypoint_tuples(path_d.waypoints)
+    assert gp.index == len(path_d.waypoints) - 1
+    assert not gp.is_backup
 
     assert successful_writes == [path_b, path_d]
     assert load_calls == [True]
@@ -248,7 +269,7 @@ def test_global_waypoint_change_success_then_failure_keeps_retry_signal() -> Non
     sailbot.land_multi_polygon = None
     sailbot.target_lp_wp_index = 1
     sailbot.received_new_global_waypoint = False
-    update_calls = []
+    update_calls: list[tuple[ci.HelperLatLon, bool, int]] = []
 
     class FakeLocalPath:
         def __init__(self) -> None:
@@ -272,24 +293,27 @@ def test_global_waypoint_change_success_then_failure_keeps_retry_signal() -> Non
                 raise PathNotFoundError("unable to solve")
             return 123.0, target_lp_wp_index
 
-    sailbot.local_path = FakeLocalPath()
+    fake_local_path = FakeLocalPath()
+    setattr(sailbot, "local_path", fake_local_path)
 
     desired_heading, sail = sailbot.get_desired_heading()
 
     assert desired_heading == 123.0
     assert sail
-    assert sailbot.gp.index == 1
+    assert require_gp(sailbot).index == 1
     assert update_calls[-1] == (waypoints[1], True, 1)
     assert not sailbot.received_new_global_waypoint
 
-    sailbot.gps.lat_lon = waypoints[1]
-    sailbot.local_path.fail_next = True
+    gps = sailbot.gps
+    assert gps is not None
+    gps.lat_lon = waypoints[1]
+    fake_local_path.fail_next = True
 
     desired_heading, sail = sailbot.get_desired_heading()
 
     assert desired_heading == 0.0
     assert not sail
-    assert sailbot.gp.index == 0
+    assert require_gp(sailbot).index == 0
     assert update_calls[-1] == (waypoints[0], True, 1)
     assert sailbot.received_new_global_waypoint
-    assert sailbot.local_path.path.waypoints == []
+    assert fake_local_path.path.waypoints == []
