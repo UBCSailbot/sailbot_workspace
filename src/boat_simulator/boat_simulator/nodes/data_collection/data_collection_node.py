@@ -10,7 +10,6 @@ from typing import Any, Type
 
 import custom_interfaces.msg
 import rclpy
-import rclpy.utilities
 import rosbag2_py
 import rosidl_runtime_py
 from rclpy.node import Node
