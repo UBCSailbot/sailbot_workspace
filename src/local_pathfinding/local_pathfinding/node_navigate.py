@@ -14,7 +14,6 @@ import local_pathfinding.coord_systems as cs
 import local_pathfinding.obstacles as ob
 from local_pathfinding.local_path import LocalPath, LocalPathInputs, PathNotFoundError
 from local_pathfinding.ompl_path import MAX_SOLVER_RUN_TIME_SEC
-from types import Optional
 
 GLOBAL_WAYPOINT_REACHED_THRESH_M = 300
 GPS_TIMEOUT_SEC = 120.0
@@ -26,13 +25,18 @@ BACKUP_GP_FILE_PATH = "/workspaces/sailbot_workspace/src/local_pathfinding/local
 class GlobalPath:
     """Small navigation state wrapper for a reverse-ordered global path."""
 
-    def __init__(self, waypoints, index: int, is_backup: bool = False):
+    def __init__(
+        self,
+        waypoints: list[ci.HelperLatLon],
+        index: int,
+        is_backup: bool = False,
+    ) -> None:
         self.waypoints = waypoints
         self.index = index
         self.is_backup = is_backup
 
     @property
-    def target_waypoint(self) -> Optional[ci.HelperLatLon]:
+    def target_waypoint(self) -> ci.HelperLatLon | None:
         """Return the current target waypoint, or None when the path is exhausted."""
         if self.index < 0 or self.index >= len(self.waypoints):
             return None
@@ -44,7 +48,7 @@ class GlobalPath:
         return self.target_waypoint is not None
 
 
-def main(args=None):
+def main(args=None) -> None:
     rclpy.init(args=args)
     sailbot = Sailbot()
 
@@ -88,7 +92,7 @@ class Sailbot(Node):
         land_multi_polygon (MultiPolygon): Optional mock land data used in development mode.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(node_name="navigate")
 
         self.declare_parameters(
@@ -211,7 +215,7 @@ class Sailbot(Node):
             for i, waypoint in enumerate(path.waypoints)
         }
 
-    def _write_global_path_to_file(self, path: ci.Path):
+    def _write_global_path_to_file(self, path: ci.Path) -> None:
         """Writes the global path to the persisted csv file.
 
         Creates the file if it does not exist. If it already exists, overwrites it with the
@@ -315,7 +319,7 @@ class Sailbot(Node):
 
         return GlobalPath(waypoints=list(path.waypoints), index=index, is_backup=is_backup)
 
-    def _set_gp(self, gp: GlobalPath):
+    def _set_gp(self, gp: GlobalPath) -> None:
         """Store a new global path and signal that the local planner must replan."""
         self.gp = gp
         self.received_new_global_waypoint = True
@@ -362,16 +366,16 @@ class Sailbot(Node):
         return False
 
     # subscriber callbacks
-    def ais_ships_callback(self, msg: ci.AISShips):
+    def ais_ships_callback(self, msg: ci.AISShips) -> None:
         self.get_logger().debug(f"Received data from {self.ais_ships_sub.topic}: {msg}")
         self.ais_ships = msg
 
-    def gps_callback(self, msg: ci.GPS):
+    def gps_callback(self, msg: ci.GPS) -> None:
         self.get_logger().debug(f"Received data from {self.gps_sub.topic}: {msg}")
         self.gps = msg
         self.gps_timeout_start_sec = self._now_sec()
 
-    def global_path_callback(self, msg: ci.Path):
+    def global_path_callback(self, msg: ci.Path) -> None:
         self.get_logger().debug(
             f"Received data from {self.global_path_sub.topic}: {self._path_to_dict(msg)}"
         )
@@ -398,12 +402,12 @@ class Sailbot(Node):
         if gp is not None:
             self._set_gp(gp)
 
-    def filtered_wind_sensor_callback(self, msg: ci.WindSensor):
+    def filtered_wind_sensor_callback(self, msg: ci.WindSensor) -> None:
         self.get_logger().debug(f"Received data from {self.filtered_wind_sensor_sub.topic}: {msg}")
         self.filtered_wind_sensor = msg
 
     # publisher callbacks
-    def desired_heading_callback(self):
+    def desired_heading_callback(self) -> None:
         """Get and publish the desired heading."""
 
         if self.gp is None:
@@ -469,7 +473,7 @@ class Sailbot(Node):
             )
             raise
 
-    def publish_local_path_data(self, sail: bool):
+    def publish_local_path_data(self, sail: bool) -> None:
         """
         Collect all navigation data and publish it in one message.
         In development and sim modes, all navigation data is published.
@@ -625,7 +629,7 @@ class Sailbot(Node):
             )[2],
         )
 
-    def update_params(self):
+    def update_params(self) -> None:
         """Update instance variables that depend on parameters if they have changed."""
 
         mode = self.get_parameter("mode").get_parameter_value().string_value
@@ -664,7 +668,7 @@ class Sailbot(Node):
         elapsed_sec = self._now_sec() - self.gps_timeout_start_sec
         return elapsed_sec > GPS_TIMEOUT_SEC
 
-    def _log_inactive_subs_warning(self):
+    def _log_inactive_subs_warning(self) -> None:
         """
         Logs a warning message for each inactive subscriber.
         """

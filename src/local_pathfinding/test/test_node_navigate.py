@@ -6,13 +6,13 @@ from local_pathfinding.node_navigate import GlobalPath, Sailbot
 
 
 class FakeLogger:
-    def debug(self, *_args, **_kwargs):
+    def debug(self, *_args, **_kwargs) -> None:
         pass
 
-    def info(self, *_args, **_kwargs):
+    def info(self, *_args, **_kwargs) -> None:
         pass
 
-    def warning(self, *_args, **_kwargs):
+    def warning(self, *_args, **_kwargs) -> None:
         pass
 
 
@@ -20,14 +20,14 @@ def make_waypoint(latitude: float, longitude: float) -> ci.HelperLatLon:
     return ci.HelperLatLon(latitude=latitude, longitude=longitude)
 
 
-def make_sailbot_shell(gps_lat_lon=None):
+def make_sailbot_shell(gps_lat_lon: ci.HelperLatLon | None = None) -> Sailbot:
     sailbot = object.__new__(Sailbot)
     sailbot.gps = SimpleNamespace(lat_lon=gps_lat_lon) if gps_lat_lon is not None else None
     sailbot.get_logger = lambda: FakeLogger()
     return sailbot
 
 
-def test_main_global_path_starts_at_last_waypoint():
+def test_main_global_path_starts_at_last_waypoint() -> None:
     waypoints = [
         make_waypoint(49.0, -123.0),
         make_waypoint(49.1, -123.1),
@@ -44,7 +44,7 @@ def test_main_global_path_starts_at_last_waypoint():
     assert not gp.is_backup
 
 
-def test_backup_global_path_starts_at_closest_gps_waypoint():
+def test_backup_global_path_starts_at_closest_gps_waypoint() -> None:
     waypoints = [
         make_waypoint(49.0, -123.0),
         make_waypoint(49.1, -123.1),
@@ -61,7 +61,7 @@ def test_backup_global_path_starts_at_closest_gps_waypoint():
     assert gp.is_backup
 
 
-def test_backup_global_path_is_not_created_without_gps():
+def test_backup_global_path_is_not_created_without_gps() -> None:
     path = ci.Path(waypoints=[make_waypoint(49.0, -123.0)])
     sailbot = make_sailbot_shell()
 
@@ -70,7 +70,7 @@ def test_backup_global_path_is_not_created_without_gps():
     assert gp is None
 
 
-def test_global_path_advance_decrements_index_until_exhausted():
+def test_global_path_advance_decrements_index_until_exhausted() -> None:
     waypoints = [
         make_waypoint(49.0, -123.0),
         make_waypoint(49.1, -123.1),
@@ -91,7 +91,7 @@ def test_global_path_advance_decrements_index_until_exhausted():
     assert gp.target_waypoint is None
 
 
-def test_reaching_final_global_waypoint_disables_sail():
+def test_reaching_final_global_waypoint_disables_sail() -> None:
     final_waypoint = make_waypoint(49.0, -123.0)
     sailbot = make_sailbot_shell(gps_lat_lon=final_waypoint)
     sailbot.gp = GlobalPath(waypoints=[final_waypoint], index=0)
