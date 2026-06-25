@@ -107,6 +107,7 @@ def get_launch_bool_or_config(
     context: LaunchContext, argument: str, config_path: str, node_name: str
 ) -> bool:
     """Return an explicit launch boolean, or inherit the node parameter from YAML."""
+    # Launch value can be an empty string when nothing is specified and this will become false
     launch_value = LaunchConfiguration(argument).perform(context).strip().lower()
     if launch_value:
         return launch_value == "true"
@@ -116,7 +117,9 @@ def get_launch_bool_or_config(
 
     node_parameters = config.get(node_name, {}).get("ros__parameters", {})
     global_parameters = config.get("/**", {}).get("ros__parameters", {})
-    return bool(node_parameters.get(argument, global_parameters.get(argument, False)))
+    global_value = global_parameters.get(argument, False)
+    node_value = node_parameters.get(argument, global_value)
+    return bool(node_value)
 
 
 def get_navigate_node_description(context: LaunchContext) -> Node:
