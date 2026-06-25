@@ -16,7 +16,9 @@
 #include <boost/beast/version.hpp>
 #include <boost/core/ignore_unused.hpp>
 #include <boost/system/error_code.hpp>
+#include <cstdlib>
 #include <iostream>
+#include <map>
 #include <memory>
 #include <string>
 
@@ -28,44 +30,66 @@ using remote_transceiver::HTTPServer;
 using remote_transceiver::Listener;
 namespace http_client = remote_transceiver::http_client;
 
+// RockBLOCK delivers the MO message payload as a hex-encoded string, so it must be converted back to
+// raw bytes before it can be parsed as a protobuf. Returns false if the input is not valid hex.
+static bool hexToBytes(const std::string &hex, std::string &out)
+{
+    if (hex.size() % 2 != 0)
+    {
+        return false;
+    }
+    out.clear();
+    out.reserve(hex.size() / 2);
+    for (size_t i = 0; i < hex.size(); i += 2)
+    {
+        char *end = nullptr;
+        const std::string byte_str = hex.substr(i, 2);
+        long byte_val = std::strtol(byte_str.c_str(), &end, 16);
+        if (end != byte_str.c_str() + 2)
+        {
+            return false;
+        }
+        out.push_back(static_cast<char>(byte_val));
+    }
+    return true;
+}
+
 remote_transceiver::MOMsgParams::MOMsgParams(const std::string &query_string)
 {
     std::cout << "[DEBUG] Raw query_string: '" << query_string << "'\n";
 
-    static const std::string DATA_KEY = "&data=";
-    size_t data_key_idx = query_string.find(DATA_KEY);
-    std::string iridium_mdata = query_string.substr(0, data_key_idx);
-    params_.data_ = query_string.substr(data_key_idx + DATA_KEY.size(), query_string.size());
-
-    std::vector<std::string> split_strings;
-    boost::algorithm::split(split_strings, iridium_mdata, boost::is_any_of("?=&"));
-
-    std::cout << "[DEBUG] Parsed split_strings:";
-    for (size_t i = 0; i < split_strings.size(); ++i)
+    std::map<std::string, std::string> fields;
+    std::vector<std::string> pairs;
+    boost::algorithm::split(pairs, query_string, boost::is_any_of("&"));
+    for (const std::string &pair : pairs)
     {
-        std::cout << " [" << i << "]='" << split_strings[i] << "'";
+        size_t eq_idx = pair.find('=');
+        if (eq_idx == std::string::npos)
+        {
+            continue;
+        }
+        fields[pair.substr(0, eq_idx)] = pair.substr(eq_idx + 1);
+    }
+
+    std::cout << "[DEBUG] Parsed fields map:";
+    for (const auto &[key, value] : fields)
+    {
+        std::cout << " '" << key << "'='" << value << "'";
     }
     std::cout << "\n";
 
-    constexpr uint8_t IMEI_IDX = 1;
-    constexpr uint8_t SERIAL_IDX = 3;
-    constexpr uint8_t MOMSN_IDX = 5;
-    constexpr uint8_t TIME_IDX = 7;
-    constexpr uint8_t LAT_IDX = 9;
-    constexpr uint8_t LON_IDX = 11;
-    constexpr uint8_t CEP_IDX = 13;
-
-    auto safe_stoi = [](const std::vector<std::string> &v, size_t idx, const char *name) -> int64_t
+    auto safe_stoi = [&fields](const char *name) -> int64_t
     {
-        if (idx < v.size() && !v[idx].empty())
+        auto it = fields.find(name);
+        if (it != fields.end() && !it->second.empty())
         {
             try
             {
-                return std::stoll(v[idx]);
+                return std::stoll(it->second);
             }
             catch (const std::exception &e)
             {
-                std::cerr << "[WARN] Invalid number for " << name << ": '" << v[idx] << "', using -1.\n";
+                std::cerr << "[WARN] Invalid number for " << name << ": '" << it->second << "', using -1.\n";
             }
         }
         else
@@ -74,17 +98,18 @@ remote_transceiver::MOMsgParams::MOMsgParams(const std::string &query_string)
         }
         return -1;
     };
-    auto safe_stof = [](const std::vector<std::string> &v, size_t idx, const char *name) -> float
+    auto safe_stof = [&fields](const char *name) -> float
     {
-        if (idx < v.size() && !v[idx].empty())
+        auto it = fields.find(name);
+        if (it != fields.end() && !it->second.empty())
         {
             try
             {
-                return std::stof(v[idx]);
+                return std::stof(it->second);
             }
             catch (const std::exception &e)
             {
-                std::cerr << "[WARN] Invalid float for " << name << ": '" << v[idx] << "', using -1.\n";
+                std::cerr << "[WARN] Invalid float for " << name << ": '" << it->second << "', using -1.\n";
             }
         }
         else
@@ -93,26 +118,25 @@ remote_transceiver::MOMsgParams::MOMsgParams(const std::string &query_string)
         }
         return -1.0f;
     };
-    auto safe_str = [](const std::vector<std::string> &v, size_t idx, const char *name) -> std::string
+    auto safe_str = [&fields](const char *name) -> std::string
     {
-        if (idx < v.size() && !v[idx].empty())
+        auto it = fields.find(name);
+        if (it != fields.end() && !it->second.empty())
         {
-            return v[idx];
+            return it->second;
         }
-        else
-        {
-            std::cerr << "[WARN] Missing field for " << name << ", using empty string.\n";
-            return "";
-        }
+        std::cerr << "[WARN] Missing field for " << name << ", using empty string.\n";
+        return "";
     };
 
-    params_.imei_ = safe_stoi(split_strings, IMEI_IDX, "imei");
-    params_.serial_ = safe_stoi(split_strings, SERIAL_IDX, "serial");
-    params_.momsn_ = safe_stoi(split_strings, MOMSN_IDX, "momsn");
-    params_.transmit_time_ = safe_str(split_strings, TIME_IDX, "transmit_time");
-    params_.lat_ = safe_stof(split_strings, LAT_IDX, "lat");
-    params_.lon_ = safe_stof(split_strings, LON_IDX, "lon");
-    params_.cep_ = safe_stoi(split_strings, CEP_IDX, "cep");
+    params_.imei_ = safe_stoi("imei");
+    params_.serial_ = safe_stoi("serial");
+    params_.momsn_ = safe_stoi("momsn");
+    params_.transmit_time_ = safe_str("transmit_time");
+    params_.lat_ = safe_stof("iridium_latitude");
+    params_.lon_ = safe_stof("iridium_longitude");
+    params_.cep_ = safe_stoi("iridium_cep");
+    params_.data_ = safe_str("data");
 
     std::cout << "[DEBUG] Parsed fields: imei=" << params_.imei_ << ", serial=" << params_.serial_ << ", momsn=" << params_.momsn_ << ", transmit_time='" << params_.transmit_time_ << "', lat=" << params_.lat_ << ", lon=" << params_.lon_ << ", cep=" << params_.cep_ << ", data(len)=" << params_.data_.size() << "\n";
 }
@@ -258,10 +282,16 @@ void HTTPServer::doPost()
                 if (!params.data_.empty()) {
                     Polaris::Sensors sensors;
                     SailbotDB::RcvdMsgInfo info = {params.lat_, params.lon_, params.cep_, params.transmit_time_};
-                    bool parse_ok = sensors.ParseFromString(params.data_);
+                    std::string raw_data;
+                    if (!hexToBytes(params.data_, raw_data)) {
+                        std::cerr << "[ERROR] data field is not valid hex, skipping: '" << params.data_ << "'" << std::endl;
+                        return;
+                    }
+                    bool parse_ok = sensors.ParseFromString(raw_data);
                     std::cout << "[DEBUG] ParseFromString returned: " << parse_ok << std::endl;
                     if (!parse_ok) {
                         std::cerr << "[ERROR] Failed to parse Sensors protobuf from data." << std::endl;
+                        return;
                     }
                     std::cout << "[DEBUG] Storing new sensors in DB..." << std::endl;
                     if (!self->db_.storeNewSensors(sensors, info)) {
