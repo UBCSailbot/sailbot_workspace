@@ -42,8 +42,6 @@ class MockGlobalPath(Node):
         self.declare_parameters(
             namespace="",
             parameters=[
-                ("global_path_interval_spacing_km", rclpy.Parameter.Type.DOUBLE),
-                ("gps_threshold", rclpy.Parameter.Type.DOUBLE),
                 ("test_plan", rclpy.Parameter.Type.STRING),
             ],
         )

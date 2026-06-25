@@ -48,25 +48,6 @@ ROS parameters specific to the nodes in the local_pathfinding package.
 - _Datatype_: `string`
 - _Acceptable Values_: Any valid filepath to a properly formatted csv file.
 
-**`global_path_interval_spacing_km`**
-
-- _Description_: Global waypoint spacing parameter shared by local pathfinding
-  nodes.
-- _Datatype_: `double`
-- _Range_: `(0.0, MAX_DOUBLE)`
-
-### `mock_global_path`
-
-The development-only node that publishes a mock global path sourced from the
-active test plan.
-
-**`gps_threshold`**
-
-- _Description_: A new path will be generated if the GPS position changed by
-  more than `gps_threshold * global_path_interval_spacing_km`.
-- _Datatype_: `double`
-- _Acceptable Values_: `(1.0, MAX_DOUBLE)`
-
 ### `mock_ais`
 
 The development-only node that publishes mock AIS data in

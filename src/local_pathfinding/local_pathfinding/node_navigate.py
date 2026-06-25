@@ -126,7 +126,6 @@ class Sailbot(Node):
                 ("pub_period_sec", rclpy.Parameter.Type.DOUBLE),
                 ("path_planner", rclpy.Parameter.Type.STRING),
                 ("test_plan", rclpy.Parameter.Type.STRING),
-                ("global_path_interval_spacing_km", rclpy.Parameter.Type.DOUBLE),
                 ("config", rclpy.Parameter.Type.STRING),
             ],
         )
@@ -165,11 +164,6 @@ class Sailbot(Node):
         # publisher timers
         self.pub_period_sec = (
             self.get_parameter("pub_period_sec").get_parameter_value().double_value
-        )
-        self.global_path_interval_spacing_km = (
-            self.get_parameter("global_path_interval_spacing_km")
-            .get_parameter_value()
-            .double_value
         )
         self.get_logger().debug(f"Got parameter: {self.pub_period_sec=}")
 
