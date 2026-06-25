@@ -4,8 +4,6 @@ import numpy as np
 from numpy.typing import NDArray
 from scipy import interpolate
 
-from controller.common.types import Scalar
-
 
 class LUT:
     """
@@ -18,14 +16,14 @@ class LUT:
 
     def __init__(
         self,
-        lookup_table: List[List[Scalar]] | NDArray,
+        lookup_table: List[List[float]] | NDArray,
         interpolation_method: str = "linear",
     ):
         """
         Initializes the LUT object.
 
         Args:
-            lookup_table (List[List[Scalar]] or NDArray): A list of lists or NDArray containing x-y
+            lookup_table (List[List[float]] or NDArray): A list of lists or NDArray containing x-y
             data points for interpolation. Shape should be (n, 2)
             interpolation_method (str): Interpolation method to use. Default is "linear".
 
@@ -67,7 +65,7 @@ class LUT:
         """
         return self.__interpolation_function(x)
 
-    def __linearInterpolation(self, x: Scalar) -> float:
+    def __linearInterpolation(self, x: float) -> float:
         output = np.interp(x, self.x, self.y)
         if isinstance(output, np.ndarray):
             raise ValueError(
@@ -75,7 +73,7 @@ class LUT:
             )
         return output
 
-    def __splineInterpolation(self, x: Scalar) -> float:
+    def __splineInterpolation(self, x: float) -> float:
         cs = interpolate.CubicSpline(self.x, self.y)
         return cs(x)
 

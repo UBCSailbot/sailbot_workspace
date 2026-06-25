@@ -40,6 +40,62 @@ def test_degrees_to_rad(test_input, expected_output):
     assert math.isclose(actual_output, expected_output)
 
 
+def test_ned_to_body_rotation_matrix_identity() -> None:
+    actual = utils.ned_to_body_rotation_matrix(0.0, 0.0, 0.0)
+    np.testing.assert_allclose(actual, np.eye(3), atol=1e-15)
+
+
+def test_ned_to_body_rotation_matrix_yaw() -> None:
+    actual = utils.ned_to_body_rotation_matrix(0.0, 0.0, math.pi / 2)
+    expected = np.array([[0.0, 1.0, 0.0], [-1.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+    np.testing.assert_allclose(actual, expected, atol=1e-15)
+
+
+@pytest.mark.parametrize(
+    ("angles", "expected"),
+    [
+        (
+            (math.pi / 2, 0.0, 0.0),
+            np.array([[1.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, -1.0, 0.0]]),
+        ),
+        (
+            (0.0, math.pi / 2, 0.0),
+            np.array([[0.0, 0.0, -1.0], [0.0, 1.0, 0.0], [1.0, 0.0, 0.0]]),
+        ),
+    ],
+)
+def test_ned_to_body_rotation_matrix_roll_and_pitch(angles, expected) -> None:
+    actual = utils.ned_to_body_rotation_matrix(*angles)
+    np.testing.assert_allclose(actual, expected, atol=1e-15)
+
+
+def test_ned_to_body_rotation_matrix_is_orthonormal() -> None:
+    actual = utils.ned_to_body_rotation_matrix(0.3, -0.2, 1.1)
+    np.testing.assert_allclose(actual @ actual.T, np.eye(3), atol=1e-15)
+    assert np.linalg.det(actual) == pytest.approx(1.0)
+
+
+@pytest.mark.parametrize("angle", [math.inf, -math.inf, math.nan])
+def test_ned_to_body_rotation_matrix_rejects_nonfinite_angles(angle: float) -> None:
+    with pytest.raises(ValueError, match="finite"):
+        utils.ned_to_body_rotation_matrix(angle, 0.0, 0.0)
+
+
+def test_body_to_ned_rotation_matrix_yaw() -> None:
+    actual = utils.body_to_ned_rotation_matrix(0.0, 0.0, math.pi / 2)
+    expected = np.array([[0.0, -1.0, 0.0], [1.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+    np.testing.assert_allclose(actual, expected, atol=1e-15)
+
+
+def test_body_to_ned_and_ned_to_body_are_inverses() -> None:
+    angles = (0.3, -0.2, 1.1)
+    body_to_ned = utils.body_to_ned_rotation_matrix(*angles)
+    ned_to_body = utils.ned_to_body_rotation_matrix(*angles)
+
+    np.testing.assert_allclose(body_to_ned @ ned_to_body, np.eye(3), atol=1e-15)
+    np.testing.assert_allclose(body_to_ned.T, ned_to_body, atol=1e-15)
+
+
 @pytest.mark.parametrize(
     "angle, isDegrees, expected_output",
     [

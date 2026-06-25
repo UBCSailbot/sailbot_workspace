@@ -6,7 +6,7 @@ import math
 from enum import Enum
 from typing import Dict
 
-from boat_simulator.common.types import EnumAttr, Scalar, ScalarOrArray
+from boat_simulator.common.types import EnumAttr, ScalarOrArray
 
 
 class ConversionFactor:
@@ -14,15 +14,15 @@ class ConversionFactor:
     supported by this class.
 
     Attributes:
-        `factor` (Scalar): The conversion factor to go from unit A to B.
-        `inverse_factor` (Scalar): The conversion factor to go from unit B to A.
+        `factor` (float): The conversion factor to go from unit A to B.
+        `inverse_factor` (float): The conversion factor to go from unit B to A.
     """
 
-    def __init__(self, factor: Scalar):
+    def __init__(self, factor: float):
         """Initializes an instance of `ConversionFactor`.
 
         Args:
-            factor (Scalar): Conversion factor from unit A to B.
+            factor (float): Conversion factor from unit A to B.
         """
         self.__factor = factor
 
@@ -81,11 +81,11 @@ class ConversionFactor:
         return self.__mul__(other)
 
     @property
-    def factor(self) -> Scalar:
+    def factor(self) -> float:
         return self.__factor
 
     @property
-    def inverse_factor(self) -> Scalar:
+    def inverse_factor(self) -> float:
         return 1 / self.factor
 
 
