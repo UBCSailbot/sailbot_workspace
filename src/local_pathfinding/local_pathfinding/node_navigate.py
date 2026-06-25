@@ -21,6 +21,30 @@ NANOSEC_PER_SEC = 1_000_000_000
 MAIN_GP_FILE_PATH = "/workspaces/sailbot_workspace/src/local_pathfinding/local_pathfinding/global_path_storage/main_global_path.csv"  # noqa
 BACKUP_GP_FILE_PATH = "/workspaces/sailbot_workspace/src/local_pathfinding/local_pathfinding/global_path_storage/backup_global_path.csv"  # noqa
 
+"""
+GlobalPath intentionally stays small: it is only the waypoint list, the current waypoint index, and
+whether the path came from backup storage. Sailbot owns the higher-level policy around when a path
+is accepted, when sail should be disabled, and when the local planner needs to replan.
+
+When a new global path comes from NET, we trust the waypoint ordering from network systems:
+index 0 is the final destination and len(waypoints) - 1 is the first target. Sailbot persists that
+incoming path to MAIN_GP_FILE_PATH before adopting it in memory, so a path that cannot be saved does
+not silently become the active route.
+
+If accepting the NET path fails, Sailbot falls back to persisted route data. It tries the persisted
+main path first, then BACKUP_GP_FILE_PATH. Backup paths need GPS because the safest place to resume
+is the waypoint closest to the current boat position. Without GPS, or without any usable path,
+Sailbot leaves gp unset and the existing inactive-input path publishes sail=False.
+
+This assumes persisted main and backup paths use the same reverse-order convention as NET paths.
+For backup paths, choosing the closest waypoint is intentionally a pragmatic resume heuristic: it
+does not try to infer whether the boat has already passed that waypoint along the route segment.
+Once selected, the path still advances toward the destination by decrementing the index.
+
+Once a path is active, navigation advances by decrementing the index. When the index drops below
+zero, the global path is exhausted and Sailbot disables sail instead of cycling between waypoints.
+"""
+
 
 class GlobalPath:
     """Small navigation state wrapper for a reverse-ordered global path."""
