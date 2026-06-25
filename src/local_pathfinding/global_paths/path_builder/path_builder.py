@@ -22,15 +22,96 @@ import plotly.graph_objects as go
 from custom_interfaces.msg import HelperLatLon, Path
 from flask import Flask, jsonify, render_template, request
 
-from local_pathfinding.global_path import (
-    _interpolate_path,
-    calculate_interval_spacing,
-    write_to_file,
-)
+import local_pathfinding.coord_systems as cs
 
 app = Flask(__name__)
 
 DEFAULT_DIR = "/workspaces/sailbot_workspace/src/local_pathfinding/global_paths/"
+
+
+def write_to_file(file_path: str, global_path: Path, tmstmp: bool = False):
+    """Writes a global path to a csv file."""
+    if tmstmp:
+        raise ValueError("path_builder no longer writes timestamped global path files")
+
+    with open(file_path, "w") as file:
+        writer = csv.writer(file)
+        writer.writerow(["latitude", "longitude"])
+        for waypoint in global_path.waypoints:
+            writer.writerow([waypoint.latitude, waypoint.longitude])
+
+
+def calculate_interval_spacing(pos: HelperLatLon, waypoints: list[HelperLatLon]) -> list[float]:
+    """Returns distances in km between each waypoint pair, including pos as the start."""
+    all_coords = [(pos.latitude, pos.longitude)] + [
+        (waypoint.latitude, waypoint.longitude) for waypoint in waypoints
+    ]
+
+    coords_array = np.array(all_coords)
+    lats1, lons1 = coords_array[:-1].T
+    lats2, lons2 = coords_array[1:].T
+    distances = cs.GEODESIC.inv(lats1=lats1, lons1=lons1, lats2=lats2, lons2=lons2)[2]
+    return [cs.meters_to_km(distance) for distance in distances]
+
+
+def _generate_path(dest: HelperLatLon, interval_spacing: float, pos: HelperLatLon) -> Path:
+    """Generates a geodesic path from pos to dest with bounded waypoint spacing."""
+    path = Path()
+    distance = cs.meters_to_km(
+        cs.GEODESIC.inv(
+            lats1=pos.latitude,
+            lons1=pos.longitude,
+            lats2=dest.latitude,
+            lons2=dest.longitude,
+        )[2]
+    )
+    num_points = max(1, int(np.floor(distance / interval_spacing)))
+
+    for lon, lat in cs.GEODESIC.npts(
+        lon1=pos.longitude,
+        lat1=pos.latitude,
+        lon2=dest.longitude,
+        lat2=dest.latitude,
+        npts=num_points,
+    ):
+        path.waypoints.append(HelperLatLon(latitude=lat, longitude=lon))
+
+    path.waypoints.append(HelperLatLon(latitude=dest.latitude, longitude=dest.longitude))
+    return path
+
+
+def _interpolate_path(
+    global_path: Path,
+    interval_spacing: float,
+    pos: HelperLatLon,
+    path_spacing: list[float],
+    write: bool = False,
+    file_path: str = "",
+) -> Path:
+    """Interpolates extra waypoints where consecutive waypoints are too far apart."""
+    waypoints = global_path.waypoints + [pos]
+
+    i, j = 0, 0
+    while i < len(path_spacing):
+        if path_spacing[i] > interval_spacing:
+            sub_path = _generate_path(
+                dest=waypoints[j + 1],
+                interval_spacing=interval_spacing,
+                pos=waypoints[j],
+            )
+            waypoints[j + 1 : j + 1] = sub_path.waypoints[:-1]
+            j += len(sub_path.waypoints) - 1
+
+        i += 1
+        j += 1
+
+    waypoints.pop(-1)
+    global_path.waypoints = waypoints
+
+    if write:
+        write_to_file(file_path=file_path, global_path=global_path)
+
+    return global_path
 
 
 def main():
