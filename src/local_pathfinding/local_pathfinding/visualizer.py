@@ -115,13 +115,23 @@ queue: Optional[Queue] = None  # type: ignore
 # --------------------------------------
 # Dataclass Helpers
 # --------------------------------------
-@dataclass(frozen=True)
-class VisualizerStateFailureHandling:
-    """Result of handling a missing/None visualizer state."""
+VisualizerStateWarning = Union[NoUpdate, None, Div]
+UpdateGraphReturn = Tuple[Any, Any, Any, Any, Any, VisualizerStateWarning]
 
-    visualizer_state: Optional["VisualizerState"]
+
+@dataclass(frozen=True)
+class CachedVisualizerStateFailure:
+    """Missing current state, but a cached visualizer state can still be rendered."""
+
+    visualizer_state: "VisualizerState"
     state_warning: html.Div
-    callback_return: Optional[Tuple[Any, Any, Any, Any, Any, Any]]
+
+
+@dataclass(frozen=True)
+class DeferredVisualizerStateFailure:
+    """Missing current state and no cached render is needed, so return early from Dash callback."""
+
+    callback_return: UpdateGraphReturn
 
 
 @dataclass(frozen=True)
@@ -2285,7 +2295,9 @@ def update_graph(
             if failure_handling.callback_return is not None:
                 return failure_handling.callback_return
 
-            vs = failure_handling.visualizer_state
+            cached_vs = failure_handling.visualizer_state
+            assert cached_vs is not None
+            vs = cached_vs
             state_warning = failure_handling.state_warning
         else:
             vs = queued_vs
@@ -2301,7 +2313,9 @@ def update_graph(
         if failure_handling.callback_return is not None:
             return failure_handling.callback_return
         # A view-only control changed; re-render the cached frame so it takes effect immediately.
-        vs = failure_handling.visualizer_state
+        cached_vs = failure_handling.visualizer_state
+        assert cached_vs is not None
+        vs = cached_vs
         state_warning = failure_handling.state_warning
 
     last_goal_tuple = (
