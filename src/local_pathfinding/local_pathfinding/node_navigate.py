@@ -181,11 +181,11 @@ class Sailbot(Node):
         )
 
         # attributes from subscribers
-        self.ais_ships = None
-        self.gps = None
-        self.gp = None
-        self.filtered_wind_sensor = None
-        self.desired_heading = None
+        self.ais_ships: ci.AISShips | None = None
+        self.gps: ci.GPS | None = None
+        self.gp: GlobalPath | None = None
+        self.filtered_wind_sensor: ci.WindSensor | None = None
+        self.desired_heading: ci.DesiredHeading | None = None
 
         # attributes
         self.gps_timeout_start_sec = self._now_sec()
@@ -519,37 +519,38 @@ class Sailbot(Node):
 
             # state is None until the first successful local path. On a sail-disabled failure it
             # may still hold the obstacles that caused the failure, so iterate only if present.
-            obstacles = self.local_path.state.obstacles if self.local_path.state else []
-            for obst in obstacles:
+            state = self.local_path.state
+            if state is not None:
+                for obst in state.obstacles:
 
-                if isinstance(obst, ob.Land):
-                    for polygon in obst.collision_zone.geoms:
+                    if isinstance(obst, ob.Land):
+                        for polygon in obst.collision_zone.geoms:
+                            latlon_polygon = cs.xy_polygon_to_latlon_polygon(
+                                state.reference_latlon, polygon
+                            )
+
+                            # each point of the polygon is in lat lon now
+                            # but you can't construct a Shapely polygon out of HelperLatLon objects
+                            # so each point is a shapely Point that needs to be converted to a
+                            # HelperLatLon, before it can be published to ROS
+                            helper_latlons = [
+                                ci.HelperLatLon(longitude=point[0], latitude=point[1])
+                                for point in latlon_polygon.exterior.coords
+                            ]
+                            helper_obstacles.append(
+                                ci.HelperObstacle(points=helper_latlons, obstacle_type="Land")
+                            )
+                    else:  # is a Boat
                         latlon_polygon = cs.xy_polygon_to_latlon_polygon(
-                            self.local_path.state.reference_latlon, polygon
+                            state.reference_latlon, obst.collision_zone
                         )
-
-                        # each point of the polygon is in lat lon now
-                        # but you can't construct a Shapely polygon out of HelperLatLon objects
-                        # so each point is a shapely Point that needs to be converted to a
-                        # HelperLatLon, before it can be published to ROS
                         helper_latlons = [
                             ci.HelperLatLon(longitude=point[0], latitude=point[1])
                             for point in latlon_polygon.exterior.coords
                         ]
                         helper_obstacles.append(
-                            ci.HelperObstacle(points=helper_latlons, obstacle_type="Land")
+                            ci.HelperObstacle(points=helper_latlons, obstacle_type="Boat")
                         )
-                else:  # is a Boat
-                    latlon_polygon = cs.xy_polygon_to_latlon_polygon(
-                        self.local_path.state.reference_latlon, obst.collision_zone
-                    )
-                    helper_latlons = [
-                        ci.HelperLatLon(longitude=point[0], latitude=point[1])
-                        for point in latlon_polygon.exterior.coords
-                    ]
-                    helper_obstacles.append(
-                        ci.HelperObstacle(points=helper_latlons, obstacle_type="Boat")
-                    )
 
             msg = ci.LPathData(
                 global_path=self._path_from_gp(),
