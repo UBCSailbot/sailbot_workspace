@@ -20,14 +20,16 @@ from dataclasses import dataclass
 from io import BytesIO
 from multiprocessing import Queue
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import dash
 import plotly.graph_objects as go
 import requests  # type: ignore[import-untyped]
 import yaml
 from dash import dcc, html
+from dash._no_update import NoUpdate
 from dash.dependencies import Input, Output, State
+from dash.html.Div import Div
 from PIL import Image
 from shapely.geometry import MultiPolygon, Polygon
 
@@ -94,6 +96,12 @@ WIND_PARAMS_SH = MOCK_NODES_DIR / "wind_params.sh"
 # frame immediately instead of waiting for the next ROS message.
 _latest_vs: Optional["VisualizerState"] = None
 
+VISUALIZER_STATE_NONE_WARNING = "Warning: the visualizer state is None. Waiting for a valid state."
+VISUALIZER_STATE_STALE_WARNING = (
+    "Warning: the visualizer state is None. The last available visualizer state is being shown "
+    "and is getting stale."
+)
+
 app = dash.Dash(__name__, assets_folder=str(ASSETS_DIR))
 # Dash only auto-detects ``favicon.ico``. The repository favicon is a PNG, so replace the
 # generated favicon placeholder with an explicit link while retaining Dash's URL-prefix handling.
@@ -102,6 +110,22 @@ app.index_string = app.index_string.replace(
     f'<link rel="icon" type="image/png" href="{app.get_asset_url("images/favicon.png")}">',
 )
 queue: Optional[Queue] = None  # type: ignore
+
+
+# --------------------------------------
+# Dataclass Helpers
+# --------------------------------------
+VisualizerStateWarning = Union[NoUpdate, None, Div]
+UpdateGraphReturn = Tuple[Any, Any, Any, Any, Any, VisualizerStateWarning]
+
+
+@dataclass(frozen=True)
+class VisualizerStateFailureHandling:
+    """Result of handling a missing/None visualizer state."""
+
+    visualizer_state: Optional["VisualizerState"]
+    state_warning: html.Div
+    callback_return: Optional[Tuple[Any, Any, Any, Any, Any, Any]]
 
 
 @dataclass(frozen=True)
@@ -351,6 +375,58 @@ class VisualizerState:
                 processed.append(Polygon(xy_points))
 
         return processed
+
+
+# --------------------------------------
+# Visualizer Failure State Helpers
+# --------------------------------------
+
+
+def visualizer_state_warning(stale: bool) -> html.Div:
+    """Build the warning shown when no current visualizer state is available."""
+    return html.Div(
+        VISUALIZER_STATE_STALE_WARNING if stale else VISUALIZER_STATE_NONE_WARNING,
+        role="alert",
+        style={
+            "margin": "0 12px 8px 12px",
+            "padding": "12px 16px",
+            "backgroundColor": "#fff3cd",
+            "border": "1px solid #ffecb5",
+            "borderRadius": "6px",
+            "color": "#664d03",
+            "fontFamily": "Consolas, monospace",
+            "fontWeight": "bold",
+        },
+    )
+
+
+def handle_visualizer_state_failure(
+    stored_range,
+    should_render_cached_state: bool,
+) -> VisualizerStateFailureHandling:
+    """
+    Handle the failure state where no current visualizer state is available.
+
+    If a previous non-None state exists and the caller wants to render it, return that cached state
+    alongside a stale-state warning. Otherwise, return the Dash callback payload that preserves the
+    existing plot/stores while updating the warning banner.
+    """
+    state_warning = visualizer_state_warning(stale=_latest_vs is not None)
+    if _latest_vs is not None and should_render_cached_state:
+        return VisualizerStateFailureHandling(_latest_vs, state_warning, None)
+
+    return VisualizerStateFailureHandling(
+        None,
+        state_warning,
+        (
+            dash.no_update,
+            dash.no_update,
+            stored_range,
+            dash.no_update,
+            dash.no_update,
+            state_warning,
+        ),
+    )
 
 
 # --------------------------------------
@@ -1808,6 +1884,7 @@ def dash_app(q: Queue):
                     ),
                 ],
             ),
+            html.Div(id="visualizer-state-warning"),
             # Reserve a useful rectangular plotting area; controls always follow beneath it.
             dcc.Graph(
                 id="live-graph",
@@ -2146,6 +2223,7 @@ def dash_app(q: Queue):
     Output("range-store", "data"),
     Output("reached-global-store", "data"),
     Output("path-status", "children"),
+    Output("visualizer-state-warning", "children"),
     Input("interval-component", "n_intervals"),
     Input("live-graph", "relayoutData"),
     Input("reset-button", "n_clicks"),
@@ -2183,12 +2261,13 @@ def update_graph(
                       first run.
 
     Returns:
-        (fig, new_goal_as_list, last_range, reached_global_keys, path_status):
+        (fig, new_goal_as_list, last_range, reached_global_keys, path_status, state_warning):
             - fig: The updated Plotly figure
             - new_goal_as_list: [x, y] for storage in dcc.Store (JSON serializable)
             - last_range: [x-range, y-range] for storage in dcc.Store (JSON serializable)
             - reached_global_keys: list of reached global waypoint keys for storage in dcc.Store
             - path_status: remaining waypoint count and latest replan reason
+            - state_warning: a warning banner when the latest visualizer state is None
 
     """
     global queue, _latest_vs  # noqa
@@ -2197,16 +2276,41 @@ def update_graph(
     ctx = dash.callback_context
     triggered_id = ctx.triggered[0]["prop_id"].split(".")[0] if ctx.triggered else None
 
-    # Interval update (default behavior)
+    # Only an explicit None received from the queue means the producer has no current state. An
+    # empty queue merely means that no new frame arrived during this interval.
+    state_warning: Union[NoUpdate, None, Div] = dash.no_update
     if queue is not None and not queue.empty():
-        vs = queue.get()  # type: ignore
-        _latest_vs = vs
-    elif triggered_id in ("map-toggle", "reset-button") and _latest_vs is not None:
-        # A view-only control changed but no new ROS message arrived; re-render the last frame
-        # so the toggle/reset takes effect immediately instead of waiting for the next message.
-        vs = _latest_vs
+        queued_vs = queue.get()  # type: ignore
+        if queued_vs is None:
+            failure_handling = handle_visualizer_state_failure(
+                stored_range,
+                should_render_cached_state=True,
+            )
+            if failure_handling.callback_return is not None:
+                return failure_handling.callback_return
+
+            cached_vs = failure_handling.visualizer_state
+            assert cached_vs is not None
+            vs = cached_vs
+            state_warning = failure_handling.state_warning
+        else:
+            vs = queued_vs
+            _latest_vs = vs
+            state_warning = None
     else:
-        return dash.no_update, dash.no_update, stored_range, dash.no_update, dash.no_update
+        # Keep the last frame without rebuilding it, but update the banner to mark it stale. If a
+        # view-only control changed, re-render the cached frame so the control takes effect.
+        failure_handling = handle_visualizer_state_failure(
+            stored_range,
+            should_render_cached_state=triggered_id in ("map-toggle", "reset-button"),
+        )
+        if failure_handling.callback_return is not None:
+            return failure_handling.callback_return
+        # A view-only control changed; re-render the cached frame so it takes effect immediately.
+        cached_vs = failure_handling.visualizer_state
+        assert cached_vs is not None
+        vs = cached_vs
+        state_warning = failure_handling.state_warning
 
     last_goal_tuple = (
         cs.XY(last_goal_xy_km[0], last_goal_xy_km[1]) if last_goal_xy_km is not None else None
@@ -2250,6 +2354,7 @@ def update_graph(
                 dash.no_update,
                 dash.no_update,
                 dash.no_update,
+                state_warning,
             )
 
         min_bounds, max_bounds = get_state_space_bounds(vs)
@@ -2270,7 +2375,14 @@ def update_graph(
     path_status = (
         f"Remaining Waypoints: {remaining_waypoints}\n Last Replan Reason: {replan_reason}"
     )
-    return fig, [new_goal_xy[0], new_goal_xy[1]], last_range, reached_global_keys, path_status
+    return (
+        fig,
+        [new_goal_xy[0], new_goal_xy[1]],
+        last_range,
+        reached_global_keys,
+        path_status,
+        state_warning,
+    )
 
 
 @app.callback(

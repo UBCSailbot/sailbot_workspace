@@ -25,6 +25,7 @@ mock_gps:
 navigate_main:
    ros__parameters:
       path_planner: "rrtstar"
+      visualizer_mode: True
 
 # controller parameters
 wingsail_ctrl_node:

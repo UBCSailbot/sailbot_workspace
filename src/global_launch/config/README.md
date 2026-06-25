@@ -115,6 +115,12 @@ configurable noise and drift.
 - _Datatype_: `string`
 - _Acceptable Values_: `"rrtstar"`
 
+**`visualizer_mode`**
+
+- _Description_: Override whether the pathfinding visualizer is used during on-water testing.
+- _Datatype_: `boolean`
+- _Acceptable Values_:  `true`, `false`
+
 ## Controller Parameters
 
 ROS parameters specific to the nodes in the Controller.

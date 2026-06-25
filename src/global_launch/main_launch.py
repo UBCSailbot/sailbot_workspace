@@ -88,15 +88,24 @@ GLOBAL_LAUNCH_ARGUMENTS = [
     ),
     DeclareLaunchArgument(
         name="on_water_mock_ais",
-        default_value="false",
-        choices=["true", "false"],
-        description="Set to 'true' to use mock AIS data during production mode on-water testing.",
+        default_value="",
+        choices=["", "true", "false"],
+        description="Override whether mock AIS data is used during production mode on-water "
+        + "testing. Leave empty to use the value in the config file.",
     ),
     DeclareLaunchArgument(
         name="on_water_test_plan",
-        default_value="on_water_mock_ais.yaml",
+        default_value="",
         description="The test plan to use for on-water testing when on_water_mock_ais=True. "
-        + "This should be a yaml file in the src/local_pathfinding/test_plans directory",
+        + "Leave empty to use the value in the config file. This will be the following yaml file: "
+        + "src/local_pathfinding/test_plans/on_water_mock_ais.yaml",
+    ),
+    DeclareLaunchArgument(
+        name="visualizer_mode",
+        default_value="",
+        choices=["", "true", "false"],
+        description="Override whether the pathfinding visualizer is used during on-water "
+        + "testing. Leave empty to use the value in the config file.",
     ),
 ]
 ENVIRONMENT_VARIABLES = [
