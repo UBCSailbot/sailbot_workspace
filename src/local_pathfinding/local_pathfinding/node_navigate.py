@@ -31,6 +31,10 @@ index 0 is the final destination and len(waypoints) - 1 is the first target. Sai
 incoming path to MAIN_GP_FILE_PATH before adopting it in memory, so a path that cannot be saved
 does not silently become the active route.
 
+NET may republish the same global path repeatedly. Once that path is already the active main path,
+Sailbot treats repeated identical waypoint lists as heartbeat-style duplicates: it preserves the
+current index and does not signal a new local-path replan.
+
 If accepting the NET path fails, Sailbot falls back to persisted route data. It tries the persisted
 main path first, then BACKUP_GP_FILE_PATH. Persisted paths need GPS because the boat may have moved
 since the route was saved, and restarting at len(waypoints) - 1 could send it backward after a
@@ -48,6 +52,12 @@ Once selected, the path still advances toward the destination by decrementing th
 
 Once a path is active, navigation advances by decrementing the index. When the index drops below
 zero, the global path is exhausted and Sailbot disables sail instead of cycling between waypoints.
+
+Sailbot keeps a separate received_new_global_path flag as a one-shot bridge from path adoption to
+the next desired-heading tick. get_desired_heading() combines that flag with same-tick waypoint
+advancement into the received_new_global_waypoint argument passed to LocalPath.update_if_needed().
+The bridge flag is cleared only after a successful local-path update, or when the global path is
+exhausted and no retryable local-path update remains.
 """
 
 
@@ -118,6 +128,8 @@ class Sailbot(Node):
         planner (str): The path planner that `Sailbot` is using.
         mode (str): Runtime mode. Development mode publishes richer local path data.
         gp (GlobalPath): Global path state that `Sailbot` is following.
+        received_new_global_path (bool): One-shot signal that the active global path changed and
+            the next desired-heading tick must force a local path update.
         land_multi_polygon (MultiPolygon): Optional mock land data used in development mode.
     """
 
@@ -237,6 +249,15 @@ class Sailbot(Node):
             i: f"({waypoint.latitude:.{num_decimals}f}, {waypoint.longitude:.{num_decimals}f})"
             for i, waypoint in enumerate(path.waypoints)
         }
+
+    @staticmethod
+    def _same_waypoints(left: list[ci.HelperLatLon], right: list[ci.HelperLatLon]) -> bool:
+        """Return whether two waypoint lists describe the same global path."""
+        return len(left) == len(right) and all(
+            left_waypoint.latitude == right_waypoint.latitude
+            and left_waypoint.longitude == right_waypoint.longitude
+            for left_waypoint, right_waypoint in zip(left, right)
+        )
 
     def _write_global_path_to_file(self, path: ci.Path) -> None:
         """Writes the global path to the persisted csv file.
@@ -419,6 +440,14 @@ class Sailbot(Node):
             )
             if self.gp is None:
                 self._load_persisted_global_path()
+            return
+
+        if (
+            self.gp is not None
+            and not self.gp.is_backup
+            and self._same_waypoints(self.gp.waypoints, list(msg.waypoints))
+        ):
+            self.get_logger().debug("Received unchanged global path. Keeping current progress.")
             return
 
         try:

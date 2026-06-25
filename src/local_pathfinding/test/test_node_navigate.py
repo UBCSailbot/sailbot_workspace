@@ -176,6 +176,31 @@ def test_global_path_callback_success_replaces_gp_after_persisting() -> None:
     assert sailbot.received_new_global_path
 
 
+def test_global_path_callback_ignores_unchanged_active_main_path() -> None:
+    incoming_path = make_path(50.0, -124.0)
+    sailbot = make_sailbot_shell()
+    sailbot.gp = GlobalPath(waypoints=list(incoming_path.waypoints), index=1, is_backup=False)
+    sailbot.received_new_global_path = False
+
+    def write_global_path_to_file(path: ci.Path) -> None:
+        raise AssertionError("unchanged active path should not be persisted again")
+
+    def load_persisted_global_path() -> bool:
+        raise AssertionError("persisted fallback should not be loaded for unchanged active path")
+
+    setattr(sailbot, "_write_global_path_to_file", write_global_path_to_file)
+    setattr(sailbot, "_load_persisted_global_path", load_persisted_global_path)
+
+    sailbot.global_path_callback(incoming_path)
+
+    gp = require_gp(sailbot)
+    assert waypoint_tuples(gp.waypoints) == waypoint_tuples(incoming_path.waypoints)
+    assert gp.index == 1
+    assert not gp.is_backup
+    assert not sailbot.received_new_global_path
+    assert get_test_logger(sailbot).has_message("debug", "Received unchanged global path")
+
+
 def test_global_path_callback_write_failure_uses_persisted_fallback() -> None:
     existing_path = make_path(49.0, -123.0)
     incoming_path = make_path(50.0, -124.0)

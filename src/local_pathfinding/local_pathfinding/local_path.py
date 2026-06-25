@@ -118,10 +118,11 @@ class LocalPathInputs:
 
     Attributes:
         gps (ci.GPS): Current GPS position and heading data.
-        ais_ships (ci.AISShips): AIS data for nearby ships.
-        global_path (ci.Path): The global path plan to the destination.
-        target_global_waypoint (ci.HelperLatLon): Target waypoint from the global path.
-        filtered_wind_sensor (ci.WindSensor): Filtered apparent wind data.
+        ais_ships (Optional[ci.AISShips]): AIS data for nearby ships, if available.
+        global_path (Optional[ci.Path]): The global path plan to the destination, if available.
+        target_global_waypoint (Optional[ci.HelperLatLon]): Target waypoint from the global path,
+            if available.
+        filtered_wind_sensor (Optional[ci.WindSensor]): Filtered apparent wind data, if available.
         planner (str): Name of the OMPL planner to use.
         land_multi_polygon (Optional[MultiPolygon]): Optional land masses to avoid.
     """
@@ -501,7 +502,7 @@ class LocalPath:
         whether a path change is required and a reason.
 
         Priority of checks (first matching condition wins):
-        - Receipt of a new global waypoint (always requires a new local path)
+        - Receipt of a new global path or target waypoint (always requires a new local path)
         - Missing OMPL path, LocalPathState, or local path
         - Current path intersects a collision zone
         - Path time-to-live (TTL) has expired
@@ -512,8 +513,8 @@ class LocalPath:
         - Boat has deviated from the current path segment beyond the allowed threshold
 
         Args:
-            received_new_global_waypoint (bool): True when the global path advanced to a
-                new waypoint and a local-path regeneration should be triggered.
+            received_new_global_waypoint (bool): True when Sailbot adopted a new global path or
+                advanced to a new target waypoint, so local-path regeneration should be triggered.
             boat_lat_lon (Optional[ci.HelperLatLon], optional): Current boat position used to
                 evaluate segment deviation. If None, deviation is not evaluated.
             new_tw (Optional[Wind], optional): The most recent true wind reading. This
@@ -575,7 +576,7 @@ class LocalPath:
 
         Converts apparent wind to true wind, updates the rolling true wind tracker, then
         evaluates whether to update the current path based on several criteria:
-        - Receipt of a new global waypoint
+        - Receipt of a new global path or target waypoint
         - Absence of an existing OMPL path, local path, or state
         - Current path intersecting with collision zones
         - Current path exceeding its time-to-live
@@ -588,8 +589,8 @@ class LocalPath:
             target_lp_wp_index (int): 0-based array index of the local waypoint Polaris is
                 currently heading toward. This starts at index 1 because OMPL index 0 is the
                 start state near the boat.
-            received_new_global_waypoint (bool): Flag indicating if a new global
-                waypoint was received.
+            received_new_global_waypoint (bool): Flag indicating that the active global path or
+                target global waypoint changed and the local path must be regenerated.
 
         Returns:
             tuple[float, int]: A tuple containing:
