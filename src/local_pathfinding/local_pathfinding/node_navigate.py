@@ -28,8 +28,8 @@ is accepted, when sail should be disabled, and when the local planner needs to r
 
 When a new global path comes from NET, we trust the waypoint ordering from network systems:
 index 0 is the final destination and len(waypoints) - 1 is the first target. Sailbot persists that
-incoming path to MAIN_GP_FILE_PATH before adopting it in memory, so a path that cannot be saved does
-not silently become the active route.
+incoming path to MAIN_GP_FILE_PATH before adopting it in memory, so a path that cannot be saved
+does not silently become the active route.
 
 If accepting the NET path fails, Sailbot falls back to persisted route data. It tries the persisted
 main path first, then BACKUP_GP_FILE_PATH. Backup paths need GPS because the safest place to resume
