@@ -9,10 +9,10 @@ from collections import deque
 from multiprocessing import Manager, Process, Queue
 from typing import Deque, Union
 
-import custom_interfaces.msg as ci
 import rclpy
 from rclpy.node import Node
 
+import custom_interfaces.msg as ci
 import local_pathfinding.visualizer as vz
 
 
@@ -106,6 +106,7 @@ class SailbotObserver(Node):
         """Send the latest state through the pipe to the dash app"""
 
         if self.msg is None:
+            self.get_logger().warn("No message received by /local_path data has been received")
             return
 
         if self.queue.qsize() >= 1:
