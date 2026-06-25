@@ -127,10 +127,10 @@ class LocalPathInputs:
     """
 
     gps: ci.GPS
-    ais_ships: ci.AISShips
-    global_path: ci.Path
-    target_global_waypoint: ci.HelperLatLon
-    filtered_wind_sensor: ci.WindSensor
+    ais_ships: ci.AISShips | None
+    global_path: ci.Path | None
+    target_global_waypoint: ci.HelperLatLon | None
+    filtered_wind_sensor: ci.WindSensor | None
     planner: str
     land_multi_polygon: Optional[MultiPolygon] = None
 
@@ -606,6 +606,9 @@ class LocalPath:
         """
         self._target_lp_wp_index = target_lp_wp_index
         boat_lat_lon = None
+
+        if inputs.filtered_wind_sensor is None:
+            raise PathNotFoundError("filtered_wind_sensor is None")
 
         # Convert apparent wind to true wind
         new_aw = Wind(

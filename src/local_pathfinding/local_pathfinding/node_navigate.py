@@ -39,9 +39,11 @@ inactive-input path publishes sail=False.
 
 This assumes persisted main and backup paths use the same reverse-order convention as NET paths.
 On resume, Sailbot finds the closest non-final waypoint and targets one index closer to the final
-destination. For example, if the closest waypoint is index 6, the resumed target is index 5. This is
-an intentional simplification: it may skip the closest waypoint when the boat is behind or between
-waypoints, but it biases recovery toward continuing down-route to index 0 instead of backtracking.
+destination. For example, if the closest waypoint is index 6, the resumed target is index 5. This
+is an intentional simplification: it may skip the closest waypoint when the boat is behind or
+between waypoints, but it biases recovery toward continuing down-route to index 0 instead of
+backtracking.
+
 Once selected, the path still advances toward the destination by decrementing the index.
 
 Once a path is active, navigation advances by decrementing the index. When the index drops below
@@ -191,7 +193,7 @@ class Sailbot(Node):
             now_sec=self._now_sec,
         )
         self.target_lp_wp_index = 1
-        self.received_new_global_waypoint = False
+        self.received_new_global_path = False
         self._load_persisted_global_path()
         self.mode = self.get_parameter("mode").get_parameter_value().string_value
         self.planner = self.get_parameter("path_planner").get_parameter_value().string_value
@@ -350,7 +352,7 @@ class Sailbot(Node):
     def _set_gp(self, gp: GlobalPath) -> None:
         """Store a new global path and signal that the local planner must replan."""
         self.gp = gp
-        self.received_new_global_waypoint = True
+        self.received_new_global_path = True
 
     def _load_persisted_global_path(self) -> bool:
         """Load the latest persisted global path or static backup path if available."""
@@ -597,6 +599,7 @@ class Sailbot(Node):
         target_global_waypoint = self.gp.target_waypoint
         if target_global_waypoint is None:
             self.get_logger().info("Global path is exhausted; disabling sail")
+            self.received_new_global_path = False
             self.local_path.path = ci.Path(waypoints=[])
             return 0.0, False
 
@@ -611,10 +614,13 @@ class Sailbot(Node):
             target_global_waypoint.longitude,
             target_global_waypoint.latitude,
         )
+
+        received_new_global_waypoint = self.received_new_global_path
         if distance_to_waypoint_m < GLOBAL_WAYPOINT_REACHED_THRESH_M:
-            self.received_new_global_waypoint = True
+            received_new_global_waypoint = True
             if not self.gp.advance_waypoint():
                 self.get_logger().info("Reached final global waypoint; disabling sail")
+                self.received_new_global_path = False
                 self.local_path.path = ci.Path(waypoints=[])
                 return 0.0, False
             target_global_waypoint = self.gp.target_waypoint
@@ -631,9 +637,8 @@ class Sailbot(Node):
                     land_multi_polygon=self.land_multi_polygon,
                 ),
                 target_lp_wp_index=self.target_lp_wp_index,
-                received_new_global_waypoint=self.received_new_global_waypoint,
+                received_new_global_waypoint=received_new_global_waypoint,
             )
-            self.received_new_global_waypoint = False
 
             local_target_wp = None
             if self.local_path.path is not None and (
@@ -645,8 +650,10 @@ class Sailbot(Node):
                 f"(index {self.target_lp_wp_index})"
             )
 
+            self.received_new_global_path = False
             return desired_heading, True
         except PathNotFoundError:
+            self.received_new_global_path = received_new_global_waypoint
             self.get_logger().warning("Unable to generate a local path; disabling sail")
             self.local_path.path = ci.Path(waypoints=[])
             return 0.0, False
