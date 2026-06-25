@@ -67,7 +67,7 @@ def get_test_logger(sailbot: Sailbot) -> FakeLogger:
     return cast(FakeLogger, sailbot.get_logger())
 
 
-def test_main_global_path_starts_at_last_waypoint() -> None:
+def test_new_global_path_starts_at_last_waypoint() -> None:
     waypoints = [
         make_waypoint(49.0, -123.0),
         make_waypoint(49.1, -123.1),
@@ -76,7 +76,7 @@ def test_main_global_path_starts_at_last_waypoint() -> None:
     path = ci.Path(waypoints=waypoints)
     sailbot = make_sailbot_shell()
 
-    gp = sailbot._create_gp(path, is_backup=False)
+    gp = sailbot._create_gp(path, is_backup=False, is_new_global_path=True)
 
     assert gp is not None
     assert gp.index == len(waypoints) - 1
@@ -84,7 +84,7 @@ def test_main_global_path_starts_at_last_waypoint() -> None:
     assert not gp.is_backup
 
 
-def test_backup_global_path_starts_at_closest_gps_waypoint() -> None:
+def test_persisted_global_path_resumes_one_waypoint_toward_destination() -> None:
     waypoints = [
         make_waypoint(49.0, -123.0),
         make_waypoint(49.1, -123.1),
@@ -96,8 +96,8 @@ def test_backup_global_path_starts_at_closest_gps_waypoint() -> None:
     gp = sailbot._create_gp(path, is_backup=True)
 
     assert gp is not None
-    assert gp.index == 1
-    assert gp.target_waypoint == waypoints[1]
+    assert gp.index == 0
+    assert gp.target_waypoint == waypoints[0]
     assert gp.is_backup
 
 

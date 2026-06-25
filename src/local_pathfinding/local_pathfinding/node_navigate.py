@@ -32,13 +32,16 @@ incoming path to MAIN_GP_FILE_PATH before adopting it in memory, so a path that 
 does not silently become the active route.
 
 If accepting the NET path fails, Sailbot falls back to persisted route data. It tries the persisted
-main path first, then BACKUP_GP_FILE_PATH. Backup paths need GPS because the safest place to resume
-is the waypoint closest to the current boat position. Without GPS, or without any usable path,
-Sailbot leaves gp unset and the existing inactive-input path publishes sail=False.
+main path first, then BACKUP_GP_FILE_PATH. Persisted paths need GPS because the boat may have moved
+since the route was saved, and restarting at len(waypoints) - 1 could send it backward after a
+power cycle. Without GPS, or without any usable path, Sailbot leaves gp unset and the existing
+inactive-input path publishes sail=False.
 
 This assumes persisted main and backup paths use the same reverse-order convention as NET paths.
-For backup paths, choosing the closest waypoint is intentionally a pragmatic resume heuristic: it
-does not try to infer whether the boat has already passed that waypoint along the route segment.
+On resume, Sailbot finds the closest non-final waypoint and targets one index closer to the final
+destination. For example, if the closest waypoint is index 6, the resumed target is index 5. This is
+an intentional simplification: it may skip the closest waypoint when the boat is behind or between
+waypoints, but it biases recovery toward continuing down-route to index 0 instead of backtracking.
 Once selected, the path still advances toward the destination by decrementing the index.
 
 Once a path is active, navigation advances by decrementing the index. When the index drops below
@@ -315,22 +318,29 @@ class Sailbot(Node):
             return ci.Path()
         return ci.Path(waypoints=list(self.gp.waypoints))
 
-    def _create_gp(self, path: ci.Path, is_backup: bool) -> GlobalPath | None:
+    def _create_gp(
+        self,
+        path: ci.Path,
+        is_backup: bool,
+        is_new_global_path: bool = False,
+    ) -> GlobalPath | None:
         """Create GlobalPath state from a ROS path, choosing the correct starting index."""
         if not path.waypoints:
             return None
 
-        if is_backup:
+        if not is_new_global_path or is_backup:
             if self.gps is None:
                 self.get_logger().warning(
-                    "Backup global path is available, but GPS is unavailable. "
-                    "Waiting for GPS before loading backup path."
+                    "Global path is available, but GPS is unavailable. "
+                    "Waiting for GPS before loading persisted path."
                 )
                 return None
 
-            index = self._closest_waypoint_index(path, self.gps.lat_lon)
+            index = self._resume_waypoint_index(path, self.gps.lat_lon)
+            path_source = "backup" if is_backup else "main"
             self.get_logger().info(
-                f"Using backup global path. Starting at closest waypoint index: {index}"
+                f"Using persisted {path_source} global path. "
+                f"Starting at resume waypoint index: {index}"
             )
         else:
             index = len(path.waypoints) - 1
@@ -362,7 +372,10 @@ class Sailbot(Node):
                 if not path.waypoints:
                     raise ValueError("global path csv has no waypoints")
 
-                gp = self._create_gp(path, is_backup=file_path == BACKUP_GP_FILE_PATH)
+                gp = self._create_gp(
+                    path,
+                    is_backup=file_path == BACKUP_GP_FILE_PATH,
+                )
                 if gp is None:
                     continue
 
@@ -416,7 +429,7 @@ class Sailbot(Node):
             self._load_persisted_global_path()
             return
 
-        gp = self._create_gp(msg, is_backup=False)
+        gp = self._create_gp(msg, is_backup=False, is_new_global_path=True)
         if gp is not None:
             self._set_gp(gp)
 
@@ -639,18 +652,24 @@ class Sailbot(Node):
             return 0.0, False
 
     @staticmethod
-    def _closest_waypoint_index(global_path: ci.Path, lat_lon: ci.HelperLatLon) -> int:
-        """Return the index of the global waypoint closest to the provided position."""
+    def _resume_waypoint_index(global_path: ci.Path, lat_lon: ci.HelperLatLon) -> int:
+        """Return a resume index biased one waypoint toward the final destination."""
 
-        return min(
-            range(len(global_path.waypoints)),
-            key=lambda index: cs.GEODESIC.inv(
+        min_i = len(global_path.waypoints) - 1
+        min_distance_m = float("inf")
+        for i in range(len(global_path.waypoints) - 1, 0, -1):
+            distance_m = cs.GEODESIC.inv(
                 lat_lon.longitude,
                 lat_lon.latitude,
-                global_path.waypoints[index].longitude,
-                global_path.waypoints[index].latitude,
-            )[2],
-        )
+                global_path.waypoints[i].longitude,
+                global_path.waypoints[i].latitude,
+            )[2]
+
+            if min_distance_m > distance_m:
+                min_distance_m = distance_m
+                min_i = i
+
+        return max(min_i - 1, 0)
 
     def update_params(self) -> None:
         """Update instance variables that depend on parameters if they have changed."""
