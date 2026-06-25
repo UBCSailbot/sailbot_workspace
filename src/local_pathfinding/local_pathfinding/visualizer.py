@@ -120,18 +120,12 @@ UpdateGraphReturn = Tuple[Any, Any, Any, Any, Any, VisualizerStateWarning]
 
 
 @dataclass(frozen=True)
-class CachedVisualizerStateFailure:
-    """Missing current state, but a cached visualizer state can still be rendered."""
+class VisualizerStateFailureHandling:
+    """Result of handling a missing/None visualizer state."""
 
-    visualizer_state: "VisualizerState"
+    visualizer_state: Optional["VisualizerState"]
     state_warning: html.Div
-
-
-@dataclass(frozen=True)
-class DeferredVisualizerStateFailure:
-    """Missing current state and no cached render is needed, so return early from Dash callback."""
-
-    callback_return: UpdateGraphReturn
+    callback_return: Optional[Tuple[Any, Any, Any, Any, Any, Any]]
 
 
 @dataclass(frozen=True)
