@@ -337,14 +337,14 @@ ROS parameters specific to the nodes in the boat simulator.
   generator that represents the wind velocity in kmph. Namely, the same value
   is fixed in the wind sensors. The value is an array containing the `x` and
   `y` components of the velocity. Only used if `wind_sensor.generator_type`
-  is `constant`.
+  is `constant`. Units m/s
 - _Datatype_: `double` array, length 2
 - _Range_: `(MIN_DOUBLE, MAX_DOUBLE)`
 
 **`wind_sensor.gaussian_params.corr_xy`**
 
 - _Description_: The correlation coefficient between x and y components of
-  the wind velocity. Only used if `wind_sensor.generator_type` is `gaussian`.
+  the wind velocity. Only used if `wind_sensor.generator_type` is `gaussian`. Units m/s
 - _Datatype_: `double`
 - _Range_: `[-1.0, 1.0]`
 
@@ -352,7 +352,7 @@ ROS parameters specific to the nodes in the boat simulator.
 
 - _Description_: The mean wind velocity parameter in kmph for the gaussian
   generator. The mean is an array containing the `x` and `y` components of
-  the velocity. Only used if `wind_sensor.generator_type` is `gaussian`.
+  the velocity. Only used if `wind_sensor.generator_type` is `gaussian`. Units m/s
 - _Datatype_: `double` array, length 2
 - _Range_: `(MIN_DOUBLE, MAX_DOUBLE)`
 
@@ -361,7 +361,7 @@ ROS parameters specific to the nodes in the boat simulator.
 - _Description_: The standard deviation parameters in kmph for the gaussian
   generator. There are two standard deviations specified within an array: one
   for the `x` component, and one for the `y` component. Only used if
-  `wind_sensor.generator_type` is `gaussian`.
+  `wind_sensor.generator_type` is `gaussian`. Units: m/s
 - _Datatype_: `double` array, length 2
 - _Range_: `(0.0, MAX_DOUBLE)`
     - If a standard deviation of zero is desired, then consider using the
@@ -377,14 +377,14 @@ ROS parameters specific to the nodes in the boat simulator.
 **`wind_generation.mvgaussian_params.mean`**
 
 - _Description_: The mean value for the wind generated, expressed in
-  kilometers per hour (km/h), for the multivariate Gaussian generator.
+  kilometers per hour (m/s), for the multivariate Gaussian generator.
 - _Datatype_: `double` array, length 2
 - _Range_: `(0.0, MAX_DOUBLE)`
 
 **`wind_generation.mvgaussian_params.cov`**
 
 - _Description_: The covariance matrix for the generated wind, represented as
-  a string formatted as a 2D `double` array, since ROS parameters do not
+  a string formatted as a 2D (m/s) `double` array, since ROS parameters do not
   support native 2D array types.
 - _Datatype_: `string`
 - _Range_: `(0.0, MAX_DOUBLE)`
@@ -392,14 +392,14 @@ ROS parameters specific to the nodes in the boat simulator.
 **`current_generation.mvgaussian_params.mean`**
 
 - _Description_: The mean value for the current generated, expressed in
-  kilometers per hour (km/h), for the multivariate Gaussian generator.
+  kilometers per hour (m/s), for the multivariate Gaussian generator.
 - _Datatype_: `double` array, length 2
 - _Range_: `(0.0, MAX_DOUBLE)`
 
 **`current_generation.mvgaussian_params.cov`**
 
 - _Description_: The covariance matrix for the generated current, represented
-  as a string formatted as a 2D `double` array, since ROS parameters do not
+  as a string formatted as a 2D (m/s) `double` array, since ROS parameters do not
   support native 2D array types.
 - _Datatype_: `string`
 - _Range_: `(0.0, MAX_DOUBLE)`
