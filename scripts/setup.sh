@@ -40,4 +40,3 @@ if [ ! -d "$LOG_PATH" ]; then
     sudo mkdir -p "$LOG_PATH"
 fi
 
-source "$HOME/.bashrc"

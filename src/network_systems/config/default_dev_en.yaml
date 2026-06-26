@@ -7,10 +7,6 @@ local_transceiver_node:
   ros__parameters:
     enabled: true
 
-mock_ais_node:
-  ros__parameters:
-    enabled: true
-
 remote_transceiver_node:
   ros__parameters:
     enabled: true

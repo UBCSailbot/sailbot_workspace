@@ -1,0 +1,102 @@
+# global parameters
+/**:
+   ros__parameters:
+      # Publishers' period (seconds): how often the publishers publish
+      config: "on_water_globals.yaml" # Name of the global config file
+      pub_period_sec: 1.0
+      test_plan: "jericho_on_water_test.yaml"
+
+# local_pathfinding parameters
+global_path:
+   ros__parameters:
+      global_path_filepath: "/workspaces/sailbot_workspace/src/local_pathfinding/global_paths/mock_global_path.csv"
+mock_ais:
+   ros__parameters:
+      on_water_mock_ais: True
+      on_water_test_plan: "on_water_mock_ais.yaml"
+mock_gps:
+   ros__parameters:
+      use_gps_noise: True
+      use_ocean_drift: True
+      use_drift_randomization: True
+      ocean_drift_speed_kmph: 0.5
+      ocean_drift_dir_deg: 45.0
+      ocean_drift_accel_kmph2: 0.0
+navigate_main:
+   ros__parameters:
+      path_planner: "rrtstar"
+      visualizer_mode: True
+
+# controller parameters
+wingsail_ctrl_node:
+   ros__parameters:
+      reynolds_number: [0.0, 1.0, 2.0]
+      angle_of_attack: [0.0, 1.0, 2.0]
+      apparent_wind_lower_threshold_kmph: 18.52
+      apparent_wind_upper_threshold_kmph: 46.3
+      apparent_wind_zero_threshold: 1.0
+
+# boat_simulator parameters
+low_level_control_node:
+   ros__parameters:
+      logging_throttle_period_sec: 2.0
+      info_log_throttle_period_sec: 2.0
+      qos_depth: 1
+      rudder:
+         disable_actuation: false
+         fixed_angle_deg: 0.0
+         actuation_execution_period_sec: 0.5
+         pid:
+            kp: 0.01
+            ki: 0.01
+            kd: 0.01
+            cp: 0.01
+            buffer_size: 50
+      wingsail:
+         disable_actuation: false
+         fixed_angle_deg: 0.0
+         actuation_execution_period_sec: 0.5
+         actuation_speed_deg_per_sec: 1.0
+physics_engine_node:
+   ros__parameters:
+      logging_throttle_period_sec: 2.0
+      info_log_throttle_period_sec: 2.0
+      action_send_goal_timeout_sec: 2.0
+      qos_depth: 1
+      rudder:
+         actuation_request_period_sec: 10.0
+      wingsail:
+         actuation_request_period_sec: 10.0
+      wind_sensor:
+         generator_type: gaussian
+         gaussian_params:
+            mean: [0.278, 0.0]
+            std_dev: [0.028, 0.028]
+            corr_xy: 0.
+         constant_params:
+            value: [0.278, 0.0]
+      wind_generation:
+         mvgaussian_params:
+            mean: [1.389, 1.389]
+            cov: "[[1.111, 0.278], [0.278, 1.111]]"
+      current_generation:
+         mvgaussian_params:
+            mean: [0.278, 0.139]
+            cov: "[[0.1389, 0.028], [0.028, 0.083]]"
+data_collection_node:
+   ros__parameters:
+      file_name: "ros_data_collection"
+      qos_depth: 10
+      topics: ["/mock_gps", "GPS", "/mock_wind_sensors", "WindSensors"]
+      bag: false
+      json: true
+      write_period_sec: 0.5
+mock_data_node:
+   ros__parameters:
+      qos_depth: 10
+      mock_desired_heading: True
+      mock_desired_heading_lower_bound: -179.99
+      mock_desired_heading_upper_bound: 180.00
+      mock_sail_trim_tab: True
+      mock_sail_trim_tab_lower_bound: -7.0
+      mock_sail_trim_tab_upper_bound: 7.0

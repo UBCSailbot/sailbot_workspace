@@ -37,54 +37,89 @@ ROS parameters common across all ROS nodes in the network.
 
 ROS parameters specific to the nodes in the local_pathfinding package.
 
-### `global_path`
-
-The production node that reads the global path from a csv file and
-publishes it (interpolated to `global_path_interval_spacing_km`) on the
-`global_path` topic for local pathfinding to consume.
-
 **`global_path_filepath`**
 
-- _Description_: The absolute filepath to a global path csv file. The file
-  must have a `latitude,longitude` header followed by one waypoint per row,
-  ordered final destination first and launch area last (`navigate` treats
-  waypoint index 0 as the final destination and heads toward it starting from
-  the last waypoint).
+- _Description_: Reserved path for storing a global path csv file. This is
+  retained for the planned `navigate` persistence/fallback workflow; production
+  global paths are published by `network_systems`. The file must have a
+  `latitude,longitude` header followed by one waypoint per row, ordered final
+  destination first and launch area last (`navigate` treats waypoint index 0 as
+  the final destination and heads toward it starting from the last waypoint).
 - _Datatype_: `string`
 - _Acceptable Values_: Any valid filepath to a properly formatted csv file.
 
-**`global_path_interval_spacing_km`**
+### `mock_ais`
 
-- _Description_: The upper bound on the spacing between consecutive points in
-  the global path in km. The path read from the csv file is interpolated so
-  that no two consecutive waypoints are farther apart than this value. This is
-  a global parameter shared by all nodes.
+The development-only node that publishes mock AIS data in
+different modes based on whether running on water (production) or in development.
+
+**`on_water_mock_ais`**
+
+- _Description_: Enable or disable mock AIS data generation.
+- _Datatype_: `boolean`
+- _Acceptable Values_: `true`, `false`
+
+**`on_water_test_plan`**
+
+- _Description_: The test plan file to use for mock AIS data when on water.
+- _Datatype_: `string`
+- _Acceptable Values_: Any valid test plan filename.
+
+### `mock_gps`
+
+The development-only node that publishes mock GPS data with
+configurable noise and drift.
+
+**`use_gps_noise`**
+
+- _Description_: Enable Gaussian noise on GPS readings.
+- _Datatype_: `boolean`
+- _Acceptable Values_: `true`, `false`
+
+**`use_ocean_drift`**
+
+- _Description_: Enable cumulative ocean current drift on GPS readings.
+- _Datatype_: `boolean`
+- _Acceptable Values_: `true`, `false`
+
+**`use_drift_randomization`**
+
+- _Description_: Enable small random variation to the ocean drift current each tick.
+- _Datatype_: `boolean`
+- _Acceptable Values_: `true`, `false`
+
+**`ocean_drift_speed_kmph`**
+
+- _Description_: Base speed of the ocean current in km/h over ground.
 - _Datatype_: `double`
-- _Range_: `(0.0, MAX_DOUBLE)`
+- _Range_: `[0.0, MAX_DOUBLE)`
 
-### `mock_global_path`
+**`ocean_drift_dir_deg`**
 
-The development-only node that publishes a mock global path sourced from the
-active test plan.
-
-**`gps_threshold`**
-
-- _Description_: A new path will be generated if the GPS position changed by
-  more than `gps_threshold * global_path_interval_spacing_km`.
+- _Description_: Direction the current flows toward in degrees (0=north, 90=east).
 - _Datatype_: `double`
-- _Acceptable Values_: `(1.0, MAX_DOUBLE)`
+- _Range_: `(-180.0, 180.0]`
+
+**`ocean_drift_accel_kmph2`**
+
+- _Description_: Acceleration of the drift speed in km/h². Set to 0 for constant drift.
+- _Datatype_: `double`
+- _Range_: `[0.0, MAX_DOUBLE)`
 
 ### `navigate_main`
 
 **`path_planner`**
 
-- _Description_: The path planner to use. Planners are from
-  [OMPL Library](https://ompl.kavrakilab.org/planners.html).
+- _Description_: The path planner used by local pathfinding. Local pathfinding currently
+  uses OMPL RRT* exclusively.
 - _Datatype_: `string`
-- _Acceptable Values_: `"bitstar"`, `"bfmtstar"`, `"fmtstar"`,
-  `"informedrrtstar"`, `"lazylbtrrt"`, `"lazyprmstar"`, `"lbtrrt"`,
-  `"prmstar"`, `"rrtconnect"`, `"rrtsharp"`, `"rrtstar"`, `"rrtxstatic"`,
-  `"sorrtstar"`
+- _Acceptable Values_: `"rrtstar"`
+
+**`visualizer_mode`**
+
+- _Description_: Override whether the pathfinding visualizer is used during on-water testing.
+- _Datatype_: `boolean`
+- _Acceptable Values_:  `true`, `false`
 
 ## Controller Parameters
 
@@ -276,14 +311,14 @@ ROS parameters specific to the nodes in the boat simulator.
   generator that represents the wind velocity in kmph. Namely, the same value
   is fixed in the wind sensors. The value is an array containing the `x` and
   `y` components of the velocity. Only used if `wind_sensor.generator_type`
-  is `constant`.
+  is `constant`. Units m/s
 - _Datatype_: `double` array, length 2
 - _Range_: `(MIN_DOUBLE, MAX_DOUBLE)`
 
 **`wind_sensor.gaussian_params.corr_xy`**
 
 - _Description_: The correlation coefficient between x and y components of
-  the wind velocity. Only used if `wind_sensor.generator_type` is `gaussian`.
+  the wind velocity. Only used if `wind_sensor.generator_type` is `gaussian`. Units m/s
 - _Datatype_: `double`
 - _Range_: `[-1.0, 1.0]`
 
@@ -291,7 +326,7 @@ ROS parameters specific to the nodes in the boat simulator.
 
 - _Description_: The mean wind velocity parameter in kmph for the gaussian
   generator. The mean is an array containing the `x` and `y` components of
-  the velocity. Only used if `wind_sensor.generator_type` is `gaussian`.
+  the velocity. Only used if `wind_sensor.generator_type` is `gaussian`. Units m/s
 - _Datatype_: `double` array, length 2
 - _Range_: `(MIN_DOUBLE, MAX_DOUBLE)`
 
@@ -300,7 +335,7 @@ ROS parameters specific to the nodes in the boat simulator.
 - _Description_: The standard deviation parameters in kmph for the gaussian
   generator. There are two standard deviations specified within an array: one
   for the `x` component, and one for the `y` component. Only used if
-  `wind_sensor.generator_type` is `gaussian`.
+  `wind_sensor.generator_type` is `gaussian`. Units: m/s
 - _Datatype_: `double` array, length 2
 - _Range_: `(0.0, MAX_DOUBLE)`
     - If a standard deviation of zero is desired, then consider using the
@@ -316,14 +351,14 @@ ROS parameters specific to the nodes in the boat simulator.
 **`wind_generation.mvgaussian_params.mean`**
 
 - _Description_: The mean value for the wind generated, expressed in
-  kilometers per hour (km/h), for the multivariate Gaussian generator.
+  kilometers per hour (m/s), for the multivariate Gaussian generator.
 - _Datatype_: `double` array, length 2
 - _Range_: `(0.0, MAX_DOUBLE)`
 
 **`wind_generation.mvgaussian_params.cov`**
 
 - _Description_: The covariance matrix for the generated wind, represented as
-  a string formatted as a 2D `double` array, since ROS parameters do not
+  a string formatted as a 2D (m/s) `double` array, since ROS parameters do not
   support native 2D array types.
 - _Datatype_: `string`
 - _Range_: `(0.0, MAX_DOUBLE)`
@@ -331,14 +366,14 @@ ROS parameters specific to the nodes in the boat simulator.
 **`current_generation.mvgaussian_params.mean`**
 
 - _Description_: The mean value for the current generated, expressed in
-  kilometers per hour (km/h), for the multivariate Gaussian generator.
+  kilometers per hour (m/s), for the multivariate Gaussian generator.
 - _Datatype_: `double` array, length 2
 - _Range_: `(0.0, MAX_DOUBLE)`
 
 **`current_generation.mvgaussian_params.cov`**
 
 - _Description_: The covariance matrix for the generated current, represented
-  as a string formatted as a 2D `double` array, since ROS parameters do not
+  as a string formatted as a 2D (m/s) `double` array, since ROS parameters do not
   support native 2D array types.
 - _Datatype_: `string`
 - _Range_: `(0.0, MAX_DOUBLE)`

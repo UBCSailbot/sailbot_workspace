@@ -6,7 +6,6 @@ from rclpy.node import Node
 from test_plans.test_plan import TestPlan
 
 import custom_interfaces.msg as ci
-import local_pathfinding.global_path as gp
 
 
 def main(args=None):
@@ -43,8 +42,6 @@ class MockGlobalPath(Node):
         self.declare_parameters(
             namespace="",
             parameters=[
-                ("global_path_interval_spacing_km", rclpy.Parameter.Type.DOUBLE),
-                ("gps_threshold", rclpy.Parameter.Type.DOUBLE),
                 ("test_plan", rclpy.Parameter.Type.STRING),
             ],
         )
@@ -63,6 +60,14 @@ class MockGlobalPath(Node):
 
         self.global_path = test_plan.global_path
 
+    @staticmethod
+    def _path_to_dict(path: ci.Path, num_decimals: int = 4) -> dict[int, str]:
+        """Converts a ci.Path msg to a dictionary suitable for logging."""
+        return {
+            i: f"({waypoint.latitude:.{num_decimals}f}, {waypoint.longitude:.{num_decimals}f})"
+            for i, waypoint in enumerate(path.waypoints)
+        }
+
     # Timer callbacks
     def global_path_callback(self, gps: ci.GPS):
         # Publish the test plan's global path exactly as defined. This node does not interpolate
@@ -70,7 +75,7 @@ class MockGlobalPath(Node):
         # waypoints provided in the test plan. The path is still published on every GPS message so
         # that node_navigate receives the waypoints even if this node launched first.
         msg = self.global_path
-        self.get_logger().debug(f"Publishing mock global path: {gp.path_to_dict(msg)}")
+        # self.get_logger().debug(f"Publishing mock global path: {self._path_to_dict(msg)}")
         self.global_path_pub.publish(msg)
 
 

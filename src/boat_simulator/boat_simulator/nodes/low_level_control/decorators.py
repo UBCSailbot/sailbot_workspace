@@ -42,6 +42,10 @@ class MutuallyExclusiveActionRoutine:
             f"An action of type {self.__action_type} is already active. Cancelling goal request"
         )
         goal_handle.abort()
+        # The execute callback must always return a Result message of the action's type; returning
+        # None (the implicit return here) makes rclpy raise "The 'result' field must be a sub
+        # message of type ..._Result" and crashes the action server.
+        return self.__action_type.Result()
 
     def __execute_action_routine(self, obj, func, *args, **kwargs):
         self.__set_active_flag(obj)
@@ -50,7 +54,9 @@ class MutuallyExclusiveActionRoutine:
             result = func(obj, *args, **kwargs)
         except RuntimeError:
             obj.get_logger().error(f"An unexpected error occurred in {func.__name__}")
-            result = None
+            # Return a valid (empty) Result rather than None so the action server doesn't crash
+            # with "The 'result' field must be a sub message of type ..._Result".
+            result = self.__action_type.Result()
 
         self.__unset_active_flag(obj)
         return result
