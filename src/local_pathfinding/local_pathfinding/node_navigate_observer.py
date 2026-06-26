@@ -92,7 +92,7 @@ class SailbotObserver(Node):
             msg (ci.LPathData): Contains all the Local Path Data for Visualization
         """
 
-        self.get_logger().debug(f"Received new local path message: {msg}")
+        # self.get_logger().debug(f"Received new local path message: {msg}")
         self.msg = msg
         if msg.replan_reason:
             self.last_replan_reason = msg.replan_reason

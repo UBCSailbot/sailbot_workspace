@@ -1,6 +1,7 @@
 """The main node of the local_pathfinding package, represented by the `Sailbot` class."""
 
 import csv
+import math
 import os
 import tempfile
 import traceback
@@ -17,6 +18,7 @@ from local_pathfinding.ompl_path import MAX_SOLVER_RUN_TIME_SEC
 
 GLOBAL_WAYPOINT_REACHED_THRESH_M = 300
 GPS_TIMEOUT_SEC = 120.0
+WAYPOINT_EQUAL_ABS_TOL_DEG = 1e-7
 NANOSEC_PER_SEC = 1_000_000_000
 MAIN_GP_FILE_PATH = "/workspaces/sailbot_workspace/src/local_pathfinding/local_pathfinding/global_path_storage/main_global_path.csv"  # noqa
 BACKUP_GP_FILE_PATH = "/workspaces/sailbot_workspace/src/local_pathfinding/local_pathfinding/global_path_storage/backup_global_path.csv"  # noqa
@@ -256,8 +258,18 @@ class Sailbot(Node):
     def _same_waypoints(left: list[ci.HelperLatLon], right: list[ci.HelperLatLon]) -> bool:
         """Return whether two waypoint lists describe the same global path."""
         return len(left) == len(right) and all(
-            left_waypoint.latitude == right_waypoint.latitude
-            and left_waypoint.longitude == right_waypoint.longitude
+            math.isclose(
+                left_waypoint.latitude,
+                right_waypoint.latitude,
+                rel_tol=0.0,
+                abs_tol=WAYPOINT_EQUAL_ABS_TOL_DEG,
+            )
+            and math.isclose(
+                left_waypoint.longitude,
+                right_waypoint.longitude,
+                rel_tol=0.0,
+                abs_tol=WAYPOINT_EQUAL_ABS_TOL_DEG,
+            )
             for left_waypoint, right_waypoint in zip(left, right)
         )
 
