@@ -23,9 +23,9 @@ BACKUP_GP_FILE_PATH = "/workspaces/sailbot_workspace/src/local_pathfinding/local
 
 """
 GlobalPath intentionally stays small: it is only the waypoint list, the current waypoint index,
-whether the path came from backup storage, and whether final-destination switch-back mode is active.
-Sailbot owns the higher-level policy around when a path is accepted, when sail should be disabled,
-and when the local planner needs to replan.
+whether the path came from backup storage, and whether final-destination switch-back mode is
+active. Sailbot owns the higher-level policy around when a path is accepted, when sail should be
+disabled, and when the local planner needs to replan.
 
 When a new global path comes from NET, we trust the waypoint ordering from network systems:
 index 0 is the final destination and len(waypoints) - 1 is the first target. Sailbot persists that
