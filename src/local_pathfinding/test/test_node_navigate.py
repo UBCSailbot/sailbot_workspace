@@ -27,6 +27,30 @@ class FakeLogger:
         return any(msg_level == level and text in msg for msg_level, msg in self.messages)
 
 
+class FakeLocalPath:
+    def __init__(self, update_calls: list[tuple[ci.HelperLatLon, bool, int]]) -> None:
+        self.path = ci.Path(waypoints=[make_waypoint(48.0, -122.0)])
+        self.update_calls = update_calls
+        self.fail_next = False
+
+    def update_if_needed(
+        self,
+        inputs: LocalPathInputs,
+        target_lp_wp_index: int,
+        received_new_global_waypoint: bool,
+    ) -> tuple[float, int]:
+        self.update_calls.append(
+            (
+                inputs.target_global_waypoint,
+                received_new_global_waypoint,
+                target_lp_wp_index,
+            )
+        )
+        if self.fail_next:
+            raise PathNotFoundError("unable to solve")
+        return 123.0, target_lp_wp_index
+
+
 def make_waypoint(latitude: float, longitude: float) -> ci.HelperLatLon:
     return ci.HelperLatLon(latitude=latitude, longitude=longitude)
 
@@ -66,6 +90,55 @@ def require_gp(sailbot: Sailbot) -> GlobalPath:
 
 def get_test_logger(sailbot: Sailbot) -> FakeLogger:
     return cast(FakeLogger, sailbot.get_logger())
+
+
+def install_successful_global_path_write(sailbot: Sailbot) -> list[ci.Path]:
+    write_calls: list[ci.Path] = []
+
+    def write_global_path_to_file(path: ci.Path) -> None:
+        write_calls.append(path)
+
+    setattr(sailbot, "_write_global_path_to_file", write_global_path_to_file)
+    return write_calls
+
+
+def install_forbidden_persisted_load(sailbot: Sailbot, reason: str) -> None:
+    def load_persisted_global_path() -> bool:
+        raise AssertionError(reason)
+
+    setattr(sailbot, "_load_persisted_global_path", load_persisted_global_path)
+
+
+def install_failing_global_path_write(sailbot: Sailbot, error: OSError) -> list[ci.Path]:
+    write_calls: list[ci.Path] = []
+
+    def write_global_path_to_file(path: ci.Path) -> None:
+        write_calls.append(path)
+        raise error
+
+    setattr(sailbot, "_write_global_path_to_file", write_global_path_to_file)
+    return write_calls
+
+
+def install_persisted_fallback_load(sailbot: Sailbot, fallback_path: ci.Path) -> list[bool]:
+    load_calls: list[bool] = []
+
+    def load_persisted_global_path() -> bool:
+        load_calls.append(True)
+        sailbot._set_gp(GlobalPath(waypoints=list(fallback_path.waypoints), index=2))
+        return True
+
+    setattr(sailbot, "_load_persisted_global_path", load_persisted_global_path)
+    return load_calls
+
+
+def install_local_path(
+    sailbot: Sailbot,
+) -> tuple[FakeLocalPath, list[tuple[ci.HelperLatLon, bool, int]]]:
+    update_calls: list[tuple[ci.HelperLatLon, bool, int]] = []
+    fake_local_path = FakeLocalPath(update_calls)
+    setattr(sailbot, "local_path", fake_local_path)
+    return fake_local_path, update_calls
 
 
 def test_new_global_path_starts_at_last_waypoint() -> None:
@@ -169,28 +242,7 @@ def test_reaching_final_global_waypoint_triggers_switch_back() -> None:
     sailbot.land_multi_polygon = None
     sailbot.target_lp_wp_index = 1
     sailbot.received_new_global_path = True
-    update_calls: list[tuple[ci.HelperLatLon, bool, int]] = []
-
-    class FakeLocalPath:
-        def __init__(self) -> None:
-            self.path = ci.Path(waypoints=[make_waypoint(48.0, -122.0)])
-
-        def update_if_needed(
-            self,
-            inputs: LocalPathInputs,
-            target_lp_wp_index: int,
-            received_new_global_waypoint: bool,
-        ) -> tuple[float, int]:
-            update_calls.append(
-                (
-                    inputs.target_global_waypoint,
-                    received_new_global_waypoint,
-                    target_lp_wp_index,
-                )
-            )
-            return 123.0, target_lp_wp_index
-
-    setattr(sailbot, "local_path", FakeLocalPath())
+    _, update_calls = install_local_path(sailbot)
 
     desired_heading, sail = sailbot.get_desired_heading()
 
@@ -221,16 +273,10 @@ def test_global_path_callback_success_replaces_gp_after_persisting() -> None:
     sailbot = make_sailbot_shell()
     sailbot.gp = GlobalPath(waypoints=list(existing_path.waypoints), index=1)
     sailbot.received_new_global_path = False
-    write_calls: list[ci.Path] = []
-
-    def write_global_path_to_file(path: ci.Path) -> None:
-        write_calls.append(path)
-
-    def load_persisted_global_path() -> bool:
-        raise AssertionError("persisted fallback should not be loaded after successful write")
-
-    setattr(sailbot, "_write_global_path_to_file", write_global_path_to_file)
-    setattr(sailbot, "_load_persisted_global_path", load_persisted_global_path)
+    write_calls = install_successful_global_path_write(sailbot)
+    install_forbidden_persisted_load(
+        sailbot, "persisted fallback should not be loaded after successful write"
+    )
 
     sailbot.global_path_callback(incoming_path)
 
@@ -250,16 +296,10 @@ def test_global_path_callback_new_path_clears_switch_back_mode() -> None:
     existing_gp.trigger_switch_back()
     sailbot.gp = existing_gp
     sailbot.received_new_global_path = False
-    write_calls: list[ci.Path] = []
-
-    def write_global_path_to_file(path: ci.Path) -> None:
-        write_calls.append(path)
-
-    def load_persisted_global_path() -> bool:
-        raise AssertionError("persisted fallback should not be loaded after successful write")
-
-    setattr(sailbot, "_write_global_path_to_file", write_global_path_to_file)
-    setattr(sailbot, "_load_persisted_global_path", load_persisted_global_path)
+    write_calls = install_successful_global_path_write(sailbot)
+    install_forbidden_persisted_load(
+        sailbot, "persisted fallback should not be loaded after successful write"
+    )
 
     sailbot.global_path_callback(incoming_path)
 
@@ -276,15 +316,14 @@ def test_global_path_callback_ignores_unchanged_active_main_path() -> None:
     sailbot = make_sailbot_shell()
     sailbot.gp = GlobalPath(waypoints=list(incoming_path.waypoints), index=1, is_backup=False)
     sailbot.received_new_global_path = False
+    install_forbidden_persisted_load(
+        sailbot, "persisted fallback should not be loaded for unchanged active path"
+    )
 
     def write_global_path_to_file(path: ci.Path) -> None:
         raise AssertionError("unchanged active path should not be persisted again")
 
-    def load_persisted_global_path() -> bool:
-        raise AssertionError("persisted fallback should not be loaded for unchanged active path")
-
     setattr(sailbot, "_write_global_path_to_file", write_global_path_to_file)
-    setattr(sailbot, "_load_persisted_global_path", load_persisted_global_path)
 
     sailbot.global_path_callback(incoming_path)
 
@@ -303,20 +342,8 @@ def test_global_path_callback_write_failure_uses_persisted_fallback() -> None:
     sailbot = make_sailbot_shell()
     sailbot.gp = GlobalPath(waypoints=list(existing_path.waypoints), index=1)
     sailbot.received_new_global_path = False
-    write_calls: list[ci.Path] = []
-    load_calls: list[bool] = []
-
-    def write_global_path_to_file(path: ci.Path) -> None:
-        write_calls.append(path)
-        raise OSError("disk full")
-
-    def load_persisted_global_path() -> bool:
-        load_calls.append(True)
-        sailbot._set_gp(GlobalPath(waypoints=list(fallback_path.waypoints), index=2))
-        return True
-
-    setattr(sailbot, "_write_global_path_to_file", write_global_path_to_file)
-    setattr(sailbot, "_load_persisted_global_path", load_persisted_global_path)
+    write_calls = install_failing_global_path_write(sailbot, OSError("disk full"))
+    load_calls = install_persisted_fallback_load(sailbot, fallback_path)
 
     sailbot.global_path_callback(incoming_path)
 
@@ -340,20 +367,14 @@ def test_global_path_callback_mixed_success_and_failure_sequence() -> None:
     sailbot.gp = GlobalPath(waypoints=list(path_a.waypoints), index=2)
     successful_writes: list[ci.Path] = []
     failing_paths = {id(path_c)}
-    load_calls: list[bool] = []
 
     def write_global_path_to_file(path: ci.Path) -> None:
         if id(path) in failing_paths:
             raise OSError("disk full")
         successful_writes.append(path)
 
-    def load_persisted_global_path() -> bool:
-        load_calls.append(True)
-        sailbot._set_gp(GlobalPath(waypoints=list(fallback_path.waypoints), index=2))
-        return True
-
     setattr(sailbot, "_write_global_path_to_file", write_global_path_to_file)
-    setattr(sailbot, "_load_persisted_global_path", load_persisted_global_path)
+    load_calls = install_persisted_fallback_load(sailbot, fallback_path)
 
     sailbot.global_path_callback(path_b)
     gp = require_gp(sailbot)
@@ -391,28 +412,7 @@ def test_new_global_path_signal_forces_replan_without_waypoint_advance() -> None
     sailbot.land_multi_polygon = None
     sailbot.target_lp_wp_index = 1
     sailbot.received_new_global_path = True
-    update_calls: list[tuple[ci.HelperLatLon, bool, int]] = []
-
-    class FakeLocalPath:
-        def __init__(self) -> None:
-            self.path = ci.Path(waypoints=[make_waypoint(48.0, -122.0)])
-
-        def update_if_needed(
-            self,
-            inputs: LocalPathInputs,
-            target_lp_wp_index: int,
-            received_new_global_waypoint: bool,
-        ) -> tuple[float, int]:
-            update_calls.append(
-                (
-                    inputs.target_global_waypoint,
-                    received_new_global_waypoint,
-                    target_lp_wp_index,
-                )
-            )
-            return 123.0, target_lp_wp_index
-
-    setattr(sailbot, "local_path", FakeLocalPath())
+    _, update_calls = install_local_path(sailbot)
 
     desired_heading, sail = sailbot.get_desired_heading()
 
@@ -437,32 +437,7 @@ def test_global_waypoint_change_success_then_failure_keeps_retry_signal() -> Non
     sailbot.land_multi_polygon = None
     sailbot.target_lp_wp_index = 1
     sailbot.received_new_global_path = False
-    update_calls: list[tuple[ci.HelperLatLon, bool, int]] = []
-
-    class FakeLocalPath:
-        def __init__(self) -> None:
-            self.path = ci.Path(waypoints=[make_waypoint(48.0, -122.0)])
-            self.fail_next = False
-
-        def update_if_needed(
-            self,
-            inputs: LocalPathInputs,
-            target_lp_wp_index: int,
-            received_new_global_waypoint: bool,
-        ) -> tuple[float, int]:
-            update_calls.append(
-                (
-                    inputs.target_global_waypoint,
-                    received_new_global_waypoint,
-                    target_lp_wp_index,
-                )
-            )
-            if self.fail_next:
-                raise PathNotFoundError("unable to solve")
-            return 123.0, target_lp_wp_index
-
-    fake_local_path = FakeLocalPath()
-    setattr(sailbot, "local_path", fake_local_path)
+    fake_local_path, update_calls = install_local_path(sailbot)
 
     desired_heading, sail = sailbot.get_desired_heading()
 
