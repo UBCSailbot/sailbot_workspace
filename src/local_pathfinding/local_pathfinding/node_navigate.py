@@ -1,6 +1,7 @@
 """The main node of the local_pathfinding package, represented by the `Sailbot` class."""
 
 import csv
+import math
 import os
 import tempfile
 import traceback
@@ -17,6 +18,7 @@ from local_pathfinding.ompl_path import MAX_SOLVER_RUN_TIME_SEC
 
 GLOBAL_WAYPOINT_REACHED_THRESH_M = 300
 GPS_TIMEOUT_SEC = 120.0
+WAYPOINT_EQUAL_ABS_TOL_DEG = 1e-7
 NANOSEC_PER_SEC = 1_000_000_000
 MAIN_GP_FILE_PATH = "/workspaces/sailbot_workspace/src/local_pathfinding/local_pathfinding/global_path_storage/main_global_path.csv"  # noqa
 BACKUP_GP_FILE_PATH = "/workspaces/sailbot_workspace/src/local_pathfinding/local_pathfinding/global_path_storage/backup_global_path.csv"  # noqa
@@ -59,10 +61,11 @@ the final two waypoints instead of disabling sail.
 
 Sailbot keeps a separate received_new_global_path flag as a one-shot bridge from path adoption to
 the next desired-heading tick. get_desired_heading() combines that flag with same-tick waypoint
-advancement into the received_new_global_waypoint argument passed to
-LocalPath.update_if_needed().
-The bridge flag is cleared only after a successful local-path update, or when no retryable
-local-path update remains.
+advancement into the received_new_global_waypoint argument passed to LocalPath.update_if_needed().
+Same-tick waypoint advancement is committed only after a successful local-path update, so a failed
+local plan cannot silently skip ahead through the global path. The bridge flag is cleared only after
+a successful local-path update, or when the global path is exhausted and no retryable local-path
+update remains.
 """
 
 
@@ -269,8 +272,18 @@ class Sailbot(Node):
     def _same_waypoints(left: list[ci.HelperLatLon], right: list[ci.HelperLatLon]) -> bool:
         """Return whether two waypoint lists describe the same global path."""
         return len(left) == len(right) and all(
-            left_waypoint.latitude == right_waypoint.latitude
-            and left_waypoint.longitude == right_waypoint.longitude
+            math.isclose(
+                left_waypoint.latitude,
+                right_waypoint.latitude,
+                rel_tol=0.0,
+                abs_tol=WAYPOINT_EQUAL_ABS_TOL_DEG,
+            )
+            and math.isclose(
+                left_waypoint.longitude,
+                right_waypoint.longitude,
+                rel_tol=0.0,
+                abs_tol=WAYPOINT_EQUAL_ABS_TOL_DEG,
+            )
             for left_waypoint, right_waypoint in zip(left, right)
         )
 
@@ -660,6 +673,7 @@ class Sailbot(Node):
         )
 
         received_new_global_waypoint = self.received_new_global_path
+        original_gp_index = self.gp.index
         if distance_to_waypoint_m < GLOBAL_WAYPOINT_REACHED_THRESH_M:
             received_new_global_waypoint = True
             if self.gp.switch_back_mode:
@@ -705,6 +719,7 @@ class Sailbot(Node):
             self.received_new_global_path = False
             return desired_heading, True
         except PathNotFoundError:
+            self.gp.index = original_gp_index
             self.received_new_global_path = received_new_global_waypoint
             self.get_logger().warning("Unable to generate a local path; disabling sail")
             self.local_path.path = ci.Path(waypoints=[])

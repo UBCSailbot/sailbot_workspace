@@ -75,7 +75,7 @@ class MockGlobalPath(Node):
         # waypoints provided in the test plan. The path is still published on every GPS message so
         # that node_navigate receives the waypoints even if this node launched first.
         msg = self.global_path
-        self.get_logger().debug(f"Publishing mock global path: {self._path_to_dict(msg)}")
+        # self.get_logger().debug(f"Publishing mock global path: {self._path_to_dict(msg)}")
         self.global_path_pub.publish(msg)
 
 
