@@ -201,6 +201,42 @@ def test_global_path_callback_ignores_unchanged_active_main_path() -> None:
     assert get_test_logger(sailbot).has_message("debug", "Received unchanged global path")
 
 
+def test_global_path_callback_ignores_active_main_path_with_float_jitter() -> None:
+    active_path = ci.Path(
+        waypoints=[
+            make_waypoint(49.00000001, -123.00000001),
+            make_waypoint(49.10000001, -123.10000001),
+        ]
+    )
+    incoming_path = ci.Path(
+        waypoints=[
+            make_waypoint(49.00000002, -123.00000002),
+            make_waypoint(49.10000002, -123.10000002),
+        ]
+    )
+    sailbot = make_sailbot_shell()
+    sailbot.gp = GlobalPath(waypoints=list(active_path.waypoints), index=1, is_backup=False)
+    sailbot.received_new_global_path = False
+
+    def write_global_path_to_file(path: ci.Path) -> None:
+        raise AssertionError("numerically unchanged active path should not be persisted again")
+
+    def load_persisted_global_path() -> bool:
+        raise AssertionError("persisted fallback should not be loaded for unchanged active path")
+
+    setattr(sailbot, "_write_global_path_to_file", write_global_path_to_file)
+    setattr(sailbot, "_load_persisted_global_path", load_persisted_global_path)
+
+    sailbot.global_path_callback(incoming_path)
+
+    gp = require_gp(sailbot)
+    assert waypoint_tuples(gp.waypoints) == waypoint_tuples(active_path.waypoints)
+    assert gp.index == 1
+    assert not gp.is_backup
+    assert not sailbot.received_new_global_path
+    assert get_test_logger(sailbot).has_message("debug", "Received unchanged global path")
+
+
 def test_global_path_callback_write_failure_uses_persisted_fallback() -> None:
     existing_path = make_path(49.0, -123.0)
     incoming_path = make_path(50.0, -124.0)
@@ -328,7 +364,7 @@ def test_new_global_path_signal_forces_replan_without_waypoint_advance() -> None
     assert not sailbot.received_new_global_path
 
 
-def test_global_waypoint_change_success_then_failure_keeps_retry_signal() -> None:
+def test_global_waypoint_change_failure_keeps_retry_signal_without_accepting_waypoint() -> None:
     waypoints = [
         make_waypoint(49.0, -123.0),
         make_waypoint(49.1, -123.1),
@@ -386,7 +422,14 @@ def test_global_waypoint_change_success_then_failure_keeps_retry_signal() -> Non
 
     assert desired_heading == 0.0
     assert not sail
-    assert require_gp(sailbot).index == 0
+    assert require_gp(sailbot).index == 1
     assert update_calls[-1] == (waypoints[0], True, 1)
     assert sailbot.received_new_global_path
     assert fake_local_path.path.waypoints == []
+
+    desired_heading, sail = sailbot.get_desired_heading()
+
+    assert desired_heading == 0.0
+    assert not sail
+    assert require_gp(sailbot).index == 1
+    assert update_calls[-1] == (waypoints[0], True, 1)
