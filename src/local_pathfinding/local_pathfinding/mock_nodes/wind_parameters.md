@@ -6,7 +6,16 @@ The mock nodes use true wind parameters (global frame) which are converted to
 apparent wind (boat frame) for testing. Both `mock_wind_sensor` and `mock_gps`
 nodes must have matching true wind parameters.
 
-## How to Change Parameters
+## How to Change Parameters through visualizer (recommended)
+
+Find the fields about (true) wind. Using the textbox,
+adjust the values and click "Apply wind".
+
+*Ensure that you specify both the true wind direction (in degrees) and
+true wind speed (in kmph). If you don't explicitly choose either of them,
+an unwanted value (usually 0) will be applied.*
+
+## How to Change Parameters (Through CLI)
 
 ### Step 1: Edit `wind_params.yaml`
 
