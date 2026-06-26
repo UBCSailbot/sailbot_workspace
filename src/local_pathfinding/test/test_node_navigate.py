@@ -242,6 +242,35 @@ def test_global_path_callback_success_replaces_gp_after_persisting() -> None:
     assert sailbot.received_new_global_path
 
 
+def test_global_path_callback_new_path_clears_switch_back_mode() -> None:
+    existing_path = make_path(49.0, -123.0)
+    incoming_path = make_path(50.0, -124.0)
+    sailbot = make_sailbot_shell()
+    existing_gp = GlobalPath(waypoints=list(existing_path.waypoints), index=0)
+    existing_gp.trigger_switch_back()
+    sailbot.gp = existing_gp
+    sailbot.received_new_global_path = False
+    write_calls: list[ci.Path] = []
+
+    def write_global_path_to_file(path: ci.Path) -> None:
+        write_calls.append(path)
+
+    def load_persisted_global_path() -> bool:
+        raise AssertionError("persisted fallback should not be loaded after successful write")
+
+    setattr(sailbot, "_write_global_path_to_file", write_global_path_to_file)
+    setattr(sailbot, "_load_persisted_global_path", load_persisted_global_path)
+
+    sailbot.global_path_callback(incoming_path)
+
+    gp = require_gp(sailbot)
+    assert write_calls == [incoming_path]
+    assert waypoint_tuples(gp.waypoints) == waypoint_tuples(incoming_path.waypoints)
+    assert gp.index == len(incoming_path.waypoints) - 1
+    assert not gp.switch_back_mode
+    assert sailbot.received_new_global_path
+
+
 def test_global_path_callback_ignores_unchanged_active_main_path() -> None:
     incoming_path = make_path(50.0, -124.0)
     sailbot = make_sailbot_shell()
