@@ -246,6 +246,35 @@ TEST_F(TestCanFrameParser, TestDesiredHeadingInvalid)
 }
 
 /**
+ * @brief Test that the DesiredHeading sail flag correctly sets the steering enable bit (bit b) on the
+ *        outgoing CAN frame. If sail = false, it should set the enable bit to 1 (to disable steering).
+ *
+ */
+TEST_F(TestCanFrameParser, DesiredHeadingSailTestValid)
+{
+    constexpr uint8_t STEERING_ENABLE_BIT = 0b01000000;  //NOLINT(readability-magic-numbers)
+    CAN_FP::CanId     id                  = CAN_FP::CanId::MAIN_HEADING;
+
+    for (bool sail : {true, false}) {
+        msg::HelperHeading helper_msg;
+        helper_msg.set__heading(45);  //NOLINT(readability-magic-numbers)
+        msg::DesiredHeading msg;
+        msg.set__heading(helper_msg);
+        msg.set__sail(sail);
+
+        CAN_FP::DesiredHeading heading_from_ros = CAN_FP::DesiredHeading(msg, id);
+        CAN_FP::CanFrame       cf               = heading_from_ros.toLinuxCan();
+
+        uint8_t raw_steering;
+        std::memcpy(&raw_steering, cf.data + CAN_FP::DesiredHeading::BYTE_OFF_STEERING, sizeof(uint8_t));
+
+        // sail == false => enable bit set to 1 (give up steering)
+        // sail == true => enable bit set to 0 (regular steering operations)
+        EXPECT_EQ((raw_steering & STEERING_ENABLE_BIT) != 0, !sail);
+    }
+}
+
+/**
  * @brief Test ROS<->CAN RudderData translations work as expected for valid input values
  *
  */

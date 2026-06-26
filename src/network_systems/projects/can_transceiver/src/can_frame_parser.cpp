@@ -773,6 +773,11 @@ DesiredHeading::DesiredHeading(msg::DesiredHeading ros_desired_heading, CanId id
       : utils::boundTo360(ros_desired_heading.heading.heading)),
   steering_(ros_desired_heading.steering)
 {
+    // Set steering enable bit based on the sail flag in the ROS message
+    uint8_t steering_disabled_bit_mask = 0b01000000;  //NOLINT(readability-magic-numbers)
+    if (!ros_desired_heading.sail) {
+        steering_ |= steering_disabled_bit_mask;
+    }
     checkBounds();
 }
 
