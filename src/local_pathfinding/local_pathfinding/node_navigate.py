@@ -56,8 +56,10 @@ zero, the global path is exhausted and Sailbot disables sail instead of cycling 
 Sailbot keeps a separate received_new_global_path flag as a one-shot bridge from path adoption to
 the next desired-heading tick. get_desired_heading() combines that flag with same-tick waypoint
 advancement into the received_new_global_waypoint argument passed to LocalPath.update_if_needed().
-The bridge flag is cleared only after a successful local-path update, or when the global path is
-exhausted and no retryable local-path update remains.
+Same-tick waypoint advancement is committed only after a successful local-path update, so a failed
+local plan cannot silently skip ahead through the global path. The bridge flag is cleared only after
+a successful local-path update, or when the global path is exhausted and no retryable local-path
+update remains.
 """
 
 
@@ -645,6 +647,7 @@ class Sailbot(Node):
         )
 
         received_new_global_waypoint = self.received_new_global_path
+        original_gp_index = self.gp.index
         if distance_to_waypoint_m < GLOBAL_WAYPOINT_REACHED_THRESH_M:
             received_new_global_waypoint = True
             if not self.gp.advance_waypoint():
@@ -682,6 +685,7 @@ class Sailbot(Node):
             self.received_new_global_path = False
             return desired_heading, True
         except PathNotFoundError:
+            self.gp.index = original_gp_index
             self.received_new_global_path = received_new_global_waypoint
             self.get_logger().warning("Unable to generate a local path; disabling sail")
             self.local_path.path = ci.Path(waypoints=[])

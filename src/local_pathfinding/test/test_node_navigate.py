@@ -328,7 +328,7 @@ def test_new_global_path_signal_forces_replan_without_waypoint_advance() -> None
     assert not sailbot.received_new_global_path
 
 
-def test_global_waypoint_change_success_then_failure_keeps_retry_signal() -> None:
+def test_global_waypoint_change_failure_keeps_retry_signal_without_accepting_waypoint() -> None:
     waypoints = [
         make_waypoint(49.0, -123.0),
         make_waypoint(49.1, -123.1),
@@ -386,7 +386,14 @@ def test_global_waypoint_change_success_then_failure_keeps_retry_signal() -> Non
 
     assert desired_heading == 0.0
     assert not sail
-    assert require_gp(sailbot).index == 0
+    assert require_gp(sailbot).index == 1
     assert update_calls[-1] == (waypoints[0], True, 1)
     assert sailbot.received_new_global_path
     assert fake_local_path.path.waypoints == []
+
+    desired_heading, sail = sailbot.get_desired_heading()
+
+    assert desired_heading == 0.0
+    assert not sail
+    assert require_gp(sailbot).index == 1
+    assert update_calls[-1] == (waypoints[0], True, 1)
