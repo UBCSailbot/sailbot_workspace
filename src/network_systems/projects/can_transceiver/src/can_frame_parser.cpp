@@ -447,7 +447,7 @@ void GPS::checkBounds() const
 
 AISShips::AISShips(const CanFrame & cf) : AISShips(static_cast<CanId>(cf.can_id))
 {
-    uint32_t raw_id;  // CAN documentation says id is uint32, but custom interfaces says its int32
+    uint32_t raw_id;
     uint32_t raw_lat;
     uint32_t raw_lon;
     uint16_t raw_speed;
@@ -828,8 +828,8 @@ void DesiredHeading::checkBounds() const
 {
     uint8_t steering_selection_bit_mask = 0b10000000;  //NOLINT(readability-magic-numbers)
     bool    is_rudder_mode              = (steering_ & steering_selection_bit_mask) != 0;
-    float   heading_lbnd               = is_rudder_mode ? RUDDER_ANGLE_LBND : HEADING_LBND;
-    float   heading_ubnd               = is_rudder_mode ? RUDDER_ANGLE_UBND : HEADING_UBND;
+    float   heading_lbnd                = is_rudder_mode ? RUDDER_ANGLE_LBND : HEADING_LBND;
+    float   heading_ubnd                = is_rudder_mode ? RUDDER_ANGLE_UBND : HEADING_UBND;
 
     uint8_t bit_mask = 0b00011111;  //NOLINT(readability-magic-numbers)
     auto    err      = utils::isOutOfBounds<float>(heading_, heading_lbnd, heading_ubnd);
