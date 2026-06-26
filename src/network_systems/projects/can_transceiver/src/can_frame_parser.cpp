@@ -164,7 +164,7 @@ MainTrimTab::MainTrimTab(const CanFrame & cf) : MainTrimTab(static_cast<CanId>(c
 
     std::memcpy(&raw_angle, cf.data + BYTE_OFF_ANGLE, sizeof(uint32_t));
 
-    angle_ = static_cast<float>(raw_angle) / 1000;  //NOLINT(readability-magic-numbers)
+    angle_ = static_cast<float>(raw_angle) / 1000 - 90;  //NOLINT(readability-magic-numbers)
 
     checkBounds();
 }
@@ -767,7 +767,10 @@ DesiredHeading::DesiredHeading(const CanFrame & cf) : DesiredHeading(static_cast
 
 DesiredHeading::DesiredHeading(msg::DesiredHeading ros_desired_heading, CanId id)
 : BaseFrame(id, CAN_BYTE_DLEN_),
-  heading_(utils::boundTo360(ros_desired_heading.heading.heading)),
+  heading_(
+    (ros_desired_heading.steering & 0b10000000) != 0  //NOLINT(readability-magic-numbers)
+      ? ros_desired_heading.heading.heading
+      : utils::boundTo360(ros_desired_heading.heading.heading)),
   steering_(ros_desired_heading.steering)
 {
     checkBounds();
@@ -823,8 +826,13 @@ DesiredHeading::DesiredHeading(CanId id) : BaseFrame(std::span{DESIRED_HEADING_I
 
 void DesiredHeading::checkBounds() const
 {
+    uint8_t steering_selection_bit_mask = 0b10000000;  //NOLINT(readability-magic-numbers)
+    bool    is_rudder_mode              = (steering_ & steering_selection_bit_mask) != 0;
+    float   heading_lbnd               = is_rudder_mode ? RUDDER_ANGLE_LBND : HEADING_LBND;
+    float   heading_ubnd               = is_rudder_mode ? RUDDER_ANGLE_UBND : HEADING_UBND;
+
     uint8_t bit_mask = 0b00011111;  //NOLINT(readability-magic-numbers)
-    auto    err      = utils::isOutOfBounds<float>(heading_, HEADING_LBND, HEADING_UBND);
+    auto    err      = utils::isOutOfBounds<float>(heading_, heading_lbnd, heading_ubnd);
     if (err) {
         std::string err_msg = err.value();
         throw std::out_of_range("Desired heading is out of bounds!\n" + debugStr() + "\n" + err_msg);
@@ -866,7 +874,7 @@ msg::HelperHeading RudderData::toRosMsg() const
 
 CanFrame RudderData::toLinuxCan() const
 {
-    uint32_t raw_heading = static_cast<uint32_t>(heading_) * 1000;  //NOLINT(readability-magic-numbers)
+    uint32_t raw_heading = static_cast<uint32_t>(heading_ * 1000);  //NOLINT(readability-magic-numbers)
 
     CanFrame cf = BaseFrame::toLinuxCan();
     std::memcpy(cf.data + BYTE_OFF_HEADING, &raw_heading, sizeof(uint32_t));
