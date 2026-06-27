@@ -204,6 +204,34 @@ private:
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_check_signal_quality_;
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_receive_and_pub_;
 
+    static constexpr double MIN_LATITUDE_DEG  = -90.0;
+    static constexpr double MAX_LATITUDE_DEG  = 90.0;
+    static constexpr double MIN_LONGITUDE_DEG = -180.0;
+    static constexpr double MAX_LONGITUDE_DEG = 180.0;
+
+    bool validatePathMsg(const custom_interfaces::msg::Path & msg)
+    {
+        if (msg.waypoints.empty()) {
+            RCLCPP_ERROR(this->get_logger(), "Received path message is empty");
+            return false;
+        }
+
+        return std::ranges::all_of(msg.waypoints, [this](const auto & waypoint) {
+            if (waypoint.latitude < MIN_LATITUDE_DEG || waypoint.latitude > MAX_LATITUDE_DEG) {
+                RCLCPP_ERROR(
+                  this->get_logger(), "Invalid latitude value: %f. Must be between -90 and 90.", waypoint.latitude);
+                return false;
+            }
+
+            if (waypoint.longitude < MIN_LONGITUDE_DEG || waypoint.longitude > MAX_LONGITUDE_DEG) {
+                RCLCPP_ERROR(
+                  this->get_logger(), "Invalid longitude value: %f. Must be between -180 and 180.", waypoint.longitude);
+                return false;
+            }
+            return true;
+        });
+    }
+
     /**
      * @brief Callback function to publish to onboard ROS network
      *
@@ -211,6 +239,10 @@ private:
     void pub_cb(/*placeholder*/)
     {
         custom_interfaces::msg::Path msg = lcl_trns_->receive();
+        if (!validatePathMsg(msg)) {
+            RCLCPP_ERROR(this->get_logger(), "Received invalid path message, not publishing.");
+            return;
+        }
         pub_->publish(msg);
     }
 

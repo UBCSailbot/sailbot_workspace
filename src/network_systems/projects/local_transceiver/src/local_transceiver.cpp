@@ -14,6 +14,8 @@
 #include <custom_interfaces/msg/gps.hpp>
 #include <custom_interfaces/msg/l_path_data.hpp>
 #include <custom_interfaces/msg/wind_sensors.hpp>
+#include <algorithm>
+#include <cmath>
 #include <exception>
 #include <regex>
 #include <stdexcept>
@@ -31,6 +33,23 @@
 using boost::system::error_code;
 using Polaris::Sensors;
 namespace bio = boost::asio;
+
+namespace
+{
+constexpr double MIN_LATITUDE_DEG  = -90.0;
+constexpr double MAX_LATITUDE_DEG  = 90.0;
+constexpr double MIN_LONGITUDE_DEG = -180.0;
+constexpr double MAX_LONGITUDE_DEG = 180.0;
+
+bool isValidPathMsg(const custom_interfaces::msg::Path & path)
+{
+    return std::ranges::all_of(path.waypoints, [](const auto & waypoint) {
+        return std::isfinite(waypoint.latitude) && std::isfinite(waypoint.longitude) &&
+               waypoint.latitude >= MIN_LATITUDE_DEG && waypoint.latitude <= MAX_LATITUDE_DEG &&
+               waypoint.longitude >= MIN_LONGITUDE_DEG && waypoint.longitude <= MAX_LONGITUDE_DEG;
+    });
+}
+}  // namespace
 
 void LocalTransceiver::updateSensor(msg::GPS gps)
 {
@@ -589,6 +608,12 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
     std::future<void> fut = std::async(std::launch::async, cacheGlobalWaypoints, receivedDataBuffer);
 
     custom_interfaces::msg::Path to_publish = parseInMsg(receivedDataBuffer);
+    if (!isValidPathMsg(to_publish)) {
+        if (log_error_) {
+            log_error_("Received invalid global path; publishing an empty path instead.");
+        }
+        to_publish.waypoints.clear();
+    }
 
     fut.get();
     return to_publish;
