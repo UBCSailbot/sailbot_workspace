@@ -225,7 +225,6 @@ def make_goal_monitor_node(plan: TestPlanInfo, goal_threshold_m: float):
 
         def local_path_callback(self, msg: ci.LPathData) -> None:
             self.remaining_local_waypoints = int(msg.remaining_waypoints)
-            print(f"Remaining local waypoints: {self.remaining_local_waypoints}")
 
         def gps_callback(self, msg: ci.GPS) -> None:
             boat_latlon = ci.HelperLatLon(latitude=msg.lat_lon.latitude,
@@ -288,6 +287,68 @@ def stop_process_group(process: subprocess.Popen, grace_sec: float = 15.0) -> No
     process.wait()
 
 
+def format_duration(seconds: float) -> str:
+    """Format the duration in seconds as HH:MM:SS."""
+    seconds = max(0, int(seconds))
+    hours, remainder = divmod(seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+
+
+def format_distance(distance_meters: float | None) -> str:
+    """Format the distance in meters, using kilometers for distances of at least one kilometer."""
+    if distance_meters is None:
+        return "--"
+    if distance_meters >= 1000:
+        return f"{distance_meters / 1000:.2f} km"
+    return f"{distance_meters:.0f} m"
+
+
+def format_speed(speed_kmph: float | None) -> str:
+    """Format a speed in kilometers per hour."""
+    if speed_kmph is None:
+        return "--"
+    return f"{speed_kmph:.2f} km/h"
+
+
+def update_progress_display(
+    plan: TestPlanInfo,
+    monitor: Any,
+    test_number: int,
+    total_tests: int,
+    timeout_sec: float,
+    test_start_monotonic_sec: float,
+    curr_monotonic_sec: float,
+    progress_update_monotonic_sec: float,
+    previous_status_length: int,
+) -> tuple[float, int]:
+    """
+    Updates the progress line when the status update interval has elapsed.
+
+    Returns the most recent progress update time and status line length for use in the next
+    update.
+    """
+    if (curr_monotonic_sec - progress_update_monotonic_sec <= STATUS_UPDATE_INTERVAL_SEC):
+        return progress_update_monotonic_sec, previous_status_length
+
+    elapsed_time = curr_monotonic_sec - test_start_monotonic_sec
+    remaining_global_waypoints = max(monitor.current_waypoint_index + 1, 0)
+    status_line = (
+        f"[{test_number}/{total_tests}] {plan.name} | "
+        f"Elapsed: {format_duration(elapsed_time)} / {format_duration(timeout_sec)} | "
+        f"Remaining Local Waypoints: {monitor.remaining_local_waypoints or 0} | "
+        f"Remaining Global Waypoints: {remaining_global_waypoints} / "
+        f"{len(plan.global_waypoints)}| "
+        f"Active Global Waypoint Dist.: {format_distance(monitor.last_distance_m)} | "
+        f"Total Route left: {format_distance(monitor.remaining_route_distance_m)} | "
+        f"Boat Speed: {format_speed(monitor.boat_speed_kmph)}"
+    )
+    clear_padding = " " * max(previous_status_length - len(status_line), 0)
+    print(f"\r{status_line}{clear_padding}", end="", flush=True)
+
+    return curr_monotonic_sec, len(status_line)
+
+
 def run_test_plan(
     args: argparse.Namespace,
     workspace: Path,
@@ -318,8 +379,8 @@ def run_test_plan(
     ros_launch_log_path = result_dir / "launch.log"
 
     timeout_sec = args.timeout_hours * 3600
-    started_at = datetime.now().isoformat(timespec="seconds")
-    started_monotonic = time.monotonic()
+    test_plan_start_time = datetime.now().isoformat(timespec="seconds")
+    test_start_monotonic_sec = time.monotonic()
 
     result_dir.mkdir(parents=True, exist_ok=True)
 
@@ -332,7 +393,7 @@ def run_test_plan(
     status = "UNKNOWN"
     reason = ""
     return_code: int | None = None
-    last_status_update_monotonic = 0.0
+    progress_update_monotonic_sec = 0.0
     previous_status_length = 0
 
     try:
@@ -346,7 +407,7 @@ def run_test_plan(
             while True:
                 rclpy.spin_once(monitor, timeout_sec=1.0)
                 return_code = launch_process.poll()
-                now_monotonic = time.monotonic()
+                curr_monotonic_sec = time.monotonic()
 
                 if monitor.completed:
                     status = "COMPLETED"
@@ -363,30 +424,26 @@ def run_test_plan(
                     )
                     break
 
-                if (time.monotonic() - started_monotonic) > timeout_sec:
+                if (curr_monotonic_sec - test_start_monotonic_sec) > timeout_sec:
                     status = "TIMEOUT"
                     reason = f"Test plan exceeded timeout of {args.timeout_hours:g} hours."
                     stop_process_group(launch_process)
                     return_code = launch_process.poll()
                     break
 
-                if (now_monotonic - last_status_update_monotonic) > STATUS_UPDATE_INTERVAL_SEC:
-                    elapsed_time = now_monotonic - started_monotonic
-                    remaining_global_waypoints = max(monitor.current_waypoint_index + 1, 0)
-                    status_line = (
-                        f"[{test_number}/{total_tests}] {plan.name} | "
-                        f"Elasped: {elapsed_time:.1f}s / {timeout_sec:.1f}s | "
-                        f"Remaining Local Waypoints: {monitor.remaining_local_waypoints or 0} | "
-                        f"Remaining Global Waypoints: {remaining_global_waypoints} | "
-                        f"Active Global Waypoint Dist.: {monitor.last_distance_m or 0:.1f} m | "
-                        f"Total Route left: {monitor.remaining_route_distance_m or 0:.1f} m | "
-                        f"Boat Speed: {monitor.boat_speed_kmph or 0:.1f} km/h"
+                progress_update_monotonic_sec, previous_status_length = (
+                    update_progress_display(
+                        plan=plan,
+                        monitor=monitor,
+                        test_number=test_number,
+                        total_tests=total_tests,
+                        timeout_sec=timeout_sec,
+                        test_start_monotonic_sec=test_start_monotonic_sec,
+                        curr_monotonic_sec=curr_monotonic_sec,
+                        progress_update_monotonic_sec=progress_update_monotonic_sec,
+                        previous_status_length=previous_status_length,
                     )
-                    # Print the status line, overwriting the previous_status_length
-                    clear_padding = " " * max(previous_status_length - len(status_line), 0)
-                    print(f"\r{status_line}{clear_padding}", end="", flush=True)
-                    previous_status_length = len(status_line)
-                    last_status_update_monotonic = now_monotonic
+                )
     except KeyboardInterrupt:
         print("\nKeyboardInterrupt received. Terminating test plan...")
         status = "INTERRUPTED"
@@ -397,12 +454,12 @@ def run_test_plan(
     finally:
         monitor.destroy_node()
     ended_at = datetime.now().isoformat(timespec="seconds")
-    duration_sec = time.monotonic() - started_monotonic
+    duration_sec = time.monotonic() - test_start_monotonic_sec
     result = {
         "test": plan.name,
         "status": status,
         "reason": reason,
-        "started_at": started_at,
+        "test_plan_start_time": test_plan_start_time,
         "ended_at": ended_at,
         "duration_sec": round(duration_sec, 3),
         "return_code": return_code,
