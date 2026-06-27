@@ -16,7 +16,7 @@ from rclpy.node import Node
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, TextIO
 
 import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
@@ -203,7 +203,7 @@ def make_goal_monitor_node(plan: TestPlanInfo, goal_threshold_m: float):
     is considered reached when the boat is within goal_threshold_m meters of it.
     """
     class GoalMonitor(Node):
-        def __init__(self):
+        def __init__(self) -> None:
             node_name = f"test_plan_goal_monitor_{plan.path.stem}"
             super().__init__(node_name=node_name)
             self.current_waypoint_index = len(plan.global_waypoints) - 1
@@ -287,6 +287,16 @@ def stop_process_group(process: subprocess.Popen, grace_sec: float = 15.0) -> No
     process.wait()
 
 
+def find_ros_process_crash(ros_launch_log: TextIO) -> str | None:
+    """
+    Read newly appended terminal output log lines and return the first ROS process crash message.
+    """
+    while line := ros_launch_log.readline():
+        if "process has died" in line and "exit code" in line:
+            return line.strip()
+    return None
+
+
 def format_duration(seconds: float) -> str:
     """Format the duration in seconds as HH:MM:SS."""
     seconds = max(0, int(seconds))
@@ -335,11 +345,10 @@ def update_progress_display(
     remaining_global_waypoints = max(monitor.current_waypoint_index + 1, 0)
     status_line = (
         f"[{test_number}/{total_tests}] {plan.name} | "
-        f"Elapsed: {format_duration(elapsed_time)} / {format_duration(timeout_sec)} | "
+        f"Elapsed: {format_duration(elapsed_time)}/{format_duration(timeout_sec)} | "
         f"Remaining Local Waypoints: {monitor.remaining_local_waypoints or 0} | "
-        f"Remaining Global Waypoints: {remaining_global_waypoints} / "
-        f"{len(plan.global_waypoints)}| "
-        f"Active Global Waypoint Dist.: {format_distance(monitor.last_distance_m)} | "
+        f"Remaining Global Waypoints: {remaining_global_waypoints}/{len(plan.global_waypoints)}| "
+        f"Current Global Waypoint Dist.: {format_distance(monitor.last_distance_m)} | "
         f"Total Route left: {format_distance(monitor.remaining_route_distance_m)} | "
         f"Boat Speed: {format_speed(monitor.boat_speed_kmph)}"
     )
@@ -397,7 +406,10 @@ def run_test_plan(
     previous_status_length = 0
 
     try:
-        with ros_launch_log_path.open("w", buffering=1) as ros_launch_log:
+        with (
+            ros_launch_log_path.open("w", buffering=1) as ros_launch_log,
+            ros_launch_log_path.open("r") as ros_launch_log_reader,
+        ):
             launch_process = subprocess.Popen(
                 launch_command,
                 stdout=ros_launch_log,
@@ -408,6 +420,14 @@ def run_test_plan(
                 rclpy.spin_once(monitor, timeout_sec=1.0)
                 return_code = launch_process.poll()
                 curr_monotonic_sec = time.monotonic()
+
+                crash_message = find_ros_process_crash(ros_launch_log_reader)
+                if crash_message:
+                    status = "FAILED"
+                    reason = f"ROS process crashed: {crash_message}"
+                    stop_process_group(launch_process)
+                    return_code = launch_process.poll()
+                    break
 
                 if monitor.completed:
                     status = "COMPLETED"
@@ -455,6 +475,7 @@ def run_test_plan(
         monitor.destroy_node()
     ended_at = datetime.now().isoformat(timespec="seconds")
     duration_sec = time.monotonic() - test_start_monotonic_sec
+    store_ros_launch_log = status not in {"COMPLETED", "TIMEOUT"}
     result = {
         "test": plan.name,
         "status": status,
@@ -466,7 +487,7 @@ def run_test_plan(
         "save_path": save_path,
         "result_path": str(result_path),
         "ros_launch_log_path": str(ros_launch_log_path),
-        "ros_launch_log_stored": status != "COMPLETED",
+        "ros_launch_log_stored": store_ros_launch_log,
         "last_target_waypoint_index": monitor.current_waypoint_index,
         "last_distance_m": monitor.last_distance_m,
         "remaining_route_distance_m": monitor.remaining_route_distance_m,
@@ -474,7 +495,7 @@ def run_test_plan(
         "command": launch_command,
     }
     write_result(result_path, result)
-    if status == "COMPLETED":
+    if not store_ros_launch_log:
         try:
             ros_launch_log_path.unlink()
         except FileNotFoundError:
