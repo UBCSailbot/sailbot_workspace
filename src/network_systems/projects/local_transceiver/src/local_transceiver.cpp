@@ -512,15 +512,15 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
 
         AT::SBDStatusRsp rsp(sbdix_value);
 
-        if (rsp.MO_status_ == 0) {
-            if (rsp.MT_status_ == 0) {
-                return parseInMsg("-1");
-            } else if (rsp.MT_status_ == 1) {  //NOLINT
-                break;
-            } else if (rsp.MT_status_ == 2) {
-                continue;
-            }
-        } else {
+        if (rsp.MO_status_ != 0) {
+            continue;
+        }
+
+        if (rsp.MT_status_ == 0) {
+            return parseInMsg("-1");
+        } else if (rsp.MT_status_ == 1) {  //NOLINT
+            break;
+        } else if (rsp.MT_status_ == 2) {
             continue;
         }
     }
@@ -568,7 +568,29 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
     custom_interfaces::msg::Path to_publish = parseInMsg(receivedDataBuffer);
 
     fut.get();
-    return to_publish;
+
+    if (validateGlobalPathWayPoints(to_publish)) {
+        return to_publish;
+    }
+
+    return parseInMsg("-1");
+}
+
+bool LocalTransceiver::validateGlobalPathWayPoints(const custom_interfaces::msg::Path & path_to_publish)
+{
+    if (path_to_publish.waypoints.empty()) {
+        return false;
+    }
+
+    for (const auto & waypoint : path_to_publish.waypoints) {  //NOLINT
+        if (
+          (waypoint.latitude < -90.0 || waypoint.latitude > 90.0) ||      //NOLINT(readability-magic-numbers)
+          (waypoint.longitude < -180.0 || waypoint.longitude > 180.0)) {  //NOLINT(readability-magic-numbers)
+            return false;
+        }
+    }
+
+    return true;
 }
 
 bool LocalTransceiver::send(const AT::Line & cmd)
