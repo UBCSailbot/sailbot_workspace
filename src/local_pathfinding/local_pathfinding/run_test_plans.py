@@ -9,18 +9,17 @@ import random
 import signal
 import subprocess
 import time
-import yaml
-import rclpy
-
-from rclpy.node import Node
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any, TextIO
 
+import rclpy
+import yaml
+from rclpy.node import Node
+
 import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
-
 
 DEFAULT_TEST_COUNT = 5
 DEFAULT_TIMEOUT_HOURS = 5.0
@@ -38,12 +37,11 @@ class TestPlanInfo:
 
 
 def parse_waypoints(path: Path) -> tuple[ci.HelperLatLon, ...]:
-    """Read the global waypoint list from a test plan's YAML file.
-    """
+    """Read the global waypoint list from a test plan's YAML file."""
     with path.open("r") as file:
         data = yaml.safe_load(file)
     data = data or {}
-    global_path = data.get("global_path")
+    global_path = data["global_path"]
     global_waypoints = global_path["waypoints"]
 
     parsed_waypoints: list[ci.HelperLatLon] = []
@@ -127,8 +125,10 @@ def resolve_test_plans(
     if target_count < 1 or target_count > len(plans):
         raise ValueError(f"--num_tests must be between 1 and {len(plans)}")
     if len(selected) > target_count:
-        raise ValueError(f"Selected {len(selected)} tests, but --num_tests is {target_count}. "
-                         "Increase --num_tests or select fewer tests.")
+        raise ValueError(
+            f"Selected {len(selected)} tests, but --num_tests is {target_count}. "
+            "Increase --num_tests or select fewer tests."
+        )
     random_seed = random.Random(seed)
     selected_test_names = {plan.name for plan in selected}
     remaining_test_names = [plan for plan in plans if plan.name not in selected_test_names]
@@ -181,7 +181,7 @@ def distance_m(x: ci.HelperLatLon, y: ci.HelperLatLon) -> float:
 def remaining_total_distance(
     boat_position: ci.HelperLatLon,
     waypoints: tuple[ci.HelperLatLon, ...],
-    current_waypoint_index: int
+    current_waypoint_index: int,
 ) -> float:
     """
     Returns the total distance (in meters) from the boat's current position to the final global
@@ -202,6 +202,7 @@ def make_goal_monitor_node(plan: TestPlanInfo, goal_threshold_m: float):
     and marks the test complete once the boat reaches the final global waypoint. A waypoint
     is considered reached when the boat is within goal_threshold_m meters of it.
     """
+
     class GoalMonitor(Node):
         def __init__(self) -> None:
             node_name = f"test_plan_goal_monitor_{plan.path.stem}"
@@ -220,15 +221,16 @@ def make_goal_monitor_node(plan: TestPlanInfo, goal_threshold_m: float):
                 msg_type=ci.LPathData,
                 topic="local_path",
                 callback=self.local_path_callback,
-                qos_profile=10
+                qos_profile=10,
             )
 
         def local_path_callback(self, msg: ci.LPathData) -> None:
             self.remaining_local_waypoints = int(msg.remaining_waypoints)
 
         def gps_callback(self, msg: ci.GPS) -> None:
-            boat_latlon = ci.HelperLatLon(latitude=msg.lat_lon.latitude,
-                                          longitude=msg.lat_lon.longitude)
+            boat_latlon = ci.HelperLatLon(
+                latitude=msg.lat_lon.latitude, longitude=msg.lat_lon.longitude
+            )
             self.last_gps_at_monotonic = time.monotonic()
             self.boat_speed_kmph = float(msg.speed.speed)
 
@@ -237,9 +239,7 @@ def make_goal_monitor_node(plan: TestPlanInfo, goal_threshold_m: float):
                 self.last_distance_m = distance_m(boat_latlon, target_waypoint)
                 if self.last_distance_m >= goal_threshold_m:
                     self.remaining_route_distance_m = remaining_total_distance(
-                        boat_latlon,
-                        plan.global_waypoints,
-                        self.current_waypoint_index
+                        boat_latlon, plan.global_waypoints, self.current_waypoint_index
                     )
                     return
                 self.get_logger().debug(
@@ -253,6 +253,7 @@ def make_goal_monitor_node(plan: TestPlanInfo, goal_threshold_m: float):
                 self.current_waypoint_index -= 1
             self.last_distance_m = 0.0
             self.remaining_route_distance_m = 0.0
+
     return GoalMonitor()
 
 
@@ -338,7 +339,7 @@ def update_progress_display(
     Returns the most recent progress update time and status line length for use in the next
     update.
     """
-    if (curr_monotonic_sec - progress_update_monotonic_sec <= STATUS_UPDATE_INTERVAL_SEC):
+    if curr_monotonic_sec - progress_update_monotonic_sec <= STATUS_UPDATE_INTERVAL_SEC:
         return progress_update_monotonic_sec, previous_status_length
 
     elapsed_time = curr_monotonic_sec - test_start_monotonic_sec
@@ -439,8 +440,8 @@ def run_test_plan(
                 if return_code is not None:
                     status = "FAILED" if return_code != 0 else "EXITED"
                     reason = (
-                        f"Launch exited with code {return_code}" +
-                        " before reaching final Global waypoint."
+                        f"Launch exited with code {return_code}"
+                        + " before reaching final Global waypoint."
                     )
                     break
 
@@ -451,18 +452,16 @@ def run_test_plan(
                     return_code = launch_process.poll()
                     break
 
-                progress_update_monotonic_sec, previous_status_length = (
-                    update_progress_display(
-                        plan=plan,
-                        monitor=monitor,
-                        test_number=test_number,
-                        total_tests=total_tests,
-                        timeout_sec=timeout_sec,
-                        test_start_monotonic_sec=test_start_monotonic_sec,
-                        curr_monotonic_sec=curr_monotonic_sec,
-                        progress_update_monotonic_sec=progress_update_monotonic_sec,
-                        previous_status_length=previous_status_length,
-                    )
+                progress_update_monotonic_sec, previous_status_length = update_progress_display(
+                    plan=plan,
+                    monitor=monitor,
+                    test_number=test_number,
+                    total_tests=total_tests,
+                    timeout_sec=timeout_sec,
+                    test_start_monotonic_sec=test_start_monotonic_sec,
+                    curr_monotonic_sec=curr_monotonic_sec,
+                    progress_update_monotonic_sec=progress_update_monotonic_sec,
+                    previous_status_length=previous_status_length,
                 )
     except KeyboardInterrupt:
         print("\nKeyboardInterrupt received. Terminating test plan...")
@@ -572,7 +571,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--save_path",
         default=os.path.join(
-            "notebooks", "local_pathfinding", "session_recordings", "test_plans_results"),
+            "notebooks", "local_pathfinding", "session_recordings", "test_plans_results"
+        ),
         help="Workspace-relative root directory for recordings and result files.",
     )
     return parser.parse_args()
