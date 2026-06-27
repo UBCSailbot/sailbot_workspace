@@ -10,14 +10,14 @@ import signal
 import subprocess
 import time
 import yaml
+import rclpy
 
+from rclpy.node import Node
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-import rclpy
-from rclpy.node import Node
 import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
 
@@ -25,6 +25,7 @@ import local_pathfinding.coord_systems as cs
 DEFAULT_TEST_COUNT = 5
 DEFAULT_TIMEOUT_HOURS = 5.0
 DEFAULT_GOAL_THRESHOLD_M = 300.0
+STATUS_UPDATE_INTERVAL_SEC = 1.0
 EXCLUDED_TEST_PLANS = {"on_water_mock_ais.yaml"}
 
 
@@ -39,7 +40,6 @@ class TestPlanInfo:
 def parse_waypoints(path: Path) -> tuple[ci.HelperLatLon, ...]:
     """Read the global waypoint list from a test plan's YAML file.
     """
-
     with path.open("r") as file:
         data = yaml.safe_load(file)
     data = data or {}
@@ -85,13 +85,14 @@ def select_plans(plans: list[TestPlanInfo], user_input: list[str]) -> list[TestP
 
     Returns: A list of TestPlanInfo objects corresponding to the selected plans.
     """
+    #  Parsing user input into a list of str
     user_selected: list[str] = []
     user_input = ",".join(user_input).split(",")
     for item in user_input:
         item = item.strip()
         if item:
             user_selected.append(item)
-
+    #  Selecting plans based on user input
     selected: list[TestPlanInfo] = []
     selected_names: set[str] = set()
 
@@ -143,7 +144,6 @@ def write_result(result_path: Path, result: dict[str, Any]) -> None:
     The parent directory is created here because each test gets its own output folder, and
     the folder may not exist before that test starts.
     """
-
     result_path.parent.mkdir(parents=True, exist_ok=True)
     with result_path.open("w") as file:
         json.dump(result, file, indent=2, sort_keys=True)
@@ -156,28 +156,43 @@ def build_launch_command(
     save_path: str,
 ) -> list[str]:
     """Builds the launch command to launch a test plan using ROS2 launch."""
-
     return [
         "ros2",
         "launch",
         "global_launch",
         "main_launch.py",
         f"mode:={args.mode}",
-        f"config:={args.config}",
+        "config:=globals.yaml",
         f"log_level:={args.log_level}",
         f"test_plan:={plan.name}",
-        f"record:={'false' if args.record else 'true'}",
+        "record:=true",
         f"save_path:={save_path}",
     ]
 
 
 def distance_m(x: ci.HelperLatLon, y: ci.HelperLatLon) -> float:
     """Return the geodesic distance between two latitude/longitude points in meters."""
-
     _, _, distance_to_waypoint_m = cs.GEODESIC.inv(
         x.longitude, x.latitude, y.longitude, y.latitude
     )
     return float(distance_to_waypoint_m)
+
+
+def remaining_total_distance(
+    boat_position: ci.HelperLatLon,
+    waypoints: tuple[ci.HelperLatLon, ...],
+    current_waypoint_index: int
+) -> float:
+    """
+    Returns the total distance (in meters) from the boat's current position to the final global
+    waypoint, following all the global waypoints in order.
+    """
+    if current_waypoint_index < 0 or current_waypoint_index >= len(waypoints):
+        return 0.0
+    total_dist = distance_m(boat_position, waypoints[current_waypoint_index])
+    for waypoint_index in range(current_waypoint_index, 0, -1):
+        total_dist += distance_m(waypoints[waypoint_index], waypoints[waypoint_index - 1])
+    return total_dist
 
 
 def make_goal_monitor_node(plan: TestPlanInfo, goal_threshold_m: float):
@@ -187,42 +202,58 @@ def make_goal_monitor_node(plan: TestPlanInfo, goal_threshold_m: float):
     and marks the test complete once the boat reaches the final global waypoint. A waypoint
     is considered reached when the boat is within goal_threshold_m meters of it.
     """
-
     class GoalMonitor(Node):
-        """Small per-test observer node used by the runner, not by the planner itself."""
-
         def __init__(self):
             node_name = f"test_plan_goal_monitor_{plan.path.stem}"
             super().__init__(node_name=node_name)
             self.current_waypoint_index = len(plan.global_waypoints) - 1
             self.completed = False
             self.last_distance_m: float | None = None
+            self.remaining_route_distance_m: float | None = None
+            self.boat_speed_kmph: float | None = None
+            self.remaining_local_waypoints: int | None = None
             self.last_gps_at_monotonic: float | None = None
             self._gps_sub = self.create_subscription(
                 msg_type=ci.GPS, topic="gps", callback=self.gps_callback, qos_profile=10
             )
+            self._local_path_sub = self.create_subscription(
+                msg_type=ci.LPathData,
+                topic="local_path",
+                callback=self.local_path_callback,
+                qos_profile=10
+            )
+
+        def local_path_callback(self, msg: ci.LPathData) -> None:
+            self.remaining_local_waypoints = int(msg.remaining_waypoints)
+            print(f"Remaining local waypoints: {self.remaining_local_waypoints}")
 
         def gps_callback(self, msg: ci.GPS) -> None:
             boat_latlon = ci.HelperLatLon(latitude=msg.lat_lon.latitude,
                                           longitude=msg.lat_lon.longitude)
             self.last_gps_at_monotonic = time.monotonic()
+            self.boat_speed_kmph = float(msg.speed.speed)
 
             while self.current_waypoint_index >= 0:
                 target_waypoint = plan.global_waypoints[self.current_waypoint_index]
                 self.last_distance_m = distance_m(boat_latlon, target_waypoint)
                 if self.last_distance_m >= goal_threshold_m:
+                    self.remaining_route_distance_m = remaining_total_distance(
+                        boat_latlon,
+                        plan.global_waypoints,
+                        self.current_waypoint_index
+                    )
                     return
-
-                # Test plan global waypoints are followed from the last item toward index 0.
                 self.get_logger().debug(
                     f"Reached waypoint index {self.current_waypoint_index} "
                     f"for {plan.name} within {self.last_distance_m:.1f} m"
                 )
                 if self.current_waypoint_index == 0:
                     self.completed = True
+                    self.remaining_route_distance_m = 0.0
                     return
                 self.current_waypoint_index -= 1
             self.last_distance_m = 0.0
+            self.remaining_route_distance_m = 0.0
     return GoalMonitor()
 
 
@@ -265,7 +296,6 @@ def run_test_plan(
     test_number: int,
     total_tests: int,
 ) -> dict[str, Any]:
-    result: dict[str, Any] = {}
     """
     Runs a single test plan and returns the result as a dictionary.
     Arguments:
@@ -282,8 +312,10 @@ def run_test_plan(
     parts = [args.save_path.strip("/"), batch_id, plan.path.stem]
     save_path = "/".join(part for part in parts if part)
     launch_command = build_launch_command(args, plan, save_path)
+    result: dict[str, Any] = {}
     result_dir = workspace / save_path
     result_path = result_dir / "result.json"
+    ros_launch_log_path = result_dir / "launch.log"
 
     timeout_sec = args.timeout_hours * 3600
     started_at = datetime.now().isoformat(timespec="seconds")
@@ -293,43 +325,68 @@ def run_test_plan(
 
     print(f"\nStarting {test_number}/{total_tests}: {plan.name}")
     print(f"Output directory: {result_dir}")
+    print("Visualizer_DashApp: http://127.0.0.1:8050/")
 
     monitor = make_goal_monitor_node(plan, args.goal_threshold_m)
 
     status = "UNKNOWN"
     reason = ""
     return_code: int | None = None
+    last_status_update_monotonic = 0.0
+    previous_status_length = 0
 
     try:
-        launch_process = subprocess.Popen(
+        with ros_launch_log_path.open("w", buffering=1) as ros_launch_log:
+            launch_process = subprocess.Popen(
                 launch_command,
+                stdout=ros_launch_log,
+                stderr=subprocess.STDOUT,
                 start_new_session=True,
             )
-        while True:
-            rclpy.spin_once(monitor, timeout_sec=1.0)
-            return_code = launch_process.poll()
-            elapsed_sec = time.monotonic() - started_monotonic
-
-            if monitor.completed:
-                status = "COMPLETED"
-                reason = "Reached final Global waypoint before timeout."
-                stop_process_group(launch_process)
+            while True:
+                rclpy.spin_once(monitor, timeout_sec=1.0)
                 return_code = launch_process.poll()
-                break
+                now_monotonic = time.monotonic()
 
-            if return_code is not None:
-                status = "FAILED" if return_code != 0 else "EXITED"
-                reason = (
-                    f"Launch exited with code {return_code} before reaching final Global waypoint."
-                )
-                break
+                if monitor.completed:
+                    status = "COMPLETED"
+                    reason = "Reached final Global waypoint before timeout."
+                    stop_process_group(launch_process)
+                    return_code = launch_process.poll()
+                    break
 
-            if elapsed_sec > timeout_sec:
-                status = "TIMEOUT"
-                reason = f"Test plan exceeded timeout of {args.timeout_hours:g} hours."
-                stop_process_group(launch_process)
-                return_code = launch_process.poll()
-                break
+                if return_code is not None:
+                    status = "FAILED" if return_code != 0 else "EXITED"
+                    reason = (
+                        f"Launch exited with code {return_code}" +
+                        " before reaching final Global waypoint."
+                    )
+                    break
+
+                if (time.monotonic() - started_monotonic) > timeout_sec:
+                    status = "TIMEOUT"
+                    reason = f"Test plan exceeded timeout of {args.timeout_hours:g} hours."
+                    stop_process_group(launch_process)
+                    return_code = launch_process.poll()
+                    break
+
+                if (now_monotonic - last_status_update_monotonic) > STATUS_UPDATE_INTERVAL_SEC:
+                    elapsed_time = now_monotonic - started_monotonic
+                    remaining_global_waypoints = max(monitor.current_waypoint_index + 1, 0)
+                    status_line = (
+                        f"[{test_number}/{total_tests}] {plan.name} | "
+                        f"Elasped: {elapsed_time:.1f}s / {timeout_sec:.1f}s | "
+                        f"Remaining Local Waypoints: {monitor.remaining_local_waypoints or 0} | "
+                        f"Remaining Global Waypoints: {remaining_global_waypoints} | "
+                        f"Active Global Waypoint Dist.: {monitor.last_distance_m or 0:.1f} m | "
+                        f"Total Route left: {monitor.remaining_route_distance_m or 0:.1f} m | "
+                        f"Boat Speed: {monitor.boat_speed_kmph or 0:.1f} km/h"
+                    )
+                    # Print the status line, overwriting the previous_status_length
+                    clear_padding = " " * max(previous_status_length - len(status_line), 0)
+                    print(f"\r{status_line}{clear_padding}", end="", flush=True)
+                    previous_status_length = len(status_line)
+                    last_status_update_monotonic = now_monotonic
     except KeyboardInterrupt:
         print("\nKeyboardInterrupt received. Terminating test plan...")
         status = "INTERRUPTED"
@@ -351,10 +408,22 @@ def run_test_plan(
         "return_code": return_code,
         "save_path": save_path,
         "result_path": str(result_path),
+        "ros_launch_log_path": str(ros_launch_log_path),
+        "ros_launch_log_stored": status != "COMPLETED",
+        "last_target_waypoint_index": monitor.current_waypoint_index,
         "last_distance_m": monitor.last_distance_m,
+        "remaining_route_distance_m": monitor.remaining_route_distance_m,
+        "remaining_local_waypoints": monitor.remaining_local_waypoints,
         "command": launch_command,
     }
     write_result(result_path, result)
+    if status == "COMPLETED":
+        try:
+            ros_launch_log_path.unlink()
+        except FileNotFoundError:
+            pass
+    else:
+        print(f"Ros Launch log saved to: {ros_launch_log_path}")
     print(f"\nFinished {test_number}/{total_tests}: {plan.name} -> {status}")
     print(f"Reason: {reason}")
     print(f"Result: {result_path}")
@@ -405,11 +474,6 @@ def parse_args() -> argparse.Namespace:
         help="Launch mode to pass to global_launch.",
     )
     parser.add_argument(
-        "--config",
-        default="globals.yaml",
-        help="Config file to pass to global_launch.",
-    )
-    parser.add_argument(
         "--log_level",
         default="info",
         choices=["debug", "info", "warn", "error", "fatal"],
@@ -433,8 +497,6 @@ def parse_args() -> argparse.Namespace:
             "notebooks", "local_pathfinding", "session_recordings", "test_plans_results"),
         help="Workspace-relative root directory for recordings and result files.",
     )
-    parser.add_argument(
-        "--record", action="store_true", help="Pass record:=true to global_launch.")
     return parser.parse_args()
 
 
@@ -478,11 +540,14 @@ def main() -> int:
     results: list[dict[str, Any]] = []
     try:
         for test_number, plan in enumerate(plans_to_run, start=1):
-            results.append(
-                run_test_plan(args, workspace, batch_id, plan, test_number, len(plans_to_run))
-            )
+            result = run_test_plan(args, workspace, batch_id, plan, test_number, len(plans_to_run))
+            results.append(result)
+            if result["status"] == "INTERRUPTED":
+                print("Test run interrupted by user. Stopping further tests.")
+                break
     finally:
-        rclpy.shutdown()
+        if rclpy.ok():
+            rclpy.shutdown()
 
     summary_path = workspace / args.save_path / batch_id / "summary.json"
     write_result(summary_path, {"batch_id": batch_id, "results": results})
