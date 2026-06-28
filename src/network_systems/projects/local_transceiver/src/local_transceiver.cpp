@@ -171,7 +171,7 @@ bool LocalTransceiver::send()
     std::string write_bin_cmd_str = AT::write_bin::CMD + std::to_string(data.size());  //according to specs
     AT::Line    at_write_cmd(write_bin_cmd_str);
 
-    static constexpr int MAX_NUM_RETRIES = 20;  // allow retries because the connection is imperfect
+    static constexpr int MAX_NUM_RETRIES = 5;  // allow retries because the connection is imperfect
     for (int i = 0; i < MAX_NUM_RETRIES; i++) {
         std::this_thread::sleep_for(std::chrono::seconds(SMALL_WAIT));
         clearSerialBuffer();  // Clear any stale data from previous iteration
@@ -230,7 +230,7 @@ bool LocalTransceiver::send()
         // NEEDS AN ACTIVE SERVER ON $WEBHOOK_SERVER_ENDPOINT OR VIRTUAL IRIDIUM WILL CRASH
         static const AT::Line sbdix_cmd = AT::Line(AT::SBD_SESSION);
         if (!send(sbdix_cmd)) {
-            continue;
+            return false;
         }
 
         clearSerialBuffer();  // Clear any data that may have come in while waiting for SBDIX response, to ensure the following readRsp gets a clean response
@@ -239,12 +239,12 @@ bool LocalTransceiver::send()
               sbdix_cmd,
               AT::Line(AT::DELIMITER),
             })) {
-            continue;
+            return false;
         }
 
         auto opt_rsp = readRsp();
         if (!opt_rsp) {
-            continue;
+            return false;
         }
 
         // This string will look something like:
@@ -259,6 +259,8 @@ bool LocalTransceiver::send()
         if (rsp.MOSuccess()) {
             return true;
         }
+        std::cerr << "SBDIX MO status indicates failure: " << std::to_string(rsp.MO_status_) << std::endl;
+        return false;
     }
     std::cerr << "Failed to transmit data to satellite!" << std::endl;
     std::cerr << sensors.DebugString() << std::endl;
@@ -283,7 +285,7 @@ bool LocalTransceiver::debugSendAT(const std::string & data)
     std::string write_bin_cmd_str = AT::write_bin::CMD + std::to_string(data.size());
     AT::Line    at_write_cmd(write_bin_cmd_str);
 
-    static constexpr int MAX_NUM_RETRIES = 20;
+    static constexpr int MAX_NUM_RETRIES = 5;
     for (int i = 0; i < MAX_NUM_RETRIES; i++) {
         if (log_debug_) {
             log_debug_("Debug: clearing buffer (attempt " + std::to_string(i) + ")");
@@ -318,8 +320,8 @@ bool LocalTransceiver::debugSendAT(const std::string & data)
         }
         if (log_debug_) {
             log_debug_(
-              "Debug: Iridium signal quality is excellent, proceeding to send write command (attempt " +
-              std::to_string(i) + ")");
+              "Debug: Iridium signal quality is " + std::to_string(current_iridium_signal_quality) +
+              ", proceeding to send write command (attempt " + std::to_string(i) + ")");
         }
 
         if (!send(at_write_cmd)) {
@@ -383,7 +385,7 @@ bool LocalTransceiver::debugSendAT(const std::string & data)
             if (log_error_) {
                 log_error_("Debug: failed to send SBDIX command (attempt " + std::to_string(i) + ")");
             }
-            continue;
+            return false;
         }
         if (log_debug_) {
             log_debug_("Debug: sent SBDIX command (attempt " + std::to_string(i) + "): " + sbdix_cmd.str_);
@@ -396,7 +398,7 @@ bool LocalTransceiver::debugSendAT(const std::string & data)
             if (log_error_) {
                 log_error_("Debug: did not receive SBDIX response header (attempt " + std::to_string(i) + ")");
             }
-            continue;
+            return false;
         }
         if (log_debug_) {
             log_debug_("Debug: received SBDIX response header (attempt " + std::to_string(i) + ")");
@@ -407,7 +409,7 @@ bool LocalTransceiver::debugSendAT(const std::string & data)
             if (log_error_) {
                 log_error_("Debug: readRsp returned no response (attempt " + std::to_string(i) + ")");
             }
-            continue;
+            return false;
         }
         if (log_debug_) {
             log_debug_("Debug: readRsp received response (attempt " + std::to_string(i) + "): " + opt_rsp.value());
@@ -429,6 +431,10 @@ bool LocalTransceiver::debugSendAT(const std::string & data)
             }
             return true;
         }
+        if (log_error_) {
+            log_error_("Debug: MO Status: " + std::to_string(rsp.MO_status_));
+        }
+        return false;
     }
 
     if (log_error_) {
@@ -579,7 +585,7 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
             continue;
         }
         std::cout << "[RAW PAYLOAD][SIZE " << payload.value().size() << " ]: ";
-        std::cout.write(payload.value().data(), payload.value().size()); //NOLINT
+        std::cout.write(payload.value().data(), payload.value().size());  //NOLINT
         std::cout << std::endl;
 
         receivedDataBuffer = payload.value();

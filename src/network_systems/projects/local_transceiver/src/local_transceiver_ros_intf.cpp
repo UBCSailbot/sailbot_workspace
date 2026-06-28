@@ -153,7 +153,12 @@ public:
 
             std::optional<custom_interfaces::msg::Path> msg = fut.get();
             if (msg) {
-                pub_->publish(*msg);
+                if (msg->waypoints.empty()) {
+                    RCLCPP_INFO(this->get_logger(), "No cached waypoints found");
+                } else {
+                    RCLCPP_INFO(this->get_logger(), "Publishing cached waypoints");
+                    pub_->publish(*msg);
+                }
             }
 
             srv_send_ = this->create_service<std_srvs::srv::Trigger>(
@@ -211,7 +216,12 @@ private:
     void pub_cb(/*placeholder*/)
     {
         custom_interfaces::msg::Path msg = lcl_trns_->receive();
-        pub_->publish(msg);
+        if (msg.waypoints.empty()) {
+            RCLCPP_INFO(this->get_logger(), "No waypoints received from Local Transceiver");
+        } else {
+            RCLCPP_INFO(this->get_logger(), "Publishing received waypoints from Local Transceiver");
+            pub_->publish(msg);
+        }
     }
 
     /**
