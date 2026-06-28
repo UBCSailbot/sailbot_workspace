@@ -1,6 +1,8 @@
 name: Build base-dev Images
 
 on:
+    release:
+        types: [published]
     workflow_dispatch:
         inputs:
             tag:
@@ -40,7 +42,7 @@ jobs:
                   file: .devcontainer/base-dev/base-dev.Dockerfile
                   push: true
                   tags: |
-                      ghcr.io/ubcsailbot/sailbot_workspace/dev:${{ inputs.tag }}
+                      ghcr.io/ubcsailbot/sailbot_workspace/dev:${{ inputs.tag || github.event.release.tag_name }}
                       ghcr.io/ubcsailbot/sailbot_workspace/dev:latest
                   platforms: linux/arm64,linux/amd64
                   cache-from: type=gha

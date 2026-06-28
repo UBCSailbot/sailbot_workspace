@@ -24,9 +24,10 @@ MAIN_GP_FILE_PATH = "/workspaces/sailbot_workspace/src/local_pathfinding/local_p
 BACKUP_GP_FILE_PATH = "/workspaces/sailbot_workspace/src/local_pathfinding/local_pathfinding/global_path_storage/backup_global_path.csv"  # noqa
 
 """
-GlobalPath intentionally stays small: it is only the waypoint list, the current waypoint index, and
-whether the path came from backup storage. Sailbot owns the higher-level policy around when a path
-is accepted, when sail should be disabled, and when the local planner needs to replan.
+GlobalPath intentionally stays small: it is only the waypoint list, the current waypoint index,
+whether the path came from backup storage, and whether final-destination switch-back mode is
+active. Sailbot owns the higher-level policy around when a path is accepted, when sail should be
+disabled, and when the local planner needs to replan.
 
 When a new global path comes from NET, we trust the waypoint ordering from network systems:
 index 0 is the final destination and len(waypoints) - 1 is the first target. Sailbot persists that
@@ -50,10 +51,13 @@ is an intentional simplification: it may skip the closest waypoint when the boat
 between waypoints, but it biases recovery toward continuing down-route to index 0 instead of
 backtracking.
 
-Once selected, the path still advances toward the destination by decrementing the index.
+Once selected, the path still advances toward the destination by decrementing the index. Valid
+global paths must contain at least two waypoints because final-destination switch-back mode
+alternates between indices 0 and 1.
 
 Once a path is active, navigation advances by decrementing the index. When the index drops below
-zero, the global path is exhausted and Sailbot disables sail instead of cycling between waypoints.
+zero after reaching the final destination, Sailbot enters switch-back mode and alternates between
+the final two waypoints instead of disabling sail.
 
 Sailbot keeps a separate received_new_global_path flag as a one-shot bridge from path adoption to
 the next desired-heading tick. get_desired_heading() combines that flag with same-tick waypoint
@@ -77,6 +81,7 @@ class GlobalPath:
         self.waypoints = waypoints
         self.index = index
         self.is_backup = is_backup
+        self.switch_back_mode = False
 
     @property
     def target_waypoint(self) -> ci.HelperLatLon | None:
@@ -89,6 +94,15 @@ class GlobalPath:
         """Advance to the next global waypoint and return False when exhausted."""
         self.index -= 1
         return self.target_waypoint is not None
+
+    def trigger_switch_back(self) -> None:
+        """Enable switch-back mode and target the waypoint before the final destination."""
+        self.switch_back_mode = True
+        self.index = 1
+
+    def do_switch_back(self) -> None:
+        """Switch between the final two global waypoint indices."""
+        self.index = 0 if self.index == 1 else 1
 
 
 def main(args=None) -> None:
@@ -662,12 +676,20 @@ class Sailbot(Node):
         original_gp_index = self.gp.index
         if distance_to_waypoint_m < GLOBAL_WAYPOINT_REACHED_THRESH_M:
             received_new_global_waypoint = True
-            if not self.gp.advance_waypoint():
-                self.get_logger().info("Reached final global waypoint; disabling sail")
+            if self.gp.switch_back_mode:
+                self.gp.do_switch_back()
+                self.get_logger().info(
+                    f"switch back mode is on; switching to index {self.gp.index}"
+                )
                 self.received_new_global_path = False
-                self.local_path.path = ci.Path(waypoints=[])
-                return 0.0, False
-            target_global_waypoint = self.gp.target_waypoint
+                target_global_waypoint = self.gp.waypoints[self.gp.index]
+            elif not self.gp.advance_waypoint():
+                self.get_logger().info("Reached final global waypoint; switching to index 1")
+                self.received_new_global_path = False
+                self.gp.trigger_switch_back()
+                target_global_waypoint = self.gp.waypoints[self.gp.index]
+            else:
+                target_global_waypoint = self.gp.target_waypoint
 
         try:
             desired_heading, self.target_lp_wp_index = self.local_path.update_if_needed(
