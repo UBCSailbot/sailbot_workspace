@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag of the Docker image (e.g. on-water-8)'
+        description: 'Tag of the Docker image (e.g. on-water-4)'
         required: true
         type: string
 
