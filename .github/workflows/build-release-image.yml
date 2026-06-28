@@ -1,6 +1,8 @@
 name: Build Release Image
 
 on:
+  release:
+    types: [published]
   workflow_dispatch:
     inputs:
       tag:
@@ -42,7 +44,7 @@ jobs:
           build-args: CACHEBUST=${{ steps.meta.outputs.timestamp }}
           push: true
           tags: |
-            ghcr.io/ubcsailbot/sailbot_workspace/release:${{ inputs.tag }}
+            ghcr.io/ubcsailbot/sailbot_workspace/release:${{ inputs.tag || github.event.release.tag_name }}
             ghcr.io/ubcsailbot/sailbot_workspace/release:latest
           platforms: linux/arm64
           cache-from: type=gha
