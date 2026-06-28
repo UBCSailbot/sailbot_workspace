@@ -16,10 +16,9 @@ from typing import Any, TextIO
 
 import rclpy
 import yaml
-from rclpy.node import Node
 
 import custom_interfaces.msg as ci
-import local_pathfinding.coord_systems as cs
+from local_pathfinding.node_goal_monitor import GoalMonitor
 
 DEFAULT_TEST_COUNT = 5
 DEFAULT_TIMEOUT_HOURS = 5.0
@@ -170,93 +169,6 @@ def build_launch_command(
     ]
 
 
-def distance_m(x: ci.HelperLatLon, y: ci.HelperLatLon) -> float:
-    """Return the geodesic distance between two latitude/longitude points in meters."""
-    _, _, distance_to_waypoint_m = cs.GEODESIC.inv(
-        x.longitude, x.latitude, y.longitude, y.latitude
-    )
-    return float(distance_to_waypoint_m)
-
-
-def remaining_total_distance(
-    boat_position: ci.HelperLatLon,
-    waypoints: tuple[ci.HelperLatLon, ...],
-    current_waypoint_index: int,
-) -> float:
-    """
-    Returns the total distance (in meters) from the boat's current position to the final global
-    waypoint, following all the global waypoints in order.
-    """
-    if current_waypoint_index < 0 or current_waypoint_index >= len(waypoints):
-        return 0.0
-    total_dist = distance_m(boat_position, waypoints[current_waypoint_index])
-    for waypoint_index in range(current_waypoint_index, 0, -1):
-        total_dist += distance_m(waypoints[waypoint_index], waypoints[waypoint_index - 1])
-    return total_dist
-
-
-def make_goal_monitor_node(plan: TestPlanInfo, goal_threshold_m: float):
-    """Create a temporary ROS node that watches GPS progress for one test plan.
-
-    The node subscribes to /gps, compares the boat position to the active global waypoint,
-    and marks the test complete once the boat reaches the final global waypoint. A waypoint
-    is considered reached when the boat is within goal_threshold_m meters of it.
-    """
-
-    class GoalMonitor(Node):
-        def __init__(self) -> None:
-            node_name = f"test_plan_goal_monitor_{plan.path.stem}"
-            super().__init__(node_name=node_name)
-            self.current_waypoint_index = len(plan.global_waypoints) - 1
-            self.completed = False
-            self.last_distance_m: float | None = None
-            self.remaining_route_distance_m: float | None = None
-            self.boat_speed_kmph: float | None = None
-            self.remaining_local_waypoints: int | None = None
-            self.last_gps_at_monotonic: float | None = None
-            self._gps_sub = self.create_subscription(
-                msg_type=ci.GPS, topic="gps", callback=self.gps_callback, qos_profile=10
-            )
-            self._local_path_sub = self.create_subscription(
-                msg_type=ci.LPathData,
-                topic="local_path",
-                callback=self.local_path_callback,
-                qos_profile=10,
-            )
-
-        def local_path_callback(self, msg: ci.LPathData) -> None:
-            self.remaining_local_waypoints = int(msg.remaining_waypoints)
-
-        def gps_callback(self, msg: ci.GPS) -> None:
-            boat_latlon = ci.HelperLatLon(
-                latitude=msg.lat_lon.latitude, longitude=msg.lat_lon.longitude
-            )
-            self.last_gps_at_monotonic = time.monotonic()
-            self.boat_speed_kmph = float(msg.speed.speed)
-
-            while self.current_waypoint_index >= 0:
-                target_waypoint = plan.global_waypoints[self.current_waypoint_index]
-                self.last_distance_m = distance_m(boat_latlon, target_waypoint)
-                if self.last_distance_m >= goal_threshold_m:
-                    self.remaining_route_distance_m = remaining_total_distance(
-                        boat_latlon, plan.global_waypoints, self.current_waypoint_index
-                    )
-                    return
-                self.get_logger().debug(
-                    f"Reached waypoint index {self.current_waypoint_index} "
-                    f"for {plan.name} within {self.last_distance_m:.1f} m"
-                )
-                if self.current_waypoint_index == 0:
-                    self.completed = True
-                    self.remaining_route_distance_m = 0.0
-                    return
-                self.current_waypoint_index -= 1
-            self.last_distance_m = 0.0
-            self.remaining_route_distance_m = 0.0
-
-    return GoalMonitor()
-
-
 def stop_process_group(process: subprocess.Popen, grace_sec: float = 15.0) -> None:
     """Stops a ros2 launch process and all child node processes."""
 
@@ -324,7 +236,6 @@ def format_speed(speed_kmph: float | None) -> str:
 
 def update_progress_display(
     plan: TestPlanInfo,
-    monitor: Any,
     test_number: int,
     total_tests: int,
     timeout_sec: float,
@@ -343,15 +254,9 @@ def update_progress_display(
         return progress_update_monotonic_sec, previous_status_length
 
     elapsed_time = curr_monotonic_sec - test_start_monotonic_sec
-    remaining_global_waypoints = max(monitor.current_waypoint_index + 1, 0)
     status_line = (
         f"[{test_number}/{total_tests}] {plan.name} | "
         f"Elapsed: {format_duration(elapsed_time)}/{format_duration(timeout_sec)} | "
-        f"Remaining Local Waypoints: {monitor.remaining_local_waypoints or 0} | "
-        f"Remaining Global Waypoints: {remaining_global_waypoints}/{len(plan.global_waypoints)}| "
-        f"Current Global Waypoint Dist.: {format_distance(monitor.last_distance_m)} | "
-        f"Total Route left: {format_distance(monitor.remaining_route_distance_m)} | "
-        f"Boat Speed: {format_speed(monitor.boat_speed_kmph)}"
     )
     clear_padding = " " * max(previous_status_length - len(status_line), 0)
     print(f"\r{status_line}{clear_padding}", end="", flush=True)
@@ -398,7 +303,12 @@ def run_test_plan(
     print(f"Output directory: {result_dir}")
     print("Visualizer_DashApp: http://127.0.0.1:8050/")
 
-    monitor = make_goal_monitor_node(plan, args.goal_threshold_m)
+    monitor = GoalMonitor(
+        node_name=f"test_plan_goal_monitor_{plan.path.stem}",
+        plan_name=plan.name,
+        global_waypoints=plan.global_waypoints,
+        goal_threshold_m=args.goal_threshold_m,
+    )
 
     status = "UNKNOWN"
     reason = ""
@@ -454,7 +364,6 @@ def run_test_plan(
 
                 progress_update_monotonic_sec, previous_status_length = update_progress_display(
                     plan=plan,
-                    monitor=monitor,
                     test_number=test_number,
                     total_tests=total_tests,
                     timeout_sec=timeout_sec,
