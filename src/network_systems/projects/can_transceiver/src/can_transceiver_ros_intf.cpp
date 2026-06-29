@@ -56,8 +56,9 @@ public:
                     RCLCPP_ERROR(this->get_logger(), "%s", err.what());
                     throw err;
                 }
-            } else if (mode == SYSTEM_MODE::DEV) {
-                RCLCPP_INFO(this->get_logger(), "Running CAN Transceiver in development mode with CAN Sim Intf");
+            } else if (mode == SYSTEM_MODE::DEV || mode == SYSTEM_MODE::SIM) {
+                RCLCPP_INFO(
+                  this->get_logger(), "Running CAN Transceiver in %s mode with CAN Sim Intf", mode.c_str());
                 try {
                     sim_intf_fd_ = mockCanFd("/tmp/CanSimIntfXXXXXX");
                     can_trns_    = std::make_unique<CanTransceiver>(sim_intf_fd_);
@@ -130,9 +131,6 @@ public:
               [this](msg::DesiredHeading desired_heading_) { subDesiredHeadingCb(desired_heading_); });
 
             if (mode == SYSTEM_MODE::DEV) {  // Initialize the CAN Sim Intf
-                mock_ais_sub_ = this->create_subscription<msg::AISShips>(
-                  ros_topics::MOCK_AIS_SHIPS, QUEUE_SIZE,
-                  [this](msg::AISShips mock_ais_ships) { subMockAISCb(mock_ais_ships); });
                 mock_gps_sub_ = this->create_subscription<msg::GPS>(
                   ros_topics::MOCK_GPS, QUEUE_SIZE, [this](msg::GPS mock_gps) { subMockGpsCb(mock_gps); });
                 mock_wind_sensors_sub_ = this->create_subscription<msg::WindSensors>(
@@ -146,6 +144,10 @@ public:
                     publishBoatSimInput(boat_sim_input_msg_);
                     // Add any other necessary looping callbacks
                 });
+            } else if (mode == SYSTEM_MODE::SIM) {  // subscribes to mock_wind_sensors to produce filtered_wind_sensor
+                mock_wind_sensors_sub_ = this->create_subscription<msg::WindSensors>(
+                  ros_topics::MOCK_WIND_SENSORS, QUEUE_SIZE,
+                  [this](msg::WindSensors mock_wind_sensors) { subMockWindSensorsCb(mock_wind_sensors); });
             }
         }
     }
@@ -183,7 +185,6 @@ private:
     msg::PressureSensors                                 pressure_sensors_;
 
     // Simulation only publishers and subscribers
-    rclcpp::Subscription<msg::AISShips>::SharedPtr     mock_ais_sub_;
     rclcpp::Subscription<msg::GPS>::SharedPtr          mock_gps_sub_;
     rclcpp::Subscription<msg::WindSensors>::SharedPtr  mock_wind_sensors_sub_;
     rclcpp::Publisher<msg::CanSimToBoatSim>::SharedPtr boat_sim_input_pub_;
@@ -197,7 +198,9 @@ private:
 
     // Holder for AISShips before publishing
     std::vector<msg::HelperAISShip> ais_ships_holder_;
-    int                             total_ais_ships = 0;
+    // Track received indices for AISShips
+    std::set<int> received_indices_;
+    int           total_ais_ships = -1;
 
     //queue of previous k wind sensor readings (either sail or hull) for moving average
     std::queue<vec> wind_sensor_readings;
@@ -267,28 +270,64 @@ private:
         try {
             CAN_FP::AISShips ais_ship(ais_frame);
 
-            if (total_ais_ships == 0) {
-                total_ais_ships = ais_ship.getNumShips();
-                ais_ships_holder_.resize(total_ais_ships);  // temporary holder vector for AIS ships
+            int num_ships = ais_ship.getNumShips();
+            int ship_idx  = ais_ship.getShipIndex();
+
+            // Case: no ships then publish empty and reset
+            if (num_ships == 0) {
+                ais_ships_.ships.clear();
+                ais_pub_->publish(ais_ships_);
+
+                total_ais_ships = -1;
+                ais_ships_holder_.clear();
+                received_indices_.clear();
+                return;
             }
 
-            int ship_idx = ais_ship.getShipIndex();
-            if (ship_idx >= static_cast<int>(ais_ships_holder_.size()) || ship_idx < 0 || ship_idx >= total_ais_ships) {
-                throw std::out_of_range("Received AIS ship index is out of bounds!");
+            // Initialize on first valid frame
+            if (total_ais_ships == -1) {
+                total_ais_ships = num_ships;
+                ais_ships_holder_.clear();
+                ais_ships_holder_.resize(num_ships);
+                received_indices_.clear();
             }
 
+            // Consistency check
+            if (num_ships != total_ais_ships) {
+                RCLCPP_WARN(
+                  this->get_logger(), "Mismatched numShips (got=%d, expected=%d), resetting", num_ships,
+                  total_ais_ships);
+
+                total_ais_ships = -1;
+                ais_ships_holder_.clear();
+                received_indices_.clear();
+                return;
+            }
+
+            // Bounds check
+            if (ship_idx < 0 || ship_idx >= total_ais_ships) {
+                RCLCPP_WARN(this->get_logger(), "Out of bounds index=%d for size=%d", ship_idx, total_ais_ships);
+                return;
+            }
+
+            // Store ship data
             ais_ships_holder_[ship_idx] = ais_ship.toRosMsg();
+            received_indices_.insert(ship_idx);
 
-            if (ship_idx >= total_ais_ships - 1) {
+            // Publish only when all ships have been received
+            if (received_indices_.size() == static_cast<size_t>(total_ais_ships)) {
                 ais_ships_.ships = ais_ships_holder_;
                 ais_pub_->publish(ais_ships_);
-                ais_ships_holder_.clear();  // reset holder vector
-                total_ais_ships = 0;        // reset the number of ships
+
+                total_ais_ships = -1;
+                ais_ships_holder_.clear();
+                received_indices_.clear();
             }
+
             RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), ais_ship.toString().c_str());
-        } catch (std::out_of_range err) {
+
+        } catch (const std::exception & err) {
             RCLCPP_WARN(this->get_logger(), "%s", err.what());
-            return;
         }
     }
 
@@ -661,17 +700,6 @@ private:
             RCLCPP_WARN(this->get_logger(), "%s", err.what());
             return;
         }
-    }
-
-    /**
-     * @brief Mock AIS topic callback
-     *
-     * @param mock_ais_ships ais_ships received from the Mock AIS topic
-     */
-    void subMockAISCb(msg::AISShips mock_ais_ships)
-    {
-        ais_ships_ = mock_ais_ships;
-        ais_pub_->publish(ais_ships_);
     }
 
     /**

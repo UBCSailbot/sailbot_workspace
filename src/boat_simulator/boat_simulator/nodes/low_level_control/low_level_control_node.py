@@ -2,16 +2,14 @@
 
 """The ROS node for the low level controller emulation."""
 
+import math
 from typing import Optional
 
 import rclpy
-import rclpy.utilities
-from custom_interfaces.action import SimRudderActuation, SimSailTrimTabActuation
 from custom_interfaces.action._sim_rudder_actuation import SimRudderActuation_Result
 from custom_interfaces.action._sim_sail_trim_tab_actuation import (
     SimSailTrimTabActuation_Result,
 )
-from custom_interfaces.msg import GPS
 from rclpy.action import ActionServer
 from rclpy.action.server import ServerGoalHandle
 from rclpy.executors import MultiThreadedExecutor
@@ -20,7 +18,14 @@ from rclpy.subscription import Subscription
 from rclpy.timer import Rate
 
 import boat_simulator.common.constants as Constants
-from boat_simulator.common.types import Scalar
+from boat_simulator.common.angle_conventions import (
+    Heading,
+    RudderAngle,
+    TrimTabAngle,
+    saturated_trim_tab_angle,
+)
+from boat_simulator.common.conventions import NED, LatLon
+from boat_simulator.common.types import Vec2
 from boat_simulator.nodes.low_level_control.controller import (
     RudderController,
     SailController,
@@ -28,6 +33,8 @@ from boat_simulator.nodes.low_level_control.controller import (
 from boat_simulator.nodes.low_level_control.decorators import (
     MutuallyExclusiveActionRoutine,
 )
+from custom_interfaces.action import SimRudderActuation, SimSailTrimTabActuation
+from custom_interfaces.msg import GPS
 
 
 def main(args=None):
@@ -72,8 +79,8 @@ class LowLevelControlNode(Node):
         """Initializes private attributes of this class that are not initialized anywhere else
         during the initialization process.
         """
-        self.__rudder_angle = 0
-        self.__sail_trim_tab_angle = 0
+        self.__rudder_angle = 0.0
+        self.__sail_trim_tab_angle = 0.0
         self._is_rudder_action_active = False
         self._is_sail_action_active = False
         self.__gps = None
@@ -258,11 +265,16 @@ class LowLevelControlNode(Node):
         else:
             self.get_logger().info("Rudder actuation enabled.")
 
-            current_heading = self.gps.heading.heading
+            # NED compass headings (degrees, 0° north increasing CW) wrapped as
+            # unit-checked Heading objects at the message boundary.
+            current_heading = Heading.from_degrees(self.gps.heading.heading)
+            desired_heading = Heading.from_degrees(
+                goal_handle.request.desired_heading.heading.heading
+            )
 
-            desired_heading = goal_handle.request.desired_heading.heading.heading
-
-            self.__rudder_controller.reset_setpoint(desired_heading, current_heading)
+            self.__rudder_controller.reset_setpoint(
+                desired_heading.degrees, current_heading.degrees
+            )
             self.get_logger().info(
                 f"Current rudder angle: {self.__rudder_controller.current_control_ang} "
                 + f"Desired rudder angle: {self.__rudder_controller.setpoint}"
@@ -271,10 +283,11 @@ class LowLevelControlNode(Node):
             self._is_rudder_action_active = True
             while not self.__rudder_controller.is_target_reached:
                 self.__rudder_controller.update_state()
-                i = self.__rudder_controller.current_control_ang
-                feedback_msg.rudder_angle = i
+                # Rudder angle (degrees) range-checked to ±30° at the boundary.
+                rudder_angle: RudderAngle = self.__rudder_controller.current_rudder_angle
+                feedback_msg.rudder_angle = rudder_angle.degrees
                 goal_handle.publish_feedback(feedback=feedback_msg)
-                self.__rudder_angle = i
+                self.__rudder_angle = rudder_angle.degrees
                 self.rudder_action_feedback_rate.sleep()
             self.get_logger().info(f"New rudder angle: {self.rudder_angle}")
             self.get_logger().info("Rudder actuation complete.")
@@ -305,21 +318,25 @@ class LowLevelControlNode(Node):
         else:
             self.get_logger().info("Trim tab actuation enabled.")
             current_trim_tab_angle = self.sail_trim_tab_angle
-            desired_trim_tab_angle = goal_handle.request.desired_angular_position
+            # Desired trim-tab deflection (degrees) saturated to the sail range
+            # (±40°) as a unit-checked TrimTabAngle at the message boundary.
+            desired_trim_tab_angle: TrimTabAngle = saturated_trim_tab_angle(
+                math.radians(goal_handle.request.desired_angular_position)
+            )
             self.get_logger().info(
                 f"Current trim tab angle: {current_trim_tab_angle} "
-                + f"Desired trim tab angle: {desired_trim_tab_angle}"
+                + f"Desired trim tab angle: {desired_trim_tab_angle.degrees}"
             )
-            self.__sail_controller.reset_setpoint(desired_trim_tab_angle)
+            self.__sail_controller.reset_setpoint(desired_trim_tab_angle.degrees)
 
             feedback_msg = SimSailTrimTabActuation.Feedback()
             self._is_sail_action_active = True
             while not self.__sail_controller.is_target_reached:
                 self.__sail_controller.update_state()
-                i = self.__sail_controller.current_control_ang
-                feedback_msg.current_angular_position = i
+                trim_tab_angle: TrimTabAngle = self.__sail_controller.current_trim_tab_angle
+                feedback_msg.current_angular_position = trim_tab_angle.degrees
                 goal_handle.publish_feedback(feedback=feedback_msg)
-                self.__sail_trim_tab_angle = i
+                self.__sail_trim_tab_angle = trim_tab_angle.degrees
                 self.sail_action_feedback_rate.sleep()
             self.get_logger().info(
                 f"New trim tab angle {self.__sail_controller.current_control_ang}"
@@ -381,15 +398,25 @@ class LowLevelControlNode(Node):
         return self.__gps
 
     @property
+    def gps_position(self) -> Optional[Vec2[LatLon, NED]]:
+        """Latest GPS fix as a typed lat/lon vector in decimal degrees, or None."""
+        if self.__gps is None:
+            return None
+        lat_lon = self.__gps.lat_lon
+        return Vec2[LatLon, NED].from_xy(lat_lon.latitude, lat_lon.longitude)
+
+    @property
     def gps_sub(self) -> Subscription:
         return self.__gps_sub
 
     @property
-    def rudder_angle(self) -> Scalar:
+    def rudder_angle(self) -> float:
+        """Latest rudder angle in degrees, within :data:`RUDDER_MAX_ANGLE_RANGE` (±30°)."""
         return self.__rudder_angle
 
     @property
-    def sail_trim_tab_angle(self) -> Scalar:
+    def sail_trim_tab_angle(self) -> float:
+        """Latest trim-tab angle in degrees, within :data:`SAIL_MAX_ANGLE_RANGE` (±40°)."""
         return self.__sail_trim_tab_angle
 
 

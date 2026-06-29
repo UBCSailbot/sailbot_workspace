@@ -13,6 +13,7 @@ import {
   WindSensorsState,
 } from '@/stores/WindSensors/WindSensorsTypes';
 import { DataFilterState } from '@/stores/DataFilter/DataFilterTypes';
+import { GraphId, Layout, LayoutItem, isSplitGroup } from '@/stores/Graphs/GraphsTypes';
 
 const parseISOString = (s: string) => {
   return Math.floor(Date.parse(s) / 1000); // Converts to seconds
@@ -47,7 +48,10 @@ const speedGraph = (speedChartData: any) => {
       key='speedChartData'
       data={speedChartData}
       title='Speed'
-      seriesData={[{ label: 'Time' }, { label: 'Speed', unit: 'km/hr' }]}
+      seriesData={[
+        { label: 'Time' }, 
+        { label: 'Speed', unit: 'km/hr', stroke: 'blue'},
+      ]}
     />
   );
 };
@@ -60,8 +64,8 @@ const BatteriesVoltageGraph = (batteriesVoltageData: any) => {
       title='Batteries Voltage'
       seriesData={[
         { label: 'Time' },
-        { label: 'Battery 1 Voltage', unit: 'V' },
-        { label: 'Battery 2 Voltage', unit: 'V' },
+        { label: 'Battery 1 Voltage', unit: 'V' , stroke: 'blue' },
+        { label: 'Battery 2 Voltage', unit: 'V' , stroke: 'pink' },
       ]}
     />
   );
@@ -75,8 +79,8 @@ const BatteriesCurrentGraph = (batteriesCurrentData: any) => {
       title='Batteries Current'
       seriesData={[
         { label: 'Time' },
-        { label: 'Battery 1 Current', unit: 'A' },
-        { label: 'Battery 2 Current', unit: 'A' },
+        { label: 'Battery 1 Current', unit: 'A' , stroke: 'blue' },
+        { label: 'Battery 2 Current', unit: 'A' , stroke: 'pink' },
       ]}
     />
   );
@@ -90,8 +94,8 @@ const WindSensorsSpeedGraph = (windSensorsSpeedData: any) => {
       title='Wind Sensors'
       seriesData={[
         { label: 'Time' },
-        { label: 'Wind Sensor 1 Speed', unit: 'm/s' },
-        { label: 'Wind Sensor 2 Speed', unit: 'm/s' },
+        { label: 'Wind Sensor 1 Speed', unit: 'm/s' , stroke: 'blue' },
+        { label: 'Wind Sensor 2 Speed', unit: 'm/s' , stroke: 'pink' },
       ]}
     />
   );
@@ -110,7 +114,7 @@ interface StatsProps {
   gps: GPSState;
   batteries: BatteriesState;
   windSensors: WindSensorsState;
-  graphsOrder: string[];
+  layout: Layout;
   dataFilter: DataFilterState;
 }
 
@@ -119,7 +123,7 @@ const Stats = ({
   gps,
   batteries,
   windSensors,
-  graphsOrder,
+  layout,
   dataFilter,
 }: StatsProps) => {
   const [summary, setSummary] = useState<string>('LOADING...');
@@ -213,13 +217,16 @@ const Stats = ({
 
   const windSensorsSpeedData = [
     windSensors.data
-      .map((data: WindSensors) => parseISOString(data.timestamp))
       .filter(
-        (time: number) => isValidTimestamp(time, startDate, endDate) == true,
-      ),
+        (data: WindSensors) =>
+          data.windSensors?.length >= 2 &&
+          isValidTimestamp(parseISOString(data.timestamp), startDate, endDate) == true,
+      )
+      .map((data: WindSensors) => parseISOString(data.timestamp)),
     windSensors.data
       .filter(
         (data: WindSensors) =>
+          data.windSensors?.length >= 2 &&
           isValidTimestamp(
             parseISOString(data.timestamp),
             startDate,
@@ -230,6 +237,7 @@ const Stats = ({
     windSensors.data
       .filter(
         (data: WindSensors) =>
+          data.windSensors?.length >= 2 &&
           isValidTimestamp(
             parseISOString(data.timestamp),
             startDate,
@@ -246,9 +254,16 @@ const Stats = ({
     WindSensors: WindSensorsSpeedGraph(windSensorsSpeedData),
   };
 
-  const graphs = graphsOrder.map(
-    (graph: string) => graphsMap[graph as keyof typeof graphsMap],
-  );
+  const renderLayoutItem = (item: LayoutItem, index: number) => {
+    if (isSplitGroup(item)) {
+      return (
+        <div key={`split-${index}`} className={styles.splitGroup}>
+          {item.map((graphId) => graphsMap[graphId])}
+        </div>
+      );
+    }
+    return graphsMap[item];
+  };
 
   return (
     <div className={styles.stats}>
@@ -260,7 +275,9 @@ const Stats = ({
           <RearrangeGraphDropdown />
         </div>
       </div>
-      <div className={styles.lineCharts}>{graphs}</div>
+      <div className={styles.lineCharts}>
+        {layout.map(renderLayoutItem)}
+      </div>
     </div>
   );
 };
@@ -269,7 +286,7 @@ const mapStateToProps = (state: any) => ({
   gps: state.gps,
   batteries: state.batteries,
   windSensors: state.windSensors,
-  graphsOrder: state.graphs.order,
+  layout: state.graphs.layout,
   dataFilter: state.dataFilter,
 });
 

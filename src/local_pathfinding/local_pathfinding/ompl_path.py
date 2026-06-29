@@ -17,17 +17,21 @@ from ompl import base
 from ompl import geometric as og
 from ompl import util as ou
 from rclpy.impl.rcutils_logger import RcutilsLogger
+from rclpy.logging import get_logger
 from shapely.geometry import MultiPolygon, Point, Polygon, box
 
 import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.obstacles as ob
+import local_pathfinding.wind_coord_systems as wcs
 from local_pathfinding.ompl_objectives import get_sailing_objective
+from local_pathfinding.ompl_validity import NO_GO_ZONE, GoalProgressWindMotionValidator
 
 if TYPE_CHECKING:
     from local_pathfinding.local_path import LocalPathState
 
 ou.setLogLevel(ou.LOG_WARN)
+_LOGGER = get_logger("OMPLPath")
 
 BOX_BUFFER_SIZE_KM = 2.0
 # for now this is statically defined and subject to change or may be made dynamic
@@ -37,12 +41,22 @@ MIN_TURNING_RADIUS_KM = 0.05  # 50 m
 # valid but the segment straddles an obstacle collision zone
 # setting this any smaller can lead to OMPL not being able to construct a tree that reaches
 # the goal state
-MAX_EDGE_LEN_KM = 0.5
+MAX_EDGE_LEN_KM = 0.1
 MAX_SOLVER_RUN_TIME_SEC = 1.0
+MAX_SIMPLIFIER_RUN_TIME_SEC = 0.1
+
+# Extra cushion past the no-go-zone edge when snapping a goal yaw out of irons.
+# Needed because (1) the validator rejects yaws exactly on NO_GO_ZONE (uses <= / >=),
+# and (2) the true wind can shift several degrees between when the goal yaw is computed
+# and when the planner evaluates nearby states. 5 degrees mirrors the "sail a few
+# degrees free of close-hauled" rule of thumb and costs nothing in path quality.
+IRONS_MARGIN_RAD = math.radians(5.0)
 
 LAND_KEY = -1
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-LAND_PKL_FILE_PATH = os.path.join(CURRENT_DIR, "..", "land", "pkl", "land.pkl")
+OFFSHORE_LAND_PKL_FILE_PATH = os.path.join(CURRENT_DIR, "..", "land", "pkl", "offshore_land.pkl")
+ON_WATER_LAND_PKL_FILE_PATH = os.path.join(CURRENT_DIR, "..", "land", "pkl", "on_water_land.pkl")
+DISTANCE_FROM_ON_WATER_LANDMARK = 20  # 20 km
 DISTANCE_THRESHOLD = 1e-9
 
 
@@ -71,12 +85,14 @@ class OMPLPath:
         parent_logger: RcutilsLogger,
         local_path_state: LocalPathState,
         land_multi_polygon: MultiPolygon = None,
+        should_simplify_path: bool = True,
     ):
         """Initialize the OMPLPath Class. Attempt to solve for a path.
 
         Args:
             parent_logger (RcutilsLogger): Logger of the parent class.
             local_path_state (LocalPathState): State of Sailbot.
+            land_multi_polygon (MultiPolygon | None): Optional land geometry override for tests.
         """
         self._box_buffer = BOX_BUFFER_SIZE_KM
 
@@ -87,12 +103,22 @@ class OMPLPath:
         self._simple_setup = self._init_simple_setup(land_multi_polygon)
 
         self.solved = self._simple_setup.solve(time=MAX_SOLVER_RUN_TIME_SEC)
+        if self.solved and should_simplify_path:
+            obj = self._simple_setup.getOptimizationObjective()
+            original = og.PathGeometric(self._simple_setup.getSolutionPath())
+            original_cost = original.cost(obj).value()
+            self._simple_setup.simplifySolution(MAX_SIMPLIFIER_RUN_TIME_SEC)
+
+            simplified = self._simple_setup.getSolutionPath()
+            simplified_cost = simplified.cost(obj).value()
+            if simplified_cost > original_cost:
+                simplified.assign(original)
 
     @staticmethod
     def init_obstacles(
         local_path_state: LocalPathState,
-        state_space_xy: Polygon = None,
-        land_multi_polygon: MultiPolygon = None,
+        state_space_xy: Polygon | None = None,
+        land_multi_polygon: MultiPolygon | None = None,
     ) -> dict[int, ob.Obstacle]:
         """Extracts obstacle data from local_path_state and compiles it into a list of Obstacles
 
@@ -153,10 +179,9 @@ class OMPLPath:
             )
 
         if OMPLPath.all_land_data is None:
-            try:
-                OMPLPath.all_land_data = load_pkl(LAND_PKL_FILE_PATH)
-            except FileNotFoundError as e:
-                exit(f"could not load the land.pkl file {e}")
+            # It is unlikely for Polaris to travel from the open ocean into English bay as that
+            # would interfere with Canadian Law.
+            OMPLPath.load_appropriate_land_obstacle(local_path_state)
 
         OMPLPath.obstacles[LAND_KEY] = ob.Land(
             reference=local_path_state.reference_latlon,
@@ -180,6 +205,35 @@ class OMPLPath:
         """
         space = Point(position.x, position.y).buffer(box_buffer_size, cap_style=3, join_style=2)
         return space
+
+    @staticmethod
+    def load_appropriate_land_obstacle(local_path_state: LocalPathState):
+        """Load the land obstacle dataset that best matches the boat's current position.
+
+        The boat's geodesic distance from the on-water reference point is compared against
+        DISTANCE_FROM_ON_WATER_LANDMARK. When the boat is within that threshold the
+        higher-resolution on-water land data is loaded; otherwise the offshore land data is
+        loaded. The result is stored on OMPLPath.all_land_data.
+
+        Args:
+            local_path_state (LocalPathState): Current local path state, providing the boat's
+                position used to select the appropriate land dataset.
+
+        Raises:
+            SystemExit: If the selected land .pkl file cannot be found.
+        """
+        on_water_ref_dist_km = cs.calculate_distance_from_on_water_reference_km(
+            local_path_state.position
+        )
+
+        try:
+            if on_water_ref_dist_km < DISTANCE_FROM_ON_WATER_LANDMARK:
+                OMPLPath.all_land_data = load_pkl(ON_WATER_LAND_PKL_FILE_PATH)
+            else:
+                OMPLPath.all_land_data = load_pkl(OFFSHORE_LAND_PKL_FILE_PATH)
+        except FileNotFoundError as e:
+            _LOGGER.warn(f"could not load the land.pkl file {e}")
+            OMPLPath.all_land_data = MultiPolygon()
 
     def get_cost(self) -> float:
         """
@@ -322,33 +376,44 @@ class OMPLPath:
 
         for state in solution_path.getStates():
             waypoint_XY = cs.XY(state.getX(), state.getY())
+            waypoint_yaw = state.getYaw()
+            waypoint_heading_deg = cs.bound_to_180(
+                math.degrees(cs.cartesian_to_true_bearing(waypoint_yaw, rad=True))
+            )
             waypoint_latlon = cs.xy_to_latlon(self.state.reference_latlon, waypoint_XY)
             waypoints.append(
                 ci.HelperLatLon(
-                    latitude=waypoint_latlon.latitude, longitude=waypoint_latlon.longitude
+                    latitude=waypoint_latlon.latitude,
+                    longitude=waypoint_latlon.longitude,
+                    heading=ci.HelperHeading(heading=waypoint_heading_deg),
                 )
             )
-
         return ci.Path(waypoints=waypoints)
 
-    def update_objectives(self):
-        """Update the objectives on the basis of which the path is optimized.
-        Raises:
-            NotImplementedError: Method or function hasn't been implemented yet.
-        """
-        raise NotImplementedError
-
     def _init_simple_setup(self, land_multi_polygon) -> og.SimpleSetup:
+        """Build the configured OMPL planning problem for the current local-path state.
+
+        The Dubins state uses an east/north Cartesian frame in kilometres. Its yaw is zero when
+        pointing east, increases counterclockwise, and is bounded to [-pi, pi).
+
+        Args:
+            land_multi_polygon: Optional land geometry override used when initializing obstacles.
+
+        Returns:
+            The configured OMPL simple setup containing the start and goal states.
+        """
         # Create buffered rectangles around sailbot's position and the goal state
         start_position_in_xy = cs.latlon_to_xy(self.state.reference_latlon, self.state.position)
         start_box = self.create_buffer_around_position(start_position_in_xy, self._box_buffer)
         start_x = start_position_in_xy.x
         start_y = start_position_in_xy.y
+        start_heading_rad = math.radians(cs.true_bearing_to_OMPL_cartesian(self.state.heading))
 
         # goal is at (0,0) because global waypoint is used as the reference point
         goal_position_in_xy = cs.XY(0, 0)
         goal_polygon = self.create_buffer_around_position(goal_position_in_xy, self._box_buffer)
         goal_x, goal_y = goal_position_in_xy
+        goal_heading_rad = self._compute_goal_heading_rad()
 
         # RRT* requires a symmetric state space which is not the default for Dubins State Space
         space = base.DubinsStateSpace(turningRadius=MIN_TURNING_RADIUS_KM, isSymmetric=True)
@@ -377,12 +442,14 @@ class OMPLPath:
         )
 
         simple_setup = og.SimpleSetup(space)
-        simple_setup.setStateValidityChecker(base.StateValidityCheckerFn(OMPLPath.is_state_valid))
+        simple_setup.setStateValidityChecker(base.StateValidityCheckerFn(self.is_state_valid))
 
         start = base.State(space)
         goal = base.State(space)
         start().setXY(start_x, start_y)
+        start().setYaw(start_heading_rad)
         goal().setXY(goal_x, goal_y)
+        goal().setYaw(goal_heading_rad)
         self._logger.debug(
             "start and goal state: "
             f"start=({start().getX()}, {start().getY()}); "
@@ -390,27 +457,120 @@ class OMPLPath:
         )
         simple_setup.setStartAndGoalStates(start, goal)
 
+        # Use the wind snapshot stored with this LocalPathState so path planning and
+        # later wind-change comparisons share the same baseline.
+        if self.state.path_generated_wind is None:
+            current_tw = self.state.current_tw
+        else:
+            current_tw = self.state.path_generated_wind
+
         space_information = simple_setup.getSpaceInformation()
+        self._goal_progress_wind_motion_validator = GoalProgressWindMotionValidator(
+            space_information,
+            goal_position_in_xy,
+            current_tw.dir_deg,
+        )
+        space_information.setMotionValidator(self._goal_progress_wind_motion_validator)
 
         self.state.planner = og.RRTstar(space_information)
 
         objective = get_sailing_objective(
             space_information,
-            simple_setup,
-            self.state.heading,
-            self.state.speed,
-            self.state.current_aw.dir_deg,
-            self.state.current_aw.speed_kmph,
+            current_tw.dir_deg,
+            current_tw.speed_kmph,
+            goal_position_in_xy,
         )
 
         simple_setup.setOptimizationObjective(objective)
         planner = og.RRTstar(space_information)
-        planner.setRange(MAX_EDGE_LEN_KM)
+        # planner.setRange(MAX_EDGE_LEN_KM)
         simple_setup.setPlanner(planner)
 
         return simple_setup
 
-    def is_state_valid(state: Union[base.State, base.SE2StateInternal]) -> bool:
+    def _compute_goal_heading_rad(self) -> float:
+        """Compute the yaw to set at the goal state, in OMPL Cartesian radians.
+
+        When the next global waypoint is not the final destination, the yaw is the bearing
+        from that waypoint toward the global waypoint after it, so OMPL plans a path that
+        arrives already aligned for the next leg. When it is the final destination, the
+        arrival orientation is arbitrary and we start from 0.0.
+
+        In either case, if the resulting yaw points into the wind no-go zone (upwind or
+        downwind irons), it is snapped to the nearest edge of the no-go zone so the boat
+        can physically hold that heading at the goal.
+
+        Returns:
+            float: OMPL Cartesian yaw in radians for the goal state.
+        """
+        waypoints = self.state.global_path.waypoints
+        reference = self.state.reference_latlon
+
+        # Global waypoints are stored in reverse order: index 0 is the final destination.
+        if reference == waypoints[0]:
+            return self._offset_if_in_irons_rad(0.0)
+
+        for i in range(1, len(waypoints)):
+            if waypoints[i] == reference:  # reference is next_gw_xy at (0, 0) in OMPL frame
+                # calculates bearing between next_gw_xy and next_to_next_gw_xy
+                next_to_next_gw_xy = cs.latlon_to_xy(reference, waypoints[i - 1])
+                bearing_deg = cs.get_path_segment_true_bearing(cs.XY(0, 0), next_to_next_gw_xy)
+                target_yaw_rad = math.radians(cs.true_bearing_to_OMPL_cartesian(bearing_deg))
+                return self._offset_if_in_irons_rad(target_yaw_rad)
+
+        self._logger.warning(
+            "reference_latlon not found in global_path waypoints; using default goal yaw 0.0"
+        )
+        return self._offset_if_in_irons_rad(0.0)
+
+    def _offset_if_in_irons_rad(self, target_yaw_rad: float) -> float:
+        """Snap a goal yaw out of the wind no-go zone, returning it unchanged otherwise.
+
+        A sailboat cannot hold a heading within NO_GO_ZONE of directly upwind or directly
+        downwind. When the proposed yaw is in either cone, this snaps to the closer edge,
+        which is also the edge that keeps the most heading progress toward the original
+        target direction (so it doubles as both the smallest correction and the side that
+        still points generally toward the next-to-next waypoint).
+
+        The planning-wind snapshot (path_generated_wind when available, otherwise the
+        current true wind) is used so the goal yaw, motion validator, and objective all
+        share the same wind baseline.
+
+        Args:
+            target_yaw_rad: Proposed goal yaw in OMPL Cartesian radians (0 = East, CCW positive).
+
+        Returns:
+            float: A goal yaw in OMPL Cartesian radians outside the wind no-go zone.
+        """
+        planning_wind = self.state.path_generated_wind or self.state.current_tw
+        tw_dir_rad_gc = math.radians(planning_wind.dir_deg)
+
+        # OMPL Cartesian yaw → boat heading in true-bearing radians, bounded to (-pi, pi].
+        boat_heading_rad_gc = cs.bound_to_180(
+            cs.cartesian_to_true_bearing(target_yaw_rad, rad=True), rad=True
+        )
+        twa = wcs.get_true_wind_angle(boat_heading_rad_gc, tw_dir_rad_gc)
+
+        abs_twa = abs(twa)
+
+        if abs_twa <= NO_GO_ZONE:
+            # Upwind irons: snap just outside the ±NO_GO_ZONE edge (margin pushes away from 0).
+            upwind_edge = NO_GO_ZONE + IRONS_MARGIN_RAD
+            new_twa = upwind_edge if twa >= 0 else -upwind_edge
+        elif abs_twa >= math.pi - NO_GO_ZONE:
+            # Downwind irons: snap just inside the ±(pi - NO_GO_ZONE) edge (margin toward pi/2).
+            downwind_edge = math.pi - NO_GO_ZONE - IRONS_MARGIN_RAD
+            new_twa = downwind_edge if twa >= 0 else -downwind_edge
+        else:
+            return target_yaw_rad
+
+        # twa = tw_dir - boat_heading, so boat_heading = tw_dir - twa.
+        new_boat_heading_rad_gc = cs.bound_to_180(tw_dir_rad_gc - new_twa, rad=True)
+        return math.radians(
+            cs.true_bearing_to_OMPL_cartesian(math.degrees(new_boat_heading_rad_gc))
+        )
+
+    def is_state_valid(self, state: Union[base.State, base.SE2StateInternal]) -> bool:
         """Evaluate a state to determine if the configuration collides with an environment
         obstacle.
 
@@ -423,20 +583,19 @@ class OMPLPath:
         if OMPLPath.obstacles:
 
             for o in OMPLPath.obstacles.values():
-                if isinstance(state, base.State):  # for testing purposes
-                    state_is_valid = o.is_valid(cs.XY(state().getX(), state().getY()))
-
+                if isinstance(state, base.State):
+                    # for testing purposes; the tests use state object
+                    point = cs.XY(state().getX(), state().getY())
                 else:  # when OMPL uses this function, it will pass in an SE2StateInternal object
-                    state_is_valid = o.is_valid(cs.XY(state.getX(), state.getY()))
-
-                if not state_is_valid:
-                    # uncomment this if you want to log which states are being labeled invalid
-                    # its commented out for now to avoid unnecessary file I/O
-
-                    # if isinstance(state, base.State):  # only happens in unit tests
-                    #     log_invalid_state(state=cs.XY(state().getX(), state().getY()), obstacle=o) # noqa
-                    # else:  # happens in prod
-                    #     log_invalid_state(state=cs.XY(state.getX(), state.getY()), obstacle=o)
+                    point = cs.XY(state.getX(), state.getY())
+                if not o.is_valid(point):
+                    # Per-state file logging for invalid-state. Log a write failure then re-raise
+                    # TODO: remove before final launch to avoid unbounded disk growth.
+                    try:
+                        log_invalid_state(state=point, obstacle=o)
+                    except OSError as e:
+                        self._logger.error(f"log_invalid_state write failed: {e}")
+                        raise
                     return False
 
         return True
@@ -453,19 +612,6 @@ def log_invalid_state(state: cs.XY, obstacle: ob.Obstacle):
         log_file.write(
             f"State at ({state.x:.2f},{state.y:.2f}) was invalidated by obstacle: {type(obstacle)}\n"  # noqa
         )
-
-
-def get_planner_class():
-    """Choose the planner to use for the OMPL query.
-
-    Args:
-        planner (str): Name of the planner to use.
-
-    Returns:
-        Tuple[str, Type[base.Planner]]: The name and class of the planner to use for the OMPL
-        query, defaults to RRT* if `planner` is not implemented in this function.
-    """
-    return "rrtstar", og.RRTstar
 
 
 def load_pkl(file_path: str) -> Any:

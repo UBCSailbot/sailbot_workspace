@@ -34,4 +34,9 @@ sudo apt-get update
 rosdep update --rosdistro "$ROS_DISTRO"
 rosdep install --from-paths src --ignore-src --rosdistro "$ROS_DISTRO" $DEP_FLAGS
 
-source "$HOME/.bashrc"
+# Create logging folder for all ROS logs.
+LOG_PATH="$ROS_WORKSPACE/src/global_launch/voyage_log"
+if [ ! -d "$LOG_PATH" ]; then
+    sudo mkdir -p "$LOG_PATH"
+fi
+

@@ -1,11 +1,14 @@
 """This module provides a generator for fluid vectors used within the physics engine."""
 
 import numpy as np
-from numpy.typing import NDArray
+from rclpy.logging import get_logger
 
+from boat_simulator.common.conventions import NED, Velocity
 from boat_simulator.common.generators import VectorGenerator
-from boat_simulator.common.types import Scalar
+from boat_simulator.common.types import Vec2
 from boat_simulator.common.utils import bound_to_180, rad_to_degrees
+
+_logger = get_logger(__name__)
 
 
 class FluidGenerator:
@@ -13,52 +16,54 @@ class FluidGenerator:
 
     Attributes:
         `generator` (VectorGenerator): The vector generator used to generate 2D fluid velocities.
-        `velocity` (NDArray): The most recently generated fluid velocity vector, expressed in
-            meters per second (m/s). It is expected to be a 3D vector.
+        `velocity` (Vec2[Velocity, NED]): The most recently generated fluid velocity vector,
+            expressed in meters per second (m/s).
     """
 
     def __init__(self, generator: VectorGenerator):
         self.__generator = generator
-        self.__velocity = np.array(self.__generator.next())
-        assert self.__velocity.shape == (2,)
+        self.__velocity: Vec2[Velocity, NED] = Vec2(self.__generator.next())
 
-    def next(self) -> NDArray:
+    def next(self) -> Vec2[Velocity, NED]:
         """Generates the next velocity vector for the fluid simulation.
 
         Returns:
-            NDArray: An array representing the updated velocity vector for the fluid simulation.
+            Vec2[Velocity, NED]: The updated fluid velocity vector in m/s.
         """
-        self.__velocity = np.array(self.__generator.next())
+        self.__velocity = Vec2(self.__generator.next())
+        _logger.debug(
+            f"next: velocity={self.__velocity} speed={self.speed} direction={self.direction}"
+        )
         return self.__velocity
 
     @property
-    def velocity(self) -> NDArray:
+    def velocity(self) -> Vec2[Velocity, NED]:
         """Returns the fluid's current velocity vector.
 
         Returns:
-            NDArray: The velocity vector of the fluid, expressed in meters per second (m/s) and
-                ranging from negative infinity to positive infinity.
+            Vec2[Velocity, NED]: The velocity vector of the fluid, expressed in
+                meters per second (m/s) and ranging from negative infinity to positive infinity.
         """
         return self.__velocity
 
     @property
-    def speed(self) -> Scalar:
+    def speed(self) -> float:
         """Calculates the current speed of the fluid.
 
         Returns:
-            Scalar: The speed of the fluid, expressed in meters per second (m/s) and within the
+            float: The speed of the fluid, expressed in meters per second (m/s) and within the
                 range of 0 to positive infinity.
         """
-        return np.linalg.norm(self.__velocity)
+        return float(np.linalg.norm(self.__velocity.data))
 
     @property
-    def direction(self) -> Scalar:
+    def direction(self) -> float:
         """Calculates the current direction of the fluid.
 
         Returns:
-            Scalar: The direction of the fluid, expressed in degrees and bounded between
+            float: The direction of the fluid, expressed in degrees and bounded between
                 [-180, 180).
         """
-        angle_rad = np.arctan2(self.__velocity[1], self.__velocity[0])
+        angle_rad = np.arctan2(self.__velocity.data[1], self.__velocity.data[0])
         angle_deg = rad_to_degrees(angle_rad)
         return bound_to_180(angle_deg)

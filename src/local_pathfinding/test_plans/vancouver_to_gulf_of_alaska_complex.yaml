@@ -1,0 +1,103 @@
+# Vancouver to Gulf of Alaska stress corridor.
+#
+# The test-plan schema only supports one wind snapshot. This uses a moderate
+# southeasterly frontal wind, common along the BC coast and Gulf of Alaska.
+# 28 km/h is roughly 15 kt, strong enough to force meaningful sail constraints
+# without making every local segment extreme.
+tw_dir_deg: 145
+tw_speed_kmph: 5.0
+
+gps:
+  latitude: 49.280000
+  longitude: -123.180000
+  speed_kmph: 10.0
+  heading_deg: 309.0
+
+# Dense mixed traffic: ferries, tugs, fishing vessels, a tanker, and cargo ships.
+# The headings intentionally create head-on, crossing, overtaking, and slow-drift
+# interactions across the Vancouver departure corridor.
+ais:
+  - {id: 101, lat: 49.292000, lon: -123.205000, heading: 105.0, speed: 22.0, rot: 0, width: 30.0, height: 180.0}
+  - {id: 102, lat: 49.305000, lon: -123.238000, heading: 285.0, speed: 32.0, rot: 0, width: 28.0, height: 150.0}
+  - {id: 103, lat: 49.317000, lon: -123.255000, heading: 350.0, speed: 11.0, rot: 4, width: 14.0, height: 90.0}
+  - {id: 104, lat: 49.335000, lon: -123.293000, heading: 170.0, speed: 8.0, rot: -3, width: 8.0, height: 24.0}
+  - {id: 105, lat: 49.350000, lon: -123.322000, heading: 80.0, speed: 18.0, rot: 0, width: 22.0, height: 140.0}
+  - {id: 106, lat: 49.364000, lon: -123.360000, heading: 115.0, speed: 30.0, rot: 0, width: 25.0, height: 120.0}
+  - {id: 107, lat: 49.380000, lon: -123.388000, heading: 245.0, speed: 26.0, rot: 0, width: 8.0, height: 35.0}
+  - {id: 108, lat: 49.394000, lon: -123.420000, heading: 20.0, speed: 9.0, rot: 2, width: 7.0, height: 20.0}
+  - {id: 109, lat: 49.421000, lon: -123.450000, heading: 135.0, speed: 16.0, rot: 0, width: 42.0, height: 230.0}
+  - {id: 110, lat: 49.288000, lon: -123.190000, heading: 315.0, speed: 7.0, rot: 0, width: 4.0, height: 12.0}
+  - {id: 111, lat: 49.308000, lon: -123.225000, heading: 305.0, speed: 24.0, rot: 0, width: 32.0, height: 170.0}
+  - {id: 112, lat: 49.373000, lon: -123.330000, heading: 210.0, speed: 13.0, rot: -6, width: 16.0, height: 65.0}
+  - {id: 113, lat: 49.406000, lon: -123.462000, heading: 55.0, speed: 6.0, rot: 5, width: 12.0, height: 45.0}
+  - {id: 114, lat: 49.344000, lon: -123.268000, heading: 265.0, speed: 12.0, rot: -8, width: 10.0, height: 40.0}
+
+# [lon, lat]. These polygons approximate shoreline, islands, and shallow
+# exclusion areas around the Vancouver-to-offshore departure corridor.
+land:
+  # Point Grey / Spanish Banks shoreline south of the first legs.
+  - [[-123.255000, 49.245000],
+     [-123.175000, 49.250000],
+     [-123.155000, 49.268000],
+     [-123.205000, 49.272000],
+     [-123.252000, 49.266000]]
+
+  # North Shore / West Vancouver shoreline north of English Bay.
+  - [[-123.160000, 49.304000],
+     [-123.218000, 49.310000],
+     [-123.286000, 49.344000],
+     [-123.260000, 49.365000],
+     [-123.178000, 49.343000],
+     [-123.145000, 49.318000]]
+
+  # Inner-island obstruction on the southern side of the mid-route.
+  - [[-123.342000, 49.305000],
+     [-123.302000, 49.313000],
+     [-123.316000, 49.339000],
+     [-123.358000, 49.334000],
+     [-123.368000, 49.318000]]
+
+  # Rocky islets near the middle of the corridor.
+  - [[-123.396000, 49.322000],
+     [-123.374000, 49.327000],
+     [-123.382000, 49.344000],
+     [-123.408000, 49.338000]]
+
+  # Bowen/Howe Sound mass north of the later legs.
+  - [[-123.342000, 49.394000],
+     [-123.392000, 49.397000],
+     [-123.438000, 49.427000],
+     [-123.405000, 49.452000],
+     [-123.342000, 49.430000],
+     [-123.315000, 49.407000]]
+
+  # Offshore shoal south-west of the later legs.
+  - [[-123.468000, 49.350000],
+     [-123.414000, 49.356000],
+     [-123.402000, 49.382000],
+     [-123.452000, 49.390000],
+     [-123.491000, 49.374000]]
+
+  # Northern coast shoulder at the end of this local-scale route.
+  - [[-123.518000, 49.448000],
+     [-123.448000, 49.451000],
+     [-123.420000, 49.486000],
+     [-123.492000, 49.508000],
+     [-123.545000, 49.485000]]
+
+# Global paths in this package are stored destination-first:
+# the first waypoint is the final destination and the last waypoint is the start.
+# These 10 waypoints are spaced about 3 km apart along the initial Vancouver
+# departure bearing toward the Gulf of Alaska.
+global_path:
+  waypoints:
+    - {latitude: 49.432433, longitude: -123.470178}
+    - {latitude: 49.415532, longitude: -123.437848}
+    - {latitude: 49.398622, longitude: -123.405539}
+    - {latitude: 49.381703, longitude: -123.373252}
+    - {latitude: 49.364775, longitude: -123.340988}
+    - {latitude: 49.347838, longitude: -123.308746}
+    - {latitude: 49.330892, longitude: -123.276526}
+    - {latitude: 49.313937, longitude: -123.244329}
+    - {latitude: 49.296973, longitude: -123.212153}
+    - {latitude: 49.280000, longitude: -123.180000}

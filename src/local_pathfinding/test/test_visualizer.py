@@ -1,7 +1,9 @@
 import math
+from types import SimpleNamespace
 
 import pytest
 
+import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.visualizer as viz
 
@@ -67,6 +69,22 @@ def test_get_unit_vector(vec: cs.XY, expected: cs.XY, expect_unit: bool):
         assert mag == pytest.approx(1.0), "magnitude of unit vector is not 1"
 
 
+def test_wind_box_is_below_main_plot():
+    vs = SimpleNamespace(
+        aw_vector_kmph=cs.XY(1.0, 0.0),
+        tw_vector_kmph=cs.XY(0.0, 1.0),
+        bw_vector_kmph=cs.XY(-1.0, 0.0),
+    )
+    wind_config = viz.configure_wind_box_elements(vs)
+    fig = viz.initial_plot()
+    viz.apply_layout(vs, fig, zoom_needed=False, last_range=None)
+
+    wind_y_domain = wind_config.layout_config["yaxis2"]["domain"]
+    assert wind_y_domain[1] < fig.layout.yaxis.domain[0]
+    assert wind_config.background_info["y0"] == wind_y_domain[0]
+    assert wind_config.background_info["y1"] == wind_y_domain[1]
+
+
 # --------------------------------------
 # Figure Builder Functions Tests
 # --------------------------------------
@@ -79,7 +97,9 @@ def test_get_unit_vector(vec: cs.XY, expected: cs.XY, expect_unit: bool):
     ],
 )
 def test_build_intermediate_trace(local_x, local_y, expected_x, expected_y, expected_text):
-    t = viz.build_intermediate_trace(local_x, local_y).to_plotly_json()
+    # reference only affects hover lat/lon (customdata), not the plotted x/y asserted below
+    reference = ci.HelperLatLon(latitude=49.0, longitude=-123.0)
+    t = viz.build_intermediate_trace(local_x, local_y, reference).to_plotly_json()
     assert t["x"] == expected_x
     assert t["y"] == expected_y
 
@@ -107,3 +127,27 @@ def test_build_path_trace(local_x, local_y, boat_xy, expect_none):
         assert j["name"] == "Path to Goal"
         assert j["x"] == [boat_xy[0]] + list(local_x[1:])
         assert j["y"] == [boat_xy[1]] + list(local_y[1:])
+
+
+def test_build_ompl_yaw_trace():
+    trace = viz.build_ompl_yaw_trace(
+        local_x_km=[0.0, 1.0, 2.0, 3.0],
+        local_y_km=[3.0, 2.0, 1.0, 0.0],
+        headings_deg=[0.0, 90.0, 180.0, -90.0],
+    ).to_plotly_json()
+
+    assert trace["name"] == "OMPL Yaw"
+    assert trace["x"] == [0.0, 1.0, 2.0, 3.0]
+    assert trace["y"] == [3.0, 2.0, 1.0, 0.0]
+    assert trace["marker"]["symbol"] == "arrow"
+    assert trace["marker"]["angleref"] == "up"
+    # Plotly normalizes marker angles into [-180, 180].
+    assert trace["marker"]["angle"] == pytest.approx([0.0, 90.0, -180.0, -90.0])
+    assert [row[2] for row in trace["customdata"]] == pytest.approx(
+        [math.pi / 2, 0.0, -math.pi / 2, -math.pi]
+    )
+
+
+def test_build_ompl_yaw_trace_rejects_mismatched_data():
+    with pytest.raises(ValueError, match="matching lengths"):
+        viz.build_ompl_yaw_trace([0.0], [0.0], [])

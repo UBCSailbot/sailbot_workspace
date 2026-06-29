@@ -259,6 +259,13 @@ private:
     void clearSerialBuffer();
 
     /**
+     * @brief  Read a binary response from Iridium
+     *
+     * @return std::optional<std::string>
+     */
+    std::optional<std::string> readBinaryRsp();
+
+    /**
      * @brief Parse the message received from the remote server
      *
      * @param msg message received from the remote server

@@ -2,17 +2,30 @@
 /**:
    ros__parameters:
       # Publishers' period (seconds): how often the publishers publish
+      config: "globals.yaml"
       pub_period_sec: 1.0
-      global_path_interval_spacing_km: 3.0
       test_plan: "basic.yaml"
 
 # local_pathfinding parameters
-mock_global_path:
+global_path:
    ros__parameters:
-      gps_threshold: 1.5
+      global_path_filepath: "/workspaces/sailbot_workspace/src/local_pathfinding/global_paths/mock_global_path.csv"
+mock_ais:
+   ros__parameters:
+      on_water_mock_ais: False
+      on_water_test_plan: "on_water_mock_ais.yaml"
+mock_gps:
+   ros__parameters:
+      use_gps_noise: True
+      use_ocean_drift: True
+      use_drift_randomization: True
+      ocean_drift_speed_kmph: 0.5
+      ocean_drift_dir_deg: 45.0
+      ocean_drift_accel_kmph2: 0.0
 navigate_main:
    ros__parameters:
       path_planner: "rrtstar"
+      visualizer_mode: False
 
 # controller parameters
 wingsail_ctrl_node:
@@ -57,19 +70,19 @@ physics_engine_node:
       wind_sensor:
          generator_type: gaussian
          gaussian_params:
-            mean: [1.0, 0.0]
-            std_dev: [0.1, 0.1]
+            mean: [0.278, 0.0]
+            std_dev: [0.028, 0.028]
             corr_xy: 0.
          constant_params:
-            value: [1.0, 0.0]
+            value: [0.278, 0.0]
       wind_generation:
          mvgaussian_params:
-            mean: [5.0, 5.0]
-            cov: "[[25.0, 10.0], [10.0, 15.0]]"
+            mean: [1.389, 1.389]
+            cov: "[[1.111, 0.278], [0.278, 1.111]]"
       current_generation:
          mvgaussian_params:
-            mean: [1.0, 0.5]
-            cov: "[[0.5, 0.1], [0.1, 0.3]]"
+            mean: [0.278, 0.139]
+            cov: "[[0.1389, 0.028], [0.028, 0.083]]"
 data_collection_node:
    ros__parameters:
       file_name: "ros_data_collection"

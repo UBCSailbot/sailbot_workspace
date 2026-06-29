@@ -3,12 +3,14 @@
 import math
 from typing import List, NamedTuple
 
-import custom_interfaces.msg as ci
 from pyproj import Geod
 from shapely.geometry import Point, Polygon
 
+import custom_interfaces.msg as ci
+
 GEODESIC = Geod(ellps="WGS84")
 PI = math.pi
+ON_WATER_REFERENCE = (49.277065, -123.201474)  # (lat, lon) pier the on-water edge is cut back to
 
 
 class XY(NamedTuple):
@@ -28,12 +30,15 @@ def cartesian_to_true_bearing(cartesian_angle: float, rad: bool = False) -> floa
 
     Args:
         cartesian_angle (float): Angle where 0 is east and values increase counter-clockwise.
+            The input may be either unsigned Cartesian ([0, 360) degrees / [0, 2*pi) radians)
+            or signed Cartesian, such as OMPL yaw ([-180, 180) degrees / [-pi, pi) radians);
+            values are interpreted modulo one full turn.
         rad (bool): If set to true cartesian_angle is assumed to be in radians, otherwise
                     cartesian_angle is assumed to be in degrees by default.
 
     Returns:
-        float: Angle where 0 is north and values increase clockwise. If rad is set to True then the
-               returned angle is in radians, otherwise it is in degrees by default.
+        float: Angle where 0 is north and values increase clockwise, normalized to [0, 360)
+               degrees or [0, 2*pi) radians when rad is True.
     """
     if rad:
         return ((PI / 2) - cartesian_angle + (2 * PI)) % (2 * PI)
@@ -54,6 +59,25 @@ def true_bearing_to_plotly_cartesian(true_bearing_deg: float) -> float:
     if -180 < true_bearing_deg < 0:
         plotly_cartesian += 360.0
     return plotly_cartesian
+
+
+def true_bearing_to_OMPL_cartesian(true_bearing_deg: float) -> float:
+    """Convert a navigation true bearing to an OMPL Cartesian yaw in degrees.
+
+    Args:
+        true_bearing_deg: Navigation angle in degrees, where 0 is north and positive values
+            rotate clockwise. Expected range is (-180, 180].
+
+    Returns:
+        The equivalent Cartesian angle in degrees, where 0 is east and positive values rotate
+        counterclockwise. The result is in [-180, 180), matching OMPL's SO(2) bounds; west is
+        represented as -180 rather than 180 degrees. This signed result is equivalent modulo
+        360 degrees to the unsigned Cartesian angle accepted by `cartesian_to_true_bearing`.
+    """
+    angle = (90.0 - true_bearing_deg) % 360.0
+    if angle >= 180.0:
+        return - 1.0 * (360.0 - angle)
+    return angle
 
 
 def get_path_segment_true_bearing(s1: XY, s2: XY, rad: bool = False):
@@ -94,7 +118,7 @@ def polar_to_cartesian(angle_rad: float, magnitude: float) -> XY:
     """
     return XY(
         x=magnitude * math.sin(angle_rad),
-        y=magnitude * math.cos(angle_rad)
+        y=magnitude * math.cos(angle_rad),
     )
 
 
@@ -161,6 +185,29 @@ def latlon_to_xy(reference: ci.HelperLatLon, latlon: ci.HelperLatLon) -> XY:
         x=distance * math.sin(true_bearing),
         y=distance * math.cos(true_bearing),
     )
+
+
+def calculate_distance_from_on_water_reference_km(latlon: ci.HelperLatLon) -> float:
+    """Calculate the geodesic distance from the on-water reference point to a coordinate.
+
+    The on-water reference (:data:`ON_WATER_REFERENCE`) is the pier that the on-water edge of
+    the land data is cut back to.
+
+    Args:
+        latlon (ci.HelperLatLon): Coordinate to measure the distance to.
+
+    Returns:
+        float: The geodesic distance between the on-water reference and latlon, in km.
+    """
+    on_water_reference_lat, on_water_reference_lon = ON_WATER_REFERENCE
+
+    _, _, distance_m = GEODESIC.inv(
+        on_water_reference_lon, on_water_reference_lat, latlon.longitude, latlon.latitude
+    )
+
+    distance_km = meters_to_km(distance_m)
+
+    return distance_km
 
 
 def xy_to_latlon(reference: ci.HelperLatLon, xy: XY) -> ci.HelperLatLon:
@@ -246,3 +293,44 @@ def latlon_polygon_list_to_xy_polygon_list(
 def latlon_list_to_xy_list(reference_latlon, lat_lon_list: List[ci.HelperLatLon]) -> List[XY]:
     """Converts a list of lat/lon coordinates to x/y coordinates."""
     return [latlon_to_xy(reference=reference_latlon, latlon=pos) for pos in lat_lon_list]
+
+
+def rot_to_rad_per_sec(rot: int) -> float:
+    """
+    Convert an AIS rate-of-turn (ROT) value into radians per second.
+
+    The AIS spec defines a two-step conversion:
+      1. Decode to degrees/min:   ROT_deg_per_min = (ROT_ais / 4.733)²
+      2. Convert to rad/s:        ROT_rad_per_sec = ROT_deg_per_min × (π/180) / 60
+
+    Specification:
+    https://documentation.spire.com/ais-fundamentals/understanding-ais-performance-in-high-traffic-zones/
+
+    Special values (not decoded via formula):
+        +127 : turning right at > 10 °/min; Turn Indicator unavailable — returns minimum bound
+        -127 : turning left  at > 10 °/min; Turn Indicator unavailable — returns minimum bound
+        -128 : no turning information available — returns 0.0
+
+    Returns:
+        float: Rate of turn in rad/s. Positive = turning right (starboard), negative = turning left
+
+    Raises:
+        ValueError: If rot is outside the valid int8 range [-128, 127].
+    """
+
+    if not (-128 <= rot <= 127):
+        raise ValueError(f"rot must be a valid int8 value in [-128, 127], got {rot}")
+
+    if rot == -128:
+        return 0.0
+
+    # Turning indicator unavailable: true rate is unknown but guaranteed > 10 °/min.
+    # Return the minimum known bound with correct sign.
+    if abs(rot) == 127:
+        return math.copysign(math.radians(10.0 / 60.0), rot)
+
+    # Capture sign before squaring, since (x)² == (-x)²
+    sign = math.copysign(1.0, rot)
+    rot_dpm = (abs(rot) / 4.733) ** 2
+
+    return math.radians(sign * rot_dpm / 60.0)

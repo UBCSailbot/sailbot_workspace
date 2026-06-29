@@ -6,8 +6,6 @@ from rclpy.node import Node
 from test_plans.test_plan import TestPlan
 
 import custom_interfaces.msg as ci
-import local_pathfinding.coord_systems as cs
-import local_pathfinding.global_path as gp
 
 
 def main(args=None):
@@ -44,8 +42,6 @@ class MockGlobalPath(Node):
         self.declare_parameters(
             namespace="",
             parameters=[
-                ("global_path_interval_spacing_km", rclpy.Parameter.Type.DOUBLE),
-                ("gps_threshold", rclpy.Parameter.Type.DOUBLE),
                 ("test_plan", rclpy.Parameter.Type.STRING),
             ],
         )
@@ -58,102 +54,29 @@ class MockGlobalPath(Node):
             msg_type=ci.Path, topic="global_path", qos_profile=10
         )
 
-        test_plan = TestPlan(self.get_parameter("test_plan").get_parameter_value().string_value)
+        test_plan_name = self.get_parameter("test_plan").get_parameter_value().string_value
+        self.get_logger().debug(f"Mock global path node test plan: {test_plan_name}")
+        test_plan = TestPlan(test_plan_name)
+
         self.global_path = test_plan.global_path
-        self.pos = None
+
+    @staticmethod
+    def _path_to_dict(path: ci.Path, num_decimals: int = 4) -> dict[int, str]:
+        """Converts a ci.Path msg to a dictionary suitable for logging."""
+        return {
+            i: f"({waypoint.latitude:.{num_decimals}f}, {waypoint.longitude:.{num_decimals}f})"
+            for i, waypoint in enumerate(path.waypoints)
+        }
 
     # Timer callbacks
     def global_path_callback(self, gps: ci.GPS):
-
-        if self.should_update_gpath(gps):
-
-            pos = self.pos
-
-            # we need to obtain the actual distances between every waypoint in the global path
-            path_spacing = gp.calculate_interval_spacing(pos, self.global_path.waypoints)
-            interval_spacing = self.get_parameter("global_path_interval_spacing_km")._value
-
-            # this checks if global path is just a destination point
-            if len(self.global_path.waypoints) < 2:
-                self.get_logger().debug(
-                    f"Generating new path from {pos.latitude:.4f}, {pos.longitude:.4f} to "
-                    f"{self.global_path.waypoints[0].latitude:.4f}, "
-                    f"{self.global_path.waypoints[0].longitude:.4f}"
-                )
-
-                msg = gp.generate_path(
-                    dest=self.global_path.waypoints[0],
-                    interval_spacing=interval_spacing,
-                    pos=pos,
-                )
-
-            elif max(path_spacing) > interval_spacing:
-                self.get_logger().debug(
-                    f"Some waypoints in the global path exceed the maximum interval spacing of"
-                    f" {interval_spacing} km. Interpolating between waypoints and generating path"
-                )
-
-                msg = gp._interpolate_path(
-                    global_path=self.global_path,
-                    interval_spacing=interval_spacing,
-                    pos=pos,
-                    path_spacing=path_spacing,
-                )
-
-            else:
-                msg = self.global_path
-
-        else:
-            # need to still publish the path even if its unchanged
-            # to ensure that node_navigate will still receive the waypoints
-            # in the event that this node launches first and publishes the
-            # mock global path once into the void
-            self.get_logger().debug("Publishing the global path unchanged")
-            msg = self.global_path
-
-        self.get_logger().debug(f"Publishing mock global path: {gp.path_to_dict(msg)}")
-        self.global_path = msg
+        # Publish the test plan's global path exactly as defined. This node does not interpolate
+        # between waypoints or generate a path from the boat's position — it relies solely on the
+        # waypoints provided in the test plan. The path is still published on every GPS message so
+        # that node_navigate receives the waypoints even if this node launched first.
+        msg = self.global_path
+        # self.get_logger().debug(f"Publishing mock global path: {self._path_to_dict(msg)}")
         self.global_path_pub.publish(msg)
-
-    def should_update_gpath(self, gps: ci.GPS):
-        """Determines if the gps location has changed enough since the last time this function
-        was called to warrant updating the global path. Doing this ensures that polaris is never
-        toofar away from the nearest global waypoint.
-
-        Args:
-            gps (ci.GPS): current GPS data from polaris
-
-        Returns:
-            bool: True if the gps location has changed enough to warrant an update of global path
-        """
-        update_gpath = False
-
-        pos = gps.lat_lon
-        if self.pos:
-            position_delta = cs.meters_to_km(
-                cs.GEODESIC.inv(
-                    lats1=self.pos.latitude,
-                    lons1=self.pos.longitude,
-                    lats2=pos.latitude,
-                    lons2=pos.longitude,
-                )[2]
-            )
-            gps_threshold = self.get_parameter("gps_threshold")._value
-            interval_spacing = self.get_parameter("global_path_interval_spacing_km")._value
-
-            if position_delta > gps_threshold * interval_spacing:
-                self.get_logger().debug(
-                    f"GPS data changed by more than {gps_threshold*interval_spacing} km. Running "
-                    "global path callback"
-                )
-                update_gpath = True
-        else:
-            # first time being called
-            # should always force mock global path to update
-            update_gpath = True
-
-        self.pos = pos
-        return update_gpath
 
 
 if __name__ == "__main__":

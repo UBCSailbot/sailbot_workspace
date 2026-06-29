@@ -20,8 +20,8 @@ class TestFluidGenerator:
         vector_generator = ConstantGenerator(constant=vector)
         fluid_generator = FluidGenerator(generator=vector_generator)
         first_fluid_vector = fluid_generator.velocity
-        assert np.all(first_fluid_vector == vector)
-        assert np.all(first_fluid_vector == fluid_generator.next())
+        np.testing.assert_array_equal(first_fluid_vector.data, vector)
+        assert first_fluid_vector == fluid_generator.next()
 
     @pytest.mark.parametrize(
         "mean, cov",
@@ -37,7 +37,7 @@ class TestFluidGenerator:
         fluid_generator = FluidGenerator(vector_generator)
         first_fluid_vector = fluid_generator.velocity
         next_fluid_vector = fluid_generator.next()
-        assert np.all(next_fluid_vector != first_fluid_vector)
+        assert next_fluid_vector != first_fluid_vector
 
     @pytest.mark.parametrize(
         "vector",
@@ -54,7 +54,7 @@ class TestFluidGenerator:
         vector_generator = ConstantGenerator(constant=vector)
         fluid_generator = FluidGenerator(generator=vector_generator)
         generated_fluid_vector = fluid_generator.next()
-        assert np.all(vector == generated_fluid_vector)
+        np.testing.assert_array_equal(vector, generated_fluid_vector.data)
         assert np.linalg.norm(vector) == fluid_generator.speed
 
     @pytest.mark.parametrize(

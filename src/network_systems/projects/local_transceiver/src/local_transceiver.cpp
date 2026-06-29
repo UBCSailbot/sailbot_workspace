@@ -171,7 +171,7 @@ bool LocalTransceiver::send()
     std::string write_bin_cmd_str = AT::write_bin::CMD + std::to_string(data.size());  //according to specs
     AT::Line    at_write_cmd(write_bin_cmd_str);
 
-    static constexpr int MAX_NUM_RETRIES = 20;  // allow retries because the connection is imperfect
+    static constexpr int MAX_NUM_RETRIES = 5;  // allow retries because the connection is imperfect
     for (int i = 0; i < MAX_NUM_RETRIES; i++) {
         std::this_thread::sleep_for(std::chrono::seconds(SMALL_WAIT));
         clearSerialBuffer();  // Clear any stale data from previous iteration
@@ -230,7 +230,7 @@ bool LocalTransceiver::send()
         // NEEDS AN ACTIVE SERVER ON $WEBHOOK_SERVER_ENDPOINT OR VIRTUAL IRIDIUM WILL CRASH
         static const AT::Line sbdix_cmd = AT::Line(AT::SBD_SESSION);
         if (!send(sbdix_cmd)) {
-            continue;
+            return false;
         }
 
         clearSerialBuffer();  // Clear any data that may have come in while waiting for SBDIX response, to ensure the following readRsp gets a clean response
@@ -239,12 +239,12 @@ bool LocalTransceiver::send()
               sbdix_cmd,
               AT::Line(AT::DELIMITER),
             })) {
-            continue;
+            return false;
         }
 
         auto opt_rsp = readRsp();
         if (!opt_rsp) {
-            continue;
+            return false;
         }
 
         // This string will look something like:
@@ -259,6 +259,8 @@ bool LocalTransceiver::send()
         if (rsp.MOSuccess()) {
             return true;
         }
+        std::cerr << "SBDIX MO status indicates failure: " << std::to_string(rsp.MO_status_) << std::endl;
+        return false;
     }
     std::cerr << "Failed to transmit data to satellite!" << std::endl;
     std::cerr << sensors.DebugString() << std::endl;
@@ -283,7 +285,7 @@ bool LocalTransceiver::debugSendAT(const std::string & data)
     std::string write_bin_cmd_str = AT::write_bin::CMD + std::to_string(data.size());
     AT::Line    at_write_cmd(write_bin_cmd_str);
 
-    static constexpr int MAX_NUM_RETRIES = 20;
+    static constexpr int MAX_NUM_RETRIES = 5;
     for (int i = 0; i < MAX_NUM_RETRIES; i++) {
         if (log_debug_) {
             log_debug_("Debug: clearing buffer (attempt " + std::to_string(i) + ")");
@@ -318,8 +320,8 @@ bool LocalTransceiver::debugSendAT(const std::string & data)
         }
         if (log_debug_) {
             log_debug_(
-              "Debug: Iridium signal quality is excellent, proceeding to send write command (attempt " +
-              std::to_string(i) + ")");
+              "Debug: Iridium signal quality is " + std::to_string(current_iridium_signal_quality) +
+              ", proceeding to send write command (attempt " + std::to_string(i) + ")");
         }
 
         if (!send(at_write_cmd)) {
@@ -383,7 +385,7 @@ bool LocalTransceiver::debugSendAT(const std::string & data)
             if (log_error_) {
                 log_error_("Debug: failed to send SBDIX command (attempt " + std::to_string(i) + ")");
             }
-            continue;
+            return false;
         }
         if (log_debug_) {
             log_debug_("Debug: sent SBDIX command (attempt " + std::to_string(i) + "): " + sbdix_cmd.str_);
@@ -396,7 +398,7 @@ bool LocalTransceiver::debugSendAT(const std::string & data)
             if (log_error_) {
                 log_error_("Debug: did not receive SBDIX response header (attempt " + std::to_string(i) + ")");
             }
-            continue;
+            return false;
         }
         if (log_debug_) {
             log_debug_("Debug: received SBDIX response header (attempt " + std::to_string(i) + ")");
@@ -407,7 +409,7 @@ bool LocalTransceiver::debugSendAT(const std::string & data)
             if (log_error_) {
                 log_error_("Debug: readRsp returned no response (attempt " + std::to_string(i) + ")");
             }
-            continue;
+            return false;
         }
         if (log_debug_) {
             log_debug_("Debug: readRsp received response (attempt " + std::to_string(i) + "): " + opt_rsp.value());
@@ -429,6 +431,10 @@ bool LocalTransceiver::debugSendAT(const std::string & data)
             }
             return true;
         }
+        if (log_error_) {
+            log_error_("Debug: MO Status: " + std::to_string(rsp.MO_status_));
+        }
+        return false;
     }
 
     if (log_error_) {
@@ -467,9 +473,14 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
 {
     static constexpr int MAX_NUM_RETRIES = 20;
     for (int i = 0; i <= MAX_NUM_RETRIES; i++) {
+        std::this_thread::sleep_for(std::chrono::seconds(SMALL_WAIT));
+        clearSerialBuffer();  // Clear any stale data from previous iteration
+
+        std::this_thread::sleep_for(std::chrono::seconds(MEDIUM_WAIT));
         if (i == MAX_NUM_RETRIES) {
             return parseInMsg("-1");
         }
+
         static const AT::Line check_conn_cmd = AT::Line(AT::CHECK_CONN);
         if (!send(check_conn_cmd)) {
             continue;
@@ -488,14 +499,41 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
             continue;
         }
 
+        clearSerialBuffer();
+
         static const AT::Line sbdix_cmd = AT::Line(AT::SBD_SESSION);
         if (!send(sbdix_cmd)) {
+            if (log_error_) {
+                log_error_("Debug: failed to send SBDIX command (attempt " + std::to_string(i) + ")");
+            }
             continue;
+        }
+        if (log_debug_) {
+            log_debug_("Debug: sent SBDIX command (attempt " + std::to_string(i) + "): " + sbdix_cmd.str_);
+        }
+
+        if (!rcvRsps({
+              sbdix_cmd,
+              AT::Line(AT::DELIMITER),
+            })) {
+            if (log_error_) {
+                log_error_("Debug: did not receive SBDIX response header (attempt " + std::to_string(i) + ")");
+            }
+            continue;
+        }
+        if (log_debug_) {
+            log_debug_("Debug: received SBDIX response header (attempt " + std::to_string(i) + ")");
         }
 
         auto opt_rsp = readRsp();
         if (!opt_rsp) {
+            if (log_error_) {
+                log_error_("Debug: readRsp returned no response (attempt " + std::to_string(i) + ")");
+            }
             continue;
+        }
+        if (log_debug_) {
+            log_debug_("Debug: readRsp received response (attempt " + std::to_string(i) + "): " + opt_rsp.value());
         }
 
         std::string              opt_rsp_val = opt_rsp.value();
@@ -524,6 +562,9 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
             continue;
         }
     }
+    if (log_debug_) {
+        log_debug_("DEBUG3");
+    }
 
     std::string receivedDataBuffer;
     for (int i = 0; i < MAX_NUM_RETRIES; i++) {
@@ -532,34 +573,19 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
             continue;
         }
 
-        if (!rcvRsps({message_to_queue_cmd, AT::Line("\n"), AT::Line("+SBDRB:"), AT::Line("\n")})) {
+        if (!rcvRsps({message_to_queue_cmd})) {
             continue;
         }
 
-        auto buffer_data = readRsp();
-        if (!buffer_data) {
+        auto payload = readBinaryRsp();
+        if (!payload) {
             continue;
         }
+        std::cout << "[RAW PAYLOAD][SIZE " << payload.value().size() << " ]: ";
+        std::cout.write(payload.value().data(), payload.value().size());  //NOLINT
+        std::cout << std::endl;
 
-        std::string message_size_str;
-        std::string message;
-        std::string checksum;
-        uint16_t    message_size_int = 0;
-
-        std::smatch match;
-
-        if (buffer_data && buffer_data->size() >= 2) {
-            message_size_str = buffer_data->substr(0, 2);
-        } else {
-            continue;
-        }
-
-        message_size_int = (static_cast<uint8_t>(message_size_str[0]) << 8) |  //NOLINT(readability-magic-numbers)
-                           static_cast<uint8_t>(message_size_str[1]);          //NOLINT(readability-magic-numbers)
-        message = buffer_data->substr(2, message_size_int);
-
-        receivedDataBuffer = message;
-
+        receivedDataBuffer = payload.value();
         break;
     }
 
@@ -668,6 +694,69 @@ bool LocalTransceiver::rcvRsps(std::initializer_list<const AT::Line> expected_rs
     // All responses must match the expected responses
     return std::all_of(
       expected_rsps.begin(), expected_rsps.end(), [this](const AT::Line & e_rsp) { return rcvRsp(e_rsp); });
+}
+
+std::optional<std::string> LocalTransceiver::readBinaryRsp()
+{
+    std::array<uint8_t, 2>    len_buf;
+    boost::system::error_code ec;
+
+    bool success = runWithTimeout(
+      [&](auto handler) { bio::async_read(serial_, bio::buffer(len_buf), bio::transfer_exactly(2), handler); }, ec);
+
+    if (!success) {
+        if (log_error_) {
+            log_error_("readBinaryRsp: failed to read length prefix: " + ec.message());
+        }
+        return std::nullopt;
+    }
+
+    uint16_t msg_len = (static_cast<uint16_t>(len_buf[0]) << 8) | static_cast<uint16_t>(len_buf[1]);  //NOLINT
+
+    if (msg_len == 0) {
+        if (log_error_) {
+            log_error_("readBinaryRsp: zero length message");
+        }
+        return std::nullopt;
+    }
+
+    std::string payload(msg_len, '\0');
+    success = runWithTimeout(
+      [&](auto handler) { bio::async_read(serial_, bio::buffer(payload), bio::transfer_exactly(msg_len), handler); },
+      ec);
+
+    if (!success) {
+        if (log_error_) {
+            log_error_("readBinaryRsp: failed to read payload: " + ec.message());
+        }
+        return std::nullopt;
+    }
+
+    std::array<uint8_t, 2> chk_buf;
+    success = runWithTimeout(
+      [&](auto handler) { bio::async_read(serial_, bio::buffer(chk_buf), bio::transfer_exactly(2), handler); }, ec);
+
+    if (!success) {
+        if (log_error_) {
+            log_error_("readBinaryRsp: failed to read checksum: " + ec.message());
+        }
+        return std::nullopt;
+    }
+
+    uint16_t received_checksum = (static_cast<uint16_t>(chk_buf[0]) << 8) | static_cast<uint16_t>(chk_buf[1]);  //NOLINT
+    uint16_t calculated_checksum = 0;
+    for (unsigned char byte : payload) {
+        calculated_checksum += byte;
+    }
+
+    if (received_checksum != calculated_checksum) {
+        if (log_error_) {
+            log_error_("readBinaryRsp: checksum mismatch");
+        }
+        return std::nullopt;
+    }
+
+    return payload;
 }
 
 std::optional<std::string> LocalTransceiver::readRsp()

@@ -2,3 +2,4 @@
 .github/pull_request_template.md
 .github/ISSUE_TEMPLATE/
 src/virtual_iridium/
+src/network_systems/projects/remote_server_standalone/mongo-cxx-driver-r4.1.4/

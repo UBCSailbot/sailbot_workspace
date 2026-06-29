@@ -97,7 +97,7 @@ src/controller/
 |------|--------|
 | **controller/common/constants.py** | Physical constants: chord width of main sail, kinematic viscosity, and the Reynolds number → angle-of-attack lookup table (used for trim tab computation). |
 | **controller/common/lut.py** | Look-up table (LUT) class: loads (x, y) data and performs linear or spline interpolation. Used to map Reynolds number to desired angle of attack. |
-| **controller/common/types.py** | Type aliases used in the package (e.g. `Scalar`, `ScalarOrArray`) for type hinting. |
+| **controller/common/types.py** | Type aliases used in the package (e.g. `float`, `ScalarOrArray`) for type hinting. |
 | **controller/wingsail/controllers.py** | `WingsailController`: computes Reynolds number from apparent wind speed, then trim tab angle from Reynolds number and apparent wind direction using the LUT. No ROS dependency. |
 | **controller/wingsail/wingsail_ctrl_node.py** | ROS 2 node `wingsail_ctrl_node`: declares parameters, subscribes to `filtered_wind_sensor`, `gps`, and `desired_heading`, applies wind-threshold scaling and `sail` flag, and publishes `SailCmd` (trim tab angle) on a timer. |
 | **launch/main_launch.py** | Launch file: loads global launch arguments (including `config` and `log_level` from `global_launch`), then starts the wingsail controller node with the given config. |
