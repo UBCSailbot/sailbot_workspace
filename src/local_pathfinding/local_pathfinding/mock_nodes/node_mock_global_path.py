@@ -11,6 +11,7 @@ import custom_interfaces.msg as ci
 def main(args=None):
     rclpy.init(args=args)
     mock_global_path = MockGlobalPath()
+    mock_global_path.publish_global_path()
 
     rclpy.spin(node=mock_global_path)
 
@@ -46,10 +47,6 @@ class MockGlobalPath(Node):
             ],
         )
 
-        self.gps_sub = self.create_subscription(
-            msg_type=ci.GPS, topic="gps", callback=self.global_path_callback, qos_profile=10
-        )
-
         self.global_path_pub = self.create_publisher(
             msg_type=ci.Path, topic="global_path", qos_profile=10
         )
@@ -68,14 +65,13 @@ class MockGlobalPath(Node):
             for i, waypoint in enumerate(path.waypoints)
         }
 
-    # Timer callbacks
-    def global_path_callback(self, gps: ci.GPS):
-        # Publish the test plan's global path exactly as defined. This node does not interpolate
-        # between waypoints or generate a path from the boat's position — it relies solely on the
-        # waypoints provided in the test plan. The path is still published on every GPS message so
-        # that node_navigate receives the waypoints even if this node launched first.
+    # Publishing the global path
+    def publish_global_path(self) -> None:
+        # Publish the test plan's global path exactly as defined once at startup. This node does
+        # not interpolate between waypoints or generate a path from the boat's position — it relies
+        # solely on the waypoints provided in the test plan.
         msg = self.global_path
-        # self.get_logger().debug(f"Publishing mock global path: {self._path_to_dict(msg)}")
+        # self.get_logger().debug(f"Published mock global path: {self._path_to_dict(msg)}")
         self.global_path_pub.publish(msg)
 
 
