@@ -22,10 +22,6 @@ def main(args=None):
 class MockGlobalPath(Node):
     """Stores and publishes the mock global path to the global_path topic.
 
-    Subscriber:
-        gps_sub (Subscription): Subscribe to a `GPS` msg which contains the current GPS location of
-        sailbot.
-
     Publisher:
         global_path_pub (Publisher): Publishes a `Path` msg containing the global path
 
