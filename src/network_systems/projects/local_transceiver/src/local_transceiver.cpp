@@ -618,8 +618,11 @@ custom_interfaces::msg::Path LocalTransceiver::parseInMsg(const std::string & ms
 
     for (auto waypoint : path.waypoints()) {
         custom_interfaces::msg::HelperLatLon helperLatLon;
-        helperLatLon.set__longitude(waypoint.longitude());
-        helperLatLon.set__latitude(waypoint.latitude());
+        const float latitude  = waypoint.latitude();
+        const float longitude = waypoint.longitude();
+
+        helperLatLon.set__latitude(latitude < -90.0f || latitude > 90.0f ? -1.0f : latitude);
+        helperLatLon.set__longitude(longitude < -180.0f || longitude > 180.0f ? -1.0f : longitude);
 
         waypoints.push_back(helperLatLon);
     }

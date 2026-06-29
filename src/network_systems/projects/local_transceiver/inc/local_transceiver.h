@@ -29,6 +29,7 @@ constexpr unsigned int SATELLITE_BAUD_RATE = 19200;
 class LocalTransceiver
 {
     friend class TestLocalTransceiver_parseInMsgValid_Test;
+    friend class TestLocalTransceiver_parseInMsgInvalid_Test;
     friend class TestLocalTransceiver_SendAndReceiveMessage;
     friend class TestLocalTransceiver_testMailboxBlackbox_Test;
     friend class TestLocalTransceiver_checkCache_Test;

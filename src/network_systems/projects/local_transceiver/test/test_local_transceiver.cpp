@@ -558,17 +558,18 @@ TEST_F(TestLocalTransceiver, parseInMsgValid)
     waypoint_a->set_latitude(holder);
     waypoint_a->set_longitude(holder);
 
+    Polaris::Waypoint * waypoint_b = path.add_waypoints();
+    waypoint_b->set_latitude(holder);
+    waypoint_b->set_longitude(holder);
+
     // convert protobuf to string
     std::string serialized_test = path.SerializeAsString();
-    std::cout << "Hex Payload: ";
-    for (unsigned char c : serialized_test) {
-        std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(c);
-    }
-    std::cout << std::endl;
 
     custom_interfaces::msg::Path parsed_test = LocalTransceiver::parseInMsg(serialized_test);
     EXPECT_EQ(parsed_test.waypoints[0].latitude, holder);
     EXPECT_EQ(parsed_test.waypoints[0].longitude, holder);
+    EXPECT_EQ(parsed_test.waypoints[1].latitude, holder);
+    EXPECT_EQ(parsed_test.waypoints[1].longitude, holder);
 }
 
 TEST_F(TestLocalTransceiver, checkCache)
@@ -638,62 +639,62 @@ TEST_F(TestLocalTransceiver, checkCache)
     EXPECT_EQ(parsed_test.waypoints[1].longitude, parsed_cache.waypoints[0].longitude);
 }
 
-// TEST_F(TestLocalTransceiver, testMailboxBlackbox)
-// {
-//     std::lock_guard<std::mutex> lock(port_mutex);  // because same port is being used
+TEST_F(TestLocalTransceiver, testMailboxBlackbox)
+{
+    std::lock_guard<std::mutex> lock(port_mutex);  // because same port is being used
 
-//     std::string holder  = "curl -X POST -F \"test=1234\" http://localhost:8080";
-//     std::string holder2 = "printf \"at+sbdix\r\" > $LOCAL_TRANSCEIVER_TEST_PORT";
+    std::string holder  = "curl -X POST -F \"test=1234\" http://localhost:8080";
+    std::string holder2 = "printf \"at+sbdix\r\" > $LOCAL_TRANSCEIVER_TEST_PORT";
 
-//     system(holder.c_str());   //NOLINT
-//     system(holder2.c_str());  //NOLINT
+    system(holder.c_str());   //NOLINT
+    system(holder2.c_str());  //NOLINT
 
-//     std::optional<std::string> response = lcl_trns_->readRsp();
-//     std::cout << *response << std::endl;
-// }
+    std::optional<std::string> response = lcl_trns_->readRsp();
+    std::cout << *response << std::endl;
+}
 
-// TEST_F(TestLocalTransceiver, parseReceiveMessageBlackbox)
-// {
-//     std::lock_guard<std::mutex> lock(port_mutex);
+TEST_F(TestLocalTransceiver, parseReceiveMessageBlackbox)
+{
+    std::lock_guard<std::mutex> lock(port_mutex);
 
-//     constexpr float     holder = 10.3;
-//     Polaris::GlobalPath sample_data;
+    constexpr float     holder = 10.3;
+    Polaris::GlobalPath sample_data;
 
-//     Polaris::Waypoint * waypoint_a = sample_data.add_waypoints();
-//     waypoint_a->set_latitude(holder);
-//     waypoint_a->set_longitude(holder);
-//     Polaris::Waypoint * waypoint_b = sample_data.add_waypoints();
-//     waypoint_b->set_latitude(holder);
-//     waypoint_b->set_longitude(holder);
+    Polaris::Waypoint * waypoint_a = sample_data.add_waypoints();
+    waypoint_a->set_latitude(holder);
+    waypoint_a->set_longitude(holder);
+    Polaris::Waypoint * waypoint_b = sample_data.add_waypoints();
+    waypoint_b->set_latitude(holder);
+    waypoint_b->set_longitude(holder);
 
-//     std::string serialized_data;
-//     ASSERT_TRUE(sample_data.SerializeToString(&serialized_data));
+    std::string serialized_data;
+    ASSERT_TRUE(sample_data.SerializeToString(&serialized_data));
 
-//     uint16_t message_size    = static_cast<uint16_t>(serialized_data.size());
-//     uint16_t message_size_be = htons(message_size);  // Convert to big-endian
+    uint16_t message_size    = static_cast<uint16_t>(serialized_data.size());
+    uint16_t message_size_be = htons(message_size);  // Convert to big-endian
 
-//     std::string size_prefix(reinterpret_cast<const char *>(&message_size_be), sizeof(message_size_be));
+    std::string size_prefix(reinterpret_cast<const char *>(&message_size_be), sizeof(message_size_be));
 
-//     std::ofstream outfile("/tmp/serialized_data.bin", std::ios::binary);
-//     outfile.write(size_prefix.data(), size_prefix.size());  //NOLINT
-//     outfile.write(serialized_data.data(), static_cast<std::streamsize>(serialized_data.size()));
-//     outfile.close();
+    std::ofstream outfile("/tmp/serialized_data.bin", std::ios::binary);
+    outfile.write(size_prefix.data(), size_prefix.size());  //NOLINT
+    outfile.write(serialized_data.data(), static_cast<std::streamsize>(serialized_data.size()));
+    outfile.close();
 
-//     outfile.close();  // Close the file after writing
+    outfile.close();  // Close the file after writing
 
-//     std::string holder2 = "curl -X POST --data-binary @/tmp/serialized_data.bin http://localhost:8080";
-//     std::system(holder2.c_str());  //NOLINT
-//     std::string test_cmd = "hexdump -C /tmp/serialized_data.bin";
-//     std::system(test_cmd.c_str());  //NOLINT
+    std::string holder2 = "curl -X POST --data-binary @/tmp/serialized_data.bin http://localhost:8080";
+    std::system(holder2.c_str());  //NOLINT
+    std::string test_cmd = "hexdump -C /tmp/serialized_data.bin";
+    std::system(test_cmd.c_str());  //NOLINT
 
-//     custom_interfaces::msg::Path received_data = lcl_trns_->receive();
+    custom_interfaces::msg::Path received_data = lcl_trns_->receive();
 
-//     Polaris::GlobalPath global_path;
-//     for (const auto & waypoint : received_data.waypoints) {
-//         Polaris::Waypoint * new_waypoint = global_path.add_waypoints();
-//         new_waypoint->set_latitude(waypoint.latitude);
-//         new_waypoint->set_longitude(waypoint.longitude);
-//     }
+    Polaris::GlobalPath global_path;
+    for (const auto & waypoint : received_data.waypoints) {
+        Polaris::Waypoint * new_waypoint = global_path.add_waypoints();
+        new_waypoint->set_latitude(waypoint.latitude);
+        new_waypoint->set_longitude(waypoint.longitude);
+    }
 
     if (global_path.waypoints_size() > 0) {
         ASSERT_EQ(global_path.waypoints_size(), sample_data.waypoints_size())
@@ -731,12 +732,3 @@ TEST_F(TestLocalTransceiver, parseInMsgInvalid)
     EXPECT_EQ(parsed_test.waypoints[1].latitude, holder);
     EXPECT_EQ(parsed_test.waypoints[1].longitude, holder);
 }
-//     if (global_path.waypoints_size() > 0) {
-//         ASSERT_EQ(global_path.waypoints_size(), sample_data.waypoints_size())
-//           << "Mismatch in number of waypoints received.";
-//         ASSERT_EQ(global_path.waypoints(0).latitude(), holder);
-//         ASSERT_EQ(global_path.waypoints(0).longitude(), holder);
-//     } else {
-//         std::cout << "No waypoints received." << std::endl;
-//     }
-// }
