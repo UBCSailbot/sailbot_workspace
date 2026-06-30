@@ -1,7 +1,7 @@
 # This file does two major jobs due to a release or manual command:
 # Builds a docker image -> registers it on our GitHub Container Registry -> Pulls on the same image from the registry ->
 # -> Builds the image and stores it in a tar file (runs ./scripts/setup.sh and ./scripts/build.sh to reduce build time on rpi)
-name: Build Release
+name: Registers Built Image and Produces Tar File
 
 on:
   release:
