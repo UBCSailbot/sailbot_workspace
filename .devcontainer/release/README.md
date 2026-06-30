@@ -35,7 +35,7 @@ compared to the previous release.
 1. On GitHub: **Releases** → **Draft a new release** → **Choose a tag** → type a
    new tag (e.g. `on-water-8`) → **Publish release**.
 
-2. The **Registers Built Image and Produces Tar File** workflow triggers
+2. The workflow **Registers Built Image and Produces Tar File** triggers
    automatically. Both jobs run in parallel:
    - **build-and-push** — pushes to `ghcr.io/ubcsailbot/sailbot_workspace/release:<tag>`
       and `:latest`
