@@ -12,8 +12,7 @@ with `src/`, `docs/`, or are shown in commands.
 - Tests: `test/`
 - Test plans: `test_plans/`
 - Launch files: `launch/`
-- Path, land, wind, and mock data: `global_paths/`, `land/`, `wind/`, and
-  `mock_ais_files/`
+- Path, land, and wind data: `global_paths/`, `land/`, and `wind/`
 - Documentation: `README.md`, `WindReference.md`, `global_paths/README.md`,
   `land/README.md`, `docs/current/local_pathfinding/overview.md`, and
   `docs/reference/python/conventions.md`
