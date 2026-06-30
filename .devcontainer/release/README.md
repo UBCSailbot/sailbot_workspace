@@ -23,7 +23,7 @@ reliable than building locally.
 ## Paths A & B — CI build (shared first step)
 
 Both paths start with a single CI workflow run that builds the image natively on
-arm64, pushes it to the registry, and saves a tar artifact in parallel (~6 min).
+arm64, pushes it to the registry, and saves a tar artifact in parallel (for Path A). This takes about 6 minutes.
 
 There are two ways in running the CI. One is manually and the other is through a
 software release on GitHub. It is preferable to create a release so that we can
