@@ -80,7 +80,7 @@ compared to the previous release.
    rsync -a release.tar sailbot@192.168.0.10:/home/sailbot/
 
    # Remote (Tailscale):
-   rsync -a release.tar sailbot@100.95.219.3:/home/sailbot/
+   rsync -a release.tar sailbot@100.95.219.39:/home/sailbot/
    ```
 
 3. **On the Pi**, load the image and reclaim space:
