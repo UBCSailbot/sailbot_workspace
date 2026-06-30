@@ -9,6 +9,8 @@ services:
       - "27017:27017"
     volumes:
       - mongodb-data:/data/db:delegated
+    # Use "always" instead if this container should restart even after some manual stops.
+    # restart: always
     restart: unless-stopped
 
 volumes:
