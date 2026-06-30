@@ -5,6 +5,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    # Use "always" instead if this container should restart even after some manual stops.
+    # restart: always
+    restart: unless-stopped
     network_mode: host
     privileged: true
     user: ros
@@ -37,6 +40,8 @@ services:
   # URL: mongodb://localhost:27017
   mongodb:
     image: mongo:${MONGO_TAG:-7.0}
+    # Use "always" instead if this container should restart even after some manual stops.
+    # restart: always
     restart: unless-stopped
     volumes:
       - mongodb-data:/data/db:delegated
