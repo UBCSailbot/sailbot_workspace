@@ -12,6 +12,7 @@
 
 # microsoft c/c++ intellisense (disabled in favor of clangd)
 /.vscode/*
+/.codex/
 
 # python
 __pycache__/
