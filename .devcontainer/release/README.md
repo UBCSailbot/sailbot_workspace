@@ -23,7 +23,8 @@ reliable than building locally.
 ## Paths A & B — CI build (shared first step)
 
 Both paths start with a single CI workflow run that builds the image natively on
-arm64, pushes it to the registry, and saves a tar artifact in parallel (for Path A). This takes about 6 minutes.
+arm64, pushes it to the registry, and saves a tar artifact in parallel
+(for Path A). This takes about 6 minutes.
 
 There are two ways in running the CI. One is manually and the other is through a
 software release on GitHub. It is preferable to create a release so that we can
@@ -41,7 +42,9 @@ compared to the previous release.
       and `:latest`
    - **build-tar** — uploads `release.tar` as a downloadable artifact (`release-<tag>-tar`)
 
-3. Once both jobs pass, continue with **Path A** or **Path B** below.
+3. Once both jobs pass, continue with
+[**Path A**](#path-a--tar-transfer-pi-offline) or
+[**Path B**](#path-b--registry-pull-pi-has-internet) below.
 
 **For manual CI build:**
 
@@ -57,7 +60,9 @@ compared to the previous release.
       `ghcr.io/ubcsailbot/sailbot_workspace/release:<tag>` and `:latest`
    - **build-tar** — uploads `release.tar` as a downloadable artifact (`release-<tag>-tar`)
 
-3. Once both jobs pass, continue with **Path A** or **Path B** below.
+3. Once both jobs pass, continue with
+[**Path A**](#path-a--tar-transfer-pi-offline) or
+[**Path B**](#path-b--registry-pull-pi-has-internet) below.
 
 ---
 
