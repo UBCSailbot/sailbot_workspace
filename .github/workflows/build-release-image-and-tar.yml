@@ -1,0 +1,84 @@
+# This file does two major jobs due to a release or manual command:
+# Builds a docker image -> registers it on our GitHub Container Registry -> Pulls on the same image from the registry ->
+# -> Builds the image and stores it in a tar file (runs ./scripts/setup.sh and ./scripts/build.sh to reduce build time on rpi)
+name: Build Release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag of the Docker image (e.g. on-water-4)'
+        required: true
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 45
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+        with:
+          platforms: linux/arm64
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.PAT_TOKEN }}
+
+      - name: Generate CACHEBUST timestamp
+        id: meta
+        run: echo "timestamp=$(($(date +%s%3N)))" >> $GITHUB_OUTPUT
+
+      - name: Build and push release
+        uses: docker/build-push-action@v7
+        with:
+          context: "{{defaultContext}}"
+          file: .devcontainer/release/release.Dockerfile
+          build-args: CACHEBUST=${{ steps.meta.outputs.timestamp }}
+          push: true
+          tags: |
+            ghcr.io/ubcsailbot/sailbot_workspace/release:${{ inputs.tag || github.event.release.tag_name }}
+            ghcr.io/ubcsailbot/sailbot_workspace/release:latest
+          platforms: linux/arm64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build-tar:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image and save to tar
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: .devcontainer/release/release.Dockerfile
+          platforms: linux/arm64
+          build-args: |
+            CACHEBUST=${{ github.run_id }}
+          tags: release:${{ inputs.tag || github.event.release.tag_name }}
+          push: false
+          outputs: type=docker,dest=release.tar
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Upload tar as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ inputs.tag || github.event.release.tag_name }}-tar
+          path: release.tar
+          retention-days: 7
