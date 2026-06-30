@@ -63,6 +63,8 @@ compared to the previous release.
 
 ## Path A — tar transfer (Pi offline)
 
+<!-- markdownlint-disable MD013 -->
+
 1. **Download the artifact.** On the finished run's page, download the
    `release-<tag>-tar` artifact (it arrives zipped; unzip to get `release.tar`).
    Or from the CLI:
@@ -71,8 +73,7 @@ compared to the previous release.
    gh run download <run-id> -n release-<tag>-tar
    ```
 
-2. **Transfer to the Pi** (see [Reaching the Pi](#reaching-the-pi) for which
-   address to use):
+2. **Transfer to the Pi** (see [Reaching the Pi](https://ubcsailbot.atlassian.net/wiki/spaces/prjt22/pages/1791230669/Raspberry+Pi+Main+Computer+Setup) for which address to use):
 
    ```bash
    # On the boat LAN/raye's wifi:
@@ -90,6 +91,8 @@ compared to the previous release.
    ```
 
 4. **Run the container** (see [Run the container](#run-the-container)).
+
+<!-- markdownlint-enable MD013 -->
 
 ---
 
@@ -191,6 +194,7 @@ docker start -i <name>
 
 ### Extracting logs and bags
 
+<!-- markdownlint-disable MD013 -->
 ```bash
 # Voyage logs
 docker cp <name>:/workspaces/sailbot_workspace/src/global_launch/voyage_log ./voyage_log
@@ -198,3 +202,4 @@ docker cp <name>:/workspaces/sailbot_workspace/src/global_launch/voyage_log ./vo
 # ROS 2 bags
 docker cp <name>:/workspaces/sailbot_workspace/notebooks/local_pathfinding/session_recording ./session_recording
 ```
+<!-- markdownlint-enable MD013 -->
