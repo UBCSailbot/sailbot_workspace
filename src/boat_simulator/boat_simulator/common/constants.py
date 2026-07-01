@@ -6,8 +6,8 @@ from enum import Enum
 
 import numpy as np
 
-from boat_simulator.common.conventions import Body, Inertia
-from boat_simulator.common.types import CoeffTable, Mat3
+from boat_simulator.common.conventions import Body, Damping, Inertia
+from boat_simulator.common.types import CoeffTable, Mat4
 
 
 # Class declarations for constants. These are not meant to be accessed directly.
@@ -57,8 +57,16 @@ class BoatProperties:
     hull_drag_factor: float
     # Mass of the boat (kg).
     mass: float
-    # 3×3 body-frame inertia tensor (kg·m²): rows/cols are roll, pitch, yaw axes.
-    inertia: Mat3[Inertia, Body]
+    # 4×4 rigid-body generalized mass-inertia matrix M_RB = diag(m, m, I_xx, I_zz)
+    # for the 4-DOF state ν = [u, v, p, r] (surge, sway, roll, yaw). Units: kg / kg·m².
+    inertia: Mat4[Inertia, Body]
+    # 4×4 diagonal added-mass matrix M_A = diag(X_u̇, Y_v̇, K_ṗ, N_ṙ). Units: kg / kg·m².
+    # C_RB and C_A (Coriolis/centripetal matrices) are NOT stored here — they are
+    # state-dependent (functions of ν) and must be computed at each timestep.
+    M_A: Mat4[Inertia, Body]
+    # 4×4 diagonal linear damping matrix D = diag(X_u, Y_v, K_p, N_r).
+    # Surge/sway entries: N·s/m; roll/yaw entries: N·m·s/rad.
+    D: Mat4[Damping, Body]
 
 
 # Directly accessible constants
@@ -195,5 +203,12 @@ BOAT_PROPERTIES = BoatProperties(
     rudder_dist=1.0,  # meters
     hull_drag_factor=0.5,
     mass=225.0,
-    inertia=Mat3(np.array([[125, 0, 0], [0, 1125, 0], [0, 0, 500]], dtype=np.float32)),
+    # M_RB = diag(m, m, I_xx, I_zz) — surge, sway, roll, yaw
+    inertia=Mat4(np.diag([225.0, 225.0, 125.0, 500.0])),
+    # TODO: Replace with real hydrodynamic added-mass coefficients.
+    # M_A = diag(X_u̇, Y_v̇, K_ṗ, N_ṙ) — diagonal linearized added-mass approximation.
+    M_A=Mat4(np.diag([20.0, 90.0, 10.0, 75.0])),
+    # TODO: Replace with real damping coefficients from tow-tank or CFD data.
+    # D = diag(X_u, Y_v, K_p, N_r) — linear damping per DOF.
+    D=Mat4(np.diag([15.0, 80.0, 25.0, 60.0])),
 )
