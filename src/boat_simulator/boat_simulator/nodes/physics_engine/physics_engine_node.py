@@ -219,6 +219,9 @@ class PhysicsEngineNode(Node):
 
         sim_wind_mps: Vec2[Velocity, NED] = self.__wind_generator.next()
         self.__sim_wind_sensor = SimWindSensor(sim_wind_mps, enable_noise=True)
+        self.__latest_wind_sensor_reading_mps: Vec2[Velocity, NED] = (
+            self.__sim_wind_sensor.wind
+        )
 
     def __init_callback_groups(self):
         """Initializes the callback groups. Whether multithreading is enabled or not will affect
@@ -348,9 +351,11 @@ class PhysicsEngineNode(Node):
     # PUBLISHER CALLBACKS
     def __publish(self):
         """Synchronously publishes data to all publishers at once."""
-        self.__update_boat_state()
+
         # TODO Get updated boat state and publish (should this be separate from publishing?)
-        # TODO Get wind sensor data and publish (should this be separate from publishing?)
+        self.__update_boat_state()
+        self.__latest_wind_sensor_reading_mps = self.__sim_wind_sensor.wind
+
         self.__publish_gps()
         self.__publish_wind_sensors()
         self.__publish_kinematics()
@@ -367,6 +372,8 @@ class PhysicsEngineNode(Node):
         self.__sim_wind_sensor.wind = true_wind_mps
         # The rudder/trim angles are already saturated value objects (saturation happens at the
         # actuation-feedback boundary), so they are forwarded to the boat model as-is.
+
+        # Entry to the simulator
         self.__boat_state.step(
             true_wind_mps,
             true_current_mps,
@@ -379,7 +386,7 @@ class PhysicsEngineNode(Node):
         lat_lon = self.__boat_state.global_lat_lon_position
 
         self.get_logger().info(f"Boat global position (lat_lon) to be published: {lat_lon}")
-        speed_mps = self.__boat_state.speed
+        speed_mps = self.__boat_state.linear_speed
         heading = self.__boat_state.true_bearing
 
         if self.__sim_gps:
@@ -426,7 +433,7 @@ class PhysicsEngineNode(Node):
 
     def __publish_wind_sensors(self):
         """Publishes filtered wind sensor data using a simple moving average."""
-        raw_wind_mps = self.__sim_wind_sensor.wind
+        raw_wind_mps = self.__latest_wind_sensor_reading_mps
         k = self.__wind_sensor_readings_mps.maxlen
         if k is None:
             raise RuntimeError("wind sensor reading window must have a fixed size")
@@ -465,7 +472,7 @@ class PhysicsEngineNode(Node):
     def __publish_kinematics(self):
         """Publishes the kinematics data of the simulated boat."""
         lat_lon = self.__boat_state.global_lat_lon_position
-        speed_mps = self.__boat_state.speed
+        speed_mps = self.__boat_state.linear_speed
         heading = self.__boat_state.true_bearing
 
         if self.__sim_gps:
