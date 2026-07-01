@@ -53,6 +53,9 @@ class Position:
     Linear Position: [x, y, z], metres
     Angular Position: [p, q, r] rad
 
+    For Vec4,
+    Position Combined (linear [x, y], metres and angular [p, q], rad): [x, y, p, q]
+
     """
 
 
@@ -122,4 +125,12 @@ class InverseInertia:
     """
     Inverse Mass-inertia quantity of the boat, measured in (kilogram-square-metres)**-1
     (1/(kg·m²)).
+    """
+
+
+class Damping:
+    """Linear damping coefficient matrix.
+
+    Diagonal entries carry different units depending on the DOF:
+    surge/sway components are in N·s/m (= kg/s); roll/yaw components are in N·m·s/rad.
     """
