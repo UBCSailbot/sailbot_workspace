@@ -91,6 +91,7 @@ ASSETS_DIR = BASE_DIR / "visualizer_assets"
 MOCK_NODES_DIR = BASE_DIR / "mock_nodes"
 WIND_PARAMS_YAML = MOCK_NODES_DIR / "wind_params.yaml"
 WIND_PARAMS_SH = MOCK_NODES_DIR / "wind_params.sh"
+MOCK_GLOBAL_PATH_CSV = BASE_DIR.parent / "global_paths" / "mock_global_path.csv"
 
 # Most recent VisualizerState, kept so view-only toggles (e.g. the map) can re-render the last
 # frame immediately instead of waiting for the next ROS message.
@@ -1613,6 +1614,21 @@ def apply_drift_params(
     )
 
 
+def reload_mock_global_path(reload_token: int) -> None:
+    """Tell the live mock_global_path node to reload the CSV-backed global path."""
+    subprocess.run(
+        [
+            "ros2",
+            "param",
+            "set",
+            "/mock_global_path",
+            "reload_token",
+            str(int(reload_token)),
+        ],
+        check=True,
+    )
+
+
 def get_state_space_bounds(
     vs: VisualizerState,
 ) -> Tuple[cs.XY, cs.XY]:
@@ -2205,6 +2221,55 @@ def dash_app(q: Queue):
                             ),
                         ],
                     ),
+                    html.Div(
+                        id="mock-global-path-control-panel",
+                        style={
+                            "display": "flex",
+                            "flexWrap": "wrap",
+                            "gap": "12px",
+                            "alignItems": "center",
+                            "padding": "10px 16px",
+                            "backgroundColor": "rgba(255, 255, 255, 0.95)",
+                            "borderRadius": "8px",
+                            "border": "1px solid #ccc",
+                            "fontFamily": "Consolas, monospace",
+                            "fontSize": "13px",
+                            "flex": "0 1 auto",
+                            "maxWidth": "100%",
+                            "boxSizing": "border-box",
+                        },
+                        children=[
+                            html.Span(
+                                "Mock Global Path",
+                                style={
+                                    "fontWeight": "bold",
+                                    "color": "rgb(18,70,139)",
+                                    "whiteSpace": "nowrap",
+                                },
+                            ),
+                            html.Button(
+                                "Reload CSV",
+                                id="reload-mock-global-path-btn",
+                                className="apply-button",
+                                style={
+                                    "backgroundColor": "rgb(18, 70, 139)",
+                                    "color": "white",
+                                    "border": "none",
+                                    "borderRadius": "4px",
+                                    "padding": "5px 12px",
+                                    "cursor": "pointer",
+                                },
+                            ),
+                            html.Div(
+                                id="mock-global-path-status",
+                                style={
+                                    "color": "green",
+                                    "fontSize": "12px",
+                                    "minWidth": "220px",
+                                },
+                            ),
+                        ],
+                    ),
                 ],
             ),
             dcc.Interval(id="interval-component", interval=UPDATE_INTERVAL_MS, n_intervals=0),
@@ -2518,5 +2583,38 @@ app.clientside_callback(
     """,
     Output("drift-status", "children", allow_duplicate=True),
     Input("drift-status", "children"),
+    prevent_initial_call=True,
+)
+
+
+@app.callback(
+    Output("mock-global-path-status", "children"),
+    Input("reload-mock-global-path-btn", "n_clicks"),
+    prevent_initial_call=True,
+)
+def update_mock_global_path(n_clicks):
+    try:
+        if not n_clicks:
+            return ""
+
+        reload_mock_global_path(n_clicks)
+        return f"✓ Reloaded mock global path from {MOCK_GLOBAL_PATH_CSV.name}"
+    except Exception as e:
+        return f"Error: {e}"
+
+
+app.clientside_callback(
+    """
+    function(status_text) {
+        if (!status_text) return "";
+        setTimeout(function(){
+            const statusDiv = document.getElementById('mock-global-path-status');
+            if (statusDiv) statusDiv.innerText = "";
+        }, 5000);
+        return status_text;
+    }
+    """,
+    Output("mock-global-path-status", "children", allow_duplicate=True),
+    Input("mock-global-path-status", "children"),
     prevent_initial_call=True,
 )
