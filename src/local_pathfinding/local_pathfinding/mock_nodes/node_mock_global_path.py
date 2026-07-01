@@ -77,7 +77,6 @@ class MockGlobalPath(Node):
 
     def _load_global_path_from_csv(self, csv_path: Path) -> ci.Path | None:
         """Load a global path from a CSV file with latitude and longitude columns."""
-        self.get_logger().info(f"Reading CSV from: {csv_path}")
         with csv_path.open("r", newline="") as file:
             reader = csv.reader(file)
             header = next(reader, None)
@@ -100,7 +99,6 @@ class MockGlobalPath(Node):
             self.get_logger().error(f"CSV file '{csv_path}' must contain at least two waypoints")
             return None
 
-        self.get_logger().info(f"Loaded {len(waypoints.waypoints)} waypoints from CSV")
         return waypoints
 
     def _load_global_path(self, from_csv: bool = False) -> ci.Path:
