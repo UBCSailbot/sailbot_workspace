@@ -88,3 +88,41 @@ Script to handle ROS setup and to further update /home/ros/.bashrc.
 ## `test.sh`
 
 Script to run tests in all ROS packages.
+
+## `test_ctrl_manual.sh`
+
+Script to manually test the controller wingsail trim tab output. It launches
+the controller, repeatedly publishes manual `filtered_wind_sensor` and
+`desired_heading` inputs at 1 Hz, and echoes `/sail_cmd`.
+
+```shell
+./scripts/test_ctrl_manual.sh <speed_kmph> <wind_direction_deg> <desired_heading_deg>
+```
+
+Example:
+
+```shell
+./scripts/test_ctrl_manual.sh 10 45 90
+```
+
+The script always publishes `desired_heading.sail` as `true`. Press `Ctrl-C`
+to stop echoing `/sail_cmd` and clean up the child ROS processes.
+
+Copy-paste test cases:
+
+```shell
+# Help and usage
+./scripts/test_ctrl_manual.sh -h
+
+# Valid manual controller tests
+./scripts/test_ctrl_manual.sh 10 45 90
+./scripts/test_ctrl_manual.sh 10 -45 90
+./scripts/test_ctrl_manual.sh 0 45 90
+./scripts/test_ctrl_manual.sh 20 180 -90
+
+# Invalid input validation
+./scripts/test_ctrl_manual.sh 10 181 90
+./scripts/test_ctrl_manual.sh 10 45 -181
+./scripts/test_ctrl_manual.sh -1 45 90
+./scripts/test_ctrl_manual.sh fast 45 90
+```
