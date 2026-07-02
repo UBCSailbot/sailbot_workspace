@@ -19,8 +19,21 @@ ZERO_SPEED_COST = 1.0
 ACCEPTABLE_COST_THRESHOLD = 0.85
 WIND_OBJECTIVE_WEIGHT = 0.15
 TIME_OBJECTIVE_WEIGHT = 0.85
+DEVIATION_OBJECTIVE_WEIGHT = 20
+SEGMENT_COUNT_OBJECTIVE_WEIGHT = 0.1
 NO_GO_ZONE = math.pi / 4
 WIND_COST_SIN_EXPONENT = 80
+
+# Lateral deviation from the start->goal rhumb line saturates the deviation cost to 1.0
+# at MAX_DEVIATION_FRACTION * rhumb_length. Smaller values produce a tighter corridor.
+MAX_DEVIATION_FRACTION = 0.5
+# Higher exponent makes small deviations very cheap and large deviations expensive.
+DEVIATION_COST_EXPONENT = 4
+
+# Flat cost charged per path segment. OMPL sums motionCost across segments, so the
+# total contribution scales linearly with segment count -- no normalization, no saturation.
+# Pushes the planner toward fewer segments when other objectives don't otherwise resolve.
+SEGMENT_COST = 1.0
 
 
 #               Estimated Boat Speeds (kmph) as function of True Wind Speed (kmph)
@@ -166,6 +179,91 @@ class WindObjective(ob.OptimizationObjective):
         return math.sin(2 * segment_wind_angle_rad_bc) ** WIND_COST_SIN_EXPONENT
 
 
+class DeviationObjective(ob.OptimizationObjective):
+    """Penalises path segments that swing wide of the start->goal rhumb line.
+
+    Encourages many tight tacks over one large swing, because each segment's cost grows with
+    its midpoint's perpendicular distance from the rhumb axis. Segments sitting on the axis
+    pay zero, so when the wind allows a straight shot to the goal the objective contributes
+    nothing.
+
+    Attributes:
+        start_position_in_xy (cs.XY): The path start in the local XY frame
+        goal_position_in_xy (cs.XY): The current goal in the local XY frame
+    """
+
+    def __init__(
+        self,
+        space_information: ob.SpaceInformation,
+        start_position_in_xy: cs.XY,
+        goal_position_in_xy: cs.XY,
+    ) -> None:
+        super().__init__(space_information)
+        self.start_position_in_xy = start_position_in_xy
+        self.goal_position_in_xy = goal_position_in_xy
+
+    def motionCost(self, s1: ob.SE2StateSpace, s2: ob.SE2StateSpace) -> ob.Cost:
+        s1_xy = cs.XY(s1.getX(), s1.getY())
+        s2_xy = cs.XY(s2.getX(), s2.getY())
+        return ob.Cost(
+            DeviationObjective.deviation_cost(
+                s1_xy,
+                s2_xy,
+                self.start_position_in_xy,
+                self.goal_position_in_xy,
+            )
+        )
+
+    @staticmethod
+    def deviation_cost(s1: cs.XY, s2: cs.XY, start: cs.XY, goal: cs.XY) -> float:
+        """Return the deviation cost for a segment as a function of its midpoint's
+        perpendicular distance from the start->goal rhumb line.
+
+        Args:
+            s1 (cs.XY): The start of the path segment
+            s2 (cs.XY): The end of the path segment
+            start (cs.XY): The path start position
+            goal (cs.XY): The current goal position
+
+        Returns:
+            float: The deviation cost in the interval [0, 1].
+        """
+        axis_x = goal.x - start.x
+        axis_y = goal.y - start.y
+        axis_len = math.hypot(axis_x, axis_y)
+        if math.isclose(axis_len, 0.0):
+            return 0.0
+
+        mid_x = 0.5 * (s1.x + s2.x)
+        mid_y = 0.5 * (s1.y + s2.y)
+        offset_x = mid_x - start.x
+        offset_y = mid_y - start.y
+
+        perp_dist = abs(offset_x * axis_y - offset_y * axis_x) / axis_len
+        max_dist = MAX_DEVIATION_FRACTION * axis_len
+        if math.isclose(max_dist, 0.0):
+            return 0.0
+
+        normalized = perp_dist / max_dist
+        return min(1.0, normalized**DEVIATION_COST_EXPONENT)
+
+
+class SegmentCountObjective(ob.OptimizationObjective):
+    """Charges a fixed cost per path segment, irrespective of segment geometry.
+
+    OMPL sums motionCost across segments when scoring a path, so the contribution of this
+    objective grows linearly with segment count. Unlike normalized objectives, there is no
+    saturation: more segments always costs proportionally more, giving the planner a sharp
+    signal to consolidate when other objectives are indifferent.
+    """
+
+    def __init__(self, space_information: ob.SpaceInformation) -> None:
+        super().__init__(space_information)
+
+    def motionCost(self, s1: ob.SE2StateSpace, s2: ob.SE2StateSpace) -> ob.Cost:
+        return ob.Cost(SEGMENT_COST)
+
+
 class TimeObjective(ob.OptimizationObjective):
     """The Time Objective assigns a cost, to any path segment, that is proportional to the
     estimated time it will take for the boat to travel from the start of the segment to the
@@ -286,6 +384,7 @@ def get_sailing_objective(
     space_information: ob.SpaceInformation,
     tw_dir_deg_gc: float,
     tw_speed_kmph: float,
+    start_position_in_xy: cs.XY,
     goal_position_in_xy: cs.XY,
 ) -> ob.OptimizationObjective:
     """Build the combined sailing optimization objective for the current wind snapshot.
@@ -307,6 +406,14 @@ def get_sailing_objective(
     multiObjective.addObjective(
         objective=TimeObjective(space_information, tw_dir_rad_gc, tw_speed_kmph),
         weight=TIME_OBJECTIVE_WEIGHT,
+    )
+    multiObjective.addObjective(
+        objective=DeviationObjective(space_information, start_position_in_xy, goal_position_in_xy),
+        weight=DEVIATION_OBJECTIVE_WEIGHT,
+    )
+    multiObjective.addObjective(
+        objective=SegmentCountObjective(space_information),
+        weight=SEGMENT_COUNT_OBJECTIVE_WEIGHT,
     )
     multiObjective.addObjective(
         objective=GoalDirectionObjective(space_information, goal_position_in_xy),

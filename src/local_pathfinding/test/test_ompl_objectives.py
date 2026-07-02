@@ -37,6 +37,29 @@ def test_time_cost(
 
 
 @pytest.mark.parametrize(
+    "s1, s2, start, goal, expected",
+    [
+        # Segment midpoint sits on the rhumb line -> zero cost
+        (cs.XY(2.0, 0.0), cs.XY(4.0, 0.0), cs.XY(0.0, 0.0), cs.XY(10.0, 0.0), 0.0),
+        # Midpoint at half the max deviation (MAX_DEVIATION_FRACTION=0.15) -> 0.5**2 = 0.25
+        (cs.XY(2.0, 0.75), cs.XY(4.0, 0.75), cs.XY(0.0, 0.0), cs.XY(10.0, 0.0), 0.25),
+        # Midpoint exactly at the max deviation -> saturated cost
+        (cs.XY(2.0, 1.5), cs.XY(4.0, 1.5), cs.XY(0.0, 0.0), cs.XY(10.0, 0.0), 1.0),
+        # Midpoint beyond the max deviation -> clamped to 1
+        (cs.XY(2.0, 3.0), cs.XY(4.0, 3.0), cs.XY(0.0, 0.0), cs.XY(10.0, 0.0), 1.0),
+        # Degenerate start == goal -> no axis, zero cost
+        (cs.XY(2.0, 2.0), cs.XY(3.0, 3.0), cs.XY(0.0, 0.0), cs.XY(0.0, 0.0), 0.0),
+    ],
+)
+def test_deviation_cost(
+    s1: cs.XY, s2: cs.XY, start: cs.XY, goal: cs.XY, expected: float
+):
+    assert ob.DeviationObjective.deviation_cost(s1, s2, start, goal) == pytest.approx(
+        expected, abs=0.01
+    )
+
+
+@pytest.mark.parametrize(
     "heading, tw_dir_rad_gc, tw_speed_kmph, expected",
     [
         # 0 deg true wind angle (irons)
