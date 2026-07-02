@@ -10,14 +10,12 @@ find_package(Protobuf REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(MONGOCXX REQUIRED libmongocxx)
 pkg_check_modules(BSONCXX REQUIRED libbsoncxx)
-find_package(CURL REQUIRED)
 
 include_directories(
     ${Boost_INCLUDE_DIRS}
     ${Protobuf_INCLUDE_DIRS}
     ${MONGOCXX_INCLUDE_DIRS}
     ${BSONCXX_INCLUDE_DIRS}
-    ${CURL_INCLUDE_DIRS}
     inc
 )
 
@@ -49,5 +47,4 @@ add_executable(remote_server ${SOURCES})
     ${Protobuf_LIBRARIES}
     ${MONGOCXX_LIBRARIES}
     ${BSONCXX_LIBRARIES}
-    ${CURL_LIBRARIES}
 )
