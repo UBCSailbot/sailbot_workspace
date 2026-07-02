@@ -19,6 +19,14 @@
     - `globals.yaml` (default): A default ROS parameter setting.
     - `on_water_globals.yaml`: For on-water testing across `production`, `development`, and `sim`. This must be used when doing on-water testing.
     - `launch_globals.yaml`: For launch in the open ocean for `production`, but can also run in `development` and `sim` for testing.
+- To control the pathfinding visualizer, use the `visualizer_mode` launch argument (e.g. `visualizer_mode:=true`).
+    - Leave empty (default) to use the value in the config file (`navigate_main.ros__parameters.visualizer_mode` in `globals.yaml`).
+    - `true`: Enables the pathfinding visualizer during on-water testing.
+    - `false`: Disables the pathfinding visualizer.
+- To use mock AIS data during on-water testing, use the `on_water_mock_ais` launch argument (e.g. `on_water_mock_ais:=true`).
+    - Leave empty (default) to use the value in the config file (`mock_ais.ros__parameters.on_water_mock_ais` in `globals.yaml`).
+    - `true`: Uses mock AIS data during production mode on-water testing.
+    - `false`: Uses real AIS data.
   <!-- markdownlint-enable MD013 -->
 
 ## Example launch commands
