@@ -156,6 +156,39 @@ All use QoS profile 1 (reliable, keep last 1).
 <!-- markdownlint-disable-next-line MD013 -->
 - **In water testing:** [In water testing (Confluence)](https://ubcsailbot.atlassian.net/wiki/x/LwA8qg)
 
+### Manual controller test
+
+Use the manual controller test script to launch the controller, publish manual
+wind and desired-heading inputs, and echo the resulting trim tab command:
+
+```bash
+./scripts/test_ctrl_manual.sh 10 45 90
+```
+
+The first argument is apparent wind speed in kmph, the second is apparent wind
+direction in degrees for `filtered_wind_sensor`, and the third is desired
+heading in degrees. The script always sets `desired_heading.sail` to `true`.
+The computed trim tab command is shown by echoing `/sail_cmd`.
+
+Copy-paste test cases:
+
+```bash
+# Help and usage
+./scripts/test_ctrl_manual.sh -h
+
+# Valid manual controller tests
+./scripts/test_ctrl_manual.sh 10 45 90
+./scripts/test_ctrl_manual.sh 10 -45 90
+./scripts/test_ctrl_manual.sh 0 45 90
+./scripts/test_ctrl_manual.sh 20 180 -90
+
+# Invalid input validation
+./scripts/test_ctrl_manual.sh 10 181 90
+./scripts/test_ctrl_manual.sh 10 45 -181
+./scripts/test_ctrl_manual.sh -1 45 90
+./scripts/test_ctrl_manual.sh fast 45 90
+```
+
 ---
 
 ## How to launch the package
