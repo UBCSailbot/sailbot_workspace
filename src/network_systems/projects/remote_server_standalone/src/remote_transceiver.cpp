@@ -2,8 +2,6 @@
 
 #include "remote_transceiver.h"
 
-#include <curl/curl.h>
-
 #include <boost/algorithm/string.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/io_context.hpp>
@@ -17,14 +15,11 @@
 #include <boost/beast/http.hpp>
 #include <boost/beast/version.hpp>
 #include <boost/core/ignore_unused.hpp>
-#include <boost/property_tree/json_parser.hpp>
-#include <boost/property_tree/ptree.hpp>
 #include <boost/system/error_code.hpp>
 #include <iostream>
 #include <memory>
 #include <string>
 
-#include "global_path.pb.h"
 #include "sailbot_db.h"
 #include "sensors.pb.h"
 #include "shared_constants.h"
@@ -32,7 +27,6 @@
 using remote_transceiver::HTTPServer;
 using remote_transceiver::Listener;
 namespace http_client = remote_transceiver::http_client;
-static const uint32_t MAX_BYTES_TRANSMISSION = MAX_LOCAL_TO_REMOTE_PAYLOAD_SIZE_BYTES;
 
 remote_transceiver::MOMsgParams::MOMsgParams(const std::string &query_string)
 {
@@ -244,12 +238,6 @@ void HTTPServer::doNotFound()
     beast::ostream(res_.body()) << "Not found: " << req_.target();
 }
 
-static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp)
-{
-    (static_cast<std::string *>(userp))->append(static_cast<char *>(contents), size * nmemb);
-    return size * nmemb;
-}
-
 void HTTPServer::doPost()
 {
     if (req_.target() == remote_transceiver::targets::SENSORS)
@@ -294,118 +282,6 @@ void HTTPServer::doPost()
             res_.set(http::field::content_type, "text/plain");
             beast::ostream(res_.body()) << "Server does not support sensors POST requests of type: " << content_type;
         }
-    }
-    else if (req_.target() == remote_transceiver::targets::GLOBAL_PATH)
-    {
-        std::shared_ptr<HTTPServer> self = shared_from_this();
-        std::string json_str = beast::buffers_to_string(req_.body().data());
-        std::stringstream ss(json_str);
-        boost::property_tree::ptree json_tree;
-        boost::property_tree::read_json(ss, json_tree);
-        std::string timestamp = json_tree.get<std::string>("timestamp");
-        Polaris::GlobalPath global_path;
-        int num_waypoints = 0;
-        for (const auto &waypoint : json_tree.get_child("waypoints"))
-        {
-            float lat = waypoint.second.get<float>("latitude");
-            float lon = waypoint.second.get<float>("longitude");
-            Polaris::Waypoint *global_waypoint = global_path.add_waypoints();
-            global_waypoint->set_longitude(lon);
-            global_waypoint->set_latitude(lat);
-            num_waypoints++;
-        }
-        global_path.set_num_waypoints(num_waypoints);
-        std::string data;
-        if (!global_path.SerializeToString(&data))
-        {
-            std::cerr << "Failed to Serialized Global Path string" << std::endl;
-            std::cerr << global_path.DebugString() << std::endl;
-        }
-
-        if (!self->db_.storeNewGlobalPath(global_path, timestamp))
-        {
-            std::cerr << "Error, failed to store data received at:\n"
-                      << timestamp << std::endl;
-        }
-
-        curl_global_init(CURL_GLOBAL_ALL);
-
-        static constexpr int NUM_CHECK = 20;
-        for (int i = 0; i < NUM_CHECK; i++)
-        {
-            CURL *curl;
-            CURLcode res;
-            std::string readBuffer;
-
-            curl = curl_easy_init();
-
-            std::string EC = "B";
-            std::string IMEI = "300434065264590";
-            std::string USERNAME = "myuser";
-            std::string ROCKBLOCK_WEB = "localhost:8100";
-
-            char *encoded_data = curl_easy_escape(curl, data.c_str(), static_cast<int>(data.size()));
-
-            std::cout << "Encoded data size: " << std::strlen(encoded_data) << " bytes" << std::endl;
-
-            if (num_waypoints <= 1)
-            {
-                EC = "10";
-            }
-            else if (std::strlen(encoded_data) > MAX_BYTES_TRANSMISSION)
-            {
-                EC = "F";
-            }
-
-            std::string url = "http://" + ROCKBLOCK_WEB + "/?data=" + std::string(encoded_data) + "&ec=" + EC +
-                              "&imei=" + IMEI + "&username=" + USERNAME;
-
-            if (curl != nullptr)
-            {
-                curl_free(encoded_data);
-
-                curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-
-                curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "POST");
-
-                curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-
-                curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
-
-                res = curl_easy_perform(curl);
-
-                if (res != CURLE_OK)
-                {
-                    std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
-                }
-                else
-                {
-                    std::stringstream ss(readBuffer);
-
-                    std::string response;
-                    std::string error;
-                    std::string message;
-
-                    std::getline(ss, response, ',');
-                    std::getline(ss, error, ',');
-                    std::getline(ss, message, ',');
-
-                    if (!self->db_.storeIridiumResponse(response, error, message, timestamp))
-                    {
-                        std::cerr << "Error, failed to store data received at:\n"
-                                  << timestamp << std::endl;
-                    }
-                    else
-                    {
-                        curl_easy_cleanup(curl);
-                        break;
-                    }
-                }
-            }
-            curl_easy_cleanup(curl);
-        }
-
-        curl_global_cleanup();
     }
     else
     {
