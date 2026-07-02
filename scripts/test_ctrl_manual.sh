@@ -94,5 +94,3 @@ WIND_PUB_PID=$!
 ros2 topic pub /desired_heading custom_interfaces/msg/DesiredHeading \
     "{heading: {heading: ${DESIRED_HEADING_DEG}}, steering: 0, sail: true}" -r 1 &
 HEADING_PUB_PID=$!
-
-ros2 topic echo --no-daemon /sail_cmd

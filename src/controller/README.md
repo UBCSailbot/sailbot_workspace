@@ -170,6 +170,18 @@ direction in degrees for `filtered_wind_sensor`, and the third is desired
 heading in degrees. The script always sets `desired_heading.sail` to `true`.
 The computed trim tab command is shown by echoing `/sail_cmd`.
 
+```bash
+Usage: ./scripts/test_ctrl_manual.sh <speed_kmph> <wind_direction_deg> <desired_heading_deg>
+```
+
+To view the output of `/sail_cmd` use
+
+```bash
+ros2 topic echo \sail_cmd
+```
+
+in another terminal window.
+
 Copy-paste test cases:
 
 ```bash
