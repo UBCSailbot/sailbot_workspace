@@ -37,9 +37,6 @@ class KinematicsFormulas:
             vel (Vec4[Velocity, Frame]): The last recorded boat velocity prior to the current time
                 step, expressed in meter per second (m/s) for linear, and radians per second
                 (rad/s) for angular.
-            acc (Vec4[Acceleration, Frame]): The last recorded boat acceleration prior to the
-                current time step, expressed in meters per second squared (m/s^2) for linear, and
-                radians per second squared (rad/s^2) for angular.
             timestep (float): The time interval on which the calculation is based, expressed in
                 seconds (s).
 
@@ -47,7 +44,7 @@ class KinematicsFormulas:
             Vec4[Position, Frame]: The calculated next position of the boat, expressed in meters
                 (m) for linear, and radians (rad) for angular.
         """
-        return Vec4(pos.data + (vel.data * timestep)))
+        return Vec4(pos.data + (vel.data * timestep))
 
     @staticmethod
     def next_velocity(
