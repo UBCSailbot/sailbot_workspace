@@ -26,7 +26,6 @@ class KinematicsFormulas:
     def next_position(
         pos: Vec4[Position, Frame],
         vel: Vec4[Velocity, Frame],
-        acc: Vec4[Acceleration, Frame],
         timestep: float,
     ) -> Vec4[Position, Frame]:
         """Calculates the boat's next position based on previous data and time step. Can be used
@@ -48,7 +47,7 @@ class KinematicsFormulas:
             Vec4[Position, Frame]: The calculated next position of the boat, expressed in meters
                 (m) for linear, and radians (rad) for angular.
         """
-        return Vec4(pos.data + (vel.data * timestep) + (acc.data * (timestep**2 / 2)))
+        return Vec4(pos.data + (vel.data * timestep)))
 
     @staticmethod
     def next_velocity(

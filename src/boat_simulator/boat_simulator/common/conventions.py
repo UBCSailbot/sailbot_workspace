@@ -38,6 +38,14 @@ class Body:
     """Boat body frame: x forward, y starboard (right), z down."""
 
 
+class BodytoNED:
+    """Body frame to NED frame matrix transfomer"""
+
+
+class NEDtoBody:
+    """NED to Body frame matrix transformer"""
+
+
 # Quantity markers
 
 
@@ -134,3 +142,7 @@ class Damping:
     Diagonal entries carry different units depending on the DOF:
     surge/sway components are in N·s/m (= kg/s); roll/yaw components are in N·m·s/rad.
     """
+
+
+class Transformer:
+    """A matrix used to rotate the Vector data from one frame to the next"""
