@@ -1,3 +1,5 @@
+# Deprecated as `build-release-image-and-tar.yml` will be taking over this job
+# This file is present for backward compatibility until after On-water test at July 4th
 name: Build Release Image
 
 on:
