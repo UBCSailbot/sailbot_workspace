@@ -1565,3 +1565,61 @@ TEST_F(TestCanTransceiver, TestNewDataIgnore)
 
     EXPECT_FALSE(is_cb_called);
 }
+
+/**
+ * @brief Test that heartbeat frames (0x130-0x134) are filtered out and never dispatched
+ *
+ */
+TEST_F(TestCanTransceiver, TestHeartbeatFramesDropped)
+{
+    using underlying = std::underlying_type_t<CAN_FP::CanId>;
+    for (underlying id = static_cast<underlying>(CAN_FP::CanId::HEARTBEAT_START);
+         id <= static_cast<underlying>(CAN_FP::CanId::HEARTBEAT_END); ++id) {
+        CAN_FP::CanId heartbeat_id = static_cast<CAN_FP::CanId>(id);
+
+        volatile bool                         is_cb_called = false;
+        std::function<void(CAN_FP::CanFrame)> test_cb      = [&is_cb_called](CAN_FP::CanFrame /*unused*/) {
+            is_cb_called = true;
+        };
+        canbus_t_->registerCanCbs({{
+          std::make_pair(heartbeat_id, test_cb),
+        }});
+
+        CAN_FP::CanFrame dummy_frame{.can_id = static_cast<canid_t>(heartbeat_id)};
+
+        canbus_t_->send(dummy_frame);
+
+        std::this_thread::sleep_for(SLEEP_TIME);
+
+        EXPECT_FALSE(is_cb_called);
+    }
+}
+
+/**
+ * @brief Test that debug frames (0x200-0x2FF) are filtered out and never dispatched
+ *
+ */
+TEST_F(TestCanTransceiver, TestDebugFramesDropped)
+{
+    using underlying = std::underlying_type_t<CAN_FP::CanId>;
+    for (underlying id = static_cast<underlying>(CAN_FP::CanId::HEARTBEAT_START);
+         id <= static_cast<underlying>(CAN_FP::CanId::HEARTBEAT_END); ++id) {
+        CAN_FP::CanId debug_id = static_cast<CAN_FP::CanId>(id);
+
+        volatile bool                         is_cb_called = false;
+        std::function<void(CAN_FP::CanFrame)> test_cb      = [&is_cb_called](CAN_FP::CanFrame /*unused*/) {
+            is_cb_called = true;
+        };
+        canbus_t_->registerCanCbs({{
+          std::make_pair(debug_id, test_cb),
+        }});
+
+        CAN_FP::CanFrame dummy_frame{.can_id = static_cast<canid_t>(debug_id)};
+
+        canbus_t_->send(dummy_frame);
+
+        std::this_thread::sleep_for(SLEEP_TIME);
+
+        EXPECT_FALSE(is_cb_called);
+    }
+}
