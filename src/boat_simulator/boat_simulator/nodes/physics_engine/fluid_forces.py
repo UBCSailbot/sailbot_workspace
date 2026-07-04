@@ -1,13 +1,13 @@
 """This module provides functionality for computing the lift and drag forces acting on a medium."""
 
+import math
 from typing import Tuple
 
 import numpy as np
-from numpy.typing import NDArray
 from rclpy.logging import get_logger
 
 from boat_simulator.common.conventions import Body, Force, Velocity
-from boat_simulator.common.types import CoeffTable, Vec2
+from boat_simulator.common.types import CoeffTable, Vec2, Vec4
 
 _logger = get_logger(__name__)
 
@@ -87,9 +87,10 @@ class MediumForceComputation:
         return angle_of_attack
 
     def compute(
-        self, apparent_velocity: Vec2[Velocity, Body], orientation: float
-    ) -> Tuple[Vec2[Force, Body], Vec2[Force, Body]]:
-        """Computes the lift and drag forces experienced by a medium immersed in a fluid.
+        self, apparent_velocity: Vec2[Velocity, Body], orientation_deg: float
+    ) -> Tuple[float, float, float]:
+        """Computes the lift and drag forces experienced by a medium immersed in a fluid as well as
+            the angle of attack to get them.
 
         Args:
             apparent_velocity (Vec2[Velocity, Body]): The apparent (relative) velocity between the
@@ -100,12 +101,13 @@ class MediumForceComputation:
                 corresponds to the positive x-axis, and angles increase counter-clockwise (CCW).
 
         Returns:
-            Tuple[Vec2[Force, Body], Vec2[Force, Body]]: A tuple containing the lift force and drag
-                force experienced by the medium, both expressed in newtons (N).
+            Tuple[float, float, float]: A tuple containing the lift force and drag
+                force experienced by the medium, both expressed in newtons (N), and the angle of
+                attack.
         """
 
-        attack_angle = self.calculate_attack_angle(apparent_velocity, orientation)
-        lift_coefficient, drag_coefficient, area = self.interpolate(attack_angle)
+        attack_angle_deg = self.calculate_attack_angle(apparent_velocity, orientation_deg)
+        lift_coefficient, drag_coefficient, area = self.interpolate(attack_angle_deg)
         velocity = apparent_velocity.data
         velocity_magnitude = np.linalg.norm(velocity)
 
@@ -114,113 +116,22 @@ class MediumForceComputation:
         # would otherwise produce NaN/Inf forces that propagate irreversibly through the
         # kinematics and blow up the simulation.
         if velocity_magnitude == 0:
-            zero_force: Vec2[Force, Body] = Vec2.from_xy(0.0, 0.0)
             _logger.info("compute: zero apparent velocity, returning zero lift/drag force")
-            return zero_force, zero_force
-
-        _logger.info(
-            f"compute: apparent_vel={velocity} m/s orientation={orientation:6.2f}° "
-            f"aoa={attack_angle:6.2f}° "
-            f"C_l={lift_coefficient:6.3f} C_d={drag_coefficient:6.3f} "
-            f"area={area:.3f} m² |v|={velocity_magnitude:6.2f} m/s "
-            f"L={0.5 * self.__fluid_density * lift_coefficient * area * velocity_magnitude**2} N "
-            f"D={0.5 * self.__fluid_density * drag_coefficient * area * velocity_magnitude**2} N"
-        )
+            return 0.0, 0.0, attack_angle_deg
 
         # Calculate the lift and drag forces
-
-        lift_force_magnitude = self.__calculate_fluid_force_magnitude(
-            lift_coefficient, velocity_magnitude, area
-        )
-        drag_force_magnitude = self.__calculate_fluid_force_magnitude(
-            drag_coefficient, velocity_magnitude, area
-        )
-
-        drag_force_unit_vector = velocity / velocity_magnitude
-        drag_force_unit_vector = self.__rotate_vector(drag_force_unit_vector, orientation)
-
-        # Rotate the lift and drag forces by 90 degrees to obtain the lift and drag forces
-
-        # Convention used here is that the positive x-axis is 0 degrees
-        # and the positive y-axis is 90 degrees
-        # Positive rotation is counter clockwise
-
-        is_drag_in_first_or_third_quadrant = (
-            drag_force_unit_vector[0] > 0 and drag_force_unit_vector[1] > 0
-        ) or (drag_force_unit_vector[0] < 0 and drag_force_unit_vector[1] < 0)
-
-        is_drag_in_second_or_fourth_quadrant = (
-            drag_force_unit_vector[0] > 0 and drag_force_unit_vector[1] < 0
-        ) or (drag_force_unit_vector[0] < 0 and drag_force_unit_vector[1] > 0)
-
-        # Rotate the lift force direction based on the quadrant of the drag force
-        if is_drag_in_first_or_third_quadrant:
-            # Rotate counter clockwise to get lift direction
-            lift_force_direction = np.array(
-                [-drag_force_unit_vector[1], drag_force_unit_vector[0]]
-            )
-        elif is_drag_in_second_or_fourth_quadrant:
-            # Rotate clockwise to get lift direction
-            lift_force_direction = np.array(
-                [drag_force_unit_vector[1], -drag_force_unit_vector[0]]
-            )
-        else:
-            # The drag unit vector lies exactly on an axis (one component is 0), so it belongs to
-            # neither quadrant test above. Use the CCW perpendicular as a consistent default rather
-            # than zeroing the lift direction, which would silently discard all lift force.
-            lift_force_direction = np.array(
-                [-drag_force_unit_vector[1], drag_force_unit_vector[0]]
-            )
-
-        # Rotate the lift and drag forces back to the original orientation
-        lift_force_direction = self.__rotate_vector(
-            lift_force_direction, orientation, clockwise=False
-        )
-        drag_force_unit_vector = self.__rotate_vector(
-            drag_force_unit_vector, orientation, clockwise=False
-        )
-
-        lift_force = np.asarray(lift_force_magnitude * lift_force_direction, dtype=np.float64)
-        drag_force = np.asarray(drag_force_magnitude * drag_force_unit_vector, dtype=np.float64)
+        lift_n = 0.5 * self.__fluid_density * lift_coefficient * area * velocity_magnitude**2
+        drag_n = 0.5 * self.__fluid_density * drag_coefficient * area * velocity_magnitude**2
 
         _logger.info(
-            f"compute: lift_force={lift_force} "
-            f"lift_force_direction={lift_force_direction} drag_force={drag_force} "
-            f"drag_force_unit_vector={drag_force_unit_vector}"
+            f"compute: apparent_vel={velocity} m/s orientation={orientation_deg:6.2f}° "
+            f"aoa={attack_angle_deg:6.2f}° "
+            f"C_l={lift_coefficient:6.3f} C_d={drag_coefficient:6.3f} "
+            f"area={area:.3f} m² |v|={velocity_magnitude:6.2f} m/s "
+            f"L={lift_n} N "
+            f"D={drag_n} N"
         )
-
-        return Vec2(lift_force), Vec2(drag_force)
-
-    def __calculate_fluid_force_magnitude(
-        self, coefficient: float, velocity_magnitude: float, area: float
-    ) -> float:
-        """Calculates the magnitude of fluid forces based on coefficient, velocity, and area."""
-        return 0.5 * self.__fluid_density * coefficient * area * (velocity_magnitude**2)
-
-    def __rotate_vector(self, v: NDArray, theta_degrees: float, clockwise=True) -> NDArray:
-        """
-        Rotates a vector by a specified angle in degrees.
-
-        Args:
-        v (np.array): The vector to be rotated.
-        theta_degrees (float): The rotation angle in degrees.
-        clockwise (bool, optional): Determines the direction of rotation. If True (default),
-                                    rotates the vector clockwise. If False, rotates the vector
-                                    counterclockwise.
-
-        Returns:
-            np.array: The rotated vector.
-        """
-        theta_radians = np.deg2rad(theta_degrees)
-        sign = 1 if clockwise else -1
-        rotation_matrix = np.array(
-            [
-                [np.cos(theta_radians), sign * np.sin(theta_radians)],
-                [-sign * np.sin(theta_radians), np.cos(theta_radians)],
-            ]
-        )
-        v_rotated = np.dot(rotation_matrix, v)
-        return v_rotated
+        return lift_n, drag_n, attack_angle_deg
 
     def interpolate(self, attack_angle: float) -> Tuple[float, float, float]:
         """Performs linear interpolation to estimate the lift coefficient, drag coefficient, and
@@ -274,3 +185,223 @@ class MediumForceComputation:
     @property
     def fluid_density(self) -> float:
         return self.__fluid_density
+
+
+class HydroStaticsForceComputation:
+    """Computes the hydrostatic restoring force. In the 4-DOF model this is nonzero only in
+    roll, per the Hydrostatics design spec.
+
+    Attributes:
+        'seawater_density' (float) the density of seawater, expressed in kilograms per
+            cubic meter (kg/m^3).
+        'gravity' (float)) gravitational acceleration, expressed in meters per second squared
+            (m/s^2).
+        'displaced_volume' (float) the volume of water displaced by the boat at floating
+            equilibrium, expressed in cubic meters (m^3).
+        'metacentric_height' (float) TODO get the proper calculations for ts
+        the vertical distance between the center of gravity
+        and the metacenter, expressed in meters (m).
+    """
+
+    def __init__(
+        self,
+        seawater_density: float,
+        gravity: float,
+        displaced_volume: float,
+        metacentric_height: float,
+    ):
+        self.__seawater_density = seawater_density
+        self.__gravity = gravity
+        self.__displaced_volume = displaced_volume
+        self.__metacentric_height = metacentric_height
+
+    def compute(self, roll_angle_rad: float) -> Vec4[Force, Body]:
+        """Computes the hydrostatic restoring force at the given roll angle
+
+        Args:
+            roll_angle_rad (float): The boat's current roll angle, expressed in radians.
+
+        Returns:
+            Vec4[Force, Body]: The restoring force
+        """
+        k_restore = (
+            -self.__seawater_density
+            * self.__gravity
+            * self.__displaced_volume
+            * self.__metacentric_height
+            * math.sin(roll_angle_rad)
+        )
+        _logger.info(
+            f"HydroStatics.compute: roll={roll_angle_rad:.4f} rad K_restore={k_restore:.2f} N·m"
+        )
+        return Vec4.from_xypr(0.0, 0.0, k_restore, 0.0)
+
+
+class AeroDynamicsForceComputation:
+    """Computes the wingsail's generalized force and moment contribution.
+
+    Args:
+        wing (MediumForceComputation): NACA 0018 lift/drag table and area for the main wing.
+        tab (MediumForceComputation): NACA 0018 lift/drag table and area for the trim tab.
+        chord_m (float): The main wing's mean chord length, expressed in meters (m).
+        mast_pivot_chord_m (float): x_mast, the chordwise position of the mast pivot,
+            expressed in meters (m) (typically the quarter-chord, per spec §2).
+        boom_length_m (float): ell_tab, the distance from the mast axis to the trim tab's
+            aerodynamic center, expressed in meters (m). TODO: TBD, mechanical CAD.
+        wing_centre_of_effort (Tuple[float, float]): (x_s, z_s), the wing's center of effort
+            relative to the boat's center of gravity, expressed in meters (m). TODO: TBD,
+            mechanical CAD.
+        air_density (float): rho_a, the density of air, expressed in kilograms per cubic meter
+            (kg/m^3).
+    """
+
+    def __init__(
+        self,
+        wing: MediumForceComputation,
+        tab: MediumForceComputation,
+        chord_m: float,
+        mast_pivot_chord_m: float,
+        boom_length_m: float,
+        wing_centre_of_effort: Tuple[float, float],
+        air_density: float,
+    ):
+        self.__wing = wing
+        self.__tab = tab
+        self.__chord_m = chord_m
+        self.__mast_pivot_chord_m = mast_pivot_chord_m
+        self.__boom_length_m = boom_length_m
+        self.__x_s, self.__z_s = wing_centre_of_effort
+        self.__air_density = air_density
+
+    def apparent_wind(
+        self,
+        boat_velocity: Vec4[Velocity, Body],
+        true_wind_speed: float,
+        true_wind_bearing_rad: float,
+        heading_rad: float,
+    ) -> Tuple[float, float]:
+        """Computes the apparent wind speed and angle-off-the-bow at the sail.
+
+        Args:
+            boat_velocity (Vec4[Velocity, Body]): The boat's current generalized velocity,
+                 in meters per second.
+            true_wind_speed (float): V_w, the true wind speed generated by the Fluid
+                Simulation, in meters per second.
+            true_wind_bearing_rad (float): beta_w, the true wind direction as an NED bearing,
+                in radians.
+            heading_rad (float): psi, the boat's current heading, in radians.
+
+        Returns:
+            Tuple[float, float]: A tuple of (V_aw, theta), the apparent wind speed in meters
+                per second, and the apparent wind angle off the bow in radians.
+        """
+        u, v = boat_velocity.x, boat_velocity.y
+        gamma_w = true_wind_bearing_rad - heading_rad - math.pi
+        u_aw = u - true_wind_speed * math.cos(gamma_w)
+        v_aw = v - true_wind_speed * math.sin(gamma_w)
+        V_aw = math.sqrt(u_aw**2 + v_aw**2)
+        theta = math.atan2(v_aw, u_aw)
+        return V_aw, theta
+
+    def net_pitching_moment(self, alpha_rad: float, v_aw: float, delta_tab_rad: float) -> float:
+        """Sets up teh equation for the net pitching moment (or rather it gives the value).
+
+        Args:
+            alpha_rad (float): Wing angle of attack, in radians.
+            v_aw (float): Apparent wind speed, in meters per second.
+            delta_tab_rad (float): Trim tab deflection, in radians.
+
+        Returns:
+            float: The net pitching moment M_net(alpha), expressed in newton meters (N*m).
+                we want this to be 0
+        """
+        lift_n, drag_n, _ = self.__wing.compute(
+            Vec2.from_xy(v_aw * math.cos(alpha_rad), v_aw * math.sin(alpha_rad)),
+            0.0,  # double check this maths out properly
+        )
+        x_cop = self.__chord_m * (0.195 + 0.305 * abs(math.sin(alpha_rad)))
+        n_perp = lift_n * math.cos(alpha_rad) + drag_n * math.sin(alpha_rad)
+        m_wing = n_perp * (x_cop - self.__mast_pivot_chord_m)
+
+        alpha_tab_rad = alpha_rad - delta_tab_rad
+        lift_coefficient, _, tab_area = self.__tab.interpolate(math.degrees(alpha_tab_rad))
+        l_tab = 0.5 * self.__air_density * v_aw**2 * tab_area * lift_coefficient
+        m_tab = l_tab * self.__boom_length_m
+        return m_wing + m_tab
+
+    def solve_wing_angle(  # double check ts
+        self, v_aw: float, delta_tab_rad: float, alpha_guess_rad: float = 0.0
+    ) -> float:
+        """Solves for the wing's equilibrium angle of attack.
+
+        Args:
+            v_aw (float): The apparent wind speed, in meters per second (m/s).
+            delta_tab_rad (float): The trim tab deflection, in radians.
+            alpha_guess_rad (float): The previous timestep's solved wing angle, in radians.
+
+        Returns:
+            float: The solved wing angle of attack alpha, in radians.
+        """
+        low, high = -math.pi / 2, math.pi / 2
+        f_low = self.net_pitching_moment(low, v_aw, delta_tab_rad)
+        f_high = self.net_pitching_moment(high, v_aw, delta_tab_rad)
+        if f_low * f_high > 0:
+            _logger.error(
+                "solve_wing_angle: no sign change on [-90, 90] deg bracket, "
+                "returning previous alpha unchanged"
+            )
+            return alpha_guess_rad
+
+        for i in range(50):
+            mid = 0.5 * (low + high)
+            f_mid = self.net_pitching_moment(mid, v_aw, delta_tab_rad)
+            if f_low * f_mid <= 0:
+                high, f_high = mid, f_mid
+            else:
+                low, f_low = mid, f_mid
+            if abs(high - low) < 1e-6:
+                break
+        return mid
+
+    def compute(
+        self,
+        boat_velocity: Vec4[Velocity, Body],
+        roll_rad: float,
+        true_wind_speed: float,
+        true_wind_bearing_rad: float,
+        heading_rad: float,
+        delta_tab_rad: float,
+        alpha_guess_rad: float = 0.0,
+    ) -> Vec4[Force, Body]:
+        """Computes the wingsail's force.
+
+        Args:
+            boat_velocity (Vec4[Velocity, Body]): The boat's current generalized velocity.
+            roll_rad (float): The boat's current roll angle in radians.
+            true_wind_speed (float): The true wind speed in meters per second.
+            true_wind_bearing_rad (float): The true wind direction,
+                in radians.
+            heading_rad (float): The boat's current heading, in radians.
+            delta_tab_rad (float): The trim tab deflection, in radians.
+            alpha_guess_rad (float): The previous timestep's solved wing angle,
+                in radians.
+
+        Returns:
+            Vec4[Force, Body]: Surge force, sway force, roll moment, and yaw moment
+            in newtons for the first two and newton meters for the last two.
+        """
+        v_aw, theta = self.apparent_wind(
+            boat_velocity, true_wind_speed, true_wind_bearing_rad, heading_rad
+        )
+        alpha_rad = self.solve_wing_angle(v_aw, delta_tab_rad, alpha_guess_rad)
+
+        lift_n, drag_n, attack_deg = self.__wing.compute(
+            Vec2.from_xy(v_aw * math.cos(theta), v_aw * math.sin(theta)), math.degrees(alpha_rad)
+        )
+        x_s = lift_n * math.sin(theta) - drag_n * math.cos(theta)
+        y_s = (lift_n * math.cos(theta) + drag_n * math.sin(theta)) * math.cos(roll_rad)
+
+        f_y = lift_n * math.cos(alpha_rad) + drag_n * math.sin(alpha_rad)
+        k_s = f_y * self.__z_s
+        n_s = f_y * self.__x_s * math.cos(roll_rad)
+        return Vec4.from_xypr(x_s, y_s, k_s, n_s)
