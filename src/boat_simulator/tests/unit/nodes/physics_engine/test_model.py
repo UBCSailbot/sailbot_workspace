@@ -33,15 +33,15 @@ def _set_pose(boat_state: BoatState, x=0.0, y=0.0, roll=0.0, yaw=0.0) -> None:
     public API into the underlying `BoatKinematics` to set up non-trivial state for the
     property/rotation tests below.
     """
-    boat_state._BoatState__kinematics_computation.kinematics.pose = Vec4.from_xypr(
-        x, y, roll, yaw
-    )  # type: ignore[attr-defined]
+    boat_state._BoatState__kinematics_computation.kinematics.pose = (  # type: ignore[attr-defined]
+        Vec4.from_xypr(x, y, roll, yaw)
+    )
 
 
 def _set_nu(boat_state: BoatState, u=0.0, v=0.0, p=0.0, r=0.0) -> None:
-    boat_state._BoatState__kinematics_computation.kinematics.nu = Vec4.from_xypr(
-        u, v, p, r
-    )  # type: ignore[attr-defined]
+    boat_state._BoatState__kinematics_computation.kinematics.nu = (  # type: ignore[attr-defined]
+        Vec4.from_xypr(u, v, p, r)
+    )
 
 
 # --- construction -------------------------------------------------------------
