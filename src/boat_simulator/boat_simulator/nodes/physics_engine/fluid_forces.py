@@ -24,8 +24,8 @@ class MediumForceComputation:
             (x, y) representing an angle of attack, in degrees, and its corresponding drag
             coefficient.
         `areas` (float): A 2D area of the aero/hydrofoil.
-        `fluid_density` (float): The density of the fluid acting on the medium, expressed in
-            kilograms per cubic meter (kg/m^3).
+        `fluid_density` (float): The density of the fluid acting on the medium, in
+            kilograms per cubic meter.
     """
 
     def __init__(
@@ -47,8 +47,8 @@ class MediumForceComputation:
         and the direction of the apparent velocity, bounded between -180 and 180 degrees.
 
         Args:
-            apparent_velocity (Vec2[Velocity, Body]): The apparent (relative) velocity between the
-                fluid and the medium, expressed in meters per second (m/s).
+            apparent_velocity (Vec2[Velocity, Body]): The apparent relative velocity between the
+                fluid and the medium, in meters per second.
             orientation (float): The orientation angle of the medium in degrees.
 
         Returns:
@@ -93,16 +93,14 @@ class MediumForceComputation:
             the angle of attack to get them.
 
         Args:
-            apparent_velocity (Vec2[Velocity, Body]): The apparent (relative) velocity between the
-                fluid and the medium, calculated as the difference between the fluid velocity and
-                the medium velocity (fluid_velocity - medium_velocity), expressed in meters per
-                second (m/s).
+            apparent_velocity (Vec2[Velocity, Body]): The apparent relative velocity between the
+                fluid and the medium, in meters per second.
             orientation (float): The orientation angle of the medium in degrees, where 0 degrees
-                corresponds to the positive x-axis, and angles increase counter-clockwise (CCW).
+                corresponds to the positive x-axis, and angles increase counterclockwise.
 
         Returns:
             Tuple[float, float, float]: A tuple containing the lift force and drag
-                force experienced by the medium, both expressed in newtons (N), and the angle of
+                force experienced by the medium, in Newtons, and the angle of
                 attack.
         """
 
@@ -139,11 +137,11 @@ class MediumForceComputation:
 
             Args:
                 attack_angle (float): The angle of attack formed between the orientation angle of
-                    the medium and the direction of the apparent velocity, expressed in degrees.
+                    the medium and the direction of the apparent velocity, in degrees.
 
             Returns:
                 Tuple[float, float, float]: A tuple of (lift_coefficient, drag_coefficient,
-                    area). Both coefficients are unitless; area is in square meters (m^2).
+                    area). Both coefficients are unitless; area is in meters squared.
         """
 
         # The foils are symmetric, so the lookup tables only store the positive AoA branch:
@@ -188,19 +186,17 @@ class MediumForceComputation:
 
 
 class HydroStaticsForceComputation:
-    """Computes the hydrostatic restoring force. In the 4-DOF model this is nonzero only in
-    roll, per the Hydrostatics design spec.
+    """Computes the hydrostatic restoring force.
 
     Attributes:
-        'seawater_density' (float) the density of seawater, expressed in kilograms per
-            cubic meter (kg/m^3).
-        'gravity' (float)) gravitational acceleration, expressed in meters per second squared
-            (m/s^2).
+        'seawater_density' (float) the density of seawater, in kilograms per
+            cubic meter.
+        'gravity' (float)) gravitational acceleration, in meters per second squared.
         'displaced_volume' (float) the volume of water displaced by the boat at floating
-            equilibrium, expressed in cubic meters (m^3).
+            equilibrium, in cubic meters.
         'metacentric_height' (float) TODO get the proper calculations for ts
         the vertical distance between the center of gravity
-        and the metacenter, expressed in meters (m).
+        and the metacenter, in meters.
     """
 
     def __init__(
@@ -219,7 +215,7 @@ class HydroStaticsForceComputation:
         """Computes the hydrostatic restoring force at the given roll angle
 
         Args:
-            roll_angle_rad (float): The boat's current roll angle, expressed in radians.
+            roll_angle_rad (float): The boat's current roll angle, in radians.
 
         Returns:
             Vec4[Force, Body]: The restoring force
@@ -241,18 +237,16 @@ class AeroDynamicsForceComputation:
     """Computes the wingsail's generalized force and moment contribution.
 
     Args:
-        wing (MediumForceComputation): NACA 0018 lift/drag table and area for the main wing.
-        tab (MediumForceComputation): NACA 0018 lift/drag table and area for the trim tab.
-        chord_m (float): The main wing's mean chord length, expressed in meters (m).
+        wing (MediumForceComputation): -.
+        tab (MediumForceComputation): -.
+        chord_m (float): The main wing's mean chord length, expressed in meters.
         mast_pivot_chord_m (float): x_mast, the chordwise position of the mast pivot,
-            expressed in meters (m) (typically the quarter-chord, per spec §2).
+            in meters.
         boom_length_m (float): ell_tab, the distance from the mast axis to the trim tab's
-            aerodynamic center, expressed in meters (m). TODO: TBD, mechanical CAD.
+            aerodynamic center, in meters.
         wing_centre_of_effort (Tuple[float, float]): (x_s, z_s), the wing's center of effort
-            relative to the boat's center of gravity, expressed in meters (m). TODO: TBD,
-            mechanical CAD.
-        air_density (float): rho_a, the density of air, expressed in kilograms per cubic meter
-            (kg/m^3).
+            relative to the boat's center of gravity, in meters.
+        air_density (float): rho_a, the density of air, in kilograms per cubic meter.
     """
 
     def __init__(
@@ -312,7 +306,7 @@ class AeroDynamicsForceComputation:
             delta_tab_rad (float): Trim tab deflection, in radians.
 
         Returns:
-            float: The net pitching moment M_net(alpha), expressed in newton meters (N*m).
+            float: The net pitching moment M_net(alpha), in newton meters.
                 we want this to be 0
         """
         lift_n, drag_n, _ = self.__wing.compute(
