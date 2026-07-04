@@ -33,11 +33,15 @@ def _set_pose(boat_state: BoatState, x=0.0, y=0.0, roll=0.0, yaw=0.0) -> None:
     public API into the underlying `BoatKinematics` to set up non-trivial state for the
     property/rotation tests below.
     """
-    boat_state._BoatState__kinematics_computation.kinematics.pose = Vec4.from_xypr(x, y, roll, yaw)
+    boat_state._BoatState__kinematics_computation.kinematics.pose = Vec4.from_xypr(  # type: ignore[attr-defined]
+        x, y, roll, yaw
+    )
 
 
 def _set_nu(boat_state: BoatState, u=0.0, v=0.0, p=0.0, r=0.0) -> None:
-    boat_state._BoatState__kinematics_computation.kinematics.nu = Vec4.from_xypr(u, v, p, r)
+    boat_state._BoatState__kinematics_computation.kinematics.nu = Vec4.from_xypr(  # type: ignore[attr-defined]
+        u, v, p, r
+    )
 
 
 # --- construction -------------------------------------------------------------
@@ -138,7 +142,9 @@ def test_ned_to_body_velocity_identity_at_zero_orientation() -> None:
     boat_state = make_boat_state()
     ned_vel = Vec2[Velocity, NED].from_xy(3.0, -2.0)
 
-    body_vel = boat_state._BoatState__ned_to_body_velocity(ned_vel)
+    body_vel = boat_state._BoatState__ned_to_body_velocity(  # type: ignore[attr-defined]
+        ned_vel
+    )
 
     assert body_vel.x == pytest.approx(3.0)
     assert body_vel.y == pytest.approx(-2.0)
@@ -150,7 +156,9 @@ def test_ned_to_body_velocity_rotates_by_roll_and_yaw() -> None:
     _set_pose(boat_state, roll=roll, yaw=yaw)
     ned_vel = Vec2[Velocity, NED].from_xy(5.0, 1.5)
 
-    body_vel = boat_state._BoatState__ned_to_body_velocity(ned_vel)
+    body_vel = boat_state._BoatState__ned_to_body_velocity(  # type: ignore[attr-defined]
+        ned_vel
+    )
 
     rotation = ned_to_body_rotation_matrix(roll_rad=roll, pitch_rad=0.0, yaw_rad=yaw)
     expected = rotation @ np.array([5.0, 1.5, 0.0])
