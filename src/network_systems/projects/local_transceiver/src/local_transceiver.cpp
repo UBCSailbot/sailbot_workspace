@@ -746,7 +746,7 @@ std::optional<std::string> LocalTransceiver::readRsp()
     boost::system::error_code ec;
 
     bool success =
-      runWithTimeout([&](auto handler) { bio::async_read_until(serial_, buf, AT::STATUS_OK, handler); }, ec);
+      runWithTimeout([&](auto handler) { bio::async_read_until(serial_, buf, AT::Line(AT::STATUS_OK), handler); }, ec);
 
     if (!success) {
         if (log_error_) {
