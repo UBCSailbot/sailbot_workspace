@@ -1,7 +1,5 @@
 PLACEHOLDER_TOPIC_0
 PLACEHOLDER_TOPIC_1
-mock_local_to_remote_transceiver
-mock_remote_to_local_transceiver
 ais_ships
 batteries
 desired_heading

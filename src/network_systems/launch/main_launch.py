@@ -17,7 +17,6 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(SCRIPT_DIR)
 from ros_info import (  # noqa: E402
     CAN_TRANSCEIVER_NODE,
-    REMOTE_TRANSCEIVER_NODE,
 )
 
 # Local launch arguments and constants
@@ -88,7 +87,6 @@ def setup_launch(context: LaunchContext) -> List[Node]:
         ).visit(context)
     launch_description_entities = list()
     launch_description_entities.append(get_can_transceiver_description(context))
-    launch_description_entities.append(get_remote_transceiver_description(context))
     launch_description_entities.append(get_local_transceiver_description(context))
     return launch_description_entities
 
@@ -116,37 +114,6 @@ def get_can_transceiver_description(context: LaunchContext) -> Node:
         package=PACKAGE_NAME,
         namespace=NAMESPACE,
         executable="can_transceiver",
-        name=node_name,
-        parameters=ros_parameters,
-        ros_arguments=ros_arguments,
-    )
-
-    return node
-
-
-def get_remote_transceiver_description(context: LaunchContext) -> Node:
-    """Gets the launch description for the remote_transceiver_node.
-
-    Args:
-        context (LaunchContext): The current launch context.
-
-    Returns:
-        Node: The node object that launches the remote_transceiver_node.
-    """
-    node_name = REMOTE_TRANSCEIVER_NODE
-    ros_parameters = [
-        {"mode": LaunchConfiguration("mode")},
-        *LaunchConfiguration("config").perform(context).split(","),
-    ]
-    ros_arguments: List[SomeSubstitutionsType] = [
-        "--log-level",
-        [f"{node_name}:=", LaunchConfiguration("log_level")],
-    ]
-
-    node = Node(
-        package=PACKAGE_NAME,
-        namespace=NAMESPACE,
-        executable="remote_transceiver",
         name=node_name,
         parameters=ros_parameters,
         ros_arguments=ros_arguments,

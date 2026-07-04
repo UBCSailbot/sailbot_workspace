@@ -6,7 +6,3 @@ can_transceiver_node:
 local_transceiver_node:
   ros__parameters:
     enabled: true
-
-remote_transceiver_node:
-  ros__parameters:
-    enabled: true
