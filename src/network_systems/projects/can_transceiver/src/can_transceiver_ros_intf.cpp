@@ -4,7 +4,6 @@
 #include <custom_interfaces/msg/batteries.hpp>
 #include <custom_interfaces/msg/can_sim_to_boat_sim.hpp>
 #include <custom_interfaces/msg/desired_heading.hpp>
-#include <custom_interfaces/msg/generic_sensors.hpp>
 #include <custom_interfaces/msg/gps.hpp>
 #include <custom_interfaces/msg/wind_sensors.hpp>
 #include <queue>
@@ -79,14 +78,11 @@ public:
             wind_sensors_pub_ = this->create_publisher<msg::WindSensors>(ros_topics::WIND_SENSORS, QUEUE_SIZE);
             filtered_wind_sensor_pub_ =
               this->create_publisher<msg::WindSensor>(ros_topics::FILTERED_WIND_SENSOR, QUEUE_SIZE);
-            // generic_sensors_pub_ = this->create_publisher<msg::GenericSensors>(ros_topics::DATA_SENSORS, QUEUE_SIZE);
             rudder_pub_       = this->create_publisher<msg::HelperHeading>(ros_topics::RUDDER, QUEUE_SIZE);
             temp_sensors_pub_ = this->create_publisher<msg::TempSensors>(ros_topics::TEMP_SENSORS, QUEUE_SIZE);
             ph_sensors_pub_   = this->create_publisher<msg::PhSensors>(ros_topics::PH_SENSORS, QUEUE_SIZE);
             salinity_sensors_pub_ =
               this->create_publisher<msg::SalinitySensors>(ros_topics::SALINITY_SENSORS, QUEUE_SIZE);
-            // pressure_sensors_pub_ =
-            //   this->create_publisher<msg::PressureSensors>(ros_topics::PRESSURE_SENSORS, QUEUE_SIZE);
 
             std::vector<std::pair<CanId, std::function<void(const CanFrame &)>>> canCbs = {
               std::make_pair(CanId::POWER_OFF, std::function<void(const CanFrame &)>([this](const CanFrame & frame) {
@@ -107,9 +103,6 @@ public:
               std::make_pair(CanId::DATA_WIND, std::function<void(const CanFrame &)>([this](const CanFrame & frame) {
                                  publishWindSensor(frame);
                              })),
-              std::make_pair(
-                CanId::GENERIC_SENSOR_START,
-                std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishGeneric(frame); })),
               std::make_pair(CanId::SAIL_AIS, std::function<void(const CanFrame &)>([this](const CanFrame & frame) {
                                  publishAIS(frame);
                              }))};
@@ -120,8 +113,6 @@ public:
             append(getCbsForRange(CanId::PH_SENSOR_START, CanId::PH_SENSOR_END, &CanTransceiverIntf::publishPh));
             append(getCbsForRange(
               CanId::SALINITY_SENSOR_START, CanId::SALINITY_SENSOR_END, &CanTransceiverIntf::publishSalinity));
-            append(getCbsForRange(
-              CanId::PRESSURE_SENSOR_START, CanId::PRESSURE_SENSOR_END, &CanTransceiverIntf::publishPressure));
 
             can_trns_->registerCanCbs(canCbs);
 
@@ -168,8 +159,6 @@ private:
     msg::WindSensors                                     wind_sensors_;
     rclcpp::Publisher<msg::WindSensor>::SharedPtr        filtered_wind_sensor_pub_;
     msg::WindSensor                                      filtered_wind_sensor_;
-    rclcpp::Publisher<msg::GenericSensors>::SharedPtr    generic_sensors_pub_;
-    msg::GenericSensors                                  generic_sensors_;
     rclcpp::Subscription<msg::DesiredHeading>::SharedPtr desired_heading_sub_;
     msg::DesiredHeading                                  desired_heading_;
     rclcpp::Subscription<msg::SailCmd>::SharedPtr        sail_cmd_sub_;
@@ -182,8 +171,6 @@ private:
     msg::PhSensors                                       ph_sensors_;
     rclcpp::Publisher<msg::SalinitySensors>::SharedPtr   salinity_sensors_pub_;
     msg::SalinitySensors                                 salinity_sensors_;
-    rclcpp::Publisher<msg::PressureSensors>::SharedPtr   pressure_sensors_pub_;
-    msg::PressureSensors                                 pressure_sensors_;
 
     // Simulation only publishers and subscribers
     rclcpp::Subscription<msg::GPS>::SharedPtr          mock_gps_sub_;
@@ -575,68 +562,6 @@ private:
             RCLCPP_WARN(this->get_logger(), "%s", err.what());
             return;
         }
-    }
-
-    void publishPressure(const CanFrame & pressure_frame)
-    {
-        try {
-            CAN_FP::PressureSensor pressure_sensor(pressure_frame);
-            size_t                 length = pressure_sensors_.pressure_sensors.size();
-            size_t                 idx    = length;
-            for (size_t i = 0; i < length; i++) {
-                if ((pressure_sensor.id_ == CAN_FP::PressureSensor::PRESSURE_SENSOR_IDS[i])) {
-                    idx = i;
-                    break;
-                }
-            }
-            if (idx == length) {
-                RCLCPP_WARN(this->get_logger(), "Unknown pressure sensor ID: 0x%X", pressure_frame.can_id);
-                return;
-            }
-            msg::PressureSensor & pressure_sensor_msg = pressure_sensors_.pressure_sensors[idx];
-            pressure_sensor_msg                       = pressure_sensor.toRosMsg();
-            pressure_sensors_pub_->publish(pressure_sensors_);
-            RCLCPP_INFO(
-              this->get_logger(), "%s %s", getCurrentTimeString().c_str(), pressure_sensor.toString().c_str());
-        } catch (std::out_of_range err) {
-            RCLCPP_WARN(this->get_logger(), "%s", err.what());
-            return;
-        }
-    }
-
-    /**
-     * @brief Publish a generic sensor frame
-     *
-     * @param generic_frame
-     */
-    void publishGeneric(const CanFrame & generic_frame)
-    {
-        //check all generic sensors in the ROS msg for the matching id
-        //assumes this sensor is in the "generic_sensors_" array of sensors, however generic sensors do not have a constructor in can_frame_parser
-        size_t length = generic_sensors_.generic_sensors.size();
-        size_t idx    = length;
-        for (size_t i = 0; i < length; i++) {
-            if (generic_frame.can_id == generic_sensors_.generic_sensors[i].id) {
-                idx = i;
-                break;
-            }
-        }
-
-        if (idx == length) {
-            RCLCPP_WARN(this->get_logger(), "Unknown generic sensor ID: 0x%X", generic_frame.can_id);
-            return;
-        }
-
-        uint64_t generic_data = 0;
-        std::memcpy(&generic_data, generic_frame.data, sizeof(int64_t));
-        msg::HelperGenericSensor & generic_sensor_msg = generic_sensors_.generic_sensors[idx];
-        generic_sensor_msg.set__data(generic_data);
-        generic_sensor_msg.set__id(generic_frame.can_id);
-
-        generic_sensors_pub_->publish(generic_sensors_);
-        std::stringstream ss;
-        ss << "[GENERIC SENSOR] CanID: " << generic_frame.can_id << " Data: " << generic_data;
-        RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), ss.str().c_str());
     }
 
     /**
