@@ -38,6 +38,7 @@ public:
     {
         this->declare_parameter("enabled", true);
         this->declare_parameter("manual_mode", false);
+        this->declare_parameter("kill_ais_can", false);
 
         if (!this->get_parameter("enabled").as_bool()) {
             RCLCPP_INFO(this->get_logger(), "CAN Transceiver is DISABLED");
@@ -203,6 +204,9 @@ private:
     // manual mode status
     inline static bool manual_mode_ = false;
 
+    // kill ais can send status
+    inline static bool kill_ais_can_ = false;
+
     std::vector<std::pair<CAN_FP::CanId, std::function<void(const CanFrame &)>>> getCbsForRange(
       CAN_FP::CanId start, CAN_FP::CanId end, void (CanTransceiverIntf::*callback)(const CanFrame &))
     {
@@ -241,6 +245,8 @@ private:
         for (const auto & param : params) {
             if (param.get_name() == "manual_mode") {
                 manual_mode_ = param.as_bool();
+            } else if (param.get_name() == "kill_ais_can") {
+                kill_ais_can_ = param.as_bool();
             }
         }
         rcl_interfaces::msg::SetParametersResult result;
@@ -255,6 +261,11 @@ private:
     void publishAIS(const CanFrame & ais_frame)
     {
         try {
+            // If kill_ais_can is set to true then shut off receiving can messages
+            if (kill_ais_can_) {
+                return;
+            }
+
             CAN_FP::AISShips ais_ship(ais_frame);
 
             int num_ships = ais_ship.getNumShips();
