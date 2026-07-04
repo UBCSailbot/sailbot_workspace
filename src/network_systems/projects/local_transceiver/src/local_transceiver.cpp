@@ -94,13 +94,15 @@ void LocalTransceiver::updateSensor(msg::SalinitySensors salinity)
     }
 }
 
-void LocalTransceiver::updateSensor(msg::PressureSensors pressure)
-{
-    sensors_.clear_pressure_sensors();
-    for (const msg::PressureSensor & pressure_data : pressure.pressure_sensors) {
-        sensors_.add_pressure_sensors(pressure_data.pressure.pressure);
-    }
-}
+// Pressure sensor retired (removed from CAN and no longer sent). Kept commented so the last
+// compile-time dependency on the Sensors proto's pressure_sensors field is gone.
+// void LocalTransceiver::updateSensor(msg::PressureSensors pressure)
+// {
+//     sensors_.clear_pressure_sensors();
+//     for (const msg::PressureSensor & pressure_data : pressure.pressure_sensors) {
+//         sensors_.add_pressure_sensors(pressure_data.pressure.pressure);
+//     }
+// }
 
 void LocalTransceiver::updateSensor(msg::LPathData localData)
 {

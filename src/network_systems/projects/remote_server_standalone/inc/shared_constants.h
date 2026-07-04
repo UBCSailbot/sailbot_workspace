@@ -44,5 +44,3 @@ constexpr float PH_LBND             = -1.6;
 constexpr float PH_UBND             = 15.6;
 constexpr float SALINITY_LBND       = 0;
 constexpr float SALINITY_UBND       = 1000000;
-constexpr float PRESSURE_LBND       = -14.5;
-constexpr float PRESSURE_UBND       = 32.6;

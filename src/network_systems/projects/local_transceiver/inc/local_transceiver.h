@@ -9,7 +9,7 @@
 #include "boost/asio/serial_port.hpp"
 #include "custom_interfaces/msg/batteries.hpp"
 #include "custom_interfaces/msg/ph_sensors.hpp"
-#include "custom_interfaces/msg/pressure_sensors.hpp"
+// #include "custom_interfaces/msg/pressure_sensors.hpp"
 #include "custom_interfaces/msg/salinity_sensors.hpp"
 #include "custom_interfaces/msg/temp_sensors.hpp"
 // #include "custom_interfaces/msg/generic_sensors.hpp"
@@ -86,7 +86,7 @@ public:
     *
     * @param pressure custom_interfaces PressureSensors object
     */
-    void updateSensor(msg::PressureSensors pressure);
+    // void updateSensor(msg::PressureSensors pressure);
 
     /**
     * @brief Update the sensor with new salinity data
