@@ -12,7 +12,7 @@ import time
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, TextIO
+from typing import Any
 
 import rclpy
 import yaml
@@ -25,6 +25,31 @@ DEFAULT_TIMEOUT_HOURS = 5.0
 DEFAULT_GOAL_THRESHOLD_M = 300.0
 STATUS_UPDATE_INTERVAL_SEC = 1.0
 EXCLUDED_TEST_PLANS = {"on_water_mock_ais.yaml"}
+NODE_MISSING_TIMEOUT_SEC = 10.0
+COMMON_NODE_NAMES = frozenset(
+    {
+        "/can_transceiver_node",
+        "/local_transceiver_node",
+        "/mock_ais",
+        "/mock_global_path",
+        "/navigate_main",
+        "/navigate_observer",
+        "/remote_transceiver_node",
+        "/rosbag2_recorder",
+        "/wingsail_ctrl_node",
+    }
+)
+NODE_NAMES_BY_MODE = {
+    "development": COMMON_NODE_NAMES | {
+        "/mock_gps",
+        "/mock_wind_sensor",
+    },
+    "sim": COMMON_NODE_NAMES | {
+        "/low_level_control_node",
+        "/physics_engine_node",
+        "/sim_visualizer_node",
+    }
+}
 
 
 @dataclass(frozen=True)
@@ -200,14 +225,13 @@ def stop_process_group(process: subprocess.Popen, grace_sec: float = 15.0) -> No
     process.wait()
 
 
-def find_ros_process_crash(ros_launch_log: TextIO) -> str | None:
-    """
-    Read newly appended terminal output log lines and return the first ROS process crash message.
-    """
-    while line := ros_launch_log.readline():
-        if "process has died" in line and "exit code" in line:
-            return line.strip()
-    return None
+def get_missing_nodes(monitor: GoalMonitor, expected_nodes: frozenset[str]) -> list[str]:
+    """Returns a list of ROS nodes that are expected but not currently running."""
+    found_nodes = {
+        f"{namespace.rstrip('/')}/{node_name}"
+        for node_name, namespace in monitor.get_node_names_and_namespaces()
+    }
+    return sorted(expected_nodes - found_nodes)
 
 
 def format_duration(seconds: float) -> str:
@@ -256,7 +280,7 @@ def update_progress_display(
     elapsed_time = curr_monotonic_sec - test_start_monotonic_sec
     status_line = (
         f"[{test_number}/{total_tests}] {plan.name} | "
-        f"Elapsed: {format_duration(elapsed_time)}/{format_duration(timeout_sec)} | "
+        f"Elapsed: {format_duration(elapsed_time)}/{format_duration(timeout_sec)} "
     )
     clear_padding = " " * max(previous_status_length - len(status_line), 0)
     print(f"\r{status_line}{clear_padding}", end="", flush=True)
@@ -292,6 +316,7 @@ def run_test_plan(
     result_dir = workspace / save_path
     result_path = result_dir / "result.json"
     ros_launch_log_path = result_dir / "launch.log"
+    expected_nodes = NODE_NAMES_BY_MODE.get(args.mode, COMMON_NODE_NAMES)
 
     timeout_sec = args.timeout_hours * 3600
     test_plan_start_time = datetime.now().isoformat(timespec="seconds")
@@ -315,12 +340,11 @@ def run_test_plan(
     return_code: int | None = None
     progress_update_monotonic_sec = 0.0
     previous_status_length = 0
+    missing_nodes = sorted(expected_nodes)
+    missing_nodes_since_sec: float | None = time.monotonic()
 
     try:
-        with (
-            ros_launch_log_path.open("w", buffering=1) as ros_launch_log,
-            ros_launch_log_path.open("r") as ros_launch_log_reader,
-        ):
+        with (ros_launch_log_path.open("w", buffering=1) as ros_launch_log):
             launch_process = subprocess.Popen(
                 launch_command,
                 stdout=ros_launch_log,
@@ -331,11 +355,17 @@ def run_test_plan(
                 rclpy.spin_once(monitor, timeout_sec=1.0)
                 return_code = launch_process.poll()
                 curr_monotonic_sec = time.monotonic()
+                missing_nodes = get_missing_nodes(monitor, expected_nodes)
 
-                crash_message = find_ros_process_crash(ros_launch_log_reader)
-                if crash_message:
+                if not missing_nodes:
+                    missing_nodes_since_sec = None
+                elif missing_nodes_since_sec is None:
+                    missing_nodes_since_sec = curr_monotonic_sec
+                elif (curr_monotonic_sec - missing_nodes_since_sec) > NODE_MISSING_TIMEOUT_SEC:
                     status = "FAILED"
-                    reason = f"ROS process crashed: {crash_message}"
+                    missing_node_text = ", ".join(missing_nodes)
+                    reason = (f"ROS nodes were missing for {NODE_MISSING_TIMEOUT_SEC:g} seconds:"
+                              f" {missing_node_text}")
                     stop_process_group(launch_process)
                     return_code = launch_process.poll()
                     break
@@ -395,6 +425,8 @@ def run_test_plan(
         "save_path": save_path,
         "result_path": str(result_path),
         "ros_launch_log_path": str(ros_launch_log_path),
+        "expected_node_names": sorted(expected_nodes),
+        "missing_node_names": missing_nodes,
         "ros_launch_log_stored": store_ros_launch_log,
         "last_target_waypoint_index": monitor.current_waypoint_index,
         "last_distance_m": monitor.last_distance_m,
