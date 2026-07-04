@@ -45,3 +45,18 @@ form of data to be handled by the server. This data will be written to
 `TEMP_FILE_PATH` so that any tests can properly verify that the rockblock web
 server will have received the correct data. So as above, if all goes well,
 `thisistestdata` should be written to the file located at `TEMP_FILE_PATH`.
+
+## How to run:
+
+### dev container — no CAN hardware needed, launches network_systems itself
+
+```
+./can_stress_test.py --log sample_can_log.csv --duration 30        # smoke test
+./can_stress_test.py --log /path/to/real_capture.log --duration 43200   # 12h soak
+```
+
+### on the boat / any host with a real or vcan can0
+
+```
+./can_stress_test.py --log capture.log --duration 43200 --iface can0
+```
