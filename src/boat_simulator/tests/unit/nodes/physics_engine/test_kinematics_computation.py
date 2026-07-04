@@ -6,13 +6,13 @@ import numpy as np
 import pytest
 
 from boat_simulator.common.angle_conventions import wrap_to_pi
-from boat_simulator.common.conventions import Body, Force, Inertia, Torque
-from boat_simulator.common.types import Mat4, Vec4
+from boat_simulator.common.constants import BOAT_PROPERTIES
+from boat_simulator.common.conventions import Body, Force, Torque
+from boat_simulator.common.types import Vec4
 from boat_simulator.nodes.physics_engine.kinematics_computation import BoatKinematics
-
-MASS = 210.0
-I_X = 125.0
-I_Z = 500.0
+MASS = BOAT_PROPERTIES.mass
+I_X = BOAT_PROPERTIES.inertia.data[2, 2]
+I_Z = BOAT_PROPERTIES.inertia.data[3, 3]
 TIMESTEP = 0.1
 
 ZERO_FORCE = Vec4[Force, Body].from_xypr(0.0, 0.0, 0.0, 0.0)
@@ -20,11 +20,7 @@ ZERO_TORQUE = Vec4[Torque, Body].from_xypr(0.0, 0.0, 0.0, 0.0)
 
 
 def make_kinematics(timestep: float = TIMESTEP) -> BoatKinematics:
-    """Builds a `BoatKinematics` with a diagonal generalized mass matrix
-    diag(mass, mass, I_x, I_z), matching how `BOAT_PROPERTIES.inertia` is constructed.
-    """
-    inertia = Mat4[Inertia, Body](np.diag([MASS, MASS, I_X, I_Z]))
-    return BoatKinematics(timestep=timestep, mass=MASS, inertia=inertia)
+    return BoatKinematics(timestep=timestep)
 
 
 # --- construction ---------------------------------------------------------
@@ -35,30 +31,14 @@ def test_construction_stores_timestep_mass_and_inertia() -> None:
 
     assert kinematics.timestep == pytest.approx(TIMESTEP)
     assert kinematics.boat_mass == pytest.approx(MASS)
-    np.testing.assert_array_equal(kinematics.inertia.data, np.diag([MASS, MASS, I_X, I_Z]))
+    np.testing.assert_array_equal(kinematics.inertia.data, BOAT_PROPERTIES.inertia.data)
 
 
-def test_construction_inverts_diagonal_inertia() -> None:
+def test_construction_inverts_inertia() -> None:
     kinematics = make_kinematics()
 
-    expected_inverse = np.diag([1 / MASS, 1 / MASS, 1 / I_X, 1 / I_Z])
+    expected_inverse = np.linalg.inv(BOAT_PROPERTIES.inertia.data)
     np.testing.assert_allclose(kinematics.inertia_inverse.data, expected_inverse)
-
-
-def test_construction_inverts_non_diagonal_inertia() -> None:
-    # A symmetric, invertible generalized mass matrix with off-diagonal coupling terms (e.g. from
-    # a nonzero x_g/z_g CG offset), to check the inverse isn't just correct in the diagonal case.
-    data = np.array(
-        [
-            [MASS, 0.0, 0.0, 5.0],
-            [0.0, MASS, 0.0, 0.0],
-            [0.0, 0.0, I_X, 0.0],
-            [5.0, 0.0, 0.0, I_Z],
-        ]
-    )
-    kinematics = BoatKinematics(TIMESTEP, MASS, Mat4[Inertia, Body](data))
-
-    np.testing.assert_allclose(data @ kinematics.inertia_inverse.data, np.eye(4), atol=1e-10)
 
 
 def test_construction_initializes_zero_state() -> None:

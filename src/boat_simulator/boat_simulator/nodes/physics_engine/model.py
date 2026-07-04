@@ -143,7 +143,6 @@ class BoatState:
         expressed in degrees [°].
         """
         pos_m = self.pose
-        # TODO: Needs to be updated for NED
         xy_km = XY(x=meters_to_km(pos_m.x), y=meters_to_km(pos_m.y))
         latlon = xy_to_latlon(self.__reference_latlon, xy_km)
         return np.array([latlon.latitude, latlon.longitude])
