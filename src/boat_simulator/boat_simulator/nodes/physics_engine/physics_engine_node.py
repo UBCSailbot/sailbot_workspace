@@ -509,16 +509,12 @@ class PhysicsEngineNode(Node):
         msg = SimWorldState()
         msg.global_gps = self.__convert_sim_data_to_gps_msg()
 
-        pos_m = self.__boat_state.global_position
+        pos_m = self.__boat_state.pose
         msg.global_pose.position.x = float(m_to_km(pos_m.x))
         msg.global_pose.position.y = float(m_to_km(pos_m.y))
-        msg.global_pose.position.z = float(m_to_km(pos_m.z))
+        msg.global_pose.position.z = 0.0
 
-        ang = self.__boat_state.angular_position.data
-        pitch_rad = ang[Constants.ORIENTATION_INDICES.PITCH.value]
-        roll_rad = ang[Constants.ORIENTATION_INDICES.ROLL.value]
-        yaw_rad = ang[Constants.ORIENTATION_INDICES.YAW.value]
-        quat = Utils.euler_zyx_to_quaternion(roll_rad, pitch_rad, yaw_rad)
+        quat = Utils.euler_zyx_to_quaternion(roll_rad=pos_m.z, pitch_rad=0.0, yaw_rad=pos_m.w)
         msg.global_pose.orientation.x = float(quat[0])
         msg.global_pose.orientation.y = float(quat[1])
         msg.global_pose.orientation.z = float(quat[2])
