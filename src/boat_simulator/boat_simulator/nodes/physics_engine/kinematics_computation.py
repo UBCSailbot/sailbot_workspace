@@ -4,6 +4,7 @@ import numpy as np
 from rclpy.logging import get_logger
 
 from boat_simulator.common.angle_conventions import wrap_to_pi
+from boat_simulator.common.constants import BOAT_PROPERTIES
 from boat_simulator.common.conventions import (
     NED,
     Acceleration,
@@ -38,7 +39,7 @@ class BoatKinematics:
             (Body), and body acceleration ν̇ (Body) of the boat.
     """
 
-    def __init__(self, timestep: float, mass: float, inertia: Mat4[Inertia, Body]) -> None:
+    def __init__(self, timestep: float) -> None:
         """Initializes an instance of `BoatKinematics`.
 
         Args:
@@ -48,9 +49,11 @@ class BoatKinematics:
                 kilograms-meters squared (kg•m^2).
         """
         self.__timestep = timestep
-        self.__boat_mass = mass
-        self.__inertia: Mat4[Inertia, Body] = inertia
-        self.__inertia_inverse: Mat4[InverseInertia, Body] = Mat4(np.linalg.inv(inertia.data))
+        self.__boat_mass = BOAT_PROPERTIES.mass
+        self.__inertia: Mat4[Inertia, Body] = BOAT_PROPERTIES.inertia
+        self.__inertia_inverse: Mat4[InverseInertia, Body] = Mat4(
+            np.linalg.inv(BOAT_PROPERTIES.inertia.data)
+        )
         self.kinematics: KinematicsData = KinematicsData()
 
     def step(self, net_force: Vec4[Force, Body], net_torque: Vec4[Torque, Body]) -> None:
