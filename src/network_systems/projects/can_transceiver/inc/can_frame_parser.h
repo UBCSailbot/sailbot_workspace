@@ -10,7 +10,6 @@
 #include <custom_interfaces/msg/gps.hpp>
 #include <custom_interfaces/msg/helper_ais_ship.hpp>
 #include <custom_interfaces/msg/ph_sensor.hpp>
-#include <custom_interfaces/msg/pressure_sensor.hpp>
 #include <custom_interfaces/msg/sail_cmd.hpp>
 #include <custom_interfaces/msg/salinity_sensor.hpp>
 #include <custom_interfaces/msg/temp_sensor.hpp>
@@ -94,24 +93,13 @@ enum class CanId : canid_t {
     SALINITY_13           = 0x12D,
     SALINITY_14           = 0x12E,
     SALINITY_SENSOR_END   = 0x12F,
-    PRESSURE_SENSOR_START = 0x130,
-    PRESSURE_1            = 0x131,
-    PRESSURE_2            = 0x132,
-    PRESSURE_3            = 0x133,
-    PRESSURE_4            = 0x134,
-    PRESSURE_5            = 0x135,
-    PRESSURE_6            = 0x136,
-    PRESSURE_7            = 0x137,
-    PRESSURE_8            = 0x138,
-    PRESSURE_9            = 0x139,
-    PRESSURE_10           = 0x13A,
-    PRESSURE_11           = 0x13B,
-    PRESSURE_12           = 0x13C,
-    PRESSURE_13           = 0x13D,
-    PRESSURE_14           = 0x13E,
-    PRESSURE_SENSOR_END   = 0x13F,
-    GENERIC_SENSOR_START  = 0x140,
-    GENERIC_SENSOR_END    = 0x1FF,
+    HEARTBEAT_START       = 0x130,
+    PDB_HEARTBEAT         = 0x130,
+    RUDR_HEARTBEAT        = 0x131,
+    SAIL_HEARTBEAT        = 0x132,
+    SENSE_HEARTBEAT       = 0x133,
+    MAIN_HEARTBEAT        = 0x134,
+    HEARTBEAT_END         = 0x134,
     DEBUG_START           = 0x200,
     DEBUG_END             = 0x2FF
 };
@@ -133,11 +121,7 @@ inline bool isValidCanId(canid_t id)
            (id >= static_cast<canid_t>(CanId::SALINITY_SENSOR_START) &&
             id <= static_cast<canid_t>(CanId::SALINITY_SENSOR_END)) ||
 
-           (id >= static_cast<canid_t>(CanId::PRESSURE_SENSOR_START) &&
-            id <= static_cast<canid_t>(CanId::PRESSURE_SENSOR_END)) ||
-
-           (id >= static_cast<canid_t>(CanId::GENERIC_SENSOR_START) &&
-            id <= static_cast<canid_t>(CanId::GENERIC_SENSOR_END)) ||
+           (id >= static_cast<canid_t>(CanId::HEARTBEAT_START) && id <= static_cast<canid_t>(CanId::HEARTBEAT_END)) ||
 
            (id >= static_cast<canid_t>(CanId::DEBUG_START) && id <= static_cast<canid_t>(CanId::DEBUG_END));
 }
@@ -206,22 +190,11 @@ static const std::map<CanId, std::string> CAN_DESC{
   {CanId::SALINITY_13, "SALINITY_13 (Salinity sensor #13)"},
   {CanId::SALINITY_14, "SALINITY_14 (Salinity sensor #14)"},
   {CanId::SALINITY_SENSOR_END, "SALINITY_SENSOR_END (End of salinity sensor range)"},
-  {CanId::PRESSURE_SENSOR_START, "PRESSURE_SENSOR_START (Start of pressure sensor range)"},
-  {CanId::PRESSURE_1, "PRESSURE_1 (Pressure sensor #1)"},
-  {CanId::PRESSURE_2, "PRESSURE_2 (Pressure sensor #2)"},
-  {CanId::PRESSURE_3, "PRESSURE_3 (Pressure sensor #3)"},
-  {CanId::PRESSURE_4, "PRESSURE_4 (Pressure sensor #4)"},
-  {CanId::PRESSURE_5, "PRESSURE_5 (Pressure sensor #5)"},
-  {CanId::PRESSURE_6, "PRESSURE_6 (Pressure sensor #6)"},
-  {CanId::PRESSURE_7, "PRESSURE_7 (Pressure sensor #7)"},
-  {CanId::PRESSURE_8, "PRESSURE_8 (Pressure sensor #8)"},
-  {CanId::PRESSURE_9, "PRESSURE_9 (Pressure sensor #9)"},
-  {CanId::PRESSURE_10, "PRESSURE_10 (Pressure sensor #10)"},
-  {CanId::PRESSURE_11, "PRESSURE_11 (Pressure sensor #11)"},
-  {CanId::PRESSURE_12, "PRESSURE_12 (Pressure sensor #12)"},
-  {CanId::PRESSURE_13, "PRESSURE_13 (Pressure sensor #13)"},
-  {CanId::PRESSURE_14, "PRESSURE_14 (Pressure sensor #14)"},
-  {CanId::PRESSURE_SENSOR_END, "PRESSURE_SENSOR_END (End of pressure sensor range)"}};
+  {CanId::PDB_HEARTBEAT, "PDB_HEARTBEAT (PDB heartbeat)"},
+  {CanId::RUDR_HEARTBEAT, "RUDR_HEARTBEAT (RUDR heartbeat)"},
+  {CanId::SAIL_HEARTBEAT, "SAIL_HEARTBEAT (SAIL heartbeat)"},
+  {CanId::SENSE_HEARTBEAT, "SENSE_HEARTBEAT (SENSE board heartbeat)"},
+  {CanId::MAIN_HEARTBEAT, "MAIN_HEARTBEAT (MAINFRAME heartbeat)"}};
 
 /**
  * @brief Custom exception for when an attempt is made to construct a CAN object with a mismatched ID
@@ -1270,97 +1243,6 @@ private:
     void checkBounds() const;
 
     float salinity_;
-};
-
-class PressureSensor final : public BaseFrame
-{
-public:
-    static constexpr std::array<CanId, 16> PRESSURE_SENSOR_IDS = {
-      CanId::PRESSURE_SENSOR_START,
-      CanId::PRESSURE_1,
-      CanId::PRESSURE_2,
-      CanId::PRESSURE_3,
-      CanId::PRESSURE_4,
-      CanId::PRESSURE_5,
-      CanId::PRESSURE_6,
-      CanId::PRESSURE_7,
-      CanId::PRESSURE_8,
-      CanId::PRESSURE_9,
-      CanId::PRESSURE_10,
-      CanId::PRESSURE_11,
-      CanId::PRESSURE_12,
-      CanId::PRESSURE_13,
-      CanId::PRESSURE_14,
-      CanId::PRESSURE_SENSOR_END};
-    static constexpr uint8_t CAN_BYTE_DLEN_    = 2;
-    static constexpr uint8_t BYTE_OFF_PRESSURE = 0;
-
-    /**
-        * @brief Explicitly deleted no-argument constructor
-        *
-        */
-    PressureSensor() = delete;
-
-    /**
-        * @brief Construct a Pressure object from a Linux CanFrame representation
-        *
-        * @param cf Linux CanFrame
-        */
-    explicit PressureSensor(const CanFrame & cf);
-
-    /**
-        * @brief Construct a PressureSensor object from a custom_interfaces ROS msg representation
-        *
-        * @param ros_pressure_sensor custom_interfaces representation of a PressureSensor
-        * @param id      CanId of the GPS (use the rosIdxToCanId() method if unknown)
-        */
-    explicit PressureSensor(msg::PressureSensor ros_pressure_sensor, CanId id);
-
-    /**
-        * @return the custom_interfaces ROS representation of the PressureSensor
-        */
-    msg::PressureSensor toRosMsg() const;
-
-    /**
-        * @return the Linux CanFrame representation of the Pressure object
-        */
-    CanFrame toLinuxCan() const override;
-
-    /**
-        * @return A string that can be printed or logged to debug a Pressure object
-        */
-    std::string debugStr() const override;
-
-    /**
-        * @brief A string representation of the PressureSensor object
-        *
-        */
-    std::string toString() const override;
-
-    /**
-     * @brief Factory method to convert the index of a pressure sensor in the custom_interfaces ROS representation
-     *        into a CanId if valid.
-     *
-     * @param pressure_idx idx of the pressure sensor in a custom_interfaces::msg::PressureSensors array
-     * @return CanId if valid, std::nullopt if invalid
-     */
-    static std::optional<CanId> rosIdxToCanId(size_t pressure_idx);
-
-private:
-    /**
-        * @brief Private helper constructor for Pressure objects
-        *
-        * @param id CanId of the PressureSensor Object
-        */
-    explicit PressureSensor(CanId id);
-
-    /**
-        * @brief Check if the assigned fields after constructing a Pressure object are within bounds.
-        * @throws std::out_of_range if any assigned fields are outside of expected bounds
-        */
-    void checkBounds() const;
-
-    float pressure_;
 };
 
 }  // namespace CAN_FP
