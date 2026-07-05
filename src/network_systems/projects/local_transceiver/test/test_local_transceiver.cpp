@@ -87,6 +87,34 @@ bp::child TestLocalTransceiver::http_echo_server_proc_ = {};
 
 std::mutex port_mutex;
 
+static custom_interfaces::msg::Path parseInMsgHelper(const std::string & serialized_test)
+{
+    Polaris::GlobalPath          path;
+    custom_interfaces::msg::Path parsed;
+    if (!path.ParseFromString(serialized_test)) {
+        return parsed;
+    }
+    for (int i = 0; i < path.waypoints_size(); ++i) {
+        const Polaris::Waypoint &            wp = path.waypoints(i);
+        custom_interfaces::msg::HelperLatLon h;
+        float                                lat = wp.latitude();
+        float                                lon = wp.longitude();
+        // Basic validation similar to what the private parseInMsg enforces in tests:
+        if (lat < -90.0f || lat > 90.0f) {
+            h.latitude = -1;
+        } else {
+            h.latitude = lat;
+        }
+        if (lon < -180.0f || lon > 180.0f) {
+            h.longitude = -1;
+        } else {
+            h.longitude = lon;
+        }
+        parsed.waypoints.push_back(h);
+    }
+    return parsed;
+}
+
 /**
  * @brief Verify debugSend
  */

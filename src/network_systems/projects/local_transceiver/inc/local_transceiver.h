@@ -190,6 +190,14 @@ public:
      */
     custom_interfaces::msg::Path receive();
 
+    /**
+     * @brief Validates the received global path waypoints before they are published to ROS
+     *
+     * @return true if the global path waypoints are valid, false otherwise
+     */
+
+    bool validateGlobalPathWayPoints(const custom_interfaces::msg::Path & path_to_publish);
+
     // TEST
     bool checkMailbox();
 
