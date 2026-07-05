@@ -1,60 +1,40 @@
 """This module contains the kinematics data for the boat."""
 
 from dataclasses import dataclass, field
-from typing import Generic
 
 from boat_simulator.common.conventions import (
     Acceleration,
     Position,
     Velocity,
 )
-from boat_simulator.common.types import Frame, Vec3
-
-_ZERO_POSITION: Vec3 = Vec3.from_xyz(0.0, 0.0, 0.0)
+from boat_simulator.common.types import Vec4
+from boat_simulator.common.conventions import NED, Body
 
 
 @dataclass
-class KinematicsData(Generic[Frame]):
+class KinematicsData():
     """Stores both linear and angular kinematic information pertaining to the boat.
 
     The generic ``Frame`` parameter specifies the reference frame of every stored
     vector.  Instantiate as ``KinematicsData[NED]`` for global-frame state or
     ``KinematicsData[Body]`` for body-frame state.
 
-    ``Position`` covers both metres (linear) and radians (angular).
-    ``Velocity`` covers both m/s (linear) and rad/s (angular).
-    ``Acceleration`` covers both m/s² (linear) and rad/s² (angular).
 
     Attributes:
-        linear_position (Vec3[Position, Frame]): Linear position [x, y, z], metres.
-        linear_velocity (Vec3[Velocity, Frame]): Linear velocity, m/s.
-        linear_acceleration (Vec3[Acceleration, Frame]): Linear acceleration, m/s².
-        angular_position (Vec3[Position, Frame]): Euler angles [pitch, roll, yaw], radians.
-        angular_velocity (Vec3[Velocity, Frame]): Angular rates [p, q, r], rad/s.
-        angular_acceleration (Vec3[Acceleration, Frame]): Angular accelerations, rad/s².
+        pose:    Pose [N, E, φ, ψ] in NED — metres (N, E) and radians (φ, ψ).
+                 [N, E, φ, ψ] - north position, east position, roll angle, yaw angle (heading)
+        nu:     Generalized body velocity [u, v, p, r] — m/s (u, v) and rad/s (p, r).
+                [u, v, p, r] - surge vel, sway vel, roll rate, yaw rate
+        nu_dot: Generalized body acceleration [u̇, v̇, ṗ, ṙ] — m/s² and rad/s².
+                [u̇, v̇, ṗ, ṙ] - surge accel, sway accel, roll accel, yaw accel
     """
 
-    is_relative: bool = False
-    linear_position: Vec3[Position, Frame] = field(
-        default_factory=lambda: Vec3.from_xyz(0.0, 0.0, 0.0)
+    pose: Vec4[Position, NED] = field(
+        default_factory=lambda: Vec4.from_xypr(0.0, 0.0, 0.0, 0.0)
     )
-    linear_velocity: Vec3[Velocity, Frame] = field(
-        default_factory=lambda: Vec3.from_xyz(0.0, 0.0, 0.0)
+    nu: Vec4[Velocity, Body] = field(
+        default_factory=lambda: Vec4.from_xypr(0.0, 0.0, 0.0, 0.0)
     )
-    linear_acceleration: Vec3[Acceleration, Frame] = field(
-        default_factory=lambda: Vec3.from_xyz(0.0, 0.0, 0.0)
+    nu_dot: Vec4[Acceleration, Body] = field(
+        default_factory=lambda: Vec4.from_xypr(0.0, 0.0, 0.0, 0.0)
     )
-    angular_position: Vec3[Position, Frame] = field(
-        default_factory=lambda: Vec3.from_xyz(0.0, 0.0, 0.0)
-    )
-    angular_velocity: Vec3[Velocity, Frame] = field(
-        default_factory=lambda: Vec3.from_xyz(0.0, 0.0, 0.0)
-    )
-    angular_acceleration: Vec3[Acceleration, Frame] = field(
-        default_factory=lambda: Vec3.from_xyz(0.0, 0.0, 0.0)
-    )
-
-    def __setattr__(self, name: str, value: object) -> None:
-        if name in ("linear_position", "angular_position") and getattr(self, "is_relative", False):
-            value = _ZERO_POSITION
-        object.__setattr__(self, name, value)

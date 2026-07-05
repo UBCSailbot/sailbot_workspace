@@ -97,6 +97,10 @@ constexpr float SOG_SPEED_UBND  = 200.0;  // Arbitrary number (kmph)
 constexpr float HEADING_LBND = 0.0;
 constexpr float HEADING_UBND = 360.0;
 
+/***** Bounds for Rudder Angle ******/
+constexpr float RUDDER_ANGLE_LBND = -90.0;
+constexpr float RUDDER_ANGLE_UBND = 90.0;
+
 /***** Bounds for Trim Tab *****/
 constexpr float TRIM_LBND = -40.0;
 constexpr float TRIM_UBND = 40.0;
@@ -133,5 +137,5 @@ constexpr float SALINITY_LBND = 0;        // lbnd of sensor being used is 0.07
 constexpr float SALINITY_UBND = 1000000;  // ubnd of sensor being used is 500000+
 
 /***** Bounds for Pressure Sensor ******/
-constexpr float PRESSURE_LBND = -14.5;  // lowest lbnd of pressure sensors under consideration is -14.5 psi
-constexpr float PRESSURE_UBND = 32.6;   // max int16_t, since ubnd of sensors under consideration is way higher
+// constexpr float PRESSURE_LBND = -14.5;  // lowest lbnd of pressure sensors under consideration is -14.5 psi
+// constexpr float PRESSURE_UBND = 32.6;   // max int16_t, since ubnd of sensors under consideration is way higher
