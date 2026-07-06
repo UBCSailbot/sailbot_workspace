@@ -6,6 +6,33 @@ UBC Sailbot's local pathfinding ROS package
 
 Using main launch file: `ros2 launch local_pathfinding main_launch.py`
 
+## Test Plans
+
+Test plans live in `test_plans/` and are documented in the
+[Test Plans Confluence page](https://ubcsailbot.atlassian.net/wiki/spaces/prjt22/pages/2996568069/Test+Plans).
+Use `test_plan:=<plan>.yaml` with the local pathfinding launch file to run one
+plan manually:
+
+```bash
+ros2 launch local_pathfinding main_launch.py mode:=development test_plan:=basic.yaml
+```
+
+To run test plans sequentially, build and source the workspace, then use the
+installed `run_test_plans` console script:
+
+```bash
+./scripts/build.sh -p local_pathfinding
+source install/local_setup.bash
+ros2 run local_pathfinding run_test_plans --list
+ros2 run local_pathfinding run_test_plans --tests basic.yaml --num_tests 1
+```
+
+`--tests` accepts test plan names or list numbers from `--list`. If
+`--num_tests` is larger than the explicitly selected plans, the runner fills the
+remaining slots randomly; use `--seed` for repeatable random selection. Results
+and rosbag recordings are written under
+`notebooks/local_pathfinding/session_recordings/test_plans_results/` by default.
+
 ## Wind Tracking
 
 Local pathfinding keeps a rolling true-wind history in `WindTracker` so wind
