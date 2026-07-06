@@ -413,7 +413,6 @@ def run_test_plan(
         monitor.destroy_node()
     ended_at = datetime.now().isoformat(timespec="seconds")
     duration_sec = time.monotonic() - test_start_monotonic_sec
-    store_ros_launch_log = status not in {"COMPLETED", "TIMEOUT"}
     result = {
         "test": plan.name,
         "status": status,
@@ -427,7 +426,7 @@ def run_test_plan(
         "ros_launch_log_path": str(ros_launch_log_path),
         "expected_node_names": sorted(expected_nodes),
         "missing_node_names": missing_nodes,
-        "ros_launch_log_stored": store_ros_launch_log,
+        "ros_launch_log_stored": True,
         "last_target_waypoint_index": monitor.current_waypoint_index,
         "last_distance_m": monitor.last_distance_m,
         "remaining_route_distance_m": monitor.remaining_route_distance_m,
@@ -435,13 +434,7 @@ def run_test_plan(
         "command": launch_command,
     }
     write_result(result_path, result)
-    if not store_ros_launch_log:
-        try:
-            ros_launch_log_path.unlink()
-        except FileNotFoundError:
-            pass
-    else:
-        print(f"Ros Launch log saved to: {ros_launch_log_path}")
+    print(f"Ros Launch log saved to: {ros_launch_log_path}")
     print(f"\nFinished {test_number}/{total_tests}: {plan.name} -> {status}")
     print(f"Reason: {reason}")
     print(f"Result: {result_path}")

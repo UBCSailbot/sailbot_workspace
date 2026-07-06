@@ -29,9 +29,23 @@ ros2 run local_pathfinding run_test_plans --tests basic.yaml --num_tests 1
 
 `--tests` accepts test plan names or list numbers from `--list`. If
 `--num_tests` is larger than the explicitly selected plans, the runner fills the
-remaining slots randomly; use `--seed` for repeatable random selection. Results
-and rosbag recordings are written under
-`notebooks/local_pathfinding/session_recordings/test_plans_results/` by default.
+remaining slots randomly; use `--seed` for repeatable random selection.
+
+By default, run outputs are written under
+`notebooks/local_pathfinding/session_recordings/test_plans_results/` in this
+layout:
+
+```text
+<save_path>/<date_batch>/
+  summary.json
+  <test_plan_name>/
+    result.json
+    launch.log
+    <rosbag recording files>
+```
+
+`summary.json` summarizes the whole batch. Each test plan directory uses the
+YAML filename without the `.yaml` extension and always keeps its `launch.log`.
 
 ## Wind Tracking
 
