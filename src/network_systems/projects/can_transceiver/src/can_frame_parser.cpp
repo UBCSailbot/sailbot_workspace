@@ -78,8 +78,8 @@ CanFrame BaseFrame::toLinuxCan() const { return CanFrame{.can_id = static_cast<c
 
 Battery::Battery(const CanFrame & cf) : Battery(static_cast<CanId>(cf.can_id))
 {
-    int32_t raw_volt;
-    int32_t raw_curr;
+    uint32_t raw_volt;
+    int32_t  raw_curr;
 
     std::memcpy(&raw_volt, cf.data + BYTE_OFF_VOLT, sizeof(int32_t));
     std::memcpy(&raw_curr, cf.data + BYTE_OFF_CURR, sizeof(int32_t));
@@ -107,8 +107,8 @@ msg::HelperBattery Battery::toRosMsg() const
 
 CanFrame Battery::toLinuxCan() const
 {
-    int32_t raw_volt = static_cast<int32_t>(volt_ * 100);  // NOLINT(readability-magic-numbers)
-    int32_t raw_curr = static_cast<int32_t>(curr_ * 100);  // NOLINT(readability-magic-numbers)
+    uint32_t raw_volt = static_cast<int32_t>(volt_ * 100);  // NOLINT(readability-magic-numbers)
+    int32_t  raw_curr = static_cast<int32_t>(curr_ * 100);  // NOLINT(readability-magic-numbers)
 
     CanFrame cf = BaseFrame::toLinuxCan();
     std::memcpy(cf.data + BYTE_OFF_VOLT, &raw_volt, sizeof(int32_t));
@@ -164,7 +164,7 @@ MainTrimTab::MainTrimTab(const CanFrame & cf) : MainTrimTab(static_cast<CanId>(c
 
     std::memcpy(&raw_angle, cf.data + BYTE_OFF_ANGLE, sizeof(uint32_t));
 
-    angle_ = static_cast<float>(raw_angle) / 1000;  //NOLINT(readability-magic-numbers)
+    angle_ = static_cast<float>(raw_angle) / 1000 - 90;  //NOLINT(readability-magic-numbers)
 
     checkBounds();
 }
@@ -230,11 +230,11 @@ void MainTrimTab::checkBounds() const
 
 WindSensor::WindSensor(const CanFrame & cf) : WindSensor(static_cast<CanId>(cf.can_id))
 {
-    int16_t raw_wind_speed;
-    int16_t raw_wind_dir;
+    uint16_t raw_wind_speed;
+    uint16_t raw_wind_dir;
 
-    std::memcpy(&raw_wind_speed, cf.data + BYTE_OFF_SPEED, sizeof(int16_t));
-    std::memcpy(&raw_wind_dir, cf.data + BYTE_OFF_ANGLE, sizeof(int16_t));
+    std::memcpy(&raw_wind_speed, cf.data + BYTE_OFF_SPEED, sizeof(uint16_t));
+    std::memcpy(&raw_wind_dir, cf.data + BYTE_OFF_ANGLE, sizeof(uint16_t));
 
     // convert knots to kmph before setting value
     wind_speed_ = static_cast<float>(raw_wind_speed * 1.852 / 10.0);  // NOLINT(readability-magic-numbers)
@@ -264,8 +264,8 @@ msg::WindSensor WindSensor::toRosMsg() const
 CanFrame WindSensor::toLinuxCan() const
 {
     // convert kmph to knots before setting value
-    int16_t raw_wind_speed = static_cast<int16_t>(wind_speed_ * 10 / 1.852);  // NOLINT(readability-magic-numbers)
-    int16_t raw_wind_dir   = static_cast<int16_t>(wind_angle_);
+    uint16_t raw_wind_speed = static_cast<uint16_t>(wind_speed_ * 10 / 1.852);  // NOLINT(readability-magic-numbers)
+    uint16_t raw_wind_dir   = static_cast<uint16_t>(wind_angle_);
 
     CanFrame cf = BaseFrame::toLinuxCan();
     std::memcpy(cf.data + BYTE_OFF_SPEED, &raw_wind_speed, sizeof(int16_t));
@@ -447,13 +447,13 @@ void GPS::checkBounds() const
 
 AISShips::AISShips(const CanFrame & cf) : AISShips(static_cast<CanId>(cf.can_id))
 {
-    int32_t  raw_id;  // CAN documentation says id is uint32, but custom interfaces says its int32
+    uint32_t raw_id;
     uint32_t raw_lat;
     uint32_t raw_lon;
     uint16_t raw_speed;
     uint16_t raw_course;
     uint16_t raw_heading;
-    int8_t   raw_rot;
+    uint8_t  raw_rot;
     uint16_t raw_length;
     uint16_t raw_width;
     uint8_t  raw_idx;
@@ -475,8 +475,8 @@ AISShips::AISShips(const CanFrame & cf) : AISShips(static_cast<CanId>(cf.can_id)
     lat_       = static_cast<float>(raw_lat / 1000000.0 - 90);     //NOLINT(readability-magic-numbers)
     lon_       = static_cast<float>(raw_lon / 1000000.0 - 180.0);  //NOLINT(readability-magic-numbers)
     speed_     = static_cast<float>(raw_speed / 10.0 * 1.852);     //NOLINT(readability-magic-numbers)
-    rot_       = raw_rot;
-    course_    = static_cast<float>(raw_course / 10.0);  //NOLINT(readability-magic-numbers)
+    rot_       = static_cast<int8_t>(raw_rot - 128);               //NOLINT(readability-magic-numbers)
+    course_    = static_cast<float>(raw_course / 10.0);            //NOLINT(readability-magic-numbers)
     heading_   = raw_heading;
     idx_       = raw_idx;
     width_     = raw_width;
@@ -546,7 +546,7 @@ CanFrame AISShips::toLinuxCan() const
     uint16_t raw_speed     = static_cast<int16_t>(std::round(speed_ / 1.852 * 10));  //NOLINT(readability-magic-numbers)
     uint16_t raw_course    = static_cast<int16_t>(course_ * 10);                     //NOLINT(readability-magic-numbers)
     uint16_t raw_heading   = static_cast<int16_t>(heading_);
-    int8_t   raw_rot       = rot_;
+    uint8_t  raw_rot       = rot_ + 128;  //NOLINT(readability-magic-numbers)
     uint16_t raw_length    = static_cast<int16_t>(length_);
     uint16_t raw_width     = static_cast<int16_t>(width_);
     uint8_t  raw_idx       = idx_;
@@ -749,7 +749,17 @@ DesiredHeading::DesiredHeading(const CanFrame & cf) : DesiredHeading(static_cast
     std::memcpy(&raw_heading, cf.data + BYTE_OFF_HEADING, sizeof(uint32_t));
     std::memcpy(&raw_steering, cf.data + BYTE_OFF_STEERING, sizeof(uint8_t));
 
-    heading_  = static_cast<float>(raw_heading) / 1000;  //NOLINT(readability-magic-numbers)
+    // Status byte format ab000000:
+    // a) Steering selection bit: 0 = heading mode (Desired Heading * 1000)
+    //                            1 = manual rudder mode ((Rudder Angle + 90) * 1000)
+    uint8_t steering_selection_bit_mask = 0b10000000;  //NOLINT(readability-magic-numbers)
+    bool    steering_selection          = (raw_steering & steering_selection_bit_mask) != 0;
+    if (steering_selection) {
+        heading_ = static_cast<float>(raw_heading) / 1000.0F - 90.0F;  //NOLINT(readability-magic-numbers)
+    } else {
+        heading_ = static_cast<float>(raw_heading) / 1000.0F;  //NOLINT(readability-magic-numbers)
+    }
+
     steering_ = raw_steering;
 
     checkBounds();
@@ -757,9 +767,17 @@ DesiredHeading::DesiredHeading(const CanFrame & cf) : DesiredHeading(static_cast
 
 DesiredHeading::DesiredHeading(msg::DesiredHeading ros_desired_heading, CanId id)
 : BaseFrame(id, CAN_BYTE_DLEN_),
-  heading_(utils::boundTo360(ros_desired_heading.heading.heading)),
+  heading_(
+    (ros_desired_heading.steering & 0b10000000) != 0  //NOLINT(readability-magic-numbers)
+      ? ros_desired_heading.heading.heading
+      : utils::boundTo360(ros_desired_heading.heading.heading)),
   steering_(ros_desired_heading.steering)
 {
+    // Set steering enable bit based on the sail flag in the ROS message
+    uint8_t steering_disabled_bit_mask = 0b01000000;  //NOLINT(readability-magic-numbers)
+    if (!ros_desired_heading.sail) {
+        steering_ |= steering_disabled_bit_mask;
+    }
     checkBounds();
 }
 
@@ -775,8 +793,12 @@ msg::DesiredHeading DesiredHeading::toRosMsg() const
 
 CanFrame DesiredHeading::toLinuxCan() const
 {
-    uint32_t raw_heading  = static_cast<uint32_t>(heading_) * 1000;  //NOLINT(readability-magic-numbers)
-    uint8_t  raw_steering = steering_;
+    uint8_t  steering_selection_bit_mask = 0b10000000;  //NOLINT(readability-magic-numbers)
+    bool     is_rudder_mode              = (steering_ & steering_selection_bit_mask) != 0;
+    uint32_t raw_heading                 = is_rudder_mode
+                                             ? static_cast<uint32_t>((heading_ + 90.0F) * 1000)  //NOLINT(readability-magic-numbers)
+                                             : static_cast<uint32_t>(heading_ * 1000);  //NOLINT(readability-magic-numbers)
+    uint8_t  raw_steering                = steering_;
 
     CanFrame cf = BaseFrame::toLinuxCan();
     std::memcpy(cf.data + BYTE_OFF_HEADING, &raw_heading, sizeof(uint32_t));
@@ -809,8 +831,13 @@ DesiredHeading::DesiredHeading(CanId id) : BaseFrame(std::span{DESIRED_HEADING_I
 
 void DesiredHeading::checkBounds() const
 {
+    uint8_t steering_selection_bit_mask = 0b10000000;  //NOLINT(readability-magic-numbers)
+    bool    is_rudder_mode              = (steering_ & steering_selection_bit_mask) != 0;
+    float   heading_lbnd                = is_rudder_mode ? RUDDER_ANGLE_LBND : HEADING_LBND;
+    float   heading_ubnd                = is_rudder_mode ? RUDDER_ANGLE_UBND : HEADING_UBND;
+
     uint8_t bit_mask = 0b00011111;  //NOLINT(readability-magic-numbers)
-    auto    err      = utils::isOutOfBounds<float>(heading_, HEADING_LBND, HEADING_UBND);
+    auto    err      = utils::isOutOfBounds<float>(heading_, heading_lbnd, heading_ubnd);
     if (err) {
         std::string err_msg = err.value();
         throw std::out_of_range("Desired heading is out of bounds!\n" + debugStr() + "\n" + err_msg);
@@ -852,7 +879,7 @@ msg::HelperHeading RudderData::toRosMsg() const
 
 CanFrame RudderData::toLinuxCan() const
 {
-    uint32_t raw_heading = static_cast<uint32_t>(heading_) * 1000;  //NOLINT(readability-magic-numbers)
+    uint32_t raw_heading = static_cast<uint32_t>(heading_ * 1000);  //NOLINT(readability-magic-numbers)
 
     CanFrame cf = BaseFrame::toLinuxCan();
     std::memcpy(cf.data + BYTE_OFF_HEADING, &raw_heading, sizeof(uint32_t));
@@ -1130,85 +1157,5 @@ void SalinitySensor::checkBounds() const
 
 // SalinitySensor private END
 // SalinitySensor END
-
-// PressureSensor START
-// PressureSensor public START
-PressureSensor::PressureSensor(const CanFrame & cf) : PressureSensor(static_cast<CanId>(cf.can_id))
-{
-    int16_t raw_pressure;
-
-    std::memcpy(&raw_pressure, cf.data + BYTE_OFF_PRESSURE, sizeof(int16_t));
-
-    // divide by 1000 to get pressure
-    pressure_ = static_cast<float>(raw_pressure / 1000.0);  // NOLINT(readability-magic-numbers)
-
-    checkBounds();
-}
-
-PressureSensor::PressureSensor(msg::PressureSensor ros_pressure_sensor, CanId id)
-: BaseFrame(id, CAN_BYTE_DLEN_), pressure_(ros_pressure_sensor.pressure.pressure)
-{
-    checkBounds();
-}
-
-msg::PressureSensor PressureSensor::toRosMsg() const
-{
-    msg::PressureSensor msg;
-    msg::HelperPressure pressure;
-    pressure.set__pressure(pressure_);
-    msg.set__pressure(pressure);
-    return msg;
-}
-
-CanFrame PressureSensor::toLinuxCan() const
-{
-    // multiply by 1000 to make int before setting value
-    int16_t raw_pressure = static_cast<int16_t>(pressure_ * 1000.0);  // NOLINT(readability-magic-numbers)
-
-    CanFrame cf = BaseFrame::toLinuxCan();
-    std::memcpy(cf.data + BYTE_OFF_PRESSURE, &raw_pressure, sizeof(int16_t));
-
-    return cf;
-}
-
-std::string PressureSensor::debugStr() const
-{
-    std::stringstream ss;
-    ss << BaseFrame::debugStr() << "\n"
-       << "Pressure: " << pressure_;
-    return ss.str();
-}
-
-std::string PressureSensor::toString() const
-{
-    std::stringstream ss;
-    ss << "[PRESSURE SENSOR] Pressure: " << pressure_;
-    return ss.str();
-}
-
-std::optional<CanId> PressureSensor::rosIdxToCanId(size_t pressure_idx)
-{
-    if (pressure_idx < PRESSURE_SENSOR_IDS.size()) {
-        return PRESSURE_SENSOR_IDS[pressure_idx];
-    }
-    return std::nullopt;
-}
-
-// PressureSensor public END
-// PressureSensor private START
-
-PressureSensor::PressureSensor(CanId id) : BaseFrame(std::span{PRESSURE_SENSOR_IDS}, id, CAN_BYTE_DLEN_) {}
-
-void PressureSensor::checkBounds() const
-{
-    auto err = utils::isOutOfBounds<float>(pressure_, PRESSURE_LBND, PRESSURE_UBND);
-    if (err) {
-        std::string err_msg = err.value();
-        throw std::out_of_range("Pressure is out of bounds!\n" + debugStr() + "\n" + err_msg);
-    }
-}
-
-// PressureSensor private END
-// PressureSensor END
 
 }  // namespace CAN_FP

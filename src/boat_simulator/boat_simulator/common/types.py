@@ -52,9 +52,7 @@ def _validated_vector(data: ArrayLike, size: int) -> NDArray[np.float64]:
     return array
 
 
-def _validated_matrix(
-    data: ArrayLike, rows: int, cols: int
-) -> NDArray[np.float64]:
+def _validated_matrix(data: ArrayLike, rows: int, cols: int) -> NDArray[np.float64]:
     """Return an immutable float copy of a matrix after validating its shape."""
     array = np.asarray(data, dtype=float)
     if array.shape != (rows, cols):
@@ -188,11 +186,14 @@ class Vec4(Generic[Quantity, Frame]):
 
     Primary use is the three rigid-body state vectors in the 4-DOF formulation::
 
-        η (eta):  Vec4[Position, NED]   — pose        [x, y, z, ψ]
-        ν (nu):   Vec4[Velocity, Body]  — velocity     [u, v, w, r]
-        τ (tau):  Vec4[Force,    Body]  — gen. force   [X, Y, Z, N]
+        η (eta):  Vec4[Position, NED]   — pose        [x, y, φ, ψ]
+        ν (nu):   Vec4[Velocity, Body]  — velocity     [u, v, p, r]
+        v̇ (nu_dot): Vec4[Acceleration, Body] — acceleration [u̇, v̇, ṗ, ṙ]
+        τ (tau):  Vec4[Force,    Body]  — gen. force   [X, Y, K, N]
 
-    The fourth component ``w`` carries yaw (ψ) in η, yaw-rate (r) in ν, and
+    The third component carries roll (φ) in η, roll-rate (r) in ν, and
+    roll moment (N) in τ.
+    The fourth component carries yaw (ψ) in η, yaw-rate (r) in ν, and
     yaw moment (N) in τ.
     """
 
@@ -202,8 +203,8 @@ class Vec4(Generic[Quantity, Frame]):
         object.__setattr__(self, "data", _validated_vector(data, 4))
 
     @classmethod
-    def from_xyzw(cls, x: float, y: float, z: float, w: float) -> Vec4[Quantity, Frame]:
-        return cls(np.array([x, y, z, w], dtype=float))
+    def from_xypr(cls, x: float, y: float, p: float, r: float) -> Vec4[Quantity, Frame]:
+        return cls(np.array([x, y, p, r], dtype=float))
 
     def __add__(self, other: Vec4[Quantity, Frame]) -> Vec4[Quantity, Frame]:
         if not isinstance(other, Vec4):

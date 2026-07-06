@@ -139,11 +139,6 @@ TEST_F(TestCanFrameParser, MainTrimTabTestValid)
         std::memcpy(&raw_angle, cf.data + CAN_FP::MainTrimTab::BYTE_OFF_ANGLE, sizeof(uint32_t));
         raw_angle = (raw_angle / 1000) - 90;  //NOLINT(readability-magic-numbers)
         EXPECT_EQ(raw_angle, expected_angle);
-
-        raw_angle *= 1000;  //NOLINT(readability-magic-numbers)
-
-        std::memcpy(cf.data + CAN_FP::MainTrimTab::BYTE_OFF_ANGLE, &raw_angle, sizeof(uint32_t));
-
         CAN_FP::MainTrimTab sail_from_can = CAN_FP::MainTrimTab(cf);
 
         EXPECT_EQ(sail_from_can.id_, id);
@@ -248,6 +243,35 @@ TEST_F(TestCanFrameParser, TestDesiredHeadingInvalid)
     std::copy(std::begin(GARBAGE_DATA), std::end(GARBAGE_DATA), cf.data);
 
     EXPECT_THROW(CAN_FP::DesiredHeading tmp(cf), std::out_of_range);
+}
+
+/**
+ * @brief Test that the DesiredHeading sail flag correctly sets the steering enable bit (bit b) on the
+ *        outgoing CAN frame. If sail = false, it should set the enable bit to 1 (to disable steering).
+ *
+ */
+TEST_F(TestCanFrameParser, DesiredHeadingSailTestValid)
+{
+    constexpr uint8_t STEERING_ENABLE_BIT = 0b01000000;  //NOLINT(readability-magic-numbers)
+    CAN_FP::CanId     id                  = CAN_FP::CanId::MAIN_HEADING;
+
+    for (bool sail : {true, false}) {
+        msg::HelperHeading helper_msg;
+        helper_msg.set__heading(45);  //NOLINT(readability-magic-numbers)
+        msg::DesiredHeading msg;
+        msg.set__heading(helper_msg);
+        msg.set__sail(sail);
+
+        CAN_FP::DesiredHeading heading_from_ros = CAN_FP::DesiredHeading(msg, id);
+        CAN_FP::CanFrame       cf               = heading_from_ros.toLinuxCan();
+
+        uint8_t raw_steering;
+        std::memcpy(&raw_steering, cf.data + CAN_FP::DesiredHeading::BYTE_OFF_STEERING, sizeof(uint8_t));
+
+        // sail == false => enable bit set to 1 (give up steering)
+        // sail == true => enable bit set to 0 (regular steering operations)
+        EXPECT_EQ((raw_steering & STEERING_ENABLE_BIT) != 0, !sail);
+    }
 }
 
 /**
@@ -614,7 +638,7 @@ TEST_F(TestCanFrameParser, AISShipsTestValid)
     constexpr std::array<uint32_t, 2> expected_raw_lons{147900000, 292900000};
     constexpr std::array<uint16_t, 2> expected_raw_cogs{1004, 432};
     constexpr std::array<uint16_t, 2> expected_raw_sogs{50, 22};
-    constexpr std::array<int8_t, 2>   expected_raw_rots{-10, 50};
+    constexpr std::array<uint8_t, 2>  expected_raw_rots{118, 178};
     constexpr std::array<uint8_t, 2>  expected_raw_widths{4, 65};
     constexpr std::array<uint16_t, 2> expected_raw_lengths{15, 360};
 
@@ -670,7 +694,7 @@ TEST_F(TestCanFrameParser, AISShipsTestValid)
         uint16_t raw_speed;
         uint16_t raw_course;
         uint16_t raw_heading;
-        int8_t   raw_rot;
+        uint8_t  raw_rot;
         uint16_t raw_length;
         uint8_t  raw_width;
         uint8_t  raw_idx;
@@ -682,7 +706,7 @@ TEST_F(TestCanFrameParser, AISShipsTestValid)
         std::memcpy(&raw_speed, cf.data + CAN_FP::AISShips::BYTE_OFF_SPEED, sizeof(int16_t));
         std::memcpy(&raw_course, cf.data + CAN_FP::AISShips::BYTE_OFF_COURSE, sizeof(int16_t));
         std::memcpy(&raw_heading, cf.data + CAN_FP::AISShips::BYTE_OFF_HEADING, sizeof(int16_t));
-        std::memcpy(&raw_rot, cf.data + CAN_FP::AISShips::BYTE_OFF_ROT, sizeof(int8_t));
+        std::memcpy(&raw_rot, cf.data + CAN_FP::AISShips::BYTE_OFF_ROT, sizeof(uint8_t));
         std::memcpy(&raw_length, cf.data + CAN_FP::AISShips::BYTE_OFF_LENGTH, sizeof(int16_t));
         std::memcpy(&raw_width, cf.data + CAN_FP::AISShips::BYTE_OFF_WIDTH, sizeof(int8_t));
         std::memcpy(&raw_idx, cf.data + CAN_FP::AISShips::BYTE_OFF_IDX, sizeof(int8_t));
@@ -1125,87 +1149,6 @@ TEST_F(TestCanFrameParser, TestPhSensorInvalid)
     };
 }
 
-// /**
-//  * @brief Test ROS<->CAN Pressure translations work as expected for valid input values
-//  *
-//  */
-// TEST_F(TestCanFrameParser, PressureSensorTestValid)
-// {
-//     constexpr std::uint8_t NUM_SENSORS = CAN_FP::PressureSensor::PRESSURE_SENSOR_IDS.size();
-//     std::vector<float>     expected_pressures;
-//     float                  increment = (PRESSURE_UBND - PRESSURE_LBND) / NUM_SENSORS;
-//     for (int i = 0; i < NUM_SENSORS; i++) {
-//         expected_pressures.push_back(PRESSURE_LBND + (increment * static_cast<float>(i)));
-//     }
-
-//     for (size_t i = 0; i < NUM_SENSORS; i++) {
-//         auto optId = CAN_FP::PressureSensor::rosIdxToCanId(i);
-
-//         ASSERT_TRUE(optId.has_value());
-
-//         CAN_FP::CanId       id                = optId.value();
-//         float               expected_pressure = expected_pressures[i];
-//         msg::PressureSensor msg;
-//         msg::HelperPressure pressure_msg;
-
-//         pressure_msg.set__pressure(expected_pressure);
-//         msg.set__pressure(pressure_msg);
-
-//         CAN_FP::PressureSensor sensor_from_ros = CAN_FP::PressureSensor(msg, id);
-//         CAN_FP::CanFrame       cf              = sensor_from_ros.toLinuxCan();
-
-//         EXPECT_EQ(cf.can_id, static_cast<canid_t>(id));
-//         EXPECT_EQ(cf.len, CAN_FP::PressureSensor::CAN_BYTE_DLEN_);
-
-//         int16_t raw_pressure;
-//         std::memcpy(&raw_pressure, cf.data + CAN_FP::PressureSensor::BYTE_OFF_PRESSURE, sizeof(int16_t));
-//         float converted_pressure = static_cast<float>(raw_pressure / 1000.0);  //NOLINT(readability-magic-numbers)
-
-//         const float tolerance = 0.001;
-//         EXPECT_NEAR(converted_pressure, expected_pressures[i], tolerance);
-
-//         CAN_FP::PressureSensor sensor_from_can = CAN_FP::PressureSensor(cf);
-
-//         EXPECT_EQ(sensor_from_can.id_, id);
-
-//         msg::PressureSensor msg_from_sensor = sensor_from_can.toRosMsg();
-//         EXPECT_NEAR(msg_from_sensor.pressure.pressure, expected_pressure, tolerance);
-//     }
-// }
-
-// /**
-//  * @brief Test the behavior of the PressureSensor class when given invalid input values
-//  *
-//  */
-// TEST_F(TestCanFrameParser, TestPressureSensorInvalid)
-// {
-//     auto optId = CAN_FP::PressureSensor::rosIdxToCanId(NUM_PRESSURE_SENSORS);
-//     EXPECT_FALSE(optId.has_value());
-
-//     CAN_FP::CanId invalid_id = CAN_FP::CanId::RESERVED;
-
-//     CAN_FP::CanFrame cf{.can_id = static_cast<canid_t>(invalid_id)};
-
-//     EXPECT_THROW(CAN_FP::PressureSensor tmp(cf), CAN_FP::CanIdMismatchException);
-
-//     const float        small = 0.01;
-//     std::vector<float> invalid_pressures{PRESSURE_LBND - small, PRESSURE_UBND + small};
-
-//     optId = CAN_FP::PressureSensor::rosIdxToCanId(0);
-//     ASSERT_TRUE(optId.has_value());
-
-//     CAN_FP::CanId       valid_id = optId.value();
-//     msg::PressureSensor msg;
-
-//     for (float invalid_pressure : invalid_pressures) {
-//         msg::HelperPressure tmp_pressure_msg;
-//         tmp_pressure_msg.set__pressure(invalid_pressure);
-//         msg.set__pressure(tmp_pressure_msg);
-
-//         EXPECT_THROW(CAN_FP::PressureSensor tmp(msg, valid_id), std::out_of_range);
-//     };
-// }
-
 /**
  * @brief Test ROS<->CAN Salinity translations work as expected for valid input values
  *
@@ -1596,36 +1539,6 @@ TEST_F(TestCanTransceiver, TestNewDataSalinityValid)
 }
 
 /**
- * @brief Test that callback can be properly registered and invoked on PRESSURE CanIds
- *
- */
-// TEST_F(TestCanTransceiver, TestNewDataPressureValid)
-// {
-//     using underlying = std::underlying_type_t<CAN_FP::CanId>;
-//     for (underlying id = static_cast<underlying>(CAN_FP::CanId::PRESSURE_SENSOR_START);
-//          id <= static_cast<underlying>(CAN_FP::CanId::PRESSURE_SENSOR_END); ++id) {
-//         CAN_FP::CanId sensor_id = static_cast<CAN_FP::CanId>(id);
-//         // for (CAN_FP::CanId id = CAN_FP::CanId::TEMP_SENSOR_START; id <= CAN_FP::CanId::TEMP_SENSOR_END; id++) {
-//         volatile bool                         is_cb_called = false;
-//         std::function<void(CAN_FP::CanFrame)> test_cb      = [&is_cb_called](CAN_FP::CanFrame /*unused*/) {
-//             is_cb_called = true;
-//         };
-//         canbus_t_->registerCanCbs({{
-//           std::make_pair(sensor_id, test_cb),
-//         }});
-
-//         // just need a valid and matching ID for this test
-//         CAN_FP::CanFrame dummy_frame{.can_id = static_cast<canid_t>(sensor_id)};
-
-//         canbus_t_->send(dummy_frame);
-
-//         std::this_thread::sleep_for(SLEEP_TIME);
-
-//         EXPECT_TRUE(is_cb_called);
-//     }
-// }
-
-/**
  * @brief Test that the CanTransceiver ignores IDs that we don't register callbacks for
  *
  */
@@ -1651,4 +1564,62 @@ TEST_F(TestCanTransceiver, TestNewDataIgnore)
     std::this_thread::sleep_for(SLEEP_TIME);
 
     EXPECT_FALSE(is_cb_called);
+}
+
+/**
+ * @brief Test that heartbeat frames (0x130-0x134) are filtered out and never dispatched
+ *
+ */
+TEST_F(TestCanTransceiver, TestHeartbeatFramesDropped)
+{
+    using underlying = std::underlying_type_t<CAN_FP::CanId>;
+    for (underlying id = static_cast<underlying>(CAN_FP::CanId::HEARTBEAT_START);
+         id <= static_cast<underlying>(CAN_FP::CanId::HEARTBEAT_END); ++id) {
+        CAN_FP::CanId heartbeat_id = static_cast<CAN_FP::CanId>(id);
+
+        volatile bool                         is_cb_called = false;
+        std::function<void(CAN_FP::CanFrame)> test_cb      = [&is_cb_called](CAN_FP::CanFrame /*unused*/) {
+            is_cb_called = true;
+        };
+        canbus_t_->registerCanCbs({{
+          std::make_pair(heartbeat_id, test_cb),
+        }});
+
+        CAN_FP::CanFrame dummy_frame{.can_id = static_cast<canid_t>(heartbeat_id)};
+
+        canbus_t_->send(dummy_frame);
+
+        std::this_thread::sleep_for(SLEEP_TIME);
+
+        EXPECT_FALSE(is_cb_called);
+    }
+}
+
+/**
+ * @brief Test that debug frames (0x200-0x2FF) are filtered out and never dispatched
+ *
+ */
+TEST_F(TestCanTransceiver, TestDebugFramesDropped)
+{
+    using underlying = std::underlying_type_t<CAN_FP::CanId>;
+    for (underlying id = static_cast<underlying>(CAN_FP::CanId::HEARTBEAT_START);
+         id <= static_cast<underlying>(CAN_FP::CanId::HEARTBEAT_END); ++id) {
+        CAN_FP::CanId debug_id = static_cast<CAN_FP::CanId>(id);
+
+        volatile bool                         is_cb_called = false;
+        std::function<void(CAN_FP::CanFrame)> test_cb      = [&is_cb_called](CAN_FP::CanFrame /*unused*/) {
+            is_cb_called = true;
+        };
+        canbus_t_->registerCanCbs({{
+          std::make_pair(debug_id, test_cb),
+        }});
+
+        CAN_FP::CanFrame dummy_frame{.can_id = static_cast<canid_t>(debug_id)};
+
+        canbus_t_->send(dummy_frame);
+
+        std::this_thread::sleep_for(SLEEP_TIME);
+
+        EXPECT_FALSE(is_cb_called);
+    }
 }
