@@ -32,6 +32,11 @@ using boost::system::error_code;
 using Polaris::Sensors;
 namespace bio = boost::asio;
 
+constexpr float LAT_LBOUND = -90.0F;
+constexpr float LAT_UBOUND = 90.0F;
+constexpr float LON_LBOUND = -180.0F;
+constexpr float LON_UBOUND = 180.0F;
+
 void LocalTransceiver::updateSensor(msg::GPS gps)
 {
     sensors_.mutable_gps()->set_heading(gps.heading.heading);
@@ -610,8 +615,13 @@ bool LocalTransceiver::validateGlobalPathWayPoints(const custom_interfaces::msg:
 
     for (const auto & waypoint : path_to_publish.waypoints) {  //NOLINT
         if (
-          (waypoint.latitude < -90.0 || waypoint.latitude > 90.0) ||      //NOLINT(readability-magic-numbers)
-          (waypoint.longitude < -180.0 || waypoint.longitude > 180.0)) {  //NOLINT(readability-magic-numbers)
+          (waypoint.latitude < LAT_LBOUND || waypoint.latitude > LAT_UBOUND) ||
+          (waypoint.longitude < LON_LBOUND || waypoint.longitude > LON_UBOUND)) {
+            if (log_error_) {
+                log_error_(
+                  "Invalid waypoint lat/lon received: (" + std::to_string(waypoint.latitude) + ", " +
+                  std::to_string(waypoint.longitude) + "). Publishing empty path.");
+            }
             return false;
         }
     }
@@ -640,11 +650,11 @@ custom_interfaces::msg::Path LocalTransceiver::parseInMsg(const std::string & ms
 
     for (auto waypoint : path.waypoints()) {
         custom_interfaces::msg::HelperLatLon helperLatLon;
-        const float latitude  = waypoint.latitude();
-        const float longitude = waypoint.longitude();
+        const float                          latitude  = waypoint.latitude();
+        const float                          longitude = waypoint.longitude();
 
-        helperLatLon.set__latitude(latitude < -90.0f || latitude > 90.0f ? -1.0f : latitude);
-        helperLatLon.set__longitude(longitude < -180.0f || longitude > 180.0f ? -1.0f : longitude);
+        helperLatLon.set__latitude(latitude < LAT_LBOUND || latitude > LAT_UBOUND ? -1.0f : latitude);      //NOLINT
+        helperLatLon.set__longitude(longitude < LON_LBOUND || longitude > LON_UBOUND ? -1.0f : longitude);  //NOLINT
 
         waypoints.push_back(helperLatLon);
     }
