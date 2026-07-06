@@ -113,6 +113,16 @@ ros2 topic list
 ros2 topic echo /desired_heading
 ```
 
+For sequential test plan runs, use the installed runner documented in
+`README.md` and the Test Plans Confluence page:
+<https://ubcsailbot.atlassian.net/wiki/spaces/prjt22/pages/2996568069/Test+Plans>.
+
+```bash
+source install/local_setup.bash
+ros2 run local_pathfinding run_test_plans --list
+ros2 run local_pathfinding run_test_plans --tests <plan>.yaml --num_tests 1
+```
+
 If a required check cannot run, clearly report:
 
 1. The command attempted
@@ -195,6 +205,9 @@ Update documentation when changing:
 - Launch arguments or run commands in `README.md`
 - Wind, coordinate, unit, or waypoint ordering conventions
 - Test plan format or available scenarios
+- Test plan runner usage; keep `README.md` aligned with
+  `local_pathfinding/run_test_plans.py` and the Test Plans Confluence page:
+  <https://ubcsailbot.atlassian.net/wiki/spaces/prjt22/pages/2996568069/Test+Plans>
 - Land, global path, or mock data generation procedures
 - ROS topics, messages, actions, or behavior visible to other packages
 
