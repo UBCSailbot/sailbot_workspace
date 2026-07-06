@@ -1,7 +1,6 @@
 """Node to publish mock global path data.
 The node is represented by the `MockGlobalPath` class."""
 
-import csv
 from pathlib import Path
 
 import rclpy
@@ -9,11 +8,12 @@ from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from test_plans.test_plan import TestPlan
+from local_pathfinding.node_navigate import Sailbot
 
 import custom_interfaces.msg as ci
 
 DEFAULT_GLOBAL_PATH_CSV = (
-    Path(__file__).resolve().parents[2] / "global_paths" / "mock_global_path.csv"
+    Path(__file__).resolve().parent / "mock_global_path.csv"
 )
 
 
@@ -50,7 +50,6 @@ class MockGlobalPath(Node):
             parameters=[
                 ("test_plan", rclpy.Parameter.Type.STRING),
                 ("global_path_csv_path", str(DEFAULT_GLOBAL_PATH_CSV)),
-                ("reload_token", rclpy.Parameter.Type.INTEGER),
             ],
         )
 
@@ -67,44 +66,10 @@ class MockGlobalPath(Node):
 
         self.global_path = self._load_global_path()
 
-    @staticmethod
-    def _path_to_dict(path: ci.Path, num_decimals: int = 4) -> dict[int, str]:
-        """Converts a ci.Path msg to a dictionary suitable for logging."""
-        return {
-            i: f"({waypoint.latitude:.{num_decimals}f}, {waypoint.longitude:.{num_decimals}f})"
-            for i, waypoint in enumerate(path.waypoints)
-        }
-
-    def _load_global_path_from_csv(self, csv_path: Path) -> ci.Path | None:
-        """Load a global path from a CSV file with latitude and longitude columns."""
-        with csv_path.open("r", newline="") as file:
-            reader = csv.reader(file)
-            header = next(reader, None)
-            if header is None:
-                self.get_logger().error(f"CSV file '{csv_path}' is empty")
-                return None
-
-            waypoints = ci.Path()
-            for row in reader:
-                if len(row) < 2:
-                    self.get_logger().error(
-                        f"CSV file '{csv_path}' has an invalid waypoint row: {row}"
-                    )
-                    return None
-                waypoints.waypoints.append(
-                    ci.HelperLatLon(latitude=float(row[0]), longitude=float(row[1]))
-                )
-
-        if len(waypoints.waypoints) < 2:
-            self.get_logger().error(f"CSV file '{csv_path}' must contain at least two waypoints")
-            return None
-
-        return waypoints
-
     def _load_global_path(self, from_csv: bool = False) -> ci.Path:
         """Load the active mock global path"""
         if from_csv:
-            global_path = self._load_global_path_from_csv(self._global_path_csv_path)
+            global_path = Sailbot._read_global_path_from_file(self._global_path_csv_path)
             if global_path is None:
                 self.get_logger().warning(
                     "Failed to load global path from CSV, keeping current path"
@@ -120,13 +85,11 @@ class MockGlobalPath(Node):
         return test_plan.global_path
 
     def _on_set_parameters(self, params: list[Parameter]) -> SetParametersResult:
-        """Reload the mock global path when the CSV path or reload token changes."""
+        """Reload the mock global path when the CSV path parameter is set."""
         should_reload = False
         for param in params:
             if param.name == "global_path_csv_path":
                 self._global_path_csv_path = Path(param.value)
-                should_reload = True
-            elif param.name == "reload_token":
                 should_reload = True
 
         if should_reload:
@@ -140,7 +103,7 @@ class MockGlobalPath(Node):
         # Publish the current global path exactly as defined in the CSV/test plan source. This node
         # does not interpolate between waypoints or generate a path from the boat's position.
         msg = self.global_path
-        # self.get_logger().debug(f"Published mock global path: {self._path_to_dict(msg)}")
+        self.get_logger().debug(f"Published mock global path: {Sailbot._path_to_dict(msg)}")
         self.global_path_pub.publish(msg)
 
 

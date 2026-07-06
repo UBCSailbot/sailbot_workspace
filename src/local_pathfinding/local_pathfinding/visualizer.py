@@ -91,7 +91,7 @@ ASSETS_DIR = BASE_DIR / "visualizer_assets"
 MOCK_NODES_DIR = BASE_DIR / "mock_nodes"
 WIND_PARAMS_YAML = MOCK_NODES_DIR / "wind_params.yaml"
 WIND_PARAMS_SH = MOCK_NODES_DIR / "wind_params.sh"
-MOCK_GLOBAL_PATH_CSV = BASE_DIR.parent / "global_paths" / "mock_global_path.csv"
+MOCK_GLOBAL_PATH_CSV = MOCK_NODES_DIR / "mock_global_path.csv"
 
 # Most recent VisualizerState, kept so view-only toggles (e.g. the map) can re-render the last
 # frame immediately instead of waiting for the next ROS message.
@@ -1614,7 +1614,7 @@ def apply_drift_params(
     )
 
 
-def reload_mock_global_path(reload_token: int) -> None:
+def reload_mock_global_path() -> None:
     """Tell the live mock_global_path node to reload the CSV-backed global path."""
     subprocess.run(
         [
@@ -1622,8 +1622,8 @@ def reload_mock_global_path(reload_token: int) -> None:
             "param",
             "set",
             "/mock_global_path",
-            "reload_token",
-            str(int(reload_token)),
+            "global_path_csv_path",
+            str(MOCK_GLOBAL_PATH_CSV),
         ],
         check=True,
     )
@@ -2268,6 +2268,13 @@ def dash_app(q: Queue):
                                     "minWidth": "220px",
                                 },
                             ),
+                            dcc.Interval(
+                                id="mock-global-path-status-clear-interval",
+                                interval=5000,
+                                n_intervals=0,
+                                disabled=True,
+                                max_intervals=1,
+                            ),
                         ],
                     ),
                 ],
@@ -2589,32 +2596,26 @@ app.clientside_callback(
 
 @app.callback(
     Output("mock-global-path-status", "children"),
+    Output("mock-global-path-status-clear-interval", "disabled"),
+    Output("mock-global-path-status-clear-interval", "n_intervals"),
     Input("reload-mock-global-path-btn", "n_clicks"),
     prevent_initial_call=True,
 )
 def update_mock_global_path(n_clicks):
     try:
-        if not n_clicks:
-            return ""
-
-        reload_mock_global_path(n_clicks)
-        return f"✓ Reloaded mock global path from {MOCK_GLOBAL_PATH_CSV.name}"
+        reload_mock_global_path()
+        return f"✓ Reloaded mock global path from {MOCK_GLOBAL_PATH_CSV.name}", False, 0
     except Exception as e:
-        return f"Error: {e}"
+        return f"Error: {e}", False, 0
 
 
-app.clientside_callback(
-    """
-    function(status_text) {
-        if (!status_text) return "";
-        setTimeout(function(){
-            const statusDiv = document.getElementById('mock-global-path-status');
-            if (statusDiv) statusDiv.innerText = "";
-        }, 5000);
-        return status_text;
-    }
-    """,
+@app.callback(
     Output("mock-global-path-status", "children", allow_duplicate=True),
-    Input("mock-global-path-status", "children"),
+    Output("mock-global-path-status-clear-interval", "disabled", allow_duplicate=True),
+    Input("mock-global-path-status-clear-interval", "n_intervals"),
     prevent_initial_call=True,
 )
+def clear_mock_global_path_status(n_intervals):
+    if not n_intervals:
+        return dash.no_update, dash.no_update
+    return "", True
