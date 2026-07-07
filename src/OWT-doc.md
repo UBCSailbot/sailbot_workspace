@@ -83,4 +83,24 @@ If possible, we would like to send a new set of global waypoints over the satell
 | 3 | |
 | 5 | |
 
+### PATH
+We will have to comprehensively test PATH. We will do this in stages.
+**Ensure that we start the test from the pier (check the image attached below)**.
+#### Stage 1
+Run PATH without any mock ais being published and two basic global waypoints. Let pathfinding run and Sailbot reach
+one of the waypoints.
+
+#### Stage 2
+Run PATH one mock AIS right in front of the boat being published and two basic global waypoints. Let pathfinding run and Sailbot reach one of the waypoints and clear the AIS.
+
+#### Stage 3
+Run PATH with multiple mock AIS around the boat and let it navigate. Verify the tacks and the general behavior of PATH.
+
+##### 3a
+Let this configuration run of 10 minutes and verify that the PATH changes. One can also verify that the PATH changes
+because of wind shift or a collision zone appearing in the picture.
+
+##### 3b (Not for OWT on 11 July)
+Publish a new collision zone at a relative time stamp to verify that the boat changes paths.
+
 
