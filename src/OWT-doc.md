@@ -69,3 +69,18 @@ Run each row from the workspace root. Example:
 
 Then observe the physical trim tab and fill in the `Real-world observation` and
 `Pass/Fail` columns.
+
+
+### NET
+We want to run the entire SOFT system and NET should properly receive, parse, and publish the sensor data. This will be
+a passive test where we don't touch the boat much.
+
+If possible, we would like to send a new set of global waypoints over the satellite.
+#### Stages for sending global waypoints:
+| len(waypoints) | Pass / Fail |
+| 1 | |
+| 2 | |
+| 3 | |
+| 5 | |
+
+
