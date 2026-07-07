@@ -6,6 +6,15 @@ import local_pathfinding.coord_systems as cs
 import local_pathfinding.ompl_objectives as ob
 
 
+def test_soft_objective_weights_sum_to_one():
+    assert (
+        ob.WIND_OBJECTIVE_WEIGHT
+        + ob.TIME_OBJECTIVE_WEIGHT
+        + ob.DEVIATION_OBJECTIVE_WEIGHT
+        + ob.SEGMENT_COUNT_OBJECTIVE_WEIGHT
+    ) == pytest.approx(1.0)
+
+
 @pytest.mark.parametrize(
     "cs1, cs2, tw_dir_rad_gc, tw_speed_kmph, expected",
     [
@@ -41,12 +50,12 @@ def test_time_cost(
     [
         # Segment midpoint sits on the rhumb line -> zero cost
         (cs.XY(2.0, 0.0), cs.XY(4.0, 0.0), cs.XY(0.0, 0.0), cs.XY(10.0, 0.0), 0.0),
-        # Midpoint at half the max deviation (MAX_DEVIATION_FRACTION=0.15) -> 0.5**2 = 0.25
-        (cs.XY(2.0, 0.75), cs.XY(4.0, 0.75), cs.XY(0.0, 0.0), cs.XY(10.0, 0.0), 0.25),
+        # Midpoint at half the max deviation -> 0.5**4 = 0.0625
+        (cs.XY(2.0, 2.5), cs.XY(4.0, 2.5), cs.XY(0.0, 0.0), cs.XY(10.0, 0.0), 0.0625),
         # Midpoint exactly at the max deviation -> saturated cost
-        (cs.XY(2.0, 1.5), cs.XY(4.0, 1.5), cs.XY(0.0, 0.0), cs.XY(10.0, 0.0), 1.0),
+        (cs.XY(2.0, 5.0), cs.XY(4.0, 5.0), cs.XY(0.0, 0.0), cs.XY(10.0, 0.0), 1.0),
         # Midpoint beyond the max deviation -> clamped to 1
-        (cs.XY(2.0, 3.0), cs.XY(4.0, 3.0), cs.XY(0.0, 0.0), cs.XY(10.0, 0.0), 1.0),
+        (cs.XY(2.0, 6.0), cs.XY(4.0, 6.0), cs.XY(0.0, 0.0), cs.XY(10.0, 0.0), 1.0),
         # Degenerate start == goal -> no axis, zero cost
         (cs.XY(2.0, 2.0), cs.XY(3.0, 3.0), cs.XY(0.0, 0.0), cs.XY(0.0, 0.0), 0.0),
     ],
