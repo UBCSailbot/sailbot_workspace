@@ -6,8 +6,8 @@ from typing import Tuple
 import numpy as np
 from rclpy.logging import get_logger
 
-from boat_simulator.common.conventions import Body, Force, Velocity
-from boat_simulator.common.types import CoeffTable, Vec2, Vec4
+from boat_simulator.common.conventions import Body, Force, Inertia, Velocity
+from boat_simulator.common.types import CoeffTable, Mat4, Vec2, Vec4
 
 _logger = get_logger(__name__)
 
@@ -399,3 +399,7 @@ class AeroDynamicsForceComputation:
         k_s = f_y * self.__z_s
         n_s = f_y * self.__x_s * math.cos(roll_rad)
         return Vec4.from_xypr(x_s, y_s, k_s, n_s)
+
+
+
+class HydroDynamicsForceComputation:
