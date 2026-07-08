@@ -4,9 +4,10 @@ import math
 from typing import Tuple
 
 import numpy as np
+from numpy.typing import NDArray
 from rclpy.logging import get_logger
 
-from boat_simulator.common.conventions import Body, Force, Inertia, Velocity
+from boat_simulator.common.conventions import Body, Force, Velocity
 from boat_simulator.common.types import CoeffTable, Mat4, Vec2, Vec4
 
 _logger = get_logger(__name__)
@@ -401,5 +402,217 @@ class AeroDynamicsForceComputation:
         return Vec4.from_xypr(x_s, y_s, k_s, n_s)
 
 
-
 class HydroDynamicsForceComputation:
+    """Computes the hydrodynamic forces acting on the boat.
+
+    Attributes:
+        rudder (MediumForceComputation): The rudder's lift and drag force computation.
+        keel (MediumForceComputation): The keel's lift and drag force computation.
+        rudder_effort (Tuple[float, float]): (x_r, z_r), the rudder's center of effort relative to
+            the boat's center of gravity, in meters.
+        keel_effort (Tuple[float, float]): (x_k, z_k), the keel's center of effort relative to the
+            boat's center of gravity, in meters.
+        hull_effort (Tuple[float, float, float]): (x_h, y_h, z_h), the hull's center of effort
+            relative to the boat's center of gravity, in meters.
+        hull_r1 (float): The hull's quadratic drag coefficient.
+        hull_r2 (float): The hull's linear drag coefficient.
+        m_a (Mat4): The added mass matrix.
+        d (Mat4): The linear damping matrix.
+        water_density (float): The density of water, in kilograms per cubic meter.
+    """
+
+    def __init__(
+        self,
+        rudder: MediumForceComputation,
+        keel: MediumForceComputation,
+        rudder_effort: Tuple[float, float],
+        keel_effort: Tuple[float, float],
+        hull_effort: Tuple[float, float, float],
+        hull_r1: float,
+        hull_r2: float,
+        m_a: Mat4,
+        d: Mat4,
+        water_density: float,
+    ):
+        self.__rudder = rudder
+        self.__keel = keel
+        self.__x_r, self.__z_r = rudder_effort
+        self.__x_k, self.__z_k = keel_effort
+        self.__x_h, self.__y_h, self.__z_h = hull_effort
+        self.__hull_r1 = hull_r1
+        self.__hull_r2 = hull_r2
+        self.__m_a = m_a
+        self.__d = d
+        self.__water_density = water_density
+
+    def relative_velocity(
+        self,
+        nu: Vec4[Velocity, Body],
+        current_speed: float,
+        current_bearing_rad: float,
+        heading_rad: float,
+    ) -> Vec4[Velocity, Body]:
+        """Computes v_r = nu - v_c, the boat's velocity relative to the water.
+
+        Args:
+            nu (Vec4[Velocity, Body]): the boat's generalized velocity [u, v, p, r].
+            current_speed (float): V_c, ocean current speed, in meters per second.
+            current_bearing_rad (float): beta_c, current direction in radians.
+            heading_rad (float): psi, the boat's current heading in radians.
+
+        Returns:
+            Vec4[Velocity, Body]: v_r = [u_r, v_r, p, r], the relative water velocity.
+        """
+        gamma_c = heading_rad - current_bearing_rad - math.pi
+        u_c = -current_speed * math.cos(gamma_c)
+        v_c = current_speed * math.sin(gamma_c)
+        return Vec4.from_xypr(nu.x - u_c, nu.y - v_c, nu.z, nu.w)
+
+    def added_mass_coriolis_matrix(self, v_r: Vec4[Velocity, Body]) -> NDArray[np.float64]:
+        """Builds C_A.
+
+        Args:
+            v_r (Vec4[Velocity, Body]): relative-to-water velocity [u, v, p, r].
+
+        Returns:
+            NDArray[np.float64]: the 4x4 C_A(v_r) matrix.
+        """
+        x_udot = self.__m_a.data[0, 0]
+        y_vdot = self.__m_a.data[1, 1]
+        k_pdot = self.__m_a.data[2, 2]
+        u, v, p = v_r.x, v_r.y, v_r.z
+        c_a = np.zeros((4, 4))
+        c_a[0, 3] = y_vdot * v
+        c_a[1, 3] = x_udot * u
+        c_a[2, 2] = k_pdot * p
+        c_a[3, 0] = -y_vdot * v
+        c_a[3, 1] = x_udot * u
+        c_a[3, 2] = y_vdot * v
+        return c_a
+
+    def hull_force(self, v_r: Vec4[Velocity, Body], roll_rad: float) -> Vec4[Force, Body]:
+        """Calculates hull forces and moments.
+
+        Args:
+            v_r (Vec4[Velocity, Body]): relative water velocity.
+            roll_rad (Float): roll angle in radians.
+
+        Returns:
+            Vec4[Force, Body]: hull forces and moments.
+        """
+        u, v, p, r = v_r.x, v_r.y, v_r.z, v_r.w
+        u_h = -u + r * self.__y_h
+        v_h = (-v - r * self.__x_h + p * self.__z_h) / math.cos(roll_rad)
+        idfkwhatthisletteris = math.sqrt(u_h**2 + v_h**2)
+        alpha_h = math.atan2(v_h, u_h)
+        h_d = self.__hull_r1 * idfkwhatthisletteris**2 + self.__hull_r2
+        x = h_d * math.cos(alpha_h)
+        y = -h_d * math.sin(alpha_h) * math.cos(roll_rad)
+        k = -y * self.__z_h
+        n = y * self.__x_h
+        return Vec4.from_xypr(x, y, k, n)
+
+    def rudder_force(
+        self, v_r: Vec4[Velocity, Body], roll_rad: float, delta_r_rad: float
+    ) -> Vec4[Force, Body]:
+        """Calculates rudder forces and moments.
+
+        Args:
+            v_r (Vec4[Velocity, Body]): relative water velocity.
+            roll_rad (float): roll angle in radians.
+            delta_r_rad (float): rudder deflection in radians.
+
+        Returns:
+            Vec4[Force, Body]: rudder forces and moments.
+        """
+
+        u, v, p, r = v_r.x, v_r.y, v_r.z, v_r.w
+        u_r = -u
+        v_r_new = -v - r * self.__x_r + p * self.__z_r
+        idfkwhatthisletteris = math.sqrt(u_r**2 + v_r_new**2)
+        beta_r = math.atan2(v_r_new, u_r)
+        alpha_r = beta_r + delta_r_rad
+
+        lift_n, drag_n, _ = self.__rudder.compute(
+            Vec2.from_xy(
+                idfkwhatthisletteris * math.cos(alpha_r), idfkwhatthisletteris * math.sin(alpha_r)
+            ),
+            0.0,
+        )
+
+        x = lift_n * math.sin(alpha_r) - drag_n * math.cos(alpha_r)
+        y = (lift_n * math.cos(alpha_r) + drag_n * math.sin(alpha_r)) * math.cos(roll_rad)
+        k = -(lift_n * math.cos(alpha_r) + drag_n * math.sin(alpha_r)) * self.__z_r
+        n = (
+            (lift_n * math.cos(alpha_r) + drag_n * math.sin(alpha_r))
+            * self.__x_r
+            * math.cos(roll_rad)
+        )
+        return Vec4.from_xypr(x, y, k, n)
+
+    def keel_force(self, v_r: Vec4[Velocity, Body], roll_rad: float) -> Vec4[Force, Body]:
+        """Calculates keel forces and moments.
+
+        Args:
+            v_r (Vec4[Velocity, Body]): relative water velocity.
+            roll_rad (float): roll angle in radians.
+
+        Returns:
+            Vec4[Force, Body]: keel forces and moments.
+        """
+        u, v, p, r = v_r.x, v_r.y, v_r.z, v_r.w
+        u_k = -u
+        v_k = v - r * self.__x_k - p * self.__z_k
+        idfkwhatthisletteris = math.hypot(u_k, v_k)
+        beta_k = math.atan2(u_k, v_k)
+        alpha_k = -beta_k + math.pi
+
+        lift_n, drag_n, _ = self.__keel.compute(
+            Vec2.from_xy(
+                idfkwhatthisletteris * math.cos(alpha_k), idfkwhatthisletteris * math.sin(alpha_k)
+            ),
+            0.0,
+        )
+
+        x = -lift_n * math.sin(alpha_k) + drag_n * math.cos(alpha_k)
+        y = -(lift_n * math.cos(alpha_k) - drag_n * math.sin(alpha_k)) * math.cos(roll_rad)
+        k = (lift_n * math.cos(alpha_k) + drag_n * math.sin(alpha_k)) * self.__z_k
+        n = (
+            -(lift_n * math.cos(alpha_k) + drag_n * math.sin(alpha_k))
+            * self.__x_k
+            * math.cos(roll_rad)
+        )
+        return Vec4.from_xypr(x, y, k, n)
+
+    def compute(
+        self,
+        v_r: Vec4[Velocity, Body],
+        v_dot_r: Vec4[Velocity, Body],
+        roll_rad: float,
+        delta_r_rad: float,
+    ) -> Vec4[Force, Body]:
+        """Calculates the total hydrodynamic generalized force acting on the boat.
+
+        Args:
+            v_r (Vec4[Velocity, Body]): The boat's velocity relative to the water.
+            v_dot_r (Vec4[Velocity, Body]): The time derivative of the boat's velocity relative
+                to the water.
+            roll_rad (float): The boat's current roll angle in radians.
+            delta_r_rad (float): The rudder deflection angle in radians.
+
+        Returns:
+            Vec4[Force, Body]: [X, Y, K, N] total hydrodynamic contribution.
+        """
+        tau_h = self.hull_force(v_r, roll_rad)
+        tau_r = self.rudder_force(v_r, roll_rad, delta_r_rad)
+        tau_k = self.keel_force(v_r, roll_rad)
+
+        added_mass_term = self.__m_a.data @ v_dot_r.data
+        c_a = self.added_mass_coriolis_matrix(v_r)
+        coriolis_term = c_a @ v_r.data
+        damping_term = self.__d.data @ v_r.data
+
+        total = (
+            tau_h.data + tau_r.data + tau_k.data - added_mass_term - coriolis_term - damping_term
+        )
+        return Vec4(total)
