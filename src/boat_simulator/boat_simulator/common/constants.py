@@ -61,8 +61,6 @@ class BoatProperties:
     # for the 4-DOF state ν = [u, v, p, r] (surge, sway, roll, yaw). Units: kg / kg·m².
     inertia: Mat4[Inertia, Body]
     # 4×4 diagonal added-mass matrix M_A = diag(X_u̇, Y_v̇, K_ṗ, N_ṙ). Units: kg / kg·m².
-    # C_RB and C_A (Coriolis/centripetal matrices) are NOT stored here — they are
-    # state-dependent (functions of ν) and must be computed at each timestep.
     M_A: Mat4[Inertia, Body]
     # 4×4 diagonal linear damping matrix D = diag(X_u, Y_v, K_p, N_r).
     # Surge/sway entries: N·s/m; roll/yaw entries: N·m·s/rad.

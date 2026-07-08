@@ -38,12 +38,21 @@ class Body:
     """Boat body frame: x forward, y starboard (right), z down."""
 
 
+class BodytoNED:
+    """Body frame to NED frame matrix transfomer"""
+
+
+class NEDtoBody:
+    """NED to Body frame matrix transformer"""
+
+
 # Quantity markers
 
 
 class Position:
     """
-    Position quantity, measured in metres (linear) or radians (angular).
+    Position quantity, measured in metres (linear) or radians (angular). p is roll, q is yaw and
+    r is pitch.
 
     For Vec2,
     Linear Position: [x, y], metres
@@ -61,7 +70,8 @@ class Position:
 
 class Velocity:
     """
-    Velocity quantity, measured in m/s (linear) or rad/s (angular).
+    Velocity quantity, measured in m/s (linear) or rad/s (angular). p is roll, q is yaw and
+    r is pitch.
 
     For Vec2,
     Linear Velocity: [vx, vy], metres
@@ -70,12 +80,16 @@ class Velocity:
     For Vec3,
     Linear Velocity: [vx, vy, vz], metres per second
     Angular Velocity: [vp, vq, vr], rad/s
+
+    For Vec4
+    Velocity Combined (linear [vx, vy], m/s and angular [vp, vq], rad/s): [vx, vy, vp, vq]
     """
 
 
 class Acceleration:
     """
-    Acceleration quantity, measured in m/s² (linear) or rad/s² (angular).
+    Acceleration quantity, measured in m/s² (linear) or rad/s² (angular). p is roll, q is yaw and
+    r is pitch.
 
     For Vec2,
     Linear Acceleration: [ax, ay], metres
@@ -84,6 +98,9 @@ class Acceleration:
     For Vec3,
     Linear Acceleration: [ax, ay, az], metres per second
     Angular Acceleration: [ap, aq, ar], rad/s
+
+    For Vec4
+    Acceleration Combined (linear [ax, ay], m/s and angular [ap, aq], rad/s): [ax, ay, ap, aq]
     """
 
 
@@ -134,3 +151,8 @@ class Damping:
     Diagonal entries carry different units depending on the DOF:
     surge/sway components are in N·s/m (= kg/s); roll/yaw components are in N·m·s/rad.
     """
+
+
+class Transformer:
+    """A matrix used to rotate the Vector data from one frame to the next. As stated in the
+    frame's name"""

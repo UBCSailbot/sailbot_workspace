@@ -27,7 +27,6 @@ namespace targets
 {
 static const std::string ROOT        = "/";
 static const std::string SENSORS     = "/sensors";
-static const std::string GLOBAL_PATH = "/global-path";
 }  // namespace targets
 struct MOMsgParams
 {

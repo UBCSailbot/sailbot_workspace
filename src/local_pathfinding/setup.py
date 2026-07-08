@@ -55,6 +55,7 @@ setup(
             "mock_gps = local_pathfinding.mock_nodes.node_mock_gps:main",
             "navigate_observer = local_pathfinding.node_navigate_observer:main",
             "fake_gps = local_pathfinding.fake_gps:main",
+            "run_test_plans = local_pathfinding.run_test_plans:main",
         ],
     },
 )
