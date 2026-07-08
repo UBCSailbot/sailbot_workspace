@@ -393,6 +393,8 @@ class AeroDynamicsForceComputation:
         lift_n, drag_n, attack_deg = self.__wing.compute(
             Vec2.from_xy(v_aw * math.cos(theta), v_aw * math.sin(theta)), math.degrees(alpha_rad)
         )
+
+        # Force and Moment calculations
         x_s = lift_n * math.sin(theta) - drag_n * math.cos(theta)
         y_s = (lift_n * math.cos(theta) + drag_n * math.sin(theta)) * math.cos(roll_rad)
 
@@ -506,6 +508,8 @@ class HydroDynamicsForceComputation:
         idfkwhatthisletteris = math.sqrt(u_h**2 + v_h**2)
         alpha_h = math.atan2(v_h, u_h)
         h_d = self.__hull_r1 * idfkwhatthisletteris**2 + self.__hull_r2
+
+        # Force and Moment calculations
         x = h_d * math.cos(alpha_h)
         y = -h_d * math.sin(alpha_h) * math.cos(roll_rad)
         k = -y * self.__z_h
@@ -540,6 +544,7 @@ class HydroDynamicsForceComputation:
             0.0,
         )
 
+        # Force and Moment calculations
         x = lift_n * math.sin(alpha_r) - drag_n * math.cos(alpha_r)
         y = (lift_n * math.cos(alpha_r) + drag_n * math.sin(alpha_r)) * math.cos(roll_rad)
         k = -(lift_n * math.cos(alpha_r) + drag_n * math.sin(alpha_r)) * self.__z_r
@@ -574,6 +579,7 @@ class HydroDynamicsForceComputation:
             0.0,
         )
 
+        # Force and Moment calculations
         x = -lift_n * math.sin(alpha_k) + drag_n * math.cos(alpha_k)
         y = -(lift_n * math.cos(alpha_k) - drag_n * math.sin(alpha_k)) * math.cos(roll_rad)
         k = (lift_n * math.cos(alpha_k) + drag_n * math.sin(alpha_k)) * self.__z_k
