@@ -505,9 +505,9 @@ class HydroDynamicsForceComputation:
         u, v, p, r = v_r.x, v_r.y, v_r.p, v_r.r
         u_h = -u + r * self.__y_h
         v_h = (-v - r * self.__x_h + p * self.__z_h) / math.cos(roll_rad)
-        idfkwhatthisletteris = math.sqrt(u_h**2 + v_h**2)
+        water_speed_rel_to_hull = math.sqrt(u_h**2 + v_h**2)
         alpha_h = math.atan2(v_h, u_h)
-        h_d = self.__hull_r1 * idfkwhatthisletteris**2 + self.__hull_r2
+        h_d = self.__hull_r1 * water_speed_rel_to_hull**2 + self.__hull_r2
 
         # Force and Moment calculations
         x = h_d * math.cos(alpha_h)
@@ -533,13 +533,14 @@ class HydroDynamicsForceComputation:
         u, v, p, r = v_r.x, v_r.y, v_r.p, v_r.r
         u_r = -u
         v_r_new = -v - r * self.__x_r + p * self.__z_r
-        idfkwhatthisletteris = math.sqrt(u_r**2 + v_r_new**2)
+        water_speed_rel_to_rudder = math.sqrt(u_r**2 + v_r_new**2)
         beta_r = math.atan2(v_r_new, u_r)
         alpha_r = beta_r + delta_r_rad
 
         lift_n, drag_n, _ = self.__rudder.compute(
             Vec2.from_xy(
-                idfkwhatthisletteris * math.cos(alpha_r), idfkwhatthisletteris * math.sin(alpha_r)
+                water_speed_rel_to_rudder * math.cos(alpha_r),
+                water_speed_rel_to_rudder * math.sin(alpha_r),
             ),
             0.0,
         )
@@ -568,13 +569,14 @@ class HydroDynamicsForceComputation:
         u, v, p, r = v_r.x, v_r.y, v_r.p, v_r.r
         u_k = -u
         v_k = v - r * self.__x_k - p * self.__z_k
-        idfkwhatthisletteris = math.hypot(u_k, v_k)
+        water_speed_rel_to_keel = math.hypot(u_k, v_k)
         beta_k = math.atan2(u_k, v_k)
         alpha_k = -beta_k + math.pi
 
         lift_n, drag_n, _ = self.__keel.compute(
             Vec2.from_xy(
-                idfkwhatthisletteris * math.cos(alpha_k), idfkwhatthisletteris * math.sin(alpha_k)
+                water_speed_rel_to_keel * math.cos(alpha_k),
+                water_speed_rel_to_keel * math.sin(alpha_k),
             ),
             0.0,
         )
