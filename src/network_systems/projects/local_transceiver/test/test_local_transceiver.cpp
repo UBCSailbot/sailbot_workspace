@@ -667,6 +667,7 @@ TEST_F(TestLocalTransceiver, checkCache)
     EXPECT_EQ(parsed_test.waypoints[1].longitude, parsed_cache.waypoints[0].longitude);
 }
 
+//
 // TEST_F(TestLocalTransceiver, testMailboxBlackbox)
 // {
 //     std::lock_guard<std::mutex> lock(port_mutex);  // because same port is being used
