@@ -115,7 +115,7 @@ class BoatKinematics:
         φ = 90°, see the design doc's open items), so it is built by hand rather than reusing
         `Mat4.from_rotation_yaw`.
         """
-        phi, psi = self.pose.z, self.pose.w
+        phi, psi = self.pose.p, self.pose.r
         cos_psi, sin_psi = np.cos(psi), np.sin(psi)
         jacobian: Mat4[Transformer, BodytoNED] = Mat4(
             np.array(

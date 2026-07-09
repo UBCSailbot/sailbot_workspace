@@ -164,8 +164,8 @@ def test_step_integrates_roll_and_yaw_rate_into_pose() -> None:
     updated_p = (12.5 / I_X) * TIMESTEP
     updated_r = (40.0 / I_Z) * TIMESTEP
     # phi starts at 0, so psi_dot = r * cos(phi) == r here.
-    assert kinematics.pose.z == pytest.approx(updated_p * TIMESTEP)
-    assert kinematics.pose.w == pytest.approx(updated_r * TIMESTEP)
+    assert kinematics.pose.p == pytest.approx(updated_p * TIMESTEP)
+    assert kinematics.pose.r == pytest.approx(updated_r * TIMESTEP)
 
 
 def test_step_scales_yaw_rate_by_cosine_of_roll() -> None:
@@ -179,9 +179,9 @@ def test_step_scales_yaw_rate_by_cosine_of_roll() -> None:
     kinematics.step(ZERO_FORCE, ZERO_TORQUE)
 
     expected_psi = 2.0 * math.cos(roll_angle) * TIMESTEP
-    assert kinematics.pose.w == pytest.approx(expected_psi)
+    assert kinematics.pose.r == pytest.approx(expected_psi)
     # Roll rate p is 0, so phi should be unaffected even though phi != 0.
-    assert kinematics.pose.z == pytest.approx(roll_angle)
+    assert kinematics.pose.p == pytest.approx(roll_angle)
 
 
 def test_step_uses_updated_velocity_for_position_integration() -> None:
@@ -214,8 +214,8 @@ def test_step_wraps_yaw_to_within_pi() -> None:
     kinematics.step(ZERO_FORCE, ZERO_TORQUE)
 
     expected_psi = wrap_to_pi((math.pi - 0.05) + 1.0 * TIMESTEP)
-    assert -math.pi <= kinematics.pose.w < math.pi
-    assert kinematics.pose.w == pytest.approx(expected_psi)
+    assert -math.pi <= kinematics.pose.r < math.pi
+    assert kinematics.pose.r == pytest.approx(expected_psi)
 
 
 def test_step_wraps_roll_to_within_pi() -> None:
@@ -226,8 +226,8 @@ def test_step_wraps_roll_to_within_pi() -> None:
     kinematics.step(ZERO_FORCE, ZERO_TORQUE)
 
     expected_phi = wrap_to_pi((-math.pi + 0.02) + (-1.0) * TIMESTEP)
-    assert -math.pi <= kinematics.pose.z < math.pi
-    assert kinematics.pose.z == pytest.approx(expected_phi)
+    assert -math.pi <= kinematics.pose.p < math.pi
+    assert kinematics.pose.p == pytest.approx(expected_phi)
 
 
 def test_step_does_not_wrap_north_east_position() -> None:

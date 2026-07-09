@@ -514,7 +514,7 @@ class PhysicsEngineNode(Node):
         msg.global_pose.position.y = float(m_to_km(pos_m.y))
         msg.global_pose.position.z = 0.0
 
-        quat = Utils.euler_zyx_to_quaternion(roll_rad=pos_m.z, pitch_rad=0.0, yaw_rad=pos_m.w)
+        quat = Utils.euler_zyx_to_quaternion(roll_rad=pos_m.p, pitch_rad=0.0, yaw_rad=pos_m.r)
         msg.global_pose.orientation.x = float(quat[0])
         msg.global_pose.orientation.y = float(quat[1])
         msg.global_pose.orientation.z = float(quat[2])

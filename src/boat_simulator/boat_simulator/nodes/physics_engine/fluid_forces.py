@@ -468,7 +468,7 @@ class HydroDynamicsForceComputation:
         gamma_c = heading_rad - current_bearing_rad - math.pi
         u_c = -current_speed * math.cos(gamma_c)
         v_c = current_speed * math.sin(gamma_c)
-        return Vec4.from_xypr(nu.x - u_c, nu.y - v_c, nu.z, nu.w)
+        return Vec4.from_xypr(nu.x - u_c, nu.y - v_c, nu.p, nu.r)
 
     def added_mass_coriolis_matrix(self, v_r: Vec4[Velocity, Body]) -> NDArray[np.float64]:
         """Builds C_A.
@@ -482,7 +482,7 @@ class HydroDynamicsForceComputation:
         x_udot = self.__m_a.data[0, 0]
         y_vdot = self.__m_a.data[1, 1]
         k_pdot = self.__m_a.data[2, 2]
-        u, v, p = v_r.x, v_r.y, v_r.z
+        u, v, p = v_r.x, v_r.y, v_r.p
         c_a = np.zeros((4, 4))
         c_a[0, 3] = y_vdot * v
         c_a[1, 3] = x_udot * u
@@ -502,7 +502,7 @@ class HydroDynamicsForceComputation:
         Returns:
             Vec4[Force, Body]: hull forces and moments.
         """
-        u, v, p, r = v_r.x, v_r.y, v_r.z, v_r.w
+        u, v, p, r = v_r.x, v_r.y, v_r.p, v_r.r
         u_h = -u + r * self.__y_h
         v_h = (-v - r * self.__x_h + p * self.__z_h) / math.cos(roll_rad)
         idfkwhatthisletteris = math.sqrt(u_h**2 + v_h**2)
@@ -530,7 +530,7 @@ class HydroDynamicsForceComputation:
             Vec4[Force, Body]: rudder forces and moments.
         """
 
-        u, v, p, r = v_r.x, v_r.y, v_r.z, v_r.w
+        u, v, p, r = v_r.x, v_r.y, v_r.p, v_r.r
         u_r = -u
         v_r_new = -v - r * self.__x_r + p * self.__z_r
         idfkwhatthisletteris = math.sqrt(u_r**2 + v_r_new**2)
@@ -565,7 +565,7 @@ class HydroDynamicsForceComputation:
         Returns:
             Vec4[Force, Body]: keel forces and moments.
         """
-        u, v, p, r = v_r.x, v_r.y, v_r.z, v_r.w
+        u, v, p, r = v_r.x, v_r.y, v_r.p, v_r.r
         u_k = -u
         v_k = v - r * self.__x_k - p * self.__z_k
         idfkwhatthisletteris = math.hypot(u_k, v_k)

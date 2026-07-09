@@ -90,7 +90,7 @@ class BoatState:
         heading; pitch is always 0 since it is not modeled in the 4-DOF state.
         """
         rotation = ned_to_body_rotation_matrix(
-            roll_rad=self.pose.z, pitch_rad=0.0, yaw_rad=self.pose.w
+            roll_rad=self.pose.p, pitch_rad=0.0, yaw_rad=self.pose.r
         )
         rotated = rotation @ np.array([glo_vel.x, glo_vel.y, 0.0])
         return Vec2[Velocity, Body].from_xy(rotated[0], rotated[1])
@@ -193,4 +193,4 @@ class BoatState:
     def true_bearing(self) -> Heading:
         """Returns the boat's current heading (yaw), normalized to the range [-pi, pi) radians
         (equivalently [-180, 180) degrees), in the simulator's own angle convention."""
-        return Heading(self.pose.w)
+        return Heading(self.pose.r)
