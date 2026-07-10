@@ -50,7 +50,6 @@ def fresh_ompl_path():
             ),
             target_global_waypoint=HelperLatLon(latitude=0.02, longitude=0.02),
             filtered_wind_sensor=WindSensor(),
-            planner="rrtstar",
             wind_tracker=WindTracker(),
         ),
         should_simplify_path=False,
@@ -116,7 +115,6 @@ def test_init_obstacles():
         ),
         target_global_waypoint=goal_position,
         filtered_wind_sensor=WindSensor(),
-        planner="rrtstar",
         wind_tracker=WindTracker(),
     )
 
@@ -198,7 +196,6 @@ def test_init_obstacles():
         ),
         target_global_waypoint=HelperLatLon(latitude=0.0, longitude=0.0),
         filtered_wind_sensor=WindSensor(),
-        planner="rrtstar",
         wind_tracker=WindTracker(),
     )
 
