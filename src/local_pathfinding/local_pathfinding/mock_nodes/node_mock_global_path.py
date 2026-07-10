@@ -1,16 +1,26 @@
 """Node to publish mock global path data.
 The node is represented by the `MockGlobalPath` class."""
 
+from pathlib import Path
+
 import rclpy
+from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
+from rclpy.parameter import Parameter
 from test_plans.test_plan import TestPlan
+from local_pathfinding.node_navigate import Sailbot
 
 import custom_interfaces.msg as ci
+
+DEFAULT_GLOBAL_PATH_CSV = (
+    Path(__file__).resolve().parent / "mock_global_path.csv"
+)
 
 
 def main(args=None):
     rclpy.init(args=args)
     mock_global_path = MockGlobalPath()
+    mock_global_path.publish_global_path()
 
     rclpy.spin(node=mock_global_path)
 
@@ -20,10 +30,6 @@ def main(args=None):
 
 class MockGlobalPath(Node):
     """Stores and publishes the mock global path to the global_path topic.
-
-    Subscriber:
-        gps_sub (Subscription): Subscribe to a `GPS` msg which contains the current GPS location of
-        sailbot.
 
     Publisher:
         global_path_pub (Publisher): Publishes a `Path` msg containing the global path
@@ -43,39 +49,61 @@ class MockGlobalPath(Node):
             namespace="",
             parameters=[
                 ("test_plan", rclpy.Parameter.Type.STRING),
+                ("global_path_csv_path", str(DEFAULT_GLOBAL_PATH_CSV)),
             ],
-        )
-
-        self.gps_sub = self.create_subscription(
-            msg_type=ci.GPS, topic="gps", callback=self.global_path_callback, qos_profile=10
         )
 
         self.global_path_pub = self.create_publisher(
             msg_type=ci.Path, topic="global_path", qos_profile=10
         )
 
-        test_plan_name = self.get_parameter("test_plan").get_parameter_value().string_value
-        self.get_logger().debug(f"Mock global path node test plan: {test_plan_name}")
-        test_plan = TestPlan(test_plan_name)
+        self._test_plan_name = self.get_parameter("test_plan").get_parameter_value().string_value
+        self._global_path_csv_path = Path(
+            self.get_parameter("global_path_csv_path").get_parameter_value().string_value
+        )
 
-        self.global_path = test_plan.global_path
+        self.add_on_set_parameters_callback(self._on_set_parameters)
 
-    @staticmethod
-    def _path_to_dict(path: ci.Path, num_decimals: int = 4) -> dict[int, str]:
-        """Converts a ci.Path msg to a dictionary suitable for logging."""
-        return {
-            i: f"({waypoint.latitude:.{num_decimals}f}, {waypoint.longitude:.{num_decimals}f})"
-            for i, waypoint in enumerate(path.waypoints)
-        }
+        self.global_path = self._load_global_path()
 
-    # Timer callbacks
-    def global_path_callback(self, gps: ci.GPS):
-        # Publish the test plan's global path exactly as defined. This node does not interpolate
-        # between waypoints or generate a path from the boat's position — it relies solely on the
-        # waypoints provided in the test plan. The path is still published on every GPS message so
-        # that node_navigate receives the waypoints even if this node launched first.
+    def _load_global_path(self, from_csv: bool = False) -> ci.Path:
+        """Load the active mock global path"""
+        if from_csv:
+            global_path = Sailbot._read_global_path_from_file(self._global_path_csv_path)
+            if global_path is None:
+                self.get_logger().warning(
+                    "Failed to load global path from CSV, keeping current path"
+                )
+                return self.global_path
+            else:
+                self.get_logger().debug(
+                    f"Loaded mock global path from CSV: {self._global_path_csv_path}"
+                )
+                return global_path
+
+        test_plan = TestPlan(self._test_plan_name)
+        return test_plan.global_path
+
+    def _on_set_parameters(self, params: list[Parameter]) -> SetParametersResult:
+        """Reload the mock global path when the CSV path parameter is set."""
+        should_reload = False
+        for param in params:
+            if param.name == "global_path_csv_path":
+                self._global_path_csv_path = Path(param.value)
+                should_reload = True
+
+        if should_reload:
+            self.global_path = self._load_global_path(from_csv=True)
+            self.publish_global_path()
+
+        return SetParametersResult(successful=True)
+
+    # Publishing the global path
+    def publish_global_path(self) -> None:
+        # Publish the current global path exactly as defined in the CSV/test plan source. This node
+        # does not interpolate between waypoints or generate a path from the boat's position.
         msg = self.global_path
-        # self.get_logger().debug(f"Publishing mock global path: {self._path_to_dict(msg)}")
+        self.get_logger().debug(f"Published mock global path: {Sailbot._path_to_dict(msg)}")
         self.global_path_pub.publish(msg)
 
 
