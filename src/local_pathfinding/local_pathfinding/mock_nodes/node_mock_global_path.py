@@ -1,6 +1,7 @@
 """Node to publish mock global path data.
 The node is represented by the `MockGlobalPath` class."""
 
+import time
 from pathlib import Path
 
 import rclpy
@@ -8,6 +9,7 @@ from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from test_plans.test_plan import TestPlan
+from local_pathfinding.mock_nodes.event_dispatcher import EventDispatcher
 from local_pathfinding.node_navigate import Sailbot
 
 import custom_interfaces.msg as ci
@@ -15,6 +17,7 @@ import custom_interfaces.msg as ci
 DEFAULT_GLOBAL_PATH_CSV = (
     Path(__file__).resolve().parent / "mock_global_path.csv"
 )
+_EVENT_TICK_PERIOD_SEC = 0.5
 
 
 def main(args=None):
@@ -65,6 +68,27 @@ class MockGlobalPath(Node):
         self.add_on_set_parameters_callback(self._on_set_parameters)
 
         self.global_path = self._load_global_path()
+
+        self._start_monotonic_sec = time.monotonic()
+        self._path_dispatcher = EventDispatcher(
+            TestPlan(self._test_plan_name).global_path_events
+        )
+        self._consume_events(elapsed_sec=0.0)
+
+        self._event_timer = self.create_timer(_EVENT_TICK_PERIOD_SEC, self._event_tick)
+
+    def _consume_events(self, elapsed_sec: float) -> bool:
+        """Apply any global-path events fired by elapsed_sec. Returns True if any fired."""
+        fired = False
+        for event in self._path_dispatcher.pop_fired(elapsed_sec):
+            self.global_path = ci.Path(waypoints=list(event.waypoints))
+            fired = True
+        return fired
+
+    def _event_tick(self) -> None:
+        elapsed_sec = time.monotonic() - self._start_monotonic_sec
+        if self._consume_events(elapsed_sec):
+            self.publish_global_path()
 
     def _load_global_path(self, from_csv: bool = False) -> ci.Path:
         """Load the active mock global path"""

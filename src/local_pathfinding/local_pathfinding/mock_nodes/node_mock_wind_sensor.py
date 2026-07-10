@@ -29,6 +29,7 @@ Setting True Wind Parameters:
   mismatch between nodes and breaks calculations. Always use the shell script.
 """
 
+import time
 from typing import List
 
 import rclpy
@@ -39,6 +40,7 @@ from test_plans.test_plan import TestPlan
 
 import custom_interfaces.msg as ci
 import local_pathfinding.wind_coord_systems as wcs
+from local_pathfinding.mock_nodes.event_dispatcher import EventDispatcher
 
 
 class MockWindSensor(Node):
@@ -60,6 +62,10 @@ class MockWindSensor(Node):
         self._boat_heading_deg = test_plan.gps.heading.heading
         self._boat_speed_kmph = test_plan.gps.speed.speed
 
+        self._start_monotonic_sec = time.monotonic()
+        self._wind_dispatcher = EventDispatcher(test_plan.wind_events)
+        self._consume_wind_events(elapsed_sec=0.0)
+
         self.pub_period_sec = (
             self.get_parameter("pub_period_sec").get_parameter_value().double_value
         )
@@ -79,7 +85,14 @@ class MockWindSensor(Node):
         # Parameter Event Handler (Parameters can change over the life of the simulation)
         self.add_on_set_parameters_callback(self._on_set_parameters)
 
+    def _consume_wind_events(self, elapsed_sec: float) -> None:
+        for event in self._wind_dispatcher.pop_fired(elapsed_sec):
+            self._tw_dir_deg = event.direction_deg
+            self._tw_speed_kmph = event.speed_kmph
+
     def mock_wind_sensor_callback(self):
+        self._consume_wind_events(time.monotonic() - self._start_monotonic_sec)
+
         aw_dir_deg, aw_speed_kmph = wcs.tw_gc_to_aw_gc(
             self._tw_dir_deg,
             self._tw_speed_kmph,

@@ -4,6 +4,7 @@ Mock class for the GPS. Publishes basic GPS data to the ROS network.
 
 import math
 import random
+import time
 from typing import List
 
 import rclpy
@@ -11,10 +12,11 @@ from geopy.distance import great_circle
 from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
 from rclpy.parameter import Parameter
-from test_plans.test_plan import TestPlan
+from test_plans.test_plan import GpsEvent, TestPlan
 
 import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
+from local_pathfinding.mock_nodes.event_dispatcher import EventDispatcher
 from local_pathfinding.ompl_objectives import TimeObjective
 
 SECONDS_PER_HOUR = 3600
@@ -89,6 +91,11 @@ class MockGPS(Node):
             self.get_parameter("ocean_drift_accel_kmph2").get_parameter_value().double_value
         )
         self._drift_offset_km = cs.XY(0.0, 0.0)  # cumulative offset in km
+
+        self._start_monotonic_sec = time.monotonic()
+        self._wind_dispatcher = EventDispatcher(test_plan.wind_events)
+        self._gps_dispatcher = EventDispatcher(test_plan.gps_events)
+        self._consume_events(elapsed_sec=0.0)
 
         self.get_logger().debug(
             f"ROS2 parameters: use_gps_noise={self._use_noise}, "
@@ -168,10 +175,36 @@ class MockGPS(Node):
         )
         return cs.xy_to_latlon(reference=lat_long_msg, xy=self._drift_offset_km)
 
+    def _consume_events(self, elapsed_sec: float) -> None:
+        """Apply any wind or GPS events (drift/toggles) that have fired by elapsed_sec."""
+        for event in self._wind_dispatcher.pop_fired(elapsed_sec):
+            self._tw_dir_deg = event.direction_deg
+            self._tw_speed_kmph = event.speed_kmph
+        for event in self._gps_dispatcher.pop_fired(elapsed_sec):
+            self._apply_gps_event(event)
+
+    def _apply_gps_event(self, event: GpsEvent) -> None:
+        if event.use_gps_noise is not None:
+            self._use_noise = event.use_gps_noise
+        if event.use_ocean_drift is not None:
+            self._use_drift = event.use_ocean_drift
+            # Match _on_set_parameters behavior: reset offset when drift is disabled.
+            if not self._use_drift:
+                self._drift_offset_km = cs.XY(0.0, 0.0)
+        if event.use_drift_randomization is not None:
+            self._use_drift_randomization = event.use_drift_randomization
+        if event.ocean_drift_speed_kmph is not None:
+            self._drift_speed_kmph = event.ocean_drift_speed_kmph
+        if event.ocean_drift_dir_deg is not None:
+            self._drift_dir_deg = event.ocean_drift_dir_deg
+        if event.ocean_drift_accel_kmph2 is not None:
+            self._drift_accel_kmph2 = event.ocean_drift_accel_kmph2
+
     def mock_gps_callback(self) -> None:
         """Updates boat speed based on current heading and true wind.
         Publishes mock gps data.
         """
+        self._consume_events(time.monotonic() - self._start_monotonic_sec)
         self.update_speed()
         self.get_next_location()
 
