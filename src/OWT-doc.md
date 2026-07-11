@@ -146,3 +146,167 @@ to switch off sensor publishing or publish sensor failure states.
 | P0 | PATH-SF-02 | Requires NET sensor failure support | Startup with `/gps` not publishing or publishing a failure state. | PATH logs missing or failed `gps`, publishes `/desired_heading.sail=false`, and does not publish a stale local path as valid. |  |  |
 | P0 | PATH-SF-03 | Requires NET sensor failure support | Startup with `/filtered_wind_sensor` not publishing or publishing a failure state. | PATH logs missing or failed `filtered_wind_sensor`, publishes `/desired_heading.sail=false`, and waits for wind data before planning. |  |  |
 | P1 | PATH-SF-04 | Requires NET sensor failure support | Let PATH publish a valid heading, then stop `/filtered_wind_sensor` or publish a wind sensor failure state. | PATH should fail safe if a replan is required: `/desired_heading.sail=false` and local path empty. If the current path is reused temporarily, record how long and whether it later fails safe. |  |  |
+
+
+## 11th July On-Water Test Plan
+
+
+Complete the dry-land testing.
+
+- [ ] CTRL-01 — speed=10 kmph, wind_direction=45 deg, desired_heading=90 deg → Trim tab moves to the positive-command side and settles.
+- [ ] CTRL-02 — speed=10 kmph, wind_direction=-45 deg, desired_heading=90 deg → Trim tab moves to the negative-command side and settles.
+- [ ] CTRL-03 — speed=10 kmph, wind_direction=45 deg, desired_heading=-90 deg → Trim tab moves to the same side as CTRL-01 and settles.
+- [ ] CTRL-04 — speed=0 kmph, wind_direction=45 deg, desired_heading=90 deg → Trim tab remains centered or returns to center.
+- [ ] CTRL-05 — speed=20 kmph, wind_direction=180 deg, desired_heading=-90 deg → Trim tab moves to the positive-command side and settles.
+- [ ] CTRL-06 — speed=30 kmph, wind_direction=-120 deg, desired_heading=0 deg → Trim tab moves to the negative-command side and settles.
+- [ ] CTRL-07 — speed=46.3 kmph, wind_direction=45 deg, desired_heading=0 deg → Trim tab remains centered or returns to center.
+
+#### Running the CTRL tests with the script
+
+```bash
+# Valid manual controller tests
+./scripts/test_ctrl_manual.sh 10 45 90      # CTRL-01
+./scripts/test_ctrl_manual.sh 10 -45 90     # CTRL-02
+./scripts/test_ctrl_manual.sh 10 45 -90     # CTRL-03
+./scripts/test_ctrl_manual.sh 0 45 90       # CTRL-04
+./scripts/test_ctrl_manual.sh 20 180 -90    # CTRL-05
+./scripts/test_ctrl_manual.sh 30 -120 0     # CTRL-06
+./scripts/test_ctrl_manual.sh 46.3 45 0     # CTRL-07
+
+# Invalid input validation (script must reject these with an error)
+./scripts/test_ctrl_manual.sh 10 181 90     # wind_direction out of [-180, 180]
+./scripts/test_ctrl_manual.sh 10 45 -181    # desired_heading out of [-180, 180]
+./scripts/test_ctrl_manual.sh -1 45 90      # speed must be >= 0
+./scripts/test_ctrl_manual.sh fast 45 90    # non-numeric argument
+```
+
+#### Running the CTRL tests manually with ros2 (if the script is unavailable)
+
+Each script invocation is equivalent to the following. Use one terminal per
+command and source the workspace in each terminal first:
+
+```bash
+source install/local_setup.bash
+export ROS_LOG_DIR="${ROS_LOG_DIR:-/tmp/ros_logs}" && mkdir -p "$ROS_LOG_DIR"
+```
+
+Terminal 1 — launch the wingsail controller (leave running for all tests):
+
+```bash
+ros2 launch controller main_launch.py
+```
+
+Terminal 2 — publish the apparent wind (substitute `speed` and `direction` per test):
+
+```bash
+ros2 topic pub /filtered_wind_sensor custom_interfaces/msg/WindSensor \
+    "{speed: {speed: 10.0}, direction: 45}" -r 1
+```
+
+Terminal 3 — publish the desired heading (substitute `heading` per test):
+
+```bash
+ros2 topic pub /desired_heading custom_interfaces/msg/DesiredHeading \
+    "{heading: {heading: 90.0}, steering: 0, sail: true}" -r 1
+```
+
+Terminal 4 (optional) — observe the commanded trim-tab angle alongside the
+physical trim tab:
+
+```bash
+ros2 topic echo /sail_cmd
+```
+
+Per-test publisher values (Ctrl-C the two `ros2 topic pub` commands between
+tests and rerun with the next row's values; the controller can stay up):
+
+| ID | Terminal 2: `/filtered_wind_sensor` | Terminal 3: `/desired_heading` |
+| --- | --- | --- |
+| CTRL-01 | `"{speed: {speed: 10.0}, direction: 45}"` | `"{heading: {heading: 90.0}, steering: 0, sail: true}"` |
+| CTRL-02 | `"{speed: {speed: 10.0}, direction: -45}"` | `"{heading: {heading: 90.0}, steering: 0, sail: true}"` |
+| CTRL-03 | `"{speed: {speed: 10.0}, direction: 45}"` | `"{heading: {heading: -90.0}, steering: 0, sail: true}"` |
+| CTRL-04 | `"{speed: {speed: 0.0}, direction: 45}"` | `"{heading: {heading: 90.0}, steering: 0, sail: true}"` |
+| CTRL-05 | `"{speed: {speed: 20.0}, direction: 180}"` | `"{heading: {heading: -90.0}, steering: 0, sail: true}"` |
+| CTRL-06 | `"{speed: {speed: 30.0}, direction: -120}"` | `"{heading: {heading: 0.0}, steering: 0, sail: true}"` |
+| CTRL-07 | `"{speed: {speed: 46.3}, direction: 45}"` | `"{heading: {heading: 0.0}, steering: 0, sail: true}"` |
+
+Notes:
+
+- `speed.speed` and `heading.heading` are `float32`; `direction` is `int16`
+  (whole degrees only, in `(-180, 180]`).
+- The manual path has no input validation — the script's invalid-input cases
+  (`181`, `-181`, `-1`, `fast`) only apply when testing the script itself.
+- `sail: true` is required; the controller treats `sail: false` as a
+  pathfinding failure and the heading is ignored.
+
+### Stage 1 testing for PATH
+
+Run PATH with no mock AIS and exactly two basic global waypoints, and let
+Sailbot reach one of them. **Start the test from the pier.**
+
+#### Setup
+
+Launch the full system in production mode from the workspace root. The
+on-water config defaults `on_water_mock_ais` to `True`, so it must be
+overridden off for Stage 1:
+
+```bash
+ros2 launch src/global_launch/main_launch.py \
+    mode:=production \
+    config:=on_water_globals.yaml \
+    on_water_mock_ais:=false \
+    record:=true
+```
+
+- `record:=true` starts a rosbag (saved under
+  `notebooks/local_pathfinding/session_recordings` by default) — this covers
+  PATH-CB-08.
+- The on-water config enables `visualizer_mode`, which launches the
+  `navigate_observer` node for PATH-CB-09.
+- Real AIS must still be publishing `/ais_ships` (via NET). Without it, PATH
+  waits with `/desired_heading.sail=false` before initial planning
+  (see PATH-AIS-01).
+
+Before starting, check the persisted global path in
+`src/local_pathfinding/local_pathfinding/global_path_storage/main_global_path.csv`.
+PATH auto-loads this on startup, so a stale path from a previous session will
+be used until a new `/global_path` arrives. Delete it or confirm it matches
+the intended Stage 1 waypoints.
+
+#### Sending the two global waypoints
+
+Preferred: have NET send the two waypoints (this doubles as the NET
+`len(waypoints)=2` row). Fallback: publish `/global_path` manually.
+
+**The global path is reverse-ordered: index 0 is the final destination and
+the last element is the first target.** For two waypoints, list the final
+destination first. Example using Jericho-area coordinates (boat sails out to
+the bay waypoint, then back toward the launch waypoint):
+
+```bash
+ros2 topic pub /global_path custom_interfaces/msg/Path \
+    "{waypoints: [{latitude: 49.278570, longitude: -123.197598}, {latitude: 49.283240, longitude: -123.195196}]}" --once
+```
+
+A global waypoint counts as reached when Sailbot is within 300 m of it
+(`GLOBAL_WAYPOINT_REACHED_THRESH_M` in `node_navigate.py`).
+
+#### Observation
+
+```bash
+ros2 topic echo /desired_heading   # expect sail: true once a local path exists
+ros2 topic echo /local_path
+ros2 topic echo /gps
+```
+
+Also watch the visualizer / base-station view for GPS, global path, local
+path, and desired heading.
+
+#### Stage 1 checklist
+
+| ID | What to do / expect | Real-world observation | Pass/Fail |
+| --- | --- | --- | --- |
+| PATH-CB-05 | Use exactly two global waypoints. When Sailbot reaches the final waypoint (index 0), PATH switches back to the waypoint at index 1 instead of disabling sail; reaching index 1 again switches back to index 0. |  | [ ] Pass / [ ] Fail |
+| PATH-CB-06 | After a valid local path is generated, let Sailbot free-run 10–15 minutes (run this when it occurs naturally). PATH stays stable; any local path change is explained by waypoint progress, wind shift, or path timeout. |  | [ ] Pass / [ ] Fail |
+| PATH-CB-08 | Recording — already happening via `record:=true`. At the end, confirm the bag includes `/gps`, `/desired_heading`, `/local_path`, `/filtered_wind_sensor`, `/ais_ships`, `/global_path`. |  | [ ] Pass / [ ] Fail |
+| PATH-CB-09 | Watch the visualizer or base-station view throughout. Observers can see GPS, global path, local path, obstacles, desired heading, and sail state clearly enough for chase-boat decisions. |  | [ ] Pass / [ ] Fail |
