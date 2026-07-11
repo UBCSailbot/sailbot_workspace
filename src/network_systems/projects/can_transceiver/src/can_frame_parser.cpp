@@ -625,7 +625,7 @@ void AISShips::checkBounds() const
         throw std::out_of_range("Course is out of bounds!\n" + debugStr() + "\n" + err_msg);
     }
     err = utils::isOutOfBounds<float>(rot_, ROT_LBND, ROT_UBND);
-    if (err.has_value() && rot_ != 128) { // NOLINT
+    if (err.has_value() && rot_ != -128) { // NOLINT
         std::string err_msg = err.value();
         throw std::out_of_range("ROT is out of bounds!\n" + debugStr() + "\n" + err_msg);
     }
