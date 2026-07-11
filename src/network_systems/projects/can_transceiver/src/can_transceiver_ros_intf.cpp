@@ -39,6 +39,8 @@ public:
         this->declare_parameter("enabled", true);
         this->declare_parameter("manual_mode", false);
         this->declare_parameter("kill_ais_can", false);
+        this->declare_parameter("kill_wind_can", false);
+        this->declare_parameter("kill_gps_can", false);
 
         if (!this->get_parameter("enabled").as_bool()) {
             RCLCPP_INFO(this->get_logger(), "CAN Transceiver is DISABLED");
@@ -57,8 +59,7 @@ public:
                     throw err;
                 }
             } else if (mode == SYSTEM_MODE::DEV || mode == SYSTEM_MODE::SIM) {
-                RCLCPP_INFO(
-                  this->get_logger(), "Running CAN Transceiver in %s mode with CAN Sim Intf", mode.c_str());
+                RCLCPP_INFO(this->get_logger(), "Running CAN Transceiver in %s mode with CAN Sim Intf", mode.c_str());
                 try {
                     sim_intf_fd_ = mockCanFd("/tmp/CanSimIntfXXXXXX");
                     can_trns_    = std::make_unique<CanTransceiver>(sim_intf_fd_);
@@ -207,6 +208,12 @@ private:
     // kill ais can send status
     inline static bool kill_ais_can_ = false;
 
+    // kill wind CAN send status
+    inline static bool kill_wind_can_ = false;
+
+    // kill GPS CAN send status
+    inline static bool kill_gps_can_ = false;
+
     std::vector<std::pair<CAN_FP::CanId, std::function<void(const CanFrame &)>>> getCbsForRange(
       CAN_FP::CanId start, CAN_FP::CanId end, void (CanTransceiverIntf::*callback)(const CanFrame &))
     {
@@ -247,6 +254,10 @@ private:
                 manual_mode_ = param.as_bool();
             } else if (param.get_name() == "kill_ais_can") {
                 kill_ais_can_ = param.as_bool();
+            } else if (param.get_name() == "kill_wind_can") {
+                kill_wind_can_ = param.as_bool()
+            } else if (param.get_name() == "kill_gps_can") {
+                kill_gps_can_ = param.as_bool()
             }
         }
         rcl_interfaces::msg::SetParametersResult result;
@@ -378,6 +389,9 @@ private:
      */
     void publishGPS(const CanFrame & gps_frame)
     {
+        if (kill_gps_can_) {
+            return;
+        }
         try {
             CAN_FP::GPS gps(gps_frame);
 
@@ -397,6 +411,9 @@ private:
      */
     void publishWindSensor(const CanFrame & wind_sensor_frame)
     {
+        if (kill_wind_can_) {
+            return;
+        }
         try {
             CAN_FP::WindSensor wind_sensor(wind_sensor_frame);
             size_t             idx;
@@ -450,8 +467,11 @@ private:
      */
     void publishFilteredWindSensor()
     {
+        if (kill_wind_can_) {
+            return;
+        }
         // construct a wind sensor ros message from the current simple moving average (stored as an x and y value)
-        double speed     = sqrt(pow(curr_sma.x, 2) + pow(curr_sma.y, 2));
+        double speed     = sqrt(pow(curr_sma.x, 2) + pow(curr_s ma.y, 2));
         double direction = atan2(curr_sma.y, curr_sma.x) * (180.0 / M_PI);  //NOLINT(readability-magic-numbers)
 
         // round to nearest integer, and ensure we aren't out of bounds due to floating point shenanigans
