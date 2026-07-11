@@ -153,13 +153,13 @@ to switch off sensor publishing or publish sensor failure states.
 
 Complete the dry-land testing.
 
-CTRL-01 — speed=10 kmph, wind_direction=45 deg, desired_heading=90 deg → Trim tab moves to the positive-command side and settles.
-CTRL-02 — speed=10 kmph, wind_direction=-45 deg, desired_heading=90 deg → Trim tab moves to the negative-command side and settles.
-CTRL-03 — speed=10 kmph, wind_direction=45 deg, desired_heading=-90 deg → Trim tab moves to the same side as CTRL-01 and settles.
-CTRL-04 — speed=0 kmph, wind_direction=45 deg, desired_heading=90 deg → Trim tab remains centered or returns to center.
-CTRL-05 — speed=20 kmph, wind_direction=180 deg, desired_heading=-90 deg → Trim tab moves to the positive-command side and settles.
-CTRL-06 — speed=30 kmph, wind_direction=-120 deg, desired_heading=0 deg → Trim tab moves to the negative-command side and settles.
-CTRL-07 — speed=46.3 kmph, wind_direction=45 deg, desired_heading=0 deg → Trim tab remains centered or returns to center.
+- [ ] CTRL-01 — speed=10 kmph, wind_direction=45 deg, desired_heading=90 deg → Trim tab moves to the positive-command side and settles.
+- [ ] CTRL-02 — speed=10 kmph, wind_direction=-45 deg, desired_heading=90 deg → Trim tab moves to the negative-command side and settles.
+- [ ] CTRL-03 — speed=10 kmph, wind_direction=45 deg, desired_heading=-90 deg → Trim tab moves to the same side as CTRL-01 and settles.
+- [ ] CTRL-04 — speed=0 kmph, wind_direction=45 deg, desired_heading=90 deg → Trim tab remains centered or returns to center.
+- [ ] CTRL-05 — speed=20 kmph, wind_direction=180 deg, desired_heading=-90 deg → Trim tab moves to the positive-command side and settles.
+- [ ] CTRL-06 — speed=30 kmph, wind_direction=-120 deg, desired_heading=0 deg → Trim tab moves to the negative-command side and settles.
+- [ ] CTRL-07 — speed=46.3 kmph, wind_direction=45 deg, desired_heading=0 deg → Trim tab remains centered or returns to center.
 
 #### Running the CTRL tests with the script
 
@@ -306,7 +306,7 @@ path, and desired heading.
 
 | ID | What to do / expect | Real-world observation | Pass/Fail |
 | --- | --- | --- | --- |
-| PATH-CB-05 | Use exactly two global waypoints. When Sailbot reaches the final waypoint (index 0), PATH switches back to the waypoint at index 1 instead of disabling sail; reaching index 1 again switches back to index 0. |  |  |
-| PATH-CB-06 | After a valid local path is generated, let Sailbot free-run 10–15 minutes (run this when it occurs naturally). PATH stays stable; any local path change is explained by waypoint progress, wind shift, or path timeout. |  |  |
-| PATH-CB-08 | Recording — already happening via `record:=true`. At the end, confirm the bag includes `/gps`, `/desired_heading`, `/local_path`, `/filtered_wind_sensor`, `/ais_ships`, `/global_path`. |  |  |
-| PATH-CB-09 | Watch the visualizer or base-station view throughout. Observers can see GPS, global path, local path, obstacles, desired heading, and sail state clearly enough for chase-boat decisions. |  |  |
+| PATH-CB-05 | Use exactly two global waypoints. When Sailbot reaches the final waypoint (index 0), PATH switches back to the waypoint at index 1 instead of disabling sail; reaching index 1 again switches back to index 0. |  | [ ] Pass / [ ] Fail |
+| PATH-CB-06 | After a valid local path is generated, let Sailbot free-run 10–15 minutes (run this when it occurs naturally). PATH stays stable; any local path change is explained by waypoint progress, wind shift, or path timeout. |  | [ ] Pass / [ ] Fail |
+| PATH-CB-08 | Recording — already happening via `record:=true`. At the end, confirm the bag includes `/gps`, `/desired_heading`, `/local_path`, `/filtered_wind_sensor`, `/ais_ships`, `/global_path`. |  | [ ] Pass / [ ] Fail |
+| PATH-CB-09 | Watch the visualizer or base-station view throughout. Observers can see GPS, global path, local path, obstacles, desired heading, and sail state clearly enough for chase-boat decisions. |  | [ ] Pass / [ ] Fail |
