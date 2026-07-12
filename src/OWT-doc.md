@@ -61,6 +61,9 @@ Fail if:
 | CTRL-06 | `speed=30 kmph`, `wind_direction=-120 deg`, `desired_heading=0 deg` | Trim tab moves to the negative-command side and settles. |  |  |
 | CTRL-07 | `speed=46.3 kmph`, `wind_direction=45 deg`, `desired_heading=0 deg` | Trim tab remains centered or returns to center. |  |  |
 
+TODO: Run this for next OWT, we had issues with getting this to actuate.
+Make sure that the input/outputs match the trim tab actuation limits (eg. July 11 it was -12 to 3 degrees) 
+
 Run each row from the workspace root. Example:
 
 ```bash
