@@ -5,3 +5,6 @@ export const LocalPath = `/api/localpath`;
 export const Batteries = `/api/batteries`;
 export const GenericSensors = `/api/generic-sensors`;
 export const WindSensors = `/api/wind-sensors`;
+export const TempSensors = `/api/temp-sensors`;
+export const PhSensors = `/api/ph-sensors`;
+export const SalinitySensors = `/api/salinity-sensors`;

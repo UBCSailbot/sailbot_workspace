@@ -10,6 +10,9 @@ import Batteries from '@/models/Batteries';
 import GenericSensors from '@/models/GenericSensors';
 import { convertBigIntToString } from '../shared/utils/utils';
 import WindSensors from '@/models/WindSensors';
+import TempSensors from '@/models/TempSensors';
+import PhSensors from '@/models/PhSensors';
+import SalinitySensors from '@/models/SalinitySensors';
 
 Given('I clear the database', async function () {
   const db = await ConnectMongoDB();
@@ -20,6 +23,9 @@ Given('I clear the database', async function () {
   await Batteries.deleteMany();
   await GenericSensors.deleteMany();
   await WindSensors.deleteMany();
+  await TempSensors.deleteMany();
+  await PhSensors.deleteMany();
+  await SalinitySensors.deleteMany();
 });
 
 Given('I insert GPS data into the database', async function () {
@@ -214,6 +220,39 @@ Given('I insert WindSensors data into the database', async function () {
   await WindSensors.create(windSensorsData);
 });
 
+Given('I insert TempSensors data into the database', async function () {
+  const tempSensorsData = {
+    tempSensors: [
+      {
+        temperature: 17.3,
+      },
+    ],
+  };
+  await TempSensors.create(tempSensorsData);
+});
+
+Given('I insert PhSensors data into the database', async function () {
+  const phSensorsData = {
+    phSensors: [
+      {
+        ph: 6.95,
+      },
+    ],
+  };
+  await PhSensors.create(phSensorsData);
+});
+
+Given('I insert SalinitySensors data into the database', async function () {
+  const salinitySensorsData = {
+    salinitySensors: [
+      {
+        salinity: 21000.5,
+      },
+    ],
+  };
+  await SalinitySensors.create(salinitySensorsData);
+});
+
 Then('the response data matches the data in the database', async function () {
   let apiResponseData_GPS;
   let databaseData_GPS;
@@ -253,7 +292,9 @@ Then(
 
       for (const property of propertiesToCompare) {
         expect(apiResponseData_AISShips[property]).to.equal(
-          (databaseData_AISShips[0].ships[i] as Record<string, unknown>)[property],
+          (databaseData_AISShips[0].ships[i] as Record<string, unknown>)[
+            property
+          ],
           `Data in the response does not match data in the database for property: ${property}`,
         );
       }
@@ -281,7 +322,9 @@ Then(
 
       for (const property of propertiesToCompare) {
         expect(apiResponseData_GlobalPath[property]).to.equal(
-          (databaseData_GlobalPath[0].waypoints[i] as Record<string, unknown>)[property],
+          (databaseData_GlobalPath[0].waypoints[i] as Record<string, unknown>)[
+            property
+          ],
           `Data in the response does not match data in the database for property: ${property}`,
         );
       }
@@ -309,7 +352,9 @@ Then(
 
       for (const property of propertiesToCompare) {
         expect(apiResponseData_LocalPath[property]).to.equal(
-          (databaseData_LocalPath[0].waypoints[i] as Record<string, unknown>)[property],
+          (databaseData_LocalPath[0].waypoints[i] as Record<string, unknown>)[
+            property
+          ],
           `Data in the response does not match data in the database for property: ${property}`,
         );
       }
@@ -337,7 +382,9 @@ Then(
 
       for (const property of propertiesToCompare) {
         expect(apiResponseData_Batteries[property]).to.equal(
-          (databaseData_Batteries[0].batteries[i] as Record<string, unknown>)[property],
+          (databaseData_Batteries[0].batteries[i] as Record<string, unknown>)[
+            property
+          ],
           `Data in the response does not match data in the database for property: ${property}`,
         );
       }
@@ -365,7 +412,12 @@ Then(
 
       for (const property of propertiesToCompare) {
         expect(apiResponseData_WindSensors[property]).to.equal(
-          (databaseData_WindSensors[0].windSensors[i] as Record<string, unknown>)[property],
+          (
+            databaseData_WindSensors[0].windSensors[i] as Record<
+              string,
+              unknown
+            >
+          )[property],
           `Data in the response does not match data in the database for property: ${property}`,
         );
       }
@@ -397,8 +449,112 @@ Then(
       for (const property of propertiesToCompare) {
         expect(apiResponseData_GenericSensors[property]).to.equal(
           convertBigIntToString(
-            (databaseData_GenericSensors[0].genericSensors[i] as Record<string, unknown>)[property] as bigint,
+            (
+              databaseData_GenericSensors[0].genericSensors[i] as Record<
+                string,
+                unknown
+              >
+            )[property] as bigint,
           ),
+          `Data in the response does not match data in the database for property: ${property}`,
+        );
+      }
+    }
+  },
+);
+
+Then(
+  'the response data matches the TempSensors data in the database',
+  async function () {
+    let apiResponseData_TempSensors;
+    let databaseData_TempSensors;
+
+    databaseData_TempSensors = await TempSensors.find({}).then(
+      function (tempsensors) {
+        let transformedTempSensors = tempsensors.map((data) => data.toJSON());
+        return transformedTempSensors;
+      },
+    );
+
+    for (let i = 0; i < 1; i++) {
+      apiResponseData_TempSensors = api.response.data.data[0].tempSensors[i];
+
+      const propertiesToCompare = Object.keys(apiResponseData_TempSensors);
+
+      for (const property of propertiesToCompare) {
+        expect(apiResponseData_TempSensors[property]).to.equal(
+          (
+            databaseData_TempSensors[0].tempSensors[i] as Record<
+              string,
+              unknown
+            >
+          )[property],
+          `Data in the response does not match data in the database for property: ${property}`,
+        );
+      }
+    }
+  },
+);
+
+Then(
+  'the response data matches the PhSensors data in the database',
+  async function () {
+    let apiResponseData_PhSensors;
+    let databaseData_PhSensors;
+
+    databaseData_PhSensors = await PhSensors.find({}).then(
+      function (phsensors) {
+        let transformedPhSensors = phsensors.map((data) => data.toJSON());
+        return transformedPhSensors;
+      },
+    );
+
+    for (let i = 0; i < 1; i++) {
+      apiResponseData_PhSensors = api.response.data.data[0].phSensors[i];
+
+      const propertiesToCompare = Object.keys(apiResponseData_PhSensors);
+
+      for (const property of propertiesToCompare) {
+        expect(apiResponseData_PhSensors[property]).to.equal(
+          (databaseData_PhSensors[0].phSensors[i] as Record<string, unknown>)[
+            property
+          ],
+          `Data in the response does not match data in the database for property: ${property}`,
+        );
+      }
+    }
+  },
+);
+
+Then(
+  'the response data matches the SalinitySensors data in the database',
+  async function () {
+    let apiResponseData_SalinitySensors;
+    let databaseData_SalinitySensors;
+
+    databaseData_SalinitySensors = await SalinitySensors.find({}).then(
+      function (salinitysensors) {
+        let transformedSalinitySensors = salinitysensors.map((data) =>
+          data.toJSON(),
+        );
+        return transformedSalinitySensors;
+      },
+    );
+
+    for (let i = 0; i < 1; i++) {
+      apiResponseData_SalinitySensors =
+        api.response.data.data[0].salinitySensors[i];
+
+      const propertiesToCompare = Object.keys(apiResponseData_SalinitySensors);
+
+      for (const property of propertiesToCompare) {
+        expect(apiResponseData_SalinitySensors[property]).to.equal(
+          (
+            databaseData_SalinitySensors[0].salinitySensors[i] as Record<
+              string,
+              unknown
+            >
+          )[property],
           `Data in the response does not match data in the database for property: ${property}`,
         );
       }

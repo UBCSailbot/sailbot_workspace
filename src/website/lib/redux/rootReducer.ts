@@ -7,6 +7,9 @@ import LocalPathReducer from '@/stores/LocalPath/LocalPathReducers';
 import BatteriesReducer from '@/stores/Batteries/BatteriesReducers';
 import WindSensorsReducer from '@/stores/WindSensors/WindSensorsReducers';
 import GenericSensorsReducer from '@/stores/GenericSensors/GenericSensorsReducers';
+import TempSensorsReducer from '@/stores/TempSensors/TempSensorsReducers';
+import PhSensorsReducer from '@/stores/PhSensors/PhSensorsReducers';
+import SalinitySensorsReducer from '@/stores/SalinitySensors/SalinitySensorsReducers';
 import GraphsReducer from '@/stores/Graphs/GraphsReducers';
 import DataFilterReducer from '@/stores/DataFilter/DataFilterReducers';
 
@@ -19,6 +22,9 @@ export function rootReducer() {
     batteries: new BatteriesReducer().reducer,
     windSensors: new WindSensorsReducer().reducer,
     genericSensors: new GenericSensorsReducer().reducer,
+    tempSensors: new TempSensorsReducer().reducer,
+    phSensors: new PhSensorsReducer().reducer,
+    salinitySensors: new SalinitySensorsReducer().reducer,
     graphs: new GraphsReducer().reducer,
     dataFilter: new DataFilterReducer().reducer,
   };

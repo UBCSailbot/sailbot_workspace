@@ -1,5 +1,5 @@
 import type { Layout, LayoutItem, GraphId } from './GraphsTypes.ts';
-import { isSplitGroup } from './GraphsTypes.ts';
+import { isSplitGroup, getAllGraphIds } from './GraphsTypes.ts';
 
 /**
  * Find the index of the layout item containing a given graphId.
@@ -73,11 +73,13 @@ export const moveGraphToIndex = (
 ): Layout => {
   const sourceIndex = findLayoutIndex(layout, sourceId);
   if (sourceIndex === -1) return layout;
-  if (targetIndex === sourceIndex || targetIndex === sourceIndex + 1) return layout;
+  if (targetIndex === sourceIndex || targetIndex === sourceIndex + 1)
+    return layout;
 
   const newLayout = [...layout];
   const [removed] = newLayout.splice(sourceIndex, 1);
-  const adjustedIndex = targetIndex > sourceIndex ? targetIndex - 1 : targetIndex;
+  const adjustedIndex =
+    targetIndex > sourceIndex ? targetIndex - 1 : targetIndex;
   newLayout.splice(adjustedIndex, 0, removed);
   return newLayout;
 };
@@ -106,6 +108,20 @@ export const extractGraph = (
   const newLayout = [...withoutGraph];
   newLayout.splice(targetIndex, 0, graphId);
   return newLayout;
+};
+
+/**
+ * Append any default graph ids missing from a layout. Guards against layouts
+ * persisted to sessionStorage before newer graphs existed — without this,
+ * those graphs would silently never render.
+ */
+export const mergeMissingGraphIds = (
+  layout: Layout,
+  defaults: GraphId[],
+): Layout => {
+  const present = new Set(getAllGraphIds(layout));
+  const missing = defaults.filter((id) => !present.has(id));
+  return missing.length > 0 ? [...layout, ...missing] : layout;
 };
 
 /**
