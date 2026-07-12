@@ -61,7 +61,6 @@ def basic_local_path_state():
         global_path=global_path,
         target_global_waypoint=global_path.waypoints[-1],
         filtered_wind_sensor=filtered_wind_sensor,
-        planner="rrtstar",
         wind_tracker=create_wind_tracker(),
     )
 
@@ -106,7 +105,6 @@ def create_update_if_needed_inputs():
         global_path=global_path,
         target_global_waypoint=global_path.waypoints[-1],
         filtered_wind_sensor=filtered_wind_sensor,
-        planner="rrtstar",
     )
 
 
@@ -887,7 +885,6 @@ def test_LocalPathState_path_generated_wind_uses_tw_avg_when_available():
         global_path=inputs.global_path,
         target_global_waypoint=inputs.target_global_waypoint,
         filtered_wind_sensor=inputs.filtered_wind_sensor,
-        planner=inputs.planner,
         wind_tracker=wind_tracker,
     )
 
@@ -1193,100 +1190,68 @@ def test_exceeded_segment_deviation_index_out_of_bounds():
 
 def test_LocalPathState_parameter_checking():
     with pytest.raises(ValueError):
-        lps = (
-            lp.LocalPathState(
-                gps=None,
-                ais_ships=AISShips(),
-                global_path=Path(
-                    waypoints=[
-                        HelperLatLon(latitude=0.0, longitude=0.0),
-                        HelperLatLon(latitude=1.0, longitude=1.0),
-                    ]
-                ),
-                target_global_waypoint=HelperLatLon(latitude=1.0, longitude=1.0),
-                filtered_wind_sensor=WindSensor(),
-                planner="rrtstar",
-                wind_tracker=create_wind_tracker(),
+        lp.LocalPathState(
+            gps=None,
+            ais_ships=AISShips(),
+            global_path=Path(
+                waypoints=[
+                    HelperLatLon(latitude=0.0, longitude=0.0),
+                    HelperLatLon(latitude=1.0, longitude=1.0),
+                ]
             ),
+            target_global_waypoint=HelperLatLon(latitude=1.0, longitude=1.0),
+            filtered_wind_sensor=WindSensor(),
+            wind_tracker=create_wind_tracker(),
+        ),
+
+    with pytest.raises(ValueError):
+        lp.LocalPathState(
+            gps=GPS(),
+            ais_ships=None,
+            global_path=Path(
+                waypoints=[
+                    HelperLatLon(latitude=0.0, longitude=0.0),
+                    HelperLatLon(latitude=1.0, longitude=1.0),
+                ]
+            ),
+            target_global_waypoint=HelperLatLon(latitude=1.0, longitude=1.0),
+            filtered_wind_sensor=WindSensor(),
+            wind_tracker=create_wind_tracker(),
+        ),
+
+    with pytest.raises(ValueError):
+        lp.LocalPathState(
+            gps=GPS(),
+            ais_ships=AISShips(),
+            global_path=Path(waypoints=[]),
+            target_global_waypoint=HelperLatLon(),
+            filtered_wind_sensor=WindSensor(),
+            wind_tracker=create_wind_tracker(),
         )
 
     with pytest.raises(ValueError):
-        lps = (
-            lp.LocalPathState(
-                gps=GPS(),
-                ais_ships=None,
-                global_path=Path(
-                    waypoints=[
-                        HelperLatLon(latitude=0.0, longitude=0.0),
-                        HelperLatLon(latitude=1.0, longitude=1.0),
-                    ]
-                ),
-                target_global_waypoint=HelperLatLon(latitude=1.0, longitude=1.0),
-                filtered_wind_sensor=WindSensor(),
-                planner="rrtstar",
-                wind_tracker=create_wind_tracker(),
-            ),
+        lp.LocalPathState(
+            gps=GPS(),
+            ais_ships=AISShips(),
+            global_path=None,
+            target_global_waypoint=None,
+            filtered_wind_sensor=WindSensor(),
+            wind_tracker=create_wind_tracker(),
         )
 
     with pytest.raises(ValueError):
-        lps = (
-            lp.LocalPathState(
-                gps=GPS(),
-                ais_ships=AISShips(),
-                global_path=Path(waypoints=[]),
-                target_global_waypoint=HelperLatLon(),
-                filtered_wind_sensor=WindSensor(),
-                planner="rrtstar",
-                wind_tracker=create_wind_tracker(),
+        lp.LocalPathState(
+            gps=GPS(),
+            ais_ships=AISShips(),
+            global_path=Path(
+                waypoints=[
+                    HelperLatLon(latitude=0.0, longitude=0.0),
+                    HelperLatLon(latitude=1.0, longitude=1.0),
+                ]
             ),
-        )
-
-    with pytest.raises(ValueError):
-        lps = (
-            lp.LocalPathState(
-                gps=GPS(),
-                ais_ships=AISShips(),
-                global_path=None,
-                target_global_waypoint=None,
-                filtered_wind_sensor=WindSensor(),
-                planner="rrtstar",
-                wind_tracker=create_wind_tracker(),
-            ),
-        )
-
-    with pytest.raises(ValueError):
-        lps = (
-            lp.LocalPathState(
-                gps=GPS(),
-                ais_ships=AISShips(),
-                global_path=Path(
-                    waypoints=[
-                        HelperLatLon(latitude=0.0, longitude=0.0),
-                        HelperLatLon(latitude=1.0, longitude=1.0),
-                    ]
-                ),
-                target_global_waypoint=HelperLatLon(latitude=1.0, longitude=1.0),
-                filtered_wind_sensor=None,
-                planner="rrtstar",
-                wind_tracker=create_wind_tracker(),
-            ),
-        )
-    with pytest.raises(ValueError):
-        lps = (  # noqa
-            lp.LocalPathState(
-                gps=GPS(),
-                ais_ships=AISShips(),
-                global_path=Path(
-                    waypoints=[
-                        HelperLatLon(latitude=0.0, longitude=0.0),
-                        HelperLatLon(latitude=1.0, longitude=1.0),
-                    ]
-                ),
-                target_global_waypoint=HelperLatLon(latitude=1.0, longitude=1.0),
-                filtered_wind_sensor=WindSensor(),
-                planner=None,
-                wind_tracker=create_wind_tracker(),
-            ),
+            target_global_waypoint=HelperLatLon(latitude=1.0, longitude=1.0),
+            filtered_wind_sensor=None,
+            wind_tracker=create_wind_tracker(),
         )
 
 

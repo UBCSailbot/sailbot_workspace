@@ -238,7 +238,6 @@ def test_reaching_final_global_waypoint_triggers_switch_back() -> None:
     sailbot.gp = GlobalPath(waypoints=waypoints, index=0)
     sailbot.ais_ships = ci.AISShips()
     sailbot.filtered_wind_sensor = ci.WindSensor()
-    sailbot.planner = "rrtstar"
     sailbot.land_multi_polygon = None
     sailbot.target_lp_wp_index = 1
     sailbot.received_new_global_path = True
@@ -444,7 +443,6 @@ def test_new_global_path_signal_forces_replan_without_waypoint_advance() -> None
     sailbot.gp = GlobalPath(waypoints=waypoints, index=2)
     sailbot.ais_ships = ci.AISShips()
     sailbot.filtered_wind_sensor = ci.WindSensor()
-    sailbot.planner = "rrtstar"
     sailbot.land_multi_polygon = None
     sailbot.target_lp_wp_index = 1
     sailbot.received_new_global_path = True
@@ -469,7 +467,6 @@ def test_global_waypoint_change_failure_keeps_retry_signal_without_accepting_way
     sailbot.gp = GlobalPath(waypoints=waypoints, index=2)
     sailbot.ais_ships = ci.AISShips()
     sailbot.filtered_wind_sensor = ci.WindSensor()
-    sailbot.planner = "rrtstar"
     sailbot.land_multi_polygon = None
     sailbot.target_lp_wp_index = 1
     sailbot.received_new_global_path = False
