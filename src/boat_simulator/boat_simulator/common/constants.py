@@ -44,11 +44,23 @@ class BoatProperties:
     # Float: each row is sail_area_m2.
     sail_areas: float
     # Shape [N, 2]: each row is [angle_of_attack_deg, lift_coefficient].
+    tab_lift_coeffs: CoeffTable
+    # Shape [N, 2]: each row is [angle_of_attack_deg, drag_coefficient].
+    tab_drag_coeffs: CoeffTable
+    # Float: each row is tab_area_m2.
+    tab_areas: float
+    # Shape [N, 2]: each row is [angle_of_attack_deg, lift_coefficient].
     rudder_lift_coeffs: CoeffTable
     # Shape [N, 2]: each row is [angle_of_attack_deg, drag_coefficient].
     rudder_drag_coeffs: CoeffTable
     # Float: each row is rudder_area_m2.
     rudder_areas: float
+    # Shape [N, 2]: each row is [angle_of_attack_deg, lift_coefficient].
+    keel_lift_coeffs: CoeffTable
+    # Shape [N, 2]: each row is [angle_of_attack_deg, drag_coefficient].
+    keel_drag_coeffs: CoeffTable
+    # Float: each row is keel_area_m2.
+    keel_areas: float
     # Distance from the center of effort of the sail to the pivot point (m).
     sail_dist: float
     # Distance from the center of effort of the rudder to the pivot point (m).
@@ -122,8 +134,34 @@ EARTH_GRAVITY = 9.81
 # TODO: This is a placeholder value for the metacentric height
 METACENTRIC_HEIGHT = 0.3  # Units: meters
 
+# TODO Placeholder: derive the mean chord from the real wingsail geometry.
+WING_SAIL_CHORD = 1.5  # Units: meters
+
+# TODO Placeholder: measure the distance from the mast axis to the tab's aero center.
+WINGSAIL_TO_TRIM_TAB_BOOM_LENGTH = 1.5  # Units: meters
+
+# TODO sail_dist is the sail CE-to-pivot distance, not CE-to-CG; z_s (CE height
+# relative to the CG) is a placeholder until we have real geometry.
+CE_HEIGHT_REL_TO_CG = -3.0  # Units: meters
+
+# TODO Placeholder: measure the mast pivot's chordwise position (~25% chord assumed).
+MAST_PIVOT_CHORD_FRACTION = 0.25  # Fraction of the wing chord, dimensionless
+
+# TODO Placeholder: measure the rudder's center of effort depth below the CG.
+RUDDER_CE_DEPTH_REL_TO_CG = 0.5  # z_r, units: meters
+
+# TODO Placeholder: measure the keel's center of effort relative to the CG.
+KEEL_CE_REL_TO_CG = (0.0, 0.5)  # (x_k, z_k), units: meters
+
+# TODO Placeholder: measure the hull's center of effort relative to the CG.
+HULL_CE_REL_TO_CG = (0.0, 0.0, 0.0)  # (x_h, y_h, z_h), units: meters
+
+# TODO Placeholder: measure the hull's linear drag coefficient.
+HULL_LINEAR_DRAG = 0.0  # Units: newton seconds per meter
+
 # Displaced volume of the boat at floating equilibrium (m^3)
 DISPLACED_VOLUME = 10.0
+
 # Constants related to the physical and mechanical properties of Polaris
 # TODO These are placeholder values which should be replaced when we have real values.
 BOAT_PROPERTIES = BoatProperties(
@@ -167,6 +205,46 @@ BOAT_PROPERTIES = BoatProperties(
         )
     ),
     sail_areas=20.0,  # meters ^ 2
+    # TODO: Replace the below placeholder constants with the real values/approximates
+    tab_lift_coeffs=CoeffTable(
+        np.array(
+            [
+                [0.0, 0.00],
+                [5.0, 0.20],
+                [10.0, 0.55],
+                [15.0, 0.85],
+                [20.0, 1.05],
+                [25.0, 1.20],  # peak lift
+                [30.0, 1.10],  # stall onset
+                [40.0, 0.80],
+                [50.0, 0.60],
+                [60.0, 0.50],
+                [75.0, 0.25],
+                [90.0, 0.00],  # dead downwind, pure drag
+            ],
+            dtype=np.float64,
+        )
+    ),
+    tab_drag_coeffs=CoeffTable(
+        np.array(
+            [
+                [0.0, 0.01],
+                [5.0, 0.015],
+                [10.0, 0.025],
+                [15.0, 0.032],
+                [20.0, 0.050],
+                [25.0, 0.105],
+                [30.0, 0.830],  # stall — drag spikes
+                [40.0, 0.380],
+                [50.0, 0.580],
+                [60.0, 0.980],
+                [75.0, 1.020],
+                [90.0, 1.200],
+            ],
+            dtype=np.float64,
+        )
+    ),
+    tab_areas=5.0,  # meters ^ 2
     # Rudder: ±45° → table covers 0–45° (sign handled by caller)
     # NACA symmetric foil: stalls ~20–22°
     rudder_lift_coeffs=CoeffTable(
@@ -203,7 +281,44 @@ BOAT_PROPERTIES = BoatProperties(
             dtype=np.float64,
         )
     ),
-    rudder_areas=0.4,  # meters ^ 2
+    rudder_areas=0.4,
+    # meters ^ 2
+    # TODO: Replace the below placeholder constants with the real values/approximates
+    keel_lift_coeffs=CoeffTable(
+        np.array(
+            [
+                [0.0, 0.00],
+                [5.0, 0.30],
+                [10.0, 0.60],
+                [15.0, 0.85],
+                [20.0, 0.92],  # peak (near stall)
+                [25.0, 0.78],  # post-stall drop
+                [30.0, 0.62],
+                [35.0, 0.52],
+                [40.0, 0.44],
+                [45.0, 0.38],
+            ],
+            dtype=np.float64,
+        )
+    ),
+    keel_drag_coeffs=CoeffTable(
+        np.array(
+            [
+                [0.0, 0.020],
+                [5.0, 0.022],
+                [10.0, 0.026],
+                [15.0, 0.032],
+                [20.0, 0.050],
+                [25.0, 0.120],  # stall — drag spikes
+                [30.0, 0.220],
+                [35.0, 0.330],
+                [40.0, 0.440],
+                [45.0, 0.550],
+            ],
+            dtype=np.float64,
+        )
+    ),
+    keel_areas=2.0,  # meters ^ 2
     sail_dist=0.5,  # meters
     rudder_dist=1.0,  # meters
     hull_drag_factor=0.5,

@@ -10,10 +10,18 @@ from rclpy.logging import get_logger
 from boat_simulator.common.constants import (
     AIR_DENSITY,
     BOAT_PROPERTIES,
+    CE_HEIGHT_REL_TO_CG,
     DISPLACED_VOLUME,
     EARTH_GRAVITY,
+    HULL_CE_REL_TO_CG,
+    HULL_LINEAR_DRAG,
+    KEEL_CE_REL_TO_CG,
+    MAST_PIVOT_CHORD_FRACTION,
     METACENTRIC_HEIGHT,
+    RUDDER_CE_DEPTH_REL_TO_CG,
     WATER_DENSITY,
+    WING_SAIL_CHORD,
+    WINGSAIL_TO_TRIM_TAB_BOOM_LENGTH,
 )
 from boat_simulator.common.conventions import (
     Acceleration,
@@ -267,21 +275,17 @@ class AeroDynamicsForceComputation:
         # TODO The trim tab needs its own coefficient tables and area in BOAT_PROPERTIES;
         # the main wing's values are stand-ins.
         self.__tab = MediumForceComputation(
-            BOAT_PROPERTIES.sail_lift_coeffs,
-            BOAT_PROPERTIES.sail_drag_coeffs,
-            BOAT_PROPERTIES.sail_areas,
+            BOAT_PROPERTIES.tab_lift_coeffs,
+            BOAT_PROPERTIES.tab_drag_coeffs,
+            BOAT_PROPERTIES.tab_areas,
             AIR_DENSITY,
         )
-        # TODO Placeholder: derive the mean chord from the real wingsail geometry.
-        self.__chord_m = 1.5
-        # TODO Placeholder: measure the mast pivot's chordwise position (~25% chord assumed).
-        self.__mast_pivot_chord_m = 0.25 * self.__chord_m
-        # TODO Placeholder: measure the distance from the mast axis to the tab's aero center.
-        self.__boom_length_m = 1.5
-        # TODO sail_dist is the sail CE-to-pivot distance, not CE-to-CG; z_s (CE height
-        # relative to the CG) is a placeholder until we have real geometry.
+
+        self.__chord_m = WING_SAIL_CHORD
+        self.__mast_pivot_chord_m = MAST_PIVOT_CHORD_FRACTION * self.__chord_m
+        self.__boom_length_m = WINGSAIL_TO_TRIM_TAB_BOOM_LENGTH
         self.__x_s = BOAT_PROPERTIES.sail_dist
-        self.__z_s = -3.0
+        self.__z_s = CE_HEIGHT_REL_TO_CG
         self.__air_density = AIR_DENSITY
 
     def apparent_wind(
@@ -446,27 +450,21 @@ class HydroDynamicsForceComputation:
             BOAT_PROPERTIES.rudder_areas,
             WATER_DENSITY,
         )
-        # TODO The keel needs its own coefficient tables and area in BOAT_PROPERTIES;
-        # the rudder's values are stand-ins.
+
         self.__keel = MediumForceComputation(
-            BOAT_PROPERTIES.rudder_lift_coeffs,
-            BOAT_PROPERTIES.rudder_drag_coeffs,
-            BOAT_PROPERTIES.rudder_areas,
+            BOAT_PROPERTIES.keel_lift_coeffs,
+            BOAT_PROPERTIES.keel_drag_coeffs,
+            BOAT_PROPERTIES.keel_areas,
             WATER_DENSITY,
         )
         # TODO rudder_dist is the rudder CE-to-pivot distance, not CE-to-CG; the rudder
-        # sits aft of the CG hence the negative sign. z_r (CE depth below the CG) is a
-        # placeholder until we have real geometry.
+        # sits aft of the CG hence the negative sign.
         self.__x_r = -BOAT_PROPERTIES.rudder_dist
-        self.__z_r = 0.5
-        # TODO Placeholder: measure the keel's center of effort relative to the CG.
-        self.__x_k = 0.0
-        self.__z_k = 0.5
-        # TODO Placeholder: measure the hull's center of effort relative to the CG.
-        self.__x_h, self.__y_h, self.__z_h = (0.0, 0.0, 0.0)
+        self.__z_r = RUDDER_CE_DEPTH_REL_TO_CG
+        self.__x_k, self.__z_k = KEEL_CE_REL_TO_CG
+        self.__x_h, self.__y_h, self.__z_h = HULL_CE_REL_TO_CG
         self.__hull_r1 = BOAT_PROPERTIES.hull_drag_factor
-        # TODO Placeholder: add a linear hull drag coefficient to BOAT_PROPERTIES.
-        self.__hull_r2 = 0.0
+        self.__hull_r2 = HULL_LINEAR_DRAG
         self.__m_a = BOAT_PROPERTIES.M_A
         self.__d = BOAT_PROPERTIES.D
 
