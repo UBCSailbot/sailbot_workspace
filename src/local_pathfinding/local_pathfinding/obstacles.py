@@ -247,7 +247,7 @@ class Boat(Obstacle):
         Case dispatch:
         - no projected collision: circular zone, buffered by (radius + BOAT_BUFFER_KM)
         - straight-line motion: rectangular zone, buffered by BOAT_BUFFER_KM
-        - turning motion: triangular swept region with no extra buffer
+        - turning motion: triangular swept region combined with a buffered circular hull zone
 
         Args:
             ais_ship (ci.HelperAISShip): Updated AIS ship data. Must have the same ID as this Boat.
@@ -332,8 +332,8 @@ class Boat(Obstacle):
         along its turning arc, then builds a triangle from: the bow tip,
         the straight-ahead collision point, and the collision point projected
         along the boat's actual turning direction.
-        No extra buffer is applied; this shape models the swept turning
-        region directly.
+        The projected triangle is combined with a conservative circular zone around the vessel's
+        current hull, including BOAT_BUFFER_KM clearance.
         """
         turn_radius_km = speed_kmps / abs(rot_rps)
         # Positive turn_angle = right turn (clockwise), negative = left turn (counter-clockwise)
@@ -382,7 +382,12 @@ class Boat(Obstacle):
             self.length_km / 2 + future_projected_distance * math.cos(turn_angle),
         ]
 
-        boat_collision_zone = Polygon([A, B, C])
+        turning_projection = Polygon([A, B, C])
+
+        hull_radius_km = math.hypot(self.width_km / 2, self.length_km / 2)
+        current_boat_zone = Point(0.0, 0.0).buffer(hull_radius_km + BOAT_BUFFER_KM)
+
+        boat_collision_zone = current_boat_zone.union(turning_projection)
         self._raw_collision_zone = self._translate_collision_zone(boat_collision_zone)
         self.collision_zone = self._raw_collision_zone
         prepared.prep(self.collision_zone)
