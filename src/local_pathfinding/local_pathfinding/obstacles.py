@@ -270,7 +270,12 @@ class Boat(Obstacle):
 
         speed_kmps = self.ais_ship.sog.speed / 3600.0
         # COG is measured in degrees clockwise from
-        # North (0° = North, 90° = East) and is [0°, 360°)
+        # North (0° = North, 90° = East) and is [0°, 360°) as per AIS standards
+        # however we HelperHeading is (-180, 180] and NET respects that.
+        # This doesn't change how the calculations because the following calculations involve
+        # sin, cos, and tan which treat signed and unsigned angle (e.g. -90 and 270) as
+        # equivalent. We must change this handling logically iff we do calculations that are not
+        # periodic in nature.
         cog_rad = math.radians(self.ais_ship.cog.heading)
 
         x, y = cs.latlon_to_xy(self.reference, self.ais_ship.lat_lon)
