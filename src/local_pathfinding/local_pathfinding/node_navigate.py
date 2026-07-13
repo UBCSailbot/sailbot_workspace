@@ -372,7 +372,7 @@ class Sailbot(Node):
         is_new_global_path: bool = False,
     ) -> GlobalPath | None:
         """Create GlobalPath state from a ROS path, choosing the correct starting index."""
-        if not path.waypoints:
+        if not path.waypoints or len(path.waypoints) < 2:
             return None
 
         if not is_new_global_path or is_backup:
