@@ -1,7 +1,5 @@
 """This module represents the state of the boat at a given step in time."""
 
-from typing import Tuple
-
 import numpy as np
 from numpy.typing import NDArray
 from rclpy.logging import get_logger
@@ -19,12 +17,12 @@ from boat_simulator.common.conventions import (
     Inertia,
     InverseInertia,
     Position,
-    Torque,
     Velocity,
 )
 from boat_simulator.common.types import Mat4, Vec2, Vec4
 from boat_simulator.common.utils import ned_to_body_rotation_matrix
 from boat_simulator.nodes.physics_engine.kinematics_computation import BoatKinematics
+from boat_simulator.nodes.physics_engine.kinetics_computation import TotalForceComputation
 from custom_interfaces.msg import HelperLatLon
 from local_pathfinding.coord_systems import XY, meters_to_km, xy_to_latlon
 
@@ -47,6 +45,7 @@ class BoatState:
         """
         self.__reference_latlon = reference_latlon
         self.__kinematics_computation = BoatKinematics(timestep)
+        self.__kinetics_computation = TotalForceComputation()
 
     def step(
         self,
@@ -79,11 +78,11 @@ class BoatState:
         rel_wind_vel = self.__ned_to_body_velocity(glo_wind_vel) - boat_vel
         rel_water_vel = boat_vel - self.__ned_to_body_velocity(glo_water_vel)
 
-        net_force, net_torque = self.__compute_net_force_and_torque(
+        net_force = self.__compute_net_force_and_torque(
             rel_wind_vel, rel_water_vel, rudder_angle.degrees, trim_tab_angle.degrees
         )
 
-        self.__kinematics_computation.step(net_force, net_torque)
+        self.__kinematics_computation.step(self.nu, net_force)
 
     def __ned_to_body_velocity(self, glo_vel: Vec2[Velocity, NED]) -> Vec2[Velocity, Body]:
         """Rotates a NED-frame velocity into the body frame using the boat's current roll and
@@ -101,7 +100,7 @@ class BoatState:
         rel_water_vel: Vec2[Velocity, Body],
         rudder_angle_deg: float,
         sail_angle_deg: float,
-    ) -> Tuple[Vec4[Force, Body], Vec4[Torque, Body]]:
+    ) -> Vec4[Force, Body]:
         """Calculates the net force and net torque acting on the boat caused by the wind and water.
 
         Args:
@@ -126,10 +125,10 @@ class BoatState:
         # AIR_DENSITY/WATER_DENSITY (boat_simulator.common.constants) and MediumForceComputation
         # subclasses (boat_simulator.nodes.physics_engine.fluid_forces) for the aero/hydro force
         # laws.
-        return (
-            Vec4[Force, Body].from_xypr(0.0, 0.0, 0.0, 0.0),
-            Vec4[Torque, Body].from_xypr(0.0, 0.0, 0.0, 0.0),
-        )
+
+        forces = self.__kinetics_computation.compute_total_force()
+
+        return forces
 
     @property
     def pose(self) -> Vec4[Position, NED]:

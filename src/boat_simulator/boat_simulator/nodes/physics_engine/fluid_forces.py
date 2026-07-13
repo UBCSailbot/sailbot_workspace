@@ -7,7 +7,12 @@ import numpy as np
 from numpy.typing import NDArray
 from rclpy.logging import get_logger
 
-from boat_simulator.common.conventions import Body, Force, Velocity
+from boat_simulator.common.conventions import (
+    Acceleration,
+    Body,
+    Force,
+    Velocity,
+)
 from boat_simulator.common.types import CoeffTable, Mat4, Vec2, Vec4
 
 _logger = get_logger(__name__)
@@ -595,7 +600,7 @@ class HydroDynamicsForceComputation:
     def compute(
         self,
         v_r: Vec4[Velocity, Body],
-        v_dot_r: Vec4[Velocity, Body],
+        v_dot_r: Vec4[Acceleration, Body],
         roll_rad: float,
         delta_r_rad: float,
     ) -> Vec4[Force, Body]:
@@ -603,8 +608,8 @@ class HydroDynamicsForceComputation:
 
         Args:
             v_r (Vec4[Velocity, Body]): The boat's velocity relative to the water.
-            v_dot_r (Vec4[Velocity, Body]): The time derivative of the boat's velocity relative
-                to the water.
+            v_dot_r (Vec4[Acceleration, Body]): The time derivative of the boat's velocity
+                relative to the water.
             roll_rad (float): The boat's current roll angle in radians.
             delta_r_rad (float): The rudder deflection angle in radians.
 
