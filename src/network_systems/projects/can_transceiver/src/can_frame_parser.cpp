@@ -615,17 +615,17 @@ void AISShips::checkBounds() const
         throw std::out_of_range("Longitude is out of bounds!\n" + debugStr() + "\n" + err_msg);
     }
     err = utils::isOutOfBounds<float>(speed_, SOG_SPEED_LBND, SOG_SPEED_UBND);
-    if (err) {
+    if (err.has_value() && speed_ != 1023) { //NOLINT
         std::string err_msg = err.value();
         throw std::out_of_range("Speed is out of bounds!\n" + debugStr() + "\n" + err_msg);
     }
     err = utils::isOutOfBounds<float>(course_, HEADING_LBND, HEADING_UBND);
-    if (err) {
+    if (err.has_value() && course_ != 3600) { //NOLINT
         std::string err_msg = err.value();
         throw std::out_of_range("Course is out of bounds!\n" + debugStr() + "\n" + err_msg);
     }
     err = utils::isOutOfBounds<float>(rot_, ROT_LBND, ROT_UBND);
-    if (err) {
+    if (err.has_value() && rot_ != -128) { // NOLINT
         std::string err_msg = err.value();
         throw std::out_of_range("ROT is out of bounds!\n" + debugStr() + "\n" + err_msg);
     }

@@ -143,7 +143,6 @@ class Sailbot(Node):
 
     Attributes:
         local_path (LocalPath): The path that `Sailbot` is following.
-        planner (str): The path planner that `Sailbot` is using.
         mode (str): Runtime mode. Development mode publishes richer local path data.
         gp (GlobalPath): Global path state that `Sailbot` is following.
         received_new_global_path (bool): One-shot signal that the active global path changed and
@@ -159,7 +158,6 @@ class Sailbot(Node):
             parameters=[
                 ("mode", rclpy.Parameter.Type.STRING),
                 ("pub_period_sec", rclpy.Parameter.Type.DOUBLE),
-                ("path_planner", rclpy.Parameter.Type.STRING),
                 ("test_plan", rclpy.Parameter.Type.STRING),
                 ("config", rclpy.Parameter.Type.STRING),
             ],
@@ -226,9 +224,7 @@ class Sailbot(Node):
         self.received_new_global_path = False
         self._load_persisted_global_path()
         self.mode = self.get_parameter("mode").get_parameter_value().string_value
-        self.planner = self.get_parameter("path_planner").get_parameter_value().string_value
         global_config = self.get_parameter("config").get_parameter_value().string_value
-        self.get_logger().debug(f"Got parameter: {self.planner=}")
 
         # Initialize mock land obstacle
         self.land_multi_polygon = None
@@ -376,7 +372,7 @@ class Sailbot(Node):
         is_new_global_path: bool = False,
     ) -> GlobalPath | None:
         """Create GlobalPath state from a ROS path, choosing the correct starting index."""
-        if not path.waypoints:
+        if path.waypoints is None or len(path.waypoints) < 2:
             return None
 
         if not is_new_global_path or is_backup:
@@ -458,17 +454,18 @@ class Sailbot(Node):
         self.gps_timeout_start_sec = self._now_sec()
 
     def global_path_callback(self, msg: ci.Path) -> None:
-        self.get_logger().debug(
-            f"Received data from {self.global_path_sub.topic}: {self._path_to_dict(msg)}"
-        )
-        if not msg.waypoints:
+        if msg.waypoints is None or len(msg.waypoints) < 2:
             self.get_logger().warning(
-                "Received empty global path. Keeping current in-memory path if available "
-                "and trying persisted fallback."
+                "Received global path with fewer than two waypoints. "
+                "Keeping current in-memory path if available and trying persisted fallback."
             )
             if self.gp is None:
                 self._load_persisted_global_path()
             return
+
+        self.get_logger().debug(
+            f"Received data from {self.global_path_sub.topic}: {self._path_to_dict(msg)}"
+        )
 
         if (
             self.gp is not None
@@ -558,7 +555,7 @@ class Sailbot(Node):
                 f"gps_lat_lon={self.gps.lat_lon if self.gps is not None else None}, "
                 f"target_gp_waypoint={self.gp.target_waypoint if self.gp is not None else None}, "
                 f"gp_index={self.gp.index if self.gp is not None else None}, "
-                f"target_lp_wp_index={self.target_lp_wp_index}, planner={self.planner}\n"
+                f"target_lp_wp_index={self.target_lp_wp_index}\n"
                 f"{traceback.format_exc()}"
             )
             raise
@@ -699,7 +696,6 @@ class Sailbot(Node):
                     global_path=self._path_from_gp(),
                     target_global_waypoint=target_global_waypoint,
                     filtered_wind_sensor=self.filtered_wind_sensor,
-                    planner=self.planner,
                     land_multi_polygon=self.land_multi_polygon,
                 ),
                 target_lp_wp_index=self.target_lp_wp_index,
@@ -764,11 +760,6 @@ class Sailbot(Node):
                 timer_period_sec=self.pub_period_sec + MAX_SOLVER_RUN_TIME_SEC,
                 callback=self.desired_heading_callback,
             )
-
-        planner = self.get_parameter("path_planner").get_parameter_value().string_value
-        if planner != self.planner:
-            self.get_logger().debug(f"Updating planner from {self.planner} to {planner}")
-            self.planner = planner
 
     def _all_subs_active(self) -> bool:
         return (

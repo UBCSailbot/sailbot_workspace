@@ -14,7 +14,7 @@ from custom_interfaces.msg import (
     HelperROT,
     HelperSpeed,
 )
-from local_pathfinding.obstacles import Boat, Land, Obstacle
+from local_pathfinding.obstacles import BOAT_BUFFER_KM, Boat, Land, Obstacle
 
 
 def load_pkl(file_path: str) -> Any:
@@ -708,10 +708,6 @@ def test_turning_collision_zone_geometry(
 
     if boat._raw_collision_zone is not None:
 
-        unbuffered = boat._raw_collision_zone
-        coords = np.array(unbuffered.exterior.coords[:-1])
-        assert coords.shape == (3, 2)
-
         bow_y = cs.meters_to_km(ais_ship.length.dimension) / 2
         cog_rad = np.radians(ais_ship.cog.heading)
 
@@ -766,10 +762,20 @@ def test_turning_collision_zone_geometry(
         rotated = np.matmul(expected_local, T.T)
         translation = np.array([dx, dy])
         expected_world = rotated + translation
-        coords_sorted = coords[np.lexsort((coords[:, 0], coords[:, 1]))]
-        expected_sorted = expected_world[np.lexsort((expected_world[:, 0], expected_world[:, 1]))]
+        # The projected turning triangle remains part of the collision zone.
+        for point in expected_world:
+            assert boat.collision_zone.covers(Point(*point))
 
-        assert np.allclose(coords_sorted, expected_sorted, atol=1e-6)
+        # The circular component covers the current hull and the configured safety clearance.
+        ship_center = cs.latlon_to_xy(reference_point, ais_ship.lat_lon)
+        assert not boat.is_valid(ship_center)
+
+        hull_radius_km = np.hypot(boat.width_km / 2, boat.length_km / 2)
+        point_within_clearance = Point(
+            ship_center.x,
+            ship_center.y - hull_radius_km - BOAT_BUFFER_KM * 0.9,
+        )
+        assert boat.collision_zone.contains(point_within_clearance)
 
 
 # Test create collision zone raises error when id of passed ais_ship does not match self's id

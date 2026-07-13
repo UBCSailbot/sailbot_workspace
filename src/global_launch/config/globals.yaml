@@ -24,7 +24,6 @@ mock_gps:
       ocean_drift_accel_kmph2: 0.0
 navigate_main:
    ros__parameters:
-      path_planner: "rrtstar"
       visualizer_mode: False
 
 # controller parameters
