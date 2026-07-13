@@ -123,7 +123,6 @@ class LocalPathInputs:
         target_global_waypoint (Optional[ci.HelperLatLon]): Target waypoint from the global path,
             if available.
         filtered_wind_sensor (Optional[ci.WindSensor]): Filtered apparent wind data, if available.
-        planner (str): Name of the OMPL planner to use.
         land_multi_polygon (Optional[MultiPolygon]): Optional land masses to avoid.
     """
 
@@ -132,7 +131,6 @@ class LocalPathInputs:
     global_path: ci.Path | None
     target_global_waypoint: ci.HelperLatLon | None
     filtered_wind_sensor: ci.WindSensor | None
-    planner: str
     land_multi_polygon: Optional[MultiPolygon] = None
 
 
@@ -149,7 +147,6 @@ class LocalPathState:
         global_path (ci.Path): Path to the destination that Sailbot is navigating along.
         reference_latlon (ci.HelperLatLon): The global waypoint that Sailbot is heading toward.
             The global waypoint is the same as the reference latlon.
-        planner (str): Planner to use for the OMPL query.
         obstacles (List[Obstacle]): All obstacles in the state space.
         path_generated_time_sec (float): Clock time in seconds when the path was generated.
         current_tw (Wind): Latest true wind reading converted from apparent wind reading from the
@@ -171,7 +168,6 @@ class LocalPathState:
         global_path: ci.Path,
         target_global_waypoint: ci.HelperLatLon,
         filtered_wind_sensor: ci.WindSensor,
-        planner: str,
         wind_tracker: WindTracker,
         path_generated_time_sec: Optional[float] = None,
     ):
@@ -183,10 +179,6 @@ class LocalPathState:
             raise ValueError("Cannot create a LocalPathState with an empty global_path")
         self.global_path = global_path
         self.reference_latlon = target_global_waypoint
-
-        if not planner:
-            raise ValueError("planner must not be None")
-        self.planner = planner
 
         # obstacles are initialized by OMPLPath right before solving
         self.obstacles: List[ob.Obstacle] = []
@@ -673,7 +665,6 @@ class LocalPath:
                         inputs.global_path,
                         inputs.target_global_waypoint,
                         inputs.filtered_wind_sensor,
-                        inputs.planner,
                         wind_tracker,
                         self._now_sec(),
                     )
