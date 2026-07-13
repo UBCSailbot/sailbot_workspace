@@ -14,6 +14,7 @@ from boat_simulator.nodes.physics_engine.fluid_forces import (
     HydroDynamicsForceComputation,
     HydroStaticsForceComputation,
 )
+from boat_simulator.nodes.physics_engine.kinematics_computation import BoatKinematics
 
 _logger = get_logger(__name__)
 
@@ -39,45 +40,38 @@ class TotalForceComputation:
             contribution.
     """
 
-    def __init__(
-        self,
-        hydrodynamics: HydroDynamicsForceComputation,
-        hydrostatics: HydroStaticsForceComputation,
-        aerodynamics: AeroDynamicsForceComputation,
-    ):
-        self.__hydrodynamics = hydrodynamics
-        self.__hydrostatics = hydrostatics
-        self.__aerodynamics = aerodynamics
+    def __init__(self):
+        self.__hydrodynamics = HydroDynamicsForceComputation()
+        self.__hydrostatics = HydroStaticsForceComputation()
+        self.__aerodynamics = AeroDynamicsForceComputation()
 
     def compute_total_force(
         self,
-        eta: Vec4[Position, NED],
-        nu: Vec4[Velocity, Body],
-        nu_dot_prev: Vec4[Acceleration, Body],
-        true_wind_speed: float,
+        boat_kinematics: BoatKinematics,
+        true_wind_speed_mps: float,
         true_wind_bearing_rad: float,
-        current_speed: float,
-        current_bearing_rad: float,
+        ocean_current_speed_mps: float,
+        ocean_current_bearing_rad: float,
         delta_r_rad: float,
         delta_tab_rad: float,
         alpha_guess_rad: float = 0.0,
     ) -> Vec4[Force, Body]:
-        """Assembles τ_RB = τ_hydro + g(η) + τ_S, the total generalized force on the boat.
+        """Assembles total force (τ_RB) = τ_hydro + g(η) + τ_S, the total generalized force
+        on the boat.
 
         The current is assumed constant and irrotational, so ν̇_r = ν̇; the previous
         timestep's acceleration stands in for ν̇ in the −M_A·ν̇_r term inside τ_hydro,
         which breaks the algebraic loop of τ_RB depending on the acceleration it produces.
 
         Args:
-            eta (Vec4[Position, NED]): η, the boat's pose [x, y, φ, ψ].
-            nu (Vec4[Velocity, Body]): ν, the boat's generalized velocity [u, v, p, r].
-            nu_dot_prev (Vec4[Acceleration, Body]): The previous timestep's solved
-                acceleration ν̇, used for the added-mass term.
-            true_wind_speed (float): V_w, the true wind speed, in meters per second.
+            boat_kinematics (BoatKinematics): The boat kinematics (position, velocity, acceleration
+                ) that contains the state at time t. The forces will help us find the state at time
+                at t+1
+            true_wind_speed_mps (float): V_w, the true wind speed, in meters per second.
             true_wind_bearing_rad (float): beta_w, the true wind direction as an NED
                 bearing, in radians.
-            current_speed (float): V_c, the ocean current speed, in meters per second.
-            current_bearing_rad (float): beta_c, the current direction as an NED bearing,
+            ocean_current_speed (float): V_c, the ocean current speed, in meters per second.
+            ocean_current_bearing_rad (float): beta_c, the current direction as an NED bearing,
                 in radians.
             delta_r_rad (float): The rudder deflection, in radians.
             delta_tab_rad (float): The trim tab deflection, in radians.
@@ -86,26 +80,29 @@ class TotalForceComputation:
         Returns:
             Vec4[Force, Body]: τ_RB = [X, Y, K, N], the total generalized force.
         """
-        roll_rad, heading_rad = eta.p, eta.r
+        roll_rad, heading_rad = boat_kinematics.pose.p, boat_kinematics.pose.r
 
         v_r = self.__hydrodynamics.relative_velocity(
-            nu, current_speed, current_bearing_rad, heading_rad
+            boat_kinematics.nu, ocean_current_speed_mps, ocean_current_bearing_rad, heading_rad
         )
-        tau_hydro = self.__hydrodynamics.compute(v_r, nu_dot_prev, roll_rad, delta_r_rad)
-        tau_static = self.__hydrostatics.compute(roll_rad)
-        tau_aero = self.__aerodynamics.compute(
-            nu,
+        hydro_force = self.__hydrodynamics.compute(
+            v_r, boat_kinematics.nu_dot, roll_rad, delta_r_rad
+        )
+        static_force = self.__hydrostatics.compute(roll_rad)
+        aero_force = self.__aerodynamics.compute(
+            boat_kinematics.nu,
             roll_rad,
-            true_wind_speed,
+            true_wind_speed_mps,
             true_wind_bearing_rad,
             heading_rad,
             delta_tab_rad,
             alpha_guess_rad,
         )
 
-        tau_rb = tau_hydro + tau_static + tau_aero
+        total_force = hydro_force + static_force + aero_force
         _logger.info(
-            f"TotalForceComputation.compute_total_force: tau_hydro={tau_hydro.data} "
-            f"tau_static={tau_static.data} tau_aero={tau_aero.data} tau_rb={tau_rb.data}"
+            f"TotalForceComputation.compute_total_force: tau_hydro={hydro_force.data} "
+            f"tau_static={static_force.data} tau_aero={aero_force.data} "
+            f"tau_rb={total_force.data}"
         )
-        return tau_rb
+        return total_force

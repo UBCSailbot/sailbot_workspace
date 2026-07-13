@@ -116,7 +116,14 @@ SAIL_MAX_ANGLE_RANGE = (-40, 40)
 # Densities of the mediums, used for force calculations, units in kg/m^3
 AIR_DENSITY = 1.225
 WATER_DENSITY = 1027.0
+# Gravity in m/s
+EARTH_GRAVITY = 9.81
 
+# TODO: This is a placeholder value for the metacentric height
+METACENTRIC_HEIGHT = 0.3  # Units: meters
+
+# Displaced volume of the boat at floating equilibrium (m^3)
+DISPLACED_VOLUME = 10.0
 # Constants related to the physical and mechanical properties of Polaris
 # TODO These are placeholder values which should be replaced when we have real values.
 BOAT_PROPERTIES = BoatProperties(

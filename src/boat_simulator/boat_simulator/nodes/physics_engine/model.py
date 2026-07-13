@@ -1,5 +1,7 @@
 """This module represents the state of the boat at a given step in time."""
 
+import math
+
 import numpy as np
 from numpy.typing import NDArray
 from rclpy.logging import get_logger
@@ -20,9 +22,10 @@ from boat_simulator.common.conventions import (
     Velocity,
 )
 from boat_simulator.common.types import Mat4, Vec2, Vec4
-from boat_simulator.common.utils import ned_to_body_rotation_matrix
 from boat_simulator.nodes.physics_engine.kinematics_computation import BoatKinematics
-from boat_simulator.nodes.physics_engine.kinetics_computation import TotalForceComputation
+from boat_simulator.nodes.physics_engine.kinetics_computation import (
+    TotalForceComputation,
+)
 from custom_interfaces.msg import HelperLatLon
 from local_pathfinding.coord_systems import XY, meters_to_km, xy_to_latlon
 
@@ -49,16 +52,17 @@ class BoatState:
 
     def step(
         self,
-        glo_wind_vel: Vec2[Velocity, NED],
-        glo_water_vel: Vec2[Velocity, NED],
+        true_wind_vel: Vec2[Velocity, NED],
+        glo_water_current_vel: Vec2[Velocity, NED],
         rudder_angle: RudderAngle,
         trim_tab_angle: TrimTabAngle,
     ) -> None:
         """Advances the boat's kinematic state by one timestep.
 
-        Converts the true wind and current into body-frame relative velocities, assembles the
-        net force and torque acting on the boat (see `__compute_net_force_and_torque`), and
-        integrates the equations of motion via `BoatKinematics.step`.
+        Converts the true wind and current velocity vectors into the speed and NED-bearing
+        form expected by `TotalForceComputation.compute_total_force`, assembles the total
+        generalized force on the boat, and integrates the equations of motion via
+        `BoatKinematics.step`.
 
         Args:
             glo_wind_vel (Vec2[Velocity, NED]): The velocity of the true wind in the global
@@ -72,63 +76,23 @@ class BoatState:
             None: The method updates the internal state of the boat's kinematics but does not
             return any data.
         """
-        boat_vel: Vec2[Velocity, Body] = Vec2[Velocity, Body].from_xy(self.nu.x, self.nu.y)
-        # Apparent wind is the true wind felt onboard, net of the boat's own motion; relative
-        # water velocity is the boat's motion through the current (design doc: v_r = nu - v_c).
-        rel_wind_vel = self.__ned_to_body_velocity(glo_wind_vel) - boat_vel
-        rel_water_vel = boat_vel - self.__ned_to_body_velocity(glo_water_vel)
 
-        net_force = self.__compute_net_force_and_torque(
-            rel_wind_vel, rel_water_vel, rudder_angle.degrees, trim_tab_angle.degrees
+        true_wind_speed_mps = math.hypot(true_wind_vel.x, true_wind_vel.y)
+        true_wind_bearing_rad = math.atan2(-true_wind_vel.y, -true_wind_vel.x)  # TODO: Review
+        ocean_current_speed_mps = math.hypot(glo_water_current_vel.x, glo_water_current_vel.y)
+        ocean_current_bearing_rad = math.atan2(glo_water_current_vel.y, glo_water_current_vel.x)
+
+        net_force: Vec4[Force, Body] = self.__kinetics_computation.compute_total_force(
+            boat_kinematics=self.__kinematics_computation,
+            true_wind_speed_mps=true_wind_speed_mps,
+            true_wind_bearing_rad=true_wind_bearing_rad,
+            ocean_current_speed_mps=ocean_current_speed_mps,
+            ocean_current_bearing_rad=ocean_current_bearing_rad,
+            delta_r_rad=rudder_angle.radians,
+            delta_tab_rad=trim_tab_angle.radians,
         )
 
         self.__kinematics_computation.step(self.nu, net_force)
-
-    def __ned_to_body_velocity(self, glo_vel: Vec2[Velocity, NED]) -> Vec2[Velocity, Body]:
-        """Rotates a NED-frame velocity into the body frame using the boat's current roll and
-        heading; pitch is always 0 since it is not modeled in the 4-DOF state.
-        """
-        rotation = ned_to_body_rotation_matrix(
-            roll_rad=self.pose.p, pitch_rad=0.0, yaw_rad=self.pose.r
-        )
-        rotated = rotation @ np.array([glo_vel.x, glo_vel.y, 0.0])
-        return Vec2[Velocity, Body].from_xy(rotated[0], rotated[1])
-
-    def __compute_net_force_and_torque(
-        self,
-        rel_wind_vel: Vec2[Velocity, Body],
-        rel_water_vel: Vec2[Velocity, Body],
-        rudder_angle_deg: float,
-        sail_angle_deg: float,
-    ) -> Vec4[Force, Body]:
-        """Calculates the net force and net torque acting on the boat caused by the wind and water.
-
-        Args:
-            rel_wind_vel (Vec2[Velocity, Body]): The velocity of the true wind in the relative
-                reference frame, expressed in meters per second (m/s).
-            rel_water_vel (Vec2[Velocity, Body]): The velocity of the current in the relative
-                reference frame, expressed in meters per second (m/s).
-            rudder_angle_deg (float): The rudder angle with respect to the boat in degrees. Angle
-                convention is 0° south, increases CW.
-            sail_angle_deg (float): The wingsail's current orientation in degrees, using the
-                convention expected by `MediumForceComputation.compute`
-                (0° along +x, CCW positive).
-
-        Returns:
-            Tuple[Vec4[Force, Body], Vec4[Torque, Body]]: A tuple of the net generalized force
-                [X, Y, K, N] and net generalized torque, both expressed in the body frame and
-                ready to be passed to `BoatKinematics.step`.
-        """
-        # TODO: Not implemented yet. Assemble the wingsail (aerodynamic), hydrodynamic
-        # (rudder/keel/hull, including added mass M_A, Coriolis C_A, and damping D), and
-        # hydrostatic forces/moments described in the physics engine design doc. This will need
-        # AIR_DENSITY/WATER_DENSITY (boat_simulator.common.constants) and MediumForceComputation
-        # subclasses (boat_simulator.nodes.physics_engine.fluid_forces) for the aero/hydro force
-        # laws.
-
-        forces = self.__kinetics_computation.compute_total_force()
-
-        return forces
 
     @property
     def pose(self) -> Vec4[Position, NED]:

@@ -7,13 +7,21 @@ import numpy as np
 from numpy.typing import NDArray
 from rclpy.logging import get_logger
 
+from boat_simulator.common.constants import (
+    AIR_DENSITY,
+    BOAT_PROPERTIES,
+    DISPLACED_VOLUME,
+    EARTH_GRAVITY,
+    METACENTRIC_HEIGHT,
+    WATER_DENSITY,
+)
 from boat_simulator.common.conventions import (
     Acceleration,
     Body,
     Force,
     Velocity,
 )
-from boat_simulator.common.types import CoeffTable, Mat4, Vec2, Vec4
+from boat_simulator.common.types import CoeffTable, Vec2, Vec4
 
 _logger = get_logger(__name__)
 
@@ -205,17 +213,11 @@ class HydroStaticsForceComputation:
         and the metacenter, in meters.
     """
 
-    def __init__(
-        self,
-        seawater_density: float,
-        gravity: float,
-        displaced_volume: float,
-        metacentric_height: float,
-    ):
-        self.__seawater_density = seawater_density
-        self.__gravity = gravity
-        self.__displaced_volume = displaced_volume
-        self.__metacentric_height = metacentric_height
+    def __init__(self):
+        self.__seawater_density = WATER_DENSITY
+        self.__gravity = EARTH_GRAVITY
+        self.__displaced_volume = DISPLACED_VOLUME
+        self.__metacentric_height = METACENTRIC_HEIGHT
 
     def compute(self, roll_angle_rad: float) -> Vec4[Force, Body]:
         """Computes the hydrostatic restoring force at the given roll angle
@@ -242,36 +244,45 @@ class HydroStaticsForceComputation:
 class AeroDynamicsForceComputation:
     """Computes the wingsail's generalized force and moment contribution.
 
-    Args:
-        wing (MediumForceComputation): -.
-        tab (MediumForceComputation): -.
+    Attributes:
+        wing (MediumForceComputation): The main wing's lift and drag force computation.
+        tab (MediumForceComputation): The trim tab's lift and drag force computation.
         chord_m (float): The main wing's mean chord length, expressed in meters.
         mast_pivot_chord_m (float): x_mast, the chordwise position of the mast pivot,
             in meters.
         boom_length_m (float): ell_tab, the distance from the mast axis to the trim tab's
             aerodynamic center, in meters.
-        wing_centre_of_effort (Tuple[float, float]): (x_s, z_s), the wing's center of effort
+        (x_s, z_s) (Tuple[float, float]): The wing's center of effort
             relative to the boat's center of gravity, in meters.
         air_density (float): rho_a, the density of air, in kilograms per cubic meter.
     """
 
-    def __init__(
-        self,
-        wing: MediumForceComputation,
-        tab: MediumForceComputation,
-        chord_m: float,
-        mast_pivot_chord_m: float,
-        boom_length_m: float,
-        wing_centre_of_effort: Tuple[float, float],
-        air_density: float,
-    ):
-        self.__wing = wing
-        self.__tab = tab
-        self.__chord_m = chord_m
-        self.__mast_pivot_chord_m = mast_pivot_chord_m
-        self.__boom_length_m = boom_length_m
-        self.__x_s, self.__z_s = wing_centre_of_effort
-        self.__air_density = air_density
+    def __init__(self):
+        self.__wing = MediumForceComputation(
+            BOAT_PROPERTIES.sail_lift_coeffs,
+            BOAT_PROPERTIES.sail_drag_coeffs,
+            BOAT_PROPERTIES.sail_areas,
+            AIR_DENSITY,
+        )
+        # TODO The trim tab needs its own coefficient tables and area in BOAT_PROPERTIES;
+        # the main wing's values are stand-ins.
+        self.__tab = MediumForceComputation(
+            BOAT_PROPERTIES.sail_lift_coeffs,
+            BOAT_PROPERTIES.sail_drag_coeffs,
+            BOAT_PROPERTIES.sail_areas,
+            AIR_DENSITY,
+        )
+        # TODO Placeholder: derive the mean chord from the real wingsail geometry.
+        self.__chord_m = 1.5
+        # TODO Placeholder: measure the mast pivot's chordwise position (~25% chord assumed).
+        self.__mast_pivot_chord_m = 0.25 * self.__chord_m
+        # TODO Placeholder: measure the distance from the mast axis to the tab's aero center.
+        self.__boom_length_m = 1.5
+        # TODO sail_dist is the sail CE-to-pivot distance, not CE-to-CG; z_s (CE height
+        # relative to the CG) is a placeholder until we have real geometry.
+        self.__x_s = BOAT_PROPERTIES.sail_dist
+        self.__z_s = -3.0
+        self.__air_density = AIR_DENSITY
 
     def apparent_wind(
         self,
@@ -428,29 +439,36 @@ class HydroDynamicsForceComputation:
         water_density (float): The density of water, in kilograms per cubic meter.
     """
 
-    def __init__(
-        self,
-        rudder: MediumForceComputation,
-        keel: MediumForceComputation,
-        rudder_effort: Tuple[float, float],
-        keel_effort: Tuple[float, float],
-        hull_effort: Tuple[float, float, float],
-        hull_r1: float,
-        hull_r2: float,
-        m_a: Mat4,
-        d: Mat4,
-        water_density: float,
-    ):
-        self.__rudder = rudder
-        self.__keel = keel
-        self.__x_r, self.__z_r = rudder_effort
-        self.__x_k, self.__z_k = keel_effort
-        self.__x_h, self.__y_h, self.__z_h = hull_effort
-        self.__hull_r1 = hull_r1
-        self.__hull_r2 = hull_r2
-        self.__m_a = m_a
-        self.__d = d
-        self.__water_density = water_density
+    def __init__(self):
+        self.__rudder = MediumForceComputation(
+            BOAT_PROPERTIES.rudder_lift_coeffs,
+            BOAT_PROPERTIES.rudder_drag_coeffs,
+            BOAT_PROPERTIES.rudder_areas,
+            WATER_DENSITY,
+        )
+        # TODO The keel needs its own coefficient tables and area in BOAT_PROPERTIES;
+        # the rudder's values are stand-ins.
+        self.__keel = MediumForceComputation(
+            BOAT_PROPERTIES.rudder_lift_coeffs,
+            BOAT_PROPERTIES.rudder_drag_coeffs,
+            BOAT_PROPERTIES.rudder_areas,
+            WATER_DENSITY,
+        )
+        # TODO rudder_dist is the rudder CE-to-pivot distance, not CE-to-CG; the rudder
+        # sits aft of the CG hence the negative sign. z_r (CE depth below the CG) is a
+        # placeholder until we have real geometry.
+        self.__x_r = -BOAT_PROPERTIES.rudder_dist
+        self.__z_r = 0.5
+        # TODO Placeholder: measure the keel's center of effort relative to the CG.
+        self.__x_k = 0.0
+        self.__z_k = 0.5
+        # TODO Placeholder: measure the hull's center of effort relative to the CG.
+        self.__x_h, self.__y_h, self.__z_h = (0.0, 0.0, 0.0)
+        self.__hull_r1 = BOAT_PROPERTIES.hull_drag_factor
+        # TODO Placeholder: add a linear hull drag coefficient to BOAT_PROPERTIES.
+        self.__hull_r2 = 0.0
+        self.__m_a = BOAT_PROPERTIES.M_A
+        self.__d = BOAT_PROPERTIES.D
 
     def relative_velocity(
         self,
