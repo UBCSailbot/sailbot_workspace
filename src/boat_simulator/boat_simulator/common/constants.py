@@ -160,7 +160,7 @@ HULL_CE_REL_TO_CG = (0.0, 0.0, 0.0)  # (x_h, y_h, z_h), units: meters
 HULL_LINEAR_DRAG = 0.0  # Units: newton seconds per meter
 
 # Displaced volume of the boat at floating equilibrium (m^3)
-DISPLACED_VOLUME = 10.0
+DISPLACED_VOLUME = 0.50
 
 # Constants related to the physical and mechanical properties of Polaris
 # TODO These are placeholder values which should be replaced when we have real values.
@@ -288,15 +288,17 @@ BOAT_PROPERTIES = BoatProperties(
         np.array(
             [
                 [0.0, 0.00],
-                [5.0, 0.30],
-                [10.0, 0.60],
+                [5.0, 0.20],
+                [10.0, 0.55],
                 [15.0, 0.85],
-                [20.0, 0.92],  # peak (near stall)
-                [25.0, 0.78],  # post-stall drop
-                [30.0, 0.62],
-                [35.0, 0.52],
-                [40.0, 0.44],
-                [45.0, 0.38],
+                [20.0, 1.05],
+                [25.0, 1.20],  # peak lift
+                [30.0, 1.10],  # stall onset
+                [40.0, 0.80],
+                [50.0, 0.60],
+                [60.0, 0.50],
+                [75.0, 0.25],
+                [90.0, 0.00],  # dead downwind, pure drag
             ],
             dtype=np.float64,
         )
@@ -304,16 +306,18 @@ BOAT_PROPERTIES = BoatProperties(
     keel_drag_coeffs=CoeffTable(
         np.array(
             [
-                [0.0, 0.020],
-                [5.0, 0.022],
-                [10.0, 0.026],
+                [0.0, 0.01],
+                [5.0, 0.015],
+                [10.0, 0.025],
                 [15.0, 0.032],
                 [20.0, 0.050],
-                [25.0, 0.120],  # stall — drag spikes
-                [30.0, 0.220],
-                [35.0, 0.330],
-                [40.0, 0.440],
-                [45.0, 0.550],
+                [25.0, 0.105],
+                [30.0, 0.830],  # stall — drag spikes
+                [40.0, 0.380],
+                [50.0, 0.580],
+                [60.0, 0.980],
+                [75.0, 1.020],
+                [90.0, 1.200],
             ],
             dtype=np.float64,
         )
@@ -325,9 +329,14 @@ BOAT_PROPERTIES = BoatProperties(
     mass=225.0,
     # M_RB = diag(m, m, I_xx, I_zz) — surge, sway, roll, yaw
     inertia=Mat4(np.diag([225.0, 225.0, 125.0, 500.0])),
-    # TODO: Replace with real hydrodynamic added-mass coefficients.
-    # M_A = diag(X_u̇, Y_v̇, K_ṗ, N_ṙ) — diagonal linearized added-mass approximation.
-    M_A=Mat4(np.diag([20.0, 90.0, 10.0, 75.0])),
+    # TODO: Replace with coefficients from strip theory or CFD for the real hull.
+    # M_A = diag(X_u̇, Y_v̇, K_ṗ, N_ṙ) — diagonal linearized added-mass approximation,
+    # estimated from slender-hull rules of thumb relative to M_RB:
+    #   X_u̇ ≈ 0.05–0.10·m   (little water entrained fore-aft on a slender hull)
+    #   Y_v̇ ≈ 0.80–1.00·m   (sway drags a large volume of water; keel adds to it)
+    #   K_ṗ ≈ 0.20–0.30·I_xx
+    #   N_ṙ ≈ 0.50–0.70·I_zz
+    M_A=Mat4(np.diag([20.0, 180.0, 30.0, 300.0])),
     # TODO: Replace with real damping coefficients from tow-tank or CFD data.
     # D = diag(X_u, Y_v, K_p, N_r) — linear damping per DOF.
     D=Mat4(np.diag([15.0, 80.0, 25.0, 60.0])),

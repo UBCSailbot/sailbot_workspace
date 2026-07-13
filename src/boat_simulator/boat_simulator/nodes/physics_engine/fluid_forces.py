@@ -529,10 +529,11 @@ class HydroDynamicsForceComputation:
         water_speed_rel_to_hull = math.sqrt(u_h**2 + v_h**2)
         alpha_h = math.atan2(v_h, u_h)
         h_d = self.__hull_r1 * water_speed_rel_to_hull**2 + self.__hull_r2
+        _logger.info(f"water_speed_rel_to_hull={water_speed_rel_to_hull} h_d={h_d} u={v_r.x}")
 
         # Force and Moment calculations
         x = h_d * math.cos(alpha_h)
-        y = -h_d * math.sin(alpha_h) * math.cos(roll_rad)
+        y = h_d * math.sin(alpha_h) * math.cos(roll_rad)
         k = -y * self.__z_h
         n = y * self.__x_h
         return Vec4.from_xypr(x, y, k, n)
@@ -644,4 +645,10 @@ class HydroDynamicsForceComputation:
         total = (
             tau_h.data + tau_r.data + tau_k.data - added_mass_term - coriolis_term - damping_term
         )
+
+        _logger.debug(
+            f"tau_h={tau_h} tau_r={tau_r} tau_k={tau_k} added_mass_term={added_mass_term} "
+            f"coriolis_term={coriolis_term} damping_term={damping_term}"
+        )
+
         return Vec4(total)

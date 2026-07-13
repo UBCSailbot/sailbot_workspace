@@ -101,8 +101,8 @@ class TotalForceComputation:
 
         total_force = hydro_force + static_force + aero_force
         _logger.info(
-            f"TotalForceComputation.compute_total_force: tau_hydro={hydro_force.data} "
-            f"tau_static={static_force.data} tau_aero={aero_force.data} "
-            f"tau_rb={total_force.data}"
+            f"TotalForceComputation.compute_total_force: hydro_force={hydro_force.data} "
+            f"static_force={static_force.data} aero_force={aero_force.data} "
+            f"total_force={total_force.data}"
         )
         return total_force
