@@ -108,13 +108,6 @@ configurable noise and drift.
 
 ### `navigate_main`
 
-**`path_planner`**
-
-- _Description_: The path planner used by local pathfinding. Local pathfinding currently
-  uses OMPL RRT* exclusively.
-- _Datatype_: `string`
-- _Acceptable Values_: `"rrtstar"`
-
 **`visualizer_mode`**
 
 - _Description_: Override whether the pathfinding visualizer is used during on-water testing.

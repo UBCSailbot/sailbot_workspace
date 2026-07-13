@@ -472,8 +472,6 @@ class OMPLPath:
         )
         space_information.setMotionValidator(self._goal_progress_wind_motion_validator)
 
-        self.state.planner = og.RRTstar(space_information)
-
         objective = get_sailing_objective(
             space_information,
             current_tw.dir_deg,
