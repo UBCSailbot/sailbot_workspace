@@ -57,11 +57,17 @@ class MockAISNode(Node):
         test_plan = TestPlan(self.test_plan)
         self.ships = list(test_plan.ais)
 
+        # Anchor for event timing: each event's `timestamp` is seconds from here.
         self._start_monotonic_sec = time.monotonic()
+
+        # Holds the sorted AIS event list and yields each one when its timestamp is reached.
         self._ais_dispatcher = EventDispatcher(test_plan.ais_events)
-        # Skip physics on the tick right after a snapshot so the published state matches the
-        # snapshot exactly; the init snapshot counts, hence the initial True.
+
+        # Skip physics for one tick after an event fires so we publish the
+        # event's exact coords (initial YAML ship list counts as an event too).
         self._just_snapshotted = True
+
+        # Fire any t=0 events so the first published message reflects them.
         self._consume_events(elapsed_sec=0.0)
 
         self.timer = self.create_timer(self.timer_period, self.timer_callback)
