@@ -372,7 +372,7 @@ class Sailbot(Node):
         is_new_global_path: bool = False,
     ) -> GlobalPath | None:
         """Create GlobalPath state from a ROS path, choosing the correct starting index."""
-        if not path.waypoints or len(path.waypoints) < 2:
+        if path.waypoints is None or len(path.waypoints) < 2:
             return None
 
         if not is_new_global_path or is_backup:
@@ -454,17 +454,18 @@ class Sailbot(Node):
         self.gps_timeout_start_sec = self._now_sec()
 
     def global_path_callback(self, msg: ci.Path) -> None:
-        self.get_logger().debug(
-            f"Received data from {self.global_path_sub.topic}: {self._path_to_dict(msg)}"
-        )
-        if not msg.waypoints:
+        if msg.waypoints is None or len(msg.waypoints) < 2:
             self.get_logger().warning(
-                "Received empty global path. Keeping current in-memory path if available "
-                "and trying persisted fallback."
+                "Received global path with fewer than two waypoints. "
+                "Keeping current in-memory path if available and trying persisted fallback."
             )
             if self.gp is None:
                 self._load_persisted_global_path()
             return
+
+        self.get_logger().debug(
+            f"Received data from {self.global_path_sub.topic}: {self._path_to_dict(msg)}"
+        )
 
         if (
             self.gp is not None

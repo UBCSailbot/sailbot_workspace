@@ -158,6 +158,15 @@ def test_new_global_path_starts_at_last_waypoint() -> None:
     assert not gp.is_backup
 
 
+def test_single_waypoint_global_path_is_not_created() -> None:
+    path = ci.Path(waypoints=[make_waypoint(49.0, -123.0)])
+    sailbot = make_sailbot_shell()
+
+    gp = sailbot._create_gp(path, is_backup=False, is_new_global_path=True)
+
+    assert gp is None
+
+
 def test_persisted_global_path_resumes_one_waypoint_toward_destination() -> None:
     waypoints = [
         make_waypoint(49.0, -123.0),
@@ -285,6 +294,42 @@ def test_global_path_callback_success_replaces_gp_after_persisting() -> None:
     assert gp.index == len(incoming_path.waypoints) - 1
     assert not gp.is_backup
     assert sailbot.received_new_global_path
+
+
+def test_global_path_callback_rejects_single_waypoint_before_persisting() -> None:
+    existing_path = make_path(49.0, -123.0)
+    incoming_path = ci.Path(waypoints=[make_waypoint(50.0, -124.0)])
+    sailbot = make_sailbot_shell()
+    sailbot.gp = GlobalPath(waypoints=list(existing_path.waypoints), index=1)
+    write_calls = install_successful_global_path_write(sailbot)
+    install_forbidden_persisted_load(
+        sailbot, "persisted fallback should not replace an existing active path"
+    )
+
+    sailbot.global_path_callback(incoming_path)
+
+    gp = require_gp(sailbot)
+    assert write_calls == []
+    assert waypoint_tuples(gp.waypoints) == waypoint_tuples(existing_path.waypoints)
+    assert get_test_logger(sailbot).has_message("warning", "fewer than two waypoints")
+
+
+def test_global_path_callback_defensively_rejects_none_waypoints() -> None:
+    existing_path = make_path(49.0, -123.0)
+    malformed_path = cast(ci.Path, SimpleNamespace(waypoints=None))
+    sailbot = make_sailbot_shell()
+    sailbot.gp = GlobalPath(waypoints=list(existing_path.waypoints), index=1)
+    write_calls = install_successful_global_path_write(sailbot)
+    install_forbidden_persisted_load(
+        sailbot, "persisted fallback should not replace an existing active path"
+    )
+
+    sailbot.global_path_callback(malformed_path)
+
+    gp = require_gp(sailbot)
+    assert write_calls == []
+    assert waypoint_tuples(gp.waypoints) == waypoint_tuples(existing_path.waypoints)
+    assert get_test_logger(sailbot).has_message("warning", "fewer than two waypoints")
 
 
 def test_global_path_callback_new_path_clears_switch_back_mode() -> None:
