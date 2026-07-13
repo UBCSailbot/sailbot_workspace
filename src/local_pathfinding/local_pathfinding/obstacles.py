@@ -269,15 +269,12 @@ class Boat(Obstacle):
             rot_rps = 0.0  # invalid ROT: treat as no rotation information
 
         speed_kmps = self.ais_ship.sog.speed / 3600.0
-        # COG is measured in degrees clockwise from
-        # North (0° = North, 90° = East) and is [0°, 360°) as per AIS standards
-        # however we HelperHeading is (-180, 180] and NET respects that.
-        # This doesn't change how the calculations because the following calculations involve
-        # sin, cos, and tan which treat signed and unsigned angle (e.g. -90 and 270) as
-        # equivalent. We must change this handling logically iff we do calculations that are not
-        # periodic in nature.
+        # Available AIS COG bearings use [0°, 360°), while HelperHeading uses (-180°, 180°].
+        # NET converts COG to the HelperHeading range before publishing. The calculations below
+        # use periodic trigonometric operations, so equivalent bearings such as -90° and 270°
+        # produce the same collision geometry. Normalize explicitly if future logic depends on
+        # the numeric range rather than only the represented direction.
         cog_rad = math.radians(self.ais_ship.cog.heading)
-
         x, y = cs.latlon_to_xy(self.reference, self.ais_ship.lat_lon)
         projected_distance = self._calculate_projected_distance(cog_rad)
 
