@@ -9,7 +9,7 @@ from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from test_plans.test_plan import TestPlan
-from local_pathfinding.mock_nodes.event_dispatcher import EventDispatcher
+from local_pathfinding.mock_nodes.dispatch_event import EventDispatcher
 from local_pathfinding.node_navigate import Sailbot
 
 import custom_interfaces.msg as ci

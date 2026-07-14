@@ -40,7 +40,7 @@ from test_plans.test_plan import TestPlan
 
 import custom_interfaces.msg as ci
 import local_pathfinding.wind_coord_systems as wcs
-from local_pathfinding.mock_nodes.event_dispatcher import EventDispatcher
+from local_pathfinding.mock_nodes.dispatch_event import EventDispatcher
 
 
 class MockWindSensor(Node):

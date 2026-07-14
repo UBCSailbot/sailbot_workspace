@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from local_pathfinding.mock_nodes.event_dispatcher import EventDispatcher
+from local_pathfinding.mock_nodes.dispatch_event import EventDispatcher
 
 
 @dataclass(frozen=True)

@@ -7,7 +7,7 @@ from test_plans.test_plan import TestPlan
 
 import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
-from local_pathfinding.mock_nodes.event_dispatcher import EventDispatcher
+from local_pathfinding.mock_nodes.dispatch_event import EventDispatcher
 
 """
 Defines a Mock AIS Node that publishes AIS ships to the ROS Network for testing purposes
