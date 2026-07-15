@@ -653,9 +653,16 @@ custom_interfaces::msg::Path LocalTransceiver::parseInMsg(const std::string & ms
         const float                          latitude  = waypoint.latitude();
         const float                          longitude = waypoint.longitude();
 
+        if (
+          latitude < LAT_LBOUND || latitude > LAT_UBOUND || longitude < LON_LBOUND ||
+          longitude > LON_UBOUND) {
+            std::cerr << "Invalid waypoint lat/lon received: (" << latitude << ", " << longitude
+                      << "). Returning empty path." << std::endl;
+            return soln;
+        }
+
         helperLatLon.set__latitude(latitude);
         helperLatLon.set__longitude(longitude);
-
         waypoints.push_back(helperLatLon);
     }
 

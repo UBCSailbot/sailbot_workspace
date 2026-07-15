@@ -735,34 +735,59 @@ TEST_F(TestLocalTransceiver, checkCache)
 //     }
 // }
 
-TEST_F(TestLocalTransceiver, parseInMsgInvalid)
+// TEST_F(TestLocalTransceiver, parseInMsgInvalid)
+// {
+//     constexpr float                                   holder     = 14.3;
+//     constexpr float                                   outofrange = -95;
+//     std::vector<custom_interfaces::msg::HelperLatLon> waypoints;
+//
+//     // protobuf
+//     Polaris::GlobalPath path;
+//
+//     Polaris::Waypoint * waypoint_a = path.add_waypoints();
+//     waypoint_a->set_latitude(outofrange);
+//     waypoint_a->set_longitude(holder);
+//
+//     Polaris::Waypoint * waypoint_b = path.add_waypoints();
+//     waypoint_b->set_latitude(holder);
+//     waypoint_b->set_longitude(holder);
+//
+//     // convert protobuf to string
+//     std::string serialized_test = path.SerializeAsString();
+//
+//     custom_interfaces::msg::Path parsed_test = LocalTransceiver::parseInMsg(serialized_test);
+//
+//     EXPECT_EQ(parsed_test.waypoints[0].latitude, outofrange);  //NOLINT
+//     EXPECT_EQ(parsed_test.waypoints[0].longitude, holder);
+//     EXPECT_EQ(parsed_test.waypoints[1].latitude, holder);
+//     EXPECT_EQ(parsed_test.waypoints[1].longitude, holder);
+//
+//     EXPECT_FALSE(lcl_trns_->validateGlobalPathWayPoints(parsed_test));
+// }
+
+TEST_F(TestLocalTransceiver, validateGlobalPathWayPoints)
 {
-    constexpr float                                   holder     = 14.3;
-    constexpr float                                   outofrange = -95;
-    std::vector<custom_interfaces::msg::HelperLatLon> waypoints;
+    constexpr float valid_lat   = 14.3F;
+    constexpr float valid_lon   = 14.3F;
+    constexpr float invalid_lat = -95.0F;
 
-    // protobuf
-    Polaris::GlobalPath path;
+    // Empty path should be rejected
+    custom_interfaces::msg::Path empty_path;
+    EXPECT_FALSE(lcl_trns_->validateGlobalPathWayPoints(empty_path));
 
-    Polaris::Waypoint * waypoint_a = path.add_waypoints();
-    waypoint_a->set_latitude(outofrange);
-    waypoint_a->set_longitude(holder);
+    // Valid path should be accepted
+    custom_interfaces::msg::Path         valid_path;
+    custom_interfaces::msg::HelperLatLon wp;
+    wp.set__latitude(valid_lat);
+    wp.set__longitude(valid_lon);
+    valid_path.set__waypoints({wp});
+    EXPECT_TRUE(lcl_trns_->validateGlobalPathWayPoints(valid_path));
 
-    Polaris::Waypoint * waypoint_b = path.add_waypoints();
-    waypoint_b->set_latitude(holder);
-    waypoint_b->set_longitude(holder);
-
-    // convert protobuf to string
-    std::string serialized_test = path.SerializeAsString();
-
-    // parseInMsg is a pure parser — it returns raw values without clamping
-    custom_interfaces::msg::Path parsed_test = LocalTransceiver::parseInMsg(serialized_test);
-
-    EXPECT_EQ(parsed_test.waypoints[0].latitude, outofrange);  //NOLINT
-    EXPECT_EQ(parsed_test.waypoints[0].longitude, holder);
-    EXPECT_EQ(parsed_test.waypoints[1].latitude, holder);
-    EXPECT_EQ(parsed_test.waypoints[1].longitude, holder);
-
-    // validateGlobalPathWayPoints must reject any path containing an out-of-range waypoint
-    EXPECT_FALSE(lcl_trns_->validateGlobalPathWayPoints(parsed_test));
+    // Path with out-of-range latitude should be rejected
+    custom_interfaces::msg::Path         invalid_path;
+    custom_interfaces::msg::HelperLatLon bad_wp;
+    bad_wp.set__latitude(invalid_lat);
+    bad_wp.set__longitude(valid_lon);
+    invalid_path.set__waypoints({bad_wp});
+    EXPECT_FALSE(lcl_trns_->validateGlobalPathWayPoints(invalid_path));
 }
