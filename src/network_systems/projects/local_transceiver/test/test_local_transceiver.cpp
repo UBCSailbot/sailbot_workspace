@@ -755,10 +755,14 @@ TEST_F(TestLocalTransceiver, parseInMsgInvalid)
     // convert protobuf to string
     std::string serialized_test = path.SerializeAsString();
 
+    // parseInMsg is a pure parser — it returns raw values without clamping
     custom_interfaces::msg::Path parsed_test = LocalTransceiver::parseInMsg(serialized_test);
 
-    EXPECT_EQ(parsed_test.waypoints[0].latitude, -1.0f);  //NOLINT
+    EXPECT_EQ(parsed_test.waypoints[0].latitude, outofrange);  //NOLINT
     EXPECT_EQ(parsed_test.waypoints[0].longitude, holder);
     EXPECT_EQ(parsed_test.waypoints[1].latitude, holder);
     EXPECT_EQ(parsed_test.waypoints[1].longitude, holder);
+
+    // validateGlobalPathWayPoints must reject any path containing an out-of-range waypoint
+    EXPECT_FALSE(lcl_trns_->validateGlobalPathWayPoints(parsed_test));
 }
