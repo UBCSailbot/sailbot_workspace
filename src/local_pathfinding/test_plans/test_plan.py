@@ -140,10 +140,15 @@ class TestPlan:
             self._tw_dir_deg = None
 
         if data.get("global_path") is not None:
+            wps = data["global_path"]["waypoints"]
+            if len(wps) < 2:
+                raise ValueError(
+                    f"global_path must contain at least 2 waypoints, got {len(wps)}"
+                )
             self._global_path = ci.Path(
                 waypoints=[
                     ci.HelperLatLon(latitude=wp["latitude"], longitude=wp["longitude"])
-                    for wp in data["global_path"]["waypoints"]
+                    for wp in wps
                 ]
             )
         else:
@@ -384,8 +389,10 @@ def _parse_global_path_events(raw: Any) -> tuple[GlobalPathEvent, ...]:
         )
         ts = float(item["timestamp"])
         waypoints_raw = item["waypoints"]
-        if not isinstance(waypoints_raw, list) or not waypoints_raw:
-            raise ValueError(f"{context} 'waypoints' must be a non-empty list")
+        if not isinstance(waypoints_raw, list) or len(waypoints_raw) < 2:
+            raise ValueError(
+                f"{context} 'waypoints' must be a list with at least 2 waypoints"
+            )
         parsed_wps: list[ci.HelperLatLon] = []
         for j, wp in enumerate(waypoints_raw):
             wp_context = f"{context} waypoint[{j}]"

@@ -326,6 +326,7 @@ def test_global_path_events_lat_out_of_range_raises(make_plan):
             "    - timestamp: 0.0\n"
             "      waypoints:\n"
             "        - {latitude: 91.0, longitude: -123.0}\n"
+            "        - {latitude: 48.16, longitude: -130.25}\n"
         )
 
 
@@ -336,6 +337,26 @@ def test_global_path_events_empty_waypoints_raises(make_plan):
             "  mock_global_path:\n"
             "    - timestamp: 0.0\n"
             "      waypoints: []\n"
+        )
+
+
+def test_global_path_events_single_waypoint_raises(make_plan):
+    with pytest.raises(ValueError, match="at least 2 waypoints"):
+        make_plan(
+            "events:\n"
+            "  mock_global_path:\n"
+            "    - timestamp: 0.0\n"
+            "      waypoints:\n"
+            "        - {latitude: 49.28, longitude: -123.18}\n"
+        )
+
+
+def test_initial_global_path_single_waypoint_raises(make_plan):
+    with pytest.raises(ValueError, match="at least 2 waypoints"):
+        make_plan(
+            "global_path:\n"
+            "  waypoints:\n"
+            "    - {latitude: 49.28, longitude: -123.18}\n"
         )
 
 
