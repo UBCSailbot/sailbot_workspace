@@ -33,10 +33,11 @@ class BoatKinematics:
     Attributes:
         `timestep` (float): The time interval for calculations, expressed in seconds (s).
         `boat_mass` (float): The mass of the boat, expressed in kilograms (kg).
-        `inertia` (Mat4[Inertia, Body]): The body-frame inertia tensor of the boat, expressed in
-            kilograms-meters squared (kg•m^2).
-        `inertia_inverse` (Mat4[Inertia, Body]): The inverse of the inertia tensor, expressed in
-            per kilograms-meters squared (1/(kg•m^2)).
+        `inertia` (Mat4[Inertia, Body]): M_RB, the rigid-body generalized mass-inertia
+            matrix, expressed in kilograms / kilograms-meters squared (kg / kg•m^2).
+        `inertia_inverse` (Mat4[Inertia, Body]): (M_RB + M_A)⁻¹, the inverse of the total
+            (rigid-body plus added-mass) generalized mass-inertia matrix that the equations
+            of motion are solved with.
         `kinematics` (KinematicsData): The most recently computed pose η (NED), body velocity ν
             (Body), and body acceleration ν̇ (Body) of the boat.
     """
@@ -50,10 +51,13 @@ class BoatKinematics:
         self.__timestep = timestep
         self.__boat_mass = BOAT_PROPERTIES.mass
         # BOAT_PROPERTIES.inertia is M_RB = diag(m, m, I_xx, I_zz), the rigid-body
-        # generalized mass-inertia matrix.
+        # generalized mass-inertia matrix. The added mass M_A is folded into the mass
+        # matrix here (the left-hand side of the equations of motion) rather than applied
+        # as a −M_A·ν̇ force: an explicit added-mass force needs the previous timestep's
+        # acceleration, which is numerically unstable when M_A is comparable to M_RB.
         self.__inertia: Mat4[Inertia, Body] = BOAT_PROPERTIES.inertia
         self.__inertia_inverse: Mat4[InverseInertia, Body] = Mat4(
-            np.linalg.inv(BOAT_PROPERTIES.inertia.data)
+            np.linalg.inv(BOAT_PROPERTIES.inertia.data + BOAT_PROPERTIES.M_A.data)
         )
         self.kinematics: KinematicsData = KinematicsData()
 
@@ -81,7 +85,7 @@ class BoatKinematics:
         self, nu: Vec4[Velocity, Body], tau_rb: Vec4[Force, Body]
     ) -> Vec4[Acceleration, Body]:
         """Solves the kinetics equation for the body-frame acceleration:
-        ν̇ = M_RB⁻¹·(τ_RB − C_RB(ν)·ν).
+        ν̇ = (M_RB + M_A)⁻¹·(τ_RB − C_RB(ν)·ν).
 
         Args:
             nu (Vec4[Velocity, Body]): ν, the boat's generalized velocity [u, v, p, r].

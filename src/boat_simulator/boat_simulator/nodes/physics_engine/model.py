@@ -92,6 +92,14 @@ class BoatState:
             delta_tab_rad=trim_tab_angle.radians,
         )
 
+        _logger.info(
+            f"pose: {self.pose}\n"
+            f"nu: {self.nu}\n"
+            f"nu_dot: {self.nu_dot}\n"
+            f"timestamp: {self.timestep}\n"
+            f"roll: {self.pose.data[2] * 180/np.pi}\n"
+            f"yaw: {self.pose.data[3] * 180/np.pi}\n"
+        )
         self.__kinematics_computation.step(self.nu, net_force)
 
     @property

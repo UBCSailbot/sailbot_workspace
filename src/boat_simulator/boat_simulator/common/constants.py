@@ -138,11 +138,11 @@ METACENTRIC_HEIGHT = 0.3  # Units: meters
 WING_SAIL_CHORD = 1.5  # Units: meters
 
 # TODO Placeholder: measure the distance from the mast axis to the tab's aero center.
-WINGSAIL_TO_TRIM_TAB_BOOM_LENGTH = 1.5  # Units: meters
+WINGSAIL_TO_TRIM_TAB_BOOM_LENGTH = 1.0  # Units: meters
 
 # TODO sail_dist is the sail CE-to-pivot distance, not CE-to-CG; z_s (CE height
 # relative to the CG) is a placeholder until we have real geometry.
-CE_HEIGHT_REL_TO_CG = -3.0  # Units: meters
+CE_HEIGHT_REL_TO_CG = -0.5  # Units: meters
 
 # TODO Placeholder: measure the mast pivot's chordwise position (~25% chord assumed).
 MAST_PIVOT_CHORD_FRACTION = 0.25  # Fraction of the wing chord, dimensionless
@@ -160,7 +160,7 @@ HULL_CE_REL_TO_CG = (0.0, 0.0, 0.0)  # (x_h, y_h, z_h), units: meters
 HULL_LINEAR_DRAG = 0.0  # Units: newton seconds per meter
 
 # Displaced volume of the boat at floating equilibrium (m^3)
-DISPLACED_VOLUME = 0.50
+DISPLACED_VOLUME = 0.1
 
 # Constants related to the physical and mechanical properties of Polaris
 # TODO These are placeholder values which should be replaced when we have real values.

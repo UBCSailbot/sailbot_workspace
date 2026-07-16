@@ -64,8 +64,11 @@ def test_construction_uses_boat_properties_mass_and_inertia() -> None:
 
     assert boat_state.boat_mass == pytest.approx(BOAT_PROPERTIES.mass)
     np.testing.assert_array_equal(boat_state.inertia.data, BOAT_PROPERTIES.inertia.data)
+    # The EOM are solved with the total mass matrix M_RB + M_A (added mass is implicit
+    # on the left-hand side, not a lagged force).
     np.testing.assert_allclose(
-        boat_state.inertia_inverse.data, np.linalg.inv(BOAT_PROPERTIES.inertia.data)
+        boat_state.inertia_inverse.data,
+        np.linalg.inv(BOAT_PROPERTIES.inertia.data + BOAT_PROPERTIES.M_A.data),
     )
 
 

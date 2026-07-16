@@ -20,12 +20,15 @@ class TotalForceComputation:
     force computations in this module (van Tonder Eq. 12)::
 
         τ_RB = τ_hydro + τ_static + τ_aero
-             = [ −M_A·ν̇_r − C_A(v_r)·v_r − D·v_r + τ_h + τ_r + τ_k ]   (HydroDynamics)
-               + g(η)                                                  (HydroStatics)
-               + τ_S                                                   (AeroDynamics)
+             = [ −C_A(v_r)·v_r − D·v_r + τ_h + τ_r + τ_k ]   (HydroDynamics)
+               + g(η)                                        (HydroStatics)
+               + τ_S                                          (AeroDynamics)
 
-    Solving the equations of motion with this force is `BoatKinematics`'s job
-    (kinematics_computation.py).
+    The added-mass inertia term −M_A·ν̇ is not a force here; M_A is folded into the
+    mass matrix on the left-hand side of the equations of motion, which `BoatKinematics`
+    (kinematics_computation.py) solves as ν̇ = (M_RB + M_A)⁻¹·(τ_RB − C_RB·ν). Applying
+    it as an explicit force would require the previous timestep's acceleration, which is
+    numerically unstable when M_A is comparable to M_RB.
 
     Attributes:
         hydrodynamics (HydroDynamicsForceComputation): Computes τ_hydro, the hull, rudder,
@@ -55,10 +58,6 @@ class TotalForceComputation:
         """Assembles total force (τ_RB) = τ_hydro + g(η) + τ_S, the total generalized force
         on the boat.
 
-        The current is assumed constant and irrotational, so ν̇_r = ν̇; the previous
-        timestep's acceleration stands in for ν̇ in the −M_A·ν̇_r term inside τ_hydro,
-        which breaks the algebraic loop of τ_RB depending on the acceleration it produces.
-
         Args:
             boat_kinematics (BoatKinematics): The boat kinematics (position, velocity, acceleration
                 ) that contains the state at time t. The forces will help us find the state at time
@@ -81,9 +80,7 @@ class TotalForceComputation:
         v_r = self.__hydrodynamics.relative_velocity(
             boat_kinematics.nu, ocean_current_speed_mps, ocean_current_bearing_rad, heading_rad
         )
-        hydro_force = self.__hydrodynamics.compute(
-            v_r, boat_kinematics.nu_dot, roll_rad, delta_r_rad
-        )
+        hydro_force = self.__hydrodynamics.compute(v_r, roll_rad, delta_r_rad)
         static_force = self.__hydrostatics.compute(roll_rad)
         aero_force = self.__aerodynamics.compute(
             boat_kinematics.nu,

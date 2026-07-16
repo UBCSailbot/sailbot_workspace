@@ -33,6 +33,11 @@ from boat_simulator.common.types import CoeffTable, Vec2, Vec4
 
 _logger = get_logger(__name__)
 
+# Lower bound on |cos(roll)| in hull_force's sway-flow division. cos(roll) -> 0 as the
+# boat heels toward 90°, where the 4-DOF hull model is no longer valid; without a floor
+# the division produces an enormous force that overflows the integrator. 0.1 ~= 84° heel.
+MIN_HULL_COS_ROLL = 0.1
+
 
 class MediumForceComputation:
     """This class calculates the lift and drag forces experienced by a medium when subjected to
@@ -143,7 +148,7 @@ class MediumForceComputation:
         lift_n = 0.5 * self.__fluid_density * lift_coefficient * area * velocity_magnitude**2
         drag_n = 0.5 * self.__fluid_density * drag_coefficient * area * velocity_magnitude**2
 
-        _logger.info(
+        _logger.debug(
             f"compute: apparent_vel={velocity} m/s orientation={orientation_deg:6.2f}° "
             f"aoa={attack_angle_deg:6.2f}° "
             f"C_l={lift_coefficient:6.3f} C_d={drag_coefficient:6.3f} "
@@ -319,7 +324,7 @@ class AeroDynamicsForceComputation:
         return V_aw, theta
 
     def net_pitching_moment(self, alpha_rad: float, v_aw: float, delta_tab_rad: float) -> float:
-        """Sets up teh equation for the net pitching moment (or rather it gives the value).
+        """Sets up the equation for the net pitching moment (or rather it gives the value).
 
         Args:
             alpha_rad (float): Wing angle of attack, in radians.
@@ -330,6 +335,7 @@ class AeroDynamicsForceComputation:
             float: The net pitching moment M_net(alpha), in newton meters.
                 we want this to be 0
         """
+        _logger.debug("Computing wing sail net pitching moment")
         lift_n, drag_n, _ = self.__wing.compute(
             Vec2.from_xy(v_aw * math.cos(alpha_rad), v_aw * math.sin(alpha_rad)),
             0.0,  # double check this maths out properly
@@ -410,17 +416,22 @@ class AeroDynamicsForceComputation:
         )
         alpha_rad = self.solve_wing_angle(v_aw, delta_tab_rad, alpha_guess_rad)
 
+        _logger.info("Computing wingsail force")
         lift_n, drag_n, attack_deg = self.__wing.compute(
             Vec2.from_xy(v_aw * math.cos(theta), v_aw * math.sin(theta)), math.degrees(alpha_rad)
         )
 
-        # Force and Moment calculations
+        # Force and Moment calculations. The transverse aero force g_s is horizontal (the
+        # wind is horizontal), so its body-frame y component — and with it the roll and yaw
+        # moments — attenuates by cos(roll) as the boat heels. K = −z_s·F_y because z_s is
+        # negative (CE above the CG in the z-down body frame), which heels the boat away
+        # from the wind and self-limits: the heeling moment vanishes at 90° of heel while
+        # the hydrostatic restoring moment peaks.
         x_s = lift_n * math.sin(theta) - drag_n * math.cos(theta)
-        y_s = (lift_n * math.cos(theta) + drag_n * math.sin(theta)) * math.cos(roll_rad)
-
-        f_y = lift_n * math.cos(alpha_rad) + drag_n * math.sin(alpha_rad)
-        k_s = f_y * self.__z_s
-        n_s = f_y * self.__x_s * math.cos(roll_rad)
+        g_s = lift_n * math.cos(theta) + drag_n * math.sin(theta)
+        y_s = g_s * math.cos(roll_rad)
+        k_s = -g_s * self.__z_s * math.cos(roll_rad)
+        n_s = g_s * self.__x_s * math.cos(roll_rad)
         return Vec4.from_xypr(x_s, y_s, k_s, n_s)
 
 
@@ -492,7 +503,23 @@ class HydroDynamicsForceComputation:
         return Vec4.from_xypr(nu.x - u_c, nu.y - v_c, nu.p, nu.r)
 
     def added_mass_coriolis_matrix(self, v_r: Vec4[Velocity, Body]) -> NDArray[np.float64]:
-        """Builds C_A.
+        """Builds C_A, the added-mass Coriolis-centripetal matrix, from M_A via Fossen's
+        construction, so it is skew-symmetric by construction for any M_A.
+
+        This deliberately deviates from van Tonder Eq. 17, which is not skew-symmetric
+        (nonzero K_ṗ·p diagonal entry, unbalanced sway-yaw pair) and therefore injects
+        energy into the system — the K_ṗ·p entry in particular drives roll unstable.
+        A Coriolis matrix only redirects momentum; skew-symmetry (νᵀ·C_A·ν = 0) is what
+        guarantees it does no work. Deriving C_A from Kirchhoff's equations (Fossen's
+        standard form) with h = M_A·v_r the generalized added momentum gives::
+
+            C_A(v_r) = ⎡  0    0   0  −h₁ ⎤
+                       ⎢  0    0   0   h₀ ⎥
+                       ⎢  0    0   0   0  ⎥
+                       ⎣  h₁  −h₀  0   0  ⎦
+
+        mirroring C_RB. The K_ṗ terms land in the pitch equation, which the 4-DOF model
+        discards, so the roll row and column are zero.
 
         Args:
             v_r (Vec4[Velocity, Body]): relative-to-water velocity [u, v, p, r].
@@ -500,17 +527,12 @@ class HydroDynamicsForceComputation:
         Returns:
             NDArray[np.float64]: the 4x4 C_A(v_r) matrix.
         """
-        x_udot = self.__m_a.data[0, 0]
-        y_vdot = self.__m_a.data[1, 1]
-        k_pdot = self.__m_a.data[2, 2]
-        u, v, p = v_r.x, v_r.y, v_r.p
+        h = self.__m_a.data @ v_r.data
         c_a = np.zeros((4, 4))
-        c_a[0, 3] = y_vdot * v
-        c_a[1, 3] = x_udot * u
-        c_a[2, 2] = k_pdot * p
-        c_a[3, 0] = -y_vdot * v
-        c_a[3, 1] = x_udot * u
-        c_a[3, 2] = y_vdot * v
+        c_a[0, 3] = -h[1]
+        c_a[1, 3] = h[0]
+        c_a[3, 0] = h[1]
+        c_a[3, 1] = -h[0]
         return c_a
 
     def hull_force(self, v_r: Vec4[Velocity, Body], roll_rad: float) -> Vec4[Force, Body]:
@@ -525,10 +547,26 @@ class HydroDynamicsForceComputation:
         """
         u, v, p, r = v_r.x, v_r.y, v_r.p, v_r.r
         u_h = -u + r * self.__y_h
-        v_h = (-v - r * self.__x_h + p * self.__z_h) / math.cos(roll_rad)
+        cos_roll = math.cos(roll_rad)
+        if abs(cos_roll) < MIN_HULL_COS_ROLL:
+            _logger.fatal(
+                f"hull_force: roll = {math.degrees(roll_rad):.1f} deg puts cos(roll) = "
+                f"{cos_roll:.4f} near zero; clamping to ±{MIN_HULL_COS_ROLL} to avoid a "
+                "division blow-up. The hull model is not valid this close to 90 deg heel.",
+                throttle_duration_sec=0.5,
+            )
+            cos_roll = math.copysign(MIN_HULL_COS_ROLL, cos_roll)
+        v_h = (-v - r * self.__x_h + p * self.__z_h) / cos_roll
         water_speed_rel_to_hull = math.sqrt(u_h**2 + v_h**2)
         alpha_h = math.atan2(v_h, u_h)
-        h_d = self.__hull_r1 * water_speed_rel_to_hull**2 + self.__hull_r2
+        # Both drag terms scale with speed (r2 is a linear damping coefficient, N·s/m), so
+        # the hull force vanishes at rest. (u_h, v_h) is the water's velocity relative to
+        # the hull, so drag acts along +alpha_h — pointing WITH the relative flow is what
+        # makes this dissipative (F·v < 0); flipping it turns the hull into a thruster.
+        h_d = (
+            self.__hull_r1 * water_speed_rel_to_hull**2
+            + self.__hull_r2 * water_speed_rel_to_hull
+        )
         _logger.info(f"water_speed_rel_to_hull={water_speed_rel_to_hull} h_d={h_d} u={v_r.x}")
 
         # Force and Moment calculations
@@ -559,6 +597,7 @@ class HydroDynamicsForceComputation:
         beta_r = math.atan2(v_r_new, u_r)
         alpha_r = beta_r + delta_r_rad
 
+        _logger.info("Computing rudder force")
         lift_n, drag_n, _ = self.__rudder.compute(
             Vec2.from_xy(
                 water_speed_rel_to_rudder * math.cos(alpha_r),
@@ -588,13 +627,18 @@ class HydroDynamicsForceComputation:
         Returns:
             Vec4[Force, Body]: keel forces and moments.
         """
+        # The keel is a fixed foil, so this mirrors rudder_force with zero deflection: the
+        # water velocity relative to the keel is the negated velocity of the keel's centre
+        # of effort through the water, and the force decomposition is identical. The signs
+        # matter dynamically — they make the keel *oppose* roll rate and leeway (damping);
+        # flipping any of them turns the keel into an energy source that pumps roll.
         u, v, p, r = v_r.x, v_r.y, v_r.p, v_r.r
         u_k = -u
-        v_k = v - r * self.__x_k - p * self.__z_k
+        v_k = -v - r * self.__x_k + p * self.__z_k
         water_speed_rel_to_keel = math.hypot(u_k, v_k)
-        beta_k = math.atan2(u_k, v_k)
-        alpha_k = -beta_k + math.pi
+        alpha_k = math.atan2(v_k, u_k)
 
+        _logger.info("Computing keel force")
         lift_n, drag_n, _ = self.__keel.compute(
             Vec2.from_xy(
                 water_speed_rel_to_keel * math.cos(alpha_k),
@@ -604,11 +648,11 @@ class HydroDynamicsForceComputation:
         )
 
         # Force and Moment calculations
-        x = -lift_n * math.sin(alpha_k) + drag_n * math.cos(alpha_k)
-        y = -(lift_n * math.cos(alpha_k) - drag_n * math.sin(alpha_k)) * math.cos(roll_rad)
-        k = (lift_n * math.cos(alpha_k) + drag_n * math.sin(alpha_k)) * self.__z_k
+        x = lift_n * math.sin(alpha_k) - drag_n * math.cos(alpha_k)
+        y = (lift_n * math.cos(alpha_k) + drag_n * math.sin(alpha_k)) * math.cos(roll_rad)
+        k = -(lift_n * math.cos(alpha_k) + drag_n * math.sin(alpha_k)) * self.__z_k
         n = (
-            -(lift_n * math.cos(alpha_k) + drag_n * math.sin(alpha_k))
+            (lift_n * math.cos(alpha_k) + drag_n * math.sin(alpha_k))
             * self.__x_k
             * math.cos(roll_rad)
         )
@@ -617,16 +661,19 @@ class HydroDynamicsForceComputation:
     def compute(
         self,
         v_r: Vec4[Velocity, Body],
-        v_dot_r: Vec4[Acceleration, Body],
         roll_rad: float,
         delta_r_rad: float,
     ) -> Vec4[Force, Body]:
         """Calculates the total hydrodynamic generalized force acting on the boat.
 
+        The added-mass inertia force −M_A·ν̇ is deliberately NOT part of this force:
+        applying it explicitly with the previous timestep's acceleration is numerically
+        unstable when M_A is comparable to M_RB (as it is in water). Instead M_A is
+        folded into the mass matrix on the left-hand side of the equations of motion,
+        which `BoatKinematics` solves as ν̇ = (M_RB + M_A)⁻¹·(τ_RB − C_RB·ν).
+
         Args:
             v_r (Vec4[Velocity, Body]): The boat's velocity relative to the water.
-            v_dot_r (Vec4[Acceleration, Body]): The time derivative of the boat's velocity
-                relative to the water.
             roll_rad (float): The boat's current roll angle in radians.
             delta_r_rad (float): The rudder deflection angle in radians.
 
@@ -637,17 +684,14 @@ class HydroDynamicsForceComputation:
         tau_r = self.rudder_force(v_r, roll_rad, delta_r_rad)
         tau_k = self.keel_force(v_r, roll_rad)
 
-        added_mass_term = self.__m_a.data @ v_dot_r.data
         c_a = self.added_mass_coriolis_matrix(v_r)
         coriolis_term = c_a @ v_r.data
         damping_term = self.__d.data @ v_r.data
 
-        total = (
-            tau_h.data + tau_r.data + tau_k.data - added_mass_term - coriolis_term - damping_term
-        )
+        total = tau_h.data + tau_r.data + tau_k.data - coriolis_term - damping_term
 
-        _logger.debug(
-            f"tau_h={tau_h} tau_r={tau_r} tau_k={tau_k} added_mass_term={added_mass_term} "
+        _logger.info(
+            f"tau_h={tau_h} tau_r={tau_r} tau_k={tau_k} "
             f"coriolis_term={coriolis_term} damping_term={damping_term}"
         )
 
