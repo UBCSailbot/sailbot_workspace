@@ -3,6 +3,7 @@
 !src/**
 !scripts/build.sh
 !scripts/setup.sh
+!scripts/test_ctrl_manual.sh
 !docs/requirements.txt
 !log/**
 !build/**
