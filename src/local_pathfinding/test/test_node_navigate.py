@@ -188,11 +188,34 @@ def test_all_subs_active_requires_rudder_heading() -> None:
 
 
 @pytest.mark.parametrize(
-    ("stale_input", "gps_timestamp", "heading_timestamp"),
-    [("gps", 0.0, 121.0), ("rudder", 121.0, 0.0)],
+    ("now_sec", "gps_timestamp", "heading_timestamp", "expected"),
+    [
+        (121.0, 121.0, 121.0, False),
+        (120.0, 0.0, 0.0, False),
+        (121.0, 0.0, 121.0, True),
+        (121.0, 121.0, 0.0, True),
+        (121.0, 0.0, 0.0, True),
+    ],
 )
-def test_desired_heading_callback_disables_sail_for_each_timed_out_input(
-    stale_input: str, gps_timestamp: float, heading_timestamp: float
+def test_timed_out_inputs(
+    now_sec: float,
+    gps_timestamp: float,
+    heading_timestamp: float,
+    expected: bool,
+) -> None:
+    sailbot = make_sailbot_shell(gps_lat_lon=make_waypoint(49.0, -123.0))
+    sailbot.gps_timeout_start_sec = gps_timestamp
+    sailbot.heading_timeout_start_sec = heading_timestamp
+    setattr(sailbot, "_now_sec", lambda: now_sec)
+
+    assert sailbot._timed_out_inputs() is expected
+
+
+@pytest.mark.parametrize(
+    ("gps_timestamp", "heading_timestamp"), [(0.0, 121.0), (121.0, 0.0)]
+)
+def test_desired_heading_callback_disables_sail_for_timed_out_inputs(
+    gps_timestamp: float, heading_timestamp: float
 ) -> None:
     sailbot = make_sailbot_shell(gps_lat_lon=make_waypoint(49.0, -123.0))
     sailbot.gp = GlobalPath(waypoints=list(make_path(49.0, -123.0).waypoints), index=2)
@@ -209,7 +232,7 @@ def test_desired_heading_callback_disables_sail_for_each_timed_out_input(
     assert len(published) == 1
     assert not published[0].sail
     assert published[0].heading.heading == 0.0
-    assert get_test_logger(sailbot).has_message("warning", stale_input)
+    assert get_test_logger(sailbot).has_message("warning", "GPS or rudder data")
 
 
 def test_new_global_path_starts_at_last_waypoint() -> None:

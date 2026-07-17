@@ -525,8 +525,7 @@ class Sailbot(Node):
         if self.gp is None:
             self._load_persisted_global_path()
 
-        timed_out_inputs = self._timed_out_inputs()
-        if timed_out_inputs:
+        if self._timed_out_inputs():
             msg = ci.DesiredHeading()
             msg.heading.heading = 0.0
             msg.sail = False
@@ -534,8 +533,8 @@ class Sailbot(Node):
             self.desired_heading = msg
 
             self.get_logger().warning(
-                f"Navigation input(s) {', '.join(timed_out_inputs)} have not been received for "
-                f"more than {NAVIGATION_INPUT_TIMEOUT_SEC:.0f} seconds. "
+                "GPS or rudder data has not been received for more than "
+                f"{NAVIGATION_INPUT_TIMEOUT_SEC:.0f} seconds. "
                 f"Publishing to {self.desired_heading_pub.topic}: {msg.heading.heading}"
             )
             self.desired_heading_pub.publish(msg)
@@ -803,12 +802,13 @@ class Sailbot(Node):
         )
 
     def _timed_out_inputs(self) -> bool:
-        """Return navigation inputs not received within the safety timeout."""
+        """Return whether GPS or rudder data exceeded the safety timeout."""
 
         now_sec = self._now_sec()
-        return ((now_sec - self.gps_timeout_start_sec > NAVIGATION_INPUT_TIMEOUT_SEC) or
-                (now_sec - self.heading_timeout_start_sec > NAVIGATION_INPUT_TIMEOUT_SEC))
-
+        return (
+            now_sec - self.gps_timeout_start_sec > NAVIGATION_INPUT_TIMEOUT_SEC
+            or now_sec - self.heading_timeout_start_sec > NAVIGATION_INPUT_TIMEOUT_SEC
+        )
 
     def _log_inactive_subs_warning(self) -> None:
         """
