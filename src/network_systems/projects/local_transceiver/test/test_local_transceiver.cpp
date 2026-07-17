@@ -87,33 +87,33 @@ bp::child TestLocalTransceiver::http_echo_server_proc_ = {};
 
 std::mutex port_mutex;
 
-// static custom_interfaces::msg::Path parseInMsgHelper(const std::string & serialized_test)
-// {
-//     Polaris::GlobalPath          path;
-//     custom_interfaces::msg::Path parsed;
-//     if (!path.ParseFromString(serialized_test)) {
-//         return parsed;
-//     }
-//     for (int i = 0; i < path.waypoints_size(); ++i) {
-//         const Polaris::Waypoint &            wp = path.waypoints(i);
-//         custom_interfaces::msg::HelperLatLon h;
-//         float                                lat = wp.latitude();
-//         float                                lon = wp.longitude();
-//         // Basic validation similar to what the private parseInMsg enforces in tests:
-//         if (lat < -90.0f || lat > 90.0f) {
-//             h.latitude = -1;
-//         } else {
-//             h.latitude = lat;
-//         }
-//         if (lon < -180.0f || lon > 180.0f) {
-//             h.longitude = -1;
-//         } else {
-//             h.longitude = lon;
-//         }
-//         parsed.waypoints.push_back(h);
-//     }
-//     return parsed;
-// }
+static custom_interfaces::msg::Path parseInMsgHelper(const std::string & serialized_test)
+{
+    Polaris::GlobalPath          path;
+    custom_interfaces::msg::Path parsed;
+    if (!path.ParseFromString(serialized_test)) {
+        return parsed;
+    }
+    for (int i = 0; i < path.waypoints_size(); ++i) {
+        const Polaris::Waypoint &            wp = path.waypoints(i);
+        custom_interfaces::msg::HelperLatLon h;
+        float                                lat = wp.latitude();
+        float                                lon = wp.longitude();
+        // Basic validation similar to what the private parseInMsg enforces in tests:
+        if (lat < -90.0f || lat > 90.0f) {
+            h.latitude = -1;
+        } else {
+            h.latitude = lat;
+        }
+        if (lon < -180.0f || lon > 180.0f) {
+            h.longitude = -1;
+        } else {
+            h.longitude = lon;
+        }
+        parsed.waypoints.push_back(h);
+    }
+    return parsed;
+}
 
 /**
  * @brief Verify debugSend
@@ -735,35 +735,35 @@ TEST_F(TestLocalTransceiver, checkCache)
 //     }
 // }
 
-// TEST_F(TestLocalTransceiver, parseInMsgInvalid)
-// {
-//     constexpr float                                   holder     = 14.3;
-//     constexpr float                                   outofrange = -95;
-//     std::vector<custom_interfaces::msg::HelperLatLon> waypoints;
-//
-//     // protobuf
-//     Polaris::GlobalPath path;
-//
-//     Polaris::Waypoint * waypoint_a = path.add_waypoints();
-//     waypoint_a->set_latitude(outofrange);
-//     waypoint_a->set_longitude(holder);
-//
-//     Polaris::Waypoint * waypoint_b = path.add_waypoints();
-//     waypoint_b->set_latitude(holder);
-//     waypoint_b->set_longitude(holder);
-//
-//     // convert protobuf to string
-//     std::string serialized_test = path.SerializeAsString();
-//
-//     custom_interfaces::msg::Path parsed_test = LocalTransceiver::parseInMsg(serialized_test);
-//
-//     EXPECT_EQ(parsed_test.waypoints[0].latitude, outofrange);  //NOLINT
-//     EXPECT_EQ(parsed_test.waypoints[0].longitude, holder);
-//     EXPECT_EQ(parsed_test.waypoints[1].latitude, holder);
-//     EXPECT_EQ(parsed_test.waypoints[1].longitude, holder);
-//
-//     EXPECT_FALSE(lcl_trns_->validateGlobalPathWayPoints(parsed_test));
-// }
+TEST_F(TestLocalTransceiver, parseInMsgInvalid)
+{
+    constexpr float                                   holder     = 14.3;
+    constexpr float                                   outofrange = -95;
+    std::vector<custom_interfaces::msg::HelperLatLon> waypoints;
+
+    // protobuf
+    Polaris::GlobalPath path;
+
+    Polaris::Waypoint * waypoint_a = path.add_waypoints();
+    waypoint_a->set_latitude(outofrange);
+    waypoint_a->set_longitude(holder);
+
+    Polaris::Waypoint * waypoint_b = path.add_waypoints();
+    waypoint_b->set_latitude(holder);
+    waypoint_b->set_longitude(holder);
+
+    // convert protobuf to string
+    std::string serialized_test = path.SerializeAsString();
+
+    custom_interfaces::msg::Path parsed_test = LocalTransceiver::parseInMsg(serialized_test);
+
+    EXPECT_EQ(parsed_test.waypoints[0].latitude, outofrange);  //NOLINT
+    EXPECT_EQ(parsed_test.waypoints[0].longitude, holder);
+    EXPECT_EQ(parsed_test.waypoints[1].latitude, holder);
+    EXPECT_EQ(parsed_test.waypoints[1].longitude, holder);
+
+    EXPECT_FALSE(lcl_trns_->validateGlobalPathWayPoints(parsed_test));
+}
 
 TEST_F(TestLocalTransceiver, validateGlobalPathWayPoints)
 {
