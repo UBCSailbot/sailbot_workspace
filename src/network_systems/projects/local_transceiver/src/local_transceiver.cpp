@@ -32,6 +32,11 @@ using boost::system::error_code;
 using Polaris::Sensors;
 namespace bio = boost::asio;
 
+constexpr float LAT_LBOUND = -90.0F;
+constexpr float LAT_UBOUND = 90.0F;
+constexpr float LON_LBOUND = -180.0F;
+constexpr float LON_UBOUND = 180.0F;
+
 void LocalTransceiver::updateSensor(msg::GPS gps)
 {
     sensors_.mutable_gps()->set_heading(gps.heading.heading);
@@ -478,7 +483,7 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
 
         std::this_thread::sleep_for(std::chrono::seconds(MEDIUM_WAIT));
         if (i == MAX_NUM_RETRIES) {
-            return parseInMsg("-1");
+            return custom_interfaces::msg::Path();
         }
 
         static const AT::Line check_conn_cmd = AT::Line(AT::CHECK_CONN);
@@ -550,18 +555,15 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
 
         AT::SBDStatusRsp rsp(sbdix_value);
 
-        if (rsp.MO_status_ == 0) {
-            if (rsp.MT_status_ == 0) {
-                if (log_debug_) {
-                    log_debug_("DEBUG: MT status 0 continue");
-                }
-                continue;
-            } else if (rsp.MT_status_ == 1) {  //NOLINT
-                break;
-            } else if (rsp.MT_status_ == 2) {
-                continue;
-            }
-        } else {
+        if (rsp.MO_status_ != 0) {
+            continue;
+        }
+
+        if (rsp.MT_status_ == 0) {
+            return custom_interfaces::msg::Path();
+        } else if (rsp.MT_status_ == 1) {  //NOLINT
+            break;
+        } else if (rsp.MT_status_ == 2) {
             continue;
         }
     }
@@ -597,7 +599,34 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
     custom_interfaces::msg::Path to_publish = parseInMsg(receivedDataBuffer);
 
     fut.get();
-    return to_publish;
+
+    if (validateGlobalPathWayPoints(to_publish)) {
+        return to_publish;
+    }
+
+    return custom_interfaces::msg::Path();
+}
+
+bool LocalTransceiver::validateGlobalPathWayPoints(const custom_interfaces::msg::Path & path_to_publish)
+{
+    if (path_to_publish.waypoints.empty()) {
+        return false;
+    }
+
+    for (const auto & waypoint : path_to_publish.waypoints) {  //NOLINT
+        if (
+          (waypoint.latitude < LAT_LBOUND || waypoint.latitude > LAT_UBOUND) ||
+          (waypoint.longitude < LON_LBOUND || waypoint.longitude > LON_UBOUND)) {
+            if (log_error_) {
+                log_error_(
+                  "Invalid waypoint lat/lon received: (" + std::to_string(waypoint.latitude) + ", " +
+                  std::to_string(waypoint.longitude) + "). Publishing empty path.");
+            }
+            return false;
+        }
+    }
+
+    return true;
 }
 
 bool LocalTransceiver::send(const AT::Line & cmd)
