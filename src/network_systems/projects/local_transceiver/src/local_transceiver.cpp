@@ -483,7 +483,7 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
 
         std::this_thread::sleep_for(std::chrono::seconds(MEDIUM_WAIT));
         if (i == MAX_NUM_RETRIES) {
-            return parseInMsg("-1");
+            return custom_interfaces::msg::Path();
         }
 
         static const AT::Line check_conn_cmd = AT::Line(AT::CHECK_CONN);
@@ -560,7 +560,7 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
         }
 
         if (rsp.MT_status_ == 0) {
-            return parseInMsg("-1");
+            return custom_interfaces::msg::Path();
         } else if (rsp.MT_status_ == 1) {  //NOLINT
             break;
         } else if (rsp.MT_status_ == 2) {
@@ -604,7 +604,7 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
         return to_publish;
     }
 
-    return parseInMsg("-1");
+    return custom_interfaces::msg::Path();
 }
 
 bool LocalTransceiver::validateGlobalPathWayPoints(const custom_interfaces::msg::Path & path_to_publish)
