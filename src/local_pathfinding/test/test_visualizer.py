@@ -1,4 +1,5 @@
 import math
+from collections import deque
 from types import SimpleNamespace
 
 import pytest
@@ -151,3 +152,53 @@ def test_build_ompl_yaw_trace():
 def test_build_ompl_yaw_trace_rejects_mismatched_data():
     with pytest.raises(ValueError, match="matching lengths"):
         viz.build_ompl_yaw_trace([0.0], [0.0], [])
+
+
+def make_visualizer_message() -> ci.LPathData:
+    gps = ci.GPS(
+        lat_lon=ci.HelperLatLon(latitude=49.0, longitude=-123.0),
+        speed=ci.HelperSpeed(speed=5.0),
+        heading=ci.HelperHeading(heading=123.0),
+    )
+    global_path = ci.Path(
+        waypoints=[
+            ci.HelperLatLon(latitude=49.1, longitude=-123.1),
+            ci.HelperLatLon(latitude=49.0, longitude=-123.0),
+        ]
+    )
+    local_path = ci.Path(
+        waypoints=[
+            ci.HelperLatLon(latitude=49.0, longitude=-123.0),
+            ci.HelperLatLon(latitude=49.05, longitude=-123.05),
+        ]
+    )
+    return ci.LPathData(
+        global_path=global_path,
+        local_path=local_path,
+        gps=gps,
+        filtered_wind_sensor=ci.WindSensor(
+            speed=ci.HelperSpeed(speed=10.0), direction=0
+        ),
+        ais_ships=ci.AISShips(),
+    )
+
+
+def test_visualizer_uses_rudder_heading_for_boat_and_wind() -> None:
+    rudder_heading = ci.HelperHeading(heading=90.0)
+    state = viz.VisualizerState(
+        msgs=deque([make_visualizer_message()]),
+        heading=rudder_heading,
+    )
+
+    assert state.boat_heading_deg == 90.0
+    assert state.boat_heading_deg != state.latest_msg.gps.heading.heading
+
+    aw_direction_deg = viz.wcs.boat_to_global_coordinate(rudder_heading.heading, 0.0)
+    expected_aw = viz.cs.polar_to_cartesian(math.radians(aw_direction_deg), 10.0)
+    assert state.aw_vector_kmph == pytest.approx(expected_aw)
+
+    trace = viz.build_boat_trace(state, boat_xy_km=(0.0, 0.0), dist_to_goal_km=1.0)
+    assert trace.marker.angle == pytest.approx(
+        viz.cs.true_bearing_to_plotly_cartesian(rudder_heading.heading)
+    )
+    assert "Heading: 90.0°" in trace.hovertemplate

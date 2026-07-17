@@ -11,13 +11,13 @@
 # True wind: prevailing summer westerly in English Bay.
 tw_dir_deg: 270
 tw_speed_kmph: 14.0
+heading_deg: 45.0
 
 # Boat starts at the Jericho Sailing Centre launch, heading out (NE) into the bay.
 gps:
   latitude: 49.277248
   longitude: -123.197365
   speed_kmph: 5.0
-  heading_deg: 45.0
 
 
 # The global waypoint makes the sailboat move in a square loop out towards the west and then north and then south.

@@ -207,8 +207,8 @@ class VisualizerState:
         final_local_wp_headings_deg (List[float]): OMPL state yaws converted to navigation headings
                                                    (degrees) for the latest local path.
 
-        sailbot_gps (List[ci.Gps]): GPS messages used for heading (degrees) and speed (km/h)
-                                    display.
+        sailbot_gps (List[ci.GPS]): GPS messages used for position and speed history.
+        boat_heading_deg (float): Latest e-compass boat heading from the ``rudder`` topic.
 
         ais_ships_by_id (Dict[int, AISShipData]): Dictionary mapping AIS ship IDs to their data
                                                    (position, heading, speed).
@@ -222,11 +222,17 @@ class VisualizerState:
         state_space (Optional[MultiPolygon]): The computed state-space overlay as a MultiPolygon.
     """
 
-    def __init__(self, msgs: deque[ci.LPathData], last_replan_reason: str = ""):
+    def __init__(
+        self,
+        msgs: deque[ci.LPathData],
+        heading: ci.HelperHeading,
+        last_replan_reason: str = "",
+    ):
         if not msgs:
             raise ValueError("VisualizerState requires at least one message")
 
         self.latest_msg = msgs[-1]
+        self.boat_heading_deg = heading.heading
         self.last_replan_reason = last_replan_reason
         self._validate_message(self.latest_msg)
 
@@ -292,7 +298,7 @@ class VisualizerState:
 
         # Wind Vectors
         boat_speed_kmph = self.latest_msg.gps.speed.speed
-        boat_heading_deg = self.latest_msg.gps.heading.heading
+        boat_heading_deg = self.boat_heading_deg
         aw_speed_kmph = self.latest_msg.filtered_wind_sensor.speed.speed
         aw_dir_boat_deg = self.latest_msg.filtered_wind_sensor.direction
 
@@ -781,14 +787,14 @@ def build_boat_trace(
     Create the boat marker trace (filled arrow-head/ triangle) at the current boat position.
 
     Args:
-        vs: VisualizerState containing GPS heading/speed history.
+        vs: VisualizerState containing GPS position/speed history and e-compass heading.
         boat_xy_km: (x, y) current boat position in km.
         dist_to_goal_km: Current straight-line distance to the goal in km (for hover text).
 
     Returns:
         A Plotly Scatter trace representing the boat marker with heading-based rotation.
     """
-    heading = vs.sailbot_gps[-1].heading.heading
+    heading = vs.boat_heading_deg
     speed = vs.sailbot_gps[-1].speed.speed
     lat = vs.sailbot_lat_lon[-1].latitude
     lon = vs.sailbot_lat_lon[-1].longitude

@@ -4,12 +4,12 @@
 # grounding on the coast to the north.
 tw_dir_deg: 180
 tw_speed_kmph: 12.0
+heading_deg: -90.0
 
 gps:
   latitude: 49.270
   longitude: -123.18
   speed_kmph: 12.0
-  heading_deg: 270.0
 
 # [lon, lat] — continuous coastline along the north side of the channel
 land:

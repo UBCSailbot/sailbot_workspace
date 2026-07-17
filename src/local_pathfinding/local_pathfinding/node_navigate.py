@@ -17,7 +17,7 @@ from local_pathfinding.local_path import LocalPath, LocalPathInputs, PathNotFoun
 from local_pathfinding.ompl_path import MAX_SOLVER_RUN_TIME_SEC
 
 GLOBAL_WAYPOINT_REACHED_THRESH_M = 300
-GPS_TIMEOUT_SEC = 120.0
+NAVIGATION_INPUT_TIMEOUT_SEC = 120.0
 WAYPOINT_EQUAL_ABS_TOL_DEG = 1e-7
 NANOSEC_PER_SEC = 1_000_000_000
 MAIN_GP_FILE_PATH = "/workspaces/sailbot_workspace/src/local_pathfinding/local_pathfinding/global_path_storage/main_global_path.csv"  # noqa
@@ -120,7 +120,8 @@ class Sailbot(Node):
 
     Subscribers:
         ais_ships_sub (Subscription): Subscribe to a `AISShips` msg.
-        gps_sub (Subscription): Subscribe to a `GPS` msg.
+        gps_sub (Subscription): Subscribe to GPS position and speed in a `GPS` msg.
+        heading_sub (Subscription): Subscribe to e-compass boat heading from `rudder`.
         global_path_sub (Subscription): Subscribe to a `Path` msg.
         filtered_wind_sensor_sub (Subscription): Subscribe to a `WindSensor` msg.
 
@@ -134,7 +135,8 @@ class Sailbot(Node):
 
     Attributes from subscribers:
         ais_ships (ci.AISShips): Data from other boats.
-        gps (ci.GPS): Data from the GPS sensor.
+        gps (ci.GPS): Position and speed data from the GPS sensor.
+        heading (ci.HelperHeading): E-compass boat heading from the `rudder` topic.
         filtered_wind_sensor (ci.WindSensor): Filtered data from the wind sensors.
         desired_heading (ci.DesiredHeading): current desired heading.
         target_lp_wp_index (int): 0-based array index of the local waypoint Polaris is currently
@@ -173,6 +175,12 @@ class Sailbot(Node):
         self.gps_sub = self.create_subscription(
             msg_type=ci.GPS, topic="gps", callback=self.gps_callback, qos_profile=10
         )
+        self.heading_sub = self.create_subscription(
+            msg_type=ci.HelperHeading,
+            topic="rudder",
+            callback=self.heading_callback,
+            qos_profile=10,
+        )
         self.global_path_sub = self.create_subscription(
             msg_type=ci.Path,
             topic="global_path",
@@ -210,12 +218,15 @@ class Sailbot(Node):
         # attributes from subscribers
         self.ais_ships: ci.AISShips | None = None
         self.gps: ci.GPS | None = None
+        self.heading: ci.HelperHeading | None = None
         self.gp: GlobalPath | None = None
         self.filtered_wind_sensor: ci.WindSensor | None = None
         self.desired_heading: ci.DesiredHeading | None = None
 
         # attributes
         self.gps_timeout_start_sec = self._now_sec()
+        self.heading_timeout_start_sec = self._now_sec()
+
         self.local_path = LocalPath(
             parent_logger=self.get_logger(),
             now_sec=self._now_sec,
@@ -453,6 +464,20 @@ class Sailbot(Node):
         self.gps = msg
         self.gps_timeout_start_sec = self._now_sec()
 
+    def heading_callback(self, msg: ci.HelperHeading) -> None:
+        """Store a valid e-compass boat heading from the ``rudder`` topic."""
+
+        if not math.isfinite(msg.heading) or not (-180.0 < msg.heading <= 180.0):
+            self.get_logger().warning(
+                f"Ignoring invalid heading from {self.heading_sub.topic}: {msg.heading}. "
+                "Expected a finite value in (-180, 180]."
+            )
+            return
+
+        self.get_logger().debug(f"Received data from {self.heading_sub.topic}: {msg}")
+        self.heading = msg
+        self.heading_timeout_start_sec = self._now_sec()
+
     def global_path_callback(self, msg: ci.Path) -> None:
         if msg.waypoints is None or len(msg.waypoints) < 2:
             self.get_logger().warning(
@@ -500,7 +525,8 @@ class Sailbot(Node):
         if self.gp is None:
             self._load_persisted_global_path()
 
-        if self._has_gps_timed_out():
+        timed_out_inputs = self._timed_out_inputs()
+        if timed_out_inputs:
             msg = ci.DesiredHeading()
             msg.heading.heading = 0.0
             msg.sail = False
@@ -508,7 +534,8 @@ class Sailbot(Node):
             self.desired_heading = msg
 
             self.get_logger().warning(
-                f"GPS data has not been received for more than {GPS_TIMEOUT_SEC:.0f} seconds. "
+                f"Navigation input(s) {', '.join(timed_out_inputs)} have not been received for "
+                f"more than {NAVIGATION_INPUT_TIMEOUT_SEC:.0f} seconds. "
                 f"Publishing to {self.desired_heading_pub.topic}: {msg.heading.heading}"
             )
             self.desired_heading_pub.publish(msg)
@@ -649,6 +676,10 @@ class Sailbot(Node):
             self.get_logger().info("No GPS is available; disabling sail")
             self.local_path.path = ci.Path(waypoints=[])
             return 0.0, False
+        if self.heading is None:
+            self.get_logger().info("No rudder heading is available; disabling sail")
+            self.local_path.path = ci.Path(waypoints=[])
+            return 0.0, False
 
         target_global_waypoint = self.gp.target_waypoint
         if target_global_waypoint is None:
@@ -692,6 +723,7 @@ class Sailbot(Node):
             desired_heading, self.target_lp_wp_index = self.local_path.update_if_needed(
                 inputs=LocalPathInputs(
                     gps=self.gps,
+                    heading=self.heading,
                     ais_ships=self.ais_ships,
                     global_path=self._path_from_gp(),
                     target_global_waypoint=target_global_waypoint,
@@ -765,15 +797,18 @@ class Sailbot(Node):
         return (
             self.ais_ships is not None
             and self.gps is not None
+            and self.heading is not None
             and self.gp is not None
             and self.filtered_wind_sensor is not None
         )
 
-    def _has_gps_timed_out(self) -> bool:
-        """Checks if we haven't received a GPS message for more than 2 minutes."""
+    def _timed_out_inputs(self) -> bool:
+        """Return navigation inputs not received within the safety timeout."""
 
-        elapsed_sec = self._now_sec() - self.gps_timeout_start_sec
-        return elapsed_sec > GPS_TIMEOUT_SEC
+        now_sec = self._now_sec()
+        return ((now_sec - self.gps_timeout_start_sec > NAVIGATION_INPUT_TIMEOUT_SEC) or
+                (now_sec - self.heading_timeout_start_sec > NAVIGATION_INPUT_TIMEOUT_SEC))
+
 
     def _log_inactive_subs_warning(self) -> None:
         """
@@ -784,6 +819,8 @@ class Sailbot(Node):
             inactive_subs.append("ais_ships")
         if self.gps is None:
             inactive_subs.append("gps")
+        if self.heading is None:
+            inactive_subs.append("rudder")
         if self.gp is None:
             inactive_subs.append("global_path")
         if self.filtered_wind_sensor is None:
