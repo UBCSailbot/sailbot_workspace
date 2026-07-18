@@ -1,6 +1,9 @@
 """This module contains the kinematics computations for the boat."""
 
+import math
+
 import numpy as np
+from numpy.typing import NDArray
 from rclpy.logging import get_logger
 
 from boat_simulator.common.angle_conventions import wrap_to_pi
@@ -14,7 +17,6 @@ from boat_simulator.common.conventions import (
     Inertia,
     InverseInertia,
     Position,
-    Torque,
     Transformer,
     Velocity,
 )
@@ -31,10 +33,11 @@ class BoatKinematics:
     Attributes:
         `timestep` (float): The time interval for calculations, expressed in seconds (s).
         `boat_mass` (float): The mass of the boat, expressed in kilograms (kg).
-        `inertia` (Mat4[Inertia, Body]): The body-frame inertia tensor of the boat, expressed in
-            kilograms-meters squared (kg•m^2).
-        `inertia_inverse` (Mat4[Inertia, Body]): The inverse of the inertia tensor, expressed in
-            per kilograms-meters squared (1/(kg•m^2)).
+        `inertia` (Mat4[Inertia, Body]): M_RB, the rigid-body generalized mass-inertia
+            matrix, expressed in kilograms / kilograms-meters squared (kg / kg•m^2).
+        `inertia_inverse` (Mat4[Inertia, Body]): (M_RB + M_A)⁻¹, the inverse of the total
+            (rigid-body plus added-mass) generalized mass-inertia matrix that the equations
+            of motion are solved with.
         `kinematics` (KinematicsData): The most recently computed pose η (NED), body velocity ν
             (Body), and body acceleration ν̇ (Body) of the boat.
     """
@@ -44,26 +47,27 @@ class BoatKinematics:
 
         Args:
             timestep (float): The time interval for calculations, expressed in seconds (s).
-            mass (float): The mass of the boat, expressed in kilograms (kg).
-            inertia (Mat4[Inertia, Body]): The body-frame inertia tensor of the boat, expressed in
-                kilograms-meters squared (kg•m^2).
         """
         self.__timestep = timestep
         self.__boat_mass = BOAT_PROPERTIES.mass
+        # BOAT_PROPERTIES.inertia is M_RB = diag(m, m, I_xx, I_zz), the rigid-body
+        # generalized mass-inertia matrix. The added mass M_A is folded into the mass
+        # matrix here (the left-hand side of the equations of motion) rather than applied
+        # as a −M_A·ν̇ force: an explicit added-mass force needs the previous timestep's
+        # acceleration, which is numerically unstable when M_A is comparable to M_RB.
         self.__inertia: Mat4[Inertia, Body] = BOAT_PROPERTIES.inertia
         self.__inertia_inverse: Mat4[InverseInertia, Body] = Mat4(
-            np.linalg.inv(BOAT_PROPERTIES.inertia.data)
+            np.linalg.inv(BOAT_PROPERTIES.inertia.data + BOAT_PROPERTIES.M_A.data)
         )
         self.kinematics: KinematicsData = KinematicsData()
 
-    def step(self, net_force: Vec4[Force, Body], net_torque: Vec4[Torque, Body]) -> None:
-        """Updates the kinematic data based on applied forces and torques.
+    def step(self, nu: Vec4[Velocity, Body], net_force: Vec4[Force, Body]) -> None:
+        """Updates the kinematic data based on the applied generalized force.
 
         Args:
-            net_force (Vec4[Force, Body]): The net force acting on the boat in the body
-                reference frame, expressed in newtons (N).
-            net_torque (Vec4[Torque, Body]): The net torque acting on the boat, expressed in
-                newton-meters (N•m).
+            nu (Vec4[Velocity, Body]): ν, the boat's generalized velocity [u, v, p, r].
+            net_force (Vec4[Force, Body]): τ_RB, the total generalized force [X, Y, K, N]
+                acting on the boat in the body reference frame.
 
         Returns:
             None: The method updates the internal state of the boat's kinematics but does not
@@ -71,28 +75,82 @@ class BoatKinematics:
         """
         # Semi-implicit (symplectic) Euler: ν̇ and ν are updated first, then η̇ is computed from
         # the *updated* ν before η is integrated.
-        self._compute_acceleration(net_force, net_torque)
+        self.kinematics.nu_dot = self._compute_acceleration(nu, net_force)
         self._compute_velocity()
         self._compute_transformation_and_position()
 
         _logger.debug(f"step result: nu_dot={self.nu_dot} nu={self.nu} pose={self.pose}")
 
     def _compute_acceleration(
-        self, net_force: Vec4[Force, Body], net_torque: Vec4[Torque, Body]
-    ) -> None:
-        """Computes ν̇ = [u̇, v̇, ṗ, ṙ] and stores it in `kinematics.nu_dot`.
+        self, nu: Vec4[Velocity, Body], tau_rb: Vec4[Force, Body]
+    ) -> Vec4[Acceleration, Body]:
+        """Solves the kinetics equation for the body-frame acceleration:
+        ν̇ = (M_RB + M_A)⁻¹·(τ_RB − C_RB(ν)·ν).
 
-        `net_force` carries the surge/sway force in the body frame;
-        `net_torque` carries the roll/yaw moment, which is already expressed in the body frame,
-        so K/I_x and N/I_z are obtained directly via
-        `inertia_inverse`. Because the generalized inertia matrix is diagonal, summing the two
-        contributions gives each DOF its own term without cross-coupling.
+        Args:
+            nu (Vec4[Velocity, Body]): ν, the boat's generalized velocity [u, v, p, r].
+            tau_rb (Vec4[Force, Body]): τ_RB, the total generalized force.
+
+        Returns:
+            Vec4[Acceleration, Body]: ν̇ = [u̇, v̇, ṗ, ṙ], the generalized acceleration.
         """
+        coriolis_term = self.rigid_body_coriolis_matrix(nu) @ nu.data
+        return Vec4(self.__inertia_inverse.data @ (tau_rb.data - coriolis_term))
 
-        lin_acc = KinematicsFormulas.next_lin_acceleration(self.boat_mass, net_force)
-        ang_acc = KinematicsFormulas.next_ang_acceleration(net_torque, self.inertia_inverse)
+    def rigid_body_coriolis_matrix(self, nu: Vec4[Velocity, Body]) -> NDArray[np.float64]:
+        """Builds C_RB(ν), the rigid-body Coriolis-centripetal matrix.
 
-        self.kinematics.nu_dot = Vec4(lin_acc.data + ang_acc.data)
+        With the body origin at the centre of gravity, only the surge-sway-yaw coupling
+        terms survive in the 4-DOF model::
+
+            C_RB(ν) = ⎡  0    0   0  −m·v ⎤
+                      ⎢  0    0   0   m·u ⎥
+                      ⎢  0    0   0    0  ⎥
+                      ⎣ m·v −m·u  0    0  ⎦
+
+        Args:
+            nu (Vec4[Velocity, Body]): ν, the boat's generalized velocity [u, v, p, r].
+
+        Returns:
+            NDArray[np.float64]: the 4x4 C_RB(ν) matrix.
+        """
+        m_x = self.__inertia.data[0, 0]
+        m_y = self.__inertia.data[1, 1]
+        u, v = nu.x, nu.y
+        c_rb = np.zeros((4, 4))
+        c_rb[0, 3] = -m_y * v
+        c_rb[1, 3] = m_x * u
+        c_rb[3, 0] = m_y * v
+        c_rb[3, 1] = -m_x * u
+        return c_rb
+
+    def kinematics_jacobian(self, eta: Vec4[Position, NED]) -> NDArray[np.float64]:
+        """Builds J(η), which maps the body velocity ν to the NED-frame pose rates η̇.
+
+        For the 4-DOF state η = [x, y, φ, ψ]::
+
+            J(η) = ⎡ cos ψ  −sin ψ·cos φ  0    0   ⎤
+                   ⎢ sin ψ   cos ψ·cos φ  0    0   ⎥
+                   ⎢   0         0        1    0   ⎥
+                   ⎣   0         0        0  cos φ ⎦
+
+        Args:
+            eta (Vec4[Position, NED]): η, the boat's pose [x, y, φ, ψ].
+
+        Returns:
+            NDArray[np.float64]: the 4x4 J(η) matrix.
+        """
+        c_phi = math.cos(eta.p)
+        c_psi, s_psi = math.cos(eta.r), math.sin(eta.r)
+        return np.array(
+            [
+                [c_psi, -s_psi * c_phi, 0.0, 0.0],
+                [s_psi, c_psi * c_phi, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [0.0, 0.0, 0.0, c_phi],
+            ],
+            dtype=float,
+        )
 
     def _compute_velocity(self) -> None:
         """Integrates ν ← ν + ν̇·dt and stores it in `kinematics.nu`."""
@@ -115,7 +173,7 @@ class BoatKinematics:
         φ = 90°, see the design doc's open items), so it is built by hand rather than reusing
         `Mat4.from_rotation_yaw`.
         """
-        phi, psi = self.pose.z, self.pose.w
+        phi, psi = self.pose.p, self.pose.r
         cos_psi, sin_psi = np.cos(psi), np.sin(psi)
         jacobian: Mat4[Transformer, BodytoNED] = Mat4(
             np.array(
