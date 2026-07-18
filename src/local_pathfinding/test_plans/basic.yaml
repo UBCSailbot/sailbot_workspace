@@ -1,11 +1,11 @@
 tw_dir_deg: 0
 tw_speed_kmph: 10.0
+heading_deg: 180.0
 
 gps:
   latitude: 49.28
   longitude: -123.18
   speed_kmph: 15.0
-  heading_deg: 180.0
 
 ais:
   - {id: 1, lat: 49.01261318191024, lon: -135.65593922412154, heading: 90.0, speed: 20.0, rot: 30, width: 1.0, height: 1.0}

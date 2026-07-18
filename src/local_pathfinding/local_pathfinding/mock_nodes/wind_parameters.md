@@ -61,6 +61,6 @@ Execute the shell script to load parameters into both nodes:
 The `mock_wind_sensor` node:
 
 1. Takes true wind parameters in the global frame
-2. Subscribes to GPS data for boat heading and speed
+2. Subscribes to GPS data for boat speed and `rudder` data for e-compass boat heading
 3. Converts true wind to apparent wind in boat frame
 4. Publishes on `filtered_wind_sensor` topic

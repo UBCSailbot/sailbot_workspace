@@ -15,13 +15,13 @@
 # True wind
 tw_dir_deg: 270
 tw_speed_kmph: 14.0
+heading_deg: -90.0
 
 # Boat starts at the "autonomous launch start position"
 gps:
   latitude: 48.799112
   longitude: -125.235504
   speed_kmph: 5.0
-  heading_deg: 270.0
 
 
 # The global waypoints are spaced ~3 km apart through using Google Maps measurement tool.

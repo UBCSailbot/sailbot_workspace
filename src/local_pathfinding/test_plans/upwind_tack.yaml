@@ -4,12 +4,12 @@
 # No-go zone (±45° of 270°): headings 225°–315° are irons.
 tw_dir_deg: 270
 tw_speed_kmph: 15.0
+heading_deg: -90.0
 
 gps:
   latitude: 49.00
   longitude: -123.18
   speed_kmph: 8.0
-  heading_deg: 270.0
 
 ais:
   - {id: 1, lat: 49.05, lon: -123.25, heading: 135.0, speed: 12.0, rot: 0, width: 2.0, height: 6.0}

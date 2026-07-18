@@ -1,4 +1,5 @@
 import math
+
 # import random
 import types
 from types import SimpleNamespace
@@ -35,6 +36,7 @@ def fresh_ompl_path():
         parent_logger=RcutilsLogger(),
         local_path_state=LocalPathState(
             gps=GPS(lat_lon=HelperLatLon(latitude=0.0, longitude=0.0)),
+            heading=HelperHeading(),
             ais_ships=AISShips(),
             global_path=Path(
                 waypoints=[
@@ -85,6 +87,7 @@ def test_init_obstacles():
 
     local_path_state = LocalPathState(
         gps=GPS(lat_lon=sailbot_position),
+        heading=HelperHeading(),
         ais_ships=AISShips(
             ships=[
                 HelperAISShip(
@@ -165,6 +168,7 @@ def test_init_obstacles():
     # Call again with one existing boat (id=1) and one new (id=3), i.e. id=2 should be evicted
     updated_local_path_state = LocalPathState(
         gps=GPS(lat_lon=sailbot_position),
+        heading=HelperHeading(),
         ais_ships=AISShips(
             ships=[
                 HelperAISShip(

@@ -6,6 +6,18 @@ UBC Sailbot's local pathfinding ROS package
 
 Using main launch file: `ros2 launch local_pathfinding main_launch.py`
 
+## Navigation Inputs
+
+Local pathfinding uses the following ROS topics for boat state:
+
+- `gps` (`custom_interfaces/GPS`) supplies geographic position and speed.
+- `rudder` (`custom_interfaces/HelperHeading`) supplies the e-compass boat heading. The topic name `\rudder` is confusing; it's misleading. When you see rudder, think heading.
+
+Despite its topic name, `rudder` contains the direction the boat's bow is pointing, not the
+physical rudder angle. It uses the `HelperHeading` navigation convention: `0°` is north, values
+increase clockwise, and the valid range is `(-180°, 180°]`. Missing, invalid, or stale heading
+data prevents local pathfinding from enabling sail.
+
 ## Test Plans
 
 Test plans live in `test_plans/` and are documented in the
@@ -16,6 +28,19 @@ plan manually:
 ```bash
 ros2 launch local_pathfinding main_launch.py mode:=development test_plan:=basic.yaml
 ```
+
+Boat heading is separate from the `gps` mapping in test plans:
+
+```yaml
+heading_deg: -90.0
+gps:
+  latitude: 49.28
+  longitude: -123.18
+  speed_kmph: 15.0
+```
+
+`heading_deg` follows the same `(-180°, 180°]` convention as the `rudder` topic. Development mode
+publishes this value on `rudder` through the local mock GPS node.
 
 To run test plans sequentially, build and source the workspace, then use the
 installed `run_test_plans` console script:
