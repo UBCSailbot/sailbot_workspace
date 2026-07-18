@@ -142,7 +142,7 @@ def total_mechanical_energy(kinematics: BoatKinematics) -> float:
         * METACENTRIC_HEIGHT
         * (1.0 - math.cos(kinematics.pose.p))
     )
-    return kinetic + potential
+    return float(kinetic + potential)
 
 
 def test_coasting_boat_never_gains_energy() -> None:
