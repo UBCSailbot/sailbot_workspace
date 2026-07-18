@@ -7,8 +7,6 @@ import AISShips from '@/models/AISShips';
 import GlobalPath from '@/models/GlobalPath';
 import LocalPath from '@/models/LocalPath';
 import Batteries from '@/models/Batteries';
-import GenericSensors from '@/models/GenericSensors';
-import { convertBigIntToString } from '../shared/utils/utils';
 import WindSensors from '@/models/WindSensors';
 import TempSensors from '@/models/TempSensors';
 import PhSensors from '@/models/PhSensors';
@@ -21,7 +19,6 @@ Given('I clear the database', async function () {
   await GlobalPath.deleteMany();
   await LocalPath.deleteMany();
   await Batteries.deleteMany();
-  await GenericSensors.deleteMany();
   await WindSensors.deleteMany();
   await TempSensors.deleteMany();
   await PhSensors.deleteMany();
@@ -182,26 +179,6 @@ Given('I insert Batteries data into the database', async function () {
     ],
   };
   await Batteries.create(batteriesData);
-});
-
-Given('I insert GenericSensors data into the database', async function () {
-  const genericSensorsData = {
-    genericSensors: [
-      {
-        id: 1,
-        data: 123456,
-      },
-      {
-        id: 2,
-        data: 123456,
-      },
-      {
-        id: 3,
-        data: 123456,
-      },
-    ],
-  };
-  await GenericSensors.create(genericSensorsData);
 });
 
 Given('I insert WindSensors data into the database', async function () {
@@ -418,44 +395,6 @@ Then(
               unknown
             >
           )[property],
-          `Data in the response does not match data in the database for property: ${property}`,
-        );
-      }
-    }
-  },
-);
-
-Then(
-  'the response data matches the GenericSensors data in the database',
-  async function () {
-    let apiResponseData_GenericSensors;
-    let databaseData_GenericSensors;
-
-    databaseData_GenericSensors = await GenericSensors.find({}).then(
-      function (genericsensors) {
-        let transformedGenericSensors = genericsensors.map((data) =>
-          data.toJSON(),
-        );
-        return transformedGenericSensors;
-      },
-    );
-
-    for (let i = 0; i < 3; i++) {
-      apiResponseData_GenericSensors =
-        api.response.data.data[0].genericSensors[i];
-
-      const propertiesToCompare = Object.keys(apiResponseData_GenericSensors);
-
-      for (const property of propertiesToCompare) {
-        expect(apiResponseData_GenericSensors[property]).to.equal(
-          convertBigIntToString(
-            (
-              databaseData_GenericSensors[0].genericSensors[i] as Record<
-                string,
-                unknown
-              >
-            )[property] as bigint,
-          ),
           `Data in the response does not match data in the database for property: ${property}`,
         );
       }

@@ -5,7 +5,6 @@ import { AISShips } from '../shared/endpoints';
 import { GlobalPath } from '../shared/endpoints';
 import { LocalPath } from '../shared/endpoints';
 import { Batteries } from '../shared/endpoints';
-import { GenericSensors } from '../shared/endpoints';
 import { WindSensors } from '../shared/endpoints';
 import { TempSensors } from '../shared/endpoints';
 import { PhSensors } from '../shared/endpoints';
@@ -33,10 +32,6 @@ When('I get all LocalPath interface data', async function () {
 
 When('I get all Batteries interface data', async function () {
   this.lastResponse = await api.get(Batteries, this.config);
-});
-
-When('I get all GenericSensors interface data', async function () {
-  this.lastResponse = await api.get(GenericSensors, this.config);
 });
 
 When('I get all WindSensors interface data', async function () {
