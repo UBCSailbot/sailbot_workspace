@@ -11,7 +11,7 @@ Using main launch file: `ros2 launch local_pathfinding main_launch.py`
 Local pathfinding uses the following ROS topics for boat state:
 
 - `gps` (`custom_interfaces/GPS`) supplies geographic position and speed.
-- `rudder` (`custom_interfaces/HelperHeading`) supplies the e-compass boat heading.
+- `rudder` (`custom_interfaces/HelperHeading`) supplies the e-compass boat heading. The topic name `\rudder` is confusing; it's misleading. When you see rudder, think heading.
 
 Despite its topic name, `rudder` contains the direction the boat's bow is pointing, not the
 physical rudder angle. It uses the `HelperHeading` navigation convention: `0°` is north, values
