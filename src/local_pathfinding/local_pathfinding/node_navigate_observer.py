@@ -28,10 +28,20 @@ def main():
     dash_process.start()
 
     try:
-        ros_process.join()
-        dash_process.join()
+        while ros_process.is_alive():
+            dash_process.join(timeout=1)
+            if dash_process.is_alive():
+                continue
+            exitcode = dash_process.exitcode
+            ros_process.join(timeout=1)
+            if not ros_process.is_alive():
+                break
+            print(f"Visualizer exited with code {exitcode}. Restarting...")
+            dash_process = Process(target=vz.dash_app, args=(interprocess_queue,), daemon=True)
+            dash_process.start()
     except KeyboardInterrupt:
         print("Keyboard interrupt [^C], shutting down.")
+    finally:
         ros_process.terminate()
         dash_process.terminate()
         ros_process.join()
