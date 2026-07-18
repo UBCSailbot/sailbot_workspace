@@ -56,18 +56,19 @@ class TotalForceComputation:
         alpha_guess_rad: float = 0.0,
     ) -> Vec4[Force, Body]:
         """Assembles total force (τ_RB) = τ_hydro + g(η) + τ_S, the total generalized force
-        on the boat.
+        on the boat. Note that if the forces themselves will have a negative sign if drag > lift.
+        We simply add these forces here.
 
         Args:
             boat_kinematics (BoatKinematics): The boat kinematics (position, velocity, acceleration
                 ) that contains the state at time t. The forces will help us find the state at time
                 at t+1
             true_wind_speed_mps (float): V_w, the true wind speed, in meters per second.
-            true_wind_bearing_rad (float): beta_w, the true wind direction as an NED
-                bearing, in radians.
+            true_wind_bearing_rad (float): beta_w, the NED bearing of the wind's velocity
+                vector (flow-toward convention), in radians.
             ocean_current_speed (float): V_c, the ocean current speed, in meters per second.
-            ocean_current_bearing_rad (float): beta_c, the current direction as an NED bearing,
-                in radians.
+            ocean_current_bearing_rad (float): beta_c, the NED bearing of the current's
+                velocity vector (flow-toward convention), in radians.
             delta_r_rad (float): The rudder deflection, in radians.
             delta_tab_rad (float): The trim tab deflection, in radians.
             alpha_guess_rad (float): The previous timestep's solved wing angle, in radians.

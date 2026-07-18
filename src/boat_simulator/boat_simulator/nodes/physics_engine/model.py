@@ -77,8 +77,11 @@ class BoatState:
             return any data.
         """
 
+        # Both bearings follow the simulator's flow-toward convention: the NED bearing of
+        # the fluid's velocity vector (the direction it flows TOWARD, not the direction it
+        # comes from). Consumers in fluid_forces.py assume this for wind and current alike.
         true_wind_speed_mps = math.hypot(true_wind_vel.x, true_wind_vel.y)
-        true_wind_bearing_rad = math.atan2(-true_wind_vel.y, -true_wind_vel.x)  # TODO: Review
+        true_wind_bearing_rad = math.atan2(true_wind_vel.y, true_wind_vel.x)
         ocean_current_speed_mps = math.hypot(glo_water_current_vel.x, glo_water_current_vel.y)
         ocean_current_bearing_rad = math.atan2(glo_water_current_vel.y, glo_water_current_vel.x)
 
