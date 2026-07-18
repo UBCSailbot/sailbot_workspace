@@ -145,7 +145,7 @@ def _stub_zero_net_force(boat_state: BoatState) -> None:
     def zero_force(**_kwargs) -> Vec4:
         return Vec4.from_xypr(0.0, 0.0, 0.0, 0.0)
 
-    boat_state._BoatState__kinetics_computation.compute_total_force = (  # type: ignore[attr-defined]  # noqa: E501
+    boat_state._BoatState__kinetics_computation.compute_total_force = (  # type: ignore[attr-defined] # noqa: E501
         zero_force
     )
 

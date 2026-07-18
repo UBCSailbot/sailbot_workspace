@@ -24,7 +24,6 @@ from boat_simulator.common.constants import (
     WINGSAIL_TO_TRIM_TAB_BOOM_LENGTH,
 )
 from boat_simulator.common.conventions import (
-    Acceleration,
     Body,
     Force,
     Velocity,
@@ -571,8 +570,7 @@ class HydroDynamicsForceComputation:
         # the hull, so drag acts along +alpha_h — pointing WITH the relative flow is what
         # makes this dissipative (F·v < 0); flipping it turns the hull into a thruster.
         h_d = (
-            self.__hull_r1 * water_speed_rel_to_hull**2
-            + self.__hull_r2 * water_speed_rel_to_hull
+            self.__hull_r1 * water_speed_rel_to_hull**2 + self.__hull_r2 * water_speed_rel_to_hull
         )
         _logger.info(f"water_speed_rel_to_hull={water_speed_rel_to_hull} h_d={h_d} u={v_r.x}")
 
