@@ -18,8 +18,8 @@ Subscribes:
 Parameters:
 * ``pub_period_sec`` (double, required): publish period (seconds)
 * ``tw_speed_kmph`` (double): true wind speed (kmph). Set via ``wind_params.sh`` script only.
-* ``tw_dir_deg`` (int): true wind direction in global frame (deg). Set via ``wind_params.sh``
-script only.
+* ``tw_dir_deg`` (int): true-wind flow direction in the global frame (deg); the
+  angle points where the air travels. Set via ``wind_params.sh`` only.
     * Valid range: (-180, 180]
 
 Setting True Wind Parameters:

@@ -78,8 +78,9 @@ class WindTracker:
         exceeds the max length, the oldest reading is removed.
 
         Args:
-            new_tw (Wind): Newest true wind reading with speed (kmph) and direction (deg).
-                Caller is responsible for ensuring this is in true wind.
+            new_tw (Wind): Newest true-wind reading with speed (kmph) and a
+                global flow-toward direction (deg). Caller is responsible for
+                ensuring this is true wind.
         """
 
         self.tw_history.append(new_tw)
@@ -155,15 +156,15 @@ class LocalPathState:
             The global waypoint is the same as the reference latlon.
         obstacles (List[Obstacle]): All obstacles in the state space.
         path_generated_time_sec (float): Clock time in seconds when the path was generated.
-        current_tw (Wind): Latest true wind reading converted from apparent wind reading from the
-            filtered wind sensor.
+        current_tw (Wind): Latest true-wind reading converted from the filtered
+            apparent-wind sensor. Its global direction points where air travels.
         wind_tracker (WindTracker): Rolling true wind tracker shared across path states.
             It owns tw_history, a queue of wind readings with max length WIND_HISTORY_LEN, and
             tw_avg, the rolling wind average used for path planning once tw_history
             reaches full capacity.
             It also tracks whether the current accepted path was generated from one cold-start
             true wind point or from the rolling average.
-        path_generated_wind (Wind): True wind value used to generate the current path.
+        path_generated_wind (Wind): Flow-toward true-wind value used to generate the current path.
             This is the rolling average when available; otherwise it falls back to current_tw.
     """
 

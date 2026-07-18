@@ -39,10 +39,10 @@ def test_time_cost(
 @pytest.mark.parametrize(
     "heading, tw_dir_rad_gc, tw_speed_kmph, expected",
     [
-        # 0 deg true wind angle (irons)
+        # 0 deg flow-relative angle (segment travels with the airflow)
         (math.radians(0), math.radians(0), 0, 0),
         (math.radians(0), math.radians(0), 75.0, 0),
-        # 180 deg true wind angle (dead run)
+        # 180 deg flow-relative angle (segment travels against the airflow)
         (math.radians(0), math.radians(180), 0, 0),
         (math.radians(0), math.radians(180), 75.0, 10),
     ],
