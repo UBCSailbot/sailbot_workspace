@@ -255,9 +255,9 @@ private:
             } else if (param.get_name() == "kill_ais_can") {
                 kill_ais_can_ = param.as_bool();
             } else if (param.get_name() == "kill_wind_can") {
-                kill_wind_can_ = param.as_bool()
+                kill_wind_can_ = param.as_bool();
             } else if (param.get_name() == "kill_gps_can") {
-                kill_gps_can_ = param.as_bool()
+                kill_gps_can_ = param.as_bool();
             }
         }
         rcl_interfaces::msg::SetParametersResult result;
@@ -471,7 +471,7 @@ private:
             return;
         }
         // construct a wind sensor ros message from the current simple moving average (stored as an x and y value)
-        double speed     = sqrt(pow(curr_sma.x, 2) + pow(curr_s ma.y, 2));
+        double speed     = sqrt(pow(curr_sma.x, 2) + pow(curr_sma.y, 2));
         double direction = atan2(curr_sma.y, curr_sma.x) * (180.0 / M_PI);  //NOLINT(readability-magic-numbers)
 
         // round to nearest integer, and ensure we aren't out of bounds due to floating point shenanigans
