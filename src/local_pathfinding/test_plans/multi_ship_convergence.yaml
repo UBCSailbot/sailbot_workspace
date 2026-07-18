@@ -7,12 +7,12 @@
 # the planner must resolve the combined constraint.
 tw_dir_deg: 180
 tw_speed_kmph: 12.0
+heading_deg: -90.0
 
 gps:
   latitude: 49.28
   longitude: -123.18
   speed_kmph: 12.0
-  heading_deg: 270.0
 
 ais:
   - {id: 1, lat: 49.28, lon: -123.30, heading: 90.0,  speed: 12.0, rot: 0, width: 3.0, height: 10.0}

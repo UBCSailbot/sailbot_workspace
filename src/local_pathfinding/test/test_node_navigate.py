@@ -1,8 +1,9 @@
 from types import SimpleNamespace
 from typing import cast
 
-import custom_interfaces.msg as ci
+import pytest
 
+import custom_interfaces.msg as ci
 from local_pathfinding.local_path import LocalPathInputs, PathNotFoundError
 from local_pathfinding.node_navigate import GlobalPath, Sailbot
 
@@ -32,6 +33,7 @@ class FakeLocalPath:
         self.path = ci.Path(waypoints=[make_waypoint(48.0, -122.0)])
         self.update_calls = update_calls
         self.fail_next = False
+        self.last_inputs: LocalPathInputs | None = None
 
     def update_if_needed(
         self,
@@ -39,6 +41,7 @@ class FakeLocalPath:
         target_lp_wp_index: int,
         received_new_global_waypoint: bool,
     ) -> tuple[float, int]:
+        self.last_inputs = inputs
         self.update_calls.append(
             (
                 inputs.target_global_waypoint,
@@ -75,6 +78,7 @@ def make_sailbot_shell(gps_lat_lon: ci.HelperLatLon | None = None) -> Sailbot:
         gps = ci.GPS()
         gps.lat_lon = gps_lat_lon
     sailbot.gps = gps
+    sailbot.heading = ci.HelperHeading(heading=45.0) if gps is not None else None
     sailbot.received_new_global_path = False
     logger = FakeLogger()
     setattr(sailbot, "global_path_sub", SimpleNamespace(topic="global_path"))
@@ -139,6 +143,96 @@ def install_local_path(
     fake_local_path = FakeLocalPath(update_calls)
     setattr(sailbot, "local_path", fake_local_path)
     return fake_local_path, update_calls
+
+
+def test_heading_callback_accepts_valid_rudder_heading() -> None:
+    sailbot = make_sailbot_shell()
+    sailbot.heading_sub = SimpleNamespace(topic="rudder")
+    sailbot.heading_timeout_start_sec = 1.0
+    setattr(sailbot, "_now_sec", lambda: 10.0)
+    heading = ci.HelperHeading(heading=180.0)
+
+    sailbot.heading_callback(heading)
+
+    assert sailbot.heading is heading
+    assert sailbot.heading_timeout_start_sec == 10.0
+
+
+@pytest.mark.parametrize("heading_deg", [float("nan"), float("inf"), -180.0, 180.1])
+def test_heading_callback_rejects_invalid_rudder_heading(heading_deg: float) -> None:
+    sailbot = make_sailbot_shell()
+    sailbot.heading_sub = SimpleNamespace(topic="rudder")
+    previous_heading = ci.HelperHeading(heading=12.0)
+    sailbot.heading = previous_heading
+    sailbot.heading_timeout_start_sec = 1.0
+    setattr(sailbot, "_now_sec", lambda: 10.0)
+
+    sailbot.heading_callback(ci.HelperHeading(heading=heading_deg))
+
+    assert sailbot.heading is previous_heading
+    assert sailbot.heading_timeout_start_sec == 1.0
+    assert get_test_logger(sailbot).has_message("warning", "Ignoring invalid heading")
+
+
+def test_all_subs_active_requires_rudder_heading() -> None:
+    sailbot = make_sailbot_shell(gps_lat_lon=make_waypoint(49.0, -123.0))
+    sailbot.ais_ships = ci.AISShips()
+    sailbot.gp = GlobalPath(waypoints=list(make_path(49.0, -123.0).waypoints), index=2)
+    sailbot.filtered_wind_sensor = ci.WindSensor()
+
+    assert sailbot._all_subs_active()
+
+    sailbot.heading = None
+
+    assert not sailbot._all_subs_active()
+
+
+@pytest.mark.parametrize(
+    ("now_sec", "gps_timestamp", "heading_timestamp", "expected"),
+    [
+        (121.0, 121.0, 121.0, False),
+        (120.0, 0.0, 0.0, False),
+        (121.0, 0.0, 121.0, True),
+        (121.0, 121.0, 0.0, True),
+        (121.0, 0.0, 0.0, True),
+    ],
+)
+def test_timed_out_inputs(
+    now_sec: float,
+    gps_timestamp: float,
+    heading_timestamp: float,
+    expected: bool,
+) -> None:
+    sailbot = make_sailbot_shell(gps_lat_lon=make_waypoint(49.0, -123.0))
+    sailbot.gps_timeout_start_sec = gps_timestamp
+    sailbot.heading_timeout_start_sec = heading_timestamp
+    setattr(sailbot, "_now_sec", lambda: now_sec)
+
+    assert sailbot._timed_out_inputs() is expected
+
+
+@pytest.mark.parametrize(
+    ("gps_timestamp", "heading_timestamp"), [(0.0, 121.0), (121.0, 0.0)]
+)
+def test_desired_heading_callback_disables_sail_for_timed_out_inputs(
+    gps_timestamp: float, heading_timestamp: float
+) -> None:
+    sailbot = make_sailbot_shell(gps_lat_lon=make_waypoint(49.0, -123.0))
+    sailbot.gp = GlobalPath(waypoints=list(make_path(49.0, -123.0).waypoints), index=2)
+    sailbot.gps_timeout_start_sec = gps_timestamp
+    sailbot.heading_timeout_start_sec = heading_timestamp
+    setattr(sailbot, "_now_sec", lambda: 121.0)
+    published: list[ci.DesiredHeading] = []
+    sailbot.desired_heading_pub = SimpleNamespace(
+        topic="desired_heading", publish=published.append
+    )
+
+    sailbot.desired_heading_callback()
+
+    assert len(published) == 1
+    assert not published[0].sail
+    assert published[0].heading.heading == 0.0
+    assert get_test_logger(sailbot).has_message("warning", "GPS or rudder data")
 
 
 def test_new_global_path_starts_at_last_waypoint() -> None:

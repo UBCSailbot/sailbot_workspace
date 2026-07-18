@@ -6,12 +6,12 @@
 # before attempting further upwind progress.
 tw_dir_deg: 270
 tw_speed_kmph: 1.5
+heading_deg: -90.0
 
 gps:
   latitude: 49.28
   longitude: -123.18
   speed_kmph: 2.5
-  heading_deg: 270.0
 
 global_path:
   waypoints:

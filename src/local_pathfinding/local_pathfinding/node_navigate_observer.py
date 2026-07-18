@@ -5,6 +5,7 @@ The main function of this file spawns two processes:
 
 """
 
+import math
 from collections import deque
 from multiprocessing import Manager, Process, Queue
 from typing import Deque, Union
@@ -27,10 +28,20 @@ def main():
     dash_process.start()
 
     try:
-        ros_process.join()
-        dash_process.join()
+        while ros_process.is_alive():
+            dash_process.join(timeout=1)
+            if dash_process.is_alive():
+                continue
+            exitcode = dash_process.exitcode
+            ros_process.join(timeout=1)
+            if not ros_process.is_alive():
+                break
+            print(f"Visualizer exited with code {exitcode}. Restarting...")
+            dash_process = Process(target=vz.dash_app, args=(interprocess_queue,), daemon=True)
+            dash_process.start()
     except KeyboardInterrupt:
         print("Keyboard interrupt [^C], shutting down.")
+    finally:
         ros_process.terminate()
         dash_process.terminate()
         ros_process.join()
@@ -61,6 +72,7 @@ class SailbotObserver(Node):
 
     Subscribers:
         local_path_sub (Subscription): Subscribes to the `LPathData` topic.
+        heading_sub (Subscription): Subscribes to e-compass boat heading on `rudder`.
 
     Attributes From Subscribers:
         queue (Queue): An interprocess queue used to pipe local pathfinding data to the
@@ -78,9 +90,16 @@ class SailbotObserver(Node):
             callback=self.local_path_callback,
             qos_profile=10,
         )
+        self.heading_sub = self.create_subscription(
+            msg_type=ci.HelperHeading,
+            topic="rudder",
+            callback=self.heading_callback,
+            qos_profile=10,
+        )
         self.msgs: Deque[ci.LPathData] = deque(maxlen=100)
         self.queue = queue
         self.msg: Union[ci.LPathData, None] = None
+        self.heading: Union[ci.HelperHeading, None] = None
         self.last_replan_reason = ""
 
         self.create_timer(3.0, self.update_queue)
@@ -102,11 +121,25 @@ class SailbotObserver(Node):
         if self.queue.qsize() < 1:
             self.update_queue()
 
+    def heading_callback(self, msg: ci.HelperHeading) -> None:
+        """Store a valid e-compass boat heading for visualization."""
+
+        if not math.isfinite(msg.heading) or not (-180.0 < msg.heading <= 180.0):
+            self.get_logger().warning(
+                f"Ignoring invalid heading from {self.heading_sub.topic}: {msg.heading}. "
+                "Expected a finite value in (-180, 180]."
+            )
+            return
+        self.heading = msg
+
     def update_queue(self):
         """Send the latest state through the pipe to the dash app"""
 
         if self.msg is None:
             self.get_logger().warn("No message received by /local_path data has been received")
+            return
+        if self.heading is None:
+            self.get_logger().warn("No e-compass boat heading has been received from /rudder")
             return
 
         if self.queue.qsize() >= 1:
@@ -119,6 +152,7 @@ class SailbotObserver(Node):
         self.queue.put(
             vz.VisualizerState(
                 msgs=self.msgs,
+                heading=self.heading,
                 last_replan_reason=self.last_replan_reason,
             )
         )

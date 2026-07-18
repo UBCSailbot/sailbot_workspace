@@ -9,7 +9,6 @@ from boat_simulator.common.angle_conventions import Heading, RudderAngle, TrimTa
 from boat_simulator.common.constants import BOAT_PROPERTIES
 from boat_simulator.common.conventions import NED, Velocity
 from boat_simulator.common.types import Vec2, Vec4
-from boat_simulator.common.utils import ned_to_body_rotation_matrix
 from boat_simulator.nodes.physics_engine.model import BoatState
 from custom_interfaces.msg import HelperLatLon
 from local_pathfinding.coord_systems import XY, meters_to_km, xy_to_latlon
@@ -28,10 +27,9 @@ def make_boat_state(timestep: float = TIMESTEP) -> BoatState:
 def _set_pose(boat_state: BoatState, x=0.0, y=0.0, roll=0.0, yaw=0.0) -> None:
     """Directly sets the boat's pose for test setup.
 
-    `__compute_net_force_and_torque` is currently stubbed to always return zero (see the TODO
-    in model.py), so `step()` alone cannot drive the boat away from rest. This reaches past the
-    public API into the underlying `BoatKinematics` to set up non-trivial state for the
-    property/rotation tests below.
+    Driving the boat to a specific pose through `step()` would mean solving the force model
+    backwards, so this reaches past the public API into the underlying `BoatKinematics` to
+    set up non-trivial state for the property tests below.
     """
     boat_state._BoatState__kinematics_computation.kinematics.pose = (  # type: ignore[attr-defined]
         Vec4.from_xypr(x, y, roll, yaw)
@@ -66,8 +64,11 @@ def test_construction_uses_boat_properties_mass_and_inertia() -> None:
 
     assert boat_state.boat_mass == pytest.approx(BOAT_PROPERTIES.mass)
     np.testing.assert_array_equal(boat_state.inertia.data, BOAT_PROPERTIES.inertia.data)
+    # The EOM are solved with the total mass matrix M_RB + M_A (added mass is implicit
+    # on the left-hand side, not a lagged force).
     np.testing.assert_allclose(
-        boat_state.inertia_inverse.data, np.linalg.inv(BOAT_PROPERTIES.inertia.data)
+        boat_state.inertia_inverse.data,
+        np.linalg.inv(BOAT_PROPERTIES.inertia.data + BOAT_PROPERTIES.M_A.data),
     )
 
 
@@ -131,47 +132,27 @@ def test_global_lat_lon_position_matches_xy_to_latlon() -> None:
     assert lon == pytest.approx(expected.longitude)
 
 
-# --- __ned_to_body_velocity (rotation used by step()) -----------------------------
-# `__compute_net_force_and_torque` currently discards the rotated wind/water velocities (it's
-# stubbed to zero, see model.py), so this rotation isn't observable through `step()` yet. These
-# tests call the name-mangled private method directly to lock in its behavior so it isn't
-# silently broken before the force model lands.
-
-
-def test_ned_to_body_velocity_identity_at_zero_orientation() -> None:
-    boat_state = make_boat_state()
-    ned_vel = Vec2[Velocity, NED].from_xy(3.0, -2.0)
-
-    body_vel = boat_state._BoatState__ned_to_body_velocity(ned_vel)  # type: ignore[attr-defined]
-
-    assert body_vel.x == pytest.approx(3.0)
-    assert body_vel.y == pytest.approx(-2.0)
-
-
-def test_ned_to_body_velocity_rotates_by_roll_and_yaw() -> None:
-    boat_state = make_boat_state()
-    roll, yaw = math.pi / 6, math.pi / 3
-    _set_pose(boat_state, roll=roll, yaw=yaw)
-    ned_vel = Vec2[Velocity, NED].from_xy(5.0, 1.5)
-
-    body_vel = boat_state._BoatState__ned_to_body_velocity(ned_vel)  # type: ignore[attr-defined]
-
-    rotation = ned_to_body_rotation_matrix(roll_rad=roll, pitch_rad=0.0, yaw_rad=yaw)
-    expected = rotation @ np.array([5.0, 1.5, 0.0])
-    assert body_vel.x == pytest.approx(expected[0])
-    assert body_vel.y == pytest.approx(expected[1])
-
-
 # --- step() ------------------------------------------------------------------------
-# The net force/torque calculation is currently stubbed to always return zero (see the TODO on
-# `__compute_net_force_and_torque` in model.py), so `step()` cannot yet move the boat away from
-# rest regardless of wind/water/rudder/trim-tab input. These tests lock in that (temporary)
-# behavior so a silent regression is visible, and should be revisited once the force model is
-# implemented.
+# `step()` assembles the net force via `TotalForceComputation` and integrates it via
+# `BoatKinematics.step`. To test the integration wiring in isolation, the force computation is
+# stubbed to zero; the force model itself is covered by the fluid_forces tests.
 
 
-def test_step_leaves_boat_at_rest_while_force_model_is_stubbed() -> None:
+def _stub_zero_net_force(boat_state: BoatState) -> None:
+    """Replaces the kinetics computation's `compute_total_force` with one returning zero, so
+    `step()` exercises only the kinematics integration."""
+
+    def zero_force(**_kwargs) -> Vec4:
+        return Vec4.from_xypr(0.0, 0.0, 0.0, 0.0)
+
+    boat_state._BoatState__kinetics_computation.compute_total_force = (  # type: ignore[attr-defined] # noqa: E501
+        zero_force
+    )
+
+
+def test_step_with_zero_net_force_leaves_boat_at_rest() -> None:
     boat_state = make_boat_state()
+    _stub_zero_net_force(boat_state)
     wind = Vec2[Velocity, NED].from_xy(12.0, 4.0)
     water = Vec2[Velocity, NED].from_xy(-1.0, 2.0)
     rudder = RudderAngle(math.radians(10.0))
@@ -184,9 +165,20 @@ def test_step_leaves_boat_at_rest_while_force_model_is_stubbed() -> None:
     np.testing.assert_array_equal(boat_state.pose.data, np.zeros(4))
 
 
+def test_step_with_wind_and_current_moves_boat_from_rest() -> None:
+    # With the real force model wired in, wind and ocean current must produce a nonzero net
+    # force on a boat at rest.
+    boat_state = make_boat_state()
+    wind = Vec2[Velocity, NED].from_xy(12.0, 4.0)
+    water = Vec2[Velocity, NED].from_xy(-1.0, 2.0)
+
+    boat_state.step(wind, water, ZERO_RUDDER, ZERO_TRIM_TAB)
+
+    assert not np.allclose(boat_state.nu.data, np.zeros(4))
+
+
 def test_step_does_not_raise_with_nonzero_boat_velocity() -> None:
-    # Exercises the rel_wind_vel/rel_water_vel computation (which depends on the boat's own
-    # nu) even though the result is currently discarded by the force-model stub.
+    # Exercises the apparent wind/current computation, which depends on the boat's own nu.
     boat_state = make_boat_state()
     _set_nu(boat_state, u=2.0, v=-1.0)
     wind = Vec2[Velocity, NED].from_xy(6.0, 0.0)

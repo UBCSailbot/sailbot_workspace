@@ -6,12 +6,12 @@
 # without making every local segment extreme.
 tw_dir_deg: 145
 tw_speed_kmph: 5.0
+heading_deg: -51.0
 
 gps:
   latitude: 49.280000
   longitude: -123.180000
   speed_kmph: 10.0
-  heading_deg: 309.0
 
 # Dense mixed traffic: ferries, tugs, fishing vessels, a tanker, and cargo ships.
 # The headings intentionally create head-on, crossing, overtaking, and slow-drift

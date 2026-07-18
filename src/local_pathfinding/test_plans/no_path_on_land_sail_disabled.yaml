@@ -16,12 +16,12 @@
 
 tw_dir_deg: 90
 tw_speed_kmph: 12.0
+heading_deg: 0.0
 
 gps:
   latitude: 49.20
   longitude: -123.20
   speed_kmph: 12.0
-  heading_deg: 0.0
 
 # No AIS traffic — the failure is caused purely by the boat being trapped by land.
 ais: []

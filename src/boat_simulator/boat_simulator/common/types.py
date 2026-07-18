@@ -239,11 +239,11 @@ class Vec4(Generic[Quantity, Frame]):
         return float(self.data[1])
 
     @property
-    def z(self) -> float:
+    def p(self) -> float:
         return float(self.data[2])
 
     @property
-    def w(self) -> float:
+    def r(self) -> float:
         """Fourth component: yaw ψ in η, yaw-rate r in ν, yaw moment N in τ."""
         return float(self.data[3])
 
