@@ -3,12 +3,12 @@
 # simultaneously avoid a collision and stay clear of both coastlines.
 tw_dir_deg: 180
 tw_speed_kmph: 10.0
+heading_deg: -90.0
 
 gps:
   latitude: 49.285
   longitude: -123.14
   speed_kmph: 10.0
-  heading_deg: 270.0
 
 ais:
   - {id: 1, lat: 49.285, lon: -123.27, heading: 90.0, speed: 12.0, rot: 10, width: 3.0, height: 10.0}
