@@ -260,7 +260,7 @@ class MockGPS(Node):
         """Update the boat speed based on current heading and true wind.
 
         Uses TimeObjective.get_sailbot_speed to calculate realistic boat speed
-        given the current heading relative to true wind direction and speed.
+        given the current heading relative to true-wind flow direction and speed.
         """
         self._mean_speed_kmph = ci.HelperSpeed(
             speed=float(
@@ -274,7 +274,7 @@ class MockGPS(Node):
         self.get_logger().debug(
             f"Updated speed: {self._mean_speed_kmph.speed:.2f} kmph "
             f"(heading: {self._heading_deg.heading:.1f}°, "
-            f"TW: {self._tw_speed_kmph:.1f} kmph from {self._tw_dir_deg}°)"
+            f"TW: {self._tw_speed_kmph:.1f} kmph toward {self._tw_dir_deg}°)"
         )
 
     def get_next_location(self) -> None:
