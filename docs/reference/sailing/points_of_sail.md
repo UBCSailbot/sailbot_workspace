@@ -6,6 +6,10 @@ names. These ranges are called *points of sail*.
 The discussion below coveres the most important points of sail for software
 members to understand.
 
+Sailbot wind angles use the flow-toward convention. A boat heading aligned with
+the airflow is directly downwind; a heading opposite the airflow is directly
+upwind.
+
 Notice how for *higher* points of sail (points of sail closer to straight into
 the wind), the sail is pulled tightly in to the boat. If the boat is on a
 *lower* point of sail, the sails should be let further out of the boat. For
@@ -17,11 +21,12 @@ as fast as it could if the sails were adjusted correctly.
 
 ## Irons
 
-The range of angles where the boat is roughly pointing straight into the wind
-are called ***Irons***, or the ***No-Go Zone***. Our implemented ***No-Go
-Zone*** is when the difference between the boat heading and true wind
-direction is within 45 degrees on either side. In WindObjective, this zone has
-a cost of 1 in the range of [0,1].
+The range of angles where the boat points roughly against the airflow is called
+***Irons***, or the upwind ***No-Go Zone***. With a flow-toward wind bearing,
+the centre of the upwind cone is 180° opposite the airflow direction. The
+implemented validator also rejects a downwind cone centred on the airflow
+direction. Both cones extend 45° to either side and receive a wind cost of 1 in
+the range [0, 1].
 
 If the boat is pointing in these directions, the sails will be flapping
 regardless of how the sheets are adjusted.

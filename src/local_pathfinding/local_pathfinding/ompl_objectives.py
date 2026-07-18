@@ -24,7 +24,7 @@ WIND_COST_SIN_EXPONENT = 80
 
 
 #               Estimated Boat Speeds (kmph) as function of True Wind Speed (kmph)
-#                               and the Sailing Angle (deg)
+#                         and the Flow-Relative Sailing Angle (deg)
 #  __________________________________________________________________________________________
 # | True  |                             Sailing Angle (deg)                                  |
 # | Wind  |__________________________________________________________________________________|
@@ -59,7 +59,7 @@ BOAT_SPEEDS_KMPH = np.array(
 )
 
 TW_SPEEDS_KMPH_GC = [0.0, 11.1, 14.8, 18.5, 22.2, 25.9, 29.6, 37.0, 55.0, 75.0]
-# Absolute angle between the path segment bearing and true wind direction, bounded by [0, 180].
+# Absolute angle between the path segment bearing and true-airflow bearing, bounded by [0, 180].
 SAILING_ANGLES_DEG_GC = [0, 45, 50, 60, 75, 90, 110, 120, 135, 150, 180]
 
 ESTIMATED_TOP_BOAT_SPEED = np.max(BOAT_SPEEDS_KMPH)
@@ -113,7 +113,7 @@ class WindObjective(ob.OptimizationObjective):
     angles among valid motions.
 
     Attributes:
-        tw_dir_rad_gc (float): Direction of true wind in global coordinate radians (-pi, pi]
+        tw_dir_rad_gc (float): True-wind flow bearing in global radians (-pi, pi].
     """
 
     def __init__(
@@ -127,8 +127,9 @@ class WindObjective(ob.OptimizationObjective):
     def motionCost(self, s1: ob.SE2StateSpace, s2: ob.SE2StateSpace) -> ob.Cost:
         """Return the wind-alignment cost for the segment from `s1` to `s2`.
 
-        Segments closer to directly upwind or downwind receive higher cost. Segments inside the
-        no-go zone receive max wind cost here and are also rejected by the motion validator.
+        Segments traveling either with the airflow (downwind) or against it
+        (upwind) receive higher cost. Segments inside either no-go cone receive
+        maximum wind cost and are also rejected by the motion validator.
 
         Args:
             s1 (SE2StateInternal): The starting point of the path segment
@@ -148,7 +149,7 @@ class WindObjective(ob.OptimizationObjective):
         Args:
             s1 (cs.XY): The start point of the path segment
             s2 (cs.XY): The end point of the path segment
-            tw_dir_rad_gc (float): The direction of the true wind in radians, (-pi, pi]
+            tw_dir_rad_gc (float): True-wind flow bearing in radians, (-pi, pi].
 
         Returns:
             float: The cost of the path segment from s1 to s2, in the interval [0, 1].
@@ -172,7 +173,7 @@ class TimeObjective(ob.OptimizationObjective):
     end of the segment.
 
     Attributes:
-        tw_dir_rad_gc (float): The direction of wind in global coordinate radians (-pi, pi]
+        tw_dir_rad_gc (float): True-wind flow bearing in global radians (-pi, pi].
         tw_speed_kmph (float): The speed of the true wind in km/h
     """
 
@@ -230,7 +231,7 @@ class TimeObjective(ob.OptimizationObjective):
         Args:
             s1 (cs.XY): The start point of the path segment
             s2 (cs.XY): The end point of the path segment
-            tw_dir_rad_gc (float): The direction of wind in global coord radians (-pi, pi]
+            tw_dir_rad_gc (float): True-wind flow bearing in global radians (-pi, pi].
             tw_speed_kmph (float): The true wind speed in km/h
 
         Returns:
@@ -264,22 +265,20 @@ class TimeObjective(ob.OptimizationObjective):
         tw_speed_kmph: float,
     ) -> float:
 
-        tw_angle_rad_bc = abs(
+        twa = abs(
             wcs.get_true_wind_angle(path_segment_true_bearing_rad, tw_dir_rad_gc)
         )
 
-        # this bounds the twa to a range of 0 to 180 degrees
-        # we can take the absolute value because we don't care if the wind is blowing
-        # on the port or starboard side when it comes to calculating the estimated speed
-        # and having the twa in the range of [0, 180] means we don't have to cover negative
-        # twa values in the BOAT_SPEEDS table
-        tw_angle_deg_gc = abs(cs.bound_to_180(math.degrees(tw_angle_rad_bc)))
+        # Bound the flow-relative angle to a range of 0 to 180 degrees.
+        # Only the magnitude of the signed flow-relative angle is needed for estimated speed.
+        # Bounding it to [0, 180] avoids negative angle entries in BOAT_SPEEDS.
+        twa = abs(cs.bound_to_180(math.degrees(twa)))
 
         # since the twa is bounded to [0, 180], the only time the interpolator would need to
         # use the fill_value is if the tw_speed_kmph is greater than the max accounted for
         # in the BOAT_SPEEDS table, in which case the interpolator will return it's configured
         # fill_value (see interpolation definition at top of class)
-        return TimeObjective.interpolation((tw_speed_kmph, tw_angle_deg_gc))
+        return TimeObjective.interpolation((tw_speed_kmph, twa))
 
 
 def get_sailing_objective(
@@ -290,7 +289,8 @@ def get_sailing_objective(
 ) -> ob.OptimizationObjective:
     """Build the combined sailing optimization objective for the current wind snapshot.
 
-    True wind is converted to radians once, then shared by the wind and time objectives.
+    The flow-toward true-wind bearing is converted to radians once, then shared
+    by the wind and time objectives.
     Goal direction remains in the objective stack even though goal progress is also enforced as a
     hard motion-validity check.
     """

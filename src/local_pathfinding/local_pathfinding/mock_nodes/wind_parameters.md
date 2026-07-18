@@ -29,9 +29,10 @@ constants:
 
 **Parameters:**
 
-- `tw_dir_deg`: True wind direction in global frame
+- `tw_dir_deg`: True-wind flow direction in the global frame; the angle points
+  where the air travels
     - Valid range: (-180, 180]
-    - 0° = North, 90° = East, 180° = South, -90° = West
+    - 0° flows north, 90° flows east, 180° flows south, and -90° flows west
 - `tw_speed_kmph`: True wind speed in km/h
     - Must be a decimal value (e.g., 100.0 not 100)
 

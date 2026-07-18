@@ -4,23 +4,19 @@ This section covers some other useful information.
 
 ## Wind Direction Convention
 
-Generally speaking, there are two ways to use an angle to describe the wind
-direction.
+Sailbot software represents wind using the **flow-toward convention**: the angle
+points in the direction the air travels. In global true-bearing coordinates,
+0° is airflow traveling toward north (from south), 90° is airflow traveling
+toward east, and angles increase clockwise.
 
-1. The angle tells you which way the wind is **blowing towards**. For example,
-   0° means the wind is blowing from North to South.
-2. The angle tells you which way the wind is **coming from**. For example, 0°
-   means the wind is blowing from South to North.
+This differs from the meteorological/source convention commonly used in spoken
+sailing descriptions. A source bearing points to where the air originated, so
+it is 180° opposite the flow-toward bearing. Convert a source bearing to a
+Sailbot flow bearing by adding 180° and normalizing it to the required range.
 
-In sailing, we normally talk about "where the wind is **coming from**". Somehow
-this ends up being more intuitive when talking about maneuvers or sail angle
-adjustments.
-
-However, when describing the wind as a vector, it can make more sense for the
-vector to represent the actual speed and direction the air is flowing. Make
-sure to document which convention you are using in your work when its
-applicable, and don't be afraid to ask someone to clarify which convention they
-are using in their work.
+Wind velocity vectors, true-wind parameters, apparent-wind calculations, and
+`WindSensor.direction` all use flow-toward values unless an external interface
+explicitly states otherwise.
 
 ## Navigation Terms
 
@@ -93,28 +89,28 @@ conventions are.
 
 ## True, Apparent, and Boat Wind
 
-- *True Wind* is the wind vector (speed and direction) which you would measure
+- *True Wind* is the airflow vector (speed and flow-toward direction) which you would measure
   while standing on land (or motionless at sea with unchanging GPS
   co-ordinates). In sailbot code, this may be referred to as ***Global
   Wind***. When people refer to "the wind", they normally mean True Wind.
-- *Boat Wind* is the wind vector which you would measure while standing on a
+- *Boat Wind* is the airflow vector which you would measure while standing on a
   moving boat when the True Wind speed is 0. This means that boat wind always
-  blows straight onto the bow of the boat, and the magnitude of the boat wind
-  is equal to the speed of the boat.
+  flows directly opposite the boat heading, toward the stern, and has magnitude
+  equal to the boat speed.
 - ***Apparent Wind*** is the vector sum of the True Wind and the Boat Wind.
   This is the wind that you would measure while standing on a moving boat
   more generally, even if there is non-zero wind. The apparent wind is also
   what our wind sensors measure, and what our sails feel. In Sailbot code,
   Apparent Wind may be referred to as ***Measured Wind***.
 
-In the example below, suppose the wind is blowing from the North at 4 m/s, and
-suppose the boat is moving **towards** the East at 3 m/s.
+In the example below, suppose true airflow travels south at 4 m/s (flow bearing
+180°), and the boat moves east at 3 m/s.
 
-- The True Wind everywhere is blowing at 4 m/s from the North
-- The Boat Wind onboard the boat is blowing **from** the East at 3 m/s
-- The Apparent Wind onboard the boat is has a magnitude of
-  $\sqrt{3^2 + 4^2} = 5 \text{ m/s}$, and is coming from a true bearing of
-  $\arctan{(\frac{3}{4})} = 36.9°$.
+- The True Wind flow bearing is 180° at 4 m/s.
+- The Boat Wind flows west at 3 m/s, with flow bearing -90°.
+- The Apparent Wind onboard the boat has a magnitude of
+  $\sqrt{3^2 + 4^2} = 5 \text{ m/s}$ and flows southwest with a true-bearing
+  direction of approximately -143.1°.
 
 ![image](../../assets/images/sailing/wind_types.jpg)
 
