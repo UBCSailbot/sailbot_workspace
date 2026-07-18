@@ -6,9 +6,9 @@ GPS global_gps
 # Position Unit: km, distance from the origin
 geometry_msgs/Pose global_pose
 
-# Direction that the wind is going TOWARDS. Note that this is difference from the WindSensor type
-# in custom_interfaces, where WindSensor.direction gives us the direction where the wind is coming
-# FROM (basically a 180 degree phase shift in the velocity direction).
+# Flow-toward wind velocity: the vector points where the air travels.
+# WindSensor.direction uses the same flow-toward convention in the boat frame;
+# this field instead stores Cartesian components in the global frame.
 #
 # Contains the linear component of the velocity.
 # Linear Velocity Unit: km/hr

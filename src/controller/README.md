@@ -34,9 +34,9 @@ found).
     - Reynolds number from wind speed and sail chord.
     - A lookup table (Reynolds number → angle of attack) with linear
       interpolation.
-    - Sign of the trim tab angle follows apparent wind direction (convention:
-      0° bow-to-stern, angle increasing clockwise; trim tab range typically
-      ±40°).
+    - Sign of the trim tab angle follows apparent wind flow direction. The angle
+      points where the air travels: 0° flows from bow toward stern and values
+      increase clockwise; trim tab range is typically ±40°.
 
 - **Wind scaling (mast protection):** If apparent wind speed is between a
   **lower** and **upper** threshold (parameters in `globals.yaml`), the trim

@@ -74,6 +74,11 @@ YAML filename without the `.yaml` extension and always keeps its `launch.log`.
 
 ## Wind Tracking
 
+Wind directions use the flow-toward convention. Global true-wind bearings point
+where the air travels: 0° flows north and 90° flows east. Apparent
+`WindSensor.direction` uses the boat frame, where 0° flows from bow toward
+stern and values increase clockwise.
+
 Local pathfinding keeps a rolling true-wind history in `WindTracker` so wind
 history survives `LocalPathState` replacement during path regeneration. Once the
 history reaches `WIND_HISTORY_LEN` readings, `WindTracker.tw_avg` is used as the
