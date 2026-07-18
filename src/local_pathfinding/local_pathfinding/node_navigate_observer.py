@@ -31,13 +31,10 @@ def main():
             dash_process.join(timeout=1)
             if dash_process.is_alive():
                 continue
-            
             exitcode = dash_process.exitcode
             ros_process.join(timeout=1)
-            
             if not ros_process.is_alive():
                 break
-            
             print(f"Visualizer exited with code {exitcode}. Restarting...")
             dash_process = Process(target=vz.dash_app, args=(interprocess_queue,), daemon=True)
             dash_process.start()
