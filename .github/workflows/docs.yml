@@ -112,9 +112,14 @@ jobs:
             git switch - --detach && \
             mike deploy pr-${{ github.event.number }} && \
             git switch gh-pages && \
-            git pull --no-rebase && \
             git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} && \
-            git push"
+            success=false && \
+            for attempt in 1 2 3; do \
+              git pull --no-rebase && git push && success=true && break; \
+              echo \"gh-pages push attempt ${attempt} failed, retrying...\"; \
+              sleep 2; \
+            done && \
+            [ \"$success\" = true ]"
 
       - name: Deploy main version of the Docs
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -127,6 +132,11 @@ jobs:
             git switch - && \
             mike deploy --update-aliases main latest && \
             git switch gh-pages && \
-            git pull --no-rebase && \
             git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} && \
-            git push"
+            success=false && \
+            for attempt in 1 2 3; do \
+              git pull --no-rebase && git push && success=true && break; \
+              echo \"gh-pages push attempt ${attempt} failed, retrying...\"; \
+              sleep 2; \
+            done && \
+            [ \"$success\" = true ]"
