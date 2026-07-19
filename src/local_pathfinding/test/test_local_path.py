@@ -9,19 +9,16 @@ import local_pathfinding.coord_systems as cs
 import local_pathfinding.local_path as lp
 import local_pathfinding.obstacles as ob
 from custom_interfaces.msg import (
-    (
     GPS,
     AISShips,
     HelperHeading,
     HelperAISShip,
     HelperDimension,
-    HelperHeading,
     HelperLatLon,
     HelperROT,
     HelperSpeed,
     Path,
     WindSensor,
-),
 )
 from local_pathfinding.obstacles import Obstacle
 from local_pathfinding.wind_coord_systems import (
