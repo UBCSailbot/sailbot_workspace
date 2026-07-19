@@ -1940,6 +1940,32 @@ def test_update_if_needed_reuses_path_when_boat_changes_heading(basic_local_path
     local_path, old_path, old_ompl_path = create_initialized_local_path_for_update_if_needed(
         basic_local_path_state
     )
+    land = ob.Land(
+        reference=basic_local_path_state.reference_latlon,
+        sailbot_position=basic_local_path_state.position,
+        all_land_data=MultiPolygon(
+            [
+                Polygon(
+                    [
+                        (-0.2, -0.2),
+                        (-0.2, 0.2),
+                        (0.2, 0.2),
+                        (0.2, -0.2),
+                    ]
+                )
+            ]
+        ),
+        state_space_latlon=Polygon(
+            [
+                (-1.0, -1.0),
+                (-1.0, 1.0),
+                (1.0, 1.0),
+                (1.0, -1.0),
+            ]
+        ),
+    )
+    basic_local_path_state.obstacles = [land]
+    
     baseline_tw = Wind(speed_kmph=5.0, dir_deg=90.0)
     set_tw_history(basic_local_path_state, baseline_tw, lp.WIND_HISTORY_LEN)
 
