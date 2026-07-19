@@ -1965,7 +1965,7 @@ def test_update_if_needed_reuses_path_when_boat_changes_heading(basic_local_path
         ),
     )
     basic_local_path_state.obstacles = [land]
-    
+
     baseline_tw = Wind(speed_kmph=5.0, dir_deg=90.0)
     set_tw_history(basic_local_path_state, baseline_tw, lp.WIND_HISTORY_LEN)
 
