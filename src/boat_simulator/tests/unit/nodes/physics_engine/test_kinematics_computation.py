@@ -7,16 +7,22 @@ import pytest
 
 from boat_simulator.common.angle_conventions import wrap_to_pi
 from boat_simulator.common.constants import BOAT_PROPERTIES
-from boat_simulator.common.conventions import Body, Force, Torque
+from boat_simulator.common.conventions import Body, Force
 from boat_simulator.common.types import Vec4
 from boat_simulator.nodes.physics_engine.kinematics_computation import BoatKinematics
+
 MASS = BOAT_PROPERTIES.mass
-I_X = BOAT_PROPERTIES.inertia.data[2, 2]
-I_Z = BOAT_PROPERTIES.inertia.data[3, 3]
+# The equations of motion are solved with the total mass matrix M_RB + M_A (added mass is
+# implicit on the left-hand side, not a lagged force), so accelerations divide by these.
+M_TOTAL = BOAT_PROPERTIES.inertia.data + BOAT_PROPERTIES.M_A.data
+M_SURGE = M_TOTAL[0, 0]
+M_SWAY = M_TOTAL[1, 1]
+I_X = M_TOTAL[2, 2]
+I_Z = M_TOTAL[3, 3]
 TIMESTEP = 0.1
 
+# The generalized force [X, Y, K, N] carries both forces (surge/sway) and moments (roll/yaw).
 ZERO_FORCE = Vec4[Force, Body].from_xypr(0.0, 0.0, 0.0, 0.0)
-ZERO_TORQUE = Vec4[Torque, Body].from_xypr(0.0, 0.0, 0.0, 0.0)
 
 
 def make_kinematics(timestep: float = TIMESTEP) -> BoatKinematics:
@@ -37,7 +43,7 @@ def test_construction_stores_timestep_mass_and_inertia() -> None:
 def test_construction_inverts_inertia() -> None:
     kinematics = make_kinematics()
 
-    expected_inverse = np.linalg.inv(BOAT_PROPERTIES.inertia.data)
+    expected_inverse = np.linalg.inv(M_TOTAL)
     np.testing.assert_allclose(kinematics.inertia_inverse.data, expected_inverse)
 
 
@@ -52,10 +58,10 @@ def test_construction_initializes_zero_state() -> None:
 # --- step(): zero input -----------------------------------------------------
 
 
-def test_step_with_zero_force_and_torque_leaves_state_at_rest() -> None:
+def test_step_with_zero_force_leaves_state_at_rest() -> None:
     kinematics = make_kinematics()
 
-    kinematics.step(ZERO_FORCE, ZERO_TORQUE)
+    kinematics.step(kinematics.nu, ZERO_FORCE)
 
     np.testing.assert_array_equal(kinematics.nu_dot.data, np.zeros(4))
     np.testing.assert_array_equal(kinematics.nu.data, np.zeros(4))
@@ -66,33 +72,32 @@ def test_step_with_zero_force_and_torque_leaves_state_at_rest() -> None:
 
 
 @pytest.mark.parametrize(
-    ("force", "torque", "expected_nu_dot"),
+    ("net_force", "expected_nu_dot"),
     [
-        (Vec4.from_xypr(21.0, 0.0, 0.0, 0.0), ZERO_TORQUE, [21.0 / MASS, 0.0, 0.0, 0.0]),
-        (Vec4.from_xypr(0.0, 42.0, 0.0, 0.0), ZERO_TORQUE, [0.0, 42.0 / MASS, 0.0, 0.0]),
-        (ZERO_FORCE, Vec4.from_xypr(0.0, 0.0, 25.0, 0.0), [0.0, 0.0, 25.0 / I_X, 0.0]),
-        (ZERO_FORCE, Vec4.from_xypr(0.0, 0.0, 0.0, 100.0), [0.0, 0.0, 0.0, 100.0 / I_Z]),
+        (Vec4.from_xypr(21.0, 0.0, 0.0, 0.0), [21.0 / M_SURGE, 0.0, 0.0, 0.0]),
+        (Vec4.from_xypr(0.0, 42.0, 0.0, 0.0), [0.0, 42.0 / M_SWAY, 0.0, 0.0]),
+        (Vec4.from_xypr(0.0, 0.0, 25.0, 0.0), [0.0, 0.0, 25.0 / I_X, 0.0]),
+        (Vec4.from_xypr(0.0, 0.0, 0.0, 100.0), [0.0, 0.0, 0.0, 100.0 / I_Z]),
     ],
     ids=["surge-force", "sway-force", "roll-torque", "yaw-torque"],
 )
-def test_step_computes_acceleration_per_dof(force, torque, expected_nu_dot) -> None:
+def test_step_computes_acceleration_per_dof(net_force, expected_nu_dot) -> None:
     kinematics = make_kinematics()
 
-    kinematics.step(force, torque)
+    kinematics.step(kinematics.nu, net_force)
 
     np.testing.assert_allclose(kinematics.nu_dot.data, expected_nu_dot)
 
 
 def test_step_does_not_cross_couple_force_and_torque_dofs() -> None:
-    # With a diagonal generalized inertia matrix, a surge/sway force must not perturb roll/yaw
-    # and a roll/yaw torque must not perturb surge/sway.
+    # With a diagonal generalized inertia matrix, the surge/sway components must not perturb
+    # roll/yaw and the roll/yaw components must not perturb surge/sway.
     kinematics = make_kinematics()
-    force = Vec4[Force, Body].from_xypr(10.0, -5.0, 0.0, 0.0)
-    torque = Vec4[Torque, Body].from_xypr(0.0, 0.0, 3.0, -7.0)
+    net_force = Vec4[Force, Body].from_xypr(10.0, -5.0, 3.0, -7.0)
 
-    kinematics.step(force, torque)
+    kinematics.step(kinematics.nu, net_force)
 
-    expected = [10.0 / MASS, -5.0 / MASS, 3.0 / I_X, -7.0 / I_Z]
+    expected = [10.0 / M_SURGE, -5.0 / M_SWAY, 3.0 / I_X, -7.0 / I_Z]
     np.testing.assert_allclose(kinematics.nu_dot.data, expected)
 
 
@@ -101,26 +106,26 @@ def test_step_does_not_cross_couple_force_and_torque_dofs() -> None:
 
 def test_step_integrates_velocity_from_acceleration() -> None:
     kinematics = make_kinematics()
-    force = Vec4[Force, Body].from_xypr(21.0, 0.0, 0.0, 0.0)
+    net_force = Vec4[Force, Body].from_xypr(21.0, 0.0, 0.0, 0.0)
 
-    kinematics.step(force, ZERO_TORQUE)
+    kinematics.step(kinematics.nu, net_force)
 
-    expected_u = (21.0 / MASS) * TIMESTEP
+    expected_u = (21.0 / M_SURGE) * TIMESTEP
     assert kinematics.nu.x == pytest.approx(expected_u)
 
 
 def test_step_accumulates_velocity_over_multiple_steps() -> None:
     kinematics = make_kinematics()
-    force = Vec4[Force, Body].from_xypr(21.0, 0.0, 0.0, 0.0)
+    net_force = Vec4[Force, Body].from_xypr(21.0, 0.0, 0.0, 0.0)
     num_steps = 5
 
     for _ in range(num_steps):
-        kinematics.step(force, ZERO_TORQUE)
+        kinematics.step(kinematics.nu, net_force)
 
-    # No drag/Coriolis is modeled here, so the acceleration is constant across steps and the
-    # velocity grows linearly.
-    assert kinematics.nu_dot.x == pytest.approx(21.0 / MASS)
-    assert kinematics.nu.x == pytest.approx((21.0 / MASS) * TIMESTEP * num_steps)
+    # No drag is modeled here and pure surge produces no Coriolis coupling, so the
+    # acceleration is constant across steps and the velocity grows linearly.
+    assert kinematics.nu_dot.x == pytest.approx(21.0 / M_SURGE)
+    assert kinematics.nu.x == pytest.approx((21.0 / M_SURGE) * TIMESTEP * num_steps)
 
 
 # --- step(): pose integration via J(eta) -------------------------------------
@@ -128,14 +133,14 @@ def test_step_accumulates_velocity_over_multiple_steps() -> None:
 
 def test_step_integrates_north_east_position_at_zero_heading() -> None:
     kinematics = make_kinematics()
-    force = Vec4[Force, Body].from_xypr(21.0, 14.0, 0.0, 0.0)
+    net_force = Vec4[Force, Body].from_xypr(21.0, 14.0, 0.0, 0.0)
 
-    kinematics.step(force, ZERO_TORQUE)
+    kinematics.step(kinematics.nu, net_force)
 
     # At psi = phi = 0, J(eta)'s rotation block is the identity, so eta_dot == nu (the
     # already-updated body velocity from this same step).
-    updated_u = (21.0 / MASS) * TIMESTEP
-    updated_v = (14.0 / MASS) * TIMESTEP
+    updated_u = (21.0 / M_SURGE) * TIMESTEP
+    updated_v = (14.0 / M_SWAY) * TIMESTEP
     assert kinematics.pose.x == pytest.approx(updated_u * TIMESTEP)
     assert kinematics.pose.y == pytest.approx(updated_v * TIMESTEP)
 
@@ -144,11 +149,11 @@ def test_step_rotates_body_velocity_into_ned_position_by_heading() -> None:
     kinematics = make_kinematics()
     psi = math.pi / 2
     kinematics.kinematics.pose = Vec4.from_xypr(0.0, 0.0, 0.0, psi)
-    force = Vec4[Force, Body].from_xypr(21.0, 0.0, 0.0, 0.0)
+    net_force = Vec4[Force, Body].from_xypr(21.0, 0.0, 0.0, 0.0)
 
-    kinematics.step(force, ZERO_TORQUE)
+    kinematics.step(kinematics.nu, net_force)
 
-    updated_u = (21.0 / MASS) * TIMESTEP
+    updated_u = (21.0 / M_SURGE) * TIMESTEP
     expected_north = updated_u * math.cos(psi) * TIMESTEP
     expected_east = updated_u * math.sin(psi) * TIMESTEP
     assert kinematics.pose.x == pytest.approx(expected_north, abs=1e-9)
@@ -157,15 +162,15 @@ def test_step_rotates_body_velocity_into_ned_position_by_heading() -> None:
 
 def test_step_integrates_roll_and_yaw_rate_into_pose() -> None:
     kinematics = make_kinematics()
-    torque = Vec4[Torque, Body].from_xypr(0.0, 0.0, 12.5, 40.0)
+    net_force = Vec4[Force, Body].from_xypr(0.0, 0.0, 12.5, 40.0)
 
-    kinematics.step(ZERO_FORCE, torque)
+    kinematics.step(kinematics.nu, net_force)
 
     updated_p = (12.5 / I_X) * TIMESTEP
     updated_r = (40.0 / I_Z) * TIMESTEP
     # phi starts at 0, so psi_dot = r * cos(phi) == r here.
-    assert kinematics.pose.z == pytest.approx(updated_p * TIMESTEP)
-    assert kinematics.pose.w == pytest.approx(updated_r * TIMESTEP)
+    assert kinematics.pose.p == pytest.approx(updated_p * TIMESTEP)
+    assert kinematics.pose.r == pytest.approx(updated_r * TIMESTEP)
 
 
 def test_step_scales_yaw_rate_by_cosine_of_roll() -> None:
@@ -176,12 +181,12 @@ def test_step_scales_yaw_rate_by_cosine_of_roll() -> None:
     kinematics.kinematics.pose = Vec4.from_xypr(0.0, 0.0, roll_angle, 0.0)
     kinematics.kinematics.nu = Vec4.from_xypr(0.0, 0.0, 0.0, 2.0)
 
-    kinematics.step(ZERO_FORCE, ZERO_TORQUE)
+    kinematics.step(kinematics.nu, ZERO_FORCE)
 
     expected_psi = 2.0 * math.cos(roll_angle) * TIMESTEP
-    assert kinematics.pose.w == pytest.approx(expected_psi)
+    assert kinematics.pose.r == pytest.approx(expected_psi)
     # Roll rate p is 0, so phi should be unaffected even though phi != 0.
-    assert kinematics.pose.z == pytest.approx(roll_angle)
+    assert kinematics.pose.p == pytest.approx(roll_angle)
 
 
 def test_step_uses_updated_velocity_for_position_integration() -> None:
@@ -191,11 +196,11 @@ def test_step_uses_updated_velocity_for_position_integration() -> None:
     """
     kinematics = make_kinematics()
     kinematics.kinematics.nu = Vec4.from_xypr(1.0, 0.0, 0.0, 0.0)
-    force = Vec4[Force, Body].from_xypr(21.0, 0.0, 0.0, 0.0)
+    net_force = Vec4[Force, Body].from_xypr(21.0, 0.0, 0.0, 0.0)
 
-    kinematics.step(force, ZERO_TORQUE)
+    kinematics.step(kinematics.nu, net_force)
 
-    updated_u = 1.0 + (21.0 / MASS) * TIMESTEP
+    updated_u = 1.0 + (21.0 / M_SURGE) * TIMESTEP
     semi_implicit_expected = updated_u * TIMESTEP
     explicit_euler_expected = 1.0 * TIMESTEP
 
@@ -211,11 +216,11 @@ def test_step_wraps_yaw_to_within_pi() -> None:
     kinematics.kinematics.pose = Vec4.from_xypr(0.0, 0.0, 0.0, math.pi - 0.05)
     kinematics.kinematics.nu = Vec4.from_xypr(0.0, 0.0, 0.0, 1.0)
 
-    kinematics.step(ZERO_FORCE, ZERO_TORQUE)
+    kinematics.step(kinematics.nu, ZERO_FORCE)
 
     expected_psi = wrap_to_pi((math.pi - 0.05) + 1.0 * TIMESTEP)
-    assert -math.pi <= kinematics.pose.w < math.pi
-    assert kinematics.pose.w == pytest.approx(expected_psi)
+    assert -math.pi <= kinematics.pose.r < math.pi
+    assert kinematics.pose.r == pytest.approx(expected_psi)
 
 
 def test_step_wraps_roll_to_within_pi() -> None:
@@ -223,11 +228,11 @@ def test_step_wraps_roll_to_within_pi() -> None:
     kinematics.kinematics.pose = Vec4.from_xypr(0.0, 0.0, -math.pi + 0.02, 0.0)
     kinematics.kinematics.nu = Vec4.from_xypr(0.0, 0.0, -1.0, 0.0)
 
-    kinematics.step(ZERO_FORCE, ZERO_TORQUE)
+    kinematics.step(kinematics.nu, ZERO_FORCE)
 
     expected_phi = wrap_to_pi((-math.pi + 0.02) + (-1.0) * TIMESTEP)
-    assert -math.pi <= kinematics.pose.z < math.pi
-    assert kinematics.pose.z == pytest.approx(expected_phi)
+    assert -math.pi <= kinematics.pose.p < math.pi
+    assert kinematics.pose.p == pytest.approx(expected_phi)
 
 
 def test_step_does_not_wrap_north_east_position() -> None:
@@ -235,7 +240,7 @@ def test_step_does_not_wrap_north_east_position() -> None:
     kinematics.kinematics.pose = Vec4.from_xypr(1000.0, -1000.0, 0.0, 0.0)
     kinematics.kinematics.nu = Vec4.from_xypr(5.0, -5.0, 0.0, 0.0)
 
-    kinematics.step(ZERO_FORCE, ZERO_TORQUE)
+    kinematics.step(kinematics.nu, ZERO_FORCE)
 
     assert kinematics.pose.x == pytest.approx(1000.0 + 5.0 * TIMESTEP)
     assert kinematics.pose.y == pytest.approx(-1000.0 - 5.0 * TIMESTEP)

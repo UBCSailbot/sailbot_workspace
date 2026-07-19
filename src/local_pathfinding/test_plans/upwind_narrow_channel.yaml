@@ -1,17 +1,15 @@
-# Wind blows directly out of the channel exit (from the west), so Polaris must tack
-# upwind through the narrow passage.  Close-hauled legs are constrained to ~3.3 km of
-# north-south room; the planner must execute short tacks within the channel walls rather
-# than making free-space tacks.
-# No-go zone (±45° of 270°): headings 225°–315° are irons — going straight west is
-# impossible, forcing a NW/SW alternating tack pattern.
+# Airflow travels west through the channel exit. The westbound destination is
+# therefore directly downwind under the flow-toward convention, and the planner
+# must gybe through the narrow passage. The downwind no-go cone is ±45° around
+# 270°, so headings 225°–315° are rejected and force alternating NW/SW legs.
 tw_dir_deg: 270
 tw_speed_kmph: 15.0
+heading_deg: -45.0
 
 gps:
   latitude: 49.280
   longitude: -123.15
   speed_kmph: 10.0
-  heading_deg: 315.0
 
 # [lon, lat]
 land:

@@ -1,5 +1,10 @@
 # Wind Conventions Reference
 
+All wind directions in the ROS interfaces and local-pathfinding calculations use
+the **flow-toward convention**: the angle points in the direction the air travels.
+This differs by 180° from the meteorological/source convention, which names the
+direction the wind comes from.
+
 ## Coordinate Systems
 
 ### Global Coordinate System
@@ -8,36 +13,36 @@
 - **0° = True North**, increases clockwise till 180°, decrease
   counter-clockwise till -180° (exclusive)
 - Range: (-180, 180] degrees
-- Used for true wind direction and boat heading
+- Used for true-wind flow direction and boat heading
 
 ### Boat Coordinate System
 
 - Relative to the boat's orientation
-- **0° = directly opposite to the boat's heading** (bow to stern direction)
+- **0° = directly opposite to the boat's heading**, so the airflow points from
+  bow toward stern
 - Increases clockwise till 180°, decrease counter-clockwise till -180°
   (exclusive) relative to the boat
 - Range: (-180, 180] degrees
-- Used for apparent wind direction (sensor readings)
+- Used for apparent-wind flow direction (sensor readings)
 
 ## Wind Types
 
 ### True Wind
 
-- Wind velocity in the global/geographic coordinate frame
+- Airflow velocity in the global/geographic coordinate frame
 - What a stationary observer on the ground would measure
-- **0° = wind blowing FROM south TO north** (opposite of meteorological
-  convention)
+- **0° = airflow traveling from south toward north**
 - Independent of boat motion
 
 ### Boat Wind
 
 - Wind created by the boat's own motion through the air
-- Direction: opposite of boat heading (`boat_heading + 180°`)
+- Flow direction: opposite of boat heading (`boat_heading + 180°`)
 - Speed: equal to boat speed
 
 ### Apparent Wind
 
-- Wind experienced on the moving boat
+- Airflow experienced on the moving boat
 - Measured relative to the boat (boat coordinate system)
 - Combination of true wind + boat-induced wind
 - **Apparent Wind = True Wind + Boat Wind**
@@ -49,9 +54,9 @@ Available in [`wind_coord_systems.py`](local_pathfinding/wind_coord_systems.py):
 ### Coordinate System Conversions
 
 - `boat_to_global_coordinate(boat_heading, wind_direction)` - Convert
-  boat-frame wind to global-frame bearing
+  a boat-frame flow direction to a global-frame flow bearing
 - `global_to_boat_coordinate(boat_heading, global_wind_direction)` - Convert
-  global-frame wind to boat-frame
+  a global-frame flow bearing to a boat-frame flow direction
 
 ### Wind Conversions
 
@@ -64,9 +69,14 @@ Available in [`wind_coord_systems.py`](local_pathfinding/wind_coord_systems.py):
 
 ## Key Notes
 
-- All angles use **meteorological convention**: wind direction indicates where
-  wind is **coming from**, not going to
-- The math computes vectors in the direction wind travels, but by convention
-  we interpret them as source directions
-- Boat coordinate 0° points to the stern (opposite of heading) following true
-  bearing conventions
+- Every stored wind angle points **where the airflow is going**.
+- In global coordinates, 0° points north and 90° points east. Global wind 0°
+  therefore means airflow traveling from south toward north.
+- In the `WindSensor` boat frame, 0° points to the stern and angles increase
+  clockwise. Sensor wind 0° therefore means airflow traveling from bow toward
+  stern.
+- Convert a flow-toward bearing to a meteorological/source bearing only for an
+  external interface that explicitly requires it: add 180° and normalize.
+- `get_true_wind_angle` returns a signed **flow-relative** angle between boat
+  heading and true airflow: 0° is flow with the heading (downwind), while 180°
+  is flow against the heading (upwind).

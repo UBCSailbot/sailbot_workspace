@@ -9,8 +9,10 @@ import local_pathfinding.coord_systems as cs
 import local_pathfinding.local_path as lp
 import local_pathfinding.obstacles as ob
 from custom_interfaces.msg import (
+    (
     GPS,
     AISShips,
+    HelperHeading,
     HelperAISShip,
     HelperDimension,
     HelperHeading,
@@ -19,6 +21,7 @@ from custom_interfaces.msg import (
     HelperSpeed,
     Path,
     WindSensor,
+),
 )
 from local_pathfinding.obstacles import Obstacle
 from local_pathfinding.wind_coord_systems import (
@@ -55,7 +58,8 @@ def basic_local_path_state():
     gps = mock.Mock()
     gps.lat_lon = HelperLatLon(latitude=0.0, longitude=0.0)
     gps.speed = mock.Mock(speed=0.0)
-    gps.heading = mock.Mock(heading=0.0)
+    gps.heading = mock.Mock(heading=123.0)
+    heading = HelperHeading(heading=0.0)
 
     ais_ships = mock.Mock()
     ais_ships.ships = []
@@ -73,6 +77,7 @@ def basic_local_path_state():
 
     return lp.LocalPathState(
         gps=gps,
+        heading=heading,
         ais_ships=ais_ships,
         global_path=global_path,
         target_global_waypoint=global_path.waypoints[-1],
@@ -99,7 +104,8 @@ def create_update_if_needed_inputs():
     gps = mock.Mock()
     gps.lat_lon = HelperLatLon(latitude=0.0, longitude=-0.1)
     gps.speed = mock.Mock(speed=0.0)
-    gps.heading = mock.Mock(heading=0.0)
+    gps.heading = mock.Mock(heading=123.0)
+    heading = HelperHeading(heading=0.0)
 
     ais_ships = mock.Mock()
     ais_ships.ships = []
@@ -117,6 +123,7 @@ def create_update_if_needed_inputs():
 
     return lp.LocalPathInputs(
         gps=gps,
+        heading=heading,
         ais_ships=ais_ships,
         global_path=global_path,
         target_global_waypoint=global_path.waypoints[-1],
@@ -166,11 +173,11 @@ def set_filtered_wind_sensor_from_true_wind(inputs, true_wind):
     aw_dir_deg_gc, aw_speed_kmph = tw_gc_to_aw_gc(
         tw_dir_deg_gc=true_wind.dir_deg,
         tw_speed_kmph=true_wind.speed_kmph,
-        boat_heading_deg_gc=inputs.gps.heading.heading,
+        boat_heading_deg_gc=inputs.heading.heading,
         boat_speed_kmph=inputs.gps.speed.speed,
     )
 
-    aw_dir_deg_bc = global_to_boat_coordinate(inputs.gps.heading.heading, aw_dir_deg_gc)
+    aw_dir_deg_bc = global_to_boat_coordinate(inputs.heading.heading, aw_dir_deg_gc)
     inputs.filtered_wind_sensor.speed.speed = aw_speed_kmph
     inputs.filtered_wind_sensor.direction = aw_dir_deg_bc
 
@@ -895,6 +902,7 @@ def test_LocalPathState_path_generated_wind_uses_tw_avg_when_available():
 
     state = lp.LocalPathState(
         gps=inputs.gps,
+        heading=inputs.heading,
         ais_ships=inputs.ais_ships,
         global_path=inputs.global_path,
         target_global_waypoint=inputs.target_global_waypoint,
@@ -1192,6 +1200,7 @@ def test_LocalPathState_parameter_checking():
     with pytest.raises(ValueError):
         lp.LocalPathState(
             gps=None,
+            heading=HelperHeading(),
             ais_ships=AISShips(),
             global_path=Path(
                 waypoints=[
@@ -1207,6 +1216,23 @@ def test_LocalPathState_parameter_checking():
     with pytest.raises(ValueError):
         lp.LocalPathState(
             gps=GPS(),
+            heading=None,
+            ais_ships=AISShips(),
+            global_path=Path(
+                waypoints=[
+                    HelperLatLon(latitude=0.0, longitude=0.0),
+                    HelperLatLon(latitude=1.0, longitude=1.0),
+                ]
+            ),
+            target_global_waypoint=HelperLatLon(latitude=1.0, longitude=1.0),
+            filtered_wind_sensor=WindSensor(),
+            wind_tracker=create_wind_tracker(),
+        )
+
+    with pytest.raises(ValueError):
+        lp.LocalPathState(
+            gps=GPS(),
+            heading=HelperHeading(),
             ais_ships=None,
             global_path=Path(
                 waypoints=[
@@ -1222,6 +1248,7 @@ def test_LocalPathState_parameter_checking():
     with pytest.raises(ValueError):
         lp.LocalPathState(
             gps=GPS(),
+            heading=HelperHeading(),
             ais_ships=AISShips(),
             global_path=Path(waypoints=[]),
             target_global_waypoint=HelperLatLon(),
@@ -1232,6 +1259,7 @@ def test_LocalPathState_parameter_checking():
     with pytest.raises(ValueError):
         lp.LocalPathState(
             gps=GPS(),
+            heading=HelperHeading(),
             ais_ships=AISShips(),
             global_path=None,
             target_global_waypoint=None,
@@ -1242,6 +1270,7 @@ def test_LocalPathState_parameter_checking():
     with pytest.raises(ValueError):
         lp.LocalPathState(
             gps=GPS(),
+            heading=HelperHeading(),
             ais_ships=AISShips(),
             global_path=Path(
                 waypoints=[
@@ -1902,7 +1931,8 @@ def test_update_if_needed_reuses_path_without_significant_wind_change(
     assert local_path.state.reference_latlon is original_reference_latlon
     assert local_path.state.position is inputs.gps.lat_lon
     assert local_path.state.speed == inputs.gps.speed.speed
-    assert local_path.state.heading == inputs.gps.heading.heading
+    assert local_path.state.heading == inputs.heading.heading
+    assert local_path.state.heading != inputs.gps.heading.heading
     assert local_path.state.current_tw.speed_kmph == pytest.approx(new_tw.speed_kmph)
     assert local_path.state.current_tw.dir_deg == pytest.approx(new_tw.dir_deg)
     old_ompl_path.get_path.assert_called_once()
@@ -1918,7 +1948,7 @@ def test_update_if_needed_reuses_path_when_boat_changes_heading(basic_local_path
 
     inputs = create_update_if_needed_inputs()
     inputs.gps.speed.speed = 3.0
-    inputs.gps.heading.heading += lp.WIND_DIRECTION_CHANGE_THRESH_DEG + 30.0
+    inputs.heading.heading += lp.WIND_DIRECTION_CHANGE_THRESH_DEG + 30.0
 
     set_filtered_wind_sensor_from_true_wind(inputs, baseline_tw)
 

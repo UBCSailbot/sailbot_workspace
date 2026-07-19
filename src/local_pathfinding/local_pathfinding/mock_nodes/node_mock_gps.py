@@ -1,6 +1,4 @@
-"""
-Mock class for the GPS. Publishes basic GPS data to the ROS network.
-"""
+"""Publish mock GPS data and e-compass boat heading for development test plans."""
 
 import math
 import random
@@ -26,18 +24,15 @@ DRIFT_DIR_NOISE_SIGMA_DEG = 2.0
 class MockGPS(Node):
 
     def __init__(self) -> None:
-        """Initialize the MockGPS class. The class is used to publish mock gps
-        data to the ROS network.
-
-        Args:
-            Node (Node): The ROS node that the class will run on.
+        """Initialize the development boat-state publisher.
 
         Attributes:
             _mock_gps_timer (Timer): Timer to call the mock gps callback function.
-            _mock_gps_publisher (Publisher): Publisher for the gps data.
+            _gps_pub (Publisher): Publisher for GPS position and speed data.
+            _heading_pub (Publisher): Publisher for e-compass boat heading on ``rudder``.
             _mean_speed_kmph (HelperSpeed): Constant speed of the boat.
             _current_location (HelperLatLon): Current location of the boat.
-            _mean_heading (HelperHeading): Constant heading of the boat.
+            _heading_deg (HelperHeading): Current boat heading published on ``rudder``.
         """
         super().__init__("mock_gps")
 
@@ -61,11 +56,14 @@ class MockGPS(Node):
 
         test_plan = TestPlan(self.get_parameter("test_plan").get_parameter_value().string_value)
         gps_data = test_plan.gps
+        heading_data = test_plan.heading
+        if gps_data is None or heading_data is None:
+            raise ValueError("MockGPS requires gps and heading_deg test-plan data")
 
         self._tw_speed_kmph = test_plan.tw_speed_kmph
         self._tw_dir_deg = test_plan.tw_dir_deg
         self._mean_speed_kmph = ci.HelperSpeed(speed=gps_data.speed.speed)
-        self._heading_deg = ci.HelperHeading(heading=gps_data.heading.heading)
+        self._heading_deg = ci.HelperHeading(heading=heading_data.heading)
         self._current_location = ci.HelperLatLon(
             latitude=gps_data.lat_lon.latitude, longitude=gps_data.lat_lon.longitude
         )
@@ -104,6 +102,11 @@ class MockGPS(Node):
         self._gps_pub = self.create_publisher(
             msg_type=ci.GPS,
             topic="gps",
+            qos_profile=10,
+        )
+        self._heading_pub = self.create_publisher(
+            msg_type=ci.HelperHeading,
+            topic="rudder",
             qos_profile=10,
         )
 
@@ -169,8 +172,7 @@ class MockGPS(Node):
         return cs.xy_to_latlon(reference=lat_long_msg, xy=self._drift_offset_km)
 
     def mock_gps_callback(self) -> None:
-        """Updates boat speed based on current heading and true wind.
-        Publishes mock gps data.
+        """Update the boat state and publish GPS plus e-compass heading data.
         """
         self.update_speed()
         self.get_next_location()
@@ -213,6 +215,10 @@ class MockGPS(Node):
             f"Publishing to {self._gps_pub.topic}, longitude: {msg.lat_lon.longitude}"
         )
         self._gps_pub.publish(msg)
+        self.get_logger().debug(
+            f"Publishing to {self._heading_pub.topic}, heading: {self._heading_deg.heading}"
+        )
+        self._heading_pub.publish(self._heading_deg)
 
     def _on_set_parameters(self, params: List[Parameter]) -> SetParametersResult:
         """This callback function serves as a guard to ensure values entered with `ros2 param set`
@@ -254,7 +260,7 @@ class MockGPS(Node):
         """Update the boat speed based on current heading and true wind.
 
         Uses TimeObjective.get_sailbot_speed to calculate realistic boat speed
-        given the current heading relative to true wind direction and speed.
+        given the current heading relative to true-wind flow direction and speed.
         """
         self._mean_speed_kmph = ci.HelperSpeed(
             speed=float(
@@ -268,7 +274,7 @@ class MockGPS(Node):
         self.get_logger().debug(
             f"Updated speed: {self._mean_speed_kmph.speed:.2f} kmph "
             f"(heading: {self._heading_deg.heading:.1f}°, "
-            f"TW: {self._tw_speed_kmph:.1f} kmph from {self._tw_dir_deg}°)"
+            f"TW: {self._tw_speed_kmph:.1f} kmph toward {self._tw_dir_deg}°)"
         )
 
     def get_next_location(self) -> None:

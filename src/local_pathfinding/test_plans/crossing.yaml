@@ -4,12 +4,12 @@
 # The planner must time a lateral offset to clear both without stopping.
 tw_dir_deg: 270
 tw_speed_kmph: 12.0
+heading_deg: 0.0
 
 gps:
   latitude: 49.10
   longitude: -123.18
   speed_kmph: 12.0
-  heading_deg: 0.0
 
 ais:
   - {id: 1, lat: 49.11, lon: -123.10, heading: 270.0, speed: 18.0, rot: 0, width: 3.0, height: 12.0}
