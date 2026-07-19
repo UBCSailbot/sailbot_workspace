@@ -672,7 +672,7 @@ class LocalPath:
         new_tw = None
         if inputs.gps is not None:
             new_aw_dir_deg_gc = boat_to_global_coordinate(
-                inputs.gps.heading.heading, new_aw.dir_deg
+                new_heading, new_aw.dir_deg
             )
             tw_dir_deg, tw_speed_kmph = aw_gc_to_tw_gc(
                 aw_dir_deg_gc=new_aw_dir_deg_gc,

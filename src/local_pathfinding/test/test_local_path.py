@@ -11,9 +11,9 @@ import local_pathfinding.obstacles as ob
 from custom_interfaces.msg import (
     GPS,
     AISShips,
-    HelperHeading,
     HelperAISShip,
     HelperDimension,
+    HelperHeading,
     HelperLatLon,
     HelperROT,
     HelperSpeed,
@@ -1971,17 +1971,18 @@ def test_update_if_needed_reuses_path_when_boat_changes_heading(basic_local_path
 
     inputs = create_update_if_needed_inputs()
     inputs.gps.speed.speed = 3.0
-    inputs.heading.heading += lp.WIND_DIRECTION_CHANGE_THRESH_DEG + 30.0
-
+    inputs.gps.heading.heading += lp.WIND_DIRECTION_CHANGE_THRESH_DEG + 30.0
     set_filtered_wind_sensor_from_true_wind(inputs, baseline_tw)
 
-    for _ in range(lp.WIND_HISTORY_LEN):
-        local_path.update_if_needed(
-            inputs=inputs,
-            target_lp_wp_index=1,
-            received_new_global_waypoint=False,
-        )
+    with mock.patch.object(lp, "OMPLPath") as ompl_path_cls:
+        for _ in range(lp.WIND_HISTORY_LEN):
+            local_path.update_if_needed(
+                inputs=inputs,
+                target_lp_wp_index=1,
+                received_new_global_waypoint=False,
+            )
 
     assert local_path._ompl_path is old_ompl_path
     assert local_path.path is old_path
     local_path._logger.info.assert_any_call("Reusing local path: Path is valid, no change needed")
+    ompl_path_cls.assert_not_called()
