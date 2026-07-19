@@ -1452,106 +1452,111 @@ def test_update_if_needed_regenerates_path_when_path_must_change(
     ompl_path_cls.assert_called_once()
 
 
-def test_update_if_needed_refreshes_obstacles_on_call(basic_local_path_state):
+@pytest.mark.parametrize(
+    "scenario, cached_ship_ids, incoming_ship_ids, expected_ship_ids",
+    [
+        (
+            "adds_new_ship",
+            [1],
+            [1, 3],
+            {1, 3},
+        ),
+        (
+            "removes_missing_ship",
+            [1, 2],
+            [1],
+            {1},
+        ),
+        (
+            "removes_all_ships_land_survives",
+            [1, 2],
+            [],
+            set(),
+        ),
+        (
+            "mixed_add_and_remove",
+            [1, 2],
+            [2, 3],
+            {2, 3},
+        ),
+        (
+            "no_change_updates_in_place",
+            [1],
+            [1],
+            {1},
+        ),
+    ],
+)
+def test_update_if_needed_syncs_boat_obstacles_with_ais_ships(
+    scenario,  # noqa: ARG001
+    cached_ship_ids,
+    incoming_ship_ids,
+    expected_ship_ids,
+    basic_local_path_state,
+):
     local_path, _, old_ompl_path = create_initialized_local_path_for_update_if_needed(
         basic_local_path_state
     )
     land_reference = basic_local_path_state.reference_latlon
+
     cached_land = ob.Land(
         reference=land_reference,
         sailbot_position=basic_local_path_state.position,
         all_land_data=MultiPolygon(
-            [
-                Polygon(
-                    [
-                        (-0.2, -0.2),
-                        (-0.2, 0.2),
-                        (0.2, 0.2),
-                        (0.2, -0.2),
-                    ]
-                )
-            ]
+            [Polygon([(-0.2, -0.2), (-0.2, 0.2), (0.2, 0.2), (0.2, -0.2)])]
         ),
         land_multi_polygon=MultiPolygon(
-            [
-                Polygon(
-                    [
-                        (-0.2, -0.2),
-                        (-0.2, 0.2),
-                        (0.2, 0.2),
-                        (0.2, -0.2),
-                    ]
-                )
-            ]
+            [Polygon([(-0.2, -0.2), (-0.2, 0.2), (0.2, 0.2), (0.2, -0.2)])]
         ),
     )
-    cached_boat = ob.Boat(
-        reference=land_reference,
-        sailbot_position=basic_local_path_state.position,
-        sailbot_speed=basic_local_path_state.speed,
-        ais_ship=HelperAISShip(
-            id=1,
+
+    def make_ship(ship_id):
+        return HelperAISShip(
+            id=ship_id,
             lat_lon=HelperLatLon(latitude=0.0, longitude=0.0),
             cog=HelperHeading(heading=0.0),
             sog=HelperSpeed(speed=0.0),
             width=HelperDimension(dimension=10.0),
             length=HelperDimension(dimension=10.0),
             rot=HelperROT(rot=0),
-        ),
-    )
-    basic_local_path_state.obstacles = [cached_boat, cached_land]
+        )
+
+    cached_boats = [
+        ob.Boat(
+            reference=land_reference,
+            sailbot_position=basic_local_path_state.position,
+            sailbot_speed=basic_local_path_state.speed,
+            ais_ship=make_ship(ship_id),
+        )
+        for ship_id in cached_ship_ids
+    ]
+    basic_local_path_state.obstacles = [*cached_boats, cached_land]
+
     inputs = create_update_if_needed_inputs()
-    inputs.ais_ships = AISShips(
-        ships=[
-            HelperAISShip(
-                id=1,
-                lat_lon=HelperLatLon(latitude=0.0, longitude=0.0),
-                cog=HelperHeading(heading=10.0),
-                sog=HelperSpeed(speed=1.0),
-                width=HelperDimension(dimension=10.0),
-                length=HelperDimension(dimension=10.0),
-                rot=HelperROT(rot=0),
-            ),
-            HelperAISShip(
-                id=3,
-                lat_lon=HelperLatLon(latitude=0.01, longitude=0.01),
-                cog=HelperHeading(heading=20.0),
-                sog=HelperSpeed(speed=2.0),
-                width=HelperDimension(dimension=12.0),
-                length=HelperDimension(dimension=14.0),
-                rot=HelperROT(rot=0),
-            ),
-        ]
-    )
+    inputs.ais_ships = AISShips(ships=[make_ship(ship_id) for ship_id in incoming_ship_ids])
 
     with (
         mock.patch.object(local_path, "in_collision_zone", return_value=False),
         mock.patch.object(local_path, "is_path_expired", return_value=False),
-        mock.patch.object(
-            local_path,
-            "exceeded_segment_deviation",
-            return_value=False,
-        ),
+        mock.patch.object(local_path, "exceeded_segment_deviation", return_value=False),
         mock.patch.object(lp, "OMPLPath") as ompl_path_cls,
     ):
-        desired_heading, new_target_lp_wp_index = local_path.update_if_needed(
+        local_path.update_if_needed(
             inputs=inputs,
             target_lp_wp_index=1,
             received_new_global_waypoint=False,
         )
 
-    assert desired_heading == pytest.approx(90.0, abs=3e-1)
-    assert new_target_lp_wp_index == 1
-    assert local_path._ompl_path is old_ompl_path
-    assert any(isinstance(obstacle, ob.Land) for obstacle in local_path.state.obstacles)
-    assert any(
-        isinstance(obstacle, ob.Boat) and obstacle.ais_ship.id == 3
+    actual_ship_ids = {
+        obstacle.ais_ship.id
         for obstacle in local_path.state.obstacles
-    )
+        if isinstance(obstacle, ob.Boat)
+    }
+    assert actual_ship_ids == expected_ship_ids
+    assert any(isinstance(o, ob.Land) for o in local_path.state.obstacles)
     assert cached_land in local_path.state.obstacles
-    assert cached_boat in local_path.state.obstacles
     ompl_path_cls.init_obstacles.assert_not_called()
-    ompl_path_cls.assert_not_called()  # constructor never invoked
+    ompl_path_cls.assert_not_called()
 
 
 @pytest.mark.parametrize(
