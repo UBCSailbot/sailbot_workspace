@@ -4,10 +4,12 @@ import ConnectMongoDB from '@/lib/mongodb';
 
 import AISShips from '@/models/AISShips';
 import Batteries from '@/models/Batteries';
-import GenericSensors from '@/models/GenericSensors';
 import GlobalPath from '@/models/GlobalPath';
 import GPS from '@/models/GPS';
 import LocalPath from '@/models/LocalPath';
+import PhSensors from '@/models/PhSensors';
+import SalinitySensors from '@/models/SalinitySensors';
+import TempSensors from '@/models/TempSensors';
 import WindSensors from '@/models/WindSensors';
 
 type LastUpdatedMap = Record<string, string | null>;
@@ -16,7 +18,9 @@ interface WithTimestamp {
   timestamp: string;
 }
 
-async function getLastUpdated<T extends WithTimestamp>(Model: Model<T>): Promise<string | null> {
+async function getLastUpdated<T extends WithTimestamp>(
+  Model: Model<T>,
+): Promise<string | null> {
   const latest = await Model.findOne({})
     .sort({ timestamp: -1 })
     .select({ timestamp: 1, _id: 0 })
@@ -36,7 +40,9 @@ export async function GET() {
       LocalPath: await getLastUpdated(LocalPath),
       Batteries: await getLastUpdated(Batteries),
       WindSensors: await getLastUpdated(WindSensors),
-      GenericSensors: await getLastUpdated(GenericSensors),
+      TempSensors: await getLastUpdated(TempSensors),
+      PhSensors: await getLastUpdated(PhSensors),
+      SalinitySensors: await getLastUpdated(SalinitySensors),
     };
 
     return NextResponse.json({ success: true, data });

@@ -12,8 +12,22 @@ import {
   WindSensors,
   WindSensorsState,
 } from '@/stores/WindSensors/WindSensorsTypes';
+import {
+  TempSensors,
+  TempSensorsState,
+} from '@/stores/TempSensors/TempSensorsTypes';
+import { PhSensors, PhSensorsState } from '@/stores/PhSensors/PhSensorsTypes';
+import {
+  SalinitySensors,
+  SalinitySensorsState,
+} from '@/stores/SalinitySensors/SalinitySensorsTypes';
 import { DataFilterState } from '@/stores/DataFilter/DataFilterTypes';
-import { GraphId, Layout, LayoutItem, isSplitGroup } from '@/stores/Graphs/GraphsTypes';
+import {
+  GraphId,
+  Layout,
+  LayoutItem,
+  isSplitGroup,
+} from '@/stores/Graphs/GraphsTypes';
 
 const parseISOString = (s: string) => {
   return Math.floor(Date.parse(s) / 1000); // Converts to seconds
@@ -49,8 +63,8 @@ const speedGraph = (speedChartData: any) => {
       data={speedChartData}
       title='Speed'
       seriesData={[
-        { label: 'Time' }, 
-        { label: 'Speed', unit: 'km/hr', stroke: 'blue'},
+        { label: 'Time' },
+        { label: 'Speed', unit: 'km/hr', stroke: 'blue' },
       ]}
     />
   );
@@ -64,8 +78,8 @@ const BatteriesVoltageGraph = (batteriesVoltageData: any) => {
       title='Batteries Voltage'
       seriesData={[
         { label: 'Time' },
-        { label: 'Battery 1 Voltage', unit: 'V' , stroke: 'blue' },
-        { label: 'Battery 2 Voltage', unit: 'V' , stroke: 'pink' },
+        { label: 'Battery 1 Voltage', unit: 'V', stroke: 'blue' },
+        { label: 'Battery 2 Voltage', unit: 'V', stroke: 'pink' },
       ]}
     />
   );
@@ -79,8 +93,8 @@ const BatteriesCurrentGraph = (batteriesCurrentData: any) => {
       title='Batteries Current'
       seriesData={[
         { label: 'Time' },
-        { label: 'Battery 1 Current', unit: 'A' , stroke: 'blue' },
-        { label: 'Battery 2 Current', unit: 'A' , stroke: 'pink' },
+        { label: 'Battery 1 Current', unit: 'A', stroke: 'blue' },
+        { label: 'Battery 2 Current', unit: 'A', stroke: 'pink' },
       ]}
     />
   );
@@ -94,8 +108,50 @@ const WindSensorsSpeedGraph = (windSensorsSpeedData: any) => {
       title='Wind Sensors'
       seriesData={[
         { label: 'Time' },
-        { label: 'Wind Sensor 1 Speed', unit: 'm/s' , stroke: 'blue' },
-        { label: 'Wind Sensor 2 Speed', unit: 'm/s' , stroke: 'pink' },
+        { label: 'Wind Sensor 1 Speed', unit: 'm/s', stroke: 'blue' },
+        { label: 'Wind Sensor 2 Speed', unit: 'm/s', stroke: 'pink' },
+      ]}
+    />
+  );
+};
+
+const TemperatureGraph = (temperatureChartData: any) => {
+  return (
+    <LineChart
+      key='temperatureChartData'
+      data={temperatureChartData}
+      title='Temperature'
+      seriesData={[
+        { label: 'Time' },
+        { label: 'Temperature', unit: '°C', stroke: 'orange' },
+      ]}
+    />
+  );
+};
+
+const PHGraph = (phChartData: any) => {
+  return (
+    <LineChart
+      key='phChartData'
+      data={phChartData}
+      title='pH'
+      seriesData={[
+        { label: 'Time' },
+        { label: 'pH', unit: 'pH', stroke: 'blue' },
+      ]}
+    />
+  );
+};
+
+const SalinityGraph = (salinityChartData: any) => {
+  return (
+    <LineChart
+      key='salinityChartData'
+      data={salinityChartData}
+      title='Salinity'
+      seriesData={[
+        { label: 'Time' },
+        { label: 'Salinity', unit: 'µS/cm', stroke: 'green' },
       ]}
     />
   );
@@ -114,6 +170,9 @@ interface StatsProps {
   gps: GPSState;
   batteries: BatteriesState;
   windSensors: WindSensorsState;
+  tempSensors: TempSensorsState;
+  phSensors: PhSensorsState;
+  salinitySensors: SalinitySensorsState;
   layout: Layout;
   dataFilter: DataFilterState;
 }
@@ -123,6 +182,9 @@ const Stats = ({
   gps,
   batteries,
   windSensors,
+  tempSensors,
+  phSensors,
+  salinitySensors,
   layout,
   dataFilter,
 }: StatsProps) => {
@@ -220,7 +282,11 @@ const Stats = ({
       .filter(
         (data: WindSensors) =>
           data.windSensors?.length >= 2 &&
-          isValidTimestamp(parseISOString(data.timestamp), startDate, endDate) == true,
+          isValidTimestamp(
+            parseISOString(data.timestamp),
+            startDate,
+            endDate,
+          ) == true,
       )
       .map((data: WindSensors) => parseISOString(data.timestamp)),
     windSensors.data
@@ -247,11 +313,89 @@ const Stats = ({
       .map((data: WindSensors) => data.windSensors[1].speed),
   ];
 
+  const temperatureChartData = [
+    tempSensors.data
+      .filter(
+        (data: TempSensors) =>
+          data.tempSensors?.length >= 1 &&
+          isValidTimestamp(
+            parseISOString(data.timestamp),
+            startDate,
+            endDate,
+          ) == true,
+      )
+      .map((data: TempSensors) => parseISOString(data.timestamp)),
+    tempSensors.data
+      .filter(
+        (data: TempSensors) =>
+          data.tempSensors?.length >= 1 &&
+          isValidTimestamp(
+            parseISOString(data.timestamp),
+            startDate,
+            endDate,
+          ) == true,
+      )
+      .map((data: TempSensors) => data.tempSensors[0].temperature),
+  ];
+
+  const phChartData = [
+    phSensors.data
+      .filter(
+        (data: PhSensors) =>
+          data.phSensors?.length >= 1 &&
+          isValidTimestamp(
+            parseISOString(data.timestamp),
+            startDate,
+            endDate,
+          ) == true,
+      )
+      .map((data: PhSensors) => parseISOString(data.timestamp)),
+    phSensors.data
+      .filter(
+        (data: PhSensors) =>
+          data.phSensors?.length >= 1 &&
+          isValidTimestamp(
+            parseISOString(data.timestamp),
+            startDate,
+            endDate,
+          ) == true,
+      )
+      .map((data: PhSensors) => data.phSensors[0].ph),
+  ];
+
+  const salinityChartData = [
+    salinitySensors.data
+      .filter(
+        (data: SalinitySensors) =>
+          data.salinitySensors?.length >= 1 &&
+          isValidTimestamp(
+            parseISOString(data.timestamp),
+            startDate,
+            endDate,
+          ) == true,
+      )
+      .map((data: SalinitySensors) => parseISOString(data.timestamp)),
+    salinitySensors.data
+      .filter(
+        (data: SalinitySensors) =>
+          data.salinitySensors?.length >= 1 &&
+          isValidTimestamp(
+            parseISOString(data.timestamp),
+            startDate,
+            endDate,
+          ) == true,
+      )
+      .map((data: SalinitySensors) => data.salinitySensors[0].salinity),
+  ];
+
   const graphsMap = {
     GPS: speedGraph(speedChartData),
     BatteriesVoltage: BatteriesVoltageGraph(batteriesVoltageData),
     BatteriesCurrent: BatteriesCurrentGraph(batteriesCurrentData),
     WindSensors: WindSensorsSpeedGraph(windSensorsSpeedData),
+    Temperature: TemperatureGraph(temperatureChartData),
+    PH: PHGraph(phChartData),
+    Salinity: SalinityGraph(salinityChartData),
   };
 
   const renderLayoutItem = (item: LayoutItem, index: number) => {
@@ -275,9 +419,7 @@ const Stats = ({
           <RearrangeGraphDropdown />
         </div>
       </div>
-      <div className={styles.lineCharts}>
-        {layout.map(renderLayoutItem)}
-      </div>
+      <div className={styles.lineCharts}>{layout.map(renderLayoutItem)}</div>
     </div>
   );
 };
@@ -286,6 +428,9 @@ const mapStateToProps = (state: any) => ({
   gps: state.gps,
   batteries: state.batteries,
   windSensors: state.windSensors,
+  tempSensors: state.tempSensors,
+  phSensors: state.phSensors,
+  salinitySensors: state.salinitySensors,
   layout: state.graphs.layout,
   dataFilter: state.dataFilter,
 });
