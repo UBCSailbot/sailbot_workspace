@@ -264,8 +264,6 @@ class LocalPathState:
             updated_obstacles.append(boat)
 
         existing_land.update_sailbot_data(sailbot_position=self.position)
-        if land_multi_polygon is not None:
-            existing_land.update_collision_zone(land_multi_polygon=land_multi_polygon)
 
         updated_obstacles.append(existing_land)
         self.obstacles = updated_obstacles
