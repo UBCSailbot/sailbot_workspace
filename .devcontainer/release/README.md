@@ -183,7 +183,7 @@ log. Change `<name>` accordingly:
 docker start <name> && \
 docker exec -it <name> bash -ic "ros2 launch \
   src/global_launch/main_launch.py record:=true mode:=production \
-  2>&1 | tee src/global_launch/voyage_log/combined_log_\$(date +%F_%H-%M-%S).txt"
+  2>&1 | tee src/global_launch/voyage_log/combined_log_$(date +%F_%T).txt"
 ```
 
 > The launch arguments (`record`, `mode`, etc.) mirror behaviour that changes
