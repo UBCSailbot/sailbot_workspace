@@ -138,20 +138,20 @@ METACENTRIC_HEIGHT = 0.3  # Units: meters
 WING_SAIL_CHORD = 1.5  # Units: meters
 
 # TODO Placeholder: measure the distance from the mast axis to the tab's aero center.
-WINGSAIL_TO_TRIM_TAB_BOOM_LENGTH = 1.0  # Units: meters
+WINGSAIL_TO_TRIM_TAB_BOOM_LENGTH = 1.43  # Units: meters
 
 # TODO sail_dist is the sail CE-to-pivot distance, not CE-to-CG; z_s (CE height
 # relative to the CG) is a placeholder until we have real geometry.
-CE_HEIGHT_REL_TO_CG = -0.5  # Units: meters
+CE_HEIGHT_REL_TO_CG = -0.92  # Units: meters
 
 # TODO Placeholder: measure the mast pivot's chordwise position (~25% chord assumed).
 MAST_PIVOT_CHORD_FRACTION = 0.25  # Fraction of the wing chord, dimensionless
 
 # TODO Placeholder: measure the rudder's center of effort depth below the CG.
-RUDDER_CE_DEPTH_REL_TO_CG = 0.5  # z_r, units: meters
+RUDDER_CE_DEPTH_REL_TO_CG = 0.74  # z_r, units: meters
 
 # TODO Placeholder: measure the keel's center of effort relative to the CG.
-KEEL_CE_REL_TO_CG = (0.0, 0.5)  # (x_k, z_k), units: meters
+KEEL_CE_REL_TO_CG = (0.0, -0.4)  # (x_k, z_k), units: meters
 
 # TODO Placeholder: measure the hull's center of effort relative to the CG.
 HULL_CE_REL_TO_CG = (0.0, 0.0, 0.0)  # (x_h, y_h, z_h), units: meters
@@ -160,7 +160,7 @@ HULL_CE_REL_TO_CG = (0.0, 0.0, 0.0)  # (x_h, y_h, z_h), units: meters
 HULL_LINEAR_DRAG = 0.0  # Units: newton seconds per meter
 
 # Displaced volume of the boat at floating equilibrium (m^3)
-DISPLACED_VOLUME = 0.1
+DISPLACED_VOLUME = 0.05
 
 # Constants related to the physical and mechanical properties of Polaris
 # TODO These are placeholder values which should be replaced when we have real values.
@@ -204,7 +204,7 @@ BOAT_PROPERTIES = BoatProperties(
             dtype=np.float64,
         )
     ),
-    sail_areas=20.0,  # meters ^ 2
+    sail_areas=2.01,  # meters ^ 2
     # TODO: Replace the below placeholder constants with the real values/approximates
     tab_lift_coeffs=CoeffTable(
         np.array(
@@ -244,7 +244,7 @@ BOAT_PROPERTIES = BoatProperties(
             dtype=np.float64,
         )
     ),
-    tab_areas=5.0,  # meters ^ 2
+    tab_areas=0.198,  # meters ^ 2
     # Rudder: ±45° → table covers 0–45° (sign handled by caller)
     # NACA symmetric foil: stalls ~20–22°
     rudder_lift_coeffs=CoeffTable(
@@ -281,7 +281,7 @@ BOAT_PROPERTIES = BoatProperties(
             dtype=np.float64,
         )
     ),
-    rudder_areas=0.4,
+    rudder_areas=0.117,
     # meters ^ 2
     # TODO: Replace the below placeholder constants with the real values/approximates
     keel_lift_coeffs=CoeffTable(
@@ -322,13 +322,13 @@ BOAT_PROPERTIES = BoatProperties(
             dtype=np.float64,
         )
     ),
-    keel_areas=2.0,  # meters ^ 2
+    keel_areas=0.51,  # meters ^ 2
     sail_dist=0.5,  # meters
     rudder_dist=1.0,  # meters
     hull_drag_factor=0.5,
-    mass=225.0,
+    mass=276.0,
     # M_RB = diag(m, m, I_xx, I_zz) — surge, sway, roll, yaw
-    inertia=Mat4(np.diag([225.0, 225.0, 125.0, 500.0])),
+    inertia=Mat4(np.diag([225.0, 225.0, 175.86, 119.04])),
     # TODO: Replace with coefficients from strip theory or CFD for the real hull.
     # M_A = diag(X_u̇, Y_v̇, K_ṗ, N_ṙ) — diagonal linearized added-mass approximation,
     # estimated from slender-hull rules of thumb relative to M_RB:
