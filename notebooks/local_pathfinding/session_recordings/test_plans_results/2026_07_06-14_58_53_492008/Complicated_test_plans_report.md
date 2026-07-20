@@ -10,7 +10,7 @@ System health was consistent across the batch: every `result.json` reports all e
 
 > **Note — global_path-adoption bug:** 7 runs used incorrect `global_path`. There is a non-deterministic behavior detected from a second run of these same 12 tests, indicating a probable ROS startup/discovery race condition between `mock_global_path` and `navigate_main`. During normal startup, `mock_global_path` publishes the path once, while `navigate_main` fails to recevice the new path because of publisher–subscriber discovery is incomplete. The message may not be delivered and the navigation may continue using the persisted global_path from the respected csv file.
 
-## Test plan Run outcomes
+## Test plan run outcomes
 
 A run is route-valid only when navigator and monitor clearly used the same waypoint list and starting leg. For invalid runs, timeout remains an operational fact, but progress, completion distance, path efficiency, maneuvers, and avoidance are not attributable to the named YAML.
 
@@ -18,27 +18,29 @@ Eleven runs ended because `Test plan exceeded timeout of 2 hours.` Jericho ended
 
 ### Route-valid runs
 
-| Test and evidence | Configured scenario | Route alignment | Result and progress | Assessment and principal limitation |
-|---|---|---|---|---|
-| `jericho_on_water_test` | `270°`, `14 km/h` true wind; 5-waypoint Jericho/English Bay loop; no configured AIS | New five-waypoint route started at index 4 | **COMPLETED** in 00:25:31.889; final index 0 reached within 299.929 m; 0 km remaining | **Valid pass.** |
-| `launch` | `270°`, `14 km/h` true wind; 7-waypoint offshore return loop; no configured AIS | New seven-waypoint route started at index 6 | **TIMEOUT** after 02:00:05.868; advanced from index 6 to index 4, then 2.655 km away; 14.016 km remained | **Valid partial/inconclusive.** Normal progress; route exceeded the 2-hour window. |
-| `multi_ship_convergence` | `180°`, `12 km/h` true wind; 3 converging AIS ships configured as nominal head-on, starboard-bow give-way, and port-bow stand-on encounters | New two-waypoint route started at index 1 | **TIMEOUT** after 02:00:05.858; remained at index 1, 22.339 km away; 33.254 km remained | **Valid partial/inconclusive.** Smooth progress; artifacts do not certify COLREG compliance per ship. |
-| `near_land` | `180°`, `10 km/h` true wind; 1 oncoming AIS ship and 2 land polygons around a westbound route | New two-waypoint route started at index 1 | **TIMEOUT** after 02:00:05.785; 2.025 km from index 1; 12.938 km remained | **Valid partial/inconclusive.** Smooth land-constrained progress; first target not reached. |
-| `vancouver_to_gulf_of_alaska_complex` | `145°`, `5 km/h` true wind; 10-waypoint Vancouver departure route; 14 AIS contacts; 7 land/shoal polygons | New ten-waypoint route adopted; start-coincident index 9 cleared and index 8 became active | **TIMEOUT** after 02:00:05.725; index 8 remained 549.788 m away; 24.596 km remained | **Valid partial/inconclusive.** The approximately 27 km route could not finish in 2 hours at the observed speed, and a first-leg detour reduced progress. |
+| Test plan | Scenario configuration | Route alignment | Outcome and assessment |
+|---|---|---|---|
+| `jericho_on_water_test` | <ul><li>**Wind:** `270°` at `14 km/h`</li><li>**Route:** 5-waypoint Jericho/English Bay loop</li><li>**AIS:** None configured</li></ul> | New 5-waypoint route started at index 4. | **COMPLETED — valid pass.**<br>Duration: 00:25:31.889.<br>Final index 0 reached within 299.929 m; 0 km remained. |
+| `launch` | <ul><li>**Wind:** `270°` at `14 km/h`</li><li>**Route:** 7-waypoint offshore return loop</li><li>**AIS:** None configured</li></ul> | New 7-waypoint route started at index 6. | **TIMEOUT — valid partial/inconclusive.**<br>Duration: 02:00:05.868.<br>Advanced from index 6 to index 4; finished 2.655 km from the active waypoint with 14.016 km remaining. Normal progress, but the route exceeded the 2-hour window. |
+| `multi_ship_convergence` | <ul><li>**Wind:** `180°` at `12 km/h`</li><li>**Route:** 2 waypoints</li><li>**AIS:** 3 converging ships: nominal head-on, starboard-bow give-way, and port-bow stand-on encounters</li></ul> | New 2-waypoint route started at index 1. | **TIMEOUT — valid partial/inconclusive.**<br>Duration: 02:00:05.858.<br>Remained at index 1, 22.339 km away, **with** 33.254 km remaining. Progress was smooth, but the artifacts do not certify per-ship COLREG compliance. |
+| `near_land` | <ul><li>**Wind:** `180°` at `10 km/h`</li><li>**Route:** 2-waypoint westbound route</li><li>**AIS:** 1 oncoming ship</li><li>**Land:** 2 polygons around the route</li></ul> | New 2-waypoint route started at index 1. | **TIMEOUT — valid partial/inconclusive.**<br>Duration: 02:00:05.785.<br>Finished 2.025 km from index 1 with 12.938 km remaining. Land-constrained progress was smooth, but the first target was not reached. |
+| `vancouver_to_gulf_of_alaska_complex` | <ul><li>**Wind:** `145°` at `5 km/h`</li><li>**Route:** 10-waypoint Vancouver departure route</li><li>**AIS:** 14 contacts</li><li>**Land:** 7 land/shoal polygons</li></ul> | New 10-waypoint route adopted; start-coincident index 9 cleared and index 8 became active. | **TIMEOUT — valid partial/inconclusive.**<br>Duration: 02:00:05.725.<br>Index 8 remained 549.788 m away, with 24.596 km remaining. The approximately 27 km route could not finish within 2 hours at the observed speed, and a first-leg detour reduced progress. |
 
 Scenario-definition warnings: Jericho and `launch` describe shoreline land in comments, but their stored YAMLs have no explicit `land` key/list. Vancouver's wind comment conflicts with its configured `145°` at `5 km/h` value.
 
-### Route-Invalid runs
+### Route-invalid runs
 
-| Test and evidence | Intended scenario | Operational result | Route-mismatch evidence | Named behavior not assessed |
-|---|---|---|---|---|
-| `basic_more_obstacles` | `0°`, `10 km/h` true wind; 7 AIS ships; 4 land polygons; 2-point long-range offshore route | **TIMEOUT** after 02:00:05.711 | The persisted and intended lists had the same two waypoints, but the navigator resumed at index 0 while the monitor evaluated index 1 | Route progress and notebook metrics |
-| `gauntlet` | `180°`, `10 km/h` true wind; 7 mixed-course AIS ships in a westbound corridor | **TIMEOUT** after 02:00:05.814 | Navigator followed the preceding `basic_more_obstacles` route and targeted `(48.158390, -130.253906)` | Gauntlet route and avoidance behavior |
-| `low_wind_tack` | `270°`, `1.5 km/h` true wind; recovery from irons followed by westbound upwind progress | **TIMEOUT** after 02:00:05.651 | Navigator followed the persisted seven-waypoint `launch` route and targeted `(48.798546, -125.235504)` | Low-wind recovery, tacking, route progress, and notebook performance |
-| `narrow_channel` | `180°`, `12 km/h` true wind; 2 land rectangles forming a narrow east-west channel | **TIMEOUT** after 02:00:05.893 | Persisted waypoint coordinates matched, but the navigator resumed at index 0 while the monitor evaluated index 1 | Channel progress, wall clearance, and performance metrics |
-| `pinched` | `180°`, `12 km/h` true wind; boat constrained between a northern coastline and a slower parallel AIS vessel | **TIMEOUT** after 02:00:05.774 | Navigator followed the persisted `near_land` route and targeted `(49.285000, -123.449997)` | Overtaking, coast clearance, route progress, and maneuvers |
-| `upwind_narrow_channel` | `270°`, `15 km/h` true wind; short upwind tacks through a narrow channel | **TIMEOUT** after 02:00:05.740 | Navigator followed the persisted `near_land` route | Tacking, wall clearance, and path efficiency |
-| `upwind_tack` | `270°`, `15 km/h` true wind; westbound upwind tacking with 1 crossing AIS vessel | **TIMEOUT** after 02:00:05.849 | Navigator followed the persisted `near_land` route | Tacking and crossing-avoidance behavior |
+These runs confirm that the launch process operated until timeout, but they do not evaluate the behavior or performance of the named scenarios. The route-mismatch evidence below explains why; a separate "Named behavior not assessed" column would repeat this same conclusion.
+
+| Test plan | Scenario configuration<br>**(YAML)** | Route-mismatch evidence | Operational outcome |
+|---|---|---|---|
+| `basic_more_obstacles` | <ul><li>**Wind:** `0°` at `10 km/h`</li><li>**Route:** 2-point long-range offshore route</li><li>**AIS:** 7 ships</li><li>**Land:** 4 polygons</li></ul> | The persisted and intended routes contained the same 2 waypoints, but the navigator resumed at index 0 while the GoalMonitor evaluated index 1. | **TIMEOUT**<br>Duration: 02:00:05.711 |
+| `gauntlet` | <ul><li>**Wind:** `180°` at `10 km/h`</li><li>**Route:** Westbound corridor</li><li>**AIS:** 7 ships on mixed courses</li></ul> | Navigator followed the persisted `basic_more_obstacles` route and targeted `(48.158390, -130.253906)`. | **TIMEOUT**<br>Duration: 02:00:05.814 |
+| `low_wind_tack` | <ul><li>**Wind:** `270°` at `1.5 km/h`</li><li>**Route:** Westbound upwind route</li><li>**Objective:** Recover from irons, then make upwind progress</li></ul> | Navigator followed the persisted 7-waypoint `launch` route and targeted `(48.798546, -125.235504)`. | **TIMEOUT**<br>Duration: 02:00:05.651 |
+| `narrow_channel` | <ul><li>**Wind:** `180°` at `12 km/h`</li><li>**Route:** Narrow east-west channel</li><li>**Land:** 2 rectangles forming the channel</li></ul> | The persisted and intended waypoint coordinates matched, but the navigator resumed at index 0 while the monitor evaluated index 1. | **TIMEOUT**<br>Duration: 02:00:05.893 |
+| `pinched` | <ul><li>**Wind:** `180°` at `12 km/h`</li><li>**Route:** Corridor between a northern coastline and a parallel vessel</li><li>**AIS:** 1 slower parallel ship</li><li>**Land:** Northern coastline</li></ul> | Navigator followed the persisted `near_land` route and targeted `(49.285000, -123.449997)`. | **TIMEOUT**<br>Duration: 02:00:05.774 |
+| `upwind_narrow_channel` | <ul><li>**Wind:** `270°` at `15 km/h`</li><li>**Route:** Short upwind route through a narrow channel</li><li>**Objective:** Tack through the channel</li></ul> | Navigator followed the persisted `near_land` route and targeted `(49.285000, -123.449997)`. | **TIMEOUT**<br>Duration: 02:00:05.740 |
+| `upwind_tack` | <ul><li>**Wind:** `270°` at `15 km/h`</li><li>**Route:** Westbound upwind route</li><li>**AIS:** 1 crossing ship</li><li>**Objective:** Upwind tacking and crossing avoidance</li></ul> | Navigator followed the persisted `near_land` route and targeted `(49.285000, -123.449997)`. | **TIMEOUT**<br>Duration: 02:00:05.849 |
 
 The invalid `gauntlet` hybrid recording is still diagnostically useful: it contains 2,699 replan rows and 111 complete two-attempt OMPL failures followed by sail disablement. These observations are not attributable to the named gauntlet scenario.
 
