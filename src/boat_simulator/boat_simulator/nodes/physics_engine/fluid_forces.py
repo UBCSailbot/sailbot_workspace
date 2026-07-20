@@ -9,8 +9,10 @@ from rclpy.logging import get_logger
 
 from boat_simulator.common.constants import (
     AIR_DENSITY,
+    BM_METACENTRIC_RADIUS,
     BOAT_PROPERTIES,
     CE_HEIGHT_REL_TO_CG,
+    DECK_EDGE_IMMERSION_ANGLE_RAD,
     DISPLACED_VOLUME,
     EARTH_GRAVITY,
     HULL_CE_REL_TO_CG,
@@ -28,6 +30,7 @@ from boat_simulator.common.conventions import (
     Force,
     Velocity,
 )
+from boat_simulator.common.hydrostatics import restoring_roll_moment
 from boat_simulator.common.types import CoeffTable, Vec2, Vec4
 
 _logger = get_logger(__name__)
@@ -212,7 +215,9 @@ class MediumForceComputation:
 
 
 class HydroStaticsForceComputation:
-    """Computes the hydrostatic restoring force.
+    """Computes the hydrostatic restoring force via the wall-sided righting-arm
+    formulation K = -rho*g*V*GZ(phi) (see `boat_simulator.common.hydrostatics`), which
+    replaces the small-angle K = -rho*g*V*GM*sin(phi) approximation.
 
     Attributes:
         'seawater_density' (float) the density of seawater, in kilograms per
@@ -220,9 +225,11 @@ class HydroStaticsForceComputation:
         'gravity' (float)) gravitational acceleration, in meters per second squared.
         'displaced_volume' (float) the volume of water displaced by the boat at floating
             equilibrium, in cubic meters.
-        'metacentric_height' (float) TODO get the proper calculations for ts
+        'metacentric_height' (float) GM, TODO get the proper calculations for ts
         the vertical distance between the center of gravity
         and the metacenter, in meters.
+        'metacentric_radius' (float) BM, TODO placeholder pending real hydrostatics.
+        'deck_edge_immersion_rad' (float) TODO placeholder pending real hull geometry.
     """
 
     def __init__(self):
@@ -230,6 +237,8 @@ class HydroStaticsForceComputation:
         self.__gravity = EARTH_GRAVITY
         self.__displaced_volume = DISPLACED_VOLUME
         self.__metacentric_height = METACENTRIC_HEIGHT
+        self.__metacentric_radius = BM_METACENTRIC_RADIUS
+        self.__deck_edge_immersion_rad = DECK_EDGE_IMMERSION_ANGLE_RAD
 
     def compute(self, roll_angle_rad: float) -> Vec4[Force, Body]:
         """Computes the hydrostatic restoring force at the given roll angle
@@ -240,12 +249,14 @@ class HydroStaticsForceComputation:
         Returns:
             Vec4[Force, Body]: The restoring force
         """
-        k_restore = (
-            -self.__seawater_density
-            * self.__gravity
-            * self.__displaced_volume
-            * self.__metacentric_height
-            * math.sin(roll_angle_rad)
+        k_restore = restoring_roll_moment(
+            heel_angle_rad=roll_angle_rad,
+            gm=self.__metacentric_height,
+            bm=self.__metacentric_radius,
+            deck_edge_immersion_rad=self.__deck_edge_immersion_rad,
+            displaced_volume=self.__displaced_volume,
+            water_density=self.__seawater_density,
+            gravity=self.__gravity,
         )
         _logger.info(
             f"HydroStatics.compute: roll={roll_angle_rad:.4f} rad K_restore={k_restore:.2f} N·m"

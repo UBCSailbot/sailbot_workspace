@@ -1,5 +1,6 @@
 """Constants used across the boat simulator package."""
 
+import math
 import os
 from dataclasses import dataclass
 from enum import Enum
@@ -131,8 +132,19 @@ WATER_DENSITY = 1027.0
 # Gravity in m/s
 EARTH_GRAVITY = 9.81
 
-# TODO: This is a placeholder value for the metacentric height
-METACENTRIC_HEIGHT = 0.3  # Units: meters
+# TODO: This is a placeholder value for the metacentric height GM. Once real hydrostatics
+# (SolidWorks/FreeShip/DELFTship/Orca3D) are available, prefer supplying a GZ curve to
+# common.hydrostatics.righting_arm over this small-angle value.
+METACENTRIC_HEIGHT = 0.3  # GM, units: meters
+
+# TODO Placeholder: measure I_wp (waterplane area's second moment about the centerline)
+# from the waterplane sketch and derive BM = I_wp / DISPLACED_VOLUME via
+# common.hydrostatics.compute_bm, rather than guessing BM directly.
+BM_METACENTRIC_RADIUS = 0.9  # BM, units: meters
+
+# TODO Placeholder: measure the heel angle at which the deck edge immerses from hull
+# geometry. Beyond this angle the wall-sided GZ formula is no longer valid.
+DECK_EDGE_IMMERSION_ANGLE_RAD = math.radians(30.0)
 
 # Derive the mean chord from the real wingsail geometry.
 WING_SAIL_CHORD = 1.5  # Units: meters
@@ -152,16 +164,13 @@ RUDDER_CE_DEPTH_REL_TO_CG = 0.74  # z_r, units: meters
 
 # NOTE Measure the keel's center of effort relative to the CG. The z_k is a magic number to
 # maintain stability
-KEEL_CE_REL_TO_CG = (0.08, -0.4)  # (x_k, z_k), units: meters
+KEEL_CE_REL_TO_CG = (0.08, -1.13)  # (x_k, z_k), units: meters
 
 # TODO Placeholder: measure the hull's center of effort relative to the CG.
 HULL_CE_REL_TO_CG = (0.0, 0.0, 0.0)  # (x_h, y_h, z_h), units: meters
 
 # TODO Placeholder: measure the hull's linear drag coefficient.
 HULL_LINEAR_DRAG = 0.0  # Units: newton seconds per meter
-
-# Displaced volume of the boat at floating equilibrium (m^3)
-DISPLACED_VOLUME = 0.05
 
 # Constants related to the physical and mechanical properties of Polaris
 # TODO These are placeholder values which should be replaced when we have real values.
@@ -342,3 +351,7 @@ BOAT_PROPERTIES = BoatProperties(
     # D = diag(X_u, Y_v, K_p, N_r) — linear damping per DOF.
     D=Mat4(np.diag([45.0, 180.0, 115.0, 140.0])),
 )
+
+# Displaced volume at floating equilibrium (m^3): rho*g*V = mass*g at rest, so V = mass/rho.
+# Derived rather than measured independently so it can't drift out of sync with the mass.
+DISPLACED_VOLUME = BOAT_PROPERTIES.mass / WATER_DENSITY

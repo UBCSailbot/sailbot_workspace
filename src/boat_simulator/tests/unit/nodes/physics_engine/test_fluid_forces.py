@@ -16,18 +16,19 @@ matrices, energy-injecting "drag") without requiring the reference derivations:
    energy (the class of bug that makes the sim explode) fails this immediately.
 """
 
-import math
-
 import numpy as np
 import pytest
 
 from boat_simulator.common.constants import (
+    BM_METACENTRIC_RADIUS,
     BOAT_PROPERTIES,
+    DECK_EDGE_IMMERSION_ANGLE_RAD,
     DISPLACED_VOLUME,
     EARTH_GRAVITY,
     METACENTRIC_HEIGHT,
     WATER_DENSITY,
 )
+from boat_simulator.common.hydrostatics import restoring_potential_energy
 from boat_simulator.common.types import Vec4
 from boat_simulator.nodes.physics_engine.fluid_forces import (
     HydroDynamicsForceComputation,
@@ -127,20 +128,47 @@ def test_hull_drag_power_is_never_positive() -> None:
         assert power <= 1e-9, f"hull injects energy: nu={nu} force={force.data}"
 
 
+@pytest.mark.xfail(
+    reason=(
+        "keel_force's u_k=-u / orientation_deg=0 convention pins the attack angle near "
+        "+-180 deg for any forward-moving state, outside the lift/drag tables' +-90 deg "
+        "range, so the keel is silent (zero force) through ordinary forward sailing. It "
+        "only re-engages once u_k=-u crosses back into (-90, 90) deg, i.e. reversed/near- "
+        "zero surge combined with large roll/yaw rates, where this test finds it can "
+        "inject energy. Needs the same orientation-tracking fix the wingsail already has "
+        "(solve_wing_angle) before this can pass unconditionally."
+    ),
+    strict=True,
+)
+def test_keel_drag_power_is_never_positive() -> None:
+    hydro = HydroDynamicsForceComputation()
+
+    for nu in random_velocities(seed=5):
+        force = hydro.keel_force(Vec4(nu), roll_rad=0.0)
+        # Per the design intent in keel_force's docstring, the keel should oppose roll rate
+        # and leeway (damping); power delivered to the boat must never be positive.
+        power = force.data @ nu
+        assert power <= 1e-9, f"keel injects energy: nu={nu} force={force.data}"
+
+
 # --- The master energy test ------------------------------------------------------
 
 
 def total_mechanical_energy(kinematics: BoatKinematics) -> float:
     """Kinetic energy with the total (rigid-body + added) mass, plus the roll potential
-    energy stored against the hydrostatic restoring moment K = -rho*g*V*GM*sin(roll)."""
+    energy stored against the hydrostatic restoring moment K = -rho*g*V*GZ(roll)."""
     nu = kinematics.nu.data
     kinetic = 0.5 * nu @ M_TOTAL @ nu
     potential = (
         WATER_DENSITY
         * EARTH_GRAVITY
         * DISPLACED_VOLUME
-        * METACENTRIC_HEIGHT
-        * (1.0 - math.cos(kinematics.pose.p))
+        * restoring_potential_energy(
+            heel_angle_rad=kinematics.pose.p,
+            gm=METACENTRIC_HEIGHT,
+            bm=BM_METACENTRIC_RADIUS,
+            deck_edge_immersion_rad=DECK_EDGE_IMMERSION_ANGLE_RAD,
+        )
     )
     return float(kinetic + potential)
 
