@@ -134,24 +134,25 @@ EARTH_GRAVITY = 9.81
 # TODO: This is a placeholder value for the metacentric height
 METACENTRIC_HEIGHT = 0.3  # Units: meters
 
-# TODO Placeholder: derive the mean chord from the real wingsail geometry.
+# Derive the mean chord from the real wingsail geometry.
 WING_SAIL_CHORD = 1.5  # Units: meters
 
-# TODO Placeholder: measure the distance from the mast axis to the tab's aero center.
+# Measure the distance from the mast axis to the tab's aero center.
 WINGSAIL_TO_TRIM_TAB_BOOM_LENGTH = 1.43  # Units: meters
 
-# TODO sail_dist is the sail CE-to-pivot distance, not CE-to-CG; z_s (CE height
+# sail_dist is the sail CE-to-pivot distance, not CE-to-CG; z_s (CE height
 # relative to the CG) is a placeholder until we have real geometry.
-CE_HEIGHT_REL_TO_CG = -0.92  # Units: meters
+CE_HEIGHT_REL_TO_CG = -1.86  # Units: meters
 
 # TODO Placeholder: measure the mast pivot's chordwise position (~25% chord assumed).
 MAST_PIVOT_CHORD_FRACTION = 0.25  # Fraction of the wing chord, dimensionless
 
-# TODO Placeholder: measure the rudder's center of effort depth below the CG.
+# Measure the rudder's center of effort depth below the CG.
 RUDDER_CE_DEPTH_REL_TO_CG = 0.74  # z_r, units: meters
 
-# TODO Placeholder: measure the keel's center of effort relative to the CG.
-KEEL_CE_REL_TO_CG = (0.0, -0.4)  # (x_k, z_k), units: meters
+# NOTE Measure the keel's center of effort relative to the CG. The z_k is a magic number to
+# maintain stability
+KEEL_CE_REL_TO_CG = (0.08, -0.4)  # (x_k, z_k), units: meters
 
 # TODO Placeholder: measure the hull's center of effort relative to the CG.
 HULL_CE_REL_TO_CG = (0.0, 0.0, 0.0)  # (x_h, y_h, z_h), units: meters
@@ -324,7 +325,7 @@ BOAT_PROPERTIES = BoatProperties(
     ),
     keel_areas=0.51,  # meters ^ 2
     sail_dist=0.5,  # meters
-    rudder_dist=1.0,  # meters
+    rudder_dist=1.35,  # meters
     hull_drag_factor=0.5,
     mass=276.0,
     # M_RB = diag(m, m, I_xx, I_zz) — surge, sway, roll, yaw
@@ -336,8 +337,8 @@ BOAT_PROPERTIES = BoatProperties(
     #   Y_v̇ ≈ 0.80–1.00·m   (sway drags a large volume of water; keel adds to it)
     #   K_ṗ ≈ 0.20–0.30·I_xx
     #   N_ṙ ≈ 0.50–0.70·I_zz
-    M_A=Mat4(np.diag([20.0, 180.0, 30.0, 300.0])),
+    M_A=Mat4(np.diag([20.0, 400.0, 230.0, 300.0])),
     # TODO: Replace with real damping coefficients from tow-tank or CFD data.
     # D = diag(X_u, Y_v, K_p, N_r) — linear damping per DOF.
-    D=Mat4(np.diag([15.0, 80.0, 25.0, 60.0])),
+    D=Mat4(np.diag([45.0, 180.0, 115.0, 140.0])),
 )
