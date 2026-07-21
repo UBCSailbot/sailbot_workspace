@@ -42,7 +42,7 @@ MIN_TURNING_RADIUS_KM = 0.05  # 50 m
 # setting this any smaller can lead to OMPL not being able to construct a tree that reaches
 # the goal state
 MAX_EDGE_LEN_KM = 0.1
-MAX_SOLVER_RUN_TIME_SEC = 1.0
+MAX_SOLVER_RUN_TIME_SEC = 10.0
 MAX_SIMPLIFIER_RUN_TIME_SEC = 0.1
 
 # Extra cushion past the no-go-zone edge when snapping a goal yaw out of irons.
@@ -476,6 +476,7 @@ class OMPLPath:
             space_information,
             current_tw.dir_deg,
             current_tw.speed_kmph,
+            start_position_in_xy,
             goal_position_in_xy,
         )
 
