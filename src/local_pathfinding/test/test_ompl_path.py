@@ -308,8 +308,7 @@ def test_is_state_valid(x: float, y: float, is_valid: bool, fresh_ompl_path):
         ais_ship,
     )
 
-    ompl_path.OMPLPath.obstacles = {}
-    ompl_path.OMPLPath.obstacles[1] = boat1
+    fresh_ompl_path.state.obstacles = [boat1]
 
     if is_valid:
         assert fresh_ompl_path.is_state_valid(state), "state should be valid"
