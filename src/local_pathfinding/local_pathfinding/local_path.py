@@ -193,6 +193,7 @@ class LocalPathState:
         self.path_generated_time_sec = (
             monotonic() if path_generated_time_sec is None else path_generated_time_sec
         )
+        self._logger = get_logger("local_path_state")
 
     def update_state(
         self,
@@ -238,50 +239,22 @@ class LocalPathState:
         )
         self.current_tw = Wind(tw_speed_kmph, tw_dir_deg)
 
-    def update_obstacles(self, land_multi_polygon: Optional[MultiPolygon] = None) -> None:
-        """Refresh obstacles from the latest AIS data while reusing cached land geometry.
-
-        When a previous obstacle set already exists, only boat obstacles are rebuilt. The land
-        obstacle is kept and its sailbot position is updated so we avoid recomputing the land
-        geometry on every callback. If no obstacle cache exists yet, fall back to a full build.
-        """
-        existing_land = None
-        existing_boats_by_id: dict[int, ob.Boat] = {}
-        for obstacle in self.obstacles:
-            if isinstance(obstacle, ob.Land):
-                existing_land = obstacle
-            elif isinstance(obstacle, ob.Boat):
-                existing_boats_by_id[obstacle.ais_ship.id] = obstacle
-
-        if existing_land is None:
-            OMPLPath.init_obstacles(
-                local_path_state=self,
-                land_multi_polygon=land_multi_polygon,
+    def update_obstacles(self) -> None:
+        """Refresh obstacles from the latest AIS data while reusing land geometry."""
+        if not self.obstacles:
+            self._logger.warn(
+                "update_obstacles called with no existing obstacles: skipping refresh. "
+                "This should only happen before the first successful replan."
             )
             return
 
-        updated_obstacles: list[ob.Obstacle] = []
-        for ship in self.ais_ships:
-            boat = existing_boats_by_id.get(ship.id)
-            if boat is None:
-                boat = ob.Boat(
-                    self.reference_latlon,
-                    self.position,
-                    self.speed,
-                    ship,
-                )
-            else:
-                boat.update_sailbot_data(
-                    sailbot_position=self.position,
-                    sailbot_speed=self.speed,
-                )
-                boat.update_collision_zone(ais_ship=ship)
-            updated_obstacles.append(boat)
-
-        existing_land.update_sailbot_data(sailbot_position=self.position)
-
-        updated_obstacles.append(existing_land)
-        self.obstacles = updated_obstacles
+        self.obstacles = ob.update_boat_obstacles(
+            obstacles=self.obstacles,
+            reference=self.reference_latlon,
+            sailbot_position=self.position,
+            sailbot_speed=self.speed,
+            ais_ships=self.ais_ships,
+        )
 
 
 class LocalPath:
@@ -691,7 +664,7 @@ class LocalPath:
                     inputs.ais_ships,
                     inputs.filtered_wind_sensor,
                 )
-                self.state.update_obstacles(inputs.land_multi_polygon)
+                self.state.update_obstacles()
                 boat_lat_lon = inputs.gps.lat_lon
             except ValueError as e:
                 # No need to handle anything else here. There is no compulsion for the path to
