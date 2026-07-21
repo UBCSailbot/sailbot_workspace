@@ -578,23 +578,23 @@ class OMPLPath:
         Returns:
             bool: True if state is valid, else false.
         """
-        if OMPLPath.obstacles:
+        obstacles = self.state.obstacles if self.state is not None else []
 
-            for o in OMPLPath.obstacles.values():
-                if isinstance(state, base.State):
-                    # for testing purposes; the tests use state object
-                    point = cs.XY(state().getX(), state().getY())
-                else:  # when OMPL uses this function, it will pass in an SE2StateInternal object
-                    point = cs.XY(state.getX(), state.getY())
-                if not o.is_valid(point):
-                    # Per-state file logging for invalid-state. Log a write failure then re-raise
-                    # TODO: remove before final launch to avoid unbounded disk growth.
-                    try:
-                        log_invalid_state(state=point, obstacle=o)
-                    except OSError as e:
-                        self._logger.error(f"log_invalid_state write failed: {e}")
-                        raise
-                    return False
+        for o in obstacles:
+            if isinstance(state, base.State):
+                # for testing purposes; the tests use state object
+                point = cs.XY(state().getX(), state().getY())
+            else:  # when OMPL uses this function, it will pass in an SE2StateInternal object
+                point = cs.XY(state.getX(), state.getY())
+            if not o.is_valid(point):
+                # Per-state file logging for invalid-state. Log a write failure then re-raise
+                # TODO: remove before final launch to avoid unbounded disk growth.
+                try:
+                    log_invalid_state(state=point, obstacle=o)
+                except OSError as e:
+                    self._logger.error(f"log_invalid_state write failed: {e}")
+                    raise
+                return False
 
         return True
 
