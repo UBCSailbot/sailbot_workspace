@@ -3,8 +3,6 @@ uint32 id
 HelperLatLon lat_lon
 # The ship's course over ground
 HelperHeading   cog
-# The ship's true heading in degrees
-HelperHeading   heading
 # The ship's speed over ground
 HelperSpeed   sog
 HelperROT   rot
