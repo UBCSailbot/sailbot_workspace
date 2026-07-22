@@ -524,3 +524,39 @@ class Boat(Obstacle):
         # Use the smaller positive time, if there is one
         t = min(quad_roots)
         return t * self.ais_ship.sog.speed
+
+
+def update_boat_obstacles(
+        obstacles: list[Obstacle] | None,
+        reference: ci.HelperLatLon,
+        sailbot_position: ci.HelperLatLon,
+        sailbot_speed: float,
+        ais_ships: list[ci.HelperAISShip],
+        ) -> list[Obstacle]:
+    """Rebuild boat obstacles while preserving any existing land obstacle."""
+    existing_boats: dict[int, Boat] = {}
+    existing_land: Land | None = None
+
+    for obstacle in obstacles or []:
+        if isinstance(obstacle, Boat):
+            existing_boats[obstacle.ais_ship.id] = obstacle
+        elif isinstance(obstacle, Land):
+            existing_land = obstacle
+
+    updated_obstacles: list[Obstacle] = []
+    for ship in ais_ships:
+        boat = existing_boats.get(ship.id)
+        if boat is None:
+            boat = Boat(reference, sailbot_position, sailbot_speed, ship)
+        else:
+            boat.update_sailbot_data(
+                sailbot_position=sailbot_position,
+                sailbot_speed=sailbot_speed,
+            )
+            boat.update_collision_zone(ais_ship=ship)
+        updated_obstacles.append(boat)
+
+    if existing_land is not None:
+        updated_obstacles.append(existing_land)
+
+    return updated_obstacles

@@ -191,10 +191,9 @@ class LocalPathState:
         # obstacles are initialized by OMPLPath right before solving
         self.obstacles: List[ob.Obstacle] = []
         self.path_generated_time_sec = (
-            monotonic()
-            if path_generated_time_sec is None
-            else path_generated_time_sec
+            monotonic() if path_generated_time_sec is None else path_generated_time_sec
         )
+        self._logger = get_logger("local_path_state")
 
     def update_state(
         self,
@@ -239,6 +238,23 @@ class LocalPathState:
             boat_speed_kmph=self.speed,
         )
         self.current_tw = Wind(tw_speed_kmph, tw_dir_deg)
+
+    def update_obstacles(self) -> None:
+        """Refresh obstacles from the latest AIS data while reusing land geometry."""
+        if not self.obstacles:
+            self._logger.warn(
+                "update_obstacles called with no existing obstacles: skipping refresh. "
+                "This should only happen before the first successful replan."
+            )
+            return
+
+        self.obstacles = ob.update_boat_obstacles(
+            obstacles=self.obstacles,
+            reference=self.reference_latlon,
+            sailbot_position=self.position,
+            sailbot_speed=self.speed,
+            ais_ships=self.ais_ships,
+        )
 
 
 class LocalPath:
@@ -648,6 +664,7 @@ class LocalPath:
                     inputs.ais_ships,
                     inputs.filtered_wind_sensor,
                 )
+                self.state.update_obstacles()
                 boat_lat_lon = inputs.gps.lat_lon
             except ValueError as e:
                 # No need to handle anything else here. There is no compulsion for the path to
