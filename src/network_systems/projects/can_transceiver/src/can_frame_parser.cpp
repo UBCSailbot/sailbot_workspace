@@ -497,6 +497,7 @@ AISShips::AISShips(msg::HelperAISShip ros_ship, CanId id)
   speed_(ros_ship.sog.speed),
   rot_(ros_ship.rot.rot),
   course_(utils::boundTo360(ros_ship.cog.heading)),
+  heading_(0.0F),
   width_(ros_ship.width.dimension),
   length_(ros_ship.length.dimension),
   ship_id_(ros_ship.id)
