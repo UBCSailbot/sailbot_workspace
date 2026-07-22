@@ -610,6 +610,93 @@ def test_collision_zone_turning_boat(
     assert boat1.collision_zone.exterior.coords is not None
 
 
+# Test collision zone when COG is unavailable (AIS sentinel 360.0). Uses a head-on
+# geometry (ship at reference, sailbot directly north) so a north-heading projection
+# would collide and produce a non-zero radius.
+@pytest.mark.parametrize(
+    "reference_point,sailbot_position,ais_ship,sailbot_speed",
+    [
+        (
+            HelperLatLon(latitude=52.0, longitude=-136.0),
+            HelperLatLon(latitude=52.01, longitude=-136.0),
+            HelperAISShip(
+                id=1,
+                lat_lon=HelperLatLon(latitude=52.0, longitude=-136.0),
+                cog=HelperHeading(heading=360.0),
+                sog=HelperSpeed(speed=20.0),
+                width=HelperDimension(dimension=20.0),
+                length=HelperDimension(dimension=100.0),
+                rot=HelperROT(rot=0),
+            ),
+            15.0,
+        )
+    ],
+)
+def test_collision_zone_cog_unavailable(
+    reference_point: HelperLatLon,
+    sailbot_position: HelperLatLon,
+    ais_ship: HelperAISShip,
+    sailbot_speed: float,
+):
+    boat = Boat(reference_point, sailbot_position, sailbot_speed, ais_ship)
+    boat.update_collision_zone()
+
+    assert boat.collision_zone is not None
+    assert isinstance(boat.collision_zone, Polygon)
+    # Circle-based zone should have many vertices, not a rectangle's ~4-8
+    assert len(boat.collision_zone.exterior.coords) > 10
+
+
+# Test collision zone when ROT is unavailable (AIS sentinel -128). Head-on geometry so
+# the straight-line branch would produce a directional rectangle, letting us verify the
+# sentinel routes to the turning branch instead.
+@pytest.mark.parametrize(
+    "reference_point,sailbot_position,ais_ship,sailbot_speed",
+    [
+        (
+            HelperLatLon(latitude=52.0, longitude=-136.0),
+            HelperLatLon(latitude=52.01, longitude=-136.0),
+            HelperAISShip(
+                id=1,
+                lat_lon=HelperLatLon(latitude=52.0, longitude=-136.0),
+                cog=HelperHeading(heading=0.0),
+                sog=HelperSpeed(speed=20.0),
+                width=HelperDimension(dimension=20.0),
+                length=HelperDimension(dimension=100.0),
+                rot=HelperROT(rot=-128),
+            ),
+            15.0,
+        )
+    ],
+)
+def test_collision_zone_rot_unavailable(
+    reference_point: HelperLatLon,
+    sailbot_position: HelperLatLon,
+    ais_ship: HelperAISShip,
+    sailbot_speed: float,
+):
+    # ROT=-128 must not silently fall into the straight-line branch. Compare against a
+    # matching boat with rot=0 (straight line) - the two zones should differ in shape.
+    boat_unavailable = Boat(reference_point, sailbot_position, sailbot_speed, ais_ship)
+    boat_unavailable.update_collision_zone()
+
+    ais_ship_straight = HelperAISShip(
+        id=ais_ship.id,
+        lat_lon=ais_ship.lat_lon,
+        cog=ais_ship.cog,
+        sog=ais_ship.sog,
+        width=ais_ship.width,
+        length=ais_ship.length,
+        rot=HelperROT(rot=0),
+    )
+    boat_straight = Boat(reference_point, sailbot_position, sailbot_speed, ais_ship_straight)
+    boat_straight.update_collision_zone()
+
+    assert boat_unavailable.collision_zone is not None
+    assert boat_straight.collision_zone is not None
+    assert not boat_unavailable.collision_zone.equals(boat_straight.collision_zone)
+
+
 # COLLISION ZONE LOGIC
 
 

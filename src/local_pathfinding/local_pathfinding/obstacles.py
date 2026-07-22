@@ -23,6 +23,9 @@ BOAT_BUFFER_KM = 0.1
 COLLISION_ZONE_STRETCH_FACTOR = 1.25  # This factor changes the width of the boat collision zone
 RADIUS_MULTIPLIER = 5
 STRAIGHT_LINE_ROT_THRESHOLD_RAD_PER_SEC = 1e-4
+# Pessimistic ROT substituted when AIS reports ROT as unavailable (-128). ~10°/sec is
+# an aggressive turn rate for typical AIS-tracked vessels; sign is arbitrary (right turn).
+UNAVAILABLE_ROT_FALLBACK_RAD_PER_SEC = math.radians(10.0)
 
 
 class Obstacle:
@@ -264,7 +267,13 @@ class Boat(Obstacle):
             self.ais_ship = ais_ship
 
         try:
-            rot_rps = cs.rot_to_rad_per_sec(self.ais_ship.rot.rot)
+            if self.ais_ship.rot.rot == -128:
+                # -128 is the AIS sentinel for "ROT unavailable". Substitute a pessimistic
+                # max ROT so the turning-zone branch produces an aggressive turn arc rather
+                # than a straight-line projection that could miss a turning boat.
+                rot_rps = UNAVAILABLE_ROT_FALLBACK_RAD_PER_SEC
+            else:
+                rot_rps = cs.rot_to_rad_per_sec(self.ais_ship.rot.rot)
         except ValueError:
             rot_rps = 0.0  # invalid ROT: treat as no rotation information
 
@@ -278,7 +287,17 @@ class Boat(Obstacle):
         x, y = cs.latlon_to_xy(self.reference, self.ais_ship.lat_lon)
         projected_distance = self._calculate_projected_distance(cog_rad)
 
-        if projected_distance == PROJ_DISTANCE_NO_COLLISION_KM:
+        if self.ais_ship.cog.heading == 360.0:
+            # 360.0 is the AIS sentinel for "COG unavailable". Since the boat's direction is
+            # unknown, draw a circle around the boat sized to how far it could travel in the
+            # same TURN_PROJECTION_TIME_SECONDS window used elsewhere. This keeps the zone
+            # bounded and speed-scaled without the "worst-case" formula that paralyses the
+            # path planner when speeds are near-equal.
+            radius_km = max(
+                speed_kmps * TURN_PROJECTION_TIME_SECONDS, self.width_km, self.length_km
+            )
+            self._set_circular_zone(radius_km)
+        elif projected_distance == PROJ_DISTANCE_NO_COLLISION_KM:
             radius_km = max(self.width_km, self.length_km)
             self._set_circular_zone(radius_km)
         elif abs(rot_rps) < STRAIGHT_LINE_ROT_THRESHOLD_RAD_PER_SEC:
