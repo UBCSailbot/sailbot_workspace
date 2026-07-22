@@ -202,6 +202,8 @@ def test_init_obstacles():
         filtered_wind_sensor=WindSensor(),
         wind_tracker=WindTracker(),
     )
+    # init_obstacles uses boat objects from local_path_state.obstacles.
+    updated_local_path_state.obstacles = list(obstacles.values())
 
     updated_obstacles = ompl_path.OMPLPath.init_obstacles(
         local_path_state=updated_local_path_state, state_space_xy=state_space_xy
