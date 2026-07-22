@@ -202,6 +202,8 @@ def test_init_obstacles():
         filtered_wind_sensor=WindSensor(),
         wind_tracker=WindTracker(),
     )
+    # init_obstacles uses boat objects from local_path_state.obstacles.
+    updated_local_path_state.obstacles = list(obstacles.values())
 
     updated_obstacles = ompl_path.OMPLPath.init_obstacles(
         local_path_state=updated_local_path_state, state_space_xy=state_space_xy
@@ -308,8 +310,7 @@ def test_is_state_valid(x: float, y: float, is_valid: bool, fresh_ompl_path):
         ais_ship,
     )
 
-    ompl_path.OMPLPath.obstacles = {}
-    ompl_path.OMPLPath.obstacles[1] = boat1
+    fresh_ompl_path.state.obstacles = [boat1]
 
     if is_valid:
         assert fresh_ompl_path.is_state_valid(state), "state should be valid"

@@ -14,7 +14,13 @@ from custom_interfaces.msg import (
     HelperROT,
     HelperSpeed,
 )
-from local_pathfinding.obstacles import BOAT_BUFFER_KM, Boat, Land, Obstacle
+from local_pathfinding.obstacles import (
+    BOAT_BUFFER_KM,
+    PROJ_DISTANCE_NO_COLLISION_KM,
+    Boat,
+    Land,
+    Obstacle,
+)
 
 
 def load_pkl(file_path: str) -> Any:
@@ -433,9 +439,10 @@ def test_calculate_projected_distance_same_loc(
     boat1 = Boat(reference_point, sailbot_position, sailbot_speed, ais_ship)
     cog_rad = np.radians(ais_ship.cog.heading)
 
-    assert boat1._calculate_projected_distance(cog_rad) == pytest.approx(
-        0.0
-    ), "incorrect projected distance"
+    projected_distance = boat1._calculate_projected_distance(cog_rad)
+
+    assert projected_distance == pytest.approx(0.0), "incorrect projected distance"
+    assert projected_distance != PROJ_DISTANCE_NO_COLLISION_KM
 
 
 # Test calculate projected distance
@@ -533,11 +540,11 @@ def test_collision_zone_straight_line_boat(
     [
         (
             HelperLatLon(latitude=52.268119490007756, longitude=-136.9133983613776),
-            HelperLatLon(latitude=51.957, longitude=-136.262),
+            HelperLatLon(latitude=51.956, longitude=-136.262),
             HelperAISShip(
                 id=1,
-                lat_lon=HelperLatLon(latitude=51.957, longitude=-136.262),  # Same as sailbot
-                cog=HelperHeading(heading=30.0),
+                lat_lon=HelperLatLon(latitude=51.957, longitude=-136.262),
+                cog=HelperHeading(heading=0.0),  # Moving north, away from Sailbot
                 sog=HelperSpeed(speed=20.0),
                 width=HelperDimension(dimension=20.0),
                 length=HelperDimension(dimension=100.0),
@@ -556,6 +563,7 @@ def test_collision_zone_no_collision_boat(
     boat1 = Boat(reference_point, sailbot_position, sailbot_speed, ais_ship)
     boat1.update_collision_zone()
 
+    assert boat1._calculate_projected_distance(0.0) == PROJ_DISTANCE_NO_COLLISION_KM
     assert isinstance(boat1.collision_zone, Polygon)
     assert boat1.collision_zone is not None
     # Circular zone should have many vertices
