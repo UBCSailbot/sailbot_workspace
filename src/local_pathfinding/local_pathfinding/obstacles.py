@@ -18,7 +18,7 @@ _LOGGER = get_logger("local_pathfinding.obstacles")
 
 # Constants
 TURN_PROJECTION_TIME_SECONDS = 10
-PROJ_DISTANCE_NO_COLLISION_KM = 0.0
+PROJ_DISTANCE_NO_COLLISION_KM = -1.0
 BOAT_BUFFER_KM = 0.1
 COLLISION_ZONE_STRETCH_FACTOR = 1.25  # This factor changes the width of the boat collision zone
 RADIUS_MULTIPLIER = 5
