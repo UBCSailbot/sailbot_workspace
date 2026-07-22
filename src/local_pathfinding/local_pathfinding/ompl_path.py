@@ -71,14 +71,9 @@ class OMPLPath:
         ** do null checks on solved. True == object exists and False == None **
     Static Attributes
         all_land_data (MultiPolygon): All land polygons along the entire global voyage
-        obstacles (Dictionary[int, Polygon]):
-                                    The dictionary of all obstacles Sailbot is currently aware of.
-                                    This is a static attribute so that OMPL can access it when
-                                    accessing the is_state_valid function pointer.
     """
 
     all_land_data = None
-    obstacles: Union[dict[int, ob.Obstacle], None] = None
 
     def __init__(
         self,
@@ -134,40 +129,19 @@ class OMPLPath:
 
         """
 
-        if OMPLPath.obstacles is None:
-            OMPLPath.obstacles = {}
-
         # BOATS
-        ais_ships = local_path_state.ais_ships
-        current_ship_ids = [ship.id for ship in ais_ships]
+        updated_obstacles: dict[int, ob.Obstacle] = {
+            obstacle.ais_ship.id: obstacle
+            for obstacle in ob.update_boat_obstacles(
+                obstacles=local_path_state.obstacles,
+                reference=local_path_state.reference_latlon,
+                sailbot_position=local_path_state.position,
+                sailbot_speed=local_path_state.speed,
+                ais_ships=local_path_state.ais_ships,
+            )
+            if isinstance(obstacle, ob.Boat)
+        }
 
-        # Remove boats no longer in ais_ships
-        boat_ids_to_remove = [
-            ship_id
-            for ship_id in OMPLPath.obstacles.keys()
-            if ship_id != LAND_KEY and ship_id not in current_ship_ids
-        ]
-        for ship_id in boat_ids_to_remove:
-            del OMPLPath.obstacles[ship_id]
-
-        for ship in ais_ships:
-            if ship.id in OMPLPath.obstacles:
-                # If the ship is already in the obstacles, update its information
-                existing_boat = OMPLPath.obstacles[ship.id]
-                existing_boat.update_sailbot_data(
-                    sailbot_position=local_path_state.position,
-                    sailbot_speed=local_path_state.speed,
-                )
-                existing_boat.update_collision_zone(ais_ship=ship)
-            else:
-                # Otherwise, create a new Obstacle object
-                new_boat = ob.Boat(
-                    local_path_state.reference_latlon,
-                    local_path_state.position,
-                    local_path_state.speed,
-                    ship,
-                )
-                OMPLPath.obstacles[ship.id] = new_boat
         # LAND
         if state_space_xy is None:
             state_space_latlon = None
@@ -183,7 +157,7 @@ class OMPLPath:
             # would interfere with Canadian Law.
             OMPLPath.load_appropriate_land_obstacle(local_path_state)
 
-        OMPLPath.obstacles[LAND_KEY] = ob.Land(
+        updated_obstacles[LAND_KEY] = ob.Land(
             reference=local_path_state.reference_latlon,
             sailbot_position=local_path_state.position,
             all_land_data=OMPLPath.all_land_data,
@@ -193,9 +167,9 @@ class OMPLPath:
 
         # obstacles are also stored in the local_path_state object
         # so that the navigate node can access and publish the obstacles
-        obstacles_list = list(OMPLPath.obstacles.values())
+        obstacles_list = list(updated_obstacles.values())
         local_path_state.obstacles = obstacles_list
-        return OMPLPath.obstacles  # for testing
+        return updated_obstacles  # for testing
 
     @staticmethod
     def create_buffer_around_position(position: cs.XY, box_buffer_size: float) -> Polygon:
@@ -578,23 +552,23 @@ class OMPLPath:
         Returns:
             bool: True if state is valid, else false.
         """
-        if OMPLPath.obstacles:
+        obstacles = self.state.obstacles if self.state is not None else []
 
-            for o in OMPLPath.obstacles.values():
-                if isinstance(state, base.State):
-                    # for testing purposes; the tests use state object
-                    point = cs.XY(state().getX(), state().getY())
-                else:  # when OMPL uses this function, it will pass in an SE2StateInternal object
-                    point = cs.XY(state.getX(), state.getY())
-                if not o.is_valid(point):
-                    # Per-state file logging for invalid-state. Log a write failure then re-raise
-                    # TODO: remove before final launch to avoid unbounded disk growth.
-                    try:
-                        log_invalid_state(state=point, obstacle=o)
-                    except OSError as e:
-                        self._logger.error(f"log_invalid_state write failed: {e}")
-                        raise
-                    return False
+        for o in obstacles:
+            if isinstance(state, base.State):
+                # for testing purposes; the tests use state object
+                point = cs.XY(state().getX(), state().getY())
+            else:  # when OMPL uses this function, it will pass in an SE2StateInternal object
+                point = cs.XY(state.getX(), state.getY())
+            if not o.is_valid(point):
+                # Per-state file logging for invalid-state. Log a write failure then re-raise
+                # TODO: remove before final launch to avoid unbounded disk growth.
+                try:
+                    log_invalid_state(state=point, obstacle=o)
+                except OSError as e:
+                    self._logger.error(f"log_invalid_state write failed: {e}")
+                    raise
+                return False
 
         return True
 

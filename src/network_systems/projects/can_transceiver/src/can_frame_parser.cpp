@@ -510,7 +510,12 @@ msg::HelperAISShip AISShips::toRosMsg() const
     lat_lon.set__longitude(lon_);
 
     msg::HelperHeading cog;
-    cog.set__heading(utils::boundTo180(course_));
+    // 360.0 is the AIS sentinel for "COG unavailable"; preserve it instead of collapsing to 0.0
+    if (course_ == 360.0F) {  //NOLINT(readability-magic-numbers)
+        cog.set__heading(360.0F);  //NOLINT(readability-magic-numbers)
+    } else {
+        cog.set__heading(utils::boundTo180(course_));
+    }
 
     msg::HelperSpeed sog;
     //convert to km/h
