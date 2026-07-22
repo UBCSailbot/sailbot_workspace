@@ -1951,7 +1951,7 @@ def test_update_if_needed_reuses_path_when_boat_changes_heading(basic_local_path
 
     inputs = create_update_if_needed_inputs()
     inputs.gps.speed.speed = 3.0
-    inputs.gps.heading.heading += lp.WIND_DIRECTION_CHANGE_THRESH_DEG + 30.0
+    inputs.heading.heading += lp.WIND_DIRECTION_CHANGE_THRESH_DEG + 30.0
     set_filtered_wind_sensor_from_true_wind(inputs, baseline_tw)
 
     with mock.patch.object(lp, "OMPLPath") as ompl_path_cls:
