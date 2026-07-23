@@ -347,9 +347,9 @@ class PhysicsEngineNode(Node):
         self.__update_boat_state()
         self.__latest_wind_sensor_reading_mps = self.__sim_wind_sensor.wind
 
-        self.__publish_gps()
+        gps_msg = self.__publish_gps()
         self.__publish_wind_sensors()
-        self.__publish_kinematics()
+        self.__publish_kinematics(gps_msg)
         self.__publish_counter += 1
 
     def __update_boat_state(self):
@@ -372,8 +372,13 @@ class PhysicsEngineNode(Node):
             self.__sail_trim_tab_angle,
         )
 
-    def __publish_gps(self):
-        """Publishes mock GPS data."""
+    def __publish_gps(self) -> GPS:
+        """Publishes mock GPS data.
+
+        Returns:
+            GPS: The published message, so `__publish_kinematics` can embed the same noisy
+                reading instead of drawing a second, independent sample from `__sim_gps`.
+        """
         lat_lon = self.__boat_state.global_lat_lon_position
 
         self.get_logger().info(f"Boat global position (lat_lon) to be published: {lat_lon}")
@@ -398,6 +403,7 @@ class PhysicsEngineNode(Node):
             .get_parameter_value()
             .double_value,
         )
+        return msg
 
     def __convert_sim_data_to_gps_msg(self) -> GPS:
         """Builds a GPS message from the current sensor readings (noisy if noise is enabled).
@@ -460,22 +466,15 @@ class PhysicsEngineNode(Node):
             .double_value,
         )
 
-    def __publish_kinematics(self):
-        """Publishes the kinematics data of the simulated boat."""
-        lat_lon = self.__boat_state.global_lat_lon_position
-        speed_mps = self.__boat_state.linear_speed
-        heading = self.__boat_state.true_bearing
+    def __publish_kinematics(self, gps_msg: GPS):
+        """Publishes the kinematics data of the simulated boat.
 
-        if self.__sim_gps:
-            self.__sim_gps.lat_lon = lat_lon
-            self.__sim_gps.speed = speed_mps
-            self.__sim_gps.heading = heading
-        else:
-            self.__sim_gps = SimGPS(
-                lat_lon=lat_lon, speed=speed_mps, heading=heading, enable_noise=True
-            )
-
-        msg = self.__convert_sim_data_to_kinematics_msg()
+        Args:
+            gps_msg (GPS): The message already published by `__publish_gps` this tick, reused
+                here as `SimWorldState.global_gps` so both topics report the same noisy GPS
+                reading instead of two independently-sampled ones.
+        """
+        msg = self.__convert_sim_data_to_kinematics_msg(gps_msg)
 
         self.kinematics_pub.publish(msg)
 
@@ -486,19 +485,23 @@ class PhysicsEngineNode(Node):
             .double_value,
         )
 
-    def __convert_sim_data_to_kinematics_msg(self) -> SimWorldState:
+    def __convert_sim_data_to_kinematics_msg(self, gps_msg: GPS) -> SimWorldState:
         """Builds a SimWorldState message from the current sim state.
 
         Unit/frame conversions to the message conventions happen here, at the I/O boundary:
         position from m to km, linear velocities from m/s to km/h, and the boat orientation
-        from Euler angles to a quaternion. The GPS portion is delegated to ``SimGPS``.
+        from Euler angles to a quaternion.
+
+        Args:
+            gps_msg (GPS): The GPS reading to embed as `global_gps`, reused from
+                `__publish_gps` rather than resampled here.
         """
 
         mps_to_kmph = ConversionFactors.mPs_to_kmPh.value.forward_convert
         m_to_km = ConversionFactors.m_to_km.value.forward_convert
 
         msg = SimWorldState()
-        msg.global_gps = self.__convert_sim_data_to_gps_msg()
+        msg.global_gps = gps_msg
 
         pos_m = self.__boat_state.pose
         msg.global_pose.position.x = float(m_to_km(pos_m.x))
