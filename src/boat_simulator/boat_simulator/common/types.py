@@ -17,7 +17,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Generic, Sequence, TypeVar, Union, overload
+from typing import Any, Generic, Sequence, Tuple, TypeVar, Union, overload
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
@@ -473,3 +473,98 @@ class CoeffTable:
 
     def __hash__(self) -> int:
         return hash((CoeffTable, self.data.dtype.str, self.data.tobytes()))
+
+
+@dataclass(frozen=True, eq=False, init=False)
+class CoeffGrid:
+    """Immutable (angle-of-attack, Reynolds-number) → coefficient lookup.
+
+    Wraps one :class:`CoeffTable` per Reynolds number (all sharing the same angle-of-attack
+    convention).  :meth:`interpolate` first interpolates linearly in angle of attack within each
+    per-Re table, then linearly in ``log(Re)`` between the tables, clamping to the end tables
+    outside the tabulated Reynolds range (matching :func:`numpy.interp`).  Interpolating in log
+    space reflects that a foil's lift/drag polar shifts roughly logarithmically with Reynolds
+    number.  Used by
+    :class:`~boat_simulator.nodes.physics_engine.fluid_forces.MediumForceComputation` to make the
+    lift/drag coefficient depend on the medium's flow speed (Reynolds number ``Re = |v|·c/ν``) as
+    well as the angle of attack.
+    """
+
+    reynolds: NDArray[np.float64]
+    tables: Tuple[CoeffTable, ...]
+
+    def __init__(self, reynolds: ArrayLike, tables: Sequence[CoeffTable]) -> None:
+        reynolds_arr = np.asarray(reynolds, dtype=float)
+        if reynolds_arr.ndim != 1 or reynolds_arr.shape[0] < 1:
+            raise ValueError(
+                f"expected a non-empty 1-D Reynolds array, got shape {reynolds_arr.shape}"
+            )
+        if np.any(reynolds_arr <= 0):
+            raise ValueError(
+                "Reynolds numbers must be positive (interpolation is done in log space)"
+            )
+        if np.any(np.diff(reynolds_arr) <= 0):
+            raise ValueError("Reynolds-number column must be sorted in strictly ascending order")
+        tables_tuple = tuple(tables)
+        if len(tables_tuple) != reynolds_arr.shape[0]:
+            raise ValueError(
+                "expected one CoeffTable per Reynolds number, got "
+                f"{len(tables_tuple)} tables for {reynolds_arr.shape[0]} Reynolds values"
+            )
+        if not all(isinstance(table, CoeffTable) for table in tables_tuple):
+            raise ValueError("tables must all be CoeffTable instances")
+
+        reynolds_arr = reynolds_arr.copy()
+        reynolds_arr.flags.writeable = False
+        object.__setattr__(self, "reynolds", reynolds_arr)
+        object.__setattr__(self, "tables", tables_tuple)
+
+    @classmethod
+    def from_single(cls, table: CoeffTable, reynolds: float = 1.0) -> CoeffGrid:
+        """Build a Reynolds-independent grid from a single table.
+
+        The resulting grid returns ``table``'s value at any Reynolds number, letting a
+        Reynolds-independent surface share the same lookup interface as a multi-Re one.
+        """
+        return cls(np.array([reynolds], dtype=float), (table,))
+
+    @property
+    def max_angle(self) -> float:
+        """Smallest per-table maximum angle (degrees).
+
+        Using the minimum keeps every constituent table within its tabulated range, so no polar is
+        silently extrapolated in angle of attack.
+        """
+        return min(table.max_angle for table in self.tables)
+
+    @property
+    def min_angle(self) -> float:
+        """Largest per-table minimum angle (degrees)."""
+        return max(table.min_angle for table in self.tables)
+
+    def interpolate(self, angle: float, reynolds: float) -> float:
+        """Interpolate the coefficient at ``angle`` (degrees) and ``reynolds``.
+
+        Linear in angle of attack within each per-Re table, then linear in ``log(Re)`` between
+        tables.  A single-Re grid is Reynolds-independent (the lone table's value is returned).
+        Non-positive Reynolds numbers are treated as the lowest tabulated value.
+        """
+        values = np.array([table.interpolate(angle) for table in self.tables], dtype=float)
+        if self.reynolds.shape[0] == 1:
+            return float(values[0])
+        if reynolds <= 0:
+            reynolds = float(self.reynolds[0])
+        return float(np.interp(np.log(reynolds), np.log(self.reynolds), values))
+
+    def __len__(self) -> int:
+        return int(self.reynolds.shape[0])
+
+    def __eq__(self, other: object) -> bool:
+        return (
+            isinstance(other, CoeffGrid)
+            and bool(np.array_equal(self.reynolds, other.reynolds))
+            and self.tables == other.tables
+        )
+
+    def __hash__(self) -> int:
+        return hash((CoeffGrid, self.reynolds.tobytes(), self.tables))
