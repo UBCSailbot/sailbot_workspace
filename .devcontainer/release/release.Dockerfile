@@ -80,6 +80,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         python3-rosdep \
         iproute2 \
         can-utils \
+        clang \
+        make \
+        vim \
     && apt-get autoremove -y \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/* \
