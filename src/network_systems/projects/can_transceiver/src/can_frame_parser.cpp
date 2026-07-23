@@ -471,17 +471,20 @@ AISShips::AISShips(const CanFrame & cf) : AISShips(static_cast<CanId>(cf.can_id)
     std::memcpy(&raw_idx, cf.data + BYTE_OFF_IDX, sizeof(int8_t));
     std::memcpy(&raw_num_ships, cf.data + BYTE_OFF_NUM_SHIPS, sizeof(int8_t));
 
-    num_ships_ = raw_num_ships;
-    lat_       = static_cast<float>(raw_lat / 1000000.0 - 90);     //NOLINT(readability-magic-numbers)
-    lon_       = static_cast<float>(raw_lon / 1000000.0 - 180.0);  //NOLINT(readability-magic-numbers)
-    speed_     = static_cast<float>(raw_speed / 10.0 * 1.852);     //NOLINT(readability-magic-numbers)
-    rot_       = static_cast<int8_t>(raw_rot - 128);               //NOLINT(readability-magic-numbers)
-    course_    = static_cast<float>(raw_course / 10.0);            //NOLINT(readability-magic-numbers)
-    heading_   = raw_heading;
-    idx_       = raw_idx;
-    width_     = raw_width;
-    length_    = raw_length;
-    ship_id_   = raw_id;
+    num_ships_   = raw_num_ships;
+    lat_         = static_cast<float>(raw_lat / 1000000.0 - 90);     //NOLINT(readability-magic-numbers)
+    lon_         = static_cast<float>(raw_lon / 1000000.0 - 180.0);  //NOLINT(readability-magic-numbers)
+    speed_       = static_cast<float>(raw_speed / 10.0 * 1.852);     //NOLINT(readability-magic-numbers)
+    raw_speed_   = raw_speed;
+    rot_         = static_cast<int8_t>(raw_rot - 128);     //NOLINT(readability-magic-numbers)
+    course_      = static_cast<float>(raw_course / 10.0);  //NOLINT(readability-magic-numbers)
+    raw_course_  = raw_course;
+    heading_     = raw_heading;
+    raw_heading_ = raw_heading;
+    idx_         = raw_idx;
+    width_       = raw_width;
+    length_      = raw_length;
+    ship_id_     = raw_id;
 
     checkBounds();
 }
@@ -494,6 +497,7 @@ AISShips::AISShips(msg::HelperAISShip ros_ship, CanId id)
   speed_(ros_ship.sog.speed),
   rot_(ros_ship.rot.rot),
   course_(utils::boundTo360(ros_ship.cog.heading)),
+  heading_(0.0F),
   width_(ros_ship.width.dimension),
   length_(ros_ship.length.dimension),
   ship_id_(ros_ship.id)
@@ -620,27 +624,32 @@ void AISShips::checkBounds() const
         throw std::out_of_range("Longitude is out of bounds!\n" + debugStr() + "\n" + err_msg);
     }
     err = utils::isOutOfBounds<float>(speed_, SOG_SPEED_LBND, SOG_SPEED_UBND);
-    if (err.has_value() && speed_ != 1023) { //NOLINT
+    if (err.has_value() && raw_speed_ != 1023) {  // NOLINT
         std::string err_msg = err.value();
         throw std::out_of_range("Speed is out of bounds!\n" + debugStr() + "\n" + err_msg);
     }
     err = utils::isOutOfBounds<float>(course_, HEADING_LBND, HEADING_UBND);
-    if (err.has_value() && course_ != 3600) { //NOLINT
+    if (err.has_value() && raw_course_ != 3600) {  //NOLINT
         std::string err_msg = err.value();
         throw std::out_of_range("Course is out of bounds!\n" + debugStr() + "\n" + err_msg);
     }
     err = utils::isOutOfBounds<float>(rot_, ROT_LBND, ROT_UBND);
-    if (err.has_value() && rot_ != -128) { // NOLINT
+    if (err.has_value() && rot_ != -128) {  // NOLINT
         std::string err_msg = err.value();
         throw std::out_of_range("ROT is out of bounds!\n" + debugStr() + "\n" + err_msg);
     }
-    err = utils::isOutOfBounds<float>(width_, SHIP_DIMENSION_LBND - 1, SHIP_DIMENSION_UBND);
-    if (err) {
+    err = utils::isOutOfBounds<float>(heading_, HEADING_LBND, HEADING_UBND);
+    if (err.has_value() && raw_heading_ != 511) {  //NOLINT
+        std::string err_msg = err.value();
+        throw std::out_of_range("Heading is out of bounds!\n" + debugStr() + "\n" + err_msg);
+    }
+    err = utils::isOutOfBounds<float>(width_, SHIP_DIMENSION_LBND, SHIP_DIMENSION_UBND);
+    if (err && width_ != 0) {  //NOLINT(readability-magic-numbers)
         std::string err_msg = err.value();
         throw std::out_of_range("Width is out of bounds!\n" + debugStr() + "\n" + err_msg);
     }
-    err = utils::isOutOfBounds<float>(length_, SHIP_DIMENSION_LBND - 1, SHIP_DIMENSION_UBND);
-    if (err) {
+    err = utils::isOutOfBounds<float>(length_, SHIP_DIMENSION_LBND, SHIP_DIMENSION_UBND);
+    if (err && length_ != 0) {  //NOLINT(readability-magic-numbers)
         std::string err_msg = err.value();
         throw std::out_of_range("Length is out of bounds!\n" + debugStr() + "\n" + err_msg);
     }
