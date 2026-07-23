@@ -141,13 +141,16 @@ CoB_REL_COORD = 0.5
 # Metacentric height used in testing
 METACENTRIC_HEIGHT = 0.5  # Units: meters
 
-# Derive the mean chord from the real wingsail geometry.
-WING_SAIL_CHORD = 1.5  # Units: meters
+# The mean chord from the real wingsail geometry.
+WING_SAIL_CHORD = 1.0  # Units: meters
 
-# Mean chord lengths of the remaining foils, used only to compute each foil's Reynolds number.
-# TODO: Replace these placeholders with the real measured mean chords.
-TAB_CHORD = 0.3  # Units: meters
-RUDDER_CHORD = 0.2  # Units: meters
+# Mean chord lengths for the trim tab
+TAB_CHORD = 0.5  # Units: meters
+
+# Mean chord lengths for the rudder
+RUDDER_CHORD = 0.25  # Units: meters
+
+# TODO: Update the keel's chord length
 KEEL_CHORD = 0.4  # Units: meters
 
 # Measure the distance from the mast axis to the tab's aero center.
