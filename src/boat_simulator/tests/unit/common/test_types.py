@@ -14,11 +14,6 @@ def _linear_table(slope: float) -> CoeffTable:
 
 
 class TestCoeffGrid:
-    def test_from_single_is_reynolds_independent(self):
-        grid = CoeffGrid.from_single(_linear_table(1.0))
-        # Same value regardless of Reynolds number.
-        for reynolds in (1.0, 1e3, 1e6, 1e9):
-            assert math.isclose(grid.interpolate(5.0, reynolds), 5.0)
 
     def test_exact_reynolds_hit_returns_that_polar(self):
         grid = CoeffGrid(
@@ -72,9 +67,3 @@ class TestCoeffGrid:
     def test_invalid_construction_raises(self, reynolds, tables):
         with pytest.raises(ValueError):
             CoeffGrid(reynolds, tables)
-
-    def test_single_table_grid_matches_underlying_table(self):
-        table = _linear_table(1.5)
-        grid = CoeffGrid.from_single(table)
-        for angle in (0.0, 3.0, 7.5, 10.0):
-            assert math.isclose(grid.interpolate(angle, 500.0), table.interpolate(angle))

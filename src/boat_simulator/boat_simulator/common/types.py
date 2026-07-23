@@ -495,22 +495,28 @@ class CoeffGrid:
 
     def __init__(self, reynolds: ArrayLike, tables: Sequence[CoeffTable]) -> None:
         reynolds_arr = np.asarray(reynolds, dtype=float)
+
+        # Safety checks
         if reynolds_arr.ndim != 1 or reynolds_arr.shape[0] < 1:
             raise ValueError(
                 f"expected a non-empty 1-D Reynolds array, got shape {reynolds_arr.shape}"
             )
+
         if np.any(reynolds_arr <= 0):
             raise ValueError(
                 "Reynolds numbers must be positive (interpolation is done in log space)"
             )
+
         if np.any(np.diff(reynolds_arr) <= 0):
             raise ValueError("Reynolds-number column must be sorted in strictly ascending order")
+
         tables_tuple = tuple(tables)
         if len(tables_tuple) != reynolds_arr.shape[0]:
             raise ValueError(
                 "expected one CoeffTable per Reynolds number, got "
                 f"{len(tables_tuple)} tables for {reynolds_arr.shape[0]} Reynolds values"
             )
+
         if not all(isinstance(table, CoeffTable) for table in tables_tuple):
             raise ValueError("tables must all be CoeffTable instances")
 
@@ -518,15 +524,6 @@ class CoeffGrid:
         reynolds_arr.flags.writeable = False
         object.__setattr__(self, "reynolds", reynolds_arr)
         object.__setattr__(self, "tables", tables_tuple)
-
-    @classmethod
-    def from_single(cls, table: CoeffTable, reynolds: float = 1.0) -> CoeffGrid:
-        """Build a Reynolds-independent grid from a single table.
-
-        The resulting grid returns ``table``'s value at any Reynolds number, letting a
-        Reynolds-independent surface share the same lookup interface as a multi-Re one.
-        """
-        return cls(np.array([reynolds], dtype=float), (table,))
 
     @property
     def max_angle(self) -> float:
@@ -543,9 +540,9 @@ class CoeffGrid:
         return max(table.min_angle for table in self.tables)
 
     def interpolate(self, angle: float, reynolds: float) -> float:
-        """Interpolate the coefficient at ``angle`` (degrees) and ``reynolds``.
+        """Interpolate the coefficient at angle (degrees) and reynolds.
 
-        Linear in angle of attack within each per-Re table, then linear in ``log(Re)`` between
+        Linear in angle of attack within each per-Re table, then linear in log(Re) between
         tables.  A single-Re grid is Reynolds-independent (the lone table's value is returned).
         Non-positive Reynolds numbers are treated as the lowest tabulated value.
         """

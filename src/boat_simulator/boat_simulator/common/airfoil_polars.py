@@ -1,6 +1,7 @@
 """Reynolds-dependent lift/drag coefficient grids for the boat simulator's foils.
 
-GENERATED FILE -- do not edit by hand.  Regenerate with::
+
+Do not edit by hand.  Regenerate with:
 
     python3 src/boat_simulator/scripts/build_airfoil_polars.py
 
