@@ -38,17 +38,23 @@ class BoatState:
     boat from the wind, water, rudder, and sail.
     """
 
-    def __init__(self, timestep: float, reference_latlon: HelperLatLon):
+    def __init__(self, timestep: float, reference_latlon: HelperLatLon, substeps: int = 1):
         """Initializes an instance of `BoatState`.
 
         Args:
-            timestep (float): The time interval for calculations, expressed in seconds (s).
+            timestep (float): The integration time interval, expressed in seconds (s). Kept
+                small enough for the explicit Euler integration in `BoatKinematics` to stay
+                numerically stable under the quadratic drag terms.
             reference_latlon (HelperLatLon): Geographic origin of the simulator's local XY frame,
                 used to project `global_position` (meters) to lat/lon.
+            substeps (int): The number of `timestep`-sized integration steps to run per call to
+                `step()`, so callers can advance the simulation by the publish period
+                while integrating at a smaller, stable timestep internally.
         """
         self.__reference_latlon = reference_latlon
         self.__kinematics_computation = BoatKinematics(timestep)
         self.__kinetics_computation = TotalForceComputation()
+        self.__substeps = substeps
 
     def step(
         self,
@@ -60,9 +66,9 @@ class BoatState:
         """Advances the boat's kinematic state by one timestep.
 
         Converts the true wind and current velocity vectors into the speed and NED-bearing
-        form expected by `TotalForceComputation.compute_total_force`, assembles the total
-        generalized force on the boat, and integrates the equations of motion via
-        `BoatKinematics.step`.
+        form to compute the total force, then repeats, for `substeps` iterations,
+        creating the total generalized force on the boat from the current state and integrating
+        the equations of Motions (BoatKinematics). Forces are recomputed each substep.
 
         Args:
             glo_wind_vel (Vec2[Velocity, NED]): The velocity of the true wind in the global
@@ -85,15 +91,17 @@ class BoatState:
         ocean_current_speed_mps = math.hypot(glo_water_current_vel.x, glo_water_current_vel.y)
         ocean_current_bearing_rad = math.atan2(glo_water_current_vel.y, glo_water_current_vel.x)
 
-        net_force: Vec4[Force, Body] = self.__kinetics_computation.compute_total_force(
-            boat_kinematics=self.__kinematics_computation,
-            true_wind_speed_mps=true_wind_speed_mps,
-            true_wind_bearing_rad=true_wind_bearing_rad,
-            ocean_current_speed_mps=ocean_current_speed_mps,
-            ocean_current_bearing_rad=ocean_current_bearing_rad,
-            delta_r_rad=rudder_angle.radians,
-            delta_tab_rad=trim_tab_angle.radians,
-        )
+        for _ in range(self.__substeps):
+            net_force: Vec4[Force, Body] = self.__kinetics_computation.compute_total_force(
+                boat_kinematics=self.__kinematics_computation,
+                true_wind_speed_mps=true_wind_speed_mps,
+                true_wind_bearing_rad=true_wind_bearing_rad,
+                ocean_current_speed_mps=ocean_current_speed_mps,
+                ocean_current_bearing_rad=ocean_current_bearing_rad,
+                delta_r_rad=rudder_angle.radians,
+                delta_tab_rad=trim_tab_angle.radians,
+            )
+            self.__kinematics_computation.step(self.nu, net_force)
 
         _logger.info(
             f"pose: {self.pose}\n"
@@ -103,7 +111,6 @@ class BoatState:
             f"roll: {self.pose.data[2] * 180/np.pi}\n"
             f"yaw: {self.pose.data[3] * 180/np.pi}\n"
         )
-        self.__kinematics_computation.step(self.nu, net_force)
 
     @property
     def pose(self) -> Vec4[Position, NED]:

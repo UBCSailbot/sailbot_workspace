@@ -50,20 +50,6 @@ from custom_interfaces.msg import (
 
 from .decorators import require_all_subs_active
 
-# --------------------------------------
-# CONVERSION HELPERS
-# --------------------------------------
-
-
-def sim_velocity_to_gps_speed_kmph(global_velocity_mps: np.ndarray) -> float:
-    """Convert simulator global velocity in m/s into GPS speed in km/h."""
-    return float(np.linalg.norm(global_velocity_mps[:2]) * 3.6)
-
-
-def sim_yaw_to_gps_heading_deg(yaw_rad: float) -> float:
-    """Convert simulator yaw, where 0 rad points east, into true bearing degrees."""
-    return float(Utils.bound_to_180(90.0 - Utils.rad_to_degrees(yaw_rad)))
-
 
 def main(args=None):
     rclpy.init(args=args)
@@ -139,6 +125,7 @@ class PhysicsEngineNode(Node):
             namespace="",
             parameters=[
                 ("pub_period_sec", rclpy.Parameter.Type.DOUBLE),
+                ("physics_timestep_sec", rclpy.Parameter.Type.DOUBLE),
                 ("logging_throttle_period_sec", rclpy.Parameter.Type.DOUBLE),
                 ("info_log_throttle_period_sec", rclpy.Parameter.Type.DOUBLE),
                 ("action_send_goal_timeout_sec", rclpy.Parameter.Type.DOUBLE),
@@ -178,8 +165,12 @@ class PhysicsEngineNode(Node):
         self.test_plan = self.get_parameter("test_plan").get_parameter_value().string_value
         test_plan = TestPlan(self.test_plan)
         gps = test_plan.gps
+        substeps = max(1, round(self.pub_period / self.physics_timestep))
+
         self.__reference_latlon: HelperLatLon = gps.lat_lon
-        self.__boat_state = BoatState(self.pub_period, self.__reference_latlon)
+        self.__boat_state = BoatState(
+            self.pub_period / substeps, self.__reference_latlon, substeps
+        )
         self.__sim_gps: Optional[SimGPS] = None
 
         # MVGaussianGenerator expects raw numpy arrays: a 1D mean vector and a 2D covariance
@@ -754,6 +745,10 @@ class PhysicsEngineNode(Node):
     @property
     def pub_period(self) -> float:
         return self.get_parameter("pub_period_sec").get_parameter_value().double_value
+
+    @property
+    def physics_timestep(self) -> float:
+        return self.get_parameter("physics_timestep_sec").get_parameter_value().double_value
 
     @property
     def publish_counter(self) -> int:
