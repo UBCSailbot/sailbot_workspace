@@ -210,9 +210,7 @@ class PhysicsEngineNode(Node):
 
         sim_wind_mps: Vec2[Velocity, NED] = self.__wind_generator.next()
         self.__sim_wind_sensor = SimWindSensor(sim_wind_mps, enable_noise=True)
-        self.__latest_wind_sensor_reading_mps: Vec2[Velocity, NED] = (
-            self.__sim_wind_sensor.wind
-        )
+        self.__latest_wind_sensor_reading_mps: Vec2[Velocity, NED] = self.__sim_wind_sensor.wind
 
     def __init_callback_groups(self):
         """Initializes the callback groups. Whether multithreading is enabled or not will affect
