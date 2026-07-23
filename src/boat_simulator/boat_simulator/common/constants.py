@@ -150,7 +150,7 @@ SAIL_CE_REL_TO_CG = (0.25, -1.86)  # (x_s, z_s), units: meters
 
 # The keel's center of effort relative to the CG. The z_k is a magic number to
 # maintain stability
-KEEL_CE_REL_TO_CG = (0.08, -0.4)  # (x_k, z_k), units: meters
+KEEL_CE_REL_TO_CG = (0.08, -1.13)  # (x_k, z_k), units: meters
 
 # The hull's center of Effort/Gravity relative to the boat's CG.
 HULL_CE_REL_TO_CG = (0.06, 0.0, 0.40)  # (x_h, y_h, z_h), units: meters

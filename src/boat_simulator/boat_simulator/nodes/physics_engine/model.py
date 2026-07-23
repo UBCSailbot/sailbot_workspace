@@ -104,12 +104,16 @@ class BoatState:
             self.__kinematics_computation.step(self.nu, net_force)
 
         _logger.info(
-            f"pose: {self.pose}\n"
-            f"nu: {self.nu}\n"
-            f"nu_dot: {self.nu_dot}\n"
-            f"timestamp: {self.timestep}\n"
-            f"roll: {self.pose.data[2] * 180/np.pi}\n"
-            f"yaw: {self.pose.data[3] * 180/np.pi}\n"
+            f"timestep {self.timestep}\n"
+            f"  pose      x={self.pose.x:8.3f} m     y={self.pose.y:8.3f} m     "
+            f"roll={math.degrees(self.pose.p):7.2f} deg   "
+            f"yaw={math.degrees(self.pose.r):7.2f} deg\n"
+            f"  velocity  u={self.nu.x:8.3f} m/s   v={self.nu.y:8.3f} m/s   "
+            f"roll_rate={math.degrees(self.nu.p):7.2f} deg/s   "
+            f"yaw_rate={math.degrees(self.nu.r):7.2f} deg/s\n"
+            f"  accel     u_dot={self.nu_dot.x:8.3f} m/s^2   v_dot={self.nu_dot.y:8.3f} m/s^2   "
+            f"roll_acc={math.degrees(self.nu_dot.p):7.2f} deg/s^2   "
+            f"yaw_acc={math.degrees(self.nu_dot.r):7.2f} deg/s^2"
         )
 
     @property
