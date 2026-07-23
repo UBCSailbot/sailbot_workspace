@@ -199,6 +199,7 @@ class MockGPS(Node):
             self.get_logger().info(
                 f"Published Lat: {published_location.latitude:.7f} "
                 f"Published Lon: {published_location.longitude:.7f} "
+                f"Noise: {self._use_noise}"
             )
 
         msg: ci.GPS = ci.GPS(
