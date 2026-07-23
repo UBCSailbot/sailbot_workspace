@@ -94,7 +94,7 @@ class TotalForceComputation:
         )
 
         total_force = hydro_force + static_force + aero_force
-        _logger.info(
+        _logger.debug(
             f"TotalForceComputation.compute_total_force: hydro_force={hydro_force.data} "
             f"static_force={static_force.data} aero_force={aero_force.data} "
             f"total_force={total_force.data}"

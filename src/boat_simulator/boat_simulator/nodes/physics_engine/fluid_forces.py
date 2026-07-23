@@ -140,7 +140,7 @@ class MediumForceComputation:
         # would otherwise produce NaN/Inf forces that propagate irreversibly through the
         # kinematics and blow up the simulation.
         if velocity_magnitude == 0:
-            _logger.info("compute: zero apparent velocity, returning zero lift/drag force")
+            _logger.debug("compute: zero apparent velocity, returning zero lift/drag force")
             return 0.0, 0.0, attack_angle_deg
 
         # Calculate the lift and drag forces
@@ -247,7 +247,7 @@ class HydroStaticsForceComputation:
             * gm
             * math.sin(roll_angle_rad)
         )
-        _logger.info(
+        _logger.debug(
             f"HydroStatics.compute: roll={roll_angle_rad:.4f} rad K_restore={k_restore:.2f} N·m"
         )
         if not (-15.0 < roll_angle_rad < 15.0):
@@ -459,7 +459,7 @@ class AeroDynamicsForceComputation:
         )
         alpha_rad = self.solve_wing_angle(v_aw, delta_tab_rad, alpha_guess_rad)
 
-        _logger.info("Computing wingsail force")
+        _logger.debug("Computing wingsail force")
         lift_n, drag_n, attack_deg = self.__wing.compute(
             Vec2.from_xy(v_aw * math.cos(theta), v_aw * math.sin(theta)), math.degrees(alpha_rad)
         )
@@ -611,7 +611,7 @@ class HydroDynamicsForceComputation:
 
         h_d = self.__hull_r1 * water_speed_rel_to_hull**2 + self.__hull_r2
 
-        _logger.info(f"water_speed_rel_to_hull={water_speed_rel_to_hull} h_d={h_d} u={v_r.x}")
+        _logger.debug(f"water_speed_rel_to_hull={water_speed_rel_to_hull} h_d={h_d} u={v_r.x}")
 
         # Force and Moment calculations
         x = h_d * math.cos(alpha_h)
@@ -641,7 +641,7 @@ class HydroDynamicsForceComputation:
         beta_r = math.atan2(v_r_new, u_r)
         alpha_r = beta_r + delta_r_rad
 
-        _logger.info("Computing rudder force")
+        _logger.debug("Computing rudder force")
         lift_n, drag_n, _ = self.__rudder.compute(
             Vec2.from_xy(
                 water_speed_rel_to_rudder * math.cos(alpha_r),
@@ -682,7 +682,7 @@ class HydroDynamicsForceComputation:
         water_speed_rel_to_keel = math.hypot(u_k, v_k)
         alpha_k = math.atan2(v_k, u_k)
 
-        _logger.info("Computing keel force")
+        _logger.debug("Computing keel force")
         lift_n, drag_n, _ = self.__keel.compute(
             Vec2.from_xy(
                 water_speed_rel_to_keel * math.cos(alpha_k),
@@ -734,7 +734,7 @@ class HydroDynamicsForceComputation:
 
         total = tau_h.data + tau_r.data + tau_k.data - coriolis_term - damping_term
 
-        _logger.info(
+        _logger.debug(
             f"tau_h={tau_h} tau_r={tau_r} tau_k={tau_k} "
             f"coriolis_term={coriolis_term} damping_term={damping_term}"
         )
