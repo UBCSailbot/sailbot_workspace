@@ -1,4 +1,5 @@
 import math
+import time
 
 import rclpy
 from rclpy.node import Node
@@ -6,6 +7,7 @@ from test_plans.test_plan import TestPlan
 
 import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
+from local_pathfinding.mock_nodes.dispatch_event import EventDispatcher
 
 """
 Defines a Mock AIS Node that publishes AIS ships to the ROS Network for testing purposes
@@ -51,42 +53,45 @@ class MockAISNode(Node):
             msg_type=ci.AISShips, topic="ais_ships", qos_profile=10
         )
         self.timer_period = 0.5
-        self.first_run = True
-        self.ships = []
+
+        test_plan = TestPlan(self.test_plan)
+        self.ships = list(test_plan.ais)
+
+        # Anchor for event timing: each event's `timestamp` is seconds from here.
+        self._start_monotonic_sec = time.monotonic()
+
+        # Holds the sorted AIS event list and yields each one when its timestamp is reached.
+        self._ais_dispatcher = EventDispatcher(test_plan.ais_events)
+
+        # Skip physics for one tick after an event fires so we publish the
+        # event's exact coords (initial YAML ship list counts as an event too).
+        self._just_snapshotted = True
+
+        # Fire any t=0 events so the first published message reflects them.
+        self._consume_events(elapsed_sec=0.0)
+
         self.timer = self.create_timer(self.timer_period, self.timer_callback)
+
+    def _consume_events(self, elapsed_sec: float) -> bool:
+        """Apply any AIS snapshot events fired by elapsed_sec. Returns True if any fired."""
+        fired = False
+        for event in self._ais_dispatcher.pop_fired(elapsed_sec):
+            self.ships = list(event.ships)
+            fired = True
+        if fired:
+            self._just_snapshotted = True
+        return fired
 
     def timer_callback(self):
         msg = ci.AISShips()
-        test_plan = TestPlan(self.test_plan)
-        ais_ships = test_plan.ais
-
-        if self.first_run:
-            for ship in ais_ships:
-                self.ships.append(ship)
-                msg.ships.append(ship)
-            self.first_run = False
-
+        self._consume_events(time.monotonic() - self._start_monotonic_sec)
+        if self._just_snapshotted:
+            self._just_snapshotted = False
         else:
-            csv_ship_ids = []
-            ships_to_remove = []
-
-            for ship in ais_ships:
-                csv_ship_ids.append(ship.id)
-                current_ship_ids = [ship.id for ship in self.ships]
-                if ship.id > 0 and ship.id not in current_ship_ids:
-                    self.ships.append(ship)
-                    msg.ships.append(ship)
-
-            for ship in self.ships:
-                if ship.id not in csv_ship_ids:
-                    ships_to_remove.append(ship)
-
-            for ship in ships_to_remove:
-                self.ships.remove(ship)
-
             for ship in self.ships:
                 self.update_ship_position(ship)
-                msg.ships.append(ship)
+        for ship in self.ships:
+            msg.ships.append(ship)
 
         self.publisher_.publish(msg)
         for ship in msg.ships:
@@ -105,7 +110,7 @@ class MockAISNode(Node):
 
         # Get speed and time
         speed = ship.sog.speed / 3600
-        time = self.timer_period
+        dt = self.timer_period
         ref = ci.HelperLatLon(latitude=0.0, longitude=0.0)
         ship_latlon = ci.HelperLatLon(
             latitude=ship.lat_lon.latitude, longitude=ship.lat_lon.longitude
@@ -131,8 +136,8 @@ class MockAISNode(Node):
         vy = speed * math.cos(heading)
 
         # Calculate new position
-        new_x = ship_cartesian.x + vx * time
-        new_y = ship_cartesian.y + vy * time
+        new_x = ship_cartesian.x + vx * dt
+        new_y = ship_cartesian.y + vy * dt
 
         # Convert back to lat_lon
         new_xy = cs.XY(x=new_x, y=new_y)
