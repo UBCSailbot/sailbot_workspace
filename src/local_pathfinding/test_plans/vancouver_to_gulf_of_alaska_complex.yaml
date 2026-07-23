@@ -1,17 +1,16 @@
 # Vancouver to Gulf of Alaska stress corridor.
 #
-# The test-plan schema only supports one wind snapshot. This uses a moderate
-# southeasterly frontal wind, common along the BC coast and Gulf of Alaska.
-# 28 km/h is roughly 15 kt, strong enough to force meaningful sail constraints
-# without making every local segment extreme.
+# The test-plan schema only supports one wind snapshot. This uses a light
+# southeasterly wind along the BC coast and Gulf of Alaska.
+# 5 km/h is roughly 2.7 kt, providing a low-wind planning scenario.
 tw_dir_deg: 145
 tw_speed_kmph: 5.0
+heading_deg: -51.0
 
 gps:
   latitude: 49.280000
   longitude: -123.180000
   speed_kmph: 10.0
-  heading_deg: 309.0
 
 # Dense mixed traffic: ferries, tugs, fishing vessels, a tanker, and cargo ships.
 # The headings intentionally create head-on, crossing, overtaking, and slow-drift

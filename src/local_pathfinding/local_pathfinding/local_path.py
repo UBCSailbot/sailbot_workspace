@@ -15,7 +15,11 @@ import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.obstacles as ob
 from local_pathfinding.ompl_path import OMPLPath
-from local_pathfinding.wind_coord_systems import Wind, aw_gc_to_tw_gc, boat_to_global_coordinate
+from local_pathfinding.wind_coord_systems import (
+    Wind,
+    aw_gc_to_tw_gc,
+    boat_to_global_coordinate,
+)
 
 WIND_SPEED_CHANGE_THRESH_PROP = 0.3
 WIND_SPEED_CHANGE_THRESH_OFFSET_KMPH = 2.0
@@ -74,8 +78,9 @@ class WindTracker:
         exceeds the max length, the oldest reading is removed.
 
         Args:
-            new_tw (Wind): Newest true wind reading with speed (kmph) and direction (deg).
-                Caller is responsible for ensuring this is in true wind.
+            new_tw (Wind): Newest true-wind reading with speed (kmph) and a
+                global flow-toward direction (deg). Caller is responsible for
+                ensuring this is true wind.
         """
 
         self.tw_history.append(new_tw)
@@ -117,7 +122,8 @@ class LocalPathInputs:
     """Current navigation inputs needed to update or regenerate a local path.
 
     Attributes:
-        gps (ci.GPS): Current GPS position and heading data.
+        gps (ci.GPS): Current GPS position and speed data.
+        heading (ci.HelperHeading): Current e-compass boat heading from the ``rudder`` topic.
         ais_ships (Optional[ci.AISShips]): AIS data for nearby ships, if available.
         global_path (Optional[ci.Path]): The global path plan to the destination, if available.
         target_global_waypoint (Optional[ci.HelperLatLon]): Target waypoint from the global path,
@@ -127,6 +133,7 @@ class LocalPathInputs:
     """
 
     gps: ci.GPS
+    heading: ci.HelperHeading
     ais_ships: ci.AISShips | None
     global_path: ci.Path | None
     target_global_waypoint: ci.HelperLatLon | None
@@ -149,21 +156,22 @@ class LocalPathState:
             The global waypoint is the same as the reference latlon.
         obstacles (List[Obstacle]): All obstacles in the state space.
         path_generated_time_sec (float): Clock time in seconds when the path was generated.
-        current_tw (Wind): Latest true wind reading converted from apparent wind reading from the
-            filtered wind sensor.
+        current_tw (Wind): Latest true-wind reading converted from the filtered
+            apparent-wind sensor. Its global direction points where air travels.
         wind_tracker (WindTracker): Rolling true wind tracker shared across path states.
             It owns tw_history, a queue of wind readings with max length WIND_HISTORY_LEN, and
             tw_avg, the rolling wind average used for path planning once tw_history
             reaches full capacity.
             It also tracks whether the current accepted path was generated from one cold-start
             true wind point or from the rolling average.
-        path_generated_wind (Wind): True wind value used to generate the current path.
+        path_generated_wind (Wind): Flow-toward true-wind value used to generate the current path.
             This is the rolling average when available; otherwise it falls back to current_tw.
     """
 
     def __init__(
         self,
         gps: ci.GPS,
+        heading: ci.HelperHeading,
         ais_ships: ci.AISShips,
         global_path: ci.Path,
         target_global_waypoint: ci.HelperLatLon,
@@ -172,7 +180,7 @@ class LocalPathState:
         path_generated_time_sec: Optional[float] = None,
     ):
         self.wind_tracker = wind_tracker
-        self.update_state(gps, ais_ships, filtered_wind_sensor)
+        self.update_state(gps, heading, ais_ships, filtered_wind_sensor)
         self.path_generated_wind = self.wind_tracker.tw_avg or self.current_tw
 
         if not (global_path and global_path.waypoints):
@@ -183,14 +191,17 @@ class LocalPathState:
         # obstacles are initialized by OMPLPath right before solving
         self.obstacles: List[ob.Obstacle] = []
         self.path_generated_time_sec = (
-            monotonic()
-            if path_generated_time_sec is None
-            else path_generated_time_sec
+            monotonic() if path_generated_time_sec is None else path_generated_time_sec
         )
+        self._logger = get_logger("local_path_state")
 
     def update_state(
-        self, gps: ci.GPS, ais_ships: ci.AISShips, filtered_wind_sensor: ci.WindSensor
-    ):
+        self,
+        gps: ci.GPS,
+        heading: ci.HelperHeading,
+        ais_ships: ci.AISShips,
+        filtered_wind_sensor: ci.WindSensor,
+    ) -> None:
         """Updates the changeable environment without changing the path or reference_latlon
 
         This method updates only the dynamic state variables (position, heading, speed,
@@ -199,15 +210,18 @@ class LocalPathState:
         construction and OMPL retries do not duplicate wind readings.
 
         Args:
-            gps (ci.GPS): Current GPS position and heading data
+            gps (ci.GPS): Current GPS position and speed data.
+            heading (ci.HelperHeading): Current e-compass boat heading from ``rudder``.
             ais_ships (ci.AISShips): Updated AIS ship data
             filtered_wind_sensor (ci.WindSensor): Updated wind sensor data
         """
         if not gps:
             raise ValueError("gps must not be None")
+        if not heading:
+            raise ValueError("heading must not be None")
         self.position = gps.lat_lon
         self.speed = gps.speed.speed
-        self.heading = gps.heading.heading
+        self.heading = heading.heading
 
         if not ais_ships:
             raise ValueError("ais_ships must not be None")
@@ -224,6 +238,23 @@ class LocalPathState:
             boat_speed_kmph=self.speed,
         )
         self.current_tw = Wind(tw_speed_kmph, tw_dir_deg)
+
+    def update_obstacles(self) -> None:
+        """Refresh obstacles from the latest AIS data while reusing land geometry."""
+        if not self.obstacles:
+            self._logger.warn(
+                "update_obstacles called with no existing obstacles: skipping refresh. "
+                "This should only happen before the first successful replan."
+            )
+            return
+
+        self.obstacles = ob.update_boat_obstacles(
+            obstacles=self.obstacles,
+            reference=self.reference_latlon,
+            sailbot_position=self.position,
+            sailbot_speed=self.speed,
+            ais_ships=self.ais_ships,
+        )
 
 
 class LocalPath:
@@ -602,23 +633,22 @@ class LocalPath:
 
         if inputs.filtered_wind_sensor is None:
             raise PathNotFoundError("filtered_wind_sensor is None")
+        if inputs.heading is None:
+            raise PathNotFoundError("heading is None")
 
         # Convert apparent wind to true wind
         new_aw = Wind(
             inputs.filtered_wind_sensor.speed.speed,
             inputs.filtered_wind_sensor.direction,
         )
-
+        new_heading = inputs.heading.heading
         new_tw = None
         if inputs.gps is not None:
-            new_aw_dir_deg_gc = boat_to_global_coordinate(
-                inputs.gps.heading.heading,
-                new_aw.dir_deg
-            )
+            new_aw_dir_deg_gc = boat_to_global_coordinate(new_heading, new_aw.dir_deg)
             tw_dir_deg, tw_speed_kmph = aw_gc_to_tw_gc(
                 aw_dir_deg_gc=new_aw_dir_deg_gc,
                 aw_speed_kmph=new_aw.speed_kmph,
-                boat_heading_deg_gc=inputs.gps.heading.heading,
+                boat_heading_deg_gc=new_heading,
                 boat_speed_kmph=inputs.gps.speed.speed,
             )
             new_tw = Wind(tw_speed_kmph, tw_dir_deg)
@@ -630,9 +660,11 @@ class LocalPath:
             try:
                 self.state.update_state(  # type: ignore
                     inputs.gps,
+                    inputs.heading,
                     inputs.ais_ships,
                     inputs.filtered_wind_sensor,
                 )
+                self.state.update_obstacles()
                 boat_lat_lon = inputs.gps.lat_lon
             except ValueError as e:
                 # No need to handle anything else here. There is no compulsion for the path to
@@ -660,13 +692,14 @@ class LocalPath:
                     else:
                         wind_tracker = self.state.wind_tracker
                     new_state = LocalPathState(
-                        inputs.gps,
-                        inputs.ais_ships,
-                        inputs.global_path,
-                        inputs.target_global_waypoint,
-                        inputs.filtered_wind_sensor,
-                        wind_tracker,
-                        self._now_sec(),
+                        gps=inputs.gps,
+                        heading=inputs.heading,
+                        ais_ships=inputs.ais_ships,
+                        global_path=inputs.global_path,
+                        target_global_waypoint=inputs.target_global_waypoint,
+                        filtered_wind_sensor=inputs.filtered_wind_sensor,
+                        wind_tracker=wind_tracker,
+                        path_generated_time_sec=self._now_sec(),
                     )
                     new_ompl_path = OMPLPath(
                         parent_logger=self._logger,

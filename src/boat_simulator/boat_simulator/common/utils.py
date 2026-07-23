@@ -197,7 +197,8 @@ def get_wind_direction(wind: Vec2[Velocity, Frame]) -> float:
         wind: Wind velocity in each coordinate.
 
     Returns:
-        float: Direction of wind, in degrees. Angle is in [-180, 180).
+        float: Flow-toward direction of the wind vector, in degrees. The angle
+            is in [-180, 180).
     """
     angle_deg = round(np.arctan2(wind.x, wind.y) * 180 / np.pi)
     return bound_to_180(angle_deg, isDegrees=True)

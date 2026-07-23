@@ -48,8 +48,8 @@ MAX_SIMPLIFIER_RUN_TIME_SEC = 0.1
 # Extra cushion past the no-go-zone edge when snapping a goal yaw out of irons.
 # Needed because (1) the validator rejects yaws exactly on NO_GO_ZONE (uses <= / >=),
 # and (2) the true wind can shift several degrees between when the goal yaw is computed
-# and when the planner evaluates nearby states. 5 degrees mirrors the "sail a few
-# degrees free of close-hauled" rule of thumb and costs nothing in path quality.
+# and when the planner evaluates nearby states. Five degrees keeps the snapped
+# yaw safely outside the relevant no-go cone with little path-quality cost.
 IRONS_MARGIN_RAD = math.radians(5.0)
 
 LAND_KEY = -1
@@ -71,14 +71,9 @@ class OMPLPath:
         ** do null checks on solved. True == object exists and False == None **
     Static Attributes
         all_land_data (MultiPolygon): All land polygons along the entire global voyage
-        obstacles (Dictionary[int, Polygon]):
-                                    The dictionary of all obstacles Sailbot is currently aware of.
-                                    This is a static attribute so that OMPL can access it when
-                                    accessing the is_state_valid function pointer.
     """
 
     all_land_data = None
-    obstacles: Union[dict[int, ob.Obstacle], None] = None
 
     def __init__(
         self,
@@ -134,40 +129,19 @@ class OMPLPath:
 
         """
 
-        if OMPLPath.obstacles is None:
-            OMPLPath.obstacles = {}
-
         # BOATS
-        ais_ships = local_path_state.ais_ships
-        current_ship_ids = [ship.id for ship in ais_ships]
+        updated_obstacles: dict[int, ob.Obstacle] = {
+            obstacle.ais_ship.id: obstacle
+            for obstacle in ob.update_boat_obstacles(
+                obstacles=local_path_state.obstacles,
+                reference=local_path_state.reference_latlon,
+                sailbot_position=local_path_state.position,
+                sailbot_speed=local_path_state.speed,
+                ais_ships=local_path_state.ais_ships,
+            )
+            if isinstance(obstacle, ob.Boat)
+        }
 
-        # Remove boats no longer in ais_ships
-        boat_ids_to_remove = [
-            ship_id
-            for ship_id in OMPLPath.obstacles.keys()
-            if ship_id != LAND_KEY and ship_id not in current_ship_ids
-        ]
-        for ship_id in boat_ids_to_remove:
-            del OMPLPath.obstacles[ship_id]
-
-        for ship in ais_ships:
-            if ship.id in OMPLPath.obstacles:
-                # If the ship is already in the obstacles, update its information
-                existing_boat = OMPLPath.obstacles[ship.id]
-                existing_boat.update_sailbot_data(
-                    sailbot_position=local_path_state.position,
-                    sailbot_speed=local_path_state.speed,
-                )
-                existing_boat.update_collision_zone(ais_ship=ship)
-            else:
-                # Otherwise, create a new Obstacle object
-                new_boat = ob.Boat(
-                    local_path_state.reference_latlon,
-                    local_path_state.position,
-                    local_path_state.speed,
-                    ship,
-                )
-                OMPLPath.obstacles[ship.id] = new_boat
         # LAND
         if state_space_xy is None:
             state_space_latlon = None
@@ -183,7 +157,7 @@ class OMPLPath:
             # would interfere with Canadian Law.
             OMPLPath.load_appropriate_land_obstacle(local_path_state)
 
-        OMPLPath.obstacles[LAND_KEY] = ob.Land(
+        updated_obstacles[LAND_KEY] = ob.Land(
             reference=local_path_state.reference_latlon,
             sailbot_position=local_path_state.position,
             all_land_data=OMPLPath.all_land_data,
@@ -193,9 +167,9 @@ class OMPLPath:
 
         # obstacles are also stored in the local_path_state object
         # so that the navigate node can access and publish the obstacles
-        obstacles_list = list(OMPLPath.obstacles.values())
+        obstacles_list = list(updated_obstacles.values())
         local_path_state.obstacles = obstacles_list
-        return OMPLPath.obstacles  # for testing
+        return updated_obstacles  # for testing
 
     @staticmethod
     def create_buffer_around_position(position: cs.XY, box_buffer_size: float) -> Polygon:
@@ -494,9 +468,9 @@ class OMPLPath:
         arrives already aligned for the next leg. When it is the final destination, the
         arrival orientation is arbitrary and we start from 0.0.
 
-        In either case, if the resulting yaw points into the wind no-go zone (upwind or
-        downwind irons), it is snapped to the nearest edge of the no-go zone so the boat
-        can physically hold that heading at the goal.
+        In either case, if the resulting yaw points into the upwind or downwind
+        no-go cone, it is snapped to the nearest edge so the boat can physically
+        hold that heading at the goal. Wind bearings point where the air travels.
 
         Returns:
             float: OMPL Cartesian yaw in radians for the goal state.
@@ -524,11 +498,11 @@ class OMPLPath:
     def _offset_if_in_irons_rad(self, target_yaw_rad: float) -> float:
         """Snap a goal yaw out of the wind no-go zone, returning it unchanged otherwise.
 
-        A sailboat cannot hold a heading within NO_GO_ZONE of directly upwind or directly
-        downwind. When the proposed yaw is in either cone, this snaps to the closer edge,
-        which is also the edge that keeps the most heading progress toward the original
-        target direction (so it doubles as both the smallest correction and the side that
-        still points generally toward the next-to-next waypoint).
+        A sailboat cannot hold a heading within NO_GO_ZONE of either no-go cone.
+        With flow-toward wind bearings, a relative angle of 0 points downwind
+        with the airflow, while pi points upwind against it. When the proposed
+        yaw is in either cone, this snaps to the closer edge that retains the
+        most progress toward the original target direction.
 
         The planning-wind snapshot (path_generated_wind when available, otherwise the
         current true wind) is used so the goal yaw, motion validator, and objective all
@@ -552,13 +526,13 @@ class OMPLPath:
         abs_twa = abs(twa)
 
         if abs_twa <= NO_GO_ZONE:
-            # Upwind irons: snap just outside the ±NO_GO_ZONE edge (margin pushes away from 0).
-            upwind_edge = NO_GO_ZONE + IRONS_MARGIN_RAD
-            new_twa = upwind_edge if twa >= 0 else -upwind_edge
-        elif abs_twa >= math.pi - NO_GO_ZONE:
-            # Downwind irons: snap just inside the ±(pi - NO_GO_ZONE) edge (margin toward pi/2).
-            downwind_edge = math.pi - NO_GO_ZONE - IRONS_MARGIN_RAD
+            # Downwind cone: move just outside ±NO_GO_ZONE around the airflow direction.
+            downwind_edge = NO_GO_ZONE + IRONS_MARGIN_RAD
             new_twa = downwind_edge if twa >= 0 else -downwind_edge
+        elif abs_twa >= math.pi - NO_GO_ZONE:
+            # Upwind cone: move inside ±(pi - NO_GO_ZONE), away from opposing the airflow.
+            upwind_edge = math.pi - NO_GO_ZONE - IRONS_MARGIN_RAD
+            new_twa = upwind_edge if twa >= 0 else -upwind_edge
         else:
             return target_yaw_rad
 
@@ -578,23 +552,23 @@ class OMPLPath:
         Returns:
             bool: True if state is valid, else false.
         """
-        if OMPLPath.obstacles:
+        obstacles = self.state.obstacles if self.state is not None else []
 
-            for o in OMPLPath.obstacles.values():
-                if isinstance(state, base.State):
-                    # for testing purposes; the tests use state object
-                    point = cs.XY(state().getX(), state().getY())
-                else:  # when OMPL uses this function, it will pass in an SE2StateInternal object
-                    point = cs.XY(state.getX(), state.getY())
-                if not o.is_valid(point):
-                    # Per-state file logging for invalid-state. Log a write failure then re-raise
-                    # TODO: remove before final launch to avoid unbounded disk growth.
-                    try:
-                        log_invalid_state(state=point, obstacle=o)
-                    except OSError as e:
-                        self._logger.error(f"log_invalid_state write failed: {e}")
-                        raise
-                    return False
+        for o in obstacles:
+            if isinstance(state, base.State):
+                # for testing purposes; the tests use state object
+                point = cs.XY(state().getX(), state().getY())
+            else:  # when OMPL uses this function, it will pass in an SE2StateInternal object
+                point = cs.XY(state.getX(), state.getY())
+            if not o.is_valid(point):
+                # Per-state file logging for invalid-state. Log a write failure then re-raise
+                # TODO: remove before final launch to avoid unbounded disk growth.
+                try:
+                    log_invalid_state(state=point, obstacle=o)
+                except OSError as e:
+                    self._logger.error(f"log_invalid_state write failed: {e}")
+                    raise
+                return False
 
         return True
 

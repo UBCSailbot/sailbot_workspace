@@ -120,12 +120,14 @@ class MockAISNode(Node):
         rot = ship.rot.rot
         rot_rps = cs.rot_to_rad_per_sec(rot)
 
-        # Update heading
-        ship.cog.heading += math.degrees(rot_rps * dt)
-        if ship.cog.heading > 180:
-            ship.cog.heading -= 360
-        elif ship.cog.heading <= -180:
-            ship.cog.heading += 360
+        # Update heading. 360.0 is the AIS sentinel for "COG unavailable"; preserve it
+        # instead of running through the normalization (which would collapse it to 0.0).
+        if ship.cog.heading != 360.0:
+            ship.cog.heading += math.degrees(rot_rps * time)
+            if ship.cog.heading > 180:
+                ship.cog.heading -= 360
+            elif ship.cog.heading <= -180:
+                ship.cog.heading += 360
         heading = math.radians(ship.cog.heading)
 
         # Convert ship position to cartesian coordinates

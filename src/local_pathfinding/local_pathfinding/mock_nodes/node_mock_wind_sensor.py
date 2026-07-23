@@ -12,13 +12,14 @@ Publishes:
 * topic: ``filtered_wind_sensor`` (custom_interfaces/WindSensor)
 
 Subscribes:
-* topic: ``gps`` (custom_interfaces/GPS) for boat heading and speed
+* topic: ``gps`` (custom_interfaces/GPS) for boat speed
+* topic: ``rudder`` (custom_interfaces/HelperHeading) for e-compass boat heading
 
 Parameters:
 * ``pub_period_sec`` (double, required): publish period (seconds)
 * ``tw_speed_kmph`` (double): true wind speed (kmph). Set via ``wind_params.sh`` script only.
-* ``tw_dir_deg`` (int): true wind direction in global frame (deg). Set via ``wind_params.sh``
-script only.
+* ``tw_dir_deg`` (int): true-wind flow direction in the global frame (deg); the
+  angle points where the air travels. Set via ``wind_params.sh`` only.
     * Valid range: (-180, 180]
 
 Setting True Wind Parameters:
@@ -57,9 +58,11 @@ class MockWindSensor(Node):
         )
 
         test_plan = TestPlan(self.get_parameter("test_plan").get_parameter_value().string_value)
+        if test_plan.gps is None or test_plan.heading is None:
+            raise ValueError("MockWindSensor requires gps and heading_deg test-plan data")
         self._tw_dir_deg = test_plan.tw_dir_deg
         self._tw_speed_kmph = test_plan.tw_speed_kmph
-        self._boat_heading_deg = test_plan.gps.heading.heading
+        self._boat_heading_deg = test_plan.heading.heading
         self._boat_speed_kmph = test_plan.gps.speed.speed
 
         self._start_monotonic_sec = time.monotonic()
@@ -80,6 +83,12 @@ class MockWindSensor(Node):
         )
         self._gps_sub = self.create_subscription(
             msg_type=ci.GPS, topic="gps", callback=self.gps_callback, qos_profile=10
+        )
+        self._heading_sub = self.create_subscription(
+            msg_type=ci.HelperHeading,
+            topic="rudder",
+            callback=self.heading_callback,
+            qos_profile=10,
         )
 
         # Parameter Event Handler (Parameters can change over the life of the simulation)
@@ -129,15 +138,20 @@ class MockWindSensor(Node):
         return SetParametersResult(successful=True)
 
     def gps_callback(self, msg: ci.GPS) -> None:
-        """Callback function for the GPS subscription. Updates the boat's position.
+        """Update boat speed from the GPS subscription.
 
         Args:
-            msg (ci.GPS): The GPS message containing the boat's position.
+            msg (ci.GPS): GPS position and speed data.
         """
 
-        self.get_logger().debug(f"received n {self._wind_sensors_pub.topic}: {msg}")
-        self._boat_heading_deg = msg.heading.heading
+        self.get_logger().debug(f"Received data from {self._gps_sub.topic}: {msg}")
         self._boat_speed_kmph = msg.speed.speed
+
+    def heading_callback(self, msg: ci.HelperHeading) -> None:
+        """Update boat heading from the e-compass ``rudder`` subscription."""
+
+        self.get_logger().debug(f"Received data from {self._heading_sub.topic}: {msg}")
+        self._boat_heading_deg = msg.heading
 
 
 def main(args=None):

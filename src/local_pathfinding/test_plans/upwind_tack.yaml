@@ -1,15 +1,16 @@
-# Wind blows directly from the west, the same direction as Polaris's destination.
-# The planner must tack upwind (NW/SW alternating legs) to make westward progress.
+# Airflow travels west, the same direction as Polaris's destination. Under the
+# flow-toward convention this is directly downwind, so the planner must gybe on
+# alternating NW/SW legs to make westward progress.
 # A single ship on a SE heading (135°) adds a crossing obstacle mid-tack.
-# No-go zone (±45° of 270°): headings 225°–315° are irons.
+# Downwind no-go cone (±45° around 270°): headings 225°–315° are rejected.
 tw_dir_deg: 270
 tw_speed_kmph: 15.0
+heading_deg: -90.0
 
 gps:
   latitude: 49.00
   longitude: -123.18
   speed_kmph: 8.0
-  heading_deg: 270.0
 
 ais:
   - {id: 1, lat: 49.05, lon: -123.25, heading: 135.0, speed: 12.0, rot: 0, width: 2.0, height: 6.0}

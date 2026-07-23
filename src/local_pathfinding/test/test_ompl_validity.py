@@ -144,7 +144,7 @@ def test_goal_progress_motion_rejects_movement_away_from_current_goal_direction(
     "s1, s2, tw_dir_rad_gc, expected",
     [
         (
-            # Segment points directly into the wind
+            # Segment points directly with the northward airflow
             cs.XY(0.0, 0.0),
             cs.XY(0.0, 1.0),
             0.0,
@@ -158,7 +158,7 @@ def test_goal_progress_motion_rejects_movement_away_from_current_goal_direction(
             math.pi / 2,
         ),
         (
-            # Segment points directly downwind
+            # Segment points directly against the northward airflow
             cs.XY(0.0, 0.0),
             cs.XY(0.0, -1.0),
             0.0,
@@ -181,49 +181,49 @@ def test_get_segment_wind_angle_rad_bc(
     "s1, s2, tw_dir_rad_gc, expected",
     [
         (
-            # Wind direction and segment both point north
+            # Airflow and segment both point north (downwind cone)
             cs.XY(0.0, 0.0),
             cs.XY(0.0, 1.0),
             0.0,
             True,
         ),
         (
-            # Wind direction south and segment points north
+            # Airflow points south and the segment points north (upwind cone)
             cs.XY(0.0, 0.0),
             cs.XY(0.0, 1.0),
             math.pi,
             True,
         ),
         (
-            # Exactly on the upwind no-go boundary
+            # Exactly on a downwind no-go boundary around the airflow direction
             cs.XY(0.0, 0.0),
             cs.XY(0.0, 1.0),
             ov.NO_GO_ZONE,
             True,
         ),
         (
-            # Exactly on the negative upwind no-go boundary
+            # Exactly on the negative downwind no-go boundary
             cs.XY(0.0, 0.0),
             cs.XY(0.0, 1.0),
             -ov.NO_GO_ZONE,
             True,
         ),
         (
-            # Exactly on the downwind no-go boundary
+            # Exactly on an upwind no-go boundary opposite the airflow direction
             cs.XY(0.0, 0.0),
             cs.XY(0.0, 1.0),
             math.pi - ov.NO_GO_ZONE,
             True,
         ),
         (
-            # Segment points south with wind on the positive downwind boundary
+            # Southbound segment with airflow on a positive downwind boundary
             cs.XY(0.0, 0.0),
             cs.XY(0.0, -1.0),
             math.pi - ov.NO_GO_ZONE,
             True,
         ),
         (
-            # Segment points south with wind on the negative downwind boundary
+            # Southbound segment with airflow on a negative downwind boundary
             cs.XY(0.0, 0.0),
             cs.XY(0.0, -1.0),
             -math.pi + ov.NO_GO_ZONE,
@@ -286,28 +286,28 @@ def test_in_wind_no_go_zone(
     "s1_xy, s2_xy, goal_position_in_xy, expected",
     [
         (
-            # In irons and not making progress
+            # In the downwind no-go cone and not making progress
             cs.XY(0.0, 0.0),
             cs.XY(0.0, 1.0),
             cs.XY(0.0, -1.0),
             False,
         ),
         (
-            # In irons but making progress
+            # In the downwind no-go cone but making progress
             cs.XY(0.0, 0.0),
             cs.XY(0.0, 1.0),
             cs.XY(0.0, 1.0),
             False,
         ),
         (
-            # Not in irons but not making progress
+            # Outside both wind no-go cones but not making progress
             cs.XY(0.0, 0.0),
             cs.XY(1.0, 0.0),
             cs.XY(-1.0, 0.0),
             False,
         ),
         (
-            # Not in irons and making progress
+            # Outside both wind no-go cones and making progress
             cs.XY(0.0, 0.0),
             cs.XY(1.0, 0.0),
             cs.XY(1.0, 0.0),

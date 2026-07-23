@@ -1,3 +1,4 @@
+import math
 import os
 from dataclasses import dataclass
 from typing import Any
@@ -127,10 +128,19 @@ class TestPlan:
                     latitude=data["gps"]["latitude"], longitude=data["gps"]["longitude"]
                 ),
                 speed=ci.HelperSpeed(speed=data["gps"]["speed_kmph"]),
-                heading=ci.HelperHeading(heading=data["gps"]["heading_deg"]),
             )
         else:
             self._gps = None
+
+        if data.get("heading_deg") is not None:
+            heading_deg = float(data["heading_deg"])
+            if not math.isfinite(heading_deg) or not (-180.0 < heading_deg <= 180.0):
+                raise ValueError("heading_deg must be a finite value in (-180, 180]")
+            self._heading = ci.HelperHeading(heading=heading_deg)
+        else:
+            self._heading = None
+            if self._gps is not None:
+                raise ValueError("heading_deg is required when gps test-plan data is provided")
 
         if data.get("tw_speed_kmph") is not None or data.get("tw_dir_deg") is not None:
             self._tw_speed_kmph = data["tw_speed_kmph"]
@@ -175,6 +185,10 @@ class TestPlan:
     @property
     def gps(self):
         return self._gps
+
+    @property
+    def heading(self):
+        return self._heading
 
     @property
     def ais(self):

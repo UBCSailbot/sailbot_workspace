@@ -1,15 +1,15 @@
 # Narrow east-west channel (~3.3 km wide) formed by two land masses.
 # Polaris enters from the east and must thread through to the goal beyond the
-# western exit.  Wind from south (beam reach) exerts northward drift, adding
-# pressure toward the northern wall and testing course-holding inside the channel.
+# western exit. Southward airflow (tw_dir_deg: 180) is perpendicular to the
+# westbound course, while the narrow walls test course-holding.
 tw_dir_deg: 180
 tw_speed_kmph: 12.0
+heading_deg: -90.0
 
 gps:
   latitude: 49.280
   longitude: -123.15
   speed_kmph: 12.0
-  heading_deg: 270.0
 
 # [lon, lat]
 land:

@@ -7,9 +7,25 @@ from shapely.geometry import MultiPolygon, Polygon
 
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.local_path as lp
-from custom_interfaces.msg import GPS, AISShips, HelperLatLon, Path, WindSensor
+import local_pathfinding.obstacles as ob
+from custom_interfaces.msg import (
+    GPS,
+    AISShips,
+    HelperAISShip,
+    HelperDimension,
+    HelperHeading,
+    HelperLatLon,
+    HelperROT,
+    HelperSpeed,
+    Path,
+    WindSensor,
+)
 from local_pathfinding.obstacles import Obstacle
-from local_pathfinding.wind_coord_systems import Wind, tw_gc_to_aw_gc, global_to_boat_coordinate
+from local_pathfinding.wind_coord_systems import (
+    Wind,
+    global_to_boat_coordinate,
+    tw_gc_to_aw_gc,
+)
 
 REF = HelperLatLon(latitude=10.0, longitude=10.0)
 
@@ -39,7 +55,8 @@ def basic_local_path_state():
     gps = mock.Mock()
     gps.lat_lon = HelperLatLon(latitude=0.0, longitude=0.0)
     gps.speed = mock.Mock(speed=0.0)
-    gps.heading = mock.Mock(heading=0.0)
+    gps.heading = mock.Mock(heading=123.0)
+    heading = HelperHeading(heading=0.0)
 
     ais_ships = mock.Mock()
     ais_ships.ships = []
@@ -57,6 +74,7 @@ def basic_local_path_state():
 
     return lp.LocalPathState(
         gps=gps,
+        heading=heading,
         ais_ships=ais_ships,
         global_path=global_path,
         target_global_waypoint=global_path.waypoints[-1],
@@ -83,7 +101,8 @@ def create_update_if_needed_inputs():
     gps = mock.Mock()
     gps.lat_lon = HelperLatLon(latitude=0.0, longitude=-0.1)
     gps.speed = mock.Mock(speed=0.0)
-    gps.heading = mock.Mock(heading=0.0)
+    gps.heading = mock.Mock(heading=123.0)
+    heading = HelperHeading(heading=0.0)
 
     ais_ships = mock.Mock()
     ais_ships.ships = []
@@ -101,6 +120,7 @@ def create_update_if_needed_inputs():
 
     return lp.LocalPathInputs(
         gps=gps,
+        heading=heading,
         ais_ships=ais_ships,
         global_path=global_path,
         target_global_waypoint=global_path.waypoints[-1],
@@ -150,16 +170,17 @@ def set_filtered_wind_sensor_from_true_wind(inputs, true_wind):
     aw_dir_deg_gc, aw_speed_kmph = tw_gc_to_aw_gc(
         tw_dir_deg_gc=true_wind.dir_deg,
         tw_speed_kmph=true_wind.speed_kmph,
-        boat_heading_deg_gc=inputs.gps.heading.heading,
+        boat_heading_deg_gc=inputs.heading.heading,
         boat_speed_kmph=inputs.gps.speed.speed,
     )
 
-    aw_dir_deg_bc = global_to_boat_coordinate(inputs.gps.heading.heading, aw_dir_deg_gc)
+    aw_dir_deg_bc = global_to_boat_coordinate(inputs.heading.heading, aw_dir_deg_gc)
     inputs.filtered_wind_sensor.speed.speed = aw_speed_kmph
     inputs.filtered_wind_sensor.direction = aw_dir_deg_bc
 
 
 # ========================= TESTS =========================
+
 
 @pytest.mark.parametrize(
     "path, target_wp_index, boat_lat_lon, correct_heading, new_target_wp_index",
@@ -437,9 +458,7 @@ def test_calculate_desired_heading_and_waypoint_index_exceptions(
     expected_exception,
 ):
     with pytest.raises(expected_exception):
-        lp.LocalPath.calculate_desired_heading_and_wp_index(
-            path, target_wp_index, boat_lat_lon
-        )
+        lp.LocalPath.calculate_desired_heading_and_wp_index(path, target_wp_index, boat_lat_lon)
 
 
 @pytest.mark.parametrize(
@@ -702,8 +721,7 @@ def test_in_collision_zone(target_local_wp_index, reference_latlon, path, obstac
         # Fifth Test: Division by 0
         (
             Wind(
-                speed_kmph=10.0
-                + lp.WIND_SPEED_CHANGE_THRESH_OFFSET_KMPH,
+                speed_kmph=10.0 + lp.WIND_SPEED_CHANGE_THRESH_OFFSET_KMPH,
                 dir_deg=99.0 - 0.9 * lp.WIND_DIRECTION_CHANGE_THRESH_DEG,
             ),
             Wind(speed_kmph=0.0, dir_deg=99.0),
@@ -881,6 +899,7 @@ def test_LocalPathState_path_generated_wind_uses_tw_avg_when_available():
 
     state = lp.LocalPathState(
         gps=inputs.gps,
+        heading=inputs.heading,
         ais_ships=inputs.ais_ships,
         global_path=inputs.global_path,
         target_global_waypoint=inputs.target_global_waypoint,
@@ -1000,7 +1019,6 @@ def _boat_position_for_segment_deviation(
             ),
             False,
         ),
-
         # Basic Exceeded
         (
             EXCEEDED_SEGMENT_DEVIATION_BASIC_PATH,
@@ -1013,7 +1031,6 @@ def _boat_position_for_segment_deviation(
             ),
             True,
         ),
-
         # Identical Waypoints
         (
             EXCEEDED_SEGMENT_DEVIATION_IDENTICAL_WAYPOINTS_PATH,
@@ -1024,7 +1041,6 @@ def _boat_position_for_segment_deviation(
             ),
             False,
         ),
-
         # Boat beyond target waypoint exceeding threshold
         (
             EXCEEDED_SEGMENT_DEVIATION_BASIC_PATH,
@@ -1037,7 +1053,6 @@ def _boat_position_for_segment_deviation(
             ),
             True,
         ),
-
         # Boat beyond target waypoint not exceeding threshold
         (
             EXCEEDED_SEGMENT_DEVIATION_SHORT_PATH,
@@ -1050,7 +1065,6 @@ def _boat_position_for_segment_deviation(
             ),
             False,
         ),
-
         # Boat before start waypoint not exceeding threshold
         (
             EXCEEDED_SEGMENT_DEVIATION_SHORT_PATH,
@@ -1063,7 +1077,6 @@ def _boat_position_for_segment_deviation(
             ),
             False,
         ),
-
         # Boat before start waypoint exceeding threshold
         (
             EXCEEDED_SEGMENT_DEVIATION_SHORT_PATH,
@@ -1076,7 +1089,6 @@ def _boat_position_for_segment_deviation(
             ),
             True,
         ),
-
         # Non Horizontal/Vertical Path not exceeding threshold
         (
             EXCEEDED_SEGMENT_DEVIATION_DIAGONAL_PATH,
@@ -1089,7 +1101,6 @@ def _boat_position_for_segment_deviation(
             ),
             False,
         ),
-
         # Non Horizontal/Vertical Path exceeding threshold
         (
             EXCEEDED_SEGMENT_DEVIATION_DIAGONAL_PATH,
@@ -1102,7 +1113,6 @@ def _boat_position_for_segment_deviation(
             ),
             True,
         ),
-
         # Boat on Segment
         (
             EXCEEDED_SEGMENT_DEVIATION_BASIC_PATH,
@@ -1115,7 +1125,6 @@ def _boat_position_for_segment_deviation(
             ),
             False,
         ),
-
         # Boat at Threshold
         (
             EXCEEDED_SEGMENT_DEVIATION_BASIC_PATH,
@@ -1128,7 +1137,6 @@ def _boat_position_for_segment_deviation(
             ),
             False,
         ),
-
         # Very short segment, boat 0.5x threshold away, should not exceed
         (
             EXCEEDED_SEGMENT_DEVIATION_VERY_SHORT_PATH,
@@ -1141,7 +1149,6 @@ def _boat_position_for_segment_deviation(
             ),
             False,
         ),
-
         # Very short segment (1m), should exceed, Converts error to meters for a mult
         (
             EXCEEDED_SEGMENT_DEVIATION_VERY_SHORT_PATH,
@@ -1154,7 +1161,6 @@ def _boat_position_for_segment_deviation(
             ),
             True,
         ),
-
         # Near-identical waypoints, boat at same position, should not exceed
         (
             EXCEEDED_SEGMENT_DEVIATION_NEAR_IDENTICAL_PATH,
@@ -1162,7 +1168,6 @@ def _boat_position_for_segment_deviation(
             HelperLatLon(latitude=1.0, longitude=1.0),
             False,
         ),
-
         # Near-identical waypoints (~1cm segment) - boat 1m away
         # GPS_POSITION_ERROR_KM should act as a floor and prevent false positives
         (
@@ -1192,6 +1197,7 @@ def test_LocalPathState_parameter_checking():
     with pytest.raises(ValueError):
         lp.LocalPathState(
             gps=None,
+            heading=HelperHeading(),
             ais_ships=AISShips(),
             global_path=Path(
                 waypoints=[
@@ -1207,6 +1213,23 @@ def test_LocalPathState_parameter_checking():
     with pytest.raises(ValueError):
         lp.LocalPathState(
             gps=GPS(),
+            heading=None,
+            ais_ships=AISShips(),
+            global_path=Path(
+                waypoints=[
+                    HelperLatLon(latitude=0.0, longitude=0.0),
+                    HelperLatLon(latitude=1.0, longitude=1.0),
+                ]
+            ),
+            target_global_waypoint=HelperLatLon(latitude=1.0, longitude=1.0),
+            filtered_wind_sensor=WindSensor(),
+            wind_tracker=create_wind_tracker(),
+        )
+
+    with pytest.raises(ValueError):
+        lp.LocalPathState(
+            gps=GPS(),
+            heading=HelperHeading(),
             ais_ships=None,
             global_path=Path(
                 waypoints=[
@@ -1222,6 +1245,7 @@ def test_LocalPathState_parameter_checking():
     with pytest.raises(ValueError):
         lp.LocalPathState(
             gps=GPS(),
+            heading=HelperHeading(),
             ais_ships=AISShips(),
             global_path=Path(waypoints=[]),
             target_global_waypoint=HelperLatLon(),
@@ -1232,6 +1256,7 @@ def test_LocalPathState_parameter_checking():
     with pytest.raises(ValueError):
         lp.LocalPathState(
             gps=GPS(),
+            heading=HelperHeading(),
             ais_ships=AISShips(),
             global_path=None,
             target_global_waypoint=None,
@@ -1242,6 +1267,7 @@ def test_LocalPathState_parameter_checking():
     with pytest.raises(ValueError):
         lp.LocalPathState(
             gps=GPS(),
+            heading=HelperHeading(),
             ais_ships=AISShips(),
             global_path=Path(
                 waypoints=[
@@ -1424,6 +1450,113 @@ def test_update_if_needed_regenerates_path_when_path_must_change(
     assert local_path.state.global_path is inputs.global_path
     local_path._logger.info.assert_any_call(f"Updating local path: {expected_reason}")
     ompl_path_cls.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    "scenario, cached_ship_ids, incoming_ship_ids, expected_ship_ids",
+    [
+        (
+            "adds_new_ship",
+            [1],
+            [1, 3],
+            {1, 3},
+        ),
+        (
+            "removes_missing_ship",
+            [1, 2],
+            [1],
+            {1},
+        ),
+        (
+            "removes_all_ships_land_survives",
+            [1, 2],
+            [],
+            set(),
+        ),
+        (
+            "mixed_add_and_remove",
+            [1, 2],
+            [2, 3],
+            {2, 3},
+        ),
+        (
+            "no_change_updates_in_place",
+            [1],
+            [1],
+            {1},
+        ),
+    ],
+)
+def test_update_if_needed_syncs_boat_obstacles_with_ais_ships(
+    scenario,  # noqa: ARG001
+    cached_ship_ids,
+    incoming_ship_ids,
+    expected_ship_ids,
+    basic_local_path_state,
+):
+    local_path, _, old_ompl_path = create_initialized_local_path_for_update_if_needed(
+        basic_local_path_state
+    )
+    land_reference = basic_local_path_state.reference_latlon
+
+    cached_land = ob.Land(
+        reference=land_reference,
+        sailbot_position=basic_local_path_state.position,
+        all_land_data=MultiPolygon(
+            [Polygon([(-0.2, -0.2), (-0.2, 0.2), (0.2, 0.2), (0.2, -0.2)])]
+        ),
+        land_multi_polygon=MultiPolygon(
+            [Polygon([(-0.2, -0.2), (-0.2, 0.2), (0.2, 0.2), (0.2, -0.2)])]
+        ),
+    )
+
+    def make_ship(ship_id):
+        return HelperAISShip(
+            id=ship_id,
+            lat_lon=HelperLatLon(latitude=0.0, longitude=0.0),
+            cog=HelperHeading(heading=0.0),
+            sog=HelperSpeed(speed=0.0),
+            width=HelperDimension(dimension=10.0),
+            length=HelperDimension(dimension=10.0),
+            rot=HelperROT(rot=0),
+        )
+
+    cached_boats = [
+        ob.Boat(
+            reference=land_reference,
+            sailbot_position=basic_local_path_state.position,
+            sailbot_speed=basic_local_path_state.speed,
+            ais_ship=make_ship(ship_id),
+        )
+        for ship_id in cached_ship_ids
+    ]
+    basic_local_path_state.obstacles = [*cached_boats, cached_land]
+
+    inputs = create_update_if_needed_inputs()
+    inputs.ais_ships = AISShips(ships=[make_ship(ship_id) for ship_id in incoming_ship_ids])
+
+    with (
+        mock.patch.object(local_path, "in_collision_zone", return_value=False),
+        mock.patch.object(local_path, "is_path_expired", return_value=False),
+        mock.patch.object(local_path, "exceeded_segment_deviation", return_value=False),
+        mock.patch.object(lp, "OMPLPath") as ompl_path_cls,
+    ):
+        local_path.update_if_needed(
+            inputs=inputs,
+            target_lp_wp_index=1,
+            received_new_global_waypoint=False,
+        )
+
+    actual_ship_ids = {
+        obstacle.ais_ship.id
+        for obstacle in local_path.state.obstacles
+        if isinstance(obstacle, ob.Boat)
+    }
+    assert actual_ship_ids == expected_ship_ids
+    assert any(isinstance(o, ob.Land) for o in local_path.state.obstacles)
+    assert cached_land in local_path.state.obstacles
+    ompl_path_cls.init_obstacles.assert_not_called()
+    ompl_path_cls.assert_not_called()
 
 
 @pytest.mark.parametrize(
@@ -1800,7 +1933,8 @@ def test_update_if_needed_reuses_path_without_significant_wind_change(
     assert local_path.state.reference_latlon is original_reference_latlon
     assert local_path.state.position is inputs.gps.lat_lon
     assert local_path.state.speed == inputs.gps.speed.speed
-    assert local_path.state.heading == inputs.gps.heading.heading
+    assert local_path.state.heading == inputs.heading.heading
+    assert local_path.state.heading != inputs.gps.heading.heading
     assert local_path.state.current_tw.speed_kmph == pytest.approx(new_tw.speed_kmph)
     assert local_path.state.current_tw.dir_deg == pytest.approx(new_tw.dir_deg)
     old_ompl_path.get_path.assert_called_once()
@@ -1811,17 +1945,18 @@ def test_update_if_needed_reuses_path_when_boat_changes_heading(basic_local_path
     local_path, old_path, old_ompl_path = create_initialized_local_path_for_update_if_needed(
         basic_local_path_state
     )
+
     baseline_tw = Wind(speed_kmph=5.0, dir_deg=90.0)
     set_tw_history(basic_local_path_state, baseline_tw, lp.WIND_HISTORY_LEN)
 
     inputs = create_update_if_needed_inputs()
     inputs.gps.speed.speed = 3.0
-    inputs.gps.heading.heading += lp.WIND_DIRECTION_CHANGE_THRESH_DEG + 30.0
-
+    inputs.heading.heading += lp.WIND_DIRECTION_CHANGE_THRESH_DEG + 30.0
     set_filtered_wind_sensor_from_true_wind(inputs, baseline_tw)
 
-    for _ in range(lp.WIND_HISTORY_LEN):
-        local_path.update_if_needed(
+    with mock.patch.object(lp, "OMPLPath") as ompl_path_cls:
+        for _ in range(lp.WIND_HISTORY_LEN):
+            local_path.update_if_needed(
                 inputs=inputs,
                 target_lp_wp_index=1,
                 received_new_global_waypoint=False,
@@ -1830,3 +1965,4 @@ def test_update_if_needed_reuses_path_when_boat_changes_heading(basic_local_path
     assert local_path._ompl_path is old_ompl_path
     assert local_path.path is old_path
     local_path._logger.info.assert_any_call("Reusing local path: Path is valid, no change needed")
+    ompl_path_cls.assert_not_called()

@@ -20,6 +20,10 @@ DEFAULT_GLOBAL_PATH_CSV = (
 _EVENT_TICK_PERIOD_SEC = 0.5
 
 
+class ExceededTimeError(Exception):
+    pass
+
+
 def main(args=None):
     rclpy.init(args=args)
     mock_global_path = MockGlobalPath()
@@ -127,7 +131,17 @@ class MockGlobalPath(Node):
         # Publish the current global path exactly as defined in the CSV/test plan source. This node
         # does not interpolate between waypoints or generate a path from the boat's position.
         msg = self.global_path
-        self.get_logger().debug(f"Published mock global path: {Sailbot._path_to_dict(msg)}")
+        start_time_ns = self.get_clock().now().nanoseconds
+        while (True):
+            node_names = self.get_node_names()
+            if 'navigate_main' in node_names:
+                break
+            if self.get_clock().now().nanoseconds - start_time_ns > 2e9:
+                raise ExceededTimeError(
+                    "Node mock global path waited for 2 seconds for navigate_main, but "
+                    "navigate_main didn't become alive"
+                )
+        self.get_logger().info(f"Published mock global path: {Sailbot._path_to_dict(msg)}")
         self.global_path_pub.publish(msg)
 
 
