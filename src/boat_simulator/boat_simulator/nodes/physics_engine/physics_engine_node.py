@@ -42,6 +42,7 @@ from custom_interfaces.action import SimRudderActuation, SimSailTrimTabActuation
 from custom_interfaces.msg import (
     GPS,
     DesiredHeading,
+    HelperHeading,
     HelperLatLon,
     SailCmd,
     SimWorldState,
@@ -276,6 +277,11 @@ class PhysicsEngineNode(Node):
             topic=Constants.PHYSICS_ENGINE_PUBLISHERS.GPS,
             qos_profile=self.get_parameter("qos_depth").get_parameter_value().integer_value,
         )
+        self.__rudder_pub = self.create_publisher(
+            msg_type=HelperHeading,
+            topic="rudder",
+            qos_profile=10,
+        )
         self.__wind_sensors_pub = self.create_publisher(
             msg_type=WindSensor,
             topic=Constants.PHYSICS_ENGINE_PUBLISHERS.FILTERED_WIND_SENSORS,
@@ -392,16 +398,20 @@ class PhysicsEngineNode(Node):
                 lat_lon=lat_lon, speed=speed_mps, heading=heading, enable_noise=True
             )
 
-        msg = self.__convert_sim_data_to_gps_msg()
+        gps_msg = self.__convert_sim_data_to_gps_msg()
+        rudder_msg = HelperHeading(heading=heading.degrees)
 
-        self.gps_pub.publish(msg)
+        self.gps_pub.publish(gps_msg)
+
+        self.rudder_pub.publish(rudder_msg)
+
         self.get_logger().debug(
             f"Publishing to {self.gps_pub.topic}",
             throttle_duration_sec=self.get_parameter("info_log_throttle_period_sec")
             .get_parameter_value()
             .double_value,
         )
-        return msg
+        return gps_msg
 
     def __convert_sim_data_to_gps_msg(self) -> GPS:
         """Builds a GPS message from the current sensor readings (noisy if noise is enabled).
@@ -766,6 +776,10 @@ class PhysicsEngineNode(Node):
     @property
     def kinematics_pub(self) -> Publisher:
         return self.__kinematics_pub
+
+    @property
+    def rudder_pub(self) -> Publisher:
+        return self.__rudder_pub
 
     @property
     def desired_heading(self) -> Optional[DesiredHeading]:
