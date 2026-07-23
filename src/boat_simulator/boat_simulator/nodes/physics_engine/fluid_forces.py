@@ -603,21 +603,17 @@ class HydroDynamicsForceComputation:
             cos_roll = math.copysign(MIN_HULL_COS_ROLL, cos_roll)
         v_h = (-v - r * self.__x_h + p * self.__z_h) / cos_roll
         water_speed_rel_to_hull = math.sqrt(u_h**2 + v_h**2)
-        alpha_h = math.atan2(v_h, u_h)
-        # Both drag terms scale with speed (r2 is a linear damping coefficient, N·s/m), so
-        # the hull force vanishes at rest. (u_h, v_h) is the water's velocity relative to
-        # the hull, so drag acts along +alpha_h — pointing WITH the relative flow is what
-        # makes this dissipative (F·v < 0); flipping it turns the hull into a thruster.
-        h_d = (
-            self.__hull_r1 * water_speed_rel_to_hull**2 + self.__hull_r2 * water_speed_rel_to_hull
-        )
+        alpha_h = math.atan2(v_h, -u_h)
+        # Extended-keel hull model (van Tonder Eq. 19-22): only drag is kept, lift is
+        # neglected. h_d is the quadratic + static drag magnitude.
+        h_d = self.__hull_r1 * water_speed_rel_to_hull**2 + self.__hull_r2
         _logger.info(f"water_speed_rel_to_hull={water_speed_rel_to_hull} h_d={h_d} u={v_r.x}")
 
         # Force and Moment calculations
         x = h_d * math.cos(alpha_h)
-        y = h_d * math.sin(alpha_h) * math.cos(roll_rad)
-        k = -y * self.__z_h
-        n = y * self.__x_h
+        y = -h_d * math.sin(alpha_h) * math.cos(roll_rad)
+        k = h_d * math.sin(alpha_h) * math.cos(roll_rad) * self.__z_h
+        n = -h_d * math.sin(alpha_h) * math.cos(roll_rad) * self.__x_h
         return Vec4.from_xypr(x, y, k, n)
 
     def rudder_force(
