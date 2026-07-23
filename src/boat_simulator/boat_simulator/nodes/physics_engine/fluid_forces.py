@@ -10,18 +10,18 @@ from rclpy.logging import get_logger
 from boat_simulator.common.constants import (
     AIR_DENSITY,
     BOAT_PROPERTIES,
-    CE_HEIGHT_REL_TO_CG,
     DISPLACED_VOLUME,
     EARTH_GRAVITY,
     HULL_CE_REL_TO_CG,
     HULL_LINEAR_DRAG,
     KEEL_CE_REL_TO_CG,
     MAST_PIVOT_CHORD_FRACTION,
-    METACENTRIC_HEIGHT,
-    RUDDER_CE_DEPTH_REL_TO_CG,
+    RUDDER_CE_REL_TO_CG,
+    SAIL_CE_REL_TO_CG,
     WATER_DENSITY,
     WING_SAIL_CHORD,
     WINGSAIL_TO_TRIM_TAB_BOOM_LENGTH,
+    CoB_REL_COORD,
 )
 from boat_simulator.common.conventions import (
     Body,
@@ -229,7 +229,6 @@ class HydroStaticsForceComputation:
         self.__seawater_density = WATER_DENSITY
         self.__gravity = EARTH_GRAVITY
         self.__displaced_volume = DISPLACED_VOLUME
-        self.__metacentric_height = METACENTRIC_HEIGHT
 
     def compute(self, roll_angle_rad: float) -> Vec4[Force, Body]:
         """Computes the hydrostatic restoring force at the given roll angle
@@ -240,17 +239,61 @@ class HydroStaticsForceComputation:
         Returns:
             Vec4[Force, Body]: The restoring force
         """
+        gm = self.calculate_metacentric_to_cog(roll_angle_rad)
         k_restore = (
             -self.__seawater_density
             * self.__gravity
             * self.__displaced_volume
-            * self.__metacentric_height
+            * gm
             * math.sin(roll_angle_rad)
         )
         _logger.info(
             f"HydroStatics.compute: roll={roll_angle_rad:.4f} rad K_restore={k_restore:.2f} N·m"
         )
+        if not (-15.0 < roll_angle_rad < 15.0):
+            _logger.warning(
+                f"HydroStatics.compute: roll angle is outside the small angle approximation"
+            )
         return Vec4.from_xypr(0.0, 0.0, k_restore, 0.0)
+
+    def calculate_metacentric_to_cog(self, roll_angle_rad: float) -> float:
+        """Computes GM, the distance from the CoG to the metacenter, by rotating the
+        (body-fixed) CoG and CoB with the hull and finding where the buoyancy line
+        crosses the hull's centerline.
+
+        1. Perpendicular to the equilibrium line (y = 0) is x = 0: at zero heel the
+           buoyant force, which always acts vertically, runs straight up the hull's
+           centerline through the CoG.
+        2. Rotate the CoG (the body-frame origin) and the CoB (CoB_REL_COORD below the
+           CoG at equilibrium) by the roll angle, since both are fixed points on the
+           rigid hull.
+        3. The buoyant force's line of action is the vertical line through the rotated
+           CoB (x = x_CoB_rotated). The CoG and CoB lie on the same body-frame line
+           (the centerline), so the rotated CoG-CoB line already passes through that
+           vertical line at the rotated CoB itself: that is the metacenter M.
+        4. GM is the distance from the rotated CoG to M.
+
+        Args:
+            roll_angle_rad (float): The boat's current roll angle, in radians.
+
+        Returns:
+            float: GM, in meters.
+        """
+        rotation = np.array(
+            [
+                [math.cos(roll_angle_rad), -math.sin(roll_angle_rad)],
+                [math.sin(roll_angle_rad), math.cos(roll_angle_rad)],
+            ]
+        )
+
+        cog_body = np.array([0.0, 0.0])
+        cob_body = np.array([0.0, -CoB_REL_COORD])
+
+        cog_rotated = rotation @ cog_body
+        metacenter = rotation @ cob_body
+
+        gm = float(np.linalg.norm(metacenter - cog_rotated))
+        return gm
 
 
 class AeroDynamicsForceComputation:
@@ -288,8 +331,7 @@ class AeroDynamicsForceComputation:
         self.__chord_m = WING_SAIL_CHORD
         self.__mast_pivot_chord_m = MAST_PIVOT_CHORD_FRACTION * self.__chord_m
         self.__boom_length_m = WINGSAIL_TO_TRIM_TAB_BOOM_LENGTH
-        self.__x_s = BOAT_PROPERTIES.sail_dist
-        self.__z_s = CE_HEIGHT_REL_TO_CG
+        self.__x_s, self.__z_s = SAIL_CE_REL_TO_CG
         self.__air_density = AIR_DENSITY
 
     def apparent_wind(
@@ -469,10 +511,7 @@ class HydroDynamicsForceComputation:
             BOAT_PROPERTIES.keel_areas,
             WATER_DENSITY,
         )
-        # TODO rudder_dist is the rudder CE-to-pivot distance, not CE-to-CG; the rudder
-        # sits aft of the CG hence the negative sign.
-        self.__x_r = -BOAT_PROPERTIES.rudder_dist
-        self.__z_r = RUDDER_CE_DEPTH_REL_TO_CG
+        self.__x_r, self.__z_r = RUDDER_CE_REL_TO_CG
         self.__x_k, self.__z_k = KEEL_CE_REL_TO_CG
         self.__x_h, self.__y_h, self.__z_h = HULL_CE_REL_TO_CG
         self.__hull_r1 = BOAT_PROPERTIES.hull_drag_factor
