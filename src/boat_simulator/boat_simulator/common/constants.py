@@ -152,8 +152,8 @@ SAIL_CE_REL_TO_CG = (0.25, -1.86)  # (x_s, z_s), units: meters
 # maintain stability
 KEEL_CE_REL_TO_CG = (0.08, -0.4)  # (x_k, z_k), units: meters
 
-# TODO Placeholder: measure the hull's center of effort relative to the CG.
-HULL_CE_REL_TO_CG = (0.0, 0.0, 0.0)  # (x_h, y_h, z_h), units: meters
+# The hull's center of Effort/Gravity relative to the boat's CG.
+HULL_CE_REL_TO_CG = (0.06, 0.0, 0.40)  # (x_h, y_h, z_h), units: meters
 
 # TODO Placeholder: measure the hull's linear drag coefficient.
 HULL_LINEAR_DRAG = 0.0  # Units: newton seconds per meter
