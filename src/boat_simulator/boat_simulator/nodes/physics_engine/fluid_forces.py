@@ -29,6 +29,7 @@ from boat_simulator.common.conventions import (
     Velocity,
 )
 from boat_simulator.common.types import CoeffTable, Vec2, Vec4
+from boat_simulator.common.utils import bound_to_180
 
 _logger = get_logger(__name__)
 
@@ -86,8 +87,7 @@ class MediumForceComputation:
         # Check if the apparent velocity is [0, 0]
         if np.all(velocity == 0):
             # Directly return the normalized orientation as the angle of attack
-            # Normalize orientation to be within [-180, 180)
-            angle_of_attack = ((orientation + 180) % 360) - 180
+            angle_of_attack = bound_to_180(angle=orientation, isDegrees=True)
             _logger.debug(
                 f"calculate_attack_angle: zero velocity, returning orientation={orientation:.2f} "
                 + f"as aoa={angle_of_attack:.2f}",
@@ -98,13 +98,13 @@ class MediumForceComputation:
         angle_of_attack_raw = np.rad2deg(np.arctan2(velocity[1], velocity[0]))
 
         # Adjust orientation to be in the range of [-180, 180)
-        orientation = ((orientation + 180) % 360) - 180
+        orientation = bound_to_180(angle=orientation, isDegrees=True)
 
         # Calculate the raw angle of attack by subtracting the orientation from the velocity angle
         angle_of_attack = angle_of_attack_raw - orientation
 
         # Normalize the angle of attack to [-180, 180) range
-        angle_of_attack = ((angle_of_attack + 180) % 360) - 180
+        angle_of_attack = bound_to_180(angle=angle_of_attack, isDegrees=True)
 
         _logger.debug(
             f"calculate_attack_angle: vel={velocity} orientation={orientation:.2f} "
@@ -429,39 +429,29 @@ class AeroDynamicsForceComputation:
 
     def compute(
         self,
-        boat_velocity: Vec4[Velocity, Body],
         roll_rad: float,
-        true_wind_speed: float,
-        true_wind_bearing_rad: float,
-        heading_rad: float,
-        delta_tab_rad: float,
-        alpha_guess_rad: float = 0.0,
+        aw_vel_mps: float,
+        aw_angle_rad: float,
+        wing_angle_of_attack_rad: float,
     ) -> Vec4[Force, Body]:
         """Computes the wingsail's force.
 
         Args:
-            boat_velocity (Vec4[Velocity, Body]): The boat's current generalized velocity.
-            roll_rad (float): The boat's current roll angle in radians.
-            true_wind_speed (float): The true wind speed in meters per second.
-            true_wind_bearing_rad (float): The NED bearing of the wind's velocity vector
-                (flow-toward convention), in radians.
-            heading_rad (float): The boat's current heading, in radians.
-            delta_tab_rad (float): The trim tab deflection, in radians.
-            alpha_guess_rad (float): The previous timestep's solved wing angle,
-                in radians.
+            roll_rad (float): phi, the boat's current roll angle, in radians.
+            aw_vel_mps (float): V_aw, the apparent wind speed at the sail, in meters per second.
+            aw_angle_rad (float): theta, the apparent wind angle off the bow, in radians.
+            wing_angle_of_attack_rad (float): alpha, the wing's equilibrium angle of attack, in
+                radians.
 
         Returns:
             Vec4[Force, Body]: Surge force, sway force, roll moment, and yaw moment
             in newtons for the first two and newton meters for the last two.
         """
-        v_aw, theta = self.apparent_wind(
-            boat_velocity, true_wind_speed, true_wind_bearing_rad, heading_rad
-        )
-        alpha_rad = self.solve_wing_angle(v_aw, delta_tab_rad, alpha_guess_rad)
 
         _logger.debug("Computing wingsail force")
         lift_n, drag_n, attack_deg = self.__wing.compute(
-            Vec2.from_xy(v_aw * math.cos(theta), v_aw * math.sin(theta)), math.degrees(alpha_rad)
+            Vec2.from_xy(aw_vel_mps * math.cos(aw_angle_rad), aw_vel_mps * math.sin(aw_angle_rad)),
+            math.degrees(wing_angle_of_attack_rad),
         )
 
         # Force and Moment calculations. The transverse aero force g_s is horizontal (the
@@ -470,8 +460,8 @@ class AeroDynamicsForceComputation:
         # negative (CE above the CG in the z-down body frame), which heels the boat away
         # from the wind and self-limits: the heeling moment vanishes at 90° of heel while
         # the hydrostatic restoring moment peaks.
-        x_s = lift_n * math.sin(theta) - drag_n * math.cos(theta)
-        g_s = lift_n * math.cos(theta) + drag_n * math.sin(theta)
+        x_s = lift_n * math.sin(aw_angle_rad) - drag_n * math.cos(aw_angle_rad)
+        g_s = lift_n * math.cos(aw_angle_rad) + drag_n * math.sin(aw_angle_rad)
         y_s = g_s * math.cos(roll_rad)
         k_s = -g_s * self.__z_s * math.cos(roll_rad)
         n_s = g_s * self.__x_s * math.cos(roll_rad)
