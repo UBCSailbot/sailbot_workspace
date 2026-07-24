@@ -10,18 +10,18 @@ from rclpy.logging import get_logger
 from boat_simulator.common.constants import (
     AIR_DENSITY,
     BOAT_PROPERTIES,
-    CE_HEIGHT_REL_TO_CG,
     DISPLACED_VOLUME,
     EARTH_GRAVITY,
     HULL_CE_REL_TO_CG,
     HULL_LINEAR_DRAG,
     KEEL_CE_REL_TO_CG,
     MAST_PIVOT_CHORD_FRACTION,
-    METACENTRIC_HEIGHT,
-    RUDDER_CE_DEPTH_REL_TO_CG,
+    RUDDER_CE_REL_TO_CG,
+    SAIL_CE_REL_TO_CG,
     WATER_DENSITY,
     WING_SAIL_CHORD,
     WINGSAIL_TO_TRIM_TAB_BOOM_LENGTH,
+    CoB_REL_COORD,
 )
 from boat_simulator.common.conventions import (
     Body,
@@ -29,6 +29,7 @@ from boat_simulator.common.conventions import (
     Velocity,
 )
 from boat_simulator.common.types import CoeffTable, Vec2, Vec4
+from boat_simulator.common.utils import bound_to_180
 
 _logger = get_logger(__name__)
 
@@ -86,8 +87,7 @@ class MediumForceComputation:
         # Check if the apparent velocity is [0, 0]
         if np.all(velocity == 0):
             # Directly return the normalized orientation as the angle of attack
-            # Normalize orientation to be within [-180, 180)
-            angle_of_attack = ((orientation + 180) % 360) - 180
+            angle_of_attack = bound_to_180(angle=orientation, isDegrees=True)
             _logger.debug(
                 f"calculate_attack_angle: zero velocity, returning orientation={orientation:.2f} "
                 + f"as aoa={angle_of_attack:.2f}",
@@ -98,13 +98,13 @@ class MediumForceComputation:
         angle_of_attack_raw = np.rad2deg(np.arctan2(velocity[1], velocity[0]))
 
         # Adjust orientation to be in the range of [-180, 180)
-        orientation = ((orientation + 180) % 360) - 180
+        orientation = bound_to_180(angle=orientation, isDegrees=True)
 
         # Calculate the raw angle of attack by subtracting the orientation from the velocity angle
         angle_of_attack = angle_of_attack_raw - orientation
 
         # Normalize the angle of attack to [-180, 180) range
-        angle_of_attack = ((angle_of_attack + 180) % 360) - 180
+        angle_of_attack = bound_to_180(angle=angle_of_attack, isDegrees=True)
 
         _logger.debug(
             f"calculate_attack_angle: vel={velocity} orientation={orientation:.2f} "
@@ -140,7 +140,7 @@ class MediumForceComputation:
         # would otherwise produce NaN/Inf forces that propagate irreversibly through the
         # kinematics and blow up the simulation.
         if velocity_magnitude == 0:
-            _logger.info("compute: zero apparent velocity, returning zero lift/drag force")
+            _logger.debug("compute: zero apparent velocity, returning zero lift/drag force")
             return 0.0, 0.0, attack_angle_deg
 
         # Calculate the lift and drag forces
@@ -229,7 +229,6 @@ class HydroStaticsForceComputation:
         self.__seawater_density = WATER_DENSITY
         self.__gravity = EARTH_GRAVITY
         self.__displaced_volume = DISPLACED_VOLUME
-        self.__metacentric_height = METACENTRIC_HEIGHT
 
     def compute(self, roll_angle_rad: float) -> Vec4[Force, Body]:
         """Computes the hydrostatic restoring force at the given roll angle
@@ -240,17 +239,61 @@ class HydroStaticsForceComputation:
         Returns:
             Vec4[Force, Body]: The restoring force
         """
+        gm = self.calculate_metacentric_to_cog(roll_angle_rad)
         k_restore = (
             -self.__seawater_density
             * self.__gravity
             * self.__displaced_volume
-            * self.__metacentric_height
+            * gm
             * math.sin(roll_angle_rad)
         )
-        _logger.info(
+        _logger.debug(
             f"HydroStatics.compute: roll={roll_angle_rad:.4f} rad K_restore={k_restore:.2f} N·m"
         )
+        if not (-15.0 < roll_angle_rad < 15.0):
+            _logger.warning(
+                "HydroStatics.compute: roll angle is outside the small angle approximation"
+            )
         return Vec4.from_xypr(0.0, 0.0, k_restore, 0.0)
+
+    def calculate_metacentric_to_cog(self, roll_angle_rad: float) -> float:
+        """Computes GM, the distance from the CoG to the metacenter, by rotating the
+        (body-fixed) CoG and CoB with the hull and finding where the buoyancy line
+        crosses the hull's centerline.
+
+        1. Perpendicular to the equilibrium line (y = 0) is x = 0: at zero heel the
+           buoyant force, which always acts vertically, runs straight up the hull's
+           centerline through the CoG.
+        2. Rotate the CoG (the body-frame origin) and the CoB (CoB_REL_COORD below the
+           CoG at equilibrium) by the roll angle, since both are fixed points on the
+           rigid hull.
+        3. The buoyant force's line of action is the vertical line through the rotated
+           CoB (x = x_CoB_rotated). The CoG and CoB lie on the same body-frame line
+           (the centerline), so the rotated CoG-CoB line already passes through that
+           vertical line at the rotated CoB itself: that is the metacenter M.
+        4. GM is the distance from the rotated CoG to M.
+
+        Args:
+            roll_angle_rad (float): The boat's current roll angle, in radians.
+
+        Returns:
+            float: GM, in meters.
+        """
+        rotation = np.array(
+            [
+                [math.cos(roll_angle_rad), -math.sin(roll_angle_rad)],
+                [math.sin(roll_angle_rad), math.cos(roll_angle_rad)],
+            ]
+        )
+
+        cog_body = np.array([0.0, 0.0])
+        cob_body = np.array([0.0, -CoB_REL_COORD])
+
+        cog_rotated = rotation @ cog_body
+        metacenter = rotation @ cob_body
+
+        gm = float(np.linalg.norm(metacenter - cog_rotated))
+        return gm
 
 
 class AeroDynamicsForceComputation:
@@ -288,8 +331,7 @@ class AeroDynamicsForceComputation:
         self.__chord_m = WING_SAIL_CHORD
         self.__mast_pivot_chord_m = MAST_PIVOT_CHORD_FRACTION * self.__chord_m
         self.__boom_length_m = WINGSAIL_TO_TRIM_TAB_BOOM_LENGTH
-        self.__x_s = BOAT_PROPERTIES.sail_dist
-        self.__z_s = CE_HEIGHT_REL_TO_CG
+        self.__x_s, self.__z_s = SAIL_CE_REL_TO_CG
         self.__air_density = AIR_DENSITY
 
     def apparent_wind(
@@ -387,39 +429,29 @@ class AeroDynamicsForceComputation:
 
     def compute(
         self,
-        boat_velocity: Vec4[Velocity, Body],
         roll_rad: float,
-        true_wind_speed: float,
-        true_wind_bearing_rad: float,
-        heading_rad: float,
-        delta_tab_rad: float,
-        alpha_guess_rad: float = 0.0,
+        aw_vel_mps: float,
+        aw_angle_rad: float,
+        wing_angle_of_attack_rad: float,
     ) -> Vec4[Force, Body]:
         """Computes the wingsail's force.
 
         Args:
-            boat_velocity (Vec4[Velocity, Body]): The boat's current generalized velocity.
-            roll_rad (float): The boat's current roll angle in radians.
-            true_wind_speed (float): The true wind speed in meters per second.
-            true_wind_bearing_rad (float): The NED bearing of the wind's velocity vector
-                (flow-toward convention), in radians.
-            heading_rad (float): The boat's current heading, in radians.
-            delta_tab_rad (float): The trim tab deflection, in radians.
-            alpha_guess_rad (float): The previous timestep's solved wing angle,
-                in radians.
+            roll_rad (float): phi, the boat's current roll angle, in radians.
+            aw_vel_mps (float): V_aw, the apparent wind speed at the sail, in meters per second.
+            aw_angle_rad (float): theta, the apparent wind angle off the bow, in radians.
+            wing_angle_of_attack_rad (float): alpha, the wing's equilibrium angle of attack, in
+                radians.
 
         Returns:
             Vec4[Force, Body]: Surge force, sway force, roll moment, and yaw moment
             in newtons for the first two and newton meters for the last two.
         """
-        v_aw, theta = self.apparent_wind(
-            boat_velocity, true_wind_speed, true_wind_bearing_rad, heading_rad
-        )
-        alpha_rad = self.solve_wing_angle(v_aw, delta_tab_rad, alpha_guess_rad)
 
-        _logger.info("Computing wingsail force")
+        _logger.debug("Computing wingsail force")
         lift_n, drag_n, attack_deg = self.__wing.compute(
-            Vec2.from_xy(v_aw * math.cos(theta), v_aw * math.sin(theta)), math.degrees(alpha_rad)
+            Vec2.from_xy(aw_vel_mps * math.cos(aw_angle_rad), aw_vel_mps * math.sin(aw_angle_rad)),
+            math.degrees(wing_angle_of_attack_rad),
         )
 
         # Force and Moment calculations. The transverse aero force g_s is horizontal (the
@@ -428,8 +460,8 @@ class AeroDynamicsForceComputation:
         # negative (CE above the CG in the z-down body frame), which heels the boat away
         # from the wind and self-limits: the heeling moment vanishes at 90° of heel while
         # the hydrostatic restoring moment peaks.
-        x_s = lift_n * math.sin(theta) - drag_n * math.cos(theta)
-        g_s = lift_n * math.cos(theta) + drag_n * math.sin(theta)
+        x_s = lift_n * math.sin(aw_angle_rad) - drag_n * math.cos(aw_angle_rad)
+        g_s = lift_n * math.cos(aw_angle_rad) + drag_n * math.sin(aw_angle_rad)
         y_s = g_s * math.cos(roll_rad)
         k_s = -g_s * self.__z_s * math.cos(roll_rad)
         n_s = g_s * self.__x_s * math.cos(roll_rad)
@@ -469,10 +501,7 @@ class HydroDynamicsForceComputation:
             BOAT_PROPERTIES.keel_areas,
             WATER_DENSITY,
         )
-        # TODO rudder_dist is the rudder CE-to-pivot distance, not CE-to-CG; the rudder
-        # sits aft of the CG hence the negative sign.
-        self.__x_r = -BOAT_PROPERTIES.rudder_dist
-        self.__z_r = RUDDER_CE_DEPTH_REL_TO_CG
+        self.__x_r, self.__z_r = RUDDER_CE_REL_TO_CG
         self.__x_k, self.__z_k = KEEL_CE_REL_TO_CG
         self.__x_h, self.__y_h, self.__z_h = HULL_CE_REL_TO_CG
         self.__hull_r1 = BOAT_PROPERTIES.hull_drag_factor
@@ -552,7 +581,7 @@ class HydroDynamicsForceComputation:
             Vec4[Force, Body]: hull forces and moments.
         """
         u, v, p, r = v_r.x, v_r.y, v_r.p, v_r.r
-        u_h = -u + r * self.__y_h
+
         cos_roll = math.cos(roll_rad)
         if abs(cos_roll) < MIN_HULL_COS_ROLL:
             _logger.fatal(
@@ -562,23 +591,23 @@ class HydroDynamicsForceComputation:
                 throttle_duration_sec=0.5,
             )
             cos_roll = math.copysign(MIN_HULL_COS_ROLL, cos_roll)
+
+        u_h = -u + r * self.__y_h
         v_h = (-v - r * self.__x_h + p * self.__z_h) / cos_roll
+
         water_speed_rel_to_hull = math.sqrt(u_h**2 + v_h**2)
-        alpha_h = math.atan2(v_h, u_h)
-        # Both drag terms scale with speed (r2 is a linear damping coefficient, N·s/m), so
-        # the hull force vanishes at rest. (u_h, v_h) is the water's velocity relative to
-        # the hull, so drag acts along +alpha_h — pointing WITH the relative flow is what
-        # makes this dissipative (F·v < 0); flipping it turns the hull into a thruster.
-        h_d = (
-            self.__hull_r1 * water_speed_rel_to_hull**2 + self.__hull_r2 * water_speed_rel_to_hull
-        )
-        _logger.info(f"water_speed_rel_to_hull={water_speed_rel_to_hull} h_d={h_d} u={v_r.x}")
+
+        alpha_h = math.atan2(v_h, -u_h)
+
+        h_d = self.__hull_r1 * water_speed_rel_to_hull**2 + self.__hull_r2
+
+        _logger.debug(f"water_speed_rel_to_hull={water_speed_rel_to_hull} h_d={h_d} u={v_r.x}")
 
         # Force and Moment calculations
         x = h_d * math.cos(alpha_h)
-        y = h_d * math.sin(alpha_h) * math.cos(roll_rad)
-        k = -y * self.__z_h
-        n = y * self.__x_h
+        y = -h_d * math.sin(alpha_h) * math.cos(roll_rad)
+        k = y * self.__z_h
+        n = -y * self.__x_h
         return Vec4.from_xypr(x, y, k, n)
 
     def rudder_force(
@@ -602,7 +631,7 @@ class HydroDynamicsForceComputation:
         beta_r = math.atan2(v_r_new, u_r)
         alpha_r = beta_r + delta_r_rad
 
-        _logger.info("Computing rudder force")
+        _logger.debug("Computing rudder force")
         lift_n, drag_n, _ = self.__rudder.compute(
             Vec2.from_xy(
                 water_speed_rel_to_rudder * math.cos(alpha_r),
@@ -643,7 +672,7 @@ class HydroDynamicsForceComputation:
         water_speed_rel_to_keel = math.hypot(u_k, v_k)
         alpha_k = math.atan2(v_k, u_k)
 
-        _logger.info("Computing keel force")
+        _logger.debug("Computing keel force")
         lift_n, drag_n, _ = self.__keel.compute(
             Vec2.from_xy(
                 water_speed_rel_to_keel * math.cos(alpha_k),
@@ -695,7 +724,7 @@ class HydroDynamicsForceComputation:
 
         total = tau_h.data + tau_r.data + tau_k.data - coriolis_term - damping_term
 
-        _logger.info(
+        _logger.debug(
             f"tau_h={tau_h} tau_r={tau_r} tau_k={tau_k} "
             f"coriolis_term={coriolis_term} damping_term={damping_term}"
         )

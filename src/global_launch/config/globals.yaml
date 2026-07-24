@@ -62,6 +62,12 @@ physics_engine_node:
       info_log_throttle_period_sec: 2.0
       action_send_goal_timeout_sec: 2.0
       qos_depth: 1
+      # Integration timestep for the equations of motion (seconds). Kept well below
+      # pub_period_sec: explicit Euler integration of the quadratic drag terms is only
+      # conditionally stable, and pub_period_sec (1.0s) is far outside that stability
+      # region. physics_engine_node runs pub_period_sec / physics_timestep_sec substeps
+      # per publish tick so the published rate is unaffected.
+      physics_timestep_sec: 0.05
       rudder:
          actuation_request_period_sec: 10.0
       wingsail:

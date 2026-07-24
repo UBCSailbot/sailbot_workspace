@@ -42,6 +42,7 @@ from custom_interfaces.action import SimRudderActuation, SimSailTrimTabActuation
 from custom_interfaces.msg import (
     GPS,
     DesiredHeading,
+    HelperHeading,
     HelperLatLon,
     SailCmd,
     SimWorldState,
@@ -49,20 +50,6 @@ from custom_interfaces.msg import (
 )
 
 from .decorators import require_all_subs_active
-
-# --------------------------------------
-# CONVERSION HELPERS
-# --------------------------------------
-
-
-def sim_velocity_to_gps_speed_kmph(global_velocity_mps: np.ndarray) -> float:
-    """Convert simulator global velocity in m/s into GPS speed in km/h."""
-    return float(np.linalg.norm(global_velocity_mps[:2]) * 3.6)
-
-
-def sim_yaw_to_gps_heading_deg(yaw_rad: float) -> float:
-    """Convert simulator yaw, where 0 rad points east, into true bearing degrees."""
-    return float(Utils.bound_to_180(90.0 - Utils.rad_to_degrees(yaw_rad)))
 
 
 def main(args=None):
@@ -139,6 +126,7 @@ class PhysicsEngineNode(Node):
             namespace="",
             parameters=[
                 ("pub_period_sec", rclpy.Parameter.Type.DOUBLE),
+                ("physics_timestep_sec", rclpy.Parameter.Type.DOUBLE),
                 ("logging_throttle_period_sec", rclpy.Parameter.Type.DOUBLE),
                 ("info_log_throttle_period_sec", rclpy.Parameter.Type.DOUBLE),
                 ("action_send_goal_timeout_sec", rclpy.Parameter.Type.DOUBLE),
@@ -178,8 +166,12 @@ class PhysicsEngineNode(Node):
         self.test_plan = self.get_parameter("test_plan").get_parameter_value().string_value
         test_plan = TestPlan(self.test_plan)
         gps = test_plan.gps
+        substeps = max(1, round(self.pub_period / self.physics_timestep))
+
         self.__reference_latlon: HelperLatLon = gps.lat_lon
-        self.__boat_state = BoatState(self.pub_period, self.__reference_latlon)
+        self.__boat_state = BoatState(
+            self.pub_period / substeps, self.__reference_latlon, substeps
+        )
         self.__sim_gps: Optional[SimGPS] = None
 
         # MVGaussianGenerator expects raw numpy arrays: a 1D mean vector and a 2D covariance
@@ -219,9 +211,7 @@ class PhysicsEngineNode(Node):
 
         sim_wind_mps: Vec2[Velocity, NED] = self.__wind_generator.next()
         self.__sim_wind_sensor = SimWindSensor(sim_wind_mps, enable_noise=True)
-        self.__latest_wind_sensor_reading_mps: Vec2[Velocity, NED] = (
-            self.__sim_wind_sensor.wind
-        )
+        self.__latest_wind_sensor_reading_mps: Vec2[Velocity, NED] = self.__sim_wind_sensor.wind
 
     def __init_callback_groups(self):
         """Initializes the callback groups. Whether multithreading is enabled or not will affect
@@ -286,6 +276,11 @@ class PhysicsEngineNode(Node):
             msg_type=GPS,
             topic=Constants.PHYSICS_ENGINE_PUBLISHERS.GPS,
             qos_profile=self.get_parameter("qos_depth").get_parameter_value().integer_value,
+        )
+        self.__rudder_pub = self.create_publisher(
+            msg_type=HelperHeading,
+            topic="rudder",
+            qos_profile=10,
         )
         self.__wind_sensors_pub = self.create_publisher(
             msg_type=WindSensor,
@@ -356,9 +351,9 @@ class PhysicsEngineNode(Node):
         self.__update_boat_state()
         self.__latest_wind_sensor_reading_mps = self.__sim_wind_sensor.wind
 
-        self.__publish_gps()
+        gps_msg = self.__publish_gps()
         self.__publish_wind_sensors()
-        self.__publish_kinematics()
+        self.__publish_kinematics(gps_msg)
         self.__publish_counter += 1
 
     def __update_boat_state(self):
@@ -381,8 +376,13 @@ class PhysicsEngineNode(Node):
             self.__sail_trim_tab_angle,
         )
 
-    def __publish_gps(self):
-        """Publishes mock GPS data."""
+    def __publish_gps(self) -> GPS:
+        """Publishes mock GPS data.
+
+        Returns:
+            GPS: The published message, so `__publish_kinematics` can embed the same noisy
+                reading instead of drawing a second, independent sample from `__sim_gps`.
+        """
         lat_lon = self.__boat_state.global_lat_lon_position
 
         self.get_logger().info(f"Boat global position (lat_lon) to be published: {lat_lon}")
@@ -398,15 +398,20 @@ class PhysicsEngineNode(Node):
                 lat_lon=lat_lon, speed=speed_mps, heading=heading, enable_noise=True
             )
 
-        msg = self.__convert_sim_data_to_gps_msg()
+        gps_msg = self.__convert_sim_data_to_gps_msg()
+        rudder_msg = HelperHeading(heading=heading.degrees)
 
-        self.gps_pub.publish(msg)
+        self.gps_pub.publish(gps_msg)
+
+        self.rudder_pub.publish(rudder_msg)
+
         self.get_logger().debug(
             f"Publishing to {self.gps_pub.topic}",
             throttle_duration_sec=self.get_parameter("info_log_throttle_period_sec")
             .get_parameter_value()
             .double_value,
         )
+        return gps_msg
 
     def __convert_sim_data_to_gps_msg(self) -> GPS:
         """Builds a GPS message from the current sensor readings (noisy if noise is enabled).
@@ -469,22 +474,15 @@ class PhysicsEngineNode(Node):
             .double_value,
         )
 
-    def __publish_kinematics(self):
-        """Publishes the kinematics data of the simulated boat."""
-        lat_lon = self.__boat_state.global_lat_lon_position
-        speed_mps = self.__boat_state.linear_speed
-        heading = self.__boat_state.true_bearing
+    def __publish_kinematics(self, gps_msg: GPS):
+        """Publishes the kinematics data of the simulated boat.
 
-        if self.__sim_gps:
-            self.__sim_gps.lat_lon = lat_lon
-            self.__sim_gps.speed = speed_mps
-            self.__sim_gps.heading = heading
-        else:
-            self.__sim_gps = SimGPS(
-                lat_lon=lat_lon, speed=speed_mps, heading=heading, enable_noise=True
-            )
-
-        msg = self.__convert_sim_data_to_kinematics_msg()
+        Args:
+            gps_msg (GPS): The message already published by `__publish_gps` this tick, reused
+                here as `SimWorldState.global_gps` so both topics report the same noisy GPS
+                reading instead of two independently-sampled ones.
+        """
+        msg = self.__convert_sim_data_to_kinematics_msg(gps_msg)
 
         self.kinematics_pub.publish(msg)
 
@@ -495,19 +493,23 @@ class PhysicsEngineNode(Node):
             .double_value,
         )
 
-    def __convert_sim_data_to_kinematics_msg(self) -> SimWorldState:
+    def __convert_sim_data_to_kinematics_msg(self, gps_msg: GPS) -> SimWorldState:
         """Builds a SimWorldState message from the current sim state.
 
         Unit/frame conversions to the message conventions happen here, at the I/O boundary:
         position from m to km, linear velocities from m/s to km/h, and the boat orientation
-        from Euler angles to a quaternion. The GPS portion is delegated to ``SimGPS``.
+        from Euler angles to a quaternion.
+
+        Args:
+            gps_msg (GPS): The GPS reading to embed as `global_gps`, reused from
+                `__publish_gps` rather than resampled here.
         """
 
         mps_to_kmph = ConversionFactors.mPs_to_kmPh.value.forward_convert
         m_to_km = ConversionFactors.m_to_km.value.forward_convert
 
         msg = SimWorldState()
-        msg.global_gps = self.__convert_sim_data_to_gps_msg()
+        msg.global_gps = gps_msg
 
         pos_m = self.__boat_state.pose
         msg.global_pose.position.x = float(m_to_km(pos_m.x))
@@ -756,6 +758,10 @@ class PhysicsEngineNode(Node):
         return self.get_parameter("pub_period_sec").get_parameter_value().double_value
 
     @property
+    def physics_timestep(self) -> float:
+        return self.get_parameter("physics_timestep_sec").get_parameter_value().double_value
+
+    @property
     def publish_counter(self) -> int:
         return self.__publish_counter
 
@@ -770,6 +776,10 @@ class PhysicsEngineNode(Node):
     @property
     def kinematics_pub(self) -> Publisher:
         return self.__kinematics_pub
+
+    @property
+    def rudder_pub(self) -> Publisher:
+        return self.__rudder_pub
 
     @property
     def desired_heading(self) -> Optional[DesiredHeading]:

@@ -76,27 +76,37 @@ class TotalForceComputation:
         Returns:
             Vec4[Force, Body]: τ_RB = [X, Y, K, N], the total generalized force.
         """
+
         roll_rad, heading_rad = boat_kinematics.pose.p, boat_kinematics.pose.r
 
-        v_r = self.__hydrodynamics.relative_velocity(
+        # Calculate the relative velocities and angles
+        rel_vel_water_mps = self.__hydrodynamics.relative_velocity(
             boat_kinematics.nu, ocean_current_speed_mps, ocean_current_bearing_rad, heading_rad
         )
-        hydro_force = self.__hydrodynamics.compute(v_r, roll_rad, delta_r_rad)
-        static_force = self.__hydrostatics.compute(roll_rad)
-        aero_force = self.__aerodynamics.compute(
-            boat_kinematics.nu,
-            roll_rad,
-            true_wind_speed_mps,
-            true_wind_bearing_rad,
-            heading_rad,
-            delta_tab_rad,
-            alpha_guess_rad,
+        aw_vel_mps, aw_angle_rad = self.__aerodynamics.apparent_wind(
+            boat_kinematics.nu, true_wind_speed_mps, true_wind_bearing_rad, heading_rad
+        )
+        wing_angle_of_attack_rad = self.__aerodynamics.solve_wing_angle(
+            aw_vel_mps, delta_tab_rad, alpha_guess_rad
         )
 
+        # Compute the class of forces
+        hydro_force = self.__hydrodynamics.compute(rel_vel_water_mps, roll_rad, delta_r_rad)
+        static_force = self.__hydrostatics.compute(roll_rad)
+        aero_force = self.__aerodynamics.compute(
+            roll_rad,
+            aw_vel_mps,
+            aw_angle_rad,
+            wing_angle_of_attack_rad,
+        )
+
+        # Sum the forces
         total_force = hydro_force + static_force + aero_force
-        _logger.info(
+
+        _logger.debug(
             f"TotalForceComputation.compute_total_force: hydro_force={hydro_force.data} "
             f"static_force={static_force.data} aero_force={aero_force.data} "
             f"total_force={total_force.data}"
         )
+
         return total_force
