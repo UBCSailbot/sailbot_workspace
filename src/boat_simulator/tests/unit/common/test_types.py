@@ -23,14 +23,16 @@ class TestCoeffGrid:
         assert math.isclose(grid.interpolate(5.0, 100.0), 5.0)  # slope 1 polar
         assert math.isclose(grid.interpolate(5.0, 1000.0), 10.0)  # slope 2 polar
 
-    def test_interpolates_linearly_in_log_reynolds(self):
-        # Values 0.0 and 2.0 at Re 100 and 10000; the geometric-mean Re (1000) is the log-midpoint.
+    def test_selects_nearest_reynolds_polar(self):
+        # Slope-1 polar at Re=100, slope-2 polar at Re=1000; value at 5 deg is 5.0 vs 10.0.
         grid = CoeffGrid(
-            np.array([100.0, 10000.0], dtype=np.float64),
-            (_linear_table(0.0), _linear_table(2.0)),
+            np.array([100.0, 1000.0], dtype=np.float64),
+            (_linear_table(1.0), _linear_table(2.0)),
         )
-        midpoint = grid.interpolate(10.0, 1000.0)
-        assert math.isclose(midpoint, 10.0)  # halfway between 0 and 20
+        assert math.isclose(grid.interpolate(5.0, 400.0), 5.0)  # closer to Re=100
+        assert math.isclose(grid.interpolate(5.0, 700.0), 10.0)  # closer to Re=1000
+        # Equidistant (Re=550): np.argmin picks the first (lower-Re) polar.
+        assert math.isclose(grid.interpolate(5.0, 550.0), 5.0)
 
     def test_clamps_outside_reynolds_range(self):
         grid = CoeffGrid(
