@@ -196,12 +196,7 @@ class MediumForceComputation:
 
         reynolds = flow_speed * self.__chord / self.__kinematic_viscosity
 
-        # The foils are symmetric, so the lookup grids only store the positive AoA branch:
-        # C_l is odd (C_l(-a) = -C_l(a)) and C_d is even (C_d(-a) = C_d(a)). We interpolate on
-        # |AoA| and re-apply the sign to lift. Beyond the grid's max angle the foil is fully
-        # stalled and outside the modeled regime, so we return zero (np.interp would otherwise
-        # silently clamp to the endpoint, producing peak lift at all out-of-range angles →
-        # runaway thrust). Grids are assumed to start at 0°.
+        # The foils are symmetric, so the lookup grids only store the positive AoA branch
         abs_attack_angle = abs(attack_angle)
         lift_sign = float(np.sign(attack_angle))
 

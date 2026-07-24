@@ -539,19 +539,18 @@ class CoeffGrid:
         """Largest per-table minimum angle (degrees)."""
         return max(table.min_angle for table in self.tables)
 
-    def interpolate(self, angle: float, reynolds: float) -> float:
-        """Interpolate the coefficient at angle (degrees) and reynolds.
+    def interpolate(self, angle: float, reynolds_input: float) -> float:
+        """Interpolate the coefficient at ``angle`` (degrees) for the given Reynolds number.
 
-        Linear in angle of attack within each per-Re table, then linear in log(Re) between
-        tables.  A single-Re grid is Reynolds-independent (the lone table's value is returned).
-        Non-positive Reynolds numbers are treated as the lowest tabulated value.
+        The angle of attack is interpolated within the polar whose tabulated Reynolds number is
+        closest to the closest reynolds array index.
         """
-        values = np.array([table.interpolate(angle) for table in self.tables], dtype=float)
-        if self.reynolds.shape[0] == 1:
-            return float(values[0])
-        if reynolds <= 0:
-            reynolds = float(self.reynolds[0])
-        return float(np.interp(np.log(reynolds), np.log(self.reynolds), values))
+        if reynolds_input <= 0:
+            index = 0
+        else:
+            index = int(np.argmin(np.abs(self.reynolds - reynolds_input)))
+        
+        return float(self.tables[index].interpolate(angle))
 
     def __len__(self) -> int:
         return int(self.reynolds.shape[0])
