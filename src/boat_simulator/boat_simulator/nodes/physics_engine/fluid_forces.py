@@ -9,16 +9,21 @@ from rclpy.logging import get_logger
 
 from boat_simulator.common.constants import (
     AIR_DENSITY,
+    AIR_KINEMATIC_VISCOSITY,
     BOAT_PROPERTIES,
     DISPLACED_VOLUME,
     EARTH_GRAVITY,
     HULL_CE_REL_TO_CG,
     HULL_LINEAR_DRAG,
     KEEL_CE_REL_TO_CG,
+    KEEL_CHORD,
     MAST_PIVOT_CHORD_FRACTION,
     RUDDER_CE_REL_TO_CG,
+    RUDDER_CHORD,
     SAIL_CE_REL_TO_CG,
+    TAB_CHORD,
     WATER_DENSITY,
+    WATER_KINEMATIC_VISCOSITY,
     WING_SAIL_CHORD,
     WINGSAIL_TO_TRIM_TAB_BOOM_LENGTH,
     CoB_REL_COORD,
@@ -28,8 +33,7 @@ from boat_simulator.common.conventions import (
     Force,
     Velocity,
 )
-from boat_simulator.common.types import CoeffTable, Vec2, Vec4
-from boat_simulator.common.utils import bound_to_180
+from boat_simulator.common.types import CoeffGrid, Vec2, Vec4
 
 _logger = get_logger(__name__)
 
@@ -43,29 +47,39 @@ class MediumForceComputation:
     """This class calculates the lift and drag forces experienced by a medium when subjected to
     fluid flow.
 
+    The lift/drag coefficients depend on both the angle of attack and the Reynolds number
+    ``Re = flow_speed * chord / kinematic_viscosity``, which is computed from the flow speed at
+    lookup time so a foil's polar shifts realistically with speed.
+
     Attributes:
-        `lift_coefficients` (CoeffTable): An array of shape (n, 2) where each row contains a pair
-            (x, y) representing an angle of attack, in degrees, and its corresponding lift
-            coefficient.
-        `drag_coefficients` (CoeffTable): An array of shape (n, 2) where each row contains a pair
-            (x, y) representing an angle of attack, in degrees, and its corresponding drag
-            coefficient.
+        `lift_coefficients` (CoeffGrid): Lift coefficient as a function of angle of attack
+            (degrees) and Reynolds number.
+        `drag_coefficients` (CoeffGrid): Drag coefficient as a function of angle of attack
+            (degrees) and Reynolds number.
         `areas` (float): A 2D area of the aero/hydrofoil.
         `fluid_density` (float): The density of the fluid acting on the medium, in
             kilograms per cubic meter.
+        `chord` (float): The foil's mean chord length, in meters, used to compute the Reynolds
+            number.
+        `kinematic_viscosity` (float): The kinematic viscosity of the fluid, in square meters per
+            second, used to compute the Reynolds number.
     """
 
     def __init__(
         self,
-        lift_coefficients: CoeffTable,
-        drag_coefficients: CoeffTable,
+        lift_coefficients: CoeffGrid,
+        drag_coefficients: CoeffGrid,
         areas: float,
         fluid_density: float,
+        chord: float,
+        kinematic_viscosity: float,
     ):
         self.__lift_coefficients = lift_coefficients
         self.__drag_coefficients = drag_coefficients
         self.__areas = areas
         self.__fluid_density = fluid_density
+        self.__chord = chord
+        self.__kinematic_viscosity = kinematic_viscosity
 
     def calculate_attack_angle(
         self, apparent_velocity: Vec2[Velocity, Body], orientation: float
@@ -131,9 +145,8 @@ class MediumForceComputation:
         """
 
         attack_angle_deg = self.calculate_attack_angle(apparent_velocity, orientation_deg)
-        lift_coefficient, drag_coefficient, area = self.interpolate(attack_angle_deg)
         velocity = apparent_velocity.data
-        velocity_magnitude = np.linalg.norm(velocity)
+        velocity_magnitude = float(np.linalg.norm(velocity))
 
         # With no relative flow there is no lift or drag (force ∝ |v|²).
         # Returning early also avoids the division by velocity_magnitude below, which
@@ -142,6 +155,10 @@ class MediumForceComputation:
         if velocity_magnitude == 0:
             _logger.debug("compute: zero apparent velocity, returning zero lift/drag force")
             return 0.0, 0.0, attack_angle_deg
+
+        lift_coefficient, drag_coefficient, area = self.interpolate(
+            attack_angle_deg, velocity_magnitude
+        )
 
         # Calculate the lift and drag forces
         lift_n = 0.5 * self.__fluid_density * lift_coefficient * area * velocity_magnitude**2
@@ -157,37 +174,42 @@ class MediumForceComputation:
         )
         return lift_n, drag_n, attack_angle_deg
 
-    def interpolate(self, attack_angle: float) -> Tuple[float, float, float]:
-        """Performs linear interpolation to estimate the lift coefficient, drag coefficient, and
-        area upon which the fluid acts, based on the provided angle of attack.
+    def interpolate(self, attack_angle: float, flow_speed: float) -> Tuple[float, float, float]:
+        """Estimate the lift coefficient, drag coefficient, and area acting on the medium.
+
+        The coefficients are interpolated over the angle of attack and the Reynolds number
+        ``Re = flow_speed * chord / kinematic_viscosity``, so a foil's polar shifts with the flow
+        speed.
 
             Args:
                 attack_angle (float): The angle of attack formed between the orientation angle of
                     the medium and the direction of the apparent velocity, in degrees.
+                flow_speed (float): The magnitude of the apparent relative velocity between the
+                    fluid and the medium, in meters per second, used to compute the Reynolds
+                    number.
 
             Returns:
                 Tuple[float, float, float]: A tuple of (lift_coefficient, drag_coefficient,
                     area). Both coefficients are unitless; area is in meters squared.
         """
 
-        # The foils are symmetric, so the lookup tables only store the positive AoA branch:
-        # C_l is odd (C_l(-a) = -C_l(a)) and C_d is even (C_d(-a) = C_d(a)). We interpolate on
-        # |AoA| and re-apply the sign to lift. Beyond the table's max angle the foil is fully
-        # stalled and outside the modeled regime, so we return zero (np.interp would otherwise
-        # silently clamp to the endpoint, producing peak lift at all out-of-range angles →
-        # runaway thrust). Tables are assumed to start at 0°.
+        reynolds = flow_speed * self.__chord / self.__kinematic_viscosity
+
+        # The foils are symmetric, so the lookup grids only store the positive AoA branch
         abs_attack_angle = abs(attack_angle)
         lift_sign = float(np.sign(attack_angle))
 
         if abs_attack_angle > self.__lift_coefficients.max_angle:
             lift_coefficient = 0.0
         else:
-            lift_coefficient = lift_sign * self.__lift_coefficients.interpolate(abs_attack_angle)
+            lift_coefficient = lift_sign * self.__lift_coefficients.interpolate(
+                abs_attack_angle, reynolds
+            )
 
         if abs_attack_angle > self.__drag_coefficients.max_angle:
             drag_coefficient = 0.0
         else:
-            drag_coefficient = self.__drag_coefficients.interpolate(abs_attack_angle)
+            drag_coefficient = self.__drag_coefficients.interpolate(abs_attack_angle, reynolds)
 
         # The foil area is modeled as constant (independent of angle of attack).
         area = self.__areas
@@ -195,11 +217,11 @@ class MediumForceComputation:
         return lift_coefficient, drag_coefficient, area
 
     @property
-    def lift_coefficients(self) -> CoeffTable:
+    def lift_coefficients(self) -> CoeffGrid:
         return self.__lift_coefficients
 
     @property
-    def drag_coefficients(self) -> CoeffTable:
+    def drag_coefficients(self) -> CoeffGrid:
         return self.__drag_coefficients
 
     @property
@@ -209,6 +231,14 @@ class MediumForceComputation:
     @property
     def fluid_density(self) -> float:
         return self.__fluid_density
+
+    @property
+    def chord(self) -> float:
+        return self.__chord
+
+    @property
+    def kinematic_viscosity(self) -> float:
+        return self.__kinematic_viscosity
 
 
 class HydroStaticsForceComputation:
@@ -318,14 +348,16 @@ class AeroDynamicsForceComputation:
             BOAT_PROPERTIES.sail_drag_coeffs,
             BOAT_PROPERTIES.sail_areas,
             AIR_DENSITY,
+            WING_SAIL_CHORD,
+            AIR_KINEMATIC_VISCOSITY,
         )
-        # TODO The trim tab needs its own coefficient tables and area in BOAT_PROPERTIES;
-        # the main wing's values are stand-ins.
         self.__tab = MediumForceComputation(
             BOAT_PROPERTIES.tab_lift_coeffs,
             BOAT_PROPERTIES.tab_drag_coeffs,
             BOAT_PROPERTIES.tab_areas,
             AIR_DENSITY,
+            TAB_CHORD,
+            AIR_KINEMATIC_VISCOSITY,
         )
 
         self.__chord_m = WING_SAIL_CHORD
@@ -388,7 +420,7 @@ class AeroDynamicsForceComputation:
         m_wing = n_perp * (x_cop - self.__mast_pivot_chord_m)
 
         alpha_tab_rad = alpha_rad - delta_tab_rad
-        lift_coefficient, _, tab_area = self.__tab.interpolate(math.degrees(alpha_tab_rad))
+        lift_coefficient, _, tab_area = self.__tab.interpolate(math.degrees(alpha_tab_rad), v_aw)
         l_tab = 0.5 * self.__air_density * v_aw**2 * tab_area * lift_coefficient
         m_tab = l_tab * self.__boom_length_m
         return m_wing + m_tab
@@ -493,6 +525,8 @@ class HydroDynamicsForceComputation:
             BOAT_PROPERTIES.rudder_drag_coeffs,
             BOAT_PROPERTIES.rudder_areas,
             WATER_DENSITY,
+            RUDDER_CHORD,
+            WATER_KINEMATIC_VISCOSITY,
         )
 
         self.__keel = MediumForceComputation(
@@ -500,6 +534,8 @@ class HydroDynamicsForceComputation:
             BOAT_PROPERTIES.keel_drag_coeffs,
             BOAT_PROPERTIES.keel_areas,
             WATER_DENSITY,
+            KEEL_CHORD,
+            WATER_KINEMATIC_VISCOSITY,
         )
         self.__x_r, self.__z_r = RUDDER_CE_REL_TO_CG
         self.__x_k, self.__z_k = KEEL_CE_REL_TO_CG
