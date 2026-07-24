@@ -113,7 +113,9 @@ class BoatState:
             f"yaw_rate={math.degrees(self.nu.r):7.2f} deg/s\n"
             f"  accel     u_dot={self.nu_dot.x:8.3f} m/s^2   v_dot={self.nu_dot.y:8.3f} m/s^2   "
             f"roll_acc={math.degrees(self.nu_dot.p):7.2f} deg/s^2   "
-            f"yaw_acc={math.degrees(self.nu_dot.r):7.2f} deg/s^2"
+            f"yaw_acc={math.degrees(self.nu_dot.r):7.2f} deg/s^2\n"
+            f"  trim_tab_angle={trim_tab_angle.degrees:7.2f} deg   "
+            f"rudder_angle={rudder_angle.degrees:7.2f} deg"
         )
 
     @property
