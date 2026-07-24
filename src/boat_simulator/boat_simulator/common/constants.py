@@ -164,6 +164,11 @@ RUDDER_CE_REL_TO_CG = (-1.35, 0.74)
 
 # The wingsail CE-to-CG in (x, Z) coordinate with units: meters
 SAIL_CE_REL_TO_CG = (0.25, -1.86)  # (x_s, z_s), units: meters
+# Measure the rudder's center of effort depth below the CG.
+RUDDER_CE_REL_TO_CG = (-1.35, 0.74)
+
+# The wingsail CE-to-CG in (x, Z) coordinate with units: meters
+SAIL_CE_REL_TO_CG = (0.25, -1.86)  # (x_s, z_s), units: meters
 
 # The keel's center of effort relative to the CG. The z_k is a magic number to
 # maintain stability
