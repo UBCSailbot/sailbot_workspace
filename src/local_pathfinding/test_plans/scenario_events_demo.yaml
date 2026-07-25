@@ -1,0 +1,42 @@
+# Demo scenario exercising the `events:` block for all four mock nodes.
+# Timestamps are short so the whole run finishes in ~20 seconds.
+
+tw_dir_deg: 0
+tw_speed_kmph: 10.0
+
+gps:
+  latitude: 49.28
+  longitude: -123.18
+  speed_kmph: 15.0
+  heading_deg: 180.0
+
+ais:
+  - {id: 1, lat: 49.30, lon: -123.20, heading: 90.0, speed: 20.0, rot: 30, width: 1.0, height: 1.0}
+  - {id: 2, lat: 49.25, lon: -123.15, heading: 45.0, speed: 15.0, rot: -20, width: 2.0, height: 2.0}
+
+global_path:
+  waypoints:
+    - {latitude: 48.158391, longitude: -130.253906}
+    - {latitude: 48.121368, longitude: -137.022955}
+
+events:
+  mock_wind_sensor:
+    - {timestamp: 3.0, direction_deg: 90, speed_kmph: 25.0}
+    - {timestamp: 12.0, direction_deg: -45, speed_kmph: 15.0}
+
+  mock_ais:
+    - timestamp: 6.0
+      ships:
+        - {id: 1, lat: 49.31, lon: -123.21, heading: 180.0, speed: 10.0, rot: 0, width: 1.0, height: 1.0}
+    - timestamp: 15.0
+      ships: []
+
+  mock_gps:
+    - {timestamp: 9.0, use_ocean_drift: true, ocean_drift_speed_kmph: 2.0, ocean_drift_dir_deg: 45.0}
+    - {timestamp: 18.0, use_ocean_drift: false}
+
+  mock_global_path:
+    - timestamp: 12.0
+      waypoints:
+        - {latitude: 48.50, longitude: -125.00}
+        - {latitude: 49.28, longitude: -123.18}
