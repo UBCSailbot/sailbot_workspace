@@ -203,7 +203,7 @@ class OMPLPath:
 
         try:
             if on_water_ref_dist_km < DISTANCE_FROM_ON_WATER_LANDMARK:
-                # For OWT on July 24
+                # For OWT on July 26
                 # OMPLPath.all_land_data = load_pkl(ON_WATER_LAND_PKL_FILE_PATH)
                 OMPLPath.all_land_data = load_pkl(VALID_EMPTY_LAND_PKL_FILE_PATH)
             else:
