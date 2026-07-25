@@ -79,6 +79,36 @@ class BoatProperties:
     D: Mat4[Damping, Body]
 
 
+@dataclass
+class FluidProperties:
+    # --- Wind Parameters ---
+    # Base (mean) wind speed (m/s)
+    wind_base_speed: float
+    # Base wind direction in NED (radians)
+    wind_base_direction: float
+    # Wind-gust reversion rate (1/s) - tuned to desired gust correlation time
+    wind_gust_reversion_rate: float
+    # Wind-gust noise intensity
+    wind_gust_noise_intensity: float
+    # Wind-direction random-walk intensity - tuned to desired veer rate
+    wind_direction_random_walk_intensity: float
+
+    # --- Current Parameters ---
+    # Current-speed reversion rate (1/s) - typically small as currents vary slowly
+    current_speed_reversion_rate: float
+    # Current-speed noise intensity
+    current_speed_noise_intensity: float
+    # Current-speed saturation band (min, max) in m/s
+    current_speed_bounds: tuple[float, float]
+    # Current direction in NED (radians) - fixed per run
+    current_direction: float
+
+
+# Constants related to the fluid generation (wind and ocean current) models.
+# TODO: These are placeholder values to be tuned to representative sailing regions.
+# For steady mode (constant wind/current), set all noise intensities to 0.0.
+
+
 # Directly accessible constants
 
 # Boat simulator ROS action names
@@ -138,11 +168,11 @@ METACENTRIC_HEIGHT = 0.3  # Units: meters
 WING_SAIL_CHORD = 1.5  # Units: meters
 
 # TODO Placeholder: measure the distance from the mast axis to the tab's aero center.
-WINGSAIL_TO_TRIM_TAB_BOOM_LENGTH = 1.0  # Units: meters
+WINGSAIL_TO_TRIM_TAB_BOOM_LENGTH = 1.5  # Units: meters
 
 # TODO sail_dist is the sail CE-to-pivot distance, not CE-to-CG; z_s (CE height
 # relative to the CG) is a placeholder until we have real geometry.
-CE_HEIGHT_REL_TO_CG = -0.5  # Units: meters
+CE_HEIGHT_REL_TO_CG = -3.0  # Units: meters
 
 # TODO Placeholder: measure the mast pivot's chordwise position (~25% chord assumed).
 MAST_PIVOT_CHORD_FRACTION = 0.25  # Fraction of the wing chord, dimensionless
@@ -160,7 +190,7 @@ HULL_CE_REL_TO_CG = (0.0, 0.0, 0.0)  # (x_h, y_h, z_h), units: meters
 HULL_LINEAR_DRAG = 0.0  # Units: newton seconds per meter
 
 # Displaced volume of the boat at floating equilibrium (m^3)
-DISPLACED_VOLUME = 0.1
+DISPLACED_VOLUME = 0.50
 
 # Constants related to the physical and mechanical properties of Polaris
 # TODO These are placeholder values which should be replaced when we have real values.
@@ -339,5 +369,20 @@ BOAT_PROPERTIES = BoatProperties(
     M_A=Mat4(np.diag([20.0, 180.0, 30.0, 300.0])),
     # TODO: Replace with real damping coefficients from tow-tank or CFD data.
     # D = diag(X_u, Y_v, K_p, N_r) — linear damping per DOF.
-    D=Mat4(np.diag([15.0, 80.0, 25.0, 60.0])),
+    D=Mat4(np.diag([15.0, 80.0, 888, 60.0])),
 )
+
+FLUID_PROPERTIES = FluidProperties(
+    wind_base_speed=8.5,  # V_const (e.g., 6.5-11 typical)
+    wind_base_direction=0.0,  # B_const
+    wind_gust_reversion_rate=0.1,  # mu_w
+    wind_gust_noise_intensity=1.0,  # q_w
+    wind_direction_random_walk_intensity=0.05,  # q_beta
+    current_speed_reversion_rate=0.01,  # mu_c
+    current_speed_noise_intensity=0.1,  # q_c
+    current_speed_bounds=(0.0, 2.5),  # V_min, V_max
+    current_direction=0.0,  # B_c
+)
+
+# Seed for reproducibility
+FLUID_SIMULATION_SEED = 67
