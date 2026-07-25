@@ -25,6 +25,7 @@ LAND_DIR = os.path.dirname(os.path.abspath(__file__))
 SHP_DIR = os.path.join(LAND_DIR, "shp")
 OFFSHORE_PKL_PATH = os.path.join(LAND_DIR, "pkl", "offshore_land.pkl")
 ON_WATER_PKL_PATH = os.path.join(LAND_DIR, "pkl", "on_water_land.pkl")
+VALID_EMPTY_LAND_PKL_FILE_PATH = os.path.join(LAND_DIR, "pkl", "valid_empty_land.pkl")
 TEST_PLAN_PATH = os.path.join(LAND_DIR, "..", "test_plans", "jericho_on_water_test.yaml")
 CUT_PLOT_PATH = os.path.join(LAND_DIR, "on_water_adapted_offshore_plot.png")
 
@@ -124,7 +125,7 @@ def cut_edge_to_point(
     return make_valid(result).buffer(0)
 
 
-def pickle_land(source: str = "offshore", cut_to: tuple[float, float] | None = None):
+def pickle_land(source: str = "offshore", cut_to: tuple[float, float] | None = None, empty: bool = False):
     """Generates a land dataset and stores it in PKL format for long term storage on disk.
 
     Land data is saved to pkl/land.pkl.
@@ -141,6 +142,12 @@ def pickle_land(source: str = "offshore", cut_to: tuple[float, float] | None = N
     Raises:
         ValueError: If source is not a known land source.
     """
+    if empty:
+        empty_land = MultiPolygon()
+        dump_pkl(empty_land, VALID_EMPTY_LAND_PKL_FILE_PATH)
+        print("Land data pickled to", VALID_EMPTY_LAND_PKL_FILE_PATH)
+        return
+
     if source not in SHP_SOURCES:
         raise ValueError(f"unknown source {source!r}; expected one of {sorted(SHP_SOURCES)}")
 
@@ -252,10 +259,13 @@ if __name__ == "__main__":
         action="store_true",
         help="Cut the on-water land back to a reference (Jericho Pier) for on-water testing.",
     )
+    parser.add_argument("--empty", action="store_true", help="Generate an empty land MultiPolygon.")
 
     args = parser.parse_args()
 
-    if args.cut:
+    if args.empty:
+        pickle_land(empty=True)
+    elif args.cut:
         pickle_land(args.source, cut_to=JERICHO_PIER)
         plot_cut(args.source, JERICHO_PIER)
     else:
