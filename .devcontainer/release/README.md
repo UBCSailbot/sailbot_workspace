@@ -6,10 +6,14 @@ it to the onboard Raspberry Pi. There are three build paths:
 - **Path A — CI build + tar transfer** (recommended; Pi offline)
 - **Path B — CI build + registry pull** (Pi has internet; take a long time to build)
 - **Path C — local build + tar transfer** (fallback; requires native arm64 preferably)
+- **Path D — local build on .devcontainer** (fallback during testing; Pi offline)
 
 All three produce the same `linux/arm64` release image. Paths A and B build it
 in GitHub Actions on a native arm64 runner (~6 min), which is faster and more
 reliable than building locally.
+
+Path D interacts with the existing `.devcontainer` on the Pi and involves
+`running scripts/build.sh`(~13 minutes). 
 
 > **Build on arm64, not under emulation.** The release image is `linux/arm64`.
 > Building it on an `amd64` machine uses QEMU emulation, which is ~5× slower
@@ -145,6 +149,24 @@ Then transfer and load exactly as in Path A, steps 2–3.
 
 ---
 
+## Path D — local build on .devcontainer (fallback)
+
+Requires a SSH connection to the Pi. The .devcontainer is named `owt_dev`
+
+Once connected, run the following:
+
+```bash
+docker start -i owt-dev
+```
+
+Once in the container run the following:
+
+```bash
+git pull # OPTIONAL and if connected to internet
+
+./scripts/run_software.sh
+```
+
 ## Run the container
 
 Run on the Pi. This starts the container and drops you into a bash shell inside
@@ -183,7 +205,7 @@ log. Change `<name>` accordingly:
 docker start <name> && \
 docker exec -it <name> bash -ic "ros2 launch \
   src/global_launch/main_launch.py record:=true mode:=production \
-  2>&1 | tee src/global_launch/voyage_log/combined_log_\$(date +%F_%H-%M-%S).txt"
+  2>&1 | tee src/global_launch/voyage_log/combined_log_$(date +%F_%T).txt"
 ```
 
 > The launch arguments (`record`, `mode`, etc.) mirror behaviour that changes

@@ -65,15 +65,14 @@ jobs:
   # https://squidfunk.github.io/mkdocs-material/publishing-your-site/#with-github-actions
   docs-update:
     runs-on: ubuntu-latest
+    # Every docs preview and main deployment writes to the same gh-pages branch.
+    # Serialize these jobs so one run cannot make another run's checkout stale.
+    concurrency:
+      group: docs-gh-pages-deployment
+      cancel-in-progress: false
     permissions:
       contents: write
     steps:
-      # very hacky I know but I can't think of a better way right now
-      - name: Wait for docs to deploy
-        if: github.event_name == 'pull_request' && github.event.action == 'closed'
-        shell: bash
-        run: sleep 120
-
       - name: Check out code
         uses: actions/checkout@v7
         with:

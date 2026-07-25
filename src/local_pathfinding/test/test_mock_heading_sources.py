@@ -27,6 +27,8 @@ def test_mock_gps_publishes_separate_rudder_heading() -> None:
     node._use_noise = False
     node._gps_pub = FakePublisher[ci.GPS]("gps")
     node._heading_pub = FakePublisher[ci.HelperHeading]("rudder")
+    node._start_monotonic_sec = 0.0
+    setattr(node, "_consume_events", lambda _elapsed_sec: None)
     setattr(node, "update_speed", lambda: None)
     setattr(node, "get_next_location", lambda: None)
     logger = mock.Mock()

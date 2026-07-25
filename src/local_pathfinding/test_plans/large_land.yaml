@@ -1,6 +1,7 @@
 # A large rectangular island sits directly in the northbound path.
 # Polaris must navigate around it (east or west) to reach the goal.
-# Wind from east gives a clean beam reach so the test isolates land avoidance.
+# Airflow traveling east is perpendicular to the northbound route, so the test
+# isolates land avoidance.
 tw_dir_deg: 90
 tw_speed_kmph: 12.0
 heading_deg: 0.0

@@ -7,7 +7,7 @@ function helpMessage() {
     echo -e "Example: ./scripts/test_ctrl_manual.sh 10 45 90\n"
     echo -e "Arguments:"
     echo -e "\tspeed_kmph: Apparent wind speed in kmph. Must be >= 0."
-    echo -e "\twind_direction_deg: Apparent wind direction in degrees. Must be in [-180, 180]."
+    echo -e "\twind_direction_deg: Flow-toward apparent wind direction in degrees. Must be in [-180, 180]."
     echo -e "\tdesired_heading_deg: Desired heading in degrees. Must be in [-180, 180]."
 }
 

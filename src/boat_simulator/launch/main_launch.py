@@ -129,6 +129,10 @@ def get_physics_engine_description(context: LaunchContext) -> Node:
     ros_arguments: List[SomeSubstitutionsType] = [
         "--log-level",
         [f"{node_name}:=", LaunchConfiguration("log_level")],
+        # Added --log-level again as to inform ros2 to listen to all the log levels in separate
+        # boat_simulator files
+        "--log-level",
+        ["boat_simulator:=", LaunchConfiguration("log_level")],
     ]
     local_arguments: List[SomeSubstitutionsType] = [
         Constants.MULTITHREADING_CLI_ARG_NAME,
@@ -211,6 +215,12 @@ def get_low_level_control_description(context: LaunchContext) -> Node:
     ros_arguments: List[SomeSubstitutionsType] = [
         "--log-level",
         [f"{node_name}:=", LaunchConfiguration("log_level")],
+        # The physics/control modules log through module-level `get_logger(__name__)` loggers
+        # (e.g. "boat_simulator.nodes.physics_engine.kinetics_computation"), which the node-scoped
+        # level above does not reach. Logger names are hierarchical, so scoping to the package root
+        # covers them all without enabling rcl/rmw internals the way a global --log-level would.
+        "--log-level",
+        ["boat_simulator:=", LaunchConfiguration("log_level")],
     ]
     local_arguments: List[SomeSubstitutionsType] = [
         Constants.MULTITHREADING_CLI_ARG_NAME,
@@ -243,6 +253,12 @@ def get_data_collection_description(context: LaunchContext) -> Node:
     ros_arguments: List[SomeSubstitutionsType] = [
         "--log-level",
         [f"{node_name}:=", LaunchConfiguration("log_level")],
+        # The physics/control modules log through module-level `get_logger(__name__)` loggers
+        # (e.g. "boat_simulator.nodes.physics_engine.kinetics_computation"), which the node-scoped
+        # level above does not reach. Logger names are hierarchical, so scoping to the package root
+        # covers them all without enabling rcl/rmw internals the way a global --log-level would.
+        "--log-level",
+        ["boat_simulator:=", LaunchConfiguration("log_level")],
     ]
     local_arguments: List[SomeSubstitutionsType] = [
         Constants.DATA_COLLECTION_CLI_ARG_NAME,
@@ -275,6 +291,12 @@ def get_mock_data_description(context: LaunchContext) -> Node:
     ros_arguments: List[SomeSubstitutionsType] = [
         "--log-level",
         [f"{node_name}:=", LaunchConfiguration("log_level")],
+        # The physics/control modules log through module-level `get_logger(__name__)` loggers
+        # (e.g. "boat_simulator.nodes.physics_engine.kinetics_computation"), which the node-scoped
+        # level above does not reach. Logger names are hierarchical, so scoping to the package root
+        # covers them all without enabling rcl/rmw internals the way a global --log-level would.
+        "--log-level",
+        ["boat_simulator:=", LaunchConfiguration("log_level")],
     ]
     # may not need local arguments.
     local_arguments: List[SomeSubstitutionsType] = [
@@ -311,6 +333,12 @@ def get_sim_visualizer_description(context: LaunchContext) -> Node:
     ros_arguments: List[SomeSubstitutionsType] = [
         "--log-level",
         [f"{node_name}:=", LaunchConfiguration("log_level")],
+        # The physics/control modules log through module-level `get_logger(__name__)` loggers
+        # (e.g. "boat_simulator.nodes.physics_engine.kinetics_computation"), which the node-scoped
+        # level above does not reach. Logger names are hierarchical, so scoping to the package root
+        # covers them all without enabling rcl/rmw internals the way a global --log-level would.
+        "--log-level",
+        ["boat_simulator:=", LaunchConfiguration("log_level")],
     ]
     # may not need local arguments.
     local_arguments: List[SomeSubstitutionsType] = [

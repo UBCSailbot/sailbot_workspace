@@ -202,6 +202,8 @@ def test_init_obstacles():
         filtered_wind_sensor=WindSensor(),
         wind_tracker=WindTracker(),
     )
+    # init_obstacles uses boat objects from local_path_state.obstacles.
+    updated_local_path_state.obstacles = list(obstacles.values())
 
     updated_obstacles = ompl_path.OMPLPath.init_obstacles(
         local_path_state=updated_local_path_state, state_space_xy=state_space_xy
@@ -219,11 +221,12 @@ def test_init_obstacles():
 @pytest.mark.parametrize(
     "distance_from_reference_km,expected_pkl_path",
     [
-        (0.0, ompl_path.ON_WATER_LAND_PKL_FILE_PATH),  # at the reference -> on-water
-        (10.0, ompl_path.ON_WATER_LAND_PKL_FILE_PATH),  # within threshold -> on-water
+        # TODO: change this when we go back to on-water land feature turned on
+        (0.0, ompl_path.VALID_EMPTY_LAND_PKL_FILE_PATH),  # at the reference -> on-water
+        (10.0, ompl_path.VALID_EMPTY_LAND_PKL_FILE_PATH),  # within threshold -> on-water
         (
             ompl_path.DISTANCE_FROM_ON_WATER_LANDMARK - 0.1,
-            ompl_path.ON_WATER_LAND_PKL_FILE_PATH,
+            ompl_path.VALID_EMPTY_LAND_PKL_FILE_PATH,
         ),  # just inside threshold -> on-water
         (
             ompl_path.DISTANCE_FROM_ON_WATER_LANDMARK + 0.1,
@@ -308,8 +311,7 @@ def test_is_state_valid(x: float, y: float, is_valid: bool, fresh_ompl_path):
         ais_ship,
     )
 
-    ompl_path.OMPLPath.obstacles = {}
-    ompl_path.OMPLPath.obstacles[1] = boat1
+    fresh_ompl_path.state.obstacles = [boat1]
 
     if is_valid:
         assert fresh_ompl_path.is_state_valid(state), "state should be valid"
@@ -371,9 +373,9 @@ def _yaw_test_self(
     [
         # After reaching the current target, the next leg goes due east; OMPL yaw 0 faces east.
         (HelperLatLon(latitude=0.0, longitude=1.0), 0.0, 0.0),
-        # With wind from the east, a due-north next leg is not in irons and keeps north yaw.
+        # With airflow traveling east, a due-north next leg is outside both no-go cones.
         (HelperLatLon(latitude=1.0, longitude=0.0), 90.0, math.pi / 2),
-        # With wind from the west, a due-south next leg is not in irons and keeps south yaw.
+        # With airflow traveling west, a due-south next leg is outside both no-go cones.
         (HelperLatLon(latitude=-1.0, longitude=0.0), -90.0, -math.pi / 2),
         # A due-west next leg exercises the signed OMPL yaw edge at -pi.
         (HelperLatLon(latitude=0.0, longitude=-1.0), 0.0, -math.pi),
@@ -426,19 +428,19 @@ def test_compute_goal_heading_rad_default_cases(waypoints, target, tw_dir_deg, e
 @pytest.mark.parametrize(
     "tw_dir_deg,yaw_in,expected_yaw",
     [
-        # Eastbound yaw with north wind is a beam reach, so it should stay unchanged.
+        # Eastbound yaw with northward airflow is perpendicular and stays unchanged.
         (0.0, 0.0, 0.0),
-        # Northbound yaw with north wind is dead upwind; TWA 0 snaps to the positive edge
-        # plus the safety margin (further off the wind, deeper into the sailable zone).
+        # Northbound yaw with northward airflow is in the downwind cone; flow angle 0
+        # snaps to the positive edge plus the safety margin.
         (0.0, math.pi / 2, 3 * math.pi / 4 + ompl_path.IRONS_MARGIN_RAD),
-        # Slightly east of dead upwind has negative TWA and snaps to the northeast edge;
-        # margin pulls OMPL yaw toward east so the boat sits a margin further off the wind.
+        # Slightly east of the downwind flow direction has negative relative angle and
+        # snaps to the northeast edge; the margin moves it farther from the cone.
         (0.0, math.radians(85.0), math.pi / 4 - ompl_path.IRONS_MARGIN_RAD),
-        # Southbound yaw with north wind is dead downwind; TWA pi snaps to the positive
-        # edge with margin pulled toward beam reach (away from dead downwind).
+        # Southbound yaw against northward airflow is in the upwind cone; flow angle pi
+        # snaps to the positive edge with margin pulled toward a perpendicular course.
         (0.0, -math.pi / 2, -3 * math.pi / 4 - ompl_path.IRONS_MARGIN_RAD),
-        # Slightly west of dead downwind has negative TWA and snaps to the southeast
-        # edge, with margin pulled toward beam reach.
+        # A heading near directly opposing the airflow has negative relative angle and
+        # snaps to an edge away from the upwind cone.
         (0.0, math.radians(-89.0), -math.pi / 4 + ompl_path.IRONS_MARGIN_RAD),
     ],
 )
@@ -470,8 +472,8 @@ def test_offset_if_in_irons_uses_current_wind_when_path_generated_wind_missing()
 @pytest.mark.parametrize(
     "next_next_waypoint,tw_dir_deg,expected_yaw",
     [
-        # A northbound next leg with north wind would be upwind, so it snaps to the edge
-        # plus the safety margin.
+        # A northbound next leg aligned with northward airflow is in the downwind cone,
+        # so it snaps to the edge plus the safety margin.
         (HelperLatLon(latitude=1.0, longitude=0.0),
          0.0, 3 * math.pi / 4 + ompl_path.IRONS_MARGIN_RAD),
     ],

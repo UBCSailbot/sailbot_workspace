@@ -301,7 +301,8 @@ ROS parameters specific to the nodes in the boat simulator.
 **`wind_sensor.constant_params.value`**
 
 - _Description_: Specifies the constant vector returned by the constant
-  generator that represents the wind velocity in kmph. Namely, the same value
+  generator that represents the flow-toward wind velocity in kmph. The vector
+  points where the air travels. Namely, the same value
   is fixed in the wind sensors. The value is an array containing the `x` and
   `y` components of the velocity. Only used if `wind_sensor.generator_type`
   is `constant`. Units m/s
@@ -318,7 +319,8 @@ ROS parameters specific to the nodes in the boat simulator.
 **`wind_sensor.gaussian_params.mean`**
 
 - _Description_: The mean wind velocity parameter in kmph for the gaussian
-  generator. The mean is an array containing the `x` and `y` components of
+  generator. It is a flow-toward vector pointing where the air travels. The
+  mean is an array containing the `x` and `y` components of
   the velocity. Only used if `wind_sensor.generator_type` is `gaussian`. Units m/s
 - _Datatype_: `double` array, length 2
 - _Range_: `(MIN_DOUBLE, MAX_DOUBLE)`
@@ -344,7 +346,8 @@ ROS parameters specific to the nodes in the boat simulator.
 **`wind_generation.mvgaussian_params.mean`**
 
 - _Description_: The mean value for the wind generated, expressed in
-  kilometers per hour (m/s), for the multivariate Gaussian generator.
+  kilometers per hour (m/s), for the multivariate Gaussian generator. The
+  generated vector uses the flow-toward convention.
 - _Datatype_: `double` array, length 2
 - _Range_: `(0.0, MAX_DOUBLE)`
 

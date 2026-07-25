@@ -36,15 +36,15 @@ def motion_makes_goal_progress(
 
 
 def get_segment_wind_angle_rad_bc(s1: cs.XY, s2: cs.XY, tw_dir_rad_gc: float) -> float:
-    """Return the absolute angle between a segment bearing and true wind direction.
+    """Return the absolute angle between a segment and true-airflow bearing.
 
     Args:
         s1 (cs.XY): The start point of the path segment
         s2 (cs.XY): The end point of the path segment
-        tw_dir_rad_gc (float): The direction of the true wind in radians, (-pi, pi]
+        tw_dir_rad_gc (float): True-wind flow bearing in radians, (-pi, pi].
 
     Returns:
-        float: The wind-relative segment angle in boat-coordinate radians, [0, pi].
+        float: The flow-relative segment angle in radians, [0, pi].
     """
     segment_true_bearing_rad = cs.get_path_segment_true_bearing(s1, s2, rad=True)
     return abs(wcs.get_true_wind_angle(segment_true_bearing_rad, tw_dir_rad_gc))
@@ -53,13 +53,14 @@ def get_segment_wind_angle_rad_bc(s1: cs.XY, s2: cs.XY, tw_dir_rad_gc: float) ->
 def in_wind_no_go_zone(s1: cs.XY, s2: cs.XY, tw_dir_rad_gc: float) -> bool:
     """Check whether a segment points too close to directly upwind or downwind.
 
-    A segment is in the no-go zone when its wind-relative angle is <= NO_GO_ZONE or
-    >= pi - NO_GO_ZONE, i.e. within 45 degrees of directly upwind or downwind.
+    With flow-toward angles, a segment at 0 radians travels with the airflow
+    (downwind), while a segment at pi radians travels against it (upwind). Both
+    directions are rejected within ``NO_GO_ZONE``.
 
     Args:
         s1 (cs.XY): The start point of the path segment
         s2 (cs.XY): The end point of the path segment
-        tw_dir_rad_gc (float): The direction of the true wind in radians, (-pi, pi]
+        tw_dir_rad_gc (float): True-wind flow bearing in radians, (-pi, pi].
 
     Returns:
         bool: True if the segment is in the wind no-go zone, else False.

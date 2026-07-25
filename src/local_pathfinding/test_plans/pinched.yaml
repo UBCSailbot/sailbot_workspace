@@ -2,7 +2,7 @@
 # ~2 km to the south travelling on a parallel westward course.
 # COLREGS Rule 13 (overtaking): the AIS ship is slower, so Polaris is overtaking —
 # Polaris is the give-way vessel and must keep clear while also avoiding the coast.
-# Wind from south pushes Polaris northward toward the coast, tightening the corridor.
+# Airflow travels south, away from the northern coast.
 tw_dir_deg: 180
 tw_speed_kmph: 12.0
 heading_deg: -90.0

@@ -19,6 +19,15 @@ For comprehensive setup instructions, follow our [setup guide](https://ubcsailbo
 
 ## Running
 
+### Wind Direction Convention
+
+`WindSensor.direction` uses the flow-toward convention in the boat frame: the
+angle points where the air travels, 0° flows from bow toward stern, and values
+increase clockwise. The CAN transceiver preserves the sensor angle while
+normalizing its range and filtering its vector components; it does not apply a
+180° source/flow conversion. Raw CAN wind sensors must therefore provide the
+same flow-toward convention.
+
 ### ROS Launch
 
 <!-- markdownlint-disable-next-line MD013 -->

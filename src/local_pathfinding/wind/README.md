@@ -7,6 +7,11 @@ prediction model for Sailbot.
 When evaluating potential paths for Sailbot to take, we take into account how fast we expect Sailbot to travel along a given path for a given true wind speed and direction. To make this prediction we need to come up with a lookup table of estimated boat speeds for certain true wind speeds and points of sail. The Jupyter notebook in this directory does exactly that.
 <!-- markdownlint-enable MD013 -->
 
+Wind directions in Sailbot software use the flow-toward convention: the angle
+points where the air travels. Sailing angles used by local pathfinding are
+measured relative to that airflow direction, so 0° is aligned with the airflow
+and 180° points against it.
+
 <!-- markdownlint-disable-next-line MD013 -->
 The source data used by the notebook file is ./polar_sailing_speed_prediction_data and it was downloaded from <https://jieter.github.io/orc-data/site/#GRE/GRE1772>.
 

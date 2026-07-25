@@ -201,6 +201,9 @@ ros2 launch controller main_launch.py
 
 Terminal 2 — publish the apparent wind (substitute `speed` and `direction` per test):
 
+`direction` is flow-toward in the boat frame: 0° means airflow travels from
+bow toward stern, and values increase clockwise.
+
 ```bash
 ros2 topic pub /filtered_wind_sensor custom_interfaces/msg/WindSensor \
     "{speed: {speed: 10.0}, direction: 45}" -r 1

@@ -45,8 +45,8 @@ class WingsailController:
 
         Args:
         - reynolds_number (float): The Reynolds number.
-        - apparent_wind_direction (float): direction of the wind, in degrees. Here 0° means the
-        apparent wind is blowing from the bow to the stern of the boat, the angle increases CW.
+        - apparent_wind_direction (float): Flow-toward direction of the apparent wind, in
+          degrees. Here 0° means airflow travels from bow toward stern; values increase CW.
         Range: -180 < direction <= 180 for symmetry
 
         Returns:
@@ -69,7 +69,7 @@ class WingsailController:
 
         Args:
         - apparent_wind_speed (float): The apparent wind speed in meters per second.
-        - apparent_wind_direction (float): The apparent wind direction in degrees.
+        - apparent_wind_direction (float): Flow-toward apparent-wind direction in degrees.
 
         Returns:
         - trim_tab_angle (float): The computed trim tab angle. With angle increasing CCW

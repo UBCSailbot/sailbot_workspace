@@ -687,9 +687,12 @@ private:
     float    lat_;
     float    lon_;
     float    speed_;
+    uint16_t raw_speed_;
     int8_t   rot_;
     float    course_;
+    uint16_t raw_course_;
     float    heading_;
+    uint16_t raw_heading_;
     float    width_;
     float    length_;
     uint32_t ship_id_;

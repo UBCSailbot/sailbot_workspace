@@ -1543,6 +1543,7 @@ def build_figure_without_local_path(
 
 
 def write_wind_params(tw_dir_deg: float, tw_speed_kmph: float) -> None:
+    """Write global flow-toward true-wind parameters and apply them to mock nodes."""
     with open(WIND_PARAMS_YAML, "r") as f:
         data = yaml.safe_load(f)
 
@@ -2001,7 +2002,7 @@ def dash_app(q: Queue):
                                     "whiteSpace": "nowrap",
                                 },
                             ),
-                            html.Label("Wind Direction (°):", style={"fontWeight": "bold"}),
+                            html.Label("Wind Flow Direction (°):", style={"fontWeight": "bold"}),
                             dcc.Input(
                                 id="tw-dir-input", type="number", value=0, style={"width": "80px"}
                             ),
@@ -2483,7 +2484,7 @@ def update_wind(_, tw_dir_deg, tw_speed_kmph):
 
         write_wind_params(tw_dir_deg, tw_speed_kmph)
 
-        return f"Applied wind: {tw_dir_deg}°, {tw_speed_kmph} km/h"
+        return f"Applied wind toward {tw_dir_deg}° at {tw_speed_kmph} km/h"
 
     except Exception as e:
         return f"Error: {e}"

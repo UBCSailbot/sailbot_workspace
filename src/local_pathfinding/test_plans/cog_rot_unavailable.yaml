@@ -1,0 +1,23 @@
+tw_dir_deg: 0
+tw_speed_kmph: 10.0
+heading_deg: 180.0
+
+gps:
+  latitude: 49.28
+  longitude: -123.18
+  speed_kmph: 15.0
+
+# Two AIS ships exercising the COG/ROT unavailable sentinels.
+# Ship 1: COG=360 (unavailable) -> expect an omnidirectional circle collision zone.
+# Ship 2: ROT=-128 (unavailable) -> expect an aggressive turning-zone (triangle + circle).
+ais:
+  - {id: 1, lat: 49.30, lon: -123.16, heading: 360.0, speed: 15.0, rot: 0, width: 20.0, height: 100.0}
+  - {id: 2, lat: 49.26, lon: -123.20, heading: 45.0,  speed: 15.0, rot: -128, width: 20.0, height: 100.0}
+
+# [lon, lat]
+land: []
+
+global_path:
+  waypoints:
+    - {latitude: 49.28, longitude: -123.14}
+    - {latitude: 49.28, longitude: -123.18}

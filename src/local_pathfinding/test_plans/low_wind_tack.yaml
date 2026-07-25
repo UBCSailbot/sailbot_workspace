@@ -1,9 +1,8 @@
-# Wind drops to ~0.8 kn (1.5 kph) mid-tack while Polaris is in irons.
-# Polaris is heading directly into the wind (270°) with essentially no drive or
-# steering authority.  The goal is upwind to the west, so the planner must decide
-# how to recover from irons and resume making progress in near-calm conditions.
-# Expected behaviour: fall off to close-hauled on either tack and rebuild boat speed
-# before attempting further upwind progress.
+# Airflow drops to ~0.8 kn (1.5 kph) while traveling west. Polaris is also
+# heading west, directly inside the downwind no-go cone, with little drive or
+# steering authority. The westbound goal is downwind under the flow-toward
+# convention, so the planner must leave the cone and rebuild boat speed before
+# attempting further progress.
 tw_dir_deg: 270
 tw_speed_kmph: 1.5
 heading_deg: -90.0
