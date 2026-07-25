@@ -2,7 +2,6 @@
 
 """The ROS node for the wingsail controller."""
 
-
 import rclpy
 import rclpy.utilities
 from rclpy.node import Node
@@ -57,10 +56,8 @@ class WingsailControllerNode(Node):
         """Initializes private attributes of this class that are not initialized anywhere else
         during the initialization process.
         """
-        self.__trim_tab_angle = 0.0
+        self.__trim_tab_angle_deg = 0.0
         self.__filtered_wind_sensor = WindSensor()
-        self.__gps = GPS()
-        self.__desired_heading = DesiredHeading()
         self.__sail = True
         # pull hardcoded table from the right place later...
         # right location should be config.py
@@ -98,7 +95,7 @@ class WingsailControllerNode(Node):
         topics for further usage in this node. Data is pulled from subscriptions periodically via
         callbacks, which are registered upon subscription initialization.
         """
-        # TODO Implement this function by subscribing to topics that give the desired input data
+
         # Callbacks for each subscriptions should be defined as private methods of this class
         self.get_logger().debug("Initializing subscriptions...")
 
@@ -109,17 +106,10 @@ class WingsailControllerNode(Node):
             qos_profile=1,
         )
 
-        self.__gps_sub = self.create_subscription(
-            msg_type=GPS,
-            topic="gps",
-            callback=self.__gps_sub_callback,
-            qos_profile=1,
-        )
-
-        self.__desired_heading_sub = self.create_subscription(
+        self.__sail_sub = self.create_subscription(
             msg_type=DesiredHeading,
             topic="desired_heading",
-            callback=self.__desired_heading_sub_callback,
+            callback=self.__sail_sub_callback,
             qos_profile=1,
         )
 
@@ -131,8 +121,6 @@ class WingsailControllerNode(Node):
         self.get_logger().debug("Initializing publishers...")
         self.__trim_tab_angle_pub = self.create_publisher(
             msg_type=SailCmd,
-            # TODO change "topic" from a magic string to a constant similar to how its done in the
-            # boat simulator
             topic="sail_cmd",
             qos_profile=1,
         )
@@ -155,8 +143,9 @@ class WingsailControllerNode(Node):
         It also logs information about the publication to the logger."""
         msg = SailCmd()
 
-        apparent_speed = self.__filtered_wind_sensor.speed.speed
-        apparent_direction = self.__filtered_wind_sensor.direction
+        apparent_speed_kmph = self.__filtered_wind_sensor.speed.speed
+        apparent_speed_mps = apparent_speed_kmph / 3.6
+        apparent_direction_deg = self.__filtered_wind_sensor.direction
         apparent_lower_threshold = (
             self.get_parameter("apparent_wind_lower_threshold_kmph")
             .get_parameter_value()
@@ -171,45 +160,34 @@ class WingsailControllerNode(Node):
             self.get_parameter("apparent_wind_zero_threshold").get_parameter_value().double_value
         )
 
-        self.__trim_tab_angle = self.__wingsailController.get_trim_tab_angle(
-            apparent_speed, apparent_direction
+        self.__trim_tab_angle_deg = self.__wingsailController.get_trim_tab_angle(
+            apparent_speed_mps, apparent_direction_deg
         )
 
         # Gets scaling factor based on wind speed thresholds
         scaling_coef = 1
-        if apparent_speed > apparent_lower_threshold and apparent_speed < apparent_upper_threshold:
+        if (
+            apparent_speed_kmph > apparent_lower_threshold
+            and apparent_speed_kmph < apparent_upper_threshold
+        ):
             difference = apparent_upper_threshold - apparent_lower_threshold
-            scaling_coef = -1 * (apparent_speed - apparent_lower_threshold) / difference + 1
-        elif apparent_speed < apparent_zero_threshold:
+            scaling_coef = -1 * (apparent_speed_kmph - apparent_lower_threshold) / difference + 1
+        elif apparent_speed_kmph < apparent_zero_threshold:
             scaling_coef = 0
-        elif apparent_speed >= apparent_upper_threshold:
+        elif apparent_speed_kmph >= apparent_upper_threshold:
             scaling_coef = 0
 
         if self.__sail:
-            self.__trim_tab_angle = scaling_coef * self.__trim_tab_angle
+            self.__trim_tab_angle_deg = scaling_coef * self.__trim_tab_angle_deg
         else:
-            self.__trim_tab_angle = 0.0
+            self.__trim_tab_angle_deg = 0.0
 
-        msg.trim_tab_angle_degrees = self.__trim_tab_angle
+        msg.trim_tab_angle_degrees = self.__trim_tab_angle_deg
 
         self.__trim_tab_angle_pub.publish(msg)
 
-        self.get_logger().info(
-            f"Published to {self.__trim_tab_angle_pub.topic} \
-                the following angle: {msg.trim_tab_angle_degrees}"
-        )
-
-    @property
-    def pub_period(self) -> float:
-        return self.get_parameter("pub_period_sec").get_parameter_value().double_value
-
-    @property
-    def mock_desired_heading(self):
-        return self.get_parameter("mock_desired_heading").get_parameter_value().bool_value
-
-    @property
-    def trim_tab_angle(self) -> float:
-        return self.__trim_tab_angle
+        self.get_logger().info(f"Published to {self.__trim_tab_angle_pub.topic} \
+                the following angle: {msg.trim_tab_angle_degrees}")
 
     def __filtered_wind_sensor_sub_callback(self, msg: WindSensor) -> None:
         """Stores the latest filtered wind sensor data
@@ -220,24 +198,19 @@ class WingsailControllerNode(Node):
         self.__filtered_wind_sensor = msg
         self.get_logger().info(f"Received data from {self.__filtered_wind_sensor_sub.topic}")
 
-    def __gps_sub_callback(self, msg: GPS) -> None:
-        """Stores the latest gps data
-
-        Args:
-            msg (GPS): gps data from CanTrxRosIntf.
-        """
-        self.__gps = msg
-        self.get_logger().info(f"Received data from {self.__gps_sub.topic}")
-
-    def __desired_heading_sub_callback(self, msg: DesiredHeading) -> None:
-        """Stores the latest desired heading data
+    def __sail_sub_callback(self, msg: DesiredHeading) -> None:
+        """Stores the sail message. The sail message is used to tell us if pathfinding wants us
+        to move (trim_tab = max_lift_angle) or stay still (trim_tab = 0.0)
 
         Args:
             msg (DesiredHeading): desired heading data from CanTrxRosIntf.
         """
-        self.__desired_heading = msg
         self.__sail = msg.sail
-        self.get_logger().info(f"Received data from {self.__desired_heading_sub.topic}")
+        self.get_logger().info(f"Received data from {self.__sail_sub.topic}")
+
+    @property
+    def pub_period(self) -> float:
+        return self.get_parameter("pub_period_sec").get_parameter_value().double_value
 
 
 if __name__ == "__main__":
