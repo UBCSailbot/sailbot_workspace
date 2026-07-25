@@ -10,12 +10,12 @@
 
 # review when someone opens a pull request
 
-* @SPDonaghy @FireBoyAJ24 @raghumanimehta
+* @FireBoyAJ24 @raghumanimehta
 
 # boat_simulator
 
-/notebooks/boat_simulator @alberto-escobar @stevenxu27 @FireBoyAJ24
-/src/boat_simulator @alberto-escobar @stevenxu27 @FireBoyAJ24
+/notebooks/boat_simulator @FireBoyAJ24 @bubbles5228
+/src/boat_simulator @FireBoyAJ24 @bubbles5228 @FireBoyAJ24
 
 # custom_interfaces
 
@@ -23,8 +23,8 @@
 
 # controller
 
-/notebooks/controller @alberto-escobar @stevenxu27
-/src/controller @alberto-escobar @stevenxu27
+/notebooks/controller @FireBoyAJ24 @bubbles5228
+/src/controller @FireBoyAJ24 @bubbles5228
 
 # diagnostics
 

@@ -56,6 +56,7 @@ LAND_KEY = -1
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 OFFSHORE_LAND_PKL_FILE_PATH = os.path.join(CURRENT_DIR, "..", "land", "pkl", "offshore_land.pkl")
 ON_WATER_LAND_PKL_FILE_PATH = os.path.join(CURRENT_DIR, "..", "land", "pkl", "on_water_land.pkl")
+VALID_EMPTY_LAND_PKL_FILE_PATH = os.path.join(CURRENT_DIR, "..", "land", "pkl", "valid_empty_land.pkl") # noqa
 DISTANCE_FROM_ON_WATER_LANDMARK = 20  # 20 km
 DISTANCE_THRESHOLD = 1e-9
 
@@ -202,7 +203,9 @@ class OMPLPath:
 
         try:
             if on_water_ref_dist_km < DISTANCE_FROM_ON_WATER_LANDMARK:
-                OMPLPath.all_land_data = load_pkl(ON_WATER_LAND_PKL_FILE_PATH)
+                # For OWT on July 26
+                # OMPLPath.all_land_data = load_pkl(ON_WATER_LAND_PKL_FILE_PATH)
+                OMPLPath.all_land_data = load_pkl(VALID_EMPTY_LAND_PKL_FILE_PATH)
             else:
                 OMPLPath.all_land_data = load_pkl(OFFSHORE_LAND_PKL_FILE_PATH)
         except FileNotFoundError as e:
