@@ -125,7 +125,11 @@ def cut_edge_to_point(
     return make_valid(result).buffer(0)
 
 
-def pickle_land(source: str = "offshore", cut_to: tuple[float, float] | None = None, empty: bool = False):
+def pickle_land(
+    source: str = "offshore",
+    cut_to: tuple[float, float] | None = None,
+    empty: bool = False
+):
     """Generates a land dataset and stores it in PKL format for long term storage on disk.
 
     Land data is saved to pkl/land.pkl.
@@ -259,7 +263,7 @@ if __name__ == "__main__":
         action="store_true",
         help="Cut the on-water land back to a reference (Jericho Pier) for on-water testing.",
     )
-    parser.add_argument("--empty", action="store_true", help="Generate an empty land MultiPolygon.")
+    parser.add_argument("--empty", action="store_true", help="Generate an empty land MultiPolygon.") # noqa
 
     args = parser.parse_args()
 
