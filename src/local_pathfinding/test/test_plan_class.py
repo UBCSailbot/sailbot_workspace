@@ -32,8 +32,8 @@ def make_plan(tmp_path: Path):
         path.write_text(content)
         return TestPlan(str(path))
     return _make
-  
-  
+
+
 def load_test_plan(file_name: str) -> TestPlan:
     TestPlan._instance = None
     return TestPlan(file_name)
@@ -375,6 +375,8 @@ def test_unknown_mock_name_raises(make_plan):
             "  mock_wind:\n"
             "    - {timestamp: 0.0, direction_deg: 90, speed_kmph: 12.0}\n"
         )
+
+
 def test_all_test_plans_use_separate_valid_heading() -> None:
     test_plan_dir = Path(__file__).resolve().parents[1] / "test_plans"
     for file_path in test_plan_dir.glob("*.yaml"):
