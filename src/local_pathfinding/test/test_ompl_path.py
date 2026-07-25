@@ -226,7 +226,7 @@ def test_init_obstacles():
         (10.0, ompl_path.VALID_EMPTY_LAND_PKL_FILE_PATH),  # within threshold -> on-water
         (
             ompl_path.DISTANCE_FROM_ON_WATER_LANDMARK - 0.1,
-            ompl_path.ON_WATER_LAND_PKL_FILE_PATH,
+            ompl_path.VALID_EMPTY_LAND_PKL_FILE_PATH,
         ),  # just inside threshold -> on-water
         (
             ompl_path.DISTANCE_FROM_ON_WATER_LANDMARK + 0.1,
