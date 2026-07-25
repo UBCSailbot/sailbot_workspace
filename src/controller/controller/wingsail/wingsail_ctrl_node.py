@@ -14,7 +14,7 @@ from controller.common.constants import (
 )
 from controller.common.lut import LUT
 from controller.wingsail.controllers import WingsailController
-from custom_interfaces.msg import GPS, DesiredHeading, SailCmd, WindSensor
+from custom_interfaces.msg import DesiredHeading, SailCmd, WindSensor
 
 
 def main(args=None):
@@ -33,7 +33,6 @@ class WingsailControllerNode(Node):
 
     Subscriptions:
         __filtered_wind_sensors_sub (Subscription): Subscribes to the filtered_wind_sensor topic
-        __gps_sub (Subscription): Subscribes to the gps topic
         __desired_heading_sub (Subscription) : Subscribes to the desired heading
 
     Publishers:
@@ -59,7 +58,6 @@ class WingsailControllerNode(Node):
         """
         self.__trim_tab_angle = 0.0
         self.__filtered_wind_sensor = WindSensor()
-        self.__gps = GPS()
         self.__desired_heading = DesiredHeading()
         self.__sail = True
         # pull hardcoded table from the right place later...
@@ -83,7 +81,7 @@ class WingsailControllerNode(Node):
                 ("angle_of_attack", rclpy.Parameter.Type.DOUBLE_ARRAY),
                 ("apparent_wind_lower_threshold_kmph", rclpy.Parameter.Type.DOUBLE),
                 ("apparent_wind_upper_threshold_kmph", rclpy.Parameter.Type.DOUBLE),
-                ("apparent_wind_zero_threshold", rclpy.Parameter.Type.DOUBLE),
+                ("apparent_wind_zero_threshold_kmph", rclpy.Parameter.Type.DOUBLE),
             ],
         )
 
@@ -106,13 +104,6 @@ class WingsailControllerNode(Node):
             msg_type=WindSensor,
             topic="filtered_wind_sensor",
             callback=self.__filtered_wind_sensor_sub_callback,
-            qos_profile=1,
-        )
-
-        self.__gps_sub = self.create_subscription(
-            msg_type=GPS,
-            topic="gps",
-            callback=self.__gps_sub_callback,
             qos_profile=1,
         )
 
@@ -155,34 +146,46 @@ class WingsailControllerNode(Node):
         It also logs information about the publication to the logger."""
         msg = SailCmd()
 
-        apparent_speed = self.__filtered_wind_sensor.speed.speed
-        apparent_direction = self.__filtered_wind_sensor.direction
-        apparent_lower_threshold = (
+        apparent_wind_speed_kmph = self.__filtered_wind_sensor.speed.speed
+        apparent_wind_direction_deg = self.__filtered_wind_sensor.direction
+        apparent_wind_lower_threshold_kmph = (
             self.get_parameter("apparent_wind_lower_threshold_kmph")
             .get_parameter_value()
             .double_value
         )
-        apparent_upper_threshold = (
+        apparent_wind_upper_threshold_kmph = (
             self.get_parameter("apparent_wind_upper_threshold_kmph")
             .get_parameter_value()
             .double_value
         )
-        apparent_zero_threshold = (
-            self.get_parameter("apparent_wind_zero_threshold").get_parameter_value().double_value
+        apparent_wind_zero_threshold_kmph = (
+            self.get_parameter("apparent_wind_zero_threshold_kmph")
+            .get_parameter_value()
+            .double_value
         )
 
         self.__trim_tab_angle = self.__wingsailController.get_trim_tab_angle(
-            apparent_speed, apparent_direction
+            apparent_wind_speed_kmph, apparent_wind_direction_deg
         )
 
         # Gets scaling factor based on wind speed thresholds
         scaling_coef = 1
-        if apparent_speed > apparent_lower_threshold and apparent_speed < apparent_upper_threshold:
-            difference = apparent_upper_threshold - apparent_lower_threshold
-            scaling_coef = -1 * (apparent_speed - apparent_lower_threshold) / difference + 1
-        elif apparent_speed < apparent_zero_threshold:
+        if (
+            apparent_wind_speed_kmph > apparent_wind_lower_threshold_kmph
+            and apparent_wind_speed_kmph < apparent_wind_upper_threshold_kmph
+        ):
+            threshold_difference_kmph = (
+                apparent_wind_upper_threshold_kmph - apparent_wind_lower_threshold_kmph
+            )
+            scaling_coef = (
+                -1
+                * (apparent_wind_speed_kmph - apparent_wind_lower_threshold_kmph)
+                / threshold_difference_kmph
+                + 1
+            )
+        elif apparent_wind_speed_kmph < apparent_wind_zero_threshold_kmph:
             scaling_coef = 0
-        elif apparent_speed >= apparent_upper_threshold:
+        elif apparent_wind_speed_kmph >= apparent_wind_upper_threshold_kmph:
             scaling_coef = 0
 
         if self.__sail:
@@ -219,15 +222,6 @@ class WingsailControllerNode(Node):
         """
         self.__filtered_wind_sensor = msg
         self.get_logger().info(f"Received data from {self.__filtered_wind_sensor_sub.topic}")
-
-    def __gps_sub_callback(self, msg: GPS) -> None:
-        """Stores the latest gps data
-
-        Args:
-            msg (GPS): gps data from CanTrxRosIntf.
-        """
-        self.__gps = msg
-        self.get_logger().info(f"Received data from {self.__gps_sub.topic}")
 
     def __desired_heading_sub_callback(self, msg: DesiredHeading) -> None:
         """Stores the latest desired heading data
