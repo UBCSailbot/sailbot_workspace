@@ -33,7 +33,7 @@ class WingsailControllerNode(Node):
 
     Subscriptions:
         __filtered_wind_sensors_sub (Subscription): Subscribes to the filtered_wind_sensor topic
-        __desired_heading_sub (Subscription) : Subscribes to the desired heading
+        __sail_sub (Subscription) : Subscribes to the desired heading
 
     Publishers:
         __trim_tab_angle_pub (Publisher): Publishes a SailCmd message with the trim tab angle from
@@ -58,7 +58,6 @@ class WingsailControllerNode(Node):
         """
         self.__trim_tab_angle = 0.0
         self.__filtered_wind_sensor = WindSensor()
-        self.__desired_heading = DesiredHeading()
         self.__sail = True
         # pull hardcoded table from the right place later...
         # right location should be config.py
@@ -107,10 +106,10 @@ class WingsailControllerNode(Node):
             qos_profile=1,
         )
 
-        self.__desired_heading_sub = self.create_subscription(
+        self.__sail_sub = self.create_subscription(
             msg_type=DesiredHeading,
             topic="desired_heading",
-            callback=self.__desired_heading_sub_callback,
+            callback=self.__sail_sub_callback,
             qos_profile=1,
         )
 
@@ -223,15 +222,14 @@ class WingsailControllerNode(Node):
         self.__filtered_wind_sensor = msg
         self.get_logger().info(f"Received data from {self.__filtered_wind_sensor_sub.topic}")
 
-    def __desired_heading_sub_callback(self, msg: DesiredHeading) -> None:
-        """Stores the latest desired heading data
-
+    def __sail_sub_callback(self, msg: DesiredHeading) -> None:
+        """Stores the latest desired heading data. We use the sail message to decide when the boat
+        should keep moving or needs to enter idle mode.
         Args:
             msg (DesiredHeading): desired heading data from CanTrxRosIntf.
         """
-        self.__desired_heading = msg
         self.__sail = msg.sail
-        self.get_logger().info(f"Received data from {self.__desired_heading_sub.topic}")
+        self.get_logger().info(f"Received data from {self.__sail_sub.topic}")
 
 
 if __name__ == "__main__":
