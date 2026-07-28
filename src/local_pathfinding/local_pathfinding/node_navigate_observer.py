@@ -16,6 +16,8 @@ from rclpy.node import Node
 import custom_interfaces.msg as ci
 import local_pathfinding.visualizer as vz
 
+HEADING_UNAVAILABLE = 360.0
+
 
 def main():
     interprocess_manager = Manager()
@@ -136,11 +138,11 @@ class SailbotObserver(Node):
         """Send the latest state through the pipe to the dash app"""
 
         if self.msg is None:
-            self.get_logger().warn("No message received by /local_path data has been received")
+            self.get_logger().warn("No message received by local_path topic")
             return
         if self.heading is None:
             self.get_logger().warn("No e-compass boat heading has been received from /rudder")
-            return
+            self.heading = ci.HelperHeading(HEADING_UNAVAILABLE)
 
         if self.queue.qsize() >= 1:
             self.get_logger().debug(

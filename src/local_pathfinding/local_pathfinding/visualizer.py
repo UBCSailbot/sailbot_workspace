@@ -38,6 +38,7 @@ import local_pathfinding.coord_systems as cs
 import local_pathfinding.wind_coord_systems as wcs
 from local_pathfinding.ompl_path import OMPLPath
 from local_pathfinding.ompl_validity import NO_GO_ZONE
+from local_pathfinding.node_navigate_observer import HEADING_UNAVAILABLE
 
 UPDATE_INTERVAL_MS = 2500
 DEFAULT_PLOT_RANGE = [-100.0, 100.0]
@@ -101,6 +102,10 @@ VISUALIZER_STATE_NONE_WARNING = "Warning: the visualizer state is None. Waiting 
 VISUALIZER_STATE_STALE_WARNING = (
     "Warning: the visualizer state is None. The last available visualizer state is being shown "
     "and is getting stale."
+)
+VISUALIZER_STATE_HEADING_UNAVAILABLE_WARNING = (
+    "Warning: Heading wasn't received in latest published message, the heading on the visualizer"
+    "might be stale"
 )
 
 app = dash.Dash(__name__, assets_folder=str(ASSETS_DIR))
@@ -388,11 +393,10 @@ class VisualizerState:
 # Visualizer Failure State Helpers
 # --------------------------------------
 
-
-def visualizer_state_warning(stale: bool) -> html.Div:
+def visualizer_state_warning(reason: str) -> html.Div:
     """Build the warning shown when no current visualizer state is available."""
     return html.Div(
-        VISUALIZER_STATE_STALE_WARNING if stale else VISUALIZER_STATE_NONE_WARNING,
+        reason,
         role="alert",
         style={
             "margin": "0 12px 8px 12px",
@@ -418,7 +422,10 @@ def handle_visualizer_state_failure(
     alongside a stale-state warning. Otherwise, return the Dash callback payload that preserves the
     existing plot/stores while updating the warning banner.
     """
-    state_warning = visualizer_state_warning(stale=_latest_vs is not None)
+    if _latest_vs is not None:
+        state_warning = visualizer_state_warning(VISUALIZER_STATE_STALE_WARNING)
+    else:
+        state_warning = visualizer_state_warning(VISUALIZER_STATE_NONE_WARNING)
     if _latest_vs is not None and should_render_cached_state:
         return VisualizerStateFailureHandling(_latest_vs, state_warning, None)
 
@@ -2372,6 +2379,16 @@ def update_graph(
             assert cached_vs is not None
             vs = cached_vs
             state_warning = failure_handling.state_warning
+        elif queued_vs.heading.heading == HEADING_UNAVAILABLE:
+            vs = queued_vs
+            _latest_vs = vs
+            failure_handling = handle_visualizer_state_failure(
+                stored_range,
+                should_render_cached_state=False
+            )
+            state_warning = visualizer_state_warning(
+                VISUALIZER_STATE_HEADING_UNAVAILABLE_WARNING
+            )
         else:
             vs = queued_vs
             _latest_vs = vs
