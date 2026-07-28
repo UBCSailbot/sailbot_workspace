@@ -34,6 +34,7 @@ from boat_simulator.common.conventions import (
     Velocity,
 )
 from boat_simulator.common.types import CoeffGrid, Vec2, Vec4
+from boat_simulator.common.utils import bound_to_180
 
 _logger = get_logger(__name__)
 
