@@ -135,16 +135,23 @@ ROS parameters specific to the nodes in the Controller.
 **`apparent_wind_lower_threshold_kmph`**
 
 - _Description_: The lower wind threshold value for apparent wind.
-- _Datatype_: 'double'
-- _Range_: '[0.0, MAX_DOUBLE)'
-- The value is in Kmph.
+- _Datatype_: `double`
+- _Range_: `[0.0, MAX_DOUBLE)`
+- _Unit_: km/h
 
 **`apparent_wind_upper_threshold_kmph`**
 
 - _Description_: The higher wind threshold value for apparent wind.
-- _Datatype_: 'double'
-- _Range_: '[0.0, MAX_DOUBLE)'
-- The value is in Kmph.
+- _Datatype_: `double`
+- _Range_: `[0.0, MAX_DOUBLE)`
+- _Unit_: km/h
+
+**`apparent_wind_zero_threshold_kmph`**
+
+- _Description_: Apparent wind speeds below this threshold produce a neutral trim-tab command.
+- _Datatype_: `double`
+- _Range_: `[0.0, MAX_DOUBLE)`
+- _Unit_: km/h
 
 ## Boat Simulator Parameters
 
