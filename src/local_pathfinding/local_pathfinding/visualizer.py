@@ -38,12 +38,12 @@ import local_pathfinding.coord_systems as cs
 import local_pathfinding.wind_coord_systems as wcs
 from local_pathfinding.ompl_path import OMPLPath
 from local_pathfinding.ompl_validity import NO_GO_ZONE
-from local_pathfinding.node_navigate_observer import HEADING_UNAVAILABLE
 
 UPDATE_INTERVAL_MS = 2500
 DEFAULT_PLOT_RANGE = [-100.0, 100.0]
 BOX_BUFFER_SIZE_KM = 1.0
 STATE_SPACE_VIEW_BUFFER_KM = 0.5
+HEADING_UNAVAILABLE = 360.0
 
 # Preserve the compact wind inset's width while centering it beneath the main plot.
 WIND_BOX_X_DOMAIN = (0.385, 0.615)
@@ -2379,7 +2379,7 @@ def update_graph(
             assert cached_vs is not None
             vs = cached_vs
             state_warning = failure_handling.state_warning
-        elif queued_vs.heading.heading == HEADING_UNAVAILABLE:
+        elif queued_vs.boat_heading_deg == HEADING_UNAVAILABLE:
             vs = queued_vs
             _latest_vs = vs
             failure_handling = handle_visualizer_state_failure(
