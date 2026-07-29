@@ -90,16 +90,9 @@ class SailbotObserver(Node):
             callback=self.local_path_callback,
             qos_profile=10,
         )
-        self.heading_sub = self.create_subscription(
-            msg_type=ci.HelperHeading,
-            topic="rudder",
-            callback=self.heading_callback,
-            qos_profile=10,
-        )
         self.msgs: Deque[ci.LPathData] = deque(maxlen=100)
         self.queue = queue
         self.msg: Union[ci.LPathData, None] = None
-        self.heading: Union[ci.HelperHeading, None] = None
         self.last_replan_reason = ""
 
         self.create_timer(3.0, self.update_queue)
@@ -121,24 +114,13 @@ class SailbotObserver(Node):
         if self.queue.qsize() < 1:
             self.update_queue()
 
-    def heading_callback(self, msg: ci.HelperHeading) -> None:
-        """Store a valid e-compass boat heading for visualization."""
-
-        if not math.isfinite(msg.heading) or not (-180.0 < msg.heading <= 180.0):
-            self.get_logger().warning(
-                f"Ignoring invalid heading from {self.heading_sub.topic}: {msg.heading}. "
-                "Expected a finite value in (-180, 180]."
-            )
-            return
-        self.heading = msg
-
     def update_queue(self):
         """Send the latest state through the pipe to the dash app"""
 
         if self.msg is None:
             self.get_logger().warn("No message received by local_path topic")
             return
-        if self.heading is None:
+        if self.msg.heading :
             self.get_logger().warn("No e-compass boat heading has been received from /rudder")
             self.heading = ci.HelperHeading(vz.HEADING_UNAVAILABLE)
 

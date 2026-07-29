@@ -538,6 +538,10 @@ class Sailbot(Node):
                 f"Publishing to {self.desired_heading_pub.topic}: {msg.heading.heading}"
             )
             self.desired_heading_pub.publish(msg)
+
+            self.heading = None
+            self.gps = None
+            self.publish_local_path_data(msg.sail)
             return  # should not continue, try again next loop
 
         if not self._all_subs_active():
@@ -550,6 +554,7 @@ class Sailbot(Node):
                 f"Publishing to {self.desired_heading_pub.topic}: {msg.heading.heading}"
             )
             self.desired_heading_pub.publish(msg)
+            self.publish_local_path_data(msg.sail)
             return  # should not continue, return and try again next loop
 
         try:
@@ -602,59 +607,56 @@ class Sailbot(Node):
             self.local_path.path if (sail and self.local_path.path is not None) else ci.Path()
         )
 
-        # publish all navigation data when in dev mode
-        if self.mode in ["development", "sim"]:
-            helper_obstacles = []
+        helper_obstacles = []
 
-            # state is None until the first successful local path. On a sail-disabled failure it
-            # may still hold the obstacles that caused the failure, so iterate only if present.
-            state = self.local_path.state
-            if state is not None:
-                for obst in state.obstacles:
+        # state is None until the first successful local path. On a sail-disabled failure it
+        # may still hold the obstacles that caused the failure, so iterate only if present.
+        state = self.local_path.state
+        if state is not None:
+            for obst in state.obstacles:
 
-                    if isinstance(obst, ob.Land):
-                        for polygon in obst.collision_zone.geoms:
-                            latlon_polygon = cs.xy_polygon_to_latlon_polygon(
-                                state.reference_latlon, polygon
-                            )
-
-                            # each point of the polygon is in lat lon now
-                            # but you can't construct a Shapely polygon out of HelperLatLon objects
-                            # so each point is a shapely Point that needs to be converted to a
-                            # HelperLatLon, before it can be published to ROS
-                            helper_latlons = [
-                                ci.HelperLatLon(longitude=point[0], latitude=point[1])
-                                for point in latlon_polygon.exterior.coords
-                            ]
-                            helper_obstacles.append(
-                                ci.HelperObstacle(points=helper_latlons, obstacle_type="Land")
-                            )
-                    else:  # is a Boat
+                if isinstance(obst, ob.Land):
+                    for polygon in obst.collision_zone.geoms:
                         latlon_polygon = cs.xy_polygon_to_latlon_polygon(
-                            state.reference_latlon, obst.collision_zone
+                            state.reference_latlon, polygon
                         )
+
+                        # each point of the polygon is in lat lon now
+                        # but you can't construct a Shapely polygon out of HelperLatLon objects
+                        # so each point is a shapely Point that needs to be converted to a
+                        # HelperLatLon, before it can be published to ROS
                         helper_latlons = [
                             ci.HelperLatLon(longitude=point[0], latitude=point[1])
                             for point in latlon_polygon.exterior.coords
                         ]
                         helper_obstacles.append(
-                            ci.HelperObstacle(points=helper_latlons, obstacle_type="Boat")
+                            ci.HelperObstacle(points=helper_latlons, obstacle_type="Land")
                         )
+                else:  # is a Boat
+                    latlon_polygon = cs.xy_polygon_to_latlon_polygon(
+                        state.reference_latlon, obst.collision_zone
+                    )
+                    helper_latlons = [
+                        ci.HelperLatLon(longitude=point[0], latitude=point[1])
+                        for point in latlon_polygon.exterior.coords
+                    ]
+                    helper_obstacles.append(
+                        ci.HelperObstacle(points=helper_latlons, obstacle_type="Boat")
+                    )
 
-            msg = ci.LPathData(
-                global_path=self._path_from_gp(),
-                local_path=local_path,
-                gps=self.gps,
-                filtered_wind_sensor=self.filtered_wind_sensor,
-                ais_ships=self.ais_ships,
-                obstacles=helper_obstacles,
-                desired_heading=self.desired_heading,
-                replan_reason=self.local_path.last_replan_reason,
-                remaining_waypoints=self.local_path.last_remaining_waypoints,
-            )
-        else:
-            # in production only publish the local path for website
-            msg = ci.LPathData(local_path=local_path)
+        # TODO: set heading to unavailable
+        msg = ci.LPathData(
+            global_path=self._path_from_gp(),
+            local_path=local_path,
+            gps=self.gps,
+            heading=self.heading,
+            filtered_wind_sensor=self.filtered_wind_sensor,
+            ais_ships=self.ais_ships,
+            obstacles=helper_obstacles,
+            desired_heading=self.desired_heading,
+            replan_reason=self.local_path.last_replan_reason,
+            remaining_waypoints=self.local_path.last_remaining_waypoints,
+        )
 
         self.lpath_data_pub.publish(msg)
 

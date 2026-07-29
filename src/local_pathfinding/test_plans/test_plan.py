@@ -24,6 +24,7 @@ _WIND_EVENT_FIELDS = frozenset({"timestamp", "direction_deg", "speed_kmph"})
 _GPS_EVENT_FIELDS = frozenset(
     {
         "timestamp",
+        "publish_heading",
         "use_gps_noise",
         "use_ocean_drift",
         "use_drift_randomization",
@@ -50,6 +51,7 @@ class WindEvent:
 @dataclass(frozen=True)
 class GpsEvent:
     timestamp: float
+    publish_heading: bool | None = None
     use_gps_noise: bool | None = None
     use_ocean_drift: bool | None = None
     use_drift_randomization: bool | None = None
@@ -295,7 +297,12 @@ def _parse_gps_events(raw: Any) -> tuple[GpsEvent, ...]:
         _check_fields(item, frozenset({"timestamp"}), _GPS_EVENT_FIELDS, context)
         ts = float(item["timestamp"])
         kwargs: dict[str, Any] = {"timestamp": ts}
-        for bool_field in ("use_gps_noise", "use_ocean_drift", "use_drift_randomization"):
+        for bool_field in (
+            "publish_heading",
+            "use_gps_noise",
+            "use_ocean_drift",
+            "use_drift_randomization",
+        ):
             if bool_field in item:
                 kwargs[bool_field] = bool(item[bool_field])
         if "ocean_drift_speed_kmph" in item:
