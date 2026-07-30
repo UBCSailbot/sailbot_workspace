@@ -31,7 +31,8 @@ found).
 
 - **Wind → trim tab:** Takes apparent wind speed and direction and converts
   them to trim tab angle (degrees) using:
-    - Reynolds number from wind speed and sail chord.
+    - Reynolds number from wind speed and sail chord. `WindSensor` provides
+      speed in km/h, which is converted to m/s for this SI calculation.
     - A lookup table (Reynolds number → angle of attack) with linear
       interpolation.
     - Sign of the trim tab angle follows apparent wind flow direction. The angle
@@ -49,8 +50,8 @@ found).
   controller subscribes to `desired_heading` and, when `sail` is false,
   publishes trim tab angle 0 and does not drive the boat.
 
-- **Minimum wind speed threshold:** A minimum wind speed threshold for
-  controller activation is planned but **not yet implemented** (to be added).
+- **Minimum wind speed threshold:** Below the configured minimum apparent-wind
+  speed, the trim tab is held at 0°.
 
 - **Design reference:** Preliminary design documents:
   [Polaris design (Confluence)](https://ubcsailbot.atlassian.net/wiki/x/fABxag).
@@ -65,7 +66,8 @@ src/controller/
 │   ├── common/                 # Shared utilities and constants
 │   │   ├── constants.py
 │   │   ├── lut.py
-│   │   └── types.py
+│   │   ├── types.py
+│   │   └── unit_conversions.py
 │   └── wingsail/
 │       ├── controllers.py
 │       └── wingsail_ctrl_node.py
@@ -98,6 +100,7 @@ src/controller/
 | **controller/common/constants.py** | Physical constants: chord width of main sail, kinematic viscosity, and the Reynolds number → angle-of-attack lookup table (used for trim tab computation). |
 | **controller/common/lut.py** | Look-up table (LUT) class: loads (x, y) data and performs linear or spline interpolation. Used to map Reynolds number to desired angle of attack. |
 | **controller/common/types.py** | Type aliases used in the package (e.g. `float`, `ScalarOrArray`) for type hinting. |
+| **controller/common/unit_conversions.py** | Converts wind speed from the ROS message convention (km/h) to the SI units (m/s) required by the Reynolds-number calculation. |
 | **controller/wingsail/controllers.py** | `WingsailController`: computes Reynolds number from apparent wind speed, then trim tab angle from Reynolds number and apparent wind direction using the LUT. No ROS dependency. |
 | **controller/wingsail/wingsail_ctrl_node.py** | ROS 2 node `wingsail_ctrl_node`: declares parameters, subscribes to `filtered_wind_sensor`, `gps`, and `desired_heading`, applies wind-threshold scaling and `sail` flag, and publishes `SailCmd` (trim tab angle) on a timer. |
 | **launch/main_launch.py** | Launch file: loads global launch arguments (including `config` and `log_level` from `global_launch`), then starts the wingsail controller node with the given config. |
@@ -125,8 +128,9 @@ namespace. The launch file passes the path via the `config` launch argument
 | **pub_period_sec** (global) | Period (seconds) at which the wingsail node publishes sail commands. |
 | **reynolds_number** | Array of Reynolds numbers for the LUT (x-axis). In the node this is overridden by a hardcoded table in `constants.py`; the param is declared for future use. |
 | **angle_of_attack** | Array of angles of attack (degrees) corresponding to `reynolds_number` (y-axis). Same note as above. |
-| **apparent_wind_lower_threshold_kmph** | Lower wind speed threshold (e.g. m/s). Below this, scaling factor is 1. Between this and the upper threshold, trim tab is scaled down. |
+| **apparent_wind_lower_threshold_kmph** | Lower wind speed threshold in km/h. Below this, scaling factor is 1. Between this and the upper threshold, trim tab is scaled down. |
 | **apparent_wind_upper_threshold_kmph** | Upper wind speed threshold. At or above this, scaling factor is 0 (trim tab forced to 0 for mast protection). |
+| **apparent_wind_zero_threshold_kmph** | Minimum wind speed in km/h. Below this, the trim tab is forced to 0. |
 <!-- markdownlint-enable MD013 -->
 
 Full parameter descriptions and conventions are in:

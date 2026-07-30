@@ -27,7 +27,7 @@ class TestWingsailController:
         return WingsailController(sample_chord_width, sample_kinematic_viscosity, sample_lut)
 
     @pytest.mark.parametrize(
-        "apparent_wind_speed, expected_reynolds_number",
+        "apparent_wind_speed_mps, expected_reynolds_number",
         [
             (0, 0),
             (3, 3 * CHORD_WIDTH_MAIN_SAIL / KINEMATIC_VISCOSITY),
@@ -37,7 +37,7 @@ class TestWingsailController:
         ],
     )
     def test_compute_reynolds_number(
-        self, wingsail_controller, apparent_wind_speed, expected_reynolds_number
+        self, wingsail_controller, apparent_wind_speed_mps, expected_reynolds_number
     ):
         """
         Tests the computation of Reynolds number.
@@ -46,12 +46,12 @@ class TestWingsailController:
             wingsail_controller: Instance of WingsailController.
         """
         computed_reynolds_number = wingsail_controller._compute_reynolds_number(
-            apparent_wind_speed
+            apparent_wind_speed_mps
         )
         assert np.isclose(computed_reynolds_number, expected_reynolds_number)
 
     @pytest.mark.parametrize(
-        "reynolds_number, apparent_wind_direction, expected_trim_tab_angle",
+        "reynolds_number, apparent_wind_direction_deg, expected_trim_tab_angle",
         [
             (1250, 45.0, 5.75),
             (15388, -90.0, -5.75),
@@ -64,7 +64,7 @@ class TestWingsailController:
         self,
         wingsail_controller,
         reynolds_number,
-        apparent_wind_direction,
+        apparent_wind_direction_deg,
         expected_trim_tab_angle,
     ):
         """
@@ -74,25 +74,25 @@ class TestWingsailController:
             wingsail_controller: Instance of WingsailController.
         """
         computed_trim_tab_angle = wingsail_controller._compute_trim_tab_angle(
-            reynolds_number, apparent_wind_direction
+            reynolds_number, apparent_wind_direction_deg
         )
         assert np.isclose(computed_trim_tab_angle, expected_trim_tab_angle)
 
     @pytest.mark.parametrize(
-        "apparent_wind_speed, apparent_wind_direction, expected_trim_tab_angle",
+        "apparent_wind_speed_kmph, apparent_wind_direction_deg, expected_trim_tab_angle",
         [
-            (10.0, 0, 6.9047300626451),
-            (4.0, 90.0, 6.045136200464),
-            (10.0, 180.0, 6.904730062645),
-            (15.0, -50.0, -7.3212852819032),
-            (20.0, -120.0, -7.928380375871),
+            (10.0, 0, 5.75),
+            (4.0, 90.0, 5.75),
+            (10.0, 180.0, 5.75),
+            (15.0, -50.0, -6.09910020881725),
+            (20.0, -120.0, -6.548800278423),
         ],
     )
     def test_get_trim_tab_angle(
         self,
         wingsail_controller,
-        apparent_wind_speed,
-        apparent_wind_direction,
+        apparent_wind_speed_kmph,
+        apparent_wind_direction_deg,
         expected_trim_tab_angle,
     ):
         """
@@ -102,6 +102,6 @@ class TestWingsailController:
             wingsail_controller: Instance of WingsailController.
         """
         computed_trim_tab_angle = wingsail_controller.get_trim_tab_angle(
-            apparent_wind_speed, apparent_wind_direction
+            apparent_wind_speed_kmph, apparent_wind_direction_deg
         )
         assert np.isclose(computed_trim_tab_angle, expected_trim_tab_angle)

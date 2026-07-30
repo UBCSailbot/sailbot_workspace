@@ -515,15 +515,19 @@ msg::HelperAISShip AISShips::toRosMsg() const
 
     msg::HelperHeading cog;
     // 360.0 is the AIS sentinel for "COG unavailable"; preserve it instead of collapsing to 0.0
-    if (course_ == 360.0F) {  //NOLINT(readability-magic-numbers)
+    if (course_ == 360.0F) {       //NOLINT(readability-magic-numbers)
         cog.set__heading(360.0F);  //NOLINT(readability-magic-numbers)
     } else {
         cog.set__heading(utils::boundTo180(course_));
     }
 
     msg::HelperSpeed sog;
-    //convert to km/h
-    sog.set__speed(speed_);
+    // 1023 is the AIS sentinel for "SOG unavailable"
+    if (raw_speed_ == 1023) {     //NOLINT(readability-magic-numbers)
+        sog.set__speed(1023.0F);  //NOLINT(readability-magic-numbers)
+    } else {
+        sog.set__speed(speed_);
+    }
 
     msg::HelperROT rot;
     rot.set__rot(rot_);

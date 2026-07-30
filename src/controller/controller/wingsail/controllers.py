@@ -1,6 +1,7 @@
 import math
 
 from controller.common.lut import LUT
+from controller.common.unit_conversions import kmph_to_mps
 
 
 class WingsailController:
@@ -19,23 +20,23 @@ class WingsailController:
         self.kinematic_viscosity = kinematic_viscosity
         self.lut: LUT = lut
 
-    def _compute_reynolds_number(self, apparent_wind_speed: float) -> float:
+    def _compute_reynolds_number(self, apparent_wind_speed_mps: float) -> float:
         """
         Computes the Reynolds number for the main sail.
 
         Args:
-        - apparent_wind_speed (float): The apparent wind speed in meters per second.
+        - apparent_wind_speed_mps (float): The apparent wind speed in meters per second.
 
         Returns:
         - reynolds_number (float): The computed Reynolds number for the main sail.
         """
         reynolds_number: float = (
-            apparent_wind_speed * self.chord_width_main_sail
+            apparent_wind_speed_mps * self.chord_width_main_sail
         ) / self.kinematic_viscosity
         return reynolds_number
 
     def _compute_trim_tab_angle(
-        self, reynolds_number: float, apparent_wind_direction: float
+        self, reynolds_number: float, apparent_wind_direction_deg: float
     ) -> float:
         """
         Computes the trim tab angle based on Reynolds number and apparent wind direction. During
@@ -45,7 +46,7 @@ class WingsailController:
 
         Args:
         - reynolds_number (float): The Reynolds number.
-        - apparent_wind_direction (float): Flow-toward direction of the apparent wind, in
+        - apparent_wind_direction_deg (float): Flow-toward direction of the apparent wind, in
           degrees. Here 0° means airflow travels from bow toward stern; values increase CW.
         Range: -180 < direction <= 180 for symmetry
 
@@ -56,10 +57,10 @@ class WingsailController:
         desired_alpha: float = self.lut(reynolds_number)  # Using __call__ method
         # If the controller convention seems reversed, flip the sign of this return statement
         # EN, AE - 2024/03/16
-        return math.copysign(desired_alpha, apparent_wind_direction)
+        return math.copysign(desired_alpha, apparent_wind_direction_deg)
 
     def get_trim_tab_angle(
-        self, apparent_wind_speed: float, apparent_wind_direction: float
+        self, apparent_wind_speed_kmph: float, apparent_wind_direction_deg: float
     ) -> float:
         """
         Computes and returns the final trim tab angle.
@@ -68,14 +69,15 @@ class WingsailController:
         dictated by the angles used in the look up table.
 
         Args:
-        - apparent_wind_speed (float): The apparent wind speed in meters per second.
-        - apparent_wind_direction (float): Flow-toward apparent-wind direction in degrees.
+        - apparent_wind_speed_kmph (float): The apparent wind speed in kilometers per hour.
+        - apparent_wind_direction_deg (float): Flow-toward apparent-wind direction in degrees.
 
         Returns:
         - trim_tab_angle (float): The computed trim tab angle. With angle increasing CCW
         """
-        reynolds_number: float = self._compute_reynolds_number(apparent_wind_speed)
+        apparent_wind_speed_mps = kmph_to_mps(apparent_wind_speed_kmph)
+        reynolds_number: float = self._compute_reynolds_number(apparent_wind_speed_mps)
         trim_tab_angle: float = self._compute_trim_tab_angle(
-            reynolds_number, apparent_wind_direction
+            reynolds_number, apparent_wind_direction_deg
         )
         return trim_tab_angle
