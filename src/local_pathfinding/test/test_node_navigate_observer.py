@@ -52,6 +52,7 @@ def test_observer_warns_when_message_heading_is_unavailable(monkeypatch) -> None
 
 def test_observer_queues_none_when_gps_is_unavailable() -> None:
     node = make_observer_shell()
+    assert node.msg is not None
     node.msg.gps = GPS_UNAVAILABLE
     node.msgs = deque([node.msg])
 

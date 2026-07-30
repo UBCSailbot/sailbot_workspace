@@ -217,6 +217,7 @@ def test_timed_out_inputs(
 
     assert sailbot._timed_out_inputs() is expected
     if heading_timestamp == 0.0 and now_sec - heading_timestamp > 120.0:
+        assert sailbot.heading is not None
         assert sailbot.heading.heading == HEADING_UNAVAILABLE
 
 
@@ -224,7 +225,7 @@ def test_timed_out_inputs(
     ("gps_timestamp", "heading_timestamp"), [(0.0, 121.0), (121.0, 0.0)]
 )
 def test_desired_heading_callback_disables_sail_for_timed_out_inputs(
-    gps_timestamp: float, heading_timestamp: float
+    gps_timestamp: float, heading_timestamp: float, monkeypatch
 ) -> None:
     sailbot = make_sailbot_shell(gps_lat_lon=make_waypoint(49.0, -123.0))
     sailbot.gp = GlobalPath(waypoints=list(make_path(49.0, -123.0).waypoints), index=2)
@@ -236,7 +237,11 @@ def test_desired_heading_callback_disables_sail_for_timed_out_inputs(
         topic="desired_heading", publish=published.append
     )
     local_path_publications: list[bool] = []
-    sailbot.publish_local_path_data = local_path_publications.append
+    monkeypatch.setattr(
+        sailbot,
+        "publish_local_path_data",
+        local_path_publications.append,
+    )
 
     sailbot.desired_heading_callback()
 
@@ -255,11 +260,15 @@ def test_publish_local_path_data_always_publishes_with_typed_defaults() -> None:
     sailbot.ais_ships = None
     sailbot.gp = None
     sailbot.desired_heading = None
-    sailbot.local_path = SimpleNamespace(
-        path=None,
-        state=None,
-        last_replan_reason="",
-        last_remaining_waypoints=0,
+    setattr(
+        sailbot,
+        "local_path",
+        SimpleNamespace(
+            path=None,
+            state=None,
+            last_replan_reason="",
+            last_remaining_waypoints=0,
+        ),
     )
     published: list[ci.LPathData] = []
     sailbot.lpath_data_pub = SimpleNamespace(publish=published.append)
