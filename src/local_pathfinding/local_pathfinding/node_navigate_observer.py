@@ -5,7 +5,6 @@ The main function of this file spawns two processes:
 
 """
 
-import math
 from collections import deque
 from multiprocessing import Manager, Process, Queue
 from typing import Deque, Union
@@ -72,7 +71,6 @@ class SailbotObserver(Node):
 
     Subscribers:
         local_path_sub (Subscription): Subscribes to the `LPathData` topic.
-        heading_sub (Subscription): Subscribes to e-compass boat heading on `rudder`.
 
     Attributes From Subscribers:
         queue (Queue): An interprocess queue used to pipe local pathfinding data to the
@@ -120,9 +118,9 @@ class SailbotObserver(Node):
         if self.msg is None:
             self.get_logger().warn("No message received by local_path topic")
             return
-        if self.msg.heading :
+
+        if self.msg.heading.heading == vz.HEADING_UNAVAILABLE:
             self.get_logger().warn("No e-compass boat heading has been received from /rudder")
-            self.heading = ci.HelperHeading(vz.HEADING_UNAVAILABLE)
 
         if self.queue.qsize() >= 1:
             self.get_logger().debug(
@@ -132,9 +130,8 @@ class SailbotObserver(Node):
             return
 
         self.queue.put(
-            vz.VisualizerState(
+            vz.create_visualizer_state(
                 msgs=self.msgs,
-                heading=self.heading,
                 last_replan_reason=self.last_replan_reason,
             )
         )

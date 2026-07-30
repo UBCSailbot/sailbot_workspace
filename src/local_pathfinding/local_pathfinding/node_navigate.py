@@ -13,6 +13,13 @@ from test_plans.test_plan import TestPlan
 import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.obstacles as ob
+from local_pathfinding.constants import (
+    AIS_SHIPS_UNAVAILABLE,
+    DESIRED_HEADING_UNAVAILABLE,
+    GPS_UNAVAILABLE,
+    HEADING_UNAVAILABLE,
+    WIND_SENSOR_UNAVAILABLE,
+)
 from local_pathfinding.local_path import LocalPath, LocalPathInputs, PathNotFoundError
 from local_pathfinding.ompl_path import MAX_SOLVER_RUN_TIME_SEC
 
@@ -538,9 +545,6 @@ class Sailbot(Node):
                 f"Publishing to {self.desired_heading_pub.topic}: {msg.heading.heading}"
             )
             self.desired_heading_pub.publish(msg)
-
-            self.heading = None
-            self.gps = None
             self.publish_local_path_data(msg.sail)
             return  # should not continue, try again next loop
 
@@ -644,16 +648,29 @@ class Sailbot(Node):
                         ci.HelperObstacle(points=helper_latlons, obstacle_type="Boat")
                     )
 
-        # TODO: set heading to unavailable
         msg = ci.LPathData(
             global_path=self._path_from_gp(),
             local_path=local_path,
-            gps=self.gps,
-            heading=self.heading,
-            filtered_wind_sensor=self.filtered_wind_sensor,
-            ais_ships=self.ais_ships,
+            gps=self.gps if self.gps is not None else GPS_UNAVAILABLE,
+            heading=(
+                self.heading
+                if self.heading is not None
+                else ci.HelperHeading(heading=HEADING_UNAVAILABLE)
+            ),
+            filtered_wind_sensor=(
+                self.filtered_wind_sensor
+                if self.filtered_wind_sensor is not None
+                else WIND_SENSOR_UNAVAILABLE
+            ),
+            ais_ships=(
+                self.ais_ships if self.ais_ships is not None else AIS_SHIPS_UNAVAILABLE
+            ),
             obstacles=helper_obstacles,
-            desired_heading=self.desired_heading,
+            desired_heading=(
+                self.desired_heading
+                if self.desired_heading is not None
+                else DESIRED_HEADING_UNAVAILABLE
+            ),
             replan_reason=self.local_path.last_replan_reason,
             remaining_waypoints=self.local_path.last_remaining_waypoints,
         )
@@ -807,10 +824,16 @@ class Sailbot(Node):
         """Return whether GPS or rudder data exceeded the safety timeout."""
 
         now_sec = self._now_sec()
-        return (
-            now_sec - self.gps_timeout_start_sec > NAVIGATION_INPUT_TIMEOUT_SEC
-            or now_sec - self.heading_timeout_start_sec > NAVIGATION_INPUT_TIMEOUT_SEC
-        )
+
+        gps_timed_out = now_sec - self.gps_timeout_start_sec > NAVIGATION_INPUT_TIMEOUT_SEC
+        heading_timed_out = now_sec - self.heading_timeout_start_sec > NAVIGATION_INPUT_TIMEOUT_SEC
+
+        if gps_timed_out:
+            self.gps = None
+        if heading_timed_out:
+            self.heading = ci.HelperHeading(heading=HEADING_UNAVAILABLE)
+
+        return gps_timed_out or heading_timed_out
 
     def _log_inactive_subs_warning(self) -> None:
         """
