@@ -549,7 +549,7 @@ class CoeffGrid:
             index = 0
         else:
             index = int(np.argmin(np.abs(self.reynolds - reynolds_input)))
-        
+
         return float(self.tables[index].interpolate(angle))
 
     def __len__(self) -> int:
