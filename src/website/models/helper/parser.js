@@ -1,4 +1,4 @@
-export const decimal2JSON = (v, i, prev) => {
+export const decimal2JSON = (v, i = null, prev = null) => {
   if (v !== null && typeof v === 'object') {
     if (v.constructor.name === 'Decimal128') prev[i] = parseFloat(v.toString());
     else
