@@ -6,6 +6,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include <array>
 #include <chrono>
 #include <iostream>
 #include <stdexcept>
@@ -22,9 +23,9 @@ constexpr auto WRITE_RETRY_DELAY = std::chrono::milliseconds(1);   // wait befor
 
 MockCanBus::MockCanBus()
 {
-    int fds[2];
+    std::array<int, 2> fds{};
     // SOCK_SEQPACKET guarantees each write is read as one whole datagram, mirroring real CAN socket semantics
-    if (socketpair(AF_UNIX, SOCK_SEQPACKET, 0, static_cast<int *>(fds)) < 0) {
+    if (socketpair(AF_UNIX, SOCK_SEQPACKET, 0, fds.data()) < 0) {
         std::string err_msg = "Failed to create mock CAN bus socketpair with error: " + std::to_string(errno) + "(" +
                               strerror(errno) + ")";  // NOLINT(concurrency-mt-unsafe)
         throw std::runtime_error(err_msg);

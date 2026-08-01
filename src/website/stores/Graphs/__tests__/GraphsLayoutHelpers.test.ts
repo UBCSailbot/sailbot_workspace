@@ -17,8 +17,9 @@ import {
   moveGraphToIndex,
   extractGraph,
   splitGraph,
+  mergeMissingGraphIds,
 } from '../GraphsLayoutHelpers.ts';
-import type { Layout } from '../GraphsTypes.ts';
+import type { GraphId, Layout } from '../GraphsTypes.ts';
 import { isSplitGroup, getAllGraphIds } from '../GraphsTypes.ts';
 
 const DEFAULT: Layout = [
@@ -28,13 +29,27 @@ const DEFAULT: Layout = [
   'WindSensors',
 ];
 
+const ALL_GRAPHS: GraphId[] = [
+  'GPS',
+  'BatteriesVoltage',
+  'BatteriesCurrent',
+  'WindSensors',
+  'Temperature',
+  'PH',
+  'Salinity',
+];
+
 test('findLayoutIndex finds standalone items', () => {
   assert.equal(findLayoutIndex(DEFAULT, 'GPS'), 0);
   assert.equal(findLayoutIndex(DEFAULT, 'WindSensors'), 3);
 });
 
 test('findLayoutIndex finds items inside a split group', () => {
-  const layout: Layout = ['GPS', ['BatteriesVoltage', 'BatteriesCurrent'], 'WindSensors'];
+  const layout: Layout = [
+    'GPS',
+    ['BatteriesVoltage', 'BatteriesCurrent'],
+    'WindSensors',
+  ];
   assert.equal(findLayoutIndex(layout, 'BatteriesVoltage'), 1);
   assert.equal(findLayoutIndex(layout, 'BatteriesCurrent'), 1);
 });
@@ -50,7 +65,11 @@ test('isSplitGroup correctly discriminates the union', () => {
 });
 
 test('getAllGraphIds flattens nested split groups', () => {
-  const layout: Layout = ['GPS', ['BatteriesVoltage', 'BatteriesCurrent'], 'WindSensors'];
+  const layout: Layout = [
+    'GPS',
+    ['BatteriesVoltage', 'BatteriesCurrent'],
+    'WindSensors',
+  ];
   assert.deepEqual(getAllGraphIds(layout), [
     'GPS',
     'BatteriesVoltage',
@@ -74,12 +93,20 @@ test('moveGraph is a no-op when sourceId === targetId', () => {
 });
 
 test('moveGraph is a no-op when both ids share a layout item', () => {
-  const layout: Layout = [['GPS', 'BatteriesVoltage'], 'BatteriesCurrent', 'WindSensors'];
+  const layout: Layout = [
+    ['GPS', 'BatteriesVoltage'],
+    'BatteriesCurrent',
+    'WindSensors',
+  ];
   assert.equal(moveGraph(layout, 'GPS', 'BatteriesVoltage'), layout);
 });
 
 test('moveGraph treats a split group as an atomic unit', () => {
-  const layout: Layout = [['GPS', 'BatteriesVoltage'], 'BatteriesCurrent', 'WindSensors'];
+  const layout: Layout = [
+    ['GPS', 'BatteriesVoltage'],
+    'BatteriesCurrent',
+    'WindSensors',
+  ];
   // The whole [GPS, BV] group slides to just before WindSensors.
   assert.deepEqual(moveGraph(layout, 'GPS', 'WindSensors'), [
     'BatteriesCurrent',
@@ -113,7 +140,11 @@ test('moveGraphToIndex shifts items correctly', () => {
 });
 
 test('extractGraph pulls a graph out of its split group as a standalone item', () => {
-  const layout: Layout = ['GPS', ['BatteriesVoltage', 'BatteriesCurrent'], 'WindSensors'];
+  const layout: Layout = [
+    'GPS',
+    ['BatteriesVoltage', 'BatteriesCurrent'],
+    'WindSensors',
+  ];
   // Extract BatteriesVoltage and drop it at gap 0 (start of layout).
   assert.deepEqual(extractGraph(layout, 'BatteriesVoltage', 0), [
     'BatteriesVoltage',
@@ -126,7 +157,11 @@ test('extractGraph pulls a graph out of its split group as a standalone item', (
 test('extractGraph collapses the remaining sibling to a standalone item', () => {
   // After extraction the partner is left alone in the split group — removeGraph
   // collapses 1-member groups so the layout never holds a degenerate group.
-  const layout: Layout = [['GPS', 'BatteriesVoltage'], 'BatteriesCurrent', 'WindSensors'];
+  const layout: Layout = [
+    ['GPS', 'BatteriesVoltage'],
+    'BatteriesCurrent',
+    'WindSensors',
+  ];
   // Layout has 3 items, so gap 3 is "insert at end". After removeGraph collapses
   // [GPS, BV] → BV, the intermediate layout is [BV, BC, WS]; GPS lands at index 3.
   const result = extractGraph(layout, 'GPS', 3);
@@ -177,8 +212,15 @@ test('splitGraph defaults side to "right"', () => {
 
 test('splitGraph is a no-op when target is already in a 2-member group', () => {
   // Two-per-row cap (minjunminji's request, enforced here).
-  const layout: Layout = ['GPS', ['BatteriesVoltage', 'BatteriesCurrent'], 'WindSensors'];
-  assert.deepEqual(splitGraph(layout, 'WindSensors', 'BatteriesVoltage'), layout);
+  const layout: Layout = [
+    'GPS',
+    ['BatteriesVoltage', 'BatteriesCurrent'],
+    'WindSensors',
+  ];
+  assert.deepEqual(
+    splitGraph(layout, 'WindSensors', 'BatteriesVoltage'),
+    layout,
+  );
 });
 
 test('splitGraph is a no-op when source === target', () => {
@@ -186,9 +228,43 @@ test('splitGraph is a no-op when source === target', () => {
 });
 
 test('splitGraph is a no-op when source and target already share a layout item', () => {
-  const layout: Layout = [['GPS', 'BatteriesVoltage'], 'BatteriesCurrent', 'WindSensors'];
+  const layout: Layout = [
+    ['GPS', 'BatteriesVoltage'],
+    'BatteriesCurrent',
+    'WindSensors',
+  ];
   // Already grouped — splitting them again is meaningless.
   assert.deepEqual(splitGraph(layout, 'GPS', 'BatteriesVoltage'), layout);
+});
+
+test('mergeMissingGraphIds appends defaults missing from a stored layout', () => {
+  // A layout persisted to sessionStorage before newer graphs existed.
+  assert.deepEqual(mergeMissingGraphIds(DEFAULT, ALL_GRAPHS), [
+    'GPS',
+    'BatteriesVoltage',
+    'BatteriesCurrent',
+    'WindSensors',
+    'Temperature',
+    'PH',
+    'Salinity',
+  ]);
+});
+
+test('mergeMissingGraphIds returns the layout unchanged when nothing is missing', () => {
+  const layout: Layout = [...ALL_GRAPHS];
+  assert.equal(mergeMissingGraphIds(layout, ALL_GRAPHS), layout);
+});
+
+test('mergeMissingGraphIds counts graphs inside split groups as present', () => {
+  const layout: Layout = [
+    ['GPS', 'Temperature'],
+    'BatteriesVoltage',
+    'BatteriesCurrent',
+    'WindSensors',
+    'PH',
+    'Salinity',
+  ];
+  assert.equal(mergeMissingGraphIds(layout, ALL_GRAPHS), layout);
 });
 
 test('the layout invariant holds across a sequence of operations', () => {

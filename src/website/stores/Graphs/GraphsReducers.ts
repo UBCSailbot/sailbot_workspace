@@ -1,17 +1,26 @@
 import BaseReducer from '@/utils/BaseReducer';
 import GraphsActions from './GraphsActions';
-import { GraphsState, Layout } from './GraphsTypes';
+import { GraphId, GraphsState, Layout } from './GraphsTypes';
 import { AnyAction } from 'redux';
 import { initSessionStorageData } from '@/utils/SessionStorage';
+import { mergeMissingGraphIds } from './GraphsLayoutHelpers';
+
+const DEFAULT_LAYOUT: GraphId[] = [
+  'GPS',
+  'BatteriesVoltage',
+  'BatteriesCurrent',
+  'WindSensors',
+  'Temperature',
+  'PH',
+  'Salinity',
+];
 
 export default class GraphsReducer extends BaseReducer {
   initialState: GraphsState = {
-    layout: initSessionStorageData('Graph Layout', [
-      'GPS',
-      'BatteriesVoltage',
-      'BatteriesCurrent',
-      'WindSensors',
-    ]) as Layout,
+    layout: mergeMissingGraphIds(
+      initSessionStorageData('Graph Layout', DEFAULT_LAYOUT) as Layout,
+      DEFAULT_LAYOUT,
+    ),
     error: null,
   };
 
