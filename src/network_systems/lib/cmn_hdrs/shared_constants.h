@@ -17,6 +17,7 @@ namespace SYSTEM_MODE
 static const std::string PROD     = "production";
 static const std::string DEV      = "development";
 static const std::string SIM      = "sim";
+static const std::string CAN      = "can";
 static const std::string TEST_SAT = "test_satellite";
 };  // namespace SYSTEM_MODE
 

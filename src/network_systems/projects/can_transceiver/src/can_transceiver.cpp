@@ -6,6 +6,7 @@
 #include <net/if.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 
 #include <stdexcept>
 #include <thread>
@@ -99,6 +100,10 @@ CanTransceiver::CanTransceiver() : is_can_simulated_(false)
 
 CanTransceiver::CanTransceiver(int fd) : sock_desc_(fd), is_can_simulated_(true)
 {
+    struct stat fd_stat;
+    if (fstat(sock_desc_, &fd_stat) == 0) {
+        sim_fd_is_socket_ = S_ISSOCK(fd_stat.st_mode);
+    }
     receive_thread_ = std::thread(&CanTransceiver::receive, this);
 }
 
@@ -140,6 +145,10 @@ void CanTransceiver::receive()
             } else {
                 std::this_thread::sleep_for(std::chrono::milliseconds(1));
             }
+        } else {
+            // bytes_read == 0: EOF on a mock file or peer closed on a socket
+            // sleep so this thread does not spin at 100% CPU until shutdown or new data
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
     }
 }
@@ -156,9 +165,10 @@ void CanTransceiver::send(const CanFrame & frame) const
             std::cerr << "CAN write error: wrote " << bytes_written << "B but CAN frames are expected to be "
                       << sizeof(CanFrame) << "B" << std::endl;
         }
-        if (is_can_simulated_) {
+        if (is_can_simulated_ && !sim_fd_is_socket_) {
             // Since we're writing to the same file we're reading from, we need to maintain the seek offset
-            // This is NOT necessary in deployment as we won't be using a file to mock it
+            // This is NOT necessary in deployment or with a socket-backed mock (ex. MockCanBus), where the
+            // peer is a genuinely separate endpoint
             lseek(sock_desc_, -static_cast<off_t>(sizeof(CAN_FP::CanFrame)), SEEK_CUR);
         }
     }

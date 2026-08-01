@@ -13,9 +13,11 @@
 #include <rclcpp/timer.hpp>
 
 #include "can_frame_parser.h"
+#include "can_log_replayer.h"
 #include "can_transceiver.h"
 #include "cmn_hdrs/ros_info.h"
 #include "cmn_hdrs/shared_constants.h"
+#include "mock_can_bus.h"
 #include "net_node.h"
 
 constexpr int  QUEUE_SIZE     = 10;  // Arbitrary number
@@ -41,6 +43,9 @@ public:
         this->declare_parameter("kill_ais_can", false);
         this->declare_parameter("kill_wind_can", false);
         this->declare_parameter("kill_gps_can", false);
+        this->declare_parameter("can_replay_file", "");
+        this->declare_parameter("can_replay_rate", 1.0);
+        this->declare_parameter("can_replay_loop", false);
 
         if (!this->get_parameter("enabled").as_bool()) {
             RCLCPP_INFO(this->get_logger(), "CAN Transceiver is DISABLED");
@@ -49,6 +54,10 @@ public:
 
             rclcpp::Parameter mode_param = this->get_parameter("mode");
             std::string       mode       = mode_param.as_string();
+
+            // Held here until callbacks are registered below, then handed to mock_can_bus_ (replay modes only)
+            std::vector<CAN_REPLAY::TimedFrame> replay_frames;
+            CAN_REPLAY::ReplayConfig            replay_cfg;
 
             if (mode == SYSTEM_MODE::PROD) {
                 RCLCPP_INFO(this->get_logger(), "Running CAN Transceiver in production mode");
@@ -67,6 +76,15 @@ public:
                     RCLCPP_ERROR(this->get_logger(), "%s", err.what());
                     throw err;
                 }
+
+            } else if (mode == SYSTEM_MODE::CAN) {
+                std::string replay_file = this->get_parameter("can_replay_file").as_string();
+                if (replay_file.empty()) {
+                    std::string msg = "CAN replay mode requires the can_replay_file parameter to be set";
+                    RCLCPP_ERROR(this->get_logger(), "%s", msg.c_str());
+                    throw std::runtime_error(msg);
+                }
+                replay_frames = initCanReplay(mode, replay_file, replay_cfg);
             } else {
                 std::string msg = "Error, invalid system mode" + mode;
                 RCLCPP_ERROR(this->get_logger(), "%s", msg.c_str());
@@ -116,6 +134,12 @@ public:
               CanId::SALINITY_SENSOR_START, CanId::SALINITY_SENSOR_END, &CanTransceiverIntf::publishSalinity));
 
             can_trns_->registerCanCbs(canCbs);
+
+            // Start replay only after callbacks are registered so the first frames of the log are not lost
+            if (mock_can_bus_) {
+                RCLCPP_INFO(this->get_logger(), "Replaying %zu CAN frames", replay_frames.size());
+                mock_can_bus_->startReplay(std::move(replay_frames), replay_cfg);
+            }
 
             sail_cmd_sub_ = this->create_subscription<msg::SailCmd>(
               ros_topics::SAIL_CMD, QUEUE_SIZE, [this](msg::SailCmd sail_cmd_) { subSailCmdCb(sail_cmd_); });
@@ -199,6 +223,9 @@ private:
     // Mock CAN file descriptor for simulation
     int sim_intf_fd_;
 
+    // Simulated CAN bus that replays a logged CAN session (replay modes only, otherwise nullptr)
+    std::unique_ptr<MockCanBus> mock_can_bus_;
+
     // Saved power mode state
     uint8_t set_pwr_mode = CAN_FP::PwrMode::POWER_MODE_NORMAL;
 
@@ -213,6 +240,44 @@ private:
 
     // kill GPS CAN send status
     inline static bool kill_gps_can_ = false;
+
+    /**
+     * @brief Set up the mock CAN bus and transceiver for replaying a logged CAN session.
+     *        Frames are returned rather than replayed immediately so that replay can start after
+     *        the CAN callbacks are registered.
+     *
+     * @param mode        system mode, for logging only
+     * @param replay_file path to the CSV CAN log to replay
+     * @param cfg         output replay config assembled from the can_replay_* parameters
+     * @return parsed frames to pass to mock_can_bus_->startReplay()
+     */
+    std::vector<CAN_REPLAY::TimedFrame> initCanReplay(
+      const std::string & mode, const std::string & replay_file, CAN_REPLAY::ReplayConfig & cfg)
+    {
+        RCLCPP_INFO(
+          this->get_logger(), "Running CAN Transceiver in %s mode replaying CAN log: %s", mode.c_str(),
+          replay_file.c_str());
+        try {
+            std::vector<CAN_REPLAY::TimedFrame> frames = CAN_REPLAY::CanLogReplayer::parseCsv(replay_file);
+
+            double rate = this->get_parameter("can_replay_rate").as_double();
+            if (rate <= 0.0) {  // <= 0 means unpaced: replay as fast as possible
+                cfg.mode = CAN_REPLAY::PacingMode::FAST;
+            } else {
+                cfg.mode = CAN_REPLAY::PacingMode::SCALED;
+                cfg.rate = rate;
+            }
+            cfg.loop = this->get_parameter("can_replay_loop").as_bool();
+
+            mock_can_bus_ = std::make_unique<MockCanBus>();
+            sim_intf_fd_  = mock_can_bus_->transceiverFd();
+            can_trns_     = std::make_unique<CanTransceiver>(sim_intf_fd_);
+            return frames;
+        } catch (std::runtime_error err) {
+            RCLCPP_ERROR(this->get_logger(), "%s", err.what());
+            throw err;
+        }
+    }
 
     std::vector<std::pair<CAN_FP::CanId, std::function<void(const CanFrame &)>>> getCbsForRange(
       CAN_FP::CanId start, CAN_FP::CanId end, void (CanTransceiverIntf::*callback)(const CanFrame &))
