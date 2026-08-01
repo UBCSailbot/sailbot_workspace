@@ -8,14 +8,27 @@ import {
   downloadLocalPathData,
   downloadBatteriesData,
   downloadWindSensorsData,
-  downloadGenericSensorsData,
+  downloadTempSensorsData,
+  downloadPhSensorsData,
+  downloadSalinitySensorsData,
 } from '@/utils/DownloadData';
 import DownloadIcon from '@/public/icons/download.svg';
 import styles from './datasetDownload.module.css';
 
 type LastUpdatedMap = Record<string, string | null>;
 
-const dataSets = [
+type DataSet = {
+  key: string;
+  title: string;
+  description: string;
+  action?: (format: string) => void;
+  externalUrl?: string;
+};
+
+// TODO(team): replace with the real Drive link to the hydrophone recordings
+const HYDROPHONE_DRIVE_URL = 'https://drive.google.com/';
+
+const dataSets: DataSet[] = [
   {
     key: 'GPS',
     title: 'GPS',
@@ -53,10 +66,29 @@ const dataSets = [
     description: 'Wind speed and direction measurements.',
   },
   {
-    key: 'GenericSensors',
-    title: 'Generic Sensors',
-    action: downloadGenericSensorsData,
-    description: 'Download generic sensor data.',
+    key: 'TempSensors',
+    title: 'Temperature',
+    action: downloadTempSensorsData,
+    description: 'Water temperature measurements (°C).',
+  },
+  {
+    key: 'PhSensors',
+    title: 'pH',
+    action: downloadPhSensorsData,
+    description: 'Water pH measurements.',
+  },
+  {
+    key: 'SalinitySensors',
+    title: 'Salinity',
+    action: downloadSalinitySensorsData,
+    description: 'Water conductivity measurements (µS/cm).',
+  },
+  {
+    key: 'Hydrophone',
+    title: 'Hydrophone',
+    externalUrl: HYDROPHONE_DRIVE_URL,
+    description:
+      'Raw hydrophone audio recordings.'
   },
 ];
 
@@ -87,37 +119,54 @@ export const DatasetDownload = () => {
               <div className={styles.title}>{dataSet.title}</div>
               <div className={styles.description}>{dataSet.description}</div>
             </div>
-            <div>
-              <div className={styles.downloadOptions}>
-                <div
-                  className={styles.downloadButton}
-                  onClick={() => dataSet.action('CSV')}
-                >
-                  <DownloadIcon />
-                  CSV
+            {dataSet.externalUrl ? (
+              <div>
+                <div className={styles.downloadOptions}>
+                  <a
+                    className={styles.downloadButton}
+                    href={dataSet.externalUrl}
+                    target='_blank'
+                    rel='noopener noreferrer'
+                  >
+                    <DownloadIcon />
+                    Open in Drive
+                  </a>
                 </div>
-                <div
-                  className={styles.downloadButton}
-                  onClick={() => dataSet.action('XLSX')}
-                >
-                  <DownloadIcon />
-                  XLSX
-                </div>
-                <div
-                  className={styles.downloadButton}
-                  onClick={() => dataSet.action('JSON')}
-                >
-                  <DownloadIcon />
-                  JSON
-                </div>
+                <p className={styles.dateUpdated}>Stored externally</p>
               </div>
-              <p className={styles.dateUpdated}>
-                Last Updated:{' '}
-                {lastUpdatedTimestamp
-                  ? `${formatTimestamp(lastUpdatedTimestamp)}`
-                  : 'NO DATA'}
-              </p>
-            </div>
+            ) : (
+              <div>
+                <div className={styles.downloadOptions}>
+                  <div
+                    className={styles.downloadButton}
+                    onClick={() => dataSet.action?.('CSV')}
+                  >
+                    <DownloadIcon />
+                    CSV
+                  </div>
+                  <div
+                    className={styles.downloadButton}
+                    onClick={() => dataSet.action?.('XLSX')}
+                  >
+                    <DownloadIcon />
+                    XLSX
+                  </div>
+                  <div
+                    className={styles.downloadButton}
+                    onClick={() => dataSet.action?.('JSON')}
+                  >
+                    <DownloadIcon />
+                    JSON
+                  </div>
+                </div>
+                <p className={styles.dateUpdated}>
+                  Last Updated:{' '}
+                  {lastUpdatedTimestamp
+                    ? `${formatTimestamp(lastUpdatedTimestamp)}`
+                    : 'NO DATA'}
+                </p>
+              </div>
+            )}
           </div>
         );
       })}

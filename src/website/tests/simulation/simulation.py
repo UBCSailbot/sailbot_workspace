@@ -35,6 +35,9 @@ global_path_data = read_json_file("./data/globalpath.json")
 ais_ships_data = read_json_file("./data/aisships.json")
 batteries_data = read_json_file("./data/batteries.json")
 wind_sensors_data = read_json_file("./data/wind_sensors.json")
+temp_sensors_data = read_json_file("./data/temp_sensors.json")
+ph_sensors_data = read_json_file("./data/ph_sensors.json")
+salinity_sensors_data = read_json_file("./data/salinity_sensors.json")
 
 # Load all database collections
 gps = db["gps"]
@@ -43,6 +46,9 @@ global_path = db["globalpaths"]
 ais_ships = db["aisships"]
 batteries = db["batteries"]
 wind_sensors = db["windsensors"]
+temp_sensors = db["temp_sensors"]
+ph_sensors = db["ph_sensors"]
+salinity_sensors = db["salinity_sensors"]
 
 
 def write_to_mongodb(data, collection, i):
@@ -73,6 +79,9 @@ def clear():
     clear_mongodb_collection(ais_ships)
     clear_mongodb_collection(batteries)
     clear_mongodb_collection(wind_sensors)
+    clear_mongodb_collection(temp_sensors)
+    clear_mongodb_collection(ph_sensors)
+    clear_mongodb_collection(salinity_sensors)
     print("\nCleared all collections\n")
 
 
@@ -104,6 +113,9 @@ while True:
         for i in range(1, len(gps_data)):
             write_to_mongodb(batteries_data[i], batteries, i)
             write_to_mongodb(wind_sensors_data[i], wind_sensors, i)
+            write_to_mongodb(temp_sensors_data[i], temp_sensors, i)
+            write_to_mongodb(ph_sensors_data[i], ph_sensors, i)
+            write_to_mongodb(salinity_sensors_data[i], salinity_sensors, i)
             write_to_mongodb(gps_data[i], gps, i)
             lp_len = len(local_path_data[j]["waypoints"]) - 1
             if (
@@ -122,6 +134,9 @@ while True:
         for i in range(1, len(gps_data)):
             write_to_mongodb(batteries_data[i], batteries, i)
             write_to_mongodb(wind_sensors_data[i], wind_sensors, i)
+            write_to_mongodb(temp_sensors_data[i], temp_sensors, i)
+            write_to_mongodb(ph_sensors_data[i], ph_sensors, i)
+            write_to_mongodb(salinity_sensors_data[i], salinity_sensors, i)
             write_to_mongodb(gps_data[i], gps, i)
             if (
                 local_path_data[j]["waypoints"][1]["latitude"] == gps_data[i]["latitude"]
