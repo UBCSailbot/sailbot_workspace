@@ -2,15 +2,24 @@ import { NextResponse } from 'next/server';
 import ConnectMongoDB from '@/lib/mongodb';
 import GenericSensors from '@/models/GenericSensors';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     await ConnectMongoDB();
 
-    const genericSensors = await GenericSensors.find({}).select({
+    const limitParam = new URL(request.url).searchParams.get('limit');
+    const limit = limitParam ? parseInt(limitParam, 10) : 0;
+
+    let query = GenericSensors.find({}).select({
       'genericSensors._id': 0,
       _id: 0,
       __v: 0,
     });
+    if (limit > 0) {
+      query = query.sort({ _id: -1 }).limit(limit);
+    }
+
+    const genericSensors = await query.lean();
+    if (limit > 0) genericSensors.reverse();
 
     return NextResponse.json({ success: true, data: genericSensors });
   } catch (error) {
