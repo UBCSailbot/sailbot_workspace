@@ -116,6 +116,7 @@ interface StatsProps {
   windSensors: WindSensorsState;
   layout: Layout;
   dataFilter: DataFilterState;
+  className?: string;
 }
 
 // make this cleaner later
@@ -125,6 +126,7 @@ const Stats = ({
   windSensors,
   layout,
   dataFilter,
+  className,
 }: StatsProps) => {
   const [summary, setSummary] = useState<string>('LOADING...');
 
@@ -266,7 +268,7 @@ const Stats = ({
   };
 
   return (
-    <div className={styles.stats}>
+    <div className={`${styles.stats} ${className ?? ''}`.trim()}>
       <div className={styles.heading}>
         <div className={styles.title}>POLARIS IS CURRENTLY:</div>
         <div className={styles.summary}>{summary}</div>

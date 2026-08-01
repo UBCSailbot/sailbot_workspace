@@ -32,6 +32,32 @@
   scrollbar-width: none;
 }
 
+@media (width <= 768px) {
+  .stats {
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    padding: 12px 14px 0;
+  }
+
+  .lineCharts {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .heading {
+    flex: 0 0 auto;
+  }
+
+  .title {
+    font-size: 15px;
+  }
+
+  .summary {
+    font-size: 16px;
+  }
+}
+
 .splitGroup {
   display: flex;
   gap: 8px;

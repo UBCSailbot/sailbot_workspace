@@ -51,3 +51,23 @@
   border: 1px solid #6b6b6b;
   border-radius: 4px;
 }
+
+@media (width <= 768px) {
+  .lineChart {
+    margin-top: 20px;
+  }
+
+  .header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .downloadOptions {
+    margin-right: 0;
+    gap: 14px;
+  }
+
+  .title {
+    font-size: 15px;
+  }
+}
