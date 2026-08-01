@@ -46,6 +46,7 @@ public:
         this->declare_parameter("can_replay_file", "");
         this->declare_parameter("can_replay_rate", 1.0);
         this->declare_parameter("can_replay_loop", false);
+        this->declare_parameter("can_replay_synthesize_heading", false);
 
         if (!this->get_parameter("enabled").as_bool()) {
             RCLCPP_INFO(this->get_logger(), "CAN Transceiver is DISABLED");
@@ -268,6 +269,16 @@ private:
                 cfg.rate = rate;
             }
             cfg.loop = this->get_parameter("can_replay_loop").as_bool();
+
+            if (this->get_parameter("can_replay_synthesize_heading").as_bool()) {
+                size_t before = frames.size();
+                frames        = CAN_REPLAY::CanLogReplayer::synthesizeHeadingFrames(std::move(frames));
+                RCLCPP_WARN(
+                  this->get_logger(),
+                  "Synthesized %zu RUDDER_DATA_FRAMEs from 0x%X attitude frames. This heading decode is inferred "
+                  "from log analysis, not confirmed by firmware - treat the published /rudder data as simulated",
+                  frames.size() - before, CAN_REPLAY::HeadingSynthesis::SRC_CAN_ID);
+            }
 
             mock_can_bus_ = std::make_unique<MockCanBus>();
             sim_intf_fd_  = mock_can_bus_->transceiverFd();

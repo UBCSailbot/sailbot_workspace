@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstdio>
+#include <cstring>
 #include <ctime>
 #include <fstream>
 #include <iostream>
@@ -261,6 +262,37 @@ std::vector<TimedFrame> CanLogReplayer::filter(std::vector<TimedFrame> frames, c
     };
     frames.erase(std::remove_if(frames.begin(), frames.end(), rejected), frames.end());
     return frames;
+}
+
+std::vector<TimedFrame> CanLogReplayer::synthesizeHeadingFrames(std::vector<TimedFrame> frames)
+{
+    std::vector<TimedFrame> out;
+    out.reserve(frames.size());
+
+    for (const TimedFrame & timed_frame : frames) {
+        out.push_back(timed_frame);
+
+        const CAN_FP::CanFrame & src = timed_frame.frame;
+        if (src.can_id != HeadingSynthesis::SRC_CAN_ID || src.len < HeadingSynthesis::SRC_MIN_DLEN) {
+            continue;
+        }
+
+        uint16_t centideg;
+        std::memcpy(&centideg, src.data + HeadingSynthesis::SRC_BYTE_OFF, sizeof(uint16_t));
+        if (centideg >= HeadingSynthesis::CENTIDEG_PER_REV) {
+            continue;  // not a heading this cycle, so there is nothing to publish
+        }
+
+        uint32_t raw_heading = static_cast<uint32_t>(centideg) * HeadingSynthesis::SRC_TO_RUDDER_SCALE;
+
+        CAN_FP::CanFrame rudder{};
+        rudder.can_id = static_cast<canid_t>(CAN_FP::CanId::RUDDER_DATA_FRAME);
+        rudder.len    = CAN_FP::RudderData::CAN_BYTE_DLEN_;
+        std::memcpy(rudder.data + CAN_FP::RudderData::BYTE_OFF_HEADING, &raw_heading, sizeof(uint32_t));
+
+        out.push_back({timed_frame.t_s, rudder});
+    }
+    return out;
 }
 
 std::chrono::nanoseconds CanLogReplayer::delayBefore(
