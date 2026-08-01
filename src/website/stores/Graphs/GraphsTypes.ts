@@ -1,4 +1,11 @@
-export type GraphId = 'GPS' | 'BatteriesVoltage' | 'BatteriesCurrent' | 'WindSensors';
+export type GraphId =
+  | 'GPS'
+  | 'BatteriesVoltage'
+  | 'BatteriesCurrent'
+  | 'WindSensors'
+  | 'Temperature'
+  | 'PH'
+  | 'Salinity';
 
 // A layout item is either a single graph or a split group of graphs
 export type LayoutItem = GraphId | GraphId[];
