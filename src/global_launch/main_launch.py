@@ -198,7 +198,7 @@ def get_running_ros_packages(mode: str) -> List[str]:
         List[str]: List of ROS package names to be launched.
     """
     match mode:
-        case "production":
+        case "production" | "can":
             return PRODUCTION_ROS_PACKAGES
         case "development":
             return DEVELOPMENT_ROS_PACKAGES
@@ -206,7 +206,8 @@ def get_running_ros_packages(mode: str) -> List[str]:
             return SIM_ROS_PACKAGES
         case _:
             raise ValueError(
-                "Invalid launch mode. Must be one of 'production'," " 'development', or 'sim'."
+                "Invalid launch mode. Must be one of 'production',"
+                " 'development', 'sim' or 'can'."
             )
 
 
