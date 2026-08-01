@@ -1,6 +1,7 @@
 #include "can_log_replayer.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <cstdio>
 #include <ctime>
 #include <fstream>
@@ -11,6 +12,10 @@
 
 namespace
 {
+
+constexpr int HEX_BASE      = 16;  // candump logs CAN IDs and data bytes in hex
+constexpr int DEC_BASE      = 10;  // the bracketed length is decimal
+constexpr int NUM_TS_FIELDS = 6;   // year, month, day, hour, minute, seconds
 
 /**
  * @brief Parse a candump-style message column (ex. "can0  041  [04]  5D 01 40 00") into a CAN frame
@@ -32,20 +37,20 @@ bool parseCanMessage(const std::string & msg_str, CAN_FP::CanFrame & frame)
         return false;
     }
     try {
-        unsigned long id  = std::stoul(id_str, nullptr, 16);
-        unsigned long len = std::stoul(len_str.substr(1, len_str.size() - 2), nullptr, 10);
+        uint64_t id  = std::stoul(id_str, nullptr, HEX_BASE);
+        size_t   len = std::stoul(len_str.substr(1, len_str.size() - 2), nullptr, DEC_BASE);
         if (len > CANFD_MAX_DLEN) {
             return false;
         }
         frame        = CAN_FP::CanFrame{};
         frame.can_id = static_cast<canid_t>(id);
         frame.len    = static_cast<uint8_t>(len);
-        for (unsigned long i = 0; i < len; i++) {
+        for (size_t i = 0; i < len; i++) {
             std::string byte_str;
             if (!(iss >> byte_str)) {
                 return false;
             }
-            unsigned long byte = std::stoul(byte_str, nullptr, 16);
+            uint64_t byte = std::stoul(byte_str, nullptr, HEX_BASE);
             if (byte > 0xFF) {  // NOLINT(readability-magic-numbers)
                 return false;
             }
@@ -78,7 +83,7 @@ bool parseIsoTimestamp(const std::string & ts_str, double & t_s)
     int    minute;
     double sec;
     // NOLINTNEXTLINE(cert-err34-c) - the return value is checked, malformed input is rejected
-    if (sscanf(ts_str.c_str(), "%d-%d-%dT%d:%d:%lf", &year, &month, &day, &hour, &minute, &sec) != 6) {
+    if (sscanf(ts_str.c_str(), "%d-%d-%dT%d:%d:%lf", &year, &month, &day, &hour, &minute, &sec) != NUM_TS_FIELDS) {
         return false;
     }
     std::tm tm{};
