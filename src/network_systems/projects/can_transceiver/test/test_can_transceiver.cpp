@@ -1776,12 +1776,22 @@ TEST_F(TestCanLogReplayer, DelayBefore)
     using std::chrono::milliseconds;
     using std::chrono::nanoseconds;
 
+    // Log timestamps in seconds: three in order, one that goes backwards, then a ~10 minute recording gap
+    constexpr double FIRST_T_S        = 0.0;
+    constexpr double SECOND_T_S       = 0.1;
+    constexpr double THIRD_T_S        = 0.15;
+    constexpr double OUT_OF_ORDER_T_S = 0.10;
+    constexpr double LONG_GAP_T_S     = 600.0;
+
+    constexpr double SCALED_RATE = 2.0;  // replay at double speed
+    constexpr auto   PERIOD      = milliseconds{10};
+
     std::vector<CAN_REPLAY::TimedFrame> frames{
-      {.t_s = 0.0, .frame = {}},
-      {.t_s = 0.1, .frame = {}},
-      {.t_s = 0.15, .frame = {}},
-      {.t_s = 0.10, .frame = {}},
-      {.t_s = 600.0, .frame = {}}};
+      {.t_s = FIRST_T_S, .frame = {}},
+      {.t_s = SECOND_T_S, .frame = {}},
+      {.t_s = THIRD_T_S, .frame = {}},
+      {.t_s = OUT_OF_ORDER_T_S, .frame = {}},
+      {.t_s = LONG_GAP_T_S, .frame = {}}};
 
     CAN_REPLAY::ReplayConfig cfg;
 
@@ -1795,13 +1805,13 @@ TEST_F(TestCanLogReplayer, DelayBefore)
     EXPECT_EQ(CanLogReplayer::delayBefore(frames, 4, cfg), cfg.max_frame_gap);
 
     cfg.mode = CAN_REPLAY::PacingMode::SCALED;
-    cfg.rate = 2.0;
+    cfg.rate = SCALED_RATE;
     EXPECT_EQ(CanLogReplayer::delayBefore(frames, 1, cfg), milliseconds{50});
 
     cfg.mode   = CAN_REPLAY::PacingMode::FIXED_PERIOD;
-    cfg.period = milliseconds{10};
-    EXPECT_EQ(CanLogReplayer::delayBefore(frames, 0, cfg), milliseconds{10});
-    EXPECT_EQ(CanLogReplayer::delayBefore(frames, 1, cfg), milliseconds{10});
+    cfg.period = PERIOD;
+    EXPECT_EQ(CanLogReplayer::delayBefore(frames, 0, cfg), PERIOD);
+    EXPECT_EQ(CanLogReplayer::delayBefore(frames, 1, cfg), PERIOD);
 
     cfg.mode = CAN_REPLAY::PacingMode::FAST;
     EXPECT_EQ(CanLogReplayer::delayBefore(frames, 1, cfg), nanoseconds{0});
@@ -1881,6 +1891,11 @@ TEST_F(TestMockCanBus, ReplayReachesCallback)
  */
 TEST_F(TestMockCanBus, OutboundFramesCaptured)
 {
+    constexpr uint8_t FRAME_LEN     = 8;
+    constexpr uint8_t FRAME_PAYLOAD = 0xAB;
+    // How long to keep listening for a loopback frame that must never arrive
+    constexpr auto LOOPBACK_GRACE = std::chrono::milliseconds(50);
+
     MockCanBus     bus;
     CanTransceiver trns(bus.transceiverFd());
 
@@ -1890,19 +1905,19 @@ TEST_F(TestMockCanBus, OutboundFramesCaptured)
                                        [&is_cb_called](const CAN_FP::CanFrame & /*unused*/) { is_cb_called = true; })));
 
     CAN_FP::CanFrame frame{.can_id = static_cast<canid_t>(CAN_FP::CanId::BMS_DATA_FRAME)};
-    frame.len     = 8;
-    frame.data[0] = 0xAB;
+    frame.len     = FRAME_LEN;
+    frame.data[0] = FRAME_PAYLOAD;
     trns.send(frame);
 
     ASSERT_TRUE(waitFor([&bus]() { return bus.outboundFrames().size() == 1; }));
 
     std::vector<CAN_FP::CanFrame> outbound = bus.outboundFrames();
     EXPECT_EQ(outbound[0].can_id, static_cast<canid_t>(CAN_FP::CanId::BMS_DATA_FRAME));
-    EXPECT_EQ(outbound[0].len, 8);
-    EXPECT_EQ(outbound[0].data[0], 0xAB);
+    EXPECT_EQ(outbound[0].len, FRAME_LEN);
+    EXPECT_EQ(outbound[0].data[0], FRAME_PAYLOAD);
 
     // Unlike the file-backed mock, sent frames must NOT loop back to the sender
-    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    std::this_thread::sleep_for(LOOPBACK_GRACE);
     EXPECT_FALSE(is_cb_called);
 }
 
