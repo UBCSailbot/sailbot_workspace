@@ -41,13 +41,13 @@ public:
                 default_db_name = remote_transceiver::PROD_DB_NAME;
                 default_host    = remote_transceiver::PROD_HOST;
                 default_port    = remote_transceiver::PROD_PORT;
-            } else if (mode == SYSTEM_MODE::DEV || mode == SYSTEM_MODE::SIM) {
+            } else if (mode == SYSTEM_MODE::DEV || mode == SYSTEM_MODE::SIM || mode == SYSTEM_MODE::CAN) {
                 default_db_name = "test";
                 default_host    = remote_transceiver::TESTING_HOST;
                 default_port    = remote_transceiver::TESTING_PORT;
 
             } else {
-                std::string msg = "Error, invalid system mode" + mode;
+                std::string msg = "Error, invalid system mode " + mode;
                 throw std::runtime_error(msg);
             }
 
