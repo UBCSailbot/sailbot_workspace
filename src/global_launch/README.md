@@ -40,8 +40,8 @@
   `ros2 launch global_launch main_launch.py mode:=development log_level:=debug`
 - Simulation run against the boat simulator:
   `ros2 launch global_launch main_launch.py mode:=sim config:=globals.yaml`
-- CAN log replay run (drives the full stack from a recorded CAN log):
-  `ros2 launch global_launch main_launch.py mode:=can`
+- CAN log replay run (effectively runs on-water test in development):
+  `ros2 launch global_launch main_launch.py mode:=can config:=on_water_globals.yaml`
 - On-water testing (must use the on-water config):
   `ros2 launch global_launch main_launch.py mode:=production config:=on_water_globals.yaml record:=true`
 - Open-ocean launch run for production:
