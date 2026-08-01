@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import ConnectMongoDB from '@/lib/mongodb';
-import GenericSensors from '@/models/GenericSensors';
+import SalinitySensors from '@/models/SalinitySensors';
 
 export async function GET(request: Request) {
   try {
@@ -9,8 +9,8 @@ export async function GET(request: Request) {
     const limitParam = new URL(request.url).searchParams.get('limit');
     const limit = limitParam ? parseInt(limitParam, 10) : 0;
 
-    let query = GenericSensors.find({}).select({
-      'genericSensors._id': 0,
+    let query = SalinitySensors.find({}).select({
+      'salinitySensors._id': 0,
       _id: 0,
       __v: 0,
     });
@@ -18,10 +18,10 @@ export async function GET(request: Request) {
       query = query.sort({ _id: -1 }).limit(limit);
     }
 
-    const genericSensors = await query.lean();
-    if (limit > 0) genericSensors.reverse();
+    const salinitySensors = await query.lean();
+    if (limit > 0) salinitySensors.reverse();
 
-    return NextResponse.json({ success: true, data: genericSensors });
+    return NextResponse.json({ success: true, data: salinitySensors });
   } catch (error) {
     return NextResponse.json(
       { success: false, message: (error as Error).message },

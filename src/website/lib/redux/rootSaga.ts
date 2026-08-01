@@ -5,7 +5,9 @@ import LocalPathSagas from '@/stores/LocalPath/LocalPathSagas';
 import GlobalPathSagas from '@/stores/GlobalPath/GlobalPathSagas';
 import BatteriesSagas from '@/stores/Batteries/BatteriesSagas';
 import WindSensorsSagas from '@/stores/WindSensors/WindSensorsSagas';
-import GenericSensorsSagas from '@/stores/GenericSensors/GenericSensorsSagas';
+import TempSensorsSagas from '@/stores/TempSensors/TempSensorsSagas';
+import PhSensorsSagas from '@/stores/PhSensors/PhSensorsSagas';
+import SalinitySensorsSagas from '@/stores/SalinitySensors/SalinitySensorsSagas';
 import GraphsSagas from '@/stores/Graphs/GraphsSagas';
 import GraphsActions from '@/stores/Graphs/GraphsActions';
 import DataFilterSagas from '@/stores/DataFilter/DataFilterSagas';
@@ -19,7 +21,9 @@ export function* rootSaga() {
     globalPath: new GlobalPathSagas().forkSagas(),
     batteries: new BatteriesSagas().forkSagas(),
     windSensors: new WindSensorsSagas().forkSagas(),
-    genericSensors: new GenericSensorsSagas().forkSagas(),
+    tempSensors: new TempSensorsSagas().forkSagas(),
+    phSensors: new PhSensorsSagas().forkSagas(),
+    salinitySensors: new SalinitySensorsSagas().forkSagas(),
     graphs: new GraphsSagas().forkSaga(GraphsActions.REARRANGE_GRAPHS),
     dataFilter: new DataFilterSagas().forkSaga(DataFilterActions.SET_TIMESTAMP),
   };
