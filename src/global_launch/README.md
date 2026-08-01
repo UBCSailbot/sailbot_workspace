@@ -7,11 +7,13 @@
   <!-- markdownlint-disable MD013 -->
     - For example, we can look at all the debug statements for all the nodes when we use `log_level:=debug` as our launch argument.
   <!-- markdownlint-enable MD013 -->
-- To select the mode, we need use `mode:="development"` or `mode:="production"` or `mode:="sim"` launch arguments
+  <!-- markdownlint-disable-next-line MD013 -->
+- To select the mode, we need use `mode:="development"` or `mode:="production"` or `mode:="sim"` or `mode:="can"` launch arguments
   <!-- markdownlint-disable MD013 -->
     - `development` (default): `local_pathfinding` generates the `filtered_wind_sensor` and `gps` data internally (mock/simulated data) for local testing without hardware. `network_systems` runs for the sake of completeness as `controller` uses one of the publishers in `network_systems's` `can_transciever_node`.
     - `production`: `network_systems` provides the `filtered_wind_sensor` and `gps` data from the real sensors over the network, and `controller` relies on `network_systems`' control publishers/subscribers to drive the boat. Used for on-water operation.
     - `sim`: launches the additional `boat_simulator` package, which simulates the boat (physics, GPS, wind sensors) to run the full software stack end-to-end against a simulated boat on pathfinding's visualizer.
+    - `can`: launches the same packages as `production` (`controller`, `local_pathfinding`, `network_systems`), but `network_systems`' `can_transceiver_node` replays a recorded candump-style CSV log instead of talking to real or mocked CAN hardware. Useful for running the full stack against realistic, previously-recorded CAN traffic without a boat. Requires the `can_replay_file` ROS parameter to be set (see [network_systems' README](../network_systems/README.md#can-log-replay)); the node fails to start otherwise.
   <!-- markdownlint-enable MD013 -->
 - To select the config file, use the `config` launch argument (e.g. `config:=globals.yaml`).
   <!-- markdownlint-disable MD013 -->
@@ -38,6 +40,8 @@
   `ros2 launch global_launch main_launch.py mode:=development log_level:=debug`
 - Simulation run against the boat simulator:
   `ros2 launch global_launch main_launch.py mode:=sim config:=globals.yaml`
+- CAN log replay run (drives the full stack from a recorded CAN log):
+  `ros2 launch global_launch main_launch.py mode:=can`
 - On-water testing (must use the on-water config):
   `ros2 launch global_launch main_launch.py mode:=production config:=on_water_globals.yaml record:=true`
 - Open-ocean launch run for production:
