@@ -4,6 +4,13 @@ from typing import cast
 import pytest
 
 import custom_interfaces.msg as ci
+from local_pathfinding.constants import (
+    AIS_SHIPS_UNAVAILABLE,
+    DESIRED_HEADING_UNAVAILABLE,
+    GPS_UNAVAILABLE,
+    HEADING_UNAVAILABLE,
+    WIND_SENSOR_UNAVAILABLE,
+)
 from local_pathfinding.local_path import LocalPathInputs, PathNotFoundError
 from local_pathfinding.node_navigate import GlobalPath, Sailbot
 
@@ -209,13 +216,16 @@ def test_timed_out_inputs(
     setattr(sailbot, "_now_sec", lambda: now_sec)
 
     assert sailbot._timed_out_inputs() is expected
+    if heading_timestamp == 0.0 and now_sec - heading_timestamp > 120.0:
+        assert sailbot.heading is not None
+        assert sailbot.heading.heading == HEADING_UNAVAILABLE
 
 
 @pytest.mark.parametrize(
     ("gps_timestamp", "heading_timestamp"), [(0.0, 121.0), (121.0, 0.0)]
 )
 def test_desired_heading_callback_disables_sail_for_timed_out_inputs(
-    gps_timestamp: float, heading_timestamp: float
+    gps_timestamp: float, heading_timestamp: float, monkeypatch
 ) -> None:
     sailbot = make_sailbot_shell(gps_lat_lon=make_waypoint(49.0, -123.0))
     sailbot.gp = GlobalPath(waypoints=list(make_path(49.0, -123.0).waypoints), index=2)
@@ -226,13 +236,55 @@ def test_desired_heading_callback_disables_sail_for_timed_out_inputs(
     sailbot.desired_heading_pub = SimpleNamespace(
         topic="desired_heading", publish=published.append
     )
+    local_path_publications: list[bool] = []
+    monkeypatch.setattr(
+        sailbot,
+        "publish_local_path_data",
+        local_path_publications.append,
+    )
 
     sailbot.desired_heading_callback()
 
     assert len(published) == 1
     assert not published[0].sail
     assert published[0].heading.heading == 0.0
+    assert local_path_publications == [False]
     assert get_test_logger(sailbot).has_message("warning", "GPS or rudder data")
+
+
+def test_publish_local_path_data_always_publishes_with_typed_defaults() -> None:
+    sailbot = object.__new__(Sailbot)
+    sailbot.gps = None
+    sailbot.heading = None
+    sailbot.filtered_wind_sensor = None
+    sailbot.ais_ships = None
+    sailbot.gp = None
+    sailbot.desired_heading = None
+    setattr(
+        sailbot,
+        "local_path",
+        SimpleNamespace(
+            path=None,
+            state=None,
+            last_replan_reason="",
+            last_remaining_waypoints=0,
+        ),
+    )
+    published: list[ci.LPathData] = []
+    sailbot.lpath_data_pub = SimpleNamespace(publish=published.append)
+
+    sailbot.publish_local_path_data(sail=False)
+
+    assert len(published) == 1
+    assert published[0].heading.heading == HEADING_UNAVAILABLE
+    assert published[0].gps == GPS_UNAVAILABLE
+    assert published[0].gps.lat_lon.latitude == 91.0
+    assert published[0].gps.lat_lon.longitude == 181.0
+    assert published[0].gps.speed.speed == -1.0
+    assert published[0].gps.heading.heading == HEADING_UNAVAILABLE
+    assert published[0].filtered_wind_sensor == WIND_SENSOR_UNAVAILABLE
+    assert published[0].ais_ships == AIS_SHIPS_UNAVAILABLE
+    assert published[0].desired_heading == DESIRED_HEADING_UNAVAILABLE
 
 
 def test_new_global_path_starts_at_last_waypoint() -> None:
