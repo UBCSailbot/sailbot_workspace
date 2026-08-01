@@ -134,3 +134,59 @@
   font-style: italic;
   text-decoration: underline;
 }
+
+@media (width <= 768px) {
+  .container {
+    flex-direction: column;
+    gap: 0;
+    padding-top: 0;
+    max-width: 100%;
+  }
+
+  /* Pinned, auto-updating text header; images scroll beneath it, keeping the
+     desktop's "text follows the active image" behaviour on one column. */
+  .textColumn {
+    order: -1;
+    position: sticky;
+    top: 52px;
+    height: auto;
+    gap: 10px;
+    padding: 16px 16px 18px;
+    background: #090909;
+    z-index: 10;
+    border-bottom: 1px solid #2a2a2a;
+  }
+
+  .headingRow {
+    margin-top: 0;
+  }
+
+  .aboutTitle {
+    font-size: 24px;
+  }
+
+  .sectionTitle {
+    font-size: 15px;
+  }
+
+  .bodyText {
+    font-size: 14px;
+  }
+
+  /* The vertical progress rail doesn't fit a single column. */
+  .progress {
+    display: none;
+  }
+
+  .imageColumn {
+    order: 0;
+    gap: 20px;
+    width: 100%;
+  }
+
+  .imageCard {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 460 / 520;
+  }
+}

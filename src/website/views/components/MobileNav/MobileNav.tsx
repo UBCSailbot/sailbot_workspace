@@ -1,14 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, ReactNode } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import styles from './mobileNav.module.css';
 
 type MobileView = 'map' | 'data';
 
 interface MobileNavProps {
-  activeView: MobileView;
-  onSelectView: (view: MobileView) => void;
+  // Provided on the dashboard, where MAP/DATA toggle the visible pane. Omitted
+  // elsewhere (e.g. /about), where MAP/DATA navigate back to the dashboard.
+  activeView?: MobileView;
+  onSelectView?: (view: MobileView) => void;
 }
 
 const MenuIcon = () => (
@@ -62,11 +65,37 @@ const AboutIcon = () => (
 
 const MobileNav = ({ activeView, onSelectView }: MobileNavProps) => {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
+  const close = () => setOpen(false);
 
   const select = (view: MobileView) => {
-    onSelectView(view);
-    setOpen(false);
+    onSelectView?.(view);
+    close();
   };
+
+  // On the dashboard MAP/DATA switch the pane in place; anywhere else they are
+  // links back to the dashboard (DATA lands on the data pane via #data).
+  const viewItem = (
+    view: MobileView,
+    icon: ReactNode,
+    label: string,
+    href: string,
+  ) =>
+    onSelectView ? (
+      <button
+        className={styles.menuItem}
+        aria-current={activeView === view}
+        onClick={() => select(view)}
+      >
+        {icon}
+        <span>{label}</span>
+      </button>
+    ) : (
+      <Link className={styles.menuItem} href={href} onClick={close}>
+        {icon}
+        <span>{label}</span>
+      </Link>
+    );
 
   return (
     <>
@@ -86,32 +115,19 @@ const MobileNav = ({ activeView, onSelectView }: MobileNavProps) => {
           <button
             className={`${styles.iconButton} ${styles.closeButton}`}
             aria-label='Close navigation'
-            onClick={() => setOpen(false)}
+            onClick={close}
           >
             <CloseIcon />
           </button>
 
           <nav className={styles.menu}>
-            <button
-              className={styles.menuItem}
-              aria-current={activeView === 'map'}
-              onClick={() => select('map')}
-            >
-              <MapIcon />
-              <span>MAP</span>
-            </button>
-            <button
-              className={styles.menuItem}
-              aria-current={activeView === 'data'}
-              onClick={() => select('data')}
-            >
-              <DataIcon />
-              <span>DATA</span>
-            </button>
+            {viewItem('map', <MapIcon />, 'MAP', '/')}
+            {viewItem('data', <DataIcon />, 'DATA', '/#data')}
             <Link
               className={styles.menuItem}
               href='/about'
-              onClick={() => setOpen(false)}
+              aria-current={pathname === '/about'}
+              onClick={close}
             >
               <AboutIcon />
               <span>ABOUT</span>
