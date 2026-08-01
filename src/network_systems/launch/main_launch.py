@@ -82,7 +82,7 @@ def setup_launch(context: LaunchContext) -> List[Node]:
         context.launch_configurations["config"] = config
 
     mode = LaunchConfiguration("mode").perform(context)
-    if mode == "development":
+    if mode in ("development", "can"):
         SetEnvironmentVariable(
             name="ROS_LOG_DIR", value="/workspaces/sailbot_workspace/log"
         ).visit(context)

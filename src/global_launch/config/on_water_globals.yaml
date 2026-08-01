@@ -99,3 +99,10 @@ mock_data_node:
       mock_sail_trim_tab: True
       mock_sail_trim_tab_lower_bound: -7.0
       mock_sail_trim_tab_upper_bound: 7.0
+can_transceiver_node:
+  ros__parameters:
+    enabled: true
+    # CAN log replay (mode:=can, or development/sim with a log file)
+    can_replay_file: "/workspaces/sailbot_workspace/src/network_systems/lib/can_log/combined_candump.csv"    # path to a candump-style CSV log; empty disables replay outside of can mode
+    can_replay_rate: 1.0   # 1.0 = real time, 2.0 = twice as fast, <= 0 = as fast as possible
+    can_replay_loop: false # restart from the top of the log after the last frame

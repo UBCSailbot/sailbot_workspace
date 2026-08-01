@@ -59,7 +59,7 @@ GLOBAL_LAUNCH_ARGUMENTS = [
     DeclareLaunchArgument(
         name="mode",
         default_value="development",
-        choices=["production", "development", "sim"],
+        choices=["production", "development", "sim", "can"],
         description="System mode. Decides whether the system is ran with development, production"
         + " or sim interfaces",
     ),
