@@ -2,8 +2,8 @@
 #
 # OPT-IN: the boat_simulator_gazebo physics backend (Gazebo Harmonic + asv_wave_sim) is a
 # ~1.8 GB dependency closure that most of the team never touches, so it is not part of the
-# base dev image. Enable it by uncommenting the INSTALL_GAZEBO build arg in
-# docker-compose.yml, then rebuild the container.
+# base dev image. Enable it by adding gazebo/docker-compose.gazebo.yml to
+# "dockerComposeFile" in devcontainer.json, then rebuild the container.
 # ---------------------------------------------------------------------------------------
 ARG BASE_TAG=setup-included-2
 ARG GAZEBO_TAG=gazebo

@@ -8,6 +8,7 @@
 
     // Uncomment the files containing the programs you need
     // "docs/docker-compose.docs.yml", // docs
+    // "gazebo/docker-compose.gazebo.yml", // Gazebo simulator backend (amd64 only)
   ],
   "service": "sailbot-workspace",
   "forwardPorts": [3005],
