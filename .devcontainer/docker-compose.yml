@@ -5,6 +5,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        # Opt in to the Gazebo simulator backend (Gazebo Harmonic + a prebuilt
+        # asv_wave_sim). Off by default because only the boat_simulator and pathfinding team needs it.
+        # Uncomment the line below to enable it, then rebuild the container.
+        # INSTALL_GAZEBO: "true"
     # Use "always" instead if this container should restart even after some manual stops.
     # restart: always
     restart: unless-stopped
