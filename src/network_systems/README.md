@@ -69,7 +69,7 @@ Those logs do still carry the heading, in an undocumented 16-byte attitude frame
 
 `globals.yaml` and `on_water_globals.yaml` both set `can_replay_file` to the
 sample log checked into
-[`lib/can_log/combined_candump.csv`](lib/can_log/combined_candump.csv), so
+[`lib/can_log/combined_can_frames.csv`](lib/can_log/combined_can_frames.csv), so
 `mode:="can"` works out of the box with the default (`globals.yaml`) config.
 To replay a different log or change the pacing, either point `config` at a
 custom yaml with your own `can_transceiver_node.ros__parameters`, or run

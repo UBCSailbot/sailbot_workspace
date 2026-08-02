@@ -507,6 +507,13 @@
                 "command": "./scripts/setup.sh",
                 "problemMatcher": []
             },
+            {
+                "label": "Pull Mock CAN Log",
+                "detail": "Pull combined_can_frames.csv from an OWT-data session for CAN log replay.",
+                "type": "shell",
+                "command": "./scripts/get_mock_can_msg.sh -d ${input:owt_date}",
+                "problemMatcher": []
+            },
             // ROS Launch Tasks
             {
                 "label": "Launch Package",
@@ -559,6 +566,18 @@
                 "type": "promptString",
                 "description": "Optional ROS package launch flags or arguments",
                 "default": ""
+            },
+            {
+                "id": "owt_date",
+                "type": "pickString",
+                "description": "OWT session date (yyyy-mm-dd) to pull combined_can_frames.csv from",
+                "default": "2026-06-06",
+                "options": [
+                    "2026-06-06",
+                    "2026-05-23",
+                    "2026-03-15",
+                    "2026-07-11",
+                ]
             }
         ]
     }
