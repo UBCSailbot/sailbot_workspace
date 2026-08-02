@@ -1,0 +1,16 @@
+# Overlay that turns on the Gazebo simulator backend.
+
+services:
+  sailbot-workspace:
+    # gazebo-dev is published for linux/amd64 only, because OSRF does not build the
+    # ros-humble-ros-gzharmonic* packages for arm64 on jammy. Without this pin, Docker on an
+    # arm64 host (Apple Silicon) targets its native platform, finds no arm64 variant in the
+    # manifest, and fails the build with "no match for platform in manifest" rather than
+    # falling back to emulation. With it, the amd64 image runs under Rosetta 2 / QEMU.
+    # For Apple Silicon users, expect poor performance when using the Gazebo GUI. We recommend
+    # running Gazebo headless.
+
+    platform: linux/amd64
+    build:
+      args:
+        INSTALL_GAZEBO: "true"

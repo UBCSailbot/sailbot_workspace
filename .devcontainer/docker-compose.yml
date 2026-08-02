@@ -7,7 +7,10 @@ services:
       dockerfile: Dockerfile
       # Opt in to the Gazebo simulator backend (Gazebo Harmonic + a prebuilt
       # asv_wave_sim). Off by default because only the boat_simulator and pathfinding team needs it.
-      # Set INSTALL_GAZEBO to "true" if wanting to use the Gazebo simulator
+      # To enable it, add gazebo/docker-compose.gazebo.yml to "dockerComposeFile" in
+      # devcontainer.json rather than flipping this to "true" - the overlay also pins the
+      # amd64 platform that gazebo-dev requires. See gazebo/README.md.
+      # CI asserts this stays "false" (see the gazebo-disabled-by-default job).
       args:
         INSTALL_GAZEBO: "false"
     # Use "always" instead if this container should restart even after some manual stops.
