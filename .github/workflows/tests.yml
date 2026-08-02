@@ -71,7 +71,7 @@ jobs:
 
     - name: Ensure Gazebo is not installed for the Main branch
       run: |
-        if grep -nE '^\s*INSTALL_GAZEBO\s*:' .devcontainer/docker-compose.yml; then
-          echo "::error file=.devcontainer/docker-compose.yml::INSTALL_GAZEBO must stay commented out - every CI job builds this compose file, and leaving it enabled would make Gazebo mandatory for everyone instead of opt-in."
+        if ! grep -qE '^\s*INSTALL_GAZEBO:\s*"false"\s*$' .devcontainer/docker-compose.yml; then
+          echo "::error file=.devcontainer/docker-compose.yml::INSTALL_GAZEBO must stay set to \"false\" - every CI job builds this compose file, and leaving it enabled would make Gazebo mandatory for everyone instead of opt-in."
           exit 1
         fi
