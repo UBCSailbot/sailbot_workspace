@@ -14,14 +14,9 @@ ARG ROS_DISTRO_NAME=humble
 ARG ASV_WAVE_SIM_REF=master
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Gazebo itself. The base image ships Ignition Fortress (ros-humble-ros-gz-*), which
-# Conflicts with the Harmonic bridge, so apt swaps it here rather than at runtime.
-#
+# Gazebo itself.
 # amd64 only: OSRF publishes the bare gz-${GZ_DISTRO} engine for arm64, but not the
-# ros-${ROS_DISTRO_NAME}-ros-gz${GZ_DISTRO}* bridge packages this image actually needs -
-# their jammy/arm64 package index has zero ros-gz entries. Building this image for arm64
-# fails with "Unable to locate package" on that line; see the platforms input in
-# ../../.github/workflows/build-gazebo-dev-image.yml.
+# ros-${ROS_DISTRO_NAME}-ros-gz${GZ_DISTRO}* bridge packages this arm64 image needs
 RUN set -eux \
     && curl -sSL https://packages.osrfoundation.org/gazebo.gpg \
         -o /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg \
