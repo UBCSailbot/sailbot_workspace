@@ -14,7 +14,11 @@
   "workspaceFolder": "/workspaces/sailbot_workspace",
   "remoteUser": "ros",
   "containerEnv": {
-    "LIBGL_ALWAYS_SOFTWARE": "1" // Needed for software rendering of opengl
+    "LIBGL_ALWAYS_SOFTWARE": "1", // Needed for software rendering of opengl
+    // Selects which Gazebo release asv_wave_sim builds against. It falls back to Garden's
+    // libraries when unset, which does not configure against the Harmonic install used by
+    // the boat_simulator_gazebo backend.
+    "GZ_VERSION": "harmonic"
   },
   // Set *default* container specific settings.json values on container create.
   "customizations": {

@@ -5,6 +5,12 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        # Opt in to the Gazebo simulator backend (Gazebo Harmonic + a prebuilt
+        # asv_wave_sim). Off by default because it adds roughly 1.8 GB to the image and
+        # ~15 minutes to the build, and only the boat_simulator_gazebo package needs it.
+        # Enable with `export INSTALL_GAZEBO=true` before rebuilding the container.
+        INSTALL_GAZEBO: ${INSTALL_GAZEBO:-true}
     # Use "always" instead if this container should restart even after some manual stops.
     # restart: always
     restart: unless-stopped
