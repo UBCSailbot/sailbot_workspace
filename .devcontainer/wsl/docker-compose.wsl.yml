@@ -1,0 +1,37 @@
+# Overlay that gives the container WSL2's GPU, so OpenGL GUIs (the Gazebo GUI, RViz) render
+# on hardware instead of on the CPU.
+#
+# WSL2 exposes the Windows GPU to Linux through /dev/dxg plus a set of userspace libraries
+# that Windows injects into every WSL distro at /usr/lib/wsl/lib (libd3d12core.so,
+# libdxcore.so, and friends). Mesa's d3d12 Gallium driver - already present in the image as
+# /usr/lib/x86_64-linux-gnu/dri/d3d12_dri.so - translates OpenGL onto them.
+#
+# /dev/dxg is already visible inside the container because the base compose file sets
+# `privileged: true`, so no `devices:` entry is needed here. Adding one would risk replacing
+# rather than extending the base file's /dev/ttyS0 mapping. The libraries are the only
+# missing piece, and without them Mesa finds no usable driver and silently falls back to
+# llvmpipe, the software rasterizer.
+#
+# WSL2 HOSTS ONLY. On macOS or a native Linux host /usr/lib/wsl does not exist; Docker
+# would create an empty directory for it instead of failing, and LIBGL_ALWAYS_SOFTWARE=0
+# would then leave the GUI with no working driver at all. See README.md.
+
+services:
+  sailbot-workspace:
+    volumes:
+      # Read-only: this tree is managed by Windows and must match the host driver version.
+      - /usr/lib/wsl:/usr/lib/wsl:ro
+
+    environment:
+      # Undo the base compose file's software-rendering fallback now that a real driver is
+      # available. Compose overlays override scalar values from earlier files, which is why
+      # LIBGL_ALWAYS_SOFTWARE is set there rather than in devcontainer.json's "containerEnv"
+      # (containerEnv is applied last and would win over this).
+      LIBGL_ALWAYS_SOFTWARE: "0"
+
+      # Pick Mesa's d3d12 driver explicitly. Auto-detection usually finds it, but only after
+      # probing for a /dev/dri node that WSL does not provide, so naming it avoids a fallback
+      # to llvmpipe that looks like success apart from being ~100x slower.
+      GALLIUM_DRIVER: d3d12
+
+      LD_LIBRARY_PATH: /usr/lib/wsl/lib:/opt/ros/humble/lib
