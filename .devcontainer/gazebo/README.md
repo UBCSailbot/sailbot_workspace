@@ -12,6 +12,11 @@
   [`../docker-compose.yml`](../docker-compose.yml)) selects this image as the
   base in [`../Dockerfile`](../Dockerfile) instead of compiling
   `asv_wave_sim` (~15 minutes) locally on every rebuild
+- Published for `linux/amd64` only. OSRF does not publish the
+  `ros-humble-ros-gzharmonic*` bridge packages this image needs for `arm64`
+  on jammy (only the bare `gz-harmonic` engine), so it cannot be built
+  natively for Apple Silicon - Docker Desktop falls back to emulating the
+  `amd64` image there instead
 
 ## How to build
 
