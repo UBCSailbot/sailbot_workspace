@@ -46,42 +46,53 @@ is what `asv_wave_sim` needs; the Dev Container originally shipped Ignition
 Fortress, which could not run the wave field at all.
 
 Gazebo is **opt-in at image build time**, because its dependency closure is
-about 1.8 GB and most of the team never runs the simulator. Enable it, then
-rebuild the container:
+about 1.8 GB and most of the team never runs the simulator. Enable it by
+setting the `INSTALL_GAZEBO` build arg in
+[`docker-compose.yml`](../../.devcontainer/docker-compose.yml) to `"true"`:
 
-```bash
-export INSTALL_GAZEBO=true
-# then: VS Code -> "Dev Containers: Rebuild Container"
+```yaml
+    build:
+      args:
+        INSTALL_GAZEBO: "true"
 ```
 
-[`docker-compose.yml`](../../.devcontainer/docker-compose.yml) forwards
-`INSTALL_GAZEBO` to the [`Dockerfile`](../../.devcontainer/Dockerfile), which
-when it is `true`:
+then run the VS Code command "Dev Containers: Rebuild Container".
 
-1. Adds the OSRF apt repository (Harmonic is not in the ROS one) and installs
+That build arg selects which image
+[`Dockerfile`](../../.devcontainer/Dockerfile) builds on top of. When it is
+`true` the base becomes
+`ghcr.io/ubcsailbot/sailbot_workspace/gazebo-dev`, a prebuilt image (see
+[`.devcontainer/gazebo/`](../../.devcontainer/gazebo/README.md)) that already
+contains:
+
+1. The OSRF apt repository (Harmonic is not in the ROS one) plus
    `gz-harmonic`, `ros-humble-ros-gzharmonic`, and `libcgal-dev` /
    `libfftw3-dev`. Note that `ros-humble-ros-gzharmonic-bridge` **conflicts
    with** and replaces `ros-humble-ros-gz-bridge`, so this removes the Fortress
    bridge.
-2. Clones and builds `asv_wave_sim`, installing it to `/opt/asv_wave_sim` and
-   exporting `ASV_WAVE_SIM_PREFIX`, `GZ_SIM_SYSTEM_PLUGIN_PATH`,
-   `GZ_RENDERING_PLUGIN_PATH`, and `GZ_SIM_RESOURCE_PATH` to point at it.
-   `GZ_RENDERING_PLUGIN_PATH` matters even though it looks redundant with
+2. `asv_wave_sim`, built and installed to `/opt/asv_wave_sim`, with
+   `ASV_WAVE_SIM_PREFIX`, `GZ_SIM_SYSTEM_PLUGIN_PATH`,
+   `GZ_RENDERING_PLUGIN_PATH`, and `GZ_SIM_RESOURCE_PATH` exported to point at
+   it. `GZ_RENDERING_PLUGIN_PATH` matters even though it looks redundant with
    `GZ_SIM_SYSTEM_PLUGIN_PATH`: the ocean surface mesh (`WavesVisual`) is drawn
    by a render-engine extension that only the GUI client loads, through a
    different loader with no built-in search path of its own. Without it the
    GUI logs `Failed to load plugin [gz-waves1-rendering-ogre2] : couldn't load
    library on path []` and the boat model spawns but never renders.
 
-Building `asv_wave_sim` into the image rather than the workspace is deliberate:
-it is a pinned third-party dependency that never changes, and its CGAL-heavy
-translation units take **~15 minutes** to compile. Paying that once per image
-beats paying it on every fresh clone. Its system plugins have no CMake install
-rules — they are meant to be used from the build tree — so the image copies the
-built `lib` directory out wholesale.
+Shipping `asv_wave_sim` prebuilt in that image rather than building it in the
+workspace is deliberate: it is a pinned third-party dependency that never
+changes, and its CGAL-heavy translation units take **~15 minutes** to compile.
+Paying that once per image beats paying it on every fresh clone. Its system
+plugins have no CMake install rules — they are meant to be used from the build
+tree — so the image copies the built `lib` directory out wholesale.
 
-With `INSTALL_GAZEBO=false` (the default) every one of those steps is skipped
-and the image is byte-identical to before.
+`gazebo-dev` is published for `linux/amd64` only, because OSRF does not build
+the `ros-humble-ros-gzharmonic*` packages for `arm64` on jammy. On Apple
+Silicon it therefore runs emulated, which is noticeably slower.
+
+With `INSTALL_GAZEBO: "false"` (the default) the base image is the plain `dev`
+image and none of the above is pulled.
 
 Then the normal workspace setup:
 

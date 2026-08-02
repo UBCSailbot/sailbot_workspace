@@ -35,7 +35,7 @@
    default with the short description above
 8. Once the workflow successfully completes, run the "Dev Containers:
    Rebuild Container" VS Code command to use the newly built image (with
-   `INSTALL_GAZEBO` uncommented in `../docker-compose.yml`)
+   `INSTALL_GAZEBO` set to `"true"` in `../docker-compose.yml`)
 
 ### Debugging locally
 
