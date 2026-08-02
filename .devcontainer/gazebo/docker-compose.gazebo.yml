@@ -1,10 +1,5 @@
-# Overlay that turns on the Gazebo simulator backend. Add it to "dockerComposeFile" in
-# devcontainer.json (see .devcontainer/gazebo/README.md) and rebuild the container.
-#
-# Kept as an overlay rather than an edit to the main docker-compose.yml for two reasons:
-# the platform pin below must NOT apply to the default build, and leaving the base file at
-# INSTALL_GAZEBO "false" keeps CI's gazebo-disabled-by-default check happy without anyone
-# having to remember to revert a local edit before committing.
+# Overlay that turns on the Gazebo simulator backend.
+
 services:
   sailbot-workspace:
     # gazebo-dev is published for linux/amd64 only, because OSRF does not build the
@@ -12,9 +7,9 @@ services:
     # arm64 host (Apple Silicon) targets its native platform, finds no arm64 variant in the
     # manifest, and fails the build with "no match for platform in manifest" rather than
     # falling back to emulation. With it, the amd64 image runs under Rosetta 2 / QEMU.
-    #
-    # This belongs here and not in the base compose file: pinning amd64 unconditionally
-    # would force every arm64 user into emulation even when they are not running Gazebo.
+    # For Apple Silicon users, expect poor performance when using the Gazebo GUI. We recommend
+    # running Gazebo headless.
+
     platform: linux/amd64
     build:
       args:
