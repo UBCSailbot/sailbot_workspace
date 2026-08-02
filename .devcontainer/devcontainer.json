@@ -8,11 +8,12 @@
 
     // Uncomment the files containing the programs you need
     // "docs/docker-compose.docs.yml", // docs
-    "gazebo/docker-compose.gazebo.yml", // Gazebo simulator backend (amd64 only)
+
+    // Uncomment the two compose files below to use the gazebo simulator
+    // "gazebo/docker-compose.gazebo.yml", // Gazebo simulator backend (amd64 only)
 
     // Renders OpenGL GUIs (Gazebo, RViz) on the GPU instead of the CPU. Must stay after
-    // docker-compose.yml, whose LIBGL_ALWAYS_SOFTWARE it overrides. See wsl/README.md.
-    "wsl/docker-compose.wsl.yml" // WSL2 GPU passthrough for OpenGL GUIs (WSL2 hosts only)
+    // "wsl/docker-compose.wsl.yml" // WSL2 GPU passthrough for OpenGL GUIs (WSL2 hosts only)
   ],
   "service": "sailbot-workspace",
   "forwardPorts": [3005],
