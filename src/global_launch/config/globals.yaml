@@ -88,6 +88,19 @@ physics_engine_node:
          mvgaussian_params:
             mean: [0.278, 0.139]
             cov: "[[0.1389, 0.028], [0.028, 0.083]]"
+gazebo_physics_bridge_node:
+   ros__parameters:
+      info_log_throttle_period_sec: 2.0
+      action_send_goal_timeout_sec: 2.0
+      qos_depth: 1
+      rudder:
+         actuation_request_period_sec: 10.0
+      wingsail:
+         actuation_request_period_sec: 10.0
+      # Constant true wind of the Gazebo world in the ENU frame (east, north), m/s.
+      # Must match <wind><linear_velocity> in
+      # src/boat_simulator_gazebo/worlds/sailing_world.sdf.
+      true_wind_enu_mps: [1.389, 1.389]
 data_collection_node:
    ros__parameters:
       file_name: "ros_data_collection"

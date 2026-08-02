@@ -5,9 +5,14 @@ import os
 from typing import List, Tuple
 
 import yaml
-from launch.actions import DeclareLaunchArgument, OpaqueFunction
+from launch.actions import (
+    DeclareLaunchArgument,
+    IncludeLaunchDescription,
+    OpaqueFunction,
+)
 from launch.launch_context import LaunchContext
 from launch.launch_description import LaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.some_substitutions_type import SomeSubstitutionsType
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
@@ -42,6 +47,14 @@ LOCAL_LAUNCH_ARGUMENTS: List[DeclareLaunchArgument] = [
         default_value="false",
         choices=["true", "false"],
         description="Enable plotting of boat path",
+    ),
+    DeclareLaunchArgument(
+        name="physics_backend",
+        default_value="kinematic",
+        choices=["kinematic", "gazebo"],
+        description="Physics backend for the boat simulator. `kinematic` runs the"
+        + " physics_engine_node; `gazebo` runs a Gazebo (gz-sim) world via the"
+        + " boat_simulator_gazebo package",
     ),
 ]
 
@@ -99,7 +112,11 @@ def setup_launch(context: LaunchContext) -> List[Node]:
         context.launch_configurations["config"] = config
 
     launch_description_entities = list()
-    launch_description_entities.append(get_physics_engine_description(context))
+    physics_backend = LaunchConfiguration("physics_backend").perform(context)
+    if physics_backend == "gazebo":
+        launch_description_entities.append(get_gazebo_backend_description(context))
+    else:
+        launch_description_entities.append(get_physics_engine_description(context))
     launch_description_entities.append(get_low_level_control_description(context))
     launch_description_entities.append(get_data_collection_description(context))
     launch_description_entities.append(get_mock_data_description(context))
@@ -149,6 +166,24 @@ def get_physics_engine_description(context: LaunchContext) -> Node:
     )
 
     return node
+
+
+def get_gazebo_backend_description(context: LaunchContext) -> IncludeLaunchDescription:
+    """Gets the launch description for the Gazebo physics backend, which replaces the
+    physics engine node. The included launch file starts the Gazebo server, the ros_gz
+    bridge, and the gazebo_physics_bridge_node from the boat_simulator_gazebo package.
+
+    Args:
+        context (LaunchContext): The current launch context.
+
+    Returns:
+        IncludeLaunchDescription: The launch description of the Gazebo backend.
+    """
+    ros_workspace = os.getenv("ROS_WORKSPACE", default="/workspaces/sailbot_workspace")
+    gazebo_launch_path = os.path.join(
+        ros_workspace, "src", "boat_simulator_gazebo", "launch", "gazebo_launch.py"
+    )
+    return IncludeLaunchDescription(PythonLaunchDescriptionSource(gazebo_launch_path))
 
 
 def get_sim_gps_origin_parameters(test_plan: str) -> dict:

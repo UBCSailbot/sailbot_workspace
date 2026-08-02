@@ -1,0 +1,16 @@
+# Source repositories required by the Gazebo physics backend. Imported into src/ by
+# scripts/setup.sh when ENABLE_GAZEBO=true (see this package's README).
+#
+# asv_wave_sim provides the gz-waves ocean wave field plus the WavesModel/WavesVisual and
+# Hydrodynamics gz-sim plugins referenced by worlds/sailing_world.sdf and the boat model
+# contract. It is REQUIRED, not optional: Hydrodynamics is what makes the boat float, since
+# the world does not load the stock gz-sim Buoyancy system.
+#
+# Requires Gazebo Garden or newer; this backend targets Harmonic. Build with
+# GZ_VERSION=harmonic, or its CMake silently selects Garden's libraries and fails to
+# configure.
+repositories:
+  asv_wave_sim:
+    type: git
+    url: https://github.com/srmainwaring/asv_wave_sim.git
+    version: master
