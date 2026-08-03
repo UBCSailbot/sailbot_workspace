@@ -16,9 +16,19 @@ setup(
         ("share/" + PACKAGE_NAME, ["package.xml"]),
         (join("share", PACKAGE_NAME), glob("launch/*_launch.py")),
         (join("share", PACKAGE_NAME, "worlds"), glob("worlds/*.sdf")),
+        # Both boat models, meshes included. gazebo_launch.py resolves boat_model_sdf out
+        # of the source tree
         (
             join("share", PACKAGE_NAME, "models", "polaris"),
             glob(join("models", "polaris", "model.*")),
+        ),
+        (
+            join("share", PACKAGE_NAME, "models", "polaris", "meshes"),
+            glob(join("models", "polaris", "meshes", "*.STL")),
+        ),
+        (
+            join("share", PACKAGE_NAME, "models", "polaris_basic"),
+            glob(join("models", "polaris_basic", "model.*")),
         ),
     ],
     zip_safe=True,

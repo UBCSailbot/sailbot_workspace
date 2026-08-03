@@ -31,12 +31,25 @@ under the old buoyancy model has been removed, on the expectation that
 `Hydrodynamics` supplies a genuine waterplane righting moment instead. That
 needs confirming on a real run before this section can claim "verified" again.
 
-The bundled [`models/polaris`](models/polaris/model.sdf) is a coarse
+The table above was measured against
+[`models/polaris_basic`](models/polaris_basic/model.sdf), a coarse
 box-geometry stand-in that satisfies the [model
 contract](#boat-model-contract): correct mass, inertia, foil areas, and
 centre-of-effort offsets from `BOAT_PROPERTIES`, but not the real hull shape.
 The lift/drag coefficients and joint gains are hand-fitted and still worth
-tuning.
+tuning. It remains the default `boat_model_sdf`.
+
+[`models/polaris`](models/polaris/model.sdf) is the same boat drawn with the
+real CAD hull geometry. The two models are deliberately identical in every
+respect except `<visual>` geometry — same links, joints, mass, inertia, gains
+and plugin parameters, all from `BOAT_PROPERTIES` — so switching between them
+changes what you see, not how the boat behaves. Both have been re-checked under
+Harmonic since the notes above: each floats at its waterline, holds attitude,
+and sails under ambient wind, in both headless and GUI mode.
+
+What has *not* been re-measured against Harmonic is the quantitative table
+above (boat speed, joint tracking, settling draft). Treat those numbers as the
+Fortress baseline until someone reruns them.
 
 ## Setup
 
@@ -171,11 +184,27 @@ ros2 launch boat_simulator_gazebo gazebo_launch.py
 
 Launch arguments (in addition to the global ones):
 
-| Argument         | Default                    | Description                                    |
-| ---------------- | -------------------------- | ---------------------------------------------- |
-| `gz_world`       | `worlds/sailing_world.sdf` | World SDF to load                              |
-| `gz_headless`    | `true`                     | Server-only (no GUI); needed without a display |
-| `boat_model_sdf` | `models/polaris/model.sdf` | Boat model to spawn; empty skips spawning      |
+| Argument            | Default                          | Description                                     |
+| ------------------- | -------------------------------- | ----------------------------------------------- |
+| `gz_world`          | `worlds/sailing_world.sdf`       | World SDF to load                               |
+| `gz_headless`       | `false`                          | Server-only (no GUI); needed without a display  |
+| `boat_model_sdf`    | `models/polaris_basic/model.sdf` | Boat model to spawn; empty skips spawning       |
+| `boat_spawn_height` | `0.2`                            | Model origin height above mean water at spawn   |
+
+`boat_spawn_height` is the spawned model's flotation equilibrium, so it belongs
+to the model rather than the launch. The default matches `polaris_basic`; spawn
+`models/polaris` with `boat_spawn_height:=0.0`:
+
+```bash
+ros2 launch boat_simulator_gazebo gazebo_launch.py \
+  boat_model_sdf:=$PWD/src/boat_simulator_gazebo/models/polaris/model.sdf \
+  boat_spawn_height:=0.0
+```
+
+Set `gz_headless:=true` when there is no display. Note that the Dev Container
+sets `LIBGL_ALWAYS_SOFTWARE=1` and exposes no GPU, so the GUI is rasterised on
+the CPU on every host platform — it runs, but it costs about 1 GB of RSS and
+holds a real-time factor near 0.8 rather than 1.0.
 
 ## Architecture
 
@@ -236,6 +265,14 @@ this contract:
 The `SimRudderActuation` feedback angle increases **CW**, so the bridge node
 negates it before commanding `rudder_joint`; `SimSailTrimTabActuation` feedback
 increases CCW and is forwarded as-is. Commands are in **radians**.
+
+These names are the contract's ROS-facing identifier for each actuated joint,
+not necessarily the joint's literal name in the model's SDF: what actually
+matters is that a `JointPositionController` plugin's `<topic>` matches
+`/model/polaris/joint/<name>/cmd_pos`. Both shipped models happen to name their
+SDF joints the same as the contract, so the `<joint_name>`/`<topic>` pair in
+each `JointPositionController` is a straight mapping; a model that named them
+otherwise would still comply as long as the topics match.
 
 ### Required plugins on the model
 
@@ -309,11 +346,58 @@ righting moment at all and the model has to be artificially ballasted
 CG-below-CB or it tumbles within seconds — even with every aerodynamic force
 removed. That workaround is gone.
 
-## Example model
+## Example models
 
-[`models/polaris/model.sdf`](models/polaris/model.sdf) is a working
-implementation of the contract above, spawned by default. It is box geometry,
-not hull shape, but its physical quantities come from `BOAT_PROPERTIES` so both
+Two models ship with this package. `gazebo_launch.py`'s `boat_model_sdf`
+launch argument picks between them (or points at something else entirely).
+
+**They are the same boat.** Links, joints, mass, inertia, joint limits, gains,
+and every `LiftDrag`/`Hydrodynamics` parameter are identical and sourced from
+`BOAT_PROPERTIES`; only `<visual>` geometry differs. Change a physical number in
+one and you must change it in the other.
+
+### `models/polaris` (real hull geometry)
+
+[`models/polaris/model.sdf`](models/polaris/model.sdf) draws the boat with the
+CAD meshes in [`models/polaris/meshes`](models/polaris/meshes), prepared from
+the SolidWorks-exported URDF at
+[`models/polaris/urdf/polaris.urdf`](models/polaris/urdf/polaris.urdf) by
+[`tools/prepare_polaris_meshes.py`](tools/prepare_polaris_meshes.py). That
+script exists because the raw export is not directly usable:
+
+- **It is in a z-down frame.** Loaded as exported, the wingsail hangs about 3 m
+  *below* the hull, the trim tab sits underwater, and the rudder points at the
+  sky. Every mesh is rotated 180° about x to fix this.
+- **`base_hull.STL` is 1.35 M triangles / 67 MB.** Since the Dev Container
+  renders in software on every platform, that geometry costs about 1 GB of extra
+  RSS in the GUI. It is decimated to ~36 k triangles (1.8 MB), which is not
+  visibly different at the scale the boat is drawn.
+
+The hull mesh is also translated so the model origin lands on the CG, matching
+`polaris_basic` and the frame the `*_CE_REL_TO_CG` constants use.
+
+Rerun the script after replacing a CAD export:
+
+```bash
+pip install fast-simplification
+python3 src/boat_simulator_gazebo/tools/prepare_polaris_meshes.py
+```
+
+It reads `models/polaris/meshes/raw/*.STL` and writes `models/polaris/meshes/`.
+The raw exports are gitignored — only the prepared meshes are committed, which
+is why cloning this repo does not cost 70 MB.
+
+Note that `base_hull.STL` is a **thin-walled shell** (~10 mm wall), so it
+encloses the volume of the hull *skin*, not the hull's displacement. It can
+never be used as `Hydrodynamics` collision geometry; see the comment on
+`hull_collision` in `model.sdf` for how the buoyancy proxy is sized instead.
+
+### `models/polaris_basic` (box stand-in, contract-verified)
+
+[`models/polaris_basic/model.sdf`](models/polaris_basic/model.sdf) is the
+model the [Status](#status) table above was measured against, and is a
+working implementation of the contract above. It is box geometry, not hull
+shape, but its physical quantities come from `BOAT_PROPERTIES` so both
 backends describe the same boat:
 
 | Link        | Geometry (m)       | Source                                |
@@ -333,9 +417,10 @@ Two details worth knowing before editing it:
   as on the real boat. Only `rudder_joint` and `trim_tab_joint` are contract
   joints.
 - **Spawn height is tied to hull geometry.** The hull box must submerge 0.075 m
-  to displace 0.269 m³, so `gazebo_launch.py` spawns the CG at
-  `BOAT_SPAWN_HEIGHT_M = 0.2` m to start at equilibrium. Change the hull
-  dimensions and that constant must change too.
+  to displace 0.269 m³, so the boat spawns with its CG at
+  `boat_spawn_height = 0.2` m to start at equilibrium. That default is
+  `polaris_basic`'s; `models/polaris` reaches equilibrium at 0.0. Change either
+  model's hull collision geometry and its spawn height must change too.
 
 ## Topic map (ros_gz_bridge)
 
@@ -353,6 +438,19 @@ topic after its Gazebo counterpart.
 
 ## Known limitations / follow-up work
 
+- **Neither model's hull collision geometry is the real hull shape.** Both use a
+  box proxy sized to reproduce the measured displacement and waterplane area at
+  equilibrium. `models/polaris`'s box is derived from the CAD hull's
+  hydrostatics (draft 0.33 m, waterplane 2.02 m²), but a box still heels and
+  pitches differently from a real hull section, so the righting moment is only
+  first-order correct.
+- **`models/polaris` reuses `polaris_basic`'s hand-fitted `LiftDrag`
+  coefficients**, which are not fitted to its actual foil geometry. That is a
+  deliberate consequence of keeping the two models physically identical.
+- The CAD rakes the rudder stock about 21° off vertical; the model holds the
+  `rudder_joint` axis vertical instead, because the contract specifies +Z and a
+  raked axis would make commanded and achieved steering angles differ by
+  `cos(rake)`.
 - The `<wave>` parameters are duplicated between the world's `WavesModel` and
   the model's `Hydrodynamics` plugin, and nothing enforces that they agree. A
   silent mismatch floats the boat against a surface other than the rendered one.
@@ -361,11 +459,11 @@ topic after its Gazebo counterpart.
   `D = diag(45, 180, 115, 140)` is in N·s/m while these are dimensionless
   coefficients scaled by submerged area, so they cannot be transcribed directly
   and the two backends will not damp identically.
-- The example model uses box geometry with hand-estimated `LiftDrag`
+- `polaris_basic` uses box geometry with hand-estimated `LiftDrag`
   coefficients fitted to the `BOAT_PROPERTIES` tables at a single point, rather
   than the full angle-of-attack curves. The kinematic and Gazebo backends will
   not agree quantitatively.
-- `I_yy` and the mast/joint damping values in the example model are guesses;
+- `I_yy` and the mast/joint damping values in `polaris_basic` are guesses;
   the 4-DOF kinematic model has no pitch DOF to source `I_yy` from.
 - Sailing has only been checked running downwind from a standing start. Upwind
   and reaching behaviour, and whether the boat can actually hold a commanded

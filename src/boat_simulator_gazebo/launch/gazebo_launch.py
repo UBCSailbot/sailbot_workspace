@@ -76,13 +76,23 @@ def gz_name(bridge_spec: str) -> str:
     return bridge_spec.split("@", 1)[0]
 
 
-# Height of the boat's centre of gravity above the water surface at flotation equilibrium.
-# The bundled model's hull collision box is 3.6 x 0.99 x 0.55 m centred on the CG and must
-# displace mass / WATER_DENSITY = 276 / 1027 = 0.269 m^3, giving a draft of 0.075 m and so
-# a CG 0.55/2 - 0.075 = 0.200 m above the waterline. Spawning here lets the boat settle
-# instead of dropping in and bobbing. A model with different hull geometry needs a
-# different value.
-BOAT_SPAWN_HEIGHT_M = 0.2
+# Height of the boat's centre of gravity above the water surface at spawn.
+#
+# This is a property of the model, not of the launch, because it is the model's flotation
+# equilibrium: spawn a boat here and it starts at rest instead of dropping in and bobbing.
+# Both shipped models put their origin on the CG, but they reach equilibrium at different
+# CG heights, so the default below only matches the default model:
+#
+#   models/polaris_basic  0.2   hull collision box 3.6 x 0.99 x 0.55 m centred on the CG,
+#                               displacing mass / WATER_DENSITY = 276 / 1027 = 0.269 m^3
+#                               at a 0.075 m draft, so the CG sits 0.55/2 - 0.075 above
+#                               the waterline.
+#   models/polaris        0.0   its collision box is sized from the real hull's measured
+#                               hydrostatics (draft 0.33 m, waterplane 2.02 m^2), which
+#                               put the waterline at z = -0.006 relative to the CG.
+#
+# Override with the boat_spawn_height launch argument when spawning a different model.
+DEFAULT_BOAT_SPAWN_HEIGHT_M = 0.2
 
 LOCAL_LAUNCH_ARGUMENTS: List[DeclareLaunchArgument] = [
     DeclareLaunchArgument(
@@ -99,10 +109,19 @@ LOCAL_LAUNCH_ARGUMENTS: List[DeclareLaunchArgument] = [
     ),
     DeclareLaunchArgument(
         name="boat_model_sdf",
-        default_value=os.path.join(PACKAGE_SRC_DIR, "models", "polaris", "model.sdf"),
+        default_value=os.path.join(PACKAGE_SRC_DIR, "models", "polaris_basic", "model.sdf"),
         description="Path to the boat model SDF/URDF satisfying the model contract in"
-        + f" src/{PACKAGE_NAME}/README.md. Defaults to the bundled example Polaris model."
+        + f" src/{PACKAGE_NAME}/README.md. Defaults to models/polaris_basic, the"
+        + " contract-verified box stand-in; models/polaris is the same boat drawn with"
+        + " the real CAD hull mesh (pass boat_spawn_height:=0.0 with it)."
         + " Set to an empty string to launch the world without a boat",
+    ),
+    DeclareLaunchArgument(
+        name="boat_spawn_height",
+        default_value=str(DEFAULT_BOAT_SPAWN_HEIGHT_M),
+        description="Height of the boat model's origin above the mean water level at spawn,"
+        + " in metres. The default is models/polaris_basic's flotation equilibrium; use 0.0"
+        + " for models/polaris",
     ),
 ]
 
@@ -216,10 +235,15 @@ def gazebo_resource_env() -> dict:
     prebuilt image already exports this, but it is rebuilt here so an in-workspace checkout
     works too. Existing entries are preserved, so a caller can add their own model paths.
 
+    This package's `models/` directory is included as well, so the shipped boat models
+    resolve as `model://polaris` / `model://polaris_basic` for anyone including them from a
+    custom world, rather than only via the absolute path `boat_model_sdf` passes to
+    `ros_gz_sim create -file`.
+
     Returns:
         dict: Environment variables to overlay onto the Gazebo server process.
     """
-    resource_paths = [PACKAGE_SRC_DIR]
+    resource_paths = [PACKAGE_SRC_DIR, os.path.join(PACKAGE_SRC_DIR, "models")]
     for root in asv_wave_sim_roots():
         models = os.path.join(root, "gz-waves-models")
         resource_paths.append(os.path.join(models, "world_models"))
@@ -312,7 +336,7 @@ def get_spawn_boat_description(context: LaunchContext, boat_model_sdf: str) -> N
             "-y",
             "0",
             "-z",
-            str(BOAT_SPAWN_HEIGHT_M),
+            LaunchConfiguration("boat_spawn_height"),
         ],
     )
 
