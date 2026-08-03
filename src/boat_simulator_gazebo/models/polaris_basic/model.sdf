@@ -1,94 +1,72 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Polaris with the real CAD hull geometry, satisfying the model contract in
-  src/boat_simulator_gazebo/README.md.
+  Example boat model satisfying the model contract in src/boat_simulator_gazebo/README.md.
 
-  This model and models/polaris_basic are deliberately identical everywhere except
-  <visual> geometry: same link and joint names, same mass and inertia, same joint
-  limits and gains, same LiftDrag and Hydrodynamics parameters. polaris_basic draws
-  itself with boxes; this one draws itself with the CAD meshes. Keeping the physics
-  byte-for-byte identical means switching boat_model_sdf between them changes only
-  what you see, never how the boat behaves, and there is one set of numbers to
-  maintain rather than two.
+  This is a coarse, geometry-only stand-in for Polaris, intended to exercise the Gazebo
+  backend end to end (buoyancy, wind-driven sail lift, rudder steering, odometry) rather
+  than to reproduce the real hull. Every physical quantity below is taken from
+  BOAT_PROPERTIES / the module constants in
+  src/boat_simulator/boat_simulator/common/constants.py so both physics backends describe
+  the same boat:
 
-  Every physical quantity therefore comes from BOAT_PROPERTIES in
-  boat_simulator/common/constants.py, NOT from the CAD export. The SolidWorks export
-  reports 244.28 kg and I_xx = 11.1 kg.m^2; BOAT_PROPERTIES says 276 kg and
-  I_xx = 175.86. The CAD figures cover the bare structure rather than the rigged boat,
-  and the roll inertia in particular is low enough to make the keel's LiftDrag moment
-  diverge and abort gz-sim within ~20 s.
+    mass            276 kg
+    I_xx, I_zz      175.86, 119.04 kg*m^2
+    sail area       2.01 m^2      CE at ( 0.25, -1.86) rel. CG  -> mast 1.86 m above CG
+    rudder area     0.117 m^2     CE at (-1.35,  0.74) rel. CG
+    keel area       0.51 m^2      CE at ( 0.08, -1.13) rel. CG
+    displaced vol.  0.269 m^3     (mass / 1027)
 
-  Frames: x forward (bow), y port, z up, with the model origin ON THE CG, matching the
-  convention the *_CE_REL_TO_CG constants are expressed against.
+  Frames: model x forward (bow), y port, z up. The hull link's inertial origin is the CG,
+  and link poses below are expressed relative to it.
 
-  The meshes in meshes/ are NOT the raw CAD export. tools/prepare_polaris_meshes.py
-  rotates them out of the exporter's z-down frame (raw, the wingsail hangs below the
-  hull and the rudder points at the sky), moves the hull onto the CG, and decimates
-  base_hull from 1.35 M triangles to ~36 k. See that script for the details; the raw
-  exports live in meshes/raw/ and are gitignored.
+  Waterline: the Buoyancy system in sailing_world.sdf computes flotation from the collision
+  geometry, so the hull collision box (not the visual) is what sets the waterline. The box
+  is 3.6 x 0.99 x 0.55 m, and displacing 0.269 m^3 of it submerges 0.075 m, i.e. 13.7% of
+  its height. gazebo_launch.py therefore spawns the model with its CG 0.2 m above z = 0 so
+  it starts at that equilibrium instead of dropping in and bobbing.
 -->
 <sdf version="1.9">
   <model name="polaris">
-    <!-- Hull: carries the boat's full mass and inertia, and all of the displaced volume.
-         The keel is rigidly fixed, so it is part of this link rather than its own. -->
+    <!-- Hull: carries the boat's full mass and inertia, and all of the displaced volume. -->
     <link name="hull">
       <inertial>
-        <!-- The CG sits at the link origin. No ballast offset is needed: the
-             Hydrodynamics plugin below integrates over the submerged volume, so the
-             centre of buoyancy moves outboard as the hull heels and supplies a real
-             waterplane righting moment. -->
+        <!-- The CG sits at the link origin, matching the convention the centre-of-effort
+             offsets in boat_simulator/common/constants.py are expressed against.
+
+             This previously carried an artificial ballast offset of -0.973 m, needed
+             because the stock gz-sim Buoyancy system applies a buoyant force that does not
+             move as the hull heels and so supplies no righting moment. asv_wave_sim's
+             Hydrodynamics plugin (further down) integrates over the submerged volume
+             instead, which recovers the waterplane restoring moment, so the offset is no
+             longer required and the CG can sit where the constants say it does. -->
         <mass>276.0</mass>
         <inertia>
           <ixx>175.86</ixx>
           <ixy>0</ixy>
           <ixz>0</ixz>
           <!-- I_yy is not tracked by the 4-DOF kinematic model (no pitch DOF). Estimated
-               from the hull's slenderness; pitch is lightly excited in practice. -->
+               here from the hull's slenderness; pitch is lightly excited in practice. -->
           <iyy>160.0</iyy>
           <iyz>0</iyz>
           <izz>119.04</izz>
         </inertia>
       </inertial>
 
-      <!-- Buoyancy proxy, NOT the hull mesh. Two separate reasons it has to be a box:
-
-           1. base_hull.STL is a thin-walled shell, about 10 mm thick -- a vertical ray
-              through it crosses the surface in pairs 9-11 mm apart. The volume it
-              encloses is the volume of the hull *skin* (0.177 m^3), not the volume the
-              hull *displaces*. Handing it to Hydrodynamics would compute buoyancy from
-              the amount of fibreglass, which is meaningless and, at 0.177 m^3 < the
-              0.269 m^3 needed, would not even float the boat.
-           2. Hydrodynamics re-integrates pressure over this geometry every physics step.
-              Against the full-resolution mesh that alone drops the simulation to roughly
-              0.01 s of sim time per 7 s of wall clock.
-
-           Sized from the real hull's hydrostatics, measured off the mesh's outer
-           envelope: at 276 kg the hull floats at a draft of 0.33 m, where it has a
-           waterplane area of 2.02 m^2. This box reproduces both -- footprint
-           3.0 x 0.673 = 2.02 m^2 sets the heave and roll stiffness, and sitting 0.133 m
-           of it under water displaces 3.0 x 0.673 x 0.133 = 0.269 m^3 = 276 / 1027.
-           It is deliberately shallower than the real hull: matching the waterplane
-           matters more for stability than matching the wetted shape, and the box's
-           bottom is never rendered. Equilibrium puts the waterline at z = -0.006, i.e.
-           the CG essentially exactly on it, so this model spawns at z ~ 0 (whereas
-           polaris_basic spawns at 0.2 -- see boat_spawn_height in gazebo_launch.py). -->
+      <!-- Collision volume sets buoyancy: 3.6 x 0.99 x 0.55 m box is 1.96 m^3 total, so the
+           boat floats once ~14% of it is submerged (0.269 m^3 / 1.96 m^3). -->
       <collision name="hull_collision">
-        <pose>-0.135 0 0.136 0 0 0</pose>
         <geometry>
           <box>
-            <size>3.0 0.673 0.55</size>
+            <size>3.6 0.99 0.55</size>
           </box>
         </geometry>
       </collision>
 
-      <!-- The keel is visual-only: it is a thin foil whose displacement is negligible
-           beside the hull's, and the box above is already sized to float the whole boat.
-           Its hydrodynamic side force comes from the LiftDrag plugin further down. -->
       <visual name="hull_visual">
         <geometry>
-          <mesh>
-            <uri>meshes/base_hull.STL</uri>
-          </mesh>
+          <box>
+            <size>3.6 0.99 0.55</size>
+          </box>
         </geometry>
         <material>
           <ambient>0.85 0.85 0.88 1</ambient>
@@ -96,16 +74,53 @@
         </material>
       </visual>
 
+      <!-- Deck marker, purely so bow direction is legible in the GUI. -->
+      <visual name="bow_marker">
+        <pose>1.5 0 0.3 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.6 0.2 0.06</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.9 0.2 0.1 1</ambient>
+          <diffuse>0.9 0.2 0.1 1</diffuse>
+        </material>
+      </visual>
+
+      <!-- Keel: fixed to the hull, so it is modelled as hull geometry rather than its own
+           link. Its lift/drag is applied by the LiftDrag system further below, which
+           references this link and the keel CE offset. -->
+      <collision name="keel_collision">
+        <pose>0.08 0 -1.13 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.45 0.06 1.15</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name="keel_visual">
+        <pose>0.08 0 -1.13 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.45 0.06 1.15</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.2 0.2 0.25 1</ambient>
+          <diffuse>0.2 0.2 0.25 1</diffuse>
+        </material>
+      </visual>
+
       <!-- Wind must reach the sail link via the world's WindEffects system. -->
       <enable_wind>false</enable_wind>
     </link>
 
-    <!-- Wing sail: rotates about the mast, which the CAD places 2.03 m above the CG and
-         0.27 m aft of it. The kinematic model drives the wing indirectly through the trim
-         tab, so the mast joint is free-spinning-with-damping and the trim tab is the
-         actuated surface, matching the real boat. -->
+    <!-- Wing sail: rotates about the mast. The kinematic model drives the wing indirectly
+         through the trim tab, so here the mast joint is free-spinning-with-damping and the
+         trim tab is the actuated surface, matching the real boat's behaviour. -->
     <link name="wing_sail">
-      <pose>-0.2693 0.11054 2.02723 0 0 0</pose>
+      <pose>0.25 0 1.86 0 0 0</pose>
       <inertial>
         <mass>12.0</mass>
         <inertia>
@@ -118,18 +133,17 @@
         </inertia>
       </inertial>
       <collision name="wing_sail_collision">
-        <pose>-0.5496 -0.11 -0.282 0 0 0</pose>
         <geometry>
           <box>
-            <size>1.532 0.08 3.55</size>
+            <size>1.5 0.12 2.7</size>
           </box>
         </geometry>
       </collision>
       <visual name="wing_sail_visual">
         <geometry>
-          <mesh>
-            <uri>meshes/link_wingsail.STL</uri>
-          </mesh>
+          <box>
+            <size>1.5 0.12 2.7</size>
+          </box>
         </geometry>
         <material>
           <ambient>0.95 0.95 0.95 1</ambient>
@@ -139,10 +153,10 @@
       <enable_wind>true</enable_wind>
     </link>
 
-    <!-- Trim tab: the actuated surface, 1.36 m aft of the mast axis in the CAD (the
-         kinematic model's WINGSAIL_TO_TRIM_TAB_BOOM_LENGTH is 1.43 m). -->
+    <!-- Trim tab: the actuated surface. WINGSAIL_TO_TRIM_TAB_BOOM_LENGTH = 1.43 m aft of
+         the mast axis. -->
     <link name="trim_tab">
-      <pose>-1.633 -0.03204 2.45329 0 0 0</pose>
+      <pose>-1.18 0 1.86 0 0 0</pose>
       <inertial>
         <mass>1.2</mass>
         <inertia>
@@ -155,18 +169,17 @@
         </inertia>
       </inertial>
       <collision name="trim_tab_collision">
-        <pose>-0.0078 0.0257 0 0 0 0</pose>
         <geometry>
           <box>
-            <size>0.31 0.075 0.63</size>
+            <size>0.3 0.05 0.66</size>
           </box>
         </geometry>
       </collision>
       <visual name="trim_tab_visual">
         <geometry>
-          <mesh>
-            <uri>meshes/link_trim_tab.STL</uri>
-          </mesh>
+          <box>
+            <size>0.3 0.05 0.66</size>
+          </box>
         </geometry>
         <material>
           <ambient>0.9 0.6 0.1 1</ambient>
@@ -176,10 +189,9 @@
       <enable_wind>true</enable_wind>
     </link>
 
-    <!-- Rudder: the CAD stock is 1.36 m aft of the CG, matching RUDDER_CE_REL_TO_CG's
-         -1.35 m almost exactly. -->
+    <!-- Rudder: RUDDER_CE_REL_TO_CG = (-1.35, 0.74), i.e. 1.35 m aft and 0.74 m below. -->
     <link name="rudder">
-      <pose>-1.36179 0.00955 -0.57477 0 0 0</pose>
+      <pose>-1.35 0 -0.74 0 0 0</pose>
       <inertial>
         <mass>3.0</mass>
         <inertia>
@@ -192,18 +204,17 @@
         </inertia>
       </inertial>
       <collision name="rudder_collision">
-        <pose>0.0707 -0.0095 0.2016 0 0 0</pose>
         <geometry>
           <box>
-            <size>0.492 0.037 0.931</size>
+            <size>0.22 0.04 0.53</size>
           </box>
         </geometry>
       </collision>
       <visual name="rudder_visual">
         <geometry>
-          <mesh>
-            <uri>meshes/link_rudder.STL</uri>
-          </mesh>
+          <box>
+            <size>0.22 0.04 0.53</size>
+          </box>
         </geometry>
         <material>
           <ambient>0.2 0.2 0.25 1</ambient>
@@ -248,10 +259,7 @@
       </axis>
     </joint>
 
-    <!-- Contract joint: rudder_joint, revolute about +Z, CCW positive, +/-30 deg.
-         The CAD rakes the stock about 21 deg off vertical; the contract specifies a
-         +Z axis, and a raked axis would make the commanded angle and the achieved
-         steering angle differ by cos(rake), so the axis is held vertical here. -->
+    <!-- Contract joint: rudder_joint, revolute about +Z, CCW positive, +/-30 deg. -->
     <joint name="rudder_joint" type="revolute">
       <parent>hull</parent>
       <child>rudder</child>
@@ -348,13 +356,7 @@
     </plugin>
 
     <!-- Keel: attached to the hull link, with <cp> at KEEL_CE_REL_TO_CG so the side force
-         and its righting/leeway moment are applied at the correct point.
-
-         This offset is only safe because the link it acts on carries BOAT_PROPERTIES'
-         I_xx of 175.86 kg.m^2. With the CAD export's I_xx of 11.1 the same block spins
-         the hull fast enough that <forward>/<upward> rotate into a new orientation every
-         step, and gz-sim aborts on an ODE broad-phase assertion within ~20 s. If this
-         model's inertia is ever taken back from CAD, this offset has to be revisited. -->
+         and its righting/leeway moment are applied at the correct point. -->
     <plugin filename="gz-sim-lift-drag-system" name="gz::sim::systems::LiftDrag">
       <link_name>hull</link_name>
       <air_density>1027</air_density>
@@ -380,8 +382,8 @@
          CG instead of carrying an artificial ballast offset.
 
          <enable> takes fully-qualified model::link names. Only the hull is listed: it holds
-         all of the displaced volume, while the rig sits above the waterline and the
-         rudder's small volume is not worth the per-step mesh integration.
+         all of the displaced volume (hull box plus keel), while the rig sits above the
+         waterline and the rudder's small volume is not worth the per-step mesh integration.
 
          The <wave> block MUST match the WavesModel plugin in worlds/sailing_world.sdf.
          Both evaluate the wave field independently from these parameters, so a mismatch

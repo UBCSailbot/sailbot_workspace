@@ -1,0 +1,4 @@
+# Raw SolidWorks CAD exports: ~70 MB, kept out of git.
+# Regenerate the committed decimated meshes with tools/prepare_polaris_meshes.py.
+*
+!.gitignore
