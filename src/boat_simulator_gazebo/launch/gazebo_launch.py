@@ -87,9 +87,9 @@ def gz_name(bridge_spec: str) -> str:
 #                               displacing mass / WATER_DENSITY = 276 / 1027 = 0.269 m^3
 #                               at a 0.075 m draft, so the CG sits 0.55/2 - 0.075 above
 #                               the waterline.
-#   models/polaris        0.0   its collision box is sized from the real hull's measured
-#                               hydrostatics (draft 0.33 m, waterplane 2.02 m^2), which
-#                               put the waterline at z = -0.006 relative to the CG.
+#   models/polaris        0.0   uses the same collision box, raised on the CG so the
+#                               waterline lands at z = -0.006, which is where the real
+#                               hull mesh floats at this displacement.
 #
 # Override with the boat_spawn_height launch argument when spawning a different model.
 DEFAULT_BOAT_SPAWN_HEIGHT_M = 0.2

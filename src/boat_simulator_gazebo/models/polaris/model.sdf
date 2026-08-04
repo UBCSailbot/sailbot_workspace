@@ -33,10 +33,12 @@
          The keel is rigidly fixed, so it is part of this link rather than its own. -->
     <link name="hull">
       <inertial>
-        <!-- The CG sits at the link origin. No ballast offset is needed: the
-             Hydrodynamics plugin below integrates over the submerged volume, so the
-             centre of buoyancy moves outboard as the hull heels and supplies a real
-             waterplane righting moment. -->
+        <!-- Ballast offset: the CG sits 0.35 m BELOW the link origin, standing in for the
+             lead a real keelboat carries low in its keel. Without it this boat capsizes
+             and floats inverted, because form stability alone leaves a hull with two
+             stable equilibria and no preference for which way is up. Same value and same
+             reasoning as models/polaris_basic -- see the long comment there. -->
+        <pose>0 0 -0.35 0 0 0</pose>
         <mass>276.0</mass>
         <inertia>
           <ixx>175.86</ixx>
@@ -62,21 +64,33 @@
               Against the full-resolution mesh that alone drops the simulation to roughly
               0.01 s of sim time per 7 s of wall clock.
 
-           Sized from the real hull's hydrostatics, measured off the mesh's outer
-           envelope: at 276 kg the hull floats at a draft of 0.33 m, where it has a
-           waterplane area of 2.02 m^2. This box reproduces both -- footprint
-           3.0 x 0.673 = 2.02 m^2 sets the heave and roll stiffness, and sitting 0.133 m
-           of it under water displaces 3.0 x 0.673 x 0.133 = 0.269 m^3 = 276 / 1027.
-           It is deliberately shallower than the real hull: matching the waterplane
-           matters more for stability than matching the wetted shape, and the box's
-           bottom is never rendered. Equilibrium puts the waterline at z = -0.006, i.e.
-           the CG essentially exactly on it, so this model spawns at z ~ 0 (whereas
-           polaris_basic spawns at 0.2 -- see boat_spawn_height in gazebo_launch.py). -->
+           The dimensions are polaris_basic's, NOT the real hull's, and that is
+           deliberate. Sized instead to the real hull's measured hydrostatics (draft
+           0.33 m, waterplane 2.02 m^2, footprint 3.0 x 0.673), the boat is far too
+           tender: the real hull's waterplane second moment is only 0.061 m^4 against
+           this box's 0.291 m^4, giving a metacentric height of 0.10-0.21 m rather than
+           1.04 m. That is the same order as the couple formed by the sail's side force
+           2 m above the CG and the keel's 1.13 m below it, so the boat heels heavily
+           under ambient wind alone. The ballast offset above is what keeps it upright,
+           but there is no reason to make its job harder than it needs to be.
+
+           Only the box's vertical placement differs from polaris_basic's: it sits high
+           enough on the origin that the waterline lands at z = -0.006, which is where
+           the real hull mesh floats at this displacement. The boat is then as stable as
+           the verified model while the visible hull still sits correctly in the water.
+
+               draft = 0.269 / (3.6 x 0.99)        = 0.0754 m
+               GM    = KB + BM - KG
+                     = -0.044 + 1.082 - (-0.35)    = 1.39 m   (polaris_basic: 1.19 m)
+
+           Equilibrium puts the origin 0.006 m above the waterline, so this model spawns
+           at z ~ 0, whereas polaris_basic spawns at 0.2 (see boat_spawn_height in
+           gazebo_launch.py). -->
       <collision name="hull_collision">
-        <pose>-0.135 0 0.136 0 0 0</pose>
+        <pose>-0.135 0 0.1936 0 0 0</pose>
         <geometry>
           <box>
-            <size>3.0 0.673 0.55</size>
+            <size>3.6 0.99 0.55</size>
           </box>
         </geometry>
       </collision>
@@ -129,6 +143,25 @@
         <geometry>
           <mesh>
             <uri>meshes/link_wingsail.STL</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <ambient>0.95 0.95 0.95 1</ambient>
+          <diffuse>1 1 1 1</diffuse>
+        </material>
+      </visual>
+
+      <!-- The wing's planform, as a plate rather than geometry, because THE CAD EXPORT
+           DOES NOT CONTAIN THE SAIL SKIN. link_wingsail.STL is the structural frame only:
+           a mast tube spanning z -2.06..1.49 and two spars at z 0.10 and 0.78, 1.99 m^2 of
+           surface in total. A 2.01 m^2 wing would need about 4 m^2 of skin on its own, and
+           the mesh has none of it -- rendered as exported, the boat carries a bare mast and
+           no sail. -->
+      <visual name="wing_sail_planform_visual">
+        <pose>0.2 -0.11 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>meshes/wingsail_planform.STL</uri>
           </mesh>
         </geometry>
         <material>

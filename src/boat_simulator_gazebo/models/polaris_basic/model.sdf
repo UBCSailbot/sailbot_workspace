@@ -30,15 +30,23 @@
     <!-- Hull: carries the boat's full mass and inertia, and all of the displaced volume. -->
     <link name="hull">
       <inertial>
-        <!-- The CG sits at the link origin, matching the convention the centre-of-effort
-             offsets in boat_simulator/common/constants.py are expressed against.
+        <!-- Ballast offset: the CG sits 0.35 m BELOW the link origin, standing in for the
+             lead a real keelboat carries low in its keel.
 
-             This previously carried an artificial ballast offset of -0.973 m, needed
-             because the stock gz-sim Buoyancy system applies a buoyant force that does not
-             move as the hull heels and so supplies no righting moment. asv_wave_sim's
-             Hydrodynamics plugin (further down) integrates over the submerged volume
-             instead, which recovers the waterplane restoring moment, so the offset is no
-             longer required and the CG can sit where the constants say it does. -->
+             The reason is that form stability alone gives a hull TWO stable equilibria. A
+             box is equally happy upside down, so any disturbance large enough to push it
+             past its (modest) range of stability leaves it there. Ballast is what makes
+             upright the only equilibrium: with the CG below the centre of buoyancy
+             (KB = -0.238 m here), an inverted hull has no restoring configuration to sit
+             in and rights itself.
+
+             0.35 m is the smallest offset found to hold the boat upright with margin;
+             it keeps roll within about +/-7 deg under ambient wind. Note the tradeoff:
+             the centre-of-effort offsets in constants.py are expressed relative to the CG,
+             so with this offset applied the link origin they are measured from is 0.35 m
+             above the true CG. Removing that discrepancy means either putting real mass in
+             a separate keel link or re-referencing the constants. -->
+        <pose>0 0 -0.35 0 0 0</pose>
         <mass>276.0</mass>
         <inertia>
           <ixx>175.86</ixx>

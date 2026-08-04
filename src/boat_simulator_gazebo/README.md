@@ -335,16 +335,32 @@ Two things to get right:
   two systems evaluate the wave field independently from their own parameters,
   so a mismatch floats the boat against a different surface than the one being
   rendered.
-- **No ballast offset is needed.** Because the centre of buoyancy moves outboard
-  as the hull heels, the waterplane righting moment is recovered and the hull's
-  inertial pose can sit at the CG, matching the convention the `*_CE_REL_TO_CG`
-  constants are expressed against.
+- **A ballast offset IS needed, and removing it capsizes the boat.** Both models
+  put the hull's inertial `<pose>` 0.35 m below the link origin. This was
+  removed once, on the reasoning that `Hydrodynamics` integrates over the
+  submerged volume and so recovers a genuine waterplane righting moment — unlike
+  the stock `Buoyancy` system, which applies a force that never shifts as the
+  hull heels. The waterplane moment is real, but **it is not a substitute for
+  ballast.** Measured with the CG on the origin, `polaris_basic` rolls past 90°
+  at ~36 s and then floats fully inverted, indefinitely.
 
-This is the reason the backend targets Harmonic. Under the stock `Buoyancy`
-system the buoyant force does not shift as the hull heels, so there is no
-righting moment at all and the model has to be artificially ballasted
-CG-below-CB or it tumbles within seconds — even with every aerodynamic force
-removed. That workaround is gone.
+  The reason is that form stability alone leaves a hull with *two* stable
+  equilibria — a box is equally happy upside down — so any disturbance past its
+  range of stability leaves it there. Ballast makes upright the only equilibrium:
+  with the CG below the centre of buoyancy, an inverted hull has nowhere stable
+  to sit and rights itself.
+
+- **Check `GM` when changing hull geometry, mass, or the ballast offset:**
+
+  ```
+  GM = KB + BM - KG,   BM = I_waterplane / displaced volume
+  ```
+
+  Both models land near GM ≈ 1.2–1.4 m and hold roll inside about ±15° under
+  ambient wind. Note that a box's waterplane second moment (0.291 m⁴) is nearly
+  5× the real hull's (0.061 m⁴), so the collision proxy is contributing much more
+  form stability than the real boat has — the ballast offset is carrying the
+  rest. Neither figure is a measured property of Polaris.
 
 ## Example models
 
@@ -353,8 +369,18 @@ launch argument picks between them (or points at something else entirely).
 
 **They are the same boat.** Links, joints, mass, inertia, joint limits, gains,
 and every `LiftDrag`/`Hydrodynamics` parameter are identical and sourced from
-`BOAT_PROPERTIES`; only `<visual>` geometry differs. Change a physical number in
-one and you must change it in the other.
+`BOAT_PROPERTIES`. Change a physical number in one and you must change it in the
+other.
+
+They differ in exactly two places, both about what you see:
+
+- `<visual>` geometry — boxes versus the CAD meshes.
+- **The vertical placement of the hull collision box.** Both use the same
+  3.6 × 0.99 × 0.55 m buoyancy proxy, but `polaris` sits it higher on the CG so
+  the waterline lands where the real hull mesh actually floats. Same
+  displacement, same waterplane, ~0.2 m difference in where the CG ends up
+  relative to the water — hence the different `boat_spawn_height` (0.0 vs 0.2)
+  and slightly different GM (1.04 m vs 0.845 m).
 
 ### `models/polaris` (real hull geometry)
 
@@ -387,10 +413,19 @@ It reads `models/polaris/meshes/raw/*.STL` and writes `models/polaris/meshes/`.
 The raw exports are gitignored — only the prepared meshes are committed, which
 is why cloning this repo does not cost 70 MB.
 
-Note that `base_hull.STL` is a **thin-walled shell** (~10 mm wall), so it
-encloses the volume of the hull *skin*, not the hull's displacement. It can
-never be used as `Hydrodynamics` collision geometry; see the comment on
-`hull_collision` in `model.sdf` for how the buoyancy proxy is sized instead.
+Two things the CAD export gets you into, both documented at the point of use in
+`model.sdf`:
+
+- **`base_hull.STL` is a thin-walled shell** (~10 mm wall), so it encloses the
+  volume of the hull *skin*, not the hull's displacement — 0.177 m³ against the
+  0.269 m³ needed to float. It can never be `Hydrodynamics` collision geometry
+  at any triangle count; see the comment on `hull_collision`.
+- **`link_wingsail.STL` has no sail skin.** It is the structural frame only: a
+  mast tube and two tab booms, 1.99 m² of surface for what should be a 2.01 m²
+  wing needing ~4 m² of skin on both sides. Rendered as exported, the boat
+  carries a bare mast and no sail. The skin is most likely a surface body or a
+  suppressed component, which the SolidWorks URDF exporter skips because it only
+  walks solid bodies.
 
 ### `models/polaris_basic` (box stand-in, contract-verified)
 
@@ -438,12 +473,26 @@ topic after its Gazebo counterpart.
 
 ## Known limitations / follow-up work
 
-- **Neither model's hull collision geometry is the real hull shape.** Both use a
-  box proxy sized to reproduce the measured displacement and waterplane area at
-  equilibrium. `models/polaris`'s box is derived from the CAD hull's
-  hydrostatics (draft 0.33 m, waterplane 2.02 m²), but a box still heels and
-  pitches differently from a real hull section, so the righting moment is only
-  first-order correct.
+- **Roll stability is tuned, not measured.** It comes from a 0.35 m ballast
+  offset plus a collision box with ~5× the real hull's waterplane inertia, and
+  neither number is derived from Polaris (see
+  [Flotation](#flotation-hydrodynamics)). Absolute heel angles, roll period, and
+  any stability-limited manoeuvre should not be trusted.
+- **The ballast offset breaks the CG convention.** The `*_CE_REL_TO_CG`
+  constants are measured from the CG, but with the offset applied the link
+  origin they are expressed against sits 0.35 m above the true CG. Fixing this
+  properly means either putting real mass in a separate keel link or
+  re-referencing the constants — both of which touch the kinematic backend too.
+- **`models/polaris`'s hull mesh floats at the right draft, but for the wrong
+  reason.** The box's placement was chosen to put the waterline where the mesh
+  looks right, not derived from the mesh's displaced volume.
+- **The wing sail's planform is a stand-in, not CAD geometry**, because the
+  export contains no sail skin. The area is right by construction, but the taper
+  ratios (0.85 and 0.50) and the one-third/two-thirds span split are plausible
+  wingsail proportions rather than measured ones, and the span itself is
+  uncertain: the frame's spars sit 0.68 m apart, which would imply a much
+  shorter wing than `sail_areas / WING_SAIL_CHORD` = 2.01 m gives. Resolved by a
+  re-export, not by tuning.
 - **`models/polaris` reuses `polaris_basic`'s hand-fitted `LiftDrag`
   coefficients**, which are not fitted to its actual foil geometry. That is a
   deliberate consequence of keeping the two models physically identical.
