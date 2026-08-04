@@ -63,6 +63,12 @@ const AboutIcon = () => (
   </svg>
 );
 
+const DownloadIcon = () => (
+  <svg width='26' height='26' viewBox='0 0 24 24'>
+    <path d='M11 4h2v7h3l-4 4-4-4h3zM5 18h14v2H5z' />
+  </svg>
+);
+
 const MobileNav = ({ activeView, onSelectView }: MobileNavProps) => {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
@@ -131,6 +137,15 @@ const MobileNav = ({ activeView, onSelectView }: MobileNavProps) => {
             >
               <AboutIcon />
               <span>ABOUT</span>
+            </Link>
+            <Link
+              className={styles.menuItem}
+              href='/download'
+              aria-current={pathname === '/download'}
+              onClick={close}
+            >
+              <DownloadIcon />
+              <span>DOWNLOAD</span>
             </Link>
           </nav>
         </div>
