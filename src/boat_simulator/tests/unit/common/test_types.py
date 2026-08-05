@@ -1,0 +1,71 @@
+"""Tests for the CoeffGrid Reynolds-dependent lookup in boat_simulator/common/types.py."""
+
+import math
+
+import numpy as np
+import pytest
+
+from boat_simulator.common.types import CoeffGrid, CoeffTable
+
+
+def _linear_table(slope: float) -> CoeffTable:
+    """A table whose value equals ``slope * angle`` at angles 0 and 10 degrees."""
+    return CoeffTable(np.array([[0.0, 0.0], [10.0, 10.0 * slope]], dtype=np.float64))
+
+
+class TestCoeffGrid:
+
+    def test_exact_reynolds_hit_returns_that_polar(self):
+        grid = CoeffGrid(
+            np.array([100.0, 1000.0], dtype=np.float64),
+            (_linear_table(1.0), _linear_table(2.0)),
+        )
+        assert math.isclose(grid.interpolate(5.0, 100.0), 5.0)  # slope 1 polar
+        assert math.isclose(grid.interpolate(5.0, 1000.0), 10.0)  # slope 2 polar
+
+    def test_selects_nearest_reynolds_polar(self):
+        # Slope-1 polar at Re=100, slope-2 polar at Re=1000; value at 5 deg is 5.0 vs 10.0.
+        grid = CoeffGrid(
+            np.array([100.0, 1000.0], dtype=np.float64),
+            (_linear_table(1.0), _linear_table(2.0)),
+        )
+        assert math.isclose(grid.interpolate(5.0, 400.0), 5.0)  # closer to Re=100
+        assert math.isclose(grid.interpolate(5.0, 700.0), 10.0)  # closer to Re=1000
+        # Equidistant (Re=550): np.argmin picks the first (lower-Re) polar.
+        assert math.isclose(grid.interpolate(5.0, 550.0), 5.0)
+
+    def test_clamps_outside_reynolds_range(self):
+        grid = CoeffGrid(
+            np.array([100.0, 1000.0], dtype=np.float64),
+            (_linear_table(1.0), _linear_table(2.0)),
+        )
+        # Below the lowest / above the highest Reynolds clamp to the end polars.
+        assert math.isclose(grid.interpolate(5.0, 1.0), 5.0)
+        assert math.isclose(grid.interpolate(5.0, 1e9), 10.0)
+
+    def test_non_positive_reynolds_uses_lowest(self):
+        grid = CoeffGrid(
+            np.array([100.0, 1000.0], dtype=np.float64),
+            (_linear_table(1.0), _linear_table(2.0)),
+        )
+        assert math.isclose(grid.interpolate(5.0, 0.0), 5.0)
+        assert math.isclose(grid.interpolate(5.0, -10.0), 5.0)
+
+    def test_max_angle_is_minimum_over_tables(self):
+        short = CoeffTable(np.array([[0.0, 0.0], [45.0, 1.0]], dtype=np.float64))
+        tall = CoeffTable(np.array([[0.0, 0.0], [90.0, 1.0]], dtype=np.float64))
+        grid = CoeffGrid(np.array([100.0, 1000.0], dtype=np.float64), (short, tall))
+        assert grid.max_angle == 45.0
+
+    @pytest.mark.parametrize(
+        "reynolds, tables",
+        [
+            (np.array([100.0]), (_linear_table(1.0), _linear_table(2.0))),  # count mismatch
+            (np.array([1000.0, 100.0]), (_linear_table(1.0), _linear_table(2.0))),  # not ascending
+            (np.array([0.0, 100.0]), (_linear_table(1.0), _linear_table(2.0))),  # non-positive Re
+            (np.array([[100.0]]), (_linear_table(1.0),)),  # not 1-D
+        ],
+    )
+    def test_invalid_construction_raises(self, reynolds, tables):
+        with pytest.raises(ValueError):
+            CoeffGrid(reynolds, tables)

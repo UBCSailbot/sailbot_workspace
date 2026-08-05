@@ -1,18 +1,15 @@
 import { getApiUrl } from '@/lib/apiUrl';
 
 /**
- * Defines all saga methods to make requests to the GenericSensors interface.
+ * Defines all saga methods to make requests to the TempSensors interface.
  */
-export const GenericSensorsService = {
-  *getGenericSensors(): Generator<any, any, any> {
+export const TempSensorsService = {
+  *getTempSensors(): Generator<any, any, any> {
     let isError = false;
 
-    return yield fetch(
-      getApiUrl('/api/generic-sensors'),
-      {
-        method: 'GET',
-      },
-    )
+    return yield fetch(getApiUrl('/api/temp-sensors'), {
+      method: 'GET',
+    })
       .then((response) => {
         isError = response.status != 200;
         return response;

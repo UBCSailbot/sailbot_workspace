@@ -5,12 +5,32 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      # Opt in to the Gazebo simulator backend (Gazebo Harmonic + a prebuilt
+      # asv_wave_sim). Off by default because only the boat_simulator and pathfinding team needs it.
+      # To enable it, add gazebo/docker-compose.gazebo.yml to "dockerComposeFile" in
+      # devcontainer.json rather than flipping this to "true" - the overlay also pins the
+      # amd64 platform that gazebo-dev requires. See gazebo/README.md.
+      # CI asserts this stays "false" (see the gazebo-disabled-by-default job).
+      args:
+        INSTALL_GAZEBO: "false"
     # Use "always" instead if this container should restart even after some manual stops.
     # restart: always
     restart: unless-stopped
     network_mode: host
     privileged: true
     user: ros
+    environment:
+      # Force Mesa to render OpenGL on the CPU (llvmpipe). The container has no GPU: there is
+      # no /dev/dri and no vendor userspace driver, so the hardware GLX path fails outright
+      # ("failed to load driver: swrast") and any GUI using it - Gazebo, RViz - aborts on
+      # startup rather than falling back. Software rendering is therefore the only thing that
+      # works by default, at the cost of being slow.
+      #
+      # This lives here rather than in devcontainer.json's "containerEnv" so that a compose
+      # overlay can override it: containerEnv is applied last by the Dev Containers extension
+      # and would win over any overlay. wsl/docker-compose.wsl.yml sets it back to "0" once it
+      # has supplied a real GPU driver. See wsl/README.md.
+      LIBGL_ALWAYS_SOFTWARE: "1"
     group_add:
       - dialout
     devices:

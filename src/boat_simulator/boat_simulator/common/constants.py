@@ -6,8 +6,9 @@ from enum import Enum
 
 import numpy as np
 
+from boat_simulator.common import airfoil_polars
 from boat_simulator.common.conventions import Body, Damping, Inertia
-from boat_simulator.common.types import CoeffTable, Mat4
+from boat_simulator.common.types import CoeffGrid, Mat4
 
 
 # Class declarations for constants. These are not meant to be accessed directly.
@@ -37,28 +38,28 @@ class PhysicsEnginePublisherTopics:
 
 @dataclass
 class BoatProperties:
-    # Shape [N, 2]: each row is [angle_of_attack_deg, lift_coefficient].
-    sail_lift_coeffs: CoeffTable
-    # Shape [N, 2]: each row is [angle_of_attack_deg, drag_coefficient].
-    sail_drag_coeffs: CoeffTable
+    # Lift coefficient as a function of (angle_of_attack_deg, Reynolds_number).
+    sail_lift_coeffs: CoeffGrid
+    # Drag coefficient as a function of (angle_of_attack_deg, Reynolds_number).
+    sail_drag_coeffs: CoeffGrid
     # Float: each row is sail_area_m2.
     sail_areas: float
-    # Shape [N, 2]: each row is [angle_of_attack_deg, lift_coefficient].
-    tab_lift_coeffs: CoeffTable
-    # Shape [N, 2]: each row is [angle_of_attack_deg, drag_coefficient].
-    tab_drag_coeffs: CoeffTable
+    # Lift coefficient as a function of (angle_of_attack_deg, Reynolds_number).
+    tab_lift_coeffs: CoeffGrid
+    # Drag coefficient as a function of (angle_of_attack_deg, Reynolds_number).
+    tab_drag_coeffs: CoeffGrid
     # Float: each row is tab_area_m2.
     tab_areas: float
-    # Shape [N, 2]: each row is [angle_of_attack_deg, lift_coefficient].
-    rudder_lift_coeffs: CoeffTable
-    # Shape [N, 2]: each row is [angle_of_attack_deg, drag_coefficient].
-    rudder_drag_coeffs: CoeffTable
+    # Lift coefficient as a function of (angle_of_attack_deg, Reynolds_number).
+    rudder_lift_coeffs: CoeffGrid
+    # Drag coefficient as a function of (angle_of_attack_deg, Reynolds_number).
+    rudder_drag_coeffs: CoeffGrid
     # Float: each row is rudder_area_m2.
     rudder_areas: float
-    # Shape [N, 2]: each row is [angle_of_attack_deg, lift_coefficient].
-    keel_lift_coeffs: CoeffTable
-    # Shape [N, 2]: each row is [angle_of_attack_deg, drag_coefficient].
-    keel_drag_coeffs: CoeffTable
+    # Lift coefficient as a function of (angle_of_attack_deg, Reynolds_number).
+    keel_lift_coeffs: CoeffGrid
+    # Drag coefficient as a function of (angle_of_attack_deg, Reynolds_number).
+    keel_drag_coeffs: CoeffGrid
     # Float: each row is keel_area_m2.
     keel_areas: float
     # Dimensionless quadratic drag coefficient for the hull: F_drag = hull_drag_factor * |v| * v.
@@ -124,6 +125,13 @@ SAIL_MAX_ANGLE_RANGE = (-40, 40)
 # Densities of the mediums, used for force calculations, units in kg/m^3
 AIR_DENSITY = 1.225
 WATER_DENSITY = 1027.0
+
+# Kinematic viscosities of the mediums, used to compute the Reynolds number
+# (Re = flow_speed * chord / kinematic_viscosity) that indexes the lift/drag coefficient grids.
+# Units: m^2/s. Values are for ~15 degC, consistent with AIR_DENSITY and WATER_DENSITY (seawater).
+AIR_KINEMATIC_VISCOSITY = 1.48e-5
+WATER_KINEMATIC_VISCOSITY = 1.05e-6
+
 # Gravity in m/s
 EARTH_GRAVITY = 9.81
 
@@ -133,8 +141,17 @@ CoB_REL_COORD = 0.5
 # Metacentric height used in testing
 METACENTRIC_HEIGHT = 0.5  # Units: meters
 
-# Derive the mean chord from the real wingsail geometry.
-WING_SAIL_CHORD = 1.5  # Units: meters
+# The mean chord from the real wingsail geometry.
+WING_SAIL_CHORD = 1.0  # Units: meters
+
+# Mean chord lengths for the trim tab
+TAB_CHORD = 0.5  # Units: meters
+
+# Mean chord lengths for the rudder
+RUDDER_CHORD = 0.25  # Units: meters
+
+# TODO: Update the keel's chord length
+KEEL_CHORD = 0.4  # Units: meters
 
 # Measure the distance from the mast axis to the tab's aero center.
 WINGSAIL_TO_TRIM_TAB_BOOM_LENGTH = 1.43  # Units: meters
@@ -142,6 +159,11 @@ WINGSAIL_TO_TRIM_TAB_BOOM_LENGTH = 1.43  # Units: meters
 # The mast pivot's chordwise position (~25% chord assumed).
 MAST_PIVOT_CHORD_FRACTION = 0.25  # Fraction of the wing chord, dimensionless
 
+# Measure the rudder's center of effort depth below the CG.
+RUDDER_CE_REL_TO_CG = (-1.35, 0.74)
+
+# The wingsail CE-to-CG in (x, Z) coordinate with units: meters
+SAIL_CE_REL_TO_CG = (0.25, -1.86)  # (x_s, z_s), units: meters
 # Measure the rudder's center of effort depth below the CG.
 RUDDER_CE_REL_TO_CG = (-1.35, 0.74)
 
@@ -162,163 +184,22 @@ HULL_LINEAR_DRAG = 0.0  # Units: newton seconds per meter
 # Constants related to the physical and mechanical properties of Polaris
 # TODO These are placeholder values which should be replaced when we have real values.
 BOAT_PROPERTIES = BoatProperties(
-    # Sail: angle of attack 0–90° (wingsail, CL peaks ~25° then stalls)
-    sail_lift_coeffs=CoeffTable(
-        np.array(
-            [
-                [0.0, 0.00],
-                [5.0, 0.20],
-                [10.0, 0.55],
-                [15.0, 0.85],
-                [20.0, 1.05],
-                [25.0, 1.20],  # peak lift
-                [30.0, 1.10],  # stall onset
-                [40.0, 0.80],
-                [50.0, 0.60],
-                [60.0, 0.50],
-                [75.0, 0.25],
-                [90.0, 0.00],  # dead downwind, pure drag
-            ],
-            dtype=np.float64,
-        )
-    ),
-    sail_drag_coeffs=CoeffTable(
-        np.array(
-            [
-                [0.0, 0.01],
-                [5.0, 0.015],
-                [10.0, 0.025],
-                [15.0, 0.032],
-                [20.0, 0.050],
-                [25.0, 0.105],
-                [30.0, 0.830],  # stall — drag spikes
-                [40.0, 0.380],
-                [50.0, 0.580],
-                [60.0, 0.980],
-                [75.0, 1.020],
-                [90.0, 1.200],
-            ],
-            dtype=np.float64,
-        )
-    ),
+    # Lift/drag coefficient grids are real XFOIL polars (airfoiltools.com) at Reynolds numbers
+    # 50k–1M, resampled and Viterna-extended to 90°, generated by scripts/build_airfoil_polars.py.
+    # Only the positive angle-of-attack branch is stored; MediumForceComputation applies the
+    # symmetric-foil sign convention (Cl odd, Cd even) and computes the Reynolds number at runtime.
+    # Wingsail and trim tab are NACA 0018; rudder and keel are NACA 0012.
+    sail_lift_coeffs=airfoil_polars.SAIL_LIFT_COEFFS,
+    sail_drag_coeffs=airfoil_polars.SAIL_DRAG_COEFFS,
     sail_areas=2.01,  # meters ^ 2
-    # TODO: Replace the below placeholder constants with the real values/approximates
-    tab_lift_coeffs=CoeffTable(
-        np.array(
-            [
-                [0.0, 0.00],
-                [5.0, 0.20],
-                [10.0, 0.55],
-                [15.0, 0.85],
-                [20.0, 1.05],
-                [25.0, 1.20],  # peak lift
-                [30.0, 1.10],  # stall onset
-                [40.0, 0.80],
-                [50.0, 0.60],
-                [60.0, 0.50],
-                [75.0, 0.25],
-                [90.0, 0.00],  # dead downwind, pure drag
-            ],
-            dtype=np.float64,
-        )
-    ),
-    tab_drag_coeffs=CoeffTable(
-        np.array(
-            [
-                [0.0, 0.01],
-                [5.0, 0.015],
-                [10.0, 0.025],
-                [15.0, 0.032],
-                [20.0, 0.050],
-                [25.0, 0.105],
-                [30.0, 0.830],  # stall — drag spikes
-                [40.0, 0.380],
-                [50.0, 0.580],
-                [60.0, 0.980],
-                [75.0, 1.020],
-                [90.0, 1.200],
-            ],
-            dtype=np.float64,
-        )
-    ),
+    tab_lift_coeffs=airfoil_polars.TAB_LIFT_COEFFS,
+    tab_drag_coeffs=airfoil_polars.TAB_DRAG_COEFFS,
     tab_areas=0.198,  # meters ^ 2
-    # Rudder: ±45° → table covers 0–45° (sign handled by caller)
-    # NACA symmetric foil: stalls ~20–22°
-    rudder_lift_coeffs=CoeffTable(
-        np.array(
-            [
-                [0.0, 0.00],
-                [5.0, 0.30],
-                [10.0, 0.60],
-                [15.0, 0.85],
-                [20.0, 0.92],  # peak (near stall)
-                [25.0, 0.78],  # post-stall drop
-                [30.0, 0.62],
-                [35.0, 0.52],
-                [40.0, 0.44],
-                [45.0, 0.38],
-            ],
-            dtype=np.float64,
-        )
-    ),
-    rudder_drag_coeffs=CoeffTable(
-        np.array(
-            [
-                [0.0, 0.020],
-                [5.0, 0.022],
-                [10.0, 0.026],
-                [15.0, 0.032],
-                [20.0, 0.050],
-                [25.0, 0.120],  # stall — drag spikes
-                [30.0, 0.220],
-                [35.0, 0.330],
-                [40.0, 0.440],
-                [45.0, 0.550],
-            ],
-            dtype=np.float64,
-        )
-    ),
-    rudder_areas=0.117,
-    # meters ^ 2
-    # TODO: Replace the below placeholder constants with the real values/approximates
-    keel_lift_coeffs=CoeffTable(
-        np.array(
-            [
-                [0.0, 0.00],
-                [5.0, 0.20],
-                [10.0, 0.55],
-                [15.0, 0.85],
-                [20.0, 1.05],
-                [25.0, 1.20],  # peak lift
-                [30.0, 1.10],  # stall onset
-                [40.0, 0.80],
-                [50.0, 0.60],
-                [60.0, 0.50],
-                [75.0, 0.25],
-                [90.0, 0.00],  # dead downwind, pure drag
-            ],
-            dtype=np.float64,
-        )
-    ),
-    keel_drag_coeffs=CoeffTable(
-        np.array(
-            [
-                [0.0, 0.01],
-                [5.0, 0.015],
-                [10.0, 0.025],
-                [15.0, 0.032],
-                [20.0, 0.050],
-                [25.0, 0.105],
-                [30.0, 0.830],  # stall — drag spikes
-                [40.0, 0.380],
-                [50.0, 0.580],
-                [60.0, 0.980],
-                [75.0, 1.020],
-                [90.0, 1.200],
-            ],
-            dtype=np.float64,
-        )
-    ),
+    rudder_lift_coeffs=airfoil_polars.RUDDER_LIFT_COEFFS,
+    rudder_drag_coeffs=airfoil_polars.RUDDER_DRAG_COEFFS,
+    rudder_areas=0.117,  # meters ^ 2
+    keel_lift_coeffs=airfoil_polars.KEEL_LIFT_COEFFS,
+    keel_drag_coeffs=airfoil_polars.KEEL_DRAG_COEFFS,
     keel_areas=0.51,  # meters ^ 2
     hull_drag_factor=0.5,
     mass=276.0,
