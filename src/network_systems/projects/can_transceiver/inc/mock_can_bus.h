@@ -9,11 +9,10 @@
 #include "can_log_replayer.h"
 
 /**
- * @brief Simulated CAN bus backed by a Unix SOCK_SEQPACKET socketpair.
- *        One end is handed to a CanTransceiver (see transceiverFd()) and behaves like a real CAN socket:
- *        reads return whole frames sent by the bus, and writes go to the bus instead of echoing back.
- *        The MockCanBus end replays logged frames onto the bus at a configurable pace and captures every
- *        frame the CanTransceiver sends so tests can inspect the boat's outbound traffic.
+ * @brief Simulated CAN bus backed by a Unix SOCK_SEQPACKET socketpair
+ *        One end is handed to a CanTransceiver (see transceiverFd()) and behaves like a real CAN socket.
+ *        The bus end replays logged frames at a configurable pace and captures every frame the
+ *        CanTransceiver sends, so tests can inspect the boat's outbound traffic.
  *
  */
 class MockCanBus
@@ -36,16 +35,16 @@ public:
     MockCanBus & operator=(const MockCanBus &) = delete;
 
     /**
-     * @brief File descriptor for the CanTransceiver end of the socketpair.
-     *        Pass it to CanTransceiver(int fd), which takes ownership and closes it on destruction.
+     * @brief File descriptor for the CanTransceiver end of the socketpair
+     * @note  CanTransceiver(int fd) takes ownership and closes it on destruction
      *
      * @return open socket file descriptor
      */
     int transceiverFd() const { return transceiver_fd_; }
 
     /**
-     * @brief Start replaying frames onto the bus in a background thread.
-     *        The ReplayConfig allow/block lists are applied before replay starts.
+     * @brief Start replaying frames onto the bus in a background thread
+     * @note  The config's allow/block lists are applied before replay starts
      *
      * @param frames frames to replay, in order
      * @param cfg    pacing, looping, and filtering configuration
@@ -81,8 +80,8 @@ private:
     void replayLoop();
 
     /**
-     * @brief Capture thread body: drains frames the CanTransceiver sends so the socket buffer never
-     *        fills and blocks its send(), and records them for outboundFrames()
+     * @brief Capture thread body: drains frames the CanTransceiver sends, so its send() never blocks
+     *        on a full socket buffer, and records them for outboundFrames()
      *
      */
     void sinkLoop();
@@ -95,9 +94,7 @@ private:
      */
     bool writeFrame(const CAN_FP::CanFrame & frame);
 
-    // CanTransceiver end of the socketpair; ownership transfers with transceiverFd()
-    int transceiver_fd_;
-    // Bus end of the socketpair, used by the replay and capture threads
+    int transceiver_fd_;  // Ownership transfers with transceiverFd()
     int bus_fd_;
 
     std::vector<CAN_REPLAY::TimedFrame> frames_;
@@ -111,7 +108,7 @@ private:
 
     std::atomic<size_t> frames_sent_{0};
 
-    // Protects outbound_, which is written by the capture thread and read via outboundFrames()
+    // Protects outbound_, written by the capture thread and read via outboundFrames()
     mutable std::mutex            outbound_mtx_;
     std::vector<CAN_FP::CanFrame> outbound_;
 };

@@ -260,13 +260,7 @@ private:
         try {
             std::vector<CAN_REPLAY::TimedFrame> frames = CAN_REPLAY::CanLogReplayer::parseCsv(replay_file);
 
-            double rate = this->get_parameter("can_replay_rate").as_double();
-            if (rate <= 0.0) {  // <= 0 means unpaced: replay as fast as possible
-                cfg.mode = CAN_REPLAY::PacingMode::FAST;
-            } else {
-                cfg.mode = CAN_REPLAY::PacingMode::SCALED;
-                cfg.rate = rate;
-            }
+            cfg.rate = this->get_parameter("can_replay_rate").as_double();  // <= 0 replays unpaced
             cfg.loop = this->get_parameter("can_replay_loop").as_bool();
 
             mock_can_bus_ = std::make_unique<MockCanBus>();

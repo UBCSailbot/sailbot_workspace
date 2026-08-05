@@ -271,30 +271,17 @@ std::vector<TimedFrame> CanLogReplayer::filter(std::vector<TimedFrame> frames, c
 std::chrono::nanoseconds CanLogReplayer::delayBefore(
   const std::vector<TimedFrame> & frames, size_t idx, const ReplayConfig & cfg)
 {
-    switch (cfg.mode) {
-        case PacingMode::FAST:
-            return std::chrono::nanoseconds{0};
-        case PacingMode::FIXED_PERIOD:
-            return std::chrono::duration_cast<std::chrono::nanoseconds>(cfg.period);
-        case PacingMode::REALTIME:
-        case PacingMode::SCALED:
-        default: {
-            if (idx == 0 || idx >= frames.size()) {
-                return std::chrono::nanoseconds{0};
-            }
-            double dt_s = frames[idx].t_s - frames[idx - 1].t_s;
-            if (cfg.mode == PacingMode::SCALED && cfg.rate > 0) {
-                dt_s /= cfg.rate;
-            }
-            if (dt_s <= 0) {  // guard against out of order or duplicate log timestamps
-                return std::chrono::nanoseconds{0};
-            }
-            // round() rather than duration_cast(): truncation would consistently under-pace the replay
-            auto delay = std::chrono::round<std::chrono::nanoseconds>(std::chrono::duration<double>(dt_s));
-            // cap the delay so gaps in the recording do not stall the replay
-            return std::min(delay, std::chrono::duration_cast<std::chrono::nanoseconds>(cfg.max_frame_gap));
-        }
+    if (cfg.rate <= 0 || idx == 0 || idx >= frames.size()) {  // a non-positive rate replays unpaced
+        return std::chrono::nanoseconds{0};
     }
+    double dt_s = (frames[idx].t_s - frames[idx - 1].t_s) / cfg.rate;
+    if (dt_s <= 0) {  // guard against out of order or duplicate log timestamps
+        return std::chrono::nanoseconds{0};
+    }
+    // round() rather than duration_cast(): truncation would consistently under-pace the replay
+    auto delay = std::chrono::round<std::chrono::nanoseconds>(std::chrono::duration<double>(dt_s));
+    // cap the delay so gaps in the recording do not stall the replay
+    return std::min(delay, std::chrono::duration_cast<std::chrono::nanoseconds>(cfg.max_frame_gap));
 }
 
 }  // namespace CAN_REPLAY
