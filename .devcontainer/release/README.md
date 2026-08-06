@@ -230,3 +230,10 @@ docker cp <name>:/workspaces/sailbot_workspace/src/global_launch/voyage_log ./vo
 docker cp <name>:/workspaces/sailbot_workspace/notebooks/local_pathfinding/session_recording ./session_recording
 ```
 <!-- markdownlint-enable MD013 -->
+
+<!-- markdownlint-disable MD013 -->
+These files are one half of an on-water test's data; the other half is the CAN
+dumps captured by the GUI. For what to do with them next — merging and decoding
+the CAN dumps, then archiving everything in `OWT-data` and Google Drive — see
+[Archiving On-Water Test Data](https://ubcsailbot.github.io/sailbot_workspace/main/current/sailbot_workspace/reference/owt_data/).
+<!-- markdownlint-enable MD013 -->
