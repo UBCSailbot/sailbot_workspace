@@ -2,20 +2,24 @@
 {
   "name": "Sailbot Workspace",
   "dockerComposeFile": [
-    "docker-compose.yml"
+    "docker-compose.yml",
     // We do not use anymore. We pulled website development out of docker in PR #614
     // "website/docker-compose.website.yml", // website
 
     // Uncomment the files containing the programs you need
     // "docs/docker-compose.docs.yml", // docs
+
+    // Uncomment the two compose files below to use the gazebo simulator
     // "gazebo/docker-compose.gazebo.yml", // Gazebo simulator backend (amd64 only)
+
+    // Renders OpenGL GUIs (Gazebo, RViz) on the GPU instead of the CPU. Must stay after
+    // "wsl/docker-compose.wsl.yml" // WSL2 GPU passthrough for OpenGL GUIs (WSL2 hosts only)
   ],
   "service": "sailbot-workspace",
   "forwardPorts": [3005],
   "workspaceFolder": "/workspaces/sailbot_workspace",
   "remoteUser": "ros",
   "containerEnv": {
-    "LIBGL_ALWAYS_SOFTWARE": "1", // Needed for software rendering of opengl
     // Selects which Gazebo release asv_wave_sim builds against. It falls back to Garden's
     // libraries when unset, which does not configure against the Harmonic install used by
     // the boat_simulator_gazebo backend.

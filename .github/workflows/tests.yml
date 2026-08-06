@@ -84,3 +84,23 @@ jobs:
           echo "::error file=.devcontainer/docker-compose.yml::INSTALL_GAZEBO must stay set to \"false\" - every CI job builds this compose file, and leaving it enabled would make Gazebo mandatory for everyone instead of opt-in."
           exit 1
         fi
+
+  wsl-gpu-disabled-by-default:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+    - name: Checkout workspace
+      uses: actions/checkout@v7
+
+    # If the composes files are running/enabled by default it would break every non-WSL developer silently. See .devcontainer/wsl/README.md.
+    - name: Ensure the WSL GPU overlay is not enabled for the Main branch
+      run: |
+        if grep -nE '^\s*"wsl/docker-compose\.wsl\.yml"' .devcontainer/devcontainer.json; then
+          echo "::error file=.devcontainer/devcontainer.json::The wsl/docker-compose.wsl.yml entry in dockerComposeFile must stay commented out - it is WSL2-only and disables the software-rendering fallback that every other host needs."
+          exit 1
+        fi
+
+        if ! grep -qE '^\s*LIBGL_ALWAYS_SOFTWARE:\s*"1"\s*$' .devcontainer/docker-compose.yml; then
+          echo "::error file=.devcontainer/docker-compose.yml::LIBGL_ALWAYS_SOFTWARE must stay set to \"1\" in the base compose file - the container has no GPU by default, and the hardware GL path aborts rather than falling back to software rendering."
+          exit 1
+        fi
