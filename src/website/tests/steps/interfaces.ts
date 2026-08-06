@@ -5,8 +5,10 @@ import { AISShips } from '../shared/endpoints';
 import { GlobalPath } from '../shared/endpoints';
 import { LocalPath } from '../shared/endpoints';
 import { Batteries } from '../shared/endpoints';
-import { GenericSensors } from '../shared/endpoints';
 import { WindSensors } from '../shared/endpoints';
+import { TempSensors } from '../shared/endpoints';
+import { PhSensors } from '../shared/endpoints';
+import { SalinitySensors } from '../shared/endpoints';
 
 When('I get all GPS interface data', async function () {
   this.lastResponse = await api.get(GPS, this.config);
@@ -32,12 +34,20 @@ When('I get all Batteries interface data', async function () {
   this.lastResponse = await api.get(Batteries, this.config);
 });
 
-When('I get all GenericSensors interface data', async function () {
-  this.lastResponse = await api.get(GenericSensors, this.config);
-});
-
 When('I get all WindSensors interface data', async function () {
   this.lastResponse = await api.get(WindSensors, this.config);
+});
+
+When('I get all TempSensors interface data', async function () {
+  this.lastResponse = await api.get(TempSensors, this.config);
+});
+
+When('I get all PhSensors interface data', async function () {
+  this.lastResponse = await api.get(PhSensors, this.config);
+});
+
+When('I get all SalinitySensors interface data', async function () {
+  this.lastResponse = await api.get(SalinitySensors, this.config);
 });
 
 export {};

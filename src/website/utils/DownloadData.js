@@ -112,7 +112,9 @@ const formatCsv = (data, sensorType) => {
     case 'localpath':
     case 'batteries':
     case 'wind-sensors':
-    case 'generic-sensors':
+    case 'temp-sensors':
+    case 'ph-sensors':
+    case 'salinity-sensors':
       return format3dCsv(data);
     default:
       throw new Error(`Unsupported sensor type: ${sensorType}`);
@@ -138,7 +140,11 @@ const format2dCsv = (data) => {
 };
 
 const format3dCsv = (data) => {
-  const firstItem = data[0];
+  // Readings can arrive with an empty sensor array, so derive the headers
+  // from the first reading that has values.
+  const firstItem = data.find(
+    (reading) => reading[Object.keys(reading)[0]].length > 0,
+  );
   if (!firstItem) return [];
 
   const innerProperties = Object.keys(firstItem);
@@ -176,7 +182,9 @@ const formatXLSX = async (data, sensorType) => {
     case 'localpath':
     case 'batteries':
     case 'wind-sensors':
-    case 'generic-sensors':
+    case 'temp-sensors':
+    case 'ph-sensors':
+    case 'salinity-sensors':
       format3dXLSX(data, worksheet, workbook);
       break;
     default:
@@ -204,7 +212,11 @@ const format2dXLSX = (data, worksheet) => {
 };
 
 const format3dXLSX = (data, worksheet) => {
-  const firstItem = data[0];
+  // Readings can arrive with an empty sensor array, so derive the headers
+  // from the first reading that has values.
+  const firstItem = data.find(
+    (reading) => reading[Object.keys(reading)[0]].length > 0,
+  );
   if (!firstItem) return [];
 
   const innerProperties = Object.keys(firstItem);
@@ -242,5 +254,9 @@ export const downloadBatteriesData = (format) =>
   downloadDataFromAPI('batteries', format);
 export const downloadWindSensorsData = (format) =>
   downloadDataFromAPI('wind-sensors', format);
-export const downloadGenericSensorsData = (format) =>
-  downloadDataFromAPI('generic-sensors', format);
+export const downloadTempSensorsData = (format) =>
+  downloadDataFromAPI('temp-sensors', format);
+export const downloadPhSensorsData = (format) =>
+  downloadDataFromAPI('ph-sensors', format);
+export const downloadSalinitySensorsData = (format) =>
+  downloadDataFromAPI('salinity-sensors', format);
