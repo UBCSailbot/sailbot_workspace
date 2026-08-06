@@ -19,11 +19,10 @@
   Frames: model x forward (bow), y port, z up. The hull link's inertial origin is the CG,
   and link poses below are expressed relative to it.
 
-  Waterline: the Buoyancy system in sailing_world.sdf computes flotation from the collision
-  geometry, so the hull collision box (not the visual) is what sets the waterline. The box
-  is 3.6 x 0.99 x 0.55 m, and displacing 0.269 m^3 of it submerges 0.075 m, i.e. 13.7% of
-  its height. gazebo_launch.py therefore spawns the model with its CG 0.2 m above z = 0 so
-  it starts at that equilibrium instead of dropping in and bobbing.
+  Waterline: the Hydrodynamics plugin below computes flotation from the collision geometry,
+  so the hull collision box (not the visual) sets the waterline. Displacing 0.269 m^3 of the
+  3.6 x 0.99 x 0.55 m box submerges 0.075 m of it, so gazebo_launch.py spawns the model with
+  its CG 0.2 m above z = 0 to start at that equilibrium rather than dropping in and bobbing.
 -->
 <sdf version="1.9">
   <model name="polaris">
@@ -31,21 +30,17 @@
     <link name="hull">
       <inertial>
         <!-- Ballast offset: the CG sits 0.35 m BELOW the link origin, standing in for the
-             lead a real keelboat carries low in its keel.
+             lead a real keelboat carries low in its keel. Form stability alone gives a hull
+             TWO stable equilibria, since a box is equally happy upside down, so any
+             disturbance past its modest range of stability leaves it inverted. With the CG
+             below the centre of buoyancy (KB = -0.238 m here), upright is the only
+             equilibrium.
 
-             The reason is that form stability alone gives a hull TWO stable equilibria. A
-             box is equally happy upside down, so any disturbance large enough to push it
-             past its (modest) range of stability leaves it there. Ballast is what makes
-             upright the only equilibrium: with the CG below the centre of buoyancy
-             (KB = -0.238 m here), an inverted hull has no restoring configuration to sit
-             in and rights itself.
-
-             0.35 m is the smallest offset found to hold the boat upright with margin;
-             it keeps roll within about +/-7 deg under ambient wind. Note the tradeoff:
-             the centre-of-effort offsets in constants.py are expressed relative to the CG,
-             so with this offset applied the link origin they are measured from is 0.35 m
-             above the true CG. Removing that discrepancy means either putting real mass in
-             a separate keel link or re-referencing the constants. -->
+             0.35 m is the smallest offset that holds the boat upright with margin, keeping
+             roll within about +/-7 deg under ambient wind. Tradeoff: the centre-of-effort
+             offsets in constants.py are relative to the CG, so the link origin they are
+             measured from now sits 0.35 m above the true CG. Fixing that means real mass in
+             a separate keel link, or re-referencing the constants. -->
         <pose>0 0 -0.35 0 0 0</pose>
         <mass>276.0</mass>
         <inertia>
@@ -60,8 +55,8 @@
         </inertia>
       </inertial>
 
-      <!-- Collision volume sets buoyancy: 3.6 x 0.99 x 0.55 m box is 1.96 m^3 total, so the
-           boat floats once ~14% of it is submerged (0.269 m^3 / 1.96 m^3). -->
+      <!-- Sets buoyancy, not just contact: the boat floats once 0.269 m^3 of this 1.96 m^3
+           box is submerged. -->
       <collision name="hull_collision">
         <geometry>
           <box>
@@ -380,22 +375,19 @@
       <upward>0 1 0</upward>
     </plugin>
 
-    <!-- Flotation and hydrodynamic damping, from asv_wave_sim.
-
-         This replaces the stock gz-sim Buoyancy system entirely. Rather than applying a
-         single buoyant force at a fixed point, it meshes the hull's collision geometry and
-         integrates pressure over whichever part is currently below the wave surface. The
-         centre of buoyancy therefore moves outboard as the boat heels, producing a real
-         waterplane righting moment. That is what lets the hull's inertial pose stay at the
-         CG instead of carrying an artificial ballast offset.
+    <!-- Flotation and hydrodynamic damping, from asv_wave_sim, replacing the stock gz-sim
+         Buoyancy system entirely. Rather than applying one buoyant force at a fixed point,
+         it integrates pressure over whichever part of the hull's collision geometry is below
+         the wave surface, so the centre of buoyancy moves outboard as the boat heels and
+         produces a real waterplane righting moment.
 
          <enable> takes fully-qualified model::link names. Only the hull is listed: it holds
          all of the displaced volume (hull box plus keel), while the rig sits above the
          waterline and the rudder's small volume is not worth the per-step mesh integration.
 
-         The <wave> block MUST match the WavesModel plugin in worlds/sailing_world.sdf.
-         Both evaluate the wave field independently from these parameters, so a mismatch
-         floats the boat against a different surface than the one being rendered. -->
+         The <wave> block MUST match the WavesModel plugin in worlds/sailing_world.sdf; both
+         evaluate the wave field independently, so a mismatch floats the boat against a
+         different surface than the one being rendered. -->
     <plugin filename="gz-waves1-hydrodynamics-system" name="gz::sim::systems::Hydrodynamics">
       <enable>polaris::hull</enable>
 
@@ -413,11 +405,10 @@
         <viscous_drag_on>1</viscous_drag_on>
         <pressure_drag_on>1</pressure_drag_on>
 
-        <!-- Linear and angular damping. The kinematic backend's linear damping matrix
-             D = diag(45, 180, 115, 140) in constants.py is in N.s/m, whereas these are
-             dimensionless coefficients scaled by the submerged area, so they cannot be
-             copied across directly. Left at the asv_wave_sim reference values; tune
-             against the kinematic backend's response if the two need to agree. -->
+        <!-- The kinematic backend's damping matrix D = diag(45, 180, 115, 140) in
+             constants.py is in N.s/m, whereas these are dimensionless coefficients scaled by
+             submerged area, so they cannot be copied across. Left at asv_wave_sim's
+             reference values; tune against the kinematic backend if the two need to agree. -->
         <cDampL1>1.0E-6</cDampL1>
         <cDampL2>1.0E-6</cDampL2>
         <cDampR1>1.0E-6</cDampR1>

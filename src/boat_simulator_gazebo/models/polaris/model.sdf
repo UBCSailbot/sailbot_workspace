@@ -3,29 +3,22 @@
   Polaris with the real CAD hull geometry, satisfying the model contract in
   src/boat_simulator_gazebo/README.md.
 
-  This model and models/polaris_basic are deliberately identical everywhere except
-  <visual> geometry: same link and joint names, same mass and inertia, same joint
-  limits and gains, same LiftDrag and Hydrodynamics parameters. polaris_basic draws
-  itself with boxes; this one draws itself with the CAD meshes. Keeping the physics
-  byte-for-byte identical means switching boat_model_sdf between them changes only
-  what you see, never how the boat behaves, and there is one set of numbers to
-  maintain rather than two.
+  This model and models/polaris_basic are deliberately identical except for <visual>
+  geometry: polaris_basic draws itself with boxes, this one with the CAD meshes. Switching
+  boat_model_sdf between them therefore changes only what you see, never how the boat
+  behaves, and there is one set of numbers to maintain rather than two.
 
-  Every physical quantity therefore comes from BOAT_PROPERTIES in
-  boat_simulator/common/constants.py, NOT from the CAD export. The SolidWorks export
-  reports 244.28 kg and I_xx = 11.1 kg.m^2; BOAT_PROPERTIES says 276 kg and
-  I_xx = 175.86. The CAD figures cover the bare structure rather than the rigged boat,
-  and the roll inertia in particular is low enough to make the keel's LiftDrag moment
-  diverge and abort gz-sim within ~20 s.
+  Every physical quantity comes from BOAT_PROPERTIES in boat_simulator/common/constants.py,
+  NOT from the CAD export, whose figures cover the bare structure rather than the rigged
+  boat (244.28 kg and I_xx = 11.1 kg.m^2, against BOAT_PROPERTIES' 276 kg and 175.86). The
+  CAD roll inertia is low enough to make the keel's LiftDrag moment diverge and abort
+  gz-sim within ~20 s.
 
   Frames: x forward (bow), y port, z up, with the model origin ON THE CG, matching the
   convention the *_CE_REL_TO_CG constants are expressed against.
 
-  The meshes in meshes/ are NOT the raw CAD export. tools/prepare_polaris_meshes.py
-  rotates them out of the exporter's z-down frame (raw, the wingsail hangs below the
-  hull and the rudder points at the sky), moves the hull onto the CG, and decimates
-  base_hull from 1.35 M triangles to ~36 k. See that script for the details; the raw
-  exports live in meshes/raw/ and are gitignored.
+  The meshes in meshes/ are NOT the raw CAD export; tools/prepare_polaris_meshes.py
+  reframes and decimates them from the gitignored meshes/raw/.
 -->
 <sdf version="1.9">
   <model name="polaris">
@@ -34,10 +27,8 @@
     <link name="hull">
       <inertial>
         <!-- Ballast offset: the CG sits 0.35 m BELOW the link origin, standing in for the
-             lead a real keelboat carries low in its keel. Without it this boat capsizes
-             and floats inverted, because form stability alone leaves a hull with two
-             stable equilibria and no preference for which way is up. Same value and same
-             reasoning as models/polaris_basic -- see the long comment there. -->
+             lead a real keelboat carries low in its keel. Without it this boat capsizes and
+             floats inverted. Same value and reasoning as models/polaris_basic. -->
         <pose>0 0 -0.35 0 0 0</pose>
         <mass>276.0</mass>
         <inertia>
@@ -52,40 +43,22 @@
         </inertia>
       </inertial>
 
-      <!-- Buoyancy proxy, NOT the hull mesh. Two separate reasons it has to be a box:
+      <!-- Buoyancy proxy, NOT the hull mesh. base_hull.STL is a ~10 mm thin-walled shell,
+           so it encloses the volume of the hull *skin* (0.177 m^3) rather than the volume
+           the hull *displaces*, which is both meaningless and too little to float the boat;
+           integrating pressure over it every step is also ruinously slow.
 
-           1. base_hull.STL is a thin-walled shell, about 10 mm thick -- a vertical ray
-              through it crosses the surface in pairs 9-11 mm apart. The volume it
-              encloses is the volume of the hull *skin* (0.177 m^3), not the volume the
-              hull *displaces*. Handing it to Hydrodynamics would compute buoyancy from
-              the amount of fibreglass, which is meaningless and, at 0.177 m^3 < the
-              0.269 m^3 needed, would not even float the boat.
-           2. Hydrodynamics re-integrates pressure over this geometry every physics step.
-              Against the full-resolution mesh that alone drops the simulation to roughly
-              0.01 s of sim time per 7 s of wall clock.
-
-           The dimensions are polaris_basic's, NOT the real hull's, and that is
-           deliberate. Sized instead to the real hull's measured hydrostatics (draft
-           0.33 m, waterplane 2.02 m^2, footprint 3.0 x 0.673), the boat is far too
-           tender: the real hull's waterplane second moment is only 0.061 m^4 against
-           this box's 0.291 m^4, giving a metacentric height of 0.10-0.21 m rather than
-           1.04 m. That is the same order as the couple formed by the sail's side force
-           2 m above the CG and the keel's 1.13 m below it, so the boat heels heavily
-           under ambient wind alone. The ballast offset above is what keeps it upright,
-           but there is no reason to make its job harder than it needs to be.
-
-           Only the box's vertical placement differs from polaris_basic's: it sits high
-           enough on the origin that the waterline lands at z = -0.006, which is where
-           the real hull mesh floats at this displacement. The boat is then as stable as
-           the verified model while the visible hull still sits correctly in the water.
+           Dimensions are polaris_basic's, not the real hull's. Sized to the real
+           hydrostatics the boat is far too tender to stay upright under ambient wind. Only
+           the vertical placement differs, set so the waterline lands at z = -0.006, where
+           the real mesh floats at this displacement:
 
                draft = 0.269 / (3.6 x 0.99)        = 0.0754 m
                GM    = KB + BM - KG
                      = -0.044 + 1.082 - (-0.35)    = 1.39 m   (polaris_basic: 1.19 m)
 
-           Equilibrium puts the origin 0.006 m above the waterline, so this model spawns
-           at z ~ 0, whereas polaris_basic spawns at 0.2 (see boat_spawn_height in
-           gazebo_launch.py). -->
+           Equilibrium puts the origin 0.006 m above the waterline, so this model spawns at
+           z ~ 0 where polaris_basic spawns at 0.2. See the README's Flotation section. -->
       <collision name="hull_collision">
         <pose>-0.135 0 0.1936 0 0 0</pose>
         <geometry>
@@ -151,12 +124,9 @@
         </material>
       </visual>
 
-      <!-- The wing's planform, as a plate rather than geometry, because THE CAD EXPORT
-           DOES NOT CONTAIN THE SAIL SKIN. link_wingsail.STL is the structural frame only:
-           a mast tube spanning z -2.06..1.49 and two spars at z 0.10 and 0.78, 1.99 m^2 of
-           surface in total. A 2.01 m^2 wing would need about 4 m^2 of skin on its own, and
-           the mesh has none of it -- rendered as exported, the boat carries a bare mast and
-           no sail. -->
+      <!-- The wing's planform, drawn as a plate because THE CAD EXPORT DOES NOT CONTAIN THE
+           SAIL SKIN. link_wingsail.STL is the structural frame only, so rendered as
+           exported the boat carries a bare mast and no sail. -->
       <visual name="wing_sail_planform_visual">
         <pose>0.2 -0.11 0 0 0 0</pose>
         <geometry>
@@ -381,13 +351,10 @@
     </plugin>
 
     <!-- Keel: attached to the hull link, with <cp> at KEEL_CE_REL_TO_CG so the side force
-         and its righting/leeway moment are applied at the correct point.
-
-         This offset is only safe because the link it acts on carries BOAT_PROPERTIES'
-         I_xx of 175.86 kg.m^2. With the CAD export's I_xx of 11.1 the same block spins
-         the hull fast enough that <forward>/<upward> rotate into a new orientation every
-         step, and gz-sim aborts on an ODE broad-phase assertion within ~20 s. If this
-         model's inertia is ever taken back from CAD, this offset has to be revisited. -->
+         and its righting/leeway moment act at the correct point. That offset is only safe
+         because the link carries BOAT_PROPERTIES' I_xx of 175.86 kg.m^2; with the CAD
+         export's 11.1 it spins the hull fast enough to abort gz-sim on an ODE assertion
+         within ~20 s. Revisit if this model's inertia is ever taken back from CAD. -->
     <plugin filename="gz-sim-lift-drag-system" name="gz::sim::systems::LiftDrag">
       <link_name>hull</link_name>
       <air_density>1027</air_density>
@@ -403,22 +370,19 @@
       <upward>0 1 0</upward>
     </plugin>
 
-    <!-- Flotation and hydrodynamic damping, from asv_wave_sim.
-
-         This replaces the stock gz-sim Buoyancy system entirely. Rather than applying a
-         single buoyant force at a fixed point, it meshes the hull's collision geometry and
-         integrates pressure over whichever part is currently below the wave surface. The
-         centre of buoyancy therefore moves outboard as the boat heels, producing a real
-         waterplane righting moment. That is what lets the hull's inertial pose stay at the
-         CG instead of carrying an artificial ballast offset.
+    <!-- Flotation and hydrodynamic damping, from asv_wave_sim, replacing the stock gz-sim
+         Buoyancy system entirely. Rather than applying one buoyant force at a fixed point,
+         it integrates pressure over whichever part of the hull's collision geometry is below
+         the wave surface, so the centre of buoyancy moves outboard as the boat heels and
+         produces a real waterplane righting moment.
 
          <enable> takes fully-qualified model::link names. Only the hull is listed: it holds
          all of the displaced volume, while the rig sits above the waterline and the
          rudder's small volume is not worth the per-step mesh integration.
 
-         The <wave> block MUST match the WavesModel plugin in worlds/sailing_world.sdf.
-         Both evaluate the wave field independently from these parameters, so a mismatch
-         floats the boat against a different surface than the one being rendered. -->
+         The <wave> block MUST match the WavesModel plugin in worlds/sailing_world.sdf; both
+         evaluate the wave field independently, so a mismatch floats the boat against a
+         different surface than the one being rendered. -->
     <plugin filename="gz-waves1-hydrodynamics-system" name="gz::sim::systems::Hydrodynamics">
       <enable>polaris::hull</enable>
 
@@ -436,11 +400,10 @@
         <viscous_drag_on>1</viscous_drag_on>
         <pressure_drag_on>1</pressure_drag_on>
 
-        <!-- Linear and angular damping. The kinematic backend's linear damping matrix
-             D = diag(45, 180, 115, 140) in constants.py is in N.s/m, whereas these are
-             dimensionless coefficients scaled by the submerged area, so they cannot be
-             copied across directly. Left at the asv_wave_sim reference values; tune
-             against the kinematic backend's response if the two need to agree. -->
+        <!-- The kinematic backend's damping matrix D = diag(45, 180, 115, 140) in
+             constants.py is in N.s/m, whereas these are dimensionless coefficients scaled by
+             submerged area, so they cannot be copied across. Left at asv_wave_sim's
+             reference values; tune against the kinematic backend if the two need to agree. -->
         <cDampL1>1.0E-6</cDampL1>
         <cDampL2>1.0E-6</cDampL2>
         <cDampR1>1.0E-6</cDampR1>

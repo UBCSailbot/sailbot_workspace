@@ -1,8 +1,7 @@
 """Launch file for the Gazebo physics backend of the boat simulator.
 
-Starts the Ignition Gazebo server with the sailing world, the ros_gz parameter bridge,
-optionally spawns the boat model, and runs gazebo_physics_bridge_node, which adapts
-Gazebo's topics to the physics engine's ROS contract.
+Starts the Gazebo server with the sailing world, the ros_gz parameter bridge, optionally
+spawns the boat model, and runs gazebo_physics_bridge_node.
 
 Lifetime is tied together in both directions: if the Gazebo server or the bridge node
 exits, the whole launch shuts down, so a dead simulator never leaves the ROS side running
@@ -34,18 +33,12 @@ PACKAGE_SRC_DIR = os.path.join(ROS_WORKSPACE, "src", PACKAGE_NAME)
 # Model name expected by the world's Buoyancy system and the ros_gz_bridge topic map.
 BOAT_MODEL_NAME = "polaris"
 
-# Topics bridged between Gazebo and ROS, as (parameter_bridge spec, ROS topic name).
-#
-# The ros_gz_bridge shipped for Humble predates YAML config files, so each bridge
-# is declared as a CLI spec of the form `<topic>@<ROS type><direction><Gazebo type>`, where
-# the direction character is `[` for Gazebo->ROS and `]` for ROS->Gazebo. The spec's topic
-# is the Gazebo name, which is also what the bridge would call the ROS topic, so the second
-# tuple element is the ROS name we remap it to.
-#
-# The Gazebo names are part of the boat model contract (see this package's README): the
-# model must be named `polaris` and carry an OdometryPublisher plugin plus a
-# JointPositionController per actuated joint. The ROS names are what
-# gazebo_physics_bridge_node subscribes to and publishes on.
+# Topics bridged between Gazebo and ROS, as (parameter_bridge spec, ROS topic name). The
+# ros_gz_bridge shipped for Humble predates YAML config files, so each bridge is a CLI spec
+# `<topic>@<ROS type><direction><Gazebo type>`, where the direction is `[` for Gazebo->ROS
+# and `]` for ROS->Gazebo. The spec's topic is the Gazebo name, which the bridge would also
+# use for the ROS topic, hence the remapping to the ROS names in the second element. The
+# Gazebo names are part of the boat model contract (see this package's README).
 BRIDGED_TOPICS = [
     (
         "/model/polaris/odometry@nav_msgs/msg/Odometry[gz.msgs.Odometry",
@@ -76,22 +69,10 @@ def gz_name(bridge_spec: str) -> str:
     return bridge_spec.split("@", 1)[0]
 
 
-# Height of the boat's centre of gravity above the water surface at spawn.
-#
-# This is a property of the model, not of the launch, because it is the model's flotation
-# equilibrium: spawn a boat here and it starts at rest instead of dropping in and bobbing.
-# Both shipped models put their origin on the CG, but they reach equilibrium at different
-# CG heights, so the default below only matches the default model:
-#
-#   models/polaris_basic  0.2   hull collision box 3.6 x 0.99 x 0.55 m centred on the CG,
-#                               displacing mass / WATER_DENSITY = 276 / 1027 = 0.269 m^3
-#                               at a 0.075 m draft, so the CG sits 0.55/2 - 0.075 above
-#                               the waterline.
-#   models/polaris        0.0   uses the same collision box, raised on the CG so the
-#                               waterline lands at z = -0.006, which is where the real
-#                               hull mesh floats at this displacement.
-#
-# Override with the boat_spawn_height launch argument when spawning a different model.
+# Spawn height of the boat's origin, which both shipped models put on the CG. This is the
+# model's flotation equilibrium, so the boat starts at rest instead of dropping in and
+# bobbing, and it therefore differs per model: 0.2 for models/polaris_basic, 0.0 for
+# models/polaris. Derived in this package's README; override with boat_spawn_height.
 DEFAULT_BOAT_SPAWN_HEIGHT_M = 0.2
 
 LOCAL_LAUNCH_ARGUMENTS: List[DeclareLaunchArgument] = [
@@ -193,9 +174,8 @@ def setup_launch(context: LaunchContext) -> List:
         get_gazebo_server_description(context),
         get_ros_gz_bridge_description(context),
         physics_bridge,
-        # The physics bridge is what makes this backend a physics engine as far as the rest
-        # of the system is concerned. If it dies, shut down so the Gazebo server goes with
-        # it rather than lingering and holding its transport topics.
+        # If the bridge dies, shut down so the Gazebo server goes with it rather than
+        # lingering and holding its transport topics.
         RegisterEventHandler(
             OnProcessExit(
                 target_action=physics_bridge,
@@ -212,10 +192,8 @@ def setup_launch(context: LaunchContext) -> List:
 def asv_wave_sim_roots() -> List[str]:
     """Finds the asv_wave_sim trees supplying the wave field and Hydrodynamics plugin.
 
-    The Dev Container image prebuilds asv_wave_sim into `ASV_WAVE_SIM_PREFIX`
-    (/opt/asv_wave_sim), so that is preferred. A source checkout under `src/` is used as a
-    fallback, which covers both an older container and anyone building it in-workspace to
-    hack on the wave physics.
+    The Dev Container image prebuilds asv_wave_sim into `ASV_WAVE_SIM_PREFIX`, so that is
+    preferred; a source checkout under `src/` is the fallback.
 
     Returns:
         List[str]: Existing prefixes, most preferred first. Empty if none is installed.
@@ -231,14 +209,9 @@ def gazebo_resource_env() -> dict:
     """Builds the environment overrides the Gazebo server needs to resolve its resources.
 
     The world includes `model://waves` from asv_wave_sim, whose models live outside any
-    ament share directory, so `GZ_SIM_RESOURCE_PATH` has to point at them explicitly. The
-    prebuilt image already exports this, but it is rebuilt here so an in-workspace checkout
-    works too. Existing entries are preserved, so a caller can add their own model paths.
-
-    This package's `models/` directory is included as well, so the shipped boat models
-    resolve as `model://polaris` / `model://polaris_basic` for anyone including them from a
-    custom world, rather than only via the absolute path `boat_model_sdf` passes to
-    `ros_gz_sim create -file`.
+    ament share directory, so `GZ_SIM_RESOURCE_PATH` has to point at them explicitly. This
+    package's `models/` is added too, so the boat models resolve as `model://polaris` from a
+    custom world. Existing entries are preserved.
 
     Returns:
         dict: Environment variables to overlay onto the Gazebo server process.
@@ -276,14 +249,11 @@ def get_gazebo_server_description(context: LaunchContext) -> ExecuteProcess:
         output="screen",
         shell=False,
         additional_env=gazebo_resource_env(),
-        # The server runs inside the `gz` process itself (the CLI is a Ruby wrapper that
-        # loads the server via FFI), so signalling this process is what stops the
-        # simulation. It does not always exit on SIGINT while running headless, hence the
-        # explicit escalation to SIGTERM and then SIGKILL; without it the server outlives
-        # the launch and the next run fails to bind its transport topics.
+        # The server does not always exit on SIGINT while headless, so escalation to
+        # SIGTERM/SIGKILL is needed; without it the server outlives the launch and the next
+        # run fails to bind its transport topics.
         sigterm_timeout="5",
         sigkill_timeout="5",
-        # A dead simulator makes the remaining nodes meaningless, so tear everything down.
         on_exit=Shutdown(reason="Gazebo server exited"),
     )
 
@@ -302,8 +272,7 @@ def get_ros_gz_bridge_description(context: LaunchContext) -> Node:
         executable="parameter_bridge",
         name="ros_gz_parameter_bridge",
         arguments=[spec for spec, _ros_name in BRIDGED_TOPICS],
-        # parameter_bridge names each ROS topic after its Gazebo counterpart, so the
-        # ROS-side names in the contract are produced by remapping.
+        # parameter_bridge names each ROS topic after its Gazebo counterpart.
         remappings=[(gz_name(spec), ros_name) for spec, ros_name in BRIDGED_TOPICS],
         ros_arguments=[
             "--log-level",
@@ -355,9 +324,6 @@ def get_gazebo_physics_bridge_description(context: LaunchContext) -> Node:
     """
     node_name = "gazebo_physics_bridge_node"
     config_path = LaunchConfiguration("config").perform(context)
-
-    # Reuse boat_simulator's launch helpers so the GPS origin comes from the same test plan
-    # resolution logic as the kinematic backend.
     boat_simulator_launch = import_module_from_source(
         "boat_simulator_main_launch",
         os.path.join(ROS_WORKSPACE, "src", "boat_simulator", "launch", "main_launch.py"),

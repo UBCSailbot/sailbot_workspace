@@ -1,24 +1,18 @@
 #!/usr/bin/env python3
 """Turns the raw SolidWorks CAD export into the meshes models/polaris ships.
 
-The CAD export is unusable as-is for two independent reasons, both fixed here:
+Two fixes, both needed to make the export usable:
 
-1. **It is in a z-down frame.** The SolidWorks assembly was built with z pointing
-   down, and the URDF exporter carried that through untouched. Loaded as-is, the
-   wingsail hangs ~3 m below the hull, the trim tab sits underwater, and the rudder
-   points up into the air. Every mesh is therefore rotated 180 deg about x here.
+1. The CAD assembly is z-down, so every mesh is rotated 180 deg about x. Loaded as-is,
+   the wingsail hangs ~3 m below the hull and the rudder points into the air.
+2. base_hull.STL is 1.35 M triangles / 67 MB, rasterised on the CPU because the
+   devcontainer forces software rendering. Decimating to ~35 k triangles costs ~1 GB
+   less RSS in the Gazebo GUI with no visible change at the scale the boat is drawn.
 
-2. **base_hull.STL is 1.35 M triangles / 67 MB.** The devcontainer forces software
-   rendering (`LIBGL_ALWAYS_SOFTWARE=1`, no `/dev/dri`) on every platform, so that
-   geometry is rasterised on the CPU everywhere and costs ~1 GB of extra RSS in the
-   Gazebo GUI. Decimating to ~35 k triangles removes that without a visible change
-   at the scale the boat is drawn.
-
-The hull mesh is additionally translated so the model origin lands on the centre of
-gravity, matching the convention models/polaris_basic uses and the one the
-`*_CE_REL_TO_CG` constants in `boat_simulator/common/constants.py` are expressed
-against. Child links are rotated only -- their origins are placed by the joint
-offsets in model.sdf, which are listed in JOINT_ORIGINS_CG_FRAME below for reference.
+The hull mesh is additionally translated onto the centre of gravity, the convention
+models/polaris_basic and the `*_CE_REL_TO_CG` constants in
+`boat_simulator/common/constants.py` use. Child links are rotated only; their origins
+come from the joint offsets in model.sdf.
 
 Usage:
     pip install fast-simplification
@@ -49,9 +43,8 @@ TARGETS = {
     "link_trim_tab": None,
 }
 
-# Joint origins in the CG-centred, z-up frame, i.e. FLIP @ p_cad - FLIP @ CG_CAD.
-# Printed by this script and transcribed into model.sdf; kept here so the two stay
-# traceable to the CAD export rather than looking like hand-tuned numbers.
+# Printed by this script and transcribed into model.sdf, so those numbers stay traceable
+# to the CAD export rather than looking hand-tuned.
 JOINT_ORIGINS_CAD = {
     "rudder_joint": np.array([-1.282, -0.0090126, 1.08]),
     "wingsail_joint": np.array([-0.18951, -0.11, -1.522]),
@@ -92,9 +85,8 @@ def write_stl(path: str, tris: np.ndarray) -> None:
 def weld(tris: np.ndarray, decimals: int = 5):
     """Converts an STL triangle soup into an indexed mesh.
 
-    STL stores every triangle independently, so coincident corners are duplicated and
-    the mesh has no edge connectivity. Edge-collapse decimation needs that
-    connectivity, so vertices are merged by rounded position first.
+    STL stores every triangle independently, so the mesh has no edge connectivity.
+    Edge-collapse decimation needs it, hence merging vertices by rounded position.
     """
     points = tris.reshape(-1, 3)
     unique, inverse = np.unique(np.round(points, decimals), axis=0, return_inverse=True)

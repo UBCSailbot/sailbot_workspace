@@ -1,13 +1,10 @@
 # Custom rosdep keys for the Gazebo physics backend, picked up by scripts/setup.sh.
 #
-# The stock `ros_gz_bridge` / `ros_gz_sim` rosdep keys resolve to ros-humble-ros-gz-*,
-# which are the Ignition Fortress builds. Those Conflict with the Harmonic vendor packages
-# this backend needs, so depending on the stock keys makes `rosdep install` uninstall
-# Harmonic and put Fortress back, silently breaking the simulator. These keys pin the
-# Harmonic builds instead.
-#
-# Harmonic itself comes from the OSRF apt repository rather than the ROS one; see this
-# package's README for adding that repository.
+# The stock `ros_gz_bridge` / `ros_gz_sim` keys resolve to ros-humble-ros-gz-*, the Ignition
+# Fortress builds. Those Conflict with the Harmonic vendor packages this backend needs, so
+# depending on them makes `rosdep install` uninstall Harmonic and put Fortress back, silently
+# breaking the simulator. These keys pin the Harmonic builds instead, which come from the
+# OSRF apt repository rather than the ROS one; see this package's README.
 
 ros_gz_bridge_harmonic:
   ubuntu:
@@ -24,7 +21,7 @@ gz_harmonic:
     apt:
       packages: [gz-harmonic]
 
-# asv_wave_sim's own build dependencies. CGAL has a stock key, FFTW does not.
+# asv_wave_sim build dependency; CGAL has a stock key, FFTW does not.
 libfftw3_dev:
   ubuntu:
     apt:

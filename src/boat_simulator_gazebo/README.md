@@ -10,12 +10,12 @@ in-house kinematic model.
 ## Status
 
 **Migration to Harmonic in progress — not yet re-verified.** The backend was
-previously verified end to end against Ignition Fortress, using the stock
-`Buoyancy` system plus a ballast offset. It has since been moved to Gazebo
-Harmonic with flotation supplied by `asv_wave_sim`'s `Hydrodynamics` plugin,
-and the numbers below have **not** been re-measured since that change.
-
-The figures from the last Fortress run, kept as a baseline to compare against:
+verified end to end against Ignition Fortress, using the stock `Buoyancy` system
+plus a ballast offset. It has since moved to Gazebo Harmonic with flotation from
+`asv_wave_sim`'s `Hydrodynamics` plugin. Both models have been re-checked
+qualitatively under Harmonic — each floats at its waterline, holds attitude, and
+sails under ambient wind, headless and in the GUI — but the numbers below are
+still the Fortress baseline and need rerunning:
 
 | Check                     | Result (Fortress baseline)                      |
 | ------------------------- | ----------------------------------------------- |
@@ -26,30 +26,13 @@ The figures from the last Fortress run, kept as a baseline to compare against:
 | `trim_tab_joint` tracking | 0.3 rad commanded → 17.18° actual (0.3 rad)     |
 | `/gps`                    | resolved to Vancouver from the test-plan origin |
 
-The open question is stability: the ballast offset that kept the hull upright
-under the old buoyancy model has been removed, on the expectation that
-`Hydrodynamics` supplies a genuine waterplane righting moment instead. That
-needs confirming on a real run before this section can claim "verified" again.
-
-The table above was measured against
-[`models/polaris_basic`](models/polaris_basic/model.sdf), a coarse
-box-geometry stand-in that satisfies the [model
-contract](#boat-model-contract): correct mass, inertia, foil areas, and
-centre-of-effort offsets from `BOAT_PROPERTIES`, but not the real hull shape.
-The lift/drag coefficients and joint gains are hand-fitted and still worth
-tuning. It remains the default `boat_model_sdf`.
-
-[`models/polaris`](models/polaris/model.sdf) is the same boat drawn with the
-real CAD hull geometry. The two models are deliberately identical in every
-respect except `<visual>` geometry — same links, joints, mass, inertia, gains
-and plugin parameters, all from `BOAT_PROPERTIES` — so switching between them
-changes what you see, not how the boat behaves. Both have been re-checked under
-Harmonic since the notes above: each floats at its waterline, holds attitude,
-and sails under ambient wind, in both headless and GUI mode.
-
-What has *not* been re-measured against Harmonic is the quantitative table
-above (boat speed, joint tracking, settling draft). Treat those numbers as the
-Fortress baseline until someone reruns them.
+They were measured against
+[`models/polaris_basic`](models/polaris_basic/model.sdf), the default
+`boat_model_sdf`: a coarse box-geometry stand-in satisfying the [model
+contract](#boat-model-contract), with hand-fitted lift/drag coefficients and
+joint gains that are still worth tuning.
+[`models/polaris`](models/polaris/model.sdf) is the same boat drawn with the real
+CAD hull, identical in every respect except `<visual>` geometry.
 
 ## Setup
 
@@ -60,52 +43,34 @@ Fortress, which could not run the wave field at all.
 
 Gazebo is **opt-in at image build time**, because its dependency closure is
 about 1.8 GB and most of the team never runs the simulator. Enable it by
-setting the `INSTALL_GAZEBO` build arg in
-[`docker-compose.yml`](../../.devcontainer/docker-compose.yml) to `"true"`:
+uncommenting the Gazebo compose overlay in
+[`devcontainer.json`](../../.devcontainer/devcontainer.json) and rebuilding the
+container; see
+[`.devcontainer/gazebo/README.md`](../../.devcontainer/gazebo/README.md) for the
+details and the Apple Silicon caveat.
 
-```yaml
-    build:
-      args:
-        INSTALL_GAZEBO: "true"
-```
+The overlay sets `INSTALL_GAZEBO=true`, which swaps the base image over to
+`ghcr.io/ubcsailbot/sailbot_workspace/gazebo-dev`. That image already contains:
 
-then run the VS Code command "Dev Containers: Rebuild Container".
-
-That build arg selects which image
-[`Dockerfile`](../../.devcontainer/Dockerfile) builds on top of. When it is
-`true` the base becomes
-`ghcr.io/ubcsailbot/sailbot_workspace/gazebo-dev`, a prebuilt image (see
-[`.devcontainer/gazebo/`](../../.devcontainer/gazebo/README.md)) that already
-contains:
-
-1. The OSRF apt repository (Harmonic is not in the ROS one) plus
-   `gz-harmonic`, `ros-humble-ros-gzharmonic`, and `libcgal-dev` /
-   `libfftw3-dev`. Note that `ros-humble-ros-gzharmonic-bridge` **conflicts
-   with** and replaces `ros-humble-ros-gz-bridge`, so this removes the Fortress
-   bridge.
+1. The OSRF apt repository (Harmonic is not in the ROS one) plus `gz-harmonic`,
+   `ros-humble-ros-gzharmonic`, and `libcgal-dev` / `libfftw3-dev`. Note that
+   `ros-humble-ros-gzharmonic-bridge` **conflicts with** and replaces
+   `ros-humble-ros-gz-bridge`, so this removes the Fortress bridge.
 2. `asv_wave_sim`, built and installed to `/opt/asv_wave_sim`, with
    `ASV_WAVE_SIM_PREFIX`, `GZ_SIM_SYSTEM_PLUGIN_PATH`,
    `GZ_RENDERING_PLUGIN_PATH`, and `GZ_SIM_RESOURCE_PATH` exported to point at
-   it. `GZ_RENDERING_PLUGIN_PATH` matters even though it looks redundant with
-   `GZ_SIM_SYSTEM_PLUGIN_PATH`: the ocean surface mesh (`WavesVisual`) is drawn
-   by a render-engine extension that only the GUI client loads, through a
-   different loader with no built-in search path of its own. Without it the
+   it. `GZ_RENDERING_PLUGIN_PATH` looks redundant with
+   `GZ_SIM_SYSTEM_PLUGIN_PATH` but is not: the ocean surface mesh
+   (`WavesVisual`) is drawn by a render-engine extension that only the GUI
+   client loads, through a loader with no search path of its own. Without it the
    GUI logs `Failed to load plugin [gz-waves1-rendering-ogre2] : couldn't load
-   library on path []` and the boat model spawns but never renders.
+   library on path []` and the boat spawns but never renders.
 
-Shipping `asv_wave_sim` prebuilt in that image rather than building it in the
-workspace is deliberate: it is a pinned third-party dependency that never
-changes, and its CGAL-heavy translation units take **~15 minutes** to compile.
-Paying that once per image beats paying it on every fresh clone. Its system
-plugins have no CMake install rules — they are meant to be used from the build
-tree — so the image copies the built `lib` directory out wholesale.
-
-`gazebo-dev` is published for `linux/amd64` only, because OSRF does not build
-the `ros-humble-ros-gzharmonic*` packages for `arm64` on jammy. On Apple
-Silicon it therefore runs emulated, which is noticeably slower.
-
-With `INSTALL_GAZEBO: "false"` (the default) the base image is the plain `dev`
-image and none of the above is pulled.
+Prebuilding `asv_wave_sim` into that image is deliberate: it is a pinned
+dependency that never changes, and its CGAL-heavy translation units take **~15
+minutes** to compile. Its system plugins have no CMake install rules — they are
+meant to be used from the build tree — so the image copies the built `lib`
+directory out wholesale.
 
 Then the normal workspace setup:
 
@@ -148,29 +113,23 @@ them would make `rosdep install` quietly uninstall Harmonic and restore
 Fortress, breaking the backend on the next run.
 
 **Open a new terminal after building this package for the first time**, or run
-`source install/local_setup.bash` in the existing one. Because this package is
-new, a shell started before it first existed will fail with:
+`source install/local_setup.bash` in the existing one. A shell started before the
+package existed fails with:
 
 ```text
 importlib.metadata.PackageNotFoundError: No package metadata was found for boat-simulator-gazebo
 ```
 
-The Dev Container's `~/.bashrc` sources the workspace overlay once at shell
-startup, so `PYTHONPATH` is a snapshot from that moment. `colcon` is invoked
-with `--symlink-install`, which leaves each Python package's metadata in
-`build/<package>/<package>.egg-info` and relies on `PYTHONPATH` to point there.
-Rebuilding does not update an already-open shell, and the error is misleading:
-the executable is found (it is located through the ament index, which is a
-filesystem lookup), only its metadata is not. Already-built packages such as
-`boat_simulator` keep working in the same shell, which is why the failure looks
-specific to this one.
+`~/.bashrc` sources the workspace overlay once at startup, so `PYTHONPATH` is a
+snapshot from that moment and `--symlink-install` leaves the package metadata
+somewhere it no longer points. The error is misleading — the executable itself is
+found through the ament index, only its metadata is not — and older packages keep
+working in the same shell, which makes the failure look specific to this one.
 
-`asv_wave_sim` is now a required part of this backend rather than an optional
-extra, since it supplies flotation. `scripts/setup.sh` still guards it: if
-`gz-cmake3` is missing it drops a `COLCON_IGNORE` into the package, because
-otherwise its configure failure aborts the entire workspace build. With that
-ignore in place the world will load but the boat will not float, so treat the
-"gz-cmake3 not found" message from setup as a hard failure for this backend.
+`asv_wave_sim` is required, not optional, since it supplies flotation. If
+`gz-cmake3` is missing, `scripts/setup.sh` drops a `COLCON_IGNORE` into it so its
+configure failure does not abort the whole workspace build. The world then loads
+but the boat does not float, so treat "gz-cmake3 not found" as a hard failure.
 
 ## Usage
 
@@ -279,13 +238,10 @@ The `SimRudderActuation` feedback angle increases **CW**, so the bridge node
 negates it before commanding `rudder_joint`; `SimSailTrimTabActuation` feedback
 increases CCW and is forwarded as-is. Commands are in **radians**.
 
-These names are the contract's ROS-facing identifier for each actuated joint,
-not necessarily the joint's literal name in the model's SDF: what actually
-matters is that a `JointPositionController` plugin's `<topic>` matches
-`/model/polaris/joint/<name>/cmd_pos`. Both shipped models happen to name their
-SDF joints the same as the contract, so the `<joint_name>`/`<topic>` pair in
-each `JointPositionController` is a straight mapping; a model that named them
-otherwise would still comply as long as the topics match.
+These are the contract's ROS-facing identifiers, not necessarily the SDF joint
+names: what matters is that a `JointPositionController`'s `<topic>` matches
+`/model/polaris/joint/<name>/cmd_pos`. Both shipped models name their SDF joints
+the same, but a model that did not would still comply.
 
 ### Required plugins on the model
 
@@ -377,23 +333,17 @@ Two things to get right:
 
 ## Example models
 
-Two models ship with this package. `gazebo_launch.py`'s `boat_model_sdf`
-launch argument picks between them (or points at something else entirely).
+Two models ship with this package; `gazebo_launch.py`'s `boat_model_sdf` picks
+between them (or points at something else entirely).
 
 **They are the same boat.** Links, joints, mass, inertia, joint limits, gains,
 and every `LiftDrag`/`Hydrodynamics` parameter are identical and sourced from
-`BOAT_PROPERTIES`. Change a physical number in one and you must change it in the
-other.
-
-They differ in exactly two places, both about what you see:
-
-- `<visual>` geometry — boxes versus the CAD meshes.
-- **The vertical placement of the hull collision box.** Both use the same
-  3.6 × 0.99 × 0.55 m buoyancy proxy, but `polaris` sits it higher on the CG so
-  the waterline lands where the real hull mesh actually floats. Same
-  displacement, same waterplane, ~0.2 m difference in where the CG ends up
-  relative to the water — hence the different `boat_spawn_height` (0.0 vs 0.2)
-  and slightly different GM (1.04 m vs 0.845 m).
+`BOAT_PROPERTIES`, so a physical number changed in one must change in the other.
+They differ only in `<visual>` geometry and in the vertical placement of the
+hull collision box: both use the same 3.6 × 0.99 × 0.55 m buoyancy proxy, but
+`polaris` sits it higher on the CG so the waterline lands where the real hull
+mesh floats. Hence the different `boat_spawn_height` (0.0 vs 0.2) and GM (1.04 m
+vs 0.845 m).
 
 ### `models/polaris` (real hull geometry)
 
@@ -401,30 +351,19 @@ They differ in exactly two places, both about what you see:
 CAD meshes in [`models/polaris/meshes`](models/polaris/meshes), prepared from
 the SolidWorks-exported URDF at
 [`models/polaris/urdf/polaris.urdf`](models/polaris/urdf/polaris.urdf) by
-[`tools/prepare_polaris_meshes.py`](tools/prepare_polaris_meshes.py). That
-script exists because the raw export is not directly usable:
-
-- **It is in a z-down frame.** Loaded as exported, the wingsail hangs about 3 m
-  *below* the hull, the trim tab sits underwater, and the rudder points at the
-  sky. Every mesh is rotated 180° about x to fix this.
-- **`base_hull.STL` is 1.35 M triangles / 67 MB.** Since the Dev Container
-  renders in software on every platform, that geometry costs about 1 GB of extra
-  RSS in the GUI. It is decimated to ~36 k triangles (1.8 MB), which is not
-  visibly different at the scale the boat is drawn.
-
-The hull mesh is also translated so the model origin lands on the CG, matching
-`polaris_basic` and the frame the `*_CE_REL_TO_CG` constants use.
-
-Rerun the script after replacing a CAD export:
+[`tools/prepare_polaris_meshes.py`](tools/prepare_polaris_meshes.py), which
+reframes the z-down export, moves the hull origin onto the CG, and decimates
+`base_hull.STL` from 1.35 M triangles to ~36 k. Rerun it after replacing a CAD
+export:
 
 ```bash
 pip install fast-simplification
 python3 src/boat_simulator_gazebo/tools/prepare_polaris_meshes.py
 ```
 
-It reads `models/polaris/meshes/raw/*.STL` and writes `models/polaris/meshes/`.
-The raw exports are gitignored — only the prepared meshes are committed, which
-is why cloning this repo does not cost 70 MB.
+It reads the gitignored `models/polaris/meshes/raw/*.STL` and writes
+`models/polaris/meshes/`; only the prepared meshes are committed, which is why
+cloning does not cost 70 MB.
 
 Two things the CAD export gets you into, both documented at the point of use in
 `model.sdf`:

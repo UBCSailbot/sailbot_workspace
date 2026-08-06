@@ -1,28 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
   Sailing world for the Gazebo (gz-sim, Harmonic) physics backend of the boat simulator.
-
-  Provides:
-    - Physics + standard gz-sim world systems.
-    - An asv_wave_sim FFT wave field, which is both the visible water surface and the
-      surface the boat's Hydrodynamics plugin integrates against.
-    - A constant true wind field with the WindEffects system.
+  Provides physics, an asv_wave_sim FFT wave field, and a constant true wind field.
 
   Flotation is NOT provided here. The stock gz-sim Buoyancy system is deliberately absent:
-  it applies a buoyant force that does not shift as the hull heels, so it produces no
-  waterplane righting moment, and any model using it has to be artificially ballasted
-  CG-below-CB to stay upright. asv_wave_sim's Hydrodynamics plugin instead integrates over
-  the submerged part of the collision mesh, which yields the righting moment for free.
-  That plugin lives on the boat model, not in this world.
+  its buoyant force does not shift as the hull heels, so it produces no waterplane righting
+  moment and any model using it has to be artificially ballasted CG-below-CB to stay
+  upright. asv_wave_sim's Hydrodynamics plugin integrates over the submerged part of the
+  collision mesh instead, which yields the righting moment for free. That plugin lives on
+  the boat model, which gazebo_launch.py spawns and which must satisfy the model contract
+  in this package's README.
 
-  The boat model itself is NOT part of this world. It is spawned by gazebo_launch.py and
-  must satisfy the model contract in this package's README (model name `polaris`, joints
-  `rudder_joint`/`trim_tab_joint`, OdometryPublisher + JointPositionController + LiftDrag
-  + Hydrodynamics plugins).
-
-  The constant wind vector below must stay in sync with the `true_wind_enu_mps` parameter
-  of gazebo_physics_bridge_node in src/global_launch/config/globals.yaml, since the bridge
-  node uses that parameter to publish the WindSensor topic.
+  The wind vector below must stay in sync with gazebo_physics_bridge_node's
+  `true_wind_enu_mps` parameter in src/global_launch/config/globals.yaml.
 -->
 <sdf version="1.9">
   <world name="sailing_world">
@@ -61,19 +51,13 @@
       <direction>-0.5 0.1 -0.9</direction>
     </light>
 
-    <!-- asv_wave_sim wave field: both the visible water surface and the surface the boat's
-         Hydrodynamics plugin integrates against. Resolved from GZ_SIM_RESOURCE_PATH, which
-         gazebo_launch.py points at src/asv_wave_sim/gz-waves-models/world_models.
+    <!-- asv_wave_sim wave field, resolved from GZ_SIM_RESOURCE_PATH. The <wave> block below
+         matches the sea state to this world's wind (1.96 m/s on a 45 degree bearing, i.e.
+         the ENU vector above); raise wind_speed for a rougher sea.
 
-         The <wave> block overrides the model's shipped defaults so the sea state matches
-         this world's wind: 1.96 m/s magnitude on a 45 degree bearing, i.e. the ENU wind
-         vector above. That is a light breeze, so the surface stays nearly flat; raise
-         wind_speed to exercise the boat in a rougher sea.
-
-         These parameters must be kept identical to the <wave> block of the Hydrodynamics
-         plugin in models/polaris/model.sdf. The two systems evaluate the wave field
-         independently, so if they disagree the boat floats against a surface that is not
-         the one being drawn. -->
+         It must stay identical to the <wave> block of the Hydrodynamics plugin in
+         models/polaris/model.sdf. The two systems evaluate the wave field independently, so
+         if they disagree the boat floats against a surface that is not the one drawn. -->
     <include>
       <uri>model://waves</uri>
       <pose>0 0 0 0 0 0</pose>
