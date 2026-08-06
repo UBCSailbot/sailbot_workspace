@@ -177,12 +177,23 @@ def test_gps_events_parsed(make_plan):
     assert plan.gps_events == (
         GpsEvent(
             timestamp=0.0,
+            publish_heading=None,
             use_ocean_drift=True,
             ocean_drift_speed_kmph=1.0,
             ocean_drift_dir_deg=45.0,
         ),
         GpsEvent(timestamp=30.0, ocean_drift_speed_kmph=2.5),
     )
+
+
+def test_gps_event_can_stop_heading_publication(make_plan):
+    plan = make_plan(
+        "events:\n"
+        "  mock_gps:\n"
+        "    - {timestamp: 15.0, publish_heading: false}\n"
+    )
+
+    assert plan.gps_events == (GpsEvent(timestamp=15.0, publish_heading=False),)
 
 
 def test_gps_events_drift_speed_over_ceiling_raises(make_plan):

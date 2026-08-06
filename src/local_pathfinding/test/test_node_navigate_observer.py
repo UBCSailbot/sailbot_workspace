@@ -1,10 +1,10 @@
 from collections import deque
-from types import SimpleNamespace
 from typing import cast
 from unittest import mock
 
 import custom_interfaces.msg as ci
 import local_pathfinding.node_navigate_observer as observer
+from local_pathfinding.constants import GPS_UNAVAILABLE
 
 
 class FakeQueue:
@@ -18,11 +18,9 @@ class FakeQueue:
         self.items.append(item)
 
 
-def make_observer_shell() -> observer.SailbotObserver:
+def make_observer_shell(heading: float = 45.0) -> observer.SailbotObserver:
     node = object.__new__(observer.SailbotObserver)
-    node.heading_sub = SimpleNamespace(topic="rudder")
-    node.heading = None
-    node.msg = ci.LPathData()
+    node.msg = ci.LPathData(heading=ci.HelperHeading(heading=heading))
     node.msgs = deque([node.msg])
     setattr(node, "queue", FakeQueue())
     node.last_replan_reason = ""
@@ -31,25 +29,34 @@ def make_observer_shell() -> observer.SailbotObserver:
     return node
 
 
-def test_observer_passes_rudder_heading_to_visualizer(monkeypatch) -> None:
+def test_observer_passes_message_to_visualizer_without_separate_heading(monkeypatch) -> None:
     node = make_observer_shell()
-    heading = ci.HelperHeading(heading=45.0)
-    node.heading_callback(heading)
-    monkeypatch.setattr(observer.vz, "VisualizerState", lambda **kwargs: kwargs)
+    monkeypatch.setattr(observer.vz, "create_visualizer_state", lambda **kwargs: kwargs)
 
     node.update_queue()
 
     queue = cast(FakeQueue, node.queue)
     queued_state = cast(dict, queue.items[0])
-    assert queued_state["heading"] is heading
+    assert queued_state["msgs"][-1] is node.msg
+    assert "heading" not in queued_state
 
 
-def test_observer_rejects_invalid_rudder_heading() -> None:
+def test_observer_warns_when_message_heading_is_unavailable(monkeypatch) -> None:
+    node = make_observer_shell(heading=observer.vz.HEADING_UNAVAILABLE)
+    monkeypatch.setattr(observer.vz, "create_visualizer_state", lambda **kwargs: kwargs)
+
+    node.update_queue()
+
+    node.get_logger().warn.assert_called_once()
+
+
+def test_observer_queues_none_when_gps_is_unavailable() -> None:
     node = make_observer_shell()
-    previous_heading = ci.HelperHeading(heading=10.0)
-    node.heading = previous_heading
+    assert node.msg is not None
+    node.msg.gps = GPS_UNAVAILABLE
+    node.msgs = deque([node.msg])
 
-    node.heading_callback(ci.HelperHeading(heading=-180.0))
+    node.update_queue()
 
-    assert node.heading is previous_heading
-    node.get_logger().warning.assert_called_once()
+    queue = cast(FakeQueue, node.queue)
+    assert queue.items == [None]
