@@ -53,13 +53,34 @@ Replay is controlled by three ROS parameters on `can_transceiver_node`:
   last frame is replayed, instead of stopping. Defaults to `false`.
 <!-- markdownlint-enable MD013 -->
 
-`globals.yaml` and `on_water_globals.yaml` both set `can_replay_file` to the
-sample log checked into
-[`lib/can_log/combined_can_frames.csv`](lib/can_log/combined_can_frames.csv), so
-`mode:="can"` works out of the box with the default (`globals.yaml`) config.
-To replay a different log or change the pacing, either point `config` at a
-custom yaml with your own `can_transceiver_node.ros__parameters`, or run
-the node directly:
+CAN logs are **not** checked into this repository; they live in
+[`UBCSailbot/OWT-data`](https://github.com/UBCSailbot/OWT-data), versioned by
+on-water-test session date. `globals.yaml` and `on_water_globals.yaml` both
+point `can_replay_file` at `lib/can_log/combined_can_frames.csv`, which is where
+the helper script drops a log. On a fresh workspace that file does not exist
+yet, so launching with `mode:="can"` downloads the default session first and
+then starts the node — `mode:="can"` works out of the box, but the first run
+needs network access and pulls a CSV file. Later runs reuse the downloaded
+log.
+
+To pull a log yourself (or to pick a different session), run the script
+directly:
+
+```bash
+./scripts/get_mock_can_msg.sh          # defaults to the OWT-2026-06-06 session
+./scripts/get_mock_can_msg.sh -d yyyy-mm-dd   # a specific session
+```
+
+Another way to run the script is to run the equivalent VS Code Task:
+
+<!-- markdownlint-disable-next-line MD013 -->
+`CTRL + SHIFT + P > Tasks: Run Task > Pull Mock CAN Log > Choose an owt date > csv is pulled, enjoy 😊`
+
+Only the default path is fetched automatically. If `can_replay_file` points
+somewhere else, that log is yours to provide, and `can_transceiver_node` fails
+to start with an error naming this script if it is missing. To replay a
+different log or change the pacing, either point `config` at a custom yaml with
+your own `can_transceiver_node.ros__parameters`, or run the node directly:
 
 ```bash
 ros2 run network_systems can_transceiver --ros-args \
