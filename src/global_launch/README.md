@@ -27,6 +27,11 @@
     - Leave empty (default) to use the value in the config file (`mock_ais.ros__parameters.on_water_mock_ais` in `globals.yaml`).
     - `true`: Uses mock AIS data during production mode on-water testing.
     - `false`: Uses real AIS data.
+- To choose what simulates the boat's motion in `sim` mode, use the `physics_backend` launch argument (e.g. `physics_backend:=gazebo_headless`). It is read by the `boat_simulator` package, so it has no effect in `development` or `production` mode.
+    - `kinematic` (default): Runs `physics_engine_node`, the boat simulator's built-in kinematic model. No extra dependencies.
+    - `gazebo_gui`: Runs a Gazebo (gz-sim) world through the `boat_simulator_gazebo` package, with the Gazebo GUI window.
+    - `gazebo_headless`: The same Gazebo backend with the server only, for when no display is available.
+    - Both Gazebo values are opt-in and need the Gazebo dependencies set up first — see [`src/boat_simulator_gazebo/README.md`](../boat_simulator_gazebo/README.md).
   <!-- markdownlint-enable MD013 -->
 
 ## Example launch commands
@@ -38,6 +43,8 @@
   `ros2 launch global_launch main_launch.py mode:=development log_level:=debug`
 - Simulation run against the boat simulator:
   `ros2 launch global_launch main_launch.py mode:=sim config:=globals.yaml`
+- Simulation run against the Gazebo physics backend, without the Gazebo GUI:
+  `ros2 launch global_launch main_launch.py mode:=sim physics_backend:=gazebo_headless`
 - On-water testing (must use the on-water config):
   `ros2 launch global_launch main_launch.py mode:=production config:=on_water_globals.yaml record:=true`
 - Open-ocean launch run for production:

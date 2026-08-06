@@ -31,6 +31,32 @@ ros2 launch boat_simulator main_launch.py [OPTIONS]...
 To see a list of options for simulator configuration, add the `-s` flag at the
 end of the above command.
 
+### Physics backend
+
+The `physics_backend` argument selects what computes the boat's motion:
+
+| Value             | Behaviour                                        |
+| ----------------- | ------------------------------------------------ |
+| `kinematic`       | Default. Runs the built-in `physics_engine_node` |
+| `gazebo_gui`      | Runs a Gazebo (gz-sim) world with the GUI window |
+| `gazebo_headless` | Same, server only — for when there is no display |
+
+``` shell
+ros2 launch boat_simulator main_launch.py physics_backend:=gazebo_headless
+```
+
+The Gazebo values are opt-in: they need the `boat_simulator_gazebo` package and
+<!-- markdownlint-disable-next-line MD013 -->
+its Gazebo dependencies, which are not part of the default Dev Container. See [`src/boat_simulator_gazebo/README.md`](../boat_simulator_gazebo/README.md)
+for setup, the extra launch arguments they accept (world, boat model, spawn
+height), and the current limitations of that backend. The same argument works
+when launching the whole system:
+
+``` shell
+ros2 launch global_launch main_launch.py \
+  mode:=sim physics_backend:=gazebo_headless
+```
+
 ## Regenerating airfoil coefficient data
 
 The simulator's lift and drag forces depend on each foil's coefficients, which

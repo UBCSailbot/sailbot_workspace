@@ -22,6 +22,15 @@ import boat_simulator.common.constants as Constants
 # Local launch arguments and constants
 PACKAGE_NAME = "boat_simulator"
 
+# The Gazebo `physics_backend` choices, mapped to the `gz_headless` value each one passes
+# down to boat_simulator_gazebo's launch file. The GUI is a launch-time choice rather than a
+# separate backend, but it is exposed here as one so that a single argument selects the whole
+# simulator setup and callers never have to reach into the included launch file's arguments.
+GAZEBO_PHYSICS_BACKENDS = {
+    "gazebo_gui": "false",
+    "gazebo_headless": "true",
+}
+
 # Add args with DeclareLaunchArguments object(s) and utilize in setup_launch()
 LOCAL_LAUNCH_ARGUMENTS: List[DeclareLaunchArgument] = [
     DeclareLaunchArgument(
@@ -51,10 +60,11 @@ LOCAL_LAUNCH_ARGUMENTS: List[DeclareLaunchArgument] = [
     DeclareLaunchArgument(
         name="physics_backend",
         default_value="kinematic",
-        choices=["kinematic", "gazebo"],
+        choices=["kinematic", *GAZEBO_PHYSICS_BACKENDS],
         description="Physics backend for the boat simulator. `kinematic` runs the"
-        + " physics_engine_node; `gazebo` runs a Gazebo (gz-sim) world via the"
-        + " boat_simulator_gazebo package",
+        + " physics_engine_node; `gazebo_gui` and `gazebo_headless` run a Gazebo (gz-sim)"
+        + " world via the boat_simulator_gazebo package, with and without the Gazebo GUI"
+        + " respectively. Use `gazebo_headless` when no display is available",
     ),
 ]
 
@@ -113,8 +123,10 @@ def setup_launch(context: LaunchContext) -> List[Node]:
 
     launch_description_entities = list()
     physics_backend = LaunchConfiguration("physics_backend").perform(context)
-    if physics_backend == "gazebo":
-        launch_description_entities.append(get_gazebo_backend_description(context))
+    if physics_backend in GAZEBO_PHYSICS_BACKENDS:
+        launch_description_entities.append(
+            get_gazebo_backend_description(context, GAZEBO_PHYSICS_BACKENDS[physics_backend])
+        )
     else:
         launch_description_entities.append(get_physics_engine_description(context))
     launch_description_entities.append(get_low_level_control_description(context))
@@ -168,13 +180,18 @@ def get_physics_engine_description(context: LaunchContext) -> Node:
     return node
 
 
-def get_gazebo_backend_description(context: LaunchContext) -> IncludeLaunchDescription:
+def get_gazebo_backend_description(
+    context: LaunchContext, gz_headless: str
+) -> IncludeLaunchDescription:
     """Gets the launch description for the Gazebo physics backend, which replaces the
     physics engine node. The included launch file starts the Gazebo server, the ros_gz
     bridge, and the gazebo_physics_bridge_node from the boat_simulator_gazebo package.
 
     Args:
         context (LaunchContext): The current launch context.
+        gz_headless (str): "true" to run the Gazebo server without its GUI, "false"
+            otherwise. Passed down explicitly, so `physics_backend` decides whether the GUI
+            runs even if `gz_headless` was also set on the command line.
 
     Returns:
         IncludeLaunchDescription: The launch description of the Gazebo backend.
@@ -183,7 +200,10 @@ def get_gazebo_backend_description(context: LaunchContext) -> IncludeLaunchDescr
     gazebo_launch_path = os.path.join(
         ros_workspace, "src", "boat_simulator_gazebo", "launch", "gazebo_launch.py"
     )
-    return IncludeLaunchDescription(PythonLaunchDescriptionSource(gazebo_launch_path))
+    return IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(gazebo_launch_path),
+        launch_arguments={"gz_headless": gz_headless}.items(),
+    )
 
 
 def get_sim_gps_origin_parameters(test_plan: str) -> dict:

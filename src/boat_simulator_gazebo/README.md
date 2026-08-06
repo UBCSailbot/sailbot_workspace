@@ -176,18 +176,30 @@ ignore in place the world will load but the boat will not float, so treat the
 
 ```bash
 # Full simulator with the Gazebo backend instead of the kinematic physics engine:
-ros2 launch boat_simulator main_launch.py physics_backend:=gazebo
+ros2 launch boat_simulator main_launch.py physics_backend:=gazebo_gui
+ros2 launch boat_simulator main_launch.py physics_backend:=gazebo_headless
+
+# Whole system in sim mode, same argument:
+ros2 launch global_launch main_launch.py \
+  mode:=sim physics_backend:=gazebo_headless
 
 # Gazebo backend alone:
 ros2 launch boat_simulator_gazebo gazebo_launch.py
 ```
+
+`physics_backend` selects the backend and, for Gazebo, whether the GUI runs:
+`gazebo_gui` opens the Gazebo window, `gazebo_headless` runs the server only.
+Both map onto this package's `gz_headless` argument below, which is what the
+standalone launch file takes; when the backend is selected through
+`boat_simulator`, `physics_backend` wins over any `gz_headless` passed
+alongside it.
 
 Launch arguments (in addition to the global ones):
 
 | Argument            | Default                          | Description                                     |
 | ------------------- | -------------------------------- | ----------------------------------------------- |
 | `gz_world`          | `worlds/sailing_world.sdf`       | World SDF to load                               |
-| `gz_headless`       | `false`                          | Server-only (no GUI); needed without a display  |
+| `gz_headless`       | `false`                          | Server-only (no GUI); set by `physics_backend`  |
 | `boat_model_sdf`    | `models/polaris_basic/model.sdf` | Boat model to spawn; empty skips spawning       |
 | `boat_spawn_height` | `0.2`                            | Model origin height above mean water at spawn   |
 
@@ -201,7 +213,8 @@ ros2 launch boat_simulator_gazebo gazebo_launch.py \
   boat_spawn_height:=0.0
 ```
 
-Set `gz_headless:=true` when there is no display. Note that the Dev Container
+Set `gz_headless:=true` (or `physics_backend:=gazebo_headless`, when launching
+through `boat_simulator`) if there is no display. Note that the Dev Container
 sets `LIBGL_ALWAYS_SOFTWARE=1` and exposes no GPU, so the GUI is rasterised on
 the CPU on every host platform — it runs, but it costs about 1 GB of RSS and
 holds a real-time factor near 0.8 rather than 1.0.
