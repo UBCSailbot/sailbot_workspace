@@ -1226,6 +1226,22 @@ def test_LocalPathState_parameter_checking():
             wind_tracker=create_wind_tracker(),
         )
 
+    with pytest.raises(ValueError, match="heading is unavailable"):
+        lp.LocalPathState(
+            gps=GPS(),
+            heading=HelperHeading(heading=lp.HEADING_UNAVAILABLE),
+            ais_ships=AISShips(),
+            global_path=Path(
+                waypoints=[
+                    HelperLatLon(latitude=0.0, longitude=0.0),
+                    HelperLatLon(latitude=1.0, longitude=1.0),
+                ]
+            ),
+            target_global_waypoint=HelperLatLon(latitude=1.0, longitude=1.0),
+            filtered_wind_sensor=WindSensor(),
+            wind_tracker=create_wind_tracker(),
+        )
+
     with pytest.raises(ValueError):
         lp.LocalPathState(
             gps=GPS(),
@@ -1450,6 +1466,24 @@ def test_update_if_needed_regenerates_path_when_path_must_change(
     assert local_path.state.global_path is inputs.global_path
     local_path._logger.info.assert_any_call(f"Updating local path: {expected_reason}")
     ompl_path_cls.assert_called_once()
+
+
+def test_update_if_needed_rejects_unavailable_heading_before_planning():
+    mock_parent_logger = mock.Mock()
+    mock_parent_logger.get_child.return_value = mock.Mock()
+    local_path = lp.LocalPath(parent_logger=mock_parent_logger)
+    inputs = create_update_if_needed_inputs()
+    inputs.heading = HelperHeading(heading=lp.HEADING_UNAVAILABLE)
+
+    with mock.patch.object(lp, "OMPLPath") as ompl_path_cls:
+        with pytest.raises(lp.PathNotFoundError, match="heading is unavailable"):
+            local_path.update_if_needed(
+                inputs=inputs,
+                target_lp_wp_index=1,
+                received_new_global_waypoint=True,
+            )
+
+    ompl_path_cls.assert_not_called()
 
 
 @pytest.mark.parametrize(

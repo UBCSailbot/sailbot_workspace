@@ -61,18 +61,22 @@ ros2 launch global_launch main_launch.py \
 
 The simulator's lift and drag forces depend on each foil's coefficients, which
 vary with both the angle of attack, the Reynolds number (`Re = |v| * chord /
-kinematic_viscosity`) and the mach number. For our calculations, we will consider the Reynolds number and angle of
-attack Rather than a single hand-tuned curve per foil, the coefficients live in
-[`common/airfoil_polars.py`](./boat_simulator/common/airfoil_polars.py) as a set of real airfoil polars
-— one per Reynolds number — that the force computation selects from at runtime by picking the closest
-tabulated Reynolds number.
+kinematic_viscosity`) and the mach number. For our calculations, we will
+consider the Reynolds number and angle of attack Rather than a single
+hand-tuned curve per foil, the coefficients live in
+[`common/airfoil_polars.py`](./boat_simulator/common/airfoil_polars.py) as a
+set of real airfoil polars — one per Reynolds number — that the force
+computation selects from at runtime by picking the closest tabulated Reynolds
+number.
 
 That module is **generated**, not edited by hand. The
-[`scripts/build_airfoil_polars.py`](./scripts/build_airfoil_polars.py) script downloads XFOIL polars from
+[`scripts/build_airfoil_polars.py`](./scripts/build_airfoil_polars.py) script
+downloads XFOIL polars from
 [airfoiltools.com](http://airfoiltools.com) for each foil's NACA section
-(keel and rudder use NACA 0012; wingsail and trim tab use NACA 0018) at Reynolds numbers 50k–1M,
-resamples the pre-stall branch to whole-degree angles of attack, and extends each polar out to 90° with the
-Viterna–Corrigan post-stall model
+(keel and rudder use NACA 0012; wingsail and trim tab use NACA 0018) at
+Reynolds numbers 50k–1M, resamples the pre-stall branch to whole-degree angles
+of attack, and extends each polar out to 90° with the Viterna–Corrigan
+post-stall model
 ([More details on Viterna extrapolation](https://www.simis.io/docs/aerodynamic-loads-viterna-extrapolation))
 (a sail sits near 90° when running dead downwind, well beyond XFOIL's ~±18° range).
 

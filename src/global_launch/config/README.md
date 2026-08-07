@@ -102,7 +102,8 @@ configurable noise and drift.
 
 **`ocean_drift_accel_kmph2`**
 
-- _Description_: Acceleration of the drift speed in km/h². Set to 0 for constant drift.
+- _Description_: Acceleration of the drift speed in km/h². Set to 0 for
+  constant drift.
 - _Datatype_: `double`
 - _Range_: `[0.0, MAX_DOUBLE)`
 
@@ -110,7 +111,8 @@ configurable noise and drift.
 
 **`visualizer_mode`**
 
-- _Description_: Override whether the pathfinding visualizer is used during on-water testing.
+- _Description_: Override whether the pathfinding visualizer is used during
+  on-water testing.
 - _Datatype_: `boolean`
 - _Acceptable Values_:  `true`, `false`
 
@@ -148,7 +150,8 @@ ROS parameters specific to the nodes in the Controller.
 
 **`apparent_wind_zero_threshold_kmph`**
 
-- _Description_: Apparent wind speeds below this threshold produce a neutral trim-tab command.
+- _Description_: Apparent wind speeds below this threshold produce a neutral
+  trim-tab command.
 - _Datatype_: `double`
 - _Range_: `[0.0, MAX_DOUBLE)`
 - _Unit_: km/h
@@ -319,7 +322,8 @@ ROS parameters specific to the nodes in the boat simulator.
 **`wind_sensor.gaussian_params.corr_xy`**
 
 - _Description_: The correlation coefficient between x and y components of
-  the wind velocity. Only used if `wind_sensor.generator_type` is `gaussian`. Units m/s
+  the wind velocity. Only used if `wind_sensor.generator_type` is `gaussian`.
+  Units m/s
 - _Datatype_: `double`
 - _Range_: `[-1.0, 1.0]`
 
