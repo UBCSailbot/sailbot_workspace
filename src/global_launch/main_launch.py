@@ -101,6 +101,15 @@ GLOBAL_LAUNCH_ARGUMENTS = [
         + "src/local_pathfinding/test_plans/on_water_mock_ais.yaml",
     ),
     DeclareLaunchArgument(
+        name="rudder_debug",
+        default_value="",
+        choices=["", "true", "false"],
+        description="Override which CAN frame /rudder is published from. 'true' uses the rudder"
+        + " board's RUDDER_DEBUG_DATA_FRAME (0x204), for logs and boards predating the e-compass."
+        + " 'false' uses RUDDER_DATA_FRAME (0x050), falling back to 0x204 if it goes quiet. Leave"
+        + " empty to use the value in the config file.",
+    ),
+    DeclareLaunchArgument(
         name="visualizer_mode",
         default_value="",
         choices=["", "true", "false"],

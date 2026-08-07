@@ -87,12 +87,12 @@ bool parseIsoTimestamp(const std::string & ts_str, double & t_s)
         return false;
     }
     std::tm tm{};
-    tm.tm_year = year - 1900;  // NOLINT(readability-magic-numbers) - epoch year of std::tm
-    tm.tm_mon  = month - 1;
-    tm.tm_mday = day;
-    tm.tm_hour = hour;
-    tm.tm_min  = minute;
-    tm.tm_sec  = 0;
+    tm.tm_year  = year - 1900;  // NOLINT(readability-magic-numbers) - epoch year of std::tm
+    tm.tm_mon   = month - 1;
+    tm.tm_mday  = day;
+    tm.tm_hour  = hour;
+    tm.tm_min   = minute;
+    tm.tm_sec   = 0;
     time_t base = timegm(&tm);
     if (base == static_cast<time_t>(-1)) {
         return false;
@@ -247,10 +247,11 @@ std::vector<TimedFrame> CanLogReplayer::parseCsv(const std::string & path)
       frames.begin(), frames.end(), [](const TimedFrame & a, const TimedFrame & b) { return a.t_s < b.t_s; });
 
     if (num_malformed > 0 || num_reassembled > 0 || num_invalid_id > 0) {
-        std::cerr << ("CAN replay: parsed " + std::to_string(frames.size()) + " frames from " + path + " (" +
-                      std::to_string(num_reassembled) + " split rows reassembled, " + std::to_string(num_malformed) +
-                      " malformed rows skipped, " + std::to_string(num_invalid_id) + " frames dropped across " +
-                      std::to_string(invalid_ids.size()) + " invalid IDs)\n");
+        std::cerr
+          << ("CAN replay: parsed " + std::to_string(frames.size()) + " frames from " + path + " (" +
+              std::to_string(num_reassembled) + " split rows reassembled, " + std::to_string(num_malformed) +
+              " malformed rows skipped, " + std::to_string(num_invalid_id) + " frames dropped across " +
+              std::to_string(invalid_ids.size()) + " invalid IDs)\n");
     }
     return frames;
 }

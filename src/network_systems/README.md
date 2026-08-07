@@ -53,6 +53,25 @@ Replay is controlled by three ROS parameters on `can_transceiver_node`:
   last frame is replayed, instead of stopping. Defaults to `false`.
 <!-- markdownlint-enable MD013 -->
 
+#### Rudder heading source
+
+<!-- markdownlint-disable MD013 -->
+Logs and boards predating the e-compass send no `RUDDER_DATA_FRAME` (0x050), so `/rudder` is never published. `local_pathfinding` treats a missing heading as an inactive input and **publishes desired heading with the sail disabled**, which makes such a log useless for exercising navigation.
+
+The heading is still available in `RUDDER_DEBUG_DATA_FRAME` (0x204), which the rudder board sends to mainframe alongside rudder angle, roll, pitch, the controller terms, and speed over ground. `can_transceiver_node` selects between the two with the `rudder_debug` parameter, and the choice applies to live CAN and to replay alike:
+
+- `rudder_debug: false` (default) publishes from 0x050, automatically falling back to 0x204 if no 0x050 arrives for 5 seconds, and logging each time the source switches.
+- `rudder_debug: true` publishes from 0x204 only, ignoring 0x050 entirely.
+
+Set it in the config yaml, or override it from either launch entry point with the `rudder_debug` launch argument:
+
+```bash
+ros2 launch global_launch main_launch.py mode:="can" rudder_debug:="true"
+```
+
+> **Warning:** 0x204 is an ELEC debug frame rather than the e-compass, so treat a `/rudder` sourced from it accordingly.
+<!-- markdownlint-enable MD013 -->
+
 CAN logs are **not** checked into this repository; they live in
 [`UBCSailbot/OWT-data`](https://github.com/UBCSailbot/OWT-data), versioned by
 on-water-test session date. `globals.yaml` and `on_water_globals.yaml` both
