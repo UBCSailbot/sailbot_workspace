@@ -100,8 +100,9 @@ enum class CanId : canid_t {
     SENSE_HEARTBEAT       = 0x133,
     MAIN_HEARTBEAT        = 0x134,
     HEARTBEAT_END         = 0x134,
-    DEBUG_START           = 0x200,
-    DEBUG_END             = 0x2FF
+    DEBUG_START             = 0x200,
+    RUDDER_DEBUG_DATA_FRAME = 0x204,
+    DEBUG_END               = 0x2FF
 };
 
 inline bool isValidCanId(canid_t id)
@@ -140,6 +141,7 @@ static const std::map<CanId, std::string> CAN_DESC{
   {CanId::SAIL_AIS, "SAIL_AIS (AIS ship data)"},
   {CanId::SAIL_WIND, "SAIL_WIND (Mast wind sensor)"},
   {CanId::RUDDER_DATA_FRAME, "RUDDER_DATA_FRAME (Rudder data from ecompass)"},
+  {CanId::RUDDER_DEBUG_DATA_FRAME, "RUDDER_DEBUG_DATA_FRAME (Debug rudder data from ecompass)"},
   {CanId::PATH_GPS_DATA_FRAME, "PATH_GPS_DATA_FRAME (GPS latitude)"},
   {CanId::DATA_WIND, "DATA_WIND (Hull wind sensor)"},
   {CanId::TEMP_SENSOR_START, "TEMP_SENSOR_START (Start of temperature sensor range)"},
@@ -961,6 +963,81 @@ private:
     void checkBounds() const;
 
     float heading_;
+};
+
+/**
+ * @brief A Rudder Debug Data class derived from the BaseFrame. Represents debug data from the rudder controller.
+ *
+ */
+class RudderDebugData final : public BaseFrame
+{
+public:
+    static constexpr std::array<CanId, 1> RUDDER_DEBUG_DATA_IDS      = {CanId::RUDDER_DEBUG_DATA_FRAME};
+    static constexpr uint8_t              CAN_BYTE_DLEN_             = 16;
+    static constexpr uint8_t              BYTE_OFF_ACTUAL_RUDDER     = 0;
+    static constexpr uint8_t              BYTE_OFF_ROLL              = 2;
+    static constexpr uint8_t              BYTE_OFF_PITCH             = 4;
+    static constexpr uint8_t              BYTE_OFF_HEADING           = 6;
+    static constexpr uint8_t              BYTE_OFF_COMMANDED_RUDDER  = 8;
+    static constexpr uint8_t              BYTE_OFF_INTEGRAL          = 10;
+    static constexpr uint8_t              BYTE_OFF_DERIVATIVE        = 12;
+    static constexpr uint8_t              BYTE_OFF_SPEED_OVER_GROUND = 14;
+
+    /**
+     * @brief Explicitly deleted no-argument constructor
+     *
+     */
+    RudderDebugData() = delete;
+
+    /**
+     * @brief Construct a RudderDebugData object from a Linux CanFrame representation
+     *
+     * @param cf Linux CanFrame
+     */
+    explicit RudderDebugData(const CanFrame & cf);
+
+    /**
+     * @return the custom_interfaces ROS representation of the RudderDebugData heading
+     */
+    msg::HelperHeading toRosMsg() const;
+
+    /**
+     * @return the Linux CanFrame representation of the RudderDebugData object
+     */
+    CanFrame toLinuxCan() const override;
+
+    /**
+     * @return A string that can be printed or logged to debug a RudderDebugData object
+     */
+    std::string debugStr() const override;
+
+    /**
+     * @brief A string representation of the RudderDebugData object
+     *
+     */
+    std::string toString() const override;
+
+private:
+    /**
+     * @brief Private helper constructor for RudderDebugData objects
+     *
+     * @param id CanId of the RudderDebugData
+     */
+    explicit RudderDebugData(CanId id);
+
+    /**
+     * @brief Preserve the frame class pattern without imposing bounds on debug data.
+     */
+    void checkBounds() const;
+
+    float   actual_rudder_angle_;
+    float   roll_;
+    float   pitch_;
+    float   heading_;
+    float   commanded_rudder_angle_;
+    int32_t integral_;
+    int32_t derivative_;
+    float   speed_over_ground_;
 };
 
 /**

@@ -29,7 +29,7 @@ void CanTransceiver::onNewCanData(const CanFrame & frame) const
     }
     CanId id{frame.can_id};
     if (
-      (id >= CanId::DEBUG_START && id <= CanId::DEBUG_END) ||
+      (id >= CanId::DEBUG_START && id <= CanId::DEBUG_END && id != CanId::RUDDER_DEBUG_DATA_FRAME) ||
       (id >= CanId::HEARTBEAT_START && id <= CanId::HEARTBEAT_END)) {
         return;
     }

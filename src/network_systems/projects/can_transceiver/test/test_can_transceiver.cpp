@@ -345,6 +345,47 @@ TEST_F(TestCanFrameParser, TestRudderDataInvalid)
 }
 
 /**
+ * @brief Test parsing a valid RUDDER_DEBUG_DATA_FRAME.
+ */
+TEST_F(TestCanFrameParser, RudderDebugDataTestValid)
+{
+    CAN_FP::CanFrame cf{
+      .can_id = static_cast<canid_t>(CAN_FP::CanId::RUDDER_DEBUG_DATA_FRAME),
+      .len    = CAN_FP::RudderDebugData::CAN_BYTE_DLEN_};
+    constexpr std::array<uint16_t, 8> raw{
+      10250,  // actual rudder: 12.5 degrees
+      17500,  // roll: -5 degrees
+      18250,  // pitch: 2.5 degrees
+      27125,  // heading: 271.25 degrees
+      8750,   // commanded rudder: -2.5 degrees
+      30123,  // integral: 123
+      29950,  // derivative: -50
+      12345   // speed over ground: 12.345 km/h
+    };
+    std::memcpy(cf.data, raw.data(), CAN_FP::RudderDebugData::CAN_BYTE_DLEN_);
+
+    CAN_FP::RudderDebugData rudder(cf);
+
+    EXPECT_EQ(rudder.id_, CAN_FP::CanId::RUDDER_DEBUG_DATA_FRAME);
+    EXPECT_EQ(rudder.can_byte_dlen_, CAN_FP::RudderDebugData::CAN_BYTE_DLEN_);
+    EXPECT_FLOAT_EQ(rudder.toRosMsg().heading, -88.75F);
+
+    CAN_FP::CanFrame round_trip = rudder.toLinuxCan();
+    EXPECT_EQ(round_trip.can_id, cf.can_id);
+    EXPECT_EQ(round_trip.len, cf.len);
+    EXPECT_EQ(std::memcmp(round_trip.data, cf.data, CAN_FP::RudderDebugData::CAN_BYTE_DLEN_), 0);
+}
+
+/**
+ * @brief Test an invalid ID for RUDDER_DEBUG_DATA_FRAME.
+ */
+TEST_F(TestCanFrameParser, RudderDebugDataTestInvalid)
+{
+    CAN_FP::CanFrame cf{.can_id = static_cast<canid_t>(CAN_FP::CanId::RESERVED)};
+    EXPECT_THROW(CAN_FP::RudderDebugData tmp(cf), CAN_FP::CanIdMismatchException);
+}
+
+/**
  * @brief Test ROS<->CAN Battery translations work as expected for valid input values
  *
  */

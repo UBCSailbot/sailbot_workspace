@@ -937,6 +937,75 @@ void RudderData::checkBounds() const
     // DesiredHeading END
 }
 
+// RudderDebugData START
+RudderDebugData::RudderDebugData(const CanFrame & cf) : RudderDebugData(static_cast<CanId>(cf.can_id))
+{
+    std::array<uint16_t, 8> raw{};
+    std::memcpy(raw.data(), cf.data, CAN_BYTE_DLEN_);
+
+    actual_rudder_angle_    = static_cast<float>(raw[0]) / 100.0F - 90.0F;
+    roll_                   = static_cast<float>(raw[1]) / 100.0F - 180.0F;
+    pitch_                  = static_cast<float>(raw[2]) / 100.0F - 180.0F;
+    heading_                = static_cast<float>(raw[3]) / 100.0F;
+    commanded_rudder_angle_ = static_cast<float>(raw[4]) / 100.0F - 90.0F;
+    integral_               = static_cast<int32_t>(raw[5]) - 30000;
+    derivative_             = static_cast<int32_t>(raw[6]) - 30000;
+    speed_over_ground_      = static_cast<float>(raw[7]) / 1000.0F;
+
+    checkBounds();
+}
+
+msg::HelperHeading RudderDebugData::toRosMsg() const
+{
+    msg::HelperHeading msg;
+    msg.set__heading(utils::boundTo180(heading_));
+    return msg;
+}
+
+CanFrame RudderDebugData::toLinuxCan() const
+{
+    std::array<uint16_t, 8> raw{
+      static_cast<uint16_t>((actual_rudder_angle_ + 90.0F) * 100.0F),
+      static_cast<uint16_t>((roll_ + 180.0F) * 100.0F),
+      static_cast<uint16_t>((pitch_ + 180.0F) * 100.0F),
+      static_cast<uint16_t>(heading_ * 100.0F),
+      static_cast<uint16_t>((commanded_rudder_angle_ + 90.0F) * 100.0F),
+      static_cast<uint16_t>(integral_ + 30000),
+      static_cast<uint16_t>(derivative_ + 30000),
+      static_cast<uint16_t>(speed_over_ground_ * 1000.0F)};
+    CanFrame cf = BaseFrame::toLinuxCan();
+    std::memcpy(cf.data, raw.data(), CAN_BYTE_DLEN_);
+    return cf;
+}
+
+std::string RudderDebugData::debugStr() const
+{
+    std::stringstream ss;
+    ss << BaseFrame::debugStr() << "\nActual rudder: " << actual_rudder_angle_ << " Roll: " << roll_
+       << " Pitch: " << pitch_ << " Heading: " << heading_ << " Commanded rudder: "
+       << commanded_rudder_angle_ << " Integral: " << integral_ << " Derivative: " << derivative_
+       << " SOG: " << speed_over_ground_;
+    return ss.str();
+}
+
+std::string RudderDebugData::toString() const
+{
+    std::stringstream ss;
+    ss << "[RUDDER DEBUG DATA] Heading: " << heading_;
+    return ss.str();
+}
+
+RudderDebugData::RudderDebugData(CanId id)
+: BaseFrame(std::span{RUDDER_DEBUG_DATA_IDS}, id, CAN_BYTE_DLEN_)
+{
+}
+
+void RudderDebugData::checkBounds() const
+{
+    // Do not check bounds for a debug frame.
+}
+// RudderDebugData END
+
 // TempSensor START
 // TempSensor public START
 TempSensor::TempSensor(const CanFrame & cf) : TempSensor(static_cast<CanId>(cf.can_id))
