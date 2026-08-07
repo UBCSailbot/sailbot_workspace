@@ -108,8 +108,8 @@ constexpr float TRIM_UBND = 40.0;
 
 // boat rotation
 // See https://documentation.spire.com/ais-fundamentals/rate-of-turn-rot/ for how ROT works
-constexpr int8_t ROT_LBND = -126;
-constexpr int8_t ROT_UBND = 126;
+constexpr int8_t ROT_LBND = -127;
+constexpr int8_t ROT_UBND = 127;
 
 // boat dimension
 constexpr float SHIP_DIMENSION_LBND = 1;      // arbitrary number
