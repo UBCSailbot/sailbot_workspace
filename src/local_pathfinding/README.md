@@ -46,8 +46,8 @@ gps:
 topic. Development mode publishes this value on `rudder` through the local mock
 GPS node.
 
-For heading-loss scenarios, a `mock_gps` event can disable the separate `rudder` publication while
-GPS publication continues:
+For heading-loss scenarios, a `mock_gps` event can disable the separate `rudder`
+publication while GPS publication continues:
 
 ```yaml
 events:
