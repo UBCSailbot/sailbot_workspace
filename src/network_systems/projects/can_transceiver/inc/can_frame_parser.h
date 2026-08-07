@@ -196,8 +196,7 @@ static const std::map<CanId, std::string> CAN_DESC{
   {CanId::RUDR_HEARTBEAT, "RUDR_HEARTBEAT (RUDR heartbeat)"},
   {CanId::SAIL_HEARTBEAT, "SAIL_HEARTBEAT (SAIL heartbeat)"},
   {CanId::SENSE_HEARTBEAT, "SENSE_HEARTBEAT (SENSE board heartbeat)"},
-  {CanId::MAIN_HEARTBEAT, "MAIN_HEARTBEAT (MAINFRAME heartbeat)"},
-  {CanId::RUDDER_DEBUG, "RUDDER_DEBUG (ELEC debug attitude frame carrying the e-compass heading)"}};
+  {CanId::MAIN_HEARTBEAT, "MAIN_HEARTBEAT (MAINFRAME heartbeat)"}};
 
 /**
  * @brief Custom exception for when an attempt is made to construct a CAN object with a mismatched ID

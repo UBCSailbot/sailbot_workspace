@@ -33,7 +33,7 @@ same flow-toward convention.
 <!-- markdownlint-disable-next-line MD013 -->
 `can_transceiver_node` can replay a recorded candump-style CSV log instead of talking to real or mocked CAN hardware, so the rest of the stack (`controller`, `local_pathfinding`) can be exercised against realistic, previously-recorded CAN traffic without a boat. This is what `mode:="can"` (see [global_launch's README](../global_launch/README.md)) uses; `development` and `sim` modes are unaffected and always use a self-looping mock file.
 
-Replay is controlled by four ROS parameters on `can_transceiver_node`:
+Replay is controlled by three ROS parameters on `can_transceiver_node`:
 
 <!-- markdownlint-disable MD013 -->
 - `can_replay_file`: path to a candump-style CSV log. Expected row format is
@@ -51,28 +51,25 @@ Replay is controlled by four ROS parameters on `can_transceiver_node`:
   replays as fast as possible with no pacing.
 - `can_replay_loop`: `true` restarts from the beginning of the log once the
   last frame is replayed, instead of stopping. Defaults to `false`.
-- `can_replay_heading_source`: which CAN frame `/rudder` is replayed from.
-  `main` (default) uses the log's own `RUDDER_DATA_FRAME` (0x050). `debug`
-  derives it from `RUDDER_DEBUG` (0x204) instead, for logs recorded before the
-  e-compass sent 0x050. See "Heading synthesis" below.
 <!-- markdownlint-enable MD013 -->
 
-#### Heading synthesis
+#### Rudder heading source
 
 <!-- markdownlint-disable MD013 -->
-Logs recorded before the e-compass began sending `RUDDER_DATA_FRAME` (0x050) contain no such frame at all, so a replayed stack never publishes `/rudder`. `local_pathfinding` treats a missing heading as an inactive input and **publishes desired heading with the sail disabled**, which makes replay useless for exercising navigation.
+Logs and boards predating the e-compass send no `RUDDER_DATA_FRAME` (0x050), so `/rudder` is never published. `local_pathfinding` treats a missing heading as an inactive input and **publishes desired heading with the sail disabled**, which makes such a log useless for exercising navigation.
 
-Those logs do still carry the heading, in the `RUDDER_DEBUG` (0x204) frame the rudder board sends to mainframe, which also holds rudder angle, roll, pitch, the rudder controller terms, and speed over ground. The replayer decodes it with `CAN_FP::RudderDebug` and emits a synthetic `RUDDER_DATA_FRAME` after each such frame.
+The heading is still available in `RUDDER_DEBUG_DATA_FRAME` (0x204), which the rudder board sends to mainframe alongside rudder angle, roll, pitch, the controller terms, and speed over ground. `can_transceiver_node` selects between the two with the `rudder_debug` parameter, and the choice applies to live CAN and to replay alike:
 
-Select it with `can_replay_heading_source: "debug"`, either in the config yaml or from the launch argument of the same name:
+- `rudder_debug: false` (default) publishes from 0x050, automatically falling back to 0x204 if no 0x050 arrives for 5 seconds, and logging each time the source switches.
+- `rudder_debug: true` publishes from 0x204 only, ignoring 0x050 entirely.
+
+Set it in the config yaml, or override it from either launch entry point with the `rudder_debug` launch argument:
 
 ```bash
-ros2 launch global_launch main_launch.py mode:="can" can_replay_heading_source:="debug"
+ros2 launch global_launch main_launch.py mode:="can" rudder_debug:="true"
 ```
 
-The two sources are mutually exclusive: under `debug` the replayer drops any `RUDDER_DATA_FRAME` the log already carries, so `/rudder` is never fed two competing headings. Under `main` (the default) the log is replayed untouched.
-
-> **Warning:** the heading is taken from an ELEC debug frame rather than the e-compass, so treat a synthesized `/rudder` as replay-only data.
+> **Warning:** 0x204 is an ELEC debug frame rather than the e-compass, so treat a `/rudder` sourced from it accordingly.
 <!-- markdownlint-enable MD013 -->
 
 CAN logs are **not** checked into this repository; they live in

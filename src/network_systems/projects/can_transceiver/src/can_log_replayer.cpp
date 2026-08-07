@@ -269,35 +269,6 @@ std::vector<TimedFrame> CanLogReplayer::filter(std::vector<TimedFrame> frames, c
     return frames;
 }
 
-std::vector<TimedFrame> CanLogReplayer::synthesizeHeadingFrames(std::vector<TimedFrame> frames)
-{
-    std::vector<TimedFrame> out;
-    out.reserve(frames.size());
-
-    for (const TimedFrame & timed_frame : frames) {
-        // the log's own e-compass headings are dropped, so /rudder is fed by one source only
-        if (timed_frame.frame.can_id == static_cast<canid_t>(CAN_FP::CanId::RUDDER_DATA_FRAME)) {
-            continue;
-        }
-        out.push_back(timed_frame);
-
-        if (timed_frame.frame.can_id != static_cast<canid_t>(CAN_FP::CanId::RUDDER_DEBUG)) {
-            continue;
-        }
-
-        try {
-            CAN_FP::RudderDebug debug(timed_frame.frame);
-            CAN_FP::RudderData  rudder(debug.toRosMsg(), CAN_FP::CanId::RUDDER_DATA_FRAME);
-            out.push_back({timed_frame.t_s, rudder.toLinuxCan()});
-        } catch (const std::exception &) {
-            // a frame that is truncated, carries no heading this cycle, or holds out of bounds
-            // state has nothing to publish, so leave it as a source frame only
-            continue;
-        }
-    }
-    return out;
-}
-
 std::chrono::nanoseconds CanLogReplayer::delayBefore(
   const std::vector<TimedFrame> & frames, size_t idx, const ReplayConfig & cfg)
 {

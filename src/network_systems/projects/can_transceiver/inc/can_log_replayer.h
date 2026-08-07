@@ -20,16 +20,6 @@ struct TimedFrame
 };
 
 /**
- * @brief Which frame a replayed heading is taken from
- *
- */
-namespace HEADING_SOURCE
-{
-static const std::string MAIN  = "main";   // the e-compass RUDDER_DATA_FRAME the log already carries
-static const std::string DEBUG = "debug";  // derived from the rudder board's RUDDER_DEBUG frame
-};  // namespace HEADING_SOURCE
-
-/**
  * @brief Replay behavior configuration
  *
  */
@@ -79,19 +69,6 @@ public:
      * @return frames that survive the filter, in their original order
      */
     static std::vector<TimedFrame> filter(std::vector<TimedFrame> frames, const ReplayConfig & cfg);
-
-    /**
-     * @brief Add a synthetic RUDDER_DATA_FRAME after every RUDDER_DEBUG frame that carries a heading,
-     *        so that replaying a log without a real e-compass frame still publishes /rudder.
-     *        See CAN_FP::RudderDebug for the decode. Source frames are kept as is, and synthetic
-     *        frames reuse their timestamp, so the result stays in chronological order.
-     *        Any RUDDER_DATA_FRAME the log already carries is dropped, so that /rudder is fed by
-     *        one heading source rather than two competing ones.
-     *
-     * @param frames frames to augment, in chronological order
-     * @return the input frames with synthetic RUDDER_DATA_FRAMEs interleaved
-     */
-    static std::vector<TimedFrame> synthesizeHeadingFrames(std::vector<TimedFrame> frames);
 
     /**
      * @brief Compute how long to wait before sending frames[idx]

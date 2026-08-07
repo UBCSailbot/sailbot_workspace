@@ -282,23 +282,6 @@ private:
             cfg.rate = this->get_parameter("can_replay_rate").as_double();  // <= 0 replays unpaced
             cfg.loop = this->get_parameter("can_replay_loop").as_bool();
 
-            std::string heading_source = this->get_parameter("can_replay_heading_source").as_string();
-            if (heading_source == CAN_REPLAY::HEADING_SOURCE::DEBUG) {
-                // Logs predating the e-compass carry no RUDDER_DATA_FRAME, so derive one from RUDDER_DEBUG
-                size_t before = frames.size();
-                frames        = CAN_REPLAY::CanLogReplayer::synthesizeHeadingFrames(std::move(frames));
-                RCLCPP_WARN(
-                  this->get_logger(),
-                  "Replaying /rudder from RUDDER_DEBUG (0x%X): synthesized %zu RUDDER_DATA_FRAMEs and dropped the "
-                  "log's own e-compass headings, so treat the published /rudder as replay only",
-                  static_cast<canid_t>(CAN_FP::CanId::RUDDER_DEBUG), frames.size() - before);
-            } else if (heading_source != CAN_REPLAY::HEADING_SOURCE::MAIN) {
-                std::string msg = "Invalid can_replay_heading_source: " + heading_source + ". Must be '" +
-                                  CAN_REPLAY::HEADING_SOURCE::MAIN + "' or '" + CAN_REPLAY::HEADING_SOURCE::DEBUG + "'";
-                RCLCPP_ERROR(this->get_logger(), "%s", msg.c_str());
-                throw std::runtime_error(msg);
-            }
-
             mock_can_bus_ = std::make_unique<MockCanBus>();
             sim_intf_fd_  = mock_can_bus_->transceiverFd();
             can_trns_     = std::make_unique<CanTransceiver>(sim_intf_fd_);
