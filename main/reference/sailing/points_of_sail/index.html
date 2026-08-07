@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-ProperDocs 1.6.7, mkdocs-material-9.7.7">
     
     
       
@@ -31,7 +31,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -928,6 +928,34 @@
     
   
     Notebooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../current/sailbot_workspace/reference/owt_data/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    On-Water Test Data
   
 
     
@@ -2753,6 +2781,9 @@ respect to the wind. Ranges of angles which are close together have special
 names. These ranges are called <em>points of sail</em>.
 The discussion below coveres the most important points of sail for software
 members to understand.</p>
+<p>Sailbot wind angles use the flow-toward convention. A boat heading aligned with
+the airflow is directly downwind; a heading opposite the airflow is directly
+upwind.</p>
 <p>Notice how for <em>higher</em> points of sail (points of sail closer to straight into
 the wind), the sail is pulled tightly in to the boat. If the boat is on a
 <em>lower</em> point of sail, the sails should be let further out of the boat. For
@@ -2761,11 +2792,12 @@ to. If the sails are adjusted too far in or too far out, the boat will not go
 as fast as it could if the sails were adjusted correctly.</p>
 <p><img alt="image" src="../../../assets/images/sailing/points_of_sail.jpg" /></p>
 <h2 id="irons">Irons<a class="headerlink" href="#irons" title="Permanent link">&para;</a></h2>
-<p>The range of angles where the boat is roughly pointing straight into the wind
-are called <strong><em>Irons</em></strong>, or the <strong><em>No-Go Zone</em></strong>. Our implemented <strong><em>No-Go
-Zone</em></strong> is when the difference between the boat heading and true wind
-direction is within 45 degrees on either side. In WindObjective, this zone has
-a cost of 1 in the range of [0,1].</p>
+<p>The range of angles where the boat points roughly against the airflow is called
+<strong><em>Irons</em></strong>, or the upwind <strong><em>No-Go Zone</em></strong>. With a flow-toward wind bearing,
+the centre of the upwind cone is 180° opposite the airflow direction. The
+implemented validator also rejects a downwind cone centred on the airflow
+direction. Both cones extend 45° to either side and receive a wind cost of 1 in
+the range [0, 1].</p>
 <p>If the boat is pointing in these directions, the sails will be flapping
 regardless of how the sheets are adjusted.
 When the sails are flapping, they are not catching the wind in a way that can
@@ -2967,7 +2999,7 @@ called a <em>broad reach</em>.</p>
       <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["content.action.edit", "content.action.view", "content.code.annotate", "content.code.copy", "content.tabs.link", "navigation.expand", "navigation.footer", "navigation.instant", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
         <script src="../../../javascripts/mathjax.js"></script>
       

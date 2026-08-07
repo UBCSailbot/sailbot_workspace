@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-ProperDocs 1.6.7, mkdocs-material-9.7.7">
     
     
       
@@ -31,7 +31,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -949,6 +949,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../sailbot_workspace/reference/owt_data/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    On-Water Test Data
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../sailbot_workspace/reference/parameters/" class="md-nav__link">
         
   
@@ -1294,6 +1322,23 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Testing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#manual-controller-test" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Manual controller test
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -2820,6 +2865,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Testing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#manual-controller-test" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Manual controller test
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2933,12 +2995,13 @@ found).</p>
 <p><strong>Wind → trim tab:</strong> Takes apparent wind speed and direction and converts
   them to trim tab angle (degrees) using:</p>
 <ul>
-<li>Reynolds number from wind speed and sail chord.</li>
+<li>Reynolds number from wind speed and sail chord. <code>WindSensor</code> provides
+  speed in km/h, which is converted to m/s for this SI calculation.</li>
 <li>A lookup table (Reynolds number → angle of attack) with linear
   interpolation.</li>
-<li>Sign of the trim tab angle follows apparent wind direction (convention:
-  0° bow-to-stern, angle increasing clockwise; trim tab range typically
-  ±40°).</li>
+<li>Sign of the trim tab angle follows apparent wind flow direction. The angle
+  points where the air travels: 0° flows from bow toward stern and values
+  increase clockwise; trim tab range is typically ±40°.</li>
 </ul>
 </li>
 <li>
@@ -2955,8 +3018,8 @@ found).</p>
   publishes trim tab angle 0 and does not drive the boat.</p>
 </li>
 <li>
-<p><strong>Minimum wind speed threshold:</strong> A minimum wind speed threshold for
-  controller activation is planned but <strong>not yet implemented</strong> (to be added).</p>
+<p><strong>Minimum wind speed threshold:</strong> Below the configured minimum apparent-wind
+  speed, the trim tab is held at 0°.</p>
 </li>
 <li>
 <p><strong>Design reference:</strong> Preliminary design documents:
@@ -2970,25 +3033,26 @@ found).</p>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>│   ├── common/                 # Shared utilities and constants
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>│   │   ├── constants.py
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>│   │   ├── lut.py
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>│   │   └── types.py
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>│   └── wingsail/
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>│       ├── controllers.py
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>│       └── wingsail_ctrl_node.py
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>├── launch/
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>│   └── main_launch.py
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>├── tests/
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>│   └── unit/
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>│       └── wingsail/
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>│           ├── test_controllers.py
-<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>│           └── common/
-<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>│               └── test_lut.py
-<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>├── resource/
-<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>│   └── controller
-<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>├── package.xml
-<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>├── setup.py
-<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>├── setup.cfg
-<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>├── LICENSE
-<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>└── .gitignore
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>│   │   ├── types.py
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>│   │   └── unit_conversions.py
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>│   └── wingsail/
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>│       ├── controllers.py
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>│       └── wingsail_ctrl_node.py
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>├── launch/
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>│   └── main_launch.py
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>├── tests/
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>│   └── unit/
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>│       └── wingsail/
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>│           ├── test_controllers.py
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>│           └── common/
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>│               └── test_lut.py
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>├── resource/
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>│   └── controller
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>├── package.xml
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>├── setup.py
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>├── setup.cfg
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>├── LICENSE
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>└── .gitignore
 </code></pre></div>
 <p>(<code>__pycache__</code> and other build/install artifacts are ignored.)</p>
 <hr />
@@ -3012,7 +3076,11 @@ found).</p>
 </tr>
 <tr>
 <td><strong>controller/common/types.py</strong></td>
-<td>Type aliases used in the package (e.g. <code>Scalar</code>, <code>ScalarOrArray</code>) for type hinting.</td>
+<td>Type aliases used in the package (e.g. <code>float</code>, <code>ScalarOrArray</code>) for type hinting.</td>
+</tr>
+<tr>
+<td><strong>controller/common/unit_conversions.py</strong></td>
+<td>Converts wind speed from the ROS message convention (km/h) to the SI units (m/s) required by the Reynolds-number calculation.</td>
 </tr>
 <tr>
 <td><strong>controller/wingsail/controllers.py</strong></td>
@@ -3073,11 +3141,15 @@ namespace. The launch file passes the path via the <code>config</code> launch ar
 </tr>
 <tr>
 <td><strong>apparent_wind_lower_threshold_kmph</strong></td>
-<td>Lower wind speed threshold (e.g. m/s). Below this, scaling factor is 1. Between this and the upper threshold, trim tab is scaled down.</td>
+<td>Lower wind speed threshold in km/h. Below this, scaling factor is 1. Between this and the upper threshold, trim tab is scaled down.</td>
 </tr>
 <tr>
 <td><strong>apparent_wind_upper_threshold_kmph</strong></td>
 <td>Upper wind speed threshold. At or above this, scaling factor is 0 (trim tab forced to 0 for mast protection).</td>
+</tr>
+<tr>
+<td><strong>apparent_wind_zero_threshold_kmph</strong></td>
+<td>Minimum wind speed in km/h. Below this, the trim tab is forced to 0.</td>
 </tr>
 </tbody>
 </table>
@@ -3137,10 +3209,41 @@ namespace. The launch file passes the path via the <code>config</code> launch ar
 <ul>
 <li><strong>In water testing:</strong> <a href="https://ubcsailbot.atlassian.net/wiki/x/LwA8qg">In water testing (Confluence)</a></li>
 </ul>
+<h3 id="manual-controller-test">Manual controller test<a class="headerlink" href="#manual-controller-test" title="Permanent link">&para;</a></h3>
+<p>Use the manual controller test script to launch the controller, publish manual
+wind and desired-heading inputs, and echo the resulting trim tab command:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>./scripts/test_ctrl_manual.sh<span class="w"> </span><span class="m">10</span><span class="w"> </span><span class="m">45</span><span class="w"> </span><span class="m">90</span>
+</code></pre></div>
+<p>The first argument is apparent wind speed in kmph, the second is apparent wind
+direction in degrees for <code>filtered_wind_sensor</code>, and the third is desired
+heading in degrees. The script always sets <code>desired_heading.sail</code> to <code>true</code>.
+The computed trim tab command is shown by echoing <code>/sail_cmd</code>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>Usage:<span class="w"> </span>./scripts/test_ctrl_manual.sh<span class="w"> </span>&lt;speed_kmph&gt;<span class="w"> </span>&lt;wind_direction_deg&gt;<span class="w"> </span>&lt;desired_heading_deg&gt;
+</code></pre></div>
+<p>To view the output of <code>/sail_cmd</code> use</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>ros2<span class="w"> </span>topic<span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="se">\s</span>ail_cmd
+</code></pre></div>
+<p>in another terminal window.</p>
+<p>Copy-paste test cases:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Help and usage</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>./scripts/test_ctrl_manual.sh<span class="w"> </span>-h
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="c1"># Valid manual controller tests</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>./scripts/test_ctrl_manual.sh<span class="w"> </span><span class="m">10</span><span class="w"> </span><span class="m">45</span><span class="w"> </span><span class="m">90</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>./scripts/test_ctrl_manual.sh<span class="w"> </span><span class="m">10</span><span class="w"> </span>-45<span class="w"> </span><span class="m">90</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>./scripts/test_ctrl_manual.sh<span class="w"> </span><span class="m">0</span><span class="w"> </span><span class="m">45</span><span class="w"> </span><span class="m">90</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>./scripts/test_ctrl_manual.sh<span class="w"> </span><span class="m">20</span><span class="w"> </span><span class="m">180</span><span class="w"> </span>-90
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="c1"># Invalid input validation</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>./scripts/test_ctrl_manual.sh<span class="w"> </span><span class="m">10</span><span class="w"> </span><span class="m">181</span><span class="w"> </span><span class="m">90</span>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>./scripts/test_ctrl_manual.sh<span class="w"> </span><span class="m">10</span><span class="w"> </span><span class="m">45</span><span class="w"> </span>-181
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>./scripts/test_ctrl_manual.sh<span class="w"> </span>-1<span class="w"> </span><span class="m">45</span><span class="w"> </span><span class="m">90</span>
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>./scripts/test_ctrl_manual.sh<span class="w"> </span>fast<span class="w"> </span><span class="m">45</span><span class="w"> </span><span class="m">90</span>
+</code></pre></div>
 <hr />
 <h2 id="how-to-launch-the-package">How to launch the package<a class="headerlink" href="#how-to-launch-the-package" title="Permanent link">&para;</a></h2>
 <p>From the workspace (after sourcing the overlay and building):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>ros2<span class="w"> </span>launch<span class="w"> </span>controller<span class="w"> </span>main_launch.py
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>ros2<span class="w"> </span>launch<span class="w"> </span>controller<span class="w"> </span>main_launch.py
 </code></pre></div>
 <p>Optional arguments (from global_launch) include:</p>
 <ul>
@@ -3151,18 +3254,18 @@ namespace. The launch file passes the path via the <code>config</code> launch ar
 </ul>
 <p>Example with custom config and debug logging:</p>
 <!-- markdownlint-disable MD013 -->
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>ros2<span class="w"> </span>launch<span class="w"> </span>controller<span class="w"> </span>main_launch.py<span class="w"> </span>config:<span class="o">=</span>/path/to/globals.yaml<span class="w"> </span>log_level:<span class="o">=</span>debug
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>ros2<span class="w"> </span>launch<span class="w"> </span>controller<span class="w"> </span>main_launch.py<span class="w"> </span>config:<span class="o">=</span>/path/to/globals.yaml<span class="w"> </span>log_level:<span class="o">=</span>debug
 </code></pre></div>
 <!-- markdownlint-enable MD013 -->
 
 <p>To see all options:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>ros2<span class="w"> </span>launch<span class="w"> </span>controller<span class="w"> </span>main_launch.py<span class="w"> </span>-s
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>ros2<span class="w"> </span>launch<span class="w"> </span>controller<span class="w"> </span>main_launch.py<span class="w"> </span>-s
 </code></pre></div>
 <hr />
 <h2 id="how-to-run-unit-tests">How to run unit tests<a class="headerlink" href="#how-to-run-unit-tests" title="Permanent link">&para;</a></h2>
 <p>From the <strong>controller</strong> package directory (or workspace root with the package
 in the path):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>pytest<span class="w"> </span>src/controller/tests/unit<span class="w"> </span>-v
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>pytest<span class="w"> </span>src/controller/tests/unit<span class="w"> </span>-v
 </code></pre></div>
 <p>Or, from the workspace root, using the workspace test flow:</p>
 <ul>
@@ -3368,7 +3471,7 @@ When they are, this section will be updated with how to run them (e.g. via the
       <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["content.action.edit", "content.action.view", "content.code.annotate", "content.code.copy", "content.tabs.link", "navigation.expand", "navigation.footer", "navigation.instant", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
         <script src="../../../javascripts/mathjax.js"></script>
       

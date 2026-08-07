@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-ProperDocs 1.6.7, mkdocs-material-9.7.7">
     
     
       
@@ -31,7 +31,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -949,6 +949,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../sailbot_workspace/reference/owt_data/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    On-Water Test Data
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../sailbot_workspace/reference/parameters/" class="md-nav__link">
         
   
@@ -1148,6 +1176,17 @@
     <span class="md-ellipsis">
       
         Run
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#regenerating-airfoil-coefficient-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Regenerating airfoil coefficient data
       
     </span>
   </a>
@@ -2680,6 +2719,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#regenerating-airfoil-coefficient-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Regenerating airfoil coefficient data
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#test" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2752,6 +2802,31 @@ package:</p>
 </code></pre></div>
 <p>To see a list of options for simulator configuration, add the <code>-s</code> flag at the
 end of the above command.</p>
+<h2 id="regenerating-airfoil-coefficient-data">Regenerating airfoil coefficient data<a class="headerlink" href="#regenerating-airfoil-coefficient-data" title="Permanent link">&para;</a></h2>
+<p>The simulator's lift and drag forces depend on each foil's coefficients, which
+vary with both the angle of attack, the Reynolds number (<code>Re = |v| * chord /
+kinematic_viscosity</code>) and the mach number. For our calculations, we will
+consider the Reynolds number and angle of attack Rather than a single
+hand-tuned curve per foil, the coefficients live in
+<a href="./boat_simulator/common/airfoil_polars.py"><code>common/airfoil_polars.py</code></a> as a
+set of real airfoil polars — one per Reynolds number — that the force
+computation selects from at runtime by picking the closest tabulated Reynolds
+number.</p>
+<p>That module is <strong>generated</strong>, not edited by hand. The
+<a href="./scripts/build_airfoil_polars.py"><code>scripts/build_airfoil_polars.py</code></a> script
+downloads XFOIL polars from
+<a href="http://airfoiltools.com">airfoiltools.com</a> for each foil's NACA section
+(keel and rudder use NACA 0012; wingsail and trim tab use NACA 0018) at
+Reynolds numbers 50k–1M, resamples the pre-stall branch to whole-degree angles
+of attack, and extends each polar out to 90° with the Viterna–Corrigan
+post-stall model
+(<a href="https://www.simis.io/docs/aerodynamic-loads-viterna-extrapolation">More details on Viterna extrapolation</a>)
+(a sail sits near 90° when running dead downwind, well beyond XFOIL's ~±18° range).</p>
+<p>Regenerate the data module after changing which foils, sections, Reynolds
+numbers, or aspect ratios are modeled (all configured near the top of the
+script). It requires network access and is never imported at runtime:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>python3<span class="w"> </span>src/boat_simulator/scripts/build_airfoil_polars.py
+</code></pre></div>
 <h2 id="test">Test<a class="headerlink" href="#test" title="Permanent link">&para;</a></h2>
 <p>Run the <code>test</code> task in the Sailbot Workspace. See</p>
 <!-- markdownlint-disable-next-line MD013 -->
@@ -2925,7 +3000,7 @@ on how to run vscode tasks.</p>
       <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["content.action.edit", "content.action.view", "content.code.annotate", "content.code.copy", "content.tabs.link", "navigation.expand", "navigation.footer", "navigation.instant", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
         <script src="../../../javascripts/mathjax.js"></script>
       

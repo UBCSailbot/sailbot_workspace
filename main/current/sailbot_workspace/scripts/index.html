@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-ProperDocs 1.6.7, mkdocs-material-9.7.7">
     
     
       
@@ -31,7 +31,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -949,6 +949,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../reference/owt_data/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    On-Water Test Data
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../reference/parameters/" class="md-nav__link">
         
   
@@ -1140,6 +1168,17 @@
     <span class="md-ellipsis">
       
         test.sh
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#test_ctrl_manualsh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        test_ctrl_manual.sh
       
     </span>
   </a>
@@ -2844,6 +2883,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#test_ctrl_manualsh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        test_ctrl_manual.sh
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2951,6 +3001,33 @@ example, to test via CLI:</p>
 <p>Script to handle ROS setup and to further update /home/ros/.bashrc.</p>
 <h2 id="testsh"><code>test.sh</code><a class="headerlink" href="#testsh" title="Permanent link">&para;</a></h2>
 <p>Script to run tests in all ROS packages.</p>
+<h2 id="test_ctrl_manualsh"><code>test_ctrl_manual.sh</code><a class="headerlink" href="#test_ctrl_manualsh" title="Permanent link">&para;</a></h2>
+<p>Script to manually test the controller wingsail trim tab output. It launches
+the controller, repeatedly publishes manual <code>filtered_wind_sensor</code> and
+<code>desired_heading</code> inputs at 1 Hz, and echoes <code>/sail_cmd</code>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>./scripts/test_ctrl_manual.sh<span class="w"> </span>&lt;speed_kmph&gt;<span class="w"> </span>&lt;wind_direction_deg&gt;<span class="w"> </span>&lt;desired_heading_deg&gt;
+</code></pre></div>
+<p>Example:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>./scripts/test_ctrl_manual.sh<span class="w"> </span><span class="m">10</span><span class="w"> </span><span class="m">45</span><span class="w"> </span><span class="m">90</span>
+</code></pre></div>
+<p>The script always publishes <code>desired_heading.sail</code> as <code>true</code>. Press <code>Ctrl-C</code>
+to stop echoing <code>/sail_cmd</code> and clean up the child ROS processes.</p>
+<p>Copy-paste test cases:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Help and usage</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>./scripts/test_ctrl_manual.sh<span class="w"> </span>-h
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># Valid manual controller tests</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>./scripts/test_ctrl_manual.sh<span class="w"> </span><span class="m">10</span><span class="w"> </span><span class="m">45</span><span class="w"> </span><span class="m">90</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>./scripts/test_ctrl_manual.sh<span class="w"> </span><span class="m">10</span><span class="w"> </span>-45<span class="w"> </span><span class="m">90</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>./scripts/test_ctrl_manual.sh<span class="w"> </span><span class="m">0</span><span class="w"> </span><span class="m">45</span><span class="w"> </span><span class="m">90</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>./scripts/test_ctrl_manual.sh<span class="w"> </span><span class="m">20</span><span class="w"> </span><span class="m">180</span><span class="w"> </span>-90
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="c1"># Invalid input validation</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>./scripts/test_ctrl_manual.sh<span class="w"> </span><span class="m">10</span><span class="w"> </span><span class="m">181</span><span class="w"> </span><span class="m">90</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>./scripts/test_ctrl_manual.sh<span class="w"> </span><span class="m">10</span><span class="w"> </span><span class="m">45</span><span class="w"> </span>-181
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>./scripts/test_ctrl_manual.sh<span class="w"> </span>-1<span class="w"> </span><span class="m">45</span><span class="w"> </span><span class="m">90</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>./scripts/test_ctrl_manual.sh<span class="w"> </span>fast<span class="w"> </span><span class="m">45</span><span class="w"> </span><span class="m">90</span>
+</code></pre></div>
 
 
 
@@ -3119,7 +3196,7 @@ example, to test via CLI:</p>
       <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["content.action.edit", "content.action.view", "content.code.annotate", "content.code.copy", "content.tabs.link", "navigation.expand", "navigation.footer", "navigation.instant", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
         <script src="../../../javascripts/mathjax.js"></script>
       
