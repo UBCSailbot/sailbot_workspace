@@ -1,0 +1,19 @@
+# Publish a valid e-compass heading initially, then stop publishing on /rudder at 15 seconds.
+# GPS position updates continue after the heading publisher is disabled.
+tw_dir_deg: 0
+tw_speed_kmph: 10.0
+heading_deg: 45.0
+
+gps:
+  latitude: 49.28
+  longitude: -123.18
+  speed_kmph: 15.0
+
+global_path:
+  waypoints:
+    - {latitude: 49.35, longitude: -123.18}
+    - {latitude: 49.28, longitude: -123.18}
+
+events:
+  mock_gps:
+    - {timestamp: 15.0, publish_heading: false}

@@ -36,6 +36,13 @@ from shapely.geometry import MultiPolygon, Polygon
 import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.wind_coord_systems as wcs
+from local_pathfinding.constants import (
+    AIS_SHIPS_UNAVAILABLE,
+    DESIRED_HEADING_UNAVAILABLE,
+    GPS_UNAVAILABLE,
+    HEADING_UNAVAILABLE,
+    WIND_SENSOR_UNAVAILABLE,
+)
 from local_pathfinding.ompl_path import OMPLPath
 from local_pathfinding.ompl_validity import NO_GO_ZONE
 
@@ -43,7 +50,6 @@ UPDATE_INTERVAL_MS = 2500
 DEFAULT_PLOT_RANGE = [-100.0, 100.0]
 BOX_BUFFER_SIZE_KM = 1.0
 STATE_SPACE_VIEW_BUFFER_KM = 0.5
-
 # Preserve the compact wind inset's width while centering it beneath the main plot.
 WIND_BOX_X_DOMAIN = (0.385, 0.615)
 # Keep the inset below the axis-title band and the main plot.
@@ -101,6 +107,9 @@ VISUALIZER_STATE_NONE_WARNING = "Warning: the visualizer state is None. Waiting 
 VISUALIZER_STATE_STALE_WARNING = (
     "Warning: the visualizer state is None. The last available visualizer state is being shown "
     "and is getting stale."
+)
+VISUALIZER_STATE_DATA_UNAVAILABLE_WARNING = (
+    "Warning: Unavailable data: {data}. Related visualizations might be incorrect."
 )
 
 app = dash.Dash(__name__, assets_folder=str(ASSETS_DIR))
@@ -208,7 +217,7 @@ class VisualizerState:
                                                    (degrees) for the latest local path.
 
         sailbot_gps (List[ci.GPS]): GPS messages used for position and speed history.
-        boat_heading_deg (float): Latest e-compass boat heading from the ``rudder`` topic.
+        boat_heading_deg (float): Latest e-compass boat heading carried by ``LPathData``.
 
         ais_ships_by_id (Dict[int, AISShipData]): Dictionary mapping AIS ship IDs to their data
                                                    (position, heading, speed).
@@ -225,16 +234,30 @@ class VisualizerState:
     def __init__(
         self,
         msgs: deque[ci.LPathData],
-        heading: ci.HelperHeading,
         last_replan_reason: str = "",
     ):
         if not msgs:
             raise ValueError("VisualizerState requires at least one message")
 
         self.latest_msg = msgs[-1]
-        self.boat_heading_deg = heading.heading
         self.last_replan_reason = last_replan_reason
         self._validate_message(self.latest_msg)
+        self.unavailable_data = self._get_unavailable_data(self.latest_msg)
+        self.boat_heading_deg = (
+            0.0
+            if "heading" in self.unavailable_data
+            else self.latest_msg.heading.heading
+        )
+        self.desired_heading_deg = (
+            0.0
+            if "desired heading" in self.unavailable_data
+            else self.latest_msg.desired_heading.heading.heading
+        )
+        self.sail_enabled = (
+            False
+            if "desired heading" in self.unavailable_data
+            else self.latest_msg.desired_heading.sail
+        )
 
         # Boat history
         self.sailbot_lat_lon = [msg.gps.lat_lon for msg in msgs]
@@ -270,7 +293,11 @@ class VisualizerState:
         )
 
         # AIS ships
-        self.ais_ships = self.latest_msg.ais_ships.ships
+        self.ais_ships = (
+            []
+            if "AIS ships" in self.unavailable_data
+            else self.latest_msg.ais_ships.ships
+        )
         ais_ship_latlons = [ship.lat_lon for ship in self.ais_ships]
         ais_ship_xy = cs.latlon_list_to_xy_list(self.reference_lat_lon, ais_ship_latlons)
         ais_positions = self._split_coordinates(ais_ship_xy)
@@ -299,21 +326,29 @@ class VisualizerState:
         # Wind Vectors
         boat_speed_kmph = self.latest_msg.gps.speed.speed
         boat_heading_deg = self.boat_heading_deg
-        aw_speed_kmph = self.latest_msg.filtered_wind_sensor.speed.speed
-        aw_dir_boat_deg = self.latest_msg.filtered_wind_sensor.direction
+        if "wind sensor" in self.unavailable_data:
+            self.aw_vector_kmph = cs.XY(0.0, 0.0)
+            self.tw_vector_kmph = cs.XY(0.0, 0.0)
+        else:
+            aw_speed_kmph = self.latest_msg.filtered_wind_sensor.speed.speed
+            aw_dir_boat_deg = self.latest_msg.filtered_wind_sensor.direction
 
-        # Convert Apparent wind to global frame
-        aw_dir_global_deg = wcs.boat_to_global_coordinate(boat_heading_deg, aw_dir_boat_deg)
-        aw_dir_global_rad = math.radians(aw_dir_global_deg)
-        # Compute apparent wind vector (in global frame)
-        self.aw_vector_kmph = cs.polar_to_cartesian(aw_dir_global_rad, aw_speed_kmph)
+            # Convert Apparent wind to global frame
+            aw_dir_global_deg = wcs.boat_to_global_coordinate(
+                boat_heading_deg, aw_dir_boat_deg
+            )
+            aw_dir_global_rad = math.radians(aw_dir_global_deg)
+            # Compute apparent wind vector (in global frame)
+            self.aw_vector_kmph = cs.polar_to_cartesian(
+                aw_dir_global_rad, aw_speed_kmph
+            )
 
-        # True wind from apparent
-        tw_dir_deg_gc, tw_speed_kmph = wcs.aw_gc_to_tw_gc(
-            aw_dir_global_deg, aw_speed_kmph, boat_heading_deg, boat_speed_kmph
-        )
-        tw_dir_rad_gc = math.radians(tw_dir_deg_gc)
-        self.tw_vector_kmph = cs.polar_to_cartesian(tw_dir_rad_gc, tw_speed_kmph)
+            # True wind from apparent
+            tw_dir_deg_gc, tw_speed_kmph = wcs.aw_gc_to_tw_gc(
+                aw_dir_global_deg, aw_speed_kmph, boat_heading_deg, boat_speed_kmph
+            )
+            tw_dir_rad_gc = math.radians(tw_dir_deg_gc)
+            self.tw_vector_kmph = cs.polar_to_cartesian(tw_dir_rad_gc, tw_speed_kmph)
 
         # Boat wind vector
         boat_wind_radians = math.radians(cs.bound_to_180(boat_heading_deg + 180))
@@ -336,6 +371,22 @@ class VisualizerState:
             raise ValueError("No local path received in the message")
         if msg.gps is None:
             raise ValueError("No GPS data received in the message")
+        if msg.gps == GPS_UNAVAILABLE:
+            raise ValueError("GPS data is unavailable")
+
+    @staticmethod
+    def _get_unavailable_data(msg: ci.LPathData) -> List[str]:
+        """Return the names of unavailable non-GPS inputs in display order."""
+        unavailable_data = []
+        if msg.heading.heading == HEADING_UNAVAILABLE:
+            unavailable_data.append("heading")
+        if msg.filtered_wind_sensor == WIND_SENSOR_UNAVAILABLE:
+            unavailable_data.append("wind sensor")
+        if msg.ais_ships == AIS_SHIPS_UNAVAILABLE:
+            unavailable_data.append("AIS ships")
+        if msg.desired_heading == DESIRED_HEADING_UNAVAILABLE:
+            unavailable_data.append("desired heading")
+        return unavailable_data
 
     @staticmethod
     def _split_coordinates(positions) -> Tuple[List[float], List[float]]:
@@ -388,11 +439,27 @@ class VisualizerState:
 # Visualizer Failure State Helpers
 # --------------------------------------
 
+def create_visualizer_state(
+    msgs: deque[ci.LPathData],
+    last_replan_reason: str = "",
+) -> Optional[VisualizerState]:
+    """Create a visualizer state, or return None when the latest GPS is unavailable."""
+    if msgs and msgs[-1].gps == GPS_UNAVAILABLE:
+        return None
+    return VisualizerState(msgs=msgs, last_replan_reason=last_replan_reason)
 
-def visualizer_state_warning(stale: bool) -> html.Div:
+
+def unavailable_data_warning(unavailable_data: List[str]) -> str:
+    """Build a warning describing which visualizer inputs are unavailable."""
+    return VISUALIZER_STATE_DATA_UNAVAILABLE_WARNING.format(
+        data=", ".join(unavailable_data)
+    )
+
+
+def visualizer_state_warning(reason: str) -> html.Div:
     """Build the warning shown when no current visualizer state is available."""
     return html.Div(
-        VISUALIZER_STATE_STALE_WARNING if stale else VISUALIZER_STATE_NONE_WARNING,
+        reason,
         role="alert",
         style={
             "margin": "0 12px 8px 12px",
@@ -418,7 +485,10 @@ def handle_visualizer_state_failure(
     alongside a stale-state warning. Otherwise, return the Dash callback payload that preserves the
     existing plot/stores while updating the warning banner.
     """
-    state_warning = visualizer_state_warning(stale=_latest_vs is not None)
+    if _latest_vs is not None:
+        state_warning = visualizer_state_warning(VISUALIZER_STATE_STALE_WARNING)
+    else:
+        state_warning = visualizer_state_warning(VISUALIZER_STATE_NONE_WARNING)
     if _latest_vs is not None and should_render_cached_state:
         return VisualizerStateFailureHandling(_latest_vs, state_warning, None)
 
@@ -2346,7 +2416,7 @@ def update_graph(
             - last_range: [x-range, y-range] for storage in dcc.Store (JSON serializable)
             - reached_global_keys: list of reached global waypoint keys for storage in dcc.Store
             - path_status: remaining waypoint count and latest replan reason
-            - state_warning: a warning banner when the latest visualizer state is None
+            - state_warning: a warning banner when state data is stale, missing, or unavailable
 
     """
     global queue, _latest_vs  # noqa
@@ -2372,6 +2442,12 @@ def update_graph(
             assert cached_vs is not None
             vs = cached_vs
             state_warning = failure_handling.state_warning
+        elif queued_vs.unavailable_data:
+            vs = queued_vs
+            _latest_vs = vs
+            state_warning = visualizer_state_warning(
+                unavailable_data_warning(queued_vs.unavailable_data)
+            )
         else:
             vs = queued_vs
             _latest_vs = vs

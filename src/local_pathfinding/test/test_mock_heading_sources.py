@@ -23,6 +23,7 @@ def test_mock_gps_publishes_separate_rudder_heading() -> None:
     node._current_location = ci.HelperLatLon(latitude=49.0, longitude=-123.0)
     node._mean_speed_kmph = ci.HelperSpeed(speed=5.0)
     node._heading_deg = ci.HelperHeading(heading=-45.0)
+    node._publish_heading = True
     node._use_drift = False
     node._use_noise = False
     node._gps_pub = FakePublisher[ci.GPS]("gps")
@@ -39,6 +40,29 @@ def test_mock_gps_publishes_separate_rudder_heading() -> None:
     assert len(node._gps_pub.messages) == 1
     assert node._gps_pub.messages[0].heading.heading == -45.0
     assert node._heading_pub.messages == [node._heading_deg]
+
+
+def test_mock_gps_can_stop_publishing_rudder_heading() -> None:
+    node = object.__new__(MockGPS)
+    node._current_location = ci.HelperLatLon(latitude=49.0, longitude=-123.0)
+    node._mean_speed_kmph = ci.HelperSpeed(speed=5.0)
+    node._heading_deg = ci.HelperHeading(heading=-45.0)
+    node._publish_heading = False
+    node._use_drift = False
+    node._use_noise = False
+    node._gps_pub = FakePublisher[ci.GPS]("gps")
+    node._heading_pub = FakePublisher[ci.HelperHeading]("rudder")
+    node._start_monotonic_sec = 0.0
+    setattr(node, "_consume_events", lambda _elapsed_sec: None)
+    setattr(node, "update_speed", lambda: None)
+    setattr(node, "get_next_location", lambda: None)
+    logger = mock.Mock()
+    setattr(node, "get_logger", lambda: logger)
+
+    MockGPS.mock_gps_callback(node)
+
+    assert len(node._gps_pub.messages) == 1
+    assert node._heading_pub.messages == []
 
 
 def test_mock_wind_uses_gps_speed_and_rudder_heading_separately() -> None:
