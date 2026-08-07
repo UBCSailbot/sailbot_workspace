@@ -1813,10 +1813,11 @@ def land_pkl_polygons_xy(reference: ci.HelperLatLon) -> List[Polygon]:
 
     def to_xy_ring(coords) -> List[Tuple[float, float]]:
         # Land coordinates are stored (lon, lat).
-        return [
-            tuple(cs.latlon_to_xy(reference, ci.HelperLatLon(latitude=lat, longitude=lon)))
+        xys = [
+            cs.latlon_to_xy(reference, ci.HelperLatLon(latitude=lat, longitude=lon))
             for lon, lat in coords
         ]
+        return [(xy.x, xy.y) for xy in xys]
 
     polygons = [
         Polygon(to_xy_ring(poly.exterior.coords), [to_xy_ring(r.coords) for r in poly.interiors])
