@@ -959,7 +959,6 @@ RudderDebugData::RudderDebugData(const CanFrame & cf) : RudderDebugData(static_c
     std::memcpy(
       &raw_speed_over_ground, cf.data + BYTE_OFF_SPEED_OVER_GROUND, sizeof(uint16_t));
 
-    // These values are fixed conversions from the ELEC rudder debug CAN frame definition.
     actual_rudder_angle_ =
       static_cast<float>(raw_actual_rudder) / 100.0F - 90.0F;  // NOLINT(readability-magic-numbers)
     roll_ = static_cast<float>(raw_roll) / 100.0F - 180.0F;  // NOLINT(readability-magic-numbers)
@@ -986,7 +985,6 @@ msg::HelperHeading RudderDebugData::toRosMsg() const
 
 CanFrame RudderDebugData::toLinuxCan() const
 {
-    // These values are fixed conversions to the ELEC rudder debug CAN frame definition.
     uint16_t raw_actual_rudder = static_cast<uint16_t>(
       (actual_rudder_angle_ + 90.0F) * 100.0F);  // NOLINT(readability-magic-numbers)
     uint16_t raw_roll =
