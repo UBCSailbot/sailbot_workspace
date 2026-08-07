@@ -27,7 +27,14 @@ PACKAGE_NAME = "network_systems"
 NAMESPACE = ""
 
 # Add args with DeclareLaunchArguments object(s) and utilize in setup_launch()
-LOCAL_LAUNCH_ARGUMENTS: List[DeclareLaunchArgument] = []
+LOCAL_LAUNCH_ARGUMENTS: List[DeclareLaunchArgument] = [
+    DeclareLaunchArgument(
+        name="rudder_debug",
+        default_value="false",
+        choices=["true", "false"],
+        description="Force rudder heading data to use RUDDER_DEBUG_DATA_FRAME.",
+    )
+]
 
 
 def generate_launch_description() -> LaunchDescription:
@@ -164,6 +171,7 @@ def get_can_transceiver_description(context: LaunchContext) -> Node:
     ros_parameters: list = [
         {"mode": LaunchConfiguration("mode")},
         *LaunchConfiguration("config").perform(context).split(","),
+        {"rudder_debug": LaunchConfiguration("rudder_debug")},
     ]
     # Appended after the config files so that the launch argument overrides them when it is set
     heading_source = LaunchConfiguration("can_replay_heading_source").perform(context).strip()

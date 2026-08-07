@@ -126,6 +126,9 @@ For example:
 ros2 launch network_systems main_launch.py
 ```
 
+Set `rudder_debug:=true` to force headings to come debug rudder data frame `0x204`.
+Otherwise, default to standard rudder data frame.
+
 This is the best option if multiple modules need to be run at once. Launch
 configurations are found under the [config](config/) folder. These
 configurations define which modules to enable/disable and what parameters to

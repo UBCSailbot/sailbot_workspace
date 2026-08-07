@@ -937,95 +937,110 @@ void RudderData::checkBounds() const
     // DesiredHeading END
 }
 
-// RudderDebug START
-// RudderDebug public START
-
-RudderDebug::RudderDebug(const CanFrame & cf) : RudderDebug(static_cast<CanId>(cf.can_id))
+// RudderDebugData START
+RudderDebugData::RudderDebugData(const CanFrame & cf) : RudderDebugData(static_cast<CanId>(cf.can_id))
 {
-    if (cf.len < CAN_BYTE_DLEN_) {
-        throw std::length_error(
-          "RUDDER_DEBUG frame is too short to decode: got " + std::to_string(cf.len) + " bytes, expected at least " +
-          std::to_string(CAN_BYTE_DLEN_) + "\n" + BaseFrame::debugStr() + "\n");
-    }
+    uint16_t raw_actual_rudder;
+    uint16_t raw_roll;
+    uint16_t raw_pitch;
+    uint16_t raw_heading;
+    uint16_t raw_commanded_rudder;
+    uint16_t raw_integral;
+    uint16_t raw_derivative;
+    uint16_t raw_speed_over_ground;
 
-    auto readField = [&cf](uint8_t byte_off) {
-        uint16_t raw;
-        std::memcpy(&raw, cf.data + byte_off, sizeof(uint16_t));
-        return raw;
-    };
+    std::memcpy(&raw_actual_rudder, cf.data + BYTE_OFF_ACTUAL_RUDDER, sizeof(uint16_t));
+    std::memcpy(&raw_roll, cf.data + BYTE_OFF_ROLL, sizeof(uint16_t));
+    std::memcpy(&raw_pitch, cf.data + BYTE_OFF_PITCH, sizeof(uint16_t));
+    std::memcpy(&raw_heading, cf.data + BYTE_OFF_HEADING, sizeof(uint16_t));
+    std::memcpy(&raw_commanded_rudder, cf.data + BYTE_OFF_COMMANDED_RUDDER, sizeof(uint16_t));
+    std::memcpy(&raw_integral, cf.data + BYTE_OFF_INTEGRAL, sizeof(uint16_t));
+    std::memcpy(&raw_derivative, cf.data + BYTE_OFF_DERIVATIVE, sizeof(uint16_t));
+    std::memcpy(
+      &raw_speed_over_ground, cf.data + BYTE_OFF_SPEED_OVER_GROUND, sizeof(uint16_t));
 
-    uint16_t raw_heading = readField(BYTE_OFF_HEADING);
-    if (raw_heading >= CENTIDEG_PER_REV) {
-        // The board sends an out of revolution value when it has no heading to report this cycle
-        throw std::out_of_range(
-          "RUDDER_DEBUG frame carries no heading this cycle: " + std::to_string(raw_heading) + " centidegrees\n" +
-          BaseFrame::debugStr() + "\n");
-    }
-    heading_ = static_cast<float>(raw_heading) / CENTIDEG_PER_DEG;
-
-    rudder_actual_ = (static_cast<float>(readField(BYTE_OFF_RUDDER_ACTUAL)) / CENTIDEG_PER_DEG) - RUDDER_ANGLE_OFFSET;
-    rudder_cmd_    = (static_cast<float>(readField(BYTE_OFF_RUDDER_CMD)) / CENTIDEG_PER_DEG) - RUDDER_ANGLE_OFFSET;
-    roll_          = (static_cast<float>(readField(BYTE_OFF_ROLL)) / CENTIDEG_PER_DEG) - ATTITUDE_ANGLE_OFFSET;
-    pitch_         = (static_cast<float>(readField(BYTE_OFF_PITCH)) / CENTIDEG_PER_DEG) - ATTITUDE_ANGLE_OFFSET;
-    integral_      = static_cast<int32_t>(readField(BYTE_OFF_INTEGRAL)) - PID_TERM_OFFSET;
-    derivative_    = static_cast<int32_t>(readField(BYTE_OFF_DERIVATIVE)) - PID_TERM_OFFSET;
-    sog_           = static_cast<float>(readField(BYTE_OFF_SOG)) / SOG_SCALE;
+    actual_rudder_angle_ =
+      static_cast<float>(raw_actual_rudder) / 100.0F - 90.0F;  // NOLINT(readability-magic-numbers)
+    roll_ = static_cast<float>(raw_roll) / 100.0F - 180.0F;  // NOLINT(readability-magic-numbers)
+    pitch_ = static_cast<float>(raw_pitch) / 100.0F - 180.0F;  // NOLINT(readability-magic-numbers)
+    heading_                = static_cast<float>(raw_heading) / 100.0F;
+    commanded_rudder_angle_ =
+      static_cast<float>(raw_commanded_rudder) / 100.0F -
+      90.0F;  // NOLINT(readability-magic-numbers)
+    integral_ = static_cast<int32_t>(raw_integral) - 30000;  // NOLINT(readability-magic-numbers)
+    derivative_ =
+      static_cast<int32_t>(raw_derivative) - 30000;  // NOLINT(readability-magic-numbers)
+    speed_over_ground_ =
+      static_cast<float>(raw_speed_over_ground) / 1000.0F;  // NOLINT(readability-magic-numbers)
 
     checkBounds();
 }
 
-msg::HelperHeading RudderDebug::toRosMsg() const
+msg::HelperHeading RudderDebugData::toRosMsg() const
 {
     msg::HelperHeading msg;
     msg.set__heading(utils::boundTo180(heading_));
     return msg;
 }
 
-std::string RudderDebug::debugStr() const
+CanFrame RudderDebugData::toLinuxCan() const
+{
+    uint16_t raw_actual_rudder = static_cast<uint16_t>(
+      (actual_rudder_angle_ + 90.0F) * 100.0F);  // NOLINT(readability-magic-numbers)
+    uint16_t raw_roll =
+      static_cast<uint16_t>((roll_ + 180.0F) * 100.0F);  // NOLINT(readability-magic-numbers)
+    uint16_t raw_pitch =
+      static_cast<uint16_t>((pitch_ + 180.0F) * 100.0F);  // NOLINT(readability-magic-numbers)
+    uint16_t raw_heading = static_cast<uint16_t>(heading_ * 100.0F);
+    uint16_t raw_commanded_rudder = static_cast<uint16_t>(
+      (commanded_rudder_angle_ + 90.0F) * 100.0F);  // NOLINT(readability-magic-numbers)
+    uint16_t raw_integral =
+      static_cast<uint16_t>(integral_ + 30000);  // NOLINT(readability-magic-numbers)
+    uint16_t raw_derivative =
+      static_cast<uint16_t>(derivative_ + 30000);  // NOLINT(readability-magic-numbers)
+    uint16_t raw_speed_over_ground =
+      static_cast<uint16_t>(speed_over_ground_ * 1000.0F);  // NOLINT(readability-magic-numbers)
+
+    CanFrame cf = BaseFrame::toLinuxCan();
+    std::memcpy(cf.data + BYTE_OFF_ACTUAL_RUDDER, &raw_actual_rudder, sizeof(uint16_t));
+    std::memcpy(cf.data + BYTE_OFF_ROLL, &raw_roll, sizeof(uint16_t));
+    std::memcpy(cf.data + BYTE_OFF_PITCH, &raw_pitch, sizeof(uint16_t));
+    std::memcpy(cf.data + BYTE_OFF_HEADING, &raw_heading, sizeof(uint16_t));
+    std::memcpy(cf.data + BYTE_OFF_COMMANDED_RUDDER, &raw_commanded_rudder, sizeof(uint16_t));
+    std::memcpy(cf.data + BYTE_OFF_INTEGRAL, &raw_integral, sizeof(uint16_t));
+    std::memcpy(cf.data + BYTE_OFF_DERIVATIVE, &raw_derivative, sizeof(uint16_t));
+    std::memcpy(
+      cf.data + BYTE_OFF_SPEED_OVER_GROUND, &raw_speed_over_ground, sizeof(uint16_t));
+    return cf;
+}
+
+std::string RudderDebugData::debugStr() const
 {
     std::stringstream ss;
-    ss << BaseFrame::debugStr() << "\n"
-       << "IMU heading: " << heading_ << "\n"
-       << "Actual rudder angle: " << rudder_actual_ << "\n"
-       << "Commanded rudder angle: " << rudder_cmd_ << "\n"
-       << "IMU roll: " << roll_ << "\n"
-       << "IMU pitch: " << pitch_ << "\n"
-       << "Controller integral: " << integral_ << "\n"
-       << "Controller derivative: " << derivative_ << "\n"
-       << "Speed over ground: " << sog_;
+    ss << BaseFrame::debugStr() << "\nActual rudder: " << actual_rudder_angle_ << " Roll: " << roll_
+       << " Pitch: " << pitch_ << " Heading: " << heading_ << " Commanded rudder: "
+       << commanded_rudder_angle_ << " Integral: " << integral_ << " Derivative: " << derivative_
+       << " SOG: " << speed_over_ground_;
     return ss.str();
 }
 
-std::string RudderDebug::toString() const
+std::string RudderDebugData::toString() const
 {
     std::stringstream ss;
-    ss << "[RUDDER DEBUG] Heading: " << heading_ << " Rudder: " << rudder_actual_ << " (cmd " << rudder_cmd_
-       << ") Roll: " << roll_ << " Pitch: " << pitch_ << " SOG: " << sog_;
+    ss << "[RUDDER DEBUG DATA] Heading: " << heading_;
     return ss.str();
 }
 
-// RudderDebug public END
-// RudderDebug private START
-
-RudderDebug::RudderDebug(CanId id) : BaseFrame(std::span{RUDDER_DEBUG_IDS}, id, CAN_BYTE_DLEN_) {}
-
-void RudderDebug::checkBounds() const
+RudderDebugData::RudderDebugData(CanId id)
+: BaseFrame(std::span{RUDDER_DEBUG_DATA_IDS}, id, CAN_BYTE_DLEN_)
 {
-    auto check = [this](float val, float lbnd, float ubnd, const std::string & field) {
-        auto err = utils::isOutOfBounds<float>(val, lbnd, ubnd);
-        if (err) {
-            throw std::out_of_range("RUDDER_DEBUG " + field + " is out of bounds!\n" + debugStr() + "\n" + err.value());
-        }
-    };
-
-    check(heading_, HEADING_LBND, HEADING_UBND, "heading");
-    check(rudder_actual_, RUDDER_ANGLE_LBND, RUDDER_ANGLE_UBND, "actual rudder angle");
-    check(rudder_cmd_, RUDDER_ANGLE_LBND, RUDDER_ANGLE_UBND, "commanded rudder angle");
-    check(sog_, SOG_SPEED_LBND, SOG_SPEED_UBND, "speed over ground");
 }
 
-// RudderDebug private END
-// RudderDebug END
+void RudderDebugData::checkBounds() const
+{
+    // Do not check bounds for a debug frame.
+}
+// RudderDebugData END
 
 // TempSensor START
 // TempSensor public START

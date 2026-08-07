@@ -21,8 +21,9 @@
 #include "mock_can_bus.h"
 #include "net_node.h"
 
-constexpr int  QUEUE_SIZE     = 10;  // Arbitrary number
-constexpr auto TIMER_INTERVAL = std::chrono::milliseconds(500);
+constexpr int  QUEUE_SIZE              = 10;  // Arbitrary number
+constexpr auto TIMER_INTERVAL          = std::chrono::milliseconds(500);
+constexpr auto RUDDER_FALLBACK_TIMEOUT = std::chrono::seconds(5);
 
 namespace msg = custom_interfaces::msg;
 using CAN_FP::CanFrame;
@@ -47,7 +48,8 @@ public:
         this->declare_parameter("can_replay_file", "");
         this->declare_parameter("can_replay_rate", 1.0);
         this->declare_parameter("can_replay_loop", false);
-        this->declare_parameter("can_replay_heading_source", CAN_REPLAY::HEADING_SOURCE::MAIN);
+        this->declare_parameter("rudder_debug", false);
+        rudder_debug_ = this->get_parameter("rudder_debug").as_bool();
 
         if (!this->get_parameter("enabled").as_bool()) {
             RCLCPP_INFO(this->get_logger(), "CAN Transceiver is DISABLED");
@@ -125,6 +127,9 @@ public:
                 std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishGPS(frame); })),
               std::make_pair(
                 CanId::RUDDER_DATA_FRAME,
+                std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishRudder(frame); })),
+              std::make_pair(
+                CanId::RUDDER_DEBUG_DATA_FRAME,
                 std::function<void(const CanFrame &)>([this](const CanFrame & frame) { publishRudder(frame); })),
               std::make_pair(CanId::SAIL_WIND, std::function<void(const CanFrame &)>([this](const CanFrame & frame) {
                                  publishWindSensor(frame);
@@ -250,6 +255,10 @@ private:
 
     // kill GPS CAN send status
     inline static bool kill_gps_can_ = false;
+
+    bool                                  rudder_debug_            = false;
+    bool                                  publishing_rudder_debug_ = false;
+    std::chrono::steady_clock::time_point last_rudder_data_        = std::chrono::steady_clock::now();
 
     /**
      * @brief Set up the mock CAN bus and transceiver for replaying a logged CAN session.
@@ -575,13 +584,38 @@ private:
     void publishRudder(const CanFrame & rudder_frame)
     {
         try {
-            CAN_FP::RudderData rudder(rudder_frame);
-            msg::HelperHeading rudder_ = rudder.toRosMsg();
-            rudder_pub_->publish(rudder_);
+            const auto id = static_cast<CanId>(rudder_frame.can_id);
+            if (id == CanId::RUDDER_DATA_FRAME) {
+                if (rudder_debug_) {
+                    return;
+                }
+
+                CAN_FP::RudderData rudder(rudder_frame);
+                msg::HelperHeading rudder_msg = rudder.toRosMsg();
+                last_rudder_data_             = std::chrono::steady_clock::now();
+                if (publishing_rudder_debug_) {
+                    RCLCPP_INFO(this->get_logger(), "Rudder data source restored to RUDDER_DATA_FRAME");
+                    publishing_rudder_debug_ = false;
+                }
+                rudder_pub_->publish(rudder_msg);
+                RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), rudder.toString().c_str());
+                return;
+            }
+
+            if (!rudder_debug_ && std::chrono::steady_clock::now() - last_rudder_data_ < RUDDER_FALLBACK_TIMEOUT) {
+                return;
+            }
+
+            CAN_FP::RudderDebugData rudder(rudder_frame);
+            msg::HelperHeading      rudder_msg = rudder.toRosMsg();
+            if (!publishing_rudder_debug_) {
+                RCLCPP_INFO(this->get_logger(), "Rudder data source switched to RUDDER_DEBUG_DATA_FRAME");
+                publishing_rudder_debug_ = true;
+            }
+            rudder_pub_->publish(rudder_msg);
             RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), rudder.toString().c_str());
-        } catch (std::out_of_range err) {
+        } catch (const std::exception & err) {
             RCLCPP_WARN(this->get_logger(), "%s", err.what());
-            return;
         }
     }
 
