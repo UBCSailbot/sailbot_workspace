@@ -11,12 +11,15 @@ Using main launch file: `ros2 launch local_pathfinding main_launch.py`
 Local pathfinding uses the following ROS topics for boat state:
 
 - `gps` (`custom_interfaces/GPS`) supplies geographic position and speed.
-- `rudder` (`custom_interfaces/HelperHeading`) supplies the e-compass boat heading. The topic name `\rudder` is confusing; it's misleading. When you see rudder, think heading.
+- `rudder` (`custom_interfaces/HelperHeading`) supplies the e-compass boat
+  heading. The topic name `\rudder` is confusing; it's misleading. When you see
+  rudder, think heading.
 
-Despite its topic name, `rudder` contains the direction the boat's bow is pointing, not the
-physical rudder angle. It uses the `HelperHeading` navigation convention: `0°` is north, values
-increase clockwise, and the valid range is `(-180°, 180°]`. Missing, invalid, or stale heading
-data prevents local pathfinding from enabling sail.
+Despite its topic name, `rudder` contains the direction the boat's bow is
+pointing, not the physical rudder angle. It uses the `HelperHeading` navigation
+convention: `0°` is north, values increase clockwise, and the valid range is
+`(-180°, 180°]`. Missing, invalid, or stale heading data prevents local
+pathfinding from enabling sail.
 
 ## Test Plans
 
@@ -39,11 +42,12 @@ gps:
   speed_kmph: 15.0
 ```
 
-`heading_deg` follows the same `(-180°, 180°]` convention as the `rudder` topic. Development mode
-publishes this value on `rudder` through the local mock GPS node.
+`heading_deg` follows the same `(-180°, 180°]` convention as the `rudder`
+topic. Development mode publishes this value on `rudder` through the local mock
+GPS node.
 
-For heading-loss scenarios, a `mock_gps` event can disable the separate `rudder` publication while
-GPS publication continues:
+For heading-loss scenarios, a `mock_gps` event can disable the separate `rudder`
+publication while GPS publication continues:
 
 ```yaml
 events:
@@ -131,4 +135,10 @@ Launch arguments are added to the run command in the format `<name>:=<value>`.
 - `ros2 <command> -h` can be used to get more info about any command.
 
 ## Example Launch Command
-`ros2 launch local_pathfinding main_launch.py mode:=development use_gps_noise:=true use_ocean_drift:=true use_drift_randomization:=true ocean_drift_speed_kmph:=0.5 ocean_drift_dir_deg:=45.0 ocean_drift_accel_kmph2:=0.0`
+
+```bash
+ros2 launch local_pathfinding main_launch.py mode:=development \
+  use_gps_noise:=true use_ocean_drift:=true use_drift_randomization:=true \
+  ocean_drift_speed_kmph:=0.5 ocean_drift_dir_deg:=45.0 \
+  ocean_drift_accel_kmph2:=0.0
+```
