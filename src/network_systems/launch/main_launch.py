@@ -1,10 +1,12 @@
 """Launch file that runs all nodes for the network systems ROS package."""
 
 import os
+import subprocess
 import sys
 from importlib.util import module_from_spec, spec_from_file_location
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
+import yaml
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, OpaqueFunction, SetEnvironmentVariable
 from launch.launch_context import LaunchContext
@@ -86,11 +88,67 @@ def setup_launch(context: LaunchContext) -> List[Node]:
         SetEnvironmentVariable(
             name="ROS_LOG_DIR", value="/workspaces/sailbot_workspace/log"
         ).visit(context)
+    if mode == "can":
+        ensure_can_replay_log(context)
     launch_description_entities = list()
     launch_description_entities.append(get_can_transceiver_description(context))
     launch_description_entities.append(get_remote_transceiver_description(context))
     launch_description_entities.append(get_local_transceiver_description(context))
     return launch_description_entities
+
+
+def get_configured_can_replay_file(context: LaunchContext) -> Optional[str]:
+    """Reads the can_replay_file parameter out of the config yaml(s) passed to the launch.
+
+    Args:
+        context (LaunchContext): The current launch context.
+
+    Returns:
+        Optional[str]: The configured replay log path, or None if no config sets one.
+    """
+    replay_file = None
+    # Later config files override earlier ones, matching how ROS merges parameter files
+    for config in LaunchConfiguration("config").perform(context).split(","):
+        try:
+            with open(config, "r") as config_file:
+                params = yaml.safe_load(config_file) or {}
+        except (OSError, yaml.YAMLError):
+            continue
+        node_params = params.get(CAN_TRANSCEIVER_NODE, {}).get("ros__parameters", {})
+        if "can_replay_file" in node_params:
+            replay_file = node_params["can_replay_file"]
+    return replay_file
+
+
+def ensure_can_replay_log(context: LaunchContext) -> None:
+    """Downloads the default CAN replay log if mode:=can is set to use it and it isn't present.
+
+    CAN logs are versioned in the OWT-data repository rather than checked into this repo, so a
+    fresh workspace has the default path configured but no file behind it. Only the default path
+    is fetched: a custom can_replay_file is the user's own log, and the node reports it itself if
+    it is missing.
+
+    Args:
+        context (LaunchContext): The current launch context.
+    """
+    replay_file = get_configured_can_replay_file(context)
+    if not replay_file or os.path.exists(replay_file):
+        return
+
+    ros_workspace = os.getenv("ROS_WORKSPACE", default="/workspaces/sailbot_workspace")
+    default_replay_file = os.path.join(
+        ros_workspace, "src", "network_systems", "lib", "can_log", "combined_can_frames.csv"
+    )
+    if os.path.abspath(replay_file) != default_replay_file:
+        return
+
+    script = os.path.join(ros_workspace, "scripts", "get_mock_can_msg.sh")
+    print(f"[network_systems] CAN replay log missing, downloading it with {script}")
+    try:
+        subprocess.run([script], check=True)
+    except (OSError, subprocess.CalledProcessError) as err:
+        # Let the launch continue: can_transceiver_node reports the missing log and how to get one
+        print(f"[network_systems] Failed to download the CAN replay log: {err}")
 
 
 def get_can_transceiver_description(context: LaunchContext) -> Node:

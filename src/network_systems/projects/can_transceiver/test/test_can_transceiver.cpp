@@ -1752,13 +1752,13 @@ TEST_F(TestCanLogReplayer, FilterAllowBlock)
     std::vector<CAN_REPLAY::TimedFrame> frames = CAN_REPLAY::CanLogReplayer::parseCsv(csv_path_);
 
     CAN_REPLAY::ReplayConfig allow_cfg;
-    allow_cfg.allow_ids = {CAN_FP::CanId::DATA_WIND};
+    allow_cfg.allow_ids                         = {CAN_FP::CanId::DATA_WIND};
     std::vector<CAN_REPLAY::TimedFrame> allowed = CAN_REPLAY::CanLogReplayer::filter(frames, allow_cfg);
     ASSERT_EQ(allowed.size(), 1);
     EXPECT_EQ(allowed[0].frame.can_id, static_cast<canid_t>(CAN_FP::CanId::DATA_WIND));
 
     CAN_REPLAY::ReplayConfig block_cfg;
-    block_cfg.block_ids = {CAN_FP::CanId::SAIL_HEARTBEAT};
+    block_cfg.block_ids                         = {CAN_FP::CanId::SAIL_HEARTBEAT};
     std::vector<CAN_REPLAY::TimedFrame> blocked = CAN_REPLAY::CanLogReplayer::filter(frames, block_cfg);
     ASSERT_EQ(blocked.size(), NUM_FIXTURE_FRAMES - 1);
     for (const CAN_REPLAY::TimedFrame & timed_frame : blocked) {
@@ -1784,7 +1784,6 @@ TEST_F(TestCanLogReplayer, DelayBefore)
     constexpr double LONG_GAP_T_S     = 600.0;
 
     constexpr double SCALED_RATE = 2.0;  // replay at double speed
-    constexpr auto   PERIOD      = milliseconds{10};
 
     std::vector<CAN_REPLAY::TimedFrame> frames{
       {.t_s = FIRST_T_S, .frame = {}},
@@ -1795,7 +1794,6 @@ TEST_F(TestCanLogReplayer, DelayBefore)
 
     CAN_REPLAY::ReplayConfig cfg;
 
-    cfg.mode = CAN_REPLAY::PacingMode::REALTIME;
     EXPECT_EQ(CanLogReplayer::delayBefore(frames, 0, cfg), nanoseconds{0});
     EXPECT_EQ(CanLogReplayer::delayBefore(frames, 1, cfg), milliseconds{100});
     EXPECT_EQ(CanLogReplayer::delayBefore(frames, 2, cfg), milliseconds{50});
@@ -1804,17 +1802,12 @@ TEST_F(TestCanLogReplayer, DelayBefore)
     // A ~10 minute gap in the recording must be capped at max_frame_gap instead of stalling the replay
     EXPECT_EQ(CanLogReplayer::delayBefore(frames, 4, cfg), cfg.max_frame_gap);
 
-    cfg.mode = CAN_REPLAY::PacingMode::SCALED;
     cfg.rate = SCALED_RATE;
     EXPECT_EQ(CanLogReplayer::delayBefore(frames, 1, cfg), milliseconds{50});
 
-    cfg.mode   = CAN_REPLAY::PacingMode::FIXED_PERIOD;
-    cfg.period = PERIOD;
-    EXPECT_EQ(CanLogReplayer::delayBefore(frames, 0, cfg), PERIOD);
-    EXPECT_EQ(CanLogReplayer::delayBefore(frames, 1, cfg), PERIOD);
-
-    cfg.mode = CAN_REPLAY::PacingMode::FAST;
+    cfg.rate = 0.0;  // unpaced
     EXPECT_EQ(CanLogReplayer::delayBefore(frames, 1, cfg), nanoseconds{0});
+    EXPECT_EQ(CanLogReplayer::delayBefore(frames, 4, cfg), nanoseconds{0});
 }
 
 /**
@@ -1858,8 +1851,7 @@ TEST_F(TestMockCanBus, ReplayReachesCallback)
     std::mutex       frame_mtx;
     CAN_FP::CanFrame received_frame{};
     trns.registerCanCb(std::make_pair(
-      CAN_FP::CanId::DATA_WIND,
-      std::function<void(const CAN_FP::CanFrame &)>([&](const CAN_FP::CanFrame & frame) {
+      CAN_FP::CanId::DATA_WIND, std::function<void(const CAN_FP::CanFrame &)>([&](const CAN_FP::CanFrame & frame) {
           std::lock_guard<std::mutex> lock(frame_mtx);
           received_frame = frame;
           wind_cb_count++;
@@ -1922,27 +1914,29 @@ TEST_F(TestMockCanBus, OutboundFramesCaptured)
 }
 
 /**
- * @brief Test that FIXED_PERIOD pacing spaces frames out over time instead of bursting them
+ * @brief Test that a paced replay spaces frames out over time instead of bursting them
  *
  */
-TEST_F(TestMockCanBus, FixedPeriodPacing)
+TEST_F(TestMockCanBus, RatePacing)
 {
-    constexpr auto   PERIOD     = std::chrono::milliseconds(20);
-    constexpr size_t NUM_FRAMES = 4;
+    constexpr auto   FRAME_GAP   = std::chrono::milliseconds(20);
+    constexpr double FRAME_GAP_S = 0.02;
+    constexpr size_t NUM_FRAMES  = 4;
 
     MockCanBus     bus;
     CanTransceiver trns(bus.transceiverFd());
 
     std::atomic<size_t> cb_count{0};
     trns.registerCanCb(std::make_pair(
-      CAN_FP::CanId::DATA_WIND, std::function<void(const CAN_FP::CanFrame &)>(
-                                  [&cb_count](const CAN_FP::CanFrame & /*unused*/) { cb_count++; })));
+      CAN_FP::CanId::DATA_WIND,
+      std::function<void(const CAN_FP::CanFrame &)>([&cb_count](const CAN_FP::CanFrame & /*unused*/) { cb_count++; })));
 
     std::vector<CAN_REPLAY::TimedFrame> frames(
       NUM_FRAMES, {.t_s = 0.0, .frame = {.can_id = static_cast<canid_t>(CAN_FP::CanId::DATA_WIND), .len = 4}});
-    CAN_REPLAY::ReplayConfig cfg;
-    cfg.mode   = CAN_REPLAY::PacingMode::FIXED_PERIOD;
-    cfg.period = PERIOD;
+    for (size_t i = 0; i < NUM_FRAMES; i++) {
+        frames[i].t_s = static_cast<double>(i) * FRAME_GAP_S;
+    }
+    CAN_REPLAY::ReplayConfig cfg;  // the default rate of 1.0 reproduces the log's own spacing
 
     auto start = std::chrono::steady_clock::now();
     bus.startReplay(frames, cfg);
@@ -1950,8 +1944,8 @@ TEST_F(TestMockCanBus, FixedPeriodPacing)
     ASSERT_TRUE(waitFor([&cb_count]() { return cb_count == NUM_FRAMES; }));
     auto elapsed = std::chrono::steady_clock::now() - start;
 
-    // One period is slept before every frame, so all frames arriving takes at least NUM_FRAMES periods
-    EXPECT_GE(elapsed, NUM_FRAMES * PERIOD);
+    // No delay precedes the first frame, so the whole replay takes at least NUM_FRAMES - 1 gaps
+    EXPECT_GE(elapsed, (NUM_FRAMES - 1) * FRAME_GAP);
 }
 
 /**

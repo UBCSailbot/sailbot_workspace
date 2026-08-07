@@ -88,12 +88,12 @@ bool parseIsoTimestamp(const std::string & ts_str, double & t_s)
         return false;
     }
     std::tm tm{};
-    tm.tm_year = year - 1900;  // NOLINT(readability-magic-numbers) - epoch year of std::tm
-    tm.tm_mon  = month - 1;
-    tm.tm_mday = day;
-    tm.tm_hour = hour;
-    tm.tm_min  = minute;
-    tm.tm_sec  = 0;
+    tm.tm_year  = year - 1900;  // NOLINT(readability-magic-numbers) - epoch year of std::tm
+    tm.tm_mon   = month - 1;
+    tm.tm_mday  = day;
+    tm.tm_hour  = hour;
+    tm.tm_min   = minute;
+    tm.tm_sec   = 0;
     time_t base = timegm(&tm);
     if (base == static_cast<time_t>(-1)) {
         return false;
@@ -248,10 +248,11 @@ std::vector<TimedFrame> CanLogReplayer::parseCsv(const std::string & path)
       frames.begin(), frames.end(), [](const TimedFrame & a, const TimedFrame & b) { return a.t_s < b.t_s; });
 
     if (num_malformed > 0 || num_reassembled > 0 || num_invalid_id > 0) {
-        std::cerr << ("CAN replay: parsed " + std::to_string(frames.size()) + " frames from " + path + " (" +
-                      std::to_string(num_reassembled) + " split rows reassembled, " + std::to_string(num_malformed) +
-                      " malformed rows skipped, " + std::to_string(num_invalid_id) + " frames dropped across " +
-                      std::to_string(invalid_ids.size()) + " invalid IDs)\n");
+        std::cerr
+          << ("CAN replay: parsed " + std::to_string(frames.size()) + " frames from " + path + " (" +
+              std::to_string(num_reassembled) + " split rows reassembled, " + std::to_string(num_malformed) +
+              " malformed rows skipped, " + std::to_string(num_invalid_id) + " frames dropped across " +
+              std::to_string(invalid_ids.size()) + " invalid IDs)\n");
     }
     return frames;
 }
@@ -303,30 +304,17 @@ std::vector<TimedFrame> CanLogReplayer::synthesizeHeadingFrames(std::vector<Time
 std::chrono::nanoseconds CanLogReplayer::delayBefore(
   const std::vector<TimedFrame> & frames, size_t idx, const ReplayConfig & cfg)
 {
-    switch (cfg.mode) {
-        case PacingMode::FAST:
-            return std::chrono::nanoseconds{0};
-        case PacingMode::FIXED_PERIOD:
-            return std::chrono::duration_cast<std::chrono::nanoseconds>(cfg.period);
-        case PacingMode::REALTIME:
-        case PacingMode::SCALED:
-        default: {
-            if (idx == 0 || idx >= frames.size()) {
-                return std::chrono::nanoseconds{0};
-            }
-            double dt_s = frames[idx].t_s - frames[idx - 1].t_s;
-            if (cfg.mode == PacingMode::SCALED && cfg.rate > 0) {
-                dt_s /= cfg.rate;
-            }
-            if (dt_s <= 0) {  // guard against out of order or duplicate log timestamps
-                return std::chrono::nanoseconds{0};
-            }
-            // round() rather than duration_cast(): truncation would consistently under-pace the replay
-            auto delay = std::chrono::round<std::chrono::nanoseconds>(std::chrono::duration<double>(dt_s));
-            // cap the delay so gaps in the recording do not stall the replay
-            return std::min(delay, std::chrono::duration_cast<std::chrono::nanoseconds>(cfg.max_frame_gap));
-        }
+    if (cfg.rate <= 0 || idx == 0 || idx >= frames.size()) {  // a non-positive rate replays unpaced
+        return std::chrono::nanoseconds{0};
     }
+    double dt_s = (frames[idx].t_s - frames[idx - 1].t_s) / cfg.rate;
+    if (dt_s <= 0) {  // guard against out of order or duplicate log timestamps
+        return std::chrono::nanoseconds{0};
+    }
+    // round() rather than duration_cast(): truncation would consistently under-pace the replay
+    auto delay = std::chrono::round<std::chrono::nanoseconds>(std::chrono::duration<double>(dt_s));
+    // cap the delay so gaps in the recording do not stall the replay
+    return std::min(delay, std::chrono::duration_cast<std::chrono::nanoseconds>(cfg.max_frame_gap));
 }
 
 }  // namespace CAN_REPLAY

@@ -24,7 +24,7 @@ constexpr auto WRITE_RETRY_DELAY = std::chrono::milliseconds(1);   // wait befor
 MockCanBus::MockCanBus()
 {
     std::array<int, 2> fds{};
-    // SOCK_SEQPACKET guarantees each write is read as one whole datagram, mirroring real CAN socket semantics
+    // SOCK_SEQPACKET reads each write as one whole datagram, mirroring real CAN socket semantics
     if (socketpair(AF_UNIX, SOCK_SEQPACKET, 0, fds.data()) < 0) {
         std::string err_msg = "Failed to create mock CAN bus socketpair with error: " + std::to_string(errno) + "(" +
                               strerror(errno) + ")";  // NOLINT(concurrency-mt-unsafe)
@@ -44,7 +44,7 @@ MockCanBus::~MockCanBus()
         sink_thread_.join();
     }
     close(bus_fd_);
-    // transceiver_fd_ is intentionally not closed - the CanTransceiver it was handed to owns it
+    // transceiver_fd_ is intentionally left open - the CanTransceiver it was handed to owns it
 }
 
 void MockCanBus::startReplay(std::vector<CAN_REPLAY::TimedFrame> frames, CAN_REPLAY::ReplayConfig cfg)
@@ -93,7 +93,7 @@ void MockCanBus::replayLoop()
             frames_sent_++;
         }
     } while (cfg_.loop && !stop_replay_);
-    // done means every frame was sent; a stopped replay (the only way a looping one exits) is not done
+    // a stopped replay is not done, and stopping is the only way a looping replay exits
     replay_done_ = !stop_replay_;
 }
 
@@ -109,7 +109,7 @@ bool MockCanBus::writeFrame(const CanFrame & frame)
             std::this_thread::sleep_for(WRITE_RETRY_DELAY);
             continue;
         }
-        // single << so log frameworks that capture stderr do not interleave or split the message
+        // single << so log frameworks capturing stderr do not split the message
         std::cerr << ("Mock CAN bus write error: " + std::to_string(errno) + "(" +
                       strerror(errno) + ")\n");  // NOLINT(concurrency-mt-unsafe)
         return false;

@@ -64,7 +64,7 @@ Logs recorded before the e-compass began sending `RUDDER_DATA_FRAME` (0x050) con
 
 Those logs do still carry the heading, in an undocumented 16-byte attitude frame on ID `0x204` that also appears to hold pitch and roll. With `can_replay_synthesize_heading: true`, the replayer emits a synthetic `RUDDER_DATA_FRAME` after each such frame, decoded as a little-endian `uint16` at byte offset 6 in centidegrees.
 
-> **Warning:** this decode is **inferred from log analysis, not confirmed by the firmware team**. Supporting evidence: the field spans exactly 0–35999 centidegrees, changes by a median of 0.28° between consecutive frames, and tracks GPS-derived course over ground with a median offset of −3.6° (90% of samples within 30°). The node logs a warning whenever synthesis is active. Treat the resulting `/rudder` data as **simulated** — it must not be relied on outside of log replay, and `0x204` should be confirmed with the firmware/electrical team (and added to the [CAN Frames wiki](https://ubcsailbot.atlassian.net/wiki/spaces/prjt22/pages/1827176527/CAN+Frames)) before anything depends on it.
+> **Warning:** this decode is from ELEC debug CAN frames.
 <!-- markdownlint-enable MD013 -->
 
 `globals.yaml` and `on_water_globals.yaml` both set `can_replay_file` to the

@@ -6,6 +6,7 @@
 #include <custom_interfaces/msg/desired_heading.hpp>
 #include <custom_interfaces/msg/gps.hpp>
 #include <custom_interfaces/msg/wind_sensors.hpp>
+#include <filesystem>
 #include <queue>
 #include <rclcpp/publisher.hpp>
 #include <rclcpp/rclcpp.hpp>
@@ -82,6 +83,14 @@ public:
                 std::string replay_file = this->get_parameter("can_replay_file").as_string();
                 if (replay_file.empty()) {
                     std::string msg = "CAN replay mode requires the can_replay_file parameter to be set";
+                    RCLCPP_ERROR(this->get_logger(), "%s", msg.c_str());
+                    throw std::runtime_error(msg);
+                }
+                if (!std::filesystem::exists(replay_file)) {
+                    std::string msg = "CAN replay log not found: " + replay_file +
+                                      ". Pull a recorded session with scripts/get_mock_can_msg.sh, or point "
+                                      "can_replay_file at your own candump-style CSV log. "
+                                      "Check src/network_systems/README.md";
                     RCLCPP_ERROR(this->get_logger(), "%s", msg.c_str());
                     throw std::runtime_error(msg);
                 }
@@ -261,13 +270,7 @@ private:
         try {
             std::vector<CAN_REPLAY::TimedFrame> frames = CAN_REPLAY::CanLogReplayer::parseCsv(replay_file);
 
-            double rate = this->get_parameter("can_replay_rate").as_double();
-            if (rate <= 0.0) {  // <= 0 means unpaced: replay as fast as possible
-                cfg.mode = CAN_REPLAY::PacingMode::FAST;
-            } else {
-                cfg.mode = CAN_REPLAY::PacingMode::SCALED;
-                cfg.rate = rate;
-            }
+            cfg.rate = this->get_parameter("can_replay_rate").as_double();  // <= 0 replays unpaced
             cfg.loop = this->get_parameter("can_replay_loop").as_bool();
 
             if (this->get_parameter("can_replay_synthesize_heading").as_bool()) {
