@@ -1,0 +1,75 @@
+# On-water test plan — Jericho Beach / English Bay, Vancouver (UBC Sailbot)
+#
+# Companion to the CAN log replay at
+# src/network_systems/lib/can_log/combined_can_frames.csv (the file
+# on_water_globals.yaml points `can_replay_file` at). The 42,765
+# PATH_GPS_DATA_FRAME (CAN ID 0x070) frames in that log were decoded with the
+# same scaling the firmware parser uses (lat = raw/1e6 - 90, lon = raw/1e6 - 180,
+# speed = raw/1e3) to recover the boat's actual track from the 2026-06-06
+# session, which ran 18:17 -> 20:57 local (~2 h 40 min, one ~17 min dropout at
+# 20:21 where the recorder restarted).
+#
+# The starting position, wind and speed expectations below come from that log.
+# The global_path does NOT. The recorded track is a ~3.4 km wander inside a
+# ~900 m x 850 m box that repeatedly crosses itself — non-adjacent points on it
+# come within 47 m of each other, far inside GLOBAL_WAYPOINT_REACHED_THRESH_M
+# (300 m in node_navigate.py), so the boat sits in several waypoints' "reached"
+# radii at once and the target index churns every cycle. Following the track
+# verbatim livelocks the planner and the sail stays disabled.
+#
+# So the global_path is a designed route instead, built to the constraints the
+# navigation code actually imposes:
+#   * every leg > 2x GLOBAL_WAYPOINT_REACHED_THRESH_M, so consecutive
+#     reached-radii never overlap      -> all legs are 800 m
+#   * every NON-adjacent waypoint pair > 2x that threshold, so the boat is never
+#     inside two radii simultaneously  -> closest such pair is 916 m
+#   * legs >> MIN_TURNING_RADIUS_KM (50 m), so the Dubins planner can settle onto
+#     each leg rather than orbiting the waypoint
+#   * no self-crossing
+# For reference, backup_global_path.csv scores 592-903 m legs and 1189 m
+# non-adjacent separation; this route is in the same class, so it needs no
+# changes to any navigation threshold.
+#
+# The route stays inside water that is already sanctioned: the union of the box
+# the boat physically sailed in the log (lat 49.2745..49.2823,
+# lon -123.2017..-123.1924) and the extent of backup_global_path.csv, giving an
+# envelope of 2187 m E-W x 1704 m N-S.
+#
+# NOTE: that envelope is a rectangle and the Jericho shoreline is not. Waypoint 1
+# sits east of anywhere the boat actually sailed and rests on the backup path's
+# extent rather than on logged ground truth — confirm it against a chart before
+# going on the water.
+#
+# At the 1.53 km/h speed made good measured over the log this route is a ~2 h
+# sail; at a more typical 3 km/h it is ~1 h.
+
+# True wind. Speed is the median measured by the wind sensors over the session
+# (CAN 0x040 / 0x041 decode to ~12.0 and ~13.0 km/h median respectively).
+# Direction is the prevailing NW afternoon sea breeze in English Bay — the log
+# only records boat-frame apparent angle, so an absolute direction cannot be
+# recovered from it directly.
+tw_dir_deg: 315
+tw_speed_kmph: 13.0
+
+# Initial heading is the ground-track bearing over the first 100 m of the log.
+# The first leg runs at 095, so the boat has to turn onto it from here.
+heading_deg: -8.0
+
+# Boat starts where the GPS log starts: ~400 m offshore, north of the Jericho
+# Sailing Centre, already under way at ~1.9 km/h.
+gps:
+  latitude: 49.278446
+  longitude: -123.194883
+  speed_kmph: 1.9
+
+# A 4-leg loop out into English Bay and back, anchored at the log's start
+# position. Against the 315 deg wind above the legs exercise distinct points of
+# sail — beam reach, close reach, upwind, broad reach — instead of the single
+# drift the log happened to capture. Total 3.20 km.
+global_path:
+  waypoints:
+    - {latitude: 49.278446, longitude: -123.194883} # CAN log start position
+    - {latitude: 49.277819, longitude: -123.183930} # 800 m, brg 095 — beam reach east into the bay
+    - {latitude: 49.285012, longitude: -123.183930} # 800 m, brg 000 — close reach north
+    - {latitude: 49.289635, longitude: -123.192355} # 800 m, brg 310 — upwind leg to the NW corner
+    - {latitude: 49.285509, longitude: -123.201362} # 800 m, brg 235 — broad reach back toward Locarno

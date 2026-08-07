@@ -4,7 +4,7 @@
       # Publishers' period (seconds): how often the publishers publish
       config: "on_water_globals.yaml" # Name of the global config file
       pub_period_sec: 1.0
-      test_plan: "jericho_on_water_test.yaml"
+      test_plan: "jericho_can_log_replay.yaml"
 
 # local_pathfinding parameters
 global_path:
@@ -12,7 +12,7 @@ global_path:
       global_path_filepath: "/workspaces/sailbot_workspace/src/local_pathfinding/global_paths/mock_global_path.csv"
 mock_ais:
    ros__parameters:
-      on_water_mock_ais: True
+      on_water_mock_ais: False
       on_water_test_plan: "on_water_mock_ais.yaml"
 mock_gps:
    ros__parameters:
@@ -107,4 +107,4 @@ can_transceiver_node:
     can_replay_file: "/workspaces/sailbot_workspace/src/network_systems/lib/can_log/combined_can_frames.csv"    # path to a candump-style CSV log; empty disables replay outside of can mode
     can_replay_rate: 1.0   # 1.0 = real time, 2.0 = twice as fast, <= 0 = as fast as possible
     can_replay_loop: false # restart from the top of the log after the last frame
-    can_replay_heading_source: "main"  # "main" uses the log's RUDDER_DATA_FRAME (0x050); "debug" derives it from RUDDER_DEBUG (0x204)
+    can_replay_heading_source: "debug"  # "main" uses the log's RUDDER_DATA_FRAME (0x050); "debug" derives it from RUDDER_DEBUG (0x204)
