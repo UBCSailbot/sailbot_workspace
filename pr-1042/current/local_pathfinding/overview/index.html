@@ -2890,8 +2890,8 @@ plan manually:</p>
 <p><code>heading_deg</code> follows the same <code>(-180°, 180°]</code> convention as the <code>rudder</code>
 topic. Development mode publishes this value on <code>rudder</code> through the local mock
 GPS node.</p>
-<p>For heading-loss scenarios, a <code>mock_gps</code> event can disable the separate <code>rudder</code> publication while
-GPS publication continues:</p>
+<p>For heading-loss scenarios, a <code>mock_gps</code> event can disable the separate <code>rudder</code>
+publication while GPS publication continues:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">events</span><span class="p">:</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">mock_gps</span><span class="p">:</span>
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">timestamp</span><span class="p">:</span><span class="w"> </span><span class="nv">15.0</span><span class="p p-Indicator">,</span><span class="nt"> publish_heading</span><span class="p">:</span><span class="w"> </span><span class="nv">false</span><span class="p p-Indicator">}</span>
