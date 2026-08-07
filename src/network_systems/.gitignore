@@ -5,3 +5,6 @@
 
 # PlantUML diagram export directory
 /diagrams/out/
+
+# Mock CAN Transceiver can messages
+/lib/can_log/combined_can_frames.csv

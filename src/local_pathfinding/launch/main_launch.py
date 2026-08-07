@@ -76,7 +76,7 @@ def setup_launch(context: LaunchContext) -> List[Node]:
     )
     launch_description_entities = []
     launch_description_entities.append(get_navigate_node_description(context))
-    if mode == "production":
+    if mode in ("production", "can"):
         if on_water_mock_ais:
             _LOGGER.warn("Mock AIS is ON in production")
             launch_description_entities.append(get_mock_ais_node_description(context))
@@ -88,7 +88,6 @@ def setup_launch(context: LaunchContext) -> List[Node]:
             launch_description_entities.append(get_navigate_observer_node_description(context))
         else:
             _LOGGER.warn("Visualizer is OFF in production")
-
     elif mode == "development":
         launch_description_entities.append(get_mock_global_path_node_description(context))
         launch_description_entities.append(get_mock_wind_sensor_node_description(context))
