@@ -247,7 +247,7 @@ for Microsoft's explanation.
 ### Arrays
 
 <!-- markdownlint-disable-next-line MD013 -->
-Using the [C++ implementation of arrays](https://en.cppreference.com/w/cpp/container/array#:~:text=std%3A%3Aarray%20is%\20a%20container%20that%20encapsulates%20fixed%20size,C-style%20array%2C%20it%20doesn%27t%20decay%20to%20T%2A%20automatically.){target=_blank}
+Using the [C++ implementation of arrays](https://en.cppreference.com/w/cpp/container/array#:~:text=std%3A%3Aarray%20is%20a%20container%20that%20encapsulates%20fixed%20size,C-style%20array%2C%20it%20doesn%27t%20decay%20to%20T%2A%20automatically.){target=_blank}
 is preferred over C arrays. It is simply easier and safer to work with than a
 standard C array without any performance costs.
 

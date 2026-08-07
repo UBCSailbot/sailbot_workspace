@@ -52,9 +52,11 @@ there.
 Add the overlay to `dockerComposeFile` in
 [`../devcontainer.json`](../devcontainer.json) by uncommenting this line:
 
+<!-- markdownlint-disable MD013 -->
 ```jsonc
 "wsl/docker-compose.wsl.yml", // WSL2 GPU passthrough for OpenGL GUIs (WSL2 hosts only)
 ```
+<!-- markdownlint-enable MD013 -->
 
 then run the "Dev Containers: Rebuild Container" VS Code command.
 
