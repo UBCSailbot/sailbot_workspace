@@ -940,17 +940,39 @@ void RudderData::checkBounds() const
 // RudderDebugData START
 RudderDebugData::RudderDebugData(const CanFrame & cf) : RudderDebugData(static_cast<CanId>(cf.can_id))
 {
-    std::array<uint16_t, 8> raw{};
-    std::memcpy(raw.data(), cf.data, CAN_BYTE_DLEN_);
+    uint16_t raw_actual_rudder;
+    uint16_t raw_roll;
+    uint16_t raw_pitch;
+    uint16_t raw_heading;
+    uint16_t raw_commanded_rudder;
+    uint16_t raw_integral;
+    uint16_t raw_derivative;
+    uint16_t raw_speed_over_ground;
 
-    actual_rudder_angle_    = static_cast<float>(raw[0]) / 100.0F - 90.0F;
-    roll_                   = static_cast<float>(raw[1]) / 100.0F - 180.0F;
-    pitch_                  = static_cast<float>(raw[2]) / 100.0F - 180.0F;
-    heading_                = static_cast<float>(raw[3]) / 100.0F;
-    commanded_rudder_angle_ = static_cast<float>(raw[4]) / 100.0F - 90.0F;
-    integral_               = static_cast<int32_t>(raw[5]) - 30000;
-    derivative_             = static_cast<int32_t>(raw[6]) - 30000;
-    speed_over_ground_      = static_cast<float>(raw[7]) / 1000.0F;
+    std::memcpy(&raw_actual_rudder, cf.data + BYTE_OFF_ACTUAL_RUDDER, sizeof(uint16_t));
+    std::memcpy(&raw_roll, cf.data + BYTE_OFF_ROLL, sizeof(uint16_t));
+    std::memcpy(&raw_pitch, cf.data + BYTE_OFF_PITCH, sizeof(uint16_t));
+    std::memcpy(&raw_heading, cf.data + BYTE_OFF_HEADING, sizeof(uint16_t));
+    std::memcpy(&raw_commanded_rudder, cf.data + BYTE_OFF_COMMANDED_RUDDER, sizeof(uint16_t));
+    std::memcpy(&raw_integral, cf.data + BYTE_OFF_INTEGRAL, sizeof(uint16_t));
+    std::memcpy(&raw_derivative, cf.data + BYTE_OFF_DERIVATIVE, sizeof(uint16_t));
+    std::memcpy(
+      &raw_speed_over_ground, cf.data + BYTE_OFF_SPEED_OVER_GROUND, sizeof(uint16_t));
+
+    // These values are fixed conversions from the ELEC rudder debug CAN frame definition.
+    actual_rudder_angle_ =
+      static_cast<float>(raw_actual_rudder) / 100.0F - 90.0F;  // NOLINT(readability-magic-numbers)
+    roll_ = static_cast<float>(raw_roll) / 100.0F - 180.0F;  // NOLINT(readability-magic-numbers)
+    pitch_ = static_cast<float>(raw_pitch) / 100.0F - 180.0F;  // NOLINT(readability-magic-numbers)
+    heading_                = static_cast<float>(raw_heading) / 100.0F;
+    commanded_rudder_angle_ =
+      static_cast<float>(raw_commanded_rudder) / 100.0F -
+      90.0F;  // NOLINT(readability-magic-numbers)
+    integral_ = static_cast<int32_t>(raw_integral) - 30000;  // NOLINT(readability-magic-numbers)
+    derivative_ =
+      static_cast<int32_t>(raw_derivative) - 30000;  // NOLINT(readability-magic-numbers)
+    speed_over_ground_ =
+      static_cast<float>(raw_speed_over_ground) / 1000.0F;  // NOLINT(readability-magic-numbers)
 
     checkBounds();
 }
@@ -964,17 +986,33 @@ msg::HelperHeading RudderDebugData::toRosMsg() const
 
 CanFrame RudderDebugData::toLinuxCan() const
 {
-    std::array<uint16_t, 8> raw{
-      static_cast<uint16_t>((actual_rudder_angle_ + 90.0F) * 100.0F),
-      static_cast<uint16_t>((roll_ + 180.0F) * 100.0F),
-      static_cast<uint16_t>((pitch_ + 180.0F) * 100.0F),
-      static_cast<uint16_t>(heading_ * 100.0F),
-      static_cast<uint16_t>((commanded_rudder_angle_ + 90.0F) * 100.0F),
-      static_cast<uint16_t>(integral_ + 30000),
-      static_cast<uint16_t>(derivative_ + 30000),
-      static_cast<uint16_t>(speed_over_ground_ * 1000.0F)};
+    // These values are fixed conversions to the ELEC rudder debug CAN frame definition.
+    uint16_t raw_actual_rudder = static_cast<uint16_t>(
+      (actual_rudder_angle_ + 90.0F) * 100.0F);  // NOLINT(readability-magic-numbers)
+    uint16_t raw_roll =
+      static_cast<uint16_t>((roll_ + 180.0F) * 100.0F);  // NOLINT(readability-magic-numbers)
+    uint16_t raw_pitch =
+      static_cast<uint16_t>((pitch_ + 180.0F) * 100.0F);  // NOLINT(readability-magic-numbers)
+    uint16_t raw_heading = static_cast<uint16_t>(heading_ * 100.0F);
+    uint16_t raw_commanded_rudder = static_cast<uint16_t>(
+      (commanded_rudder_angle_ + 90.0F) * 100.0F);  // NOLINT(readability-magic-numbers)
+    uint16_t raw_integral =
+      static_cast<uint16_t>(integral_ + 30000);  // NOLINT(readability-magic-numbers)
+    uint16_t raw_derivative =
+      static_cast<uint16_t>(derivative_ + 30000);  // NOLINT(readability-magic-numbers)
+    uint16_t raw_speed_over_ground =
+      static_cast<uint16_t>(speed_over_ground_ * 1000.0F);  // NOLINT(readability-magic-numbers)
+
     CanFrame cf = BaseFrame::toLinuxCan();
-    std::memcpy(cf.data, raw.data(), CAN_BYTE_DLEN_);
+    std::memcpy(cf.data + BYTE_OFF_ACTUAL_RUDDER, &raw_actual_rudder, sizeof(uint16_t));
+    std::memcpy(cf.data + BYTE_OFF_ROLL, &raw_roll, sizeof(uint16_t));
+    std::memcpy(cf.data + BYTE_OFF_PITCH, &raw_pitch, sizeof(uint16_t));
+    std::memcpy(cf.data + BYTE_OFF_HEADING, &raw_heading, sizeof(uint16_t));
+    std::memcpy(cf.data + BYTE_OFF_COMMANDED_RUDDER, &raw_commanded_rudder, sizeof(uint16_t));
+    std::memcpy(cf.data + BYTE_OFF_INTEGRAL, &raw_integral, sizeof(uint16_t));
+    std::memcpy(cf.data + BYTE_OFF_DERIVATIVE, &raw_derivative, sizeof(uint16_t));
+    std::memcpy(
+      cf.data + BYTE_OFF_SPEED_OVER_GROUND, &raw_speed_over_ground, sizeof(uint16_t));
     return cf;
 }
 
