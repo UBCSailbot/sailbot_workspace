@@ -1,0 +1,429 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Example boat model satisfying the model contract in src/boat_simulator_gazebo/README.md.
+
+  This is a coarse, geometry-only stand-in for Polaris, intended to exercise the Gazebo
+  backend end to end (buoyancy, wind-driven sail lift, rudder steering, odometry) rather
+  than to reproduce the real hull. Every physical quantity below is taken from
+  BOAT_PROPERTIES / the module constants in
+  src/boat_simulator/boat_simulator/common/constants.py so both physics backends describe
+  the same boat:
+
+    mass            276 kg
+    I_xx, I_zz      175.86, 119.04 kg*m^2
+    sail area       2.01 m^2      CE at ( 0.25, -1.86) rel. CG  -> mast 1.86 m above CG
+    rudder area     0.117 m^2     CE at (-1.35,  0.74) rel. CG
+    keel area       0.51 m^2      CE at ( 0.08, -1.13) rel. CG
+    displaced vol.  0.269 m^3     (mass / 1027)
+
+  Frames: model x forward (bow), y port, z up. The hull link's inertial origin is the CG,
+  and link poses below are expressed relative to it.
+
+  Waterline: the Hydrodynamics plugin below computes flotation from the collision geometry,
+  so the hull collision box (not the visual) sets the waterline. Displacing 0.269 m^3 of the
+  3.6 x 0.99 x 0.55 m box submerges 0.075 m of it, so gazebo_launch.py spawns the model with
+  its CG 0.2 m above z = 0 to start at that equilibrium rather than dropping in and bobbing.
+-->
+<sdf version="1.9">
+  <model name="polaris">
+    <!-- Hull: carries the boat's full mass and inertia, and all of the displaced volume. -->
+    <link name="hull">
+      <inertial>
+        <!-- Ballast offset: the CG sits 0.35 m BELOW the link origin, standing in for the
+             lead a real keelboat carries low in its keel. Form stability alone gives a hull
+             TWO stable equilibria, since a box is equally happy upside down, so any
+             disturbance past its modest range of stability leaves it inverted. With the CG
+             below the centre of buoyancy (KB = -0.238 m here), upright is the only
+             equilibrium.
+
+             0.35 m is the smallest offset that holds the boat upright with margin, keeping
+             roll within about +/-7 deg under ambient wind. Tradeoff: the centre-of-effort
+             offsets in constants.py are relative to the CG, so the link origin they are
+             measured from now sits 0.35 m above the true CG. Fixing that means real mass in
+             a separate keel link, or re-referencing the constants. -->
+        <pose>0 0 -0.35 0 0 0</pose>
+        <mass>276.0</mass>
+        <inertia>
+          <ixx>175.86</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <!-- I_yy is not tracked by the 4-DOF kinematic model (no pitch DOF). Estimated
+               here from the hull's slenderness; pitch is lightly excited in practice. -->
+          <iyy>160.0</iyy>
+          <iyz>0</iyz>
+          <izz>119.04</izz>
+        </inertia>
+      </inertial>
+
+      <!-- Sets buoyancy, not just contact: the boat floats once 0.269 m^3 of this 1.96 m^3
+           box is submerged. -->
+      <collision name="hull_collision">
+        <geometry>
+          <box>
+            <size>3.6 0.99 0.55</size>
+          </box>
+        </geometry>
+      </collision>
+
+      <visual name="hull_visual">
+        <geometry>
+          <box>
+            <size>3.6 0.99 0.55</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.85 0.85 0.88 1</ambient>
+          <diffuse>0.9 0.9 0.95 1</diffuse>
+        </material>
+      </visual>
+
+      <!-- Deck marker, purely so bow direction is legible in the GUI. -->
+      <visual name="bow_marker">
+        <pose>1.5 0 0.3 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.6 0.2 0.06</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.9 0.2 0.1 1</ambient>
+          <diffuse>0.9 0.2 0.1 1</diffuse>
+        </material>
+      </visual>
+
+      <!-- Keel: fixed to the hull, so it is modelled as hull geometry rather than its own
+           link. Its lift/drag is applied by the LiftDrag system further below, which
+           references this link and the keel CE offset. -->
+      <collision name="keel_collision">
+        <pose>0.08 0 -1.13 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.45 0.06 1.15</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name="keel_visual">
+        <pose>0.08 0 -1.13 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.45 0.06 1.15</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.2 0.2 0.25 1</ambient>
+          <diffuse>0.2 0.2 0.25 1</diffuse>
+        </material>
+      </visual>
+
+      <!-- Wind must reach the sail link via the world's WindEffects system. -->
+      <enable_wind>false</enable_wind>
+    </link>
+
+    <!-- Wing sail: rotates about the mast. The kinematic model drives the wing indirectly
+         through the trim tab, so here the mast joint is free-spinning-with-damping and the
+         trim tab is the actuated surface, matching the real boat's behaviour. -->
+    <link name="wing_sail">
+      <pose>0.25 0 1.86 0 0 0</pose>
+      <inertial>
+        <mass>12.0</mass>
+        <inertia>
+          <ixx>6.0</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>6.0</iyy>
+          <iyz>0</iyz>
+          <izz>0.6</izz>
+        </inertia>
+      </inertial>
+      <collision name="wing_sail_collision">
+        <geometry>
+          <box>
+            <size>1.5 0.12 2.7</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name="wing_sail_visual">
+        <geometry>
+          <box>
+            <size>1.5 0.12 2.7</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.95 0.95 0.95 1</ambient>
+          <diffuse>1 1 1 1</diffuse>
+        </material>
+      </visual>
+      <enable_wind>true</enable_wind>
+    </link>
+
+    <!-- Trim tab: the actuated surface. WINGSAIL_TO_TRIM_TAB_BOOM_LENGTH = 1.43 m aft of
+         the mast axis. -->
+    <link name="trim_tab">
+      <pose>-1.18 0 1.86 0 0 0</pose>
+      <inertial>
+        <mass>1.2</mass>
+        <inertia>
+          <ixx>0.4</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.4</iyy>
+          <iyz>0</iyz>
+          <izz>0.05</izz>
+        </inertia>
+      </inertial>
+      <collision name="trim_tab_collision">
+        <geometry>
+          <box>
+            <size>0.3 0.05 0.66</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name="trim_tab_visual">
+        <geometry>
+          <box>
+            <size>0.3 0.05 0.66</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.9 0.6 0.1 1</ambient>
+          <diffuse>0.9 0.6 0.1 1</diffuse>
+        </material>
+      </visual>
+      <enable_wind>true</enable_wind>
+    </link>
+
+    <!-- Rudder: RUDDER_CE_REL_TO_CG = (-1.35, 0.74), i.e. 1.35 m aft and 0.74 m below. -->
+    <link name="rudder">
+      <pose>-1.35 0 -0.74 0 0 0</pose>
+      <inertial>
+        <mass>3.0</mass>
+        <inertia>
+          <ixx>0.3</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.3</iyy>
+          <iyz>0</iyz>
+          <izz>0.05</izz>
+        </inertia>
+      </inertial>
+      <collision name="rudder_collision">
+        <geometry>
+          <box>
+            <size>0.22 0.04 0.53</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name="rudder_visual">
+        <geometry>
+          <box>
+            <size>0.22 0.04 0.53</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0.2 0.2 0.25 1</ambient>
+          <diffuse>0.2 0.2 0.25 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- JOINTS -->
+
+    <!-- Mast: free to weathervane about +Z. Not in the contract's actuated-joint list; the
+         trim tab is what steers it. Damping stands in for mast bearing friction and keeps
+         the wing from oscillating unboundedly. -->
+    <joint name="mast_joint" type="revolute">
+      <parent>hull</parent>
+      <child>wing_sail</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-3.14159</lower>
+          <upper>3.14159</upper>
+        </limit>
+        <dynamics>
+          <damping>2.0</damping>
+        </dynamics>
+      </axis>
+    </joint>
+
+    <!-- Contract joint: trim_tab_joint, revolute about +Z, CCW positive, +/-40 deg. -->
+    <joint name="trim_tab_joint" type="revolute">
+      <parent>wing_sail</parent>
+      <child>trim_tab</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-0.698</lower>
+          <upper>0.698</upper>
+        </limit>
+        <dynamics>
+          <damping>0.1</damping>
+        </dynamics>
+      </axis>
+    </joint>
+
+    <!-- Contract joint: rudder_joint, revolute about +Z, CCW positive, +/-30 deg. -->
+    <joint name="rudder_joint" type="revolute">
+      <parent>hull</parent>
+      <child>rudder</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-0.524</lower>
+          <upper>0.524</upper>
+        </limit>
+        <dynamics>
+          <damping>0.5</damping>
+        </dynamics>
+      </axis>
+    </joint>
+
+    <!-- PLUGINS -->
+
+    <!-- Pose/velocity feedback consumed by gazebo_physics_bridge_node, bridged to
+         /gazebo/odometry. Publishes on /model/polaris/odometry by default. -->
+    <plugin filename="gz-sim-odometry-publisher-system"
+            name="gz::sim::systems::OdometryPublisher">
+      <dimensions>3</dimensions>
+      <odom_publish_frequency>10</odom_publish_frequency>
+      <odom_frame>world</odom_frame>
+      <robot_base_frame>polaris</robot_base_frame>
+    </plugin>
+
+    <!-- Actuated joints. Topics must match BRIDGED_TOPICS in launch/gazebo_launch.py. -->
+    <plugin filename="gz-sim-joint-position-controller-system"
+            name="gz::sim::systems::JointPositionController">
+      <joint_name>rudder_joint</joint_name>
+      <topic>/model/polaris/joint/rudder_joint/cmd_pos</topic>
+      <p_gain>8.0</p_gain>
+      <i_gain>0.0</i_gain>
+      <d_gain>1.0</d_gain>
+    </plugin>
+    <plugin filename="gz-sim-joint-position-controller-system"
+            name="gz::sim::systems::JointPositionController">
+      <joint_name>trim_tab_joint</joint_name>
+      <topic>/model/polaris/joint/trim_tab_joint/cmd_pos</topic>
+      <p_gain>3.0</p_gain>
+      <i_gain>0.0</i_gain>
+      <d_gain>0.3</d_gain>
+    </plugin>
+
+    <!-- Aerodynamics. cla/cda and the stall point approximate the BOAT_PROPERTIES
+         coefficient tables: the sail's CL peaks near 1.20 at ~25 deg, so cla ~ 2.75/rad
+         with stall at 0.44 rad. <upward> is the lift axis; <forward> is the chord line. -->
+    <plugin filename="gz-sim-lift-drag-system" name="gz::sim::systems::LiftDrag">
+      <link_name>wing_sail</link_name>
+      <air_density>1.225</air_density>
+      <area>2.01</area>
+      <a0>0.0</a0>
+      <cla>2.75</cla>
+      <cda>0.05</cda>
+      <alpha_stall>0.44</alpha_stall>
+      <cla_stall>-2.7</cla_stall>
+      <cda_stall>1.5</cda_stall>
+      <cp>0 0 0</cp>
+      <forward>1 0 0</forward>
+      <upward>0 1 0</upward>
+    </plugin>
+
+    <plugin filename="gz-sim-lift-drag-system" name="gz::sim::systems::LiftDrag">
+      <link_name>trim_tab</link_name>
+      <air_density>1.225</air_density>
+      <area>0.198</area>
+      <a0>0.0</a0>
+      <cla>2.75</cla>
+      <cda>0.05</cda>
+      <alpha_stall>0.44</alpha_stall>
+      <cla_stall>-2.7</cla_stall>
+      <cda_stall>1.5</cda_stall>
+      <cp>0 0 0</cp>
+      <forward>1 0 0</forward>
+      <upward>0 1 0</upward>
+    </plugin>
+
+    <!-- Hydrodynamics: same LiftDrag system, seawater density. The rudder's CL peaks near
+         0.92 at ~20 deg -> cla ~ 2.6/rad, stall at 0.35 rad. -->
+    <plugin filename="gz-sim-lift-drag-system" name="gz::sim::systems::LiftDrag">
+      <link_name>rudder</link_name>
+      <air_density>1027</air_density>
+      <area>0.117</area>
+      <a0>0.0</a0>
+      <cla>2.6</cla>
+      <cda>0.02</cda>
+      <alpha_stall>0.35</alpha_stall>
+      <cla_stall>-2.5</cla_stall>
+      <cda_stall>1.2</cda_stall>
+      <cp>0 0 0</cp>
+      <forward>1 0 0</forward>
+      <upward>0 1 0</upward>
+    </plugin>
+
+    <!-- Keel: attached to the hull link, with <cp> at KEEL_CE_REL_TO_CG so the side force
+         and its righting/leeway moment are applied at the correct point. -->
+    <plugin filename="gz-sim-lift-drag-system" name="gz::sim::systems::LiftDrag">
+      <link_name>hull</link_name>
+      <air_density>1027</air_density>
+      <area>0.51</area>
+      <a0>0.0</a0>
+      <cla>2.75</cla>
+      <cda>0.05</cda>
+      <alpha_stall>0.44</alpha_stall>
+      <cla_stall>-2.7</cla_stall>
+      <cda_stall>1.5</cda_stall>
+      <cp>0.08 0 -1.13</cp>
+      <forward>1 0 0</forward>
+      <upward>0 1 0</upward>
+    </plugin>
+
+    <!-- Flotation and hydrodynamic damping, from asv_wave_sim, replacing the stock gz-sim
+         Buoyancy system entirely. Rather than applying one buoyant force at a fixed point,
+         it integrates pressure over whichever part of the hull's collision geometry is below
+         the wave surface, so the centre of buoyancy moves outboard as the boat heels and
+         produces a real waterplane righting moment.
+
+         <enable> takes fully-qualified model::link names. Only the hull is listed: it holds
+         all of the displaced volume (hull box plus keel), while the rig sits above the
+         waterline and the rudder's small volume is not worth the per-step mesh integration.
+
+         The <wave> block MUST match the WavesModel plugin in worlds/sailing_world.sdf; both
+         evaluate the wave field independently, so a mismatch floats the boat against a
+         different surface than the one being rendered. -->
+    <plugin filename="gz-waves1-hydrodynamics-system" name="gz::sim::systems::Hydrodynamics">
+      <enable>polaris::hull</enable>
+
+      <wave>
+        <algorithm>fft</algorithm>
+        <tile_size>256</tile_size>
+        <cell_count>256</cell_count>
+        <wind_speed>1.96</wind_speed>
+        <wind_angle_deg>45</wind_angle_deg>
+        <steepness>2</steepness>
+      </wave>
+
+      <hydrodynamics>
+        <damping_on>1</damping_on>
+        <viscous_drag_on>1</viscous_drag_on>
+        <pressure_drag_on>1</pressure_drag_on>
+
+        <!-- The kinematic backend's damping matrix D = diag(45, 180, 115, 140) in
+             constants.py is in N.s/m, whereas these are dimensionless coefficients scaled by
+             submerged area, so they cannot be copied across. Left at asv_wave_sim's
+             reference values; tune against the kinematic backend if the two need to agree. -->
+        <cDampL1>1.0E-6</cDampL1>
+        <cDampL2>1.0E-6</cDampL2>
+        <cDampR1>1.0E-6</cDampR1>
+        <cDampR2>1.0E-6</cDampR2>
+
+        <!-- Pressure drag. Stands in for the hull_drag_factor = 0.5 quadratic hull drag
+             in constants.py, which this plugin resolves per-face instead. -->
+        <cPDrag1>1.0E+2</cPDrag1>
+        <cPDrag2>1.0E+2</cPDrag2>
+        <fPDrag>0.4</fPDrag>
+        <cSDrag1>1.0E+2</cSDrag1>
+        <cSDrag2>1.0E+2</cSDrag2>
+        <fSDrag>0.4</fSDrag>
+        <vRDrag>1.0</vRDrag>
+      </hydrodynamics>
+    </plugin>
+  </model>
+</sdf>

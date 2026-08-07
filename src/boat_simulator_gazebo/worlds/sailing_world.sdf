@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Sailing world for the Gazebo (gz-sim, Harmonic) physics backend of the boat simulator.
+  Provides physics, an asv_wave_sim FFT wave field, and a constant true wind field.
+
+  Flotation is NOT provided here. The stock gz-sim Buoyancy system is deliberately absent:
+  its buoyant force does not shift as the hull heels, so it produces no waterplane righting
+  moment and any model using it has to be artificially ballasted CG-below-CB to stay
+  upright. asv_wave_sim's Hydrodynamics plugin integrates over the submerged part of the
+  collision mesh instead, which yields the righting moment for free. That plugin lives on
+  the boat model, which gazebo_launch.py spawns and which must satisfy the model contract
+  in this package's README.
+
+  The wind vector below must stay in sync with gazebo_physics_bridge_node's
+  `true_wind_enu_mps` parameter in src/global_launch/config/globals.yaml.
+-->
+<sdf version="1.9">
+  <world name="sailing_world">
+    <physics name="default_physics" type="ignored">
+      <max_step_size>0.005</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+    </physics>
+
+    <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"/>
+    <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"/>
+    <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"/>
+
+    <!-- Applies the world <wind> vector to links with <enable_wind> and feeds the
+         LiftDrag systems on the boat's sail. -->
+    <plugin filename="gz-sim-wind-effects-system" name="gz::sim::systems::WindEffects">
+      <force_approximation_scaling_factor>1.0</force_approximation_scaling_factor>
+    </plugin>
+
+    <!-- Constant true wind, ENU frame, m/s. 1.389 m/s = 5 km/h per component, matching
+         the kinematic backend's wind_generation mean in globals.yaml. -->
+    <wind>
+      <linear_velocity>1.389 1.389 0</linear_velocity>
+    </wind>
+
+    <scene>
+      <ambient>0.6 0.6 0.6 1</ambient>
+      <background>0.7 0.85 0.95 1</background>
+      <sky/>
+    </scene>
+
+    <light type="directional" name="sun">
+      <cast_shadows>true</cast_shadows>
+      <pose>0 0 100 0 0 0</pose>
+      <diffuse>0.9 0.9 0.9 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+      <direction>-0.5 0.1 -0.9</direction>
+    </light>
+
+    <!-- asv_wave_sim wave field, resolved from GZ_SIM_RESOURCE_PATH. The <wave> block below
+         matches the sea state to this world's wind (1.96 m/s on a 45 degree bearing, i.e.
+         the ENU vector above); raise wind_speed for a rougher sea.
+
+         It must stay identical to the <wave> block of the Hydrodynamics plugin in
+         models/polaris/model.sdf. The two systems evaluate the wave field independently, so
+         if they disagree the boat floats against a surface that is not the one drawn. -->
+    <include>
+      <uri>model://waves</uri>
+      <pose>0 0 0 0 0 0</pose>
+      <plugin filename="gz-waves1-waves-model-system" name="gz::sim::systems::WavesModel">
+        <static>0</static>
+        <update_rate>30</update_rate>
+        <wave>
+          <algorithm>fft</algorithm>
+          <tile_size>256</tile_size>
+          <cell_count>256</cell_count>
+          <wind_speed>1.96</wind_speed>
+          <wind_angle_deg>45</wind_angle_deg>
+          <steepness>2</steepness>
+        </wave>
+      </plugin>
+    </include>
+  </world>
+</sdf>

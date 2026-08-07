@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>boat_simulator_gazebo</name>
+  <version>0.0.0</version>
+  <description>Gazebo (gz-sim) physics backend for UBC Sailbot's Boat Simulator</description>
+  <maintainer email="software@ubcsailbot.org">Akshanjay Kompelli</maintainer>
+  <license>MIT</license>
+
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>python3-pytest</test_depend>
+
+  <!-- ROS Dependencies -->
+  <exec_depend>boat_simulator</exec_depend>
+  <exec_depend>custom_interfaces</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>ros2launch</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+
+  <!-- Gazebo Dependencies. Conditional so that default (non-Gazebo) environments do not pull in
+       the Gazebo binaries via rosdep; opt in with `export ENABLE_GAZEBO=true` before running
+       scripts/setup.sh. These are the custom Harmonic keys from custom-rosdep.yaml, NOT the
+       stock `ros_gz_bridge` / `ros_gz_sim` keys, which would swap Harmonic out for Fortress. -->
+  <exec_depend condition="$ENABLE_GAZEBO == true">gz_harmonic</exec_depend>
+  <exec_depend condition="$ENABLE_GAZEBO == true">ros_gz_bridge_harmonic</exec_depend>
+  <exec_depend condition="$ENABLE_GAZEBO == true">ros_gz_sim_harmonic</exec_depend>
+
+  <!-- asv_wave_sim build dependencies; it supplies this backend's flotation. -->
+  <exec_depend condition="$ENABLE_GAZEBO == true">cgal</exec_depend>
+  <exec_depend condition="$ENABLE_GAZEBO == true">libfftw3_dev</exec_depend>
+
+  <!-- Python Dependencies -->
+  <exec_depend>python3-numpy</exec_depend>
+  <exec_depend>python3-pyproj</exec_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

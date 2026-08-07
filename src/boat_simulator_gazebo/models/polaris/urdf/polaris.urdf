@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="polaris">
+  <link
+    name="base_hull">
+    <inertial>
+      <origin
+        xyz="0.079791 0.00053586 0.50523"
+        rpy="0 0 0" />
+      <mass
+        value="244.28" />
+      <inertia
+        ixx="11.115"
+        ixy="-0.096705"
+        ixz="-0.50862"
+        iyy="73.155"
+        iyz="-0.0015324"
+        izz="72.152" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://polaris/meshes/base_hull.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.75294 0.75294 0.75294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://polaris/meshes/base_hull.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <link
+    name="link_rudder">
+    <inertial>
+      <origin
+        xyz="0.051296 0.0099805 -0.074335"
+        rpy="0 0 0" />
+      <mass
+        value="0.28508" />
+      <inertia
+        ixx="0.0093841"
+        ixy="2.11E-05"
+        ixz="0.0034418"
+        iyy="0.011395"
+        iyz="4.5738E-06"
+        izz="0.0020393" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://polaris/meshes/link_rudder.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://polaris/meshes/link_rudder.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint_rudder"
+    type="revolute">
+    <origin
+      xyz="-1.282 -0.0090126 1.08"
+      rpy="0 0 0" />
+    <parent
+      link="base_hull" />
+    <child
+      link="link_rudder" />
+    <axis
+      xyz="0.35837 0 -0.93358" />
+    <limit
+      lower="-0.523599"
+      upper="0.523599"
+      effort="100000"
+      velocity="10000" />
+  </joint>
+  <link
+    name="link_wingsail">
+    <inertial>
+      <origin
+        xyz="0.48309 0.11001 0.01352"
+        rpy="0 0 0" />
+      <mass
+        value="22.122" />
+      <inertia
+        ixx="5.9349"
+        ixy="-2.1133E-06"
+        ixz="0.020465"
+        iyy="6.3216"
+        iyz="-4.5614E-05"
+        izz="0.41093" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://polaris/meshes/link_wingsail.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.75294 0.75294 0.75294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://polaris/meshes/link_wingsail.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint_wingsail"
+    type="continuous">
+    <origin
+      xyz="-0.18951 -0.11 -1.522"
+      rpy="0 0 0" />
+    <parent
+      link="base_hull" />
+    <child
+      link="link_wingsail" />
+    <axis
+      xyz="0 0 -1" />
+  </joint>
+  <link
+    name="link_trim_tab">
+    <inertial>
+      <origin
+        xyz="0.012277 -0.021796 -5.8647E-06"
+        rpy="0 0 0" />
+      <mass
+        value="0.39689" />
+      <inertia
+        ixx="0.013826"
+        ixy="0.00039851"
+        ixz="1.4415E-07"
+        iyy="0.015866"
+        iyz="-2.3939E-08"
+        izz="0.0023654" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://polaris/meshes/link_trim_tab.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.69804 0.69804 0.69804 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://polaris/meshes/link_trim_tab.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint_trim_tab"
+    type="revolute">
+    <origin
+      xyz="-1.3637 0.14258 -0.42606"
+      rpy="0 0 0" />
+    <parent
+      link="link_wingsail" />
+    <child
+      link="link_trim_tab" />
+    <axis
+      xyz="0 0 -1" />
+    <limit
+      lower="-0.5236"
+      upper="0.5236"
+      effort="100000"
+      velocity="1000" />
+  </joint>
+</robot>

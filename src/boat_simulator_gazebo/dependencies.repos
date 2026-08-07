@@ -1,0 +1,12 @@
+# Imported into src/ by scripts/setup.sh when ENABLE_GAZEBO=true.
+#
+# asv_wave_sim provides the gz-waves ocean wave field plus the WavesModel/WavesVisual and
+# Hydrodynamics gz-sim plugins used by worlds/sailing_world.sdf and the boat model contract.
+# It is REQUIRED, not optional: Hydrodynamics is what makes the boat float, since the world
+# does not load the stock gz-sim Buoyancy system. Build it with GZ_VERSION=harmonic, or its
+# CMake silently selects Garden's libraries and fails to configure.
+repositories:
+  asv_wave_sim:
+    type: git
+    url: https://github.com/srmainwaring/asv_wave_sim.git
+    version: master
