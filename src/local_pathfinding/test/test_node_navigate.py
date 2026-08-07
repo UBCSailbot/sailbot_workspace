@@ -4,6 +4,8 @@ from typing import cast
 import pytest
 
 import custom_interfaces.msg as ci
+import local_pathfinding.local_path as lp
+import local_pathfinding.obstacles as ob
 from local_pathfinding.constants import (
     AIS_SHIPS_UNAVAILABLE,
     DESIRED_HEADING_UNAVAILABLE,
@@ -12,7 +14,7 @@ from local_pathfinding.constants import (
     WIND_SENSOR_UNAVAILABLE,
 )
 from local_pathfinding.local_path import LocalPathInputs, PathNotFoundError
-from local_pathfinding.node_navigate import GlobalPath, Sailbot
+from local_pathfinding.node_navigate import AIS_SHIP_TIMEOUT_SEC, GlobalPath, Sailbot
 
 
 class FakeLogger:
@@ -87,8 +89,12 @@ def make_sailbot_shell(gps_lat_lon: ci.HelperLatLon | None = None) -> Sailbot:
     sailbot.gps = gps
     sailbot.heading = ci.HelperHeading(heading=45.0) if gps is not None else None
     sailbot.received_new_global_path = False
+    sailbot.ais_ships = None
+    setattr(sailbot, "_tracked_ais_ships", {})
+    setattr(sailbot, "_last_omitted_ais_ids", set())
     logger = FakeLogger()
     setattr(sailbot, "global_path_sub", SimpleNamespace(topic="global_path"))
+    setattr(sailbot, "ais_ships_sub", SimpleNamespace(topic="ais_ships"))
     setattr(sailbot, "get_logger", lambda: logger)
     return sailbot
 
@@ -691,3 +697,264 @@ def test_global_waypoint_change_failure_keeps_retry_signal_without_accepting_way
     assert not sail
     assert require_gp(sailbot).index == 1
     assert update_calls[-1] == (waypoints[0], True, 1)
+
+
+# ========================= AIS SHIP TRACKING =========================
+def make_ais_ship(
+    ship_id: int,
+    latitude: float = 49.30,
+    longitude: float = -123.20,
+) -> ci.HelperAISShip:
+    return ci.HelperAISShip(
+        id=ship_id,
+        lat_lon=make_waypoint(latitude, longitude),
+        cog=ci.HelperHeading(heading=30.0),
+        sog=ci.HelperSpeed(speed=20.0),
+        width=ci.HelperDimension(dimension=20.0),
+        length=ci.HelperDimension(dimension=100.0),
+        rot=ci.HelperROT(rot=0),
+    )
+
+
+def deliver_ais(sailbot: Sailbot, ships: list[ci.HelperAISShip], now_sec: float) -> None:
+    """Deliver an AIS message to sailbot as if the clock read now_sec."""
+    setattr(sailbot, "_now_sec", lambda: now_sec)
+    sailbot.ais_ships_callback(ci.AISShips(ships=ships))
+
+
+def tracked_ids(sailbot: Sailbot) -> list[int]:
+    ais_ships = sailbot.ais_ships
+    assert ais_ships is not None
+    return sorted(ship.id for ship in ais_ships.ships)
+
+
+def count_messages(sailbot: Sailbot, level: str, text: str) -> int:
+    return sum(
+        1
+        for msg_level, msg in get_test_logger(sailbot).messages
+        if msg_level == level and text in msg
+    )
+
+
+def test_partial_ais_message_retains_omitted_ships() -> None:
+    sailbot = make_sailbot_shell()
+    deliver_ais(sailbot, [make_ais_ship(1), make_ais_ship(2)], now_sec=0.0)
+    assert tracked_ids(sailbot) == [1, 2]
+
+    deliver_ais(sailbot, [make_ais_ship(1, latitude=49.31)], now_sec=6.0)
+
+    assert tracked_ids(sailbot) == [1, 2]
+    ais_ships = sailbot.ais_ships
+    assert ais_ships is not None
+    refreshed = next(ship for ship in ais_ships.ships if ship.id == 1)
+    assert refreshed.lat_lon.latitude == 49.31
+    assert get_test_logger(sailbot).has_message("warning", "omitted 1 tracked ship(s) [2]")
+
+
+def test_empty_ais_message_retains_tracked_ships() -> None:
+    sailbot = make_sailbot_shell()
+    deliver_ais(sailbot, [make_ais_ship(1), make_ais_ship(2)], now_sec=0.0)
+
+    deliver_ais(sailbot, [], now_sec=15.0)
+
+    assert tracked_ids(sailbot) == [1, 2]
+    assert get_test_logger(sailbot).has_message("warning", "omitted 2 tracked ship(s) [1, 2]")
+
+
+def test_repeated_partial_ais_messages_warn_once() -> None:
+    """A transceiver stuck in a degraded state must not warn at the AIS publish rate."""
+    sailbot = make_sailbot_shell()
+    deliver_ais(sailbot, [make_ais_ship(1), make_ais_ship(2)], now_sec=0.0)
+
+    for tick in range(5):
+        deliver_ais(sailbot, [make_ais_ship(1)], now_sec=6.0 + tick * 0.5)
+
+    assert count_messages(sailbot, "warning", "omitted") == 1
+    assert tracked_ids(sailbot) == [1, 2]
+
+
+def test_changed_ais_omission_warns_again() -> None:
+    sailbot = make_sailbot_shell()
+    deliver_ais(sailbot, [make_ais_ship(1), make_ais_ship(2)], now_sec=0.0)
+
+    deliver_ais(sailbot, [make_ais_ship(1)], now_sec=6.0)
+    deliver_ais(sailbot, [make_ais_ship(1)], now_sec=6.5)
+    deliver_ais(sailbot, [], now_sec=15.0)
+    deliver_ais(sailbot, [], now_sec=15.5)
+
+    assert count_messages(sailbot, "warning", "omitted 1 tracked ship(s) [2]") == 1
+    assert count_messages(sailbot, "warning", "omitted 2 tracked ship(s) [1, 2]") == 1
+
+
+def test_recovered_ais_message_logs_once_and_rearms_the_warning() -> None:
+    sailbot = make_sailbot_shell()
+    deliver_ais(sailbot, [make_ais_ship(1), make_ais_ship(2)], now_sec=0.0)
+
+    deliver_ais(sailbot, [make_ais_ship(1)], now_sec=6.0)
+    deliver_ais(sailbot, [make_ais_ship(1), make_ais_ship(2)], now_sec=7.0)
+    deliver_ais(sailbot, [make_ais_ship(1), make_ais_ship(2)], now_sec=7.5)
+    deliver_ais(sailbot, [make_ais_ship(1)], now_sec=8.0)
+
+    assert count_messages(sailbot, "info", "carry every tracked ship again") == 1
+    assert count_messages(sailbot, "warning", "omitted") == 2
+
+
+def test_ships_timing_out_is_not_reported_as_ais_recovery() -> None:
+    """The omitted set shrinking because ships expired is not a recovery."""
+    sailbot = make_sailbot_shell()
+    deliver_ais(sailbot, [make_ais_ship(1)], now_sec=0.0)
+
+    deliver_ais(sailbot, [], now_sec=15.0)
+    # Ship 1 ages out of the map, so the next empty message omits nothing.
+    deliver_ais(sailbot, [], now_sec=AIS_SHIP_TIMEOUT_SEC + 1.0)
+    deliver_ais(sailbot, [], now_sec=AIS_SHIP_TIMEOUT_SEC + 2.0)
+
+    assert tracked_ids(sailbot) == []
+    assert count_messages(sailbot, "info", "carry every tracked ship again") == 0
+
+
+def test_tracked_ais_ship_expires_after_timeout() -> None:
+    sailbot = make_sailbot_shell()
+    deliver_ais(sailbot, [make_ais_ship(1), make_ais_ship(2)], now_sec=0.0)
+
+    deliver_ais(sailbot, [make_ais_ship(1)], now_sec=AIS_SHIP_TIMEOUT_SEC + 1.0)
+
+    assert tracked_ids(sailbot) == [1]
+    assert get_test_logger(sailbot).has_message("warning", "Dropping 1 AIS ship(s) [2]")
+
+
+def test_ais_refresh_resets_the_timeout() -> None:
+    sailbot = make_sailbot_shell()
+    deliver_ais(sailbot, [make_ais_ship(1)], now_sec=0.0)
+    deliver_ais(sailbot, [make_ais_ship(1)], now_sec=AIS_SHIP_TIMEOUT_SEC - 100.0)
+
+    # Well past the timeout measured from the first message, but not from the refresh.
+    deliver_ais(sailbot, [], now_sec=AIS_SHIP_TIMEOUT_SEC + 300.0)
+
+    assert tracked_ids(sailbot) == [1]
+
+
+def test_unavailable_sentinel_is_never_tracked() -> None:
+    sailbot = make_sailbot_shell()
+
+    deliver_ais(sailbot, list(AIS_SHIPS_UNAVAILABLE.ships), now_sec=0.0)
+
+    assert tracked_ids(sailbot) == []
+    assert sailbot._tracked_ais_ships == {}
+
+
+def test_expired_ais_snapshot_is_empty_rather_than_unavailable() -> None:
+    sailbot = make_sailbot_shell(gps_lat_lon=make_waypoint(49.0, -123.0))
+    deliver_ais(sailbot, [make_ais_ship(1)], now_sec=0.0)
+
+    deliver_ais(sailbot, [], now_sec=AIS_SHIP_TIMEOUT_SEC + 1.0)
+
+    # AIS is working and nothing is in range; sail must not be disabled for a missing input.
+    assert tracked_ids(sailbot) == []
+    sailbot.gp = GlobalPath(waypoints=list(make_path(49.0, -123.0).waypoints), index=2)
+    sailbot.filtered_wind_sensor = ci.WindSensor()
+    assert sailbot._all_subs_active()
+
+
+def test_tracked_ais_ships_expire_without_a_new_message(monkeypatch) -> None:
+    sailbot = make_sailbot_shell(gps_lat_lon=make_waypoint(49.0, -123.0))
+    deliver_ais(sailbot, [make_ais_ship(1)], now_sec=0.0)
+
+    now_sec = AIS_SHIP_TIMEOUT_SEC + 1.0
+    sailbot.gp = GlobalPath(waypoints=list(make_path(49.0, -123.0).waypoints), index=2)
+    sailbot.filtered_wind_sensor = None
+    sailbot.desired_heading = None
+    sailbot.gps_timeout_start_sec = now_sec
+    sailbot.heading_timeout_start_sec = now_sec
+    setattr(sailbot, "_now_sec", lambda: now_sec)
+    sailbot.desired_heading_pub = SimpleNamespace(
+        topic="desired_heading", publish=lambda _msg: None
+    )
+    monkeypatch.setattr(sailbot, "publish_local_path_data", lambda _sail: None)
+
+    sailbot.desired_heading_callback()
+
+    assert tracked_ids(sailbot) == []
+
+
+def make_local_path_state(ais_ships: ci.AISShips | None) -> lp.LocalPathState:
+    assert ais_ships is not None
+    global_path = make_path(49.0, -123.0)
+    return lp.LocalPathState(
+        gps=ci.GPS(
+            lat_lon=make_waypoint(49.28, -123.18),
+            speed=ci.HelperSpeed(speed=15.0),
+            heading=ci.HelperHeading(heading=180.0),
+        ),
+        heading=ci.HelperHeading(heading=180.0),
+        ais_ships=ais_ships,
+        global_path=global_path,
+        target_global_waypoint=global_path.waypoints[-1],
+        filtered_wind_sensor=ci.WindSensor(speed=ci.HelperSpeed(speed=5.0), direction=90),
+        wind_tracker=lp.WindTracker(),
+    )
+
+
+def refresh_state(state: lp.LocalPathState, ais_ships: ci.AISShips | None) -> None:
+    assert ais_ships is not None
+    state.update_state(
+        gps=ci.GPS(
+            lat_lon=state.position,
+            speed=ci.HelperSpeed(speed=state.speed),
+            heading=ci.HelperHeading(heading=state.heading),
+        ),
+        heading=ci.HelperHeading(heading=state.heading),
+        ais_ships=ais_ships,
+        filtered_wind_sensor=ci.WindSensor(speed=ci.HelperSpeed(speed=5.0), direction=90),
+    )
+    state.update_obstacles()
+
+
+def obstacle_boat_ids(state: lp.LocalPathState) -> list[int]:
+    return sorted(
+        obstacle.ais_ship.id for obstacle in state.obstacles if isinstance(obstacle, ob.Boat)
+    )
+
+
+def test_tracked_ais_ships_survive_partial_updates_end_to_end() -> None:
+    """Boats omitted by a partial AIS message stay in the planner's obstacle set.
+
+    Walks the whole consumer chain the bug broke: ais_ships_callback -> LocalPathState ->
+    update_obstacles, following the timings in test_plans/ais_partial_updates.yaml.
+    """
+    sailbot = make_sailbot_shell()
+    deliver_ais(
+        sailbot,
+        [make_ais_ship(1), make_ais_ship(2, latitude=49.25, longitude=-123.15)],
+        now_sec=0.0,
+    )
+
+    state = make_local_path_state(sailbot.ais_ships)
+    state.obstacles = ob.update_boat_obstacles(
+        obstacles=[],
+        reference=state.reference_latlon,
+        sailbot_position=state.position,
+        sailbot_speed=state.speed,
+        ais_ships=state.ais_ships,
+    )
+    assert obstacle_boat_ids(state) == [1, 2]
+
+    # t=6s: a message carrying only boat 1. Boat 2 must not vanish from collision detection.
+    deliver_ais(sailbot, [make_ais_ship(1, latitude=49.31)], now_sec=6.0)
+    refresh_state(state, sailbot.ais_ships)
+    assert obstacle_boat_ids(state) == [1, 2]
+
+    # t=15s: an empty message. Both boats must still be there.
+    deliver_ais(sailbot, [], now_sec=15.0)
+    refresh_state(state, sailbot.ais_ships)
+    assert obstacle_boat_ids(state) == [1, 2]
+
+    # Only the timeout removes them, and each boat ages from its own last refresh: boat 2 was
+    # last seen at t=0 while boat 1 was refreshed at t=6, so boat 2 goes first.
+    deliver_ais(sailbot, [], now_sec=AIS_SHIP_TIMEOUT_SEC + 1.0)
+    refresh_state(state, sailbot.ais_ships)
+    assert obstacle_boat_ids(state) == [1]
+
+    deliver_ais(sailbot, [], now_sec=AIS_SHIP_TIMEOUT_SEC + 100.0)
+    refresh_state(state, sailbot.ais_ships)
+    assert obstacle_boat_ids(state) == []

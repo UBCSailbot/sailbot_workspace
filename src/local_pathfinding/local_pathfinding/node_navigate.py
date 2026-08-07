@@ -5,6 +5,7 @@ import math
 import os
 import tempfile
 import traceback
+from dataclasses import dataclass
 
 import rclpy
 from rclpy.node import Node
@@ -25,6 +26,7 @@ from local_pathfinding.ompl_path import MAX_SOLVER_RUN_TIME_SEC
 
 GLOBAL_WAYPOINT_REACHED_THRESH_M = 300
 NAVIGATION_INPUT_TIMEOUT_SEC = 120.0
+AIS_SHIP_TIMEOUT_SEC = 600.0
 WAYPOINT_EQUAL_ABS_TOL_DEG = 1e-7
 NANOSEC_PER_SEC = 1_000_000_000
 MAIN_GP_FILE_PATH = "/workspaces/sailbot_workspace/src/local_pathfinding/local_pathfinding/global_path_storage/main_global_path.csv"  # noqa
@@ -74,6 +76,20 @@ local plan cannot silently skip ahead through the global path. The bridge flag i
 after a successful local-path update, or when the global path is exhausted and no retryable
 local-path update remains.
 """
+
+
+@dataclass(frozen=True)
+class TrackedAISShip:
+    """An AIS ship Sailbot is tracking, with the time its data was last refreshed.
+
+    An `ais_ships` message is a partial snapshot, not a statement about every vessel in range:
+    the CAN transceiver drops a whole batch whenever multi-frame reassembly fails. Sailbot
+    therefore keeps ships in a map keyed by MMSI and ages them out on `AIS_SHIP_TIMEOUT_SEC`,
+    so a degraded message updates what it carries instead of erasing what it omits.
+    """
+
+    ship: ci.HelperAISShip
+    last_seen_sec: float
 
 
 class GlobalPath:
@@ -223,6 +239,12 @@ class Sailbot(Node):
         )
 
         # attributes from subscribers
+        # ais_ships is derived from _tracked_ais_ships rather than assigned straight from the
+        # topic, so downstream consumers keep receiving a complete snapshot. It stays None until
+        # the first message arrives so _all_subs_active can tell "no AIS yet" apart from "AIS is
+        # working and nothing is in range".
+        self._tracked_ais_ships: dict[int, TrackedAISShip] = {}
+        self._last_omitted_ais_ids: set[int] = set()
         self.ais_ships: ci.AISShips | None = None
         self.gps: ci.GPS | None = None
         self.heading: ci.HelperHeading | None = None
@@ -463,8 +485,43 @@ class Sailbot(Node):
 
     # subscriber callbacks
     def ais_ships_callback(self, msg: ci.AISShips) -> None:
+        """Merge an AIS snapshot into the tracked ships instead of replacing them.
+
+        Ships carried by the message are refreshed, ships it omits are kept until they time out.
+        """
+
         self.get_logger().debug(f"Received data from {self.ais_ships_sub.topic}: {msg}")
-        self.ais_ships = msg
+
+        now_sec = self._now_sec()
+        tracked_before = set(self._tracked_ais_ships)
+
+        received_ids: set[int] = set()
+        for ship in msg.ships:
+            # 0 is not a valid MMSI; it is the AIS_SHIPS_UNAVAILABLE sentinel, so it must never
+            # be tracked as a real vessel.
+            if ship.id == 0:
+                continue
+            self._tracked_ais_ships[ship.id] = TrackedAISShip(ship=ship, last_seen_sec=now_sec)
+            received_ids.add(ship.id)
+
+        # A degraded transceiver republishes the same partial snapshot at the full AIS rate, so
+        # logging per message buries every other line. Log the transitions instead: one warning
+        # when the set of omitted ships changes, one recovery notice when it clears.
+        omitted_ids = tracked_before - received_ids
+        if omitted_ids != self._last_omitted_ais_ids:
+            if omitted_ids:
+                self.get_logger().warning(
+                    f"AIS message omitted {len(omitted_ids)} tracked ship(s) "
+                    f"{sorted(omitted_ids)}; retaining them until they go "
+                    f"{AIS_SHIP_TIMEOUT_SEC:.0f} seconds without a refresh"
+                )
+            elif received_ids:
+                # Distinguishes a real recovery from the omitted set merely shrinking as
+                # unrefreshed ships time out of the map.
+                self.get_logger().info("AIS messages carry every tracked ship again")
+            self._last_omitted_ais_ids = omitted_ids
+
+        self._rebuild_ais_snapshot(now_sec)
 
     def gps_callback(self, msg: ci.GPS) -> None:
         self.get_logger().debug(f"Received data from {self.gps_sub.topic}: {msg}")
@@ -528,6 +585,10 @@ class Sailbot(Node):
     # publisher callbacks
     def desired_heading_callback(self) -> None:
         """Get and publish the desired heading."""
+
+        # Ships also have to age out when AIS goes silent entirely and no callback fires.
+        if self.ais_ships is not None:
+            self._rebuild_ais_snapshot(self._now_sec())
 
         if self.gp is None:
             self._load_persisted_global_path()
@@ -818,6 +879,29 @@ class Sailbot(Node):
             and self.heading is not None
             and self.gp is not None
             and self.filtered_wind_sensor is not None
+        )
+
+    def _rebuild_ais_snapshot(self, now_sec: float) -> None:
+        """Expire stale tracked ships, then rebuild `ais_ships` from the ones that remain."""
+
+        expired_ids = [
+            ship_id
+            for ship_id, tracked in self._tracked_ais_ships.items()
+            if now_sec - tracked.last_seen_sec > AIS_SHIP_TIMEOUT_SEC
+        ]
+        for ship_id in expired_ids:
+            del self._tracked_ais_ships[ship_id]
+
+        if expired_ids:
+            self.get_logger().warning(
+                f"Dropping {len(expired_ids)} AIS ship(s) {sorted(expired_ids)} not refreshed in "
+                f"{AIS_SHIP_TIMEOUT_SEC:.0f} seconds"
+            )
+
+        # An empty snapshot is meaningful here: AIS is working and nothing is in range. Only a
+        # snapshot that was never built stays None.
+        self.ais_ships = ci.AISShips(
+            ships=[tracked.ship for tracked in self._tracked_ais_ships.values()]
         )
 
     def _timed_out_inputs(self) -> bool:
