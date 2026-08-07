@@ -1,3 +1,5 @@
+<!-- This file is written in unwrapped prose; long lines are intentional -->
+<!-- markdownlint-disable MD013 -->
 # aisstream-ingest.js
 
 Standalone worker that streams live AIS vessel traffic from [aisstream.io](https://aisstream.io) and writes periodic snapshots to MongoDB for the website map. Run from `src/website` with `node scripts/aisstream-ingest.js`. Requires `MONGODB_URI` and `AISSTREAM_API_KEY`; exits immediately if either is missing.
