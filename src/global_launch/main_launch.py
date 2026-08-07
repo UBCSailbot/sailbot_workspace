@@ -101,6 +101,15 @@ GLOBAL_LAUNCH_ARGUMENTS = [
         + "src/local_pathfinding/test_plans/on_water_mock_ais.yaml",
     ),
     DeclareLaunchArgument(
+        name="can_replay_heading_source",
+        default_value="",
+        choices=["", "main", "debug"],
+        description="Which CAN frame a replayed heading is taken from during mode:=can. 'main' use"
+        + " the log's own RUDDER_DATA_FRAME (0x050), 'debug' derives it from the rudder board's"
+        + " RUDDER_DEBUG frame (0x204) for logs recorded before the e-compass sent 0x050. Leave"
+        + " empty to use the value in the config file.",
+    ),
+    DeclareLaunchArgument(
         name="visualizer_mode",
         default_value="",
         choices=["", "true", "false"],

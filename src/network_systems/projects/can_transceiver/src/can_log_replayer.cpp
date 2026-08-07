@@ -275,6 +275,10 @@ std::vector<TimedFrame> CanLogReplayer::synthesizeHeadingFrames(std::vector<Time
     out.reserve(frames.size());
 
     for (const TimedFrame & timed_frame : frames) {
+        // the log's own e-compass headings are dropped, so /rudder is fed by one source only
+        if (timed_frame.frame.can_id == static_cast<canid_t>(CAN_FP::CanId::RUDDER_DATA_FRAME)) {
+            continue;
+        }
         out.push_back(timed_frame);
 
         if (timed_frame.frame.can_id != static_cast<canid_t>(CAN_FP::CanId::RUDDER_DEBUG)) {

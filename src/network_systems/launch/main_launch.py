@@ -161,10 +161,14 @@ def get_can_transceiver_description(context: LaunchContext) -> Node:
         Node: The node object that launches the can_transceiver_node.
     """
     node_name = CAN_TRANSCEIVER_NODE
-    ros_parameters = [
+    ros_parameters: list = [
         {"mode": LaunchConfiguration("mode")},
         *LaunchConfiguration("config").perform(context).split(","),
     ]
+    # Appended after the config files so that the launch argument overrides them when it is set
+    heading_source = LaunchConfiguration("can_replay_heading_source").perform(context).strip()
+    if heading_source:
+        ros_parameters.append({"can_replay_heading_source": heading_source})
     ros_arguments: List[SomeSubstitutionsType] = [
         "--log-level",
         [f"{node_name}:=", LaunchConfiguration("log_level")],

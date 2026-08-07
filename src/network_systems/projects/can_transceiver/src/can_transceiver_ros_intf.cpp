@@ -47,7 +47,7 @@ public:
         this->declare_parameter("can_replay_file", "");
         this->declare_parameter("can_replay_rate", 1.0);
         this->declare_parameter("can_replay_loop", false);
-        this->declare_parameter("can_replay_synthesize_heading", false);
+        this->declare_parameter("can_replay_heading_source", CAN_REPLAY::HEADING_SOURCE::MAIN);
 
         if (!this->get_parameter("enabled").as_bool()) {
             RCLCPP_INFO(this->get_logger(), "CAN Transceiver is DISABLED");
@@ -273,14 +273,21 @@ private:
             cfg.rate = this->get_parameter("can_replay_rate").as_double();  // <= 0 replays unpaced
             cfg.loop = this->get_parameter("can_replay_loop").as_bool();
 
-            if (this->get_parameter("can_replay_synthesize_heading").as_bool()) {
+            std::string heading_source = this->get_parameter("can_replay_heading_source").as_string();
+            if (heading_source == CAN_REPLAY::HEADING_SOURCE::DEBUG) {
+                // Logs predating the e-compass carry no RUDDER_DATA_FRAME, so derive one from RUDDER_DEBUG
                 size_t before = frames.size();
                 frames        = CAN_REPLAY::CanLogReplayer::synthesizeHeadingFrames(std::move(frames));
                 RCLCPP_WARN(
                   this->get_logger(),
-                  "Synthesized %zu RUDDER_DATA_FRAMEs from RUDDER_DEBUG (0x%X) frames. This heading comes from the "
-                  "rudder board's debug frame rather than the e-compass, so treat the published /rudder as replay only",
-                  frames.size() - before, static_cast<canid_t>(CAN_FP::CanId::RUDDER_DEBUG));
+                  "Replaying /rudder from RUDDER_DEBUG (0x%X): synthesized %zu RUDDER_DATA_FRAMEs and dropped the "
+                  "log's own e-compass headings, so treat the published /rudder as replay only",
+                  static_cast<canid_t>(CAN_FP::CanId::RUDDER_DEBUG), frames.size() - before);
+            } else if (heading_source != CAN_REPLAY::HEADING_SOURCE::MAIN) {
+                std::string msg = "Invalid can_replay_heading_source: " + heading_source + ". Must be '" +
+                                  CAN_REPLAY::HEADING_SOURCE::MAIN + "' or '" + CAN_REPLAY::HEADING_SOURCE::DEBUG + "'";
+                RCLCPP_ERROR(this->get_logger(), "%s", msg.c_str());
+                throw std::runtime_error(msg);
             }
 
             mock_can_bus_ = std::make_unique<MockCanBus>();

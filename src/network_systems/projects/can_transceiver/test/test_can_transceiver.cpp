@@ -1767,7 +1767,7 @@ TEST_F(TestCanLogReplayer, FilterAllowBlock)
 }
 
 /**
- * @brief Test the pacing delay computation for every pacing mode
+ * @brief Test the pacing delay computation across replay rates
  *
  */
 TEST_F(TestCanLogReplayer, DelayBefore)
@@ -1792,7 +1792,7 @@ TEST_F(TestCanLogReplayer, DelayBefore)
       {.t_s = OUT_OF_ORDER_T_S, .frame = {}},
       {.t_s = LONG_GAP_T_S, .frame = {}}};
 
-    CAN_REPLAY::ReplayConfig cfg;
+    CAN_REPLAY::ReplayConfig cfg;  // the default rate of 1.0 paces the replay in real time
 
     EXPECT_EQ(CanLogReplayer::delayBefore(frames, 0, cfg), nanoseconds{0});
     EXPECT_EQ(CanLogReplayer::delayBefore(frames, 1, cfg), milliseconds{100});
@@ -1859,7 +1859,7 @@ TEST_F(TestMockCanBus, ReplayReachesCallback)
 
     std::vector<CAN_REPLAY::TimedFrame> frames = CAN_REPLAY::CanLogReplayer::parseCsv(csv_path_);
     CAN_REPLAY::ReplayConfig            cfg;
-    cfg.mode = CAN_REPLAY::PacingMode::FAST;
+    cfg.rate = 0.0;  // unpaced, so the test does not wait out the log's real timing
     bus.startReplay(frames, cfg);
 
     ASSERT_TRUE(waitFor([&bus]() { return bus.replayDone(); }));
@@ -1960,9 +1960,8 @@ TEST_F(TestMockCanBus, LoopReplay)
     std::vector<CAN_REPLAY::TimedFrame> frames(
       2, {.t_s = 0.0, .frame = {.can_id = static_cast<canid_t>(CAN_FP::CanId::DATA_WIND), .len = 4}});
     CAN_REPLAY::ReplayConfig cfg;
-    cfg.mode   = CAN_REPLAY::PacingMode::FIXED_PERIOD;
-    cfg.period = std::chrono::milliseconds(1);
-    cfg.loop   = true;
+    cfg.rate = 0.0;  // unpaced, so the wrap around happens promptly
+    cfg.loop = true;
 
     bus.startReplay(frames, cfg);
 
@@ -1973,8 +1972,6 @@ TEST_F(TestMockCanBus, LoopReplay)
     EXPECT_FALSE(bus.replayDone());  // a looping replay is never "done", it can only be stopped
 }
 
-// The undocumented attitude frame is a CAN FD frame, so it is wider than HeadingSynthesis::SRC_MIN_DLEN
-constexpr uint8_t ATTITUDE_FRAME_DLEN = 16;
 // Tolerance for headings that round trip through the frame's centidegree encoding
 constexpr double HEADING_TOLERANCE = 0.01;
 
@@ -1993,9 +1990,9 @@ TEST_F(TestCanLogReplayer, SynthesizeHeadingFrames)
     constexpr double WIND_T_S     = 1.0;
     constexpr double ATTITUDE_T_S = 2.0;
 
-    CAN_FP::CanFrame attitude{.can_id = CAN_REPLAY::HeadingSynthesis::SRC_CAN_ID};
-    attitude.len = ATTITUDE_FRAME_DLEN;
-    std::memcpy(attitude.data + CAN_REPLAY::HeadingSynthesis::SRC_BYTE_OFF, &EXPECTED_CENTIDEG, sizeof(uint16_t));
+    CAN_FP::CanFrame attitude{.can_id = static_cast<canid_t>(CAN_FP::CanId::RUDDER_DEBUG)};
+    attitude.len = CAN_FP::RudderDebug::CAN_BYTE_DLEN_;
+    std::memcpy(attitude.data + CAN_FP::RudderDebug::BYTE_OFF_HEADING, &EXPECTED_CENTIDEG, sizeof(uint16_t));
 
     CAN_FP::CanFrame wind{.can_id = static_cast<canid_t>(CAN_FP::CanId::DATA_WIND)};
     wind.len = 4;
@@ -2007,7 +2004,7 @@ TEST_F(TestCanLogReplayer, SynthesizeHeadingFrames)
     // the wind frame is untouched and the attitude frame is kept, with the synthetic frame after it
     ASSERT_EQ(out.size(), 3);
     EXPECT_EQ(out[0].frame.can_id, static_cast<canid_t>(CAN_FP::CanId::DATA_WIND));
-    EXPECT_EQ(out[1].frame.can_id, CAN_REPLAY::HeadingSynthesis::SRC_CAN_ID);
+    EXPECT_EQ(out[1].frame.can_id, static_cast<canid_t>(CAN_FP::CanId::RUDDER_DEBUG));
     EXPECT_EQ(out[2].frame.can_id, static_cast<canid_t>(CAN_FP::CanId::RUDDER_DATA_FRAME));
 
     // the synthetic frame reuses its source's timestamp so the result stays chronological
@@ -2029,14 +2026,14 @@ TEST_F(TestCanLogReplayer, SynthesizeHeadingFrames)
 TEST_F(TestCanLogReplayer, SynthesizeHeadingFramesSkipsInvalid)
 {
     // A frame too short to hold the heading field must not produce a synthetic frame
-    CAN_FP::CanFrame short_frame{.can_id = CAN_REPLAY::HeadingSynthesis::SRC_CAN_ID};
+    CAN_FP::CanFrame short_frame{.can_id = static_cast<canid_t>(CAN_FP::CanId::RUDDER_DEBUG)};
     short_frame.len = 4;
 
-    // Nor may an out of range value, which RudderData would reject as out of bounds
-    constexpr uint16_t OUT_OF_RANGE = CAN_REPLAY::HeadingSynthesis::CENTIDEG_PER_REV;
-    CAN_FP::CanFrame   bad_heading{.can_id = CAN_REPLAY::HeadingSynthesis::SRC_CAN_ID};
-    bad_heading.len = ATTITUDE_FRAME_DLEN;
-    std::memcpy(bad_heading.data + CAN_REPLAY::HeadingSynthesis::SRC_BYTE_OFF, &OUT_OF_RANGE, sizeof(uint16_t));
+    // Nor may an out of range value, which RudderDebug rejects as carrying no heading
+    constexpr uint16_t OUT_OF_RANGE = CAN_FP::RudderDebug::CENTIDEG_PER_REV;
+    CAN_FP::CanFrame   bad_heading{.can_id = static_cast<canid_t>(CAN_FP::CanId::RUDDER_DEBUG)};
+    bad_heading.len = CAN_FP::RudderDebug::CAN_BYTE_DLEN_;
+    std::memcpy(bad_heading.data + CAN_FP::RudderDebug::BYTE_OFF_HEADING, &OUT_OF_RANGE, sizeof(uint16_t));
 
     // Log timestamps in seconds, with the malformed heading recorded after the short frame
     constexpr double SHORT_FRAME_T_S = 1.0;
@@ -2076,14 +2073,14 @@ TEST_F(TestMockCanBus, SynthesizedHeadingReachesRudderCallback)
           cb_count++;
       })));
 
-    CAN_FP::CanFrame attitude{.can_id = CAN_REPLAY::HeadingSynthesis::SRC_CAN_ID};
-    attitude.len = ATTITUDE_FRAME_DLEN;
-    std::memcpy(attitude.data + CAN_REPLAY::HeadingSynthesis::SRC_BYTE_OFF, &EXPECTED_CENTIDEG, sizeof(uint16_t));
+    CAN_FP::CanFrame attitude{.can_id = static_cast<canid_t>(CAN_FP::CanId::RUDDER_DEBUG)};
+    attitude.len = CAN_FP::RudderDebug::CAN_BYTE_DLEN_;
+    std::memcpy(attitude.data + CAN_FP::RudderDebug::BYTE_OFF_HEADING, &EXPECTED_CENTIDEG, sizeof(uint16_t));
 
     std::vector<CAN_REPLAY::TimedFrame> frames =
       CAN_REPLAY::CanLogReplayer::synthesizeHeadingFrames({{.t_s = 0.0, .frame = attitude}});
     CAN_REPLAY::ReplayConfig cfg;
-    cfg.mode = CAN_REPLAY::PacingMode::FAST;
+    cfg.rate = 0.0;  // unpaced, so the test does not wait out the log's real timing
     bus.startReplay(frames, cfg);
 
     ASSERT_TRUE(waitFor([&cb_count]() { return cb_count > 0; }));
@@ -2091,4 +2088,81 @@ TEST_F(TestMockCanBus, SynthesizedHeadingReachesRudderCallback)
     std::lock_guard<std::mutex> lock(frame_mtx);
     CAN_FP::RudderData          rudder(received);
     EXPECT_NEAR(rudder.toRosMsg().heading, EXPECTED_HEADING - HEADING_UBND, HEADING_TOLERANCE);  // bounds to 180
+}
+
+/**
+ * @brief Test that RudderDebug decodes every documented field of the 0x204 frame, and rejects
+ *        frames it cannot decode
+ *
+ */
+TEST_F(TestCanFrameParser, RudderDebugTestDecode)
+{
+    // Raw field values as the rudder board encodes them, chosen to span the ranges seen in real logs
+    constexpr std::array<uint16_t, 8> RAW{7766, 18550, 17675, 14362, 12000, 29860, 59447, 13889};
+    constexpr float                   TOLERANCE = 0.001F;
+
+    CAN_FP::CanFrame cf{.can_id = static_cast<canid_t>(CAN_FP::CanId::RUDDER_DEBUG)};
+    cf.len = CAN_FP::RudderDebug::CAN_BYTE_DLEN_;
+    std::memcpy(cf.data, RAW.data(), sizeof(RAW));
+
+    CAN_FP::RudderDebug debug(cf);
+
+    EXPECT_EQ(debug.id_, CAN_FP::CanId::RUDDER_DEBUG);
+    EXPECT_NEAR(debug.getActualRudderAngle(), -12.34F, TOLERANCE);
+    EXPECT_NEAR(debug.getRoll(), 5.5F, TOLERANCE);
+    EXPECT_NEAR(debug.getPitch(), -3.25F, TOLERANCE);
+    EXPECT_NEAR(debug.getHeading(), 143.62F, TOLERANCE);
+    EXPECT_NEAR(debug.getCommandedRudderAngle(), 30.0F, TOLERANCE);
+    EXPECT_EQ(debug.getIntegralTerm(), -140);
+    EXPECT_EQ(debug.getDerivativeTerm(), 29447);
+    EXPECT_NEAR(debug.getSpeedOverGround(), 13.889F, TOLERANCE);
+    EXPECT_NEAR(debug.toRosMsg().heading, 143.62F, TOLERANCE);
+
+    CAN_FP::CanFrame wrong_id{.can_id = static_cast<canid_t>(CAN_FP::CanId::RUDDER_DATA_FRAME)};
+    wrong_id.len = CAN_FP::RudderDebug::CAN_BYTE_DLEN_;
+    EXPECT_THROW(CAN_FP::RudderDebug tmp(wrong_id), CAN_FP::CanIdMismatchException);
+
+    CAN_FP::CanFrame truncated = cf;
+    truncated.len              = CAN_FP::RudderDebug::CAN_BYTE_DLEN_ - 1;
+    EXPECT_THROW(CAN_FP::RudderDebug tmp(truncated), std::length_error);
+
+    // The board sends an out of revolution value when it has no heading to report this cycle
+    CAN_FP::CanFrame   no_heading          = cf;
+    constexpr uint16_t NO_HEADING_SENTINEL = CAN_FP::RudderDebug::CENTIDEG_PER_REV;
+    std::memcpy(no_heading.data + CAN_FP::RudderDebug::BYTE_OFF_HEADING, &NO_HEADING_SENTINEL, sizeof(uint16_t));
+    EXPECT_THROW(CAN_FP::RudderDebug tmp(no_heading), std::out_of_range);
+}
+
+/**
+ * @brief Test that selecting the debug heading source replaces the log's own e-compass headings,
+ *        so that /rudder is fed by one source rather than two competing ones
+ *
+ */
+TEST_F(TestCanLogReplayer, SynthesizeHeadingFramesReplacesRealHeadings)
+{
+    constexpr uint16_t CENTIDEG      = 14362;
+    constexpr double   REAL_T_S      = 1.0;
+    constexpr double   DEBUG_T_S     = 2.0;
+    constexpr float    EXPECTED_HDG  = 143.62F;
+
+    CAN_FP::CanFrame rudder_debug{.can_id = static_cast<canid_t>(CAN_FP::CanId::RUDDER_DEBUG)};
+    rudder_debug.len = CAN_FP::RudderDebug::CAN_BYTE_DLEN_;
+    std::memcpy(rudder_debug.data + CAN_FP::RudderDebug::BYTE_OFF_HEADING, &CENTIDEG, sizeof(uint16_t));
+
+    CAN_FP::CanFrame real_heading{.can_id = static_cast<canid_t>(CAN_FP::CanId::RUDDER_DATA_FRAME)};
+    real_heading.len = CAN_FP::RudderData::CAN_BYTE_DLEN_;
+
+    std::vector<CAN_REPLAY::TimedFrame> frames{
+      {.t_s = REAL_T_S, .frame = real_heading}, {.t_s = DEBUG_T_S, .frame = rudder_debug}};
+
+    std::vector<CAN_REPLAY::TimedFrame> out = CAN_REPLAY::CanLogReplayer::synthesizeHeadingFrames(frames);
+
+    // the log's own heading is dropped, leaving the RUDDER_DEBUG frame and the one derived from it
+    ASSERT_EQ(out.size(), 2);
+    EXPECT_EQ(out[0].frame.can_id, static_cast<canid_t>(CAN_FP::CanId::RUDDER_DEBUG));
+    EXPECT_EQ(out[1].frame.can_id, static_cast<canid_t>(CAN_FP::CanId::RUDDER_DATA_FRAME));
+    EXPECT_DOUBLE_EQ(out[1].t_s, DEBUG_T_S);
+
+    CAN_FP::RudderData rudder(out[1].frame);
+    EXPECT_NEAR(rudder.toRosMsg().heading, EXPECTED_HDG, HEADING_TOLERANCE);
 }
