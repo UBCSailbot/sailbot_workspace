@@ -101,6 +101,7 @@ enum class CanId : canid_t {
     MAIN_HEARTBEAT        = 0x134,
     HEARTBEAT_END         = 0x134,
     DEBUG_START           = 0x200,
+    RUDDER_DEBUG          = 0x204,
     DEBUG_END             = 0x2FF
 };
 
@@ -194,7 +195,8 @@ static const std::map<CanId, std::string> CAN_DESC{
   {CanId::RUDR_HEARTBEAT, "RUDR_HEARTBEAT (RUDR heartbeat)"},
   {CanId::SAIL_HEARTBEAT, "SAIL_HEARTBEAT (SAIL heartbeat)"},
   {CanId::SENSE_HEARTBEAT, "SENSE_HEARTBEAT (SENSE board heartbeat)"},
-  {CanId::MAIN_HEARTBEAT, "MAIN_HEARTBEAT (MAINFRAME heartbeat)"}};
+  {CanId::MAIN_HEARTBEAT, "MAIN_HEARTBEAT (MAINFRAME heartbeat)"},
+  {CanId::RUDDER_DEBUG, "RUDDER_DEBUG (ELEC debug attitude frame carrying the e-compass heading)"}};
 
 /**
  * @brief Custom exception for when an attempt is made to construct a CAN object with a mismatched ID
@@ -961,6 +963,101 @@ private:
     void checkBounds() const;
 
     float heading_;
+};
+
+/**
+ * @brief A Rudder Debug class derived from the BaseFrame. Represents the RUDDER_DEBUG (0x204) frame
+ *        the rudder board sends to mainframe. Per the CAN frames spec, eight little endian uint16
+ *        fields: rudder angle, roll, pitch, heading, commanded rudder angle, the controller integral
+ *        and derivative terms, and speed over ground. Roll, pitch, and the controller terms have no
+ *        defined bounds, so they are decoded and exposed as is rather than range checked.
+ */
+class RudderDebug final : public BaseFrame
+{
+public:
+    static constexpr std::array<CanId, 1> RUDDER_DEBUG_IDS = {CanId::RUDDER_DEBUG};
+    static constexpr uint8_t              CAN_BYTE_DLEN_   = 16;
+
+    static constexpr uint8_t BYTE_OFF_RUDDER_ACTUAL = 0;
+    static constexpr uint8_t BYTE_OFF_ROLL          = 2;
+    static constexpr uint8_t BYTE_OFF_PITCH         = 4;
+    static constexpr uint8_t BYTE_OFF_HEADING       = 6;
+    static constexpr uint8_t BYTE_OFF_RUDDER_CMD    = 8;
+    static constexpr uint8_t BYTE_OFF_INTEGRAL      = 10;
+    static constexpr uint8_t BYTE_OFF_DERIVATIVE    = 12;
+    static constexpr uint8_t BYTE_OFF_SOG           = 14;
+
+    // Encodings the rudder board applies before sending, undone on decode
+    static constexpr uint16_t CENTIDEG_PER_REV      = 36000;    // a heading at or above this is not a heading
+    static constexpr float    CENTIDEG_PER_DEG      = 100.0F;   // every angle field is sent in centidegrees
+    static constexpr float    RUDDER_ANGLE_OFFSET   = 90.0F;    // rudder angles are sent as angle + 90
+    static constexpr float    ATTITUDE_ANGLE_OFFSET = 180.0F;   // roll and pitch are sent as angle + 180
+    static constexpr int32_t  PID_TERM_OFFSET       = 30000;    // controller terms are sent as term + 30000
+    static constexpr float    SOG_SCALE             = 1000.0F;  // speed over ground is sent as km/h * 1000
+
+    /**
+     * @brief Explicitly deleted no-argument constructor
+     *
+     */
+    RudderDebug() = delete;
+
+    /**
+     * @brief Construct a RudderDebug object from a Linux CanFrame representation
+     *
+     * @param cf Linux CanFrame
+     * @throws CanIdMismatchException if cf is not a RUDDER_DEBUG frame
+     * @throws std::length_error      if cf is too short to hold the documented fields
+     * @throws std::out_of_range      if the frame carries no heading this cycle, or a field is out of bounds
+     */
+    explicit RudderDebug(const CanFrame & cf);
+
+    /**
+     * @return the custom_interfaces ROS representation of the frame's IMU heading
+     */
+    msg::HelperHeading toRosMsg() const;
+
+    /**
+     * @return A string that can be printed or logged to debug a RudderDebug object
+     */
+    std::string debugStr() const override;
+
+    /**
+     * @brief A string representation of the RudderDebug object
+     *
+     */
+    std::string toString() const override;
+
+    float   getHeading() const { return heading_; }                  // degrees, [0, 360), 0 is north, increasing CW
+    float   getActualRudderAngle() const { return rudder_actual_; }  // degrees, positive steers right
+    float   getCommandedRudderAngle() const { return rudder_cmd_; }  // degrees, positive steers right
+    float   getRoll() const { return roll_; }                        // degrees, positive tips to starboard
+    float   getPitch() const { return pitch_; }                      // degrees, positive pitches down
+    int32_t getIntegralTerm() const { return integral_; }
+    int32_t getDerivativeTerm() const { return derivative_; }
+    float   getSpeedOverGround() const { return sog_; }  // km/h
+
+private:
+    /**
+     * @brief Private helper constructor for RudderDebug objects
+     *
+     * @param id CanId of the RudderDebug frame
+     */
+    explicit RudderDebug(CanId id);
+
+    /**
+     * @brief Check if the assigned fields after constructing a RudderDebug object are within bounds.
+     * @throws std::out_of_range if any assigned fields are outside of expected bounds
+     */
+    void checkBounds() const;
+
+    float   heading_;
+    float   rudder_actual_;
+    float   rudder_cmd_;
+    float   roll_;
+    float   pitch_;
+    int32_t integral_;
+    int32_t derivative_;
+    float   sog_;
 };
 
 /**

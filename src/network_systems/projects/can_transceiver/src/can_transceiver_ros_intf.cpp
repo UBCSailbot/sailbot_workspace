@@ -278,9 +278,9 @@ private:
                 frames        = CAN_REPLAY::CanLogReplayer::synthesizeHeadingFrames(std::move(frames));
                 RCLCPP_WARN(
                   this->get_logger(),
-                  "Synthesized %zu RUDDER_DATA_FRAMEs from 0x%X attitude frames. This heading decode is inferred "
-                  "from log analysis, not confirmed by firmware - treat the published /rudder data as simulated",
-                  frames.size() - before, CAN_REPLAY::HeadingSynthesis::SRC_CAN_ID);
+                  "Synthesized %zu RUDDER_DATA_FRAMEs from RUDDER_DEBUG (0x%X) frames. This heading comes from the "
+                  "rudder board's debug frame rather than the e-compass, so treat the published /rudder as replay only",
+                  frames.size() - before, static_cast<canid_t>(CAN_FP::CanId::RUDDER_DEBUG));
             }
 
             mock_can_bus_ = std::make_unique<MockCanBus>();

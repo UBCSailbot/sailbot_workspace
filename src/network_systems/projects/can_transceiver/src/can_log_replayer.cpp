@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstdio>
-#include <cstring>
 #include <ctime>
 #include <fstream>
 #include <iostream>
@@ -278,25 +277,19 @@ std::vector<TimedFrame> CanLogReplayer::synthesizeHeadingFrames(std::vector<Time
     for (const TimedFrame & timed_frame : frames) {
         out.push_back(timed_frame);
 
-        const CAN_FP::CanFrame & src = timed_frame.frame;
-        if (src.can_id != HeadingSynthesis::SRC_CAN_ID || src.len < HeadingSynthesis::SRC_MIN_DLEN) {
+        if (timed_frame.frame.can_id != static_cast<canid_t>(CAN_FP::CanId::RUDDER_DEBUG)) {
             continue;
         }
 
-        uint16_t centideg;
-        std::memcpy(&centideg, src.data + HeadingSynthesis::SRC_BYTE_OFF, sizeof(uint16_t));
-        if (centideg >= HeadingSynthesis::CENTIDEG_PER_REV) {
-            continue;  // not a heading this cycle, so there is nothing to publish
+        try {
+            CAN_FP::RudderDebug debug(timed_frame.frame);
+            CAN_FP::RudderData  rudder(debug.toRosMsg(), CAN_FP::CanId::RUDDER_DATA_FRAME);
+            out.push_back({timed_frame.t_s, rudder.toLinuxCan()});
+        } catch (const std::exception &) {
+            // a frame that is truncated, carries no heading this cycle, or holds out of bounds
+            // state has nothing to publish, so leave it as a source frame only
+            continue;
         }
-
-        uint32_t raw_heading = static_cast<uint32_t>(centideg) * HeadingSynthesis::SRC_TO_RUDDER_SCALE;
-
-        CAN_FP::CanFrame rudder{};
-        rudder.can_id = static_cast<canid_t>(CAN_FP::CanId::RUDDER_DATA_FRAME);
-        rudder.len    = CAN_FP::RudderData::CAN_BYTE_DLEN_;
-        std::memcpy(rudder.data + CAN_FP::RudderData::BYTE_OFF_HEADING, &raw_heading, sizeof(uint32_t));
-
-        out.push_back({timed_frame.t_s, rudder});
     }
     return out;
 }
