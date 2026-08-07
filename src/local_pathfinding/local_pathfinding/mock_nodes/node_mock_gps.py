@@ -66,6 +66,7 @@ class MockGPS(Node):
         self._tw_dir_deg = test_plan.tw_dir_deg
         self._mean_speed_kmph = ci.HelperSpeed(speed=gps_data.speed.speed)
         self._heading_deg = ci.HelperHeading(heading=heading_data.heading)
+        self._publish_heading = True
         self._current_location = ci.HelperLatLon(
             latitude=gps_data.lat_lon.latitude, longitude=gps_data.lat_lon.longitude
         )
@@ -187,6 +188,8 @@ class MockGPS(Node):
             self._apply_gps_event(event)
 
     def _apply_gps_event(self, event: GpsEvent) -> None:
+        if event.publish_heading is not None:
+            self._publish_heading = event.publish_heading
         if event.use_gps_noise is not None:
             self._use_noise = event.use_gps_noise
         if event.use_ocean_drift is not None:
@@ -249,10 +252,11 @@ class MockGPS(Node):
             f"Publishing to {self._gps_pub.topic}, longitude: {msg.lat_lon.longitude}"
         )
         self._gps_pub.publish(msg)
-        self.get_logger().debug(
-            f"Publishing to {self._heading_pub.topic}, heading: {self._heading_deg.heading}"
-        )
-        self._heading_pub.publish(self._heading_deg)
+        if self._publish_heading:
+            self.get_logger().debug(
+                f"Publishing to {self._heading_pub.topic}, heading: {self._heading_deg.heading}"
+            )
+            self._heading_pub.publish(self._heading_deg)
 
     def _on_set_parameters(self, params: List[Parameter]) -> SetParametersResult:
         """This callback function serves as a guard to ensure values entered with `ros2 param set`

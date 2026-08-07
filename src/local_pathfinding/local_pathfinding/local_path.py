@@ -14,6 +14,7 @@ from shapely.geometry import LineString, MultiPolygon
 import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.obstacles as ob
+from local_pathfinding.constants import HEADING_UNAVAILABLE
 from local_pathfinding.ompl_path import OMPLPath
 from local_pathfinding.wind_coord_systems import (
     Wind,
@@ -219,6 +220,8 @@ class LocalPathState:
             raise ValueError("gps must not be None")
         if not heading:
             raise ValueError("heading must not be None")
+        if heading.heading == HEADING_UNAVAILABLE:
+            raise ValueError("heading is unavailable")
         self.position = gps.lat_lon
         self.speed = gps.speed.speed
         self.heading = heading.heading
@@ -635,6 +638,8 @@ class LocalPath:
             raise PathNotFoundError("filtered_wind_sensor is None")
         if inputs.heading is None:
             raise PathNotFoundError("heading is None")
+        if inputs.heading.heading == HEADING_UNAVAILABLE:
+            raise PathNotFoundError("heading is unavailable")
 
         # Convert apparent wind to true wind
         new_aw = Wind(

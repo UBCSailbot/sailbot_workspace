@@ -13,7 +13,7 @@ in GitHub Actions on a native arm64 runner (~6 min), which is faster and more
 reliable than building locally.
 
 Path D interacts with the existing `.devcontainer` on the Pi and involves
-`running scripts/build.sh`(~13 minutes). 
+`running scripts/build.sh`(~13 minutes).
 
 > **Build on arm64, not under emulation.** The release image is `linux/arm64`.
 > Building it on an `amd64` machine uses QEMU emulation, which is ~5× slower
@@ -230,3 +230,8 @@ docker cp <name>:/workspaces/sailbot_workspace/src/global_launch/voyage_log ./vo
 docker cp <name>:/workspaces/sailbot_workspace/notebooks/local_pathfinding/session_recording ./session_recording
 ```
 <!-- markdownlint-enable MD013 -->
+
+These files are one half of an on-water test's data; the other half is the CAN
+dumps captured by the GUI. For what to do with them next — merging and decoding
+the CAN dumps, then archiving everything in `OWT-data` and Google Drive — see
+[Archiving On-Water Test Data](../../docs/current/sailbot_workspace/reference/owt_data.md).
