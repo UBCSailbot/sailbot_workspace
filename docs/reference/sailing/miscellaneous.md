@@ -89,8 +89,9 @@ conventions are.
 
 ## True, Apparent, and Boat Wind
 
-- *True Wind* is the airflow vector (speed and flow-toward direction) which you would measure
-  while standing on land (or motionless at sea with unchanging GPS
+- *True Wind* is the airflow vector (speed and flow-toward direction) which
+  you would measure while standing on land (or motionless at sea with
+  unchanging GPS
   co-ordinates). In sailbot code, this may be referred to as ***Global
   Wind***. When people refer to "the wind", they normally mean True Wind.
 - *Boat Wind* is the airflow vector which you would measure while standing on a
