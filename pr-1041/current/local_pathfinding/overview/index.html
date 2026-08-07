@@ -2886,12 +2886,18 @@ plan manually:</p>
 </code></pre></div>
 <p><code>heading_deg</code> follows the same <code>(-180°, 180°]</code> convention as the <code>rudder</code> topic. Development mode
 publishes this value on <code>rudder</code> through the local mock GPS node.</p>
+<p>For heading-loss scenarios, a <code>mock_gps</code> event can disable the separate <code>rudder</code> publication while
+GPS publication continues:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">events</span><span class="p">:</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">mock_gps</span><span class="p">:</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">timestamp</span><span class="p">:</span><span class="w"> </span><span class="nv">15.0</span><span class="p p-Indicator">,</span><span class="nt"> publish_heading</span><span class="p">:</span><span class="w"> </span><span class="nv">false</span><span class="p p-Indicator">}</span>
+</code></pre></div>
 <p>To run test plans sequentially, build and source the workspace, then use the
 installed <code>run_test_plans</code> console script:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>./scripts/build.sh<span class="w"> </span>-p<span class="w"> </span>local_pathfinding
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nb">source</span><span class="w"> </span>install/local_setup.bash
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>ros2<span class="w"> </span>run<span class="w"> </span>local_pathfinding<span class="w"> </span>run_test_plans<span class="w"> </span>--list
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>ros2<span class="w"> </span>run<span class="w"> </span>local_pathfinding<span class="w"> </span>run_test_plans<span class="w"> </span>--tests<span class="w"> </span>basic.yaml<span class="w"> </span>--num_tests<span class="w"> </span><span class="m">1</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>./scripts/build.sh<span class="w"> </span>-p<span class="w"> </span>local_pathfinding
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nb">source</span><span class="w"> </span>install/local_setup.bash
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>ros2<span class="w"> </span>run<span class="w"> </span>local_pathfinding<span class="w"> </span>run_test_plans<span class="w"> </span>--list
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>ros2<span class="w"> </span>run<span class="w"> </span>local_pathfinding<span class="w"> </span>run_test_plans<span class="w"> </span>--tests<span class="w"> </span>basic.yaml<span class="w"> </span>--num_tests<span class="w"> </span><span class="m">1</span>
 </code></pre></div>
 <p><code>--tests</code> accepts test plan names or list numbers from <code>--list</code>. If
 <code>--num_tests</code> is larger than the explicitly selected plans, the runner fills the
@@ -2899,12 +2905,12 @@ remaining slots randomly; use <code>--seed</code> for repeatable random selectio
 <p>By default, run outputs are written under
 <code>notebooks/local_pathfinding/session_recordings/test_plans_results/</code> in this
 layout:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>&lt;save_path&gt;/&lt;date_batch&gt;/
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>  summary.json
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>  &lt;test_plan_name&gt;/
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    result.json
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    launch.log
-<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    &lt;rosbag recording files&gt;
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>&lt;save_path&gt;/&lt;date_batch&gt;/
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>  summary.json
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>  &lt;test_plan_name&gt;/
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    result.json
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    launch.log
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    &lt;rosbag recording files&gt;
 </code></pre></div>
 <p><code>summary.json</code> summarizes the whole batch. Each test plan directory uses the
 YAML filename without the <code>.yaml</code> extension and always keeps its <code>launch.log</code>.</p>
