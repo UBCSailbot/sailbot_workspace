@@ -6,7 +6,7 @@ it to the onboard Raspberry Pi. There are four build paths:
 - **Path A — CI build + tar transfer** (recommended; Pi offline)
 - **Path B — CI build + registry pull** (Pi has internet; takes a long time to build)
 - **Path C — local build + tar transfer** (fallback; requires native arm64 preferably)
-- **Path D —  local build on `.devcontainer` with through Git Pull (fallback during testing; Pi offline)
+- **Path D — local build on `.devcontainer`** (fallback during testing; Pi offline)
 
 Paths A, B, and C produce the same `linux/arm64` release image. Paths A and B
 build it in GitHub Actions on a native arm64 runner (~6 min), which is faster and
@@ -15,8 +15,8 @@ more reliable than building locally.
 Path D interacts with the existing `.devcontainer` on the Pi and involves
 running `scripts/build.sh` (~13 minutes).
 
-If you only need to move **code changes** and not a whole new image, skip the
-build paths entirely — see
+If you only need to move **code changes** into the container already running on
+the Pi, skip the build paths entirely and use `git bundle` — see
 [Updating source without internet](#updating-source-without-internet-pi-offline).
 
 > **Build on arm64, not under emulation.** The release image is `linux/arm64`.
@@ -166,7 +166,7 @@ This has no resume, so prefer the `rsync -aP` route on an unreliable link.
 
 ---
 
-## Path D — local build on `.devcontainer` with through Git Pull (fallback)
+## Path D — local build on `.devcontainer` (fallback)
 
 Requires an SSH connection to the Pi. The dev container is named `owt-dev`.
 
@@ -186,62 +186,62 @@ git pull # only works if the Pi has internet — otherwise see the section below
 
 ---
 
-## Updating source without internet (Pi offline) through Git Pull
+## Updating source without internet (Pi offline)
 
 The Pi reaches the boat's private WiFi for SSH, but that network has no route to
-GitHub, so `git pull` on the Pi fails. Git doesn't need the internet, though —
-only a route to a machine holding the objects, and your laptop is that machine.
-SSH over the PAN is a perfectly good transport.
+GitHub, so `git pull` inside the container fails. Git doesn't need the internet,
+though — only a route to the objects, and your laptop has them.
+
+**Use `git bundle`.** The repo we need to update lives *inside* the running
+container, and a bundle is the only approach that crosses that boundary:
+
+- `git push` / `git pull` need a live endpoint. The container runs with
+  `--network host`, so port 22 on the Pi is the *host's* sshd — there's no
+  separate SSH server inside the container to push to.
+- The container filesystem isn't visible from the Pi host, so a plain path
+  remote doesn't reach it either.
+- A bundle is a single **file**, and `docker cp` moves files across the
+  container boundary. That's the whole trick.
 
 Use this when only **code** changed. If the image itself changed (new apt/ROS
-dependencies, Dockerfile edits), you need a full rebuild via Paths A–C. Code
-baked into the release image can't be patched this way; this updates the repo
-checked out on the Pi host at `~/sailbot_workspace`, which is what Path D's dev
-container uses.
+dependencies, Dockerfile edits), you need a full rebuild via Paths A–C.
 
-### Option 1 — push from laptop to Pi (usually easiest)
-
-A normal repo refuses pushes to its checked-out branch. Set this once **on the
-Pi**:
-
-```bash
-git -C ~/sailbot_workspace config receive.denyCurrentBranch updateInstead
-```
-
-Then from your laptop:
-
-```bash
-git remote add pi ssh://sailbot@192.168.0.10/home/sailbot/sailbot_workspace
-git push pi HEAD:main
-```
-
-`updateInstead` also updates the Pi's working tree, but only if it's clean —
-commit or stash anything on the Pi first. If you'd rather not set that config,
-push to a scratch branch instead (`git push pi main:incoming`) and merge it on
-the Pi.
-
-### Option 2 — `git bundle` (also survives a USB stick)
-
-A bundle is the same bytes `git push` would have sent, frozen into one file.
-Git treats it as a read-only remote.
-
-On your laptop:
+### 1. Create the bundle (laptop)
 
 ```bash
 # Full bundle — works even into an empty repo
 git bundle create polaris.bundle --branches --tags
 
-# Or incremental: only what the Pi doesn't already have
-BASE=$(ssh sailbot@192.168.0.10 'git -C ~/sailbot_workspace rev-parse HEAD')
+# Or incremental: only what the container doesn't already have.
+# Get BASE by running `git rev-parse HEAD` inside the container first.
 git bundle create polaris.bundle main ^$BASE
-
-rsync -aP polaris.bundle sailbot@192.168.0.10:/home/sailbot/sailbot_workspace/
 ```
 
-On the Pi:
+An incremental bundle is typically kilobytes rather than tens of megabytes, so
+prefer it for repeat trips. It's a snapshot — commit again and you regenerate.
+
+### 2. Move it to the Pi, then into the container
 
 ```bash
-cd ~/sailbot_workspace
+# laptop → Pi host
+rsync -aP polaris.bundle sailbot@192.168.0.10:/home/sailbot/
+
+# Pi host → container
+docker cp /home/sailbot/polaris.bundle <name>:/workspaces/sailbot_workspace/
+```
+
+`docker cp` writes as root. If the container runs as a non-root user, fix
+ownership before running git:
+
+```bash
+docker exec -u root <name> chown ros:ros /workspaces/sailbot_workspace/polaris.bundle
+```
+
+### 3. Apply it (inside the container)
+
+```bash
+docker exec -it <name> bash
+cd /workspaces/sailbot_workspace
 git bundle verify ./polaris.bundle
 git status                        # confirm clean
 git pull ./polaris.bundle main
@@ -255,8 +255,15 @@ git log --oneline main..bundle/main
 git merge bundle/main             # or: git reset --hard bundle/main
 ```
 
-An incremental bundle is typically kilobytes rather than tens of megabytes, so
-prefer it for repeat trips. It's a snapshot — commit again and you regenerate.
+Rebuild the workspace afterwards if you touched anything compiled
+(C++ nodes, message definitions) — the container is still running the binaries
+from the image until you do.
+
+> **This patch is not durable.** `docker rm -f <name>` during a redeploy destroys
+> the container and everything you pulled into it. Treat in-container bundle
+> updates as on-the-dock hotfixes: push the same commits to GitHub and fold them
+> into the next tagged release, or the fix disappears the next time someone
+> follows Path A.
 
 ### Gotchas
 
@@ -266,8 +273,10 @@ prefer it for repeat trips. It's a snapshot — commit again and you regenerate.
 | --- | --- |
 | `does not appear to be a git repository` | Git couldn't read a bundle at that path, so it fell back to treating it as a repo directory. Check `ls -l` and that `head -c 16` shows `# v2 git bundle`. Always pass an explicit path (`./polaris.bundle`), never a bare filename. |
 | `refusing to fetch into branch 'refs/heads/main' checked out at ...` | You can't fetch directly onto the checked-out branch. Use `git pull`, or fetch into `refs/remotes/bundle/main` and merge. |
-| Later "dubious ownership" or permission errors | Someone ran `sudo git`, leaving root-owned objects in `.git`. Never `sudo git` here. Repair with `sudo chown -R sailbot:sailbot ~/sailbot_workspace`. |
+| Later "dubious ownership" or permission errors | Someone ran `sudo git`, leaving root-owned objects in `.git`, or `docker cp` dropped a root-owned bundle in. Never `sudo git`. Repair with `chown -R` as the container's own user. |
 | Bundle contains the wrong commits | Your laptop's local `main` had drifted from `origin/main`. Check `git bundle verify` output — if they differ, bundle `refs/remotes/origin/main` instead. Always fetch from GitHub *before* leaving the internet. |
+| Update vanished after redeploy | Expected — `docker rm -f` destroys the container's filesystem. The commits must also reach GitHub and the next release image. |
+| Code updated but behaviour unchanged | Compiled artifacts still come from the image. Rebuild inside the container. |
 | Interrupted transfer | Use `rsync -aP` (resumable) rather than `scp`. |
 
 <!-- markdownlint-enable MD013 -->
