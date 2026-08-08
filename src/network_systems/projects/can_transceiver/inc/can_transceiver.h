@@ -63,6 +63,9 @@ private:
     int sock_desc_;
     // flag to indicate whether the connected CAN socket is a simulated socket or a real socket
     bool is_can_simulated_;
+    // flag to indicate whether a simulated fd is a socket (ex. a MockCanBus socketpair end) rather than a
+    // regular file (ex. from mockCanFd()); only file-backed simulation needs the seek offset maintained
+    bool sim_fd_is_socket_ = false;
     // Mutex to protect the CAN port from simultaneous reads and writes
     // mutable keyword required for std::lock_guard
     mutable std::mutex can_mtx_;

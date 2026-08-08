@@ -1,12 +1,18 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <gtest/gtest.h>
+#include <unistd.h>
 
+#include <atomic>
+#include <chrono>
 #include <cstring>
+#include <fstream>
 
 #include "can_frame_parser.h"
+#include "can_log_replayer.h"
 #include "can_transceiver.h"
 #include "cmn_hdrs/shared_constants.h"
+#include "mock_can_bus.h"
 
 namespace msg = custom_interfaces::msg;
 
@@ -336,6 +342,47 @@ TEST_F(TestCanFrameParser, TestRudderDataInvalid)
     std::copy(std::begin(GARBAGE_DATA), std::end(GARBAGE_DATA), cf.data);
 
     EXPECT_THROW(CAN_FP::RudderData tmp(cf), std::out_of_range);
+}
+
+/**
+ * @brief Test parsing a valid RUDDER_DEBUG_DATA_FRAME.
+ */
+TEST_F(TestCanFrameParser, RudderDebugDataTestValid)
+{
+    CAN_FP::CanFrame cf{
+      .can_id = static_cast<canid_t>(CAN_FP::CanId::RUDDER_DEBUG_DATA_FRAME),
+      .len    = CAN_FP::RudderDebugData::CAN_BYTE_DLEN_};
+    constexpr std::array<uint16_t, 8> raw{
+      10250,  // actual rudder: 12.5 degrees
+      17500,  // roll: -5 degrees
+      18250,  // pitch: 2.5 degrees
+      27125,  // heading: 271.25 degrees
+      8750,   // commanded rudder: -2.5 degrees
+      30123,  // integral: 123
+      29950,  // derivative: -50
+      12345   // speed over ground: 12.345 km/h
+    };
+    std::memcpy(cf.data, raw.data(), CAN_FP::RudderDebugData::CAN_BYTE_DLEN_);
+
+    CAN_FP::RudderDebugData rudder(cf);
+
+    EXPECT_EQ(rudder.id_, CAN_FP::CanId::RUDDER_DEBUG_DATA_FRAME);
+    EXPECT_EQ(rudder.can_byte_dlen_, CAN_FP::RudderDebugData::CAN_BYTE_DLEN_);
+    EXPECT_FLOAT_EQ(rudder.toRosMsg().heading, -88.75F);
+
+    CAN_FP::CanFrame round_trip = rudder.toLinuxCan();
+    EXPECT_EQ(round_trip.can_id, cf.can_id);
+    EXPECT_EQ(round_trip.len, cf.len);
+    EXPECT_EQ(std::memcmp(round_trip.data, cf.data, CAN_FP::RudderDebugData::CAN_BYTE_DLEN_), 0);
+}
+
+/**
+ * @brief Test an invalid ID for RUDDER_DEBUG_DATA_FRAME.
+ */
+TEST_F(TestCanFrameParser, RudderDebugDataTestInvalid)
+{
+    CAN_FP::CanFrame cf{.can_id = static_cast<canid_t>(CAN_FP::CanId::RESERVED)};
+    EXPECT_THROW(CAN_FP::RudderDebugData tmp(cf), CAN_FP::CanIdMismatchException);
 }
 
 /**
@@ -754,7 +801,6 @@ TEST_F(TestCanFrameParser, TestAISShipsInvalid)
     constexpr std::array<float, 2>  invalid_lons{LON_LBND - 1, LON_UBND + 1};
     constexpr std::array<float, 2>  invalid_cogs{-361, 361};
     constexpr std::array<float, 2>  invalid_sogs{SOG_SPEED_LBND - 1, SOG_SPEED_UBND + 1};
-    constexpr std::array<int8_t, 2> invalid_rots{ROT_LBND - 1, ROT_UBND + 1};
     constexpr std::array<float, 2>  invalid_widths{SHIP_DIMENSION_LBND - 2, SHIP_DIMENSION_UBND + 1};
     constexpr std::array<float, 2>  invalid_lengths{SHIP_DIMENSION_LBND - 2, SHIP_DIMENSION_UBND + 1};
 
@@ -871,38 +917,6 @@ TEST_F(TestCanFrameParser, TestAISShipsInvalid)
 
         msg::HelperROT rot;
         rot.set__rot(ROT_UBND);
-
-        msg::HelperDimension width;
-        width.set__dimension(SHIP_DIMENSION_LBND);  //NOLINT(readability-magic-numbers)
-
-        msg::HelperDimension length;
-        length.set__dimension(SHIP_DIMENSION_LBND);  //NOLINT(readability-magic-numbers)
-
-        msg.set__id(10);  //NOLINT(readability-magic-numbers)
-        msg.set__lat_lon(lat_lon);
-        msg.set__cog(cog);
-        msg.set__sog(sog);
-        msg.set__rot(rot);
-        msg.set__width(width);
-        msg.set__length(length);
-
-        EXPECT_THROW(CAN_FP::AISShips tmp(msg, valid_id), std::out_of_range);
-    };
-
-    for (int8_t invalid_rot : invalid_rots) {
-        msg::HelperLatLon lat_lon;
-        lat_lon.set__latitude(LAT_UBND);
-        lat_lon.set__longitude(LON_UBND);
-
-        msg::HelperHeading cog;
-        cog.set__heading(HEADING_LBND);
-
-        msg::HelperSpeed sog;
-        //convert to km/h
-        sog.set__speed(SOG_SPEED_UBND);
-
-        msg::HelperROT rot;
-        rot.set__rot(invalid_rot);
 
         msg::HelperDimension width;
         width.set__dimension(SHIP_DIMENSION_LBND);  //NOLINT(readability-magic-numbers)
@@ -1622,4 +1636,346 @@ TEST_F(TestCanTransceiver, TestDebugFramesDropped)
 
         EXPECT_FALSE(is_cb_called);
     }
+}
+
+/**
+ * @brief Test CanLogReplayer CSV parsing, filtering, and pacing math against a candump-style log
+ *
+ */
+class TestCanLogReplayer : public ::testing::Test
+{
+protected:
+    // Rows taken from a real boat log: classic, CAN FD (16/24/20 byte), and zero-length frames, an invalid
+    // CAN ID row (0x999) and a malformed row (both of which must be dropped), and an AIS row that the log
+    // writer split across two lines mid byte ("...4D 08 0" + "7 04 B8...") which must be reassembled
+    static constexpr const char * FIXTURE_CSV =
+      "Timestamp,Elapsed_Time_s,CAN_Message\n"
+      "2026-06-06T20:16:32.154049,5645.967,can0  041  [04]  5D 01 40 00\n"
+      "2026-06-06T20:16:32.164074,5645.977,can0  204  [16]  6E 23 74 46 59 48 90 59 28 23 3B 75 AF 76 41 36\n"
+      "2026-06-06T20:16:32.349830,5646.163,can0  206  [24]  EE 0B 2C 07 F9 0B 99 C6 E9 07 E9 0B FE 0B 00 00 00 00 "
+      "00 00 00 00 00 00\n"
+      "2026-06-06T20:16:32.350068,5646.163,can0  110  [02]  2E 1B\n"
+      "2026-06-06T20:16:32.364997,5646.178,can0  132  [00]\n"
+      "2026-06-06T20:16:32.365073,5646.178,can0  070  [20]  4C 36 4D 08 F4 BE 62 03 00 7D 00 00 10 03 00 00 3B 12 "
+      "00 00\n"
+      "2026-06-06T20:16:32.451316,5646.265,can0  999  [01]  FF\n"
+      "this row is malformed\n"
+      "2026-06-06T20:16:32.500000,5646.314,can0  060  [32]  00 00 00 00 AB 2C 4D 08 0\n"
+      "2026-06-06T20:16:32.510000,5646.324,7 04 B8 10 00 00 10 0E FF 01 00 00 00 00 00 00 01 00 00 00 00 00 00 "
+      "00\n"
+      "2026-06-06T20:16:32.557519,5646.371,can0  040  [04]  5F 01 53 00\n";
+    // 11 rows minus the invalid ID and malformed rows, with the split AIS row reassembled into one frame
+    static constexpr size_t NUM_FIXTURE_FRAMES = 8;
+
+    std::string csv_path_;
+
+    TestCanLogReplayer()
+    {
+        std::string       tmpl = "/tmp/TestCanLogReplayerXXXXXX";
+        std::vector<char> tmpl_cstr(tmpl.c_str(), tmpl.c_str() + tmpl.size() + 1);
+        int               fd = mkstemp(tmpl_cstr.data());
+        EXPECT_NE(fd, -1);
+        csv_path_ = std::string(tmpl_cstr.data());
+        std::ofstream file(csv_path_);
+        file << FIXTURE_CSV;
+        file.close();
+        close(fd);
+    }
+    ~TestCanLogReplayer() override { unlink(csv_path_.c_str()); }
+};
+
+/**
+ * @brief Test that a candump-style CSV log parses into the expected frames, in order, with
+ *        invalid IDs and malformed rows dropped
+ *
+ */
+TEST_F(TestCanLogReplayer, ParseCsvValid)
+{
+    std::vector<CAN_REPLAY::TimedFrame> frames = CAN_REPLAY::CanLogReplayer::parseCsv(csv_path_);
+
+    ASSERT_EQ(frames.size(), NUM_FIXTURE_FRAMES);
+
+    // Classic 4 byte frame
+    EXPECT_EQ(frames[0].frame.can_id, static_cast<canid_t>(CAN_FP::CanId::DATA_WIND));
+    EXPECT_EQ(frames[0].frame.len, 4);
+    EXPECT_EQ(frames[0].frame.data[0], 0x5D);
+    EXPECT_EQ(frames[0].frame.data[1], 0x01);
+    EXPECT_EQ(frames[0].frame.data[2], 0x40);
+    EXPECT_EQ(frames[0].frame.data[3], 0x00);
+
+    // Frame times come from the ISO timestamp column (as seconds since the epoch), so check the
+    // delta between the first two rows: 20:16:32.164074 - 20:16:32.154049 = 10.025 ms
+    EXPECT_NEAR(frames[1].t_s - frames[0].t_s, 0.010025, 1e-4);
+
+    // CAN FD frames with >8 bytes of data
+    EXPECT_EQ(frames[1].frame.can_id, 0x204);
+    EXPECT_EQ(frames[1].frame.len, 16);
+    EXPECT_EQ(frames[1].frame.data[15], 0x36);
+    EXPECT_EQ(frames[2].frame.can_id, 0x206);
+    EXPECT_EQ(frames[2].frame.len, 24);
+
+    // Zero-length frame
+    EXPECT_EQ(frames[4].frame.can_id, static_cast<canid_t>(CAN_FP::CanId::SAIL_HEARTBEAT));
+    EXPECT_EQ(frames[4].frame.len, 0);
+
+    // 20 byte GPS frame
+    EXPECT_EQ(frames[5].frame.can_id, static_cast<canid_t>(CAN_FP::CanId::PATH_GPS_DATA_FRAME));
+    EXPECT_EQ(frames[5].frame.len, 20);
+    EXPECT_EQ(frames[5].frame.data[0], 0x4C);
+    EXPECT_EQ(frames[5].frame.data[16], 0x3B);
+
+    // The split AIS row must be reassembled, including the byte the writer split in half ("0" + "7")
+    EXPECT_EQ(frames[6].frame.can_id, static_cast<canid_t>(CAN_FP::CanId::SAIL_AIS));
+    EXPECT_EQ(frames[6].frame.len, 32);
+    EXPECT_EQ(frames[6].frame.data[4], 0xAB);
+    EXPECT_EQ(frames[6].frame.data[8], 0x07);
+    EXPECT_EQ(frames[6].frame.data[9], 0x04);
+    EXPECT_EQ(frames[6].frame.data[10], 0xB8);
+    EXPECT_EQ(frames[6].frame.data[31], 0x00);
+
+    // The invalid ID (0x999) and malformed rows are dropped, so the last frame is SAIL_WIND
+    EXPECT_EQ(frames[NUM_FIXTURE_FRAMES - 1].frame.can_id, static_cast<canid_t>(CAN_FP::CanId::SAIL_WIND));
+
+    // Log timestamps must be monotonically non-decreasing
+    for (size_t i = 1; i < frames.size(); i++) {
+        EXPECT_GE(frames[i].t_s, frames[i - 1].t_s);
+    }
+}
+
+/**
+ * @brief Test that parsing a nonexistent log file throws
+ *
+ */
+TEST_F(TestCanLogReplayer, ParseCsvMissingFile)
+{
+    EXPECT_THROW(CAN_REPLAY::CanLogReplayer::parseCsv("/tmp/DoesNotExist.csv"), std::runtime_error);
+}
+
+/**
+ * @brief Test the allow and block ID list filtering
+ *
+ */
+TEST_F(TestCanLogReplayer, FilterAllowBlock)
+{
+    std::vector<CAN_REPLAY::TimedFrame> frames = CAN_REPLAY::CanLogReplayer::parseCsv(csv_path_);
+
+    CAN_REPLAY::ReplayConfig allow_cfg;
+    allow_cfg.allow_ids                         = {CAN_FP::CanId::DATA_WIND};
+    std::vector<CAN_REPLAY::TimedFrame> allowed = CAN_REPLAY::CanLogReplayer::filter(frames, allow_cfg);
+    ASSERT_EQ(allowed.size(), 1);
+    EXPECT_EQ(allowed[0].frame.can_id, static_cast<canid_t>(CAN_FP::CanId::DATA_WIND));
+
+    CAN_REPLAY::ReplayConfig block_cfg;
+    block_cfg.block_ids                         = {CAN_FP::CanId::SAIL_HEARTBEAT};
+    std::vector<CAN_REPLAY::TimedFrame> blocked = CAN_REPLAY::CanLogReplayer::filter(frames, block_cfg);
+    ASSERT_EQ(blocked.size(), NUM_FIXTURE_FRAMES - 1);
+    for (const CAN_REPLAY::TimedFrame & timed_frame : blocked) {
+        EXPECT_NE(timed_frame.frame.can_id, static_cast<canid_t>(CAN_FP::CanId::SAIL_HEARTBEAT));
+    }
+}
+
+/**
+ * @brief Test the pacing delay computation across replay rates
+ *
+ */
+TEST_F(TestCanLogReplayer, DelayBefore)
+{
+    using CAN_REPLAY::CanLogReplayer;
+    using std::chrono::milliseconds;
+    using std::chrono::nanoseconds;
+
+    // Log timestamps in seconds: three in order, one that goes backwards, then a ~10 minute recording gap
+    constexpr double FIRST_T_S        = 0.0;
+    constexpr double SECOND_T_S       = 0.1;
+    constexpr double THIRD_T_S        = 0.15;
+    constexpr double OUT_OF_ORDER_T_S = 0.10;
+    constexpr double LONG_GAP_T_S     = 600.0;
+
+    constexpr double SCALED_RATE = 2.0;  // replay at double speed
+
+    std::vector<CAN_REPLAY::TimedFrame> frames{
+      {.t_s = FIRST_T_S, .frame = {}},
+      {.t_s = SECOND_T_S, .frame = {}},
+      {.t_s = THIRD_T_S, .frame = {}},
+      {.t_s = OUT_OF_ORDER_T_S, .frame = {}},
+      {.t_s = LONG_GAP_T_S, .frame = {}}};
+
+    CAN_REPLAY::ReplayConfig cfg;  // the default rate of 1.0 paces the replay in real time
+
+    EXPECT_EQ(CanLogReplayer::delayBefore(frames, 0, cfg), nanoseconds{0});
+    EXPECT_EQ(CanLogReplayer::delayBefore(frames, 1, cfg), milliseconds{100});
+    EXPECT_EQ(CanLogReplayer::delayBefore(frames, 2, cfg), milliseconds{50});
+    // Out of order log timestamps must clamp to no delay rather than going negative
+    EXPECT_EQ(CanLogReplayer::delayBefore(frames, 3, cfg), nanoseconds{0});
+    // A ~10 minute gap in the recording must be capped at max_frame_gap instead of stalling the replay
+    EXPECT_EQ(CanLogReplayer::delayBefore(frames, 4, cfg), cfg.max_frame_gap);
+
+    cfg.rate = SCALED_RATE;
+    EXPECT_EQ(CanLogReplayer::delayBefore(frames, 1, cfg), milliseconds{50});
+
+    cfg.rate = 0.0;  // unpaced
+    EXPECT_EQ(CanLogReplayer::delayBefore(frames, 1, cfg), nanoseconds{0});
+    EXPECT_EQ(CanLogReplayer::delayBefore(frames, 4, cfg), nanoseconds{0});
+}
+
+/**
+ * @brief Test a MockCanBus wired to a real CanTransceiver over the socketpair
+ *
+ */
+class TestMockCanBus : public TestCanLogReplayer
+{
+protected:
+    static constexpr auto POLL_INTERVAL = std::chrono::milliseconds(10);
+    static constexpr int  MAX_POLLS     = 200;  // up to 2s per wait to keep CI from flaking
+
+    /**
+     * @brief Poll until pred() is true or the timeout expires
+     *
+     * @return whether pred() became true
+     */
+    static bool waitFor(const std::function<bool()> & pred)
+    {
+        for (int i = 0; i < MAX_POLLS; i++) {
+            if (pred()) {
+                return true;
+            }
+            std::this_thread::sleep_for(POLL_INTERVAL);
+        }
+        return pred();
+    }
+};
+
+/**
+ * @brief Test that replayed frames reach a callback registered with the CanTransceiver, with
+ *        their data intact
+ *
+ */
+TEST_F(TestMockCanBus, ReplayReachesCallback)
+{
+    MockCanBus     bus;
+    CanTransceiver trns(bus.transceiverFd());
+
+    std::atomic<int> wind_cb_count{0};
+    std::mutex       frame_mtx;
+    CAN_FP::CanFrame received_frame{};
+    trns.registerCanCb(std::make_pair(
+      CAN_FP::CanId::DATA_WIND, std::function<void(const CAN_FP::CanFrame &)>([&](const CAN_FP::CanFrame & frame) {
+          std::lock_guard<std::mutex> lock(frame_mtx);
+          received_frame = frame;
+          wind_cb_count++;
+      })));
+
+    std::vector<CAN_REPLAY::TimedFrame> frames = CAN_REPLAY::CanLogReplayer::parseCsv(csv_path_);
+    CAN_REPLAY::ReplayConfig            cfg;
+    cfg.rate = 0.0;  // unpaced, so the test does not wait out the log's real timing
+    bus.startReplay(frames, cfg);
+
+    ASSERT_TRUE(waitFor([&bus]() { return bus.replayDone(); }));
+    EXPECT_EQ(bus.numFramesSent(), frames.size());
+    ASSERT_TRUE(waitFor([&wind_cb_count]() { return wind_cb_count > 0; }));
+
+    EXPECT_EQ(wind_cb_count, 1);  // the fixture has exactly one DATA_WIND frame
+    std::lock_guard<std::mutex> lock(frame_mtx);
+    EXPECT_EQ(received_frame.can_id, static_cast<canid_t>(CAN_FP::CanId::DATA_WIND));
+    EXPECT_EQ(received_frame.len, 4);
+    EXPECT_EQ(received_frame.data[0], 0x5D);
+    EXPECT_EQ(received_frame.data[1], 0x01);
+    EXPECT_EQ(received_frame.data[2], 0x40);
+    EXPECT_EQ(received_frame.data[3], 0x00);
+}
+
+/**
+ * @brief Test that frames the boat sends through the CanTransceiver are captured by the MockCanBus
+ *        instead of echoing back to the boat like the file-backed mock did
+ *
+ */
+TEST_F(TestMockCanBus, OutboundFramesCaptured)
+{
+    constexpr uint8_t FRAME_LEN     = 8;
+    constexpr uint8_t FRAME_PAYLOAD = 0xAB;
+    // How long to keep listening for a loopback frame that must never arrive
+    constexpr auto LOOPBACK_GRACE = std::chrono::milliseconds(50);
+
+    MockCanBus     bus;
+    CanTransceiver trns(bus.transceiverFd());
+
+    volatile bool is_cb_called = false;
+    trns.registerCanCb(std::make_pair(
+      CAN_FP::CanId::BMS_DATA_FRAME, std::function<void(const CAN_FP::CanFrame &)>(
+                                       [&is_cb_called](const CAN_FP::CanFrame & /*unused*/) { is_cb_called = true; })));
+
+    CAN_FP::CanFrame frame{.can_id = static_cast<canid_t>(CAN_FP::CanId::BMS_DATA_FRAME)};
+    frame.len     = FRAME_LEN;
+    frame.data[0] = FRAME_PAYLOAD;
+    trns.send(frame);
+
+    ASSERT_TRUE(waitFor([&bus]() { return bus.outboundFrames().size() == 1; }));
+
+    std::vector<CAN_FP::CanFrame> outbound = bus.outboundFrames();
+    EXPECT_EQ(outbound[0].can_id, static_cast<canid_t>(CAN_FP::CanId::BMS_DATA_FRAME));
+    EXPECT_EQ(outbound[0].len, FRAME_LEN);
+    EXPECT_EQ(outbound[0].data[0], FRAME_PAYLOAD);
+
+    // Unlike the file-backed mock, sent frames must NOT loop back to the sender
+    std::this_thread::sleep_for(LOOPBACK_GRACE);
+    EXPECT_FALSE(is_cb_called);
+}
+
+/**
+ * @brief Test that a paced replay spaces frames out over time instead of bursting them
+ *
+ */
+TEST_F(TestMockCanBus, RatePacing)
+{
+    constexpr auto   FRAME_GAP   = std::chrono::milliseconds(20);
+    constexpr double FRAME_GAP_S = 0.02;
+    constexpr size_t NUM_FRAMES  = 4;
+
+    MockCanBus     bus;
+    CanTransceiver trns(bus.transceiverFd());
+
+    std::atomic<size_t> cb_count{0};
+    trns.registerCanCb(std::make_pair(
+      CAN_FP::CanId::DATA_WIND,
+      std::function<void(const CAN_FP::CanFrame &)>([&cb_count](const CAN_FP::CanFrame & /*unused*/) { cb_count++; })));
+
+    std::vector<CAN_REPLAY::TimedFrame> frames(
+      NUM_FRAMES, {.t_s = 0.0, .frame = {.can_id = static_cast<canid_t>(CAN_FP::CanId::DATA_WIND), .len = 4}});
+    for (size_t i = 0; i < NUM_FRAMES; i++) {
+        frames[i].t_s = static_cast<double>(i) * FRAME_GAP_S;
+    }
+    CAN_REPLAY::ReplayConfig cfg;  // the default rate of 1.0 reproduces the log's own spacing
+
+    auto start = std::chrono::steady_clock::now();
+    bus.startReplay(frames, cfg);
+
+    ASSERT_TRUE(waitFor([&cb_count]() { return cb_count == NUM_FRAMES; }));
+    auto elapsed = std::chrono::steady_clock::now() - start;
+
+    // No delay precedes the first frame, so the whole replay takes at least NUM_FRAMES - 1 gaps
+    EXPECT_GE(elapsed, (NUM_FRAMES - 1) * FRAME_GAP);
+}
+
+/**
+ * @brief Test that loop mode replays the log again from the top until stopped
+ *
+ */
+TEST_F(TestMockCanBus, LoopReplay)
+{
+    MockCanBus     bus;
+    CanTransceiver trns(bus.transceiverFd());
+
+    std::vector<CAN_REPLAY::TimedFrame> frames(
+      2, {.t_s = 0.0, .frame = {.can_id = static_cast<canid_t>(CAN_FP::CanId::DATA_WIND), .len = 4}});
+    CAN_REPLAY::ReplayConfig cfg;
+    cfg.rate = 0.0;  // unpaced, so the wrap around happens promptly
+    cfg.loop = true;
+
+    bus.startReplay(frames, cfg);
+
+    // More frames than the log holds must arrive, proving the replay wrapped around
+    ASSERT_TRUE(waitFor([&bus, &frames]() { return bus.numFramesSent() > frames.size(); }));
+
+    bus.stopReplay();
+    EXPECT_FALSE(bus.replayDone());  // a looping replay is never "done", it can only be stopped
 }

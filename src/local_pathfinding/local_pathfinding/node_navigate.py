@@ -5,6 +5,7 @@ import math
 import os
 import tempfile
 import traceback
+from dataclasses import dataclass
 
 import rclpy
 from rclpy.node import Node
@@ -13,11 +14,20 @@ from test_plans.test_plan import TestPlan
 import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.obstacles as ob
+from local_pathfinding.constants import (
+    AIS_SHIPS_UNAVAILABLE,
+    DESIRED_HEADING_UNAVAILABLE,
+    GPS_UNAVAILABLE,
+    HEADING_UNAVAILABLE,
+    INVALID_MMSI,
+    WIND_SENSOR_UNAVAILABLE,
+)
 from local_pathfinding.local_path import LocalPath, LocalPathInputs, PathNotFoundError
 from local_pathfinding.ompl_path import MAX_SOLVER_RUN_TIME_SEC
 
 GLOBAL_WAYPOINT_REACHED_THRESH_M = 300
 NAVIGATION_INPUT_TIMEOUT_SEC = 120.0
+AIS_SHIP_TIMEOUT_SEC = 600.0
 WAYPOINT_EQUAL_ABS_TOL_DEG = 1e-7
 NANOSEC_PER_SEC = 1_000_000_000
 MAIN_GP_FILE_PATH = "/workspaces/sailbot_workspace/src/local_pathfinding/local_pathfinding/global_path_storage/main_global_path.csv"  # noqa
@@ -67,6 +77,14 @@ local plan cannot silently skip ahead through the global path. The bridge flag i
 after a successful local-path update, or when the global path is exhausted and no retryable
 local-path update remains.
 """
+
+
+@dataclass(frozen=True)
+class TrackedAISShip:
+    """A tracked AIS ship and when it was last refreshed."""
+
+    ship: ci.HelperAISShip
+    last_seen_sec: float
 
 
 class GlobalPath:
@@ -216,7 +234,8 @@ class Sailbot(Node):
         )
 
         # attributes from subscribers
-        self.ais_ships: ci.AISShips | None = None
+        # None means no AIS message has arrived; an empty map means no ships are in range.
+        self._tracked_ais_ships: dict[int, TrackedAISShip] | None = None
         self.gps: ci.GPS | None = None
         self.heading: ci.HelperHeading | None = None
         self.gp: GlobalPath | None = None
@@ -456,8 +475,19 @@ class Sailbot(Node):
 
     # subscriber callbacks
     def ais_ships_callback(self, msg: ci.AISShips) -> None:
+        """Refresh the ships this message carries, leaving omitted ones to time out."""
+
         self.get_logger().debug(f"Received data from {self.ais_ships_sub.topic}: {msg}")
-        self.ais_ships = msg
+
+        now_sec = self._now_sec()
+        if self._tracked_ais_ships is None:
+            self._tracked_ais_ships = {}
+        for ship in msg.ships:
+            if ship.id == INVALID_MMSI:
+                continue
+            self._tracked_ais_ships[ship.id] = TrackedAISShip(ship=ship, last_seen_sec=now_sec)
+
+        self._rebuild_ais_snapshot()
 
     def gps_callback(self, msg: ci.GPS) -> None:
         self.get_logger().debug(f"Received data from {self.gps_sub.topic}: {msg}")
@@ -538,6 +568,7 @@ class Sailbot(Node):
                 f"Publishing to {self.desired_heading_pub.topic}: {msg.heading.heading}"
             )
             self.desired_heading_pub.publish(msg)
+            self.publish_local_path_data(msg.sail)
             return  # should not continue, try again next loop
 
         if not self._all_subs_active():
@@ -550,6 +581,7 @@ class Sailbot(Node):
                 f"Publishing to {self.desired_heading_pub.topic}: {msg.heading.heading}"
             )
             self.desired_heading_pub.publish(msg)
+            self.publish_local_path_data(msg.sail)
             return  # should not continue, return and try again next loop
 
         try:
@@ -602,59 +634,69 @@ class Sailbot(Node):
             self.local_path.path if (sail and self.local_path.path is not None) else ci.Path()
         )
 
-        # publish all navigation data when in dev mode
-        if self.mode in ["development", "sim"]:
-            helper_obstacles = []
+        helper_obstacles = []
 
-            # state is None until the first successful local path. On a sail-disabled failure it
-            # may still hold the obstacles that caused the failure, so iterate only if present.
-            state = self.local_path.state
-            if state is not None:
-                for obst in state.obstacles:
+        # state is None until the first successful local path. On a sail-disabled failure it
+        # may still hold the obstacles that caused the failure, so iterate only if present.
+        state = self.local_path.state
+        if state is not None:
+            for obst in state.obstacles:
 
-                    if isinstance(obst, ob.Land):
-                        for polygon in obst.collision_zone.geoms:
-                            latlon_polygon = cs.xy_polygon_to_latlon_polygon(
-                                state.reference_latlon, polygon
-                            )
-
-                            # each point of the polygon is in lat lon now
-                            # but you can't construct a Shapely polygon out of HelperLatLon objects
-                            # so each point is a shapely Point that needs to be converted to a
-                            # HelperLatLon, before it can be published to ROS
-                            helper_latlons = [
-                                ci.HelperLatLon(longitude=point[0], latitude=point[1])
-                                for point in latlon_polygon.exterior.coords
-                            ]
-                            helper_obstacles.append(
-                                ci.HelperObstacle(points=helper_latlons, obstacle_type="Land")
-                            )
-                    else:  # is a Boat
+                if isinstance(obst, ob.Land):
+                    for polygon in obst.collision_zone.geoms:
                         latlon_polygon = cs.xy_polygon_to_latlon_polygon(
-                            state.reference_latlon, obst.collision_zone
+                            state.reference_latlon, polygon
                         )
+
+                        # each point of the polygon is in lat lon now
+                        # but you can't construct a Shapely polygon out of HelperLatLon objects
+                        # so each point is a shapely Point that needs to be converted to a
+                        # HelperLatLon, before it can be published to ROS
                         helper_latlons = [
                             ci.HelperLatLon(longitude=point[0], latitude=point[1])
                             for point in latlon_polygon.exterior.coords
                         ]
                         helper_obstacles.append(
-                            ci.HelperObstacle(points=helper_latlons, obstacle_type="Boat")
+                            ci.HelperObstacle(points=helper_latlons, obstacle_type="Land")
                         )
+                else:  # is a Boat
+                    latlon_polygon = cs.xy_polygon_to_latlon_polygon(
+                        state.reference_latlon, obst.collision_zone
+                    )
+                    helper_latlons = [
+                        ci.HelperLatLon(longitude=point[0], latitude=point[1])
+                        for point in latlon_polygon.exterior.coords
+                    ]
+                    helper_obstacles.append(
+                        ci.HelperObstacle(points=helper_latlons, obstacle_type="Boat")
+                    )
 
-            msg = ci.LPathData(
-                global_path=self._path_from_gp(),
-                local_path=local_path,
-                gps=self.gps,
-                filtered_wind_sensor=self.filtered_wind_sensor,
-                ais_ships=self.ais_ships,
-                obstacles=helper_obstacles,
-                desired_heading=self.desired_heading,
-                replan_reason=self.local_path.last_replan_reason,
-                remaining_waypoints=self.local_path.last_remaining_waypoints,
-            )
-        else:
-            # in production only publish the local path for website
-            msg = ci.LPathData(local_path=local_path)
+        msg = ci.LPathData(
+            global_path=self._path_from_gp(),
+            local_path=local_path,
+            gps=self.gps if self.gps is not None else GPS_UNAVAILABLE,
+            heading=(
+                self.heading
+                if self.heading is not None
+                else ci.HelperHeading(heading=HEADING_UNAVAILABLE)
+            ),
+            filtered_wind_sensor=(
+                self.filtered_wind_sensor
+                if self.filtered_wind_sensor is not None
+                else WIND_SENSOR_UNAVAILABLE
+            ),
+            ais_ships=(
+                self._rebuild_ais_snapshot()
+            ),
+            obstacles=helper_obstacles,
+            desired_heading=(
+                self.desired_heading
+                if self.desired_heading is not None
+                else DESIRED_HEADING_UNAVAILABLE
+            ),
+            replan_reason=self.local_path.last_replan_reason,
+            remaining_waypoints=self.local_path.last_remaining_waypoints,
+        )
 
         self.lpath_data_pub.publish(msg)
 
@@ -723,7 +765,7 @@ class Sailbot(Node):
                 inputs=LocalPathInputs(
                     gps=self.gps,
                     heading=self.heading,
-                    ais_ships=self.ais_ships,
+                    ais_ships=self._rebuild_ais_snapshot(),
                     global_path=self._path_from_gp(),
                     target_global_waypoint=target_global_waypoint,
                     filtered_wind_sensor=self.filtered_wind_sensor,
@@ -794,28 +836,58 @@ class Sailbot(Node):
 
     def _all_subs_active(self) -> bool:
         return (
-            self.ais_ships is not None
+            self._tracked_ais_ships is not None
             and self.gps is not None
             and self.heading is not None
             and self.gp is not None
             and self.filtered_wind_sensor is not None
         )
 
+    def _rebuild_ais_snapshot(self) -> ci.AISShips:
+        """Expire stale ships and return the current AIS snapshot."""
+
+        if self._tracked_ais_ships is None:
+            return AIS_SHIPS_UNAVAILABLE
+
+        expired_ids = [
+            ship_id
+            for ship_id, tracked in self._tracked_ais_ships.items()
+            if self._now_sec() - tracked.last_seen_sec > AIS_SHIP_TIMEOUT_SEC
+        ]
+        for ship_id in expired_ids:
+            del self._tracked_ais_ships[ship_id]
+
+        if expired_ids:
+            self.get_logger().warning(
+                f"Dropping {len(expired_ids)} AIS ship(s) {sorted(expired_ids)} not refreshed in "
+                f"{AIS_SHIP_TIMEOUT_SEC:.0f} seconds"
+            )
+
+        return ci.AISShips(
+            ships=[tracked.ship for tracked in self._tracked_ais_ships.values()]
+        )
+
     def _timed_out_inputs(self) -> bool:
         """Return whether GPS or rudder data exceeded the safety timeout."""
 
         now_sec = self._now_sec()
-        return (
-            now_sec - self.gps_timeout_start_sec > NAVIGATION_INPUT_TIMEOUT_SEC
-            or now_sec - self.heading_timeout_start_sec > NAVIGATION_INPUT_TIMEOUT_SEC
-        )
+
+        gps_timed_out = now_sec - self.gps_timeout_start_sec > NAVIGATION_INPUT_TIMEOUT_SEC
+        heading_timed_out = now_sec - self.heading_timeout_start_sec > NAVIGATION_INPUT_TIMEOUT_SEC
+
+        if gps_timed_out:
+            self.gps = None
+        if heading_timed_out:
+            self.heading = ci.HelperHeading(heading=HEADING_UNAVAILABLE)
+
+        return gps_timed_out or heading_timed_out
 
     def _log_inactive_subs_warning(self) -> None:
         """
         Logs a warning message for each inactive subscriber.
         """
         inactive_subs = []
-        if self.ais_ships is None:
+        if self._tracked_ais_ships is None:
             inactive_subs.append("ais_ships")
         if self.gps is None:
             inactive_subs.append("gps")

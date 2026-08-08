@@ -14,6 +14,7 @@ Main Components:
 """
 
 import math
+import pickle
 import subprocess
 from collections import deque
 from dataclasses import dataclass
@@ -31,19 +32,31 @@ from dash._no_update import NoUpdate
 from dash.dependencies import Input, Output, State
 from dash.html.Div import Div
 from PIL import Image
-from shapely.geometry import MultiPolygon, Polygon
+from shapely.geometry import MultiPolygon, Point, Polygon
 
 import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.wind_coord_systems as wcs
-from local_pathfinding.ompl_path import OMPLPath
+from local_pathfinding.constants import (
+    AIS_SHIPS_UNAVAILABLE,
+    DESIRED_HEADING_UNAVAILABLE,
+    GPS_UNAVAILABLE,
+    HEADING_UNAVAILABLE,
+    WIND_SENSOR_UNAVAILABLE,
+)
+from local_pathfinding.ompl_path import (
+    BOX_BUFFER_SIZE_KM,
+    DISTANCE_FROM_ON_WATER_LANDMARK,
+    ON_WATER_LAND_PKL_FILE_PATH,
+    OMPLPath,
+)
 from local_pathfinding.ompl_validity import NO_GO_ZONE
 
 UPDATE_INTERVAL_MS = 2500
 DEFAULT_PLOT_RANGE = [-100.0, 100.0]
-BOX_BUFFER_SIZE_KM = 1.0
+# BOX_BUFFER_SIZE_KM is imported from ompl_path rather than redefined here so the drawn
+# state space always matches the region OMPL actually plans in.
 STATE_SPACE_VIEW_BUFFER_KM = 0.5
-
 # Preserve the compact wind inset's width while centering it beneath the main plot.
 WIND_BOX_X_DOMAIN = (0.385, 0.615)
 # Keep the inset below the axis-title band and the main plot.
@@ -85,6 +98,18 @@ OSM_OVERLAY_OPACITY = 1.0
 _osm_tile_cache: Dict[Tuple[int, int, int], Any] = {}
 _osm_overlay_cache: Dict[Any, Tuple[Any, Tuple[float, float, float, float]]] = {}
 
+# Raw land-dataset overlay: the full on_water_land.pkl geometry, drawn on top of the clipped
+# "Land Obstacle" traces so an operator can see the land the planner would use even outside the
+# current state space (e.g. to confirm a CAN GPS fix is on water).
+LAND_PKL_FILL_COLOR = "rgba(34, 139, 34, 0.30)"
+LAND_PKL_LINE_COLOR = "rgba(20, 90, 20, 0.95)"
+LAND_PKL_LINE_WIDTH = 1.5
+
+# The pkl is small and never changes at runtime, so both the raw geometry and its XY projection
+# (keyed by the reference lat/lon) are cached instead of being rebuilt every ~2.5 s frame.
+_land_pkl_cache: Optional[MultiPolygon] = None
+_land_pkl_xy_cache: Dict[Tuple[float, float], List[Polygon]] = {}
+
 
 BASE_DIR = Path(__file__).resolve().parent
 ASSETS_DIR = BASE_DIR / "visualizer_assets"
@@ -101,6 +126,9 @@ VISUALIZER_STATE_NONE_WARNING = "Warning: the visualizer state is None. Waiting 
 VISUALIZER_STATE_STALE_WARNING = (
     "Warning: the visualizer state is None. The last available visualizer state is being shown "
     "and is getting stale."
+)
+VISUALIZER_STATE_DATA_UNAVAILABLE_WARNING = (
+    "Warning: Unavailable data: {data}. Related visualizations might be incorrect."
 )
 
 app = dash.Dash(__name__, assets_folder=str(ASSETS_DIR))
@@ -208,7 +236,7 @@ class VisualizerState:
                                                    (degrees) for the latest local path.
 
         sailbot_gps (List[ci.GPS]): GPS messages used for position and speed history.
-        boat_heading_deg (float): Latest e-compass boat heading from the ``rudder`` topic.
+        boat_heading_deg (float): Latest e-compass boat heading carried by ``LPathData``.
 
         ais_ships_by_id (Dict[int, AISShipData]): Dictionary mapping AIS ship IDs to their data
                                                    (position, heading, speed).
@@ -225,16 +253,30 @@ class VisualizerState:
     def __init__(
         self,
         msgs: deque[ci.LPathData],
-        heading: ci.HelperHeading,
         last_replan_reason: str = "",
     ):
         if not msgs:
             raise ValueError("VisualizerState requires at least one message")
 
         self.latest_msg = msgs[-1]
-        self.boat_heading_deg = heading.heading
         self.last_replan_reason = last_replan_reason
         self._validate_message(self.latest_msg)
+        self.unavailable_data = self._get_unavailable_data(self.latest_msg)
+        self.boat_heading_deg = (
+            0.0
+            if "heading" in self.unavailable_data
+            else self.latest_msg.heading.heading
+        )
+        self.desired_heading_deg = (
+            0.0
+            if "desired heading" in self.unavailable_data
+            else self.latest_msg.desired_heading.heading.heading
+        )
+        self.sail_enabled = (
+            False
+            if "desired heading" in self.unavailable_data
+            else self.latest_msg.desired_heading.sail
+        )
 
         # Boat history
         self.sailbot_lat_lon = [msg.gps.lat_lon for msg in msgs]
@@ -270,7 +312,11 @@ class VisualizerState:
         )
 
         # AIS ships
-        self.ais_ships = self.latest_msg.ais_ships.ships
+        self.ais_ships = (
+            []
+            if "AIS ships" in self.unavailable_data
+            else self.latest_msg.ais_ships.ships
+        )
         ais_ship_latlons = [ship.lat_lon for ship in self.ais_ships]
         ais_ship_xy = cs.latlon_list_to_xy_list(self.reference_lat_lon, ais_ship_latlons)
         ais_positions = self._split_coordinates(ais_ship_xy)
@@ -299,21 +345,29 @@ class VisualizerState:
         # Wind Vectors
         boat_speed_kmph = self.latest_msg.gps.speed.speed
         boat_heading_deg = self.boat_heading_deg
-        aw_speed_kmph = self.latest_msg.filtered_wind_sensor.speed.speed
-        aw_dir_boat_deg = self.latest_msg.filtered_wind_sensor.direction
+        if "wind sensor" in self.unavailable_data:
+            self.aw_vector_kmph = cs.XY(0.0, 0.0)
+            self.tw_vector_kmph = cs.XY(0.0, 0.0)
+        else:
+            aw_speed_kmph = self.latest_msg.filtered_wind_sensor.speed.speed
+            aw_dir_boat_deg = self.latest_msg.filtered_wind_sensor.direction
 
-        # Convert Apparent wind to global frame
-        aw_dir_global_deg = wcs.boat_to_global_coordinate(boat_heading_deg, aw_dir_boat_deg)
-        aw_dir_global_rad = math.radians(aw_dir_global_deg)
-        # Compute apparent wind vector (in global frame)
-        self.aw_vector_kmph = cs.polar_to_cartesian(aw_dir_global_rad, aw_speed_kmph)
+            # Convert Apparent wind to global frame
+            aw_dir_global_deg = wcs.boat_to_global_coordinate(
+                boat_heading_deg, aw_dir_boat_deg
+            )
+            aw_dir_global_rad = math.radians(aw_dir_global_deg)
+            # Compute apparent wind vector (in global frame)
+            self.aw_vector_kmph = cs.polar_to_cartesian(
+                aw_dir_global_rad, aw_speed_kmph
+            )
 
-        # True wind from apparent
-        tw_dir_deg_gc, tw_speed_kmph = wcs.aw_gc_to_tw_gc(
-            aw_dir_global_deg, aw_speed_kmph, boat_heading_deg, boat_speed_kmph
-        )
-        tw_dir_rad_gc = math.radians(tw_dir_deg_gc)
-        self.tw_vector_kmph = cs.polar_to_cartesian(tw_dir_rad_gc, tw_speed_kmph)
+            # True wind from apparent
+            tw_dir_deg_gc, tw_speed_kmph = wcs.aw_gc_to_tw_gc(
+                aw_dir_global_deg, aw_speed_kmph, boat_heading_deg, boat_speed_kmph
+            )
+            tw_dir_rad_gc = math.radians(tw_dir_deg_gc)
+            self.tw_vector_kmph = cs.polar_to_cartesian(tw_dir_rad_gc, tw_speed_kmph)
 
         # Boat wind vector
         boat_wind_radians = math.radians(cs.bound_to_180(boat_heading_deg + 180))
@@ -336,6 +390,22 @@ class VisualizerState:
             raise ValueError("No local path received in the message")
         if msg.gps is None:
             raise ValueError("No GPS data received in the message")
+        if msg.gps == GPS_UNAVAILABLE:
+            raise ValueError("GPS data is unavailable")
+
+    @staticmethod
+    def _get_unavailable_data(msg: ci.LPathData) -> List[str]:
+        """Return the names of unavailable non-GPS inputs in display order."""
+        unavailable_data = []
+        if msg.heading.heading == HEADING_UNAVAILABLE:
+            unavailable_data.append("heading")
+        if msg.filtered_wind_sensor == WIND_SENSOR_UNAVAILABLE:
+            unavailable_data.append("wind sensor")
+        if msg.ais_ships == AIS_SHIPS_UNAVAILABLE:
+            unavailable_data.append("AIS ships")
+        if msg.desired_heading == DESIRED_HEADING_UNAVAILABLE:
+            unavailable_data.append("desired heading")
+        return unavailable_data
 
     @staticmethod
     def _split_coordinates(positions) -> Tuple[List[float], List[float]]:
@@ -388,11 +458,27 @@ class VisualizerState:
 # Visualizer Failure State Helpers
 # --------------------------------------
 
+def create_visualizer_state(
+    msgs: deque[ci.LPathData],
+    last_replan_reason: str = "",
+) -> Optional[VisualizerState]:
+    """Create a visualizer state, or return None when the latest GPS is unavailable."""
+    if msgs and msgs[-1].gps == GPS_UNAVAILABLE:
+        return None
+    return VisualizerState(msgs=msgs, last_replan_reason=last_replan_reason)
 
-def visualizer_state_warning(stale: bool) -> html.Div:
+
+def unavailable_data_warning(unavailable_data: List[str]) -> str:
+    """Build a warning describing which visualizer inputs are unavailable."""
+    return VISUALIZER_STATE_DATA_UNAVAILABLE_WARNING.format(
+        data=", ".join(unavailable_data)
+    )
+
+
+def visualizer_state_warning(reason: str) -> html.Div:
     """Build the warning shown when no current visualizer state is available."""
     return html.Div(
-        VISUALIZER_STATE_STALE_WARNING if stale else VISUALIZER_STATE_NONE_WARNING,
+        reason,
         role="alert",
         style={
             "margin": "0 12px 8px 12px",
@@ -418,7 +504,10 @@ def handle_visualizer_state_failure(
     alongside a stale-state warning. Otherwise, return the Dash callback payload that preserves the
     existing plot/stores while updating the warning banner.
     """
-    state_warning = visualizer_state_warning(stale=_latest_vs is not None)
+    if _latest_vs is not None:
+        state_warning = visualizer_state_warning(VISUALIZER_STATE_STALE_WARNING)
+    else:
+        state_warning = visualizer_state_warning(VISUALIZER_STATE_NONE_WARNING)
     if _latest_vs is not None and should_render_cached_state:
         return VisualizerStateFailureHandling(_latest_vs, state_warning, None)
 
@@ -1324,6 +1413,7 @@ def build_figure(
     last_range: Optional[Dict[str, List[float]]],
     reached_global_keys: Optional[List[str]] = None,
     show_map: bool = False,
+    show_land_data: bool = False,
 ) -> Tuple[go.Figure, Tuple[float, float], List[str]]:
     """
     Builds and renders the complete path planning visualization figure.
@@ -1339,6 +1429,8 @@ def build_figure(
         reached_global_keys: Keys of global waypoints already reached by the boat (persisted
                       across frames); reached waypoints are not plotted.
         show_map: Whether to draw the OpenStreetMap basemap beneath the data.
+        show_land_data: Whether to draw the full on_water_land.pkl geometry and report whether
+                      the boat's GPS fix falls inside it.
 
     Returns:
        (fig, new_goal_xy_rounded, reached_global_keys):
@@ -1362,7 +1454,13 @@ def build_figure(
         # Still render the boat, obstacles, AIS traffic, and wind so the operator keeps
         # situational awareness instead of seeing a blank or crashed view.
         return build_figure_without_local_path(
-            vs, boat_xy_km, last_goal_xy_km, last_range, reached_global_keys, show_map
+            vs,
+            boat_xy_km,
+            last_goal_xy_km,
+            last_range,
+            reached_global_keys,
+            show_map,
+            show_land_data,
         )
     goal_xy_km = cs.XY(local_x_km[-1], local_y_km[-1])
     goal_change = compute_goal_change(last_goal_xy_km, goal_xy_km)
@@ -1428,6 +1526,9 @@ def build_figure(
     if show_map:
         add_map_overlay(fig, vs, last_range)
 
+    if show_land_data:
+        add_land_pkl_overlay(fig, vs)
+
     return fig, goal_change.new_goal_xy_rounded, reached_global_keys
 
 
@@ -1438,6 +1539,7 @@ def build_figure_without_local_path(
     last_range: Optional[Dict[str, List[float]]],
     reached_global_keys: Optional[List[str]] = None,
     show_map: bool = False,
+    show_land_data: bool = False,
 ) -> Tuple[go.Figure, Tuple[float, float], List[str]]:
     """
     Build the visualization when no local path is available.
@@ -1458,6 +1560,8 @@ def build_figure_without_local_path(
         last_range: Previously stored axis ranges, or None on first render.
         reached_global_keys: Keys of global waypoints already reached; passed through unchanged.
         show_map: Whether to draw the OpenStreetMap basemap beneath the data.
+        show_land_data: Whether to draw the full on_water_land.pkl geometry and report whether
+            the boat's GPS fix falls inside it.
     Returns:
         (fig, goal_xy, reached_global_keys): The figure, the goal position to persist downstream
         (the previous goal if known, otherwise the current boat position so goal-change tracking
@@ -1537,6 +1641,9 @@ def build_figure_without_local_path(
 
     if show_map:
         add_map_overlay(fig, vs, last_range)
+
+    if show_land_data:
+        add_land_pkl_overlay(fig, vs)
 
     goal_xy = last_goal_xy_km if last_goal_xy_km is not None else (boat_xy_km[0], boat_xy_km[1])
     return fig, goal_xy, reached_global_keys
@@ -1659,6 +1766,230 @@ def get_state_space_bounds(
     return (
         cs.XY(x_min - STATE_SPACE_VIEW_BUFFER_KM, y_min - STATE_SPACE_VIEW_BUFFER_KM),
         cs.XY(x_max + STATE_SPACE_VIEW_BUFFER_KM, y_max + STATE_SPACE_VIEW_BUFFER_KM),
+    )
+
+
+# --------------------------------------
+# Raw land dataset (.pkl) overlay
+# --------------------------------------
+def load_on_water_land() -> MultiPolygon:
+    """Load (and cache) the on-water land dataset the planner uses near the reference point.
+
+    The pkl stores land as a MultiPolygon in lat/lon space with (x=lon, y=lat). A missing or
+    unreadable file yields an empty MultiPolygon so the overlay degrades quietly instead of
+    taking down the visualizer.
+
+    Returns:
+        The land MultiPolygon, empty if the pkl could not be loaded.
+    """
+    global _land_pkl_cache  # noqa
+    if _land_pkl_cache is None:
+        try:
+            with open(ON_WATER_LAND_PKL_FILE_PATH, "rb") as f:
+                land = pickle.load(f)
+            _land_pkl_cache = land if isinstance(land, MultiPolygon) else MultiPolygon([land])
+        except (OSError, pickle.UnpicklingError):
+            _land_pkl_cache = MultiPolygon()
+    return _land_pkl_cache
+
+
+def land_pkl_polygons_xy(reference: ci.HelperLatLon) -> List[Polygon]:
+    """Project the land dataset into the XY (km) frame, preserving interior rings.
+
+    ``cs.latlon_polygon_list_to_xy_polygon_list`` keeps only exteriors, which would fill in the
+    dataset's 26 holes (inlets and other water enclosed by land) and make water read as land.
+    This conversion carries the interiors through so the drawn shape matches what the planner
+    actually treats as an obstacle.
+
+    Args:
+        reference: Lat/Lon anchor of the XY frame (the global path's final waypoint).
+
+    Returns:
+        The land polygons in XY (km), holes included.
+    """
+    key = (round(reference.latitude, 6), round(reference.longitude, 6))
+    if key in _land_pkl_xy_cache:
+        return _land_pkl_xy_cache[key]
+
+    def to_xy_ring(coords) -> List[Tuple[float, float]]:
+        # Land coordinates are stored (lon, lat).
+        xys = [
+            cs.latlon_to_xy(reference, ci.HelperLatLon(latitude=lat, longitude=lon))
+            for lon, lat in coords
+        ]
+        return [(xy.x, xy.y) for xy in xys]
+
+    polygons = [
+        Polygon(to_xy_ring(poly.exterior.coords), [to_xy_ring(r.coords) for r in poly.interiors])
+        for poly in load_on_water_land().geoms
+        if not poly.is_empty
+    ]
+
+    # One reference per voyage in practice; the bound just stops unbounded growth if it changes.
+    if len(_land_pkl_xy_cache) > 8:
+        _land_pkl_xy_cache.clear()
+    _land_pkl_xy_cache[key] = polygons
+    return polygons
+
+
+def _ring_to_svg_path(coords) -> str:
+    """Convert a closed ring of (x, y) points into an SVG path subpath."""
+    points = list(coords)
+    head = f"M {points[0][0]},{points[0][1]}"
+    body = " ".join(f"L {x},{y}" for x, y in points[1:])
+    return f"{head} {body} Z"
+
+
+def build_land_pkl_shapes(polys_xy: List[Polygon]) -> List[Dict[str, Any]]:
+    """Build filled shapes for the land dataset, cutting out interior rings.
+
+    Each polygon becomes one SVG path shape whose exterior and interiors are separate subpaths.
+    ``fillrule="evenodd"`` is what makes the interiors render as holes; a Scatter trace with
+    ``fill="toself"`` would fill them in instead.
+
+    Args:
+        polys_xy: Land polygons in XY (km).
+
+    Returns:
+        Shape dicts ready for ``fig.add_shape(**shape)``.
+    """
+    shapes: List[Dict[str, Any]] = []
+    for poly in polys_xy:
+        if poly.is_empty:
+            continue
+        subpaths = [_ring_to_svg_path(poly.exterior.coords)]
+        subpaths += [_ring_to_svg_path(ring.coords) for ring in poly.interiors]
+        shapes.append(
+            {
+                "type": "path",
+                "path": " ".join(subpaths),
+                "fillrule": "evenodd",
+                "fillcolor": LAND_PKL_FILL_COLOR,
+                "line": {"color": LAND_PKL_LINE_COLOR, "width": LAND_PKL_LINE_WIDTH},
+                "layer": "below",
+                "xref": "x",
+                "yref": "y",
+            }
+        )
+    return shapes
+
+
+def build_land_pkl_legend_trace(polys_xy: List[Polygon]) -> go.Scatter:
+    """Build a legend/hover entry for the land dataset overlay.
+
+    The fill itself is drawn as layout shapes (the only way to cut out holes), and shapes cannot
+    appear in the legend. This outline trace gives the overlay a legend row and hover readout;
+    its rings are separated by ``None`` so they are not joined by stray segments.
+
+    Args:
+        polys_xy: Land polygons in XY (km).
+
+    Returns:
+        A Plotly Scatter line trace tracing every ring in the dataset.
+    """
+    xs: List[Optional[float]] = []
+    ys: List[Optional[float]] = []
+    for poly in polys_xy:
+        if poly.is_empty:
+            continue
+        for ring in [poly.exterior, *poly.interiors]:
+            ring_x, ring_y = ring.xy
+            xs.extend(list(ring_x) + [None])
+            ys.extend(list(ring_y) + [None])
+
+    return go.Scatter(
+        x=xs,
+        y=ys,
+        mode="lines",
+        line=dict(color=LAND_PKL_LINE_COLOR, width=LAND_PKL_LINE_WIDTH),
+        name="Land Data (on_water_land.pkl)",
+        hovertemplate="Land edge<br>X: %{x:.2f}<br>Y: %{y:.2f}<extra></extra>",
+        showlegend=True,
+    )
+
+
+def build_boat_on_land_status(vs: VisualizerState, polys_xy: List[Polygon]) -> Tuple[str, str]:
+    """Describe where the boat's latest GPS fix sits relative to the land dataset.
+
+    Containment is tested in lat/lon against the raw pkl (the same geometry and convention the
+    planner uses), while the distance to the nearest land edge is measured in the XY frame, whose
+    units are already km.
+
+    Args:
+        vs: VisualizerState providing the latest GPS lat/lon.
+        polys_xy: Land polygons in XY (km), used for the edge distance.
+
+    Returns:
+        (text, color) for the on-plot annotation.
+    """
+    latlon = vs.sailbot_lat_lon[-1]
+    land = load_on_water_land()
+    if land.is_empty:
+        return ("Land data unavailable (on_water_land.pkl could not be loaded)", "darkorange")
+
+    inside = land.contains(Point(latlon.longitude, latlon.latitude))
+
+    # ``boundary`` rather than ``exterior``: an interior ring is just as much a land edge, and for
+    # a fix inside a hole it is the only nearby one.
+    boat_xy = Point(vs.sailbot_pos_x_km[-1], vs.sailbot_pos_y_km[-1])
+    edge_dist_km = min(
+        (poly.boundary.distance(boat_xy) for poly in polys_xy if not poly.is_empty),
+        default=float("inf"),
+    )
+
+    ref_dist_km = cs.calculate_distance_from_on_water_reference_km(latlon)
+    dataset_note = (
+        ""
+        if ref_dist_km < DISTANCE_FROM_ON_WATER_LANDMARK
+        else f" — NOTE: boat is {ref_dist_km:.1f} km from the on-water reference, so the planner "
+        f"loads offshore_land.pkl, not this dataset"
+    )
+
+    if inside:
+        return (
+            f"⚠️ GPS fix is INSIDE the land data "
+            f"({edge_dist_km:.3f} km from the nearest edge){dataset_note}",
+            "red",
+        )
+    return (
+        f"GPS fix is on water ({edge_dist_km:.3f} km from the nearest land edge){dataset_note}",
+        "darkgreen",
+    )
+
+
+def add_land_pkl_overlay(fig: go.Figure, vs: VisualizerState) -> None:
+    """Draw the full land dataset and report whether the boat's GPS fix falls inside it.
+
+    Unlike the "Land Obstacle" traces — which are the dataset clipped to the OMPL state space and
+    round-tripped through the ROS message — this draws the pkl geometry directly, so land outside
+    the current state space is still visible.
+
+    Args:
+        fig: Target Plotly figure.
+        vs: VisualizerState providing the reference lat/lon and the boat's GPS position.
+    """
+    polys_xy = land_pkl_polygons_xy(vs.reference_lat_lon)
+    if not polys_xy:
+        _add_map_message(fig, "Land data unavailable")
+        return
+
+    for shape in build_land_pkl_shapes(polys_xy):
+        fig.add_shape(**shape)
+    fig.add_trace(build_land_pkl_legend_trace(polys_xy))
+
+    text, color = build_boat_on_land_status(vs, polys_xy)
+    fig.add_annotation(
+        text=text,
+        xref="paper",
+        yref="paper",
+        x=0.02,
+        y=0.92,
+        xanchor="left",
+        showarrow=False,
+        font=dict(color=color, size=12),
+        bgcolor="rgba(255, 255, 255, 0.85)",
+        bordercolor=color,
+        borderwidth=1,
     )
 
 
@@ -2226,6 +2557,12 @@ def dash_app(q: Queue):
                                 value=[],
                                 style={"fontWeight": "bold", "marginLeft": "10px"},
                             ),
+                            dcc.Checklist(
+                                id="land-data-toggle",
+                                options={"on": " Show land data"},
+                                value=[],
+                                style={"fontWeight": "bold", "marginLeft": "10px"},
+                            ),
                         ],
                     ),
                     html.Div(
@@ -2307,6 +2644,7 @@ def dash_app(q: Queue):
     Input("live-graph", "relayoutData"),
     Input("reset-button", "n_clicks"),
     Input("map-toggle", "value"),
+    Input("land-data-toggle", "value"),
     State("live-graph", "figure"),
     State("goal-store", "data"),
     State("range-store", "data"),
@@ -2318,6 +2656,7 @@ def update_graph(
     relayout_data,
     __: int,
     map_toggle: Optional[List[str]],
+    land_data_toggle: Optional[List[str]],
     current_figure,
     last_goal_xy_km: Optional[List[float]],
     stored_range,
@@ -2332,6 +2671,7 @@ def update_graph(
         relayout_data: Data relayed from Plotly when user pans, zooms in/out, autoscales
         __: Reset button n_clicks (unused).
         map_toggle: Value of the "Show map" checklist (["on"] when enabled).
+        land_data_toggle: Value of the "Show land data" checklist (["on"] when enabled).
         current_figure: Current figure state from live-graph.
         last_goal_xy_km: Previously stored goal as [x, y] or None on first run.
         stored_range: Previously stored range as {"x": [xmin, xmax], "y": [ymin, ymax]}
@@ -2346,7 +2686,7 @@ def update_graph(
             - last_range: [x-range, y-range] for storage in dcc.Store (JSON serializable)
             - reached_global_keys: list of reached global waypoint keys for storage in dcc.Store
             - path_status: remaining waypoint count and latest replan reason
-            - state_warning: a warning banner when the latest visualizer state is None
+            - state_warning: a warning banner when state data is stale, missing, or unavailable
 
     """
     global queue, _latest_vs  # noqa
@@ -2372,6 +2712,12 @@ def update_graph(
             assert cached_vs is not None
             vs = cached_vs
             state_warning = failure_handling.state_warning
+        elif queued_vs.unavailable_data:
+            vs = queued_vs
+            _latest_vs = vs
+            state_warning = visualizer_state_warning(
+                unavailable_data_warning(queued_vs.unavailable_data)
+            )
         else:
             vs = queued_vs
             _latest_vs = vs
@@ -2381,7 +2727,8 @@ def update_graph(
         # view-only control changed, re-render the cached frame so the control takes effect.
         failure_handling = handle_visualizer_state_failure(
             stored_range,
-            should_render_cached_state=triggered_id in ("map-toggle", "reset-button"),
+            should_render_cached_state=triggered_id
+            in ("map-toggle", "land-data-toggle", "reset-button"),
         )
         if failure_handling.callback_return is not None:
             return failure_handling.callback_return
@@ -2396,6 +2743,7 @@ def update_graph(
     )
 
     show_map = map_toggle is not None and "on" in map_toggle
+    show_land_data = land_data_toggle is not None and "on" in land_data_toggle
 
     if relayout_data and triggered_id == "live-graph":
         # Only process relayout_data if it was the actual trigger
@@ -2422,7 +2770,7 @@ def update_graph(
         last_range = stored_range
 
     fig, new_goal_xy, reached_global_keys = build_figure(
-        vs, last_goal_tuple, last_range, reached_global_keys, show_map
+        vs, last_goal_tuple, last_range, reached_global_keys, show_map, show_land_data
     )
 
     if triggered_id == "reset-button":

@@ -9,7 +9,7 @@ ros_topics:
   FILTERED_WIND_SENSOR: filtered_wind_sensor
   GLOBAL_PATH: global_path
   GPS: gps
-  LOCAL_PATH: local_path_data
+  LOCAL_PATH: local_path
   MOCK_GPS: mock_gps
   MOCK_WIND_SENSORS: mock_wind_sensors
   WIND_SENSORS: wind_sensors

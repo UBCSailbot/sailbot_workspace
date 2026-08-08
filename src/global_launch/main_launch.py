@@ -59,7 +59,7 @@ GLOBAL_LAUNCH_ARGUMENTS = [
     DeclareLaunchArgument(
         name="mode",
         default_value="development",
-        choices=["production", "development", "sim"],
+        choices=["production", "development", "sim", "can"],
         description="System mode. Decides whether the system is ran with development, production"
         + " or sim interfaces",
     ),
@@ -99,6 +99,15 @@ GLOBAL_LAUNCH_ARGUMENTS = [
         description="The test plan to use for on-water testing when on_water_mock_ais=True. "
         + "Leave empty to use the value in the config file. This will be the following yaml file: "
         + "src/local_pathfinding/test_plans/on_water_mock_ais.yaml",
+    ),
+    DeclareLaunchArgument(
+        name="rudder_debug",
+        default_value="",
+        choices=["", "true", "false"],
+        description="Override which CAN frame /rudder is published from. 'true' uses the rudder"
+        + " board's RUDDER_DEBUG_DATA_FRAME (0x204), for logs and boards predating the e-compass."
+        + " 'false' uses RUDDER_DATA_FRAME (0x050), falling back to 0x204 if it goes quiet. Leave"
+        + " empty to use the value in the config file.",
     ),
     DeclareLaunchArgument(
         name="visualizer_mode",
@@ -198,7 +207,7 @@ def get_running_ros_packages(mode: str) -> List[str]:
         List[str]: List of ROS package names to be launched.
     """
     match mode:
-        case "production":
+        case "production" | "can":
             return PRODUCTION_ROS_PACKAGES
         case "development":
             return DEVELOPMENT_ROS_PACKAGES
@@ -206,7 +215,8 @@ def get_running_ros_packages(mode: str) -> List[str]:
             return SIM_ROS_PACKAGES
         case _:
             raise ValueError(
-                "Invalid launch mode. Must be one of 'production'," " 'development', or 'sim'."
+                "Invalid launch mode. Must be one of 'production',"
+                " 'development', 'sim' or 'can'."
             )
 
 

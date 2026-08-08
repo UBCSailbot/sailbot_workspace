@@ -7,6 +7,12 @@ import pytest
 import custom_interfaces.msg as ci
 import local_pathfinding.coord_systems as cs
 import local_pathfinding.visualizer as viz
+from local_pathfinding.constants import (
+    AIS_SHIPS_UNAVAILABLE,
+    DESIRED_HEADING_UNAVAILABLE,
+    GPS_UNAVAILABLE,
+    WIND_SENSOR_UNAVAILABLE,
+)
 
 
 # --------------------------------------
@@ -183,22 +189,69 @@ def make_visualizer_message() -> ci.LPathData:
     )
 
 
-def test_visualizer_uses_rudder_heading_for_boat_and_wind() -> None:
-    rudder_heading = ci.HelperHeading(heading=90.0)
+def test_visualizer_uses_message_heading_for_boat_and_wind() -> None:
+    message = make_visualizer_message()
+    message.heading = ci.HelperHeading(heading=90.0)
     state = viz.VisualizerState(
-        msgs=deque([make_visualizer_message()]),
-        heading=rudder_heading,
+        msgs=deque([message]),
     )
 
     assert state.boat_heading_deg == 90.0
     assert state.boat_heading_deg != state.latest_msg.gps.heading.heading
 
-    aw_direction_deg = viz.wcs.boat_to_global_coordinate(rudder_heading.heading, 0.0)
+    aw_direction_deg = viz.wcs.boat_to_global_coordinate(message.heading.heading, 0.0)
     expected_aw = viz.cs.polar_to_cartesian(math.radians(aw_direction_deg), 10.0)
     assert state.aw_vector_kmph == pytest.approx(expected_aw)
 
     trace = viz.build_boat_trace(state, boat_xy_km=(0.0, 0.0), dist_to_goal_km=1.0)
     assert trace.marker.angle == pytest.approx(
-        viz.cs.true_bearing_to_plotly_cartesian(rudder_heading.heading)
+        viz.cs.true_bearing_to_plotly_cartesian(message.heading.heading)
     )
     assert "Heading: 90.0°" in trace.hovertemplate
+
+
+def test_visualizer_accepts_unavailable_message_heading() -> None:
+    message = make_visualizer_message()
+    message.heading = ci.HelperHeading(heading=viz.HEADING_UNAVAILABLE)
+
+    state = viz.VisualizerState(msgs=deque([message]))
+
+    assert state.boat_heading_deg == 0.0
+    assert state.unavailable_data == ["heading"]
+
+
+def test_visualizer_handles_unavailable_non_gps_data() -> None:
+    message = make_visualizer_message()
+    message.heading = ci.HelperHeading(heading=viz.HEADING_UNAVAILABLE)
+    message.filtered_wind_sensor = WIND_SENSOR_UNAVAILABLE
+    message.ais_ships = AIS_SHIPS_UNAVAILABLE
+    message.desired_heading = DESIRED_HEADING_UNAVAILABLE
+
+    state = viz.VisualizerState(msgs=deque([message]))
+
+    assert state.unavailable_data == [
+        "heading",
+        "wind sensor",
+        "AIS ships",
+        "desired heading",
+    ]
+    assert state.boat_heading_deg == 0.0
+    assert state.desired_heading_deg == 0.0
+    assert not state.sail_enabled
+    assert state.ais_ships == []
+    assert state.ais_ships_by_id == {}
+    assert state.aw_vector_kmph == cs.XY(0.0, 0.0)
+    assert state.tw_vector_kmph == cs.XY(0.0, 0.0)
+    assert viz.unavailable_data_warning(state.unavailable_data) == (
+        "Warning: Unavailable data: heading, wind sensor, AIS ships, desired heading. "
+        "Related visualizations might be incorrect."
+    )
+
+
+def test_create_visualizer_state_returns_none_for_unavailable_gps() -> None:
+    message = make_visualizer_message()
+    message.gps = GPS_UNAVAILABLE
+
+    assert viz.create_visualizer_state(msgs=deque([message])) is None
+    with pytest.raises(ValueError, match="GPS data is unavailable"):
+        viz.VisualizerState(msgs=deque([message]))

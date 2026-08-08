@@ -2,3 +2,8 @@
 can_transceiver_node:
   ros__parameters:
     enabled: true
+    rudder_debug: false # force heading input to use RUDDER_DEBUG_DATA_FRAME
+    # CAN log replay (only used when mode:=can)
+    # can_replay_file: "/workspaces/sailbot_workspace/src/network_systems/lib/can_log/combined_can_frames.csv"    # path to a candump-style CSV log; empty disables replay outside of can mode
+    # can_replay_rate: 1.0   # 1.0 = real time, 2.0 = twice as fast, <= 0 = as fast as possible
+    # can_replay_loop: false # restart from the top of the log after the last frame

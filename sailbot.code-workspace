@@ -110,26 +110,26 @@
             "**/log": true
         },
         "todo-tree.highlights.useColourScheme": true,
-        "workbench.colorCustomizations": {
-            "activityBar.activeBackground": "#19488d",
-            "activityBar.activeBorder": "#dd4181",
-            "activityBar.background": "#19488d",
-            "activityBar.foreground": "#e7e7e7",
-            "activityBar.inactiveForeground": "#e7e7e799",
-            "activityBarBadge.background": "#dd4181",
-            "activityBarBadge.foreground": "#e7e7e7",
-            "sash.hoverBorder": "#19488d",
-            "statusBar.background": "#113262",
-            "statusBar.foreground": "#e7e7e7",
-            "statusBarItem.hoverBackground": "#19488d",
-            "statusBarItem.remoteBackground": "#113262",
-            "statusBarItem.remoteForeground": "#e7e7e7",
-            "titleBar.activeBackground": "#113262",
-            "titleBar.activeForeground": "#e7e7e7",
-            "titleBar.inactiveBackground": "#11326299",
-            "titleBar.inactiveForeground": "#e7e7e799",
-            "commandCenter.border": "#e7e7e799"
-        },
+        // "workbench.colorCustomizations": {
+        //     "activityBar.activeBackground": "#19488d",
+        //     "activityBar.activeBorder": "#dd4181",
+        //     "activityBar.background": "#19488d",
+        //     "activityBar.foreground": "#e7e7e7",
+        //     "activityBar.inactiveForeground": "#e7e7e799",
+        //     "activityBarBadge.background": "#dd4181",
+        //     "activityBarBadge.foreground": "#e7e7e7",
+        //     "sash.hoverBorder": "#19488d",
+        //     "statusBar.background": "#113262",
+        //     "statusBar.foreground": "#e7e7e7",
+        //     "statusBarItem.hoverBackground": "#19488d",
+        //     "statusBarItem.remoteBackground": "#113262",
+        //     "statusBarItem.remoteForeground": "#e7e7e7",
+        //     "titleBar.activeBackground": "#113262",
+        //     "titleBar.activeForeground": "#e7e7e7",
+        //     "titleBar.inactiveBackground": "#11326299",
+        //     "titleBar.inactiveForeground": "#e7e7e799",
+        //     "commandCenter.border": "#e7e7e799"
+        // },
 
         // python
         "[python]": {
@@ -507,6 +507,13 @@
                 "command": "./scripts/setup.sh",
                 "problemMatcher": []
             },
+            {
+                "label": "Pull Mock CAN Log",
+                "detail": "Pull combined_can_frames.csv from an OWT-data session for CAN log replay.",
+                "type": "shell",
+                "command": "./scripts/get_mock_can_msg.sh -d ${input:owt_date}",
+                "problemMatcher": []
+            },
             // ROS Launch Tasks
             {
                 "label": "Launch Package",
@@ -559,6 +566,19 @@
                 "type": "promptString",
                 "description": "Optional ROS package launch flags or arguments",
                 "default": ""
+            },
+            {
+                "id": "owt_date",
+                "type": "pickString",
+                "description": "OWT session date (yyyy-mm-dd) to pull combined_can_frames.csv from",
+                "default": "2026-06-06",
+                "options": [
+                    "2026-06-06",
+                    "2026-05-23",
+                    "2026-03-15",
+                    "2026-07-11",
+                    "2026-07-26",
+                ]
             }
         ]
     }

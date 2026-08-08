@@ -23,6 +23,9 @@
         },
         {
             "pattern": "^https://linuxize.com*"
+        },
+        {
+            "pattern": "^https://ubcsailbot.atlassian.net*"
         }
     ],
 

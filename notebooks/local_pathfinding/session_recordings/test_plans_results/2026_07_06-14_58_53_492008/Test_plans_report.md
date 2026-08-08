@@ -1,3 +1,5 @@
+<!-- Generated report; footnote lists stay indented to attach to footnotes -->
+<!-- markdownlint-disable MD007 -->
 <style>
 .wide-table {
   width: 100%;

@@ -28,6 +28,90 @@ normalizing its range and filtering its vector components; it does not apply a
 180° source/flow conversion. Raw CAN wind sensors must therefore provide the
 same flow-toward convention.
 
+### CAN Log Replay
+
+<!-- markdownlint-disable-next-line MD013 -->
+`can_transceiver_node` can replay a recorded candump-style CSV log instead of talking to real or mocked CAN hardware, so the rest of the stack (`controller`, `local_pathfinding`) can be exercised against realistic, previously-recorded CAN traffic without a boat. This is what `mode:="can"` (see [global_launch's README](../global_launch/README.md)) uses; `development` and `sim` modes are unaffected and always use a self-looping mock file.
+
+Replay is controlled by three ROS parameters on `can_transceiver_node`:
+
+<!-- markdownlint-disable MD013 -->
+- `can_replay_file`: path to a candump-style CSV log. Expected row format is
+  `<ISO timestamp>,<elapsed seconds>,<iface>  <hex ID>  [<decimal length>]  <hex bytes>`,
+  e.g. `2026-06-06T20:16:32.154049,5645.967,can0  041  [04]  5D 01 40 00`.
+  Frames are timed and ordered using the timestamp column (not the elapsed
+  seconds column, since combined logs from multiple sessions can have
+  inconsistent elapsed bases). Rows the logger split mid-frame across two
+  lines are reassembled automatically, and a one-line summary of any
+  malformed or dropped rows is printed once the file finishes parsing. **This
+  parameter is required when `mode:="can"`**; the node fails to start if it
+  is empty.
+- `can_replay_rate`: playback speed multiplier. `1.0` (default) replays at
+  the log's original pace, `2.0` replays twice as fast, and any value `<= 0`
+  replays as fast as possible with no pacing.
+- `can_replay_loop`: `true` restarts from the beginning of the log once the
+  last frame is replayed, instead of stopping. Defaults to `false`.
+<!-- markdownlint-enable MD013 -->
+
+#### Rudder heading source
+
+<!-- markdownlint-disable MD013 -->
+Logs and boards predating the e-compass send no `RUDDER_DATA_FRAME` (0x050), so `/rudder` is never published. `local_pathfinding` treats a missing heading as an inactive input and **publishes desired heading with the sail disabled**, which makes such a log useless for exercising navigation.
+
+The heading is still available in `RUDDER_DEBUG_DATA_FRAME` (0x204), which the rudder board sends to mainframe alongside rudder angle, roll, pitch, the controller terms, and speed over ground. `can_transceiver_node` selects between the two with the `rudder_debug` parameter, and the choice applies to live CAN and to replay alike:
+
+- `rudder_debug: false` (default) publishes from 0x050, automatically falling back to 0x204 if no 0x050 arrives for 5 seconds, and logging each time the source switches.
+- `rudder_debug: true` publishes from 0x204 only, ignoring 0x050 entirely.
+
+Set it in the config yaml, or override it from either launch entry point with the `rudder_debug` launch argument:
+
+```bash
+ros2 launch global_launch main_launch.py mode:="can" rudder_debug:="true"
+```
+
+> **Warning:** 0x204 is an ELEC debug frame rather than the e-compass, so treat a `/rudder` sourced from it accordingly.
+<!-- markdownlint-enable MD013 -->
+
+CAN logs are **not** checked into this repository; they live in
+[`UBCSailbot/OWT-data`](https://github.com/UBCSailbot/OWT-data), versioned by
+on-water-test session date. `globals.yaml` and `on_water_globals.yaml` both
+point `can_replay_file` at `lib/can_log/combined_can_frames.csv`, which is where
+the helper script drops a log. On a fresh workspace that file does not exist
+yet, so launching with `mode:="can"` downloads the default session first and
+then starts the node — `mode:="can"` works out of the box, but the first run
+needs network access and pulls a CSV file. Later runs reuse the downloaded
+log.
+
+To pull a log yourself (or to pick a different session), run the script
+directly:
+
+```bash
+./scripts/get_mock_can_msg.sh          # defaults to the OWT-2026-06-06 session
+./scripts/get_mock_can_msg.sh -d yyyy-mm-dd   # a specific session
+```
+
+Another way to run the script is to run the equivalent VS Code Task:
+
+<!-- markdownlint-disable-next-line MD013 -->
+`CTRL + SHIFT + P > Tasks: Run Task > Pull Mock CAN Log > Choose an owt date > csv is pulled, enjoy 😊`
+
+Only the default path is fetched automatically. If `can_replay_file` points
+somewhere else, that log is yours to provide, and `can_transceiver_node` fails
+to start with an error naming this script if it is missing. To replay a
+different log or change the pacing, either point `config` at a custom yaml with
+your own `can_transceiver_node.ros__parameters`, or run the node directly:
+
+```bash
+ros2 run network_systems can_transceiver --ros-args \
+  -p enabled:=true -p mode:=can \
+  -p can_replay_file:=/path/to/your/log.csv -p can_replay_rate:=0
+```
+
+NOTE:
+In CAN mode, the local and remote transceivers will effectively run in development
+mode. It is done like this to prevent running the satellite or the database when
+we are simply testing it in our development environment.
+
 ### ROS Launch
 
 <!-- markdownlint-disable-next-line MD013 -->
@@ -38,6 +122,9 @@ For example:
 ```bash
 ros2 launch network_systems main_launch.py
 ```
+
+Set `rudder_debug:=true` to force headings to come debug rudder data frame `0x204`.
+Otherwise, default to standard rudder data frame.
 
 This is the best option if multiple modules need to be run at once. Launch
 configurations are found under the [config](config/) folder. These
