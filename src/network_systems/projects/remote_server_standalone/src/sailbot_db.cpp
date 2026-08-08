@@ -22,8 +22,6 @@ namespace bstream = bsoncxx::builder::stream;
 using Polaris::GlobalPath;
 using Polaris::Sensors;
 
-mongocxx::instance SailbotDB::inst_{};  // statically initialize instance
-
 // PUBLIC
 
 std::ostream & operator<<(std::ostream & os, const SailbotDB::RcvdMsgInfo & info)
@@ -69,8 +67,12 @@ std::string SailbotDB::mkTimestamp(const std::tm & tm)
 
 SailbotDB::SailbotDB(const std::string & db_name, const std::string & mongodb_conn_str) : db_name_(db_name)
 {
-    mongocxx::uri uri = mongocxx::uri{mongodb_conn_str};
-    pool_             = std::make_unique<mongocxx::pool>(uri);
+    // The mongo C driver may be built with automatic init/cleanup disabled, so a mongocxx::instance
+    // (which calls mongoc_init()) must exist before any pool is created. A function-local static
+    // initializes on first use, which avoids the static init order fiasco between translation units.
+    static mongocxx::instance inst{};
+    mongocxx::uri             uri = mongocxx::uri{mongodb_conn_str};
+    pool_                         = std::make_unique<mongocxx::pool>(uri);
 }
 
 void SailbotDB::printDoc(const DocVal & doc) { std::cout << bsoncxx::to_json(doc.view()) << std::endl; }

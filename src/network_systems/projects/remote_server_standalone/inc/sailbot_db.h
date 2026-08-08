@@ -57,7 +57,6 @@ protected:
     std::unique_ptr<mongocxx::pool> pool_;
 
 private:
-    static mongocxx::instance       inst_;
     bool storeGps(const Polaris::Sensors::Gps & gps_pb, const std::string & timestamp, mongocxx::client & client);
     bool storeAis(
       const ProtoList<Polaris::Sensors::Ais> & ais_ships_pb, const std::string & timestamp, mongocxx::client & client);
