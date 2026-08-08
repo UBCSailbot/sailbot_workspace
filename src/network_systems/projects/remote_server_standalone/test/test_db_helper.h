@@ -5,7 +5,7 @@
 
 #include "sailbot_db.h"
 #include "sensors.pb.h"
-#include "utils/utils.h"
+#include "utils.h"
 
 class UtilDB : public SailbotDB
 {

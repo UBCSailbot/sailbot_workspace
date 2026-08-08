@@ -75,6 +75,6 @@ message Sensors
     repeated float    temp_sensors     = 5;
     repeated float    ph_sensors       = 6;
     repeated float    salinity_sensors = 7;
-    repeated float    pressure_sensors = 8;
+    // repeated float    pressure_sensors = 8;
     Path              local_path_data  = 9;
 }

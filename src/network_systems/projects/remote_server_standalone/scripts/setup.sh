@@ -5,8 +5,8 @@ set -e
 sudo apt-get update
 sudo apt-get install -y build-essential cmake pkg-config wget curl gnupg
 
-# 2. Install Boost, Protobuf, and Curl
-sudo apt-get install -y libboost-all-dev protobuf-compiler libprotobuf-dev libcurl4-openssl-dev
+# 2. Install Boost, Protobuf, Curl, and GoogleTest
+sudo apt-get install -y libboost-all-dev protobuf-compiler libprotobuf-dev libcurl4-openssl-dev libgtest-dev
 
 # 3. Install MongoDB C driver (libmongoc, libbson) from source
 MONGOC_VERSION=1.24.4

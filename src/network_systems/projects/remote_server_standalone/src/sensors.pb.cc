@@ -220,7 +220,6 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_sensors_2eproto::offsets[] PRO
   PROTOBUF_FIELD_OFFSET(::Polaris::Sensors, temp_sensors_),
   PROTOBUF_FIELD_OFFSET(::Polaris::Sensors, ph_sensors_),
   PROTOBUF_FIELD_OFFSET(::Polaris::Sensors, salinity_sensors_),
-  PROTOBUF_FIELD_OFFSET(::Polaris::Sensors, pressure_sensors_),
   PROTOBUF_FIELD_OFFSET(::Polaris::Sensors, local_path_data_),
 };
 static const ::PROTOBUF_NAMESPACE_ID::internal::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
@@ -245,24 +244,23 @@ static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] =
 
 const char descriptor_table_protodef_sensors_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
   "\n\rsensors.proto\022\007Polaris\032\016waypoint.proto"
-  "\"\261\005\n\007Sensors\022!\n\003gps\030\001 \001(\0132\024.Polaris.Sens"
+  "\"\227\005\n\007Sensors\022!\n\003gps\030\001 \001(\0132\024.Polaris.Sens"
   "ors.Gps\022+\n\014wind_sensors\030\002 \003(\0132\025.Polaris."
   "Sensors.Wind\022+\n\tbatteries\030\003 \003(\0132\030.Polari"
   "s.Sensors.Battery\022\'\n\tais_ships\030\004 \003(\0132\024.P"
   "olaris.Sensors.Ais\022\024\n\014temp_sensors\030\005 \003(\002"
   "\022\022\n\nph_sensors\030\006 \003(\002\022\030\n\020salinity_sensors"
-  "\030\007 \003(\002\022\030\n\020pressure_sensors\030\010 \003(\002\022.\n\017loca"
-  "l_path_data\030\t \001(\0132\025.Polaris.Sensors.Path"
-  "\032J\n\003Gps\022\020\n\010latitude\030\001 \001(\002\022\021\n\tlongitude\030\002"
-  " \001(\002\022\r\n\005speed\030\003 \001(\002\022\017\n\007heading\030\004 \001(\002\032(\n\004"
-  "Wind\022\r\n\005speed\030\001 \001(\002\022\021\n\tdirection\030\002 \001(\005\032+"
-  "\n\007Battery\022\017\n\007voltage\030\001 \001(\002\022\017\n\007current\030\002 "
-  "\001(\002\032|\n\003Ais\022\n\n\002id\030\001 \001(\r\022\020\n\010latitude\030\002 \001(\002"
-  "\022\021\n\tlongitude\030\003 \001(\002\022\013\n\003sog\030\004 \001(\002\022\013\n\003cog\030"
-  "\005 \001(\002\022\013\n\003rot\030\006 \001(\002\022\r\n\005width\030\007 \001(\002\022\016\n\006len"
-  "gth\030\010 \001(\002\032#\n\007Generic\022\n\n\002id\030\001 \001(\r\022\014\n\004data"
-  "\030\002 \001(\004\032,\n\004Path\022$\n\twaypoints\030\001 \003(\0132\021.Pola"
-  "ris.Waypointb\006proto3"
+  "\030\007 \003(\002\022.\n\017local_path_data\030\t \001(\0132\025.Polari"
+  "s.Sensors.Path\032J\n\003Gps\022\020\n\010latitude\030\001 \001(\002\022"
+  "\021\n\tlongitude\030\002 \001(\002\022\r\n\005speed\030\003 \001(\002\022\017\n\007hea"
+  "ding\030\004 \001(\002\032(\n\004Wind\022\r\n\005speed\030\001 \001(\002\022\021\n\tdir"
+  "ection\030\002 \001(\005\032+\n\007Battery\022\017\n\007voltage\030\001 \001(\002"
+  "\022\017\n\007current\030\002 \001(\002\032|\n\003Ais\022\n\n\002id\030\001 \001(\r\022\020\n\010"
+  "latitude\030\002 \001(\002\022\021\n\tlongitude\030\003 \001(\002\022\013\n\003sog"
+  "\030\004 \001(\002\022\013\n\003cog\030\005 \001(\002\022\013\n\003rot\030\006 \001(\002\022\r\n\005widt"
+  "h\030\007 \001(\002\022\016\n\006length\030\010 \001(\002\032#\n\007Generic\022\n\n\002id"
+  "\030\001 \001(\r\022\014\n\004data\030\002 \001(\004\032,\n\004Path\022$\n\twaypoint"
+  "s\030\001 \003(\0132\021.Polaris.Waypointb\006proto3"
   ;
 static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_sensors_2eproto_deps[1] = {
   &::descriptor_table_waypoint_2eproto,
@@ -278,7 +276,7 @@ static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_sen
 };
 static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_sensors_2eproto_once;
 const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_sensors_2eproto = {
-  false, false, descriptor_table_protodef_sensors_2eproto, "sensors.proto", 740,
+  false, false, descriptor_table_protodef_sensors_2eproto, "sensors.proto", 714,
   &descriptor_table_sensors_2eproto_once, descriptor_table_sensors_2eproto_sccs, descriptor_table_sensors_2eproto_deps, 7, 1,
   schemas, file_default_instances, TableStruct_sensors_2eproto::offsets,
   file_level_metadata_sensors_2eproto, 7, file_level_enum_descriptors_sensors_2eproto, file_level_service_descriptors_sensors_2eproto,
@@ -1834,8 +1832,7 @@ Sensors::Sensors(::PROTOBUF_NAMESPACE_ID::Arena* arena)
   ais_ships_(arena),
   temp_sensors_(arena),
   ph_sensors_(arena),
-  salinity_sensors_(arena),
-  pressure_sensors_(arena) {
+  salinity_sensors_(arena) {
   SharedCtor();
   RegisterArenaDtor(arena);
   // @@protoc_insertion_point(arena_constructor:Polaris.Sensors)
@@ -1847,8 +1844,7 @@ Sensors::Sensors(const Sensors& from)
       ais_ships_(from.ais_ships_),
       temp_sensors_(from.temp_sensors_),
       ph_sensors_(from.ph_sensors_),
-      salinity_sensors_(from.salinity_sensors_),
-      pressure_sensors_(from.pressure_sensors_) {
+      salinity_sensors_(from.salinity_sensors_) {
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   if (from._internal_has_gps()) {
     gps_ = new ::Polaris::Sensors_Gps(*from.gps_);
@@ -1909,7 +1905,6 @@ void Sensors::Clear() {
   temp_sensors_.Clear();
   ph_sensors_.Clear();
   salinity_sensors_.Clear();
-  pressure_sensors_.Clear();
   if (GetArena() == nullptr && gps_ != nullptr) {
     delete gps_;
   }
@@ -2002,16 +1997,6 @@ const char* Sensors::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::in
           ptr += sizeof(float);
         } else goto handle_unusual;
         continue;
-      // repeated float pressure_sensors = 8;
-      case 8:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 66)) {
-          ptr = ::PROTOBUF_NAMESPACE_ID::internal::PackedFloatParser(_internal_mutable_pressure_sensors(), ptr, ctx);
-          CHK_(ptr);
-        } else if (static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 69) {
-          _internal_add_pressure_sensors(::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<float>(ptr));
-          ptr += sizeof(float);
-        } else goto handle_unusual;
-        continue;
       // .Polaris.Sensors.Path local_path_data = 9;
       case 9:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 74)) {
@@ -2092,11 +2077,6 @@ failure:
   // repeated float salinity_sensors = 7;
   if (this->_internal_salinity_sensors_size() > 0) {
     target = stream->WriteFixedPacked(7, _internal_salinity_sensors(), target);
-  }
-
-  // repeated float pressure_sensors = 8;
-  if (this->_internal_pressure_sensors_size() > 0) {
-    target = stream->WriteFixedPacked(8, _internal_pressure_sensors(), target);
   }
 
   // .Polaris.Sensors.Path local_path_data = 9;
@@ -2189,21 +2169,6 @@ size_t Sensors::ByteSizeLong() const {
     total_size += data_size;
   }
 
-  // repeated float pressure_sensors = 8;
-  {
-    unsigned int count = static_cast<unsigned int>(this->_internal_pressure_sensors_size());
-    size_t data_size = 4UL * count;
-    if (data_size > 0) {
-      total_size += 1 +
-        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::Int32Size(
-            static_cast<::PROTOBUF_NAMESPACE_ID::int32>(data_size));
-    }
-    int cached_size = ::PROTOBUF_NAMESPACE_ID::internal::ToCachedSize(data_size);
-    _pressure_sensors_cached_byte_size_.store(cached_size,
-                                    std::memory_order_relaxed);
-    total_size += data_size;
-  }
-
   // .Polaris.Sensors.Gps gps = 1;
   if (this->has_gps()) {
     total_size += 1 +
@@ -2255,7 +2220,6 @@ void Sensors::MergeFrom(const Sensors& from) {
   temp_sensors_.MergeFrom(from.temp_sensors_);
   ph_sensors_.MergeFrom(from.ph_sensors_);
   salinity_sensors_.MergeFrom(from.salinity_sensors_);
-  pressure_sensors_.MergeFrom(from.pressure_sensors_);
   if (from.has_gps()) {
     _internal_mutable_gps()->::Polaris::Sensors_Gps::MergeFrom(from._internal_gps());
   }
@@ -2291,7 +2255,6 @@ void Sensors::InternalSwap(Sensors* other) {
   temp_sensors_.InternalSwap(&other->temp_sensors_);
   ph_sensors_.InternalSwap(&other->ph_sensors_);
   salinity_sensors_.InternalSwap(&other->salinity_sensors_);
-  pressure_sensors_.InternalSwap(&other->pressure_sensors_);
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
       PROTOBUF_FIELD_OFFSET(Sensors, local_path_data_)
       + sizeof(Sensors::local_path_data_)

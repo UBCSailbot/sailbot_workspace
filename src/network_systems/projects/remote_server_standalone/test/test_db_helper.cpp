@@ -1,4 +1,4 @@
-#include "util_db.h"
+#include "test_db_helper.h"
 
 #include <bsoncxx/builder/basic/document.hpp>
 #include <bsoncxx/builder/stream/document.hpp>
@@ -12,10 +12,10 @@
 #include <mongocxx/options/find.hpp>
 #include <random>
 
-#include "cmn_hdrs/shared_constants.h"
-#include "sailbot_db/inc/sailbot_db.h"
-#include "sailbot_db/inc/util_db.h"
-#include "utils/utils.h"
+#include "shared_constants.h"
+#include "sailbot_db.h"
+#include "test_db_helper.h"
+#include "utils.h"
 
 using Polaris::GlobalPath;
 using Polaris::Sensors;
