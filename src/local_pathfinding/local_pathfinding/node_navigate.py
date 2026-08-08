@@ -234,9 +234,8 @@ class Sailbot(Node):
         )
 
         # attributes from subscribers
-        # ais_ships is rebuilt from this map; None until the first message.
-        self._tracked_ais_ships: dict[int, TrackedAISShip] = {}
-        self.ais_ships: ci.AISShips | None = None
+        # None means no AIS message has arrived; an empty map means no ships are in range.
+        self._tracked_ais_ships: dict[int, TrackedAISShip] | None = None
         self.gps: ci.GPS | None = None
         self.heading: ci.HelperHeading | None = None
         self.gp: GlobalPath | None = None
@@ -481,12 +480,14 @@ class Sailbot(Node):
         self.get_logger().debug(f"Received data from {self.ais_ships_sub.topic}: {msg}")
 
         now_sec = self._now_sec()
+        if self._tracked_ais_ships is None:
+            self._tracked_ais_ships = {}
         for ship in msg.ships:
             if ship.id == INVALID_MMSI:
                 continue
             self._tracked_ais_ships[ship.id] = TrackedAISShip(ship=ship, last_seen_sec=now_sec)
 
-        self._rebuild_ais_snapshot(now_sec)
+        self._rebuild_ais_snapshot()
 
     def gps_callback(self, msg: ci.GPS) -> None:
         self.get_logger().debug(f"Received data from {self.gps_sub.topic}: {msg}")
@@ -550,10 +551,6 @@ class Sailbot(Node):
     # publisher callbacks
     def desired_heading_callback(self) -> None:
         """Get and publish the desired heading."""
-
-        # Ships must age out even when AIS goes silent and no callback fires.
-        if self.ais_ships is not None:
-            self._rebuild_ais_snapshot(self._now_sec())
 
         if self.gp is None:
             self._load_persisted_global_path()
@@ -689,7 +686,7 @@ class Sailbot(Node):
                 else WIND_SENSOR_UNAVAILABLE
             ),
             ais_ships=(
-                self.ais_ships if self.ais_ships is not None else AIS_SHIPS_UNAVAILABLE
+                self._rebuild_ais_snapshot()
             ),
             obstacles=helper_obstacles,
             desired_heading=(
@@ -768,7 +765,7 @@ class Sailbot(Node):
                 inputs=LocalPathInputs(
                     gps=self.gps,
                     heading=self.heading,
-                    ais_ships=self.ais_ships,
+                    ais_ships=self._rebuild_ais_snapshot(),
                     global_path=self._path_from_gp(),
                     target_global_waypoint=target_global_waypoint,
                     filtered_wind_sensor=self.filtered_wind_sensor,
@@ -839,20 +836,23 @@ class Sailbot(Node):
 
     def _all_subs_active(self) -> bool:
         return (
-            self.ais_ships is not None
+            self._tracked_ais_ships is not None
             and self.gps is not None
             and self.heading is not None
             and self.gp is not None
             and self.filtered_wind_sensor is not None
         )
 
-    def _rebuild_ais_snapshot(self, now_sec: float) -> None:
-        """Expire stale ships, then rebuild `ais_ships` from the rest."""
+    def _rebuild_ais_snapshot(self) -> ci.AISShips:
+        """Expire stale ships and return the current AIS snapshot."""
+
+        if self._tracked_ais_ships is None:
+            return AIS_SHIPS_UNAVAILABLE
 
         expired_ids = [
             ship_id
             for ship_id, tracked in self._tracked_ais_ships.items()
-            if now_sec - tracked.last_seen_sec > AIS_SHIP_TIMEOUT_SEC
+            if self._now_sec() - tracked.last_seen_sec > AIS_SHIP_TIMEOUT_SEC
         ]
         for ship_id in expired_ids:
             del self._tracked_ais_ships[ship_id]
@@ -863,8 +863,7 @@ class Sailbot(Node):
                 f"{AIS_SHIP_TIMEOUT_SEC:.0f} seconds"
             )
 
-        # Empty means nothing in range; never goes back to None.
-        self.ais_ships = ci.AISShips(
+        return ci.AISShips(
             ships=[tracked.ship for tracked in self._tracked_ais_ships.values()]
         )
 
@@ -888,7 +887,7 @@ class Sailbot(Node):
         Logs a warning message for each inactive subscriber.
         """
         inactive_subs = []
-        if self.ais_ships is None:
+        if self._tracked_ais_ships is None:
             inactive_subs.append("ais_ships")
         if self.gps is None:
             inactive_subs.append("gps")
