@@ -1,19 +1,23 @@
 # Deploying a release to the Raspberry Pi
 
 This guide covers building a release image of `sailbot_workspace` and deploying
-it to the onboard Raspberry Pi. There are three build paths:
+it to the onboard Raspberry Pi. There are four build paths:
 
 - **Path A — CI build + tar transfer** (recommended; Pi offline)
-- **Path B — CI build + registry pull** (Pi has internet; take a long time to build)
+- **Path B — CI build + registry pull** (Pi has internet; takes a long time to build)
 - **Path C — local build + tar transfer** (fallback; requires native arm64 preferably)
-- **Path D — local build on .devcontainer** (fallback during testing; Pi offline)
+- **Path D —  local build on `.devcontainer` with through Git Pull (fallback during testing; Pi offline)
 
-All three produce the same `linux/arm64` release image. Paths A and B build it
-in GitHub Actions on a native arm64 runner (~6 min), which is faster and more
-reliable than building locally.
+Paths A, B, and C produce the same `linux/arm64` release image. Paths A and B
+build it in GitHub Actions on a native arm64 runner (~6 min), which is faster and
+more reliable than building locally.
 
 Path D interacts with the existing `.devcontainer` on the Pi and involves
-`running scripts/build.sh`(~13 minutes).
+running `scripts/build.sh` (~13 minutes).
+
+If you only need to move **code changes** and not a whole new image, skip the
+build paths entirely — see
+[Updating source without internet](#updating-source-without-internet-pi-offline).
 
 > **Build on arm64, not under emulation.** The release image is `linux/arm64`.
 > Building it on an `amd64` machine uses QEMU emulation, which is ~5× slower
@@ -30,7 +34,7 @@ Both paths start with a single CI workflow run that builds the image natively on
 arm64, pushes it to the registry, and saves a tar artifact in parallel
 (for Path A). This takes about 6 minutes.
 
-There are two ways in running the CI. One is manually and the other is through a
+There are two ways of running the CI. One is manually and the other is through a
 software release on GitHub. It is preferable to create a release so that we can
 track what version of the software we used for deployment and the changes
 compared to the previous release.
@@ -92,6 +96,9 @@ compared to the previous release.
    rsync -a release.tar sailbot@100.95.219.39:/home/sailbot/
    ```
 
+   Use `rsync -aP` on a flaky PAN link — it shows progress and resumes a
+   partial transfer instead of starting the multi-GB tar over.
+
 3. **On the Pi**, load the image and reclaim space:
 
    ```bash
@@ -147,11 +154,21 @@ docker save -o release.tar release:on-water-8
 
 Then transfer and load exactly as in Path A, steps 2–3.
 
+If you'd rather not stage a tar on disk at either end, pipe it straight over
+SSH — one command, no intermediate file:
+
+```bash
+docker save release:on-water-8 | gzip | \
+  ssh sailbot@192.168.0.10 'gunzip | docker load'
+```
+
+This has no resume, so prefer the `rsync -aP` route on an unreliable link.
+
 ---
 
-## Path D — local build on .devcontainer (fallback)
+## Path D — local build on `.devcontainer` with through Git Pull (fallback)
 
-Requires a SSH connection to the Pi. The .devcontainer is named `owt_dev`
+Requires an SSH connection to the Pi. The dev container is named `owt-dev`.
 
 Once connected, run the following:
 
@@ -162,10 +179,100 @@ docker start -i owt-dev
 Once in the container run the following:
 
 ```bash
-git pull # OPTIONAL and if connected to internet
+git pull # only works if the Pi has internet — otherwise see the section below
 
 ./scripts/run_software.sh
 ```
+
+---
+
+## Updating source without internet (Pi offline) through Git Pull
+
+The Pi reaches the boat's private WiFi for SSH, but that network has no route to
+GitHub, so `git pull` on the Pi fails. Git doesn't need the internet, though —
+only a route to a machine holding the objects, and your laptop is that machine.
+SSH over the PAN is a perfectly good transport.
+
+Use this when only **code** changed. If the image itself changed (new apt/ROS
+dependencies, Dockerfile edits), you need a full rebuild via Paths A–C. Code
+baked into the release image can't be patched this way; this updates the repo
+checked out on the Pi host at `~/sailbot_workspace`, which is what Path D's dev
+container uses.
+
+### Option 1 — push from laptop to Pi (usually easiest)
+
+A normal repo refuses pushes to its checked-out branch. Set this once **on the
+Pi**:
+
+```bash
+git -C ~/sailbot_workspace config receive.denyCurrentBranch updateInstead
+```
+
+Then from your laptop:
+
+```bash
+git remote add pi ssh://sailbot@192.168.0.10/home/sailbot/sailbot_workspace
+git push pi HEAD:main
+```
+
+`updateInstead` also updates the Pi's working tree, but only if it's clean —
+commit or stash anything on the Pi first. If you'd rather not set that config,
+push to a scratch branch instead (`git push pi main:incoming`) and merge it on
+the Pi.
+
+### Option 2 — `git bundle` (also survives a USB stick)
+
+A bundle is the same bytes `git push` would have sent, frozen into one file.
+Git treats it as a read-only remote.
+
+On your laptop:
+
+```bash
+# Full bundle — works even into an empty repo
+git bundle create polaris.bundle --branches --tags
+
+# Or incremental: only what the Pi doesn't already have
+BASE=$(ssh sailbot@192.168.0.10 'git -C ~/sailbot_workspace rev-parse HEAD')
+git bundle create polaris.bundle main ^$BASE
+
+rsync -aP polaris.bundle sailbot@192.168.0.10:/home/sailbot/sailbot_workspace/
+```
+
+On the Pi:
+
+```bash
+cd ~/sailbot_workspace
+git bundle verify ./polaris.bundle
+git status                        # confirm clean
+git pull ./polaris.bundle main
+```
+
+To inspect before merging rather than pulling straight in:
+
+```bash
+git fetch ./polaris.bundle main:refs/remotes/bundle/main
+git log --oneline main..bundle/main
+git merge bundle/main             # or: git reset --hard bundle/main
+```
+
+An incremental bundle is typically kilobytes rather than tens of megabytes, so
+prefer it for repeat trips. It's a snapshot — commit again and you regenerate.
+
+### Gotchas
+
+<!-- markdownlint-disable MD013 -->
+
+| Symptom | Cause / fix |
+| --- | --- |
+| `does not appear to be a git repository` | Git couldn't read a bundle at that path, so it fell back to treating it as a repo directory. Check `ls -l` and that `head -c 16` shows `# v2 git bundle`. Always pass an explicit path (`./polaris.bundle`), never a bare filename. |
+| `refusing to fetch into branch 'refs/heads/main' checked out at ...` | You can't fetch directly onto the checked-out branch. Use `git pull`, or fetch into `refs/remotes/bundle/main` and merge. |
+| Later "dubious ownership" or permission errors | Someone ran `sudo git`, leaving root-owned objects in `.git`. Never `sudo git` here. Repair with `sudo chown -R sailbot:sailbot ~/sailbot_workspace`. |
+| Bundle contains the wrong commits | Your laptop's local `main` had drifted from `origin/main`. Check `git bundle verify` output — if they differ, bundle `refs/remotes/origin/main` instead. Always fetch from GitHub *before* leaving the internet. |
+| Interrupted transfer | Use `rsync -aP` (resumable) rather than `scp`. |
+
+<!-- markdownlint-enable MD013 -->
+
+---
 
 ## Run the container
 
