@@ -20,4 +20,3 @@ ros_topics:
 ros_nodes:
   CAN_TRANSCEIVER: can_transceiver_node
   LOCAL_TRANSCEIVER: local_transceiver_node
-  REMOTE_TRANSCEIVER: remote_transceiver_node

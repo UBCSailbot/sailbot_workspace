@@ -25,7 +25,7 @@ error_codes = {
 logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
-TEMP_FILE_PATH = "/tmp/remote_transceiver/downstream_test.log"
+TEMP_FILE_PATH = "/tmp/rockblock_web_server/downstream_test.log"
 
 
 # Custom HTTP request handler
