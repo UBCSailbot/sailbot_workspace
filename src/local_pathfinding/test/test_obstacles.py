@@ -655,9 +655,7 @@ def test_collision_zone_cog_unavailable(
     assert len(boat.collision_zone.exterior.coords) > 10
 
 
-# Test collision zone when ROT is unavailable (AIS sentinel -128). Head-on geometry so
-# the straight-line branch would produce a directional rectangle, letting us verify the
-# sentinel routes to the turning branch instead.
+# Test the direction-independent circle used when ROT is unavailable (AIS sentinel -128).
 @pytest.mark.parametrize(
     "reference_point,sailbot_position,ais_ship,sailbot_speed",
     [
@@ -677,14 +675,12 @@ def test_collision_zone_cog_unavailable(
         )
     ],
 )
-def test_collision_zone_rot_unavailable(
+def test_collision_zone_rot_unavailable_is_buffered_reachability_circle(
     reference_point: HelperLatLon,
     sailbot_position: HelperLatLon,
     ais_ship: HelperAISShip,
     sailbot_speed: float,
 ):
-    # ROT=-128 must not silently fall into the straight-line branch. Compare against a
-    # matching boat with rot=0 (straight line) - the two zones should differ in shape.
     boat_unavailable = Boat(reference_point, sailbot_position, sailbot_speed, ais_ship)
     boat_unavailable.update_collision_zone()
 
@@ -702,7 +698,78 @@ def test_collision_zone_rot_unavailable(
 
     assert boat_unavailable.collision_zone is not None
     assert boat_straight.collision_zone is not None
+
+    projected_distance = boat_unavailable._calculate_projected_distance(0.0)
+    ship_position = cs.latlon_to_xy(reference_point, ais_ship.lat_lon)
+    bow = Point(ship_position.x, ship_position.y + boat_unavailable.length_km / 2)
+    expected_zone = bow.buffer(projected_distance + BOAT_BUFFER_KM)
+
+    assert boat_unavailable.collision_zone.equals(expected_zone)
     assert not boat_unavailable.collision_zone.equals(boat_straight.collision_zone)
+
+
+@pytest.mark.parametrize("rot", [127, -127])
+def test_collision_zone_rot_indicator_unavailable_uses_uncertain_rot_envelope(rot: int):
+    """The +/-127 AIS values share the conservative unknown-ROT treatment with -128."""
+    reference_point = HelperLatLon(latitude=52.0, longitude=-136.0)
+    sailbot_position = HelperLatLon(latitude=52.01, longitude=-136.0)
+
+    def make_ship(ship_rot: int) -> HelperAISShip:
+        return HelperAISShip(
+            id=1,
+            lat_lon=HelperLatLon(latitude=52.0, longitude=-136.0),
+            cog=HelperHeading(heading=0.0),
+            sog=HelperSpeed(speed=20.0),
+            width=HelperDimension(dimension=20.0),
+            length=HelperDimension(dimension=100.0),
+            rot=HelperROT(rot=ship_rot),
+        )
+
+    boat = Boat(reference_point, sailbot_position, 15.0, make_ship(rot))
+    boat_unknown = Boat(reference_point, sailbot_position, 15.0, make_ship(-128))
+    boat_straight = Boat(reference_point, sailbot_position, 15.0, make_ship(0))
+
+    assert boat.collision_zone is not None
+    assert boat.collision_zone.equals(boat_unknown.collision_zone)
+    assert not boat.collision_zone.equals(boat_straight.collision_zone)
+
+
+def test_turning_zone_straight_line_only_is_buffered_reachability_circle():
+    """The direction-independent projection reaches projected_distance plus clearance."""
+    reference_point = HelperLatLon(latitude=52.0, longitude=-136.0)
+    sailbot_position = HelperLatLon(latitude=52.01, longitude=-136.0)
+    ais_ship = HelperAISShip(
+        id=1,
+        lat_lon=HelperLatLon(latitude=52.0, longitude=-136.0),
+        cog=HelperHeading(heading=0.0),
+        sog=HelperSpeed(speed=20.0),
+        width=HelperDimension(dimension=20.0),
+        length=HelperDimension(dimension=100.0),
+        rot=HelperROT(rot=30),
+    )
+    boat = Boat(reference_point, sailbot_position, 15.0, ais_ship)
+
+    projected_distance = boat._calculate_projected_distance(0.0)
+    ship_position = cs.latlon_to_xy(reference_point, ais_ship.lat_lon)
+    boat._set_turning_zone(
+        cs.rot_to_rad_per_sec(ais_ship.rot.rot),
+        ais_ship.sog.speed / 3600.0,
+        0.0,
+        ship_position.x,
+        ship_position.y,
+        projected_distance,
+        project_along_straight_line_only=True,
+    )
+
+    bow = Point(ship_position.x, ship_position.y + boat.length_km / 2)
+    expected_radius = projected_distance + BOAT_BUFFER_KM
+    assert boat.collision_zone.equals(bow.buffer(expected_radius))
+    assert boat.collision_zone.contains(
+        Point(bow.x + projected_distance + BOAT_BUFFER_KM * 0.5, bow.y)
+    )
+    assert not boat.collision_zone.contains(
+        Point(bow.x + projected_distance + BOAT_BUFFER_KM * 1.1, bow.y)
+    )
 
 
 # COLLISION ZONE LOGIC
