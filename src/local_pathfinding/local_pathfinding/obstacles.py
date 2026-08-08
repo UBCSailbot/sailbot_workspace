@@ -248,7 +248,7 @@ class Boat(Obstacle):
         - no projected collision: circular zone, buffered by (radius + BOAT_BUFFER_KM)
         - straight-line motion: rectangular zone, buffered by BOAT_BUFFER_KM
         - turning motion: triangular swept region combined with a buffered circular hull zone
-        - unknown ROT: direction-independent circle from the bow, buffered by BOAT_BUFFER_KM
+        - unknown ROT: finite-horizon circle from the bow, buffered by BOAT_BUFFER_KM
 
         Args:
             ais_ship (ci.HelperAISShip): Updated AIS ship data. Must have the same ID as this Boat.
@@ -358,16 +358,19 @@ class Boat(Obstacle):
         current hull, including BOAT_BUFFER_KM clearance.
 
         When project_along_straight_line_only is True, creates a direction-independent circle
-        centered at the bow. Its radius is the projected distance plus BOAT_BUFFER_KM.
+        centered at the bow and unions it with the buffered current hull.
         """
 
         bow_y_km = self.length_km / 2
         #   A = bow tip
         A = [0.0, bow_y_km]
+        hull_radius_km = math.hypot(self.width_km / 2, self.length_km / 2)
+        current_boat_zone = Point(0.0, 0.0).buffer(hull_radius_km + BOAT_BUFFER_KM)
         if project_along_straight_line_only:
             # This is the final geometry, so include the clearance in its radius.
             full_circle_from_A = Point(A).buffer(projected_distance + BOAT_BUFFER_KM)
-            self._raw_collision_zone = self._translate_collision_zone(full_circle_from_A)
+            boat_collision_zone = current_boat_zone.union(full_circle_from_A)
+            self._raw_collision_zone = self._translate_collision_zone(boat_collision_zone)
             self.collision_zone = self._raw_collision_zone
             prepared.prep(self.collision_zone)
             return
@@ -421,9 +424,6 @@ class Boat(Obstacle):
 
         turning_projection = Polygon([A, B, C])
 
-        hull_radius_km = math.hypot(self.width_km / 2, self.length_km / 2)
-        current_boat_zone = Point(0.0, 0.0).buffer(hull_radius_km + BOAT_BUFFER_KM)
-
         boat_collision_zone = current_boat_zone.union(turning_projection)
         self._raw_collision_zone = self._translate_collision_zone(boat_collision_zone)
         self.collision_zone = self._raw_collision_zone
@@ -437,14 +437,16 @@ class Boat(Obstacle):
         y: float,
         projected_distance: float,
     ) -> None:
-        """Create a direction-independent circle when AIS has no usable turn rate."""
+        """Create a finite-horizon circle when AIS has no usable turn rate."""
+        max_projected_distance = speed_kmps * TURN_PROJECTION_TIME_SECONDS
+        bounded_projected_distance = min(projected_distance, max_projected_distance)
         self._set_turning_zone(
             0.0,
             speed_kmps,
             cog_rad,
             x,
             y,
-            projected_distance,
+            bounded_projected_distance,
             project_along_straight_line_only=True,
         )
 

@@ -17,6 +17,7 @@ from custom_interfaces.msg import (
 from local_pathfinding.obstacles import (
     BOAT_BUFFER_KM,
     PROJ_DISTANCE_NO_COLLISION_KM,
+    TURN_PROJECTION_TIME_SECONDS,
     Boat,
     Land,
     Obstacle,
@@ -655,6 +656,15 @@ def test_collision_zone_cog_unavailable(
     assert len(boat.collision_zone.exterior.coords) > 10
 
 
+def make_expected_reachability_zone(boat: Boat, projected_distance: float) -> Polygon:
+    """Build the local reachability circle and buffered hull, then place them in the world."""
+    bow = Point(0.0, boat.length_km / 2)
+    reachability_circle = bow.buffer(projected_distance + BOAT_BUFFER_KM)
+    hull_radius_km = np.hypot(boat.width_km / 2, boat.length_km / 2)
+    current_hull = Point(0.0, 0.0).buffer(hull_radius_km + BOAT_BUFFER_KM)
+    return boat._translate_collision_zone(current_hull.union(reachability_circle))
+
+
 # Test the direction-independent circle used when ROT is unavailable (AIS sentinel -128).
 @pytest.mark.parametrize(
     "reference_point,sailbot_position,ais_ship,sailbot_speed",
@@ -700,9 +710,10 @@ def test_collision_zone_rot_unavailable_is_buffered_reachability_circle(
     assert boat_straight.collision_zone is not None
 
     projected_distance = boat_unavailable._calculate_projected_distance(0.0)
-    ship_position = cs.latlon_to_xy(reference_point, ais_ship.lat_lon)
-    bow = Point(ship_position.x, ship_position.y + boat_unavailable.length_km / 2)
-    expected_zone = bow.buffer(projected_distance + BOAT_BUFFER_KM)
+    max_projected_distance = ais_ship.sog.speed / 3600.0 * TURN_PROJECTION_TIME_SECONDS
+    expected_zone = make_expected_reachability_zone(
+        boat_unavailable, min(projected_distance, max_projected_distance)
+    )
 
     assert boat_unavailable.collision_zone.equals(expected_zone)
     assert not boat_unavailable.collision_zone.equals(boat_straight.collision_zone)
@@ -762,14 +773,62 @@ def test_turning_zone_straight_line_only_is_buffered_reachability_circle():
     )
 
     bow = Point(ship_position.x, ship_position.y + boat.length_km / 2)
-    expected_radius = projected_distance + BOAT_BUFFER_KM
-    assert boat.collision_zone.equals(bow.buffer(expected_radius))
+    expected_zone = make_expected_reachability_zone(boat, projected_distance)
+    assert boat.collision_zone.equals(expected_zone)
     assert boat.collision_zone.contains(
         Point(bow.x + projected_distance + BOAT_BUFFER_KM * 0.5, bow.y)
     )
     assert not boat.collision_zone.contains(
         Point(bow.x + projected_distance + BOAT_BUFFER_KM * 1.1, bow.y)
     )
+
+
+def test_unknown_rot_reachability_circle_caps_near_equal_speed_projection():
+    """Near-equal speeds cannot expand the unknown-ROT zone beyond its finite horizon."""
+    reference_point = HelperLatLon(latitude=52.02, longitude=-136.0)
+    sailbot_position = HelperLatLon(latitude=52.0, longitude=-136.0)
+    ais_ship = HelperAISShip(
+        id=1,
+        lat_lon=HelperLatLon(latitude=52.009, longitude=-136.0),
+        cog=HelperHeading(heading=0.0),
+        sog=HelperSpeed(speed=20.0),
+        width=HelperDimension(dimension=20.0),
+        length=HelperDimension(dimension=100.0),
+        rot=HelperROT(rot=-128),
+    )
+    boat = Boat(reference_point, sailbot_position, 20.1, ais_ship)
+
+    projected_distance = boat._calculate_projected_distance(0.0)
+    horizon_distance = ais_ship.sog.speed / 3600.0 * TURN_PROJECTION_TIME_SECONDS
+    assert projected_distance > 100.0
+
+    expected_zone = make_expected_reachability_zone(boat, horizon_distance)
+    assert boat.collision_zone.equals(expected_zone)
+
+
+def test_unknown_rot_reachability_zone_includes_long_current_hull():
+    """A short reachability radius must not expose any part of the current vessel."""
+    reference_point = HelperLatLon(latitude=52.01, longitude=-136.0)
+    sailbot_position = HelperLatLon(latitude=52.001, longitude=-136.0)
+    ais_ship = HelperAISShip(
+        id=1,
+        lat_lon=HelperLatLon(latitude=52.0, longitude=-136.0),
+        cog=HelperHeading(heading=0.0),
+        sog=HelperSpeed(speed=0.0),
+        width=HelperDimension(dimension=40.0),
+        length=HelperDimension(dimension=300.0),
+        rot=HelperROT(rot=-128),
+    )
+    boat = Boat(reference_point, sailbot_position, 15.0, ais_ship)
+
+    projected_distance = boat._calculate_projected_distance(0.0)
+    expected_zone = make_expected_reachability_zone(boat, projected_distance)
+    ship_position = cs.latlon_to_xy(reference_point, ais_ship.lat_lon)
+    stern = Point(ship_position.x, ship_position.y - boat.length_km / 2)
+
+    assert projected_distance == pytest.approx(0.0)
+    assert boat.collision_zone.equals(expected_zone)
+    assert boat.collision_zone.covers(stern)
 
 
 # COLLISION ZONE LOGIC
