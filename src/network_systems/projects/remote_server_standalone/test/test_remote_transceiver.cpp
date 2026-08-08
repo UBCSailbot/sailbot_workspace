@@ -92,12 +92,24 @@ TEST_F(TestRemoteTransceiver, TestGet)
  * @return formatted request body
  */
 
+std::string bytesToHex(const std::string &bytes)
+{
+    static const char hex_digits[] = "0123456789abcdef";
+    std::ostringstream s;
+    for (unsigned char c : bytes)
+    {
+        s << hex_digits[c >> 4] << hex_digits[c & 0x0f];
+    }
+    return s.str();
+}
+
 std::string createSensorPostBody(remote_transceiver::MOMsgParams::Params params)
 {
     std::ostringstream s;
     s << "imei=" << params.imei_ << "&serial=" << params.serial_ << "&momsn=" << params.momsn_
       << "&transmit_time=" << params.transmit_time_ << "&iridium_latitude=" << params.lat_
-      << "&iridium_longitude=" << params.lon_ << "&iridium_cep=" << params.cep_ << "&data=" << params.data_;
+      << "&iridium_longitude=" << params.lon_ << "&iridium_cep=" << params.cep_ << "&data="
+      << bytesToHex(params.data_);
     return s.str();
 }
 
