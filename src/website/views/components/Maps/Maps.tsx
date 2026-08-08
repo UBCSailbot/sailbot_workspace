@@ -1,7 +1,6 @@
 import React, { useRef, useCallback } from 'react';
 /* Leaflet related imports */
 import {
-  MapContainer,
   Marker,
   Popup,
   TileLayer,
@@ -16,6 +15,7 @@ import L from 'leaflet';
 import 'leaflet-geometryutil';
 import { GPS } from '@/stores/GPS/GPSTypes';
 import { AISShip } from '@/stores/AISShips/AISShipsTypes';
+import SafeMapContainer from './SafeMapContainer';
 import styles from './maps.module.css';
 
 export interface IMapsProps {
@@ -193,7 +193,7 @@ const Maps: React.FC<IMapsProps> = ({
   }, [aisShips, rotatePoint]);
 
   return (
-    <MapContainer
+    <SafeMapContainer
       center={convertToLatLng(gpsLocation)}
       zoom={13}
       minZoom={3}
@@ -227,7 +227,7 @@ const Maps: React.FC<IMapsProps> = ({
         <Popup>{printObjectInfo(gpsLocation)}</Popup>
       </Marker>
       <Polyline pathOptions={{ color: '#2563eb' }} positions={gpsPath} />
-    </MapContainer>
+    </SafeMapContainer>
   );
 };
 

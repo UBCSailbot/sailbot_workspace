@@ -4,6 +4,10 @@
   flex-direction: column;
 }
 
+.mapCanvas {
+  height: 100%;
+}
+
 .toolbar {
   display: flex;
   padding: 10px;
@@ -32,4 +36,36 @@
   justify-content: center;
   font-size: 16px;
   font-weight: 500;
+}
+
+@media (width <= 768px) {
+  .map {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+  }
+
+  .mapCanvas {
+    flex: 1;
+    min-height: 0;
+    height: auto;
+    order: 1;
+  }
+
+  .toolbar {
+    order: 0;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 10px 14px;
+  }
+
+  .filter label {
+    font-size: 18px;
+  }
+
+  .filter input[type='checkbox'] {
+    width: 28px;
+    height: 28px;
+    margin-right: 10px;
+  }
 }
