@@ -1760,13 +1760,13 @@ TEST_F(TestCanLogReplayer, FilterAllowBlock)
     std::vector<CAN_REPLAY::TimedFrame> frames = CAN_REPLAY::CanLogReplayer::parseCsv(csv_path_);
 
     CAN_REPLAY::ReplayConfig allow_cfg;
-    allow_cfg.allow_ids = {CAN_FP::CanId::DATA_WIND};
+    allow_cfg.allow_ids                         = {CAN_FP::CanId::DATA_WIND};
     std::vector<CAN_REPLAY::TimedFrame> allowed = CAN_REPLAY::CanLogReplayer::filter(frames, allow_cfg);
     ASSERT_EQ(allowed.size(), 1);
     EXPECT_EQ(allowed[0].frame.can_id, static_cast<canid_t>(CAN_FP::CanId::DATA_WIND));
 
     CAN_REPLAY::ReplayConfig block_cfg;
-    block_cfg.block_ids = {CAN_FP::CanId::SAIL_HEARTBEAT};
+    block_cfg.block_ids                         = {CAN_FP::CanId::SAIL_HEARTBEAT};
     std::vector<CAN_REPLAY::TimedFrame> blocked = CAN_REPLAY::CanLogReplayer::filter(frames, block_cfg);
     ASSERT_EQ(blocked.size(), NUM_FIXTURE_FRAMES - 1);
     for (const CAN_REPLAY::TimedFrame & timed_frame : blocked) {
@@ -1859,8 +1859,7 @@ TEST_F(TestMockCanBus, ReplayReachesCallback)
     std::mutex       frame_mtx;
     CAN_FP::CanFrame received_frame{};
     trns.registerCanCb(std::make_pair(
-      CAN_FP::CanId::DATA_WIND,
-      std::function<void(const CAN_FP::CanFrame &)>([&](const CAN_FP::CanFrame & frame) {
+      CAN_FP::CanId::DATA_WIND, std::function<void(const CAN_FP::CanFrame &)>([&](const CAN_FP::CanFrame & frame) {
           std::lock_guard<std::mutex> lock(frame_mtx);
           received_frame = frame;
           wind_cb_count++;
@@ -1937,8 +1936,8 @@ TEST_F(TestMockCanBus, RatePacing)
 
     std::atomic<size_t> cb_count{0};
     trns.registerCanCb(std::make_pair(
-      CAN_FP::CanId::DATA_WIND, std::function<void(const CAN_FP::CanFrame &)>(
-                                  [&cb_count](const CAN_FP::CanFrame & /*unused*/) { cb_count++; })));
+      CAN_FP::CanId::DATA_WIND,
+      std::function<void(const CAN_FP::CanFrame &)>([&cb_count](const CAN_FP::CanFrame & /*unused*/) { cb_count++; })));
 
     std::vector<CAN_REPLAY::TimedFrame> frames(
       NUM_FRAMES, {.t_s = 0.0, .frame = {.can_id = static_cast<canid_t>(CAN_FP::CanId::DATA_WIND), .len = 4}});

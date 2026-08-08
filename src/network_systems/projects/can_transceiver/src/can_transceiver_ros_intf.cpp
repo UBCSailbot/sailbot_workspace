@@ -258,7 +258,7 @@ private:
 
     bool                                  rudder_debug_            = false;
     bool                                  publishing_rudder_debug_ = false;
-    std::chrono::steady_clock::time_point last_rudder_data_ = std::chrono::steady_clock::now();
+    std::chrono::steady_clock::time_point last_rudder_data_        = std::chrono::steady_clock::now();
 
     /**
      * @brief Set up the mock CAN bus and transceiver for replaying a logged CAN session.
@@ -575,7 +575,7 @@ private:
 
                 CAN_FP::RudderData rudder(rudder_frame);
                 msg::HelperHeading rudder_msg = rudder.toRosMsg();
-                last_rudder_data_ = std::chrono::steady_clock::now();
+                last_rudder_data_             = std::chrono::steady_clock::now();
                 if (publishing_rudder_debug_) {
                     RCLCPP_INFO(this->get_logger(), "Rudder data source restored to RUDDER_DATA_FRAME");
                     publishing_rudder_debug_ = false;

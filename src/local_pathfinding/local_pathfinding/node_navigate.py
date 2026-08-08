@@ -5,6 +5,7 @@ import math
 import os
 import tempfile
 import traceback
+from dataclasses import dataclass
 
 import rclpy
 from rclpy.node import Node
@@ -18,6 +19,7 @@ from local_pathfinding.constants import (
     DESIRED_HEADING_UNAVAILABLE,
     GPS_UNAVAILABLE,
     HEADING_UNAVAILABLE,
+    INVALID_MMSI,
     WIND_SENSOR_UNAVAILABLE,
 )
 from local_pathfinding.local_path import LocalPath, LocalPathInputs, PathNotFoundError
@@ -25,6 +27,7 @@ from local_pathfinding.ompl_path import MAX_SOLVER_RUN_TIME_SEC
 
 GLOBAL_WAYPOINT_REACHED_THRESH_M = 300
 NAVIGATION_INPUT_TIMEOUT_SEC = 120.0
+AIS_SHIP_TIMEOUT_SEC = 600.0
 WAYPOINT_EQUAL_ABS_TOL_DEG = 1e-7
 NANOSEC_PER_SEC = 1_000_000_000
 MAIN_GP_FILE_PATH = "/workspaces/sailbot_workspace/src/local_pathfinding/local_pathfinding/global_path_storage/main_global_path.csv"  # noqa
@@ -74,6 +77,14 @@ local plan cannot silently skip ahead through the global path. The bridge flag i
 after a successful local-path update, or when the global path is exhausted and no retryable
 local-path update remains.
 """
+
+
+@dataclass(frozen=True)
+class TrackedAISShip:
+    """A tracked AIS ship and when it was last refreshed."""
+
+    ship: ci.HelperAISShip
+    last_seen_sec: float
 
 
 class GlobalPath:
@@ -223,7 +234,8 @@ class Sailbot(Node):
         )
 
         # attributes from subscribers
-        self.ais_ships: ci.AISShips | None = None
+        # None means no AIS message has arrived; an empty map means no ships are in range.
+        self._tracked_ais_ships: dict[int, TrackedAISShip] | None = None
         self.gps: ci.GPS | None = None
         self.heading: ci.HelperHeading | None = None
         self.gp: GlobalPath | None = None
@@ -463,8 +475,19 @@ class Sailbot(Node):
 
     # subscriber callbacks
     def ais_ships_callback(self, msg: ci.AISShips) -> None:
+        """Refresh the ships this message carries, leaving omitted ones to time out."""
+
         self.get_logger().debug(f"Received data from {self.ais_ships_sub.topic}: {msg}")
-        self.ais_ships = msg
+
+        now_sec = self._now_sec()
+        if self._tracked_ais_ships is None:
+            self._tracked_ais_ships = {}
+        for ship in msg.ships:
+            if ship.id == INVALID_MMSI:
+                continue
+            self._tracked_ais_ships[ship.id] = TrackedAISShip(ship=ship, last_seen_sec=now_sec)
+
+        self._rebuild_ais_snapshot()
 
     def gps_callback(self, msg: ci.GPS) -> None:
         self.get_logger().debug(f"Received data from {self.gps_sub.topic}: {msg}")
@@ -663,7 +686,7 @@ class Sailbot(Node):
                 else WIND_SENSOR_UNAVAILABLE
             ),
             ais_ships=(
-                self.ais_ships if self.ais_ships is not None else AIS_SHIPS_UNAVAILABLE
+                self._rebuild_ais_snapshot()
             ),
             obstacles=helper_obstacles,
             desired_heading=(
@@ -742,7 +765,7 @@ class Sailbot(Node):
                 inputs=LocalPathInputs(
                     gps=self.gps,
                     heading=self.heading,
-                    ais_ships=self.ais_ships,
+                    ais_ships=self._rebuild_ais_snapshot(),
                     global_path=self._path_from_gp(),
                     target_global_waypoint=target_global_waypoint,
                     filtered_wind_sensor=self.filtered_wind_sensor,
@@ -813,11 +836,35 @@ class Sailbot(Node):
 
     def _all_subs_active(self) -> bool:
         return (
-            self.ais_ships is not None
+            self._tracked_ais_ships is not None
             and self.gps is not None
             and self.heading is not None
             and self.gp is not None
             and self.filtered_wind_sensor is not None
+        )
+
+    def _rebuild_ais_snapshot(self) -> ci.AISShips:
+        """Expire stale ships and return the current AIS snapshot."""
+
+        if self._tracked_ais_ships is None:
+            return AIS_SHIPS_UNAVAILABLE
+
+        expired_ids = [
+            ship_id
+            for ship_id, tracked in self._tracked_ais_ships.items()
+            if self._now_sec() - tracked.last_seen_sec > AIS_SHIP_TIMEOUT_SEC
+        ]
+        for ship_id in expired_ids:
+            del self._tracked_ais_ships[ship_id]
+
+        if expired_ids:
+            self.get_logger().warning(
+                f"Dropping {len(expired_ids)} AIS ship(s) {sorted(expired_ids)} not refreshed in "
+                f"{AIS_SHIP_TIMEOUT_SEC:.0f} seconds"
+            )
+
+        return ci.AISShips(
+            ships=[tracked.ship for tracked in self._tracked_ais_ships.values()]
         )
 
     def _timed_out_inputs(self) -> bool:
@@ -840,7 +887,7 @@ class Sailbot(Node):
         Logs a warning message for each inactive subscriber.
         """
         inactive_subs = []
-        if self.ais_ships is None:
+        if self._tracked_ais_ships is None:
             inactive_subs.append("ais_ships")
         if self.gps is None:
             inactive_subs.append("gps")
