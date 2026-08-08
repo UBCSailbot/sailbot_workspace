@@ -91,7 +91,6 @@ def make_sailbot_shell(gps_lat_lon: ci.HelperLatLon | None = None) -> Sailbot:
     sailbot.received_new_global_path = False
     sailbot.ais_ships = None
     setattr(sailbot, "_tracked_ais_ships", {})
-    setattr(sailbot, "_last_omitted_ais_ids", set())
     logger = FakeLogger()
     setattr(sailbot, "global_path_sub", SimpleNamespace(topic="global_path"))
     setattr(sailbot, "ais_ships_sub", SimpleNamespace(topic="ais_ships"))
@@ -728,14 +727,6 @@ def tracked_ids(sailbot: Sailbot) -> list[int]:
     return sorted(ship.id for ship in ais_ships.ships)
 
 
-def count_messages(sailbot: Sailbot, level: str, text: str) -> int:
-    return sum(
-        1
-        for msg_level, msg in get_test_logger(sailbot).messages
-        if msg_level == level and text in msg
-    )
-
-
 def test_partial_ais_message_retains_omitted_ships() -> None:
     sailbot = make_sailbot_shell()
     deliver_ais(sailbot, [make_ais_ship(1), make_ais_ship(2)], now_sec=0.0)
@@ -748,7 +739,6 @@ def test_partial_ais_message_retains_omitted_ships() -> None:
     assert ais_ships is not None
     refreshed = next(ship for ship in ais_ships.ships if ship.id == 1)
     assert refreshed.lat_lon.latitude == 49.31
-    assert get_test_logger(sailbot).has_message("warning", "omitted 1 tracked ship(s) [2]")
 
 
 def test_empty_ais_message_retains_tracked_ships() -> None:
@@ -758,59 +748,6 @@ def test_empty_ais_message_retains_tracked_ships() -> None:
     deliver_ais(sailbot, [], now_sec=15.0)
 
     assert tracked_ids(sailbot) == [1, 2]
-    assert get_test_logger(sailbot).has_message("warning", "omitted 2 tracked ship(s) [1, 2]")
-
-
-def test_repeated_partial_ais_messages_warn_once() -> None:
-    """A transceiver stuck in a degraded state must not warn at the AIS publish rate."""
-    sailbot = make_sailbot_shell()
-    deliver_ais(sailbot, [make_ais_ship(1), make_ais_ship(2)], now_sec=0.0)
-
-    for tick in range(5):
-        deliver_ais(sailbot, [make_ais_ship(1)], now_sec=6.0 + tick * 0.5)
-
-    assert count_messages(sailbot, "warning", "omitted") == 1
-    assert tracked_ids(sailbot) == [1, 2]
-
-
-def test_changed_ais_omission_warns_again() -> None:
-    sailbot = make_sailbot_shell()
-    deliver_ais(sailbot, [make_ais_ship(1), make_ais_ship(2)], now_sec=0.0)
-
-    deliver_ais(sailbot, [make_ais_ship(1)], now_sec=6.0)
-    deliver_ais(sailbot, [make_ais_ship(1)], now_sec=6.5)
-    deliver_ais(sailbot, [], now_sec=15.0)
-    deliver_ais(sailbot, [], now_sec=15.5)
-
-    assert count_messages(sailbot, "warning", "omitted 1 tracked ship(s) [2]") == 1
-    assert count_messages(sailbot, "warning", "omitted 2 tracked ship(s) [1, 2]") == 1
-
-
-def test_recovered_ais_message_logs_once_and_rearms_the_warning() -> None:
-    sailbot = make_sailbot_shell()
-    deliver_ais(sailbot, [make_ais_ship(1), make_ais_ship(2)], now_sec=0.0)
-
-    deliver_ais(sailbot, [make_ais_ship(1)], now_sec=6.0)
-    deliver_ais(sailbot, [make_ais_ship(1), make_ais_ship(2)], now_sec=7.0)
-    deliver_ais(sailbot, [make_ais_ship(1), make_ais_ship(2)], now_sec=7.5)
-    deliver_ais(sailbot, [make_ais_ship(1)], now_sec=8.0)
-
-    assert count_messages(sailbot, "info", "carry every tracked ship again") == 1
-    assert count_messages(sailbot, "warning", "omitted") == 2
-
-
-def test_ships_timing_out_is_not_reported_as_ais_recovery() -> None:
-    """The omitted set shrinking because ships expired is not a recovery."""
-    sailbot = make_sailbot_shell()
-    deliver_ais(sailbot, [make_ais_ship(1)], now_sec=0.0)
-
-    deliver_ais(sailbot, [], now_sec=15.0)
-    # Ship 1 ages out of the map, so the next empty message omits nothing.
-    deliver_ais(sailbot, [], now_sec=AIS_SHIP_TIMEOUT_SEC + 1.0)
-    deliver_ais(sailbot, [], now_sec=AIS_SHIP_TIMEOUT_SEC + 2.0)
-
-    assert tracked_ids(sailbot) == []
-    assert count_messages(sailbot, "info", "carry every tracked ship again") == 0
 
 
 def test_tracked_ais_ship_expires_after_timeout() -> None:
