@@ -270,7 +270,8 @@ class Boat(Obstacle):
                 return
             self.ais_ship = ais_ship
 
-        rot_unavailable = self.ais_ship.rot.rot == -128
+        rot = self.ais_ship.rot.rot
+        rot_unavailable = rot == -128 or abs(rot) == 127
         try:
             if rot_unavailable:
                 # -128 is the AIS sentinel for "ROT unavailable". Substitute a pessimistic
@@ -358,6 +359,7 @@ class Boat(Obstacle):
         x: float,
         y: float,
         projected_distance: float,
+        project_along_straight_line_only: bool = False
     ) -> None:
         """Creates a triangular collision zone for a turning boat.
         Projects where the boat will be after TURN_PROJECTION_TIME_SECONDS
@@ -367,9 +369,26 @@ class Boat(Obstacle):
         The projected triangle is combined with a conservative circular zone around the vessel's
         current hull, including BOAT_BUFFER_KM clearance.
         """
-        turn_radius_km = speed_kmps / abs(rot_rps)
+
         # Positive turn_angle = right turn (clockwise), negative = left turn (counter-clockwise)
         turn_angle = rot_rps * TURN_PROJECTION_TIME_SECONDS
+
+        bow_y_km = self.length_km / 2
+        #   A = bow tip
+        #   B = collision point if the boat continued straight ahead
+        A = [0.0, bow_y_km]
+        B = [0.0, bow_y_km + projected_distance]
+        if project_along_straight_line_only:
+            # collision point if the boat continued straight ahead but along turn_angle
+            C = [
+                projected_distance * math.sin(turn_angle),
+                bow_y_km + projected_distance * math.cos(turn_angle),
+            ]
+            full_circle_from_A = Point(A).buffer(projected_distance)
+            
+
+
+        turn_radius_km = speed_kmps / abs(rot_rps)
 
         # The center of curvature lies 90° to the right of the heading for right turns,
         # and 90° to the left for left turns.
@@ -407,8 +426,6 @@ class Boat(Obstacle):
         #   A = bow tip
         #   B = collision point if the boat continued straight ahead
         #   C = collision point projected along the boat's actual turning direction
-        A = [0.0, self.length_km / 2]
-        B = [0.0, self.length_km / 2 + projected_distance]
         C = [
             future_projected_distance * math.sin(turn_angle),
             self.length_km / 2 + future_projected_distance * math.cos(turn_angle),
