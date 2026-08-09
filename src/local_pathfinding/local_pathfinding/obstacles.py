@@ -23,13 +23,6 @@ BOAT_BUFFER_KM = 0.1
 COLLISION_ZONE_STRETCH_FACTOR = 1.25  # This factor changes the width of the boat collision zone
 RADIUS_MULTIPLIER = 5
 STRAIGHT_LINE_ROT_THRESHOLD_RAD_PER_SEC = 1e-4
-# Pessimistic ROT substituted when AIS reports ROT as unavailable (-128). ~5°/sec is
-# the upper end for typical small maneuverable AIS-tracked vessels (container ships
-# ~0.5°/s); it balances "aggressive turn" against tight-spin degenerate projections
-# where a very high rate makes the boat effectively stationary. The full ROT is unknown,
-# so we union three projections at this rate: straight-line (rate 0), right turn, and
-# left turn (see Boat._set_unknown_rot_zone).
-UNAVAILABLE_ROT_FALLBACK_RAD_PER_SEC = math.radians(5.0)
 
 
 class Obstacle:
@@ -255,6 +248,7 @@ class Boat(Obstacle):
         - no projected collision: circular zone, buffered by (radius + BOAT_BUFFER_KM)
         - straight-line motion: rectangular zone, buffered by BOAT_BUFFER_KM
         - turning motion: triangular swept region combined with a buffered circular hull zone
+        - unknown ROT: finite-horizon circle from the bow, buffered by BOAT_BUFFER_KM
 
         Args:
             ais_ship (ci.HelperAISShip): Updated AIS ship data. Must have the same ID as this Boat.
@@ -270,19 +264,14 @@ class Boat(Obstacle):
                 return
             self.ais_ship = ais_ship
 
-        rot_unavailable = self.ais_ship.rot.rot == -128
-        try:
-            if rot_unavailable:
-                # -128 is the AIS sentinel for "ROT unavailable". Substitute a pessimistic
-                # max ROT so the turning-zone branch produces an aggressive turn arc rather
-                # than a straight-line projection that could miss a turning boat. The turn
-                # direction is unknown, so downstream we union both signs (see
-                # _set_bidirectional_turning_zone).
-                rot_rps = UNAVAILABLE_ROT_FALLBACK_RAD_PER_SEC
-            else:
+        rot = self.ais_ship.rot.rot
+        rot_unavailable = rot == -128 or abs(rot) == 127
+        if not rot_unavailable:
+            try:
                 rot_rps = cs.rot_to_rad_per_sec(self.ais_ship.rot.rot)
-        except ValueError:
-            rot_rps = 0.0  # invalid ROT: treat as no rotation information
+            except ValueError:
+                rot_rps = 0.0  # invalid ROT: treat as no rotation information
+                rot_unavailable = True
 
         speed_kmps = self.ais_ship.sog.speed / 3600.0
         # Available AIS COG bearings use [0°, 360°), while HelperHeading uses (-180°, 180°].
@@ -307,12 +296,12 @@ class Boat(Obstacle):
         elif projected_distance == PROJ_DISTANCE_NO_COLLISION_KM:
             radius_km = max(self.width_km, self.length_km)
             self._set_circular_zone(radius_km)
-        elif abs(rot_rps) < STRAIGHT_LINE_ROT_THRESHOLD_RAD_PER_SEC:
-            self._set_straight_line_zone(projected_distance)
         elif rot_unavailable:
             self._set_unknown_rot_zone(
                 speed_kmps, cog_rad, x, y, projected_distance
             )
+        elif abs(rot_rps) < STRAIGHT_LINE_ROT_THRESHOLD_RAD_PER_SEC:
+            self._set_straight_line_zone(projected_distance)
         else:
             self._set_turning_zone(rot_rps, speed_kmps, cog_rad, x, y, projected_distance)
 
@@ -358,6 +347,7 @@ class Boat(Obstacle):
         x: float,
         y: float,
         projected_distance: float,
+        project_along_straight_line_only: bool = False,
     ) -> None:
         """Creates a triangular collision zone for a turning boat.
         Projects where the boat will be after TURN_PROJECTION_TIME_SECONDS
@@ -366,10 +356,30 @@ class Boat(Obstacle):
         along the boat's actual turning direction.
         The projected triangle is combined with a conservative circular zone around the vessel's
         current hull, including BOAT_BUFFER_KM clearance.
+
+        When project_along_straight_line_only is True, creates a direction-independent circle
+        centered at the bow and unions it with the buffered current hull.
         """
-        turn_radius_km = speed_kmps / abs(rot_rps)
+
+        bow_y_km = self.length_km / 2
+        #   A = bow tip
+        A = [0.0, bow_y_km]
+        hull_radius_km = math.hypot(self.width_km / 2, self.length_km / 2)
+        current_boat_zone = Point(0.0, 0.0).buffer(hull_radius_km + BOAT_BUFFER_KM)
+        if project_along_straight_line_only:
+            # This is the final geometry, so include the clearance in its radius.
+            full_circle_from_A = Point(A).buffer(projected_distance + BOAT_BUFFER_KM)
+            boat_collision_zone = current_boat_zone.union(full_circle_from_A)
+            self._raw_collision_zone = self._translate_collision_zone(boat_collision_zone)
+            self.collision_zone = self._raw_collision_zone
+            prepared.prep(self.collision_zone)
+            return
+
         # Positive turn_angle = right turn (clockwise), negative = left turn (counter-clockwise)
         turn_angle = rot_rps * TURN_PROJECTION_TIME_SECONDS
+        # B = collision point if the boat continued straight ahead
+        B = [0.0, bow_y_km + projected_distance]
+        turn_radius_km = speed_kmps / abs(rot_rps)
 
         # The center of curvature lies 90° to the right of the heading for right turns,
         # and 90° to the left for left turns.
@@ -407,17 +417,12 @@ class Boat(Obstacle):
         #   A = bow tip
         #   B = collision point if the boat continued straight ahead
         #   C = collision point projected along the boat's actual turning direction
-        A = [0.0, self.length_km / 2]
-        B = [0.0, self.length_km / 2 + projected_distance]
         C = [
             future_projected_distance * math.sin(turn_angle),
             self.length_km / 2 + future_projected_distance * math.cos(turn_angle),
         ]
 
         turning_projection = Polygon([A, B, C])
-
-        hull_radius_km = math.hypot(self.width_km / 2, self.length_km / 2)
-        current_boat_zone = Point(0.0, 0.0).buffer(hull_radius_km + BOAT_BUFFER_KM)
 
         boat_collision_zone = current_boat_zone.union(turning_projection)
         self._raw_collision_zone = self._translate_collision_zone(boat_collision_zone)
@@ -432,36 +437,18 @@ class Boat(Obstacle):
         y: float,
         projected_distance: float,
     ) -> None:
-        """Union of straight-line, right-turn, and left-turn projections.
-
-        Used when AIS reports ROT as unavailable (-128): both the rate and direction of
-        turn are unknown, so we cover the full maneuvering envelope by unioning three
-        projections: straight-line motion (ROT ~= 0) plus a pessimistic-magnitude turn
-        (UNAVAILABLE_ROT_FALLBACK_RAD_PER_SEC) in each direction.
-        """
+        """Create a finite-horizon circle when AIS has no usable turn rate."""
+        max_projected_distance = speed_kmps * TURN_PROJECTION_TIME_SECONDS
+        bounded_projected_distance = min(projected_distance, max_projected_distance)
         self._set_turning_zone(
-            UNAVAILABLE_ROT_FALLBACK_RAD_PER_SEC,
+            0.0,
             speed_kmps,
             cog_rad,
             x,
             y,
-            projected_distance,
+            bounded_projected_distance,
+            project_along_straight_line_only=True,
         )
-        right_zone = self.collision_zone
-
-        self._set_turning_zone(
-            -UNAVAILABLE_ROT_FALLBACK_RAD_PER_SEC,
-            speed_kmps,
-            cog_rad,
-            x,
-            y,
-            projected_distance,
-        )
-        left_zone = self.collision_zone
-
-        self._set_straight_line_zone(projected_distance)
-        self.collision_zone = right_zone.union(left_zone).union(self.collision_zone)
-        prepared.prep(self.collision_zone)
 
     def _translate_collision_zone(self, boat_collision_zone):
         # this code block translates and rotates the collision zone to the world frame
