@@ -13,6 +13,8 @@
     "aisstream:ingest": "node scripts/aisstream-ingest.js",
     "test:scripts": "node --test scripts/__tests__/*.test.js",
     "test:graphs": "node --test stores/Graphs/__tests__/*.test.ts",
+    "test:e2e": "playwright test",
+    "test:e2e:report": "playwright show-report",
     "lint": "prettier --check . && stylelint --allow-empty-input \"**/*.{css,scss}\" && next lint",
     "format": "prettier --write ."
   },
@@ -42,6 +44,7 @@
     "uplot-react": "^1.1.5"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@svgr/webpack": "^8.1.0",
     "@types/express": "^4.17.17",
     "@types/leaflet": "^1.9.7",

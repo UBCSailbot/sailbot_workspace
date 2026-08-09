@@ -7,3 +7,21 @@
   padding-right: 8px;
   text-transform: uppercase !important;
 }
+
+.hiddenOnMobile {
+  /* no-op on desktop; both panes show side by side */
+}
+
+@media (width <= 768px) {
+  .dashboard {
+    flex-direction: column;
+    height: 100dvh;
+    gap: 0;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .hiddenOnMobile {
+    display: none !important;
+  }
+}

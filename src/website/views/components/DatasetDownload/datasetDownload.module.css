@@ -81,3 +81,26 @@
   opacity: 0.4;
   margin-top: 4px;
 }
+
+@media (width <= 768px) {
+  .downloadContainer {
+    margin-top: 24px;
+    gap: 40px;
+  }
+
+  .downloadHeader h2 {
+    font-size: 26px;
+  }
+
+  .dataSetDownload {
+    width: 100%;
+    padding: 0 16px 80px;
+    gap: 20px;
+  }
+
+  .dataSetCard {
+    width: 100%;
+    max-width: 420px;
+    padding: 24px;
+  }
+}

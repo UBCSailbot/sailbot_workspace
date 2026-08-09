@@ -1,0 +1,5 @@
+@media (width <= 768px) {
+  .desktopHeader {
+    display: none;
+  }
+}

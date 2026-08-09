@@ -25,11 +25,13 @@ const Map = ({
   globalPath,
   localPath,
   aisShips,
+  className,
 }: {
   gps: GPSState;
   globalPath: GlobalPathState;
   localPath: LocalPathState;
   aisShips: AISShipsState;
+  className?: string;
 }) => {
   const [showAIShips, setShowAIShips] = useState(true);
   const [showGlobalPath, setShowGlobalPath] = useState(true);
@@ -59,21 +61,23 @@ const Map = ({
   const aisShipsData = aisShips.data;
 
   return (
-    <div className={styles.map}>
-      <Maps
-        gpsLocation={gpsData[gpsData.length - 1]}
-        gpsPath={gpsData.map((gpsPoint) => convertToLatLng(gpsPoint))}
-        globalPath={globalPathData.waypoints.map((waypoint) =>
-          convertToLatLng(waypoint),
-        )}
-        showGlobalPath={showGlobalPath}
-        localPath={localPathData.waypoints.map((waypoint) =>
-          convertToLatLng(waypoint),
-        )}
-        showLocalPath={showLocalPath}
-        aisShips={aisShipsData.ships}
-        showAIShips={showAIShips}
-      />
+    <div className={`${styles.map} ${className ?? ''}`.trim()}>
+      <div className={styles.mapCanvas}>
+        <Maps
+          gpsLocation={gpsData[gpsData.length - 1]}
+          gpsPath={gpsData.map((gpsPoint) => convertToLatLng(gpsPoint))}
+          globalPath={globalPathData.waypoints.map((waypoint) =>
+            convertToLatLng(waypoint),
+          )}
+          showGlobalPath={showGlobalPath}
+          localPath={localPathData.waypoints.map((waypoint) =>
+            convertToLatLng(waypoint),
+          )}
+          showLocalPath={showLocalPath}
+          aisShips={aisShipsData.ships}
+          showAIShips={showAIShips}
+        />
+      </div>
       <div className={styles.toolbar}>
         {filters.map((filter) => (
           <div className={styles.filter} key={filter.key}>
