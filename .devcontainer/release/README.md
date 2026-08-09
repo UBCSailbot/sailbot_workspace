@@ -1,19 +1,23 @@
 # Deploying a release to the Raspberry Pi
 
 This guide covers building a release image of `sailbot_workspace` and deploying
-it to the onboard Raspberry Pi. There are three build paths:
+it to the onboard Raspberry Pi. There are four build paths:
 
 - **Path A — CI build + tar transfer** (recommended; Pi offline)
-- **Path B — CI build + registry pull** (Pi has internet; take a long time to build)
+- **Path B — CI build + registry pull** (Pi has internet; takes a long time to build)
 - **Path C — local build + tar transfer** (fallback; requires native arm64 preferably)
-- **Path D — local build on .devcontainer** (fallback during testing; Pi offline)
+- **Path D — local build on `.devcontainer`** (fallback during testing; Pi offline)
 
-All three produce the same `linux/arm64` release image. Paths A and B build it
-in GitHub Actions on a native arm64 runner (~6 min), which is faster and more
-reliable than building locally.
+Paths A, B, and C produce the same `linux/arm64` release image. Paths A and B
+build it in GitHub Actions on a native arm64 runner (~6 min), which is faster and
+more reliable than building locally.
 
 Path D interacts with the existing `.devcontainer` on the Pi and involves
-`running scripts/build.sh`(~13 minutes).
+running `scripts/build.sh` (~13 minutes).
+
+If you only need to move **code changes** into the container already running on
+the Pi, skip the build paths entirely and use `git bundle` — see
+[Updating source without internet](#updating-source-without-internet-pi-offline).
 
 > **Build on arm64, not under emulation.** The release image is `linux/arm64`.
 > Building it on an `amd64` machine uses QEMU emulation, which is ~5× slower
@@ -30,7 +34,7 @@ Both paths start with a single CI workflow run that builds the image natively on
 arm64, pushes it to the registry, and saves a tar artifact in parallel
 (for Path A). This takes about 6 minutes.
 
-There are two ways in running the CI. One is manually and the other is through a
+There are two ways of running the CI. One is manually and the other is through a
 software release on GitHub. It is preferable to create a release so that we can
 track what version of the software we used for deployment and the changes
 compared to the previous release.
@@ -92,6 +96,9 @@ compared to the previous release.
    rsync -a release.tar sailbot@100.95.219.39:/home/sailbot/
    ```
 
+   Use `rsync -aP` on a flaky PAN link — it shows progress and resumes a
+   partial transfer instead of starting the multi-GB tar over.
+
 3. **On the Pi**, load the image and reclaim space:
 
    ```bash
@@ -147,11 +154,21 @@ docker save -o release.tar release:on-water-8
 
 Then transfer and load exactly as in Path A, steps 2–3.
 
+If you'd rather not stage a tar on disk at either end, pipe it straight over
+SSH — one command, no intermediate file:
+
+```bash
+docker save release:on-water-8 | gzip | \
+  ssh sailbot@192.168.0.10 'gunzip | docker load'
+```
+
+This has no resume, so prefer the `rsync -aP` route on an unreliable link.
+
 ---
 
-## Path D — local build on .devcontainer (fallback)
+## Path D — local build on `.devcontainer` (fallback)
 
-Requires a SSH connection to the Pi. The .devcontainer is named `owt_dev`
+Requires an SSH connection to the Pi. The dev container is named `owt-dev`.
 
 Once connected, run the following:
 
@@ -162,10 +179,109 @@ docker start -i owt-dev
 Once in the container run the following:
 
 ```bash
-git pull # OPTIONAL and if connected to internet
+git pull # only works if the Pi has internet — otherwise see the section below
 
 ./scripts/run_software.sh
 ```
+
+---
+
+## Updating source without internet (Pi offline)
+
+The Pi reaches the boat's private WiFi for SSH, but that network has no route to
+GitHub, so `git pull` inside the container fails. Git doesn't need the internet,
+though — only a route to the objects, and your laptop has them.
+
+**Use `git bundle`.** The repo we need to update lives *inside* the running
+container, and a bundle is the only approach that crosses that boundary:
+
+- `git push` / `git pull` need a live endpoint. The container runs with
+  `--network host`, so port 22 on the Pi is the *host's* sshd — there's no
+  separate SSH server inside the container to push to.
+- The container filesystem isn't visible from the Pi host, so a plain path
+  remote doesn't reach it either.
+- A bundle is a single **file**, and `docker cp` moves files across the
+  container boundary. That's the whole trick.
+
+Use this when only **code** changed. If the image itself changed (new apt/ROS
+dependencies, Dockerfile edits), you need a full rebuild via Paths A–C.
+
+### 1. Create the bundle (laptop)
+
+```bash
+# Full bundle — works even into an empty repo
+git bundle create polaris.bundle --branches --tags
+
+# Or incremental: only what the container doesn't already have.
+# Get BASE by running `git rev-parse HEAD` inside the container first.
+git bundle create polaris.bundle main ^$BASE
+```
+
+An incremental bundle is typically kilobytes rather than tens of megabytes, so
+prefer it for repeat trips. It's a snapshot — commit again and you regenerate.
+
+### 2. Move it to the Pi, then into the container
+
+```bash
+# laptop → Pi host
+rsync -aP polaris.bundle sailbot@192.168.0.10:/home/sailbot/
+
+# Pi host → container
+docker cp /home/sailbot/polaris.bundle <name>:/workspaces/sailbot_workspace/
+```
+
+`docker cp` writes as root. If the container runs as a non-root user, fix
+ownership before running git:
+
+```bash
+docker exec -u root <name> chown ros:ros /workspaces/sailbot_workspace/polaris.bundle
+```
+
+### 3. Apply it (inside the container)
+
+```bash
+docker exec -it <name> bash
+cd /workspaces/sailbot_workspace
+git bundle verify ./polaris.bundle
+git status                        # confirm clean
+git pull ./polaris.bundle main
+```
+
+To inspect before merging rather than pulling straight in:
+
+```bash
+git fetch ./polaris.bundle main:refs/remotes/bundle/main
+git log --oneline main..bundle/main
+git merge bundle/main             # or: git reset --hard bundle/main
+```
+
+Rebuild the workspace afterwards if you touched anything compiled
+(C++ nodes, message definitions) — the container is still running the binaries
+from the image until you do.
+
+> **This patch is not durable.** `docker rm -f <name>` during a redeploy destroys
+> the container and everything you pulled into it. Treat in-container bundle
+> updates as on-the-dock hotfixes: push the same commits to GitHub and fold them
+> into the next tagged release, or the fix disappears the next time someone
+> follows Path A.
+
+### Gotchas
+
+<!-- markdownlint-disable MD013 -->
+
+| Symptom | Cause / fix |
+| --- | --- |
+| `does not appear to be a git repository` | Git couldn't read a bundle at that path, so it fell back to treating it as a repo directory. Check `ls -l` and that `head -c 16` shows `# v2 git bundle`. Always pass an explicit path (`./polaris.bundle`), never a bare filename. |
+| `refusing to fetch into branch 'refs/heads/main' checked out at ...` | You can't fetch directly onto the checked-out branch. Use `git pull`, or fetch into `refs/remotes/bundle/main` and merge. |
+| Later "dubious ownership" or permission errors | Someone ran `sudo git`, leaving root-owned objects in `.git`, or `docker cp` dropped a root-owned bundle in. Never `sudo git`. Repair with `chown -R` as the container's own user. |
+| Bundle contains the wrong commits | Your laptop's local `main` had drifted from `origin/main`. Check `git bundle verify` output — if they differ, bundle `refs/remotes/origin/main` instead. Always fetch from GitHub *before* leaving the internet. |
+| Update vanished after redeploy | Expected — `docker rm -f` destroys the container's filesystem. The commits must also reach GitHub and the next release image. |
+| Code updated but behaviour unchanged | Compiled artifacts still come from the image. Rebuild inside the container. |
+| Interrupted transfer | Use `rsync -aP` (resumable) rather than `scp`. |
+
+<!-- markdownlint-enable MD013 -->
+
+---
 
 ## Run the container
 
