@@ -70,6 +70,7 @@
     z-index: 20;
     height: 52px;
     padding: 0 16px;
+    background: #090909;
     border-bottom: 1px solid #2a2a2a;
   }
 }
