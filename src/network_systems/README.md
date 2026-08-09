@@ -108,9 +108,9 @@ ros2 run network_systems can_transceiver --ros-args \
 ```
 
 NOTE:
-In CAN mode, the local and remote transceivers will effectively run in development
-mode. It is done like this to prevent running the satellite or the database when
-we are simply testing it in our development environment.
+In CAN mode, the local transceiver will effectively run in development
+mode. It is done like this to prevent running the satellite when we are
+simply testing it in our development environment.
 
 ### ROS Launch
 

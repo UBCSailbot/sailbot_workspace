@@ -15,7 +15,7 @@
 #include "remote_transceiver.h"
 #include "sailbot_db.h"
 #include "sensors.pb.h"
-#include "util_db.h"
+#include "test_db_helper.h"
 
 using Polaris::Sensors;
 using remote_transceiver::TESTING_HOST;
@@ -68,7 +68,7 @@ protected:
 
 // Initialize static objects
 bio::io_context  TestRemoteTransceiver::io_{TestRemoteTransceiver::NUM_THREADS};
-std::vector      TestRemoteTransceiver::io_threads_ = std::vector<std::thread>(NUM_THREADS);
+std::vector<std::thread> TestRemoteTransceiver::io_threads_ = std::vector<std::thread>(NUM_THREADS);
 SailbotDB        TestRemoteTransceiver::server_db_  = SailbotDB(test_db_name, SailbotDB::MONGODB_CONN_STR());
 bio::ip::address TestRemoteTransceiver::addr_       = bio::ip::make_address(TESTING_HOST);
 
@@ -92,12 +92,24 @@ TEST_F(TestRemoteTransceiver, TestGet)
  * @return formatted request body
  */
 
+std::string bytesToHex(const std::string &bytes)
+{
+    static const char hex_digits[] = "0123456789abcdef";
+    std::ostringstream s;
+    for (unsigned char c : bytes)
+    {
+        s << hex_digits[c >> 4] << hex_digits[c & 0x0f];
+    }
+    return s.str();
+}
+
 std::string createSensorPostBody(remote_transceiver::MOMsgParams::Params params)
 {
     std::ostringstream s;
     s << "imei=" << params.imei_ << "&serial=" << params.serial_ << "&momsn=" << params.momsn_
       << "&transmit_time=" << params.transmit_time_ << "&iridium_latitude=" << params.lat_
-      << "&iridium_longitude=" << params.lon_ << "&iridium_cep=" << params.cep_ << "&data=" << params.data_;
+      << "&iridium_longitude=" << params.lon_ << "&iridium_cep=" << params.cep_ << "&data="
+      << bytesToHex(params.data_);
     return s.str();
 }
 

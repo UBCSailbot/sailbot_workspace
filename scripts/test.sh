@@ -15,10 +15,6 @@ function signal_handler() {
     if [ -n "$(pgrep -f virtual_iridium)" ]; then
         pkill -f virtual_iridium
     fi
-
-    if [ -n "$ROCKBLOCK_SERVER_PID" ] && ps -p $ROCKBLOCK_SERVER_PID > /dev/null; then
-        kill $ROCKBLOCK_SERVER_PID
-    fi
 }
 
 # Package to test if selecting an individual package
@@ -43,18 +39,9 @@ trap 'signal_handler' EXIT
 if [ -f install/local_setup.bash ]; then source install/local_setup.bash; fi
 
 if [[ "$PACKAGE" == "network_systems" || "$PACKAGE" == "" ]]; then
-    # Change MONGODB_PASSWORD password to do tests on the database
-    export MONGODB_PASSWORD="placeholder"  # DO NOT PUSH THE ACTUAL PASSWORD TO GITHUB
-
     NET_DIR=src/network_systems
     if [ -d $NET_DIR ]; then
         ./scripts/run_virtual_iridium.sh &> /tmp/virtual_iridium.log &
-        pushd $NET_DIR
-        ./scripts/sailbot_db sailbot_db --clear
-        ./scripts/sailbot_db sailbot_db --populate
-        python3 scripts/rockblock_web_server.py &
-        ROCKBLOCK_SERVER_PID=$!
-        popd
     fi
     # Set the environment variables
     export ROS_LOG_DIR="/src/network_systems/scripts/can_transceiver.log"

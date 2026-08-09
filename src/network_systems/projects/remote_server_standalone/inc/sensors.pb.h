@@ -1191,7 +1191,6 @@ class Sensors PROTOBUF_FINAL :
     kTempSensorsFieldNumber = 5,
     kPhSensorsFieldNumber = 6,
     kSalinitySensorsFieldNumber = 7,
-    kPressureSensorsFieldNumber = 8,
     kGpsFieldNumber = 1,
     kLocalPathDataFieldNumber = 9,
   };
@@ -1315,28 +1314,6 @@ class Sensors PROTOBUF_FINAL :
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
       mutable_salinity_sensors();
 
-  // repeated float pressure_sensors = 8;
-  int pressure_sensors_size() const;
-  private:
-  int _internal_pressure_sensors_size() const;
-  public:
-  void clear_pressure_sensors();
-  private:
-  float _internal_pressure_sensors(int index) const;
-  const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
-      _internal_pressure_sensors() const;
-  void _internal_add_pressure_sensors(float value);
-  ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
-      _internal_mutable_pressure_sensors();
-  public:
-  float pressure_sensors(int index) const;
-  void set_pressure_sensors(int index, float value);
-  void add_pressure_sensors(float value);
-  const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
-      pressure_sensors() const;
-  ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
-      mutable_pressure_sensors();
-
   // .Polaris.Sensors.Gps gps = 1;
   bool has_gps() const;
   private:
@@ -1389,8 +1366,6 @@ class Sensors PROTOBUF_FINAL :
   mutable std::atomic<int> _ph_sensors_cached_byte_size_;
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< float > salinity_sensors_;
   mutable std::atomic<int> _salinity_sensors_cached_byte_size_;
-  ::PROTOBUF_NAMESPACE_ID::RepeatedField< float > pressure_sensors_;
-  mutable std::atomic<int> _pressure_sensors_cached_byte_size_;
   ::Polaris::Sensors_Gps* gps_;
   ::Polaris::Sensors_Path* local_path_data_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
@@ -2164,53 +2139,6 @@ inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
 Sensors::mutable_salinity_sensors() {
   // @@protoc_insertion_point(field_mutable_list:Polaris.Sensors.salinity_sensors)
   return _internal_mutable_salinity_sensors();
-}
-
-// repeated float pressure_sensors = 8;
-inline int Sensors::_internal_pressure_sensors_size() const {
-  return pressure_sensors_.size();
-}
-inline int Sensors::pressure_sensors_size() const {
-  return _internal_pressure_sensors_size();
-}
-inline void Sensors::clear_pressure_sensors() {
-  pressure_sensors_.Clear();
-}
-inline float Sensors::_internal_pressure_sensors(int index) const {
-  return pressure_sensors_.Get(index);
-}
-inline float Sensors::pressure_sensors(int index) const {
-  // @@protoc_insertion_point(field_get:Polaris.Sensors.pressure_sensors)
-  return _internal_pressure_sensors(index);
-}
-inline void Sensors::set_pressure_sensors(int index, float value) {
-  pressure_sensors_.Set(index, value);
-  // @@protoc_insertion_point(field_set:Polaris.Sensors.pressure_sensors)
-}
-inline void Sensors::_internal_add_pressure_sensors(float value) {
-  pressure_sensors_.Add(value);
-}
-inline void Sensors::add_pressure_sensors(float value) {
-  _internal_add_pressure_sensors(value);
-  // @@protoc_insertion_point(field_add:Polaris.Sensors.pressure_sensors)
-}
-inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
-Sensors::_internal_pressure_sensors() const {
-  return pressure_sensors_;
-}
-inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >&
-Sensors::pressure_sensors() const {
-  // @@protoc_insertion_point(field_list:Polaris.Sensors.pressure_sensors)
-  return _internal_pressure_sensors();
-}
-inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
-Sensors::_internal_mutable_pressure_sensors() {
-  return &pressure_sensors_;
-}
-inline ::PROTOBUF_NAMESPACE_ID::RepeatedField< float >*
-Sensors::mutable_pressure_sensors() {
-  // @@protoc_insertion_point(field_mutable_list:Polaris.Sensors.pressure_sensors)
-  return _internal_mutable_pressure_sensors();
 }
 
 // .Polaris.Sensors.Path local_path_data = 9;

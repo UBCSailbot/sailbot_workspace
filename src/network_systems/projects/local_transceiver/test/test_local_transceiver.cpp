@@ -165,7 +165,7 @@ TEST_F(TestLocalTransceiver, sendData)
     custom_interfaces::msg::Batteries       batteries;
     custom_interfaces::msg::TempSensors     temp;
     custom_interfaces::msg::PhSensors       ph;
-    custom_interfaces::msg::PressureSensors pressure;
+    // custom_interfaces::msg::PressureSensors pressure;
     custom_interfaces::msg::SalinitySensors salinity;
     custom_interfaces::msg::LPathData       local_paths;
     // custom_interfaces::msg::GenericSensors sensors;

@@ -34,7 +34,6 @@ COMMON_NODE_NAMES = frozenset(
         "/mock_global_path",
         "/navigate_main",
         "/navigate_observer",
-        "/remote_transceiver_node",
         "/rosbag2_recorder",
         "/wingsail_ctrl_node",
     }
