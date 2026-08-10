@@ -1,4 +1,6 @@
 """Low level control logic for actuating the rudder and the sail."""
+
+from collections import deque
 from math import atan2, copysign, cos, sin
 from typing import Tuple
 
@@ -73,9 +75,21 @@ class ActuatorController:
 
 
 class RudderController(ActuatorController):
-    """General Class for the Actuator Controller.
+    """PID controller for the rudder.
 
-    RudderController Extends: ActuatorController
+    Attributes:
+        `current_heading` (float): Current boat heading direction in degrees,
+            0 degrees (North) at the positive y axis and increasing clockwise.
+        `desired_heading` (float): Target boating heading direction in degrees,
+            0 degrees (North) at the positive y axis and increasing clockwise.
+        `current_control_ang` (float): Last commanded rudder angle in degrees.
+        `time_step` (float): Time per iteration given in seconds.
+        `kp`, `ki`, `kd` (float): PID constants for the rudder controller.
+        `cp` (float): Tuning parameter for control action.
+        `buffer_size` (int): Number of samples used to filter the derivative error.
+        `max_angle_range` (Tuple): Max rudder control angle range in degrees, minimum[0] and
+            maximum[1]
+
     """
 
     def __init__(
@@ -85,8 +99,10 @@ class RudderController(ActuatorController):
         current_control_ang: float,
         time_step: float,
         kp: float,
+        ki: float,
+        kd: float,
         cp: float,
-        control_speed: float,
+        buffer_size: int = 1,
         max_angle_range=RUDDER_MAX_ANGLE_RANGE,
     ):
         """Initializes the class attributes.
@@ -97,26 +113,33 @@ class RudderController(ActuatorController):
             `desired_heading` (float): Target boating heading direction in degrees,
              0 degrees (North) at the positive y axis and increasing clockwise.
             `current_control_ang` (float): Current control mechanism angle in degrees.
-            `time_step` (float): Time per iteration given in seconds.
-            `kp` (float): Proportional constant when calculating error.
-            `cp` (float): Tuning parameter for control action.
-            `control_speed` (float): Speed of controller change in degrees per second.
-            'max_angle_range' (Tuple): Max control angle range in degrees,minimum[0] and maximum[1]
-
+            `time_step` (float): Time per control-loop iteration in seconds.
+            `kp` (float): Proportional gain.
+            `ki` (float): Integral gain.
+            `kd` (float): Derivative gain.
+            `cp` (float): Tuning parameter for the saturating proportional term.
+            `buffer_size` (int): Number of past error samples used to filter the
+             derivative term. Defaults to 1 (unfiltered derivative).
+            `max_angle_range` (Tuple): Max control angle range in degrees,
+             minimum[0] and maximum[1]
         """
-
-        super().__init__(
-            current_control_ang,
-            time_step,
-            control_speed,
-            max_angle_range,
-        )
+        self.current_control_ang = current_control_ang
+        self.time_step = time_step
+        self.max_angle_range = max_angle_range
 
         self.current_heading = bound_to_180(current_heading)
         self.desired_heading = bound_to_180(desired_heading)
+        self.setpoint = 0.0  # last commanded rudder angle in degrees
+
         self.kp = kp
+        self.ki = ki
+        self.kd = kd
         self.cp = cp
-        self.setpoint = 0.0  # current setpoint angle in degrees
+        self.buffer_size = buffer_size
+
+        self._integral_error = 0.0
+        self._error_buffer: deque = deque(maxlen=max(self.buffer_size, 1))
+
         self.reset_setpoint(self.desired_heading, self.current_heading)
 
     def reset_setpoint(self, new_desired_heading: float, new_current_heading: float) -> None:
@@ -128,9 +151,26 @@ class RudderController(ActuatorController):
             `new_current_heading` (float): New current heading in degrees
         """
 
-        self.desired_heading = new_desired_heading
-        self.current_heading = new_current_heading
+        self.desired_heading = bound_to_180(new_desired_heading)
+        self.current_heading = bound_to_180(new_current_heading)
+        self._integral_error = 0.0
+        self._error_buffer.clear()
+        self._error_buffer.append(self._compute_error())
         self._compute_setpoint()
+
+    def step(self, new_current_heading: float) -> float:
+        """Updates the controller state with a new current heading and computes the next rudder
+        setpoint.
+
+        Args:
+            `new_current_heading` (float): New current heading in degrees
+
+        Returns:
+            float: The next rudder setpoint in degrees
+        """
+        self.current_heading = bound_to_180(new_current_heading)
+        self.current_control_ang = self._compute_setpoint()
+        return self.current_control_ang
 
     def _compute_error(self) -> float:
         """Computes the error between desired and current heading
@@ -150,30 +190,39 @@ class RudderController(ActuatorController):
         return error_rad
 
     def _compute_setpoint(self) -> float:
-        """Computes the corresponding control error angle between current control angle and
-        target control angle. Uses Raye's implementation from:
-            https://github.com/UBCSailbot/raye-boat-controller/blob/master/python/tack_controller.py
+        """Computes the next rudder setpoint based on the current and desired heading.
 
         Returns:
-            float: Corresponding error angle between the
-            current and target control angle in degrees"""
+            float: The next rudder setpoint in degrees
+        """
+        error_rad = self._compute_error()
+        self._error_buffer.append(error_rad)
 
-        heading_error_rad = self._compute_error()
+        p_term = (self.kp * error_rad) / (1 + self.cp * abs(error_rad))
 
-        rudder_setpoint_rad = (self.kp * heading_error_rad) / (
-            1 + (self.cp * abs(heading_error_rad))
-        )
+        self._integral_error += error_rad * self.time_step
+        i_term = self.ki * self._integral_error
 
-        rudder_setpoint_rad = min(
-            max(rudder_setpoint_rad, np.deg2rad(self.max_angle_range[0])),
-            np.deg2rad(self.max_angle_range[1]),
-        )
+        if len(self._error_buffer) >= 2:
+            d_term = (
+                self.kd
+                * (self._error_buffer[-1] - self._error_buffer[0])
+                / (self.time_step * (len(self._error_buffer) - 1))
+            )
+        else:
+            d_term = 0.0
 
-        rudder_setpoint_deg = np.rad2deg(rudder_setpoint_rad)
-        self.running_error = rudder_setpoint_deg - self.current_control_ang
-        self.setpoint = rudder_setpoint_deg
+        calculated_rad = p_term + i_term + d_term
 
-        return rudder_setpoint_deg
+        min_rad = np.deg2rad(self.max_angle_range[0])
+        max_rad = np.deg2rad(self.max_angle_range[1])
+        output_rad = min(max(calculated_rad, min_rad), max_rad)
+
+        if output_rad != calculated_rad:
+            self._integral_error -= error_rad * self.time_step
+
+        self.setpoint = np.rad2deg(output_rad)
+        return self.setpoint
 
     def _change_desired_heading(self, changed_desired_heading) -> None:
         """Changes desired heading to a new angle. Used for testing purposes
