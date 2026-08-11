@@ -920,8 +920,8 @@ std::string RudderData::toString() const
     return ss.str();
 }
 
-// DesiredHeading public END
-// DesiredHeading private START
+// RudderData public END
+// RudderData private START
 
 RudderData::RudderData(CanId id) : BaseFrame(std::span{RUDDER_DATA_IDS}, id, CAN_BYTE_DLEN_) {}
 
@@ -932,10 +932,10 @@ void RudderData::checkBounds() const
         std::string err_msg = err.value();
         throw std::out_of_range("Rudder heading is out of bounds!\n" + debugStr() + "\n" + err_msg);
     }
-
-    // DesiredHeading private END
-    // DesiredHeading END
 }
+
+// RudderData private END
+// RudderData END
 
 // RudderDebugData START
 RudderDebugData::RudderDebugData(const CanFrame & cf) : RudderDebugData(static_cast<CanId>(cf.can_id))
@@ -956,22 +956,17 @@ RudderDebugData::RudderDebugData(const CanFrame & cf) : RudderDebugData(static_c
     std::memcpy(&raw_commanded_rudder, cf.data + BYTE_OFF_COMMANDED_RUDDER, sizeof(uint16_t));
     std::memcpy(&raw_integral, cf.data + BYTE_OFF_INTEGRAL, sizeof(uint16_t));
     std::memcpy(&raw_derivative, cf.data + BYTE_OFF_DERIVATIVE, sizeof(uint16_t));
-    std::memcpy(
-      &raw_speed_over_ground, cf.data + BYTE_OFF_SPEED_OVER_GROUND, sizeof(uint16_t));
+    std::memcpy(&raw_speed_over_ground, cf.data + BYTE_OFF_SPEED_OVER_GROUND, sizeof(uint16_t));
 
-    actual_rudder_angle_ =
-      static_cast<float>(raw_actual_rudder) / 100.0F - 90.0F;  // NOLINT(readability-magic-numbers)
-    roll_ = static_cast<float>(raw_roll) / 100.0F - 180.0F;  // NOLINT(readability-magic-numbers)
-    pitch_ = static_cast<float>(raw_pitch) / 100.0F - 180.0F;  // NOLINT(readability-magic-numbers)
-    heading_                = static_cast<float>(raw_heading) / 100.0F;
+    actual_rudder_angle_ = static_cast<float>(raw_actual_rudder) / 100.0F - 90.0F;  // NOLINT(readability-magic-numbers)
+    roll_                = static_cast<float>(raw_roll) / 100.0F - 180.0F;          // NOLINT(readability-magic-numbers)
+    pitch_               = static_cast<float>(raw_pitch) / 100.0F - 180.0F;         // NOLINT(readability-magic-numbers)
+    heading_             = static_cast<float>(raw_heading) / 100.0F;
     commanded_rudder_angle_ =
-      static_cast<float>(raw_commanded_rudder) / 100.0F -
-      90.0F;  // NOLINT(readability-magic-numbers)
-    integral_ = static_cast<int32_t>(raw_integral) - 30000;  // NOLINT(readability-magic-numbers)
-    derivative_ =
-      static_cast<int32_t>(raw_derivative) - 30000;  // NOLINT(readability-magic-numbers)
-    speed_over_ground_ =
-      static_cast<float>(raw_speed_over_ground) / 1000.0F;  // NOLINT(readability-magic-numbers)
+      static_cast<float>(raw_commanded_rudder) / 100.0F - 90.0F;               // NOLINT(readability-magic-numbers)
+    integral_          = static_cast<int32_t>(raw_integral) - 30000;           // NOLINT(readability-magic-numbers)
+    derivative_        = static_cast<int32_t>(raw_derivative) - 30000;         // NOLINT(readability-magic-numbers)
+    speed_over_ground_ = static_cast<float>(raw_speed_over_ground) / 1000.0F;  // NOLINT(readability-magic-numbers)
 
     checkBounds();
 }
@@ -985,19 +980,15 @@ msg::HelperHeading RudderDebugData::toRosMsg() const
 
 CanFrame RudderDebugData::toLinuxCan() const
 {
-    uint16_t raw_actual_rudder = static_cast<uint16_t>(
-      (actual_rudder_angle_ + 90.0F) * 100.0F);  // NOLINT(readability-magic-numbers)
-    uint16_t raw_roll =
-      static_cast<uint16_t>((roll_ + 180.0F) * 100.0F);  // NOLINT(readability-magic-numbers)
-    uint16_t raw_pitch =
-      static_cast<uint16_t>((pitch_ + 180.0F) * 100.0F);  // NOLINT(readability-magic-numbers)
+    uint16_t raw_actual_rudder =
+      static_cast<uint16_t>((actual_rudder_angle_ + 90.0F) * 100.0F);          // NOLINT(readability-magic-numbers)
+    uint16_t raw_roll    = static_cast<uint16_t>((roll_ + 180.0F) * 100.0F);   // NOLINT(readability-magic-numbers)
+    uint16_t raw_pitch   = static_cast<uint16_t>((pitch_ + 180.0F) * 100.0F);  // NOLINT(readability-magic-numbers)
     uint16_t raw_heading = static_cast<uint16_t>(heading_ * 100.0F);
-    uint16_t raw_commanded_rudder = static_cast<uint16_t>(
-      (commanded_rudder_angle_ + 90.0F) * 100.0F);  // NOLINT(readability-magic-numbers)
-    uint16_t raw_integral =
-      static_cast<uint16_t>(integral_ + 30000);  // NOLINT(readability-magic-numbers)
-    uint16_t raw_derivative =
-      static_cast<uint16_t>(derivative_ + 30000);  // NOLINT(readability-magic-numbers)
+    uint16_t raw_commanded_rudder =
+      static_cast<uint16_t>((commanded_rudder_angle_ + 90.0F) * 100.0F);   // NOLINT(readability-magic-numbers)
+    uint16_t raw_integral   = static_cast<uint16_t>(integral_ + 30000);    // NOLINT(readability-magic-numbers)
+    uint16_t raw_derivative = static_cast<uint16_t>(derivative_ + 30000);  // NOLINT(readability-magic-numbers)
     uint16_t raw_speed_over_ground =
       static_cast<uint16_t>(speed_over_ground_ * 1000.0F);  // NOLINT(readability-magic-numbers)
 
@@ -1009,8 +1000,7 @@ CanFrame RudderDebugData::toLinuxCan() const
     std::memcpy(cf.data + BYTE_OFF_COMMANDED_RUDDER, &raw_commanded_rudder, sizeof(uint16_t));
     std::memcpy(cf.data + BYTE_OFF_INTEGRAL, &raw_integral, sizeof(uint16_t));
     std::memcpy(cf.data + BYTE_OFF_DERIVATIVE, &raw_derivative, sizeof(uint16_t));
-    std::memcpy(
-      cf.data + BYTE_OFF_SPEED_OVER_GROUND, &raw_speed_over_ground, sizeof(uint16_t));
+    std::memcpy(cf.data + BYTE_OFF_SPEED_OVER_GROUND, &raw_speed_over_ground, sizeof(uint16_t));
     return cf;
 }
 
@@ -1018,9 +1008,8 @@ std::string RudderDebugData::debugStr() const
 {
     std::stringstream ss;
     ss << BaseFrame::debugStr() << "\nActual rudder: " << actual_rudder_angle_ << " Roll: " << roll_
-       << " Pitch: " << pitch_ << " Heading: " << heading_ << " Commanded rudder: "
-       << commanded_rudder_angle_ << " Integral: " << integral_ << " Derivative: " << derivative_
-       << " SOG: " << speed_over_ground_;
+       << " Pitch: " << pitch_ << " Heading: " << heading_ << " Commanded rudder: " << commanded_rudder_angle_
+       << " Integral: " << integral_ << " Derivative: " << derivative_ << " SOG: " << speed_over_ground_;
     return ss.str();
 }
 
@@ -1031,14 +1020,15 @@ std::string RudderDebugData::toString() const
     return ss.str();
 }
 
-RudderDebugData::RudderDebugData(CanId id)
-: BaseFrame(std::span{RUDDER_DEBUG_DATA_IDS}, id, CAN_BYTE_DLEN_)
-{
-}
+RudderDebugData::RudderDebugData(CanId id) : BaseFrame(std::span{RUDDER_DEBUG_DATA_IDS}, id, CAN_BYTE_DLEN_) {}
 
 void RudderDebugData::checkBounds() const
 {
-    // Do not check bounds for a debug frame.
+    auto err = utils::isOutOfBounds<float>(heading_, HEADING_LBND, HEADING_UBND);
+    if (err) {
+        std::string err_msg = err.value();
+        throw std::out_of_range("Rudder heading is out of bounds!\n" + debugStr() + "\n" + err_msg);
+    }
 }
 // RudderDebugData END
 
