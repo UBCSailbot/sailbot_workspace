@@ -31,6 +31,8 @@ public:
 
     {
         this->declare_parameter("enabled", true);
+        this->declare_parameter("local_transceiver_debug", false);
+        local_transceiver_debug_ = this->get_parameter("local_transceiver_debug").as_bool();
         bool enabled_ = this->get_parameter("enabled").as_bool();
 
         if (!enabled_) {
@@ -198,13 +200,23 @@ public:
                                    std::placeholders::_2));
             RCLCPP_INFO(this->get_logger(), "receive_and_pub service created");
 
-            receive_timer_cb();
-            send_timer_cb();
             receive_timer_ = this->create_wall_timer(
               std::chrono::duration<double>(receive_period_sec),
               std::bind(&LocalTransceiverIntf::receive_timer_cb, this));
             send_timer_ = this->create_wall_timer(
               std::chrono::duration<double>(send_period_sec), std::bind(&LocalTransceiverIntf::send_timer_cb, this));
+
+            if (local_transceiver_debug_) {
+                receive_timer_->cancel();
+                send_timer_->cancel();
+                RCLCPP_INFO(this->get_logger(), "Local Transceiver automatic timers are disabled");
+            } else {
+                receive_timer_cb();
+                send_timer_cb();
+            }
+
+            param_cb_handle_ = this->add_on_set_parameters_callback(
+              std::bind(&LocalTransceiverIntf::on_param_change, this, std::placeholders::_1));
         }
     }
 
@@ -227,6 +239,45 @@ private:
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_send_debug_;
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_check_signal_quality_;
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_receive_and_pub_;
+
+    rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr param_cb_handle_;
+    bool                                                             local_transceiver_debug_ = false;
+
+    rcl_interfaces::msg::SetParametersResult on_param_change(const std::vector<rclcpp::Parameter> & params)
+    {
+        rcl_interfaces::msg::SetParametersResult result;
+        result.successful = true;
+
+        for (const auto & param : params) {
+            if (param.get_name() != "local_transceiver_debug") {
+                continue;
+            }
+
+            if (param.get_type() != rclcpp::ParameterType::PARAMETER_BOOL) {
+                result.successful = false;
+                result.reason     = "local_transceiver_debug must be a boolean";
+                return result;
+            }
+
+            const bool debug_enabled = param.as_bool();
+            if (debug_enabled == local_transceiver_debug_) {
+                continue;
+            }
+
+            if (debug_enabled) {
+                receive_timer_->cancel();
+                send_timer_->cancel();
+                RCLCPP_INFO(this->get_logger(), "Local Transceiver automatic timers are disabled");
+            } else {
+                receive_timer_->reset();
+                send_timer_->reset();
+                RCLCPP_INFO(this->get_logger(), "Local Transceiver automatic timers are enabled");
+            }
+            local_transceiver_debug_ = debug_enabled;
+        }
+
+        return result;
+    }
 
     /**
      * @brief Callback function to publish to onboard ROS network
