@@ -110,6 +110,13 @@ GLOBAL_LAUNCH_ARGUMENTS = [
         + " empty to use the value in the config file.",
     ),
     DeclareLaunchArgument(
+        name="manual_mode",
+        default_value="false",
+        choices=["true", "false"],
+        description="Override whether can_transceiver_node starts in manual mode."
+        + "Which functionally disables CAN communcation from soft to elec."
+    ),
+    DeclareLaunchArgument(
         name="visualizer_mode",
         default_value="",
         choices=["", "true", "false"],
