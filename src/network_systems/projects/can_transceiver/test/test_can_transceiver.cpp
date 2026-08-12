@@ -349,31 +349,41 @@ TEST_F(TestCanFrameParser, TestRudderDataInvalid)
  */
 TEST_F(TestCanFrameParser, RudderDebugDataTestValid)
 {
-    CAN_FP::CanFrame cf{
-      .can_id = static_cast<canid_t>(CAN_FP::CanId::RUDDER_DEBUG_DATA_FRAME),
-      .len    = CAN_FP::RudderDebugData::CAN_BYTE_DLEN_};
-    constexpr std::array<uint16_t, 8> raw{
+    constexpr std::array<uint16_t, 8> base_raw{
       10250,  // actual rudder: 12.5 degrees
       17500,  // roll: -5 degrees
       18250,  // pitch: 2.5 degrees
-      27125,  // heading: 271.25 degrees
+      0,      // heading, replaced by each test case
       8750,   // commanded rudder: -2.5 degrees
       30123,  // integral: 123
       29950,  // derivative: -50
       12345   // speed over ground: 12.345 km/h
     };
-    std::memcpy(cf.data, raw.data(), CAN_FP::RudderDebugData::CAN_BYTE_DLEN_);
+    constexpr std::array<std::pair<uint16_t, float>, 3> heading_cases{{
+      {0, 0.0F},        // lower bound
+      {20300, -157.0F}, // typical heading: 203 degrees
+      {36000, 0.0F}     // upper bound
+    }};
 
-    CAN_FP::RudderDebugData rudder(cf);
+    for (const auto & [raw_heading, expected_ros_heading] : heading_cases) {
+        CAN_FP::CanFrame cf{
+          .can_id = static_cast<canid_t>(CAN_FP::CanId::RUDDER_DEBUG_DATA_FRAME),
+          .len    = CAN_FP::RudderDebugData::CAN_BYTE_DLEN_};
+        auto raw = base_raw;
+        raw[CAN_FP::RudderDebugData::BYTE_OFF_HEADING / sizeof(uint16_t)] = raw_heading;
+        std::memcpy(cf.data, raw.data(), CAN_FP::RudderDebugData::CAN_BYTE_DLEN_);
 
-    EXPECT_EQ(rudder.id_, CAN_FP::CanId::RUDDER_DEBUG_DATA_FRAME);
-    EXPECT_EQ(rudder.can_byte_dlen_, CAN_FP::RudderDebugData::CAN_BYTE_DLEN_);
-    EXPECT_FLOAT_EQ(rudder.toRosMsg().heading, -88.75F);
+        CAN_FP::RudderDebugData rudder(cf);
 
-    CAN_FP::CanFrame round_trip = rudder.toLinuxCan();
-    EXPECT_EQ(round_trip.can_id, cf.can_id);
-    EXPECT_EQ(round_trip.len, cf.len);
-    EXPECT_EQ(std::memcmp(round_trip.data, cf.data, CAN_FP::RudderDebugData::CAN_BYTE_DLEN_), 0);
+        EXPECT_EQ(rudder.id_, CAN_FP::CanId::RUDDER_DEBUG_DATA_FRAME);
+        EXPECT_EQ(rudder.can_byte_dlen_, CAN_FP::RudderDebugData::CAN_BYTE_DLEN_);
+        EXPECT_FLOAT_EQ(rudder.toRosMsg().heading, expected_ros_heading);
+
+        CAN_FP::CanFrame round_trip = rudder.toLinuxCan();
+        EXPECT_EQ(round_trip.can_id, cf.can_id);
+        EXPECT_EQ(round_trip.len, cf.len);
+        EXPECT_EQ(std::memcmp(round_trip.data, cf.data, CAN_FP::RudderDebugData::CAN_BYTE_DLEN_), 0);
+    }
 }
 
 /**
@@ -383,6 +393,14 @@ TEST_F(TestCanFrameParser, RudderDebugDataTestInvalid)
 {
     CAN_FP::CanFrame cf{.can_id = static_cast<canid_t>(CAN_FP::CanId::RESERVED)};
     EXPECT_THROW(CAN_FP::RudderDebugData tmp(cf), CAN_FP::CanIdMismatchException);
+
+    cf.can_id = static_cast<canid_t>(CAN_FP::CanId::RUDDER_DEBUG_DATA_FRAME);
+    cf.len    = CAN_FP::RudderDebugData::CAN_BYTE_DLEN_;
+    constexpr std::array<uint16_t, 2> invalid_headings{36001, UINT16_MAX};
+    for (const uint16_t raw_heading : invalid_headings) {
+        std::memcpy(cf.data + CAN_FP::RudderDebugData::BYTE_OFF_HEADING, &raw_heading, sizeof(raw_heading));
+        EXPECT_THROW(CAN_FP::RudderDebugData tmp(cf), std::out_of_range);
+    }
 }
 
 /**
