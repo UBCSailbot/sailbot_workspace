@@ -169,11 +169,9 @@ def get_can_transceiver_description(context: LaunchContext) -> Node:
     rudder_debug = LaunchConfiguration("rudder_debug").perform(context).strip()
     if rudder_debug:
         ros_parameters.append({"rudder_debug": rudder_debug.lower() == "true"})
-        
     manual_mode = LaunchConfiguration("manual_mode").perform(context).strip()
     if manual_mode:
         ros_parameters.append({"manual_mode": manual_mode.lower() == "true"})
-        
     ros_arguments: List[SomeSubstitutionsType] = [
         "--log-level",
         [f"{node_name}:=", LaunchConfiguration("log_level")],
