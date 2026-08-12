@@ -135,26 +135,46 @@
   text-decoration: underline;
 }
 
+/* desktop-only wrapper: visible above 768px, hidden on mobile */
+.desktopOnly {
+  display: block;
+}
+
+/* mobile-only wrapper: hidden above 768px, visible on mobile */
+.mobileOnly {
+  display: none;
+}
+
 @media (width <= 768px) {
-  .container {
-    flex-direction: column;
-    gap: 0;
-    padding-top: 0;
-    max-width: 100%;
+  .desktopOnly {
+    display: none;
   }
 
-  /* Pinned, auto-updating text header; images scroll beneath it, keeping the
-     desktop's "text follows the active image" behaviour on one column. */
-  .textColumn {
-    order: -1;
-    position: sticky;
-    top: 52px;
-    height: auto;
-    gap: 10px;
-    padding: 16px 16px 18px;
-    background: #090909;
-    z-index: 10;
-    border-bottom: 1px solid #2a2a2a;
+  .mobileOnly {
+    display: flex;
+    flex-direction: column;
+    gap: 48px;
+    padding: 72px 16px 24px;
+  }
+
+  .mobileSection {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .mobileImageCard {
+    width: 100%;
+    overflow: hidden;
+    border-radius: 8px;
+    aspect-ratio: 460 / 520;
+  }
+
+  .mobileImageCard .image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
   }
 
   .headingRow {
@@ -171,23 +191,5 @@
 
   .bodyText {
     font-size: 14px;
-  }
-
-  /* The vertical progress rail doesn't fit a single column. */
-  .progress {
-    display: none;
-  }
-
-  .imageColumn {
-    order: 0;
-    gap: 20px;
-    width: 100%;
-    padding: 0 8px;
-  }
-
-  .imageCard {
-    width: 100%;
-    height: auto;
-    aspect-ratio: 460 / 520;
   }
 }
