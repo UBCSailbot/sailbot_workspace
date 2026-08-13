@@ -30,6 +30,10 @@
     - Leave empty (default) to use the value in the config file (`mock_ais.ros__parameters.on_water_mock_ais` in `globals.yaml`).
     - `true`: Uses mock AIS data during production mode on-water testing.
     - `false`: Uses real AIS data.
+- To control whether network system's CAN_transceiver runs in manual mode or not, use the `manual_mode` launch argument. If manual mode is enabled CAN communications between the software and elec are disabled.
+    - Leave empty (default) to use the value defined in a config file. If undefined in `globals.yaml` or similar, the value defaults to what is declared in `network_systems/../can_transceiver_ros_intf.cpp` that being `false`.
+    - `true`: Enables manual_mode
+    - `false`: Disables manual_mode
   <!-- markdownlint-enable MD013 -->
 
 ## Example launch commands
