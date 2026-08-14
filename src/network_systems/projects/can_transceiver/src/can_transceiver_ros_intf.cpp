@@ -50,6 +50,7 @@ public:
         this->declare_parameter("can_replay_loop", false);
         this->declare_parameter("rudder_debug", false);
         rudder_debug_ = this->get_parameter("rudder_debug").as_bool();
+        manual_mode_  = this->get_parameter("manual_mode").as_bool();
 
         if (!this->get_parameter("enabled").as_bool()) {
             RCLCPP_INFO(this->get_logger(), "CAN Transceiver is DISABLED");
