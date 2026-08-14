@@ -30,7 +30,7 @@ const HistoricDataDropdown = () => {
   const handleClick = () => setIsOpen(!isOpen);
 
   return (
-    <div ref={dropdownRef}>
+    <div ref={dropdownRef} className={styles.dropdownContainer}>
       <div className={styles.dropdownButton} onClick={handleClick}>
         <HistoryIcon />
         View Historic Data

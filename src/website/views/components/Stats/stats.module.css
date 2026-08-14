@@ -68,6 +68,10 @@
   min-width: 0;
 }
 
+.dropdownContainer {
+  position: relative;
+}
+
 .dropdownButton {
   display: flex;
   align-items: center;
@@ -86,11 +90,16 @@
   display: flex;
   flex-direction: column;
   position: absolute;
+  top: 100%;
+  left: 0;
   border-radius: 4px;
   margin-top: 8px;
   padding: 8px;
   z-index: 1000;
-  width: 250px;
+  width: 342px;
+  background: #0d0d0d;
+  border: 1px solid #404040;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 
 .dropdownItem {
