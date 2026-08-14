@@ -6,6 +6,7 @@ import { PhSensorsService } from './PhSensorsService';
 
 export default class PhSensorsSagas extends BaseSaga {
   *[PhSensorsActions.POLL_PHSENSORS]() {
+    yield delay(3000);
     while (true) {
       try {
         const phSensors: PhSensors[] = yield call(
