@@ -6,6 +6,7 @@ import { BatteriesService } from './BatteriesService';
 
 export default class BatteriesSagas extends BaseSaga {
   *[BatteriesActions.POLL_BATTERIES]() {
+    yield delay(1500);
     while (true) {
       try {
         const batteries: Battery[] = yield call(BatteriesService.getBatteries);

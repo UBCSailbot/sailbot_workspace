@@ -6,6 +6,7 @@ import { TempSensorsService } from './TempSensorsService';
 
 export default class TempSensorsSagas extends BaseSaga {
   *[TempSensorsActions.POLL_TEMPSENSORS]() {
+    yield delay(2500);
     while (true) {
       try {
         const tempSensors: TempSensors[] = yield call(

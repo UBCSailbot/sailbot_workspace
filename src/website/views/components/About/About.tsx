@@ -128,64 +128,91 @@ const About = () => {
 
   return (
     <div ref={rootRef}>
-      <div className={styles.container}>
-        {/* image column */}
-        <div className={styles.imageColumn}>
-          {Description.map((section, index) => (
-            <div
-              key={index}
-              ref={(image) => {
-                imageRefs.current[index] = image;
-              }}
-            >
-              <div className={styles.imageCard}>
-                <Image
-                  className={styles.image}
-                  src={section.imageSrc}
-                  width={460}
-                  height={520}
-                  alt={section.imageAlt}
-                  priority
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* progress bar */}
-        <div className={styles.progress}>
-          <div className={styles.progressFadeTop} />
-          <p ref={numberRef} className={styles.progressNumber}>
-            0{displayIndex + 1}
-          </p>
-
-          <div className={styles.progressLineWrap}>
-            {[0, 1, 2].map((dotIdx) => (
+      {/* desktop layout — hidden on mobile via CSS */}
+      <div className={styles.desktopOnly}>
+        <div className={styles.container}>
+          {/* image column */}
+          <div className={styles.imageColumn}>
+            {Description.map((section, index) => (
               <div
-                key={dotIdx}
-                ref={(el) => {
-                  dotRefs.current[dotIdx] = el;
+                key={index}
+                ref={(image) => {
+                  imageRefs.current[index] = image;
                 }}
-                className={styles.progressDot}
-                style={{ marginBottom: `${80 - 40 * dotIdx}px` }} // styling so Dot 1 is 80px from the bottom of the line, Dot 2 is 40px, & Dot 3 is 0px
-              />
+              >
+                <div className={styles.imageCard}>
+                  <Image
+                    className={styles.image}
+                    src={section.imageSrc}
+                    width={460}
+                    height={520}
+                    alt={section.imageAlt}
+                    priority
+                  />
+                </div>
+              </div>
             ))}
           </div>
-        </div>
 
-        {/* text section */}
-        <div className={styles.textColumn}>
-          <div className={styles.headingRow}>
-            <h2 className={styles.aboutTitle}>ABOUT US</h2>
-            <h3>/</h3>
-            <h3 ref={headingRef} className={styles.sectionTitle}>
-              {Description[displayIndex].title}
-            </h3>
+          {/* progress bar */}
+          <div className={styles.progress}>
+            <div className={styles.progressFadeTop} />
+            <p ref={numberRef} className={styles.progressNumber}>
+              0{displayIndex + 1}
+            </p>
+
+            <div className={styles.progressLineWrap}>
+              {[0, 1, 2].map((dotIdx) => (
+                <div
+                  key={dotIdx}
+                  ref={(el) => {
+                    dotRefs.current[dotIdx] = el;
+                  }}
+                  className={styles.progressDot}
+                  style={{ marginBottom: `${80 - 40 * dotIdx}px` }} // styling so Dot 1 is 80px from the bottom of the line, Dot 2 is 40px, & Dot 3 is 0px
+                />
+              ))}
+            </div>
           </div>
-          <p ref={textRef} className={styles.bodyText}>
-            {Description[displayIndex].content}
-          </p>
+
+          {/* text section */}
+          <div className={styles.textColumn}>
+            <div className={styles.headingRow}>
+              <h2 className={styles.aboutTitle}>ABOUT US</h2>
+              <h3>/</h3>
+              <h3 ref={headingRef} className={styles.sectionTitle}>
+                {Description[displayIndex].title}
+              </h3>
+            </div>
+            <p ref={textRef} className={styles.bodyText}>
+              {Description[displayIndex].content}
+            </p>
+          </div>
         </div>
+      </div>
+
+      {/* mobile layout — simple static sections, hidden on desktop */}
+      <div className={styles.mobileOnly}>
+        {Description.map((section, index) => (
+          <div key={index} className={styles.mobileSection}>
+            <div className={styles.headingRow}>
+              <h2 className={styles.aboutTitle}>ABOUT US</h2>
+              <h3>/</h3>
+              <h3 className={styles.sectionTitle}>{section.title}</h3>
+            </div>
+            <div className={styles.mobileImageCard}>
+              <Image
+                className={styles.image}
+                src={section.imageSrc}
+                width={460}
+                height={520}
+                alt={section.imageAlt}
+                priority={index === 0}
+              />
+            </div>
+            <p className={styles.bodyText}>{section.content}</p>
+          </div>
+        ))}
       </div>
 
       {/* dataset link */}

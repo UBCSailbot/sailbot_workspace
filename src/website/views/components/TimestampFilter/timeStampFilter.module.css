@@ -38,7 +38,8 @@
 
 .calendarWrapper :global(.react-datepicker) {
   width: 326px;
-  background: none !important;
+  background: #0d0d0d !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 
 .calendarWrapper :global(.react-datepicker-popper) {
@@ -80,7 +81,15 @@
 }
 
 .calendar :global(.react-datepicker__time-container) {
-  border-left: none !important;
+  border-left: 1px solid #404040 !important;
+}
+
+.calendar :global(.react-datepicker__time) {
+  background: #0d0d0d !important;
+}
+
+.calendar :global(.react-datepicker__time-name) {
+  color: white !important;
 }
 
 .calendar :global(.react-datepicker__time-list) {
