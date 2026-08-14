@@ -70,7 +70,7 @@ def encode(waypoints=None):
         path.waypoints = wps
 
     proto_bytes = path_to_proto_bytes(path)
-    print(f"\nEncoded protobuf bytes (hex):\n{proto_bytes.hex()}")
+    print(f"\nEncoded protobuf bytes (hex):\n{proto_bytes[2:].hex()}")
 
 
 def path_to_proto_bytes(path):

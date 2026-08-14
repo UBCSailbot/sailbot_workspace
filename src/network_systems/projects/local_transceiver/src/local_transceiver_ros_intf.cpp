@@ -103,8 +103,10 @@ public:
             }
 
             this->declare_parameter("port", default_port);
-            this->declare_parameter<double>("receive_period_sec", 1800.0);
-            this->declare_parameter<double>("send_period_sec", 3600.0);
+            constexpr double DEFAULT_RECEIVE_PERIOD_SEC = 1800.0;
+            constexpr double DEFAULT_SEND_PERIOD_SEC    = 3600.0;
+            this->declare_parameter<double>("receive_period_sec", DEFAULT_RECEIVE_PERIOD_SEC);
+            this->declare_parameter<double>("send_period_sec", DEFAULT_SEND_PERIOD_SEC);
             rclcpp::Parameter default_port_parm  = this->get_parameter("port");
             std::string       port               = default_port_parm.as_string();
             const double      receive_period_sec = this->get_parameter("receive_period_sec").as_double();
