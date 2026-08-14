@@ -336,7 +336,7 @@ const RearrangeGraphDropdown = ({ graphs, rearrangeGraphs }: any) => {
     : null;
 
   return (
-    <div ref={dropdownRef}>
+    <div ref={dropdownRef} className={styles.dropdownContainer}>
       <div className={styles.dropdownButton} onClick={handleClick}>
         <RearrangeIcon />
         Rearrange Graphs
