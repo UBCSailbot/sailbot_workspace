@@ -217,8 +217,7 @@ bool LocalTransceiver::send()
         }
 
         std::string msg_str = data + checksum(data);
-        AT::Line    msg(msg_str);
-        if (!send(msg)) {
+        if (!sendRaw(msg_str)) {
             continue;
         }
 
@@ -356,15 +355,16 @@ bool LocalTransceiver::debugSendAT(const std::string & data)
         }
 
         std::string msg_str = data + checksum(data);
-        AT::Line    msg(msg_str);
-        if (!send(msg)) {
+        if (!sendRaw(msg_str)) {
             if (log_error_) {
                 log_error_("Debug: failed to send payload (attempt " + std::to_string(i) + ")");
             }
             continue;
         }
         if (log_debug_) {
-            log_debug_("Debug: sent payload (attempt " + std::to_string(i) + "): " + msg.str_);
+            log_debug_(
+              "Debug: sent " + std::to_string(data.size()) + " payload bytes plus checksum (attempt " +
+              std::to_string(i) + ")");
         }
 
         if (!rcvRsps({
@@ -641,6 +641,17 @@ bool LocalTransceiver::send(const AT::Line & cmd)
     bio::write(serial_, bio::buffer(cmd.str_, cmd.str_.size()), ec);
     if (ec) {
         std::cerr << "Write failed with error: " << ec.message() << std::endl;
+        return false;
+    }
+    return true;
+}
+
+bool LocalTransceiver::sendRaw(const std::string & data)
+{
+    boost::system::error_code ec;
+    bio::write(serial_, bio::buffer(data.data(), data.size()), ec);
+    if (ec) {
+        std::cerr << "Binary write failed with error: " << ec.message() << std::endl;
         return false;
     }
     return true;
