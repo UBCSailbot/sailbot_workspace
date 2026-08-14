@@ -240,6 +240,13 @@ private:
     bool send(const AT::Line & cmd);
 
     /**
+     * @brief Best-effort clear of the Iridium mobile-originated message buffer
+     *
+     * @return true if the modem confirms the buffer was cleared, false otherwise
+     */
+    bool clearMOBuffer();
+
+    /**
      * @brief Read responses from serial
      *
      * @param expected_rsps expected responses
