@@ -6,6 +6,7 @@ import { SalinitySensorsService } from './SalinitySensorsService';
 
 export default class SalinitySensorsSagas extends BaseSaga {
   *[SalinitySensorsActions.POLL_SALINITYSENSORS]() {
+    yield delay(3500);
     while (true) {
       try {
         const salinitySensors: SalinitySensors[] = yield call(

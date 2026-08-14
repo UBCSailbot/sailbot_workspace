@@ -6,6 +6,7 @@ import { WindSensorsService } from './WindSensorsService';
 
 export default class WindSensorsSagas extends BaseSaga {
   *[WindSensorsAction.POLL_WINDSENSORS]() {
+    yield delay(2000);
     while (true) {
       try {
         const windSensors: WindSensor[] = yield call(
