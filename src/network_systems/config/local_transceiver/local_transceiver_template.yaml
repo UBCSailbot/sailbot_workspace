@@ -3,6 +3,6 @@ local_transceiver_node:
   ros__parameters:
     enabled: true
     # The following parameters are optional. Defaults are set in local_transceiver_ros_intf.cpp
-    # Disable automatic startup and timer-driven send/receive calls. This can also be changed at runtime.
+    # Disable timer-driven send/receive calls. This can also be changed at runtime.
     local_transceiver_debug: false
     port: # String: Serial port that the Local Transceiver will use (default: /tmp/local_transceiver_test_port)

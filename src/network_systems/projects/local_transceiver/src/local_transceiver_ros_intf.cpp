@@ -212,9 +212,6 @@ public:
                 receive_timer_->cancel();
                 send_timer_->cancel();
                 RCLCPP_INFO(this->get_logger(), "Local Transceiver automatic timers are disabled");
-            } else {
-                receive_timer_cb();
-                send_timer_cb();
             }
 
             param_cb_handle_ = this->add_on_set_parameters_callback(
