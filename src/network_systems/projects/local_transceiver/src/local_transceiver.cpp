@@ -508,9 +508,9 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
 
         clearSerialBuffer();
 
-        // An uncleared MO message would be transmitted again by the mailbox-check SBD session.
-        // Clearing is best-effort so an unavailable modem does not prevent checking for MT data.
-        clearMOBuffer();
+        if (!clearMOBuffer()) {
+            continue;
+        }
 
         static const AT::Line sbdix_cmd = AT::Line(AT::SBD_SESSION);
         if (!send(sbdix_cmd)) {
