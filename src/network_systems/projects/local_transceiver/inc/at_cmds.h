@@ -19,6 +19,7 @@ const std::string GARBAGE   = "\n";
 
 const std::string CHECK_CONN        = "AT";
 const std::string SBD_SESSION       = "AT+SBDIX";  // 5.144
+const std::string CLEAR_MO_BUFFER   = "AT+SBDD0";  // 5.142: clear the mobile-originated buffer
 const std::string DSBL_CTRLFLOW     = "AT&K0";
 const std::string DNLD_TO_QUEUE     = "AT+SBDRB";
 const std::string CHECK_SIG_QUALITY = "AT+CSQ";
