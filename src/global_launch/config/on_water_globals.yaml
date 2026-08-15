@@ -4,6 +4,8 @@
       # Publishers' period (seconds): how often the publishers publish
       config: "on_water_globals.yaml" # Name of the global config file
       pub_period_sec: 1.0
+      receive_period_sec: 1800.0
+      send_period_sec: 3600.0
       test_plan: "jericho_on_water_test.yaml"
 
 # local_pathfinding parameters
