@@ -26,7 +26,7 @@ type DataSet = {
 };
 
 // TODO(team): replace with the real Drive link to the hydrophone recordings
-const HYDROPHONE_DRIVE_URL = 'https://drive.google.com/';
+const HYDROPHONE_DRIVE_URL = 'https://drive.google.com/drive/folders/1oKVSy055-gNkFngFmi1BNiyFt5tf_u9x?usp=drive_link';
 
 const dataSets: DataSet[] = [
   {
