@@ -217,8 +217,7 @@ bool LocalTransceiver::send()
         }
 
         std::string msg_str = data + checksum(data);
-        AT::Line    msg(msg_str);
-        if (!send(msg)) {
+        if (!sendRaw(msg_str)) {
             continue;
         }
 
@@ -239,8 +238,6 @@ bool LocalTransceiver::send()
         if (!send(sbdix_cmd)) {
             return false;
         }
-
-        clearSerialBuffer();  // Clear any data that may have come in while waiting for SBDIX response, to ensure the following readRsp gets a clean response
 
         if (!rcvRsps({
               sbdix_cmd,
@@ -264,6 +261,7 @@ bool LocalTransceiver::send()
 
         AT::SBDStatusRsp rsp(sbd_status_vec[0]);
         if (rsp.MOSuccess()) {
+            clearMOBuffer();
             return true;
         }
         std::cerr << "SBDIX MO status indicates failure: " << std::to_string(rsp.MO_status_) << std::endl;
@@ -357,15 +355,16 @@ bool LocalTransceiver::debugSendAT(const std::string & data)
         }
 
         std::string msg_str = data + checksum(data);
-        AT::Line    msg(msg_str);
-        if (!send(msg)) {
+        if (!sendRaw(msg_str)) {
             if (log_error_) {
                 log_error_("Debug: failed to send payload (attempt " + std::to_string(i) + ")");
             }
             continue;
         }
         if (log_debug_) {
-            log_debug_("Debug: sent payload (attempt " + std::to_string(i) + "): " + msg.str_);
+            log_debug_(
+              "Debug: sent " + std::to_string(data.size()) + " payload bytes plus checksum (attempt " +
+              std::to_string(i) + ")");
         }
 
         if (!rcvRsps({
@@ -436,6 +435,7 @@ bool LocalTransceiver::debugSendAT(const std::string & data)
             if (log_debug_) {
                 log_debug_("Debug: debugSendAT transmitted successfully");
             }
+            clearMOBuffer();
             return true;
         }
         if (log_error_) {
@@ -507,6 +507,10 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
         }
 
         clearSerialBuffer();
+
+        if (!clearMOBuffer()) {
+            continue;
+        }
 
         static const AT::Line sbdix_cmd = AT::Line(AT::SBD_SESSION);
         if (!send(sbdix_cmd)) {
@@ -638,6 +642,48 @@ bool LocalTransceiver::send(const AT::Line & cmd)
     if (ec) {
         std::cerr << "Write failed with error: " << ec.message() << std::endl;
         return false;
+    }
+    return true;
+}
+
+bool LocalTransceiver::sendRaw(const std::string & data)
+{
+    boost::system::error_code ec;
+    bio::write(serial_, bio::buffer(data.data(), data.size()), ec);
+    if (ec) {
+        std::cerr << "Binary write failed with error: " << ec.message() << std::endl;
+        return false;
+    }
+    return true;
+}
+
+bool LocalTransceiver::clearMOBuffer()
+{
+    static const AT::Line clear_mo_cmd = AT::Line(AT::CLEAR_MO_BUFFER);
+    if (!send(clear_mo_cmd)) {
+        if (log_error_) {
+            log_error_("Failed to send command to clear the Iridium MO buffer");
+        }
+        return false;
+    }
+
+    if (!rcvRsps({
+          clear_mo_cmd,
+          AT::Line(AT::DELIMITER),
+          AT::Line("0"),
+          AT::Line("\n"),
+          AT::Line(AT::DELIMITER),
+          AT::Line(AT::STATUS_OK),
+          AT::Line("\n"),
+        })) {
+        if (log_error_) {
+            log_error_("Iridium modem did not confirm that the MO buffer was cleared");
+        }
+        return false;
+    }
+
+    if (log_debug_) {
+        log_debug_("Iridium MO buffer cleared successfully");
     }
     return true;
 }
@@ -915,12 +961,6 @@ int LocalTransceiver::checkIridiumSignalQuality()
     // }
     int signal_quality =
       opt_rsp_val.find("+CSQ:") != std::string::npos ? std::stoi(opt_rsp_val.substr(opt_rsp_val.find(":") + 1)) : -1;
-
-    std::this_thread::sleep_for(std::chrono::seconds(SMALL_WAIT));
-
-    clearSerialBuffer();  // Clear any data that may have come in while waiting for CSQ response, to ensure the following readRsp gets a clean response
-
-    std::this_thread::sleep_for(std::chrono::seconds(SMALL_WAIT));
 
     return signal_quality;
 }

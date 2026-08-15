@@ -240,6 +240,20 @@ private:
     bool send(const AT::Line & cmd);
 
     /**
+     * @brief Send binary data to the serial port without adding an AT command terminator
+     *
+     * @param data raw bytes to send
+     */
+    bool sendRaw(const std::string & data);
+
+    /**
+     * @brief Best-effort clear of the Iridium mobile-originated message buffer
+     *
+     * @return true if the modem confirms the buffer was cleared, false otherwise
+     */
+    bool clearMOBuffer();
+
+    /**
      * @brief Read responses from serial
      *
      * @param expected_rsps expected responses
