@@ -31,6 +31,8 @@ public:
 
     {
         this->declare_parameter("enabled", true);
+        this->declare_parameter("local_transceiver_debug", false);
+        local_transceiver_debug_ = this->get_parameter("local_transceiver_debug").as_bool();
         bool enabled_ = this->get_parameter("enabled").as_bool();
 
         if (!enabled_) {
@@ -101,11 +103,27 @@ public:
             }
 
             this->declare_parameter("port", default_port);
-            rclcpp::Parameter default_port_parm = this->get_parameter("port");
-            std::string       port              = default_port_parm.as_string();
+            constexpr double DEFAULT_RECEIVE_PERIOD_SEC = 1800.0;
+            constexpr double DEFAULT_SEND_PERIOD_SEC    = 3600.0;
+            this->declare_parameter<double>("receive_period_sec", DEFAULT_RECEIVE_PERIOD_SEC);
+            this->declare_parameter<double>("send_period_sec", DEFAULT_SEND_PERIOD_SEC);
+            rclcpp::Parameter default_port_parm  = this->get_parameter("port");
+            std::string       port               = default_port_parm.as_string();
+            const double      receive_period_sec = this->get_parameter("receive_period_sec").as_double();
+            const double      send_period_sec    = this->get_parameter("send_period_sec").as_double();
+
+            if (!std::isfinite(receive_period_sec) || receive_period_sec <= 0.0) {
+                throw std::invalid_argument("receive_period_sec must be greater than zero");
+            }
+            if (!std::isfinite(send_period_sec) || send_period_sec <= 0.0) {
+                throw std::invalid_argument("send_period_sec must be greater than zero");
+            }
 
             RCLCPP_INFO(
               this->get_logger(), "Running Local Transceiver in mode: %s, with port: %s.", mode.c_str(), port.c_str());
+            RCLCPP_INFO(
+              this->get_logger(), "Local Transceiver periods: receive=%.3f seconds, send=%.3f seconds",
+              receive_period_sec, send_period_sec);
             lcl_trns_ = std::make_unique<LocalTransceiver>(port, SATELLITE_BAUD_RATE);
 
             // Set up logging callbacks to use ROS logging
@@ -118,9 +136,6 @@ public:
               std::async(std::launch::async, lcl_trns_->getCache);
 
             static constexpr int ROS_Q_SIZE = 5;
-            // disable receive timer until ready for deployment
-            //static constexpr auto TIMER_INTERVAL = std::chrono::milliseconds(300000);
-            //timer_ = this->create_wall_timer(TIMER_INTERVAL, std::bind(&LocalTransceiverIntf::pub_cb, this));
             pub_ = this->create_publisher<custom_interfaces::msg::Path>(ros_topics::GLOBAL_PATH, ROS_Q_SIZE);
 
             // subscriber nodes
@@ -186,13 +201,31 @@ public:
                                    &LocalTransceiverIntf::receive_and_pub_request_handler, this, std::placeholders::_1,
                                    std::placeholders::_2));
             RCLCPP_INFO(this->get_logger(), "receive_and_pub service created");
+
+            receive_timer_ = this->create_wall_timer(
+              std::chrono::duration<double>(receive_period_sec),
+              std::bind(&LocalTransceiverIntf::receive_timer_cb, this));
+            send_timer_ = this->create_wall_timer(
+              std::chrono::duration<double>(send_period_sec), std::bind(&LocalTransceiverIntf::send_timer_cb, this));
+
+            if (local_transceiver_debug_) {
+                receive_timer_->cancel();
+                send_timer_->cancel();
+                RCLCPP_INFO(this->get_logger(), "Local Transceiver automatic timers are disabled");
+            } else {
+                receive_timer_cb();
+                send_timer_cb();
+            }
+
+            param_cb_handle_ = this->add_on_set_parameters_callback(
+              std::bind(&LocalTransceiverIntf::on_param_change, this, std::placeholders::_1));
         }
     }
 
 private:
     std::unique_ptr<LocalTransceiver> lcl_trns_;  // Local Transceiver instance
-    // Publishing timer - disabled until deployment
-    //rclcpp::TimerBase::SharedPtr                               timer_;
+    rclcpp::TimerBase::SharedPtr                               receive_timer_;
+    rclcpp::TimerBase::SharedPtr                               send_timer_;
     rclcpp::Publisher<custom_interfaces::msg::Path>::SharedPtr pub_;
 
     rclcpp::Subscription<custom_interfaces::msg::WindSensors>::SharedPtr     sub_wind_sensor;
@@ -209,6 +242,45 @@ private:
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_check_signal_quality_;
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_receive_and_pub_;
 
+    rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr param_cb_handle_;
+    bool                                                             local_transceiver_debug_ = false;
+
+    rcl_interfaces::msg::SetParametersResult on_param_change(const std::vector<rclcpp::Parameter> & params)
+    {
+        rcl_interfaces::msg::SetParametersResult result;
+        result.successful = true;
+
+        for (const auto & param : params) {
+            if (param.get_name() != "local_transceiver_debug") {
+                continue;
+            }
+
+            if (param.get_type() != rclcpp::ParameterType::PARAMETER_BOOL) {
+                result.successful = false;
+                result.reason     = "local_transceiver_debug must be a boolean";
+                return result;
+            }
+
+            const bool debug_enabled = param.as_bool();
+            if (debug_enabled == local_transceiver_debug_) {
+                continue;
+            }
+
+            if (debug_enabled) {
+                receive_timer_->cancel();
+                send_timer_->cancel();
+                RCLCPP_INFO(this->get_logger(), "Local Transceiver automatic timers are disabled");
+            } else {
+                receive_timer_->reset();
+                send_timer_->reset();
+                RCLCPP_INFO(this->get_logger(), "Local Transceiver automatic timers are enabled");
+            }
+            local_transceiver_debug_ = debug_enabled;
+        }
+
+        return result;
+    }
+
     /**
      * @brief Callback function to publish to onboard ROS network
      *
@@ -221,6 +293,28 @@ private:
         } else {
             RCLCPP_INFO(this->get_logger(), "Publishing received waypoints from Local Transceiver");
             pub_->publish(msg);
+        }
+    }
+
+    void receive_timer_cb()
+    {
+        try {
+            pub_cb();
+        } catch (const std::exception & e) {
+            RCLCPP_ERROR(this->get_logger(), "Exception during timed receive(): %s", e.what());
+        }
+    }
+
+    void send_timer_cb()
+    {
+        try {
+            if (lcl_trns_->send()) {
+                RCLCPP_INFO(this->get_logger(), "Successfully sent data via Local Transceiver");
+            } else {
+                RCLCPP_INFO(this->get_logger(), "Send is unsuccessful");
+            }
+        } catch (const std::exception & e) {
+            RCLCPP_ERROR(this->get_logger(), "Exception during send(): %s", e.what());
         }
     }
 
