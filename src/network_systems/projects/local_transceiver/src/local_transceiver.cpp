@@ -180,11 +180,19 @@ bool LocalTransceiver::send()
 
     static constexpr int MAX_NUM_RETRIES = 5;  // allow retries because the connection is imperfect
     for (int i = 0; i < MAX_NUM_RETRIES; i++) {
+        if (log_debug_) {
+            log_debug_("Debug: clearing buffer (attempt " + std::to_string(i) + ")");
+        }
+
         std::this_thread::sleep_for(std::chrono::seconds(SMALL_WAIT));
         clearSerialBuffer();  // Clear any stale data from previous iteration
 
         std::this_thread::sleep_for(std::chrono::seconds(MEDIUM_WAIT));
+        if (log_debug_) {
+            log_debug_("Debug: cleared buffer, checking Iridium signal quality (attempt " + std::to_string(i) + ")");
+        }
 
+        // int current_iridium_signal_quality = 5;
         int current_iridium_signal_quality = checkIridiumSignalQuality();
         if (current_iridium_signal_quality == -1) {
             if (log_error_) {
@@ -200,11 +208,23 @@ bool LocalTransceiver::send()
             }
             std::this_thread::sleep_for(
               std::chrono::seconds(MEDIUM_WAIT));  // Wait a moment before retrying if no signal
+
             continue;
+        }
+        if (log_debug_) {
+            log_debug_(
+              "Debug: Iridium signal quality is " + std::to_string(current_iridium_signal_quality) +
+              ", proceeding to send write command (attempt " + std::to_string(i) + ")");
         }
 
         if (!send(at_write_cmd)) {
+            if (log_error_) {
+                log_error_("Debug: failed to send write command (attempt " + std::to_string(i) + ")");
+            }
             continue;
+        }
+        if (log_debug_) {
+            log_debug_("Debug: sent write command (attempt " + std::to_string(i) + "): " + at_write_cmd.str_);
         }
 
         if (!rcvRsps({
@@ -213,12 +233,26 @@ bool LocalTransceiver::send()
               AT::Line(AT::RSP_READY),
               AT::Line("\n"),
             })) {
+            if (log_error_) {
+                log_error_("Debug: did not receive ready prompt (attempt " + std::to_string(i) + ")");
+            }
             continue;
+        }
+        if (log_debug_) {
+            log_debug_("Debug: received ready prompt (attempt " + std::to_string(i) + ")");
         }
 
         std::string msg_str = data + checksum(data);
         if (!sendRaw(msg_str)) {
+            if (log_error_) {
+                log_error_("Debug: failed to send payload (attempt " + std::to_string(i) + ")");
+            }
             continue;
+        }
+        if (log_debug_) {
+            log_debug_(
+              "Debug: sent " + std::to_string(data.size()) + " payload bytes plus checksum (attempt " +
+              std::to_string(i) + ")");
         }
 
         if (!rcvRsps({
@@ -229,42 +263,72 @@ bool LocalTransceiver::send()
               AT::Line(AT::STATUS_OK),
               AT::Line("\n"),
             })) {
+            if (log_error_) {
+                log_error_("Debug: write did not complete successfully (attempt " + std::to_string(i) + ")");
+            }
             continue;
         }
+        if (log_debug_) {
+            log_debug_("Debug: write completed successfully (attempt " + std::to_string(i) + ")");
+        }
 
-        // Check SBD Session status to see if data was sent successfully
-        // NEEDS AN ACTIVE SERVER ON $WEBHOOK_SERVER_ENDPOINT OR VIRTUAL IRIDIUM WILL CRASH
+        clearSerialBuffer();
+
         static const AT::Line sbdix_cmd = AT::Line(AT::SBD_SESSION);
         if (!send(sbdix_cmd)) {
+            if (log_error_) {
+                log_error_("Debug: failed to send SBDIX command (attempt " + std::to_string(i) + ")");
+            }
             return false;
+        }
+        if (log_debug_) {
+            log_debug_("Debug: sent SBDIX command (attempt " + std::to_string(i) + "): " + sbdix_cmd.str_);
         }
 
         if (!rcvRsps({
               sbdix_cmd,
               AT::Line(AT::DELIMITER),
             })) {
+            if (log_error_) {
+                log_error_("Debug: did not receive SBDIX response header (attempt " + std::to_string(i) + ")");
+            }
             return false;
+        }
+        if (log_debug_) {
+            log_debug_("Debug: received SBDIX response header (attempt " + std::to_string(i) + ")");
         }
 
         auto opt_rsp = readRsp();
         if (!opt_rsp) {
+            if (log_error_) {
+                log_error_("Debug: readRsp returned no response (attempt " + std::to_string(i) + ")");
+            }
             return false;
         }
+        if (log_debug_) {
+            log_debug_("Debug: readRsp received response (attempt " + std::to_string(i) + "): " + opt_rsp.value());
+        }
 
-        // This string will look something like:
-        // "+SBDIX:<MO status>,<MOMSN>,<MT status>,<MTMSN>,<MT length>,<MTqueued>\r\n\r\nOK\r"
-        // on success
-        // Don't bother to check for OK\r as MO status will tell us if it succeeded or not
         std::string              opt_rsp_val = opt_rsp.value();
         std::vector<std::string> sbd_status_vec;
         boost::algorithm::split(sbd_status_vec, opt_rsp_val, boost::is_any_of(AT::DELIMITER));
 
         AT::SBDStatusRsp rsp(sbd_status_vec[0]);
+
+        if (log_debug_) {
+            log_debug_("SBDIX parsed rsp MO Status: " + std::to_string(rsp.MO_status_));
+        }
+
         if (rsp.MOSuccess()) {
+            if (log_debug_) {
+                log_debug_("Debug: debugSendAT transmitted successfully");
+            }
             clearMOBuffer();
             return true;
         }
-        std::cerr << "SBDIX MO status indicates failure: " << std::to_string(rsp.MO_status_) << std::endl;
+        if (log_error_) {
+            log_error_("Debug: MO Status: " + std::to_string(rsp.MO_status_));
+        }
         return false;
     }
     std::cerr << "Failed to transmit data to satellite!" << std::endl;
