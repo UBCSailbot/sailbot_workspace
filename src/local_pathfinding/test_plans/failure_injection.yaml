@@ -1,0 +1,76 @@
+name: failure_injection
+description: >-
+  Mission that deliberately injects sensor and navigation faults to validate
+  pathfinding robustness, stale-data rejection, recovery behavior, and safe fallback logic.
+duration_seconds: 9000
+
+# Baseline conditions for the mission.
+tw_dir_deg: 20
+tw_speed_kmph: 18.0
+heading_deg: 50.0
+
+gps:
+  latitude: 49.28
+  longitude: -123.18
+  speed_kmph: 12.0
+
+global_path:
+  waypoints:
+    - {latitude: 48.158391, longitude: -130.253906}
+    - {latitude: 48.121368, longitude: -137.022955}
+
+# Ordered fault injection timeline.
+events:
+  mock_wind_sensor:
+    - {timestamp: 300.0, direction_deg: 90, speed_kmph: 0.0}
+    - {timestamp: 900.0, direction_deg: 180, speed_kmph: 5.0}
+    - {timestamp: 1800.0, direction_deg: -150, speed_kmph: 28.0}
+    - {timestamp: 3600.0, direction_deg: 0, speed_kmph: 40.0}
+    - {timestamp: 5400.0, direction_deg: 35, speed_kmph: 12.0}
+    - {timestamp: 7200.0, direction_deg: 210, speed_kmph: 45.0}
+    - {timestamp: 8400.0, direction_deg: 20, speed_kmph: 18.0}
+
+  mock_gps:
+    - {timestamp: 600.0, use_ocean_drift: true, ocean_drift_speed_kmph: 10.0, ocean_drift_dir_deg: 45.0}
+    - {timestamp: 1200.0, use_ocean_drift: false}
+    - {timestamp: 2100.0, use_gps_noise: true}
+    - {timestamp: 3000.0, use_gps_noise: false}
+    - {timestamp: 4200.0, use_ocean_drift: true, ocean_drift_speed_kmph: 30.0, ocean_drift_dir_deg: 180.0}
+    - {timestamp: 5100.0, use_ocean_drift: false}
+    - {timestamp: 6600.0, publish_heading: false}
+    - {timestamp: 6900.0, publish_heading: true}
+    - {timestamp: 7800.0, use_drift_randomization: true}
+    - {timestamp: 8100.0, use_drift_randomization: false}
+
+  mock_ais:
+    - timestamp: 900.0
+      ships: []
+    - timestamp: 2000.0
+      ships:
+        - {id: 1, lat: 49.31, lon: -123.21, heading: 180.0, speed: 10.0, rot: 0, width: 1.0, height: 1.0}
+    - timestamp: 4500.0
+      ships:
+        - {id: 1, lat: 49.35, lon: -123.25, heading: 90.0, speed: 12.0, rot: 15, width: 1.2, height: 2.0}
+    - timestamp: 6300.0
+      ships: []
+    - timestamp: 7600.0
+      ships:
+        - {id: 1, lat: 49.30, lon: -123.18, heading: 0.0, speed: 8.0, rot: 20, width: 1.5, height: 2.5}
+
+  mock_global_path:
+    - timestamp: 1500.0
+      waypoints:
+        - {latitude: 48.40, longitude: -126.00}
+        - {latitude: 49.20, longitude: -123.50}
+    - timestamp: 4200.0
+      waypoints:
+        - {latitude: 48.30, longitude: -125.00}
+        - {latitude: 48.90, longitude: -123.90}
+    - timestamp: 6000.0
+      waypoints:
+        - {latitude: 48.25, longitude: -128.00}
+        - {latitude: 49.05, longitude: -124.30}
+    - timestamp: 7800.0
+      waypoints:
+        - {latitude: 48.18, longitude: -130.25}
+        - {latitude: 48.12, longitude: -137.02}
