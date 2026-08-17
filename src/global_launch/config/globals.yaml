@@ -6,6 +6,7 @@
       pub_period_sec: 1.0
       receive_period_sec: 1800.0
       send_period_sec: 3600.0
+      debug_send_period_sec: 900.0
       test_plan: "basic.yaml"
 
 # local_pathfinding parameters
