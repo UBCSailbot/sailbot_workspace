@@ -178,7 +178,7 @@ bool LocalTransceiver::send()
     std::string write_bin_cmd_str = AT::write_bin::CMD + std::to_string(data.size());  //according to specs
     AT::Line    at_write_cmd(write_bin_cmd_str);
 
-    static constexpr int MAX_NUM_RETRIES = 5;  // allow retries because the connection is imperfect
+    static constexpr int MAX_NUM_RETRIES = 20;  // allow retries because the connection is imperfect
     for (int i = 0; i < MAX_NUM_RETRIES; i++) {
         if (log_debug_) {
             log_debug_("Debug: clearing buffer (attempt " + std::to_string(i) + ")");
@@ -354,7 +354,7 @@ bool LocalTransceiver::debugSendAT(const std::string & data)
     std::string write_bin_cmd_str = AT::write_bin::CMD + std::to_string(data.size());
     AT::Line    at_write_cmd(write_bin_cmd_str);
 
-    static constexpr int MAX_NUM_RETRIES = 5;
+    static constexpr int MAX_NUM_RETRIES = 20;
     for (int i = 0; i < MAX_NUM_RETRIES; i++) {
         if (log_debug_) {
             log_debug_("Debug: clearing buffer (attempt " + std::to_string(i) + ")");
