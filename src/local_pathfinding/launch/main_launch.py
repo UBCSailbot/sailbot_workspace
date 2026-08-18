@@ -17,6 +17,16 @@ _LOGGER = get_logger("local_pathfinding_launch")
 # Local launch arguments and constants
 PACKAGE_NAME = "local_pathfinding"
 
+# navigate_main can die on a segmentation fault in the compiled OMPL solver during a local-path
+# replan. Auto-respawning it keeps the pathfinding software alive instead of leaving it dead for
+# the rest of the voyage; on restart it reloads the persisted global path and resumes from the
+# current GPS position. Scoped to navigate_main only. The delay rate-limits restarts but does NOT
+# cap them (a deterministic crash would loop every ~delay seconds); pair with a restart cap and a
+# safe fallback heading if that becomes a concern. launch_ros suppresses respawn during a graceful
+# shutdown, though a signal sent to the whole process group can still fire one transient respawn
+# that teardown then reaps.
+NAVIGATE_RESPAWN_DELAY_SEC = 2.0
+
 
 def generate_launch_description() -> LaunchDescription:
     """The launch file entry point. Generates the launch description for the `local_pathfinding`
@@ -157,6 +167,10 @@ def get_navigate_node_description(context: LaunchContext) -> Node:
         emulate_tty=True,
         parameters=ros_parameters,
         ros_arguments=ros_arguments,
+        # Restart navigate_main if it dies (e.g. OMPL solver segfault) so pathfinding recovers
+        # rather than staying down for the rest of the run. See NAVIGATE_RESPAWN_DELAY_SEC.
+        respawn=True,
+        respawn_delay=NAVIGATE_RESPAWN_DELAY_SEC,
     )
 
     return node
