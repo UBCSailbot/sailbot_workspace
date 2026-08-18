@@ -160,7 +160,7 @@ def get_navigate_node_description(context: LaunchContext) -> Node:
         emulate_tty=True,
         parameters=ros_parameters,
         ros_arguments=ros_arguments,
-        # Auto-restart navigate_main if it dies (e.g. OMPL solver segfault) so pathfinding recovers.
+        # Auto-restart navigate_main if it dies (e.g. OMPL solver segfault) so pathfinding recovers
         respawn=True,
         respawn_delay=NAVIGATE_RESPAWN_DELAY_SEC,
     )
