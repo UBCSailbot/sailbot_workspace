@@ -17,6 +17,9 @@ _LOGGER = get_logger("local_pathfinding_launch")
 # Local launch arguments and constants
 PACKAGE_NAME = "local_pathfinding"
 
+# Seconds launch waits before relaunching navigate_main after it dies (see respawn below).
+NAVIGATE_RESPAWN_DELAY_SEC = 2.0
+
 
 def generate_launch_description() -> LaunchDescription:
     """The launch file entry point. Generates the launch description for the `local_pathfinding`
@@ -157,6 +160,9 @@ def get_navigate_node_description(context: LaunchContext) -> Node:
         emulate_tty=True,
         parameters=ros_parameters,
         ros_arguments=ros_arguments,
+        # Auto-restart navigate_main if it dies (e.g. OMPL solver segfault) so pathfinding recovers
+        respawn=True,
+        respawn_delay=NAVIGATE_RESPAWN_DELAY_SEC,
     )
 
     return node
