@@ -25,6 +25,9 @@ from ros_info import (  # noqa: E402
 PACKAGE_NAME = "network_systems"
 NAMESPACE = ""
 
+# Seconds launch waits before relaunching a net node after it dies.
+NET_RESPAWN_DELAY_SEC = 3.0
+
 # Add args with DeclareLaunchArguments object(s) and utilize in setup_launch()
 # Note: rudder_debug is declared in global_launch, which this file pulls in via
 # get_global_launch_arguments(), so it is settable from either launch entry point
@@ -184,6 +187,8 @@ def get_can_transceiver_description(context: LaunchContext) -> Node:
         name=node_name,
         parameters=ros_parameters,
         ros_arguments=ros_arguments,
+        respawn=True,
+        respawn_delay=NET_RESPAWN_DELAY_SEC,
     )
 
     return node
@@ -214,6 +219,8 @@ def get_local_transceiver_description(context: LaunchContext) -> Node:
         name=node_name,
         parameters=ros_parameters,
         ros_arguments=ros_arguments,
+        respawn=True,
+        respawn_delay=NET_RESPAWN_DELAY_SEC,
     )
 
     return node
