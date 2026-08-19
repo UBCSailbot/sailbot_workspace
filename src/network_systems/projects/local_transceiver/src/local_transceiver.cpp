@@ -478,7 +478,7 @@ void LocalTransceiver::cacheGlobalWaypoints(std::string receivedDataBuffer)
 
 custom_interfaces::msg::Path LocalTransceiver::receive()
 {
-    static constexpr int MAX_NUM_RETRIES = 20;
+    static constexpr int MAX_NUM_RETRIES = 5;
     for (int i = 0; i <= MAX_NUM_RETRIES; i++) {
         std::this_thread::sleep_for(std::chrono::seconds(SMALL_WAIT));
         clearSerialBuffer();  // Clear any stale data from previous iteration
@@ -530,7 +530,7 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
             if (log_error_) {
                 log_error_("Debug: did not receive SBDIX response header (attempt " + std::to_string(i) + ")");
             }
-            continue;
+            return custom_interfaces::msg::Path();
         }
         if (log_debug_) {
             log_debug_("Debug: received SBDIX response header (attempt " + std::to_string(i) + ")");
@@ -541,7 +541,7 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
             if (log_error_) {
                 log_error_("Debug: readRsp returned no response (attempt " + std::to_string(i) + ")");
             }
-            continue;
+            return custom_interfaces::msg::Path();
         }
         if (log_debug_) {
             log_debug_("Debug: readRsp received response (attempt " + std::to_string(i) + "): " + opt_rsp.value());
@@ -562,7 +562,7 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
         AT::SBDStatusRsp rsp(sbdix_value);
 
         if (rsp.MO_status_ != 0) {
-            continue;
+            return custom_interfaces::msg::Path();
         }
 
         if (rsp.MT_status_ == 0) {
@@ -570,7 +570,7 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
         } else if (rsp.MT_status_ == 1) {  //NOLINT
             break;
         } else if (rsp.MT_status_ == 2) {
-            continue;
+            return custom_interfaces::msg::Path();
         }
     }
     if (log_debug_) {
