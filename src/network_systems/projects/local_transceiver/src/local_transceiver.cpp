@@ -561,15 +561,15 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
 
         AT::SBDStatusRsp rsp(sbdix_value);
 
-        if (rsp.MO_status_ != 0) {
+        if (rsp.MO_status_ != 0) {  //NOLINT
             return custom_interfaces::msg::Path();
         }
 
-        if (rsp.MT_status_ == 0) {
+        if (rsp.MT_status_ == 0) {  //NOLINT
             return custom_interfaces::msg::Path();
         } else if (rsp.MT_status_ == 1) {  //NOLINT
             break;
-        } else if (rsp.MT_status_ == 2) {
+        } else if (rsp.MT_status_ == 2) {  //NOLINT
             return custom_interfaces::msg::Path();
         }
     }
