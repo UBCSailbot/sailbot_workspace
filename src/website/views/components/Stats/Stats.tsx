@@ -23,7 +23,6 @@ import {
 } from '@/stores/SalinitySensors/SalinitySensorsTypes';
 import { DataFilterState } from '@/stores/DataFilter/DataFilterTypes';
 import {
-  GraphId,
   Layout,
   LayoutItem,
   isSplitGroup,
@@ -174,7 +173,11 @@ const getStatsSummary = (filteredGpsData: GPS[]) => {
     return 'NO DATA';
   }
 
-  const lastValidGpsData = filteredGpsData[filteredGpsData.length - 1];
+  const lastValidGpsData =
+    [...filteredGpsData]
+      .reverse()
+      .find((g) => !(g.latitude === 0 && g.longitude === 0)) ??
+    filteredGpsData[filteredGpsData.length - 1];
   return `${lastValidGpsData.speed} KM/HR | ${lastValidGpsData.heading}° | ${lastValidGpsData.latitude}° N, ${lastValidGpsData.longitude}° W`;
 };
 
