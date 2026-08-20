@@ -2,6 +2,8 @@ import Header from '@/views/components/Header/Header';
 import Dashboard from '@/views/components/Dashboard/Dashboard';
 import styles from './page.module.css';
 
+export const dynamic = 'force-dynamic';
+
 export default function Home() {
   return (
     <>
