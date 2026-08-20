@@ -223,60 +223,23 @@ const Stats = ({
       .map((data: GPS) => data.speed),
   ];
 
+  const validBatteries = batteries.data.filter(
+    (data: Batteries) =>
+      data.batteries?.length >= 2 &&
+      isValidTimestamp(parseISOString(data.timestamp), startDate, endDate) ==
+        true,
+  );
+
   const batteriesVoltageData = [
-    batteries.data
-      .map((data: Batteries) => parseISOString(data.timestamp))
-      .filter(
-        (time: number) => isValidTimestamp(time, startDate, endDate) == true,
-      ),
-    batteries.data
-      .filter(
-        (data: Batteries) =>
-          isValidTimestamp(
-            parseISOString(data.timestamp),
-            startDate,
-            endDate,
-          ) == true,
-      )
-      .map((data: Batteries) => data.batteries[0].voltage),
-    batteries.data
-      .filter(
-        (data: Batteries) =>
-          isValidTimestamp(
-            parseISOString(data.timestamp),
-            startDate,
-            endDate,
-          ) == true,
-      )
-      .map((data: Batteries) => data.batteries[1].voltage),
+    validBatteries.map((data: Batteries) => parseISOString(data.timestamp)),
+    validBatteries.map((data: Batteries) => data.batteries[0].voltage),
+    validBatteries.map((data: Batteries) => data.batteries[1].voltage),
   ];
 
   const batteriesCurrentData = [
-    batteries.data
-      .map((data: Batteries) => parseISOString(data.timestamp))
-      .filter(
-        (time: number) => isValidTimestamp(time, startDate, endDate) == true,
-      ),
-    batteries.data
-      .filter(
-        (data: Batteries) =>
-          isValidTimestamp(
-            parseISOString(data.timestamp),
-            startDate,
-            endDate,
-          ) == true,
-      )
-      .map((data: Batteries) => data.batteries[0].current),
-    batteries.data
-      .filter(
-        (data: Batteries) =>
-          isValidTimestamp(
-            parseISOString(data.timestamp),
-            startDate,
-            endDate,
-          ) == true,
-      )
-      .map((data: Batteries) => data.batteries[1].current),
+    validBatteries.map((data: Batteries) => parseISOString(data.timestamp)),
+    validBatteries.map((data: Batteries) => data.batteries[0].current),
+    validBatteries.map((data: Batteries) => data.batteries[1].current),
   ];
 
   const windSensorsSpeedData = [
