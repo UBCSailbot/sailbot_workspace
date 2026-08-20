@@ -53,7 +53,6 @@ public:
         manual_mode_  = this->get_parameter("manual_mode").as_bool();
 
         if (!this->get_parameter("enabled").as_bool()) {
-            RCLCPP_INFO(this->get_logger(), "CAN Transceiver is DISABLED");
         } else {
             this->declare_parameter("mode", rclcpp::PARAMETER_STRING);
 
@@ -65,7 +64,6 @@ public:
             CAN_REPLAY::ReplayConfig            replay_cfg;
 
             if (mode == SYSTEM_MODE::PROD) {
-                RCLCPP_INFO(this->get_logger(), "Running CAN Transceiver in production mode");
                 try {
                     can_trns_ = std::make_unique<CanTransceiver>();
                 } catch (std::runtime_error err) {
@@ -73,7 +71,6 @@ public:
                     throw err;
                 }
             } else if (mode == SYSTEM_MODE::DEV || mode == SYSTEM_MODE::SIM) {
-                RCLCPP_INFO(this->get_logger(), "Running CAN Transceiver in %s mode with CAN Sim Intf", mode.c_str());
                 try {
                     sim_intf_fd_ = mockCanFd("/tmp/CanSimIntfXXXXXX");
                     can_trns_    = std::make_unique<CanTransceiver>(sim_intf_fd_);
@@ -153,7 +150,6 @@ public:
 
             // Start replay only after callbacks are registered so the first frames of the log are not lost
             if (mock_can_bus_) {
-                RCLCPP_INFO(this->get_logger(), "Replaying %zu CAN frames", replay_frames.size());
                 mock_can_bus_->startReplay(std::move(replay_frames), replay_cfg);
             }
 
@@ -272,11 +268,9 @@ private:
      * @return parsed frames to pass to mock_can_bus_->startReplay()
      */
     std::vector<CAN_REPLAY::TimedFrame> initCanReplay(
-      const std::string & mode, const std::string & replay_file, CAN_REPLAY::ReplayConfig & cfg)
+      [[maybe_unused]] const std::string & mode, const std::string & replay_file,
+      CAN_REPLAY::ReplayConfig & cfg)
     {
-        RCLCPP_INFO(
-          this->get_logger(), "Running CAN Transceiver in %s mode replaying CAN log: %s", mode.c_str(),
-          replay_file.c_str());
         try {
             std::vector<CAN_REPLAY::TimedFrame> frames = CAN_REPLAY::CanLogReplayer::parseCsv(replay_file);
 
@@ -314,7 +308,6 @@ private:
     {
         try {
             CAN_FP::PowerOff po(po_frame);
-            RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), "Shutting down...");
             system("$ROS_WORKSPACE/src/network_systems/scripts/shutdown.sh");  //NOLINT(concurrency-mt-unsafe)
         } catch (std::out_of_range err) {
             RCLCPP_WARN(this->get_logger(), "%s", err.what());
@@ -412,8 +405,6 @@ private:
                 received_indices_.clear();
             }
 
-            RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), ais_ship.toString().c_str());
-
         } catch (const std::exception & err) {
             RCLCPP_WARN(this->get_logger(), "%s", err.what());
         }
@@ -453,7 +444,6 @@ private:
             std::stringstream ss;
             ss << currentTime;
 
-            RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), bat.toString().c_str());
         } catch (std::out_of_range err) {
             RCLCPP_WARN(this->get_logger(), "%s", err.what());
             return;
@@ -476,7 +466,6 @@ private:
 
             msg::GPS gps_ = gps.toRosMsg();
             gps_pub_->publish(gps_);
-            RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), gps.toString().c_str());
         } catch (std::out_of_range err) {
             RCLCPP_WARN(this->get_logger(), "%s", err.what());
             return;
@@ -533,7 +522,6 @@ private:
             }
 
             publishFilteredWindSensor();
-            RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), wind_sensor.toString().c_str());
         } catch (std::out_of_range err) {
             RCLCPP_WARN(this->get_logger(), "%s", err.what());
             return;
@@ -560,9 +548,6 @@ private:
         filtered_wind.speed.speed = static_cast<float>(speed);
         filtered_wind.direction   = static_cast<int16_t>(direction);
         filtered_wind_sensor_pub_->publish(filtered_wind);
-        std::stringstream ss;
-        ss << "[FILTERED WIND SENSOR] Speed: " << filtered_wind.speed.speed << " Angle: " << filtered_wind.direction;
-        RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), ss.str().c_str());
     }
 
     void publishRudder(const CanFrame & rudder_frame)
@@ -578,11 +563,9 @@ private:
                 msg::HelperHeading rudder_msg = rudder.toRosMsg();
                 last_rudder_data_             = std::chrono::steady_clock::now();
                 if (publishing_rudder_debug_) {
-                    RCLCPP_INFO(this->get_logger(), "Rudder data source restored to RUDDER_DATA_FRAME");
                     publishing_rudder_debug_ = false;
                 }
                 rudder_pub_->publish(rudder_msg);
-                RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), rudder.toString().c_str());
                 return;
             }
 
@@ -593,11 +576,9 @@ private:
             CAN_FP::RudderDebugData rudder(rudder_frame);
             msg::HelperHeading      rudder_msg = rudder.toRosMsg();
             if (!publishing_rudder_debug_) {
-                RCLCPP_INFO(this->get_logger(), "Rudder data source switched to RUDDER_DEBUG_DATA_FRAME");
                 publishing_rudder_debug_ = true;
             }
             rudder_pub_->publish(rudder_msg);
-            RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), rudder.toString().c_str());
         } catch (const std::exception & err) {
             RCLCPP_WARN(this->get_logger(), "%s", err.what());
         }
@@ -628,7 +609,6 @@ private:
             msg::TempSensor & temp_sensor_msg = temp_sensors_.temp_sensors[idx];
             temp_sensor_msg                   = temp_sensor.toRosMsg();
             temp_sensors_pub_->publish(temp_sensors_);
-            RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), temp_sensor.toString().c_str());
         } catch (std::out_of_range err) {
             RCLCPP_WARN(this->get_logger(), "%s", err.what());
             return;
@@ -654,7 +634,6 @@ private:
             msg::PhSensor & ph_sensor_msg = ph_sensors_.ph_sensors[idx];
             ph_sensor_msg                 = ph_sensor.toRosMsg();
             ph_sensors_pub_->publish(ph_sensors_);
-            RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), ph_sensor.toString().c_str());
         } catch (std::out_of_range err) {
             RCLCPP_WARN(this->get_logger(), "%s", err.what());
             return;
@@ -680,8 +659,6 @@ private:
             msg::SalinitySensor & salinity_sensor_msg = salinity_sensors_.salinity_sensors[idx];
             salinity_sensor_msg                       = salinity_sensor.toRosMsg();
             salinity_sensors_pub_->publish(salinity_sensors_);
-            RCLCPP_INFO(
-              this->get_logger(), "%s %s", getCurrentTimeString().c_str(), salinity_sensor.toString().c_str());
         } catch (std::out_of_range err) {
             RCLCPP_WARN(this->get_logger(), "%s", err.what());
             return;
@@ -702,8 +679,6 @@ private:
         try {
             auto desired_heading_frame = CAN_FP::DesiredHeading(desired_heading_, CanId::MAIN_HEADING);
             can_trns_->send(desired_heading_frame.toLinuxCan());
-            RCLCPP_INFO(
-              this->get_logger(), "%s %s", getCurrentTimeString().c_str(), desired_heading_frame.toString().c_str());
         } catch (const std::out_of_range & e) {
             RCLCPP_WARN(this->get_logger(), "%s", e.what());
             return;
@@ -723,8 +698,6 @@ private:
         sail_cmd_                = sail_cmd_input;
         auto main_trim_tab_frame = CAN_FP::MainTrimTab(sail_cmd_, CanId::MAIN_TR_TAB);
         can_trns_->send(main_trim_tab_frame.toLinuxCan());
-        RCLCPP_INFO(
-          this->get_logger(), "%s %s", getCurrentTimeString().c_str(), main_trim_tab_frame.toString().c_str());
     }
 
     // SIMULATION CALLBACKS //
@@ -754,8 +727,6 @@ private:
         try {
             CAN_FP::MainTrimTab main_trim_tab_frame(sail_cmd_input, CanId::MAIN_TR_TAB);
             can_trns_->send(main_trim_tab_frame.toLinuxCan());
-            RCLCPP_INFO(
-              this->get_logger(), "%s %s", getCurrentTimeString().c_str(), main_trim_tab_frame.toString().c_str());
         } catch (std::out_of_range err) {
             RCLCPP_WARN(this->get_logger(), "%s", err.what());
             return;

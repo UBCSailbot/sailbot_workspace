@@ -35,18 +35,10 @@ class MockAISNode(Node):
         )  # to avoid unused parameter warning
 
         if on_water_test:
-            self.get_logger().info(
-                "Mock AIS is running in in on-water testing. Mock AIS data will be published "
-                + "instead of real AIS data."
-            )
             self.test_plan = (
                 self.get_parameter("on_water_test_plan").get_parameter_value().string_value
             )
         else:
-            self.get_logger().info(
-                "Mock AIS is running in development mode. Mock AIS data will be published for "
-                + "testing purposes."
-            )
             self.test_plan = self.get_parameter("test_plan").get_parameter_value().string_value
 
         self.publisher_ = self.create_publisher(

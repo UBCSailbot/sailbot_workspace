@@ -305,11 +305,8 @@ class LocalPath:
             bool: True if the path has expired, False otherwise.
         """
         if self.state is None:
-            self._logger.info("Path is expired, since the state is None")
             return True
         is_expired = self._now_sec() >= (self.state.path_generated_time_sec + PATH_TTL_SEC)
-        if is_expired:
-            self._logger.info("Path is expired")
         return is_expired
 
     @staticmethod
@@ -379,7 +376,6 @@ class LocalPath:
             segment = LineString([(p1.x, p1.y), (p2.x, p2.y)])
             for o in self.state.obstacles:
                 if segment.crosses(o.collision_zone) or segment.touches(o.collision_zone):
-                    self._logger.info("Path intersects with collision zone")
                     return True
         return False
 
@@ -427,13 +423,7 @@ class LocalPath:
         )
 
         if significant_change:
-            self._logger.info(
-                "Significant wind change detected: "
-                f"speed {previous_wind_data.speed_kmph:.2f} -> {current_speed_kmph:.2f} km/h "
-                f"({speed_change:.2f} km/h, threshold {speed_change_threshold:.2f} km/h); "
-                f"direction {previous_dir_deg:.2f} -> {current_dir_deg:.2f} deg "
-                f"({dir_change:.2f} deg, threshold {WIND_DIRECTION_CHANGE_THRESH_DEG:.2f} deg)"
-            )
+            pass
         else:
             self._logger.debug(
                 f"speed {previous_wind_data.speed_kmph:.2f} -> {current_speed_kmph:.2f} km/h "
@@ -507,12 +497,6 @@ class LocalPath:
         distance_to_segment_km = np.linalg.norm(rejection_vector)
 
         segment_exceeded = distance_to_segment_km > max_deviation_km
-        if segment_exceeded:
-            self._logger.info(
-                "Boat deviated from path segment: "
-                f"distance {distance_to_segment_km:.2f} km, "
-                f"max deviation {max_deviation_km:.2f} km"
-            )
 
         return segment_exceeded
 
@@ -743,12 +727,6 @@ class LocalPath:
                     + f" within {MAX_OMPL_PATH_GEN_TRIES}"
                 )
 
-            if self.state is not None:
-                time_on_prev_sec = self._now_sec() - self.state.path_generated_time_sec
-                self._logger.info(
-                    f"Previous local path was active for {time_on_prev_sec:.1f}s before switching"
-                )
-            self._logger.info(f"Updating local path: {must_change_reason.reason}")
             self.last_remaining_waypoints = self._count_remaining_waypoints()
             self.last_replan_reason = must_change_reason.reason
             # Record whether this newly accepted path was generated before the wind average
@@ -775,7 +753,6 @@ class LocalPath:
         self.last_remaining_waypoints = 0
 
         try:
-            self._logger.info(f"Reusing local path: {must_change_reason.reason}")
             heading_old_path, old_target_lp_wp_index = self.calculate_desired_heading_and_wp_index(
                 self._ompl_path.get_path(), target_lp_wp_index, boat_lat_lon  # type: ignore
             )
