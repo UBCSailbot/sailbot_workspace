@@ -1464,7 +1464,6 @@ def test_update_if_needed_regenerates_path_when_path_must_change(
     assert local_path._ompl_path is new_ompl_path
     assert local_path.path is new_path
     assert local_path.state.global_path is inputs.global_path
-    local_path._logger.info.assert_any_call(f"Updating local path: {expected_reason}")
     ompl_path_cls.assert_called_once()
 
 
@@ -1658,7 +1657,6 @@ def test_update_if_needed_regenerates_path_for_significant_wind_change(
     assert local_path.path is new_path
     assert local_path._ompl_path is not old_ompl_path
     assert not local_path.state.wind_tracker.using_one_tw_point
-    local_path._logger.info.assert_any_call("Updating local path: Significant wind change")
     ompl_path_cls.assert_called_once()
 
 
@@ -1698,7 +1696,6 @@ def test_update_if_needed_regenerates_path_when_segment_deviation_exceeded(
     assert local_path._ompl_path is new_ompl_path
     assert local_path.path is new_path
     assert local_path._ompl_path is not old_ompl_path
-    local_path._logger.info.assert_any_call("Updating local path: Boat deviated from path segment")
     exceeded_segment_deviation.assert_called_once_with(old_path, 1, inputs.gps.lat_lon)
     ompl_path_cls.assert_called_once()
 
@@ -1733,7 +1730,6 @@ def test_update_if_needed_reuses_path_when_boat_not_deviated(
     assert local_path.path is old_path
     exceeded_segment_deviation.assert_called_once_with(old_path, 1, inputs.gps.lat_lon)
     ompl_path_cls.assert_not_called()
-    local_path._logger.info.assert_any_call("Reusing local path: Path is valid, no change needed")
 
 
 def test_update_if_needed_raises_when_path_generation_exceeds_retries():
@@ -1998,5 +1994,4 @@ def test_update_if_needed_reuses_path_when_boat_changes_heading(basic_local_path
 
     assert local_path._ompl_path is old_ompl_path
     assert local_path.path is old_path
-    local_path._logger.info.assert_any_call("Reusing local path: Path is valid, no change needed")
     ompl_path_cls.assert_not_called()

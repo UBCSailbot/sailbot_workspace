@@ -59,7 +59,7 @@ def ros_node(queue: Queue):
     try:
         rclpy.spin(node=sailbot_observer)
     except KeyboardInterrupt:
-        sailbot_observer.get_logger().info("Keyboard interrupt [^C], shutting down.")
+        pass
     finally:
         sailbot_observer.destroy_node()
         rclpy.shutdown()
@@ -80,7 +80,6 @@ class SailbotObserver(Node):
 
     def __init__(self, queue: Queue):
         super().__init__("navigate_observer")
-        self.get_logger().info("SailbotObserver node initialized")
 
         self.local_path_sub = self.create_subscription(
             msg_type=ci.LPathData,

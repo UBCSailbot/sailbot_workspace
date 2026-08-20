@@ -213,30 +213,13 @@ class MockGPS(Node):
         self.update_speed()
         self.get_next_location()
 
-        self.get_logger().info(
-            f"Actual Lat: {self._current_location.latitude:.7f} "
-            f"Actual Lon: {self._current_location.longitude:.7f}\n"
-        )
-
         if self._use_drift:
             published_location = self.add_ocean_drift(self._current_location)
-
-            self.get_logger().info(
-                f"Drift Offset: {self._drift_offset_km}\n"
-                f"Drift Speed: {self._drift_speed_kmph}\n"
-                f"Drift Direction {self._drift_dir_deg}"
-            )
         else:
             published_location = self._current_location
 
         if self._use_noise:
             published_location = self.add_gps_noise(published_location)
-
-            self.get_logger().info(
-                f"Published Lat: {published_location.latitude:.7f} "
-                f"Published Lon: {published_location.longitude:.7f} "
-                f"Noise: {self._use_noise}"
-            )
 
         msg: ci.GPS = ci.GPS(
             lat_lon=published_location,

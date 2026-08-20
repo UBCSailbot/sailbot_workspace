@@ -320,7 +320,6 @@ class OMPLPath:
                 # This seems like it should never happen. However, our logic updates
                 # target_lp_wp_index whenever Polaris is near the local waypoint. This update can
                 # take place before the boat has passed the said waypoint.
-                self._logger.info("Boat is behind the target_lp_wp_index")
                 projected_dist = 0.0
 
             fraction_travelled = projected_dist / total_seg_dist

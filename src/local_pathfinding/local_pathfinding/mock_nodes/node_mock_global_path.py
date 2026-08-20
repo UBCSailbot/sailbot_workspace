@@ -141,7 +141,6 @@ class MockGlobalPath(Node):
                     "Node mock global path waited for 2 seconds for navigate_main, but "
                     "navigate_main didn't become alive"
                 )
-        self.get_logger().info(f"Published mock global path: {Sailbot._path_to_dict(msg)}")
         self.global_path_pub.publish(msg)
 
 

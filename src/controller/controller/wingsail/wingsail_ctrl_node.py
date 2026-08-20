@@ -196,11 +196,6 @@ class WingsailControllerNode(Node):
 
         self.__trim_tab_angle_pub.publish(msg)
 
-        self.get_logger().info(
-            f"Published to {self.__trim_tab_angle_pub.topic} \
-                the following angle: {msg.trim_tab_angle_degrees}"
-        )
-
     @property
     def pub_period(self) -> float:
         return self.get_parameter("pub_period_sec").get_parameter_value().double_value
@@ -220,7 +215,6 @@ class WingsailControllerNode(Node):
             msg (WindSensor): Filtered wind sensor data from CanTrxRosIntf.
         """
         self.__filtered_wind_sensor = msg
-        self.get_logger().info(f"Received data from {self.__filtered_wind_sensor_sub.topic}")
 
     def __sail_sub_callback(self, msg: DesiredHeading) -> None:
         """Stores the latest desired heading data. We use the sail message to decide when the boat
@@ -229,7 +223,6 @@ class WingsailControllerNode(Node):
             msg (DesiredHeading): desired heading data from CanTrxRosIntf.
         """
         self.__sail = msg.sail
-        self.get_logger().info(f"Received data from {self.__sail_sub.topic}")
 
 
 if __name__ == "__main__":

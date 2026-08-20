@@ -290,7 +290,6 @@ class Sailbot(Node):
         self.received_new_global_path = False
         self._load_persisted_global_path()
         self.mode = self.get_parameter("mode").get_parameter_value().string_value
-        global_config = self.get_parameter("config").get_parameter_value().string_value
 
         # Initialize mock land obstacle
         self.land_multi_polygon = None
@@ -300,23 +299,8 @@ class Sailbot(Node):
             if self.test_plan:
                 self.get_logger().warn("User has manually overridden test plan through CLI")
 
-            self.get_logger().info("test plan: " + self.test_plan)
             test_plan = TestPlan(self.test_plan)
             self.land_multi_polygon = test_plan.land
-            self.get_logger().info("Loaded mock land data.")
-
-        if global_config == "on_water_globals.yaml":
-            self.get_logger().info(
-                f"On water globals config ({global_config}) is successfully loaded "
-            )
-        elif global_config == "launch_globals.yaml":
-            self.get_logger().info(
-                f"Launch globals config ({global_config}) is successfully loaded "
-            )
-        else:
-            self.get_logger().info(
-                f"Default globals config ({global_config}) is successfully loaded "
-            )
 
     def _now_sec(self) -> float:
         """Return the current ROS clock time in seconds."""
@@ -450,11 +434,6 @@ class Sailbot(Node):
                 return None
 
             index = self._resume_waypoint_index(path, self.gps.lat_lon)
-            path_source = "backup" if is_backup else "main"
-            self.get_logger().info(
-                f"Using persisted {path_source} global path. "
-                f"Starting at resume waypoint index: {index}"
-            )
         else:
             index = len(path.waypoints) - 1
 
@@ -493,7 +472,6 @@ class Sailbot(Node):
                     continue
 
                 self._set_gp(gp)
-                self.get_logger().info(f"Loaded global path from {file_path}")
                 return True
             except read_errors as err:
                 log = (
@@ -631,18 +609,8 @@ class Sailbot(Node):
             msg = ci.DesiredHeading()
             msg.heading.heading = desired_heading
             msg.sail = sail
-            if (
-                self.desired_heading is None
-                or desired_heading != self.desired_heading.heading.heading
-            ):
-                self.get_logger().info(f"Updating desired heading to: {msg.heading.heading:.2f}")
-
             self.desired_heading = msg
 
-            self.get_logger().info(
-                f"Publishing to {self.desired_heading_pub.topic}: {msg.heading.heading}, "
-                f"sail == {msg.sail}"  # noqa
-            )
             self.desired_heading_pub.publish(msg)
 
             self.get_logger().debug(f"Publishing local path data to {self.lpath_data_pub.topic}")
@@ -750,28 +718,20 @@ class Sailbot(Node):
         """
 
         if self.gp is None:
-            self.get_logger().info("No global path is available; disabling sail")
             self.local_path.path = ci.Path(waypoints=[])
             return 0.0, False
         if self.gps is None:
-            self.get_logger().info("No GPS is available; disabling sail")
             self.local_path.path = ci.Path(waypoints=[])
             return 0.0, False
         if self.heading is None:
-            self.get_logger().info("No rudder heading is available; disabling sail")
             self.local_path.path = ci.Path(waypoints=[])
             return 0.0, False
 
         target_global_waypoint = self.gp.target_waypoint
         if target_global_waypoint is None:
-            self.get_logger().info("Global path is exhausted; disabling sail")
             self.received_new_global_path = False
             self.local_path.path = ci.Path(waypoints=[])
             return 0.0, False
-
-        self.get_logger().info(
-            f"Current target global waypoint: {target_global_waypoint} (index: {self.gp.index})"
-        )
 
         # Check if we're close enough to the global waypoint to head to the next one
         _, _, distance_to_waypoint_m = cs.GEODESIC.inv(
@@ -787,13 +747,9 @@ class Sailbot(Node):
             received_new_global_waypoint = True
             if self.gp.switch_back_mode:
                 self.gp.do_switch_back()
-                self.get_logger().info(
-                    f"switch back mode is on; switching to index {self.gp.index}"
-                )
                 self.received_new_global_path = False
                 target_global_waypoint = self.gp.waypoints[self.gp.index]
             elif not self.gp.advance_waypoint():
-                self.get_logger().info("Reached final global waypoint; switching to index 1")
                 self.received_new_global_path = False
                 self.gp.trigger_switch_back()
                 target_global_waypoint = self.gp.waypoints[self.gp.index]
@@ -813,16 +769,6 @@ class Sailbot(Node):
                 ),
                 target_lp_wp_index=self.target_lp_wp_index,
                 received_new_global_waypoint=received_new_global_waypoint,
-            )
-
-            local_target_wp = None
-            if self.local_path.path is not None and (
-                0 <= self.target_lp_wp_index < len(self.local_path.path.waypoints)
-            ):
-                local_target_wp = self.local_path.path.waypoints[self.target_lp_wp_index]
-            self.get_logger().info(
-                f"Current target local waypoint: {local_target_wp} "
-                f"(index {self.target_lp_wp_index})"
             )
 
             self.received_new_global_path = False
