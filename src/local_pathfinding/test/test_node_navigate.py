@@ -90,6 +90,13 @@ def make_sailbot_shell(gps_lat_lon: ci.HelperLatLon | None = None) -> Sailbot:
     sailbot.heading = ci.HelperHeading(heading=45.0) if gps is not None else None
     sailbot.received_new_global_path = False
     setattr(sailbot, "_tracked_ais_ships", None)
+    # __init__ is bypassed here; seed the respawn self-heal tracking the callbacks touch (#1065).
+    sailbot._sub_received = {
+        "gps": False,
+        "rudder": False,
+        "filtered_wind_sensor": False,
+        "ais_ships": False,
+    }
     logger = FakeLogger()
     setattr(sailbot, "global_path_sub", SimpleNamespace(topic="global_path"))
     setattr(sailbot, "ais_ships_sub", SimpleNamespace(topic="ais_ships"))
