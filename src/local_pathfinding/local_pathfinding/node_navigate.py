@@ -33,14 +33,6 @@ NANOSEC_PER_SEC = 1_000_000_000
 MAIN_GP_FILE_PATH = "/workspaces/sailbot_workspace/src/local_pathfinding/local_pathfinding/global_path_storage/main_global_path.csv"  # noqa
 BACKUP_GP_FILE_PATH = "/workspaces/sailbot_workspace/src/local_pathfinding/local_pathfinding/global_path_storage/backup_global_path.csv"  # noqa
 
-# Respawn re-subscription self-heal (#1065): after a fast respawn a subscription can silently fail
-# to match its live publisher. The watchdog recreates our reader (best-effort, capped); it never
-# exits the node, so a legitimately quiet sensor (no AIS, GPS acquiring) is never acted on and the
-# worst case is navigate's existing sail-disabled fallback.
-SUBSCRIPTION_RESUBSCRIBE_CHECK_SEC = 2.0
-SUBSCRIPTION_RESUBSCRIBE_GRACE_SEC = 5.0
-SUBSCRIPTION_RESUBSCRIBE_MAX_ATTEMPTS = 5
-
 """
 GlobalPath intentionally stays small: it is only the waypoint list, the current waypoint index,
 whether the path came from backup storage, and whether final-destination switch-back mode is
@@ -218,34 +210,6 @@ class Sailbot(Node):
             topic="filtered_wind_sensor",
             callback=self.filtered_wind_sensor_callback,
             qos_profile=10,
-        )
-
-        # Respawn re-subscription self-heal (#1065): track/guard the continuously-published inputs.
-        # global_path is excluded (event-driven; it self-rescues from the persisted CSV).
-        self._guarded_subs = {
-            "gps": {"attr": "gps_sub", "msg_type": ci.GPS, "cb": self.gps_callback},
-            "rudder": {
-                "attr": "heading_sub",
-                "msg_type": ci.HelperHeading,
-                "cb": self.heading_callback,
-            },
-            "filtered_wind_sensor": {
-                "attr": "filtered_wind_sensor_sub",
-                "msg_type": ci.WindSensor,
-                "cb": self.filtered_wind_sensor_callback,
-            },
-            "ais_ships": {
-                "attr": "ais_ships_sub",
-                "msg_type": ci.AISShips,
-                "cb": self.ais_ships_callback,
-            },
-        }
-        self._sub_received = {topic: False for topic in self._guarded_subs}
-        self._sub_created_sec = {topic: self._now_sec() for topic in self._guarded_subs}
-        self._sub_resubscribe_attempts = {topic: 0 for topic in self._guarded_subs}
-        self._resubscribe_watchdog_timer = self.create_timer(
-            timer_period_sec=SUBSCRIPTION_RESUBSCRIBE_CHECK_SEC,
-            callback=self._resubscribe_watchdog_callback,
         )
 
         # publishers
@@ -505,7 +469,6 @@ class Sailbot(Node):
     def ais_ships_callback(self, msg: ci.AISShips) -> None:
         """Refresh the ships this message carries, leaving omitted ones to time out."""
 
-        self._sub_received["ais_ships"] = True
         self.get_logger().debug(f"Received data from {self.ais_ships_sub.topic}: {msg}")
 
         now_sec = self._now_sec()
@@ -519,7 +482,6 @@ class Sailbot(Node):
         self._rebuild_ais_snapshot()
 
     def gps_callback(self, msg: ci.GPS) -> None:
-        self._sub_received["gps"] = True
         self.get_logger().debug(f"Received data from {self.gps_sub.topic}: {msg}")
         self.gps = msg
         self.gps_timeout_start_sec = self._now_sec()
@@ -527,7 +489,6 @@ class Sailbot(Node):
     def heading_callback(self, msg: ci.HelperHeading) -> None:
         """Store a valid e-compass boat heading from the ``rudder`` topic."""
 
-        self._sub_received["rudder"] = True
         if not math.isfinite(msg.heading) or not (-180.0 < msg.heading <= 180.0):
             self.get_logger().warning(
                 f"Ignoring invalid heading from {self.heading_sub.topic}: {msg.heading}. "
@@ -576,7 +537,6 @@ class Sailbot(Node):
             self._set_gp(gp)
 
     def filtered_wind_sensor_callback(self, msg: ci.WindSensor) -> None:
-        self._sub_received["filtered_wind_sensor"] = True
         self.get_logger().debug(f"Received data from {self.filtered_wind_sensor_sub.topic}: {msg}")
         self.filtered_wind_sensor = msg
 
@@ -903,63 +863,11 @@ class Sailbot(Node):
             inactive_subs.append("filtered_wind_sensor")
         if len(inactive_subs) == 0:
             return
-        # debug, not warning: a legitimately quiet sensor (no AIS targets, GPS acquiring) makes
-        # this fire every cycle on a normal leg, so warning level would spam the launch logs.
-        self.get_logger().debug(
+        self.get_logger().warning(
             "Missing navigation inputs: "
             + ", ".join(inactive_subs)
             + "; publishing desired heading with sail disabled"
         )
-
-    def _resubscribe_watchdog_callback(self) -> None:
-        """Best-effort recovery of a subscription orphaned by a respawn (#1065).
-
-        Never exits the node: if it cannot help, navigate stays in its existing sail-disabled
-        fallback, exactly as without this. Only recreates our reader when a publisher is actually
-        discoverable; a legitimately quiet sensor (no AIS targets, GPS still acquiring) has a live
-        publisher endpoint but nothing to send, and is left alone.
-        """
-        now = self._now_sec()
-        for topic, info in self._guarded_subs.items():
-            try:
-                if self._sub_received[topic]:
-                    continue
-                if self._sub_resubscribe_attempts[topic] >= SUBSCRIPTION_RESUBSCRIBE_MAX_ATTEMPTS:
-                    continue
-                if now - self._sub_created_sec[topic] < SUBSCRIPTION_RESUBSCRIBE_GRACE_SEC:
-                    continue
-                try:
-                    publisher_present = self.count_publishers(topic) > 0
-                except Exception:  # noqa: BLE001 - graph query failed; back off and retry later
-                    self._sub_created_sec[topic] = now
-                    continue
-                if not publisher_present:
-                    # No publisher visible: either not up yet or a legitimately quiet sensor.
-                    # Never act on that; just back off.
-                    self._sub_created_sec[topic] = now
-                    continue
-                # Publisher discoverable but our reader has no data: likely a respawn orphan.
-                # Recreate our reader (new before old; a failed create leaves the old one intact).
-                old_sub = getattr(self, info["attr"])
-                new_sub = self.create_subscription(
-                    msg_type=info["msg_type"],
-                    topic=topic,
-                    callback=info["cb"],
-                    qos_profile=10,
-                )
-                setattr(self, info["attr"], new_sub)
-                try:
-                    self.destroy_subscription(old_sub)
-                except Exception:  # noqa: BLE001
-                    pass
-                self._sub_created_sec[topic] = now
-                self._sub_resubscribe_attempts[topic] += 1
-                self.get_logger().debug(
-                    f"Re-subscribed '{topic}' post-respawn "
-                    f"(attempt {self._sub_resubscribe_attempts[topic]})."
-                )
-            except Exception as err:  # noqa: BLE001 - never crash navigate
-                self.get_logger().debug(f"Re-subscribe watchdog error for '{topic}': {err}")
 
 
 if __name__ == "__main__":
