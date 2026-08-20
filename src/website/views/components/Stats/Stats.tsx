@@ -23,14 +23,25 @@ import {
 } from '@/stores/SalinitySensors/SalinitySensorsTypes';
 import { DataFilterState } from '@/stores/DataFilter/DataFilterTypes';
 import {
-  GraphId,
   Layout,
   LayoutItem,
   isSplitGroup,
 } from '@/stores/Graphs/GraphsTypes';
 
 const parseISOString = (s: string) => {
-  return Math.floor(Date.parse(s) / 1000); // Converts to seconds
+  let decoded = s;
+  try {
+    decoded = decodeURIComponent(s);
+  } catch {
+    decoded = s;
+  }
+  const m = decoded.match(
+    /^(\d{2})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})$/,
+  );
+  const normalized = m
+    ? `20${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6]}`
+    : decoded;
+  return Math.floor(Date.parse(normalized) / 1000);
 };
 
 const isValidTimestamp = (
@@ -162,7 +173,11 @@ const getStatsSummary = (filteredGpsData: GPS[]) => {
     return 'NO DATA';
   }
 
-  const lastValidGpsData = filteredGpsData[filteredGpsData.length - 1];
+  const lastValidGpsData =
+    [...filteredGpsData]
+      .reverse()
+      .find((g) => !(g.latitude === 0 && g.longitude === 0)) ??
+    filteredGpsData[filteredGpsData.length - 1];
   return `${lastValidGpsData.speed} KM/HR | ${lastValidGpsData.heading}° | ${lastValidGpsData.latitude}° N, ${lastValidGpsData.longitude}° W`;
 };
 
@@ -223,60 +238,23 @@ const Stats = ({
       .map((data: GPS) => data.speed),
   ];
 
+  const validBatteries = batteries.data.filter(
+    (data: Batteries) =>
+      data.batteries?.length >= 2 &&
+      isValidTimestamp(parseISOString(data.timestamp), startDate, endDate) ==
+        true,
+  );
+
   const batteriesVoltageData = [
-    batteries.data
-      .map((data: Batteries) => parseISOString(data.timestamp))
-      .filter(
-        (time: number) => isValidTimestamp(time, startDate, endDate) == true,
-      ),
-    batteries.data
-      .filter(
-        (data: Batteries) =>
-          isValidTimestamp(
-            parseISOString(data.timestamp),
-            startDate,
-            endDate,
-          ) == true,
-      )
-      .map((data: Batteries) => data.batteries[0].voltage),
-    batteries.data
-      .filter(
-        (data: Batteries) =>
-          isValidTimestamp(
-            parseISOString(data.timestamp),
-            startDate,
-            endDate,
-          ) == true,
-      )
-      .map((data: Batteries) => data.batteries[1].voltage),
+    validBatteries.map((data: Batteries) => parseISOString(data.timestamp)),
+    validBatteries.map((data: Batteries) => data.batteries[0].voltage),
+    validBatteries.map((data: Batteries) => data.batteries[1].voltage),
   ];
 
   const batteriesCurrentData = [
-    batteries.data
-      .map((data: Batteries) => parseISOString(data.timestamp))
-      .filter(
-        (time: number) => isValidTimestamp(time, startDate, endDate) == true,
-      ),
-    batteries.data
-      .filter(
-        (data: Batteries) =>
-          isValidTimestamp(
-            parseISOString(data.timestamp),
-            startDate,
-            endDate,
-          ) == true,
-      )
-      .map((data: Batteries) => data.batteries[0].current),
-    batteries.data
-      .filter(
-        (data: Batteries) =>
-          isValidTimestamp(
-            parseISOString(data.timestamp),
-            startDate,
-            endDate,
-          ) == true,
-      )
-      .map((data: Batteries) => data.batteries[1].current),
+    validBatteries.map((data: Batteries) => parseISOString(data.timestamp)),
+    validBatteries.map((data: Batteries) => data.batteries[0].current),
+    validBatteries.map((data: Batteries) => data.batteries[1].current),
   ];
 
   const windSensorsSpeedData = [

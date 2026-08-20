@@ -4,7 +4,7 @@ import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import styles from './map.module.css';
 import { connect } from 'react-redux';
-import { GPSState } from '@/stores/GPS/GPSTypes';
+import { GPS, GPSState } from '@/stores/GPS/GPSTypes';
 import { GlobalPathState } from '@/stores/GlobalPath/GlobalPathTypes';
 import { LocalPathState } from '@/stores/LocalPath/LocalPathTypes';
 import { AISShipsState } from '@/stores/AISShips/AISShipsTypes';
@@ -55,7 +55,13 @@ const Map = ({
     },
   ];
 
-  const gpsData = gps.data;
+  const isValidGps = (g: GPS) =>
+    g != null &&
+    Number.isFinite(g.latitude) &&
+    Number.isFinite(g.longitude) &&
+    !(g.latitude === 0 && g.longitude === 0);
+
+  const gpsData = gps.data.filter(isValidGps);
   const globalPathData = globalPath.data;
   const localPathData = localPath.data;
   const aisShipsData = aisShips.data;
@@ -64,7 +70,15 @@ const Map = ({
     <div className={`${styles.map} ${className ?? ''}`.trim()}>
       <div className={styles.mapCanvas}>
         <Maps
-          gpsLocation={gpsData[gpsData.length - 1]}
+          gpsLocation={
+            gpsData[gpsData.length - 1] ?? {
+              latitude: 49.28,
+              longitude: -123.12,
+              speed: 0,
+              heading: 0,
+              timestamp: '',
+            }
+          }
           gpsPath={gpsData.map((gpsPoint) => convertToLatLng(gpsPoint))}
           globalPath={globalPathData.waypoints.map((waypoint) =>
             convertToLatLng(waypoint),
