@@ -4,7 +4,7 @@
       # Publishers' period (seconds): how often the publishers publish
       config: "globals.yaml"
       pub_period_sec: 1.0
-      receive_period_sec: 1800.0
+      receive_period_sec: 3600.0
       send_period_sec: 3600.0
       test_plan: "basic.yaml"
 
