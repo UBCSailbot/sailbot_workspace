@@ -566,29 +566,9 @@ class OMPLPath:
             else:  # when OMPL uses this function, it will pass in an SE2StateInternal object
                 point = cs.XY(state.getX(), state.getY())
             if not o.is_valid(point):
-                # Per-state file logging for invalid-state. Log a write failure then re-raise
-                # TODO: remove before final launch to avoid unbounded disk growth.
-                try:
-                    log_invalid_state(state=point, obstacle=o)
-                except OSError as e:
-                    self._logger.error(f"log_invalid_state write failed: {e}")
-                    raise
                 return False
 
         return True
-
-
-def log_invalid_state(state: cs.XY, obstacle: ob.Obstacle):
-    """
-    Logs details about a state and the obstacle that makes it invalid for use in a path.
-    """
-    with open(
-        "/workspaces/sailbot_workspace/src/local_pathfinding/local_pathfinding/invalid_states.log",
-        "a",
-    ) as log_file:
-        log_file.write(
-            f"State at ({state.x:.2f},{state.y:.2f}) was invalidated by obstacle: {type(obstacle)}\n"  # noqa
-        )
 
 
 def load_pkl(file_path: str) -> Any:
