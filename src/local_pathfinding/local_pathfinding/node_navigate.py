@@ -290,6 +290,7 @@ class Sailbot(Node):
         self.received_new_global_path = False
         self._load_persisted_global_path()
         self.mode = self.get_parameter("mode").get_parameter_value().string_value
+        global_config = self.get_parameter("config").get_parameter_value().string_value
 
         # Initialize mock land obstacle
         self.land_multi_polygon = None
@@ -301,6 +302,19 @@ class Sailbot(Node):
 
             test_plan = TestPlan(self.test_plan)
             self.land_multi_polygon = test_plan.land
+
+        if global_config == "on_water_globals.yaml":
+            self.get_logger().debug(
+                f"On water globals config ({global_config}) is successfully loaded "
+            )
+        elif global_config == "launch_globals.yaml":
+            self.get_logger().debug(
+                f"Launch globals config ({global_config}) is successfully loaded "
+            )
+        else:
+            self.get_logger().debug(
+                f"Default globals config ({global_config}) is successfully loaded "
+            )
 
     def _now_sec(self) -> float:
         """Return the current ROS clock time in seconds."""
@@ -611,6 +625,10 @@ class Sailbot(Node):
             msg.sail = sail
             self.desired_heading = msg
 
+            self.get_logger().debug(
+                f"Publishing to {self.desired_heading_pub.topic}: {msg.heading.heading}, "
+                f"sail == {msg.sail}"  # noqa
+            )
             self.desired_heading_pub.publish(msg)
 
             self.get_logger().debug(f"Publishing local path data to {self.lpath_data_pub.topic}")

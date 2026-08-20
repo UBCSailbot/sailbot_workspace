@@ -195,6 +195,10 @@ class WingsailControllerNode(Node):
         msg.trim_tab_angle_degrees = self.__trim_tab_angle
 
         self.__trim_tab_angle_pub.publish(msg)
+        self.get_logger().debug(
+            f"Published to {self.__trim_tab_angle_pub.topic} \
+                the following angle: {msg.trim_tab_angle_degrees}"
+        )
 
     @property
     def pub_period(self) -> float:
