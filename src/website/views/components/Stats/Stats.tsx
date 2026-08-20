@@ -30,7 +30,19 @@ import {
 } from '@/stores/Graphs/GraphsTypes';
 
 const parseISOString = (s: string) => {
-  return Math.floor(Date.parse(s) / 1000); // Converts to seconds
+  let decoded = s;
+  try {
+    decoded = decodeURIComponent(s);
+  } catch {
+    decoded = s;
+  }
+  const m = decoded.match(
+    /^(\d{2})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})$/,
+  );
+  const normalized = m
+    ? `20${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6]}`
+    : decoded;
+  return Math.floor(Date.parse(normalized) / 1000);
 };
 
 const isValidTimestamp = (
