@@ -6,6 +6,31 @@
   flex-direction: column;
 }
 
+.notice {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex: 1;
+  gap: 12px;
+  padding: 24px 32px;
+  max-width: 36em;
+}
+
+.noticeLabel {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.55;
+}
+
+.noticeBody {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.55;
+  opacity: 0.9;
+}
+
 .heading {
   display: flex;
   flex-direction: column;
@@ -40,21 +65,13 @@
     padding: 12px 14px 0;
   }
 
-  .lineCharts {
-    flex: 1;
-    min-height: 0;
+  .notice {
+    padding: 20px 0 24px;
+    max-width: none;
   }
 
-  .heading {
-    flex: 0 0 auto;
-  }
-
-  .title {
+  .noticeBody {
     font-size: 15px;
-  }
-
-  .summary {
-    font-size: 16px;
   }
 }
 

@@ -4,7 +4,7 @@ import { test, expect, Page } from '@playwright/test';
 // pane. On mobile exactly one pane is shown (the other is display:none), so
 // these two strings tell us which view is active.
 const MAP_MARKER = 'AIS Ships';
-const DATA_MARKER = 'POLARIS IS CURRENTLY';
+const DATA_MARKER = 'Temporary during voyage';
 
 const hasHorizontalOverflow = (page: Page) =>
   page.evaluate(
