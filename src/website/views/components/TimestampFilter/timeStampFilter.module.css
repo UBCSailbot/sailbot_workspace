@@ -26,6 +26,13 @@
   font: inherit;
   cursor: pointer;
   text-transform: uppercase !important;
+  background: #0d0d0d;
+  color: white;
+  caret-color: white;
+}
+
+.input::placeholder {
+  color: #808080;
 }
 
 .input:hover {
@@ -44,6 +51,12 @@
 
 .calendarWrapper :global(.react-datepicker-popper) {
   margin-top: 8px !important;
+}
+
+.calendarWrapper :global(.react-datepicker__triangle) {
+  fill: #0d0d0d !important;
+  color: #0d0d0d !important;
+  stroke: #404040 !important;
 }
 
 .calendar {

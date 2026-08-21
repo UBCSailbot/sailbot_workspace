@@ -169,6 +169,14 @@ const SalinityGraph = (salinityChartData: any) => {
   );
 };
 
+const formatNumber = (value: number, digits: number) =>
+  Number.isFinite(value) ? value.toFixed(digits) : '--';
+
+const formatCoordinate = (value: number, positive: string, negative: string) =>
+  Number.isFinite(value)
+    ? `${Math.abs(value).toFixed(4)}° ${value < 0 ? negative : positive}`
+    : '--';
+
 const getStatsSummary = (filteredGpsData: GPS[]) => {
   if (!filteredGpsData.length) {
     return 'NO DATA';
@@ -179,7 +187,16 @@ const getStatsSummary = (filteredGpsData: GPS[]) => {
       .reverse()
       .find((g) => !(g.latitude === 0 && g.longitude === 0)) ??
     filteredGpsData[filteredGpsData.length - 1];
-  return `${lastValidGpsData.speed} KM/HR | ${lastValidGpsData.heading}° | ${lastValidGpsData.latitude}° N, ${lastValidGpsData.longitude}° W`;
+
+  const location = `${formatCoordinate(
+    lastValidGpsData.latitude,
+    'N',
+    'S',
+  )}, ${formatCoordinate(lastValidGpsData.longitude, 'E', 'W')}`;
+  const heading = `${formatNumber(lastValidGpsData.heading, 1)}°`;
+  const speed = `${formatNumber(lastValidGpsData.speed, 1)} km/h`;
+
+  return `Location: ${location} | Heading: ${heading} | Speed: ${speed}`;
 };
 
 interface StatsProps {
