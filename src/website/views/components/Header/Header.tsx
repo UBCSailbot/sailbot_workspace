@@ -21,14 +21,6 @@ const Header = () => {
           DASHBOARD
         </Link>
         <Link
-          href='/about'
-          style={
-            currentPath === '/about' ? { textDecoration: 'underline' } : {}
-          }
-        >
-          ABOUT
-        </Link>
-        <Link
           href='/download'
           style={
             currentPath === '/download' ? { textDecoration: 'underline' } : {}

@@ -57,12 +57,6 @@ const DataIcon = () => (
   </svg>
 );
 
-const AboutIcon = () => (
-  <svg width='26' height='26' viewBox='0 0 24 24'>
-    <path d='M12 2a10 10 0 100 20 10 10 0 000-20zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z' />
-  </svg>
-);
-
 const DownloadIcon = () => (
   <svg width='26' height='26' viewBox='0 0 24 24'>
     <path d='M11 4h2v7h3l-4 4-4-4h3zM5 18h14v2H5z' />
@@ -129,15 +123,6 @@ const MobileNav = ({ activeView, onSelectView }: MobileNavProps) => {
           <nav className={styles.menu}>
             {viewItem('map', <MapIcon />, 'MAP', '/')}
             {viewItem('data', <DataIcon />, 'DATA', '/#data')}
-            <Link
-              className={styles.menuItem}
-              href='/about'
-              aria-current={pathname === '/about'}
-              onClick={close}
-            >
-              <AboutIcon />
-              <span>ABOUT</span>
-            </Link>
             <Link
               className={styles.menuItem}
               href='/download'
