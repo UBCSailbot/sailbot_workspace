@@ -3,12 +3,13 @@ import GraphsActions from './GraphsActions';
 import { GraphId, GraphsState, Layout } from './GraphsTypes';
 import { AnyAction } from 'redux';
 import { initSessionStorageData } from '@/utils/SessionStorage';
-import { mergeMissingGraphIds } from './GraphsLayoutHelpers';
+import {
+  mergeMissingGraphIds,
+  pruneUnknownGraphIds,
+} from './GraphsLayoutHelpers';
 
 const DEFAULT_LAYOUT: GraphId[] = [
   'GPS',
-  'BatteriesVoltage',
-  'BatteriesCurrent',
   'WindSensors',
   'Temperature',
   'PH',
@@ -18,7 +19,10 @@ const DEFAULT_LAYOUT: GraphId[] = [
 export default class GraphsReducer extends BaseReducer {
   initialState: GraphsState = {
     layout: mergeMissingGraphIds(
-      initSessionStorageData('Graph Layout', DEFAULT_LAYOUT) as Layout,
+      pruneUnknownGraphIds(
+        initSessionStorageData('Graph Layout', DEFAULT_LAYOUT) as Layout,
+        DEFAULT_LAYOUT,
+      ),
       DEFAULT_LAYOUT,
     ),
     error: null,

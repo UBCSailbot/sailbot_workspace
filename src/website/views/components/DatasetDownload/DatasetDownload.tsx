@@ -6,7 +6,6 @@ import {
   downloadAISShipsData,
   downloadGlobalPathData,
   downloadLocalPathData,
-  downloadBatteriesData,
   downloadWindSensorsData,
   downloadTempSensorsData,
   downloadPhSensorsData,
@@ -52,12 +51,6 @@ const dataSets: DataSet[] = [
     title: 'Local Path',
     action: downloadLocalPathData,
     description: 'Local vessel latitude and longitude path.',
-  },
-  {
-    key: 'Batteries',
-    title: 'Batteries',
-    action: downloadBatteriesData,
-    description: 'Battery voltage and current measurements.',
   },
   {
     key: 'WindSensors',

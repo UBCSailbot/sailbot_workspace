@@ -18,6 +18,7 @@ import {
   extractGraph,
   splitGraph,
   mergeMissingGraphIds,
+  pruneUnknownGraphIds,
 } from '../GraphsLayoutHelpers.ts';
 import type { GraphId, Layout } from '../GraphsTypes.ts';
 import { isSplitGroup, getAllGraphIds } from '../GraphsTypes.ts';
@@ -265,6 +266,36 @@ test('mergeMissingGraphIds counts graphs inside split groups as present', () => 
     'Salinity',
   ];
   assert.equal(mergeMissingGraphIds(layout, ALL_GRAPHS), layout);
+});
+
+test('pruneUnknownGraphIds drops standalone ids not in the allowed set', () => {
+  const allowed: GraphId[] = ['GPS', 'WindSensors'];
+  const layout: Layout = [
+    'GPS',
+    'BatteriesVoltage',
+    'BatteriesCurrent',
+    'WindSensors',
+  ];
+  assert.deepEqual(pruneUnknownGraphIds(layout, allowed), [
+    'GPS',
+    'WindSensors',
+  ]);
+});
+
+test('pruneUnknownGraphIds collapses a split group down to its surviving member', () => {
+  const allowed: GraphId[] = ['GPS', 'WindSensors'];
+  const layout: Layout = ['GPS', ['BatteriesVoltage', 'WindSensors']];
+  // The group loses BatteriesVoltage and collapses to a standalone WindSensors.
+  assert.deepEqual(pruneUnknownGraphIds(layout, allowed), [
+    'GPS',
+    'WindSensors',
+  ]);
+});
+
+test('pruneUnknownGraphIds drops a split group whose members are all removed', () => {
+  const allowed: GraphId[] = ['GPS'];
+  const layout: Layout = ['GPS', ['BatteriesVoltage', 'BatteriesCurrent']];
+  assert.deepEqual(pruneUnknownGraphIds(layout, allowed), ['GPS']);
 });
 
 test('the layout invariant holds across a sequence of operations', () => {

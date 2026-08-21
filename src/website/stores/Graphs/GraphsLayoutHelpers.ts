@@ -111,6 +111,31 @@ export const extractGraph = (
 };
 
 /**
+ * Drop any graph ids not in `allowed` from a layout, collapsing split groups
+ * the same way removeGraph does (1-member group → standalone, empty → dropped).
+ * Guards against layouts persisted to sessionStorage that still reference graphs
+ * we no longer offer — without this, a removed graph would linger in the
+ * rearrange list for anyone with an older layout stored.
+ */
+export const pruneUnknownGraphIds = (
+  layout: Layout,
+  allowed: GraphId[],
+): Layout => {
+  const allowedSet = new Set(allowed);
+  return layout
+    .map((item): LayoutItem | null => {
+      if (isSplitGroup(item)) {
+        const filtered = item.filter((id) => allowedSet.has(id));
+        if (filtered.length === 0) return null;
+        if (filtered.length === 1) return filtered[0];
+        return filtered;
+      }
+      return allowedSet.has(item) ? item : null;
+    })
+    .filter((item): item is LayoutItem => item !== null);
+};
+
+/**
  * Append any default graph ids missing from a layout. Guards against layouts
  * persisted to sessionStorage before newer graphs existed — without this,
  * those graphs would silently never render.
