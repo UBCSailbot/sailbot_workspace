@@ -229,6 +229,7 @@ const Maps: React.FC<IMapsProps> = ({
       />
 
       {showAIShips && <LayerGroup>{renderShips()}</LayerGroup>}
+      {/* TEMP HIDDEN: local + global path
       {showLocalPath && (
         <Polyline pathOptions={{ color: 'red' }} positions={localPath} />
       )}
@@ -238,6 +239,7 @@ const Maps: React.FC<IMapsProps> = ({
           positions={globalPath}
         />
       )}
+      */}
       <Marker position={convertToLatLng(gpsLocation)} icon={createCustomIcon()}>
         <Popup>{printObjectInfo(gpsLocation)}</Popup>
       </Marker>

@@ -43,16 +43,17 @@ const Map = ({
       key: 'aisShips',
       setState: setShowAIShips,
     },
-    {
-      label: 'Global Path',
-      key: 'globalPath',
-      setState: setShowGlobalPath,
-    },
-    {
-      label: 'Local Path',
-      key: 'localPath',
-      setState: setShowLocalPath,
-    },
+    // TEMP HIDDEN: global + local path toggles
+    // {
+    //   label: 'Global Path',
+    //   key: 'globalPath',
+    //   setState: setShowGlobalPath,
+    // },
+    // {
+    //   label: 'Local Path',
+    //   key: 'localPath',
+    //   setState: setShowLocalPath,
+    // },
   ];
 
   const isValidGps = (g: GPS) =>

@@ -23,6 +23,7 @@ import {
 } from '@/stores/SalinitySensors/SalinitySensorsTypes';
 import { DataFilterState } from '@/stores/DataFilter/DataFilterTypes';
 import {
+  GraphId,
   Layout,
   LayoutItem,
   isSplitGroup,
@@ -368,12 +369,13 @@ const Stats = ({
       .map((data: SalinitySensors) => data.salinitySensors[0].salinity),
   ];
 
-  const graphsMap = {
+  const graphsMap: Partial<Record<GraphId, JSX.Element>> = {
     GPS: speedGraph(speedChartData),
-    BatteriesVoltage: BatteriesVoltageGraph(batteriesVoltageData),
-    BatteriesCurrent: BatteriesCurrentGraph(batteriesCurrentData),
+    // TEMP HIDDEN: batteries + temperature charts
+    // BatteriesVoltage: BatteriesVoltageGraph(batteriesVoltageData),
+    // BatteriesCurrent: BatteriesCurrentGraph(batteriesCurrentData),
     WindSensors: WindSensorsSpeedGraph(windSensorsSpeedData),
-    Temperature: TemperatureGraph(temperatureChartData),
+    // Temperature: TemperatureGraph(temperatureChartData),
     PH: PHGraph(phChartData),
     Salinity: SalinityGraph(salinityChartData),
   };
