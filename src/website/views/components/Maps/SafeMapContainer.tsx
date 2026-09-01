@@ -17,6 +17,7 @@ import React, {
   type ReactNode,
   type Ref,
 } from 'react';
+import { flushSync } from 'react-dom';
 
 type SafeMapContainerProps = MapOptions & {
   center: LatLngExpression;
@@ -35,6 +36,10 @@ type SafeMapContainerProps = MapOptions & {
  * Mode's attach→detach→attach ref cycle can call L.map() twice on the same
  * node before setState lands. v5 fixed this with a ref guard; we mirror that
  * here so we don't have to bump to React 19 / react-leaflet v5 yet.
+ *
+ * Teardown also unmounts React children (via flushSync) before Leaflet
+ * mutates the container, which avoids `removeChild` null errors on HMR /
+ * Strict Mode remounts.
  */
 function SafeMapContainerComponent(
   {
@@ -55,47 +60,60 @@ function SafeMapContainerComponent(
 
   useImperativeHandle(forwardedRef, () => context?.map ?? null, [context]);
 
-  const mapRef = useCallback((node: HTMLDivElement | null) => {
-    if (node === null) {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
-        mapInstanceRef.current = undefined;
-        setContext(null);
-      }
+  const destroyMap = useCallback(() => {
+    const map = mapInstanceRef.current;
+    if (!map) {
       return;
     }
-
-    if (mapInstanceRef.current) {
-      return;
+    mapInstanceRef.current = undefined;
+    // Drop React-leaflet children while the container DOM is still intact.
+    flushSync(() => {
+      setContext(null);
+    });
+    try {
+      map.remove();
+    } catch {
+      // Container may already be gone after Fast Refresh.
     }
-
-    // Strict Mode reappearLayoutEffects can hand back the same DOM node still
-    // tagged by Leaflet after the previous fiber was hidden. Clear it so L.map
-    // doesn't throw "Map container is already initialized."
-    const leafletNode = node as HTMLDivElement & { _leaflet_id?: number };
-    if (leafletNode._leaflet_id != null) {
-      leafletNode._leaflet_id = undefined;
-      leafletNode.replaceChildren();
-    }
-
-    const map = new LeafletMap(node, options);
-    mapInstanceRef.current = map;
-    map.setView(center, zoom);
-    if (whenReady != null) {
-      map.whenReady(whenReady);
-    }
-    setContext(createLeafletContext(map));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const mapRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (node === null) {
+        destroyMap();
+        return;
+      }
+
+      if (mapInstanceRef.current) {
+        return;
+      }
+
+      // Strict Mode reappearLayoutEffects can hand back the same DOM node still
+      // tagged by Leaflet after the previous fiber was hidden. Clear it so L.map
+      // doesn't throw "Map container is already initialized."
+      const leafletNode = node as HTMLDivElement & { _leaflet_id?: number };
+      if (leafletNode._leaflet_id != null) {
+        leafletNode._leaflet_id = undefined;
+        leafletNode.replaceChildren();
+      }
+
+      const map = new LeafletMap(node, options);
+      mapInstanceRef.current = map;
+      map.setView(center, zoom);
+      if (whenReady != null) {
+        map.whenReady(whenReady);
+      }
+      setContext(createLeafletContext(map));
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [destroyMap],
+  );
 
   useEffect(() => {
     return () => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
-        mapInstanceRef.current = undefined;
-      }
+      destroyMap();
     };
-  }, []);
+  }, [destroyMap]);
 
   return (
     <div {...props} ref={mapRef}>

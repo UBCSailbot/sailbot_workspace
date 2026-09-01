@@ -14,6 +14,6 @@ test.describe('desktop: dashboard', () => {
     ).toBeHidden();
     // Both panes are visible at the same time on desktop.
     await expect(page.getByText('AIS Ships')).toBeVisible();
-    await expect(page.getByText('POLARIS IS CURRENTLY')).toBeVisible();
+    await expect(page.getByText('Temporary during voyage')).toBeVisible();
   });
 });

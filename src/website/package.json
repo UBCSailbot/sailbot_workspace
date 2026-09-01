@@ -51,6 +51,7 @@
     "@types/node": "18.7.5",
     "@types/react": "^18.3.11",
     "@types/react-datepicker": "^7.0.0",
+    "@types/react-dom": "^18.3.7",
     "@types/redux-logger": "^3.0.12",
     "@typescript-eslint/eslint-plugin": "^6.10.0",
     "@typescript-eslint/parser": "^6.10.0",
