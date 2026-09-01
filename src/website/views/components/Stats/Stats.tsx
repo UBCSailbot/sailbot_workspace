@@ -10,12 +10,10 @@ const Stats = ({ className }: StatsProps) => {
   return (
     <div className={`${styles.stats} ${className ?? ''}`.trim()}>
       <div className={styles.notice} role='status'>
-        <p className={styles.noticeLabel}>Temporary during voyage</p>
+        <p className={styles.noticeLabel}>Last updated August 31, 2026</p>
         <p className={styles.noticeBody}>
-          POLARIS is collecting data in the Pacific. To save satellite credits,
-          we only share internal diagnostics and basic data while it&apos;s
-          underway. Full research datasets will be uploaded once POLARIS is
-          back on land.
+          Research data collected during POLARIS&apos;s voyage will be
+          available shortly. We are actively working to prepare it for sharing.
         </p>
       </div>
     </div>
