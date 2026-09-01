@@ -20,9 +20,20 @@ const convertToLatLng = (obj: any): [number, number] => {
   return [obj.latitude, obj.longitude];
 };
 
-// Polaris launch point (Bamfield, BC). Anchors the start of the drawn track only:
+// Polaris launch track (Bamfield, BC). Anchors the start of the drawn track only:
 // the boat marker and map center still come from the newest real GPS fix.
-const START_POINT: [number, number] = [48.8340485, -125.1369535];
+// Waypoints curve north around the Bamfield peninsula through water so the
+// straight Bamfield→first-GPS segment does not cut land.
+const START_PATH: [number, number][] = [
+  [48.8340485, -125.1369535], // Bamfield launch
+  [48.8355, -125.1378],
+  [48.8375, -125.138],
+  [48.8395, -125.14],
+  [48.8405, -125.15],
+  [48.839, -125.16],
+  [48.832, -125.168],
+  [48.822, -125.18],
+];
 
 const Map = ({
   gps,
@@ -85,7 +96,7 @@ const Map = ({
             }
           }
           gpsPath={[
-            START_POINT,
+            ...START_PATH,
             ...gpsData.map((gpsPoint) => convertToLatLng(gpsPoint)),
           ]}
           globalPath={globalPathData.waypoints.map((waypoint) =>
