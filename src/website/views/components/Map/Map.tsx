@@ -8,6 +8,7 @@ import { GPS, GPSState } from '@/stores/GPS/GPSTypes';
 import { GlobalPathState } from '@/stores/GlobalPath/GlobalPathTypes';
 import { LocalPathState } from '@/stores/LocalPath/LocalPathTypes';
 import { AISShipsState } from '@/stores/AISShips/AISShipsTypes';
+import { VOYAGE_PATH, LAST_KNOWN_POSITION, VOYAGE_CENTER, VOYAGE_ZOOM } from '@/utils/voyagePath';
 
 // Dynamically import Maps component with SSR disabled
 const Maps = dynamic(() => import('../Maps/Maps'), {
@@ -20,9 +21,6 @@ const convertToLatLng = (obj: any): [number, number] => {
   return [obj.latitude, obj.longitude];
 };
 
-// Polaris launch point (Bamfield, BC). Anchors the start of the drawn track only:
-// the boat marker and map center still come from the newest real GPS fix.
-const START_POINT: [number, number] = [48.8340485, -125.1369535];
 
 const Map = ({
   gps,
@@ -75,19 +73,10 @@ const Map = ({
     <div className={`${styles.map} ${className ?? ''}`.trim()}>
       <div className={styles.mapCanvas}>
         <Maps
-          gpsLocation={
-            gpsData[gpsData.length - 1] ?? {
-              latitude: 49.28,
-              longitude: -123.12,
-              speed: 0,
-              heading: 0,
-              timestamp: '',
-            }
-          }
-          gpsPath={[
-            START_POINT,
-            ...gpsData.map((gpsPoint) => convertToLatLng(gpsPoint)),
-          ]}
+          gpsLocation={gpsData[gpsData.length - 1] ?? { ...LAST_KNOWN_POSITION, speed: 0, heading: 0, timestamp: '' }}
+          gpsPath={VOYAGE_PATH}
+          center={VOYAGE_CENTER}
+          zoom={VOYAGE_ZOOM}
           globalPath={globalPathData.waypoints.map((waypoint) =>
             convertToLatLng(waypoint),
           )}
