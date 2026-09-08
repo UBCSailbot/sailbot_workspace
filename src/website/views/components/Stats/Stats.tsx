@@ -12,8 +12,10 @@ const Stats = ({ className }: StatsProps) => {
       <div className={styles.notice} role='status'>
         <p className={styles.noticeLabel}>Last updated August 31, 2026</p>
         <p className={styles.noticeBody}>
-          Research data collected during POLARIS&apos;s voyage will be
-          available shortly. We are actively working to prepare it for sharing.
+          POLARIS is back home after successfully completing its first
+          autonomous ocean voyage. Research data collected throughout the
+          journey will be available shortly. We have improvements planned and
+          are actively working toward our next mission.
         </p>
       </div>
     </div>
