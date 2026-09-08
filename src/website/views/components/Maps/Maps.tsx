@@ -27,6 +27,8 @@ export interface IMapsProps {
   showLocalPath: boolean;
   aisShips: AISShip[];
   showAIShips: boolean;
+  center?: L.LatLngExpression;
+  zoom?: number;
 }
 
 export interface IMapsState {
@@ -77,6 +79,8 @@ const Maps: React.FC<IMapsProps> = ({
   showLocalPath,
   aisShips,
   showAIShips,
+  center,
+  zoom,
 }) => {
   const mapRef = useRef<L.Map | null>(null);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
@@ -209,8 +213,8 @@ const Maps: React.FC<IMapsProps> = ({
 
   return (
     <SafeMapContainer
-      center={convertToLatLng(gpsLocation)}
-      zoom={13}
+      center={center ?? convertToLatLng(gpsLocation)}
+      zoom={zoom ?? 13}
       minZoom={3}
       maxBounds={map_bound}
       maxBoundsViscosity={1.0}
