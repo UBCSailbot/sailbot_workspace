@@ -1,4 +1,4 @@
-#include "can_frame_parser.h"
+module;
 
 #include <linux/can.h>
 
@@ -8,8 +8,10 @@
 #include <span>
 #include <stdexcept>
 
-#include "cmn_hdrs/shared_constants.h"
-#include "utils/utils.h"
+module network_systems.can.frame_parser;
+
+import network_systems.shared_constants;
+import network_systems.utils;
 
 namespace CAN_FP
 {

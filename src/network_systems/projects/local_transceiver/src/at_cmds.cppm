@@ -1,39 +1,44 @@
-#pragma once
+module;
 
 // Full command set: https://cdn-shop.adafruit.com/product-files/4521/4521-AT%20command.pdf
-// Section numbers in this header file refer to this document
+// Section numbers in this module interface refer to this document.
 
 #include <cstdint>
+#include <cstddef>
 #include <sstream>
 #include <string>
 #include <vector>
 
+export module network_systems.local.at_commands;
+
+export {
+
 namespace AT
 {
 
-const std::string DELIMITER = "\r\n";
-const std::string STATUS_OK = "OK";
-const std::string RSP_READY = "READY";
-const std::string CSQ       = "READY";
-const std::string GARBAGE   = "\n";
+inline const std::string DELIMITER = "\r\n";
+inline const std::string STATUS_OK = "OK";
+inline const std::string RSP_READY = "READY";
+inline const std::string CSQ       = "READY";
+inline const std::string GARBAGE   = "\n";
 
-const std::string CHECK_CONN        = "AT";
-const std::string SBD_SESSION       = "AT+SBDIX";  // 5.144
-const std::string CLEAR_MO_BUFFER   = "AT+SBDD0";  // 5.142: clear the mobile-originated buffer
-const std::string DSBL_CTRLFLOW     = "AT&K0";
-const std::string DNLD_TO_QUEUE     = "AT+SBDRB";
-const std::string CHECK_SIG_QUALITY = "AT+CSQ";
+inline const std::string CHECK_CONN        = "AT";
+inline const std::string SBD_SESSION       = "AT+SBDIX";  // 5.144
+inline const std::string CLEAR_MO_BUFFER   = "AT+SBDD0";  // 5.142: clear the mobile-originated buffer
+inline const std::string DSBL_CTRLFLOW     = "AT&K0";
+inline const std::string DNLD_TO_QUEUE     = "AT+SBDRB";
+inline const std::string CHECK_SIG_QUALITY = "AT+CSQ";
 
 namespace write_bin  // 5.154
 {
-const std::string CMD = "AT+SBDWB=";
+inline const std::string CMD = "AT+SBDWB=";
 
 namespace rsp
 {
-const std::string SUCCESS      = "0";
-const std::string TIMEOUT      = "1";
-const std::string BAD_CHECKSUM = "2";
-const std::string WRONG_SIZE   = "3";
+inline const std::string SUCCESS      = "0";
+inline const std::string TIMEOUT      = "1";
+inline const std::string BAD_CHECKSUM = "2";
+inline const std::string WRONG_SIZE   = "3";
 }  // namespace rsp
 }  // namespace write_bin
 
@@ -121,3 +126,5 @@ struct SBDStatusRsp
 };
 
 }  // namespace AT
+
+}  // export

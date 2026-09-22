@@ -1,4 +1,4 @@
-#include "can_log_replayer.h"
+module;
 
 #include <algorithm>
 #include <cstdint>
@@ -9,6 +9,10 @@
 #include <set>
 #include <sstream>
 #include <stdexcept>
+
+module network_systems.can.log_replayer;
+
+import network_systems.can.frame_parser;
 
 namespace
 {

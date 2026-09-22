@@ -1,10 +1,15 @@
 // Standalone entry point for the remote server
 #include <boost/asio/io_context.hpp>
+#include <cstdint>
 #include <iostream>
+#include <memory>
+#include <string>
 #include <thread>
+#include <utility>
+#include <vector>
 
-#include "remote_transceiver.h"
-#include "sailbot_db.h"
+import network_systems.remote.database;
+import network_systems.remote.transceiver;
 
 int main(int argc, char ** argv)
 {

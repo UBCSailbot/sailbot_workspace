@@ -1,8 +1,20 @@
-cmake_minimum_required(VERSION 3.10)
-project(remote_server_standalone)
+cmake_minimum_required(VERSION 3.28)
+
+set(CMAKE_CXX_COMPILER "/usr/bin/clang++-16" CACHE FILEPATH "Remote server C++ compiler")
+project(remote_server_standalone LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_SCAN_FOR_MODULES ON)
+
+if(NOT CMAKE_GENERATOR MATCHES "Ninja")
+    message(FATAL_ERROR "Remote server C++ modules require the Ninja generator")
+endif()
+
+if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 16)
+    message(FATAL_ERROR "Remote server C++ modules require Clang 16 or newer")
+endif()
 
 find_package(Boost REQUIRED COMPONENTS system thread)
 find_package(Protobuf REQUIRED)
@@ -33,8 +45,20 @@ set(APP_LOGIC_SRCS
     src/remote_transceiver.cpp
     src/sailbot_db.cpp
 )
+set(APP_MODULE_SRCS
+    src/remote_transceiver.cppm
+    src/sailbot_db.cppm
+    src/shared_constants.cppm
+)
 
 add_library(remote_server_lib STATIC ${APP_LOGIC_SRCS} ${PROTO_SRCS})
+target_sources(
+    remote_server_lib PUBLIC
+    FILE_SET cxx_modules TYPE CXX_MODULES
+    BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}
+    FILES ${APP_MODULE_SRCS}
+)
+target_compile_features(remote_server_lib PUBLIC cxx_std_20)
 target_link_libraries(remote_server_lib
     ${Boost_LIBRARIES}
     ${Protobuf_LIBRARIES}
@@ -43,6 +67,7 @@ target_link_libraries(remote_server_lib
 )
 
 add_executable(remote_server src/main.cpp)
+target_compile_features(remote_server PRIVATE cxx_std_20)
 target_link_libraries(remote_server remote_server_lib)
 
 # ---- Tests ----
@@ -54,7 +79,16 @@ if(BUILD_TESTING)
         test/test_remote_transceiver.cpp
         test/test_db_helper.cpp
     )
-    # test/ holds the test-only helper headers (test_db_helper.h, utils.h)
+    target_sources(
+        remote_server_tests PRIVATE
+        FILE_SET cxx_modules TYPE CXX_MODULES
+        BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}
+        FILES
+            test/test_db_helper.cppm
+            test/utils.cppm
+    )
+    target_compile_features(remote_server_tests PRIVATE cxx_std_20)
+    # test/ holds the test-only module interfaces.
     target_include_directories(remote_server_tests PRIVATE test)
     target_link_libraries(remote_server_tests
         remote_server_lib

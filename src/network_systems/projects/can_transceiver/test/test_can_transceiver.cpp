@@ -8,11 +8,11 @@
 #include <cstring>
 #include <fstream>
 
-#include "can_frame_parser.h"
-#include "can_log_replayer.h"
-#include "can_transceiver.h"
-#include "cmn_hdrs/shared_constants.h"
-#include "mock_can_bus.h"
+import network_systems.can.frame_parser;
+import network_systems.can.log_replayer;
+import network_systems.can.mock_bus;
+import network_systems.can.transceiver;
+import network_systems.shared_constants;
 
 namespace msg = custom_interfaces::msg;
 

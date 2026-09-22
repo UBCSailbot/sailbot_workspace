@@ -1,10 +1,16 @@
-#pragma once
+module;
 
+#include <cstddef>
 #include <chrono>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
-#include "can_frame_parser.h"
+export module network_systems.can.log_replayer;
+
+export import network_systems.can.frame_parser;
+
+export {
 
 namespace CAN_REPLAY
 {
@@ -83,3 +89,5 @@ public:
 };
 
 }  // namespace CAN_REPLAY
+
+}  // export

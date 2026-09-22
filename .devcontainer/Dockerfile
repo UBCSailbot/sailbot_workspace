@@ -14,6 +14,25 @@ FROM ghcr.io/ubcsailbot/sailbot_workspace/gazebo-dev:${GAZEBO_TAG} AS base-true
 
 FROM base-${INSTALL_GAZEBO}
 
+# C++20 module toolchain.
+USER root
+RUN wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key \
+        | gpg --dearmor -o /usr/share/keyrings/llvm-archive-keyring.gpg \
+    && echo "deb [signed-by=/usr/share/keyrings/llvm-archive-keyring.gpg] http://apt.llvm.org/jammy/ llvm-toolchain-jammy-16 main" \
+        > /etc/apt/sources.list.d/llvm-16.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends \
+        clang-16 \
+        clangd-16 \
+        clang-tidy-16 \
+        clang-tools-16 \
+    && pip3 install --no-cache-dir \
+        cmake==3.28.6 \
+        ninja==1.11.1.1 \
+    && apt-get autoremove -y \
+    && apt-get clean -y \
+    && rm -rf /var/lib/apt/lists/{apt,dpkg,cache,log} /tmp/* /var/tmp/*
+
 # Copy configuration files (e.g., .vimrc) from config/ to the container's home directory
 ARG USERNAME=ros
 ARG HOME=/home/${USERNAME}

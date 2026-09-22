@@ -12,10 +12,33 @@ For comprehensive setup instructions, follow our [setup guide](https://ubcsailbo
 
 ## Building
 
+Network Systems uses named C++20 modules. Rebuild the Dev Container after
+updating the workspace so that Clang 16, CMake 3.28, `clang-scan-deps`, and
+Ninja 1.11 are available. The workspace build script selects Ninja
+automatically. Existing Network Systems build directories created with a
+different CMake generator must be removed before the first module build.
+
 **Option A**: With sailbot_workspace open, invoke the VSCode `build` or
 `debug` task.
 
 **Option B**: Run `/workspaces/sailbot_workspace/build.sh`
+
+### C++ module interfaces
+
+Maintained Network Systems APIs are imported rather than included. The public
+module names are:
+
+- Shared: `network_systems.ros_info`, `network_systems.shared_constants`,
+  `network_systems.utils`, and `network_systems.net_node`
+- CAN: `network_systems.can.frame_parser`,
+  `network_systems.can.log_replayer`, `network_systems.can.transceiver`, and
+  `network_systems.can.mock_bus`
+- Local satellite: `network_systems.local.at_commands` and
+  `network_systems.local.transceiver`
+
+Standard-library, Linux, ROS, Boost, Protobuf, CURL, and GTest dependencies
+remain regular includes inside module global fragments or consuming source
+files; they are not project-provided named modules.
 
 ## Running
 

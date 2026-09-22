@@ -1,18 +1,31 @@
-cmake_minimum_required(VERSION 3.10)
-project(network_systems)
+cmake_minimum_required(VERSION 3.28)
+
+set(CLANG_VERSION "16")
+set(CMAKE_CXX_COMPILER "/usr/bin/clang++-${CLANG_VERSION}" CACHE FILEPATH "Network Systems C++ compiler")
+
+project(network_systems LANGUAGES CXX)
 include(functions.cmake)
 
 # Options and constants
 option(STATIC_ANALYSIS "Enable clang-tidy checks" ON)
 option(UNIT_TEST "Enable unit tests" ON)
-set(CLANG_VERSION "14")
-
 # Configure the compiler
-set(CMAKE_CXX_COMPILER "/usr/bin/clang++-${CLANG_VERSION}")
 if(STATIC_ANALYSIS)
   set(CMAKE_CXX_CLANG_TIDY "clang-tidy-${CLANG_VERSION}")
 endif()
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_SCAN_FOR_MODULES ON)
+
+if(NOT CMAKE_GENERATOR MATCHES "Ninja")
+  message(FATAL_ERROR "Network Systems C++ modules require the Ninja generator")
+endif()
+
+if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 16)
+  message(FATAL_ERROR "Network Systems C++ modules require Clang 16 or newer")
+endif()
 
 # Configure build flags
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -31,7 +44,7 @@ endif()
 # C++ standard. This appears to be a warning specific to clang++ with
 # -Wpedantic, and does not appear with g++ or MSVC
 set(CMAKE_CXX_FLAGS
-    "${CMAKE_CXX_FLAGS} -std=c++20 -Wall -Wextra -Wpedantic -Werror -Wno-nested-anon-types -pthread"
+    "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic -Werror -Wno-nested-anon-types -pthread"
 )
 message(WARNING
     "Building Network Systems with build type '${CMAKE_BUILD_TYPE}' "

@@ -10,10 +10,10 @@
 #include <std_msgs/msg/string.hpp>
 #include <std_srvs/srv/trigger.hpp>
 
-#include "cmn_hdrs/ros_info.h"
-#include "cmn_hdrs/shared_constants.h"
-#include "local_transceiver.h"
-#include "net_node.h"
+import network_systems.local.transceiver;
+import network_systems.net_node;
+import network_systems.ros_info;
+import network_systems.shared_constants;
 
 /**
  * @brief Connect the Local Transceiver to the ROS network

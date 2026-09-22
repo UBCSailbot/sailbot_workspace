@@ -1,4 +1,4 @@
-#include "test_db_helper.h"
+module;
 
 #include <bsoncxx/builder/basic/document.hpp>
 #include <bsoncxx/builder/stream/document.hpp>
@@ -12,10 +12,11 @@
 #include <mongocxx/options/find.hpp>
 #include <random>
 
-#include "shared_constants.h"
-#include "sailbot_db.h"
-#include "test_db_helper.h"
-#include "utils.h"
+module network_systems.remote.test.db_helper;
+
+import network_systems.remote.constants;
+import network_systems.remote.database;
+import network_systems.remote.test.utils;
 
 using Polaris::GlobalPath;
 using Polaris::Sensors;

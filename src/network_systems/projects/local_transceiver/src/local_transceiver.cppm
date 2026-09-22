@@ -1,10 +1,16 @@
-#pragma once
+module;
 
 #include <boost/asio/streambuf.hpp>
+#include <boost/system/error_code.hpp>
+#include <chrono>
+#include <cstdint>
+#include <custom_interfaces/msg/path.hpp>
 #include <functional>
+#include <initializer_list>
+#include <optional>
 #include <string>
+#include <sys/time.h>
 
-#include "at_cmds.h"
 #include "boost/asio/io_service.hpp"
 #include "boost/asio/serial_port.hpp"
 #include "custom_interfaces/msg/batteries.hpp"
@@ -18,6 +24,12 @@
 #include "custom_interfaces/msg/wind_sensors.hpp"
 #include "rclcpp/node.hpp"
 #include "sensors.pb.h"
+
+export module network_systems.local.transceiver;
+
+export import network_systems.local.at_commands;
+
+export {
 
 namespace msg = custom_interfaces::msg;
 
@@ -310,3 +322,5 @@ private:
     template <typename AsyncReadOp>
     bool runWithTimeout(AsyncReadOp && op, boost::system::error_code & out_ec);
 };
+
+}  // export

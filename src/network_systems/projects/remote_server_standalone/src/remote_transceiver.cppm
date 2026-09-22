@@ -1,12 +1,24 @@
 // Copied from original project, ROS dependencies removed
+module;
+
 #include <boost/asio.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/strand.hpp>
 #include <boost/beast.hpp>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
 #include <memory>
+#include <string>
+#include <tuple>
+#include <utility>
 
-#include "sailbot_db.h"
-#include "shared_constants.h"
+export module network_systems.remote.transceiver;
+
+export import network_systems.remote.constants;
+export import network_systems.remote.database;
+
+export {
 
 namespace beast = boost::beast;
 namespace http  = beast::http;
@@ -17,16 +29,16 @@ namespace remote_transceiver
 {
     // We're currently using the TESTING_HOST and TESTING_PORT
 constexpr int            DEFAULT_NUM_IO_THREADS = 2;
-static const std::string PROD_DB_NAME           = "PLACEHOLDER";
-static const std::string PROD_HOST              = "0.0.0.0";
+inline const std::string PROD_DB_NAME           = "PLACEHOLDER";
+inline const std::string PROD_HOST              = "0.0.0.0";
 constexpr uint16_t       PROD_PORT              = 8081;
-static const std::string TESTING_HOST           = "0.0.0.0";
+inline const std::string TESTING_HOST           = "0.0.0.0";
 constexpr uint16_t       TESTING_PORT           = 8081;
 constexpr int            HTTP_VERSION           = 11;
 namespace targets
 {
-static const std::string ROOT        = "/";
-static const std::string SENSORS     = "/sensors";
+inline const std::string ROOT        = "/";
+inline const std::string SENSORS     = "/sensors";
 }  // namespace targets
 struct MOMsgParams
 {
@@ -97,3 +109,5 @@ http::response<http::dynamic_body>   post_response_body(
     ConnectionInfo info, std::string content_type, const std::string & body);
 }  // namespace http_client
 }  // namespace remote_transceiver
+
+}  // export

@@ -1,4 +1,4 @@
-#include "mock_can_bus.h"
+module;
 
 #include <errno.h>
 #include <poll.h>
@@ -10,6 +10,11 @@
 #include <chrono>
 #include <iostream>
 #include <stdexcept>
+
+module network_systems.can.mock_bus;
+
+import network_systems.can.frame_parser;
+import network_systems.can.log_replayer;
 
 using CAN_FP::CanFrame;
 using CAN_REPLAY::CanLogReplayer;
