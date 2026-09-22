@@ -6,8 +6,9 @@
 python3 gen_ros_info.py
 ```
 
-Takes [ros_info.yaml](../ros_info.yaml) and generates a C++ header file and
-Python file with constants defined within.
+Takes [ros_info.yaml](../ros_info.yaml) and generates the
+`network_systems.ros_info` C++ module interface and a Python file with the same
+constants.
 
 ## Rockblock Web Server
 

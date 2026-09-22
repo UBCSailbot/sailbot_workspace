@@ -1,6 +1,15 @@
-# Create module library
-function(make_lib module srcs link_libs inc_dirs compile_defs)
+# Create a library that may provide named C++ modules.
+function(make_lib module srcs module_srcs link_libs inc_dirs compile_defs)
     add_library(${module} ${srcs})
+    if(module_srcs)
+        target_sources(
+            ${module} PUBLIC
+            FILE_SET cxx_modules TYPE CXX_MODULES
+            BASE_DIRS ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR}
+            FILES ${module_srcs}
+        )
+    endif()
+    target_compile_features(${module} PUBLIC cxx_std_20)
     ament_target_dependencies(${module} PUBLIC ${ROS_DEPS})
     target_compile_definitions(${module} PUBLIC ${compile_defs})
     target_link_libraries(${module} PUBLIC ${link_libs})
@@ -11,13 +20,13 @@ function(make_lib module srcs link_libs inc_dirs compile_defs)
         ${inc_dirs}
     )
     add_dependencies(${module} ${AUTOGEN_TARGETS})
-    set(${module}_inc_dir ${CMAKE_CURRENT_LIST_DIR}/inc CACHE INTERNAL "${module} header include directory")
 endfunction()
 
 # Create project module ROS executable
 function(make_exe module srcs link_libs inc_dirs compile_defs)
     set(bin_module bin_${module})
     add_executable(${bin_module} ${srcs})
+    target_compile_features(${bin_module} PUBLIC cxx_std_20)
     target_compile_definitions(${bin_module} PUBLIC ${compile_defs})
     ament_target_dependencies(${bin_module} PUBLIC ${ROS_DEPS})
     target_link_libraries(${bin_module} PUBLIC ${link_libs} boost_program_options net_node)
@@ -26,7 +35,6 @@ function(make_exe module srcs link_libs inc_dirs compile_defs)
         ${CMAKE_CURRENT_LIST_DIR}/inc
         ${CMAKE_SOURCE_DIR}/lib
         ${inc_dirs}
-        ${net_node_inc_dir}
     )
     add_dependencies(${bin_module} ${AUTOGEN_TARGETS})
     install(TARGETS ${bin_module} DESTINATION lib/${PROJECT_NAME})
@@ -39,6 +47,7 @@ function(make_unit_test module srcs link_libs inc_dirs compile_defs)
     if(UNIT_TEST)
         set(test_module test_${module})
         add_executable(${test_module} ${srcs})
+        target_compile_features(${test_module} PUBLIC cxx_std_20)
         target_compile_definitions(${test_module} PUBLIC ${compile_defs})
         ament_target_dependencies(${test_module} PUBLIC ${ROS_DEPS})
         target_include_directories(

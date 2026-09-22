@@ -1,10 +1,17 @@
-#pragma once
+module;
 
+#include <compare>
 #include <boost/asio/streambuf.hpp>
+#include <boost/system/error_code.hpp>
+#include <chrono>
+#include <cstdint>
+#include <custom_interfaces/msg/path.hpp>
 #include <functional>
+#include <initializer_list>
+#include <optional>
 #include <string>
+#include <sys/time.h>
 
-#include "at_cmds.h"
 #include "boost/asio/io_service.hpp"
 #include "boost/asio/serial_port.hpp"
 #include "custom_interfaces/msg/batteries.hpp"
@@ -18,6 +25,18 @@
 #include "custom_interfaces/msg/wind_sensors.hpp"
 #include "rclcpp/node.hpp"
 #include "sensors.pb.h"
+
+class TestLocalTransceiver_parseInMsgValid_Test;
+class TestLocalTransceiver_parseInMsgInvalid_Test;
+class TestLocalTransceiver_SendAndReceiveMessage;
+class TestLocalTransceiver_testMailboxBlackbox_Test;
+class TestLocalTransceiver_checkCache_Test;
+
+export module network_systems.local.transceiver;
+
+export import network_systems.local.at_commands;
+
+export {
 
 namespace msg = custom_interfaces::msg;
 
@@ -211,7 +230,7 @@ public:
 private:
     // Serial port read/write timeout
     // * This 'TIMEOUT' timeout is used for the socket - it doesn't work with the actual hardware modem
-    constexpr static const struct timeval TIMEOUT
+    constexpr static const timeval TIMEOUT
     {
         0,        // seconds
           200000  // microseconds
@@ -310,3 +329,5 @@ private:
     template <typename AsyncReadOp>
     bool runWithTimeout(AsyncReadOp && op, boost::system::error_code & out_ec);
 };
+
+}  // export

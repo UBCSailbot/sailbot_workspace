@@ -1,27 +1,50 @@
 /* IMPORTANT: Make sure only one instance of sailbot_workspace/scripts/run_virtual_iridium.sh is running */
 
+#include <compare>
 #include <curl/curl.h>
 #include <gtest/gtest.h>
 
 #include <boost/process.hpp>
 #include <boost/system/system_error.hpp>
 #include <chrono>  // added
+#include <custom_interfaces/msg/batteries.hpp>
+#include <custom_interfaces/msg/generic_sensors.hpp>
+#include <custom_interfaces/msg/gps.hpp>
+#include <custom_interfaces/msg/helper_battery.hpp>
+#include <custom_interfaces/msg/helper_generic_sensor.hpp>
+#include <custom_interfaces/msg/helper_ph.hpp>
+#include <custom_interfaces/msg/helper_pressure.hpp>
+#include <custom_interfaces/msg/helper_salinity.hpp>
+#include <custom_interfaces/msg/helper_temp.hpp>
+#include <custom_interfaces/msg/l_path_data.hpp>
+#include <custom_interfaces/msg/path.hpp>
+#include <custom_interfaces/msg/ph_sensor.hpp>
+#include <custom_interfaces/msg/ph_sensors.hpp>
+#include <custom_interfaces/msg/pressure_sensor.hpp>
+#include <custom_interfaces/msg/pressure_sensors.hpp>
+#include <custom_interfaces/msg/salinity_sensor.hpp>
+#include <custom_interfaces/msg/salinity_sensors.hpp>
+#include <custom_interfaces/msg/temp_sensor.hpp>
+#include <custom_interfaces/msg/temp_sensors.hpp>
+#include <custom_interfaces/msg/wind_sensor.hpp>
+#include <custom_interfaces/msg/wind_sensors.hpp>
 #include <custom_interfaces/msg/detail/helper_dimension__struct.hpp>
 #include <custom_interfaces/msg/detail/helper_heading__struct.hpp>
 #include <custom_interfaces/msg/detail/helper_lat_lon__struct.hpp>
 #include <custom_interfaces/msg/detail/helper_rot__struct.hpp>
 #include <custom_interfaces/msg/detail/helper_speed__struct.hpp>
+#include <filesystem>
 #include <fstream>
 #include <mutex>
 #include <thread>  // added
 #include <vector>
 
-#include "at_cmds.h"
-#include "cmn_hdrs/shared_constants.h"
-#include "filesystem"
 #include "global_path.pb.h"
-#include "local_transceiver.h"
 #include "sensors.pb.h"
+
+import network_systems.local.at_commands;
+import network_systems.local.transceiver;
+import network_systems.shared_constants;
 
 namespace bp = boost::process;
 
@@ -499,7 +522,7 @@ TEST_F(TestLocalTransceiver, SerializeSalinitySensors)
 
 /**
  * @brief Verifies correct construction of status response object
- *        for at_cmds.h
+ *        for network_systems.local.at_commands
  */
 TEST_F(TestLocalTransceiver, ValidSBDRespose)
 {
@@ -516,7 +539,7 @@ TEST_F(TestLocalTransceiver, ValidSBDRespose)
 
 /**
  * @brief Verifies exception is thrown for incorrect construction of status response object
- *        for at_cmds.h
+ *        for network_systems.local.at_commands
  */
 TEST_F(TestLocalTransceiver, InvalidSBDRespose)
 {
@@ -526,7 +549,7 @@ TEST_F(TestLocalTransceiver, InvalidSBDRespose)
 
 /**
  * @brief Verifies correct reporting of MO status (success, failure, no network)
- *        for at_cmds.h
+ *        for network_systems.local.at_commands
  */
 TEST_F(TestLocalTransceiver, MOStatusTest)
 {

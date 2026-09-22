@@ -1,26 +1,36 @@
-#pragma once
+module;
 
+#include <bsoncxx/document/view_or_value.hpp>
+#include <cstdint>
+#include <ctime>
 #include <google/protobuf/repeated_field.h>
 
 #include <mongocxx/collection.hpp>
 #include <mongocxx/database.hpp>
 #include <mongocxx/instance.hpp>
 #include <mongocxx/pool.hpp>
+#include <memory>
+#include <ostream>
+#include <string>
 
 #include "global_path.pb.h"
 #include "sensors.pb.h"
 #include "waypoint.pb.h"
 
-const std::string COLLECTION_AIS_SHIPS        = "ais_ships";
-const std::string COLLECTION_BATTERIES        = "batteries";
-const std::string COLLECTION_TEMP_SENSORS     = "temp_sensors";
-const std::string COLLECTION_PH_SENSORS       = "ph_sensors";
-const std::string COLLECTION_SALINITY_SENSORS = "salinity_sensors";
-const std::string COLLECTION_GPS              = "gps";
-const std::string COLLECTION_WIND_SENSORS     = "wind_sensors";
-const std::string COLLECTION_LOCAL_PATH       = "local_path";
-const std::string COLLECTION_GLOBAL_PATH      = "global_path";
-const std::string COLLECTION_IRIDIUM_RESPONSE = "iridium_response";
+export module network_systems.remote.database;
+
+export {
+
+inline const std::string COLLECTION_AIS_SHIPS        = "ais_ships";
+inline const std::string COLLECTION_BATTERIES        = "batteries";
+inline const std::string COLLECTION_TEMP_SENSORS     = "temp_sensors";
+inline const std::string COLLECTION_PH_SENSORS       = "ph_sensors";
+inline const std::string COLLECTION_SALINITY_SENSORS = "salinity_sensors";
+inline const std::string COLLECTION_GPS              = "gps";
+inline const std::string COLLECTION_WIND_SENSORS     = "wind_sensors";
+inline const std::string COLLECTION_LOCAL_PATH       = "local_path";
+inline const std::string COLLECTION_GLOBAL_PATH      = "global_path";
+inline const std::string COLLECTION_IRIDIUM_RESPONSE = "iridium_response";
 
 template <typename T>
 using ProtoList = google::protobuf::RepeatedPtrField<T>;
@@ -79,3 +89,5 @@ private:
       const std::string & response, const std::string & error, const std::string & message,
       const std::string & timestamp, mongocxx::client & client);
 };
+
+}  // export

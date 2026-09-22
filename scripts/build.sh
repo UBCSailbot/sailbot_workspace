@@ -37,6 +37,8 @@ STATIC_ANALYSIS="OFF"
 
 UNIT_TEST="ON"
 
+export CMAKE_GENERATOR=Ninja
+
 # Build ROS packages in src directory
 colcon build \
         --base-paths $ROS_WORKSPACE/src \
