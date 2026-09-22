@@ -9,7 +9,10 @@ module;
 #include <array>
 #include <chrono>
 #include <iostream>
+#include <mutex>
 #include <stdexcept>
+#include <thread>
+#include <vector>
 
 module network_systems.can.mock_bus;
 

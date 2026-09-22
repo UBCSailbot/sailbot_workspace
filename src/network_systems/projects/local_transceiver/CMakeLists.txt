@@ -12,6 +12,7 @@ set(inc_dirs
 )
 
 set(compile_defs
+    BOOST_ASIO_USE_TS_EXECUTOR_AS_DEFAULT
     LOCAL_TRANSCEIVER_TEST_PORT="$ENV{LOCAL_TRANSCEIVER_TEST_PORT}"
     RUN_VIRTUAL_IRIDIUM_SCRIPT_PATH="$ENV{ROS_WORKSPACE}/scripts/run_virtual_iridium.sh"
     RUN_HTTP_ECHO_SERVER_CMD="python3 $ENV{ROS_WORKSPACE}/src/network_systems/scripts/http_echo_server.py"

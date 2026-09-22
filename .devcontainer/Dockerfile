@@ -27,7 +27,7 @@ RUN wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key \
         clang-tidy-16 \
         clang-tools-16 \
     && pip3 install --no-cache-dir \
-        cmake==3.28.6 \
+        cmake==3.28.4 \
         ninja==1.11.1.1 \
     && apt-get autoremove -y \
     && apt-get clean -y \

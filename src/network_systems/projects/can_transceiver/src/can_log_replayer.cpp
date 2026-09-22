@@ -1,6 +1,9 @@
 module;
 
+#include <linux/can.h>
+
 #include <algorithm>
+#include <chrono>
 #include <cstdint>
 #include <cstdio>
 #include <ctime>

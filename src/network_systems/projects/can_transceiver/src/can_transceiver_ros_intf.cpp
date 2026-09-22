@@ -5,6 +5,9 @@
 #include <custom_interfaces/msg/can_sim_to_boat_sim.hpp>
 #include <custom_interfaces/msg/desired_heading.hpp>
 #include <custom_interfaces/msg/gps.hpp>
+#include <custom_interfaces/msg/ph_sensors.hpp>
+#include <custom_interfaces/msg/salinity_sensors.hpp>
+#include <custom_interfaces/msg/temp_sensors.hpp>
 #include <custom_interfaces/msg/wind_sensors.hpp>
 #include <filesystem>
 #include <queue>

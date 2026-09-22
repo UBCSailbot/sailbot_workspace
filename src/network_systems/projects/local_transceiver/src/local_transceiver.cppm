@@ -1,5 +1,6 @@
 module;
 
+#include <compare>
 #include <boost/asio/streambuf.hpp>
 #include <boost/system/error_code.hpp>
 #include <chrono>
@@ -24,6 +25,12 @@ module;
 #include "custom_interfaces/msg/wind_sensors.hpp"
 #include "rclcpp/node.hpp"
 #include "sensors.pb.h"
+
+class TestLocalTransceiver_parseInMsgValid_Test;
+class TestLocalTransceiver_parseInMsgInvalid_Test;
+class TestLocalTransceiver_SendAndReceiveMessage;
+class TestLocalTransceiver_testMailboxBlackbox_Test;
+class TestLocalTransceiver_checkCache_Test;
 
 export module network_systems.local.transceiver;
 
@@ -223,7 +230,7 @@ public:
 private:
     // Serial port read/write timeout
     // * This 'TIMEOUT' timeout is used for the socket - it doesn't work with the actual hardware modem
-    constexpr static const struct timeval TIMEOUT
+    constexpr static const timeval TIMEOUT
     {
         0,        // seconds
           200000  // microseconds

@@ -1,5 +1,6 @@
 module;
 
+#include <compare>
 #include <cstddef>
 #include <chrono>
 #include <stdexcept>

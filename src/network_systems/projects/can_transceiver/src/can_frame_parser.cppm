@@ -1,5 +1,6 @@
 module;
 
+#include <compare>
 #include <linux/can.h>
 
 #include <array>

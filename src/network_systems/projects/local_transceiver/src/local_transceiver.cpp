@@ -13,13 +13,21 @@ module;
 #include <custom_interfaces/msg/generic_sensors.hpp>
 #include <custom_interfaces/msg/gps.hpp>
 #include <custom_interfaces/msg/l_path_data.hpp>
+#include <custom_interfaces/msg/ph_sensor.hpp>
+#include <custom_interfaces/msg/ph_sensors.hpp>
+#include <custom_interfaces/msg/salinity_sensor.hpp>
+#include <custom_interfaces/msg/salinity_sensors.hpp>
+#include <custom_interfaces/msg/temp_sensor.hpp>
+#include <custom_interfaces/msg/temp_sensors.hpp>
 #include <custom_interfaces/msg/wind_sensors.hpp>
 #include <exception>
 #include <filesystem>
 #include <fstream>
+#include <future>
 #include <regex>
 #include <stdexcept>
 #include <string>
+#include <thread>
 
 #include "global_path.pb.h"
 #include "sensors.pb.h"

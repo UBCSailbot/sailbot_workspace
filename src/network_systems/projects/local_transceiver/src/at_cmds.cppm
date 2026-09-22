@@ -1,5 +1,6 @@
 module;
 
+#include <compare>
 // Full command set: https://cdn-shop.adafruit.com/product-files/4521/4521-AT%20command.pdf
 // Section numbers in this module interface refer to this document.
 

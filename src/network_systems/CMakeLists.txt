@@ -44,7 +44,7 @@ endif()
 # C++ standard. This appears to be a warning specific to clang++ with
 # -Wpedantic, and does not appear with g++ or MSVC
 set(CMAKE_CXX_FLAGS
-    "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic -Werror -Wno-nested-anon-types -pthread"
+    "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic -Werror -Wno-nested-anon-types -Wno-export-unnamed -pthread"
 )
 message(WARNING
     "Building Network Systems with build type '${CMAKE_BUILD_TYPE}' "
