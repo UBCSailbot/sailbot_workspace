@@ -13,9 +13,8 @@ const Stats = ({ className }: StatsProps) => {
         <p className={styles.noticeLabel}>Last updated August 31, 2026</p>
         <p className={styles.noticeBody}>
           POLARIS is back home after successfully completing its first
-          autonomous ocean voyage. Research data collected throughout the
-          journey will be available shortly. We have improvements planned and
-          are actively working toward our next mission.
+          autonomous ocean voyage. We have improvements planned and are
+          actively working toward our next mission.
         </p>
       </div>
     </div>

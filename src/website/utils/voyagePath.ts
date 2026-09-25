@@ -423,9 +423,9 @@ export const VOYAGE_PATH: [number, number][] = [
   [48.950165, -125.558625]
 ];
 
-// Last recorded fix — used as static marker position since live telemetry is offline.
-export const LAST_KNOWN_POSITION = { latitude: 48.950165, longitude: -125.558625 };
+// Boat is back at UBC after completing the voyage.
+export const LAST_KNOWN_POSITION = { latitude: 49.2606, longitude: -123.246 };
 
-// Center and zoom that fits the full voyage path.
-export const VOYAGE_CENTER: [number, number] = [48.69, -125.58];
-export const VOYAGE_ZOOM = 9;
+// Center and zoom that fits the full voyage path and home position at UBC.
+export const VOYAGE_CENTER: [number, number] = [48.97, -124.4];
+export const VOYAGE_ZOOM = 8;
