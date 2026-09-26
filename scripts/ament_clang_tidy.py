@@ -104,6 +104,7 @@ def main(argv=sys.argv[1:]):
         return 1
 
     bin_names = [
+        "clang-tidy-16",
         "clang-tidy",
         "clang-tidy-10",
         "clang-tidy-11",

@@ -1,11 +1,18 @@
 // Copied from original, ROS dependencies removed
-#pragma once
+module;
+
+#include <cstdint>
 #include <string>
+
+export module network_systems.remote.constants;
+
+export {
+
 namespace SYSTEM_MODE
 {
-static const std::string PROD     = "production";
-static const std::string DEV      = "development";
-static const std::string TEST_SAT = "test_satellite";
+inline const std::string PROD     = "production";
+inline const std::string DEV      = "development";
+inline const std::string TEST_SAT = "test_satellite";
 };  // namespace SYSTEM_MODE
 constexpr unsigned int MAX_LOCAL_TO_REMOTE_PAYLOAD_SIZE_BYTES = 340;
 constexpr unsigned int MAX_REMOTE_TO_LOCAL_PAYLOAD_SIZE_BYTES = 270;
@@ -44,3 +51,5 @@ constexpr float PH_LBND             = -1.6;
 constexpr float PH_UBND             = 15.6;
 constexpr float SALINITY_LBND       = 0;
 constexpr float SALINITY_UBND       = 1000000;
+
+}  // export

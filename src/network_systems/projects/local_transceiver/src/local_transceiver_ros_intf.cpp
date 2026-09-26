@@ -1,19 +1,35 @@
-#include <bits/stdc++.h>
-
 #include <chrono>
+#include <cmath>
+#include <cstdlib>
+#include <custom_interfaces/msg/batteries.hpp>
+#include <custom_interfaces/msg/gps.hpp>
+#include <custom_interfaces/msg/l_path_data.hpp>
+#include <custom_interfaces/msg/path.hpp>
+#include <custom_interfaces/msg/ph_sensors.hpp>
+#include <custom_interfaces/msg/pressure_sensors.hpp>
+#include <custom_interfaces/msg/salinity_sensors.hpp>
+#include <custom_interfaces/msg/temp_sensors.hpp>
+#include <custom_interfaces/msg/wind_sensors.hpp>
+#include <filesystem>
 #include <functional>
+#include <future>
+#include <iostream>
 #include <memory>
+#include <optional>
 #include <rclcpp/publisher.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/subscription.hpp>
 #include <rclcpp/timer.hpp>
 #include <std_msgs/msg/string.hpp>
 #include <std_srvs/srv/trigger.hpp>
+#include <string>
+#include <thread>
+#include <vector>
 
-#include "cmn_hdrs/ros_info.h"
-#include "cmn_hdrs/shared_constants.h"
-#include "local_transceiver.h"
-#include "net_node.h"
+import network_systems.local.transceiver;
+import network_systems.net_node;
+import network_systems.ros_info;
+import network_systems.shared_constants;
 
 /**
  * @brief Connect the Local Transceiver to the ROS network

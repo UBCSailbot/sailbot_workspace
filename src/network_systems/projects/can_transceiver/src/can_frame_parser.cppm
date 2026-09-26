@@ -1,9 +1,11 @@
-#pragma once
+module;
 
+#include <compare>
 #include <linux/can.h>
-#include <stdint.h>
 
 #include <array>
+#include <cstddef>
+#include <cstdint>
 #include <custom_interfaces/msg/ais_ships.hpp>
 #include <custom_interfaces/msg/batteries.hpp>
 #include <custom_interfaces/msg/desired_heading.hpp>
@@ -14,11 +16,18 @@
 #include <custom_interfaces/msg/salinity_sensor.hpp>
 #include <custom_interfaces/msg/temp_sensor.hpp>
 #include <custom_interfaces/msg/wind_sensor.hpp>
+#include <exception>
 #include <map>
 #include <optional>
+#include <ostream>
 #include <span>
 #include <stdexcept>
+#include <string>
 #include <type_traits>
+
+export module network_systems.can.frame_parser;
+
+export {
 
 // CAN frame definitions from: https://ubcsailbot.atlassian.net/wiki/spaces/prjt22/pages/1827176527/CAN+Frames
 namespace CAN_FP
@@ -131,7 +140,7 @@ inline bool isValidCanId(canid_t id)
  * @brief Map the CanId enum to a description
  *
  */
-static const std::map<CanId, std::string> CAN_DESC{
+inline const std::map<CanId, std::string> CAN_DESC{
   {CanId::PWR_MODE, "PWR_MODE (Power Mode)"},
   {CanId::MAIN_HEADING, "MAIN_HEADING (Main heading for rudder)"},
   {CanId::MAIN_TR_TAB, "MAIN_TR_TAB (Trim tab for sail)"},
@@ -1327,3 +1336,5 @@ private:
 };
 
 }  // namespace CAN_FP
+
+}  // export
