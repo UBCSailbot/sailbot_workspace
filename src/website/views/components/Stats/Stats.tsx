@@ -14,8 +14,8 @@ const Stats = ({ className }: StatsProps) => {
         <p className={styles.noticeBody}>
           POLARIS is back home after successfully completing its first
           autonomous ocean voyage. Research data collected throughout the
-          journey will be available shortly. We have improvements planned and
-          are actively working toward our next mission.
+          journey is available in the Downloads page. We have improvements
+          planned and are actively working toward our next mission.
         </p>
       </div>
     </div>
