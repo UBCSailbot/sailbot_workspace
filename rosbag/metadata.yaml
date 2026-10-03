@@ -1,0 +1,39 @@
+rosbag2_bagfile_information:
+  version: 5
+  storage_identifier: ""
+  duration:
+    nanoseconds: 250586041567620
+  starting_time:
+    nanoseconds_since_epoch: 1787075380388127981
+  message_count: 775391
+  topics_with_message_count:
+    - topic_metadata:
+        name: /ais_ships
+        type: custom_interfaces/msg/AISShips
+        serialization_format: cdr
+        offered_qos_profiles: "- history: 3\n  depth: 0\n  reliability: 1\n  durability: 2\n  deadline:\n    sec: 9223372036\n    nsec: 854775807\n  lifespan:\n    sec: 9223372036\n    nsec: 854775807\n  liveliness: 1\n  liveliness_lease_duration:\n    sec: 9223372036\n    nsec: 854775807\n  avoid_ros_namespace_conventions: false"
+      message_count: 108657
+    - topic_metadata:
+        name: /filtered_wind_sensor
+        type: custom_interfaces/msg/WindSensor
+        serialization_format: cdr
+        offered_qos_profiles: "- history: 3\n  depth: 0\n  reliability: 1\n  durability: 2\n  deadline:\n    sec: 9223372036\n    nsec: 854775807\n  lifespan:\n    sec: 9223372036\n    nsec: 854775807\n  liveliness: 1\n  liveliness_lease_duration:\n    sec: 9223372036\n    nsec: 854775807\n  avoid_ros_namespace_conventions: false"
+      message_count: 325369
+    - topic_metadata:
+        name: /gps
+        type: custom_interfaces/msg/GPS
+        serialization_format: cdr
+        offered_qos_profiles: "- history: 3\n  depth: 0\n  reliability: 1\n  durability: 2\n  deadline:\n    sec: 9223372036\n    nsec: 854775807\n  lifespan:\n    sec: 9223372036\n    nsec: 854775807\n  liveliness: 1\n  liveliness_lease_duration:\n    sec: 9223372036\n    nsec: 854775807\n  avoid_ros_namespace_conventions: false"
+      message_count: 216116
+    - topic_metadata:
+        name: /local_path
+        type: custom_interfaces/msg/LPathData
+        serialization_format: cdr
+        offered_qos_profiles: "- history: 3\n  depth: 0\n  reliability: 1\n  durability: 2\n  deadline:\n    sec: 9223372036\n    nsec: 854775807\n  lifespan:\n    sec: 9223372036\n    nsec: 854775807\n  liveliness: 1\n  liveliness_lease_duration:\n    sec: 9223372036\n    nsec: 854775807\n  avoid_ros_namespace_conventions: false"
+      message_count: 125249
+  compression_format: ""
+  compression_mode: ""
+  relative_file_paths:
+    - datarecording_2026_08_18-10_49_14_0.db3
+  files:
+    []

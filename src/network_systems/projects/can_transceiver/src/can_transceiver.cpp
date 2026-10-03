@@ -105,6 +105,7 @@ CanTransceiver::CanTransceiver(int fd) : sock_desc_(fd), is_can_simulated_(true)
         sim_fd_is_socket_ = S_ISSOCK(fd_stat.st_mode);
     }
     receive_thread_ = std::thread(&CanTransceiver::receive, this);
+    std::cout << "CanTransceiver initialized with fd " << sock_desc_ << std::endl;
 }
 
 CanTransceiver::~CanTransceiver()
