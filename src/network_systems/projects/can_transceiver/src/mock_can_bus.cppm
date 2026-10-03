@@ -1,12 +1,18 @@
-#pragma once
+module;
 
 #include <atomic>
+#include <cstddef>
 #include <mutex>
+#include <stdexcept>
 #include <thread>
 #include <vector>
 
-#include "can_frame_parser.h"
-#include "can_log_replayer.h"
+export module network_systems.can.mock_bus;
+
+export import network_systems.can.frame_parser;
+export import network_systems.can.log_replayer;
+
+export {
 
 /**
  * @brief Simulated CAN bus backed by a Unix SOCK_SEQPACKET socketpair
@@ -112,3 +118,5 @@ private:
     mutable std::mutex            outbound_mtx_;
     std::vector<CAN_FP::CanFrame> outbound_;
 };
+
+}  // export

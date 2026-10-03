@@ -1,11 +1,23 @@
-#pragma once
+module;
 
+#include <ctime>
+#include <cstddef>
+#include <memory>
 #include <random>
 #include <span>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
 
-#include "sailbot_db.h"
 #include "sensors.pb.h"
-#include "utils.h"
+
+export module network_systems.remote.test.db_helper;
+
+export import network_systems.remote.database;
+export import network_systems.remote.test.utils;
+
+export {
 
 class UtilDB : public SailbotDB
 {
@@ -200,3 +212,5 @@ private:
     */
     void genGlobalPathData(Polaris::GlobalPath & global_path_data);
 };
+
+}  // export

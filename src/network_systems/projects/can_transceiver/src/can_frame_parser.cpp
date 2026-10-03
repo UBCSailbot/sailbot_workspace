@@ -1,15 +1,37 @@
-#include "can_frame_parser.h"
+module;
 
 #include <linux/can.h>
 
+#include <cmath>
+#include <compare>
+#include <custom_interfaces/msg/desired_heading.hpp>
+#include <custom_interfaces/msg/gps.hpp>
+#include <custom_interfaces/msg/helper_ais_ship.hpp>
+#include <custom_interfaces/msg/helper_battery.hpp>
+#include <custom_interfaces/msg/helper_dimension.hpp>
+#include <custom_interfaces/msg/helper_heading.hpp>
+#include <custom_interfaces/msg/helper_lat_lon.hpp>
+#include <custom_interfaces/msg/helper_ph.hpp>
+#include <custom_interfaces/msg/helper_rot.hpp>
+#include <custom_interfaces/msg/helper_salinity.hpp>
+#include <custom_interfaces/msg/helper_speed.hpp>
+#include <custom_interfaces/msg/helper_temp.hpp>
+#include <custom_interfaces/msg/ph_sensor.hpp>
+#include <custom_interfaces/msg/sail_cmd.hpp>
+#include <custom_interfaces/msg/salinity_sensor.hpp>
+#include <custom_interfaces/msg/temp_sensor.hpp>
+#include <custom_interfaces/msg/wind_sensor.hpp>
+#include <optional>
 #include <bitset>
 #include <cstring>
 #include <iostream>
 #include <span>
 #include <stdexcept>
 
-#include "cmn_hdrs/shared_constants.h"
-#include "utils/utils.h"
+module network_systems.can.frame_parser;
+
+import network_systems.shared_constants;
+import network_systems.utils;
 
 namespace CAN_FP
 {

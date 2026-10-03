@@ -3,9 +3,10 @@
 Shared libraries used by the various Network Systems projects that do not
 generate their own executable.
 
-## cmn_hdrs
+## Common modules
 
-Headers that contain information useful for multiple modules in Network Systems.
+Named C++ modules containing ROS names, constants, and utilities shared by
+multiple Network Systems projects.
 
 ## protofiles
 

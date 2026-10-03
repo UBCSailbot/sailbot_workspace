@@ -29,6 +29,7 @@
   "customizations": {
     "vscode": {
       "settings": {
+        "clangd.path": "/usr/bin/clangd-16",
         "terminal.integrated.profiles.linux": {
           "bash": {
             "path": "bash",

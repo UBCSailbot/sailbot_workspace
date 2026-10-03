@@ -1,6 +1,12 @@
-#include "net_node.h"
+module;
 
+#include <iostream>
 #include <rclcpp/rclcpp.hpp>
+#include <stdexcept>
+#include <string>
+#include <unistd.h>
+
+module network_systems.net_node;
 
 NetNode::NetNode(const std::string & node_name)
 : rclcpp::Node(node_name),
