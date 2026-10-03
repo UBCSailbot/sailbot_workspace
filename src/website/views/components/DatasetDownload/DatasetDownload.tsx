@@ -24,9 +24,6 @@ type DataSet = {
   externalUrl?: string;
 };
 
-// TODO(team): replace with the real Drive link to the hydrophone recordings
-const HYDROPHONE_DRIVE_URL = 'https://drive.google.com/drive/folders/1oKVSy055-gNkFngFmi1BNiyFt5tf_u9x?usp=drive_link';
-
 const dataSets: DataSet[] = [
   {
     key: 'GPS',
@@ -75,13 +72,6 @@ const dataSets: DataSet[] = [
     title: 'Salinity',
     action: downloadSalinitySensorsData,
     description: 'Water conductivity measurements (µS/cm).',
-  },
-  {
-    key: 'Hydrophone',
-    title: 'Hydrophone',
-    externalUrl: HYDROPHONE_DRIVE_URL,
-    description:
-      'Raw hydrophone audio recordings.'
   },
 ];
 
