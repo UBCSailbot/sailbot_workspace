@@ -56,6 +56,7 @@ remote_transceiver::MOMsgParams::MOMsgParams(const std::string & query_string)
     std::cout << "[DEBUG] Raw query_string: '" << query_string << "'\n";
 
     std::cout << "LOVE MONGA 4EVER" << endl;
+    std::cout << "ALI so sexy" << endl;
     gi std::map<std::string, std::string> fields;
     std::vector<std::string>              pairs;
     boost::algorithm::split(pairs, query_string, boost::is_any_of("&"));
