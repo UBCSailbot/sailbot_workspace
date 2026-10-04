@@ -611,15 +611,14 @@ TEST_F(TestLocalTransceiver, parseReceiveMessageBlackbox)
 {
     std::lock_guard<std::mutex> lock(port_mutex);
 
-    constexpr float     holder = 10.3;
     Polaris::GlobalPath sample_data;
 
     Polaris::Waypoint * waypoint_a = sample_data.add_waypoints();
-    waypoint_a->set_latitude(holder);
-    waypoint_a->set_longitude(holder);
+    waypoint_a->set_latitude(10.3F);
+    waypoint_a->set_longitude(-123.4F);
     Polaris::Waypoint * waypoint_b = sample_data.add_waypoints();
-    waypoint_b->set_latitude(holder);
-    waypoint_b->set_longitude(holder);
+    waypoint_b->set_latitude(49.2F);
+    waypoint_b->set_longitude(-122.8F);
 
     std::string serialized_data;
     ASSERT_TRUE(sample_data.SerializeToString(&serialized_data));
@@ -637,18 +636,12 @@ TEST_F(TestLocalTransceiver, parseReceiveMessageBlackbox)
 
     custom_interfaces::msg::Path received_data = lcl_trns_->receive();
 
-    Polaris::GlobalPath global_path;
-    for (const auto & waypoint : received_data.waypoints) {
-        Polaris::Waypoint * new_waypoint = global_path.add_waypoints();
-        new_waypoint->set_latitude(waypoint.latitude);
-        new_waypoint->set_longitude(waypoint.longitude);
-    }
-
-    ASSERT_EQ(global_path.waypoints_size(), sample_data.waypoints_size())
+    ASSERT_EQ(received_data.waypoints.size(), static_cast<std::size_t>(sample_data.waypoints_size()))
       << "Mismatch in number of waypoints received.";
-    for (int i = 0; i < global_path.waypoints_size(); ++i) {
-        EXPECT_FLOAT_EQ(global_path.waypoints(i).latitude(), holder);
-        EXPECT_FLOAT_EQ(global_path.waypoints(i).longitude(), holder);
+    for (int i = 0; i < sample_data.waypoints_size(); ++i) {
+        SCOPED_TRACE("Waypoint index: " + std::to_string(i));
+        EXPECT_FLOAT_EQ(received_data.waypoints[i].latitude, sample_data.waypoints(i).latitude());
+        EXPECT_FLOAT_EQ(received_data.waypoints[i].longitude, sample_data.waypoints(i).longitude());
     }
 }
 
