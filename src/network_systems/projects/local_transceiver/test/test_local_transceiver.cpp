@@ -159,11 +159,11 @@ TEST_F(TestLocalTransceiver, sendData)
     // static const int NUM_SALINITY_SENSORS = 16;
 
     // custom inferfaces used
-    custom_interfaces::msg::GPS         gps;
-    custom_interfaces::msg::WindSensors wind;
-    custom_interfaces::msg::Batteries   batteries;
-    custom_interfaces::msg::TempSensors temp;
-    custom_interfaces::msg::PhSensors   ph;
+    custom_interfaces::msg::GPS             gps;
+    custom_interfaces::msg::WindSensors     wind;
+    custom_interfaces::msg::Batteries       batteries;
+    custom_interfaces::msg::TempSensors     temp;
+    custom_interfaces::msg::PhSensors       ph;
     custom_interfaces::msg::SalinitySensors salinity;
     custom_interfaces::msg::LPathData       local_paths;
     // custom_interfaces::msg::GenericSensors sensors;
@@ -215,7 +215,6 @@ TEST_F(TestLocalTransceiver, sendData)
         ph_array[i].set__ph(ph_data);
     }
     ph.set__ph_sensors(ph_array);
-
 
     std::array<custom_interfaces::msg::SalinitySensor, NUM_SALINITY_SENSORS> salinity_array;
     for (int i = 0; i < NUM_SALINITY_SENSORS; i++) {
@@ -450,7 +449,6 @@ TEST_F(TestLocalTransceiver, SerializeSalinitySensors)
     EXPECT_FLOAT_EQ(deserialized.salinity_sensors(0), expected_salinity);
 }
 
-
 /**
  * @brief Verifies correct construction of status response object
  *        for at_cmds.h
@@ -614,11 +612,11 @@ TEST_F(TestLocalTransceiver, parseReceiveMessageBlackbox)
     Polaris::GlobalPath sample_data;
 
     Polaris::Waypoint * waypoint_a = sample_data.add_waypoints();
-    waypoint_a->set_latitude(10.3F);
-    waypoint_a->set_longitude(-123.4F);
+    waypoint_a->set_latitude(10.3F);     //NOLINT(readability-magic-numbers)
+    waypoint_a->set_longitude(-123.4F);  //NOLINT(readability-magic-numbers)
     Polaris::Waypoint * waypoint_b = sample_data.add_waypoints();
-    waypoint_b->set_latitude(49.2F);
-    waypoint_b->set_longitude(-122.8F);
+    waypoint_b->set_latitude(49.2F);     //NOLINT(readability-magic-numbers)
+    waypoint_b->set_longitude(-122.8F);  //NOLINT(readability-magic-numbers)
 
     std::string serialized_data;
     ASSERT_TRUE(sample_data.SerializeToString(&serialized_data));
