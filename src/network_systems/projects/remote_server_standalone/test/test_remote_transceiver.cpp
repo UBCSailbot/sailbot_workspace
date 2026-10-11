@@ -12,10 +12,11 @@
 #include <thread>
 #include <vector>
 
-#include "remote_transceiver.h"
-#include "sailbot_db.h"
 #include "sensors.pb.h"
-#include "test_db_helper.h"
+
+import network_systems.remote.database;
+import network_systems.remote.test.db_helper;
+import network_systems.remote.transceiver;
 
 using Polaris::Sensors;
 using remote_transceiver::TESTING_HOST;

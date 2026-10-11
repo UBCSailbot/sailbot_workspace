@@ -15,7 +15,7 @@ For comprehensive setup instructions, follow our [setup guide](https://ubcsailbo
 **Option A**: With sailbot_workspace open, invoke the VSCode `build` or
 `debug` task.
 
-**Option B**: Run `/workspaces/sailbot_workspace/build.sh`
+**Option B**: Run `./scripts/build.sh -p network_systems` from the workspace root.
 
 ## Running
 

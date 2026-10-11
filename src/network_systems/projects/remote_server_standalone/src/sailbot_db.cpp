@@ -1,9 +1,11 @@
-#include "sailbot_db.h"
+module;
 
 #include <bsoncxx/builder/stream/array.hpp>
 #include <bsoncxx/builder/stream/document.hpp>
 #include <bsoncxx/builder/stream/helpers.hpp>
 #include <bsoncxx/json.hpp>
+#include <cstdlib>
+#include <cstring>
 #include <cstdint>
 #include <iomanip>
 #include <iostream>
@@ -17,6 +19,8 @@
 #include "global_path.pb.h"
 #include "sensors.pb.h"
 #include "waypoint.pb.h"
+
+module network_systems.remote.database;
 
 namespace bstream = bsoncxx::builder::stream;
 using Polaris::GlobalPath;

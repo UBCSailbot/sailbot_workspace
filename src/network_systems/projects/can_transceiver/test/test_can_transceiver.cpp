@@ -1,18 +1,39 @@
+#include <memory>
+#include <thread>
+
 #include <errno.h>
 #include <fcntl.h>
 #include <gtest/gtest.h>
+#include <linux/can.h>
 #include <unistd.h>
 
 #include <atomic>
 #include <chrono>
 #include <cstring>
+#include <custom_interfaces/msg/desired_heading.hpp>
+#include <custom_interfaces/msg/gps.hpp>
+#include <custom_interfaces/msg/helper_ais_ship.hpp>
+#include <custom_interfaces/msg/helper_battery.hpp>
+#include <custom_interfaces/msg/helper_dimension.hpp>
+#include <custom_interfaces/msg/helper_heading.hpp>
+#include <custom_interfaces/msg/helper_lat_lon.hpp>
+#include <custom_interfaces/msg/helper_ph.hpp>
+#include <custom_interfaces/msg/helper_rot.hpp>
+#include <custom_interfaces/msg/helper_salinity.hpp>
+#include <custom_interfaces/msg/helper_speed.hpp>
+#include <custom_interfaces/msg/helper_temp.hpp>
+#include <custom_interfaces/msg/ph_sensor.hpp>
+#include <custom_interfaces/msg/sail_cmd.hpp>
+#include <custom_interfaces/msg/salinity_sensor.hpp>
+#include <custom_interfaces/msg/temp_sensor.hpp>
+#include <custom_interfaces/msg/wind_sensor.hpp>
 #include <fstream>
 
-#include "can_frame_parser.h"
-#include "can_log_replayer.h"
-#include "can_transceiver.h"
-#include "cmn_hdrs/shared_constants.h"
-#include "mock_can_bus.h"
+import network_systems.can.frame_parser;
+import network_systems.can.log_replayer;
+import network_systems.can.mock_bus;
+import network_systems.can.transceiver;
+import network_systems.shared_constants;
 
 namespace msg = custom_interfaces::msg;
 

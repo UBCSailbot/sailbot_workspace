@@ -1,9 +1,19 @@
-#pragma once
+module;
 
 #include <boost/math/special_functions.hpp>
+#include <cmath>
 #include <concepts>
+#include <cstdint>
+#include <iostream>
 #include <optional>
 #include <sstream>
+#include <string>
+#include <type_traits>
+#include <typeinfo>
+
+export module network_systems.remote.test.utils;
+
+export {
 
 // Define a concept for arithmetic types
 template <typename T>
@@ -119,7 +129,7 @@ bool checkEQ(T rcvd, T expected, const std::string & err_msg)
            type of the same bit width
 */
 template <typename Type>
-static auto boundTo180(Type angle)
+auto boundTo180(Type angle)
 {
     if constexpr (std::is_integral_v<Type> && std::is_unsigned_v<Type>) {
         using ReturnType      = std::make_signed_t<Type>;
@@ -147,7 +157,7 @@ static auto boundTo180(Type angle)
                 type of the same bit width
 */
 template <typename Type>
-static auto boundTo360(Type angle)
+auto boundTo360(Type angle)
 {
     // if unsigned int
     if constexpr (std::is_integral_v<Type> && std::is_unsigned_v<Type>) {
@@ -207,3 +217,5 @@ private:
 };
 
 }  // namespace utils
+
+}  // export

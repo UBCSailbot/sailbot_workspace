@@ -1,5 +1,13 @@
-#pragma once
+module;
+
 #include <rclcpp/rclcpp.hpp>
+#include <sstream>
+#include <streambuf>
+#include <string>
+
+export module network_systems.net_node;
+
+export {
 
 /**
  * Network Systems custom ROS Node.
@@ -51,3 +59,5 @@ private:
     LogBuf           new_stdout_buf_;  // LogBuf to redirect stdout to
     LogBuf           new_stderr_buf_;  // LogBuf to redirect stderr to
 };
+
+}  // export

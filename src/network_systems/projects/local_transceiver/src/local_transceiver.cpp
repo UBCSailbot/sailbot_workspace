@@ -1,4 +1,4 @@
-#include "local_transceiver.h"
+module;
 
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
@@ -13,20 +13,31 @@
 #include <custom_interfaces/msg/generic_sensors.hpp>
 #include <custom_interfaces/msg/gps.hpp>
 #include <custom_interfaces/msg/l_path_data.hpp>
+#include <custom_interfaces/msg/ph_sensor.hpp>
+#include <custom_interfaces/msg/ph_sensors.hpp>
+#include <custom_interfaces/msg/salinity_sensor.hpp>
+#include <custom_interfaces/msg/salinity_sensors.hpp>
+#include <custom_interfaces/msg/temp_sensor.hpp>
+#include <custom_interfaces/msg/temp_sensors.hpp>
 #include <custom_interfaces/msg/wind_sensors.hpp>
 #include <exception>
+#include <filesystem>
+#include <fstream>
+#include <future>
 #include <regex>
 #include <stdexcept>
 #include <string>
+#include <thread>
 
-#include "at_cmds.h"
-#include "cmn_hdrs/ros_info.h"
-#include "cmn_hdrs/shared_constants.h"
-#include "filesystem"
-#include "fstream"
 #include "global_path.pb.h"
 #include "sensors.pb.h"
 #include "waypoint.pb.h"
+
+module network_systems.local.transceiver;
+
+import network_systems.local.at_commands;
+import network_systems.ros_info;
+import network_systems.shared_constants;
 
 using boost::system::error_code;
 using Polaris::Sensors;

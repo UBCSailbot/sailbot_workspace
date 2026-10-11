@@ -1,5 +1,7 @@
-#pragma once
+module;
 
+#include <cstdlib>
+#include <cstdint>
 #include <custom_interfaces/msg/batteries.hpp>
 #include <custom_interfaces/msg/ph_sensors.hpp>
 #include <custom_interfaces/msg/pressure_sensors.hpp>
@@ -8,17 +10,21 @@
 #include <custom_interfaces/msg/wind_sensors.hpp>
 #include <string>
 
+export module network_systems.shared_constants;
+
+export {
+
 /**
  * ROS argument value for system mode. An enum would be a better way of representing a binary choice between the two
  * options, but since strings are not integral types they cannot be made into enums.
  */
 namespace SYSTEM_MODE
 {
-static const std::string PROD     = "production";
-static const std::string DEV      = "development";
-static const std::string SIM      = "sim";
-static const std::string CAN      = "can";
-static const std::string TEST_SAT = "test_satellite";
+inline const std::string PROD     = "production";
+inline const std::string DEV      = "development";
+inline const std::string SIM      = "sim";
+inline const std::string CAN      = "can";
+inline const std::string TEST_SAT = "test_satellite";
 };  // namespace SYSTEM_MODE
 
 constexpr unsigned int MAX_LOCAL_TO_REMOTE_PAYLOAD_SIZE_BYTES = 340;
@@ -38,8 +44,8 @@ inline std::string getCacheTempPath()
            "/build/network_systems/projects/local_transceiver/global_waypoint_cache_temp";
 }
 
-static const std::string CACHE_PATH      = getCachePath();
-static const std::string CACHE_TEMP_PATH = getCacheTempPath();
+inline const std::string CACHE_PATH      = getCachePath();
+inline const std::string CACHE_TEMP_PATH = getCacheTempPath();
 
 constexpr int NUM_BATTERIES = []() constexpr
 {
@@ -140,3 +146,5 @@ constexpr float SALINITY_UBND = 1000000;  // ubnd of sensor being used is 500000
 /***** Bounds for Pressure Sensor ******/
 // constexpr float PRESSURE_LBND = -14.5;  // lowest lbnd of pressure sensors under consideration is -14.5 psi
 // constexpr float PRESSURE_UBND = 32.6;   // max int16_t, since ubnd of sensors under consideration is way higher
+
+}  // export

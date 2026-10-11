@@ -1,6 +1,6 @@
-#define BOOST_BIND_GLOBAL_PLACEHOLDERS
+module;
 
-#include "remote_transceiver.h"
+#define BOOST_BIND_GLOBAL_PLACEHOLDERS
 
 #include <boost/algorithm/string.hpp>
 #include <boost/asio.hpp>
@@ -22,9 +22,12 @@
 #include <memory>
 #include <string>
 
-#include "sailbot_db.h"
 #include "sensors.pb.h"
-#include "shared_constants.h"
+
+module network_systems.remote.transceiver;
+
+import network_systems.remote.constants;
+import network_systems.remote.database;
 
 using remote_transceiver::HTTPServer;
 using remote_transceiver::Listener;

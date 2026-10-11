@@ -1,4 +1,4 @@
-#include "can_transceiver.h"
+module;
 
 #include <errno.h>
 #include <fcntl.h>
@@ -10,13 +10,21 @@
 
 #include <stdexcept>
 #include <thread>
+#include <cstring>
+#include <functional>
+#include <iostream>
+#include <mutex>
+#include <vector>
 
-#include "can_frame_parser.h"
 #include "linux/can/raw.h"
 
-using IFreq       = struct ifreq;
-using SockAddr    = struct sockaddr;
-using SockAddrCan = struct sockaddr_can;
+module network_systems.can.transceiver;
+
+import network_systems.can.frame_parser;
+
+using IFreq       = ifreq;
+using SockAddr    = sockaddr;
+using SockAddrCan = sockaddr_can;
 
 using CAN_FP::CanFrame;
 using CAN_FP::CanId;

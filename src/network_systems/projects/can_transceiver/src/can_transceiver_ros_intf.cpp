@@ -5,6 +5,9 @@
 #include <custom_interfaces/msg/can_sim_to_boat_sim.hpp>
 #include <custom_interfaces/msg/desired_heading.hpp>
 #include <custom_interfaces/msg/gps.hpp>
+#include <custom_interfaces/msg/ph_sensors.hpp>
+#include <custom_interfaces/msg/salinity_sensors.hpp>
+#include <custom_interfaces/msg/temp_sensors.hpp>
 #include <custom_interfaces/msg/wind_sensors.hpp>
 #include <filesystem>
 #include <queue>
@@ -13,13 +16,13 @@
 #include <rclcpp/subscription.hpp>
 #include <rclcpp/timer.hpp>
 
-#include "can_frame_parser.h"
-#include "can_log_replayer.h"
-#include "can_transceiver.h"
-#include "cmn_hdrs/ros_info.h"
-#include "cmn_hdrs/shared_constants.h"
-#include "mock_can_bus.h"
-#include "net_node.h"
+import network_systems.can.frame_parser;
+import network_systems.can.log_replayer;
+import network_systems.can.mock_bus;
+import network_systems.can.transceiver;
+import network_systems.net_node;
+import network_systems.ros_info;
+import network_systems.shared_constants;
 
 constexpr int  QUEUE_SIZE              = 10;  // Arbitrary number
 constexpr auto TIMER_INTERVAL          = std::chrono::milliseconds(500);

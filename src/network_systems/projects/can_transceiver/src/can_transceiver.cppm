@@ -1,11 +1,21 @@
-#pragma once
+module;
 
 #include <linux/can.h>
 
+#include <functional>
+#include <map>
+#include <mutex>
 #include <rclcpp/rclcpp.hpp>
 #include <string>
+#include <thread>
+#include <utility>
+#include <vector>
 
-#include "can_frame_parser.h"
+export module network_systems.can.transceiver;
+
+export import network_systems.can.frame_parser;
+
+export {
 
 /**
  * @brief CAN Transceiver Class
@@ -100,3 +110,5 @@ private:
  * @return int opened file descriptor
  */
 int mockCanFd(std::string template_str);
+
+}  // export

@@ -33,8 +33,8 @@ mv "$SRC_DIR"/*.pb.h "$DIR/inc/"
 BUILD_DIR="$DIR/build"
 mkdir -p "$BUILD_DIR"
 cd "$BUILD_DIR"
-cmake ..
-make -j$(nproc)
+cmake -G Ninja -DCMAKE_CXX_COMPILER=/usr/bin/clang++-16 ..
+cmake --build . --parallel "$(nproc)"
 
 cd "$DIR"
 echo "Build complete. Run ./scripts/run_server.sh to start the server."

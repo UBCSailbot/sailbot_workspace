@@ -1,6 +1,9 @@
-#include "can_log_replayer.h"
+module;
+
+#include <linux/can.h>
 
 #include <algorithm>
+#include <chrono>
 #include <cstdint>
 #include <cstdio>
 #include <ctime>
@@ -9,6 +12,10 @@
 #include <set>
 #include <sstream>
 #include <stdexcept>
+
+module network_systems.can.log_replayer;
+
+import network_systems.can.frame_parser;
 
 namespace
 {
