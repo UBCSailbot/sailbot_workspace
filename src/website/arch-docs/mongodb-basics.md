@@ -75,9 +75,35 @@ So the Mongoose schemas in `src/website/models/` describe what the website **exp
 
 - **Collection name mismatch for global path.** `models/GlobalPath.ts` doesn't set a collection name, so Mongoose derives one from the model name: `GlobalPath` → `globalpaths`. The C++ server writes to `global_path` (`inc/sailbot_db.h`). The simulation script writes to `globalpaths`, so it works in dev, but real boat data would never reach the website. (The global path display is currently hidden in the UI.)
 - **Collection name mismatch for AIS ships.** `scripts/aisstream-ingest.js` defines its own Mongoose model `AISShips` (line ~206) without a collection name, so it writes to `aisships`. Commit `4f90ccd3` (Aug 15 2026) changed the website's `models/AISShips.ts` to read `ais_ships` instead (matching the C++ server). Since then, the website reads the C++ server's AIS data and **not** the aisstream worker's, unless production overrides this somehow. Unverified against the production DB.
-- **Reads mostly skip Mongoose's type conversion.** Most routes end with `.lean()`, which returns raw driver objects. `app/api/globalpath` and `app/api/localpath` don't, so they get full Mongoose documents converted to the schema types, then serialized through the schema's `toJSON` transform.
 - **Number types.** The models declare coordinates as `Decimal128`, but the C++ server writes plain `double`s. This works because the API routes use `.lean()` (which skips Mongoose's type conversion) and `models/helper/parser.js` only converts values that really are `Decimal128`.
-- **Timestamp formats.** Mongoose's default timestamp is ISO 8601 (`2026-08-20T14:03:22.000Z`). The C++ server writes `YY-MM-DD HH:MM:SS` (two-digit year, no timezone; see `mkTimestamp` in `sailbot_db.cpp`). Both are strings, not BSON `Date`s, so sorting and filtering by time relies on string comparison, which only works when every document uses the same format.
+- **Timestamp formats.** Mongoose's default timestamp is ISO 8601 (`2026-08-20T14:03:22.000Z`). The C++ server writes `YY-MM-DD HH:MM:SS` (two-digit year, no timezone), which is RockBLOCK's `transmit_time` passed through unchanged. Both are strings, not BSON `Date`s, so sorting and filtering by time relies on string comparison, which only works when every document uses the same format.
+
+### How the website actually uses its Mongoose schemas
+
+In Mongoose you can't query a collection directly. You query a **Model**, and a model is built from a schema plus a collection name:
+
+```ts
+// models/GPS.ts
+const GPSSchema = new mongoose.Schema({ latitude: ..., timestamp: ... });
+export default mongoose.model('GPS', GPSSchema); // 3rd argument (collection name) omitted → Mongoose picks one
+
+// app/api/gps/route.ts
+GPS.find({}).select('-_id -__v').sort({ _id: -1 }).limit(n).lean();
+```
+
+So every query goes through a schema, but what the schema actually _does_ depends on the stage:
+
+| Stage                         | What the schema does                                                                                     | Used in this repo?                                                          |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Choosing the collection       | Maps the model to a collection name                                                                      | **Always.** This is where the name mismatches come from                     |
+| Filter                        | Converts filter values to schema types (`{ speed: "5" }` → `5`)                                          | No. Every route filters with `{}`                                           |
+| Results **without** `.lean()` | Wraps results in Mongoose documents with schema types; `res.json()` runs the schema's `toJSON` transform | Only `globalpath` and `localpath`                                           |
+| Results **with** `.lean()`    | Nothing. Raw objects, exactly as the writer stored them                                                  | The other 8 routes                                                          |
+| Writes                        | Validation (`required`, the "exactly 2 batteries" check), defaults, dropping unknown fields              | **Never in production.** Only the Cucumber tests write through these models |
+
+`.lean()` isn't a mistake. It's the recommended approach for read-only endpoints, because it's faster and uses less memory. And Mongoose isn't strictly required: `.lean()` skips the schema on results, and `mongoose.connection.db.collection('gps').find({})` skips Mongoose entirely and uses the native driver.
+
+**In practice the schemas shape no data a visitor sees.** The two routes that apply them are for hidden features, and `globalpath` reads the wrong collection anyway. **The website's Mongoose schemas define the collection names and give developers TypeScript types, but they don't validate or shape the data.** The real schema is set independently by each writer (the C++ server, the AIS worker, the simulation script), and nothing checks that they agree.
 
 ## 4. Querying: SQL, Drizzle, and Mongo side by side
 
