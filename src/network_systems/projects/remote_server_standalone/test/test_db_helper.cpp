@@ -1,6 +1,7 @@
 #include "test_db_helper.h"
 
 #include <bsoncxx/builder/basic/document.hpp>
+#include <bsoncxx/builder/basic/kvp.hpp>
 #include <bsoncxx/builder/stream/document.hpp>
 #include <bsoncxx/builder/stream/helpers.hpp>
 #include <bsoncxx/document/value.hpp>
@@ -37,6 +38,7 @@ void UtilDB::cleanDB()
     mongocxx::collection local_path_coll       = db[COLLECTION_LOCAL_PATH];
     mongocxx::collection global_path_coll      = db[COLLECTION_GLOBAL_PATH];
     mongocxx::collection iridium_response_coll = db[COLLECTION_IRIDIUM_RESPONSE];
+    mongocxx::collection voyages_coll          = db[COLLECTION_VOYAGES];
 
     gps_coll.delete_many(bsoncxx::builder::basic::make_document());
     ais_coll.delete_many(bsoncxx::builder::basic::make_document());
@@ -50,6 +52,7 @@ void UtilDB::cleanDB()
     local_path_coll.delete_many(bsoncxx::builder::basic::make_document());
     global_path_coll.delete_many(bsoncxx::builder::basic::make_document());
     iridium_response_coll.delete_many(bsoncxx::builder::basic::make_document());
+    voyages_coll.delete_many(bsoncxx::builder::basic::make_document());
 }
 
 Sensors UtilDB::genRandSensors()
@@ -308,6 +311,34 @@ bool UtilDB::verifyDBWrite_IridiumResponse(
         expectEQ(dumped_timestamps[i], expected_timestamp[i], "");
     }
     return !tracker.failed();
+}
+
+bool UtilDB::verifyVoyageTags(const std::string & expected_voyage)
+{
+    utils::FailTracker    tracker;
+    mongocxx::pool::entry entry = pool_->acquire();
+    mongocxx::database    db    = (*entry)[db_name_];
+
+    for (const std::string & name :
+         {COLLECTION_GPS, COLLECTION_AIS_SHIPS, COLLECTION_TEMP_SENSORS, COLLECTION_PH_SENSORS,
+          COLLECTION_SALINITY_SENSORS, COLLECTION_BATTERIES, COLLECTION_WIND_SENSORS, COLLECTION_LOCAL_PATH}) {
+        mongocxx::collection coll = db[name];
+        tracker.track(utils::checkEQ(coll.count_documents({}) > 0, true, "Error: " + name + " has no documents"));
+        for (const bsoncxx::document::view & doc : coll.find({})) {
+            // An untagged document has no voyage field at all, which bsonString() reports as nullopt
+            tracker.track(
+              utils::checkEQ(
+                bsonString(doc["voyage"]).value_or(""), expected_voyage, "Error: wrong voyage in " + name));
+        }
+    }
+    return !tracker.failed();
+}
+
+int64_t UtilDB::countActiveVoyages()
+{
+    mongocxx::pool::entry entry = pool_->acquire();
+    mongocxx::collection  coll  = (*entry)[db_name_][COLLECTION_VOYAGES];
+    return coll.count_documents(bsoncxx::builder::basic::make_document(bsoncxx::builder::basic::kvp("active", true)));
 }
 
 std::tuple<std::vector<std::string>, std::vector<std::string>, std::vector<std::string>, std::vector<std::string>>
