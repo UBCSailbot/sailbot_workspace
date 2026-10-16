@@ -133,12 +133,12 @@ GET /api/gps
 { "success": true, "data": [{ "latitude": 48.8345, "longitude": -125.137, "speed": 2.1, "heading": 270, "timestamp": "26-08-20 14:03:22" }, ...] }
 ```
 
-**4. As downloaded.** CSV and Excel flatten the nested lists into one row per inner item, so a wind reading with two sensors becomes two rows:
+**4. As downloaded.** CSV and Excel flatten the nested lists into one row per inner item, so a wind reading with two sensors becomes two rows (the timestamp appears only on the first):
 
 ```csv
 timestamp,speed,direction
 26-08-20 14:03:22,15,-57
-26-08-20 14:03:22,11,-34
+,11,-34
 ```
 
 ### Characteristics that matter for the database
@@ -154,3 +154,29 @@ timestamp,speed,direction
 - **Global path never arrives from the boat.** The remote server has code to store a global path, but nothing calls it. The website also reads `globalpaths` while the server would write `global_path`.
 - **Two AIS sources, two collections.** The boat's AIS goes to `ais_ships`. The aisstream worker writes to `aisships`. The website reads only `ais_ships`.
 - **Two timestamp formats.** The boat path uses `YY-MM-DD HH:MM:SS` (RockBLOCK's transmit time, UTC). The AIS worker and Mongoose default use ISO 8601. Both are stored as strings, not dates.
+
+## Core functionality and Constraints
+
+The end-to-end interactions the website exists for. Each has a sequence diagram in [`diagrams/`](diagrams/). (More core functionality may be added; this list covers what has been mapped so far.)
+
+### CF1: View the voyage on the map
+
+**Supports the purpose by:** (visually) being a livestream of the boats location and other vessels around it.
+
+Currently data like the voyage path and the cursor are actually hardcoded and are not livestreamed. Even if they weren't hardcoded, they are updated hourly by the boat so livestreaming wouldn't serve much purpose.
+
+If the boat consistently updated this data, then we could change to a livestreaming approach or poll for data more frequently.
+
+See [`diagrams/cf1-map-sequence.md`](diagrams/cf1-map-sequence.md) for the end-to-end sequence diagram.
+
+### CF2: Download a dataset
+
+**Supports the purpose by:** making the voyage's data available to anyone who wants it in tabular format, not just viewable on the map.
+
+This data is pulled from the database which the boat writes to hourly. There isn't much point in livestreaming this data because the updates happen hourly.
+
+If the boat consistently updated this data, then we could change to a livestreaming approach or poll for data more frequently.
+
+See [`diagrams/cf2-download-sequence.md`](diagrams/cf2-download-sequence.md) for the end-to-end sequence diagram.
+
+## Improvements to Explore
