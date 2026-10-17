@@ -157,24 +157,24 @@ void CanTransceiver::send(const CanFrame & frame) const
 {
     std::lock_guard<std::mutex> lock(can_mtx_);
 
-    constexpr int MAX_RETRIES = 5;
+    constexpr int  MAX_RETRIES = 5;
     constexpr auto RETRY_DELAY = std::chrono::milliseconds(1);
     for (int attempt = 0; attempt < MAX_RETRIES; attempt++) {
-        ssize_t                     bytes_written = write(sock_desc_, &frame, sizeof(CanFrame));
+        ssize_t bytes_written = write(sock_desc_, &frame, sizeof(CanFrame));
         if (bytes_written == sizeof(CanFrame)) {
-            return; // exit the for loop after success!
+            return;  // exit the for loop after success!
         }
         if (bytes_written < 0) {
             if (attempt < MAX_RETRIES) {
                 std::this_thread::sleep_for(RETRY_DELAY);
-                continue; // Do I really need this or can i just remove continue?
+                continue;  // Do I really need this or can i just remove continue?
             }
             std::cerr << "CAN write error: " << errno << "(" << strerror(errno)  // NOLINT(concurrency-mt-unsafe)
-                    << ")" << std::endl;
+                      << ")" << std::endl;
         } else {
             if (bytes_written != sizeof(CanFrame)) {
                 std::cerr << "CAN write error: wrote " << bytes_written << "B but CAN frames are expected to be "
-                        << sizeof(CanFrame) << "B" << std::endl;
+                          << sizeof(CanFrame) << "B" << std::endl;
             }
             if (is_can_simulated_ && !sim_fd_is_socket_) {
                 // Since we're writing to the same file we're reading from, we need to maintain the seek offset
