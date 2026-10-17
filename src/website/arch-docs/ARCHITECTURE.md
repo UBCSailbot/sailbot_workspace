@@ -180,3 +180,21 @@ If the boat consistently updated this data, then we could change to a livestream
 See [`diagrams/cf2-download-sequence.md`](diagrams/cf2-download-sequence.md) for the end-to-end sequence diagram.
 
 ## Improvements to Explore
+
+### Livestreaming:
+
+If Zephyr wants to add livestreaming to the website, then we'll have the frequency the boat sends messages to the C++ database. Currently, boat messages are only sent once per hour, so the best the website can do for dataset and position updates is hourly.
+
+If the boat sends messages more frequently, then we need to change some of our architecture. We'll need to change our one hour polling frequency to match the upload rate of the boat. Parsing these messages into collection documents and how we query them should relatively the same. To avoid page refreshes we should probably use a websocket to update the site.
+
+### Multi-Boat Approach:
+
+Currently, the codebase is hardcoded to show one voyage, but a goal of Zephyr is the ability to show multiple voyages at the same time for testing and the launch of autonamous sailboats simultaneously.
+
+To do this we can explore a design that shows the cursors for all boats at the same time on the map, and different colors for their voyages. Clicking a voyage or toggling filters could let users view only one or a few of the boats. To display their data at the same time we can update ```Map.tsx``` and its components to batch query for the boat data and render it all.
+
+### Database:
+
+For the livestreaming and a multi-boat approach we will have frequent reads/writes to the database. To make reads efficient we can add indexes and query for the latest documents that we need. For example, we can bulk read documents when the map first loads to render the voyage paths, then on each clock tick (hourly, 30 minutes, etc.) we only fetch the X latest data points that we need.
+
+If we are going to have multiple voyages, it would help to have unique identifiers for the documents so that we know which boat they belong to. Because we likely won't need to do many joins or complex queries, MongoDB is a good choice, especially because the data within documents may change and we can still query them without a migration.
