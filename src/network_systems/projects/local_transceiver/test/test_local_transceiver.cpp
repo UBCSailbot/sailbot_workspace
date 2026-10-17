@@ -544,6 +544,68 @@ TEST_F(TestLocalTransceiver, MOStatusTest)
 }
 
 /**
+ * @brief Verifies that truncated or malformed SBDIX responses throw instead of reading past the parsed fields
+ *        for at_cmds.h
+ */
+TEST_F(TestLocalTransceiver, TruncatedSBDResponse)
+{
+    EXPECT_THROW(AT::SBDStatusRsp status("+SBDIX:0,1234,0"), std::invalid_argument);
+    EXPECT_THROW(AT::SBDStatusRsp status("+SBDIX:0"), std::invalid_argument);
+    EXPECT_THROW(AT::SBDStatusRsp status("garbage"), std::invalid_argument);
+    EXPECT_THROW(AT::SBDStatusRsp status(""), std::invalid_argument);
+}
+
+/**
+ * @brief Verifies MO status codes are classified into the correct retry behaviour
+ *        for at_cmds.h
+ */
+TEST_F(TestLocalTransceiver, ClassifyMOStatus)
+{
+    auto classify = [](int mo_status) {
+        return AT::SBDStatusRsp("+SBDIX:" + std::to_string(mo_status) + ",1,0,0,0,0").classifyMO();
+    };
+
+    for (int code : {0, 1, 2, 3, 4}) {
+        EXPECT_EQ(classify(code), AT::MOResult::SUCCESS) << "MO status " << code;
+    }
+    // Transient failures, plus reserved codes which the manual says indicate failure
+    for (int code : {5, 8, 10, 13, 17, 18, 19, 20, 31, 32, 35, 39, 63}) {
+        EXPECT_EQ(classify(code), AT::MOResult::RETRY_SOON) << "MO status " << code;
+    }
+    for (int code : {36, 37, 38}) {
+        EXPECT_EQ(classify(code), AT::MOResult::RETRY_LATER) << "MO status " << code;
+    }
+    for (int code : {11, 12, 14, 15, 16, 33, 34, 64, 65}) {
+        EXPECT_EQ(classify(code), AT::MOResult::FATAL) << "MO status " << code;
+    }
+}
+
+/**
+ * @brief Verifies SBD session retry delays follow the Adaptive Retry schedule
+ */
+TEST_F(TestLocalTransceiver, sbdSessionRetryDelay)
+{
+    using std::chrono::milliseconds;
+    using std::chrono::seconds;
+
+    EXPECT_EQ(LocalTransceiver::sbdSessionRetryDelay(0), milliseconds(0));
+
+    constexpr int NUM_SAMPLES = 100;
+    for (int i = 0; i < NUM_SAMPLES; i++) {
+        for (int attempt : {1, 2}) {
+            milliseconds delay = LocalTransceiver::sbdSessionRetryDelay(attempt);
+            EXPECT_GE(delay, milliseconds(0));
+            EXPECT_LE(delay, seconds(5));
+        }
+        for (int attempt : {3, 4}) {
+            milliseconds delay = LocalTransceiver::sbdSessionRetryDelay(attempt);
+            EXPECT_GE(delay, milliseconds(0));
+            EXPECT_LE(delay, seconds(30));
+        }
+    }
+}
+
+/**
  * @brief Verifies that message from remote server is correctly parsed
  */
 TEST_F(TestLocalTransceiver, parseInMsgValid)
