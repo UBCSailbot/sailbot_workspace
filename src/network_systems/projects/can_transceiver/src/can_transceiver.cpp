@@ -162,6 +162,7 @@ void CanTransceiver::send(const CanFrame & frame) const
     for (int attempt = 0; attempt < MAX_RETRIES; attempt++) {
         ssize_t bytes_written = write(sock_desc_, &frame, sizeof(CanFrame));
         if (bytes_written == sizeof(CanFrame)) {
+            lseek(sock_desc_, -static_cast<off_t>(sizeof(CAN_FP::CanFrame)), SEEK_CUR);
             return;  // exit the for loop after success!
         }
         if (bytes_written < 0) {
