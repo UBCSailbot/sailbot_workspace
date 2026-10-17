@@ -81,6 +81,8 @@ email_enabled = False
 ip_enabled = False
 http_post_enabled = False
 
+MAX_MT_PAYLOAD_BYTES = 270
+
 mt_messages = deque()
 
 #Set-up a queue
@@ -93,6 +95,9 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
     def do_POST(self):
         print("Handling post request")
         content_len = int(self.headers['Content-Length'])
+        if content_len > MAX_MT_PAYLOAD_BYTES:
+            self.send_error(413, "MT payload exceeds 270 bytes")
+            return
         body = str(self.rfile.read(content_len))
         rec_msg = body
         http_queue.put(rec_msg)
@@ -317,7 +322,6 @@ def read_binary():
     message_length = struct.pack('>H', len(mt_buffer))
     checksum = struct.pack('>H', sum(bytearray(mt_buffer)) & 0xffff)
     ser.write(message_length + mt_buffer + checksum)
-    send_ok()
 
 
 def send_ok():

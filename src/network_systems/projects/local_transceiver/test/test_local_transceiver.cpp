@@ -46,6 +46,8 @@ protected:
         if (!http_echo_server_proc_.running(e)) {
             throw std::runtime_error("Failed to start http echo server process! " + e.message());
         }
+        // Allow the child process to bind its HTTP listening socket.
+        std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 
     static void TearDownTestSuite()
@@ -598,7 +600,9 @@ TEST_F(TestLocalTransceiver, testMailboxBlackbox)
     std::string holder  = "curl -X POST -F \"test=1234\" http://localhost:8080";
     std::string holder2 = "printf \"at+sbdix\r\" > $LOCAL_TRANSCEIVER_TEST_PORT";
 
-    system(holder.c_str());   //NOLINT
+    system(holder.c_str());  //NOLINT
+    // Allow the queued HTTP message to settle before starting the SBD session.
+    std::this_thread::sleep_for(std::chrono::seconds(1));
     system(holder2.c_str());  //NOLINT
 
     std::optional<std::string> response = lcl_trns_->readRsp();
@@ -632,6 +636,8 @@ TEST_F(TestLocalTransceiver, parseReceiveMessageBlackbox)
       "curl --fail --silent --show-error -X POST --data-binary @/tmp/serialized_data.bin http://localhost:8080";
     ASSERT_EQ(std::system(holder2.c_str()), 0) << "Failed to queue the test payload";  //NOLINT
 
+    // Allow the queued HTTP message to settle before starting the SBD session.
+    std::this_thread::sleep_for(std::chrono::seconds(1));
     custom_interfaces::msg::Path received_data = lcl_trns_->receive();
 
     ASSERT_EQ(received_data.waypoints.size(), static_cast<std::size_t>(sample_data.waypoints_size()))
