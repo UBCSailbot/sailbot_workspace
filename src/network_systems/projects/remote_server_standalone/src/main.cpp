@@ -9,7 +9,7 @@
 int main(int argc, char ** argv)
 {
     try {
-        std::string db_name          = "test";
+        std::string db_name          = remote_transceiver::PROD_DB_NAME;
         std::string host             = remote_transceiver::TESTING_HOST;
         int         port             = remote_transceiver::TESTING_PORT;
         int         num_threads      = remote_transceiver::DEFAULT_NUM_IO_THREADS;
@@ -19,6 +19,7 @@ int main(int argc, char ** argv)
             std::cerr << "Failed to connect to database" << std::endl;
             return 1;
         }
+        std::cout << "[INFO] Active voyage: " << sailbot_db.startNewVoyage() << std::endl;
         boost::asio::io_context  io(num_threads);
         boost::asio::ip::address addr     = boost::asio::ip::make_address(host);
         auto                     listener = std::make_shared<remote_transceiver::Listener>(
