@@ -16,7 +16,6 @@
 #include <cstdint>
 
 
-
 #include "can_frame_parser.h"
 #include "can_log_replayer.h"
 #include "can_transceiver.h"
@@ -25,10 +24,17 @@
 #include "mock_can_bus.h"
 #include "net_node.h"
 
+
 constexpr int  QUEUE_SIZE              = 10;  // Arbitrary number
 constexpr auto TIMER_INTERVAL          = std::chrono::milliseconds(500);
 constexpr auto RUDDER_FALLBACK_TIMEOUT = std::chrono::seconds(5);
 const std::uintmax_t MAX_FILE_SIZE = 50'000'000;
+
+ struct CsvEntry {
+    std::string name;
+    std::string timestamp;
+    std::string data;
+};
 
 
 namespace msg = custom_interfaces::msg;
@@ -41,6 +47,89 @@ struct vec
     double y;
 };
 
+class CsvLogger{
+
+    public:
+    CsvLogger();
+    ~CsvLogger();
+     explicit CsvLogger(rclcpp::Logger logger);
+
+      void  process(const std::vector<CsvEntry>& csvEntries) {
+         this->csvEntries = csvEntries;
+    }
+
+    void opener(const std::string& filename) {
+         streams_[filename].open(filename, std::ios::app);
+    }  
+
+    void closer(const std::string& filename) {
+           auto it = streams_.find(filename);
+      if (it != streams_.end() && it->second.is_open()) {
+        it->second.close();
+      }
+    }
+    void write( const std::vector<CsvEntry>& csvEntries);
+
+    private:
+    std::map<std::string, std::ofstream> streams_;
+    std::string filename;
+    std::string time;
+    std:: uintmax_t count = 0;
+    std::vector<CsvEntry> csvEntries;
+    std::map<std::string, uint32_t> fileCounts;
+    rclcpp::Logger logger_;
+    std::ofstream ais_Ships,batteries,gps,wind_sensor,filtered_wind,rudder,rudder_debug,
+                  temp,ph,salinity,desired_frame, main_trim_tab_frame;
+       std::vector<std::string> csvFiles = {"ais_Ships.csv","battery.csv","gps.csv","wind_sensor.csv","filtered_wind.csv",
+    "rudder.csv","rudder_debug.csv","temp.csv","ph.csv","salinity.csv","desired_heading.csv","main_frame.csv"};
+
+};
+CsvLogger::CsvLogger(rclcpp::Logger logger): logger_(logger) {
+
+    for (const auto& file : csvFiles) {
+            streams_[file].open(file, std::ios::app);   // creates + opens
+        }
+
+    this->logger_ = logger;
+    }
+
+    void CsvLogger:: write(const std::vector<CsvEntry>& csvEntries)
+    {
+           uint32_t dot =0;
+        for(const auto& file : csvFiles){
+
+            if(std::filesystem::exists(file) && std::filesystem::file_size(file) >= MAX_FILE_SIZE){
+                closer(file);
+                RCLCPP_INFO(logger_, " %s file as it has exceeded the maximum size of %ju bytes, New file is created.", file.c_str(), MAX_FILE_SIZE);
+                 dot = file.find_last_of('.');
+                 
+            while(std::filesystem::exists(file.substr(0, dot) + std::to_string(count) + ".csv")) {
+                      count++;
+                 }
+             fileCounts[file] = count;
+                filename = file.substr(0, dot) + std::to_string(fileCounts[file]) + ".csv";
+                std::rename(file.c_str(), filename.c_str());
+               
+                fileCounts[file]++;
+                opener(file);
+             }
+             count =0;
+              dot = file.find_last_of('.');
+             for(const auto& entry : csvEntries){
+                  
+                if(entry.name == file.substr(0, dot)){
+                     streams_[file] << entry.name << ":" << entry.timestamp << "," << entry.data << "\n";
+                }
+        }
+    }
+}
+    CsvLogger::~CsvLogger() {
+        for (auto& [name, stream] : streams_) {
+            if (stream.is_open()) {
+                stream.close();
+            }
+        }
+    }
 class CanTransceiverIntf : public NetNode
 {
      std::ofstream ais_ships,batteries,GPS,wind_sensor_data,filtered_wind_data,rudder_data,rudder_debug_data,
@@ -50,6 +139,8 @@ class CanTransceiverIntf : public NetNode
 public:
     CanTransceiverIntf() : NetNode(ros_nodes::CAN_TRANSCEIVER)
     {
+
+
         this->declare_parameter("enabled", true);
         this->declare_parameter("manual_mode", false);
         this->declare_parameter("kill_ais_can", false);
@@ -195,6 +286,10 @@ public:
         }
     }
 
+     void send(CsvLogger& csvfiles){
+          csvfiles.process(csvEntries);
+    }
+
 private:
     // pointer to the CAN Transceiver implementation
     std::unique_ptr<CanTransceiver> can_trns_;
@@ -270,6 +365,10 @@ private:
     bool                                  rudder_debug_            = false;
     bool                                  publishing_rudder_debug_ = false;
     std::chrono::steady_clock::time_point last_rudder_data_        = std::chrono::steady_clock::now();
+
+
+
+    std::vector<CsvEntry> csvEntries;
 
     /**
      * @brief Set up the mock CAN bus and transceiver for replaying a logged CAN session.
@@ -361,8 +460,6 @@ private:
     void publishAIS(const CanFrame & ais_frame)
     {
           static std::string past_ais_value;
-          static std::uint32_t count = 0;
-          std::string filename;
         try {
 
             // If kill_ais_can is set to true then shut off receiving can messages
@@ -426,22 +523,9 @@ private:
                 ais_ships_holder_.clear();
                 received_indices_.clear();
             }
-
-           while (std::filesystem::exists("ais_Ships" + std::to_string(count) + ".csv")) {
-                         count++;
-                        }
-
-            if(std::filesystem::file_size("ais_Ships.csv") >= MAX_FILE_SIZE){
-                RCLCPP_INFO(this->get_logger(), " ais_Ships.csv file as it has exceeded the maximum size of %ju bytes, New file is created.", MAX_FILE_SIZE);
-                filename = "ais_Ships" + std::to_string(count) + ".csv";
-                std::rename("ais_Ships.csv", filename.c_str());
-                count++;
-             }
              if(past_ais_value !=  ais_ship.toString()){
             RCLCPP_DEBUG(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), ais_ship.toString().c_str());
-            ais_ships.open("ais_Ships.csv", std::ios::app);
-            ais_ships <<"AIS:" << getCurrentTimeString() << "," << ais_ship.toString() << "\n";
-            ais_ships.close();
+               csvEntries.push_back({"ais_Ship", getCurrentTimeString(), ais_ship.toString()});
              }
              past_ais_value = ais_ship.toString();
 
@@ -460,8 +544,7 @@ private:
     {
 
         static std::string past_battery_value;
-        static std::uint32_t count = 0;
-        std::string filename;
+
         try {
             CAN_FP::Battery      bat(battery_frame);
             msg::HelperBattery & bat_msg = batteries_;
@@ -487,23 +570,9 @@ private:
 
             std::stringstream ss;
             ss << currentTime;
-
-            while (std::filesystem::exists("battery" + std::to_string(count) + ".csv")) {
-                         count++;
-                        }
-
-            if(std::filesystem::file_size("battery.csv") >= MAX_FILE_SIZE){
-                RCLCPP_INFO(this->get_logger(), " battery.csv file as it has exceeded the maximum size of %ju bytes, New file is created.", MAX_FILE_SIZE);
-                filename = "battery" + std::to_string(count) + ".csv";
-                std::rename("battery.csv", filename.c_str());
-                count++;
-             }
-
             if (past_battery_value != bat.toString()) {
                 RCLCPP_DEBUG(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), bat.toString().c_str());
-                batteries.open("battery.csv", std::ios::app);
-                batteries <<"BATTERY:" << getCurrentTimeString() << "," << bat.toString() << "\n";
-                batteries.close();
+                csvEntries.push_back({"battery", getCurrentTimeString(), bat.toString()});
             }
             past_battery_value = bat.toString();
 
@@ -533,11 +602,8 @@ private:
             msg::GPS gps_ = gps.toRosMsg();
             gps_pub_->publish(gps_);
 
-            while (std::filesystem::exists("gps" + std::to_string(count) + ".csv")) {
-                         count++;
-                        }
 
-            if(std::filesystem::file_size("gps.csv") >= MAX_FILE_SIZE){
+            if(std::filesystem::exists("gps.csv") && std::filesystem::file_size("gps.csv") >= MAX_FILE_SIZE){
                 RCLCPP_INFO(this->get_logger(), " gps.csv file as it has exceeded the maximum size of %ju bytes, New file is created.", MAX_FILE_SIZE);
                 while (std::filesystem::exists("gps" + std::to_string(count) + ".csv")) {
                     count++;
@@ -550,9 +616,7 @@ private:
             if (past_gps_value != gps.toString()) {
                 RCLCPP_DEBUG(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), gps.toString().c_str());
 
-                GPS.open("gps.csv", std::ios::app);
-                GPS <<"GPS:" << getCurrentTimeString() << "," << gps.toString() << "\n";
-                GPS.close();
+                csvEntries.push_back({"gps", getCurrentTimeString(), gps.toString()});
             }
              past_gps_value = gps.toString();
         } catch (std::out_of_range err) {
@@ -569,8 +633,6 @@ private:
     void publishWindSensor(const CanFrame & wind_sensor_frame)
     {
         static std::string past_wind_sensor_value;
-        static std::uint32_t count = 0;
-        static std::string filename;
         if (kill_wind_can_) {
             return;
         }
@@ -614,22 +676,9 @@ private:
             }
 
             publishFilteredWindSensor();
-
-            while (std::filesystem::exists("wind_sensor" + std::to_string(count) + ".csv")) {
-                         count++;
-                        }
-
-            if(std::filesystem::file_size("wind_sensor.csv") >= MAX_FILE_SIZE){
-                RCLCPP_INFO(this->get_logger(), " wind_sensor.csv file as it has exceeded the maximum size of %ju bytes, New file is created.", MAX_FILE_SIZE);
-                filename = "wind_sensor" + std::to_string(count) + ".csv";
-                std::rename("wind_sensor.csv", filename.c_str());
-                count++;
-             }
             if (past_wind_sensor_value != wind_sensor.toString()) {
                 RCLCPP_DEBUG(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), wind_sensor.toString().c_str());
-               wind_sensor_data.open("wind_sensor.csv", std::ios::app);
-                wind_sensor_data <<"WIND_SENSOR:" << getCurrentTimeString() << "," << wind_sensor.toString() << "\n";
-                wind_sensor_data.close();
+              csvEntries.push_back({"wind_sensor", getCurrentTimeString(), wind_sensor.toString()});
             }
               past_wind_sensor_value = wind_sensor.toString();
         } catch (std::out_of_range err) {
@@ -645,8 +694,6 @@ private:
     void publishFilteredWindSensor()
     {
         static std::string past_filtered_wind_values;
-        static std::uint32_t count = 0;
-        static std::string filename;
 
         if (kill_wind_can_) {
             return;
@@ -665,22 +712,10 @@ private:
         std::stringstream ss;
         ss << "[FILTERED WIND SENSOR] Speed: " << filtered_wind.speed.speed << " Angle: " << filtered_wind.direction;
 
-        while (std::filesystem::exists("filtered_wind" + std::to_string(count) + ".csv")) {
-                         count++;
-                        }
-
-       if(std::filesystem::file_size("filtered_wind.csv") >= MAX_FILE_SIZE){
-            RCLCPP_INFO(this->get_logger(), " filtered_wind.csv file as it has exceeded the maximum size of %ju bytes, New file is created.", MAX_FILE_SIZE);
-            filename = "filtered_wind" + std::to_string(count) + ".csv";
-            std::rename("filtered_wind.csv", filename.c_str());
-            count++;
-         }
 
         if(past_filtered_wind_values != ss.str()){
             RCLCPP_DEBUG(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), ss.str().c_str());
-            filtered_wind_data.open("filtered_wind.csv", std::ios::app);
-            filtered_wind_data << "Speed:" << getCurrentTimeString() << "," << filtered_wind.speed.speed << ", Angle:" << filtered_wind.direction << "\n";
-            filtered_wind_data.close();
+            csvEntries.push_back({"filtered_wind", getCurrentTimeString(), ss.str()});
         }
         past_filtered_wind_values = ss.str();
     }
@@ -689,9 +724,7 @@ private:
     {
         static std::string past_rudder_value;
         static std::string past_rudder_debug_value;
-        static std::string filename;
-        static std::uint32_t count = 0;
-         static std::uint32_t debug_count = 0;
+     
         try {
             const auto id = static_cast<CanId>(rudder_frame.can_id);
             if (id == CanId::RUDDER_DATA_FRAME) {
@@ -707,23 +740,9 @@ private:
                     publishing_rudder_debug_ = false;
                 }
                 rudder_pub_->publish(rudder_msg);
-
-                while (std::filesystem::exists("rudder" + std::to_string(count) + ".csv")) {
-                         count++;
-                        }
-
-                if(std::filesystem::file_size("rudder.csv") >= MAX_FILE_SIZE){
-                    RCLCPP_INFO(this->get_logger(), " rudder.csv file as it has exceeded the maximum size of %ju bytes, New file is created.", MAX_FILE_SIZE);
-                    filename = "rudder" + std::to_string(count) + ".csv";
-                    std::rename("rudder.csv", filename.c_str());
-                    count++;
-                 }
-
                 if(past_rudder_value != rudder.toString()){
                     RCLCPP_DEBUG(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), rudder.toString().c_str());
-                    rudder_data.open("rudder.csv", std::ios::app);
-                    rudder_data <<"RUDDER:" << getCurrentTimeString() << "," << rudder.toString() << "\n";
-                    rudder_data.close();
+                   csvEntries.push_back({"rudder", getCurrentTimeString(), rudder.toString()});
                 }
                 past_rudder_value = rudder.toString();
                 return;
@@ -741,22 +760,9 @@ private:
             }
             rudder_pub_->publish(rudder_msg);
 
-            while (std::filesystem::exists("rudder_debug" + std::to_string(count) + ".csv")) {
-                         count++;
-                        }
-
-            if(std::filesystem::file_size("rudder_debug.csv") >= MAX_FILE_SIZE){
-                RCLCPP_INFO(this->get_logger(), " rudder_debug.csv file as it has exceeded the maximum size of %ju bytes, New file is created.", MAX_FILE_SIZE);
-                filename = "rudder_debug" + std::to_string(debug_count) + ".csv";
-                std::rename("rudder_debug.csv", filename.c_str());
-                debug_count++;
-             }
-
             if(past_rudder_debug_value !=  rudder.toString()){
                  RCLCPP_DEBUG(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), rudder.toString().c_str());
-                 rudder_debug_data.open("rudder_debug.csv", std::ios::app);
-                    rudder_debug_data <<"RUDDER_DEBUG:" << getCurrentTimeString() << "," << rudder.toString() << "\n";
-                    rudder_debug_data.close();
+                 csvEntries.push_back({"rudder_debug", getCurrentTimeString(), rudder.toString()});
             }
             past_rudder_debug_value = rudder.toString();
 
@@ -774,8 +780,6 @@ private:
     void publishTemp(const CanFrame & temp_frame)
     {
         std::unordered_map<size_t, std::string> past_temp_values;
-        static std::string filename;
-        static std:: uintmax_t count = 0;
         try {
             CAN_FP::TempSensor temp_sensor(temp_frame);
             size_t             length = temp_sensors_.temp_sensors.size();
@@ -794,22 +798,9 @@ private:
             temp_sensor_msg                   = temp_sensor.toRosMsg();
             temp_sensors_pub_->publish(temp_sensors_);
 
-            while (std::filesystem::exists("temp" + std::to_string(count) + ".csv")) {
-                         count++;
-                        }
-
-            if(std::filesystem::file_size("temp.csv") >= MAX_FILE_SIZE){
-                RCLCPP_INFO(this->get_logger(), " temp.csv file as it has exceeded the maximum size of %ju bytes, New file is created.", MAX_FILE_SIZE);
-                filename = "temp" + std::to_string(count) + ".csv";
-                std::rename("temp.csv", filename.c_str());
-                count++;
-             }
-
             if(past_temp_values[idx] != temp_sensor.toString()){
                 RCLCPP_DEBUG(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), temp_sensor.toString().c_str());
-                temp_data.open("temp.csv", std::ios::app);
-                temp_data <<"TEMP:" << getCurrentTimeString() << "," << temp_sensor.toString() << "\n";
-                temp_data.close();
+               csvEntries.push_back({"temp", getCurrentTimeString(), temp_sensor.toString()});
             }
             past_temp_values[idx] = temp_sensor.toString();
 
@@ -822,8 +813,6 @@ private:
     void publishPh(const CanFrame & ph_frame)
     {
         static std::string past_ph_value;
-        static std::string filename;
-        static std:: uintmax_t count = 0;
         try {
             CAN_FP::PhSensor ph_sensor(ph_frame);
             size_t           length = ph_sensors_.ph_sensors.size();
@@ -842,21 +831,11 @@ private:
             ph_sensor_msg                 = ph_sensor.toRosMsg();
             ph_sensors_pub_->publish(ph_sensors_);
 
-            while (std::filesystem::exists("ph" + std::to_string(count) + ".csv")) {
-                         count++;
-                        }
 
-            if(std::filesystem::file_size("ph.csv") >= MAX_FILE_SIZE){
-                RCLCPP_INFO(this->get_logger(), " ph.csv file as it has exceeded the maximum size of %ju bytes, New file is created.", MAX_FILE_SIZE);
-                filename = "ph" + std::to_string(count) + ".csv";
-                std::rename("ph.csv", filename.c_str());
-                count++;
-             }
+         
             if(past_ph_value != ph_sensor.toString()){
                 RCLCPP_DEBUG(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), ph_sensor.toString().c_str());
-                ph_data.open("ph.csv", std::ios::app);
-                ph_data <<"PH:" << getCurrentTimeString() << "," << ph_sensor.toString() << "\n";
-                ph_data.close();
+                csvEntries.push_back({"ph", getCurrentTimeString(), ph_sensor.toString()});
             }
             past_ph_value = ph_sensor.toString();
 
@@ -869,8 +848,7 @@ private:
     void publishSalinity(const CanFrame & salinity_frame)
     {
         static std::string past_salinity_value;
-        static std::string filename;
-        static std:: uintmax_t count = 0;
+       
         try {
             CAN_FP::SalinitySensor salinity_sensor(salinity_frame);
             size_t                 length = salinity_sensors_.salinity_sensors.size();
@@ -889,22 +867,9 @@ private:
             salinity_sensor_msg                       = salinity_sensor.toRosMsg();
             salinity_sensors_pub_->publish(salinity_sensors_);
 
-            while (std::filesystem::exists("salinity" + std::to_string(count) + ".csv")) {
-                         count++;
-                        }
-
-            if(std::filesystem::file_size("salinity.csv") >= MAX_FILE_SIZE){
-                RCLCPP_INFO(this->get_logger(), " salinity.csv file as it has exceeded the maximum size of %ju bytes, New file is created.", MAX_FILE_SIZE);
-                filename = "salinity" + std::to_string(count) + ".csv";
-                std::rename("salinity.csv", filename.c_str());
-                count++;
-             }
-
             if(past_salinity_value != salinity_sensor.toString()){
                 RCLCPP_DEBUG(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), salinity_sensor.toString().c_str());
-                salinity_data.open("salinity.csv", std::ios::app);
-                salinity_data <<"SALINITY:" << getCurrentTimeString() << "," << salinity_sensor.toString() << "\n";
-                salinity_data.close();
+                csvEntries.push_back({"salinity", getCurrentTimeString(), salinity_sensor.toString()});
             }
             past_salinity_value = salinity_sensor.toString();
 
@@ -922,8 +887,6 @@ private:
     void subDesiredHeadingCb(msg::DesiredHeading desired_heading)
     {
         static std::string past_desired_heading_value;
-        static std::string filename;
-        static std:: uintmax_t count = 0;
         if (manual_mode_) {
             return;
         }
@@ -932,23 +895,10 @@ private:
             auto desired_heading_frame = CAN_FP::DesiredHeading(desired_heading_, CanId::MAIN_HEADING);
             can_trns_->send(desired_heading_frame.toLinuxCan());
 
-             while (std::filesystem::exists("desired_heading" + std::to_string(count) + ".csv")) {
-                    count++;
-             }
-            if(std::filesystem::file_size("desired_heading.csv") >= MAX_FILE_SIZE){
-                RCLCPP_INFO(this->get_logger(), " desired_heading.csv file as it has exceeded the maximum size of %ju bytes, New file is created.", MAX_FILE_SIZE);
-                filename = "desired_heading" + std::to_string(count) + ".csv";
-                std::rename("desired_heading.csv", filename.c_str());
-                count++;
-             }
-
             if(past_desired_heading_value != desired_heading_frame.toString()) {
 
-                   RCLCPP_DEBUG(
-              this->get_logger(), "%s %s", getCurrentTimeString().c_str(), desired_heading_frame.toString().c_str());
-                desired_frame_data.open("desired_heading.csv", std::ios::app);
-                desired_frame_data <<"DESIRED_HEADING:" << getCurrentTimeString() << "," << desired_heading_frame.toString() << "\n";
-                desired_frame_data.close();
+                   RCLCPP_DEBUG(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), desired_heading_frame.toString().c_str());
+                csvEntries.push_back({"desired_heading", getCurrentTimeString(), desired_heading_frame.toString()});
             }
             past_desired_heading_value = desired_heading_frame.toString();
         } catch (const std::out_of_range & e) {
@@ -965,8 +915,6 @@ private:
     void subSailCmdCb(const msg::SailCmd & sail_cmd_input)
     {
          static std::string past_main_trim_tab_frame;
-         static std::string filename;
-         static std:: uintmax_t count = 0;
         if (manual_mode_) {
             return;
         }
@@ -974,25 +922,10 @@ private:
         auto main_trim_tab_frame = CAN_FP::MainTrimTab(sail_cmd_, CanId::MAIN_TR_TAB);
         can_trns_->send(main_trim_tab_frame.toLinuxCan());
 
-        if(std::filesystem::file_size("main_frame.csv") >= MAX_FILE_SIZE){
-            RCLCPP_INFO(this->get_logger(), " main_frame.csv file as it has exceeded the maximum size of %ju bytes, New file is created.", MAX_FILE_SIZE);
-            while (std::filesystem::exists("main_frame_" + std::to_string(count) + ".csv")) {
-                count++;
-            }
-            filename = "main_frame_" + std::to_string(count) + ".csv";
-            std::rename("main_frame.csv", filename.c_str());
-            count++;
-         }
-
-         while (std::filesystem::exists("main_frame" + std::to_string(count) + ".csv")) {
-                    count++;
-         }
         if (past_main_trim_tab_frame != main_trim_tab_frame.toString()&&!main_trim_tab_frame.toString().empty()) {
-            main_trim_tab_frame_data.open("main_frame.csv", std::ios::app);
-            main_trim_tab_frame_data <<"MAIN TRIM TAB:" << getCurrentTimeString() << "," << main_trim_tab_frame.toString() << "\n";
-            main_trim_tab_frame_data.close();
              RCLCPP_DEBUG(
           this->get_logger(), "%s %s", getCurrentTimeString().c_str(), main_trim_tab_frame.toString().c_str());
+          csvEntries.push_back({"main_trim_tab", getCurrentTimeString(), main_trim_tab_frame.toString()});
         }
         past_main_trim_tab_frame = main_trim_tab_frame.toString();
 
@@ -1107,6 +1040,7 @@ private:
         return ss.str();
     }
 };
+
 
 int main(int argc, char * argv[])
 {
