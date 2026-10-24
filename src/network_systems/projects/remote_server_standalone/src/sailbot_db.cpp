@@ -7,6 +7,7 @@
 #include <bsoncxx/builder/stream/helpers.hpp>
 #include <bsoncxx/json.hpp>
 #include <bsoncxx/types.hpp>
+#include <cctype>
 #include <chrono>
 #include <cstdint>
 #include <iomanip>
@@ -16,6 +17,8 @@
 #include <mongocxx/collection.hpp>
 #include <mongocxx/database.hpp>
 #include <mongocxx/instance.hpp>
+#include <mongocxx/options/update.hpp>
+#include <regex>
 #include <sstream>
 
 #include "global_path.pb.h"
@@ -27,6 +30,8 @@ using bsoncxx::builder::basic::kvp;
 using bsoncxx::builder::basic::make_document;
 using Polaris::GlobalPath;
 using Polaris::Sensors;
+
+static const std::string ACTIVE_VOYAGE_ID = "active";
 
 static void appendVoyage(bstream::document & doc_builder, const std::string & voyage)
 {
@@ -59,9 +64,24 @@ const std::string & SailbotDB::MONGODB_CONN_STR()
               "MongoDB password not found (must be inputted into test.sh): Running MongoDB tests locally \n");  // If running tests locally
             return std::string("mongodb://localhost:27017");
         }
-        return "mongodb+srv://software:" + std::string(pwd) + "@dev.khxge.mongodb.net/?appName=dev";
+        return atlasConnStr(pwd);
     }();
     return conn_str;
+}
+
+std::string SailbotDB::atlasConnStr(const std::string & password)
+{
+    // The password goes into the userinfo part of the URI, where @ : / % and similar characters must be escaped
+    std::ostringstream encoded;
+    encoded << std::uppercase << std::hex << std::setfill('0');
+    for (const unsigned char c : password) {
+        if (std::isalnum(c) != 0 || c == '-' || c == '.' || c == '_' || c == '~') {
+            encoded << c;
+        } else {
+            encoded << '%' << std::setw(2) << static_cast<int>(c);
+        }
+    }
+    return "mongodb+srv://" + MONGODB_ATLAS_USER + ":" + encoded.str() + "@" + MONGODB_ATLAS_HOST + "/?appName=dev";
 }
 
 std::string SailbotDB::mkTimestamp(const std::tm & tm)
@@ -76,6 +96,20 @@ std::string SailbotDB::mkTimestamp(const std::tm & tm)
           << tm.tm_hour << ":" << std::setfill('0') << std::setw(2) << tm.tm_min << ":" << std::setfill('0')  // minute
           << std::setw(2) << tm.tm_sec;                                                                       // second
     return tm_ss.str();
+}
+
+std::string SailbotDB::normalizeTimestamp(const std::string & timestamp)
+{
+    // RockBLOCK sends transmit_time percent-encoded (26-08-21%2022%3A46%3A04), which is how all stored data looks.
+    // Plain (mkTimestamp) and form-encoded times are rewritten to that form so every stored timestamp sorts and
+    // compares the same way; anything else is kept as received.
+    static const std::regex pattern(
+      "^([0-9]{2}-[0-9]{2}-[0-9]{2})(?: |\\+|%20)([0-9]{2})(?::|%3[Aa])([0-9]{2})(?::|%3[Aa])([0-9]{2})$");
+    std::smatch match;
+    if (!std::regex_match(timestamp, match, pattern)) {
+        return timestamp;
+    }
+    return match.str(1) + "%20" + match.str(2) + "%3A" + match.str(3) + "%3A" + match.str(4);
 }
 
 SailbotDB::SailbotDB(const std::string & db_name, const std::string & mongodb_conn_str) : db_name_(db_name)
@@ -107,23 +141,30 @@ bool SailbotDB::testConnection()
 
 bool SailbotDB::storeNewSensors(const Sensors & sensors_pb, RcvdMsgInfo new_info)
 {
-    // Only using timestamp info for now, may use other fields in the future
-    const std::string & timestamp = new_info.timestamp_;
-    const std::string   voyage    = getActiveVoyage();
-    if (voyage.empty()) {
-        std::cerr << "[WARN] No active voyage, storing untagged" << std::endl;
+    // The server calls this on a detached thread, where an uncaught exception would terminate the whole server,
+    // so a database error (e.g. a network blip or Atlas failover) is reported as a failed store instead
+    try {
+        // Only using timestamp info for now, may use other fields in the future
+        const std::string timestamp = normalizeTimestamp(new_info.timestamp_);
+        const std::string voyage    = getActiveVoyage();
+        if (voyage.empty()) {
+            std::cerr << "[WARN] No active voyage, storing untagged" << std::endl;
+        }
+        mongocxx::pool::entry entry = pool_->acquire();
+        return storeGps(sensors_pb.gps(), timestamp, voyage, *entry) &&
+               storeAis(sensors_pb.ais_ships(), timestamp, voyage, *entry) &&
+               //    storeGenericSensors(sensors_pb.data_sensors(), timestamp, *entry) && // * Generic sensors are replaced by Temp, Salinity, pH, Pressure
+               storeTempSensors(sensors_pb.temp_sensors(), timestamp, voyage, *entry) &&
+               storePhSensors(sensors_pb.ph_sensors(), timestamp, voyage, *entry) &&
+               storeSalinitySensors(sensors_pb.salinity_sensors(), timestamp, voyage, *entry) &&
+               //    storePressureSensors(sensors_pb.pressure_sensors(), timestamp, *entry) && // * We aren't using pH Sensors as of Nov 2025
+               storeBatteries(sensors_pb.batteries(), timestamp, voyage, *entry) &&
+               storeWindSensors(sensors_pb.wind_sensors(), timestamp, voyage, *entry) &&
+               storePathSensors(sensors_pb.local_path_data(), timestamp, voyage, *entry);
+    } catch (const std::exception & e) {
+        std::cerr << "[ERROR] Database error while storing sensors: " << e.what() << std::endl;
+        return false;
     }
-    mongocxx::pool::entry entry = pool_->acquire();
-    return storeGps(sensors_pb.gps(), timestamp, voyage, *entry) &&
-           storeAis(sensors_pb.ais_ships(), timestamp, voyage, *entry) &&
-           //    storeGenericSensors(sensors_pb.data_sensors(), timestamp, *entry) && // * Generic sensors are replaced by Temp, Salinity, pH, Pressure
-           storeTempSensors(sensors_pb.temp_sensors(), timestamp, voyage, *entry) &&
-           storePhSensors(sensors_pb.ph_sensors(), timestamp, voyage, *entry) &&
-           storeSalinitySensors(sensors_pb.salinity_sensors(), timestamp, voyage, *entry) &&
-           //    storePressureSensors(sensors_pb.pressure_sensors(), timestamp, *entry) && // * We aren't using pH Sensors as of Nov 2025
-           storeBatteries(sensors_pb.batteries(), timestamp, voyage, *entry) &&
-           storeWindSensors(sensors_pb.wind_sensors(), timestamp, voyage, *entry) &&
-           storePathSensors(sensors_pb.local_path_data(), timestamp, voyage, *entry);
 }
 
 std::string SailbotDB::startNewVoyage()
@@ -136,13 +177,13 @@ std::string SailbotDB::startNewVoyage()
 
 std::string SailbotDB::getActiveVoyage()
 {
-    mongocxx::pool::entry entry   = pool_->acquire();
-    mongocxx::collection  voyages = (*entry)[db_name_][COLLECTION_VOYAGES];
-    auto                  voyage  = voyages.find_one(make_document(kvp("active", true)));
-    if (!voyage) {
+    mongocxx::pool::entry entry  = pool_->acquire();
+    mongocxx::collection  active = (*entry)[db_name_][COLLECTION_ACTIVE_VOYAGE];
+    auto                  record = active.find_one(make_document(kvp("_id", ACTIVE_VOYAGE_ID)));
+    if (!record) {
         return "";
     }
-    return bsonString(voyage->view()["name"]).value_or("");
+    return bsonString(record->view()["voyage"]).value_or("");
 }
 
 // END PUBLIC
@@ -182,16 +223,29 @@ void SailbotDB::insertVoyage(const std::string & name, const std::string & creat
     mongocxx::collection  voyages = (*entry)[db_name_][COLLECTION_VOYAGES];
     voyages.insert_one(make_document(
       kvp("name", name), kvp("created_at", bsoncxx::types::b_date{std::chrono::system_clock::now()}),
-      kvp("created_by", created_by), kvp("active", false)));
+      kvp("created_by", created_by)));
 }
 
+// The active voyage is one field of one document, so switching it is a single atomic write: an upload never sees
+// zero or two active voyages, and concurrent activations just apply one after the other.
 void SailbotDB::activateVoyage(const std::string & name)
 {
-    mongocxx::pool::entry entry   = pool_->acquire();
-    mongocxx::collection  voyages = (*entry)[db_name_][COLLECTION_VOYAGES];
-    voyages.update_many(make_document(), make_document(kvp("$set", make_document(kvp("active", false)))));
-    voyages.update_one(
-      make_document(kvp("name", name)), make_document(kvp("$set", make_document(kvp("active", true)))));
+    mongocxx::pool::entry     entry  = pool_->acquire();
+    mongocxx::collection      active = (*entry)[db_name_][COLLECTION_ACTIVE_VOYAGE];
+    mongocxx::options::update options;
+    options.upsert(true);
+    active.update_one(
+      make_document(kvp("_id", ACTIVE_VOYAGE_ID)), make_document(kvp("$set", make_document(kvp("voyage", name)))),
+      options);
+}
+
+void SailbotDB::renameActiveVoyage(const std::string & old_name, const std::string & new_name)
+{
+    mongocxx::pool::entry entry  = pool_->acquire();
+    mongocxx::collection  active = (*entry)[db_name_][COLLECTION_ACTIVE_VOYAGE];
+    active.update_one(
+      make_document(kvp("_id", ACTIVE_VOYAGE_ID), kvp("voyage", old_name)),
+      make_document(kvp("$set", make_document(kvp("voyage", new_name)))));
 }
 
 // PRIVATE

@@ -49,8 +49,6 @@ using Targets  = std::vector<std::pair<std::string, Doc>>;
 using CsvCells = std::map<std::string, std::vector<std::string>>;
 
 const std::string DB_NAME             = "sailbot_db";
-const std::string DB_HOST             = "dev.khxge.mongodb.net";
-const std::string DB_USER             = "software";
 const std::string UNTAGGED            = "untagged";
 const std::string TIMESTAMP_PATTERN   = "^([0-9]{2}-[0-9]{2}-[0-9]{2})%20([0-9]{2})%3A([0-9]{2})%3A([0-9]{2})$";
 const std::string VOYAGE_NAME_PATTERN = "^[A-Za-z0-9_-]{1,40}$";
@@ -75,10 +73,6 @@ constexpr int          KEY_CANCEL        = 3;
 constexpr int          KEY_BACKSPACE     = 8;
 constexpr int          KEY_DELETE        = 127;
 
-const std::vector<std::string> SENSOR_COLLECTIONS = {
-  COLLECTION_GPS,          COLLECTION_AIS_SHIPS,        COLLECTION_TEMP_SENSORS,
-  COLLECTION_PH_SENSORS,   COLLECTION_SALINITY_SENSORS, COLLECTION_BATTERIES,
-  COLLECTION_WIND_SENSORS, COLLECTION_LOCAL_PATH};
 const std::vector<std::string> ROW_HEADER = {"#", "voyage", "time", "lat", "lon", "speed", "heading", "parts"};
 
 struct CsvSource
@@ -104,6 +98,7 @@ public:
     using SailbotDB::activateVoyage;
     using SailbotDB::generateVoyageName;
     using SailbotDB::insertVoyage;
+    using SailbotDB::renameActiveVoyage;
 
 private:
     mongocxx::pool::entry client_;
@@ -202,25 +197,6 @@ std::string readPassword()
     }
     std::cout << std::endl;
     return password;
-}
-
-std::string percentEncode(const std::string & text)
-{
-    std::ostringstream out;
-    out << std::uppercase << std::hex << std::setfill('0');
-    for (const unsigned char c : text) {
-        if (std::isalnum(c) != 0 || c == '-' || c == '.' || c == '_' || c == '~') {
-            out << c;
-        } else {
-            out << '%' << std::setw(2) << static_cast<int>(c);
-        }
-    }
-    return out.str();
-}
-
-std::string buildUri(const std::string & password)
-{
-    return "mongodb+srv://" + DB_USER + ":" + percentEncode(password) + "@" + DB_HOST + "/?appName=dev";
 }
 
 bool readLine(const std::string & prompt, std::string & line)
@@ -437,12 +413,6 @@ std::string dateText(const Element & element)
 }
 
 template <typename Element>
-bool isTrue(const Element & element)
-{
-    return element && element.type() == bsoncxx::type::k_bool && element.get_bool().value;
-}
-
-template <typename Element>
 std::string valueText(const Element & element, int decimals)
 {
     switch (element.type()) {
@@ -515,16 +485,26 @@ Doc stringTimestampFilter(const std::string & voyage)
     return filter.extract();
 }
 
-Doc timestampFilter(const Session & session, const std::set<std::string> & timestamps)
+// The same timestamp can hold separate uploads in different voyages (an upload replayed after switching voyages),
+// so a listed message is matched by its timestamp and its voyage, never by its timestamp alone
+Doc rowFilter(const std::vector<Row> & rows)
 {
-    bsoncxx::builder::basic::array values;
-    for (const std::string & timestamp : timestamps) {
-        values.append(timestamp);
+    std::map<std::string, std::set<std::string>> timestamps;
+    for (const Row & row : rows) {
+        timestamps[voyageLabel(row.voyage)].insert(row.timestamp);
     }
-    bsoncxx::builder::basic::document filter;
-    filter.append(kvp("timestamp", make_document(kvp("$in", values.view()))));
-    appendScope(filter, session.voyage);
-    return filter.extract();
+    bsoncxx::builder::basic::array branches;
+    for (const auto & [voyage, values] : timestamps) {
+        bsoncxx::builder::basic::array in;
+        for (const std::string & timestamp : values) {
+            in.append(timestamp);
+        }
+        bsoncxx::builder::basic::document branch;
+        branch.append(kvp("timestamp", make_document(kvp("$in", in.view()))));
+        appendScope(branch, voyage);
+        branches.append(branch.extract());
+    }
+    return make_document(kvp("$or", branches.view()));
 }
 
 Targets sensorTargets(DocView filter)
@@ -542,11 +522,7 @@ bool voyageExists(Session & session, const std::string & name)
     return voyages.count_documents(make_document(kvp("name", name))) > 0;
 }
 
-bool isActive(Session & session, const std::string & name)
-{
-    mongocxx::collection voyages = session.db.collection(COLLECTION_VOYAGES);
-    return voyages.count_documents(make_document(kvp("name", name), kvp("active", true))) > 0;
-}
+bool isActive(Session & session, const std::string & name) { return session.db.getActiveVoyage() == name; }
 
 void printNoVoyage(const std::string & name)
 {
@@ -622,21 +598,17 @@ std::vector<Row> findRows(Session & session, DocView filter, int order, std::int
 
 void fillParts(Session & session, std::vector<Row> & rows)
 {
-    std::set<std::string> timestamps;
-    for (const Row & row : rows) {
-        timestamps.insert(row.timestamp);
-    }
-    const Doc               filter = timestampFilter(session, timestamps);
+    const Doc               filter = rowFilter(rows);
     mongocxx::options::find options;
-    options.projection(make_document(kvp("timestamp", 1), kvp("_id", 0)));
+    options.projection(make_document(kvp("timestamp", 1), kvp("voyage", 1), kvp("_id", 0)));
     for (const std::string & name : SENSOR_COLLECTIONS) {
-        std::set<std::string> present;
-        mongocxx::collection  collection = session.db.collection(name);
+        std::set<std::pair<std::string, std::string>> present;
+        mongocxx::collection                          collection = session.db.collection(name);
         for (const DocView & doc : collection.find(filter.view(), options)) {
-            present.insert(text(doc["timestamp"]));
+            present.emplace(text(doc["timestamp"]), text(doc["voyage"]));
         }
         for (Row & row : rows) {
-            row.parts += static_cast<int>(present.count(row.timestamp));
+            row.parts += static_cast<int>(present.count({row.timestamp, row.voyage}));
         }
     }
 }
@@ -746,16 +718,24 @@ bool stillThere(Session & session, const std::vector<std::size_t> & picks)
     filter.append(kvp("_id", make_document(kvp("$in", ids.view()))));
     appendScope(filter, session.voyage);
     mongocxx::options::find options;
-    options.projection(make_document(kvp("_id", 1)));
-    std::set<std::string> found;
-    mongocxx::collection  gps = session.db.collection(COLLECTION_GPS);
+    options.projection(make_document(kvp("_id", 1), kvp("voyage", 1)));
+    std::map<std::string, std::string> found;
+    mongocxx::collection               gps = session.db.collection(COLLECTION_GPS);
     for (const DocView & doc : gps.find(filter.view(), options)) {
-        found.insert(doc["_id"].get_oid().value.to_string());
+        found[doc["_id"].get_oid().value.to_string()] = text(doc["voyage"]);
     }
     const std::string where = session.voyage.empty() ? "in the database" : "in voyage " + session.voyage;
     for (const std::size_t index : picks) {
-        if (found.count(session.rows[index].id.to_string()) == 0) {
+        const Row & row     = session.rows[index];
+        const auto  current = found.find(row.id.to_string());
+        if (current == found.end()) {
             std::cout << "Row #" << index + 1 << " is no longer " << where << ", run list or range again" << std::endl;
+            return false;
+        }
+        // The selection filter matches each row's voyage, so a row moved since it was listed would match nothing
+        if (current->second != row.voyage) {
+            std::cout << "Row #" << index + 1 << " is now in voyage " << voyageLabel(current->second)
+                      << ", run list or range again" << std::endl;
             return false;
         }
     }
@@ -773,11 +753,11 @@ std::optional<std::vector<std::size_t>> selectRows(Session & session, const Args
 
 Doc selectionFilter(const Session & session, const std::vector<std::size_t> & picks)
 {
-    std::set<std::string> timestamps;
+    std::vector<Row> rows;
     for (const std::size_t index : picks) {
-        timestamps.insert(session.rows[index].timestamp);
+        rows.push_back(session.rows[index]);
     }
-    return timestampFilter(session, timestamps);
+    return rowFilter(rows);
 }
 
 Table countTable(Session & session, const Targets & targets)
@@ -841,7 +821,7 @@ bsoncxx::array::value backupCollection(
     return ids.extract();
 }
 
-void backupAndDelete(Session & session, const Targets & targets)
+std::vector<bsoncxx::array::value> writeBackup(Session & session, const Targets & targets)
 {
     const std::filesystem::path        folder = makeBackupFolder();
     std::vector<bsoncxx::array::value> ids;
@@ -850,7 +830,13 @@ void backupAndDelete(Session & session, const Targets & targets)
         ids.push_back(backupCollection(collection, filter.view(), folder / (name + ".jsonl")));
     }
     std::cout << "Backup written to " << folder.string() << std::endl;
-    Table table;
+    return ids;
+}
+
+void backupAndDelete(Session & session, const Targets & targets)
+{
+    const std::vector<bsoncxx::array::value> ids = writeBackup(session, targets);
+    Table                                    table;
     for (std::size_t i = 0; i < targets.size(); i++) {
         mongocxx::collection collection = session.db.collection(targets[i].first);
         const auto result = collection.delete_many(make_document(kvp("_id", make_document(kvp("$in", ids[i].view())))));
@@ -934,7 +920,8 @@ std::map<std::string, VoyageStats> voyageStats(Session & session)
 
 void cmdVoyages(Session & session, const Args &)
 {
-    std::map<std::string, VoyageStats> stats = voyageStats(session);
+    std::map<std::string, VoyageStats> stats  = voyageStats(session);
+    const std::string                  active = session.db.getActiveVoyage();
     mongocxx::options::find            options;
     options.sort(make_document(kvp("created_at", -1)));
     Table                table;
@@ -943,7 +930,7 @@ void cmdVoyages(Session & session, const Args &)
         const std::string   name = text(doc["name"]);
         const VoyageStats & stat = stats[name];
         table.push_back(
-          {isTrue(doc["active"]) ? "*" : "", name, dateText(doc["created_at"]), text(doc["created_by"]), stat.messages,
+          {name == active ? "*" : "", name, dateText(doc["created_at"]), text(doc["created_by"]), stat.messages,
            stat.first, stat.last});
     }
     const VoyageStats & stat = stats[UNTAGGED];
@@ -999,6 +986,7 @@ void renameVoyage(Session & session, const std::string & old_name, const std::st
     if (!confirm("Rename voyage " + old_name + " to " + new_name + "?")) {
         return;
     }
+    session.db.renameActiveVoyage(old_name, new_name);
     mongocxx::collection voyages = session.db.collection(COLLECTION_VOYAGES);
     voyages.update_one(
       make_document(kvp("name", old_name)), make_document(kvp("$set", make_document(kvp("name", new_name)))));
@@ -1008,14 +996,17 @@ void renameVoyage(Session & session, const std::string & old_name, const std::st
 
 void mergeVoyages(Session & session, const std::string & old_name, const std::string & new_name)
 {
+    Targets targets = sensorTargets(scopeFilter(old_name).view());
+    targets.emplace_back(COLLECTION_VOYAGES, make_document(kvp("name", old_name)));
     std::cout << "Voyage " << new_name << " already exists. This merges the two voyages: every message of " << old_name
-              << " moves into " << new_name << " and the voyage " << old_name << " is removed." << std::endl;
+              << " moves into " << new_name << " and the voyage " << old_name << " is removed:" << std::endl;
+    printTable({"collection", "documents"}, countTable(session, targets));
     if (!confirmWord("merge")) {
         return;
     }
-    if (isActive(session, old_name)) {
-        session.db.activateVoyage(new_name);
-    }
+    // Merged messages cannot be told apart afterwards, so keep them as they were (README: undoing a merge)
+    writeBackup(session, targets);
+    session.db.renameActiveVoyage(old_name, new_name);
     const Doc update = make_document(kvp("$set", make_document(kvp("voyage", new_name))));
     updateAll(session, sensorTargets(scopeFilter(old_name).view()), update.view());
     mongocxx::collection voyages = session.db.collection(COLLECTION_VOYAGES);
@@ -1127,7 +1118,7 @@ void cmdShow(Session & session, const Args & args)
       {"message", "time", decodeTime(row.timestamp)},
       {"message", "timestamp", row.timestamp},
       {"message", "voyage", voyageLabel(row.voyage)}};
-    const Doc filter = timestampFilter(session, {row.timestamp});
+    const Doc filter = rowFilter({row});
     for (const std::string & name : SENSOR_COLLECTIONS) {
         appendDocuments(session, name, filter.view(), table);
     }
@@ -1340,19 +1331,25 @@ void cmdExport(Session & session, const Args & args)
     }
     mongocxx::options::find options;
     options.sort(make_document(kvp("timestamp", 1), kvp("_id", 1)));
-    const std::filesystem::path file = std::filesystem::absolute(*voyage + ".csv");
-    std::ofstream               out(file);
-    std::size_t                 count = 0;
-    mongocxx::collection        gps   = session.db.collection(COLLECTION_GPS);
-    out << CSV_HEADER << "\n";
+    std::ostringstream   csv;
+    std::size_t          count = 0;
+    mongocxx::collection gps   = session.db.collection(COLLECTION_GPS);
+    csv << CSV_HEADER << "\n";
     for (const DocView & doc : gps.find(filter.view(), options)) {
-        out << csvLine(doc, joined) << "\n";
+        csv << csvLine(doc, joined) << "\n";
         count++;
     }
+    // Only replace an earlier export once the new one is complete, so a database or disk error never leaves a
+    // partial file in its place
+    const std::filesystem::path file    = std::filesystem::absolute(*voyage + ".csv");
+    const std::filesystem::path partial = std::filesystem::absolute(*voyage + ".csv.part");
+    std::ofstream               out(partial);
+    out << csv.str();
     out.close();
     if (!out) {
-        throw std::runtime_error("Cannot write " + file.string());
+        throw std::runtime_error("Cannot write " + partial.string());
     }
+    std::filesystem::rename(partial, file);
     std::cout << "Wrote " << count << " row(s) to " << file.string() << std::endl;
 }
 
@@ -1379,7 +1376,7 @@ const std::vector<Command> & commands()
       {"rename", "rename <old> <new>", "", "Rename a voyage, or merge it into an existing one", cmdRename},
       {"enter", "enter <voyage>", "", "Work inside one voyage (or untagged) until quit", cmdEnter},
       {"list", "list [n|all]", "list [n|all]", "Latest n messages (default 20), oldest to newest", cmdList},
-      {"range", "range <start> <end>", "range <start> <end>", "Messages between two times (view only)", cmdRange},
+      {"range", "range <start> <end>", "range <start> <end>", "Messages between two times", cmdRange},
       {"show", "show <#>", "show <#>", "Every field of one listed message", cmdShow},
       {"assign", "assign <voyage> <rows>", "assign <voyage> <rows>", "Move listed messages into a voyage", cmdAssign},
       {"unassign", "unassign <rows>", "unassign <rows>", "Remove the voyage from listed messages", cmdUnassign},
@@ -1443,9 +1440,9 @@ int main()
         std::cout << "No password entered" << std::endl;
         return 1;
     }
-    std::cout << "Connecting to " << DB_HOST << " ... " << std::flush;
+    std::cout << "Connecting to " << MONGODB_ATLAS_HOST << " ... " << std::flush;
     try {
-        CliDB db(buildUri(password));
+        CliDB db(SailbotDB::atlasConnStr(password));
         if (!db.testConnection()) {
             std::cout << "Connection failed" << std::endl;
             return 1;

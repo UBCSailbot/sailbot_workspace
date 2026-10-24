@@ -96,10 +96,7 @@ public:
      */
     bool verifyVoyageTags(const std::string & expected_voyage);
 
-    /**
-     * @return Number of voyages marked active
-     */
-    int64_t countActiveVoyages();
+    using SailbotDB::activateVoyage;
 
     /**
      * @brief Dump and check all sensors and timestamps from the database

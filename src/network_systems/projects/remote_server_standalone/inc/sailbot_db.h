@@ -9,6 +9,7 @@
 #include <mongocxx/pool.hpp>
 #include <optional>
 #include <string>
+#include <vector>
 
 #include "global_path.pb.h"
 #include "sensors.pb.h"
@@ -25,6 +26,15 @@ const std::string COLLECTION_LOCAL_PATH       = "local_path";
 const std::string COLLECTION_GLOBAL_PATH      = "global_path";
 const std::string COLLECTION_IRIDIUM_RESPONSE = "iridium_response";
 const std::string COLLECTION_VOYAGES          = "voyages";
+const std::string COLLECTION_ACTIVE_VOYAGE    = "active_voyage";
+const std::string MONGODB_ATLAS_HOST          = "dev.khxge.mongodb.net";
+const std::string MONGODB_ATLAS_USER          = "software";
+
+// The collections that storeNewSensors writes one document to for every upload
+const std::vector<std::string> SENSOR_COLLECTIONS = {
+  COLLECTION_GPS,          COLLECTION_AIS_SHIPS,        COLLECTION_TEMP_SENSORS,
+  COLLECTION_PH_SENSORS,   COLLECTION_SALINITY_SENSORS, COLLECTION_BATTERIES,
+  COLLECTION_WIND_SENSORS, COLLECTION_LOCAL_PATH};
 
 template <typename T>
 using ProtoList = google::protobuf::RepeatedPtrField<T>;
@@ -62,7 +72,9 @@ public:
         friend std::ostream & operator<<(std::ostream & os, const RcvdMsgInfo & info);
     };
     static const std::string & MONGODB_CONN_STR();
+    static std::string         atlasConnStr(const std::string & password);
     static std::string         mkTimestamp(const std::tm & tm);
+    static std::string         normalizeTimestamp(const std::string & timestamp);
     SailbotDB(const std::string & db_name, const std::string & mongodb_conn_str = MONGODB_CONN_STR());
     void        printDoc(const DocVal & doc);
     bool        testConnection();
@@ -80,6 +92,7 @@ protected:
     std::string                     generateVoyageName();
     void                            insertVoyage(const std::string & name, const std::string & created_by);
     void                            activateVoyage(const std::string & name);
+    void                            renameActiveVoyage(const std::string & old_name, const std::string & new_name);
 
 private:
     bool storeGps(

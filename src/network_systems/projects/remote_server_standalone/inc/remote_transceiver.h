@@ -18,6 +18,7 @@ namespace remote_transceiver
     // We're currently using the TESTING_HOST and TESTING_PORT
 constexpr int            DEFAULT_NUM_IO_THREADS = 2;
 static const std::string PROD_DB_NAME           = "sailbot_db";
+static const std::string TEST_DB_NAME           = "test";
 static const std::string PROD_HOST              = "0.0.0.0";
 constexpr uint16_t       PROD_PORT              = 8081;
 static const std::string TESTING_HOST           = "0.0.0.0";

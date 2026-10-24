@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include <array>
+#include <atomic>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/address.hpp>
 #include <boost/beast/http/status.hpp>
@@ -265,7 +266,47 @@ TEST_F(TestRemoteTransceiver, TestStartNewVoyage)
     const std::string second = g_test_db.startNewVoyage();
     EXPECT_EQ(second, first.substr(0, first.size() - 1) + "2");
     EXPECT_EQ(g_test_db.getActiveVoyage(), second);
-    EXPECT_EQ(g_test_db.countActiveVoyages(), 1);
+}
+
+/**
+ * @brief Test that switching the active voyage never leaves a moment with no active voyage, even while several
+ *        activations run at once
+ *
+ */
+TEST_F(TestRemoteTransceiver, TestSwitchActiveVoyageConcurrently)
+{
+    constexpr int     NUM_WRITERS     = 4;
+    constexpr int     NUM_ACTIVATIONS = 25;
+    const std::string first           = g_test_db.startNewVoyage();
+    const std::string second          = g_test_db.startNewVoyage();
+
+    std::atomic<bool> done{false};
+    std::atomic<int>  reads_without_voyage{0};
+    std::thread       reader([&]() {
+        while (!done) {
+            if (g_test_db.getActiveVoyage().empty()) {
+                reads_without_voyage++;
+            }
+        }
+    });
+
+    std::array<std::thread, NUM_WRITERS> writers;
+    for (int i = 0; i < NUM_WRITERS; i++) {
+        writers[i] = std::thread([&, i]() {
+            for (int n = 0; n < NUM_ACTIVATIONS; n++) {
+                g_test_db.activateVoyage(i % 2 == 0 ? first : second);
+            }
+        });
+    }
+    for (std::thread & writer : writers) {
+        writer.join();
+    }
+    done = true;
+    reader.join();
+
+    EXPECT_EQ(reads_without_voyage, 0);
+    const std::string active = g_test_db.getActiveVoyage();
+    EXPECT_TRUE(active == first || active == second) << active;
 }
 
 /**
@@ -296,4 +337,44 @@ TEST_F(TestRemoteTransceiver, TestPostSensorsUntagged)
     std::this_thread::sleep_for(WAIT_AFTER_RES);
 
     EXPECT_TRUE(g_test_db.verifyVoyageTags(""));
+}
+
+/**
+ * @brief Test that stored timestamps always use the percent-encoded form RockBLOCK sends
+ *
+ */
+TEST(TestSailbotDB, TestNormalizeTimestamp)
+{
+    const std::string encoded = "26-08-21%2012%3A30%3A05";
+    EXPECT_EQ(SailbotDB::normalizeTimestamp(encoded), encoded);
+    EXPECT_EQ(SailbotDB::normalizeTimestamp("26-08-21 12:30:05"), encoded);
+    EXPECT_EQ(SailbotDB::normalizeTimestamp("26-08-21+12:30:05"), encoded);
+    EXPECT_EQ(SailbotDB::normalizeTimestamp("26-08-21%2012%3a30%3a05"), encoded);
+    EXPECT_EQ(SailbotDB::normalizeTimestamp("not a time"), "not a time");
+}
+
+/**
+ * @brief Test that the password is escaped in the Atlas connection string, so characters like @ : / % cannot break it
+ *
+ */
+TEST(TestSailbotDB, TestAtlasConnStrEscapesPassword)
+{
+    EXPECT_EQ(
+      SailbotDB::atlasConnStr("pa@ss:w/rd%1"),
+      "mongodb+srv://software:pa%40ss%3Aw%2Frd%251@dev.khxge.mongodb.net/?appName=dev");
+    EXPECT_EQ(
+      SailbotDB::atlasConnStr("Plain-pass_1.~"),
+      "mongodb+srv://software:Plain-pass_1.~@dev.khxge.mongodb.net/?appName=dev");
+}
+
+/**
+ * @brief Test that a database error is reported as a failed store. An exception would escape the server's detached
+ *        POST thread and terminate the whole server.
+ *
+ */
+TEST(TestSailbotDB, TestStoreNewSensorsDbError)
+{
+    SailbotDB unreachable(test_db_name, "mongodb://127.0.0.1:1/?serverSelectionTimeoutMS=200");
+    auto [sensors, info] = g_test_db.genRandData(UtilDB::getTimestamp());
+    EXPECT_FALSE(unreachable.storeNewSensors(sensors, info));
 }
