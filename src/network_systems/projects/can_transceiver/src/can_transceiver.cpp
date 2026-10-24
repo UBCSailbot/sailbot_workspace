@@ -40,7 +40,7 @@ void bringCanInterfaceDown(int sock_desc)
 
     // SIOCSIFFLAGS = write
     // Remove the "interface up" bit from the local flags
-    ifr.ifr_flags = static_cast<short>(ifr.ifr_flags & ~IFF_UP);
+    ifr.ifr_flags = static_cast<int16_t>(ifr.ifr_flags & ~IFF_UP);
     if (ioctl(sock_desc, SIOCSIFFLAGS, &ifr) < 0) {
         std::cerr << "Failed to bring can0 down while handling ENOBUFS: " << errno << "("
                   << strerror(errno)  // NOLINT(concurrency-mt-unsafe)
