@@ -1,1 +1,1 @@
-TempSensor[16] temp_sensors
+TempSensor[2] temp_sensors
