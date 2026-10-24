@@ -21,6 +21,37 @@ using SockAddrCan = struct sockaddr_can;
 using CAN_FP::CanFrame;
 using CAN_FP::CanId;
 
+namespace
+{
+void bringCanInterfaceDown(int sock_desc)
+{
+    IFreq ifr{};
+    // Identify the target interface
+    std::strncpy(ifr.ifr_name, "can0", IFNAMSIZ - 1);
+
+    // SIOCGIFFLAGS = read
+    // Read current flags into ifr
+    if (ioctl(sock_desc, SIOCGIFFLAGS, &ifr) < 0) {
+        std::cerr << "Failed to read can0 interface flags while handling ENOBUFS: " << errno << "("
+                  << strerror(errno)  // NOLINT(concurrency-mt-unsafe)
+                  << ")" << std::endl;
+        return;
+    }
+
+    // SIOCSIFFLAGS = write
+    // Remove the "interface up" bit from the local flags
+    ifr.ifr_flags = static_cast<short>(ifr.ifr_flags & ~IFF_UP);
+    if (ioctl(sock_desc, SIOCSIFFLAGS, &ifr) < 0) {
+        std::cerr << "Failed to bring can0 down while handling ENOBUFS: " << errno << "("
+                  << strerror(errno)  // NOLINT(concurrency-mt-unsafe)
+                  << ")" << std::endl;
+        return;
+    }
+
+    std::cerr << "Brought can0 down after CAN write returned ENOBUFS" << std::endl;
+}
+}  // namespace
+
 void CanTransceiver::onNewCanData(const CanFrame & frame) const
 {
     if (!CAN_FP::isValidCanId(frame.can_id)) {
@@ -156,33 +187,25 @@ void CanTransceiver::receive()
 void CanTransceiver::send(const CanFrame & frame) const
 {
     std::lock_guard<std::mutex> lock(can_mtx_);
-
-    constexpr int  MAX_RETRIES = 5;
-    constexpr auto RETRY_DELAY = std::chrono::milliseconds(1);
-    for (int attempt = 0; attempt < MAX_RETRIES; attempt++) {
-        ssize_t bytes_written = write(sock_desc_, &frame, sizeof(CanFrame));
-        if (bytes_written == sizeof(CanFrame)) {
-            lseek(sock_desc_, -static_cast<off_t>(sizeof(CAN_FP::CanFrame)), SEEK_CUR);
-            return;  // exit the for loop after success!
+    ssize_t                     bytes_written = write(sock_desc_, &frame, sizeof(CanFrame));
+    if (bytes_written < 0) {
+        const int write_errno = errno;  // Used const to be safe and store the error reliably
+        std::cerr << "CAN write error: " << write_errno << "("
+                  << strerror(write_errno)  // NOLINT(concurrency-mt-unsafe)
+                  << ")" << std::endl;
+        if (write_errno == ENOBUFS && !is_can_simulated_) {
+            bringCanInterfaceDown(sock_desc_);
         }
-        if (bytes_written < 0) {
-            if (attempt < MAX_RETRIES) {
-                std::this_thread::sleep_for(RETRY_DELAY);
-                continue;  // Do I really need this or can i just remove continue?
-            }
-            std::cerr << "CAN write error: " << errno << "(" << strerror(errno)  // NOLINT(concurrency-mt-unsafe)
-                      << ")" << std::endl;
-        } else {
-            if (bytes_written != sizeof(CanFrame)) {
-                std::cerr << "CAN write error: wrote " << bytes_written << "B but CAN frames are expected to be "
-                          << sizeof(CanFrame) << "B" << std::endl;
-            }
-            if (is_can_simulated_ && !sim_fd_is_socket_) {
-                // Since we're writing to the same file we're reading from, we need to maintain the seek offset
-                // This is NOT necessary in deployment or with a socket-backed mock (ex. MockCanBus), where the
-                // peer is a genuinely separate endpoint
-                lseek(sock_desc_, -static_cast<off_t>(sizeof(CAN_FP::CanFrame)), SEEK_CUR);
-            }
+    } else {
+        if (bytes_written != sizeof(CanFrame)) {
+            std::cerr << "CAN write error: wrote " << bytes_written << "B but CAN frames are expected to be "
+                      << sizeof(CanFrame) << "B" << std::endl;
+        }
+        if (is_can_simulated_ && !sim_fd_is_socket_) {
+            // Since we're writing to the same file we're reading from, we need to maintain the seek offset
+            // This is NOT necessary in deployment or with a socket-backed mock (ex. MockCanBus), where the
+            // peer is a genuinely separate endpoint
+            lseek(sock_desc_, -static_cast<off_t>(sizeof(CAN_FP::CanFrame)), SEEK_CUR);
         }
     }
 }
