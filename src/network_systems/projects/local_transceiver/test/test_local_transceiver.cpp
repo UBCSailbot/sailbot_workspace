@@ -101,6 +101,20 @@ TEST_F(TestLocalTransceiver, debugSendTest)
 }
 
 /**
+ * @brief Verify a rejected command returns its ERROR right away instead of waiting for the serial timeout
+ */
+TEST_F(TestLocalTransceiver, debugSendErrorReturnsQuickly)
+{
+    const auto start      = std::chrono::steady_clock::now();
+    auto       opt_result = lcl_trns_->debugSend("AT+NOTACOMMAND");
+    const auto elapsed    = std::chrono::steady_clock::now() - start;
+
+    ASSERT_TRUE(opt_result);
+    EXPECT_TRUE(boost::algorithm::contains(opt_result.value(), AT::STATUS_ERROR));
+    EXPECT_LT(elapsed, std::chrono::seconds(5));
+}
+
+/**
  * @brief Test debugSendAT that sends a small payload through the same flow as send()
  */
 TEST_F(TestLocalTransceiver, DebugSendAT)
@@ -510,6 +524,60 @@ TEST_F(TestLocalTransceiver, TruncatedSBDResponse)
 }
 
 /**
+ * @brief Verifies MT status helpers, which decide whether a message must be read from the MT buffer
+ *        for at_cmds.h
+ */
+TEST_F(TestLocalTransceiver, MTStatusTest)
+{
+    AT::SBDStatusRsp no_message("+SBDIX:0,1,0,0,0,0");
+    AT::SBDStatusRsp received("+SBDIX:0,1,1,7,270,2");
+    AT::SBDStatusRsp mailbox_error("+SBDIX:0,1,2,0,0,0");
+
+    EXPECT_TRUE(no_message.mailboxChecked());
+    EXPECT_FALSE(no_message.MTReceived());
+
+    EXPECT_TRUE(received.mailboxChecked());
+    EXPECT_TRUE(received.MTReceived());
+    EXPECT_EQ(received.MT_len_, 270);  // max MT size, would overflow a uint8_t
+    EXPECT_EQ(received.MT_queued_, 2);
+
+    EXPECT_FALSE(mailbox_error.mailboxChecked());
+    EXPECT_FALSE(mailbox_error.MTReceived());
+}
+
+/**
+ * @brief Verifies the extended status response used to poll for ring alerts
+ *        for at_cmds.h
+ */
+TEST_F(TestLocalTransceiver, SBDStatusExtResponse)
+{
+    // The modem puts spaces after the commas
+    AT::SBDStatusExtRsp ring("+SBDSX: 0, 12, 1, 7, 1, 3");
+    EXPECT_FALSE(ring.MO_flag_);
+    EXPECT_EQ(ring.MOMSN_, 12);
+    EXPECT_TRUE(ring.MT_flag_);
+    EXPECT_EQ(ring.MTMSN_, 7);
+    EXPECT_TRUE(ring.RA_flag_);
+    EXPECT_EQ(ring.msg_waiting_, 3);
+
+    AT::SBDStatusExtRsp no_ring("+SBDSX:1,12,0,-1,0,0");
+    EXPECT_TRUE(no_ring.MO_flag_);
+    EXPECT_EQ(no_ring.MTMSN_, -1);
+    EXPECT_FALSE(no_ring.RA_flag_);
+
+    EXPECT_THROW(AT::SBDStatusExtRsp status("+SBDSX:0,12,1"), std::invalid_argument);
+    EXPECT_THROW(AT::SBDStatusExtRsp status("ERROR"), std::invalid_argument);
+}
+
+/**
+ * @brief Verifies a new transceiver reports no recent mailbox check, so the first poll checks the mailbox
+ */
+TEST_F(TestLocalTransceiver, mailboxNotCheckedAtStart)
+{
+    EXPECT_FALSE(lcl_trns_->mailboxCheckedWithin(std::chrono::hours(1)));
+}
+
+/**
  * @brief Verifies MO status codes are classified into the correct retry behaviour
  *        for at_cmds.h
  */
@@ -700,7 +768,12 @@ TEST_F(TestLocalTransceiver, parseReceiveMessageBlackbox)
 
     // Allow the queued HTTP message to settle before starting the SBD session.
     std::this_thread::sleep_for(std::chrono::seconds(1));
-    custom_interfaces::msg::Path received_data = lcl_trns_->receive();
+    // receive() hands received paths to the path callback
+    std::optional<custom_interfaces::msg::Path> received_path;
+    lcl_trns_->setPathCallback([&received_path](const custom_interfaces::msg::Path & path) { received_path = path; });
+    ASSERT_TRUE(lcl_trns_->receive());
+    ASSERT_TRUE(received_path.has_value()) << "No global path was received";
+    const custom_interfaces::msg::Path & received_data = *received_path;
 
     ASSERT_EQ(received_data.waypoints.size(), static_cast<std::size_t>(sample_data.waypoints_size()))
       << "Mismatch in number of waypoints received.";

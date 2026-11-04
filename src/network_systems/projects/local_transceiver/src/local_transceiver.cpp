@@ -38,6 +38,34 @@ constexpr float LAT_UBOUND = 90.0F;
 constexpr float LON_LBOUND = -180.0F;
 constexpr float LON_UBOUND = 180.0F;
 
+namespace
+{
+/**
+ * @brief Tells bio::async_read_until to stop at the end of an AT command's final result, "OK" or "ERROR".
+ *        Stopping only at "OK" would make every command the modem rejects wait for the full SERIAL_TIMEOUT.
+ */
+struct FinalResultMatcher
+{
+    template <typename Iterator>
+    std::pair<Iterator, bool> operator()(Iterator begin, Iterator end) const
+    {
+        const std::string data(begin, end);
+        for (const std::string & result : {AT::STATUS_OK + AT::DELIMITER, AT::STATUS_ERROR + AT::DELIMITER}) {
+            size_t pos = data.find(result);
+            if (pos != std::string::npos) {
+                return {begin + static_cast<std::ptrdiff_t>(pos + result.size()), true};
+            }
+        }
+        return {end, false};  // keep reading
+    }
+};
+}  // namespace
+
+template <>
+struct boost::asio::is_match_condition<FinalResultMatcher> : public std::true_type
+{
+};
+
 void LocalTransceiver::updateSensor(msg::GPS gps)
 {
     sensors_.mutable_gps()->set_heading(gps.heading.heading);
@@ -129,6 +157,8 @@ void LocalTransceiver::setLogCallbacks(LogCallback debug_cb, LogCallback error_c
     log_error_ = error_cb;
 }
 
+void LocalTransceiver::setPathCallback(PathCallback path_cb) { on_path_ = path_cb; }
+
 LocalTransceiver::LocalTransceiver(const std::string & port_name, const uint32_t baud_rate) : serial_(io_, port_name)
 {
     serial_.set_option(bio::serial_port_base::baud_rate(baud_rate));
@@ -184,7 +214,7 @@ bool LocalTransceiver::send()
     // Load the message into the modem's MO buffer. It stays there between SBD sessions, so it only needs to be
     // loaded once no matter how many sessions are attempted.
     bool loaded = false;
-    for (int i = 0; i < MAX_LOAD_MO_ATTEMPTS && !loaded; i++) {
+    for (int i = 0; i < MAX_MODEM_CMD_ATTEMPTS && !loaded; i++) {
         std::this_thread::sleep_for(SMALL_WAIT);
         clearSerialBuffer();  // Clear any stale data from previous iteration
 
@@ -212,6 +242,23 @@ bool LocalTransceiver::send()
         return false;
     }
 
+    std::optional<AT::SBDStatusRsp> rsp = runSBDSessionWithRetry(false);
+    if (!rsp) {
+        if (log_error_) {
+            log_error_("Failed to transmit data to satellite\n" + sensors.DebugString());
+        }
+        return false;
+    }
+
+    // The session also checked the mailbox. Clear the MO buffer first so follow-up sessions to collect more mail
+    // cannot send this data again.
+    bool mo_cleared = clearMOBuffer();
+    collectMail(*rsp, false, mo_cleared);
+    return true;
+}
+
+std::optional<AT::SBDStatusRsp> LocalTransceiver::runSBDSessionWithRetry(bool answering_ring)
+{
     // Only the SBD session goes to the satellite, and it is where failures happen (signal drops, no network).
     // Failed sessions are not charged on RockBLOCK, so transient failures are retried with a growing random delay.
     for (int attempt = 0; attempt < MAX_SBD_SESSION_ATTEMPTS; attempt++) {
@@ -228,14 +275,14 @@ bool LocalTransceiver::send()
         }
 
         // NEEDS AN ACTIVE SERVER ON $WEBHOOK_SERVER_ENDPOINT OR VIRTUAL IRIDIUM WILL CRASH
-        std::optional<AT::SBDStatusRsp> rsp = runSBDSession();
+        std::optional<AT::SBDStatusRsp> rsp = runSBDSession(answering_ring);
         if (!rsp) {
             // The message may have been delivered even though the result could not be read. Retrying could send
             // (and pay for) a duplicate, so give up until the next send.
             if (log_error_) {
                 log_error_("Could not read SBD session result, not retrying");
             }
-            return false;
+            return std::nullopt;
         }
 
         const std::string mo_status_str = std::to_string(rsp->MO_status_);
@@ -244,8 +291,7 @@ bool LocalTransceiver::send()
                 if (log_debug_) {
                     log_debug_("SBD session succeeded on attempt " + std::to_string(attempt));
                 }
-                clearMOBuffer();
-                return true;
+                return rsp;
             case AT::MOResult::RETRY_SOON:
                 if (log_error_) {
                     log_error_(
@@ -257,35 +303,35 @@ bool LocalTransceiver::send()
                 if (log_error_) {
                     log_error_(
                       "Iridium gateway asked to retry later (MO status " + mo_status_str +
-                      "), not retrying until the next send");
+                      "), not retrying until the next attempt");
                 }
-                return false;
+                return std::nullopt;
             case AT::MOResult::FATAL:
                 if (log_error_) {
                     log_error_(
                       "SBD session failed with MO status " + mo_status_str + ", which retrying cannot fix");
                 }
-                return false;
+                return std::nullopt;
         }
     }
 
     if (log_error_) {
-        log_error_(
-          "Failed to transmit data to satellite after " + std::to_string(MAX_SBD_SESSION_ATTEMPTS) +
-          " attempts\n" + sensors.DebugString());
+        log_error_("SBD session failed after " + std::to_string(MAX_SBD_SESSION_ATTEMPTS) + " attempts");
     }
-    return false;
+    return std::nullopt;
 }
 
-std::optional<AT::SBDStatusRsp> LocalTransceiver::runSBDSession()
+std::optional<AT::SBDStatusRsp> LocalTransceiver::runSBDSession(bool answering_ring)
 {
-    static const AT::Line sbdix_cmd = AT::Line(AT::SBD_SESSION);
-    if (!send(sbdix_cmd)) {
+    static const AT::Line sbdix_cmd  = AT::Line(AT::SBD_SESSION);
+    static const AT::Line sbdixa_cmd = AT::Line(AT::SBD_SESSION_RING);
+    const AT::Line &      cmd        = answering_ring ? sbdixa_cmd : sbdix_cmd;
+    if (!send(cmd)) {
         return std::nullopt;
     }
 
     if (!rcvRsps({
-          sbdix_cmd,
+          cmd,
           AT::Line(AT::DELIMITER),
         })) {
         return std::nullopt;
@@ -297,27 +343,120 @@ std::optional<AT::SBDStatusRsp> LocalTransceiver::runSBDSession()
     }
 
     // The response looks like "+SBDIX:<MO status>,<MOMSN>,<MT status>,<MTMSN>,<MT length>,<MTqueued>\r\n\r\nOK\r"
-    // Search for the status line instead of assuming it comes first, since stale bytes can precede it.
+    // (SBDIXA replies with the same "+SBDIX:" line)
+    std::optional<std::string> line = findRspLine(opt_rsp.value(), "SBDIX:");
+    if (!line) {
+        if (log_error_) {
+            log_error_("No SBDIX status in response: \"" + opt_rsp.value() + "\"");
+        }
+        return std::nullopt;
+    }
+    try {
+        return AT::SBDStatusRsp(*line);
+    } catch (const std::exception & e) {
+        if (log_error_) {
+            log_error_(std::string("Failed to parse SBD session result: ") + e.what());
+        }
+        return std::nullopt;
+    }
+}
+
+std::optional<std::string> LocalTransceiver::findRspLine(const std::string & rsp, const std::string & prefix)
+{
+    // Search for the line instead of assuming it comes first, since stale bytes can precede it
     std::vector<std::string> lines;
-    boost::algorithm::split(lines, opt_rsp.value(), boost::is_any_of(AT::DELIMITER));
+    boost::algorithm::split(lines, rsp, boost::is_any_of(AT::DELIMITER));
     for (const std::string & line : lines) {
-        if (line.find("SBDIX:") == std::string::npos) {
-            continue;
+        if (line.find(prefix) != std::string::npos) {
+            return line;
         }
-        try {
-            return AT::SBDStatusRsp(line);
-        } catch (const std::exception & e) {
+    }
+    return std::nullopt;
+}
+
+void LocalTransceiver::collectMail(AT::SBDStatusRsp rsp, bool from_ring, bool can_drain)
+{
+    for (int session = 0; session < MAX_MAILBOX_SESSIONS; session++) {
+        if (!rsp.mailboxChecked()) {
             if (log_error_) {
-                log_error_(std::string("Failed to parse SBD session result: ") + e.what());
+                log_error_("Iridium gateway could not check the mailbox (MT status 2)");
             }
-            return std::nullopt;
+            return;
         }
+        last_mailbox_check_ = std::chrono::steady_clock::now();
+
+        if (rsp.MTReceived()) {
+            // Only the first session can tell us this: follow-up sessions are expected to find mail
+            if (session == 0 && !from_ring && log_debug_) {
+                log_debug_("Message collected by a regular SBD session before a ring alert was answered");
+            }
+            // Must be read now, the next session overwrites the modem's MT buffer
+            std::optional<custom_interfaces::msg::Path> path = readMTMessage();
+            if (path && on_path_) {
+                on_path_(*path);
+            }
+        }
+
+        if (rsp.MT_queued_ == 0) {
+            return;
+        }
+        if (!can_drain) {
+            if (log_error_) {
+                log_error_(
+                  std::to_string(rsp.MT_queued_) +
+                  " messages still queued, but the MO buffer could not be cleared so they are left for later");
+            }
+            return;
+        }
+        if (log_debug_) {
+            log_debug_(std::to_string(rsp.MT_queued_) + " more messages queued, collecting the next one");
+        }
+        std::optional<AT::SBDStatusRsp> next = runSBDSessionWithRetry(false);
+        if (!next) {
+            return;
+        }
+        rsp = *next;
     }
 
     if (log_error_) {
-        log_error_("No SBDIX status in response: \"" + opt_rsp.value() + "\"");
+        log_error_("Stopped collecting mail after " + std::to_string(MAX_MAILBOX_SESSIONS) + " sessions");
     }
-    return std::nullopt;
+}
+
+bool LocalTransceiver::mailboxCheckedWithin(std::chrono::steady_clock::duration max_age) const
+{
+    return last_mailbox_check_ && std::chrono::steady_clock::now() - *last_mailbox_check_ < max_age;
+}
+
+std::optional<bool> LocalTransceiver::ringAlertPending()
+{
+    static const AT::Line sbdsx_cmd = AT::Line(AT::SBD_STATUS_EXT);
+    clearSerialBuffer();
+    if (!send(sbdsx_cmd) || !rcvRsps({sbdsx_cmd, AT::Line(AT::DELIMITER)})) {
+        return std::nullopt;
+    }
+
+    auto opt_rsp = readRsp();
+    if (!opt_rsp) {
+        return std::nullopt;
+    }
+
+    // The response looks like "+SBDSX: <MO flag>, <MOMSN>, <MT flag>, <MTMSN>, <RA flag>, <msg waiting>\r\n\r\nOK\r"
+    std::optional<std::string> line = findRspLine(opt_rsp.value(), "SBDSX:");
+    if (!line) {
+        if (log_error_) {
+            log_error_("No SBDSX status in response: \"" + opt_rsp.value() + "\"");
+        }
+        return std::nullopt;
+    }
+    try {
+        return AT::SBDStatusExtRsp(*line).RA_flag_;
+    } catch (const std::exception & e) {
+        if (log_error_) {
+            log_error_(std::string("Failed to parse SBDSX status: ") + e.what());
+        }
+        return std::nullopt;
+    }
 }
 
 std::chrono::milliseconds LocalTransceiver::sbdSessionRetryDelay(int attempt)
@@ -541,145 +680,72 @@ void LocalTransceiver::cacheGlobalWaypoints(std::string receivedDataBuffer)
     std::filesystem::rename(CACHE_TEMP_PATH, CACHE_PATH);
 }
 
-custom_interfaces::msg::Path LocalTransceiver::receive()
+bool LocalTransceiver::receive(bool answering_ring)
 {
-    static constexpr int MAX_NUM_RETRIES = 5;
-    for (int i = 0; i <= MAX_NUM_RETRIES; i++) {
-        std::this_thread::sleep_for(std::chrono::seconds(SMALL_WAIT));
+    static const AT::Line check_conn_cmd       = AT::Line(AT::CHECK_CONN);
+    static const AT::Line disable_ctrlflow_cmd = AT::Line(AT::DSBL_CTRLFLOW);
+
+    // Local setup, no satellite cost. The MO buffer must be empty, or the session would upload (and pay for)
+    // whatever a failed send() left in it.
+    bool ready = false;
+    for (int i = 0; i < MAX_MODEM_CMD_ATTEMPTS && !ready; i++) {
+        std::this_thread::sleep_for(SMALL_WAIT);
         clearSerialBuffer();  // Clear any stale data from previous iteration
 
-        std::this_thread::sleep_for(std::chrono::seconds(MEDIUM_WAIT));
-        if (i == MAX_NUM_RETRIES) {
-            return custom_interfaces::msg::Path();
-        }
-
-        static const AT::Line check_conn_cmd = AT::Line(AT::CHECK_CONN);
-        if (!send(check_conn_cmd)) {
-            continue;
-        }
-
-        if (!rcvRsps({check_conn_cmd, AT::Line(AT::DELIMITER), AT::Line(AT::STATUS_OK), AT::Line("\n")})) {
-            continue;
-        }
-
-        static const AT::Line disable_ctrlflow_cmd = AT::Line(AT::DSBL_CTRLFLOW);
-        if (!send(disable_ctrlflow_cmd)) {
-            continue;
-        }
-
-        if (!rcvRsps({disable_ctrlflow_cmd, AT::Line(AT::DELIMITER), AT::Line(AT::STATUS_OK), AT::Line("\n")})) {
-            continue;
-        }
-
-        clearSerialBuffer();
-
-        if (!clearMOBuffer()) {
-            continue;
-        }
-
-        static const AT::Line sbdix_cmd = AT::Line(AT::SBD_SESSION);
-        if (!send(sbdix_cmd)) {
-            if (log_error_) {
-                log_error_("Debug: failed to send SBDIX command (attempt " + std::to_string(i) + ")");
-            }
-            continue;
-        }
-        if (log_debug_) {
-            log_debug_("Debug: sent SBDIX command (attempt " + std::to_string(i) + "): " + sbdix_cmd.str_);
-        }
-
-        if (!rcvRsps({
-              sbdix_cmd,
-              AT::Line(AT::DELIMITER),
-            })) {
-            if (log_error_) {
-                log_error_("Debug: did not receive SBDIX response header (attempt " + std::to_string(i) + ")");
-            }
-            return custom_interfaces::msg::Path();
-        }
-        if (log_debug_) {
-            log_debug_("Debug: received SBDIX response header (attempt " + std::to_string(i) + ")");
-        }
-
-        auto opt_rsp = readRsp();
-        if (!opt_rsp) {
-            if (log_error_) {
-                log_error_("Debug: readRsp returned no response (attempt " + std::to_string(i) + ")");
-            }
-            return custom_interfaces::msg::Path();
-        }
-        if (log_debug_) {
-            log_debug_("Debug: readRsp received response (attempt " + std::to_string(i) + "): " + opt_rsp.value());
-        }
-
-        std::string              opt_rsp_val = opt_rsp.value();
-        std::vector<std::string> sbd_status_vec;
-        boost::algorithm::split(sbd_status_vec, opt_rsp_val, boost::is_any_of(AT::DELIMITER));
-
-        std::string sbdix_value;
-        for (const auto & element : sbd_status_vec) {
-            if (element.find("SBDIX:") != std::string::npos) {
-                sbdix_value = element;
-                break;
-            }
-        }
-
-        AT::SBDStatusRsp rsp(sbdix_value);
-
-        if (rsp.MO_status_ != 0) {  //NOLINT
-            return custom_interfaces::msg::Path();
-        }
-
-        if (rsp.MT_status_ == 0) {  //NOLINT
-            return custom_interfaces::msg::Path();
-        } else if (rsp.MT_status_ == 1) {  //NOLINT
-            break;
-        } else if (rsp.MT_status_ == 2) {  //NOLINT
-            return custom_interfaces::msg::Path();
-        }
+        ready = send(check_conn_cmd) &&
+                rcvRsps({check_conn_cmd, AT::Line(AT::DELIMITER), AT::Line(AT::STATUS_OK), AT::Line("\n")}) &&
+                send(disable_ctrlflow_cmd) &&
+                rcvRsps({disable_ctrlflow_cmd, AT::Line(AT::DELIMITER), AT::Line(AT::STATUS_OK), AT::Line("\n")}) &&
+                clearMOBuffer();
     }
-    if (log_debug_) {
-        log_debug_("DEBUG3");
+    if (!ready) {
+        if (log_error_) {
+            log_error_("Iridium modem not ready for a mailbox check");
+        }
+        return false;
     }
 
-    std::string receivedDataBuffer;
-    for (int i = 0; i < MAX_NUM_RETRIES; i++) {
+    std::optional<AT::SBDStatusRsp> rsp = runSBDSessionWithRetry(answering_ring);
+    if (!rsp) {
+        return false;
+    }
+    collectMail(*rsp, answering_ring, true);
+    return rsp->mailboxChecked();
+}
+
+std::optional<custom_interfaces::msg::Path> LocalTransceiver::readMTMessage()
+{
+    static constexpr int  MAX_READ_ATTEMPTS    = 5;
+    static const AT::Line message_to_queue_cmd = AT::Line(AT::DNLD_TO_QUEUE);
+
+    std::optional<std::string> payload;
+    for (int i = 0; i < MAX_READ_ATTEMPTS && !payload; i++) {
         if (i > 0) {
             // A failed read can leave partial payload bytes behind, which would break the next attempt's echo check
             clearSerialBuffer();
         }
-        static const AT::Line message_to_queue_cmd = AT::Line(AT::DNLD_TO_QUEUE);
-        if (!send(message_to_queue_cmd)) {
-            continue;
+        if (send(message_to_queue_cmd) && rcvRsps({message_to_queue_cmd})) {
+            payload = readBinaryRsp();
         }
-
-        if (!rcvRsps({message_to_queue_cmd})) {
-            continue;
+    }
+    if (!payload) {
+        // The gateway deleted its copy when it was downloaded, so this message is gone
+        if (log_error_) {
+            log_error_("Failed to read a received message from the Iridium MT buffer, it is lost");
         }
-
-        auto payload = readBinaryRsp();
-        if (!payload) {
-            continue;
-        }
-        std::cout << "[RAW PAYLOAD][SIZE " << payload.value().size() << " ]: ";
-        std::cout.write(payload.value().data(), payload.value().size());  //NOLINT
-        std::cout << std::endl;
-
-        receivedDataBuffer = payload.value();
-        break;
+        return std::nullopt;
+    }
+    if (log_debug_) {
+        log_debug_("Read " + std::to_string(payload->size()) + " byte message from the Iridium MT buffer");
     }
 
-    std::future<void> fut = std::async(std::launch::async, cacheGlobalWaypoints, receivedDataBuffer);
-
-    custom_interfaces::msg::Path to_publish = parseInMsg(receivedDataBuffer);
-
-    fut.get();
-
-    if (validateGlobalPathWayPoints(to_publish)) {
-        return to_publish;
+    custom_interfaces::msg::Path path = parseInMsg(*payload);
+    if (!validateGlobalPathWayPoints(path)) {
+        return std::nullopt;
     }
-
-    return custom_interfaces::msg::Path();
+    // Only cache valid paths: getCache() publishes the cache on startup without validating it
+    cacheGlobalWaypoints(*payload);
+    return path;
 }
 
 bool LocalTransceiver::validateGlobalPathWayPoints(const custom_interfaces::msg::Path & path_to_publish)
@@ -892,7 +958,7 @@ std::optional<std::string> LocalTransceiver::readRsp()
     boost::system::error_code ec;
 
     bool success = runWithTimeout(
-      [&](auto handler) { bio::async_read_until(serial_, buf, AT::STATUS_OK + AT::DELIMITER, handler); }, ec);
+      [&](auto handler) { bio::async_read_until(serial_, buf, FinalResultMatcher(), handler); }, ec);
 
     if (!success) {
         if (log_error_) {
