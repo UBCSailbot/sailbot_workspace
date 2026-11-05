@@ -1,9 +1,14 @@
 #include "sailbot_db.h"
 
+#include <bsoncxx/builder/basic/document.hpp>
+#include <bsoncxx/builder/basic/kvp.hpp>
 #include <bsoncxx/builder/stream/array.hpp>
 #include <bsoncxx/builder/stream/document.hpp>
 #include <bsoncxx/builder/stream/helpers.hpp>
 #include <bsoncxx/json.hpp>
+#include <bsoncxx/types.hpp>
+#include <cctype>
+#include <chrono>
 #include <cstdint>
 #include <iomanip>
 #include <iostream>
@@ -12,6 +17,8 @@
 #include <mongocxx/collection.hpp>
 #include <mongocxx/database.hpp>
 #include <mongocxx/instance.hpp>
+#include <mongocxx/options/update.hpp>
+#include <regex>
 #include <sstream>
 
 #include "global_path.pb.h"
@@ -19,8 +26,19 @@
 #include "waypoint.pb.h"
 
 namespace bstream = bsoncxx::builder::stream;
+using bsoncxx::builder::basic::kvp;
+using bsoncxx::builder::basic::make_document;
 using Polaris::GlobalPath;
 using Polaris::Sensors;
+
+static const std::string ACTIVE_VOYAGE_ID = "active";
+
+static void appendVoyage(bstream::document & doc_builder, const std::string & voyage)
+{
+    if (!voyage.empty()) {
+        doc_builder << "voyage" << voyage;
+    }
+}
 
 // PUBLIC
 
@@ -46,9 +64,24 @@ const std::string & SailbotDB::MONGODB_CONN_STR()
               "MongoDB password not found (must be inputted into test.sh): Running MongoDB tests locally \n");  // If running tests locally
             return std::string("mongodb://localhost:27017");
         }
-        return "mongodb+srv://software:" + std::string(pwd) + "@dev.khxge.mongodb.net/?appName=dev";
+        return atlasConnStr(pwd);
     }();
     return conn_str;
+}
+
+std::string SailbotDB::atlasConnStr(const std::string & password)
+{
+    // The password goes into the userinfo part of the URI, where @ : / % and similar characters must be escaped
+    std::ostringstream encoded;
+    encoded << std::uppercase << std::hex << std::setfill('0');
+    for (const unsigned char c : password) {
+        if (std::isalnum(c) != 0 || c == '-' || c == '.' || c == '_' || c == '~') {
+            encoded << c;
+        } else {
+            encoded << '%' << std::setw(2) << static_cast<int>(c);
+        }
+    }
+    return "mongodb+srv://" + MONGODB_ATLAS_USER + ":" + encoded.str() + "@" + MONGODB_ATLAS_HOST + "/?appName=dev";
 }
 
 std::string SailbotDB::mkTimestamp(const std::tm & tm)
@@ -57,12 +90,26 @@ std::string SailbotDB::mkTimestamp(const std::tm & tm)
     constexpr int     YEAR_MODULUS = 100;   // used to extract the last two digits of the year
     std::stringstream tm_ss;
     tm_ss << std::setfill('0') << std::setw(2)
-          << (tm.tm_year + YEAR_OFFSET) % YEAR_MODULUS  // format last 2 digits of year (e.g., 2025 → 25)
+          << (tm.tm_year + YEAR_OFFSET) % YEAR_MODULUS  // format last 2 digits of year (e.g., 2025 -> 25)
           << "-" << std::setfill('0') << std::setw(2) << (tm.tm_mon + 1)  // months are 0-based (0 = January)
           << "-" << std::setfill('0') << std::setw(2) << tm.tm_mday << " " << std::setfill('0') << std::setw(2)  // hour
           << tm.tm_hour << ":" << std::setfill('0') << std::setw(2) << tm.tm_min << ":" << std::setfill('0')  // minute
           << std::setw(2) << tm.tm_sec;                                                                       // second
     return tm_ss.str();
+}
+
+std::string SailbotDB::normalizeTimestamp(const std::string & timestamp)
+{
+    // RockBLOCK sends transmit_time percent-encoded (26-08-21%2022%3A46%3A04), which is how all stored data looks.
+    // Plain (mkTimestamp) and form-encoded times are rewritten to that form so every stored timestamp sorts and
+    // compares the same way; anything else is kept as received.
+    static const std::regex pattern(
+      "^([0-9]{2}-[0-9]{2}-[0-9]{2})(?: |\\+|%20)([0-9]{2})(?::|%3[Aa])([0-9]{2})(?::|%3[Aa])([0-9]{2})$");
+    std::smatch match;
+    if (!std::regex_match(timestamp, match, pattern)) {
+        return timestamp;
+    }
+    return match.str(1) + "%20" + match.str(2) + "%3A" + match.str(3) + "%3A" + match.str(4);
 }
 
 SailbotDB::SailbotDB(const std::string & db_name, const std::string & mongodb_conn_str) : db_name_(db_name)
@@ -94,18 +141,49 @@ bool SailbotDB::testConnection()
 
 bool SailbotDB::storeNewSensors(const Sensors & sensors_pb, RcvdMsgInfo new_info)
 {
-    // Only using timestamp info for now, may use other fields in the future
-    const std::string &   timestamp = new_info.timestamp_;
-    mongocxx::pool::entry entry     = pool_->acquire();
-    return storeGps(sensors_pb.gps(), timestamp, *entry) && storeAis(sensors_pb.ais_ships(), timestamp, *entry) &&
-           //    storeGenericSensors(sensors_pb.data_sensors(), timestamp, *entry) && // * Generic sensors are replaced by Temp, Salinity, pH, Pressure
-           storeTempSensors(sensors_pb.temp_sensors(), timestamp, *entry) &&
-           storePhSensors(sensors_pb.ph_sensors(), timestamp, *entry) &&
-           storeSalinitySensors(sensors_pb.salinity_sensors(), timestamp, *entry) &&
-           //    storePressureSensors(sensors_pb.pressure_sensors(), timestamp, *entry) && // * We aren't using pH Sensors as of Nov 2025
-           storeBatteries(sensors_pb.batteries(), timestamp, *entry) &&
-           storeWindSensors(sensors_pb.wind_sensors(), timestamp, *entry) &&
-           storePathSensors(sensors_pb.local_path_data(), timestamp, *entry);
+    // The server calls this on a detached thread, where an uncaught exception would terminate the whole server,
+    // so a database error (e.g. a network blip or Atlas failover) is reported as a failed store instead
+    try {
+        // Only using timestamp info for now, may use other fields in the future
+        const std::string timestamp = normalizeTimestamp(new_info.timestamp_);
+        const std::string voyage    = getActiveVoyage();
+        if (voyage.empty()) {
+            std::cerr << "[WARN] No active voyage, storing untagged" << std::endl;
+        }
+        mongocxx::pool::entry entry = pool_->acquire();
+        return storeGps(sensors_pb.gps(), timestamp, voyage, *entry) &&
+               storeAis(sensors_pb.ais_ships(), timestamp, voyage, *entry) &&
+               //    storeGenericSensors(sensors_pb.data_sensors(), timestamp, *entry) && // * Generic sensors are replaced by Temp, Salinity, pH, Pressure
+               storeTempSensors(sensors_pb.temp_sensors(), timestamp, voyage, *entry) &&
+               storePhSensors(sensors_pb.ph_sensors(), timestamp, voyage, *entry) &&
+               storeSalinitySensors(sensors_pb.salinity_sensors(), timestamp, voyage, *entry) &&
+               //    storePressureSensors(sensors_pb.pressure_sensors(), timestamp, *entry) && // * We aren't using pH Sensors as of Nov 2025
+               storeBatteries(sensors_pb.batteries(), timestamp, voyage, *entry) &&
+               storeWindSensors(sensors_pb.wind_sensors(), timestamp, voyage, *entry) &&
+               storePathSensors(sensors_pb.local_path_data(), timestamp, voyage, *entry);
+    } catch (const std::exception & e) {
+        std::cerr << "[ERROR] Database error while storing sensors: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+std::string SailbotDB::startNewVoyage()
+{
+    const std::string name = generateVoyageName();
+    insertVoyage(name, "server");
+    activateVoyage(name);
+    return name;
+}
+
+std::string SailbotDB::getActiveVoyage()
+{
+    mongocxx::pool::entry entry  = pool_->acquire();
+    mongocxx::collection  active = (*entry)[db_name_][COLLECTION_ACTIVE_VOYAGE];
+    auto                  record = active.find_one(make_document(kvp("_id", ACTIVE_VOYAGE_ID)));
+    if (!record) {
+        return "";
+    }
+    return bsonString(record->view()["voyage"]).value_or("");
 }
 
 // END PUBLIC
@@ -123,21 +201,72 @@ bool SailbotDB::storeIridiumResponse(
     return storeIridiumResponse(response, error, message, timestamp, *entry);
 }
 
+std::string SailbotDB::generateVoyageName()
+{
+    const std::chrono::year_month_day today{std::chrono::floor<std::chrono::days>(std::chrono::system_clock::now())};
+    std::stringstream                 date_ss;
+    date_ss << static_cast<int>(today.year()) << "-" << std::setfill('0') << std::setw(2)
+            << static_cast<unsigned>(today.month()) << "-" << std::setw(2) << static_cast<unsigned>(today.day());
+    mongocxx::pool::entry entry   = pool_->acquire();
+    mongocxx::collection  voyages = (*entry)[db_name_][COLLECTION_VOYAGES];
+    for (int n = 1;; n++) {
+        const std::string name = date_ss.str() + "_" + std::to_string(n);
+        if (voyages.count_documents(make_document(kvp("name", name))) == 0) {
+            return name;
+        }
+    }
+}
+
+void SailbotDB::insertVoyage(const std::string & name, const std::string & created_by)
+{
+    mongocxx::pool::entry entry   = pool_->acquire();
+    mongocxx::collection  voyages = (*entry)[db_name_][COLLECTION_VOYAGES];
+    voyages.insert_one(make_document(
+      kvp("name", name), kvp("created_at", bsoncxx::types::b_date{std::chrono::system_clock::now()}),
+      kvp("created_by", created_by)));
+}
+
+// The active voyage is one field of one document, so switching it is a single atomic write: an upload never sees
+// zero or two active voyages, and concurrent activations just apply one after the other.
+void SailbotDB::activateVoyage(const std::string & name)
+{
+    mongocxx::pool::entry     entry  = pool_->acquire();
+    mongocxx::collection      active = (*entry)[db_name_][COLLECTION_ACTIVE_VOYAGE];
+    mongocxx::options::update options;
+    options.upsert(true);
+    active.update_one(
+      make_document(kvp("_id", ACTIVE_VOYAGE_ID)), make_document(kvp("$set", make_document(kvp("voyage", name)))),
+      options);
+}
+
+void SailbotDB::renameActiveVoyage(const std::string & old_name, const std::string & new_name)
+{
+    mongocxx::pool::entry entry  = pool_->acquire();
+    mongocxx::collection  active = (*entry)[db_name_][COLLECTION_ACTIVE_VOYAGE];
+    active.update_one(
+      make_document(kvp("_id", ACTIVE_VOYAGE_ID), kvp("voyage", old_name)),
+      make_document(kvp("$set", make_document(kvp("voyage", new_name)))));
+}
+
 // PRIVATE
 
-bool SailbotDB::storeGps(const Sensors::Gps & gps_pb, const std::string & timestamp, mongocxx::client & client)
+bool SailbotDB::storeGps(
+  const Sensors::Gps & gps_pb, const std::string & timestamp, const std::string & voyage, mongocxx::client & client)
 {
     mongocxx::database   db       = client[db_name_];
     mongocxx::collection gps_coll = db[COLLECTION_GPS];
-    DocVal gps_doc = bstream::document{} << "latitude" << gps_pb.latitude() << "longitude" << gps_pb.longitude()
-                                         << "speed" << gps_pb.speed() << "heading" << gps_pb.heading() << "timestamp"
-                                         << timestamp << bstream::finalize;
+    bstream::document    doc_builder{};
+    doc_builder << "latitude" << gps_pb.latitude() << "longitude" << gps_pb.longitude() << "speed" << gps_pb.speed()
+                << "heading" << gps_pb.heading() << "timestamp" << timestamp;
+    appendVoyage(doc_builder, voyage);
+    DocVal gps_doc = doc_builder << bstream::finalize;
 
     return static_cast<bool>(gps_coll.insert_one(gps_doc.view()));
 }
 
 bool SailbotDB::storeAis(
-  const ProtoList<Sensors::Ais> & ais_ships_pb, const std::string & timestamp, mongocxx::client & client)
+  const ProtoList<Sensors::Ais> & ais_ships_pb, const std::string & timestamp, const std::string & voyage,
+  mongocxx::client & client)
 {
     mongocxx::database   db       = client[db_name_];
     mongocxx::collection ais_coll = db[COLLECTION_AIS_SHIPS];
@@ -151,7 +280,9 @@ bool SailbotDB::storeAis(
                             << "cog" << ais_ship.cog() << "rot" << ais_ship.rot() << "width" << ais_ship.width()
                             << "length" << ais_ship.length() << bstream::close_document;
     }
-    DocVal ais_ships_doc = ais_ships_doc_arr << bstream::close_array << "timestamp" << timestamp << bstream::finalize;
+    ais_ships_doc_arr << bstream::close_array << "timestamp" << timestamp;
+    appendVoyage(doc_builder, voyage);
+    DocVal ais_ships_doc = doc_builder << bstream::finalize;
     return static_cast<bool>(ais_coll.insert_one(ais_ships_doc.view()));
 }
 
@@ -171,7 +302,8 @@ bool SailbotDB::storeAis(
 // }
 
 bool SailbotDB::storeTempSensors(
-  const ProtoPrimitiveList<float> & temp_pb, const std::string & timestamp, mongocxx::client & client)
+  const ProtoPrimitiveList<float> & temp_pb, const std::string & timestamp, const std::string & voyage,
+  mongocxx::client & client)
 {
     mongocxx::database   db        = client[db_name_];
     mongocxx::collection temp_coll = db[COLLECTION_TEMP_SENSORS];
@@ -181,12 +313,15 @@ bool SailbotDB::storeTempSensors(
         temp_doc_arr = temp_doc_arr << bstream::open_document << "temperature" << temp_sensor
                                     << bstream::close_document;
     }
-    DocVal temp_doc = temp_doc_arr << bstream::close_array << "timestamp" << timestamp << bstream::finalize;
+    temp_doc_arr << bstream::close_array << "timestamp" << timestamp;
+    appendVoyage(doc_builder, voyage);
+    DocVal temp_doc = doc_builder << bstream::finalize;
     return static_cast<bool>(temp_coll.insert_one(temp_doc.view()));
 }
 
 bool SailbotDB::storePhSensors(
-  const ProtoPrimitiveList<float> & ph_pb, const std::string & timestamp, mongocxx::client & client)
+  const ProtoPrimitiveList<float> & ph_pb, const std::string & timestamp, const std::string & voyage,
+  mongocxx::client & client)
 {
     mongocxx::database   db      = client[db_name_];
     mongocxx::collection ph_coll = db[COLLECTION_PH_SENSORS];
@@ -195,12 +330,15 @@ bool SailbotDB::storePhSensors(
     for (const float & ph_sensor : ph_pb) {
         ph_doc_arr = ph_doc_arr << bstream::open_document << "ph" << ph_sensor << bstream::close_document;
     }
-    DocVal ph_doc = ph_doc_arr << bstream::close_array << "timestamp" << timestamp << bstream::finalize;
+    ph_doc_arr << bstream::close_array << "timestamp" << timestamp;
+    appendVoyage(doc_builder, voyage);
+    DocVal ph_doc = doc_builder << bstream::finalize;
     return static_cast<bool>(ph_coll.insert_one(ph_doc.view()));
 }
 
 bool SailbotDB::storeSalinitySensors(
-  const ProtoPrimitiveList<float> & salinity_pb, const std::string & timestamp, mongocxx::client & client)
+  const ProtoPrimitiveList<float> & salinity_pb, const std::string & timestamp, const std::string & voyage,
+  mongocxx::client & client)
 {
     mongocxx::database   db            = client[db_name_];
     mongocxx::collection salinity_coll = db[COLLECTION_SALINITY_SENSORS];
@@ -210,7 +348,9 @@ bool SailbotDB::storeSalinitySensors(
         salinity_doc_arr = salinity_doc_arr << bstream::open_document << "salinity" << salinity_sensor
                                             << bstream::close_document;
     }
-    DocVal salinity_doc = salinity_doc_arr << bstream::close_array << "timestamp" << timestamp << bstream::finalize;
+    salinity_doc_arr << bstream::close_array << "timestamp" << timestamp;
+    appendVoyage(doc_builder, voyage);
+    DocVal salinity_doc = doc_builder << bstream::finalize;
     return static_cast<bool>(salinity_coll.insert_one(salinity_doc.view()));
 }
 
@@ -230,7 +370,8 @@ bool SailbotDB::storeSalinitySensors(
 // }
 
 bool SailbotDB::storeBatteries(
-  const ProtoList<Sensors::Battery> & battery_pb, const std::string & timestamp, mongocxx::client & client)
+  const ProtoList<Sensors::Battery> & battery_pb, const std::string & timestamp, const std::string & voyage,
+  mongocxx::client & client)
 {
     mongocxx::database   db             = client[db_name_];
     mongocxx::collection batteries_coll = db[COLLECTION_BATTERIES];
@@ -240,12 +381,15 @@ bool SailbotDB::storeBatteries(
         batteries_doc_arr = batteries_doc_arr << bstream::open_document << "voltage" << battery.voltage() << "current"
                                               << battery.current() << bstream::close_document;
     }
-    DocVal batteries_doc = batteries_doc_arr << bstream::close_array << "timestamp" << timestamp << bstream::finalize;
+    batteries_doc_arr << bstream::close_array << "timestamp" << timestamp;
+    appendVoyage(doc_builder, voyage);
+    DocVal batteries_doc = doc_builder << bstream::finalize;
     return static_cast<bool>(batteries_coll.insert_one(batteries_doc.view()));
 }
 
 bool SailbotDB::storeWindSensors(
-  const ProtoList<Sensors::Wind> & wind_pb, const std::string & timestamp, mongocxx::client & client)
+  const ProtoList<Sensors::Wind> & wind_pb, const std::string & timestamp, const std::string & voyage,
+  mongocxx::client & client)
 {
     mongocxx::database   db        = client[db_name_];
     mongocxx::collection wind_coll = db[COLLECTION_WIND_SENSORS];
@@ -255,12 +399,15 @@ bool SailbotDB::storeWindSensors(
         wind_doc_arr = wind_doc_arr << bstream::open_document << "speed" << wind_sensor.speed() << "direction"
                                     << static_cast<int16_t>(wind_sensor.direction()) << bstream::close_document;
     }
-    DocVal wind_doc = wind_doc_arr << bstream::close_array << "timestamp" << timestamp << bstream::finalize;
+    wind_doc_arr << bstream::close_array << "timestamp" << timestamp;
+    appendVoyage(doc_builder, voyage);
+    DocVal wind_doc = doc_builder << bstream::finalize;
     return static_cast<bool>(wind_coll.insert_one(wind_doc.view()));
 }
 
 bool SailbotDB::storePathSensors(
-  const Sensors::Path & local_path_pb, const std::string & timestamp, mongocxx::client & client)
+  const Sensors::Path & local_path_pb, const std::string & timestamp, const std::string & voyage,
+  mongocxx::client & client)
 {
     mongocxx::database           db              = client[db_name_];
     mongocxx::collection         local_path_coll = db[COLLECTION_LOCAL_PATH];
@@ -271,7 +418,9 @@ bool SailbotDB::storePathSensors(
         local_path_doc_arr = local_path_doc_arr << bstream::open_document << "latitude" << waypoint.latitude()
                                                 << "longitude" << waypoint.longitude() << bstream::close_document;
     }
-    DocVal local_path_doc = local_path_doc_arr << bstream::close_array << "timestamp" << timestamp << bstream::finalize;
+    local_path_doc_arr << bstream::close_array << "timestamp" << timestamp;
+    appendVoyage(doc_builder, voyage);
+    DocVal local_path_doc = doc_builder << bstream::finalize;
     return static_cast<bool>(local_path_coll.insert_one(local_path_doc.view()));
 }
 

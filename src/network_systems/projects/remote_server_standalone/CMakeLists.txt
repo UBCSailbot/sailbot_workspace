@@ -45,6 +45,9 @@ target_link_libraries(remote_server_lib
 add_executable(remote_server src/main.cpp)
 target_link_libraries(remote_server remote_server_lib)
 
+add_executable(sailbot_cli src/sailbot_cli.cpp)
+target_link_libraries(sailbot_cli remote_server_lib)
+
 # ---- Tests ----
 option(BUILD_TESTING "Build the standalone test suite" ON)
 if(BUILD_TESTING)
