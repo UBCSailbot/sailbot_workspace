@@ -103,14 +103,20 @@ public:
             }
 
             this->declare_parameter("port", default_port);
-            constexpr double DEFAULT_RECEIVE_PERIOD_SEC = 1800.0;
-            constexpr double DEFAULT_SEND_PERIOD_SEC    = 3600.0;
+            // receive_period_sec: longest time without a mailbox check. Every send also checks the mailbox, so this
+            //                     only costs anything when sends are failing or stopped.
+            // ring_poll_period_sec: how often to read the modem's ring alert flag, which is free
+            constexpr double DEFAULT_RECEIVE_PERIOD_SEC   = 3600.0;
+            constexpr double DEFAULT_SEND_PERIOD_SEC      = 3600.0;
+            constexpr double DEFAULT_RING_POLL_PERIOD_SEC = 60.0;
             this->declare_parameter<double>("receive_period_sec", DEFAULT_RECEIVE_PERIOD_SEC);
             this->declare_parameter<double>("send_period_sec", DEFAULT_SEND_PERIOD_SEC);
-            rclcpp::Parameter default_port_parm  = this->get_parameter("port");
-            std::string       port               = default_port_parm.as_string();
-            const double      receive_period_sec = this->get_parameter("receive_period_sec").as_double();
-            const double      send_period_sec    = this->get_parameter("send_period_sec").as_double();
+            this->declare_parameter<double>("ring_poll_period_sec", DEFAULT_RING_POLL_PERIOD_SEC);
+            rclcpp::Parameter default_port_parm    = this->get_parameter("port");
+            std::string       port                 = default_port_parm.as_string();
+            const double      receive_period_sec   = this->get_parameter("receive_period_sec").as_double();
+            const double      send_period_sec      = this->get_parameter("send_period_sec").as_double();
+            const double      ring_poll_period_sec = this->get_parameter("ring_poll_period_sec").as_double();
 
             if (!std::isfinite(receive_period_sec) || receive_period_sec <= 0.0) {
                 throw std::invalid_argument("receive_period_sec must be greater than zero");
@@ -118,12 +124,18 @@ public:
             if (!std::isfinite(send_period_sec) || send_period_sec <= 0.0) {
                 throw std::invalid_argument("send_period_sec must be greater than zero");
             }
+            if (!std::isfinite(ring_poll_period_sec) || ring_poll_period_sec <= 0.0) {
+                throw std::invalid_argument("ring_poll_period_sec must be greater than zero");
+            }
+            receive_period_ = std::chrono::duration_cast<std::chrono::steady_clock::duration>(
+              std::chrono::duration<double>(receive_period_sec));
 
             RCLCPP_INFO(
               this->get_logger(), "Running Local Transceiver in mode: %s, with port: %s.", mode.c_str(), port.c_str());
             RCLCPP_INFO(
-              this->get_logger(), "Local Transceiver periods: receive=%.3f seconds, send=%.3f seconds",
-              receive_period_sec, send_period_sec);
+              this->get_logger(),
+              "Local Transceiver periods: receive=%.3f seconds, send=%.3f seconds, ring poll=%.3f seconds",
+              receive_period_sec, send_period_sec, ring_poll_period_sec);
             lcl_trns_ = std::make_unique<LocalTransceiver>(port, SATELLITE_BAUD_RATE);
 
             // Set up logging callbacks to use ROS logging
@@ -137,6 +149,10 @@ public:
 
             static constexpr int ROS_Q_SIZE = 5;
             pub_ = this->create_publisher<custom_interfaces::msg::Path>(ros_topics::GLOBAL_PATH, ROS_Q_SIZE);
+            lcl_trns_->setPathCallback([this](const custom_interfaces::msg::Path & path) {
+                RCLCPP_INFO(this->get_logger(), "Publishing received waypoints from Local Transceiver");
+                pub_->publish(path);
+            });
 
             // subscriber nodes
             sub_wind_sensor = this->create_subscription<custom_interfaces::msg::WindSensors>(
@@ -203,7 +219,7 @@ public:
             RCLCPP_INFO(this->get_logger(), "receive_and_pub service created");
 
             receive_timer_ = this->create_wall_timer(
-              std::chrono::duration<double>(receive_period_sec),
+              std::chrono::duration<double>(ring_poll_period_sec),
               std::bind(&LocalTransceiverIntf::receive_timer_cb, this));
             send_timer_ = this->create_wall_timer(
               std::chrono::duration<double>(send_period_sec), std::bind(&LocalTransceiverIntf::send_timer_cb, this));
@@ -241,6 +257,9 @@ private:
 
     rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr param_cb_handle_;
     bool                                                             local_transceiver_debug_ = false;
+    std::chrono::steady_clock::duration                              receive_period_;
+    // Starts empty so the first poll checks the mailbox: messages sent while the boat was off have no rings left
+    std::optional<std::chrono::steady_clock::time_point> last_backup_check_;
 
     rcl_interfaces::msg::SetParametersResult on_param_change(const std::vector<rclcpp::Parameter> & params)
     {
@@ -282,21 +301,34 @@ private:
      * @brief Callback function to publish to onboard ROS network
      *
      */
-    void pub_cb(/*placeholder*/)
+    void pub_cb(bool answering_ring = false)
     {
-        custom_interfaces::msg::Path msg = lcl_trns_->receive();
-        if (msg.waypoints.empty()) {
-            RCLCPP_INFO(this->get_logger(), "No waypoints received from Local Transceiver");
-        } else {
-            RCLCPP_INFO(this->get_logger(), "Publishing received waypoints from Local Transceiver");
-            pub_->publish(msg);
+        // Received paths are published by the path callback
+        if (!lcl_trns_->receive(answering_ring)) {
+            RCLCPP_INFO(this->get_logger(), "Mailbox check failed");
         }
     }
 
+    /**
+     * @brief Answer a pending ring alert, or check the mailbox if nothing has in receive_period_
+     */
     void receive_timer_cb()
     {
         try {
-            pub_cb();
+            if (lcl_trns_->ringAlertPending().value_or(false)) {
+                RCLCPP_INFO(this->get_logger(), "Ring alert pending, checking mailbox");
+                pub_cb(true);
+                return;
+            }
+
+            const auto now          = std::chrono::steady_clock::now();
+            const bool backup_due   = !last_backup_check_ || now - *last_backup_check_ >= receive_period_;
+            const bool recent_check = lcl_trns_->mailboxCheckedWithin(receive_period_);
+            if (backup_due && !recent_check) {
+                RCLCPP_INFO(this->get_logger(), "No recent mailbox check, checking mailbox");
+                last_backup_check_ = now;
+                pub_cb();
+            }
         } catch (const std::exception & e) {
             RCLCPP_ERROR(this->get_logger(), "Exception during timed receive(): %s", e.what());
         }

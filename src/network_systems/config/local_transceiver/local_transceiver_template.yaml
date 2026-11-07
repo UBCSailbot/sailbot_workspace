@@ -5,4 +5,7 @@ local_transceiver_node:
     # The following parameters are optional. Defaults are set in local_transceiver_ros_intf.cpp
     # Disable timer-driven send/receive calls. This can also be changed at runtime.
     local_transceiver_debug: false
+    send_period_sec: # Double: seconds between sends (default: 3600.0)
+    receive_period_sec: # Double: longest time without a mailbox check, sends count as checks (default: 3600.0)
+    ring_poll_period_sec: # Double: seconds between free ring alert flag checks (default: 60.0)
     port: # String: Serial port that the Local Transceiver will use (default: /tmp/local_transceiver_test_port)
