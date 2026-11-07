@@ -16,9 +16,9 @@ using CAN_REPLAY::CanLogReplayer;
 
 namespace
 {
-constexpr auto STOP_CHECK_SLICE  = std::chrono::milliseconds(5);   // max sleep between stop flag checks
-constexpr int  SINK_POLL_TIMEOUT = 10;                             // ms to block waiting for outbound frames
-constexpr auto WRITE_RETRY_DELAY = std::chrono::milliseconds(1);   // wait before retrying a full socket buffer
+constexpr auto STOP_CHECK_SLICE  = std::chrono::milliseconds(5);  // max sleep between stop flag checks
+constexpr int  SINK_POLL_TIMEOUT = 10;                            // ms to block waiting for outbound frames
+constexpr auto WRITE_RETRY_DELAY = std::chrono::milliseconds(1);  // wait before retrying a full socket buffer
 }  // namespace
 
 MockCanBus::MockCanBus()
@@ -110,8 +110,10 @@ bool MockCanBus::writeFrame(const CanFrame & frame)
             continue;
         }
         // single << so log frameworks capturing stderr do not split the message
-        std::cerr << ("Mock CAN bus write error: " + std::to_string(errno) + "(" +
-                      strerror(errno) + ")\n");  // NOLINT(concurrency-mt-unsafe)
+        std::cerr
+          << ("Mock CAN bus write error: " + std::to_string(errno) + "(" +
+              strerror(errno) +  // NOLINT(concurrency-mt-unsafe)
+              ")\n");
         return false;
     }
     return false;
@@ -136,11 +138,14 @@ void MockCanBus::sinkLoop()
         } else if (bytes_read == 0) {
             return;  // CanTransceiver end closed - nothing left to capture
         } else if (bytes_read > 0) {
-            std::cerr << ("Mock CAN bus read error: read " + std::to_string(bytes_read) +
-                          "B but CAN frames are expected to be " + std::to_string(sizeof(CanFrame)) + "B\n");
+            std::cerr
+              << ("Mock CAN bus read error: read " + std::to_string(bytes_read) +
+                  "B but CAN frames are expected to be " + std::to_string(sizeof(CanFrame)) + "B\n");
         } else if (errno != EAGAIN && errno != EWOULDBLOCK) {
-            std::cerr << ("Mock CAN bus read error: " + std::to_string(errno) + "(" +
-                          strerror(errno) + ")\n");  // NOLINT(concurrency-mt-unsafe)
+            std::cerr
+              << ("Mock CAN bus read error: " + std::to_string(errno) + "(" +
+                  strerror(errno) +  // NOLINT(concurrency-mt-unsafe)
+                  ")\n");
         }
     }
 }
