@@ -8,6 +8,7 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 
+#include <cstdlib>
 #include <stdexcept>
 #include <thread>
 
@@ -51,6 +52,18 @@ void bringCanInterfaceDown(int sock_desc)
     std::cerr << "Brought can0 down after CAN write returned ENOBUFS" << std::endl;
 }
 }  // namespace
+
+void bringCanInterfaceUp()
+{
+    int result = std::system(
+      "sudo ip link set can0 up type can bitrate 500000 dbitrate 1000000 fd on");  // NOLINT(concurrency-mt-unsafe)
+
+    if (result == 0) {
+        std::cerr << "Sudo command executed successfully.\n" << std::endl;
+    } else {
+        std::cerr << "Sudo command failed or required a password prompt.\n" << std::endl;
+    }
+}
 
 void CanTransceiver::onNewCanData(const CanFrame & frame) const
 {
@@ -188,13 +201,17 @@ void CanTransceiver::send(const CanFrame & frame) const
 {
     std::lock_guard<std::mutex> lock(can_mtx_);
     ssize_t                     bytes_written = write(sock_desc_, &frame, sizeof(CanFrame));
+    std::string                 manual_override_test;
     if (bytes_written < 0) {
         const int write_errno = errno;  // Used const to be safe and store the error reliably
         std::cerr << "CAN write error: " << write_errno << "("
                   << strerror(write_errno)  // NOLINT(concurrency-mt-unsafe)
                   << ")" << std::endl;
-        if (write_errno == ENOBUFS && !is_can_simulated_) {
+        if (
+          (write_errno == ENOBUFS && !is_can_simulated_) ||
+          (std::cin >> manual_override_test && manual_override_test == "test_buffer")) {
             bringCanInterfaceDown(sock_desc_);
+            bringCanInterfaceUp();
         }
     } else {
         if (bytes_written != sizeof(CanFrame)) {
