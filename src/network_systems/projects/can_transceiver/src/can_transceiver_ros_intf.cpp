@@ -14,6 +14,7 @@
 #include <rclcpp/timer.hpp>
 #include <fstream>
 #include <cstdint>
+#include <mutex>
 
 
 #include "can_frame_parser.h"
@@ -28,7 +29,7 @@
 constexpr int  QUEUE_SIZE              = 10;  // Arbitrary number
 constexpr auto TIMER_INTERVAL          = std::chrono::milliseconds(500);
 constexpr auto RUDDER_FALLBACK_TIMEOUT = std::chrono::seconds(5);
-const std::uintmax_t MAX_FILE_SIZE = 50'000'000;
+const std::uintmax_t MAX_FILE_SIZE = 5'000'000'000;
 
  struct CsvEntry {
     std::string name;
@@ -60,13 +61,42 @@ class CsvLogger{
 
     void opener(const std::string& filename) {
          streams_[filename].open(filename, std::ios::app);
-    }  
+    }
 
     void closer(const std::string& filename) {
            auto it = streams_.find(filename);
       if (it != streams_.end() && it->second.is_open()) {
         it->second.close();
       }
+    }
+
+     std::vector<CsvEntry> queue_vector(){
+        std::vector<CsvEntry> vec;
+        while(!m_queue.empty()){
+            vec.push_back(m_queue.front());
+            m_queue.pop();
+        }
+        return vec;
+    }
+
+    void push(const std::vector<CsvEntry>& csvEntries){
+
+        std::lock_guard<std::mutex> lock(m_mutex);
+
+        for(const auto& entry : csvEntries){
+            m_queue.push(entry);
+        }
+
+        m_cond.notify_one();
+    }
+     CsvEntry pop(){
+
+        std::unique_lock<std::mutex> lock(m_mutex);
+         m_cond.wait(lock, [this]() { return !m_queue.empty(); });
+        CsvEntry entries = m_queue.front();
+           m_queue.pop();
+         return entries;
+
     }
     void write( const std::vector<CsvEntry>& csvEntries);
 
@@ -82,6 +112,9 @@ class CsvLogger{
                   temp,ph,salinity,desired_frame, main_trim_tab_frame;
        std::vector<std::string> csvFiles = {"ais_Ships.csv","battery.csv","gps.csv","wind_sensor.csv","filtered_wind.csv",
     "rudder.csv","rudder_debug.csv","temp.csv","ph.csv","salinity.csv","desired_heading.csv","main_frame.csv"};
+    std::queue<CsvEntry> m_queue;
+    std::mutex m_mutex;
+    std::condition_variable m_cond;
 
 };
 CsvLogger::CsvLogger(rclcpp::Logger logger): logger_(logger) {
@@ -96,31 +129,34 @@ CsvLogger::CsvLogger(rclcpp::Logger logger): logger_(logger) {
     void CsvLogger:: write(const std::vector<CsvEntry>& csvEntries)
     {
            uint32_t dot =0;
+           CsvEntry value;
         for(const auto& file : csvFiles){
 
             if(std::filesystem::exists(file) && std::filesystem::file_size(file) >= MAX_FILE_SIZE){
                 closer(file);
                 RCLCPP_INFO(logger_, " %s file as it has exceeded the maximum size of %ju bytes, New file is created.", file.c_str(), MAX_FILE_SIZE);
                  dot = file.find_last_of('.');
-                 
+
             while(std::filesystem::exists(file.substr(0, dot) + std::to_string(count) + ".csv")) {
                       count++;
                  }
              fileCounts[file] = count;
                 filename = file.substr(0, dot) + std::to_string(fileCounts[file]) + ".csv";
                 std::rename(file.c_str(), filename.c_str());
-               
+
                 fileCounts[file]++;
                 opener(file);
              }
              count =0;
               dot = file.find_last_of('.');
-             for(const auto& entry : csvEntries){
-                  
-                if(entry.name == file.substr(0, dot)){
-                     streams_[file] << entry.name << ":" << entry.timestamp << "," << entry.data << "\n";
+
+                push(csvEntries);
+
+                for(const auto& entry : queue_vector()){
+                    if(entry.name == file.substr(0, dot)){
+                        streams_[file] << entry.name << ":" << entry.timestamp << "," << entry.data << "\n";
+                    }
                 }
-        }
     }
 }
     CsvLogger::~CsvLogger() {
@@ -139,7 +175,6 @@ class CanTransceiverIntf : public NetNode
 public:
     CanTransceiverIntf() : NetNode(ros_nodes::CAN_TRANSCEIVER)
     {
-
 
         this->declare_parameter("enabled", true);
         this->declare_parameter("manual_mode", false);
@@ -289,6 +324,10 @@ public:
      void send(CsvLogger& csvfiles){
           csvfiles.process(csvEntries);
     }
+    void write(CsvLogger& csvfiles){
+          csvfiles.write(csvEntries);
+         csvEntries.clear();
+    }
 
 private:
     // pointer to the CAN Transceiver implementation
@@ -366,10 +405,9 @@ private:
     bool                                  publishing_rudder_debug_ = false;
     std::chrono::steady_clock::time_point last_rudder_data_        = std::chrono::steady_clock::now();
 
-
-
+   static std::unordered_map<size_t, std::string> past_temp_values;
     std::vector<CsvEntry> csvEntries;
-
+     CsvLogger csvLogger_;
     /**
      * @brief Set up the mock CAN bus and transceiver for replaying a logged CAN session.
      *        Frames are returned rather than replayed immediately so that replay can start after
@@ -523,8 +561,9 @@ private:
                 ais_ships_holder_.clear();
                 received_indices_.clear();
             }
-             if(past_ais_value !=  ais_ship.toString()){
             RCLCPP_DEBUG(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), ais_ship.toString().c_str());
+             if(past_ais_value !=  ais_ship.toString()){
+            RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), ais_ship.toString().c_str());
                csvEntries.push_back({"ais_Ship", getCurrentTimeString(), ais_ship.toString()});
              }
              past_ais_value = ais_ship.toString();
@@ -570,8 +609,9 @@ private:
 
             std::stringstream ss;
             ss << currentTime;
+            RCLCPP_DEBUG(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), bat.toString().c_str());
             if (past_battery_value != bat.toString()) {
-                RCLCPP_DEBUG(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), bat.toString().c_str());
+                RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), bat.toString().c_str());
                 csvEntries.push_back({"battery", getCurrentTimeString(), bat.toString()});
             }
             past_battery_value = bat.toString();
@@ -591,8 +631,7 @@ private:
     void publishGPS(const CanFrame & gps_frame)
     {
         static std::string past_gps_value;
-        static std::uint32_t count = 0;
-        static std::string filename;
+
         if (kill_gps_can_) {
             return;
         }
@@ -602,23 +641,12 @@ private:
             msg::GPS gps_ = gps.toRosMsg();
             gps_pub_->publish(gps_);
 
-
-            if(std::filesystem::exists("gps.csv") && std::filesystem::file_size("gps.csv") >= MAX_FILE_SIZE){
-                RCLCPP_INFO(this->get_logger(), " gps.csv file as it has exceeded the maximum size of %ju bytes, New file is created.", MAX_FILE_SIZE);
-                while (std::filesystem::exists("gps" + std::to_string(count) + ".csv")) {
-                    count++;
-                }
-                filename = "gps" + std::to_string(count) + ".csv";
-                std::rename("gps.csv", filename.c_str());
-                count++;
-             }
-
-            if (past_gps_value != gps.toString()) {
-                RCLCPP_DEBUG(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), gps.toString().c_str());
-
-                csvEntries.push_back({"gps", getCurrentTimeString(), gps.toString()});
+            RCLCPP_DEBUG(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), gps.toString().c_str());
+             if (past_gps_value != gps.toString()) {
+                RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), gps.toString().c_str());
+              csvEntries.push_back({"gps", getCurrentTimeString(), gps.toString()});
             }
-             past_gps_value = gps.toString();
+
         } catch (std::out_of_range err) {
             RCLCPP_WARN(this->get_logger(), "%s", err.what());
             return;
@@ -676,8 +704,9 @@ private:
             }
 
             publishFilteredWindSensor();
+            RCLCPP_DEBUG(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), wind_sensor.toString().c_str());
             if (past_wind_sensor_value != wind_sensor.toString()) {
-                RCLCPP_DEBUG(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), wind_sensor.toString().c_str());
+                RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), wind_sensor.toString().c_str());
               csvEntries.push_back({"wind_sensor", getCurrentTimeString(), wind_sensor.toString()});
             }
               past_wind_sensor_value = wind_sensor.toString();
@@ -712,9 +741,9 @@ private:
         std::stringstream ss;
         ss << "[FILTERED WIND SENSOR] Speed: " << filtered_wind.speed.speed << " Angle: " << filtered_wind.direction;
 
-
+         RCLCPP_DEBUG(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), ss.str().c_str());
         if(past_filtered_wind_values != ss.str()){
-            RCLCPP_DEBUG(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), ss.str().c_str());
+            RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), ss.str().c_str());
             csvEntries.push_back({"filtered_wind", getCurrentTimeString(), ss.str()});
         }
         past_filtered_wind_values = ss.str();
@@ -724,7 +753,7 @@ private:
     {
         static std::string past_rudder_value;
         static std::string past_rudder_debug_value;
-     
+
         try {
             const auto id = static_cast<CanId>(rudder_frame.can_id);
             if (id == CanId::RUDDER_DATA_FRAME) {
@@ -740,8 +769,9 @@ private:
                     publishing_rudder_debug_ = false;
                 }
                 rudder_pub_->publish(rudder_msg);
+                RCLCPP_DEBUG(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), rudder.toString().c_str());
                 if(past_rudder_value != rudder.toString()){
-                    RCLCPP_DEBUG(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), rudder.toString().c_str());
+                    RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), rudder.toString().c_str());
                    csvEntries.push_back({"rudder", getCurrentTimeString(), rudder.toString()});
                 }
                 past_rudder_value = rudder.toString();
@@ -760,8 +790,9 @@ private:
             }
             rudder_pub_->publish(rudder_msg);
 
+            RCLCPP_DEBUG(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), rudder.toString().c_str());
             if(past_rudder_debug_value !=  rudder.toString()){
-                 RCLCPP_DEBUG(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), rudder.toString().c_str());
+                 RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), rudder.toString().c_str());
                  csvEntries.push_back({"rudder_debug", getCurrentTimeString(), rudder.toString()});
             }
             past_rudder_debug_value = rudder.toString();
@@ -779,7 +810,6 @@ private:
      */
     void publishTemp(const CanFrame & temp_frame)
     {
-        std::unordered_map<size_t, std::string> past_temp_values;
         try {
             CAN_FP::TempSensor temp_sensor(temp_frame);
             size_t             length = temp_sensors_.temp_sensors.size();
@@ -798,8 +828,9 @@ private:
             temp_sensor_msg                   = temp_sensor.toRosMsg();
             temp_sensors_pub_->publish(temp_sensors_);
 
+            RCLCPP_DEBUG(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), temp_sensor.toString().c_str());
             if(past_temp_values[idx] != temp_sensor.toString()){
-                RCLCPP_DEBUG(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), temp_sensor.toString().c_str());
+                RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), temp_sensor.toString().c_str());
                csvEntries.push_back({"temp", getCurrentTimeString(), temp_sensor.toString()});
             }
             past_temp_values[idx] = temp_sensor.toString();
@@ -832,9 +863,9 @@ private:
             ph_sensors_pub_->publish(ph_sensors_);
 
 
-         
+            RCLCPP_DEBUG(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), ph_sensor.toString().c_str());
             if(past_ph_value != ph_sensor.toString()){
-                RCLCPP_DEBUG(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), ph_sensor.toString().c_str());
+                RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), ph_sensor.toString().c_str());
                 csvEntries.push_back({"ph", getCurrentTimeString(), ph_sensor.toString()});
             }
             past_ph_value = ph_sensor.toString();
@@ -848,7 +879,7 @@ private:
     void publishSalinity(const CanFrame & salinity_frame)
     {
         static std::string past_salinity_value;
-       
+
         try {
             CAN_FP::SalinitySensor salinity_sensor(salinity_frame);
             size_t                 length = salinity_sensors_.salinity_sensors.size();
@@ -867,8 +898,9 @@ private:
             salinity_sensor_msg                       = salinity_sensor.toRosMsg();
             salinity_sensors_pub_->publish(salinity_sensors_);
 
+             RCLCPP_DEBUG(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), salinity_sensor.toString().c_str());
             if(past_salinity_value != salinity_sensor.toString()){
-                RCLCPP_DEBUG(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), salinity_sensor.toString().c_str());
+                RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), salinity_sensor.toString().c_str());
                 csvEntries.push_back({"salinity", getCurrentTimeString(), salinity_sensor.toString()});
             }
             past_salinity_value = salinity_sensor.toString();
@@ -895,9 +927,10 @@ private:
             auto desired_heading_frame = CAN_FP::DesiredHeading(desired_heading_, CanId::MAIN_HEADING);
             can_trns_->send(desired_heading_frame.toLinuxCan());
 
+            RCLCPP_DEBUG(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), desired_heading_frame.toString().c_str());
             if(past_desired_heading_value != desired_heading_frame.toString()) {
 
-                   RCLCPP_DEBUG(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), desired_heading_frame.toString().c_str());
+                RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), desired_heading_frame.toString().c_str());
                 csvEntries.push_back({"desired_heading", getCurrentTimeString(), desired_heading_frame.toString()});
             }
             past_desired_heading_value = desired_heading_frame.toString();
@@ -922,8 +955,10 @@ private:
         auto main_trim_tab_frame = CAN_FP::MainTrimTab(sail_cmd_, CanId::MAIN_TR_TAB);
         can_trns_->send(main_trim_tab_frame.toLinuxCan());
 
+        RCLCPP_DEBUG(
+          this->get_logger(), "%s %s", getCurrentTimeString().c_str(), main_trim_tab_frame.toString().c_str());
         if (past_main_trim_tab_frame != main_trim_tab_frame.toString()&&!main_trim_tab_frame.toString().empty()) {
-             RCLCPP_DEBUG(
+             RCLCPP_INFO(
           this->get_logger(), "%s %s", getCurrentTimeString().c_str(), main_trim_tab_frame.toString().c_str());
           csvEntries.push_back({"main_trim_tab", getCurrentTimeString(), main_trim_tab_frame.toString()});
         }
