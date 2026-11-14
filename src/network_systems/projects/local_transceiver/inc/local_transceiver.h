@@ -1,5 +1,7 @@
 #pragma once
 
+#include <sys/types.h>
+
 #include <boost/asio/streambuf.hpp>
 #include <chrono>
 #include <functional>
@@ -36,6 +38,9 @@ class LocalTransceiver
     friend class TestLocalTransceiver_testMailboxBlackbox_Test;
     friend class TestLocalTransceiver_checkCache_Test;
     friend class TestLocalTransceiver_sbdSessionRetryDelay_Test;
+    friend class TestLocalTransceiver_findLaunchProcess_Test;
+    friend class TestLocalTransceiver_launchHandlesSigint_Test;
+    friend class TestLocalTransceiver_restartSoftwareRefusesWithoutSupervisor_Test;
 
 public:
     // Logging callback types
@@ -177,6 +182,26 @@ public:
      * @return response to the sent command as a string if successful, std::nullopt on failure
      */
     std::optional<std::string> debugSend(const std::string & cmd);
+
+    /**
+     * @brief Debug helper that restarts the whole ROS software system (every node), NOT the Raspberry Pi
+     *        or the Docker container. Ticket #1099
+     *
+     * It gracefully shuts down the `ros2 launch` process that started this node (SIGINT, same as Ctrl-C) after
+     * leaving a marker file behind. `scripts/run_software.sh` sees the marker once launch has exited and launches
+     * the system again. This function does not wait for that: on success the whole system, including the process
+     * calling this, is torn down shortly after it returns.
+     *
+     * @note Requires the system to have been started with `scripts/run_software.sh`, which provides the
+     *       SAILBOT_RESTART_SENTINEL environment variable and relaunches on request. Without it nothing would
+     *       bring the system back up, so the request is refused instead of just shutting everything down.
+     * @note Currently has no callers. It is meant to be triggered over satellite once the satellite command
+     *       framework exists, at which point it will likely move out of this class.
+     *
+     * @return true if the restart was requested, false if it was refused or failed (nothing is shut down
+     *         and no marker file is left behind)
+     */
+    bool restartSoftware();
 
     /**
      * @brief Asynchronously save the received serialized data to a local file
@@ -334,4 +359,26 @@ private:
 
     template <typename AsyncReadOp>
     bool runWithTimeout(AsyncReadOp && op, boost::system::error_code & out_ec);
+
+    /**
+     * @brief Find the `ros2 launch` process this process descends from
+     *
+     * @param start_pid process to start the search from, which is also checked
+     * @param proc_dir  procfs mount to read from (a parameter so tests can fake one)
+     * @return pid of the nearest ancestor (or start_pid itself) running `ros2 launch`, or std::nullopt if there is none
+     */
+    static std::optional<pid_t> findLaunchProcess(pid_t start_pid, const std::string & proc_dir = "/proc");
+
+    /**
+     * @brief Check that a process has a SIGINT handler installed, i.e. SIGINT will shut it down gracefully.
+     *
+     * `ros2 launch` (Humble) only shuts its nodes down on SIGINT. If SIGINT is ignored, which a shell does for
+     * background (`&`) jobs, a SIGINT is a no-op. SIGTERM is no alternative: launch exits on it without stopping
+     * its nodes first, which leaves them running as orphans.
+     *
+     * @param pid      process to check
+     * @param proc_dir procfs mount to read from (a parameter so tests can fake one)
+     * @return true if the process catches SIGINT, false if not or if it could not be determined
+     */
+    static bool launchHandlesSigint(pid_t pid, const std::string & proc_dir = "/proc");
 };
