@@ -7,6 +7,8 @@
 
 #include "can_frame_parser.h"
 
+#include <atomic>
+
 /**
  * @brief CAN Transceiver Class
  *        Handles transmission and reception of data to and from the hardware/simulator
@@ -58,6 +60,11 @@ public:
     void registerCanCbs(
       const std::vector<std::pair<CAN_FP::CanId, std::function<void(const CAN_FP::CanFrame &)>>> & cb_kvps);
 
+    void setTriggerBufferTest(bool enabled)
+    {
+        trigger_buffer_test.store(enabled, std::memory_order_relaxed);
+    }
+
 private:
     // CAN socket this instance is attached to (can be a normal file descriptor when simulating)
     int sock_desc_;
@@ -91,6 +98,8 @@ private:
      * @param frame received CAN data frame
      */
     void onNewCanData(const CAN_FP::CanFrame & frame) const;
+
+    std::atomic_bool trigger_buffer_test{false};
 };
 
 /**
