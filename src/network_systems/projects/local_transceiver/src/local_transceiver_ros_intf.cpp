@@ -202,11 +202,13 @@ public:
                                    std::placeholders::_2));
             RCLCPP_INFO(this->get_logger(), "receive_and_pub service created");
 
+            // !
             receive_timer_ = this->create_wall_timer(
               std::chrono::duration<double>(receive_period_sec),
               std::bind(&LocalTransceiverIntf::receive_timer_cb, this));
             send_timer_ = this->create_wall_timer(
               std::chrono::duration<double>(send_period_sec), std::bind(&LocalTransceiverIntf::send_timer_cb, this));
+            //!
 
             if (local_transceiver_debug_) {
                 receive_timer_->cancel();
