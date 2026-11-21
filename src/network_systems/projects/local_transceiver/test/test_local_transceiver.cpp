@@ -570,6 +570,37 @@ TEST_F(TestLocalTransceiver, SBDStatusExtResponse)
 }
 
 /**
+ * @brief Verifies the read_until matcher finds a final result even when it is split across serial reads
+ *        for at_cmds.h
+ */
+TEST_F(TestLocalTransceiver, FinalResultMatcherSplitReads)
+{
+    // Feeds chunks one at a time, resuming each search where the previous one said to, like asio does.
+    // Returns how many bytes the matched response spans, or std::nullopt if no result was found.
+    auto match = [](const std::vector<std::string> & chunks) -> std::optional<size_t> {
+        AT::FinalResultMatcher matcher;
+        std::string            buf;
+        size_t                 search_start = 0;
+        for (const std::string & chunk : chunks) {
+            buf += chunk;
+            auto [pos, found] = matcher(buf.cbegin() + static_cast<std::ptrdiff_t>(search_start), buf.cend());
+            if (found) {
+                return static_cast<size_t>(pos - buf.cbegin());
+            }
+            search_start = static_cast<size_t>(pos - buf.cbegin());
+        }
+        return std::nullopt;
+    };
+
+    const std::string rsp = "+SBDSX: 0, 5, 0, -1, 1, 0\r\n\r\nOK\r\n";
+    EXPECT_EQ(match({rsp}), rsp.size());
+    EXPECT_EQ(match({rsp.substr(0, rsp.size() - 1), "\n"}), rsp.size());  // "OK\r" then "\n"
+    EXPECT_EQ(match({"ERR", "OR\r\n"}), std::string("ERROR\r\n").size());
+    EXPECT_EQ(match({"O", "K", "\r", "\n"}), std::string("OK\r\n").size());
+    EXPECT_EQ(match({"+SBDIX: 0,", "6, 1"}), std::nullopt);
+}
+
+/**
  * @brief Verifies a new transceiver reports no recent mailbox check, so the first poll checks the mailbox
  */
 TEST_F(TestLocalTransceiver, mailboxNotCheckedAtStart)

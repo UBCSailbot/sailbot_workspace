@@ -3,7 +3,9 @@
 // Full command set: https://cdn-shop.adafruit.com/product-files/4521/4521-AT%20command.pdf
 // Section numbers in this header file refer to this document
 
+#include <algorithm>
 #include <cstdint>
+#include <iterator>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -69,6 +71,31 @@ constexpr uint8_t TRAFFIC_MANAGEMENT   = 38;
 constexpr uint8_t BAND_VIOLATION       = 64;
 constexpr uint8_t PLL_LOCK_FAILURE     = 65;
 }  // namespace mo_status
+
+/**
+ * @brief Match condition for boost::asio::async_read_until that stops at the end of an AT command's final result,
+ *        "OK" or "ERROR". Stopping only at "OK" would make every command the modem rejects wait for the full timeout.
+ */
+struct FinalResultMatcher
+{
+    template <typename Iterator>
+    std::pair<Iterator, bool> operator()(Iterator begin, Iterator end) const
+    {
+        const std::string ok    = STATUS_OK + DELIMITER;
+        const std::string error = STATUS_ERROR + DELIMITER;
+        const std::string data(begin, end);
+        for (const std::string & result : {ok, error}) {
+            size_t pos = data.find(result);
+            if (pos != std::string::npos) {
+                return {begin + static_cast<std::ptrdiff_t>(pos + result.size()), true};
+            }
+        }
+        // Asio resumes the next search from the returned iterator. Back up so a result split across serial reads
+        // (e.g. "OK\r" then "\n") is still seen whole.
+        const auto keep = static_cast<std::ptrdiff_t>(std::max(ok.size(), error.size()) - 1);
+        return {end - std::min(keep, std::distance(begin, end)), false};
+    }
+};
 
 // +SBDIX MT status codes
 namespace mt_status

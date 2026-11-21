@@ -38,31 +38,8 @@ constexpr float LAT_UBOUND = 90.0F;
 constexpr float LON_LBOUND = -180.0F;
 constexpr float LON_UBOUND = 180.0F;
 
-namespace
-{
-/**
- * @brief Tells bio::async_read_until to stop at the end of an AT command's final result, "OK" or "ERROR".
- *        Stopping only at "OK" would make every command the modem rejects wait for the full SERIAL_TIMEOUT.
- */
-struct FinalResultMatcher
-{
-    template <typename Iterator>
-    std::pair<Iterator, bool> operator()(Iterator begin, Iterator end) const
-    {
-        const std::string data(begin, end);
-        for (const std::string & result : {AT::STATUS_OK + AT::DELIMITER, AT::STATUS_ERROR + AT::DELIMITER}) {
-            size_t pos = data.find(result);
-            if (pos != std::string::npos) {
-                return {begin + static_cast<std::ptrdiff_t>(pos + result.size()), true};
-            }
-        }
-        return {end, false};  // keep reading
-    }
-};
-}  // namespace
-
 template <>
-struct boost::asio::is_match_condition<FinalResultMatcher> : public std::true_type
+struct boost::asio::is_match_condition<AT::FinalResultMatcher> : public std::true_type
 {
 };
 
@@ -407,6 +384,11 @@ void LocalTransceiver::collectMail(AT::SBDStatusRsp rsp, bool from_ring, bool ca
                   " messages still queued, but the MO buffer could not be cleared so they are left for later");
             }
             return;
+        }
+        // Stop before a session we would not read the result of: it would download a message (deleting the
+        // gateway's copy) that the next session overwrites
+        if (session + 1 >= MAX_MAILBOX_SESSIONS) {
+            break;
         }
         if (log_debug_) {
             log_debug_(std::to_string(rsp.MT_queued_) + " more messages queued, collecting the next one");
@@ -958,7 +940,7 @@ std::optional<std::string> LocalTransceiver::readRsp()
     boost::system::error_code ec;
 
     bool success = runWithTimeout(
-      [&](auto handler) { bio::async_read_until(serial_, buf, FinalResultMatcher(), handler); }, ec);
+      [&](auto handler) { bio::async_read_until(serial_, buf, AT::FinalResultMatcher(), handler); }, ec);
 
     if (!success) {
         if (log_error_) {
