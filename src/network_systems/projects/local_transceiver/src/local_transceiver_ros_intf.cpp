@@ -302,7 +302,7 @@ private:
 
     void handleUnsupported(uint64_t command_id, bool suppress_ack)
     {
-        // TODO: implement the unimplemented command actions
+        // TODO(sailbot): implement the unimplemented command actions
         sendAck(command_id, false, "unsupported", suppress_ack);
     }
 
@@ -356,12 +356,12 @@ private:
             case Polaris::Command::kGlobalPath:
                 handleSetGlobalPath(cmd.global_path(), cmd.command_id(), suppress_ack);
                 break;
-            case Polaris::Command::kRestart:          // TODO: implement remote restart
-            case Polaris::Command::kSoftwareHealth:   // TODO: implement software health check
-            case Polaris::Command::kComponentHealth:  // TODO: implement component health check
-            case Polaris::Command::kClearWaypoints:   // TODO: implement clearing waypoints/cache
-            case Polaris::Command::kPathfinding:      // TODO: implement setting sail/pathfinding bit
-            case Polaris::Command::kCommunication:    // TODO: implement updating communication periods
+            case Polaris::Command::kRestart:          // TODO(sailbot): implement remote restart
+            case Polaris::Command::kSoftwareHealth:   // TODO(sailbot): implement software health check
+            case Polaris::Command::kComponentHealth:  // TODO(sailbot): implement component health check
+            case Polaris::Command::kClearWaypoints:   // TODO(sailbot): implement clearing waypoints/cache
+            case Polaris::Command::kPathfinding:      // TODO(sailbot): implement setting sail/pathfinding bit
+            case Polaris::Command::kCommunication:    // TODO(sailbot): implement updating communication periods
             default:
                 handleUnsupported(cmd.command_id(), suppress_ack);
                 break;

@@ -819,7 +819,7 @@ bool LocalTransceiver::sendCommandResponse(const Polaris::CommandResponse & resp
     bool        loaded = false;
     for (int i = 0; i < MAX_LOAD_MO_ATTEMPTS && !loaded; i++) {
         std::this_thread::sleep_for(SMALL_WAIT);
-        // TODO: Check if any timing issues on hardware, and modify the clears/sleeps
+        // TODO(Apps247): Check if any timing issues on hardware, and modify the clears/sleeps
         clearSerialBuffer();
         loaded = send(at_write_cmd) &&
                  rcvRsps({
