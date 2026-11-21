@@ -51,7 +51,6 @@ struct vec
 class CsvLogger{
 
     public:
-    CsvLogger();
     ~CsvLogger();
      explicit CsvLogger(rclcpp::Logger logger);
 
@@ -168,12 +167,8 @@ CsvLogger::CsvLogger(rclcpp::Logger logger): logger_(logger) {
     }
 class CanTransceiverIntf : public NetNode
 {
-     std::ofstream ais_ships,batteries,GPS,wind_sensor_data,filtered_wind_data,rudder_data,rudder_debug_data,
-                  temp_data,ph_data,salinity_data,desired_frame_data, main_trim_tab_frame_data;
-
-
 public:
-    CanTransceiverIntf() : NetNode(ros_nodes::CAN_TRANSCEIVER)
+    CanTransceiverIntf() : NetNode(ros_nodes::CAN_TRANSCEIVER),csvLogger_(rclcpp::get_logger("can_transceiver"))
     {
 
         this->declare_parameter("enabled", true);
@@ -405,7 +400,6 @@ private:
     bool                                  publishing_rudder_debug_ = false;
     std::chrono::steady_clock::time_point last_rudder_data_        = std::chrono::steady_clock::now();
 
-   static std::unordered_map<size_t, std::string> past_temp_values;
     std::vector<CsvEntry> csvEntries;
      CsvLogger csvLogger_;
     /**
@@ -810,6 +804,7 @@ private:
      */
     void publishTemp(const CanFrame & temp_frame)
     {
+         static std::unordered_map<size_t, std::string> past_temp_values;
         try {
             CAN_FP::TempSensor temp_sensor(temp_frame);
             size_t             length = temp_sensors_.temp_sensors.size();
