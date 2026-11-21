@@ -40,6 +40,16 @@ class LocalTransceiver
 public:
     // Logging callback types
     using LogCallback = std::function<void(const std::string &)>;
+    // Called with each valid global path received from the remote server
+    using PathCallback = std::function<void(const custom_interfaces::msg::Path &)>;
+
+    /**
+     * @brief Set the callback that receives global paths. Paths can arrive from both send() and receive(), since every
+     *        SBD session also checks the mailbox.
+     *
+     * @param path_cb Callback for received global paths
+     */
+    void setPathCallback(PathCallback path_cb);
 
     /**
     * @brief Set logging callbacks for debug and error messages
@@ -187,11 +197,27 @@ public:
     static void cacheGlobalWaypoints(std::string receivedDataBuffer);
 
     /**
-     * @brief Retrieve the latest message from the remote server via the serial port
+     * @brief Check the Iridium mailbox and pass any received global paths to the path callback
      *
-     * @return The message as a binary string
+     * @param answering_ring true if this check answers a ring alert (uses AT+SBDIXA)
+     * @return true if the mailbox was checked, even if it was empty
      */
-    custom_interfaces::msg::Path receive();
+    bool receive(bool answering_ring = false);
+
+    /**
+     * @brief Check the modem's ring alert flag. This only talks to the modem, so it costs nothing.
+     *        The flag is set even when AT+SBDMTA ring indications are off, and stays set until a mailbox check succeeds.
+     *
+     * @return true if a ring alert is waiting to be answered, std::nullopt if the flag could not be read
+     */
+    std::optional<bool> ringAlertPending();
+
+    /**
+     * @brief Check if any SBD session (from send() or receive()) checked the mailbox recently
+     *
+     * @param max_age how recent the check must be
+     */
+    bool mailboxCheckedWithin(std::chrono::steady_clock::duration max_age) const;
 
     /**
      * @brief Validates the received global path waypoints before they are published to ROS
@@ -225,11 +251,14 @@ private:
     static constexpr std::chrono::seconds SMALL_WAIT{std::chrono::seconds(2)};
     static constexpr std::chrono::seconds MEDIUM_WAIT{std::chrono::seconds(2)};
 
-    // Loading the MO buffer only talks to the modem, so it rarely fails and needs few retries
-    static constexpr int MAX_LOAD_MO_ATTEMPTS = 3;
+    // Commands that only talk to the modem (like loading the MO buffer) rarely fail and need few retries
+    static constexpr int MAX_MODEM_CMD_ATTEMPTS = 3;
     // SBD sessions go to the satellite, retried following RockBLOCK's Adaptive Retry recommendation
     // https://docs.groundcontrol.com/iot/rockblock/user-manual/adaptive-retry
     static constexpr int MAX_SBD_SESSION_ATTEMPTS = 5;
+    // Each session downloads one message, so draining a queue needs one session per message. Capped so a flood of
+    // messages cannot keep us in a paid loop.
+    static constexpr int MAX_MAILBOX_SESSIONS = 5;
 
     // boost io service - required for boost::asio operations
     boost::asio::io_service io_;
@@ -240,6 +269,9 @@ private:
     // Logging callbacks
     LogCallback log_debug_;
     LogCallback log_error_;
+    PathCallback on_path_;
+    // When an SBD session last checked the mailbox without error
+    std::optional<std::chrono::steady_clock::time_point> last_mailbox_check_;
 
     /**
      * @brief Send a command to the serial port
@@ -263,11 +295,43 @@ private:
     bool clearMOBuffer();
 
     /**
-     * @brief Run one SBD session (AT+SBDIX) and parse its result
+     * @brief Run one SBD session (AT+SBDIX or AT+SBDIXA) and parse its result
      *
+     * @param answering_ring true to use AT+SBDIXA
      * @return the session status, or std::nullopt if the result could not be read
      */
-    std::optional<AT::SBDStatusRsp> runSBDSession();
+    std::optional<AT::SBDStatusRsp> runSBDSession(bool answering_ring);
+
+    /**
+     * @brief Run SBD sessions until one succeeds, retrying transient failures with a growing random delay
+     *
+     * @param answering_ring true to use AT+SBDIXA
+     * @return the status of the successful session, or std::nullopt if none succeeded
+     */
+    std::optional<AT::SBDStatusRsp> runSBDSessionWithRetry(bool answering_ring);
+
+    /**
+     * @brief Handle the mailbox part of a successful SBD session: read a downloaded message, then run more sessions
+     *        while the gateway says messages are queued
+     *
+     * @param rsp       status of the session that just finished
+     * @param from_ring true if that session answered a ring alert
+     * @param can_drain true if follow-up sessions are allowed. Must be false if the MO buffer might still hold a sent
+     *                  message, since every session uploads the MO buffer and it would be sent (and paid for) again.
+     */
+    void collectMail(AT::SBDStatusRsp rsp, bool from_ring, bool can_drain);
+
+    /**
+     * @brief Read the message in the modem's MT buffer (AT+SBDRB), validate it, and cache it
+     *
+     * @return the global path, or std::nullopt if it could not be read or is invalid
+     */
+    std::optional<custom_interfaces::msg::Path> readMTMessage();
+
+    /**
+     * @brief Find the first line of an AT response that contains prefix
+     */
+    static std::optional<std::string> findRspLine(const std::string & rsp, const std::string & prefix);
 
     /**
      * @brief Random wait before an SBD session attempt: none for the first attempt, 0-5s for the next two,
@@ -288,6 +352,11 @@ private:
 
     bool rcvRsp(const AT::Line & expected_rsp);
 
+    /**
+     * @brief Read until the command's final result line ("OK" or "ERROR")
+     *
+     * @return everything read, or std::nullopt on timeout. Callers must check for the line they expect.
+     */
     std::optional<std::string> readRsp();
 
     /**
