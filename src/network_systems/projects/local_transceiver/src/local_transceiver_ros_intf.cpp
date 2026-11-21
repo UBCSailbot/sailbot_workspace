@@ -3,6 +3,7 @@
 #include <chrono>
 #include <functional>
 #include <memory>
+#include <mutex>
 #include <rclcpp/publisher.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/subscription.hpp>
@@ -12,6 +13,8 @@
 
 #include "cmn_hdrs/ros_info.h"
 #include "cmn_hdrs/shared_constants.h"
+#include "command.pb.h"
+#include "global_path.pb.h"
 #include "local_transceiver.h"
 #include "net_node.h"
 
@@ -238,6 +241,7 @@ private:
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_send_debug_;
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_check_signal_quality_;
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_receive_and_pub_;
+    std::mutex                                        command_mutex_;
 
     rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr param_cb_handle_;
     bool                                                             local_transceiver_debug_ = false;
@@ -278,25 +282,96 @@ private:
         return result;
     }
 
-    /**
-     * @brief Callback function to publish to onboard ROS network
-     *
-     */
-    void pub_cb(/*placeholder*/)
+    void sendAck(uint64_t command_id, bool success, const std::string & message, bool suppress_ack = false)
     {
-        custom_interfaces::msg::Path msg = lcl_trns_->receive();
-        if (msg.waypoints.empty()) {
-            RCLCPP_INFO(this->get_logger(), "No waypoints received from Local Transceiver");
-        } else {
-            RCLCPP_INFO(this->get_logger(), "Publishing received waypoints from Local Transceiver");
-            pub_->publish(msg);
+        if (suppress_ack) {
+            return;
+        }
+
+        Polaris::CommandResponse resp;
+        resp.set_command_id(command_id);
+        auto * ack = resp.mutable_ack();
+        ack->set_success(success);
+        ack->set_message(message);
+        try {
+            lcl_trns_->sendCommandResponse(resp);
+        } catch (const std::exception & e) {
+            RCLCPP_ERROR(this->get_logger(), "Failed to send ack: %s", e.what());
+        }
+    }
+
+    void handleUnsupported(uint64_t command_id, bool suppress_ack)
+    {
+        // TODO(sailbot): implement the unimplemented command actions
+        sendAck(command_id, false, "unsupported", suppress_ack);
+    }
+
+    void handleSetGlobalPath(const Polaris::SetGlobalPath & gp, uint64_t command_id, bool suppress_ack)
+    {
+        custom_interfaces::msg::Path                      to_publish;
+        std::vector<custom_interfaces::msg::HelperLatLon> waypoints;
+        Polaris::GlobalPath                               cached_path;
+        for (const auto & wp : gp.waypoints()) {
+            custom_interfaces::msg::HelperLatLon hl;
+            hl.set__latitude(wp.latitude());
+            hl.set__longitude(wp.longitude());
+            waypoints.push_back(hl);
+
+            auto * cached_wp = cached_path.add_waypoints();
+            cached_wp->set_latitude(wp.latitude());
+            cached_wp->set_longitude(wp.longitude());
+        }
+        to_publish.set__waypoints(waypoints);
+
+        if (!lcl_trns_->validateGlobalPathWayPoints(to_publish)) {
+            sendAck(command_id, false, "invalid_waypoints", suppress_ack);
+            return;
+        }
+
+        // Cache only validated waypoint data, then publish it
+        std::string gbuf;
+        cached_path.SerializeToString(&gbuf);
+        std::async(std::launch::async, LocalTransceiver::cacheGlobalWaypoints, gbuf).wait();
+
+        pub_->publish(to_publish);
+        sendAck(command_id, true, "ok", suppress_ack);
+    }
+
+    void processCommands()
+    {
+        std::lock_guard<std::mutex> lock(command_mutex_);
+        auto                        data_opt = lcl_trns_->receiveData();
+        if (!data_opt) {
+            return;
+        }
+
+        auto cmd_opt = lcl_trns_->parseCommand(*data_opt);
+        if (!cmd_opt) {
+            return;
+        }
+
+        const auto & cmd          = *cmd_opt;
+        const bool   suppress_ack = cmd.suppress_ack();
+        switch (cmd.payload_case()) {
+            case Polaris::Command::kGlobalPath:
+                handleSetGlobalPath(cmd.global_path(), cmd.command_id(), suppress_ack);
+                break;
+            case Polaris::Command::kRestart:          // TODO(sailbot): implement remote restart
+            case Polaris::Command::kSoftwareHealth:   // TODO(sailbot): implement software health check
+            case Polaris::Command::kComponentHealth:  // TODO(sailbot): implement component health check
+            case Polaris::Command::kClearWaypoints:   // TODO(sailbot): implement clearing waypoints/cache
+            case Polaris::Command::kPathfinding:      // TODO(sailbot): implement setting sail/pathfinding bit
+            case Polaris::Command::kCommunication:    // TODO(sailbot): implement updating communication periods
+            default:
+                handleUnsupported(cmd.command_id(), suppress_ack);
+                break;
         }
     }
 
     void receive_timer_cb()
     {
         try {
-            pub_cb();
+            processCommands();
         } catch (const std::exception & e) {
             RCLCPP_ERROR(this->get_logger(), "Exception during timed receive(): %s", e.what());
         }
@@ -359,14 +434,13 @@ private:
         (void)request;
 
         try {
-            pub_cb();
-            RCLCPP_INFO(
-              this->get_logger(), "Receive and pub completed, check if path message was published successfully.");
+            processCommands();
+            RCLCPP_INFO(this->get_logger(), "Receive and process commands completed.");
             response->success = true;
-            response->message = "Receive and publish completed";
+            response->message = "Receive and process commands completed";
 
         } catch (const std::exception & e) {
-            RCLCPP_ERROR(this->get_logger(), "Exception during pub_cb(receive and publish): %s", e.what());
+            RCLCPP_ERROR(this->get_logger(), "Exception during processCommands(): %s", e.what());
             response->success = false;
             response->message = std::string("Exception: ") + e.what();
         }

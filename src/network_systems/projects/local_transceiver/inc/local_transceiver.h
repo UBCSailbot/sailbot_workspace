@@ -7,8 +7,10 @@
 #include <string>
 
 #include "at_cmds.h"
+#include "boat_to_land_message.pb.h"
 #include "boost/asio/io_service.hpp"
 #include "boost/asio/serial_port.hpp"
+#include "command.pb.h"
 #include "custom_interfaces/msg/batteries.hpp"
 #include "custom_interfaces/msg/ph_sensors.hpp"
 // #include "custom_interfaces/msg/pressure_sensors.hpp"
@@ -187,11 +189,23 @@ public:
     static void cacheGlobalWaypoints(std::string receivedDataBuffer);
 
     /**
-     * @brief Retrieve the latest message from the remote server via the serial port
-     *
-     * @return The message as a binary string
+     * @brief Receive raw MT payload from satellite modem
+     * @return optional raw bytes if a message was received
      */
-    custom_interfaces::msg::Path receive();
+    std::optional<std::string> receiveData();
+
+    /**
+     * @brief Parse a raw payload into a Command if possible
+     * @return optional parsed Command
+     */
+    static std::optional<Polaris::Command> parseCommand(const std::string & data);
+
+    /**
+     * @brief Send a CommandResponse wrapped in a BoatToLandMessage envelope
+     * @param resp CommandResponse to send
+     * @return true on success
+     */
+    bool sendCommandResponse(const Polaris::CommandResponse & resp);
 
     /**
      * @brief Validates the received global path waypoints before they are published to ROS

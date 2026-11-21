@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package Polaris;
+
+import "sensors.proto";
+import "command.proto";
+
+message BoatToLandMessage {
+  oneof payload {
+    Sensors sensors = 1;
+    CommandResponse command_response = 2;
+  }
+}

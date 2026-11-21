@@ -18,6 +18,7 @@
 
 #include "at_cmds.h"
 #include "cmn_hdrs/shared_constants.h"
+#include "command.pb.h"
 #include "filesystem"
 #include "global_path.pb.h"
 #include "local_transceiver.h"
@@ -675,17 +676,21 @@ TEST_F(TestLocalTransceiver, parseReceiveMessageBlackbox)
 {
     std::lock_guard<std::mutex> lock(port_mutex);
 
-    Polaris::GlobalPath sample_data;
+    constexpr uint64_t command_id = 42;
 
-    Polaris::Waypoint * waypoint_a = sample_data.add_waypoints();
+    Polaris::Command sample_command;
+    sample_command.set_command_id(command_id);
+    Polaris::SetGlobalPath * sample_path = sample_command.mutable_global_path();
+
+    Polaris::Waypoint * waypoint_a = sample_path->add_waypoints();
     waypoint_a->set_latitude(10.3F);     //NOLINT(readability-magic-numbers)
     waypoint_a->set_longitude(-123.4F);  //NOLINT(readability-magic-numbers)
-    Polaris::Waypoint * waypoint_b = sample_data.add_waypoints();
+    Polaris::Waypoint * waypoint_b = sample_path->add_waypoints();
     waypoint_b->set_latitude(49.2F);     //NOLINT(readability-magic-numbers)
     waypoint_b->set_longitude(-122.8F);  //NOLINT(readability-magic-numbers)
 
     std::string serialized_data;
-    ASSERT_TRUE(sample_data.SerializeToString(&serialized_data));
+    ASSERT_TRUE(sample_command.SerializeToString(&serialized_data));
 
     // Queue only the protobuf payload; the modem supplies the binary response framing.
     std::ofstream outfile("/tmp/serialized_data.bin", std::ios::binary);
@@ -700,15 +705,34 @@ TEST_F(TestLocalTransceiver, parseReceiveMessageBlackbox)
 
     // Allow the queued HTTP message to settle before starting the SBD session.
     std::this_thread::sleep_for(std::chrono::seconds(1));
-    custom_interfaces::msg::Path received_data = lcl_trns_->receive();
+    auto data = lcl_trns_->receiveData();
+    ASSERT_TRUE(data.has_value());
 
-    ASSERT_EQ(received_data.waypoints.size(), static_cast<std::size_t>(sample_data.waypoints_size()))
+    auto received_command = LocalTransceiver::parseCommand(*data);
+    ASSERT_TRUE(received_command.has_value());
+    ASSERT_EQ(received_command->command_id(), command_id);
+    ASSERT_EQ(received_command->payload_case(), Polaris::Command::kGlobalPath);
+
+    const auto & received_path = received_command->global_path();
+    ASSERT_EQ(received_path.waypoints_size(), sample_path->waypoints_size())
       << "Mismatch in number of waypoints received.";
-    for (int i = 0; i < sample_data.waypoints_size(); ++i) {
+    for (int i = 0; i < sample_path->waypoints_size(); ++i) {
         SCOPED_TRACE("Waypoint index: " + std::to_string(i));
-        EXPECT_FLOAT_EQ(received_data.waypoints[i].latitude, sample_data.waypoints(i).latitude());
-        EXPECT_FLOAT_EQ(received_data.waypoints[i].longitude, sample_data.waypoints(i).longitude());
+        EXPECT_FLOAT_EQ(received_path.waypoints(i).latitude(), sample_path->waypoints(i).latitude());
+        EXPECT_FLOAT_EQ(received_path.waypoints(i).longitude(), sample_path->waypoints(i).longitude());
     }
+}
+
+TEST_F(TestLocalTransceiver, parseCommandPreservesSuppressAck)
+{
+    Polaris::Command cmd;
+    cmd.set_command_id(1);
+    cmd.mutable_clear_waypoints();
+    cmd.set_suppress_ack(true);
+
+    auto parsed = LocalTransceiver::parseCommand(cmd.SerializeAsString());
+    ASSERT_TRUE(parsed.has_value());
+    EXPECT_TRUE(parsed->suppress_ack());
 }
 
 TEST_F(TestLocalTransceiver, parseInMsgInvalid)
