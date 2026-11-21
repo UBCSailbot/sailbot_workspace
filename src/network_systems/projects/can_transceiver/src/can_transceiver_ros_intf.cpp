@@ -640,6 +640,8 @@ private:
                 RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), gps.toString().c_str());
               csvEntries.push_back({"gps", getCurrentTimeString(), gps.toString()});
             }
+            past_gps_value = gps.toString();
+
 
         } catch (std::out_of_range err) {
             RCLCPP_WARN(this->get_logger(), "%s", err.what());
