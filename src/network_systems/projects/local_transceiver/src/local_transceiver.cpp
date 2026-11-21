@@ -1067,8 +1067,3 @@ bool LocalTransceiver::runWithTimeout(AsyncReadOp && op, boost::system::error_co
     return !out_ec;
 }
 
-void LocalTransceiver::setPeriodSec(double receive, double send)
-{
-    this->set_parameter(RCLPP::Parameter("receive_period_sec", receive));
-    this->set_parameter(RCLPP::Parameter("send_period_sec", send));
-}

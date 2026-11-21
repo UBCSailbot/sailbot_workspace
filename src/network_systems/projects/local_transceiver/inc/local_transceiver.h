@@ -334,12 +334,4 @@ private:
 
     template <typename AsyncReadOp>
     bool runWithTimeout(AsyncReadOp && op, boost::system::error_code & out_ec);
-
-    /**
-     * @brief Takes in new values for receive_period_sec and send_period_sec.
-     * The function will pass it onto the Ros Parameter and update it accordingly
-     *
-     * @param double double
-     */
-     void setPeriodSec(double receive, double send);
 };
