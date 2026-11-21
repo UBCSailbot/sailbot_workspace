@@ -55,7 +55,7 @@ void bringCanInterfaceDown(int sock_desc)
 
 void bringCanInterfaceUp()
 {
-    int result = std::system(
+    int result = std::system( // NOLINT(concurrency-mt-unsafe)
       "sudo ip link set can0 up type can bitrate 500000 dbitrate 1000000 fd on");  // NOLINT(concurrency-mt-unsafe)
 
     if (result == 0) {
