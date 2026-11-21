@@ -723,6 +723,18 @@ TEST_F(TestLocalTransceiver, parseReceiveMessageBlackbox)
     }
 }
 
+TEST_F(TestLocalTransceiver, parseCommandPreservesSuppressAck)
+{
+    Polaris::Command cmd;
+    cmd.set_command_id(1);
+    cmd.mutable_clear_waypoints();
+    cmd.set_suppress_ack(true);
+
+    auto parsed = LocalTransceiver::parseCommand(cmd.SerializeAsString());
+    ASSERT_TRUE(parsed.has_value());
+    EXPECT_TRUE(parsed->suppress_ack());
+}
+
 TEST_F(TestLocalTransceiver, parseInMsgInvalid)
 {
     constexpr float                                   holder     = 14.3;

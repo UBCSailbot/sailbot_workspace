@@ -281,8 +281,12 @@ private:
         return result;
     }
 
-    void sendAck(uint64_t command_id, bool success, const std::string & message)
+    void sendAck(uint64_t command_id, bool success, const std::string & message, bool suppress_ack = false)
     {
+        if (suppress_ack) {
+            return;
+        }
+
         Polaris::CommandResponse resp;
         resp.set_command_id(command_id);
         auto * ack = resp.mutable_ack();
@@ -295,13 +299,13 @@ private:
         }
     }
 
-    void handleUnsupported(uint64_t command_id)
+    void handleUnsupported(uint64_t command_id, bool suppress_ack)
     {
         // TODO: implement the unimplemented command actions
-        sendAck(command_id, false, "unsupported");
+        sendAck(command_id, false, "unsupported", suppress_ack);
     }
 
-    void handleSetGlobalPath(const Polaris::SetGlobalPath & gp, uint64_t command_id)
+    void handleSetGlobalPath(const Polaris::SetGlobalPath & gp, uint64_t command_id, bool suppress_ack)
     {
         custom_interfaces::msg::Path                      to_publish;
         std::vector<custom_interfaces::msg::HelperLatLon> waypoints;
@@ -319,7 +323,7 @@ private:
         to_publish.set__waypoints(waypoints);
 
         if (!lcl_trns_->validateGlobalPathWayPoints(to_publish)) {
-            sendAck(command_id, false, "invalid_waypoints");
+            sendAck(command_id, false, "invalid_waypoints", suppress_ack);
             return;
         }
 
@@ -329,7 +333,7 @@ private:
         std::async(std::launch::async, LocalTransceiver::cacheGlobalWaypoints, gbuf).wait();
 
         pub_->publish(to_publish);
-        sendAck(command_id, true, "ok");
+        sendAck(command_id, true, "ok", suppress_ack);
     }
 
     void processCommands()
@@ -345,10 +349,11 @@ private:
             return;
         }
 
-        const auto & cmd = *cmd_opt;
+        const auto & cmd          = *cmd_opt;
+        const bool   suppress_ack = cmd.suppress_ack();
         switch (cmd.payload_case()) {
             case Polaris::Command::kGlobalPath:
-                handleSetGlobalPath(cmd.global_path(), cmd.command_id());
+                handleSetGlobalPath(cmd.global_path(), cmd.command_id(), suppress_ack);
                 break;
             case Polaris::Command::kRestart:          // TODO: implement remote restart
             case Polaris::Command::kSoftwareHealth:   // TODO: implement software health check
@@ -357,7 +362,7 @@ private:
             case Polaris::Command::kPathfinding:      // TODO: implement setting sail/pathfinding bit
             case Polaris::Command::kCommunication:    // TODO: implement updating communication periods
             default:
-                handleUnsupported(cmd.command_id());
+                handleUnsupported(cmd.command_id(), suppress_ack);
                 break;
         }
     }

@@ -65,6 +65,8 @@ message Command {
     SetPathfindingEnabled pathfinding = 7;
     SetCommunicationPeriods communication = 8;
   }
+  // When false (the default), the boat sends an ACK over satellite.
+  bool suppress_ack = 9;
 }
 
 // Boat-to-shore command response envelope
