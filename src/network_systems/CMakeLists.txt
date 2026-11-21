@@ -58,10 +58,6 @@ find_package(Boost 1.74.0 REQUIRED
     thread
 )
 
-# MongoDB
-find_package(mongocxx REQUIRED)
-find_package(bsoncxx REQUIRED)
-
 # Protobuf
 find_package(Protobuf REQUIRED)
 set(PROTOBUF_LINK_LIBS
