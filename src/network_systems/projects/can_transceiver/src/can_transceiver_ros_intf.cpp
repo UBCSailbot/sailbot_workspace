@@ -49,6 +49,8 @@ public:
         this->declare_parameter("can_replay_rate", 1.0);
         this->declare_parameter("can_replay_loop", false);
         this->declare_parameter("rudder_debug", false);
+        this->declare_parameter("trigger_buffer_test", false);
+        trigger_buffer_test = this->get_parameter("trigger_buffer_test").as_bool();
         rudder_debug_ = this->get_parameter("rudder_debug").as_bool();
         manual_mode_  = this->get_parameter("manual_mode").as_bool();
 
@@ -68,6 +70,7 @@ public:
                 RCLCPP_INFO(this->get_logger(), "Running CAN Transceiver in production mode");
                 try {
                     can_trns_ = std::make_unique<CanTransceiver>();
+                    can_trns_->setTriggerBufferTest(trigger_buffer_test);
                 } catch (std::runtime_error err) {
                     RCLCPP_ERROR(this->get_logger(), "%s", err.what());
                     throw err;
@@ -77,6 +80,7 @@ public:
                 try {
                     sim_intf_fd_ = mockCanFd("/tmp/CanSimIntfXXXXXX");
                     can_trns_    = std::make_unique<CanTransceiver>(sim_intf_fd_);
+                    can_trns_->setTriggerBufferTest(trigger_buffer_test);
                 } catch (std::runtime_error err) {
                     RCLCPP_ERROR(this->get_logger(), "%s", err.what());
                     throw err;
@@ -259,6 +263,7 @@ private:
 
     bool                                  rudder_debug_            = false;
     bool                                  publishing_rudder_debug_ = false;
+    bool                                  trigger_buffer_test      = false;
     std::chrono::steady_clock::time_point last_rudder_data_        = std::chrono::steady_clock::now();
 
     /**
