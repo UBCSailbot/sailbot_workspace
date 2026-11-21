@@ -129,6 +129,8 @@ CsvLogger::CsvLogger(rclcpp::Logger logger): logger_(logger) {
     {
            uint32_t dot =0;
            CsvEntry value;
+           push(csvEntries);
+            auto entries = queue_vector();
         for(const auto& file : csvFiles){
 
             if(std::filesystem::exists(file) && std::filesystem::file_size(file) >= MAX_FILE_SIZE){
@@ -149,9 +151,7 @@ CsvLogger::CsvLogger(rclcpp::Logger logger): logger_(logger) {
              count =0;
               dot = file.find_last_of('.');
 
-                push(csvEntries);
-
-                for(const auto& entry : queue_vector()){
+                for(const auto& entry : entries){
                     if(entry.name == file.substr(0, dot)){
                         streams_[file] << entry.name << ":" << entry.timestamp << "," << entry.data << "\n";
                     }
