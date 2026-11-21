@@ -184,6 +184,7 @@ Listener::Listener(bio::io_context &io, tcp::endpoint endpoint, SailbotDB &&db)
     catch (beast::error_code ec)
     {
         std::cerr << "Error: " << ec.message() << std::endl;
+        throw beast::system_error(ec); // A server that cannot listen must not start, see main.cpp
     }
 };
 

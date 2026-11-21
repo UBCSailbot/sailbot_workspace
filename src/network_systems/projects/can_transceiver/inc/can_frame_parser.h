@@ -1048,25 +1048,9 @@ private:
 class TempSensor final : public BaseFrame
 {
 public:
-    static constexpr std::array<CanId, 16> TEMP_SENSOR_IDS = {
-      CanId::TEMP_SENSOR_START,
-      CanId::TEMP_1,
-      CanId::TEMP_2,
-      CanId::TEMP_3,
-      CanId::TEMP_4,
-      CanId::TEMP_5,
-      CanId::TEMP_6,
-      CanId::TEMP_7,
-      CanId::TEMP_8,
-      CanId::TEMP_9,
-      CanId::TEMP_10,
-      CanId::TEMP_11,
-      CanId::TEMP_12,
-      CanId::TEMP_13,
-      CanId::TEMP_14,
-      CanId::TEMP_SENSOR_END};
-    static constexpr uint8_t CAN_BYTE_DLEN_ = 4;
-    static constexpr uint8_t BYTE_OFF_TEMP  = 0;
+    static constexpr std::array<CanId, 2> TEMP_SENSOR_IDS = {CanId::TEMP_1, CanId::TEMP_2};
+    static constexpr uint8_t              CAN_BYTE_DLEN_  = 4;
+    static constexpr uint8_t              BYTE_OFF_TEMP   = 0;
 
     /**
       * @brief Explicitly deleted no-argument constructor
@@ -1143,25 +1127,9 @@ private:
 class PhSensor final : public BaseFrame
 {
 public:
-    static constexpr std::array<CanId, 16> PH_SENSOR_IDS = {
-      CanId::PH_SENSOR_START,
-      CanId::PH_1,
-      CanId::PH_2,
-      CanId::PH_3,
-      CanId::PH_4,
-      CanId::PH_5,
-      CanId::PH_6,
-      CanId::PH_7,
-      CanId::PH_8,
-      CanId::PH_9,
-      CanId::PH_10,
-      CanId::PH_11,
-      CanId::PH_12,
-      CanId::PH_13,
-      CanId::PH_14,
-      CanId::PH_SENSOR_END};
-    static constexpr uint8_t CAN_BYTE_DLEN_ = 2;
-    static constexpr uint8_t BYTE_OFF_PH    = 0;
+    static constexpr std::array<CanId, 1> PH_SENSOR_IDS  = {CanId::PH_1};
+    static constexpr uint8_t              CAN_BYTE_DLEN_ = 2;
+    static constexpr uint8_t              BYTE_OFF_PH    = 0;
 
     /**
        * @brief Explicitly deleted no-argument constructor
@@ -1238,25 +1206,9 @@ private:
 class SalinitySensor final : public BaseFrame
 {
 public:
-    static constexpr std::array<CanId, 16> SALINITY_SENSOR_IDS = {
-      CanId::SALINITY_SENSOR_START,
-      CanId::SALINITY_1,
-      CanId::SALINITY_2,
-      CanId::SALINITY_3,
-      CanId::SALINITY_4,
-      CanId::SALINITY_5,
-      CanId::SALINITY_6,
-      CanId::SALINITY_7,
-      CanId::SALINITY_8,
-      CanId::SALINITY_9,
-      CanId::SALINITY_10,
-      CanId::SALINITY_11,
-      CanId::SALINITY_12,
-      CanId::SALINITY_13,
-      CanId::SALINITY_14,
-      CanId::SALINITY_SENSOR_END};
-    static constexpr uint8_t CAN_BYTE_DLEN_    = 4;
-    static constexpr uint8_t BYTE_OFF_SALINITY = 0;
+    static constexpr std::array<CanId, 1> SALINITY_SENSOR_IDS = {CanId::SALINITY_1};
+    static constexpr uint8_t              CAN_BYTE_DLEN_      = 4;
+    static constexpr uint8_t              BYTE_OFF_SALINITY   = 0;
 
     /**
         * @brief Explicitly deleted no-argument constructor

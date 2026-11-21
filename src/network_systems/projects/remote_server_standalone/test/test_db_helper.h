@@ -89,6 +89,16 @@ public:
       std::span<std::string> expected_message, std::span<std::string> expected_timestamp);
 
     /**
+     * @brief Check that every sensor collection has documents and that all of them are tagged with a voyage
+     *
+     * @param expected_voyage Voyage name, or an empty string to expect no voyage field (untagged)
+     * @return true if every sensor document matches, false otherwise
+     */
+    bool verifyVoyageTags(const std::string & expected_voyage);
+
+    using SailbotDB::activateVoyage;
+
+    /**
      * @brief Dump and check all sensors and timestamps from the database
      *
      * @param tracker           FailureTracker that gets if any unexpected results are dumped

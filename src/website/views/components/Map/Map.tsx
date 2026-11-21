@@ -73,7 +73,16 @@ const Map = ({
     <div className={`${styles.map} ${className ?? ''}`.trim()}>
       <div className={styles.mapCanvas}>
         <Maps
-          gpsLocation={gpsData[gpsData.length - 1] ?? { ...LAST_KNOWN_POSITION, speed: 0, heading: 0, timestamp: '' }}
+          gpsLocation={{
+            // LAST_KNOWN_POSITION, VOYAGE_PATH, VOYAGE_CENTER
+            // hardcoded intentionally since voyage over
+            // and this maintains current logical flow
+            // When new voyage launched these MUST be changed
+            ...LAST_KNOWN_POSITION,
+            speed: 0,
+            heading: 0,
+            timestamp: '',
+          }}
           gpsPath={VOYAGE_PATH}
           center={VOYAGE_CENTER}
           zoom={VOYAGE_ZOOM}

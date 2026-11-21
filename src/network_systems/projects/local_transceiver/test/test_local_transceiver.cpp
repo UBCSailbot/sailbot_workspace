@@ -46,6 +46,8 @@ protected:
         if (!http_echo_server_proc_.running(e)) {
             throw std::runtime_error("Failed to start http echo server process! " + e.message());
         }
+        // Allow the child process to bind its HTTP listening socket.
+        std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 
     static void TearDownTestSuite()
@@ -146,7 +148,7 @@ TEST_F(TestLocalTransceiver, checkIridiumSignalQuality)
 
 /**
  * @brief Send a binary string to virtual_iridium and verify it is received
- * Using gps, wind, batteries, temperature, ph, salinity, pressure, local path data
+ * Using gps, wind, batteries, temperature, ph, salinity, local path data
  */
 TEST_F(TestLocalTransceiver, sendData)
 {
@@ -156,7 +158,6 @@ TEST_F(TestLocalTransceiver, sendData)
     // * The below constants are already defined in the constants file, but some files define seem to define them again
     // static const int NUM_TEMP_SENSORS     = 16;
     // static const int NUM_PH_SENSORS       = 16;
-    // static const int NUM_PRESSURE_SENSORS = 16;
     // static const int NUM_SALINITY_SENSORS = 16;
 
     // custom inferfaces used
@@ -165,7 +166,6 @@ TEST_F(TestLocalTransceiver, sendData)
     custom_interfaces::msg::Batteries       batteries;
     custom_interfaces::msg::TempSensors     temp;
     custom_interfaces::msg::PhSensors       ph;
-    // custom_interfaces::msg::PressureSensors pressure;
     custom_interfaces::msg::SalinitySensors salinity;
     custom_interfaces::msg::LPathData       local_paths;
     // custom_interfaces::msg::GenericSensors sensors;
@@ -218,14 +218,6 @@ TEST_F(TestLocalTransceiver, sendData)
     }
     ph.set__ph_sensors(ph_array);
 
-    // std::array<custom_interfaces::msg::PressureSensor, NUM_PRESSURE_SENSORS> pressure_array;
-    // for (int i = 0; i < NUM_PRESSURE_SENSORS; i++) {
-    //     custom_interfaces::msg::HelperPressure pressure_data;
-    //     pressure_data.set__pressure(holder);
-    //     pressure_array[i].set__pressure(pressure_data);
-    // }
-    // pressure.set__pressure_sensors(pressure_array);
-
     std::array<custom_interfaces::msg::SalinitySensor, NUM_SALINITY_SENSORS> salinity_array;
     for (int i = 0; i < NUM_SALINITY_SENSORS; i++) {
         custom_interfaces::msg::HelperSalinity salinity_data;
@@ -248,7 +240,6 @@ TEST_F(TestLocalTransceiver, sendData)
     lcl_trns_->updateSensor(wind);
     lcl_trns_->updateSensor(gps);
     lcl_trns_->updateSensor(temp);
-    // lcl_trns_->updateSensor(pressure);
     lcl_trns_->updateSensor(ph);
     lcl_trns_->updateSensor(salinity);
     lcl_trns_->updateSensor(batteries);
@@ -460,43 +451,6 @@ TEST_F(TestLocalTransceiver, SerializeSalinitySensors)
     EXPECT_FLOAT_EQ(deserialized.salinity_sensors(0), expected_salinity);
 }
 
-// /**
-//  * @brief Test that pressure sensor data is serialized correctly
-//  */
-// TEST_F(TestLocalTransceiver, SerializePressureSensors)
-// {
-//     constexpr float expected_pressure = 101.3;
-
-//     custom_interfaces::msg::PressureSensors pressure_sensors;
-//     custom_interfaces::msg::PressureSensor  pressure_sensor;
-//     custom_interfaces::msg::HelperPressure  pressure_data;
-
-//     pressure_data.set__pressure(expected_pressure);
-//     pressure_sensor.set__pressure(pressure_data);
-//     std::array<custom_interfaces::msg::PressureSensor, NUM_PRESSURE_SENSORS> pressure_array;
-//     for (int i = 0; i < NUM_PRESSURE_SENSORS; i++) {
-//         pressure_array[i] = pressure_sensor;
-//     }
-//     pressure_sensors.set__pressure_sensors(pressure_array);
-
-//     lcl_trns_->updateSensor(pressure_sensors);
-//     Polaris::Sensors sensors(lcl_trns_->sensors());
-
-//     EXPECT_EQ(sensors.pressure_sensors_size(), NUM_PRESSURE_SENSORS);
-//     EXPECT_FLOAT_EQ(sensors.pressure_sensors(0), expected_pressure);
-
-//     // Test serialization
-//     std::string serialized;
-//     EXPECT_TRUE(sensors.SerializeToString(&serialized));
-//     EXPECT_GT(serialized.size(), 0);
-
-//     // Test deserialization
-//     Polaris::Sensors deserialized;
-//     EXPECT_TRUE(deserialized.ParseFromString(serialized));
-//     EXPECT_EQ(deserialized.pressure_sensors_size(), NUM_PRESSURE_SENSORS);
-//     EXPECT_FLOAT_EQ(deserialized.pressure_sensors(0), expected_pressure);
-// }
-
 /**
  * @brief Verifies correct construction of status response object
  *        for at_cmds.h
@@ -541,6 +495,68 @@ TEST_F(TestLocalTransceiver, MOStatusTest)
     EXPECT_TRUE(success_response.MOSuccess());
     EXPECT_FALSE(failed_response.MOSuccess());
     EXPECT_FALSE(no_network_service_response.MOSuccess());
+}
+
+/**
+ * @brief Verifies that truncated or malformed SBDIX responses throw instead of reading past the parsed fields
+ *        for at_cmds.h
+ */
+TEST_F(TestLocalTransceiver, TruncatedSBDResponse)
+{
+    EXPECT_THROW(AT::SBDStatusRsp status("+SBDIX:0,1234,0"), std::invalid_argument);
+    EXPECT_THROW(AT::SBDStatusRsp status("+SBDIX:0"), std::invalid_argument);
+    EXPECT_THROW(AT::SBDStatusRsp status("garbage"), std::invalid_argument);
+    EXPECT_THROW(AT::SBDStatusRsp status(""), std::invalid_argument);
+}
+
+/**
+ * @brief Verifies MO status codes are classified into the correct retry behaviour
+ *        for at_cmds.h
+ */
+TEST_F(TestLocalTransceiver, ClassifyMOStatus)
+{
+    auto classify = [](int mo_status) {
+        return AT::SBDStatusRsp("+SBDIX:" + std::to_string(mo_status) + ",1,0,0,0,0").classifyMO();
+    };
+
+    for (int code : {0, 1, 2, 3, 4}) {
+        EXPECT_EQ(classify(code), AT::MOResult::SUCCESS) << "MO status " << code;
+    }
+    // Transient failures, plus reserved codes which the manual says indicate failure
+    for (int code : {5, 8, 10, 13, 17, 18, 19, 20, 31, 32, 35, 39, 63}) {
+        EXPECT_EQ(classify(code), AT::MOResult::RETRY_SOON) << "MO status " << code;
+    }
+    for (int code : {36, 37, 38}) {
+        EXPECT_EQ(classify(code), AT::MOResult::RETRY_LATER) << "MO status " << code;
+    }
+    for (int code : {11, 12, 14, 15, 16, 33, 34, 64, 65}) {
+        EXPECT_EQ(classify(code), AT::MOResult::FATAL) << "MO status " << code;
+    }
+}
+
+/**
+ * @brief Verifies SBD session retry delays follow the Adaptive Retry schedule
+ */
+TEST_F(TestLocalTransceiver, sbdSessionRetryDelay)
+{
+    using std::chrono::milliseconds;
+    using std::chrono::seconds;
+
+    EXPECT_EQ(LocalTransceiver::sbdSessionRetryDelay(0), milliseconds(0));
+
+    constexpr int NUM_SAMPLES = 100;
+    for (int i = 0; i < NUM_SAMPLES; i++) {
+        for (int attempt : {1, 2}) {
+            milliseconds delay = LocalTransceiver::sbdSessionRetryDelay(attempt);
+            EXPECT_GE(delay, milliseconds(0));
+            EXPECT_LE(delay, seconds(5));
+        }
+        for (int attempt : {3, 4}) {
+            milliseconds delay = LocalTransceiver::sbdSessionRetryDelay(attempt);
+            EXPECT_GE(delay, milliseconds(0));
+            EXPECT_LE(delay, seconds(30));
+        }
+    }
 }
 
 /**
@@ -639,73 +655,61 @@ TEST_F(TestLocalTransceiver, checkCache)
     EXPECT_EQ(parsed_test.waypoints[1].longitude, parsed_cache.waypoints[0].longitude);
 }
 
-//
-// TEST_F(TestLocalTransceiver, testMailboxBlackbox)
-// {
-//     std::lock_guard<std::mutex> lock(port_mutex);  // because same port is being used
+TEST_F(TestLocalTransceiver, testMailboxBlackbox)
+{
+    std::lock_guard<std::mutex> lock(port_mutex);  // because same port is being used
 
-//     std::string holder  = "curl -X POST -F \"test=1234\" http://localhost:8080";
-//     std::string holder2 = "printf \"at+sbdix\r\" > $LOCAL_TRANSCEIVER_TEST_PORT";
+    std::string holder  = "curl -X POST -F \"test=1234\" http://localhost:8080";
+    std::string holder2 = "printf \"at+sbdix\r\" > $LOCAL_TRANSCEIVER_TEST_PORT";
 
-//     system(holder.c_str());   //NOLINT
-//     system(holder2.c_str());  //NOLINT
+    system(holder.c_str());  //NOLINT
+    // Allow the queued HTTP message to settle before starting the SBD session.
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    system(holder2.c_str());  //NOLINT
 
-//     std::optional<std::string> response = lcl_trns_->readRsp();
-//     std::cout << *response << std::endl;
-// }
+    std::optional<std::string> response = lcl_trns_->readRsp();
+    std::cout << *response << std::endl;
+}
 
-// TEST_F(TestLocalTransceiver, parseReceiveMessageBlackbox)
-// {
-//     std::lock_guard<std::mutex> lock(port_mutex);
+TEST_F(TestLocalTransceiver, parseReceiveMessageBlackbox)
+{
+    std::lock_guard<std::mutex> lock(port_mutex);
 
-//     constexpr float     holder = 10.3;
-//     Polaris::GlobalPath sample_data;
+    Polaris::GlobalPath sample_data;
 
-//     Polaris::Waypoint * waypoint_a = sample_data.add_waypoints();
-//     waypoint_a->set_latitude(holder);
-//     waypoint_a->set_longitude(holder);
-//     Polaris::Waypoint * waypoint_b = sample_data.add_waypoints();
-//     waypoint_b->set_latitude(holder);
-//     waypoint_b->set_longitude(holder);
+    Polaris::Waypoint * waypoint_a = sample_data.add_waypoints();
+    waypoint_a->set_latitude(10.3F);     //NOLINT(readability-magic-numbers)
+    waypoint_a->set_longitude(-123.4F);  //NOLINT(readability-magic-numbers)
+    Polaris::Waypoint * waypoint_b = sample_data.add_waypoints();
+    waypoint_b->set_latitude(49.2F);     //NOLINT(readability-magic-numbers)
+    waypoint_b->set_longitude(-122.8F);  //NOLINT(readability-magic-numbers)
 
-//     std::string serialized_data;
-//     ASSERT_TRUE(sample_data.SerializeToString(&serialized_data));
+    std::string serialized_data;
+    ASSERT_TRUE(sample_data.SerializeToString(&serialized_data));
 
-//     uint16_t message_size    = static_cast<uint16_t>(serialized_data.size());
-//     uint16_t message_size_be = htons(message_size);  // Convert to big-endian
+    // Queue only the protobuf payload; the modem supplies the binary response framing.
+    std::ofstream outfile("/tmp/serialized_data.bin", std::ios::binary);
+    ASSERT_TRUE(outfile.is_open());
+    outfile.write(serialized_data.data(), static_cast<std::streamsize>(serialized_data.size()));
+    outfile.close();
+    ASSERT_TRUE(outfile.good());
 
-//     std::string size_prefix(reinterpret_cast<const char *>(&message_size_be), sizeof(message_size_be));
+    std::string holder2 =
+      "curl --fail --silent --show-error -X POST --data-binary @/tmp/serialized_data.bin http://localhost:8080";
+    ASSERT_EQ(std::system(holder2.c_str()), 0) << "Failed to queue the test payload";  //NOLINT
 
-//     std::ofstream outfile("/tmp/serialized_data.bin", std::ios::binary);
-//     outfile.write(size_prefix.data(), size_prefix.size());  //NOLINT
-//     outfile.write(serialized_data.data(), static_cast<std::streamsize>(serialized_data.size()));
-//     outfile.close();
+    // Allow the queued HTTP message to settle before starting the SBD session.
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    custom_interfaces::msg::Path received_data = lcl_trns_->receive();
 
-//     outfile.close();  // Close the file after writing
-
-//     std::string holder2 = "curl -X POST --data-binary @/tmp/serialized_data.bin http://localhost:8080";
-//     std::system(holder2.c_str());  //NOLINT
-//     std::string test_cmd = "hexdump -C /tmp/serialized_data.bin";
-//     std::system(test_cmd.c_str());  //NOLINT
-
-//     custom_interfaces::msg::Path received_data = lcl_trns_->receive();
-
-//     Polaris::GlobalPath global_path;
-//     for (const auto & waypoint : received_data.waypoints) {
-//         Polaris::Waypoint * new_waypoint = global_path.add_waypoints();
-//         new_waypoint->set_latitude(waypoint.latitude);
-//         new_waypoint->set_longitude(waypoint.longitude);
-//     }
-
-//     if (global_path.waypoints_size() > 0) {
-//         ASSERT_EQ(global_path.waypoints_size(), sample_data.waypoints_size())
-//           << "Mismatch in number of waypoints received.";
-//         ASSERT_EQ(global_path.waypoints(0).latitude(), holder);
-//         ASSERT_EQ(global_path.waypoints(0).longitude(), holder);
-//     } else {
-//         std::cout << "No waypoints received." << std::endl;
-//     }
-// }
+    ASSERT_EQ(received_data.waypoints.size(), static_cast<std::size_t>(sample_data.waypoints_size()))
+      << "Mismatch in number of waypoints received.";
+    for (int i = 0; i < sample_data.waypoints_size(); ++i) {
+        SCOPED_TRACE("Waypoint index: " + std::to_string(i));
+        EXPECT_FLOAT_EQ(received_data.waypoints[i].latitude, sample_data.waypoints(i).latitude());
+        EXPECT_FLOAT_EQ(received_data.waypoints[i].longitude, sample_data.waypoints(i).longitude());
+    }
+}
 
 TEST_F(TestLocalTransceiver, parseInMsgInvalid)
 {

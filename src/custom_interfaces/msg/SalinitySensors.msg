@@ -1,1 +1,1 @@
-SalinitySensor[16] salinity_sensors
+SalinitySensor[1] salinity_sensors

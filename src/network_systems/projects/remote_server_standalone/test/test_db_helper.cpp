@@ -1,6 +1,7 @@
 #include "test_db_helper.h"
 
 #include <bsoncxx/builder/basic/document.hpp>
+#include <bsoncxx/builder/basic/kvp.hpp>
 #include <bsoncxx/builder/stream/document.hpp>
 #include <bsoncxx/builder/stream/helpers.hpp>
 #include <bsoncxx/document/value.hpp>
@@ -25,31 +26,12 @@ void UtilDB::cleanDB()
     mongocxx::pool::entry entry = pool_->acquire();
     mongocxx::database    db    = (*entry)[db_name_];
 
-    mongocxx::collection gps_coll = db[COLLECTION_GPS];
-    mongocxx::collection ais_coll = db[COLLECTION_AIS_SHIPS];
-    // mongocxx::collection generic_coll          = db[COLLECTION_DATA_SENSORS];
-    mongocxx::collection temp_coll     = db[COLLECTION_TEMP_SENSORS];
-    mongocxx::collection ph_coll       = db[COLLECTION_PH_SENSORS];
-    mongocxx::collection salinity_coll = db[COLLECTION_SALINITY_SENSORS];
-    // mongocxx::collection pressure_coll         = db[COLLECTION_PRESSURE_SENSORS];
-    mongocxx::collection batteries_coll        = db[COLLECTION_BATTERIES];
-    mongocxx::collection wind_coll             = db[COLLECTION_WIND_SENSORS];
-    mongocxx::collection local_path_coll       = db[COLLECTION_LOCAL_PATH];
-    mongocxx::collection global_path_coll      = db[COLLECTION_GLOBAL_PATH];
-    mongocxx::collection iridium_response_coll = db[COLLECTION_IRIDIUM_RESPONSE];
-
-    gps_coll.delete_many(bsoncxx::builder::basic::make_document());
-    ais_coll.delete_many(bsoncxx::builder::basic::make_document());
-    // generic_coll.delete_many(bsoncxx::builder::basic::make_document());
-    temp_coll.delete_many(bsoncxx::builder::basic::make_document());
-    // pressure_coll.delete_many(bsoncxx::builder::basic::make_document());
-    salinity_coll.delete_many(bsoncxx::builder::basic::make_document());
-    ph_coll.delete_many(bsoncxx::builder::basic::make_document());
-    batteries_coll.delete_many(bsoncxx::builder::basic::make_document());
-    wind_coll.delete_many(bsoncxx::builder::basic::make_document());
-    local_path_coll.delete_many(bsoncxx::builder::basic::make_document());
-    global_path_coll.delete_many(bsoncxx::builder::basic::make_document());
-    iridium_response_coll.delete_many(bsoncxx::builder::basic::make_document());
+    std::vector<std::string> names = SENSOR_COLLECTIONS;
+    names.insert(
+      names.end(), {COLLECTION_GLOBAL_PATH, COLLECTION_IRIDIUM_RESPONSE, COLLECTION_VOYAGES, COLLECTION_ACTIVE_VOYAGE});
+    for (const std::string & name : names) {
+        db[name].delete_many(bsoncxx::builder::basic::make_document());
+    }
 }
 
 Sensors UtilDB::genRandSensors()
@@ -164,7 +146,7 @@ bool UtilDB::verifyDBWrite(std::span<Sensors> expected_sensors, std::span<Sailbo
     expectEQ(dumped_timestamps.size(), num_docs, "");
 
     for (size_t i = 0; i < num_docs; i++) {
-        expectEQ(dumped_timestamps[i], expected_msg_info[i].timestamp_, "");
+        expectEQ(dumped_timestamps[i], SailbotDB::normalizeTimestamp(expected_msg_info[i].timestamp_), "");
 
         // gps
         expectFloatEQ(dumped_sensors[i].gps().latitude(), expected_sensors[i].gps().latitude(), "");
@@ -306,6 +288,25 @@ bool UtilDB::verifyDBWrite_IridiumResponse(
         expectEQ(dumped_error[i], expected_error[i], "");
         expectEQ(dumped_message[i], expected_message[i], "");
         expectEQ(dumped_timestamps[i], expected_timestamp[i], "");
+    }
+    return !tracker.failed();
+}
+
+bool UtilDB::verifyVoyageTags(const std::string & expected_voyage)
+{
+    utils::FailTracker    tracker;
+    mongocxx::pool::entry entry = pool_->acquire();
+    mongocxx::database    db    = (*entry)[db_name_];
+
+    for (const std::string & name : SENSOR_COLLECTIONS) {
+        mongocxx::collection coll = db[name];
+        tracker.track(utils::checkEQ(coll.count_documents({}) > 0, true, "Error: " + name + " has no documents"));
+        for (const bsoncxx::document::view & doc : coll.find({})) {
+            // An untagged document has no voyage field at all, which bsonString() reports as nullopt
+            tracker.track(
+              utils::checkEQ(
+                bsonString(doc["voyage"]).value_or(""), expected_voyage, "Error: wrong voyage in " + name));
+        }
     }
     return !tracker.failed();
 }

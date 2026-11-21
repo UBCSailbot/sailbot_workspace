@@ -1,15 +1,18 @@
 #include <gtest/gtest.h>
 
 #include <array>
+#include <atomic>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/address.hpp>
 #include <boost/beast/http/status.hpp>
 #include <chrono>
 #include <cstdint>
 #include <random>
+#include <regex>
 #include <sstream>
 #include <string>
 #include <thread>
+#include <utility>
 #include <vector>
 
 #include "remote_transceiver.h"
@@ -219,4 +222,159 @@ TEST_F(TestRemoteTransceiver, TestPostGlobalPathNotFound)
       {TESTING_HOST, std::to_string(TESTING_PORT), "/global-path"}, "application/json", "{}");
 
     EXPECT_EQ(status, http::status::bad_request);
+}
+
+/**
+ * @brief POST one set of random sensors to the server
+ *
+ * @return The sensors and message info that were sent
+ */
+std::pair<Sensors, SailbotDB::RcvdMsgInfo> postRandSensors()
+{
+    auto [rand_sensors, rand_info] = g_test_db.genRandData(UtilDB::getTimestamp());
+    std::string rand_sensors_str;
+    EXPECT_TRUE(rand_sensors.SerializeToString(&rand_sensors_str));
+    std::string query = createSensorPostBody(
+      {.imei_          = 0,
+       .serial_        = 0,
+       .momsn_         = 1,
+       .transmit_time_ = rand_info.timestamp_,
+       .lat_           = rand_info.lat_,
+       .lon_           = rand_info.lon_,
+       .cep_           = rand_info.cep_,
+       .data_          = rand_sensors_str});
+    http::status status = http_client::post(
+      {TESTING_HOST, std::to_string(TESTING_PORT), remote_transceiver::targets::SENSORS},
+      "application/x-www-form-urlencoded", query);
+    EXPECT_EQ(status, http::status::ok);
+    return {rand_sensors, rand_info};
+}
+
+/**
+ * @brief Test that a new voyage is named <date>_<n> and becomes the only active voyage
+ *
+ */
+TEST_F(TestRemoteTransceiver, TestStartNewVoyage)
+{
+    EXPECT_EQ(g_test_db.getActiveVoyage(), "");
+
+    const std::string first = g_test_db.startNewVoyage();
+    EXPECT_TRUE(std::regex_match(first, std::regex("^[0-9]{4}-[0-9]{2}-[0-9]{2}_1$"))) << first;
+    EXPECT_EQ(g_test_db.getActiveVoyage(), first);
+
+    // Same day, so the suffix counts up instead of reusing the name
+    const std::string second = g_test_db.startNewVoyage();
+    EXPECT_EQ(second, first.substr(0, first.size() - 1) + "2");
+    EXPECT_EQ(g_test_db.getActiveVoyage(), second);
+}
+
+/**
+ * @brief Test that switching the active voyage never leaves a moment with no active voyage, even while several
+ *        activations run at once
+ *
+ */
+TEST_F(TestRemoteTransceiver, TestSwitchActiveVoyageConcurrently)
+{
+    constexpr int     NUM_WRITERS     = 4;
+    constexpr int     NUM_ACTIVATIONS = 25;
+    const std::string first           = g_test_db.startNewVoyage();
+    const std::string second          = g_test_db.startNewVoyage();
+
+    std::atomic<bool> done{false};
+    std::atomic<int>  reads_without_voyage{0};
+    std::thread       reader([&]() {
+        while (!done) {
+            if (g_test_db.getActiveVoyage().empty()) {
+                reads_without_voyage++;
+            }
+        }
+    });
+
+    std::array<std::thread, NUM_WRITERS> writers;
+    for (int i = 0; i < NUM_WRITERS; i++) {
+        writers[i] = std::thread([&, i]() {
+            for (int n = 0; n < NUM_ACTIVATIONS; n++) {
+                g_test_db.activateVoyage(i % 2 == 0 ? first : second);
+            }
+        });
+    }
+    for (std::thread & writer : writers) {
+        writer.join();
+    }
+    done = true;
+    reader.join();
+
+    EXPECT_EQ(reads_without_voyage, 0);
+    const std::string active = g_test_db.getActiveVoyage();
+    EXPECT_TRUE(active == first || active == second) << active;
+}
+
+/**
+ * @brief Test that POSTed sensors are tagged with the active voyage
+ *
+ */
+TEST_F(TestRemoteTransceiver, TestPostSensorsTaggedWithVoyage)
+{
+    SCOPED_TRACE("Seed: " + std::to_string(g_rand_seed));  // Print seed on any failure
+    const std::string voyage       = g_test_db.startNewVoyage();
+    auto [rand_sensors, rand_info] = postRandSensors();
+    std::this_thread::sleep_for(WAIT_AFTER_RES);
+
+    std::array<Sensors, 1>                expected_sensors = {rand_sensors};
+    std::array<SailbotDB::RcvdMsgInfo, 1> expected_info    = {rand_info};
+    EXPECT_TRUE(g_test_db.verifyDBWrite(expected_sensors, expected_info));
+    EXPECT_TRUE(g_test_db.verifyVoyageTags(voyage));
+}
+
+/**
+ * @brief Test that POSTed sensors are stored without a voyage field when no voyage is active
+ *
+ */
+TEST_F(TestRemoteTransceiver, TestPostSensorsUntagged)
+{
+    SCOPED_TRACE("Seed: " + std::to_string(g_rand_seed));  // Print seed on any failure
+    postRandSensors();
+    std::this_thread::sleep_for(WAIT_AFTER_RES);
+
+    EXPECT_TRUE(g_test_db.verifyVoyageTags(""));
+}
+
+/**
+ * @brief Test that stored timestamps always use the percent-encoded form RockBLOCK sends
+ *
+ */
+TEST(TestSailbotDB, TestNormalizeTimestamp)
+{
+    const std::string encoded = "26-08-21%2012%3A30%3A05";
+    EXPECT_EQ(SailbotDB::normalizeTimestamp(encoded), encoded);
+    EXPECT_EQ(SailbotDB::normalizeTimestamp("26-08-21 12:30:05"), encoded);
+    EXPECT_EQ(SailbotDB::normalizeTimestamp("26-08-21+12:30:05"), encoded);
+    EXPECT_EQ(SailbotDB::normalizeTimestamp("26-08-21%2012%3a30%3a05"), encoded);
+    EXPECT_EQ(SailbotDB::normalizeTimestamp("not a time"), "not a time");
+}
+
+/**
+ * @brief Test that the password is escaped in the Atlas connection string, so characters like @ : / % cannot break it
+ *
+ */
+TEST(TestSailbotDB, TestAtlasConnStrEscapesPassword)
+{
+    EXPECT_EQ(
+      SailbotDB::atlasConnStr("pa@ss:w/rd%1"),
+      "mongodb+srv://software:pa%40ss%3Aw%2Frd%251@dev.khxge.mongodb.net/?appName=dev");
+    EXPECT_EQ(
+      SailbotDB::atlasConnStr("Plain-pass_1.~"),
+      "mongodb+srv://software:Plain-pass_1.~@dev.khxge.mongodb.net/?appName=dev");
+}
+
+/**
+ * @brief Test that a database error is reported as a failed store. An exception would escape the server's detached
+ *        POST thread and terminate the whole server.
+ *
+ */
+TEST(TestSailbotDB, TestStoreNewSensorsDbError)
+{
+    SailbotDB unreachable(test_db_name, "mongodb://127.0.0.1:1/?serverSelectionTimeoutMS=200");
+    auto [sensors, info] = g_test_db.genRandData(UtilDB::getTimestamp());
+    EXPECT_FALSE(unreachable.storeNewSensors(sensors, info));
 }

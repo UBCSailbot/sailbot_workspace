@@ -1,7 +1,9 @@
 #pragma once
 
 #include <boost/asio/streambuf.hpp>
+#include <chrono>
 #include <functional>
+#include <optional>
 #include <string>
 
 #include "at_cmds.h"
@@ -33,6 +35,7 @@ class LocalTransceiver
     friend class TestLocalTransceiver_SendAndReceiveMessage;
     friend class TestLocalTransceiver_testMailboxBlackbox_Test;
     friend class TestLocalTransceiver_checkCache_Test;
+    friend class TestLocalTransceiver_sbdSessionRetryDelay_Test;
 
 public:
     // Logging callback types
@@ -222,6 +225,12 @@ private:
     static constexpr std::chrono::seconds SMALL_WAIT{std::chrono::seconds(2)};
     static constexpr std::chrono::seconds MEDIUM_WAIT{std::chrono::seconds(2)};
 
+    // Loading the MO buffer only talks to the modem, so it rarely fails and needs few retries
+    static constexpr int MAX_LOAD_MO_ATTEMPTS = 3;
+    // SBD sessions go to the satellite, retried following RockBLOCK's Adaptive Retry recommendation
+    // https://docs.groundcontrol.com/iot/rockblock/user-manual/adaptive-retry
+    static constexpr int MAX_SBD_SESSION_ATTEMPTS = 5;
+
     // boost io service - required for boost::asio operations
     boost::asio::io_service io_;
     // serial port data where is sent and received
@@ -252,6 +261,22 @@ private:
      * @return true if the modem confirms the buffer was cleared, false otherwise
      */
     bool clearMOBuffer();
+
+    /**
+     * @brief Run one SBD session (AT+SBDIX) and parse its result
+     *
+     * @return the session status, or std::nullopt if the result could not be read
+     */
+    std::optional<AT::SBDStatusRsp> runSBDSession();
+
+    /**
+     * @brief Random wait before an SBD session attempt: none for the first attempt, 0-5s for the next two,
+     *        0-30s after that
+     *
+     * @param attempt zero-based attempt number
+     * @return how long to wait before the attempt
+     */
+    static std::chrono::milliseconds sbdSessionRetryDelay(int attempt);
 
     /**
      * @brief Read responses from serial

@@ -1,1 +1,1 @@
-PhSensor[16] ph_sensors
+PhSensor[1] ph_sensors

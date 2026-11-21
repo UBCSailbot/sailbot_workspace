@@ -5,6 +5,7 @@
 
 #include <cstdint>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -47,6 +48,35 @@ const int VERYGOOD  = 4;
 const int EXCELLENT = 5;
 }  // namespace signal_quality
 
+// +SBDIX MO status codes that need special handling. Codes not listed here are either success (0-4) or
+// transient/reserved failures that are worth retrying.
+// Reference: https://docs.groundcontrol.com/iot/rockblock/user-manual/at-commands
+namespace mo_status
+{
+constexpr uint8_t GSS_QUEUE_FULL       = 11;
+constexpr uint8_t TOO_MANY_SEGMENTS    = 12;
+constexpr uint8_t INVALID_SEGMENT_SIZE = 14;
+constexpr uint8_t ACCESS_DENIED        = 15;
+constexpr uint8_t ISU_LOCKED           = 16;
+constexpr uint8_t ANTENNA_FAULT        = 33;
+constexpr uint8_t RADIO_DISABLED       = 34;
+constexpr uint8_t REGISTRATION_WAIT    = 36;  // must wait 3 minutes since last registration
+constexpr uint8_t SBD_DISABLED         = 37;  // SBD service temporarily disabled
+constexpr uint8_t TRAFFIC_MANAGEMENT   = 38;
+constexpr uint8_t BAND_VIOLATION       = 64;
+constexpr uint8_t PLL_LOCK_FAILURE     = 65;
+}  // namespace mo_status
+
+/**
+ * @brief How to react to the MO status of an SBD session
+ */
+enum class MOResult {
+    SUCCESS,      // message delivered
+    RETRY_SOON,   // transient failure (signal drop, no network, busy), retrying is free on RockBLOCK
+    RETRY_LATER,  // gateway asked us to wait minutes, an immediate retry cannot succeed
+    FATAL         // retrying cannot fix this (account, hardware, or message problem)
+};
+
 /**
  * @brief Simple Line struct to help enforce DRY when dealing with strings while performing reads and writes
  *
@@ -85,11 +115,15 @@ struct SBDStatusRsp
      * @brief Construct a new Status Response object
      *
      * @param rsp_string string of format "+SBDIX:<MO status>,<MOMSN>,<MT status>,<MTMSN>,<MT length>,<MTqueued>"
+     * @throws std::invalid_argument if rsp_string is malformed
      */
     explicit SBDStatusRsp(const std::string & rsp_string)
     {
-        size_t                   begin_point = rsp_string.find(':');
-        std::string              data        = rsp_string.substr(begin_point + 1);
+        size_t begin_point = rsp_string.find(':');
+        if (begin_point == std::string::npos) {
+            throw std::invalid_argument("Malformed SBDIX response: \"" + rsp_string + "\"");
+        }
+        std::string              data = rsp_string.substr(begin_point + 1);
         std::vector<std::string> tokens;
 
         size_t start = 0;
@@ -101,7 +135,11 @@ struct SBDStatusRsp
         tokens.push_back(data.substr(start));
 
         // assign index numbers
-        enum { MO_STATUS_INDEX, MOMSN_INDEX, MT_STATUS_INDEX, MTMSN_INDEX, MT_LEN_INDEX, MT_QUEUED_INDEX };
+        enum { MO_STATUS_INDEX, MOMSN_INDEX, MT_STATUS_INDEX, MTMSN_INDEX, MT_LEN_INDEX, MT_QUEUED_INDEX, NUM_FIELDS };
+
+        if (tokens.size() < NUM_FIELDS) {
+            throw std::invalid_argument("Malformed SBDIX response: \"" + rsp_string + "\"");
+        }
 
         MO_status_ = std::stoi(tokens[MO_STATUS_INDEX]);
         MOMSN_     = std::stoi(tokens[MOMSN_INDEX]);
@@ -118,6 +156,34 @@ struct SBDStatusRsp
      * @return false on failure
      */
     bool MOSuccess() const { return MO_status_ <= MO_SUCCESS_END; }
+
+    /**
+     * @brief Classify the MO status to decide whether the session should be retried
+     */
+    MOResult classifyMO() const
+    {
+        if (MOSuccess()) {
+            return MOResult::SUCCESS;
+        }
+        switch (MO_status_) {
+            case mo_status::GSS_QUEUE_FULL:
+            case mo_status::TOO_MANY_SEGMENTS:
+            case mo_status::INVALID_SEGMENT_SIZE:
+            case mo_status::ACCESS_DENIED:
+            case mo_status::ISU_LOCKED:
+            case mo_status::ANTENNA_FAULT:
+            case mo_status::RADIO_DISABLED:
+            case mo_status::BAND_VIOLATION:
+            case mo_status::PLL_LOCK_FAILURE:
+                return MOResult::FATAL;
+            case mo_status::REGISTRATION_WAIT:
+            case mo_status::SBD_DISABLED:
+            case mo_status::TRAFFIC_MANAGEMENT:
+                return MOResult::RETRY_LATER;
+            default:
+                return MOResult::RETRY_SOON;
+        }
+    }
 };
 
 }  // namespace AT

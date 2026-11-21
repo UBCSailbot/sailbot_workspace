@@ -15,6 +15,7 @@
 #include <custom_interfaces/msg/l_path_data.hpp>
 #include <custom_interfaces/msg/wind_sensors.hpp>
 #include <exception>
+#include <random>
 #include <regex>
 #include <stdexcept>
 #include <string>
@@ -155,8 +156,9 @@ bool LocalTransceiver::send()
     Polaris::Sensors sensors = sensors_;
 
     if (!sensors.SerializeToString(&data)) {
-        std::cerr << "Failed to serialize sensors string" << std::endl;
-        std::cerr << sensors.DebugString() << std::endl;
+        if (log_error_) {
+            log_error_("Failed to serialize sensors string\n" + sensors.DebugString());
+        }
         return false;
     }
     if (data.size() >= MAX_LOCAL_TO_REMOTE_PAYLOAD_SIZE_BYTES) {
@@ -177,99 +179,162 @@ bool LocalTransceiver::send()
 
     std::string write_bin_cmd_str = AT::write_bin::CMD + std::to_string(data.size());  //according to specs
     AT::Line    at_write_cmd(write_bin_cmd_str);
+    std::string msg_str = data + checksum(data);
 
-    static constexpr int MAX_NUM_RETRIES = 20;  // allow retries because the connection is imperfect
-    for (int i = 0; i < MAX_NUM_RETRIES; i++) {
-        std::this_thread::sleep_for(std::chrono::seconds(SMALL_WAIT));
+    // Load the message into the modem's MO buffer. It stays there between SBD sessions, so it only needs to be
+    // loaded once no matter how many sessions are attempted.
+    bool loaded = false;
+    for (int i = 0; i < MAX_LOAD_MO_ATTEMPTS && !loaded; i++) {
+        std::this_thread::sleep_for(SMALL_WAIT);
         clearSerialBuffer();  // Clear any stale data from previous iteration
 
-        std::this_thread::sleep_for(std::chrono::seconds(MEDIUM_WAIT));
-
-        int current_iridium_signal_quality = checkIridiumSignalQuality();
-        if (current_iridium_signal_quality == -1) {
-            if (log_error_) {
-                log_error_("Debug: Failed to check Iridium signal quality");
-            }
-            continue;
+        loaded = send(at_write_cmd) &&
+                 rcvRsps({
+                   at_write_cmd,
+                   AT::Line(AT::DELIMITER),
+                   AT::Line(AT::RSP_READY),
+                   AT::Line("\n"),
+                 }) &&
+                 sendRaw(msg_str) &&
+                 rcvRsps({
+                   AT::Line(AT::DELIMITER),
+                   AT::Line(AT::write_bin::rsp::SUCCESS),
+                   AT::Line("\n"),
+                   AT::Line(AT::DELIMITER),
+                   AT::Line(AT::STATUS_OK),
+                   AT::Line("\n"),
+                 });
+    }
+    if (!loaded) {
+        if (log_error_) {
+            log_error_("Failed to load message into the Iridium MO buffer");
         }
-        if (current_iridium_signal_quality < AT::signal_quality::GOOD) {
-            if (log_debug_) {
-                log_debug_(
-                  "Debug: Iridium signal quality is currently " + std::to_string(current_iridium_signal_quality) +
-                  ", retrying...");
-            }
-            std::this_thread::sleep_for(
-              std::chrono::seconds(MEDIUM_WAIT));  // Wait a moment before retrying if no signal
-            continue;
-        }
-
-        if (!send(at_write_cmd)) {
-            continue;
-        }
-
-        if (!rcvRsps({
-              at_write_cmd,
-              AT::Line(AT::DELIMITER),
-              AT::Line(AT::RSP_READY),
-              AT::Line("\n"),
-            })) {
-            continue;
-        }
-
-        std::string msg_str = data + checksum(data);
-        if (!sendRaw(msg_str)) {
-            continue;
-        }
-
-        if (!rcvRsps({
-              AT::Line(AT::DELIMITER),
-              AT::Line(AT::write_bin::rsp::SUCCESS),
-              AT::Line("\n"),
-              AT::Line(AT::DELIMITER),
-              AT::Line(AT::STATUS_OK),
-              AT::Line("\n"),
-            })) {
-            continue;
-        }
-
-        // Check SBD Session status to see if data was sent successfully
-        // NEEDS AN ACTIVE SERVER ON $WEBHOOK_SERVER_ENDPOINT OR VIRTUAL IRIDIUM WILL CRASH
-        static const AT::Line sbdix_cmd = AT::Line(AT::SBD_SESSION);
-        if (!send(sbdix_cmd)) {
-            return false;
-        }
-
-        if (!rcvRsps({
-              sbdix_cmd,
-              AT::Line(AT::DELIMITER),
-            })) {
-            return false;
-        }
-
-        auto opt_rsp = readRsp();
-        if (!opt_rsp) {
-            return false;
-        }
-
-        // This string will look something like:
-        // "+SBDIX:<MO status>,<MOMSN>,<MT status>,<MTMSN>,<MT length>,<MTqueued>\r\n\r\nOK\r"
-        // on success
-        // Don't bother to check for OK\r as MO status will tell us if it succeeded or not
-        std::string              opt_rsp_val = opt_rsp.value();
-        std::vector<std::string> sbd_status_vec;
-        boost::algorithm::split(sbd_status_vec, opt_rsp_val, boost::is_any_of(AT::DELIMITER));
-
-        AT::SBDStatusRsp rsp(sbd_status_vec[0]);
-        if (rsp.MOSuccess()) {
-            clearMOBuffer();
-            return true;
-        }
-        std::cerr << "SBDIX MO status indicates failure: " << std::to_string(rsp.MO_status_) << std::endl;
         return false;
     }
-    std::cerr << "Failed to transmit data to satellite!" << std::endl;
-    std::cerr << sensors.DebugString() << std::endl;
+
+    // Only the SBD session goes to the satellite, and it is where failures happen (signal drops, no network).
+    // Failed sessions are not charged on RockBLOCK, so transient failures are retried with a growing random delay.
+    for (int attempt = 0; attempt < MAX_SBD_SESSION_ATTEMPTS; attempt++) {
+        std::this_thread::sleep_for(sbdSessionRetryDelay(attempt));
+
+        // CSQ 1 is the minimum needed to transmit, so only skip the session when there is no signal at all.
+        // If the signal quality could not be read (-1), try anyway and let the MO status decide.
+        int signal_quality = checkIridiumSignalQuality();  // also clears the serial buffer
+        if (signal_quality == AT::signal_quality::NOSIGNAL) {
+            if (log_debug_) {
+                log_debug_("No Iridium signal, skipping SBD session attempt " + std::to_string(attempt));
+            }
+            continue;
+        }
+
+        // NEEDS AN ACTIVE SERVER ON $WEBHOOK_SERVER_ENDPOINT OR VIRTUAL IRIDIUM WILL CRASH
+        std::optional<AT::SBDStatusRsp> rsp = runSBDSession();
+        if (!rsp) {
+            // The message may have been delivered even though the result could not be read. Retrying could send
+            // (and pay for) a duplicate, so give up until the next send.
+            if (log_error_) {
+                log_error_("Could not read SBD session result, not retrying");
+            }
+            return false;
+        }
+
+        const std::string mo_status_str = std::to_string(rsp->MO_status_);
+        switch (rsp->classifyMO()) {
+            case AT::MOResult::SUCCESS:
+                if (log_debug_) {
+                    log_debug_("SBD session succeeded on attempt " + std::to_string(attempt));
+                }
+                clearMOBuffer();
+                return true;
+            case AT::MOResult::RETRY_SOON:
+                if (log_error_) {
+                    log_error_(
+                      "SBD session attempt " + std::to_string(attempt) + " failed with MO status " + mo_status_str +
+                      ", retrying");
+                }
+                break;
+            case AT::MOResult::RETRY_LATER:
+                if (log_error_) {
+                    log_error_(
+                      "Iridium gateway asked to retry later (MO status " + mo_status_str +
+                      "), not retrying until the next send");
+                }
+                return false;
+            case AT::MOResult::FATAL:
+                if (log_error_) {
+                    log_error_(
+                      "SBD session failed with MO status " + mo_status_str + ", which retrying cannot fix");
+                }
+                return false;
+        }
+    }
+
+    if (log_error_) {
+        log_error_(
+          "Failed to transmit data to satellite after " + std::to_string(MAX_SBD_SESSION_ATTEMPTS) +
+          " attempts\n" + sensors.DebugString());
+    }
     return false;
+}
+
+std::optional<AT::SBDStatusRsp> LocalTransceiver::runSBDSession()
+{
+    static const AT::Line sbdix_cmd = AT::Line(AT::SBD_SESSION);
+    if (!send(sbdix_cmd)) {
+        return std::nullopt;
+    }
+
+    if (!rcvRsps({
+          sbdix_cmd,
+          AT::Line(AT::DELIMITER),
+        })) {
+        return std::nullopt;
+    }
+
+    auto opt_rsp = readRsp();
+    if (!opt_rsp) {
+        return std::nullopt;
+    }
+
+    // The response looks like "+SBDIX:<MO status>,<MOMSN>,<MT status>,<MTMSN>,<MT length>,<MTqueued>\r\n\r\nOK\r"
+    // Search for the status line instead of assuming it comes first, since stale bytes can precede it.
+    std::vector<std::string> lines;
+    boost::algorithm::split(lines, opt_rsp.value(), boost::is_any_of(AT::DELIMITER));
+    for (const std::string & line : lines) {
+        if (line.find("SBDIX:") == std::string::npos) {
+            continue;
+        }
+        try {
+            return AT::SBDStatusRsp(line);
+        } catch (const std::exception & e) {
+            if (log_error_) {
+                log_error_(std::string("Failed to parse SBD session result: ") + e.what());
+            }
+            return std::nullopt;
+        }
+    }
+
+    if (log_error_) {
+        log_error_("No SBDIX status in response: \"" + opt_rsp.value() + "\"");
+    }
+    return std::nullopt;
+}
+
+std::chrono::milliseconds LocalTransceiver::sbdSessionRetryDelay(int attempt)
+{
+    static constexpr int                       NUM_SHORT_RETRIES = 2;
+    static constexpr std::chrono::milliseconds SHORT_MAX_DELAY{std::chrono::seconds(5)};
+    static constexpr std::chrono::milliseconds LONG_MAX_DELAY{std::chrono::seconds(30)};
+
+    if (attempt <= 0) {
+        return std::chrono::milliseconds(0);
+    }
+    const std::chrono::milliseconds max_delay = attempt <= NUM_SHORT_RETRIES ? SHORT_MAX_DELAY : LONG_MAX_DELAY;
+
+    // Random delays avoid retrying in lockstep with whatever caused the failure
+    static thread_local std::mt19937                     rng{std::random_device{}()};
+    std::uniform_int_distribution<std::chrono::milliseconds::rep> dist(0, max_delay.count());
+    return std::chrono::milliseconds(dist(rng));
 }
 
 bool LocalTransceiver::debugSendAT(const std::string & data)
@@ -579,6 +644,10 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
 
     std::string receivedDataBuffer;
     for (int i = 0; i < MAX_NUM_RETRIES; i++) {
+        if (i > 0) {
+            // A failed read can leave partial payload bytes behind, which would break the next attempt's echo check
+            clearSerialBuffer();
+        }
         static const AT::Line message_to_queue_cmd = AT::Line(AT::DNLD_TO_QUEUE);
         if (!send(message_to_queue_cmd)) {
             continue;
