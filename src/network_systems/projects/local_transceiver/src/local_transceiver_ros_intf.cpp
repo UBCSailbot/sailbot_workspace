@@ -14,6 +14,7 @@
 #include "cmn_hdrs/ros_info.h"
 #include "cmn_hdrs/shared_constants.h"
 #include "command.pb.h"
+#include "global_path.pb.h"
 #include "local_transceiver.h"
 #include "net_node.h"
 
