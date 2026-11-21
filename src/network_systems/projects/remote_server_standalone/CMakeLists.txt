@@ -26,6 +26,8 @@ set(PROTO_SRCS
     src/global_path.pb.cc
     src/sensors.pb.cc
     src/waypoint.pb.cc
+    src/command.pb.cc
+    src/boat_to_land_message.pb.cc
 )
 
 # App logic shared by the server and the tests (exclude main.cpp and the test-only helper)

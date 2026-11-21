@@ -1,0 +1,78 @@
+syntax = "proto3";
+
+package Polaris;
+
+import "waypoint.proto";
+
+// ACK for a command
+message Ack {
+  bool success = 1;
+  string message = 2;  // optional short reason
+}
+
+// Remote restart request (stub)
+message RemoteRestart {}
+
+// Software health check request (stub)
+message SoftwareHealthCheck {}
+
+// Software health result
+message SoftwareHealthResult {
+  bool ok = 1;
+  string report = 2;
+}
+
+// Component health check request (stub)
+message ComponentHealthCheck {
+  string component = 1;  // optional component name
+}
+
+// Component health result
+message ComponentHealthResult {
+  bool ok = 1;
+  string component = 2;
+  string report = 3;
+}
+
+// Set global path (reuses existing waypoint schema)
+message SetGlobalPath {
+  repeated Waypoint waypoints = 1;
+}
+
+// Clear waypoints
+message ClearWaypoints {}
+
+// Enable/disable pathfinding (sail bit)
+message SetPathfindingEnabled {
+  bool enabled = 1;
+}
+
+// Set communication periods (seconds)
+message SetCommunicationPeriods {
+  uint32 send_period_sec = 1;
+  uint32 receive_period_sec = 2;
+}
+
+// Shore-to-boat command envelope
+message Command {
+  uint64 command_id = 1;
+  oneof payload {
+    SetGlobalPath global_path = 2;
+    RemoteRestart restart = 3;
+    SoftwareHealthCheck software_health = 4;
+    ComponentHealthCheck component_health = 5;
+    ClearWaypoints clear_waypoints = 6;
+    SetPathfindingEnabled pathfinding = 7;
+    SetCommunicationPeriods communication = 8;
+  }
+}
+
+// Boat-to-shore command response envelope
+message CommandResponse {
+  uint64 command_id = 1;
+  oneof payload {
+    Ack ack = 2;
+    SoftwareHealthResult software_health = 3;
+    ComponentHealthResult component_health = 4;
+  }
+}

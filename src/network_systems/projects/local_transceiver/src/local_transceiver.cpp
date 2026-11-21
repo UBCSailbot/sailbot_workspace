@@ -21,8 +21,10 @@
 #include <string>
 
 #include "at_cmds.h"
+#include "boat_to_land_message.pb.h"
 #include "cmn_hdrs/ros_info.h"
 #include "cmn_hdrs/shared_constants.h"
+#include "command.pb.h"
 #include "filesystem"
 #include "fstream"
 #include "global_path.pb.h"
@@ -151,13 +153,14 @@ void LocalTransceiver::stop()
 
 bool LocalTransceiver::send()
 {
-    std::string data;
-    // Make sure to get a copy of the sensors because repeated calls may give us different results
-    Polaris::Sensors sensors = sensors_;
+    Polaris::BoatToLandMessage boat_to_land_message;
+    auto *                     sensors_msg = boat_to_land_message.mutable_sensors();
+    *sensors_msg                           = sensors_;
 
-    if (!sensors.SerializeToString(&data)) {
+    std::string data;
+    if (!boat_to_land_message.SerializeToString(&data)) {
         if (log_error_) {
-            log_error_("Failed to serialize sensors string\n" + sensors.DebugString());
+            log_error_("Failed to serialize BoatToLandMessage string\n" + boat_to_land_message.DebugString());
         }
         return false;
     }
@@ -166,7 +169,7 @@ bool LocalTransceiver::send()
         std::string err_string =
           "Data too large!\n"
           "Attempted: " +
-          std::to_string(data.size()) + " bytes\n" + sensors.DebugString() +
+          std::to_string(data.size()) + " bytes\n" + boat_to_land_message.DebugString() +
           "\n"
           "No implementation to handle this!";
         throw std::length_error(err_string);
@@ -272,7 +275,7 @@ bool LocalTransceiver::send()
     if (log_error_) {
         log_error_(
           "Failed to transmit data to satellite after " + std::to_string(MAX_SBD_SESSION_ATTEMPTS) +
-          " attempts\n" + sensors.DebugString());
+          " attempts\n" + boat_to_land_message.DebugString());
     }
     return false;
 }
@@ -541,7 +544,7 @@ void LocalTransceiver::cacheGlobalWaypoints(std::string receivedDataBuffer)
     std::filesystem::rename(CACHE_TEMP_PATH, CACHE_PATH);
 }
 
-custom_interfaces::msg::Path LocalTransceiver::receive()
+std::optional<std::string> LocalTransceiver::receiveData()
 {
     static constexpr int MAX_NUM_RETRIES = 5;
     for (int i = 0; i <= MAX_NUM_RETRIES; i++) {
@@ -550,7 +553,7 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
 
         std::this_thread::sleep_for(std::chrono::seconds(MEDIUM_WAIT));
         if (i == MAX_NUM_RETRIES) {
-            return custom_interfaces::msg::Path();
+            return std::nullopt;
         }
 
         static const AT::Line check_conn_cmd = AT::Line(AT::CHECK_CONN);
@@ -595,7 +598,7 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
             if (log_error_) {
                 log_error_("Debug: did not receive SBDIX response header (attempt " + std::to_string(i) + ")");
             }
-            return custom_interfaces::msg::Path();
+            return std::nullopt;
         }
         if (log_debug_) {
             log_debug_("Debug: received SBDIX response header (attempt " + std::to_string(i) + ")");
@@ -606,7 +609,7 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
             if (log_error_) {
                 log_error_("Debug: readRsp returned no response (attempt " + std::to_string(i) + ")");
             }
-            return custom_interfaces::msg::Path();
+            return std::nullopt;
         }
         if (log_debug_) {
             log_debug_("Debug: readRsp received response (attempt " + std::to_string(i) + "): " + opt_rsp.value());
@@ -627,15 +630,15 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
         AT::SBDStatusRsp rsp(sbdix_value);
 
         if (rsp.MO_status_ != 0) {  //NOLINT
-            return custom_interfaces::msg::Path();
+            return std::nullopt;
         }
 
         if (rsp.MT_status_ == 0) {  //NOLINT
-            return custom_interfaces::msg::Path();
+            return std::nullopt;
         } else if (rsp.MT_status_ == 1) {  //NOLINT
             break;
         } else if (rsp.MT_status_ == 2) {  //NOLINT
-            return custom_interfaces::msg::Path();
+            return std::nullopt;
         }
     }
     if (log_debug_) {
@@ -668,18 +671,10 @@ custom_interfaces::msg::Path LocalTransceiver::receive()
         receivedDataBuffer = payload.value();
         break;
     }
-
-    std::future<void> fut = std::async(std::launch::async, cacheGlobalWaypoints, receivedDataBuffer);
-
-    custom_interfaces::msg::Path to_publish = parseInMsg(receivedDataBuffer);
-
-    fut.get();
-
-    if (validateGlobalPathWayPoints(to_publish)) {
-        return to_publish;
+    if (receivedDataBuffer.empty()) {
+        return std::nullopt;
     }
-
-    return custom_interfaces::msg::Path();
+    return receivedDataBuffer;
 }
 
 bool LocalTransceiver::validateGlobalPathWayPoints(const custom_interfaces::msg::Path & path_to_publish)
@@ -775,6 +770,130 @@ custom_interfaces::msg::Path LocalTransceiver::parseInMsg(const std::string & ms
 
     soln.set__waypoints(waypoints);
     return soln;
+}
+
+std::optional<Polaris::Command> LocalTransceiver::parseCommand(const std::string & data)
+{
+    if (data.empty()) {
+        return std::nullopt;
+    }
+    Polaris::Command cmd;
+    if (!cmd.ParseFromString(data)) {
+        return std::nullopt;
+    }
+    if (cmd.payload_case() == Polaris::Command::PAYLOAD_NOT_SET) {
+        return std::nullopt;
+    }
+    return cmd;
+}
+
+bool LocalTransceiver::sendCommandResponse(const Polaris::CommandResponse & resp)
+{
+    Polaris::BoatToLandMessage boat_to_land_message;
+    auto *                     cmd_resp = boat_to_land_message.mutable_command_response();
+    *cmd_resp                           = resp;
+
+    std::string data;
+    if (!boat_to_land_message.SerializeToString(&data)) {
+        if (log_error_) {
+            log_error_("Failed to serialize BoatToLandMessage string\n" + boat_to_land_message.DebugString());
+        }
+        return false;
+    }
+    std::string out = data;
+    if (out.size() >= MAX_LOCAL_TO_REMOTE_PAYLOAD_SIZE_BYTES) {
+        std::string err_string =
+          "Data too large!\n"
+          "Attempted: " +
+          std::to_string(out.size()) + " bytes\n" + resp.DebugString() +
+          "\n"
+          "No implementation to handle this!";
+        throw std::length_error(err_string);
+    }
+    if (log_debug_) {
+        log_debug_("sendCommandResponse() starting...");
+    }
+    std::string write_bin_cmd_str = AT::write_bin::CMD + std::to_string(out.size());
+    AT::Line    at_write_cmd(write_bin_cmd_str);
+    std::string msg_str = out + checksum(out);
+    bool        loaded = false;
+    for (int i = 0; i < MAX_LOAD_MO_ATTEMPTS && !loaded; i++) {
+        std::this_thread::sleep_for(SMALL_WAIT);
+        // TODO: Check if any timing issues on hardware, and modify the clears/sleeps
+        clearSerialBuffer();
+        loaded = send(at_write_cmd) &&
+                 rcvRsps({
+                   at_write_cmd,
+                   AT::Line(AT::DELIMITER),
+                   AT::Line(AT::RSP_READY),
+                   AT::Line("\n"),
+                 }) &&
+                 sendRaw(msg_str) &&
+                 rcvRsps({
+                   AT::Line(AT::DELIMITER),
+                   AT::Line(AT::write_bin::rsp::SUCCESS),
+                   AT::Line("\n"),
+                   AT::Line(AT::DELIMITER),
+                   AT::Line(AT::STATUS_OK),
+                   AT::Line("\n"),
+                 });
+    }
+    if (!loaded) {
+        if (log_error_) {
+            log_error_("Failed to load message into the Iridium MO buffer");
+        }
+        return false;
+    }
+    for (int attempt = 0; attempt < MAX_SBD_SESSION_ATTEMPTS; attempt++) {
+        std::this_thread::sleep_for(sbdSessionRetryDelay(attempt));
+        int signal_quality = checkIridiumSignalQuality();
+        if (signal_quality == AT::signal_quality::NOSIGNAL) {
+            if (log_debug_) {
+                log_debug_("No Iridium signal, skipping SBD session attempt " + std::to_string(attempt));
+            }
+            continue;
+        }
+        std::optional<AT::SBDStatusRsp> rsp = runSBDSession();
+        if (!rsp) {
+            if (log_error_) {
+                log_error_("Could not read SBD session result, not retrying");
+            }
+            return false;
+        }
+        const std::string mo_status_str = std::to_string(rsp->MO_status_);
+        switch (rsp->classifyMO()) {
+            case AT::MOResult::SUCCESS:
+                if (log_debug_) {
+                    log_debug_("SBD session succeeded on attempt " + std::to_string(attempt));
+                }
+                clearMOBuffer();
+                return true;
+            case AT::MOResult::RETRY_SOON:
+                if (log_error_) {
+                    log_error_(
+                      "SBD session attempt " + std::to_string(attempt) + " failed with MO status " + mo_status_str +
+                      ", retrying");
+                }
+                break;
+            case AT::MOResult::RETRY_LATER:
+                if (log_error_) {
+                    log_error_(
+                      "Iridium gateway asked to retry later (MO status " + mo_status_str +
+                      "), not retrying until the next send");
+                }
+                return false;
+            case AT::MOResult::FATAL:
+                if (log_error_) {
+                    log_error_(
+                      "SBD session failed with MO status " + mo_status_str + ", which retrying cannot fix");
+                }
+                return false;
+        }
+    }
+    if (log_error_) {
+        log_error_("Failed to transmit command response to satellite after " + std::to_string(MAX_SBD_SESSION_ATTEMPTS) + " attempts\n");
+    }
+    return false;
 }
 
 std::optional<custom_interfaces::msg::Path> LocalTransceiver::getCache()
