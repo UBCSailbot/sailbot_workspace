@@ -109,6 +109,7 @@ public:
             this->declare_parameter<double>("send_period_sec", DEFAULT_SEND_PERIOD_SEC);
             rclcpp::Parameter default_port_parm  = this->get_parameter("port");
             std::string       port               = default_port_parm.as_string();
+
             const double      receive_period_sec = this->get_parameter("receive_period_sec").as_double();
             const double      send_period_sec    = this->get_parameter("send_period_sec").as_double();
 
@@ -202,11 +203,9 @@ public:
                                    std::placeholders::_2));
             RCLCPP_INFO(this->get_logger(), "receive_and_pub service created");
 
-            receive_timer_ = this->create_wall_timer(
-              std::chrono::duration<double>(receive_period_sec),
-              std::bind(&LocalTransceiverIntf::receive_timer_cb, this));
-            send_timer_ = this->create_wall_timer(
-              std::chrono::duration<double>(send_period_sec), std::bind(&LocalTransceiverIntf::send_timer_cb, this));
+            // !
+            setPeriodSec(receive_period_sec, send_period_sec);
+            //!
 
             if (local_transceiver_debug_) {
                 receive_timer_->cancel();
@@ -277,6 +276,8 @@ private:
 
         return result;
     }
+
+    
 
     /**
      * @brief Callback function to publish to onboard ROS network
@@ -432,6 +433,25 @@ private:
             response->message = std::string("Exception: ") + e.what();
         }
     }
+
+    /**
+     * @brief Takes in new values for receive_period_sec and send_period_sec.
+     * The function will pass it onto the Ros Parameter and update it accordingly
+     *
+     * @param double double
+     */
+    void setPeriodSec(double receive, double send)
+        {
+            this->set_parameter(rclcpp::Parameter("receive_period_sec", receive));
+            this->set_parameter(rclcpp::Parameter("send_period_sec", send));
+
+            receive_timer_ = this->create_wall_timer(
+              std::chrono::duration<double>(receive),
+              std::bind(&LocalTransceiverIntf::receive_timer_cb, this));
+            send_timer_ = this->create_wall_timer(
+              std::chrono::duration<double>(send), std::bind(&LocalTransceiverIntf::send_timer_cb, this));
+        }
+
 };
 
 int main(int argc, char * argv[])
