@@ -558,7 +558,7 @@ private:
             RCLCPP_DEBUG(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), ais_ship.toString().c_str());
              if(past_ais_value !=  ais_ship.toString()){
             RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), ais_ship.toString().c_str());
-               csvEntries.push_back({"ais_Ship", getCurrentTimeString(), ais_ship.toString()});
+               csvEntries.push_back({"ais_Ships", getCurrentTimeString(), ais_ship.toString()});
              }
              past_ais_value = ais_ship.toString();
 
@@ -957,7 +957,7 @@ private:
         if (past_main_trim_tab_frame != main_trim_tab_frame.toString()&&!main_trim_tab_frame.toString().empty()) {
              RCLCPP_INFO(
           this->get_logger(), "%s %s", getCurrentTimeString().c_str(), main_trim_tab_frame.toString().c_str());
-          csvEntries.push_back({"main_trim_tab", getCurrentTimeString(), main_trim_tab_frame.toString()});
+          csvEntries.push_back({"main_frame", getCurrentTimeString(), main_trim_tab_frame.toString()});
         }
         past_main_trim_tab_frame = main_trim_tab_frame.toString();
 
