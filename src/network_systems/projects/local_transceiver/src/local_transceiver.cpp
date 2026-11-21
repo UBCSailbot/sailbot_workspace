@@ -13,8 +13,8 @@
 #include <boost/asio/write.hpp>
 #include <boost/system/error_code.hpp>
 #include <cerrno>
+#include <cstdint>
 #include <cstdlib>
-#include <cstring>
 #include <custom_interfaces/msg/batteries.hpp>
 #include <custom_interfaces/msg/generic_sensors.hpp>
 #include <custom_interfaces/msg/gps.hpp>
@@ -276,8 +276,7 @@ bool LocalTransceiver::send()
                 return false;
             case AT::MOResult::FATAL:
                 if (log_error_) {
-                    log_error_(
-                      "SBD session failed with MO status " + mo_status_str + ", which retrying cannot fix");
+                    log_error_("SBD session failed with MO status " + mo_status_str + ", which retrying cannot fix");
                 }
                 return false;
         }
@@ -285,8 +284,8 @@ bool LocalTransceiver::send()
 
     if (log_error_) {
         log_error_(
-          "Failed to transmit data to satellite after " + std::to_string(MAX_SBD_SESSION_ATTEMPTS) +
-          " attempts\n" + sensors.DebugString());
+          "Failed to transmit data to satellite after " + std::to_string(MAX_SBD_SESSION_ATTEMPTS) + " attempts\n" +
+          sensors.DebugString());
     }
     return false;
 }
@@ -346,7 +345,7 @@ std::chrono::milliseconds LocalTransceiver::sbdSessionRetryDelay(int attempt)
     const std::chrono::milliseconds max_delay = attempt <= NUM_SHORT_RETRIES ? SHORT_MAX_DELAY : LONG_MAX_DELAY;
 
     // Random delays avoid retrying in lockstep with whatever caused the failure
-    static thread_local std::mt19937                     rng{std::random_device{}()};
+    static thread_local std::mt19937                              rng{std::random_device{}()};
     std::uniform_int_distribution<std::chrono::milliseconds::rep> dist(0, max_delay.count());
     return std::chrono::milliseconds(dist(rng));
 }
@@ -614,7 +613,7 @@ bool LocalTransceiver::launchHandlesSigint(pid_t pid, const std::string & proc_d
             continue;
         }
         try {
-            const unsigned long long caught = std::stoull(line.substr(CAUGHT_SIGNALS_KEY.size()), nullptr, 16);
+            const uint64_t caught = std::stoull(line.substr(CAUGHT_SIGNALS_KEY.size()), nullptr, 16);
             return ((caught >> (SIGINT - 1)) & 1ULL) != 0;
         } catch (const std::exception &) {
             return false;
@@ -635,7 +634,7 @@ bool LocalTransceiver::restartSoftware()
 
     // scripts/run_software.sh exports where it expects the restart marker. If it's missing, nobody is going to
     // relaunch the system, so shutting it down would just take the boat's software offline.
-    const char * sentinel_env = std::getenv(RESTART_SENTINEL_ENV);
+    const char * sentinel_env = std::getenv(RESTART_SENTINEL_ENV);  //NOLINT(concurrency-mt-unsafe)
     if (sentinel_env == nullptr || sentinel_env[0] == '\0') {
         return refuse(
           std::string(RESTART_SENTINEL_ENV) +
@@ -665,7 +664,7 @@ bool LocalTransceiver::restartSoftware()
 
     // SIGINT is what makes launch shut every node down gracefully (same as Ctrl-C). Never use SIGTERM here.
     if (kill(launch_pid.value(), SIGINT) != 0) {
-        const std::string error = std::strerror(errno);
+        const std::string error = std::generic_category().message(errno);
         std::error_code   ignored;
         std::filesystem::remove(sentinel_path, ignored);
         return refuse("could not signal `ros2 launch` (pid " + std::to_string(launch_pid.value()) + "): " + error);

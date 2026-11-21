@@ -819,6 +819,8 @@ private:
 TEST_F(TestLocalTransceiver, findLaunchProcess)
 {
     FakeProc proc;
+    // The fake pids are arbitrary, naming each one would not make the process trees any clearer
+    // NOLINTBEGIN(readability-magic-numbers)
     // bash -> python3 ros2 launch -> local_transceiver (comm with spaces and parentheses) -> a helper
     proc.add(100, 1, "bash", {"/bin/bash", "./scripts/run_software.sh"});
     proc.add(
@@ -855,6 +857,7 @@ TEST_F(TestLocalTransceiver, findLaunchProcess)
     proc.add(900, 901, "a", {"a"});
     proc.add(901, 900, "b", {"b"});
     EXPECT_EQ(LocalTransceiver::findLaunchProcess(900, proc.path()), std::nullopt);
+    // NOLINTEND(readability-magic-numbers)
 }
 
 /**
@@ -863,6 +866,8 @@ TEST_F(TestLocalTransceiver, findLaunchProcess)
 TEST_F(TestLocalTransceiver, launchHandlesSigint)
 {
     FakeProc proc;
+    // The fake pids are arbitrary, naming each one would not make the process trees any clearer
+    // NOLINTBEGIN(readability-magic-numbers)
     // SigCgt values taken from a real `ros2 launch`: SIGINT caught (bit 1), and a background job with SIGINT ignored
     proc.add(100, 1, "python3", {"python3"}, "0000000100000002");
     proc.add(200, 1, "python3", {"python3"}, "0000000100000000");
@@ -875,12 +880,13 @@ TEST_F(TestLocalTransceiver, launchHandlesSigint)
     EXPECT_FALSE(LocalTransceiver::launchHandlesSigint(300, proc.path()));
     EXPECT_FALSE(LocalTransceiver::launchHandlesSigint(400, proc.path()));
     EXPECT_FALSE(LocalTransceiver::launchHandlesSigint(999, proc.path()));
+    // NOLINTEND(readability-magic-numbers)
 
     // Against the real /proc, to make sure the parsing matches what the kernel actually reports
     // sigaction saves and restores the previous handler completely (flags and mask too), unlike std::signal
     const pid_t      self = getpid();
-    struct sigaction prev{};
-    struct sigaction act{};
+    struct sigaction prev = {};
+    struct sigaction act  = {};
     sigemptyset(&act.sa_mask);
     act.sa_handler = [](int) {};
     sigaction(SIGINT, &act, &prev);
@@ -903,29 +909,29 @@ TEST_F(TestLocalTransceiver, launchHandlesSigint)
 TEST_F(TestLocalTransceiver, restartSoftwareRefusesWithoutSupervisor)
 {
     // Put the variable back as it was at the end, so later tests don't depend on this one
-    const char *                     original = std::getenv("SAILBOT_RESTART_SENTINEL");
-    const std::optional<std::string> saved    = original ? std::optional<std::string>(original) : std::nullopt;
+    const char * original                  = std::getenv("SAILBOT_RESTART_SENTINEL");  //NOLINT(concurrency-mt-unsafe)
+    const std::optional<std::string> saved = original != nullptr ? std::optional<std::string>(original) : std::nullopt;
 
     std::vector<std::string> errors;
     lcl_trns_->setLogCallbacks(
       [](const std::string &) {}, [&errors](const std::string & msg) { errors.push_back(msg); });
 
     // Not started by scripts/run_software.sh: the variable is unset or empty
-    unsetenv("SAILBOT_RESTART_SENTINEL");
+    unsetenv("SAILBOT_RESTART_SENTINEL");  //NOLINT(concurrency-mt-unsafe)
     EXPECT_FALSE(lcl_trns_->restartSoftware());
     ASSERT_EQ(errors.size(), 1U);
     EXPECT_NE(errors[0].find("SAILBOT_RESTART_SENTINEL"), std::string::npos);
 
-    setenv("SAILBOT_RESTART_SENTINEL", "", 1);
+    setenv("SAILBOT_RESTART_SENTINEL", "", 1);  //NOLINT(concurrency-mt-unsafe)
     EXPECT_FALSE(lcl_trns_->restartSoftware());
     EXPECT_EQ(errors.size(), 2U);
-    unsetenv("SAILBOT_RESTART_SENTINEL");
+    unsetenv("SAILBOT_RESTART_SENTINEL");  //NOLINT(concurrency-mt-unsafe)
 
     // Works without log callbacks set too
     lcl_trns_->setLogCallbacks(nullptr, nullptr);
     EXPECT_FALSE(lcl_trns_->restartSoftware());
 
     if (saved.has_value()) {
-        setenv("SAILBOT_RESTART_SENTINEL", saved->c_str(), 1);
+        setenv("SAILBOT_RESTART_SENTINEL", saved->c_str(), 1);  //NOLINT(concurrency-mt-unsafe)
     }
 }
