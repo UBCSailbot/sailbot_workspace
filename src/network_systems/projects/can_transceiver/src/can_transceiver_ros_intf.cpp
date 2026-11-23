@@ -321,7 +321,7 @@ private:
             CAN_FP::PowerOff po(po_frame);
             RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), "Shutting down...");
             system("$ROS_WORKSPACE/src/network_systems/scripts/shutdown.sh");  //NOLINT(concurrency-mt-unsafe)
-        } catch (std::out_of_range err) {
+        } catch (const std::exception & err) {
             RCLCPP_WARN(this->get_logger(), "%s", err.what());
             return;
         }
@@ -460,7 +460,7 @@ private:
 
             RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), bat.toString().c_str());
 
-        } catch (std::out_of_range err) {
+        } catch (const std::exception & err) {
             RCLCPP_WARN(this->get_logger(), "%s", err.what());
             return;
         }
@@ -483,7 +483,7 @@ private:
             msg::GPS gps_ = gps.toRosMsg();
             gps_pub_->publish(gps_);
             RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), gps.toString().c_str());
-        } catch (std::out_of_range err) {
+        } catch (const std::exception & err) {
             RCLCPP_WARN(this->get_logger(), "%s", err.what());
             return;
         }
@@ -540,7 +540,7 @@ private:
 
             publishFilteredWindSensor();
             RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), wind_sensor.toString().c_str());
-        } catch (std::out_of_range err) {
+        } catch (const std::exception & err) {
             RCLCPP_WARN(this->get_logger(), "%s", err.what());
             return;
         }
@@ -635,7 +635,7 @@ private:
             temp_sensor_msg                   = temp_sensor.toRosMsg();
             temp_sensors_pub_->publish(temp_sensors_);
             RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), temp_sensor.toString().c_str());
-        } catch (std::out_of_range err) {
+        } catch (const std::exception & err) {
             RCLCPP_WARN(this->get_logger(), "%s", err.what());
             return;
         }
@@ -661,7 +661,7 @@ private:
             ph_sensor_msg                 = ph_sensor.toRosMsg();
             ph_sensors_pub_->publish(ph_sensors_);
             RCLCPP_INFO(this->get_logger(), "%s %s", getCurrentTimeString().c_str(), ph_sensor.toString().c_str());
-        } catch (std::out_of_range err) {
+        } catch (const std::exception & err) {
             RCLCPP_WARN(this->get_logger(), "%s", err.what());
             return;
         }
@@ -688,7 +688,7 @@ private:
             salinity_sensors_pub_->publish(salinity_sensors_);
             RCLCPP_INFO(
               this->get_logger(), "%s %s", getCurrentTimeString().c_str(), salinity_sensor.toString().c_str());
-        } catch (std::out_of_range err) {
+        } catch (const std::exception & err) {
             RCLCPP_WARN(this->get_logger(), "%s", err.what());
             return;
         }
@@ -762,7 +762,7 @@ private:
             can_trns_->send(main_trim_tab_frame.toLinuxCan());
             RCLCPP_INFO(
               this->get_logger(), "%s %s", getCurrentTimeString().c_str(), main_trim_tab_frame.toString().c_str());
-        } catch (std::out_of_range err) {
+        } catch (const std::exception & err) {
             RCLCPP_WARN(this->get_logger(), "%s", err.what());
             return;
         }
