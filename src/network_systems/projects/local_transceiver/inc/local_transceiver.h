@@ -179,6 +179,14 @@ public:
     std::optional<std::string> debugSend(const std::string & cmd);
 
     /**
+     * @brief Ask the global launcher to restart the ROS 2 stack with its current arguments.
+     *
+     * Reserved for future satellite commands. A successful restart also stops this process.
+     * @return true if the asynchronous request was sent, false if the launcher was unavailable.
+     */
+    bool restartSoftware();
+
+    /**
      * @brief Asynchronously save the received serialized data to a local file
      *
      * @param receivedDataBuffer string to cache
@@ -214,10 +222,9 @@ public:
 private:
     // Serial port read/write timeout
     // * This 'TIMEOUT' timeout is used for the socket - it doesn't work with the actual hardware modem
-    constexpr static const struct timeval TIMEOUT
-    {
-        0,        // seconds
-          200000  // microseconds
+    constexpr static const struct timeval TIMEOUT{
+      0,      // seconds
+      200000  // microseconds
     };
     // * This 'SERIAL_TIMEOUT' timeout actually works for the serial port, both on hardware and virtual
     static constexpr std::chrono::milliseconds SERIAL_TIMEOUT{std::chrono::seconds(15)};

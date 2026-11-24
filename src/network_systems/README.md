@@ -156,6 +156,18 @@ For example:
 /workspaces/sailbot_workspace/build/network_systems/projects/example/example
 ```
 
+### ROS 2 software restart
+
+`LocalTransceiver::restartSoftware()` in `local_transceiver.cpp` requests
+an asynchronous restart of the ROS 2 stack on the Raspberry Pi. Only unit
+tests call it today. It is reserved for a future satellite command.
+
+The function returns `true` when it sends the request to the global
+launcher's private Unix socket. It returns `false` if the send fails,
+including when `network_systems` runs on its own. On receiving a restart
+request, the global launcher waits for its nodes to exit and relaunches
+with the original arguments.
+
 ## Testing
 
 Unit tests specific to Network Systems is done using

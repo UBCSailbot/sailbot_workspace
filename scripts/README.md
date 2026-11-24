@@ -23,6 +23,13 @@ Script to run Clang-Tidy using `ament_clang_tidy.py`.
 
 Script to run a single or all ROS packages.
 
+## `run_software.sh`
+
+Sets up and builds the workspace, then starts the global ROS 2 launch.
+Arguments such as `mode:=production` are passed through to `ros2 launch`.
+The global launcher handles
+[restart requests](../src/network_systems/README.md#ros-2-software-restart).
+
 ## `run_virtual_iridium.sh`
 
 <!-- markdownlint-disable MD013 -->
@@ -76,10 +83,6 @@ Other relevant commands include (but are not limited to):
 ## `run-tests.sh`
 
 Script to setup, build, and test all ROS packages.
-
-## `run_software.sh`
-
-Script to setup, build, and run all ROS packages.
 
 ## `setup.sh`
 

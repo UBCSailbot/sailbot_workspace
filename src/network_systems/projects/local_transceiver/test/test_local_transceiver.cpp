@@ -3,9 +3,12 @@
 #include <curl/curl.h>
 #include <gtest/gtest.h>
 
+#include <array>
+#include <boost/asio/local/datagram_protocol.hpp>
 #include <boost/process.hpp>
 #include <boost/system/system_error.hpp>
 #include <chrono>  // added
+#include <cstdlib>
 #include <custom_interfaces/msg/detail/helper_dimension__struct.hpp>
 #include <custom_interfaces/msg/detail/helper_heading__struct.hpp>
 #include <custom_interfaces/msg/detail/helper_lat_lon__struct.hpp>
@@ -13,6 +16,8 @@
 #include <custom_interfaces/msg/detail/helper_speed__struct.hpp>
 #include <fstream>
 #include <mutex>
+#include <optional>
+#include <string_view>
 #include <thread>  // added
 #include <vector>
 
@@ -766,4 +771,45 @@ TEST_F(TestLocalTransceiver, validateGlobalPathWayPoints)
     bad_wp.set__longitude(valid_lon);
     invalid_path.set__waypoints({bad_wp});
     EXPECT_FALSE(lcl_trns_->validateGlobalPathWayPoints(invalid_path));
+}
+
+TEST_F(TestLocalTransceiver, restartSoftwareSendsRequestToGlobalLaunch)
+{
+    using RestartSocket                = boost::asio::local::datagram_protocol;
+    constexpr std::string_view request = "restart";
+
+    std::string socket_dir = "/tmp/sailbot-restart-test-XXXXXX";
+    ASSERT_NE(mkdtemp(socket_dir.data()), nullptr);
+    const std::string socket_path = socket_dir + "/restart.sock";
+
+    boost::asio::io_context io;
+    RestartSocket::socket   receiver(io, RestartSocket::endpoint(socket_path));
+    receiver.non_blocking(true);
+
+    const char *                     env_name = "SAILBOT_RESTART_SOCKET";
+    const char *                     original = std::getenv(env_name);  // NOLINT(concurrency-mt-unsafe)
+    const std::optional<std::string> saved = original != nullptr ? std::optional<std::string>(original) : std::nullopt;
+
+    EXPECT_EQ(unsetenv(env_name), 0);  // NOLINT(concurrency-mt-unsafe)
+    EXPECT_FALSE(lcl_trns_->restartSoftware());
+
+    const std::string missing_socket = socket_dir + "/missing.sock";
+    EXPECT_EQ(setenv(env_name, missing_socket.c_str(), 1), 0);  // NOLINT(concurrency-mt-unsafe)
+    EXPECT_FALSE(lcl_trns_->restartSoftware());
+
+    EXPECT_EQ(setenv(env_name, socket_path.c_str(), 1), 0);  // NOLINT(concurrency-mt-unsafe)
+    EXPECT_TRUE(lcl_trns_->restartSoftware());
+    std::array<char, request.size() + 1> buffer{};
+    boost::system::error_code            error;
+    const auto                           received = receiver.receive(boost::asio::buffer(buffer), 0, error);
+    EXPECT_FALSE(error) << error.message();
+    EXPECT_EQ(std::string_view(buffer.data(), received), request);
+
+    if (saved.has_value()) {
+        EXPECT_EQ(setenv(env_name, saved->c_str(), 1), 0);  // NOLINT(concurrency-mt-unsafe)
+    } else {
+        EXPECT_EQ(unsetenv(env_name), 0);  // NOLINT(concurrency-mt-unsafe)
+    }
+    std::filesystem::remove(socket_path);
+    std::filesystem::remove(socket_dir);
 }

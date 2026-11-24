@@ -1,14 +1,21 @@
 #include "local_transceiver.h"
 
+#include <unistd.h>
+
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/asio/deadline_timer.hpp>
+#include <boost/asio/local/datagram_protocol.hpp>
 #include <boost/asio/read.hpp>
 #include <boost/asio/read_until.hpp>
 #include <boost/asio/serial_port.hpp>
 #include <boost/asio/streambuf.hpp>
 #include <boost/asio/write.hpp>
 #include <boost/system/error_code.hpp>
+#include <boost/system/system_error.hpp>
+#include <cerrno>
+#include <cstdint>
+#include <cstdlib>
 #include <custom_interfaces/msg/batteries.hpp>
 #include <custom_interfaces/msg/generic_sensors.hpp>
 #include <custom_interfaces/msg/gps.hpp>
@@ -19,6 +26,8 @@
 #include <regex>
 #include <stdexcept>
 #include <string>
+#include <string_view>
+#include <vector>
 
 #include "at_cmds.h"
 #include "cmn_hdrs/ros_info.h"
@@ -262,8 +271,7 @@ bool LocalTransceiver::send()
                 return false;
             case AT::MOResult::FATAL:
                 if (log_error_) {
-                    log_error_(
-                      "SBD session failed with MO status " + mo_status_str + ", which retrying cannot fix");
+                    log_error_("SBD session failed with MO status " + mo_status_str + ", which retrying cannot fix");
                 }
                 return false;
         }
@@ -271,8 +279,8 @@ bool LocalTransceiver::send()
 
     if (log_error_) {
         log_error_(
-          "Failed to transmit data to satellite after " + std::to_string(MAX_SBD_SESSION_ATTEMPTS) +
-          " attempts\n" + sensors.DebugString());
+          "Failed to transmit data to satellite after " + std::to_string(MAX_SBD_SESSION_ATTEMPTS) + " attempts\n" +
+          sensors.DebugString());
     }
     return false;
 }
@@ -332,7 +340,7 @@ std::chrono::milliseconds LocalTransceiver::sbdSessionRetryDelay(int attempt)
     const std::chrono::milliseconds max_delay = attempt <= NUM_SHORT_RETRIES ? SHORT_MAX_DELAY : LONG_MAX_DELAY;
 
     // Random delays avoid retrying in lockstep with whatever caused the failure
-    static thread_local std::mt19937                     rng{std::random_device{}()};
+    static thread_local std::mt19937                              rng{std::random_device{}()};
     std::uniform_int_distribution<std::chrono::milliseconds::rep> dist(0, max_delay.count());
     return std::chrono::milliseconds(dist(rng));
 }
@@ -525,6 +533,33 @@ std::optional<std::string> LocalTransceiver::debugSend(const std::string & cmd)
     }
 
     return readRsp();
+}
+
+bool LocalTransceiver::restartSoftware()
+{
+    const char * socket_path = std::getenv("SAILBOT_RESTART_SOCKET");  // NOLINT(concurrency-mt-unsafe)
+    if (socket_path == nullptr || socket_path[0] == '\0') {
+        if (log_error_) {
+            log_error_("Software restart requires the Sailbot global ROS 2 launch");
+        }
+        return false;
+    }
+
+    using RestartSocket                        = bio::local::datagram_protocol;
+    constexpr std::string_view RESTART_REQUEST = "restart";
+    try {
+        bio::io_context       io;
+        RestartSocket::socket socket(io, RestartSocket{});
+        socket.non_blocking(true);
+        const auto message = bio::buffer(RESTART_REQUEST.data(), RESTART_REQUEST.size());
+        socket.send_to(message, RestartSocket::endpoint(socket_path));
+    } catch (const boost::system::system_error & error) {
+        if (log_error_) {
+            log_error_(std::string("Could not send the software restart request: ") + error.what());
+        }
+        return false;
+    }
+    return true;
 }
 
 void LocalTransceiver::cacheGlobalWaypoints(std::string receivedDataBuffer)
