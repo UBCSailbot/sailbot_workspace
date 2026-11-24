@@ -9,6 +9,7 @@ setup(
     version="0.0.0",
     packages=[],
     install_requires=["setuptools"],
+    tests_require=["pytest"],
     data_files=[
         ("share/ament_index/resource_index/packages", ["resource/" + PACKAGE_NAME]),
         ("share/" + PACKAGE_NAME, ["package.xml"]),

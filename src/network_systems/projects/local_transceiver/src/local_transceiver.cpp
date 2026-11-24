@@ -1,17 +1,18 @@
 #include "local_transceiver.h"
 
-#include <signal.h>
 #include <unistd.h>
 
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/asio/deadline_timer.hpp>
+#include <boost/asio/local/datagram_protocol.hpp>
 #include <boost/asio/read.hpp>
 #include <boost/asio/read_until.hpp>
 #include <boost/asio/serial_port.hpp>
 #include <boost/asio/streambuf.hpp>
 #include <boost/asio/write.hpp>
 #include <boost/system/error_code.hpp>
+#include <boost/system/system_error.hpp>
 #include <cerrno>
 #include <cstdint>
 #include <cstdlib>
@@ -21,13 +22,11 @@
 #include <custom_interfaces/msg/l_path_data.hpp>
 #include <custom_interfaces/msg/wind_sensors.hpp>
 #include <exception>
-#include <iterator>
 #include <random>
 #include <regex>
-#include <sstream>
 #include <stdexcept>
 #include <string>
-#include <system_error>
+#include <string_view>
 #include <vector>
 
 #include "at_cmds.h"
@@ -47,10 +46,6 @@ constexpr float LAT_LBOUND = -90.0F;
 constexpr float LAT_UBOUND = 90.0F;
 constexpr float LON_LBOUND = -180.0F;
 constexpr float LON_UBOUND = 180.0F;
-
-// Environment variable that scripts/run_software.sh sets to the path of the file it looks for to learn that a
-// software restart was requested (see LocalTransceiver::restartSoftware)
-constexpr const char * RESTART_SENTINEL_ENV = "SAILBOT_RESTART_SENTINEL";
 
 void LocalTransceiver::updateSensor(msg::GPS gps)
 {
@@ -540,140 +535,29 @@ std::optional<std::string> LocalTransceiver::debugSend(const std::string & cmd)
     return readRsp();
 }
 
-// Contents of a /proc/<pid>/<name> file, or an empty string if it can't be read.
-// Procfs files report a size of 0, so they have to be read until EOF.
-static std::string readProcFile(const std::string & proc_dir, pid_t pid, const std::string & name)
-{
-    std::ifstream file(proc_dir + "/" + std::to_string(pid) + "/" + name, std::ios::binary);
-    return {std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};
-}
-
-// Parent of a process, read from /proc/<pid>/stat: "<pid> (<comm>) <state> <ppid> ...".
-// <comm> is the executable name, which may itself contain spaces and parentheses, so look for the LAST ')'.
-static std::optional<pid_t> readParentPid(const std::string & proc_dir, pid_t pid)
-{
-    const std::string stat       = readProcFile(proc_dir, pid, "stat");
-    const size_t      comm_close = stat.rfind(')');
-    if (comm_close == std::string::npos) {
-        return std::nullopt;
-    }
-    std::istringstream rest(stat.substr(comm_close + 1));
-    char               state;
-    pid_t              ppid;
-    if (!(rest >> state >> ppid)) {
-        return std::nullopt;
-    }
-    return ppid;
-}
-
-// Whether a /proc/<pid>/cmdline (NUL separated arguments) is `ros2 launch ...`, run as `ros2` or through an
-// interpreter such as `python3 /opt/ros/humble/bin/ros2 launch ...`.
-static bool isRosLaunchCmdline(const std::string & cmdline)
-{
-    std::vector<std::string> args;
-    std::istringstream       stream(cmdline);
-    for (std::string arg; std::getline(stream, arg, '\0');) {
-        args.push_back(arg);
-    }
-    for (size_t i = 0; i + 1 < args.size(); i++) {
-        if (std::filesystem::path(args[i]).filename() == "ros2" && args[i + 1] == "launch") {
-            return true;
-        }
-    }
-    return false;
-}
-
-std::optional<pid_t> LocalTransceiver::findLaunchProcess(pid_t start_pid, const std::string & proc_dir)
-{
-    // Bounded so that a malformed (e.g. cyclic) process tree can't loop forever
-    static constexpr int MAX_ANCESTORS = 64;
-
-    pid_t pid = start_pid;
-    for (int i = 0; i < MAX_ANCESTORS && pid > 1; i++) {
-        if (isRosLaunchCmdline(readProcFile(proc_dir, pid, "cmdline"))) {
-            return pid;
-        }
-        std::optional<pid_t> parent = readParentPid(proc_dir, pid);
-        if (!parent.has_value()) {
-            return std::nullopt;
-        }
-        pid = parent.value();
-    }
-    return std::nullopt;
-}
-
-bool LocalTransceiver::launchHandlesSigint(pid_t pid, const std::string & proc_dir)
-{
-    // /proc/<pid>/status has a line "SigCgt:\t<hex mask>" where bit (n - 1) is set if signal n has a handler
-    static const std::string CAUGHT_SIGNALS_KEY = "SigCgt:";
-
-    std::istringstream status(readProcFile(proc_dir, pid, "status"));
-    for (std::string line; std::getline(status, line);) {
-        if (line.rfind(CAUGHT_SIGNALS_KEY, 0) != 0) {
-            continue;
-        }
-        try {
-            const uint64_t caught = std::stoull(line.substr(CAUGHT_SIGNALS_KEY.size()), nullptr, 16);
-            return ((caught >> (SIGINT - 1)) & 1ULL) != 0;
-        } catch (const std::exception &) {
-            return false;
-        }
-    }
-    return false;
-}
-
 bool LocalTransceiver::restartSoftware()
 {
-    // Every refusal goes through here, so none of them can leave a marker behind or shut anything down
-    auto refuse = [this](const std::string & reason) {
+    const char * socket_path = std::getenv("SAILBOT_RESTART_SOCKET");  // NOLINT(concurrency-mt-unsafe)
+    if (socket_path == nullptr || socket_path[0] == '\0') {
         if (log_error_) {
-            log_error_("restartSoftware(): refusing to restart the software system: " + reason);
+            log_error_("Software restart requires the Sailbot global ROS 2 launch");
         }
         return false;
-    };
-
-    // scripts/run_software.sh exports where it expects the restart marker. If it's missing, nobody is going to
-    // relaunch the system, so shutting it down would just take the boat's software offline.
-    const char * sentinel_env = std::getenv(RESTART_SENTINEL_ENV);  //NOLINT(concurrency-mt-unsafe)
-    if (sentinel_env == nullptr || sentinel_env[0] == '\0') {
-        return refuse(
-          std::string(RESTART_SENTINEL_ENV) +
-          " is not set, so the system was not started with scripts/run_software.sh and would not come back up");
-    }
-    const std::string sentinel_path = sentinel_env;
-
-    const std::optional<pid_t> launch_pid = findLaunchProcess(getpid());
-    if (!launch_pid.has_value()) {
-        return refuse("could not find the `ros2 launch` process this node was started by");
-    }
-    if (!launchHandlesSigint(launch_pid.value())) {
-        return refuse(
-          "`ros2 launch` (pid " + std::to_string(launch_pid.value()) +
-          ") is not handling SIGINT (e.g. it was started as a background job), so it would not shut down cleanly");
     }
 
-    // The marker has to exist before launch starts shutting down: run_software.sh checks for it as soon as
-    // launch exits.
-    {
-        std::ofstream sentinel(sentinel_path);
-        sentinel << launch_pid.value() << std::endl;
-        if (!sentinel) {
-            return refuse("could not write the restart marker " + sentinel_path);
+    using RestartSocket                        = bio::local::datagram_protocol;
+    constexpr std::string_view RESTART_REQUEST = "restart";
+    try {
+        bio::io_context       io;
+        RestartSocket::socket socket(io, RestartSocket{});
+        socket.non_blocking(true);
+        const auto message = bio::buffer(RESTART_REQUEST.data(), RESTART_REQUEST.size());
+        socket.send_to(message, RestartSocket::endpoint(socket_path));
+    } catch (const boost::system::system_error & error) {
+        if (log_error_) {
+            log_error_(std::string("Could not send the software restart request: ") + error.what());
         }
-    }
-
-    // SIGINT is what makes launch shut every node down gracefully (same as Ctrl-C). Never use SIGTERM here.
-    if (kill(launch_pid.value(), SIGINT) != 0) {
-        const std::string error = std::generic_category().message(errno);
-        std::error_code   ignored;
-        std::filesystem::remove(sentinel_path, ignored);
-        return refuse("could not signal `ros2 launch` (pid " + std::to_string(launch_pid.value()) + "): " + error);
-    }
-
-    if (log_debug_) {
-        log_debug_(
-          "restartSoftware(): sent SIGINT to `ros2 launch` (pid " + std::to_string(launch_pid.value()) +
-          "), scripts/run_software.sh will relaunch the system once it has shut down");
+        return false;
     }
     return true;
 }

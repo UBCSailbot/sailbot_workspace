@@ -1,7 +1,13 @@
 """Global launch file that starts the entire system."""
 
+import atexit
 import datetime
 import os
+import socket
+import sys
+import tempfile
+from asyncio import Future
+from contextlib import ExitStack
 from typing import List
 
 from launch import Action, LaunchDescription
@@ -13,9 +19,12 @@ from launch.actions import (
     SetEnvironmentVariable,
     SetLaunchConfiguration,
 )
+from launch.event_handlers import OnProcessStart, OnShutdown
+from launch.events import Shutdown
+from launch.events.process import ProcessStarted
 from launch.launch_context import LaunchContext
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.logging import launch_config
+from launch.logging import get_logger, launch_config
 from launch.substitutions import LaunchConfiguration
 
 PRODUCTION_ROS_PACKAGES = ["controller", "local_pathfinding", "network_systems"]
@@ -141,10 +150,72 @@ def generate_launch_description() -> LaunchDescription:
     launch_description = LaunchDescription(
         [
             *GLOBAL_LAUNCH_ARGUMENTS,
+            OpaqueFunction(function=enable_software_restart),
             OpaqueFunction(function=setup_launch),
         ]
     )
     return launch_description
+
+
+def enable_software_restart(context: LaunchContext) -> List[Action]:
+    """Accept restart requests from nodes belonging to this global launch."""
+    # Only the ros2 launch CLI can be replaced at exit. LaunchService may also be embedded.
+    if (
+        os.path.basename(sys.argv[0]) != "ros2"
+        or sys.argv[1:2] != ["launch"]
+        or not hasattr(socket, "AF_UNIX")
+    ):
+        return []
+
+    launch_argv = [sys.executable, *sys.argv]
+    launch_env = os.environ.copy()
+    restart = Shutdown(reason="Local transceiver requested a software restart")
+    resources = ExitStack()
+    try:
+        directory = resources.enter_context(tempfile.TemporaryDirectory(dir="/tmp"))
+        socket_path = os.path.join(directory, "restart.sock")
+        listener = resources.enter_context(socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM))
+        listener.bind(socket_path)
+        listener.setblocking(False)
+    except OSError as error:
+        resources.close()
+        get_logger("launch").warning(f"Software restart unavailable ({error})")
+        return [SetEnvironmentVariable("SAILBOT_RESTART_SOCKET", "")]
+    request = b"restart"
+    process_completions: set[Future] = set()
+
+    def track_process(event: ProcessStarted, _context: LaunchContext) -> None:
+        completion = event.action.get_asyncio_future()
+        if completion is not None:
+            process_completions.add(completion)
+
+    def relaunch() -> None:
+        # A forced launch exit can leave nodes running.
+        if any(not future.done() or future.cancelled() for future in process_completions):
+            get_logger("launch").error("Software restart cancelled during incomplete ROS shutdown")
+            return
+        try:
+            os.execve(sys.executable, launch_argv, launch_env)
+        except OSError as error:
+            print(f"Could not relaunch ROS 2 ({error})", file=sys.stderr, flush=True)
+            os._exit(1)
+
+    def receive_request() -> None:
+        if listener.recv(len(request) + 1) == request and not context.is_shutdown:
+            context.asyncio_loop.remove_reader(listener.fileno())
+            context.emit_event_sync(restart)
+
+    def close_listener(event: Shutdown, _context: LaunchContext) -> None:
+        context.asyncio_loop.remove_reader(listener.fileno())
+        resources.close()
+        if event is restart and not context.is_shutdown:
+            # ROS finishes shutting down its nodes before the CLI exits.
+            atexit.register(relaunch)
+
+    context.asyncio_loop.add_reader(listener.fileno(), receive_request)
+    context.register_event_handler(OnProcessStart(on_start=track_process))
+    context.register_event_handler(OnShutdown(on_shutdown=close_listener, handle_once=True))
+    return [SetEnvironmentVariable("SAILBOT_RESTART_SOCKET", socket_path)]
 
 
 def setup_launch(context: LaunchContext) -> List[Action]:

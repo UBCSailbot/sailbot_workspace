@@ -2,12 +2,12 @@
 
 #include <curl/curl.h>
 #include <gtest/gtest.h>
-#include <unistd.h>
 
+#include <array>
+#include <boost/asio/local/datagram_protocol.hpp>
 #include <boost/process.hpp>
 #include <boost/system/system_error.hpp>
 #include <chrono>  // added
-#include <csignal>
 #include <cstdlib>
 #include <custom_interfaces/msg/detail/helper_dimension__struct.hpp>
 #include <custom_interfaces/msg/detail/helper_heading__struct.hpp>
@@ -17,6 +17,7 @@
 #include <fstream>
 #include <mutex>
 #include <optional>
+#include <string_view>
 #include <thread>  // added
 #include <vector>
 
@@ -772,166 +773,43 @@ TEST_F(TestLocalTransceiver, validateGlobalPathWayPoints)
     EXPECT_FALSE(lcl_trns_->validateGlobalPathWayPoints(invalid_path));
 }
 
-/**
- * @brief Builds a fake procfs directory so process lookups can be tested without depending on the real process tree
- */
-class FakeProc
+TEST_F(TestLocalTransceiver, restartSoftwareSendsRequestToGlobalLaunch)
 {
-public:
-    FakeProc() : dir_(std::filesystem::temp_directory_path() / ("fake_proc_" + std::to_string(getpid())))
-    {
-        std::filesystem::remove_all(dir_);
-        std::filesystem::create_directories(dir_);
-    }
-    ~FakeProc() { std::filesystem::remove_all(dir_); }
+    using RestartSocket                = boost::asio::local::datagram_protocol;
+    constexpr std::string_view request = "restart";
 
-    /**
-     * @param pid     pid of the fake process
-     * @param ppid    parent pid of the fake process
-     * @param comm    executable name as it appears in /proc/<pid>/stat
-     * @param args    command line arguments, stored NUL separated as in /proc/<pid>/cmdline
-     * @param sig_cgt hex mask of caught signals, as in the SigCgt line of /proc/<pid>/status
-     */
-    void add(
-      pid_t pid, pid_t ppid, const std::string & comm, const std::vector<std::string> & args,
-      const std::string & sig_cgt = "0000000000000000")
-    {
-        const std::filesystem::path proc_dir = dir_ / std::to_string(pid);
-        std::filesystem::create_directories(proc_dir);
-        std::ofstream(proc_dir / "stat") << pid << " (" << comm << ") S " << ppid << " 1 1 0 -1 4194304 100 0\n";
-        std::ofstream cmdline(proc_dir / "cmdline", std::ios::binary);
-        for (const std::string & arg : args) {
-            cmdline << arg << '\0';
-        }
-        std::ofstream(proc_dir / "status") << "Name:\t" << comm << "\nSigIgn:\t0000000001001004\nSigCgt:\t" << sig_cgt
-                                           << "\nSigBlk:\t0000000000000000\n";
-    }
+    std::string socket_dir = "/tmp/sailbot-restart-test-XXXXXX";
+    ASSERT_NE(mkdtemp(socket_dir.data()), nullptr);
+    const std::string socket_path = socket_dir + "/restart.sock";
 
-    std::string path() const { return dir_.string(); }
+    boost::asio::io_context io;
+    RestartSocket::socket   receiver(io, RestartSocket::endpoint(socket_path));
+    receiver.non_blocking(true);
 
-private:
-    std::filesystem::path dir_;
-};
+    const char *                     env_name = "SAILBOT_RESTART_SOCKET";
+    const char *                     original = std::getenv(env_name);  // NOLINT(concurrency-mt-unsafe)
+    const std::optional<std::string> saved    = original ? std::optional<std::string>(original) : std::nullopt;
 
-/**
- * @brief Verifies the `ros2 launch` ancestor lookup used by restartSoftware
- */
-TEST_F(TestLocalTransceiver, findLaunchProcess)
-{
-    FakeProc proc;
-    // The fake pids are arbitrary, naming each one would not make the process trees any clearer
-    // NOLINTBEGIN(readability-magic-numbers)
-    // bash -> python3 ros2 launch -> local_transceiver (comm with spaces and parentheses) -> a helper
-    proc.add(100, 1, "bash", {"/bin/bash", "./scripts/run_software.sh"});
-    proc.add(
-      200, 100, "python3",
-      {"/usr/bin/python3", "/opt/ros/humble/bin/ros2", "launch", "src/global_launch/main_launch.py"});
-    proc.add(300, 200, "local (trans) ceiver", {"/ws/install/lib/network_systems/local_transceiver"});
-    proc.add(400, 300, "sh", {"/bin/sh", "-c", "something"});
-
-    EXPECT_EQ(LocalTransceiver::findLaunchProcess(400, proc.path()), std::optional<pid_t>(200));
-    EXPECT_EQ(LocalTransceiver::findLaunchProcess(300, proc.path()), std::optional<pid_t>(200));
-    // The start process is checked too
-    EXPECT_EQ(LocalTransceiver::findLaunchProcess(200, proc.path()), std::optional<pid_t>(200));
-    // The search only goes up the tree, never down
-    EXPECT_EQ(LocalTransceiver::findLaunchProcess(100, proc.path()), std::nullopt);
-
-    // `ros2` run as the executable itself, instead of through python
-    proc.add(500, 100, "ros2", {"/opt/ros/humble/bin/ros2", "launch", "pkg", "file.py"});
-    proc.add(510, 500, "node", {"node"});
-    EXPECT_EQ(LocalTransceiver::findLaunchProcess(510, proc.path()), std::optional<pid_t>(500));
-
-    // Other ros2 commands are not launch, even if "launch" shows up later in the arguments
-    proc.add(600, 100, "python3", {"/usr/bin/python3", "/opt/ros/humble/bin/ros2", "run", "pkg", "launch"});
-    proc.add(610, 600, "node", {"node"});
-    EXPECT_EQ(LocalTransceiver::findLaunchProcess(610, proc.path()), std::nullopt);
-    proc.add(700, 100, "python3", {"/usr/bin/python3", "/opt/ros/humble/bin/ros2", "topic", "list"});
-    EXPECT_EQ(LocalTransceiver::findLaunchProcess(700, proc.path()), std::nullopt);
-
-    // A process that doesn't exist, or whose parent doesn't exist
-    EXPECT_EQ(LocalTransceiver::findLaunchProcess(999, proc.path()), std::nullopt);
-    proc.add(800, 12345, "orphan", {"orphan"});
-    EXPECT_EQ(LocalTransceiver::findLaunchProcess(800, proc.path()), std::nullopt);
-
-    // A malformed process tree with a cycle must terminate
-    proc.add(900, 901, "a", {"a"});
-    proc.add(901, 900, "b", {"b"});
-    EXPECT_EQ(LocalTransceiver::findLaunchProcess(900, proc.path()), std::nullopt);
-    // NOLINTEND(readability-magic-numbers)
-}
-
-/**
- * @brief Verifies the check that `ros2 launch` would shut down gracefully on SIGINT
- */
-TEST_F(TestLocalTransceiver, launchHandlesSigint)
-{
-    FakeProc proc;
-    // The fake pids are arbitrary, naming each one would not make the process trees any clearer
-    // NOLINTBEGIN(readability-magic-numbers)
-    // SigCgt values taken from a real `ros2 launch`: SIGINT caught (bit 1), and a background job with SIGINT ignored
-    proc.add(100, 1, "python3", {"python3"}, "0000000100000002");
-    proc.add(200, 1, "python3", {"python3"}, "0000000100000000");
-    // Only SIGTERM (bit 14) caught: not good enough, launch has to be stopped with SIGINT
-    proc.add(300, 1, "python3", {"python3"}, "0000000000004000");
-    proc.add(400, 1, "python3", {"python3"}, "not hex");
-
-    EXPECT_TRUE(LocalTransceiver::launchHandlesSigint(100, proc.path()));
-    EXPECT_FALSE(LocalTransceiver::launchHandlesSigint(200, proc.path()));
-    EXPECT_FALSE(LocalTransceiver::launchHandlesSigint(300, proc.path()));
-    EXPECT_FALSE(LocalTransceiver::launchHandlesSigint(400, proc.path()));
-    EXPECT_FALSE(LocalTransceiver::launchHandlesSigint(999, proc.path()));
-    // NOLINTEND(readability-magic-numbers)
-
-    // Against the real /proc, to make sure the parsing matches what the kernel actually reports
-    // sigaction saves and restores the previous handler completely (flags and mask too), unlike std::signal
-    const pid_t      self = getpid();
-    struct sigaction prev = {};
-    struct sigaction act  = {};
-    sigemptyset(&act.sa_mask);
-    act.sa_handler = [](int) {};
-    sigaction(SIGINT, &act, &prev);
-    EXPECT_TRUE(LocalTransceiver::launchHandlesSigint(self));
-    act.sa_handler = SIG_IGN;
-    sigaction(SIGINT, &act, nullptr);
-    EXPECT_FALSE(LocalTransceiver::launchHandlesSigint(self));
-    act.sa_handler = SIG_DFL;
-    sigaction(SIGINT, &act, nullptr);
-    EXPECT_FALSE(LocalTransceiver::launchHandlesSigint(self));
-    sigaction(SIGINT, &prev, nullptr);
-}
-
-/**
- * @brief Verifies restartSoftware refuses, without shutting anything down, when nothing would relaunch the system
- *
- * The case where the environment is set up is deliberately not covered here: it would really signal any
- * `ros2 launch` this test happens to be running under.
- */
-TEST_F(TestLocalTransceiver, restartSoftwareRefusesWithoutSupervisor)
-{
-    // Put the variable back as it was at the end, so later tests don't depend on this one
-    const char * original                  = std::getenv("SAILBOT_RESTART_SENTINEL");  //NOLINT(concurrency-mt-unsafe)
-    const std::optional<std::string> saved = original != nullptr ? std::optional<std::string>(original) : std::nullopt;
-
-    std::vector<std::string> errors;
-    lcl_trns_->setLogCallbacks(
-      [](const std::string &) {}, [&errors](const std::string & msg) { errors.push_back(msg); });
-
-    // Not started by scripts/run_software.sh: the variable is unset or empty
-    unsetenv("SAILBOT_RESTART_SENTINEL");  //NOLINT(concurrency-mt-unsafe)
+    EXPECT_EQ(unsetenv(env_name), 0);  // NOLINT(concurrency-mt-unsafe)
     EXPECT_FALSE(lcl_trns_->restartSoftware());
-    ASSERT_EQ(errors.size(), 1U);
-    EXPECT_NE(errors[0].find("SAILBOT_RESTART_SENTINEL"), std::string::npos);
 
-    setenv("SAILBOT_RESTART_SENTINEL", "", 1);  //NOLINT(concurrency-mt-unsafe)
+    const std::string missing_socket = socket_dir + "/missing.sock";
+    EXPECT_EQ(setenv(env_name, missing_socket.c_str(), 1), 0);  // NOLINT(concurrency-mt-unsafe)
     EXPECT_FALSE(lcl_trns_->restartSoftware());
-    EXPECT_EQ(errors.size(), 2U);
-    unsetenv("SAILBOT_RESTART_SENTINEL");  //NOLINT(concurrency-mt-unsafe)
 
-    // Works without log callbacks set too
-    lcl_trns_->setLogCallbacks(nullptr, nullptr);
-    EXPECT_FALSE(lcl_trns_->restartSoftware());
+    EXPECT_EQ(setenv(env_name, socket_path.c_str(), 1), 0);  // NOLINT(concurrency-mt-unsafe)
+    EXPECT_TRUE(lcl_trns_->restartSoftware());
+    std::array<char, request.size() + 1> buffer{};
+    boost::system::error_code            error;
+    const auto                           received = receiver.receive(boost::asio::buffer(buffer), 0, error);
+    EXPECT_FALSE(error) << error.message();
+    EXPECT_EQ(std::string_view(buffer.data(), received), request);
 
     if (saved.has_value()) {
-        setenv("SAILBOT_RESTART_SENTINEL", saved->c_str(), 1);  //NOLINT(concurrency-mt-unsafe)
+        EXPECT_EQ(setenv(env_name, saved->c_str(), 1), 0);  // NOLINT(concurrency-mt-unsafe)
+    } else {
+        EXPECT_EQ(unsetenv(env_name), 0);  // NOLINT(concurrency-mt-unsafe)
     }
+    std::filesystem::remove(socket_path);
+    std::filesystem::remove(socket_dir);
 }

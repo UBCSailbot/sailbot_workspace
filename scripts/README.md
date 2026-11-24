@@ -25,32 +25,10 @@ Script to run a single or all ROS packages.
 
 ## `run_software.sh`
 
-Sets up, builds and launches the whole software system
-(`ros2 launch src/global_launch/main_launch.py`). This is what runs on the boat,
-started by `deployment/start_containers.sh`.
-
-It also relaunches the system when a node asks for a software restart (ticket
-\#1099, `LocalTransceiver::restartSoftware()`). Restarting the system means
-restarting every ROS node, not the Raspberry Pi or the Docker container:
-
-1. The node creates the marker file at `$SAILBOT_RESTART_SENTINEL`, a variable
-   this script exports, then stops `ros2 launch` with SIGINT.
-2. Launch shuts every node down. When it exits, this script finds the marker,
-   deletes it, waits a couple of seconds and launches the system again. It does
-   not set up or build again.
-
-Things to know:
-
-- The restart only works when the system was started by this script. A node
-  refuses the request if `$SAILBOT_RESTART_SENTINEL` is not set, because
-  nothing would bring the system back up. For example, a plain
-  `ros2 launch ...` will not restart.
-- Only SIGINT shuts launch down properly. On SIGTERM it exits without stopping
-  its nodes first, which leaves them running as orphans. This script starts launch with SIGINT
-  set to its default, because a shell ignores SIGINT for background (`&`) jobs
-  and that would be inherited.
-- If `ros2 launch` exits without a marker (a crash, or Ctrl-C), this script
-  exits with launch's exit code, as it did before.
+Sets up and builds the workspace, then starts the global ROS 2 launch.
+Arguments such as `mode:=production` are passed through to `ros2 launch`.
+The global launcher handles
+[restart requests](../src/network_systems/README.md#ros-2-software-restart).
 
 ## `run_virtual_iridium.sh`
 
@@ -105,10 +83,6 @@ Other relevant commands include (but are not limited to):
 ## `run-tests.sh`
 
 Script to setup, build, and test all ROS packages.
-
-## `run_software.sh`
-
-Script to setup, build, and run all ROS packages.
 
 ## `setup.sh`
 
