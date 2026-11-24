@@ -788,7 +788,7 @@ TEST_F(TestLocalTransceiver, restartSoftwareSendsRequestToGlobalLaunch)
 
     const char *                     env_name = "SAILBOT_RESTART_SOCKET";
     const char *                     original = std::getenv(env_name);  // NOLINT(concurrency-mt-unsafe)
-    const std::optional<std::string> saved    = original ? std::optional<std::string>(original) : std::nullopt;
+    const std::optional<std::string> saved = original != nullptr ? std::optional<std::string>(original) : std::nullopt;
 
     EXPECT_EQ(unsetenv(env_name), 0);  // NOLINT(concurrency-mt-unsafe)
     EXPECT_FALSE(lcl_trns_->restartSoftware());

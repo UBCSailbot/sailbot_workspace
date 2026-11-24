@@ -222,10 +222,9 @@ public:
 private:
     // Serial port read/write timeout
     // * This 'TIMEOUT' timeout is used for the socket - it doesn't work with the actual hardware modem
-    constexpr static const struct timeval TIMEOUT
-    {
-        0,        // seconds
-          200000  // microseconds
+    constexpr static const struct timeval TIMEOUT{
+      0,      // seconds
+      200000  // microseconds
     };
     // * This 'SERIAL_TIMEOUT' timeout actually works for the serial port, both on hardware and virtual
     static constexpr std::chrono::milliseconds SERIAL_TIMEOUT{std::chrono::seconds(15)};
