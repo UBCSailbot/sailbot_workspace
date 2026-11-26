@@ -203,10 +203,23 @@ class LowLevelControlNode(Node):
             .double_value
         )
         kp = self.get_parameter("rudder.pid.kp").get_parameter_value().double_value
+        ki = self.get_parameter("rudder.pid.ki").get_parameter_value().double_value
+        kd = self.get_parameter("rudder.pid.kd").get_parameter_value().double_value
         cp = self.get_parameter("rudder.pid.cp").get_parameter_value().double_value
-        control_speed = 1 / time_step  # not sure if this is the right value to use
+        buffer_size = (
+            self.get_parameter("rudder.pid.buffer_size").get_parameter_value().integer_value
+        )
+
         self.__rudder_controller = RudderController(
-            current_heading, desired_heading, current_control_ang, time_step, kp, cp, control_speed
+            current_heading,
+            desired_heading,
+            current_control_ang,
+            time_step,
+            kp,
+            ki,
+            kd,
+            cp,
+            buffer_size,
         )
 
     def __init_sail_controller(self):
@@ -282,7 +295,9 @@ class LowLevelControlNode(Node):
             feedback_msg = SimRudderActuation.Feedback()
             self._is_rudder_action_active = True
             while not self.__rudder_controller.is_target_reached:
-                self.__rudder_controller.update_state()
+                # Pull the latest heading feedback and recompute the PID against it every tick
+                latest_heading = Heading.from_degrees(self.gps.heading.heading)
+                self.__rudder_controller.step(latest_heading.degrees)
                 # Rudder angle (degrees) range-checked to ±30° at the boundary.
                 rudder_angle: RudderAngle = self.__rudder_controller.current_rudder_angle
                 feedback_msg.rudder_angle = rudder_angle.degrees
